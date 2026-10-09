@@ -3,6 +3,7 @@
 Escriben las filas nulas de la vista como `test_masked_campaign.Recorder` y anotan cada
 llamada en un registro de líneas JSON que indica `SLOT_LOG`. No usan CUDA ni ajustan nada.
 `SLOT_DELAY` alarga cada trabajo y `SLOT_CRASH` hace que ese trabajo muera sin resultado.
+`SLOT_OOM` hace que ese trabajo agote su VRAM la primera vez, con una marca en `SLOT_MARKS`.
 Con `SLOT_PAUSE_AFTER`, el primer trabajo que empieza tras ese número de trabajos terminados
 crea el archivo de parada y espera a que la campaña se la transmita, así que la parada
 siempre llega con al menos un trabajo en curso.
@@ -78,11 +79,30 @@ def _score(job):
     return {"gru-00": 0.02, "gru-10": 0.01}.get(job["candidate"], 0.03)
 
 
+class OutOfMemoryError(RuntimeError):
+    """Mismo nombre que `torch.OutOfMemoryError`, que es lo que mira la campaña."""
+
+
+def _environment():
+    import torch
+
+    names = ("OMP_NUM_THREADS", "MKL_NUM_THREADS", "CUBLAS_WORKSPACE_CONFIG")
+    values = {k: v for k, v in os.environ.items() if k.startswith("MARS_TITAN_") or k in names}
+    values["tf32"] = [torch.backends.cuda.matmul.allow_tf32, torch.backends.cudnn.allow_tf32]
+    return values
+
+
 def record_job(run):
     """Escribir el resultado del trabajo y anotar proceso, inicio y fin."""
     started = time.time()
     if os.environ.get("SLOT_CRASH") == run.job["id"]:
         os._exit(3)
+    if os.environ.get("SLOT_OOM") == run.job["id"]:
+        mark = Path(os.environ["SLOT_MARKS"]) / run.job["id"].replace("/", "_")
+        if not mark.exists():
+            mark.touch()
+            _log(id=run.job["id"], event="oom", environment=_environment())
+            raise OutOfMemoryError("CUDA out of memory (simulado)")
     delay = float(os.environ.get("SLOT_DELAY", "0"))
     run.folder.mkdir(parents=True, exist_ok=True)
     resumed = (run.folder / "partial.bin").exists()
@@ -119,7 +139,7 @@ def record_job(run):
         start=started,
         end=time.time(),
         resumed=resumed,
-        environment={k: v for k, v in os.environ.items() if k.startswith("MARS_TITAN_")},
+        environment=_environment(),
     )
     return report
 

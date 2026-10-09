@@ -19,14 +19,14 @@ import multiprocessing
 import os
 import signal
 import traceback
+import xml.etree.ElementTree as ET
 from dataclasses import asdict, dataclass, fields
 from pathlib import Path
 
+from .campaign_resources import CONTEXT_MIB, MIB
+
 PDEATHSIG = 1  # PR_SET_PDEATHSIG
 _CONTEXT = multiprocessing.get_context("spawn")
-MIB = 1024**2
-# Memoria del cliente MPS fuera del asignador de PyTorch: contexto, cuBLAS y cuDNN.
-MPS_MARGIN_MIB = 512
 MPS_SERVER = "nvidia-cuda-mps-server"
 
 
@@ -58,6 +58,28 @@ def _die_with_parent():
     except OSError:  # pragma: no cover - solo Linux
         return
     libc.prctl(PDEATHSIG, signal.SIGKILL)
+
+
+def strict_fp32():
+    """FP32 estricto y cuDNN determinista en el proceso que ejecuta un trabajo CUDA.
+
+    Sin TF32 en matmul ni en cuDNN, con la precisión más alta de matmul y sin la búsqueda
+    de algoritmos de cuDNN, de modo que el mismo trabajo da los mismos bits solo, en otra
+    ranura o junto a otros. Se aplica igual en la ejecución en serie y en las ranuras.
+    """
+    import torch
+
+    torch.backends.cuda.matmul.allow_tf32 = False
+    torch.backends.cudnn.allow_tf32 = False
+    torch.backends.cudnn.benchmark = False
+    torch.backends.cudnn.deterministic = True
+    torch.set_float32_matmul_precision("highest")
+
+
+def _cuda_available():
+    import torch
+
+    return torch.cuda.is_available()
 
 
 def bound_vram(limit):
@@ -101,8 +123,11 @@ def slot_main(connection, task, event):
         from .masked_campaign import JobRun, Paused
 
         run = JobRun(**task.run, stop=EventStop(event))
-        if task.vram_bytes:
-            bound_vram(task.vram_bytes)
+        strict_fp32()
+        if task.vram_bytes and _cuda_available():
+            # El asignador recibe la VRAM del trabajo sin la del contexto de CUDA. Sin CUDA
+            # no hay nada que acotar: el ejecutor exige `cuda:0` y falla por su cuenta.
+            bound_vram(max(task.vram_bytes - CONTEXT_MIB * MIB, 256 * MIB))
         try:
             report = _resolve(task.executor)(run)
         except Paused:
@@ -210,58 +235,70 @@ def new_event():
 
 
 def slot_environment(execution, resources):
-    """Tubería, MPS y límite de memoria del cliente MPS de un trabajo."""
+    """Tubería, hilos y límite de VRAM del proceso de un trabajo.
+
+    `vram_bytes` es la VRAM de todo el proceso, con su contexto. Con MPS es también el
+    límite del cliente, así que un trabajo que se pasa falla solo, sin tocar a los demás.
+    El resto del entorno, como `CUBLAS_WORKSPACE_CONFIG`, se hereda de la campaña.
+    """
     from .campaign_resources import environment
 
     values = environment(execution)
+    values["MARS_TITAN_SLOT_VRAM_MIB"] = str(resources.vram_bytes // MIB)
     if execution.mps:
-        limit = resources.vram_bytes // MIB + MPS_MARGIN_MIB
-        values["CUDA_MPS_PINNED_DEVICE_MEM_LIMIT"] = f"0={limit}M"
+        values["CUDA_MPS_PINNED_DEVICE_MEM_LIMIT"] = f"0={resources.vram_bytes // MIB}M"
     return values
 
 
-def compute_processes():
-    """PID y nombre de los procesos de cómputo en la GPU 0, sin abrir CUDA."""
-    import subprocess
+DESKTOP_TYPES = frozenset({"G", "C+G"})
+COMPUTE_TYPES = frozenset({"C", "M", "M+C"})
 
-    result = subprocess.run(
-        [
-            "nvidia-smi",
-            "-i",
-            "0",
-            "--query-compute-apps=pid,process_name",
-            "--format=csv,noheader,nounits",
-        ],
-        check=True,
-        capture_output=True,
-        text=True,
-        timeout=10,
-    )
-    processes = []
-    for line in result.stdout.splitlines():
-        if not line.strip():
+
+def parse_gpu_processes(xml, mps):
+    """VRAM libre y procesos de cómputo ajenos de la GPU 0 según `nvidia-smi -q -x`.
+
+    Los procesos gráficos del escritorio («G» y «C+G») no cuentan como cargas de cómputo,
+    igual que en `GpuLease`, aunque su memoria sí resta de la libre. Con MPS declarado se
+    admite su servidor. Cualquier otro proceso «C», «M» o «M+C» es ajeno.
+    """
+    import re
+
+    try:
+        devices = ET.fromstring(xml).findall("gpu")
+    except ET.ParseError as error:
+        raise ValueError("El controlador no ha devuelto XML válido") from error
+    if len(devices) != 1:
+        raise ValueError("La consulta debe identificar una única GPU")
+    free = devices[0].findtext("fb_memory_usage/free", "").strip()
+    if not re.fullmatch(r"\d+ MiB", free):
+        raise ValueError("La memoria libre de la GPU no está disponible en MiB")
+    processes = devices[0].find("processes")
+    if processes is None:
+        raise ValueError("El controlador no informa de los procesos de GPU")
+    foreign = []
+    for process in processes.findall("process_info"):
+        pid = process.findtext("pid", "").strip()
+        kind = process.findtext("type", "").strip()
+        name = process.findtext("process_name", "").strip()
+        if not pid.isdecimal() or kind not in DESKTOP_TYPES | COMPUTE_TYPES:
+            raise ValueError("El controlador no identifica un proceso de GPU")
+        if kind in DESKTOP_TYPES or (mps and Path(name.split(" ")[0]).name == MPS_SERVER):
             continue
-        pid, _, name = line.partition(",")
-        if not pid.strip().isdecimal():
-            raise ValueError("nvidia-smi no identifica un proceso de cómputo")
-        processes.append((int(pid), name.strip()))
-    return processes
+        foreign.append((int(pid), kind, name))
+    return int(free.split()[0]) * MIB, foreign
 
 
-def free_vram_bytes():
+def gpu_processes(mps):
     import subprocess
 
     result = subprocess.run(
-        ["nvidia-smi", "-i", "0", "--query-gpu=memory.free", "--format=csv,noheader,nounits"],
+        ["nvidia-smi", "-q", "-x", "-i", "0"],
         check=True,
         capture_output=True,
         text=True,
         timeout=10,
     )
-    value = result.stdout.strip()
-    if not value.isdecimal():
-        raise ValueError("nvidia-smi no informa de la VRAM libre en MiB")
-    return int(value) * MIB
+    return parse_gpu_processes(result.stdout, mps)
 
 
 def mps_ready(directory):
@@ -299,14 +336,9 @@ class SlotLease:
         self.handle = (runtime / "mars-titan-scientific-gpu.lock").open("a")
         try:
             fcntl.flock(self.handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
-            foreign = [
-                (pid, name)
-                for pid, name in compute_processes()
-                if not (self.execution.mps and Path(name).name == MPS_SERVER)
-            ]
+            free, foreign = gpu_processes(self.execution.mps)
             if foreign:
                 raise RuntimeError(f"Hay otras cargas de cómputo activas en CUDA: {foreign}")
-            free = free_vram_bytes()
             budget = self.execution.vram_budget_bytes
             if budget is not None and free < budget:
                 raise RuntimeError(

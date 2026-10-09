@@ -63,6 +63,7 @@ from .campaign_plan import (
 )
 from .campaign_resources import (
     Execution,
+    PeakEstimates,
     ResourcePool,
     check_plan,
     environment,
@@ -78,11 +79,16 @@ from .campaign_storage import (
     release_confirmed,
     view_counts,
 )
+from .corpus_inputs import DIGEST_CACHE_ENV
 from .learning_hold import LearningHoldError, require_learning_allowed
 
 RUN_KIND = "historical_masked_campaign_run"
 # Posiciones del plan que una ranura libre puede adelantar a un trabajo que espera.
 BACKFILL_JOBS = 16
+# Picos de VRAM observados por tipo de trabajo, para admitir los siguientes.
+OBSERVED_RESOURCES = "observed-resources.json"
+# Huellas de los archivos de las vistas que comparten los trabajos de la campaña.
+DIGESTS = "file-digests.json"
 RECEIPT_KIND = "masked_campaign_job"
 # Tramos que lee la comparación: calibración común y evaluación.
 COMPARED = ("calibration", "evaluation")
@@ -830,7 +836,7 @@ def run_campaign(
         try:
             with (
                 signals as requested,
-                _environment(execution),
+                _environment(execution, output),
                 reservation,
                 ThreadPoolExecutor(execution.cpu_workers) as pool,
             ):
@@ -887,10 +893,17 @@ def _gpu_lease():
 
 
 class _environment:
-    """Variables de la tubería durante la campaña, restauradas al terminar."""
+    """Variables de la tubería durante la campaña, restauradas al terminar.
 
-    def __init__(self, execution):
+    Las huellas de los archivos de las vistas se comparten en `file-digests.json` de la
+    salida, de modo que cada trabajo, en este proceso o en su ranura, no vuelve a leer
+    completos los archivos que ya comprobó otro con la misma firma de stat.
+    """
+
+    def __init__(self, execution, output):
         self.values, self.previous = environment(execution), {}
+        if DIGEST_CACHE_ENV not in os.environ:
+            self.values[DIGEST_CACHE_ENV] = str(Path(output).resolve() / DIGESTS)
 
     def __enter__(self):
         for name, value in self.values.items():
@@ -913,6 +926,34 @@ def _slot_lease(execution):
         return SlotLease(execution)
 
     return lease
+
+
+def _launch_order(pending, execution, estimates, executors, ready, fits):
+    """Trabajos que se intentan lanzar, en orden.
+
+    Sin ranuras aisladas, solo el primero pendiente, como en la ejecución en serie. Con
+    ranuras, los `BACKFILL_JOBS` primeros del plan de mayor a menor VRAM estimada, de modo
+    que los grandes no esperan detrás de los pequeños y estos rellenan lo que queda. Con la
+    misma VRAM se conserva el orden del plan. Si el primer trabajo listo de esa ventana no
+    cabe (`fits`), su dispositivo queda reservado para él: no se intenta ningún otro trabajo
+    de ese dispositivo hasta que los que están en curso le dejen sitio. Así un trabajo
+    grande no espera indefinidamente detrás de los pequeños que lo adelantan.
+    """
+    if not execution.isolated:
+        return pending[:1]
+    window = pending[:BACKFILL_JOBS]
+
+    def device(job):
+        return executors[job["model"], job["kind"]]["device"]
+
+    def size(job):
+        return estimates.resources(job, device(job)).vram_bytes
+
+    order = sorted(window, key=size, reverse=True)
+    head = next((job for job in window if ready(job)), None)
+    if head is None or fits(head):
+        return order
+    return [job for job in order if job is head or device(job) != device(head)]
 
 
 class _Running:
@@ -939,11 +980,15 @@ def _execute(state, jobs, pool, execution):
         new_event,
         run_fields,
         slot_environment,
+        strict_fp32,
         wait,
     )
 
     admission = ResourcePool(execution)
+    estimates = PeakEstimates(execution, state.output / OBSERVED_RESOURCES)
     pending, threads, slots = list(jobs), {}, {}
+    # Trabajos CUDA declarados en el proceso de la campaña: uno a la vez, en un hilo.
+    in_process = ThreadPoolExecutor(1) if execution.isolated else None
     event = new_event() if execution.isolated else None
     failure, paused = None, False
 
@@ -991,6 +1036,7 @@ def _execute(state, jobs, pool, execution):
             entry = slots.pop(handle)
             status, value, usage = result[:3]
             state.usage[entry.job["id"]] = usage
+            estimates.observe(entry.job, usage)
             if status == "completed":
                 try:
                     finish(entry, value)
@@ -1000,11 +1046,34 @@ def _execute(state, jobs, pool, execution):
                 admission.release(entry.resources)
                 if status == "paused":
                     paused = True
+                elif value["type"] == "OutOfMemoryError" and estimates.grow(
+                    entry.job, entry.resources
+                ):
+                    # Solo falló este proceso: se repite desde su intento con más VRAM.
+                    pending.insert(0, entry.job)
                 else:
                     failure = failure or RuntimeError(
                         f"{entry.job['id']} falló en su proceso: {value['type']}: "
                         f"{value['message']}\n{result[3] if len(result) > 3 else ''}"
                     )
+
+    def ready(job):
+        return all(dep in state.receipts for dep in job["depends"])
+
+    def admitted(job):
+        resources = estimates.resources(job, state.executors[job["model"], job["kind"]]["device"])
+        # Con trabajos en curso, uno que no cabe en disco espera a que liberen su reserva.
+        fits = admission.admits(resources) and (not (threads or slots) or state.fits(job))
+        return resources, fits
+
+    def reserves(job):
+        """Si el trabajo no cabe por recursos que otros lanzamientos le seguirían quitando.
+
+        Esperar al hilo de la campaña no reserva el dispositivo: las ranuras siguen llenándose
+        hasta que ese hilo quede libre.
+        """
+        resources, fits = admitted(job)
+        return not fits and not admission.waits_for_campaign(resources)
 
     def launch():
         """Lanzar los trabajos listos en orden. Devuelve si alguno empezó o se confirmó.
@@ -1014,18 +1083,18 @@ def _execute(state, jobs, pool, execution):
         del plan, para ocupar una ranura libre sin alejarse del orden declarado.
         """
         progressed = False
-        for job in pending[: BACKFILL_JOBS if execution.isolated else 1]:
+        order = _launch_order(
+            pending, execution, estimates, state.executors, ready, lambda job: not reserves(job)
+        )
+        for job in order:
             if failure is not None or paused or state.stop.requested:
                 break
-            if any(dep not in state.receipts for dep in job["depends"]):
+            if not ready(job):
+                continue
+            resources, fits = admitted(job)
+            if not fits:
                 continue
             executor = state.executors[job["model"], job["kind"]]
-            resources = execution.resources(job, executor["device"])
-            if not admission.admits(resources):
-                continue
-            # Con trabajos en curso, uno que no cabe en disco espera a que liberen su reserva.
-            if (threads or slots) and not state.fits(job):
-                continue
             prepared, receipt = state.prepare(job)
             pending.remove(job)
             progressed = True
@@ -1039,6 +1108,10 @@ def _execute(state, jobs, pool, execution):
             admission.acquire(resources)
             if resources.device == "cpu":
                 threads[pool.submit(executor["run"], run)] = entry
+            elif execution.isolated and resources.campaign_process:
+                strict_fp32()
+                admission.hold_context()
+                threads[in_process.submit(executor["run"], run)] = entry
             elif execution.isolated:
                 lock = state.folder(job) / ".job.lock"
                 lock.parent.mkdir(parents=True, exist_ok=True)
@@ -1052,6 +1125,8 @@ def _execute(state, jobs, pool, execution):
                 slots[SlotProcess(task, event)] = entry
             else:
                 try:
+                    if resources.device == "cuda":
+                        strict_fp32()
                     report = executor["run"](run)
                 except BaseException:
                     admission.release(resources)
@@ -1089,6 +1164,9 @@ def _execute(state, jobs, pool, execution):
         while threads or slots:
             collect(block=True)
         raise
+    finally:
+        if in_process is not None:
+            in_process.shutdown()
     if failure is not None:
         raise failure
     if paused or state.stop.requested:

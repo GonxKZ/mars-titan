@@ -12,11 +12,13 @@ Sin declaración, la campaña conserva su ejecución anterior: los trabajos CUDA
 uno en el mismo proceso y los CPU con los `cpu_workers` de la sección tabular.
 """
 
+import json
 import os
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 from mars_titan.data.cohort_files import read_manifest
+from mars_titan.data.storage import atomic_json
 
 from .input_pipeline import PipelineOptions
 
@@ -24,11 +26,17 @@ EXECUTION_KIND = "historical_masked_campaign_execution"
 DEVICES = ("cpu", "cuda")
 MAX_GPU_SLOTS = 4
 MAX_CPU_WORKERS = 8
+MAX_THREADS_PER_JOB = 8
 MIB = 1024**2
+# Memoria de un proceso CUDA fuera del asignador de PyTorch: contexto, cuBLAS y cuDNN.
+CONTEXT_MIB = 512
+# Reintentos de un trabajo que agota su VRAM, cada uno con una reserva mayor.
+MAX_OOM_RETRIES = 2
+OBSERVED_KIND = "historical_masked_campaign_observed_resources"
 _FIELDS = {"schema_version", "kind", "gpu", "host", "pipeline", "models", "notes"}
 _GPU = {"slots", "vram_budget_mib", "mps", "mps_pipe_directory"}
-_HOST = {"cpu_workers", "ram_budget_mib", "reserve_mib"}
-_MODEL = {"device", "vram_mib", "host_mib", "scopes"}
+_HOST = {"cpu_workers", "threads_per_job", "ram_budget_mib", "reserve_mib"}
+_MODEL = {"device", "vram_mib", "host_mib", "scopes", "campaign_process"}
 _PIPELINE = {"decode_workers", "prefetch_batches", "group_cache_mib"}
 
 
@@ -47,11 +55,18 @@ def _mib(value, label, *, lower=0, upper=64 * 1024):
 
 @dataclass(frozen=True)
 class JobResources:
-    """Dispositivo, VRAM y RAM que un trabajo declara antes de ejecutarse."""
+    """Dispositivo, VRAM y RAM que un trabajo declara antes de ejecutarse.
+
+    `campaign_process` ejecuta el trabajo en un hilo del proceso de la campaña aunque haya
+    ranuras, para que conserve el estado que comparte con los siguientes del mismo modelo
+    (la matriz cuantizada de XGBoost o las estadísticas de Ridge de una ventana). Ese
+    proceso no acota la VRAM del trabajo, así que su declaración debe ser una cota medida.
+    """
 
     device: str
     vram_bytes: int = 0
     host_bytes: int = 0
+    campaign_process: bool = False
 
 
 @dataclass(frozen=True)
@@ -60,6 +75,7 @@ class Execution:
 
     gpu_slots: int = 1
     cpu_workers: int = 1
+    threads_per_job: int | None = None
     vram_budget_bytes: int | None = None
     host_budget_bytes: int | None = None
     host_reserve_bytes: int = 0
@@ -88,6 +104,7 @@ class Execution:
             sha256=self.sha256,
             gpu_slots=self.gpu_slots,
             cpu_workers=self.cpu_workers,
+            threads_per_job=self.threads_per_job,
             vram_budget_bytes=self.vram_budget_bytes,
             host_budget_bytes=self.host_budget_bytes,
             host_reserve_bytes=self.host_reserve_bytes,
@@ -103,6 +120,11 @@ def _model(name, value, scopes):
     )
     device = value["device"]
     _require(device in DEVICES, f"{name} declara un dispositivo desconocido")
+    campaign_process = value.get("campaign_process", False)
+    _require(
+        type(campaign_process) is bool and (device == "cuda" or not campaign_process),
+        f"{name} solo puede ejecutarse en el proceso de la campaña si es CUDA",
+    )
 
     def resources(entry, label):
         vram = entry.get("vram_mib", value.get("vram_mib"))
@@ -113,7 +135,8 @@ def _model(name, value, scopes):
         else:
             _require(vram in (None, 0), f"{label} es CPU y no declara VRAM")
             vram_bytes = 0
-        return JobResources(device, vram_bytes, _mib(host, f"La RAM de {label}", lower=1))
+        host_bytes = _mib(host, f"La RAM de {label}", lower=1)
+        return JobResources(device, vram_bytes, host_bytes, campaign_process)
 
     overrides = value.get("scopes", {})
     _require(
@@ -166,8 +189,11 @@ def load_execution(path, *, scopes=("US", "CN", "US+CN")):
         isinstance(host, dict)
         and set(host) == _HOST
         and type(host["cpu_workers"]) is int
-        and 1 <= host["cpu_workers"] <= MAX_CPU_WORKERS,
-        f"Los trabajadores CPU deben estar entre 1 y {MAX_CPU_WORKERS}",
+        and 1 <= host["cpu_workers"] <= MAX_CPU_WORKERS
+        and type(host["threads_per_job"]) is int
+        and 1 <= host["threads_per_job"] <= MAX_THREADS_PER_JOB,
+        f"Los trabajadores CPU deben estar entre 1 y {MAX_CPU_WORKERS} y los hilos por "
+        f"trabajo entre 1 y {MAX_THREADS_PER_JOB}",
     )
     _require(
         isinstance(pipeline, dict) and set(pipeline) == _PIPELINE,
@@ -178,6 +204,7 @@ def load_execution(path, *, scopes=("US", "CN", "US+CN")):
     return Execution(
         gpu_slots=gpu["slots"],
         cpu_workers=host["cpu_workers"],
+        threads_per_job=host["threads_per_job"],
         vram_budget_bytes=_mib(gpu["vram_budget_mib"], "El presupuesto de VRAM", lower=256),
         host_budget_bytes=_mib(host["ram_budget_mib"], "El presupuesto de RAM", lower=1024),
         host_reserve_bytes=_mib(host["reserve_mib"], "La reserva de RAM"),
@@ -248,22 +275,35 @@ class ResourcePool:
     def __init__(self, execution, *, available=available_host_bytes):
         self.execution, self.available = execution, available
         self.running = {"cpu": [], "cuda": []}
+        # Contexto CUDA que conserva el proceso de la campaña tras su primer trabajo CUDA.
+        self.resident = 0
+
+    def hold_context(self):
+        """Contar desde ahora el contexto CUDA del proceso de la campaña.
+
+        Mientras corre un trabajo de ese proceso, su declaración ya incluye el contexto.
+        """
+        self.resident = CONTEXT_MIB * MIB
 
     def _slots(self, device):
         return self.execution.gpu_slots if device == "cuda" else self.execution.cpu_workers
+
+    def waits_for_campaign(self, resources):
+        """Si el trabajo espera al único hilo de los trabajos del proceso de la campaña."""
+        return resources.campaign_process and any(r.campaign_process for r in self.running["cuda"])
 
     def admits(self, resources):
         execution, running = self.execution, self.running
         if len(running[resources.device]) >= self._slots(resources.device):
             return False
-        busy = [item for items in running.values() for item in items]
-        if (
-            resources.device == "cuda"
-            and execution.vram_budget_bytes is not None
-            and sum(r.vram_bytes for r in running["cuda"]) + resources.vram_bytes
-            > execution.vram_budget_bytes
-        ):
+        if self.waits_for_campaign(resources):
             return False
+        busy = [item for items in running.values() for item in items]
+        if resources.device == "cuda" and execution.vram_budget_bytes is not None:
+            jobs = [*running["cuda"], resources]
+            resident = 0 if any(r.campaign_process for r in jobs) else self.resident
+            if sum(r.vram_bytes for r in jobs) + resident > execution.vram_budget_bytes:
+                return False
         if execution.host_budget_bytes is not None and (
             sum(r.host_bytes for r in busy) + resources.host_bytes > execution.host_budget_bytes
         ):
@@ -293,10 +333,84 @@ def legacy_execution(campaign):
 
 
 def environment(execution):
-    """Variables de la tubería y de MPS que hereda cada proceso de un trabajo."""
+    """Variables de la tubería, los hilos y MPS que hereda cada proceso de un trabajo."""
     values = {} if execution.pipeline is None else execution.pipeline.environment()
+    if execution.threads_per_job is not None:
+        for name in ("OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS"):
+            values[name] = str(execution.threads_per_job)
     if execution.mps:
         directory = execution.mps_pipe_directory or os.environ.get("CUDA_MPS_PIPE_DIRECTORY")
         _require(directory, "MPS necesita CUDA_MPS_PIPE_DIRECTORY o mps_pipe_directory")
         values["CUDA_MPS_PIPE_DIRECTORY"] = directory
     return values
+
+
+class PeakEstimates:
+    """VRAM de cada tipo de trabajo: la declarada o la observada, la mayor de las dos.
+
+    El tipo es el modelo y el ámbito. Cuando un trabajo termina en su proceso, su pico
+    reservado por el asignador más `CONTEXT_MIB` sustituye a la estimación si es mayor, de
+    modo que los siguientes trabajos del mismo tipo se admiten con lo observado. Nunca baja
+    de lo declarado, que se mide en la ventana más poblada. Si un trabajo agota su VRAM, la
+    estimación sube la mitad (al menos 1 GiB) sin pasar del presupuesto y el trabajo se
+    repite, como mucho `MAX_OOM_RETRIES` veces. El estado se guarda de forma atómica en
+    `path` para que una reanudación lo conserve.
+    """
+
+    def __init__(self, execution, path):
+        self.execution, self.path = execution, Path(path)
+        self.observed, self.retries = {}, {}
+        if self.path.exists():
+            document = json.loads(self.path.read_text())
+            _require(
+                isinstance(document, dict)
+                and document.get("kind") == OBSERVED_KIND
+                and isinstance(document.get("observed"), dict)
+                and all(
+                    isinstance(entry, dict) and type(entry.get("vram_bytes")) is int
+                    for entry in document["observed"].values()
+                ),
+                "El registro de recursos observados no cumple su contrato",
+            )
+            self.observed = document["observed"]
+
+    @staticmethod
+    def key(job):
+        return f"{job['model']}/{job['scope']}"
+
+    def resources(self, job, default_device):
+        declared = self.execution.resources(job, default_device)
+        entry = self.observed.get(self.key(job))
+        if declared.device != "cuda" or entry is None:
+            return declared
+        vram = max(declared.vram_bytes, entry["vram_bytes"])
+        if self.execution.vram_budget_bytes is not None:
+            vram = min(vram, self.execution.vram_budget_bytes)
+        return replace(declared, vram_bytes=vram)
+
+    def _save(self, job, vram_bytes, **fields):
+        key = self.key(job)
+        entry = dict(self.observed.get(key, {}))
+        entry.update(fields, vram_bytes=max(vram_bytes, entry.get("vram_bytes", 0)))
+        self.observed[key] = entry
+        atomic_json(self.path, dict(kind=OBSERVED_KIND, observed=self.observed))
+
+    def observe(self, job, usage):
+        """Registrar el pico reservado de un trabajo terminado en su proceso."""
+        peak = usage.get("peak_vram_reserved_bytes")
+        if type(peak) is int and peak > 0:
+            self._save(job, peak + CONTEXT_MIB * MIB, peak_reserved_bytes=peak)
+
+    def grow(self, job, current):
+        """Subir la estimación tras agotar la VRAM. Falso si no quedan reintentos o margen."""
+        count = self.retries.get(job["id"], 0)
+        budget = self.execution.vram_budget_bytes
+        if count >= MAX_OOM_RETRIES or (budget is not None and current.vram_bytes >= budget):
+            return False
+        grown = max(current.vram_bytes * 3 // 2, current.vram_bytes + 1024 * MIB)
+        if budget is not None:
+            grown = min(grown, budget)
+        self.retries[job["id"]] = count + 1
+        oom = self.observed.get(self.key(job), {}).get("oom", 0) + 1
+        self._save(job, grown, oom=oom)
+        return True

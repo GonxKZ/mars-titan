@@ -15,13 +15,23 @@ import pytest
 from mars_titan.training import masked_campaign as engine
 from mars_titan.training.campaign_plan import load_campaign, plan_campaign
 from mars_titan.training.campaign_resources import (
+    CONTEXT_MIB,
+    MAX_OOM_RETRIES,
     Execution,
     JobResources,
+    PeakEstimates,
     ResourcePool,
     check_plan,
     load_execution,
 )
-from mars_titan.training.campaign_slots import SlotProcess, SlotTask, bound_vram, new_event, wait
+from mars_titan.training.campaign_slots import (
+    SlotProcess,
+    SlotTask,
+    bound_vram,
+    new_event,
+    parse_gpu_processes,
+    wait,
+)
 from mars_titan.training.input_pipeline import PipelineOptions
 from tests.training import slot_doubles
 from tests.training.test_masked_campaign import prepared, write_campaign  # noqa: F401
@@ -53,6 +63,7 @@ def slots(count, **fields):
     return Execution(
         gpu_slots=count,
         cpu_workers=fields.pop("cpu_workers", 1),
+        threads_per_job=2,
         pipeline=PipelineOptions(decode_workers=2, prefetch_batches=2),
         **fields,
     )
@@ -116,6 +127,9 @@ def test_slots_run_jobs_concurrently_with_the_same_receipts(prepared, tmp_path, 
         peak = max(peak, active)
     assert peak <= 3
     assert {e["environment"]["MARS_TITAN_DECODE_WORKERS"] for e in gpu} == {"2"}
+    assert {e["environment"]["OMP_NUM_THREADS"] for e in gpu} == {"2"}
+    # Cada proceso de una ranura trabaja en FP32 estricto, sin TF32.
+    assert all(e["environment"]["tf32"] == [False, False] for e in gpu)
     assert summary["execution"]["gpu_slots"] == 3
     assert set(summary["usage"]) == {e["id"] for e in gpu}
 
@@ -294,3 +308,243 @@ def test_the_declared_vram_bound_cannot_be_widened_by_the_job(monkeypatch):
     torch.cuda.set_per_process_memory_fraction(0.9)
     torch.cuda.set_per_process_memory_fraction(0.1)
     assert calls == [0.25, 0.25, 0.1]
+
+
+MIB = 1024**2
+
+
+def test_a_job_that_runs_out_of_vram_is_repeated_alone_with_more(prepared, tmp_path, monkeypatch):  # noqa: F811
+    campaign = campaign_file(tmp_path)
+    views = {"US": prepared.views["US"]}
+    planned = [job["id"] for job in plan_campaign(load_campaign(campaign))]
+    marks = tmp_path / "marks"
+    marks.mkdir()
+    monkeypatch.setenv("SLOT_LOG", str(tmp_path / "slots.jsonl"))
+    monkeypatch.setenv("SLOT_OOM", planned[1])
+    monkeypatch.setenv("SLOT_MARKS", str(marks))
+    execution = slots(2, vram_budget_bytes=4096 * MIB)
+    summary = execute(campaign, views, tmp_path / "out", execution, cpu={("ridge", "fit")})
+    assert summary["status"] == "completed"
+    entries = [e for e in log(tmp_path / "slots.jsonl") if e["id"] == planned[1]]
+    assert [e["event"] for e in entries] == ["oom", "completed"]
+    first, second = (int(e["environment"]["MARS_TITAN_SLOT_VRAM_MIB"]) for e in entries)
+    assert second >= first + 1024
+    observed = json.loads((tmp_path / "out" / engine.OBSERVED_RESOURCES).read_text())
+    assert observed["observed"]["neural/US"]["oom"] == 1
+    assert execute(campaign, views, tmp_path / "serial", slots(1))["status"] == "completed"
+    assert receipts(tmp_path / "out") == receipts(tmp_path / "serial")
+
+
+def test_estimates_follow_the_observed_peak_within_the_budget(tmp_path):
+    execution = Execution(
+        gpu_slots=2,
+        vram_budget_bytes=4096 * MIB,
+        models={"neural": dict(default=JobResources("cuda", 1024 * MIB, GIB), scopes={})},
+    )
+    job = dict(id="US/fold-000/gru/search-gru-00", model="neural", scope="US")
+    path = tmp_path / "observed.json"
+    estimates = PeakEstimates(execution, path)
+    assert estimates.resources(job, "cuda").vram_bytes == 1024 * MIB
+    estimates.observe(job, dict(peak_vram_reserved_bytes=256 * MIB))
+    assert estimates.resources(job, "cuda").vram_bytes == 1024 * MIB  # nunca baja
+    estimates.observe(job, dict(peak_vram_reserved_bytes=1536 * MIB))
+    expected = (1536 + CONTEXT_MIB) * MIB
+    assert PeakEstimates(execution, path).resources(job, "cuda").vram_bytes == expected
+    current = estimates.resources(job, "cuda")
+    for _ in range(MAX_OOM_RETRIES):
+        assert estimates.grow(job, current)
+        current = estimates.resources(job, "cuda")
+    assert current.vram_bytes == 4096 * MIB  # sin pasar del presupuesto
+    assert not estimates.grow(job, current)
+
+
+def test_an_observed_peak_keeps_the_campaign_process(tmp_path):
+    exclusive = JobResources("cuda", 2048 * MIB, GIB, campaign_process=True)
+    execution = Execution(
+        gpu_slots=2,
+        vram_budget_bytes=4096 * MIB,
+        models={"xgboost": dict(default=exclusive, scopes={})},
+    )
+    job = dict(id="US/fold-000/xgboost/search-xgboost-00", model="xgboost", scope="US")
+    estimates = PeakEstimates(execution, tmp_path / "observed.json")
+    estimates.observe(job, dict(peak_vram_reserved_bytes=3072 * MIB))
+    assert estimates.resources(job, "cuda") == JobResources(
+        "cuda", 3584 * MIB, GIB, campaign_process=True
+    )
+
+
+def test_slots_launch_the_largest_ready_jobs_first():
+    execution = Execution(
+        gpu_slots=3,
+        models={
+            "neural": dict(default=JobResources("cuda", 512 * MIB, GIB), scopes={}),
+            "titans_mac": dict(default=JobResources("cuda", 1792 * MIB, GIB), scopes={}),
+        },
+    )
+    jobs = [
+        dict(id=str(index), model=model, kind="fit", scope="US")
+        for index, model in enumerate(["neural", "titans_mac", "neural", "titans_mac"])
+    ]
+    executors = {(m, "fit"): dict(device="cuda") for m in ("neural", "titans_mac")}
+    estimates = PeakEstimates(execution, "/nonexistent/observed.json")
+    order = engine._launch_order(jobs, execution, estimates, executors, READY, FITS)
+    assert [job["id"] for job in order] == ["1", "3", "0", "2"]
+    serial = Execution(gpu_slots=1, models=execution.models)
+    assert engine._launch_order(jobs, serial, estimates, executors, READY, FITS) == jobs[:1]
+
+
+def always(_job):
+    return True
+
+
+READY = FITS = always
+
+
+def test_a_blocked_first_job_reserves_its_device():
+    execution = Execution(
+        gpu_slots=3,
+        cpu_workers=2,
+        models={
+            "neural": dict(default=JobResources("cuda", 512 * MIB, GIB), scopes={}),
+            "xgboost": dict(default=JobResources("cuda", 4096 * MIB, GIB), scopes={}),
+            "ridge": dict(default=JobResources("cpu", 0, GIB), scopes={}),
+        },
+    )
+    models = ["neural", "xgboost", "neural", "ridge", "neural"]
+    jobs = [dict(id=str(i), model=m, kind="fit", scope="US") for i, m in enumerate(models)]
+    executors = {(m, "fit"): dict(device="cpu" if m == "ridge" else "cuda") for m in set(models)}
+    estimates = PeakEstimates(execution, "/nonexistent/observed.json")
+
+    def order(ready, fits):
+        result = engine._launch_order(jobs, execution, estimates, executors, ready, fits)
+        return [job["id"] for job in result]
+
+    # El primer trabajo listo cabe: los grandes primero y los pequeños rellenan.
+    assert order(READY, FITS) == ["1", "0", "2", "4", "3"]
+    # El grande es el primero listo y no cabe: solo él y los de otro dispositivo.
+    first_blocked = lambda job: job["id"] != "0"  # noqa: E731
+    assert order(first_blocked, lambda job: job["id"] != "1") == ["1", "3"]
+    # Si el que no cabe no es el primero listo, no reserva nada.
+    assert order(READY, lambda job: job["id"] != "1") == ["1", "0", "2", "4", "3"]
+
+
+def gpu_report(*processes, free="6000 MiB"):
+    rows = "".join(
+        f"<process_info><pid>{pid}</pid><type>{kind}</type>"
+        f"<process_name>{name}</process_name></process_info>"
+        for pid, kind, name in processes
+    )
+    return (
+        f"<nvidia_smi_log><gpu><fb_memory_usage><free>{free}</free></fb_memory_usage>"
+        f"<processes>{rows}</processes></gpu></nvidia_smi_log>"
+    )
+
+
+DESKTOP = ((7971, "C+G", "ptyxis"), (2999, "G", "/usr/bin/gnome-shell"))
+SERVER = (51, "M", "/usr/bin/nvidia-cuda-mps-server")
+
+
+def test_desktop_processes_do_not_block_the_slots():
+    assert parse_gpu_processes(gpu_report(*DESKTOP), mps=False) == (6000 * 1024**2, [])
+
+
+@pytest.mark.parametrize("kind", ["C", "M", "M+C"])
+def test_other_compute_processes_block_the_slots(kind):
+    _free, foreign = parse_gpu_processes(gpu_report(*DESKTOP, (9, kind, "python")), mps=True)
+    assert foreign == [(9, kind, "python")]
+
+
+def test_the_mps_server_is_admitted_only_when_mps_is_declared():
+    assert parse_gpu_processes(gpu_report(SERVER), mps=True)[1] == []
+    assert parse_gpu_processes(gpu_report(SERVER), mps=False)[1] == [SERVER]
+
+
+@pytest.mark.parametrize(
+    "report",
+    [
+        gpu_report((9, "X", "python")),
+        gpu_report(("nine", "C", "python")),
+        gpu_report(free="6 GiB"),
+        "<nvidia_smi_log><gpu><fb_memory_usage><free>1 MiB</free></fb_memory_usage></gpu>"
+        "</nvidia_smi_log>",
+        "<nvidia_smi_log/>",
+        "not xml",
+    ],
+)
+def test_an_unreadable_gpu_report_is_rejected(report):
+    with pytest.raises(ValueError):
+        parse_gpu_processes(report, mps=False)
+
+
+@pytest.mark.parametrize("ridge_mib", [1024, 4096])
+def test_campaign_process_jobs_run_there(prepared, tmp_path, monkeypatch, ridge_mib):  # noqa: F811
+    import os
+
+    campaign = campaign_file(tmp_path)
+    views = {"US": prepared.views["US"]}
+    monkeypatch.setenv("SLOT_LOG", str(tmp_path / "slots.jsonl"))
+    monkeypatch.setenv("SLOT_DELAY", "0.2")
+    ridge = JobResources("cuda", ridge_mib * MIB, GIB, campaign_process=True)
+    execution = slots(
+        3,
+        vram_budget_bytes=4096 * MIB,
+        models=dict(
+            neural=dict(default=JobResources("cuda", 1024 * MIB, GIB), scopes={}),
+            ridge=dict(default=ridge, scopes={}),
+        ),
+    )
+    assert execute(campaign, views, tmp_path / "out", execution)["status"] == "completed"
+    entries = [e for e in log(tmp_path / "slots.jsonl") if e["event"] == "completed"]
+    ridge_jobs = [e for e in entries if "/ridge/" in e["id"]]
+    neural = [e for e in entries if "/ridge/" not in e["id"]]
+    assert ridge_jobs and {e["pid"] for e in ridge_jobs} == {os.getpid()}
+    assert os.getpid() not in {e["pid"] for e in neural}
+    # Los trabajos del proceso de la campaña nunca se solapan entre sí.
+    spans = sorted((e["start"], e["end"]) for e in ridge_jobs)
+    assert all(a[1] <= b[0] for a, b in zip(spans, spans[1:], strict=False))
+    shared = [
+        (job, other)
+        for job in ridge_jobs
+        for other in neural
+        if other["start"] < job["end"] and job["start"] < other["end"]
+    ]
+    # Con 1 GiB conviven con las ranuras. Con todo el presupuesto (más el contexto que ya
+    # conserva la campaña) se ejecutan sin trabajos GPU al lado.
+    assert bool(shared) == (ridge_mib < 4096)
+    assert execute(campaign, views, tmp_path / "serial", slots(1))["status"] == "completed"
+    assert receipts(tmp_path / "out") == receipts(tmp_path / "serial")
+
+
+def test_the_campaign_context_counts_once_in_the_vram_budget():
+    execution = Execution(gpu_slots=3, vram_budget_bytes=4096 * MIB)
+    pool = ResourcePool(execution, available=lambda: 64 * GIB)
+    slot = JobResources("cuda", 1792 * MIB, GIB)
+    inside = JobResources("cuda", 1024 * MIB, GIB, campaign_process=True)
+    pool.acquire(slot)
+    assert pool.admits(JobResources("cuda", 2304 * MIB, GIB))
+    pool.hold_context()
+    # El contexto que conserva la campaña ocupa 512 MiB fuera de los trabajos en curso.
+    assert not pool.admits(JobResources("cuda", 2304 * MIB, GIB))
+    assert pool.admits(JobResources("cuda", 1792 * MIB, GIB))
+    # Un trabajo de la campaña ya incluye ese contexto en su declaración.
+    pool.acquire(inside)
+    assert pool.admits(JobResources("cuda", 1280 * MIB, GIB))
+    assert not pool.admits(JobResources("cuda", 1281 * MIB, GIB))
+    # La campaña ejecuta sus trabajos de uno en uno: el segundo no ocupa una ranura esperando.
+    second = JobResources("cuda", 256 * MIB, GIB, campaign_process=True)
+    assert pool.waits_for_campaign(second) and not pool.admits(second)
+    pool.release(inside)
+    assert not pool.waits_for_campaign(second) and pool.admits(second)
+
+
+@pytest.mark.parametrize(
+    "ridge",
+    [
+        dict(device="cpu", host_mib=1536, campaign_process=True),
+        dict(device="cuda", vram_mib=1024, host_mib=1536, campaign_process="sí"),
+    ],
+)
+def test_only_cuda_jobs_are_declared_in_the_campaign_process(tmp_path, ridge):
+    path = write_execution(tmp_path / "execution.json", models=dict(ridge=ridge))
+    with pytest.raises(ValueError, match="proceso de la campaña"):
+        load_execution(path)
