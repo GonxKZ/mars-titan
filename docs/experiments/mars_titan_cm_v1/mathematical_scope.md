@@ -50,7 +50,9 @@ Ambas matrices tienen radio espectral cero, radio numérico 0,75 y norma espectr
 
 Una condición distinta sería una matriz P positiva definida común con `A_t* P A_t ≤ ρ² P` para todas las actualizaciones admisibles. Eso permite una contracción en norma P y una conversión euclídea que depende de `sqrt(cond(P))`. No basta una P diferente en cada paso o una muestra finita de Jacobianos para establecer esa condición global.
 
-En una actualización residual `z' = z + η f(z,x)`, el operador local completo es `I + η D_z f`, incluidas las puertas y la atención. Todavía no se ha fijado ese contrato para Titans-MAC. Ningún peso interno se identifica automáticamente con dicho operador.
+En una actualización residual `z' = z + η f(z,x)`, el operador local completo es `I + η D_z f`, incluidas las puertas y la atención. El refinamiento del lector episódico tiene esa forma, con `η = σ(s)` y `f_k(z) = tanh(W[z, base, read(z), presencia] + b)`. `refinement_jacobians` calcula cada `J_k = I + σ(s) D_z f_k` completo, incluida la derivada de la lectura respecto a la consulta, con la base y los episodios elegidos fijos. La elección de episodios es constante a trozos y la derivada solo vale lejos de los empates del orden de vecinos. Para MAC, `fast_state_jacobian` deriva la transición rápida completa de pesos y momentum, y C penaliza `RᵀJR` de esa transición, no el refinamiento. Ningún peso interno se identifica automáticamente con estos operadores.
+
+[`operator_dynamics.py`](../../../src/mars_titan/cm/operator_dynamics.py) separa en el código las lecturas de esta sección. `fixed_operator_powers` compara `||A^j||₂` medido con `2ŵ^j`, donde ŵ es la estimación corregida de `w(A)`, sin certificar el redondeo. `variable_products` mide normas y radios espectrales de los productos ordenados `A_t ⋯ A_1` y marca el caso del contraejemplo, con todas las estimaciones puntuales por debajo del umbral y algún producto por encima. Una muestra finita de productos describe esa trayectoria y no prueba la condición común anterior.
 
 ## Objetivo de representantes
 
