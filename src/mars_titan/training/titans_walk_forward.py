@@ -58,6 +58,7 @@ from mars_titan.models.titans.financial import (
 )
 from mars_titan.models.titans.financial_inputs import FINAL_TEST_US
 
+from .candidate_walk_forward import check_view_rows
 from .checkpoints import StopRequest
 from .corpus_inputs import CorpusDataset
 from .financial_run import ChronologicalTrainer, Paused, load_recipe
@@ -273,6 +274,21 @@ class PredictionRows:
         return self.tables
 
 
+def checked_tables(rows, metrics, dataset, partition):
+    """Tablas de un tramo con exactamente las filas y objetivos de la vista.
+
+    Se exige además que el destino reciba cada etiqueta puntuada. Reutiliza la comprobación
+    por mercado, activo e instante de la GRU candidata.
+    """
+    tables = rows.finish()
+    _require(
+        tables and rows.count == metrics["labels"],
+        f"Las predicciones de {partition} no concilian con las etiquetas puntuadas",
+    )
+    check_view_rows(pa.concat_tables(tables), dataset, partition)
+    return tables
+
+
 def _verify(output, report):
     for record in report["predictions"].values():
         path = output / record["path"]
@@ -407,11 +423,7 @@ def run_titans_window(
                 raise Paused
             rows = PredictionRows(trainer.quantiles)
             metrics = trainer.predict_partition(sources[name], rows, stop=stop)
-            tables = rows.finish()
-            _require(
-                rows.count == metrics["labels"] == identity["expected_rows"][name],
-                f"Las predicciones de {name} no concilian con la población de la vista",
-            )
+            tables = checked_tables(rows, metrics, dataset, name)
             if name == "validation":
                 best, recomputed = fit["best_score"], metrics["session_mae"]
                 report["validation_selection_check"] = dict(
@@ -503,6 +515,7 @@ def carry_titans(anchor, anchor_view, view, output, *, device="cuda:0", stop=Non
     Es la pieza de la variante B. No ajusta parámetros ni selección. Cada tramo trasladado
     empieza con la memoria rápida inicial y su propio calentamiento de entradas.
     """
+    require_learning_allowed("la predicción trasladada de Titans-MAC")
     from .carried_predictions import carried_window
     from .checkpoints import load_training_state
     from .financial_run import ChronologicalInference, ChronologicalRecipe
@@ -568,11 +581,7 @@ def carry_titans(anchor, anchor_view, view, output, *, device="cuda:0", stop=Non
     for name in CARRIED:
         rows = PredictionRows(inference.quantiles)
         metrics = inference.predict(sources[name], rows, stop=stop)
-        tables = rows.finish()
-        _require(
-            rows.count == metrics["labels"] == dataset.manifest["counts"][name],
-            f"Las predicciones trasladadas de {name} no concilian con la vista",
-        )
+        tables = checked_tables(rows, metrics, dataset, name)
         path = output / f"{name}-predictions.parquet"
         written = atomic_parquet_batches(path, tables)
         _require(written == rows.count, f"El Parquet de {name} no conserva sus filas")

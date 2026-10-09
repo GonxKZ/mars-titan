@@ -604,16 +604,37 @@ def inflated_validation(original):
     return altered
 
 
-def dropped_row(original):
-    def altered(self, source, rows, *, stop=None):
-        return original(self, source, SkipFirstRow(rows), stop=stop)
+class ShiftFirstTarget:
+    """Destino que conserva el recuento pero cambia el objetivo de la primera fila."""
 
-    return altered
+    def __init__(self, rows):
+        self.rows, self.shifted = rows, False
+
+    def append(self, record):
+        if not self.shifted:
+            flow, at, prediction, target, levels = record
+            record, self.shifted = (flow, at, prediction, target + 1.0, levels), True
+        self.rows.append(record)
+
+
+def wrapped_sink(sink):
+    def wrap(original):
+        def altered(self, source, rows, *, stop=None):
+            return original(self, source, sink(rows), stop=stop)
+
+        return altered
+
+    return wrap
 
 
 @pytest.mark.parametrize(
     ("wrap", "message"),
-    [(inflated_validation, "no reproduce la puntuación"), (dropped_row, "no concilian")],
+    [
+        (inflated_validation, "no reproduce la puntuación"),
+        (wrapped_sink(SkipFirstRow), "no concilian"),
+        (wrapped_sink(ShiftFirstTarget), "1 filas difieren de la vista"),
+    ],
+    ids=["validation", "dropped", "target"],
 )
 def test_window_fails_when_its_predictions_do_not_reconcile(
     base, tmp_path, monkeypatch, wrap, message

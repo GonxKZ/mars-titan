@@ -339,6 +339,13 @@ ENTRY_POINTS = {
         ),
     ),
     "run_titans_walk_forward": _titans_window_script,
+    "carry_titans": _simple(
+        "mars_titan.training.titans_walk_forward",
+        "read_manifest",
+        lambda m, out: m.carry_titans(
+            out.with_name("a"), out.with_name("a.json"), out.with_name("v.json"), out, device="cpu"
+        ),
+    ),
 }
 
 

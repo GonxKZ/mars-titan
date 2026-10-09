@@ -17,19 +17,21 @@ import pyarrow.parquet as pq
 import pytest
 import torch
 
+from mars_titan.data.input_policy import HISTORICAL_MASKED, STRICT_INPUTS
 from mars_titan.data.storage import atomic_json, sha256
 from mars_titan.environments.walk_forward_receipt import read_window_receipt
 from mars_titan.training import masked_campaign as engine
 from mars_titan.training import titans_walk_forward as wf
 from mars_titan.training.campaign_plan import (
     TITANS,
+    _titans,
     check_campaign,
     load_campaign,
     pending_families,
     plan_campaign,
 )
 from tests.training.test_masked_campaign import Recorder, doubles, write_campaign
-from tests.training.test_titans_walk_forward import Factory
+from tests.training.test_titans_walk_forward import Factory, ShiftFirstTarget
 from tests.training.test_walk_forward_v2_views import fixture
 
 ARM = "titans_mac_online"
@@ -184,6 +186,8 @@ def test_check_lists_titans_as_connected_only_when_the_campaign_declares_it(tmp_
     checked = check_campaign(path)
     assert "titans_mac" not in checked["pending_families"]
     assert checked["counts"]["scopes"]["US"]["arms"][ARM] == {"42": dict(fit=7, carry=12)}
+    jobs = [job for job in plan_campaign(load_campaign(path)) if job["arm"] == ARM]
+    assert {(job["family"], job["model"]) for job in jobs} == {(TITANS, TITANS)}
     plain = load_campaign(path) | {TITANS: None}
     assert pending_families(plain)["titans_mac"]["arms"] == [ARM]
 
@@ -210,6 +214,16 @@ def test_campaign_rejects_a_titans_recipe_without_the_protocol_rule(tmp_path):
         arm: case[0][1]["variant"]
         for arm, case in load_campaign(path)[TITANS]["candidates"].items()
     } == {ARM: "mac_online", "titans_mac_frozen": "mac_frozen"}
+
+
+def test_titans_section_requires_the_masked_input_policy(tmp_path):
+    path = titans_campaign(tmp_path / "config")
+    campaign = load_campaign(path)
+    section = json.loads(path.read_text())[TITANS]
+    arms, rule = campaign["comparison_config"]["arms"], campaign["rule"]
+    assert _titans(section, arms, rule, HISTORICAL_MASKED, path.parent) == campaign[TITANS]
+    with pytest.raises(ValueError, match="política con máscaras"):
+        _titans(section, arms, rule, STRICT_INPUTS, path.parent)
 
 
 def test_fit_executor_returns_the_completed_window_only_for_its_view(campaign_run):
@@ -334,19 +348,24 @@ class RepeatFirstRow:
         self.rows.append(record)
 
 
-def test_carry_reconciles_its_rows_before_writing(campaign_run, tmp_path, monkeypatch):
+@pytest.mark.parametrize(
+    ("sink", "message"),
+    [(RepeatFirstRow, "no concilian"), (ShiftFirstTarget, "1 filas difieren de la vista")],
+    ids=["repeated", "target"],
+)
+def test_carry_reconciles_its_rows_before_writing(
+    campaign_run, tmp_path, monkeypatch, sink, message
+):
     from mars_titan.training.financial_run import ChronologicalInference
 
     predict = ChronologicalInference.predict
     monkeypatch.setattr(
         ChronologicalInference,
         "predict",
-        lambda self, source, rows, **options: predict(
-            self, source, RepeatFirstRow(rows), **options
-        ),
+        lambda self, source, rows, **options: predict(self, source, sink(rows), **options),
     )
     anchor, anchor_view, view = carry_job(campaign_run)
     output = tmp_path / "carry"
-    with pytest.raises(ValueError, match="no concilian"):
+    with pytest.raises(ValueError, match=message):
         wf.carry_titans(anchor, anchor_view, view, output, device="cpu")
     assert not list(output.glob("*.parquet")) and not (output / "carry.json").exists()
