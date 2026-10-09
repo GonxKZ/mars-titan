@@ -285,6 +285,14 @@ void mixed_episodes_keep_the_global_denominator_across_blocks() {
 }
 
 void recovery_rejects_foreign_identity_partial_consumption_and_invalid_counts() {
+    {
+        KlpoLearningController forced(sources(true), settings());
+        require(forced.collect_tick(), "Falta el prefijo forzado incompleto");
+        auto partial = forced.snapshot();
+        partial.metadata["phase"] = "consumed";
+        partial.metadata["counters"]["consumed_waves"] = 1;
+        rejected([&] { forced.restore(partial); });
+    }
     KlpoLearningController run(sources(false), settings());
     require(run.collect_tick(), "Falta el prefijo incompleto");
     const auto valid = run.snapshot();
@@ -338,6 +346,30 @@ void invalid_configs_and_disabled_autograd_are_rejected() {
     const at::NoGradGuard disabled;
     rejected([&] { static_cast<void>(run.backward_ready()); });
 }
+
+void exhausted_counter_fixtures_reject_another_wave() {
+    constexpr uint64_t waves = uint64_t{1} << 32;
+    constexpr uint64_t updates = uint64_t{1} << 26;
+    rejected([&] {
+        static_cast<void>(klpo_after_consumption({updates, updates, updates / 2, 0}, 2, true));
+    });
+    rejected([&] { static_cast<void>(klpo_after_consumption({waves, 0, 0, 0}, 2, false)); });
+    KlpoLearningController run(sources(true), settings());
+    require(run.collect_tick() && run.collect_tick(), "Falta el fixture forzado completo");
+    auto last = run.snapshot();
+    last.metadata["phase"] = "consumed";
+    last.metadata["counters"]["consumed_waves"] = waves;
+    run.restore(last);
+    const auto root = directory();
+    {
+        PpoCheckpointStore store(root, run.identity());
+        rejected([&] { run.start_next_wave(store); });
+        require(run.snapshot().metadata.dump() == last.metadata.dump(),
+                "El rechazo del límite cambió el estado confirmado");
+    }
+    std::filesystem::remove_all(root);
+    rejected([&] { static_cast<void>(klpo_before_collection({waves, 0, 0, 0}, 2)); });
+}
 } // namespace
 
 int main() {
@@ -352,6 +384,7 @@ int main() {
         labelled_states_keep_reference_until_confirmed_cadence();
         recovery_rejects_foreign_identity_partial_consumption_and_invalid_counts();
         invalid_configs_and_disabled_autograd_are_rejected();
+        exhausted_counter_fixtures_reject_another_wave();
         std::cout << "Controlador terminal contrastado sin pasos de optimizador\n";
     } catch (const std::exception& error) {
         std::cerr << error.what() << '\n';
