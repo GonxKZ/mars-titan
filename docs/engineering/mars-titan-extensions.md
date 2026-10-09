@@ -86,7 +86,9 @@ Las campañas A y B no declaran todavía la sección, igual que la GRU episódic
 | `tests/training/test_mars_titan_walk_forward.py` | Ventana sobre el padre, estado compuesto, filas, reanudación y rechazos previos a abrir fuentes |
 | `tests/training/test_mars_titan_campaign.py` | Plan, dependencias, pendientes con motivo y campaña reducida con ejecutores reales |
 
-El aislamiento se comprueba registrando cada llamada a `prepare` del padre: con M0, M1 y M2 la secuencia de predicciones del núcleo y de estados rápidos exportados coincide bit a bit con la de `ChronologicalInference` de Titans-MAC.
+El aislamiento se comprueba registrando cada llamada a `prepare` del padre: con M0, M1 y M2 la secuencia de predicciones del núcleo y de estados rápidos exportados coincide bit a bit con la de `ChronologicalInference` de Titans-MAC. `tests/memory/test_mars_titan_session_parity.py` entrega los mismos eventos a `FinancialSession` y al recorrido cronológico del lector, con un banco de capacidad 4 que recibe 16 etiquetas: las 20 emisiones coinciden bit a bit en M1, M2 y K = 2 con sus dos modos de selección, igual que los IDs admitidos.
+
+Se aplicaron 16 mutaciones dirigidas en copias aisladas, comprobando que las pruebas importaban la copia. Catorce hicieron fallar las pruebas: admitir antes de predecir, M0 con lectura, el orden de admisión, el peso de cada bloque en la pérdida del tramo, la identidad con todo apagado, B6 con banco, la selección del consumidor, la semilla y el lector elegidos del padre, el codec trasladado, el ganador del finalista, el padre ausente, las dependencias de búsqueda y el motivo pendiente. El peso de bloque solo se detectó tras añadir la prueba que compara bloques de una fila con bloques de todo el instante. Las otras dos eran equivalentes. Invertir el signo del error M2 no cambia nada observable porque el banco solo usa su valor absoluto, y la comprobación explícita de K con episodios fijos repetía la regla `requires` de la declaración, así que se retiró.
 
 ## Comprobaciones CUDA pendientes
 
