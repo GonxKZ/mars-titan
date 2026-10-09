@@ -75,16 +75,18 @@ EXTENSION_POINTS = {
     ),
     "cm_v1": dict(issue=293, pending="Brazos B, B+C, B+M y B+C+M sobre la B fijada por protocolo"),
 }
-# Etapas que parten de los padres seleccionados en cada ventana. Solo se declaran.
+# Etapas que parten de los padres seleccionados en cada ventana de una campaña base
+# confirmada. Se ejecutan con su propia orden (`run_masked_campaign.py posttraining`).
 LATER_STAGES = {
     "posttraining_adapter_matrix": dict(
-        config="configs/posttraining/adapter-matrix-v1.json",
+        config="configs/posttraining/adapter-matrix-v2.json",
+        stages=dict(
+            A="configs/posttraining/historical-masked-adapter-stage-a.json",
+            B="configs/posttraining/historical-masked-adapter-stage-b.json",
+        ),
+        entry="mars_titan.posttraining.campaign_stage:run_stage",
         issue=364,
-        pending=[
-            "ejecución desde la cola",
-            "conexión con las ventanas walk-forward",
-            "objetivo pinball para padres con cuantiles",
-        ],
+        pending=[],
     )
 }
 _FIELDS = {

@@ -21,6 +21,9 @@ from tests.training.test_walk_forward_v2_views import PROTOCOLS, fixture, prepar
 CAMPAIGNS = {
     v: Path(f"configs/baselines/historical-masked-campaign-{v.lower()}.json") for v in "AB"
 }
+STAGES = {
+    v: Path(f"configs/posttraining/historical-masked-adapter-stage-{v.lower()}.json") for v in "AB"
+}
 
 
 def uniform(campaign, rows):
@@ -142,10 +145,33 @@ def test_report_shape_is_serializable():
     assert json.loads(json.dumps(estimate)) == estimate
 
 
-def test_script_checks_a_campaign_without_reading_data(capsys):
+def test_script_checks_a_campaign_and_its_posttraining_stage_without_reading_data(capsys):
     import runpy
 
     script = runpy.run_path("scripts/run_masked_campaign.py", run_name="script")
     assert script["main"](["check", "--campaign", str(CAMPAIGNS["B"])]) == 0
     report = json.loads(capsys.readouterr().out)
     assert report["status"] == "checked" and report["counts"]["prediction_jobs"] == 868
+    assert script["main"](["posttraining", "check", "--stage", str(STAGES["B"])]) == 0
+    stage = json.loads(capsys.readouterr().out)
+    assert stage["status"] == "checked" and stage["variant"] == "B"
+    assert (stage["counts"]["training_jobs"], stage["counts"]["prediction_jobs"]) == (1479, 2436)
+
+
+def test_script_runs_the_posttraining_stage_only_without_the_hold(learning_hold, tmp_path):
+    import runpy
+
+    from mars_titan.training.learning_hold import LearningHoldError
+
+    learning_hold(False)
+    script = runpy.run_path("scripts/run_masked_campaign.py", run_name="script")
+    arguments = ["posttraining", "run", "--stage", str(STAGES["A"]), "--views", f"US={tmp_path}"]
+    arguments += [
+        "--campaign-output",
+        str(tmp_path / "campaign"),
+        "--output",
+        str(tmp_path / "out"),
+    ]
+    with pytest.raises(LearningHoldError):
+        script["main"](arguments)
+    assert not (tmp_path / "out").exists()
