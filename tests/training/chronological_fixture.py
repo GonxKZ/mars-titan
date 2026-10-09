@@ -18,7 +18,6 @@ from mars_titan.training.cohort_contract import representation_hash
 US_2023 = 1_672_531_200_000_000
 US_2024 = 1_704_067_200_000_000
 STAMP = pa.timestamp("us", tz="UTC")
-NEWS, CHARTS = 4, 3
 
 
 @cache
@@ -63,6 +62,14 @@ def _schemas():
     return samples, labels
 
 
+def _numeric(width, present, value):
+    """Valores, máscaras y edades con el primer concepto observado cuando hay presencia."""
+    result = [0.0] * (3 * width)
+    if present:
+        result[0], result[width], result[2 * width] = float(value), 1.0, 0.25
+    return result
+
+
 def _observed(asset, index):
     """Activos con huecos, alta tardía y presencia variable de modalidades."""
     if asset == 1 and index % 4 == 3:
@@ -78,6 +85,7 @@ def chronological_corpus(
     last="2023-02-28",
     group_size=8,
     perturb_after=None,
+    widths=(4, 3, 1, 2),
 ):
     """Escribir una supervisión histórica con máscaras sin pasar por modelos ni objetivos reales.
 
@@ -85,14 +93,15 @@ def chronological_corpus(
     de ese instante, para comprobar que el pasado del recorrido no cambia.
     """
     root = Path(root)
+    news, charts, concepts, indicators = widths
     roots = {name: root / name for name in ("prepared", "samples", "labels")}
     days = [d for d in clock().days if date.fromisoformat(first) <= d <= date.fromisoformat(last)]
     positions = [clock().days.index(day) for day in days]
     sample_schema, label_schema = _schemas()
     representation = dict(
         **policy_identity(HISTORICAL_MASKED),
-        fundamental_concepts=["fixture:Assets"],
-        macro_indicators=["macro_a", "macro_b"],
+        fundamental_concepts=[f"fixture:C{i}" for i in range(concepts)],
+        macro_indicators=[f"macro_{i}" for i in range(indicators)],
         encoders={"purpose": "technical_fixture"},
         representation_code={"fixture": "0" * 64},
         text_aggregation="fixture_mean",
@@ -132,7 +141,7 @@ def chronological_corpus(
             news_present = (index + asset) % 3 == 0
             fundamentals_present = (index + asset) % 2 == 0
             macro_present = index % 5 != 4
-            noise = generator.normal(0, 1, NEWS + CHARTS + 2).astype(np.float32)
+            noise = generator.normal(0, 1, news + charts + 2).astype(np.float32)
             if future:
                 noise = noise * 3 + 1
             presence = [True, news_present, True, fundamentals_present, macro_present]
@@ -141,14 +150,10 @@ def chronological_corpus(
                     cohort_id="original_audited",
                     prediction_at=moment,
                     price_end_index=position,
-                    news=noise[:NEWS].tolist() if news_present else [0.0] * NEWS,
-                    charts=noise[NEWS : NEWS + CHARTS].tolist(),
-                    fundamentals=[float(noise[-2]), 1.0, 0.5]
-                    if fundamentals_present
-                    else [0.0] * 3,
-                    macro=[float(noise[-1]), 0.0, 1.0, 0.0, 0.25, 0.0]
-                    if macro_present
-                    else [0.0] * 6,
+                    news=noise[:news].tolist() if news_present else [0.0] * news,
+                    charts=noise[news : news + charts].tolist(),
+                    fundamentals=_numeric(concepts, fundamentals_present, noise[-2]),
+                    macro=_numeric(indicators, macro_present, noise[-1]),
                     presence=presence,
                     news_count=2 if news_present else 0,
                     input_availability={
@@ -161,6 +166,8 @@ def chronological_corpus(
             reason = (
                 "insufficient_history"
                 if row_number < 2
+                else "zero_market_variance"
+                if (asset, index) == (0, 18)
                 else "missing_next_session"
                 if index == len(days) - 1
                 else "target_crosses_partition_boundary"
@@ -169,7 +176,7 @@ def chronological_corpus(
             )
             target = round(float(generator.normal(0, 0.01)), 8)
             if perturb_after is not None and micros(maturity) > perturb_after:
-                target = target + 0.5
+                target = target - 1.0
             accepted = reason == "accepted"
             labels.append(
                 dict(
