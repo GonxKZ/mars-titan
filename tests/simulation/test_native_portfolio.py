@@ -5,6 +5,9 @@ import pytest
 
 from mars_titan.simulation.native_portfolio import NativePortfolio
 from mars_titan.simulation.portfolio import CorporateAction, Instrument, Portfolio, Quote
+from tests.simulation.native_library import requires_native_library
+
+pytestmark = requires_native_library
 
 
 def assert_same(reference, native):
