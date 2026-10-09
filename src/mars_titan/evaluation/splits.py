@@ -20,7 +20,7 @@ _COMMON = set(_DATES + _MONTHS) | {
 # La versión 1 conserva su margen fijo. La 2 purga por el intervalo de cada etiqueta y
 # declara la regla de parada común antes de preparar las vistas.
 _FIELDS = {1: _COMMON | {"gap_sessions"}, 2: _COMMON | {"purge", "selection"}}
-_SELECTION = {"metric", "patience", "min_delta", "minimum_epochs", "max_epochs"}
+_SELECTION = {"metric", "stopping", "patience", "min_delta", "max_epochs"}
 
 
 def _add_months(day, months):
@@ -83,11 +83,11 @@ def stopping_rule(config):
     rule = config.get("selection") if isinstance(config, dict) else None
     if (
         not isinstance(rule, dict)
-        or set(rule) != _SELECTION
+        or not _SELECTION <= set(rule) <= _SELECTION | {"minimum_epochs"}
         or type(rule["max_epochs"]) is not int
         or not 1 <= rule["max_epochs"] <= 1000
     ):
-        raise ValueError("La regla de parada necesita métrica, paciencia, mínimo y máximo")
+        raise ValueError("La regla de parada necesita métrica, modo, paciencia y máximo")
     validate_selection(
         {key: value for key, value in rule.items() if key != "max_epochs"},
         epochs=rule["max_epochs"],

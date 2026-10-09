@@ -226,17 +226,9 @@ def test_v2_rejects_a_joint_window_that_would_leave_a_market_empty(tmp_path):
     assert not (tmp_path / "joint").exists()
 
 
-def plan(tmp_path, **changes):
-    value = json.loads(Path("configs/baselines/convergence-temporal-search-us.json").read_text())
-    value.update(
-        arms=["US+CN"],
-        models=["rnn"],
-        finalist_seeds=[42],
-        max_epochs=30,
-        patience=5,
-        min_delta=1e-05,
-        minimum_epochs=3,
-    )
+def plan(tmp_path, name="historical-masked-reference-search-us.json", **changes):
+    value = json.loads((Path("configs/baselines") / name).read_text())
+    value.update(arms=["US+CN"], models=["rnn"], finalist_seeds=[42])
     value.update(changes)
     path = tmp_path / "plan.json"
     atomic_json(path, value)
@@ -264,39 +256,40 @@ def test_search_check_accepts_masked_v2_views_without_reserving_the_gpu(
     "change",
     [
         dict(patience=10),
-        dict(minimum_epochs=10),
-        dict(max_epochs=100),
+        dict(max_epochs=20),
         dict(min_delta=0.0),
-        dict(schema_version=2),
+        dict(stopping="validation_plateau"),
     ],
 )
 def test_search_rejects_a_plan_that_does_not_apply_the_common_stopping_rule(
     joint_views, tmp_path, change
 ):
-    path = plan(tmp_path, **change)
-    if change.get("schema_version") == 2:
-        value = json.loads(path.read_text())
-        value.pop("minimum_epochs")
-        atomic_json(path, value)
     with pytest.raises(ValueError, match="regla de parada"):
-        temporal_search.check_temporal_search(path, joint_views.output)
+        temporal_search.check_temporal_search(plan(tmp_path, **change), joint_views.output)
 
 
-def test_masked_campaign_needs_an_executor_that_declares_the_policy(
+@pytest.mark.parametrize(
+    ("name", "changes"),
+    [
+        ("historical-masked-reference-search-us.json", dict(input_policy="strict_inputs_v1")),
+        ("convergence-temporal-search-us.json", {}),
+        ("strict-temporal-search-us.json", {}),
+    ],
+)
+def test_search_reads_the_policy_from_the_plan_and_rejects_strict_plans_on_masked_views(
+    joint_views, tmp_path, name, changes
+):
+    with pytest.raises(ValueError, match="política de entradas"):
+        temporal_search.check_temporal_search(plan(tmp_path, name, **changes), joint_views.output)
+
+
+def test_masked_campaign_runs_each_window_with_the_plan_that_declares_the_policy(
     joint_views, tmp_path, monkeypatch
 ):
-    def legacy(config, manifest, folder, *, resume=False, progress=None):
-        raise AssertionError("No debe ejecutarse con vistas históricas")
-
-    monkeypatch.setattr(temporal_search, "run_search", legacy)
-    output = tmp_path / "campaign"
-    with pytest.raises(ValueError, match="política histórica"):
-        temporal_search.run_temporal_search(plan(tmp_path), joint_views.output, output)
-    assert not output.exists()
     calls = []
 
-    def adherent(config, manifest, folder, *, resume=False, progress=None, input_policy):
-        calls.append(input_policy)
+    def study(config, manifest, folder, *, resume=False, progress=None):
+        calls.append((json.loads(config.read_text())["input_policy"], manifest.parent.name))
         folder.mkdir()
         result = dict(status="paused", planned_runs=per_fold, completed_runs=0)
         progress(result)
@@ -309,14 +302,14 @@ def test_masked_campaign_needs_an_executor_that_declares_the_policy(
         def __exit__(self, *args):
             return False
 
-    per_fold = temporal_search.check_temporal_search(plan(tmp_path), joint_views.output)[
-        "runs_per_fold"
-    ]
-    monkeypatch.setattr(temporal_search, "run_search", adherent)
+    path = plan(tmp_path)
+    per_fold = temporal_search.check_temporal_search(path, joint_views.output)["runs_per_fold"]
+    monkeypatch.setattr(temporal_search, "run_search", study)
     monkeypatch.setattr(temporal_search, "GpuLease", Lease)
-    summary = temporal_search.run_temporal_search(plan(tmp_path), joint_views.output, output)
-    assert summary["status"] == "paused" and calls == [HISTORICAL_MASKED]
+    summary = temporal_search.run_temporal_search(path, joint_views.output, tmp_path / "campaign")
+    assert summary["status"] == "paused" and calls == [(HISTORICAL_MASKED, "fold-000")]
     assert summary["identity"]["input_policy"] == HISTORICAL_MASKED
+    assert summary["planned_runs"] == 13 * per_fold
 
 
 def test_strict_preflight_keeps_its_identity_fields(tmp_path):

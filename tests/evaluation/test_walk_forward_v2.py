@@ -19,6 +19,9 @@ V2 = {
     "JOINT-US": "historical-masked-joint-us-walk-forward-v2.json",
 }
 DAY = 86_400_000_000
+RULE = dict(
+    metric="session_mae", stopping="fixed_budget", patience=5, min_delta=1e-5, max_epochs=30
+)
 # Huellas calculadas con el código anterior a la versión 2 sobre la misma rejilla.
 V1_DIGESTS = {
     "chinese-real-walk-forward.json": (
@@ -162,32 +165,15 @@ def test_first_window_is_the_first_with_three_years_of_mature_labels(name, marke
         dict(step_months=6),
         dict(schema_version=True),
         dict(schema_version=3),
-        dict(selection=dict(metric="session_mae", patience=5, min_delta=1e-5, minimum_epochs=3)),
-        dict(
-            selection=dict(
-                metric="session_mae", patience=5, min_delta=1e-5, minimum_epochs=30, max_epochs=30
-            )
-        ),
-        dict(
-            selection=dict(
-                metric="test_mae", patience=5, min_delta=1e-5, minimum_epochs=3, max_epochs=30
-            )
-        ),
-        dict(
-            selection=dict(
-                metric="session_mae", patience=0, min_delta=1e-5, minimum_epochs=3, max_epochs=30
-            )
-        ),
-        dict(
-            selection=dict(
-                metric="session_mae", patience=5, min_delta=-1, minimum_epochs=3, max_epochs=30
-            )
-        ),
-        dict(
-            selection=dict(
-                metric="session_mae", patience=5, min_delta=1e-5, minimum_epochs=3, max_epochs=0
-            )
-        ),
+        dict(selection=RULE | dict(stopping="whenever")),
+        dict(selection=RULE | dict(metric="test_mae")),
+        dict(selection=RULE | dict(patience=0)),
+        dict(selection=RULE | dict(min_delta=-1)),
+        dict(selection=RULE | dict(max_epochs=0)),
+        dict(selection=RULE | dict(minimum_epochs=30)),
+        dict(selection=RULE | dict(unknown=1)),
+        dict(selection={k: v for k, v in RULE.items() if k != "stopping"}),
+        dict(selection={k: v for k, v in RULE.items() if k != "max_epochs"}),
         dict(first_validation_start="2003-04-01"),
         dict(final_test_end="2024-01-01"),
     ],
@@ -337,32 +323,45 @@ def run_rule(rule, scores, *, parent=None, resume_at=None):
     return dict(state, stop_reason="budget_exhausted")
 
 
-def test_v2_stopping_rule_is_common_and_matches_the_declared_values():
+def test_v2_stopping_rule_is_common_and_matches_the_reference_plan():
     rules = [stopping_rule(protocol(name)) for name in V2]
-    assert all(rule == rules[0] for rule in rules)
-    assert rules[0] == dict(
-        metric="session_mae", minimum_epochs=3, patience=5, min_delta=1e-5, max_epochs=30
+    assert all(rule == RULE for rule in rules)
+    plan = json.loads(
+        Path("configs/baselines/historical-masked-reference-search-us.json").read_text()
     )
+    assert {key: plan[key] for key in ("stopping", "patience", "min_delta", "max_epochs")} == {
+        key: RULE[key] for key in ("stopping", "patience", "min_delta", "max_epochs")
+    }
 
 
-def test_patience_starts_after_the_minimum_and_ignores_ties_and_small_gains():
+def test_fixed_budget_keeps_the_best_state_and_ignores_ties_and_small_gains():
     rule = stopping_rule(protocol("US"))
     flat = run_rule(rule, [1.0] * 40)
-    assert flat["last_epoch"] == 8 and flat["best_epoch"] == 1
+    assert flat["last_epoch"] == 30 and flat["best_epoch"] == 1
+    assert flat["stop_reason"] == "budget_exhausted" and flat["plateau_epoch"] == 6
     tiny = run_rule(rule, [1.0, 0.999995, 0.999992, 0.999991] + [0.999991] * 40)
-    assert tiny["best_epoch"] == 1 and tiny["last_epoch"] == 8
-    gains = run_rule(rule, [1.0, 0.9, 0.8, 0.8, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7])
-    assert gains["best_epoch"] == 5 and gains["last_epoch"] == 10
+    assert tiny["best_epoch"] == 1 and tiny["last_epoch"] == 30
+    gains = run_rule(rule, [1.0, 0.9, 0.8, 0.8, 0.7] + [0.75] * 20 + [0.69] + [0.8] * 10)
+    assert gains["best_epoch"] == 26 and gains["plateau_epoch"] == 10
+    assert gains["best_score"] == 0.69 and gains["last_epoch"] == 30
+
+
+def test_a_declared_plateau_counts_patience_only_after_the_minimum():
+    rule = dict(RULE, stopping="validation_plateau", minimum_epochs=3)
+    stopping_rule(protocol("US") | dict(selection=rule))
+    flat = run_rule(rule, [1.0] * 40)
+    assert flat["last_epoch"] == 8 and flat["stop_reason"] == "validation_plateau"
     descent = run_rule(rule, [1.0 - 0.01 * epoch for epoch in range(40)])
     assert descent["stop_reason"] == "budget_exhausted" and descent["last_epoch"] == 30
 
 
-def test_initial_state_is_eligible_and_recovery_mid_patience_keeps_the_decision():
-    rule = stopping_rule(protocol("US"))
-    worse = run_rule(rule, [1.1, 1.2, 1.05, 1.3, 1.2, 1.4, 1.1, 1.2], parent=1.0)
-    assert worse["best_epoch"] == 0 and worse["best_score"] == 1.0 and worse["last_epoch"] == 8
-    scores = [1.0, 0.9, 0.95, 0.96, 0.97, 0.98, 0.99, 0.99, 0.99]
+@pytest.mark.parametrize("stopping", ["fixed_budget", "validation_plateau"])
+def test_initial_state_is_eligible_and_recovery_mid_patience_keeps_the_decision(stopping):
+    rule = dict(RULE, stopping=stopping)
+    worse = run_rule(rule, [1.1, 1.2, 1.05, 1.3, 1.2, 1.4, 1.1, 1.2] * 4, parent=1.0)
+    assert worse["best_epoch"] == 0 and worse["best_score"] == 1.0
+    scores = [1.0, 0.9, 0.95, 0.96, 0.97, 0.98, 0.99, 0.99, 0.99] * 4
     continuous = run_rule(rule, scores)
-    resumed = run_rule(rule, scores, resume_at=5)
-    assert continuous == resumed
-    assert continuous["best_epoch"] == 2 and continuous["last_epoch"] == 8
+    resumed = run_rule(rule, scores, resume_at=4)
+    assert continuous == resumed and continuous["best_epoch"] == 2
+    assert continuous["last_epoch"] == (30 if stopping == "fixed_budget" else 7)
