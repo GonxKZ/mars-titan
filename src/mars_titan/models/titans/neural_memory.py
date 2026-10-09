@@ -44,6 +44,12 @@ class NeuralMemory(nn.Module):
             self.alpha_projection = nn.Linear(config.dim, config.dim, bias=False, dtype=dtype)
             self.eta_projection = nn.Linear(config.dim, 1, bias=False, dtype=dtype)
             self.theta_projection = nn.Linear(config.dim, 1, bias=False, dtype=dtype)
+            if config.gate_bias is not None:
+                # Los bias constantes no consumen RNG: los pesos coinciden con los de v1.
+                gates = (self.alpha_projection, self.eta_projection, self.theta_projection)
+                logits = config.gate_bias.logits(config.theta_max)
+                for gate, value in zip(gates, logits, strict=True):
+                    gate.bias = nn.Parameter(torch.full((gate.out_features,), value, dtype=dtype))
         self.to(device=device)
 
     def _reference(self) -> Tensor:

@@ -18,7 +18,7 @@ S_t = η · S_(t−1) − θ · ∂ℓ/∂W
 W_t = (1 − α) · W_(t−1) + S_t
 ```
 
-`α` se aplica por filas de salida a cada matriz. Es una decisión explícita para interpretar el olvido vectorial de la versión final. En arXiv v1 el olvido se presenta como escalar. Las tres tasas dependen de la entrada, sin bias. Matemáticamente `α` y `η` pertenecen a `(0, 1)` y `θ` a `(0, theta_max)`, con `0 < theta_max ≤ 1`. En coma flotante la sigmoide puede saturar en los extremos. Se rechazan NaN e infinitos antes de aplicar la sigmoide. No se promedian gradientes entre flujos ni se congelan en el inicio de un chunk.
+`α` se aplica por filas de salida a cada matriz. Es una decisión explícita para interpretar el olvido vectorial de la versión final. En arXiv v1 el olvido se presenta como escalar. Las tres tasas dependen de la entrada. En la identidad v1 sus proyecciones no tienen bias y `α` empieza cerca de 0,5. La opción `gate_bias` añade bias declarados con una identidad nueva y conserva v1 como valor por defecto. Su análisis está en [inicialización de las puertas](titans-gate-initialization.md). Matemáticamente `α` y `η` pertenecen a `(0, 1)` y `θ` a `(0, theta_max)`, con `0 < theta_max ≤ 1`. En coma flotante la sigmoide puede saturar en los extremos. Se rechazan NaN e infinitos antes de aplicar la sigmoide. No se promedian gradientes entre flujos ni se congelan en el inicio de un chunk.
 
 Con una sola matriz, la derivada de referencia es `2 (Wk − v) kᵀ`. La reducción sumada conserva este factor 2. Los pesos iniciales son parámetros lentos aprendibles. Cada flujo recibe una copia independiente, momentum cero y contador cero. La inicialización usa semillas locales identificadas y restaura el RNG global de CPU.
 

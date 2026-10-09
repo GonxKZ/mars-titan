@@ -97,12 +97,12 @@ Se aplicaron diecinueve mutaciones dirigidas sobre el entrenador y el lector y l
 
 Con los parámetros iniciales, `α` vale cerca de 0,5 porque las tasas no tienen bias. La memoria rápida se reduce a la mitad en cada observación. En el fixture, la norma de cada capa pasa de 5,6 a 0,09 tras seis observaciones y a 1,4·10⁻¹⁰ tras 36. La representación previa a la cabeza cae por debajo de 10⁻¹⁵ y la predicción queda en el bias de la cabeza. El gradiente de la cabeza baja de 10⁻⁷ a 10⁻¹³ en cuatro tramos. `mac_frozen` mantiene M0 y no presenta ese descenso.
 
-Es una propiedad del núcleo sin entrenar, no un resultado predictivo. Puede impedir que `mac_online` aprenda la escritura. Cambiar la inicialización o añadir bias a las tasas exige una identidad nueva del núcleo y su propio contraste, por lo que no se ha modificado aquí.
+Es una propiedad del núcleo sin entrenar, no un resultado predictivo. Puede impedir que `mac_online` aprenda la escritura. Cambiar la inicialización o añadir bias a las tasas exige una identidad nueva del núcleo y su propio contraste, por lo que no se ha modificado aquí. Esa identidad existe ahora con [bias declarado](titans-gate-initialization.md). `FinancialConfig` la expone como `gate_bias` y las recetas escalar y de cuantiles la declaran con semivida de 256 observaciones. Las medidas de este apartado corresponden a v1.
 
 ## Pendiente
 
 - Ejecución real tras levantar el bloqueo, con el protocolo y las ventanas de #363.
 - Comprobación CUDA escrita y sin ejecutar: `CUDA_VISIBLE_DEVICES=0 OMP_NUM_THREADS=2 UV_PROJECT_ENVIRONMENT=<entorno> uv run --no-sync python -m pytest -q tests/training/test_financial_run.py::test_cuda_pass_matches_cpu_without_optimizer_steps`. Después hay que perfilar una pasada en `cuda:0` con FP32, medir memoria y sincronizaciones y comprobar la recuperación en ese dispositivo.
 - Banco episódico, M1 a M3, K mayor que 1 y C siguen fuera de este entrenador, porque `FinancialPredictor` exige banco desactivado y K=1 y el factorial CM-v1 tiene su propio contraste.
-- Decidir la inicialización de las tasas de `mac_online` antes de fijar la receta.
+- Repetir con `gate_bias` la observación de normas y gradientes del fixture de este entrenador. La inicialización ya está declarada en las recetas, pero esa medida concreta se hizo con v1.
 - Medir `labels_without_graph` en fases conjuntas de dos mercados.
