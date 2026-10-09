@@ -75,6 +75,9 @@ function(mars_titan_build_identity source_hash)
         if(TARGET mars_titan_klpo_collection)
             list(APPEND targets mars_titan_klpo_collection)
         endif()
+        if(TARGET mars_titan_klpo_learning)
+            list(APPEND targets mars_titan_klpo_learning)
+        endif()
         foreach(target IN LISTS targets)
             foreach(property TYPE COMPILE_FEATURES COMPILE_FLAGS COMPILE_OPTIONS COMPILE_DEFINITIONS
                     "COMPILE_DEFINITIONS_${configuration_upper}"
