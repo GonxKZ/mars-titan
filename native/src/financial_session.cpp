@@ -366,6 +366,14 @@ const RulePeriod* period_at(const std::vector<RulePeriod>& periods, int64_t at) 
 }
 } // namespace
 
+bool same_policy_origin(const MarketTape& left, const MarketTape& right) noexcept {
+    if (left.domain != right.domain) {
+        return false;
+    }
+    return left.domain == "real" ? left.historical_basis == right.historical_basis
+                                 : left.parent_id == right.parent_id;
+}
+
 bool MarketTape::has_market_rules() const noexcept {
     return std::any_of(instruments.begin(), instruments.end(),
                        [](const auto& instrument) { return !instrument.rules.empty(); });

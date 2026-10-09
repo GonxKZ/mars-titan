@@ -519,6 +519,20 @@ void real_tapes_keep_their_walk_forward_cuts() {
     auto declared = tape();
     declared->historical_audit_verified = true;
     rejected([&] { declared->validate(); }, "Una cinta sintética no puede marcarse como real");
+    // Cada ventana real reajusta el predictor: se comparan base histórica y dominio.
+    auto window = real();
+    window->parent_id = "otro-ajuste-walk-forward";
+    require(mars_titan::simulation::same_policy_origin(*real(), *window),
+            "Dos ventanas reales de la misma base pertenecen a la misma política");
+    window->historical_basis = "US/edicion-de-prueba/lag-1";
+    require(!mars_titan::simulation::same_policy_origin(*real(), *window),
+            "Otro plazo de pago es otra base histórica");
+    auto other_parent = tape();
+    other_parent->parent_id = "otro-predictor";
+    require(!mars_titan::simulation::same_policy_origin(*tape(), *other_parent) &&
+                mars_titan::simulation::same_policy_origin(*tape(), *tape()) &&
+                !mars_titan::simulation::same_policy_origin(*tape(), *real()),
+            "Una cinta sintética conserva su predictor padre y su dominio");
 }
 
 int main() {

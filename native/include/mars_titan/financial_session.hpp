@@ -103,6 +103,11 @@ struct MarketTape {
     std::span<const double> predictions(std::size_t session) const && = delete;
 };
 
+// Fuentes que una misma política puede combinar. Una cinta sintética exige el mismo predictor
+// padre. En una cinta real cada ventana walk-forward reajusta el predictor y cambia su padre,
+// así que se exige la misma base histórica: mercado, edición y plazo de pago declarados.
+[[nodiscard]] bool same_policy_origin(const MarketTape& left, const MarketTape& right) noexcept;
+
 struct Parameters {
     double capital = default_capital;
     double cost_bps = default_cost_bps;

@@ -79,6 +79,9 @@ function(mars_titan_build_identity source_hash)
         if(TARGET mars_titan_klpo_learning)
             list(APPEND targets mars_titan_klpo_learning)
         endif()
+        if(TARGET mars_titan_policy_stage)
+            list(APPEND targets mars_titan_policy_stage)
+        endif()
         foreach(target IN LISTS targets)
             foreach(property TYPE COMPILE_FEATURES COMPILE_FLAGS COMPILE_OPTIONS COMPILE_DEFINITIONS
                     "COMPILE_DEFINITIONS_${configuration_upper}"
@@ -101,7 +104,7 @@ function(mars_titan_build_identity source_hash)
                 endif()
                 mars_titan_identity_value("${target}.${property}" "${value}")
             endforeach()
-            if(target MATCHES "^(mars_titan_simulation|mars_titan_financial|mars_titan_simulation_files|mars_titan_ppo|mars_titan_ppo_files|mars-titan-sim|mars-titan-ppo)$")
+            if(target MATCHES "^(mars_titan_simulation|mars_titan_financial|mars_titan_simulation_files|mars_titan_ppo|mars_titan_ppo_files|mars_titan_policy_stage|mars-titan-sim|mars-titan-ppo)$")
                 get_target_property(sources "${target}" SOURCES)
                 foreach(source IN LISTS sources)
                     foreach(property COMPILE_FLAGS COMPILE_OPTIONS COMPILE_DEFINITIONS

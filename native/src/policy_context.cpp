@@ -89,7 +89,7 @@ void validate_input(const simulation::BatchInput& input, const simulation::Batch
     require(input.tape && first.tape && input.tape->assets == first.tape->assets &&
                 input.tape->partition == first.tape->partition &&
                 input.tape->currency == first.tape->currency &&
-                input.tape->parent_id == first.tape->parent_id &&
+                simulation::same_policy_origin(*input.tape, *first.tape) &&
                 input.context.has_value() == first.context.has_value() &&
                 (!input.context || checked_optional(input.context).fields == first.context->fields),
             "El contexto mezcla esquemas, particiones o predictores");

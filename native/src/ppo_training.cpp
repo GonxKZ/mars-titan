@@ -57,8 +57,8 @@ void validate_sources(const std::vector<simulation::BatchInput>& inputs, std::st
     const auto& first = *inputs.front().tape;
     for (const auto& input : inputs) {
         require(input.tape && input.tape->partition == partition &&
-                    input.tape->domain == first.domain && input.tape->parent_id == first.parent_id,
-                "Las fuentes mezclan particiones, dominios o predictores padre");
+                    simulation::same_policy_origin(*input.tape, first),
+                "Las fuentes mezclan particiones, dominios, predictores padre o bases históricas");
     }
 }
 
