@@ -59,7 +59,7 @@ def test_v2_declares_the_staged_roles_of_every_window():
     )
     assert roles["chain"]["candidates"] == ["frozen_parent", "adapter", "continuation"]
     assert roles["rl"] == dict(
-        train=["fold-000", "fold-001", "fold-002", "fold-003"],
+        train=["fold-001", "fold-002", "fold-003"],
         validation="fold-004",
         evaluation="fold-005",
     )
@@ -96,13 +96,19 @@ def test_new_rows_start_after_everything_the_parent_used_and_end_with_the_train_
         chain.parent_window(value, JOINT, "fold-019")
 
 
-def test_rl_windows_expand_and_need_three_previous_evaluations():
+def test_rl_windows_use_the_three_evaluations_before_validation_or_the_declared_expansion():
     windows = [f"fold-{i:03d}" for i in range(8)]
-    assert [chain.rl_windows(windows, w) for w in windows[:4]] == [None] * 4
-    assert chain.rl_windows(windows, "fold-004") == dict(
-        train=windows[:3], validation="fold-003", evaluation="fold-004"
+    for rule in (chain.RL_RULE, chain.RL_EXPANDING):
+        assert [chain.rl_windows(windows, w, rule) for w in windows[:4]] == [None] * 4
+        assert chain.rl_windows(windows, "fold-004", rule) == dict(
+            train=windows[:3], validation="fold-003", evaluation="fold-004"
+        )
+    assert chain.rl_windows(windows, "fold-007") == dict(
+        train=windows[3:6], validation="fold-006", evaluation="fold-007"
     )
-    assert chain.rl_windows(windows, "fold-007")["train"] == windows[:6]
+    assert chain.rl_windows(windows, "fold-007", chain.RL_EXPANDING)["train"] == windows[:6]
+    with pytest.raises(ValueError, match="no es una regla"):
+        chain.rl_windows(windows, "fold-007", "rolling_previous_evaluations")
     with pytest.raises(ValueError, match="no tiene evaluación"):
         chain.rl_windows(windows[1:], "fold-000")
 
@@ -114,8 +120,8 @@ def test_rl_windows_expand_and_need_three_previous_evaluations():
         lambda v: v["walk_forward_stages"]["chain"].update(min_improvement=0.001),
         lambda v: v["walk_forward_stages"]["posttraining"]["candidates"].append("base_retrain"),
         lambda v: v["walk_forward_stages"]["posttraining"].update(parent="chain_previous"),
-        lambda v: v["walk_forward_stages"]["rl"].update(min_train_windows=2),
-        lambda v: v["walk_forward_stages"]["rl"].update(train="rolling_previous_evaluations"),
+        lambda v: v["walk_forward_stages"]["rl"].update(train_windows=4),
+        lambda v: v["walk_forward_stages"]["rl"].update(train="expanding_previous_evaluations"),
         lambda v: v["walk_forward_stages"].update(test="validation"),
         lambda v: v["walk_forward_stages"].pop("test"),
     ],
@@ -124,8 +130,8 @@ def test_rl_windows_expand_and_need_three_previous_evaluations():
         "loose_improvement",
         "retrain_as_candidate",
         "chain_parent",
-        "two_rl_windows",
-        "rolling_rl",
+        "four_rl_windows",
+        "expanding_rl_as_main",
         "test_on_validation",
         "missing_test",
     ],
@@ -229,6 +235,10 @@ def _broken(kind):
         policies[5]["depends"] = policies[5]["depends"][1:]
     elif kind == "policy_with_two_windows":
         policies[0] = dict(policies[0], train=policies[0]["train"][1:])
+    elif kind == "policy_validates_before_its_training":
+        policies[5] = dict(policies[5], train=[*policies[5]["train"][:2], policies[5]["window"]])
+    elif kind == "policy_evaluates_before_validation":
+        policies[5] = dict(policies[5], validation=policies[5]["window"])
     elif kind == "policy_without_predictor_seed":
         policies[0].pop("predictor_seed")
     elif kind == "policy_reads_a_later_chain":
@@ -243,7 +253,9 @@ def _broken(kind):
         ("adapter_with_older_parent", "no depende del estado elegido de la base en fold-003"),
         ("adapter_in_first_window", "la primera ventana no tiene posentrenamiento"),
         ("policy_missing_a_window", "no depende de la cadena de todas las ventanas"),
-        ("policy_with_two_windows", "no depende de la cadena de todas las ventanas"),
+        ("policy_with_two_windows", "no ajusta con tres ventanas anteriores"),
+        ("policy_validates_before_its_training", "no ajusta con tres ventanas anteriores"),
+        ("policy_evaluates_before_validation", "no ajusta con tres ventanas anteriores"),
         ("policy_without_predictor_seed", "semilla de su predictor"),
         ("policy_reads_a_later_chain", "fase posterior"),
     ],

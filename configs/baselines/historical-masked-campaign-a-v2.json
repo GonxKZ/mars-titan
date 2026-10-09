@@ -91,8 +91,8 @@
     },
     "chain": {"rule": "chain_validation_score_v1", "min_improvement": 0.0, "first_window": "base"},
     "rl": {
-      "train": "expanding_previous_evaluations",
-      "min_train_windows": 3,
+      "train": "fixed_prior_evaluations_v1",
+      "train_windows": 3,
       "validation": "previous_evaluation",
       "evaluation": "own_evaluation",
       "predictor": "chain"

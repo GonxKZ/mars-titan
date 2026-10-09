@@ -111,7 +111,7 @@ Para la ventana k, con evaluación en el año Y, los tramos son los de la secci�
 | Base | Inicialización nueva | `train_k` | `val_k` | `cal_k` | `eval_k` |
 | Posentrenamiento (k ≥ 1) | Estado elegido de la base en k-1 | Filas de `train_k` con decisión en [ene Y-1, abr Y-1) | `val_k`, con el padre elegible en la época 0 | `cal_k` | `eval_k` |
 | Predictor de la cadena | Candidatos del posentrenamiento, o la base en la ventana 0 | Nada | `val_k` | `cal_k` | `eval_k` |
-| RL anclada en k | Política nueva | Cintas de `eval_0` a `eval_{k-2}` (mínimo 3) | Cinta de `eval_{k-1}` | | Cinta de `eval_k` |
+| RL anclada en k | Política nueva | Cintas de `eval_{k-4}` a `eval_{k-2}` | Cinta de `eval_{k-1}` | | Cinta de `eval_k` |
 | Test | | | | | `eval_k`, igual para todas las familias |
 
 El padre del posentrenamiento es el estado elegido de la base en la ventana k-1 para el mismo brazo y semilla, el ganador de la búsqueda o el finalista. Ese padre ajustó sus pesos hasta marzo de Y-2 y usó abril a diciembre de Y-2 para elegir época y calibrar. Esos nueve meses ya influyeron en el padre por selección y calibración, así que tampoco entran en el ajuste nuevo. Las filas nuevas son las del tramo `train` de la vista k con decisión entre el final de `cal_{k-1}` y el final de `train_k` (`campaign_chain.posttraining_rows`), unos tres meses. Su etiqueta madura antes del final de `train_k` por la purga de la vista, y toda etiqueta del padre madura antes de su primera decisión, así que la purga queda en los dos extremos. La ventana 0 no tiene padre ni posentrenamiento. El padre no es el predictor de la cadena de k-1, para que las adaptaciones no se acumulen de un año a otro y cada contraste parta del mismo tipo de estado.
@@ -122,9 +122,9 @@ Los candidatos de la ventana k ≥ 1 son el padre congelado (la base k-1 traslad
 
 El reentreno completo de la ventana k (la base k) no es candidato. La cadena mide cuánto aporta adaptar un estado con datos que no vio. Si el reentreno pudiera ganar, se mezclarían dos preguntas, adaptar o volver a entrenar desde cero, y la entrada de la RL cambiaría de naturaleza de una ventana a otra según quién ganase. La comparación base k frente a cadena k se informa aparte, como otro contraste emparejado sobre las mismas filas de `eval_k`, con las mismas métricas y las semillas resumidas igual que en el resto de la comparación.
 
-### RL expansiva
+### RL con las tres evaluaciones anteriores
 
-La política anclada en k ajusta con las cintas reales reconstruidas de todas las evaluaciones anteriores a su validación, valida con la de `eval_{k-1}` y evalúa con la de `eval_k`. La primera política es la de la quinta ventana de cada mercado (`campaign_chain.rl_windows`). Cada cinta lleva las predicciones fuera de muestra del predictor de la cadena de su propia ventana, cuyo recibo declara la última etiqueta usada (`labels_used_until`) calculada con las etiquetas reales de sus vistas. Ningún predictor predice en una cinta filas con las que ajustó, eligió o calibró, porque esa etiqueta madura antes del inicio de su evaluación y toda decisión de la cinta es posterior.
+La política anclada en k ajusta con las cintas reales reconstruidas de las tres evaluaciones anteriores a su validación (`eval_{k-4}` a `eval_{k-2}`), valida con la de `eval_{k-1}` y evalúa con la de `eval_k`. La regla se declara como `fixed_prior_evaluations_v1` y la primera política es la de la quinta ventana de cada mercado (`campaign_chain.rl_windows`). El 10 de octubre, antes de cualquier resultado, se descartó como diseño principal la ventana en expansión con todas las evaluaciones anteriores. Exigir historia en todas las cintas sesga el universo de la política hacia las empresas antiguas: según el recuento de la etapa de políticas, deja 1.593 candidatos frente a 3.284 en EE. UU. y 533 frente a 718 en China. Además, KLPO admite como mucho 16 cintas. La expansión queda como sensibilidad declarada y desactivada, con su propia identidad en la etapa de políticas. Las dos reglas empiezan en la misma ventana. Cada cinta lleva las predicciones fuera de muestra del predictor de la cadena de su propia ventana, cuyo recibo declara la última etiqueta usada (`labels_used_until`) calculada con las etiquetas reales de sus vistas. Ningún predictor predice en una cinta filas con las que ajustó, eligió o calibró, porque esa etiqueta madura antes del inicio de su evaluación y toda decisión de la cinta es posterior.
 
 ### MARS-TITAN y el control en línea
 
@@ -140,8 +140,8 @@ flowchart TB
   Bk["Base k: reentreno completo hasta marzo de Y-1"]
   P["Posentrenamiento k: ajusta con enero a marzo de Y-1, elige con val_k y calibra con cal_k"]
   C["Predictor de la cadena k: padre congelado, adaptador o continuación"]
-  Cprev["Predictores de la cadena 0 a k-1: predicciones fuera de muestra de cada evaluación"]
-  R["RL k: ajusta con las cintas de eval_0 a eval_k-2 y valida con eval_k-1"]
+  Cprev["Predictores de la cadena k-4 a k-1: predicciones fuera de muestra de cada evaluación"]
+  R["RL k: ajusta con las cintas de eval_k-4 a eval_k-2 y valida con eval_k-1"]
   T["Test eval_k, año Y: mismas filas para todas las familias"]
   Bprev -->|"estado elegido como padre"| P
   P --> C
