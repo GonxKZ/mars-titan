@@ -610,15 +610,21 @@ que se construye sobre esta versión. No forman parte de este archivo.
 La [declaración de la comparación postentrenada](../../configs/posttraining/historical-masked-adapter-comparison-a.json)
 no enumera brazos. `posttraining/stage_comparison.py` los deriva del plan de la
 etapa de adaptadores y forma una comparación por padre y ámbito con el padre
-congelado (el propio brazo base con las predicciones de la campaña), la
-continuación completa y los brazos adaptados de la matriz para su familia. Así
-una familia nueva de la matriz entra sin reescribir nada. Las familias declaradas
-son `versus_frozen_parent` (adaptados y continuación menos el padre) y
-`versus_full_continuation` (adaptados menos la continuación), más el nivel de
-cada brazo. Todo lo demás se hereda de la comparación de la campaña: protocolos,
-métricas, calibración común, remuestreo y secciones secundarias. Hoy salen cinco
-padres (`rnn`, `lstm`, `gru`, `dlinear` y `transformer_compact`) con seis brazos,
-salvo el Transformer, que tiene diez porque la matriz le da puntos de lectura.
+congelado, la continuación completa y los brazos adaptados de la matriz para su
+familia. Así una familia nueva de la matriz entra sin reescribir nada. En el
+[walk-forward por etapas](../engineering/masked-posttraining.md#etapa-por-ventana-de-la-campaña)
+de A, el padre congelado es el trabajo `frozen` de la etapa, que aplica a la
+ventana k el estado elegido por la base en k-1, y el brazo base reentrenado en k
+queda como nivel fuera de las familias. Como la primera ventana de cada ámbito
+no tiene postentrenamiento, la comparación empieza en la segunda. Las familias
+declaradas son `versus_frozen_parent` (adaptados y continuación menos el padre
+congelado) y `versus_full_continuation` (adaptados menos la continuación), más el
+nivel de cada brazo. Todo lo demás se hereda de la comparación de la campaña:
+protocolos, métricas, calibración común, remuestreo y secciones secundarias. Hoy
+salen cinco padres (`rnn`, `lstm`, `gru`, `dlinear` y `transformer_compact`) con
+siete brazos, salvo el Transformer, que tiene once porque la matriz le da puntos
+de lectura. La validación de los recibos por etapas elige el predictor de la
+cadena y no entra en esta comparación.
 
 El manifiesto de fuentes de un padre une las predicciones del padre, leídas del
 manifiesto ya validado de la campaña, con los recibos confirmados de la etapa. Se
