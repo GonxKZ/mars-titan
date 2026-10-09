@@ -14,6 +14,11 @@ Se rechaza cualquier mezcla: otra política, otra vista o edición, otro protoco
 ventanas ausentes o sobrantes, filas fuera del tramo declarado, filas de la
 reserva de 2024 y brazos que no evalúan exactamente las mismas filas (activo,
 mercado e instante) con los mismos objetivos. El mensaje indica cuántas difieren.
+
+La versión 2 de la configuración declara además los estratos por presencia de
+noticias y fundamentales (``modality_strata``), un análisis secundario que no
+cambia ninguna salida de la versión 1. Su presencia sale de la propia vista de
+cada ventana y debe cubrir exactamente las filas evaluadas por los brazos.
 """
 
 import argparse
@@ -34,6 +39,7 @@ from mars_titan.calibration import conformal_quantiles as cqr
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.input_policy import masked_inputs, policy_identity
 from mars_titan.data.storage import atomic_json, outside_source, sha256
+from mars_titan.evaluation import modality_strata
 from mars_titan.evaluation.forecast_panel import WEIGHTINGS, ForecastPanel, SessionSeries
 from mars_titan.evaluation.forecast_scores import COVERAGE_ERROR, SessionScores, score_sessions
 from mars_titan.evaluation.paired_comparisons import compare_series, delta, interaction, level
@@ -77,6 +83,7 @@ _CONFIG_FIELDS = {
     "calibration",
     "comparison",
 }
+STRATA_FIELD = "modality_strata"
 _METRIC_FIELDS = {"primary", "market_weighting", "rank_ic_min_assets", "quantile_head"}
 _CALIBRATION_FIELDS = {"method", "partition", "nominals", "groups", "min_rows", "order_rule"}
 _COMPARISON_FIELDS = {
@@ -210,10 +217,12 @@ def load_config(path):
     """Validar la configuración declarada antes de abrir ninguna predicción."""
     path = Path(path)
     config, digest = read_manifest(path, 1024**2)
+    version = config.get("schema_version") if isinstance(config, dict) else None
     _require(
         isinstance(config, dict)
-        and set(config) == _CONFIG_FIELDS
-        and config["schema_version"] == 1
+        and type(version) is int
+        and version in (1, 2)
+        and set(config) == _CONFIG_FIELDS | ({STRATA_FIELD} if version == 2 else set())
         and config["kind"] == CONFIG_KIND
         and config["status"] == DECLARED
         and config["partition"] == "evaluation"
@@ -284,6 +293,12 @@ def load_config(path):
         "Las comparaciones deben empezar por el MAE y usar métricas por sesión",
     )
     families = _families(comparison["families"], arms)
+    if version == 2:
+        _require(
+            masked_inputs(config["input_policy"]),
+            "Los estratos de presencia necesitan la política de entradas con máscaras",
+        )
+        modality_strata.declaration(config[STRATA_FIELD], SERIES_METRICS)
     resolved = {
         scope: _protocols(path.parent, scope, declared) for scope, declared in scopes.items()
     }
@@ -355,11 +370,15 @@ def load_sources(path, config, scope_name):
         isinstance(sources["windows"], dict) and set(sources["windows"]) == set(windows),
         "Las fuentes no cubren exactamente las ventanas declaradas",
     )
-    views, edition = {}, None
+    views, view_paths, edition = {}, {}, None
     for window_id, window in windows.items():
         entry = sources["windows"][window_id]
         _require(isinstance(entry, dict) and set(entry) == {"view"}, "La ventana necesita su vista")
         views[window_id], current = _view(path.parent, entry["view"], window, scope, policy)
+        # La ruta solo se abre si se declaran estratos, y entonces se comprueba su huella.
+        view_paths[window_id] = _file(path.parent, entry["view"], f"La vista de {window_id}")[
+            "path"
+        ]
         _require(
             edition is None or current == edition, "Las ventanas no comparten la misma edición"
         )
@@ -402,7 +421,15 @@ def load_sources(path, config, scope_name):
                     for part in ("calibration", "evaluation")
                     if part in entry
                 }
-    return dict(sha256=digest, scope=scope_name, views=views, edition=edition, files=files, **scope)
+    return dict(
+        sha256=digest,
+        scope=scope_name,
+        views=views,
+        view_paths=view_paths,
+        edition=edition,
+        files=files,
+        **scope,
+    )
 
 
 def _read_predictions(file, columns):
@@ -442,18 +469,21 @@ def _check_segment(table, window, partition, markets, label):
     return market, times
 
 
-def _panel(table, window, partition, scope, label, *, output, prediction=None):
-    market, times = _check_segment(table, window, partition, scope["markets"], label)
-    # La identidad de fila es (mercado, activo, instante), común a todos los runners.
-    row_id = pc.binary_join_element_wise(
+def _row_id(table):
+    """Identidad de fila (mercado, activo, instante), común a todos los runners."""
+    return pc.binary_join_element_wise(
         table["market"].cast(pa.large_string()),
         table["asset_id"].cast(pa.large_string()),
         table["prediction_at"].cast(pa.int64()).cast(pa.large_string()),
         pa.scalar("/", pa.large_string()),
     )
+
+
+def _panel(table, window, partition, scope, label, *, output, prediction=None):
+    market, times = _check_segment(table, window, partition, scope["markets"], label)
     quantile = output == QUANTILE_HEAD
     return ForecastPanel.from_columns(
-        row_id,
+        _row_id(table),
         market,
         times,
         table["target"].to_numpy(),
@@ -496,12 +526,46 @@ def _calibrated(panel, record):
     return dataclasses.replace(panel, quantiles=quantiles), adjusted, None
 
 
+def _presence_codes(sources, config, window_id, reference):
+    """Estrato de cada fila evaluada, en el orden canónico del panel de referencia.
+
+    La presencia se lee de la vista de la ventana y debe cubrir las mismas filas con
+    los mismos objetivos que los brazos, con la misma comprobación que entre brazos.
+    Si alguna fila no tiene precios, gráficos y macro, los estratos declarados no
+    describen la ventana: no hay códigos y el registro cuenta esas filas.
+    """
+    table, bits = modality_strata.view_presence(
+        sources["view_paths"][window_id], config["input_policy"], sources["views"][window_id]
+    )
+    label = f"La presencia de la vista de {window_id}"
+    panel = _panel(
+        table,
+        sources["windows"][window_id],
+        "evaluation",
+        sources,
+        label,
+        output=POINT,
+        prediction=np.zeros(table.num_rows),
+    )
+    _same_rows(reference, panel, label)
+    record = dict(rows=table.num_rows, incomplete=modality_strata.incomplete_rows(bits))
+    if record["incomplete"]:
+        return None, record
+    order = pc.index_in(reference[1].row_id, value_set=_row_id(table)).to_numpy()
+    return modality_strata.codes(bits)[order], record
+
+
 def _score_window(sources, config, window_id):
-    """Puntuar todos los brazos de una ventana. Cada calibrador se fija antes de evaluar."""
+    """Puntuar todos los brazos de una ventana. Cada calibrador se fija antes de evaluar.
+
+    Devuelve las puntuaciones por brazo y semilla y, si se declaran estratos, el registro
+    de presencia de la ventana.
+    """
     window = sources["windows"][window_id]
     minimum = config["metrics"]["rank_ic_min_assets"]
     calibration = config["calibration"]
     results, reference, calibration_reference = {}, None, None
+    row_codes, presence = None, None
     for name, arm in config["arms"].items():
         quantile = arm["output"] == QUANTILE_HEAD
         columns = COLUMNS + (QUANTILE_COLUMNS if quantile else ())
@@ -529,13 +593,24 @@ def _score_window(sources, config, window_id):
             if reference is None:
                 reference = (label, panel)
                 targets = table.select(["asset_id", "market", "prediction_at", "target"])
+                if STRATA_FIELD in config:
+                    row_codes, presence = _presence_codes(sources, config, window_id, reference)
             _same_rows(reference, panel, label)
             entry["raw"] = score_sessions(panel, rank_ic_min_assets=minimum)
+            calibrated = None
             if quantile:
                 calibrated, adjusted, reason = _calibrated(panel, entry["calibrator"]["record"])
                 entry.update(calibrated_reason=reason, order_adjusted_rows=adjusted)
                 if calibrated is not None:
                     entry["calibrated"] = score_sessions(calibrated, rank_ic_min_assets=minimum)
+            if row_codes is not None:
+                # Los cuantiles calibrados son los del calibrador común, sin reajuste.
+                entry["strata"] = modality_strata.score_strata(
+                    panel,
+                    row_codes,
+                    rank_ic_min_assets=minimum,
+                    calibrated=None if calibrated is None else calibrated.quantiles,
+                )
             results[name, seed] = entry
     for name, arm in config["arms"].items():
         if arm["output"] != ZERO_CONTROL:
@@ -552,7 +627,11 @@ def _score_window(sources, config, window_id):
             calibrated=None,
             calibrated_reason=None,
         )
-    return results
+        if row_codes is not None:
+            results[name, None]["strata"] = modality_strata.score_strata(
+                panel, row_codes, rank_ic_min_assets=minimum
+            )
+    return results, presence
 
 
 def _views(scores, markets):
@@ -696,13 +775,187 @@ def _arm_summary(windows, views, calibrated_views, missing, weighting):
     )
 
 
+def _stratum_views(scores, markets, names):
+    """Ámbito y mercados de un estrato. Un mercado sin sesiones del estrato queda vacío."""
+    if scores is None:
+        return dict.fromkeys(names)
+    views = {names[0]: scores}
+    if len(markets) > 1:
+        for code, market in enumerate(scores.markets):
+            mask = scores.session_market == code
+            views[market] = scores.select_sessions(mask, label=market) if mask.any() else None
+    return views
+
+
+def _cell(scores, thresholds, market=None):
+    """Filas, sesiones y estimabilidad del estrato en el ámbito o en un mercado."""
+    rows, sessions = 0, 0
+    if scores is not None and market is None:
+        rows, sessions = int(scores.samples.sum()), len(scores.samples)
+    elif scores is not None:
+        mask = scores.session_market == scores.markets.index(market)
+        rows, sessions = int(scores.samples[mask].sum()), int(mask.sum())
+    estimable, reason = modality_strata.estimability(rows, sessions, **thresholds)
+    return dict(rows=rows, sessions=sessions, estimable=estimable, reason=reason)
+
+
+def _stratum_arm(config, per_window, key, stratum, markets, names):
+    """Vistas en bruto y calibradas de un brazo y semilla en un estrato y sus partes."""
+    parts = [results[key]["strata"][stratum] for results in per_window.values()]
+    raw = [part["raw"] for part in parts if part["raw"] is not None]
+    views = _stratum_views(SessionScores.concatenate(raw) if raw else None, markets, names)
+    calibrated = None
+    # Sin calibrador en alguna ventana, el estrato tampoco tiene cobertura calibrada.
+    if config["arms"][key[0]]["output"] == QUANTILE_HEAD and all(
+        results[key]["calibrated"] is not None for results in per_window.values()
+    ):
+        adjusted = [part["calibrated"] for part in parts if part["calibrated"] is not None]
+        joined = SessionScores.concatenate(adjusted) if adjusted else None
+        calibrated = _stratum_views(joined, markets, names)
+    return views, calibrated, parts
+
+
+def _stratum_summary(scores, calibrated, quantile, cell, weighting):
+    """MAE por sesión y cobertura y anchura calibradas de una celda estimable."""
+    result = dict(
+        session_mae=None, reason=cell["reason"], calibrated_intervals=None, calibrated_reason=None
+    )
+    if not cell["estimable"]:
+        result["calibrated_reason"] = cell["reason"]
+        return result
+    result["session_mae"] = scores.summary(market_weighting=weighting)["point"]["mae"]
+    if not quantile:
+        result["calibrated_reason"] = "El brazo no emite cuantiles"
+    elif calibrated is None:
+        result["calibrated_reason"] = "Alguna ventana no tiene calibrador"
+    else:
+        intervals = calibrated.summary(market_weighting=weighting)["quantiles"]["intervals"]
+        result["calibrated_intervals"] = [
+            {key: row[key] for key in ("nominal", "coverage", "coverage_gap", "width")}
+            for row in intervals
+        ]
+    return result
+
+
+def _window_mae(parts, cells, weighting):
+    """MAE por sesión de cada ventana y mercado estimables, y None en los demás."""
+    result = {}
+    for (window, row), part in zip(cells.items(), parts, strict=True):
+        by_market = {}
+        if any(cell["estimable"] for cell in row.values()):
+            by_market = part["raw"].summary(market_weighting=weighting)["by_market"]
+        result[window] = {
+            market: by_market[market]["mae"] if cell["estimable"] else None
+            for market, cell in row.items()
+        }
+    return result
+
+
+def _strata_report(config, scored, overall, markets):
+    """Sección secundaria por estrato de presencia, con los umbrales y la confianza declarados.
+
+    Las celdas por debajo del umbral aparecen con su motivo y sin métricas. La confianza de
+    contrastes y coberturas corrige por Bonferroni el número de celdas de estrato y ámbito.
+    Si alguna ventana tiene filas sin precios, gráficos y macro, la sección entera queda no
+    estimable con sus recuentos. La métrica principal no depende de este resultado.
+    """
+    declared = config[STRATA_FIELD]
+    presence = {window: record for window, (_, record) in scored.items()}
+    incomplete = {window: record["incomplete"] for window, record in presence.items()}
+    if any(incomplete.values()):
+        return dict(
+            declaration=declared,
+            status="not_estimable",
+            reason=(
+                f"{sum(incomplete.values())} filas de evaluación no tienen precios, gráficos y "
+                "macro, así que los estratos declarados no describen la población"
+            ),
+            presence=presence,
+        )
+    per_window = {window: results for window, (results, _) in scored.items()}
+    thresholds = {key: declared[key] for key in ("min_rows", "min_sessions")}
+    weighting = config["metrics"]["market_weighting"]
+    keys = list(per_window[next(iter(per_window))])
+    reference = overall[keys[0][0]][0]
+    names = list(reference)
+    cells = len(modality_strata.STRATA) * len(names)
+    confidence = modality_strata.adjusted_confidence(config["comparison"]["confidence"], cells)
+    local = dict(
+        config,
+        comparison=dict(config["comparison"], metrics=declared["metrics"], confidence=confidence),
+    )
+    population, arms, contrasts, calibration = {}, {}, {}, {}
+    for stratum, pattern in modality_strata.STRATA.items():
+        by_key = {
+            key: _stratum_arm(config, per_window, key, stratum, markets, names) for key in keys
+        }
+        # Todos los brazos evalúan las mismas filas, así que la población es la del primero.
+        first_views, _, first_parts = by_key[keys[0]]
+        whole = {}
+        for view in names:
+            cell = _cell(first_views[view], thresholds)
+            whole[view] = dict(cell, row_share=cell["rows"] / int(reference[view].samples.sum()))
+        windows = {
+            window: {market: _cell(part["raw"], thresholds, market) for market in markets}
+            for window, part in zip(per_window, first_parts, strict=True)
+        }
+        population[stratum] = dict(pattern=pattern, overall=whole, windows=windows)
+        views, calibrated = {}, {}
+        for (arm, seed), (raw, adjusted, parts) in by_key.items():
+            quantile = config["arms"][arm]["output"] == QUANTILE_HEAD
+            views.setdefault(arm, []).append(raw)
+            if quantile:
+                calibrated.setdefault(arm, []).append(adjusted)
+            label = "deterministic" if seed is None else str(seed)
+            arms.setdefault(arm, {}).setdefault(label, {})[stratum] = dict(
+                overall={
+                    view: _stratum_summary(
+                        raw[view],
+                        None if adjusted is None else adjusted[view],
+                        quantile,
+                        whole[view],
+                        weighting,
+                    )
+                    for view in names
+                },
+                windows=_window_mae(parts, windows, weighting),
+            )
+        estimable = [view for view in names if whole[view]["estimable"]]
+        compared = _contrasts(local, views, estimable) if estimable else {}
+        intervals = _interval_calibration(local, views, calibrated, estimable) if estimable else {}
+        missing = {view: dict(reason=whole[view]["reason"]) for view in names}
+        contrasts[stratum] = {view: compared.get(view, missing[view]) for view in names}
+        calibration[stratum] = {
+            arm: {view: intervals.get(arm, {}).get(view, missing[view]) for view in names}
+            for arm in calibrated
+        }
+    return dict(
+        declaration=declared,
+        status="computed",
+        reason=None,
+        presence=presence,
+        recalibrated=False,
+        multiplicity=dict(
+            method=modality_strata.MULTIPLICITY,
+            cells=cells,
+            family_confidence=config["comparison"]["confidence"],
+            confidence=confidence,
+        ),
+        population=population,
+        arms=arms,
+        contrasts=contrasts,
+        interval_calibration=calibration,
+    )
+
+
 def evaluate_walk_forward(config_path, sources_path, scope):
     """Calcular el informe y la tabla por sesión de un ámbito sin escribir nada."""
     started = time.perf_counter()
     config = load_config(config_path)
     sources = load_sources(sources_path, config, scope)
     weighting, markets = config["metrics"]["market_weighting"], sources["markets"]
-    per_window = {window: _score_window(sources, config, window) for window in sources["windows"]}
+    scored = {window: _score_window(sources, config, window) for window in sources["windows"]}
+    per_window = {window: results for window, (results, _) in scored.items()}
     overall, calibrated, arms, tables = {}, {}, {}, []
     for arm, seed in per_window[next(iter(per_window))]:
         windows = {window: results[arm, seed] for window, results in per_window.items()}
@@ -722,6 +975,7 @@ def evaluate_walk_forward(config_path, sources_path, scope):
         )
         tables.extend(_session_tables(windows, arm, seed))
     names = list(overall[next(iter(overall))][0])
+    strata = _strata_report(config, scored, overall, markets) if STRATA_FIELD in config else None
     report = dict(
         schema_version=1,
         kind=REPORT_KIND,
@@ -774,6 +1028,10 @@ def evaluate_walk_forward(config_path, sources_path, scope):
             elapsed_seconds=time.perf_counter() - started,
         ),
     )
+    if strata is not None:
+        report[STRATA_FIELD] = strata
+        for name in ("evaluation/modality_strata.py", "training/corpus_inputs.py"):
+            report["analysis_source_sha256"][name] = sha256(Path(__file__).parents[1] / name)
     return report, pa.concat_tables(tables, promote_options="default")
 
 

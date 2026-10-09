@@ -47,6 +47,8 @@ Las ventanas conjuntas empiezan cuando los dos mercados tienen etiquetas en los 
 
 La ponderación entre mercados de las ventanas que sí se evalúan se declara en [métricas](metrics.md) y es la misma para todos los modelos.
 
+La comparación declara además un análisis secundario por presencia de noticias y fundamentales, fijado el 9 de octubre de 2026 antes de cualquier resultado. Es descriptivo, no interviene en la selección ni en la parada de ningún brazo y no cambia la métrica principal. Su definición está en [métricas](metrics.md#estratos-por-presencia-de-modalidades).
+
 Los protocolos US y conjunto comparten cortes. Las ventanas conjuntas coinciden fecha a fecha con las ventanas US de 2011 a 2023, aunque sus identificadores empiezan en `fold-000`. Una comparación entre el brazo US y el conjunto sobre filas US se hace con esas trece ventanas, emparejadas por el intervalo de evaluación y no por el identificador.
 
 ## Purga por el intervalo de cada etiqueta

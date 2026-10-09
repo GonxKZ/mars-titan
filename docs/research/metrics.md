@@ -499,7 +499,9 @@ de Titans-MAC frente a `transformer_direct`, las políticas de escritura M1 a M3
 frente a M0, los refinamientos K = 2 y 4 sobre M1, el factorial CM-v1 y el nivel
 de cada brazo. Tomar M1 como base de K es una propuesta pendiente de revisión.
 M3 todavía no está definida en el código y su brazo exige esa definición antes
-de evaluar.
+de evaluar. La versión 2 de la configuración añade los
+[estratos por presencia de modalidades](#estratos-por-presencia-de-modalidades),
+un análisis secundario que no cambia nada de lo anterior.
 
 Falta conectar los productores de predicciones. Las referencias neuronales con
 retención `heldout_full_train_sessions_v1` ya escriben archivos por tramo con
@@ -508,6 +510,148 @@ retención `heldout_full_train_sessions_v1` ya escriben archivos por tramo con
 todavía no exporta predicciones por fila y la GRU episódica, los tabulares y
 CM-v1 necesitan el mismo formato. El manifiesto de fuentes se generará a partir
 de sus recibos cuando existan.
+
+## Estratos por presencia de modalidades
+
+Es un análisis secundario y descriptivo, declarado el 9 de octubre de 2026 antes
+de cualquier resultado. No se usa para seleccionar modelos, configuraciones ni
+épocas, y no cambia la conclusión que se extraiga de la métrica principal, que
+sigue siendo el MAE residual por sesión de toda la población evaluada. Responde a
+otra pregunta: cómo rinde cada brazo según las modalidades que tenía cada muestra,
+sobre todo en la subpoblación con las cuatro modalidades (precios y gráficos,
+noticias, fundamentales y macro).
+
+En la edición v3 desde 2000, con 17.076.024 muestras de 5.023 activos, precios,
+gráficos y macro están presentes en todas las filas. Los fundamentales cubren el
+34,4 % del total (40,6 % en EE. UU. y 0,8 % en China) y las noticias el 17,9 %
+(18,6 % y 13,7 %). Por eso los estratos solo distinguen noticias y fundamentales:
+
+| Estrato | Noticias | Fundamentales | Modalidades de la muestra |
+| --- | --- | --- | --- |
+| `news_and_fundamentals` | Sí | Sí | Las cuatro: precios y gráficos, noticias, fundamentales y macro |
+| `news_only` | Sí | No | Precios y gráficos, noticias y macro |
+| `fundamentals_only` | No | Sí | Precios y gráficos, fundamentales y macro |
+| `neither` | No | No | Precios y gráficos y macro |
+
+`news_and_fundamentals` es el estrato de interés declarado (`focus`). Los cuatro
+estratos forman una partición de las filas evaluadas, de modo que cada fila cae
+exactamente en uno.
+
+### Declaración
+
+La sección `modality_strata` de la versión 2 de la [configuración](../../configs/evaluation/historical-masked-2000-comparison.json)
+fija el estatus (`secondary_descriptive`), el uso permitido, la fuente de la
+presencia, las tres modalidades que se dan por presentes, los cuatro patrones, el
+estrato de interés, las métricas de los contrastes (solo el MAE), la prohibición
+de recalibrar, los umbrales y la corrección por comparaciones múltiples. Su huella
+SHA-256 al declararla es
+`378a5cfc8640f9b91b2ee739c328cca300422f22799591248fba1e0b74137c27`. El cargador
+rechaza cualquier otro valor de esos campos, una sección en la versión 1, una
+versión 2 sin sección y la sección con la política estricta. Una configuración de
+versión 1 produce las mismas salidas que antes de este cambio. Se comprobó en
+procesos separados frente al código anterior con los fixtures de US, CN y US+CN:
+informe y `sessions.parquet` idénticos, salvo la fecha de creación, los recursos y
+la huella del código analizador, que cambian por definición.
+
+### Origen de los bits de presencia
+
+Para cada ventana, `evaluation/modality_strata.py::view_presence` abre su vista
+con `CorpusDataset`, que comprueba las huellas de muestras, etiquetas y precios
+frente al manifiesto de la vista. Toma las filas que las etiquetas asignan al
+tramo de evaluación y lee la columna `presence` de `samples.parquet` en la
+posición `sample_row` de cada etiqueta. Comprueba la forma de cinco booleanos, que
+la presencia de noticias coincida con `news_count` y que el instante de la
+etiqueta sea el de la muestra. No vuelve a leer los vectores, cuya coherencia con
+las máscaras ya se verificó al preparar la edición y que las huellas protegen.
+
+La tabla resultante (activo, mercado, instante y objetivo) pasa por la misma
+comprobación que dos brazos, `_same_rows`: debe tener exactamente las filas y los
+objetivos del primer brazo, y el error cuenta cuántas filas sobran, faltan o
+cambian de objetivo. Solo entonces se alinea cada fila con el orden canónico del
+panel. Si alguna fila evaluada no tiene precios, gráficos y macro, la declaración
+deja de describir la población. La sección entera queda `not_estimable` con el
+número de filas afectadas en cada ventana y el resto del informe no cambia.
+
+### Métricas por estrato
+
+- **MAE por sesión.** En el estrato $k$, el error de la sesión usa solo sus filas
+  de $k$, y las sesiones sin filas de $k$ no entran:
+  $\operatorname{MAE}_{s,k}=\frac{1}{n_{s,k}}\sum_{i\in s\cap k}|\hat y_i-y_i|$.
+  Se agrega con la ponderación declarada (`session`), uniendo ventanas, para el
+  ámbito y para cada mercado. Es `score_sessions` aplicado al subconjunto de filas
+  del panel ya validado.
+- **Relación con la métrica principal.** Dentro de cada sesión,
+  $\operatorname{MAE}_s=\sum_k \frac{n_{s,k}}{n_s}\operatorname{MAE}_{s,k}$, y el
+  MAE por filas es la media de los estratos con pesos $N_k/N$. El MAE por sesión
+  agregado solo es la media de los estratos ponderada por sus sesiones cuando cada
+  sesión pertenece a un único estrato. Las pruebas comprueban las tres
+  identidades. En general, un estrato pesa en la métrica principal según la
+  fracción de filas que ocupa en cada sesión, no según su número de sesiones.
+- **Contrastes.** Las familias, la longitud de bloque, las réplicas, la semilla y
+  la sensibilidad son las de la comparación principal, aplicadas al MAE del
+  estrato. Las semillas se promedian sesión a sesión como en la ruta principal.
+- **Intervalos.** Cobertura y anchura de los intervalos del 80 % y del 95 % con el
+  calibrador común de cada ventana, ajustado una vez por mercado con todas las
+  filas de calibración. Los cuantiles calibrados del panel completo se restringen
+  a las filas del estrato. Ningún estrato vuelve a ajustar el calibrador, y las
+  pruebas cuentan el mismo número de ajustes con y sin estratos. Se informa además
+  el error de cobertura con su intervalo por bloques, en bruto y calibrado, como en
+  la sección principal.
+
+### Umbral y celdas no estimables
+
+Antes de ver ningún resultado se fijan `min_rows=1000` y `min_sessions=50`. Una
+celda se informa si alcanza los dos mínimos. Las celdas son cada ventana y
+mercado, el ámbito completo y cada mercado. Por debajo del umbral la celda aparece
+con `estimable=false`, sus filas, sus sesiones y el motivo con el umbral, y sus
+métricas, contrastes y coberturas quedan a `null` con ese motivo. Nunca se omite.
+Una ventana por debajo del umbral sigue aportando sus filas a la celda del ámbito,
+que se define sobre todas las ventanas. Las 1.000 filas coinciden con el mínimo
+de la calibración por mercado y las 50 sesiones superan el bloque más largo de la
+sensibilidad (40 días). Con un 0,8 % de fundamentales en China, es de esperar que
+muchas celdas chinas con fundamentales queden no estimables. Se informará así.
+
+### Comparaciones múltiples
+
+`compare_series` ya da intervalos simultáneos por máximo estudentizado dentro de
+cada familia. Entre estratos y ámbitos se aplica además Bonferroni sobre el número
+de celdas declarado, cuatro estratos por el número de ámbitos: 12 en US+CN y 4 en
+US o en CN. La confianza de contrastes y coberturas es $1-0{,}05/12\approx
+0{,}99583$ en el ámbito conjunto y $1-0{,}05/4=0{,}9875$ en los demás. El
+bootstrap de un estrato remuestrea solo los días con sesiones de ese estrato, así
+que con un estrato disperso un bloque abarca más tiempo de calendario.
+
+### Informe
+
+El informe añade la sección `modality_strata` con `declaration`, `status`,
+`presence` (filas y filas incompletas por ventana), `recalibrated=false`,
+`multiplicity`, `population` (patrón, filas, sesiones, fracción de filas y
+estimabilidad por ámbito y por ventana y mercado), `arms` (MAE por ámbito con los
+intervalos calibrados y MAE por ventana y mercado, para cada brazo, semilla y
+estrato), `contrasts` e `interval_calibration`. `sessions.parquet` no cambia y
+`analysis_source_sha256` añade este módulo y `training/corpus_inputs.py`.
+
+### Coste
+
+Con una ventana sintética de 625.000 filas de evaluación (2.500 activos y 250
+sesiones) y 155.000 de calibración, el control cero, un brazo puntual y uno con
+cuantiles, dos hilos y una carga media cercana a 3, cuatro repeticiones tardaron
+1,93 s sin la sección y entre 3,8 y 4,2 s con ella. El pico de memoria pasó de
+1,06 a 1,09 GiB. La mayor parte del aumento es volver a ordenar y puntuar los
+subpaneles, incluido el Rank IC por sesión, que los estratos no usan. El resto es
+sobre todo construir el panel de presencia y alinear sus filas. Esta medida
+sustituye la lectura de la vista por la tabla ya generada. Leer una vista real
+comprueba las huellas de todos sus archivos y no se ha medido sobre la edición.
+
+### Qué no permite afirmar
+
+Las diferencias entre estratos describen subpoblaciones distintas, no el efecto
+de añadir una modalidad. Tener noticias o fundamentales se asocia al tamaño del
+activo, al mercado y al periodo, así que un MAE menor en
+`news_and_fundamentals` no demuestra que esas modalidades lo reduzcan. Para eso
+harían falta controles con la misma fila y la modalidad enmascarada. Los
+contrastes entre brazos dentro de un estrato sí son emparejados, porque todos los
+brazos evalúan las mismas filas.
 
 ## Coste medido
 
