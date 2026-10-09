@@ -25,9 +25,15 @@ EVENTS = (125, 126, 127, 128)
 
 
 @pytest.fixture
-def gru(native, four_flow_source):
+def gru_native(native):
+    """Enlace con el candidato GRU y el reservorio compartido, o una omisión explícita."""
     if not hasattr(native, "causal_reservoir_draws") or not hasattr(native, "Candidate"):
         pytest.skip("El enlace no incluye el candidato GRU ni el reservorio compartido")
+    return native
+
+
+@pytest.fixture
+def gru(gru_native, four_flow_source):
     return create(four_flow_source)
 
 
@@ -143,9 +149,9 @@ def earlier_inputs(source, delay_us):
 
 @pytest.mark.parametrize("refinements", [1, 2, 4])
 def test_each_event_reads_one_snapshot_before_admitting_its_mature_labels(
-    native, four_flow_source, tmp_path, refinements
+    gru_native, four_flow_source, tmp_path, refinements
 ):
-    source = four_flow_source
+    native, source = gru_native, four_flow_source
     pair = create(source, refinements=refinements)
     with open_session(native, source, pair, tmp_path / "run", block_rows=1) as session:
         previous, admitted = [], []
