@@ -143,3 +143,99 @@ def test_price_cli_rejects_report_overwriting_inputs_or_partitions(tmp_path, mon
         main()
     assert not output.exists()
     assert not state.exists()
+
+
+ROUNDED_SOURCE = (
+    "Date,Open,High,Low,Close,Volume\n"
+    "2024-01-02,3.976320878595475,3.9916150569915767,3.845233163135132,3.991615056991577,5\n"
+    "2024-01-03,7.44871007398853,7.6707175603792175,7.594163204377157,7.64,5\n"
+    "2024-01-04,10,12,9,11,5\n"
+)
+
+
+def _rounded_source(tmp_path):
+    source = tmp_path / "dataset"
+    folder = source / "time_series/S&P500_time_series"
+    folder.mkdir(parents=True)
+    (folder / "a.csv").write_text(ROUNDED_SOURCE)
+    database = tmp_path / "inventory.sqlite"
+    inventory(source, database)
+    return source, database
+
+
+def test_rounding_tolerance_is_a_separate_policy_with_traceable_roundings(tmp_path):
+    from mars_titan.data.audited_prices import audit_catalog, read_audited_prices
+    from mars_titan.data.temporal import MarketClock
+
+    source, database = _rounded_source(tmp_path)
+    strict = module().audit_prices(
+        source, database, tmp_path / "strict.json", details_root=tmp_path / "strict"
+    )
+    state, output = tmp_path / "rounded.json", tmp_path / "rounded"
+    rounded = module().audit_prices(
+        source, database, state, details_root=output, ordering_rtol=1e-9
+    )
+    assert "ordering_rtol" not in strict
+    assert "ordering_rounded_rows" not in strict["markets"]["US"]
+    assert strict["markets"]["US"]["accepted"] == 1
+    assert rounded["ordering_rtol"] == 1e-9
+    assert rounded["markets"]["US"]["accepted"] == 2
+    assert rounded["markets"]["US"]["invalid_ohlc"] == 1
+    assert rounded["markets"]["US"]["ordering_rounded_rows"] == 1
+    assert rounded["artifacts"] == strict["artifacts"] + 1 == 5
+    assert rounded["policy"] != strict["policy"]
+    partition = output / "US/A"
+    trace = pq.read_table(partition / "ordering_roundings.parquet").to_pylist()
+    assert [(row["source_row"], row["source_high"]) for row in trace] == [(1, 3.9916150569915767)]
+    assert pq.read_table(partition / "exclusions.parquet")["source_row"].to_pylist() == [2]
+    assert not (tmp_path / "strict/US/A/ordering_roundings.parquet").exists()
+    # La reanudación no puede mezclar tolerancias en el mismo estado y destino.
+    with pytest.raises(ValueError, match="política"):
+        module().audit_prices(source, database, state, details_root=output, ordering_rtol=1e-8)
+    with pytest.raises(ValueError, match="tolerancia"):
+        module().audit_prices(source, database, tmp_path / "x.json", ordering_rtol=1e-3)
+    # El lector auditado posterior comprueba el orden estricto y acepta la envolvente.
+    records, _ = audit_catalog(state)
+    record = records["US", "A"]
+    clock = MarketClock("US", "2023-01-01", "2025-01-01")
+    frame, receipt, reserved = read_audited_prices(
+        record, record["source_sha256"], clock, "2023-12-31"
+    )
+    assert frame.empty and reserved == 2
+    frame, receipt, reserved = read_audited_prices(
+        record, record["source_sha256"], clock, "2024-12-31"
+    )
+    assert frame["session"].tolist() == ["2024-01-02", "2024-01-04"]
+    assert frame.loc[0, "high"] == frame.loc[0, "close"] == 3.991615056991577
+    assert receipt["accepted"] == 2 and reserved == 0
+
+
+def test_price_cli_passes_the_declared_rounding_tolerance(tmp_path, monkeypatch):
+    import sys
+
+    from mars_titan.data.cli import main
+
+    source, database = _rounded_source(tmp_path)
+    report = tmp_path / "report.json"
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "audit",
+            "audit-prices",
+            "--source",
+            str(source),
+            "--database",
+            str(database),
+            "--state",
+            str(tmp_path / "state.json"),
+            "--report",
+            str(report),
+            "--ordering-rtol",
+            "1e-9",
+        ],
+    )
+    main()
+    result = json.loads(report.read_text())
+    assert result["ordering_rtol"] == 1e-9
+    assert result["markets"]["US"]["ordering_rounded_rows"] == 1
