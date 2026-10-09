@@ -9,6 +9,7 @@ valor y devuelve el double correctamente redondeado.
 
 import csv
 import math
+import multiprocessing
 import re
 from collections.abc import Sequence
 from pathlib import Path
@@ -130,7 +131,9 @@ def number_parsing_receipt(source: Path, *, workers: int) -> dict:
         raise ValueError("El número de procesos debe estar entre 1 y 16")
     started = time.perf_counter()
     markets = {}
-    with ProcessPoolExecutor(max_workers=workers) as pool:
+    # Procesos nuevos en lugar de fork, que no es seguro con hilos de Arrow o BLAS ya activos.
+    spawn = multiprocessing.get_context("spawn")
+    with ProcessPoolExecutor(max_workers=workers, mp_context=spawn) as pool:
         for market, folder in PRICE_SOURCES.items():
             paths = sorted((source / "time_series" / folder).glob("*.csv"))
             totals = dict(files=len(paths))

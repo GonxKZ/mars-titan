@@ -1,0 +1,148 @@
+"""Comparar dos ediciones codificadas activo por activo y registrar cada diferencia.
+
+Sirve para verificar la v3.1 frente a la v3. Para cada sesión común exige vectores idénticos
+cuando el gráfico tiene la misma huella y registra cada gráfico que cambia. Las sesiones nuevas
+se cuentan, y las que desaparecen se registran porque la revisión no debería perder ninguna.
+También mide cuánto cambian las ventanas de precios de las sesiones comunes.
+"""
+
+import json
+import multiprocessing
+from concurrent.futures import ProcessPoolExecutor
+from pathlib import Path
+
+import numpy as np
+import pyarrow.parquet as pq
+
+from .cohort_files import read_manifest
+from .storage import atomic_json
+
+# El gráfico se compara por su huella y la posición del precio cambia si se admiten filas
+# anteriores. Su efecto se mide sobre la ventana. El resto de columnas debe coincidir.
+_COMPARED_APART = {"chart_hash", "charts", "price_end_index"}
+
+
+def _table(root, market, symbol):
+    folder = Path(root) / "samples" / market / symbol
+    receipt, _ = read_manifest(folder / "manifest.json")
+    table = pq.read_table(folder / "samples.parquet")
+    return receipt, {row["session"]: row for row in table.to_pylist()}, table.column_names
+
+
+def compare_asset(previous_root, current_root, market, symbol):
+    """Diferencias de un activo entre la edición anterior y la nueva."""
+    _, before, old_columns = _table(previous_root, market, symbol)
+    receipt, after, new_columns = _table(current_root, market, symbol)
+    if old_columns != new_columns:
+        raise ValueError("Las ediciones comparadas tienen columnas distintas")
+    same = [name for name in new_columns if name not in _COMPARED_APART]
+    common = sorted(before.keys() & after.keys())
+    record = dict(
+        market=market,
+        symbol=symbol,
+        previous_samples=len(before),
+        samples=len(after),
+        common=len(common),
+        new_sessions=len(after.keys() - before.keys()),
+        dropped_sessions=sorted(before.keys() - after.keys()),
+        market_absent_windows=receipt.get("market_absent_windows", {}).get("windows", 0),
+        changed_charts=[],
+        other_differences=[],
+    )
+    for session in common:
+        old, new = before[session], after[session]
+        if old["chart_hash"] != new["chart_hash"]:
+            record["changed_charts"].append([session, old["chart_hash"], new["chart_hash"]])
+        elif old["charts"] != new["charts"]:
+            record["other_differences"].append([session, "charts_with_same_png"])
+        for name in same:
+            if old[name] != new[name]:
+                record["other_differences"].append([session, name])
+    record.update(_window_changes(previous_root, current_root, market, symbol, before, after))
+    return record
+
+
+def _window_changes(previous_root, current_root, market, symbol, before, after):
+    """Cambio de las ventanas de precio de las sesiones comunes, canales OHLCV."""
+    from mars_titan.training.corpus_inputs import _price_contexts
+
+    prices, contexts = {}, set()
+    for name, root in (("before", previous_root), ("after", current_root)):
+        configuration = json.loads((Path(root) / "configuration.json").read_text())
+        contexts.add(configuration["context_sessions"])
+        path = Path(configuration["prepared_root"]) / market / symbol / "prices.parquet"
+        table = pq.read_table(path, columns=["open", "high", "low", "close", "volume"])
+        prices[name] = np.column_stack([table[c].to_numpy() for c in table.column_names])
+    # Una sesión común tiene ventana completa en ambas ediciones: la anterior no admitía huecos.
+    full = sorted(before.keys() & after.keys())
+    if len(contexts) != 1:
+        raise ValueError("Las ediciones comparadas usan contextos distintos")
+    (context,) = contexts
+    changed, largest = 0, 0.0
+    for start in range(0, len(full), 256):
+        chunk = full[start : start + 256]
+        old = _price_contexts(
+            prices["before"], np.array([before[s]["price_end_index"] for s in chunk]), context
+        )
+        new = _price_contexts(
+            prices["after"], np.array([after[s]["price_end_index"] for s in chunk]), context
+        )
+        differ = (old.view(np.uint32) != new.view(np.uint32)).any(axis=(1, 2))
+        changed += int(differ.sum())
+        largest = max(largest, float(np.abs(old - new).max(initial=0.0)))
+    return dict(windows_compared=len(full), windows_changed=changed, window_max_abs_change=largest)
+
+
+def compare_editions(previous_root, current_root, output, *, workers=4):
+    """Recorrer todos los activos de la edición nueva con un registro reanudable por activo."""
+    if type(workers) is not int or not 1 <= workers <= 16:
+        raise ValueError("El número de procesos debe estar entre 1 y 16")
+    output = Path(output)
+    output.mkdir(parents=True, exist_ok=True)
+    log = output / "assets.jsonl"
+    done = set()
+    if log.exists():
+        for line in log.read_text().splitlines():
+            row = json.loads(line)
+            done.add((row["market"], row["symbol"]))
+    root = Path(current_root) / "samples"
+    pending = [
+        (folder.parent.name, folder.name)
+        for folder in sorted(root.glob("*/*"))
+        if (folder / "manifest.json").exists()
+        and (folder.parent.name, folder.name) not in done
+        and (Path(previous_root) / "samples" / folder.parent.name / folder.name).exists()
+    ]
+    # Procesos nuevos en lugar de fork, que no es seguro con hilos de Arrow o BLAS ya activos.
+    spawn = multiprocessing.get_context("spawn")
+    with (
+        ProcessPoolExecutor(max_workers=workers, mp_context=spawn) as pool,
+        log.open("a") as stream,
+    ):
+        for record in pool.map(
+            compare_asset,
+            [previous_root] * len(pending),
+            [current_root] * len(pending),
+            *zip(*pending, strict=True) if pending else ([], []),
+            chunksize=4,
+        ):
+            stream.write(json.dumps(record, sort_keys=True) + "\n")
+            stream.flush()
+    rows = [json.loads(line) for line in log.read_text().splitlines()]
+    summary = dict(
+        assets=len(rows),
+        previous_samples=sum(r["previous_samples"] for r in rows),
+        samples=sum(r["samples"] for r in rows),
+        common_sessions=sum(r["common"] for r in rows),
+        new_sessions=sum(r["new_sessions"] for r in rows),
+        dropped_sessions=sum(len(r["dropped_sessions"]) for r in rows),
+        market_absent_windows=sum(r["market_absent_windows"] for r in rows),
+        changed_charts=sum(len(r["changed_charts"]) for r in rows),
+        other_differences=sum(len(r["other_differences"]) for r in rows),
+        windows_compared=sum(r["windows_compared"] for r in rows),
+        windows_changed=sum(r["windows_changed"] for r in rows),
+        window_max_abs_change=max((r["window_max_abs_change"] for r in rows), default=0.0),
+        log=str(log),
+    )
+    atomic_json(output / "summary.json", summary)
+    return summary
