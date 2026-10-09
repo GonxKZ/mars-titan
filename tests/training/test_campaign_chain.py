@@ -16,6 +16,7 @@ import pytest
 
 from mars_titan.data.storage import atomic_json, sha256
 from mars_titan.environments.walk_forward_receipt import RECEIPT_KIND
+from mars_titan.training import campaign_budget as budget
 from mars_titan.training import campaign_chain as chain
 from mars_titan.training import campaign_online_controls as online
 from mars_titan.training import campaign_plan as plan
@@ -413,6 +414,67 @@ def test_variant_b_is_counted_but_never_launched(tmp_path, learning_doubles):
     with pytest.raises(ValueError, match="no se puede lanzar"):
         engine.run_campaign(path, {}, tmp_path / "out")
     assert not (tmp_path / "out").exists()
+
+
+# Presupuesto
+
+
+def test_new_rows_count_only_targets_inside_the_span_with_mature_labels(tmp_path):
+    value = campaign()
+    protocol = value["comparison_config"]["resolved_scopes"]["US"]["protocols"]["US"]
+    folder = tmp_path / "labels" / "US" / "A"
+    folder.mkdir(parents=True)
+    moments = ["2004-12-31", "2005-01-03", "2005-03-30", "2005-03-31", "2005-02-01"]
+    matured = ["2005-01-03", "2005-01-04", "2005-03-31", "2005-04-01", "2005-02-02"]
+    targets = [0.1, 0.2, 0.3, 0.4, None]
+    stamp = pa.timestamp("us", tz="UTC")
+    table = pa.table(
+        dict(
+            prediction_at=pa.array(np.array(moments, dtype="datetime64[us]"), stamp),
+            target_available_at=pa.array(np.array(matured, dtype="datetime64[us]"), stamp),
+            target=pa.array(targets, pa.float64()),
+        )
+    )
+    pq.write_table(table, folder / "labels.parquet")
+    rows = budget.target_posttraining_rows(tmp_path / "labels", protocol)
+    assert list(rows) == [f"fold-{i:03d}" for i in range(1, 19)]
+    # En fold-001 entran las del 3 de enero y del 30 de marzo. La del 31 madura en abril
+    # y la de febrero no tiene objetivo.
+    assert rows["fold-001"] == 2 and sum(rows.values()) == 2
+
+
+def test_staged_adapters_fit_only_new_rows_and_skip_the_first_window():
+    from mars_titan.posttraining import campaign_stage as adapters
+
+    value = campaign()
+    stage = adapters.load_stage(plan.LATER_STAGES["posttraining_adapter_matrix"]["joint_stage"])
+    windows = [name for name, _ in chain.scope_windows(value, JOINT)]
+    counts = {
+        scope: {
+            w: dict(train=1_000_000, validation=1000, calibration=500, evaluation=2000)
+            for w, _ in chain.scope_windows(value, scope)
+        }
+        for scope in value["scopes"]
+    }
+    fresh = {scope: {w: 100_000 for w in list(rows)[1:]} for scope, rows in counts.items()}
+    rates = budget.uniform_rates(value, 1000.0, inference_ratio=2.0, stage=stage)
+    staged = budget.staged_posttraining_hours(stage, counts, fresh, rates)
+    jobs = [job for job in adapters.plan_stage(stage) if job["window"] != windows[0]]
+    epochs = stage["matrix"]["budget"]["epochs"]
+    per_job = epochs * 100_000 / 1000 + ((epochs + 2) * 1000 + 2500) / 2000
+    parents = len({(j["window"], j["base_arm"], j["seed"]) for j in jobs})
+    cache = (100_000 + 1000 + 3500) / 2000
+    assert staged["training_jobs"] == len(jobs) and staged["frozen_parent_predictions"] == parents
+    assert math.isclose(staged["hours"] * 3600, len(jobs) * per_job + parents * cache)
+    full = budget.project(value, counts, rates, stage=stage)
+    cheap = budget.project(value, counts, rates, stage=stage, fresh=fresh)
+    assert cheap["adapters_design"] == "staged_chain_v1"
+    assert math.isclose(cheap["stages"]["adapters"], staged["hours"])
+    assert cheap["stages"]["adapters"] < full["stages"]["adapters"]
+    assert full["adapters_design"] == "same_window_parent"
+    # El control en línea predice calibración y evaluación y da como mucho un paso por fila.
+    online_seconds = 153 * (2500 / 2000 + 2500 / 1000)
+    assert math.isclose(full["families"]["online_control"] * 3600, online_seconds)
 
 
 # Verificador de disjunción sobre vistas preparadas
