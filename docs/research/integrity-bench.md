@@ -84,6 +84,39 @@ uv run python -m mars_titan.integrity.row_identity \
 - se rechaza un archivo cambiado tras publicar el manifiesto;
 - la huella no depende del orden de las filas ni de su partición en bloques.
 
+## Registro previo y desviaciones
+
+`integrity/preregistration.py` fija qué se va a comparar antes de producir resultados. El registro es un archivo JSON Lines que solo crece, con dos tipos de entrada:
+- **Declaración.** Ruta y huella SHA-256 de un documento, por ejemplo la configuración de la comparación walk-forward, con sus brazos, métricas, familias de contrastes y parámetros del bootstrap. Va acompañada de una nota.
+- **Desviación.** Cambio posterior sobre una declaración, con el motivo y la huella del documento que la sustituye. La declaración original no se borra.
+
+Cada entrada guarda la huella canónica de la anterior. Si se edita, se borra o se reordena una línea, la cadena se rompe, aunque se recalcule la huella de la línea editada, porque la entrada siguiente apunta a la huella antigua. Las entradas inválidas se rechazan antes de escribir: desviaciones sin declaración, un documento declarado dos veces o fechas que retroceden.
+
+`check_report` comprueba un informe de comparación:
+1. Busca la declaración cuya huella coincide con `configuration.sha256` del informe.
+2. Exige que la fecha de la declaración sea anterior a la del informe.
+3. Lista las desviaciones registradas sobre esa declaración.
+4. Si recibe el repositorio, busca el primer commit que añade la entrada, exige que sea anterior al informe e indica si ese commit ya está en un remoto.
+
+```bash
+uv run python -m mars_titan.integrity.preregistration declare \
+  configs/evaluation/preregistration.jsonl configs/evaluation/historical-masked-2000-comparison.json \
+  --note "Comparación principal de la campaña A"
+uv run python -m mars_titan.integrity.preregistration check \
+  configs/evaluation/preregistration.jsonl COMPARISON_DIR/comparison.json --repository . --output PREREG.json
+```
+
+**Límite declarado.** Las fechas locales y las de commit las fija el propio autor, así que por sí solas no prueban nada frente a terceros. La prueba externa es publicar el commit de la declaración en GitHub antes de lanzar la evaluación: el informe lo indica en `published_before_report`. La cadena tampoco impide declarar muchas variantes y publicar solo la favorable. Por eso todas las declaraciones y desviaciones del registro se publican con los resultados.
+
+**Uso previsto.** La configuración definitiva de la campaña se declara cuando esté fusionada en `develop` y antes de generar ninguna predicción de evaluación. Hasta entonces el registro del repositorio no existe, para no acumular desviaciones sobre configuraciones que siguen cambiando.
+
+**Pruebas.**
+- Una declaración y su desviación forman una cadena válida.
+- Se detectan una entrada editada (también con la huella recalculada), una eliminada y dos reordenadas.
+- Las entradas inválidas no llegan al archivo.
+- Un informe anterior a su declaración, o sin declarar, falla.
+- Con un repositorio git temporal y un remoto local, se distinguen el commit local, el commit publicado y el commit posterior al informe.
+
 ## Comprobaciones pendientes
 
 Siguen en #442, en este orden:
@@ -93,5 +126,4 @@ Siguen en #442, en este orden:
    - invariantes de caja, posiciones, costes y acciones imposibles en las cintas reales con políticas fijas;
    - cota con oráculo de información futura, marcada como diagnóstico y excluida de toda comparación.
 2. Falsaciones que ajustan modelos, solo declaradas mientras dure el bloqueo de aprendizaje: placebo con etiquetas permutadas dentro de cada sesión, desplazamiento temporal de las entradas, predicción constante y aleatoria y estabilidad entre semillas. Cada una con su coste y su criterio de éxito o fracaso escritos de antemano.
-3. Registro previo de comparaciones, métricas y criterios con huella y fecha, y registro de desviaciones.
-4. Informe de integridad generado por la orden única de la campaña, que bloquea la publicación si alguna comprobación falla. Invocará también el verificador de disjunción del diseño por etapas ([#437](https://github.com/GonxKZ/mars-titan/issues/437)) en lugar de duplicarlo.
+3. Informe de integridad generado por la orden única de la campaña, que bloquea la publicación si alguna comprobación falla. Invocará también el verificador de disjunción del diseño por etapas ([#437](https://github.com/GonxKZ/mars-titan/issues/437)) en lugar de duplicarlo.
