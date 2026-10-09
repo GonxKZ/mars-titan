@@ -46,8 +46,11 @@ sobre el grupo lógico antes de dividirlo en bloques.
 
 M0 exige `readout=None` o `mode="no_bank"` y no admite episodios. `None` conserva
 la predicción del núcleo. `no_bank` ejecuta el mismo refinador con lectura cero.
-M1 admite los resultados maduros y aplica la retención configurada. M2 y M3 se
-rechazan. El factor de retención M permanece separado de estas reglas.
+M1 admite los resultados maduros y aplica la retención configurada.
+[M2](mature-error-write-policy.md) usa un reservorio, un índice selectivo por error
+maduro de la emisión y un índice reciente, con un único presupuesto 50/25/25.
+Sus pruebas de composición son CPU. M3 se rechaza. El factor de retención M
+permanece separado de estas reglas y está desactivado en M2.
 
 La sesión utiliza `memory_contract="causal_v2"`. El reservorio inicializa
 `mt19937_64` mediante `seed_seq` con las dos palabras de 32 bits de la semilla

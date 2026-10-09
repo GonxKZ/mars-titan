@@ -6,6 +6,7 @@ import pickletools
 import zipfile
 
 import pytest
+import torch
 from test_native_episode_backend import native as native
 from test_native_episode_backend import record
 from test_write_policy import bank
@@ -76,6 +77,38 @@ def test_expansion_budget_is_exact_and_sums_all_indices(native):
             api().verify_memory_archives(
                 payload, {"reservoir": 2, "selective": 1, "recent": 1}, max_expanded_bytes=limit
             )
+
+
+def test_restore_counts_coded_bytes_and_two_expanded_copies_at_the_exact_limit(native):
+    first = bank(native)
+    archives = first.snapshot()["indices"]
+    coded = sum(map(len, archives.values()))
+    expanded = sum(
+        info.file_size
+        for content in archives.values()
+        for info in zipfile.ZipFile(io.BytesIO(content)).infolist()
+    )
+    required = first.estimated_bytes(0) + coded + 2 * expanded
+    for maximum, accepted in ((required, True), (required - 1, False)):
+        value = bank(native, max_working_bytes=maximum)
+        payload = value.snapshot()
+        assert sum(map(len, payload["indices"].values())) == coded
+        if accepted:
+            assert value.restore(payload).snapshot() == payload
+        else:
+            with pytest.raises(ValueError, match="presupuesto"):
+                value.restore(payload)
+
+
+def test_metadata_inspection_never_calls_the_torch_tensor_rebuilder(native, monkeypatch):
+    payload = bank(native).snapshot()["indices"]
+    module = api()
+
+    def forbidden(*args, **kwargs):
+        pytest.fail("La inspección no puede reconstruir tensores Torch")
+
+    monkeypatch.setattr(torch._utils, "_rebuild_tensor_v2", forbidden)
+    assert module.verify_memory_archives(payload, {"reservoir": 2, "selective": 1, "recent": 1}) > 0
 
 
 def test_compressed_80_mib_is_rejected_before_creating_a_native_restore(native, monkeypatch):
