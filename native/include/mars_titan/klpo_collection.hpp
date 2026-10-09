@@ -46,6 +46,8 @@ class KlpoTerminalCollector {
   public:
     KlpoTerminalCollector(std::vector<simulation::BatchInput> inputs,
                           KlpoCollectionOptions options);
+    KlpoTerminalCollector(std::vector<simulation::BatchInput> inputs, KlpoCollectionOptions options,
+                          PpoPolicy reference);
     ~KlpoTerminalCollector();
     KlpoTerminalCollector(const KlpoTerminalCollector&) = delete;
     KlpoTerminalCollector& operator=(const KlpoTerminalCollector&) = delete;
@@ -60,6 +62,9 @@ class KlpoTerminalCollector {
     [[nodiscard]] KlpoEpisodeObjective objective(KlpoTerminalBudget budget = {}) const;
     [[nodiscard]] nlohmann::json identity() const;
     [[nodiscard]] PpoCheckpointBundle snapshot() const;
+    [[nodiscard]] static std::unique_ptr<KlpoTerminalCollector>
+    from_snapshot(std::vector<simulation::BatchInput> inputs, KlpoCollectionOptions options,
+                  const PpoCheckpointBundle& state);
     void restore(const PpoCheckpointBundle& state);
     [[nodiscard]] nlohmann::json save(PpoCheckpointStore& store) const;
 

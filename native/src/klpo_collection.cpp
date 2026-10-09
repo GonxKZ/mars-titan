@@ -140,6 +140,7 @@ constexpr std::size_t metadata_position_bytes = 1024;
 constexpr std::size_t metadata_action_bytes = 256;
 constexpr std::size_t context_growth_per_lane = 2048;
 constexpr std::size_t collection_metadata_fields = 8;
+constexpr std::size_t maximum_initial_rng_bytes = 16384;
 
 Json precision_identity() {
     return {{"matmul_tf32", at::globalContext().allowTF32CuBLAS()},
@@ -197,6 +198,37 @@ Json hidden_json(const at::Tensor& hidden) {
     return {{"rows", values.size(0)}, {"width", values.size(1)}, {"values", storage}};
 }
 
+Json random_json(const PpoRandomState& state) {
+    const auto bytes = [](const at::Tensor& value) {
+        require(value.defined() && value.device().is_cpu() && value.scalar_type() == at::kByte &&
+                    value.dim() == 1 && value.is_contiguous() && value.numel() > 0 &&
+                    static_cast<std::size_t>(value.numel()) <= maximum_initial_rng_bytes,
+                "El RNG inicial no conserva forma, tipo o presupuesto");
+        const std::span elements(value.const_data_ptr<uint8_t>(),
+                                 static_cast<std::size_t>(value.numel()));
+        return std::vector<uint8_t>(elements.begin(), elements.end());
+    };
+    return {{"sampling", bytes(state.sampling)}, {"shuffle", bytes(state.shuffle)}};
+}
+
+PpoRandomState read_random(const Json& state) {
+    require(state.is_object() && state.size() == 2, "El RNG inicial tiene campos incompatibles");
+    const auto bytes = [](const Json& values) {
+        require(values.is_array() && !values.empty() && values.size() <= maximum_initial_rng_bytes,
+                "El RNG inicial excede su presupuesto");
+        auto tensor = at::empty({static_cast<int64_t>(values.size())}, at::kByte);
+        const std::span output(tensor.data_ptr<uint8_t>(), values.size());
+        for (std::size_t index = 0; index < values.size(); ++index) {
+            const auto value = simulation::read_json_int64(values[index]);
+            require(value >= 0 && value <= std::numeric_limits<uint8_t>::max(),
+                    "El RNG inicial contiene un byte inválido");
+            output[index] = static_cast<uint8_t>(value);
+        }
+        return tensor;
+    };
+    return {bytes(state.at("sampling")), bytes(state.at("shuffle"))};
+}
+
 void check_source_budget(const std::vector<simulation::BatchInput>& inputs,
                          const KlpoCollectionOptions& options) {
     require(!inputs.empty() && inputs.size() <= maximum_klpo_episodes && options.workers > 0 &&
@@ -242,7 +274,8 @@ void check_source_budget(const std::vector<simulation::BatchInput>& inputs,
 } // namespace
 
 struct KlpoTerminalCollector::Impl {
-    Impl(std::vector<simulation::BatchInput> sources, KlpoCollectionOptions configuration)
+    Impl(std::vector<simulation::BatchInput> sources, KlpoCollectionOptions configuration,
+         std::unique_ptr<PpoPolicy> reference = {})
         : inputs(std::move(sources)), options(std::move(configuration)) {
         check_source_budget(inputs, options);
         environment = std::make_unique<simulation::FinancialBatch>(inputs, options.workers);
@@ -252,9 +285,21 @@ struct KlpoTerminalCollector::Impl {
                                                       environment->observations());
             width = context->observation_width();
         }
-        actor =
-            std::make_unique<PpoPolicy>(width, PpoHyperparameters{}, options.seed, options.device,
-                                        default_ppo_memory_bytes, options.architecture);
+        supplied_reference = static_cast<bool>(reference);
+        if (reference) {
+            require(reference->observation_width() == width &&
+                        reference->device() == options.device &&
+                        reference->architecture() == options.architecture &&
+                        reference->optimizer_steps() == 0 && !reference->objective().enabled() &&
+                        !reference->terminal_adam_enabled(),
+                    "La referencia recibida no corresponde a la recogida congelada");
+            actor = std::move(reference);
+            initial_rng = random_json(actor->random_state());
+        } else {
+            actor = std::make_unique<PpoPolicy>(width, PpoHyperparameters{}, options.seed,
+                                                options.device, default_ppo_memory_bytes,
+                                                options.architecture);
+        }
         hidden = actor->initial_state(inputs.size());
         recorded.fold = options.fold;
         recorded.reference_sha256 = actor->parameter_fingerprint();
@@ -346,6 +391,10 @@ struct KlpoTerminalCollector::Impl {
             {"torch", TORCH_VERSION},
             {"source_code", MARS_TITAN_NATIVE_SOURCE_SHA256},
             {"build", MARS_TITAN_NATIVE_BUILD_SHA256}};
+        if (supplied_reference) {
+            identity_value["reference_origin"] = "provided_parameters_and_rng_v1";
+            identity_value["initial_rng_sha256"] = simulation::content_sha256(initial_rng.dump());
+        }
     }
 
     void healthy() const {
@@ -490,7 +539,7 @@ struct KlpoTerminalCollector::Impl {
                 "La oleada excede el payload de recuperación");
         std::ostringstream archive;
         actor->save(archive);
-        Json metadata = {{"schema_version", 1},
+        Json metadata = {{"schema_version", supplied_reference ? 2 : 1},
                          {"kind", "klpo_collection_state"},
                          {"identity", identity_value},
                          {"phase", phase_name(collection_phase(recorded))},
@@ -498,6 +547,9 @@ struct KlpoTerminalCollector::Impl {
                          {"context_bytes", context_bytes.size()},
                          {"environment", environment_json(environment->snapshot())},
                          {"hidden", hidden_json(hidden)}};
+        if (supplied_reference) {
+            metadata["initial_rng"] = initial_rng;
+        }
         require(metadata.dump().size() <= maximum_ppo_metadata_bytes,
                 "Los metadatos exceden el presupuesto");
         return {std::move(metadata), archive.str(), records + context_bytes, Json::object()};
@@ -511,6 +563,8 @@ struct KlpoTerminalCollector::Impl {
     at::Tensor hidden;
     KlpoEpisodeBatch recorded;
     Json identity_value;
+    Json initial_rng;
+    bool supplied_reference = false;
     bool busy = false;
     bool failed = false;
 };
@@ -518,6 +572,10 @@ struct KlpoTerminalCollector::Impl {
 KlpoTerminalCollector::KlpoTerminalCollector(std::vector<simulation::BatchInput> inputs,
                                              KlpoCollectionOptions options)
     : impl_(std::make_unique<Impl>(std::move(inputs), std::move(options))) {}
+KlpoTerminalCollector::KlpoTerminalCollector(std::vector<simulation::BatchInput> inputs,
+                                             KlpoCollectionOptions options, PpoPolicy reference)
+    : impl_(std::make_unique<Impl>(std::move(inputs), std::move(options),
+                                   std::make_unique<PpoPolicy>(std::move(reference)))) {}
 KlpoTerminalCollector::~KlpoTerminalCollector() = default;
 bool KlpoTerminalCollector::collect_tick(
     const std::function<void(KlpoCollectionBoundary)>& failure) {
@@ -550,12 +608,25 @@ Json KlpoTerminalCollector::save(PpoCheckpointStore& store) const {
 
 void KlpoTerminalCollector::restore(const PpoCheckpointBundle& state) {
     require(!impl_->busy, "No se recupera dentro de una transición activa");
-    require(state.metadata.is_object() && state.metadata.size() == collection_metadata_fields &&
+    require(state.metadata.is_object() &&
+                state.metadata.at("identity").dump() == impl_->identity_value.dump(),
+            "El checkpoint pertenece a otra referencia o recogida");
+    auto candidate = from_snapshot(impl_->inputs, impl_->options, state);
+    impl_ = std::move(candidate->impl_);
+}
+
+std::unique_ptr<KlpoTerminalCollector>
+KlpoTerminalCollector::from_snapshot(std::vector<simulation::BatchInput> inputs,
+                                     KlpoCollectionOptions options,
+                                     const PpoCheckpointBundle& state) {
+    require(state.metadata.is_object(), "Faltan los metadatos de la recogida");
+    const auto version = simulation::read_json_int64(state.metadata.at("schema_version"));
+    require((version == 1 || version == 2) &&
+                state.metadata.size() == collection_metadata_fields + (version == 2 ? 1 : 0) &&
                 state.metadata.dump().size() <= maximum_ppo_metadata_bytes &&
                 !state.policy_archive.empty() &&
                 state.policy_archive.size() <= maximum_ppo_archive_bytes &&
-                state.rollout_archive.size() <= maximum_ppo_archive_bytes &&
-                state.metadata.at("identity").dump() == impl_->identity_value.dump(),
+                state.rollout_archive.size() <= maximum_ppo_archive_bytes,
             "El checkpoint no corresponde a esta oleada");
     const auto count = simulation::read_json_int64(state.metadata.at("record_bytes"));
     const auto context_size = simulation::read_json_int64(state.metadata.at("context_bytes"));
@@ -566,8 +637,18 @@ void KlpoTerminalCollector::restore(const PpoCheckpointBundle& state) {
             "El payload no conserva sus longitudes");
     const auto recorded = deserialize_klpo_batch(
         std::string_view(state.rollout_archive).substr(0, static_cast<std::size_t>(count)),
-        impl_->options.record_bytes);
-    auto candidate = std::make_unique<Impl>(impl_->inputs, impl_->options);
+        options.record_bytes);
+    std::istringstream archive(state.policy_archive);
+    const auto restored = PpoPolicy::load(archive, options.device);
+    std::unique_ptr<KlpoTerminalCollector> result;
+    if (version == 2) {
+        const auto initial = read_random(state.metadata.at("initial_rng"));
+        result = std::make_unique<KlpoTerminalCollector>(std::move(inputs), std::move(options),
+                                                         restored.frozen_reference(initial));
+    } else {
+        result = std::make_unique<KlpoTerminalCollector>(std::move(inputs), std::move(options));
+    }
+    auto& candidate = result->impl_;
     std::size_t ticks = 0;
     for (const auto& episode : recorded.episodes) {
         ticks = std::max(ticks, episode.steps.size());
@@ -580,8 +661,6 @@ void KlpoTerminalCollector::restore(const PpoCheckpointBundle& state) {
     require(expected.metadata.dump() == state.metadata.dump() &&
                 expected.rollout_archive == state.rollout_archive,
             "El registro no concuerda con el sampler, las fuentes o las carteras");
-    std::istringstream archive(state.policy_archive);
-    const auto restored = PpoPolicy::load(archive, impl_->options.device);
     const auto actual_rng = restored.random_state();
     const auto expected_rng = candidate->actor->random_state();
     require(restored.parameter_fingerprint() == candidate->recorded.reference_sha256 &&
@@ -591,6 +670,6 @@ void KlpoTerminalCollector::restore(const PpoCheckpointBundle& state) {
                 at::equal(actual_rng.sampling, expected_rng.sampling) &&
                 at::equal(actual_rng.shuffle, expected_rng.shuffle),
             "El archivo del actor no conserva referencia, RNG o ausencia de actualizaciones");
-    impl_ = std::move(candidate);
+    return result;
 }
 } // namespace mars_titan::learning
