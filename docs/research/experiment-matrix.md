@@ -12,7 +12,7 @@ Estado: diseño de la comparación confirmatoria. Ninguna celda representa un re
 | B3 | GRU compacta | Referencia neural secuencial con presupuesto comparable. | Obligatoria |
 | B4 | DLinear | Control de complejidad de bajo coste, con adaptación documentada a la variable objetivo. | Deseable tras el piloto |
 | B5 | TCN o PatchTST reducido | Contraste adicional si aporta una pregunta distinta. | Extensión |
-| B6 | Memoria asociativa compacta con regla delta | Control simplificado, separado de Titans-MAC y del banco episódico. | Secundaria |
+| B6 | Memoria asociativa compacta con regla delta | Control simplificado, separado de Titans-MAC y del banco episódico. El [componente aislado](../engineering/mature-associative-memory.md) incluye también la escritura proximal y no está conectado a la sesión. | Secundaria |
 | B7 | Transformer compacto | Aislar el cambio de codificador frente a la GRU, con fusión y cabeza comunes. | Obligatoria |
 | B8 | Titans-MAC adaptado | Atención cercana, memoria neuronal con momentum y olvido, y parámetros persistentes aprendidos. | Obligatoria |
 | B9 | MARS-TITAN sobre Titans-MAC | Incorporar las modificaciones acordadas como componentes desactivables. | Obligatoria |
