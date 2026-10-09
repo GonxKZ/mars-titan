@@ -278,11 +278,21 @@ class _BlockReader:
 
     Cada fila se selecciona con las mismas comprobaciones que `_observation` y `_fill_batch`
     en la lectura por observación, y las ventanas de precios de un bloque se transforman
-    juntas con `_price_contexts`, cuyo resultado por fila no depende del bloque. Los grupos se
-    descartan por antigüedad de uso al superar el presupuesto de bytes. Con `executor`, los
-    grupos que piden los instantes siguientes se decodifican antes en hilos, y cada grupo
-    sigue siendo el resultado de `_sample_group` sobre el mismo archivo.
+    juntas con `_price_contexts`, cuyo resultado por fila no depende del bloque. Con
+    `executor`, los grupos que piden los instantes siguientes se decodifican antes en
+    hilos, y cada grupo sigue siendo el resultado de `_sample_group` sobre el mismo archivo.
+
+    Cada instante recorre los activos de su mercado en el mismo orden, un acceso cíclico en
+    el que descartar el grupo usado hace más tiempo descarta justo el siguiente que se va a
+    pedir, y sin sitio para todos ningún grupo llegaría a reutilizarse. Al superar el
+    presupuesto se descartan primero los grupos de activos que no aparecen desde hace
+    `STALE_EVENTS` instantes y después los usados más recientemente. Así, con un
+    presupuesto menor que el conjunto activo, se sigue reutilizando la parte que cabe.
     """
+
+    # Instantes sin aparecer tras los que un activo se considera fuera del recorrido. Cubre
+    # la alternancia de mercados y los cierres de varios días de uno de ellos.
+    STALE_EVENTS = 16
 
     def __init__(self, source, block_rows, max_cached_bytes, executor=None):
         if type(block_rows) is not int or not 1 <= block_rows <= 256:
@@ -292,6 +302,7 @@ class _BlockReader:
         self.source, self.block_rows, self.limit = source, block_rows, max_cached_bytes
         self.groups, self.cached_bytes, self.decoded_groups = OrderedDict(), 0, 0
         self.peak_cached_bytes, self.redecoded_groups = 0, 0
+        self.event, self._used = 0, {}
         self._labels, self._prices, self._files = {}, {}, {}
         self._executor, self._pending, self._last = executor, {}, {}
 
@@ -353,6 +364,7 @@ class _BlockReader:
                     pass
 
     def _decoded(self, identity, group):
+        self._used[identity] = self.event
         cached = self.groups.get(identity)
         if cached is not None and cached[0] == group:
             self.groups.move_to_end(identity)
@@ -366,8 +378,7 @@ class _BlockReader:
         )
         if cached is not None:
             self.cached_bytes -= self.groups.pop(identity)[2]
-        while self.groups and self.cached_bytes + size > self.limit:
-            self.cached_bytes -= self.groups.popitem(last=False)[1][2]
+        self._evict(size)
         self.groups[identity] = (group, arrays, size)
         self.cached_bytes += size
         self.peak_cached_bytes = max(self.peak_cached_bytes, self.cached_bytes)
@@ -379,12 +390,21 @@ class _BlockReader:
         self._last[identity] = group
         return arrays
 
+    def _evict(self, size):
+        """Dejar sitio para `size` bytes: primero activos ausentes y después los recientes."""
+        horizon = self.event - self.STALE_EVENTS
+        while self.groups and self.cached_bytes + size > self.limit:
+            oldest = next(iter(self.groups))
+            stale = self._used[oldest] < horizon
+            self.cached_bytes -= self.groups.popitem(last=not stale)[1][2]
+
     def _asset_prices(self, identity):
         if identity not in self._prices:
             self._prices[identity] = self.source.dataset._prices(self.source._assets[identity])
         return self._prices[identity]
 
     def blocks(self, positions):
+        self.event += 1
         result = []
         for start in range(0, len(positions), self.block_rows):
             result.append(self._block(positions[start : start + self.block_rows]))

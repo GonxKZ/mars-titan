@@ -138,6 +138,40 @@ def test_undersized_group_cache_redecodes_without_changing_the_events(tmp_path, 
     assert reader.redecoded_groups > 0 and len(reader.groups) == 1
 
 
+def test_a_cache_smaller_than_the_active_assets_still_reuses_groups(tmp_path):
+    # Un grupo por activo: cada instante pide los mismos seis grupos en el mismo orden.
+    _, streams = sources(tmp_path, SEQUENTIAL, assets=6, group_size=128)
+    source = streams["train"]
+    expected = per_row(source.events())
+    events = source.batched_events(block_rows=1, max_cached_bytes=1024**2)
+    first = next(events)
+    reader = source.last_reader
+    # Sitio para cuatro de los seis grupos, antes de que entre el último activo.
+    assert len(reader.groups) < 6
+    reader.limit = 4 * max(entry[2] for entry in reader.groups.values())
+    rest = list(events)
+    assert per_row([first, *rest]) == expected
+    requests = sum(len(batch["sample_ids"]) for event in rest for batch in event.inputs)
+    # Descartar siempre el más antiguo volvería a decodificar casi todos los grupos pedidos.
+    assert requests >= 24 and 0 < reader.redecoded_groups <= 0.6 * requests
+    assert reader.cached_bytes <= reader.limit
+
+
+def test_absent_assets_leave_the_cache_before_the_recent_ones():
+    reader = api._BlockReader(None, 1, 1024**2)
+    reader.limit, reader.event = 300, 40
+    # El activo 0 no aparece desde hace más de STALE_EVENTS instantes.
+    for identity, used in ((0, 40 - reader.STALE_EVENTS - 1), (1, 39), (2, 40)):
+        reader.groups[identity] = (0, None, 100)
+        reader._used[identity] = used
+    reader.cached_bytes = 300
+    reader._evict(100)
+    assert list(reader.groups) == [1, 2] and reader.cached_bytes == 200
+    # Sin activos ausentes, sale el usado más recientemente.
+    reader._evict(200)
+    assert list(reader.groups) == [1] and reader.cached_bytes == 100
+
+
 def delivered_before_error(events):
     received = []
     try:
