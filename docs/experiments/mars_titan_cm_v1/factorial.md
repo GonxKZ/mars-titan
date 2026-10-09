@@ -69,7 +69,7 @@ El contraejemplo de la issue pasa por las tres. A1 y A2 tienen radio numérico 0
 
 La ventana del lector es común con MARS-TITAN. `ReadoutFamily` reúne lo que distingue a cada familia: control esperado en el padre, variante, retención e identidad. MARS-TITAN rechaza ahora cualquier padre con control C.
 
-La sección opcional `cm_v1` de la campaña solo declara la ruta de la declaración y la semilla de búsqueda. Los dos núcleos son trabajos auxiliares: se ajustan en las ventanas reentrenadas con sus casos y finalistas, no tienen traslado y no publican recibo de ventana. Cada búsqueda de un brazo depende de las búsquedas de su núcleo en la ventana y cada finalista del finalista del núcleo con su semilla. Los ejecutores declaran `fastpath=False` mientras dura cada trabajo. Las campañas A y B no declaran todavía la sección. Declararla añadiría 1.080 ajustes en A (360 de núcleos) y 408 ajustes con 336 traslados en B (136 de núcleos).
+La sección opcional `cm_v1` de la campaña solo declara la ruta de la declaración y la semilla de búsqueda. Los dos núcleos son trabajos auxiliares: se ajustan en las ventanas reentrenadas con sus casos y finalistas, no tienen traslado y no publican recibo de ventana. Cada búsqueda de un brazo depende de las búsquedas de su núcleo en la ventana y cada finalista del finalista del núcleo con su semilla. Los ejecutores declaran `fastpath=False` mientras dura cada trabajo. Los nombres de los cuatro brazos son los de la comparación declarada y no cambian. La etapa de políticas solo puede usar como predictores esos brazos, nunca los núcleos auxiliares. Las campañas A y B no declaran todavía la sección. Declararla añadiría 1.080 ajustes en A (360 de núcleos) y 408 ajustes con 336 traslados en B (136 de núcleos).
 
 ## Comprobaciones
 
@@ -82,7 +82,7 @@ Todas en CPU, con `CUDA_VISIBLE_DEVICES=-1`, dos hilos y pruebas por archivo.
 | `tests/models/titans/test_transition_jacobian.py` | `RᵀJR` igual a la compresión de C, J frente a diferencias centrales en FP64, trayectoria, `I + η D_z f` en los dos modos de selección y sin banco, y `first_read` con el episodio del primer paso donde una nueva búsqueda elegiría otro |
 | `tests/training/test_cm_v1_factorial.py` | Declaración, presupuesto de C, núcleos emparejados con el mismo número de pasos, cada factor solo donde se declara, control del padre, recuperación de un brazo completo, rechazo de una declaración cambiada al ajustar y al trasladar, y retención con episodios reales dentro de la capacidad |
 | `tests/memory/test_mars_titan_session_parity.py` | El recorrido cronológico del lector emite lo mismo que `FinancialSession` también con centros fijos |
-| `tests/training/test_cm_v1_campaign.py` | Plan, dependencias, salida de los auxiliares, auxiliares sin traslado ni recibo y campaña B reducida con los ejecutores reales hasta la tercera ventana |
+| `tests/training/test_cm_v1_campaign.py` | Plan, dependencias, salida de los auxiliares, auxiliares sin traslado ni recibo ni papel de predictor en la etapa de políticas y campaña B reducida con los ejecutores reales hasta la tercera ventana |
 
 La [mutación dirigida](results.md#factorial-sobre-titans-mac) cubrió el objetivo de C, la selección por evento, los contadores, los rechazos, el padre, el gemelo disabled, la retención, la campaña y las lecturas del operador.
 
