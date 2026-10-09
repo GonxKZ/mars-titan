@@ -123,8 +123,8 @@ cronológico conecta el banco, la lectura y los estados por bloques con
 parámetros compartidos congelados. M0/M1 y la recuperación conjunta están
 comprobados en CPU/CUDA. M2 añade tres índices con cupos 50/25/25 y error de la
 emisión original. Su comprobación CUDA focal comprende FP32/FP64, $K=1$,
-$B_{\mathrm{mem}}=4$ y C desactivado, y hoy solo pasa con el binario nativo
-cuya huella fija la prueba. M3 conserva esos índices y ordena el selectivo con
+$B_{\mathrm{mem}}=4$ y C desactivado, y pasa en \texttt{cuda:0} con el binario
+nativo realmente cargado. M3 conserva esos índices y ordena el selectivo con
 el error maduro, una anomalía del último rendimiento y una relevancia según la
 frescura contable y la presencia de noticias, normalizados con escalas del
 tramo de entrenamiento de cada ventana y con pesos fijos de un tercio. Sus
@@ -244,8 +244,10 @@ así que los núcleos de CM-v1 conservan la receta de Titans-MAC.
 Estas comprobaciones recorren el ajuste hasta el paso del optimizador sin
 aplicarlo, casi siempre en CPU. El 9 de octubre se repitieron en
 \texttt{cuda:0}, también sin pasos de optimizador, 21 comprobaciones de estas
-rutas, y pasan 20. La de M2 solo pasa con el binario nativo cuya huella fija la
-prueba. Según las medidas de memoria en \texttt{cuda:0}, un tramo de
+rutas, y pasaron 20. La de M2 fallaba porque fijaba la huella de una
+compilación anterior. Tras sustituir esa huella por la del binario realmente
+cargado, M2 y M3 pasan con el enlace nativo de la rama de integración. Según
+las medidas de memoria en \texttt{cuda:0}, un tramo de
 \texttt{mac\_online} con 5.023 flujos necesitaría unos 14,7~GiB sin acumulación
 y 1,24~GiB con bloques de 128 filas, así que la campaña necesitará esa
 acumulación en una GPU de 8~GB. Ninguna cifra de este apartado procede de un
