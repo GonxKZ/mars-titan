@@ -73,6 +73,14 @@ def test_a_repeated_contracting_operator_is_not_flagged():
         assert norm <= 2 * result.pointwise.angular_corrected_estimate[0] ** (step + 1)
 
 
+def test_an_expanding_operator_is_not_the_counterexample():
+    """Productos por encima del umbral con lecturas puntuales también por encima."""
+    result = variable_products((1.5 * torch.eye(2, dtype=torch.float64)).expand(3, 2, 2))
+    assert (result.pointwise.angular_corrected_estimate > 1).all()
+    assert (result.product_norms > 1).all()
+    assert not result.pointwise_below_but_product_above
+
+
 def test_pointwise_reading_is_the_heuristic_diagnostic_in_blocks_of_sixteen():
     generator = torch.Generator().manual_seed(9)
     sequence = 0.3 * torch.randn((40, 3, 3), generator=generator, dtype=torch.float64)
