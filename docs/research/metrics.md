@@ -724,7 +724,9 @@ eventos del índice, con y sin bloques. Sin el parámetro, la lectura no cambia.
   las usa en la métrica. En un modelo sin memoria ese recuento debe ser cero y las
   pruebas lo comprueban. Con pesos iniciales y un optimizador que no modifica
   pesos, la predicción enmascarada de Titans-MAC coincide bit a bit con la del
-  mismo estado sobre un corpus sin noticias ni fundamentales.
+  mismo estado sobre un corpus sin noticias ni fundamentales. Con el enlace
+  episódico compilado, los traslados enmascarados de MARS-TITAN y de la GRU
+  candidata también coinciden con los de un corpus sin esas modalidades.
 - **Calibración.** Los cuantiles enmascarados se corrigen con el calibrador común
   de la ventana, ajustado una vez con las predicciones originales de calibración.
   Nunca se vuelve a ajustar y las pruebas cuentan el mismo número de ajustes con y
