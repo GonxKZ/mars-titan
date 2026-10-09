@@ -40,7 +40,13 @@ FIT, CARRY = "fit", "carry"
 # conectará con un planificador y un ejecutor propios en este mismo registro.
 EXTENSION_POINTS = {
     "episodic_gru": dict(
-        issue=383, pending="Entrenador cronológico de la GRU candidata con banco episódico"
+        issue=383,
+        pending=(
+            "El entrenador cronológico existe, pero falta una entrada por ventana que prepare "
+            "desde la vista los índices de observaciones y el adaptador de cada semilla, la "
+            "predicción trasladada de la variante B, comprobar que escribe exactamente las "
+            "filas de la vista y acotar su memoria de activaciones para el universo completo"
+        ),
     ),
     "titans_mac": dict(
         issue=23,
