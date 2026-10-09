@@ -17,7 +17,7 @@ import pytest
 from mars_titan.data.cohort_files import read_manifest
 from mars_titan.data.storage import atomic_json
 from mars_titan.environments.walk_forward_receipt import read_window_receipt
-from mars_titan.simulation import campaign_stage
+from mars_titan.simulation import campaign_stage, window_tapes
 from mars_titan.simulation.native_runtime import library_path
 from mars_titan.simulation.storage import read_tape
 from mars_titan.training.learning_hold import LearningHoldError
@@ -58,16 +58,20 @@ def test_variant_a_runs_every_policy_on_the_same_causal_tapes(base_a, tmp_path, 
     learner = fixture.ScriptedLearner()
     summary = fixture.run(base_a, tmp_path / "stage", learner)
     assert summary["status"] == "completed"
-    assert summary["planned"] == summary["completed"] == dict(fit=12, reference=6)
+    # KLPO y referencias sobre GRU y LSTM, y Double DQN solo sobre la GRU.
+    assert summary["planned"] == summary["completed"] == dict(fit=18, reference=12)
     found = receipts(tmp_path / "stage")
-    assert len(found) == 18
+    assert len(found) == 30
     stage = campaign_stage.load_stage(base_a.stage)
     folds = stage["campaign"]["comparison_config"]["resolved_scopes"]["US"]["windows"]
-    by_window = {}
+    by_window, universes = {}, {}
     for receipt in found.values():
         identity = receipt["identity"]
-        # Todas las políticas y referencias de una ventana ven exactamente las mismas cintas.
-        by_window.setdefault(identity["window"], set()).add(json.dumps(identity["tapes"]))
+        # Todas las políticas y referencias de un predictor y una ventana ven las mismas
+        # cintas, y todos los predictores de la ventana comparten el universo.
+        key = (identity["window"], identity["predictor"])
+        by_window.setdefault(key, set()).add(json.dumps(identity["tapes"]))
+        universes.setdefault(identity["window"], set()).add(identity["tapes"]["universe_sha256"])
         assert len(receipt["evaluation"]) == 3 and receipt["final_test_opened"] is False
         if identity["kind"] == "fit":
             assert receipt["selection"] == dict(
@@ -76,7 +80,12 @@ def test_variant_a_runs_every_policy_on_the_same_causal_tapes(base_a, tmp_path, 
             assert receipt["transitions"] == 64 and receipt["policy"]["id"] == identity["id"]
         else:
             assert receipt["policy"] is None and receipt["transitions"] == 0
-    assert {window: len(values) for window, values in by_window.items()} == {
+    assert {key: len(values) for key, values in by_window.items()} == {
+        (window, predictor): 1
+        for window in ("fold-002", "fold-003")
+        for predictor in ("gru", "lstm")
+    }
+    assert {window: len(values) for window, values in universes.items()} == {
         "fold-002": 1,
         "fold-003": 1,
     }
@@ -102,12 +111,19 @@ def test_variant_a_runs_every_policy_on_the_same_causal_tapes(base_a, tmp_path, 
             ends.append((start, end))
         assert ends[0][1] <= ends[1][0] and ends[1][1] <= ends[2][0]
     metrics = summary["metrics"]
-    assert list(metrics) == ["klpo_terminal", "double_dqn", "cash", "hold_initial", "rebalance_50"]
-    assert metrics["klpo_terminal"]["10"]["episodes"] == 6 and metrics["cash"]["0"]["episodes"] == 2
+    assert list(metrics) == ["gru", "lstm"]
+    assert list(metrics["gru"]) == ["klpo_terminal", "double_dqn", *fixture.REFERENCES]
+    assert list(metrics["lstm"]) == ["klpo_terminal", *fixture.REFERENCES]
+    for predictor in ("gru", "lstm"):
+        assert metrics[predictor]["klpo_terminal"]["10"]["episodes"] == 6
+        assert metrics[predictor]["cash"]["0"]["episodes"] == 2
+        assert metrics[predictor]["cash"]["25"]["mean_liquidated_log_growth"] == 0.0
     assert all(
-        entry["denominator"] == "completed" for arm in metrics.values() for entry in arm.values()
+        entry["denominator"] == "completed"
+        for arms in metrics.values()
+        for arm in arms.values()
+        for entry in arm.values()
     )
-    assert metrics["cash"]["25"]["mean_liquidated_log_growth"] == 0.0
 
 
 def test_variant_b_carries_the_anchor_policy_on_the_anchor_universe(
@@ -115,7 +131,7 @@ def test_variant_b_carries_the_anchor_policy_on_the_anchor_universe(
 ):
     learner = fixture.ScriptedLearner()
     summary = fixture.run(base_b, tmp_path / "stage", learner)
-    assert summary["planned"] == summary["completed"] == dict(fit=6, carry=6, reference=6)
+    assert summary["planned"] == summary["completed"] == dict(fit=9, carry=9, reference=12)
     found = receipts(tmp_path / "stage")
     for job_id, receipt in found.items():
         identity = receipt["identity"]
@@ -129,10 +145,90 @@ def test_variant_b_carries_the_anchor_policy_on_the_anchor_universe(
         assert identity["tapes"]["evaluation"] != anchor["identity"]["tapes"]["evaluation"]
         assert job_id.endswith(f"carry-s{identity['seed']}")
     carries = [call for call in learner.calls if call["anchor"] is not None]
-    assert len(carries) == 6 and all(call["tapes"].evaluation is not None for call in carries)
+    assert len(carries) == 9 and all(call["tapes"].evaluation is not None for call in carries)
     # La evaluación trasladada se monta en el universo del ancla.
     assert (tmp_path / "stage/tapes/US/US/gru/fold-002/evaluation-fold-003").is_dir()
     assert not (tmp_path / "stage/universes/US/US/fold-003.json").exists()
+
+
+@pytest.fixture
+def lstm_without(monkeypatch):
+    """La LSTM no emitió filas del mercado en las ventanas indicadas de la campaña base."""
+
+    def select(*windows):
+        real = campaign_stage.campaign_source
+
+        def source(base, output, seed):
+            read = real(base, output, seed)
+
+            def missing(scope, market, window, predictor):
+                receipt, values = read(scope, market, window, predictor)
+                return receipt, None if predictor == "lstm" and window in windows else values
+
+            return missing
+
+        monkeypatch.setattr(campaign_stage, "campaign_source", source)
+
+    return select
+
+
+def outcomes(found, predictor, arm):
+    return {
+        (r["identity"]["window"], r["identity"]["kind"]): {e["reason"] for e in r["evaluation"]}
+        for r in found.values()
+        if r["identity"]["predictor"] == predictor and r["identity"]["arm"] == arm
+    }
+
+
+@pytest.mark.parametrize("variant", "AB")
+def test_a_predictor_without_training_predictions_fails_its_policies_without_running_them(
+    variant, base_a, base_b, tmp_path, learning_doubles, lstm_without
+):
+    base = dict(A=base_a, B=base_b)[variant]
+    # La LSTM no predijo el primer año de ajuste de la ventana de 2022.
+    lstm_without("fold-000")
+    learner = fixture.ScriptedLearner()
+    summary = fixture.run(base, tmp_path / "stage", learner)
+    assert summary["status"] == "completed"
+    reason = window_tapes.NO_PREDICTIONS
+    found = receipts(tmp_path / "stage")
+    klpo = outcomes(found, "lstm", "klpo_terminal")
+    if variant == "A":
+        # La política de 2023 se ajusta con 2021 y valida con 2022, que sí tienen predicciones.
+        assert klpo == {("fold-002", "fit"): {reason}, ("fold-003", "fit"): {None}}
+        called = {call["id"] for call in learner.calls if "/lstm/" in call["id"]}
+        assert called == {f"US/US/fold-003/lstm/klpo_terminal/fit-s{s}" for s in (42, 43, 44)}
+    else:
+        # En B la ventana de 2023 traslada la política de 2022, que no se pudo ajustar.
+        assert klpo == {("fold-002", "fit"): {reason}, ("fold-003", "carry"): {reason}}
+        assert not any("/lstm/" in call["id"] for call in learner.calls)
+    for receipt in found.values():
+        if reason in {e["reason"] for e in receipt["evaluation"]}:
+            assert receipt["policy"] is None and receipt["transitions"] == 0
+            assert receipt["selection"] is None
+    # Las referencias solo usan la evaluación y la GRU no cambia.
+    assert all(value == {None} for value in outcomes(found, "lstm", "cash").values())
+    assert all(value == {None} for value in outcomes(found, "gru", "klpo_terminal").values())
+    failed = summary["metrics"]["lstm"]["klpo_terminal"]["10"]
+    assert failed["failure_reasons"] == {reason: 3 if variant == "A" else 6}
+
+
+def test_a_predictor_without_evaluation_predictions_fails_those_episodes(
+    base_a, tmp_path, learning_doubles, lstm_without
+):
+    lstm_without("fold-003")
+    learner = fixture.ScriptedLearner()
+    assert fixture.run(base_a, tmp_path / "stage", learner)["status"] == "completed"
+    reason = window_tapes.NO_PREDICTIONS
+    found = receipts(tmp_path / "stage")
+    # La política de 2023 se ajusta con datos completos y solo falla su evaluación.
+    assert outcomes(found, "lstm", "klpo_terminal")[("fold-003", "fit")] == {reason}
+    assert outcomes(found, "lstm", "cash") == {
+        ("fold-002", "reference"): {None},
+        ("fold-003", "reference"): {reason},
+    }
+    called = [call for call in learner.calls if call["id"].startswith("US/US/fold-003/lstm/")]
+    assert len(called) == 3 and all(call["tapes"].evaluation is None for call in called)
 
 
 def test_a_paused_policy_resumes_in_its_folder_and_confirmed_jobs_are_not_repeated(
@@ -167,7 +263,7 @@ def test_a_stop_request_pauses_between_jobs(base_a, tmp_path, learning_doubles):
     assert summary["status"] == "paused" and summary["completed"] == dict(fit=2)
     rest = fixture.ScriptedLearner()
     assert fixture.run(base_a, tmp_path / "stage", rest)["status"] == "completed"
-    assert len(rest.calls) == 10 and not any(call["resume"] for call in rest.calls)
+    assert len(rest.calls) == 16 and not any(call["resume"] for call in rest.calls)
 
 
 def test_the_learning_hold_stops_the_stage_before_outputs_and_between_jobs(
@@ -409,7 +505,7 @@ def test_script_checks_the_policy_stage_and_runs_it_only_without_the_hold(
     assert script["main"](["rl", "check", "--stage", str(REPOSITORY["B"])]) == 0
     report = json.loads(capsys.readouterr().out)
     assert report["status"] == "checked" and report["variant"] == "B"
-    assert (report["counts"]["training_jobs"], report["counts"]["carried_jobs"]) == (240, 480)
+    assert (report["counts"]["training_jobs"], report["counts"]["carried_jobs"]) == (456, 912)
     assert set(report["missing_capabilities"]) >= {"native_klpo/US", "native_ppo/CN"}
     learning_hold(False)
     arguments = ["rl", "run", "--stage", str(REPOSITORY["A"]), "--views", f"US={tmp_path}"]
@@ -430,7 +526,8 @@ def test_references_with_native_accounting_match_the_python_accounting(
     assert python["status"] == native["status"] == "completed"
     found = {name: receipts(tmp_path / name) for name in ("python", "native")}
     references = [job for job, r in found["python"].items() if r["identity"]["kind"] == "reference"]
-    assert len(references) == 6
+    # Tres referencias en dos ventanas para cada uno de los dos predictores.
+    assert len(references) == 12
     for job in references:
         for ours, theirs in zip(
             found["python"][job]["evaluation"], found["native"][job]["evaluation"], strict=True

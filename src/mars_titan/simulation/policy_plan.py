@@ -1,12 +1,18 @@
 """Declarar y planificar la etapa de políticas financieras de la campaña con máscaras.
 
-La etapa se declara en dos archivos. Las políticas comunes fijan antes de evaluar los
-brazos predictores, las ventanas de ajuste, el universo, el entorno, los costes, las
-semillas, el presupuesto de transiciones, el criterio de selección de cartera, los brazos
-aprendidos con su motor, las referencias sin aprendizaje y el contraste con KLPO como brazo
-principal. Cada variante nombra su campaña base, sus ámbitos y sus límites. El plan
-enumera cada ajuste, traslado y referencia sin leer datos. Este módulo no lee cintas ni
-ejecuta ningún ajuste.
+La etapa se declara en dos archivos. Las políticas comunes fijan antes de evaluar la
+semilla del predictor, los dos niveles de la comparación, las ventanas de ajuste, el
+universo, el entorno, los costes, las semillas, el presupuesto de transiciones, el criterio
+de selección de cartera, los brazos aprendidos con su motor, las referencias sin
+aprendizaje y el contraste con KLPO como brazo principal. Cada variante nombra su campaña
+base, sus ámbitos y sus límites. El plan enumera cada ajuste, traslado y referencia sin
+leer datos. Este módulo no lee cintas ni ejecuta ningún ajuste.
+
+El nivel `all_predictors` aplica KLPO y las tres referencias a todos los brazos con
+productor en la campaña base, resueltos desde su configuración. Una familia que la campaña
+registre más adelante entra así sin cambiar la etapa. El nivel `algorithms` compara las
+demás políticas aprendidas solo sobre los predictores que declara, porque cada brazo
+aprendido multiplica los ajustes y el contraste principal es KLPO.
 """
 
 import math
@@ -23,6 +29,9 @@ from .environment import ACTIONS
 STAGE_KIND = "historical_masked_rl_stage"
 POLICIES_KIND = "historical_masked_rl_policies"
 FIT, CARRY, REFERENCE = "fit", "carry", "reference"
+ALL_PREDICTORS, ALGORITHMS = "all_predictors", "algorithms"
+# El nivel completo se resuelve con todos los brazos con productor de la campaña base.
+CAMPAIGN_PRODUCERS = "campaign_producers"
 SEEDS = [42, 43, 44]
 # Referencias sin aprendizaje de `simulation.evaluation.fixed_policy`.
 REFERENCES = ("cash", "hold_initial", "rebalance_50")
@@ -60,6 +69,7 @@ _POLICIES = {
     "kind",
     "status",
     "predictor",
+    "levels",
     "train_windows",
     "universe",
     "environment",
@@ -237,13 +247,24 @@ def _read_policies(path):
         and contrasts["controls"] == [*list(policies)[1:], *references],
         "KLPO es el brazo principal, va primero y se contrasta con todos los demás",
     )
+    levels = config["levels"]
+    _require(
+        isinstance(levels, dict)
+        and set(levels) == {ALL_PREDICTORS, ALGORITHMS}
+        and all(isinstance(v, dict) and set(v) == {"predictors", "arms"} for v in levels.values())
+        and levels[ALL_PREDICTORS]["predictors"] == CAMPAIGN_PRODUCERS
+        and levels[ALL_PREDICTORS]["arms"] == [contrasts["primary"], *references]
+        and levels[ALGORITHMS]["arms"] == list(policies)[1:]
+        and isinstance(levels[ALGORITHMS]["predictors"], list)
+        and levels[ALGORITHMS]["predictors"]
+        and len(set(levels[ALGORITHMS]["predictors"])) == len(levels[ALGORITHMS]["predictors"]),
+        "El nivel completo aplica KLPO y las referencias a todos los predictores y el de "
+        "algoritmos, las demás políticas a predictores declarados",
+    )
     predictor, universe = config["predictor"], config["universe"]
     _require(
         isinstance(predictor, dict)
-        and set(predictor) == {"arms", "seed"}
-        and isinstance(predictor["arms"], list)
-        and predictor["arms"]
-        and len(set(predictor["arms"])) == len(predictor["arms"])
+        and set(predictor) == {"seed"}
         and isinstance(universe, dict)
         and universe.get("rule") == window_tapes.UNIVERSE_RULE
         and set(universe) == {"rule", "max_assets"}
@@ -280,15 +301,7 @@ def load_stage(path):
         and scopes == [scope for scope in campaign["scopes"] if scope in scopes],
         "Los ámbitos pertenecen a la campaña y siguen su orden",
     )
-    produced = {spec["arm"] for spec in _arm_specs(campaign)}
-    arms = campaign["comparison_config"]["arms"]
-    predictor = policies["predictor"]
-    _require(
-        all(
-            arm in produced and predictor["seed"] in arms[arm]["seeds"] for arm in predictor["arms"]
-        ),
-        "Cada brazo predictor debe tener productor en la campaña y la semilla declarada",
-    )
+    levels = resolve_levels(campaign, policies)
     limits = config["limits"]
     _require(
         isinstance(limits, dict)
@@ -302,7 +315,36 @@ def load_stage(path):
         path=str(path.resolve()),
         campaign=campaign,
         policies=policies,
+        levels=levels,
+        predictors=levels[ALL_PREDICTORS]["predictors"],
+        # Todos los brazos de la campaña predicen las mismas filas de cada ventana. El universo
+        # de un ancla es común a todos los predictores y lo fija el primero de algoritmos.
+        universe_predictor=levels[ALGORITHMS]["predictors"][0],
     )
+
+
+def resolve_levels(campaign, policies):
+    """Predictores y brazos de cada nivel, con los productores de la campaña en su orden."""
+    seed = policies["predictor"]["seed"]
+    specs = _arm_specs(campaign)
+    produced = [spec["arm"] for spec in specs]
+    _require(
+        produced and all(seed in spec["seeds"] for spec in specs),
+        "Cada brazo predictor de la campaña debe tener productor y la semilla declarada",
+    )
+    declared = policies["levels"]
+    algorithms = declared[ALGORITHMS]["predictors"]
+    _require(
+        set(algorithms) <= set(produced),
+        "Los predictores de la comparación de algoritmos deben tener productor en la campaña",
+    )
+    return {
+        ALL_PREDICTORS: dict(predictors=produced, arms=declared[ALL_PREDICTORS]["arms"]),
+        ALGORITHMS: dict(
+            predictors=[arm for arm in produced if arm in algorithms],
+            arms=declared[ALGORITHMS]["arms"],
+        ),
+    }
 
 
 def scope_windows(stage, scope):
@@ -311,6 +353,15 @@ def scope_windows(stage, scope):
     folds = campaign["comparison_config"]["resolved_scopes"][scope]["windows"]
     rows = window_tapes.policy_windows(list(folds.values()), stage["policies"]["train_windows"])
     return window_tapes.policy_schedule(rows, campaign["period"], folds)
+
+
+def _arms(stage, predictor):
+    """Brazos aprendidos de un predictor con su nivel: KLPO primero y después algoritmos."""
+    levels = stage["levels"]
+    arms = [(ALL_PREDICTORS, levels[ALL_PREDICTORS]["arms"][0])]
+    if predictor in levels[ALGORITHMS]["predictors"]:
+        arms += [(ALGORITHMS, arm) for arm in levels[ALGORITHMS]["arms"]]
+    return arms
 
 
 def plan_stage(stage):
@@ -324,7 +375,7 @@ def plan_stage(stage):
         for market in markets:
             for row in rows:
                 anchor = anchors[row["anchor"]]
-                for predictor in policies["predictor"]["arms"]:
+                for predictor in stage["predictors"]:
                     prefix = f"{scope}/{market}/{row['window']}/{predictor}"
                     common = dict(
                         scope=scope,
@@ -335,7 +386,8 @@ def plan_stage(stage):
                         validation=anchor["validation"],
                         predictor=predictor,
                     )
-                    for arm, engine in policies["engines"].items():
+                    for level, arm in _arms(stage, predictor):
+                        engine = policies["engines"][arm]
                         for seed in policies["seeds"]:
                             kind = FIT if row["trained"] else CARRY
                             fitted = (
@@ -345,6 +397,7 @@ def plan_stage(stage):
                                 dict(
                                     common,
                                     id=f"{prefix}/{arm}/{kind}-s{seed}",
+                                    level=level,
                                     arm=arm,
                                     engine=engine,
                                     seed=seed,
@@ -357,6 +410,7 @@ def plan_stage(stage):
                             dict(
                                 common,
                                 id=f"{prefix}/{reference}/reference",
+                                level=ALL_PREDICTORS,
                                 arm=reference,
                                 engine="reference",
                                 seed=None,
@@ -393,14 +447,27 @@ def count_stage(stage, jobs=None):
                 for arm, seeds in arms.items()
             },
         )
-    kinds = Counter(job["kind"] for job in jobs)
-    totals = dict(
-        training_jobs=kinds[FIT],
-        carried_jobs=kinds[CARRY],
-        reference_jobs=kinds[REFERENCE],
-        evaluation_jobs=kinds[CARRY] + kinds[REFERENCE],
-        evaluation_episodes=len(jobs) * len(stage["policies"]["evaluation_costs_bps"]),
-    )
+    costs = len(stage["policies"]["evaluation_costs_bps"])
+
+    def totals_of(selected):
+        kinds = Counter(job["kind"] for job in selected)
+        return dict(
+            training_jobs=kinds[FIT],
+            carried_jobs=kinds[CARRY],
+            reference_jobs=kinds[REFERENCE],
+            evaluation_jobs=kinds[CARRY] + kinds[REFERENCE],
+            evaluation_episodes=len(selected) * costs,
+        )
+
+    totals = totals_of(jobs)
+    levels = {
+        level: dict(
+            totals_of([job for job in jobs if job["level"] == level]),
+            predictors=stage["levels"][level]["predictors"],
+            arms=stage["levels"][level]["arms"],
+        )
+        for level in (ALL_PREDICTORS, ALGORITHMS)
+    }
     limits = stage["limits"]
     for kind, limit in (
         ("training_jobs", "max_training_jobs"),
@@ -411,4 +478,4 @@ def count_stage(stage, jobs=None):
             f"La etapa prevé {totals[kind]} trabajos ({kind}) y supera el límite "
             f"declarado {limit}={limits[limit]}",
         )
-    return dict(scopes=scopes, **totals)
+    return dict(scopes=scopes, levels=levels, **totals)
