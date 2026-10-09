@@ -11,7 +11,7 @@ La campaña de referencias del 6 y 7 de octubre registraba `cudnn_allow_tf32=tru
 por defecto de PyTorch, que permite TF32 en las convoluciones y en los RNN de cuDNN (la GRU,
 la LSTM y la RNN). Aquí es un cambio de configuración declarado, no un ajuste por resultados.
 
-El lanzador fija los indicadores antes de crear modelos y otra vez antes de cada trabajo.
+El lanzador fija los indicadores en cada trabajo, antes de que su ejecutor cree modelos.
 Al confirmar exige que sigan igual y que el informe del ejecutor no registre otro valor con
 ninguno de los nombres que usan los informes del proyecto. Un recibo sin la precisión
 declarada o con otra se rechaza al reanudar.

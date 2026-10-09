@@ -587,7 +587,7 @@ class _Campaign:
             return None, receipt
         executor = self.executors[job["model"], job["kind"]]
         if self.campaign.get("numerics"):
-            # Otra vez antes de cada trabajo, por si un ejecutor anterior los cambió.
+            # En cada trabajo, antes de que su ejecutor cree modelos.
             campaign_numerics.apply(self.campaign["numerics"])
         section = self.campaign["neural" if job["family"] == NEURAL else "tabular"]
         view = self.views[job["scope"]]["windows"][job["window"]]
@@ -830,9 +830,6 @@ def run_campaign(
                 "La salida sin identidad contiene artefactos ajenos",
             )
             atomic_json(marker, identity)
-        if campaign.get("numerics"):
-            # Antes de crear cualquier modelo.
-            campaign_numerics.apply(campaign["numerics"])
         state = _Campaign(campaign, checked, output, identity, executors, None, jobs, disk)
         uses_gpu = any(executors[j["model"], j["kind"]]["device"] == "cuda" for j in jobs)
         reservation = (lease or _gpu_lease)() if uses_gpu else nullcontext()
