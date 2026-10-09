@@ -1,10 +1,15 @@
-"""Adaptador residual común y tres objetivos predictivos con información completa."""
+"""Adaptador residual común, adaptadores sobre un padre congelado y objetivos predictivos."""
 
+import copy
 import math
+from dataclasses import dataclass
 
 import numpy as np
 import torch
 from torch import nn
+from torch.nn.utils import parametrize
+
+ADAPTER_FORMS = ("residual", "low_rank")
 
 
 def _policy_inputs(centers, values, scale):
@@ -134,3 +139,162 @@ class LinearResidualPolicy(nn.Module):
         if not torch.isfinite(result).all():
             raise ValueError("El centro predictivo del adaptador no es finito")
         return result
+
+
+def _row_block(rows, size):
+    start, stop = (0, size) if rows is None else rows
+    if type(start) is not int or type(stop) is not int or not 0 <= start < stop <= size:
+        raise ValueError("El bloque de filas del adaptador no pertenece al tensor")
+    return start, stop
+
+
+def _add_rows(original, delta, rows):
+    start, stop = rows
+    if (start, stop) == (0, len(original)):
+        return original + delta
+    # El resto de filas se copia sin operar, así conserva exactamente sus valores.
+    return torch.cat((original[:start], original[start:stop] + delta, original[stop:]))
+
+
+class ResidualDelta(nn.Module):
+    """Sumar a un bloque de filas una corrección completa que empieza en cero."""
+
+    def __init__(self, shape, *, rows=None, dtype=torch.float32):
+        super().__init__()
+        shape = tuple(shape)
+        if not 1 <= len(shape) <= 2 or any(type(size) is not int or size < 1 for size in shape):
+            raise ValueError("La corrección residual necesita un vector o una matriz")
+        self.rows = _row_block(rows, shape[0])
+        rows_count = self.rows[1] - self.rows[0]
+        self.delta = nn.Parameter(torch.zeros((rows_count, *shape[1:]), dtype=dtype))
+
+    def forward(self, original):
+        return _add_rows(original, self.delta, self.rows)
+
+
+class LowRankDelta(nn.Module):
+    """Sumar (alpha / r) U V a un bloque de filas de W, con U inicializada a cero.
+
+    Es la factorización de LoRA (Hu et al., 2022). V se inicializa como una capa
+    lineal de PyTorch con un generador propio, de modo que no consume el RNG global.
+    Con U nula la matriz efectiva es exactamente W y el gradiente de V es cero en
+    el primer paso. Los parámetros entrenables son r (filas + columnas).
+    """
+
+    def __init__(self, shape, rank, *, alpha, rows=None, generator, dtype=torch.float32):
+        super().__init__()
+        shape = tuple(shape)
+        if len(shape) != 2 or any(type(size) is not int or size < 1 for size in shape):
+            raise ValueError("El adaptador de bajo rango necesita una matriz")
+        if (
+            type(rank) is not int
+            or not 1 <= rank <= min(64, *shape)
+            or type(alpha) not in (int, float)
+            or not math.isfinite(alpha)
+            or alpha <= 0
+            or not isinstance(generator, torch.Generator)
+            or generator.device.type != "cpu"
+        ):
+            raise ValueError("El rango, la escala o el generador del adaptador no son válidos")
+        self.rows = _row_block(rows, shape[0])
+        self.rank, self.scaling = rank, float(alpha) / rank
+        down = torch.empty(rank, shape[1], dtype=dtype)
+        bound = 1 / math.sqrt(shape[1])
+        down.uniform_(-bound, bound, generator=generator)
+        self.down = nn.Parameter(down)
+        self.up = nn.Parameter(torch.zeros(self.rows[1] - self.rows[0], rank, dtype=dtype))
+
+    def forward(self, original):
+        return _add_rows(original, (self.up @ self.down) * self.scaling, self.rows)
+
+
+@dataclass(frozen=True)
+class AdapterTarget:
+    """Tensor de un padre que recibe una corrección, sin modificar su valor original."""
+
+    module: str
+    tensor: str
+    form: str
+    rank: int | None = None
+    alpha: float | None = None
+    rows: tuple[int, int] | None = None
+
+    def __post_init__(self):
+        if (
+            not isinstance(self.module, str)
+            or not isinstance(self.tensor, str)
+            or not self.tensor.isidentifier()
+            or self.form not in ADAPTER_FORMS
+            or (self.form == "low_rank") != (self.rank is not None and self.alpha is not None)
+            or (self.form == "residual" and (self.rank, self.alpha) != (None, None))
+            or (self.rows is not None and (not isinstance(self.rows, tuple) or len(self.rows) != 2))
+        ):
+            raise ValueError("El destino del adaptador no está bien declarado")
+
+    def trainable_parameters(self, shape):
+        start, stop = _row_block(self.rows, shape[0])
+        rows = stop - start
+        if self.form == "residual":
+            return rows * math.prod(shape[1:])
+        return self.rank * (rows + shape[1])
+
+    def identity(self, shape):
+        return dict(
+            module=self.module,
+            tensor=self.tensor,
+            shape=list(shape),
+            form=self.form,
+            rank=self.rank,
+            alpha=self.alpha,
+            rows=list(_row_block(self.rows, shape[0])),
+            trainable_parameters=self.trainable_parameters(shape),
+        )
+
+
+def adapted_copy(model, targets, *, seed):
+    """Copiar el padre, congelar todos sus pesos y añadir correcciones nulas declaradas.
+
+    El padre recibido no cambia. Solo los parámetros de los adaptadores requieren
+    gradiente. Un destino repetido o inexistente se rechaza antes de copiar.
+    """
+    targets = tuple(targets)
+    if (
+        not isinstance(model, nn.Module)
+        or not targets
+        or any(not isinstance(target, AdapterTarget) for target in targets)
+        or len({(t.module, t.tensor) for t in targets}) != len(targets)
+        or type(seed) is not int
+        or not 0 <= seed < 2**63
+    ):
+        raise ValueError("Los destinos del adaptador o su semilla no son válidos")
+    for target in targets:
+        module = model.get_submodule(target.module)
+        value = getattr(module, target.tensor, None)
+        if not isinstance(value, nn.Parameter) or parametrize.is_parametrized(
+            module, target.tensor
+        ):
+            raise ValueError("El destino del adaptador no es un parámetro original del padre")
+    result = copy.deepcopy(model).requires_grad_(False)
+    generator = torch.Generator(device="cpu").manual_seed(seed)
+    for target in targets:
+        module = result.get_submodule(target.module)
+        value = getattr(module, target.tensor)
+        if target.form == "residual":
+            adapter = ResidualDelta(value.shape, rows=target.rows, dtype=value.dtype)
+        else:
+            adapter = LowRankDelta(
+                value.shape,
+                target.rank,
+                alpha=target.alpha,
+                rows=target.rows,
+                generator=generator,
+                dtype=value.dtype,
+            )
+        parametrize.register_parametrization(
+            module, target.tensor, adapter.to(device=value.device), unsafe=False
+        )
+    return result
+
+
+def trainable_parameters(model):
+    return sum(value.numel() for value in model.parameters() if value.requires_grad)
