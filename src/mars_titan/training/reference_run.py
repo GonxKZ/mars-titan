@@ -258,6 +258,19 @@ def _update(statistics, prediction, target):
     statistics["absolute_error"] += sums[1]
 
 
+def row_loss(case, emitted, prediction, target, quantiles):
+    """Calcula la pérdida por fila, pinball con la cabeza de cuantiles o la escalar del caso."""
+    if quantiles:
+        return pinball_loss(emitted, target, reduction="none")
+    if case["loss"] == "huber":
+        return torch.nn.functional.huber_loss(
+            prediction, target, delta=case["huber_delta"], reduction="none"
+        )
+    if case["loss"] == "mae":
+        return torch.nn.functional.l1_loss(prediction, target, reduction="none")
+    return torch.nn.functional.mse_loss(prediction, target, reduction="none")
+
+
 def _session_table(errors, zero):
     """Resumir errores por mercado e instante, junto al control de predicción nula."""
     keys = sorted(errors.sessions, key=lambda key: (key[1], key[0]))
@@ -663,16 +676,7 @@ def run_reference_case(
                 target = torch.from_numpy(batch["target"]).to(device, dtype=torch.float32)
                 emitted = _forward(model, batch, device)
                 prediction = _point(emitted, target, quantiles)
-                if quantiles:
-                    loss = pinball_loss(emitted, target, reduction="none")
-                elif case["loss"] == "huber":
-                    loss = torch.nn.functional.huber_loss(
-                        prediction, target, delta=case["huber_delta"], reduction="none"
-                    )
-                elif case["loss"] == "mae":
-                    loss = torch.nn.functional.l1_loss(prediction, target, reduction="none")
-                else:
-                    loss = torch.nn.functional.mse_loss(prediction, target, reduction="none")
+                loss = row_loss(case, emitted, prediction, target, quantiles)
                 if weighting != "natural":
                     loss = loss * torch.tensor([weights[m] for m in batch["market"]], device=device)
                 loss = loss.mean()

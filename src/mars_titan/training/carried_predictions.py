@@ -97,34 +97,15 @@ def _receipt(output, record):
     return json_record
 
 
-def carry_reference(
-    anchor,
-    anchor_manifest,
-    manifest,
-    output,
-    *,
-    batch_size,
-    input_policy,
-    stop=None,
-    modality_ablation=None,
-):
-    """Aplicar el estado seleccionado de una referencia neuronal a otra ventana."""
-    import torch
+def selected_reference(anchor, anchor_manifest, *, input_policy):
+    """Lee el informe y el estado elegido de una referencia neuronal confirmada.
 
-    from mars_titan.data.embeddings import require_cuda
-    from mars_titan.models.baselines.multimodal import STRICT_FUSION, MultimodalReference
-    from mars_titan.models.quantile_head import QUANTILE_HEAD
+    El ancla debe estar completa y seleccionada, con la reserva cerrada, la vista indicada,
+    la misma política de entradas y el mismo entorno y código.
+    """
+    from .reference_run import _confirmed_state, read_json, scientific_identity
 
-    from .reference_run import (
-        _confirmed_state,
-        _evaluate,
-        configured_corpus,
-        read_json,
-        scientific_identity,
-    )
-
-    started = time.perf_counter()
-    anchor, anchor_manifest, manifest = Path(anchor), Path(anchor_manifest), Path(manifest)
+    anchor, anchor_manifest = Path(anchor), Path(anchor_manifest)
     report = read_json(anchor / "run.json")
     identity = report["identity"]
     case = identity["case"]
@@ -141,6 +122,54 @@ def carry_reference(
     )
     if any(identity.get(key) != value for key, value in current.items()):
         raise ValueError("El entorno o el código no coincide con el ancla")
+    state = _confirmed_state(anchor, identity, report["checkpoint"], report.get("selection"))
+    return report, state
+
+
+def reference_model(identity, state, device):
+    """Construye la referencia de una identidad confirmada y carga su estado elegido.
+
+    Devuelve el modelo y si emite los cinco cuantiles de la cabeza común.
+    """
+    from mars_titan.models.baselines.multimodal import STRICT_FUSION, MultimodalReference
+    from mars_titan.models.quantile_head import QUANTILE_HEAD
+
+    case = identity["case"]
+    quantiles = case.get("head") == QUANTILE_HEAD
+    model = MultimodalReference(
+        case["kind"],
+        identity["dimensions"],
+        context=identity["context"],
+        mask_fusion=identity.get("mask_fusion", STRICT_FUSION),
+        **case["architecture"],
+        **({"head": QUANTILE_HEAD} if quantiles else {}),
+    ).to(device)
+    model.load_state_dict(state["model"])
+    return model, quantiles
+
+
+def carry_reference(
+    anchor,
+    anchor_manifest,
+    manifest,
+    output,
+    *,
+    batch_size,
+    input_policy,
+    stop=None,
+    modality_ablation=None,
+):
+    """Aplicar el estado seleccionado de una referencia neuronal a otra ventana."""
+    import torch
+
+    from mars_titan.data.embeddings import require_cuda
+
+    from .reference_run import _evaluate, configured_corpus
+
+    started = time.perf_counter()
+    anchor, anchor_manifest, manifest = Path(anchor), Path(anchor_manifest), Path(manifest)
+    report, state = selected_reference(anchor, anchor_manifest, input_policy=input_policy)
+    identity = report["identity"]
     anchor_meta, _ = read_manifest(anchor_manifest, 8 * 1024**2)
     dataset = configured_corpus(
         manifest, input_policy=input_policy, modality_ablation=modality_ablation
@@ -154,18 +183,8 @@ def carry_reference(
     if dataset.context != identity["context"] or dataset.manifest["scope"] != report["scope"]:
         raise ValueError("La ventana trasladada no conserva el contexto ni el alcance del ancla")
     output = _destination(output, dataset.roots.values())
-    state = _confirmed_state(anchor, identity, report["checkpoint"], report.get("selection"))
     device = require_cuda()
-    quantiles = case.get("head") == QUANTILE_HEAD
-    model = MultimodalReference(
-        case["kind"],
-        identity["dimensions"],
-        context=identity["context"],
-        mask_fusion=identity.get("mask_fusion", STRICT_FUSION),
-        **case["architecture"],
-        **({"head": QUANTILE_HEAD} if quantiles else {}),
-    ).to(device)
-    model.load_state_dict(state["model"])
+    model, quantiles = reference_model(identity, state, device)
     first = next(dataset.batches(partition="train", batch_size=1, epoch=0, seed=0))
     if {name: value.shape[-1] for name, value in first["inputs"].items()} != identity["dimensions"]:
         raise ValueError("Las dimensiones de la ventana no coinciden con las del ancla")
