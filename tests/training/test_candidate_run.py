@@ -188,13 +188,17 @@ def test_gradients_reach_every_trainable_parameter(shared, tmp_path, refinements
     assert all(value.grad is None for name, value in reference.model.named_parameters().items())
 
 
-def test_scalar_fallback_only_moves_the_median_row_of_the_head(shared, tmp_path):
+@pytest.mark.parametrize("loss", ["pinball", "mae"])
+def test_pinball_reaches_every_quantile_and_the_fallback_only_the_median(shared, tmp_path, loss):
     _, streams = shared
-    engine = trainer(streams, tmp_path / "l1", loss="mae")
+    engine = trainer(streams, tmp_path / loss, loss=loss)
     engine.run()
     for record in named_records(engine):
         rows = record["head_weight"].abs().sum(dim=1)
-        assert rows[2] > 0 and bool((rows[[0, 1, 3, 4]] == 0).all())
+        if loss == "pinball":
+            assert bool((rows > 0).all())
+        else:
+            assert rows[2] > 0 and bool((rows[[0, 1, 3, 4]] == 0).all())
 
 
 def test_loop_uses_only_matured_labels_and_reads_the_bank_before_admitting(shared, tmp_path):
@@ -532,6 +536,12 @@ def test_active_hold_rejects_a_real_optimizer_before_creating_outputs(
     monkeypatch.setenv("MARS_TITAN_TRAINING_HOLD", str(hold))
     engine = trainer(streams, tmp_path / "run", factory=None)
     assert isinstance(engine.optimizer, torch.optim.AdamW)
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("El entrenador llegó al paso del optimizador")
+
+    # Sin esta sustitución, el gancho global de pruebas convertiría el paso en una omisión.
+    monkeypatch.setattr(engine.optimizer, "step", forbidden)
     before = {name: value.clone() for name, value in engine.model.named_parameters().items()}
     with pytest.raises(RuntimeError, match="bloqueo de aprendizaje"):
         engine.run()
@@ -635,3 +645,59 @@ def test_saved_parameters_replace_the_live_module_values(shared, tmp_path):
             value.copy_(other[name])
     assert candidate_run.restore_selected(tmp_path / "run", fresh) == saved
     assert fresh.model.parameter_fingerprint() == saved
+
+
+def test_labels_without_a_live_graph_stay_out_of_the_loss(shared, tmp_path):
+    from mars_titan.memory.financial_observations import ObservationEvent
+
+    _, streams = shared
+    engine = trainer(streams, tmp_path / "run", admission="m0")
+    run = candidate_run._Pass()
+    graph = torch.zeros(5, dtype=torch.float64, requires_grad=True)
+    run.pending["US/A0000", 100] = candidate_run._Pending(0.5)
+    run.pending["US/A0001", 100] = candidate_run._Pending(0.25)
+    run.graphs["US/A0001", 100] = graph
+    labels = (("US/A0000", 100, 0.125), ("US/A0001", 100, -0.125))
+    event = ObservationEvent(200, (), labels, False)
+    engine._labels(run, streams["train"], event, train=True)
+    assert run.counters["labels"] == 2 and run.counters["labels_without_graph"] == 1
+    assert len(run.predictions) == 1 and run.predictions[0] is graph
+    assert run.targets == [-0.125] and run.used == [("US/A0001", 100, 200)]
+    assert not run.pending and not run.graphs
+    with pytest.raises(ValueError, match="pendiente"):
+        engine._labels(run, streams["train"], event, train=True)
+
+
+def test_heldout_partitions_write_the_common_prediction_files(tmp_path):
+    from mars_titan.data.input_policy import HISTORICAL_MASKED
+    from mars_titan.memory import financial_observations as api
+    from mars_titan.memory.financial_session import FinancialPhase
+    from mars_titan.training.corpus_inputs import CorpusDataset
+    from tests.training.historical_temporal_fixture import historical_temporal_fixture
+    from tests.training.test_historical_temporal import prepare
+
+    prepare(historical_temporal_fixture(tmp_path / "source"), tmp_path / "views")
+    dataset = CorpusDataset(
+        tmp_path / "views/fold-000/manifest.json", input_policy=HISTORICAL_MASKED
+    )
+    streams = {}
+    for name, start, end, _ in dataset.temporals["US"].partitioner.bounds:
+        phase = FinancialPhase(name, int(start), int(start), int(end), int(end))
+        index = api.prepare_observation_index(dataset, tmp_path / f"index-{name}", phase=phase)
+        streams[name] = api.FinancialObservationSource(dataset, index)
+    heldout = {name: streams[name] for name in candidate_run.HELDOUT}
+    engine = trainer(streams, tmp_path / "run", heldout=heldout, update_instants=1)
+    report = engine.run()
+    assert report["status"] == "completed"
+    assert set(report["predictions"]) == {"validation", "calibration", "evaluation"}
+    for name, record in report["predictions"].items():
+        table = pq.read_table(tmp_path / "run" / record["path"])
+        panel = ForecastPanel.from_arrow(table, quantile_columns=QUANTILE_COLUMNS, levels=LEVELS)
+        assert panel.rows == record["metrics"]["samples"] >= 1
+        phase = streams[name].phase
+        moments = table["prediction_at"].cast("int64").to_numpy()
+        assert ((moments >= phase.decision_start) & (moments < phase.decision_end)).all()
+    assert engine.identity["sources"].keys() == set(streams)
+    swapped = dict(calibration=heldout["evaluation"], evaluation=heldout["calibration"])
+    with pytest.raises(ValueError, match="particiones"):
+        trainer(streams, tmp_path / "swapped", heldout=swapped)
