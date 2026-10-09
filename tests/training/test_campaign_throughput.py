@@ -757,6 +757,9 @@ def test_candidate_measurement_compares_accumulation_and_recomputation(
     )
     (record,) = rates.values()
     assert record["variant"] == "m1_k1"
+    # Los dos casos solo cambian la tasa de aprendizaje y comparten la medida del primero.
+    assert record["measured_case"] == "lr1e-4"
+    assert record["shared_by_cases"] == ["lr1e-4", "lr1e-3"]
     names = [throughput.option_name(option) for option in throughput.CANDIDATE_OPTIONS]
     assert list(record["options"]) == names
     assert record["declared_option"] == "accumulation_rows=null,recompute=false"

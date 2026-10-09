@@ -43,8 +43,13 @@ from .checkpoints import (
 )
 from .learning_hold import require_learning_allowed
 from .selection import (
+    AWAIT,
+    FINISH,
     VALIDATION_PLATEAU,
     advance_selection,
+    awaiting,
+    bind_joint_epoch,
+    epoch_decision,
     initial_selection,
     validate_selection,
 )
@@ -896,8 +901,12 @@ class ChronologicalTrainer(ChronologicalInference):
         self.predictor.load_state_dict(state["model"])
         return state
 
-    def run(self, *, resume=False, stop=None):
-        """Recorrer épocas hasta la paciencia declarada o el presupuesto fijo."""
+    def run(self, *, resume=False, stop=None, joint_epoch=None):
+        """Recorrer épocas hasta la paciencia declarada o el presupuesto fijo.
+
+        Con la meseta conjunta, el ajuste espera en su primera meseta (`AWAIT`) hasta que se
+        reanuda con la época común del grupo (`joint_epoch`).
+        """
         output, checkpoints = self.output, self.output / "checkpoints"
         if isinstance(self.optimizer, torch.optim.Optimizer):
             require_learning_allowed("ChronologicalTrainer.run de Titans-MAC")
@@ -920,6 +929,8 @@ class ChronologicalTrainer(ChronologicalInference):
             if state["run"] is not None:
                 self.predictor.train()
                 run = self._restore(state["run"])
+            # Una ejecución ya conjunta solo continúa o se confirma con su misma época común.
+            bind_joint_epoch(report, joint_epoch, self.recipe.selection, self.recipe.epochs)
             if report["status"] == "completed":
                 self._load_best(report)
                 return report
@@ -935,6 +946,7 @@ class ChronologicalTrainer(ChronologicalInference):
                 final_test_opened=False,
                 attempts=[],
             )
+            bind_joint_epoch(report, joint_epoch, self.recipe.selection, self.recipe.epochs)
 
         def save(position, current=None, *, best=False):
             self._check_runtime()
@@ -961,11 +973,23 @@ class ChronologicalTrainer(ChronologicalInference):
             save(cursor)
         started = time.perf_counter()
         try:
+            options = self.recipe.selection
             while cursor["phase"] != "done":
                 epoch = cursor["epoch"]
+                if cursor["phase"] == "train" and cursor["stage"] == "start":
+                    # Al empezar una época: esperar al grupo o terminar en la época conjunta.
+                    decision = epoch_decision(
+                        self.selection, options, self.recipe.epochs, joint_epoch
+                    )
+                    if decision == AWAIT:
+                        report.update(awaiting(self.selection, self.recipe.epochs))
+                        return report
+                    if decision == FINISH:
+                        cursor = dict(epoch=epoch, phase="done")
+                        save(cursor)
+                        continue
                 if cursor["phase"] == "validation":
                     metrics = self.evaluate(self.validation, stop=stop)
-                    options = self.recipe.selection
                     self.selection = (
                         initial_selection(metrics["session_mae"], options)
                         if epoch == 0
@@ -982,13 +1006,17 @@ class ChronologicalTrainer(ChronologicalInference):
                         )
                     )
                     self.train_metrics = None
-                    # Con presupuesto fijo, should_stop nunca corta y se registra plateau_epoch.
-                    finished = epoch >= self.recipe.epochs or self.selection["should_stop"]
+                    # Con presupuesto fijo o meseta conjunta, should_stop nunca corta solo.
+                    decision = epoch_decision(
+                        self.selection, options, self.recipe.epochs, joint_epoch
+                    )
+                    finished = decision == FINISH
                     cursor = (
                         dict(epoch=epoch, phase="done")
                         if finished
                         else dict(epoch=epoch, phase="train", event=0, stage="start")
                     )
+                    # Con AWAIT, el cursor ya confirmado espera al grupo al empezar la época.
                     save(cursor, best=self.selection["last_improved"])
                     if stop.requested and not finished:
                         raise Paused
