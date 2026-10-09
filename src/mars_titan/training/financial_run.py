@@ -230,7 +230,8 @@ class FlowStates:
     """
 
     def __init__(self, rows=None):
-        # Flujo -> (bloque, fila). El orden de inserción es el de aparición de los flujos.
+        # Cada flujo apunta a su bloque y a su fila dentro de él. El diccionario conserva el
+        # orden en que aparecen los flujos, que es el que usan los recorridos.
         self._rows = {} if rows is None else dict(rows)
 
     def __contains__(self, flow):

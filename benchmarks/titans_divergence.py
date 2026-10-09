@@ -41,7 +41,8 @@ from titans_mac_output_scale import CANDIDATES, build  # noqa: E402
 
 from mars_titan.data.storage import atomic_json  # noqa: E402
 
-# (dispositivo, dtype de cálculo, aritmética)
+# Cada precisión indica el dispositivo, el dtype con el que se calcula y la aritmética de
+# las multiplicaciones. TF32 y BF16 se emulan sobre FP32 para aislar su redondeo.
 PRECISIONS = {
     "cpu_float64": ("cpu", torch.float64, "exact"),
     "cuda_float64": ("cuda:0", torch.float64, "exact"),
@@ -53,8 +54,9 @@ PRECISIONS = {
 }
 # Error de redondeo unitario de cada aritmética, para predecir el horizonte de separación.
 UNIT_ROUNDOFF = {"float64": 2.0**-53, "float32": 2.0**-24, "tf32": 2.0**-11, "bf16": 2.0**-8}
-# reproduction: parámetros y tokens FP64 como titans_mac_output_scale.py.
-# precision: parámetros y tokens redondeados a FP32 y comunes a todas las precisiones.
+# El estudio de reproducción usa parámetros y tokens FP64, como titans_mac_output_scale.py.
+# El de precisión los redondea a FP32 una vez y los comparte entre todas las precisiones,
+# de modo que solo cambia la aritmética.
 STUDIES = ("reproduction", "precision")
 CAMPAIGN = "gate_bias_residual_layer_norm"
 CONTRAST = "gate_bias"
