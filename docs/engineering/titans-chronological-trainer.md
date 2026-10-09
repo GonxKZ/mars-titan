@@ -41,7 +41,7 @@ Los pesos rápidos iniciales M0 son parámetros aprendidos. En `mac_online` solo
 
 La pérdida principal es el MAE residual. La receta admite también MSE y Huber con el mismo validador que las referencias. Cada paso promedia las etiquetas maduras del tramo.
 
-La selección reutiliza `selection.py`. El estado inicial se evalúa antes de ajustar y es elegible como mejor estado. La paciencia cuenta validaciones completas con la mejora mínima declarada. El modo `fixed_updates` exige una paciencia mayor que las épocas, recorre todas y conserva el mejor estado, para que los controles emparejados tengan el mismo número de actualizaciones. Con los mismos eventos, los cuatro controles hacen los mismos pasos, cortes y etiquetas en la pérdida.
+La selección reutiliza `selection.py`. El estado inicial se evalúa antes de ajustar y es elegible como mejor estado. La paciencia cuenta validaciones completas con la mejora mínima declarada. Con `stopping="fixed_budget"`, la regla común de `selection.py` recorre todas las épocas, conserva el mejor estado y registra en `plateau_epoch` dónde habría parado la paciencia, para que los controles emparejados tengan el mismo número de actualizaciones. Con los mismos eventos, los cuatro controles hacen los mismos pasos, cortes y etiquetas en la pérdida.
 
 La receta propuesta está en [`configs/titans/chronological-training.json`](../../configs/titans/chronological-training.json), marcada como no ejecutada. Ventanas, calentamiento y épocas dependen del protocolo de #363.
 

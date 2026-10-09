@@ -20,8 +20,7 @@
     "weight_decay": 0.0,
     "max_grad_norm": 1.0,
     "epochs": 30,
-    "selection": {"metric": "session_mae", "patience": 31, "min_delta": 0.0},
-    "budget": "fixed_updates",
+    "selection": {"metric": "session_mae", "patience": 5, "min_delta": 0.0, "stopping": "fixed_budget"},
     "block_rows": 128,
     "checkpoint_updates": 256,
     "checkpoint_seconds": 900.0

@@ -35,10 +35,14 @@ from .checkpoints import (
     save_training_state,
 )
 from .learning_hold import learning_blocked
-from .selection import advance_selection, initial_selection, validate_selection
+from .selection import (
+    VALIDATION_PLATEAU,
+    advance_selection,
+    initial_selection,
+    validate_selection,
+)
 
 RECIPE = "titans_financial_chronological_v1"
-BUDGETS = ("patience", "fixed_updates")
 _OWN_MODULES = (
     "mars_titan.training.financial_run",
     "mars_titan.memory.financial_observations",
@@ -64,7 +68,6 @@ class ChronologicalRecipe:
     max_grad_norm: float | None = 1.0
     epochs: int = 20
     selection: dict = field(default_factory=_default_selection)
-    budget: str = "patience"
     block_rows: int = 128
     checkpoint_updates: int = 256
     checkpoint_seconds: float = 900.0
@@ -87,8 +90,6 @@ class ChronologicalRecipe:
                     or self.max_grad_norm <= 0
                 )
             )
-            or self.budget not in BUDGETS
-            or (self.budget == "fixed_updates" and self.selection["patience"] <= self.epochs)
         ):
             raise ValueError(
                 "La receta necesita truncamiento, presupuesto, optimizador y parada válidos"
@@ -677,7 +678,7 @@ class ChronologicalTrainer:
                         )
                     )
                     self.train_metrics = None
-                    # Con presupuesto fijo, la receta exige paciencia mayor que las épocas.
+                    # Con presupuesto fijo, should_stop nunca corta y se registra plateau_epoch.
                     finished = epoch >= self.recipe.epochs or self.selection["should_stop"]
                     cursor = (
                         dict(epoch=epoch, phase="done")
@@ -699,6 +700,8 @@ class ChronologicalTrainer:
             report.update(
                 status="completed",
                 stopped_early=cursor["epoch"] < self.recipe.epochs,
+                stopping=self.recipe.selection.get("stopping", VALIDATION_PLATEAU),
+                plateau_epoch=self.selection.get("plateau_epoch"),
                 best_epoch=self.selection["best_epoch"],
                 best_score=self.selection["best_score"],
                 finished_at_utc=datetime.now(UTC).isoformat(),

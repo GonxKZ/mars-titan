@@ -23,6 +23,7 @@ from mars_titan.training.financial_run import (
     ChronologicalTrainer,
     parameter_roles,
 )
+from mars_titan.training.selection import FIXED_BUDGET
 from tests.training.chronological_fixture import (
     US_2023,
     chronological_corpus,
@@ -111,8 +112,8 @@ def predictor(streams, variant="mac_online", seed=42):
 def trainer(streams, output, *, model=None, variant="mac_online", pairing=None, **options):
     recipe = dict(truncation=3, epochs=1, block_rows=2, selection=SELECTION)
     recipe.update(options)
-    if recipe.get("budget") == "fixed_updates":
-        recipe["selection"] = dict(recipe["selection"], patience=recipe["epochs"] + 1)
+    if recipe.pop("fixed", False):
+        recipe["selection"] = dict(recipe["selection"], stopping=FIXED_BUDGET)
     return ChronologicalTrainer(
         model or predictor(streams, variant),
         ChronologicalRecipe(**recipe),
@@ -144,13 +145,13 @@ def named_records(engine):
         dict(weight_decay=-1.0),
         dict(max_grad_norm=float("inf")),
         dict(block_rows=257),
-        dict(budget="unbounded"),
-        dict(budget="fixed_updates", epochs=3, selection=dict(SELECTION, patience=3)),
+        dict(selection=dict(SELECTION, stopping="unbounded")),
+        dict(selection=dict(SELECTION, minimum_epochs=1), epochs=1),
         dict(selection=dict(SELECTION, metric="mae")),
         dict(checkpoint_seconds=0.0),
     ],
 )
-def test_recipe_rejects_undeclared_or_invalid_budgets(options):
+def test_recipe_rejects_undeclared_or_invalid_declarations(options):
     with pytest.raises(ValueError):
         ChronologicalRecipe(**options)
 
@@ -277,9 +278,7 @@ def test_paired_controls_start_equal_and_keep_equal_updates(shared, tmp_path):
     for variant in VARIANTS:
         model = predictor(streams, variant, seed=11)
         receipt = copy_paired_parameters(source, model)
-        engine = trainer(
-            streams, tmp_path / variant, model=model, pairing=receipt, budget="fixed_updates"
-        )
+        engine = trainer(streams, tmp_path / variant, model=model, pairing=receipt, fixed=True)
         for name, value in model.named_parameters():
             torch.testing.assert_close(value, dict(source.named_parameters())[name], rtol=0, atol=0)
         identities.add(engine.run_id)
@@ -327,7 +326,7 @@ def test_future_suffix_does_not_change_past_predictions_or_gradients(tmp_path):
 
 def test_resume_after_interruption_reproduces_the_continuous_run(shared, tmp_path):
     _, streams = shared
-    options = dict(epochs=2, budget="fixed_updates", checkpoint_updates=2)
+    options = dict(epochs=2, fixed=True, checkpoint_updates=2)
     continuous = trainer(streams, tmp_path / "continuous", **options)
     expected = continuous.run()
     stop = StopAtStep(15)
@@ -517,8 +516,12 @@ def test_selection_follows_declared_patience_and_keeps_the_best_state(
     _, streams = shared
     cases = (
         ("patience", dict(epochs=4, selection=dict(SELECTION, patience=2)), [0.5, 0.4, 0.45, 0.46]),
-        ("fixed", dict(epochs=4, budget="fixed_updates"), [0.5, 0.4, 0.45, 0.46, 0.3]),
-        ("parent", dict(epochs=2, budget="fixed_updates"), [0.1, 0.4, 0.45]),
+        (
+            "fixed",
+            dict(epochs=4, fixed=True, selection=dict(SELECTION, patience=2)),
+            [0.5, 0.4, 0.45, 0.46, 0.3],
+        ),
+        ("parent", dict(epochs=2, fixed=True), [0.1, 0.4, 0.45]),
     )
     reports = {}
     for name, options, values in cases:
@@ -538,6 +541,8 @@ def test_selection_follows_declared_patience_and_keeps_the_best_state(
     assert (reports["patience"]["best_epoch"], reports["patience"]["stopped_early"]) == (1, True)
     assert (reports["fixed"]["best_epoch"], reports["fixed"]["stopped_early"]) == (4, False)
     assert [h["global_step"] for h in reports["fixed"]["history"]] == [0, 1, 2, 3, 4]
+    assert reports["fixed"]["plateau_epoch"] == 3 and reports["fixed"]["stopping"] == FIXED_BUDGET
+    assert reports["patience"]["plateau_epoch"] is None
     assert (reports["parent"]["best_epoch"], reports["parent"]["best_score"]) == (0, 0.1)
 
 
@@ -566,7 +571,7 @@ def test_declared_recipe_builds_the_four_paired_controls(shared):
     from mars_titan.training.financial_run import load_recipe
 
     recipe, document = load_recipe("configs/titans/chronological-training.json")
-    assert recipe.budget == "fixed_updates" and recipe.selection["patience"] > recipe.epochs
+    assert recipe.selection["stopping"] == FIXED_BUDGET
     assert document["status"] == "propuesta_sin_ejecutar"
     _, streams = shared
     specification = streams["train"].specification()
