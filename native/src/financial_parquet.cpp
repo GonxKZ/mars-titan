@@ -1,3 +1,4 @@
+#include "mars_titan/reconstructed_tape.hpp"
 #include "mars_titan/simulation_files.hpp"
 
 #include <arrow/api.h>
@@ -15,6 +16,7 @@
 #include <initializer_list>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -289,13 +291,17 @@ std::shared_ptr<const MarketTape> load_market_tape(const std::filesystem::path& 
         throw std::invalid_argument("El volumen o las huellas del escenario no son válidos");
     }
     const auto& identity = manifest.at("identity");
-    if (identity.at("domain") != "synthetic") {
-        throw std::invalid_argument(
-            "El ejecutable solo admite escenarios sintéticos, sin acreditar histórico real");
-    }
     const auto partition = identity.at("partition").get<std::string>();
     if (partition != "train" && partition != "validation") {
         throw std::invalid_argument("La partición no está admitida. El test permanece cerrado");
+    }
+    // Solo se admite el histórico real reconstruido, con su auditoría y sus cortes walk-forward,
+    // y se exige antes de abrir el Parquet.
+    std::optional<ReconstructedAudit> audit;
+    if (identity.at("domain") == "real") {
+        audit = read_reconstructed_audit(identity, identity.at("currency").get<std::string>());
+    } else if (identity.at("domain") != "synthetic") {
+        throw std::invalid_argument("El escenario no declara un dominio admitido");
     }
     auto tape = std::make_shared<MarketTape>();
     tape->assets = identity.at("assets").get<std::vector<std::string>>();
@@ -308,7 +314,7 @@ std::shared_ptr<const MarketTape> load_market_tape(const std::filesystem::path& 
         throw std::invalid_argument("El manifiesto necesita activos únicos y ordenados");
     }
     tape->currency = identity.at("currency").get<std::string>();
-    tape->domain = "synthetic";
+    tape->domain = audit ? "real" : "synthetic";
     tape->partition = partition;
     tape->parent_id = identity.at("parent_id").get<std::string>();
     tape->source_sha256 = content_sha256(manifest_bytes);
@@ -366,6 +372,9 @@ std::shared_ptr<const MarketTape> load_market_tape(const std::filesystem::path& 
     tape->open_times.resize(sessions);
     tape->prediction_times.resize(sessions);
     read_batches(*reader, *tape, rows);
+    if (audit) {
+        admit_reconstructed_tape(*tape, *audit);
+    }
     tape->validate();
     return tape;
 }

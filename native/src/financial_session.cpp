@@ -41,7 +41,6 @@ constexpr double three_quarters = 0.75;
 constexpr double unknown = std::numeric_limits<double>::quiet_NaN();
 constexpr std::size_t maximum_rule_periods = 64;
 constexpr std::size_t maximum_rule_name = 64;
-constexpr int64_t validation_start = 1'672'531'200'000'000;
 constexpr int64_t final_test_start = 1'704'067'200'000'000;
 constexpr std::array<double, 6> exposures{0, 0, quarter, half, three_quarters, 1};
 static_assert(std::is_nothrow_swappable_v<SessionSnapshot>);
@@ -386,7 +385,9 @@ void MarketTape::validate() const {
         (domain != "synthetic" && domain != "real") ||
         (partition != "train" && partition != "validation") || !valid_digest(source_sha256) ||
         parent_id.empty() || parent_id.size() > maximum_parent_id ||
-        (domain == "real" && !historical_audit_verified)) {
+        (domain == "real") != historical_audit_verified ||
+        (domain == "real") != !historical_basis.empty() ||
+        prediction_fit_ends.size() != (domain == "real" ? sessions : 0)) {
         throw std::invalid_argument("La cinta no conserva dimensiones, origen y periodo admitidos");
     }
     std::unordered_set<std::string_view> asset_names;
@@ -401,13 +402,15 @@ void MarketTape::validate() const {
         throw std::invalid_argument(
             "Las reglas de mercado no cubren cada activo con lotes, periodos y tasas válidos");
     }
-    const int64_t low = partition == "train" ? 0 : validation_start;
-    const int64_t high = partition == "train" ? validation_start : final_test_start;
     for (std::size_t session = 0; session < sessions; ++session) {
+        // Una cinta real no usa fechas fijas de partición: cada predicción debe proceder de un
+        // ajuste anterior a su emisión y ninguna sesión puede alcanzar el test sellado.
         if (open_times[session] < 0 || open_times[session] >= close_times[session] ||
             prediction_times[session] < 0 || prediction_times[session] > close_times[session] ||
             (session != 0 && open_times[session] <= close_times[session - 1]) ||
-            (domain == "real" && (close_times[session] < low || close_times[session] >= high))) {
+            (domain == "real" &&
+             (close_times[session] >= final_test_start || prediction_fit_ends[session] < 0 ||
+              prediction_fit_ends[session] > prediction_times[session]))) {
             throw std::invalid_argument(
                 "El calendario mezcla decisiones, ejecución o el test cerrado");
         }
@@ -419,6 +422,10 @@ void MarketTape::validate() const {
              (index % price_width == volume_column ? value < 0 : value <= 0))) {
             throw std::invalid_argument(
                 "Los precios y volúmenes deben ser válidos o estar ausentes");
+        }
+        // Sin retornos de salida, una cinta real valora cada activo en todas sus sesiones.
+        if (domain == "real" && index % price_width == close_column && std::isnan(value)) {
+            throw std::invalid_argument("La cinta real necesita un cierre valorado por sesión");
         }
     }
     if (std::any_of(scores.begin(), scores.end(), [](double value) { return std::isinf(value); })) {
@@ -432,7 +439,8 @@ void MarketTape::validate() const {
         if (action.id.empty() || action.id.size() > maximum_action_id ||
             !ids.insert(action.id).second || action.asset >= count || !action.verified ||
             !nonnegative(action.value) || moment == open_times.end() ||
-            *moment != action.effective_at) {
+            *moment != action.effective_at ||
+            (domain == "real" && moment == open_times.begin())) {
             throw std::invalid_argument(
                 "La acción corporativa está duplicada o no está acreditada");
         }

@@ -164,7 +164,8 @@ if(MARS_TITAN_BUILD_SIMULATION)
             mars_titan_find_arrow()
             find_package(OpenSSL REQUIRED COMPONENTS Crypto)
             find_package(Threads REQUIRED)
-            add_library(mars_titan_simulation_files STATIC src/financial_parquet.cpp src/simulation_files.cpp)
+            add_library(mars_titan_simulation_files STATIC src/financial_parquet.cpp src/simulation_files.cpp
+                src/reconstructed_tape.cpp)
             target_include_directories(mars_titan_simulation_files PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
             target_link_libraries(mars_titan_simulation_files PUBLIC mars_titan_financial mars_titan::parquet
                 OpenSSL::Crypto Threads::Threads nlohmann_json::nlohmann_json)
@@ -177,7 +178,8 @@ if(MARS_TITAN_BUILD_SIMULATION)
             endif()
             list(APPEND mars_analysis_sources
                 "${CMAKE_CURRENT_SOURCE_DIR}/src/financial_parquet.cpp"
-                "${CMAKE_CURRENT_SOURCE_DIR}/src/simulation_files.cpp")
+                "${CMAKE_CURRENT_SOURCE_DIR}/src/simulation_files.cpp"
+                "${CMAKE_CURRENT_SOURCE_DIR}/src/reconstructed_tape.cpp")
         endif()
     endif()
 
@@ -339,7 +341,8 @@ if(MARS_TITAN_BUILD_SIMULATION)
             "${CMAKE_CURRENT_SOURCE_DIR}/cmake/BuildIdentity.cmake"
             "${CMAKE_CURRENT_SOURCE_DIR}/cmake/RunnerDependencies.cmake")
         if(TARGET mars_titan_simulation_files)
-            list(APPEND identity_files "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/simulation_files.hpp")
+            list(APPEND identity_files "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/simulation_files.hpp"
+                "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/reconstructed_tape.hpp")
         endif()
         if(MARS_TITAN_BUILD_COHORT_EXECUTION)
             list(APPEND identity_files "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/cohort_execution.hpp"

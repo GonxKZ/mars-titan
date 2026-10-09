@@ -476,6 +476,51 @@ void invalid_market_rules_are_rejected() {
     rejected([&] { missing->validate(); }, "Las reglas deben cubrir cada activo");
 }
 
+// Una cinta real solo se admite con su auditoría walk-forward y conserva cada cierre.
+void real_tapes_keep_their_walk_forward_cuts() {
+    constexpr int64_t final_test_start = 1'704'067'200'000'000;
+    const auto real = [] {
+        auto data = tape();
+        data->domain = "real";
+        data->historical_basis = "US/edicion-de-prueba/lag-0";
+        data->historical_audit_verified = true;
+        data->prediction_fit_ends.assign(data->close_times.size(), 0);
+        return data;
+    };
+    real()->validate();
+    const auto invalid = [&](auto change, std::string_view message) {
+        auto data = real();
+        change(*data);
+        rejected([&] { data->validate(); }, message);
+    };
+    invalid([](MarketTape& data) { data.historical_audit_verified = false; },
+            "Una cinta real sin auditoría debe rechazarse");
+    invalid([](MarketTape& data) { data.historical_basis.clear(); },
+            "Una cinta real sin base histórica debe rechazarse");
+    invalid([](MarketTape& data) { data.prediction_fit_ends.pop_back(); },
+            "Cada sesión real necesita su corte de ajuste");
+    invalid([](MarketTape& data) { data.prediction_fit_ends[1] = data.prediction_times[1] + 1; },
+            "Un ajuste posterior a la predicción debe rechazarse");
+    invalid([](MarketTape& data) { data.prediction_fit_ends[0] = -1; },
+            "Un corte negativo debe rechazarse");
+    invalid([](MarketTape& data) { data.close_times.back() = final_test_start; },
+            "Una sesión del test sellado debe rechazarse");
+    invalid([](MarketTape& data) { data.prices[3] = unknown; },
+            "Una cinta real con un cierre ausente debe rechazarse");
+    invalid(
+        [](MarketTape& data) {
+            data.actions = {CorporateAction{"A/0/split", 0, CorporateKind::split,
+                                            data.open_times.front(), 2, std::nullopt, true}};
+        },
+        "Un evento sin cierre anterior debe rechazarse");
+    auto synthetic = tape();
+    synthetic->prediction_fit_ends.assign(synthetic->close_times.size(), 0);
+    rejected([&] { synthetic->validate(); }, "Una cinta sintética no declara cortes reales");
+    auto declared = tape();
+    declared->historical_audit_verified = true;
+    rejected([&] { declared->validate(); }, "Una cinta sintética no puede marcarse como real");
+}
+
 int main() {
     try {
         purchases_and_sales_charge_both_sides();
@@ -490,6 +535,7 @@ int main() {
         ex_rights_reference_moves_the_daily_limit();
         lots_minimum_and_purchase_tax_follow_the_instrument();
         invalid_market_rules_are_rejected();
+        real_tapes_keep_their_walk_forward_cuts();
     } catch (const std::exception& error) {
         std::cerr << error.what() << '\n';
         return 1;

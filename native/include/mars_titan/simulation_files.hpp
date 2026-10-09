@@ -20,6 +20,7 @@ inline constexpr std::size_t bytes_per_mebibyte = bytes_per_kibibyte * bytes_per
 inline constexpr std::size_t maximum_manifest_bytes = 4 * bytes_per_mebibyte;
 inline constexpr std::size_t maximum_market_bytes = 256 * bytes_per_mebibyte;
 inline constexpr std::size_t maximum_checkpoint_bytes = 16 * bytes_per_mebibyte;
+inline constexpr std::size_t maximum_trace_bytes = 64 * bytes_per_mebibyte;
 inline constexpr std::size_t default_checkpoint_steps = 64;
 
 struct RunOptions {
@@ -30,6 +31,8 @@ struct RunOptions {
     std::optional<std::size_t> stop_after;
     bool resume = false;
     bool diagnostic = false;
+    // Traza paso a paso de observaciones, recompensas, órdenes y cartera para auditar paridad.
+    bool trace = false;
 };
 
 struct ComparisonOptions {

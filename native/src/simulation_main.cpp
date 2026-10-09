@@ -58,6 +58,8 @@ Options parse(int argc, char** argv) {
             result.run.diagnostic = true;
         } else if (name == "--compare") {
             result.compare = true;
+        } else if (name == "--trace") {
+            result.run.trace = true;
         } else {
             if (++i >= argc) {
                 throw std::invalid_argument("Falta el valor de un argumento");
@@ -99,6 +101,9 @@ Options parse(int argc, char** argv) {
     if (result.compare && (seen.contains("--policy") || seen.contains("--cost-bps"))) {
         throw std::invalid_argument("--compare fija las tres políticas y los tres costes");
     }
+    if (result.run.trace && (result.compare || result.run.resume || result.run.stop_after)) {
+        throw std::invalid_argument("--trace necesita una ejecución completa sin --compare");
+    }
     if (!std::isfinite(result.run.parameters.cost_bps) ||
         !std::isfinite(result.run.parameters.capital) ||
         !std::isfinite(result.run.parameters.participation)) {
@@ -127,10 +132,11 @@ int main(int argc, char** argv) {
             std::cout << "mars-titan-sim --input DIR --output DIR [--policy "
                          "cash|hold_initial|rebalance_25|rebalance_50|rebalance_75|rebalance_100]\n"
                          "  [--cost-bps N] [--capital N] [--participation N] [--resume]\n"
-                         "  [--stop-after N] [--checkpoint-steps N] [--diagnostic]\n"
+                         "  [--stop-after N] [--checkpoint-steps N] [--diagnostic] [--trace]\n"
                          "  [--compare --workers 1|2|4|8]\n"
-                         "Ejecuta referencias deterministas sobre validación sintética, sin abrir "
-                         "el test.\n";
+                         "Ejecuta referencias deterministas sobre una cinta de validación "
+                         "sintética o real\nreconstruida con su auditoría walk-forward, sin "
+                         "abrir el test.\n";
             return 0;
         }
         if (contains(options.input, options.run.output) ||
