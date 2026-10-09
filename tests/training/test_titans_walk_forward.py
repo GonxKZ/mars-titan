@@ -4,9 +4,11 @@ El optimizador inyectado registra gradientes y llamadas sin modificar pesos. Las
 proceden de un corpus técnico con máscaras preparado con el contrato temporal v2.
 """
 
+import copy
 import json
 from contextlib import contextmanager
 from pathlib import Path
+from types import SimpleNamespace
 
 import numpy as np
 import pyarrow as pa
@@ -222,7 +224,7 @@ def micros(day):
         "historical-masked-joint-us-walk-forward-v2.json",
     ],
 )
-@pytest.mark.parametrize("warmup", [0, 12])
+@pytest.mark.parametrize("warmup", [0, 12, 60])
 def test_phases_cover_each_v2_fold_with_a_warmup_bounded_by_its_partition(path, warmup):
     protocol = json.loads((CONFIGS / "evaluation" / path).read_text())
     folds = build_folds(protocol)
@@ -244,8 +246,12 @@ def test_phases_cover_each_v2_fold_with_a_warmup_bounded_by_its_partition(path, 
                 year, month = year - 1, month + 12
             expected = max(origin, micros(f"{year:04d}-{month:02d}-01"))
             assert phase.warmup_start == expected <= phase.decision_start
-            assert phase.warmup_start >= micros(fold["validation"][0]) - 400 * 86_400_000_000
+            assert phase.warmup_start >= micros(start) - warmup * 31 * 86_400_000_000
         assert phases["validation"].decision_start == train.decision_end
+    # Con 60 meses, la primera validación US (abril de 2004) empieza a calentar en el origen.
+    first = wf.window_phases(folds[0], warmup)["validation"]
+    clipped = warmup == 60 and protocol["first_validation_start"] == "2004-04-01"
+    assert (first.warmup_start == micros("2000-01-01")) == clipped
 
 
 def test_controls_write_three_partitions_that_the_comparison_accepts(base, tmp_path):
@@ -623,3 +629,36 @@ def test_window_fails_when_its_predictions_do_not_reconcile(
     report = json.loads((output / "run.json").read_text())
     assert report["status"] == "failed" and report["predictions"] == {}
     assert not (output / "validation-predictions.parquet").exists()
+
+
+def test_view_must_keep_the_window_rows_and_the_closed_final_test(base):
+    dataset = CorpusDataset(base["view"], input_policy=HISTORICAL_MASKED)
+    protocol = json.loads(Path(base["protocol"]).read_text())
+    fold = build_folds(protocol)[0]
+    wf._check_view(dataset, protocol, fold)
+    for change in (
+        lambda manifest: manifest.update(final_test_opened=True),
+        lambda manifest: manifest.pop("final_test_opened"),
+        lambda manifest: manifest["counts"].update(evaluation=0),
+        lambda manifest: manifest["counts"].pop("calibration"),
+    ):
+        manifest = copy.deepcopy(dataset.manifest)
+        change(manifest)
+        altered = SimpleNamespace(manifest=manifest)
+        with pytest.raises(ValueError, match="cuatro tramos"):
+            wf._check_view(altered, protocol, fold)
+    with pytest.raises(ValueError, match="protocolo y la ventana"):
+        wf._check_view(dataset, protocol, dict(fold, evaluation=["2023-11-01", "2024-01-02"]))
+
+
+def test_window_refuses_an_output_with_files_from_another_run(base, tmp_path, monkeypatch):
+    def refuse(*_, **__):
+        raise AssertionError("La vista no debe abrirse sobre una salida ajena")
+
+    monkeypatch.setattr(wf, "CorpusDataset", refuse)
+    output = tmp_path / "run"
+    output.mkdir()
+    (output / "other.json").write_text("{}")
+    with pytest.raises(ValueError, match="otra ejecución"):
+        window(base["view"], base["protocol"], base["recipe"], output)
+    assert sorted(path.name for path in output.iterdir()) == ["other.json"]

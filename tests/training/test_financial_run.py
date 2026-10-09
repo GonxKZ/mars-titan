@@ -1,6 +1,8 @@
 """Entrenador cronológico comprobado hasta el paso del optimizador, sin modificar pesos."""
 
+import copy
 import json
+from dataclasses import replace
 
 import pytest
 import torch
@@ -389,6 +391,10 @@ def test_partition_inference_needs_a_later_partition_of_the_same_input_and_a_row
     rows = []
     with pytest.raises(ValueError, match="tramo"):
         engine.predict_partition(streams["train"], rows)
+    early = copy.copy(streams["validation"])
+    early.phase = replace(early.phase, decision_start=streams["train"].phase.decision_end - 1)
+    with pytest.raises(ValueError, match="tramo"):
+        engine.predict_partition(early, rows)
     with pytest.raises(ValueError, match="destino"):
         engine.predict_partition(streams["validation"], None)
     metrics = engine.predict_partition(streams["validation"], rows)
