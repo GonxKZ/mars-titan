@@ -39,6 +39,8 @@ constexpr std::array<double, assets> scores{0.01, 0.02};
 constexpr double limited_reference = 8;
 constexpr double free_reference = 20;
 constexpr double limit_band = 0.2;
+constexpr double narrow_reference = 18.5;
+constexpr double narrow_band = 0.05;
 
 bool close(double left, double right) { return std::abs(left - right) <= tolerance; }
 
@@ -82,6 +84,94 @@ int price_limits_round_half_up_to_the_cent() {
         mt_simulation_price_limits_v1(10, 1e-11, &high, &low, error.data(), error.size()) !=
             MT_SIM_INVALID_ARGUMENT) {
         return fail("Sin banda no hay límites y una banda no exacta se rechaza");
+    }
+    return 0;
+}
+
+// Una orden de un activo con reglas. Devuelve el motivo o -1 si el núcleo rechaza la llamada.
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
+int32_t limited_order(double price, double reference, double band, bool buy) {
+    constexpr double held = 1000;
+    constexpr double capacity = 10;
+    constexpr double cash = 1e15;
+    const uint32_t currency = 0;
+    const double lot = 1;
+    const uint8_t retired = 0;
+    const std::array<double, quote_fields> quote{price, price, price, price, held};
+    const mt_position_v1 position{held, buy ? held + capacity : 0, capacity, 1};
+    const mt_account_v1 account{cash, 0, 0, 0, cash};
+    const mt_rules_v1 rule{0, reference, band, 0, 0, 0, 0};
+    mt_position_v1 next_position{};
+    mt_account_v1 next_account{};
+    mt_trade_v1 trade{};
+    std::array<char, error_capacity> error{};
+    if (mt_simulation_step_v2(1, 1, &currency, &lot, &rule, &retired, quote.data(), &position,
+                              &account, rate, participation, 1, 2, 3, &next_position,
+                              &next_account, &trade, error.data(), error.size()) != MT_SIM_OK) {
+        return -1;
+    }
+    return trade.reason;
+}
+
+// El núcleo decide como el límite decimal exacto en la franja donde el producto binario duda,
+// con referencias en céntimos y fuera de la rejilla y con bandas próximas a 1.
+int limit_decisions_match_exact_limits() {
+    constexpr int samples = 2000;
+    constexpr int magnitudes = 10;
+    constexpr int smallest_magnitude = -3;
+    constexpr double spread = 9;
+    constexpr double unit_interval = 0x1p-53;
+    constexpr int mantissa_shift = 11;
+    constexpr std::array bands{0.05, 0.1, 0.2, 0.3, 0.44, 0.6, 0.95, 0.9999999999};
+    constexpr std::array offsets{0.0, 0.005, 0.0099, 0.01, 0.0101, 0.02, 0.5};
+    uint64_t state = 0x9e3779b97f4a7c15U;
+    std::array<char, error_capacity> error{};
+    for (int sample = 0; sample < samples; ++sample) {
+        state ^= state << 13U;
+        state ^= state >> 7U;
+        state ^= state << 17U;
+        const double magnitude =
+            std::pow(10.0, static_cast<double>(state % magnitudes) + smallest_magnitude);
+        double reference =
+            magnitude * (1 + static_cast<double>(state >> mantissa_shift) * unit_interval * spread);
+        if (sample % 2 == 0 && reference >= 1) {
+            reference = std::round(reference * 100) / 100;
+        }
+        for (const double band : bands) {
+            double upper = 0;
+            double lower = 0;
+            if (mt_simulation_price_limits_v1(reference, band, &upper, &lower, error.data(),
+                                              error.size()) != MT_SIM_OK) {
+                return fail(error.data());
+            }
+            for (const double center : {upper, lower, reference * (1 + band),
+                                        reference * (1 - band)}) {
+                for (const double offset : offsets) {
+                    for (const double price :
+                         {center + offset, center - offset, std::nextafter(center, 0.0),
+                          std::nextafter(center, HUGE_VAL)}) {
+                        if (!(price > 0)) {
+                            continue;
+                        }
+                        const auto buying = limited_order(price, reference, band, true);
+                        const auto selling = limited_order(price, reference, band, false);
+                        if ((buying == MT_ORDER_LIMIT_UP) != (price >= upper) ||
+                            (selling == MT_ORDER_LIMIT_DOWN) != (price <= lower) ||
+                            buying < 0 || selling < 0) {
+                            std::cerr << reference << ' ' << band << ' ' << price << '\n';
+                            return fail("La decisión del límite difiere del cálculo exacto");
+                        }
+                    }
+                }
+            }
+        }
+    }
+    // Los importes fuera de 2^53 céntimos y las bandas sin decimal exacto se rechazan.
+    constexpr double huge_reference = 1e14;
+    constexpr double inexact_band = 0.30000000000000004;
+    if (limited_order(1, huge_reference, 0.1, true) != -1 ||
+        limited_order(1, 10, inexact_band, false) != -1) {
+        return fail("El núcleo debe rechazar límites decimales no exactos");
     }
     return 0;
 }
@@ -182,7 +272,8 @@ int main() {
         return fail("La observación no conserva señal y exposición");
     }
     if (mt_simulation_rules_size_v1() != sizeof(mt_rules_v1) ||
-        price_limits_round_half_up_to_the_cent() != 0) {
+        price_limits_round_half_up_to_the_cent() != 0 ||
+        limit_decisions_match_exact_limits() != 0) {
         return fail("El contrato de reglas no coincide");
     }
     // Sin reglas, v2 reproduce v1 byte a byte.
@@ -219,6 +310,13 @@ int main() {
     if (step_rules(rules.data()) != MT_SIM_OK || trades[0].reason != MT_ORDER_LIMIT_UP ||
         next_positions[0].quantity != 0 || trades[1].reason == MT_ORDER_LIMIT_UP) {
         return fail("Una compra en el límite superior no debe ejecutarse");
+    }
+    // Con una banda de 0,05 sobre 18,50 la apertura de 20 supera 19,43. Cada activo usa su banda
+    // aunque el núcleo reutilice la lectura decimal de la anterior.
+    rules[1] = {0, narrow_reference, narrow_band, 0, 0, 0, 0};
+    if (step_rules(rules.data()) != MT_SIM_OK || trades[0].reason != MT_ORDER_LIMIT_UP ||
+        trades[1].reason != MT_ORDER_LIMIT_UP) {
+        return fail("Cada activo debe aplicar su propia banda");
     }
     rules[0].band = 1;
     if (step_rules(rules.data()) != MT_SIM_INVALID_ARGUMENT) {

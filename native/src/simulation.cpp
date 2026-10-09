@@ -40,6 +40,9 @@ constexpr int maximum_band_decimals = 10;
 constexpr int maximum_dropped_digits = 30;
 constexpr uint64_t exact_integer_limit = uint64_t{1} << binary64_precision;
 constexpr double cents_per_unit = 100;
+constexpr double approximate_limit_slack = 1e-12;
+// Una décima parte de 2^53 céntimos deja holgura frente al rechazo de rounded_cents.
+constexpr double approximate_price_limit = 9e12;
 static_assert(std::numeric_limits<double>::is_iec559);
 static_assert(std::numeric_limits<double>::digits == binary64_precision);
 static_assert(sizeof(mt_position_v1) == position_bytes && sizeof(mt_account_v1) == account_bytes);
@@ -138,7 +141,8 @@ float clipped(double value) noexcept {
     return static_cast<float>(std::clamp(value, -observation_limit, observation_limit));
 }
 
-bool rate_below_one(double value) noexcept { return nonnegative(value) && value < 1; }
+// Dos comparaciones bastan: NaN no supera ninguna y el infinito queda fuera de [0, 1).
+bool rate_below_one(double value) noexcept { return value >= 0 && value < 1; }
 
 bool valid_rules(std::span<const mt_rules_v1> rules) noexcept {
     return std::all_of(rules.begin(), rules.end(), [](const auto &rule) {
@@ -241,18 +245,17 @@ struct DailyLimits {
     double lower = unknown;
 };
 
-// Mismo resultado que Instrument.limits: Decimal(repr(reference)) * (1 ± Decimal(repr(band))).
-// Con 17 cifras de referencia y 10 decimales de banda el producto cabe en las 28 cifras del
-// contexto decimal de Python, que así no redondea antes de cuantizar.
-bool daily_limits(double reference, double band, DailyLimits &limits) noexcept {
-    limits = {};
-    if (band == 0 || std::isnan(reference) || reference <= 0) {
-        return true;
-    }
-    DecimalNumber base{};
+// Banda decimal digits / scale. value conserva el double original para reutilizarla.
+struct DecimalBand {
+    double value = unknown;
+    uint64_t digits = 0;
+    uint64_t scale = 1;
+    int exponent = 0;
+};
+
+bool decimal_band(double band, DecimalBand &result) noexcept {
     DecimalNumber width{};
-    if (!std::isfinite(reference) || !shortest_decimal(reference, base) ||
-        !shortest_decimal(band, width) || width.exponent >= 0 ||
+    if (!shortest_decimal(band, width) || width.exponent >= 0 ||
         -width.exponent > maximum_band_decimals) {
         return false;
     }
@@ -263,9 +266,69 @@ bool daily_limits(double reference, double band, DailyLimits &limits) noexcept {
     if (width.digits >= scale) {
         return false;
     }
-    const int exponent = base.exponent + width.exponent;
-    return rounded_cents(Wide{base.digits} * (scale + width.digits), exponent, limits.upper) &&
-           rounded_cents(Wide{base.digits} * (scale - width.digits), exponent, limits.lower);
+    result = {band, width.digits, scale, width.exponent};
+    return true;
+}
+
+// Mismo resultado que Instrument.limits: Decimal(repr(reference)) * (1 ± Decimal(repr(band))).
+// Con 17 cifras de referencia y 10 decimales de banda el producto cabe en las 28 cifras del
+// contexto decimal de Python, que así no redondea antes de cuantizar.
+bool exact_limits(double reference, const DecimalBand &band, DailyLimits &limits) noexcept {
+    DecimalNumber base{};
+    if (!std::isfinite(reference) || !shortest_decimal(reference, base)) {
+        return false;
+    }
+    const int exponent = base.exponent + band.exponent;
+    return rounded_cents(Wide{base.digits} * (band.scale + band.digits), exponent, limits.upper) &&
+           rounded_cents(Wide{base.digits} * (band.scale - band.digits), exponent, limits.lower);
+}
+
+bool daily_limits(double reference, double band, DailyLimits &limits) noexcept {
+    limits = {};
+    if (band == 0 || std::isnan(reference) || reference <= 0) {
+        return true;
+    }
+    DecimalBand width{};
+    return decimal_band(band, width) && exact_limits(reference, width, limits);
+}
+
+/*
+ * Motivo de bloqueo de una orden activa con referencia positiva. Cada producto binario difiere
+ * de su límite decimal en medio céntimo más menos de 1e-15 veces el límite superior, también con
+ * bandas próximas a 1. Con un margen de un céntimo más 1e-12 veces ese límite, una apertura fuera
+ * de la franja se decide igual que con el cálculo exacto. Este se usa dentro de la franja y con
+ * límites desde una décima parte de 2^53 céntimos, de modo que se conservan los mismos errores.
+ */
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
+bool limit_reason(double price, double delta, double reference, const DecimalBand &band,
+                  int32_t &reason) noexcept {
+    reason = MT_ORDER_COMPLETE;
+    const double upper = reference * (1 + band.value);
+    const double margin = 1 / cents_per_unit + upper * approximate_limit_slack;
+    if (upper + margin < approximate_price_limit) {
+        const double lower = reference * (1 - band.value);
+        const bool near_upper = delta > 0 && std::abs(price - upper) <= margin;
+        const bool near_lower = delta < 0 && std::abs(price - lower) <= margin;
+        if (!near_upper && !near_lower) {
+            if (delta > 0 && price > upper) {
+                reason = MT_ORDER_LIMIT_UP;
+            } else if (delta < 0 && price < lower) {
+                reason = MT_ORDER_LIMIT_DOWN;
+            }
+            return true;
+        }
+    }
+    DailyLimits limits{};
+    if (!exact_limits(reference, band, limits)) {
+        return false;
+    }
+    // Una apertura en el límite no se trata como ejecutable en esa dirección.
+    if (delta > 0 && price >= limits.upper) {
+        reason = MT_ORDER_LIMIT_UP;
+    } else if (delta < 0 && price <= limits.lower) {
+        reason = MT_ORDER_LIMIT_DOWN;
+    }
+    return true;
 }
 
 // Mayor venta admitida que no supera la deseada, como Instrument.sellable.
@@ -366,6 +429,8 @@ template<std::size_t AccountCapacity> int step_accounts(
                            error_capacity);
         }
     }
+    // Las bandas se repiten entre activos y se leen una vez mientras no cambian.
+    DecimalBand band{};
     for (std::size_t index = 0; index < positions.size(); ++index) {
         auto &position = positions[index];
         auto &trade = operations[index];
@@ -384,20 +449,17 @@ template<std::size_t AccountCapacity> int step_accounts(
         }
         const double delta = position.target - position.quantity;
         const mt_rules_v1 *rule = rule_view.empty() ? nullptr : &rule_view[index];
-        if (rule != nullptr) {
-            DailyLimits limits{};
-            if (!daily_limits(rule->reference, rule->band, limits)) {
+        // Una referencia NaN o no positiva y una banda 0 no imponen límite, como en daily_limits.
+        if (rule != nullptr && rule->band != 0 && rule->reference > 0) {
+            int32_t reason = MT_ORDER_COMPLETE;
+            if ((rule->band != band.value && !decimal_band(rule->band, band)) ||
+                !limit_reason(price, delta, rule->reference, band, reason)) {
                 return failure(MT_SIM_INVALID_ARGUMENT,
                                "La referencia o la banda no admiten un límite decimal exacto",
                                error, error_capacity);
             }
-            // Una apertura en el límite no se trata como ejecutable en esa dirección.
-            if (delta > 0 && price >= limits.upper) {
-                trade.reason = MT_ORDER_LIMIT_UP;
-                continue;
-            }
-            if (delta < 0 && price <= limits.lower) {
-                trade.reason = MT_ORDER_LIMIT_DOWN;
+            if (reason != MT_ORDER_COMPLETE) {
+                trade.reason = reason;
                 continue;
             }
         }
