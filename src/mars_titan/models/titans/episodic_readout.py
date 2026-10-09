@@ -13,6 +13,10 @@ from .episodic_snapshot import EpisodeSnapshot, _device, _digest_id
 from .financial import PreparedDecisions
 from .state import check_differentiable, check_finite
 
+# `per_step` vuelve a seleccionar episodios en cada refinamiento. `first_read` fija en los
+# pasos siguientes los episodios de la primera lectura y solo recalcula sus pesos.
+EPISODE_SELECTIONS = ("per_step", "first_read")
+
 
 @dataclass(frozen=True)
 class EpisodicReadoutConfig:
@@ -25,6 +29,7 @@ class EpisodicReadoutConfig:
     seed: int = 42
     max_batch: int = 256
     max_working_bytes: int = 32 * 1024**2
+    episode_selection: str = "per_step"
 
     def __post_init__(self):
         _digest_id(self.codec_id, "El codec")
@@ -37,6 +42,8 @@ class EpisodicReadoutConfig:
             raise ValueError("K debe ser 1, 2 o 4")
         if self.mode not in ("bank", "no_bank"):
             raise ValueError("El modo de lectura debe ser bank o no_bank")
+        if self.episode_selection not in EPISODE_SELECTIONS:
+            raise ValueError("La selección de episodios debe ser per_step o first_read")
         if (
             type(self.temperature) not in (int, float)
             or not math.isfinite(self.temperature)
@@ -46,8 +53,11 @@ class EpisodicReadoutConfig:
         object.__setattr__(self, "temperature", float(self.temperature))
 
     def identity(self):
-        return dict(
-            **asdict(self),
+        fields = asdict(self)
+        # El modo anterior conserva literalmente su identidad y su huella.
+        episodes = fields.pop("episode_selection")
+        result = dict(
+            **fields,
             schema_version=1,
             query_normalization="scaled_l2_eps_1e-12",
             selection="global_each_step_fp64_stable_low_id",
@@ -59,6 +69,12 @@ class EpisodicReadoutConfig:
             initial_step=0.1,
             dropout=0.0,
         )
+        if episodes == "first_read":
+            result.update(
+                episode_selection=episodes,
+                selection="global_first_read_fp64_stable_low_id_then_fixed_positions",
+            )
+        return result
 
 
 @dataclass(frozen=True)
@@ -165,6 +181,13 @@ class EpisodicReadout(nn.Module):
         return 65536 + selection + per_step * self.config.refinements * (4 if differentiable else 1)
 
     def read(self, state, snapshot=None, *, context_id=None, cutoff=None):
+        return self._read(state, snapshot, context_id, cutoff)[0]
+
+    def _read(self, state, snapshot, context_id, cutoff, positions=None):
+        """Leer y devolver también las posiciones elegidas en la instantánea.
+
+        Con `positions` se atienden esos episodios con la consulta actual, sin seleccionar.
+        """
         self._state(state)
         episodes = snapshot.count if isinstance(snapshot, EpisodeSnapshot) else 0
         if (
@@ -192,14 +215,24 @@ class EpisodicReadout(nn.Module):
                 state.new_empty((len(state), 0)),
                 torch.empty((len(state), 0), dtype=torch.int64, device=state.device),
                 torch.zeros((len(state), 1), dtype=torch.bool, device=state.device),
-            )
+            ), None
         raw = self.query_projection(state)
         check_finite(raw, "La consulta episódica")
         query = _normalize(raw)
         keys, values, labels, ids = snapshot._values[:4]
-        with torch.no_grad():
-            scores = query.double() @ keys.T
-            indices = torch.argsort(scores, dim=-1, descending=True, stable=True)[:, :count]
+        if positions is None:
+            with torch.no_grad():
+                scores = query.double() @ keys.T
+                indices = torch.argsort(scores, dim=-1, descending=True, stable=True)[:, :count]
+        elif (
+            not isinstance(positions, torch.Tensor)
+            or positions.dtype != torch.int64
+            or positions.shape != (len(state), count)
+            or positions.device != state.device
+        ):
+            raise ValueError("Las posiciones fijadas no corresponden a la lectura")
+        else:
+            indices = positions
         flat = indices.flatten()
         selected_keys = (
             keys.index_select(0, flat).reshape(len(state), count, 64).to(dtype=state.dtype)
@@ -223,7 +256,7 @@ class EpisodicReadout(nn.Module):
             weights,
             ids.index_select(0, flat).reshape(len(state), count),
             torch.ones((len(state), 1), dtype=torch.bool, device=state.device),
-        )
+        ), indices
 
     def refine(self, state, base, read):
         check_finite(self.step_logit, "La puerta de refinamiento")
@@ -262,11 +295,14 @@ class EpisodicReadout(nn.Module):
             > self.config.max_working_bytes
         ):
             raise ValueError("La lectura supera el presupuesto de trabajo estimado")
+        fixed = self.config.episode_selection == "first_read"
         with torch.set_grad_enabled(differentiable):
             base = z_base if differentiable else z_base.detach()
-            state, reads = base, []
+            state, reads, positions = base, [], None
             for _ in range(self.config.refinements):
-                read = self.read(state, snapshot, context_id=context_id, cutoff=cutoff)
+                read, chosen = self._read(state, snapshot, context_id, cutoff, positions)
+                if fixed:
+                    positions = chosen
                 state = self.refine(state, base, read)
                 reads.append(read)
         return ReadoutResult(state, tuple(reads))
@@ -330,7 +366,7 @@ def copy_readout_parameters(source, target):
         return {
             key: value
             for key, value in model.config.identity().items()
-            if key not in {"mode", "seed"}
+            if key not in {"mode", "seed", "episode_selection", "selection"}
         }
 
     require_identity(identity(source), identity(target))
