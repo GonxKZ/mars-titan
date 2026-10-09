@@ -581,3 +581,81 @@ def test_session_table_keeps_window_market_and_metric_columns(joint):
     zero = sessions.filter(pc.equal(sessions["arm"], "zero"))
     assert zero["seed"].null_count == zero.num_rows
     assert zero["coverage_0.8"].null_count == zero.num_rows
+
+
+NEW_METRICS = ["up_precision", "down_precision", "sign_brier", "interval_score@0.8"]
+
+
+@pytest.fixture(scope="module")
+def extended(tmp_path_factory):
+    study = Study(tmp_path_factory.mktemp("extended"))
+    study.config["comparison"]["metrics"] += NEW_METRICS
+    study.publish()
+    return study, *study.run()
+
+
+def test_side_precision_brier_and_interval_score_are_contrasted_with_the_same_family(extended):
+    _, report, _ = extended
+    family = report["contrasts"]["US+CN"]["quantile_models"]
+    for metric in NEW_METRICS:
+        row = family[metric]["contrasts"][0]
+        assert row["name"] == "titans-gru" and row["estimate"] is not None, metric
+        assert family[metric]["multiplicity"]["family_size"] == 1
+    assert family["interval_score@0.8"]["loss"] is True
+    assert family["up_precision"]["loss"] is False
+    # El control cero no afirma ningún signo ni emite cuantiles.
+    zero = report["contrasts"]["US+CN"]["references_vs_zero"]
+    assert all(row["estimate"] is None for row in zero["up_precision"]["contrasts"])
+    assert "cuantiles" in zero["sign_brier"]["reason"]
+    gru = report["arms"]["gru"]["seeds"]["42"]["overall"]["US+CN"]["summary"]
+    scores = [row["interval_score"] for row in gru["quantiles"]["intervals"]]
+    assert all(value > 0 for value in scores)
+
+
+def test_sign_reliability_reports_the_seed_mean_ece_with_a_block_interval(extended):
+    _, report, _ = extended
+    section = report["sign_reliability"]
+    assert section["bins"] == 10 and section["resampling"]["block_length"] == 1
+    assert set(section["arms"]) == {"gru", "titans"}
+    entry = section["arms"]["gru"]["US+CN"]
+    seeds = report["arms"]["gru"]["seeds"]
+    per_seed = [
+        seeds[seed]["overall"]["US+CN"]["summary"]["quantiles"]["sign_probability"]["ece"]
+        for seed in ("42", "43")
+    ]
+    assert entry["raw"]["per_seed"] == pytest.approx(per_seed, rel=1e-12)
+    assert entry["raw"]["estimate"] == pytest.approx(np.mean(per_seed), rel=1e-12)
+    lower, upper = entry["raw"]["interval"]
+    assert 0 <= lower <= upper <= 1
+    assert sum(row["rows"] for row in entry["raw"]["reliability"]) == 2 * 84
+    assert entry["calibrated"]["estimate"] is not None and entry["calibrated_reason"] is None
+    assert set(entry) == {"raw", "calibrated", "calibrated_reason"}
+    assert "US" in section["arms"]["titans"] and "CN" in section["arms"]["titans"]
+
+
+def test_the_ece_interval_resamples_days_and_averages_the_seeds():
+    """Días idénticos dan el mismo ECE en cada réplica: el intervalo es la media de semillas."""
+
+    def seed(rows, targets):
+        days = np.repeat(np.arange(6), len(rows))
+        panel = ForecastPanel.from_columns(
+            [f"r{i:03d}" for i in range(len(days))],
+            np.array(["US"] * len(days)),
+            np.datetime64("2023-03-01T21:05", "us") + days.astype("timedelta64[D]"),
+            np.tile(targets, 6),
+            np.tile([row[2] for row in rows], 6),
+            quantiles=np.tile(np.asarray(rows, dtype=np.float64), (6, 1)),
+            levels=LEVELS,
+        )
+        return score_sessions(panel)
+
+    first = seed([[-2, -1, 0, 1, 2], [0.1, 0.2, 0.3, 0.4, 0.5]], [1.0, -1.0])
+    second = seed([[-0.5, 0.5, 1, 2, 3], [-2, -1, 0, 1, 2]], [1.0, 1.0])
+    options = dict(block_length=2, replicates=40, seed=3, confidence=0.9)
+    result = walk._ece([first, second], options)
+    expected = np.mean(result["per_seed"])
+    assert result["per_seed"] == pytest.approx([(0.5 + 0.975) / 2, (0.0625 + 0.5) / 2])
+    assert result["estimate"] == pytest.approx(expected)
+    assert result["interval"] == pytest.approx([expected, expected])
+    short = walk._ece([first], dict(options, block_length=6))
+    assert short["interval"] is None and "bloque" in short["reason"]
