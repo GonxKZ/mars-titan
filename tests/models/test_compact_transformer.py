@@ -354,11 +354,15 @@ def test_standalone_encoder_rejects_invalid_dimensions_before_using_rng(options)
     assert torch.equal(before, torch.get_rng_state())
 
 
-def test_transformer_is_not_implicitly_admitted_to_the_campaign_design():
-    from mars_titan.training.reference_design import design_cases
+def test_transformer_design_declares_its_options_in_every_case():
+    from mars_titan.training.reference_design import TRANSFORMER_OPTIONS, design_cases
 
+    # La búsqueda solo admite esta familia en su versión 4. Ver test_masked_reference_campaigns.
+    cases = design_cases(["transformer"])
+    assert len(cases) == 12
+    assert all(c["case"]["architecture"]["transformer"] == TRANSFORMER_OPTIONS for c in cases)
     with pytest.raises(ValueError, match="familias"):
-        design_cases(["transformer"])
+        design_cases(["mlp"])
 
 
 @pytest.mark.parametrize("stage", ["prices", "macro", "head"])
