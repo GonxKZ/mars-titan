@@ -297,9 +297,24 @@ class ViewCohortSource:
     Expone la interfaz de `ParquetCohortSource` que usan `PairedInputs` y el padre, más
     `cohorts(posiciones)`, que lee por bloques una secuencia completa. Una posición suelta
     cuesta una lectura del tramo, así que los consumidores piden la secuencia entera.
+
+    `since` (microsegundos) deja solo las sesiones con decisión en ese instante o después.
+    El índice y su población no cambian. Si todas las sesiones de la fuente caben en el
+    presupuesto, la primera lectura las conserva y las épocas siguientes no vuelven a leer
+    el tramo.
     """
 
-    def __init__(self, manifest, dataset, *, partition, max_block_bytes, input_policy, stop=None):
+    def __init__(
+        self,
+        manifest,
+        dataset,
+        *,
+        partition,
+        max_block_bytes,
+        input_policy,
+        stop=None,
+        since=None,
+    ):
         self.manifest_path = Path(manifest)
         meta, self.manifest_sha256 = read_manifest(self.manifest_path)
         expected = policy_identity(input_policy) if input_policy in INPUT_POLICIES else None
@@ -340,6 +355,13 @@ class ViewCohortSource:
         self.market_bounds, self.bounds, self.index = checked_index(
             meta, record, partition, input_policy, self.max_assets
         )
+        if since is not None:
+            if type(since) is not int or since <= 0:
+                raise ValueError("El inicio de las sesiones debe ser un instante en microsegundos")
+            self.index = [row for row in self.index if row[0] >= since]
+            if not self.index:
+                raise ValueError("No hay sesiones del tramo desde el inicio declarado")
+        self.since = since
         self.offsets = np.cumsum([0] + [row[1] for row in self.index])
         self.max_block_bytes = max_block_bytes
         # El plan del primer bloque supone filas completas. Los siguientes usan lo medido.
@@ -347,7 +369,7 @@ class ViewCohortSource:
         self.row_bytes += ROW_OVERHEAD + len(self.shapes)
         self.estimate = self.row_bytes
         self.statistics = dict(passes=0, cohorts=0, evicted=0, peak_block_bytes=0)
-        self.closed = False
+        self.resident, self.closed = None, False
 
     def __len__(self):
         return len(self.index)
@@ -426,6 +448,19 @@ class ViewCohortSource:
             type(position) is not int or not 0 <= position < len(self) for position in positions
         ):
             raise ValueError("Las posiciones no pertenecen a una fuente abierta")
+        if self.resident is None:
+            # Si todas las sesiones caben, se leen una vez y sirven a todas las épocas. Se
+            # intenta una sola vez: si una sesión se descarta, la fuente sigue por bloques.
+            self.resident = False
+            if self._plan(range(len(self)), 0) == len(self):
+                done, sessions = self._collect(list(range(len(self))))
+                if done == len(self):
+                    self.resident = sessions
+        if self.resident:
+            for position in positions:
+                at = self.index[position][0]
+                yield self._checked(*self.resident[at].raw(at))
+            return
         start = 0
         while start < len(positions):
             done, sessions = self._collect(positions[start : self._plan(positions, start)])
@@ -436,21 +471,24 @@ class ViewCohortSource:
                 session.uses -= 1
                 if not session.uses:
                     del sessions[at]
-                if presence is not None:
-                    check_presence(presence, raw["inputs"])
-                checked = checked_cohort(
-                    raw,
-                    presence,
-                    shapes=self.shapes,
-                    max_assets=self.max_assets,
-                    market_bounds=self.market_bounds,
-                )
-                self.statistics["cohorts"] += 1
-                yield {key: value for key, value in checked.items() if key != "sha256"}
+                yield self._checked(raw, presence)
             start += done
 
+    def _checked(self, raw, presence):
+        if presence is not None:
+            check_presence(presence, raw["inputs"])
+        checked = checked_cohort(
+            raw,
+            presence,
+            shapes=self.shapes,
+            max_assets=self.max_assets,
+            market_bounds=self.market_bounds,
+        )
+        self.statistics["cohorts"] += 1
+        return {key: value for key, value in checked.items() if key != "sha256"}
+
     def close(self):
-        self.closed = True
+        self.resident, self.closed = None, True
 
     def __enter__(self):
         return self

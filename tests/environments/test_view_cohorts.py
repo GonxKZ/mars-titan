@@ -130,6 +130,87 @@ def test_an_underestimated_block_evicts_its_last_sessions_and_stays_exact(joint)
             same_cohort(cohort, ref(position))
     assert source.statistics["evicted"] > 0
     assert source.statistics["peak_block_bytes"] <= 40_000
+    # El intento de conservar el tramo entero falló una vez y no se repite.
+    assert source.resident is False
+
+
+def test_a_partition_that_fits_is_read_once_for_every_epoch(joint):
+    source = streamed(joint, "train")
+    rng = np.random.default_rng(3)
+    with ParquetCohortSource(joint.ordered_path, partition="train", input_policy=POLICY) as ref:
+        for _ in range(3):
+            order = rng.permutation(len(source)).tolist()
+            for position, cohort in zip(order, source.cohorts(order), strict=True):
+                same_cohort(cohort, ref(position))
+    assert source.statistics["passes"] == 1 and len(source.resident) == len(source)
+    small = streamed(joint, "train", 20_000)
+    first = list(small.cohorts(list(range(len(small)))))
+    passes = small.statistics["passes"]
+    second = list(small.cohorts(list(range(len(small)))))
+    assert small.resident is False and passes > 1
+    # Cada época vuelve a leer el tramo por bloques, con la estimación ya medida.
+    assert small.statistics["passes"] - passes > 1
+    for left, right in zip(first, second, strict=True):
+        same_cohort(left, right)
+    source.close()
+    assert source.resident is None
+    with pytest.raises(ValueError, match="fuente abierta"):
+        next(source.cohorts([0]))
+
+
+@pytest.mark.parametrize("budget", [LARGE, 20_000])
+def test_since_keeps_the_later_sessions_with_the_same_bits(joint, budget):
+    full = streamed(joint, "train")
+    since = full.index[len(full) // 2][0]
+    offset = next(i for i, row in enumerate(full.index) if row[0] >= since)
+    source = ViewCohortSource(
+        joint.index_path,
+        joint.dataset,
+        partition="train",
+        max_block_bytes=budget,
+        input_policy=POLICY,
+        since=since,
+    )
+    assert source.since == since and 0 < offset < len(full)
+    assert source.index == full.index[offset:]
+    assert int(source.offsets[-1]) == sum(rows for _, rows in full.index[offset:])
+    # La población y la huella del tramo siguen siendo las del índice completo.
+    assert source.population_counts == full.population_counts
+    assert source.partition_sha256 == full.partition_sha256
+    positions = list(range(len(source)))
+    with ParquetCohortSource(joint.ordered_path, partition="train", input_policy=POLICY) as ref:
+        for position, cohort in zip(positions, source.cohorts(positions), strict=True):
+            assert cohort["prediction_at"] >= since
+            same_cohort(cohort, ref(position + offset))
+
+
+@pytest.mark.parametrize(
+    ("since", "message"),
+    [(0, "microsegundos"), (-5, "microsegundos"), (1.0, "microsegundos"), (True, "microsegundos")],
+)
+def test_since_must_be_a_positive_instant(joint, since, message):
+    with pytest.raises(ValueError, match=message):
+        ViewCohortSource(
+            joint.index_path,
+            joint.dataset,
+            partition="train",
+            max_block_bytes=LARGE,
+            input_policy=POLICY,
+            since=since,
+        )
+
+
+def test_since_after_the_last_session_is_rejected(joint):
+    last = streamed(joint, "train").index[-1][0]
+    with pytest.raises(ValueError, match="No hay sesiones"):
+        ViewCohortSource(
+            joint.index_path,
+            joint.dataset,
+            partition="train",
+            max_block_bytes=LARGE,
+            input_policy=POLICY,
+            since=last + 1,
+        )
 
 
 class Predictor:
@@ -209,6 +290,43 @@ def test_resumed_batches_continue_after_the_confirmed_cursor(pairs):
     cursor = batches[middle]["confirmed_cursor"]
     resumed = [comparable(batch) for batch in right.batches(**options, cursor=cursor)]
     assert resumed == [comparable(batch) for batch in batches[middle + 1 :]]
+
+
+def test_paired_inputs_identify_a_fit_limited_to_later_sessions(joint, pairs, tmp_path):
+    _, full = pairs
+    since = full.train.index[len(full.train) // 2][0]
+    sources = [
+        ViewCohortSource(
+            joint.index_path,
+            joint.dataset,
+            partition=name,
+            max_block_bytes=30_000,
+            input_policy=POLICY,
+            since=since if name == "train" else None,
+        )
+        for name in ("train", "validation")
+    ]
+    limited, cache = paired(joint, tmp_path, sources)
+    assert "train_since" not in full.identity and "train_since" not in full.window
+    assert limited.identity == dict(full.identity, train_since=since)
+    assert limited.sha256 != full.sha256
+    assert limited.window == dict(
+        full.window,
+        train_since=since,
+        train_rows=int(sources[0].offsets[-1]),
+        train_cohorts=len(sources[0]),
+    )
+    assert limited.counts["validation"] == full.counts["validation"]
+    assert 0 < limited.counts["train"] < full.counts["train"]
+    assert limited.population_counts == full.population_counts
+    batches = list(
+        limited.batches(partition="train", condition="real", batch_size=4, epoch=0, seed=42)
+    )
+    moments = {at for at, _ in full.train.index if at >= since}
+    assert sum(len(batch["target"]) for batch in batches) == limited.counts["train"]
+    assert all(int(moment) in moments for batch in batches for moment in batch["prediction_at"])
+    for handle in (*sources, cache):
+        handle.close()
 
 
 def test_a_session_larger_than_the_budget_is_rejected(joint):

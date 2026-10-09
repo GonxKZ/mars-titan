@@ -113,6 +113,9 @@ class PairedInputs:
         self.masked = masked_inputs(self.input_policy)
         windows, synthetic_identity = self._episodes(train)
         self.train, self.validation, self.parent = train, validation, parent
+        # Ajuste limitado a las sesiones desde un instante. Sin límite la identidad no cambia.
+        since = getattr(train, "since", None)
+        since = {} if since is None else dict(train_since=since)
         self.features = (
             1
             + sum(math.prod(shape) for shape in self.shapes.values())
@@ -129,6 +132,7 @@ class PairedInputs:
             synthetic=synthetic_identity,
             shapes={name: list(shape) for name, shape in self.shapes.items()},
             **policy_identity(self.input_policy),
+            **since,
         )
         self.sha256 = fingerprint(self.identity)
         self.counts = {
@@ -144,6 +148,7 @@ class PairedInputs:
                 train_bounds={
                     market: list(bounds) for market, bounds in sorted(train.market_bounds.items())
                 },
+                **since,
             )
             if self.masked
             else None
