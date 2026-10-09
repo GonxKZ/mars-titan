@@ -53,6 +53,10 @@ _OWN_MODULES = (
 )
 
 
+# Marca de una predicción del tramo cuyo grafo se recalcula al actualizar.
+_REPLAY = object()
+
+
 def _default_selection():
     return dict(metric="session_mae", patience=3, min_delta=0.0)
 
@@ -72,6 +76,9 @@ class ChronologicalRecipe:
     block_rows: int = 128
     checkpoint_updates: int = 256
     checkpoint_seconds: float = 900.0
+    # None conserva el grafo de todos los flujos del tramo. Un entero recalcula el tramo
+    # por bloques de hasta ese número de flujos y acumula sus gradientes antes del paso.
+    accumulation_rows: int | None = None
 
     def __post_init__(self):
         # pinball solo corresponde a `quantile_head_v1`. huber_delta conserva su validación.
@@ -84,6 +91,13 @@ class ChronologicalRecipe:
             or not 0 < self.learning_rate <= 1
             or self.weight_decay < 0
             or self.checkpoint_seconds <= 0
+            or (
+                self.accumulation_rows is not None
+                and (
+                    type(self.accumulation_rows) is not int
+                    or not 1 <= self.accumulation_rows <= 256
+                )
+            )
             or (
                 self.max_grad_norm is not None
                 and (
@@ -106,10 +120,16 @@ class ChronologicalRecipe:
         )
 
     def identity(self):
+        fields = asdict(self)
+        # Sin acumulación se conserva literalmente la identidad anterior y su huella.
+        if fields["accumulation_rows"] is None:
+            fields.pop("accumulation_rows")
+        else:
+            fields["gradient_accumulation"] = "flow_blocks_replayed_from_segment_start_v1"
         return dict(
             schema_version=1,
             recipe=RECIPE,
-            **asdict(self),
+            **fields,
             optimizer="AdamW",
             truncation_unit="decision_instants_per_differentiable_segment",
             label_rule="loss_only_after_maturity_event_then_next_segment_update",
@@ -259,6 +279,10 @@ class _Pass:
     targets: list = field(default_factory=list)
     used: list = field(default_factory=list)
     instants: int = 0
+    # Con acumulación: lotes del tramo en orden y estado de cada flujo al empezarlo.
+    # None indica un flujo nuevo dentro del tramo. Se vacían en cada actualización.
+    segment: list = field(default_factory=list)
+    starts: dict = field(default_factory=dict)
 
 
 class ChronologicalTrainer:
@@ -305,7 +329,10 @@ class ChronologicalTrainer:
             not _compatible(specification, source.specification()) for source in (train, validation)
         ):
             raise ValueError("Las vistas no conservan la entrada del predictor")
-        if recipe.block_rows > predictor.config.max_batch:
+        if (
+            recipe.block_rows > predictor.config.max_batch
+            or (recipe.accumulation_rows or 0) > predictor.config.max_batch
+        ):
             raise ValueError("El bloque de activos supera el lote del predictor")
         self.device = predictor.head.weight.device
         if str(self.device) not in {"cpu", "cuda:0"}:
@@ -391,8 +418,10 @@ class ChronologicalTrainer:
         predictor, specification = self.predictor, self.predictor.config.inputs
         warmup = event.at < source.phase.decision_start
         grad = differentiable and not warmup
+        # La acumulación emite con el mismo cálculo y corta el grafo tras cada bloque.
+        accumulate = grad and self.recipe.accumulation_rows is not None
         if grad and run.instants == 0 and predictor.config.variant == "mac_frozen":
-            self._anchor_frozen(run)
+            self._anchor_frozen(run.flows)
         for raw in event.inputs:
             batch = DecisionBatch.from_validated(
                 validated_cpu_batch(raw, specification),
@@ -402,10 +431,15 @@ class ChronologicalTrainer:
             new = tuple(flow for flow in batch.flow_ids if flow not in run.flows)
             if new:
                 run.flows.update(_split(predictor.initial_state(new, differentiable=grad)))
+            if accumulate:
+                for flow in batch.flow_ids:
+                    if flow not in run.starts:
+                        run.starts[flow] = None if flow in new else run.flows[flow]
+                run.segment.append(batch)
             state = _stack([run.flows[flow] for flow in batch.flow_ids])
             with torch.set_grad_enabled(grad):
                 prepared = predictor.prepare(batch, state, differentiable=grad)
-            run.flows.update(_split(prepared.next_state))
+            run.flows.update(_split(prepared.next_state, detach=accumulate))
             size = len(batch.flow_ids)
             run.counters["observations"] += size
             if warmup:
@@ -424,28 +458,28 @@ class ChronologicalTrainer:
                 if levels is not None:
                     run.levels[flow, at] = levels[row]
                 if grad:
-                    run.graphs[flow, at] = graphs[row]
+                    run.graphs[flow, at] = _REPLAY if accumulate else graphs[row]
                 if self.audit is not None:
                     self.audit.append(("prediction", source.phase.partition, flow, at, values[row]))
             run.counters["predictions"] += size
         if event.inputs and not warmup:
             run.instants += 1
 
-    def _anchor_frozen(self, run):
+    def _anchor_frozen(self, states):
         """Sin escrituras, la memoria de cada flujo es M0. Cada tramo lee el M0 vigente."""
-        flows, size = list(run.flows), self.predictor.config.max_batch
+        flows, size = list(states), self.predictor.config.max_batch
         for start in range(0, len(flows), size):
             chunk = flows[start : start + size]
             memory = self.predictor.mac.initial_state(len(chunk), differentiable=True).memory
             for row, flow in enumerate(chunk):
-                state = run.flows[flow]
+                state = states[flow]
                 fresh = NeuralMemoryState(
                     tuple(w[row : row + 1] for w in memory.weights),
                     tuple(m[row : row + 1] for m in memory.momentum),
                     memory.steps[row : row + 1],
                     memory.config_id,
                 )
-                run.flows[flow] = replace(state, mac=replace(state.mac, memory=fresh))
+                states[flow] = replace(state, mac=replace(state.mac, memory=fresh))
 
     def _labels(self, run, event, *, train):
         """Resolver etiquetas maduras contra la predicción emitida y su grafo vigente."""
@@ -480,15 +514,70 @@ class ChronologicalTrainer:
                 errors[start : start + 4096],
             )
 
-    def _update(self, run, at):
-        """Un paso con las etiquetas maduras del tramo y truncamiento de todos los flujos."""
-        if run.predictions:
-            prediction = torch.stack(run.predictions)
-            target = torch.tensor(run.targets, dtype=prediction.dtype, device=prediction.device)
-            loss = self._loss(prediction, target)
+    def _backward(self, run):
+        """Gradiente de la pérdida media del tramo con los grafos conservados."""
+        prediction = torch.stack(run.predictions)
+        target = torch.tensor(run.targets, dtype=prediction.dtype, device=prediction.device)
+        loss = self._loss(prediction, target)
+        if not torch.isfinite(loss).item():
+            raise ValueError("La pérdida del tramo no es finita")
+        loss.backward()
+        return loss
+
+    def _replay(self, run):
+        """Recalcular el tramo por bloques de flujos y acumular el gradiente de la misma media.
+
+        Los flujos son independientes dados los parámetros, que no cambian dentro del tramo.
+        Cada bloque parte del estado de sus flujos al empezar el tramo, recorre sus lotes en
+        el orden original y pondera su pérdida media por su fracción de etiquetas. La suma
+        de los bloques es la pérdida media del tramo.
+        """
+        predictor, size = self.predictor, self.recipe.accumulation_rows
+        targets = {
+            (flow, at): value for (flow, at, _), value in zip(run.used, run.targets, strict=True)
+        }
+        order = list(dict.fromkeys(flow for flow, _, _ in run.used))
+        total = 0.0
+        for start in range(0, len(order), size):
+            group = order[start : start + size]
+            states = {flow: run.starts[flow] for flow in group if run.starts[flow] is not None}
+            if predictor.config.variant == "mac_frozen":
+                self._anchor_frozen(states)
+            members, graphs = set(group), {}
+            for batch in run.segment:
+                rows = [i for i, flow in enumerate(batch.flow_ids) if flow in members]
+                if not rows:
+                    continue
+                batch = batch.select(rows)
+                new = tuple(flow for flow in batch.flow_ids if flow not in states)
+                if new:
+                    states.update(_split(predictor.initial_state(new, differentiable=True)))
+                state = _stack([states[flow] for flow in batch.flow_ids])
+                with torch.enable_grad():
+                    prepared = predictor.prepare(batch, state, differentiable=True)
+                states.update(_split(prepared.next_state))
+                outputs = prepared.quantiles if self.quantiles else prepared.point_predictions
+                for row, key in enumerate(zip(batch.flow_ids, batch.prediction_at, strict=True)):
+                    if key in targets:
+                        graphs[key] = outputs[row]
+            keys = [(flow, at) for flow, at, _ in run.used if flow in members]
+            if any(key not in graphs for key in keys):
+                raise ValueError("La repetición del tramo no reproduce sus predicciones")
+            prediction = torch.stack([graphs[key] for key in keys])
+            target = torch.tensor(
+                [targets[key] for key in keys], dtype=prediction.dtype, device=prediction.device
+            )
+            loss = self._loss(prediction, target) * (len(keys) / len(run.used))
             if not torch.isfinite(loss).item():
                 raise ValueError("La pérdida del tramo no es finita")
             loss.backward()
+            total += float(loss.detach())
+        return torch.tensor(total)
+
+    def _update(self, run, at):
+        """Un paso con las etiquetas maduras del tramo y truncamiento de todos los flujos."""
+        if run.predictions:
+            loss = self._replay(run) if self.recipe.accumulation_rows else self._backward(run)
             torch.nn.utils.clip_grad_norm_(
                 self.predictor.parameters(),
                 self.recipe.max_grad_norm or math.inf,
@@ -511,6 +600,8 @@ class ChronologicalTrainer:
         run.predictions.clear()
         run.targets.clear()
         run.used.clear()
+        run.segment.clear()
+        run.starts.clear()
         run.instants = 0
         run.counters["segments"] += 1
 
@@ -520,6 +611,8 @@ class ChronologicalTrainer:
         run.pending.clear()
         run.graphs.clear()
         run.levels.clear()
+        run.segment.clear()
+        run.starts.clear()
 
     @staticmethod
     def _metrics(run):
@@ -604,6 +697,8 @@ class ChronologicalTrainer:
         raise ValueError("El recorrido de ajuste terminó sin su cierre declarado")
 
     def _export(self, run):
+        if run.graphs or run.segment or run.starts:
+            raise ValueError("Solo se confirma un recorrido en la barrera posterior a un paso")
         predictor, size = self.predictor, self.predictor.config.max_batch
         flows = sorted(run.flows)
         fast = [
