@@ -201,7 +201,11 @@ def _group(job):
 
 @dataclass(frozen=True)
 class JobRun:
-    """Lo que necesita un ejecutor: trabajo, caso resuelto, vista, destino y ancla."""
+    """Lo que necesita un ejecutor: trabajo, caso resuelto, vista, destino y ancla.
+
+    `parent` solo existe en los ajustes que parten de otro predictor elegido en la misma
+    ventana y semilla, como el lector de MARS-TITAN sobre Titans-MAC.
+    """
 
     job: dict
     case: dict | None
@@ -213,6 +217,7 @@ class JobRun:
     checkpoint_seconds: float
     stop: object
     anchor: dict | None = None
+    parent: dict | None = None
 
 
 def _neural_fit(run):
@@ -295,6 +300,18 @@ def _titans_carry(run):
     return titans_carry(run)
 
 
+def _mars_titan_fit(run):
+    from .mars_titan_walk_forward import mars_titan_fit
+
+    return mars_titan_fit(run)
+
+
+def _mars_titan_carry(run):
+    from .mars_titan_walk_forward import mars_titan_carry
+
+    return mars_titan_carry(run)
+
+
 # Ejecutores por modelo y tipo, con su dispositivo y si reanudan el último intento.
 EXECUTORS = {
     ("neural", FIT): dict(run=_neural_fit, device="cuda", resumable=True, report="run.json"),
@@ -312,6 +329,12 @@ EXECUTORS = {
     ("titans_mac", FIT): dict(run=_titans_fit, device="cuda", resumable=True, report="run.json"),
     ("titans_mac", CARRY): dict(
         run=_titans_carry, device="cuda", resumable=False, report="carry.json"
+    ),
+    ("mars_titan", FIT): dict(
+        run=_mars_titan_fit, device="cuda", resumable=True, report="run.json"
+    ),
+    ("mars_titan", CARRY): dict(
+        run=_mars_titan_carry, device="cuda", resumable=False, report="carry.json"
     ),
 }
 
@@ -404,15 +427,21 @@ class _Campaign:
             all(dep in self.receipts for dep in job["depends"]),
             f"{job['id']} depende de trabajos sin confirmar",
         )
+        parent = self.parent_of(job)
+        origin = (
+            {} if parent is None else dict(parent=parent["job"], parent_sha256=parent["sha256"])
+        )
         if job["stage"] == "search":
-            return job["case"], None, {}
+            return job["case"], None, origin
         if job["stage"] == "finalist":
+            # El ganador sale de las búsquedas propias, nunca de las del padre.
+            own = f"{job['scope']}/{job['window']}/{job['arm']}/search-"
             key, winner = min(
-                ((dep, self.receipts[dep]) for dep in job["depends"]),
+                ((dep, self.receipts[dep]) for dep in job["depends"] if dep.startswith(own)),
                 key=lambda item: (item[1]["score"], item[0]),
             )
             case = winner["identity"]["case"] | dict(seed=job["seed"])
-            return case, None, dict(source=key, source_sha256=winner["sha256"])
+            return case, None, dict(source=key, source_sha256=winner["sha256"], **origin)
         key, receipt = self.selected(job["scope"], job["anchor"], job["arm"], job["seed"])
         anchor = dict(
             folder=self.output / receipt["attempt"],
@@ -421,6 +450,18 @@ class _Campaign:
             sha256=receipt["sha256"],
         )
         return None, anchor, dict(source=key, source_sha256=receipt["sha256"])
+
+    def parent_of(self, job):
+        """Predictor elegido del que parte un ajuste con padre en su ventana y semilla."""
+        if job.get("parent") is None or job["kind"] != FIT:
+            return None
+        key, receipt = self.selected(job["scope"], job["window"], job["parent"], job["seed"])
+        return dict(
+            folder=self.output / receipt["attempt"],
+            job=key,
+            sha256=receipt["sha256"],
+            checkpoint_sha256=receipt["parent"]["sha256"],
+        )
 
     def job_identity(self, job, case, sources):
         view = self.views[job["scope"]]["windows"][job["window"]]
@@ -482,6 +523,7 @@ class _Campaign:
             checkpoint_seconds=self.campaign["neural"]["checkpoint_seconds"],
             stop=self.stop,
             anchor=anchor,
+            parent=self.parent_of(job),
         )
         return (run, identity), None
 
