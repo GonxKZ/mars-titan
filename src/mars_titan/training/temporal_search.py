@@ -2,6 +2,7 @@
 
 import argparse
 import fcntl
+import inspect
 import json
 import os
 import re
@@ -9,28 +10,40 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from mars_titan.data.cohort_files import read_manifest, safe_destination
+from mars_titan.data.input_policy import (
+    HISTORICAL_MASKED,
+    INPUT_POLICIES,
+    STRICT_INPUTS,
+    masked_inputs,
+)
 from mars_titan.data.storage import atomic_json, outside_source, sha256
-from mars_titan.evaluation.splits import PARTITIONS, build_folds
+from mars_titan.evaluation.splits import PARTITIONS, build_folds, stopping_rule
 
 from .checkpoints import StopRequest
+from .cohort_contract import input_identity
 from .experiment_resources import GpuLease
 from .reference_search import _configuration, run_search
 from .temporal_contract import temporal_contracts, temporal_fold
 
+# Versión del informe de vistas según la política de entradas y si une los dos mercados.
+_REPORT_VERSIONS = {
+    (STRICT_INPUTS, False): 1,
+    (STRICT_INPUTS, True): 2,
+    (HISTORICAL_MASKED, False): 2,
+    (HISTORICAL_MASKED, True): 3,
+}
+_PLAN_STOPPING = ("max_epochs", "patience", "min_delta", "minimum_epochs")
 
-def _source_reports(report, views, markets):
-    if report["schema_version"] == 1:
+
+def _source_reports(report, views, markets, policy, joint):
+    masked = masked_inputs(policy)
+    if not joint:
         if len(markets) != 1:
             raise ValueError("La campaña conjunta necesita un informe temporal de versión 2")
         result = {next(iter(markets)): report}
     else:
         sources = report.get("sources")
-        if (
-            report.get("kind") != "joint_temporal_views"
-            or markets != {"US", "CN"}
-            or not isinstance(sources, dict)
-            or set(sources) != markets
-        ):
+        if markets != {"US", "CN"} or not isinstance(sources, dict) or set(sources) != markets:
             raise ValueError("La unión no identifica los informes de sus dos mercados")
         result = {}
         for market, record in sources.items():
@@ -44,17 +57,18 @@ def _source_reports(report, views, markets):
             local, digest = read_manifest(views / relative, 1024**2)
             if (
                 digest != record["sha256"]
-                or local.get("schema_version") != 1
+                or local.get("schema_version") != (2 if masked else 1)
                 or local.get("status") != "temporal_views_prepared"
                 or local.get("final_test_opened") is not False
             ):
                 raise ValueError("Un informe local no conserva su identidad temporal")
+            input_identity(local, input_policy=policy)
             result[market] = local
+    # La política histórica conserva el macro del padre y no tiene panel ni admisión propios.
+    keys = ("parent_sha256", "protocol_sha256")
+    keys += () if masked else ("macro_sha256", "admission_sha256")
     for local in result.values():
-        if any(
-            not re.fullmatch(r"[0-9a-f]{64}", str(local.get(key)))
-            for key in ("parent_sha256", "macro_sha256", "admission_sha256", "protocol_sha256")
-        ):
+        if any(not re.fullmatch(r"[0-9a-f]{64}", str(local.get(key))) for key in keys):
             raise ValueError("Faltan huellas de procedencia de la preparación")
     return result
 
@@ -70,19 +84,23 @@ def _inputs(config, views):
         raise ValueError("La campaña temporal requiere un único brazo y peso natural")
     markets = {"US", "CN"} if plan["arms"] == ["US+CN"] else set(plan["arms"])
     report, report_hash = read_manifest(views / "report.json", 1024**2)
+    policy = report.get("input_policy", STRICT_INPUTS) if isinstance(report, dict) else None
+    joint = isinstance(report, dict) and report.get("kind") == "joint_temporal_views"
     if (
         not isinstance(report, dict)
+        or policy not in INPUT_POLICIES
         or type(report.get("schema_version")) is not int
-        or report.get("schema_version") not in {1, 2}
+        or report["schema_version"] != _REPORT_VERSIONS[(policy, joint)]
         or report.get("status") != "temporal_views_prepared"
         or report.get("final_test_opened") is not False
         or not isinstance(report.get("folds"), list)
         or not 1 <= len(report["folds"]) <= 128
     ):
         raise ValueError("Las vistas no tienen un informe de preparación admisible")
+    input_identity(report, input_policy=policy)
     if not re.fullmatch(r"[0-9a-f]{64}", str(report.get("parent_sha256"))):
         raise ValueError("Faltan huellas de procedencia de la preparación")
-    evidence = _source_reports(report, views, markets)
+    evidence = _source_reports(report, views, markets, policy, joint)
     if any(len(local.get("folds", [])) != len(report["folds"]) for local in evidence.values()):
         raise ValueError("Los informes locales no contienen todas las ventanas conjuntas")
     records, protocols = [], None
@@ -94,7 +112,7 @@ def _inputs(config, views):
         meta, digest = read_manifest(path, 8 * 1024**2)
         if not isinstance(meta, dict):
             raise ValueError("El manifiesto de la ventana no es un objeto")
-        contracts = temporal_contracts(meta)
+        contracts = temporal_contracts(meta, input_policy=policy)
         current = {market: contract["protocol"] for market, contract in contracts.items()}
         if protocols is None:
             protocols = current
@@ -131,7 +149,7 @@ def _inputs(config, views):
                 for key in ("macro_sha256", "parent_sha256", "admission_sha256")
             ):
                 raise ValueError("Una ventana no conserva las fuentes de su mercado")
-            if report["schema_version"] == 2:
+            if joint:
                 local_record = local["folds"][index]
                 local_path = views / "markets" / market / name / "manifest.json"
                 local_view, signature = read_manifest(local_path, 8 * 1024**2)
@@ -145,18 +163,30 @@ def _inputs(config, views):
                     or row.get("market_counts", {}).get(market) != local_view.get("counts")
                 ):
                     raise ValueError("La unión no conserva exactamente su ventana local")
-        if report["schema_version"] == 2 and meta["counts"] != {
+        if joint and meta["counts"] != {
             part: sum(local["folds"][index]["counts"][part] for local in evidence.values())
             for part in PARTITIONS
         }:
             raise ValueError("Los recuentos conjuntos no suman las poblaciones locales")
         records.append(
-            dict(id=name, manifest=path, manifest_sha256=digest, fold=temporal_fold(meta))
+            dict(
+                id=name,
+                manifest=path,
+                manifest_sha256=digest,
+                fold=temporal_fold(meta, input_policy=policy),
+                counts=meta["counts"],
+            )
         )
     if any(
         [r["fold"] for r in records] != build_folds(protocol) for protocol in protocols.values()
     ):
         raise ValueError("La campaña no contiene todas las ventanas del protocolo")
+    protocol = next(iter(protocols.values()))
+    if protocol["schema_version"] == 2:
+        # Todas las familias deben detenerse con la regla registrada en el protocolo.
+        rule = stopping_rule(protocol)
+        if plan["schema_version"] != 3 or any(plan[key] != rule[key] for key in _PLAN_STOPPING):
+            raise ValueError("El plan no aplica la regla de parada declarada por el protocolo")
     per_fold = len(cases) + len(plan["models"]) * (
         len(plan["finalist_seeds"]) - 1 + 2 * len(plan["finalist_seeds"])
     )
@@ -170,19 +200,40 @@ def _inputs(config, views):
     )
     identity.update(
         {"protocol_sha256": report["protocol_sha256"]}
-        if report["schema_version"] == 1
+        if not joint
         else {
             "protocols_sha256": {
                 market: local["protocol_sha256"] for market, local in evidence.items()
             }
         }
     )
+    if masked_inputs(policy):
+        identity["input_policy"] = policy
     return records, identity, per_fold
+
+
+def check_temporal_search(config, views):
+    """Validar ventanas, población y presupuesto sin reservar la GPU ni entrenar."""
+    records, identity, per_fold = _inputs(Path(config), Path(views))
+    return dict(
+        status="checked",
+        identity=identity,
+        runs_per_fold=per_fold,
+        planned_runs=per_fold * len(records),
+        folds=[dict(id=r["id"], fold=r["fold"], counts=r["counts"]) for r in records],
+        scientific_training_started=False,
+        final_test_opened=False,
+    )
 
 
 def run_temporal_search(config, views, output, *, resume=False):
     config, views, output = map(Path, (config, views, output))
     records, identity, per_fold = _inputs(config, views)
+    policy = identity.get("input_policy", STRICT_INPUTS)
+    # Las vistas con máscaras requieren adhesión explícita del ejecutor antes de reservar la GPU.
+    if masked_inputs(policy) and "input_policy" not in inspect.signature(run_search).parameters:
+        raise ValueError("La búsqueda de referencias todavía no admite la política histórica")
+    options = {"input_policy": policy} if masked_inputs(policy) else {}
     safe_destination(output)
     outside_source(views, output)
     outside_source(Path("dataset"), output)
@@ -273,7 +324,12 @@ def run_temporal_search(config, views, output, *, resume=False):
 
                 folder = output / record["id"]
                 result = run_search(
-                    config, record["manifest"], folder, resume=folder.exists(), progress=observe
+                    config,
+                    record["manifest"],
+                    folder,
+                    resume=folder.exists(),
+                    progress=observe,
+                    **options,
                 )
                 resources.check()
                 observe(result)
@@ -297,10 +353,19 @@ def run_temporal_search(config, views, output, *, resume=False):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    for name in ("config", "views", "output"):
+    for name in ("config", "views"):
         parser.add_argument("--" + name, type=Path, required=True)
+    parser.add_argument("--output", type=Path)
     parser.add_argument("--resume", action="store_true")
+    parser.add_argument(
+        "--check", action="store_true", help="Validar y presupuestar sin reservar la GPU"
+    )
     args = parser.parse_args(argv)
+    if args.check:
+        print(json.dumps(check_temporal_search(args.config, args.views), ensure_ascii=False))
+        return 0
+    if args.output is None:
+        parser.error("La ejecución necesita --output")
     report = run_temporal_search(args.config, args.views, args.output, resume=args.resume)
     print(json.dumps(report, ensure_ascii=False))
     return 0 if report["status"] == "completed" else 2

@@ -29,7 +29,12 @@ from mars_titan.data.preparation import atomic_parquet
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.data.temporal import MarketClock
 from mars_titan.evaluation.split_readiness import _admission, _complete_dates
-from mars_titan.evaluation.splits import PARTITIONS, FoldPartitioner, build_folds
+from mars_titan.evaluation.splits import (
+    LABEL_INTERVAL_PURGE,
+    PARTITIONS,
+    FoldPartitioner,
+    build_folds,
+)
 
 from .cohort_contract import cohort_identity, representation_identity, validate_cohort_rows
 from .temporal_contract import validate_temporal_view
@@ -333,6 +338,7 @@ def prepare_temporal_corpus(
         outside_source(source, output)
     protocol, protocol_hash = read_manifest(protocol_path)
     folds = build_folds(protocol)
+    interval_purge = protocol.get("purge") == LABEL_INTERVAL_PURGE
     annual_boundary = None
     if recover_annual_boundaries:
         clock = MarketClock(protocol["market"], "2022-12-01", "2023-01-31")
@@ -365,6 +371,8 @@ def prepare_temporal_corpus(
             final_test_opened=False,
         )
         view["roots"]["labels"] = str((output / fold["id"] / "labels").resolve())
+        if interval_purge:
+            view["purged_by_boundary"] = {key: 0 for key in PARTITIONS}
         if recover_annual_boundaries:
             view["label_admission"] = dict(
                 schema_version=1,
@@ -455,6 +463,15 @@ def prepare_temporal_corpus(
                 )
                 for name in PARTITIONS:
                     view["counts"][name] += counts[name]
+                if interval_purge:
+                    # La frontera purgada es el final del tramo que contiene la decisión.
+                    crossed = temporal.partitioner.nominal_partitions(
+                        label_prediction[reasons == "label_crosses_boundary"]
+                    )
+                    purged = {name: int(np.sum(crossed == name)) for name in PARTITIONS}
+                    view["assets"][position]["purged_by_boundary"] = purged
+                    for name in PARTITIONS:
+                        view["purged_by_boundary"][name] += purged[name]
                 if recover_annual_boundaries:
                     view["recovered_annual_labels"] += int(np.sum(used & recovered))
             parent._file(asset, "samples")
@@ -477,6 +494,20 @@ def prepare_temporal_corpus(
             )
             if recover_annual_boundaries:
                 summaries[-1]["recovered_annual_labels"] = view["recovered_annual_labels"]
+            if interval_purge:
+                summaries[-1]["purged_by_boundary"] = view["purged_by_boundary"]
+        empty = [
+            f"{row['id']}:{name}"
+            for row in summaries
+            for name, count in row["counts"].items()
+            if interval_purge and not count
+        ]
+        if empty:
+            # La versión 2 no cambia la población de una ventana dejando un tramo vacío.
+            raise ValueError(
+                f"El protocolo v2 no admite tramos sin filas en {protocol['market']}: "
+                + ", ".join(empty[:8])
+            )
         report = dict(
             schema_version=2 if masked else 1,
             **policy_identity(input_policy),
