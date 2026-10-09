@@ -17,7 +17,7 @@ import pytest
 from mars_titan.data.cohort_files import read_manifest
 from mars_titan.data.storage import atomic_json
 from mars_titan.environments.walk_forward_receipt import read_window_receipt
-from mars_titan.simulation import campaign_stage, window_tapes
+from mars_titan.simulation import campaign_stage, native_policy_runs, window_tapes
 from mars_titan.simulation.native_runtime import library_path
 from mars_titan.simulation.storage import read_tape
 from mars_titan.training.learning_hold import LearningHoldError
@@ -77,7 +77,12 @@ def test_variant_a_runs_every_policy_on_the_same_causal_tapes(base_a, tmp_path, 
             assert receipt["selection"] == dict(
                 metric="ruin_count_then_mean_liquidated_log_growth", partition="validation"
             )
-            assert receipt["transitions"] == 64 and receipt["policy"]["id"] == identity["id"]
+            assert receipt["policy"]["id"] == identity["id"]
+            if identity["arm"] == "klpo_terminal":
+                # Dos oleadas completas de dos episodios anuales, sin superar el presupuesto.
+                assert receipt["waves"] == 2 and 0 < receipt["transitions"] <= 1024
+            else:
+                assert receipt["transitions"] == 1024 and receipt["waves"] is None
         else:
             assert receipt["policy"] is None and receipt["transitions"] == 0
     assert {key: len(values) for key, values in by_window.items()} == {
@@ -323,7 +328,14 @@ def test_missing_engine_capabilities_stop_the_stage_before_reading_sources(
     assert not (tmp_path / "out").exists()
 
 
-def test_capability_requirements_follow_engine_and_market():
+def missing_binaries(monkeypatch, root):
+    """Sustituir los binarios de política por rutas inexistentes."""
+    for variable, name in native_policy_runs.BINARIES.values():
+        monkeypatch.setenv(variable, str(root / name))
+
+
+def test_capability_requirements_follow_engine_and_market(monkeypatch, tmp_path):
+    missing_binaries(monkeypatch, tmp_path)
     executors = campaign_stage.EXECUTORS
     job = dict(engine="native_klpo", market="CN")
     assert campaign_stage.requirements(job, executors) == [
@@ -338,11 +350,45 @@ def test_capability_requirements_follow_engine_and_market():
     assert probed["native_accounting"]["available"] is False
     assert probed["native_cn_a_share_rules"]["available"] is False
     for name in ("native_policy_reconstructed_tapes", "native_klpo_financial_runner"):
-        assert probed[name] == dict(
-            available=False, reason=campaign_stage.CAPABILITIES[name]["pending"]
+        assert probed[name]["available"] is False
+        assert probed[name]["reason"].startswith(campaign_stage.CAPABILITIES[name]["pending"])
+    for engine in ("native_ppo", "native_klpo"):
+        run = executors[engine]["run"]
+        assert isinstance(run, native_policy_runs.NativePolicyExecutor) and run.engine == engine
+
+
+def test_the_hold_stops_the_stage_before_probing_or_launching_binaries(
+    learning_hold, tmp_path, monkeypatch
+):
+    learning_hold(False)
+    launched = []
+
+    def forbidden(*args, **kwargs):
+        launched.append(args)
+        raise AssertionError("La etapa lanzó un proceso con el bloqueo vigente")
+
+    monkeypatch.setattr(campaign_stage, "probe_capabilities", forbidden)
+    monkeypatch.setattr(native_policy_runs.subprocess, "run", forbidden)
+    with pytest.raises(LearningHoldError):
+        campaign_stage.run_stage(
+            REPOSITORY["A"], {}, tmp_path / "c", tmp_path / "e", tmp_path / "out"
         )
-    with pytest.raises(campaign_stage.MissingCapability):
-        executors["native_ppo"]["run"]()
+    assert launched == [] and not (tmp_path / "out").exists()
+
+
+def test_policy_binaries_declare_their_capabilities_and_identity():
+    for engine in native_policy_runs.BINARIES:
+        if not native_policy_runs.binary_path(engine).is_file():
+            pytest.skip("Faltan mars-titan-ppo o mars-titan-klpo compilados")
+    probed = campaign_stage.probe_capabilities()
+    for name, binary in (
+        ("native_policy_reconstructed_tapes", "mars-titan-ppo"),
+        ("native_klpo_financial_runner", "mars-titan-klpo"),
+    ):
+        assert probed[name]["available"] is True and probed[name]["reason"] is None
+        identity = probed[name]["binary"]
+        assert identity["binary"] == binary and len(identity["binary_sha256"]) == 64
+        assert len(identity["native_build_sha256"]) == 64
 
 
 def _pop(job, report):
@@ -368,6 +414,16 @@ def _selection(**values):
     return change
 
 
+def _fewer(job, report):
+    # PPO y Double DQN gastan todo el presupuesto y KLPO todas las oleadas que caben en él.
+    if job["kind"] == "fit":
+        if job["engine"] == "native_klpo":
+            report["waves"] -= 1
+        else:
+            report["transitions"] = 32
+    return report
+
+
 def _episode(**values):
     def change(job, report):
         report["evaluation"][0] = dict(report["evaluation"][0], **values)
@@ -385,7 +441,7 @@ INVALID = {
     "drops_an_episode": (_pop, "cada coste"),
     "predictor_mae": (_selection(metric="session_mae"), "criterio de cartera"),
     "selects_on_evaluation": (_selection(partition="evaluation"), "criterio de cartera"),
-    "fewer_transitions": (_set(transitions=32), "presupuesto"),
+    "fewer_transitions": (_fewer, "presupuesto"),
     "policy_of_another_job": (
         _set(policy=dict(id="US/US/fold-002/gru/double_dqn/fit-s42", sha256="a" * 64)),
         "política elegida",
@@ -497,10 +553,11 @@ def test_changed_tapes_are_rejected_on_resume(base_a, tmp_path, learning_doubles
 
 
 def test_script_checks_the_policy_stage_and_runs_it_only_without_the_hold(
-    learning_hold, tmp_path, capsys
+    learning_hold, tmp_path, capsys, monkeypatch
 ):
     import runpy
 
+    missing_binaries(monkeypatch, tmp_path)
     script = runpy.run_path("scripts/run_masked_campaign.py", run_name="script")
     assert script["main"](["rl", "check", "--stage", str(REPOSITORY["B"])]) == 0
     report = json.loads(capsys.readouterr().out)
