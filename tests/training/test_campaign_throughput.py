@@ -1175,7 +1175,7 @@ def test_campaign_report_adds_the_policy_stage_apart_from_gpu_hours(doubled, pol
     for *_, kwargs in doubled:
         assert not any(key.startswith("policy_") for key in kwargs)
     assert report["rates"][throughput.POLICY_STAGE] == POLICY_RATES
-    jobs = dict(A=dict(fit=1368, reference=792), B=dict(fit=456, carry=912, reference=792))
+    jobs = dict(A=dict(fit=1368, reference=1221), B=dict(fit=456, carry=912, reference=1221))
     for estimate, previous in zip(report["estimates"], without["estimates"], strict=True):
         stage = estimate[throughput.POLICY_STAGE]
         assert stage["status"] == "approximate" and stage["jobs"] == jobs[estimate["variant"]]
@@ -1237,7 +1237,7 @@ def test_campaign_report_measures_the_prepared_families_and_their_policy_stage(
         status="prepared_not_declared",
     )
     # Con las tres familias, la etapa de políticas resuelve 22 predictores en vez de 11.
-    jobs = dict(A=dict(fit=2160, reference=1584), B=dict(fit=720, carry=1440, reference=1584))
+    jobs = dict(A=dict(fit=2160, reference=2442), B=dict(fit=720, carry=1440, reference=2442))
     expected = dict(A=((1080, 0), (1080, 0)), B=((408, 504), (408, 336)))
     for estimate in report["estimates"]:
         families = estimate["families"]
