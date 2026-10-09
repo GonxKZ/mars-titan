@@ -16,13 +16,16 @@ import torch
 from mars_titan.budget_training import seed_run
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.embeddings import require_cuda
+from mars_titan.data.input_policy import HISTORICAL_MASKED, STRICT_INPUTS, policy_identity
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.models.baselines.boosting_selection import BoostingSelection
+from mars_titan.models.baselines.external_boosting import MAX_DISK_CACHE_BYTES
 
 from .checkpoints import StopRequest
+from .cohort_contract import input_identity
 from .external_corpus import run_external_reference
 from .partition_contract import supervision_bounds
-from .tabular_corpus import run_tabular_reference
+from .tabular_corpus import feature_order, run_tabular_reference
 from .temporal_contract import temporal_contracts
 
 
@@ -54,6 +57,11 @@ def _code():
         "budget_training.py",
     )
     return {name: sha256(root / name) for name in names}
+
+
+def _policy(config):
+    """La versión 3 declara la edición con máscaras. Las anteriores son estrictas."""
+    return config.get("input_policy", STRICT_INPUTS)
 
 
 def _environment():
@@ -119,13 +127,16 @@ def _configuration(path):
         "checkpoint_interval",
         "final_test_opened",
     }
-    convergence = config.get("schema_version") == 2
+    convergence = config.get("schema_version") in (2, 3)
+    masked = config.get("schema_version") == 3
     if convergence:
         keys.update({"selection", "max_validation_cache_bytes"})
+    if masked:
+        keys.update({"input_policy", "max_disk_cache_bytes"})
     if (
         set(config) != keys
         or type(config["schema_version"]) is not int
-        or config["schema_version"] not in (1, 2)
+        or config["schema_version"] not in (1, 2, 3)
         or not _numbers(config["ridge_alphas"], 1e-12, 1e12)
         or not _numbers(config["depths"], 1, 12, integers=True)
         or not _numbers(config["bins"], 2, 512, integers=True)
@@ -147,6 +158,13 @@ def _configuration(path):
         or config["final_test_opened"] is not False
     ):
         raise ValueError("La configuración tabular no cumple el diseño o los presupuestos")
+    if masked and (
+        config["input_policy"] != HISTORICAL_MASKED
+        or config["on_host"]
+        or type(config["max_disk_cache_bytes"]) is not int
+        or not 1 <= config["max_disk_cache_bytes"] <= MAX_DISK_CACHE_BYTES
+    ):
+        raise ValueError("La edición con máscaras necesita caché en disco con presupuesto")
     if convergence:
         BoostingSelection(config["selection"], config["rounds"])
         if (
@@ -168,12 +186,15 @@ def _configuration(path):
     if convergence:
         common["selection"] = config["selection"]
         common["max_validation_cache_bytes"] = config["max_validation_cache_bytes"]
+    policy = {"input_policy": config["input_policy"]} if masked else {}
+    if masked:
+        common.update(policy, max_disk_cache_bytes=config["max_disk_cache_bytes"])
     cases = [
         dict(
             id=f"ridge-a{float(alpha)!r}",
             kind="ridge",
             stage="search",
-            parameters=dict(alpha=alpha, batch_size=config["batch_size"]),
+            parameters=dict(alpha=alpha, batch_size=config["batch_size"], **policy),
         )
         for alpha in config["ridge_alphas"]
     ]
@@ -231,6 +252,13 @@ def _completed(folder, task, source, source_hash):
     ):
         raise ValueError("El resultado no confirma la misma población, origen y modelo")
     options = task["parameters"]
+    policy = options.get("input_policy", STRICT_INPUTS)
+    holder = report if task["kind"] == "ridge" else identity
+    if policy != STRICT_INPUTS and (
+        report.get("feature_order") != feature_order(policy)
+        or any(holder.get(key) != value for key, value in policy_identity(policy).items())
+    ):
+        raise ValueError("El resultado no conserva la política de entradas ni sus bits")
     if task["kind"] == "ridge":
         if any(report.get(key) != value for key, value in options.items()):
             raise ValueError("Ridge no conserva los parámetros del caso")
@@ -380,6 +408,7 @@ def run_tabular_search(
 ):
     config_path, manifest, output = map(Path, (config_path, manifest, output))
     config, cases, config_hash = _configuration(config_path)
+    policy = _policy(config)
     source, source_hash = read_manifest(manifest, 8 * 1024**2)
     if expected_source_hash is not None and source_hash != expected_source_hash:
         raise ValueError("El origen no coincide con la población verificada por la cola")
@@ -392,8 +421,9 @@ def run_tabular_search(
         raise ValueError(
             "La campaña necesita dos particiones admitidas y una población identificada"
         )
-    for market in temporal_contracts(source) or [None]:
-        supervision_bounds(source, market=market)
+    input_identity(source, input_policy=policy)
+    for market in temporal_contracts(source, input_policy=policy) or [None]:
+        supervision_bounds(source, market=market, input_policy=policy)
     safe_destination(output)
     for root in (*source["roots"].values(), manifest.parent, config_path):
         outside_source(Path(root), output)
@@ -403,6 +433,7 @@ def run_tabular_search(
     identity = dict(
         config_sha256=config_hash,
         manifest_sha256=source_hash,
+        **policy_identity(policy),
         code=_code(),
         environment=_environment(),
     )
