@@ -26,13 +26,21 @@ debe justificar ese límite con los manifiestos de preparación. El entorno no
 deduce una fecha de publicación a partir de un periodo contable.
 
 Las entradas deben estar disponibles en la decisión. Las etiquetas deben madurar
-después. Los datos de entrenamiento no pueden cruzar el inicio de 2023. La
-validación usa decisiones y etiquetas de 2023. Las fechas de 2024 en adelante
-se rechazan antes de decidir. Si la fuente declara `partition`, debe coincidir
-con la del entorno. Así, la validación walk-forward que empieza en diciembre de
-2022 no puede recorrerse como entrenamiento aunque sus fechas sean anteriores
-a 2023. Los cortes fijos todavía rechazan esa validación, que necesitará los
-límites de su supervisión y otra identidad del entorno.
+después. Sin ventana declarada, los datos de entrenamiento no pueden cruzar el
+inicio de 2023 y la validación usa decisiones y etiquetas de 2023. Las fechas de
+2024 en adelante se rechazan antes de decidir. Si la fuente declara `partition`,
+debe coincidir con la del entorno. Así, la validación walk-forward que empieza en
+diciembre de 2022 no puede recorrerse como entrenamiento aunque sus fechas sean
+anteriores a 2023.
+
+Con `window`, el entorno toma los cortes de un recibo de ventana del protocolo
+walk-forward v2 (`environments/walk_forward_receipt.py`). Admite los cuatro
+tramos (ajuste, validación, calibración y evaluación). Cada decisión debe caer
+dentro de su tramo y cada etiqueta debe madurar antes de su final, que es la
+misma purga por intervalo del protocolo. Si la fuente declara límites por
+mercado, deben coincidir con los del recibo. La ventana entra en la identidad
+del entorno, de modo que un estado guardado con otra ventana no se restaura. El
+contrato del recibo está en la [revisión de integridad](rl-environment-integrity.md#recibo-de-ventana-walk-forward).
 
 Una llamada a `step` registra todas las acciones de la cohorte. Después avanza
 al siguiente instante y devuelve únicamente los créditos cuya etiqueta ya ha

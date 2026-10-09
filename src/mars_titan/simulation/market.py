@@ -8,12 +8,29 @@ from dataclasses import asdict
 import numpy as np
 
 from mars_titan.environments.cohorts import FINAL_TEST_START_US, VALIDATION_START_US
+from mars_titan.evaluation.splits import PARTITIONS
 
 from .portfolio import MAX_INSTRUMENTS, CorporateAction, Quote
 
 # 4.200 activos durante un año de 251 sesiones superan el millón de celdas anterior.
 # Con 48 bytes por celda (OHLCV y predicción en float64) el máximo ocupa 96 MiB por copia.
 MAX_TAPE_CELLS = 2_097_152
+RECONSTRUCTED = "unadjusted_reconstructed"
+# Tratamiento fijo de la edición reconstruida (#379). Una cinta no puede declarar otro.
+RECONSTRUCTED_CONTRACT = dict(
+    corporate_actions="provider_events_in_verified_rows",
+    corporate_actions_complete=False,
+    exit_returns="unavailable",
+    population="listed_through_2025_03",
+    rows="verified_only",
+    non_trading="zero_volume_or_missing_row_without_execution",
+    valuation="last_traded_close",
+    same_day_split_dividend="lower_cash_without_execution",
+    off_grid_open="without_execution",
+)
+CURRENCIES = {"US": "USD", "CN": "CNY"}
+_HEX = re.compile(r"[a-f0-9]{64}")
+_SEGMENT = {"receipt_sha256", "fold", "partition", "start", "end", "labels_used_until"}
 
 
 def _times(values):
@@ -27,6 +44,54 @@ def _times(values):
     ):
         raise ValueError("Los tiempos deben ser enteros UTC no negativos de 64 bits")
     return result.astype(np.int64, copy=True)
+
+
+def _reconstructed_contract(audit, currency):
+    """Comprobar que la cinta declara las limitaciones de la edición sin suavizarlas."""
+    keys = {"price_basis", "market", "edition_id", "evidence_sha256", "walk_forward"}
+    keys |= {"prediction_fit_ends", "assumptions", *RECONSTRUCTED_CONTRACT}
+    assumptions = audit.get("assumptions")
+    if (
+        set(audit) != keys
+        or any(audit[key] != value for key, value in RECONSTRUCTED_CONTRACT.items())
+        or audit["corporate_actions_complete"] is not False
+        or CURRENCIES.get(audit["market"]) != currency
+        or not _HEX.fullmatch(str(audit["edition_id"]))
+        or not _HEX.fullmatch(str(audit["evidence_sha256"]))
+        or not isinstance(assumptions, dict)
+        or set(assumptions) != {"dividend_payment_lag_sessions"}
+        or type(assumptions["dividend_payment_lag_sessions"]) is not int
+        or not 0 <= assumptions["dividend_payment_lag_sessions"] <= 252
+    ):
+        raise ValueError("La cinta reconstruida no declara su tratamiento y sus limitaciones")
+
+
+def _walk_forward_fits(segments, times):
+    """Último dato de ajuste de cada sesión, derivado de los recibos de su ventana."""
+    if (
+        not isinstance(segments, list)
+        or not 1 <= len(segments) <= 128
+        or any(
+            not isinstance(segment, dict)
+            or set(segment) != _SEGMENT
+            or not _HEX.fullmatch(str(segment["receipt_sha256"]))
+            or not isinstance(segment["fold"], str)
+            or segment["partition"] not in PARTITIONS
+            or any(type(segment[key]) is not int for key in ("start", "end", "labels_used_until"))
+            or not 0 <= segment["start"] < segment["end"] <= FINAL_TEST_START_US
+            for segment in segments
+        )
+        or any(a["end"] > b["start"] for a, b in zip(segments, segments[1:], strict=False))
+    ):
+        raise ValueError("Los tramos walk-forward de la cinta no son válidos")
+    starts = np.array([segment["start"] for segment in segments], dtype=np.int64)
+    ends = np.array([segment["end"] for segment in segments], dtype=np.int64)
+    owner = np.searchsorted(starts, times, side="right") - 1
+    if (owner < 0).any() or (times >= ends[np.maximum(owner, 0)]).any():
+        raise ValueError("Una sesión de la cinta queda fuera de sus tramos walk-forward")
+    if len(set(owner.tolist())) != len(segments):
+        raise ValueError("Un tramo walk-forward declarado no tiene sesiones")
+    return [segments[i]["labels_used_until"] for i in owner]
 
 
 class MarketTape:
@@ -49,7 +114,14 @@ class MarketTape:
     ):
         if domain not in {"synthetic", "real"} or partition not in {"train", "validation"}:
             raise ValueError("La simulación necesita origen y partición de desarrollo")
-        if domain == "real" and (
+        reconstructed = (
+            domain == "real"
+            and isinstance(audit, dict)
+            and audit.get("price_basis") == RECONSTRUCTED
+        )
+        if reconstructed:
+            _reconstructed_contract(audit, currency)
+        elif domain == "real" and (
             not isinstance(audit, dict)
             or audit.get("price_basis") != "unadjusted"
             or audit.get("corporate_actions_complete") is not True
@@ -91,7 +163,17 @@ class MarketTape:
             if partition == "train"
             else (VALIDATION_START_US, FINAL_TEST_START_US)
         )
-        if domain == "real" and not (times[0] >= low and times[-1] < high):
+        if reconstructed:
+            # Los cortes salen de los recibos walk-forward y no de las fechas fijas de 2023.
+            if audit["prediction_fit_ends"] != _walk_forward_fits(audit["walk_forward"], times):
+                raise ValueError(
+                    "Las predicciones históricas necesitan un ajuste anterior a cada decisión"
+                )
+            prefixes = {asset.split("/", 1)[0] for asset in assets}
+            if prefixes != {audit["market"]} or not np.isfinite(prices[:, :, 3]).all():
+                # Sin retornos de salida, ningún activo puede quedar sin valorar.
+                raise ValueError("La cinta reconstruida necesita un cierre valorado por sesión")
+        elif domain == "real" and not (times[0] >= low and times[-1] < high):
             raise ValueError("La simulación histórica cruza su partición o el test sellado")
         order = np.argsort(assets)
         self.assets = [assets[i] for i in order]

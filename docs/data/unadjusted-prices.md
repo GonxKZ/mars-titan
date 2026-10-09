@@ -157,6 +157,8 @@ El código está en [`unadjusted_prices.py`](../../src/mars_titan/data/unadjuste
 
 La edición no satisface por sí sola el contrato de `MarketTape`. Una cinta real debe limitarse a filas verificadas, tratar el volumen cero como sesión sin negociación y declarar las acciones corporativas que use. Las escisiones registradas como splits fraccionarios y las ampliaciones no publicadas impiden afirmar que las acciones estén completas.
 
+La [tercera fase de la revisión de integridad](../engineering/rl-environment-integrity.md#tercera-fase-cinta-real-reconstruida-y-cortes-walk-forward) construye esa cinta con estas condiciones y declara en su identidad lo que la edición no cubre.
+
 ## Limitaciones
 
 - La evidencia independiente cubre 15 activos. La rejilla es una comprobación interna y su tolerancia se eligió tras explorar toda la población.

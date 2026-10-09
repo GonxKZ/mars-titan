@@ -7,8 +7,11 @@ import re
 import gymnasium as gym
 import numpy as np
 
+from mars_titan.evaluation.splits import PARTITIONS
+
 from .actions import ActionGrid
 from .cohorts import FINAL_TEST_START_US, VALIDATION_START_US, read_cohort, shapes_contract
+from .walk_forward_receipt import WalkForwardWindow
 
 
 class CausalPredictionEnv(gym.Env):
@@ -27,12 +30,14 @@ class CausalPredictionEnv(gym.Env):
         max_pending=65_536,
         max_observation_bytes=64 * 1024**2,
         partition="train",
+        window=None,
     ):
         if (
             not callable(source)
             or not isinstance(grid, ActionGrid)
             or source_sha256 != grid.source_sha256
-            or partition not in {"train", "validation"}
+            or partition not in (PARTITIONS if window is not None else {"train", "validation"})
+            or (window is not None and not isinstance(window, WalkForwardWindow))
             or type(max_pending) is not int
             or not 1 <= max_pending <= 65_536
         ):
@@ -41,6 +46,12 @@ class CausalPredictionEnv(gym.Env):
         if declared is not None and declared != partition:
             # Los cortes fijos no distinguen una validación walk-forward anterior a 2023.
             raise ValueError("La fuente declara otra partición que la del entorno")
+        if window is not None:
+            # Los cortes de la ventana salen de su recibo. La fuente no puede declarar otros.
+            start, end = window.segment(partition)
+            bounds = getattr(source, "market_bounds", None) or {}
+            if any(tuple(value) != (start, end, end) for value in bounds.values()):
+                raise ValueError("La fuente declara otros cortes que la ventana walk-forward")
         self.shapes = shapes_contract(shapes, max_assets, max_observation_bytes)
         self.source, self.grid = source, grid
         self.max_assets, self.max_pending, self.max_bytes = (
@@ -72,15 +83,26 @@ class CausalPredictionEnv(gym.Env):
         self.current, self.pending, self.position, self.clock, self.done = None, [], 0, 0, True
         self.started, self.origins = False, {}
         self.abandoned = dict(episodes=0, pending_credits=0)
-        self.start = 0 if partition == "train" else VALIDATION_START_US
-        self.end = VALIDATION_START_US if partition == "train" else FINAL_TEST_START_US
+        self.window = window
+        if window is not None:
+            self.identity["walk_forward"] = window.identity(partition)
+            self.start, self.end = start, end
+        else:
+            self.start = 0 if partition == "train" else VALIDATION_START_US
+            self.end = VALIDATION_START_US if partition == "train" else FINAL_TEST_START_US
 
     def _read(self, position):
         raw = self.source(position)
         current = (
             None if raw is None else read_cohort(raw, self.shapes, self.max_assets, self.max_bytes)
         )
-        if current is not None:
+        if current is not None and self.window is not None:
+            # Decisión dentro del tramo y etiquetas maduras antes de su final, nunca en 2024.
+            if not self.start <= current["prediction_at"] < self.end or (
+                (current["target_available_at"] >= self.end).any()
+            ):
+                raise ValueError("La cohorte cruza el tramo de su ventana walk-forward")
+        elif current is not None:
             train = current["prediction_at"] < VALIDATION_START_US
             if train != (self.identity["partition"] == "train") or (
                 train and (current["target_available_at"] >= VALIDATION_START_US).any()
