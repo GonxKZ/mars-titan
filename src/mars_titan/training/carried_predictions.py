@@ -149,7 +149,10 @@ def selected_reference(anchor, anchor_manifest, *, input_policy):
     if declared_policy(case.get("precision")) != identity.get("kernel_policy"):
         raise ValueError("El entorno o el código no coincide con el ancla")
     current = scientific_identity(
-        kind=case["kind"], input_policy=input_policy, head=case.get("head")
+        kind=case["kind"],
+        input_policy=input_policy,
+        head=case.get("head"),
+        graphs="cuda_graphs" in case,
     )
     if any(identity.get(key) != value for key, value in current.items()):
         raise ValueError("El entorno o el código no coincide con el ancla")
