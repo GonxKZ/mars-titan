@@ -43,6 +43,7 @@ from . import campaign_numerics, campaign_schedule, masked_campaign
 from .campaign_plan import (
     DECLARED,
     NEURAL,
+    ONLINE,
     QUANTILE_HEAD,
     _arm_specs,
     arm_output,
@@ -382,7 +383,8 @@ def _base_receipts(base, campaign, stage, pairs=None):
     `pairs` limita la confirmación a esos pares (ámbito, ventana) al ejecutar una ventana.
     """
     for job in plan_campaign(campaign):
-        if job["scope"] not in stage["scopes"]:
+        # El control en línea no tiene un estado elegido que ablacionar.
+        if job["scope"] not in stage["scopes"] or job["kind"] == ONLINE:
             continue
         if pairs is not None and (job["scope"], job["window"]) not in pairs:
             continue

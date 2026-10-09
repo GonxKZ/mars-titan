@@ -87,12 +87,16 @@ def test_v2_plans_the_joint_model_for_every_arm_and_three_separate_controls():
     joint, us, cn = (counts["scopes"][scope] for scope in ("US+CN", "US", "CN"))
     assert (joint["windows"], us["windows"], cn["windows"]) == (19, 19, 13)
     assert (joint["training_jobs"], us["training_jobs"], cn["training_jobs"]) == (1938, 228, 156)
-    assert set(us["arms"]) == set(cn["arms"]) == set(CONTROLS)
+    # El control en línea acompaña al Transformer compacto en cada ámbito.
+    assert set(us["arms"]) == set(cn["arms"]) == {*CONTROLS, "transformer_compact_online"}
     assert plan.scope_arms(loaded, "US") == plan.scope_arms(loaded, "CN") == list(CONTROLS)
     # Dos casos con la semilla 42 y el elegido repetido con 43 y 44 en cada ventana.
     for record, windows in ((joint, 19), (us, 19), (cn, 13)):
+        assert record["arms"]["transformer_compact_online"] == {
+            s: dict(fit=0, carry=0, online=windows) for s in ("42", "43", "44")
+        }
         for arm in record["arms"]:
-            if arm in {"ridge", "xgboost", "gru_episodic"}:
+            if arm in {"ridge", "xgboost", "gru_episodic", "transformer_compact_online"}:
                 continue
             assert record["arms"][arm] == {
                 "42": dict(fit=2 * windows, carry=0),
@@ -119,6 +123,8 @@ def test_extra_seeds_repeat_only_the_selected_case_after_every_search_of_the_sco
         # Ninguna dependencia cruza de ámbito.
         assert all(dep.split("/")[0] == job["scope"] for dep in job["depends"]), job["id"]
     for (scope, window, arm), members in groups.items():
+        if arm == "transformer_compact_online":
+            continue  # El control en línea no busca casos: parte del elegido de su padre.
         searches = sorted(job["id"] for job in members if job["stage"] == "search")
         finalists = [job for job in members if job["stage"] == "finalist"]
         assert all(job["seed"] == 42 for job in members if job["stage"] == "search")
@@ -186,7 +192,8 @@ def test_v2_rejects_declarations_that_break_the_seed_stopping_or_memory_rules(
 
 def test_memory_options_block_the_launch_until_they_match_the_recipe(tmp_path):
     blockers = plan.launch_blockers(campaign())
-    assert len(blockers) == 4 and all("pendiente" in reason for reason in blockers)
+    memory = [reason for reason in blockers if "medida de memoria" in reason]
+    assert len(memory) == 4 and all("pendiente" in reason for reason in blockers)
 
     def fixed(value):
         # Un valor igual al de la receta (null, sin acumulación) deja de bloquear.
@@ -197,6 +204,7 @@ def test_memory_options_block_the_launch_until_they_match_the_recipe(tmp_path):
     assert [reason.split(".")[0] for reason in plan.launch_blockers(loaded)] == [
         "episodic_gru",
         "episodic_gru",
+        *["transformer_compact_online"] * 4,
     ]
     report = plan.check_campaign(CAMPAIGN)
     assert report["launch_blockers"] == blockers
@@ -278,7 +286,7 @@ def test_window_schedule_orders_every_stage_of_the_window_and_counts_all_jobs():
     for row in schedule:
         totals.update({entry["phase"]: len(entry["jobs"]) for entry in row["phases"]})
     assert totals["base_search"] + totals["selected_case_seeds"] == 2322
-    assert totals["ablation"] == 3534
+    assert (totals["online"], totals["ablation"]) == (153, 3534)
     # Las etapas declaradas antes del diseño por etapas parten de la ventana k y su RL no
     # lee la cadena: el calendario las rechaza hasta que adopten el contrato.
     adapter_jobs = adapters.plan_stage(
@@ -535,7 +543,7 @@ def reduced(folder, *, controls=("gru",), arms=("gru", "ridge")):
     tabular.update(ridge_alphas=[1.0], depths=[3], bins=[64], rates=[0.1])
     atomic_json(folder / "tabular.json", tabular)
     value = json.loads(CAMPAIGN.read_text())
-    for section in ("titans_mac", "episodic_gru", "mars_titan", "cm_v1"):
+    for section in ("titans_mac", "episodic_gru", "mars_titan", "cm_v1", "online_controls"):
         value.pop(section)
     value.update(
         comparison="comparison.json",
@@ -921,7 +929,7 @@ def test_the_plan_checks_every_declared_document_of_the_campaign_and_its_stages(
         "historical-masked-rl-policies.json",
         "historical-masked-ablation-stage-a-v2.json",
     ]
-    assert len(plan.plan_campaign(value)) == 2322
+    assert len(plan.plan_campaign(value)) == 2322 + 153
     assert plan.check_campaign(CAMPAIGN)["data_policy"] == "real_edition_only"
 
 

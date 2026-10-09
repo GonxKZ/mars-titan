@@ -1,4 +1,4 @@
-"""Walk-forward por etapas de la campaña A: roles, cadena y disjunción.
+"""Walk-forward por etapas de la campaña A: roles, cadena, control en línea y disjunción.
 
 Las pruebas del plan no leen datos. Las del verificador preparan vistas sobre el corpus
 técnico, las alteran en sitio y las restauran, y escriben recibos de la cadena a mano. Nada
@@ -11,6 +11,7 @@ import numpy as np
 import pytest
 
 from mars_titan.training import campaign_chain as chain
+from mars_titan.training import campaign_online_controls as online
 from mars_titan.training import campaign_plan as plan
 from mars_titan.training import campaign_schedule as order
 from tests.training.test_campaign_a_joint import CAMPAIGN, edited
@@ -174,7 +175,7 @@ def test_the_schedule_selects_the_chain_after_posttraining_and_before_the_policy
     adapters, policies = staged_jobs(value, base)
     schedule = order.window_schedule(value, base, dict(adapters=adapters, rl=policies))
     phase = {name: index for index, name in enumerate(order.PHASES)}
-    assert phase["adapters"] < phase["chain"] < phase["rl"]
+    assert phase["online"] < phase["adapters"] < phase["chain"] < phase["rl"]
     chains = [row["phases"][phase["chain"]]["jobs"] for row in schedule]
     assert chains == [[chain.chain_job_id(JOINT, row["window"], "rnn", 42)] for row in schedule]
     assert [len(row["phases"][phase["rl"]]["jobs"]) for row in schedule] == [0] * 4 + [1] * 15
@@ -290,3 +291,105 @@ def test_row_fingerprints_ignore_order_and_combine_asset_by_asset():
         chain.row_fingerprint(["US", "US"], ["A", "A"], [1, 1])
     with pytest.raises(ValueError, match="no aporta filas"):
         chain.combine({("US", "A"): (0, "x")})
+
+
+# Control en línea y variante B
+
+
+def test_the_online_control_starts_from_the_selected_parent_with_the_bank_cap():
+    value = campaign()
+    base = plan.plan_campaign(value)
+    jobs = [job for job in base if job["kind"] == online.ONLINE]
+    assert len(jobs) == 153 == value["online_controls"]["limits"]["max_online_jobs"]
+    assert plan.count_jobs(value)["online_jobs"] == 153
+    by_id = {job["id"]: job for job in jobs}
+    first = by_id["US/fold-004/transformer_compact_online/online-s42"]
+    assert first["depends"] == [
+        *searches(base, "US/fold-004/transformer_compact"),
+        *searches(base, "US/fold-004/mars_titan_m1"),
+    ]
+    assert len(first["depends"]) == 4
+    other = by_id["CN/fold-012/transformer_compact_online/online-s44"]
+    assert other["depends"] == [
+        "CN/fold-012/transformer_compact/finalist-s44",
+        "CN/fold-012/mars_titan_m1/finalist-s44",
+    ]
+    assert all(
+        (job["model"], job["stage"], job["regenerable"], job["family"])
+        == ("neural", "online", False, plan.NEURAL)
+        and job["case"]["rule"]["update_cap"] == online.CAP
+        for job in jobs
+    )
+    # El calendario los pone tras elegir padre y tope en su ventana.
+    schedule = order.window_schedule(value, plan.plan_campaign(value))
+    assert sum(len(row["phases"][order.PHASES.index("online")]["jobs"]) for row in schedule) == 153
+
+
+def test_the_online_control_respects_its_job_limit(tmp_path):
+    def tight(value):
+        value["online_controls"]["limits"]["max_online_jobs"] = 152
+
+    with pytest.raises(ValueError, match="max_online_jobs=152"):
+        plan.plan_campaign(plan.load_campaign(edited(tmp_path, tight)))
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        lambda arm: arm.update(cap_arm="mars_titan_m2"),
+        lambda arm: arm.update(parent_arm="gru"),
+        lambda arm: arm.update(partitions=["evaluation"]),
+        lambda arm: arm["rule"].update(optimizer="adam"),
+        lambda arm: arm["rule"].update(update_cap="rows"),
+        lambda arm: arm["rule"].update(learning_rate=0.0),
+        lambda arm: arm["rule"].update(learning_rate=1),
+        lambda arm: arm["rule"].update(block_rows=64.0),
+        lambda arm: arm["rule"].update(update_every=0),
+        lambda arm: arm["rule"].update(max_grad_norm=-1.0),
+        lambda arm: arm["rule"].pop("max_grad_norm"),
+    ],
+    ids=[
+        "other_cap",
+        "other_parent",
+        "evaluation_only",
+        "adam",
+        "row_cap",
+        "zero_rate",
+        "integer_rate",
+        "float_block",
+        "zero_frequency",
+        "negative_clip",
+        "missing_clip",
+    ],
+)
+def test_the_online_control_admits_only_its_declared_rule(tmp_path, change):
+    def broken(value):
+        change(value["online_controls"]["arms"][online.ARM])
+
+    with pytest.raises(ValueError, match="se limita con las escrituras del banco"):
+        plan.load_campaign(edited(tmp_path, broken))
+
+
+def test_the_online_control_needs_its_parent_and_cap_in_every_scope(tmp_path):
+    def no_reader(declared):
+        declared["joint_design"]["separate_controls"] = ["transformer_compact"]
+
+    path = edited(tmp_path, lambda value: None, comparison_change=no_reader)
+    with pytest.raises(ValueError, match="En US el control en línea necesita"):
+        plan.load_campaign(path)
+
+
+def test_the_online_rule_blocks_the_launch_until_every_value_is_declared(tmp_path):
+    pending = [r for r in plan.launch_blockers(campaign()) if r.startswith(online.ARM)]
+    assert pending == [
+        f"{online.ARM}.rule.{name} sigue pendiente"
+        for name in ("learning_rate", "block_rows", "update_every", "max_grad_norm")
+    ]
+
+    def declared(value):
+        value["online_controls"]["arms"][online.ARM]["rule"].update(
+            learning_rate=1e-4, block_rows=64, update_every=1, max_grad_norm=1.0
+        )
+
+    loaded = plan.load_campaign(edited(tmp_path, declared))
+    assert not [r for r in plan.launch_blockers(loaded) if r.startswith(online.ARM)]

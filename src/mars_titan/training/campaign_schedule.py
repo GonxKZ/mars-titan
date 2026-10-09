@@ -9,13 +9,14 @@ Con `execution.order = "by_window"` la campaña recorre cada ventana en estas fa
 1. `base_search`: casos de búsqueda de todos los brazos con la semilla de búsqueda.
 2. `selection`: elección del caso de cada brazo con la validación de esa ventana.
 3. `selected_case_seeds`: el caso elegido con las demás semillas (y los traslados).
-4. `adapters`: el posentrenamiento, que parte del estado elegido de la base en la ventana
+4. `online`: el control en línea, que parte del estado elegido de su padre en la ventana.
+5. `adapters`: el posentrenamiento, que parte del estado elegido de la base en la ventana
    anterior y ajusta solo con las filas nuevas (`campaign_chain`).
-5. `chain`: la selección del predictor de la cadena de cada brazo base y semilla.
-6. `ablation` y `rl`: la ablación y la política, que lee la cadena de esta ventana y de
+6. `chain`: la selección del predictor de la cadena de cada brazo base y semilla.
+7. `ablation` y `rl`: la ablación y la política, que lee la cadena de esta ventana y de
    todas las anteriores que necesita.
-7. `comparison`: agregados por sesión de la comparación de esa ventana.
-8. `release`: liberación de lo temporal de la ventana, tras sus agregados.
+8. `comparison`: agregados por sesión de la comparación de esa ventana.
+9. `release`: liberación de lo temporal de la ventana, tras sus agregados.
 
 Después empieza la siguiente ventana. El plan solo admite dependencias hacia fases
 anteriores de la misma ventana o hacia ventanas anteriores. La selección no es un trabajo,
@@ -38,6 +39,7 @@ PHASES = (
     "base_search",
     "selection",
     "selected_case_seeds",
+    "online",
     "adapters",
     "chain",
     "ablation",
@@ -47,7 +49,10 @@ PHASES = (
 )
 # Fase de cada clase (`stage`) de trabajo de la campaña base.
 BASE_PHASES = dict(
-    search="base_search", finalist="selected_case_seeds", carry="selected_case_seeds"
+    search="base_search",
+    finalist="selected_case_seeds",
+    carry="selected_case_seeds",
+    online="online",
 )
 STAGES = ("adapters", "ablation", "rl")
 

@@ -54,6 +54,7 @@ from .campaign_plan import (
     FIT,
     MARS,
     NEURAL,
+    ONLINE,
     TITANS,
     _arm_specs,
     extend_campaign,
@@ -63,6 +64,7 @@ from .campaign_plan import (
 
 TRAINING_PARTITIONS = ("validation", "calibration", "evaluation", "train")
 POSTTRAINING = "posttraining_adapter_matrix"
+ONLINE_CONTROL = "online_control"
 POLICY_STAGE = "rl_policy_comparison"
 ABLATION_STAGE = "modality_ablation"
 NOT_MEASURED = "not_measured"
@@ -269,6 +271,24 @@ def _option_hours(campaign, family, jobs, counts, measured, epochs):
     return result
 
 
+def _online_hours(campaign, jobs, counts, neural):
+    """Horas del control en línea, con una cota prudente de sus pasos.
+
+    Cada trabajo predice calibración y evaluación con la inferencia más lenta de su padre y,
+    como cada etiqueta madura entra a lo sumo en un paso, ajusta como mucho esas mismas filas
+    una vez con el caudal de ajuste más lento del padre.
+    """
+    parent = campaign["online_controls"]["arms"][jobs[0]["arm"]]["parent_arm"]
+    rate = _slowest(neural[parent].values())
+
+    def seconds(job):
+        rows = counts[job["scope"]][job["window"]]
+        held = rows["calibration"] + rows["evaluation"]
+        return held / rate["inference"] + held / rate["train"]
+
+    return dict(_hours(jobs, seconds), bound="each_matured_label_in_at_most_one_step")
+
+
 def _posttraining_hours(stage, counts, rates):
     """Horas de la etapa de adaptadores, con la caché de cada padre ajustado.
 
@@ -370,7 +390,7 @@ def estimate_hours(
     jobs = plan_campaign(campaign)
     families = {}
     for family in (NEURAL, *CHRONOLOGICAL):
-        selected = [job for job in jobs if job["family"] == family]
+        selected = [job for job in jobs if job["family"] == family and job["kind"] != ONLINE]
         if not selected:
             continue
         measured = rates.get(family)
@@ -385,6 +405,13 @@ def estimate_hours(
             )
         else:
             families[family] = _option_hours(campaign, family, selected, counts, measured, epochs)
+    online = [job for job in jobs if job["kind"] == ONLINE]
+    if online:
+        families[ONLINE_CONTROL] = (
+            _online_hours(campaign, online, counts, rates[NEURAL])
+            if NEURAL in rates
+            else dict(status=NOT_MEASURED)
+        )
     specs = {spec["arm"]: spec for spec in _arm_specs(campaign)}
     # Familias que A y B todavía no declaran: el informe dice de dónde viene su sección.
     for family in PREPARED:

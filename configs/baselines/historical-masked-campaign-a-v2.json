@@ -99,6 +99,24 @@
     },
     "test": "evaluation"
   },
+  "online_controls": {
+    "arms": {
+      "transformer_compact_online": {
+        "parent_arm": "transformer_compact",
+        "cap_arm": "mars_titan_m1",
+        "partitions": ["calibration", "evaluation"],
+        "rule": {
+          "optimizer": "sgd",
+          "learning_rate": "pending",
+          "block_rows": "pending",
+          "update_every": "pending",
+          "max_grad_norm": "pending",
+          "update_cap": "episodic_bank_writes"
+        }
+      }
+    },
+    "limits": {"max_online_jobs": 153}
+  },
   "memory_options": {
     "titans_mac": {"accumulation_rows": "pending"},
     "episodic_gru": {"accumulation_rows": "pending", "recompute": "pending"},

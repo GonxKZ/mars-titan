@@ -52,6 +52,7 @@ from . import (
     campaign_chain,
     campaign_data_policy,
     campaign_numerics,
+    campaign_online_controls,
     campaign_schedule,
 )
 from .reference_design import PINBALL, QUANTILE_HEAD, candidate_indices, design_cases
@@ -71,6 +72,7 @@ TITANS_RECIPE = "titans_financial_chronological_v1"
 # Repite titans_walk_forward.SEARCHED sin importar PyTorch. Una prueba lo fija.
 TITANS_SEARCHED = ("learning_rate", "max_grad_norm")
 FIT, CARRY = "fit", "carry"
+ONLINE = campaign_online_controls.ONLINE
 # GRU candidata con banco episódico. Repite candidate_run.RECIPE sin importar PyTorch.
 EPISODIC = "episodic_gru"
 CANDIDATE_RECIPE = "candidate_gru_chronological_v1"
@@ -210,8 +212,8 @@ _FIELDS_V2 = {
     "numerics",
     "data_policy",
 }
-# Sección opcional de la versión 2: el walk-forward por etapas.
-_OPTIONAL_V2 = {"walk_forward_stages"}
+# Secciones opcionales de la versión 2: el walk-forward por etapas y el control en línea.
+_OPTIONAL_V2 = {"walk_forward_stages", "online_controls"}
 _SEED_POLICY = {"search_seed", "selected_case_seeds", "deterministic_arms"}
 # Único modo de parada conectado: la regla del protocolo. La parada conjunta de los brazos
 # emparejados se añadirá aquí como otro modo, con sus grupos, cuando exista su ejecutor.
@@ -769,6 +771,8 @@ def load_campaign(path):
     if version == 2:
         _seed_policy(config["seed_policy"], campaign)
         campaign["memory_options"] = _memory_options(config["memory_options"], campaign)
+        if "online_controls" in config:
+            campaign_online_controls.declared(config["online_controls"], campaign)
     return campaign
 
 
@@ -828,12 +832,13 @@ def _memory_options(declared, campaign):
 
 def launch_blockers(campaign):
     """Motivos que impiden lanzar la campaña aunque su plan sea válido."""
-    return [
+    blockers = [
         f"{family}.{option} sigue pendiente de la medida de memoria en cuda:0"
         for family, options in (campaign.get("memory_options") or {}).items()
         for option, value in options.items()
         if value == PENDING
     ]
+    return blockers + campaign_online_controls.blockers(campaign)
 
 
 def _checked_limits(limits):
@@ -1054,6 +1059,7 @@ def plan_campaign(campaign):
                 for seed in spec["seeds"]:
                     depends = searches if seed == spec["seed"] else [f"{prefix}/finalist-s{seed}"]
                     jobs.append(_job(*common, "carry", seed, anchor=row["anchor"], depends=depends))
+    jobs += campaign_online_controls.plan_online(campaign, jobs)
     _require(len({job["id"] for job in jobs}) == len(jobs), "El plan contiene trabajos repetidos")
     if execution_order(campaign) == "by_window":
         return campaign_schedule.order_by_window(campaign, jobs)
@@ -1077,7 +1083,7 @@ def count_jobs(campaign, jobs=None):
         for job in selected:
             seeds = arms.setdefault(job["arm"], {})
             entry = seeds.setdefault(str(job["seed"]), dict(fit=0, carry=0))
-            entry[job["kind"]] += 1
+            entry[job["kind"]] = entry.get(job["kind"], 0) + 1
         scopes[scope] = dict(
             windows=len(rows),
             retrained_windows=[row["window"] for row in rows if row["trained"]],
@@ -1090,6 +1096,8 @@ def count_jobs(campaign, jobs=None):
         training_jobs=sum(job["kind"] == FIT for job in jobs),
         prediction_jobs=sum(job["kind"] == CARRY for job in jobs),
     )
+    if campaign.get("online_controls"):
+        totals["online_jobs"] = sum(job["kind"] == ONLINE for job in jobs)
     limits = campaign["limits"]
     for kind, limit in (
         ("training_jobs", "max_training_jobs"),
@@ -1139,6 +1147,7 @@ def check_campaign(path):
         numerics=campaign.get("numerics"),
         data_policy=campaign.get("data_policy"),
         walk_forward_stages=campaign.get("walk_forward_stages"),
+        online_controls=campaign.get("online_controls"),
         memory_options=campaign.get("memory_options"),
         launch_blockers=launch_blockers(campaign),
         pending_families=pending_families(campaign),
