@@ -1,7 +1,8 @@
 """Métricas financieras comunes sobre series de patrimonio por sesión.
 
-Las usan la etapa de políticas financieras y la cartera larga y corta de la comparación
-predictiva. Parten del patrimonio valorado en cada cierre, nunca de retornos residuales.
+Las usa el informe de la etapa de políticas financieras y están pensadas para la cartera
+larga y corta de la comparación predictiva, que hoy calcula las suyas con las mismas
+convenciones. Parten del patrimonio valorado en cada cierre, nunca de retornos residuales.
 
 Convenciones declaradas antes de ver resultados:
 

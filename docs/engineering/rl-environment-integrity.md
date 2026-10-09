@@ -249,7 +249,7 @@ Cada episodio de evaluación publica su patrimonio a cada cierre (`equity`). La 
 
 - Cada ventana termina con su liquidación y las ventanas se encadenan. Si la serie encadenada se arruina, sus métricas terminan en la ruina.
 - Un brazo con tres semillas reparte el capital entre ellas. Sus métricas por semilla se publican aparte.
-- Las métricas de `evaluation/financial_metrics.py`, compartidas con la cartera larga y corta de la comparación predictiva, son rentabilidad acumulada y anualizada (también en porcentaje), volatilidad, Sharpe y Sortino con tipo sin riesgo cero, drawdown máximo, giro y costes sobre el capital.
+- Las métricas de `evaluation/financial_metrics.py` son rentabilidad acumulada y anualizada (también en porcentaje), volatilidad, Sharpe y Sortino con tipo sin riesgo cero, drawdown máximo, giro y costes sobre el capital. La cartera larga y corta de la comparación predictiva, preparada en otra rama (#32), calcula las suyas con las mismas convenciones de 252 sesiones, tipo cero y desviación muestral. Unificar ambas en un solo módulo queda pendiente para cuando se integren las dos ramas. Su bootstrap remuestrea sesiones en orden y da intervalos también para el drawdown, mientras que este cuenta apariciones de sesiones y publica el drawdown solo como estimación puntual.
 - La incertidumbre sale del bootstrap circular por bloques de sesiones, con bloque de 21, sensibilidad de 5 y 63, 2.000 réplicas, semilla 20261009 y confianza del 95 %. Todas las series de una familia usan las mismas réplicas.
 - Los contrastes son KLPO menos cada control, con intervalos simultáneos por máximo estudentizado dentro de cada familia y métrica. No se corrige entre predictores, costes ni métricas. El coste principal declarado es 10 pb.
 
