@@ -11,7 +11,10 @@ from mars_titan.memory.native_backend import load_native
 
 @pytest.fixture
 def native():
-    module = load_native(os.environ["MARS_TITAN_EPISODIC_NATIVE"])
+    path = os.environ.get("MARS_TITAN_EPISODIC_NATIVE")
+    if not path:
+        pytest.skip("Falta el enlace nativo CPU compilado")
+    module = load_native(path)
     if not hasattr(module, "PhaseContract"):
         pytest.fail("Falta el ciclo financiero v2")
     return module

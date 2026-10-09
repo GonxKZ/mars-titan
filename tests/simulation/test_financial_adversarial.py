@@ -10,10 +10,11 @@ from mars_titan.simulation.environment import FinancialEnv
 from mars_titan.simulation.evaluation import evaluate
 from mars_titan.simulation.market import MarketTape
 from mars_titan.simulation.portfolio import CorporateAction
+from tests.simulation.native_library import NATIVE_BACKEND
 
 DAY = 86_400_000_000
 START = 946_684_800_000_000 + 16 * 3_600_000_000
-BACKENDS = ("python", "native")
+BACKENDS = ("python", NATIVE_BACKEND)
 EVIDENCE = {
     "price_basis": "unadjusted",
     "corporate_actions_complete": True,

@@ -9,6 +9,24 @@ import pytest
 
 from mars_titan.evaluation.splits import build_folds
 
+# Fuentes del contrato temporal estricto (versión 1). La admisión de recibos valida el
+# contrato completo pero no abre estas rutas, por eso pueden apuntar a archivos ausentes.
+STRICT_SOURCES = dict(
+    macro_path="/unavailable/macro.parquet",
+    macro_sha256="c" * 64,
+    admission_path="/unavailable/admission.json",
+    admission_sha256="d" * 64,
+    parent_manifest="/unavailable/parent/manifest.json",
+    parent_sha256="e" * 64,
+)
+
+
+def strict_view(protocol):
+    """Vista estricta completa de la primera ventana, como la escribe la preparación."""
+    return dict(
+        schema_version=1, protocol=protocol, fold=build_folds(protocol)[0], **STRICT_SOURCES
+    )
+
 
 def save(path, value):
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -56,7 +74,7 @@ class Campaign:
             counts=self.counts,
             selected_arm=self.arm,
             source_manifest_sha256="b" * 64,
-            temporal_view=dict(schema_version=1, protocol=protocol, fold=build_folds(protocol)[0]),
+            temporal_view=strict_view(protocol),
         )
         if len(markets) == 2:
             contract = self.manifest.pop("temporal_view")
@@ -603,9 +621,8 @@ def test_only_the_explicit_verified_temporal_manifest_may_be_external(campaign):
         sources(campaign)
 
 
-def test_does_not_follow_other_paths_inside_the_temporal_metadata(campaign):
-    campaign.manifest["roots"] = dict(labels="/unavailable/private-test")
-    campaign.manifest["temporal_view"]["macro_path"] = "/unavailable/macro.parquet"
+def republish_manifest(campaign):
+    """Volver a firmar el manifiesto y enlazar todos los recibos a la nueva huella."""
     campaign.manifest_hash = save(campaign.manifest_path, campaign.manifest)
     for original in campaign.originals.values():
         if "identity" in original:
@@ -615,9 +632,29 @@ def test_does_not_follow_other_paths_inside_the_temporal_metadata(campaign):
         else:
             original["manifest_sha256"] = campaign.manifest_hash
     campaign.publish()
+
+
+def test_does_not_follow_other_paths_inside_the_temporal_metadata(campaign):
+    campaign.manifest["roots"] = dict(labels="/unavailable/private-test")
+    campaign.manifest["temporal_view"]["macro_path"] = "/unavailable/private-macro.parquet"
+    republish_manifest(campaign)
     rows, provenance = sources(campaign)
     assert len(rows) == 14
     assert "/unavailable/" not in json.dumps(provenance)
+
+
+@pytest.mark.parametrize("change", [*STRICT_SOURCES, "schema_version", "extra"])
+def test_incomplete_or_extended_strict_view_is_rejected_with_consistent_receipts(campaign, change):
+    view = campaign.manifest["temporal_view"]
+    if change == "extra":
+        view["input_policy"] = "strict_inputs_v1"
+    elif change == "schema_version":
+        view["schema_version"] = 2
+    else:
+        del view[change]
+    republish_manifest(campaign)
+    with pytest.raises(ValueError, match="contrato"):
+        sources(campaign)
 
 
 def test_temporal_metadata_cannot_move_the_final_test_boundary(campaign):

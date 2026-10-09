@@ -363,7 +363,7 @@ def test_cli_main_propagates_real_status_and_does_not_print_entries(tmp_path, ca
 
 
 def temporal_fixture(tmp_path):
-    from mars_titan.evaluation.splits import build_folds
+    from tests.evaluation.test_comparison_sources import strict_view
 
     source, report_path, prediction = fixture_run(tmp_path / "source")
     report = json.loads(report_path.read_text())
@@ -404,7 +404,7 @@ def temporal_fixture(tmp_path):
             kind="corpus_supervision",
             cohort_complete=True,
             final_test_opened=False,
-            temporal_view=dict(schema_version=1, protocol=protocol, fold=build_folds(protocol)[0]),
+            temporal_view=strict_view(protocol),
         ),
     )
     report["identity"] = dict(manifest_sha256=sha256(manifest))
