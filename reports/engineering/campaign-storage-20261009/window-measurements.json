@@ -1,0 +1,4952 @@
+{
+ "US/fold-000": {
+  "validation": {
+   "rows": 159831,
+   "writers": {
+    "neural": {
+     "current": 8790717,
+     "large_groups": 4962501,
+     "shared_rows": 2824144,
+     "shared_rows_ordered": 2824144
+    },
+    "ridge": {
+     "current": 3904826,
+     "large_groups": 2693100,
+     "shared_rows": 1142187,
+     "shared_rows_ordered": 1142187
+    },
+    "xgboost": {
+     "current": 3270096,
+     "large_groups": 2139425,
+     "shared_rows": 588510,
+     "shared_rows_ordered": 588510
+    },
+    "episodic_gru": {
+     "current": 7587578,
+     "large_groups": 5146775,
+     "shared_rows": 2824604,
+     "shared_rows_ordered": 3587040
+    },
+    "titans": {
+     "current": 8682112,
+     "large_groups": 5207036,
+     "shared_rows": 2880325,
+     "shared_rows_ordered": 3645731
+    }
+   },
+   "shared_rows_bytes": 1550161
+  },
+  "calibration": {
+   "rows": 82500,
+   "writers": {
+    "neural": {
+     "current": 4434831,
+     "large_groups": 2587091,
+     "shared_rows": 1458759,
+     "shared_rows_ordered": 1458759
+    },
+    "ridge": {
+     "current": 1951205,
+     "large_groups": 1414797,
+     "shared_rows": 590070,
+     "shared_rows_ordered": 590070
+    },
+    "xgboost": {
+     "current": 1623518,
+     "large_groups": 1130205,
+     "shared_rows": 305478,
+     "shared_rows_ordered": 305478
+    },
+    "episodic_gru": {
+     "current": 3889782,
+     "large_groups": 2670783,
+     "shared_rows": 1456335,
+     "shared_rows_ordered": 1831776
+    },
+    "titans": {
+     "current": 4449389,
+     "large_groups": 2704760,
+     "shared_rows": 1490902,
+     "shared_rows_ordered": 1866086
+    }
+   },
+   "shared_rows_bytes": 824283
+  },
+  "evaluation": {
+   "rows": 351026,
+   "writers": {
+    "neural": {
+     "current": 20031301,
+     "large_groups": 10815487,
+     "shared_rows": 6201431,
+     "shared_rows_ordered": 6201431
+    },
+    "ridge": {
+     "current": 8703064,
+     "large_groups": 5839422,
+     "shared_rows": 2511188,
+     "shared_rows_ordered": 2511188
+    },
+    "xgboost": {
+     "current": 7308865,
+     "large_groups": 4615808,
+     "shared_rows": 1287574,
+     "shared_rows_ordered": 1287574
+    },
+    "episodic_gru": {
+     "current": 16707683,
+     "large_groups": 11279634,
+     "shared_rows": 6203766,
+     "shared_rows_ordered": 7762842
+    },
+    "titans": {
+     "current": 19211213,
+     "large_groups": 11417407,
+     "shared_rows": 6333411,
+     "shared_rows_ordered": 7902961
+    }
+   },
+   "shared_rows_bytes": 3326486
+  }
+ },
+ "US/fold-001": {
+  "validation": {
+   "rows": 177518,
+   "writers": {
+    "neural": {
+     "current": 9764376,
+     "large_groups": 5487448,
+     "shared_rows": 3126839,
+     "shared_rows_ordered": 3126839
+    },
+    "ridge": {
+     "current": 4332335,
+     "large_groups": 2985430,
+     "shared_rows": 1270763,
+     "shared_rows_ordered": 1270763
+    },
+    "xgboost": {
+     "current": 3627320,
+     "large_groups": 2367968,
+     "shared_rows": 653299,
+     "shared_rows_ordered": 653299
+    },
+    "episodic_gru": {
+     "current": 8424404,
+     "large_groups": 5711313,
+     "shared_rows": 3135553,
+     "shared_rows_ordered": 3991413
+    },
+    "titans": {
+     "current": 9718963,
+     "large_groups": 5778188,
+     "shared_rows": 3204025,
+     "shared_rows_ordered": 4057578
+    }
+   },
+   "shared_rows_bytes": 1713815
+  },
+  "calibration": {
+   "rows": 90383,
+   "writers": {
+    "neural": {
+     "current": 4829058,
+     "large_groups": 2814867,
+     "shared_rows": 1590279,
+     "shared_rows_ordered": 1590279
+    },
+    "ridge": {
+     "current": 2126198,
+     "large_groups": 1544967,
+     "shared_rows": 649717,
+     "shared_rows_ordered": 649717
+    },
+    "xgboost": {
+     "current": 1767140,
+     "large_groups": 1225396,
+     "shared_rows": 330146,
+     "shared_rows_ordered": 330146
+    },
+    "episodic_gru": {
+     "current": 4258799,
+     "large_groups": 2911215,
+     "shared_rows": 1599536,
+     "shared_rows_ordered": 2011975
+    },
+    "titans": {
+     "current": 4859639,
+     "large_groups": 2956618,
+     "shared_rows": 1639667,
+     "shared_rows_ordered": 2054802
+    }
+   },
+   "shared_rows_bytes": 894801
+  },
+  "evaluation": {
+   "rows": 379845,
+   "writers": {
+    "neural": {
+     "current": 21663316,
+     "large_groups": 11671839,
+     "shared_rows": 6711249,
+     "shared_rows_ordered": 6711249
+    },
+    "ridge": {
+     "current": 9375296,
+     "large_groups": 6280632,
+     "shared_rows": 2712637,
+     "shared_rows_ordered": 2712637
+    },
+    "xgboost": {
+     "current": 7866697,
+     "large_groups": 4964832,
+     "shared_rows": 1396837,
+     "shared_rows_ordered": 1396837
+    },
+    "episodic_gru": {
+     "current": 18050423,
+     "large_groups": 12171536,
+     "shared_rows": 6701135,
+     "shared_rows_ordered": 8368940
+    },
+    "titans": {
+     "current": 20813149,
+     "large_groups": 12305800,
+     "shared_rows": 6841121,
+     "shared_rows_ordered": 8501132
+    }
+   },
+   "shared_rows_bytes": 3566143
+  }
+ },
+ "US/fold-002": {
+  "validation": {
+   "rows": 189048,
+   "writers": {
+    "neural": {
+     "current": 10378000,
+     "large_groups": 5841620,
+     "shared_rows": 3344226,
+     "shared_rows_ordered": 3344226
+    },
+    "ridge": {
+     "current": 4607476,
+     "large_groups": 3158127,
+     "shared_rows": 1352748,
+     "shared_rows_ordered": 1352748
+    },
+    "xgboost": {
+     "current": 3856641,
+     "large_groups": 2497956,
+     "shared_rows": 692575,
+     "shared_rows_ordered": 692575
+    },
+    "episodic_gru": {
+     "current": 8940097,
+     "large_groups": 6063029,
+     "shared_rows": 3347271,
+     "shared_rows_ordered": 4253867
+    },
+    "titans": {
+     "current": 10318222,
+     "large_groups": 6139284,
+     "shared_rows": 3415727,
+     "shared_rows_ordered": 4326790
+    }
+   },
+   "shared_rows_bytes": 1804431
+  },
+  "calibration": {
+   "rows": 96663,
+   "writers": {
+    "neural": {
+     "current": 5163812,
+     "large_groups": 3016126,
+     "shared_rows": 1708624,
+     "shared_rows_ordered": 1708624
+    },
+    "ridge": {
+     "current": 2274878,
+     "large_groups": 1645769,
+     "shared_rows": 694134,
+     "shared_rows_ordered": 694134
+    },
+    "xgboost": {
+     "current": 1890880,
+     "large_groups": 1307998,
+     "shared_rows": 356363,
+     "shared_rows_ordered": 356363
+    },
+    "episodic_gru": {
+     "current": 4560556,
+     "large_groups": 3117309,
+     "shared_rows": 1698055,
+     "shared_rows_ordered": 2156722
+    },
+    "titans": {
+     "current": 5192540,
+     "large_groups": 3156936,
+     "shared_rows": 1750688,
+     "shared_rows_ordered": 2194711
+    }
+   },
+   "shared_rows_bytes": 951182
+  },
+  "evaluation": {
+   "rows": 413405,
+   "writers": {
+    "neural": {
+     "current": 23590287,
+     "large_groups": 12734948,
+     "shared_rows": 7308790,
+     "shared_rows_ordered": 7308790
+    },
+    "ridge": {
+     "current": 10241382,
+     "large_groups": 6859412,
+     "shared_rows": 2954264,
+     "shared_rows_ordered": 2954264
+    },
+    "xgboost": {
+     "current": 8599614,
+     "large_groups": 5416774,
+     "shared_rows": 1511626,
+     "shared_rows_ordered": 1511626
+    },
+    "episodic_gru": {
+     "current": 19702948,
+     "large_groups": 13296462,
+     "shared_rows": 7300488,
+     "shared_rows_ordered": 9070138
+    },
+    "titans": {
+     "current": 22662117,
+     "large_groups": 13452056,
+     "shared_rows": 7459337,
+     "shared_rows_ordered": 9227358
+    }
+   },
+   "shared_rows_bytes": 3903100
+  }
+ },
+ "US/fold-003": {
+  "validation": {
+   "rows": 205177,
+   "writers": {
+    "neural": {
+     "current": 11272397,
+     "large_groups": 6334664,
+     "shared_rows": 3618378,
+     "shared_rows_ordered": 3618378
+    },
+    "ridge": {
+     "current": 4997289,
+     "large_groups": 3428906,
+     "shared_rows": 1466842,
+     "shared_rows_ordered": 1466842
+    },
+    "xgboost": {
+     "current": 4182423,
+     "large_groups": 2716803,
+     "shared_rows": 754737,
+     "shared_rows_ordered": 754737
+    },
+    "episodic_gru": {
+     "current": 9727026,
+     "large_groups": 6589605,
+     "shared_rows": 3619776,
+     "shared_rows_ordered": 4616286
+    },
+    "titans": {
+     "current": 11209663,
+     "large_groups": 6675083,
+     "shared_rows": 3703009,
+     "shared_rows_ordered": 4698101
+    }
+   },
+   "shared_rows_bytes": 1961020
+  },
+  "calibration": {
+   "rows": 107960,
+   "writers": {
+    "neural": {
+     "current": 5796207,
+     "large_groups": 3357482,
+     "shared_rows": 1903512,
+     "shared_rows_ordered": 1903512
+    },
+    "ridge": {
+     "current": 2548575,
+     "large_groups": 1830537,
+     "shared_rows": 773315,
+     "shared_rows_ordered": 773315
+    },
+    "xgboost": {
+     "current": 2119726,
+     "large_groups": 1454590,
+     "shared_rows": 397368,
+     "shared_rows_ordered": 397368
+    },
+    "episodic_gru": {
+     "current": 5114099,
+     "large_groups": 3484084,
+     "shared_rows": 1901117,
+     "shared_rows_ordered": 2406844
+    },
+    "titans": {
+     "current": 5902625,
+     "large_groups": 3535169,
+     "shared_rows": 1954759,
+     "shared_rows_ordered": 2455319
+    }
+   },
+   "shared_rows_bytes": 1056677
+  },
+  "evaluation": {
+   "rows": 451569,
+   "writers": {
+    "neural": {
+     "current": 25794250,
+     "large_groups": 13872396,
+     "shared_rows": 7963110,
+     "shared_rows_ordered": 7963110
+    },
+    "ridge": {
+     "current": 11173489,
+     "large_groups": 7480715,
+     "shared_rows": 3228561,
+     "shared_rows_ordered": 3228561
+    },
+    "xgboost": {
+     "current": 9380498,
+     "large_groups": 5907387,
+     "shared_rows": 1655233,
+     "shared_rows_ordered": 1655233
+    },
+    "episodic_gru": {
+     "current": 21355489,
+     "large_groups": 14362162,
+     "shared_rows": 7978697,
+     "shared_rows_ordered": 9876576
+    },
+    "titans": {
+     "current": 24641624,
+     "large_groups": 14514971,
+     "shared_rows": 8144364,
+     "shared_rows_ordered": 10033058
+    }
+   },
+   "shared_rows_bytes": 4249906
+  }
+ },
+ "US/fold-004": {
+  "validation": {
+   "rows": 230343,
+   "writers": {
+    "neural": {
+     "current": 12653985,
+     "large_groups": 7097125,
+     "shared_rows": 4070862,
+     "shared_rows_ordered": 4070862
+    },
+    "ridge": {
+     "current": 5610567,
+     "large_groups": 3829246,
+     "shared_rows": 1648406,
+     "shared_rows_ordered": 1648406
+    },
+    "xgboost": {
+     "current": 4695748,
+     "large_groups": 3026411,
+     "shared_rows": 845569,
+     "shared_rows_ordered": 845569
+    },
+    "episodic_gru": {
+     "current": 10899928,
+     "large_groups": 7312065,
+     "shared_rows": 4065969,
+     "shared_rows_ordered": 5190756
+    },
+    "titans": {
+     "current": 12577709,
+     "large_groups": 7411614,
+     "shared_rows": 4160216,
+     "shared_rows_ordered": 5287081
+    }
+   },
+   "shared_rows_bytes": 2179692
+  },
+  "calibration": {
+   "rows": 112361,
+   "writers": {
+    "neural": {
+     "current": 6032112,
+     "large_groups": 3492198,
+     "shared_rows": 1980899,
+     "shared_rows_ordered": 1980899
+    },
+    "ridge": {
+     "current": 2651601,
+     "large_groups": 1900831,
+     "shared_rows": 804214,
+     "shared_rows_ordered": 804214
+    },
+    "xgboost": {
+     "current": 2205183,
+     "large_groups": 1506609,
+     "shared_rows": 409992,
+     "shared_rows_ordered": 409992
+    },
+    "episodic_gru": {
+     "current": 5323001,
+     "large_groups": 3639643,
+     "shared_rows": 1987324,
+     "shared_rows_ordered": 2514373
+    },
+    "titans": {
+     "current": 6155963,
+     "large_groups": 3687004,
+     "shared_rows": 2037903,
+     "shared_rows_ordered": 2560901
+    }
+   },
+   "shared_rows_bytes": 1096068
+  },
+  "evaluation": {
+   "rows": 475747,
+   "writers": {
+    "neural": {
+     "current": 27149749,
+     "large_groups": 14595709,
+     "shared_rows": 8404635,
+     "shared_rows_ordered": 8404635
+    },
+    "ridge": {
+     "current": 11754705,
+     "large_groups": 7848866,
+     "shared_rows": 3399336,
+     "shared_rows_ordered": 3399336
+    },
+    "xgboost": {
+     "current": 9865796,
+     "large_groups": 6199780,
+     "shared_rows": 1750250,
+     "shared_rows_ordered": 1750250
+    },
+    "episodic_gru": {
+     "current": 22482433,
+     "large_groups": 15084793,
+     "shared_rows": 8406838,
+     "shared_rows_ordered": 10361356
+    },
+    "titans": {
+     "current": 25916998,
+     "large_groups": 15276625,
+     "shared_rows": 8583034,
+     "shared_rows_ordered": 10549901
+    }
+   },
+   "shared_rows_bytes": 4447182
+  }
+ },
+ "US/fold-005": {
+  "validation": {
+   "rows": 238867,
+   "writers": {
+    "neural": {
+     "current": 13120943,
+     "large_groups": 7360600,
+     "shared_rows": 4224178,
+     "shared_rows_ordered": 4224178
+    },
+    "ridge": {
+     "current": 5801480,
+     "large_groups": 3966624,
+     "shared_rows": 1707605,
+     "shared_rows_ordered": 1707605
+    },
+    "xgboost": {
+     "current": 4852640,
+     "large_groups": 3130057,
+     "shared_rows": 871036,
+     "shared_rows_ordered": 871036
+    },
+    "episodic_gru": {
+     "current": 11260317,
+     "large_groups": 7571568,
+     "shared_rows": 4220687,
+     "shared_rows_ordered": 5393408
+    },
+    "titans": {
+     "current": 13005350,
+     "large_groups": 7651962,
+     "shared_rows": 4303227,
+     "shared_rows_ordered": 5474400
+    }
+   },
+   "shared_rows_bytes": 2257867
+  },
+  "calibration": {
+   "rows": 123252,
+   "writers": {
+    "neural": {
+     "current": 6611328,
+     "large_groups": 3817104,
+     "shared_rows": 2177820,
+     "shared_rows_ordered": 2177820
+    },
+    "ridge": {
+     "current": 2900483,
+     "large_groups": 2067034,
+     "shared_rows": 881095,
+     "shared_rows_ordered": 881095
+    },
+    "xgboost": {
+     "current": 2410822,
+     "large_groups": 1636406,
+     "shared_rows": 450467,
+     "shared_rows_ordered": 450467
+    },
+    "episodic_gru": {
+     "current": 5748758,
+     "large_groups": 3891560,
+     "shared_rows": 2175947,
+     "shared_rows_ordered": 2751214
+    },
+    "titans": {
+     "current": 6646899,
+     "large_groups": 3945610,
+     "shared_rows": 2226128,
+     "shared_rows_ordered": 2802740
+    }
+   },
+   "shared_rows_bytes": 1185295
+  },
+  "evaluation": {
+   "rows": 502951,
+   "writers": {
+    "neural": {
+     "current": 28675964,
+     "large_groups": 15403457,
+     "shared_rows": 8880916,
+     "shared_rows_ordered": 8880916
+    },
+    "ridge": {
+     "current": 12399526,
+     "large_groups": 8269833,
+     "shared_rows": 3592440,
+     "shared_rows_ordered": 3592440
+    },
+    "xgboost": {
+     "current": 10402362,
+     "large_groups": 6523165,
+     "shared_rows": 1845772,
+     "shared_rows_ordered": 1845772
+    },
+    "episodic_gru": {
+     "current": 23756705,
+     "large_groups": 15931652,
+     "shared_rows": 8877212,
+     "shared_rows_ordered": 10944156
+    },
+    "titans": {
+     "current": 27420672,
+     "large_groups": 16101016,
+     "shared_rows": 9062606,
+     "shared_rows_ordered": 11115267
+    }
+   },
+   "shared_rows_bytes": 4674850
+  }
+ },
+ "US/fold-006": {
+  "validation": {
+   "rows": 251005,
+   "writers": {
+    "neural": {
+     "current": 13773490,
+     "large_groups": 7723681,
+     "shared_rows": 4441147,
+     "shared_rows_ordered": 4441147
+    },
+    "ridge": {
+     "current": 6075324,
+     "large_groups": 4155024,
+     "shared_rows": 1794707,
+     "shared_rows_ordered": 1794707
+    },
+    "xgboost": {
+     "current": 5078216,
+     "large_groups": 3284983,
+     "shared_rows": 924664,
+     "shared_rows_ordered": 924664
+    },
+    "episodic_gru": {
+     "current": 11798200,
+     "large_groups": 7932722,
+     "shared_rows": 4430622,
+     "shared_rows_ordered": 5662660
+    },
+    "titans": {
+     "current": 13624381,
+     "large_groups": 8037254,
+     "shared_rows": 4532604,
+     "shared_rows_ordered": 5764739
+    }
+   },
+   "shared_rows_bytes": 2359069
+  },
+  "calibration": {
+   "rows": 129778,
+   "writers": {
+    "neural": {
+     "current": 6962200,
+     "large_groups": 3999155,
+     "shared_rows": 2284587,
+     "shared_rows_ordered": 2284587
+    },
+    "ridge": {
+     "current": 3052010,
+     "large_groups": 2171905,
+     "shared_rows": 929696,
+     "shared_rows_ordered": 929696
+    },
+    "xgboost": {
+     "current": 2536464,
+     "large_groups": 1719484,
+     "shared_rows": 477275,
+     "shared_rows_ordered": 477275
+    },
+    "episodic_gru": {
+     "current": 6056622,
+     "large_groups": 4105706,
+     "shared_rows": 2294692,
+     "shared_rows_ordered": 2901289
+    },
+    "titans": {
+     "current": 7005691,
+     "large_groups": 4164353,
+     "shared_rows": 2349552,
+     "shared_rows_ordered": 2957809
+    }
+   },
+   "shared_rows_bytes": 1241560
+  },
+  "evaluation": {
+   "rows": 536815,
+   "writers": {
+    "neural": {
+     "current": 30602830,
+     "large_groups": 16412641,
+     "shared_rows": 9473415,
+     "shared_rows_ordered": 9473415
+    },
+    "ridge": {
+     "current": 13214927,
+     "large_groups": 8815430,
+     "shared_rows": 3837184,
+     "shared_rows_ordered": 3837184
+    },
+    "xgboost": {
+     "current": 11083252,
+     "large_groups": 6945884,
+     "shared_rows": 1967638,
+     "shared_rows_ordered": 1967638
+    },
+    "episodic_gru": {
+     "current": 25343484,
+     "large_groups": 16989189,
+     "shared_rows": 9474934,
+     "shared_rows_ordered": 11637798
+    },
+    "titans": {
+     "current": 29226691,
+     "large_groups": 17190011,
+     "shared_rows": 9673958,
+     "shared_rows_ordered": 11835035
+    }
+   },
+   "shared_rows_bytes": 4975594
+  }
+ },
+ "US/fold-007": {
+  "validation": {
+   "rows": 270539,
+   "writers": {
+    "neural": {
+     "current": 14840694,
+     "large_groups": 8321409,
+     "shared_rows": 4785096,
+     "shared_rows_ordered": 4785096
+    },
+    "ridge": {
+     "current": 6544172,
+     "large_groups": 4476777,
+     "shared_rows": 1934993,
+     "shared_rows_ordered": 1934993
+    },
+    "xgboost": {
+     "current": 5469575,
+     "large_groups": 3540848,
+     "shared_rows": 999063,
+     "shared_rows_ordered": 999063
+    },
+    "episodic_gru": {
+     "current": 12713358,
+     "large_groups": 8542099,
+     "shared_rows": 4775822,
+     "shared_rows_ordered": 6095255
+    },
+    "titans": {
+     "current": 14652430,
+     "large_groups": 8651073,
+     "shared_rows": 4884837,
+     "shared_rows_ordered": 6201295
+    }
+   },
+   "shared_rows_bytes": 2540436
+  },
+  "calibration": {
+   "rows": 134561,
+   "writers": {
+    "neural": {
+     "current": 7179477,
+     "large_groups": 4155358,
+     "shared_rows": 2373797,
+     "shared_rows_ordered": 2373797
+    },
+    "ridge": {
+     "current": 3158169,
+     "large_groups": 2253694,
+     "shared_rows": 963924,
+     "shared_rows_ordered": 963924
+    },
+    "xgboost": {
+     "current": 2623685,
+     "large_groups": 1781528,
+     "shared_rows": 491757,
+     "shared_rows_ordered": 491757
+    },
+    "episodic_gru": {
+     "current": 6288123,
+     "large_groups": 4251667,
+     "shared_rows": 2375087,
+     "shared_rows_ordered": 3009762
+    },
+    "titans": {
+     "current": 7260413,
+     "large_groups": 4320551,
+     "shared_rows": 2438849,
+     "shared_rows_ordered": 3074834
+    }
+   },
+   "shared_rows_bytes": 1289121
+  },
+  "evaluation": {
+   "rows": 558205,
+   "writers": {
+    "neural": {
+     "current": 31818562,
+     "large_groups": 17075629,
+     "shared_rows": 9850529,
+     "shared_rows_ordered": 9850529
+    },
+    "ridge": {
+     "current": 13747796,
+     "large_groups": 9172686,
+     "shared_rows": 3990751,
+     "shared_rows_ordered": 3990751
+    },
+    "xgboost": {
+     "current": 11530980,
+     "large_groups": 7229436,
+     "shared_rows": 2047501,
+     "shared_rows_ordered": 2047501
+    },
+    "episodic_gru": {
+     "current": 26405408,
+     "large_groups": 17711857,
+     "shared_rows": 9859153,
+     "shared_rows_ordered": 12099258
+    },
+    "titans": {
+     "current": 30486594,
+     "large_groups": 17897403,
+     "shared_rows": 10058906,
+     "shared_rows_ordered": 12288780
+    }
+   },
+   "shared_rows_bytes": 5179183
+  }
+ },
+ "US/fold-008": {
+  "validation": {
+   "rows": 280053,
+   "writers": {
+    "neural": {
+     "current": 15365787,
+     "large_groups": 8599739,
+     "shared_rows": 4941053,
+     "shared_rows_ordered": 4941053
+    },
+    "ridge": {
+     "current": 6810220,
+     "large_groups": 4630771,
+     "shared_rows": 2000630,
+     "shared_rows_ordered": 2000630
+    },
+    "xgboost": {
+     "current": 5697775,
+     "large_groups": 3662886,
+     "shared_rows": 1032744,
+     "shared_rows_ordered": 1032744
+    },
+    "episodic_gru": {
+     "current": 13183081,
+     "large_groups": 8848332,
+     "shared_rows": 4936070,
+     "shared_rows_ordered": 6288863
+    },
+    "titans": {
+     "current": 15174887,
+     "large_groups": 8948227,
+     "shared_rows": 5043891,
+     "shared_rows_ordered": 6392282
+    }
+   },
+   "shared_rows_bytes": 2628701
+  },
+  "calibration": {
+   "rows": 139673,
+   "writers": {
+    "neural": {
+     "current": 7491773,
+     "large_groups": 4324404,
+     "shared_rows": 2475916,
+     "shared_rows_ordered": 2475916
+    },
+    "ridge": {
+     "current": 3286897,
+     "large_groups": 2332402,
+     "shared_rows": 998226,
+     "shared_rows_ordered": 998226
+    },
+    "xgboost": {
+     "current": 2732095,
+     "large_groups": 1847994,
+     "shared_rows": 513817,
+     "shared_rows_ordered": 513817
+    },
+    "episodic_gru": {
+     "current": 6535287,
+     "large_groups": 4417743,
+     "shared_rows": 2469707,
+     "shared_rows_ordered": 3128041
+    },
+    "titans": {
+     "current": 7536125,
+     "large_groups": 4467312,
+     "shared_rows": 2517470,
+     "shared_rows_ordered": 3179835
+    }
+   },
+   "shared_rows_bytes": 1333523
+  },
+  "evaluation": {
+   "rows": 590148,
+   "writers": {
+    "neural": {
+     "current": 33658679,
+     "large_groups": 18057136,
+     "shared_rows": 10421517,
+     "shared_rows_ordered": 10421517
+    },
+    "ridge": {
+     "current": 14543447,
+     "large_groups": 9689898,
+     "shared_rows": 4216218,
+     "shared_rows_ordered": 4216218
+    },
+    "xgboost": {
+     "current": 12199763,
+     "large_groups": 7642602,
+     "shared_rows": 2168922,
+     "shared_rows_ordered": 2168922
+    },
+    "episodic_gru": {
+     "current": 27924963,
+     "large_groups": 18743822,
+     "shared_rows": 10405644,
+     "shared_rows_ordered": 12765023
+    },
+    "titans": {
+     "current": 32214392,
+     "large_groups": 18941314,
+     "shared_rows": 10639092,
+     "shared_rows_ordered": 12967271
+    }
+   },
+   "shared_rows_bytes": 5470732
+  }
+ },
+ "US/fold-009": {
+  "validation": {
+   "rows": 298520,
+   "writers": {
+    "neural": {
+     "current": 16393227,
+     "large_groups": 9168030,
+     "shared_rows": 5278061,
+     "shared_rows_ordered": 5278061
+    },
+    "ridge": {
+     "current": 7266443,
+     "large_groups": 4930192,
+     "shared_rows": 2134782,
+     "shared_rows_ordered": 2134782
+    },
+    "xgboost": {
+     "current": 6080649,
+     "large_groups": 3889957,
+     "shared_rows": 1094547,
+     "shared_rows_ordered": 1094547
+    },
+    "episodic_gru": {
+     "current": 14081496,
+     "large_groups": 9443521,
+     "shared_rows": 5281884,
+     "shared_rows_ordered": 6672645
+    },
+    "titans": {
+     "current": 16256846,
+     "large_groups": 9555135,
+     "shared_rows": 5381667,
+     "shared_rows_ordered": 6786608
+    }
+   },
+   "shared_rows_bytes": 2793958
+  },
+  "calibration": {
+   "rows": 151383,
+   "writers": {
+    "neural": {
+     "current": 8122822,
+     "large_groups": 4653994,
+     "shared_rows": 2667012,
+     "shared_rows_ordered": 2667012
+    },
+    "ridge": {
+     "current": 3555781,
+     "large_groups": 2520415,
+     "shared_rows": 1084673,
+     "shared_rows_ordered": 1084673
+    },
+    "xgboost": {
+     "current": 2954581,
+     "large_groups": 1993674,
+     "shared_rows": 557930,
+     "shared_rows_ordered": 557930
+    },
+    "episodic_gru": {
+     "current": 7091208,
+     "large_groups": 4793331,
+     "shared_rows": 2678607,
+     "shared_rows_ordered": 3401261
+    },
+    "titans": {
+     "current": 8146548,
+     "large_groups": 4853994,
+     "shared_rows": 2740219,
+     "shared_rows_ordered": 3461977
+    }
+   },
+   "shared_rows_bytes": 1434994
+  },
+  "evaluation": {
+   "rows": 635880,
+   "writers": {
+    "neural": {
+     "current": 36240852,
+     "large_groups": 19404734,
+     "shared_rows": 11221495,
+     "shared_rows_ordered": 11221495
+    },
+    "ridge": {
+     "current": 15627216,
+     "large_groups": 10397605,
+     "shared_rows": 4545922,
+     "shared_rows_ordered": 4545922
+    },
+    "xgboost": {
+     "current": 13102084,
+     "large_groups": 8182387,
+     "shared_rows": 2330704,
+     "shared_rows_ordered": 2330704
+    },
+    "episodic_gru": {
+     "current": 30071302,
+     "large_groups": 20135283,
+     "shared_rows": 11230103,
+     "shared_rows_ordered": 13711951
+    },
+    "titans": {
+     "current": 34722567,
+     "large_groups": 20368826,
+     "shared_rows": 11466315,
+     "shared_rows_ordered": 13944839
+    }
+   },
+   "shared_rows_bytes": 5848535
+  }
+ },
+ "US/fold-010": {
+  "validation": {
+   "rows": 319746,
+   "writers": {
+    "neural": {
+     "current": 17537790,
+     "large_groups": 9793539,
+     "shared_rows": 5650744,
+     "shared_rows_ordered": 5650744
+    },
+    "ridge": {
+     "current": 7726555,
+     "large_groups": 5257340,
+     "shared_rows": 2283971,
+     "shared_rows_ordered": 2283971
+    },
+    "xgboost": {
+     "current": 6456307,
+     "large_groups": 4143911,
+     "shared_rows": 1170542,
+     "shared_rows_ordered": 1170542
+    },
+    "episodic_gru": {
+     "current": 15045042,
+     "large_groups": 10081705,
+     "shared_rows": 5643374,
+     "shared_rows_ordered": 7113847
+    },
+    "titans": {
+     "current": 17381394,
+     "large_groups": 10201213,
+     "shared_rows": 5760312,
+     "shared_rows_ordered": 7229238
+    }
+   },
+   "shared_rows_bytes": 2971817
+  },
+  "calibration": {
+   "rows": 164450,
+   "writers": {
+    "neural": {
+     "current": 8823875,
+     "large_groups": 5050470,
+     "shared_rows": 2900207,
+     "shared_rows_ordered": 2900207
+    },
+    "ridge": {
+     "current": 3859478,
+     "large_groups": 2722223,
+     "shared_rows": 1175951,
+     "shared_rows_ordered": 1175951
+    },
+    "xgboost": {
+     "current": 3206396,
+     "large_groups": 2149743,
+     "shared_rows": 603469,
+     "shared_rows_ordered": 603469
+    },
+    "episodic_gru": {
+     "current": 7711315,
+     "large_groups": 5185586,
+     "shared_rows": 2909505,
+     "shared_rows_ordered": 3685651
+    },
+    "titans": {
+     "current": 8915481,
+     "large_groups": 5259358,
+     "shared_rows": 2968420,
+     "shared_rows_ordered": 3757319
+    }
+   },
+   "shared_rows_bytes": 1545428
+  },
+  "evaluation": {
+   "rows": 690027,
+   "writers": {
+    "neural": {
+     "current": 39320151,
+     "large_groups": 21013349,
+     "shared_rows": 12182599,
+     "shared_rows_ordered": 12182599
+    },
+    "ridge": {
+     "current": 16938963,
+     "large_groups": 11230504,
+     "shared_rows": 4929378,
+     "shared_rows_ordered": 4929378
+    },
+    "xgboost": {
+     "current": 14198444,
+     "large_groups": 8829912,
+     "shared_rows": 2528786,
+     "shared_rows_ordered": 2528786
+    },
+    "episodic_gru": {
+     "current": 32616206,
+     "large_groups": 21815881,
+     "shared_rows": 12170439,
+     "shared_rows_ordered": 14844376
+    },
+    "titans": {
+     "current": 37637063,
+     "large_groups": 22066365,
+     "shared_rows": 12436600,
+     "shared_rows_ordered": 15094678
+    }
+   },
+   "shared_rows_bytes": 6297678
+  }
+ },
+ "US/fold-011": {
+  "validation": {
+   "rows": 347653,
+   "writers": {
+    "neural": {
+     "current": 19052459,
+     "large_groups": 10618169,
+     "shared_rows": 6143737,
+     "shared_rows_ordered": 6143737
+    },
+    "ridge": {
+     "current": 8380103,
+     "large_groups": 5687466,
+     "shared_rows": 2485451,
+     "shared_rows_ordered": 2485451
+    },
+    "xgboost": {
+     "current": 6999467,
+     "large_groups": 4481324,
+     "shared_rows": 1279309,
+     "shared_rows_ordered": 1279309
+    },
+    "episodic_gru": {
+     "current": 16351328,
+     "large_groups": 10952480,
+     "shared_rows": 6140906,
+     "shared_rows_ordered": 7696075
+    },
+    "titans": {
+     "current": 18839812,
+     "large_groups": 11087786,
+     "shared_rows": 6270033,
+     "shared_rows_ordered": 7828620
+    }
+   },
+   "shared_rows_bytes": 3200271
+  },
+  "calibration": {
+   "rows": 177158,
+   "writers": {
+    "neural": {
+     "current": 9504978,
+     "large_groups": 5436621,
+     "shared_rows": 3127101,
+     "shared_rows_ordered": 3127101
+    },
+    "ridge": {
+     "current": 4155118,
+     "large_groups": 2925708,
+     "shared_rows": 1266933,
+     "shared_rows_ordered": 1266933
+    },
+    "xgboost": {
+     "current": 3451548,
+     "large_groups": 2306502,
+     "shared_rows": 647725,
+     "shared_rows_ordered": 647725
+    },
+    "episodic_gru": {
+     "current": 8308024,
+     "large_groups": 5588318,
+     "shared_rows": 3132364,
+     "shared_rows_ordered": 3981726
+    },
+    "titans": {
+     "current": 9606706,
+     "large_groups": 5657160,
+     "shared_rows": 3199604,
+     "shared_rows_ordered": 4051317
+    }
+   },
+   "shared_rows_bytes": 1657923
+  },
+  "evaluation": {
+   "rows": 737095,
+   "writers": {
+    "neural": {
+     "current": 41978246,
+     "large_groups": 22439816,
+     "shared_rows": 13028645,
+     "shared_rows_ordered": 13028645
+    },
+    "ridge": {
+     "current": 18073614,
+     "large_groups": 11977719,
+     "shared_rows": 5266726,
+     "shared_rows_ordered": 5266726
+    },
+    "xgboost": {
+     "current": 15146360,
+     "large_groups": 9417575,
+     "shared_rows": 2706582,
+     "shared_rows_ordered": 2706582
+    },
+    "episodic_gru": {
+     "current": 34829253,
+     "large_groups": 23294650,
+     "shared_rows": 13004416,
+     "shared_rows_ordered": 15831257
+    },
+    "titans": {
+     "current": 40189006,
+     "large_groups": 23556689,
+     "shared_rows": 13281186,
+     "shared_rows_ordered": 16091924
+    }
+   },
+   "shared_rows_bytes": 6707341
+  }
+ },
+ "US/fold-012": {
+  "validation": {
+   "rows": 372332,
+   "writers": {
+    "neural": {
+     "current": 20422176,
+     "large_groups": 11378525,
+     "shared_rows": 6581837,
+     "shared_rows_ordered": 6581837
+    },
+    "ridge": {
+     "current": 9046233,
+     "large_groups": 6094303,
+     "shared_rows": 2663834,
+     "shared_rows_ordered": 2663834
+    },
+    "xgboost": {
+     "current": 7567865,
+     "large_groups": 4793092,
+     "shared_rows": 1362623,
+     "shared_rows_ordered": 1362623
+    },
+    "episodic_gru": {
+     "current": 17540170,
+     "large_groups": 11736379,
+     "shared_rows": 6571596,
+     "shared_rows_ordered": 8204085
+    },
+    "titans": {
+     "current": 20256970,
+     "large_groups": 11888130,
+     "shared_rows": 6717722,
+     "shared_rows_ordered": 8356298
+    }
+   },
+   "shared_rows_bytes": 3428621
+  },
+  "calibration": {
+   "rows": 185903,
+   "writers": {
+    "neural": {
+     "current": 9916341,
+     "large_groups": 5710469,
+     "shared_rows": 3285971,
+     "shared_rows_ordered": 3285971
+    },
+    "ridge": {
+     "current": 4351746,
+     "large_groups": 3069671,
+     "shared_rows": 1329383,
+     "shared_rows_ordered": 1329383
+    },
+    "xgboost": {
+     "current": 3613362,
+     "large_groups": 2418986,
+     "shared_rows": 678696,
+     "shared_rows_ordered": 678696
+    },
+    "episodic_gru": {
+     "current": 8713088,
+     "large_groups": 5878079,
+     "shared_rows": 3283881,
+     "shared_rows_ordered": 4184835
+    },
+    "titans": {
+     "current": 10072203,
+     "large_groups": 5945900,
+     "shared_rows": 3356459,
+     "shared_rows_ordered": 4251838
+    }
+   },
+   "shared_rows_bytes": 1739344
+  },
+  "evaluation": {
+   "rows": 771198,
+   "writers": {
+    "neural": {
+     "current": 43920004,
+     "large_groups": 23450837,
+     "shared_rows": 13614435,
+     "shared_rows_ordered": 13614435
+    },
+    "ridge": {
+     "current": 18893774,
+     "large_groups": 12509453,
+     "shared_rows": 5510053,
+     "shared_rows_ordered": 5510053
+    },
+    "xgboost": {
+     "current": 15831052,
+     "large_groups": 9822449,
+     "shared_rows": 2823049,
+     "shared_rows_ordered": 2823049
+    },
+    "episodic_gru": {
+     "current": 36458411,
+     "large_groups": 24375408,
+     "shared_rows": 13633977,
+     "shared_rows_ordered": 16547702
+    },
+    "titans": {
+     "current": 42094045,
+     "large_groups": 24648716,
+     "shared_rows": 13900246,
+     "shared_rows_ordered": 16822648
+    }
+   },
+   "shared_rows_bytes": 6995552
+  }
+ },
+ "US/fold-013": {
+  "validation": {
+   "rows": 385496,
+   "writers": {
+    "neural": {
+     "current": 21114380,
+     "large_groups": 11764035,
+     "shared_rows": 6801243,
+     "shared_rows_ordered": 6801243
+    },
+    "ridge": {
+     "current": 9361946,
+     "large_groups": 6297363,
+     "shared_rows": 2753888,
+     "shared_rows_ordered": 2753888
+    },
+    "xgboost": {
+     "current": 7831115,
+     "large_groups": 4963163,
+     "shared_rows": 1419688,
+     "shared_rows_ordered": 1419688
+    },
+    "episodic_gru": {
+     "current": 18137638,
+     "large_groups": 12172011,
+     "shared_rows": 6802795,
+     "shared_rows_ordered": 8502568
+    },
+    "titans": {
+     "current": 20950003,
+     "large_groups": 12293701,
+     "shared_rows": 6949846,
+     "shared_rows_ordered": 8627979
+    }
+   },
+   "shared_rows_bytes": 3541531
+  },
+  "calibration": {
+   "rows": 195052,
+   "writers": {
+    "neural": {
+     "current": 10397595,
+     "large_groups": 5982484,
+     "shared_rows": 3446625,
+     "shared_rows_ordered": 3446625
+    },
+    "ridge": {
+     "current": 4561946,
+     "large_groups": 3218384,
+     "shared_rows": 1396362,
+     "shared_rows_ordered": 1396362
+    },
+    "xgboost": {
+     "current": 3787314,
+     "large_groups": 2533741,
+     "shared_rows": 711717,
+     "shared_rows_ordered": 711717
+    },
+    "episodic_gru": {
+     "current": 9134802,
+     "large_groups": 6139575,
+     "shared_rows": 3441470,
+     "shared_rows_ordered": 4377358
+    },
+    "titans": {
+     "current": 10560297,
+     "large_groups": 6237378,
+     "shared_rows": 3529360,
+     "shared_rows_ordered": 4468830
+    }
+   },
+   "shared_rows_bytes": 1821074
+  },
+  "evaluation": {
+   "rows": 821962,
+   "writers": {
+    "neural": {
+     "current": 46791042,
+     "large_groups": 24987757,
+     "shared_rows": 14526835,
+     "shared_rows_ordered": 14526835
+    },
+    "ridge": {
+     "current": 20137042,
+     "large_groups": 13320571,
+     "shared_rows": 5870997,
+     "shared_rows_ordered": 5870997
+    },
+    "xgboost": {
+     "current": 16872657,
+     "large_groups": 10466882,
+     "shared_rows": 3017308,
+     "shared_rows_ordered": 3017308
+    },
+    "episodic_gru": {
+     "current": 38923065,
+     "large_groups": 26022998,
+     "shared_rows": 14518153,
+     "shared_rows_ordered": 17604639
+    },
+    "titans": {
+     "current": 44929657,
+     "large_groups": 26303594,
+     "shared_rows": 14803934,
+     "shared_rows_ordered": 17894802
+    }
+   },
+   "shared_rows_bytes": 7445431
+  }
+ },
+ "US/fold-014": {
+  "validation": {
+   "rows": 414945,
+   "writers": {
+    "neural": {
+     "current": 22732714,
+     "large_groups": 12659799,
+     "shared_rows": 7329556,
+     "shared_rows_ordered": 7329556
+    },
+    "ridge": {
+     "current": 9993928,
+     "large_groups": 6770253,
+     "shared_rows": 2965403,
+     "shared_rows_ordered": 2965403
+    },
+    "xgboost": {
+     "current": 8345941,
+     "large_groups": 5321061,
+     "shared_rows": 1516211,
+     "shared_rows_ordered": 1516211
+    },
+    "episodic_gru": {
+     "current": 19567026,
+     "large_groups": 13079439,
+     "shared_rows": 7324991,
+     "shared_rows_ordered": 9093928
+    },
+    "titans": {
+     "current": 22546719,
+     "large_groups": 13253561,
+     "shared_rows": 7488997,
+     "shared_rows_ordered": 9260778
+    }
+   },
+   "shared_rows_bytes": 3802802
+  },
+  "calibration": {
+   "rows": 209484,
+   "writers": {
+    "neural": {
+     "current": 11165741,
+     "large_groups": 6413539,
+     "shared_rows": 3697853,
+     "shared_rows_ordered": 3697853
+    },
+    "ridge": {
+     "current": 4891990,
+     "large_groups": 3441977,
+     "shared_rows": 1497875,
+     "shared_rows_ordered": 1497875
+    },
+    "xgboost": {
+     "current": 4060022,
+     "large_groups": 2711186,
+     "shared_rows": 767082,
+     "shared_rows_ordered": 767082
+    },
+    "episodic_gru": {
+     "current": 9824064,
+     "large_groups": 6608081,
+     "shared_rows": 3703565,
+     "shared_rows_ordered": 4721658
+    },
+    "titans": {
+     "current": 11327860,
+     "large_groups": 6693297,
+     "shared_rows": 3784041,
+     "shared_rows_ordered": 4802617
+    }
+   },
+   "shared_rows_bytes": 1943054
+  },
+  "evaluation": {
+   "rows": 890629,
+   "writers": {
+    "neural": {
+     "current": 50727215,
+     "large_groups": 27052286,
+     "shared_rows": 15733963,
+     "shared_rows_ordered": 15733963
+    },
+    "ridge": {
+     "current": 21800469,
+     "large_groups": 14417922,
+     "shared_rows": 6361456,
+     "shared_rows_ordered": 6361456
+    },
+    "xgboost": {
+     "current": 18263700,
+     "large_groups": 11321860,
+     "shared_rows": 3265394,
+     "shared_rows_ordered": 3265394
+    },
+    "episodic_gru": {
+     "current": 42201970,
+     "large_groups": 28192575,
+     "shared_rows": 15716814,
+     "shared_rows_ordered": 19042665
+    },
+    "titans": {
+     "current": 48691992,
+     "large_groups": 28507365,
+     "shared_rows": 16050564,
+     "shared_rows_ordered": 19362853
+    }
+   },
+   "shared_rows_bytes": 8052018
+  }
+ },
+ "US/fold-015": {
+  "validation": {
+   "rows": 446733,
+   "writers": {
+    "neural": {
+     "current": 24472759,
+     "large_groups": 13590984,
+     "shared_rows": 7882330,
+     "shared_rows_ordered": 7882330
+    },
+    "ridge": {
+     "current": 10743347,
+     "large_groups": 7262133,
+     "shared_rows": 3191038,
+     "shared_rows_ordered": 3191038
+    },
+    "xgboost": {
+     "current": 8969125,
+     "large_groups": 5707068,
+     "shared_rows": 1635973,
+     "shared_rows_ordered": 1635973
+    },
+    "episodic_gru": {
+     "current": 21046231,
+     "large_groups": 14103475,
+     "shared_rows": 7890376,
+     "shared_rows_ordered": 9771304
+    },
+    "titans": {
+     "current": 24305280,
+     "large_groups": 14254133,
+     "shared_rows": 8053270,
+     "shared_rows_ordered": 9923562
+    }
+   },
+   "shared_rows_bytes": 4068851
+  },
+  "calibration": {
+   "rows": 229872,
+   "writers": {
+    "neural": {
+     "current": 12322505,
+     "large_groups": 7031137,
+     "shared_rows": 4063682,
+     "shared_rows_ordered": 4063682
+    },
+    "ridge": {
+     "current": 5378339,
+     "large_groups": 3767224,
+     "shared_rows": 1644353,
+     "shared_rows_ordered": 1644353
+    },
+    "xgboost": {
+     "current": 4465433,
+     "large_groups": 2970484,
+     "shared_rows": 847611,
+     "shared_rows_ordered": 847611
+    },
+    "episodic_gru": {
+     "current": 10812103,
+     "large_groups": 7268807,
+     "shared_rows": 4059039,
+     "shared_rows_ordered": 5184293
+    },
+    "titans": {
+     "current": 12492556,
+     "large_groups": 7357824,
+     "shared_rows": 4151085,
+     "shared_rows_ordered": 5275299
+    }
+   },
+   "shared_rows_bytes": 2121723
+  },
+  "evaluation": {
+   "rows": 962580,
+   "writers": {
+    "neural": {
+     "current": 54865401,
+     "large_groups": 29202355,
+     "shared_rows": 16998805,
+     "shared_rows_ordered": 16998805
+    },
+    "ridge": {
+     "current": 23570719,
+     "large_groups": 15543630,
+     "shared_rows": 6875438,
+     "shared_rows_ordered": 6875438
+    },
+    "xgboost": {
+     "current": 19748049,
+     "large_groups": 12194412,
+     "shared_rows": 3526220,
+     "shared_rows_ordered": 3526220
+    },
+    "episodic_gru": {
+     "current": 46027864,
+     "large_groups": 31087752,
+     "shared_rows": 17013341,
+     "shared_rows_ordered": 20572568
+    },
+    "titans": {
+     "current": 53053345,
+     "large_groups": 31396056,
+     "shared_rows": 17334787,
+     "shared_rows_ordered": 20881612
+    }
+   },
+   "shared_rows_bytes": 8663349
+  }
+ },
+ "US/fold-016": {
+  "validation": {
+   "rows": 481994,
+   "writers": {
+    "neural": {
+     "current": 26397374,
+     "large_groups": 14660826,
+     "shared_rows": 8507604,
+     "shared_rows_ordered": 8507604
+    },
+    "ridge": {
+     "current": 11591995,
+     "large_groups": 7833132,
+     "shared_rows": 3443294,
+     "shared_rows_ordered": 3443294
+    },
+    "xgboost": {
+     "current": 9677968,
+     "large_groups": 6158386,
+     "shared_rows": 1768548,
+     "shared_rows_ordered": 1768548
+    },
+    "episodic_gru": {
+     "current": 22771813,
+     "large_groups": 15234641,
+     "shared_rows": 8502425,
+     "shared_rows_ordered": 10499853
+    },
+    "titans": {
+     "current": 26235907,
+     "large_groups": 15401471,
+     "shared_rows": 8683342,
+     "shared_rows_ordered": 10666907
+    }
+   },
+   "shared_rows_bytes": 4387395
+  },
+  "calibration": {
+   "rows": 247360,
+   "writers": {
+    "neural": {
+     "current": 13262672,
+     "large_groups": 7560005,
+     "shared_rows": 4379661,
+     "shared_rows_ordered": 4379661
+    },
+    "ridge": {
+     "current": 5786312,
+     "large_groups": 4038484,
+     "shared_rows": 1768312,
+     "shared_rows_ordered": 1768312
+    },
+    "xgboost": {
+     "current": 4803945,
+     "large_groups": 3179475,
+     "shared_rows": 909301,
+     "shared_rows_ordered": 909301
+    },
+    "episodic_gru": {
+     "current": 11627922,
+     "large_groups": 7788332,
+     "shared_rows": 4373339,
+     "shared_rows_ordered": 5569650
+    },
+    "titans": {
+     "current": 13427515,
+     "large_groups": 7900204,
+     "shared_rows": 4464723,
+     "shared_rows_ordered": 5672743
+    }
+   },
+   "shared_rows_bytes": 2268928
+  },
+  "evaluation": {
+   "rows": 1008423,
+   "writers": {
+    "neural": {
+     "current": 57363954,
+     "large_groups": 30497534,
+     "shared_rows": 17808904,
+     "shared_rows_ordered": 17808904
+    },
+    "ridge": {
+     "current": 24564011,
+     "large_groups": 16186641,
+     "shared_rows": 7203959,
+     "shared_rows_ordered": 7203959
+    },
+    "xgboost": {
+     "current": 20559215,
+     "large_groups": 12680397,
+     "shared_rows": 3697715,
+     "shared_rows_ordered": 3697715
+    },
+    "episodic_gru": {
+     "current": 48159266,
+     "large_groups": 32360208,
+     "shared_rows": 17802964,
+     "shared_rows_ordered": 21506982
+    },
+    "titans": {
+     "current": 55443268,
+     "large_groups": 32701012,
+     "shared_rows": 18168135,
+     "shared_rows_ordered": 21860114
+    }
+   },
+   "shared_rows_bytes": 8977634
+  }
+ },
+ "US/fold-017": {
+  "validation": {
+   "rows": 504255,
+   "writers": {
+    "neural": {
+     "current": 27592941,
+     "large_groups": 15316864,
+     "shared_rows": 8904154,
+     "shared_rows_ordered": 8904154
+    },
+    "ridge": {
+     "current": 12082794,
+     "large_groups": 8167704,
+     "shared_rows": 3603594,
+     "shared_rows_ordered": 3603594
+    },
+    "xgboost": {
+     "current": 10080335,
+     "large_groups": 6419113,
+     "shared_rows": 1855003,
+     "shared_rows_ordered": 1855003
+    },
+    "episodic_gru": {
+     "current": 24070628,
+     "large_groups": 16200082,
+     "shared_rows": 8912206,
+     "shared_rows_ordered": 10954466
+    },
+    "titans": {
+     "current": 27747450,
+     "large_groups": 16379115,
+     "shared_rows": 9087831,
+     "shared_rows_ordered": 11137526
+    }
+   },
+   "shared_rows_bytes": 4561566
+  },
+  "calibration": {
+   "rows": 254913,
+   "writers": {
+    "neural": {
+     "current": 13661601,
+     "large_groups": 7753675,
+     "shared_rows": 4496977,
+     "shared_rows_ordered": 4496977
+    },
+    "ridge": {
+     "current": 5946974,
+     "large_groups": 4152507,
+     "shared_rows": 1824242,
+     "shared_rows_ordered": 1824242
+    },
+    "xgboost": {
+     "current": 4934618,
+     "large_groups": 3260661,
+     "shared_rows": 932394,
+     "shared_rows_ordered": 932394
+    },
+    "episodic_gru": {
+     "current": 12088780,
+     "large_groups": 8201821,
+     "shared_rows": 4503089,
+     "shared_rows_ordered": 5761974
+    },
+    "titans": {
+     "current": 13947605,
+     "large_groups": 8293656,
+     "shared_rows": 4607134,
+     "shared_rows_ordered": 5857382
+    }
+   },
+   "shared_rows_bytes": 2327017
+  },
+  "evaluation": {
+   "rows": 1021782,
+   "writers": {
+    "neural": {
+     "current": 58104635,
+     "large_groups": 30817025,
+     "shared_rows": 18035272,
+     "shared_rows_ordered": 18035272
+    },
+    "ridge": {
+     "current": 24856571,
+     "large_groups": 16333512,
+     "shared_rows": 7297012,
+     "shared_rows_ordered": 7297012
+    },
+    "xgboost": {
+     "current": 20798622,
+     "large_groups": 12769849,
+     "shared_rows": 3733349,
+     "shared_rows_ordered": 3733349
+    },
+    "episodic_gru": {
+     "current": 48723533,
+     "large_groups": 32697852,
+     "shared_rows": 18053809,
+     "shared_rows_ordered": 21769761
+    },
+    "titans": {
+     "current": 56179628,
+     "large_groups": 33065889,
+     "shared_rows": 18401257,
+     "shared_rows_ordered": 22135073
+    }
+   },
+   "shared_rows_bytes": 9031357
+  }
+ },
+ "US/fold-018": {
+  "validation": {
+   "rows": 510913,
+   "writers": {
+    "neural": {
+     "current": 27934361,
+     "large_groups": 15495124,
+     "shared_rows": 9023962,
+     "shared_rows_ordered": 9023962
+    },
+    "ridge": {
+     "current": 12371164,
+     "large_groups": 8249569,
+     "shared_rows": 3651588,
+     "shared_rows_ordered": 3651588
+    },
+    "xgboost": {
+     "current": 10342188,
+     "large_groups": 6475914,
+     "shared_rows": 1877933,
+     "shared_rows_ordered": 1877933
+    },
+    "episodic_gru": {
+     "current": 24308415,
+     "large_groups": 16360115,
+     "shared_rows": 9018659,
+     "shared_rows_ordered": 11084737
+    },
+    "titans": {
+     "current": 28036659,
+     "large_groups": 16555637,
+     "shared_rows": 9213269,
+     "shared_rows_ordered": 11282855
+    }
+   },
+   "shared_rows_bytes": 4595433
+  },
+  "calibration": {
+   "rows": 254563,
+   "writers": {
+    "neural": {
+     "current": 13543494,
+     "large_groups": 7769404,
+     "shared_rows": 4503471,
+     "shared_rows_ordered": 4503471
+    },
+    "ridge": {
+     "current": 5920408,
+     "large_groups": 4150081,
+     "shared_rows": 1820311,
+     "shared_rows_ordered": 1820311
+    },
+    "xgboost": {
+     "current": 4909398,
+     "large_groups": 3260402,
+     "shared_rows": 930630,
+     "shared_rows_ordered": 930630
+    },
+    "episodic_gru": {
+     "current": 12069662,
+     "large_groups": 8163190,
+     "shared_rows": 4486142,
+     "shared_rows_ordered": 5739871
+    },
+    "titans": {
+     "current": 13938376,
+     "large_groups": 8276110,
+     "shared_rows": 4600718,
+     "shared_rows_ordered": 5850346
+    }
+   },
+   "shared_rows_bytes": 2328522
+  },
+  "evaluation": {
+   "rows": 1027173,
+   "writers": {
+    "neural": {
+     "current": 58387323,
+     "large_groups": 30940622,
+     "shared_rows": 18121614,
+     "shared_rows_ordered": 18121614
+    },
+    "ridge": {
+     "current": 24983737,
+     "large_groups": 16388545,
+     "shared_rows": 7337627,
+     "shared_rows_ordered": 7337627
+    },
+    "xgboost": {
+     "current": 20904239,
+     "large_groups": 12826292,
+     "shared_rows": 3775374,
+     "shared_rows_ordered": 3775374
+    },
+    "episodic_gru": {
+     "current": 48876183,
+     "large_groups": 32811264,
+     "shared_rows": 18113660,
+     "shared_rows_ordered": 21889340
+    },
+    "titans": {
+     "current": 56363205,
+     "large_groups": 33173684,
+     "shared_rows": 18505533,
+     "shared_rows_ordered": 22258288
+    }
+   },
+   "shared_rows_bytes": 9045774
+  }
+ },
+ "CN/fold-000": {
+  "validation": {
+   "rows": 61334,
+   "writers": {
+    "neural": {
+     "current": 3336038,
+     "large_groups": 1892227,
+     "shared_rows": 1089342,
+     "shared_rows_ordered": 1089342
+    },
+    "ridge": {
+     "current": 1434977,
+     "large_groups": 1014613,
+     "shared_rows": 438946,
+     "shared_rows_ordered": 438946
+    },
+    "xgboost": {
+     "current": 1191134,
+     "large_groups": 803007,
+     "shared_rows": 227340,
+     "shared_rows_ordered": 227340
+    },
+    "episodic_gru": {
+     "current": 2792425,
+     "large_groups": 1904778,
+     "shared_rows": 1081473,
+     "shared_rows_ordered": 1353663
+    },
+    "titans": {
+     "current": 3245778,
+     "large_groups": 1927512,
+     "shared_rows": 1108446,
+     "shared_rows_ordered": 1376656
+    }
+   },
+   "shared_rows_bytes": 575325
+  },
+  "calibration": {
+   "rows": 31736,
+   "writers": {
+    "neural": {
+     "current": 1664247,
+     "large_groups": 1002070,
+     "shared_rows": 560394,
+     "shared_rows_ordered": 560394
+    },
+    "ridge": {
+     "current": 716501,
+     "large_groups": 554060,
+     "shared_rows": 229310,
+     "shared_rows_ordered": 229310
+    },
+    "xgboost": {
+     "current": 590499,
+     "large_groups": 441025,
+     "shared_rows": 116275,
+     "shared_rows_ordered": 116275
+    },
+    "episodic_gru": {
+     "current": 1464809,
+     "large_groups": 1016100,
+     "shared_rows": 564603,
+     "shared_rows_ordered": 701258
+    },
+    "titans": {
+     "current": 1620058,
+     "large_groups": 1038494,
+     "shared_rows": 585594,
+     "shared_rows_ordered": 721586
+    }
+   },
+   "shared_rows_bytes": 324603
+  },
+  "evaluation": {
+   "rows": 136641,
+   "writers": {
+    "neural": {
+     "current": 7742677,
+     "large_groups": 4107900,
+     "shared_rows": 2409701,
+     "shared_rows_ordered": 2409701
+    },
+    "ridge": {
+     "current": 3256230,
+     "large_groups": 2179721,
+     "shared_rows": 979537,
+     "shared_rows_ordered": 979537
+    },
+    "xgboost": {
+     "current": 2713726,
+     "large_groups": 1703286,
+     "shared_rows": 503101,
+     "shared_rows_ordered": 503101
+    },
+    "episodic_gru": {
+     "current": 6243219,
+     "large_groups": 4163546,
+     "shared_rows": 2418760,
+     "shared_rows_ordered": 3053372
+    },
+    "titans": {
+     "current": 7230188,
+     "large_groups": 4233148,
+     "shared_rows": 2469242,
+     "shared_rows_ordered": 3116451
+    }
+   },
+   "shared_rows_bytes": 1199531
+  }
+ },
+ "CN/fold-001": {
+  "validation": {
+   "rows": 69815,
+   "writers": {
+    "neural": {
+     "current": 3796657,
+     "large_groups": 2140404,
+     "shared_rows": 1237592,
+     "shared_rows_ordered": 1237592
+    },
+    "ridge": {
+     "current": 1643331,
+     "large_groups": 1144287,
+     "shared_rows": 499800,
+     "shared_rows_ordered": 499800
+    },
+    "xgboost": {
+     "current": 1365962,
+     "large_groups": 901081,
+     "shared_rows": 256596,
+     "shared_rows_ordered": 256596
+    },
+    "episodic_gru": {
+     "current": 3182047,
+     "large_groups": 2159148,
+     "shared_rows": 1236392,
+     "shared_rows_ordered": 1543836
+    },
+    "titans": {
+     "current": 3691424,
+     "large_groups": 2197704,
+     "shared_rows": 1269615,
+     "shared_rows_ordered": 1579454
+    }
+   },
+   "shared_rows_bytes": 644138
+  },
+  "calibration": {
+   "rows": 34292,
+   "writers": {
+    "neural": {
+     "current": 1814091,
+     "large_groups": 1080002,
+     "shared_rows": 606064,
+     "shared_rows_ordered": 606064
+    },
+    "ridge": {
+     "current": 776958,
+     "large_groups": 595963,
+     "shared_rows": 247785,
+     "shared_rows_ordered": 247785
+    },
+    "xgboost": {
+     "current": 640795,
+     "large_groups": 474753,
+     "shared_rows": 126575,
+     "shared_rows_ordered": 126575
+    },
+    "episodic_gru": {
+     "current": 1576208,
+     "large_groups": 1090132,
+     "shared_rows": 607260,
+     "shared_rows_ordered": 755054
+    },
+    "titans": {
+     "current": 1830986,
+     "large_groups": 1120175,
+     "shared_rows": 633818,
+     "shared_rows_ordered": 782116
+    }
+   },
+   "shared_rows_bytes": 348031
+  },
+  "evaluation": {
+   "rows": 144664,
+   "writers": {
+    "neural": {
+     "current": 8196380,
+     "large_groups": 4343822,
+     "shared_rows": 2556177,
+     "shared_rows_ordered": 2556177
+    },
+    "ridge": {
+     "current": 3439191,
+     "large_groups": 2294066,
+     "shared_rows": 1035300,
+     "shared_rows_ordered": 1035300
+    },
+    "xgboost": {
+     "current": 2864753,
+     "large_groups": 1787491,
+     "shared_rows": 528724,
+     "shared_rows_ordered": 528724
+    },
+    "episodic_gru": {
+     "current": 6579220,
+     "large_groups": 4418049,
+     "shared_rows": 2550567,
+     "shared_rows_ordered": 3247661
+    },
+    "titans": {
+     "current": 7604121,
+     "large_groups": 4471092,
+     "shared_rows": 2611803,
+     "shared_rows_ordered": 3299707
+    }
+   },
+   "shared_rows_bytes": 1258021
+  }
+ },
+ "CN/fold-002": {
+  "validation": {
+   "rows": 73081,
+   "writers": {
+    "neural": {
+     "current": 3970210,
+     "large_groups": 2224833,
+     "shared_rows": 1290025,
+     "shared_rows_ordered": 1290025
+    },
+    "ridge": {
+     "current": 1717762,
+     "large_groups": 1194663,
+     "shared_rows": 524738,
+     "shared_rows_ordered": 524738
+    },
+    "xgboost": {
+     "current": 1427551,
+     "large_groups": 940724,
+     "shared_rows": 270801,
+     "shared_rows_ordered": 270801
+    },
+    "episodic_gru": {
+     "current": 3312178,
+     "large_groups": 2255078,
+     "shared_rows": 1293972,
+     "shared_rows_ordered": 1614405
+    },
+    "titans": {
+     "current": 3830598,
+     "large_groups": 2302302,
+     "shared_rows": 1329662,
+     "shared_rows_ordered": 1658402
+    }
+   },
+   "shared_rows_bytes": 669576
+  },
+  "calibration": {
+   "rows": 37219,
+   "writers": {
+    "neural": {
+     "current": 1949821,
+     "large_groups": 1164916,
+     "shared_rows": 656638,
+     "shared_rows_ordered": 656638
+    },
+    "ridge": {
+     "current": 835369,
+     "large_groups": 642237,
+     "shared_rows": 270055,
+     "shared_rows_ordered": 270055
+    },
+    "xgboost": {
+     "current": 687555,
+     "large_groups": 510235,
+     "shared_rows": 138053,
+     "shared_rows_ordered": 138053
+    },
+    "episodic_gru": {
+     "current": 1703317,
+     "large_groups": 1176886,
+     "shared_rows": 652492,
+     "shared_rows_ordered": 819616
+    },
+    "titans": {
+     "current": 1983527,
+     "large_groups": 1197870,
+     "shared_rows": 679182,
+     "shared_rows_ordered": 840457
+    }
+   },
+   "shared_rows_bytes": 372031
+  },
+  "evaluation": {
+   "rows": 147402,
+   "writers": {
+    "neural": {
+     "current": 8313721,
+     "large_groups": 4410009,
+     "shared_rows": 2601524,
+     "shared_rows_ordered": 2601524
+    },
+    "ridge": {
+     "current": 3476396,
+     "large_groups": 2322974,
+     "shared_rows": 1054178,
+     "shared_rows_ordered": 1054178
+    },
+    "xgboost": {
+     "current": 2891137,
+     "large_groups": 1813902,
+     "shared_rows": 545104,
+     "shared_rows_ordered": 545104
+    },
+    "episodic_gru": {
+     "current": 6684479,
+     "large_groups": 4486720,
+     "shared_rows": 2608876,
+     "shared_rows_ordered": 3311769
+    },
+    "titans": {
+     "current": 7721243,
+     "large_groups": 4540730,
+     "shared_rows": 2665013,
+     "shared_rows_ordered": 3366392
+    }
+   },
+   "shared_rows_bytes": 1268052
+  }
+ },
+ "CN/fold-003": {
+  "validation": {
+   "rows": 74341,
+   "writers": {
+    "neural": {
+     "current": 3996762,
+     "large_groups": 2266052,
+     "shared_rows": 1315009,
+     "shared_rows_ordered": 1315009
+    },
+    "ridge": {
+     "current": 1698656,
+     "large_groups": 1210060,
+     "shared_rows": 534380,
+     "shared_rows_ordered": 534380
+    },
+    "xgboost": {
+     "current": 1403450,
+     "large_groups": 950003,
+     "shared_rows": 274325,
+     "shared_rows_ordered": 274325
+    },
+    "episodic_gru": {
+     "current": 3366663,
+     "large_groups": 2291386,
+     "shared_rows": 1312389,
+     "shared_rows_ordered": 1648460
+    },
+    "titans": {
+     "current": 3892918,
+     "large_groups": 2333967,
+     "shared_rows": 1355216,
+     "shared_rows_ordered": 1688779
+    }
+   },
+   "shared_rows_bytes": 675331
+  },
+  "calibration": {
+   "rows": 37443,
+   "writers": {
+    "neural": {
+     "current": 1961076,
+     "large_groups": 1171636,
+     "shared_rows": 661088,
+     "shared_rows_ordered": 661088
+    },
+    "ridge": {
+     "current": 837826,
+     "large_groups": 642774,
+     "shared_rows": 270331,
+     "shared_rows_ordered": 270331
+    },
+    "xgboost": {
+     "current": 689149,
+     "large_groups": 511471,
+     "shared_rows": 139028,
+     "shared_rows_ordered": 139028
+    },
+    "episodic_gru": {
+     "current": 1713547,
+     "large_groups": 1179446,
+     "shared_rows": 666433,
+     "shared_rows_ordered": 824190
+    },
+    "titans": {
+     "current": 1995606,
+     "large_groups": 1201191,
+     "shared_rows": 682734,
+     "shared_rows_ordered": 845331
+    }
+   },
+   "shared_rows_bytes": 372292
+  },
+  "evaluation": {
+   "rows": 152275,
+   "writers": {
+    "neural": {
+     "current": 8613120,
+     "large_groups": 4565486,
+     "shared_rows": 2690938,
+     "shared_rows_ordered": 2690938
+    },
+    "ridge": {
+     "current": 3603710,
+     "large_groups": 2406550,
+     "shared_rows": 1090422,
+     "shared_rows_ordered": 1090422
+    },
+    "xgboost": {
+     "current": 2998950,
+     "large_groups": 1872630,
+     "shared_rows": 556500,
+     "shared_rows_ordered": 556500
+    },
+    "episodic_gru": {
+     "current": 6924656,
+     "large_groups": 4625515,
+     "shared_rows": 2694205,
+     "shared_rows_ordered": 3413865
+    },
+    "titans": {
+     "current": 7996418,
+     "large_groups": 4696436,
+     "shared_rows": 2756617,
+     "shared_rows_ordered": 3483098
+    }
+   },
+   "shared_rows_bytes": 1315380
+  }
+ },
+ "CN/fold-004": {
+  "validation": {
+   "rows": 77702,
+   "writers": {
+    "neural": {
+     "current": 4221866,
+     "large_groups": 2365302,
+     "shared_rows": 1373576,
+     "shared_rows_ordered": 1373576
+    },
+    "ridge": {
+     "current": 1823940,
+     "large_groups": 1264337,
+     "shared_rows": 557689,
+     "shared_rows_ordered": 557689
+    },
+    "xgboost": {
+     "current": 1515384,
+     "large_groups": 992984,
+     "shared_rows": 286338,
+     "shared_rows_ordered": 286338
+    },
+    "episodic_gru": {
+     "current": 3520025,
+     "large_groups": 2387778,
+     "shared_rows": 1369696,
+     "shared_rows_ordered": 1724084
+    },
+    "titans": {
+     "current": 4064228,
+     "large_groups": 2426569,
+     "shared_rows": 1407412,
+     "shared_rows_ordered": 1759048
+    }
+   },
+   "shared_rows_bytes": 706295
+  },
+  "calibration": {
+   "rows": 37887,
+   "writers": {
+    "neural": {
+     "current": 1983820,
+     "large_groups": 1185286,
+     "shared_rows": 669090,
+     "shared_rows_ordered": 669090
+    },
+    "ridge": {
+     "current": 849345,
+     "large_groups": 649900,
+     "shared_rows": 274152,
+     "shared_rows_ordered": 274152
+    },
+    "xgboost": {
+     "current": 698946,
+     "large_groups": 516161,
+     "shared_rows": 140413,
+     "shared_rows_ordered": 140413
+    },
+    "episodic_gru": {
+     "current": 1736218,
+     "large_groups": 1199670,
+     "shared_rows": 671382,
+     "shared_rows_ordered": 838725
+    },
+    "titans": {
+     "current": 2016377,
+     "large_groups": 1217921,
+     "shared_rows": 690270,
+     "shared_rows_ordered": 855350
+    }
+   },
+   "shared_rows_bytes": 375597
+  },
+  "evaluation": {
+   "rows": 151339,
+   "writers": {
+    "neural": {
+     "current": 8573818,
+     "large_groups": 4556921,
+     "shared_rows": 2673909,
+     "shared_rows_ordered": 2673909
+    },
+    "ridge": {
+     "current": 3609676,
+     "large_groups": 2409116,
+     "shared_rows": 1082187,
+     "shared_rows_ordered": 1082187
+    },
+    "xgboost": {
+     "current": 3008681,
+     "large_groups": 1883256,
+     "shared_rows": 556325,
+     "shared_rows_ordered": 556325
+    },
+    "episodic_gru": {
+     "current": 6929674,
+     "large_groups": 4624029,
+     "shared_rows": 2675753,
+     "shared_rows_ordered": 3394742
+    },
+    "titans": {
+     "current": 7990601,
+     "large_groups": 4692307,
+     "shared_rows": 2738977,
+     "shared_rows_ordered": 3460922
+    }
+   },
+   "shared_rows_bytes": 1326181
+  }
+ },
+ "CN/fold-005": {
+  "validation": {
+   "rows": 76939,
+   "writers": {
+    "neural": {
+     "current": 4185713,
+     "large_groups": 2354103,
+     "shared_rows": 1361440,
+     "shared_rows_ordered": 1361440
+    },
+    "ridge": {
+     "current": 1813503,
+     "large_groups": 1262060,
+     "shared_rows": 553198,
+     "shared_rows_ordered": 553198
+    },
+    "xgboost": {
+     "current": 1507903,
+     "large_groups": 994157,
+     "shared_rows": 285297,
+     "shared_rows_ordered": 285297
+    },
+    "episodic_gru": {
+     "current": 3503544,
+     "large_groups": 2377260,
+     "shared_rows": 1357569,
+     "shared_rows_ordered": 1705564
+    },
+    "titans": {
+     "current": 4043852,
+     "large_groups": 2415664,
+     "shared_rows": 1393559,
+     "shared_rows_ordered": 1741634
+    }
+   },
+   "shared_rows_bytes": 708509
+  },
+  "calibration": {
+   "rows": 38317,
+   "writers": {
+    "neural": {
+     "current": 2011176,
+     "large_groups": 1205897,
+     "shared_rows": 682400,
+     "shared_rows_ordered": 682400
+    },
+    "ridge": {
+     "current": 864333,
+     "large_groups": 658952,
+     "shared_rows": 277480,
+     "shared_rows_ordered": 277480
+    },
+    "xgboost": {
+     "current": 712226,
+     "large_groups": 523730,
+     "shared_rows": 142258,
+     "shared_rows_ordered": 142258
+    },
+    "episodic_gru": {
+     "current": 1766670,
+     "large_groups": 1209496,
+     "shared_rows": 681117,
+     "shared_rows_ordered": 841103
+    },
+    "titans": {
+     "current": 2047949,
+     "large_groups": 1233045,
+     "shared_rows": 697477,
+     "shared_rows_ordered": 863346
+    }
+   },
+   "shared_rows_bytes": 381321
+  },
+  "evaluation": {
+   "rows": 160751,
+   "writers": {
+    "neural": {
+     "current": 9083161,
+     "large_groups": 4803303,
+     "shared_rows": 2839048,
+     "shared_rows_ordered": 2839048
+    },
+    "ridge": {
+     "current": 3790377,
+     "large_groups": 2524520,
+     "shared_rows": 1148667,
+     "shared_rows_ordered": 1148667
+    },
+    "xgboost": {
+     "current": 3151951,
+     "large_groups": 1962308,
+     "shared_rows": 586453,
+     "shared_rows_ordered": 586453
+    },
+    "episodic_gru": {
+     "current": 7320786,
+     "large_groups": 4865649,
+     "shared_rows": 2834420,
+     "shared_rows_ordered": 3605601
+    },
+    "titans": {
+     "current": 8420907,
+     "large_groups": 4928212,
+     "shared_rows": 2897052,
+     "shared_rows_ordered": 3667123
+    }
+   },
+   "shared_rows_bytes": 1375011
+  }
+ },
+ "CN/fold-006": {
+  "validation": {
+   "rows": 82141,
+   "writers": {
+    "neural": {
+     "current": 4453757,
+     "large_groups": 2490182,
+     "shared_rows": 1452896,
+     "shared_rows_ordered": 1452896
+    },
+    "ridge": {
+     "current": 1886592,
+     "large_groups": 1321401,
+     "shared_rows": 587564,
+     "shared_rows_ordered": 587564
+    },
+    "xgboost": {
+     "current": 1560371,
+     "large_groups": 1035604,
+     "shared_rows": 301769,
+     "shared_rows_ordered": 301769
+    },
+    "episodic_gru": {
+     "current": 3731472,
+     "large_groups": 2517012,
+     "shared_rows": 1451164,
+     "shared_rows_ordered": 1826377
+    },
+    "titans": {
+     "current": 4290350,
+     "large_groups": 2548829,
+     "shared_rows": 1483816,
+     "shared_rows_ordered": 1857487
+    }
+   },
+   "shared_rows_bytes": 733393
+  },
+  "calibration": {
+   "rows": 39570,
+   "writers": {
+    "neural": {
+     "current": 2093392,
+     "large_groups": 1230569,
+     "shared_rows": 697899,
+     "shared_rows_ordered": 697899
+    },
+    "ridge": {
+     "current": 891776,
+     "large_groups": 670572,
+     "shared_rows": 283518,
+     "shared_rows_ordered": 283518
+    },
+    "xgboost": {
+     "current": 734676,
+     "large_groups": 533591,
+     "shared_rows": 146537,
+     "shared_rows_ordered": 146537
+    },
+    "episodic_gru": {
+     "current": 1808025,
+     "large_groups": 1238374,
+     "shared_rows": 701256,
+     "shared_rows_ordered": 868327
+    },
+    "titans": {
+     "current": 2102296,
+     "large_groups": 1259667,
+     "shared_rows": 716388,
+     "shared_rows_ordered": 888948
+    }
+   },
+   "shared_rows_bytes": 386903
+  },
+  "evaluation": {
+   "rows": 168344,
+   "writers": {
+    "neural": {
+     "current": 9516629,
+     "large_groups": 5032114,
+     "shared_rows": 2976186,
+     "shared_rows_ordered": 2976186
+    },
+    "ridge": {
+     "current": 3969456,
+     "large_groups": 2643757,
+     "shared_rows": 1204312,
+     "shared_rows_ordered": 1204312
+    },
+    "xgboost": {
+     "current": 3300753,
+     "large_groups": 2057250,
+     "shared_rows": 617803,
+     "shared_rows_ordered": 617803
+    },
+    "episodic_gru": {
+     "current": 7671916,
+     "large_groups": 5110156,
+     "shared_rows": 2973457,
+     "shared_rows_ordered": 3787795
+    },
+    "titans": {
+     "current": 8902969,
+     "large_groups": 5173282,
+     "shared_rows": 3042829,
+     "shared_rows_ordered": 3849571
+    }
+   },
+   "shared_rows_bytes": 1438597
+  }
+ },
+ "CN/fold-007": {
+  "validation": {
+   "rows": 85643,
+   "writers": {
+    "neural": {
+     "current": 4641156,
+     "large_groups": 2591324,
+     "shared_rows": 1511101,
+     "shared_rows_ordered": 1511101
+    },
+    "ridge": {
+     "current": 1962421,
+     "large_groups": 1379335,
+     "shared_rows": 612914,
+     "shared_rows_ordered": 612914
+    },
+    "xgboost": {
+     "current": 1622228,
+     "large_groups": 1079200,
+     "shared_rows": 312779,
+     "shared_rows_ordered": 312779
+    },
+    "episodic_gru": {
+     "current": 3905692,
+     "large_groups": 2628208,
+     "shared_rows": 1511340,
+     "shared_rows_ordered": 1904989
+    },
+    "titans": {
+     "current": 4492619,
+     "large_groups": 2664740,
+     "shared_rows": 1551362,
+     "shared_rows_ordered": 1941710
+    }
+   },
+   "shared_rows_bytes": 765976
+  },
+  "calibration": {
+   "rows": 41927,
+   "writers": {
+    "neural": {
+     "current": 2216935,
+     "large_groups": 1302294,
+     "shared_rows": 740502,
+     "shared_rows_ordered": 740502
+    },
+    "ridge": {
+     "current": 943847,
+     "large_groups": 707093,
+     "shared_rows": 300272,
+     "shared_rows_ordered": 300272
+    },
+    "xgboost": {
+     "current": 777332,
+     "large_groups": 559407,
+     "shared_rows": 152586,
+     "shared_rows_ordered": 152586
+    },
+    "episodic_gru": {
+     "current": 1912480,
+     "large_groups": 1321161,
+     "shared_rows": 747039,
+     "shared_rows_ordered": 929771
+    },
+    "titans": {
+     "current": 2216464,
+     "large_groups": 1332117,
+     "shared_rows": 758986,
+     "shared_rows_ordered": 941192
+    }
+   },
+   "shared_rows_bytes": 406579
+  },
+  "evaluation": {
+   "rows": 172289,
+   "writers": {
+    "neural": {
+     "current": 9738967,
+     "large_groups": 5142577,
+     "shared_rows": 3043286,
+     "shared_rows_ordered": 3043286
+    },
+    "ridge": {
+     "current": 4061248,
+     "large_groups": 2700081,
+     "shared_rows": 1232284,
+     "shared_rows_ordered": 1232284
+    },
+    "xgboost": {
+     "current": 3376939,
+     "large_groups": 2100831,
+     "shared_rows": 633032,
+     "shared_rows_ordered": 633032
+    },
+    "episodic_gru": {
+     "current": 7830951,
+     "large_groups": 5228347,
+     "shared_rows": 3044434,
+     "shared_rows_ordered": 3873727
+    },
+    "titans": {
+     "current": 9096696,
+     "large_groups": 5300693,
+     "shared_rows": 3116836,
+     "shared_rows_ordered": 3944236
+    }
+   },
+   "shared_rows_bytes": 1466949
+  }
+ },
+ "CN/fold-008": {
+  "validation": {
+   "rows": 87834,
+   "writers": {
+    "neural": {
+     "current": 4760850,
+     "large_groups": 2652166,
+     "shared_rows": 1546839,
+     "shared_rows_ordered": 1546839
+    },
+    "ridge": {
+     "current": 2056140,
+     "large_groups": 1413015,
+     "shared_rows": 628373,
+     "shared_rows_ordered": 628373
+    },
+    "xgboost": {
+     "current": 1707273,
+     "large_groups": 1107555,
+     "shared_rows": 322913,
+     "shared_rows_ordered": 322913
+    },
+    "episodic_gru": {
+     "current": 3991958,
+     "large_groups": 2688494,
+     "shared_rows": 1554591,
+     "shared_rows_ordered": 1953133
+    },
+    "titans": {
+     "current": 4581187,
+     "large_groups": 2731296,
+     "shared_rows": 1592272,
+     "shared_rows_ordered": 1993076
+    }
+   },
+   "shared_rows_bytes": 784197
+  },
+  "calibration": {
+   "rows": 42045,
+   "writers": {
+    "neural": {
+     "current": 2225596,
+     "large_groups": 1306565,
+     "shared_rows": 743607,
+     "shared_rows_ordered": 743607
+    },
+    "ridge": {
+     "current": 949704,
+     "large_groups": 709316,
+     "shared_rows": 301039,
+     "shared_rows_ordered": 301039
+    },
+    "xgboost": {
+     "current": 782655,
+     "large_groups": 564297,
+     "shared_rows": 156020,
+     "shared_rows_ordered": 156020
+    },
+    "episodic_gru": {
+     "current": 1916776,
+     "large_groups": 1317784,
+     "shared_rows": 742473,
+     "shared_rows_ordered": 925494
+    },
+    "titans": {
+     "current": 2228692,
+     "large_groups": 1336251,
+     "shared_rows": 761118,
+     "shared_rows_ordered": 943792
+    }
+   },
+   "shared_rows_bytes": 408035
+  },
+  "evaluation": {
+   "rows": 115056,
+   "writers": {
+    "neural": {
+     "current": 6406715,
+     "large_groups": 3507752,
+     "shared_rows": 2035503,
+     "shared_rows_ordered": 2035503
+    },
+    "ridge": {
+     "current": 2731979,
+     "large_groups": 1874575,
+     "shared_rows": 826684,
+     "shared_rows_ordered": 826684
+    },
+    "xgboost": {
+     "current": 2274881,
+     "large_groups": 1471448,
+     "shared_rows": 423557,
+     "shared_rows_ordered": 423557
+    },
+    "episodic_gru": {
+     "current": 5272035,
+     "large_groups": 3563275,
+     "shared_rows": 2033592,
+     "shared_rows_ordered": 2566337
+    },
+    "titans": {
+     "current": 6117834,
+     "large_groups": 3623366,
+     "shared_rows": 2087409,
+     "shared_rows_ordered": 2624170
+    }
+   },
+   "shared_rows_bytes": 1047342
+  }
+ },
+ "CN/fold-009": {
+  "validation": {
+   "rows": 40605,
+   "writers": {
+    "neural": {
+     "current": 2152536,
+     "large_groups": 1270552,
+     "shared_rows": 716202,
+     "shared_rows_ordered": 716202
+    },
+    "ridge": {
+     "current": 931693,
+     "large_groups": 696324,
+     "shared_rows": 290501,
+     "shared_rows_ordered": 290501
+    },
+    "xgboost": {
+     "current": 770463,
+     "large_groups": 553928,
+     "shared_rows": 148105,
+     "shared_rows_ordered": 148105
+    },
+    "episodic_gru": {
+     "current": 1872862,
+     "large_groups": 1291124,
+     "shared_rows": 716993,
+     "shared_rows_ordered": 896273
+    },
+    "titans": {
+     "current": 2172868,
+     "large_groups": 1305091,
+     "shared_rows": 734351,
+     "shared_rows_ordered": 910870
+    }
+   },
+   "shared_rows_bytes": 405582
+  },
+  "calibration": {
+   "rows": 44558,
+   "writers": {
+    "neural": {
+     "current": 2333723,
+     "large_groups": 1376902,
+     "shared_rows": 786803,
+     "shared_rows_ordered": 786803
+    },
+    "ridge": {
+     "current": 995980,
+     "large_groups": 745604,
+     "shared_rows": 319363,
+     "shared_rows_ordered": 319363
+    },
+    "xgboost": {
+     "current": 818993,
+     "large_groups": 589182,
+     "shared_rows": 162941,
+     "shared_rows_ordered": 162941
+    },
+    "episodic_gru": {
+     "current": 2025273,
+     "large_groups": 1394992,
+     "shared_rows": 791474,
+     "shared_rows_ordered": 983839
+    },
+    "titans": {
+     "current": 2357631,
+     "large_groups": 1414110,
+     "shared_rows": 809942,
+     "shared_rows_ordered": 1003442
+    }
+   },
+   "shared_rows_bytes": 425998
+  },
+  "evaluation": {
+   "rows": 179831,
+   "writers": {
+    "neural": {
+     "current": 10174507,
+     "large_groups": 5360277,
+     "shared_rows": 3167171,
+     "shared_rows_ordered": 3167171
+    },
+    "ridge": {
+     "current": 4256117,
+     "large_groups": 2823443,
+     "shared_rows": 1284568,
+     "shared_rows_ordered": 1284568
+    },
+    "xgboost": {
+     "current": 3541860,
+     "large_groups": 2203930,
+     "shared_rows": 665053,
+     "shared_rows_ordered": 665053
+    },
+    "episodic_gru": {
+     "current": 8183078,
+     "large_groups": 5465387,
+     "shared_rows": 3168974,
+     "shared_rows_ordered": 4044537
+    },
+    "titans": {
+     "current": 9498852,
+     "large_groups": 5527589,
+     "shared_rows": 3240256,
+     "shared_rows_ordered": 4107335
+    }
+   },
+   "shared_rows_bytes": 1538023
+  }
+ },
+ "CN/fold-010": {
+  "validation": {
+   "rows": 90932,
+   "writers": {
+    "neural": {
+     "current": 4938947,
+     "large_groups": 2760934,
+     "shared_rows": 1610973,
+     "shared_rows_ordered": 1610973
+    },
+    "ridge": {
+     "current": 2098646,
+     "large_groups": 1467941,
+     "shared_rows": 652004,
+     "shared_rows_ordered": 652004
+    },
+    "xgboost": {
+     "current": 1737456,
+     "large_groups": 1147948,
+     "shared_rows": 332011,
+     "shared_rows_ordered": 332011
+    },
+    "episodic_gru": {
+     "current": 4147584,
+     "large_groups": 2799463,
+     "shared_rows": 1606833,
+     "shared_rows_ordered": 2026587
+    },
+    "titans": {
+     "current": 4758206,
+     "large_groups": 2841077,
+     "shared_rows": 1651341,
+     "shared_rows_ordered": 2066943
+    }
+   },
+   "shared_rows_bytes": 815488
+  },
+  "calibration": {
+   "rows": 45257,
+   "writers": {
+    "neural": {
+     "current": 2393591,
+     "large_groups": 1400989,
+     "shared_rows": 799168,
+     "shared_rows_ordered": 799168
+    },
+    "ridge": {
+     "current": 1022225,
+     "large_groups": 760925,
+     "shared_rows": 324957,
+     "shared_rows_ordered": 324957
+    },
+    "xgboost": {
+     "current": 842472,
+     "large_groups": 602283,
+     "shared_rows": 166315,
+     "shared_rows_ordered": 166315
+    },
+    "episodic_gru": {
+     "current": 2057919,
+     "large_groups": 1419572,
+     "shared_rows": 799349,
+     "shared_rows_ordered": 999606
+    },
+    "titans": {
+     "current": 2384514,
+     "large_groups": 1439764,
+     "shared_rows": 823019,
+     "shared_rows_ordered": 1019987
+    }
+   },
+   "shared_rows_bytes": 435725
+  },
+  "evaluation": {
+   "rows": 189504,
+   "writers": {
+    "neural": {
+     "current": 10700404,
+     "large_groups": 5636031,
+     "shared_rows": 3347441,
+     "shared_rows_ordered": 3347441
+    },
+    "ridge": {
+     "current": 4451493,
+     "large_groups": 2950392,
+     "shared_rows": 1354959,
+     "shared_rows_ordered": 1354959
+    },
+    "xgboost": {
+     "current": 3698813,
+     "large_groups": 2293958,
+     "shared_rows": 698523,
+     "shared_rows_ordered": 698523
+    },
+    "episodic_gru": {
+     "current": 8585835,
+     "large_groups": 5717836,
+     "shared_rows": 3354859,
+     "shared_rows_ordered": 4254924
+    },
+    "titans": {
+     "current": 9965484,
+     "large_groups": 5809205,
+     "shared_rows": 3424275,
+     "shared_rows_ordered": 4338429
+    }
+   },
+   "shared_rows_bytes": 1594485
+  }
+ },
+ "CN/fold-011": {
+  "validation": {
+   "rows": 96475,
+   "writers": {
+    "neural": {
+     "current": 5225280,
+     "large_groups": 2913592,
+     "shared_rows": 1707377,
+     "shared_rows_ordered": 1707377
+    },
+    "ridge": {
+     "current": 2255347,
+     "large_groups": 1542625,
+     "shared_rows": 691550,
+     "shared_rows_ordered": 691550
+    },
+    "xgboost": {
+     "current": 1872099,
+     "large_groups": 1202726,
+     "shared_rows": 351651,
+     "shared_rows_ordered": 351651
+    },
+    "episodic_gru": {
+     "current": 4384465,
+     "large_groups": 2948374,
+     "shared_rows": 1705723,
+     "shared_rows_ordered": 2148540
+    },
+    "titans": {
+     "current": 5012281,
+     "large_groups": 2988998,
+     "shared_rows": 1745407,
+     "shared_rows_ordered": 2190688
+    }
+   },
+   "shared_rows_bytes": 850622
+  },
+  "calibration": {
+   "rows": 47512,
+   "writers": {
+    "neural": {
+     "current": 2484994,
+     "large_groups": 1467599,
+     "shared_rows": 841463,
+     "shared_rows_ordered": 841463
+    },
+    "ridge": {
+     "current": 1058201,
+     "large_groups": 792622,
+     "shared_rows": 341348,
+     "shared_rows_ordered": 341348
+    },
+    "xgboost": {
+     "current": 869506,
+     "large_groups": 626026,
+     "shared_rows": 174752,
+     "shared_rows_ordered": 174752
+    },
+    "episodic_gru": {
+     "current": 2152900,
+     "large_groups": 1478893,
+     "shared_rows": 839518,
+     "shared_rows_ordered": 1046725
+    },
+    "titans": {
+     "current": 2495712,
+     "large_groups": 1507161,
+     "shared_rows": 865905,
+     "shared_rows_ordered": 1073105
+    }
+   },
+   "shared_rows_bytes": 451031
+  },
+  "evaluation": {
+   "rows": 192594,
+   "writers": {
+    "neural": {
+     "current": 10860621,
+     "large_groups": 5722854,
+     "shared_rows": 3401874,
+     "shared_rows_ordered": 3401874
+    },
+    "ridge": {
+     "current": 4510982,
+     "large_groups": 2992929,
+     "shared_rows": 1379402,
+     "shared_rows_ordered": 1379402
+    },
+    "xgboost": {
+     "current": 3746022,
+     "large_groups": 2323039,
+     "shared_rows": 709510,
+     "shared_rows_ordered": 709510
+    },
+    "episodic_gru": {
+     "current": 8685495,
+     "large_groups": 5813688,
+     "shared_rows": 3401330,
+     "shared_rows_ordered": 4337584
+    },
+    "titans": {
+     "current": 10098452,
+     "large_groups": 5887349,
+     "shared_rows": 3483293,
+     "shared_rows_ordered": 4412364
+    }
+   },
+   "shared_rows_bytes": 1612579
+  }
+ },
+ "CN/fold-012": {
+  "validation": {
+   "rows": 98177,
+   "writers": {
+    "neural": {
+     "current": 5317004,
+     "large_groups": 2960196,
+     "shared_rows": 1734461,
+     "shared_rows_ordered": 1734461
+    },
+    "ridge": {
+     "current": 2295742,
+     "large_groups": 1569649,
+     "shared_rows": 705851,
+     "shared_rows_ordered": 705851
+    },
+    "xgboost": {
+     "current": 1905786,
+     "large_groups": 1225701,
+     "shared_rows": 361903,
+     "shared_rows_ordered": 361903
+    },
+    "episodic_gru": {
+     "current": 4442721,
+     "large_groups": 2990654,
+     "shared_rows": 1737153,
+     "shared_rows_ordered": 2188151
+    },
+    "titans": {
+     "current": 5079268,
+     "large_groups": 3032197,
+     "shared_rows": 1775606,
+     "shared_rows_ordered": 2228329
+    }
+   },
+   "shared_rows_bytes": 863345
+  },
+  "calibration": {
+   "rows": 47414,
+   "writers": {
+    "neural": {
+     "current": 2507521,
+     "large_groups": 1466797,
+     "shared_rows": 841555,
+     "shared_rows_ordered": 841555
+    },
+    "ridge": {
+     "current": 1065289,
+     "large_groups": 789786,
+     "shared_rows": 340246,
+     "shared_rows_ordered": 340246
+    },
+    "xgboost": {
+     "current": 877012,
+     "large_groups": 623526,
+     "shared_rows": 173986,
+     "shared_rows_ordered": 173986
+    },
+    "episodic_gru": {
+     "current": 2142162,
+     "large_groups": 1472544,
+     "shared_rows": 834694,
+     "shared_rows_ordered": 1045395
+    },
+    "titans": {
+     "current": 2489402,
+     "large_groups": 1498678,
+     "shared_rows": 864457,
+     "shared_rows_ordered": 1070453
+    }
+   },
+   "shared_rows_bytes": 449297
+  },
+  "evaluation": {
+   "rows": 194649,
+   "writers": {
+    "neural": {
+     "current": 10971562,
+     "large_groups": 5775194,
+     "shared_rows": 3436438,
+     "shared_rows_ordered": 3436438
+    },
+    "ridge": {
+     "current": 4549439,
+     "large_groups": 3021765,
+     "shared_rows": 1396570,
+     "shared_rows_ordered": 1396570
+    },
+    "xgboost": {
+     "current": 3776415,
+     "large_groups": 2340678,
+     "shared_rows": 715481,
+     "shared_rows_ordered": 715481
+    },
+    "episodic_gru": {
+     "current": 8749787,
+     "large_groups": 5841720,
+     "shared_rows": 3437497,
+     "shared_rows_ordered": 4378338
+    },
+    "titans": {
+     "current": 10161427,
+     "large_groups": 5925125,
+     "shared_rows": 3521172,
+     "shared_rows_ordered": 4459869
+    }
+   },
+   "shared_rows_bytes": 1624247
+  }
+ },
+ "US+CN/fold-000": {
+  "validation": {
+   "rows": 312339,
+   "writers": {
+    "neural": {
+     "current": 17141603,
+     "large_groups": 9541457,
+     "shared_rows": 5520104,
+     "shared_rows_ordered": 6879686
+    },
+    "ridge": {
+     "current": 7535210,
+     "large_groups": 5114698,
+     "shared_rows": 2233791,
+     "shared_rows_ordered": 3598696
+    },
+    "xgboost": {
+     "current": 6294512,
+     "large_groups": 4030380,
+     "shared_rows": 1148377,
+     "shared_rows_ordered": 2514378
+    },
+    "episodic_gru": {
+     "current": 14738650,
+     "large_groups": 9877748,
+     "shared_rows": 5513760,
+     "shared_rows_ordered": 6954266
+    },
+    "titans": {
+     "current": 17017546,
+     "large_groups": 10012337,
+     "shared_rows": 5639339,
+     "shared_rows_ordered": 7085596
+    }
+   },
+   "shared_rows_bytes": 2868120
+  },
+  "calibration": {
+   "rows": 161514,
+   "writers": {
+    "neural": {
+     "current": 8652216,
+     "large_groups": 4968377,
+     "shared_rows": 2846188,
+     "shared_rows_ordered": 3603717
+    },
+    "ridge": {
+     "current": 3787325,
+     "large_groups": 2671517,
+     "shared_rows": 1154103,
+     "shared_rows_ordered": 1898906
+    },
+    "xgboost": {
+     "current": 3145907,
+     "large_groups": 2109934,
+     "shared_rows": 590715,
+     "shared_rows_ordered": 1337321
+    },
+    "episodic_gru": {
+     "current": 7599291,
+     "large_groups": 5119607,
+     "shared_rows": 2855436,
+     "shared_rows_ordered": 3629767
+    },
+    "titans": {
+     "current": 8694527,
+     "large_groups": 5175362,
+     "shared_rows": 2911761,
+     "shared_rows_ordered": 3685592
+    }
+   },
+   "shared_rows_bytes": 1506626
+  },
+  "evaluation": {
+   "rows": 673456,
+   "writers": {
+    "neural": {
+     "current": 38438100,
+     "large_groups": 20515094,
+     "shared_rows": 11889963,
+     "shared_rows_ordered": 14207839
+    },
+    "ridge": {
+     "current": 16536941,
+     "large_groups": 10992064,
+     "shared_rows": 4812951,
+     "shared_rows_ordered": 7143195
+    },
+    "xgboost": {
+     "current": 13862407,
+     "large_groups": 8654235,
+     "shared_rows": 2470929,
+     "shared_rows_ordered": 4805366
+    },
+    "episodic_gru": {
+     "current": 31927180,
+     "large_groups": 21358722,
+     "shared_rows": 11893886,
+     "shared_rows_ordered": 14496027
+    },
+    "titans": {
+     "current": 36803791,
+     "large_groups": 21607401,
+     "shared_rows": 12141483,
+     "shared_rows_ordered": 14742325
+    }
+   },
+   "shared_rows_bytes": 6221490
+  }
+ },
+ "US+CN/fold-001": {
+  "validation": {
+   "rows": 340354,
+   "writers": {
+    "neural": {
+     "current": 18648839,
+     "large_groups": 10382064,
+     "shared_rows": 6011192,
+     "shared_rows_ordered": 7450907
+    },
+    "ridge": {
+     "current": 8188926,
+     "large_groups": 5552109,
+     "shared_rows": 2430890,
+     "shared_rows_ordered": 3867925
+    },
+    "xgboost": {
+     "current": 6837158,
+     "large_groups": 4371736,
+     "shared_rows": 1250797,
+     "shared_rows_ordered": 2687552
+    },
+    "episodic_gru": {
+     "current": 16043750,
+     "large_groups": 10772600,
+     "shared_rows": 5996016,
+     "shared_rows_ordered": 7554962
+    },
+    "titans": {
+     "current": 18508247,
+     "large_groups": 10875390,
+     "shared_rows": 6132014,
+     "shared_rows_ordered": 7666109
+    }
+   },
+   "shared_rows_bytes": 3099776
+  },
+  "calibration": {
+   "rows": 168853,
+   "writers": {
+    "neural": {
+     "current": 9008882,
+     "large_groups": 5196103,
+     "shared_rows": 2983208,
+     "shared_rows_ordered": 3765725
+    },
+    "ridge": {
+     "current": 3952564,
+     "large_groups": 2795335,
+     "shared_rows": 1207292,
+     "shared_rows_ordered": 1986780
+    },
+    "xgboost": {
+     "current": 3282015,
+     "large_groups": 2211665,
+     "shared_rows": 619778,
+     "shared_rows_ordered": 1403109
+    },
+    "episodic_gru": {
+     "current": 7954056,
+     "large_groups": 5353961,
+     "shared_rows": 2979804,
+     "shared_rows_ordered": 3798649
+    },
+    "titans": {
+     "current": 9193517,
+     "large_groups": 5418797,
+     "shared_rows": 3051932,
+     "shared_rows_ordered": 3862653
+    }
+   },
+   "shared_rows_bytes": 1574669
+  },
+  "evaluation": {
+   "rows": 702869,
+   "writers": {
+    "neural": {
+     "current": 40102327,
+     "large_groups": 21442199,
+     "shared_rows": 12412891,
+     "shared_rows_ordered": 14826087
+    },
+    "ridge": {
+     "current": 17251722,
+     "large_groups": 11464221,
+     "shared_rows": 5020191,
+     "shared_rows_ordered": 7430632
+    },
+    "xgboost": {
+     "current": 14460446,
+     "large_groups": 9016843,
+     "shared_rows": 2572815,
+     "shared_rows_ordered": 4983254
+    },
+    "episodic_gru": {
+     "current": 33351581,
+     "large_groups": 22311473,
+     "shared_rows": 12401352,
+     "shared_rows_ordered": 15106643
+    },
+    "titans": {
+     "current": 38492827,
+     "large_groups": 22562141,
+     "shared_rows": 12661057,
+     "shared_rows_ordered": 15359984
+    }
+   },
+   "shared_rows_bytes": 6478205
+  }
+ },
+ "US+CN/fold-002": {
+  "validation": {
+   "rows": 353134,
+   "writers": {
+    "neural": {
+     "current": 19363959,
+     "large_groups": 10783274,
+     "shared_rows": 6236001,
+     "shared_rows_ordered": 7717427
+    },
+    "ridge": {
+     "current": 8538509,
+     "large_groups": 5767760,
+     "shared_rows": 2523349,
+     "shared_rows_ordered": 3995850
+    },
+    "xgboost": {
+     "current": 7136158,
+     "large_groups": 4537921,
+     "shared_rows": 1294169,
+     "shared_rows_ordered": 2766011
+    },
+    "episodic_gru": {
+     "current": 16680405,
+     "large_groups": 11173087,
+     "shared_rows": 6222545,
+     "shared_rows_ordered": 7812331
+    },
+    "titans": {
+     "current": 19196442,
+     "large_groups": 11311902,
+     "shared_rows": 6375112,
+     "shared_rows_ordered": 7949671
+    }
+   },
+   "shared_rows_bytes": 3219022
+  },
+  "calibration": {
+   "rows": 176892,
+   "writers": {
+    "neural": {
+     "current": 9454994,
+     "large_groups": 5432324,
+     "shared_rows": 3122208,
+     "shared_rows_ordered": 3947378
+    },
+    "ridge": {
+     "current": 4133730,
+     "large_groups": 2916297,
+     "shared_rows": 1266355,
+     "shared_rows_ordered": 2083467
+    },
+    "xgboost": {
+     "current": 3431271,
+     "large_groups": 2291882,
+     "shared_rows": 647008,
+     "shared_rows_ordered": 1459051
+    },
+    "episodic_gru": {
+     "current": 8318424,
+     "large_groups": 5593506,
+     "shared_rows": 3134061,
+     "shared_rows_ordered": 3975448
+    },
+    "titans": {
+     "current": 9611491,
+     "large_groups": 5664110,
+     "shared_rows": 3194172,
+     "shared_rows_ordered": 4044776
+    }
+   },
+   "shared_rows_bytes": 1638681
+  },
+  "evaluation": {
+   "rows": 737550,
+   "writers": {
+    "neural": {
+     "current": 42128081,
+     "large_groups": 22506854,
+     "shared_rows": 13001469,
+     "shared_rows_ordered": 15524813
+    },
+    "ridge": {
+     "current": 18142787,
+     "large_groups": 12051657,
+     "shared_rows": 5269248,
+     "shared_rows_ordered": 7772073
+    },
+    "xgboost": {
+     "current": 15213611,
+     "large_groups": 9494253,
+     "shared_rows": 2701445,
+     "shared_rows_ordered": 5214669
+    },
+    "episodic_gru": {
+     "current": 35033757,
+     "large_groups": 23439419,
+     "shared_rows": 13020562,
+     "shared_rows_ordered": 15825424
+    },
+    "titans": {
+     "current": 40374570,
+     "large_groups": 23708796,
+     "shared_rows": 13290203,
+     "shared_rows_ordered": 16101024
+    }
+   },
+   "shared_rows_bytes": 6827364
+  }
+ },
+ "US+CN/fold-003": {
+  "validation": {
+   "rows": 372861,
+   "writers": {
+    "neural": {
+     "current": 20474322,
+     "large_groups": 11386869,
+     "shared_rows": 6589811,
+     "shared_rows_ordered": 8104540
+    },
+    "ridge": {
+     "current": 9030706,
+     "large_groups": 6097939,
+     "shared_rows": 2665262,
+     "shared_rows_ordered": 4187301
+    },
+    "xgboost": {
+     "current": 7550199,
+     "large_groups": 4802064,
+     "shared_rows": 1372515,
+     "shared_rows_ordered": 2891426
+    },
+    "episodic_gru": {
+     "current": 17655195,
+     "large_groups": 11819896,
+     "shared_rows": 6578663,
+     "shared_rows_ordered": 8222090
+    },
+    "titans": {
+     "current": 20375011,
+     "large_groups": 11974629,
+     "shared_rows": 6729339,
+     "shared_rows_ordered": 8367654
+    }
+   },
+   "shared_rows_bytes": 3407556
+  },
+  "calibration": {
+   "rows": 188826,
+   "writers": {
+    "neural": {
+     "current": 10115008,
+     "large_groups": 5785712,
+     "shared_rows": 3336172,
+     "shared_rows_ordered": 4209986
+    },
+    "ridge": {
+     "current": 4419500,
+     "large_groups": 3108490,
+     "shared_rows": 1350180,
+     "shared_rows_ordered": 2225808
+    },
+    "xgboost": {
+     "current": 3669551,
+     "large_groups": 2446686,
+     "shared_rows": 692259,
+     "shared_rows_ordered": 1564003
+    },
+    "episodic_gru": {
+     "current": 8877794,
+     "large_groups": 5974532,
+     "shared_rows": 3341982,
+     "shared_rows_ordered": 4244089
+    },
+    "titans": {
+     "current": 10243983,
+     "large_groups": 6054548,
+     "shared_rows": 3411617,
+     "shared_rows_ordered": 4320497
+    }
+   },
+   "shared_rows_bytes": 1743821
+  },
+  "evaluation": {
+   "rows": 788155,
+   "writers": {
+    "neural": {
+     "current": 44962400,
+     "large_groups": 23961467,
+     "shared_rows": 13925154,
+     "shared_rows_ordered": 16546104
+    },
+    "ridge": {
+     "current": 19305945,
+     "large_groups": 12801794,
+     "shared_rows": 5630499,
+     "shared_rows_ordered": 8266767
+    },
+    "xgboost": {
+     "current": 16175822,
+     "large_groups": 10069131,
+     "shared_rows": 2886502,
+     "shared_rows_ordered": 5534104
+    },
+    "episodic_gru": {
+     "current": 37379583,
+     "large_groups": 24972490,
+     "shared_rows": 13903538,
+     "shared_rows_ordered": 16881470
+    },
+    "titans": {
+     "current": 43126210,
+     "large_groups": 25278163,
+     "shared_rows": 14203173,
+     "shared_rows_ordered": 17179549
+    }
+   },
+   "shared_rows_bytes": 7222884
+  }
+ },
+ "US+CN/fold-004": {
+  "validation": {
+   "rows": 397448,
+   "writers": {
+    "neural": {
+     "current": 21769902,
+     "large_groups": 12114107,
+     "shared_rows": 7005452,
+     "shared_rows_ordered": 8615806
+    },
+    "ridge": {
+     "current": 9555890,
+     "large_groups": 6462098,
+     "shared_rows": 2843814,
+     "shared_rows_ordered": 4428563
+    },
+    "xgboost": {
+     "current": 7977500,
+     "large_groups": 5080070,
+     "shared_rows": 1460485,
+     "shared_rows_ordered": 3046535
+    },
+    "episodic_gru": {
+     "current": 18755492,
+     "large_groups": 12557647,
+     "shared_rows": 7016922,
+     "shared_rows_ordered": 8736590
+    },
+    "titans": {
+     "current": 21640378,
+     "large_groups": 12699566,
+     "shared_rows": 7164878,
+     "shared_rows_ordered": 8880219
+    }
+   },
+   "shared_rows_bytes": 3591139
+  },
+  "calibration": {
+   "rows": 202337,
+   "writers": {
+    "neural": {
+     "current": 10840353,
+     "large_groups": 6187241,
+     "shared_rows": 3574872,
+     "shared_rows_ordered": 4513525
+    },
+    "ridge": {
+     "current": 4733169,
+     "large_groups": 3319338,
+     "shared_rows": 1445924,
+     "shared_rows_ordered": 2386349
+    },
+    "xgboost": {
+     "current": 3929536,
+     "large_groups": 2611386,
+     "shared_rows": 746401,
+     "shared_rows_ordered": 1678396
+    },
+    "episodic_gru": {
+     "current": 9519011,
+     "large_groups": 6401911,
+     "shared_rows": 3570724,
+     "shared_rows_ordered": 4552154
+    },
+    "titans": {
+     "current": 10986236,
+     "large_groups": 6480104,
+     "shared_rows": 3648502,
+     "shared_rows_ordered": 4628608
+    }
+   },
+   "shared_rows_bytes": 1859683
+  },
+  "evaluation": {
+   "rows": 841366,
+   "writers": {
+    "neural": {
+     "current": 47996929,
+     "large_groups": 25529627,
+     "shared_rows": 14870146,
+     "shared_rows_ordered": 17602021
+    },
+    "ridge": {
+     "current": 20623841,
+     "large_groups": 13643095,
+     "shared_rows": 6008974,
+     "shared_rows_ordered": 8789195
+    },
+    "xgboost": {
+     "current": 17282273,
+     "large_groups": 10715741,
+     "shared_rows": 3085094,
+     "shared_rows_ordered": 5861841
+    },
+    "episodic_gru": {
+     "current": 39916467,
+     "large_groups": 26682129,
+     "shared_rows": 14863089,
+     "shared_rows_ordered": 18018014
+    },
+    "titans": {
+     "current": 46059662,
+     "large_groups": 26970781,
+     "shared_rows": 15154000,
+     "shared_rows_ordered": 18307527
+    }
+   },
+   "shared_rows_bytes": 7677655
+  }
+ },
+ "US+CN/fold-005": {
+  "validation": {
+   "rows": 424592,
+   "writers": {
+    "neural": {
+     "current": 23250174,
+     "large_groups": 12895286,
+     "shared_rows": 7496513,
+     "shared_rows_ordered": 9159256
+    },
+    "ridge": {
+     "current": 10197518,
+     "large_groups": 6878296,
+     "shared_rows": 3033757,
+     "shared_rows_ordered": 4698526
+    },
+    "xgboost": {
+     "current": 8511293,
+     "large_groups": 5406528,
+     "shared_rows": 1557852,
+     "shared_rows_ordered": 3226758
+    },
+    "episodic_gru": {
+     "current": 20053299,
+     "large_groups": 13408187,
+     "shared_rows": 7505918,
+     "shared_rows_ordered": 9295457
+    },
+    "titans": {
+     "current": 23063560,
+     "large_groups": 13563199,
+     "shared_rows": 7653703,
+     "shared_rows_ordered": 9456061
+    }
+   },
+   "shared_rows_bytes": 3817700
+  },
+  "calibration": {
+   "rows": 215475,
+   "writers": {
+    "neural": {
+     "current": 11543512,
+     "large_groups": 6595302,
+     "shared_rows": 3803291,
+     "shared_rows_ordered": 4816109
+    },
+    "ridge": {
+     "current": 5041415,
+     "large_groups": 3533621,
+     "shared_rows": 1541285,
+     "shared_rows_ordered": 2547716
+    },
+    "xgboost": {
+     "current": 4185807,
+     "large_groups": 2781247,
+     "shared_rows": 790752,
+     "shared_rows_ordered": 1795341
+    },
+    "episodic_gru": {
+     "current": 10153532,
+     "large_groups": 6815288,
+     "shared_rows": 3814328,
+     "shared_rows_ordered": 4858313
+    },
+    "titans": {
+     "current": 11685576,
+     "large_groups": 6907073,
+     "shared_rows": 3896224,
+     "shared_rows_ordered": 4946514
+    }
+   },
+   "shared_rows_bytes": 1980679
+  },
+  "evaluation": {
+   "rows": 897846,
+   "writers": {
+    "neural": {
+     "current": 51190615,
+     "large_groups": 27257325,
+     "shared_rows": 15848927,
+     "shared_rows_ordered": 18800784
+    },
+    "ridge": {
+     "current": 21956108,
+     "large_groups": 14512455,
+     "shared_rows": 6418203,
+     "shared_rows_ordered": 9351717
+    },
+    "xgboost": {
+     "current": 18390878,
+     "large_groups": 11398012,
+     "shared_rows": 3296384,
+     "shared_rows_ordered": 6237274
+    },
+    "episodic_gru": {
+     "current": 42592144,
+     "large_groups": 28425966,
+     "shared_rows": 15853367,
+     "shared_rows_ordered": 19187214
+    },
+    "titans": {
+     "current": 49149382,
+     "large_groups": 28751884,
+     "shared_rows": 16173722,
+     "shared_rows_ordered": 19509923
+    }
+   },
+   "shared_rows_bytes": 8156191
+  }
+ },
+ "US+CN/fold-006": {
+  "validation": {
+   "rows": 454473,
+   "writers": {
+    "neural": {
+     "current": 24911637,
+     "large_groups": 13808368,
+     "shared_rows": 8027612,
+     "shared_rows_ordered": 9766770
+    },
+    "ridge": {
+     "current": 10972932,
+     "large_groups": 7365215,
+     "shared_rows": 3250040,
+     "shared_rows_ordered": 4990936
+    },
+    "xgboost": {
+     "current": 9167985,
+     "large_groups": 5785616,
+     "shared_rows": 1669092,
+     "shared_rows_ordered": 3411337
+    },
+    "episodic_gru": {
+     "current": 21466478,
+     "large_groups": 14358602,
+     "shared_rows": 8027186,
+     "shared_rows_ordered": 9914722
+    },
+    "titans": {
+     "current": 24778756,
+     "large_groups": 14538469,
+     "shared_rows": 8199082,
+     "shared_rows_ordered": 10094042
+    }
+   },
+   "shared_rows_bytes": 4084301
+  },
+  "calibration": {
+   "rows": 225473,
+   "writers": {
+    "neural": {
+     "current": 12024372,
+     "large_groups": 6904583,
+     "shared_rows": 3982002,
+     "shared_rows_ordered": 5045377
+    },
+    "ridge": {
+     "current": 5267065,
+     "large_groups": 3692734,
+     "shared_rows": 1611401,
+     "shared_rows_ordered": 2663072
+    },
+    "xgboost": {
+     "current": 4371642,
+     "large_groups": 2909579,
+     "shared_rows": 821067,
+     "shared_rows_ordered": 1879916
+    },
+    "episodic_gru": {
+     "current": 10635766,
+     "large_groups": 7135719,
+     "shared_rows": 3987982,
+     "shared_rows_ordered": 5080179
+    },
+    "titans": {
+     "current": 12207199,
+     "large_groups": 7228295,
+     "shared_rows": 4068141,
+     "shared_rows_ordered": 5169627
+    }
+   },
+   "shared_rows_bytes": 2066467
+  },
+  "evaluation": {
+   "rows": 939542,
+   "writers": {
+    "neural": {
+     "current": 53554882,
+     "large_groups": 28483866,
+     "shared_rows": 16575827,
+     "shared_rows_ordered": 19635106
+    },
+    "ridge": {
+     "current": 22946513,
+     "large_groups": 15159233,
+     "shared_rows": 6710600,
+     "shared_rows_ordered": 9755986
+    },
+    "xgboost": {
+     "current": 19215242,
+     "large_groups": 11889515,
+     "shared_rows": 3443876,
+     "shared_rows_ordered": 6486268
+    },
+    "episodic_gru": {
+     "current": 44664478,
+     "large_groups": 30300694,
+     "shared_rows": 16584775,
+     "shared_rows_ordered": 20070748
+    },
+    "titans": {
+     "current": 51474866,
+     "large_groups": 30611655,
+     "shared_rows": 16920098,
+     "shared_rows_ordered": 20391937
+    }
+   },
+   "shared_rows_bytes": 8503142
+  }
+ },
+ "US+CN/fold-007": {
+  "validation": {
+   "rows": 471139,
+   "writers": {
+    "neural": {
+     "current": 25778474,
+     "large_groups": 14299411,
+     "shared_rows": 8321443,
+     "shared_rows_ordered": 10115216
+    },
+    "ridge": {
+     "current": 11351426,
+     "large_groups": 7614407,
+     "shared_rows": 3367418,
+     "shared_rows_ordered": 5156814
+    },
+    "xgboost": {
+     "current": 9480356,
+     "large_groups": 5978603,
+     "shared_rows": 1727626,
+     "shared_rows_ordered": 3521010
+    },
+    "episodic_gru": {
+     "current": 22247158,
+     "large_groups": 14852965,
+     "shared_rows": 8316875,
+     "shared_rows_ordered": 10250289
+    },
+    "titans": {
+     "current": 25672313,
+     "large_groups": 15052986,
+     "shared_rows": 8496667,
+     "shared_rows_ordered": 10444745
+    }
+   },
+   "shared_rows_bytes": 4211404
+  },
+  "calibration": {
+   "rows": 236979,
+   "writers": {
+    "neural": {
+     "current": 12630969,
+     "large_groups": 7253108,
+     "shared_rows": 4185374,
+     "shared_rows_ordered": 5302215
+    },
+    "ridge": {
+     "current": 5531909,
+     "large_groups": 3880004,
+     "shared_rows": 1695392,
+     "shared_rows_ordered": 2802770
+    },
+    "xgboost": {
+     "current": 4590789,
+     "large_groups": 3057262,
+     "shared_rows": 864338,
+     "shared_rows_ordered": 1980027
+    },
+    "episodic_gru": {
+     "current": 11181131,
+     "large_groups": 7501235,
+     "shared_rows": 4188416,
+     "shared_rows_ordered": 5348081
+    },
+    "titans": {
+     "current": 12903580,
+     "large_groups": 7586023,
+     "shared_rows": 4276368,
+     "shared_rows_ordered": 5435324
+    }
+   },
+   "shared_rows_bytes": 2166039
+  },
+  "evaluation": {
+   "rows": 994251,
+   "writers": {
+    "neural": {
+     "current": 56660902,
+     "large_groups": 30157624,
+     "shared_rows": 17551486,
+     "shared_rows_ordered": 20760894
+    },
+    "ridge": {
+     "current": 24294817,
+     "large_groups": 16040963,
+     "shared_rows": 7105598,
+     "shared_rows_ordered": 10294366
+    },
+    "xgboost": {
+     "current": 20346289,
+     "large_groups": 12590407,
+     "shared_rows": 3645145,
+     "shared_rows_ordered": 6843810
+    },
+    "episodic_gru": {
+     "current": 47791398,
+     "large_groups": 32123606,
+     "shared_rows": 17565359,
+     "shared_rows_ordered": 21202154
+    },
+    "titans": {
+     "current": 55018911,
+     "large_groups": 32491612,
+     "shared_rows": 17919275,
+     "shared_rows_ordered": 21565451
+    }
+   },
+   "shared_rows_bytes": 8994932
+  }
+ },
+ "US+CN/fold-008": {
+  "validation": {
+   "rows": 502779,
+   "writers": {
+    "neural": {
+     "current": 27532130,
+     "large_groups": 15251458,
+     "shared_rows": 8882406,
+     "shared_rows_ordered": 10741425
+    },
+    "ridge": {
+     "current": 12064194,
+     "large_groups": 8126774,
+     "shared_rows": 3591348,
+     "shared_rows_ordered": 5463343
+    },
+    "xgboost": {
+     "current": 10067659,
+     "large_groups": 6384129,
+     "shared_rows": 1842125,
+     "shared_rows_ordered": 3720698
+    },
+    "episodic_gru": {
+     "current": 24102552,
+     "large_groups": 16217489,
+     "shared_rows": 8887659,
+     "shared_rows_ordered": 10921619
+    },
+    "titans": {
+     "current": 27757889,
+     "large_groups": 16398006,
+     "shared_rows": 9058189,
+     "shared_rows_ordered": 11101754
+    }
+   },
+   "shared_rows_bytes": 4504779
+  },
+  "calibration": {
+   "rows": 251529,
+   "writers": {
+    "neural": {
+     "current": 13406392,
+     "large_groups": 7680344,
+     "shared_rows": 4444578,
+     "shared_rows_ordered": 5628079
+    },
+    "ridge": {
+     "current": 5864316,
+     "large_groups": 4105156,
+     "shared_rows": 1799695,
+     "shared_rows_ordered": 2975106
+    },
+    "xgboost": {
+     "current": 4865230,
+     "large_groups": 3228968,
+     "shared_rows": 924456,
+     "shared_rows_ordered": 2098917
+    },
+    "episodic_gru": {
+     "current": 12015073,
+     "large_groups": 8127357,
+     "shared_rows": 4438171,
+     "shared_rows_ordered": 5674905
+    },
+    "titans": {
+     "current": 13844728,
+     "large_groups": 8225820,
+     "shared_rows": 4543623,
+     "shared_rows_ordered": 5774916
+    }
+   },
+   "shared_rows_bytes": 2295309
+  },
+  "evaluation": {
+   "rows": 1005685,
+   "writers": {
+    "neural": {
+     "current": 57393511,
+     "large_groups": 30667012,
+     "shared_rows": 17748344,
+     "shared_rows_ordered": 20970801
+    },
+    "ridge": {
+     "current": 24785821,
+     "large_groups": 16419933,
+     "shared_rows": 7183127,
+     "shared_rows_ordered": 10407498
+    },
+    "xgboost": {
+     "current": 20791734,
+     "large_groups": 12920284,
+     "shared_rows": 3682219,
+     "shared_rows_ordered": 6907849
+    },
+    "episodic_gru": {
+     "current": 48486499,
+     "large_groups": 32656829,
+     "shared_rows": 17742552,
+     "shared_rows_ordered": 21440748
+    },
+    "titans": {
+     "current": 55741572,
+     "large_groups": 33021824,
+     "shared_rows": 18116213,
+     "shared_rows_ordered": 21800205
+    }
+   },
+   "shared_rows_bytes": 9287135
+  }
+ },
+ "US+CN/fold-009": {
+  "validation": {
+   "rows": 487338,
+   "writers": {
+    "neural": {
+     "current": 26758522,
+     "large_groups": 14892739,
+     "shared_rows": 8608795,
+     "shared_rows_ordered": 10445636
+    },
+    "ridge": {
+     "current": 11777217,
+     "large_groups": 7974441,
+     "shared_rows": 3482629,
+     "shared_rows_ordered": 5317973
+    },
+    "xgboost": {
+     "current": 9841917,
+     "large_groups": 6279872,
+     "shared_rows": 1787636,
+     "shared_rows_ordered": 3623404
+    },
+    "episodic_gru": {
+     "current": 23402356,
+     "large_groups": 15803358,
+     "shared_rows": 8607780,
+     "shared_rows_ordered": 10613465
+    },
+    "titans": {
+     "current": 26880748,
+     "large_groups": 15969625,
+     "shared_rows": 8785567,
+     "shared_rows_ordered": 10782422
+    }
+   },
+   "shared_rows_bytes": 4466925
+  },
+  "calibration": {
+   "rows": 274430,
+   "writers": {
+    "neural": {
+     "current": 14690048,
+     "large_groups": 8347589,
+     "shared_rows": 4843452,
+     "shared_rows_ordered": 6103205
+    },
+    "ridge": {
+     "current": 6403047,
+     "large_groups": 4470967,
+     "shared_rows": 1961818,
+     "shared_rows_ordered": 3228133
+    },
+    "xgboost": {
+     "current": 5313237,
+     "large_groups": 3510626,
+     "shared_rows": 1008692,
+     "shared_rows_ordered": 2267791
+    },
+    "episodic_gru": {
+     "current": 13131692,
+     "large_groups": 8854353,
+     "shared_rows": 4860646,
+     "shared_rows_ordered": 6160830
+    },
+    "titans": {
+     "current": 15115945,
+     "large_groups": 8981606,
+     "shared_rows": 4957991,
+     "shared_rows_ordered": 6281982
+    }
+   },
+   "shared_rows_bytes": 2498008
+  },
+  "evaluation": {
+   "rows": 1142411,
+   "writers": {
+    "neural": {
+     "current": 65195241,
+     "large_groups": 34655576,
+     "shared_rows": 20133661,
+     "shared_rows_ordered": 23941976
+    },
+    "ridge": {
+     "current": 27940881,
+     "large_groups": 18459829,
+     "shared_rows": 8160993,
+     "shared_rows_ordered": 11937930
+    },
+    "xgboost": {
+     "current": 23403987,
+     "large_groups": 14491455,
+     "shared_rows": 4196486,
+     "shared_rows_ordered": 7969554
+    },
+    "episodic_gru": {
+     "current": 55018971,
+     "large_groups": 37087532,
+     "shared_rows": 20169406,
+     "shared_rows_ordered": 24500411
+    },
+    "titans": {
+     "current": 63276753,
+     "large_groups": 37486855,
+     "shared_rows": 20597687,
+     "shared_rows_ordered": 24905109
+    }
+   },
+   "shared_rows_bytes": 10378012
+  }
+ },
+ "US+CN/fold-010": {
+  "validation": {
+   "rows": 572926,
+   "writers": {
+    "neural": {
+     "current": 31362888,
+     "large_groups": 17394840,
+     "shared_rows": 10115504,
+     "shared_rows_ordered": 12191627
+    },
+    "ridge": {
+     "current": 13725168,
+     "large_groups": 9245349,
+     "shared_rows": 4095040,
+     "shared_rows_ordered": 6152336
+    },
+    "xgboost": {
+     "current": 11449993,
+     "large_groups": 7260101,
+     "shared_rows": 2099907,
+     "shared_rows_ordered": 4167088
+    },
+    "episodic_gru": {
+     "current": 27497483,
+     "large_groups": 18499016,
+     "shared_rows": 10119954,
+     "shared_rows_ordered": 12384908
+    },
+    "titans": {
+     "current": 31667930,
+     "large_groups": 18708712,
+     "shared_rows": 10331124,
+     "shared_rows_ordered": 12594263
+    }
+   },
+   "shared_rows_bytes": 5125105
+  },
+  "calibration": {
+   "rows": 292617,
+   "writers": {
+    "neural": {
+     "current": 15679706,
+     "large_groups": 8902473,
+     "shared_rows": 5169995,
+     "shared_rows_ordered": 6473568
+    },
+    "ridge": {
+     "current": 6836326,
+     "large_groups": 4756451,
+     "shared_rows": 2092607,
+     "shared_rows_ordered": 3402093
+    },
+    "xgboost": {
+     "current": 5674296,
+     "large_groups": 3736697,
+     "shared_rows": 1075564,
+     "shared_rows_ordered": 2382339
+    },
+    "episodic_gru": {
+     "current": 14010987,
+     "large_groups": 9445845,
+     "shared_rows": 5178062,
+     "shared_rows_ordered": 6546932
+    },
+    "titans": {
+     "current": 16072607,
+     "large_groups": 9567478,
+     "shared_rows": 5283872,
+     "shared_rows_ordered": 6665286
+    }
+   },
+   "shared_rows_bytes": 2651955
+  },
+  "evaluation": {
+   "rows": 1197927,
+   "writers": {
+    "neural": {
+     "current": 68230598,
+     "large_groups": 36190403,
+     "shared_rows": 21143159,
+     "shared_rows_ordered": 25186116
+    },
+    "ridge": {
+     "current": 29134889,
+     "large_groups": 19218224,
+     "shared_rows": 8558365,
+     "shared_rows_ordered": 12602777
+    },
+    "xgboost": {
+     "current": 24378003,
+     "large_groups": 15051358,
+     "shared_rows": 4395323,
+     "shared_rows_ordered": 8435911
+    },
+    "episodic_gru": {
+     "current": 57461056,
+     "large_groups": 38640756,
+     "shared_rows": 21142180,
+     "shared_rows_ordered": 25735937
+    },
+    "titans": {
+     "current": 66129159,
+     "large_groups": 39087392,
+     "shared_rows": 21589842,
+     "shared_rows_ordered": 26190004
+    }
+   },
+   "shared_rows_bytes": 10712214
+  }
+ },
+ "US+CN/fold-011": {
+  "validation": {
+   "rows": 600730,
+   "writers": {
+    "neural": {
+     "current": 32860956,
+     "large_groups": 18184730,
+     "shared_rows": 10615805,
+     "shared_rows_ordered": 12751696
+    },
+    "ridge": {
+     "current": 14353597,
+     "large_groups": 9655633,
+     "shared_rows": 4290565,
+     "shared_rows_ordered": 6430427
+    },
+    "xgboost": {
+     "current": 11967915,
+     "large_groups": 7571705,
+     "shared_rows": 2201845,
+     "shared_rows_ordered": 4346499
+    },
+    "episodic_gru": {
+     "current": 28787384,
+     "large_groups": 19335394,
+     "shared_rows": 10621140,
+     "shared_rows_ordered": 12951570
+    },
+    "titans": {
+     "current": 33144434,
+     "large_groups": 19552388,
+     "shared_rows": 10818568,
+     "shared_rows_ordered": 13170975
+    }
+   },
+   "shared_rows_bytes": 5317585
+  },
+  "calibration": {
+   "rows": 302425,
+   "writers": {
+    "neural": {
+     "current": 16186693,
+     "large_groups": 9185600,
+     "shared_rows": 5339124,
+     "shared_rows_ordered": 6679814
+    },
+    "ridge": {
+     "current": 7041956,
+     "large_groups": 4894540,
+     "shared_rows": 2160518,
+     "shared_rows_ordered": 3499205
+    },
+    "xgboost": {
+     "current": 5840706,
+     "large_groups": 3842100,
+     "shared_rows": 1106388,
+     "shared_rows_ordered": 2446765
+    },
+    "episodic_gru": {
+     "current": 14455010,
+     "large_groups": 9752553,
+     "shared_rows": 5333105,
+     "shared_rows_ordered": 6749349
+    },
+    "titans": {
+     "current": 16651224,
+     "large_groups": 9864000,
+     "shared_rows": 5451132,
+     "shared_rows_ordered": 6858490
+    }
+   },
+   "shared_rows_bytes": 2713143
+  },
+  "evaluation": {
+   "rows": 1214376,
+   "writers": {
+    "neural": {
+     "current": 69136812,
+     "large_groups": 36620423,
+     "shared_rows": 21432991,
+     "shared_rows_ordered": 25560962
+    },
+    "ridge": {
+     "current": 29494379,
+     "large_groups": 19405460,
+     "shared_rows": 8675337,
+     "shared_rows_ordered": 12796930
+    },
+    "xgboost": {
+     "current": 24672321,
+     "large_groups": 15185828,
+     "shared_rows": 4456051,
+     "shared_rows_ordered": 8577298
+    },
+    "episodic_gru": {
+     "current": 58143209,
+     "large_groups": 39142137,
+     "shared_rows": 21430446,
+     "shared_rows_ordered": 26143701
+    },
+    "titans": {
+     "current": 66965397,
+     "large_groups": 39559335,
+     "shared_rows": 21883995,
+     "shared_rows_ordered": 26572085
+    }
+   },
+   "shared_rows_bytes": 10831805
+  }
+ },
+ "US+CN/fold-012": {
+  "validation": {
+   "rows": 609090,
+   "writers": {
+    "neural": {
+     "current": 33288933,
+     "large_groups": 18409684,
+     "shared_rows": 10758968,
+     "shared_rows_ordered": 12930242
+    },
+    "ridge": {
+     "current": 14679833,
+     "large_groups": 9756438,
+     "shared_rows": 4353586,
+     "shared_rows_ordered": 6509975
+    },
+    "xgboost": {
+     "current": 12260877,
+     "large_groups": 7645805,
+     "shared_rows": 2235653,
+     "shared_rows_ordered": 4399342
+    },
+    "episodic_gru": {
+     "current": 29108722,
+     "large_groups": 19562193,
+     "shared_rows": 10753342,
+     "shared_rows_ordered": 13127242
+    },
+    "titans": {
+     "current": 33482167,
+     "large_groups": 19793309,
+     "shared_rows": 10978488,
+     "shared_rows_ordered": 13357674
+    }
+   },
+   "shared_rows_bytes": 5379072
+  },
+  "calibration": {
+   "rows": 301977,
+   "writers": {
+    "neural": {
+     "current": 16067145,
+     "large_groups": 9168592,
+     "shared_rows": 5329853,
+     "shared_rows_ordered": 6665637
+    },
+    "ridge": {
+     "current": 7012743,
+     "large_groups": 4892079,
+     "shared_rows": 2157166,
+     "shared_rows_ordered": 3494569
+    },
+    "xgboost": {
+     "current": 5813359,
+     "large_groups": 3843560,
+     "shared_rows": 1108097,
+     "shared_rows_ordered": 2446050
+    },
+    "episodic_gru": {
+     "current": 14425505,
+     "large_groups": 9710305,
+     "shared_rows": 5328822,
+     "shared_rows_ordered": 6736705
+    },
+    "titans": {
+     "current": 16625500,
+     "large_groups": 9828065,
+     "shared_rows": 5441833,
+     "shared_rows_ordered": 6851086
+    }
+   },
+   "shared_rows_bytes": 2716141
+  },
+  "evaluation": {
+   "rows": 1221822,
+   "writers": {
+    "neural": {
+     "current": 69526966,
+     "large_groups": 36810592,
+     "shared_rows": 21570966,
+     "shared_rows_ordered": 25733682
+    },
+    "ridge": {
+     "current": 29654738,
+     "large_groups": 19483470,
+     "shared_rows": 8728944,
+     "shared_rows_ordered": 12885475
+    },
+    "xgboost": {
+     "current": 24803357,
+     "large_groups": 15242139,
+     "shared_rows": 4483810,
+     "shared_rows_ordered": 8644144
+    },
+    "episodic_gru": {
+     "current": 58400154,
+     "large_groups": 39293874,
+     "shared_rows": 21559347,
+     "shared_rows_ordered": 26297743
+    },
+    "titans": {
+     "current": 67316554,
+     "large_groups": 39745953,
+     "shared_rows": 22025852,
+     "shared_rows_ordered": 26751099
+    }
+   },
+   "shared_rows_bytes": 10828544
+  }
+ }
+}
