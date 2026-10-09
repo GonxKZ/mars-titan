@@ -2,6 +2,7 @@
 
 import argparse
 import fcntl
+import math
 import os
 import re
 import resource
@@ -13,18 +14,29 @@ from pathlib import Path
 import numpy as np
 
 from mars_titan.data.cohort_files import read_manifest, safe_destination
+from mars_titan.data.input_policy import (
+    INPUT_POLICIES,
+    STRICT_INPUTS,
+    masked_inputs,
+    policy_identity,
+)
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.models.baselines.boosting_selection import BoostingSelection, ValidationCache
 from mars_titan.models.baselines.external_boosting import (
     ExternalBoostingModel,
     _libraries,
+    available_ram_bytes,
+    external_cache_plan,
     fit_external_boosting,
+    free_disk_bytes,
 )
-from mars_titan.models.baselines.inputs import MODALITIES
 
 from .checkpoints import StopRequest
 from .corpus_inputs import CorpusDataset
-from .tabular_corpus import _matrix, _predict
+from .tabular_corpus import _matrix, _predict, feature_order
+
+# Opciones del recorrido que no son parámetros del ajuste externo.
+_READER_OPTIONS = {"batch_size", "max_validation_cache_bytes", "input_policy"}
 
 
 class _Paused(Exception):
@@ -33,6 +45,7 @@ class _Paused(Exception):
 
 def _identity(dataset, options, cp, xgb):
     root = Path(__file__).parents[1]
+    policy = options.get("input_policy", STRICT_INPUTS)
     names = (
         "training/external_corpus.py",
         "training/tabular_corpus.py",
@@ -50,10 +63,11 @@ def _identity(dataset, options, cp, xgb):
         "data/storage.py",
         "data/cohort_files.py",
         "data/embeddings.py",
-    )
+    ) + (("data/input_policy.py",) if masked_inputs(policy) else ())
     return dict(
         manifest_sha256=dataset.identity,
         cohort=dataset.cohort,
+        **policy_identity(policy),
         options=options,
         xgboost=xgb.__version__,
         cupy=cp.__version__,
@@ -158,10 +172,21 @@ def run_external_reference(
     max_validation_cache_bytes=16 * 1024**3,
     resume=False,
     stop=None,
+    input_policy=STRICT_INPUTS,
+    max_disk_cache_bytes=None,
 ):
-    """Recorrer todas las filas admitidas sin abrir el test ni reducir la población."""
+    """Recorrer todas las filas admitidas sin abrir el test ni reducir la población.
+
+    Antes de crear la salida se estima la caché con la población declarada y se
+    falla si no cabe en los presupuestos de RAM o disco ni en lo disponible.
+    """
     if type(batch_size) is not int or not 1 <= batch_size <= 4096 or type(resume) is not bool:
         raise ValueError("El lote o el modo de recuperación no son válidos")
+    if input_policy not in INPUT_POLICIES:
+        raise ValueError("La política de entradas no está admitida")
+    masked = masked_inputs(input_policy)
+    if masked and not on_host and max_disk_cache_bytes is None:
+        raise ValueError("La edición con máscaras necesita un presupuesto de disco explícito")
     if selection is not None:
         BoostingSelection(selection, rounds)
         if (
@@ -169,7 +194,7 @@ def run_external_reference(
             or not 1 <= max_validation_cache_bytes <= 32 * 1024**3
         ):
             raise ValueError("El presupuesto de caché de validación no es válido")
-    dataset, output = CorpusDataset(Path(manifest)), Path(output)
+    dataset, output = CorpusDataset(Path(manifest), input_policy=input_policy), Path(output)
     if min(dataset.manifest["counts"].values()) < 1:
         raise ValueError("Se necesitan entrenamiento y validación no vacíos")
     for protected in (*dataset.roots.values(), Path("dataset")):
@@ -180,6 +205,29 @@ def run_external_reference(
         raise ValueError("La referencia necesita una salida nueva o recuperación explícita")
     if resume and not (output / "run.json").is_file():
         raise ValueError("No existe un informe recuperable")
+    first = next(dataset.batches(partition="train", batch_size=batch_size, epoch=0, seed=0))
+    features = _matrix(first, np.float32, presence=masked).shape[1]
+    validation_rows = dataset.manifest["counts"]["validation"]
+    validation_bytes = (
+        # Valores float32, objetivo y fecha de 8 bytes, mercado <U2 y cabeceras por bloque.
+        min(
+            max_validation_cache_bytes,
+            validation_rows * (features * 4 + 24) + 4096 * math.ceil(validation_rows / batch_size),
+        )
+        if selection is not None
+        else 0
+    )
+    plan = external_cache_plan(
+        rows=dataset.manifest["counts"]["train"],
+        features=features,
+        max_bin=max_bin,
+        on_host=on_host,
+        max_host_cache_bytes=max_host_cache_bytes,
+        max_disk_cache_bytes=max_disk_cache_bytes,
+        available_ram=available_ram_bytes(),
+        free_disk=free_disk_bytes(output),
+        other_disk_bytes=validation_bytes,
+    )
     cp, xgb = _libraries()
     options = dict(
         rounds=rounds,
@@ -196,6 +244,10 @@ def run_external_reference(
     if selection is not None:
         options["selection"] = dict(selection)
         options["max_validation_cache_bytes"] = max_validation_cache_bytes
+    if masked:
+        options["input_policy"] = input_policy
+    if max_disk_cache_bytes is not None:
+        options["max_disk_cache_bytes"] = max_disk_cache_bytes
     identity = _identity(dataset, options, cp, xgb)
     output.mkdir(parents=True, exist_ok=resume)
     lock = os.open(output / ".lock", os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW, 0o600)
@@ -213,7 +265,7 @@ def run_external_reference(
                 scope=dataset.manifest["scope"],
                 cohort_complete=dataset.manifest["cohort_complete"],
                 final_test_opened=False,
-                feature_order=list(MODALITIES),
+                feature_order=feature_order(input_policy),
                 fitted_rows=0,
                 completed_rounds=0,
                 status="pending",
@@ -267,16 +319,21 @@ def run_external_reference(
             return report
         if len(report["attempts"]) >= 9999:
             raise ValueError("Se ha alcanzado el límite de intentos de recuperación")
-        return _execute(dataset, output, report, parent, cp, xgb, stop or StopRequest())
+        return _execute(dataset, output, report, parent, cp, xgb, stop or StopRequest(), plan=plan)
     finally:
         os.close(lock)
 
 
-def _execute(dataset, output, report, parent, cp, xgb, stop):
+def _execute(dataset, output, report, parent, cp, xgb, stop, plan=None):
     options = report["identity"]["options"]
     batch_size = options["batch_size"]
+    presence = masked_inputs(options.get("input_policy", STRICT_INPUTS))
     started = time.perf_counter()
-    attempt = dict(started_at_utc=datetime.now(UTC).isoformat(), observed_device_used_bytes_max=0)
+    attempt = dict(
+        started_at_utc=datetime.now(UTC).isoformat(),
+        observed_device_used_bytes_max=0,
+        memory_plan=plan,
+    )
     report["attempts"].append(attempt)
     report["status"] = "running"
 
@@ -318,7 +375,7 @@ def _execute(dataset, output, report, parent, cp, xgb, stop):
         for batch in dataset.batches(partition="train", batch_size=batch_size, epoch=0, seed=0):
             if stop.requested:
                 raise _Paused
-            yield _matrix(batch, np.float32), batch["target"]
+            yield _matrix(batch, np.float32, presence=presence), batch["target"]
 
     def validation():
         for batch in dataset.batches(
@@ -327,7 +384,7 @@ def _execute(dataset, output, report, parent, cp, xgb, stop):
             if stop.requested:
                 raise _Paused
             yield (
-                _matrix(batch, np.float32),
+                _matrix(batch, np.float32, presence=presence),
                 batch["target"],
                 batch["market"],
                 batch["prediction_at"],
@@ -358,11 +415,7 @@ def _execute(dataset, output, report, parent, cp, xgb, stop):
                 factory,
                 Path(temporary) / "pages",
                 expected_rows=report["samples"]["train"],
-                **{
-                    key: value
-                    for key, value in options.items()
-                    if key not in {"batch_size", "max_validation_cache_bytes"}
-                },
+                **{key: value for key, value in options.items() if key not in _READER_OPTIONS},
                 resume=parent,
                 checkpoint=confirm,
                 **validation_options,
@@ -385,7 +438,14 @@ def _execute(dataset, output, report, parent, cp, xgb, stop):
                 raise _Paused
             path = output / f"{partition}-predictions.parquet"
             metrics = _predict(
-                model, restored, dataset, partition, batch_size, path, dtype=np.float32
+                model,
+                restored,
+                dataset,
+                partition,
+                batch_size,
+                path,
+                dtype=np.float32,
+                presence=presence,
             )
             predictions[partition] = dict(path=path.name, sha256=sha256(path), metrics=metrics)
         if "selection" in options and (
@@ -433,6 +493,8 @@ def main():
     parser.add_argument("--max-host-cache-bytes", type=int, default=16 * 1024**3)
     parser.add_argument("--checkpoint-interval", type=int, default=10)
     parser.add_argument("--disk-cache", action="store_true")
+    parser.add_argument("--max-disk-cache-bytes", type=int)
+    parser.add_argument("--input-policy", choices=INPUT_POLICIES, default=STRICT_INPUTS)
     parser.add_argument("--resume", action="store_true")
     options = vars(parser.parse_args())
     options["on_host"] = not options.pop("disk_cache")
