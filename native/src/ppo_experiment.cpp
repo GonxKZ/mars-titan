@@ -2041,6 +2041,18 @@ Json run_audit(const PpoExperimentOptions& options, const ExperimentConfig& conf
 }
 } // namespace
 
+void require_policy_device(const PpoExperimentOptions& options, std::size_t total_transitions) {
+    require_device(options, total_transitions);
+}
+
+void admit_policy_gpu(const PpoExperimentOptions& options) {
+    if (options.device == "cuda:0") {
+        static_cast<void>(validate_gpu_lease(options));
+    }
+}
+
+void configure_policy_runtime(const PpoExperimentOptions& options) { configure_runtime(options); }
+
 Json run_ppo_experiment(const PpoExperimentOptions& options,
                         const std::function<bool()>& stop_requested) {
     const auto started = std::chrono::steady_clock::now();

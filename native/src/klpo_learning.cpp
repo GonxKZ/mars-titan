@@ -285,6 +285,14 @@ std::string KlpoLearningController::reference_fingerprint() const {
     impl_->healthy();
     return impl_->collector->records().reference_sha256;
 }
+std::size_t KlpoLearningController::collected_steps() const {
+    impl_->healthy();
+    std::size_t result = 0;
+    for (const auto& episode : impl_->collector->records().episodes) {
+        result += episode.steps.size();
+    }
+    return result;
+}
 PpoCheckpointBundle KlpoLearningController::snapshot() const {
     impl_->healthy();
     return impl_->snapshot_for(*impl_->collector, impl_->counters, impl_->consumed);
