@@ -150,3 +150,20 @@ def test_carried_vectors_check_the_previous_edition_and_the_encoder(tmp_path):
             carried.select("US", "A", Encoders.spec)
     finally:
         carried.close()
+
+
+def test_the_window_contract_must_declare_the_calendars_of_the_edition(tmp_path):
+    from mars_titan.data.price_windows import calendar_digest, price_window_contract
+
+    manifest, clock, macro = prepared_edition(tmp_path)
+    kwargs = dict(macros={"US": macro}, clocks={"US": clock}, context=2, encoders=Encoders())
+    declared = dict(
+        start=clock.days[1].isoformat(),
+        end=clock.days[-1].isoformat(),
+        decisions_sha256=calendar_digest(clock),
+    )
+    # La huella coincide, pero el inicio declarado no reconstruye el mismo calendario.
+    for calendars in ({"US": declared}, {"US": declared, "CN": declared}):
+        contract = price_window_contract(calendars, dict.fromkeys(calendars, []))
+        with pytest.raises(ValueError, match="no declara los calendarios"):
+            encode_corpus(manifest, tmp_path / "edition", price_window=contract, **kwargs)

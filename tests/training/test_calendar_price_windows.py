@@ -264,7 +264,9 @@ def test_financial_observations_carry_the_same_gapped_windows_as_the_reader(tmp_
     phase = FinancialPhase("train", start, start, close, close)
     manifest = api.prepare_observation_index(dataset, tmp_path / "index", phase=phase)
     seen, gapped = 0, 0
-    for event in api.FinancialObservationSource(dataset, manifest).events():
+    source = api.FinancialObservationSource(dataset, manifest)
+    # La lectura por observación y la lectura por bloques de activos montan el mismo tensor.
+    for event in [*source.events(), *source.batched_events(block_rows=4)]:
         for batch in event.inputs:
             assert batch["inputs"]["prices"].shape[1:] == (64, 6)
             for index, key in enumerate(batch["sample_ids"]):
