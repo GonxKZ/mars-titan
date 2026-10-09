@@ -218,6 +218,14 @@ def test_quantile_case_runs_until_each_step_and_selects_with_the_median(
     assert validation["primary"] == "quantile_median" and validation["pinball"] >= 0
     assert validation["session_mae"] == report["baseline"]["session_mae"]
     assert report["selection"]["best_epoch"] == 0
+    # Las estadísticas del ajuste usan la mediana. Sin pasos coincide con la caché del padre.
+    expected = sum(
+        float(np.abs(item["parent"] - item["target"]).sum())
+        for item in data.batches(partition="train", condition="real", batch_size=2, epoch=0, seed=0)
+    )
+    assert len(report["epochs"]) == declared["budget"]["epochs"]
+    for epoch in report["epochs"]:
+        assert epoch["train"]["absolute_error"] == pytest.approx(expected, rel=1e-6)
     table = pq.read_table(output / "validation-predictions.parquet").to_pydict()
     levels = np.column_stack([table[name] for name in QUANTILE_COLUMNS])
     assert (np.diff(levels, axis=1) >= 0).all()

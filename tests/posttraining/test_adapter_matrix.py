@@ -306,6 +306,9 @@ INVALID_SECOND = {
     "quantile_continuation": lambda o: o["quantile_head_v1"].__setitem__(
         "full_continuation", "neural_mae"
     ),
+    "quantile_point": lambda o: o["quantile_head_v1"].update(
+        adapters="neural_mae", full_continuation="neural_mae"
+    ),
     "scalar_pinball": lambda o: o["scalar"].update(
         adapters="neural_pinball", full_continuation="neural_pinball"
     ),

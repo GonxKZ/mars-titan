@@ -7,6 +7,7 @@ iniciales, y el optimizador del fixture `recorder`, que no hereda de
 """
 
 import json
+import shutil
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -118,6 +119,12 @@ def test_the_unchanged_declaration_is_accepted(tmp_path):
 def test_stage_rejects_inconsistent_declarations(tmp_path, name):
     with pytest.raises(ValueError):
         campaign_stage.check_stage(mutated(tmp_path, INVALID[name]))
+
+
+def test_loading_a_stage_requires_objectives_for_the_quantile_head(tmp_path):
+    # La carga ya rechaza la matriz escalar, antes de planificar ningún trabajo.
+    with pytest.raises(ValueError, match="escalar"):
+        campaign_stage.load_stage(mutated(tmp_path, INVALID["scalar_matrix"]))
 
 
 @pytest.fixture(scope="module")
@@ -307,6 +314,25 @@ def test_the_hold_blocks_before_reading_and_before_each_pending_job(
     summary = read_manifest(output / "summary.json")[0]
     assert summary["status"] == "blocked"
     assert summary["completed"]["training_jobs"] == 1
+    # El trabajo siguiente no llega a crear su carpeta ni a abrir su ventana.
+    assert len(list((output / "jobs").glob("*/*/*/*"))) == 1
+
+
+def test_the_hold_also_stops_a_carry_that_would_not_fit(base_b, tmp_path, recorder, learning_hold):
+    allowed = learning_hold(True)
+
+    def block(optimizer):
+        if len(recorder.optimizers) == 5:
+            allowed.write_text(json.dumps({"training_allowed": False}), encoding="utf-8")
+
+    recorder.on_step = block
+    output = tmp_path / "stage"
+    with pytest.raises(LearningHoldError):
+        run(base_b, output)
+    summary = read_manifest(output / "summary.json")[0]
+    assert summary["status"] == "blocked"
+    assert summary["completed"] == dict(training_jobs=5, prediction_jobs=0)
+    assert not list((output / "jobs").rglob("carry-s42"))
 
 
 def tamper(kind):
@@ -316,6 +342,8 @@ def tamper(kind):
             values["prediction_at"][0] = np.datetime64("2024-01-02", "us").astype(object)
         elif kind == "target":
             values["target"][0] += 1.0
+        elif kind == "median":
+            values["prediction"][0] += 0.001
         else:
             values["quantile_0100"], values["quantile_0900"] = (
                 values["quantile_0900"],
@@ -328,7 +356,7 @@ def tamper(kind):
 
 @pytest.mark.parametrize(
     ("kind", "message"),
-    [("reserved", "2024"), ("target", "mismas filas"), ("order", "orden")],
+    [("reserved", "2024"), ("target", "mismas filas"), ("order", "orden"), ("median", "mediana")],
 )
 def test_predictions_outside_the_contract_are_rejected(
     base_a, tmp_path, recorder, monkeypatch, kind, message
@@ -355,3 +383,38 @@ def test_command_checks_the_declared_stage_without_reading_data(capsys):
     printed = json.loads(capsys.readouterr().out)
     assert printed["status"] == "checked" and printed["scientific_training_started"] is False
     assert printed["counts"]["training_jobs"] == 3915
+
+
+def test_matrix_seeds_must_match_the_seeds_of_each_parent(tmp_path):
+    matrix = json.loads((CONFIGS / "adapter-matrix-v2.json").read_text())
+    matrix["budget"]["seeds"] = [42, 43]
+    atomic_json(tmp_path / "matrix.json", matrix)
+    path = mutated(tmp_path, lambda v: v.update(matrix=str(tmp_path / "matrix.json")))
+    with pytest.raises(ValueError, match="semilla"):
+        campaign_stage.check_stage(path)
+
+
+def test_an_unconfirmed_base_job_stops_the_stage_before_any_fit(base_a, tmp_path, recorder):
+    copy = tmp_path / "campaign"
+    shutil.copytree(base_a.output, copy)
+    (copy / "jobs/US/fold-001/gru/search-gru-00/receipt.json").unlink()
+    base = SimpleNamespace(**dict(vars(base_a), output=copy))
+    with pytest.raises(ValueError, match="Falta confirmar US/fold-001/gru/search-gru-00"):
+        run(base, tmp_path / "stage")
+    assert not (tmp_path / "stage").exists() and recorder.optimizers == []
+
+
+def test_a_carry_requires_the_parent_that_the_base_campaign_carried(
+    base_b, tmp_path, recorder, monkeypatch
+):
+    original = campaign_stage._Stage.base_parent
+
+    def other(self, scope, window, base_arm, seed):
+        key, receipt, report = original(self, scope, window, base_arm, seed)
+        if window == "fold-001":
+            receipt = dict(receipt, parent=dict(receipt["parent"], sha256="0" * 64))
+        return key, receipt, report
+
+    monkeypatch.setattr(campaign_stage._Stage, "base_parent", other)
+    with pytest.raises(ValueError, match="padre del ancla"):
+        run(base_b, tmp_path / "stage")
