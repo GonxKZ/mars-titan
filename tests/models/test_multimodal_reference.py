@@ -6,6 +6,7 @@ import pytest
 import torch
 
 from mars_titan.data.embeddings import require_cuda
+from tests.suite_support import requires_cuda
 
 
 def model_type():
@@ -29,6 +30,7 @@ def inputs(device, *, batch=3, context=32):
     }
 
 
+@requires_cuda
 @pytest.mark.parametrize("kind", ["rnn", "lstm", "gru", "dlinear"])
 @pytest.mark.parametrize("layers", [1, 2])
 def test_every_modality_receives_gradients_with_explicit_architecture(kind, layers):
@@ -48,6 +50,7 @@ def test_every_modality_receives_gradients_with_explicit_architecture(kind, laye
     assert model.architecture == dict(hidden_size=64, layers=layers, dropout=0.1)
 
 
+@requires_cuda
 @pytest.mark.parametrize("kind", ["rnn", "lstm", "gru", "dlinear"])
 def test_windows_do_not_retain_hidden_state_and_evaluation_disables_dropout(kind):
     cls = model_type()
@@ -66,6 +69,7 @@ def test_windows_do_not_retain_hidden_state_and_evaluation_disables_dropout(kind
     torch.testing.assert_close(reversed_batch.flip(0), expected, rtol=1e-5, atol=1e-6)
 
 
+@requires_cuda
 def test_capacity_changes_with_width_and_depth_and_preserves_input_contract():
     cls = model_type()
     device = require_cuda()
