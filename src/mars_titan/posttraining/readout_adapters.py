@@ -36,7 +36,7 @@ from mars_titan.models.predictive_adaptation import adapter_names, base_digest
 from mars_titan.models.titans.config import canonical
 from mars_titan.models.titans.episodic_readout import apply_episodic_readout
 from mars_titan.models.titans.frozen_financial import _numerics
-from mars_titan.training.financial_run import ChronologicalInference, _split, _stack
+from mars_titan.training.financial_run import ChronologicalInference, FlowStates
 from mars_titan.training.mars_titan_run import MarsTitanInference, ReadoutTrainer
 
 _OWN = (
@@ -211,11 +211,12 @@ class ReadoutAdapterTrainer(ReadoutTrainer):
         if replay:
             for flow in batch.flow_ids:
                 if flow not in run.starts:
-                    ((_, run.starts[flow]),) = _split(run.flows[flow], detach=True)
-        state = _stack([run.flows[flow] for flow in batch.flow_ids])
+                    # Se guarda la fila vigente del flujo. La repetición la usa sin grafo.
+                    run.starts[flow] = run.flows.handle(flow)
+        state = run.flows.gather(batch.flow_ids)
         with torch.set_grad_enabled(replay):
             prepared = self.predictor.prepare(batch, state, differentiable=replay, **plan)
-        run.flows.update(_split(prepared.next_state, detach=replay))
+        run.flows.put(prepared.next_state, detach=replay)
         control = prepared.local_control
         if control is not None and self._measured is not None:
             self._measured.append((control.penalty.detach(), control.flow_ids))
@@ -280,8 +281,7 @@ class ReadoutAdapterTrainer(ReadoutTrainer):
                 "control_groups_discarded", 0
             ) + len(run.penalties)
         parameter_id = self.predictor._parameter_id
-        for state in list(run.flows.values()):
-            run.flows.update(_split(state, detach=True, parameter_id=parameter_id))
+        run.flows.detach(parameter_id)
         run.blocks.clear()
         run.used.clear()
         run.starts.clear()
@@ -310,7 +310,9 @@ class ReadoutAdapterTrainer(ReadoutTrainer):
         loss_sum, replayed, used = 0.0, 0, 0
         for start in range(0, len(order), size):
             members = set(order[start : start + size])
-            states = {flow: run.starts[flow] for flow in members if flow in run.starts}
+            states = FlowStates((flow, run.starts[flow]) for flow in members if flow in run.starts)
+            # Sin grafo: la repetición no reutiliza nada del cálculo emitido.
+            states.detach()
             terms, penalties = [], []
             for block in sorted(run.blocks):
                 record = run.blocks[block]
@@ -322,12 +324,12 @@ class ReadoutAdapterTrainer(ReadoutTrainer):
                 selected = batch if whole else batch.select(rows)
                 if any(flow not in states for flow in selected.flow_ids):
                     raise ValueError("Un flujo repetido no tiene su estado al empezar el tramo")
-                state = _stack([states[flow] for flow in selected.flow_ids])
+                state = states.gather(selected.flow_ids)
                 with torch.enable_grad():
                     prepared = predictor.prepare(
                         selected, state, differentiable=True, **record["plan"]
                     )
-                states.update(_split(prepared.next_state))
+                states.put(prepared.next_state)
                 if prepared.local_control is not None:
                     penalties.append(prepared.local_control.penalty)
                     replayed += len(prepared.local_control.flow_ids)

@@ -59,6 +59,7 @@ from .checkpoints import (
     save_training_state,
 )
 from .financial_run import _compatible
+from .kernel_policy import declared_policy, require_policy, valid_precision
 from .learning_hold import require_learning_allowed
 from .search_cases import SEARCHED, case_options, checked_search_cases
 from .selection import (
@@ -119,6 +120,8 @@ class CandidateRecipe:
     recompute: bool = False
     checkpoint_updates: int = 256
     checkpoint_seconds: float = 900.0
+    # None conserva la configuración numérica del proceso y la identidad anterior.
+    precision: str | None = None
 
     def __post_init__(self):
         validate_selection(self.selection, epochs=self.epochs)
@@ -143,6 +146,7 @@ class CandidateRecipe:
             or not 0 < self.learning_rate <= 1
             or self.weight_decay < 0
             or self.checkpoint_seconds <= 0
+            or not valid_precision(self.precision)
             or (
                 rows is not None
                 and (type(rows) is not int or not self.block_rows <= rows <= 65_536)
@@ -158,10 +162,13 @@ class CandidateRecipe:
             )
 
     def identity(self):
+        fields = asdict(self)
+        if fields["precision"] is None:
+            fields.pop("precision")
         return dict(
             schema_version=1,
             recipe=RECIPE,
-            **asdict(self),
+            **fields,
             optimizer="AdamW",
             update_unit="decision_instants_per_segment_no_bptt",
             label_rule="loss_only_after_maturity_event_then_next_segment_update",
@@ -441,6 +448,8 @@ class CandidateChronologicalPredictor:
         if self.device == "cuda:0" and not torch.cuda.is_available():
             raise RuntimeError("cuda:0 no está disponible y no se cambia de dispositivo")
         self.adapter, self.model, self.recipe = adapter, model, recipe
+        # La política se aplica antes de calcular nada y antes de registrar `_numerics`.
+        self.kernel_policy = declared_policy(recipe.precision)
         self.native, self.specification = adapter.native, adapter.specification
         self.sources = sources
         self.world, self.fold = world, fold
@@ -521,6 +530,9 @@ class CandidateChronologicalPredictor:
             if train:
                 run.outstanding[block] = size
             emitted = quantiles.detach()
+            # Un único nodo de autograd para las filas del bloque. Indexar fila a fila creaba
+            # uno por fila, y cada backward rellenaba con ceros un gradiente del bloque entero.
+            graphs = quantiles.unbind(0) if train else None
             issued = emitted[:, MEDIAN_INDEX].cpu().tolist()
             levels = None if train else emitted.cpu().numpy()
             encoded = None if self.codec is None else self.codec.encode(batch)
@@ -537,7 +549,7 @@ class CandidateChronologicalPredictor:
                 run.pending[flow, at] = entry
                 if train:
                     entry.block = block
-                    run.graphs[flow, at] = quantiles[row]
+                    run.graphs[flow, at] = graphs[row]
                 if self.audit is not None:
                     self.audit.append(("prediction", partition, flow, at, issued[row], seen))
             run.counters["predictions"] += size
@@ -750,6 +762,9 @@ class CandidateChronologicalTrainer(CandidateChronologicalPredictor):
             numerics=_numerics(),
             final_test_opened=False,
         )
+        if self.kernel_policy is not None:
+            # Sin precisión declarada la identidad conserva su forma anterior.
+            self.identity["kernel_policy"] = self.kernel_policy
         self.run_id = hashlib.sha256(canonical(self.identity).encode()).hexdigest()
         self.global_step, self.selection, self.history, self.train_metrics = 0, None, [], None
 
@@ -769,6 +784,7 @@ class CandidateChronologicalTrainer(CandidateChronologicalPredictor):
             or _numerics() != self.identity["numerics"]
         ):
             raise ValueError("El código o la configuración numérica cambiaron durante el recorrido")
+        require_policy(self.recipe.precision, self.kernel_policy)
 
     def _extra_state(self):
         """Estado ajustable fuera del módulo nativo. El ajuste del candidato no tiene ninguno."""
