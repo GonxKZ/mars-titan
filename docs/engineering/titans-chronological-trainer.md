@@ -85,6 +85,8 @@ La memoria del tramo pasa a ser el grafo de un bloque, más los lotes de entrada
 
 Las pruebas de [`test_financial_run_accumulation.py`](../../tests/training/test_financial_run_accumulation.py) comparan, en los cuatro controles, con cabeza escalar y de cuantiles y bloques de uno y dos flujos, un ajuste de dos épocas con y sin acumulación. Predicciones, etiquetas, actualizaciones, métricas de validación y llamadas al optimizador coinciden bit a bit y los gradientes de cada paso coinciden con tolerancia relativa 10⁻¹⁰ en FP64. También comprueban que la repetición no supera el bloque declarado, que el grafo recorrido por cada backward baja a un tercio con bloques de un flujo sobre los tres del fixture, que la reanudación reproduce la ejecución continua y que solo se exporta un recorrido en la barrera posterior a un paso.
 
+La misma medida con la receta de la campaña, que añade la memoria con residual y LayerNorm, da 375,6 KB por fila e instante en `mac_online` frente a 374,5 KB con la memoria v1, y 273,9 KB frente a 273,4 KB en `mac_frozen`. Los otros dos controles no cambian. Con los 4.202 activos de EE. UU., el tramo completo seguiría en 12,6 GB y bajaría a 1,16 GB con `accumulation_rows=128` ([recibo](../../reports/engineering/titans-chronological-memory-campaign-20261009.json)).
+
 Las recetas v1 no declaran `accumulation_rows`. La [receta de la campaña](#receta-de-la-campaña-y-casos-de-búsqueda) lo declara `null` hasta medir la memoria en `cuda:0`. Con los activos por instante de US, la estimación en CPU del tramo completo de `mac_online` supera los 8 GB, así que el valor previsto es 128. Fijarlo cambia la huella de la receta y la identidad de todos los trabajos Titans, por lo que se hará antes de lanzar la campaña.
 
 ## Ventana walk-forward
