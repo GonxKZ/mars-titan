@@ -1,0 +1,421 @@
+{
+  "schema_version": 1,
+  "kind": "titans_linear_memory_certificate_check",
+  "started_utc": "2026-10-09T22:49:59.267851+00:00",
+  "program_sha256": "eb2f8fe1b543a2e4990f86ba21afdcf7ca937791fdd2a0351f662eec518be6b5",
+  "python": "3.12.14",
+  "numpy": "2.5.3",
+  "torch": "2.14.0+cu130",
+  "decomposition": {
+    "cases": 125,
+    "dimensions": [
+      1,
+      2,
+      3,
+      8,
+      32
+    ],
+    "max_abs_difference": 1.7763568394002505e-15
+  },
+  "code_transition": {
+    "module": "mars_titan.models.titans.neural_memory.NeuralMemory",
+    "depth": 1,
+    "dtype": "float64",
+    "rows_checked": 156,
+    "max_abs_difference": 2.220446049250313e-16,
+    "optimizer_steps": 0
+  },
+  "certified_boxes": {
+    "semivida_256_momentum_0_3": {
+      "box": {
+        "alpha": [
+          "27/10000",
+          "1"
+        ],
+        "eta": [
+          "0",
+          "3/10"
+        ],
+        "theta": [
+          "0",
+          "1/10"
+        ]
+      },
+      "float_estimate": {
+        "rho": 0.9989997775375421,
+        "p": 0.1815,
+        "q": 9.776680409528916
+      },
+      "exact": {
+        "rho": "999/1000",
+        "p": "91/500",
+        "q": "39/4",
+        "vertices": [
+          {
+            "alpha": "27/10000",
+            "eta": "0",
+            "theta": "0",
+            "psd": true
+          },
+          {
+            "alpha": "27/10000",
+            "eta": "0",
+            "theta": "1/10",
+            "psd": true
+          },
+          {
+            "alpha": "27/10000",
+            "eta": "3/10",
+            "theta": "0",
+            "psd": true
+          },
+          {
+            "alpha": "27/10000",
+            "eta": "3/10",
+            "theta": "1/10",
+            "psd": true
+          },
+          {
+            "alpha": "1",
+            "eta": "0",
+            "theta": "0",
+            "psd": true
+          },
+          {
+            "alpha": "1",
+            "eta": "0",
+            "theta": "1/10",
+            "psd": true
+          },
+          {
+            "alpha": "1",
+            "eta": "3/10",
+            "theta": "0",
+            "psd": true
+          },
+          {
+            "alpha": "1",
+            "eta": "3/10",
+            "theta": "1/10",
+            "psd": true
+          }
+        ]
+      },
+      "rho_float": 0.999,
+      "contraction_half_life_steps": 692.8005491785002,
+      "condition_number_P0": 9.790832116088202
+    },
+    "semivida_69_momentum_0_5": {
+      "box": {
+        "alpha": [
+          "1/100",
+          "1"
+        ],
+        "eta": [
+          "0",
+          "1/2"
+        ],
+        "theta": [
+          "0",
+          "1/10"
+        ]
+      },
+      "float_estimate": {
+        "rho": 0.9972129908030514,
+        "p": 0.3729,
+        "q": 9.647189859441943
+      },
+      "exact": {
+        "rho": "49861/50000",
+        "p": "37/100",
+        "q": "481/50",
+        "vertices": [
+          {
+            "alpha": "1/100",
+            "eta": "0",
+            "theta": "0",
+            "psd": true
+          },
+          {
+            "alpha": "1/100",
+            "eta": "0",
+            "theta": "1/10",
+            "psd": true
+          },
+          {
+            "alpha": "1/100",
+            "eta": "1/2",
+            "theta": "0",
+            "psd": true
+          },
+          {
+            "alpha": "1/100",
+            "eta": "1/2",
+            "theta": "1/10",
+            "psd": true
+          },
+          {
+            "alpha": "1",
+            "eta": "0",
+            "theta": "0",
+            "psd": true
+          },
+          {
+            "alpha": "1",
+            "eta": "0",
+            "theta": "1/10",
+            "psd": true
+          },
+          {
+            "alpha": "1",
+            "eta": "1/2",
+            "theta": "0",
+            "psd": true
+          },
+          {
+            "alpha": "1",
+            "eta": "1/2",
+            "theta": "1/10",
+            "psd": true
+          }
+        ]
+      },
+      "rho_float": 0.99722,
+      "contraction_half_life_steps": 248.98678379405473,
+      "condition_number_P0": 9.791065551556953
+    },
+    "pt1_semivida_346_momentum_0_3": {
+      "box": {
+        "alpha": [
+          "1/500",
+          "1"
+        ],
+        "eta": [
+          "0",
+          "3/10"
+        ],
+        "theta": [
+          "0",
+          "1/10"
+        ]
+      },
+      "float_estimate": {
+        "rho": 0.999695868018955,
+        "p": 0.1815,
+        "q": 9.776680409528916
+      },
+      "exact": {
+        "rho": "9997/10000",
+        "p": "181/1000",
+        "q": "49/5",
+        "vertices": [
+          {
+            "alpha": "1/500",
+            "eta": "0",
+            "theta": "0",
+            "psd": true
+          },
+          {
+            "alpha": "1/500",
+            "eta": "0",
+            "theta": "1/10",
+            "psd": true
+          },
+          {
+            "alpha": "1/500",
+            "eta": "3/10",
+            "theta": "0",
+            "psd": true
+          },
+          {
+            "alpha": "1/500",
+            "eta": "3/10",
+            "theta": "1/10",
+            "psd": true
+          },
+          {
+            "alpha": "1",
+            "eta": "0",
+            "theta": "0",
+            "psd": true
+          },
+          {
+            "alpha": "1",
+            "eta": "0",
+            "theta": "1/10",
+            "psd": true
+          },
+          {
+            "alpha": "1",
+            "eta": "3/10",
+            "theta": "0",
+            "psd": true
+          },
+          {
+            "alpha": "1",
+            "eta": "3/10",
+            "theta": "1/10",
+            "psd": true
+          }
+        ]
+      },
+      "rho_float": 0.9997,
+      "contraction_half_life_steps": 2310.1440109451796,
+      "condition_number_P0": 9.840339801939297
+    }
+  },
+  "random_products": {
+    "box": "semivida_256_momentum_0_3",
+    "sequences": 600,
+    "steps_per_sequence": 32,
+    "dimensions": [
+      2,
+      4,
+      8
+    ],
+    "max_step_norm_over_rho": 0.9999984074476115,
+    "max_product_norm_over_rho_power": 6.163451447832704e-08
+  },
+  "counterexample": {
+    "box": {
+      "alpha": [
+        "27/10000",
+        "1"
+      ],
+      "eta": [
+        "0",
+        "9/10"
+      ],
+      "theta": [
+        "0",
+        "1/10"
+      ]
+    },
+    "sequence": [
+      {
+        "alpha": "27/10000",
+        "eta": "9/10",
+        "theta": "0"
+      },
+      {
+        "alpha": "27/10000",
+        "eta": "0",
+        "theta": "1/10"
+      },
+      {
+        "alpha": "1",
+        "eta": "9/10",
+        "theta": "1/10"
+      },
+      {
+        "alpha": "27/10000",
+        "eta": "9/10",
+        "theta": "0"
+      },
+      {
+        "alpha": "27/10000",
+        "eta": "9/10",
+        "theta": "0"
+      },
+      {
+        "alpha": "27/10000",
+        "eta": "9/10",
+        "theta": "0"
+      },
+      {
+        "alpha": "27/10000",
+        "eta": "9/10",
+        "theta": "0"
+      },
+      {
+        "alpha": "27/10000",
+        "eta": "9/10",
+        "theta": "0"
+      }
+    ],
+    "key": [
+      "1",
+      "0"
+    ],
+    "every_factor_schur_stable_exact": true,
+    "every_factor_real_nonnegative_spectrum_exact": true,
+    "exact_trace_power": 64,
+    "certified_lower_bound_product_spectral_radius": 1.7171101029305729,
+    "numeric_product_spectral_radius": 1.7547099181099393,
+    "numeric_growth_per_step": 1.072817048341843
+  },
+  "bounded_writes": {
+    "alpha_low": 0.0027,
+    "eta_high": 0.9,
+    "theta_high": 0.1,
+    "huber_delta": 1.0,
+    "max_norm_over_bound": 0.00400292205508165,
+    "note": "Valores t de Student con 1,5 grados y saltos de factor 1000 en el 1 % de pasos"
+  },
+  "incremental_contraction": {
+    "box": "pt1_semivida_346_momentum_0_3",
+    "rho": "9997/10000",
+    "trajectories": 200,
+    "steps": 400,
+    "clip_delta": 0.5,
+    "max_distance_over_rho_power": 0.8076423290117101
+  },
+  "frontier_float_estimate": [
+    {
+      "eta_high": 0.0,
+      "min_alpha_estimate": 1.0000006449092493e-05,
+      "half_life_estimate": 69314.32678015265
+    },
+    {
+      "eta_high": 0.1,
+      "min_alpha_estimate": 0.00016426833754057738,
+      "half_life_estimate": 4219.256481867287
+    },
+    {
+      "eta_high": 0.2,
+      "min_alpha_estimate": 0.0006901864413899068,
+      "half_life_estimate": 1003.9431537464359
+    },
+    {
+      "eta_high": 0.3,
+      "min_alpha_estimate": 0.0017169808651292119,
+      "half_life_estimate": 403.3544950741823
+    },
+    {
+      "eta_high": 0.4,
+      "min_alpha_estimate": 0.0036435188273192666,
+      "half_life_estimate": 189.8943570054975
+    },
+    {
+      "eta_high": 0.5,
+      "min_alpha_estimate": 0.007363519051852852,
+      "half_life_estimate": 93.78559774548398
+    },
+    {
+      "eta_high": 0.6,
+      "min_alpha_estimate": 0.017746793401325997,
+      "half_life_estimate": 38.70999338905605
+    },
+    {
+      "eta_high": 0.7,
+      "min_alpha_estimate": 0.05354324747581206,
+      "half_life_estimate": 12.59580525620183
+    },
+    {
+      "eta_high": 0.8,
+      "min_alpha_estimate": 0.12190861907950895,
+      "half_life_estimate": 5.331712225282244
+    },
+    {
+      "eta_high": 0.9,
+      "min_alpha_estimate": 0.22825362271731717,
+      "half_life_estimate": 2.6752181670231887
+    }
+  ],
+  "limits": [
+    "Memoria lineal de una capa con claves unitarias. No cubre la memoria de dos capas con LayerNorm residual de la receta de campaña.",
+    "Los certificados racionales son exactos en los vértices. La frontera es una estimación flotante y no demuestra que fuera de ella no exista certificado.",
+    "La cota con escrituras acotadas vale para cualquier secuencia de claves, valores y puertas. La contracción incremental exige además que las puertas estén dentro de una caja certificada."
+  ],
+  "finished_utc": "2026-10-09T22:50:13.668124+00:00"
+}
