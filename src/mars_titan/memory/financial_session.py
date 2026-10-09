@@ -21,7 +21,8 @@ from mars_titan.models.titans.financial_inputs import (
 from mars_titan.training import prefix_eligibility
 from mars_titan.training.prefix_eligibility import PrefixEvidence, PrefixTargetVerifier
 
-from . import episodic_session, financial_consumers, financial_state_artifacts
+from . import associative_memory, episodic_session, financial_consumers, financial_state_artifacts
+from .associative_memory import AssociativeMemory, MatureCorrection
 from .episodic_session import (
     EpisodicSession,
     _canonical,
@@ -138,6 +139,7 @@ class FinancialSession(EpisodicSession):
         max_input_blocks=128,
         max_log_bytes=16 * 1024**3,
         resume=False,
+        associative=None,
     ):
         if (
             type(self) is not FinancialSession
@@ -147,6 +149,16 @@ class FinancialSession(EpisodicSession):
         ):
             raise ValueError(ADMISSION_ERROR)
         binding = bind_consumer(consumer, codec, retention, admission)
+        if associative is not None and (
+            type(associative) is not MatureCorrection
+            or binding.kind != "titans_mac"
+            or admission != "m0"
+        ):
+            # Con banco, el error episódico mezclaría la corrección de A con el núcleo.
+            raise ValueError(
+                "La corrección asociativa B6 solo se declara sobre Titans-MAC sin banco"
+            )
+        self.associative = associative
         bounded_integer(block_rows, "lote físico", 1, binding.max_batch)
         bounded_integer(max_input_blocks, "bloques de inputs pendientes", 1, 256)
         bounded_integer(max_log_bytes, "registro de la fase", 1, 16 * 1024**3)
@@ -175,6 +187,10 @@ class FinancialSession(EpisodicSession):
             )
         }
         code.update(binding.code())
+        if associative is not None:
+            code["associative_memory"] = hashlib.sha256(
+                Path(associative_memory.__file__).read_bytes()
+            ).hexdigest()
         self.model_id = _digest(dict(consumer=consumer.identity(), integration=code))
         contract = dict(
             schema_version=2,
@@ -207,6 +223,9 @@ class FinancialSession(EpisodicSession):
             input_compaction="canonical_live_rows_256_when_block_budget_requires",
             fast_compaction="canonical_live_rows_when_block_or_byte_budget_requires",
         )
+        # Sin B6 el contrato no cambia. Con B6 la generación guarda A y el núcleo pendiente.
+        if associative is not None:
+            contract["associative"] = associative.identity()
         self.contract_id = _digest(contract)
         self._callback_versions = _callback_signature(self)
         self._runtime_contract = (
@@ -285,6 +304,8 @@ class FinancialSession(EpisodicSession):
             "prefix",
             "control",
         }
+        if self.associative is not None:
+            fields.add("associative")
         if (
             not isinstance(value, dict)
             or set(value) != fields
@@ -314,6 +335,27 @@ class FinancialSession(EpisodicSession):
         bank, episodes = super()._bank(reference)
         self._binding.check_bank(bank, episodes)
         return bank, episodes
+
+    def _associative_state(self, reference):
+        """Matriz A confirmada y predicción del núcleo de cada pendiente, en su orden."""
+        if reference is None:
+            return AssociativeMemory(self.associative.memory), torch.empty(0, dtype=torch.float64)
+        value = self._read(reference, "associative")
+        if not isinstance(value, dict) or set(value) != {"memory", "core"}:
+            raise ValueError("La corrección asociativa no conserva su matriz y su núcleo")
+        memory = AssociativeMemory.restore(self.associative.memory, value["memory"])
+        core = value["core"]
+        if (
+            not isinstance(core, torch.Tensor)
+            or core.dtype != torch.float64
+            or core.ndim != 1
+            or not torch.isfinite(core).all()
+        ):
+            raise ValueError("Las predicciones del núcleo pendientes no son un vector FP64 finito")
+        return memory, core
+
+    def _stage_associative(self, memory, core):
+        return self._stage(dict(memory=memory.export(), core=core), "associative")
 
     def diagnostics(self):
         if self._binding.kind == "candidate_gru":
@@ -505,6 +547,17 @@ class FinancialSession(EpisodicSession):
         self.consumer.verify()
         pending = self._read(bundle["pending"], "pending") if bundle else self._empty_queue()
         self._check_queue(pending)
+        if self.associative is not None:
+            memory, core = self._associative_state(bundle["associative"] if bundle else None)
+            known = dict(zip(map(_row_key, pending["rows"]), core.tolist(), strict=True))
+            if not warmup:
+                # A de la generación anterior para todo el evento. Se emite núcleo + corrección.
+                keys = self.associative.keys(np.stack([r.key_inputs for r in rows]))
+                corrections = memory.read(keys)[:, 0].tolist()
+                known.update(
+                    (_row_key(r.metadata()), value) for r, value in zip(rows, values, strict=True)
+                )
+                values = [v + c for v, c in zip(values, corrections, strict=True)]
         if not warmup:
             pending = self._append_pending(pending, rows)
         proposal = dict(
@@ -518,6 +571,11 @@ class FinancialSession(EpisodicSession):
             prefix=self._stage([asdict(p) for p in self._inflight["proofs"]], "prefix"),
             control=self._stage(control, "control"),
         )
+        if self.associative is not None:
+            aligned = [known[_row_key(row)] for row in pending["rows"]]
+            proposal["associative"] = self._stage_associative(
+                memory, torch.tensor(aligned, dtype=torch.float64)
+            )
         self._proposal = proposal
         return values, _canonical(proposal)
 
@@ -549,7 +607,15 @@ class FinancialSession(EpisodicSession):
             pending = self._stage(self._empty_queue(), "pending")
         else:
             fast, pending = bundle["fast"], bundle["pending"]
+        extra = {}
+        if self.associative is not None:
+            extra["associative"] = (
+                self._stage_associative(*self._associative_state(None))
+                if bundle is None
+                else bundle["associative"]
+            )
         return dict(
+            **extra,
             generation=state["generation"] + 1,
             cutoff=self._inflight["cutoff"],
             bank=bundle["bank"] if bundle else None,
@@ -623,6 +689,27 @@ class FinancialSession(EpisodicSession):
             bank = self._binding.propose(
                 self.native, bank, pending, admitted, episodes, confirmed_at=proposed["cutoff"]
             )
+        if self.associative is not None:
+            memory, core = self._associative_state(proposed["associative"])
+            # Todas las etiquetas aplicadas escriben A, con independencia de la admisión.
+            indices = [
+                positions[item.prediction.asset, item.prediction.decision_at] for item in outcomes
+            ]
+            if indices:
+                selected = torch.tensor(indices, dtype=torch.int64, device="cpu")
+                feedback = self.associative.feedback(
+                    # El ejecutor entrega los resultados en orden canónico y el contador de A
+                    # los numera de forma estable, igual que el banco con sus episodios.
+                    ids=[memory.writes + offset for offset in range(1, len(outcomes) + 1)],
+                    decision_at=[item.prediction.decision_at for item in outcomes],
+                    available_at=[item.label.available_at for item in outcomes],
+                    keys=self.associative.keys(pending["key_inputs"].index_select(0, selected)),
+                    values=[
+                        item.label.value - core[index].item()
+                        for item, index in zip(outcomes, indices, strict=True)
+                    ],
+                )
+                memory = memory.write(feedback, cutoff=proposed["cutoff"])
         selected = {r.id for r in bank.records()}
         bank_ref = self._stage(
             dict(snapshot=bank.snapshot(), episodes={i: episodes[i] for i in sorted(selected)}),
@@ -642,6 +729,8 @@ class FinancialSession(EpisodicSession):
         bundle = dict(
             proposed, bank=bank_ref, pending=self._stage(pending, "pending"), inputs=sources
         )
+        if self.associative is not None:
+            bundle["associative"] = self._stage_associative(memory, core.index_select(0, indexes))
         self._verify_bundle(bundle)
         self.consumer.verify()
         self._proposal = bundle
@@ -684,6 +773,10 @@ class FinancialSession(EpisodicSession):
         self._check_queue(pending)
         if self._check_sources(bundle["inputs"], pending) != bundle["inputs"]:
             raise ValueError("La generación conserva inputs pendientes huérfanos")
+        if self.associative is not None:
+            _, core = self._associative_state(bundle["associative"])
+            if len(core) != len(pending["rows"]):
+                raise ValueError("El núcleo pendiente no corresponde a la cola confirmada")
         if not isinstance(bundle["current_inputs"], list) or len(bundle["current_inputs"]) > 32:
             raise ValueError("Las observaciones de la generación superan su presupuesto")
         observed, input_bytes = [], 0
@@ -761,6 +854,10 @@ class FinancialSession(EpisodicSession):
         bank, _ = self._bank(bundle["bank"])
         if bank.seen != (snapshot["applied"] if self.admission in {"m1", "m2"} else 0):
             raise ValueError("El banco no concilia con los labels maduros y la regla de admisión")
+        if self.associative is not None:
+            memory, _ = self._associative_state(bundle["associative"])
+            if memory.writes != snapshot["applied"]:
+                raise ValueError("La matriz A no concilia con los labels maduros aplicados")
         pending = self._read(bundle["pending"], "pending")
         expected = {(p.asset, p.decision_at) for p in self._executor.pending()}
         if expected != {_row_key(row) for row in pending["rows"]}:
@@ -786,9 +883,12 @@ class FinancialSession(EpisodicSession):
             if bundle is None:
                 continue
             self._verify_bundle(bundle)
+            names = ("bank", "pending", "fast", "prefix", "control")
+            if self.associative is not None:
+                names += ("associative",)
             live = [
                 state["bundle"],
-                *(bundle[name] for name in ("bank", "pending", "fast", "prefix", "control")),
+                *(bundle[name] for name in names),
                 *bundle["inputs"],
                 *bundle["current_inputs"],
                 *self._fast_store.live_references(self._read(bundle["fast"], "fast")),
