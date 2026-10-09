@@ -682,9 +682,10 @@ void require_compatible(const simulation::BatchInput& reference,
                 reference.tape->currency == input.tape->currency &&
                 reference.tape->domain == input.tape->domain &&
                 reference.tape->parent_id == input.tape->parent_id &&
+                reference.tape->instruments == input.tape->instruments &&
                 reference.context.has_value() == input.context.has_value() &&
                 (!reference.context || reference.context->fields == input.context->fields),
-            "Entrenamiento y validación no conservan activos, moneda, padre o campos de contexto");
+            "Entrenamiento y validación no conservan activos, moneda, padre, reglas o contexto");
 }
 
 struct ExperimentInputs {

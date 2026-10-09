@@ -218,7 +218,7 @@ def measure_policies(stage, *, steps=2048, warmup=64, library=None):
 
 
 def policy_hours(stage, rates):
-    """Horas orientativas de cada ajuste, traslado y referencia de la etapa.
+    """Horas orientativas de cada ajuste, traslado y referencia de la etapa, por nivel.
 
     Un ajuste recorre el presupuesto con `environments` entornos por lote, calcula los
     minilotes de cada recorrido, valida al inicio y cada `evaluation_transitions` y evalúa
@@ -257,16 +257,22 @@ def policy_hours(stage, rates):
         return total
 
     jobs = plan_stage(stage)
-    scopes = {}
+    scopes, levels = {}, {}
     for job in jobs:
         hours = seconds(job) / 3600
-        scope = scopes.setdefault(job["scope"], dict(hours=0.0, arms={}))
+        scope = scopes.setdefault(job["scope"], dict(hours=0.0, arms={}, predictors={}))
         scope["hours"] += hours
         scope["arms"][job["arm"]] = scope["arms"].get(job["arm"], 0.0) + hours
+        predictor = job["predictor"]
+        scope["predictors"][predictor] = scope["predictors"].get(predictor, 0.0) + hours
+        level = levels.setdefault(job["level"], dict(hours=0.0, jobs=Counter()))
+        level["hours"] += hours
+        level["jobs"][job["kind"]] += 1
     return dict(
         status="approximate",
         hours=math.fsum(scope["hours"] for scope in scopes.values()),
         jobs=dict(Counter(job["kind"] for job in jobs)),
+        levels={name: dict(value, jobs=dict(value["jobs"])) for name, value in levels.items()},
         scopes=scopes,
         per_fit=dict(
             transitions=budget["transitions"],

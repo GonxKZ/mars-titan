@@ -17,6 +17,7 @@
   },
   "components": {
     "episodic_bank": {
+      "connection": "connected",
       "map_ids": ["I04", "I05", "I06"],
       "enabled": false,
       "disabled_value": "readout_none_m0",
@@ -27,9 +28,10 @@
       "level": "N4",
       "issues": [18, 19, 23],
       "control": "Titans-MAC con readout=None, M0 no_bank con el mismo ajuste y M1 a igual capacidad física",
-      "pending": "Ningún entrenador ajusta los parámetros del lector. M3 no está definida"
+      "pending": "Entrenador cronológico del lector implementado sin ejecutar. M3 no está definida: faltan a_norm, r_norm, sus escalas y umbrales"
     },
     "refinements": {
+      "connection": "connected",
       "map_ids": ["I07"],
       "enabled": false,
       "disabled_value": 1,
@@ -42,22 +44,41 @@
       "level": "N4",
       "issues": [56],
       "control": "K=1 con lecturas emparejadas",
-      "pending": "Modo con los episodios de la primera lectura para igualar episodios únicos examinados"
+      "pending": "Ninguno técnico. La comparación espera a la edición histórica"
+    },
+    "refinement_episodes": {
+      "connection": "connected",
+      "map_ids": ["I07"],
+      "enabled": false,
+      "disabled_value": "per_step",
+      "allowed": ["first_read"],
+      "requires": "refinements",
+      "phases": ["evaluation", "readout_training"],
+      "state": "working_state",
+      "insertion": "src/mars_titan/models/titans/episodic_readout.py:EpisodicReadout.forward",
+      "level": "N4",
+      "issues": [56],
+      "control": "El mismo K con selección en cada paso y K=1, que coincide bit a bit en ambos modos",
+      "pending": "Ninguno técnico. La comparación espera a la edición histórica"
     },
     "associative_memory": {
+      "connection": "connected",
       "map_ids": ["I11"],
       "enabled": false,
       "disabled_value": "absent",
       "allowed": ["delta", "proximal"],
+      "value": {"rule": "allowed", "key": ["codec", "constant"], "rate": "eta", "forgetting": "lambda"},
+      "excludes": ["episodic_bank"],
       "phases": ["evaluation"],
       "state": "associative_matrix",
-      "insertion": "src/mars_titan/memory/financial_consumers.py:TitansBinding.prepare_event",
-      "level": "N2",
+      "insertion": "src/mars_titan/memory/financial_session.py:FinancialSession._prepare_event",
+      "level": "N4",
       "issues": [392, 27, 28],
       "control": "Titans-MAC sin componente, corrector de sesgo con la coordenada constante del codec y M1 con las mismas etiquetas",
-      "pending": "Conexión con la sesión y elección de η y λ en desarrollo"
+      "pending": "Elección de η y λ en desarrollo. El recorrido cronológico por ventanas todavía no emite B6"
     },
     "document_selection": {
+      "connection": "declared",
       "map_ids": ["I10"],
       "enabled": false,
       "disabled_value": "window_mean",
@@ -71,6 +92,7 @@
       "pending": "Materializar conjuntos de documentos por decisión desde DocumentIndex con coste medido"
     },
     "regime_context": {
+      "connection": "declared",
       "map_ids": ["I09"],
       "enabled": false,
       "disabled_value": "absent",
@@ -84,6 +106,7 @@
       "pending": "Enlace Python de MarkovFilter, parámetros por fold y entrada en la fusión"
     },
     "information_view": {
+      "connection": "declared",
       "map_ids": ["I03"],
       "enabled": false,
       "disabled_value": "full_view",
@@ -97,6 +120,7 @@
       "pending": "El índice de observaciones exige un CorpusDataset exacto"
     },
     "adaptive_refinements": {
+      "connection": "declared",
       "map_ids": ["I08"],
       "enabled": false,
       "disabled_value": "fixed_k",
@@ -111,6 +135,7 @@
       "pending": "Utilidad obtenida de rutas emitidas, con su coste registrado"
     },
     "replay_schedule": {
+      "connection": "declared",
       "map_ids": ["I12"],
       "enabled": false,
       "disabled_value": "absent",
@@ -124,6 +149,7 @@
       "pending": "Enlace Python de ReplaySchedule y conexión con un entrenador cronológico"
     },
     "adapters": {
+      "connection": "declared",
       "map_ids": ["I13"],
       "enabled": false,
       "disabled_value": "frozen_parent",
@@ -163,7 +189,8 @@
     {"id": "A6", "reference": "base", "change": {"document_selection": "attention"}},
     {"id": "A7", "reference": "base", "change": {"regime_context": "filtered_hmm"}},
     {"id": "A8", "reference": "base", "change": {"information_view": "reduced_view"}},
-    {"id": "A9", "reference": "fitted_arm", "change": {"replay_schedule": ["uniform", "recent", "spaced"]}}
+    {"id": "A9", "reference": "fitted_arm", "change": {"replay_schedule": ["uniform", "recent", "spaced"]}},
+    {"id": "A10", "reference": "A4", "change": {"refinement_episodes": "first_read"}}
   ],
   "budget": {
     "protocol": "issue 363",
@@ -171,8 +198,8 @@
     "reported": ["parameters", "operations", "bytes", "seconds"]
   },
   "pending": [
-    "Entrenador cronológico del lector episódico con el padre Titans-MAC congelado.",
-    "Constructor de la variante desde esta declaración y prueba de paridad completa con todo apagado.",
-    "La edición histórica desde 2000 verificada. Hasta entonces no se ejecuta ningún ajuste ni comparación."
+    "Ejecutar el ajuste del lector y las comparaciones cuando la edición histórica desde 2000 esté verificada.",
+    "Definir M3 con a_norm, r_norm, escalas y umbrales acreditados antes de declararla.",
+    "Conectar los componentes declarados sin conexión con su control de descarte."
   ]
 }

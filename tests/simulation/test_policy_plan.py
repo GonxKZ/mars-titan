@@ -1,7 +1,7 @@
 """Declaración y plan de la etapa de políticas, sin leer datos ni ajustar políticas.
 
-Los recuentos se fijan con las configuraciones del repositorio. Las mutaciones de la
-declaración deben fallar antes de planificar.
+Los recuentos se fijan por nivel con las configuraciones del repositorio. Las mutaciones
+de la declaración deben fallar antes de planificar.
 """
 
 import copy
@@ -9,6 +9,7 @@ import importlib
 import json
 from collections import Counter
 from pathlib import Path
+from types import SimpleNamespace
 
 import numpy as np
 import pytest
@@ -20,9 +21,19 @@ from mars_titan.training import campaign_plan as plan
 CONFIGS = Path("configs/simulation")
 STAGES = {v: CONFIGS / f"historical-masked-rl-stage-{v.lower()}.json" for v in "AB"}
 POLICIES = CONFIGS / "historical-masked-rl-policies.json"
-LEARNED = ("klpo_terminal", "ppo_clip_full_kl", "ppo_kl_penalty_adaptive")
-LEARNED += ("ppo_clip_kl_epoch_stop", "double_dqn")
+ALGORITHM_ARMS = ("ppo_clip_full_kl", "ppo_kl_penalty_adaptive", "ppo_clip_kl_epoch_stop")
+ALGORITHM_ARMS += ("double_dqn",)
 REFERENCES = ("cash", "hold_initial", "rebalance_50")
+# Brazos con productor en las campañas A y B, en el orden de su configuración.
+PRODUCERS = ["rnn", "lstm", "gru", "dlinear", "transformer_compact", "ridge", "xgboost"]
+PRODUCERS += ["titans_transformer_direct", "titans_mac_disabled", "titans_mac_frozen"]
+PRODUCERS += ["titans_mac_online"]
+COMPARED = ["transformer_compact", "titans_mac_online"]
+# Ajustes, traslados y referencias por nivel en todos los ámbitos.
+LEVELS = dict(
+    A=dict(all_predictors=(792, 0, 792), algorithms=(576, 0, 0)),
+    B=dict(all_predictors=(264, 528, 792), algorithms=(192, 384, 0)),
+)
 # Ventanas de política por ámbito: las del protocolo menos las cuatro primeras, que
 # aportan los tres años de ajuste y el de validación de la primera política.
 WINDOWS = {"US": 15, "CN": 9}
@@ -33,37 +44,122 @@ def us(day):
     return int(np.datetime64(day, "us").astype(np.int64))
 
 
-@pytest.mark.parametrize(("variant", "fits", "carries"), [("A", 720, 0), ("B", 240, 480)])
-def test_repository_stages_count_every_window_predictor_arm_seed_and_reference(
-    variant, fits, carries
-):
+@pytest.mark.parametrize("variant", "AB")
+def test_repository_stages_count_every_level_window_predictor_arm_seed_and_reference(variant):
     result = campaign_stage.check_stage(STAGES[variant])
     counts = result["counts"]
+    fits = sum(value[0] for value in LEVELS[variant].values())
+    carries = sum(value[1] for value in LEVELS[variant].values())
     assert (counts["training_jobs"], counts["carried_jobs"]) == (fits, carries)
-    assert counts["reference_jobs"] == 144 and counts["evaluation_jobs"] == carries + 144
-    assert counts["evaluation_episodes"] == (fits + carries + 144) * 3
+    assert counts["reference_jobs"] == 792 and counts["evaluation_jobs"] == carries + 792
+    assert counts["evaluation_episodes"] == (fits + carries + 792) * 3 == 6480
+    for level, (fit, carry, reference) in LEVELS[variant].items():
+        entry = counts["levels"][level]
+        assert (entry["training_jobs"], entry["carried_jobs"]) == (fit, carry)
+        assert entry["reference_jobs"] == reference
+        assert entry["evaluation_episodes"] == (fit + carry + reference) * 3
+    assert counts["levels"]["all_predictors"]["predictors"] == PRODUCERS
+    assert counts["levels"]["algorithms"]["predictors"] == COMPARED
     stage = campaign_stage.load_stage(STAGES[variant])
-    assert stage["limits"] == dict(max_training_jobs=fits, max_evaluation_jobs=carries + 144)
+    assert stage["limits"] == dict(max_training_jobs=fits, max_evaluation_jobs=carries + 792)
     for scope, total in WINDOWS.items():
         entry = counts["scopes"][scope]
         anchors = ANCHORS[variant][scope]
         assert len(entry["windows"]) == total and len(entry["anchors"]) == anchors
         assert entry["carried_windows"] == total - anchors
-        # Dos predictores, cinco brazos aprendidos con tres semillas y tres referencias.
-        assert entry["training_jobs"] == anchors * 2 * 5 * 3
-        assert entry["carried_jobs"] == (total - anchors) * 2 * 5 * 3
-        assert entry["reference_jobs"] == total * 2 * 3
-        assert list(entry["arms"]) == [*LEARNED, *REFERENCES]
-        for arm in LEARNED:
-            fit = dict(fit=anchors * 2) if anchors else {}
-            carry = dict(carry=(total - anchors) * 2) if total > anchors else {}
+        # KLPO y las referencias sobre los 11 predictores y cuatro políticas más sobre dos.
+        assert entry["training_jobs"] == anchors * (11 + 2 * 4) * 3
+        assert entry["carried_jobs"] == (total - anchors) * (11 + 2 * 4) * 3
+        assert entry["reference_jobs"] == total * 11 * 3
+        assert set(entry["arms"]) == {"klpo_terminal", *ALGORITHM_ARMS, *REFERENCES}
+        for arm, predictors in (("klpo_terminal", 11), *((arm, 2) for arm in ALGORITHM_ARMS)):
+            fit = dict(fit=anchors * predictors) if anchors else {}
+            carry = dict(carry=(total - anchors) * predictors) if total > anchors else {}
             assert entry["arms"][arm] == {str(s): fit | carry for s in (42, 43, 44)}
         for arm in REFERENCES:
-            assert entry["arms"][arm] == {"none": dict(reference=total * 2)}
+            assert entry["arms"][arm] == {"none": dict(reference=total * 11)}
     assert result["contrasts"]["primary"] == "klpo_terminal"
+    assert result["universe_predictor"] == "transformer_compact"
     assert result["selection"]["metric"] == "ruin_count_then_mean_liquidated_log_growth"
     assert result["seeds"] == [42, 43, 44] and result["budget"]["transitions"] == 262144
     assert result["scientific_training_started"] is False and result["final_test_opened"] is False
+
+
+@pytest.mark.parametrize("variant", "AB")
+def test_levels_resolve_every_producer_of_the_campaign(variant):
+    stage = campaign_stage.load_stage(STAGES[variant])
+    assert stage["predictors"] == [spec["arm"] for spec in plan._arm_specs(stage["campaign"])]
+    assert stage["predictors"] == PRODUCERS
+    jobs = policy_plan.plan_stage(stage)
+    for job in jobs:
+        if job["level"] == "algorithms":
+            assert job["predictor"] in COMPARED and job["arm"] in ALGORITHM_ARMS
+        else:
+            assert job["arm"] in ("klpo_terminal", *REFERENCES)
+    covered = {job["predictor"] for job in jobs if job["arm"] == "klpo_terminal"}
+    assert covered == {job["predictor"] for job in jobs if job["arm"] == "cash"} == set(PRODUCERS)
+
+
+def campaign_with_candidate(tmp_path, variant):
+    """Campaña del repositorio con la sección de la GRU candidata, solo para planificar."""
+    folder = Path("configs/baselines").resolve()
+    campaign = json.loads(
+        (folder / f"historical-masked-campaign-{variant.lower()}.json").read_text()
+    )
+    campaign["comparison"] = str((folder / campaign["comparison"]).resolve())
+    campaign["tabular"]["config"] = str((folder / campaign["tabular"]["config"]).resolve())
+    campaign["titans_mac"]["recipe"] = str((folder / campaign["titans_mac"]["recipe"]).resolve())
+    recipe = Path("configs/candidate/chronological-training.json").resolve()
+    principal = json.loads(recipe.read_text())["principal"]
+    campaign["episodic_gru"] = dict(
+        recipe=str(recipe), arms={"gru_episodic": principal}, search_seed=42
+    )
+    campaign["limits"]["max_training_jobs"] = 100_000
+    campaign["limits"]["max_prediction_jobs"] = 100_000
+    atomic_json(tmp_path / "campaign.json", campaign)
+    return tmp_path / "campaign.json"
+
+
+def test_a_producer_registered_in_the_campaign_enters_the_first_level_without_changes(tmp_path):
+    def with_candidate(stage):
+        stage["campaign"] = str(campaign_with_candidate(tmp_path, "A"))
+        stage["limits"] = dict(max_training_jobs=100_000, max_evaluation_jobs=100_000)
+
+    result = campaign_stage.check_stage(mutated(tmp_path, change_stage=with_candidate))
+    levels = result["counts"]["levels"]
+    assert levels["all_predictors"]["predictors"] == [
+        *PRODUCERS[:7],
+        "gru_episodic",
+        *PRODUCERS[7:],
+    ]
+    # La candidata añade 24 ventanas por tres semillas de KLPO y tres referencias.
+    assert levels["all_predictors"]["training_jobs"] == 792 + 24 * 3
+    assert levels["all_predictors"]["reference_jobs"] == 792 + 24 * 3
+    assert levels["algorithms"]["training_jobs"] == 576
+
+
+def test_every_first_level_fit_shares_the_budget_and_the_portfolio_criterion():
+    stage = campaign_stage.load_stage(STAGES["A"])
+    jobs = [job for job in policy_plan.plan_stage(stage) if job["kind"] == "fit"]
+    tapes = SimpleNamespace(failure=None, unfit=None)
+    budget = stage["policies"]["budget"]["transitions"]
+    selection = dict(metric="ruin_count_then_mean_liquidated_log_growth", partition="validation")
+    records = [
+        dict(cost_bps=cost, status="completed", reason=None, steps=1, net_return=0.0)
+        | dict(liquidated_net_return=0.0, max_drawdown=0.0)
+        for cost in stage["policies"]["evaluation_costs_bps"]
+    ]
+    for predictor in PRODUCERS:
+        job = next(j for j in jobs if j["predictor"] == predictor and j["arm"] == "klpo_terminal")
+        report = dict(status="completed", transitions=budget, updates=1, selection=selection)
+        report.update(policy=dict(id=job["id"], sha256="a" * 64), evaluation=records)
+        campaign_stage.check_report(stage, job, report, tapes)
+        for change in (
+            dict(transitions=budget // 2),
+            dict(selection=dict(selection, metric="mae")),
+        ):
+            with pytest.raises(ValueError, match="presupuesto, el criterio de cartera"):
+                campaign_stage.check_report(stage, job, dict(report, **change), tapes)
 
 
 def test_first_policy_windows_follow_three_training_years_and_one_validation_year():
@@ -110,9 +206,11 @@ def test_klpo_is_planned_first_and_each_carry_depends_on_the_fit_of_its_anchor()
     groups = {}
     for job in jobs:
         groups.setdefault((job["scope"], job["window"], job["predictor"]), []).append(job)
-    for group in groups.values():
-        assert group[0]["arm"] == "klpo_terminal"
-        assert [job["arm"] for job in group[-3:]] == list(REFERENCES)
+    for (_, _, predictor), group in groups.items():
+        # KLPO primero, las políticas de algoritmos si el predictor se compara y las referencias.
+        learned = ["klpo_terminal", *(ALGORITHM_ARMS if predictor in COMPARED else ())]
+        expected = [arm for arm in learned for _ in (42, 43, 44)]
+        assert [job["arm"] for job in group] == [*expected, *REFERENCES]
     for job in jobs:
         if job["kind"] == "carry":
             (anchor,) = job["depends"]
@@ -128,8 +226,8 @@ def test_klpo_is_planned_first_and_each_carry_depends_on_the_fit_of_its_anchor()
         else:
             assert job["depends"] == []
     assert Counter(job["engine"] for job in jobs if job["kind"] != "reference") == {
-        "native_klpo": 144,
-        "native_ppo": 576,
+        "native_klpo": 264 + 528,
+        "native_ppo": 192 + 384,
     }
 
 
@@ -194,8 +292,18 @@ INVALID_POLICIES = {
     "no_training_years": lambda v: v.update(train_windows=0),
     "unknown_universe_rule": lambda v: v["universe"].update(rule="best_in_evaluation"),
     "universe_too_large": lambda v: v["universe"].update(max_assets=5000),
-    "predictor_without_producer": lambda v: v["predictor"].update(arms=["gru_episodic"]),
+    "predictor_without_producer": lambda v: v["levels"]["algorithms"].update(
+        predictors=["gru_episodic"]
+    ),
     "predictor_seed": lambda v: v["predictor"].update(seed=7),
+    "fixed_first_level": lambda v: v["levels"]["all_predictors"].update(predictors=COMPARED),
+    "first_level_without_klpo": lambda v: v["levels"]["all_predictors"]["arms"].pop(0),
+    "klpo_in_algorithms": lambda v: v["levels"]["algorithms"]["arms"].insert(0, "klpo_terminal"),
+    "algorithm_missing": lambda v: v["levels"]["algorithms"]["arms"].pop(),
+    "no_compared_predictor": lambda v: v["levels"]["algorithms"].update(predictors=[]),
+    "repeated_predictor": lambda v: v["levels"]["algorithms"].update(predictors=["ridge", "ridge"]),
+    "missing_level": lambda v: v["levels"].pop("algorithms"),
+    "old_predictor_list": lambda v: v["predictor"].update(arms=COMPARED),
     "test_opened": lambda v: v.update(final_test_opened=True),
     "extra_field": lambda v: v.update(extra=1),
     "status": lambda v: v.update(status="executed"),
@@ -203,8 +311,8 @@ INVALID_POLICIES = {
 INVALID_STAGES = {
     "unknown_scope": lambda v: v.update(scopes=["EU"]),
     "unordered_scopes": lambda v: v.update(scopes=["CN", "US"]),
-    "limit": lambda v: v["limits"].update(max_training_jobs=719),
-    "evaluation_limit": lambda v: v["limits"].update(max_evaluation_jobs=143),
+    "limit": lambda v: v["limits"].update(max_training_jobs=1367),
+    "evaluation_limit": lambda v: v["limits"].update(max_evaluation_jobs=791),
     "test_opened": lambda v: v.update(final_test_opened=True),
 }
 
@@ -237,19 +345,27 @@ REASONS = {
     "universe_too_large": "universo",
     "predictor_without_producer": "productor",
     "predictor_seed": "semilla declarada",
+    "fixed_first_level": "nivel completo",
+    "first_level_without_klpo": "nivel completo",
+    "klpo_in_algorithms": "nivel completo",
+    "algorithm_missing": "nivel completo",
+    "no_compared_predictor": "nivel completo",
+    "repeated_predictor": "nivel completo",
+    "missing_level": "nivel completo",
+    "old_predictor_list": "predictor, el universo",
     "test_opened": "contrato",
     "extra_field": "contrato",
     "status": "contrato",
     "unknown_scope": "ámbitos",
     "unordered_scopes": "ámbitos",
-    "limit": "max_training_jobs=719",
-    "evaluation_limit": "max_evaluation_jobs=143",
+    "limit": "max_training_jobs=1367",
+    "evaluation_limit": "max_evaluation_jobs=791",
 }
 
 
 def test_the_unchanged_declaration_is_accepted(tmp_path):
     path = mutated(tmp_path)
-    assert campaign_stage.check_stage(path)["counts"]["training_jobs"] == 720
+    assert campaign_stage.check_stage(path)["counts"]["training_jobs"] == 1368
 
 
 @pytest.mark.parametrize("name", sorted(INVALID_POLICIES))

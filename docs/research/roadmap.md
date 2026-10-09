@@ -27,6 +27,19 @@ flowchart LR
 
 Se trabajará en unidades pequeñas y revisables. El [tablero](task-board.md) desarrolla las tareas, dependencias y prioridades. Las fechas se fijarán cuando se concrete el calendario del proyecto. Las duraciones estimadas no son fechas de entrega confirmadas.
 
+## Estado a 9 de octubre de 2026
+
+La tabla resume la evidencia técnica integrada en `develop` hasta `0ac197ce` para la [campaña desde 2000](training-campaign-2000.md). Ningún hito está cerrado. Las implementaciones y sus pruebas preparan la comparación, pero los criterios de aceptación exigen ejecutar entrenamientos y evaluaciones que siguen bloqueados hasta verificar la edición histórica y sus objetivos residuales.
+
+| Hito | Evidencia técnica integrada | Pendiente para su criterio de cierre |
+| --- | --- | --- |
+| O1. Datos multimodales | Edición v3 con máscaras en codificación, con un prefijo verificado de 512 activos y 1.773.121 muestras. [Precios negociados reconstruidos](../data/unadjusted-prices.md) y declaración del sesgo de supervivencia en el [protocolo](protocol.md#universo-y-selección-del-subconjunto) | Completar y verificar la edición con los 5.676 candidatos y declarar el sesgo en la memoria |
+| O2. Retornos residuales | `prepare_corpus_targets` con comprobación por defecto y ejecución con cerrojo, y factores de mercado versionados | Generar los objetivos sobre la edición verificada y comparar bruto y residual |
+| O3. Memoria adaptativa | Núcleo Titans-MAC con [puertas con bias](../engineering/titans-gate-initialization.md) y memoria con residual, [entrenador cronológico](../engineering/titans-chronological-trainer.md) [MARS-TITAN con ampliaciones](../engineering/mars-titan-extensions.md) sobre el padre `mac_online` y [factorial de CM-v1](../experiments/mars_titan_cm_v1/factorial.md) con C como penalización y M como retención con centros fijos | Comprobaciones CUDA, M3 sin definir, ampliaciones sin conexión y ningún ajuste ejecutado |
+| O4. Referencias y ablaciones | [Referencias con máscaras](../engineering/masked-reference-runners.md), [comparadores tabulares](../engineering/masked-tabular-comparators.md), [GRU episódica por ventana](../engineering/candidate-chronological-trainer.md) y [matriz de adaptadores](../engineering/masked-posttraining.md), con campañas A y B declaradas | Medir el caudal, elegir entre A y B, declarar la GRU episódica, MARS-TITAN y CM-v1, y ejecutar |
+| O5. Evaluación | [Protocolo walk-forward v2](walk-forward-2000.md), [métricas por sesión y CQR común](metrics.md) y [etapa de políticas por ventana](training-campaign-2000.md#etapa-de-políticas-por-ventana) sobre [entornos auditados](../engineering/rl-environment-integrity.md) | Predicciones reales, cintas reconstruidas en `mars-titan-ppo` y `mars-titan-sim`, orden financiera de KLPO y apertura única del test de 2024 |
+| O6. Interpretación e informe | Estado técnico recogido en el README, esta documentación y la memoria de trabajo | Resultados que interpretar |
+
 ## Alcance mínimo y extensiones
 
 La [campaña previa de referencias](../engineering/comparison-campaign.md) pasa a
@@ -35,7 +48,7 @@ recorrer el universo completo admisible. No se limita a las cifras iniciales de
 en paralelo con O5, siempre que cada entrenamiento use una instantánea de datos
 fijada y validada. El desarrollo del candidato no forma parte de esa campaña.
 
-El mínimo científico es una comparación estadounidense reproducible, con piloto de hasta 64 activos y selección principal propuesta de hasta 128. Incluye un horizonte diario, las cuatro modalidades de disponibilidad justificable, contexto macro, referencias de varias familias y una memoria compacta con ablaciones de componentes. Una muestra sin alguna modalidad se excluye. No se sustituye por entrenamiento de dos modalidades.
+El mínimo científico es una comparación estadounidense reproducible, con piloto de hasta 64 activos y selección principal propuesta de hasta 128. Incluye un horizonte diario, las cuatro modalidades de disponibilidad justificable, contexto macro, referencias de varias familias y una memoria compacta con ablaciones de componentes. En la comparación estricta, una muestra sin alguna modalidad se excluye. No se sustituye por entrenamiento de dos modalidades. La edición histórica desde 2000 es una comparación adicional que conserva las cuatro posiciones de modalidad con máscaras explícitas y las mismas filas en todos los modelos.
 
 La residualización sectorial, un Transformer adicional, HS300, memorias jerárquicas completas y kernels C++/CUDA son extensiones. Su activación exige que los controles temporales y las referencias funcionen, que exista presupuesto medido y que la comparación principal no quede comprometida.
 

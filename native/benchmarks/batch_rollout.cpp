@@ -36,6 +36,11 @@ constexpr double quantile_99 = 0.99;
 constexpr uint64_t hash_offset = 14695981039346656037ULL;
 constexpr uint64_t hash_prime = 1099511628211ULL;
 constexpr int report_precision = 12;
+constexpr double cents = 100;
+constexpr double board_lot = 100;
+constexpr double main_board_band = 0.1;
+constexpr double seller_stamp_duty = 0.0005;
+constexpr int64_t forever = int64_t{1} << 62;
 
 struct Options {
     std::size_t environments = fixture_environments;
@@ -43,6 +48,9 @@ struct Options {
     std::size_t sessions = fixture_sessions;
     std::size_t workers = 1;
     bool reference = false;
+    // Reglas de acciones A del tablero principal sobre precios en la rejilla de 0,01.
+    bool china = false;
+    double capital = default_capital;
 };
 
 std::size_t number(std::string_view input) {
@@ -70,13 +78,21 @@ Options parse(std::span<char*> arguments) {
             result.sessions = number(arguments[index]);
         } else if (name == "--workers") {
             result.workers = number(arguments[index]);
+        } else if (name == "--rules") {
+            const std::string_view rules(arguments[index]);
+            if (rules != "cn" && rules != "none") {
+                throw std::invalid_argument("Las reglas deben ser cn o none");
+            }
+            result.china = rules == "cn";
+        } else if (name == "--capital") {
+            result.capital = static_cast<double>(number(arguments[index]));
         } else {
             throw std::invalid_argument("Argumento desconocido");
         }
     }
     if (result.environments == 0 || result.environments > maximum_environments ||
         result.assets == 0 || result.assets > maximum_assets ||
-        result.sessions < 4 || result.sessions > maximum_sessions ||
+        result.sessions < 4 || result.sessions > maximum_sessions || result.capital <= 0 ||
         result.assets * result.sessions > maximum_rows ||
         (result.workers != 1 && result.workers != 2 && result.workers != 4 &&
          result.workers != maximum_batch_workers) ||
@@ -88,7 +104,7 @@ Options parse(std::span<char*> arguments) {
 
 std::shared_ptr<const MarketTape> fixture(const Options& options) {
     auto result = std::make_shared<MarketTape>();
-    result->currency = "USD";
+    result->currency = options.china ? "CNY" : "USD";
     result->domain = "synthetic";
     result->partition = "train";
     result->parent_id = "diagnostic-analytic";
@@ -104,12 +120,25 @@ std::shared_ptr<const MarketTape> fixture(const Options& options) {
         result->prediction_times.push_back(static_cast<int64_t>(2 * time + 1));
         for (std::size_t asset = 0; asset < options.assets; ++asset) {
             const auto phase = static_cast<double>(time + asset) * step_scale;
-            const auto opening = price_scale + static_cast<double>(asset) + std::sin(phase);
-            const auto closing = opening + std::cos(phase) * signal_scale;
+            auto opening = price_scale + static_cast<double>(asset) + std::sin(phase);
+            auto closing = opening + std::cos(phase) * signal_scale;
+            if (options.china) {
+                opening = std::round(opening * cents) / cents;
+                closing = std::round(closing * cents) / cents;
+            }
             result->prices.insert(result->prices.end(), {opening, std::max(opening, closing),
                 std::min(opening, closing), closing, volume});
             result->scores.push_back(signal_scale * std::sin(phase));
         }
+    }
+    if (options.china) {
+        InstrumentRules rules;
+        rules.rules = "diagnostic_cn_main";
+        rules.lot = board_lot;
+        rules.odd_lot_exit = true;
+        rules.price_limits = {RulePeriod{0, forever, main_board_band, 0, 0}};
+        rules.taxes = {RulePeriod{0, forever, 0, 0, seller_stamp_duty}};
+        result->instruments.assign(options.assets, rules);
     }
     return result;
 }
@@ -139,17 +168,19 @@ void mix(uint64_t& hash, double value) {
 void run(const Options& options) {
     const auto total_start = Clock::now();
     const auto data = fixture(options);
+    Parameters parameters;
+    parameters.capital = options.capital;
     const auto width = options.assets * financial_columns + observation_tail;
     std::vector<FinancialSession> references;
     std::unique_ptr<FinancialBatch> batch;
     if (options.reference) {
         references.reserve(options.environments);
         for (std::size_t lane = 0; lane < options.environments; ++lane) {
-            references.emplace_back(data);
+            references.emplace_back(data, parameters);
         }
     } else {
         batch = std::make_unique<FinancialBatch>(
-            std::vector<BatchInput>(options.environments, {data, {}, {}}), options.workers);
+            std::vector<BatchInput>(options.environments, {data, parameters, {}}), options.workers);
     }
     const auto setup_seconds = seconds(total_start);
     std::vector<uint8_t> actions(options.environments);
@@ -176,7 +207,7 @@ void run(const Options& options) {
         batch->reset(indices);
     } else {
         for (auto& reference : references) {
-            reference = FinancialSession(data);
+            reference = FinancialSession(data, parameters);
         }
     }
     uint64_t hash = hash_offset;
@@ -214,6 +245,8 @@ void run(const Options& options) {
     const auto transitions = options.environments * (options.sessions - 1);
     std::cout << std::setprecision(report_precision)
               << "{\"domain\":\"technical\",\"reference\":" << (options.reference ? "true" : "false")
+              << ",\"rules\":\"" << (options.china ? "cn_main_board" : "none")
+              << "\",\"capital\":" << options.capital
               << ",\"environments\":" << options.environments << ",\"assets\":" << options.assets
               << ",\"sessions\":" << options.sessions << ",\"workers\":" << options.workers
               << ",\"transitions\":" << transitions << ",\"checksum\":\"" << hash << '"'

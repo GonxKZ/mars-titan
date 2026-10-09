@@ -33,6 +33,17 @@ class Trade(ct.Structure):
     ]
 
 
+_RULE_AMOUNTS = ("minimum_order", "reference", "band", "buy_tax", "sell_tax")
+
+
+class Rules(ct.Structure):
+    _fields_ = [
+        *((name, ct.c_double) for name in _RULE_AMOUNTS),
+        ("odd_lot_exit", ct.c_uint32),
+        ("reserved", ct.c_uint32),
+    ]
+
+
 class Layout(ct.Structure):
     _fields_ = [
         (name, ct.c_uint32)
@@ -61,6 +72,36 @@ TRADE = np.dtype(
         ("reserved", np.uint32),
     ],
     align=True,
+)
+RULES = np.dtype(
+    [
+        *((name, np.float64) for name in _RULE_AMOUNTS),
+        ("odd_lot_exit", np.uint32),
+        ("reserved", np.uint32),
+    ],
+    align=True,
+)
+# Contrato nativo de las reglas de mercado. Forma parte de la identidad de los entornos con reglas.
+RULES_CONTRACT = "mt_simulation_step_v2/mt_rules_v1"
+_STEP_ARGUMENTS = (
+    ct.c_uint32,
+    ct.c_uint32,
+    ct.POINTER(ct.c_uint32),
+    ct.POINTER(ct.c_double),
+    ct.POINTER(ct.c_uint8),
+    ct.POINTER(ct.c_double),
+    ct.POINTER(Position),
+    ct.POINTER(Account),
+    ct.c_double,
+    ct.c_double,
+    ct.c_int64,
+    ct.c_int64,
+    ct.c_int64,
+    ct.POINTER(Position),
+    ct.POINTER(Account),
+    ct.POINTER(Trade),
+    ct.POINTER(ct.c_char),
+    ct.c_size_t,
 )
 
 
@@ -95,23 +136,24 @@ class NativeLibrary:
         ):
             raise ValueError("La biblioteca nativa no comparte el contrato binario")
         self.api.mt_simulation_step_v1.restype = ct.c_int
-        self.api.mt_simulation_step_v1.argtypes = [
-            ct.c_uint32,
-            ct.c_uint32,
-            ct.POINTER(ct.c_uint32),
-            ct.POINTER(ct.c_double),
-            ct.POINTER(ct.c_uint8),
-            ct.POINTER(ct.c_double),
-            ct.POINTER(Position),
-            ct.POINTER(Account),
+        self.api.mt_simulation_step_v1.argtypes = list(_STEP_ARGUMENTS)
+        self.api.mt_simulation_rules_size_v1.restype = ct.c_uint32
+        self.api.mt_simulation_rules_size_v1.argtypes = []
+        rules_size = self.api.mt_simulation_rules_size_v1()
+        if rules_size != RULES.itemsize or rules_size != ct.sizeof(Rules):
+            raise ValueError("La biblioteca nativa no comparte el contrato de reglas")
+        self.api.mt_simulation_step_v2.restype = ct.c_int
+        self.api.mt_simulation_step_v2.argtypes = [
+            *_STEP_ARGUMENTS[:4],
+            ct.POINTER(Rules),
+            *_STEP_ARGUMENTS[4:],
+        ]
+        self.api.mt_simulation_price_limits_v1.restype = ct.c_int
+        self.api.mt_simulation_price_limits_v1.argtypes = [
             ct.c_double,
             ct.c_double,
-            ct.c_int64,
-            ct.c_int64,
-            ct.c_int64,
-            ct.POINTER(Position),
-            ct.POINTER(Account),
-            ct.POINTER(Trade),
+            ct.POINTER(ct.c_double),
+            ct.POINTER(ct.c_double),
             ct.POINTER(ct.c_char),
             ct.c_size_t,
         ]
@@ -154,12 +196,9 @@ class NativeLibrary:
             raise ValueError("El bloque OHLCV debe ser float64 contiguo con una fila por activo")
         return values
 
-    def step(self, owner, prices, open_at, close_at):
-        code = self.api.mt_simulation_step_v1(
-            len(owner.assets),
-            len(owner.currencies),
-            _pointer(owner._currency_ids, ct.c_uint32),
-            _pointer(owner._lots, ct.c_double),
+    def step(self, owner, prices, open_at, close_at, rules=None):
+        """Avanzar una sesión. Sin reglas se usa la llamada v1, idéntica a la anterior."""
+        arguments = (
             _pointer(owner._retired, ct.c_uint8),
             _pointer(prices, ct.c_double),
             _pointer(owner._positions, Position),
@@ -175,7 +214,34 @@ class NativeLibrary:
             owner._error,
             len(owner._error),
         )
+        common = (
+            len(owner.assets),
+            len(owner.currencies),
+            _pointer(owner._currency_ids, ct.c_uint32),
+            _pointer(owner._lots, ct.c_double),
+        )
+        if rules is None:
+            code = self.api.mt_simulation_step_v1(*common, *arguments)
+        else:
+            if rules.dtype != RULES or rules.shape != (len(owner.assets),):
+                raise ValueError("Las reglas deben tener una fila por activo")
+            code = self.api.mt_simulation_step_v2(*common, _pointer(rules, Rules), *arguments)
         _check(code, owner._error)
+
+    def price_limits(self, reference, band):
+        """Límites decimales calculados en C++, o None. Sirve para contrastar con Python."""
+        upper, lower = ct.c_double(), ct.c_double()
+        error = ct.create_string_buffer(512)
+        code = self.api.mt_simulation_price_limits_v1(
+            float("nan") if reference is None else reference,
+            band,
+            ct.byref(upper),
+            ct.byref(lower),
+            error,
+            len(error),
+        )
+        _check(code, error)
+        return None if np.isnan(upper.value) else (upper.value, lower.value)
 
     def observation(self, owner, prices, previous, scores, score_scale):
         count = len(owner.assets)

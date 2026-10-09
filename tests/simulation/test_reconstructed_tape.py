@@ -455,8 +455,6 @@ def test_reconstructed_chinese_tapes_require_the_a_share_rules(edition):
     with pytest.raises(ValueError, match="reglas de acciones A"):
         FinancialEnv(tape, instruments=plain)
     rules = {asset: china_a_share_instrument(asset) for asset in tape.assets}
-    with pytest.raises(ValueError, match="nativo"):
-        FinancialEnv(tape, instruments=rules, backend="native")
     assert FinancialEnv(tape, instruments=rules).identity["instruments_sha256"]
 
 

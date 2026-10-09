@@ -7,9 +7,12 @@ definición. El plan enumera cada ajuste y cada predicción trasladada antes de 
 datos y respeta los límites declarados. Este módulo no lee vistas, no reserva la GPU
 y no ejecuta ningún ajuste.
 
-Las secciones opcionales ``episodic_gru`` y ``titans_mac`` conectan la GRU candidata y
-los controles de Titans-MAC con sus recetas cronológicas. Sin ellas, sus brazos siguen
-declarados como punto de extensión pendiente.
+Las secciones opcionales ``episodic_gru``, ``titans_mac`` y ``mars_titan`` conectan la GRU
+candidata, los controles de Titans-MAC y el lector episódico de MARS-TITAN con sus recetas
+cronológicas. Sin ellas, sus brazos siguen declarados como punto de extensión pendiente.
+Cada ajuste de MARS-TITAN parte del Titans-MAC ``mac_online`` elegido en la misma ventana y
+semilla, así que depende de esos trabajos. La sección ``cm_v1`` conecta el factorial CM-v1:
+sus dos núcleos son trabajos auxiliares sin traslado y cada brazo parte de uno de ellos.
 
 Variante A: cada ventana anual se reentrena desde cero. Variante B: se reentrena desde
 cero en la primera ventana y cada ``retrain_every_months`` meses. Las ventanas
@@ -48,8 +51,26 @@ FIT, CARRY = "fit", "carry"
 # GRU candidata con banco episódico. Repite candidate_run.RECIPE sin importar PyTorch.
 EPISODIC = "episodic_gru"
 CANDIDATE_RECIPE = "candidate_gru_chronological_v1"
+# Lector episódico de MARS-TITAN sobre Titans-MAC. Repite mars_titan_run.RECIPE y SEARCHED.
+MARS = "mars_titan"
+MARS_RECIPE = "mars_titan_episodic_readout_chronological_v1"
+MARS_SEARCHED = TITANS_SEARCHED
+# Escrituras con lector que ajustar. Las demás combinaciones se rechazan al ejecutar.
+MARS_BANKS = ("m0_no_bank", "m1", "m2")
+# Factorial CM-v1. Repite los nombres de training.cm_v1_factorial sin importar PyTorch.
+CM = "cm_v1"
+CM_NAME = "mars_titan_cm_v1_factorial"
+CM_CORE_MODEL = "cm_v1_core"
+CM_CORES = ("cm_v1_core_b", "cm_v1_core_c")
+# Brazo y núcleo del que parte: C cambia el núcleo y M solo la retención del lector.
+CM_ARMS = {
+    "cm_v1_b": "cm_v1_core_b",
+    "cm_v1_bc": "cm_v1_core_c",
+    "cm_v1_bm": "cm_v1_core_b",
+    "cm_v1_bcm": "cm_v1_core_c",
+}
 # Familias con sección opcional en la campaña. Sin ella siguen como punto de extensión.
-OPTIONAL = (EPISODIC, TITANS)
+OPTIONAL = (EPISODIC, TITANS, MARS, CM)
 
 # Familias de la comparación sin entrenador conectado a estas vistas. Cada una se
 # conectará con un planificador y un ejecutor propios en este mismo registro.
@@ -70,10 +91,22 @@ EXTENSION_POINTS = {
             "Esta campaña no la declara"
         ),
     ),
-    "mars_titan": dict(
-        issue=366, pending="Ampliaciones de MARS-TITAN sobre el núcleo con sus puntos de inserción"
+    MARS: dict(
+        issue=366,
+        pending=(
+            "El lector por ventana y la predicción trasladada se conectan con la sección "
+            "mars_titan sobre el padre titans_mac_online. Falta declararla en las campañas A "
+            "y B después de medir memoria y caudal en cuda:0"
+        ),
     ),
-    "cm_v1": dict(issue=293, pending="Brazos B, B+C, B+M y B+C+M sobre la B fijada por protocolo"),
+    CM: dict(
+        issue=293,
+        pending=(
+            "Los núcleos y los brazos B, B+C, B+M y B+C+M se conectan con la sección cm_v1 "
+            "y su declaración. Falta declararla en las campañas A y B después de medir la "
+            "penalización C y el lector en cuda:0"
+        ),
+    ),
 }
 # Etapas que parten de los padres seleccionados en cada ventana de una campaña base
 # confirmada. Se ejecutan con su propia orden (`run_masked_campaign.py posttraining`).
@@ -132,6 +165,8 @@ _NEURAL = {
 _TABULAR = {"config", "arms", "cpu_workers"}
 _EPISODIC = {"recipe", "arms", "search_seed"}
 _TITANS = {"recipe", "arms", "search_seed"}
+_MARS = {"recipe", "arms", "pending_arms", "parent_arm", "search_seed"}
+_CM = {"declaration", "search_seed"}
 _LIMITS = {"max_training_jobs", "max_prediction_jobs"}
 
 
@@ -335,6 +370,28 @@ def _titans(section, arms, rule, policy, base, count):
         all(seed in _seeds(arms[name]["seeds"], name) for name in mapping),
         "La semilla de búsqueda de Titans debe estar en todos sus brazos",
     )
+    cases = _titans_cases(recipe, rule, count)
+    candidates = {
+        name: [
+            (
+                case,
+                dict(
+                    recipe=str(path),
+                    recipe_sha256=digest,
+                    variant=variant,
+                    seed=seed,
+                    search_case=case,
+                ),
+            )
+            for case in cases
+        ]
+        for name, variant in mapping.items()
+    }
+    return dict(section, path=str(path), sha256=digest, seed=seed, candidates=candidates)
+
+
+def _titans_cases(recipe, rule, count):
+    """Casos de búsqueda de una receta de Titans-MAC con la cabeza y la regla comunes."""
     selection = {key: value for key, value in rule.items() if key != "max_epochs"}
     _require(
         isinstance(recipe, dict)
@@ -357,6 +414,57 @@ def _titans(section, arms, rule, policy, base, count):
         f"La receta de Titans necesita {count} casos de búsqueda del optimizador, tantos "
         "como índices ajusta cada referencia neuronal",
     )
+    return cases
+
+
+def _mars_titan(section, arms, rule, policy, base, count, titans):
+    """Brazos de MARS-TITAN: combinación de componentes, receta del lector y padre.
+
+    El padre es un brazo `mac_online` de la sección de Titans-MAC con las mismas semillas.
+    Los brazos declarados sin definición, como M3, quedan en `pending_arms` con su motivo.
+    `training.mars_titan_walk_forward` valida la combinación completa en cada ajuste.
+    """
+    if section is None:
+        return None
+    _require(
+        isinstance(section, dict) and set(section) == _MARS and policy == HISTORICAL_MASKED,
+        "La sección de MARS-TITAN no cumple o la campaña no usa la política con máscaras",
+    )
+    parent = section["parent_arm"]
+    _require(
+        titans is not None and titans["arms"].get(parent) == "mac_online",
+        "MARS-TITAN necesita como padre el brazo mac_online de la sección de Titans-MAC",
+    )
+    path = (base / section["recipe"]).resolve()
+    recipe, digest = read_manifest(path, 64 * 1024)
+    mapping, pending, seed = section["arms"], section["pending_arms"], section["search_seed"]
+    declared = {name for name, arm in arms.items() if arm["family"] == MARS}
+    _require(
+        isinstance(mapping, dict)
+        and isinstance(pending, dict)
+        and not set(mapping) & set(pending)
+        and set(mapping) | set(pending) == declared
+        and all(isinstance(motive, str) and motive for motive in pending.values())
+        and all(
+            isinstance(components, dict)
+            and components.get("episodic_bank") in MARS_BANKS
+            and arms[name]["output"] == QUANTILE_HEAD
+            for name, components in mapping.items()
+        )
+        and len({json.dumps(c, sort_keys=True) for c in mapping.values()}) == len(mapping),
+        "Cada brazo de MARS-TITAN necesita una combinación distinta con banco episódico y "
+        "cuantiles, o un motivo pendiente",
+    )
+    _require(
+        seed == titans["seed"]
+        and all(
+            seed in _seeds(arms[name]["seeds"], name)
+            and set(arms[name]["seeds"]) <= set(arms[parent]["seeds"])
+            for name in mapping
+        ),
+        "Cada semilla de MARS-TITAN necesita su padre Titans-MAC y la misma semilla de búsqueda",
+    )
+    cases = _readout_cases(recipe, rule, count)
     candidates = {
         name: [
             (
@@ -364,16 +472,134 @@ def _titans(section, arms, rule, policy, base, count):
                 dict(
                     recipe=str(path),
                     recipe_sha256=digest,
-                    variant=variant,
+                    components=components,
                     seed=seed,
                     search_case=case,
+                    parent_arm=parent,
                 ),
             )
             for case in cases
         ]
-        for name, variant in mapping.items()
+        for name, components in mapping.items()
     }
     return dict(section, path=str(path), sha256=digest, seed=seed, candidates=candidates)
+
+
+def _readout_cases(recipe, rule, count):
+    """Casos de búsqueda del lector episódico con la pinball y la regla comunes."""
+    selection = {key: value for key, value in rule.items() if key != "max_epochs"}
+    cases = (
+        (recipe.get("walk_forward") or {}).get("search_cases") if isinstance(recipe, dict) else None
+    )
+    _require(
+        isinstance(recipe, dict)
+        and recipe.get("recipe_name") == MARS_RECIPE
+        and recipe["recipe"].get("loss") == PINBALL
+        and recipe["recipe"].get("epochs") == rule["max_epochs"]
+        and recipe["recipe"].get("selection") == selection,
+        "La receta del lector no aplica la pinball común ni la regla de parada del protocolo",
+    )
+    _require(
+        isinstance(cases, dict)
+        and len(cases) == count
+        and all(
+            isinstance(case, dict) and case and set(case) <= set(MARS_SEARCHED)
+            for case in cases.values()
+        ),
+        f"La receta del lector necesita {count} casos de búsqueda del optimizador, tantos "
+        "como índices ajusta cada referencia neuronal",
+    )
+    return cases
+
+
+def _cm_v1(section, arms, rule, policy, base, count):
+    """Núcleos y brazos del factorial CM-v1 desde su declaración, sin importar PyTorch.
+
+    Los núcleos `cm_v1_core_b` y `cm_v1_core_c` son trabajos auxiliares sin traslado ni
+    recibo de ventana: cada brazo parte del núcleo elegido en su ventana y semilla.
+    `training.cm_v1_factorial` vuelve a validar declaración, control y retención.
+    """
+    if section is None:
+        return None
+    _require(
+        isinstance(section, dict) and set(section) == _CM and policy == HISTORICAL_MASKED,
+        "La sección de CM-v1 no cumple o la campaña no usa la política con máscaras",
+    )
+    path = (base / section["declaration"]).resolve()
+    document, digest = read_manifest(path, 64 * 1024)
+    declared = {name for name, arm in arms.items() if arm["family"] == CM}
+    _require(
+        isinstance(document, dict)
+        and document.get("name") == CM_NAME
+        and isinstance(document.get("base"), dict)
+        and isinstance(document.get("arms"), dict)
+        and set(document["arms"]) == set(CM_ARMS) == declared
+        and all(
+            document["arms"][arm].get("control") == (CM_ARMS[arm] == CM_CORES[1]) for arm in CM_ARMS
+        )
+        and document.get("cores") == {core: core == CM_CORES[1] for core in CM_CORES}
+        and all(arms[name]["output"] == QUANTILE_HEAD for name in CM_ARMS),
+        "La declaración de CM-v1 no corresponde a sus cuatro brazos con cuantiles y sus núcleos",
+    )
+    seed = section["search_seed"]
+    seeds = sorted({s for name in CM_ARMS for s in _seeds(arms[name]["seeds"], name)})
+    _require(
+        all(seed in arms[name]["seeds"] for name in CM_ARMS),
+        "La semilla de búsqueda de CM-v1 debe estar en todos sus brazos",
+    )
+    recipes = {}
+    for name in ("core_recipe", "readout_recipe"):
+        value = document["base"].get(name)
+        _require(isinstance(value, str), "La declaración de CM-v1 no nombra sus recetas")
+        recipes[name] = (path.parent / value).resolve()
+    core, core_sha = read_manifest(recipes["core_recipe"], 64 * 1024)
+    readout, readout_sha = read_manifest(recipes["readout_recipe"], 64 * 1024)
+    common = dict(declaration=str(path), declaration_sha256=digest, seed=seed)
+    candidates = {
+        name: [
+            (
+                case,
+                dict(
+                    common,
+                    recipe=str(recipes["core_recipe"]),
+                    recipe_sha256=core_sha,
+                    core=name,
+                    search_case=case,
+                ),
+            )
+            for case in _titans_cases(core, rule, count)
+        ]
+        for name in CM_CORES
+    }
+    for name, parent in CM_ARMS.items():
+        candidates[name] = [
+            (
+                case,
+                dict(
+                    common,
+                    recipe=str(recipes["readout_recipe"]),
+                    recipe_sha256=readout_sha,
+                    arm=name,
+                    search_case=case,
+                    parent_arm=parent,
+                ),
+            )
+            for case in _readout_cases(readout, rule, count)
+        ]
+    # Los núcleos van primero: el plan respeta así las dependencias de cada brazo.
+    models = {**{name: CM_CORE_MODEL for name in CM_CORES}, **dict.fromkeys(CM_ARMS, CM)}
+    return dict(
+        section,
+        path=str(path),
+        sha256=digest,
+        seed=seed,
+        arms=models,
+        candidates=candidates,
+        parents=dict(CM_ARMS),
+        seeds={name: seeds for name in CM_CORES},
+        helpers=CM_CORES,
+        outputs=dict.fromkeys(CM_CORES, QUANTILE_HEAD),
+    )
 
 
 def load_campaign(path):
@@ -382,7 +608,7 @@ def load_campaign(path):
     config, digest = read_manifest(path, 1024**2)
     _require(
         isinstance(config, dict)
-        and _FIELDS <= set(config) <= _FIELDS | {EPISODIC, TITANS}
+        and _FIELDS <= set(config) <= _FIELDS | set(OPTIONAL)
         and config["schema_version"] == 1
         and config["kind"] == CAMPAIGN_KIND
         and config["status"] == DECLARED
@@ -440,6 +666,8 @@ def load_campaign(path):
         families <= {NEURAL, TABULAR, *EXTENSION_POINTS},
         "La comparación declara familias sin entrenador ni punto de extensión",
     )
+    count = len(config["neural"]["case_indices"])
+    titans = _titans(config.get(TITANS), arms, rule, policy, base, count)
     return dict(
         config,
         sha256=digest,
@@ -454,14 +682,9 @@ def load_campaign(path):
         tabular=_tabular(config["tabular"], arms, policy, base),
         **{
             EPISODIC: _episodic(config.get(EPISODIC), arms, rule, policy, base),
-            TITANS: _titans(
-                config.get(TITANS),
-                arms,
-                rule,
-                policy,
-                base,
-                len(config["neural"]["case_indices"]),
-            ),
+            TITANS: titans,
+            MARS: _mars_titan(config.get(MARS), arms, rule, policy, base, count, titans),
+            CM: _cm_v1(config.get(CM), arms, rule, policy, base, count),
         },
     )
 
@@ -482,7 +705,10 @@ def schedule(folds, period):
 
 def _job(scope, window, arm, family, model, stage, seed, **fields):
     name = {"search": f"search-{fields.get('candidate')}"}.get(stage, f"{stage}-s{seed}")
+    # Solo los brazos que parten de otro predictor elegido declaran su padre.
+    parent = {"parent": fields["parent"]} if fields.get("parent") else {}
     return dict(
+        **parent,
         id=f"{scope}/{window}/{arm}/{name}",
         scope=scope,
         window=window,
@@ -508,24 +734,43 @@ def _arm_specs(campaign):
     for family, section in sections:
         for name, kind in section["arms"].items():
             # En las secciones opcionales, la familia también nombra el modelo del ejecutor.
-            model = {NEURAL: "neural", EPISODIC: EPISODIC, TITANS: TITANS}.get(family, kind)
+            model = {NEURAL: "neural", EPISODIC: EPISODIC, TITANS: TITANS, MARS: MARS}.get(
+                family, kind
+            )
+            # Los trabajos auxiliares, como los núcleos de CM-v1, no son brazos comparados.
+            seeds = section.get("seeds", {}).get(name) or arms[name]["seeds"]
             specs.append(
                 dict(
                     arm=name,
                     family=family,
                     model=model,
                     seed=section["seed"],
-                    seeds=arms[name]["seeds"],
+                    seeds=seeds,
                     candidates=section["candidates"][name],
+                    parent=section.get("parents", {}).get(name, section.get("parent_arm")),
+                    helper=name in section.get("helpers", ()),
                 )
             )
     return specs
+
+
+def arm_output(campaign, arm):
+    """Salida de un brazo comparado o de un trabajo auxiliar, que emite la de sus brazos."""
+    declared = campaign["comparison_config"]["arms"]
+    if arm in declared:
+        return declared[arm]["output"]
+    for family in OPTIONAL:
+        outputs = (campaign.get(family) or {}).get("outputs", {})
+        if arm in outputs:
+            return outputs[arm]
+    raise ValueError(f"{arm} no es un brazo ni un trabajo auxiliar de la campaña")
 
 
 def plan_campaign(campaign):
     """Enumerar todos los trabajos con sus dependencias sin leer vistas ni datos."""
     jobs = []
     specs = _arm_specs(campaign)
+    names = {spec["arm"]: spec for spec in specs}
     for scope in campaign["scopes"]:
         folds = list(campaign["comparison_config"]["resolved_scopes"][scope]["windows"].values())
         for row in schedule(folds, campaign["period"]):
@@ -535,13 +780,33 @@ def plan_campaign(campaign):
                 prefix = f"{scope}/{row['anchor']}/{spec['arm']}"
                 searches = [f"{prefix}/search-{name}" for name, _ in spec["candidates"]]
                 if row["trained"]:
+                    # El padre de la búsqueda es el ganador de sus búsquedas en la ventana y
+                    # el de cada finalista, su finalista con la misma semilla.
+                    parent, above = spec["parent"], []
+                    if parent:
+                        origin = f"{scope}/{window}/{parent}"
+                        above = [f"{origin}/search-{n}" for n, _ in names[parent]["candidates"]]
                     for name, case in spec["candidates"]:
                         jobs.append(
-                            _job(*common, "search", spec["seed"], candidate=name, case=case)
+                            _job(
+                                *common,
+                                "search",
+                                spec["seed"],
+                                candidate=name,
+                                case=case,
+                                depends=above,
+                                parent=parent,
+                            )
                         )
                     for seed in spec["seeds"]:
                         if seed != spec["seed"]:
-                            jobs.append(_job(*common, "finalist", seed, depends=searches))
+                            depends = searches + ([f"{origin}/finalist-s{seed}"] if parent else [])
+                            jobs.append(
+                                _job(*common, "finalist", seed, depends=depends, parent=parent)
+                            )
+                    continue
+                if spec["helper"]:
+                    # Un auxiliar solo existe para que su brazo parta de él al ajustar.
                     continue
                 for seed in spec["seeds"]:
                     depends = searches if seed == spec["seed"] else [f"{prefix}/finalist-s{seed}"]
@@ -589,13 +854,17 @@ def count_jobs(campaign, jobs=None):
 
 
 def pending_families(campaign):
-    """Brazos de la comparación que esperan un entrenador conectado."""
+    """Brazos de la comparación que esperan un entrenador conectado, con su motivo."""
     result = {}
-    connected = {spec["family"] for spec in _arm_specs(campaign)}
+    connected = {spec["arm"] for spec in _arm_specs(campaign)}
     for name, arm in campaign["comparison_config"]["arms"].items():
-        if arm["family"] in EXTENSION_POINTS and arm["family"] not in connected:
-            entry = result.setdefault(arm["family"], dict(EXTENSION_POINTS[arm["family"]], arms=[]))
+        family = arm["family"]
+        if family in EXTENSION_POINTS and name not in connected:
+            entry = result.setdefault(family, dict(EXTENSION_POINTS[family], arms=[]))
             entry["arms"].append(name)
+            motive = (campaign.get(family) or {}).get("pending_arms", {}).get(name)
+            if motive:
+                entry.setdefault("motives", {})[name] = motive
     return result
 
 

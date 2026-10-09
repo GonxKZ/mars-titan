@@ -126,7 +126,7 @@ La [edición de precios negociados reconstruidos](../data/unadjusted-prices.md) 
 - **Calendario.** Las aperturas son las oficiales de XNYS o XSHG (`MarketClock.opens`) y las decisiones son las del proyecto, cinco minutos después del cierre. Así las predicciones emitidas en la decisión cumplen `prediction_times <= close_times`.
 - **Predicciones.** Cada ventana aporta sus predicciones, que deben coincidir con la huella del recibo y caer en una decisión de su tramo. Las de activos excluidos se descartan y se cuentan.
 
-`MarketTape` admite esta base solo con el tratamiento fijo `RECONSTRUCTED_CONTRACT` en su auditoría. Una cinta que declare acciones completas, retornos de salida, otra valoración o otro mercado se rechaza. Además exige un cierre valorado en cada sesión y activo, deriva `prediction_fit_ends` de los tramos walk-forward declarados y rechaza sesiones fuera de esos tramos o tramos que alcancen 2024. `FinancialEnv` rechaza una cinta china reconstruida sin las reglas de acciones A de `market_rules`, y el motor nativo sigue sin aplicarlas.
+`MarketTape` admite esta base solo con el tratamiento fijo `RECONSTRUCTED_CONTRACT` en su auditoría. Una cinta que declare acciones completas, retornos de salida, otra valoración o otro mercado se rechaza. Además exige un cierre valorado en cada sesión y activo, deriva `prediction_fit_ends` de los tramos walk-forward declarados y rechaza sesiones fuera de esos tramos o tramos que alcancen 2024. `FinancialEnv` rechaza una cinta china reconstruida sin las reglas de acciones A de `market_rules`. Al cerrar esta fase el motor nativo no las aplicaba. Ahora lo hace con paridad exacta, como recoge la [revisión de reglas chinas](china-market-rules.md#motor-nativo).
 
 | Garantía de `MarketTape` | Cinta reconstruida | Cómo se cumple o se declara |
 | --- | --- | --- |
@@ -199,7 +199,7 @@ La memoria residente máxima fue de 379 MB. En 2008 y 2011 la mayoría de los ac
 - La elegibilidad depende de la verificación retrospectiva y de la presencia al final de la cinta. Es un sesgo de selección declarado, no una fuga de precios, pero un resultado sobre estas cintas está condicionado a ello.
 - Retornos de salida, estado ST, días posteriores a la salida a bolsa, ampliaciones de capital, retenciones y fechas reales de pago siguen sin datos.
 - La regla del menor importe subestima el cobro cuando el importe de la edición se refiere a la acción posterior al split. En 600239.SS, en junio de 2015, 0,046154 por 1,3 da 0,06, lo que sugiere ese caso. No lo he contrastado con el anuncio de la empresa.
-- El motor nativo no aplica las reglas chinas. No hay ruta CUDA en estos entornos.
+- No hay ruta CUDA en estos entornos. Las reglas chinas en el motor nativo se añadieron después, con su [paridad](china-market-rules.md#motor-nativo).
 - No existen todavía recibos reales. El orquestador de la campaña con máscaras debe escribirlos con este contrato.
 
 ```bash
@@ -223,7 +223,7 @@ MARS_TITAN_UNADJUSTED_EDITION=~/.local/state/mars-titan/unadjusted-prices-202610
 
 **Memorización de cintas.** Cada episodio recorre la misma cinta desde el principio. Repetir una cinta no crea trayectorias independientes y una política puede memorizarla. Solo las fuentes de validación separadas lo controlan.
 
-**Diferencias entre simulación y mercado.** Los mundos de adaptación abren al cierre anterior, sin salto nocturno. No hay deslizamiento ni impacto de precio más allá del límite del 1 % del volumen de decisión. El coste en puntos básicos no varía por mercado ni por fecha. Las reglas chinas solo existen en el motor Python.
+**Diferencias entre simulación y mercado.** Los mundos de adaptación abren al cierre anterior, sin salto nocturno. No hay deslizamiento ni impacto de precio más allá del límite del 1 % del volumen de decisión. El coste en puntos básicos no varía por mercado ni por fecha. Las reglas chinas existen en ambos motores, con los pendientes de la [revisión de reglas](china-market-rules.md#lo-que-falta).
 
 **Dependencias de capacidad fuera de estos módulos.** La preparación del corpus causal (`corpus_source._partition`) sigue rechazando cohortes de más de 4.096 filas y debe usar `MAX_COHORT_ASSETS`. Los padres del postentrenamiento y los lotes de las referencias aceptan 4.096 filas por llamada. Si un padre no es independiente por fila, trocear una cohorte cambiaría sus predicciones. El modo clásico del banco episódico mantiene 4.096 activos. Esos módulos pertenecen a otras tareas.
 

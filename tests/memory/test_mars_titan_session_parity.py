@@ -1,0 +1,137 @@
+"""El recorrido cronológico del lector emite lo mismo que `FinancialSession` con el mismo banco.
+
+Los seis eventos de cuatro flujos se entregan a `FinancialSession` y, como eventos de
+observación equivalentes, a `MarsTitanInference`. Las predicciones dependen del banco
+retenido, porque llegan 16 etiquetas a un banco de capacidad 4 y el lector elige dos
+vecinos. Coincidir bit a bit acredita el mismo orden de evento, la misma admisión y los
+mismos IDs que la sesión, también con M2, con K = 2 en sus dos modos de selección y con
+la retención con centros fijos que usa M en el factorial CM-v1.
+"""
+
+import numpy as np
+import pytest
+import torch
+from test_financial_session import moment
+from test_financial_session_associative import EVENTS, label, options
+from test_financial_session_associative import four_flow_source as four_flow_source
+from test_financial_session_associative import module_backend as module_backend
+from test_financial_session_associative import no_target_estimation as no_target_estimation
+from test_financial_session_associative import shared_native as shared_native
+from test_financial_session_controls import FLOWS
+from test_mars_titan_variant import session_run
+
+from mars_titan.data.input_policy import MODALITIES
+from mars_titan.memory.financial_observations import ObservationEvent
+from mars_titan.memory.financial_session import FinancialPhase
+from mars_titan.memory.retention_bank import RetentionConfig
+from mars_titan.memory.write_policy import MatureErrorConfig
+from mars_titan.models.titans.episodic_readout import EpisodicReadout, EpisodicReadoutConfig
+from mars_titan.models.titans.financial import FinancialConfig, FinancialPredictor
+from mars_titan.models.titans.frozen_financial import FrozenFinancialConsumer
+from mars_titan.training import mars_titan_run as mt
+
+PHASE = FinancialPhase("validation", moment(125), moment(125), moment(200), moment(201))
+
+
+def instants(batches, name):
+    values = [value for batch in batches for value in getattr(batch, name)]
+    return np.array(values, dtype="datetime64[us]")
+
+
+def raw(batches):
+    """Bloque de los cuatro flujos de un instante con los campos de entrada validados."""
+    return dict(
+        inputs={name: np.concatenate([b.inputs[name] for b in batches]) for name in MODALITIES},
+        presence=np.concatenate([batch.presence for batch in batches]),
+        sample_ids=[sample for batch in batches for sample in batch.sample_ids],
+        prediction_at=instants(batches, "prediction_at"),
+        input_available_at=instants(batches, "input_available_at"),
+    )
+
+
+def events(source):
+    """Los eventos de la sesión: etiquetas de la emisión anterior y entradas del instante."""
+    result, previous = [], []
+    for index in EVENTS:
+        at = moment(index)
+        inputs = () if index == 129 else (raw(source["batches"][index]),)
+        labels = tuple((flow, decided, label(flow, index)) for flow, decided in previous)
+        result.append(ObservationEvent(at, inputs, labels, False))
+        previous = [(flow, at) for flow in FLOWS] if inputs else []
+    return result
+
+
+def models(source, refinements, episodes):
+    config = FinancialConfig(source["spec"], variant="mac_online", hidden_size=32, seed=42)
+    predictor = FinancialPredictor(config, dtype=torch.float64, device="cpu")
+    readout = EpisodicReadout(
+        EpisodicReadoutConfig(
+            source["codec"].fingerprint(),
+            hidden_size=32,
+            refinements=refinements,
+            neighbors=2,
+            seed=7,
+            episode_selection=episodes,
+        ),
+        dtype=torch.float64,
+        device="cpu",
+    )
+    return predictor.eval().requires_grad_(False), readout.eval().requires_grad_(False)
+
+
+@pytest.mark.parametrize(
+    ("admission", "refinements", "episodes", "policy"),
+    [
+        ("m1", 1, "per_step", "reservoir"),
+        ("m2", 1, "per_step", "reservoir"),
+        ("m1", 2, "first_read", "reservoir"),
+        ("m1", 2, "per_step", "reservoir"),
+        ("m1", 1, "per_step", "anchored"),
+    ],
+)
+def test_chronological_pass_emits_exactly_what_the_session_emits(
+    shared_native, four_flow_source, tmp_path, admission, refinements, episodes, policy
+):
+    predictor, readout = models(four_flow_source, refinements, episodes)
+    retention = (
+        MatureErrorConfig(capacity=4)
+        if admission == "m2"
+        else RetentionConfig(policy=policy, capacity=4, seed=73, frontier=1)
+    )
+    settings = options(
+        shared_native,
+        four_flow_source,
+        FrozenFinancialConsumer(predictor, readout=readout),
+        admission=admission,
+        retention=retention,
+    )
+    session = session_run(shared_native, four_flow_source, settings, tmp_path / "session")
+    plan = mt.ReadoutRecipe(
+        loss="mae", block_rows=4, neighbors=2, max_working_bytes=readout.config.max_working_bytes
+    )
+    inference = mt.MarsTitanInference(
+        predictor,
+        readout,
+        plan,
+        admission=admission,
+        retention=retention,
+        native=shared_native,
+        codec=four_flow_source["codec"],
+        world="parity",
+        fold="0",
+        audit=True,
+    )
+    metrics = inference._pass(PHASE, events(four_flow_source))
+    emitted = [(a, t, v) for event in session["emitted"] for _, a, t, v in event]
+    issued = [(e[2], e[3], e[4]) for e in inference.audit if e[0] == "prediction"]
+    assert issued == emitted and len(issued) == 20
+    assert metrics["labels"] == metrics["admitted"] == session["snapshot"]["applied"] == 16
+    admitted = [e[3] for e in inference.audit if e[0] == "admit"]
+    assert [i for ids in admitted for i in ids] == list(range(1, 17))
+    retained, episodes_kept = session["bank"]
+    assert 1 <= len(retained) <= 4 and set(retained) <= set(range(1, 17))
+    # El error M2 de la sesión es el de la predicción emitida, como en el recorrido.
+    if admission == "m2":
+        for identifier in retained:
+            episode = episodes_kept[identifier]
+            assert episode["error"] == episode["label"] - episode["issued_prediction"]

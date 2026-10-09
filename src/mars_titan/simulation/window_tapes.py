@@ -26,6 +26,8 @@ from .reconstructed_tape import build_reconstructed_tape
 ROLES = ("train", "validation", "evaluation")
 SEGMENT = "evaluation"
 UNIVERSE_RULE = "median_traded_value_in_validation_v1"
+# Motivo de los episodios de un predictor que no emitió filas del mercado en un tramo.
+NO_PREDICTIONS = "predictor_without_predictions"
 
 
 def _require(condition, message):

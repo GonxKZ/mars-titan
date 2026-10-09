@@ -1,13 +1,20 @@
 """Etapa de refuerzo de la campaña con máscaras: políticas financieras por ventana walk-forward.
 
 La etapa parte de una campaña base confirmada (`training.masked_campaign`). En cada ventana
-de política, todos los brazos observan las mismas cintas, montadas con las predicciones
-congeladas y los recibos de cada brazo predictor declarado (`simulation.window_tapes`). Los
-brazos son las variantes PPO identificadas, KLPO terminal como brazo principal del
-contraste, Double DQN y tres referencias sin aprendizaje: efectivo, comprar y mantener y la
-regla fija sobre la predicción. Comparten seis acciones, las semillas 42, 43 y 44 y el
-presupuesto de transiciones declarado antes de evaluar. La selección usa el criterio de
-cartera declarado sobre la cinta de validación, nunca el error del predictor.
+de política, todos los brazos de un predictor observan las mismas cintas, montadas con sus
+predicciones congeladas y sus recibos de ventana (`simulation.window_tapes`), y todos los
+predictores comparten el universo del ancla. KLPO terminal, brazo principal del contraste, y
+tres referencias sin aprendizaje (efectivo, comprar y mantener y la regla fija sobre la
+predicción) se aplican a todos los predictores con productor en la campaña. Las variantes
+PPO identificadas y Double DQN se comparan sobre los predictores del nivel de algoritmos.
+Comparten seis acciones, las semillas 42, 43 y 44 y el presupuesto de transiciones
+declarado antes de evaluar. La selección usa el criterio de cartera declarado sobre la
+cinta de validación, nunca el error del predictor.
+
+Un predictor sin predicciones del mercado en un tramo no detiene la etapa. Si le faltan en
+el ajuste o la validación del ancla, sus ajustes y traslados no se ejecutan y registran
+todos sus episodios como fallidos con el motivo `predictor_without_predictions`. Si le
+faltan en la evaluación, los episodios de esa ventana fallan con el mismo motivo.
 
 Variante B: cada política se ajusta en la primera ventana de política y cada `period`
 ventanas, como en la campaña base. Las intermedias evalúan sin ajuste la política
@@ -47,6 +54,7 @@ from . import window_tapes
 from .policy_plan import (
     CARRY,
     FIT,
+    REFERENCE,
     _number,
     _require,
     count_stage,
@@ -174,6 +182,7 @@ class PolicyTapes:
     validation: object
     evaluation: object
     failure: dict | None
+    unfit: dict | None
     paths: dict
     identity: dict
 
@@ -264,6 +273,21 @@ def reference_executor(backend):
     return run
 
 
+def unfit_report(stage, tapes):
+    """Informe de un ajuste o traslado sin datos de ajuste o validación: no se ejecuta."""
+    reason = tapes.unfit["reason"]
+    return dict(
+        status="completed",
+        transitions=0,
+        updates=0,
+        selection=None,
+        policy=None,
+        evaluation=[
+            episode(cost, failure=reason) for cost in stage["policies"]["evaluation_costs_bps"]
+        ],
+    )
+
+
 def _pending_engine(engine):
     def run(*_args, **_kwargs):
         raise MissingCapability(f"El ejecutor {engine} sobre cintas reconstruidas no existe")
@@ -337,9 +361,18 @@ def check_report(stage, job, report, tapes, anchor=None):
         f"{job['id']}: cada coste necesita su episodio, también si falla",
     )
     failure = None if tapes.failure is None else tapes.failure["reason"]
+    if job["kind"] != REFERENCE and tapes.unfit is not None:
+        failure = tapes.unfit["reason"]
     for record, cost in zip(report["evaluation"], costs, strict=True):
         _record(record, cost, failure)
-    if job["kind"] == FIT:
+    if job["kind"] != REFERENCE and tapes.unfit is not None:
+        _require(
+            report.get("policy") is None
+            and report.get("selection") is None
+            and report["transitions"] == report["updates"] == 0,
+            f"{job['id']}: sin predicciones de ajuste o validación no hay política que evaluar",
+        )
+    elif job["kind"] == FIT:
         selection, policy = report.get("selection"), report.get("policy")
         _require(
             isinstance(selection, dict)
@@ -371,7 +404,7 @@ def check_report(stage, job, report, tapes, anchor=None):
 
 
 def summarize(stage, receipts):
-    """Métricas por brazo y coste con todos los episodios, también fallidos y arruinados.
+    """Métricas por predictor, brazo y coste con todos los episodios, también fallidos.
 
     La media del crecimiento logarítmico liquidado se calcula sobre los episodios completos
     y se publica con su denominador. Fallos y ruinas se cuentan aparte y nunca se omiten.
@@ -381,26 +414,28 @@ def summarize(stage, receipts):
     for receipt in receipts.values():
         identity = receipt["identity"]
         for record in receipt["evaluation"]:
-            key = (identity["arm"], record["cost_bps"])
+            key = (identity["predictor"], identity["arm"], record["cost_bps"])
             values.setdefault(key, []).append(record)
     result = {}
-    for arm in order:
-        for cost in stage["policies"]["evaluation_costs_bps"]:
-            records = values.get((arm, cost), [])
-            if not records:
-                continue
-            completed = [r for r in records if r["status"] == "completed"]
-            growth = [math.log1p(r["liquidated_net_return"]) for r in completed]
-            reasons = Counter(r["reason"] for r in records if r["status"] == "failed")
-            result.setdefault(arm, {})[str(cost)] = dict(
-                episodes=len(records),
-                completed=len(completed),
-                ruined=sum(r["status"] == "ruined" for r in records),
-                failed=sum(r["status"] == "failed" for r in records),
-                failure_reasons=dict(sorted(reasons.items())),
-                mean_liquidated_log_growth=math.fsum(growth) / len(growth) if growth else None,
-                denominator="completed",
-            )
+    for predictor in stage["predictors"]:
+        for arm in order:
+            for cost in stage["policies"]["evaluation_costs_bps"]:
+                records = values.get((predictor, arm, cost), [])
+                if not records:
+                    continue
+                completed = [r for r in records if r["status"] == "completed"]
+                growth = [math.log1p(r["liquidated_net_return"]) for r in completed]
+                reasons = Counter(r["reason"] for r in records if r["status"] == "failed")
+                entry = result.setdefault(predictor, {}).setdefault(arm, {})
+                entry[str(cost)] = dict(
+                    episodes=len(records),
+                    completed=len(completed),
+                    ruined=sum(r["status"] == "ruined" for r in records),
+                    failed=sum(r["status"] == "failed" for r in records),
+                    failure_reasons=dict(sorted(reasons.items())),
+                    mean_liquidated_log_growth=math.fsum(growth) / len(growth) if growth else None,
+                    denominator="completed",
+                )
     return result
 
 
@@ -428,7 +463,7 @@ def _code():
 
 def _base_receipts(base, campaign, stage):
     """Confirmar los trabajos base de los ámbitos y predictores de la etapa."""
-    predictors = set(stage["policies"]["predictor"]["arms"])
+    predictors = set(stage["predictors"])
     for job in plan_campaign(campaign):
         if job["scope"] not in stage["scopes"] or job["arm"] not in predictors:
             continue
@@ -442,7 +477,9 @@ def campaign_source(base, campaign_output, seed):
     """Recibo de ventana y predicciones emitidas del predictor elegido en la campaña base.
 
     El recibo publicado debe identificar al predictor elegido para la semilla y su huella
-    de evaluación del mercado debe coincidir con la del trabajo confirmado.
+    de evaluación del mercado debe coincidir con la del trabajo confirmado. Si el trabajo no
+    emitió filas del mercado en su evaluación, el recibo tampoco las declara y la fuente
+    devuelve `None` en lugar de predicciones.
     """
 
     def source(scope, market, window, predictor):
@@ -451,13 +488,14 @@ def campaign_source(base, campaign_output, seed):
         _, selected = base.selected(scope, window, predictor, seed)
         record = selected["predictions"]["evaluation"]
         expected = record["markets"].get(market)
+        declared = dict(receipt.predictions).get(window_tapes.SEGMENT)
         _require(
             receipt.parent == (selected["parent"]["id"], selected["parent"]["sha256"])
-            and expected is not None
-            and receipt.prediction_record(window_tapes.SEGMENT)
-            == (expected["rows"], expected["sha256"]),
+            and declared == (None if expected is None else (expected["rows"], expected["sha256"])),
             f"El recibo de {scope}/{window}/{predictor} no corresponde al predictor elegido",
         )
+        if expected is None:
+            return receipt, None
         values = window_tapes.segment_predictions(
             campaign_output / record["path"], record["sha256"], market
         )
@@ -470,13 +508,15 @@ class _Tapes:
     """Universos y cintas confirmados de la etapa, con un conjunto abierto como máximo.
 
     `source(ámbito, mercado, ventana, predictor)` devuelve el recibo de la ventana y las
-    predicciones emitidas en su tramo de evaluación. Cada recibo debe pertenecer a la
-    ventana y al mercado pedidos, y los tramos de ajuste y validación deben terminar antes
-    de la evaluación según los propios recibos.
+    predicciones emitidas en su tramo de evaluación, o `None` si no las hay. Cada recibo
+    debe pertenecer a la ventana y al mercado pedidos, y los tramos de ajuste y validación
+    deben terminar antes de la evaluación según los propios recibos. El universo de cada
+    ancla es común a todos los predictores y se elige con `universe_predictor`.
     """
 
-    def __init__(self, policies, source, edition, edition_id, output):
+    def __init__(self, policies, source, edition, edition_id, output, universe_predictor):
         self.policies, self.output = policies, output
+        self.universe_predictor = universe_predictor
         self._source, self.edition, self.edition_id = source, edition, edition_id
         self.lag = policies["environment"]["dividend_payment_lag_sessions"]
         self.key, self.current, self.evaluations = None, None, {}
@@ -491,9 +531,14 @@ class _Tapes:
 
     def universe(self, job):
         """Universo del ancla con datos de ajuste y validación, guardado con su identidad."""
-        predictor = self.policies["predictor"]["arms"][0]
+        predictor = self.universe_predictor
         windows = [*job["train"], job["validation"]]
         sources = {window: self.source(job, window, predictor) for window in windows}
+        _require(
+            all(values is not None for _, values in sources.values()),
+            f"El predictor {predictor} del universo no tiene predicciones de {job['market']} "
+            f"en el ajuste o la validación de {job['anchor']}",
+        )
         identity = dict(
             edition_id=self.edition_id,
             rule=window_tapes.UNIVERSE_RULE,
@@ -525,8 +570,9 @@ class _Tapes:
     def tape(self, job, role, window, universe):
         """Cinta de un tramo restringida al universo, confirmada en disco o construida.
 
-        Devuelve carpeta, cinta (o None si la evaluación excluye un activo del universo),
-        fallo y tramo del recibo.
+        Devuelve carpeta, cinta, fallo y tramo del recibo. La cinta es None si el predictor
+        no tiene predicciones del mercado en el tramo o si la evaluación excluye un activo del
+        universo, y el fallo guarda el motivo.
         """
         from .storage import read_tape, write_tape
 
@@ -541,6 +587,10 @@ class _Tapes:
             record = read_manifest(failure_path, 8 * 1024**2)[0]
             _require(record["identity"] == expected, f"La cinta fallida {folder.name} cambió")
             return folder, None, record["failure"], bounds
+        if values is None:
+            failure = dict(reason=window_tapes.NO_PREDICTIONS, window=window)
+            atomic_json(failure_path, dict(identity=expected, failure=failure))
+            return folder, None, failure, bounds
         if (folder / "manifest.json").is_file():
             tape = read_tape(folder)
         else:
@@ -590,12 +640,19 @@ class _Tapes:
             all(a[1] <= b[0] for a, b in zip(segments, segments[1:], strict=False)),
             f"La política de {job['window']} usaría tramos posteriores a su evaluación",
         )
+        # Sin predicciones en el ajuste o la validación no hay política que ajustar.
+        unfit = next((item[2] for item in (*train, validation) if item[2] is not None), None)
+
+        def sha(item):
+            return None if item[1] is None else item[1].sha256
+
         return PolicyTapes(
             universe=universe,
             train=tuple(item[1] for item in train),
             validation=validation[1],
             evaluation=evaluation[1],
             failure=evaluation[2],
+            unfit=unfit,
             paths=dict(
                 train=[str(item[0]) for item in train],
                 validation=str(validation[0]),
@@ -603,10 +660,11 @@ class _Tapes:
             ),
             identity=dict(
                 universe_sha256=_digest(list(universe)),
-                train=[item[1].sha256 for item in train],
-                validation=validation[1].sha256,
-                evaluation=None if evaluation[1] is None else evaluation[1].sha256,
+                train=[sha(item) for item in train],
+                validation=sha(validation),
+                evaluation=sha(evaluation),
                 failure=evaluation[2],
+                unfit=unfit,
             ),
         )
 
@@ -683,15 +741,19 @@ class _Stage:
                 resume = folder.exists()
                 folder.mkdir(parents=True, exist_ok=True)
                 anchor = self.receipts[job["depends"][0]] if job["kind"] == CARRY else None
-                report = self.executors[job["engine"]]["run"](
-                    job,
-                    tapes,
-                    folder,
-                    stage=self.stage,
-                    resume=resume,
-                    stop=self.stop,
-                    anchor=anchor,
-                )
+                if job["kind"] != REFERENCE and tapes.unfit is not None:
+                    # Sin datos de ajuste o validación no se lanza ningún ejecutor.
+                    report = unfit_report(self.stage, tapes)
+                else:
+                    report = self.executors[job["engine"]]["run"](
+                        job,
+                        tapes,
+                        folder,
+                        stage=self.stage,
+                        resume=resume,
+                        stop=self.stop,
+                        anchor=anchor,
+                    )
                 if report.get("status") == "paused":
                     raise Paused
                 receipt = self.confirm(job, identity, tapes, report, anchor)
@@ -752,6 +814,8 @@ def check_stage(path, *, library=None):
         policies_sha256=policies["sha256"],
         campaign_sha256=stage["campaign"]["sha256"],
         predictor=policies["predictor"],
+        levels=stage["levels"],
+        universe_predictor=stage["universe_predictor"],
         universe=policies["universe"],
         selection=policies["selection"],
         budget=policies["budget"],
@@ -826,7 +890,9 @@ def run_stage(
             )
             atomic_json(marker, identity)
         source = campaign_source(base, campaign_output, stage["policies"]["predictor"]["seed"])
-        tapes = _Tapes(stage["policies"], source, edition, edition_id, output)
+        tapes = _Tapes(
+            stage["policies"], source, edition, edition_id, output, stage["universe_predictor"]
+        )
         state = _Stage(stage, tapes, output, identity, executors, None)
         signals = StopRequest() if stop is None else nullcontext(stop)
         _summary(output, identity, jobs, state, "running")
