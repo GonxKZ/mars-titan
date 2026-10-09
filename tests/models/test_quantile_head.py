@@ -277,3 +277,23 @@ def test_parametrization_and_median_reject_other_widths(value):
 def test_nonfinite_free_values_propagate_instead_of_being_hidden():
     raw = torch.tensor([[0.0, 0.0, math.nan, 0.0, 0.0]])
     assert torch.isnan(ordered_quantiles(raw)).all()
+
+
+@pytest.mark.skipif(not torch.cuda.is_available(), reason="Requiere cuda:0 explícito")
+@pytest.mark.parametrize("dtype", DTYPES)
+def test_cuda_head_and_loss_match_cpu(dtype):
+    head = QuantileHead(32, dtype=dtype)
+    device_head = QuantileHead(32, dtype=dtype, device="cuda:0")
+    device_head.load_state_dict(head.state_dict())
+    state = torch.randn(64, 32, generator=torch.Generator().manual_seed(29), dtype=dtype)
+    target = torch.randn(64, generator=torch.Generator().manual_seed(30), dtype=dtype)
+    values = []
+    for model, device in ((head, "cpu"), (device_head, "cuda:0")):
+        quantiles = model(state.to(device))
+        loss = pinball_loss(quantiles, target.to(device))
+        gradients = torch.autograd.grad(loss, (model.weight, model.bias))
+        values.append([quantiles, loss, *gradients])
+    tolerance = dict(rtol=1e-5, atol=1e-6) if dtype == torch.float32 else dict(rtol=1e-12, atol=0)
+    for cpu, cuda in zip(*values, strict=True):
+        torch.testing.assert_close(cuda.cpu(), cpu, **tolerance)
+    assert (values[1][0].diff(dim=1) >= 0).all()

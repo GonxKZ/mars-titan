@@ -141,3 +141,25 @@ def test_declared_quantile_recipe_builds_the_four_paired_controls(shared):  # no
     for variant in document["variants"]:
         config = FinancialConfig(specification, variant=variant, **options)
         assert config.identity()["output"] == QUANTILE_HEAD
+
+
+@pytest.mark.skipif(not torch.cuda.is_available(), reason="Requiere cuda:0 explícito")
+def test_cuda_quantile_pass_matches_cpu_without_optimizer_steps(shared, tmp_path):  # noqa: F811
+    _, streams = shared
+    engines = {}
+    for device in ("cpu", "cuda:0"):
+        model = quantile_predictor(streams).to(device)
+        name = device.replace(":", "")
+        engines[device] = trainer(streams, tmp_path / name, model=model, loss=PINBALL)
+        assert engines[device].run()["status"] == "completed"
+    cpu, cuda = engines.values()
+    left, right = entries(cpu.audit, "prediction"), entries(cuda.audit, "prediction")
+    assert [e[:4] for e in left] == [e[:4] for e in right]
+    for a, b in zip(left, right, strict=True):
+        assert a[4] == pytest.approx(b[4], rel=1e-9, abs=1e-12)
+    for a, b in zip(named_records(cpu), named_records(cuda), strict=True):
+        for key, value in a.items():
+            if value is None:
+                assert b[key] is None
+            else:
+                torch.testing.assert_close(value, b[key].cpu(), rtol=1e-7, atol=1e-10)
