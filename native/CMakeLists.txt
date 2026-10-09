@@ -224,6 +224,10 @@ if(MARS_TITAN_BUILD_SIMULATION)
         add_executable(mars-titan-klpo src/klpo_main.cpp)
         target_link_libraries(mars-titan-klpo PRIVATE mars_titan_policy_stage)
         mars_titan_configure_target(mars-titan-klpo)
+        # Coste de la recogida de políticas sobre cintas reales, sin pasos de optimizador.
+        add_executable(mars-titan-policy-benchmark benchmarks/policy_collection.cpp)
+        target_link_libraries(mars-titan-policy-benchmark PRIVATE mars_titan_policy_stage)
+        mars_titan_configure_target(mars-titan-policy-benchmark)
         list(APPEND mars_analysis_sources "${CMAKE_CURRENT_SOURCE_DIR}/src/ppo_policy.cpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/src/klpo_collection.cpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/src/klpo_learning.cpp"
