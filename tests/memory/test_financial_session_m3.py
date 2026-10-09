@@ -110,8 +110,9 @@ def open_session(native, source, consumer, output, *, resume=False):
 
 
 def trajectory(native, source, consumer, output, *, recover=False):
+    """Seis eventos M3 con un corte opcional en 128. También lo usa la comprobación CUDA."""
     run = open_session(native, source, consumer, output)
-    previous, receipts = [], []
+    previous, receipts, points = [], [], {}
     try:
         for index in (125, 126, 127, 128, 129, 130):
             batches = [] if index == 129 else source["batches"][index]
@@ -132,6 +133,7 @@ def trajectory(native, source, consumer, output, *, recover=False):
                 run = open_session(native, source, consumer, output, resume=True)
                 assert run.snapshot() == before
             previous = run.step(batches, feedback, kind=kind, cutoff=moment(index)).predictions
+            points.update({(p.asset, p.decision_at): p.value for p in previous})
             bundle = run._bundle(run.snapshot()["state"])
             bank, episodes = run._bank(bundle["bank"])
             receipts.append((bank.index_ids(), bank.receipt, bank.write_features))
@@ -142,7 +144,7 @@ def trajectory(native, source, consumer, output, *, recover=False):
         run.close()
     with open_session(native, source, consumer, output, resume=True) as restored:
         assert restored.snapshot() == final
-    return receipts, final, diagnostics
+    return receipts, final, diagnostics, points
 
 
 def test_session_recovers_m3_atomically_without_repeating_offers(shared_native, source, tmp_path):
@@ -151,7 +153,8 @@ def test_session_recovers_m3_atomically_without_repeating_offers(shared_native, 
     reference = trajectory(shared_native, source, consumer, tmp_path / "reference")
     recovered = trajectory(shared_native, source, consumer, tmp_path / "recovered", recover=True)
     assert reference == recovered
-    receipts, final, diagnostics = reference
+    receipts, final, diagnostics, points = reference
+    assert len(points) == 20
     assert (final["issued"], final["applied"]) == (20, 16)
     assert diagnostics["B_mem"] == 4 and diagnostics["physical_slots"] <= 4
     assert all(receipt is not None for _, receipt, _ in receipts[1:])

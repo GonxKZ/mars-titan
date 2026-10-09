@@ -83,7 +83,7 @@ La anomalía y la relevancia se calculan con las entradas de la decisión. En el
 
 ## Coste
 
-Por candidato, M3 añade la mediana de 62 rendimientos dos veces, el mínimo de las edades observadas y unas pocas operaciones escalares. La selección ordena los mismos residentes y candidatos que M2. La sesión lee una vez más los artefactos de inputs retenidos en los eventos con maduraciones, y cada ventana recorre una vez su tramo de entrenamiento para estimar las escalas. Estos costes no se han medido sobre el corpus. La medida de memoria y caudal del lector en `cuda:0` sigue pendiente para todos los brazos.
+Por candidato, M3 añade la mediana de 62 rendimientos dos veces, el mínimo de las edades observadas y unas pocas operaciones escalares. La selección ordena los mismos residentes y candidatos que M2. La sesión lee una vez más los artefactos de inputs retenidos en los eventos con maduraciones, y cada ajuste recorre una vez su tramo de entrenamiento para estimar las escalas. La orden de caudal de la campaña ya mide el lector M3 como los demás lectores, hasta el paso y sin cambiar pesos, y estima antes sus escalas con `window_scalers`, la misma regla que la campaña, sobre el tramo de entrenamiento de la ventana medida. Guarda su huella y la duración de ese recorrido en `write_scalers`, que no se suma a las horas, igual que los demás normalizadores. La orden no se ha ejecutado, así que estos costes siguen sin medir sobre el corpus.
 
 ## Revisión adversarial
 
@@ -105,26 +105,38 @@ Por candidato, M3 añade la mediana de 62 rendimientos dos veces, el mínimo de 
 | `tests/training/test_mars_titan_run.py` | Escalas del propio tramo, bucle hasta el paso con el registrador, contadores y reanudación con escalas, rasgos y contadores |
 | `tests/training/test_mars_titan_walk_forward.py` | Ventana M3 completa, escalas guardadas, reutilización al reanudar y escalas del ancla |
 | `tests/training/test_mars_titan_campaign.py` | `mars_titan_m3` sin pendientes, la comparación de 23 brazos con productor cuando se declaran las cuatro secciones y una campaña B reducida con M3 ajustado y trasladado |
+| `tests/training/test_campaign_throughput.py` | Medida del lector M3 hasta el paso sin cambiar pesos, con sus contadores del selectivo y escalas iguales a las de la regla de la campaña |
+| `tests/training/test_campaign_extensions.py` | Declaración preparada con M3 entre sus brazos: 4.680 ajustes en A, 1.768 ajustes y 1.792 traslados en B y 22 predictores en la etapa de políticas |
 
 Las pruebas que recorren el ajuste usan el registrador de gradientes, que no modifica pesos, con la protección de aprendizaje activa. Las etiquetas son manuales o proceden del corpus técnico sintético de las pruebas, y no se genera ningún objetivo real.
 
-Se aplicaron de una en una 15 mutaciones dirigidas en una copia aislada, comprobando antes que las pruebas importaban la copia. Catorce hicieron fallar las pruebas: incluir el último rendimiento en su propia MAD, tratar la relevancia desconocida como cero, usar el mínimo en lugar del máximo, puntuar la noticia con `1 − p_news`, estimar la escala del error con el signo, aceptar otra partición o decisiones anteriores al intervalo de entrenamiento, retirar la anomalía de la puntuación, desempatar por el mayor ID, entregar a la sesión los rasgos en otro orden, reanudar sin la presencia de noticias, aceptar en el lector escalas de otro tramo, dejar de contrastar en la sesión el error M3 con la emisión y volver a estimar las escalas al reanudar una ventana. La restante retiraba la comparación de IDs del selectivo al restaurar el banco. Era equivalente, porque la comparación de puntuaciones ya la cubría, así que se retiró del código.
+Se aplicaron de una en una 15 mutaciones dirigidas en una copia aislada, comprobando antes que las pruebas importaban la copia. Catorce hicieron fallar las pruebas: incluir el último rendimiento en su propia MAD, tratar la relevancia desconocida como cero, usar el mínimo en lugar del máximo, puntuar la noticia con `1 − p_news`, estimar la escala del error con el signo, aceptar otra partición o decisiones anteriores al intervalo de entrenamiento, retirar la anomalía de la puntuación, desempatar por el mayor ID, entregar a la sesión los rasgos en otro orden, reanudar sin la presencia de noticias, aceptar en el lector escalas de otro tramo, dejar de contrastar en la sesión el error M3 con la emisión y volver a estimar las escalas al reanudar una ventana. La restante retiraba la comparación de IDs del selectivo al restaurar el banco. Era equivalente, porque la comparación de puntuaciones ya la cubría, así que se retiró del código. En la medida de caudal se aplicaron cinco mutaciones más (M3 sin escalas, escalas del tramo de validación, sin contadores del selectivo, recorrido creado sin esos contadores y escalas sin registrar) y las cinco hicieron fallar las pruebas.
 
 ## Pendiente
 
 - Ejecutar la comparación A11 cuando la edición histórica desde 2000 esté verificada.
-- Estimar las escalas de M3 en la medida de caudal de `campaign_throughput` con el tramo de entrenamiento de la ventana medida. Hasta entonces la [declaración preparada](../../configs/baselines/historical-masked-campaign-extensions.json) mantiene `mars_titan_m3` en `pending_arms`.
-- Añadir M3 a las comprobaciones CUDA y medir en `cuda:0` el coste del lector con M3.
+- Ejecutar en `cuda:0` las comprobaciones M3 y la orden de caudal con `--extensions`, que ya incluye `mars_titan_m3`.
 - Declarar, si se justifica, las ablaciones de un solo componente, la diversidad y la relevancia macro como identidades nuevas.
 
-No se ha usado la GPU. Las comprobaciones CUDA existentes del banco M2 y del lector se ejecutan, cuando la GPU quede libre, desde la raíz del repositorio con la orden siguiente. Ninguna cubre todavía M3, así que antes hay que añadirles un caso con `CompositeScoreConfig` y escalas estimadas en CPU.
+### Comprobaciones CUDA
+
+No se ha usado la GPU. Dos comprobaciones tienen casos M3 y se ensayaron solo en CPU, lo que no acredita CUDA:
+
+- `tests/memory/cuda_mature_error_check.py::test_cuda_m3_scores_parity_and_recovery` recorre la sesión M3 con B_mem = 4 y K = 1 en CPU y en el dispositivo, en FP32 y FP64. Exige los mismos IDs, ofertas y rasgos de entrada, el error, la puntuación y las predicciones dentro de las tolerancias del caso M2, la recuperación exacta en cada dispositivo y un margen mínimo de 1e-4 entre la puntuación elegida y la mejor descartada. En el ensayo en CPU el margen fue 6,8e-3. `MARS_TITAN_M3_CHECK_DEVICE=cpu` activa ese ensayo.
+- `tests/training/cuda_mars_titan_run_check.py` compara el ajuste sin pasos y su validación con M3 y K = 1, y con M3, K = 4 y episodios fijos, además de los casos M1. Para M3 exige IDs, índices, anomalía, relevancia y máscara iguales, error y puntuación dentro de la tolerancia y un margen mínimo de 1e-4. En el ensayo en CPU el margen mínimo fue 6,8e-4 y cada caso puntuó 292 ofertas. `MARS_TITAN_MARS_RUN_CHECK_DEVICE=cpu` activa ese ensayo.
+
+El caso M2 de la primera comprobación exige el enlace nativo con huella `e7559ed4…`, así que la orden de M3 lo excluye. Los casos M3 registran la huella del enlace usado. Cuando la GPU quede libre, desde la raíz del repositorio:
 
 ```bash
 CUDA_VISIBLE_DEVICES=0 OMP_NUM_THREADS=2 CUBLAS_WORKSPACE_CONFIG=:4096:8 \
   MARS_TITAN_EPISODIC_NATIVE=<enlace episódico nativo compilado> \
   UV_PROJECT_ENVIRONMENT=<entorno uv con PyTorch CUDA> \
-  uv run --no-sync python -m pytest -q tests/memory/cuda_mature_error_check.py \
-  tests/training/cuda_mars_titan_run_check.py
+  uv run --no-sync python -m pytest -q tests/memory/cuda_mature_error_check.py -k m3
+CUDA_VISIBLE_DEVICES=0 OMP_NUM_THREADS=2 CUBLAS_WORKSPACE_CONFIG=:4096:8 \
+  MARS_TITAN_EPISODIC_NATIVE=<enlace episódico nativo compilado> \
+  MARS_TITAN_MARS_RUN_CHECK_REPORT=$PWD/mars-titan-readout-cuda.json \
+  UV_PROJECT_ENVIRONMENT=<entorno uv con PyTorch CUDA> \
+  uv run --no-sync python -m pytest -q tests/training/cuda_mars_titan_run_check.py
 ```
 
 ## Referencias

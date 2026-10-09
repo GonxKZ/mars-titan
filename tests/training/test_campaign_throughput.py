@@ -22,7 +22,14 @@ from mars_titan.data.storage import atomic_json
 from mars_titan.models.baselines import multimodal
 from mars_titan.models.quantile_head import QUANTILE_HEAD
 from mars_titan.posttraining import adapter_matrix, campaign_stage
-from mars_titan.training import campaign_extensions, cm_v1_factorial, experiment_resources
+from mars_titan.training import (
+    campaign_extensions,
+    cm_v1_factorial,
+    experiment_resources,
+    financial_run,
+    mars_titan_run,
+    mars_titan_walk_forward,
+)
 from mars_titan.training import campaign_plan as plan
 from mars_titan.training import campaign_throughput as throughput
 from mars_titan.training.campaign_plan import CM, EPISODIC, MARS, NEURAL, TITANS, load_campaign
@@ -329,7 +336,7 @@ def test_variant_b_costs_less_than_a_with_the_same_rates():
 
 
 @pytest.mark.parametrize(
-    ("variant", "mars", "cm"), [("A", (900, 0), (1080, 0)), ("B", (340, 420), (408, 336))]
+    ("variant", "mars", "cm"), [("A", (1080, 0), (1080, 0)), ("B", (408, 504), (408, 336))]
 )
 def test_readout_and_core_hours_follow_the_exact_plan_and_their_parents(variant, mars, cm):
     campaign = extended(variant)
@@ -769,6 +776,7 @@ MARS_ARMS = {
     "mars_titan_m0": {"episodic_bank": "m0_no_bank"},
     "mars_titan_m1": {"episodic_bank": "m1"},
     "mars_titan_m2": {"episodic_bank": "m2"},
+    "mars_titan_m3": {"episodic_bank": "m3"},
     "mars_titan_m1_k2": {"episodic_bank": "m1", "refinements": 2},
 }
 MEASURED = dict(segments=1, segment_warmup=0, events=1, event_warmup=0)
@@ -876,11 +884,10 @@ def test_mars_measurement_walks_the_m0_readout_over_a_frozen_parent(
 def test_mars_measurement_walks_the_bank_readouts_with_their_admission_and_k(
     views, cpu, tmp_path, guarded_steps
 ):
-    arms = ["mars_titan_m1", "mars_titan_m2", "mars_titan_m1_k2"]
+    arms = ["mars_titan_m1", "mars_titan_m2", "mars_titan_m3", "mars_titan_m1_k2"]
     campaign = mars_campaign(tmp_path / "config", arms)
-    rates = throughput.measure_mars_titan(
-        campaign, views / "fold-000/manifest.json", tmp_path / "work", **MEASURED
-    )
+    view = views / "fold-000/manifest.json"
+    rates = throughput.measure_mars_titan(campaign, view, tmp_path / "work", **MEASURED)
     assert list(rates) == arms
     for arm, record in rates.items():
         (result,) = record["options"].values()
@@ -889,7 +896,24 @@ def test_mars_measurement_walks_the_bank_readouts_with_their_admission_and_k(
         # El banco recibe episodios maduros durante la ventana medida.
         assert counters["end"]["admitted"] > counters["start"]["admitted"], arm
         assert record["components"] == MARS_ARMS[arm] and record["inference"] > 0
+        assert ("write_scalers" in record) == (arm == "mars_titan_m3"), arm
     assert set(guarded_steps) == {1} and len(guarded_steps) == 2 * len(arms)
+    # M3 cuenta los cambios de su índice selectivo, que solo reciben ofertas maduras.
+    window = rates["mars_titan_m3"]["options"]["recipe"]["window_counters"]
+    start, end = window["start"], window["end"]
+    offered = end["admitted"] - start["admitted"]
+    changed = sum(end[k] - start[k] for k in ("selective_admitted", "selective_rejected"))
+    assert set(start) == {"admitted", *mars_titan_run.m3_counters()} and changed == offered
+    # Sus escalas siguen la regla de la campaña sobre el tramo de entrenamiento medido.
+    _, document = financial_run.load_recipe(campaign[TITANS]["path"])
+    _, sources, _ = throughput._chronological_sources(view, document, tmp_path / "work")
+    plan_case = mars_titan_run.case_recipe(
+        mars_titan_run.load_recipe(campaign[MARS]["path"]), "lr1e-4"
+    )
+    expected = mars_titan_walk_forward.window_scalers(sources["train"], plan_case)
+    scalers = rates["mars_titan_m3"]["write_scalers"]
+    assert scalers["sha256"] == expected.fingerprint()
+    assert scalers["source_sha256"] == sources["train"].identity and scalers["seconds"] > 0
 
 
 @NATIVE
@@ -1212,9 +1236,9 @@ def test_campaign_report_measures_the_prepared_families_and_their_policy_stage(
         sha256=campaign_extensions.load_extensions(EXTENSIONS)["sha256"],
         status="prepared_not_declared",
     )
-    # Con las tres familias, la etapa de políticas resuelve 21 predictores en vez de 11.
-    jobs = dict(A=dict(fit=2088, reference=1512), B=dict(fit=696, carry=1392, reference=1512))
-    expected = dict(A=((900, 0), (1080, 0)), B=((340, 420), (408, 336)))
+    # Con las tres familias, la etapa de políticas resuelve 22 predictores en vez de 11.
+    jobs = dict(A=dict(fit=2160, reference=1584), B=dict(fit=720, carry=1440, reference=1584))
+    expected = dict(A=((1080, 0), (1080, 0)), B=((408, 504), (408, 336)))
     for estimate in report["estimates"]:
         families = estimate["families"]
         assert set(families) == {NEURAL, TITANS, EPISODIC, MARS, CM, throughput.POSTTRAINING}
