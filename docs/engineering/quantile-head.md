@@ -63,6 +63,6 @@ La mutación dirigida introdujo 26 defectos, uno cada vez, y ejecutó las prueba
 
 - La calibración común al estilo CQR está implementada en `src/mars_titan/calibration/conformal_quantiles.py` y la aplica la [evaluación walk-forward](../research/metrics.md#calibración-común-de-intervalos), ajustada en el tramo de calibración de cada ventana y congelada antes de evaluar. No se ha aplicado a predicciones reales.
 - Ejecutar el control de la cabeza cuando se levante el bloqueo y repetir la búsqueda de tasas de aprendizaje.
-- Integrar los cuantiles en los consumidores de sesión de `memory/` y en los padres de `posttraining/`, que hoy solo leen la predicción puntual y construyen referencias escalares.
+- Integrar los cuantiles en los consumidores de sesión de `memory/`. Los padres de `posttraining/` ya se reconstruyen con la cabeza declarada y aportan su mediana, como describe el [postentrenamiento con la edición histórica](masked-posttraining.md).
 - Comprobaciones CUDA de las rutas nuevas. Las órdenes están en la descripción de la PR.
 - Medir el coste de la cabeza en la integración. Se espera pequeño frente a los codificadores, pero no se ha medido.

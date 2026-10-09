@@ -14,6 +14,7 @@ import numpy as np
 import torch
 
 from mars_titan.data.cohort_files import read_manifest, safe_destination
+from mars_titan.data.input_policy import STRICT_INPUTS, policy_identity
 from mars_titan.data.storage import atomic_json, sha256
 from mars_titan.models.klpo import MODES as KLPO
 from mars_titan.models.klpo import behavior_log_probabilities, token_loss
@@ -21,6 +22,7 @@ from mars_titan.models.predictive_adaptation import (
     LinearResidualPolicy,
     gaussian_log_probabilities,
     objective,
+    trainable_parameters,
 )
 from mars_titan.training.checkpoints import (
     StopRequest,
@@ -31,7 +33,9 @@ from mars_titan.training.checkpoints import (
 )
 from mars_titan.training.run_receipts import initialize_receipt
 
+from . import adapter_matrix
 from .evaluation import centers, evaluate
+from .hold import refuse_while_blocked
 from .inputs import CONDITIONS
 from .parents import require_device
 from .selection import select_epoch, selection_policy
@@ -39,7 +43,8 @@ from .selection import select_epoch, selection_policy
 MODES = ("reinforce", "expected", "mae", *KLPO, "neural_mae", "neural_mse")
 
 
-def code_identity():
+def code_identity(*, masked=False, adapters=False):
+    """Huellas del código. Máscaras y adaptadores añaden solo sus propios módulos."""
     root = Path(__file__).parents[1]
     names = (
         "posttraining/run.py",
@@ -79,7 +84,13 @@ def code_identity():
         "data/storage.py",
         "profiling.py",
     )
+    names += ("data/input_policy.py",) if masked else ()
+    names += ("posttraining/adapter_matrix.py",) if adapters else ()
     return {name: sha256(root / name) for name in names}
+
+
+def case_code(case, dataset):
+    return code_identity(masked=getattr(dataset, "masked", False), adapters="adapter" in case)
 
 
 def validate_case(case):
@@ -97,7 +108,7 @@ def validate_case(case):
     }
     if (
         not isinstance(case, dict)
-        or not required <= set(case) <= required | {"selection"}
+        or not required <= set(case) <= required | {"selection", "adapter"}
         or case["mode"] not in MODES
         or case["condition"] not in CONDITIONS
         or type(case["seed"]) is not int
@@ -122,6 +133,10 @@ def validate_case(case):
     policy = selection_policy(case)
     if case["epochs"] > 30 and policy["version"] != 3:
         raise ValueError("El presupuesto superior a 30 épocas requiere selección versión 3")
+    if "adapter" in case:
+        if not case["mode"].startswith("neural_") or case["condition"] != "real":
+            raise ValueError("Los adaptadores son continuaciones supervisadas con datos reales")
+        adapter_matrix.validate_adapter(case["adapter"])
 
 
 def _statistics():
@@ -194,15 +209,28 @@ def _validate_run(
         or grid.training_samples != dataset.counts["train"]
     ):
         raise ValueError("La rejilla no se ha ajustado con el entrenamiento real")
+    masked = getattr(dataset, "masked", False)
+    policy = getattr(dataset, "input_policy", STRICT_INPUTS)
     expected_norm = dict(
-        train_sha256=dataset.train.manifest_sha256,
         parent_sha256=dataset.parent.parent_sha256,
         encoding=dataset.parent.encoding,
         samples=dataset.counts["train"],
         fit_partition="train",
     )
-    if any(normalization.get(k) != v for k, v in expected_norm.items()):
+    # Con máscaras, la escala se liga a la ventana de ajuste y no al manifiesto ordenado.
+    expected_norm |= (
+        dict(**policy_identity(policy), window=dataset.window)
+        if masked
+        else dict(train_sha256=dataset.train.manifest_sha256)
+    )
+    if any(normalization.get(k) != v for k, v in expected_norm.items()) or (
+        masked and "train_sha256" in normalization
+    ):
         raise ValueError("La normalización no corresponde a las filas reales de entrenamiento")
+    if parent is not None and parent.identity.get("input_policy", STRICT_INPUTS) != policy:
+        raise ValueError("El padre no comparte la política de entradas de los datos")
+    if "adapter" in case and case["adapter"]["input_policy"] != policy:
+        raise ValueError("La matriz de adaptadores pertenece a otra política de entradas")
     if (
         len(normalization.get("mean", [])) != dataset.features
         or len(normalization.get("scale", [])) != dataset.features
@@ -225,6 +253,14 @@ def _validate_run(
 
 
 def _identity(dataset, parent, case, grid, normalization, budget, batch_size, device, diagnostic):
+    adapter = (
+        dict(
+            adapter_matrix.describe(case["adapter"], parent.model),
+            seed=adapter_matrix.adapter_seed(case),
+        )
+        if "adapter" in case
+        else None
+    )
     identity = dict(
         dataset=dataset.identity,
         case=case,
@@ -235,7 +271,7 @@ def _identity(dataset, parent, case, grid, normalization, budget, batch_size, de
         budget=budget,
         device=device,
         diagnostic=diagnostic,
-        code=code_identity(),
+        code=case_code(case, dataset),
         numpy=np.__version__,
         torch=str(torch.__version__),
         python=platform.python_version(),
@@ -254,6 +290,9 @@ def _identity(dataset, parent, case, grid, normalization, budget, batch_size, de
             cudnn_version=torch.backends.cudnn.version() if device == "cuda:0" else None,
         ),
     )
+    if adapter is not None:
+        # Destinos, formas, rangos y parámetros entrenables forman la identidad del brazo.
+        identity["adapter"] = adapter
     # Los recibos y checkpoints usan el mismo árbol de tipos JSON.
     return json.loads(json.dumps(identity, allow_nan=False))
 
@@ -276,6 +315,24 @@ def _best_state(output, identity, selection, expected_sha256=None):
     return selected
 
 
+def build_model(parent, case, grid, normalization, identity=None):
+    """Construir la corrección, la continuación completa o el brazo de la matriz."""
+    if "adapter" in case:
+        model = parent.adapted(
+            adapter_matrix.targets(case["adapter"], parent.model),
+            seed=adapter_matrix.adapter_seed(case),
+        )
+        expected = (identity or {}).get("adapter", {}).get("trainable_parameters")
+        if expected is not None and trainable_parameters(model) != expected:
+            raise ValueError("El brazo no conserva los parámetros entrenables de su identidad")
+        return model
+    if case["mode"].startswith("neural_"):
+        return parent.continuation()
+    return LinearResidualPolicy(
+        normalization["mean"], normalization["scale"], target_scale=grid.scale
+    )
+
+
 def run_case(
     dataset,
     output,
@@ -294,6 +351,7 @@ def run_case(
     max_updates=None,
 ):
     """Comparar un objetivo y condición. CPU solo admite diagnósticos de hasta 5000 filas."""
+    refuse_while_blocked("el postentrenamiento")
     started = time.perf_counter()
     neural, budget = _validate_run(
         dataset,
@@ -367,16 +425,17 @@ def run_case(
         torch.manual_seed(case["seed"])
         torch.use_deterministic_algorithms(True)
         torch.backends.cudnn.benchmark = False
-        model = (
-            parent.continuation()
-            if neural
-            else LinearResidualPolicy(
-                normalization["mean"], normalization["scale"], target_scale=grid.scale
-            )
+        model = build_model(parent, case, grid, normalization, identity).to(device)
+        if "adapter" in case or getattr(dataset, "masked", False):
+            report["trainable_parameters"] = trainable_parameters(model)
+        # Un adaptador solo entrega al optimizador sus propios parámetros.
+        parameters = (
+            [value for value in model.parameters() if value.requires_grad]
+            if "adapter" in case
+            else model.parameters()
         )
-        model = model.to(device)
         optimizer = torch.optim.AdamW(
-            model.parameters(), lr=case["learning_rate"], weight_decay=case["weight_decay"]
+            parameters, lr=case["learning_rate"], weight_decay=case["weight_decay"]
         )
         generators = {
             name: torch.Generator(device=device).manual_seed(case["seed"] + i + 1)
@@ -415,7 +474,7 @@ def run_case(
 
         def save(best=False):
             nonlocal last_saved
-            if code_identity() != identity["code"]:
+            if case_code(case, dataset) != identity["code"]:
                 raise ValueError("El código ha cambiado durante el postentrenamiento")
             if any(not torch.isfinite(p).all() for p in model.parameters()):
                 raise ValueError("El optimizador ha producido pesos no finitos")
@@ -544,7 +603,7 @@ def run_case(
                 stop=stop,
                 destination=path,
             )
-            if code_identity() != identity["code"]:
+            if case_code(case, dataset) != identity["code"]:
                 raise ValueError("El código ha cambiado durante la evaluación final")
             report.update(
                 status="completed",

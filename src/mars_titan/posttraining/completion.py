@@ -14,6 +14,8 @@ from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.training.checkpoints import StopRequest
 from mars_titan.training.run_receipts import initialize_receipt
 
+from .hold import refuse_while_blocked
+
 
 def _receipt(path, expected=None):
     if not path.is_file():
@@ -233,6 +235,8 @@ def _inputs(args):
 
 
 def _stage(args):
+    if args.stage in {"tabular", "posttraining"}:
+        refuse_while_blocked(f"la etapa {args.stage}")
     from mars_titan.training.baseline_queue import reference_market
 
     folder = args.output / args.fold
@@ -283,6 +287,7 @@ def _stage(args):
 
 
 def run_completion(args, stop):
+    refuse_while_blocked("la campaña de compleción")
     for protected in (args.reference, args.encoded.parent, args.tabular_config, args.post_config):
         outside_source(protected, args.output)
         outside_source(args.output, protected)

@@ -50,6 +50,12 @@ Hasta 64 activos, ventanas de 64 sesiones, dimensión latente 64, lote inicial d
 
 Como límite de planificación, hasta diez configuraciones por familia y tres semillas en la comparación confirmatoria. Se registrará el tiempo total de búsqueda, no solo el entrenamiento del mejor modelo. Los codificadores de texto se precalcularán con pesos congelados cuando sea apropiado. La primera medición de memoria fijará el margen operativo por debajo de los 8 GB físicos, incluyendo activaciones, optimizadores y actualización interna.
 
+## Adaptadores de postentrenamiento
+
+[La matriz de adaptadores](../../configs/posttraining/adapter-matrix-v1.json) fija antes del primer ajuste qué partes de un padre congelado pueden cambiar. Combina cabeza, consulta y salida de la lectura y fusión en sus siete combinaciones de uno, dos y tres puntos, más un control de rango completo en la fusión. Cada semilla conserva tres controles: la salida del padre congelado, la corrección lineal residual inicializada a cero y la continuación de todos los parámetros. Todos los brazos tienen las mismas filas, semillas, lote, épocas, actualizaciones y validación temporal.
+
+La pregunta es dónde conviene adaptar, no cuántos parámetros caben. Por eso la matriz registra parámetros entrenables y estados invalidados. Un punto solo quedaría justificado si mejora al padre y a la corrección lineal con la misma métrica, y esa comparación es la que permite descartarlo. La lectura solo existe en el Transformer compacto entre las referencias actuales. Titans-MAC y la lectura episódica tienen destinos declarados, pero su ajuste depende del entrenador cronológico. Los detalles técnicos están en el [postentrenamiento con la edición histórica](../engineering/masked-posttraining.md). No hay resultados de esta matriz.
+
 ## Identificador y evidencia
 
 Cada ejecución futura tendrá `run_id`, hash de configuración, commit, hash del manifiesto, semillas, entorno, modo de memoria, corte temporal, horas GPU, VRAM máxima y motivo de finalización. Conservará predicciones por activo/instante, métricas por sesión y eventos de actualización. Las tablas resumidas se generan desde esas evidencias, sin transcribir cifras manualmente.

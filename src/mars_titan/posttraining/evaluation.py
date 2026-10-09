@@ -10,7 +10,11 @@ from mars_titan.models.predictive_adaptation import gaussian_log_probabilities
 
 def centers(model, batch, *, neural, device):
     if neural:
-        result = model({k: torch.as_tensor(v, device=device) for k, v in batch["inputs"].items()})
+        inputs = {k: torch.as_tensor(v, device=device) for k, v in batch["inputs"].items()}
+        # Los lotes con máscaras llevan bits de presencia. Los estrictos, no.
+        presence = batch.get("presence")
+        extra = () if presence is None else (torch.as_tensor(presence, device=device),)
+        result = model(inputs, *extra)
     else:
         result = model(
             torch.as_tensor(batch["features"], device=device),
