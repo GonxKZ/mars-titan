@@ -531,6 +531,17 @@ del panel es ordenar identidades de texto con Arrow, que no se ha sustituido
 porque las alternativas medidas (recuento de distintos más ordenación de tres
 claves) no mejoraron.
 
+La evaluación walk-forward se midió con una ventana anual sintética de 625.000
+filas de evaluación (2.500 activos y 250 sesiones) y 155.000 de calibración, un
+brazo puntual, uno con cuantiles calibrados y el control cero. Con dos hilos y
+la CPU compartida (carga media cercana a 14), tres repeticiones tardaron 4,7,
+2,8 y 2,8 s, incluidas lectura, huellas, validación, calibración, puntuación,
+contrastes con 2.000 réplicas y el informe. El pico de memoria del proceso,
+que también generó los datos, fue de 1,07 GiB. Con unos 1.250 pares de brazo,
+semilla y ventana en el ámbito US, la extrapolación lineal ronda la media hora
+en un proceso. Es una estimación, no una medida de la campaña real, y no
+justifica por ahora otra implementación.
+
 ## Qué no demuestran estas métricas
 
 Ninguna de estas cifras procede todavía de datos de mercado. El bloqueo de
