@@ -229,6 +229,8 @@ if(MARS_TITAN_BUILD_SIMULATION)
         target_link_libraries(mars-titan-policy-benchmark PRIVATE mars_titan_policy_stage)
         mars_titan_configure_target(mars-titan-policy-benchmark)
         list(APPEND mars_analysis_sources "${CMAKE_CURRENT_SOURCE_DIR}/src/ppo_policy.cpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/src/group_relative.cpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/src/quantile_dqn.cpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/src/klpo_collection.cpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/src/klpo_learning.cpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/src/ppo_training.cpp"
@@ -247,6 +249,16 @@ if(MARS_TITAN_BUILD_SIMULATION)
             "${CMAKE_CURRENT_SOURCE_DIR}/src/policy_command.cpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/src/learning_hold.cpp")
         if(BUILD_TESTING)
+            # Objetivos de grupo y QR-DQN frente a la referencia FP64 independiente, sin pasos.
+            add_executable(rl_variety_tests tests/rl_variety_tests.cpp)
+            target_link_libraries(rl_variety_tests PRIVATE mars_titan_ppo nlohmann_json::nlohmann_json)
+            mars_titan_configure_target(rl_variety_tests)
+            add_test(NAME rl_variety COMMAND rl_variety_tests
+                "${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/rl_variety_reference.json")
+            set_tests_properties(rl_variety PROPERTIES TIMEOUT 120 LABELS "unit;rl-objectives")
+            mars_titan_sanitizer_test_environment(rl_variety)
+            set_property(TEST rl_variety APPEND PROPERTY ENVIRONMENT
+                "CUDA_VISIBLE_DEVICES=-1" "OMP_NUM_THREADS=1" "MKL_NUM_THREADS=1")
             add_executable(klpo_reference_tests tests/klpo_reference_tests.cpp)
             target_link_libraries(klpo_reference_tests PRIVATE mars_titan_klpo_collection)
             mars_titan_configure_target(klpo_reference_tests)
@@ -383,6 +395,10 @@ if(MARS_TITAN_BUILD_SIMULATION)
                 "${CMAKE_CURRENT_SOURCE_DIR}/src/klpo_episodes.cpp"
                 "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/klpo_terminal.hpp"
                 "${CMAKE_CURRENT_SOURCE_DIR}/src/klpo_terminal.cpp"
+                "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/group_relative.hpp"
+                "${CMAKE_CURRENT_SOURCE_DIR}/src/group_relative.cpp"
+                "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/quantile_dqn.hpp"
+                "${CMAKE_CURRENT_SOURCE_DIR}/src/quantile_dqn.cpp"
                 "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/ppo_controller.hpp"
                 "${CMAKE_CURRENT_SOURCE_DIR}/src/ppo_controller.cpp"
                 "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/ppo_objectives.hpp"
