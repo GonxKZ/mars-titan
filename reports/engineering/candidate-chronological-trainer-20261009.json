@@ -1,13 +1,13 @@
 {
  "schema_version": 1,
- "recorded_at_utc": "2026-10-09T05:59:40+00:00",
- "tested_head": "a41fa12c3ba71483f5b82899d8c08099dee26d52",
- "base": "f9789a47b989fc5bdc4a353dd152ed7b6bf1cdcd",
+ "recorded_at_utc": "2026-10-09T06:06:13+00:00",
+ "tested_head": "894555a56d7d4458f8fc3f6b5d931bbd4d50ae93",
+ "base": "1e79dd37cd2956054081aea0a8c874ce73653d45",
  "scope": "Comprobación técnica en CPU sin pasos de optimizador ni entrenamiento",
  "source_sha256": {
-  "src/mars_titan/training/candidate_run.py": "f51d5570b119971cf61fa9f82b51a6fafd8e6d73619912c30971365871e9a63b",
-  "tests/training/test_candidate_run.py": "9466dfca0eb926dea92e3796da638e4732dd9853f80f45d545210e5c73e7481f",
-  "tests/training/cuda_candidate_run_check.py": "e634364575760e096d81ea78f7b4ca7b54f8d73b870a47b89e3eef7536aeedb9",
+  "src/mars_titan/training/candidate_run.py": "c5201b21337beb5eb75767d496b5d5b2fed2feb590e28d94cebd297fd2a1682f",
+  "tests/training/test_candidate_run.py": "5914019672e5befbd119d66f90c9aaa8d69636f15969bd6d83a8fcd1b1dddbcb",
+  "tests/training/cuda_candidate_run_check.py": "3a54881472d6d039ed9bff3c0a0c333c55e73bb926a9a0d19fe1de3dc39651b0",
   "configs/candidate/chronological-training.json": "07e5fad67a1da3fe33ff947162ab3aa2fc97755fd79b7c2fbea549243bb3a80c",
   "configs/evaluation/historical-masked-us-walk-forward-v2.json": "c4addc74c5ac5efd76993263b31bdc49e9e9a12f745c84368f7cead35e2d6648"
  },
@@ -21,16 +21,16 @@
  "tests": {
   "trainer": {
    "command": "uv run --no-sync python -m pytest -q -rs -p no:cacheprovider tests/training/test_candidate_run.py",
-   "passed": 41,
+   "passed": 42,
    "skipped": 0,
-   "seconds": 68.95
+   "seconds": 67.73
   },
   "affected": {
-   "command": "uv run --no-sync python -m pytest -q -rs -p no:cacheprovider tests/training/test_candidate_run.py tests/training/test_financial_run.py tests/models/candidate tests/memory/test_financial_session_gru.py tests/memory/test_candidate_bank.py tests/memory/test_flow_cursors.py tests/models/test_quantile_head.py tests/models/test_quantile_head_native.py tests/training/test_learning_hold.py tests/training/test_selection_budget.py tests/training/test_selection_minimum.py tests/evaluation/test_walk_forward_comparison.py",
-   "passed": 286,
+   "command": "uv run --no-sync python -m pytest -q -rs -p no:cacheprovider tests/training/test_candidate_run.py tests/training/test_financial_run.py tests/models/candidate tests/memory/test_financial_session_gru.py tests/memory/test_candidate_bank.py tests/memory/test_flow_cursors.py tests/models/test_quantile_head.py tests/models/test_quantile_head_native.py tests/training/test_learning_hold.py tests/training/test_learning_hold_guards.py tests/training/test_selection_budget.py tests/training/test_selection_minimum.py tests/evaluation/test_walk_forward_comparison.py",
+   "passed": 385,
    "skipped": 3,
    "skipped_reason": "comprobaciones cuda:0 sin dispositivo visible",
-   "seconds": 138.91
+   "seconds": 121.64
   },
   "excluded": {
    "file": "tests/training/test_selection.py",
@@ -39,10 +39,10 @@
   "cuda_check_on_cpu": {
    "command": "MARS_TITAN_CANDIDATE_RUN_CHECK_DEVICE=cpu uv run --no-sync python -m pytest -q -p no:cacheprovider tests/training/cuda_candidate_run_check.py",
    "passed": 4,
-   "seconds": 32.46,
+   "seconds": 26.55,
    "note": "Ensaya la lógica de la comprobación con dos copias en CPU. No acredita CUDA."
   },
-  "environment": "CUDA_VISIBLE_DEVICES=-1, OMP_NUM_THREADS=2, MKL_NUM_THREADS=2, MARS_TITAN_EPISODIC_NATIVE con el enlace CPU de esta rama",
+  "environment": "CUDA_VISIBLE_DEVICES=-1, OMP_NUM_THREADS=2, MKL_NUM_THREADS=2, MARS_TITAN_EPISODIC_NATIVE con el enlace CPU de esta rama. Las pruebas que llaman a run usan learning_doubles, una protección temporal permitida, y el gancho global de torch.optim sigue activo",
   "ruff": true,
   "format": true,
   "optimizer_steps": 0
@@ -55,9 +55,9 @@
   "native_sources_changed": false
  },
  "mutations": {
-  "executed": 17,
+  "executed": 18,
   "detected_first_round": 14,
-  "detected": 17,
+  "detected": 18,
   "cases": [
    {
     "mutation": "admit_before_predictions",
@@ -144,17 +144,6 @@
     "summary": "1 failed, 25 passed in 24.55s"
    },
    {
-    "mutation": "no_hold_check",
-    "description": "Sin comprobar el bloqueo antes de crear salidas",
-    "detected": true,
-    "first_round": {
-     "detected": false,
-     "summary": "37 passed, 1 skipped in 68.85s"
-    },
-    "summary": "1 failed, 34 passed in 53.82s",
-    "note": "La guarda global de pruebas convertía el paso en un salto. La prueba sustituye ahora optimizer.step por una función que falla."
-   },
-   {
     "mutation": "labels_into_loss_without_graph_check",
     "description": "Etiquetas sin grafo vivo enviadas a la pérdida",
     "detected": true,
@@ -175,8 +164,23 @@
     },
     "summary": "1 failed, 21 passed in 19.92s",
     "note": "Se añadió la prueba de filas de head_weight con gradiente para pinball y L1."
+   },
+   {
+    "mutation": "no_hold_check",
+    "description": "run sin require_learning_allowed",
+    "detected": true,
+    "summary": "2 failed, 40 deselected in 4.28s",
+    "note": "Repetida tras adoptar require_learning_allowed, con -k active_hold. La primera ronda, con la comprobación anterior, no la detectó porque la guarda global convertía el paso en un salto."
+   },
+   {
+    "mutation": "hold_only_for_torch_optim",
+    "description": "Protección consultada solo con un optimizador de torch.optim",
+    "detected": true,
+    "summary": "1 failed, 1 passed, 40 deselected in 3.22s",
+    "note": "Con -k active_hold. Falla el caso del optimizador de registro."
    }
-  ]
+  ],
+  "note": "La primera ronda ejecutó 17 mutaciones y detectó 14. Las tres restantes se detectaron tras añadir pruebas. Las dos de la protección se ejecutaron sobre el código final."
  },
  "measurements": {
   "conditions": "CPU con dos hilos, FP32, dimensiones reales, 128 filas, 16 episodios, K = 1, con otros procesos en curso. Sonda aislada, no perfil del recorrido completo",
