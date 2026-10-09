@@ -59,9 +59,11 @@ adaptación correspondiente.
 
 La pérdida pinball y los intervalos predictivos quedan fuera de este
 acumulador y se calculan con el contrato de comparación descrito más abajo. NLL
-y ECE no están implementadas. NLL requiere una densidad especificada y ECE
-probabilidades de un evento definido. No se deducen esas salidas de una
-predicción puntual ni de una lista de cuantiles.
+no está implementada porque requiere una densidad especificada, que una lista de
+cinco cuantiles no determina. El ECE sí se calcula, pero sobre un evento definido
+y con una regla declarada antes de los resultados: la [probabilidad implícita de
+subida](#probabilidad-implícita-de-subida-brier-y-ece) que se deduce de los
+cuantiles. Una predicción puntual no tiene esa probabilidad y no recibe ECE.
 
 La [verificación de esta agregación](../../reports/resources/session-evaluation-quality.json)
 registra ejemplos conocidos, cobertura y mutaciones dirigidas. No presenta esos
@@ -185,6 +187,14 @@ al alza 2/3, la precisión a la baja 1/2 y la exhaustividad a la baja 1/2. La
 predicción 5 sobre el objetivo cero no cuenta y la predicción cero sobre −2 es
 un fallo de exhaustividad.
 
+Desde la versión 4 de la comparación, `up_precision` y `down_precision` también
+son series contrastables. Responden a la pregunta de cuántas veces acierta un
+modelo cuando dice que el residuo sube (o baja). Una sesión sin ninguna llamada
+de ese signo no tiene precisión, y el contraste emparejado solo usa las sesiones
+definidas en todos los brazos que intervienen, con el número de sesiones excluidas
+en el informe. La exhaustividad no se contrasta porque un modelo puede subirla
+llamando siempre el mismo signo.
+
 ## Correlación de rangos por sesión
 
 El Rank IC de una sesión es la correlación de Pearson entre los rangos medios
@@ -282,6 +292,62 @@ conservadores (`overcovers`). Si contiene el cero, el resultado es
 cobertura prometida frente a la observada, junto con el error de signo
 comprometido descrito arriba. Una cobertura correcta con intervalos muy anchos
 no informa, por eso se lee siempre con la anchura.
+
+### Puntuación de intervalo
+
+La cobertura y la anchura se leen juntas, pero no se ordenan con un único número.
+La puntuación de intervalo de [Gneiting y Raftery (2007)](https://doi.org/10.1198/016214506000001437)
+las combina. Para el intervalo central $[l,u]=[q_{\tau},q_{1-\tau}]$ con
+$\alpha=2\tau$:
+
+$$
+\operatorname{IS}_\alpha(l,u;y)=(u-l)+\frac{2}{\alpha}(l-y)^{+}+\frac{2}{\alpha}(y-u)^{+},
+\qquad
+\operatorname{IS}_s=\frac{1}{n_s}\sum_{i\in s}\operatorname{IS}_\alpha(l_i,u_i;y_i).
+$$
+
+Es una pérdida propia para el par de cuantiles: menor es mejor y un intervalo
+demasiado estrecho paga cada salida con el factor $2/\alpha$, que vale 10 en el
+intervalo del 80 % ($\tau=0{,}1$) y 40 en el del 95 % ($\tau=0{,}025$). Cumple
+$\tfrac{\alpha}{2}\operatorname{IS}_\alpha=\rho_\tau(y-l)+\rho_{1-\tau}(y-u)$, que las
+pruebas comprueban fila a fila. `interval_score` se informa con cada intervalo
+del resumen y `interval_score@0.8` y `interval_score@0.95` son series por sesión
+que la comparación contrasta como pérdidas, igual que el MAE.
+
+### Probabilidad implícita de subida, Brier y ECE
+
+Los cinco cuantiles definen una función de distribución por tramos. La regla
+`piecewise_linear_cdf_at_zero_flat_beyond_extreme_levels_v1`, declarada el 9 de
+octubre de 2026 antes de cualquier resultado, interpola linealmente entre los
+puntos $(q_j,\tau_j)$ y la deja plana por debajo de $q_{0{,}025}$ y por encima de
+$q_{0{,}975}$. Con un empate entre cuantiles se toma el valor continuo por la
+derecha. La probabilidad de subida es $p_i=1-\hat F_i(0)$ y queda siempre entre
+0,025 y 0,975. La regla no supone una forma de las colas y por eso no afirma más
+seguridad que la que dan los niveles extremos.
+
+El evento es $y_i>0$ y solo se juzgan las filas con $y_i\neq 0$, como en la
+dirección. Por sesión se informa el Brier $\frac{1}{m_s}\sum_i(p_i-\mathbf 1\{y_i>0\})^2$,
+que es una regla propia para probabilidades y la serie `sign_brier` de la
+comparación (pérdida). Para la calibración, las filas se reparten en diez
+intervalos fijos de probabilidad, $[0;0{,}1)$ hasta $[0{,}9;1]$:
+
+$$
+\operatorname{ECE}=\frac{1}{M}\sum_{b=1}^{10}\Bigl|\sum_{i\in b}\mathbf 1\{y_i>0\}-\sum_{i\in b}p_i\Bigr|,
+$$
+
+con $M$ las filas juzgables de todas las sesiones. Es la media ponderada por filas
+de $|\bar y_b-\bar p_b|$ y cada fila pesa lo mismo. La curva de fiabilidad publica
+filas, probabilidad media y frecuencia observada de cada intervalo. El informe
+walk-forward da en `sign_reliability` el ECE de cada semilla, el ECE medio de las
+semillas, la curva agregada y un intervalo percentil por bloques de días: cada
+réplica remuestrea los mismos días para todas las semillas, recalcula el ECE de
+cada una y promedia. Se informa en bruto y con el calibrador común de intervalos.
+
+El ECE con intervalos fijos tiene sesgo positivo con pocas filas por intervalo y
+depende del número de intervalos. Por eso no entra en las familias de contrastes
+y se lee junto al Brier, que sí se contrasta. La probabilidad sale de cuantiles
+entrenados con pinball, no de una cabeza de clasificación, así que una mala
+calibración del signo puede convivir con buenos cuantiles en el centro.
 
 ## Riesgo-cobertura selectiva
 
@@ -504,6 +570,69 @@ de evaluar. La versión 2 de la configuración añade los
 un análisis secundario que no cambia nada de lo anterior. La versión 3 añade la
 [ablación de modalidades en inferencia](#ablación-de-modalidades-en-inferencia),
 otro análisis secundario que tampoco cambia las salidas anteriores.
+
+La versión 4, declarada el 9 de octubre de 2026 antes de cualquier predicción
+real, completa la comparación en tres puntos:
+
+- **Métricas contrastadas.** Además del MAE, el MSE, la dirección, el Rank IC y la
+  pinball, se contrastan la precisión al alza y a la baja, el Brier del signo y la
+  puntuación de los intervalos del 80 % y del 95 %. El informe añade en todas las
+  versiones la fiabilidad del signo (`sign_reliability`).
+- **Familias arquitectónicas.** GRU frente a GRU episódica (`episodic_gru`), el
+  Transformer compacto frente a Titans-MAC `transformer_direct` (`encoder_change`,
+  el cambio de codificador con fusión y cabeza comunes), `mac_online` frente a
+  MARS-TITAN M0 (`episodic_reader`, el lector episódico con la memoria del núcleo
+  activa), M1 frente a CM-v1 B (`cm_v1_base`) y la GRU episódica frente a
+  `mac_online` (`core_vs_episodic_gru`). Con el factorial CM-v1 y las familias
+  anteriores quedan cubiertos B, B+C, B+M y B+C+M, MARS-TITAN con las
+  ampliaciones apagadas (M0) frente a Titans-MAC y el núcleo frente a la GRU
+  episódica. Cada familia lleva su propia corrección por máximo estudentizado.
+- **Cartera.** La sección `long_short` declara la [cartera larga y corta por
+  cuartiles](long-short-portfolio.md), un análisis financiero secundario que
+  calcula `long_short_comparison` con las mismas fuentes.
+
+La versión 5 añade a la versión 4 el [diseño conjunto](walk-forward-2000.md#comparación-con-los-controles-separados)
+de la campaña A v2 (`joint_design`). Un mercado solo cuenta en las ventanas en las que es
+elegible y los controles separados de US y CN se comparan con el brazo conjunto
+restringido a las filas de su mercado. Las métricas, la fiabilidad del signo y la cartera
+aplican las mismas exclusiones.
+
+Las semillas se agregan así. La comparación solo lee el caso elegido de cada
+brazo, que la campaña A repite con las semillas 42, 43 y 44. Cada semilla tiene
+su resumen y los contrastes, la fiabilidad del signo y la cartera usan la media
+de las semillas sesión a sesión. La incertidumbre sale solo del remuestreo de
+días y una semilla nunca cuenta como una sesión más. Un brazo determinista con
+una semilla, como Ridge, entra con su serie tal cual. Los casos de búsqueda, que
+solo usan la semilla 42, no entran en la comparación y quedan en los recibos de
+selección y el registro de ensayos.
+
+Con el diseño conjunto de la campaña A, el contraste del modelo conjunto frente al
+separado en cada mercado y la exclusión de las métricas chinas anteriores a 2011
+se declaran en la comparación conjunta de `feat/campaign-a-joint-design` (#363),
+que se construye sobre esta versión. No forman parte de este archivo.
+
+### Brazos postentrenados
+
+La [declaración de la comparación postentrenada](../../configs/posttraining/historical-masked-adapter-comparison-a.json)
+no enumera brazos. `posttraining/stage_comparison.py` los deriva del plan de la
+etapa de adaptadores y forma una comparación por padre y ámbito con el padre
+congelado (el propio brazo base con las predicciones de la campaña), la
+continuación completa y los brazos adaptados de la matriz para su familia. Así
+una familia nueva de la matriz entra sin reescribir nada. Las familias declaradas
+son `versus_frozen_parent` (adaptados y continuación menos el padre) y
+`versus_full_continuation` (adaptados menos la continuación), más el nivel de
+cada brazo. Todo lo demás se hereda de la comparación de la campaña: protocolos,
+métricas, calibración común, remuestreo y secciones secundarias. Hoy salen cinco
+padres (`rnn`, `lstm`, `gru`, `dlinear` y `transformer_compact`) con seis brazos,
+salvo el Transformer, que tiene diez porque la matriz le da puntos de lectura.
+
+El manifiesto de fuentes de un padre une las predicciones del padre, leídas del
+manifiesto ya validado de la campaña, con los recibos confirmados de la etapa. Se
+rechaza una etapa con otra declaración, otras vistas o un recibo de otra ejecución,
+vista o identidad, y la comparación exige las mismas filas y objetivos en todos los
+brazos. Cada padre es un análisis secundario propio, sin corrección entre padres,
+y no sirve para elegir la arquitectura base. Sin ablación de modalidades
+conectada para estos brazos, su sección queda pendiente en el informe.
 
 Falta conectar los productores de predicciones. Las referencias neuronales con
 retención `heldout_full_train_sessions_v1` ya escriben archivos por tramo con
@@ -824,6 +953,15 @@ que también generó los datos, fue de 1,07 GiB. Con unos 1.250 pares de brazo,
 semilla y ventana en el ámbito US, la extrapolación lineal ronda la media hora
 en un proceso. Es una estimación, no una medida de la campaña real, y no
 justifica por ahora otra implementación.
+
+La versión 4 se midió después a la escala del ámbito US de la campaña A, con datos
+sintéticos de las mismas formas: 19 ventanas, 12.826.460 filas de evaluación,
+3.087.269 de calibración, 23 brazos y 64 series de brazo y semilla. La comparación
+sin estratos tardó 1.678 s con un pico de 1,90 GiB y la cartera larga y corta 860 s
+con 1,96 GiB, en un proceso con dos hilos y la CPU compartida (carga media de 14 a
+18). El tiempo crece casi linealmente con las filas leídas, unos 2 µs por fila y
+serie. El [informe de escala](../../reports/engineering/evaluation-scale-20261009/README.md)
+recoge las cuatro medidas, sus condiciones y la extrapolación al diseño conjunto.
 
 ## Qué no demuestran estas métricas
 

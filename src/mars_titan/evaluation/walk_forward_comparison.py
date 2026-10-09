@@ -26,7 +26,13 @@ de la etapa de ablación y se comparan con las originales en las mismas filas, c
 calibrador ya ajustado. Sin ese manifiesto, la sección queda pendiente y el resto del
 informe no cambia.
 
-La versión 4 añade el diseño conjunto (``joint_design``). El ámbito conjunto compara todos
+La versión 4 declara la cartera larga y corta por cuartiles (``long_short``), que calcula
+``long_short_comparison`` con estas mismas fuentes y comprobaciones. El informe añade en
+todas las versiones la fiabilidad de la probabilidad implícita de subida
+(``sign_reliability``): ECE medio de las semillas con intervalo percentil por bloques de
+días y curva de fiabilidad, en bruto y con el calibrador común.
+
+La versión 5 añade el diseño conjunto (``joint_design``). El ámbito conjunto compara todos
 los brazos y un mercado solo cuenta en las ventanas en las que su propio protocolo, con su
 historia mínima, recorre los mismos tramos (``market_eligibility``). Las filas de ese
 mercado en las demás ventanas se predicen y se conservan, pero quedan fuera de la
@@ -55,10 +61,24 @@ from mars_titan.calibration import conformal_quantiles as cqr
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.input_policy import masked_inputs, policy_identity
 from mars_titan.data.storage import atomic_json, outside_source, sha256
-from mars_titan.evaluation import modality_ablation, modality_strata
+from mars_titan.evaluation import long_short, modality_ablation, modality_strata
 from mars_titan.evaluation.forecast_panel import WEIGHTINGS, ForecastPanel, SessionSeries
-from mars_titan.evaluation.forecast_scores import COVERAGE_ERROR, SessionScores, score_sessions
-from mars_titan.evaluation.paired_comparisons import compare_series, delta, interaction, level
+from mars_titan.evaluation.forecast_scores import (
+    COVERAGE_ERROR,
+    INTERVAL_SCORE,
+    QUANTILE_SERIES,
+    SIGN_BINS,
+    SessionScores,
+    expected_calibration_error,
+    score_sessions,
+)
+from mars_titan.evaluation.paired_comparisons import (
+    circular_block_counts,
+    compare_series,
+    delta,
+    interaction,
+    level,
+)
 from mars_titan.evaluation.splits import build_folds, eligible_folds
 from mars_titan.models.quantile_head import LEVELS, QUANTILE_COLUMNS, QUANTILE_HEAD
 from mars_titan.training.temporal_contract import temporal_contracts
@@ -72,7 +92,18 @@ SCOPES = {"US": ("US",), "CN": ("CN",), "US+CN": ("US", "CN")}
 ZERO_CONTROL = "zero_control"
 POINT = "point"
 OUTPUTS = (ZERO_CONTROL, POINT, QUANTILE_HEAD)
-SERIES_METRICS = ("mae", "mse", "direction_accuracy", "rank_ic", "pinball")
+SERIES_METRICS = (
+    "mae",
+    "mse",
+    "direction_accuracy",
+    "rank_ic",
+    "pinball",
+    "up_precision",
+    "down_precision",
+    "sign_brier",
+    f"{INTERVAL_SCORE}0.8",
+    f"{INTERVAL_SCORE}0.95",
+)
 COLUMNS = ("asset_id", "market", "prediction_at", "target", "prediction")
 MAX_FILE_BYTES = 4 * 1024**3
 MAX_ARMS = 64
@@ -101,13 +132,15 @@ _CONFIG_FIELDS = {
 }
 STRATA_FIELD = "modality_strata"
 ABLATION_FIELD = "modality_ablation"
+LONG_SHORT_FIELD = "long_short"
 JOINT_FIELD = "joint_design"
-# Secciones que añade cada versión de la configuración.
+# Secciones secundarias que añade cada versión de la configuración.
 SECTIONS = {
     1: set(),
     2: {STRATA_FIELD},
     3: {STRATA_FIELD, ABLATION_FIELD},
-    4: {STRATA_FIELD, ABLATION_FIELD, JOINT_FIELD},
+    4: {STRATA_FIELD, ABLATION_FIELD, LONG_SHORT_FIELD},
+    5: {STRATA_FIELD, ABLATION_FIELD, LONG_SHORT_FIELD, JOINT_FIELD},
 }
 _JOINT_FIELDS = {
     "declared_at",
@@ -366,6 +399,30 @@ def load_config(path):
     """Validar la configuración declarada antes de abrir ninguna predicción."""
     path = Path(path)
     config, digest = read_manifest(path, 1024**2)
+    return validate_config(config, digest, path.parent)
+
+
+def resolve_config(config):
+    """Ruta de una configuración declarada o configuración ya validada por ``validate_config``.
+
+    Una configuración derivada (por ejemplo, la de los brazos postentrenados de un padre)
+    llega ya validada, con su huella y sus ámbitos resueltos.
+    """
+    if isinstance(config, dict):
+        _require(
+            {"sha256", "resolved_scopes", "resolved_families"} <= set(config),
+            "La configuración en memoria debe llegar validada",
+        )
+        return config
+    return load_config(config)
+
+
+def validate_config(config, digest, folder):
+    """Validar una configuración ya leída. ``folder`` resuelve las rutas de los protocolos.
+
+    Cada versión añade las secciones secundarias de ``SECTIONS``. La 4 añade la cartera
+    larga y corta por cuartiles y la 5 el diseño conjunto con controles separados.
+    """
     version = config.get("schema_version") if isinstance(config, dict) else None
     _require(
         isinstance(config, dict)
@@ -450,11 +507,11 @@ def load_config(path):
         modality_strata.declaration(config[STRATA_FIELD], SERIES_METRICS)
     if version >= 3:
         modality_ablation.declaration(config[ABLATION_FIELD])
-    resolved = {
-        scope: _protocols(path.parent, scope, declared) for scope, declared in scopes.items()
-    }
+    if version >= 4:
+        long_short.declaration(config[LONG_SHORT_FIELD])
+    resolved = {scope: _protocols(folder, scope, declared) for scope, declared in scopes.items()}
     if JOINT_FIELD in config:
-        _joint_design(config[JOINT_FIELD], resolved, arms, families, path.parent)
+        _joint_design(config[JOINT_FIELD], resolved, arms, families, folder)
     else:
         _plain_scopes(resolved, arms, families)
     return dict(config, sha256=digest, resolved_scopes=resolved, resolved_families=families)
@@ -946,7 +1003,8 @@ def _views(scores, markets):
 
 
 def _metric_available(scores, metric):
-    return metric != "pinball" or scores.levels is not None
+    quantile = metric in QUANTILE_SERIES or metric.startswith(INTERVAL_SCORE)
+    return not quantile or scores.levels is not None
 
 
 def _seed_series(overall, arm, view, metric):
@@ -1031,6 +1089,100 @@ def _interval_calibration(config, overall, calibrated, views):
                     comparison=compared,
                 )
     return result
+
+
+def _period_bins(scores):
+    """Filas, probabilidad y subidas por día UTC e intervalo de probabilidad, [días, bins]."""
+    periods = int(scores.session_period.max()) + 1
+    cells = []
+    for values in (scores.sign_bin_rows, scores.sign_bin_probability, scores.sign_bin_up):
+        total = np.zeros((periods, SIGN_BINS))
+        np.add.at(total, scores.session_period, values)
+        cells.append(total)
+    return cells
+
+
+def _ece(items, comparison):
+    """ECE medio de las semillas, su curva conjunta y su intervalo percentil por bloques.
+
+    Las semillas comparten días y réplicas, así que cada réplica promedia los ECE de las
+    semillas con los mismos días remuestreados, como los contrastes de ``compare_series``.
+    El ECE tiene sesgo positivo con pocas filas por intervalo y el intervalo lo describe,
+    no lo corrige.
+    """
+    cells = [_period_bins(scores) for scores in items]
+    totals = [[cell.sum(axis=0) for cell in seed] for seed in cells]
+    estimates = [expected_calibration_error(*seed) for seed in totals]
+    rows, probability, up = (np.sum([seed[i] for seed in totals], axis=0) for i in range(3))
+    result = dict(
+        estimate=None if None in estimates else float(np.mean(estimates)),
+        per_seed=estimates,
+        reliability=[
+            dict(
+                lower=index / SIGN_BINS,
+                upper=(index + 1) / SIGN_BINS,
+                rows=int(rows[index]),
+                mean_probability=float(probability[index] / rows[index]) if rows[index] else None,
+                observed_up_frequency=float(up[index] / rows[index]) if rows[index] else None,
+            )
+            for index in range(SIGN_BINS)
+        ],
+        interval=None,
+        reason=None,
+    )
+    periods, block = cells[0][0].shape[0], comparison["block_length"]
+    if result["estimate"] is None:
+        result["reason"] = "Alguna semilla no tiene filas con objetivo no nulo"
+        return result
+    if block >= periods:
+        result["reason"] = "Se necesitan más días que la longitud del bloque"
+        return result
+    rng = np.random.default_rng(comparison["seed"])
+    draws = []
+    for offset in range(0, comparison["replicates"], 256):
+        size = min(256, comparison["replicates"] - offset)
+        counts = circular_block_counts(rng, size, periods, block).astype(np.float64)
+        values = [expected_calibration_error(*(counts @ cell for cell in seed)) for seed in cells]
+        draws.append(np.mean(values, axis=0))
+    draws = np.concatenate(draws)
+    if np.isnan(draws).any():
+        result["reason"] = "Alguna réplica no contiene filas con objetivo no nulo"
+        return result
+    tail = (1 - comparison["confidence"]) / 2
+    result["interval"] = [float(v) for v in np.quantile(draws, [tail, 1 - tail])]
+    return result
+
+
+def _sign_reliability(config, overall, calibrated, views):
+    """Fiabilidad de la probabilidad implícita de subida por brazo y vista, bruta y calibrada."""
+    comparison = config["comparison"]
+    resampling = dict(
+        method="circular_block_bootstrap",
+        unit="utc_calendar_day_with_all_sessions_and_assets",
+        block_length=comparison["block_length"],
+        replicates=comparison["replicates"],
+        seed=comparison["seed"],
+        confidence=comparison["confidence"],
+        interval="percentile_marginal",
+    )
+    result = {}
+    for arm, items in overall.items():
+        if items[0][next(iter(views))].levels is None:
+            continue
+        result[arm] = {}
+        for view in views:
+            entry = dict(raw=_ece([scores[view] for scores in items], comparison))
+            adjusted = calibrated.get(arm, [None])
+            entry["calibrated"] = (
+                None
+                if None in adjusted
+                else _ece([scores[view] for scores in adjusted], comparison)
+            )
+            entry["calibrated_reason"] = (
+                "Alguna ventana no tiene calibrador" if entry["calibrated"] is None else None
+            )
+            result[arm][view] = entry
+    return dict(resampling=resampling, bins=SIGN_BINS, arms=result)
 
 
 def _session_tables(windows, arm, seed):
@@ -1234,11 +1386,12 @@ def _strata_report(config, scored, overall, markets):
 def evaluate_walk_forward(config_path, sources_path, scope, *, ablation_sources=None):
     """Calcular el informe y la tabla por sesión de un ámbito sin escribir nada.
 
+    `config_path` es la ruta de la configuración o una configuración ya validada.
     `ablation_sources` es el manifiesto de la etapa de ablación de modalidades. Solo se
     admite si la configuración declara la ablación.
     """
     started = time.perf_counter()
-    config = load_config(config_path)
+    config = resolve_config(config_path)
     sources = load_sources(sources_path, config, scope)
     # Desde aquí, los brazos y las familias son los del ámbito evaluado.
     config = scope_config(config, scope)
@@ -1304,6 +1457,7 @@ def evaluate_walk_forward(config_path, sources_path, scope, *, ablation_sources=
         arms=arms,
         contrasts=_contrasts(config, overall, names),
         interval_calibration=_interval_calibration(config, overall, calibrated, names),
+        sign_reliability=_sign_reliability(config, overall, calibrated, names),
         versions={name: version(name) for name in ("numpy", "pyarrow")},
         analysis_source_sha256={
             name: sha256(Path(__file__).parents[1] / name)

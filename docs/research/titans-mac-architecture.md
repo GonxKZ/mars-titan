@@ -4,7 +4,7 @@ La comparación conserva el candidato GRU con banco episódico y añade una refe
 
 La referencia bibliográfica es [Titans: Learning to Memorize at Test Time, NeurIPS 2025](https://proceedings.neurips.cc/paper_files/paper/2025/file/a4ca07aa108036f80cbb5b82285fd4b1-Paper-Conference.pdf), de Ali Behrouz, Peilin Zhong y Vahab Mirrokni. La adaptación al objetivo residual y a FinMultiTime pertenece a este proyecto. No constituye una reproducción de los resultados del artículo.
 
-El [recibo de fuentes](../../reports/research/titans-mac-source-audit-20261008.json) fija versiones, hashes de los PDF, ecuaciones y discrepancias comprobadas. La inspección de una implementación no oficial no equivale a incorporarla ni ejecutarla.
+El [recibo de fuentes](../../reports/research/titans-mac-source-audit-20261008.json) fija versiones, hashes de los PDF, ecuaciones y discrepancias comprobadas. La inspección de una implementación no oficial no equivale a incorporarla ni ejecutarla. La [revisión de implementaciones públicas](titans-reference-implementations.md) no encontró código de los autores y compara numéricamente la memoria del núcleo con `lucidrains/titans-pytorch`, ejecutada en un entorno aislado sin incorporarla al repositorio.
 
 ## Arquitecturas y estado comprobado
 
