@@ -505,6 +505,32 @@ def test_window_refuses_while_the_learning_hold_blocks(base, tmp_path, learning_
     assert not (tmp_path / "run").exists() and not (tmp_path / "indices").exists()
 
 
+def test_window_fits_the_chosen_search_case_and_names_it_in_its_request(base, tmp_path):
+    path = recipe(tmp_path)
+    document = json.loads(path.read_text())
+    document["recipe"].pop("learning_rate")
+    document["walk_forward"]["search_cases"] = {
+        "slow": dict(learning_rate=1e-4),
+        "fast": dict(learning_rate=1e-3),
+    }
+    path.write_text(json.dumps(document))
+    with pytest.raises(ValueError, match="Elige uno"):
+        window(base["view"], base["protocol"], path, tmp_path / "missing")
+    assert not (tmp_path / "missing").exists()
+    with unfused_attention():
+        report, _ = window(
+            base["view"], base["protocol"], path, tmp_path / "run", search_case="slow"
+        )
+    assert report["status"] == "completed" and report["request"]["search_case"] == "slow"
+    fit = json.loads((tmp_path / "run" / "fit/run.json").read_text())
+    assert fit["identity"]["recipe"]["learning_rate"] == 1e-4
+    # El optimizador sustituto no mueve pesos: solo cambia la identidad, no las filas.
+    for partition in wf.PREDICTED:
+        assert table(tmp_path / "run", partition) == table(
+            base["root"] / "runs" / "mac_online", partition
+        )
+
+
 @pytest.mark.parametrize(
     "case",
     ["min_delta", "epochs", "walk_forward", "warmup", "window", "seed", "protocol", "variant"],

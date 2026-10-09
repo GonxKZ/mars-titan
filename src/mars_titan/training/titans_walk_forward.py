@@ -4,7 +4,8 @@ Contrato por ventana para el orquestador de la campaña con máscaras:
 
 - Entradas: la vista de la ventana (supervisión con su contrato temporal v2 y la edición
   desde 2000 con máscaras), el protocolo v2 que la generó, el identificador de ventana,
-  la receta cronológica con su sección `walk_forward`, la variante y la semilla.
+  la receta cronológica con su sección `walk_forward`, la variante, la semilla y, si la
+  receta declara casos de búsqueda, el caso elegido.
 - Salida: un directorio con `run.json` y, al completarse, un Parquet por fila para
   validación, calibración y evaluación con las columnas de `training.reference_run`
   (y los cinco cuantiles si la receta usa `quantile_head_v1`). `run.json` declara
@@ -29,6 +30,7 @@ import hashlib
 import importlib
 import math
 import os
+import re
 import time
 from dataclasses import asdict
 from datetime import UTC, date, datetime
@@ -61,7 +63,7 @@ from mars_titan.models.titans.financial_inputs import FINAL_TEST_US
 from .candidate_walk_forward import check_view_rows
 from .checkpoints import StopRequest
 from .corpus_inputs import CorpusDataset
-from .financial_run import ChronologicalTrainer, Paused, load_recipe
+from .financial_run import ChronologicalRecipe, ChronologicalTrainer, Paused, load_recipe
 from .learning_hold import require_learning_allowed
 from .temporal_contract import temporal_contracts
 
@@ -70,6 +72,10 @@ PREDICTED = ("validation", "calibration", "evaluation")
 MEMORY_POLICY = "reset_each_pass_then_input_warmup_v1"
 DTYPES = {"float32": torch.float32, "float64": torch.float64}
 _ROWS_PER_TABLE = 65_536
+# Hiperparámetros del optimizador que puede variar un caso de búsqueda. La arquitectura
+# queda fija porque los cuatro controles comparten los parámetros iniciales emparejados.
+SEARCHED = ("learning_rate", "max_grad_norm")
+CASE_NAME = re.compile(r"[a-z][a-z0-9_-]{0,31}")
 _CODE = (
     "mars_titan.training.titans_walk_forward",
     "mars_titan.training.financial_run",
@@ -100,16 +106,52 @@ def memory_policy(warmup_months):
 
 
 def walk_forward_options(document):
-    """Leer la sección `walk_forward` de la receta. Hoy solo declara el calentamiento."""
+    """Leer la sección `walk_forward`: calentamiento y casos de búsqueda opcionales.
+
+    Cada caso de `search_cases` sustituye los mismos hiperparámetros de `SEARCHED`, que
+    entonces no aparecen en `recipe`. Así ningún valor base queda sin usar o sin elegir.
+    """
     options = document.get("walk_forward")
     _require(
         isinstance(options, dict)
-        and set(options) == {"warmup_months"}
+        and {"warmup_months"} <= set(options) <= {"warmup_months", "search_cases"}
         and type(options["warmup_months"]) is int
         and 0 <= options["warmup_months"] <= 60,
         "La receta necesita walk_forward.warmup_months entero entre 0 y 60",
     )
+    cases = options.get("search_cases")
+    if "search_cases" in options:
+        valid = isinstance(cases, dict) and all(
+            isinstance(case, dict) and case for case in cases.values()
+        )
+        keys = {frozenset(case) for case in cases.values()} if valid else set()
+        _require(
+            valid
+            and 1 <= len(cases) <= 3
+            and all(isinstance(name, str) and CASE_NAME.fullmatch(name) for name in cases)
+            and len(keys) == 1
+            and next(iter(keys)) <= set(SEARCHED)
+            and not next(iter(keys)) & set(document["recipe"])
+            and len({canonical(case) for case in cases.values()}) == len(cases),
+            "Los casos de búsqueda deben ser de uno a tres, distintos, con nombre válido y "
+            "sustituir los mismos hiperparámetros del optimizador, ausentes de la receta base",
+        )
+        for case in cases.values():
+            ChronologicalRecipe(**(document["recipe"] | case))
     return options
+
+
+def case_recipe(document, search_case):
+    """Receta cronológica del caso elegido. Sin casos declarados, la de la receta."""
+    cases = walk_forward_options(document).get("search_cases")
+    if cases is None:
+        _require(search_case is None, "La receta no declara casos de búsqueda")
+        return ChronologicalRecipe(**document["recipe"])
+    _require(
+        isinstance(search_case, str) and search_case in cases,
+        "Elige uno de los casos de búsqueda que declara la receta",
+    )
+    return ChronologicalRecipe(**(document["recipe"] | cases[search_case]))
 
 
 def _micros(day):
@@ -157,8 +199,9 @@ def _protocol(protocol, window, seed):
     return protocol, digest, rule, folds[window]
 
 
-def _recipe(path, rule):
-    recipe, document = load_recipe(path)
+def _recipe(path, rule, search_case=None):
+    _, document = load_recipe(path)
+    recipe = case_recipe(document, search_case)
     selection = {key: value for key, value in rule.items() if key != "max_epochs"}
     _require(
         recipe.epochs == rule["max_epochs"] and recipe.selection == selection,
@@ -221,9 +264,13 @@ def _code():
     return {name: sha256(Path(importlib.import_module(name).__file__)) for name in _CODE}
 
 
-def _request(view, protocol_sha, window, recipe, variant, seed, device):
-    """Petición verificable sin abrir la vista: huellas de sus archivos y del código."""
-    return dict(
+def _request(view, protocol_sha, window, recipe, variant, seed, device, search_case=None):
+    """Petición verificable sin abrir la vista: huellas de sus archivos y del código.
+
+    El caso de búsqueda solo aparece si la receta los declara, de modo que las peticiones
+    de las recetas sin casos conservan su forma anterior.
+    """
+    request = dict(
         view_sha256=sha256(Path(view)),
         protocol_sha256=protocol_sha,
         window=window,
@@ -233,6 +280,9 @@ def _request(view, protocol_sha, window, recipe, variant, seed, device):
         device=device,
         code=_code(),
     )
+    if search_case is not None:
+        request["search_case"] = search_case
+    return request
 
 
 class PredictionRows:
@@ -309,12 +359,14 @@ def run_titans_window(
     indices=None,
     stop=None,
     optimizer_factory=None,
+    search_case=None,
 ):
     """Ajustar una variante en una ventana y escribir sus predicciones por fila.
 
     La protección del aprendizaje se comprueba antes de leer ninguna fuente.
     `optimizer_factory` solo existe para comprobar el bucle con un optimizador que no
-    modifica pesos.
+    modifica pesos. `search_case` elige uno de los casos de búsqueda de la receta, y es
+    obligatorio si la receta los declara.
     """
     require_learning_allowed("run_titans_window de Titans-MAC")
     _require(variant in VARIANTS, "La variante no pertenece a los controles de Titans-MAC")
@@ -322,8 +374,8 @@ def run_titans_window(
     _require(device in ("cpu", "cuda:0"), "El dispositivo debe ser cpu o cuda:0 explícitos")
     view, output = Path(view), Path(output)
     protocol_document, protocol_sha, rule, fold = _protocol(protocol, window, seed)
-    chronological, document, options = _recipe(recipe, rule)
-    request = _request(view, protocol_sha, window, recipe, variant, seed, device)
+    chronological, document, options = _recipe(recipe, rule, search_case)
+    request = _request(view, protocol_sha, window, recipe, variant, seed, device, search_case)
     safe_destination(output)
     report_path = output / "run.json"
     if report_path.exists():
@@ -518,7 +570,7 @@ def carry_titans(anchor, anchor_view, view, output, *, device="cuda:0", stop=Non
     require_learning_allowed("la predicción trasladada de Titans-MAC")
     from .carried_predictions import carried_window
     from .checkpoints import load_training_state
-    from .financial_run import ChronologicalInference, ChronologicalRecipe
+    from .financial_run import ChronologicalInference
 
     started = time.perf_counter()
     anchor, anchor_view, view, output = (Path(v) for v in (anchor, anchor_view, view, output))
@@ -539,7 +591,8 @@ def carry_titans(anchor, anchor_view, view, output, *, device="cuda:0", stop=Non
     identity = report["identity"]
     document, request = identity["recipe"], identity["request"]
     options = walk_forward_options(document)
-    chronological = ChronologicalRecipe(**document["recipe"])
+    # El recorrido congelado usa el truncamiento y los bloques del caso elegido en el ancla.
+    chronological = case_recipe(document, request.get("search_case"))
     anchor_manifest, _ = read_manifest(anchor_view, 64 * 1024**2)
     if device == "cuda:0":
         from mars_titan.data.embeddings import require_cuda
@@ -603,6 +656,7 @@ def carry_titans(anchor, anchor_view, view, output, *, device="cuda:0", stop=Non
             fold=anchor_fold,
             variant=request["variant"],
             seed=request["seed"],
+            **({"search_case": request["search_case"]} if "search_case" in request else {}),
         ),
         view_sha256=sha256(view),
         fold=fold,
