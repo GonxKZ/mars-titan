@@ -2,8 +2,13 @@
 
 La ejecución comprueba el bloqueo de aprendizaje antes de cada trabajo, confirma un
 recibo por trabajo con huellas, tramos y filas, no repite los trabajos confirmados con
-la misma identidad y rehace los incompletos. Los trabajos CUDA se ejecutan de uno en
-uno bajo una única reserva de la GPU y los trabajos CPU con la concurrencia declarada.
+la misma identidad y rehace los incompletos. Sin declaración de ejecución, los trabajos
+CUDA se ejecutan de uno en uno en este proceso bajo una única reserva de la GPU y los
+trabajos CPU con la concurrencia declarada. Una declaración de ejecución
+(``training.campaign_resources``) puede fijar varias ranuras GPU: cada trabajo GPU corre
+entonces en su propio proceso con su VRAM acotada (``training.campaign_slots``), y la
+admisión respeta las dependencias del plan, las ranuras y la VRAM y la RAM declaradas.
+Los recibos y el resumen se escriben solo desde este proceso, de uno en uno.
 Cuando una semilla de un brazo tiene su predictor elegido en una ventana, se escribe el
 recibo walk-forward de cada mercado con el contrato de ``environments.walk_forward_receipt``.
 Al final se escribe el manifiesto de fuentes de cada ámbito que consume
@@ -23,7 +28,8 @@ import json
 import math
 import os
 from collections import Counter
-from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
+from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor
+from concurrent.futures import wait as wait_futures
 from contextlib import nullcontext
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -55,6 +61,14 @@ from .campaign_plan import (
     load_campaign,
     plan_campaign,
 )
+from .campaign_resources import (
+    Execution,
+    ResourcePool,
+    check_plan,
+    environment,
+    legacy_execution,
+    load_execution,
+)
 from .campaign_storage import (
     DiskGuard,
     confirmed_ids,
@@ -67,6 +81,8 @@ from .campaign_storage import (
 from .learning_hold import LearningHoldError, require_learning_allowed
 
 RUN_KIND = "historical_masked_campaign_run"
+# Posiciones del plan que una ranura libre puede adelantar a un trabajo que espera.
+BACKFILL_JOBS = 16
 RECEIPT_KIND = "masked_campaign_job"
 # Tramos que lee la comparación: calibración común y evaluación.
 COMPARED = ("calibration", "evaluation")
@@ -430,6 +446,8 @@ class _Campaign:
             json.dumps(identity, sort_keys=True).encode()
         ).hexdigest()
         self.receipts = {}
+        # Picos de memoria de los trabajos que corrieron en su propio proceso.
+        self.usage = {}
         # Huella de filas y objetivos por ámbito, ventana y tramo, común a todos los brazos.
         self.rows = {}
         self.groups = {}
@@ -641,14 +659,21 @@ class _Campaign:
         )
         return dict(parent)
 
+    def _disk_need(self, job):
+        _, counts, storage = self.disk
+        footprint = job_footprint(job, counts[job["scope"]][job["window"]], storage)
+        return footprint["retained_bytes"] + footprint["transient_bytes"]
+
+    def fits(self, job):
+        """Si el trabajo cabe ahora sobre el margen de disco, sin reservar nada."""
+        return self.disk is None or self.disk[0].admits(self._disk_need(job))
+
     def admit(self, job):
         """Empezar un trabajo solo si lo que ocupará deja intacto el margen de disco."""
         if self.disk is None:
             return
-        guard, counts, storage = self.disk
-        footprint = job_footprint(job, counts[job["scope"]][job["window"]], storage)
-        need = footprint["retained_bytes"] + footprint["transient_bytes"]
-        if not guard.admits(need, job["id"]):
+        need = self._disk_need(job)
+        if not self.disk[0].admits(need, job["id"]):
             raise DiskPaused(f"{job['id']} necesita {need} bytes sobre el margen de disco")
 
     def release(self, job, receipt):
@@ -707,6 +732,7 @@ class _Campaign:
 
 
 def _summary(output, identity, jobs, receipts, status, **extra):
+    """Resumen confirmado de la campaña. Solo lo escribe el proceso de la campaña."""
     planned = Counter(job["kind"] for job in jobs)
     done = Counter(job["kind"] for job in jobs if job["id"] in receipts)
     summary = dict(
@@ -725,11 +751,16 @@ def _summary(output, identity, jobs, receipts, status, **extra):
     return summary
 
 
-def run_campaign(path, views, output, *, executors=None, lease=None, stop=None, storage=None):
+def run_campaign(
+    path, views, output, *, executors=None, lease=None, stop=None, storage=None, execution=None
+):
     """Ejecutar o reanudar la campaña. Los ejecutores y la reserva se pueden sustituir.
 
     `storage` es la ruta de la declaración de almacenamiento. Con ella se comprueba el
     pico proyectado antes de escribir nada y la ejecución vigila el margen de disco.
+    `execution` es la ruta de una declaración de ejecución o una `Execution`. Sin ella se
+    conserva la ejecución anterior. La declaración no entra en la identidad de la campaña,
+    así que una campaña puede reanudarse con otra concurrencia.
     """
     from .checkpoints import StopRequest
 
@@ -737,6 +768,10 @@ def run_campaign(path, views, output, *, executors=None, lease=None, stop=None, 
     campaign = load_campaign(path)
     jobs = plan_campaign(campaign)
     count_jobs(campaign, jobs)
+    if execution is None:
+        execution = legacy_execution(campaign)
+    elif not isinstance(execution, Execution):
+        execution = load_execution(execution, scopes=tuple(campaign["scopes"]))
     _require(
         isinstance(views, dict) and set(views) == set(campaign["scopes"]),
         "Se necesitan las vistas de exactamente los ámbitos de la campaña",
@@ -750,6 +785,7 @@ def run_campaign(path, views, output, *, executors=None, lease=None, stop=None, 
     outside_source(Path("dataset"), output)
     executors = dict(EXECUTORS if executors is None else executors)
     _require(set(executors) == set(EXECUTORS), "Faltan ejecutores para algún modelo")
+    check_plan(execution, jobs, executors)
     identity = _identity(campaign, checked)
     disk, launch = None, None
     if storage is not None:
@@ -778,10 +814,11 @@ def run_campaign(path, views, output, *, executors=None, lease=None, stop=None, 
             atomic_json(marker, identity)
         state = _Campaign(campaign, checked, output, identity, executors, None, jobs, disk)
         uses_gpu = any(executors[j["model"], j["kind"]]["device"] == "cuda" for j in jobs)
-        reservation = (lease or _gpu_lease)() if uses_gpu else nullcontext()
+        default_lease = _slot_lease(execution) if execution.isolated else _gpu_lease
+        reservation = (lease or default_lease)() if uses_gpu else nullcontext()
         signals = StopRequest() if stop is None else nullcontext(stop)
-        workers = campaign["tabular"]["cpu_workers"]
         pause = None
+        record = dict(execution=execution.record())
 
         def disk_report():
             if disk is None:
@@ -789,11 +826,16 @@ def run_campaign(path, views, output, *, executors=None, lease=None, stop=None, 
             pending = {} if pause is None else dict(pause=pause)
             return dict(disk=dict(launch=launch, guard=disk[0].state(), **pending))
 
-        _summary(output, identity, jobs, state.receipts, "running", **disk_report())
+        _summary(output, identity, jobs, state.receipts, "running", **record, **disk_report())
         try:
-            with signals as requested, reservation, ThreadPoolExecutor(workers) as pool:
+            with (
+                signals as requested,
+                _environment(execution),
+                reservation,
+                ThreadPoolExecutor(execution.cpu_workers) as pool,
+            ):
                 state.stop = requested if disk is None else disk[0].watch(requested)
-                status = _execute(state, jobs, pool, workers)
+                status = _execute(state, jobs, pool, execution)
         except Paused as error:
             status = "paused"
             if isinstance(error, DiskPaused):
@@ -802,15 +844,38 @@ def run_campaign(path, views, output, *, executors=None, lease=None, stop=None, 
                 pause = "El espacio libre bajó del margen durante un trabajo"
         except LearningHoldError as error:
             _summary(
-                output, identity, jobs, state.receipts, "blocked", error=str(error), **disk_report()
+                output,
+                identity,
+                jobs,
+                state.receipts,
+                "blocked",
+                error=str(error),
+                **record,
+                **disk_report(),
             )
             raise
         except BaseException as error:
             _summary(
-                output, identity, jobs, state.receipts, "failed", error=str(error), **disk_report()
+                output,
+                identity,
+                jobs,
+                state.receipts,
+                "failed",
+                error=str(error),
+                **record,
+                **disk_report(),
             )
             raise
-        return _summary(output, identity, jobs, state.receipts, status, **disk_report())
+        return _summary(
+            output,
+            identity,
+            jobs,
+            state.receipts,
+            status,
+            **record,
+            **disk_report(),
+            usage=state.usage,
+        )
     finally:
         os.close(descriptor)
 
@@ -821,36 +886,213 @@ def _gpu_lease():
     return GpuLease()
 
 
-def _execute(state, jobs, pool, workers):
-    """Recorrer el plan en orden. CUDA de uno en uno y CPU con concurrencia acotada."""
-    running = {}
+class _environment:
+    """Variables de la tubería durante la campaña, restauradas al terminar."""
 
-    def collect(done):
-        for future in done:
-            job, run, identity = running.pop(future)
-            state.record(job, state.confirm(job, run, identity, future.result()))
+    def __init__(self, execution):
+        self.values, self.previous = environment(execution), {}
 
-    for job in jobs:
-        while any(dep not in state.receipts for dep in job["depends"]) and running:
-            collect(wait(running, return_when=FIRST_COMPLETED).done)
-        if state.stop.requested:
-            raise Paused
-        prepared, receipt = state.prepare(job)
-        if receipt is not None:
-            state.record(job, receipt)
-            continue
-        require_learning_allowed(f"el trabajo {job['id']}")
-        state.admit(job)
-        run, identity = prepared
-        executor = state.executors[job["model"], job["kind"]]
-        if executor["device"] == "cpu":
-            while len(running) >= workers:
-                collect(wait(running, return_when=FIRST_COMPLETED).done)
-            running[pool.submit(executor["run"], run)] = (job, run, identity)
-            continue
-        state.record(job, state.confirm(job, run, identity, executor["run"](run)))
-    while running:
-        collect(wait(running, return_when=FIRST_COMPLETED).done)
+    def __enter__(self):
+        for name, value in self.values.items():
+            self.previous[name] = os.environ.get(name)
+            os.environ[name] = value
+        return self
+
+    def __exit__(self, *_):
+        for name, value in self.previous.items():
+            if value is None:
+                os.environ.pop(name, None)
+            else:
+                os.environ[name] = value
+
+
+def _slot_lease(execution):
+    def lease():
+        from .campaign_slots import SlotLease
+
+        return SlotLease(execution)
+
+    return lease
+
+
+class _Running:
+    """Trabajo lanzado: su plan, su ejecución, su identidad y sus recursos."""
+
+    def __init__(self, job, run, identity, resources):
+        self.job, self.run, self.identity, self.resources = job, run, identity, resources
+
+
+def _execute(state, jobs, pool, execution):
+    """Recorrer el plan por orden de prioridad respetando dependencias y recursos.
+
+    Un trabajo se lanza cuando sus dependencias están confirmadas y `ResourcePool` lo
+    admite. Si no cabe, se prueban los siguientes del plan. Sin ranuras aisladas, cada
+    trabajo CUDA se ejecuta en este proceso hasta terminar, como antes. Con ranuras, cada
+    trabajo GPU corre en su proceso y este bucle solo lanza, espera y confirma. Una parada o
+    un fallo detienen los lanzamientos, piden a los trabajos en curso que se detengan en su
+    siguiente barrera y esperan a todos antes de terminar.
+    """
+    from .campaign_slots import (
+        SlotProcess,
+        SlotTask,
+        executor_name,
+        new_event,
+        run_fields,
+        slot_environment,
+        wait,
+    )
+
+    admission = ResourcePool(execution)
+    pending, threads, slots = list(jobs), {}, {}
+    event = new_event() if execution.isolated else None
+    failure, paused = None, False
+
+    def finish(entry, report):
+        admission.release(entry.resources)
+        state.record(entry.job, state.confirm(entry.job, entry.run, entry.identity, report))
+        _summary(
+            state.output,
+            state.identity,
+            jobs,
+            state.receipts,
+            "running",
+            execution=execution.record(),
+        )
+
+    def collect(block):
+        nonlocal failure, paused
+        handles = list(slots)
+        if block and (threads or slots):
+            futures = list(threads)
+            if futures and not handles:
+                wait_futures(futures, return_when=FIRST_COMPLETED, timeout=0.5)
+            elif handles:
+                wait(handles, 0.05 if futures else 0.5)
+        for future in [future for future in threads if future.done()]:
+            entry = threads.pop(future)
+            try:
+                report = future.result()
+            except Paused:
+                admission.release(entry.resources)
+                paused = True
+                continue
+            except BaseException as error:  # noqa: BLE001 - se lanza tras drenar
+                admission.release(entry.resources)
+                failure = failure or error
+                continue
+            try:
+                finish(entry, report)
+            except BaseException as error:  # noqa: BLE001
+                failure = failure or error
+        for handle in handles:
+            result = handle.poll()
+            if result is None:
+                continue
+            entry = slots.pop(handle)
+            status, value, usage = result[:3]
+            state.usage[entry.job["id"]] = usage
+            if status == "completed":
+                try:
+                    finish(entry, value)
+                except BaseException as error:  # noqa: BLE001
+                    failure = failure or error
+            else:
+                admission.release(entry.resources)
+                if status == "paused":
+                    paused = True
+                else:
+                    failure = failure or RuntimeError(
+                        f"{entry.job['id']} falló en su proceso: {value['type']}: "
+                        f"{value['message']}\n{result[3] if len(result) > 3 else ''}"
+                    )
+
+    def launch():
+        """Lanzar los trabajos listos en orden. Devuelve si alguno empezó o se confirmó.
+
+        Sin ranuras aisladas solo se considera el primer trabajo pendiente, como en la
+        ejecución en serie. Con ranuras se adelantan como mucho `BACKFILL_JOBS` posiciones
+        del plan, para ocupar una ranura libre sin alejarse del orden declarado.
+        """
+        progressed = False
+        for job in pending[: BACKFILL_JOBS if execution.isolated else 1]:
+            if failure is not None or paused or state.stop.requested:
+                break
+            if any(dep not in state.receipts for dep in job["depends"]):
+                continue
+            executor = state.executors[job["model"], job["kind"]]
+            resources = execution.resources(job, executor["device"])
+            if not admission.admits(resources):
+                continue
+            # Con trabajos en curso, uno que no cabe en disco espera a que liberen su reserva.
+            if (threads or slots) and not state.fits(job):
+                continue
+            prepared, receipt = state.prepare(job)
+            pending.remove(job)
+            progressed = True
+            if receipt is not None:
+                state.record(job, receipt)
+                continue
+            require_learning_allowed(f"el trabajo {job['id']}")
+            state.admit(job)
+            run, identity = prepared
+            entry = _Running(job, run, identity, resources)
+            admission.acquire(resources)
+            if resources.device == "cpu":
+                threads[pool.submit(executor["run"], run)] = entry
+            elif execution.isolated:
+                lock = state.folder(job) / ".job.lock"
+                lock.parent.mkdir(parents=True, exist_ok=True)
+                task = SlotTask(
+                    executor=executor_name(executor["run"]),
+                    run=run_fields(run),
+                    environment=slot_environment(execution, resources),
+                    vram_bytes=resources.vram_bytes,
+                    lock=str(lock),
+                )
+                slots[SlotProcess(task, event)] = entry
+            else:
+                try:
+                    report = executor["run"](run)
+                except BaseException:
+                    admission.release(resources)
+                    raise
+                finish(entry, report)
+                # El plan vuelve a recorrerse desde el principio, como en la ejecución en serie.
+                return True
+        return progressed
+
+    try:
+        while pending or threads or slots:
+            collect(block=False)
+            stopping = failure is not None or paused or state.stop.requested
+            if stopping:
+                if event is not None:
+                    event.set()
+                if not (threads or slots):
+                    break
+                collect(block=True)
+                continue
+            if pending and launch():
+                continue
+            if threads or slots:
+                collect(block=True)
+                continue
+            if pending:
+                blocked = pending[0]
+                raise RuntimeError(
+                    f"{blocked['id']} no puede empezar: sus dependencias no se confirmaron "
+                    "o sus recursos declarados no caben en la memoria libre"
+                )
+    except BaseException:
+        if event is not None:
+            event.set()
+        while threads or slots:
+            collect(block=True)
+        raise
+    if failure is not None:
+        raise failure
+    if paused or state.stop.requested:
+        raise Paused
     _require(len(state.receipts) == len(jobs), "La campaña no confirmó todos sus trabajos")
     return "completed"
 
@@ -979,6 +1221,11 @@ def main(argv=None):
         required=True,
         help="Declaración de almacenamiento con el margen de disco y los bytes medidos",
     )
+    execute.add_argument(
+        "--execution",
+        type=Path,
+        help="Declaración de ejecución con ranuras GPU, trabajadores CPU, memoria y lectura",
+    )
     sources.add_argument("--scope", choices=tuple(comparison.SCOPES), required=True)
     sources.add_argument("--comparison", type=Path)
     args = parser.parse_args(argv)
@@ -992,7 +1239,11 @@ def main(argv=None):
         }
     elif args.command == "run":
         result = run_campaign(
-            args.campaign, _views_argument(args.views), args.output, storage=args.storage
+            args.campaign,
+            _views_argument(args.views),
+            args.output,
+            storage=args.storage,
+            execution=args.execution,
         )
         result.pop("jobs")
     else:

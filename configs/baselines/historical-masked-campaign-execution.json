@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "kind": "historical_masked_campaign_execution",
+  "notes": "Recursos de ejecución de la campaña con máscaras. No entran en la identidad científica. VRAM en MiB del asignador por trabajo; RAM del anfitrión por proceso, con tubería y cachés. XGBoost y Ridge declaran el presupuesto completo hasta medir su VRAM en la ventana más poblada.",
+  "gpu": {
+    "slots": 1,
+    "vram_budget_mib": 7000,
+    "mps": false
+  },
+  "host": {
+    "cpu_workers": 1,
+    "ram_budget_mib": 22528,
+    "reserve_mib": 3072
+  },
+  "pipeline": {
+    "decode_workers": 4,
+    "prefetch_batches": 4,
+    "group_cache_mib": 4096
+  },
+  "models": {
+    "neural": {
+      "device": "cuda",
+      "vram_mib": 1024,
+      "host_mib": 4096
+    },
+    "ridge": {
+      "device": "cuda",
+      "vram_mib": 7000,
+      "host_mib": 8192
+    },
+    "xgboost": {
+      "device": "cuda",
+      "vram_mib": 7000,
+      "host_mib": 12288
+    },
+    "titans_mac": {
+      "device": "cuda",
+      "vram_mib": 1792,
+      "host_mib": 8192,
+      "scopes": {
+        "CN": {
+          "vram_mib": 1024,
+          "host_mib": 5120
+        }
+      }
+    },
+    "mars_titan": {
+      "device": "cuda",
+      "vram_mib": 1792,
+      "host_mib": 8192,
+      "scopes": {
+        "CN": {
+          "vram_mib": 1024,
+          "host_mib": 5120
+        }
+      }
+    },
+    "cm_v1_core": {
+      "device": "cuda",
+      "vram_mib": 1792,
+      "host_mib": 8192,
+      "scopes": {
+        "CN": {
+          "vram_mib": 1024,
+          "host_mib": 5120
+        }
+      }
+    },
+    "cm_v1": {
+      "device": "cuda",
+      "vram_mib": 1792,
+      "host_mib": 8192,
+      "scopes": {
+        "CN": {
+          "vram_mib": 1024,
+          "host_mib": 5120
+        }
+      }
+    },
+    "episodic_gru": {
+      "device": "cuda",
+      "vram_mib": 2048,
+      "host_mib": 8192,
+      "scopes": {
+        "CN": {
+          "vram_mib": 1024,
+          "host_mib": 5120
+        }
+      }
+    }
+  }
+}
