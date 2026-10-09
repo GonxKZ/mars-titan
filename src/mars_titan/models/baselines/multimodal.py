@@ -246,11 +246,20 @@ class MultimodalReference(nn.Module):
 
     def forward(self, inputs, presence=None):
         """Devolver [lote] con la cabeza escalar o [lote, 5] cuantiles ordenados."""
+        output, checks = self.forward_pending(inputs, presence)
+        raise_nonfinite(checks)
+        return output
+
+    def forward_pending(self, inputs, presence=None):
+        """Salida de `forward` y sus comprobaciones de finitud, todavía sin sincronizar.
+
+        Solo el Transformer tiene comprobaciones. Quien llama debe evaluarlas en el mismo
+        orden antes de usar la salida, como hace `forward` con `raise_nonfinite`.
+        """
         fused, checks = self._encode(inputs, presence)
         output = self.head(fused)
         if not self.emits_quantiles:
             output = output.squeeze(-1)
         if self.kind == "transformer":
             checks.append((output, "La salida Transformer contiene valores no finitos"))
-        raise_nonfinite(checks)
-        return output
+        return output, checks

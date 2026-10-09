@@ -33,8 +33,17 @@ def first_nonfinite(checks):
     """
     if not checks:
         return None
-    flags = torch.stack([torch.isfinite(value.detach()).all() for value, _ in checks])
-    for finite, (_, message) in zip(flags.tolist(), checks, strict=True):
+    return first_flagged(nonfinite_flags(checks), [message for _, message in checks])
+
+
+def nonfinite_flags(checks):
+    """Indicadores de finitud de cada comprobación, en el dispositivo y sin sincronizar."""
+    return torch.stack([torch.isfinite(value.detach()).all() for value, _ in checks])
+
+
+def first_flagged(flags, messages):
+    """Mensaje del primer indicador falso, con una sola copia al host."""
+    for finite, message in zip(flags.tolist(), messages, strict=True):
         if not finite:
             return message
     return None
