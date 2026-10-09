@@ -7,6 +7,7 @@
 #include <memory>
 #include <stdexcept>
 #include <string_view>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -14,9 +15,11 @@ namespace {
 using mars_titan::simulation::CorporateAction;
 using mars_titan::simulation::CorporateKind;
 using mars_titan::simulation::FinancialSession;
+using mars_titan::simulation::InstrumentRules;
 using mars_titan::simulation::MarketTape;
 using mars_titan::simulation::Parameters;
 using mars_titan::simulation::ReferencePolicy;
+using mars_titan::simulation::RulePeriod;
 using mars_titan::simulation::SessionSnapshot;
 
 constexpr std::size_t price_width = 5;
@@ -357,6 +360,119 @@ void ties_follow_asset_identity_and_bad_tapes_fail() {
 }
 }
 
+// Reglas de un tablero con lote de 100, resto impar, banda del 10 % y timbre de venta.
+InstrumentRules a_share(double lot = 100, double minimum = 0, double buy_tax = 0) {
+    constexpr int64_t forever = int64_t{1} << 62;
+    constexpr double band = 0.1;
+    constexpr double sell_tax = 0.001;
+    InstrumentRules result;
+    result.rules = "prueba_cn";
+    result.lot = lot;
+    result.minimum_order = minimum;
+    result.odd_lot_exit = true;
+    result.price_limits = {RulePeriod{0, forever, band, 0, 0}};
+    result.taxes = {RulePeriod{0, forever, 0, buy_tax, sell_tax}};
+    return result;
+}
+
+void ex_rights_reference_moves_the_daily_limit() {
+    constexpr double dividend = 0.5;
+    constexpr double split = 2;
+    constexpr double held = 100;
+    constexpr double sell_tax = 0.001;
+    // 8,80 queda dentro de la banda sobre 9,50 (dividendo) y en el límite sobre 10,00.
+    constexpr double dividend_open = 8.8;
+    // 4,60 queda dentro de la banda sobre 5,00 (split) y por debajo del límite sobre 10,00.
+    constexpr double split_open = 4.6;
+    for (const auto& [action, opening, sold] :
+         {std::tuple{CorporateAction{"dividendo", 0, CorporateKind::dividend, 4, dividend, 5,
+                                     true},
+                     dividend_open, held},
+          std::tuple{CorporateAction{"split", 0, CorporateKind::split, 4, split, std::nullopt,
+                                     true},
+                     split_open, held * split}}) {
+        for (const bool adjusted : {true, false}) {
+            auto data = tape(4);
+            data->instruments = {a_share()};
+            data->prices[2 * price_width] = opening;
+            if (adjusted) {
+                data->actions = {action};
+            }
+            FinancialSession session(data, parameters());
+            static_cast<void>(session.step(full_exposure_action));
+            near(session.snapshot().positions[0].quantity, held, "La compra debe ser de un lote");
+            const auto sale = session.step(1);
+            if (adjusted) {
+                near(-sale.trades[0].quantity, sold, "El exderecho debe permitir la venta");
+                near(sale.trades[0].cost, sold * opening * sell_tax,
+                     "La venta debe pagar el timbre");
+            } else {
+                require(sale.trades[0].quantity == 0 &&
+                            sale.trades[0].reason == MT_ORDER_LIMIT_DOWN,
+                        "Sin evento la apertura queda en el límite inferior");
+            }
+        }
+    }
+}
+
+void lots_minimum_and_purchase_tax_follow_the_instrument() {
+    constexpr double buy_tax = 0.003;
+    constexpr double taxed_purchase = 99;
+    constexpr double star_minimum = 200;
+    constexpr double odd_holding = 150;
+    auto taxed = tape();
+    taxed->instruments = {a_share(1, 0, buy_tax)};
+    FinancialSession reserve(taxed, parameters());
+    const auto bought = reserve.step(full_exposure_action);
+    near(bought.trades[0].quantity, taxed_purchase, "El timbre de compra se reserva");
+    near(bought.trades[0].cost, taxed_purchase * price * buy_tax, "La compra paga su timbre");
+    auto star = tape();
+    star->instruments = {a_share(1, star_minimum)};
+    FinancialSession minimum(star, parameters());
+    const auto refused = minimum.step(full_exposure_action);
+    require(refused.trades[0].quantity == 0 && refused.trades[0].reason == MT_ORDER_RESTRICTED,
+            "Una compra inferior al mínimo no se ejecuta");
+    auto odd = tape(4);
+    odd->instruments = {a_share()};
+    odd->actions = {CorporateAction{"bonus", 0, CorporateKind::split, 4, 1.5, std::nullopt,
+                                    true}};
+    std::fill_n(odd->prices.begin() + static_cast<std::ptrdiff_t>(2 * price_width), volume_column,
+                price / 1.5);
+    FinancialSession session(odd, parameters());
+    static_cast<void>(session.step(full_exposure_action));
+    const auto sale = session.step(1);
+    near(-sale.trades[0].quantity, odd_holding, "El resto impar se vende de una vez");
+    auto plain = tape(4);
+    plain->instruments = {InstrumentRules{}};
+    FinancialSession unruled(plain, parameters());
+    FinancialSession reference(tape(4), parameters());
+    static_cast<void>(unruled.step(full_exposure_action));
+    static_cast<void>(reference.step(full_exposure_action));
+    same_state(unruled.snapshot(), reference.snapshot());
+}
+
+void invalid_market_rules_are_rejected() {
+    const auto invalid = [](auto change) {
+        auto data = tape();
+        data->instruments = {a_share()};
+        change(data->instruments.front());
+        rejected([&] { data->validate(); }, "Las reglas inválidas deben rechazarse");
+    };
+    invalid([](InstrumentRules& rules) { rules.lot = 0; });
+    invalid([](InstrumentRules& rules) { rules.price_limits.front().band = 1; });
+    invalid([](InstrumentRules& rules) { rules.taxes.front().sell = -1; });
+    invalid([](InstrumentRules& rules) { rules.rules = "Con Mayúsculas"; });
+    invalid([](InstrumentRules& rules) { rules.price_limits.push_back(rules.price_limits[0]); });
+    invalid([](InstrumentRules& rules) {
+        rules.rules.clear();
+        rules.price_limits.clear();
+        rules.taxes.clear();
+    });
+    auto missing = tape(2, {"A", "B"});
+    missing->instruments = {a_share()};
+    rejected([&] { missing->validate(); }, "Las reglas deben cubrir cada activo");
+}
+
 int main() {
     try {
         purchases_and_sales_charge_both_sides();
@@ -368,6 +484,9 @@ int main() {
         normalized_turnover_overflow_keeps_the_confirmed_state();
         repeated_writeoff_keeps_the_confirmed_state();
         ties_follow_asset_identity_and_bad_tapes_fail();
+        ex_rights_reference_moves_the_daily_limit();
+        lots_minimum_and_purchase_tax_follow_the_instrument();
+        invalid_market_rules_are_rejected();
     } catch (const std::exception& error) {
         std::cerr << error.what() << '\n';
         return 1;

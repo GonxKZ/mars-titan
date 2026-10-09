@@ -9,6 +9,7 @@
 #include <optional>
 #include <span>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #if __has_cpp_attribute(clang::lifetimebound)
@@ -43,6 +44,29 @@ struct CorporateAction {
     bool verified = false;
 };
 
+// Valores vigentes en [start, end), en microsegundos UTC, como Period en Python.
+struct RulePeriod {
+    int64_t start = 0;
+    int64_t end = 0;
+    double band = 0;
+    double buy = 0;
+    double sell = 0;
+    bool operator==(const RulePeriod&) const = default;
+};
+
+// Reglas de un activo con la semántica de Instrument. Sin identidad solo conservan el lote.
+struct InstrumentRules {
+    std::string rules;
+    double lot = 1;
+    double minimum_order = 0;
+    bool odd_lot_exit = false;
+    std::vector<RulePeriod> price_limits;
+    std::vector<RulePeriod> taxes;
+    bool operator==(const InstrumentRules&) const = default;
+};
+
+inline constexpr std::string_view market_rules_contract = "mt_simulation_step_v2/mt_rules_v1";
+
 struct MarketTape {
     std::vector<std::string> assets;
     std::vector<int64_t> open_times;
@@ -51,6 +75,8 @@ struct MarketTape {
     std::vector<double> prices;
     std::vector<double> scores;
     std::vector<CorporateAction> actions;
+    // Vacío sin reglas declaradas. Si existe, una entrada por activo en el orden de assets.
+    std::vector<InstrumentRules> instruments;
     std::string currency;
     std::string domain;
     std::string partition;
@@ -59,6 +85,7 @@ struct MarketTape {
     bool historical_audit_verified = false;
 
     void validate() const;
+    [[nodiscard]] bool has_market_rules() const noexcept;
     [[nodiscard]] std::span<const double>
     frame(std::size_t session) const & MARS_TITAN_LIFETIME_BOUND;
     [[nodiscard]] std::span<const double>
@@ -151,6 +178,7 @@ private:
     [[nodiscard]] StepOutcome prepare_step(uint8_t action);
     void commit_step() noexcept;
     void observe_state(const SessionSnapshot& state, std::span<float> destination) const;
+    void prepare_rules(std::size_t following);
     std::shared_ptr<const MarketTape> tape_;
     Parameters parameters_;
     SessionSnapshot state_;
@@ -159,6 +187,8 @@ private:
     std::vector<mt_trade_v1> trades_;
     std::vector<uint32_t> currencies_;
     std::vector<double> lots_;
+    // Vacío sin reglas. Se rellena en cada paso con la banda, el timbre y la referencia vigentes.
+    std::vector<mt_rules_v1> rules_;
     std::vector<std::size_t> ranking_;
     std::vector<std::vector<std::size_t>> actions_by_session_;
 };
