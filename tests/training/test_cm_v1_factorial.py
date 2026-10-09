@@ -295,6 +295,21 @@ def test_completed_arm_is_returned_and_a_changed_declaration_is_refused(factoria
             declaration=changed,
             device="cpu",
         )
+    # El traslado lee la declaración que registra el ancla y exige su misma huella.
+    original = factorial["declaration"].read_text()
+    factorial["declaration"].write_text(json.dumps(document))
+    try:
+        with pytest.raises(ValueError, match="cambió después de ajustar el ancla"):
+            cm.carry_cm_v1(
+                root / "cm_v1_bm",
+                factorial["view"],
+                factorial["view"],
+                tmp_path / "carry",
+                device="cpu",
+            )
+    finally:
+        factorial["declaration"].write_text(original)
+    assert not (tmp_path / "carry").exists()
 
 
 def consolidating(streams, output, native, *, capacity, policy, **retention):

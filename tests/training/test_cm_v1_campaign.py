@@ -96,6 +96,11 @@ def test_cores_fit_once_per_case_and_each_arm_starts_from_its_core(tmp_path, var
         assert counts[arm] == counts[TITANS_ARM]
     for core in plan.CM_CORES:
         assert all(entry["carry"] == 0 for entry in counts[core].values())
+    # Los núcleos emiten la cabeza de cuantiles de sus brazos y se validan con sus columnas.
+    for name in (*plan.CM_CORES, *plan.CM_ARMS):
+        assert plan.arm_output(campaign, name) == plan.QUANTILE_HEAD
+    with pytest.raises(ValueError, match="trabajo auxiliar"):
+        plan.arm_output(campaign, "cm_v1_core_x")
     pending = plan.check_campaign(declared(tmp_path, variant))["pending_families"]
     assert "cm_v1" not in pending
     assert "cm_v1" in plan.check_campaign(CAMPAIGNS[variant])["pending_families"]

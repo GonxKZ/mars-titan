@@ -201,6 +201,20 @@ def test_frequency_follows_the_observation_counter_of_each_flow(shared, tmp_path
     assert 0 < groups[2] < groups[1]
 
 
+def test_penalties_without_mature_labels_are_discarded_without_a_step(shared, tmp_path):
+    """Un tramo sin etiquetas maduras no da paso, así que C no añade actualizaciones."""
+    _, streams = shared
+    b, report_b = run(streams, tmp_path / "b", control("disabled"), truncation=1)
+    c, report_c = run(streams, tmp_path / "c", control("penalty", 0.5), truncation=1)
+    metrics = train_metrics(report_c)
+    assert metrics["control_groups_discarded"] > 0
+    assert metrics["control_groups_kept"] == (
+        metrics["control_groups_in_objective"] + metrics["control_groups_discarded"]
+    )
+    assert entries(b.audit, "update") == entries(c.audit, "update")
+    assert metrics["updates"] == train_metrics(report_b)["updates"]
+
+
 def test_logical_group_is_the_event_and_not_the_physical_block(shared, tmp_path):
     _, streams = shared
     reports, records = {}, {}
