@@ -1,6 +1,8 @@
 """Lotes supervisados por activo y grupo Parquet, sin acumular el corpus en RAM."""
 
+import fcntl
 import hashlib
+import json
 import os
 import re
 import threading
@@ -21,7 +23,7 @@ from mars_titan.data.input_policy import (
     validate_historical_vectors,
 )
 from mars_titan.data.modality_ablation import ablate_samples, ablated_modalities
-from mars_titan.data.storage import sha256
+from mars_titan.data.storage import atomic_json, sha256
 
 from .cohort_contract import cohort_identity, representation_identity, validate_cohort_rows
 from .input_pipeline import PipelineOptions, background, ordered_map
@@ -37,8 +39,80 @@ _DIGEST_LIMIT = 1 << 18
 _DIGEST_LOCK = threading.Lock()
 
 
+# Archivo de huellas compartido entre procesos, por ejemplo los de las ranuras de una campaña.
+DIGEST_CACHE_ENV = "MARS_TITAN_DIGEST_CACHE"
+_DIGEST_KIND = "mars_titan_file_digests"
+_DIGEST_FILE_BYTES = 64 * 1024**2
+
+
 def _signature(stat):
     return (stat.st_dev, stat.st_ino, stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns)
+
+
+def _digest_file():
+    raw = os.environ.get(DIGEST_CACHE_ENV)
+    if not raw:
+        return None
+    path = Path(raw)
+    if not path.is_absolute() or path.is_symlink():
+        raise ValueError(f"{DIGEST_CACHE_ENV} debe ser una ruta absoluta y regular")
+    return path
+
+
+def _read_digests(path):
+    """Entradas válidas del archivo compartido. Un archivo ilegible no aporta ninguna."""
+    try:
+        if not path.is_file() or path.stat().st_size > _DIGEST_FILE_BYTES:
+            return {}
+        document = json.loads(path.read_text())
+    except (OSError, ValueError):
+        return {}
+    if not isinstance(document, dict) or document.get("kind") != _DIGEST_KIND:
+        return {}
+    entries = {}
+    for entry in document.get("entries", ()):
+        if (
+            isinstance(entry, list)
+            and len(entry) == 7
+            and isinstance(entry[0], str)
+            and all(type(value) is int for value in entry[1:6])
+            and isinstance(entry[6], str)
+            and re.fullmatch(r"[0-9a-f]{64}", entry[6])
+        ):
+            entries[entry[0], tuple(entry[1:6])] = entry[6]
+    return entries
+
+
+def load_shared_digests():
+    """Incorporar las huellas que otros procesos guardaron con la misma firma de stat.
+
+    Una entrada solo vale para la ruta y la firma exactas con que se calculó. La firma
+    incluye el ctime, que cambia con cualquier escritura y que un usuario no puede fijar,
+    así que un archivo modificado se vuelve a leer completo, igual que con la memoria del
+    proceso.
+    """
+    path = _digest_file()
+    if path is None:
+        return
+    entries = _read_digests(path)
+    with _DIGEST_LOCK:
+        for key, value in entries.items():
+            _DIGESTS.setdefault(key, value)
+
+
+def store_shared_digests(keys):
+    """Añadir al archivo compartido las huellas de `keys`, con cerrojo y escritura atómica."""
+    path = _digest_file()
+    if path is None or not keys:
+        return
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.with_name(path.name + ".lock").open("a") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        entries = _read_digests(path)
+        with _DIGEST_LOCK:
+            entries.update({key: _DIGESTS[key] for key in keys if key in _DIGESTS})
+        rows = [[name, *signature, value] for (name, signature), value in sorted(entries.items())]
+        atomic_json(path, dict(kind=_DIGEST_KIND, entries=rows[-_DIGEST_LIMIT:]))
 
 
 def _digest(path, signature):
@@ -411,6 +485,7 @@ class CorpusDataset:
         Las huellas se calculan antes en hilos y la comprobación recorre después los activos
         en su orden, así que el primer artefacto inválido es el mismo que en serie.
         """
+        load_shared_digests()
         pending = []
         for asset in self.assets:
             for kind in ("prices", "samples", "labels"):
@@ -420,9 +495,12 @@ class CorpusDataset:
                         pending.append((path, _signature(path.stat())))
                 except OSError:
                     continue
-        if len(pending) > 1:
-            with ThreadPoolExecutor(min(HASH_WORKERS, len(pending))) as pool:
-                list(pool.map(lambda item: _digest(*item), pending))
+        with _DIGEST_LOCK:
+            missing = [item for item in pending if (str(item[0]), item[1]) not in _DIGESTS]
+        if missing:
+            with ThreadPoolExecutor(min(HASH_WORKERS, len(missing))) as pool:
+                list(pool.map(lambda item: _digest(*item), missing))
+        store_shared_digests([(str(path), signature) for path, signature in missing])
         for asset in self.assets:
             for kind in ("prices", "samples", "labels"):
                 self._file(asset, kind)
@@ -706,7 +784,7 @@ class CorpusDataset:
         caché de tablas o fuera de la edición con máscaras se devuelve `None` y el activo se
         lee grupo a grupo, que lanza el mismo error en la misma posición.
         """
-        if not works or not self.masked or self.cache_sample_tables:
+        if not works or not self._reads_assets():
             return None
         first = works[0]
         groups = sorted(work["group"] for work in works)
@@ -893,6 +971,16 @@ class CorpusDataset:
                 break
         return results, None, asset
 
+    def _reads_assets(self):
+        """La lectura conjunta por activo solo se usa en la edición con máscaras sin caché."""
+        return self.masked and not self.cache_sample_tables
+
+    @staticmethod
+    def _group_items(plan):
+        """El plan grupo a grupo, como activos de un grupo, para la lectura por grupo."""
+        for kind, value in plan:
+            yield ([value], None) if kind == "group" else ([], value)
+
     @staticmethod
     def _asset_plan(plan):
         """Agrupar los trabajos del plan por activo.
@@ -914,11 +1002,14 @@ class CorpusDataset:
             raise
 
     def _blocks(self, partition, epoch, seed, cursor):
-        plan = self._asset_plan(self._group_plan(partition, epoch, seed, cursor))
+        plan = self._group_plan(partition, epoch, seed, cursor)
+        # Por activo, cada unidad retiene un activo decodificado. Por grupo, un grupo.
+        if self._reads_assets():
+            plan, lookahead = self._asset_plan(plan), self.pipeline.decode_workers + 1
+        else:
+            plan, lookahead = self._group_items(plan), self.pipeline.lookahead
         if self.pipeline.decode_workers:
-            stream = ordered_map(
-                self._asset_blocks, plan, self._executor(), self.pipeline.decode_workers + 1
-            )
+            stream = ordered_map(self._asset_blocks, plan, self._executor(), lookahead)
         else:
             stream = map(self._asset_blocks, plan)
         dimensions = None

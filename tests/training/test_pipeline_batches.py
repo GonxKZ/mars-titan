@@ -329,3 +329,41 @@ def test_parallel_hashing_reports_the_first_invalid_asset_in_order(tmp_path, mon
     with pytest.raises(ValueError, match="ha cambiado"):
         dataset(manifest, SEQUENTIAL)
     assert checked[-1] == (meta["assets"][1]["symbol"], "labels")
+
+
+def test_shared_digests_spare_rehashing_and_still_detect_changes(tmp_path, monkeypatch):
+    manifest = corpus(tmp_path, assets=3)
+    shared = tmp_path / "shared" / "file-digests.json"
+    monkeypatch.setenv(corpus_inputs.DIGEST_CACHE_ENV, str(shared))
+    monkeypatch.setattr(corpus_inputs, "_DIGESTS", {})
+    dataset(manifest, SEQUENTIAL)
+    assert shared.is_file()
+    # Otro proceso: memoria vacía. Las huellas compartidas evitan leer los archivos.
+    monkeypatch.setattr(corpus_inputs, "_DIGESTS", {})
+    hashed, original = [], corpus_inputs.sha256
+    monkeypatch.setattr(corpus_inputs, "sha256", lambda path: hashed.append(path) or original(path))
+    reader = dataset(manifest, SEQUENTIAL)
+    assert hashed == []
+    # Un archivo reescrito cambia de firma: se lee de nuevo y se rechaza.
+    path = reader._file(reader.assets[0], "samples")
+    content = path.read_bytes()
+    path.write_bytes(content[:-9] + b"X" + content[-8:])
+    monkeypatch.setattr(corpus_inputs, "_DIGESTS", {})
+    with pytest.raises(ValueError, match="ha cambiado"):
+        dataset(manifest, SEQUENTIAL)
+    assert path in hashed
+
+
+def test_an_unreadable_shared_digest_file_only_costs_a_rehash(tmp_path, monkeypatch):
+    manifest = corpus(tmp_path, assets=2)
+    shared = tmp_path / "file-digests.json"
+    shared.write_text("{no es json")
+    monkeypatch.setenv(corpus_inputs.DIGEST_CACHE_ENV, str(shared))
+    monkeypatch.setattr(corpus_inputs, "_DIGESTS", {})
+    expected = stream(dataset(manifest, SEQUENTIAL), "train", 3, 0, 1)
+    assert json.loads(shared.read_text())["kind"] == "mars_titan_file_digests"
+    monkeypatch.setenv(corpus_inputs.DIGEST_CACHE_ENV, "relativa.json")
+    with pytest.raises(ValueError, match="ruta absoluta"):
+        dataset(manifest, SEQUENTIAL)
+    monkeypatch.delenv(corpus_inputs.DIGEST_CACHE_ENV)
+    assert stream(dataset(manifest, SEQUENTIAL), "train", 3, 0, 1) == expected
