@@ -148,7 +148,8 @@ class FinancialTrainer:
             else None
         )
         self.optimizer = torch.optim.Adam(self.network.parameters(), lr=config.learning_rate)
-        self.rng = np.random.default_rng(seed)
+        # El mundo sintético usa default_rng(seed). La exploración toma un flujo hijo distinto.
+        self.rng = np.random.default_rng(np.random.SeedSequence(seed).spawn(1)[0])
         self.sampling = torch.Generator(device=device).manual_seed(seed)
         self.replay = (
             Replay(config.replay_capacity, env.observation_space.shape[0])
@@ -166,6 +167,7 @@ class FinancialTrainer:
             seed=seed,
             device=device,
             diagnostic=diagnostic,
+            rng_streams=dict(numpy="seed_sequence_spawn_v1", torch="manual_seed"),
             environment=env.identity,
             torch=str(torch.__version__),
             numerics=dict(
