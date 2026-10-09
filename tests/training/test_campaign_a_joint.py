@@ -320,6 +320,17 @@ def test_later_stages_confirm_only_the_base_of_the_window_they_run(module):
     assert seen and all((job["scope"], job["window"]) == ("US+CN", "fold-006") for job in seen)
 
 
+def test_window_jobs_follow_dependencies_through_every_level():
+    def job(name, window, depends=()):
+        return dict(id=name, scope="US+CN", window=window, depends=list(depends))
+
+    chain = [job("c", "fold-000"), job("b", "fold-000", ["c"]), job("a", "fold-001", ["b"])]
+    selected = order.window_jobs(campaign(), chain, "fold-001")
+    assert [item["id"] for item in selected] == ["c", "b", "a"]
+    with pytest.raises(ValueError, match="no está en el plan"):
+        order.window_jobs(campaign(), chain[1:], "fold-001")
+
+
 def test_a_carried_window_keeps_its_anchor_and_the_dependencies_it_needs():
     variant_b = plan.load_campaign(CONFIGS / "baselines/historical-masked-campaign-b.json")
     jobs = plan.plan_campaign(variant_b)
