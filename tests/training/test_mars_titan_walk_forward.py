@@ -8,6 +8,7 @@ estado elegido compuesto, reanudación y los rechazos previos a abrir fuentes.
 import json
 import shutil
 from pathlib import Path
+from types import SimpleNamespace
 
 import pyarrow.parquet as pq
 import pytest
@@ -26,6 +27,8 @@ from tests.training.test_titans_walk_forward import (
 DECLARED = Path("configs/titans/episodic-readout-historical-masked.json")
 M1 = {"episodic_bank": "m1"}
 M0 = {"episodic_bank": "m0_no_bank"}
+M3 = {"episodic_bank": "m3"}
+COMPONENTS = dict(m1=M1, m0=M0, m3=M3)
 
 
 @pytest.fixture(autouse=True)
@@ -82,7 +85,7 @@ def base(tmp_path_factory, learning_doubles_module):
         plan = readout_recipe(root)
         runs = {
             name: mars(view, parent, plan, root / "runs" / name, components)
-            for name, components in (("m1", M1), ("m0", M0))
+            for name, components in COMPONENTS.items()
         }
     finally:
         torch.backends.mha.set_fastpath_enabled(previous)
@@ -93,7 +96,7 @@ def table(folder, partition):
     return pq.read_table(folder / f"{partition}-predictions.parquet").sort_by("sample_id")
 
 
-@pytest.mark.parametrize("name", ["m1", "m0"])
+@pytest.mark.parametrize("name", ["m1", "m0", "m3"])
 def test_window_fits_the_reader_and_scores_the_parent_rows(base, name):
     report, factory = base["runs"][name]
     output = base["root"] / "runs" / name
@@ -101,7 +104,7 @@ def test_window_fits_the_reader_and_scores_the_parent_rows(base, name):
     assert factory.instances and all(i.calls == len(i.records) > 0 for i in factory.instances)
     fit = json.loads((output / "fit/run.json").read_text())
     assert fit["identity"]["recipe"]["learning_rate"] == 1e-4
-    assert fit["identity"]["admission"] == ("m1" if name == "m1" else "m0")
+    assert fit["identity"]["admission"] == name
     selected = json.loads((output / "selected.json").read_text())
     assert report["checkpoint"] == dict(
         path="selected.json", sha256=sha256(output / "selected.json")
@@ -118,9 +121,30 @@ def test_window_fits_the_reader_and_scores_the_parent_rows(base, name):
         assert set(QUANTILE_COLUMNS) <= set(rows.column_names)
     # La identidad de la variante parte del núcleo elegido en la ventana del padre.
     variant = report["identity"]["variant"]
-    assert variant["components"] == (M1 if name == "m1" else M0)
+    assert variant["components"] == COMPONENTS[name]
     assert variant["base"]["parameters_sha256"] == fit["identity"]["parent"]["parameters_sha256"]
     assert report["identity"]["memory_policy"]["bank"].startswith("empty_at_each_pass")
+
+
+def test_m3_window_freezes_the_scalers_of_its_training_tramo(base):
+    report, _ = base["runs"]["m3"]
+    output = base["root"] / "runs" / "m3"
+    fit = json.loads((output / "fit/run.json").read_text())
+    stored = mw.WriteScalers.from_fields(fit["identity"]["retention"]["scalers"])
+    train = report["identity"]["indices"]["train"]
+    assert stored.source_sha256 == train != report["identity"]["indices"]["validation"]
+    assert fit["identity"]["sources"]["train"]["index_sha256"] == train
+    phase = fit["identity"]["sources"]["train"]["phase"]
+    assert (stored.decision_start, stored.decision_end) == (
+        phase["decision_start"],
+        phase["decision_end"],
+    )
+    # Una ejecución reanudada reutiliza las escalas guardadas sin recorrer de nuevo el tramo.
+    plan = mw.case_recipe(mw.load_recipe(base["plan"]), "lr1e-4")
+    assert mw._training_scalers(output / "fit", SimpleNamespace(identity=train), plan) == stored
+    with pytest.raises(ValueError, match="tramo de entrenamiento"):
+        mw._training_scalers(output / "fit", SimpleNamespace(identity="0" * 64), plan)
+    assert mw._anchor_scalers(fit) == stored
 
 
 def test_identity_reuses_the_variant_builder_of_the_declaration(base):
@@ -172,7 +196,7 @@ def copied_parent(base, tmp_path, change):
     ("components", "message"),
     [
         ({}, "propio Titans-MAC"),
-        ({"episodic_bank": "m3"}, "M3"),
+        ({"episodic_bank": "m4"}, "no admite"),
         (
             {"associative_memory": dict(rule="delta", key="codec", rate=0.5, forgetting=0.0)},
             "B6",
