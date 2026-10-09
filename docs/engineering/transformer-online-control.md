@@ -45,6 +45,19 @@ El motor registra el ejecutor como `("neural", "online")`, con el informe `onlin
 
 El control no forma parte de la cadena de predictores que alimenta la RL. Para los brazos en línea, el valor `labels_used_until` del recibo de ventana solo acota el estado de partida. La causalidad dentro de calibración y evaluación la comprueban las pruebas del ejecutor.
 
+## Comparación
+
+La comparación de la evaluación (`configs/evaluation/historical-masked-2000-comparison.json`) declara el brazo `transformer_compact_online` en la familia `online_control`, con la misma cabeza de cuantiles y las mismas semillas que `transformer_compact` y `mars_titan_m1`. Dos familias de contrastes lo emparejan sobre las mismas filas y sesiones:
+
+| Familia | Contraste | Qué responde |
+| --- | --- | --- |
+| `online_learning` | `transformer_compact_online` menos `transformer_compact` | Cuánto gana el Transformer solo por seguir aprendiendo con las etiquetas del banco |
+| `memory_vs_online_learning` | `mars_titan_m1` menos `transformer_compact_online` | Si MARS-TITAN mejora a un modelo que recibe la misma información en línea |
+
+El brazo entra también en la familia de niveles. Si el control en línea alcanza a MARS-TITAN, su mejora frente al Transformer congelado no puede atribuirse solo a la memoria. Si MARS-TITAN lo supera con un intervalo simultáneo que excluye el cero, el aprendizaje en línea con las mismas etiquetas no basta para explicar la diferencia. El contraste no separa la memoria de Titans-MAC del banco episódico, porque M1 tiene las dos. Esa separación la dan `episodic_reader` y `episodic_write_policies`.
+
+Las campañas A y B de la edición desde 2000 no declaran los trabajos del control, así que el plan lo lista entre las familias pendientes con la issue #443. La campaña A por etapas los declara en su sección `online_controls`.
+
 ## Comprobaciones
 
 `tests/training/test_online_reference.py` usa un ancla Transformer con los pesos iniciales de la semilla y una ventana M1 ajustada con el registrador de gradientes sobre un padre Titans-MAC. El optimizador del control solo registra pasos y normas.
