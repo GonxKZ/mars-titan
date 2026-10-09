@@ -196,10 +196,12 @@ def test_double_dqn_selects_and_evaluates_the_chosen_state_without_updates(
             row["status"] in ("completed", "ruined") and row["steps"] == len(evaluation_tape[1]) - 1
         )
         assert row["liquidated_net_return"] > -1
-    # La venta final descuenta solo la tarifa declarada, como `terminal_liquidation`. China
-    # paga además el timbre en cada venta, también con tarifa cero.
+    # La venta final descuenta la tarifa declarada y, en China, el timbre de venta vigente en el
+    # último cierre, como `terminal_liquidation`. China paga además el timbre en cada venta,
+    # también con tarifa cero, y esta política termina invertida.
     zero = document["metrics"][0]
-    assert zero["net_return"] == zero["liquidated_net_return"]
+    assert (zero["net_return"] == zero["liquidated_net_return"]) is (market == "US")
+    assert zero["liquidated_net_return"] <= zero["net_return"]
     assert (zero["costs"] == 0) is (market == "US")
     # Una cinta de evaluación que no es posterior a la validación se rechaza.
     early = ["--audit-run", fit, "--audit-tape", tapes[market]["early_evaluation"][0][0]]

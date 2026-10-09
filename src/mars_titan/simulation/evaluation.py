@@ -3,6 +3,24 @@
 import math
 import time
 
+# La venta hipotética al último cierre paga `cost_bps` y el impuesto de venta vigente en la
+# fecha de ese cierre, como `liquidated_nav` en el motor nativo.
+LIQUIDATION_BASIS = "final_close_minus_cost_bps_and_sell_taxes"
+
+
+def _exit_costs(env):
+    """Coste de vender todas las posiciones al último cierre con su impuesto de venta."""
+    at = int(env.tape.close_times[env.cursor])
+    held, taxes = [], []
+    for asset, quantity in env.book.positions.items():
+        value = quantity * env.tape.prices[env.cursor, env.tape.assets.index(asset), 3]
+        held.append(value)
+        rate = env.instruments[asset].tax(at, "sell")
+        if rate:
+            taxes.append(value * rate)
+    # Mismo orden de operaciones que el motor nativo: el coste sobre la suma y después el timbre.
+    return math.fsum(held) * env.cost_bps / 10000 + math.fsum(taxes)
+
 
 def evaluate(env, policy, *, seed=42, check_resources=None):
     """Valorar posiciones al cierre, conservando las órdenes que no se ejecutaron."""
@@ -28,16 +46,7 @@ def evaluate(env, policy, *, seed=42, check_resources=None):
     completed = nav is not None
     net_return = nav / initial - 1 if completed else None
     # La recompensa valora al cierre sin pagar la salida. Se informa aparte, sin cambiarla.
-    exit_costs = (
-        math.fsum(
-            quantity * env.tape.prices[env.cursor, env.tape.assets.index(asset), 3]
-            for asset, quantity in env.book.positions.items()
-        )
-        * env.cost_bps
-        / 10000
-        if completed
-        else None
-    )
+    exit_costs = _exit_costs(env) if completed else None
     if completed and (not math.isfinite(net_return) or net_return < -1 or not 0 <= drawdown <= 1):
         raise ValueError("La valoración no conserva los límites de una cartera sin deuda")
     return dict(
@@ -69,7 +78,7 @@ def evaluate(env, policy, *, seed=42, check_resources=None):
         pending_orders=env.book.orders,
         ruin_reward_penalty=env.ruin_penalty if reason == "ruin" else None,
         terminal_liquidation=dict(
-            basis="final_close_minus_cost_bps",
+            basis=LIQUIDATION_BASIS,
             estimated_costs=exit_costs,
             net_return=(nav - exit_costs) / initial - 1 if completed else None,
         ),

@@ -725,7 +725,12 @@ double liquidated_nav(const SessionSnapshot& state, const MarketTape& tape) {
     if (state.positions.size() * price_width != prices.size() || std::isnan(state.account.nav)) {
         return unknown;
     }
+    // La venta hipotética al último cierre paga el coste configurado y el impuesto de venta
+    // vigente en la fecha de ese cierre, como `terminal_liquidation` en Python.
+    const auto at = tape.close_times[state.cursor];
+    const bool rules = !tape.instruments.empty();
     AccurateSum held;
+    AccurateSum taxes;
     for (std::size_t asset = 0; asset < state.positions.size(); ++asset) {
         const double quantity = state.positions[asset].quantity;
         if (quantity == 0) {
@@ -736,10 +741,15 @@ double liquidated_nav(const SessionSnapshot& state, const MarketTape& tape) {
             return unknown;
         }
         checked_sum(held, quantity * close);
+        const auto* tax = rules ? period_at(tape.instruments[asset].taxes, at) : nullptr;
+        if (tax != nullptr && tax->sell != 0) {
+            checked_sum(taxes, quantity * close * tax->sell);
+        }
     }
     // Las posiciones son largas y no superan el patrimonio, así que el resultado no es negativo.
     const double nav =
-        state.account.nav - held.value() * state.parameters.cost_bps / basis_point_denominator;
+        state.account.nav -
+        (held.value() * state.parameters.cost_bps / basis_point_denominator + taxes.value());
     check_amount(nav);
     return nav;
 }
