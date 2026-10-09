@@ -8,6 +8,7 @@ el aislamiento del estado rápido del padre y la reanudación desde checkpoints 
 import copy
 import json
 import os
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -15,6 +16,8 @@ import torch
 
 from mars_titan.memory.episodic_codec import FrozenEpisodeCodec
 from mars_titan.memory.native_backend import load_native
+from mars_titan.memory.write_policy import CompositeScoreConfig
+from mars_titan.memory.write_scores import fit_write_scalers
 from mars_titan.models.titans.episodic_readout import EpisodicReadout, EpisodicReadoutConfig
 from mars_titan.models.titans.financial import FinancialConfig, FinancialPredictor
 from mars_titan.models.titans.local_control import MACProjectionConfig
@@ -77,16 +80,25 @@ def reader(streams, admission, *, refinements=1, episodes="per_step", seed=42, *
     return EpisodicReadout(config, dtype=torch.float64), codec
 
 
+def scalers_for(streams, plan):
+    """Escalas M3 del tramo de entrenamiento de la fixture."""
+    return fit_write_scalers(streams["train"], block_rows=plan.block_rows)
+
+
 def build(streams, output, native, *, admission="m1", model=None, plan=None, **options):
     plan = plan or recipe()
     factory = options.pop("factory", RecordingOptimizer)
+    scalers = options.pop("scalers", None)
+    if admission == "m3" and scalers is None:
+        scalers = scalers_for(streams, plan)
+    extra = {} if scalers is None else dict(scalers=scalers)
     readout, codec = reader(streams, admission, **options)
     return mt.ReadoutTrainer(
         model or parent(streams),
         readout,
         plan,
         admission=admission,
-        retention=mt.retention_config(plan, admission),
+        retention=mt.retention_config(plan, admission, **extra),
         native=native,
         codec=codec,
         train=streams["train"],
@@ -165,13 +177,43 @@ def test_recipe_rejects_invalid_values(options):
         recipe(**options)
 
 
-def test_m3_is_rejected_with_its_motive_and_m2_keeps_its_three_indices():
+def test_m3_needs_training_scalers_and_shares_the_three_indices_of_m2(shared):
+    _, streams = shared
     plan = recipe()
     with pytest.raises(ValueError, match="M3"):
         mt.retention_config(plan, "m3")
     with pytest.raises(ValueError, match="tres índices"):
         mt.retention_config(plan, "m2", policy="anchored")
+    with pytest.raises(ValueError, match="tres índices"):
+        mt.retention_config(plan, "m3", policy="anchored", scalers=scalers_for(streams, plan))
+    with pytest.raises(ValueError, match="solo M3 lleva escalas"):
+        mt.retention_config(plan, "m1", scalers=scalers_for(streams, plan))
     assert mt.retention_config(plan, "m0") is None
+    m3 = mt.retention_config(plan, "m3", scalers=scalers_for(streams, plan))
+    m2 = mt.retention_config(plan, "m2")
+    assert type(m3) is CompositeScoreConfig
+    assert (m3.capacity, m3.seed, m3.quotas) == (m2.capacity, m2.seed, m2.quotas)
+
+
+def test_m3_scalers_must_come_from_the_training_tramo_of_the_fit(shared, tmp_path, native):
+    _, streams = shared
+    fitted = scalers_for(streams, recipe())
+    engine = build(streams, tmp_path / "run", native, admission="m3", scalers=fitted)
+    assert engine.identity["retention"]["scalers"]["source_sha256"] == streams["train"].identity
+    for foreign in (
+        replace(fitted, source_sha256=streams["validation"].identity),
+        replace(fitted, decision_start=fitted.decision_start + 1),
+    ):
+        with pytest.raises(ValueError, match="tramo de entrenamiento"):
+            build(streams, tmp_path / "other", native, admission="m3", scalers=foreign)
+    other = build(
+        streams,
+        tmp_path / "changed",
+        native,
+        admission="m3",
+        scalers=replace(fitted, error_median=fitted.error_median * 2),
+    )
+    assert other.run_id != engine.run_id
 
 
 @pytest.mark.parametrize("admission", ["m0", "m1"])
@@ -274,7 +316,7 @@ def runs(shared, tmp_path_factory, native):
         previous = torch.backends.mha.get_fastpath_enabled()
         torch.backends.mha.set_fastpath_enabled(False)
         try:
-            for admission in ("m0", "m1", "m2"):
+            for admission in ("m0", "m1", "m2", "m3"):
                 engine = build(
                     streams, root / admission, native, admission=admission, plan=recipe(epochs=2)
                 )
@@ -286,7 +328,7 @@ def runs(shared, tmp_path_factory, native):
     return result
 
 
-@pytest.mark.parametrize("admission", ["m0", "m1", "m2"])
+@pytest.mark.parametrize("admission", ["m0", "m1", "m2", "m3"])
 def test_loop_reaches_the_step_without_changing_any_weight(runs, admission):
     engine, report, before = runs[admission]
     assert report["status"] == "completed" and report["final_test_opened"] is False
@@ -309,6 +351,19 @@ def test_loop_reaches_the_step_without_changing_any_weight(runs, admission):
         assert train["admitted"] == 0
     else:
         assert train["admitted"] == train["labels"]
+    if admission == "m3":
+        # Cada candidato maduro se ofrece al selectivo, que lo admite o lo rechaza.
+        for metrics in (train, report["history"][-1]["validation"]):
+            assert (
+                metrics["selective_admitted"] + metrics["selective_rejected"]
+                == (metrics["admitted"])
+            )
+            assert metrics["selective_admitted"] - metrics["selective_evicted"] == min(
+                metrics["admitted"], mt.retention_config(recipe(), "m2").quotas["selective"]
+            )
+            assert 0 <= metrics["relevance_unknown"] <= metrics["admitted"]
+    else:
+        assert "selective_admitted" not in train
 
 
 def train_passes(audit):
@@ -384,7 +439,7 @@ def test_parent_fast_state_does_not_depend_on_the_bank_or_the_readout(shared, tm
 
     model.prepare = recording
     sequences = {}
-    for admission in ("m0", "m1", "m2"):
+    for admission in ("m0", "m1", "m2", "m3"):
         calls.clear()
         engine = build(streams, tmp_path / admission, native, admission=admission, model=model)
         engine.evaluate(streams["validation"])
@@ -465,7 +520,7 @@ def test_future_suffix_changes_neither_past_predictions_nor_past_gradients(
                 torch.testing.assert_close(value, right[key], rtol=0, atol=0)
 
 
-@pytest.mark.parametrize("admission", ["m1", "m2"])
+@pytest.mark.parametrize("admission", ["m1", "m2", "m3"])
 def test_resume_after_a_pause_reproduces_the_continuous_run(
     shared, tmp_path, native, learning_doubles, admission
 ):
@@ -481,6 +536,12 @@ def test_resume_after_a_pause_reproduces_the_continuous_run(
     assert state["cursor"]["phase"] == "train" and state["cursor"]["stage"] == "inputs"
     assert state["run"]["bank"] is not None and state["run"]["fast"]
     assert state["optimizer"]["calls"] == state["global_step"]
+    if admission == "m3":
+        # El checkpoint conserva escalas, rasgos pendientes, componentes y contadores.
+        assert first.identity["retention"]["scalers"]["source_sha256"]
+        assert state["run"]["bank"]["features"]
+        assert {"anomaly", "filing_age", "news"} <= set(state["run"]["pending"])
+        assert "selective_admitted" in state["run"]["counters"]
     second = build(streams, tmp_path / "paused", native, admission=admission, plan=plan)
     resumed = second.run(resume=True)
     assert resumed["status"] == "completed"

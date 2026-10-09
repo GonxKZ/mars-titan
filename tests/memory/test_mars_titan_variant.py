@@ -19,7 +19,8 @@ from mars_titan.memory import mars_titan_variant as api
 from mars_titan.memory.associative_memory import MatureCorrection
 from mars_titan.memory.financial_session import FinancialSession
 from mars_titan.memory.retention_bank import RetentionConfig
-from mars_titan.memory.write_policy import MatureErrorConfig
+from mars_titan.memory.write_policy import CompositeScoreConfig, MatureErrorConfig
+from mars_titan.memory.write_scores import WriteScalers
 from mars_titan.models.titans.episodic_readout import EpisodicReadout, EpisodicReadoutConfig
 from mars_titan.models.titans.financial import FinancialConfig, FinancialPredictor
 from mars_titan.models.titans.frozen_financial import FrozenFinancialConsumer
@@ -40,7 +41,7 @@ def base(frozen_consumer):
 
 
 def valid_combinations():
-    banks = [None, "m0_no_bank", "m1", "m2"]
+    banks = [None, "m0_no_bank", "m1", "m2", "m3"]
     steps = [None, 2, 4]
     episodes = [None, "first_read"]
     corrections = [None, DELTA, PROXIMAL]
@@ -69,6 +70,10 @@ def test_declaration_connects_exactly_the_components_of_the_builder(declaration,
         lambda d: d["components"]["refinements"].update(connection="declared"),
         lambda d: d["components"]["episodic_bank"].update(enabled=True),
         lambda d: d.update(final_test_opened=True),
+        # La definición declarada de M3 debe repetir la del código: pesos, escalas y huecos.
+        lambda d: d["components"]["episodic_bank"]["m3"].update(weights=[0.5, 0.25, 0.25]),
+        lambda d: d["components"]["episodic_bank"]["m3"].update(diversity="included"),
+        lambda d: d["components"]["episodic_bank"].pop("m3"),
     ):
         document = copy.deepcopy(declaration)
         change(document)
@@ -87,7 +92,7 @@ def test_all_disabled_is_the_core_and_every_combination_has_its_own_identity(dec
     for components in valid_combinations():
         variant = api.select_variant(declaration, components, base=base)
         prints.setdefault(variant.fingerprint(), []).append(components)
-    assert len(prints) == len(list(valid_combinations())) == 18
+    assert len(prints) == len(list(valid_combinations())) == 23
     assert all(len(group) == 1 for group in prints.values())
     assert core.fingerprint() in prints
 
@@ -140,12 +145,35 @@ def test_components_map_to_their_consumer_settings(declaration, base):
     assert b6.readout_config("a" * 64) is None
     with pytest.raises(ValueError, match="combinación"):
         m2.readout_config("a" * 64, refinements=1)
+    m3 = api.select_variant(declaration, dict(episodic_bank="m3"), base=base)
+    assert (m3.admission, m3.readout_mode) == ("m3", "bank")
+    scalers = WriteScalers(
+        source_sha256="a" * 64,
+        dataset_sha256="b" * 64,
+        decision_start=1,
+        decision_end=2,
+        decisions=4,
+        labels=4,
+        filing_decisions=0,
+        news_decisions=1,
+        error_median=0.25,
+        anomaly_median=1.0,
+        filing_age_median=None,
+        news_share=0.25,
+    )
+    settings = m3.session_options(capacity=8, seed=5, scalers=scalers)
+    assert type(settings["retention"]) is CompositeScoreConfig
+    assert settings["retention"].scalers is scalers and settings["admission"] == "m3"
+    with pytest.raises(ValueError, match="escalas"):
+        m3.session_options(capacity=8, seed=5)
+    with pytest.raises(ValueError, match="M2 no usa escalas"):
+        m2.session_options(capacity=8, seed=5, scalers=scalers)
 
 
 @pytest.mark.parametrize(
     ("components", "message"),
     [
-        (dict(episodic_bank="m3"), "a_norm y r_norm"),
+        (dict(episodic_bank="m4"), "no admite"),
         (dict(episodic_bank="readout_none_m0"), "omitiendo"),
         (dict(episodic_bank="m1", refinements=1), "omitiendo"),
         (dict(episodic_bank="m1", refinements=3), "no admite"),
