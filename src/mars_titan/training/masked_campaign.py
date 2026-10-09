@@ -32,6 +32,7 @@ from pathlib import Path
 import numpy as np
 import pyarrow as pa
 
+from mars_titan.data import prediction_files
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.environments.walk_forward_receipt import (
@@ -560,10 +561,16 @@ class _Campaign:
             receipt.get("identity") == identity,
             f"El trabajo confirmado {job['id']} cambió de identidad",
         )
-        for record in [receipt["report"], *receipt["predictions"].values()]:
-            _require(
-                sha256(self.output / record["path"]) == record["sha256"],
-                f"Un artefacto confirmado de {job['id']} ha cambiado",
+        _require(
+            sha256(self.output / receipt["report"]["path"]) == receipt["report"]["sha256"],
+            f"Un artefacto confirmado de {job['id']} ha cambiado",
+        )
+        # Las predicciones pueden estar compactadas o liberadas por la retención v2.
+        for record in receipt["predictions"].values():
+            prediction_files.verify(
+                self.output / record["path"],
+                record["sha256"],
+                label=f"Un artefacto confirmado de {job['id']} ha cambiado",
             )
         self.same_rows(job, receipt)
         return dict(receipt, sha256=digest)

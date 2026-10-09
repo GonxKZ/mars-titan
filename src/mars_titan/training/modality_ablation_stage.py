@@ -33,6 +33,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
+from mars_titan.data import prediction_files
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.modality_ablation import VARIANTS, ablation_identity
 from mars_titan.data.storage import atomic_json, outside_source, sha256
@@ -434,11 +435,16 @@ class _Stage:
             return None
         receipt, digest = read_manifest(path, 8 * 1024**2)
         _require(receipt.get("identity") == identity, f"{job['id']} cambió de identidad")
-        for record in (receipt["report"], receipt["prediction"]):
-            _require(
-                sha256(self.output / record["path"]) == record["sha256"],
-                f"Un artefacto confirmado de {job['id']} ha cambiado",
-            )
+        _require(
+            sha256(self.output / receipt["report"]["path"]) == receipt["report"]["sha256"],
+            f"Un artefacto confirmado de {job['id']} ha cambiado",
+        )
+        record = receipt["prediction"]
+        prediction_files.verify(
+            self.output / record["path"],
+            record["sha256"],
+            label=f"Un artefacto confirmado de {job['id']} ha cambiado",
+        )
         return dict(receipt, sha256=digest)
 
     def attempt(self, job):

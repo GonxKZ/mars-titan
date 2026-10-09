@@ -43,6 +43,7 @@ import numpy as np
 import pyarrow as pa
 import torch
 
+from mars_titan.data import prediction_files
 from mars_titan.data.batches import atomic_parquet_batches
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.input_policy import HISTORICAL_MASKED
@@ -364,10 +365,13 @@ def checked_tables(rows, metrics, dataset, partition):
 
 
 def _verify(output, report):
+    """Comprobar las predicciones confirmadas, presentes, compactadas o liberadas."""
     for record in report["predictions"].values():
         path = output / record["path"]
         safe_destination(path)
-        _require(sha256(path) == record["sha256"], "Han cambiado las predicciones confirmadas")
+        prediction_files.verify(
+            path, record["sha256"], label="Han cambiado las predicciones confirmadas"
+        )
 
 
 def run_titans_window(

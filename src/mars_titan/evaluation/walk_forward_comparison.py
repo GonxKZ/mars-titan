@@ -48,6 +48,7 @@ import pyarrow.compute as pc
 import pyarrow.parquet as pq
 
 from mars_titan.calibration import conformal_quantiles as cqr
+from mars_titan.data import prediction_files
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.input_policy import masked_inputs, policy_identity
 from mars_titan.data.storage import atomic_json, outside_source, sha256
@@ -377,7 +378,8 @@ def validate_config(config, digest, folder):
     return dict(config, sha256=digest, resolved_scopes=resolved, resolved_families=families)
 
 
-def _file(folder, record, label):
+def _file(folder, record, label, *, predictions=False):
+    """Ruta y huella de una fuente. Unas predicciones pueden estar compactadas o liberadas."""
     _require(
         isinstance(record, dict)
         and set(record) == {"path", "sha256"}
@@ -389,6 +391,10 @@ def _file(folder, record, label):
     )
     path = Path(record["path"])
     path = path if path.is_absolute() else folder / path
+    if predictions and not path.exists():
+        # La retención v2 sustituye las filas por su forma compacta o por sus huellas.
+        prediction_files.verify(path, record["sha256"])
+        return dict(path=path, sha256=record["sha256"])
     _require(not path.is_symlink() and path.is_file(), f"{label} no es un archivo regular")
     _require(0 < path.stat().st_size <= MAX_FILE_BYTES, f"{label} supera el presupuesto")
     return dict(path=path, sha256=record["sha256"])
@@ -489,7 +495,7 @@ def load_sources(path, config, scope_name):
                 _require(entry["input_policy"] == policy, f"{where} declara otra política")
                 _require(entry["view_sha256"] == views[window_id], f"{where} usa otra vista")
                 files[name, int(seed), window_id] = {
-                    part: _file(path.parent, entry[part], f"{where} ({part})")
+                    part: _file(path.parent, entry[part], f"{where} ({part})", predictions=True)
                     for part in ("calibration", "evaluation")
                     if part in entry
                 }
@@ -505,16 +511,16 @@ def load_sources(path, config, scope_name):
 
 
 def _read_predictions(file, columns):
-    """Leer solo las columnas necesarias después de comprobar huella y tipos."""
-    path = file["path"]
-    _require(sha256(path) == file["sha256"], f"La huella de {path.name} no coincide")
-    schema = pq.read_schema(path)
-    _require(set(columns) <= set(schema.names), f"Faltan columnas en {path.name}")
+    """Leer solo las columnas necesarias después de comprobar huella y tipos.
+
+    Un archivo compactado por la retención v2 se lee igual que el original. Uno liberado
+    no tiene filas: su ventana se compara con los agregados guardados o tras regenerarlo.
+    """
+    table = prediction_files.read(file["path"], file["sha256"], columns)
     _require(
-        schema.field("prediction_at").type == pa.timestamp("us", tz="UTC"),
+        table.schema.field("prediction_at").type == pa.timestamp("us", tz="UTC"),
         "Los instantes deben ser timestamp UTC en microsegundos",
     )
-    table = pq.read_table(path, columns=list(columns), use_threads=False)
     _require(all(table[name].null_count == 0 for name in columns), "Hay valores ausentes")
     for name in ("asset_id", "market"):
         _require(
@@ -679,7 +685,10 @@ def _ablation_sources(path, config, sources):
                         f"{where} en {window_id} solo declara su evaluación",
                     )
                     files[variant, name, int(seed), window_id] = _file(
-                        path.parent, entry["evaluation"], f"{where} en {window_id}"
+                        path.parent,
+                        entry["evaluation"],
+                        f"{where} en {window_id}",
+                        predictions=True,
                     )
     return dict(sha256=digest, files=files)
 

@@ -31,6 +31,7 @@ from pathlib import Path
 
 import numpy as np
 
+from mars_titan.data import prediction_files
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.environments.walk_forward_receipt import (
@@ -453,10 +454,15 @@ class _Stage:
             return None
         receipt, digest = read_manifest(path, 8 * 1024**2)
         _require(receipt.get("identity") == identity, f"{job['id']} cambió de identidad")
-        for record in [receipt["run"], *receipt["predictions"].values()]:
-            _require(
-                sha256(self.output / record["path"]) == record["sha256"],
-                f"Un artefacto confirmado de {job['id']} ha cambiado",
+        _require(
+            sha256(self.output / receipt["run"]["path"]) == receipt["run"]["sha256"],
+            f"Un artefacto confirmado de {job['id']} ha cambiado",
+        )
+        for record in receipt["predictions"].values():
+            prediction_files.verify(
+                self.output / record["path"],
+                record["sha256"],
+                label=f"Un artefacto confirmado de {job['id']} ha cambiado",
             )
         return dict(receipt, sha256=digest)
 
