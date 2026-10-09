@@ -41,7 +41,7 @@ from mars_titan.environments.walk_forward_receipt import prediction_fingerprint,
 from mars_titan.evaluation import walk_forward_comparison as comparison
 from mars_titan.evaluation.splits import PARTITIONS
 
-from . import campaign_schedule
+from . import campaign_numerics, campaign_schedule
 from .campaign_plan import (
     CARRY,
     FIT,
@@ -430,6 +430,8 @@ def _identity(campaign, views):
         input_policy=campaign["input_policy"],
         stopping_rule=campaign["rule"],
         variant=campaign["variant"],
+        # Solo la versión 2 declara la precisión, así que la identidad de la 1 no cambia.
+        **({"numerics": campaign["numerics"]} if campaign.get("numerics") else {}),
         views={
             scope: dict(
                 report_sha256=record["report_sha256"],
@@ -554,6 +556,11 @@ class _Campaign:
             receipt.get("identity") == identity,
             f"El trabajo confirmado {job['id']} cambió de identidad",
         )
+        numerics = self.campaign.get("numerics")
+        _require(
+            numerics is None or receipt.get("numerics") == numerics,
+            f"El recibo de {job['id']} registra otra precisión numérica",
+        )
         for record in [receipt["report"], *receipt["predictions"].values()]:
             _require(
                 sha256(self.output / record["path"]) == record["sha256"],
@@ -579,6 +586,9 @@ class _Campaign:
         if receipt is not None:
             return None, receipt
         executor = self.executors[job["model"], job["kind"]]
+        if self.campaign.get("numerics"):
+            # Otra vez antes de cada trabajo, por si un ejecutor anterior los cambió.
+            campaign_numerics.apply(self.campaign["numerics"])
         section = self.campaign["neural" if job["family"] == NEURAL else "tabular"]
         view = self.views[job["scope"]]["windows"][job["window"]]
         run = JobRun(
@@ -605,6 +615,9 @@ class _Campaign:
         quantile = arm_output(self.campaign, job["arm"]) == QUANTILE_HEAD
         columns = comparison.COLUMNS + (comparison.QUANTILE_COLUMNS if quantile else ())
         _require(report.get("final_test_opened") is False, f"{job['id']} abre la reserva final")
+        numerics = self.campaign.get("numerics")
+        if numerics:
+            campaign_numerics.require_job(numerics, job["id"], report)
         predictions = {}
         for partition in COMPARED:
             record = report["predictions"][partition]
@@ -646,6 +659,8 @@ class _Campaign:
             final_test_opened=False,
             confirmed_at_utc=datetime.now(UTC).isoformat(),
         )
+        if numerics:
+            receipt["numerics"] = campaign_numerics.current()
         self.same_rows(job, receipt)
         path = self.folder(job) / "receipt.json"
         atomic_json(path, receipt)
@@ -815,6 +830,9 @@ def run_campaign(
                 "La salida sin identidad contiene artefactos ajenos",
             )
             atomic_json(marker, identity)
+        if campaign.get("numerics"):
+            # Antes de crear cualquier modelo.
+            campaign_numerics.apply(campaign["numerics"])
         state = _Campaign(campaign, checked, output, identity, executors, None, jobs, disk)
         uses_gpu = any(executors[j["model"], j["kind"]]["device"] == "cuda" for j in jobs)
         reservation = (lease or _gpu_lease)() if uses_gpu else nullcontext()

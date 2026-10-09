@@ -39,7 +39,7 @@ from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.evaluation import modality_ablation as analysis
 from mars_titan.evaluation import walk_forward_comparison as comparison
 
-from . import campaign_schedule, masked_campaign
+from . import campaign_numerics, campaign_schedule, masked_campaign
 from .campaign_plan import (
     DECLARED,
     NEURAL,
@@ -483,6 +483,8 @@ class _Stage:
         resolved = self.campaign["comparison_config"]["resolved_scopes"][job["scope"]]
         label = f"{job['id']} ({PARTITION})"
         _require(report.get("final_test_opened") is False, f"{job['id']} abre la reserva final")
+        if self.campaign.get("numerics"):
+            campaign_numerics.require_job(self.campaign["numerics"], job["id"], report)
         _require(
             report.get("modality_ablation") == identity["modality_ablation"],
             f"{job['id']} no declara la ablación pedida",
@@ -655,6 +657,9 @@ def run_stage(
                 "La salida sin identidad contiene artefactos ajenos",
             )
             atomic_json(marker, identity)
+        if stage["campaign"].get("numerics"):
+            # La precisión de la campaña base, antes de crear cualquier modelo.
+            campaign_numerics.apply(stage["campaign"]["numerics"])
         state = _Stage(stage, base, output, identity, executors, None)
         signals = StopRequest() if stop is None else nullcontext(stop)
         reservation = (lease or _gpu_lease)()

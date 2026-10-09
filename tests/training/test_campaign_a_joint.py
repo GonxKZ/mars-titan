@@ -20,6 +20,7 @@ from mars_titan.data.storage import atomic_json
 from mars_titan.evaluation import walk_forward_comparison as comparison
 from mars_titan.evaluation.splits import build_folds, eligible_folds
 from mars_titan.training import campaign_budget as budget
+from mars_titan.training import campaign_numerics as numerics
 from mars_titan.training import campaign_plan as plan
 from mars_titan.training import campaign_schedule as order
 from mars_titan.training import masked_campaign as engine
@@ -147,6 +148,10 @@ def test_extra_seeds_repeat_only_the_selected_case_after_every_search_of_the_sco
         (lambda v: v.pop("seed_policy"), "contrato"),
         (lambda v: v.update(execution={"order": "random"}), "orden de ejecución"),
         (lambda v: v.pop("execution"), "contrato"),
+        (lambda v: v["numerics"].update(cudnn_allow_tf32=True), "FP32 estricto"),
+        (lambda v: v["numerics"].update(float32_matmul_precision="high"), "FP32 estricto"),
+        (lambda v: v["numerics"].update(cuda_matmul_allow_tf32=0), "FP32 estricto"),
+        (lambda v: v.pop("numerics"), "contrato"),
     ],
     ids=[
         "xgboost_not_declared_deterministic",
@@ -161,6 +166,10 @@ def test_extra_seeds_repeat_only_the_selected_case_after_every_search_of_the_sco
         "v2_without_seed_policy",
         "unknown_execution_order",
         "v2_without_execution_order",
+        "cudnn_tf32_allowed",
+        "matmul_precision_high",
+        "matmul_flag_not_boolean",
+        "v2_without_numerics",
     ],
 )
 def test_v2_rejects_declarations_that_break_the_seed_stopping_or_memory_rules(
@@ -555,6 +564,14 @@ def _doubles(learning_doubles):
     return learning_doubles
 
 
+@pytest.fixture(autouse=True)
+def _restore_numerics():
+    """La campaña fija la precisión del proceso. Las demás pruebas conservan la suya."""
+    before = numerics.current()
+    yield
+    numerics.apply(before)
+
+
 def test_prepare_and_views_accept_the_joint_scope_with_its_eligibility(joint_campaign):
     report = json.loads((joint_campaign.views["US+CN"] / "report.json").read_text())
     assert report["market_eligibility"]["CN"]["folds"][0] == "fold-006"
@@ -618,6 +635,89 @@ def test_a_window_run_executes_that_window_of_every_scope_and_reuses_its_receipt
         ("US", "fold-007"),
         ("CN", "fold-001"),
     }
+
+
+class Precision(Recorder):
+    """Doble que registra la precisión vigente y puede contradecir la declarada."""
+
+    def __init__(self, *, recorded=None, flip=False):
+        super().__init__()
+        self.seen, self.recorded, self.flip = [], recorded, flip
+
+    def __call__(self, run):
+        import torch
+
+        self.seen.append(numerics.current())
+        report = super().__call__(run)
+        if self.recorded:
+            report["runtime"] = dict(numerics=dict(self.recorded))
+        if self.flip:
+            torch.backends.cudnn.allow_tf32 = True
+        return report
+
+
+def _window(joint_campaign, output, recorder, window="fold-006"):
+    return engine.run_campaign(
+        joint_campaign.campaign,
+        joint_campaign.views,
+        output,
+        executors=doubles(recorder),
+        lease=nullcontext,
+        stop=SimpleNamespace(requested=False),
+        window=window,
+    )
+
+
+def test_the_launcher_fixes_strict_fp32_and_records_it_in_every_receipt(joint_campaign, tmp_path):
+    import torch
+
+    torch.backends.cudnn.allow_tf32 = True
+    recorder = Precision()
+    _window(joint_campaign, tmp_path / "out", recorder)
+    assert recorder.seen and all(seen == numerics.STRICT_FP32 for seen in recorder.seen)
+    receipts = list((tmp_path / "out/jobs").rglob("receipt.json"))
+    assert len(receipts) == len(recorder.calls)
+    assert all(
+        json.loads(path.read_text())["numerics"] == numerics.STRICT_FP32 for path in receipts
+    )
+    marker = json.loads((tmp_path / "out/campaign.json").read_text())
+    assert marker["numerics"] == numerics.STRICT_FP32
+    # Un recibo que registra otra precisión se rechaza al reanudar.
+    path = receipts[0]
+    receipt = json.loads(path.read_text())
+    receipt["numerics"] = dict(numerics.STRICT_FP32, cudnn_allow_tf32=True)
+    path.write_text(json.dumps(receipt))
+    with pytest.raises(ValueError, match="registra otra precisión numérica"):
+        _window(joint_campaign, tmp_path / "out", Precision())
+
+
+@pytest.mark.parametrize(
+    ("recorder", "message"),
+    [
+        (lambda: Precision(recorded={"cudnn_allow_tf32": True}), "registra otra precisión"),
+        (lambda: Precision(recorded={"matmul_precision": "high"}), "registra otra precisión"),
+        (lambda: Precision(flip=True), "terminó con otra precisión"),
+    ],
+    ids=["report_with_cudnn_tf32", "report_with_high_precision", "executor_changes_flags"],
+)
+def test_a_job_that_runs_or_reports_another_precision_is_not_confirmed(
+    joint_campaign, tmp_path, recorder, message
+):
+    with pytest.raises(ValueError, match=message):
+        _window(joint_campaign, tmp_path / "out", recorder())
+    assert not list((tmp_path / "out/jobs").rglob("receipt.json"))
+
+
+def test_recorded_precision_follows_every_alias_in_nested_reports():
+    report = dict(
+        identity=dict(numerics=dict(cudnn_allow_tf32=False, matmul_tf32=True)),
+        cases=[dict(matmul_precision="highest"), dict(cudnn_tf32=True)],
+    )
+    assert numerics.recorded(report, numerics.STRICT_FP32) == [
+        "informe.identity.numerics.matmul_tf32=True",
+        "informe.cases[1].cudnn_tf32=True",
+    ]
+    assert numerics.recorded(dict(a=[dict(b=1)]), numerics.STRICT_FP32) == []
 
 
 def test_comparison_excludes_ineligible_china_rows_and_pairs_joint_with_separate(joint_campaign):
@@ -752,3 +852,28 @@ def test_read_counts_rejects_counts_that_miss_a_window(tmp_path):
     atomic_json(tmp_path / "counts.json", document)
     with pytest.raises(ValueError, match="ventanas de la campaña"):
         budget.read_counts(tmp_path / "counts.json", campaign())
+
+
+def test_target_counts_purge_a_label_that_matures_exactly_at_the_boundary(tmp_path):
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+
+    def moments(*texts):
+        return pa.array(np.array(texts, dtype="datetime64[us]"), type=pa.timestamp("us", tz="UTC"))
+
+    folder = tmp_path / "labels/US/AAA"
+    folder.mkdir(parents=True)
+    pq.write_table(
+        pa.table(
+            dict(
+                prediction_at=moments("2004-03-30T20:00", "2004-03-30T20:00", "2004-03-29"),
+                # Madura justo en la frontera del ajuste de fold-000, antes y sin objetivo.
+                target_available_at=moments("2004-04-01", "2004-03-31T21:00", "2004-03-30"),
+                target=pa.array([0.1, 0.2, None], type=pa.float64()),
+            )
+        ),
+        folder / "labels.parquet",
+    )
+    protocol = json.loads(US_V2.read_text())
+    counts = budget.target_window_counts(tmp_path / "labels", protocol)
+    assert counts["fold-000"] == dict(train=1, validation=0, calibration=0, evaluation=0)

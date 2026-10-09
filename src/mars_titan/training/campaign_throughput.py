@@ -45,6 +45,7 @@ from pathlib import Path
 from mars_titan.data.cohort_files import read_manifest
 from mars_titan.data.input_policy import HISTORICAL_MASKED
 
+from . import campaign_numerics
 from .campaign_plan import (
     CM,
     CM_ARMS,
@@ -1412,6 +1413,12 @@ def measure_campaigns(
         work is not None or not any(reference.get(family) for family in CHRONOLOGICAL),
         "Las familias cronológicas necesitan un directorio de trabajo para sus índices",
     )
+    declared = {json.dumps(c.get("numerics"), sort_keys=True) for c in campaigns}
+    _require(len(declared) == 1, "Las variantes medidas deben declarar la misma precisión")
+    numerics = reference.get("numerics")
+    if numerics:
+        # Se mide con la precisión con la que se entrenará.
+        campaign_numerics.apply(numerics)
     started = time.perf_counter()
     with GpuLease() as lease:
         rates = {NEURAL: measure_rates(reference, first_view, **batched)}
@@ -1449,6 +1456,7 @@ def measure_campaigns(
         if prepared is None
         else dict(path=prepared["path"], sha256=prepared["sha256"], status=prepared["status"]),
         rates=rates,
+        numerics=None if numerics is None else campaign_numerics.current(),
         estimates=estimates,
         comparison=_comparison(estimates),
         resources=resources,

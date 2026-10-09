@@ -39,7 +39,7 @@ from mars_titan.environments.walk_forward_receipt import (
 from mars_titan.environments.walk_forward_receipt import read_window_receipt
 from mars_titan.evaluation import walk_forward_comparison as comparison
 from mars_titan.models.quantile_head import MEDIAN_INDEX, QUANTILE_COLUMNS, QUANTILE_HEAD
-from mars_titan.training import campaign_schedule, masked_campaign
+from mars_titan.training import campaign_numerics, campaign_schedule, masked_campaign
 from mars_titan.training.campaign_plan import (
     CARRY,
     DECLARED,
@@ -560,6 +560,8 @@ class _Stage:
         window = resolved["windows"][job["window"]]
         view = self.view(job["scope"], job["window"])
         columns = comparison.COLUMNS + QUANTILE_COLUMNS
+        if self.campaign.get("numerics"):
+            campaign_numerics.require_job(self.campaign["numerics"], job["id"], result)
         predictions = {}
         for partition in COMPARED:
             record = result["predictions"][partition]
@@ -787,6 +789,9 @@ def run_stage(
             atomic_json(marker, identity)
         signals = StopRequest() if stop is None else nullcontext(stop)
         reservation = (lease or _gpu_lease)()
+        if campaign.get("numerics"):
+            # La precisión de la campaña base, antes de crear cualquier modelo.
+            campaign_numerics.apply(campaign["numerics"])
         state = _Stage(
             stage, base, campaign_output, output, identity, device=device, lease=None, stop=None
         )

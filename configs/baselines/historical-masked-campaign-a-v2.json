@@ -73,6 +73,11 @@
   },
   "stopping": {"mode": "protocol"},
   "execution": {"order": "by_window"},
+  "numerics": {
+    "float32_matmul_precision": "highest",
+    "cuda_matmul_allow_tf32": false,
+    "cudnn_allow_tf32": false
+  },
   "memory_options": {
     "titans_mac": {"accumulation_rows": "pending"},
     "episodic_gru": {"accumulation_rows": "pending", "recompute": "pending"},
