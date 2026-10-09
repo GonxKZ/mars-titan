@@ -50,6 +50,7 @@ from .checkpoints import (
     save_training_state,
 )
 from .corpus_inputs import CorpusDataset
+from .kernel_policy import PRECISIONS, declared_policy, require_policy
 from .learning_hold import require_learning_allowed
 from .selection import (
     AWAIT,
@@ -180,7 +181,7 @@ def _options(
 ):
     required = {"kind", "loss", "learning_rate", "seed", "epochs", "huber_delta"}
     if (
-        not required <= set(case) <= required | {"architecture", "selection", "head"}
+        not required <= set(case) <= required | {"architecture", "selection", "head", "precision"}
         or case["kind"] not in KINDS
         or type(case["epochs"]) is not int
         or not 1 <= case["epochs"] <= 1000
@@ -198,6 +199,11 @@ def _options(
         raise ValueError("La configuración del entrenamiento no es válida")
     if prediction_retention not in PREDICTION_RETENTIONS:
         raise ValueError("La retención de predicciones no pertenece al contrato")
+    # Sin el campo se conserva la configuración numérica del proceso y la identidad previa.
+    if "precision" in case and (
+        type(case["precision"]) is not str or case["precision"] not in PRECISIONS
+    ):
+        raise ValueError("La precisión del caso no pertenece a la política de núcleos")
     transformer = case["kind"] == "transformer"
     if (transformer or masked_inputs(input_policy)) and "architecture" not in case:
         raise ValueError(
@@ -461,6 +467,7 @@ def _parent(parent, dataset, case, model, batch_size, weighting, input_policy=ST
         or identity["case"]["seed"] != case["seed"]
         or identity["case"].get("architecture") != case.get("architecture")
         or identity["case"].get("head") != case.get("head")
+        or identity["case"].get("precision") != case.get("precision")
         or identity["batch_size"] != batch_size
         or identity["weighting"] != weighting
         or any(identity.get(key) != inputs.get(key) for key in ("input_policy", "mask_contract"))
@@ -510,6 +517,8 @@ def run_reference_case(
         input_policy=input_policy,
         prediction_retention=prediction_retention,
     )
+    # La política se fija antes de construir el modelo y de registrar los valores numéricos.
+    kernel_policy = declared_policy(case.get("precision"))
     masked = masked_inputs(input_policy)
     quantiles = case.get("head") == QUANTILE_HEAD
     start = time.perf_counter()
@@ -583,6 +592,8 @@ def run_reference_case(
         identity["prediction_retention"] = prediction_retention
     if quantiles:
         identity["output_head"] = dict(CONTRACT)
+    if kernel_policy is not None:
+        identity["kernel_policy"] = kernel_policy
     optimizer = torch.optim.AdamW(model.parameters(), lr=case["learning_rate"])
     report_path = output / "run.json"
     if resume and report_path.exists():
@@ -651,6 +662,7 @@ def run_reference_case(
             for name, expected in identity["code"].items()
         ):
             raise ValueError("El código ha cambiado durante la ejecución")
+        require_policy(case.get("precision"), kernel_policy)
         state = dict(
             global_step=step,
             epoch=epoch,
