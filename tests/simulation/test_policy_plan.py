@@ -264,6 +264,23 @@ def test_selection_never_uses_the_error_of_the_predictor():
         assert candidate["selection"]["metric"] not in policy_plan.SELECTION_METRICS
 
 
+def test_the_declared_capital_buys_an_a_share_lot_in_every_selected_asset():
+    from mars_titan.simulation.environment import ACTIONS
+    from mars_titan.simulation.market_rules import china_a_share_instrument
+
+    policies = json.loads(POLICIES.read_text())
+    # El entorno reparte la exposición a partes iguales en el cuartil superior de puntuaciones
+    # positivas. Con la menor exposición positiva y el universo completo, cada activo debe
+    # recibir al menos un lote de 100 acciones A a 50 CNY, o China apenas podría operar.
+    exposure = min(level for level in ACTIONS if level)
+    selected = -(-policies["universe"]["max_assets"] // 4)
+    per_asset = policies["environment"]["capital"] * exposure / selected
+    lot = china_a_share_instrument("CN/600000.SS").lot
+    assert per_asset >= lot * 50
+    # Con el capital anterior de 10 000 no llegaba a un lote ni a 1 CNY por acción.
+    assert 10_000 * exposure / selected < lot
+
+
 def test_later_stage_registers_both_variants_with_their_pending_capabilities():
     report = plan.check_campaign(Path("configs/baselines/historical-masked-campaign-b.json"))
     declared = report["later_stages"]["rl_policy_comparison"]
