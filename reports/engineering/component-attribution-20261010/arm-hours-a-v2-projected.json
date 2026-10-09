@@ -1,0 +1,303 @@
+{
+  "schema_version": 1,
+  "kind": "comparison_arm_hours",
+  "basis": "projected",
+  "source": "Proyección de la campaña A v2 (#431, commit 2656031f) con 16.000 muestras-época por segundo, inferencia a 3 veces ese caudal y 10 épocas efectivas, sobre los recuentos de reports/data/campaign-a-v2-window-counts-20261009.json. B6 solo predice validación, calibración y evaluación con tres semillas y no incluye el calentamiento. Ningún caudal está medido en esta edición",
+  "scope": "US+CN",
+  "arms": {
+    "cm_v1_b": {
+      "gpu_hours": 94.401354,
+      "parents": [
+        "cm_v1_core_b"
+      ]
+    },
+    "cm_v1_bc": {
+      "gpu_hours": 94.401354,
+      "parents": [
+        "cm_v1_core_c"
+      ]
+    },
+    "cm_v1_bcm": {
+      "gpu_hours": 94.401354,
+      "parents": [
+        "cm_v1_core_c"
+      ]
+    },
+    "cm_v1_bm": {
+      "gpu_hours": 94.401354,
+      "parents": [
+        "cm_v1_core_b"
+      ]
+    },
+    "cm_v1_core_b": {
+      "gpu_hours": 94.401354,
+      "parents": []
+    },
+    "cm_v1_core_c": {
+      "gpu_hours": 94.401354,
+      "parents": []
+    },
+    "dlinear": {
+      "gpu_hours": 92.396676,
+      "parents": []
+    },
+    "dlinear__full_continuation": {
+      "gpu_hours": 36.221413,
+      "parents": [
+        "dlinear"
+      ]
+    },
+    "dlinear__fusion": {
+      "gpu_hours": 33.91506,
+      "parents": [
+        "dlinear"
+      ]
+    },
+    "dlinear__fusion_full_rank": {
+      "gpu_hours": 33.91506,
+      "parents": [
+        "dlinear"
+      ]
+    },
+    "dlinear__head": {
+      "gpu_hours": 33.91506,
+      "parents": [
+        "dlinear"
+      ]
+    },
+    "dlinear__head_fusion": {
+      "gpu_hours": 33.91506,
+      "parents": [
+        "dlinear"
+      ]
+    },
+    "gru": {
+      "gpu_hours": 92.396676,
+      "parents": []
+    },
+    "gru__full_continuation": {
+      "gpu_hours": 36.221413,
+      "parents": [
+        "gru"
+      ]
+    },
+    "gru__fusion": {
+      "gpu_hours": 33.91506,
+      "parents": [
+        "gru"
+      ]
+    },
+    "gru__fusion_full_rank": {
+      "gpu_hours": 33.91506,
+      "parents": [
+        "gru"
+      ]
+    },
+    "gru__head": {
+      "gpu_hours": 33.91506,
+      "parents": [
+        "gru"
+      ]
+    },
+    "gru__head_fusion": {
+      "gpu_hours": 33.91506,
+      "parents": [
+        "gru"
+      ]
+    },
+    "gru_episodic": {
+      "gpu_hours": 67.244354,
+      "parents": []
+    },
+    "lstm": {
+      "gpu_hours": 92.396676,
+      "parents": []
+    },
+    "lstm__full_continuation": {
+      "gpu_hours": 36.221413,
+      "parents": [
+        "lstm"
+      ]
+    },
+    "lstm__fusion": {
+      "gpu_hours": 33.91506,
+      "parents": [
+        "lstm"
+      ]
+    },
+    "lstm__fusion_full_rank": {
+      "gpu_hours": 33.91506,
+      "parents": [
+        "lstm"
+      ]
+    },
+    "lstm__head": {
+      "gpu_hours": 33.91506,
+      "parents": [
+        "lstm"
+      ]
+    },
+    "lstm__head_fusion": {
+      "gpu_hours": 33.91506,
+      "parents": [
+        "lstm"
+      ]
+    },
+    "mars_titan_m0": {
+      "gpu_hours": 94.401354,
+      "parents": [
+        "titans_mac_online"
+      ]
+    },
+    "mars_titan_m1": {
+      "gpu_hours": 94.401354,
+      "parents": [
+        "titans_mac_online"
+      ]
+    },
+    "mars_titan_m1_k2": {
+      "gpu_hours": 94.401354,
+      "parents": [
+        "titans_mac_online"
+      ]
+    },
+    "mars_titan_m1_k4": {
+      "gpu_hours": 94.401354,
+      "parents": [
+        "titans_mac_online"
+      ]
+    },
+    "mars_titan_m2": {
+      "gpu_hours": 94.401354,
+      "parents": [
+        "titans_mac_online"
+      ]
+    },
+    "mars_titan_m3": {
+      "gpu_hours": 94.401354,
+      "parents": [
+        "titans_mac_online"
+      ]
+    },
+    "rnn": {
+      "gpu_hours": 92.396676,
+      "parents": []
+    },
+    "rnn__full_continuation": {
+      "gpu_hours": 36.221413,
+      "parents": [
+        "rnn"
+      ]
+    },
+    "rnn__fusion": {
+      "gpu_hours": 33.91506,
+      "parents": [
+        "rnn"
+      ]
+    },
+    "rnn__fusion_full_rank": {
+      "gpu_hours": 33.91506,
+      "parents": [
+        "rnn"
+      ]
+    },
+    "rnn__head": {
+      "gpu_hours": 33.91506,
+      "parents": [
+        "rnn"
+      ]
+    },
+    "rnn__head_fusion": {
+      "gpu_hours": 33.91506,
+      "parents": [
+        "rnn"
+      ]
+    },
+    "titans_mac_disabled": {
+      "gpu_hours": 94.401354,
+      "parents": []
+    },
+    "titans_mac_frozen": {
+      "gpu_hours": 94.401354,
+      "parents": []
+    },
+    "titans_mac_online": {
+      "gpu_hours": 94.401354,
+      "parents": []
+    },
+    "titans_transformer_direct": {
+      "gpu_hours": 94.401354,
+      "parents": []
+    },
+    "transformer_compact": {
+      "gpu_hours": 92.396676,
+      "parents": []
+    },
+    "transformer_compact__full_continuation": {
+      "gpu_hours": 36.221413,
+      "parents": [
+        "transformer_compact"
+      ]
+    },
+    "transformer_compact__fusion": {
+      "gpu_hours": 33.91506,
+      "parents": [
+        "transformer_compact"
+      ]
+    },
+    "transformer_compact__fusion_full_rank": {
+      "gpu_hours": 33.91506,
+      "parents": [
+        "transformer_compact"
+      ]
+    },
+    "transformer_compact__head": {
+      "gpu_hours": 33.91506,
+      "parents": [
+        "transformer_compact"
+      ]
+    },
+    "transformer_compact__head_fusion": {
+      "gpu_hours": 33.91506,
+      "parents": [
+        "transformer_compact"
+      ]
+    },
+    "transformer_compact__head_readout": {
+      "gpu_hours": 33.91506,
+      "parents": [
+        "transformer_compact"
+      ]
+    },
+    "transformer_compact__head_readout_fusion": {
+      "gpu_hours": 33.91506,
+      "parents": [
+        "transformer_compact"
+      ]
+    },
+    "transformer_compact__readout": {
+      "gpu_hours": 33.91506,
+      "parents": [
+        "transformer_compact"
+      ]
+    },
+    "transformer_compact__readout_fusion": {
+      "gpu_hours": 33.91506,
+      "parents": [
+        "transformer_compact"
+      ]
+    },
+    "mars_titan_b6": {
+      "gpu_hours": 0.459165,
+      "parents": [
+        "titans_mac_online"
+      ]
+    },
+    "mars_titan_b6_bias": {
+      "gpu_hours": 0.459165,
+      "parents": [
+        "titans_mac_online"
+      ]
+    }
+  }
+}
