@@ -55,6 +55,11 @@ constexpr int64_t maximum_auxiliary_samples = 8192;
 constexpr int64_t maximum_auxiliary_updates = 64;
 constexpr int64_t checkpoint_version = 2;
 constexpr int64_t controller_checkpoint_version = 3;
+constexpr int64_t terminal_checkpoint_version = 4;
+constexpr std::string_view terminal_adam_contract = "klpo_actor_adam_zero_critic_v1";
+constexpr double terminal_adam_beta1 = .9;
+constexpr double terminal_adam_beta2 = .999;
+constexpr double terminal_adam_epsilon = 1e-8;
 constexpr int64_t metric_count = 6;
 
 struct RecurrentSequence {
@@ -388,6 +393,40 @@ double read_double(torch::serialize::InputArchive& archive, const char* key) {
     return value.toDouble();
 }
 
+void write_terminal_options(torch::serialize::OutputArchive& archive,
+                            const PpoTerminalAdamOptions& options) {
+    torch::serialize::OutputArchive state;
+    state.write("contract", c10::IValue(std::string(terminal_adam_contract)));
+    state.write("learning_rate", c10::IValue(options.learning_rate));
+    state.write("gradient_norm", c10::IValue(options.gradient_norm));
+    state.write("beta1", c10::IValue(terminal_adam_beta1));
+    state.write("beta2", c10::IValue(terminal_adam_beta2));
+    state.write("epsilon", c10::IValue(terminal_adam_epsilon));
+    state.write("weight_decay", c10::IValue(0.));
+    state.write("amsgrad", c10::IValue(false));
+    archive.write("terminal_adam", state);
+}
+
+PpoTerminalAdamOptions read_terminal_options(torch::serialize::InputArchive& archive) {
+    torch::serialize::InputArchive state;
+    archive.read("terminal_adam", state);
+    constexpr std::size_t expected_fields = 8;
+    require(state.keys().size() == expected_fields, "El contrato Adam terminal contiene campos ajenos");
+    c10::IValue contract, amsgrad;
+    state.read("contract", contract);
+    state.read("amsgrad", amsgrad);
+    PpoTerminalAdamOptions result{read_double(state, "learning_rate"), read_double(state, "gradient_norm")};
+    result.validate();
+    require(contract.isString() && contract.toStringRef() == terminal_adam_contract &&
+                read_double(state, "beta1") == terminal_adam_beta1 &&
+                read_double(state, "beta2") == terminal_adam_beta2 &&
+                read_double(state, "epsilon") == terminal_adam_epsilon &&
+                read_double(state, "weight_decay") == 0 &&
+                amsgrad.isBool() && !amsgrad.toBool(),
+            "El archivo no conserva el Adam terminal cerrado");
+    return result;
+}
+
 PpoObjectiveConfig read_objective(torch::serialize::InputArchive& archive) {
     c10::IValue id, sampler, kl;
     archive.read("id", id);
@@ -549,6 +588,9 @@ struct PpoPolicy::Impl {
     std::size_t target_interval = 0;
     std::unique_ptr<torch::optim::Adam> optimizer;
     std::unique_ptr<torch::optim::Adam> auxiliary_optimizer;
+    std::unique_ptr<torch::optim::Adam> terminal_optimizer;
+    PpoTerminalAdamOptions terminal_options;
+    bool terminal_failed = false;
     at::Generator sampler;
     at::Generator shuffler;
     at::Generator auxiliary_rng;
@@ -584,6 +626,7 @@ struct PpoPolicy::Impl {
     }
 
     void validate_observations(const at::Tensor& observations, bool allow_cpu = false) const {
+        require(!terminal_failed, "El actor necesita recuperar un checkpoint confirmado");
         require(observations.defined() && observations.dim() == 2 &&
                     observations.size(1) == static_cast<int64_t>(width) &&
                     observations.scalar_type() == at::kFloat,
@@ -948,10 +991,49 @@ struct PpoPolicy::Impl {
         }
     }
 
+    void validate_terminal_optimizer() {
+        require(terminal_optimizer && !terminal_failed && !objective.enabled() &&
+                    !architecture.auxiliary && !architecture.double_dqn && optimizer->state().empty(),
+                "El actor terminal no conserva su aislamiento o necesita recuperación");
+        terminal_options.validate();
+        require(terminal_options.learning_rate == parameters.learning_rate,
+                "La tasa del optimizador terminal no corresponde al actor");
+        validate_optimizer(*terminal_optimizer);
+        const auto expected = network.policy_parameters();
+        const auto& actual = terminal_optimizer->param_groups().front().params();
+        require(actual.size() == expected.size(), "El Adam terminal no corresponde a sus parámetros");
+        for (std::size_t index = 0; index < expected.size(); ++index) {
+            require(actual[index].is_same(expected[index]), "El optimizador contiene un parámetro ajeno");
+            if (index + 2 >= expected.size() && !terminal_optimizer->state().empty()) {
+                const auto& base = terminal_optimizer->state().at(actual[index].unsafeGetTensorImpl());
+                const auto* state = dynamic_cast<const torch::optim::AdamParamState*>(base.get());
+                require(state != nullptr &&
+                            (state->exp_avg().select(0, ppo_action_count) == 0).all().item<bool>() &&
+                            (state->exp_avg_sq().select(0, ppo_action_count) == 0).all().item<bool>(),
+                        "El crítico contiene momentos de otra actualización");
+            }
+        }
+    }
+
+    [[nodiscard]] at::Tensor critic_bits() const {
+        const at::NoGradGuard no_grad;
+        const auto weights = network.policy_parameters();
+        return at::cat({weights[weights.size() - 2].select(0, ppo_action_count).reshape({-1}),
+                        weights.back().select(0, ppo_action_count).reshape({-1})})
+            .view(at::kInt).clone();
+    }
+
     [[nodiscard]] std::size_t optimizer_step_count() const {
-        return adam_steps(*optimizer);
+        return adam_steps(terminal_optimizer ? *terminal_optimizer : *optimizer);
     }
 };
+
+void PpoTerminalAdamOptions::validate() const {
+    require(std::isfinite(learning_rate) && learning_rate > 0 && learning_rate <= 1 &&
+                std::isfinite(gradient_norm) && gradient_norm >= 0 &&
+                gradient_norm <= maximum_gradient_norm,
+            "Las opciones del Adam terminal no son finitas o exceden sus límites");
+}
 void PpoHyperparameters::validate() const {
     require(std::isfinite(learning_rate) && learning_rate > 0 && learning_rate <= 1 &&
                 std::isfinite(gamma) && gamma >= 0 && gamma <= 1 &&
@@ -1043,6 +1125,7 @@ at::Tensor PpoPolicy::act(const at::Tensor& observations, bool deterministic) {
 at::Tensor PpoPolicy::values(const at::Tensor& observations) const { return forward(observations).values; }
 
 PpoUpdateStats PpoPolicy::update(const PpoRollout& rollout) {
+    require(!impl_->terminal_optimizer, "El actor terminal no admite actualizaciones PPO");
     require(!impl_->architecture.double_dqn, "Double DQN debe usar su actualización con red objetivo");
     impl_->validate_rollout(rollout, impl_->tensor_device);
     if (impl_->architecture.kind == PpoNetworkKind::gru) {
@@ -1060,6 +1143,7 @@ PpoUpdateStats PpoPolicy::update(const PpoRollout& rollout) {
     return result;
 }
 PpoUpdateStats PpoPolicy::update_from_cpu(const PpoRollout& rollout) {
+    require(!impl_->terminal_optimizer, "El actor terminal no admite actualizaciones PPO");
     require(impl_->architecture.kind == PpoNetworkKind::mlp && !impl_->architecture.double_dqn,
             "La actualización desde CPU requiere una política PPO de tipo MLP");
     impl_->validate_rollout(rollout, at::Device(at::kCPU));
@@ -1083,8 +1167,10 @@ std::optional<double> PpoPolicy::full_kl(const PpoRollout& rollout) const {
 }
 
 void PpoPolicy::save(std::ostream& destination) const {
+    if (impl_->terminal_optimizer) { impl_->validate_terminal_optimizer(); }
     torch::serialize::OutputArchive archive;
-    archive.write("schema_version", c10::IValue(impl_->objective.enabled() ? controller_checkpoint_version : checkpoint_version));
+    archive.write("schema_version", c10::IValue(impl_->terminal_optimizer ? terminal_checkpoint_version :
+        impl_->objective.enabled() ? controller_checkpoint_version : checkpoint_version));
     archive.write("observation_width", c10::IValue(static_cast<int64_t>(impl_->width)));
     archive.write("memory_budget", c10::IValue(static_cast<int64_t>(impl_->budget)));
     archive.write("device", c10::IValue(impl_->device_name));
@@ -1107,7 +1193,12 @@ void PpoPolicy::save(std::ostream& destination) const {
     impl_->network.save(network);
     archive.write("network", network);
     torch::serialize::OutputArchive optimizer;
-    impl_->optimizer->save(optimizer);
+    if (impl_->terminal_optimizer) {
+        write_terminal_options(archive, impl_->terminal_options);
+        impl_->terminal_optimizer->save(optimizer);
+    } else {
+        impl_->optimizer->save(optimizer);
+    }
     archive.write("optimizer", optimizer);
     archive.write("sampling_rng", generator_state(impl_->sampler), true);
     archive.write("shuffle_rng", generator_state(impl_->shuffler), true);
@@ -1131,11 +1222,20 @@ void PpoPolicy::save(std::ostream& destination) const {
 }
 
 PpoPolicy PpoPolicy::load(std::istream& source, std::string_view device_name) {
+    return load_mode(source, device_name, false);
+}
+
+PpoPolicy PpoPolicy::load_terminal(std::istream& source, std::string_view device_name) {
+    return load_mode(source, device_name, true);
+}
+
+PpoPolicy PpoPolicy::load_mode(std::istream& source, std::string_view device_name, bool terminal) {
     validate_stream(source);
     torch::serialize::InputArchive archive;
     archive.load_from(source, at::Device(at::kCPU));
     const auto version = read_integer(archive, "schema_version");
-    require(version == 1 || version == checkpoint_version || version == controller_checkpoint_version,
+    require(terminal ? version == terminal_checkpoint_version :
+                (version == 1 || version == checkpoint_version || version == controller_checkpoint_version),
             "La versión del checkpoint PPO no está admitida");
     PpoArchitecture architecture;
     if (version >= checkpoint_version) {
@@ -1182,14 +1282,33 @@ PpoPolicy PpoPolicy::load(std::istream& source, std::string_view device_name) {
                      static_cast<std::size_t>(budget), architecture, objective);
     torch::serialize::InputArchive network;
     archive.read("network", network);
+    if (terminal) {
+        for (const auto& item : result.impl_->network.named_parameters()) {
+            at::Tensor saved;
+            network.read(item.key(), saved);
+            require(saved.defined() && saved.layout() == at::kStrided &&
+                        saved.scalar_type() == at::kFloat,
+                    "El archivo terminal necesita parámetros FP32 sin conversión");
+            require_float(saved, item.value().sizes(), at::Device(at::kCPU));
+        }
+    }
     result.impl_->network.load(network);
     result.impl_->network.to(result.impl_->tensor_device, at::kFloat);
     result.impl_->network.validate(width, result.impl_->tensor_device);
     result.impl_->network.pack_recurrent_weights();
     torch::serialize::InputArchive optimizer;
     archive.read("optimizer", optimizer);
-    result.impl_->optimizer->load(optimizer);
-    result.impl_->validate_optimizer(*result.impl_->optimizer);
+    if (terminal) {
+        result.enable_terminal_adam(read_terminal_options(archive));
+        result.impl_->terminal_optimizer->load(optimizer);
+        result.impl_->validate_terminal_optimizer();
+    } else {
+        torch::serialize::InputArchive incompatible;
+        require(!archive.try_read("terminal_adam", incompatible),
+                "Un checkpoint PPO contiene estado de la ruta terminal");
+        result.impl_->optimizer->load(optimizer);
+        result.impl_->validate_optimizer(*result.impl_->optimizer);
+    }
     if (objective.enabled()) {
         controller.validate(objective, static_cast<int64_t>(result.optimizer_steps()), parameters.epochs);
         result.impl_->controller = controller;
@@ -1295,6 +1414,7 @@ PpoInference PpoPolicy::infer(const at::Tensor& observations, const at::Tensor& 
 
 PpoForward PpoPolicy::terminal_forward(const at::Tensor& history,
                                       const at::Tensor& lengths) const {
+    require(!impl_->terminal_failed, "El actor necesita recuperar un checkpoint confirmado");
     require(!impl_->architecture.double_dqn && !impl_->architecture.auxiliary &&
                 history.defined() && history.layout() == at::kStrided && history.dim() == 3 &&
                 history.scalar_type() == at::kFloat && history.device() == impl_->tensor_device &&
@@ -1347,6 +1467,7 @@ const PpoObjectiveConfig& PpoPolicy::objective() const noexcept { return impl_->
 const PpoControllerState& PpoPolicy::controller_state() const noexcept { return impl_->controller; }
 std::size_t PpoPolicy::parameter_count() const noexcept { return model_parameters(impl_->width, impl_->architecture); }
 std::string PpoPolicy::parameter_fingerprint() const {
+    require(!impl_->terminal_failed, "El actor necesita recuperar un checkpoint confirmado");
     const at::NoGradGuard no_grad;
     impl_->network.validate(static_cast<int64_t>(impl_->width), impl_->tensor_device);
     std::string material = "policy_parameters_fp32_v1\n";
@@ -1371,6 +1492,108 @@ std::string PpoPolicy::parameter_fingerprint() const {
     }
     return simulation::content_sha256(material);
 }
+
+void PpoPolicy::enable_terminal_adam(PpoTerminalAdamOptions options) {
+    options.validate();
+    require(!impl_->terminal_optimizer && !impl_->terminal_failed && !impl_->objective.enabled() &&
+                !impl_->architecture.auxiliary && !impl_->architecture.double_dqn &&
+                impl_->optimizer->state().empty() && options.learning_rate == impl_->parameters.learning_rate,
+            "La ruta terminal exige un Adam nuevo y una configuración propia compatible");
+    impl_->network.validate(static_cast<int64_t>(impl_->width), impl_->tensor_device);
+    auto optimizer = std::make_unique<torch::optim::Adam>(
+        impl_->network.policy_parameters(), torch::optim::AdamOptions(options.learning_rate)
+            .betas(std::make_tuple(terminal_adam_beta1, terminal_adam_beta2))
+            .eps(terminal_adam_epsilon).weight_decay(0).amsgrad(false));
+    impl_->terminal_options = options;
+    impl_->terminal_optimizer = std::move(optimizer);
+    impl_->validate_terminal_optimizer();
+}
+
+bool PpoPolicy::terminal_adam_enabled() const noexcept {
+    return static_cast<bool>(impl_->terminal_optimizer);
+}
+PpoTerminalAdamOptions PpoPolicy::terminal_adam_options() const {
+    impl_->validate_terminal_optimizer();
+    return impl_->terminal_options;
+}
+void PpoPolicy::terminal_zero_grad() {
+    impl_->validate_terminal_optimizer();
+    impl_->terminal_optimizer->zero_grad();
+}
+
+double PpoPolicy::validate_terminal_gradients() const {
+    impl_->validate_terminal_optimizer();
+    const at::NoGradGuard no_grad;
+    const auto parameters = impl_->network.policy_parameters();
+    std::vector<at::Tensor> norms;
+    norms.reserve(parameters.size());
+    for (std::size_t index = 0; index < parameters.size(); ++index) {
+        const auto gradient = parameters[index].grad();
+        require(gradient.defined() && gradient.layout() == at::kStrided,
+                "Falta un gradiente denso del actor terminal");
+        require_float(gradient, parameters[index].sizes(), impl_->tensor_device);
+        require(gradient.scalar_type() == at::kFloat, "Los gradientes terminales necesitan FP32");
+        if (index + 2 >= parameters.size()) {
+            require((gradient.select(0, ppo_action_count) == 0).all().item<bool>(),
+                    "La pérdida terminal alcanzó la fila del crítico");
+        }
+        norms.push_back(at::linalg_vector_norm(gradient, gradient_norm_order,
+                                               std::nullopt, false, at::kDouble));
+    }
+    const auto norm = at::linalg_vector_norm(at::stack(norms), gradient_norm_order).item<double>();
+    require(std::isfinite(norm), "La norma global del actor no es finita");
+    return norm;
+}
+
+std::vector<at::Tensor> PpoPolicy::terminal_gradients() const {
+    static_cast<void>(validate_terminal_gradients());
+    const at::NoGradGuard no_grad;
+    std::vector<at::Tensor> result;
+    for (const auto& parameter : impl_->network.policy_parameters()) {
+        result.push_back(parameter.grad().detach().to(at::kCPU).clone());
+    }
+    return result;
+}
+
+double PpoPolicy::terminal_step() {
+    double norm = validate_terminal_gradients();
+    const auto previous = optimizer_steps();
+    require(previous < static_cast<std::size_t>(maximum_optimizer_steps),
+            "Adam terminal superaría el límite de actualizaciones");
+    const auto critic = impl_->critic_bits();
+    if (impl_->terminal_options.gradient_norm > 0) {
+        norm = torch::nn::utils::clip_grad_norm_(impl_->network.policy_parameters(),
+            impl_->terminal_options.gradient_norm, gradient_norm_order, true);
+    }
+    // A partir de aquí un fallo exige recuperar el checkpoint anterior.
+    impl_->terminal_failed = true;
+    impl_->terminal_optimizer->step();
+    impl_->network.validate(static_cast<int64_t>(impl_->width), impl_->tensor_device);
+    require(at::equal(critic, impl_->critic_bits()), "Adam modificó los bits de la fila del crítico");
+    impl_->terminal_failed = false;
+    try {
+        impl_->validate_terminal_optimizer();
+        require(optimizer_steps() == previous + 1,
+                "Adam terminal no confirmó exactamente una actualización");
+    } catch (...) {
+        impl_->terminal_failed = true;
+        throw;
+    }
+    return norm;
+}
+
+PpoPolicy PpoPolicy::frozen_reference(const PpoRandomState& initial_rng) const {
+    require(!impl_->terminal_failed && !impl_->objective.enabled() &&
+                !impl_->architecture.auxiliary && !impl_->architecture.double_dqn,
+            "La referencia terminal necesita un actor compatible y confirmado");
+    if (impl_->terminal_optimizer) { impl_->validate_terminal_optimizer(); }
+    PpoPolicy result(impl_->width, impl_->parameters, 0, impl_->device_name,
+                     impl_->budget, impl_->architecture);
+    result.impl_->network.copy_parameters(impl_->network);
+    result.restore_random_state(initial_rng);
+    return result;
+}
+
 PpoAuxiliaryStats PpoPolicy::consolidate(const at::Tensor& observations,
                                        const at::Tensor& matured_rewards, int64_t steps) {
     require(impl_->architecture.auxiliary && steps > 0 && steps <= maximum_auxiliary_updates,
@@ -1412,7 +1635,8 @@ std::size_t PpoPolicy::auxiliary_steps() const {
     return impl_->auxiliary_optimizer ? adam_steps(*impl_->auxiliary_optimizer) : 0;
 }
 at::Tensor PpoPolicy::state_from_history(const at::Tensor& observations,
-                                         const at::Tensor& lengths) const {
+                                        const at::Tensor& lengths) const {
+    require(!impl_->terminal_failed, "El actor necesita recuperar un checkpoint confirmado");
     require(observations.defined() && observations.dim() == 3 &&
                 observations.size(0) <= ppo_maximum_history && observations.size(1) > 0 &&
                 observations.size(2) == static_cast<int64_t>(impl_->width) &&
