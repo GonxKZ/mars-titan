@@ -19,6 +19,7 @@ import torch
 from mars_titan.data.storage import atomic_json, sha256
 from mars_titan.environments.walk_forward_receipt import read_window_receipt
 from mars_titan.models.quantile_head import QUANTILE_COLUMNS
+from mars_titan.simulation import campaign_stage as policy_stage
 from mars_titan.training import campaign_plan as plan
 from mars_titan.training import cm_v1_factorial as cm
 from mars_titan.training import masked_campaign as engine
@@ -104,6 +105,30 @@ def test_cores_fit_once_per_case_and_each_arm_starts_from_its_core(tmp_path, var
     pending = plan.check_campaign(declared(tmp_path, variant))["pending_families"]
     assert "cm_v1" not in pending
     assert "cm_v1" in plan.check_campaign(CAMPAIGNS[variant])["pending_families"]
+
+
+@pytest.mark.parametrize(
+    ("algorithms", "accepted"), [(["cm_v1_b"], True), (["cm_v1_core_b"], False)]
+)
+def test_policy_stage_reads_the_arms_and_never_the_helper_cores(tmp_path, algorithms, accepted):
+    """La etapa de políticas solo admite como predictor un brazo con recibos de ventana."""
+    stage = json.loads(Path("configs/simulation/historical-masked-rl-stage-a.json").read_text())
+    policies = json.loads(Path("configs/simulation/historical-masked-rl-policies.json").read_text())
+    policies["levels"]["algorithms"]["predictors"] = algorithms
+    # Los límites declarados cubren los 11 predictores actuales, sin los brazos de CM-v1.
+    stage["limits"] = dict.fromkeys(stage["limits"], 100_000)
+    atomic_json(tmp_path / "policies.json", policies)
+    stage.update(campaign=str(declared(tmp_path, "A")), policies=str(tmp_path / "policies.json"))
+    atomic_json(tmp_path / "stage.json", stage)
+    if accepted:
+        checked = policy_stage.check_stage(tmp_path / "stage.json")
+        predictors = checked["levels"]["all_predictors"]["predictors"]
+        assert set(plan.CM_ARMS) <= set(predictors)
+        assert not set(plan.CM_CORES) & set(predictors)
+        assert checked["levels"]["algorithms"]["predictors"] == ["cm_v1_b"]
+    else:
+        with pytest.raises(ValueError, match="productor"):
+            policy_stage.check_stage(tmp_path / "stage.json")
 
 
 def changed(tmp_path, name, change):

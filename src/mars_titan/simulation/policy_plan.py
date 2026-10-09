@@ -326,7 +326,8 @@ def load_stage(path):
 def resolve_levels(campaign, policies):
     """Predictores y brazos de cada nivel, con los productores de la campaña en su orden."""
     seed = policies["predictor"]["seed"]
-    specs = _arm_specs(campaign)
+    # Los auxiliares, como los núcleos de CM-v1, no publican recibo de ventana ni predicen.
+    specs = [spec for spec in _arm_specs(campaign) if not spec["helper"]]
     produced = [spec["arm"] for spec in specs]
     _require(
         produced and all(seed in spec["seeds"] for spec in specs),
