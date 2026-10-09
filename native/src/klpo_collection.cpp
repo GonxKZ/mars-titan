@@ -260,8 +260,8 @@ void check_source_budget(const std::vector<simulation::BatchInput>& inputs,
         if (first == nullptr) {
             first = input.tape.get();
         }
-        require(input.tape->domain == first->domain && input.tape->parent_id == first->parent_id,
-                "Las fuentes mezclan dominios o predictores padre");
+        require(simulation::same_policy_origin(*input.tape, *first),
+                "Las fuentes mezclan dominios, predictores padre o bases históricas");
         const auto account = [&](std::size_t count, std::size_t bytes) {
             require(count <= (maximum_ppo_metadata_bytes - estimated) / bytes,
                     "El estado de las carteras excedería el límite de recuperación");

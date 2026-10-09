@@ -66,6 +66,9 @@ struct InstrumentRules {
 };
 
 inline constexpr std::string_view market_rules_contract = "mt_simulation_step_v2/mt_rules_v1";
+// Única cinta real admitida: edición reconstruida con predicciones fuera de muestra (#390).
+inline constexpr std::string_view reconstructed_tape_contract =
+    "unadjusted_reconstructed_walk_forward_v1";
 
 struct MarketTape {
     std::vector<std::string> assets;
@@ -82,6 +85,12 @@ struct MarketTape {
     std::string partition;
     std::string parent_id;
     std::string source_sha256;
+    // En una cinta real, la partición es su papel en la política y los cortes salen de los
+    // recibos walk-forward: el último dato de ajuste del predictor de cada sesión. El lector
+    // solo marca historical_audit_verified después de comprobar el contrato reconstruido.
+    std::vector<int64_t> prediction_fit_ends;
+    // Mercado, edición y supuestos de la auditoría real. Vacío en las cintas sintéticas.
+    std::string historical_basis;
     bool historical_audit_verified = false;
 
     void validate() const;
@@ -93,6 +102,11 @@ struct MarketTape {
     std::span<const double> frame(std::size_t session) const && = delete;
     std::span<const double> predictions(std::size_t session) const && = delete;
 };
+
+// Fuentes que una misma política puede combinar. Una cinta sintética exige el mismo predictor
+// padre. En una cinta real cada ventana walk-forward reajusta el predictor y cambia su padre,
+// así que se exige la misma base histórica: mercado, edición y plazo de pago declarados.
+[[nodiscard]] bool same_policy_origin(const MarketTape& left, const MarketTape& right) noexcept;
 
 struct Parameters {
     double capital = default_capital;

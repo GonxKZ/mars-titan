@@ -67,7 +67,7 @@ def test_policy_hours_follow_budget_validations_costs_and_backends(variant):
     assert estimate["per_fit"] == dict(
         transitions=262_144, gradient_minibatches=256 * 4 * 16, validations=17
     )
-    # EE. UU. usa la contabilidad nativa medida y China la Python, sin reglas nativas.
+    # En estas medidas ficticias China no tiene contabilidad nativa y se estima con la Python.
     assert estimate["stepping_backend"] == dict(US="native", CN="python")
     plan = policy_plan.plan_stage(stage)
     single = 1 / 2000
@@ -157,7 +157,8 @@ def test_native_accounting_is_measured_where_the_engine_admits_the_market(cpu):
     rates = policy_throughput.measure_policies(reduced(), steps=8, warmup=2)
     assert rates["stepping"]["US"]["native"]["steps_per_second"] > 0
     china = rates["stepping"]["CN"]["native"]
-    # Mientras el motor nativo no aplique las reglas A, China se mide solo en Python.
+    # China se mide con las reglas A nativas. Una biblioteca anterior a esas reglas
+    # queda sin medida nativa y declara el motivo.
     assert china.get("steps_per_second", 0) > 0 or "reglas" in china["reason"]
 
 

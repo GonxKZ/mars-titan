@@ -4,7 +4,7 @@
 
 El ejecutable admite fuentes sintéticas de entrenamiento y validación. La comprobación CPU es un diagnóstico limitado a 32 transiciones de ajuste. La ruta de ejecución CUDA exige `cuda:0`, admisión exclusiva y presupuesto de VRAM. Esta herramienta permite comprobar el recorrido de aprendizaje y recuperación, pero no constituye una ejecución del candidato MARS-TITAN ni una comparación científica sobre FinMultiTime.
 
-Esta guía describe el esquema 1, con MLP y réplicas equilibradas de hasta doce fuentes por partición. El [esquema 2 de adaptación](adaptive-rl.md) añade un catálogo de mundos rotatorio, calentamiento sin operaciones, controles de ventana y GRU, memoria episódica, HMM, consolidación auxiliar y Double DQN. Tiene su propio contrato de recuperación, trazas y auditoría final.
+Esta guía describe el esquema 1, con MLP y réplicas equilibradas de hasta doce fuentes por partición. El [esquema 2 de adaptación](adaptive-rl.md) añade un catálogo de mundos rotatorio, calentamiento sin operaciones, controles de ventana y GRU, memoria episódica, HMM, consolidación auxiliar y Double DQN. Tiene su propio contrato de recuperación, trazas y auditoría final. El esquema 4 ajusta PPO y Double DQN sobre las cintas reconstruidas de la etapa de políticas y se describe con `mars-titan-klpo` en [políticas nativas sobre cintas reconstruidas](native-policy-real-tapes.md).
 
 ## Política y recorrido de aprendizaje
 

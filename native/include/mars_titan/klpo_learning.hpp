@@ -62,6 +62,8 @@ class KlpoLearningController {
     [[nodiscard]] std::vector<at::Tensor> gradient_snapshot() const;
     [[nodiscard]] std::string actor_fingerprint() const;
     [[nodiscard]] std::string reference_fingerprint() const;
+    // Pasos registrados en la oleada actual, también cuando ya está consumida.
+    [[nodiscard]] std::size_t collected_steps() const;
     [[nodiscard]] nlohmann::json identity() const;
     [[nodiscard]] PpoCheckpointBundle snapshot() const;
     [[nodiscard]] nlohmann::json save(PpoCheckpointStore& store) const;

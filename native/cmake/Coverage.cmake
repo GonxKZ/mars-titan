@@ -46,7 +46,7 @@ function(mars_titan_coverage_report)
     foreach(target mars_titan_simulation simulation_tests threaded_simulation c_abi_test
                    financial_session_tests financial_batch_tests markov_filter_tests mars-titan-sim
                    ppo_policy_tests ppo_training_tests ppo_checkpoint_tests ppo_inputs_tests
-                   episodic_memory_tests policy_context_tests decision_trace_tests learning_replay_tests mars-titan-ppo
+                   episodic_memory_tests policy_context_tests decision_trace_tests learning_replay_tests mars-titan-ppo mars-titan-klpo
                    memory_stress_tests mars-titan-memory-stress replay_schedule_tests mars-titan-replay-control
                    adapter_control_tests mars-titan-adapter-control cohort_execution_tests mars-titan-cohorts
                    financial_controls_tests mars-titan-financial-controls

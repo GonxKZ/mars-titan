@@ -303,6 +303,11 @@ Json run_identity(const MarketTape& tape, const RunOptions& options) {
     if (tape.has_market_rules()) {
         identity["market_rules"] = market_rules_contract;
     }
+    // Lo mismo con una cinta real. Las sintéticas conservan su identidad anterior.
+    if (tape.domain == "real") {
+        identity["historical_audit"] = reconstructed_tape_contract;
+        identity["historical_basis"] = tape.historical_basis;
+    }
     return identity;
 }
 
@@ -310,8 +315,8 @@ Json receipt_contract(const MarketTape& tape, const RunOptions& options, const J
     return Json{{"schema_version", 1},
                 {"activity", "simulation"},
                 {"model", policy_name(options.policy)},
-                {"domain", options.diagnostic ? "technical" : "synthetic"},
-                {"partition", "validation"},
+                {"domain", options.diagnostic ? "technical" : tape.domain},
+                {"partition", tape.partition},
                 {"identity", identity},
                 {"total_steps", tape.close_times.size() - 1},
                 {"final_test_opened", false},
@@ -525,6 +530,76 @@ Json event_json(const StepOutcome& outcome) {
                 {"trades", trades},
                 {"unvalued", outcome.unvalued}};
 }
+Json account_json(const mt_account_v1& account) {
+    return Json{{"cash", nullable(account.cash)},
+                {"costs", nullable(account.costs)},
+                {"turnover", nullable(account.turnover)},
+                {"receivable", nullable(account.receivable)},
+                {"nav", nullable(account.nav)}};
+}
+
+Json observation_json(const FinancialSession& session) {
+    Json result = Json::array();
+    for (const auto value : session.observation()) {
+        result.push_back(value);
+    }
+    return result;
+}
+
+// Traza completa en memoria, publicada una vez al terminar y acotada a 64 MiB.
+class TraceRecorder {
+  public:
+    TraceRecorder(bool enabled, const FinancialSession& session) : enabled_(enabled) {
+        if (enabled_) {
+            initial_ = observation_json(session);
+            bytes_ = initial_.dump().size();
+        }
+    }
+
+    void record(uint8_t action, const StepOutcome& outcome, const FinancialSession& session) {
+        if (!enabled_) {
+            return;
+        }
+        const auto state = session.snapshot();
+        Json positions = Json::array();
+        for (const auto& position : state.positions) {
+            positions.push_back(Json{{"quantity", nullable(position.quantity)},
+                                     {"target", nullable(position.target)},
+                                     {"capacity", nullable(position.capacity)},
+                                     {"decision_at", position.decision_at}});
+        }
+        auto event = event_json(outcome);
+        event["cursor"] = state.cursor;
+        event["action"] = action;
+        event["reward_valid"] = outcome.reward_valid;
+        event["observation"] = observation_json(session);
+        event["positions"] = std::move(positions);
+        event["account"] = account_json(state.account);
+        bytes_ += event.dump().size();
+        if (bytes_ > maximum_trace_bytes) {
+            throw std::invalid_argument("La traza supera 64 MiB");
+        }
+        steps_.push_back(std::move(event));
+    }
+
+    Json publish(const std::filesystem::path& path, const Json& identity) const {
+        const Json document{{"schema_version", 1},
+                            {"identity_sha256", content_sha256(identity.dump())},
+                            {"initial_observation", initial_},
+                            {"steps", steps_}};
+        atomic_json_file(path, document, maximum_trace_bytes + maximum_manifest_bytes);
+        return Json{{"path", "trace.json"},
+                    {"sha256", content_sha256(read_bounded_file(
+                                   path, maximum_trace_bytes + maximum_manifest_bytes))},
+                    {"steps", steps_.size()}};
+    }
+
+  private:
+    bool enabled_;
+    Json initial_ = Json::array();
+    Json steps_ = Json::array();
+    std::size_t bytes_ = 0;
+};
 } // namespace
 
 struct OutputLock::Impl {
@@ -812,10 +887,13 @@ SessionSnapshot read_snapshot(const Json& value) {
 Json run_reference(std::shared_ptr<const MarketTape> tape, const RunOptions& options,
                    const std::function<bool()>& stop_requested) {
     const auto started = Clock::now();
-    if (!tape || tape->domain != "synthetic" || tape->partition != "validation" ||
-        options.checkpoint_steps == 0 || options.checkpoint_steps > maximum_sessions) {
+    // Una cinta real llega ya verificada por el lector con su auditoría walk-forward.
+    if (!tape || (tape->domain != "synthetic" && tape->domain != "real") ||
+        tape->partition != "validation" || options.checkpoint_steps == 0 ||
+        options.checkpoint_steps > maximum_sessions ||
+        (options.trace && (options.resume || options.stop_after))) {
         throw std::invalid_argument(
-            "La referencia requiere validación sintética y checkpoints acotados");
+            "La referencia requiere validación, checkpoints acotados y una traza completa");
     }
     FinancialSession session(tape, options.parameters);
     const auto identity = run_identity(*tape, options);
@@ -883,17 +961,23 @@ Json run_reference(std::shared_ptr<const MarketTape> tape, const RunOptions& opt
         atomic_json_file(options.output / "run.json", report);
     };
     std::size_t applied = 0;
+    TraceRecorder trace(options.trace, session);
     try {
         publish();
         while (!session.done() && !stop_requested() &&
                (!options.stop_after || applied < *options.stop_after)) {
-            pending_event = session.step(policy_action(options.policy, session.cursor()));
+            const auto action = policy_action(options.policy, session.cursor());
+            pending_event = session.step(action);
+            trace.record(action, *pending_event, session);
             ++applied;
             if (session.cursor() % options.checkpoint_steps == 0) {
                 publish();
             }
         }
         report["status"] = session.done() ? "completed" : "paused";
+        if (options.trace && session.done()) {
+            report["trace"] = trace.publish(options.output / "trace.json", identity);
+        }
         publish();
     } catch (const std::exception& error) {
         report["status"] = "failed";
@@ -915,8 +999,9 @@ Json run_comparison(std::shared_ptr<const MarketTape> tape, const ComparisonOpti
         options.workers != maximum_workers) {
         throw std::invalid_argument("La comparación admite 1, 2, 4 u 8 trabajadores");
     }
-    if (!tape || tape->partition != "validation" || tape->domain != "synthetic") {
-        throw std::invalid_argument("La comparación requiere una cinta sintética de validación");
+    if (!tape || tape->partition != "validation" ||
+        (tape->domain != "synthetic" && tape->domain != "real") || options.run.trace) {
+        throw std::invalid_argument("La comparación requiere una cinta de validación sin traza");
     }
     const OutputLock lock(options.run.output, options.run.resume);
     auto identity = run_identity(*tape, options.run);
@@ -974,7 +1059,7 @@ Json run_comparison(std::shared_ptr<const MarketTape> tape, const ComparisonOpti
     Json summary{{"schema_version", 1},
                  {"activity", "simulation_comparison"},
                  {"model", "simulator"},
-                 {"domain", options.run.diagnostic ? "technical" : "synthetic"},
+                 {"domain", options.run.diagnostic ? "technical" : tape->domain},
                  {"partition", "validation"},
                  {"identity", identity},
                  {"status", failed      ? "failed"
