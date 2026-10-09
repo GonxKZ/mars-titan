@@ -266,6 +266,44 @@ def test_fit_executor_returns_the_completed_window_only_for_its_view(campaign_ru
         wf.titans_fit(SimpleNamespace(**vars(run) | dict(view_sha256="0" * 64)), device="cpu")
 
 
+def test_executors_declare_unfused_attention_only_while_their_job_runs(monkeypatch, tmp_path):
+    """La campaña no fija fastpath para el proceso. Cada trabajo de Titans lo declara."""
+    seen = []
+
+    def window(*_args, **_kwargs):
+        seen.append(torch.backends.mha.get_fastpath_enabled())
+        return dict(status="completed", request=dict(view_sha256="v"))
+
+    def carried(*_args, **_kwargs):
+        seen.append(torch.backends.mha.get_fastpath_enabled())
+        raise wf.Paused
+
+    case = dict(recipe="r", variant="mac_online", seed=42, search_case="lr1e-4")
+    monkeypatch.setattr(wf, "_campaign_case", lambda run: case)
+    monkeypatch.setattr(wf, "view_protocol", lambda view: {})
+    monkeypatch.setattr(wf, "run_titans_window", window)
+    monkeypatch.setattr(wf, "carry_titans", carried)
+    run = SimpleNamespace(
+        view="v",
+        view_sha256="v",
+        job=dict(window="fold-000"),
+        folder=tmp_path,
+        stop=None,
+        anchor=dict(folder=tmp_path, view="a"),
+    )
+    previous = torch.backends.mha.get_fastpath_enabled()
+    torch.backends.mha.set_fastpath_enabled(True)
+    try:
+        assert wf.titans_fit(run, device="cpu")["status"] == "completed"
+        assert torch.backends.mha.get_fastpath_enabled() is True
+        with pytest.raises(engine.Paused):
+            wf.titans_carry(run, device="cpu")
+        assert torch.backends.mha.get_fastpath_enabled() is True
+    finally:
+        torch.backends.mha.set_fastpath_enabled(previous)
+    assert seen == [False, False]
+
+
 def selected_search(output, window):
     """Búsqueda elegida en una ventana: menor MAE de validación y, si empatan, el nombre."""
     receipts = {
