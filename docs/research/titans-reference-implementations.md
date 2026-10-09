@@ -126,7 +126,7 @@ Un paso con `θ = 1`, `η = 0` y `α = 0` aísla la derivada que usa la operaci�
 
 ### CUDA
 
-El mismo arnés admite `--device cuda:0` y se ejecuta con `memslot gpu`. El estado de esa comprobación está en el [resumen de medidas](../../reports/engineering/titans-reference-parity-20261009/README.md).
+El [recibo CUDA](../../reports/engineering/titans-reference-parity-20261009/parity-cuda.json) repite la comparación con lucidrains en `cuda:0`, en una RTX 4070 Laptop GPU con TF32 desactivado y algoritmos deterministas. Reservó como máximo 433 MiB. En FP64 pasan los 5 casos, con un cociente máximo de 0,083. En FP32 pasan los 3 casos sin residual. Los 2 casos con residual y LayerNorm quedan fuera de la tolerancia declarada en 7 y 9 de 19 tensores, con una diferencia entre implementaciones que es como mucho 1,61 veces el redondeo de cada una frente a su evaluación FP64. Las comprobaciones de `fla` solo se ejecutaron en CPU. La orden y el resto de detalles están en el [resumen de medidas](../../reports/engineering/titans-reference-parity-20261009/README.md).
 
 ## Recomendación
 
