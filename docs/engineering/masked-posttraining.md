@@ -149,9 +149,9 @@ Con correcciones nulas la salida coincide exactamente con la del padre cuando am
 
 | Pieza | Función |
 | --- | --- |
-| `MatrixWindow` | Prepara una vez la lectura de ajuste y validación de una vista con la política de la matriz, el índice de cohortes de la [lectura por bloques](#lectura-por-bloques) o la copia ordenada, la reanuda si existe y abre sus dos lectores |
+| `MatrixWindow` | Prepara una vez la lectura de ajuste y validación de una vista con la política de la matriz, el índice de cohortes de la [lectura por bloques](#lectura-por-bloques) o la copia ordenada, la reanuda si existe y abre sus dos lectores. Con `since` el ajuste solo lee las sesiones desde ese instante y la rejilla se ajusta con sus objetivos |
 | `MatrixParent` | Carga el padre, abre su caché de predicciones, ajusta el normalizador solo con el tramo de ajuste y registra `plan.json` antes del primer ajuste. `run` llama a `run_case` y exige las actualizaciones del plan |
-| `predict_heldout` | Reconstruye el estado seleccionado y escribe calibración y evaluación con las filas completas de la vista |
+| `predict_heldout` | Reconstruye el estado seleccionado y escribe calibración y evaluación (y validación, en el walk-forward por etapas) con las filas completas de la vista |
 | `release_ordered` | Retira las copias Parquet de ajuste y validación que declara el manifiesto, después de comprobar su huella, y conserva el manifiesto |
 
 ### Presupuesto
@@ -169,7 +169,7 @@ En el modo matriz, los padres son los ganadores y finalistas emparejados por sem
 La copia ordenada de los tramos de ajuste y validación duplicaba en disco cada ventana. En la ventana US+CN más poblada (14,64 millones de filas de ajuste) eran unos 160 GB transitorios, según la medida de [#425](https://github.com/GonxKZ/mars-titan/pull/425). `environments/view_cohorts.py` evita esa copia sin cambiar los lotes:
 
 - `prepare_cohort_index` recorre una vez cada tramo con el mismo lector que alimentaba la copia (`CorpusDataset.batches` con época y semilla cero, cuyo contenido no depende del tamaño de lote) y guarda solo el índice: sesiones y filas por sesión, mercados y límites, las comprobaciones de cada cohorte y la rejilla de acciones, ajustada con los objetivos en el mismo orden que la consulta de la copia (instante y activo). Su identidad incluye la huella de la vista, la política, la supervisión y el código. Un índice de otra vista, política o código se rechaza.
-- `ViewCohortSource` entrega las cohortes en el orden de las visitas de cada época, la permutación del generador `[seed, epoch]`. Agrupa visitas consecutivas en bloques que caben en `max_block_bytes`, lee el tramo una vez por bloque y conserva solo las filas de las sesiones del bloque. Un vector nulo o idéntico al primero de su sesión (el macro de una sesión o las noticias ausentes) no se copia y se reconstruye con los mismos bits, también el signo de los ceros. Si un bloque supera el presupuesto mientras se lee, sus últimas sesiones pasan al siguiente, de modo que cada bloque es un prefijo completo de visitas.
+- `ViewCohortSource` entrega las cohortes en el orden de las visitas de cada época, la permutación del generador `[seed, epoch]`. Agrupa visitas consecutivas en bloques que caben en `max_block_bytes`, lee el tramo una vez por bloque y conserva solo las filas de las sesiones del bloque. Un vector nulo o idéntico al primero de su sesión (el macro de una sesión o las noticias ausentes) no se copia y se reconstruye con los mismos bits, también el signo de los ceros. Si un bloque supera el presupuesto mientras se lee, sus últimas sesiones pasan al siguiente, de modo que cada bloque es un prefijo completo de visitas. Con `since` solo quedan las sesiones con decisión desde ese instante, sin cambiar el índice ni su población. Si todas las sesiones de la fuente caben en el presupuesto, se leen una vez y sirven a todas las épocas.
 
 Las pruebas comparan las dos lecturas sobre una vista conjunta US+CN con presencias distintas por mercado. Coinciden bit a bit el índice y la rejilla, cada cohorte con sus bits de presencia en las dos particiones y con varios presupuestos, también con bloques desalojados, los lotes y cursores del adaptador en dos épocas y en validación, la reanudación a mitad de cohorte y la normalización. Una etapa completa con cada lectura aplica los mismos gradientes en cada llamada al optimizador y escribe las mismas predicciones. Al probarlo apareció un fallo anterior: `PairedInputs` no admitía una fuente con dos mercados, que no tiene un límite único de tramo. Ahora cada fila se comprueba con los límites de su mercado.
 
@@ -183,30 +183,71 @@ Medida local en CPU sobre el corpus técnico conjunto, con 16 activos, gráficos
 
 El pico de disco de los bloques es la caché del padre, igual en las dos lecturas. Es una sola ejecución de cada caso sobre un corpus pequeño, sin la edición real ni CUDA.
 
-El orden exacto tiene un coste de lectura. Cada bloque es una lectura completa del tramo de ajuste. En la ventana conjunta más poblada, la columna de presencia del tramo de ajuste tiene un 15,0 % de filas con noticias y un 32,6 % con fundamentales, lo que da unos 3.794 bytes por fila en un bloque. Con 3 GiB son 18 lecturas por época en esa ventana. Con el caudal del lector medido en `perf/campaign-pipeline` sobre vistas reales (de 17.000 a 25.000 filas por segundo en secuencia y unas 40.000 con hilos), cada lectura de esa ventana tarda entre 6 y 14 minutos. Es una estimación, no una medida de la etapa. Las alternativas (leer en el mismo recorrido todos los ajustes de una semilla y ventana, saltar las filas ajenas al bloque en el lector o declarar otro orden de visitas) están descritas en [#363](https://github.com/GonxKZ/mars-titan/issues/363) y ninguna está aplicada.
+El orden exacto tiene un coste de lectura. Cada bloque es una lectura completa del tramo de ajuste. En la ventana conjunta más poblada, la columna de presencia del tramo de ajuste tiene un 15,0 % de filas con noticias y un 32,6 % con fundamentales, lo que da unos 3.794 bytes por fila en un bloque. Con 3 GiB son 18 lecturas por época si se ajusta todo el tramo, como en el plan anclado de B. En el walk-forward por etapas de A el ajuste solo lee las filas nuevas. Con el caudal del lector medido en `perf/campaign-pipeline` sobre vistas reales (de 17.000 a 25.000 filas por segundo en secuencia y unas 40.000 con hilos), cada lectura de esa ventana tarda entre 6 y 14 minutos. Es una estimación, no una medida de la etapa. Las alternativas (leer en el mismo recorrido todos los ajustes de una semilla y ventana, saltar las filas ajenas al bloque en el lector o declarar otro orden de visitas) están descritas en [#363](https://github.com/GonxKZ/mars-titan/issues/363) y ninguna está aplicada.
 
 ## Etapa por ventana de la campaña
 
-`posttraining/campaign_stage.py` recorre la matriz sobre la [campaña con máscaras](../research/training-campaign-2000.md#orquestación-de-los-brazos-con-entrenador) ya confirmada. La etapa se declara en dos configuraciones, una por variante de presupuesto: [A](../../configs/posttraining/historical-masked-adapter-stage-a.json) y [B](../../configs/posttraining/historical-masked-adapter-stage-b.json). Cada una indica su campaña, la matriz de versión 2, los ámbitos, los brazos neuronales (RNN, LSTM, GRU, DLinear y Transformer compacto), la lectura de las cohortes y los límites de trabajos. `load_stage` exige que la matriz declare objetivos para `quantile_head_v1`, que comparta política y lote con la campaña, que los ámbitos sigan su orden, que los brazos pertenezcan a la comparación y que las semillas de cada brazo sean las de la matriz. Con la matriz de versión 3 admite también los [brazos cronológicos](#brazos-cronológicos).
+`posttraining/campaign_stage.py` recorre la matriz sobre la [campaña con máscaras](../research/training-campaign-2000.md#orquestación-de-los-brazos-con-entrenador) ya confirmada como un walk-forward por etapas, el diseño elegido el 9 de octubre (opción 1 con control). El padre de la ventana k es el estado que la campaña base eligió en k-1 y cada caso lo ajusta solo con las filas de k que ese padre no usó. La etapa se declara en dos configuraciones, una por variante de presupuesto: [A](../../configs/posttraining/historical-masked-adapter-stage-a.json) y [B](../../configs/posttraining/historical-masked-adapter-stage-b.json). Cada una indica su campaña, la matriz de versión 2, los ámbitos, los brazos neuronales (RNN, LSTM, GRU, DLinear y Transformer compacto), la lectura de las cohortes y los límites de trabajos. `load_stage` exige que la matriz declare objetivos para `quantile_head_v1`, que comparta política y lote con la campaña, que los ámbitos sigan su orden, que los brazos pertenezcan a la comparación y que las semillas de cada brazo sean las de la matriz. A debe declarar además `chain_rule: chain_validation_score_v1`, `data_policy: real_edition_only` y la lectura por bloques, y su campaña debe reentrenar todas las ventanas. Con la matriz de versión 3 admite también los [brazos cronológicos](#brazos-cronológicos).
 
 | Elemento | Regla |
 | --- | --- |
-| Padre | Estado elegido del brazo base en la misma ventana y semilla, según los recibos confirmados de la campaña: el ganador de la búsqueda con la semilla 42 y el finalista con las demás. El informe debe conservar su huella |
-| Ajuste | Solo el tramo de ajuste de la vista de esa ventana, con la lectura declarada, la caché y el normalizador de esa ventana y ese padre |
-| Selección | Validación de la misma ventana, con la selección de versión 2 y el padre elegible en la época cero |
-| Predicción | Calibración y evaluación de la vista con el estado seleccionado, el esquema común de la comparación, la mediana como predicción y los cinco cuantiles |
-| Filas | Las de la vista. La huella de filas y objetivos de cada tramo debe ser la de la campaña base en esa ventana |
-| Nombre del brazo | `<brazo base>__<punto>`, por ejemplo `gru__head_fusion` o `transformer_compact__full_continuation` |
-| Padre congelado | Sin trabajos. Sus predicciones son las de la campaña base |
+| Padre | Estado elegido del brazo base en la ventana anterior y la misma semilla, según los recibos confirmados de la campaña: el ganador de la búsqueda con la semilla 42 y el finalista con las demás. El informe debe conservar su huella. La primera ventana de cada ámbito no tiene postentrenamiento |
+| Ajuste | Solo las filas de `train_k` con decisión desde el final de `cal_{k-1}` hasta el final de `train_k`, con la [disjunción](#filas-nuevas-y-disjunción) comprobada por identidad de fila. La caché y el normalizador son los de ese padre sobre esas filas |
+| Selección | Validación de la ventana k, con la selección de versión 2 y el padre elegible en la época cero |
+| Predicción | Validación, calibración y evaluación de la vista k con el estado seleccionado, el esquema común de la comparación, la mediana como predicción y los cinco cuantiles |
+| Filas | Las de la vista. Calibración y evaluación deben tener la huella de filas y objetivos de la campaña base en esa ventana |
+| Brazos | `<brazo base>__frozen_parent` (el padre congelado), `<brazo base>__<punto>` para cada caso de la matriz, por ejemplo `gru__head_fusion`, y `<brazo base>__full_continuation` |
+| Reentrenamiento base de k | Es el contraste de la cadena y no compite como candidato |
 
-Cada trabajo confirma `jobs/<ámbito>/<ventana>/<brazo>/<fit|carry>-s<semilla>/receipt.json` con su identidad (etapa, caso, vista, trabajo base del padre, huella de su recibo y de su estado elegido y, en B, el ajuste del ancla), la ejecución, las actualizaciones, la selección y las predicciones con su huella, filas, huella de filas y objetivos y huellas por mercado. Antes de confirmarlo se comprueba que cada tramo cae en su segmento sin filas de 2024, que tiene las filas de la vista, que los cuantiles son finitos y no decrecientes y que la predicción es exactamente la mediana. Después se escribe el recibo walk-forward de cada mercado en `windows/<ámbito>/<ventana>/<brazo>/seed-<semilla>/<mercado>.json`, con el contrato de [#390](https://github.com/GonxKZ/mars-titan/pull/390), validado con `read_window_receipt` y con `labels_used_until` en el microsegundo anterior a la evaluación. Su `parent` es el trabajo de la etapa que ajustó el estado seleccionado y la huella de ese estado.
+Cada trabajo confirma `jobs/<ámbito>/<ventana>/<brazo>/<fit|frozen>-s<semilla>/receipt.json` con su identidad (etapa, caso, vista de la ventana y del padre, trabajo base del padre con la huella de su recibo y de su estado elegido y, en un ajuste, la huella de sus filas nuevas y de su prueba), la ejecución, las actualizaciones, la selección, la puntuación de validación recalculada y la declarada, el resumen de las filas nuevas, `labels_used_until` y las predicciones con su huella, filas, huella de filas y objetivos y huellas por mercado. Antes de confirmarlo se comprueba que cada tramo cae en su segmento sin filas de 2024, que tiene las filas de la vista, que los cuantiles son finitos y no decrecientes y que la predicción es exactamente la mediana. Después se escribe el recibo walk-forward de cada mercado en `windows/<ámbito>/<ventana>/<brazo>/seed-<semilla>/<mercado>.json`, con el contrato de [#390](https://github.com/GonxKZ/mars-titan/pull/390), validado con `read_window_receipt`. Su `parent` es el trabajo de la etapa que dejó el estado seleccionado. Su `labels_used_until` es la madurez de la última etiqueta aceptada de ajuste, validación o calibración de la ventana o del padre, una cota conservadora de las etiquetas que llegaron a ese estado y a su selección, siempre anterior a la evaluación. Hasta que `training/label_maturity.py` de [#430](https://github.com/GonxKZ/mars-titan/pull/430) entre en `develop`, la calcula `staged_rows.labels_used_until` con las mismas etiquetas aceptadas.
+
+### Filas nuevas y disjunción
+
+`staged_rows.posttraining_rows` fija el intervalo de decisiones de las filas nuevas: empieza al final de la calibración del padre y termina con el tramo de ajuste de la ventana, que la vista ya purga antes de `val_k`. En la campaña A cada ventana avanza un año y la validación y la calibración ocupan nueve meses, así que las filas nuevas son las de un trimestre (de enero a marzo del año de la evaluación anterior).
+
+`staged_rows.fit_rows_proof` lo comprueba por identidad de fila. Una fila es un mercado, un activo y su fila del archivo de muestras, que las vistas de una misma edición comparten. Por eso exige que cada activo conserve la huella de su archivo de muestras en las dos vistas. La prueba se calcula una vez por ámbito y ventana y se guarda en `windows-data/<ámbito>/<ventana>/fit-rows.json`:
+
+| Campo | Contenido |
+| --- | --- |
+| `parent_rows` | Filas de ajuste, validación y calibración del padre en su vista |
+| `intersection` | Filas nuevas que el padre usó en cada uno de esos tramos. Deben ser cero |
+| `rows`, `sha256` | Número de filas nuevas y su huella, con la fórmula del plan de la campaña (`mars-titan-chain-rows-v1`, activo, número de filas y sha256 de sus filas ordenadas) |
+| `first_decision`, `last_decision` | Primera y última decisión de las filas nuevas |
+| `parent_labels_mature_until` | Madurez de la última etiqueta del padre. Debe ser anterior al inicio de las filas nuevas |
+| `labels_mature_until` | Madurez de la última etiqueta de las filas nuevas. Debe ser anterior a la validación |
+| `labels_used_until` | Madurez de la última etiqueta de ajuste, validación o calibración del padre o de la ventana |
+
+La prueba falla si la ventana no tiene filas nuevas, si un activo cambia de archivo de muestras, si una fila nueva ya la usó el padre o si una etiqueta madura fuera de su límite. Cada trabajo la vuelve a leer, comprueba que corresponde a sus dos vistas y guarda su huella en la identidad.
+
+Cada familia lee solo esas filas:
+
+- Brazos neuronales. `ViewCohortSource` recibe `since`, el inicio de las filas nuevas, y deja solo las sesiones desde ese instante. El índice y su población no cambian. La rejilla de acciones se ajusta con los objetivos de las filas nuevas. La etapa exige que el lector de ajuste tenga exactamente las filas de la prueba. El padre se carga con el índice de su propia vista, porque su identidad depende de la población con la que se ajustó.
+- Titans-MAC y lectores episódicos. La fase de ajuste decide en el intervalo de las filas nuevas y lee antes, sin etiquetas, el mismo calentamiento de 12 meses que los tramos medidos, sin salir del tramo de ajuste de la vista. Validación, calibración y evaluación son las de la ventana k con su calentamiento. El estado se carga como en un traslado. Con M3 se conservan las escalas congeladas del ajuste del brazo padre, y el entrenador comprueba que son esas y que terminan antes de las filas nuevas.
+- GRU candidata. No tiene calentamiento: su contexto de 64 sesiones viaja en cada muestra.
+
+### Padre congelado
+
+El trabajo `frozen` de cada brazo base, semilla y ventana k ≥ 1 aplica sin ajuste el estado elegido en k-1 a validación, calibración y evaluación de k. Usa el mismo recorrido que los ajustes: `evaluate_partition` con el modelo del padre en los brazos neuronales y `frozen_titans`, `frozen_readout` o `frozen_candidate` en los cronológicos, que reinician la memoria rápida en cada tramo y leen su calentamiento como un traslado de la campaña base. Así, un caso que no cambia pesos emite exactamente las mismas filas y empata con el padre. Registra cero actualizaciones.
+
+### Predictor de la cadena
+
+Por ámbito, ventana, brazo base y semilla, el trabajo `<ámbito>/<ventana>/<brazo base>__chain/select-s<semilla>` elige el predictor publicado con la regla `chain_validation_score_v1`:
+
+1. La puntuación de cada candidato es el MAE medio por sesión de la mediana sobre todas las filas de `val_k`, la misma definición que elige el estado de la campaña base. `staged_chain.validation_score` la recalcula sobre las predicciones de validación guardadas, en orden de mercado, activo e instante, y el recibo se rechaza si no coincide con la declarada por el ajuste con tolerancia relativa 1e-6.
+2. Compiten el padre congelado, cada caso de adaptadores y la continuación completa. Gana la puntuación menor.
+3. El padre congelado solo se sustituye con una mejora estricta. Los empates entre los demás se resuelven por el identificador del trabajo.
+4. En la primera ventana el predictor es el estado elegido de la base.
+
+La selección escribe primero los recibos de cada mercado en `windows/<ámbito>/<ventana>/<brazo base>__chain/seed-<semilla>/<mercado>.json`, con el `parent` del trabajo elegido y la huella de su recibo, y al final `selection.json`, de tipo `campaign_chain_selection`, con la campaña, la etapa, la regla, la ventana del padre, los candidatos con su puntuación, el elegido, su estado, las filas nuevas (nulas en la primera ventana y con el padre congelado), la huella de cada recibo de mercado y `labels_used_until`. `staged_chain.read_selection` comprueba todo el conjunto antes de aceptarlo y una reanudación exige la misma selección. Los identificadores, rutas y lectura reproducen los del plan de la campaña y se sustituirán por `training/campaign_chain.py` cuando esté en `develop`.
+
+Dos límites de la regla. La igualdad solo es exacta cuando las predicciones son las mismas. Un caso con pesos casi iguales a los del padre puede ganarle por una diferencia del orden del redondeo, y la regla no fija un margen mínimo. Además, la cadena no alimenta a la ventana siguiente: el padre de k+1 sigue siendo el estado elegido por la base en k.
 
 ### Brazos cronológicos
 
 Con la matriz de versión 3, un brazo de Titans-MAC, MARS-TITAN, CM-v1 o la GRU candidata entra en la etapa si la campaña base declara su sección. Uno que solo existe en la comparación queda en espera (`awaiting_sections` en `check`) y no genera trabajos. Sus casos salen de `chronological_matrix.cases` con la variante de Titans-MAC del brazo o con su banco, y los ejecutan `posttraining/chronological_windows.py` (Titans-MAC y lectores) y `posttraining/candidate_adapters.py` (GRU candidata):
 
-- El ajuste parte del estado elegido del brazo base en la misma ventana y semilla, abre la vista de esa ventana y escribe validación, calibración y evaluación con el esquema común. No abre la lectura de cohortes de los brazos neuronales.
-- El traslado de la variante B aplica sin ajuste el estado del ancla, con los mismos adaptadores, a la ventana trasladada. Cada intento escribe en una carpeta nueva (`attempt-0001`, `attempt-0002` y siguientes, hasta 16) y la etapa reutiliza el último si está completado.
+- El ajuste parte del estado elegido del brazo base en la ventana anterior y la misma semilla, abre la vista de la ventana y escribe validación, calibración y evaluación con el esquema común. No abre la lectura de cohortes de los brazos neuronales.
+- El padre congelado escribe cada intento en una carpeta nueva (`attempt-0001`, `attempt-0002` y siguientes, hasta 16) y la etapa reutiliza el último si está completado.
 - Un brazo que parte de otro predictor elegido, como MARS-TITAN de `titans_mac_online`, exige también los recibos confirmados de ese padre en la campaña base.
 - Todos los ajustes de un mismo padre deben aplicar las mismas actualizaciones, y el recibo se rechaza si no.
 - Tras confirmar un trabajo cronológico se borran sus índices de observaciones, que solo reconstruiría otra ejecución del mismo trabajo. El resumen registra los bytes liberados en `released_index_bytes`.
@@ -215,33 +256,33 @@ Las configuraciones A y B del repositorio todavía declaran la matriz de versió
 
 ### Variante B
 
-En una ventana trasladada no se ajusta nada. El trabajo `carry` depende del ajuste del mismo caso en la ventana ancla y aplica su estado seleccionado, con el padre elegido en el ancla, a calibración y evaluación de la ventana trasladada. Es la misma regla con la que la campaña base traslada sus padres, y la etapa lo comprueba: el padre que la campaña base usa en esa ventana debe ser el del ancla. `carried_window` vuelve a comprobar que la información del ancla termina antes de la calibración de la ventana trasladada. El padre se carga con el índice o el manifiesto ordenado del ancla, que se conservan, y el recibo de la ejecución del ancla debe conservar su huella. Un traslado registra cero actualizaciones y publica su recibo walk-forward con el `parent` del ancla.
+B conserva su configuración y su plan anclado: en las ventanas reentrenadas se ajusta y en las trasladadas el trabajo `carry` aplicaría el estado del ancla. Por la decisión del 9 de octubre no se ejecuta. `check` la cuenta y la marca como no ejecutable con su motivo, `run_stage` la rechaza antes de leer nada y su configuración no puede declarar la regla de la cadena.
 
 ### Recuento
 
-Por ventana y semilla hay 29 casos: cinco en cada familia recurrente y en DLinear y nueve en el Transformer. Con tres semillas son 87 por ventana.
+Por ventana y semilla hay 29 casos: cinco en cada familia recurrente y en DLinear y nueve en el Transformer. Con tres semillas son 87 por ventana. En A hay 45 ventanas, 42 con postentrenamiento, y 15 padres por ventana (cinco brazos por tres semillas).
 
-| Variante | Ventanas reentrenadas | Ventanas trasladadas | Ajustes | Traslados |
-| --- | ---: | ---: | ---: | ---: |
-| A | 45 | 0 | 3.915 | 0 |
-| B | 17 | 28 | 1.479 | 2.436 |
+| Variante | Ventanas con ajuste | Ajustes | Padres congelados | Traslados | Selecciones de la cadena | Se ejecuta |
+| --- | ---: | ---: | ---: | ---: | ---: | --- |
+| A | 42 | 3.654 | 630 | 0 | 675 | Sí |
+| B | 17 | 1.479 | 0 | 2.436 | 0 | No |
 
-Los límites de cada configuración son iguales a su plan, como en la campaña base. `check` los comprueba sin leer datos.
+Los límites de cada configuración (ajustes y predicciones) son iguales a su plan, como en la campaña base. `check` los comprueba sin leer datos. En la estimación de horas de `training/campaign_throughput.py`, las filas nuevas de cada ventana se aproximan con los recuentos como el ajuste de k menos ajuste, validación y calibración de k-1. Es una cota algo mayor, porque las filas que la purga quitó en las fronteras de k-1 sí están en el ajuste de k.
 
 ### Ejecución, recuperación y disco
 
-`run_stage` llama a `require_learning_allowed` antes de abrir fuentes y otra vez antes de cada trabajo pendiente. Lee el estado confirmado de la campaña base con su misma identidad (configuración, vistas y código) y exige que estén confirmados todos los trabajos base de los ámbitos y brazos de la etapa. La salida debe quedar fuera de las vistas, de la salida de la campaña y de `dataset/`, y guarda su identidad en `stage.json`: etapa, campaña, matriz, política, `training_data`, variante, edición de cada mercado, huellas de las vistas y huellas del código. Una salida de otra etapa, otra campaña u otro código se rechaza.
+`run_stage` llama a `require_learning_allowed` antes de abrir fuentes y otra vez antes de cada trabajo pendiente. Lee el estado confirmado de la campaña base con su misma identidad (configuración, vistas y código) y exige que estén confirmados todos los trabajos base de los ámbitos y brazos de la etapa. La salida debe quedar fuera de las vistas, de la salida de la campaña y de `dataset/`, y guarda su identidad en `stage.json`: etapa, diseño, regla de la cadena, política de datos, campaña, matriz, política de entradas, `training_data`, variante, edición de cada mercado, huellas de las vistas y huellas del código. Una salida de otra etapa, otra campaña u otro código se rechaza.
 
-Los trabajos se recorren en el orden del plan, con una sola ventana, un padre y una vista abiertos. Un trabajo con recibo e identidad iguales no se repite, tras comprobar las huellas de sus artefactos. Uno pendiente se reanuda desde su punto de control con la frecuencia de la campaña. Una parada deja el resumen en `paused`, la protección en `blocked` y un error en `failed`. El resumen registra trabajos previstos y completados, las actualizaciones de cada trabajo, el plan de cada padre y las copias retiradas.
+Los trabajos se recorren ventana a ventana: en cada una, el padre congelado y los ajustes de cada padre y después la selección de cada cadena, con una sola ventana, un padre y una vista abiertos. Un trabajo con recibo e identidad iguales no se repite, tras comprobar las huellas de sus artefactos. Uno pendiente se reanuda desde su punto de control con la frecuencia de la campaña. Una parada deja el resumen en `paused`, la protección en `blocked` y un error en `failed`. El resumen registra trabajos previstos y completados (ajustes, padres congelados y selecciones), las actualizaciones de cada trabajo, el elegido de cada cadena y el plan de cada padre.
 
 La declaración `cohort_reading` fija cómo leen los brazos neuronales:
 
 | Lectura | Declaración | Disco por ventana |
 | --- | --- | --- |
 | Por bloques | `{"source": "view_blocks", "max_block_bytes": n}`, con n entre 256 MiB y 16 GiB | Índice de cohortes en `windows-data/<ámbito>/<ventana>/cohorts/` |
-| Copia ordenada | `{"source": "ordered_corpus", "retention": "keep"}` o `"release_after_window_fits"` | Parquet de ajuste y validación. Con la retirada, se borran al confirmar todos los ajustes de la ventana y se conserva el manifiesto |
+| Copia ordenada | `{"source": "ordered_corpus", "retention": "keep"}` o `"release_after_window_fits"` | Parquet de ajuste y validación. Solo la admite B |
 
-Las dos configuraciones del repositorio leen por bloques con 3 GiB. Cada ventana guarda además, por brazo base y semilla, la caché del padre, el normalizador y el plan. Un traslado carga el padre del ancla con el índice o el manifiesto de esa ventana, que se conservan. `training/storage_budget.py` solo cuenta la copia ordenada y su preparación cuando la etapa la declara.
+Las dos configuraciones del repositorio leen por bloques con 3 GiB. Si todas las sesiones de una fuente caben en ese presupuesto, la primera lectura las conserva y las épocas siguientes no vuelven a leer el tramo. El intento se hace una vez y, si falla, la fuente sigue por bloques. Con unos 3.794 bytes por fila, la estimación de la ventana conjunta más poblada, caben unas 850.000 filas. Si las filas nuevas o la validación de una ventana no caben, su fuente sigue por bloques. No se ha medido con la edición real cuántas caben. Cada ventana guarda además la prueba de filas nuevas y, por brazo base y semilla, la caché del padre, el normalizador y el plan. `training/storage_budget.py` cuenta las tres particiones de predicción de cada trabajo y solo cuenta la copia ordenada y su preparación cuando la etapa la declara.
 
 ```bash
 uv run --no-sync python scripts/run_masked_campaign.py posttraining check \
@@ -281,6 +322,8 @@ Quedan sin ejecutar las pruebas que aplican pasos reales de AdamW, que la guarda
 
 ### Objetivo pinball, cola y etapa por ventana
 
+Los recuentos y recorridos de la etapa de este apartado corresponden a su diseño anterior, con el padre en la misma ventana y traslados en B. Los del diseño actual están en [walk-forward por etapas](#walk-forward-por-etapas).
+
 - `tests/posttraining/test_quantile_adaptation.py` (17 pruebas): la pinball solo llega a los adaptadores y deja intacto el padre, la continuación recibe gradiente en todos los pesos, el orden de los cuantiles se conserva con pesos aleatorios, cada caso de cuantiles llega hasta el paso del optimizador con las actualizaciones previstas, se selecciona con la mediana y resume el ajuste con ella, un objetivo que no corresponde a la cabeza se rechaza antes de crear el optimizador y un padre escalar conserva su objetivo e identidad.
 - `tests/posttraining/test_adapter_matrix.py` (37): además de lo anterior, la versión 2, su plan con padres de cuantiles y diez disposiciones de objetivos inválidas.
 - `tests/posttraining/test_matrix_queue.py` (3): el modo matriz recorre cada caso por padre y semilla, se pausa y se reanuda sin repetir pasos, aplica las mismas actualizaciones en todos los brazos y controles, detecta un plan alterado, no repite casos confirmados, mantiene separado el modo de #128 y se detiene con la protección antes de leer.
@@ -294,6 +337,8 @@ Después de rebasar sobre `develop` (6119a7ea), 39 archivos de pruebas de posten
 
 ### Familias cronológicas, lectura por bloques y datos reales
 
+Los recuentos y recorridos de la etapa de este apartado corresponden a su diseño anterior, con el padre en la misma ventana y traslados en B. Los del diseño actual están en [walk-forward por etapas](#walk-forward-por-etapas).
+
 - `tests/posttraining/test_adapter_matrix.py` (54): además de lo anterior, la versión 3, sus casos cronológicos con receta y semillas de componente fijas y las declaraciones abiertas o que tocan la memoria.
 - `tests/posttraining/test_titans_adapters.py` (14): con correcciones nulas, cada brazo de las cuatro variantes emite los mismos bits que el padre congelado, los recuentos coinciden con los tensores declarados, el gradiente solo llega a los adaptadores y la memoria queda congelada, los brazos de un padre comparten actualizaciones, etiquetas y predicciones, el gradiente de cada corrección es la regla de la cadena aplicada al de la continuación completa, la reanudación reproduce el recorrido continuo y sin postentrenamiento los papeles y la identidad no cambian.
 - `tests/posttraining/test_readout_adapters.py` (12): brazos de MARS-TITAN y CM-v1 con los mismos eventos, actualizaciones y predicciones emitidas, gradiente solo en las correcciones declaradas, regla de la cadena de la lectura, gradiente del núcleo independiente del tamaño de bloque de flujos, núcleo sin banco, penalización C sobre el operador adaptado, reanudación y rechazos.
@@ -304,6 +349,22 @@ Después de rebasar sobre `develop` (6119a7ea), 39 archivos de pruebas de posten
 - `tests/posttraining/test_real_data_only.py` (17): las importaciones del programa de la campaña, la ejecución de `posttraining check` con los módulos de #128 bloqueados, siete declaraciones ajenas a los datos reales, la campaña sin máscaras, la edición de cada mercado en la identidad, entradas reales sin episodios y el orden de las cohortes reales igual al anterior.
 
 Las pruebas de `tests/posttraining/test_adapter_campaign_stage.py` y `test_chronological_stage.py` recorren la etapa con los módulos de #128 sustituidos por centinelas.
+
+### Walk-forward por etapas
+
+Se ejecutaron en CPU, sin GPU visible y sin pasos de optimizador. Las que recorren ajustes sustituyen AdamW por el registrador que exige pesos sin cambios.
+
+- `tests/posttraining/test_staged_rows.py` (8): sobre las dos ventanas US de la campaña reducida, el intervalo de filas nuevas (del 1 de enero al 1 de abril de 2022) y la prueba de disjunción frente a una lectura independiente de las etiquetas de las dos vistas: recuentos del padre, filas nuevas, primera y última decisión, huella con la fórmula del plan y madurez de las etiquetas. Tres inicios desplazados hacia los tramos del padre se rechazan por intersección y, sin esa comprobación, por la madurez de sus etiquetas. También se rechazan las vistas intercambiadas y un archivo de muestras distinto, la huella no depende del orden y `MatrixWindow` ajusta la rejilla solo con las filas nuevas.
+- `tests/posttraining/test_staged_chain.py` (15): la puntuación es la media de los MAE por sesión, no depende del orden en que se escribieron las filas y suma cada sesión en un orden fijo. La regla solo sustituye al padre congelado con una mejora estricta, desempata por identificador y rechaza siete conjuntos de candidatos inválidos. Se comprueban además identificadores, rutas, el orden de las ventanas y los padres de cada semilla.
+- `tests/environments/test_view_cohorts.py` (26): además de lo anterior, una fuente que cabe en el presupuesto se lee una vez en tres épocas con los mismos bits, una que no cabe sigue por bloques sin reintentar, `since` conserva las sesiones posteriores con los mismos bits con dos presupuestos y rechaza instantes inválidos, y `PairedInputs` identifica el ajuste limitado sin cambiar la validación ni la población.
+- `tests/posttraining/test_adapter_campaign_stage.py` (40): recuentos de A y B, B no ejecutable y sin cadena, dependencias de cada ajuste en los padres de k-1, orden ventana a ventana y declaraciones inválidas de A. El recorrido completo usa la campaña A reducida de dos ventanas US con un brazo GRU. Predice fold-001 con el padre congelado y ajusta cinco casos desde el estado elegido en fold-000, con el normalizador limitado a las filas nuevas y las mismas actualizaciones. Las predicciones son idénticas a las del padre congelado, los recibos walk-forward llevan la última etiqueta usada y la cadena conserva al padre congelado. Una mejora estricta de 1e-9 elige el adaptador, una puntuación recalculada distinta de la declarada se rechaza, una selección, un recibo o una prueba alterados detienen la siguiente ejecución, B se rechaza antes de leer, una pausa se reanuda sin repetir actualizaciones y la protección se comprueba antes de leer y antes de cada trabajo.
+- `tests/posttraining/test_chronological_stage.py` (7): campaña A reducida de dos ventanas US con `titans_mac_online` ajustado con los ejecutores reales. La etapa predice fold-001 con el padre congelado y ajusta la continuación y la cabeza solo con las filas nuevas, con decisiones desde el 1 de enero de 2022 y el calentamiento anterior sin etiquetas. Sin cambios de pesos, los dos ajustes emiten exactamente las filas del padre congelado en validación, calibración y evaluación, la cadena lo conserva, los índices se liberan y la reanudación no crea optimizadores.
+- `tests/posttraining/test_readout_windows.py` (5) y `test_candidate_adapters.py` (6), con el enlace nativo: los casos de M1 y la cabeza de la GRU candidata ajustados con las filas nuevas de la ventana siguiente emiten las filas de su padre congelado, y este reproduce en calibración y evaluación el traslado de la campaña base.
+- `tests/posttraining/test_readout_adapters.py` (13): además, la regla de las escalas M3 por etapas (las del brazo padre, anteriores a las filas nuevas) y la del ajuste base.
+- `tests/posttraining/test_heldout.py`: la evaluación congelada admite validación y sigue rechazando ajuste y test.
+- `tests/training/test_campaign_throughput.py`, `test_campaign_plan.py`, `test_campaign_extensions.py` y `test_storage_budget.py`: recuentos de A (3.654 y 630), horas con filas nuevas, padre congelado y caché, y el rechazo de recuentos sin filas nuevas.
+
+Diecisiete mutaciones dirigidas, aplicadas una a una sobre una copia del árbol, hacen fallar al menos una prueba cada una. Cubren la intersección, la madurez del padre, el inicio de las filas nuevas, el archivo de muestras y la huella de `staged_rows`, la desigualdad estricta, el desempate y el orden de la puntuación de `staged_chain`, el filtro y la lectura única de `ViewCohortSource`, la rejilla de `MatrixWindow`, la fase de ajuste de Titans-MAC y de la GRU candidata, la regla de las escalas M3 y, en la etapa, el filtro de filas nuevas, la ventana del padre y la comprobación de la puntuación declarada. En la primera pasada sobrevivieron dos: recorrer la validación en el orden escrito (la prueba aleatoria no distinguía los redondeos) y retirar la comparación entre la puntuación recalculada y la declarada. Se añadió una prueba para cada una y las dos fallan ahora.
 
 ### Comprobaciones CUDA
 
@@ -328,10 +389,10 @@ La cola y la etapa solo se han recorrido en CPU con los diagnósticos de `run_ca
 
 ## Pendiente
 
-- Sustituir la etapa por ventana por el walk-forward por etapas de la campaña A: padre elegido en la ventana anterior, ajuste solo con las filas de `train_k` que el padre no usó, selección con `val_k`, predictor de la cadena por ventana y sin variante B. Las secciones sobre la etapa describen todavía el diseño anterior.
-- Adoptar `training/label_maturity.py` de [#430](https://github.com/GonxKZ/mars-titan/pull/430) en los recibos walk-forward de la etapa y la política de precisión declarada de `perf/campaign-kernels` en la carga de padres, cuando entren en `develop`.
-- Decidir cómo se reduce el coste de lectura del orden exacto antes de ejecutar la etapa con la edición real.
-- Declarar antes de ver resultados una comparación con los brazos postentrenados y publicar su manifiesto de fuentes para `evaluation.walk_forward_comparison`. La etapa escribe sus predicciones con el esquema común y los recibos walk-forward, pero no publica ese manifiesto.
+- Sustituir `posttraining/staged_chain.py`, la huella de `posttraining/staged_rows.py` y su `labels_used_until` por `training/campaign_chain.py` del plan de la campaña y `training/label_maturity.py` de [#430](https://github.com/GonxKZ/mars-titan/pull/430) cuando entren en `develop`, y adoptar en la carga de padres la política de precisión declarada de `perf/campaign-kernels`.
+- Reconstruir en `posttraining/parents.py` el Transformer padre con el contrato de lote de `perf/campaign-kernels` (`transformer_batch_options`) cuando entre en `develop`, y rechazar un presupuesto cuyo lote supere el `max_batch` del padre. Hoy el lote de la matriz debe ser el de la campaña, que no pasa de 256.
+- Decidir cómo se reduce el coste de lectura del orden exacto antes de ejecutar la etapa con la edición real, y medir cuántas filas nuevas y de validación caben en el presupuesto de cada ventana.
+- Declarar antes de ver resultados una comparación con los predictores de la cadena y publicar su manifiesto de fuentes para `evaluation.walk_forward_comparison`. La etapa escribe sus predicciones con el esquema común, los recibos walk-forward y las selecciones, pero no publica ese manifiesto.
 - Recorrer la cola y la etapa en `cuda:0` con la reserva de la GPU. Los lectores episódicos y la GRU candidata no tienen todavía una comprobación CUDA de sus adaptadores.
 - Medir con la edición real el disco de los índices, las cachés de padres, los normalizadores y los checkpoints de cada ventana.
 - `training.predictive_run` registra `fit_cutoff_utc` fijo en 2023. Es exacto para las dos particiones históricas, no para las ventanas. No se ha cambiado para no alterar su identidad estricta.
