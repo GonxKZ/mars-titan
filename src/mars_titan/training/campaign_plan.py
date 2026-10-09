@@ -7,6 +7,9 @@ definición. El plan enumera cada ajuste y cada predicción trasladada antes de 
 datos y respeta los límites declarados. Este módulo no lee vistas, no reserva la GPU
 y no ejecuta ningún ajuste.
 
+La sección opcional ``episodic_gru`` conecta la GRU candidata con su receta cronológica.
+Sin ella, sus brazos siguen declarados como punto de extensión pendiente.
+
 Variante A: cada ventana anual se reentrena desde cero. Variante B: se reentrena desde
 cero en la primera ventana y cada ``retrain_every_months`` meses. Las ventanas
 intermedias se predicen con el estado seleccionado en la última ventana reentrenada,
@@ -35,17 +38,19 @@ NEURAL_KINDS = ("rnn", "lstm", "gru", "dlinear", "transformer")
 TABULAR_KINDS = ("ridge", "xgboost")
 NEURAL, TABULAR = "neural_reference", "tabular_reference"
 FIT, CARRY = "fit", "carry"
+# GRU candidata con banco episódico. Repite candidate_run.RECIPE sin importar PyTorch.
+EPISODIC = "episodic_gru"
+CANDIDATE_RECIPE = "candidate_gru_chronological_v1"
 
 # Familias de la comparación sin entrenador conectado a estas vistas. Cada una se
 # conectará con un planificador y un ejecutor propios en este mismo registro.
 EXTENSION_POINTS = {
-    "episodic_gru": dict(
+    EPISODIC: dict(
         issue=383,
         pending=(
-            "El entrenador cronológico existe, pero falta una entrada por ventana que prepare "
-            "desde la vista los índices de observaciones y el adaptador de cada semilla, la "
-            "predicción trasladada de la variante B, comprobar que escribe exactamente las "
-            "filas de la vista y acotar su memoria de activaciones para el universo completo"
+            "La entrada por ventana y la predicción trasladada existen y se conectan con la "
+            "sección episodic_gru. Falta declararla en las campañas A y B después de medir "
+            "memoria y caudal en cuda:0, elegir accumulation_rows o recompute y ampliar límites"
         ),
     ),
     "titans_mac": dict(
@@ -94,6 +99,7 @@ _NEURAL = {
     "prediction_retention",
 }
 _TABULAR = {"config", "arms", "cpu_workers"}
+_EPISODIC = {"recipe", "arms", "search_seed"}
 _LIMITS = {"max_training_jobs", "max_prediction_jobs"}
 
 
@@ -220,13 +226,59 @@ def _tabular(section, arms, policy, base):
     )
 
 
+def _episodic(section, arms, rule, policy, base):
+    """Brazos de la GRU candidata con su receta y variante, sin importar PyTorch."""
+    if section is None:
+        return None
+    _require(
+        isinstance(section, dict) and set(section) == _EPISODIC,
+        "La sección de la GRU candidata no cumple",
+    )
+    path = (base / section["recipe"]).resolve()
+    document, digest = read_manifest(path, 64 * 1024)
+    _require(
+        isinstance(document, dict)
+        and all(isinstance(document.get(key), dict) for key in ("model", "recipe", "variants")),
+        "La receta de la GRU candidata no conserva su esquema",
+    )
+    model, mapping, seed = document["model"], section["arms"], section["search_seed"]
+    _require(
+        document.get("recipe_name") == CANDIDATE_RECIPE
+        and model.get("input_policy") == policy
+        and model.get("output_head") == QUANTILE_HEAD
+        and isinstance(mapping, dict)
+        and set(mapping) == {name for name, arm in arms.items() if arm["family"] == EPISODIC}
+        and all(
+            name == document.get("arm")
+            and variant in document["variants"]
+            and arms[name]["output"] == QUANTILE_HEAD
+            and set(_seeds(arms[name]["seeds"], name)) <= set(model.get("seeds", []))
+            and seed in arms[name]["seeds"]
+            for name, variant in mapping.items()
+        ),
+        "Cada brazo de la GRU candidata necesita su receta, una variante y las semillas, "
+        "política y cabeza de la comparación",
+    )
+    selection = {key: value for key, value in rule.items() if key != "max_epochs"}
+    candidates = {}
+    for name, variant in mapping.items():
+        options = document["recipe"] | document["variants"][variant]
+        _require(
+            options.get("epochs") == rule["max_epochs"] and options.get("selection") == selection,
+            "La receta de la GRU candidata no aplica la regla de parada del protocolo",
+        )
+        case = dict(recipe=str(path), recipe_sha256=digest, variant=variant, seed=seed)
+        candidates[name] = [(variant, case)]
+    return dict(section, path=str(path), sha256=digest, seed=seed, candidates=candidates)
+
+
 def load_campaign(path):
     """Validar la campaña y resolver comparación, protocolos, regla y candidatos."""
     path = Path(path)
     config, digest = read_manifest(path, 1024**2)
     _require(
         isinstance(config, dict)
-        and set(config) == _FIELDS
+        and _FIELDS <= set(config) <= _FIELDS | {EPISODIC}
         and config["schema_version"] == 1
         and config["kind"] == CAMPAIGN_KIND
         and config["status"] == DECLARED
@@ -296,6 +348,7 @@ def load_campaign(path):
         period=every // step,
         neural=_neural(config["neural"], arms, rule, policy),
         tabular=_tabular(config["tabular"], arms, policy, base),
+        **{EPISODIC: _episodic(config.get(EPISODIC), arms, rule, policy, base)},
     )
 
 
@@ -336,9 +389,12 @@ def _arm_specs(campaign):
     """Brazos con entrenador: familia, modelo, semilla de búsqueda y candidatos."""
     specs = []
     arms = campaign["comparison_config"]["arms"]
-    for family, section in ((NEURAL, campaign["neural"]), (TABULAR, campaign["tabular"])):
+    sections = [(NEURAL, campaign["neural"]), (TABULAR, campaign["tabular"])]
+    if campaign.get(EPISODIC) is not None:
+        sections.append((EPISODIC, campaign[EPISODIC]))
+    for family, section in sections:
         for name, kind in section["arms"].items():
-            model = "neural" if family == NEURAL else kind
+            model = {NEURAL: "neural", EPISODIC: EPISODIC}.get(family, kind)
             specs.append(
                 dict(
                     arm=name,
@@ -421,8 +477,9 @@ def count_jobs(campaign, jobs=None):
 def pending_families(campaign):
     """Brazos de la comparación que esperan un entrenador conectado."""
     result = {}
+    connected = {spec["family"] for spec in _arm_specs(campaign)}
     for name, arm in campaign["comparison_config"]["arms"].items():
-        if arm["family"] in EXTENSION_POINTS:
+        if arm["family"] in EXTENSION_POINTS and arm["family"] not in connected:
             entry = result.setdefault(arm["family"], dict(EXTENSION_POINTS[arm["family"]], arms=[]))
             entry["arms"].append(name)
     return result

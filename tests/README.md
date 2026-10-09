@@ -37,7 +37,7 @@ La protección local `~/.local/state/mars-titan/training-hold-2000.json`, o la r
 | --- | --- |
 | Referencias neuronales | `run_reference_case`, `run_search`, `run_temporal_search`, `run_reference_campaign` y `training/real_campaign.run_campaign` |
 | Referencias tabulares | `run_tabular_reference`, `run_external_reference`, `run_tabular_search` y `baseline_queue.run_queue` |
-| Campaña con máscaras | `masked_campaign.run_campaign`, al empezar y antes de cada trabajo |
+| Campaña con máscaras | `masked_campaign.run_campaign`, al empezar y antes de cada trabajo, y `candidate_walk_forward.fit_window` y `carry_window` |
 | Adaptador predictivo | `run_predictive_case`, `run_predictive_study` y `klpo_queue.run_queue` |
 | Postentrenamiento | `posttraining/run.run_case`, `posttraining/queue.run_queue`, `run_completion` y las etapas tabular y de postentrenamiento de la compleción |
 | Sondas y mediciones | `train_budget_grid`, `run_temporal_probe`, `profile_case`, `run_reference_probe` y `models/baselines/campaign.run_campaign` |
@@ -46,7 +46,7 @@ La protección local `~/.local/state/mars-titan/training-hold-2000.json`, o la r
 | Scripts | `run_native_ppo.py` en modo de entrenamiento, `benchmark_native_ppo.py`, `benchmark_adaptive_rl.py` y `run_financial_comparators.py` |
 | Ejecutables nativos | `mars-titan-ppo` en modo de entrenamiento, después de validar argumentos y antes de leer fuentes, y `mars-titan-adapter-control` |
 
-`ChronologicalTrainer.run` en `src/mars_titan/training/financial_run.py` mantiene su propia comprobación. `CandidateChronologicalTrainer.run` en `src/mars_titan/training/candidate_run.py` llama a `require_learning_allowed()` con cualquier optimizador, y sus pruebas usan `learning_doubles` porque el suyo solo registra gradientes.
+`ChronologicalTrainer.run` en `src/mars_titan/training/financial_run.py` mantiene su propia comprobación. `CandidateChronologicalTrainer.run` en `src/mars_titan/training/candidate_run.py` llama a `require_learning_allowed()` con cualquier optimizador, y sus pruebas usan `learning_doubles` porque el suyo solo registra gradientes. `carry_window` también comprueba la protección aunque no ajusta, porque produce las predicciones de una ventana de la campaña.
 
 ### Lo que no se bloquea
 
