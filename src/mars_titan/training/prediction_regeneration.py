@@ -14,7 +14,9 @@ compara el resultado bit a bit con la huella de contenido registrada.
 El proceso fija FP32 estricto, sin TF32 en cuBLAS ni en cuDNN. Los traslados comprueban
 además la identidad numérica que registró el ajuste. Si una tabla no sale idéntica, el
 informe lo dice y la retención la conserva. La regeneración no ajusta pesos, selección ni
-normalizadores, y escribe en un destino nuevo, nunca sobre las tablas originales.
+normalizadores, y escribe en un destino nuevo, nunca sobre las tablas originales. Como
+predice ventanas reales de la campaña, se detiene con el bloqueo de aprendizaje igual que
+los traslados y la ablación.
 """
 
 import argparse
@@ -149,7 +151,9 @@ def regenerate_job(path, views, output, job_id, destination, *, regenerators=Non
     """
     from . import masked_campaign as engine
     from .campaign_plan import plan_campaign
+    from .learning_hold import require_learning_allowed
 
+    require_learning_allowed("la regeneración de predicciones de la campaña")
     campaign, state = engine._confirmed_state(path, views, output)
     destination = _destination(destination, Path(output))
     job, _, _ = _confirmed_until(state, plan_campaign(campaign), job_id)
@@ -204,7 +208,9 @@ def _regenerate_base(campaign, state, job, destination, regenerators=None):
 def regenerate_ablation(path, views, campaign_output, output, job_id, destination, **options):
     """Regenerar la evaluación enmascarada de un trabajo confirmado de la ablación."""
     from . import modality_ablation_stage as ablation
+    from .learning_hold import require_learning_allowed
 
+    require_learning_allowed("la regeneración de predicciones de la ablación")
     stage, base, output = ablation._opened(path, views, campaign_output, output)
     destination = _destination(destination, Path(campaign_output), output)
     identity = ablation._identity(stage, base.views)

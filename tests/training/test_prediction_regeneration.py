@@ -167,6 +167,22 @@ def test_regeneration_needs_a_new_destination_and_a_regenerator(allowed, tmp_pat
         )
 
 
+def test_regeneration_stops_while_the_learning_hold_blocks(base, tmp_path, learning_hold):  # noqa: F811
+    from mars_titan.training.learning_hold import LearningHoldError
+
+    learning_hold(False)
+    job = jobs_of(base, model="neural", kind=engine.FIT)[0]
+    with pytest.raises(LearningHoldError):
+        regeneration.regenerate_job(
+            base.campaign, base.views, base.output, job["id"], tmp_path / "again"
+        )
+    with pytest.raises(LearningHoldError):
+        regeneration.regenerate_ablation(
+            base.stage, base.views, base.output, tmp_path / "out", "x", tmp_path / "other"
+        )
+    assert not (tmp_path / "again").exists() and not (tmp_path / "other").exists()
+
+
 def test_each_fit_model_has_a_regenerator_except_the_cm_v1_cores():
     available = engine.regenerators()
     fits = {model for model, kind in engine.EXECUTORS if kind == engine.FIT}
