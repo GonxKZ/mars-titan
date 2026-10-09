@@ -1,0 +1,296 @@
+{
+  "schema_version": 1,
+  "kind": "terminal_klpo_actor_control_verification",
+  "recorded_at_utc": "2026-10-09T02:09:38.667883+00:00",
+  "source_revision": "be88f4d902fa1a407dc579dfddf2284583fdee85",
+  "base_revision": "bbc806f3fb4164d9381c9edfb2599c83562f0beb",
+  "issue": "https://github.com/GonxKZ/mars-titan/issues/137",
+  "scope": "Código de controlador, gradientes y recuperación con fixtures. No se ejecutan actualizaciones ni comparaciones científicas.",
+  "source_sha256": {
+    "native/src/klpo_learning.cpp": "82540f1759cecb2eab6f44fb6b8213c6525ae0be5caa7f7d084bcf5a5ffe43c8",
+    "native/src/klpo_collection.cpp": "c09312b100a8cf5a397d48680dd1e6ec161dd24680a07de7080f67b61e8d1098",
+    "native/src/ppo_policy.cpp": "4651b3cd528763fc1187fc72626d74445ef4242d9d52629afa02f096c4590e12"
+  },
+  "toolchain": {
+    "cpp_standard": 20,
+    "clang": "21.1.8",
+    "clang_tidy": "21.1.6",
+    "llvm": "21.1.8",
+    "lizard": "1.24.1",
+    "torch": "2.14.0+cu130"
+  },
+  "cpu": {
+    "test_names": [
+      "klpo_episodes",
+      "klpo_terminal",
+      "klpo_reference",
+      "klpo_learning",
+      "klpo_actor",
+      "klpo_collection",
+      "klpo_policy",
+      "ppo_variant_state",
+      "ppo_variant_objective",
+      "ppo_checkpoint"
+    ],
+    "release": {
+      "passed": 10,
+      "seconds": 2.4
+    },
+    "asan_ubsan": {
+      "passed": 10,
+      "seconds": 10.89
+    },
+    "coverage": {
+      "passed": 10,
+      "seconds": 4.23
+    },
+    "later_rng_regression": {
+      "release_passed": 1,
+      "asan_ubsan_passed": 1,
+      "coverage_passed": 1
+    },
+    "static_analyzer": [
+      {
+        "source": "klpo_learning.cpp",
+        "diagnostics": 0,
+        "exit_code": 0
+      },
+      {
+        "source": "klpo_collection.cpp",
+        "diagnostics": 0,
+        "exit_code": 0
+      },
+      {
+        "source": "ppo_policy.cpp",
+        "diagnostics": 0,
+        "exit_code": 0
+      }
+    ],
+    "optimizer_steps_executed": 0,
+    "fixture_states": "Algunas pruebas escriben pesos, momentos y contadores de archivo a mano. Esos datos no acreditan una ejecución Adam.",
+    "sanitizer_source_revision": "be88f4d902fa1a407dc579dfddf2284583fdee85",
+    "clang_tidy": {
+      "diagnostics_in_project": 0,
+      "limits": "Avisos de cabeceras externas excluidos por la configuración existente. LLVM Lifetime Safety experimental habilitado por CMake."
+    }
+  },
+  "coverage": {
+    "convention": "CCN Lizard por función cuyo rango contiene una línea modificada. Cobertura de regiones LLVM kind=0 dentro del rango, incluidas lambdas. CRAP=CCN²*(1-c)^3+CCN. No equivale a sentencias ni acredita ramas que ejecutan optimización.",
+    "files": [
+      {
+        "path": "native/src/klpo_learning.cpp",
+        "lines": {
+          "count": 377,
+          "covered": 346,
+          "percent": 91.77718832891246
+        },
+        "changed_function_count": 32,
+        "max_ccn": 17,
+        "max_crap": 30.0
+      },
+      {
+        "path": "native/src/klpo_collection.cpp",
+        "lines": {
+          "count": 676,
+          "covered": 669,
+          "percent": 98.96449704142012
+        },
+        "changed_function_count": 7,
+        "max_ccn": 24,
+        "max_crap": 24.00295215055968
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "lines": {
+          "count": 1511,
+          "covered": 1060,
+          "percent": 70.1522170747849
+        },
+        "changed_function_count": 26,
+        "max_ccn": 35,
+        "max_crap": 147.15302128182702
+      }
+    ],
+    "changed_functions_max_ccn": 35,
+    "changed_functions_max_crap": 147.15302128182702,
+    "unexecuted": [
+      "KlpoLearningController::update_ready",
+      "PpoPolicy::terminal_step",
+      "Rutas previas de actualización PPO"
+    ],
+    "largest_crap_function": "PpoPolicy::load_mode",
+    "limits": "La cobertura parcial y CRAP incluyen las rutas no ejecutadas. No se eliminan del denominador para mejorar la cifra.",
+    "source_revision": "be88f4d902fa1a407dc579dfddf2284583fdee85"
+  },
+  "mutations": {
+    "attempted_final": 10,
+    "detected_final": 10,
+    "cases": [
+      "empty_is_not_update",
+      "whole_denominator",
+      "reference_cadence",
+      "complete_consumed",
+      "critic_identity",
+      "actor_budget",
+      "publication_failure",
+      "reference_initial_rng",
+      "critic_moments",
+      "consumable_budget"
+    ],
+    "initial_survivors": [
+      "Consumo de un prefijo completamente forzado",
+      "Restauración del RNG al copiar la referencia"
+    ],
+    "resolution": "Se añadieron aserciones del caso forzado incompleto y de ambos RNG inmediatamente después de copiar. Producción no cambió por estas dos mutaciones."
+  },
+  "cuda_delta": {
+    "device": "cuda:0",
+    "hardware": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "allocator_cap_bytes": 134217728,
+    "tolerance": {
+      "rtol": 1e-05,
+      "atol": 1e-06
+    },
+    "actor_shape": [
+      18,
+      4,
+      3
+    ],
+    "actors": [
+      {
+        "gradient_error_max": 7.152557373046875e-07,
+        "kind": "mlp",
+        "loss_error": 8.114645766443829e-08,
+        "parameters_sha256": "68c0eeedbdc4b55fae961342a22ead420b677dd8fceb202db044476125ef8f3d",
+        "roundtrip_gradients_exact": true,
+        "updates": 0
+      },
+      {
+        "gradient_error_max": 1.0728836059570312e-06,
+        "kind": "gru",
+        "loss_error": 7.788054384727516e-08,
+        "parameters_sha256": "a230e6a8f0588d7ebfa49933c31034656518c4f0a651dfb342157d026d98e521",
+        "roundtrip_gradients_exact": true,
+        "updates": 0
+      }
+    ],
+    "actor_peak_allocated_bytes": 76267008,
+    "actor_peak_reserved_bytes": 90177536,
+    "reference_and_forced_wave": {
+      "reference_recovery": true,
+      "forced_wave_roundtrip": true,
+      "global_rng_unchanged": true,
+      "peak_allocated_bytes": 42671616,
+      "peak_reserved_bytes": 56623104
+    },
+    "failed_fixture_preserved": "El primer intento usó context.variant=ppo con una GRU y fue rechazado. Se corrigió a ppo_gru. Cada tramo se repitió por separado para conservar resultados numéricos y recuperación. No cambió producción.",
+    "optimizer_steps_executed": 0,
+    "processes_closed": true,
+    "limits": "La cuota Torch no incluye el contexto CUDA. No se midió aceleración ni aislamiento de rendimiento frente a otras aplicaciones.",
+    "source_revision": "be88f4d902fa1a407dc579dfddf2284583fdee85"
+  },
+  "h256_baseline": {
+    "source_revision": "19d5a2cd2088702ccf86562b9e77a7b5528e23c0",
+    "native_tree_equal_to_base": true,
+    "workload": {
+      "episodes": 8,
+      "horizon": 256,
+      "width": 128,
+      "hidden": 64,
+      "forced_prefix": 16,
+      "architecture": "GRU",
+      "actor_seed": 42,
+      "reference_seed": 43,
+      "threads": 1
+    },
+    "cpu_profiles": [
+      {
+        "block": 1,
+        "peak_aten_bytes": 5024376,
+        "profiled_forward_backward_seconds": 0.467620879,
+        "max_rss_kib": 769664,
+        "process_seconds": 2.65
+      },
+      {
+        "block": 8,
+        "peak_aten_bytes": 8170176,
+        "profiled_forward_backward_seconds": 0.086120299,
+        "max_rss_kib": 306900,
+        "process_seconds": 0.78
+      }
+    ],
+    "cpu_max_gradient_error": 1.430511474609375e-06,
+    "cuda_profiles": [
+      {
+        "block": 1,
+        "max_gradient_absolute_error": 5.7220458984375e-06,
+        "loss_absolute_error": 6.162199484016639e-07,
+        "peak_allocated_bytes": 78547456,
+        "peak_reserved_bytes": 90177536,
+        "profiled_seconds": 0.267508906
+      },
+      {
+        "block": 8,
+        "max_gradient_absolute_error": 6.198883056640625e-06,
+        "loss_absolute_error": 7.349608452944523e-07,
+        "peak_allocated_bytes": 94834176,
+        "peak_reserved_bytes": 111149056,
+        "profiled_seconds": 0.214428364
+      }
+    ],
+    "optimizer_steps": 0,
+    "limits": "Perfil anterior al controlador, con actor y referencia fijados. Una medición instrumentada por forma. Los eventos ATen no incluyen vectores C++, bibliotecas o metadatos del profiler. No acredita el coste de actualizaciones ni una aceleración reproducida.",
+    "rss_note": "GNU time incluye bibliotecas y la traza Kineto. No se confunde con los eventos de almacenamiento ATen.",
+    "cpu_diagnostic": "Kineto consultó el inventario GPU y emitió gpuGetDeviceCount code100 con CUDA_VISIBLE_DEVICES=-1. Las dos ejecuciones CPU terminaron con exit0."
+  },
+  "pending": [
+    "Paso real de Adam CPU/CUDA",
+    "Invariancia efectiva de la fila del crítico después de ese paso",
+    "Recuperación después de una actualización ejecutada",
+    "Alternancia de referencias aprendidas y coste del ciclo completo",
+    "Comparación científica con el histórico verificado y test final reservado"
+  ],
+  "format_only_correspondence": {
+    "reference_revision": "be88f4d902fa1a407dc579dfddf2284583fdee85",
+    "before_sha256": "f1d9909e161eb580061c52d2ec8c2266ac1d55e9a75976fa488ad19c796dd8af",
+    "after_sha256": "82540f1759cecb2eab6f44fb6b8213c6525ae0be5caa7f7d084bcf5a5ffe43c8",
+    "clang": "21.1.8",
+    "method": "clang -dump-raw-tokens, clases y spelling, excluyendo solo unknown de espacio. Se ignoran ubicaciones y flags de inicio de línea.",
+    "tokens": 3242,
+    "equal": true
+  },
+  "unmeasured": [
+    "Energía",
+    "Pico total del contexto CUDA",
+    "Rendimiento del ciclo con actualizaciones",
+    "Aceleración repetida y aislada"
+  ],
+  "head_reconciliation": {
+    "recorded_at_utc": "2026-10-09T02:58:05+00:00",
+    "source_revision": "603156f7cda71f326da5876489a36793883b28b8",
+    "parent_revision": "be88f4d902fa1a407dc579dfddf2284583fdee85",
+    "changes_after_parent": "Aserción del RNG copiado en klpo_actor_tests.cpp y formato de una llamada en klpo_learning.cpp con tokens iguales.",
+    "native_build_source_sha256": "ff0067b6fb69747cf0e3ec47df80a4efea06ed9fdbb8ecaea6e48764d5681198",
+    "environment": "CUDA_VISIBLE_DEVICES=-1, MARS_TITAN_LIBTORCH_ENABLE_CUDA=OFF, clang 21.1.8, torch 2.14.0+cu130",
+    "release": {
+      "passed": 10,
+      "failed": 0,
+      "ctest_seconds": 2.7,
+      "rebuild": "Sin trabajo pendiente en Ninja"
+    },
+    "asan_ubsan": {
+      "passed": 10,
+      "failed": 0,
+      "ctest_seconds": 10.97,
+      "rebuild_seconds": 50.24,
+      "options": "halt_on_error=1, detect_leaks=1"
+    },
+    "optimizer_steps_executed": 0,
+    "not_repeated": [
+      "Cobertura y CRAP",
+      "Mutaciones",
+      "Análisis estático",
+      "Delta CUDA"
+    ]
+  }
+}
