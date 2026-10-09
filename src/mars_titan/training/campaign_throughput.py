@@ -353,16 +353,19 @@ def _totals(families):
     return dict(declared_options=declared, fastest_options=fastest, without_estimate=missing)
 
 
-def estimate_hours(campaign, counts, rates, *, stage=None, policy_stage=None, ablation_stage=None):
+def estimate_hours(
+    campaign, counts, rates, *, stage=None, policy_stage=None, ablation_stage=None, epochs=None
+):
     """Horas previstas por familia, opción, ámbito y brazo de una variante.
 
     `counts` asigna a cada ámbito y ventana sus filas por tramo y `rates` a cada familia
     medida sus caudales. Las familias declaradas sin medir y los tabulares quedan como no
     medidos. Con `stage`, añade la etapa de la matriz de adaptadores de esa variante. Con
     `policy_stage`, añade aparte la estimación orientativa de la etapa de políticas y con
-    `ablation_stage`, la de la ablación de modalidades.
+    `ablation_stage`, la de la ablación de modalidades. `epochs` sustituye las épocas de la
+    regla de parada, por ejemplo con las épocas efectivas previstas de una parada temprana.
     """
-    epochs = campaign["rule"]["max_epochs"]
+    epochs = campaign["rule"]["max_epochs"] if epochs is None else epochs
     jobs = plan_campaign(campaign)
     families = {}
     for family in (NEURAL, *CHRONOLOGICAL):
