@@ -175,14 +175,14 @@ Los trabajos se recorren en el orden del plan, con una sola ventana, un padre y 
 Cada ventana guarda en `windows-data/<ámbito>/<ventana>/` su copia ordenada y, por brazo base y semilla, la caché del padre, el normalizador y el plan. Con `release_after_window_fits`, que declaran las dos configuraciones, la etapa retira las copias Parquet de ajuste y validación de una ventana cuando todos sus ajustes están confirmados y conserva el manifiesto. Sin esa retención la variante A acumularía una copia de cada ventana expansiva. No se ha medido el tamaño de esas copias con la edición real.
 
 ```bash
-uv run --no-sync python -m mars_titan.posttraining.campaign_stage check \
+uv run --no-sync python scripts/run_masked_campaign.py posttraining check \
   --stage configs/posttraining/historical-masked-adapter-stage-a.json
-uv run --no-sync python -m mars_titan.posttraining.campaign_stage run \
+uv run --no-sync python scripts/run_masked_campaign.py posttraining run \
   --stage <configuración> --views US=<vistas>/US --views CN=<vistas>/CN \
   --views US+CN=<vistas>/US+CN --campaign-output <campaña> --output <etapa>
 ```
 
-La etapa aún no está registrada en `training/campaign_plan.py`, que sigue declarando la matriz v1 con sus tres tareas pendientes, ni en `scripts/run_masked_campaign.py`. Hasta entonces se ejecuta con su propia orden.
+La etapa está registrada en `LATER_STAGES` de `training/campaign_plan.py` con la matriz de versión 2, la configuración de cada variante, su punto de entrada (`campaign_stage:run_stage`) y ninguna tarea pendiente, y `check` de la campaña la informa así. La orden única de la campaña la ejecuta con el subcomando `posttraining`, que delega en `campaign_stage.main`. La orden propia del módulo sigue disponible con los mismos argumentos. La [medición de caudal](../research/training-campaign-2000.md#medición-de-caudal) de la campaña mide también sus casos y estima sus horas.
 
 ## Protección del aprendizaje
 
@@ -238,7 +238,6 @@ La cola y la etapa solo se han recorrido en CPU con los diagnósticos de `run_ca
 
 ## Pendiente
 
-- Registrar la etapa en `LATER_STAGES` de `training/campaign_plan.py` y en `scripts/run_masked_campaign.py`, junto con la expectativa de `tests/training/test_campaign_plan.py`.
 - Declarar antes de ver resultados una comparación con los brazos postentrenados y publicar su manifiesto de fuentes para `evaluation.walk_forward_comparison`. La etapa escribe sus predicciones con el esquema común y los recibos walk-forward, pero no publica ese manifiesto.
 - Recorrer la cola y la etapa en `cuda:0` con la reserva de la GPU y las comprobaciones CUDA anteriores.
 - Medir con la edición real el disco de las copias ordenadas, las cachés de padres, los normalizadores y los checkpoints de cada ventana antes de fijar la retención.

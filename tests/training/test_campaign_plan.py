@@ -3,6 +3,7 @@
 Estas pruebas no leen vistas ni datos, no reservan la GPU y no ajustan ningún modelo.
 """
 
+import importlib
 import json
 from datetime import date
 from pathlib import Path
@@ -295,13 +296,27 @@ def test_pending_families_and_later_stages_are_declared_not_planned():
     assert planned == {*NEURAL_ARMS, "ridge", "xgboost", *TITANS_ARMS}
     assert not planned & {arm for entry in pending.values() for arm in entry["arms"]}
     stage = report["later_stages"]["posttraining_adapter_matrix"]
-    assert Path(stage["config"]).is_file()
-    assert stage["pending"] == [
-        "ejecución desde la cola",
-        "conexión con las ventanas walk-forward",
-        "objetivo pinball para padres con cuantiles",
-    ]
+    assert stage["config"] == "configs/posttraining/adapter-matrix-v2.json"
+    assert Path(stage["config"]).is_file() and stage["pending"] == [] and stage["issue"] == 364
+    assert stage["entry"] == "mars_titan.posttraining.campaign_stage:run_stage"
+    module, _, function = stage["entry"].partition(":")
+    assert callable(getattr(importlib.import_module(module), function))
     assert report["scientific_training_started"] is False and report["final_test_opened"] is False
+
+
+@pytest.mark.parametrize("variant", plan.VARIANTS)
+def test_later_stage_of_each_variant_starts_from_that_campaign_and_matrix(variant):
+    from mars_titan.posttraining import campaign_stage
+
+    declared = plan.LATER_STAGES["posttraining_adapter_matrix"]
+    assert set(declared["stages"]) == set(plan.VARIANTS)
+    stage = campaign_stage.load_stage(declared["stages"][variant])
+    assert stage["campaign"]["path"] == str(CAMPAIGNS[variant].resolve())
+    assert stage["campaign"]["variant"] == variant
+    assert stage["matrix_path"] == str(Path(declared["config"]).resolve())
+    counts = campaign_stage.count_stage(stage)
+    expected = dict(A=(3915, 0), B=(1479, 2436))[variant]
+    assert (counts["training_jobs"], counts["prediction_jobs"]) == expected
 
 
 def test_titans_arms_search_as_many_optimizer_cases_as_the_neural_references():

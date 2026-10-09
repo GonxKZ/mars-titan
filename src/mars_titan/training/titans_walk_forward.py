@@ -16,7 +16,9 @@ Contrato por ventana para el orquestador de la campaña con máscaras:
 
 Campaña con máscaras: `titans_fit` y `titans_carry` son los ejecutores que registra
 `training.masked_campaign` para los ajustes y las predicciones trasladadas de la variante
-B. `carry_titans` aplica el estado elegido en la ventana ancla sin ajustar nada.
+B. `carry_titans` aplica el estado elegido en la ventana ancla sin ajustar nada. Los
+dos ejecutores declaran fastpath=False durante su trabajo, como la orden de una
+ventana, y restauran después el estado del proceso.
 
 Política de memoria, común a las cuatro variantes: cada recorrido parte del estado rápido
 inicial y de una cola vacía. El ajuste empieza en el inicio de su tramo. Validación,
@@ -32,6 +34,7 @@ import math
 import os
 import re
 import time
+from contextlib import contextmanager
 from dataclasses import asdict
 from datetime import UTC, date, datetime
 from pathlib import Path
@@ -676,6 +679,21 @@ def carry_titans(anchor, anchor_view, view, output, *, device="cuda:0", stop=Non
     return receipt
 
 
+@contextmanager
+def unfused_attention():
+    """Declarar fastpath=False durante un trabajo de Titans-MAC y restaurar el estado previo.
+
+    El recorrido cronológico lo exige. La orden de una ventana lo fija para todo el
+    proceso. En la campaña, los demás brazos conservan la configuración del proceso.
+    """
+    previous = torch.backends.mha.get_fastpath_enabled()
+    torch.backends.mha.set_fastpath_enabled(False)
+    try:
+        yield
+    finally:
+        torch.backends.mha.set_fastpath_enabled(previous)
+
+
 def _campaign_case(run):
     case = run.case
     _require(
@@ -701,19 +719,20 @@ def titans_fit(run, *, device="cuda:0", optimizer_factory=None):
     from .masked_campaign import Paused as CampaignPaused
 
     case = _campaign_case(run)
-    report = run_titans_window(
-        run.view,
-        view_protocol(run.view),
-        run.job["window"],
-        case["recipe"],
-        variant=case["variant"],
-        seed=case["seed"],
-        output=run.folder,
-        device=device,
-        stop=run.stop,
-        optimizer_factory=optimizer_factory,
-        search_case=case["search_case"],
-    )
+    with unfused_attention():
+        report = run_titans_window(
+            run.view,
+            view_protocol(run.view),
+            run.job["window"],
+            case["recipe"],
+            variant=case["variant"],
+            seed=case["seed"],
+            output=run.folder,
+            device=device,
+            stop=run.stop,
+            optimizer_factory=optimizer_factory,
+            search_case=case["search_case"],
+        )
     if report["status"] == "paused":
         raise CampaignPaused
     _require(
@@ -728,13 +747,14 @@ def titans_carry(run, *, device="cuda:0"):
     from .masked_campaign import Paused as CampaignPaused
 
     try:
-        return carry_titans(
-            run.anchor["folder"],
-            run.anchor["view"],
-            run.view,
-            run.folder,
-            device=device,
-            stop=run.stop,
-        )
+        with unfused_attention():
+            return carry_titans(
+                run.anchor["folder"],
+                run.anchor["view"],
+                run.view,
+                run.folder,
+                device=device,
+                stop=run.stop,
+            )
     except Paused as error:
         raise CampaignPaused from error

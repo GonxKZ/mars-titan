@@ -130,7 +130,7 @@ Cada entrada escribe en `receipts/<mercado>.json` el recibo walk-forward de cada
 
 El planificador la valida sin importar PyTorch (nombre de la receta, política, cabeza, variante, semillas y regla de parada del protocolo). Con un único candidato, cada ventana reentrenada tiene una búsqueda con la semilla de búsqueda y un finalista por cada semilla restante, y cada ventana trasladada una predicción por semilla. El caso guarda la ruta y la huella de la receta, y `campaign_case` la vuelve a leer con `load_recipe` antes de ajustar.
 
-Las campañas A y B declaradas aún no incluyen la sección. En B añadiría 51 ajustes y 84 traslados (680 y 616 en total) y en A 135 ajustes (1.800). Antes hay que medir memoria y caudal en `cuda:0` y elegir entre `accumulation_rows` y `recompute`, porque la extrapolación del tramo completo supera los 8 GB con el universo completo y cada opción cambia la identidad de la receta. Hasta entonces la comprobación de la campaña sigue informando del brazo como pendiente.
+Las campañas A y B declaradas aún no incluyen la sección. En B añadiría 51 ajustes y 84 traslados (680 y 616 en total) y en A 135 ajustes (1.800). Antes hay que medir memoria y caudal en `cuda:0` y elegir entre `accumulation_rows` y `recompute`, porque la extrapolación del tramo completo supera los 8 GB con el universo completo y cada opción cambia la identidad de la receta. La [orden de medición](../research/training-campaign-2000.md#medición-de-caudal) de la campaña compara las cuatro combinaciones con la misma medida cuando recibe esta receta. Hasta entonces la comprobación de la campaña sigue informando del brazo como pendiente.
 
 ## Coste y memoria medidos
 
