@@ -8,6 +8,7 @@ import json
 import os
 from pathlib import Path
 
+import numpy as np
 import pyarrow.parquet as pq
 import pytest
 import torch
@@ -155,15 +156,20 @@ def test_arms_share_updates_and_only_the_head_corrections_move(arms):
     assert full["posttraining"]["native_parameters_sha256"] is None
 
 
-def test_carried_head_arm_matches_the_carried_parent(arms, parent, views, tmp_path):
-    output, _, _ = arms["head"]
-    carried = ca.carry_candidate_posttraining(
-        output,
-        views.windows[SCOPE][FIRST],
-        views.windows[SCOPE][NEXT],
-        tmp_path / "carry",
-        device="cpu",
+@pytest.fixture(scope="module")
+def frozen(views, parent, allowed):
+    output = views.root / "adapter-frozen"
+    receipt = ca.frozen_candidate(
+        parent, views.windows[SCOPE][FIRST], views.windows[SCOPE][NEXT], output, device="cpu"
     )
+    return output, receipt
+
+
+def test_frozen_parent_matches_the_carried_parent(frozen, parent, views, tmp_path):
+    output, receipt = frozen
+    assert receipt["kind"] == ca.FROZEN_KIND and receipt["status"] == "completed"
+    assert set(receipt["predictions"]) == set(ca.PREDICTED)
+    assert receipt["months_since_parent_information"] > 0
     base = walk.carry_window(
         parent,
         views.windows[SCOPE][FIRST],
@@ -172,9 +178,53 @@ def test_carried_head_arm_matches_the_carried_parent(arms, parent, views, tmp_pa
         parent_id=f"{SCOPE}/{FIRST}/gru_episodic",
         device="cpu",
     )
-    for name in ca.CARRIED:
-        left = rows(tmp_path / "carry", carried["predictions"][name])
+    for name in ("calibration", "evaluation"):
+        left = rows(output, receipt["predictions"][name])
         right = rows(tmp_path / "base", base["predictions"][name])
+        assert left.equals(right), name
+    validation = rows(output, receipt["predictions"]["validation"])
+    counts = CorpusDataset(views.windows[SCOPE][NEXT], input_policy=HISTORICAL_MASKED).manifest[
+        "counts"
+    ]
+    assert validation.num_rows == counts["validation"] > 0
+
+
+def test_staged_head_fits_the_new_rows_and_reproduces_the_frozen_parent(
+    views, parent, matrix, frozen, allowed, tmp_path
+):
+    document, digest = matrix
+    made = []
+
+    def factory(groups):
+        made.append(RecordingOptimizer(groups))
+        return made[-1]
+
+    report = ca.run_candidate_posttraining(
+        parent,
+        views.windows[SCOPE][NEXT],
+        tmp_path / "staged",
+        case=cases(matrix)["head"],
+        matrix=document,
+        digest=digest,
+        device="cpu",
+        optimizer_factory=factory,
+        parent_view=views.windows[SCOPE][FIRST],
+    )
+    assert report["status"] == "completed" and made and made[0].calls > 0
+    placement = report["posttraining"]["placement"]
+    assert placement["design"] == ca.STAGED and placement["parent_window"] == FIRST
+    assert report["request"]["parent_view_sha256"] == placement["parent_view_sha256"]
+    train = report["sources"]["train"]["phase"]
+    since = int(np.datetime64(placement["fit_start"], "us").astype(np.int64))
+    until = int(np.datetime64(placement["fit_end"], "us").astype(np.int64))
+    # Sin calentamiento: las 64 sesiones de contexto viajan en cada muestra.
+    assert (train["warmup_start"], train["decision_start"]) == (since, since)
+    assert (train["decision_end"], train["close_at"]) == (until, until)
+    # Con la corrección de la cabeza a cero y sin cambios de pesos, emite al padre congelado.
+    output, receipt = frozen
+    for name in ca.PREDICTED:
+        left = rows(tmp_path / "staged", report["predictions"][name])
+        right = rows(output, receipt["predictions"][name])
         assert left.equals(right), name
 
 

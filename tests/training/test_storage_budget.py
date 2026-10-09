@@ -247,7 +247,9 @@ def test_formula_rebuilds_each_window_from_its_rows_and_measured_bytes_per_row()
 def test_block_reading_removes_the_ordered_corpus_from_the_adapter_peak(tmp_path):
     from mars_titan.posttraining.campaign_stage import load_stage, plan_stage
 
-    path = Path("configs/posttraining/historical-masked-adapter-stage-a.json")
+    # A solo admite la lectura por bloques que necesita su ajuste con las filas nuevas. La
+    # copia ordenada se compara con el plan de B, que aún la admite.
+    path = Path("configs/posttraining/historical-masked-adapter-stage-b.json")
     declared = json.loads(path.read_text())
     assert declared["cohort_reading"]["source"] == "view_blocks"
     base = path.resolve().parent

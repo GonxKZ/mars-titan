@@ -1,18 +1,25 @@
 """Una ventana del postentrenamiento de Titans-MAC y de los brazos con lector episódico.
 
-Cada ventana parte del estado elegido de un brazo de la campaña con máscaras en la misma
-vista y semilla, ajusta un caso de la matriz de versión 3 (`chronological_matrix`) con el
-tramo de ajuste y selecciona con la validación, con el padre elegible en la época cero.
-Escribe validación, calibración y evaluación con el esquema común y los cinco cuantiles.
+Cada ventana parte del estado elegido de un brazo de la campaña con máscaras y una semilla,
+ajusta un caso de la matriz de versión 3 (`chronological_matrix`) y selecciona con la
+validación, con el padre elegible en la época cero. Escribe validación, calibración y
+evaluación con el esquema común y los cinco cuantiles.
 
-Fases, calentamiento, truncamiento, bloques, acumulación y política de memoria son los del
-ajuste del padre, leídos de su identidad. Solo cambian el optimizador, el presupuesto y la
+Sin `parent_view`, el padre se ajustó en la misma vista y el caso usa su tramo de ajuste.
+Con `parent_view` (walk-forward por etapas), el padre es el estado elegido en la ventana
+anterior: se carga con el estado portable de los traslados, validación, calibración y
+evaluación son las de esta ventana y el ajuste solo decide con las filas que el padre no
+usó (`staged_rows.posttraining_rows`), tras el calentamiento sin etiquetas declarado.
+
+Calentamiento, truncamiento, bloques, acumulación y política de memoria son los del ajuste
+del padre, leídos de su identidad. Solo cambian el optimizador, el presupuesto y la
 selección, que declara la matriz. Así un cambio de la regla de un brazo base (por ejemplo su
 calentamiento) llega igual a sus adaptadores.
 
-El traslado de la variante B aplica sin ajuste el estado elegido en la ventana ancla, con
-los mismos adaptadores, a la calibración y la evaluación de una ventana posterior. La
-protección del aprendizaje se comprueba antes de leer ninguna fuente.
+`frozen_titans` y `frozen_readout` predicen validación, calibración y evaluación de una
+ventana posterior con el estado elegido del padre, sin ajustar nada: es el padre congelado
+del walk-forward por etapas. La protección del aprendizaje se comprueba antes de leer
+ninguna fuente.
 """
 
 import hashlib
@@ -23,8 +30,6 @@ from dataclasses import asdict, replace
 from datetime import UTC, datetime
 from pathlib import Path
 
-import torch
-
 from mars_titan.data.batches import atomic_parquet_batches
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.input_policy import HISTORICAL_MASKED
@@ -32,13 +37,13 @@ from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.memory.episodic_codec import FrozenEpisodeCodec
 from mars_titan.memory.financial_session import FinancialPhase
 from mars_titan.models.predictive_adaptation import (
-    AdapterTarget,
     attach_adapters,
     base_digest,
     trainable_parameters,
 )
 from mars_titan.models.titans.config import canonical
 from mars_titan.models.titans.financial import FinancialConfig, FinancialPredictor
+from mars_titan.training.carried_predictions import carried_window
 from mars_titan.training.checkpoints import StopRequest, load_training_state
 from mars_titan.training.corpus_inputs import CorpusDataset
 from mars_titan.training.financial_run import (
@@ -69,6 +74,8 @@ from mars_titan.training.titans_walk_forward import (
     PredictionRows,
     _carried_parameters,
     _check_view,
+    _micros,
+    _months_before,
     _new_destination,
     _require,
     _sources,
@@ -77,21 +84,25 @@ from mars_titan.training.titans_walk_forward import (
     checked_tables,
     control_config,
     view_protocol,
+    walk_forward_options,
+    window_phases,
 )
 from mars_titan.training.titans_walk_forward import KIND as TITANS_KIND
 
 from . import chronological_matrix as cm
 from .readout_adapters import ReadoutAdapterTrainer
+from .staged_rows import posttraining_rows
 
 TITANS_WINDOW = "titans_mac_posttraining_window"
 READOUT_WINDOW = "readout_posttraining_window"
-TITANS_CARRY = "titans_mac_posttraining_carry"
-READOUT_CARRY = "readout_posttraining_carry"
-CARRIED = ("calibration", "evaluation")
+TITANS_FROZEN = "titans_mac_frozen_parent"
+READOUT_FROZEN = "readout_frozen_parent"
+STAGED = "staged_previous_window_v1"
 _CODE = (
     "mars_titan.posttraining.chronological_windows",
     "mars_titan.posttraining.chronological_matrix",
     "mars_titan.posttraining.readout_adapters",
+    "mars_titan.posttraining.staged_rows",
     "mars_titan.models.predictive_adaptation",
     "mars_titan.training.financial_run",
     "mars_titan.training.mars_titan_run",
@@ -120,21 +131,6 @@ def _completed(folder, kinds):
 
 def _phases(identity, names):
     return {name: FinancialPhase(**identity["phases"][name]) for name in names}
-
-
-def _targets(description):
-    """Destinos declarados en la identidad de un ajuste, para reconstruirlo al trasladar."""
-    return [
-        AdapterTarget(
-            row["module"],
-            row["tensor"],
-            row["form"],
-            rank=row["rank"],
-            alpha=row["alpha"],
-            rows=tuple(row["rows"]),
-        )
-        for row in description["targets"]
-    ]
 
 
 def _attach(model, targets, seed, *, seal=False):
@@ -305,14 +301,14 @@ def _open_view(view, identity, output, protected, indices, names=PREDICTED + ("t
     return dataset, sources
 
 
-def _case_request(case, digest, matrix, parent, parent_sha, view, device):
+def _case_request(case, digest, matrix, parent, parent_sha, view, device, parent_view=None):
     cm.validate_case(case)
     _require(
         case["adapter"] is None or case["adapter"]["matrix_sha256"] == digest,
         "El caso no pertenece a la matriz declarada",
     )
     _require(matrix["input_policy"] == HISTORICAL_MASKED, "La matriz no usa la edición desde 2000")
-    return dict(
+    request = dict(
         view_sha256=sha256(view),
         matrix_sha256=digest,
         case=case,
@@ -320,6 +316,41 @@ def _case_request(case, digest, matrix, parent, parent_sha, view, device):
         device=device,
         code=_code(),
     )
+    if parent_view is not None:
+        request["parent_view_sha256"] = sha256(parent_view)
+    return request
+
+
+def staged_window(parent_view, view, warmup_months):
+    """Ventana, fases y colocación de un padre ajustado en la vista de la ventana anterior.
+
+    Validación, calibración y evaluación son las de la ventana, con su calentamiento. El
+    ajuste decide solo con las filas nuevas y lee antes, sin etiquetas, el mismo
+    calentamiento que los tramos medidos, sin salir del tramo de ajuste de la vista.
+    """
+    parent_manifest, _ = read_manifest(parent_view, 64 * 1024**2)
+    manifest, _ = read_manifest(view, 64 * 1024**2)
+    parent_fold, fold, _ = carried_window(parent_manifest, manifest, input_policy=HISTORICAL_MASKED)
+    start, end = posttraining_rows(parent_fold, fold)
+    phases = window_phases(fold, warmup_months)
+    origin, since, until = (_micros(day) for day in (fold["train"][0], start, end))
+    warmup = max(origin, _micros(_months_before(start, warmup_months)))
+    phases["train"] = FinancialPhase("train", warmup, since, until, until)
+    placement = dict(
+        design=STAGED,
+        parent_window=parent_fold["id"],
+        parent_view_sha256=sha256(parent_view),
+        fit_start=start,
+        fit_end=end,
+    )
+    return fold, {name: asdict(phase) for name, phase in phases.items()}, placement
+
+
+def _placement(identity, parent_view, view, titans):
+    """Ventana y fases del ajuste: las del padre o, por etapas, las de la ventana nueva."""
+    if parent_view is None:
+        return identity["window"], identity["phases"], None
+    return staged_window(parent_view, view, walk_forward_options(titans)["warmup_months"])
 
 
 def run_titans_posttraining(
@@ -334,22 +365,25 @@ def run_titans_posttraining(
     indices=None,
     stop=None,
     optimizer_factory=None,
+    parent_view=None,
 ):
-    """Postentrenar el estado elegido de una variante de Titans-MAC en su ventana.
+    """Postentrenar el estado elegido de una variante de Titans-MAC.
 
     Con adaptadores solo cambian sus correcciones. La memoria neuronal, la persistente y
     los demás parámetros quedan congelados, y los pesos rápidos siguen su regla asociativa.
-    La continuación completa ajusta los mismos papeles que el ajuste base.
+    La continuación completa ajusta los mismos papeles que el ajuste base. Con
+    `parent_view`, el padre se ajustó en esa vista anterior (walk-forward por etapas).
     """
     require_learning_allowed("el postentrenamiento de Titans-MAC")
     _cuda(device)
     parent, view, output = Path(parent), Path(view), Path(output)
+    origin = view if parent_view is None else Path(parent_view)
     parent_report, parent_sha = _completed(parent, (TITANS_KIND,))
-    request = _case_request(case, digest, matrix, parent, parent_sha, view, device)
+    request = _case_request(case, digest, matrix, parent, parent_sha, view, device, parent_view)
     original = parent_report["request"]
     _require(
-        original["view_sha256"] == request["view_sha256"] and original["seed"] == case["seed"],
-        "El padre no se ajustó en esta vista con la semilla del caso",
+        original["view_sha256"] == sha256(origin) and original["seed"] == case["seed"],
+        "El padre no se ajustó en su vista con la semilla del caso",
     )
     resumed = _resumed(output, request)
     if resumed is not None:
@@ -357,10 +391,18 @@ def run_titans_posttraining(
     identity = parent_report["identity"]
     document = identity["recipe"]
     recipe = replace(case_recipe(document, original.get("search_case")), **cm.recipe_options(case))
-    dataset, sources = _open_view(view, identity, output, (parent,), indices)
+    window, phases, placement = _placement(identity, parent_view, view, document)
+    dataset, sources = _open_view(
+        view, dict(window=window, phases=phases), output, (parent,), indices
+    )
     _, state = _best(parent, parent_report)
     predictor = _predictor(
-        document, sources["train"].specification(), original, device, state["model"]
+        document,
+        sources["train"].specification(),
+        original,
+        device,
+        state["model"],
+        carried=placement is not None,
     )
     adapter = case["adapter"]
     description = None
@@ -387,6 +429,8 @@ def run_titans_posttraining(
         adapter=description,
         base_parameters_sha256=base if adapter is not None else None,
     )
+    if placement is not None:
+        posttraining["placement"] = placement
     trainer = ChronologicalTrainer(
         predictor,
         recipe,
@@ -400,11 +444,11 @@ def run_titans_posttraining(
         schema_version=1,
         kind=TITANS_WINDOW,
         request=request,
-        window=identity["window"],
+        window=window,
         recipe=document,
         posttraining=posttraining,
         memory_policy=identity["memory_policy"],
-        phases=identity["phases"],
+        phases=phases,
         indices={name: source.identity for name, source in sources.items()},
         fit_run_id=trainer.run_id,
         expected_rows={name: dataset.manifest["counts"][name] for name in PREDICTED},
@@ -507,29 +551,42 @@ def run_readout_posttraining(
     indices=None,
     stop=None,
     optimizer_factory=None,
+    parent_view=None,
 ):
     """Postentrenar el núcleo, la lectura episódica o ambos de un brazo con lector.
 
     El núcleo adaptado parte del mismo padre con su control C declarado. Sin adaptadores
-    en el núcleo, el padre se carga congelado como en el ajuste del brazo.
+    en el núcleo, el padre se carga congelado como en el ajuste del brazo. Con
+    `parent_view`, el brazo se ajustó en esa vista anterior (walk-forward por etapas) y,
+    con M3, conserva las escalas congeladas de su propio ajuste.
     """
     require_learning_allowed("el postentrenamiento de un brazo con lector episódico")
     _cuda(device)
     arm, view, output = Path(arm), Path(view), Path(output)
-    report, digest_arm, family, parent, parent_report = _arm_parts(arm, view)
-    request = _case_request(case, digest, matrix, arm, digest_arm, view, device)
+    origin = view if parent_view is None else Path(parent_view)
+    report, digest_arm, family, parent, parent_report = _arm_parts(arm, origin)
+    request = _case_request(case, digest, matrix, arm, digest_arm, view, device, parent_view)
     _require(report["request"]["seed"] == case["seed"], "El brazo no tiene la semilla del caso")
     resumed = _resumed(output, request)
     if resumed is not None:
         return resumed
     identity = report["identity"]
-    dataset, sources = _open_view(view, identity, output, (arm, parent), indices)
+    window, phases, placement = _placement(
+        identity, parent_view, view, parent_report["identity"]["recipe"]
+    )
+    staged = placement is not None
+    dataset, sources = _open_view(
+        view, dict(window=window, phases=phases), output, (arm, parent), indices
+    )
     specification = sources["train"].specification()
     frozen, variant, codec, readout, base_recipe = _readout_models(
-        family, report, parent, parent_report, specification, device, carried=False
+        family, report, parent, parent_report, specification, device, carried=staged
     )
     fit, state = _best(arm, report)
-    readout.load_state_dict(state["model"])
+    if staged:
+        _carried_readout(state["model"], readout)
+    else:
+        readout.load_state_dict(state["model"])
     _require(
         _parameters_digest(readout) == state["readout_sha256"],
         "El lector elegido del brazo no conserva su huella",
@@ -547,7 +604,12 @@ def run_readout_posttraining(
             titans = parent_report["identity"]["recipe"]
             _, parent_state = _best(parent, parent_report)
             predictor = _predictor(
-                titans, specification, parent_report["request"], device, parent_state["model"]
+                titans,
+                specification,
+                parent_report["request"],
+                device,
+                parent_state["model"],
+                carried=staged,
             ).eval()
             targets = cm.titans_targets(matrix, adapter["core"])
             description["core"] = _attach(
@@ -575,6 +637,11 @@ def run_readout_posttraining(
         ),
         adapter=description or None,
     )
+    if staged:
+        scalers = extra.get("scalers")
+        posttraining["placement"] = dict(
+            placement, scalers=None if scalers is None else asdict(scalers)
+        )
     trainer = ReadoutAdapterTrainer(
         predictor,
         readout,
@@ -589,25 +656,25 @@ def run_readout_posttraining(
         validation=sources["validation"],
         output=output / "fit",
         world=family.world,
-        fold=identity["window"]["id"],
+        fold=window["id"],
         optimizer_factory=optimizer_factory,
     )
-    window = dict(
+    record = dict(
         schema_version=1,
         kind=READOUT_WINDOW,
         request=request,
-        window=identity["window"],
+        window=window,
         recipe=identity["recipe"],
         family=family.request,
         posttraining=posttraining,
         memory_policy=identity["memory_policy"],
-        phases=identity["phases"],
+        phases=phases,
         indices={name: source.identity for name, source in sources.items()},
         fit_run_id=trainer.run_id,
         expected_rows={name: dataset.manifest["counts"][name] for name in PREDICTED},
         final_test_opened=False,
     )
-    report_out = _report(output, request, window, READOUT_WINDOW)
+    report_out = _report(output, request, record, READOUT_WINDOW)
     return _fit_and_predict(
         trainer,
         lambda source, rows, stop: trainer.evaluate(source, stop=stop, rows=rows),
@@ -619,27 +686,31 @@ def run_readout_posttraining(
     )
 
 
-def _carry_view(anchor_view, view, output, protected, titans):
-    """Ventana trasladada posterior al ancla, con sus fases de calibración y evaluación."""
-    from mars_titan.training.carried_predictions import carried_window
-    from mars_titan.training.titans_walk_forward import walk_forward_options, window_phases
-
-    anchor_manifest, _ = read_manifest(anchor_view, 64 * 1024**2)
+def _later_view(parent_view, view, output, protected, titans):
+    """Vista de una ventana posterior a la del padre, con las fases de sus tramos medidos."""
+    parent_manifest, _ = read_manifest(parent_view, 64 * 1024**2)
     dataset = CorpusDataset(view, input_policy=HISTORICAL_MASKED)
-    anchor_fold, fold, age = carried_window(
-        anchor_manifest, dataset.manifest, input_policy=HISTORICAL_MASKED
+    parent_fold, fold, age = carried_window(
+        parent_manifest, dataset.manifest, input_policy=HISTORICAL_MASKED
     )
     _check_view(dataset, view_protocol(view), fold)
     _new_destination(output, (*dataset.roots.values(), view.parent, *protected))
-    months = walk_forward_options(titans)["warmup_months"]
-    phases = window_phases(fold, months)
-    sources = _sources(dataset, {name: phases[name] for name in CARRIED}, output / "indices")
-    return dataset, sources, anchor_fold, fold, age, phases
+    phases = window_phases(fold, walk_forward_options(titans)["warmup_months"])
+    sources = _sources(dataset, {name: phases[name] for name in PREDICTED}, output / "indices")
+    extra = dict(
+        view_sha256=sha256(view),
+        fold=fold,
+        parent_fold=parent_fold,
+        months_since_parent_information=age,
+        phases={name: asdict(phases[name]) for name in PREDICTED},
+    )
+    return dataset, sources, fold, extra
 
 
-def _carry_receipt(output, kind, anchor, report_sha, report, dataset, sources, inference, extra):
+def _frozen_receipt(output, kind, parent, report_sha, report, dataset, sources, inference, extra):
+    """Predecir los tres tramos medidos sin ajustar y confirmar el recibo del padre congelado."""
     predictions = {}
-    for name in CARRIED:
+    for name in PREDICTED:
         rows = PredictionRows(inference.quantiles)
         metrics = inference.evaluate(sources[name], rows=rows)
         predictions[name] = _write(output, name, rows, metrics, dataset)
@@ -647,12 +718,11 @@ def _carry_receipt(output, kind, anchor, report_sha, report, dataset, sources, i
         schema_version=1,
         kind=kind,
         status="completed",
-        anchor=dict(
-            path=str(anchor.resolve()),
+        parent=dict(
+            path=str(parent.resolve()),
             run_sha256=report_sha,
             checkpoint_sha256=report["checkpoint"]["sha256"],
             view_sha256=report["request"]["view_sha256"],
-            case=report["request"]["case"],
         ),
         predictions=predictions,
         indices={name: source.identity for name, source in sources.items()},
@@ -662,63 +732,8 @@ def _carry_receipt(output, kind, anchor, report_sha, report, dataset, sources, i
         finished_at_utc=datetime.now(UTC).isoformat(),
         **extra,
     )
-    atomic_json(output / "carry.json", receipt)
+    atomic_json(output / "frozen.json", receipt)
     return receipt
-
-
-def carry_titans_posttraining(anchor, anchor_view, view, output, *, device="cuda:0", stop=None):
-    """Variante B: predecir una ventana posterior con el estado postentrenado del ancla."""
-    require_learning_allowed("la predicción trasladada del postentrenamiento de Titans-MAC")
-    _cuda(device)
-    anchor, anchor_view, view, output = (Path(v) for v in (anchor, anchor_view, view, output))
-    report, report_sha = _completed(anchor, (TITANS_WINDOW,))
-    _require(sha256(anchor_view) == report["request"]["view_sha256"], "La vista del ancla cambió")
-    identity = report["identity"]
-    document = identity["recipe"]
-    parent = identity["posttraining"]["parent"]
-    dataset, sources, anchor_fold, fold, age, phases = _carry_view(
-        anchor_view, view, output, (anchor,), document
-    )
-    _, state = _best(anchor, report)
-    request = dict(variant=parent["variant"], seed=parent["seed"])
-    predictor = FinancialPredictor(
-        FinancialConfig(
-            sources["calibration"].specification(),
-            variant=parent["variant"],
-            seed=parent["seed"],
-            **{k: v for k, v in document["predictor"].items() if k != "dtype"},
-        ),
-        device=device,
-        dtype=DTYPES[document["predictor"]["dtype"]],
-    )
-    description = identity["posttraining"]["adapter"]
-    if description is not None:
-        _attach(predictor, _targets(description), description["seed"], seal=True)
-    _carried_parameters(state["model"], predictor)
-    recipe = replace(
-        case_recipe(document, parent.get("search_case")),
-        **cm.recipe_options(report["request"]["case"]),
-    )
-    inference = ChronologicalInference(predictor.eval(), recipe)
-    return _carry_receipt(
-        output,
-        TITANS_CARRY,
-        anchor,
-        report_sha,
-        report,
-        dataset,
-        sources,
-        _Evaluate(inference),
-        dict(
-            view_sha256=sha256(view),
-            fold=fold,
-            anchor_fold=anchor_fold,
-            months_since_anchor_information=age,
-            phases={name: asdict(phases[name]) for name in CARRIED},
-            device=device,
-            parent=request,
-        ),
-    )
 
 
 class _Evaluate:
@@ -731,94 +746,87 @@ class _Evaluate:
         return self.inference.predict(source, rows)
 
 
-def _load_adapters(model, saved):
-    """Copiar los adaptadores guardados de un núcleo y dejarlo sellado y congelado."""
-    from mars_titan.models.predictive_adaptation import adapter_names
+def frozen_titans(parent, parent_view, view, output, *, device="cuda:0", stop=None):
+    """Padre congelado: el estado elegido de Titans-MAC en su ventana, aplicado a otra.
 
-    values = dict(model.named_parameters())
-    _require(
-        isinstance(saved, dict) and list(saved) == adapter_names(model),
-        "Los adaptadores guardados no son los del núcleo reconstruido",
-    )
-    with torch.no_grad():
-        for name, value in saved.items():
-            _require(
-                value.shape == values[name].shape and value.dtype == values[name].dtype,
-                "Los adaptadores guardados no conservan forma o precisión",
-            )
-            values[name].copy_(value)
-    model.requires_grad_(False)
-    model._seal_parameters()
-
-
-def carry_readout_posttraining(anchor, anchor_view, view, output, *, device="cuda:0", stop=None):
-    """Variante B del lector: núcleo, lector y adaptadores elegidos en el ancla, sin ajuste.
-
-    El núcleo se predice con C en modo disabled, como el padre congelado del brazo: C no
-    interviene en la emisión.
+    No ajusta parámetros ni selección. Cada tramo empieza con la memoria rápida inicial y
+    su propio calentamiento de entradas, como un traslado de la campaña base.
     """
-    require_learning_allowed("la predicción trasladada del postentrenamiento de un lector")
+    require_learning_allowed("la predicción del padre congelado de Titans-MAC")
     _cuda(device)
-    anchor, anchor_view, view, output = (Path(v) for v in (anchor, anchor_view, view, output))
-    report, report_sha = _completed(anchor, (READOUT_WINDOW,))
-    _require(sha256(anchor_view) == report["request"]["view_sha256"], "La vista del ancla cambió")
-    arm = Path(report["request"]["parent"]["path"])
-    arm_report, arm_sha = read_manifest(arm / "run.json", 16 * 1024**2)
-    _require(arm_sha == report["request"]["parent"]["run_sha256"], "El brazo del ancla cambió")
-    family = readout_family_of(arm_report)
-    parent = Path(arm_report["request"]["parent"]["path"])
-    parent_report, _ = read_manifest(parent / "run.json", 16 * 1024**2)
-    dataset, sources, anchor_fold, fold, age, phases = _carry_view(
-        anchor_view, view, output, (anchor, arm, parent), parent_report["identity"]["recipe"]
+    parent, parent_view, view, output = (Path(v) for v in (parent, parent_view, view, output))
+    report, report_sha = _completed(parent, (TITANS_KIND,))
+    _require(
+        sha256(parent_view) == report["request"]["view_sha256"],
+        "La vista del padre no es la de su ajuste",
+    )
+    document, request = report["identity"]["recipe"], report["request"]
+    dataset, sources, _, extra = _later_view(parent_view, view, output, (parent,), document)
+    _, state = _best(parent, report)
+    predictor = _predictor(
+        document,
+        sources["validation"].specification(),
+        request,
+        device,
+        state["model"],
+        carried=True,
+    ).eval()
+    inference = ChronologicalInference(predictor, case_recipe(document, request.get("search_case")))
+    return _frozen_receipt(
+        output,
+        TITANS_FROZEN,
+        parent,
+        report_sha,
+        report,
+        dataset,
+        sources,
+        _Evaluate(inference),
+        dict(extra, device=device),
+    )
+
+
+def frozen_readout(arm, arm_view, view, output, *, device="cuda:0", stop=None):
+    """Padre congelado de un brazo con lector: núcleo y lector elegidos, aplicados a otra
+    ventana. El núcleo predice con C en modo disabled, como en el ajuste del brazo."""
+    require_learning_allowed("la predicción del padre congelado de un brazo con lector")
+    _cuda(device)
+    arm, arm_view, view, output = (Path(v) for v in (arm, arm_view, view, output))
+    report, digest, family, parent, parent_report = _arm_parts(arm, arm_view)
+    dataset, sources, fold, extra = _later_view(
+        arm_view, view, output, (arm, parent), parent_report["identity"]["recipe"]
     )
     frozen, variant, codec, readout, base_recipe = _readout_models(
         family,
-        arm_report,
+        report,
         parent,
         parent_report,
-        sources["calibration"].specification(),
+        sources["validation"].specification(),
         device,
         carried=True,
     )
-    description = report["identity"]["posttraining"]["adapter"] or {}
-    _, state = _best(anchor, report)
-    if "core" in description:
-        _attach(frozen, _targets(description["core"]), description["core"]["seed"], seal=True)
-        _load_adapters(frozen, state["core_adapters"])
-    if "episodic_readout" in description:
-        part = description["episodic_readout"]
-        _attach(readout, _targets(part), part["seed"])
+    fit, state = _best(arm, report)
     _carried_readout(state["model"], readout)
     readout.eval().requires_grad_(False)
-    arm_fit, _ = read_manifest(arm / "fit/run.json", 16 * 1024**2)
-    extra = {"scalers": _anchor_scalers(arm_fit)} if variant.admission == "m3" else {}
+    scalers = {"scalers": _anchor_scalers(fit)} if variant.admission == "m3" else {}
     inference = MarsTitanInference(
         frozen,
         readout,
         base_recipe,
         admission=variant.admission,
-        retention=family.retention(base_recipe, variant, **extra),
+        retention=family.retention(base_recipe, variant, **scalers),
         native=_native(variant.admission),
         codec=codec,
         world=family.world,
         fold=fold["id"],
     )
-    return _carry_receipt(
+    return _frozen_receipt(
         output,
-        READOUT_CARRY,
-        anchor,
-        report_sha,
+        READOUT_FROZEN,
+        arm,
+        digest,
         report,
         dataset,
         sources,
         inference,
-        dict(
-            view_sha256=sha256(view),
-            fold=fold,
-            anchor_fold=anchor_fold,
-            months_since_anchor_information=age,
-            phases={name: asdict(phases[name]) for name in CARRIED},
-            device=device,
-            family=family.request,
-        ),
+        dict(extra, device=device, family=family.request),
     )

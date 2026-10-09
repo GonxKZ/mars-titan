@@ -9,7 +9,10 @@ ajusta todos los parámetros nativos desde el estado elegido, con el presupuesto
 
 El banco, su admisión y su instantánea por evento son los del ajuste base. Las fases (con
 su calentamiento), la admisión, K, los bloques y la acumulación salen de la identidad del
-padre. Solo cambian el optimizador, el presupuesto y la selección.
+padre. Solo cambian el optimizador, el presupuesto y la selección. Con `parent_view`
+(walk-forward por etapas), el padre se ajustó en la ventana anterior, los tramos son los
+de esta ventana y el ajuste solo decide con las filas nuevas. `frozen_candidate` predice
+validación, calibración y evaluación de una ventana posterior con el estado del padre.
 """
 
 import hashlib
@@ -19,12 +22,13 @@ from dataclasses import asdict, replace
 from datetime import UTC, datetime
 from pathlib import Path
 
+import numpy as np
 import pyarrow.parquet as pq
 import torch
 from torch import nn
 from torch.nn import functional
 
-from mars_titan.data.cohort_files import read_manifest, safe_destination
+from mars_titan.data.cohort_files import read_manifest
 from mars_titan.data.input_policy import HISTORICAL_MASKED, policy_identity
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.memory.financial_observations import (
@@ -40,27 +44,29 @@ from mars_titan.training.candidate_run import (
     CandidateChronologicalPredictor,
     CandidateChronologicalTrainer,
     _Pause,
-    restore_selected,
 )
 from mars_titan.training.candidate_walk_forward import (
     WORLD,
     _anchor,
+    _phases,
     _prepare_output,
     _window,
     anchor_adapter,
     check_view_rows,
     window_sources,
 )
-from mars_titan.training.carried_predictions import _destination, _receipt, carried_window
-from mars_titan.training.checkpoints import load_training_state
+from mars_titan.training.carried_predictions import _destination, carried_window
 from mars_titan.training.corpus_inputs import CorpusDataset
 from mars_titan.training.learning_hold import require_learning_allowed
 
 from . import chronological_matrix as cm
+from .staged_rows import posttraining_rows
 
 KIND = "candidate_posttraining_window"
-CARRIED = ("calibration", "evaluation")
-PARTITIONS = ("train", "validation", *HELDOUT)
+FROZEN_KIND = "candidate_frozen_parent"
+STAGED = "staged_previous_window_v1"
+PREDICTED = ("validation", *HELDOUT)
+PARTITIONS = ("train", *PREDICTED)
 
 
 def _require(condition, message):
@@ -206,6 +212,30 @@ def _parent_phases(report, names):
     return {name: FinancialPhase(**declared[name]["phase"]) for name in names}
 
 
+def staged_phases(parent_view, dataset):
+    """Fases de esta ventana para un padre de la anterior: el ajuste solo con filas nuevas.
+
+    La candidata no tiene calentamiento: su contexto de 64 sesiones viaja en cada muestra.
+    """
+    parent_manifest, _ = read_manifest(parent_view, 8 * 1024**2)
+    parent_fold, fold, _ = carried_window(
+        parent_manifest, dataset.manifest, input_policy=HISTORICAL_MASKED
+    )
+    start, end = posttraining_rows(parent_fold, fold)
+    phases = _phases(dataset)
+    since, until = (int(np.datetime64(day, "us").astype(np.int64)) for day in (start, end))
+    _require(until == phases["train"].decision_end, "Las filas nuevas no acaban con el ajuste")
+    phases["train"] = FinancialPhase("train", since, since, until, until)
+    placement = dict(
+        design=STAGED,
+        parent_window=parent_fold["id"],
+        parent_view_sha256=sha256(parent_view),
+        fit_start=start,
+        fit_end=end,
+    )
+    return phases, placement
+
+
 def run_candidate_posttraining(
     parent,
     view,
@@ -217,8 +247,10 @@ def run_candidate_posttraining(
     device="cuda:0",
     stop=None,
     optimizer_factory=None,
+    parent_view=None,
 ):
-    """Postentrenar el estado elegido de una ventana de la candidata en esa misma ventana."""
+    """Postentrenar el estado elegido de la candidata en su ventana o, con `parent_view`,
+    el de la ventana anterior con las filas nuevas de esta."""
     require_learning_allowed("el postentrenamiento de la GRU candidata")
     _require(device in ("cpu", "cuda:0"), "El dispositivo debe ser cpu o cuda:0 explícitos")
     cm.validate_case(case)
@@ -229,7 +261,8 @@ def run_candidate_posttraining(
         "El caso no pertenece a la GRU candidata de la matriz declarada",
     )
     parent, view, output = Path(parent), Path(view), Path(output)
-    window, window_sha, report, _ = _anchor(parent, view)
+    origin = view if parent_view is None else Path(parent_view)
+    window, window_sha, report, _ = _anchor(parent, origin)
     _require(window["seed"] == case["seed"], "El padre no se ajustó con la semilla del caso")
     dataset = CorpusDataset(view, input_policy=HISTORICAL_MASKED)
     contracts = _window(dataset)
@@ -242,6 +275,12 @@ def run_candidate_posttraining(
         parent=dict(path=str(parent.resolve()), window_sha256=window_sha),
         device=device,
     )
+    placement = None
+    if parent_view is None:
+        phases = _parent_phases(report, PARTITIONS)
+    else:
+        request["parent_view_sha256"] = sha256(origin)
+        phases, placement = staged_phases(origin, dataset)
     path = output / "window.json"
     if path.is_file():
         previous, _ = read_manifest(path, 8 * 1024**2)
@@ -249,9 +288,9 @@ def run_candidate_posttraining(
         if previous.get("status") == "completed":
             return previous
     output.mkdir(parents=True, exist_ok=True)
-    sources = _sources(dataset, output / "indices", _parent_phases(report, PARTITIONS))
+    sources = _sources(dataset, output / "indices", phases)
     adapter, parent_recipe, _, _ = anchor_adapter(
-        parent, view, sources["train"].specification(), device=device
+        parent, origin, sources["train"].specification(), device=device
     )
     recipe = replace(parent_recipe, **cm.recipe_options(case))
     head, description = None, None
@@ -263,19 +302,22 @@ def run_candidate_posttraining(
         )
     fold = next(iter(contracts.values()))["fold"]
     folder = output / "run"
+    posttraining = dict(
+        kind=KIND,
+        case=case,
+        parent=dict(
+            window_sha256=window_sha,
+            checkpoint_sha256=window["checkpoint"]["sha256"],
+            parameters_sha256=window["checkpoint"]["parameters_sha256"],
+        ),
+        adapter=description,
+    )
+    if placement is not None:
+        posttraining["placement"] = placement
     trainer = CandidatePosttrainer(
         adapter,
         recipe,
-        posttraining=dict(
-            kind=KIND,
-            case=case,
-            parent=dict(
-                window_sha256=window_sha,
-                checkpoint_sha256=window["checkpoint"]["sha256"],
-                parameters_sha256=window["checkpoint"]["parameters_sha256"],
-            ),
-            adapter=description,
-        ),
+        posttraining=posttraining,
         head=head,
         train=sources["train"],
         validation=sources["validation"],
@@ -336,73 +378,37 @@ def run_candidate_posttraining(
     return document
 
 
-def _completed(anchor, anchor_view):
-    document, digest = read_manifest(Path(anchor) / "window.json", 8 * 1024**2)
-    _require(
-        document.get("kind") == KIND
-        and document.get("status") == "completed"
-        and document.get("final_test_opened") is False
-        and document["request"]["view_sha256"] == sha256(anchor_view),
-        "El ancla no es un postentrenamiento completo de la candidata sobre esa vista",
-    )
-    safe_destination(Path(anchor) / document["run"]["path"])
-    _require(
-        sha256(Path(anchor) / document["run"]["path"]) == document["run"]["sha256"],
-        "La ejecución del ancla cambió",
-    )
-    return document, digest
+def frozen_candidate(parent, parent_view, view, output, *, device="cuda:0", stop=None):
+    """Padre congelado: el estado elegido de la candidata en su ventana, aplicado a otra.
 
-
-def carry_candidate_posttraining(anchor, anchor_view, view, output, *, device="cuda:0", stop=None):
-    """Variante B: calibración y evaluación posteriores con el estado elegido en el ancla."""
-    require_learning_allowed("la predicción trasladada del postentrenamiento de la candidata")
-    anchor, anchor_view, view = Path(anchor), Path(anchor_view), Path(view)
-    document, digest = _completed(anchor, anchor_view)
+    No ajusta nada. `carried_window` exige la misma edición y protocolo y una ventana
+    posterior. Escribe validación, calibración y evaluación con el esquema común.
+    """
+    require_learning_allowed("la predicción del padre congelado de la candidata")
+    parent, parent_view, view = Path(parent), Path(parent_view), Path(view)
+    window, window_sha, report, _ = _anchor(parent, parent_view)
     dataset = CorpusDataset(view, input_policy=HISTORICAL_MASKED)
     contracts = _window(dataset)
-    anchor_meta, _ = read_manifest(anchor_view, 8 * 1024**2)
-    anchor_fold, fold, months = carried_window(
-        anchor_meta, dataset.manifest, input_policy=HISTORICAL_MASKED
+    parent_meta, _ = read_manifest(parent_view, 8 * 1024**2)
+    parent_fold, fold, months = carried_window(
+        parent_meta, dataset.manifest, input_policy=HISTORICAL_MASKED
     )
     output = _destination(output, dataset.roots.values())
     _prepare_output(view, output, dataset)
+    outside_source(parent, output)
     output.mkdir(parents=True)
-    parent = Path(document["request"]["parent"]["path"])
-    _, _, parent_report, _ = _anchor(parent, anchor_view)
-    folder = anchor / "run"
-    run, _ = read_manifest(folder / "run.json", 16 * 1024**2)
-    # Las fases trasladadas son las del traslado de la campaña base en esa ventana.
-    sources = window_sources(dataset, output / "indices", CARRIED)
-    adapter, parent_recipe, _, _ = anchor_adapter(
-        parent, anchor_view, sources["calibration"].specification(), device=device
+    sources = window_sources(dataset, output / "indices", PREDICTED)
+    adapter, recipe, _, _ = anchor_adapter(
+        parent, parent_view, sources["validation"].specification(), device=device
     )
-    parameters = restore_selected(folder, adapter, carried=True)
-    _require(
-        parameters == document["checkpoint"]["parameters_sha256"],
-        "Los parámetros cargados no son los elegidos en el ancla",
-    )
-    recipe = replace(parent_recipe, **cm.recipe_options(document["request"]["case"]))
-    description = document["posttraining"]["adapter"]
-    head = None
-    if description is not None:
-        head = adapted_head(
-            adapter.model, document["request"]["case"]["adapter"]["points"], description["seed"]
-        ).to(device)
-        state = load_training_state(
-            folder / "checkpoints",
-            expected_identity=run["identity"],
-            selection="best",
-            expected_sha256=document["checkpoint"]["sha256"],
-        )
-        load_head(head, state["head_adapters"])
     target = output / "predictions"
     target.mkdir()
     predictor = CandidateHeadPredictor(
-        adapter, recipe, head=head, sources=sources, output=target, world=WORLD, fold=fold["id"]
+        adapter, recipe, head=None, sources=sources, output=target, world=WORLD, fold=fold["id"]
     )
     predictions = {}
     try:
-        for name in CARRIED:
+        for name in PREDICTED:
             path = target / f"{name}-predictions.parquet"
             metrics = predictor.evaluate(sources[name], stop=stop, destination=path)
             predictions[name] = dict(
@@ -413,23 +419,29 @@ def carry_candidate_posttraining(anchor, anchor_view, view, output, *, device="c
             )
     except _Pause:
         return dict(status="paused", final_test_opened=False)
-    return _receipt(
-        output,
-        dict(
-            model=KIND,
-            anchor=dict(
-                window_sha256=digest,
-                checkpoint_sha256=document["checkpoint"]["sha256"],
-                parameters_sha256=document["checkpoint"]["parameters_sha256"],
-                case=document["request"]["case"],
-                fold=anchor_fold,
-            ),
-            parent_recipe=parent_report["identity"]["recipe"],
-            manifest_sha256=dataset.identity,
-            fold=fold,
-            markets=sorted(contracts),
-            months_since_anchor_information=months,
-            predictions=predictions,
-            **policy_identity(HISTORICAL_MASKED),
+    receipt = dict(
+        schema_version=1,
+        kind=FROZEN_KIND,
+        status="completed",
+        parent=dict(
+            path=str(parent.resolve()),
+            window_sha256=window_sha,
+            checkpoint_sha256=window["checkpoint"]["sha256"],
+            parameters_sha256=window["checkpoint"]["parameters_sha256"],
+            view_sha256=sha256(parent_view),
+            fold=parent_fold,
         ),
+        parent_recipe=report["identity"]["recipe"],
+        manifest_sha256=dataset.identity,
+        fold=fold,
+        markets=sorted(contracts),
+        months_since_parent_information=months,
+        predictions=predictions,
+        device=device,
+        final_test_opened=False,
+        scientific_training_started=False,
+        finished_at_utc=datetime.now(UTC).isoformat(),
+        **policy_identity(HISTORICAL_MASKED),
     )
+    atomic_json(output / "frozen.json", receipt)
+    return receipt

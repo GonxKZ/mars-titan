@@ -2,15 +2,18 @@
 
 La campaña base es la de `test_mars_titan_campaign`: B sobre US con `titans_mac_online` y
 `mars_titan_m1`, una ventana reentrenada y dos trasladadas. Cada caso de la matriz de versión
-3 parte del lector elegido en la ventana reentrenada y se traslada después a la siguiente.
-El optimizador registra gradientes sin modificar pesos, así que todas las predicciones deben
-ser las del brazo base. Necesita el enlace nativo del banco episódico.
+3 parte del lector elegido en la ventana reentrenada y se ajusta en ella y, como en el
+walk-forward por etapas, con las filas nuevas de la siguiente. El padre congelado predice
+esa siguiente ventana sin ajustar. El optimizador registra gradientes sin modificar pesos,
+así que todas las predicciones deben ser las del brazo base o las de su padre congelado.
+Necesita el enlace nativo del banco episódico.
 """
 
 import json
 import os
 from pathlib import Path
 
+import numpy as np
 import pyarrow.parquet as pq
 import pytest
 
@@ -58,30 +61,45 @@ def windows(campaign_run, tmp_path_factory):  # noqa: F811
         if item["case"]["seed"] != 42:
             continue
         name = item["id"].split("/", 1)[1]
-        factory = Factory()
+        factory, staged_factory = Factory(), Factory()
+        common = dict(case=item["case"], matrix=matrix, digest=digest, device="cpu")
         with unfused_attention():
             fit = cw.run_readout_posttraining(
                 arm,
                 Path(prepared[fitted]["path"]),
                 root / name / "fit",
-                case=item["case"],
-                matrix=matrix,
-                digest=digest,
-                device="cpu",
                 optimizer_factory=factory,
+                **common,
             )
-            carry = cw.carry_readout_posttraining(
-                root / name / "fit",
-                Path(prepared[fitted]["path"]),
+            staged = cw.run_readout_posttraining(
+                arm,
                 Path(prepared[carried]["path"]),
-                root / name / "carry",
-                device="cpu",
+                root / name / "staged",
+                optimizer_factory=staged_factory,
+                parent_view=Path(prepared[fitted]["path"]),
+                **common,
             )
-        result[name] = dict(fit=fit, carry=carry, factory=factory, root=root / name)
+        result[name] = dict(
+            fit=fit,
+            staged=staged,
+            factory=factory,
+            staged_factory=staged_factory,
+            root=root / name,
+        )
+    with unfused_attention():
+        frozen = cw.frozen_readout(
+            arm,
+            Path(prepared[fitted]["path"]),
+            Path(prepared[carried]["path"]),
+            root / "frozen",
+            device="cpu",
+        )
     base = dict(
         fit=json.loads((arm / "run.json").read_text()),
         arm=arm,
         carry=receipt(campaign_run, f"US/{carried}/{ARM}/carry-s42"),
+        frozen=frozen,
+        frozen_root=root / "frozen",
     )
     return dict(runs=result, base=base, output=campaign_run.output)
 
@@ -96,17 +114,47 @@ def test_matrix_declares_the_core_the_reader_and_both_with_a_bank(windows):
 
 
 def test_every_case_emits_the_rows_of_the_base_arm(windows):
-    base, output = windows["base"], windows["output"]
+    base = windows["base"]
     for name, run in windows["runs"].items():
         assert run["fit"]["status"] == "completed", name
         for partition in ("validation", "calibration", "evaluation"):
             mine = rows(run["root"] / "fit" / run["fit"]["predictions"][partition]["path"])
             theirs = rows(base["arm"] / base["fit"]["predictions"][partition]["path"])
             assert mine == theirs, (name, partition)
-        for partition in ("calibration", "evaluation"):
-            mine = rows(run["root"] / "carry" / run["carry"]["predictions"][partition]["path"])
-            theirs = rows(output / base["carry"]["predictions"][partition]["path"])
-            assert mine == theirs, (name, "carry", partition)
+        # El ajuste por etapas sin cambios de pesos emite las filas del padre congelado.
+        for partition in ("validation", "calibration", "evaluation"):
+            mine = rows(run["root"] / "staged" / run["staged"]["predictions"][partition]["path"])
+            theirs = rows(base["frozen_root"] / base["frozen"]["predictions"][partition]["path"])
+            assert mine == theirs, (name, "staged", partition)
+
+
+def test_the_frozen_parent_reproduces_the_carry_of_the_base_campaign(windows):
+    base, output = windows["base"], windows["output"]
+    frozen = base["frozen"]
+    assert frozen["kind"] == cw.READOUT_FROZEN and frozen["status"] == "completed"
+    assert frozen["months_since_parent_information"] > 0
+    for partition in ("calibration", "evaluation"):
+        mine = rows(base["frozen_root"] / frozen["predictions"][partition]["path"])
+        theirs = rows(output / base["carry"]["predictions"][partition]["path"])
+        assert mine == theirs, partition
+
+
+def test_staged_cases_fit_only_the_new_rows_of_the_next_window(windows):
+    for name, run in windows["runs"].items():
+        report = json.loads((run["root"] / "staged" / "run.json").read_text())
+        identity = report["identity"]
+        placement = identity["posttraining"]["placement"]
+        assert placement["design"] == cw.STAGED and placement["parent_window"] == "fold-000"
+        # M1 no fija escalas. Con M3 serían las del ajuste del brazo padre.
+        assert placement["scalers"] is None
+        start = placement["fit_start"]
+        since = int(np.datetime64(start, "us").astype(np.int64))
+        assert identity["phases"]["train"]["decision_start"] == since, name
+        assert identity["phases"]["train"]["warmup_start"] < since
+        fit = json.loads((run["root"] / "fit" / "run.json").read_text())
+        # Mismo padre y mismo caso, ajustes distintos: la ventana y sus filas cambian.
+        assert identity["posttraining"]["case"] == fit["identity"]["posttraining"]["case"]
+        assert identity["phases"]["train"] != fit["identity"]["phases"]["train"]
 
 
 def test_cases_share_updates_and_train_only_their_declared_parameters(windows):
@@ -124,3 +172,7 @@ def test_cases_share_updates_and_train_only_their_declared_parameters(windows):
             assert set(adapter) == set(name.split("+")), name
     assert len(updates) == 1
     assert roles["full_continuation"] != roles["core"]
+    staged = {
+        sum(i.calls for i in run["staged_factory"].instances) for run in windows["runs"].values()
+    }
+    assert len(staged) == 1 and min(staged) > 0
