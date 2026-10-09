@@ -467,3 +467,36 @@ def test_a_regeneration_error_keeps_the_rows_and_is_retried_while_a_comparison_i
     assert attempts[-1] == "differs"
     assert prediction_files.verify(other, other_digest) == prediction_files.COMPACTED
     assert totals["not_regenerable"] == 2
+
+
+def test_masked_predictions_without_aggregates_are_compacted_not_released(
+    base,  # noqa: F811
+    tmp_path,
+    monkeypatch,
+):
+    """Si la comparación no declara la ablación, sus filas no tienen agregados y se conservan."""
+    on_cpu(monkeypatch)
+    monkeypatch.setenv(HOLD_ENV, str(base.hold))
+    output = tmp_path / "campaign"
+    shutil.copytree(base.output, output, symlinks=True)
+    staged = tmp_path / "ablation"
+    ablation.run_stage(base.stage, base.views, output, staged, lease=CpuLease, stop=RUNNING)
+    path, campaign = schedule(base, tmp_path)
+    windows = rolling.load_schedule(path, campaign)
+    state = rolling.Rolling(
+        rolling.load_retention(DECLARATION),
+        base.campaign,
+        base.views,
+        output,
+        windows,
+        ablation=dict(stage=base.stage, output=staged),
+    )
+    declared = state.comparison_config()
+    without = {k: v for k, v in declared.items() if k != comparison.ABLATION_FIELD}
+    monkeypatch.setattr(rolling.Rolling, "comparison_config", lambda self: without)
+    rolling.run_rolling(state, Calls().runners())
+    for job in ablation.plan_stage(ablation.load_stage(base.stage)):
+        receipt = json.loads((staged / "jobs" / job["id"] / "receipt.json").read_text())
+        record = receipt["prediction"]
+        state_of = prediction_files.verify(staged / record["path"], record["sha256"])
+        assert state_of == prediction_files.COMPACTED

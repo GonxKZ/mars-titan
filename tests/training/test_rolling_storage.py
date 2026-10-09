@@ -213,3 +213,8 @@ def test_the_storage_command_adds_the_rolling_walk_of_campaign_a(tmp_path, capsy
     )
     printed = json.loads(capsys.readouterr().out.split("\n}\n", 1)[1])
     assert printed["all_regenerated"]["peak_at"] == result["all_regenerated"]["peak_at"]
+
+
+def test_an_input_read_last_in_its_own_window_is_released_with_it(declared):
+    result = estimate(declared, policy_reads={JOBS[1]["id"]: 1})["all_regenerated"]
+    assert result["retained_bytes"] == 2 * kept_per_fit(declared)
