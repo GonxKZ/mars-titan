@@ -84,6 +84,33 @@ uv run python -m mars_titan.integrity.row_identity \
 - se rechaza un archivo cambiado tras publicar el manifiesto;
 - la huella no depende del orden de las filas ni de su partición en bloques.
 
+## Escáner de fugas en las entradas
+
+`integrity/leakage_scan.py` busca columnas de entrada que contengan el objetivo futuro, sin entrenar ningún modelo. Una entrada que lleva el objetivo, aunque sea con ruido o con una transformación monótona, ordena los activos de cada sesión casi igual que él. Las señales reales sobre rendimientos residuales diarios tienen correlaciones de rangos por sesión del orden de centésimas.
+
+Para cada columna y cada sesión (mercado e instante) calcula dos correlaciones de Spearman:
+- con el objetivo de la fila;
+- con un placebo pasado, que es el objetivo del mismo activo `lag` decisiones antes. Con `lag` igual o mayor que el horizonte de la etiqueta, ese placebo ya ha madurado en el momento de la decisión.
+
+Las ausencias se excluyen columna a columna, y el objetivo se ordena solo entre las filas en las que la columna está presente. Una columna se marca si la media de |IC| supera 0,2 o si alguna sesión con al menos 20 activos supera 0,95. El placebo no decide nada: sirve para distinguir una entrada que copia rendimientos pasados (legítima, alta con el placebo) de una que copia el futuro.
+
+```bash
+uv run python -m mars_titan.integrity.leakage_scan INPUTS.parquet --lag 1 --output LEAKAGE.json
+```
+
+**Límites declarados.**
+- Los umbrales se fijan antes de mirar los datos reales. No se estiman.
+- Que no marque nada no demuestra que no haya fugas sutiles. Una fuga débil y repartida entre muchas columnas puede quedar por debajo de los umbrales.
+- Se aplica sobre la matriz tabular de la campaña, que comparte con las familias neuronales la construcción de entradas de cada ventana, y solo sobre filas de validación.
+
+**Pruebas.** Con paneles escritos en la prueba y canarios inyectados:
+- se marcan el objetivo con ruido, una transformación monótona, el rango invertido y una fuga en una sola sesión;
+- no se marcan una señal débil realista, el ruido ni el rendimiento pasado;
+- con ausencias, la media coincide con la correlación de Spearman directa de pandas sobre las filas presentes;
+- una columna constante y las sesiones pequeñas quedan sin correlación definida.
+
+Tres mutaciones dirigidas hacen fallar las pruebas: ordenar el objetivo también en las filas ausentes, quitar el mínimo de activos y quitar el umbral por sesión.
+
 ## Registro previo y desviaciones
 
 `integrity/preregistration.py` fija qué se va a comparar antes de producir resultados. El registro es un archivo JSON Lines que solo crece, con dos tipos de entrada:
@@ -121,7 +148,7 @@ uv run python -m mars_titan.integrity.preregistration check \
 
 Siguen en #442, en este orden:
 1. Sondas sin ajuste:
-   - canarios de información futura en entradas de prueba que los detectores deben señalar;
+   - aplicar el escáner de fugas a la matriz tabular real de cada ventana, sobre validación;
    - ninguna fila de 2024 en las predicciones de validación y en los demás artefactos de selección;
    - invariantes de caja, posiciones, costes y acciones imposibles en las cintas reales con políticas fijas;
    - cota con oráculo de información futura, marcada como diagnóstico y excluida de toda comparación.
