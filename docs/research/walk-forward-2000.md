@@ -137,11 +137,11 @@ Cada alternativa responde a una pregunta algo distinta:
 - **C** parte en cada ventana del estado seleccionado en la anterior, que solo ha visto datos previos a su propia validación. No hay fuga, pero el resultado de una ventana depende del camino anterior y las ventanas dejan de ser ajustes independientes. Las memorias se siguen reiniciando por ventana. El padre debe ser elegible como época 0 y el presupuesto de continuación es igual para todos los brazos. Es otra comparación y debe presentarse como tal.
 - **D** mantiene ajustes independientes con el mismo número de actualizaciones en todas las ventanas, muestreando de toda la historia disponible. En la última ventana US equivale a 1,6 pasadas y en las primeras de CN a muchas más, así que su valor debe fijarse por comparación.
 
-La elección no se toma en este documento. Antes del primer entrenamiento se registrará en [#363](https://github.com/GonxKZ/mars-titan/issues/363) la alternativa, el caudal medido en la primera ventana, los brazos y semillas incluidos y, si procede, el archivo del protocolo reducido con su huella. Como orientación, B con paso de 36 meses conserva la semántica del diseño con un tercio del coste de A y cabe en el límite de trabajos, y C solo tendría sentido como comparación separada si el caudal medido no permite B para todas las familias.
+La orientación inicial era B con paso de 36 meses, que conserva la semántica del diseño con un tercio del coste de A y cabe en el límite de trabajos. El 9 de octubre de 2026 se eligió A con todas las familias, registrada en [#363](https://github.com/GonxKZ/mars-titan/issues/363), sin esperar al caudal medido: se prefirió que cada ventana entrene con todo su pasado disponible. Las cifras de coste de esta sección siguen siendo hipótesis. La duración real se medirá con los primeros trabajos y se registrará en la misma tarea, sin cambiar a B ni recortar filas en silencio.
 
 ## Uso
 
-La preparación necesita la supervisión histórica verificada, que todavía no existe. Cuando esté disponible:
+La preparación necesita la supervisión histórica verificada. La edición v3 y sus objetivos residuales se verificaron el 9 de octubre ([recibo](../../reports/data/historical-edition-v3-targets-20261009.json)) y las vistas reales de la campaña se están preparando con `run_masked_campaign.py prepare`, descrito en el [plan de la campaña](training-campaign-2000.md#ejecución-y-recuperación). Para unas vistas conjuntas sueltas:
 
 ```bash
 uv run --no-sync python -m mars_titan.training.joint_temporal_corpus \
@@ -162,4 +162,4 @@ Las pruebas de `tests/evaluation/test_walk_forward_v2.py` comprueban los límite
 
 Las pruebas de `tests/training/test_walk_forward_v2_views.py` preparan vistas sobre un corpus técnico con filas en todos los años, desde febrero de 2000 en US y julio de 2006 en CN. Comparan los recuentos por ventana, tramo, mercado y año con una derivación independiente, comprueban `purged_by_boundary`, el rechazo de una ventana conjunta con CN vacío, la comprobación de la búsqueda sin GPU, la lectura de la política desde un plan de versión 4, el rechazo de planes estrictos o con otra parada y la paridad de las vistas v1. La invariancia del objetivo residual ante cambios futuros ya la cubre `tests/data/test_budget_targets.py`.
 
-Nada de esto ejecuta modelos, pasos de optimizador ni evaluaciones científicas, ni genera objetivos reales. Los recuentos reales por ventana y mercado se registrarán cuando exista la supervisión histórica verificada.
+Nada de esto ejecuta modelos, pasos de optimizador ni evaluaciones científicas, ni genera objetivos reales. Los recuentos reales por ventana y mercado se registrarán cuando terminen las vistas sobre la supervisión histórica verificada.
