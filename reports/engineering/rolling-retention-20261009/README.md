@@ -40,9 +40,17 @@ Resultados en CPU con los fixtures de las pruebas, que ajustan sin cambiar pesos
 | CM-v1 (B, B+C, B+M y B+C+M) | factorial reducido | los tres | idéntica bit a bit |
 | Ablación de modalidades | evaluación enmascarada | evaluación | idéntica bit a bit |
 
-Una tabla con un solo bit cambiado se detecta como distinta y la retención la compacta en lugar de liberarla. Los núcleos auxiliares de CM-v1 no tienen traslado, así que sus tablas no se liberan. La regeneración real de XGBoost carga el booster elegido con su propio predictor, que estas pruebas sustituyen.
+Una tabla con un solo bit cambiado se detecta como distinta y la retención la compacta en lugar de liberarla. Trece mutantes dirigidos sobre la decisión de liberar, la comparación, la política numérica, las entradas de las políticas, la guardia, los agregados y la reanudación quedan detectados (`mutation.json`). Dos sobrevivieron en la primera pasada y motivaron dos pruebas nuevas. Los núcleos auxiliares de CM-v1 no tienen traslado, así que sus tablas no se liberan. La regeneración real de XGBoost carga el booster elegido con su propio predictor, que estas pruebas sustituyen.
 
-Comprobación pendiente en la GPU, con la campaña ya ejecutada y una sola carga GPU:
+Hay dos comprobaciones preparadas para la GPU, ninguna ejecutada. La primera ajusta en `cuda:0` Titans-MAC y, con el enlace nativo, el lector M1 de MARS-TITAN y la GRU episódica, en FP32 y FP32 estricto con optimizadores que solo registran gradientes, y exige que la regeneración en el mismo dispositivo repita bit a bit sus tres tramos. Su ensayo en CPU (`MARS_TITAN_REGENERATION_CHECK_DEVICE=cpu`) pasa con archivos idénticos byte a byte, lo que no acredita CUDA:
+
+```bash
+CUBLAS_WORKSPACE_CONFIG=:4096:8 MARS_TITAN_EPISODIC_NATIVE=<enlace> \
+  MARS_TITAN_REGENERATION_CHECK_REPORT=<informe.json> \
+  uv run --no-sync pytest -q tests/training/cuda_regeneration_check.py
+```
+
+La segunda se hará con la campaña ya ejecutada, sobre un trabajo de cada familia:
 
 ```bash
 CUBLAS_WORKSPACE_CONFIG=:4096:8 \
