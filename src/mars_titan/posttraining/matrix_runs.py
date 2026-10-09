@@ -167,6 +167,7 @@ class MatrixParent:
             self.rows = [row for row in rows[1:] if row["case"]["seed"] == seed]
             _require(self.rows, "La matriz no declara casos para la semilla del padre")
             self.budget = dict(
+                matrix_sha256=digest,
                 head=self.head,
                 updates_per_epoch=updates,
                 rows=[
@@ -174,6 +175,15 @@ class MatrixParent:
                 ],
                 excluded=adapter_matrix.excluded_controls(matrix, self.head),
             )
+            # El plan queda registrado antes del primer ajuste y no cambia al reanudar.
+            path = folder / "plan.json"
+            if path.exists():
+                _require(
+                    read_manifest(path, 4 * 1024**2)[0] == self.budget,
+                    "El plan de la matriz de este padre ha cambiado",
+                )
+            else:
+                atomic_json(path, self.budget)
         except BaseException:
             self.cache.close()
             raise

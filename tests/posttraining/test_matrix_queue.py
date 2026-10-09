@@ -137,6 +137,14 @@ def test_matrix_mode_runs_every_case_per_parent_and_seed_and_resumes(
     created = len(recorder.optimizers)
     assert queue.run_queue(*args, stop=stop)["status"] == "completed"
     assert len(recorder.optimizers) == created
+    # El plan de cada padre se registró antes del primer ajuste y no se reescribe.
+    plan = output / "parents/gru/seed-42/plan.json"
+    value = read_manifest(plan)[0]
+    assert value == summary["budgets"]["gru/seed-42"] and value["matrix_sha256"] == digest
+    value["rows"][1]["updates"] += 1
+    atomic_json(plan, value)
+    with pytest.raises(ValueError, match="plan"):
+        queue.run_queue(*args, stop=stop)
 
 
 def test_matrix_mode_keeps_the_objective_mode_separate(tmp_path, monkeypatch):
