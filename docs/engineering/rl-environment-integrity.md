@@ -141,7 +141,7 @@ La [edición de precios negociados reconstruidos](../data/unadjusted-prices.md) 
 
 ### Recibo de ventana walk-forward
 
-`environments/walk_forward_receipt.py` define el contrato que leerán los entornos. El orquestador de la campaña con máscaras escribirá un recibo por ventana y mercado. Los entornos no dependen de su código.
+`environments/walk_forward_receipt.py` define el contrato que leerán los entornos. El orquestador de la [campaña con máscaras](../research/training-campaign-2000.md#ejecución-y-recuperación) escribe un recibo por brazo, semilla, ventana y mercado con las funciones de este módulo. Los entornos no dependen de su código.
 
 | Campo | Contenido | Comprobación |
 | --- | --- | --- |
@@ -236,7 +236,7 @@ MARS_TITAN_UNADJUSTED_EDITION=~/.local/state/mars-titan/unadjusted-prices-202610
 | Precios sin ajustar, splits, dividendos y bajas | Una cinta con precios ajustados y splits declarados crearía saltos falsos de patrimonio | La tercera fase construye la cinta desde la edición reconstruida, solo con filas verificadas y acciones del proveedor declaradas como incompletas. Las bajas siguen sin datos |
 | Retornos de salida de activos dados de baja | Sin ellos, las bajas aparecen como cierres ausentes y las fuentes de ajuste se rechazan | Pendiente. La cinta reconstruida lo declara y excluye las series que terminan dentro de ella |
 | Calendario de aperturas | La ejecución depende de `open_times` reales | Cubierto en la tercera fase con las aperturas oficiales de XNYS y XSHG |
-| Predicciones fuera de muestra | La cinta real exige `prediction_fit_ends` | Contrato del recibo definido en la tercera fase. Faltan los recibos reales de la campaña |
+| Predicciones fuera de muestra | La cinta real exige `prediction_fit_ends` | Contrato del recibo definido en la tercera fase y escrito por el orquestador de la campaña. Faltan los recibos reales, porque la campaña no se ha ejecutado |
 | Supervivencia | La población preparada apenas contiene bajas | Incorporar listas históricas de cotizadas y bajas con retornos de salida, o declarar los resultados como condicionados a sobrevivir hasta 2023 |
 | Estado ST y salidas a bolsa | Cambian la banda diaria de un activo | Incorporar el historial de advertencias de riesgo y fechas de admisión con su fuente |
 | Codificadores congelados | Su preentrenamiento puede ser posterior a la decisión | Registrar la fecha de corte de cada codificador y contrastar con la modalidad enmascarada |
