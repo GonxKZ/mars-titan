@@ -6,7 +6,14 @@ refinamiento y las diferencias finitas en FP64. No construyen optimizadores.
 
 import pytest
 import torch
-from test_episodic_readout_fixed_episodes import random_reader, random_snapshot
+from test_episodic_readout_fixed_episodes import (
+    random_reader,
+    random_snapshot,
+    reader,
+    reselecting,
+    snapshot,
+    start,
+)
 from test_local_control import evaluate, fixture
 from torch.nn.attention import SDPBackend, sdpa_kernel
 
@@ -129,6 +136,29 @@ def test_each_refinement_operator_is_identity_plus_gate_times_the_state_derivati
     with torch.no_grad():
         result = model(base, snapshot, context_id=CONTEXT, cutoff=10)
     torch.testing.assert_close(state, result.state, rtol=0, atol=0)
+
+
+def test_first_read_keeps_its_episodes_where_a_new_search_would_change_them():
+    """El segundo paso de first_read deriva con el episodio del primero, no con el nuevo."""
+    models = {}
+    for mode in ("per_step", "first_read"):
+        models[mode] = reader(neighbors=1, refinements=2, episode_selection=mode)
+        reselecting(models[mode])
+        with torch.no_grad():
+            noise = torch.randn(
+                models[mode].refinement.weight.shape,
+                generator=torch.Generator().manual_seed(4),
+                dtype=torch.float64,
+            )
+            models[mode].refinement.weight.add_(0.05 * noise)
+    data, options = snapshot(3), dict(context_id=CONTEXT, cutoff=10)
+    with torch.no_grad():
+        reads = {mode: model(start(), data, **options).reads for mode, model in models.items()}
+    assert [r.ids.item() for r in reads["per_step"]] == [10, 20]
+    assert [r.ids.item() for r in reads["first_read"]] == [10, 10]
+    moved, kept = (refinement_jacobians(models[m], start(), data, **options) for m in models)
+    torch.testing.assert_close(moved[0], kept[0], rtol=0, atol=0)
+    assert not torch.allclose(moved[1], kept[1], rtol=1e-6, atol=1e-9)
 
 
 def test_refinement_without_episodes_still_has_the_gated_residual_form():

@@ -83,7 +83,8 @@ def refinement_jacobians(readout, z_base, snapshot=None, *, context_id=None, cut
     """J_k = ∂z_{k+1}/∂z_k de cada refinamiento de una fila, con base y episodios fijos.
 
     En `per_step` cada paso usa los episodios que elige en su estado. En `first_read`
-    todos usan los del primer paso, como `EpisodicReadout.forward`.
+    todos usan los del primer paso, como `EpisodicReadout.forward`: a partir del segundo,
+    la lectura se restringe a esas posiciones y las devuelve.
     """
     # El lector importa el predictor y este el control C, que usa este módulo.
     from .episodic_readout import EpisodicReadout
@@ -101,9 +102,8 @@ def refinement_jacobians(readout, z_base, snapshot=None, *, context_id=None, cut
             _, chosen = readout._read(state, snapshot, context_id, cutoff, first)
         if fixed and first is None:
             first = chosen
-        positions = first if fixed else chosen
 
-        def step(value, positions=positions):
+        def step(value, positions=chosen):
             read, _ = readout._read(value, snapshot, context_id, cutoff, positions)
             return readout.refine(value, base, read)
 
