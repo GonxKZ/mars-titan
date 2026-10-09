@@ -371,10 +371,15 @@ def _digest(value):
     return hashlib.sha256(json.dumps(value, sort_keys=True).encode()).hexdigest()
 
 
-def _base_receipts(base, campaign, stage):
-    """Confirmar los trabajos base de los ámbitos de la etapa, en el orden del plan."""
+def _base_receipts(base, campaign, stage, pairs=None):
+    """Confirmar los trabajos base de los ámbitos de la etapa, en el orden del plan.
+
+    `pairs` limita la confirmación a esos pares (ámbito, ventana) al ejecutar una ventana.
+    """
     for job in plan_campaign(campaign):
         if job["scope"] not in stage["scopes"]:
+            continue
+        if pairs is not None and (job["scope"], job["window"]) not in pairs:
             continue
         case, _, sources = base.resolve(job)
         receipt = base.confirmed(job, base.job_identity(job, case, sources))
@@ -593,7 +598,7 @@ def _gpu_lease():
     return GpuLease()
 
 
-def _opened(path, views, campaign_output, output):
+def _opened(path, views, campaign_output, output, pairs=None):
     """Etapa, campaña base confirmada y destino comprobados, sin crear nada."""
     stage = load_stage(path)
     campaign = stage["campaign"]
@@ -608,7 +613,7 @@ def _opened(path, views, campaign_output, output):
         outside_source(protected, output)
         outside_source(output, protected)
     _, base = masked_campaign._confirmed_state(campaign["path"], views, campaign_output)
-    _base_receipts(base, campaign, stage)
+    _base_receipts(base, campaign, stage, pairs)
     return stage, base, output
 
 
@@ -664,13 +669,25 @@ def run_stage(path, views, campaign_output, output, *, executors=None, lease=Non
         os.close(descriptor)
 
 
-def write_sources(path, views, campaign_output, output, scope, *, comparison_path=None):
+def write_sources(
+    path, views, campaign_output, output, scope, *, comparison_path=None, window=None
+):
     """Escribir el manifiesto de predicciones enmascaradas de un ámbito y validarlo.
 
     Sin `comparison_path` se valida con la comparación de la campaña. Una comparación con
     un subconjunto de brazos publica solo esos brazos, como `masked_campaign.write_sources`.
+    Con `window` se publica solo esa ventana en `sources/windows/<ventana>/`.
     """
-    stage, base, output = _opened(path, views, campaign_output, output)
+    pairs = None
+    if window is not None:
+        # La ventana y los anclas de los que parten sus predicciones enmascaradas.
+        planned = [
+            job
+            for job in plan_stage(load_stage(path))
+            if (job["scope"], job["window"]) == (scope, window)
+        ]
+        pairs = {(scope, name) for job in planned for name in (job["window"], job["anchor"])}
+    stage, base, output = _opened(path, views, campaign_output, output, pairs)
     _require(scope in stage["scopes"], "El ámbito no pertenece a la etapa")
     identity = _identity(stage, base.views)
     _require(
@@ -681,6 +698,8 @@ def write_sources(path, views, campaign_output, output, scope, *, comparison_pat
     validation = comparison.load_config(
         Path(comparison_path or stage["campaign"]["comparison_path"]).resolve()
     )
+    if window is not None:
+        validation = comparison.restrict_windows(validation, scope, [window])
     _require(
         validation.get(comparison.ABLATION_FIELD) == stage["declaration"],
         "La comparación de validación no declara la misma ablación",
@@ -696,9 +715,11 @@ def write_sources(path, views, campaign_output, output, scope, *, comparison_pat
     state = _Stage(stage, base, output, identity, EXECUTORS, None)
     windows = base.views[scope]["windows"]
     folder = output / "sources"
+    if window is not None:
+        windows, folder = {window: windows[window]}, folder / "windows" / window
     variants = {}
     for job in plan_stage(stage):
-        if job["scope"] != scope or job["arm"] not in wanted:
+        if job["scope"] != scope or job["arm"] not in wanted or job["window"] not in windows:
             continue
         _require(
             job["seed"] in wanted[job["arm"]]["seeds"],

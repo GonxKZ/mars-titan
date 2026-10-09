@@ -917,18 +917,34 @@ def _confirmed_state(path, views, output):
     return campaign, _Campaign(campaign, checked, Path(output), identity, EXECUTORS, None)
 
 
-def write_sources(path, views, output, scope, *, comparison_path=None):
+def with_dependencies(jobs, wanted):
+    """Trabajos pedidos y sus dependencias, en el orden del plan."""
+    by_id = {job["id"]: job for job in jobs}
+    wanted, pending = set(wanted), list(wanted)
+    while pending:
+        for dependency in by_id[pending.pop()]["depends"]:
+            if dependency not in wanted:
+                wanted.add(dependency)
+                pending.append(dependency)
+    return [job for job in jobs if job["id"] in wanted]
+
+
+def write_sources(path, views, output, scope, *, comparison_path=None, window=None):
     """Escribir el manifiesto de fuentes de un ámbito y validarlo con la comparación.
 
     Sin `comparison_path` se valida con la comparación de la campaña, que incluye los
     brazos de las familias sin entrenador conectado. Una comparación declarada con un
-    subconjunto de brazos permite evaluar los brazos ya producidos.
+    subconjunto de brazos permite evaluar los brazos ya producidos. Con `window` se
+    publica solo esa ventana en `sources/windows/<ventana>/`, validada con la comparación
+    limitada a ella, para guardar sus agregados en cuanto termina.
     """
     campaign, state = _confirmed_state(path, views, output)
     _require(scope in campaign["scopes"], "El ámbito no pertenece a la campaña")
     validation = comparison.load_config(
         Path(comparison_path or campaign["comparison_path"]).resolve()
     )
+    if window is not None:
+        validation = comparison.restrict_windows(validation, scope, [window])
     produced = {spec["arm"]: spec for spec in _arm_specs(campaign)}
     wanted = {
         name: arm for name, arm in validation["arms"].items() if arm["output"] != "zero_control"
@@ -940,6 +956,10 @@ def write_sources(path, views, output, scope, *, comparison_path=None):
         "brazos disponibles o conecta su entrenador",
     )
     jobs = [job for job in plan_campaign(campaign) if job["scope"] == scope]
+    if window is not None:
+        jobs = with_dependencies(
+            plan_campaign(campaign), [job["id"] for job in jobs if job["window"] == window]
+        )
     for job in jobs:
         case, _, sources = state.resolve(job)
         receipt = state.confirmed(job, state.job_identity(job, case, sources))
@@ -947,6 +967,8 @@ def write_sources(path, views, output, scope, *, comparison_path=None):
         state.receipts[job["id"]] = receipt
     windows = state.views[scope]["windows"]
     folder = Path(output) / "sources"
+    if window is not None:
+        windows, folder = {window: windows[window]}, folder / "windows" / window
     arms, rows = {}, {}
     for name, arm in wanted.items():
         _require(

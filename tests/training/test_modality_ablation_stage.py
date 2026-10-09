@@ -397,6 +397,46 @@ def test_sources_feed_the_comparison_with_the_original_calibrators(base, staged,
         assert summary["calibrated_reason"] == "Alguna ventana no tiene calibrador"
 
 
+def test_one_window_sources_give_the_same_report_through_window_aggregates(base, staged, tmp_path):
+    """Cada ventana se puntúa en cuanto termina y el informe final no abre ninguna fila."""
+    from mars_titan.evaluation import window_aggregates
+
+    volatile = {"created_at_utc", "resources", "sources_sha256"}
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setenv(HOLD_ENV, str(base.hold))
+        config = comparison.load_config(base.comparison)
+        windows = list(config["resolved_scopes"]["US"]["windows"])
+        for window in windows:
+            primary = engine.write_sources(
+                base.campaign, base.views, base.output, "US", window=window
+            )
+            masked = ablation.write_sources(
+                base.stage, base.views, base.output, staged.output, "US", window=window
+            )
+            assert primary.parent.name == window == masked.parent.name
+            restricted = comparison.restrict_windows(config, "US", [window])
+            sources = comparison.load_sources(primary, restricted, "US")
+            assert list(sources["windows"]) == [window]
+            ablated = comparison._ablation_sources(masked, restricted, sources)
+            window_aggregates.write(tmp_path / "aggregates", restricted, sources, window, ablated)
+        masked = ablation.write_sources(base.stage, base.views, base.output, staged.output, "US")
+        primary = engine.write_sources(base.campaign, base.views, base.output, "US")
+    expected, sessions = comparison.evaluate_walk_forward(
+        base.comparison, primary, "US", ablation_sources=masked
+    )
+    report, from_aggregates = comparison.evaluate_walk_forward(
+        base.comparison,
+        primary,
+        "US",
+        ablation_sources=masked,
+        aggregates=tmp_path / "aggregates",
+    )
+    assert {k: v for k, v in report.items() if k not in volatile} == {
+        k: v for k, v in expected.items() if k not in volatile
+    }
+    assert from_aggregates.equals(sessions)
+
+
 class Counting(torch.optim.Optimizer):
     """Optimizador que solo cuenta llamadas: nunca modifica los pesos."""
 

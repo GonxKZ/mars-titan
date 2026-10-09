@@ -510,6 +510,23 @@ def load_sources(path, config, scope_name):
     )
 
 
+def restrict_windows(config, scope, windows):
+    """La configuración validada con un ámbito limitado a algunas de sus ventanas.
+
+    Conserva la huella de la configuración, porque declara lo mismo. Sirve para validar y
+    puntuar las fuentes de una ventana en cuanto termina, antes de tener las demás.
+    """
+    resolved = config["resolved_scopes"][scope]
+    windows = set(windows)
+    _require(
+        windows and windows <= set(resolved["windows"]),
+        "Las ventanas deben ser del ámbito declarado",
+    )
+    kept = {key: value for key, value in resolved["windows"].items() if key in windows}
+    scopes = dict(config["resolved_scopes"], **{scope: dict(resolved, windows=kept)})
+    return dict(config, resolved_scopes=scopes)
+
+
 def _read_predictions(file, columns):
     """Leer solo las columnas necesarias después de comprobar huella y tipos.
 
@@ -1197,12 +1214,16 @@ def _strata_report(config, scored, overall, markets):
     )
 
 
-def evaluate_walk_forward(config_path, sources_path, scope, *, ablation_sources=None):
+def evaluate_walk_forward(
+    config_path, sources_path, scope, *, ablation_sources=None, aggregates=None
+):
     """Calcular el informe y la tabla por sesión de un ámbito sin escribir nada.
 
     `config_path` es la ruta de la configuración o una configuración ya validada.
     `ablation_sources` es el manifiesto de la etapa de ablación de modalidades. Solo se
-    admite si la configuración declara la ablación.
+    admite si la configuración declara la ablación. `aggregates` es la carpeta de los
+    agregados por ventana (`window_aggregates`) que guardó la retención v2. Con ella no se
+    lee ninguna predicción por fila, y cada ventana exige agregados de estas mismas fuentes.
     """
     started = time.perf_counter()
     config = resolve_config(config_path)
@@ -1212,9 +1233,18 @@ def evaluate_walk_forward(config_path, sources_path, scope, *, ablation_sources=
     if ablation_sources is not None:
         _require(ABLATION_FIELD in config, "La configuración no declara la ablación de modalidades")
         ablation = _ablation_sources(ablation_sources, config, sources)
-    scored = {
-        window: _score_window(sources, config, window, ablation) for window in sources["windows"]
-    }
+    if aggregates is None:
+        scored = {
+            window: _score_window(sources, config, window, ablation)
+            for window in sources["windows"]
+        }
+    else:
+        from . import window_aggregates
+
+        scored = {
+            window: window_aggregates.read(aggregates, config, sources, window, ablation)
+            for window in sources["windows"]
+        }
     per_window = {window: results for window, (results, _) in scored.items()}
     overall, calibrated, arms, tables = {}, {}, {}, []
     for arm, seed in per_window[next(iter(per_window))]:
@@ -1317,7 +1347,9 @@ def evaluate_walk_forward(config_path, sources_path, scope, *, ablation_sources=
     return report, pa.concat_tables(tables, promote_options="default")
 
 
-def write_walk_forward(config_path, sources_path, scope, output, *, ablation_sources=None):
+def write_walk_forward(
+    config_path, sources_path, scope, output, *, ablation_sources=None, aggregates=None
+):
     """Publicar el informe y las sesiones en un directorio nuevo fuera de las fuentes."""
     output = Path(output)
     safe_destination(output)
@@ -1329,7 +1361,7 @@ def write_walk_forward(config_path, sources_path, scope, output, *, ablation_sou
         outside_source(source, output)
         outside_source(output, source)
     report, sessions = evaluate_walk_forward(
-        config_path, sources_path, scope, ablation_sources=ablation_sources
+        config_path, sources_path, scope, ablation_sources=ablation_sources, aggregates=aggregates
     )
     json.dumps(report, allow_nan=False)
     output.mkdir(parents=True)
@@ -1346,9 +1378,15 @@ def main(argv=None):
     parser.add_argument("--scope", choices=tuple(SCOPES), required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--ablation-sources", type=Path)
+    parser.add_argument("--aggregates", type=Path, help="Agregados por ventana de la retención v2")
     args = parser.parse_args(argv)
     report = write_walk_forward(
-        args.config, args.sources, args.scope, args.output, ablation_sources=args.ablation_sources
+        args.config,
+        args.sources,
+        args.scope,
+        args.output,
+        ablation_sources=args.ablation_sources,
+        aggregates=args.aggregates,
     )
     windows = len(report["windows"])
     print(f"Comparados {len(report['arms'])} brazos en {windows} ventanas. Reserva final cerrada.")
