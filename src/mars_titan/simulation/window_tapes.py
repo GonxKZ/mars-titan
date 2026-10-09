@@ -14,12 +14,13 @@ cinta de evaluación excluye deja esa evaluación como fallida, sin cambiar el u
 información posterior.
 """
 
+from pathlib import Path
+
 import numpy as np
 import pyarrow as pa
-import pyarrow.parquet as pq
 
-from mars_titan.data.storage import sha256
 from mars_titan.environments.walk_forward_receipt import WalkForwardWindow
+from mars_titan.evaluation import walk_forward_comparison as comparison
 
 from .reconstructed_tape import build_reconstructed_tape
 
@@ -93,15 +94,13 @@ def policy_schedule(rows, period, folds):
 
 
 def segment_predictions(path, digest, market):
-    """Puntuaciones emitidas de un mercado: instante, activo y mediana, con su huella."""
-    _require(sha256(path) == digest, f"Las predicciones de {path.name} han cambiado")
-    table = pq.read_table(
-        path, columns=["asset_id", "market", "prediction_at", "prediction"], use_threads=False
-    )
-    _require(
-        table["prediction_at"].type == pa.timestamp("us", tz="UTC")
-        and all(table[name].null_count == 0 for name in table.column_names),
-        "Las predicciones necesitan instantes UTC y valores completos",
+    """Puntuaciones emitidas de un mercado: instante, activo y mediana, con su huella.
+
+    Se leen con el lector de la comparación, que comprueba huella, tipos y ausencias, para
+    que un cambio del formato de las predicciones toque un único punto.
+    """
+    table = comparison._read_predictions(
+        dict(path=Path(path), sha256=digest), ("asset_id", "market", "prediction_at", "prediction")
     )
     rows = table["market"].to_numpy(zero_copy_only=False).astype(str) == market
     return dict(
