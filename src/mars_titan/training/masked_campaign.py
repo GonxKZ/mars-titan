@@ -1021,13 +1021,13 @@ def _execute(state, jobs, pool, execution):
                 admission.release(entry.resources)
                 paused = True
                 continue
-            except BaseException as error:  # noqa: BLE001 - se lanza tras drenar
+            except BaseException as error:  # Se lanza al terminar los demás trabajos.
                 admission.release(entry.resources)
                 failure = failure or error
                 continue
             try:
                 finish(entry, report)
-            except BaseException as error:  # noqa: BLE001
+            except BaseException as error:
                 failure = failure or error
         for handle in handles:
             result = handle.poll()
@@ -1040,7 +1040,7 @@ def _execute(state, jobs, pool, execution):
             if status == "completed":
                 try:
                     finish(entry, value)
-                except BaseException as error:  # noqa: BLE001
+                except BaseException as error:
                     failure = failure or error
             else:
                 admission.release(entry.resources)

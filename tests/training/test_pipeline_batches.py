@@ -80,7 +80,7 @@ def reference_reader():
     module = types.ModuleType("mars_titan.training._reader_before_pipeline")
     module.__package__ = "mars_titan.training"
     module.__file__ = f"{REFERENCE}:corpus_inputs.py"
-    exec(compile(source, module.__file__, "exec"), module.__dict__)  # noqa: S102
+    exec(compile(source, module.__file__, "exec"), module.__dict__)
     return module.CorpusDataset
 
 

@@ -198,16 +198,20 @@ def test_pool_admits_by_slots_vram_and_host_memory():
     pool.acquire(large)
     assert pool.admits(small) and not pool.admits(large)
     pool.acquire(small)
-    assert not pool.admits(small)  # sin ranuras
+    # Las dos ranuras GPU ya están ocupadas.
+    assert not pool.admits(small)
     cpu = JobResources("cpu", 0, 5 * GIB)
     assert pool.admits(cpu)
     pool.acquire(cpu)
-    assert not pool.admits(JobResources("cpu", 0, GIB))  # sin trabajadores CPU
+    # El único trabajador CPU ya está ocupado.
+    assert not pool.admits(JobResources("cpu", 0, GIB))
     pool.release(small)
-    assert not pool.admits(JobResources("cuda", GIB, 4 * GIB))  # RAM declarada: 7 + 4 > 10
+    # La RAM declarada en curso (7 GiB) más la nueva (4 GiB) supera los 10 GiB.
+    assert not pool.admits(JobResources("cuda", GIB, 4 * GIB))
     assert pool.admits(JobResources("cuda", GIB, GIB))
     free[0] = GIB + GIB // 2
-    assert not pool.admits(JobResources("cuda", GIB, GIB))  # sin la reserva del anfitrión
+    # La memoria disponible ya no cubre la reserva del anfitrión.
+    assert not pool.admits(JobResources("cuda", GIB, GIB))
 
 
 def write_execution(path, **changes):
@@ -346,7 +350,8 @@ def test_estimates_follow_the_observed_peak_within_the_budget(tmp_path):
     estimates = PeakEstimates(execution, path)
     assert estimates.resources(job, "cuda").vram_bytes == 1024 * MIB
     estimates.observe(job, dict(peak_vram_reserved_bytes=256 * MIB))
-    assert estimates.resources(job, "cuda").vram_bytes == 1024 * MIB  # nunca baja
+    # Un pico menor que lo declarado no baja la estimación.
+    assert estimates.resources(job, "cuda").vram_bytes == 1024 * MIB
     estimates.observe(job, dict(peak_vram_reserved_bytes=1536 * MIB))
     expected = (1536 + CONTEXT_MIB) * MIB
     assert PeakEstimates(execution, path).resources(job, "cuda").vram_bytes == expected
@@ -354,7 +359,8 @@ def test_estimates_follow_the_observed_peak_within_the_budget(tmp_path):
     for _ in range(MAX_OOM_RETRIES):
         assert estimates.grow(job, current)
         current = estimates.resources(job, "cuda")
-    assert current.vram_bytes == 4096 * MIB  # sin pasar del presupuesto
+    # La estimación crece hasta el presupuesto y no lo supera.
+    assert current.vram_bytes == 4096 * MIB
     assert not estimates.grow(job, current)
 
 

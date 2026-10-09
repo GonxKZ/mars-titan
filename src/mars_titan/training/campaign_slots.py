@@ -25,7 +25,8 @@ from pathlib import Path
 
 from .campaign_resources import CONTEXT_MIB, MIB
 
-PDEATHSIG = 1  # PR_SET_PDEATHSIG
+# Opción PR_SET_PDEATHSIG de prctl: el núcleo avisa al hijo cuando muere su padre.
+PDEATHSIG = 1
 _CONTEXT = multiprocessing.get_context("spawn")
 MPS_SERVER = "nvidia-cuda-mps-server"
 
@@ -55,7 +56,7 @@ class SlotTask:
 def _die_with_parent():
     try:
         libc = ctypes.CDLL("libc.so.6", use_errno=True)
-    except OSError:  # pragma: no cover - solo Linux
+    except OSError:  # pragma: no cover (solo existe en Linux)
         return
     libc.prctl(PDEATHSIG, signal.SIGKILL)
 
@@ -134,7 +135,7 @@ def slot_main(connection, task, event):
             connection.send(("paused", None, _usage()))
             return
         connection.send(("completed", report, _usage()))
-    except BaseException as error:  # noqa: BLE001 - se informa a la campaña
+    except BaseException as error:  # Cualquier fallo se informa a la campaña.
         connection.send(
             ("failed", dict(type=type(error).__name__, message=str(error)), _usage())
             + (traceback.format_exc(),)
@@ -155,7 +156,7 @@ def _usage():
         if torch.cuda.is_initialized():
             usage["peak_vram_allocated_bytes"] = torch.cuda.max_memory_allocated(0)
             usage["peak_vram_reserved_bytes"] = torch.cuda.max_memory_reserved(0)
-    except ImportError:  # pragma: no cover - PyTorch siempre está en el entorno
+    except ImportError:  # pragma: no cover (PyTorch siempre está en el entorno)
         pass
     return usage
 
