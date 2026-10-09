@@ -312,10 +312,19 @@ void bind_cohorts(py::module_& module) {
 }
 } // namespace
 
+#ifdef MARS_TITAN_CANDIDATE_PYTHON
+namespace mars_titan::candidate {
+void bind_candidate(py::module_& module);
+}
+#endif
+
 PYBIND11_MODULE(_episodic_native, module) {
     module.doc() = "Banco CPU y ejecución de cohortes con una sola publicación confirmada";
     module.attr("abi_version") = 1;
     module.attr("torch_version") = MARS_TITAN_EPISODIC_TORCH_VERSION;
+#ifdef MARS_TITAN_CANDIDATE_PYTHON
+    mars_titan::candidate::bind_candidate(module);
+#endif
     module.def("require_safe_path",
                [](const std::string& path) { mars_titan::simulation::require_safe_path(path); });
     module.def("seal_blob", [](const std::string& directory, std::size_t maximum,
