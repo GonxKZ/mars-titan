@@ -2,7 +2,7 @@
   "schema_version": 1,
   "recipe_name": "candidate_gru_chronological_v1",
   "status": "propuesta_sin_ejecutar",
-  "arm": "candidate_gru_episodic",
+  "arm": "gru_episodic",
   "protocol": "../evaluation/historical-masked-us-walk-forward-v2.json",
   "model": {
     "input_policy": "historical_masked_2000_v1",
