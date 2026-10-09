@@ -298,12 +298,12 @@ class NativePolicyExecutor:
     def anchor_run(job, folder, anchor):
         """Ajuste del ancla: la etapa guarda su carpeta relativa a la salida."""
         parts = PurePosixPath(job["id"]).parts
-        root = folder.parents[len(parts) + 1]
         _require(
-            root / "jobs" / job["id"] / "run" == folder
+            folder.parts[-len(parts) - 2 :] == ("jobs", *parts, "run")
             and PurePosixPath(anchor["run"]).parts[0] == "jobs",
             "El traslado no encuentra la salida de la etapa",
         )
+        root = folder.parents[len(parts) + 1]
         fit = root / anchor["run"] / "fit"
         _require((fit / "run.json").is_file(), f"{job['id']}: falta el ajuste de su ancla")
         return fit
