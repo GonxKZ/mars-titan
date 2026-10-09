@@ -449,6 +449,24 @@ def test_new_rows_count_only_targets_inside_the_span_with_mature_labels(tmp_path
     assert rows["fold-001"] == 2 and sum(rows.values()) == 2
 
 
+def test_declared_new_rows_cover_every_window_with_a_parent_and_add_up_by_market(tmp_path):
+    value = campaign()
+    report = Path("reports/data/campaign-a-v2-window-counts-20261009.json")
+    fresh = budget.read_posttraining_rows(report, value)
+    counts, _ = budget.read_counts(report, value)
+    joint, us, cn = fresh[JOINT], fresh["US"], fresh["CN"]
+    assert list(joint) == [w for w, _ in chain.scope_windows(value, JOINT)][1:]
+    # El conjunto suma US y, desde fold-007, la ventana CN con los mismos tramos.
+    assert joint["fold-001"] == us["fold-001"]
+    assert [joint[w] - us[w] for w in list(joint)[6:]] == list(cn.values())
+    assert all(fresh[s][w] < counts[s][w]["train"] for s in fresh for w in fresh[s])
+    document = json.loads(report.read_text())
+    document["posttraining_rows"]["CN"].pop("fold-012")
+    atomic_json(tmp_path / "counts.json", document)
+    with pytest.raises(ValueError, match="filas nuevas de cada ventana"):
+        budget.read_posttraining_rows(tmp_path / "counts.json", value)
+
+
 def test_staged_adapters_fit_only_new_rows_and_skip_the_first_window():
     from mars_titan.posttraining import campaign_stage as adapters
 
