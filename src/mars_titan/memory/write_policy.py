@@ -7,6 +7,8 @@ import struct
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
+from . import native_memory_archive
+
 _ROLES = ("reservoir", "selective", "recent")
 _CODE = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
 _MAX_ARCHIVE = 2 * 1024**2
@@ -112,6 +114,9 @@ class MatureErrorBank:
             native_torch_version=native.torch_version,
             native_schema_version=2,
             code_sha256=_CODE,
+            archive_validation_sha256=hashlib.sha256(
+                Path(native_memory_archive.__file__).read_bytes()
+            ).hexdigest(),
             reservoir="native_v2_mt19937_64_seed_only",
             score="absolute_emitted_mature_error_fp64",
             selection="highest_score_then_lowest_mature_ordinal",
@@ -120,7 +125,7 @@ class MatureErrorBank:
             key_width=64,
             value_width=64,
             duplicate_storage="physical_slots_counted_union_checked_bitwise",
-            budget_version=1,
+            budget_version=2,
         )
         self._identity_json = _canonical(identity)
         self._indices = {}
@@ -348,6 +353,15 @@ class MatureErrorBank:
             raise ValueError("El snapshot no corresponde al contrato compuesto de M2")
         if payload["receipt"] is not None:
             self._check_receipt_shape(payload["receipt"])
+        # Reservar las copias codificadas y dos materializaciones de los storages.
+        available = (
+            self.config.max_working_bytes
+            - self.estimated_bytes(0)
+            - sum(map(len, payload["indices"].values()))
+        )
+        native_memory_archive.verify_memory_archives(
+            payload["indices"], self.config.quotas, max_expanded_bytes=max(available // 2, 0)
+        )
         candidate = self._new()
         for role in _ROLES:
             candidate._indices[role].restore_bytes(payload["indices"][role])
