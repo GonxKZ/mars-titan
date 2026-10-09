@@ -73,6 +73,15 @@ TITANS_RECIPE = "titans_financial_chronological_v1"
 TITANS_SEARCHED = ("learning_rate", "max_grad_norm")
 FIT, CARRY = "fit", "carry"
 ONLINE = campaign_online_controls.ONLINE
+# Campañas declaradas del repositorio que se conservan para contar y comprobar, pero no se
+# lanzan. Las copias de las pruebas, en otras rutas, siguen ejercitando su código.
+RETIRED = {
+    "configs/baselines/historical-masked-campaign-b.json": (
+        "La campaña está retirada: la variante B (reentreno cada 36 meses con traslados) no "
+        "se ejecuta por decisión del autor del 9 de octubre de 2026. Se conserva para contar "
+        "y comprobar"
+    ),
+}
 # GRU candidata con banco episódico. Repite candidate_run.RECIPE sin importar PyTorch.
 EPISODIC = "episodic_gru"
 CANDIDATE_RECIPE = "candidate_gru_chronological_v1"
@@ -831,12 +840,22 @@ def _memory_options(declared, campaign):
 
 
 def launch_blockers(campaign):
-    """Motivos que impiden lanzar la campaña aunque su plan sea válido."""
+    """Motivos que impiden lanzar la campaña aunque su plan sea válido.
+
+    Una campaña retirada del repositorio, como la variante B declarada, se conserva para
+    contar y comprobar, pero no se ejecuta.
+    """
     blockers = [
         f"{family}.{option} sigue pendiente de la medida de memoria en cuda:0"
         for family, options in (campaign.get("memory_options") or {}).items()
         for option, value in options.items()
         if value == PENDING
+    ]
+    repository = Path(__file__).resolve().parents[3]
+    blockers += [
+        reason
+        for relative, reason in RETIRED.items()
+        if Path(campaign["path"]) == (repository / relative).resolve()
     ]
     return blockers + campaign_online_controls.blockers(campaign)
 

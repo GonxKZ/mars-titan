@@ -14,7 +14,8 @@ from mars_titan.training import campaign_chain as chain
 from mars_titan.training import campaign_online_controls as online
 from mars_titan.training import campaign_plan as plan
 from mars_titan.training import campaign_schedule as order
-from tests.training.test_campaign_a_joint import CAMPAIGN, edited
+from mars_titan.training import masked_campaign as engine
+from tests.training.test_campaign_a_joint import CAMPAIGN, CONFIGS, edited
 
 JOINT = "US+CN"
 
@@ -393,3 +394,14 @@ def test_the_online_rule_blocks_the_launch_until_every_value_is_declared(tmp_pat
 
     loaded = plan.load_campaign(edited(tmp_path, declared))
     assert not [r for r in plan.launch_blockers(loaded) if r.startswith(online.ARM)]
+
+
+def test_variant_b_is_counted_but_never_launched(tmp_path, learning_doubles):
+    path = CONFIGS / "baselines/historical-masked-campaign-b.json"
+    report = plan.check_campaign(path)
+    assert report["launch_blockers"] == [plan.RETIRED[str(path)]]
+    assert report["counts"]["training_jobs"] > 0 and report["counts"]["prediction_jobs"] > 0
+    assert plan.RETIRED[str(path)] not in plan.launch_blockers(campaign())
+    with pytest.raises(ValueError, match="no se puede lanzar"):
+        engine.run_campaign(path, {}, tmp_path / "out")
+    assert not (tmp_path / "out").exists()
