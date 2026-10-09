@@ -19,6 +19,8 @@ REASONS = {1: "missing_open", 2: "unknown_liquidity", 3: "cash_liquidity_or_lot_
 class NativePortfolio:
     def __init__(self, instruments, cash, *, cost_bps=10, participation=0.01, library=None):
         self._schema = Portfolio(instruments, cash, cost_bps=cost_bps, participation=participation)
+        if any(instrument.restricted for instrument in self._schema.instruments.values()):
+            raise ValueError("El núcleo nativo todavía no aplica lotes, límites ni impuestos")
         if len(cash) > 32:
             raise ValueError("El núcleo nativo admite como máximo 32 cuentas")
         self.library = load_library(library)

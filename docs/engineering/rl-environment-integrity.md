@@ -36,17 +36,19 @@ La columna de estado combina cinco situaciones. «Corregido» indica un defecto 
 | Apalancamiento y cortos | Financiero | Comprobado | Efectivo y posiciones no negativos y exposición acotada por el patrimonio en secuencias aleatorias |
 | Acciones NaN, flotantes, booleanas o fuera de rango | Predictivo y financiero | Corregido y comprobado | Fallan antes de la transición. Un entero mayor que int64 lanzaba `OverflowError` y ahora lanza `ValueError` |
 | Recompensa por terminar o reiniciar | Financiero | Comprobado | La suma de recompensas coincide con el logaritmo del patrimonio final entre el inicial y un reinicio no arrastra estado |
-| Coste de salida no pagado al final | Financiero, Python y nativo | Limitación, informada | La valoración final no liquida. La evaluación Python añade una estimación separada. La selección nativa sigue sin ella |
-| Cierre ausente de una posición | Financiero, Python y nativo | Limitación y pendiente | La transición es inválida y se excluye del objetivo. La validación nativa falla si ocurre. Las cintas sintéticas no tienen cierres ausentes |
+| Coste de salida no pagado al final | Financiero, Python y nativo | Corregido con métrica declarada | La evaluación Python añade una estimación separada. La selección nativa admite `ruin_count_then_mean_liquidated_log_growth`. La métrica anterior se conserva para las configuraciones existentes |
+| Cierre ausente de una posición | Financiero, Python y nativo | Corregido y pendiente | Las fuentes de ajuste con cierres ausentes se rechazan en ambos entrenadores. La evaluación lo marca como incompleto y la validación nativa falla. Las bajas reales necesitan su retorno de salida |
 | Acción corporativa antes de la primera decisión | Financiero | Corregido | Python la ignoraba y la sesión nativa la aplicaba. La cinta la rechaza |
 | Predicciones dentro de muestra en cintas históricas | Financiero | Corregido y pendiente | Una cinta real exige el fin de ajuste de cada sesión, anterior a su decisión |
 | Orden de activos e índice del lote | Todos | Comprobado | Los activos se ordenan por identificador. Las permutaciones conservan resultados y el índice del lote no entra en la observación |
-| RNG compartido entre ajuste y evaluación | Python y nativo | Limitación | Los entornos no usan RNG. La evaluación es `argmax`. El RNG del entrenador Python reproduce el flujo del generador del mundo cuando coinciden las semillas |
+| RNG compartido entre ajuste y evaluación | Python y nativo | Corregido | Los entornos no usan RNG y la evaluación es `argmax`. El entrenador Python deriva su flujo de `SeedSequence(seed).spawn` y ya no repite el del generador del mundo |
 | Solapamiento de episodios de ajuste y validación | Cintas sintéticas | Comprobado por lectura | Las semillas, huellas y particiones separadas se exigen en los ejecutores. `generate_world` solo usa la semilla |
-| Supervivencia | Real | Pendiente | Depende de que el corpus conserve activos dados de baja y sus retornos de salida |
-| Selección con episodios fallidos | Python y nativo | Limitación | Nativo falla ante una validación incompleta. La campaña Python marca `status="completed"` aunque la valoración sea incompleta |
+| Supervivencia | Real | Sesgo medido y pendiente | De 4.202 activos US con precios solo 2 terminan antes de diciembre de 2023, y los 810 chinos llegan al 29-12-2023. La población está formada casi solo por supervivientes |
+| Selección con episodios fallidos | Python y nativo | Corregido | Nativo falla ante una validación incompleta y sus medias quedan como NaN. La campaña Python publica `failed` y cuenta las valoraciones incompletas |
 | Pasos forzados de calentamiento | PPO, DQN y KLPO | Comprobado por lectura | PPO y DQN enmascaran su recompensa. KLPO la suma al retorno terminal, pero desde efectivo vale cero |
 | Conocimiento posterior en codificadores congelados | Observación | Fuera del entorno | Un codificador preentrenado después de la decisión puede contener información futura. El entorno no puede detectarlo |
+| Activos omitidos por capacidad | Cohortes y cintas | Corregido | La sesión más poblada tiene 4.200 activos US. Cohortes, cintas y carteras Python admiten 8.192 con presupuesto de memoria explícito |
+| Reglas del mercado chino ausentes | Financiero, Python | Corregido parcialmente | Lotes, resto impar, mínimo de STAR, bandas diarias y timbre por fechas, con [fuentes primarias](china-market-rules.md). ST y salidas a bolsa siguen pendientes |
 
 ## Correcciones
 
@@ -86,21 +88,37 @@ La recompensa valora la cartera al cierre sin pagar su liquidación. Terminar in
 
 Las trayectorias válidas no cambian. Con un mundo sintético de seis activos y sesenta sesiones, la revisión base y esta rama producen la misma huella de cinta, las mismas observaciones, recompensas e `info` en los motores Python y nativo, las mismas métricas de las tres referencias fijas y la misma trayectoria predictiva. El recibo conserva las huellas comparadas.
 
-Cambian el esquema del snapshot predictivo, la admisión de cintas reales y de acciones en la primera apertura, el tipo de error de una acción fuera de int64 y el informe de evaluación, que gana un campo. El entorno predictivo no tiene resultados previos y no hay cintas reales construidas. Las huellas de código de `environment.py`, `market.py` y `evaluation.py` forman parte de las identidades de `FinancialTrainer` y de la campaña Python. Una ejecución pausada con el código anterior no puede reanudarse con el nuevo, como exige su contrato. El código nativo no cambia.
+Cambian el esquema del snapshot predictivo, la admisión de cintas reales y de acciones en la primera apertura, el tipo de error de una acción fuera de int64 y el informe de evaluación, que gana un campo. El entorno predictivo no tiene resultados previos y no hay cintas reales construidas. Las huellas de código de `environment.py`, `market.py` y `evaluation.py` forman parte de las identidades de `FinancialTrainer` y de la campaña Python. Una ejecución pausada con el código anterior no puede reanudarse con el nuevo, como exige su contrato. En la primera fase el código nativo no cambió.
+
+## Segunda fase
+
+Los puntos abiertos de la primera revisión tienen ahora una corrección o una política explícita. Cada cambio de comportamiento tiene identidad propia y las trayectorias válidas anteriores se conservan, salvo las huellas que dependen del código modificado. El [recibo de la segunda fase](../../reports/engineering/rl-environment-integrity-2-20261009.json) registra medidas, pruebas, mutaciones y paridad.
+
+**Capacidad medida.** Con DuckDB, en lectura sobre los `prices.parquet` de la población preparada, la sesión más poblada tiene 4.200 activos US (6 de noviembre de 2023). Con ventana completa de 64 sesiones son 4.195. En entrenamiento, hasta 2022, el máximo es 4.189. China llega a 810 activos. Hay 4.202 activos US distintos entre 2000 y 2023. `MAX_COHORT_ASSETS` pasa de 4.096 a 8.192 en cohortes, rejillas de acciones y huellas del padre. Con las formas de la edición histórica cada activo ocupa 6.725 bytes, 28 MB la sesión más poblada y 55 MB el máximo, dentro de los 64 MiB por defecto. Las cintas y carteras Python admiten 8.192 activos y 2.097.152 celdas, 96 MiB de precios y predicciones en el máximo, y un año de los 4.202 activos cabe en una cinta. La biblioteca C++ conserva 4.096 activos y el motor nativo rechaza explícitamente una cinta mayor.
+
+**Evaluación nativa incompleta.** `evaluate_policy` ya no devuelve un cero con apariencia de válido. Las medias de una evaluación pausada, vacía o incompleta quedan como NaN y la agregación por bloques omite los incompletos.
+
+**Selección con venta final.** Las sesiones publican un retorno liquidado y la evaluación una media liquidada. La métrica declarada `ruin_count_then_mean_liquidated_log_growth` selecciona con ella. Las configuraciones existentes conservan la métrica anterior y producen los mismos registros. Una campaña nueva debe declarar cuál usa.
+
+**Valoraciones incompletas en la campaña Python.** Cada evaluación toma su estado de `financial_validation.completed` y la campaña cuenta las incompletas.
+
+**Flujos aleatorios del entrenador Python.** La exploración, el replay y el barajado proceden de un hijo de `SeedSequence(seed)`, con el esquema `seed_sequence_spawn_v1` en la identidad.
+
+**Cierres ausentes.** La política es rechazar en origen las fuentes de ajuste con algún cierre ausente, en `FinancialTrainer` y en `load_ppo_input`. Una transición censurada no puede llegar al objetivo y la exposición no puede usarse para esquivar una pérdida. Las aperturas ausentes siguen siendo órdenes pendientes. La evaluación y la validación ya trataban el caso como incompleto. Con datos reales esta política impedirá entrenar mientras las bajas y suspensiones no lleguen como acciones acreditadas.
+
+**Reglas chinas.** La [revisión de reglas](china-market-rules.md) recoge fuentes, artículos y vigencias. La simulación Python aplica lotes, resto impar, mínimo de STAR, bandas por tablero y fecha con redondeo por la mitad hacia arriba sobre el precio de referencia exderecho, y el timbre por fechas. T+1 se cumple por construcción. ST, salidas a bolsa, ampliaciones y topes por orden quedan documentados como pendientes.
+
+**Paridad de la segunda fase.** Frente a `d03229b2`, un mundo sintético de 6 activos y 60 sesiones produce las mismas observaciones, recompensas, `info`, instantáneas contables y métricas de referencia en los motores Python y nativo, y la misma trayectoria predictiva. Cambian las huellas de cinta y de entorno, porque `SyntheticWorld` incluye en su identidad la huella de `environments/cohorts.py`, que contiene el contrato de capacidad. También cambian las identidades de `FinancialTrainer`, de la campaña Python y del PPO nativo, que dependen de su código. Una ejecución pausada con el código anterior no se reanuda con este.
+
+## Hallazgos sobre la población preparada
+
+**Supervivencia.** De los 4.202 activos US con precios, solo 2 terminan antes de diciembre de 2023 (el primero el 13 de marzo de 2017). Los 810 activos chinos tienen datos hasta el 29 de diciembre de 2023. La población crece de 1.343 activos US en 2000 a 4.200 en 2023 sin bajas apreciables. Es una población de empresas que existían al final del periodo. Cualquier resultado sobre ella, predictivo o financiero, hereda un sesgo de supervivencia que los entornos no pueden corregir. Hace falta una lista histórica de cotizadas y bajas, con retornos de salida, o declarar el resultado como condicionado a la supervivencia hasta 2023.
+
+**Base de precios.** Con una tolerancia de 0,05 céntimos, el 84 % de los cierres chinos y el 69 % de los estadounidenses no caen en un múltiplo de céntimo, y en 2023 siguen fuera el 75 % y el 62 %. Es coherente con precios ajustados por acciones corporativas posteriores. La cinta real exige precios sin ajustar, así que estos Parquet no la satisfacen.
 
 ## Limitaciones que siguen abiertas
 
-**Selección nativa sin coste de salida.** `ruin_count_then_mean_log_growth` usa el logaritmo del patrimonio final sin liquidar. La diferencia puede llegar a 0,001 con 10 pb y exposición completa, diez veces el `min_delta` de 0,0001 configurado. Propongo una métrica nueva con valoración liquidada y su propia identidad, sin sustituir la actual en las ejecuciones ya registradas.
-
-**Transiciones censuradas por cierres ausentes.** Python y nativo excluyen del objetivo la transición con un cierre ausente de una posición. Como la validez depende de la exposición elegida, una pérdida previa a una suspensión o baja sin acción acreditada no entra en el ajuste. Las cintas sintéticas actuales no tienen cierres ausentes y la validación nativa falla si aparecen. Con datos reales, cada baja debe llegar como acción acreditada con su retorno de salida, y el informe debe publicar cuántas transiciones se censuran.
-
-**Puntuación cero de una evaluación incompleta.** `evaluate_policy` devuelve `mean_log_growth = 0` cuando hay episodios incompletos. Su único llamador lo rechaza antes de seleccionar, pero un consumidor nuevo podría tomarlo como válido. Conviene devolver un valor ausente con un estado explícito.
-
-**RNG del entrenador Python.** `FinancialTrainer` crea `default_rng(seed)` y `generate_world` usa `default_rng(config.seed)`. Los mundos de entrenamiento y las semillas de los comparadores usan 42, 43 y 44, así que la exploración puede consumir el mismo flujo que generó el mundo. No he encontrado un alineamiento temporal explotable, pero la independencia no está garantizada. La solución es derivar flujos con `SeedSequence.spawn` y una identidad nueva del entrenador.
-
 **Semilla del mundo sin partición.** Con la misma semilla, `generate_world` produce la misma trayectoria de precios en entrenamiento y validación, desplazada en el tiempo. Los ejecutores rechazan esa coincidencia, pero la función no. Incluir la partición en la semilla cambiaría todos los mundos y requiere otra versión del generador.
-
-**Estado de la campaña Python.** `run_campaign` publica `status="completed"` aunque `financial_validation.completed` sea falso. El observatorio exporta este último campo. Los agregados deben contar los episodios incompletos con ese campo y no con el estado del proceso.
 
 **Validación optimista.** Las cifras de validación del mejor checkpoint son las mismas que lo seleccionaron. Solo la auditoría separada del esquema 2 estima su rendimiento sin ese sesgo.
 
@@ -108,9 +126,9 @@ Cambian el esquema del snapshot predictivo, la admisión de cintas reales y de a
 
 **Memorización de cintas.** Cada episodio recorre la misma cinta desde el principio. Repetir una cinta no crea trayectorias independientes y una política puede memorizarla. Solo las fuentes de validación separadas lo controlan.
 
-**Diferencias entre simulación y mercado.** Los mundos de adaptación abren al cierre anterior, sin salto nocturno. No hay deslizamiento ni impacto de precio más allá del límite del 1 % del volumen de decisión. El coste es constante en ambos mercados. No se modelan el impuesto de timbre chino en ventas, los lotes de cien acciones, la regla T+1, los límites diarios de precio ni las suspensiones salvo como precio ausente. Estas diferencias no permiten obtener recompensa en los datos sintéticos actuales, pero sobrestiman la ejecutabilidad en China.
+**Diferencias entre simulación y mercado.** Los mundos de adaptación abren al cierre anterior, sin salto nocturno. No hay deslizamiento ni impacto de precio más allá del límite del 1 % del volumen de decisión. El coste en puntos básicos no varía por mercado ni por fecha. Las reglas chinas solo existen en el motor Python.
 
-**Capacidad.** El censo histórico registra 4.200 activos estadounidenses con archivos de precios durante 2023. El máximo por sesión será igual o menor y todavía no está medido. Las cohortes y las cintas admiten 4.096 activos y `MarketTape` un máximo de 1.048.576 celdas, unas 249 sesiones con 4.200 activos. Superar el límite hace fallar la preparación. No autoriza omitir empresas.
+**Dependencias de capacidad fuera de estos módulos.** La preparación del corpus causal (`corpus_source._partition`) sigue rechazando cohortes de más de 4.096 filas y debe usar `MAX_COHORT_ASSETS`. Los padres del postentrenamiento y los lotes de las referencias aceptan 4.096 filas por llamada. Si un padre no es independiente por fila, trocear una cohorte cambiaría sus predicciones. El modo clásico del banco episódico mantiene 4.096 activos. Esos módulos pertenecen a otras tareas.
 
 **Predicciones dentro de muestra en el postentrenamiento.** El [postentrenamiento predictivo](../research/predictive-adaptation.md) usa predicciones del padre sobre su propia partición de entrenamiento. Está documentado y queda fuera de estos entornos.
 
@@ -119,12 +137,11 @@ Cambian el esquema del snapshot predictivo, la admisión de cintas reales y de a
 | Comprobación | Motivo | Propuesta |
 | --- | --- | --- |
 | Precios sin ajustar, splits, dividendos y bajas | Una cinta con precios ajustados y splits declarados crearía saltos falsos de patrimonio | Conciliar precios brutos y ajustados del proveedor con las acciones acreditadas, y rechazar la cinta si un split explica un salto ya ajustado |
-| Retornos de salida de activos dados de baja | Sin ellos, las bajas aparecen como cierres ausentes y se censuran | Convertir cada baja en una acción acreditada con su valor de recuperación, también cero |
+| Retornos de salida de activos dados de baja | Sin ellos, las bajas aparecen como cierres ausentes y las fuentes de ajuste se rechazan | Convertir cada baja en una acción acreditada con su valor de recuperación, también cero |
 | Calendario de aperturas | La ejecución depende de `open_times` reales | Derivarlo del calendario de cada bolsa y comprobar que cada apertura sigue al cierre de decisión |
 | Predicciones fuera de muestra | La cinta real exige `prediction_fit_ends` | Generar las puntuaciones con las ventanas walk-forward y copiar cada corte de sus recibos |
-| Supervivencia | Las cohortes deben incluir activos que luego desaparecen | Comparar el censo por instante con listas históricas de constituyentes y bajas |
-| Tamaño máximo de cohorte | El censo anual roza el límite de 4.096 | Medir el máximo por `prediction_at` y mercado y, si lo supera, ampliar el límite con medidas de memoria |
-| Reglas del mercado chino | T+1, lotes, límites diarios y timbre cambian lo ejecutable | Añadirlas como identidad nueva del simulador con pruebas de contabilidad conocida |
+| Supervivencia | La población preparada apenas contiene bajas | Incorporar listas históricas de cotizadas y bajas con retornos de salida, o declarar los resultados como condicionados a sobrevivir hasta 2023 |
+| Estado ST y salidas a bolsa | Cambian la banda diaria de un activo | Incorporar el historial de advertencias de riesgo y fechas de admisión con su fuente |
 | Codificadores congelados | Su preentrenamiento puede ser posterior a la decisión | Registrar la fecha de corte de cada codificador y contrastar con la modalidad enmascarada |
 
 ## Comprobaciones CUDA
@@ -141,7 +158,19 @@ cmake --preset native-release -DMARS_TITAN_BUILD_RUNNER=OFF
 cmake --build --preset native-release --target mars_titan_simulation
 cd ..
 CUDA_VISIBLE_DEVICES=-1 uv run pytest tests/environments/test_prediction_adversarial.py \
-  tests/simulation/test_financial_adversarial.py
+  tests/simulation/test_financial_adversarial.py tests/environments/test_cohort_capacity.py \
+  tests/simulation/test_tape_capacity.py tests/simulation/test_trainer_streams.py \
+  tests/simulation/test_china_market_rules.py
+```
+
+Las pruebas nativas de la segunda fase se compilan con el preset de PPO sin CUDA y no ejecutan Adam:
+
+```bash
+cd native
+cmake --preset native-ppo-release -DMARS_TITAN_LIBTORCH_ENABLE_CUDA=OFF -DMARS_TITAN_BUILD_FINANCIAL=ON
+cmake --build --preset native-ppo-release --target ppo_evaluation_tests ppo_inputs_tests
+cd ../build/native/native-ppo-release
+CUDA_VISIBLE_DEVICES=-1 ctest -R '^(ppo_evaluation|ppo_inputs|financial_session|financial_batch)$'
 ```
 
 Ambos archivos usan fixtures sintéticos identificados como tales. No cargan pesos ni ejecutan optimizadores.

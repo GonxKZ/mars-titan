@@ -6,8 +6,10 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from .cohorts import MAX_COHORT_ASSETS
 
-def _real(values, *, maximum=4096):
+
+def _real(values, *, maximum=MAX_COHORT_ASSETS):
     array = np.asarray(values)
     if array.size > maximum or np.iscomplexobj(array) or not np.issubdtype(array.dtype, np.number):
         raise ValueError("Los valores deben ser reales y respetar el presupuesto")
@@ -65,7 +67,7 @@ class ActionGrid:
         return cls(values, scale, source_sha256, len(array))
 
     def _probabilities(self, values):
-        probabilities = _real(values, maximum=4096 * 21)
+        probabilities = _real(values, maximum=MAX_COHORT_ASSETS * 21)
         if (
             probabilities.ndim != 2
             or probabilities.shape[1] != 21

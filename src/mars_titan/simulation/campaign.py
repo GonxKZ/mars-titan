@@ -14,6 +14,11 @@ from .evaluation import evaluate, fixed_policy, learned_policy
 from .training import FinancialTrainer, TrainConfig
 
 
+def evaluation_status(result):
+    """Publicar como fallida una valoración sin cierre, aunque el proceso haya terminado."""
+    return "completed" if result["financial_validation"]["completed"] is True else "failed"
+
+
 def run_campaign(
     train, validation, output, config, *, resume=False, diagnostic=False, lease=None, stop=None
 ):
@@ -94,6 +99,7 @@ def run_campaign(
         parent_frozen=True,
         training_runs=0,
         evaluations=0,
+        incomplete_evaluations=0,
         total_steps=6 * training.total_steps,
         global_step=0,
     )
@@ -113,13 +119,14 @@ def run_campaign(
         result.update(
             model=name,
             domain=report["domain"],
-            status="completed",
+            status=evaluation_status(result),
             updated_at=datetime.now(UTC).isoformat(),
         )
         destination = output / "evaluations" / f"{name}-{seed}-{cost}-{index}"
         destination.mkdir(parents=True, exist_ok=True)
         atomic_json(destination / "run.json", result)
         report["evaluations"] += 1
+        report["incomplete_evaluations"] += int(result["status"] != "completed")
 
     with (output / ".campaign.lock").open("a") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)

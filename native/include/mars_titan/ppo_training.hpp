@@ -7,6 +7,7 @@
 #include "mars_titan/decision_trace.hpp"
 #include "mars_titan/learning_replay.hpp"
 
+#include <limits>
 #include <string_view>
 
 namespace mars_titan::learning {
@@ -113,7 +114,10 @@ struct PpoEvaluation {
     std::size_t episodes = 0;
     std::size_t incomplete = 0;
     std::size_t ruined = 0;
-    double mean_log_growth = 0;
+    // Una evaluación pausada, vacía o incompleta no tiene puntuación y conserva NaN.
+    double mean_log_growth = std::numeric_limits<double>::quiet_NaN();
+    // La misma media con la cartera final vendida al último cierre y su coste.
+    double mean_liquidated_log_growth = std::numeric_limits<double>::quiet_NaN();
     std::vector<simulation::FinancialMetrics> metrics;
 };
 

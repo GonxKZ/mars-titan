@@ -12,6 +12,7 @@
 #include <cstdlib>
 #include <filesystem>
 #include <iostream>
+#include <cmath>
 #include <limits>
 #include <memory>
 #include <stdexcept>
@@ -29,6 +30,7 @@ using mars_titan::learning::load_ppo_input;
 constexpr std::size_t fixture_limit = bytes_per_mebibyte;
 constexpr std::size_t context_file_limit = 64 * bytes_per_mebibyte;
 constexpr std::size_t sessions = 3;
+constexpr std::size_t price_columns = 5;
 constexpr std::size_t feature_count = 2;
 constexpr std::size_t fixture_rows = sessions * feature_count;
 constexpr std::size_t digest_characters = 64;
@@ -219,7 +221,7 @@ void replace_context_bytes(const std::filesystem::path& directory, std::string_v
     atomic_json_file(directory / "context.json", manifest);
 }
 
-void write_market(const std::filesystem::path& directory) {
+void write_market(const std::filesystem::path& directory, std::string_view missing = {}) {
     const auto tape = market();
     std::vector<std::shared_ptr<arrow::Field>> fields;
     std::vector<std::shared_ptr<arrow::Array>> columns;
@@ -228,7 +230,11 @@ void write_market(const std::filesystem::path& directory) {
         const double number = name == "volume"  ? fixture_volume
                               : name == "score" ? fixture_score
                                                 : fixture_price;
-        columns.push_back(array<arrow::DoubleBuilder>(std::vector<double>(sessions, number)));
+        std::vector<double> values(sessions, number);
+        if (name == missing) {
+            values[1] = std::numeric_limits<double>::quiet_NaN();
+        }
+        columns.push_back(array<arrow::DoubleBuilder>(values));
     }
     for (const auto& [name, times] : std::array<std::pair<std::string, std::vector<int64_t>>, 3>{
              {{"close_time", tape.close_times},
@@ -282,6 +288,23 @@ void optional_context_and_verified_input_are_loaded() {
     require(context.source_sha256 ==
                 content_sha256(read_bounded_file(temporary.path / "context.json", fixture_limit)),
             "La identidad del contexto debe proceder del JSON realmente leído");
+}
+
+void missing_closes_are_rejected_before_any_transition() {
+    TemporaryDirectory closes;
+    write_market(closes.path, "close");
+    bool rejected = false;
+    try {
+        static_cast<void>(load_ppo_input(closes.path));
+    } catch (const std::invalid_argument& error) {
+        rejected = std::string_view(error.what()).find("cierres ausentes") != std::string_view::npos;
+    }
+    require(rejected, "Una fuente PPO con un cierre ausente debe rechazarse al cargarla");
+    TemporaryDirectory opens;
+    write_market(opens.path, "open");
+    const auto input = load_ppo_input(opens.path);
+    require(input.tape && std::isnan(input.tape->prices[price_columns]),
+            "Una apertura ausente conserva su orden pendiente y no se rechaza");
 }
 
 void manifest_identity_and_schema_are_rejected() {
@@ -445,6 +468,7 @@ void symlinks_and_non_regular_files_are_rejected() {
 int main() {
     try {
         optional_context_and_verified_input_are_loaded();
+        missing_closes_are_rejected_before_any_transition();
         manifest_identity_and_schema_are_rejected();
         dense_typed_rows_and_temporal_availability_are_required();
         metadata_rejects_external_chunks_and_decompression_budgets_before_reading_pages();

@@ -58,6 +58,9 @@ constexpr std::size_t maximum_process_memory_bytes = std::size_t{12} * 1024 * 10
 constexpr double maximum_vram_fraction = 0.75;
 constexpr std::array allowed_seeds{uint64_t{42}, uint64_t{43}, uint64_t{44}};
 constexpr std::string_view selection_metric = "ruin_count_then_mean_log_growth";
+// Variante declarada que descuenta la venta final al último cierre. No sustituye a la anterior.
+constexpr std::string_view liquidated_selection_metric =
+    "ruin_count_then_mean_liquidated_log_growth";
 constexpr std::string_view lock_name = "mars-titan-scientific-gpu.lock";
 
 void require(bool condition, std::string_view message) {
@@ -100,6 +103,7 @@ struct ExperimentConfig {
     std::size_t environments = 0;
     std::size_t checkpoint_transitions = 0;
     double min_delta = 0;
+    bool liquidated_selection = false;
     std::size_t patience = 0;
     bool early_stopping = false;
     std::size_t min_transitions = 0;
@@ -269,8 +273,10 @@ ExperimentConfig configuration(const std::filesystem::path& path) {
     } else {
         require_fields(selection, {"min_delta", "patience", "early_stopping", "metric"});
     }
-    require(selection.at("metric") == selection_metric,
+    require(selection.at("metric") == selection_metric ||
+                selection.at("metric") == liquidated_selection_metric,
             "La métrica de selección PPO no está admitida");
+    result.liquidated_selection = selection.at("metric") == liquidated_selection_metric;
     result.min_delta = finite_number(selection.at("min_delta"));
     result.patience = count(selection.at("patience"));
     result.early_stopping = boolean(selection.at("early_stopping"));
@@ -1138,6 +1144,9 @@ Progress restore_progress(const Json& value, const PpoTrainingState& state,
                     progress.evaluated_optimizer_steps.has_value(),
                 "La selección PPO no corresponde al cursor confirmado");
         static_cast<void>(finite_number(progress.best.at("mean_log_growth")));
+        if (config.liquidated_selection) {
+            static_cast<void>(finite_number(progress.best.at("mean_liquidated_log_growth")));
+        }
     } else {
         require(progress.evaluations == 0, "Falta el candidato de una evaluación PPO completa");
     }
@@ -1348,8 +1357,12 @@ class ExperimentRun {
         if (evaluation.paused) {
             return false;
         }
+        const auto score = config_.liquidated_selection ? evaluation.mean_liquidated_log_growth
+                                                        : evaluation.mean_log_growth;
+        const auto score_field =
+            config_.liquidated_selection ? "mean_liquidated_log_growth" : "mean_log_growth";
         require(evaluation.incomplete == 0 && evaluation.episodes == inputs_.validation.size() &&
-                    std::isfinite(evaluation.mean_log_growth),
+                    std::isfinite(evaluation.mean_log_growth) && std::isfinite(score),
                 "La validación PPO está incompleta y no permite seleccionar un checkpoint");
         double mean_drawdown = 0;
         Json validation_metrics = Json::array();
@@ -1384,8 +1397,7 @@ class ExperimentRun {
             progress_.best.is_null() ||
             evaluation.ruined < count(progress_.best.at("ruin_count")) ||
             (evaluation.ruined == count(progress_.best.at("ruin_count")) &&
-             evaluation.mean_log_growth >
-                 finite_number(progress_.best.at("mean_log_growth")) + config_.min_delta);
+             score > finite_number(progress_.best.at(score_field)) + config_.min_delta);
         if (config_.schema_version == 3) {
             require(progress_.evaluation_cursors.size() < maximum_selection_evaluations,
                     "El selector supera el límite de cursores de validación");
@@ -1400,6 +1412,9 @@ class ExperimentRun {
                                   {"transitions", trainer_.transitions()},
                                   {"optimizer_steps", trainer_.optimizer_steps()},
                                   {"episodes", evaluation.episodes}};
+            if (config_.liquidated_selection) {
+                progress_.best["mean_liquidated_log_growth"] = evaluation.mean_liquidated_log_growth;
+            }
             if (config_.learning.enabled) {
                 progress_.best["mean_max_drawdown"] = mean_drawdown;
                 progress_.best["validation_metrics"] = std::move(validation_metrics);

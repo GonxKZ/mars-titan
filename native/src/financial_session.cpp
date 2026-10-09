@@ -594,6 +594,30 @@ void FinancialSession::restore(const SessionSnapshot& snapshot) {
     std::swap(state_, staged_);
 }
 
+double liquidated_nav(const SessionSnapshot& state, const MarketTape& tape) {
+    const auto prices = tape.frame(state.cursor);
+    if (state.positions.size() * price_width != prices.size() || std::isnan(state.account.nav)) {
+        return unknown;
+    }
+    AccurateSum held;
+    for (std::size_t asset = 0; asset < state.positions.size(); ++asset) {
+        const double quantity = state.positions[asset].quantity;
+        if (quantity == 0) {
+            continue;
+        }
+        const double close = prices[asset * price_width + close_column];
+        if (std::isnan(close)) {
+            return unknown;
+        }
+        checked_sum(held, quantity * close);
+    }
+    // Las posiciones son largas y no superan el patrimonio, así que el resultado no es negativo.
+    const double nav =
+        state.account.nav - held.value() * state.parameters.cost_bps / basis_point_denominator;
+    check_amount(nav);
+    return nav;
+}
+
 FinancialMetrics FinancialSession::metrics() const {
     FinancialMetrics result;
     result.costs = state_.account.costs;
@@ -606,6 +630,7 @@ FinancialMetrics FinancialSession::metrics() const {
         result.invalid_reason = "missing_close";
     } else {
         result.net_return = state_.account.nav / parameters_.capital - 1;
+        result.liquidated_net_return = liquidated_nav(state_, *tape_) / parameters_.capital - 1;
         result.max_drawdown = state_.max_drawdown;
         if (state_.account.nav == 0) {
             result.invalid_reason = "ruined";

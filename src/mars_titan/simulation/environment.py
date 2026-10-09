@@ -1,12 +1,14 @@
 """Seis decisiones experimentales comunes para comparadores financieros."""
 
 import copy
+import hashlib
+import json
 import math
 
 import gymnasium as gym
 import numpy as np
 
-from .portfolio import Instrument, Portfolio
+from .portfolio import NATIVE_MAX_INSTRUMENTS, Instrument, Portfolio
 
 ACTIONS = (None, 0.0, 0.25, 0.5, 0.75, 1.0)
 
@@ -29,6 +31,7 @@ class FinancialEnv(gym.Env):
         ruin_penalty=-20,
         backend="python",
         native_library=None,
+        instruments=None,
     ):
         if (
             not math.isfinite(score_scale)
@@ -41,6 +44,24 @@ class FinancialEnv(gym.Env):
             native_library is not None and backend != "native"
         ):
             raise ValueError("El motor debe ser python o native con una biblioteca explícita")
+        if backend == "native" and len(tape.assets) > NATIVE_MAX_INSTRUMENTS:
+            raise ValueError("La biblioteca nativa todavía admite como máximo 4096 activos")
+        if instruments is not None and (
+            not isinstance(instruments, dict)
+            or set(instruments) != set(tape.assets)
+            or any(
+                not isinstance(item, Instrument) or item.currency != tape.currency
+                for item in instruments.values()
+            )
+        ):
+            raise ValueError("Las reglas declaradas deben cubrir cada activo en su moneda")
+        if backend == "native" and instruments is not None:
+            raise ValueError("El motor nativo todavía no aplica reglas de mercado declaradas")
+        self.instruments = (
+            dict(instruments)
+            if instruments is not None
+            else {asset: Instrument(tape.currency) for asset in tape.assets}
+        )
         self.backend, self.native_library = backend, None
         if backend == "native":
             from .native_runtime import load_library
@@ -66,12 +87,18 @@ class FinancialEnv(gym.Env):
             accounting_backend=backend,
             native_library_sha256=self.native_library.sha256 if self.native_library else None,
         )
+        if instruments is not None:
+            # Las reglas cambian lo ejecutable y forman otra identidad del entorno.
+            rules = {asset: item.identity() for asset, item in sorted(self.instruments.items())}
+            self.identity["instruments_sha256"] = hashlib.sha256(
+                json.dumps(rules, sort_keys=True).encode()
+            ).hexdigest()
         self.action_space = gym.spaces.Discrete(6)
         self.observation_space = gym.spaces.Box(-10, 10, (6 * len(tape.assets) + 2,), np.float32)
         self.book, self.cursor, self.done, self.paused = None, 0, True, False
 
     def _new_book(self):
-        instruments = {asset: Instrument(self.tape.currency) for asset in self.tape.assets}
+        instruments = self.instruments
         cash = {self.tape.currency: self.capital}
         options = dict(cost_bps=self.cost_bps, participation=self.participation)
         if self.backend == "native":
