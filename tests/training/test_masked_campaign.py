@@ -96,7 +96,7 @@ class Recorder:
     """Ejecutor sustituto: registra el trabajo y escribe filas nulas de la vista."""
 
     def __init__(self, *, stop=None, interrupt_at=None, mutate=None, delay=0.0):
-        self.calls, self.cache = [], {}
+        self.calls, self.cache, self.times = [], {}, {}
         self.stop, self.interrupt_at, self.mutate, self.delay = stop, interrupt_at, mutate, delay
         self.active, self.peak, self.lock = 0, 0, threading.Lock()
 
@@ -150,6 +150,7 @@ class Recorder:
                 )
             )
             position = len(self.calls)
+        started = time.perf_counter()
         try:
             time.sleep(self.delay)
             run.folder.mkdir(parents=True, exist_ok=True)
@@ -170,6 +171,7 @@ class Recorder:
         finally:
             with self.lock:
                 self.active -= 1
+                self.times[run.job["id"]] = (started, time.perf_counter())
 
 
 def doubles(recorder, cpu=()):
@@ -365,7 +367,8 @@ def test_every_job_must_evaluate_the_same_rows_without_2024(prepared, tmp_path, 
 def test_cpu_jobs_respect_the_declared_concurrency_and_gpu_jobs_run_alone(prepared, tmp_path):
     campaign = write_campaign(tmp_path / "config", tabular=dict(cpu_workers=2))
     gpu = Recorder()
-    cpu = Recorder(delay=0.02)
+    # Cada trabajo CPU dura más que los trabajos CUDA que lo separan del siguiente en el plan.
+    cpu = Recorder(delay=0.5)
 
     def dispatch(run_):
         return (cpu if run_.job["model"] == "ridge" else gpu)(run_)
@@ -382,6 +385,14 @@ def test_cpu_jobs_respect_the_declared_concurrency_and_gpu_jobs_run_alone(prepar
     assert summary["status"] == "completed"
     assert gpu.peak == 1 and 1 <= cpu.peak <= 2
     assert len(cpu.calls) == 7 + 12 and len(gpu.calls) == 140 - 19
+    # La cola también está acotada: ningún trabajo CUDA empieza con más de dos trabajos CPU
+    # anteriores en el plan todavía en curso.
+    order = [job["id"] for job in plan_campaign(load_campaign(campaign))]
+    for call in gpu.calls:
+        start = gpu.times[call["id"]][0]
+        earlier = order[: order.index(call["id"])]
+        running = [key for key in earlier if key in cpu.times and cpu.times[key][1] > start]
+        assert len(running) <= 2, call["id"]
 
 
 def test_sources_feed_the_walk_forward_comparison_with_the_same_rows(prepared, tmp_path):
