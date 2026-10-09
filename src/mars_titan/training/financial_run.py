@@ -434,7 +434,11 @@ class ChronologicalTrainer:
             if accumulate:
                 for flow in batch.flow_ids:
                     if flow not in run.starts:
-                        run.starts[flow] = None if flow in new else run.flows[flow]
+                        # Sin grafo: la repetición no reutiliza nada del cálculo emitido.
+                        if flow in new:
+                            run.starts[flow] = None
+                        else:
+                            ((_, run.starts[flow]),) = _split(run.flows[flow], detach=True)
                 run.segment.append(batch)
             state = _stack([run.flows[flow] for flow in batch.flow_ids])
             with torch.set_grad_enabled(grad):

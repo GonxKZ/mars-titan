@@ -19,8 +19,10 @@ from mars_titan.models.titans.config import canonical
 from mars_titan.models.titans.financial import VARIANTS, FinancialConfig, FinancialPredictor
 from mars_titan.training.financial_run import ChronologicalRecipe, _Pass, load_recipe
 from mars_titan.training.graph_memory import saved_graph_bytes
+from tests.training.chronological_fixture import phases
 from tests.training.test_financial_run import (
     StopAtStep,
+    corpus,
     entries,
     explicit_fastpath,  # noqa: F401
     named_records,
@@ -227,3 +229,21 @@ def test_saved_graph_bytes_counts_unique_storages_and_skips_excluded_tensors():
     output.backward()
     assert saved_graph_bytes([output], exclude=[weight]) == 0
     assert saved_graph_bytes([inputs]) == 0
+
+
+def test_flows_born_in_the_segment_send_gradient_to_the_initial_fast_weights(tmp_path):
+    # Sin calentamiento, los flujos nacen en el primer tramo con M0 diferenciable.
+    _, streams = corpus(tmp_path, train=phases(warmup="2022-11-15")[0])
+    full = trainer(streams, tmp_path / "full")
+    full.run()
+    blocks = trainer(streams, tmp_path / "blocks", accumulation_rows=1)
+    blocks.run()
+    expected, actual = named_records(full), named_records(blocks)
+    assert any(r["mac.memory.initial_weights.0"] is not None for r in expected)
+    assert blocks.audit == full.audit
+    for left, right in zip(actual, expected, strict=True):
+        for key, value in right.items():
+            if value is None:
+                assert left[key] is None, key
+            else:
+                torch.testing.assert_close(left[key], value, rtol=1e-10, atol=1e-13)
