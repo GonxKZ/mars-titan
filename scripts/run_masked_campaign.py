@@ -6,18 +6,20 @@ trabajos y se detiene si rige el bloqueo de aprendizaje. `sources` publica el
 manifiesto de fuentes de un ámbito. `posttraining check|run` valida o ejecuta la etapa
 de la matriz de adaptadores sobre una campaña base confirmada. `rl check|run` valida o
 ejecuta la etapa de políticas financieras por ventana, con las capacidades del motor que
-necesita. `ablation check|run|sources` valida, ejecuta o publica la ablación de modalidades
-en inferencia sobre una campaña base confirmada, sin ajustar nada. `throughput` mide en la
-GPU, sin pasos de optimizador, el caudal de las familias declaradas y estima las horas de las
-variantes indicadas. `extensions` comprueba sin leer datos la declaración preparada de la GRU
-candidata, MARS-TITAN y CM-v1 y sus recuentos. `storage` estima el disco de la campaña y de sus
-etapas con los recuentos de las vistas y tablas sintéticas, sin leer objetivos ni ajustar.
+necesita. `rl-report` agrega sus salidas confirmadas en el informe financiero.
+`ablation check|run|sources` valida, ejecuta o publica la ablación de modalidades en inferencia
+sobre una campaña base confirmada, sin ajustar nada. `throughput` mide en la GPU, sin pasos de
+optimizador, el caudal de las familias declaradas y estima las horas de las variantes
+indicadas. `extensions` comprueba sin leer datos la declaración preparada de la GRU candidata,
+MARS-TITAN y CM-v1 y sus recuentos. `storage` estima el disco de la campaña y de sus etapas
+con los recuentos de las vistas y tablas sintéticas, sin leer objetivos ni ajustar.
 """
 
 import sys
 
 from mars_titan.posttraining import campaign_stage
 from mars_titan.simulation import campaign_stage as rl_stage
+from mars_titan.simulation import stage_report
 from mars_titan.training import (
     campaign_extensions,
     campaign_throughput,
@@ -37,6 +39,8 @@ def main(argv=None):
         return campaign_stage.main(argv[1:])
     if argv[:1] == ["rl"]:
         return rl_stage.main(argv[1:])
+    if argv[:1] == ["rl-report"]:
+        return stage_report.main(argv[1:])
     if argv[:1] == ["ablation"]:
         return modality_ablation_stage.main(argv[1:])
     if argv[:1] == ["storage"]:
