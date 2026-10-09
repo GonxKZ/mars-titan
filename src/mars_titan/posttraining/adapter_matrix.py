@@ -8,7 +8,9 @@ controles de todos los brazos. La matriz no añade combinaciones después de lee
 La versión 1 solo declara objetivos para padres de salida escalar. La versión 2 los
 declara por cabeza del padre: los escalares conservan los de la versión 1 y los de
 `quantile_head_v1` optimizan la pinball de sus cinco niveles. Un control que no tiene
-objetivo para una cabeza se excluye con su motivo, no se reinterpreta.
+objetivo para una cabeza se excluye con su motivo, no se reinterpreta. La versión 3
+conserva todo lo anterior y añade los destinos de las familias con entrenador cronológico
+(`chronological_matrix`).
 """
 
 import itertools
@@ -110,7 +112,7 @@ def validate_matrix(matrix):
     _require(
         isinstance(matrix, dict)
         and set(matrix) == keys
-        and matrix["schema_version"] in (1, 2)
+        and matrix["schema_version"] in (1, 2, 3)
         and type(matrix["schema_version"]) is int
         and matrix["kind"] == KIND
         and matrix["input_policy"] in INPUT_POLICIES
@@ -128,7 +130,7 @@ def validate_matrix(matrix):
     declared = {SCALAR: matrix["objectives"]} if version_one else matrix["objectives"]
     _require(
         isinstance(declared, dict) and set(declared) == ({SCALAR} if version_one else set(HEADS)),
-        "La versión 1 declara objetivos escalares y la 2 uno por cada cabeza del padre",
+        "La versión 1 declara objetivos escalares y las demás uno por cada cabeza del padre",
     )
     for head, value in declared.items():
         _objectives_for(head, value)
@@ -190,7 +192,7 @@ def validate_matrix(matrix):
     _require(
         combinations == expected, "La matriz contiene todas las combinaciones de 1, 2 y 3 puntos"
     )
-    _architectures(matrix["architectures"])
+    _architectures(matrix["architectures"], matrix["schema_version"])
     from .run import validate_case
 
     # Los casos derivados deben pertenecer al diseño emparejado del ajuste.
@@ -243,11 +245,16 @@ def model_head(model):
     return QUANTILE_HEAD if getattr(model, "emits_quantiles", False) else SCALAR
 
 
-def _architectures(declared):
+def _architectures(declared, version=2):
+    groups = {"executable", "pending"} | ({"chronological"} if version >= 3 else set())
     _require(
-        isinstance(declared, dict) and set(declared) == {"executable", "pending"},
-        "Las arquitecturas se separan en ejecutables y pendientes",
+        isinstance(declared, dict) and set(declared) == groups,
+        "Las arquitecturas se separan en ejecutables, cronológicas desde la versión 3 y pendientes",
     )
+    if version >= 3:
+        from .chronological_matrix import validate
+
+        validate(declared["chronological"], POINTS)
     executable = declared["executable"]
     _require(
         isinstance(executable, dict)
