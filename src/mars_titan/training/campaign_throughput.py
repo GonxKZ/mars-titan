@@ -15,6 +15,10 @@ registrada como tal. Las horas se estiman aplicando los caudales a las filas de 
 ventana de las variantes A y B, por familia y por opción, incluida la etapa de la
 matriz de adaptadores.
 
+Con las etapas de políticas, `simulation.policy_throughput` mide además el entorno
+financiero y la red de las políticas por lotes, sin pasos de optimizador, y añade a cada
+variante una estimación orientativa de esa etapa, separada de las horas de GPU.
+
 Ridge y XGBoost no se miden: medir una ronda o una solución ya sería ajustarlos. Su
 coste queda como no medido en el informe.
 """
@@ -36,6 +40,7 @@ from .campaign_plan import EPISODIC, FIT, NEURAL, TITANS, load_campaign, plan_ca
 
 TRAINING_PARTITIONS = ("validation", "calibration", "evaluation", "train")
 POSTTRAINING = "posttraining_adapter_matrix"
+POLICY_STAGE = "rl_policy_comparison"
 NOT_MEASURED = "not_measured"
 OUT_OF_MEMORY = "out_of_memory"
 # Opciones de memoria comparadas con la misma medida. Se mide además la de la receta.
@@ -53,8 +58,19 @@ _LIMITS = dict(
     segment_warmup=(0, 1000),
     events=(1, 100_000),
     event_warmup=(0, 10_000),
+    policy_steps=(1, 100_000),
+    policy_warmup=(0, 10_000),
 )
-SETTINGS = dict(batches=50, warmup=5, segments=8, segment_warmup=2, events=64, event_warmup=8)
+SETTINGS = dict(
+    batches=50,
+    warmup=5,
+    segments=8,
+    segment_warmup=2,
+    events=64,
+    event_warmup=8,
+    policy_steps=2048,
+    policy_warmup=64,
+)
 
 
 def _require(condition, message):
@@ -250,12 +266,13 @@ def _totals(families):
     return dict(declared_options=declared, fastest_options=fastest, without_estimate=missing)
 
 
-def estimate_hours(campaign, counts, rates, *, stage=None):
+def estimate_hours(campaign, counts, rates, *, stage=None, policy_stage=None):
     """Horas previstas por familia, opción, ámbito y brazo de una variante.
 
     `counts` asigna a cada ámbito y ventana sus filas por tramo y `rates` a cada familia
     medida sus caudales. Las familias declaradas sin medir y los tabulares quedan como no
-    medidos. Con `stage`, añade la etapa de la matriz de adaptadores de esa variante.
+    medidos. Con `stage`, añade la etapa de la matriz de adaptadores de esa variante. Con
+    `policy_stage`, añade aparte la estimación orientativa de la etapa de políticas.
     """
     epochs = campaign["rule"]["max_epochs"]
     jobs = plan_campaign(campaign)
@@ -290,10 +307,24 @@ def estimate_hours(campaign, counts, rates, *, stage=None):
             if POSTTRAINING in rates and NEURAL in rates
             else dict(status=NOT_MEASURED)
         )
+    extra = {}
+    if policy_stage is not None:
+        from mars_titan.simulation.policy_throughput import policy_hours
+
+        _require(
+            policy_stage["campaign"]["path"] == campaign["path"],
+            "La etapa de políticas no parte de esta campaña",
+        )
+        extra[POLICY_STAGE] = (
+            policy_hours(policy_stage, rates[POLICY_STAGE])
+            if POLICY_STAGE in rates
+            else dict(status=NOT_MEASURED)
+        )
     return dict(
         variant=campaign["variant"],
         retrain_every_months=campaign["retrain_every_months"],
         families=families,
+        **extra,
         tabular=NOT_MEASURED,
         total_gpu_hours=_totals(families),
         assumptions=[
@@ -856,16 +887,27 @@ def _comparison(estimates):
 
 
 def measure_campaigns(
-    paths, views, first_view, *, stages=(), candidate=None, work=None, output=None, **settings
+    paths,
+    views,
+    first_view,
+    *,
+    stages=(),
+    rl_stages=(),
+    candidate=None,
+    work=None,
+    output=None,
+    **settings,
 ):
     """Medir una vez en `cuda:0` y estimar las horas de cada variante declarada.
 
     Mide las referencias neuronales, Titans-MAC si la campaña lo declara, la GRU candidata
-    si la campaña la declara o `candidate` da su receta, y la matriz de adaptadores si se
-    pasan sus etapas. `work` guarda los índices de la primera vista y `output`, el informe.
+    si la campaña la declara o `candidate` da su receta, la matriz de adaptadores si se
+    pasan sus etapas y el entorno y la red de las políticas si se pasan `rl_stages`.
+    `work` guarda los índices de la primera vista y `output`, el informe.
     """
     from mars_titan.data.storage import atomic_json
     from mars_titan.posttraining.campaign_stage import load_stage
+    from mars_titan.simulation import policy_plan, policy_throughput
 
     from .experiment_resources import GpuLease
 
@@ -895,8 +937,21 @@ def measure_campaigns(
         and len({(s["matrix_sha256"], tuple(s["families"].items())) for s in loaded}) <= 1,
         "Cada etapa de adaptadores parte de una campaña medida, con la misma matriz y brazos",
     )
+    policies = [policy_plan.load_stage(path) for path in rl_stages]
+    by_policies = {stage["campaign"]["path"]: stage for stage in policies}
+    _require(
+        len(by_policies) == len(policies)
+        and set(by_policies) <= {c["path"] for c in campaigns}
+        and len({stage["policies"]["sha256"] for stage in policies}) <= 1,
+        "Cada etapa de políticas parte de una campaña medida, con las mismas políticas",
+    )
     batched = {key: settings[key] for key in ("batches", "warmup")}
-    chronological = {key: value for key, value in settings.items() if key not in batched}
+    stepped = dict(steps=settings["policy_steps"], warmup=settings["policy_warmup"])
+    chronological = {
+        key: value
+        for key, value in settings.items()
+        if key not in batched and not key.startswith("policy_")
+    }
     _require(
         work is not None or not (reference.get(TITANS) or reference.get(EPISODIC)),
         "Titans-MAC y la GRU candidata necesitan un directorio de trabajo para sus índices",
@@ -910,6 +965,8 @@ def measure_campaigns(
             rates[EPISODIC] = measure_candidate(reference, first_view, work, **chronological)
         if loaded:
             rates[POSTTRAINING] = measure_posttraining(loaded[0], first_view, **batched)
+        if policies:
+            rates[POLICY_STAGE] = policy_throughput.measure_policies(policies[0], **stepped)
         resources = lease.record
     estimates = [
         estimate_hours(
@@ -917,6 +974,7 @@ def measure_campaigns(
             _window_counts(campaign, views),
             rates,
             stage=by_campaign.get(campaign["path"]),
+            policy_stage=by_policies.get(campaign["path"]),
         )
         for campaign in campaigns
     ]
@@ -949,6 +1007,7 @@ def main(argv=None):
     parser.add_argument("--views", action="append", required=True)
     parser.add_argument("--first-view", type=Path, required=True)
     parser.add_argument("--stage", type=Path, action="append", default=[])
+    parser.add_argument("--rl-stage", type=Path, action="append", default=[])
     parser.add_argument("--candidate-recipe", type=Path)
     parser.add_argument("--candidate-variant")
     parser.add_argument("--work", type=Path)
@@ -966,6 +1025,7 @@ def main(argv=None):
         _views_argument(args.views),
         args.first_view,
         stages=args.stage,
+        rl_stages=args.rl_stage,
         candidate=candidate,
         work=args.work,
         output=args.output,

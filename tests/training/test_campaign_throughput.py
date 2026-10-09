@@ -775,3 +775,101 @@ def test_script_runs_the_posttraining_stage_only_without_the_hold(learning_hold,
     with pytest.raises(LearningHoldError):
         script["main"](arguments)
     assert not (tmp_path / "out").exists()
+
+
+RL_STAGES = {
+    v: Path(f"configs/simulation/historical-masked-rl-stage-{v.lower()}.json") for v in "AB"
+}
+POLICY_RATES = dict(
+    stepping={
+        market: dict(python=dict(steps_per_second=500.0), native=dict(status="unavailable"))
+        for market in ("CN", "US")
+    },
+    network=dict(
+        inference_transitions_per_second={"1": 2000.0, "16": 16000.0},
+        gradient_minibatches_per_second=100.0,
+    ),
+)
+
+
+def policy_stage(path):
+    from mars_titan.simulation import policy_plan
+
+    return policy_plan.load_stage(path)
+
+
+@pytest.fixture
+def policies(monkeypatch):
+    from mars_titan.simulation import policy_throughput
+
+    calls = []
+
+    def measured(stage, **kwargs):
+        calls.append((stage["campaign"]["variant"], kwargs))
+        return POLICY_RATES
+
+    monkeypatch.setattr(policy_throughput, "measure_policies", measured)
+    return calls
+
+
+def test_campaign_report_adds_the_policy_stage_apart_from_gpu_hours(doubled, policies, tmp_path):
+    paths = [CAMPAIGNS["A"], CAMPAIGNS["B"]]
+    without = throughput.measure_campaigns(paths, {}, tmp_path / "v.json", work=tmp_path / "w")
+    doubled.clear()
+    report = throughput.measure_campaigns(
+        paths,
+        {},
+        tmp_path / "v.json",
+        rl_stages=[RL_STAGES["A"], RL_STAGES["B"]],
+        work=tmp_path / "w",
+        policy_steps=512,
+    )
+    # El entorno y la red se miden una vez y las familias cronológicas no reciben sus ajustes.
+    assert policies == [("A", dict(steps=512, warmup=64))]
+    for *_, kwargs in doubled:
+        assert not any(key.startswith("policy_") for key in kwargs)
+    assert report["rates"][throughput.POLICY_STAGE] == POLICY_RATES
+    jobs = dict(A=dict(fit=720, reference=144), B=dict(fit=240, carry=480, reference=144))
+    for estimate, previous in zip(report["estimates"], without["estimates"], strict=True):
+        stage = estimate[throughput.POLICY_STAGE]
+        assert stage["status"] == "approximate" and stage["jobs"] == jobs[estimate["variant"]]
+        assert stage["hours"] > 0 and throughput.POLICY_STAGE not in estimate["families"]
+        assert estimate["total_gpu_hours"] == previous["total_gpu_hours"]
+    assert report["optimizer_steps"] == 0
+
+
+def test_a_policy_stage_needs_its_measured_campaign_and_shared_policies(
+    doubled, policies, tmp_path
+):
+    with pytest.raises(ValueError, match="Cada etapa de políticas parte de una campaña medida"):
+        throughput.measure_campaigns(
+            [CAMPAIGNS["A"]], {}, tmp_path / "v.json", rl_stages=[RL_STAGES["B"]], work=tmp_path
+        )
+    with pytest.raises(ValueError, match="enteros acotados"):
+        throughput.measure_campaigns(
+            [CAMPAIGNS["A"]], {}, tmp_path / "v.json", work=tmp_path, policy_steps=0
+        )
+    assert doubled == [] and policies == []
+    campaign = load_campaign(CAMPAIGNS["A"])
+    with pytest.raises(ValueError, match="no parte de esta campaña"):
+        throughput.estimate_hours(
+            campaign, *uniform(campaign, ROWS), policy_stage=policy_stage(RL_STAGES["B"])
+        )
+    estimate = throughput.estimate_hours(
+        campaign, *uniform(campaign, ROWS), policy_stage=policy_stage(RL_STAGES["A"])
+    )
+    assert estimate[throughput.POLICY_STAGE] == dict(status=throughput.NOT_MEASURED)
+
+
+def test_script_measures_the_policy_stage(doubled, policies, tmp_path, capsys):
+    import runpy
+
+    script = runpy.run_path("scripts/run_masked_campaign.py", run_name="script")
+    arguments = ["throughput", "--campaign", str(CAMPAIGNS["B"]), "--views", f"US={tmp_path}"]
+    arguments += ["--rl-stage", str(RL_STAGES["B"]), "--first-view", str(tmp_path / "v.json")]
+    arguments += ["--work", str(tmp_path / "work"), "--policy-warmup", "8"]
+    assert script["main"](arguments) == 0
+    printed = json.loads(capsys.readouterr().out)
+    assert policies == [("B", dict(steps=2048, warmup=8))]
+    (estimate,) = printed["estimates"]
+    assert estimate[throughput.POLICY_STAGE]["jobs"]["carry"] == 480
