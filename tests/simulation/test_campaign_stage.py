@@ -391,6 +391,34 @@ def test_policy_binaries_declare_their_capabilities_and_identity():
         assert len(identity["native_build_sha256"]) == 64
 
 
+def fake_binary(path, report):
+    """Ejecutable que responde a `--capabilities` con el informe dado o falla sin él."""
+    body = "exit 1" if report is None else f"printf '%s' '{json.dumps(report)}'"
+    path.write_text(f"#!/bin/sh\n{body}\n")
+    path.chmod(0o755)
+    return path
+
+
+def test_a_binary_without_the_capability_or_with_another_name_is_unavailable(monkeypatch, tmp_path):
+    # Un binario anterior al esquema 4, otro ejecutable o uno que falla no cuentan.
+    declared = ["native_policy_reconstructed_tapes"]
+    older = dict(schema_version=1, binary="mars-titan-ppo", capabilities=[])
+    cases = {
+        "older": (older, "declara"),
+        "renamed": (dict(older, binary="mars-titan-sim", capabilities=declared), "declara"),
+        "failing": (None, "no informa"),
+    }
+    missing_binaries(monkeypatch, tmp_path)
+    for name, (report, message) in cases.items():
+        variable = native_policy_runs.BINARIES["native_ppo"][0]
+        monkeypatch.setenv(variable, str(fake_binary(tmp_path / name, report)))
+        with pytest.raises(ValueError, match=message):
+            native_policy_runs.probe_binary("native_ppo", declared[0])
+        probed = campaign_stage.probe_capabilities()["native_policy_reconstructed_tapes"]
+        assert probed["available"] is False and message in probed["reason"]
+        assert "binary" not in probed
+
+
 def _pop(job, report):
     report["evaluation"].pop()
     return report
@@ -424,6 +452,13 @@ def _fewer(job, report):
     return report
 
 
+def _beyond_waves(job, report):
+    # KLPO declara sus oleadas completas, pero no puede gastar más de lo que caben.
+    if job["kind"] == "fit" and job["engine"] == "native_klpo":
+        report["transitions"] += 10**6
+    return report
+
+
 def _episode(**values):
     def change(job, report):
         report["evaluation"][0] = dict(report["evaluation"][0], **values)
@@ -442,6 +477,7 @@ INVALID = {
     "predictor_mae": (_selection(metric="session_mae"), "criterio de cartera"),
     "selects_on_evaluation": (_selection(partition="evaluation"), "criterio de cartera"),
     "fewer_transitions": (_fewer, "presupuesto"),
+    "klpo_beyond_its_waves": (_beyond_waves, "presupuesto"),
     "policy_of_another_job": (
         _set(policy=dict(id="US/US/fold-002/gru/double_dqn/fit-s42", sha256="a" * 64)),
         "política elegida",

@@ -26,7 +26,7 @@ from mars_titan.simulation import campaign_stage, native_policy_runs
 from mars_titan.simulation.market import MarketTape
 from mars_titan.simulation.storage import read_tape, write_tape
 from mars_titan.training.learning_hold import HOLD_ENV
-from tests.simulation.policy_tape_fixture import write_policy_tapes
+from tests.simulation.policy_tape_fixture import ROLES, monthly_window, write_policy_tapes
 
 ROOT = Path(__file__).resolve().parents[2]
 POLICIES = ROOT / "configs/simulation/historical-masked-rl-policies.json"
@@ -136,6 +136,13 @@ def test_ppo_pauses_on_real_tapes_before_its_first_update(
         )
     assert report["domain"] == "technical" and report["selected_policy_sha256"] is None
     assert report["evaluations"] == 1 and "analysis_domain" not in report
+    # Una selección abierta no se evalúa.
+    audit = ["--audit-run", output, "--audit-tape", tapes[market]["evaluation"][0][0]]
+    result = run(
+        binaries["native_ppo"], hold, "--config", config, "--output", tmp_path / "open", *audit
+    )
+    assert result.returncode == 1 and "selección finalizada" in result.stderr
+    assert not (tmp_path / "open").exists()
     identity = read(output / "identity.json")["identity"]
     assert identity["schema_version"] == 4 and identity["sources_contract"] == (
         "unadjusted_reconstructed_walk_forward_v1"
@@ -194,6 +201,13 @@ def test_double_dqn_selects_and_evaluates_the_chosen_state_without_updates(
     zero = document["metrics"][0]
     assert zero["net_return"] == zero["liquidated_net_return"]
     assert (zero["costs"] == 0) is (market == "US")
+    # Una cinta de evaluación que no es posterior a la validación se rechaza.
+    early = ["--audit-run", fit, "--audit-tape", tapes[market]["early_evaluation"][0][0]]
+    result = run(
+        binaries["native_ppo"], hold, "--config", config, "--output", tmp_path / "early", *early
+    )
+    assert result.returncode == 1 and "posterior a la selección" in result.stderr
+    assert not (tmp_path / "early").exists()
 
 
 def test_klpo_collects_a_full_wave_and_pauses_before_update_ready(
@@ -253,6 +267,22 @@ def test_klpo_collects_a_full_wave_and_pauses_before_update_ready(
     assert document["identity"]["policy_sha256"] == payload["best"]["actor_sha256"]
     assert document["identity"]["optimizer_steps"] == 0
     assert [row["cost_bps"] for row in document["metrics"]] == [0.0, 10.0, 25.0]
+
+
+def test_klpo_rejects_a_budget_below_one_complete_wave(binaries, tapes, tmp_path, learning_hold):
+    hold = learning_hold(True)
+    us = tapes["US"]
+    wave = len(us["train"][1][1]) - 1
+    stage = diagnostic_stage(environments=1, transitions=wave - 1, evaluation_transitions=wave - 1)
+    config = write_config(
+        tmp_path / "klpo.json",
+        native_policy_runs.klpo_config(stage, job("klpo_terminal", "native_klpo")),
+    )
+    output = tmp_path / "out"
+    arguments = ["--config", config, "--output", output, *sources(us, train=(1,))]
+    # La pausa pedida evita cualquier actualización aunque faltara la comprobación.
+    result = run(binaries["native_klpo"], hold, *arguments, "--stop-after", 1)
+    assert result.returncode == 1 and "ni una oleada completa" in result.stderr
 
 
 def blocking(tmp_path):
@@ -431,6 +461,18 @@ def test_stage_executors_fit_carry_and_pause_through_the_launcher(
         anchor=anchor,
     )
     assert {record["reason"] for record in failed["evaluation"]} == {"universe_assets_excluded"}
+    # Un ancla con otra huella o una carpeta fuera de la etapa no se evalúan.
+    forged = dict(anchor, policy=dict(report["policy"], sha256="c" * 64))
+    with pytest.raises(ValueError, match="política elegida"):
+        executor(carry_job, us, carry_folder, stage=stage, resume=True, stop=stop, anchor=forged)
+    outside = tmp_path / "elsewhere" / "run"
+    outside.mkdir(parents=True)
+    with pytest.raises(ValueError, match="no encuentra la salida"):
+        executor(carry_job, us, outside, stage=stage, resume=False, stop=stop, anchor=anchor)
+    # Cada episodio debe corresponder a la cinta y al coste evaluados.
+    row = dict(report["evaluation"][0], manifest_sha256="0" * 64)
+    with pytest.raises(ValueError, match="no corresponde a su cinta"):
+        native_policy_runs._record(row, 0, sha256(Path(us.paths["evaluation"]) / "manifest.json"))
 
     klpo_stage = diagnostic_stage(environments=1)
     klpo_stage["policies"]["evaluation_costs_bps"] = [0, 10, 25]
@@ -444,10 +486,40 @@ def test_stage_executors_fit_carry_and_pause_through_the_launcher(
     )
     assert paused == dict(status="paused")
     assert read(klpo_folder / "fit/run.json")["optimizer_steps"] == 0
+    # El ajuste pausado se reanuda en su carpeta y vuelve a pausarse en el mismo punto.
+    again = klpo(
+        klpo_job, single, klpo_folder, stage=klpo_stage, resume=True, stop=stop, anchor=None
+    )
+    assert again == dict(status="paused")
+    assert read(klpo_folder / "fit/run.json")["collected_transitions"] == 5
     changed = copy.deepcopy(klpo_stage)
     changed["policies"]["selection"]["min_delta"] = 0.5
     with pytest.raises(ValueError, match="configuración nativa cambió"):
         klpo(klpo_job, single, klpo_folder, stage=changed, resume=True, stop=stop, anchor=None)
+
+
+def test_stage_writes_chinese_tapes_with_their_a_share_rules(tapes, tmp_path):
+    folder, tape = tapes["CN"]["validation"][0]
+    window, values = monthly_window(
+        "CN", ROLES[2][1], [asset.split("/")[1] for asset in tape.assets]
+    )
+    policies = dict(environment=dict(dividend_payment_lag_sessions=0), universe=dict(max_assets=8))
+    stage_tapes = campaign_stage._Tapes(
+        policies,
+        lambda *_: (window, values),
+        folder.parents[1] / "edition",
+        "fixture",
+        tmp_path,
+        "fixture",
+    )
+    job = dict(scope="CN", market="CN", predictor="fixture", anchor="fixture")
+    written, built, failure, _ = stage_tapes.tape(
+        job, "validation", window.fold, tuple(tape.assets)
+    )
+    assert failure is None and tuple(built.assets) == tuple(tape.assets)
+    manifest = read(written / "manifest.json")
+    assert manifest["schema_version"] == 2 and set(manifest["instruments"]) == set(tape.assets)
+    assert manifest["instruments"] == read(folder / "manifest.json")["instruments"]
 
 
 def test_stage_requires_the_engine_costs(tapes, tmp_path):

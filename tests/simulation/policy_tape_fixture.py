@@ -87,4 +87,13 @@ def write_policy_tapes(root, market, *, lag=LAG):
         folder = root / f"{market}-lag{lag}" / f"{number}-{role}"
         write_tape(tape, folder, instruments=instruments(tape, market))
         result[role].append((folder, tape))
+    # La primera ventana de ajuste con el papel de evaluación: su manifiesto es distinto del
+    # de la cinta de ajuste, pero termina antes de la selección.
+    window, values = monthly_window(market, ROLES[0][1], symbols)
+    tape, _ = window_tapes.build_segment_tape(
+        edition, window, values, market=market, role="evaluation", lag=lag
+    )
+    folder = root / f"{market}-lag{lag}" / "early-evaluation"
+    write_tape(tape, folder, instruments=instruments(tape, market))
+    result["early_evaluation"] = [(folder, tape)]
     return result
