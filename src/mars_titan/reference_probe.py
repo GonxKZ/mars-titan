@@ -19,6 +19,7 @@ from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.data.streaming import iter_windows
 from mars_titan.models.baselines.inputs import MODALITIES, feature_vector, tabular_batches
 from mars_titan.models.baselines.ridge import RidgeModel, fit_ridge_blocks
+from mars_titan.training.learning_hold import require_learning_allowed
 
 
 def prepare_probe(prepared: Path, samples: Path, output: Path, report_path: Path):
@@ -74,6 +75,7 @@ def run_reference_probe(
     alpha: float = 1.0,
     kind: str = "ridge",
 ):
+    require_learning_allowed("el ajuste de la sonda ridge o boosting")
     if kind not in {"ridge", "boosting"}:
         raise ValueError("La referencia solicitada no está implementada")
     started = time.perf_counter()

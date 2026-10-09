@@ -10,10 +10,10 @@ El [recibo de fuentes](../../reports/research/titans-mac-source-audit-20261008.j
 
 | Referencia | Función | Estado revisado el 9 de octubre de 2026 |
 | --- | --- | --- |
-| GRU con banco episódico | Conservar el candidato previo y sus controles de escritura | [Componente C++20 integrado](../../native/candidate.md) y [adaptador histórico con máscaras](../../native/candidate_historical.md), con pruebas CPU/CUDA, gradientes y recuperación del módulo. Pendientes la conexión cronológica y el banco 128×256 de esta variante. No entrenado. |
+| GRU con banco episódico | Conservar el candidato previo y sus controles de escritura | [Componente C++20 integrado](../../native/candidate.md) y [adaptador histórico con máscaras](../../native/candidate_historical.md), con pruebas CPU/CUDA, gradientes y recuperación del módulo. La [conexión cronológica y el banco 128×256](../engineering/gru-financial-sessions.md) tienen pruebas CPU y falta su comprobación CUDA. El [entrenador cronológico](../engineering/candidate-chronological-trainer.md) está comprobado en CPU sin pasos de optimizador. No entrenado. |
 | Transformer compacto | Aislar el cambio de codificador con proyecciones, fusión y cabeza comunes | [Referencia integrada](../engineering/compact-transformer-reference.md), con pruebas CPU/CUDA y paridad de los modos anteriores. Sin resultados predictivos propios. |
-| Titans-MAC adaptado | Atención cercana, memoria neuronal actualizable y memoria persistente aprendida | [Núcleo](../engineering/titans-memory-core.md), [adaptador](../engineering/titans-financial-adapter.md) y [consumidor cronológico](../engineering/financial-session-v2.md) integrados, con pruebas técnicas CPU/CUDA. Sin entrenamiento ni trayectoria histórica completa ejecutada. |
-| MARS-TITAN sobre Titans-MAC | Incorporar las modificaciones acordadas mediante componentes desactivables | El consumidor conecta banco, lectura y estados con M0/M1 y [M2 con tres índices 50/25/25](../engineering/mature-error-write-policy.md). M2 tiene una comprobación CUDA focal FP32/FP64, K=1, B_mem=4 y C apagado. K repite la lectura sin multiplicar actualizaciones de MAC. M3 y la consolidación M sobre M2 continúan pendientes. |
+| Titans-MAC adaptado | Atención cercana, memoria neuronal actualizable y memoria persistente aprendida | [Núcleo](../engineering/titans-memory-core.md), [adaptador](../engineering/titans-financial-adapter.md) y [consumidor cronológico](../engineering/financial-session-v2.md) integrados, con pruebas técnicas CPU/CUDA. El [entrenador cronológico](../engineering/titans-chronological-trainer.md) está comprobado en CPU sin pasos de optimizador. La [inicialización con bias declarado de las puertas](../engineering/titans-gate-initialization.md) evita el colapso de la memoria rápida en fixtures. `FinancialConfig` la expone y las recetas cronológicas la declaran para la campaña. La [memoria con residual y LayerNorm](../engineering/titans-mac-output-scale.md) de la sección 3.3 es un componente desactivable que activa la receta de la campaña desde 2000, con las recetas v1 intactas. La [ventana walk-forward](../engineering/titans-chronological-trainer.md#ventana-walk-forward) escribe predicciones por fila. Sin entrenamiento ni trayectoria histórica completa ejecutada. |
+| MARS-TITAN sobre Titans-MAC | Incorporar las modificaciones acordadas mediante componentes desactivables | El consumidor conecta banco, lectura y estados con M0/M1 y [M2 con tres índices 50/25/25](../engineering/mature-error-write-policy.md). M2 tiene una comprobación CUDA focal FP32/FP64, K=1, B_mem=4 y C apagado. K repite la lectura sin multiplicar actualizaciones de MAC. M3 y la consolidación M sobre M2 continúan pendientes. Ningún entrenador ajusta todavía los parámetros del lector episódico. La [correspondencia de modificaciones](#correspondencia-de-las-modificaciones-de-integración) fija el nivel de cada ampliación y la [variante declarada](#variante-mars-titan-con-ampliaciones) sus componentes desactivables. |
 | CM-v1 | Contrastar C y M sobre una referencia concreta, sin sustituirla | [C local de MAC](../experiments/mars_titan_cm_v1/mac_local_control.md), selector M y codec comprobados. El consumidor integra retenciones configurables. Pendientes la composición factorial completa y el estudio científico. Desactivada por defecto. |
 
 Estos nombres describen brazos del estudio. No renombran checkpoints ni convierten una referencia anterior en Titans. El valor de `baseline_id` de cada contraste debe señalar una configuración ejecutable y fijada. La elección de una nueva arquitectura para B crea otro contraste B, B+C, B+M y B+C+M, conservando los manifiestos anteriores.
@@ -27,7 +27,7 @@ La memoria neuronal representa una función parametrizada por pesos rápidos, no
 $$\ell(M_{t-1};x_t)=\|M_{t-1}(k_t)-v_t\|_2^2,$$
 $$S_t=\eta_t S_{t-1}-\theta_t\nabla_M\ell(M_{t-1};x_t),\qquad M_t=(1-\alpha_t)M_{t-1}+S_t.$$
 
-La implementación debe declarar las formas y la aplicación de las puertas dependientes de la entrada. No basta una tasa fija o una regla delta sin momentum para identificar este núcleo. Las proyecciones y la atención pertenecen al ajuste externo. La actualización interna modifica los pesos rápidos y su momentum con el objetivo asociativo.
+La implementación debe declarar las formas y la aplicación de las puertas dependientes de la entrada. No basta una tasa fija o una regla delta sin momentum para identificar este núcleo. El artículo no fija la forma funcional, el bias ni la inicialización de `α`, `η` y `θ`. Sin bias, `α` empieza cerca de 0,5 y la memoria de dos capas tiende a lecturas nulas. La identidad con `gate_bias` fija las tasas iniciales para entrada nula y conserva la dependencia de la entrada. Es una decisión propia, analizada en la [inicialización de las puertas](../engineering/titans-gate-initialization.md). Las proyecciones y la atención pertenecen al ajuste externo. La actualización interna modifica los pesos rápidos y su momentum con el objetivo asociativo.
 
 MAC recupera información desde el estado previo, la incorpora con los parámetros persistentes al contexto de atención, actualiza memoria con la salida de atención y combina ambas salidas. La sección 3.1 y las ecuaciones (7–10) especifican este recorrido. Los parámetros persistentes de la ecuación (6) se aprenden durante el ajuste externo y permanecen fijos durante inferencia.
 
@@ -45,6 +45,8 @@ La máscara necesita una comprobación adicional. Si `h_j` se obtiene consultand
 | Banco episódico | Episodios reales, identidad, representación, disponibilidad y predicción emitida | Admisión y retención separadas. El error financiero solo se incorpora al madurar el resultado. |
 | Estado de trabajo | Activaciones, consulta y refinamientos de una predicción | Se descarta al terminar esa predicción. |
 | Cola pendiente y cursor | Predicciones emitidas, etiquetas aún no utilizables y posición confirmada | Confirmación temporal recuperable. No participa en recuperación ni consolidación antes de ser elegible. |
+| Memoria asociativa A (ampliación) | Matriz de clave por valor, contador y cursor de resultados aplicados | Solo cambia con etiquetas maduras, después de emitir, en orden canónico. No toca pesos rápidos ni banco. |
+| Estado del régimen (ampliación) | Probabilidades filtradas y cursor del filtro | Avanzaría una vez por cohorte con observaciones permitidas, antes de predecir. Propuesto, sin conexión. |
 
 Cada recorrido debe declarar cómo se inicializan, reinician, arrastran y guardan los pesos rápidos. El estado por activo o flujo no puede depender del orden de los activos en el lote. Todas las predicciones de una misma sesión parten del snapshot publicado para esa sesión. Una adaptación local a entradas observadas debe ser explícita y no propagar efectos entre activos por el orden de ejecución.
 
@@ -52,25 +54,168 @@ La sorpresa asociativa es una cantidad del objetivo de memoria. El error financi
 
 La serialización debe conservar parámetros compartidos, pesos rápidos, momentum, memoria persistente, banco episódico, cola, cursor, representación, RNG y configuración. Los grafos de autograd del pasado no forman parte del estado persistido. La política de diferenciación distingue el ajuste externo de la actualización interna y debe verificarse con gradientes, no mediante una desconexión indiscriminada.
 
-## Modificaciones y controles
-
-Las [decisiones de integración](system-integration.md) y la [revisión de ampliaciones](neuroarchitecture-review.md) conservan las propuestas anteriores. Su incorporación requiere un punto de inserción y una comprobación concreta. La [referencia episódica](candidate-architecture.md) conserva las reglas del candidato previo.
+## Controles de los brazos sin ampliaciones
 
 | Componente | Inserción o responsabilidad | Control necesario |
 | --- | --- | --- |
 | Cuatro modalidades y macro | Representaciones comunes, máscaras explícitas y fusión con información disponible | Mismas filas, catálogos, objetivo residual y cortes en todos los brazos de la edición. |
 | Codificador Transformer | Reemplazo identificado del codificador temporal, con la fusión y cabeza comparables | GRU previa y Transformer sin memoria neuronal. |
 | Memoria neuronal | Lectura y actualización interna de Titans-MAC | Misma atención y parametrización pertinente con actualización congelada, y control sin memoria identificado. |
-| Banco episódico | Lectura adicional de episodios, separada de los pesos rápidos | Banco desactivado y políticas original, uniforme y selectiva con capacidad comparable. |
-| Error maduro y sorpresa económica | Admisión posterior a la predicción y a la disponibilidad del resultado | Error solo frente a combinación completa, sin recalcular la predicción histórica. |
-| Régimen e incertidumbre | Estado filtrado y salidas ya previstas por sus contratos | Opciones independientes y calibración separada de selección. Su inclusión no se da por implementada. |
-| Refinamientos K | Estado temporal de una predicción | K=1 principal, K=2 y K=4 con número de lecturas y presupuesto emparejados. |
-| Replay, especialistas y destilación | Extensiones con padres y datos permitidos identificados | Componentes desactivados y comparación propia antes de incorporarlos al predictor. |
-| C y M | Operador real de la dinámica y consolidación del banco episódico | Factorial independiente y paridad con ambos desactivados. |
 
 Los identificadores M0–M3 de las políticas de escritura se conservan. En cualquier adaptación que ya tenga memoria neuronal debe indicarse expresamente qué memoria desactiva una ablación. No se puede presentar la retirada del banco episódico como retirada de toda la memoria de Titans.
 
 Una mejora aparente puede proceder del codificador, del número de parámetros, de la exposición a datos o del tiempo adicional. Se registran esos costes por separado y se distinguen igualdad de actualizaciones e igualdad de cómputo. No se amplía retrospectivamente una búsqueda solo para favorecer un brazo.
+
+## Correspondencia de las modificaciones de integración
+
+Esta sección relaciona cada propuesta de la [revisión de integración](system-integration.md) con su punto de inserción sobre Titans-MAC. El estado se comprobó en el código de `develop` del 9 de octubre de 2026 (8ffb95aa), no solo en la documentación. Las [decisiones de integración](system-integration.md), la [revisión de ampliaciones](neuroarchitecture-review.md) y la [referencia episódica](candidate-architecture.md) conservan las propuestas y reglas anteriores.
+
+Se usan cinco niveles. Ninguno implica el siguiente.
+
+| Nivel | Significado |
+| --- | --- |
+| N1 | Propuesta, sin código propio. |
+| N2 | Componente aislado, sin conexión con el consumidor de MARS-TITAN. |
+| N3 | Conectado a `FrozenFinancialConsumer` o `FinancialSession` sobre `FinancialPredictor`. |
+| N4 | Comprobado técnicamente en ese consumidor, con pruebas CPU y CUDA cuando se indica. |
+| N5 | Experimento ejecutado. Ninguna modificación alcanza este nivel. |
+
+Una propuesta sin punto de inserción justificado o sin un control que permita descartarla queda como no incorporada. No se añade un módulo para completar la tabla. La «relación con el núcleo» indica si la modificación cambia el cálculo de Titans-MAC o actúa antes o después de él.
+
+### Inserción y estado
+
+| ID | Modificación (sección de la revisión) | Inserción sobre Titans-MAC (archivo, función, tensor y momento) | Relación con el núcleo | Estado que lee o modifica | Interruptor | Nivel |
+| --- | --- | --- | --- | --- | --- | --- |
+| I01 | Ciclo de decisión, registro inmutable y maduración (Decisión arquitectónica, Decisiones y maduración) | `FinancialSession.step` sobre el `Executor` nativo de `cohort_execution`. Prepara todo el evento con la generación anterior, emite `Prediction{id, generation, value}`, resuelve después los resultados maduros y publica una generación | Envuelve al núcleo sin cambiar su cálculo | Cola pendiente, cursor, generación y predicciones emitidas | Ninguno. Es el contrato común de todos los brazos con estado | N4. Falta la aceptación sobre todas las fases históricas |
+| I02 | Vista común antes de los consumidores (Arquitectura propuesta) | `FinancialInputSpec(source_sha256, view_sha256)` compartida por predictor, codec y verificador de prefijos. `TitansBinding.check` rechaza fuentes distintas al construir la sesión | Fija las entradas del núcleo | Identidad de entradas | Ninguno | N4 para predictor y codec. Padre, régimen y calibrador no están conectados |
+| I03 | Vista reducida (Variantes y orden de contraste) | `ViewDataset` delante de `prepare_observation_index` en `memory/financial_observations.py`, que hoy exige un `CorpusDataset` exacto. Retira valores, máscaras y edades en los cinco bloques antes de cualquier consumidor | Cambia las entradas del núcleo sin cambiar sus formas | Entradas. Invalida tokens, pesos rápidos, claves del codec y predicciones guardadas | Vista completa, que devuelve los mismos valores | N2 |
+| I04 | Lecturas de una instantánea común (Decisión arquitectónica) | `TitansBinding.snapshot` crea un `EpisodeSnapshot` con el banco confirmado antes del primer bloque. Todos los activos, bloques y pasos K leen esa copia, con `cutoff` y `context_id` del evento | Posterior a MAC | Banco episódico en lectura | Sin lector no hay instantánea | N4 |
+| I05 | Banco episódico y lectura posterior a MAC (MARS-TITAN original, banco y lectura K fija) | Lectura: `FrozenFinancialConsumer.prepare` llama a `apply_episodic_readout` sobre `working_state` [flujos, 64] y aplica la cabeza del núcleo. Escritura: `FinancialSession._resolve` con `TitansBinding.propose`, después de emitir | Posterior a MAC. No modifica pesos rápidos, atención ni memoria persistente | Banco 64×64 con hasta 1.024 episodios y parámetros del lector | `readout=None` reproduce el núcleo. `mode="no_bank"` conserva el refinador con lectura cero (M0) | N4. Ningún entrenador ajusta el lector. El banco de 8.192 episodios con claves 128 y base 256 solo existe en la GRU |
+| I06 | Error financiero de la predicción emitida, utilidad medida tras el resultado (Decisiones y maduración) | `FinancialSession._resolve` calcula `label − issued_prediction` con la salida del registro nativo y la entrega a `MatureErrorBank` | Independiente. Usa la predicción emitida, no la sorpresa asociativa | Admisión del banco | `admission` m0, m1 o m2. M3 se rechaza | N4. M2 con CUDA focal FP32/FP64, K=1, B_mem=4 y C apagado |
+| I07 | Refinamientos K = 1, 2 y 4 (Recurrencia, primer bucle) | `EpisodicReadout.forward` aplica K lecturas y pasos sobre el estado de trabajo tras una única preparación MAC | Posterior a MAC. No cuenta actualizaciones de memoria | Estado de trabajo, que se descarta | `refinements`, con K=1 principal | N4 en CPU. La comprobación CUDA de M2 solo cubre K=1 |
+| I08 | Cálculo adaptativo de K y autoevaluación (Recurrencia, Valor del cálculo) | Puerta por flujo antes de `EpisodicReadout.forward` (archivo del núcleo, excluido de esta tarea), con lote activo B_k decreciente y parámetros fijados en desarrollo | Posterior a MAC | Estado de trabajo y asignación de K | K fijo | N1 |
+| I09 | Régimen filtrado (Arquitectura propuesta, Tres escalas de estado) | Paso nuevo en `FinancialSession._prepare_event`, antes de crear la instantánea, con observaciones de mercado disponibles hasta el corte. Su posterior se guardaría en la generación y entraría como contexto antes de `self.fusion` en `FinancialPredictor.prepare` (excluido) o como partición del banco en `TitansBinding.bank` | Cambia la entrada de la fusión o el banco | Estado del filtro, una transición por cohorte | Sin régimen | N2. `MarkovFilter` C++20 solo sirve al contexto PPO, sin enlace Python. Sus parámetros por fold necesitan un ajuste bloqueado |
+| I10 | Selección de documentos antes de agregar (Vista de información y conservación de documentos) | Datos: `DocumentIndex.batches(asset_id, start, end)` con los límites de `_text_window`, en un tensor [B, D, 384] con máscara y disponibilidad. Modelo: sustituir la media que recibe `self.encoders["news"]` en `FinancialPredictor.prepare` (excluido) | Sustituye una entrada del núcleo | Representación de noticias. Invalida tokens y pesos rápidos. El codec del banco conserva la media salvo declaración nueva | Media de la ventana. Pesos uniformes deben reproducirla | N2 |
+| I11 | Memoria asociativa delta o proximal (Recurrencia, segundo bucle) | Lectura en `TitansBinding.prepare_event` tras `FrozenFinancialConsumer.prepare`, con `row.key_inputs` normalizada como en el banco y la A de la generación anterior. Escritura en `FinancialSession._resolve` junto a `propose`, con `MatureFeedback` y valor `label − predicción del núcleo` | Posterior a la cabeza del núcleo | Matriz A, contador y cursor propios | Componente ausente. Con A = 0 la lectura es cero | N2, [componente aislado](../engineering/mature-associative-memory.md) |
+| I12 | Replay programado (Postentrenamiento y adaptadores) | Entrenador cronológico tras aplicar las etiquetas maduras de cada tramo, con `ReplaySchedule.prepare` y `commit`. `training/financial_run.py` está excluido de esta tarea | Ajuste de parámetros compartidos, solo en entrenamiento | Parámetros, optimizador y cursor del calendario | Sin replay | N2. Calendarios C++20 sin conexión |
+| I13 | Adaptadores de consulta, salida y bajo rango (Postentrenamiento y adaptadores) | Sobre el padre seleccionado: `head`, `mac.query_projection` y `mac.attention.out_proj`, `fusion.0`. En MARS-TITAN, `query_projection` y `value_projection` del lector | Modifica parámetros del núcleo o del lector tras seleccionar el padre | Parámetros compartidos. Invalidan predicciones guardadas, salidas de atención o representaciones según el punto | Padre congelado | N1 para Titans y el lector, declarados como pendientes en la matriz. N2 con `AdapterControl` sintético |
+| I14 | Retorno con riesgo estimado: cuantiles y calibración (Arquitectura propuesta) | `FinancialConfig.head="quantile_head_v1"` y `apply_episodic_readout` con la misma cabeza. Calibración común fuera del modelo | Cabeza común a todos los brazos, no es una ampliación | Parámetros de la cabeza | Cabeza escalar | N4 para la cabeza en el entrenador, con paso CUDA sin optimizador. Calibración N2 |
+| I15 | Destilación (Postentrenamiento y adaptadores) | Profesor MARS-TITAN completo y alumno Titans-MAC con K=1, con salidas del profesor solo de tramos permitidos | Entrenamiento separado | Parámetros del alumno | Sin destilación | N1 |
+| I16 | Eventos auxiliares (Ruido, hechos verificables y eventos públicos) | Cabezas sobre `working_state` con pérdidas y máscaras propias | Posterior a MAC | Parámetros de cabezas auxiliares | Sin cabezas | No incorporada |
+| I17 | Adaptación autosupervisada (Recurrencia, cuarto modo) | Modo de ajuste separado sobre ventanas ya observadas | Ajuste de parámetros | Parámetros | Pesos congelados | No incorporada |
+| I18 | Sondas de representaciones e intervenciones (Recurrencia) | Registro acotado de representaciones, consultas, episodios y salidas por K sobre copias de la instantánea | Análisis posterior | Ninguno del recorrido principal | Sin registro | No incorporada |
+| I19 | Continuidad prequential entre fases (Tres escalas de estado) | Reinicio o arrastre de pesos rápidos y banco entre calibración y evaluación | Estado del núcleo y del banco | Pesos rápidos y banco | Reinicio por fase | N1. La política común se fija en #363 |
+| I20 | C y M de CM-v1 | C sobre la transición rápida de MAC antes del lector y M como retención `anchored` del banco | C mide el núcleo. M actúa sobre el banco | Diagnóstico C y banco | `local_control=None` y retención original | N4 como composición técnica. Es la variante independiente de #293, no forma parte de esta |
+
+### Objetivo, control y evidencia
+
+| ID | Objetivo predictivo que ayuda a contrastar | Control que permitiría descartarla | Evidencia actual | Issues |
+| --- | --- | --- | --- | --- |
+| I01 | Requisito de validez. Sin él cualquier efecto de memoria podría proceder de información futura | Invariancia al sufijo futuro, al orden de activos y a los bloques físicos | [Sesión](../../tests/memory/test_financial_session.py), [M2](../../tests/memory/test_financial_session_m2.py), [ejecución de cohortes](../engineering/cohort-execution.md) | #21, #217, #23 |
+| I02 | Requisito de validez de las comparaciones | Rechazo de un codec de otra vista antes de abrir la sesión | `test_codec_from_another_view_is_rejected_before_creating_a_session` en la [sesión](../../tests/memory/test_financial_session.py), añadida con esta correspondencia. El rechazo de un prefijo de otra fuente no tiene prueba propia en la ruta Titans | #21, #23 |
+| I03 | No inferioridad con menos información, con margen fijado antes de evaluar | Vista completa con paridad exacta y auditoría de todas las rutas, incluida la del padre | [Vistas](../../tests/data/test_information_views.py), [entradas](../../tests/training/test_information_inputs.py), [guía](../engineering/information-views.md) | #214, #28 |
+| I04 | Requisito de validez de las lecturas | Instantánea futura rechazada al corte de la decisión | [Consumidor](../../tests/models/titans/test_frozen_financial.py), [lector](../../tests/models/titans/test_episodic_readout.py) | #21 |
+| I05 | ¿Recuperar episodios maduros similares reduce el MAE residual de Titans-MAC con la misma información? | Titans-MAC con `readout=None`, M0 `no_bank` con el mismo presupuesto de ajuste y M1 a igual capacidad | [Consumidor](../../tests/models/titans/test_frozen_financial.py), [sesión](../../tests/memory/test_financial_session.py), [CUDA](../../tests/memory/cuda_financial_session_check.py), [guía](../engineering/episodic-financial-readout.md) | #18, #23 |
+| I06 | ¿Seleccionar por error maduro conserva episodios más útiles que el reservorio a igual capacidad y escrituras? | M1 uniforme con la misma capacidad física y las ofertas contadas | [M2](../../tests/memory/test_financial_session_m2.py), [CUDA](../../tests/memory/cuda_mature_error_check.py), [guía](../engineering/mature-error-write-policy.md) | #19 |
+| I07 | ¿El cálculo adicional sobre la misma información reduce el error? | K=1 con lecturas emparejadas. Falta un modo que reutilice los episodios de la primera lectura, porque hoy cada paso vuelve a seleccionar y K=4 puede examinar más episodios únicos | [Una actualización MAC por K](../../tests/models/titans/test_frozen_financial.py), [selección por paso](../../tests/models/titans/test_episodic_readout.py) | #56 |
+| I08 | Igual MAE con menos aplicaciones del bloque | K fijo y asignación aleatoria con el mismo cómputo medio. La utilidad procede de rutas emitidas y su coste se registra | Ninguna | #56 |
+| I09 | ¿Un estado de mercado filtrado mejora la predicción o la recuperación? | Sin régimen, reglas observables de volatilidad y tendencia, y banco global a igual capacidad | [Filtro](../../native/tests/markov_filter_tests.cpp), [entornos](../engineering/batched-rl-environments.md), [diseño](markov-regimes.md) | #20 |
+| I10 | ¿La identidad de cada documento aporta información que la media elimina? | Media con la misma ventana, contando documentos únicos examinados y codificados | [Índice](../../tests/data/test_document_index.py) y [guía](../engineering/document-index.md). La consulta tardó 451 ms en p50 con 64×128 sobre un índice sin partición por activo | #17, #213 |
+| I11 | ¿Una corrección lineal escrita con errores maduros reduce el MAE de la predicción congelada? | Titans-MAC sin componente, corrector de sesgo con la coordenada constante del codec como única clave, M1 con las mismas etiquetas, delta frente a proximal con η y λ comunes | [Pruebas](../../tests/memory/test_associative_memory.py) y [guía](../engineering/mature-associative-memory.md) | #392, #27, #28 |
+| I12 | ¿El orden de las exposiciones cambia la calidad con el mismo multiconjunto? | Calendarios `uniform`, `recent` y `spaced` con exposiciones, lotes y actualizaciones iguales | [Guía](../engineering/replay-schedules.md) | #55, #215 |
+| I13 | ¿Una adaptación localizada iguala a la continuación completa con menos parámetros entrenables? | Padre congelado, corrección lineal y continuación completa | [Matriz](../../configs/posttraining/adapter-matrix-v1.json), [pruebas](../../tests/posttraining/test_adapter_matrix.py), [control nativo](../engineering/adapter-controls.md) | #364, #216 |
+| I14 | Calibración de la incertidumbre, sin cambiar la población principal | Cabeza escalar L1 con el mismo presupuesto | [Titans](../../tests/models/titans/test_financial_quantiles.py), [entrenador](../../tests/training/test_financial_run_quantiles.py), [guía](../engineering/quantile-head.md) | #22 |
+| I15 | ¿Un alumno barato conserva la calidad del profesor? | Alumno directo con las mismas entradas y el profesor, con su coste | Ninguna | #57 |
+| I16 a I18 | Véase el apartado siguiente | Sin control ejecutable definido | Ninguna | Ninguna |
+| I19 | Efecto de arrastrar estado entre fases | Reinicio por fase con las mismas condiciones en todos los brazos | Ninguna | #363 |
+| I20 | Efecto de C y M sobre una B fijada | Factorial B, B+C, B+M y B+C+M con paridad de ambos apagados | [Especificación](../experiments/mars_titan_cm_v1/specification.md) | #293 |
+
+### Propuestas no incorporadas
+
+Los eventos auxiliares (I16) carecen de un conjunto de etiquetas de eventos con observación y exposición acreditadas. Sin esas etiquetas no hay pérdida auxiliar con máscara propia ni control posible. La adaptación autosupervisada (I17) requiere un protocolo de desarrollo y ajuste separado de la evaluación congelada, que la revisión no fija y el bloqueo impide ejecutar. Las sondas (I18) son un análisis posterior a un entrenamiento y no cambian el predictor. Ninguna de las tres recibe issue ni componente hasta que cumpla el criterio de inserción y control.
+
+### Requisitos transversales de la revisión
+
+| Requisito | Dónde se cumple | Nivel |
+| --- | --- | --- |
+| Orden canónico de escrituras y publicación por cohorte | Ejecutor nativo y `FinancialSession`. La memoria asociativa repite la regla con su cursor | N4 |
+| Identidad de feedback distinta de la de exposición | Feedback con revisión cero en el ejecutor. Exposición propia en `ReplaySchedule` | N4 y N2 |
+| Barrera de recuperación del estado completo | Una generación por evento con pesos rápidos, banco, cola y cursor | N4 |
+| Denominador global en microlotes | El entrenador de Titans calcula una sola pérdida sobre las etiquetas maduras del tramo. La acumulación por bloques de la GRU está en curso | Comprobado en Titans sin pasos de optimizador |
+| Mejor estado separado del de recuperación | Entrenadores cronológicos de Titans y de la GRU | Comprobado sin pasos de optimizador |
+| Un único escritor del banco y lectores de una instantánea | La sesión publica una generación y el lector usa copias | N4 |
+
+## Variante MARS-TITAN con ampliaciones
+
+La variante parte del brazo Titans-MAC `mac_online` con su receta cronológica y añade componentes desactivables. La [declaración](../../configs/titans/mars-titan-extensions.json) tiene todos los componentes apagados y estado `declared_not_executed`. No describe un modelo entrenado ni una combinación elegida.
+
+### Componentes
+
+| Componente | Valores | Apagado | Fase en la que actúa | Nivel |
+| --- | --- | --- | --- | --- |
+| `episodic_bank` (I04 a I06) | `m0_no_bank`, `m1`, `m2` | `readout=None` y admisión m0 | Evaluación y entrenamiento del lector | N4 |
+| `refinements` (I07) | 1, 2, 4 | 1. Solo existe con banco | Preparación de cada predicción | N4 en CPU |
+| `associative_memory` (I11) | `delta`, `proximal` | Ausente | Evaluación | N2 |
+| `document_selection` (I10) | `attention` | Media de la ventana | Entradas | N2 |
+| `regime_context` (I09) | `filtered_hmm` | Ausente | Entradas o banco | N2 |
+| `information_view` (I03) | Identidad de una vista reducida | Vista completa | Entradas | N2 |
+| `adaptive_refinements` (I08) | Puerta declarada | Ausente | Preparación | N1 |
+| `replay_schedule` (I12) | `uniform`, `recent`, `spaced` | Ausente | Entrenamiento | N2 |
+| `adapters` (I13) | Brazos de la matriz de adaptadores | Ausente | Postentrenamiento | N1 |
+
+CM-v1 queda fuera porque es la tercera variante, con su propia B. La cabeza de cuantiles es común a todos los brazos. Destilación y las propuestas no incorporadas no forman parte de la variante.
+
+### Identidad y paridad
+
+Cada combinación tiene una identidad propia: la huella SHA-256 del JSON canónico que reúne la identidad del brazo Titans-MAC de partida y la configuración de los componentes activos. Con todos apagados el conjunto de componentes activos está vacío y la combinación no crea otro brazo. Es exactamente Titans-MAC `mac_online`, con el mismo checkpoint, el mismo consumidor (`readout=None`, admisión m0, `local_control=None`) y la misma identidad. No se entrena una copia para presentarla como variante.
+
+La paridad está comprobada por componente. `readout=None` reproduce exactamente la predicción del núcleo (`test_none_composition_is_exact_and_warmup_only_returns_state` y `test_none_preserves_the_existing_prediction_and_never_calls_the_head`). `local_control=None` conserva la identidad anterior. La validación del entrenador coincide con la sesión M0 sin lector (`test_validation_pass_matches_the_frozen_session`). La memoria asociativa vacía lee cero. Falta una prueba de la variante completa que construya la sesión desde la declaración con todo apagado y compare predicciones, pesos rápidos, cola y RNG con el brazo Titans-MAC. Llegará con el constructor de la variante, que todavía no existe.
+
+### Estados y orden dentro de cada evento
+
+Los estados siguen la tabla de [estados y disponibilidad](#estados-y-disponibilidad). Cada componente debe guardar su estado en la generación del evento y no escribir en el estado de otro. El banco ya lo hace. A, el régimen y la vista tendrán que hacerlo al conectarse. Dentro de un evento con corte t el orden es fijo:
+
+1. Validar el evento, el corte y las pruebas de prefijo, y cargar la generación confirmada g−1.
+2. Avanzar el filtro de régimen una vez con observaciones disponibles hasta t, si está activo.
+3. Crear la instantánea del banco y fijar la A de g−1. Son las mismas para todos los activos, bloques y pasos K.
+4. Para cada bloque en orden canónico de flujos, `FinancialPredictor.prepare` construye el token con las entradas de la vista, lee la memoria neuronal desde M_{t−1}, aplica la atención con la memoria persistente y actualiza M_t una vez por observación en `mac_online`. Después llegan los K refinamientos sobre la instantánea sin escribir memoria, la cabeza y la lectura asociativa.
+5. Registrar cada predicción emitida en la cola, con la parte del núcleo separada si existe corrección asociativa.
+6. Resolver los resultados que maduran en t, en orden canónico, contra la predicción emitida. Proponer sobre copias las escrituras del banco y de A.
+7. Publicar la generación g de forma atómica. Su efecto empieza en el evento siguiente.
+
+Las actualizaciones de parámetros compartidos, el replay y los adaptadores solo ocurren en entrenamiento o postentrenamiento, nunca dentro de la sesión congelada.
+
+### Qué aporta el banco frente a la memoria neuronal
+
+La memoria neuronal de Titans es paramétrica y propia de cada flujo. Se escribe en cada observación con la sorpresa asociativa entre proyecciones del token, sin ver ninguna etiqueta, y olvida mediante α. Comprime la historia de entradas de ese activo.
+
+El banco episódico es global para la fase y no paramétrico. Solo se escribe con resultados maduros y guarda el valor de la etiqueta junto a claves fijas del codec. Permite recuperar lo que ocurrió en contextos parecidos de otros activos y fechas. Esa información de resultados no llega nunca a los pesos rápidos de Titans. Por eso apagar el banco no retira la memoria neuronal, y `mac_disabled` o `mac_frozen` no retiran el banco. La memoria asociativa A ocupa un punto intermedio: también usa resultados maduros, pero los comprime en una aplicación lineal.
+
+### Matriz mínima de ablaciones
+
+Cada fila cambia un único componente respecto de su referencia. No se ejecuta el producto cartesiano. Una combinación se justifica solo con resultados individuales y una interacción pequeña registrada antes de evaluar.
+
+| Contraste | Referencia | Qué aísla |
+| --- | --- | --- |
+| A1 | Titans-MAC | M0 `no_bank`: parámetros y cálculo del refinador sin contenido de memoria |
+| A2 | A1 | M1 con K=1: contenido de los episodios maduros |
+| A3 | A2 | M2 con la misma capacidad física: selección por error maduro |
+| A4 | A2 | K=2 y K=4: cálculo adicional, con episodios únicos emparejados cuando exista ese modo |
+| A5 | Titans-MAC | Memoria asociativa delta, su corrector de sesgo y la proximal con η y λ comunes |
+| A6 | Titans-MAC | Selección de documentos frente a la media de la misma ventana |
+| A7 | Titans-MAC | Contexto de régimen. La partición del banco por régimen solo después de A2 |
+| A8 | Titans-MAC | Vista reducida frente a la completa, con margen de no inferioridad previo |
+| A9 | Brazo ajustado | Calendarios de replay con el mismo multiconjunto de exposiciones |
+
+El presupuesto es igual en cada contraste: mismas filas, ventanas y purga de #363, mismas semillas, mismo número de actualizaciones y misma regla de parada. La capacidad física del banco y los candidatos examinados se igualan donde corresponda. Se registran parámetros, operaciones, bytes y tiempo. La incertidumbre se calcula por sesiones con dependencia temporal.
+
+### Pendiente antes de poder ejecutarla
+
+- Un entrenador cronológico del lector episódico. La propuesta es ajustar solo el lector con el padre Titans-MAC seleccionado y congelado, construyendo el banco en entrenamiento como hace el [entrenador de la GRU](../engineering/candidate-chronological-trainer.md). Así el núcleo coincide con el del brazo Titans-MAC y A1 separa parámetros de contenido.
+- El modo de K con episodios fijos de la primera lectura, en `models/titans/episodic_readout.py`.
+- La conexión de A, de la vista reducida, del régimen y de la selección de documentos en los puntos indicados, cada una con su prueba de paridad.
+- El constructor de la variante desde la declaración y la prueba de paridad completa.
+- La edición histórica desde 2000 verificada. Hasta entonces no se ejecuta ningún ajuste ni comparación.
 
 ## CM-v1 y revisión matemática
 

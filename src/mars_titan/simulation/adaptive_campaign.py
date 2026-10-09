@@ -21,6 +21,7 @@ from pathlib import Path
 
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.storage import atomic_json, sha256
+from mars_titan.training.learning_hold import require_learning_allowed
 
 from .adaptation_scenarios import FAMILIES
 
@@ -1535,6 +1536,7 @@ def run_adaptive_campaign(
     sleep=time.sleep,
 ):
     """Ejecutar una cola secuencial sin adquirir el bloqueo GPU del lanzador."""
+    require_learning_allowed("la campaña de adaptación con PPO nativo")
     paths = [Path(path).absolute() for path in (scenarios, binary, output, config)]
     for path in paths:
         safe_destination(path)

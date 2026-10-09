@@ -225,3 +225,29 @@ def test_output_ancestor_of_science_is_rejected_before_reading_sources(tmp_path)
 
     with pytest.raises(ValueError, match="salida"):
         compare_campaigns(tmp_path / "reference", tmp_path / "completion", tmp_path)
+
+
+def test_masked_campaign_aggregates_like_the_strict_one_only_under_its_policy(tmp_path):
+    from mars_titan.data.input_policy import HISTORICAL_MASKED
+    from mars_titan.evaluation.campaign_comparison import compare_campaigns, main
+    from tests.evaluation.test_comparison_sources import Campaign
+
+    strict = Campaign(tmp_path / "strict", materialize=True, markets=("US", "CN"))
+    masked = Campaign(
+        tmp_path / "masked", materialize=True, markets=("US", "CN"), policy=HISTORICAL_MASKED
+    )
+    with pytest.raises(ValueError, match="política de entradas"):
+        compare_campaigns(masked.reference, masked.completion, tmp_path / "x", repetitions=10)
+    expected = compare_campaigns(
+        strict.reference, strict.completion, tmp_path / "a", repetitions=10
+    )
+    arguments = ["--reference", str(masked.reference), "--completion", str(masked.completion)]
+    arguments += ["--output", str(tmp_path / "b"), "--repetitions", "10"]
+    assert main([*arguments, "--input-policy", HISTORICAL_MASKED]) == 0
+    import json
+
+    result = json.loads((tmp_path / "b" / "comparison.json").read_text())
+    assert result["provenance"]["input_policy"] == HISTORICAL_MASKED
+    assert "input_policy" not in expected["provenance"]
+    for name in ("overall", "by_fold", "intervals"):
+        assert result[name] == expected[name]

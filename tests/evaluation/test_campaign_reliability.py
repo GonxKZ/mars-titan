@@ -10,14 +10,17 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
 
+from mars_titan.data.input_policy import HISTORICAL_MASKED, STRICT_INPUTS
 from mars_titan.data.storage import sha256
 from mars_titan.evaluation.comparison_sources import predictive_sources
 from mars_titan.evaluation.session_metrics import SessionErrors
 from tests.evaluation.test_comparison_sources import Campaign, save
 
 
-def prepared_campaign(root, change=None, *, calibration_samples=20, markets=("US",)):
-    campaign = Campaign(root, matching=True, markets=markets)
+def prepared_campaign(
+    root, change=None, *, calibration_samples=20, markets=("US",), policy=STRICT_INPUTS
+):
+    campaign = Campaign(root, matching=True, markets=markets, policy=policy)
     campaign.counts.update(calibration=calibration_samples, evaluation=4)
     if len(markets) > 1:
         assert calibration_samples % 4 == 0
@@ -498,3 +501,29 @@ def test_joint_pipeline_publishes_market_rows_without_counting_models_twice(tmp_
     csv_rows = list(csv.DictReader((output / "cases.csv").open()))
     assert len(csv_rows) == 48 and {row["market"] for row in csv_rows} == {"US", "CN"}
     assert sha256(output / "cases.csv") == report["artifacts"]["cases.csv"]
+
+
+@pytest.mark.parametrize("markets", [("US",), ("US", "CN")])
+def test_masked_campaign_gives_the_same_cases_as_the_strict_one_under_its_policy(tmp_path, markets):
+    from mars_titan.evaluation.campaign_reliability import evaluate_campaign_reliability
+
+    samples = 20 if len(markets) == 1 else 8
+    strict = prepared_campaign(tmp_path / "strict", calibration_samples=samples, markets=markets)
+    masked = prepared_campaign(
+        tmp_path / "masked", calibration_samples=samples, markets=markets, policy=HISTORICAL_MASKED
+    )
+    with pytest.raises(ValueError, match="política de entradas"):
+        evaluate_campaign_reliability(masked.reference, masked.completion, tmp_path / "rejected")
+    assert not (tmp_path / "rejected").exists()
+    expected = evaluate_campaign_reliability(strict.reference, strict.completion, tmp_path / "a")
+    report = evaluate_campaign_reliability(
+        masked.reference, masked.completion, tmp_path / "b", input_policy=HISTORICAL_MASKED
+    )
+    assert report["provenance"]["input_policy"] == HISTORICAL_MASKED
+    assert "input_policy" not in expected["provenance"]
+
+    def numbers(rows):
+        # Las huellas de recibos cambian con la vista. Valores, conteos y fechas no.
+        return [{k: v for k, v in row.items() if not k.endswith("sha256")} for row in rows]
+
+    assert numbers(report["cases"]) == numbers(expected["cases"])

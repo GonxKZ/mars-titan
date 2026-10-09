@@ -6,7 +6,7 @@
 
 La referencia científica es [Titans: Learning to Memorize at Test Time, NeurIPS 2025](https://proceedings.neurips.cc/paper_files/paper/2025/file/a4ca07aa108036f80cbb5b82285fd4b1-Paper-Conference.pdf), de Ali Behrouz, Peilin Zhong y Vahab Mirrokni. La sorpresa con momentum aparece en la ecuación 1, la pérdida asociativa en la 2, el olvido en la 3 y MAC en las ecuaciones 7 a 10. El [preprint arXiv v1](https://arxiv.org/abs/2501.00663v1) presenta MAC en las ecuaciones 21 a 25.
 
-Para cada flujo y observación `x`, el núcleo proyecta `k = W_K x` y `v = W_V x`. La memoria tiene una o dos matrices cuadradas `D × D`, sin bias. Con dos capas aplica GELU exacta entre ambas. Esta adaptación compacta no reproduce la expansión, el residual ni LayerNorm descritos en la sección 3.3 de la versión final. La normalización L2 de claves y queries, con `eps=1e-12`, se identifica en configuración y puede desactivarse.
+Para cada flujo y observación `x`, el núcleo proyecta `k = W_K x` y `v = W_V x`. La memoria tiene una o dos matrices cuadradas `D × D`, sin bias. Con dos capas aplica GELU exacta entre ambas. Esta adaptación compacta no reproduce la expansión, el residual ni LayerNorm descritos en la sección 3.3 de la versión final. La memoria `x + LN(MLP(x))` existe ahora como [componente desactivable con identidad propia](titans-mac-output-scale.md). La expansión sigue sin reproducirse. La normalización L2 de claves y queries, con `eps=1e-12`, se identifica en configuración y puede desactivarse.
 
 Se usa la pérdida `ℓ = ||M(k) − v||²`, sumada sobre componentes. Cada token actualiza sus pesos actuales de forma secuencial:
 
@@ -18,7 +18,7 @@ S_t = η · S_(t−1) − θ · ∂ℓ/∂W
 W_t = (1 − α) · W_(t−1) + S_t
 ```
 
-`α` se aplica por filas de salida a cada matriz. Es una decisión explícita para interpretar el olvido vectorial de la versión final. En arXiv v1 el olvido se presenta como escalar. Las tres tasas dependen de la entrada, sin bias. Matemáticamente `α` y `η` pertenecen a `(0, 1)` y `θ` a `(0, theta_max)`, con `0 < theta_max ≤ 1`. En coma flotante la sigmoide puede saturar en los extremos. Se rechazan NaN e infinitos antes de aplicar la sigmoide. No se promedian gradientes entre flujos ni se congelan en el inicio de un chunk.
+`α` se aplica por filas de salida a cada matriz. Es una decisión explícita para interpretar el olvido vectorial de la versión final. En arXiv v1 el olvido se presenta como escalar. Las tres tasas dependen de la entrada. En la identidad v1 sus proyecciones no tienen bias y `α` empieza cerca de 0,5. La opción `gate_bias` añade bias declarados con una identidad nueva y conserva v1 como valor por defecto. Su análisis está en [inicialización de las puertas](titans-gate-initialization.md). Matemáticamente `α` y `η` pertenecen a `(0, 1)` y `θ` a `(0, theta_max)`, con `0 < theta_max ≤ 1`. En coma flotante la sigmoide puede saturar en los extremos. Se rechazan NaN e infinitos antes de aplicar la sigmoide. No se promedian gradientes entre flujos ni se congelan en el inicio de un chunk.
 
 Con una sola matriz, la derivada de referencia es `2 (Wk − v) kᵀ`. La reducción sumada conserva este factor 2. Los pesos iniciales son parámetros lentos aprendibles. Cada flujo recibe una copia independiente, momentum cero y contador cero. La inicialización usa semillas locales identificadas y restaura el RNG global de CPU.
 

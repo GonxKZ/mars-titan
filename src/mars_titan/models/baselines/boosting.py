@@ -11,6 +11,7 @@ from sklearn.ensemble import HistGradientBoostingRegressor
 from threadpoolctl import threadpool_limits
 
 from mars_titan.data.storage import sha256
+from mars_titan.training.learning_hold import require_learning_allowed
 
 from .inputs import validated_blocks
 
@@ -54,6 +55,7 @@ class BoostingModel:
 
 
 def fit_boosting_batches(factory, *, max_bytes: int = 256 * 1024**2) -> BoostingModel:
+    require_learning_allowed("el ajuste HistGradientBoosting")
     if type(max_bytes) is not int or max_bytes < 1:
         raise ValueError("El presupuesto de boosting debe ser positivo")
     parts, labels, size = [], [], 0

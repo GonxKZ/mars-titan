@@ -6,6 +6,8 @@ La configuración local contiene una lista `sources` de objetos con `id` y `summ
 
 Las campañas con validación cruzada temporal añaden `manifest` a cada fuente, con el manifiesto original de esa ventana. Su SHA-256 debe coincidir con la identidad del resumen. El revisor comprueba la ventana mediante `build_folds`, sin cargar el corpus. Cuando una ejecución utiliza una vista por mercado en `views/US.json`, `views/CN.json` o `views/US+CN.json`, verifica su huella contra el informe y exige el mismo origen y contrato temporal. Una vista se lee una vez por mercado y ciclo.
 
+Cada fuente puede declarar `input_policy`. Sin declaración se aplica la política estricta y su vista de versión 1. Con `historical_masked_2000_v1` la fuente debe incluir `manifest`, el manifiesto y las vistas por mercado deben adherirse a esa política y la versión de la vista debe ser 2. El contrato temporal guardado en el estado añade entonces `input_policy`, de modo que el cambio de política invalida la caché. Las referencias con retención `heldout_full_train_sessions_v1` no guardan predicciones completas de entrenamiento, así que se revisan con `--partition validation`.
+
 La revisión habitual se ejecuta desde el entorno del proyecto:
 
 ```bash

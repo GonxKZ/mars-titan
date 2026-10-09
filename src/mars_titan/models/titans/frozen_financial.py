@@ -32,6 +32,7 @@ _TITANS_MODULES = (
 _SOURCE_MODULES = tuple(f"mars_titan.models.titans.{name}" for name in _TITANS_MODULES) + (
     "mars_titan.models.baselines.transformer",
     "mars_titan.models.baselines.multimodal",
+    "mars_titan.models.quantile_head",
     "mars_titan.cm.numerical_radius",
     "mars_titan.data.input_policy",
     "mars_titan.training.cohort_contract",
@@ -199,6 +200,7 @@ class FrozenPreparation:
     next_state: object
     readout: object
     local_control: object
+    quantiles: torch.Tensor | None = None
 
 
 class FrozenFinancialConsumer:
@@ -303,5 +305,9 @@ class FrozenFinancialConsumer:
             differentiable=False,
         )
         return FrozenPreparation(
-            result.point_predictions, prepared.next_state, result.readout, prepared.local_control
+            result.point_predictions,
+            prepared.next_state,
+            result.readout,
+            prepared.local_control,
+            result.quantiles,
         )

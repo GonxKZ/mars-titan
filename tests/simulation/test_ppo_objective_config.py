@@ -20,13 +20,20 @@ PENALTY = {
 }
 
 
-def parse_only(tmp_path, objective, *, variant="ppo"):
+@pytest.fixture
+def executable():
+    value = os.environ.get("MARS_TITAN_PPO_EXECUTABLE")
+    if not value:
+        pytest.skip("Define MARS_TITAN_PPO_EXECUTABLE con un mars-titan-ppo compilado")
+    return Path(value).resolve(strict=True)
+
+
+def parse_only(executable, tmp_path, objective, *, variant="ppo"):
     config = copy.deepcopy(BASE)
     config["policy_objective"] = objective
     config["agent"]["variant"] = variant
     path = tmp_path / "config.json"
     path.write_text(json.dumps(config))
-    executable = Path(os.environ["MARS_TITAN_PPO_EXECUTABLE"])
     result = subprocess.run(
         [
             str(executable),
@@ -57,8 +64,10 @@ def parse_only(tmp_path, objective, *, variant="ppo"):
         PENALTY,
     ],
 )
-def test_valid_objective_reaches_source_guard_without_loading_sources(tmp_path, objective):
-    assert "Se necesitan fuentes acotadas" in parse_only(tmp_path, objective)
+def test_valid_objective_reaches_source_guard_without_loading_sources(
+    executable, tmp_path, objective
+):
+    assert "Se necesitan fuentes acotadas" in parse_only(executable, tmp_path, objective)
 
 
 @pytest.mark.parametrize(
@@ -75,12 +84,12 @@ def test_valid_objective_reaches_source_guard_without_loading_sources(tmp_path, 
         ("extra", 1),
     ],
 )
-def test_incompatible_objective_is_rejected_before_source_guard(tmp_path, field, value):
+def test_incompatible_objective_is_rejected_before_source_guard(executable, tmp_path, field, value):
     objective = {**PENALTY, field: value}
-    assert "Se necesitan fuentes acotadas" not in parse_only(tmp_path, objective)
+    assert "Se necesitan fuentes acotadas" not in parse_only(executable, tmp_path, objective)
 
 
-def test_double_dqn_rejects_the_ppo_controller_before_sources(tmp_path):
+def test_double_dqn_rejects_the_ppo_controller_before_sources(executable, tmp_path):
     assert "Se necesitan fuentes acotadas" not in parse_only(
-        tmp_path, PENALTY, variant="double_dqn"
+        executable, tmp_path, PENALTY, variant="double_dqn"
     )

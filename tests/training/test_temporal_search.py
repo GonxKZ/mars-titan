@@ -249,7 +249,15 @@ def metadata_views(tmp_path, protocol=None):
         path.write_text(
             json.dumps(
                 dict(
-                    temporal_view=dict(protocol=protocol, fold=fold, **values),
+                    temporal_view=dict(
+                        schema_version=1,
+                        protocol=protocol,
+                        fold=fold,
+                        parent_manifest="/fixture/parent.json",
+                        macro_path="/fixture/macro.parquet",
+                        admission_path="/fixture/admission.json",
+                        **values,
+                    ),
                     final_test_opened=False,
                     scope="full_corpus",
                     cohort_complete=True,

@@ -16,6 +16,7 @@ import numpy as np
 import pyarrow.compute as pc
 
 from mars_titan.data.cohort_files import safe_destination
+from mars_titan.data.input_policy import INPUT_POLICIES, STRICT_INPUTS
 from mars_titan.data.macro_coverage import _publish_directory
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.evaluation.comparison_sources import predictive_sources
@@ -261,13 +262,14 @@ def _case_market_rows(calibration_source, evaluation_source, calibration, evalua
         )
 
 
-def evaluate_campaign_reliability(reference, completion, output):
+def evaluate_campaign_reliability(reference, completion, output, *, input_policy=STRICT_INPUTS):
     """Guardar diagnósticos por modelo con las fuentes intactas y sin promediar semillas.
 
     Los cocientes por fila conservan sus conteos. Las medias por sesión dan el
     mismo peso a cada par de mercado e instante con denominador definido y
     declaran cuántas sesiones entran en cada media. En el brazo conjunto se
-    calibran y evalúan los mercados por separado. No se mezclan folds.
+    calibran y evalúan los mercados por separado. No se mezclan folds. La
+    política de entradas se declara y se transmite a la admisión de las vistas.
     """
     started = time.perf_counter()
     reference, completion, output = map(Path, (reference, completion, output))
@@ -276,7 +278,7 @@ def evaluate_campaign_reliability(reference, completion, output):
     for source in (reference, completion):
         outside_source(source, output)
         outside_source(output, source)
-    sources, provenance = predictive_sources(reference, completion)
+    sources, provenance = predictive_sources(reference, completion, input_policy=input_policy)
     pairs = _pairs(sources)
     initial_cache = InitialPolicyCache()
     current_fold, cohorts, rows, hashed_bytes = None, {}, [], 0
@@ -382,8 +384,16 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ("reference", "completion", "output"):
         parser.add_argument(f"--{name}", type=Path, required=True)
+    parser.add_argument(
+        "--input-policy",
+        choices=INPUT_POLICIES,
+        default=STRICT_INPUTS,
+        help="Política de entradas declarada por las vistas (estricta si no se indica).",
+    )
     args = parser.parse_args(argv)
-    report = evaluate_campaign_reliability(args.reference, args.completion, args.output)
+    report = evaluate_campaign_reliability(
+        args.reference, args.completion, args.output, input_policy=args.input_policy
+    )
     print(f"Fiabilidad evaluada para {report['counts']['models']} modelos. Test final cerrado.")
     return 0
 

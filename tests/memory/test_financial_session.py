@@ -284,3 +284,20 @@ def test_replacing_preparation_callback_cannot_keep_the_model_identity(native, t
         with pytest.raises(ValueError):
             run.step(inputs(data, 125), [])
         assert (tmp_path / "run/latest.json").read_bytes() == latest
+
+
+@pytest.mark.parametrize("k", [None, 1])
+def test_codec_from_another_view_is_rejected_before_creating_a_session(native, tmp_path, k):
+    dataset, spec, _, engine, prefix = resources(tmp_path, k=k)
+    other = FrozenEpisodeCodec(
+        FinancialInputSpec(
+            source_sha256=spec.source_sha256,
+            view_sha256="c" * 64,
+            representation=spec.representation,
+            dimensions=spec.dimensions,
+            input_policy=spec.input_policy,
+        )
+    )
+    with pytest.raises(ValueError, match="no comparten la fuente"):
+        session(native, tmp_path / "run", (dataset, spec, other, engine, prefix))
+    assert not (tmp_path / "run").exists()

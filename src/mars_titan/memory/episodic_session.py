@@ -94,11 +94,11 @@ class _BankView:
         return tuple(result)
 
 
-def _empty_pending():
+def _empty_pending(widths=(64, 64), dtype=torch.float32):
     return dict(
         rows=[],
-        key_inputs=torch.empty((0, 64), dtype=torch.float32, device="cpu"),
-        values=torch.empty((0, 64), dtype=torch.float32, device="cpu"),
+        key_inputs=torch.empty((0, widths[0]), dtype=dtype, device="cpu"),
+        values=torch.empty((0, widths[1]), dtype=dtype, device="cpu"),
     )
 
 
@@ -150,19 +150,21 @@ def _check_metadata(row, *, episode=False):
         raise ValueError("El episodio no conserva los tipos de su predicción y etiqueta")
 
 
-def _check_pending(pending, *, maximum=32768):
+def _check_pending(pending, *, maximum=32768, widths=(64, 64), dtype=torch.float32):
     if not isinstance(pending, dict) or set(pending) != {"rows", "key_inputs", "values"}:
         raise ValueError("La cola de rasgos no conserva su formato")
     rows = pending["rows"]
     if not isinstance(rows, list) or len(rows) > maximum:
         raise ValueError("La cola de rasgos supera el presupuesto")
-    for value in (pending["key_inputs"], pending["values"]):
+    for value, width in zip((pending["key_inputs"], pending["values"]), widths, strict=True):
         if (
             not isinstance(value, torch.Tensor)
-            or value.dtype != torch.float32
-            or value.shape != (len(rows), 64)
+            or value.dtype != dtype
+            or value.shape != (len(rows), width)
         ):
-            raise ValueError("La cola necesita claves y valores FP32 de 64 coordenadas")
+            raise ValueError(
+                "La cola necesita claves y valores con la geometría y precisión del banco"
+            )
     for row in rows:
         _check_metadata(row)
     keys = [_row_key(row) for row in rows]

@@ -9,6 +9,7 @@ from mars_titan.simulation.campaign import run_campaign
 from mars_titan.simulation.storage import read_tape
 from mars_titan.training.checkpoints import StopRequest
 from mars_titan.training.experiment_resources import GpuLease
+from mars_titan.training.learning_hold import require_learning_allowed
 
 
 def main():
@@ -22,6 +23,7 @@ def main():
         "--diagnostic", action="store_true", help="Prueba técnica explícita en CPU, hasta 32 pasos"
     )
     args = parser.parse_args()
+    require_learning_allowed("la campaña de comparadores financieros")
     config, _ = read_manifest(args.config, 1024**2)
     train, validation = (
         read_tape(args.train_tape),

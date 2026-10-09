@@ -15,6 +15,7 @@ from mars_titan.posttraining.preparation import encoder_contract
 from mars_titan.posttraining.queue import read_design
 
 from .checkpoints import StopRequest
+from .learning_hold import require_learning_allowed
 from .reference_search import _configuration as neural_configuration
 from .run_receipts import initialize_receipt
 from .tabular_search import _configuration as tabular_configuration
@@ -226,6 +227,7 @@ def _command(name, args):
 
 def run_campaign(args, stop):
     """Reanudar etapas confirmadas sin duplicar entrenamiento ni asumir una parada completa."""
+    require_learning_allowed("la campaña real encadenada")
     identity, specifications = prepare_campaign(args)
     receipts = dict(
         neural=args.references / "summary.json",

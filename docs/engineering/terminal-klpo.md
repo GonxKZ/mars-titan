@@ -102,12 +102,13 @@ Un fallo previo al commit permite repetir el paso con el RNG anterior. Un fallo
 posterior exige recuperar un checkpoint confirmado. La recuperación no publica
 otro estado durante esa comprobación.
 
-Esta entrega parte de una referencia inicial identificada por semilla y pesos.
-No incorpora actualización de parámetros, selección de política, importación de
-un actor ajustado ni alternancia de oleadas con referencias distintas. Tampoco
-se han comprobado recuperación después de optimizar ni resultados financieros.
-La ruta PPO anterior no usa estos métodos optativos. El bloqueo histórico sigue
-vigente.
+El modo técnico parte de una referencia inicial identificada por semilla y pesos.
+La construcción optativa admite una copia de pesos y el RNG inicial de la oleada.
+Su recuperación conserva ambos en vez de reconstruirlos solo desde la semilla.
+El [controlador de actualizaciones](terminal-klpo-updates.md) añade un actor y
+Adam separados, con cadencia y publicación propias. La recuperación después de
+un paso real y los resultados financieros siguen sin comprobarse. La ruta PPO
+anterior no usa estos métodos optativos. El bloqueo histórico sigue vigente.
 
 ## Comprobación local sin aprendizaje
 

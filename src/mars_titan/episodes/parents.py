@@ -7,6 +7,7 @@ import sqlite3
 
 import numpy as np
 
+from mars_titan.environments.cohorts import MAX_COHORT_ASSETS
 from mars_titan.models.baselines.inputs import MODALITIES
 
 
@@ -14,7 +15,7 @@ def input_fingerprint(raw, parent_sha256, encoding):
     ids = raw["asset_ids"]
     if (
         not isinstance(ids, list)
-        or not 1 <= len(ids) <= 4096
+        or not 1 <= len(ids) <= MAX_COHORT_ASSETS
         or len(set(ids)) != len(ids)
         or not all(isinstance(name, str) for name in ids)
         or set(raw["inputs"]) != set(MODALITIES)
@@ -51,7 +52,16 @@ def input_fingerprint(raw, parent_sha256, encoding):
         digest.update(name.encode())
         digest.update(str(inputs[name].shape).encode())
         digest.update(inputs[name].tobytes())
-    return digest.hexdigest(), inputs, order
+    presence = raw.get("presence")
+    if presence is not None:
+        # Los bits distinguen un bloque ausente de un valor observado igual a cero.
+        presence = np.asarray(presence)
+        if presence.dtype != np.bool_ or presence.shape != (len(ids), len(MODALITIES)):
+            raise ValueError("La presencia del padre necesita cinco booleanos por activo")
+        presence = presence[order]
+        digest.update(b"presence")
+        digest.update(presence.tobytes())
+    return digest.hexdigest(), inputs, order, presence
 
 
 class ParentCache:
@@ -79,7 +89,7 @@ class ParentCache:
         ).fetchone()[0]
 
     def predict(self, raw):
-        key, inputs, order = input_fingerprint(raw, self.parent_sha256, self.encoding)
+        key, inputs, order, presence = input_fingerprint(raw, self.parent_sha256, self.encoding)
         self.clock += 1
         with self.db:
             cached = self.db.execute(
@@ -91,7 +101,12 @@ class ParentCache:
                     raise ValueError("La predicción cacheada está corrupta")
                 values = np.frombuffer(blob, dtype="<f8")
             else:
-                values = np.asarray(self.predictor(inputs), dtype="<f8")
+                values = np.asarray(
+                    self.predictor(inputs)
+                    if presence is None
+                    else self.predictor(inputs, presence=presence),
+                    dtype="<f8",
+                )
                 if values.shape != (len(order),) or not np.isfinite(values).all():
                     raise ValueError("El padre no devuelve una predicción finita por activo")
                 blob = values.tobytes()

@@ -1,4 +1,10 @@
-"""Comparar seis padres completos sobre datos reales y dos aumentos emparejados."""
+"""Comparar seis padres completos sobre datos reales y dos aumentos emparejados.
+
+La cola tiene dos modos identificados por su configuración. Un diseño de #128 ejecuta
+los ocho objetivos de cada padre (`paired_posttraining_queue` o
+`real_continuations_queue`). Una matriz de adaptadores (`adapter_matrix_queue`)
+ejecuta sus brazos y controles sobre cada padre neuronal y semilla de la vista.
+"""
 
 import argparse
 import fcntl
@@ -11,22 +17,27 @@ import torch
 
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.embeddings import FrozenEncoders
+from mars_titan.data.input_policy import HISTORICAL_MASKED
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.environments.actions import ActionGrid
 from mars_titan.environments.corpus_source import ParquetCohortSource, prepare_causal_corpus
 from mars_titan.episodes.augmentation import fit_volatility
 from mars_titan.episodes.parents import ParentCache
+from mars_titan.models.quantile_head import QUANTILE_HEAD
 from mars_titan.training.checkpoints import StopRequest
 from mars_titan.training.experiment_resources import GpuLease
 from mars_titan.training.klpo_queue import selected_parents
+from mars_titan.training.learning_hold import require_learning_allowed
 from mars_titan.training.predictive_parents import _verified_file
 from mars_titan.training.run_receipts import initialize_receipt
 
+from . import adapter_matrix
 from .inputs import CONDITIONS, PairedInputs, fingerprint, fit_normalization
+from .matrix_runs import MatrixParent, MatrixWindow
 from .parent_selection import matching_parents, matching_seeds, parent_for_seed
 from .parents import NEURAL, load_parent
 from .preparation import EpisodeFactory, encoder_contract, prepare_augmentation
-from .run import MODES, code_identity, run_case, validate_case
+from .run import MODES, case_code, code_identity, run_case, validate_case
 from .selection import selection_policy
 
 
@@ -62,6 +73,9 @@ def read_design(path):
     matching = plan.get("schema_version") == 2
     if matching:
         keys.add("parent_seed_policy")
+    # La edición con máscaras se declara en el diseño y solo admite continuaciones reales.
+    if "input_policy" in plan:
+        keys.add("input_policy")
     if (
         set(plan) != keys
         or type(plan["schema_version"]) is not int
@@ -72,6 +86,7 @@ def read_design(path):
         or plan["neural_controls"] != list(MODES[6:])
         or (not real_only and plan["fraction"] != 0.25)
         or plan["final_test_opened"] is not False
+        or ("input_policy" in plan and (plan["input_policy"] != HISTORICAL_MASKED or not real_only))
         or not isinstance(plan["seeds"], list)
         or not 1 <= len(plan["seeds"]) <= 10
         or any(type(s) is not int or not 0 <= s < 2**32 for s in plan["seeds"])
@@ -187,9 +202,12 @@ def _prepare_augmentations(plan, train, output, binding, summary, stop, lease):
 
 def run_queue(config, reference, tabular, encoded, output, *, arm="US", stop=None):
     """Ejecutar secuencialmente la cola o recuperarla, con una única concesión de GPU."""
+    require_learning_allowed("la cola de postentrenamiento")
     config, reference, tabular, encoded, output = map(
         Path, (config, reference, tabular, encoded, output)
     )
+    if read_manifest(config, 1024**2)[0].get("kind") == adapter_matrix.KIND:
+        return run_matrix_queue(config, reference, tabular, encoded, output, arm=arm, stop=stop)
     plan, cases, config_hash = read_design(config)
     policy = selection_policy(cases("gru")[0]["case"])
     stop = stop or StopRequest()
@@ -246,6 +264,8 @@ def run_queue(config, reference, tabular, encoded, output, *, arm="US", stop=Non
                 )
             )
             atomic_json(output / "summary.json", summary)
+            # La ruta estricta conserva sus llamadas sin argumentos nuevos.
+            policy = {"input_policy": plan["input_policy"]} if "input_policy" in plan else {}
             try:
                 ordered = output / "ordered"
                 prepared = prepare_causal_corpus(
@@ -254,6 +274,7 @@ def run_queue(config, reference, tabular, encoded, output, *, arm="US", stop=Non
                     batch_size=plan["batch_size"],
                     resume=ordered.exists(),
                     stop=stop,
+                    **policy,
                 )
                 if prepared["status"] != "completed":
                     raise InterruptedError
@@ -262,8 +283,10 @@ def run_queue(config, reference, tabular, encoded, output, *, arm="US", stop=Non
                 if prepared["source_sha256"] != binding["supervision_sha256"]:
                     raise ValueError("Los datos ordenados no corresponden a la supervisión")
                 with (
-                    ParquetCohortSource(ordered_path, partition="train") as train,
-                    ParquetCohortSource(ordered_path, partition="validation") as validation,
+                    ParquetCohortSource(ordered_path, partition="train", **policy) as train,
+                    ParquetCohortSource(
+                        ordered_path, partition="validation", **policy
+                    ) as validation,
                 ):
                     grid = ActionGrid.from_dict(prepared["grid"])
                     augmentations = _prepare_augmentations(
@@ -339,7 +362,7 @@ def run_queue(config, reference, tabular, encoded, output, *, arm="US", stop=Non
                                                 parent=parent.identity,
                                                 normalization=normalization,
                                                 batch_size=plan["batch_size"],
-                                                code=code_identity(),
+                                                code=case_code(item["case"], data),
                                             )
                                             if any(
                                                 fingerprint(result["identity"].get(k))
@@ -385,6 +408,179 @@ def run_queue(config, reference, tabular, encoded, output, *, arm="US", stop=Non
                     or _queue_code() != identity["code"]
                 ):
                     raise ValueError("La cola no conserva todos los casos y su identidad")
+                summary["status"] = "completed"
+            except InterruptedError:
+                summary["status"] = "paused"
+            except BaseException as error:
+                summary.update(
+                    status="failed",
+                    last_failure=dict(type=type(error).__name__, message=str(error)),
+                )
+                raise
+            finally:
+                atomic_json(output / "summary.json", summary)
+            return summary
+        finally:
+            os.close(descriptor)
+
+
+# Frecuencia de los puntos de control de recuperación del modo matriz. No cambia resultados.
+MATRIX_CHECKPOINT_SECONDS = 300
+
+
+def _matrix_code():
+    return code_identity(masked=True, adapters=True, quantiles=True) | {
+        f"posttraining/{name}": sha256(Path(__file__).with_name(name))
+        for name in ("queue.py", "matrix_runs.py", "parent_selection.py", "heldout.py")
+    }
+
+
+def _parent_head(record):
+    """Cabeza del padre según su recibo, sin cargar pesos."""
+    report, _ = read_manifest(Path(record["report"]), 8 * 1024**2)
+    return QUANTILE_HEAD if "output_head" in report["identity"] else adapter_matrix.SCALAR
+
+
+def run_matrix_queue(config, reference, tabular, encoded, output, *, arm="US", stop=None):
+    """Ejecutar la matriz de adaptadores por padre neuronal y semilla de una vista.
+
+    Los padres son los ganadores y finalistas emparejados por semilla de la campaña de
+    referencias. Ridge y XGBoost no reciben adaptadores. Cada caso se confirma en el
+    resumen con la huella de su recibo y se recupera desde su punto de control.
+    """
+    require_learning_allowed("la matriz de adaptadores de la cola")
+    config, reference, tabular, encoded, output = map(
+        Path, (config, reference, tabular, encoded, output)
+    )
+    matrix, digest = adapter_matrix.read_matrix(config)
+    seeds = list(matrix["budget"]["seeds"])
+    batch_size = matrix["budget"]["batch_size"]
+    stop = stop or StopRequest()
+    with GpuLease() as lease:
+        torch.set_num_threads(4)
+        proof = matching_parents(reference, tabular, arm, seeds=seeds)
+        binding = encoder_contract(Path(proof["manifest"]), encoded)
+        if binding["supervision_sha256"] != proof["manifest_sha256"]:
+            raise ValueError("La supervisión ha cambiado tras verificar los padres")
+        safe_destination(output)
+        for protected in (
+            reference.parent,
+            tabular.parent,
+            encoded.parent,
+            Path(proof["manifest"]).parent,
+            config,
+        ):
+            outside_source(protected, output)
+            outside_source(output, protected)
+        parents = [
+            (kind, seed, parent_for_seed(proof, kind, seed))
+            for kind in proof["parents"]
+            if kind in adapter_matrix.FAMILIES
+            for seed in seeds
+        ]
+        if not parents:
+            raise ValueError("La matriz necesita al menos un padre neuronal")
+        planned = sum(
+            1
+            for kind, seed, record in parents
+            for item in adapter_matrix.cases(matrix, digest, kind, head=_parent_head(record))
+            if item["case"]["seed"] == seed
+        )
+        identity = dict(
+            proof=proof,
+            matrix_sha256=digest,
+            input_policy=matrix["input_policy"],
+            binding=binding,
+            code=_matrix_code(),
+        )
+        output.mkdir(parents=True, exist_ok=True)
+        descriptor = os.open(output / ".queue.lock", os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW, 0o600)
+        try:
+            fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            confirmed = initialize_receipt(
+                output, identity, record="summary.json", lock=".queue.lock"
+            )
+            summary = (
+                read_manifest(output / "summary.json", 8 * 1024**2)[0]
+                if confirmed
+                else dict(
+                    schema_version=1,
+                    kind="adapter_matrix_queue",
+                    identity=identity,
+                    status="running",
+                    runs={},
+                    budgets={},
+                    planned_runs=planned,
+                    completed_runs=0,
+                    final_test_opened=False,
+                )
+            )
+            summary["status"] = "running"
+            atomic_json(output / "summary.json", summary)
+            try:
+                with MatrixWindow(
+                    proof["manifest"],
+                    output,
+                    encoding=fingerprint(binding),
+                    input_policy=matrix["input_policy"],
+                    batch_size=batch_size,
+                    stop=stop,
+                ) as window:
+                    if window.source_sha256 != binding["supervision_sha256"]:
+                        raise ValueError("Los datos ordenados no corresponden a la supervisión")
+                    _confirm_artifact(summary, output, window.manifest)
+                    for kind, seed, record in parents:
+                        if stop.requested:
+                            raise InterruptedError
+                        if sha256(Path(record["report"])) != record["sha256"]:
+                            raise ValueError("El informe del padre ha cambiado")
+                        folder = output / "parents" / kind
+                        with MatrixParent(
+                            window,
+                            record["report"],
+                            folder / f"seed-{seed}",
+                            matrix=matrix,
+                            digest=digest,
+                            seed=seed,
+                            device="cuda:0",
+                            lease=lease,
+                            stop=stop,
+                        ) as parent:
+                            _confirm_artifact(
+                                summary, output, folder / f"seed-{seed}" / "normalization.json"
+                            )
+                            summary["budgets"][f"{kind}/seed-{seed}"] = parent.budget
+                            for row in parent.rows:
+                                if stop.requested:
+                                    raise InterruptedError
+                                if sha256(config) != digest or _matrix_code() != identity["code"]:
+                                    raise ValueError("La matriz o el código de la cola ha cambiado")
+                                destination = folder / "runs" / row["id"]
+                                result = parent.run(
+                                    row,
+                                    destination,
+                                    checkpoint_seconds=MATRIX_CHECKPOINT_SECONDS,
+                                    stop=stop,
+                                )
+                                summary["runs"][f"{kind}/{row['id']}"] = dict(
+                                    status=result["status"],
+                                    path=str((destination / "run.json").relative_to(output)),
+                                    sha256=sha256(destination / "run.json"),
+                                    updates=result["global_step"],
+                                )
+                                summary["completed_runs"] = sum(
+                                    r["status"] == "completed" for r in summary["runs"].values()
+                                )
+                                atomic_json(output / "summary.json", summary)
+                                if result["status"] != "completed":
+                                    raise InterruptedError
+                        gc.collect()
+                        torch.cuda.empty_cache()
+                if (
+                    summary["completed_runs"] != summary["planned_runs"]
+                    or _matrix_code() != identity["code"]
+                ):
+                    raise ValueError("La cola no conserva todos los casos de la matriz")
                 summary["status"] = "completed"
             except InterruptedError:
                 summary["status"] = "paused"

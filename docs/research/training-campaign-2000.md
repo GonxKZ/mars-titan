@@ -1,0 +1,289 @@
+# Campaña de entrenamiento sobre la edición histórica desde 2000
+
+Revisión del 9 de octubre de 2026. Este documento ordena el recorrido completo desde los datos hasta la comparación final. Describe un plan y el estado de cada etapa. No contiene resultados predictivos: ningún modelo se ha entrenado sobre esta edición y el test de 2024 sigue cerrado.
+
+## Objetivo
+
+Entrenar desde cero todas las arquitecturas comparadas con todos los datos utilizables desde 2000, con las mismas filas, la misma validación temporal y presupuestos comparables. Después se aplican postentrenamientos y políticas de refuerzo sobre esas mismas bases. La pregunta es cuánto cambia el error de cada variante frente a sus referencias, con incertidumbre temporal y costes medidos.
+
+El bloqueo de aprendizaje sigue vigente hasta que la edición esté completa y verificada. Su condición es preparar la edición desde 2000 con ausencias y máscaras explícitas y la misma población para todos los modelos.
+
+## Etapas y estado
+
+| Etapa | Contenido | Estado a 9 de octubre | Tarea |
+| --- | --- | --- | --- |
+| 1. Edición de entradas | Codificación v3 de precios, noticias, gráficos, fundamentales y 140 posiciones macro con nivel, presencia y antigüedad, más cinco bits de presencia por modalidad | En curso. Más de 750 de unos 5.028 activos elegibles confirmados. El resto se codifica en paralelo con paridad bit a bit comprobada | [#171](https://github.com/GonxKZ/mars-titan/issues/171) |
+| 2. Objetivos | Retorno residual apertura-cierre de la sesión siguiente, OLS con 252 sesiones y un mínimo de 126 pares, solo con pares disponibles en la decisión | Código existente. Exige la población completa, así que espera a la etapa 1 | [#15](https://github.com/GonxKZ/mars-titan/issues/15) |
+| 3. Verificación de la edición | Conciliación de los 5.676 candidatos, recuentos frente al censo de ventanas, máscaras, disponibilidad no posterior a la decisión, ninguna fila de 2024 | Verificador por prefijos existente. Falta la pasada completa | [#171](https://github.com/GonxKZ/mars-titan/issues/171) |
+| 4. Protocolo temporal | Ventanas anuales expansivas desde el primer año con etiquetas, validación interna al final de cada tramo de entrenamiento, evaluación del año siguiente, purga por intervalo real de etiquetas | Diseño y comprobaciones técnicas en el [protocolo v2](walk-forward-2000.md). Variantes de presupuesto A y B declaradas con su [recuento de trabajos](#variantes-de-presupuesto). La [orden de medición](#medición-de-caudal) cubre referencias, Titans-MAC, GRU candidata y adaptadores. Falta ejecutarla en `cuda:0`, elegir la variante y preparar las vistas reales | [#363](https://github.com/GonxKZ/mars-titan/issues/363) |
+| 5. Entrenamiento base | Referencias, GRU episódica, Transformer compacto, núcleo Titans-MAC, MARS-TITAN con ampliaciones y CM-v1 | [Orquestación](#orquestación-de-los-brazos-con-entrenador) de las referencias neuronales y tabulares preparada y comprobada con dobles, sin ejecutar. Los entrenadores cronológicos de [Titans-MAC](../engineering/titans-chronological-trainer.md) y de la [GRU episódica](../engineering/candidate-chronological-trainer.md) están comprobados sin pasos de optimizador. Los dos tienen entrada por ventana y traslado para B, registrados en la orquestación mediante secciones opcionales y comprobados en CPU. Las campañas A y B declaran Titans-MAC con su [receta de campaña](../engineering/titans-chronological-trainer.md#receta-de-la-campaña-y-casos-de-búsqueda), sin ejecutar. La GRU episódica aún no está declarada | [#234](https://github.com/GonxKZ/mars-titan/issues/234), [#23](https://github.com/GonxKZ/mars-titan/issues/23), [#293](https://github.com/GonxKZ/mars-titan/issues/293) |
+| 6. Postentrenamiento | Padre congelado, continuación supervisada, corrección residual y adaptadores, solos y combinados | Edición con máscaras, matriz con pinball para padres de cuantiles, modo matriz de la cola y [etapa por ventana](../engineering/masked-posttraining.md#etapa-por-ventana-de-la-campaña) comprobados hasta el paso del optimizador, sin ejecutar. La etapa está registrada en la orquestación como etapa posterior, con el subcomando `posttraining` de la orden única | [#364](https://github.com/GonxKZ/mars-titan/issues/364), [#128](https://github.com/GonxKZ/mars-titan/issues/128) |
+| 7. Refuerzo | Variantes de PPO, KLPO prioritario y Double DQN sobre entornos auditados | Controladores implementados sin ejecutar pasos. [Etapa de políticas por ventana](#etapa-de-políticas-por-ventana) declarada para A y B, registrada en la orquestación con el subcomando `rl` y comprobada en CPU con ejecutores sustitutos, sin ejecutar. Los brazos aprendidos esperan a que el motor nativo admita cintas reconstruidas y a una orden ejecutable de KLPO, y China a las reglas de acciones A en el motor nativo | [#137](https://github.com/GonxKZ/mars-titan/issues/137), [#365](https://github.com/GonxKZ/mars-titan/issues/365) |
+| 8. Evaluación | MAE residual por sesión y métricas secundarias con incertidumbre por bloques | Métricas, calibración común CQR y [evaluación walk-forward](metrics.md#evaluación-walk-forward-de-la-edición-desde-2000) implementadas con pruebas técnicas y [configuración declarada](../../configs/evaluation/historical-masked-2000-comparison.json). Sin aplicar a esta edición. Las referencias neuronales y tabulares ya escriben las predicciones por fila de calibración y evaluación, y la orquestación publica el manifiesto de fuentes de cada ámbito. Faltan los productores de las demás familias | [#32](https://github.com/GonxKZ/mars-titan/issues/32), [#36](https://github.com/GonxKZ/mars-titan/issues/36) |
+
+## Población y equidad
+
+Todas las arquitecturas leen las mismas filas de la edición. Una fila existe aunque falten noticias, fundamentales o macro, porque la ausencia se marca y se rellena con cero de forma explícita. Ninguna variante puede descartar filas difíciles para mejorar su promedio.
+
+Los bits de presencia forman parte de la entrada de todas las familias. Titans y la GRU candidata ya los recibían. Con la política con máscaras las referencias neuronales los fusionan con las modalidades y Ridge, HistGradientBoosting y XGBoost los reciben como cinco columnas más. Sin ese cambio, una diferencia de error podría deberse a que un modelo distingue un cero real de una ausencia y otro no.
+
+La comparación estricta, que exige las cuatro modalidades completas y los 140 indicadores, se conserva como control separado. No se mezclan sus filas con las de la edición desde 2000.
+
+## Validación temporal y sobreajuste
+
+Cada ventana entrena con todo el pasado disponible hasta su corte, valida en el tramo final de ese pasado y evalúa el año siguiente. La purga elimina las filas cuya etiqueta madura después del corte. China no tiene etiquetas residuales antes de 2006 porque sus precios y el factor CSI300 empiezan ese año. Por eso las ventanas conjuntas empiezan en 2011, el primer año con tres años de etiquetas maduras en los dos mercados, y ninguna ventana admite un mercado vacío. Las ventanas solo de US evalúan desde 2005 y siguen entrenando con todo el pasado disponible. El [protocolo v2](walk-forward-2000.md) justifica la decisión.
+
+La selección guarda el mejor estado según la validación temporal, con presupuesto fijo de 30 épocas, paciencia y mejora mínima declaradas en el protocolo. Los controles emparejados conservan el mismo número de actualizaciones. Si una parada independiente rompiera esa igualdad, se usa selección del mejor estado con presupuesto fijo. Los checkpoints de recuperación rotan con un límite pequeño y el mejor estado se guarda aparte, según [la política de checkpoints](../engineering/checkpoint-recovery.md).
+
+Los brazos con memoria predicen cada tramo desde el estado inicial, tras observar las entradas de los 12 meses anteriores sin etiquetas. El calentamiento es el mismo para los cuatro controles de Titans-MAC y está declarado en sus recetas antes de entrenar. Ninguna etiqueta madura se escribe en la memoria rápida. La [política completa](../engineering/titans-chronological-trainer.md#política-de-memoria-en-inferencia) explica por qué no se encadena la memoria entre tramos.
+
+El test de 2024 no participa en ninguna selección. Se abrirá una sola vez, con la configuración fijada, al final de la campaña.
+
+## Familias entrenadas
+
+| Familia | Identidad | Qué aísla |
+| --- | --- | --- |
+| Referencias | RNN, LSTM, GRU, DLinear, Transformer compacto, Ridge y XGBoost | Nivel de error sin memoria persistente |
+| GRU episódica | Candidato con banco 128×256, referencia independiente | Memoria episódica sobre un codificador recurrente |
+| Núcleo Titans-MAC | `transformer_direct`, `mac_disabled`, `mac_frozen`, `mac_online` | Cambio de codificador frente a memoria neuronal |
+| MARS-TITAN con ampliaciones | Banco episódico, escritura M0 a M3, refinamientos K=1, 2 y 4, y las modificaciones del [documento de integración](system-integration.md), cada una desactivable | Aportación de cada ampliación, una cada vez |
+| CM-v1 | B, B+C, B+M y B+C+M sobre la B elegida por protocolo | Control del radio numérico y consolidación, según [su especificación](../experiments/mars_titan_cm_v1/specification.md) |
+
+No se ejecuta el producto cartesiano de todas las ampliaciones. Primero se fija la base y después se estudia un mecanismo cada vez, como establece el [documento de integración](system-integration.md).
+
+## Orquestación de los brazos con entrenador
+
+La campaña se declara en dos configuraciones que solo difieren en el presupuesto: la [variante A](../../configs/baselines/historical-masked-campaign-a.json) y la [variante B](../../configs/baselines/historical-masked-campaign-b.json). Brazos, semillas, ámbitos, protocolos y ventanas se leen de la [comparación walk-forward declarada](../../configs/evaluation/historical-masked-2000-comparison.json), así que los productores y la evaluación comparten una única definición. El plan está en `training/campaign_plan.py`, la ejecución en `training/masked_campaign.py` y las predicciones trasladadas en `training/carried_predictions.py`. Nada de esto se ha ejecutado con datos reales.
+
+### Variantes de presupuesto
+
+La variante A reentrena desde cero cada ventana anual, con su ajuste, su validación y su selección. La variante B reentrena desde cero la primera ventana de cada ámbito y después cada 36 meses. Las ventanas intermedias no se ajustan y se predicen con el estado seleccionado en la última ventana reentrenada, que llamamos ancla. Con ese paso las anclas de US evalúan 2005, 2008, 2011, 2014, 2017, 2020 y 2023, y las de CN y US+CN evalúan 2011, 2014, 2017, 2020 y 2023, un subconjunto exacto de las de US. A diferencia de la alternativa B del [protocolo](walk-forward-2000.md#coste-y-alternativas-de-presupuesto), que solo evaluaba las ventanas reentrenadas, esta variante evalúa todos los años.
+
+| Elemento de B | Regla |
+| --- | --- |
+| Estado usado | El estado seleccionado en el ancla para cada brazo y semilla: el ganador de la búsqueda con la semilla 42 y el finalista de cada otra semilla. No se cambian pesos, normalizadores ni selección |
+| Información del ancla | Termina al final de su validación, el 1 de octubre del año anterior a su evaluación, con etiquetas maduras antes de esa fecha. El plan exige que esa fecha no sea posterior al comienzo de la calibración de cada ventana trasladada, y la predicción lo comprueba otra vez con los manifiestos |
+| Filas y purga | Las de la vista de la ventana trasladada, con la purga por intervalo de etiqueta en sus propias fronteras. Son exactamente las filas que esa ventana tiene en A |
+| Calibración | La comparación ajusta la calibración común con las predicciones del modelo trasladado en el tramo de calibración de esa ventana (los tres meses anteriores al año evaluado) y la congela antes de leer la evaluación |
+| Ajuste y validación de la ventana trasladada | No se usan |
+
+El precio de B es la antigüedad del modelo. La información del ancla termina 3 meses antes de su propia evaluación, 15 meses antes en el primer año trasladado y 27 en el segundo. B responde por tanto a otra pregunta, el error con reentrenamiento trienal, y no debe mezclarse con A. Como todos los brazos siguen el mismo calendario, la comparación emparejada dentro de cada variante conserva las mismas filas y la misma antigüedad.
+
+En cada ventana reentrenada, cada brazo neuronal ajusta los dos candidatos del diseño (índices 0 y 10) con la semilla 42 y un finalista por cada semilla restante. Cada control de Titans-MAC hace lo mismo con los dos casos de búsqueda de su receta. Ridge ajusta sus tres alfas con la semilla 42, la única que le asigna la comparación, y XGBoost ajusta sus doce configuraciones con la semilla 42 y un finalista con cada una de las otras dos semillas. En cada ventana trasladada se hace una predicción por brazo y semilla.
+
+| Variante | Ámbito | Ventanas reentrenadas | Ventanas trasladadas | Ajustes | Predicciones trasladadas |
+| --- | --- | ---: | ---: | ---: | ---: |
+| A | US | 19 | 0 | 1.007 | 0 |
+| A | CN | 13 | 0 | 689 | 0 |
+| A | US+CN | 13 | 0 | 689 | 0 |
+| A | Total | 45 | 0 | 2.385 | 0 |
+| B | US | 7 | 12 | 371 | 372 |
+| B | CN | 5 | 8 | 265 | 248 |
+| B | US+CN | 5 | 8 | 265 | 248 |
+| B | Total | 17 | 28 | 901 | 868 |
+
+Titans-MAC aporta 720 ajustes en A, y 272 ajustes y 336 traslados en B. Sin sus cuatro brazos quedarían los 1.665 ajustes de A y los 629 ajustes y 532 traslados de B.
+
+Ajustes por brazo y semilla en cada ámbito:
+
+| Brazo y semilla | A, US | A, CN o US+CN | B, US | B, CN o US+CN |
+| --- | ---: | ---: | ---: | ---: |
+| Cada referencia neuronal o control de Titans-MAC, semilla 42 | 38 | 26 | 14 | 10 |
+| Cada referencia neuronal o control de Titans-MAC, semillas 43 y 44 | 19 | 13 | 7 | 5 |
+| Ridge, semilla 42 | 57 | 39 | 21 | 15 |
+| XGBoost, semilla 42 | 228 | 156 | 84 | 60 |
+| XGBoost, semillas 43 y 44 | 19 | 13 | 7 | 5 |
+
+En B cada brazo y semilla añade 12 predicciones trasladadas en US y 8 en CN y en US+CN. Cada configuración declara `max_training_jobs` y `max_prediction_jobs` iguales a su plan, de modo que añadir brazos, semillas o candidatos exige cambiar la configuración y su huella. Superarlos detiene la comprobación con el recuento previsto y el límite. La búsqueda temporal de referencias ya no tiene un tope fijo de 512 ejecuciones: un plan de versión 4 puede declarar `max_runs`, y sin ese campo conserva el límite anterior.
+
+La elección entre A y B no se toma aquí. Depende del caudal medido y se registrará en [#363](https://github.com/GonxKZ/mars-titan/issues/363) antes del primer entrenamiento, con la huella de la configuración elegida.
+
+### Parada y pérdida
+
+Los casos neuronales se construyen con el diseño de referencias y la regla `stopping_rule(protocol)`: presupuesto fijo de 30 épocas con el mejor estado, MAE residual por sesión en validación, paciencia 5 como diagnóstico y mejora mínima 0,00001. La campaña rechaza protocolos con reglas distintas entre ámbitos, y cada caso debe coincidir con la regla antes de planificarse.
+
+La pérdida común de los brazos neuronales es la pinball de [`quantile_head_v1`](../engineering/quantile-head.md), decidida en [#22](https://github.com/GonxKZ/mars-titan/issues/22). En la campaña sustituye a la familia de pérdidas del diseño de referencias, que alterna MAE, MSE y Huber según el índice. Los índices 0 y 10 conservan su tasa de aprendizaje, anchura, profundidad y abandono, y solo cambian la cabeza y la pérdida. El término de la mediana es la pérdida absoluta, coherente con la métrica principal. La búsqueda de la familia de pérdidas sigue en los estudios escalares y en el [control de la cabeza](../../configs/baselines/quantile-head-control-us.json). Si ese control obligara a volver a la salida escalar, haría falta otra configuración de campaña con otra huella.
+
+Titans-MAC sigue la misma regla con su [receta de campaña](../engineering/titans-chronological-trainer.md#receta-de-la-campaña-y-casos-de-búsqueda), que activa la memoria con residual y LayerNorm junto a `gate_bias`, decidida en [#27](https://github.com/GonxKZ/mars-titan/issues/27). Para que la búsqueda sea equitativa, declara tantos casos como índices ajusta cada referencia neuronal, dos, con el mismo presupuesto fijo por caso y selección por validación, y la planificación rechaza otro número. La rejilla se deriva del diseño de referencias, sin datos. Los casos 0 y 10 usan la tasa 10⁻⁴ y se diferencian en anchura y dropout. En Titans la arquitectura queda fija por el emparejamiento de los cuatro controles, así que los dos casos varían la tasa: 10⁻⁴, la de las referencias, y 10⁻³, la de la receta v1. El recorte se mantiene en 1,0.
+
+XGBoost no sigue la regla neuronal. Usa hasta 2.000 rondas con meseta de validación, un mínimo de 200 rondas, paciencia de 100 y la misma mejora mínima de 0,00001, sobre el mismo tramo de validación y con el MAE por sesión. Hay tres diferencias: la unidad es una ronda de boosting y no una época, se detiene en la meseta en lugar de agotar un presupuesto fijo, y el mejor modelo se sustituye con cualquier mejora estricta mientras la mejora mínima solo cuenta para la paciencia. No se alinea. El presupuesto fijo existe para que los controles neuronales emparejados apliquen el mismo número de actualizaciones, y XGBoost no forma parte de esos pares. Agotar siempre las 2.000 rondas, cada una con una lectura completa de páginas [estimada en 26 a 30 GB](../engineering/masked-tabular-comparators.md), multiplicaría el coste sin una comparación emparejada que lo justifique. Cambiar `BoostingSelection` cambiaría además la identidad de la ruta estricta. Ridge no tiene épocas y elige su alfa con el MAE por sesión de validación.
+
+### Referencias tabulares
+
+Ridge, HistGradientBoosting y XGBoost aceptan la retención reservada `heldout_full_train_sessions_v1`. Escriben validación, calibración y evaluación por fila con el mismo esquema que las referencias neuronales y resumen el ajuste sin tabla. Sin declararla conservan el recibo anterior de ajuste y validación.
+
+El recorrido por ventanas no pasa por `posttraining/`. Tras [#386](https://github.com/GonxKZ/mars-titan/pull/386) la cola tabular de `posttraining/completion.py` lee la política, pero sigue esperando a una búsqueda neuronal completa sobre una sola vista, usa `run_tabular_search` y solo conserva ajuste y validación. Adaptarla habría exigido cambiar su contrato, así que la campaña llama directamente a los ejecutores tabulares.
+
+HistGradientBoosting queda fuera del plan. Su ajuste concatena la matriz completa en memoria en `float64`, y con unos 15,4 millones de filas y 1.719 columnas serían unos 212 GB, frente a los 32 GB del equipo. Incluirlo exigiría muestrear filas, que rompe la población común, o un ajuste con memoria externa que aún no existe.
+
+### Ejecución y recuperación
+
+```bash
+uv run --no-sync python scripts/run_masked_campaign.py check \
+  --campaign configs/baselines/historical-masked-campaign-b.json
+uv run --no-sync python scripts/run_masked_campaign.py prepare \
+  --campaign <configuración> --parent <supervisión histórica> --output <vistas>
+uv run --no-sync python scripts/run_masked_campaign.py run --campaign <configuración> \
+  --views US=<vistas>/US --views CN=<vistas>/CN --views US+CN=<vistas>/US+CN --output <campaña>
+uv run --no-sync python scripts/run_masked_campaign.py sources --campaign <configuración> \
+  --views US=<vistas>/US --output <campaña> --scope US --comparison <comparación>
+```
+
+`check` valida y cuenta sin leer datos. `prepare` crea las vistas de cada ámbito desde la supervisión histórica con los protocolos v2 y la recuperación de fronteras anuales (`recover_annual_boundaries`). Para un solo mercado escribe antes la proyección de la supervisión en ese mercado. Las vistas se comprueban frente a la comparación: misma política, mismas ventanas, mismos protocolos, una sola edición y todos los tramos con filas. Una vista de otro ámbito, de otro protocolo o de otra política se rechaza antes de crear la salida.
+
+`run` llama a `require_learning_allowed` antes de abrir fuentes y otra vez antes de cada trabajo. Si la protección vuelve a estar vigente a mitad de campaña, `LearningHoldError` la detiene antes del siguiente trabajo y el resumen queda en `blocked`. La salida guarda la identidad de la campaña (configuración, comparación, configuración tabular, huellas de vistas y código) y un recibo por trabajo con su identidad, el intento, el informe del ejecutor, el MAE de validación y, para calibración y evaluación, la huella del Parquet, el número de filas y una huella de filas y objetivos independiente del orden. Cada predicción debe caer en su tramo, no contener filas de 2024 y tener tantas filas como la vista. Todos los trabajos de una ventana deben dar la misma huella de filas y objetivos, y el primero que difiera detiene la campaña.
+
+Al reanudar, un trabajo con recibo e identidad iguales no se repite, después de comprobar las huellas de sus artefactos. Los trabajos sin recibo se rehacen: las referencias neuronales y XGBoost continúan su último intento desde su punto de control, y Ridge y las predicciones trasladadas empiezan un intento nuevo. Una salida de otra campaña, otras vistas u otro código se rechaza. Los trabajos CUDA se ejecutan de uno en uno bajo una única reserva de la GPU. Los trabajos CPU usan la concurrencia `cpu_workers` de la configuración tabular. Hoy Ridge y XGBoost se ejecutan en CUDA, así que esa concurrencia solo se aplicará cuando se conecte un ejecutor tabular de CPU.
+
+Cuando una semilla de un brazo ya tiene su predictor elegido en una ventana (el ganador de la búsqueda cuando terminan todos los candidatos, el finalista o la predicción trasladada), `run` escribe el recibo de ventana que leen los entornos de refuerzo, uno por mercado, en `windows/<ámbito>/<ventana>/<brazo>/seed-<semilla>/<mercado>.json`. Se construye con el contrato de `environments/walk_forward_receipt.py` y se valida con su `read_window_receipt` antes de escribirlo:
+
+| Campo | Valor en la campaña |
+| --- | --- |
+| `protocol`, `fold` | Protocolo v2 del mercado y ventana de la comparación declarada |
+| `parent` | Trabajo que ajustó el estado elegido y huella de ese estado. En una ventana trasladada es el trabajo del ancla, y la campaña comprueba que la predicción trasladada partió de ese mismo estado |
+| `labels_used_until` | Microsegundo anterior al inicio de la evaluación |
+| `predictions` | Filas y `prediction_fingerprint` de la mediana emitida en calibración y evaluación, solo con las filas de ese mercado |
+
+`labels_used_until` es una cota y no la maduración exacta de la última etiqueta. La calibración común usa el tramo anterior a la evaluación y la purga por intervalo de etiqueta obliga a que todas sus etiquetas maduren antes del final del tramo, así que ninguna etiqueta usada en ajuste, selección o calibración madura después. En una ventana trasladada el modelo dejó de aprender antes, pero su calibración también usa ese tramo. Al reanudar, un recibo de ventana ya escrito debe coincidir con el que se deriva de los trabajos confirmados. No hay recibos reales porque la campaña no se ha ejecutado.
+
+`sources` publica el manifiesto de un ámbito para `evaluation.walk_forward_comparison`. Elige para cada brazo, semilla y ventana el ganador de la búsqueda, el finalista o la predicción trasladada, vuelve a exigir las mismas filas en todos ellos y valida el manifiesto con `load_sources` antes de publicarlo. Con la comparación declarada de 23 brazos falla y nombra los brazos sin productor. Para evaluar antes solo las referencias haría falta declarar, antes de ver resultados, una comparación con esos brazos.
+
+### Puntos de extensión y etapas posteriores
+
+| Familia | Brazos de la comparación | Tarea | Falta |
+| --- | --- | --- | --- |
+| GRU candidata | `gru_episodic` | [#383](https://github.com/GonxKZ/mars-titan/issues/383) | Declarar la sección `episodic_gru` en A y B tras medir memoria y caudal en `cuda:0`. La [entrada por ventana](../engineering/candidate-chronological-trainer.md#ventanas-walk-forward-de-la-campaña) ya existe |
+| MARS-TITAN | `mars_titan_m0` a `mars_titan_m3`, `mars_titan_m1_k2`, `mars_titan_m1_k4` | [#366](https://github.com/GonxKZ/mars-titan/issues/366) | Ampliaciones sobre el núcleo con sus puntos de inserción |
+| CM-v1 | `cm_v1_b`, `cm_v1_bc`, `cm_v1_bm`, `cm_v1_bcm` | [#293](https://github.com/GonxKZ/mars-titan/issues/293) | Brazos sobre la B fijada por protocolo |
+
+Cada familia se conectará con su planificador y su ejecutor en el mismo registro. Hasta entonces el plan las informa como pendientes y no crea trabajos falsos. La GRU candidata ya está conectada: `masked_campaign.EXECUTORS` registra su ajuste por ventana y su traslado, y una sección opcional `episodic_gru` de la campaña declara su receta, la variante de cada brazo y la semilla de búsqueda. Sus predicciones contienen exactamente las filas de la vista y las de los demás brazos, comprobado con vistas del corpus técnico. Las campañas A y B declaradas no incluyen todavía esa sección. Declararla en B añadiría 51 ajustes y 84 traslados (680 y 616 en total) y en A 135 ajustes (1.800), y antes hay que elegir con una medida en `cuda:0` entre `accumulation_rows` y `recompute`, porque la extrapolación desde CPU del tramo completo supera los 8 GB con el universo completo. La [orden de medición](#medición-de-caudal) compara las cuatro combinaciones. Mientras tanto, la comprobación sigue informando del brazo como pendiente en [#383](https://github.com/GonxKZ/mars-titan/issues/383).
+
+Titans-MAC sigue el mismo patrón y ya no figura como pendiente. La sección `titans_mac` declara la receta común de los cuatro controles, el control de cada brazo y la semilla de búsqueda, y `EXECUTORS` registra su [ajuste por ventana y su traslado](../engineering/titans-chronological-trainer.md#conexión-con-la-campaña-con-máscaras). Las configuraciones A y B la declaran, con los límites de trabajos recalculados, y siguen en estado `declared_not_executed`. `accumulation_rows` queda en `null` en la receta hasta medir la memoria en `cuda:0`, porque el tramo completo de `mac_online` con todo el universo superaría los 8 GB según la estimación en CPU. El valor previsto es 128 y la [orden de medición](#medición-de-caudal) compara los dos valores. Los dos ejecutores declaran `fastpath=False` mientras dura cada trabajo, que el recorrido cronológico exige y la orden de la campaña no fijaba.
+
+El postentrenamiento con la [matriz de adaptadores de versión 2](../../configs/posttraining/adapter-matrix-v2.json) de [#364](https://github.com/GonxKZ/mars-titan/issues/364) es una etapa posterior que parte de los padres seleccionados en cada ventana. Su [ejecución por ventana](../engineering/masked-posttraining.md#etapa-por-ventana-de-la-campaña) está implementada en `posttraining/campaign_stage.py`, con una configuración por variante ([A](../../configs/posttraining/historical-masked-adapter-stage-a.json) y [B](../../configs/posttraining/historical-masked-adapter-stage-b.json)), y se ha comprobado sin pasos de optimizador. Prevé 3.915 ajustes en A y 1.479 ajustes y 2.436 traslados en B. En B los casos siguen el calendario de sus padres: se ajustan en las anclas y se trasladan sin ajuste a las ventanas intermedias. `LATER_STAGES` de `training/campaign_plan.py` la registra con la matriz de versión 2, la configuración de cada variante y su punto de entrada, sin tareas pendientes, y `run_masked_campaign.py posttraining check` o `run` la valida o la ejecuta sobre una campaña base confirmada. No se ha ejecutado.
+
+La [etapa de políticas](#etapa-de-políticas-por-ventana) de [#137](https://github.com/GonxKZ/mars-titan/issues/137) es la segunda etapa posterior. `LATER_STAGES` la registra como `rl_policy_comparison`, con sus políticas comunes, la configuración de cada variante, su punto de entrada `simulation.campaign_stage:run_stage` y tres capacidades pendientes del motor. `run_masked_campaign.py rl check` o `rl run` la valida o la ejecuta sobre una campaña base confirmada.
+
+### Medición de caudal
+
+Una sola orden mide en `cuda:0` las familias con entrenador y la etapa de adaptadores y escribe el informe con el que se elegirá entre A y B en [#363](https://github.com/GonxKZ/mars-titan/issues/363):
+
+```bash
+CUBLAS_WORKSPACE_CONFIG=:4096:8 MARS_TITAN_EPISODIC_NATIVE=<enlace nativo> \
+uv run --no-sync python scripts/run_masked_campaign.py throughput \
+  --campaign configs/baselines/historical-masked-campaign-a.json \
+  --campaign configs/baselines/historical-masked-campaign-b.json \
+  --stage configs/posttraining/historical-masked-adapter-stage-a.json \
+  --stage configs/posttraining/historical-masked-adapter-stage-b.json \
+  --rl-stage configs/simulation/historical-masked-rl-stage-a.json \
+  --rl-stage configs/simulation/historical-masked-rl-stage-b.json \
+  --candidate-recipe configs/candidate/chronological-training.json \
+  --views US=<vistas>/US --views CN=<vistas>/CN --views US+CN=<vistas>/US+CN \
+  --first-view <vistas>/US/fold-000/manifest.json \
+  --work <trabajo> --output <trabajo>/throughput.json
+```
+
+La orden reserva la GPU con la regla de una sola carga y mide sobre la primera ventana:
+
+| Familia | Recorrido medido | Opciones comparadas |
+| --- | --- | --- |
+| Referencias neuronales | Cada brazo y candidato: 50 lotes de ajuste con forward, pinball y backward tras 5 de calentamiento, y 50 de inferencia sobre la validación | |
+| Titans-MAC | Cada control con la receta de campaña recorre `ChronologicalTrainer._train_pass` desde el inicio del tramo de ajuste, con `fastpath=False` como en `titans_fit`. Se cronometran 8 tramos entre barreras de paso tras 2 de calentamiento. Los dos casos de búsqueda comparten la medida, porque solo cambian la tasa de aprendizaje | `accumulation_rows` en `null` y 128 |
+| GRU candidata | La receta y su variante principal recorren `CandidateChronologicalTrainer._train_pass` con el módulo nativo. Las campañas no declaran todavía su sección, así que la orden la añade solo para medir y estimar, con las mismas reglas que una sección declarada | `accumulation_rows` en `null` y 128, con y sin `recompute` |
+| Adaptadores | Cada caso de la matriz v2 con una semilla (brazos aplicables y continuación completa) sobre cada padre candidato con pesos iniciales, porque los padres elegidos aún no existen, con el lote de la matriz | |
+| Políticas | El entorno financiero de cada mercado sobre una cinta sintética de 128 activos y 253 sesiones, con un ciclo fijo de las seis acciones, 2.048 transiciones tras 64 de calentamiento. La red `FinancialNetwork` con inferencia por lotes de 1 y de 16 observaciones, copias incluidas, y forward y backward de un minilote de 64 del objetivo PPO, sin optimizador | Contabilidad Python y nativa, donde el motor admite el mercado |
+
+La inferencia de Titans-MAC y de la GRU candidata se mide con los parámetros congelados sobre 64 eventos del mismo tramo, tras 8 de calentamiento. Ningún recorrido crea un optimizador de PyTorch. Las familias cronológicas llegan hasta el paso con un optimizador propio de la medición, que solo cuenta los pasos pedidos y libera los gradientes, y al terminar cada opción se exige que los pesos no hayan cambiado. Un gancho global rechaza además cualquier paso durante toda la medición. Solo se registran filas por segundo, filas medidas, pasos pedidos sin actualización y memoria, nunca pérdidas ni errores. Una opción que no cabe en la memoria reservada queda como `out_of_memory` y la medición sigue con las demás.
+
+Con esos caudales el informe estima las horas de GPU de cada variante por familia, opción, ámbito y brazo. Las referencias conservan su fórmula: 30 épocas de ajuste y validación más las predicciones finales. Titans-MAC, la GRU candidata y los casos de la matriz validan antes de la primera época y tras cada una, y vuelven a predecir la validación con el estado elegido. Un ajuste suma así sus épocas de ajuste, épocas + 2 pasadas de validación, calibración y evaluación, y un traslado solo calibración y evaluación. En Titans-MAC cada tramo predicho añade sus 12 meses de calentamiento, estimados con la densidad de filas del propio tramo. Cada padre de la matriz en una ventana reentrenada suma una pasada de ajuste y validación para su caché. Finalistas, traslados y padres sin elegir usan el candidato más lento. Para cada variante, `total_gpu_hours` suma las familias con la opción declarada en cada receta y con la opción más rápida que cabe en memoria, y `comparison` da A, B y el cociente B/A. Ridge y XGBoost quedan como no medidos, porque medirlos ya sería ajustarlos. La estimación supone el mismo caudal en todas las ventanas y no incluye esperas de disco, índices, normalizadores ni reanudaciones.
+
+La etapa de políticas tiene una estimación aparte, fuera de `total_gpu_hours`, porque mezcla entorno en CPU y red en GPU. Cada ajuste suma el presupuesto de transiciones con inferencia por lotes de 16, los 16.384 minilotes de sus recorridos, 17 validaciones completas sobre la cinta de validación y la evaluación de los tres costes. Un traslado evalúa los tres costes y una referencia lo hace sin red. Las sesiones de cada tramo se aproximan con días hábiles. La estimación es orientativa en los dos sentidos: el entorno nativo se mide a través de Python, que el motor C++ no necesita, y no se miden el paso de Adam, las oleadas de KLPO, el replay de Double DQN ni los puntos de control. Double DQN y KLPO se estiman con los minilotes de PPO. `tests/simulation/test_policy_throughput.py` (8 pruebas) fija la fórmula con caudales dados y recorre la medición en CPU sin crear optimizadores, con el gancho retirado al terminar y el rechazo de una medición que cambia pesos. Como referencia técnica, una pasada en CPU de `measure_stepping` con 128 activos y 512 transiciones, repetida tres veces con otros procesos en el equipo (carga media de 9,5), dio entre 241 y 388 transiciones por segundo con la contabilidad Python y entre 1.496 y 2.536 con la nativa en EE. UU. China solo admite hoy la contabilidad Python. Con esa dispersión, la cifra no sirve para fijar el presupuesto.
+
+El pico de memoria corresponde a la ventana medida. El informe registra para cada familia cronológica el máximo de observaciones por evento de esa ventana, y las ventanas posteriores tienen más activos. Antes de fijar una opción con el universo completo hay que repetir la orden con la ventana más poblada como `--first-view`. Las opciones elegidas cambian la identidad de cada receta y se registrarán en [#363](https://github.com/GonxKZ/mars-titan/issues/363) con la variante. La orden no se ha ejecutado.
+
+### Comprobaciones técnicas
+
+Las pruebas de `tests/training/test_campaign_plan.py`, `test_masked_campaign.py`, `test_carried_predictions.py`, `test_campaign_throughput.py` y `test_tabular_retention.py` no ajustan modelos ni ejecutan pasos de optimizador y no usan la GPU. Comprueban los recuentos exactos de A y B por ámbito, brazo y semilla, que Titans-MAC declara tantos casos de búsqueda como las referencias neuronales, la causalidad de cada traslado, la regla de parada y la pinball de cada caso, el rechazo de límites superados, de reglas mezcladas y de configuraciones alteradas, los trabajos lanzados con su vista, ventana, semilla y caso, la reanudación tras una interrupción simulada, el bloqueo al empezar y a mitad de campaña, el rechazo de vistas o políticas mezcladas, filas distintas, objetivos distintos y filas de 2024, la concurrencia CPU y la cola acotadas, los recibos de ventana validados con `read_window_receipt` (padre elegido, cota de la última etiqueta y huellas por mercado), su comprobación al reanudar, el rechazo de un traslado que no parte del estado del ancla, el manifiesto aceptado por `walk_forward_comparison` en US y US+CN y la medición de caudal. Esta recorre en CPU referencias, adaptadores, Titans-MAC y GRU candidata con el corpus técnico sin cambiar pesos, con el gancho activo en cada paso pedido y fastpath restaurado, cronometra tramos y eventos entre barreras, registra una opción sin memoria y sigue, y estima las horas por familia, opción y variante con los recuentos exactos de trabajos de la campaña y de la etapa. Los ejecutores se sustituyen por dobles que escriben predicciones nulas con las filas exactas de cada vista, y las pruebas admiten la campaña con la protección temporal permitida de `learning_doubles`, como el resto de lanzadores con dobles. Las predicciones trasladadas se prueban en CPU con un ancla neuronal construida a mano con pesos iniciales y con una función tabular fija.
+
+## Postentrenamiento
+
+Cada postentrenamiento parte de un padre seleccionado en la misma ventana y se compara con ese padre congelado. Los adaptadores se colocan solos y en combinaciones de uno, dos o tres puntos de inserción, con el mismo presupuesto de actualizaciones y la misma validación. Se ajustan solo con el tramo de ajuste de la ventana, se seleccionan con su validación y predicen calibración y evaluación con las mismas filas que la campaña base. Los objetivos ya derivados se describen en [adaptación predictiva](predictive-adaptation.md).
+
+Las referencias neuronales de la campaña emiten cinco cuantiles. Sus adaptadores y su continuación completa optimizan la pinball media de esos niveles, la misma pérdida del padre, y la selección usa el MAE por sesión de la mediana. La corrección lineal residual queda excluida para estos padres con un motivo declarado: corrige un único valor escalar, la mediana guardada en la caché, y la corrección por nivel inicializada a cero ya es el brazo de la cabeza. Con padres escalares se conserva el diseño anterior, en el que la corrección residual se compara con la salida continua del padre.
+
+## Refuerzo
+
+Los entornos consumen únicamente predicciones fuera de muestra del walk-forward, identificadas por los [recibos de ventana](#ejecución-y-recuperación) de la campaña. La ejecución usa el precio posterior a la decisión, con costes y deslizamiento declarados y límites de posición. Un agente escrito a mano que intente leer información futura debe fallar o no obtener ventaja. Los resultados sobre entornos sintéticos no se presentan como resultados sobre FinMultiTime. El controlador KLPO terminal se describe en [su documento de ingeniería](../engineering/terminal-klpo-updates.md).
+
+### Etapa de políticas por ventana
+
+La etapa está declarada en las [políticas comunes](../../configs/simulation/historical-masked-rl-policies.json) y en una configuración por variante ([A](../../configs/simulation/historical-masked-rl-stage-a.json) y [B](../../configs/simulation/historical-masked-rl-stage-b.json)). `simulation/policy_plan.py` valida la declaración y enumera los trabajos sin leer datos, `simulation/window_tapes.py` monta las cintas de cada tramo y `simulation/campaign_stage.py` ejecuta, reanuda y confirma. No se ha ejecutado.
+
+Cada política aprende y se elige con información anterior a su evaluación. La política de la ventana k se ajusta con los tramos de evaluación de las tres ventanas anteriores a k−1, se selecciona con el de k−1 y se evalúa en k. Se usan tramos de evaluación porque son los únicos con predicciones fuera de muestra de un ajuste que terminó antes, de modo que el predictor no vio ninguna etiqueta posterior a la primera decisión del tramo. La construcción lo exige con el `labels_used_until` de cada recibo. Las cuatro primeras ventanas del protocolo se reservan para el primer ajuste y la primera validación. EE. UU. tiene así 15 ventanas de política, que evalúan de 2009 a 2023, y China 9, de 2015 a 2023. 2024 sigue cerrado.
+
+Los predictores son el Transformer compacto y Titans-MAC en línea con la semilla 42, la referencia y el núcleo que la propuesta contrasta. Para cada uno, el universo de un ancla sigue la regla `median_traded_value_in_validation_v1`: activos admitidos en todas las cintas de ajuste y validación, con alguna predicción en validación, ordenados por la mediana de cierre por volumen de la validación y con desempate por identificador, hasta 128. La evaluación no interviene en esa elección. Si la cinta de evaluación excluye un activo del universo, por ejemplo por filas sin verificar, el trabajo registra sus episodios como fallidos con el motivo `universe_assets_excluded` en lugar de reducir el universo en silencio.
+
+Los brazos comparten entorno, observaciones, las seis acciones y las semillas 42, 43 y 44:
+
+| Brazo | Motor | Objetivo |
+| --- | --- | --- |
+| `klpo_terminal` (principal) | `native_klpo` | `klpo_terminal_token_full_v1` con el controlador `klpo_full_fresh_waves_v1` y dos actualizaciones confirmadas por referencia |
+| `ppo_clip_full_kl` | `native_ppo` | `ppo_clip_full_kl_v1` |
+| `ppo_kl_penalty_adaptive` | `native_ppo` | `ppo_kl_penalty_adaptive_v1` con KL objetivo 0,01 |
+| `ppo_clip_kl_epoch_stop` | `native_ppo` | `ppo_clip_kl_epoch_stop_v1` con KL objetivo 0,01 |
+| `double_dqn` | `native_ppo` | Double DQN |
+| `cash`, `hold_initial`, `rebalance_50` | Contabilidad nativa | Sin aprendizaje: efectivo, compra inicial y regla fija del 50 % sobre la predicción |
+
+El presupuesto se fija antes de evaluar: 262.144 transiciones por ajuste con 16 entornos, recorridos de 1.024 transiciones, cuatro épocas de minilotes de 64 y una validación cada 16.384 transiciones. La selección usa `ruin_count_then_mean_liquidated_log_growth` sobre la validación, con mejora mínima de 0,0001, paciencia 5 y sin parada temprana, así que todos los brazos consumen el mismo presupuesto. El MAE del predictor nunca interviene. Cada trabajo se evalúa con costes de 0, 10 y 25 pb. El capital es 1.000.000 en la moneda del mercado. Con los 10.000 de configuraciones anteriores, el cuartil superior de 128 activos recibía unos 78 por activo con la menor exposición, menos que un lote de 100 acciones A a cualquier precio por encima de 0,78 CNY y menos que una acción de muchas empresas estadounidenses.
+
+| Variante | Ajustes | Traslados | Referencias | Episodios de evaluación |
+| --- | --- | --- | --- | --- |
+| A | 720 | 0 | 144 | 2.592 |
+| B | 240 | 480 | 144 | 2.592 |
+
+En B la política se ajusta en la primera ventana de política y cada tres, como la campaña base. EE. UU. ajusta en 2009, 2012, 2015, 2018 y 2021 y China en 2015, 2018 y 2021. Las ventanas intermedias evalúan sin ajuste la política elegida en su ancla, sobre el universo del ancla.
+
+```bash
+uv run --no-sync python scripts/run_masked_campaign.py rl check \
+  --stage configs/simulation/historical-masked-rl-stage-b.json
+uv run --no-sync python scripts/run_masked_campaign.py rl run \
+  --stage configs/simulation/historical-masked-rl-stage-b.json \
+  --views US=<vistas>/US --views CN=<vistas>/CN --views US+CN=<vistas>/US+CN \
+  --campaign-output <campaña> --edition <edición desde 2000> --output <políticas>
+```
+
+`check` cuenta los trabajos y consulta las capacidades del motor sin leer datos. `run` llama a `require_learning_allowed` antes de nada y antes de cada trabajo pendiente, exige después todas las capacidades del plan y solo entonces abre fuentes y crea la salida. Lee de la campaña base confirmada el recibo de ventana y las predicciones del predictor elegido. El recibo debe pertenecer a la ventana y al mercado pedidos e identificar al padre elegido con la huella de sus predicciones. Los brazos y referencias de una ventana reutilizan las mismas cintas, guardadas con su recibo y su universo, y una cinta cambiada se rechaza al reanudar.
+
+Cada trabajo confirma un recibo con sus cintas, su informe y un registro por coste, también cuando el episodio falla o se arruina. Un ajuste debe declarar el criterio de cartera sobre la validación, el presupuesto completo y la huella de la política elegida. Un traslado evalúa la política de su ancla sin transiciones ni selección y una referencia no aprende ni selecciona. Las métricas por brazo y coste cuentan episodios completos, arruinados y fallidos con sus motivos, y la media del crecimiento logarítmico liquidado se publica con su denominador. Un trabajo pausado se reanuda en su carpeta y los confirmados no se repiten.
+
+Hoy `run` se detiene antes de crear la salida porque faltan capacidades del motor:
+
+| Capacidad | Situación | Trabajos afectados |
+| --- | --- | --- |
+| `native_policy_reconstructed_tapes` | `mars-titan-ppo` solo admite fuentes sintéticas. Falta admitir cintas reconstruidas con su auditoría walk-forward, ajustar con el presupuesto, seleccionar con el criterio de cartera y evaluar el estado elegido | PPO, KLPO y Double DQN |
+| `native_klpo_financial_runner` | `KlpoLearningController` no tiene una orden ejecutable que recoja oleadas sobre cintas y seleccione en validación | KLPO |
+| `native_cn_a_share_rules` | El motor nativo rechaza reglas de mercado declaradas y una cinta china reconstruida exige lotes, resto impar, bandas diarias y timbre. Se comprueba con una sonda sobre el motor instalado | Todos los de China, también las referencias |
+
+Las dos primeras no tienen sonda y siguen pendientes hasta que exista su ejecutor. La contabilidad nativa de las referencias sí se comprueba con la biblioteca compilada. La recuperación de un ajuste real queda a cargo del ejecutor nativo, con sus puntos de control de cartera, órdenes, generadores, optimizador, replay y cursor.
+
+Las pruebas no ajustan políticas ni ejecutan pasos de optimizador y no usan la GPU. `tests/simulation/test_policy_plan.py` (44 pruebas) fija los recuentos de A y B, el orden causal de todos los trabajos, KLPO primero, las dependencias de cada traslado, el capital mínimo para un lote de acciones A y el rechazo de declaraciones alteradas, entre ellas una selección por MAE. `test_window_tapes.py` (11) comprueba con recibos y una edición sintética que un recibo de un ajuste posterior, de otro mercado, falsificado o renombrado como una ventana anterior se rechaza, que perturbar el precio o la predicción posteriores a una decisión no cambia ninguna observación ni acción hasta ese punto, que la exposición máxima solo opera activos del universo en aperturas ejecutables, que un activo excluido produce episodios fallidos y que solo la cinta de evaluación puede excluirlo. `test_campaign_stage.py` (25) recorre A y B sobre una campaña base reducida, con brazos aprendidos sustituidos por una política guionizada sin red, y comprueba cintas comunes por ventana, traslados con la política y el universo del ancla, pausa y reanudación, el bloqueo al empezar y entre trabajos, la parada por capacidades ausentes antes de crear la salida, el rechazo de informes que ocultan episodios o rompen el contrato y el de una campaña base alterada. Con la biblioteca nativa compilada comprueba además que las referencias dan los mismos episodios con la contabilidad nativa y con la Python en esa campaña reducida. `test_policy_recovery.py` (3) pausa un trabajo con el entrenador Python de PPO o Double DQN por debajo de su calentamiento y su recorrido, con momentos de Adam escritos a mano, y comprueba que el trabajo reanudado coincide con una ejecución continua en cartera, órdenes pendientes, cursor, generadores, optimizador, replay y recorrido, y en la pérdida y los gradientes de la actualización siguiente, calculados sin aplicarla. La cinta de esta prueba conserva precios y sesiones de la etapa con puntuaciones sintéticas, porque la campaña reducida emite pocas predicciones.
+
+La mutación dirigida aplicó de uno en uno 26 defectos a la lógica nueva: orden de tramos, cota de etiquetas, ancla de los traslados, regla del universo, ventana y padre del recibo, contrato de los informes, episodios fallidos en el resumen, bloqueo entre trabajos, reglas chinas, capacidades antes de crear la salida, bandera de reanudación, KLPO primero y fórmula y pesos de la medición de caudal. En la primera pasada sobrevivieron cuatro (orden de tramos según los recibos, episodio completo sobre una cinta fallida, activo perdido en una cinta de ajuste y KLPO declarado en segundo lugar con controles coherentes). Se añadieron las pruebas que faltaban y los 26 fallan ahora.
+
+## Métricas
+
+La métrica principal es el MAE residual por sesión. Primero se promedian los activos de un mismo mercado e instante y después se aplica la ponderación temporal y entre mercados. Se registran también MSE y RMSE, acierto de dirección con convención de empates, correlación de rangos por sesión y, cuando la salida lo permita, pérdida pinball, cobertura y anchura de cuantiles con y sin calibración común. La diferencia frente a una referencia se informa como Delta_error = MAE_variante − MAE_base y como porcentaje 100·(MAE_base − MAE_variante)/MAE_base, con intervalos del 95 % por bloques temporales. El detalle está en [métricas](metrics.md).
+
+## Cómputo
+
+La campaña se ejecuta en una RTX 4070 Laptop de 8 GB con el perfil de energía de ahorro, que el equipo necesita para no apagarse por temperatura. En esas condiciones la GPU trabaja a unos 1.305 MHz con limitación térmica. La auditoría de preparación estima unas 85 h por familia, configuración y semilla si se reentrena cada ventana anual completa con 30 épocas. Es una hipótesis basada en caudales de ediciones anteriores. El presupuesto definitivo se fijará con el caudal medido en la primera ventana mediante la [orden de medición](#medición-de-caudal), antes de lanzar la campaña, y será el mismo para los brazos emparejados.
+
+## Decisiones pendientes antes de entrenar
+
+- Variante A o B de la [orquestación](#variantes-de-presupuesto), con el caudal medido en la GPU y la huella de la configuración elegida ([#363](https://github.com/GonxKZ/mars-titan/issues/363)).
+- Comparación parcial con las referencias, si se quiere evaluarlas antes de conectar las demás familias.
+- Revisar la configuración de evaluación declarada antes de ver resultados: familias de contrastes, base de los refinamientos K, mínimo de activos del Rank IC y longitud de bloque ([#32](https://github.com/GonxKZ/mars-titan/issues/32)). La [cabeza común](../engineering/quantile-head.md) y su calibración CQR ([#22](https://github.com/GonxKZ/mars-titan/issues/22)) están implementadas y el control de la cabeza sobre el Transformer compacto está declarado sin ejecutar.
+- Semillas fijas y margen mínimo relevante de error, registrados antes de ver resultados.
+- Política de retención de predicciones y checkpoints según el disco disponible.
+- Implementar en el motor nativo las tres capacidades de la [etapa de políticas](#etapa-de-políticas-por-ventana) y medir su caudal en `cuda:0` antes de fijar el presupuesto de transiciones.
+- `accumulation_rows` de Titans-MAC según los activos por instante, con 128 como valor previsto. Sin acumulación, el grafo de un tramo de `mac_online` con más de unos mil activos supera la memoria de la GPU según la [estimación medida en CPU](../engineering/titans-chronological-trainer.md#memoria-del-tramo-y-acumulación-por-bloques). Fijarlo cambia la huella de la receta de campaña y la identidad de sus trabajos.

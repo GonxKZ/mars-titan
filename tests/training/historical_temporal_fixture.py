@@ -15,8 +15,25 @@ from mars_titan.data.temporal import MarketClock
 from mars_titan.training.cohort_contract import representation_hash
 from tests.training.test_corpus_inputs import corpus
 
+DEFAULT_DAYS = (
+    "2000-01-04",
+    "2000-06-30",
+    "2009-01-15",
+    "2022-11-15",
+    "2022-12-15",
+    "2022-12-30",
+    "2023-01-17",
+    "2023-02-15",
+    "2023-03-15",
+    "2023-09-28",
+    "2023-10-02",
+    "2023-12-28",
+    "2023-12-29",
+)
 
-def historical_temporal_fixture(root, markets=("US",)):
+
+def historical_temporal_fixture(root, markets=("US",), days=None):
+    """Crear el corpus técnico. `days` permite fijar las sesiones de cada mercado."""
     root = Path(root)
     parent = corpus(root / "parent", assets=1, rows=1, markets=markets)
     meta = json.loads(parent.read_text())
@@ -36,21 +53,7 @@ def historical_temporal_fixture(root, markets=("US",)):
     for asset in meta["assets"]:
         market, symbol = asset["market"], asset["symbol"]
         clock = clocks[market] = MarketClock(market, "1999-01-01", "2024-01-05")
-        requested = [
-            "2000-01-04",
-            "2000-06-30",
-            "2009-01-15",
-            "2022-11-15",
-            "2022-12-15",
-            "2022-12-30",
-            "2023-01-17",
-            "2023-02-15",
-            "2023-03-15",
-            "2023-09-28",
-            "2023-10-02",
-            "2023-12-28",
-            "2023-12-29",
-        ]
+        requested = DEFAULT_DAYS if days is None else days[market]
         positions = [
             clock.days.index(date.fromisoformat(day))
             for day in requested

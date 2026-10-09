@@ -556,6 +556,59 @@ void memory_contract_versions_are_explicit_and_incompatible() {
     invalid.schema_version = 3;
     rejected([&] { static_cast<void>(serialize_memory(invalid)); });
 }
+// Simula plazas de otra geometría con los sorteos compartidos y los contrasta con v2.
+void causal_draws_match_the_native_reservoir_and_split_batches() {
+    constexpr std::size_t batch = 7;
+    constexpr uint64_t seen_limit = uint64_t{1} << 32;
+    constexpr auto last_free_slot = static_cast<int64_t>(small_capacity) - 1;
+    for (const std::size_t capacity : {std::size_t{1}, small_capacity}) {
+        EpisodicMemory bank(scope(), seed, capacity, 2);
+        auto state = causal_reservoir_state(seed);
+        require(state == bank.snapshot().reservoir_rng,
+                "El estado inicial compartido difiere del reservorio v2");
+        std::vector<uint64_t> slots;
+        std::vector<int64_t> all_draws;
+        for (uint64_t first = 1; first <= last_record; first += batch) {
+            const auto count = std::min<uint64_t>(batch, last_record - first + 1);
+            const auto draws = causal_reservoir_draws(state, bank.seen(), capacity, count);
+            for (uint64_t offset = 0; offset < count; ++offset) {
+                const auto slot = draws.slots.at(offset);
+                const auto id = first + offset;
+                if (slot >= 0 && static_cast<std::size_t>(slot) == slots.size()) {
+                    slots.push_back(id);
+                } else if (slot >= 0) {
+                    slots.at(static_cast<std::size_t>(slot)) = id;
+                }
+                write(bank, record(id));
+                all_draws.push_back(slot);
+            }
+            std::vector<uint64_t> retained;
+            for (const auto& value : bank.retained_records()) {
+                retained.push_back(value.id);
+            }
+            require(retained == slots && draws.state == bank.snapshot().reservoir_rng,
+                    "Los sorteos compartidos no reproducen las plazas o el RNG de v2");
+            state = draws.state;
+        }
+        const auto whole =
+            causal_reservoir_draws(causal_reservoir_state(seed), 0, capacity, last_record);
+        require(whole.slots == all_draws && whole.state == state,
+                "Dividir el lote cambió los sorteos del reservorio");
+    }
+    const auto largest = causal_reservoir_draws(causal_reservoir_state(seed), 0,
+                                                maximum_reservoir_capacity, small_capacity);
+    require(largest.slots.size() == small_capacity && largest.slots.back() == last_free_slot &&
+                largest.state == causal_reservoir_state(seed),
+            "Las plazas libres consumieron el RNG o perdieron su orden");
+    const auto initial = causal_reservoir_state(seed);
+    rejected([&] { (void)causal_reservoir_draws(initial, 0, 0, 1); });
+    rejected([&] { (void)causal_reservoir_draws(initial, 0, maximum_reservoir_capacity + 1, 1); });
+    rejected([&] { (void)causal_reservoir_draws(initial, 0, 1, maximum_retention_batch + 1); });
+    rejected([&] { (void)causal_reservoir_draws(initial, seen_limit, 1, 1); });
+    rejected([&] { (void)causal_reservoir_draws(initial + " ", 0, 1, 1); });
+    rejected([&] { (void)causal_reservoir_draws("", 0, 1, 1); });
+    rejected([&] { (void)causal_reservoir_draws("1 2 3", 0, 1, 1); });
+}
 } // namespace
 
 int main() {
@@ -576,6 +629,7 @@ int main() {
         external_retention_rejects_invalid_batches_without_changing_the_bank();
         causal_rng_pairs_scopes_but_keeps_recovery_isolated();
         memory_contract_versions_are_explicit_and_incompatible();
+        causal_draws_match_the_native_reservoir_and_split_batches();
     } catch (const std::exception& error) {
         std::cerr << error.what() << '\n';
         return 1;

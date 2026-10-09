@@ -91,15 +91,15 @@ La memoria vacía conserva el refinador. No equivale a omitirlo ni a usar la GRU
 escalar de `MultimodalReference`. La política estricta y la histórica tienen
 identidades diferentes aunque se hayan emparejado sus parámetros.
 
-Falta conectar el candidato al recorrido cronológico, los cursores, warmup,
-resolución de pendientes y publicación de una generación común. También falta
-un banco identificado para claves de 128 y valores de 256, con sus reglas de
-claves nulas, admisión, snapshot, retención y recuperación. No se reduce esta
-geometría a la del banco compartido de 64 × 64. Esta entrega no implementa
-M2/M3 ni C/M sobre la GRU y no acredita entrenamiento o comparación predictiva.
-La integración cronológica deberá fijar también los flags de ejecución numérica
-durante la sesión y comprobarlos al recuperar, además de la identidad de este
-adaptador.
+Esta entrega no conectaba el candidato al recorrido cronológico ni tenía banco
+propio. La fase posterior, descrita en
+[GRU episódica en el coordinador financiero](../docs/engineering/gru-financial-sessions.md),
+añade el codec CPU fijo, un banco identificado de claves 128 y valores 256 con sus
+reglas de claves nulas, admisión, snapshot y recuperación, y el enlace con cursores,
+warmup, resolución de pendientes y publicación de una generación común. Fija los
+flags numéricos en la identidad del consumidor y los comprueba al recuperar. No se
+reduce esta geometría a la del banco de 64 × 64. M2/M3 y C/M siguen sin definirse
+sobre la GRU y no hay entrenamiento ni comparación predictiva.
 
 ## Comprobaciones técnicas
 

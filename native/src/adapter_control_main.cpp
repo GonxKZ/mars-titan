@@ -1,4 +1,5 @@
 #include "mars_titan/adapter_control.hpp"
+#include "mars_titan/learning_hold.hpp"
 
 #include <ATen/ATen.h>
 #include <ATen/CPUGeneratorImpl.h>
@@ -234,6 +235,8 @@ int main(int argc, char** argv) {
         at::set_num_threads(1);
         at::set_num_interop_threads(1);
         const auto options = parse(arguments);
+        // Cada repetición ejecuta pasos SGD sobre el fixture sintético.
+        mars_titan::learning::require_learning_allowed("el control de adaptadores");
         const auto data = fixture(options);
         const auto parent_mse =
             (at::mm(data.validation_inputs, data.base.t()) - data.validation_targets)

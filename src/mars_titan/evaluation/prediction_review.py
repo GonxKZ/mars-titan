@@ -13,6 +13,7 @@ import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
 
+from mars_titan.data.input_policy import STRICT_INPUTS, masked_inputs
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.evaluation import session_metrics, splits
 from mars_titan.training.temporal_contract import temporal_contracts, temporal_fold
@@ -47,6 +48,11 @@ def _signature(path):
     return [stat.st_dev, stat.st_ino, stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns]
 
 
+def _policy(source):
+    """Política declarada por la fuente. Sin declaración se mantiene la estricta."""
+    return source.get("input_policy", STRICT_INPUTS)
+
+
 def _sources(sources):
     if not isinstance(sources, list) or not 1 <= len(sources) <= 32:
         raise ValueError("Se necesitan entre 1 y 32 fuentes explícitas")
@@ -62,11 +68,15 @@ def _sources(sources):
             not isinstance(source["manifest"], str) or not source["manifest"]
         ):
             raise ValueError("El manifiesto temporal necesita una ruta explícita")
+        if masked_inputs(_policy(source)) and "manifest" not in source:
+            raise ValueError("La política con máscaras requiere su manifiesto temporal")
 
 
 def _temporal_contract(source, summary):
     if "manifest" not in source:
         return None
+    policy = _policy(source)
+    version = 2 if masked_inputs(policy) else 1
     path = Path(source["manifest"])
     if path.is_symlink():
         raise ValueError("El manifiesto temporal no puede ser un enlace simbólico")
@@ -79,11 +89,11 @@ def _temporal_contract(source, summary):
         or manifest.get("final_test_opened") is not False
     ):
         raise ValueError("El resumen y el manifiesto temporal no conservan su contrato y huella")
-    contracts = temporal_contracts(manifest)
-    fold = temporal_fold(manifest)
+    contracts = temporal_contracts(manifest, input_policy=policy)
+    fold = temporal_fold(manifest, input_policy=policy)
     for view in contracts.values():
         protocol = view["protocol"]
-        if view["schema_version"] != 1 or fold not in splits.build_folds(protocol):
+        if view["schema_version"] != version or fold not in splits.build_folds(protocol):
             raise ValueError("La ventana temporal no pertenece al protocolo confirmado")
         if protocol["final_test_start"] > "2024-01-01":
             raise ValueError("El protocolo temporal invade el test reservado")
@@ -93,6 +103,7 @@ def _temporal_contract(source, summary):
         windows={p: fold[p] for p in PARTITIONS},
         view=manifest.get("temporal_view"),
         views=contracts,
+        policy=policy,
     )
 
 
@@ -112,7 +123,7 @@ def _run_manifest(folder, run, report, temporal, views):
         view, digest = _json(_inside(folder, path.relative_to(folder)))
         if (
             view.get("source_manifest_sha256") != temporal["manifest_sha256"]
-            or temporal_contracts(view)
+            or temporal_contracts(view, input_policy=temporal["policy"])
             != {
                 market: contract
                 for market, contract in temporal["views"].items()
@@ -175,22 +186,24 @@ def _confirmed(source, partitions):
                 if partition in population and population[partition] != count:
                     raise ValueError("Las predicciones no concilian la población declarada")
             path = _inside(folder, artifact["path"])
+            contract = None
+            if temporal:
+                contract = dict(
+                    manifest_sha256=temporal["manifest_sha256"],
+                    run_manifest_sha256=manifest,
+                    fold=temporal["fold"],
+                    bounds=temporal["windows"][partition],
+                )
+                # La política estricta conserva el contrato y la huella anteriores.
+                if masked_inputs(temporal["policy"]):
+                    contract["input_policy"] = temporal["policy"]
             yield dict(
                 key=f"{source['id']}/{run_id}/{partition}",
                 path=path,
                 report_sha256=digest,
                 artifact=artifact,
                 partition=partition,
-                temporal_contract=(
-                    dict(
-                        manifest_sha256=temporal["manifest_sha256"],
-                        run_manifest_sha256=manifest,
-                        fold=temporal["fold"],
-                        bounds=temporal["windows"][partition],
-                    )
-                    if temporal
-                    else None
-                ),
+                temporal_contract=contract,
             )
 
 

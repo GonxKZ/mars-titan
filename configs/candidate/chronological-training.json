@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "recipe_name": "candidate_gru_chronological_v1",
+  "status": "propuesta_sin_ejecutar",
+  "arm": "gru_episodic",
+  "protocol": "../evaluation/historical-masked-us-walk-forward-v2.json",
+  "model": {
+    "input_policy": "historical_masked_2000_v1",
+    "dtype": "float32",
+    "seeds": [42, 43, 44],
+    "feature_seed": 43,
+    "key_seed": 44,
+    "output_head": "quantile_head_v1"
+  },
+  "recipe": {
+    "admission": "m1",
+    "refinements": 1,
+    "bank_capacity": 1024,
+    "bank_seed": 73,
+    "update_instants": 8,
+    "loss": "pinball",
+    "learning_rate": 0.001,
+    "weight_decay": 0.0,
+    "max_grad_norm": 1.0,
+    "epochs": 30,
+    "selection": {"metric": "session_mae", "stopping": "fixed_budget", "patience": 5, "min_delta": 1e-05},
+    "block_rows": 128,
+    "accumulation_rows": null,
+    "recompute": false,
+    "checkpoint_updates": 256,
+    "checkpoint_seconds": 900.0
+  },
+  "variants": {
+    "m1_k1": {},
+    "m0_k1": {"admission": "m0"},
+    "m1_k2": {"refinements": 2},
+    "m1_k4": {"refinements": 4},
+    "m1_k1_l1_median": {"loss": "mae"}
+  },
+  "principal": "m1_k1",
+  "pending": [
+    "El presupuesto definitivo depende de la alternativa que se registre en #363 con el caudal medido en la primera ventana.",
+    "El banco empieza vacío en cada pasada. El índice de observaciones no contiene etiquetas del calentamiento, así que no hay calentamiento episódico con etiquetas anteriores al tramo.",
+    "La variante m1_k1_l1_median solo se usa si el control de #22 descarta la cabeza de cuantiles para la comparación principal.",
+    "M2 y M3 no están definidos sobre la geometría 128x256 de este banco.",
+    "El caudal y la memoria en cuda:0 se medirán antes de fijar el presupuesto común.",
+    "accumulation_rows y recompute siguen desactivados para conservar la paridad con la receta anterior. Antes de ampliar al universo completo hay que medir la memoria en cuda:0 y elegir la opción. Cada una cambia la identidad de la receta."
+  ]
+}

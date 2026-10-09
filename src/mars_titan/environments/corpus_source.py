@@ -19,6 +19,15 @@ import pyarrow.parquet as pq
 from mars_titan.data.batches import atomic_parquet_batches
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.cohort_news import COHORT_POLICIES
+from mars_titan.data.input_policy import (
+    INPUT_POLICIES,
+    STRICT_INPUTS,
+    masked_inputs,
+    policy_identity,
+)
+from mars_titan.data.input_policy import (
+    MODALITIES as PRESENCE_ORDER,
+)
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.models.baselines.inputs import MODALITIES
 from mars_titan.training.checkpoints import StopRequest
@@ -27,12 +36,13 @@ from mars_titan.training.partition_contract import ordered_bounds
 from mars_titan.training.run_receipts import initialize_receipt
 
 from .actions import ActionGrid
-from .cohorts import read_cohort, shapes_contract
+from .cohorts import MAX_COHORT_ASSETS, read_cohort, shapes_contract
 
 MAX_BLOCK_BYTES = 64 * 1024**2
 
 
-def _code():
+def _code(*, masked=False):
+    """Huellas del código. La política con máscaras añade solo su contrato de entradas."""
     root = Path(__file__).parents[1]
     return {
         name: sha256(root / name)
@@ -54,6 +64,7 @@ def _code():
             "data/cohort_news.py",
             "data/storage.py",
         )
+        + (("data/input_policy.py",) if masked else ())
     }
 
 
@@ -79,6 +90,11 @@ def _tables(dataset, partition, batch_size, shapes, stop):
             columns[name] = pa.FixedSizeListArray.from_arrays(
                 pa.array(values.reshape(-1), type=pa.float32()),
                 int(np.prod(shapes[name])),
+            )
+        if dataset.masked:
+            # Los bits viajan con su fila. La ruta estricta no añade ninguna columna.
+            columns["presence"] = pa.FixedSizeListArray.from_arrays(
+                pa.array(batch["presence"].reshape(-1), type=pa.bool_()), len(PRESENCE_ORDER)
             )
         table = pa.table(columns)
         if table.nbytes > MAX_BLOCK_BYTES:
@@ -161,7 +177,33 @@ def _ordered_parquet(
         yield connection
 
 
+def _check_cohorts(market_index, bounds):
+    """Exigir claves únicas, disponibilidad previa y etiquetas maduras dentro del tramo.
+
+    Una sesión puede tener tantos activos como admite el entorno. La sesión más poblada
+    de la edición desde 2000 tiene 4.200 activos US, así que no se recorta ninguna.
+    """
+    for (
+        market,
+        at,
+        rows,
+        distinct,
+        available_min,
+        available_max,
+        mature_min,
+        mature_max,
+    ) in market_index:
+        lower, upper, cutoff = bounds[market]
+        if not (
+            1 <= rows == distinct <= MAX_COHORT_ASSETS
+            and 0 <= available_min <= available_max <= at < mature_min <= mature_max < upper
+            and lower <= at < cutoff
+        ):
+            raise ValueError("Las claves, disponibilidad o fechas de una cohorte son inválidas")
+
+
 def _partition(dataset, output, partition, report, stop):
+    policy = report.get("input_policy", STRICT_INPUTS)
     with tempfile.TemporaryDirectory(prefix=f"{partition}-pending-", dir=output) as directory:
         temporary = Path(directory)
         raw, ordered = temporary / "input.parquet", temporary / "ordered.parquet"
@@ -191,28 +233,15 @@ def _partition(dataset, output, partition, report, stop):
                 "FROM read_parquet(?) GROUP BY 1, 2",
                 [str(ordered)],
             ).fetchmany(200_001)
-        bounds = {market: ordered_bounds(report, market=market)[partition] for market in markets}
+        bounds = {
+            market: ordered_bounds(report, market=market, input_policy=policy)[partition]
+            for market in markets
+        }
         if not 1 <= len(index) <= 100_000 or sum(row[1] for row in index) != count:
             raise ValueError("El índice temporal no concilia o supera el presupuesto de cohortes")
         if len(market_index) > 200_000 or sum(row[2] for row in market_index) != count:
             raise ValueError("El índice por mercado no concilia o supera su presupuesto")
-        for (
-            market,
-            at,
-            rows,
-            distinct,
-            available_min,
-            available_max,
-            mature_min,
-            mature_max,
-        ) in market_index:
-            lower, upper, cutoff = bounds[market]
-            if not (
-                1 <= rows == distinct <= 4096
-                and 0 <= available_min <= available_max <= at < mature_min <= mature_max < upper
-                and lower <= at < cutoff
-            ):
-                raise ValueError("Las claves, disponibilidad o fechas de una cohorte son inválidas")
+        _check_cohorts(market_index, bounds)
         maximum = max(row[1] for row in index)
         shapes_contract(report["shapes"], maximum, MAX_BLOCK_BYTES)
         ordered = _bounded_groups(ordered, report["shapes"])
@@ -293,12 +322,22 @@ def _fit_grid(output, record, source_sha256):
     return ActionGrid.fit(targets, source_sha256=source_sha256, partition="train").to_dict()
 
 
-def prepare_causal_corpus(manifest, output, *, batch_size=256, resume=False, stop=None):
-    """Confirmar cada partición completa y reutilizarla tras una interrupción."""
+def prepare_causal_corpus(
+    manifest, output, *, batch_size=256, resume=False, stop=None, input_policy=STRICT_INPUTS
+):
+    """Confirmar cada partición completa y reutilizarla tras una interrupción.
+
+    Con la política histórica, cada fila conserva sus cinco bits de presencia y el
+    recibo declara la política. Sin ella, archivos e identidad no cambian.
+    """
     if type(batch_size) is not int or not 1 <= batch_size <= 4096 or type(resume) is not bool:
         raise ValueError("El tamaño del lote o la recuperación no son válidos")
+    if input_policy not in INPUT_POLICIES:
+        raise ValueError("La política de entradas no está admitida")
+    masked = masked_inputs(input_policy)
     started = time.perf_counter()
-    dataset, output, stop = CorpusDataset(Path(manifest)), Path(output), stop or StopRequest()
+    dataset = CorpusDataset(Path(manifest), input_policy=input_policy)
+    output, stop = Path(output), stop or StopRequest()
     if min(dataset.manifest["counts"].values()) < 1:
         raise ValueError("Se necesitan entrenamiento y validación no vacíos")
     for protected in (*dataset.roots.values(), Path("dataset")):
@@ -312,12 +351,13 @@ def prepare_causal_corpus(manifest, output, *, batch_size=256, resume=False, sto
     identity = dict(
         source_sha256=dataset.identity,
         batch_size=batch_size,
-        code=_code(),
+        code=_code(masked=masked),
         duckdb=duckdb.__version__,
         pyarrow=pa.__version__,
         numpy=np.__version__,
         cohort_id=dataset.cohort,
         news_content_policy=dataset.manifest.get("news_content_policy"),
+        **policy_identity(input_policy),
     )
     if getattr(dataset, "temporal", None) is not None:
         identity["source_manifest"] = dict(
@@ -360,6 +400,7 @@ def prepare_causal_corpus(manifest, output, *, batch_size=256, resume=False, sto
                 final_test_opened=False,
                 shapes={name: list(value.shape[1:]) for name, value in first["inputs"].items()},
                 partitions={},
+                **policy_identity(input_policy),
             )
             if "source_manifest" in identity:
                 report["source_manifest"] = identity["source_manifest"]
@@ -375,7 +416,10 @@ def prepare_causal_corpus(manifest, output, *, batch_size=256, resume=False, sto
                     report["partitions"][partition] = _partition(
                         dataset, output, partition, report, stop
                     )
-                if _code() != identity["code"] or sha256(dataset.path) != dataset.identity:
+                if (
+                    _code(masked=masked) != identity["code"]
+                    or sha256(dataset.path) != dataset.identity
+                ):
                     raise ValueError(
                         "El código o manifiesto de origen ha cambiado durante la preparación"
                     )
@@ -401,12 +445,45 @@ def prepare_causal_corpus(manifest, output, *, batch_size=256, resume=False, sto
         os.close(lock)
 
 
+def _presence(table, inputs):
+    """Leer los bits y exigir el relleno nulo de cada bloque ausente."""
+    column = table["presence"].combine_chunks()
+    lengths = pa.compute.list_value_length(column).to_numpy()
+    if (
+        column.null_count
+        or column.values.null_count
+        or not pa.types.is_boolean(column.type.value_type)
+        or not np.all(lengths == len(PRESENCE_ORDER))
+    ):
+        raise ValueError("La presencia necesita cinco booleanos por fila")
+    presence = column.flatten().to_numpy(zero_copy_only=False).reshape(len(table), -1)
+    if not presence[:, [PRESENCE_ORDER.index("prices"), PRESENCE_ORDER.index("charts")]].all():
+        raise ValueError("Los precios y gráficos causales son obligatorios")
+    for index, name in enumerate(PRESENCE_ORDER):
+        values = inputs[name].reshape(len(table), -1)
+        if np.any(values[~presence[:, index]] != 0):
+            raise ValueError("Un bloque ausente contiene valores distintos de cero")
+    presence.setflags(write=False)
+    return presence
+
+
 class ParquetCohortSource:
     """Leer una cohorte por índice, con dos grupos como máximo en una caché acotada."""
 
-    def __init__(self, manifest, *, partition, max_cache_bytes=MAX_BLOCK_BYTES):
+    def __init__(
+        self, manifest, *, partition, max_cache_bytes=MAX_BLOCK_BYTES, input_policy=STRICT_INPUTS
+    ):
         self.manifest_path = Path(manifest)
         meta, self.manifest_sha256 = read_manifest(self.manifest_path)
+        expected = policy_identity(input_policy) if input_policy in INPUT_POLICIES else None
+        # La política se declara al abrir. Un lector estricto no interpreta ceros rellenos.
+        if expected is None or any(
+            {key: value[key] for key in ("input_policy", "mask_contract") if key in value}
+            != expected
+            for value in (meta, meta.get("identity", {}))
+        ):
+            raise ValueError("La política de entradas no coincide con el corpus ordenado")
+        self.input_policy, self.masked = input_policy, masked_inputs(input_policy)
         if (
             meta.get("schema_version") != 1
             or meta.get("kind") != "causal_prediction_corpus"
@@ -432,6 +509,7 @@ class ParquetCohortSource:
         ):
             raise ValueError("La cohorte no conserva su procedencia y política editorial")
         self.path, verified_signature = _file(self.manifest_path.parent, partition, record)
+        self.partition_sha256 = record["sha256"]
         self.shapes = shapes_contract(meta["shapes"], record["max_assets"], MAX_BLOCK_BYTES)
         self.max_assets, self.max_cache_bytes = record["max_assets"], max_cache_bytes
         self.source_sha256, self.partition = meta["source_sha256"], partition
@@ -446,7 +524,8 @@ class ParquetCohortSource:
         ):
             raise ValueError("La población ordenada necesita sus mercados explícitos")
         self.market_bounds = {
-            market: ordered_bounds(meta, market=market)[partition] for market in markets
+            market: ordered_bounds(meta, market=market, input_policy=input_policy)[partition]
+            for market in markets
         }
         self.bounds = (
             next(iter(self.market_bounds.values())) if len(self.market_bounds) == 1 else None
@@ -477,9 +556,12 @@ class ParquetCohortSource:
         if footer[4:] != b"PAR1" or int.from_bytes(footer[:4], "little") > 64 * 1024**2:
             raise ValueError("Los metadatos Parquet exceden el presupuesto o no son válidos")
         self.file = pq.ParquetFile(self.path)
-        if self.file.metadata.num_rows != record["rows"]:
+        if (
+            self.file.metadata.num_rows != record["rows"]
+            or ("presence" in self.file.schema_arrow.names) != self.masked
+        ):
             self.file.close()
-            raise ValueError("Las filas Parquet no concilian con el recibo")
+            raise ValueError("Las filas o columnas Parquet no concilian con el recibo")
         self.signature = self._signature()
         if self.signature != verified_signature:
             self.file.close()
@@ -554,7 +636,12 @@ class ParquetCohortSource:
             target_available_at=table["target_available_at"].to_numpy(),
             target=table["target"].to_numpy(),
         )
+        presence = _presence(table, inputs) if self.masked else None
         checked = read_cohort(raw, self.shapes, self.max_assets, MAX_BLOCK_BYTES)
+        if presence is not None:
+            # read_cohort ordena por activo. Los bits siguen exactamente ese orden.
+            checked["presence"] = presence[np.argsort(raw["asset_ids"])]
+            checked["presence"].setflags(write=False)
         markets = np.array([asset.split("/", 1)[0] for asset in checked["asset_ids"]])
         if not set(markets) <= self.market_bounds.keys():
             raise ValueError("Una fila pertenece a un mercado sin contrato temporal")
@@ -589,6 +676,7 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--batch-size", type=int, default=256)
     parser.add_argument("--resume", action="store_true")
+    parser.add_argument("--input-policy", choices=INPUT_POLICIES, default=STRICT_INPUTS)
     with StopRequest() as stop:
         report = prepare_causal_corpus(**vars(parser.parse_args()), stop=stop)
     print(f"Estado: {report['status']}. Filas previstas: {report['counts']}")
