@@ -658,9 +658,8 @@ class ChronologicalTrainer:
                         )
                     )
                     self.train_metrics = None
-                    finished = epoch >= self.recipe.epochs or (
-                        self.recipe.budget == "patience" and self.selection["should_stop"]
-                    )
+                    # Con presupuesto fijo, la receta exige paciencia mayor que las épocas.
+                    finished = epoch >= self.recipe.epochs or self.selection["should_stop"]
                     cursor = (
                         dict(epoch=epoch, phase="done")
                         if finished

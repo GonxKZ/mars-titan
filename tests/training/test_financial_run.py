@@ -195,16 +195,19 @@ def test_optimizer_must_cover_exactly_the_outer_parameters(shared, tmp_path):
         )
 
 
-def test_loop_steps_only_at_segment_boundaries_with_matured_labels(shared, tmp_path):
+def test_loop_steps_only_at_segment_boundaries_with_matured_labels(shared, tmp_path, monkeypatch):
     _, streams = shared
     engine = trainer(streams, tmp_path / "run")
     initial = engine.predictor._parameter_id
+    seals, seal = [], engine.predictor._seal_parameters
+    monkeypatch.setattr(engine.predictor, "_seal_parameters", lambda: seals.append(1) or seal())
     report = engine.run()
     assert report["status"] == "completed"
     train = report["history"][1]["train"]
     updates = entries(engine.audit, "update")
     assert len(engine.optimizer.records) == len(updates) == train["updates"] > 3
     assert engine.optimizer.zero_calls == len(updates)
+    assert len(seals) == len(updates) + 1
     assert engine.predictor._parameter_id == initial
     phase = streams["train"].phase
     instants = sorted({e[3] for e in entries(engine.audit, "prediction", "train")})
