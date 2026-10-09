@@ -659,15 +659,16 @@ def test_labels_without_a_live_graph_stay_out_of_the_loss(shared, tmp_path):
     run = candidate_run._Pass()
     graph = torch.zeros(5, dtype=torch.float64, requires_grad=True)
     run.pending["US/A0000", 100] = candidate_run._Pending(0.5)
-    run.pending["US/A0001", 100] = candidate_run._Pending(0.25)
+    run.pending["US/A0001", 100] = candidate_run._Pending(0.25, block=0)
     run.graphs["US/A0001", 100] = graph
+    run.outstanding[0] = 1
     labels = (("US/A0000", 100, 0.125), ("US/A0001", 100, -0.125))
     event = ObservationEvent(200, (), labels, False)
     engine._labels(run, streams["train"], event, train=True)
     assert run.counters["labels"] == 2 and run.counters["labels_without_graph"] == 1
     assert len(run.predictions) == 1 and run.predictions[0] is graph
     assert run.targets == [-0.125] and run.used == [("US/A0001", 100, 200)]
-    assert not run.pending and not run.graphs
+    assert not run.pending and not run.graphs and not run.outstanding
     with pytest.raises(ValueError, match="pendiente"):
         engine._labels(run, streams["train"], event, train=True)
 

@@ -24,6 +24,7 @@ from pathlib import Path
 import numpy as np
 import pyarrow as pa
 import torch
+from torch.utils.checkpoint import checkpoint
 
 from mars_titan.data.batches import atomic_parquet_batches
 from mars_titan.data.input_policy import HISTORICAL_MASKED, MODALITIES
@@ -99,6 +100,11 @@ class CandidateRecipe:
     epochs: int = 30
     selection: dict = field(default_factory=_default_selection)
     block_rows: int = 128
+    # None conserva un único backward por tramo. Un entero propaga cada evento al madurar
+    # sus etiquetas, en grupos de bloques de predicción completos de hasta ese número de filas.
+    accumulation_rows: int | None = None
+    # Guardar solo las entradas de cada bloque y repetir su forward durante el backward.
+    recompute: bool = False
     checkpoint_updates: int = 256
     checkpoint_seconds: float = 900.0
 
@@ -113,11 +119,12 @@ class CandidateRecipe:
             (self.bank_seed, 0, 2**64 - 1),
         )
         numbers = (self.learning_rate, self.weight_decay, self.checkpoint_seconds)
-        clip = self.max_grad_norm
+        clip, rows = self.max_grad_norm, self.accumulation_rows
         if (
             self.admission not in ADMISSIONS
             or type(self.refinements) is not int
             or self.refinements not in (1, 2, 4)
+            or type(self.recompute) is not bool
             or self.loss not in LOSSES
             or any(type(v) is not int or not low <= v <= high for v, low, high in integers)
             or any(type(v) not in (int, float) or not math.isfinite(v) for v in numbers)
@@ -125,13 +132,17 @@ class CandidateRecipe:
             or self.weight_decay < 0
             or self.checkpoint_seconds <= 0
             or (
+                rows is not None
+                and (type(rows) is not int or not self.block_rows <= rows <= 65_536)
+            )
+            or (
                 clip is not None
                 and (type(clip) not in (int, float) or not math.isfinite(clip) or clip <= 0)
             )
         ):
             raise ValueError(
                 "La receta necesita banco M0/M1, K = 1, 2 o 4, pérdida, presupuesto, "
-                "optimizador y checkpoints válidos"
+                "optimizador, acumulación, recomputación y checkpoints válidos"
             )
 
     def identity(self):
@@ -142,7 +153,12 @@ class CandidateRecipe:
             optimizer="AdamW",
             update_unit="decision_instants_per_segment_no_bptt",
             label_rule="loss_only_after_maturity_event_then_next_segment_update",
-            loss_reduction="mean_over_matured_labels_of_segment",
+            loss_reduction=(
+                "mean_over_matured_labels_of_segment"
+                if self.accumulation_rows is None
+                else "row_sum_backward_at_maturity_by_whole_prediction_blocks_"
+                "then_gradient_divided_by_segment_labels"
+            ),
             bank_rule="snapshot_before_event_labels_then_admit_mature_labels",
             bank_reset="each_pass_starts_empty",
             refinements_counted_as_memory_updates=False,
@@ -256,6 +272,7 @@ class _Pending:
     available: int | None = None
     key: torch.Tensor | None = None
     value: torch.Tensor | None = None
+    block: int | None = None
 
 
 def _counters():
@@ -287,8 +304,13 @@ class _Pass:
     graphs: dict = field(default_factory=dict)
     predictions: list = field(default_factory=list)
     targets: list = field(default_factory=list)
+    blocks: list = field(default_factory=list)
+    outstanding: dict = field(default_factory=dict)
     used: list = field(default_factory=list)
     instants: int = 0
+    next_block: int = 0
+    accumulated: int = 0
+    accumulated_loss: object = 0.0
 
 
 class _PredictionRows:
@@ -486,8 +508,15 @@ class CandidateChronologicalTrainer:
         inputs = self.native.CandidateInputs(
             *(tensors.inputs[name] for name in MODALITIES), tensors.presence
         )
+        refinements = self.recipe.refinements
+        if grad and self.recipe.recompute:
+            # Mismos parámetros, instantánea y K en la repetición. La salida emitida no cambia.
+            return checkpoint(
+                lambda: self.model.forward(inputs, memory, refinements).quantiles,
+                use_reentrant=False,
+            )
         with torch.set_grad_enabled(grad):
-            return self.model.forward(inputs, memory, self.recipe.refinements).quantiles
+            return self.model.forward(inputs, memory, refinements).quantiles
 
     def _observe(self, run, source, event, *, train):
         """Predecir cada bloque con la instantánea previa a las etiquetas del evento."""
@@ -503,6 +532,9 @@ class CandidateChronologicalTrainer:
                 continue
             seen = 0 if run.bank is None else run.bank.seen
             quantiles = self._forward(batch, self._memory(run), grad=train)
+            block, run.next_block = run.next_block, run.next_block + 1
+            if train:
+                run.outstanding[block] = size
             emitted = quantiles.detach()
             issued = emitted[:, MEDIAN_INDEX].cpu().tolist()
             levels = None if train else emitted.cpu().numpy()
@@ -519,6 +551,7 @@ class CandidateChronologicalTrainer:
                     entry.value = torch.from_numpy(encoded.values[row].copy())
                 run.pending[flow, at] = entry
                 if train:
+                    entry.block = block
                     run.graphs[flow, at] = quantiles[row]
                 if self.audit is not None:
                     self.audit.append(("prediction", partition, flow, at, issued[row], seen))
@@ -551,8 +584,12 @@ class CandidateChronologicalTrainer:
             if graph is None:
                 run.counters["labels_without_graph"] += 1
                 continue
+            run.outstanding[entry.block] -= 1
+            if not run.outstanding[entry.block]:
+                del run.outstanding[entry.block]
             run.predictions.append(graph)
             run.targets.append(value)
+            run.blocks.append(entry.block)
             run.used.append((flow, decision_at, event.at))
         for start in range(0, len(errors), 4096):
             run.errors.update(
@@ -591,20 +628,72 @@ class CandidateChronologicalTrainer:
                 ("admit", source.phase.partition, at, tuple(episodes.ids.tolist()), run.bank.seen)
             )
 
-    def _loss(self, quantiles, target):
+    def _loss(self, quantiles, target, *, reduction="mean"):
         if self.recipe.loss == PINBALL:
-            return pinball_loss(quantiles, target)
-        return torch.nn.functional.l1_loss(median(quantiles), target)
+            if reduction == "mean":
+                return pinball_loss(quantiles, target)
+            return pinball_loss(quantiles, target, reduction="none").sum()
+        return torch.nn.functional.l1_loss(median(quantiles), target, reduction=reduction)
+
+    def _stacked(self, run, rows):
+        quantiles = torch.stack([run.predictions[row] for row in rows])
+        target = [run.targets[row] for row in rows]
+        return quantiles, torch.tensor(target, dtype=quantiles.dtype, device=quantiles.device)
+
+    def _accumulate(self, run, at):
+        """Propagar las etiquetas que maduran en el evento, por grupos de bloques completos.
+
+        Cada grupo suma la pérdida de sus filas y el paso del tramo divide el gradiente por el
+        total de etiquetas. Equivale a ponderar cada grupo por sus filas sobre ese total. Las
+        predicciones conservan su instantánea y sus parámetros, así que solo cambia el orden
+        de las sumas. Un bloque nunca se reparte entre grupos, para no recorrer su grafo dos
+        veces dentro del evento.
+        """
+        if not run.predictions:
+            return
+        blocks = {}
+        for row, block in enumerate(run.blocks):
+            blocks.setdefault(block, []).append(row)
+        groups = [([], set())]
+        for block, rows in blocks.items():
+            if groups[-1][0] and len(groups[-1][0]) + len(rows) > self.recipe.accumulation_rows:
+                groups.append(([], set()))
+            groups[-1][0].extend(rows)
+            groups[-1][1].add(block)
+        for rows, members in groups:
+            loss = self._loss(*self._stacked(run, rows), reduction="sum")
+            # Un bloque con filas aún sin etiqueta conserva su grafo hasta que maduren o hasta
+            # el paso del tramo. Sin recomputación retiene sus activaciones completas.
+            loss.backward(retain_graph=not members.isdisjoint(run.outstanding))
+            run.accumulated += len(rows)
+            run.accumulated_loss = run.accumulated_loss + loss.detach()
+        if self.audit is not None:
+            self.audit.append(("accumulate", at, tuple(len(rows) for rows, _ in groups)))
+        run.predictions.clear()
+        run.targets.clear()
+        run.blocks.clear()
 
     def _update(self, run, at):
         """Un paso con las etiquetas maduras del tramo. Después se descartan los grafos."""
-        if run.predictions:
-            quantiles = torch.stack(run.predictions)
-            target = torch.tensor(run.targets, dtype=quantiles.dtype, device=quantiles.device)
-            loss = self._loss(quantiles, target)
-            if not torch.isfinite(loss).item():
-                raise ValueError("La pérdida del tramo no es finita")
-            loss.backward()
+        if self.recipe.accumulation_rows is None:
+            labels = len(run.predictions)
+            if labels:
+                loss = self._loss(*self._stacked(run, range(labels)))
+                if not torch.isfinite(loss).item():
+                    raise ValueError("La pérdida del tramo no es finita")
+                loss.backward()
+                total = float(loss.detach()) * labels
+        else:
+            labels = run.accumulated
+            if labels:
+                # Una sola sincronización por tramo, como sin acumulación.
+                total = float(run.accumulated_loss)
+                if not math.isfinite(total):
+                    raise ValueError("La pérdida del tramo no es finita")
+                for value in self.trainable:
+                    if value.grad is not None:
+                        value.grad.div_(labels)
+        if labels:
             torch.nn.utils.clip_grad_norm_(
                 self.trainable, self.recipe.max_grad_norm or math.inf, error_if_nonfinite=True
             )
@@ -612,14 +701,17 @@ class CandidateChronologicalTrainer:
             self.optimizer.zero_grad(set_to_none=True)
             self.global_step += 1
             run.counters["updates"] += 1
-            run.counters["labels_in_loss"] += len(run.predictions)
-            run.counters["loss_sum"] += float(loss.detach()) * len(run.predictions)
+            run.counters["labels_in_loss"] += labels
+            run.counters["loss_sum"] += total
             if self.audit is not None:
                 self.audit.append(("update", at, self.global_step, tuple(run.used)))
         run.graphs.clear()
+        run.outstanding.clear()
         run.predictions.clear()
         run.targets.clear()
+        run.blocks.clear()
         run.used.clear()
+        run.accumulated, run.accumulated_loss = 0, 0.0
         run.instants = 0
         run.counters["segments"] += 1
 
@@ -690,6 +782,8 @@ class CandidateChronologicalTrainer:
         for index, event in enumerate(events, start):
             if not (index == start and stage == "inputs"):
                 self._labels(run, source, event, train=True)
+                if self.recipe.accumulation_rows is not None:
+                    self._accumulate(run, event.at)
                 decision = bool(event.inputs) and event.at >= source.phase.decision_start
                 if (decision and run.instants == self.recipe.update_instants) or event.close_phase:
                     before = self.global_step
@@ -714,7 +808,7 @@ class CandidateChronologicalTrainer:
 
     def _export(self, run):
         """Barrera tras un paso: sin grafos vivos y con la admisión del evento sin aplicar."""
-        if run.graphs or run.predictions or run.instants:
+        if run.graphs or run.predictions or run.instants or run.accumulated:
             raise ValueError("La barrera solo admite tramos ya actualizados")
         keys = sorted(run.pending)
         entries = [run.pending[key] for key in keys]
