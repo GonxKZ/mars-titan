@@ -583,9 +583,7 @@ def test_orders_into_suspensions_and_missing_rows_never_fill(edition):
 @pytest.mark.parametrize(
     "backend", ["python", pytest.param("native", marks=requires_native_library)]
 )
-def test_a_session_without_any_row_creates_no_execution_no_price_and_no_reward(
-    tmp_path, backend
-):
+def test_a_session_without_any_row_creates_no_execution_no_price_and_no_reward(tmp_path, backend):
     # Una sesión del calendario sin fila de ningún activo, como la ausencia marcada por
     # máscara en la edición, no inventa precio, no ejecuta órdenes y no produce recompensa.
     hole = (100, 101)
