@@ -27,4 +27,38 @@ Cada prueba protege una propiedad concreta. La cobertura y las pruebas de mutaci
 
 ## Protección del aprendizaje
 
-Mientras exista la protección local `~/.local/state/mars-titan/training-hold-2000.json` con `training_allowed: false`, `tests/conftest.py` registra un gancho global previo a cada paso de optimizador de PyTorch. La prueba que intente ese paso se omite antes de modificar pesos o estados del optimizador, con el motivo «Bloqueo de aprendizaje vigente». La variable `MARS_TITAN_TRAINING_HOLD` permite indicar otra ruta. Sin protección, o con `training_allowed: true`, el gancho no se instala y las pruebas se comportan como antes. Un valor ambiguo del campo detiene la sesión de pruebas. Los optimizadores nativos de LibTorch en C++ no pasan por este gancho, así que sus pruebas siguen requiriendo una selección explícita.
+La protección local `~/.local/state/mars-titan/training-hold-2000.json`, o la ruta indicada en `MARS_TITAN_TRAINING_HOLD`, bloquea el aprendizaje mientras no declare `training_allowed: true`. Un archivo ausente no bloquea y un valor que no sea booleano detiene la ejecución. Python la lee con `learning_blocked()` y `require_learning_allowed()` en `src/mars_titan/training/learning_hold.py`. Los ejecutables nativos usan la misma variable y la misma ruta mediante `native/src/learning_hold.cpp`.
+
+### Puntos de entrada protegidos
+
+`require_learning_allowed()` lanza `LearningHoldError` al inicio de cada punto de entrada que ajusta parámetros, antes de abrir fuentes, crear salidas o escribir checkpoints. Esta excepción no hereda de `RuntimeError`, así que los lanzadores no la registran como un fallo ordinario del intento.
+
+| Ámbito | Puntos de entrada |
+| --- | --- |
+| Referencias neuronales | `run_reference_case`, `run_search`, `run_temporal_search`, `run_reference_campaign` y `training/real_campaign.run_campaign` |
+| Referencias tabulares | `run_tabular_reference`, `run_external_reference`, `run_tabular_search` y `baseline_queue.run_queue` |
+| Adaptador predictivo | `run_predictive_case`, `run_predictive_study` y `klpo_queue.run_queue` |
+| Postentrenamiento | `posttraining/run.run_case`, `posttraining/queue.run_queue`, `run_completion` y las etapas tabular y de postentrenamiento de la compleción |
+| Sondas y mediciones | `train_budget_grid`, `run_temporal_probe`, `profile_case`, `run_reference_probe` y `models/baselines/campaign.run_campaign` |
+| Primitivas de ajuste | `fit_ridge_blocks`, `fit_boosting_batches`, `fit_external_boosting` y `fit_hmm` |
+| Simulación y refuerzo | `FinancialTrainer.run`, `simulation/campaign.run_campaign`, `run_adaptive_campaign` y `prepare_adaptation_scenarios` con `fit_markov=True` |
+| Scripts | `run_native_ppo.py` en modo de entrenamiento, `benchmark_native_ppo.py`, `benchmark_adaptive_rl.py` y `run_financial_comparators.py` |
+| Ejecutables nativos | `mars-titan-ppo` en modo de entrenamiento, después de validar argumentos y antes de leer fuentes, y `mars-titan-adapter-control` |
+
+`ChronologicalTrainer.run` en `src/mars_titan/training/financial_run.py` mantiene su propia comprobación.
+
+### Lo que no se bloquea
+
+La preparación de objetivos (`prepare_corpus_targets`), la codificación (`encode_corpus`), la generación de escenarios sin HMM y `temporal_search --check` siguen permitidas. También la inferencia congelada, como la auditoría de `run_native_ppo.py --audit-run` y su ruta en `mars-titan-ppo` o la etapa de evaluación de la compleción. Las estadísticas que describen datos o residuos sin ajustar un modelo (`fit_standardizer`, `fit_normalization`, `ActionGrid.fit`, `fit_volatility` y el estadístico de orden de `fit_conformal_quantiles`) tampoco se bloquean. Esta protección actúa sobre el ajuste de parámetros y no impide por sí sola la evaluación científica ni el análisis de campañas (`scripts/finish_real_campaign.py` y `src/mars_titan/evaluation/`).
+
+### Comportamiento en las pruebas
+
+- `tests/conftest.py` registra un gancho global previo a cada paso de `torch.optim`. La prueba que intente ese paso se omite antes de modificar pesos o estados del optimizador. Sin protección, o con `training_allowed: true`, el gancho no se instala.
+- El mismo archivo convierte `LearningHoldError` en una omisión con su motivo, tanto en la preparación como en la llamada. Mientras rige la protección, las pruebas que alcanzan un punto de entrada protegido se omiten antes de ajustar.
+- El fixture `learning_doubles` apunta `MARS_TITAN_TRAINING_HOLD` a una protección temporal permitida. Lo usan pruebas cuyo aprendizaje está sustituido por binarios o ejecutores simulados, como el lanzador PPO nativo y la campaña adaptativa. `tests/posttraining/conftest.py` también lo aplica mientras rige la protección, porque el postentrenamiento solo ajusta mediante `torch.optim`. El gancho de PyTorch sigue activo en todas ellas.
+- `tests/training/test_learning_hold_guards.py` recorre cada punto de entrada con protecciones temporales. Bloqueado, falla antes del doble que sustituye el ajuste y sin crear salidas. Permitido o sin protección, llega a ese doble. También comprueba que la preparación de objetivos, la codificación, `temporal_search --check` y la auditoría congelada no se bloquean. Las pruebas del binario real necesitan `MARS_TITAN_PPO_EXECUTABLE`.
+- `tests/posttraining/test_learning_hold_entrypoints.py` comprueba lo mismo en los cinco puntos de entrada del postentrenamiento y que la etapa de evaluación congelada no se bloquea.
+- `tests/simulation/test_native_ppo_runner.py` se omite mientras rige la protección porque entrena con el binario real.
+- En CTest, `learning_hold` comprueba la lectura nativa y `adapter_control_cli_hold` el rechazo del control de adaptadores con una protección temporal. `adapter_control_cli` se omite mediante el mensaje del bloqueo.
+
+Siguen requiriendo una selección explícita las pruebas que ajustan sin pasar por un punto de entrada protegido: `tests/models/test_boosting_selection.py` y `tests/training/test_external_convergence.py` (llaman a `xgb.train`), `tests/models/test_ridge_normal_equations.py` (resuelve el sistema normal de la ridge) y las pruebas de CTest que usan directamente las bibliotecas de PPO, KLPO y adaptadores, por ejemplo `ppo_training`, `ppo_policy` y `adapter_control`.
