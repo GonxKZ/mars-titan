@@ -3,6 +3,7 @@
 import fcntl
 import os
 import tempfile
+from collections import OrderedDict
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
@@ -246,6 +247,92 @@ class ObservationEvent:
     close_phase: bool
 
 
+def _observation(dataset, asset, decoded, row, at):
+    """Seleccionar una fila decodificada con las mismas operaciones en ambas lecturas."""
+    stamps, ends, vectors, presence, known, valid = decoded
+    if not 0 <= row < len(stamps) or stamps[row] != at:
+        raise ValueError("La posición no corresponde a la observación indexada")
+    prices, price_at = dataset._prices(asset)
+    rows = np.array([row], dtype=np.int64)
+    return dict(
+        vectors=vectors,
+        rows=rows,
+        prices=_price_contexts(prices, ends[rows], dataset.context),
+        key=f"{asset['market']}/{asset['symbol']}",
+        prediction_at=stamps[rows],
+        sample_at=stamps[rows],
+        price_available_at=price_at[ends[rows]],
+        input_available_at=known[rows],
+        availability_valid=valid[rows],
+        presence=presence[rows],
+    )
+
+
+class _BlockReader:
+    """Conservar el último grupo decodificado de cada activo y montar bloques por instante.
+
+    Las filas se copian con `_fill_batch`, igual que en la lectura por observación.
+    Los grupos se descartan por antigüedad de uso al superar el presupuesto de bytes.
+    """
+
+    def __init__(self, source, block_rows, max_cached_bytes):
+        if type(block_rows) is not int or not 1 <= block_rows <= 256:
+            raise ValueError("El bloque de activos debe tener entre 1 y 256 filas")
+        if type(max_cached_bytes) is not int or not 1024**2 <= max_cached_bytes <= 8 * 1024**3:
+            raise ValueError("La caché de grupos debe estar entre 1 MiB y 8 GiB")
+        self.source, self.block_rows, self.limit = source, block_rows, max_cached_bytes
+        self.groups, self.cached_bytes, self.decoded_groups = OrderedDict(), 0, 0
+        self._labels = {}
+
+    def labels(self, identity):
+        """Las etiquetas de una fase se leen una vez por activo y recorrido."""
+        if identity not in self._labels:
+            self._labels[identity] = self.source._label_arrays(identity)
+        return self._labels[identity]
+
+    def _decoded(self, identity, group):
+        cached = self.groups.get(identity)
+        if cached is not None and cached[0] == group:
+            self.groups.move_to_end(identity)
+            return cached[1]
+        if cached is not None:
+            self.cached_bytes -= self.groups.pop(identity)[2]
+        dataset = self.source.dataset
+        asset = self.source._assets[identity]
+        with pq.ParquetFile(dataset._file(asset, "samples")) as file:
+            if not 0 <= group < file.num_row_groups:
+                raise ValueError("El grupo de origen no existe")
+            _, *arrays = dataset._sample_group(asset, file, group)
+        stamps, ends, vectors, *rest = arrays
+        size = sum(v.nbytes for v in (stamps, ends, *vectors.values(), *rest) if v is not None)
+        while self.groups and self.cached_bytes + size > self.limit:
+            self.cached_bytes -= self.groups.popitem(last=False)[1][2]
+        self.groups[identity] = (group, arrays, size)
+        self.cached_bytes += size
+        self.decoded_groups += 1
+        return arrays
+
+    def blocks(self, positions):
+        dataset, result = self.source.dataset, []
+        for start in range(0, len(positions), self.block_rows):
+            chunk, batch, widths = positions[start : start + self.block_rows], None, None
+            for filled, (identity, group, row, at) in enumerate(chunk):
+                decoded = self._decoded(identity, group)
+                shape = {name: value.shape[1] for name, value in decoded[2].items()}
+                if widths is not None and shape != widths:
+                    raise ValueError("Las dimensiones cambian entre activos")
+                widths = shape
+                asset = self.source._assets[identity]
+                block = _observation(dataset, asset, decoded, row, at)
+                if batch is None:
+                    batch = _new_batch(
+                        decoded[2], dataset.context, len(chunk), masked=True, supervised=False
+                    )
+                _fill_batch(batch, filled, block, 0, 1)
+            result.append(batch)
+        return result
+
+
 class FinancialObservationSource:
     def __init__(self, dataset, manifest):
         self.dataset, self.path = dataset, Path(manifest)
@@ -317,36 +404,23 @@ class FinancialObservationSource:
         with pq.ParquetFile(path) as file:
             if not 0 <= group < file.num_row_groups:
                 raise ValueError("El grupo de origen no existe")
-            table, stamps, ends, vectors, presence, known, valid = self.dataset._sample_group(
-                asset, file, group
-            )
-            if not 0 <= row < len(table) or stamps[row] != at:
-                raise ValueError("La posición no corresponde a la observación indexada")
-            prices, price_at = self.dataset._prices(asset)
-            positions = np.array([row], dtype=np.int64)
-            block = dict(
-                vectors=vectors,
-                rows=positions,
-                prices=_price_contexts(prices, ends[positions], self.dataset.context),
-                key=f"{asset['market']}/{asset['symbol']}",
-                prediction_at=stamps[positions],
-                sample_at=stamps[positions],
-                price_available_at=price_at[ends[positions]],
-                input_available_at=known[positions],
-                availability_valid=valid[positions],
-                presence=presence[positions],
-            )
-            batch = _new_batch(vectors, self.dataset.context, 1, masked=True, supervised=False)
+            _, *decoded = self.dataset._sample_group(asset, file, group)
+            block = _observation(self.dataset, asset, decoded, row, at)
+            batch = _new_batch(decoded[2], self.dataset.context, 1, masked=True, supervised=False)
             _fill_batch(batch, 0, block, 0, 1)
             return batch
 
-    def _label(self, identity, row, at, sample_at):
+    def _label_arrays(self, identity):
         asset = self._assets[identity]
         path = self.dataset._file(asset, "samples")
         with pq.ParquetFile(path) as file:
-            positions, stamps, values, maturity = self.dataset._labels(
-                asset, self.phase.partition, file.metadata.num_rows
-            )
+            return self.dataset._labels(asset, self.phase.partition, file.metadata.num_rows)
+
+    def _label(self, identity, row, at, sample_at, arrays=None):
+        asset = self._assets[identity]
+        positions, stamps, values, maturity = (
+            self._label_arrays(identity) if arrays is None else arrays
+        )
         index = int(np.searchsorted(positions, row))
         if (
             index == len(positions)
@@ -357,7 +431,7 @@ class FinancialObservationSource:
             raise ValueError("La maduración indexada no corresponde al label verificado")
         return f"{asset['market']}/{asset['symbol']}", sample_at, float(values[index])
 
-    def _event(self, at, rows):
+    def _event(self, at, rows, reader=None):
         inputs, labels, close, seen = [], [], False, set()
         for _, kind, identity, group, row, sample_at in rows:
             if kind == 2:
@@ -380,7 +454,10 @@ class FinancialObservationSource:
                     or len(inputs) >= 8192
                 ):
                     raise ValueError("La observación indexada queda fuera del tramo o capacidad")
-                inputs.append(self._input(identity, group, row, at))
+                if reader is None:
+                    inputs.append(self._input(identity, group, row, at))
+                else:
+                    inputs.append((identity, group, row, at))
             elif kind == 1:
                 if (
                     not self.phase.decision_start <= sample_at < at < self.phase.decision_end
@@ -388,12 +465,30 @@ class FinancialObservationSource:
                     or len(labels) >= 8192
                 ):
                     raise ValueError("La maduración indexada queda fuera del tramo o capacidad")
-                labels.append(self._label(identity, row, at, sample_at))
+                arrays = None if reader is None else reader.labels(identity)
+                labels.append(self._label(identity, row, at, sample_at, arrays))
             else:
                 raise ValueError("El índice contiene un tipo de evento desconocido")
+        if reader is not None:
+            inputs = reader.blocks(inputs)
         return ObservationEvent(at, tuple(inputs), tuple(labels), close)
 
     def events(self, *, start_cursor=0):
+        """Entregar una observación por lote, como la referencia de paridad del lector."""
+        for at, rows in self._logical_events(start_cursor):
+            yield self._event(at, rows)
+
+    def batched_events(self, *, start_cursor=0, block_rows=256, max_cached_bytes=1024**3):
+        """Entregar el mismo conjunto y orden canónico en bloques de activos por instante.
+
+        Cada grupo Parquet se decodifica una vez mientras sus filas siguen en uso.
+        """
+        reader = _BlockReader(self, block_rows, max_cached_bytes)
+        for at, rows in self._logical_events(start_cursor):
+            yield self._event(at, rows, reader)
+
+    def _logical_events(self, start_cursor):
+        """Agrupar filas del índice por instante y conciliar su resumen sin decodificar."""
         if type(start_cursor) is not int or not 0 <= start_cursor <= len(self.metadata["groups"]):
             raise ValueError("El cursor de eventos no pertenece al índice")
         path = self._confirm()
@@ -413,7 +508,7 @@ class FinancialObservationSource:
                     if previous is not None and at != previous:
                         groups.append([previous, len(rows)])
                         if len(groups) > start_cursor:
-                            yield self._event(previous, rows)
+                            yield previous, rows
                         rows = []
                     rows.append(item)
                     if len(rows) > 16385:
@@ -422,7 +517,7 @@ class FinancialObservationSource:
         if rows:
             groups.append([previous, len(rows)])
             if len(groups) > start_cursor:
-                yield self._event(previous, rows)
+                yield previous, rows
         if (
             groups != self.metadata["groups"]
             or count != self.metadata["rows"]
