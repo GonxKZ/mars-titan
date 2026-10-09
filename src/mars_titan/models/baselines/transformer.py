@@ -26,6 +26,14 @@ def transformer_options(options):
     return dict(options)
 
 
+def validate_attention_budget(batch, *, context, heads, layers):
+    """Comprobar lote y posiciones de atención sin construir el modelo ni leer datos."""
+    if type(batch) is not int or not 1 <= batch <= _MAX_BATCH:
+        raise ValueError("El lote de precios supera el presupuesto o está vacío")
+    if batch * context**2 * heads * layers > _MAX_ATTENTION_ELEMENTS:
+        raise ValueError("La atención supera el presupuesto conjunto de lote y contexto")
+
+
 class CompactPriceTransformer(nn.Module):
     """Proyectar una ventana completa sin memoria ni estado entre llamadas.
 
@@ -152,14 +160,12 @@ class CompactPriceTransformer(nn.Module):
         settings = self._settings
         if prices.ndim != 3 or prices.shape[1:] != (settings["context"], settings["input_size"]):
             raise ValueError("La ventana de precios no tiene la forma esperada")
-        batch = prices.shape[0]
-        if not 1 <= batch <= _MAX_BATCH:
-            raise ValueError("El lote de precios supera el presupuesto o está vacío")
-        if (
-            batch * settings["context"] ** 2 * settings["heads"] * settings["layers"]
-            > _MAX_ATTENTION_ELEMENTS
-        ):
-            raise ValueError("La atención supera el presupuesto conjunto de lote y contexto")
+        validate_attention_budget(
+            prices.shape[0],
+            context=settings["context"],
+            heads=settings["heads"],
+            layers=settings["layers"],
+        )
         if (
             prices.dtype not in (torch.float32, torch.float64)
             or prices.dtype != self.projection.weight.dtype

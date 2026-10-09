@@ -1,5 +1,6 @@
 """Épocas completas de referencias multimodales con cursor y estado recuperables."""
 
+import hashlib
 import importlib.metadata
 import json
 import math
@@ -16,9 +17,20 @@ import torch
 from mars_titan.budget_training import seed_run, validate_loss
 from mars_titan.data.batches import atomic_parquet_batches
 from mars_titan.data.embeddings import require_cuda
+from mars_titan.data.input_policy import STRICT_INPUTS, masked_inputs, policy_identity
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.evaluation.session_metrics import SessionErrors
-from mars_titan.models.baselines.multimodal import MultimodalReference, validate_architecture
+from mars_titan.models.baselines.multimodal import (
+    PRESENCE_FUSION,
+    STRICT_FUSION,
+    MultimodalReference,
+    validate_architecture,
+)
+from mars_titan.models.baselines.transformer import (
+    CompactPriceTransformer,
+    transformer_options,
+    validate_attention_budget,
+)
 from mars_titan.profiling import CostProbe
 
 from .checkpoints import (
@@ -29,7 +41,14 @@ from .checkpoints import (
     save_training_state,
 )
 from .corpus_inputs import CorpusDataset
-from .selection import advance_selection, initial_selection, validate_selection
+from .selection import FIXED_BUDGET, advance_selection, initial_selection, validate_selection
+
+KINDS = ("rnn", "lstm", "gru", "dlinear", "transformer")
+# Política anterior: filas completas de ajuste y validación.
+FULL_TRAIN_VALIDATION = "full_train_validation_v1"
+# Filas completas de validación, calibración y evaluación. El ajuste se resume por sesión.
+HELDOUT_FULL_TRAIN_SESSIONS = "heldout_full_train_sessions_v1"
+PREDICTION_RETENTIONS = (FULL_TRAIN_VALIDATION, HELDOUT_FULL_TRAIN_SESSIONS)
 
 
 class _Pause(Exception):
@@ -42,11 +61,11 @@ def read_json(path):
     return json.loads(path.read_text())
 
 
-def configured_corpus(manifest):
+def configured_corpus(manifest, *, input_policy=STRICT_INPUTS):
     """Activar las tablas solo con un presupuesto explícito para esta ejecución."""
     budget = os.environ.get("MARS_TITAN_INPUT_CACHE_MIB")
     if budget is None:
-        return CorpusDataset(manifest)
+        return CorpusDataset(manifest, input_policy=input_policy)
     if (
         not 1 <= len(budget) <= 4
         or not budget.isascii()
@@ -54,38 +73,54 @@ def configured_corpus(manifest):
         or not 1 <= int(budget) <= 4096
     ):
         raise ValueError("MARS_TITAN_INPUT_CACHE_MIB debe ser un entero entre 1 y 4096")
-    return CorpusDataset(manifest, cache_bytes=int(budget) * 1024**2, cache_sample_tables=True)
-
-
-def scientific_identity():
-    """Compartir versiones, política numérica y transformaciones entre todos los casos."""
-    root = Path(__file__).parents[1]
-    sources = (
-        "training/reference_run.py",
-        "training/reference_campaign.py",
-        "training/selection.py",
-        "training/checkpoints.py",
-        "training/corpus_inputs.py",
-        "training/temporal_corpus.py",
-        "training/temporal_contract.py",
-        "evaluation/splits.py",
-        "evaluation/split_readiness.py",
-        "data/cohort_contexts.py",
-        "data/samples.py",
-        "data/temporal.py",
-        "profiling.py",
-        "models/baselines/dlinear.py",
-        "models/baselines/multimodal.py",
-        "training/cohort_contract.py",
-        "evaluation/session_metrics.py",
-        "models/baselines/campaign.py",
-        "budget_training.py",
-        "data/streaming.py",
-        "data/batches.py",
-        "data/cohort_files.py",
-        "data/storage.py",
-        "data/embeddings.py",
+    return CorpusDataset(
+        manifest,
+        cache_bytes=int(budget) * 1024**2,
+        cache_sample_tables=True,
+        input_policy=input_policy,
     )
+
+
+_SOURCES = (
+    "training/reference_run.py",
+    "training/reference_campaign.py",
+    "training/selection.py",
+    "training/checkpoints.py",
+    "training/corpus_inputs.py",
+    "training/temporal_corpus.py",
+    "training/temporal_contract.py",
+    "evaluation/splits.py",
+    "evaluation/split_readiness.py",
+    "data/cohort_contexts.py",
+    "data/samples.py",
+    "data/temporal.py",
+    "profiling.py",
+    "models/baselines/dlinear.py",
+    "models/baselines/multimodal.py",
+    "training/cohort_contract.py",
+    "evaluation/session_metrics.py",
+    "models/baselines/campaign.py",
+    "budget_training.py",
+    "data/streaming.py",
+    "data/batches.py",
+    "data/cohort_files.py",
+    "data/storage.py",
+    "data/embeddings.py",
+)
+
+
+def scientific_identity(*, kind=None, input_policy=STRICT_INPUTS):
+    """Compartir versiones, política numérica y transformaciones entre todos los casos.
+
+    El Transformer y la lectura con máscaras añaden sus huellas solo en esos casos.
+    Así, la identidad de las referencias estrictas anteriores conserva sus campos.
+    """
+    root = Path(__file__).parents[1]
+    sources = _SOURCES
+    if kind == "transformer":
+        sources += ("models/baselines/transformer.py",)
+    if masked_inputs(input_policy):
+        sources += ("data/input_policy.py",)
     return dict(
         torch=str(torch.__version__),
         cuda=torch.version.cuda,
@@ -106,11 +141,19 @@ def scientific_identity():
     )
 
 
-def _options(case, batch_size, checkpoint_seconds, checkpoint_steps):
+def _options(
+    case,
+    batch_size,
+    checkpoint_seconds,
+    checkpoint_steps,
+    *,
+    input_policy=STRICT_INPUTS,
+    prediction_retention=FULL_TRAIN_VALIDATION,
+):
     required = {"kind", "loss", "learning_rate", "seed", "epochs", "huber_delta"}
     if (
         not required <= set(case) <= required | {"architecture", "selection"}
-        or case["kind"] not in {"rnn", "lstm", "gru", "dlinear"}
+        or case["kind"] not in KINDS
         or type(case["epochs"]) is not int
         or not 1 <= case["epochs"] <= 1000
         or type(case["seed"]) is not int
@@ -125,15 +168,27 @@ def _options(case, batch_size, checkpoint_seconds, checkpoint_steps):
         or case["learning_rate"] <= 0
     ):
         raise ValueError("La configuración del entrenamiento no es válida")
+    if prediction_retention not in PREDICTION_RETENTIONS:
+        raise ValueError("La retención de predicciones no pertenece al contrato")
+    transformer = case["kind"] == "transformer"
+    if (transformer or masked_inputs(input_policy)) and "architecture" not in case:
+        raise ValueError(
+            "El Transformer y la política con máscaras requieren una arquitectura científica"
+        )
+    if transformer and batch_size > CompactPriceTransformer.max_batch:
+        raise ValueError("El lote supera el presupuesto de la referencia Transformer")
     if "architecture" in case:
         architecture = case["architecture"]
-        if not isinstance(architecture, dict) or set(architecture) != {
-            "hidden_size",
-            "layers",
-            "dropout",
-        }:
+        expected = {"hidden_size", "layers", "dropout"} | (
+            {"transformer"} if transformer else set()
+        )
+        if not isinstance(architecture, dict) or set(architecture) != expected:
             raise ValueError("La arquitectura necesita anchura, profundidad y regularización")
-        validate_architecture(**architecture)
+        validate_architecture(**{k: v for k, v in architecture.items() if k != "transformer"})
+        if transformer and not isinstance(architecture["transformer"], dict):
+            raise ValueError("El Transformer necesita cabezas y anchura FFN explícitas")
+        if transformer:
+            transformer_options(architecture["transformer"])
     if "selection" in case:
         validate_selection(case["selection"], epochs=case["epochs"])
     validate_loss(case["loss"], case["huber_delta"])
@@ -143,6 +198,13 @@ def _options(case, batch_size, checkpoint_seconds, checkpoint_steps):
 
 def _inputs(batch, device):
     return {k: torch.from_numpy(v).to(device) for k, v in batch["inputs"].items()}
+
+
+def _forward(model, batch, device):
+    """Entregar la presencia solo cuando el lector aplica la política con máscaras."""
+    if "presence" not in batch:
+        return model(_inputs(batch, device))
+    return model(_inputs(batch, device), torch.from_numpy(batch["presence"]).to(device))
 
 
 def _statistics():
@@ -171,9 +233,47 @@ def _update(statistics, prediction, target):
     statistics["absolute_error"] += sums[1]
 
 
-def _evaluate(model, dataset, batch_size, *, partition="validation", destination=None, stop=None):
+def _session_table(errors, zero):
+    """Resumir errores por mercado e instante, junto al control de predicción nula."""
+    keys = sorted(errors.sessions, key=lambda key: (key[1], key[0]))
+    if keys != sorted(zero.sessions, key=lambda key: (key[1], key[0])):
+        raise ValueError("El resumen por sesión no concilia el modelo y el control nulo")
+    model_rows = [errors.sessions[key] for key in keys]
+    zero_rows = [zero.sessions[key] for key in keys]
+    return pa.table(
+        {
+            "market": [market for market, _ in keys],
+            "prediction_at": pa.array(
+                [moment for _, moment in keys], type=pa.timestamp("us", tz="UTC")
+            ),
+            "samples": pa.array([row[0] for row in model_rows], type=pa.int64()),
+            "absolute_error": [row[1] for row in model_rows],
+            "squared_error": [row[2] for row in model_rows],
+            "zero_absolute_error": [row[1] for row in zero_rows],
+            "zero_squared_error": [row[2] for row in zero_rows],
+        }
+    )
+
+
+def _evaluate(
+    model,
+    dataset,
+    batch_size,
+    *,
+    device="cuda:0",
+    partition="validation",
+    destination=None,
+    sessions=None,
+    stop=None,
+):
+    """Evaluar una partición completa. `sessions` resume filas sin guardarlas una a una."""
+    if destination is not None and sessions is not None:
+        raise ValueError("Una evaluación guarda filas completas o un resumen por sesión")
     model.eval()
     accumulator = SessionErrors()
+    zero = SessionErrors() if sessions is not None else None
+    # Dos flujos separados no dependen de las fronteras entre lotes.
+    digests = dict(sample_ids=hashlib.sha256(), predictions=hashlib.sha256())
     start = time.perf_counter()
 
     def tables():
@@ -183,7 +283,7 @@ def _evaluate(model, dataset, batch_size, *, partition="validation", destination
             ):
                 if stop is not None and stop.requested:
                     raise _Pause
-                predicted = model(_inputs(batch, "cuda:0"))
+                predicted = _forward(model, batch, device)
                 if predicted.shape != batch["target"].shape:
                     raise ValueError("Predicción y etiqueta no tienen la misma forma")
                 predictions = predicted.cpu().numpy()
@@ -192,6 +292,12 @@ def _evaluate(model, dataset, batch_size, *, partition="validation", destination
                     batch["prediction_at"],
                     predictions.astype(np.float64) - batch["target"],
                 )
+                if zero is not None:
+                    zero.update(batch["market"], batch["prediction_at"], -batch["target"])
+                    digests["sample_ids"].update(
+                        "".join(f"{key}\n" for key in batch["sample_ids"]).encode()
+                    )
+                    digests["predictions"].update(predictions.astype("<f4").tobytes())
                 if destination is None:
                     continue
                 yield pa.table(
@@ -218,7 +324,20 @@ def _evaluate(model, dataset, batch_size, *, partition="validation", destination
     statistics["elapsed_seconds"] = time.perf_counter() - start
     if statistics["samples"] != dataset.manifest["counts"][partition]:
         raise ValueError("La evaluación no reconcilia toda la población")
-    return _metrics(statistics)
+    metrics = _metrics(statistics)
+    if sessions is not None:
+        atomic_parquet_batches(sessions, [_session_table(accumulator, zero)])
+        metrics.update(
+            zero=_metrics(zero.summary() | dict(elapsed_seconds=statistics["elapsed_seconds"])),
+            sample_ids_sha256=digests["sample_ids"].hexdigest(),
+            predictions_float32_sha256=digests["predictions"].hexdigest(),
+        )
+    return metrics
+
+
+def retained_artifacts(report):
+    """Enumerar los archivos que acredita un recibo, incluido el resumen del ajuste."""
+    return [*report["predictions"].values(), *filter(None, [report.get("train_summary")])]
 
 
 def training_weights(assets, weighting):
@@ -263,11 +382,12 @@ def _confirmed_state(directory, identity, checkpoint, selection_state=None):
     return state
 
 
-def _parent(parent, dataset, case, model, batch_size, weighting):
+def _parent(parent, dataset, case, model, batch_size, weighting, input_policy=STRICT_INPUTS):
     if parent is None:
         return None
     report = read_json(parent / "run.json")
     identity = report["identity"]
+    inputs = policy_identity(input_policy)
     if (
         report.get("status") != "completed"
         or identity["manifest_sha256"] != dataset.identity
@@ -276,10 +396,13 @@ def _parent(parent, dataset, case, model, batch_size, weighting):
         or identity["case"].get("architecture") != case.get("architecture")
         or identity["batch_size"] != batch_size
         or identity["weighting"] != weighting
+        or any(identity.get(key) != inputs.get(key) for key in ("input_policy", "mask_contract"))
+        or identity.get("mask_fusion") != (PRESENCE_FUSION if inputs else None)
     ):
         raise ValueError("El origen no corresponde a la población, arquitectura y semilla")
     checkpoint = report["checkpoint"]
-    if any(identity.get(k) != v for k, v in scientific_identity().items()):
+    current = scientific_identity(kind=case["kind"], input_policy=input_policy)
+    if any(identity.get(k) != v for k, v in current.items()):
         raise ValueError("El entorno o el código no coincide con el origen de la continuación")
     state = _confirmed_state(parent, identity, checkpoint, report.get("selection"))
     model.load_state_dict(state["model"])
@@ -298,14 +421,36 @@ def run_reference_case(
     stop: StopRequest | None = None,
     initialize_from: Path | None = None,
     weighting: str = "natural",
+    input_policy: str = STRICT_INPUTS,
+    prediction_retention: str = FULL_TRAIN_VALIDATION,
 ) -> dict:
-    """Ajustar una referencia sobre toda la edición, sin abrir el test final."""
-    _options(case, batch_size, checkpoint_seconds, checkpoint_steps)
+    """Ajustar una referencia sobre toda la edición, sin abrir el test final.
+
+    Sin argumentos nuevos se conserva la ruta estricta: lectura, identidad y archivos.
+    La política con máscaras activa la fusión con presencia y la registra en la identidad.
+    """
+    _options(
+        case,
+        batch_size,
+        checkpoint_seconds,
+        checkpoint_steps,
+        input_policy=input_policy,
+        prediction_retention=prediction_retention,
+    )
+    masked = masked_inputs(input_policy)
     start = time.perf_counter()
     device = require_cuda()
-    dataset = configured_corpus(manifest)
+    dataset = configured_corpus(manifest, input_policy=input_policy)
     if min(dataset.manifest["counts"].values()) < 1:
         raise ValueError("Se necesitan datos de ajuste y validación en este brazo")
+    if case["kind"] == "transformer":
+        architecture = case["architecture"]
+        validate_attention_budget(
+            batch_size,
+            context=dataset.context,
+            heads=architecture["transformer"]["heads"],
+            layers=architecture["layers"],
+        )
     for protected in (*dataset.roots.values(), Path("dataset")):
         outside_source(protected, output)
         outside_source(output, protected)
@@ -318,15 +463,21 @@ def run_reference_case(
     dimensions = {name: value.shape[-1] for name, value in first["inputs"].items()}
     model = (
         MultimodalReference(
-            case["kind"], dimensions, context=dataset.context, **case["architecture"]
+            case["kind"],
+            dimensions,
+            context=dataset.context,
+            mask_fusion=PRESENCE_FUSION if masked else STRICT_FUSION,
+            **case["architecture"],
         )
         if "architecture" in case
         else CostProbe(case["kind"], dimensions, context=dataset.context)
     ).to(device)
     weights = training_weights(dataset.assets, weighting)
-    initialization = _parent(initialize_from, dataset, case, model, batch_size, weighting)
+    initialization = _parent(
+        initialize_from, dataset, case, model, batch_size, weighting, input_policy
+    )
     identity = dict(
-        **scientific_identity(),
+        **scientific_identity(kind=case["kind"], input_policy=input_policy),
         manifest_sha256=dataset.identity,
         case=case,
         model_family="scientific_multimodal_reference"
@@ -347,6 +498,12 @@ def run_reference_case(
             entry_limit=dataset.cache_entry_limit,
         ),
     )
+    # Los campos nuevos solo aparecen fuera de la ruta estricta anterior.
+    identity.update(policy_identity(input_policy))
+    if masked:
+        identity["mask_fusion"] = PRESENCE_FUSION
+    if prediction_retention != FULL_TRAIN_VALIDATION:
+        identity["prediction_retention"] = prediction_retention
     optimizer = torch.optim.AdamW(model.parameters(), lr=case["learning_rate"])
     report_path = output / "run.json"
     if resume and report_path.exists():
@@ -355,7 +512,7 @@ def run_reference_case(
             raise ValueError("La identidad o configuración de la ejecución ha cambiado")
         if report["status"] == "completed":
             _confirmed_state(output, identity, report["checkpoint"], report.get("selection"))
-            for item in report["predictions"].values():
+            for item in retained_artifacts(report):
                 if sha256(output / item["path"]) != item["sha256"]:
                     raise ValueError("Han cambiado las predicciones confirmadas")
             return report
@@ -431,7 +588,7 @@ def run_reference_case(
     try:
         save()
         if initialization is not None and selection_options and selection is None:
-            baseline = _evaluate(model, dataset, batch_size, stop=stop)
+            baseline = _evaluate(model, dataset, batch_size, device=device, stop=stop)
             report["initial_validation"] = baseline
             selection = initial_selection(baseline["session_mae"], selection_options)
             save(best=True)
@@ -451,7 +608,7 @@ def run_reference_case(
             for batch in iterator:
                 optimizer.zero_grad(set_to_none=True)
                 target = torch.from_numpy(batch["target"]).to(device, dtype=torch.float32)
-                prediction = model(_inputs(batch, device))
+                prediction = _forward(model, batch, device)
                 if prediction.shape != target.shape:
                     raise ValueError("Predicción y etiqueta no tienen la misma forma")
                 if case["loss"] == "huber":
@@ -491,7 +648,7 @@ def run_reference_case(
             statistics["elapsed_seconds"] += time.perf_counter() - segment
             if statistics["samples"] != dataset.manifest["counts"]["train"]:
                 raise ValueError("La época no recorrió exactamente toda la población")
-            validation = _evaluate(model, dataset, batch_size, stop=stop)
+            validation = _evaluate(model, dataset, batch_size, device=device, stop=stop)
             history.append(dict(epoch=epoch + 1, train=_metrics(statistics), validation=validation))
             epoch, cursor, statistics = epoch + 1, None, _statistics()
             if selection_options:
@@ -511,26 +668,57 @@ def run_reference_case(
             model.load_state_dict(selected["model"])
             report["checkpoint"] = checkpoint
             evaluating_selected = True
+        legacy = prediction_retention == FULL_TRAIN_VALIDATION
+        # Calibración y evaluación se predicen después de fijar el estado seleccionado.
+        partitions = (
+            ("train", "validation")
+            if legacy
+            else tuple(name for name in dataset.partitions if name != "train")
+        )
         predictions = {}
-        for partition in ("train", "validation"):
+        for partition in partitions:
             path = output / f"{partition}-predictions.parquet"
             metrics = _evaluate(
-                model, dataset, batch_size, partition=partition, destination=path, stop=stop
+                model,
+                dataset,
+                batch_size,
+                device=device,
+                partition=partition,
+                destination=path,
+                stop=stop,
             )
             predictions[partition] = dict(path=path.name, sha256=sha256(path), metrics=metrics)
+            if not legacy:
+                predictions[partition]["bytes"] = path.stat().st_size
+        if not legacy:
+            path = output / "train-sessions.parquet"
+            metrics = _evaluate(
+                model,
+                dataset,
+                batch_size,
+                device=device,
+                partition="train",
+                sessions=path,
+                stop=stop,
+            )
+            report["train_summary"] = dict(
+                path=path.name, sha256=sha256(path), bytes=path.stat().st_size, metrics=metrics
+            )
         report.update(
             status="completed",
             predictions=predictions,
             global_step=step,
             finished_at_utc=datetime.now(UTC).isoformat(),
         )
-        if selection_options and "minimum_epochs" in selection_options:
+        if selection_options and {"minimum_epochs", "stopping"} & set(selection_options):
             report.update(
                 stop_reason=(
                     "validation_plateau" if selection["should_stop"] else "budget_exhausted"
                 ),
                 last_epoch_improved=selection["last_improved"],
             )
+            if selection_options.get("stopping") == FIXED_BUDGET:
+                report["plateau_epoch"] = selection["plateau_epoch"]
         return report
     except _Pause:
         if not evaluating_selected:

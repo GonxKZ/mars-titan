@@ -9,7 +9,7 @@ def candidate_indices(config):
         return list(range(12))
     indices = config.get("case_indices")
     if (
-        config.get("schema_version") not in {2, 3}
+        config.get("schema_version") not in {2, 3, 4}
         or not isinstance(indices, list)
         or not 1 <= len(indices) <= 3
         or any(type(i) is not int or not 0 <= i < 12 for i in indices)
@@ -21,12 +21,25 @@ def candidate_indices(config):
     return indices
 
 
-def design_cases(models, *, seed=42, epochs=30, patience=5, min_delta=0.0, minimum_epochs=None):
+# Mismas opciones que el codificador del núcleo Titans-MAC, declaradas en cada caso.
+TRANSFORMER_OPTIONS = dict(heads=4, feedforward_multiplier=2)
+
+
+def design_cases(
+    models,
+    *,
+    seed=42,
+    epochs=30,
+    patience=5,
+    min_delta=0.0,
+    minimum_epochs=None,
+    stopping=None,
+):
     if (
         not isinstance(models, list)
         or not models
         or len(set(models)) != len(models)
-        or not set(models) <= {"rnn", "lstm", "gru", "dlinear"}
+        or not set(models) <= {"rnn", "lstm", "gru", "dlinear", "transformer"}
     ):
         raise ValueError("Las familias de modelos deben ser conocidas, distintas y explícitas")
     if (
@@ -39,6 +52,8 @@ def design_cases(models, *, seed=42, epochs=30, patience=5, min_delta=0.0, minim
     selection = dict(metric="session_mae", patience=patience, min_delta=min_delta)
     if minimum_epochs is not None:
         selection["minimum_epochs"] = minimum_epochs
+    if stopping is not None:
+        selection["stopping"] = stopping
     validate_selection(selection, epochs=epochs)
     cases = []
     for kind in models:
@@ -57,5 +72,7 @@ def design_cases(models, *, seed=42, epochs=30, patience=5, min_delta=0.0, minim
                 ),
                 selection=dict(selection),
             )
+            if kind == "transformer":
+                case["architecture"]["transformer"] = dict(TRANSFORMER_OPTIONS)
             cases.append(dict(id=f"{kind}-{index:02d}-s{seed}", case=case))
     return cases
