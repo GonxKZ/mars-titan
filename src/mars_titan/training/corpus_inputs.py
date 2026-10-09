@@ -3,7 +3,9 @@
 import hashlib
 import os
 import re
+import threading
 from collections import OrderedDict
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import numpy as np
@@ -22,9 +24,36 @@ from mars_titan.data.modality_ablation import ablate_samples, ablated_modalities
 from mars_titan.data.storage import sha256
 
 from .cohort_contract import cohort_identity, representation_identity, validate_cohort_rows
+from .input_pipeline import PipelineOptions, background, ordered_map
 
 VECTORS = ("news", "charts", "fundamentals", "macro")
 MAX_TABLE_BYTES = 64 * 1024**2
+# Hilos que calculan las huellas de los artefactos al abrir una edición.
+HASH_WORKERS = 4
+# Huellas ya calculadas en este proceso por ruta y firma de stat. La firma incluye ctime, que
+# cambia con cualquier escritura, así que un archivo modificado se vuelve a leer completo.
+_DIGESTS = {}
+_DIGEST_LIMIT = 1 << 18
+_DIGEST_LOCK = threading.Lock()
+
+
+def _signature(stat):
+    return (stat.st_dev, stat.st_ino, stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns)
+
+
+def _digest(path, signature):
+    """Huella del archivo con esa firma, calculada como mucho una vez por proceso."""
+    key = str(path), signature
+    with _DIGEST_LOCK:
+        known = _DIGESTS.get(key)
+    if known is not None:
+        return known
+    value = sha256(path)
+    with _DIGEST_LOCK:
+        if len(_DIGESTS) >= _DIGEST_LIMIT:
+            _DIGESTS.clear()
+        _DIGESTS[key] = value
+    return value
 
 
 def _unique(pairs):
@@ -176,6 +205,44 @@ def _price_contexts(prices, ends, context):
     ):
         raise ValueError("Las ventanas del bloque no tienen índices o dimensiones válidos")
     windows = prices[ends.astype(np.intp, copy=False)[:, None] - np.arange(context - 1, -1, -1)]
+    return _window_features(windows)
+
+
+def _window_contexts(prices, ends, context):
+    """Ventanas de filas de activos distintos, con las comprobaciones de `_price_contexts`.
+
+    `prices[i]` es la tabla OHLCV del activo de la fila `i`. Las ventanas se copian en un
+    bloque contiguo y se transforman juntas, así que cada fila coincide con la de
+    `_price_contexts` sobre su propio activo. Con tipos distintos se transforma fila a fila.
+    """
+    ends = np.asarray(ends)
+    if (
+        len(prices) != len(ends)
+        or any(
+            table.ndim != 2 or table.shape[1] != 5 or table.dtype.kind not in "fiu"
+            for table in prices
+        )
+        or ends.ndim != 1
+        or ends.dtype.kind not in "iu"
+        or not 1 <= len(ends) <= 256
+        or type(context) is not int
+        or not 2 <= context <= 512
+        or (ends < context - 1).any()
+        or any(end >= len(table) for table, end in zip(prices, ends, strict=True))
+    ):
+        raise ValueError("Las ventanas del bloque no tienen índices o dimensiones válidos")
+    if len({table.dtype for table in prices}) != 1:
+        return np.concatenate(
+            [_price_contexts(table, ends[i : i + 1], context) for i, table in enumerate(prices)]
+        )
+    windows = np.empty((len(ends), context, 5), dtype=prices[0].dtype)
+    for row, (table, end) in enumerate(zip(prices, ends.astype(np.intp), strict=True)):
+        windows[row] = table[end - context + 1 : end + 1]
+    return _window_features(windows)
+
+
+def _window_features(windows):
+    """Transformar ventanas `[filas, contexto, 5]` con las mismas operaciones por fila."""
     if (
         not np.isfinite(windows).all()
         or (windows[:, :, :4] <= 0).any()
@@ -199,6 +266,10 @@ class CorpusDataset:
     `modality_ablation` nombra una variante de `data.modality_ablation`. Solo existe con la
     edición con máscaras: las modalidades de la variante se leen como una ausencia real en
     todas las filas. Sin ella, la lectura no cambia.
+
+    `pipeline` declara los hilos de decodificación y los lotes adelantados. Sin ella se
+    leen de `PipelineOptions.from_environment`, que por defecto es la ruta secuencial. La
+    tubería entrega los mismos lotes, cursores y errores en el mismo orden.
     """
 
     def __init__(
@@ -209,11 +280,18 @@ class CorpusDataset:
         cache_sample_tables: bool = False,
         input_policy: str = STRICT_INPUTS,
         modality_ablation: str | None = None,
+        pipeline: PipelineOptions | None = None,
     ):
         if type(cache_bytes) is not int or not 0 <= cache_bytes <= 4 * 1024**3:
             raise ValueError("La caché de entrada debe estar entre cero y cuatro GiB")
         if type(cache_sample_tables) is not bool:
             raise ValueError("La caché de tablas necesita una opción booleana explícita")
+        pipeline = PipelineOptions.from_environment() if pipeline is None else pipeline
+        if type(pipeline) is not PipelineOptions:
+            raise ValueError("La tubería de lectura se declara con PipelineOptions")
+        self.pipeline = pipeline
+        self._decoder = None
+        self._lock = threading.RLock()
         self.cache_limit = cache_bytes
         self.cache_sample_tables = cache_sample_tables
         self.cache_entry_limit = 16384 if cache_sample_tables else 8192
@@ -300,12 +378,42 @@ class CorpusDataset:
             identities.add((market, symbol))
             for partition in counts:
                 counts[partition] += asset["counts"][partition]
-            for kind in ("prices", "samples", "labels"):
-                self._file(asset, kind)
+        self._verify_files()
         if counts != meta.get("counts"):
             raise ValueError("Los recuentos del corpus no concilian con los activos")
 
-    def _file(self, asset, kind):
+    def _verify_files(self):
+        """Comprobar todos los artefactos, con las huellas pendientes calculadas en paralelo.
+
+        Las huellas se calculan antes en hilos y la comprobación recorre después los activos
+        en su orden, así que el primer artefacto inválido es el mismo que en serie.
+        """
+        pending = []
+        for asset in self.assets:
+            for kind in ("prices", "samples", "labels"):
+                path = self._path(asset, kind)
+                try:
+                    if path.is_file() and not path.is_symlink():
+                        pending.append((path, _signature(path.stat())))
+                except OSError:
+                    continue
+        if len(pending) > 1:
+            with ThreadPoolExecutor(min(HASH_WORKERS, len(pending))) as pool:
+                list(pool.map(lambda item: _digest(*item), pending))
+        for asset in self.assets:
+            for kind in ("prices", "samples", "labels"):
+                self._file(asset, kind)
+
+    def _executor(self):
+        """Hilos de decodificación de esta edición, creados al primer uso."""
+        with self._lock:
+            if self._decoder is None:
+                self._decoder = ThreadPoolExecutor(
+                    self.pipeline.decode_workers, thread_name_prefix="mars-titan-decode"
+                )
+            return self._decoder
+
+    def _path(self, asset, kind):
         root = self.roots["prepared" if kind == "prices" else kind]
         key = (root, asset["market"], asset["symbol"], kind)
         path = self._artifact_paths.get(key)
@@ -313,6 +421,11 @@ class CorpusDataset:
             path = root.joinpath(asset["market"], asset["symbol"], f"{kind}.parquet")
             if len(self._artifact_paths) < self._artifact_path_limit:
                 self._artifact_paths[key] = path
+        return path
+
+    def _file(self, asset, kind):
+        root = self.roots["prepared" if kind == "prices" else kind]
+        path = self._path(asset, kind)
         # Solo se reutiliza la ruta. El archivo se comprueba en cada acceso.
         try:
             valid = (
@@ -324,10 +437,9 @@ class CorpusDataset:
             valid = False
         if not valid:
             raise ValueError("Falta un artefacto regular dentro del origen declarado")
-        stat = path.stat()
-        signature = (stat.st_dev, stat.st_ino, stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns)
+        signature = _signature(path.stat())
         if self.verified.get(path) != signature:
-            if sha256(path) != asset[kind + "_sha256"]:
+            if _digest(path, signature) != asset[kind + "_sha256"]:
                 raise ValueError("Un artefacto supervisado ha cambiado desde su confirmación")
             with path.open("rb") as stream:
                 stream.seek(-8, 2)
@@ -336,28 +448,22 @@ class CorpusDataset:
                 raise ValueError(
                     "La cabecera final de Parquet no es válida o excede su presupuesto"
                 )
-            after = path.stat()
-            if signature != (
-                after.st_dev,
-                after.st_ino,
-                after.st_size,
-                after.st_mtime_ns,
-                after.st_ctime_ns,
-            ):
+            if signature != _signature(path.stat()):
                 raise ValueError("Un artefacto ha cambiado durante la comprobación")
             self.verified[path] = signature
         return path
 
     def _cached(self, key, signature):
-        if key not in self._cache:
-            return None
-        previous, value, size = self._cache[key]
-        if previous != signature:
-            self._cache.pop(key)
-            self.cached_bytes -= size
-            return None
-        self._cache.move_to_end(key)
-        return value
+        with self._lock:
+            if key not in self._cache:
+                return None
+            previous, value, size = self._cache[key]
+            if previous != signature:
+                self._cache.pop(key)
+                self.cached_bytes -= size
+                return None
+            self._cache.move_to_end(key)
+            return value
 
     def _remember(self, key, signature, value):
         size = (
@@ -367,20 +473,21 @@ class CorpusDataset:
         )
         if self.cache_limit == 0 or size > self.cache_limit:
             return
-        if key in self._cache:
-            _, _, previous_size = self._cache.pop(key)
-            self.cached_bytes -= previous_size
-        while self._cache and (
-            self.cached_bytes + size > self.cache_limit
-            or len(self._cache) >= self.cache_entry_limit
-        ):
-            _, (_, _, previous_size) = self._cache.popitem(last=False)
-            self.cached_bytes -= previous_size
         if not isinstance(value, pa.Table):
             for array in value:
                 array.flags.writeable = False
-        self._cache[key] = signature, value, size
-        self.cached_bytes += size
+        with self._lock:
+            if key in self._cache:
+                _, _, previous_size = self._cache.pop(key)
+                self.cached_bytes -= previous_size
+            while self._cache and (
+                self.cached_bytes + size > self.cache_limit
+                or len(self._cache) >= self.cache_entry_limit
+            ):
+                _, (_, _, previous_size) = self._cache.popitem(last=False)
+                self.cached_bytes -= previous_size
+            self._cache[key] = signature, value, size
+            self.cached_bytes += size
 
     @staticmethod
     def _partition_labels(arrays, partition):
@@ -557,17 +664,24 @@ class CorpusDataset:
             availability, availability_valid = _availability(table, presence=presence)
         return table, timestamps, ends, vectors, presence, availability, availability_valid
 
-    def _blocks(self, partition, epoch, seed, cursor):
+    def _group_plan(self, partition, epoch, seed, cursor):
+        """Recorrer activos y grupos en el orden del lector sin decodificar vectores.
+
+        Entrega `("group", trabajo)` por cada grupo con filas pendientes, con sus bloques de
+        hasta 256 etiquetas y el consumo confirmado antes de cada uno, y `("asset", activo)`
+        al terminar cada activo. Los cursores y los errores del recorrido son los de la ruta
+        secuencial porque se calculan aquí, en el mismo orden.
+        """
         order = _random(seed, epoch, "assets").permutation(len(self.assets))
         consumed = sum(self.assets[int(i)]["counts"][partition] for i in order[: cursor["asset"]])
-        dimensions = None
         for asset_position in range(cursor["asset"], len(order)):
             asset = self.assets[int(order[asset_position])]
             key = f"{asset['market']}/{asset['symbol']}"
             path = self._file(asset, "samples")
             with pq.ParquetFile(path) as file:
+                metadata = file.metadata
                 positions, prediction, target, maturity = self._labels(
-                    asset, partition, file.metadata.num_rows
+                    asset, partition, metadata.num_rows
                 )
                 prices, available = self._prices(asset)
                 # El orden permuta solo los grupos con filas y usa su rango entre ellos.
@@ -576,7 +690,7 @@ class CorpusDataset:
                 populated = _populated_groups(file)
                 groups = _random(seed, epoch, key + "/groups").permutation(len(populated))
                 offsets = np.cumsum(
-                    [0] + [file.metadata.row_group(g).num_rows for g in range(file.num_row_groups)]
+                    [0] + [metadata.row_group(g).num_rows for g in range(file.num_row_groups)]
                 )
                 start_group = cursor["group"] if asset_position == cursor["asset"] else 0
                 if not 0 <= start_group < max(1, len(groups)):
@@ -603,48 +717,106 @@ class CorpusDataset:
                             raise ValueError("El consumo confirmado del cursor no concilia")
                     if not len(indexes) or start == len(indexes):
                         continue
-                    table, timestamps, ends, vectors, presence, availability, availability_valid = (
-                        self._sample_group(asset, file, group)
-                    )
-                    shape = {name: values.shape[1] for name, values in vectors.items()}
-                    if dimensions is not None and dimensions != shape:
-                        raise ValueError("Las dimensiones cambian entre activos")
-                    dimensions = shape
+                    blocks = []
                     for offset in range(start, len(indexes), 256):
                         labels = indexes[offset : offset + 256]
-                        block_rows = positions[labels] - offsets[group]
-                        if (block_rows < 0).any() or (block_rows >= len(table)).any():
-                            raise ValueError("La etiqueta queda fuera de su grupo de muestras")
-                        contexts = _price_contexts(prices, ends[block_rows], self.context)
-                        yield dict(
-                            vectors=vectors,
-                            rows=block_rows,
-                            prices=contexts,
-                            target=target[labels],
-                            key=key,
-                            prediction_at=prediction[labels],
-                            target_available_at=maturity[labels],
-                            sample_at=timestamps[block_rows],
-                            price_available_at=available[ends[block_rows]],
-                            input_available_at=(
-                                availability[block_rows] if availability is not None else None
-                            ),
-                            availability_valid=(
-                                availability_valid[block_rows] if availability is not None else None
-                            ),
-                            presence=presence[block_rows] if presence is not None else None,
-                            cursor={
-                                "asset": asset_position,
-                                "group": group_position,
-                                "offset": offset,
-                                "consumed": int(consumed),
-                            },
-                        )
+                        blocks.append((offset, labels, int(consumed)))
                         consumed += len(labels)
-            for kind in ("prices", "samples", "labels"):
-                self._file(asset, kind)
+                    yield (
+                        "group",
+                        dict(
+                            asset=asset,
+                            key=key,
+                            path=path,
+                            metadata=metadata,
+                            group=group,
+                            first_row=offsets[group],
+                            cursor=(asset_position, group_position),
+                            blocks=blocks,
+                            labels=(positions, prediction, target, maturity),
+                            prices=(prices, available),
+                        ),
+                    )
+            yield "asset", asset
         if consumed != self.manifest["counts"][partition]:
             raise ValueError("El recorrido no visita exactamente la población declarada")
+
+    def _group_blocks(self, item):
+        """Decodificar un grupo del plan y formar sus bloques. Puede ejecutarse en un hilo.
+
+        Si un bloque no es válido, se devuelven los anteriores y el error, que el lector
+        lanza después de entregarlos, como en la ruta secuencial.
+        """
+        kind, work = item
+        if kind != "group":
+            return item
+        asset, group = work["asset"], work["group"]
+        with pq.ParquetFile(work["path"], metadata=work["metadata"]) as file:
+            table, timestamps, ends, vectors, presence, availability, availability_valid = (
+                self._sample_group(asset, file, group)
+            )
+        shape = {name: values.shape[1] for name, values in vectors.items()}
+        positions, prediction, target, maturity = work["labels"]
+        prices, available = work["prices"]
+        asset_position, group_position = work["cursor"]
+        blocks, error = [], None
+        try:
+            for offset, labels, consumed in work["blocks"]:
+                block_rows = positions[labels] - work["first_row"]
+                if (block_rows < 0).any() or (block_rows >= len(table)).any():
+                    raise ValueError("La etiqueta queda fuera de su grupo de muestras")
+                contexts = _price_contexts(prices, ends[block_rows], self.context)
+                blocks.append(
+                    dict(
+                        vectors=vectors,
+                        rows=block_rows,
+                        prices=contexts,
+                        target=target[labels],
+                        key=work["key"],
+                        prediction_at=prediction[labels],
+                        target_available_at=maturity[labels],
+                        sample_at=timestamps[block_rows],
+                        price_available_at=available[ends[block_rows]],
+                        input_available_at=(
+                            availability[block_rows] if availability is not None else None
+                        ),
+                        availability_valid=(
+                            availability_valid[block_rows] if availability is not None else None
+                        ),
+                        presence=presence[block_rows] if presence is not None else None,
+                        cursor={
+                            "asset": asset_position,
+                            "group": group_position,
+                            "offset": offset,
+                            "consumed": consumed,
+                        },
+                    )
+                )
+        except Exception as failure:  # noqa: BLE001 - se lanza tras los bloques anteriores
+            error = failure
+        return "group", (shape, blocks, error)
+
+    def _blocks(self, partition, epoch, seed, cursor):
+        plan = self._group_plan(partition, epoch, seed, cursor)
+        if self.pipeline.decode_workers:
+            stream = ordered_map(
+                self._group_blocks, plan, self._executor(), self.pipeline.lookahead
+            )
+        else:
+            stream = map(self._group_blocks, plan)
+        dimensions = None
+        for kind, value in stream:
+            if kind == "asset":
+                for name in ("prices", "samples", "labels"):
+                    self._file(value, name)
+                continue
+            shape, blocks, error = value
+            if dimensions is not None and dimensions != shape:
+                raise ValueError("Las dimensiones cambian entre activos")
+            dimensions = shape
+            yield from blocks
+            if error is not None:
+                raise error
 
     def observation_batches(self, *, start, end, batch_size=256):
         """Leer todas las filas históricas del intervalo, por activo y sin labels.
@@ -751,6 +923,12 @@ class CorpusDataset:
             ):
                 raise ValueError("El cursor no corresponde al corpus, época o partición")
             point = {key: cursor[key] for key in point}
+        stream = self._batch_stream(partition, batch_size, epoch, seed, identity, point)
+        if self.pipeline.prefetch_batches:
+            stream = background(stream, self.pipeline.prefetch_batches)
+        yield from stream
+
+    def _batch_stream(self, partition, batch_size, epoch, seed, identity, point):
         batch, filled, consumed = None, 0, point["consumed"]
         total = self.manifest["counts"][partition]
         for block in self._blocks(partition, epoch, seed, point):
