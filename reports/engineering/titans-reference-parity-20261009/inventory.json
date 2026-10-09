@@ -1,0 +1,376 @@
+{
+  "schema_version": 1,
+  "checked_utc": "2026-10-09",
+  "official_code": {
+    "found": false,
+    "checks": [
+      "arXiv 2501.00663: solo v1 (2024-12-31), sin enlace a código en la página. El texto dice que el código se publicará 'soon'.",
+      "Actas de NeurIPS 2025: sin material suplementario ni enlace a código. La lista de comprobación responde [Yes] y justifica que se publicará en GitHub tras la publicación.",
+      "OpenReview, búsqueda pública de la API: el envío 8GjSf9Rh7Z de NeurIPS 2025 no muestra supplementary_material ni code.",
+      "Blog de Google Research 'Titans + MIRAS' (2025-12-04): sin enlace a código, solo a los artículos, BABILong y la organización google-research.",
+      "Página personal del primer autor (alibehrouz.com): Titans, MIRAS, ATLAS y Nested Learning sin enlace a código.",
+      "GitHub ABehrouz/Titans: repositorio vacío creado el 2025-04-09 (la API responde 'Git Repository is empty').",
+      "Organizaciones google (2919 repositorios), google-research (364) y google-deepmind (409): ningún nombre relacionado con Titans, ATLAS, MIRAS o Nested Learning. google-research/google-research sin carpeta de Titans en su raíz.",
+      "PMLR v306 (ATLAS, ICML 2026): sin enlace a código.",
+      "Titans Revisited (arXiv 2510.09551) atribuye a la falta de código público parte de su dificultad de reproducción y no enlaza código propio."
+    ]
+  },
+  "implementations": [
+    {
+      "repository": "lucidrains/titans-pytorch",
+      "url": "https://github.com/lucidrains/titans-pytorch",
+      "license_spdx": "MIT",
+      "stars_2026_10_09": 1990,
+      "created": "2025-01-08",
+      "pushed": "2026-07-13",
+      "commit": "1d40c445fa1794fb28582c721786482b5b683e47",
+      "commit_date": "2026-07-13T14:26:23Z",
+      "official": false,
+      "author": "Phil Wang",
+      "framework": "PyTorch",
+      "variants": [
+        "LMM (NeuralMemory)",
+        "MAC como modelo de lenguaje"
+      ],
+      "review": "código leído completo y ejecutado en entorno aislado",
+      "memory_update": "secuencial con chunk_size=1 y batch_size=1; por defecto gradientes en los pesos del inicio de cada mini-lote (batch_size) y tasas compartidas por chunk",
+      "tests": "pytest de formas, encadenamiento de estados, inferencia y muestreo; sin comparación con las ecuaciones",
+      "status": "mantenida (último commit 2026-07-13)",
+      "notes": "Referencia más usada. Su MAC no sigue las ecuaciones 21-25: añade la lectura al flujo residual antes de la atención y escribe con la entrada de la capa."
+    },
+    {
+      "repository": "fla-org/flash-linear-attention",
+      "url": "https://github.com/fla-org/flash-linear-attention",
+      "license_spdx": "MIT",
+      "stars_2026_10_09": 5841,
+      "created": "2023-12-20",
+      "pushed": "2026-10-09",
+      "commit": "855e502613d47d8cc139153f0d87ecae5831ac3c",
+      "commit_date": "2026-10-09T10:33:43Z",
+      "official": false,
+      "author": "Songlin Yang, Yu Zhang, Zhiyuan Li y colaboradores",
+      "framework": "PyTorch (operación naive sin kernel Triton)",
+      "variants": [
+        "memoria lineal con LayerNorm y residual estilo TTT (fla/ops/titans)"
+      ],
+      "review": "fla/ops/titans leído completo y ejecutado en entorno aislado",
+      "memory_update": "secuencial o por bloques con gradientes en los pesos del inicio del bloque, forma paralela de la sección 3.2",
+      "tests": "tests/ops/test_titans.py marcado skipif(True, reason='FIXME')",
+      "status": "biblioteca mantenida. Último cambio de fla/ops/titans el 2026-08-18 (#1148, retirada de head_first). La última corrección declarada de la operación es del 2025-03-03",
+      "notes": "La derivada de LayerNorm activa no coincide con autograd (factor 5,4 en norma en el recibo). La fórmula comentada sí coincide."
+    },
+    {
+      "repository": "omkarghugarkar007/titans-pytorch-unofficial-implementation",
+      "url": "https://github.com/omkarghugarkar007/titans-pytorch-unofficial-implementation",
+      "license_spdx": "MIT",
+      "stars_2026_10_09": 1,
+      "created": "2026-09-06",
+      "pushed": "2026-09-06",
+      "commit": "6e4728b15706aa862e022ae6304b8b0837544697",
+      "commit_date": "2026-09-06T14:36:07Z",
+      "official": false,
+      "author": "omkarghugarkar007",
+      "framework": "PyTorch",
+      "variants": [
+        "LMM",
+        "MAC",
+        "MAG",
+        "MAL"
+      ],
+      "review": "código leído (memory.py, MAC y README)",
+      "memory_update": "por bloques con forma cerrada en espacio logarítmico; chunk_size=1 reproduce la recurrencia por token",
+      "tests": "pruebas de ecuaciones frente a una transcripción literal, causalidad por perturbación y gradientes",
+      "status": "reciente (2026-09-06), 1 estrella",
+      "notes": "Once desviaciones declaradas: SiLU y LayerNorm entre capas, salida acotada, valores normalizados, tasas acotadas, gate con M_(t-1), derivada sin segundo orden por M."
+    },
+    {
+      "repository": "Aedelon/titans-pytorch-mlx",
+      "url": "https://github.com/Aedelon/titans-pytorch-mlx",
+      "license_spdx": "Apache-2.0",
+      "stars_2026_10_09": 30,
+      "created": "2026-01-15",
+      "pushed": "2026-01-16",
+      "commit": "0dc7a4d2829df55d221f67bf56c0603e9ac7c6f4",
+      "commit_date": "2026-01-16T10:07:15Z",
+      "official": false,
+      "author": "Delanoe Pirard",
+      "framework": "PyTorch y MLX",
+      "variants": [
+        "LMM",
+        "MAC",
+        "MAG",
+        "MAL"
+      ],
+      "review": "memory.py leído",
+      "memory_update": "una actualización por llamada con la pérdida media de todo el segmento y lote",
+      "tests": "105 pruebas declaradas, no revisadas una a una",
+      "status": "sin commits desde 2026-01-16",
+      "notes": "Tasas promediadas a un escalar por lote, memoria compartida entre flujos, estado devuelto con detach y escritura con .data sobre los parámetros."
+    },
+    {
+      "repository": "mindemory/jax_titans",
+      "url": "https://github.com/mindemory/jax_titans",
+      "license_spdx": "Apache-2.0",
+      "stars_2026_10_09": 0,
+      "created": "2026-09-27",
+      "pushed": "2026-10-05",
+      "commit": "283e416a8672da30318ba91caf52c3e134fdfe92",
+      "commit_date": "2026-10-05T03:07:58Z",
+      "official": false,
+      "author": "mindemory",
+      "framework": "JAX",
+      "variants": [
+        "MAC"
+      ],
+      "review": "README y núcleo leídos",
+      "memory_update": "secuencial por token con jax.lax.scan",
+      "tests": "regla delta, estabilidad, causalidad y gradiente de la proyección de claves",
+      "status": "reciente (2026-09-27), 0 estrellas",
+      "notes": "Pérdida con factor 1/2, valores normalizados, h enmascarado de forma causal, gate y*sigmoid(RMSNorm(M(q)))."
+    },
+    {
+      "repository": "mahdi-shafiei/titans-flax",
+      "url": "https://github.com/mahdi-shafiei/titans-flax",
+      "license_spdx": "MIT",
+      "stars_2026_10_09": 3,
+      "created": "2025-05-28",
+      "pushed": "2026-09-30",
+      "commit": "b0d1170db8bd68b6c3e06fe9b83a4b78a963ef20",
+      "commit_date": "2026-01-23T02:55:41Z",
+      "official": false,
+      "author": "mahdi-shafiei",
+      "framework": "Flax NNX",
+      "variants": [
+        "LMM",
+        "MAC",
+        "MAG",
+        "MAL"
+      ],
+      "review": "neural_memory.py inspeccionado",
+      "memory_update": "una actualización con claves y valores promediados en secuencia y lote",
+      "tests": "presentes, no revisadas",
+      "status": "último commit 2026-01-23",
+      "notes": "Tasas como parámetros escalares aprendidos, sin dependencia de la entrada."
+    },
+    {
+      "repository": "Yuan-ManX/Titans-PyTorch",
+      "url": "https://github.com/Yuan-ManX/Titans-PyTorch",
+      "license_spdx": "MIT",
+      "stars_2026_10_09": 37,
+      "created": "2025-01-16",
+      "pushed": "2025-01-20",
+      "commit": "976954c73e72a9256a34b4babe70cee3f29b47da",
+      "commit_date": "2025-01-20T09:01:00Z",
+      "official": false,
+      "variants": [
+        "LMM"
+      ],
+      "review": "README y núcleo leídos por la API, sin descarga ni ejecución",
+      "notes": "Derivado de una revisión temprana de lucidrains sin atribución. Momentum entre llamadas sin usar."
+    },
+    {
+      "repository": "Mohammed-Saajid/tf-titans",
+      "url": "https://github.com/Mohammed-Saajid/tf-titans",
+      "license_spdx": "MIT",
+      "stars_2026_10_09": 4,
+      "created": "2025-03-02",
+      "pushed": "2025-03-10",
+      "commit": "579feeb4ca8886bd19b264d387924d82075e85b1",
+      "commit_date": "2025-03-10T06:13:11Z",
+      "official": false,
+      "variants": [
+        "MAC (nominal)"
+      ],
+      "review": "README y núcleo leídos por la API, sin descarga ni ejecución",
+      "notes": "Sin pérdida asociativa ni actualización por gradiente en inferencia."
+    },
+    {
+      "repository": "kolejnyy/titans-lmm",
+      "url": "https://github.com/kolejnyy/titans-lmm",
+      "license_spdx": null,
+      "stars_2026_10_09": 24,
+      "created": "2025-04-09",
+      "pushed": "2025-04-09",
+      "commit": "ce6a1ed94e0934d68171b081c296c1dc51c196dc",
+      "commit_date": "2025-04-09T20:49:59Z",
+      "official": false,
+      "variants": [
+        "MAC"
+      ],
+      "review": "README y núcleo leídos por la API, sin descarga ni ejecución",
+      "notes": "Prueba de concepto con tasas constantes y memoria compartida entre flujos."
+    },
+    {
+      "repository": "aheschl1/titans",
+      "url": "https://github.com/aheschl1/titans",
+      "license_spdx": "MIT",
+      "stars_2026_10_09": 12,
+      "created": "2025-02-28",
+      "pushed": "2025-03-16",
+      "commit": "329d2a22f48b4f79b7077a111129938ff0251abd",
+      "commit_date": "2025-03-16T20:47:11Z",
+      "official": false,
+      "variants": [
+        "LMM",
+        "MAC"
+      ],
+      "review": "README y núcleo leídos por la API, sin descarga ni ejecución",
+      "notes": "Pérdida L1 y signo de la actualización invertido."
+    },
+    {
+      "repository": "andrew-veriga/Titans_jax",
+      "url": "https://github.com/andrew-veriga/Titans_jax",
+      "license_spdx": "MIT",
+      "stars_2026_10_09": 0,
+      "created": "2026-03-09",
+      "pushed": "2026-06-18",
+      "commit": "37b80288044a9755610fe78574f78a1f8d85818d",
+      "commit_date": "2026-06-18T11:08:51Z",
+      "official": false,
+      "variants": [
+        "memoria dentro de Gemma 3"
+      ],
+      "review": "README y núcleo leídos por la API, sin descarga ni ejecución",
+      "notes": "Port en JAX del código temprano de lucidrains, no es MAC/MAG/MAL."
+    },
+    {
+      "repository": "ai-in-pm/Titans---Learning-to-Memorize-at-Test-Time",
+      "url": "https://github.com/ai-in-pm/Titans---Learning-to-Memorize-at-Test-Time",
+      "license_spdx": "MIT",
+      "stars_2026_10_09": 291,
+      "created": "2025-01-16",
+      "pushed": "2026-06-15",
+      "commit": "846f78b2d66b910b7fbe0ce56e8888adcaad15bb",
+      "commit_date": "2026-06-15T06:20:16Z",
+      "official": false,
+      "variants": [],
+      "review": "README y núcleo leídos por la API, sin descarga ni ejecución",
+      "notes": "Demostración con modelos de lenguaje externos, sin implementación del modelo."
+    },
+    {
+      "repository": "aryateja2106/neural-memory-reproduction",
+      "url": "https://github.com/aryateja2106/neural-memory-reproduction",
+      "license_spdx": "NOASSERTION",
+      "stars_2026_10_09": 6,
+      "created": "2025-12-31",
+      "pushed": "2025-12-31",
+      "commit": "7d6f20cf986c5e8b8fe771eef25793ab3f18083f",
+      "commit_date": "2025-12-31T06:23:40Z",
+      "official": false,
+      "variants": [
+        "funciones sueltas"
+      ],
+      "review": "README y núcleo leídos por la API, sin descarga ni ejecución",
+      "notes": "Sin olvido de la ecuación 13 ni proyecciones."
+    },
+    {
+      "repository": "hoshuaclawdbot/titans-cuda",
+      "url": "https://github.com/hoshuaclawdbot/titans-cuda",
+      "license_spdx": null,
+      "stars_2026_10_09": 0,
+      "created": "2026-01-28",
+      "pushed": "2026-01-28",
+      "commit": "34ff871bde45946f1b93cacfb91bb92f1c6196ea",
+      "commit_date": "2026-01-28T21:07:01Z",
+      "official": false,
+      "variants": [
+        "LMM en CUDA"
+      ],
+      "review": "README y núcleo leídos por la API, sin descarga ni ejecución",
+      "notes": "El gradiente de la memoria no se calcula (TODO)."
+    },
+    {
+      "repository": "MLDreamer/titans-pytorch-swarnenduai",
+      "url": "https://github.com/MLDreamer/titans-pytorch-swarnenduai",
+      "license_spdx": null,
+      "stars_2026_10_09": 3,
+      "created": "2026-04-25",
+      "pushed": "2026-04-25",
+      "commit": "ad2566dec2085caad87dc10adda7236f5b9ae89c",
+      "commit_date": "2026-04-25T15:07:18Z",
+      "official": false,
+      "variants": [
+        "LMM"
+      ],
+      "review": "README y núcleo leídos por la API, sin descarga ni ejecución",
+      "notes": "Autoencoder sin proyecciones clave-valor, tasas constantes."
+    },
+    {
+      "repository": "Fahd-8/Memory-Augmented-Context-MAC-Language-Model",
+      "url": "https://github.com/Fahd-8/Memory-Augmented-Context-MAC-Language-Model",
+      "license_spdx": null,
+      "stars_2026_10_09": 1,
+      "created": "2025-12-27",
+      "pushed": "2026-04-10",
+      "commit": "da8ef0aed7f89a098e7d18c7d6ca3a08ad5fe59b",
+      "commit_date": "2026-04-08T10:14:50Z",
+      "official": false,
+      "variants": [
+        "modelo propio"
+      ],
+      "review": "README y núcleo leídos por la API, sin descarga ni ejecución",
+      "notes": "Memoria con SGD y umbral, sin efecto en la salida según la lectura del código."
+    },
+    {
+      "repository": "Coalyx/OpenTitans",
+      "url": "https://github.com/Coalyx/OpenTitans",
+      "license_spdx": "MIT",
+      "stars_2026_10_09": 4,
+      "created": "2026-04-22",
+      "pushed": "2026-04-29",
+      "commit": "a329ee6dcca8de8d3bdc7d8bbedc430f71398c8d",
+      "commit_date": "2026-04-29T10:05:31Z",
+      "official": false,
+      "variants": [
+        "MAC",
+        "MAG",
+        "MAL",
+        "ATLAS",
+        "MIRAS"
+      ],
+      "review": "solo metadatos",
+      "notes": "No revisado en detalle."
+    }
+  ],
+  "follow_up_papers_unofficial": [
+    {
+      "repository": "danielquintas8/atlas-torch",
+      "paper": "ATLAS (arXiv 2505.23735)",
+      "official": false,
+      "url": "https://github.com/danielquintas8/atlas-torch",
+      "license_spdx": "MIT",
+      "stars_2026_10_09": 4,
+      "created": "2026-03-23",
+      "pushed": "2026-09-16",
+      "commit": "b2b7634913391145a9fa5762811f680ef7587e3a",
+      "commit_date": "2026-09-16T16:40:39Z",
+      "notes": "Port de lucidrains con regla Omega, rasgos polinómicos y Newton-Schulz."
+    },
+    {
+      "repository": "jonlukewatts/titans-miras",
+      "paper": "MIRAS (arXiv 2504.13173)",
+      "official": false,
+      "url": "https://github.com/jonlukewatts/titans-miras",
+      "license_spdx": "MIT",
+      "stars_2026_10_09": 0,
+      "created": "2025-12-23",
+      "pushed": "2025-12-24",
+      "commit": "b3f208e98ed99e68def619454232e3811798d7d3",
+      "commit_date": "2025-12-24T18:41:13Z",
+      "notes": "Variantes Yaad, Moneta y Memora, no revisadas."
+    },
+    {
+      "repository": "kmccleary3301/nested_learning",
+      "paper": "Nested Learning (arXiv 2512.24695)",
+      "official": false,
+      "url": "https://github.com/kmccleary3301/nested_learning",
+      "license_spdx": "Apache-2.0",
+      "stars_2026_10_09": 712,
+      "created": "2025-11-10",
+      "pushed": "2026-02-25",
+      "commit": "56463f3853552f17791bc10a40c534864724d614",
+      "commit_date": "2026-02-25T22:11:47Z",
+      "notes": "HOPE, CMS y Titans automodificable con pruebas, no oficial."
+    }
+  ]
+}

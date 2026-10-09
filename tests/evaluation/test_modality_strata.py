@@ -152,7 +152,7 @@ def joint(tmp_path_factory):
 def test_declared_configuration_is_a_secondary_analysis_fixed_before_results():
     config = walk.load_config(CONFIG)
     section = config["modality_strata"]
-    assert config["schema_version"] == 3
+    assert config["schema_version"] == 4
     assert section["status"] == "secondary_descriptive" and section["declared_at"] == "2026-10-09"
     assert section["use"] == strata.USE and "not_for_model_selection" in section["use"]
     assert section["strata"] == strata.STRATA and section["focus"] == "news_and_fundamentals"
