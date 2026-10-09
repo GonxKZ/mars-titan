@@ -113,6 +113,14 @@ void bind_memory(py::module_& module) {
         .def_readonly("record", &memory::MemoryNeighbor::record)
         .def_readonly("similarity", &memory::MemoryNeighbor::similarity);
     module.def("normalize_key", &memory::normalize_memory_key);
+    module.def("causal_reservoir_state", &memory::causal_reservoir_state, py::arg("seed"));
+    module.def(
+        "causal_reservoir_draws",
+        [](const std::string& state, uint64_t seen, std::size_t capacity, std::size_t count) {
+            auto draws = memory::causal_reservoir_draws(state, seen, capacity, count);
+            return py::make_tuple(std::move(draws.slots), py::str(draws.state));
+        },
+        py::arg("state"), py::arg("seen"), py::arg("capacity"), py::arg("count"));
     py::class_<memory::EpisodicMemory>(module, "EpisodicMemory")
         .def(py::init<memory::MemoryScope, uint64_t, std::size_t>())
         .def(py::init<memory::MemoryScope, uint64_t, std::size_t, std::uint32_t>())
