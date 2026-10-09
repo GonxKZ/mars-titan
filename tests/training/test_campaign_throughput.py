@@ -560,6 +560,33 @@ def test_measurement_runs_forward_and_backward_without_changing_weights(views, c
     unchanged(recorded)
 
 
+def test_the_measured_transformer_admits_the_measured_batch_with_the_same_weights(views, cpu):
+    from mars_titan.training.reference_run import configured_corpus
+
+    campaign = load_campaign(CAMPAIGNS["A"])
+    ((_, case), *_) = campaign["neural"]["candidates"]["transformer_compact"]
+    dataset = configured_corpus(
+        views / "fold-018/manifest.json", input_policy=campaign["input_policy"]
+    )
+    declared, _ = throughput._reference(case, dataset, 256)
+    wider, _ = throughput._reference(case, dataset, 512)
+    assert declared.max_batch is None and declared.price_encoder.max_batch == 256
+    assert wider.max_batch == wider.price_encoder.max_batch == 512
+    assert declared.state_dict().keys() == wider.state_dict().keys()
+    for name, value in declared.state_dict().items():
+        other = wider.state_dict()[name]
+        if isinstance(value, torch.Tensor):
+            assert torch.equal(value, other), name
+        elif name.endswith("price_encoder._extra_state"):
+            # Solo cambia el contrato del lote: el máximo y su presupuesto de atención.
+            changed = {
+                key for key in value.keys() | other.keys() if value.get(key) != other.get(key)
+            }
+            assert changed == {"max_batch", "max_attention_elements"} and other["max_batch"] == 512
+        else:
+            assert value == other, name
+
+
 def test_matrix_measurement_covers_every_case_without_changing_the_parent(
     views, cpu, recorded, monkeypatch
 ):

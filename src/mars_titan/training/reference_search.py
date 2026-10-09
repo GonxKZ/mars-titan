@@ -13,7 +13,6 @@ from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.embeddings import require_cuda
 from mars_titan.data.input_policy import INPUT_POLICIES, STRICT_INPUTS, masked_inputs
 from mars_titan.data.storage import atomic_json, outside_source, sha256
-from mars_titan.models.baselines.transformer import CompactPriceTransformer
 
 from .checkpoints import StopRequest
 from .learning_hold import require_learning_allowed
@@ -133,10 +132,9 @@ def _configuration(path):
         type(plan["max_runs"]) is not int or not 1 <= plan["max_runs"] <= MAX_DECLARED_RUNS
     ):
         raise ValueError(f"El límite declarado debe ser un entero entre 1 y {MAX_DECLARED_RUNS}")
-    if "transformer" in plan["models"] and (
-        plan["schema_version"] != 4 or plan["batch_size"] > CompactPriceTransformer.max_batch
-    ):
-        raise ValueError("El Transformer requiere la versión 4 y lotes de hasta 256 ventanas")
+    # `run_reference_case` amplía el lote admitido del Transformer cuando el plan lo pide.
+    if "transformer" in plan["models"] and plan["schema_version"] != 4:
+        raise ValueError("El Transformer requiere la versión 4")
     cases = design_cases(
         plan["models"],
         seed=plan["search_seed"],
