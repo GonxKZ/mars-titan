@@ -89,9 +89,43 @@ Los lotes que solo sirven juntos son tres:
 - El juego de Shapley con las ocho piezas de Titans no se puede completar con ningún
   brazo: 236 de sus 256 coaliciones activan una pieza sin aquella de la que depende.
 
+## Coste de evaluar la matriz
+
+`benchmarks/comparison_matrix.py` prepara un informe walk-forward sintético del ámbito US
+con las sesiones reales de las 19 ventanas, los 23 brazos y las 65 series de brazo y
+semilla de la campaña A, con siete activos por sesión (597.625 filas de sesión y 48 MB de
+tabla). El coste de la matriz depende de las sesiones, los brazos y las familias, no de
+los activos, porque solo lee estadísticos por sesión. Los valores son sintéticos y no
+dicen nada del mercado.
+
+```bash
+uv run --no-sync python benchmarks/comparison_matrix.py prepare --root <raíz nueva> --scope US
+uv run --no-sync python benchmarks/comparison_matrix.py measure --root <raíz> --scope US \
+  --output <salida nueva>
+```
+
+La evaluación completa (183 contrastes estimables en 20 familias, vistas en bruto y
+calibrada con todas las métricas, ECE del signo y escritura del informe de 5,6 MB) tardó
+152 s de reloj y 266 s de CPU de usuario, con un pico de 1,44 GiB. Se ejecutó una vez con
+NumPy 2.5.3, PyArrow 25.0.1, dos hilos, sin GPU y con la CPU compartida (carga media
+cercana a 23 en 16 núcleos), así que la cifra no es un límite del equipo. Está en
+[`matrix-evaluation-cost-us.json`](matrix-evaluation-cost-us.json).
+
+Un perfil con cProfile de la misma evaluación (163 s bajo el perfilador) atribuye 147 s a
+las vistas de predicción, de los que unos 97 s son la generación de los índices del
+remuestreo por bloques en `paired_comparisons.py`. Cada familia y cada métrica repiten esos
+sorteos con la misma semilla y el mismo número de días. Un prototipo que calcula los
+recuentos con diferencias acumuladas dio los mismos enteros y entre 1,0 y 3,3 veces menos
+tiempo en esa función, y reutilizar los sorteos entre familias evitaría casi todas las
+9.280 llamadas. Como la matriz se evalúa una vez por ámbito y tarda del orden de una
+décima parte de la comparación walk-forward a la misma escala, el ahorro sería de uno o
+dos minutos por evaluación. No se ha cambiado `paired_comparisons.py` en esta tarea.
+
 ## Archivos
 
 - [`missing-arms.json`](missing-arms.json): informe completo, reproducible con la orden
   anterior. Una prueba lo regenera y exige que coincida.
 - [`arm-hours-a-v2-projected.json`](arm-hours-a-v2-projected.json): horas por brazo del
   ámbito US+CN y sus padres, con su procedencia.
+- [`matrix-evaluation-cost-us.json`](matrix-evaluation-cost-us.json): tiempo, CPU y
+  memoria de la evaluación de la matriz con las sesiones del ámbito US.

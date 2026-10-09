@@ -1095,6 +1095,17 @@ con 1,96 GiB, en un proceso con dos hilos y la CPU compartida (carga media de 14
 serie. El [informe de escala](../../reports/engineering/evaluation-scale-20261009/README.md)
 recoge las cuatro medidas, sus condiciones y la extrapolación al diseño conjunto.
 
+La matriz de comparaciones se midió con `benchmarks/comparison_matrix.py` sobre una tabla
+por sesión sintética del ámbito US con las mismas sesiones, brazos y semillas que la
+campaña A (19 ventanas, 597.625 filas de sesión y 65 series). Evaluar sus 183 contrastes
+estimables en 20 familias, con las vistas en bruto y calibrada y el ECE del signo, tardó
+152 s con un pico de 1,44 GiB, dos hilos y la CPU compartida (carga media cercana a 23).
+Alrededor del 60 % del tiempo se va en generar los índices del remuestreo por bloques, que
+cada familia repite con la misma semilla. Reutilizarlos ahorraría uno o dos minutos por
+evaluación, poco frente al resto de la evaluación, y no se ha hecho. El
+[informe de brazos que faltan](../../reports/engineering/component-attribution-20261010/README.md)
+recoge la medida y el perfil.
+
 ## Qué no demuestran estas métricas
 
 Ninguna de estas cifras procede todavía de datos de mercado. El bloqueo de
