@@ -1,6 +1,6 @@
 # Referencia episódica y recurrencia de MARS-TITAN
 
-Esta especificación conserva la referencia GRU con banco episódico y sus reglas de escritura. La [dirección arquitectónica vigente](titans-mac-architecture.md) añade Transformer compacto, Titans-MAC y ampliaciones de MARS-TITAN sobre ese núcleo. El banco no sustituye la memoria neuronal de Titans. Existe un componente nativo del candidato previo en [#296](https://github.com/GonxKZ/mars-titan/pull/296), con pruebas CPU. Su comprobación CUDA, integración cronológica y evaluación siguen pendientes.
+Esta especificación conserva la referencia GRU con banco episódico y sus reglas de escritura. La [dirección arquitectónica vigente](titans-mac-architecture.md) añade Transformer compacto, Titans-MAC y ampliaciones de MARS-TITAN sobre ese núcleo. El banco no sustituye la memoria neuronal de Titans. El [componente nativo](../../native/candidate.md) y la [variante histórica con máscaras](../../native/candidate_historical.md) tienen comprobaciones CPU/CUDA, con recibos y alcances separados. El estado revisado el 9 de octubre mantiene pendientes la integración cronológica de la GRU y su evaluación científica.
 
 ## Separar memoria persistente y cálculo interno
 
