@@ -252,6 +252,30 @@ def estimability(rows, sessions, *, min_rows, min_sessions):
     return True, None
 
 
+def subset_views(scores, markets, names):
+    """Ámbito y mercados de un subconjunto de filas. Un mercado sin sesiones queda vacío."""
+    if scores is None:
+        return dict.fromkeys(names)
+    views = {names[0]: scores}
+    if len(markets) > 1:
+        for code, market in enumerate(scores.markets):
+            mask = scores.session_market == code
+            views[market] = scores.select_sessions(mask, label=market) if mask.any() else None
+    return views
+
+
+def cell(scores, thresholds, market=None):
+    """Filas, sesiones y estimabilidad de un subconjunto en el ámbito o en un mercado."""
+    rows, sessions = 0, 0
+    if scores is not None and market is None:
+        rows, sessions = int(scores.samples.sum()), len(scores.samples)
+    elif scores is not None:
+        mask = scores.session_market == scores.markets.index(market)
+        rows, sessions = int(scores.samples[mask].sum()), int(mask.sum())
+    estimable, reason = estimability(rows, sessions, **thresholds)
+    return dict(rows=rows, sessions=sessions, estimable=estimable, reason=reason)
+
+
 def adjusted_confidence(confidence, cells):
     """Bonferroni entre las celdas de estrato y ámbito sobre el nivel de cada familia."""
     _require(type(cells) is int and cells >= 1, "El número de celdas debe ser positivo")
