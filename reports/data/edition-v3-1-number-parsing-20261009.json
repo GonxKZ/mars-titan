@@ -1,0 +1,44 @@
+{
+  "number_parsing": "python_float_correctly_rounded_v1",
+  "reference": "csv.reader + float(text)",
+  "legacy": "pandas.read_csv default C engine + pandas.to_numeric",
+  "columns": [
+    "Open",
+    "High",
+    "Low",
+    "Close",
+    "Volume",
+    "Dividends",
+    "Stock Splits"
+  ],
+  "markets": {
+    "US": {
+      "files": 4213,
+      "values": 122141159,
+      "absent": 0,
+      "exact_mismatches": 0,
+      "pattern_rejected_float_accepted": 0,
+      "legacy_mismatches": 10894452,
+      "legacy_max_ulps": 2768,
+      "legacy_mismatch_fraction": 0.08919558393907168
+    },
+    "CN": {
+      "files": 810,
+      "values": 21975884,
+      "absent": 8,
+      "exact_mismatches": 0,
+      "pattern_rejected_float_accepted": 0,
+      "legacy_mismatches": 1786171,
+      "legacy_max_ulps": 7,
+      "legacy_mismatch_fraction": 0.08127871671645763
+    }
+  },
+  "versions": {
+    "python": "3.12.14",
+    "pandas": "3.0.6",
+    "numpy": "2.5.3"
+  },
+  "workers": 4,
+  "elapsed_seconds": 120.75889913298306,
+  "errors": []
+}
