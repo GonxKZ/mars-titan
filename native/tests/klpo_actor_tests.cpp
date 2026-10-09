@@ -103,6 +103,9 @@ void reference_copy_has_its_own_rng_and_no_optimizer_role() {
     auto learner = actor(PpoNetworkKind::gru);
     const auto rng = learner.random_state();
     auto reference = learner.frozen_reference(rng);
+    require(at::equal(reference.random_state().sampling, rng.sampling) &&
+                at::equal(reference.random_state().shuffle, rng.shuffle),
+            "La copia no conserva el RNG inicial recibido");
     require(!reference.terminal_adam_enabled() && reference.optimizer_steps() == 0 &&
                 reference.parameter_fingerprint() == learner.parameter_fingerprint(),
             "La referencia no copió solamente parámetros y RNG");

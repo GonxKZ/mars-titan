@@ -365,8 +365,8 @@ KlpoLearningController::update_ready(PpoCheckpointStore& store,
                                      const std::function<void(KlpoLearningBoundary)>& failure) {
     require(phase() == KlpoLearningPhase::ready && decisions(impl_->collector->records()) > 0,
             "La actualización necesita una oleada completa con decisiones");
-    const auto next = klpo_after_consumption(
-        impl_->counters, impl_->config.confirmed_updates_per_reference, true);
+    const auto next = klpo_after_consumption(impl_->counters,
+                                             impl_->config.confirmed_updates_per_reference, true);
     impl_->check_store(store);
     static_cast<void>(save(store));
     auto summary = backward_ready();
