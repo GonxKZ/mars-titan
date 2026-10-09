@@ -48,7 +48,12 @@ from mars_titan.data.input_policy import HISTORICAL_MASKED, masked_inputs
 from mars_titan.evaluation import walk_forward_comparison as comparison
 from mars_titan.evaluation.splits import build_folds, stopping_rule
 
-from . import campaign_data_policy, campaign_numerics, campaign_schedule
+from . import (
+    campaign_chain,
+    campaign_data_policy,
+    campaign_numerics,
+    campaign_schedule,
+)
 from .reference_design import PINBALL, QUANTILE_HEAD, candidate_indices, design_cases
 
 CAMPAIGN_KIND = "historical_masked_campaign"
@@ -205,6 +210,8 @@ _FIELDS_V2 = {
     "numerics",
     "data_policy",
 }
+# Sección opcional de la versión 2: el walk-forward por etapas.
+_OPTIONAL_V2 = {"walk_forward_stages"}
 _SEED_POLICY = {"search_seed", "selected_case_seeds", "deterministic_arms"}
 # Único modo de parada conectado: la regla del protocolo. La parada conjunta de los brazos
 # emparejados se añadirá aquí como otro modo, con sus grupos, cuando exista su ejecutor.
@@ -667,9 +674,10 @@ def load_campaign(path):
     config, digest = read_manifest(path, 1024**2)
     version = config.get("schema_version") if isinstance(config, dict) else None
     fields = _FIELDS | (_FIELDS_V2 if version == 2 else set())
+    optional = set(OPTIONAL) | (_OPTIONAL_V2 if version == 2 else set())
     _require(
         isinstance(config, dict)
-        and fields <= set(config) <= fields | set(OPTIONAL)
+        and fields <= set(config) <= fields | optional
         and version in (1, 2)
         and config["kind"] == CAMPAIGN_KIND
         and config["status"] == DECLARED
@@ -736,6 +744,12 @@ def load_campaign(path):
         )
         campaign_numerics.declared(config["numerics"])
         campaign_data_policy.declared(config["data_policy"])
+        if "walk_forward_stages" in config:
+            campaign_chain.declared(config["walk_forward_stages"])
+            _require(
+                config["execution"]["order"] == "by_window",
+                "El walk-forward por etapas recorre la campaña ventana a ventana",
+            )
     campaign = dict(
         config,
         sha256=digest,
@@ -1124,6 +1138,7 @@ def check_campaign(path):
         execution_order=execution_order(campaign),
         numerics=campaign.get("numerics"),
         data_policy=campaign.get("data_policy"),
+        walk_forward_stages=campaign.get("walk_forward_stages"),
         memory_options=campaign.get("memory_options"),
         launch_blockers=launch_blockers(campaign),
         pending_families=pending_families(campaign),

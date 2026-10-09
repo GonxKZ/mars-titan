@@ -79,6 +79,26 @@
     "cuda_matmul_allow_tf32": false,
     "cudnn_allow_tf32": false
   },
+  "walk_forward_stages": {
+    "design": "staged_chain_v1",
+    "posttraining": {
+      "parent": "base_selected_previous_window",
+      "fit_rows": "after_parent_calibration_until_train_end",
+      "selection": "validation",
+      "calibration": "calibration",
+      "candidates": ["frozen_parent", "adapter", "continuation"],
+      "reported_apart": ["base_retrain"]
+    },
+    "chain": {"rule": "chain_validation_score_v1", "min_improvement": 0.0, "first_window": "base"},
+    "rl": {
+      "train": "expanding_previous_evaluations",
+      "min_train_windows": 3,
+      "validation": "previous_evaluation",
+      "evaluation": "own_evaluation",
+      "predictor": "chain"
+    },
+    "test": "evaluation"
+  },
   "memory_options": {
     "titans_mac": {"accumulation_rows": "pending"},
     "episodic_gru": {"accumulation_rows": "pending", "recompute": "pending"},

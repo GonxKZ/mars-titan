@@ -9,14 +9,20 @@ Con `execution.order = "by_window"` la campaña recorre cada ventana en estas fa
 1. `base_search`: casos de búsqueda de todos los brazos con la semilla de búsqueda.
 2. `selection`: elección del caso de cada brazo con la validación de esa ventana.
 3. `selected_case_seeds`: el caso elegido con las demás semillas (y los traslados).
-4. `adapters`, `ablation` y `rl`: etapas posteriores de la misma ventana.
-5. `comparison`: agregados por sesión de la comparación de esa ventana.
-6. `release`: liberación de lo temporal de la ventana, tras sus agregados.
+4. `adapters`: el posentrenamiento, que parte del estado elegido de la base en la ventana
+   anterior y ajusta solo con las filas nuevas (`campaign_chain`).
+5. `chain`: la selección del predictor de la cadena de cada brazo base y semilla.
+6. `ablation` y `rl`: la ablación y la política, que lee la cadena de esta ventana y de
+   todas las anteriores que necesita.
+7. `comparison`: agregados por sesión de la comparación de esa ventana.
+8. `release`: liberación de lo temporal de la ventana, tras sus agregados.
 
 Después empieza la siguiente ventana. El plan solo admite dependencias hacia fases
 anteriores de la misma ventana o hacia ventanas anteriores. La selección no es un trabajo,
 sino la lectura del MAE de validación de los recibos de búsqueda, y las dos últimas fases
-son los puntos de conexión de los agregados por ventana y de la retención rodante.
+son los puntos de conexión de los agregados por ventana y de la retención rodante. Si la
+campaña declara el walk-forward por etapas, el calendario crea las selecciones de la cadena
+a partir de la etapa de adaptadores y exige a adaptadores y RL las dependencias del diseño.
 """
 
 import argparse
@@ -25,12 +31,15 @@ from pathlib import Path
 
 from mars_titan.evaluation.splits import PARTITIONS
 
+from . import campaign_chain
+
 ORDERS = ("by_scope", "by_window")
 PHASES = (
     "base_search",
     "selection",
     "selected_case_seeds",
     "adapters",
+    "chain",
     "ablation",
     "rl",
     "comparison",
@@ -136,10 +145,15 @@ def window_schedule(campaign, jobs, stages=None):
     """Fases de cada ventana de campaña con sus trabajos, comprobando las dependencias.
 
     `jobs` es el plan de la campaña base y `stages` asigna a `adapters`, `ablation` o `rl`
-    el plan de esa etapa, que debe partir de la misma campaña.
+    el plan de esa etapa, que debe partir de la misma campaña. Con el walk-forward por
+    etapas declarado, añade la fase `chain` y comprueba las dependencias del diseño.
     """
     stages = dict(stages or {})
     _require(set(stages) <= set(STAGES), "Las etapas posteriores son adapters, ablation o rl")
+    if campaign.get("walk_forward_stages"):
+        campaign_chain.check_staged(campaign, jobs, stages)
+        if "adapters" in stages:
+            stages["chain"] = campaign_chain.chain_jobs(campaign, jobs, stages["adapters"])
     rows = campaign_windows(campaign)
     position = _position(campaign)
     located = {}

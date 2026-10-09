@@ -265,25 +265,32 @@ def test_window_schedule_orders_every_stage_of_the_window_and_counts_all_jobs():
     from mars_titan.training import modality_ablation_stage as ablation
 
     value = campaign()
+    jobs = plan.plan_campaign(value)
     stages = dict(
-        adapters=adapters.plan_stage(
-            adapters.load_stage(plan.LATER_STAGES["posttraining_adapter_matrix"]["joint_stage"])
-        ),
         ablation=ablation.plan_stage(
             ablation.load_stage(plan.LATER_STAGES["modality_ablation"]["joint_stage"])
         ),
-        rl=policy_plan.plan_stage(
-            policy_plan.load_stage(plan.LATER_STAGES["rl_policy_comparison"]["joint_stage"])
-        ),
     )
-    schedule = order.window_schedule(value, plan.plan_campaign(value), stages)
+    schedule = order.window_schedule(value, jobs, stages)
     assert [row["window"] for row in schedule] == [f"fold-{i:03d}" for i in range(19)]
     assert [entry["phase"] for entry in schedule[0]["phases"]] == list(order.PHASES)
     totals = Counter()
     for row in schedule:
         totals.update({entry["phase"]: len(entry["jobs"]) for entry in row["phases"]})
     assert totals["base_search"] + totals["selected_case_seeds"] == 2322
-    assert (totals["adapters"], totals["ablation"], totals["rl"]) == (1653, 3534, 2160 + 1584)
+    assert totals["ablation"] == 3534
+    # Las etapas declaradas antes del diseño por etapas parten de la ventana k y su RL no
+    # lee la cadena: el calendario las rechaza hasta que adopten el contrato.
+    adapter_jobs = adapters.plan_stage(
+        adapters.load_stage(plan.LATER_STAGES["posttraining_adapter_matrix"]["joint_stage"])
+    )
+    with pytest.raises(ValueError, match="la primera ventana no tiene posentrenamiento"):
+        order.window_schedule(value, jobs, dict(adapters=adapter_jobs))
+    rl_jobs = policy_plan.plan_stage(
+        policy_plan.load_stage(plan.LATER_STAGES["rl_policy_comparison"]["joint_stage"])
+    )
+    with pytest.raises(ValueError, match="semilla de su predictor"):
+        order.window_schedule(value, jobs, dict(rl=rl_jobs))
     window = schedule[6]
     selection = window["phases"][order.PHASES.index("selection")]
     assert "CN/fold-000/mars_titan_m1" in selection["decisions"]
@@ -301,7 +308,7 @@ def test_window_schedule_and_order_reject_dependencies_on_later_work():
     with pytest.raises(ValueError, match="antes que una de sus dependencias"):
         order.order_by_window(value, jobs)
     with pytest.raises(ValueError, match="aparece dos veces"):
-        order.window_schedule(value, jobs[:1], dict(adapters=jobs[:1]))
+        order.window_schedule(value, jobs[:1], dict(ablation=jobs[:1]))
 
 
 @pytest.mark.parametrize("module", ["posttraining", "simulation", "ablation"])
