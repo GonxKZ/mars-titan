@@ -77,12 +77,14 @@ Todas en CPU, con `CUDA_VISIBLE_DEVICES=-1`, dos hilos y pruebas por archivo.
 
 | Archivo | Qué comprueba |
 | --- | --- |
-| `tests/training/test_financial_run_control.py` | Parámetros y base emparejados, identidad, rechazos, paridad exacta con B sin flujos medidos, linealidad del gradiente en el peso sin recorte, la cabeza fuera del camino de C, grupo lógico frente a bloque físico, validación igual a B y reanudación exacta |
-| `tests/cm/test_operator_dynamics.py` | A1/A2, expresión del operador fijo, productos frente a su cálculo explícito y rechazos |
-| `tests/models/titans/test_transition_jacobian.py` | `RᵀJR` igual a la compresión de C, J frente a diferencias centrales en FP64, trayectoria, `I + η D_z f` en los dos modos de selección y sin banco |
-| `tests/training/test_cm_v1_factorial.py` | Declaración, presupuesto de C, núcleos emparejados con el mismo número de pasos, cada factor solo donde se declara, control del padre, recuperación de un brazo completo, rechazo de una declaración cambiada y retención con episodios reales dentro de la capacidad |
+| `tests/training/test_financial_run_control.py` | Parámetros y base emparejados, identidad, rechazos, paridad exacta con B sin flujos medidos, objetivo de cada tramo igual a la tarea más la media de sus grupos, frecuencia según el contador de cada flujo, términos descartados sin paso, linealidad del gradiente en el peso sin recorte, la cabeza fuera del camino de C, grupo lógico frente a bloque físico, validación igual a B y reanudación exacta |
+| `tests/cm/test_operator_dynamics.py` | A1/A2, expresión del operador fijo, productos frente a su cálculo explícito, un operador expansivo que no se confunde con el contraejemplo y rechazos |
+| `tests/models/titans/test_transition_jacobian.py` | `RᵀJR` igual a la compresión de C, J frente a diferencias centrales en FP64, trayectoria, `I + η D_z f` en los dos modos de selección y sin banco, y `first_read` con el episodio del primer paso donde una nueva búsqueda elegiría otro |
+| `tests/training/test_cm_v1_factorial.py` | Declaración, presupuesto de C, núcleos emparejados con el mismo número de pasos, cada factor solo donde se declara, control del padre, recuperación de un brazo completo, rechazo de una declaración cambiada al ajustar y al trasladar, y retención con episodios reales dentro de la capacidad |
 | `tests/memory/test_mars_titan_session_parity.py` | El recorrido cronológico del lector emite lo mismo que `FinancialSession` también con centros fijos |
-| `tests/training/test_cm_v1_campaign.py` | Plan, dependencias, auxiliares sin traslado ni recibo y campaña B reducida con los ejecutores reales hasta la tercera ventana |
+| `tests/training/test_cm_v1_campaign.py` | Plan, dependencias, salida de los auxiliares, auxiliares sin traslado ni recibo y campaña B reducida con los ejecutores reales hasta la tercera ventana |
+
+La [mutación dirigida](results.md#factorial-sobre-titans-mac) cubrió el objetivo de C, la selección por evento, los contadores, los rechazos, el padre, el gemelo disabled, la retención, la campaña y las lecturas del operador.
 
 Con el registrador no hay pasos, así que el núcleo de C conserva los parámetros de B. La campaña reducida comprueba entonces que B y B+C, y B+M y B+C+M, emiten exactamente las mismas filas en cada ventana. Es la paridad del factorial con C sin efecto, no una medida de su efecto.
 

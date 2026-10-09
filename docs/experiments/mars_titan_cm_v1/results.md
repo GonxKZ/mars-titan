@@ -43,6 +43,16 @@ CUDA_VISIBLE_DEVICES=-1 OMP_NUM_THREADS=2 OPENBLAS_NUM_THREADS=2 MKL_NUM_THREADS
 
 El benchmark imprime las repeticiones, dispersión, versiones, formas, buffers y límites en JSON. No se midieron energía, coste económico, VRAM o transferencias. No se sustituye una implementación anterior ni se afirma una aceleración.
 
+## Factorial sobre Titans-MAC
+
+El 9 de octubre de 2026 se comprobó en CPU la implementación del [factorial](factorial.md), con `CUDA_VISIBLE_DEVICES=-1`, dos hilos y un archivo de pruebas cada vez. Ninguna prueba ejecuta pasos de optimizador. Los bucles llegan al paso con un registrador de gradientes que no modifica pesos y las entradas de ventana se recorren con la protección del aprendizaje simulada.
+
+Las pruebas nuevas cubren la penalización en el entrenador (11), las lecturas del operador (22), los Jacobianos completos (10), el factorial (19), su campaña (15), la paridad con la sesión también con centros fijos y las protecciones de las tres entradas. La regresión de las 49 suites afectadas, de C/M, Titans, sesiones, campaña, comparación, entrenadores y postentrenamiento, dio 1.297 pruebas superadas y 7 omitidas por falta de CUDA o por el bloqueo. El ensayo de la comprobación CUDA en CPU superó sus 4 casos, lo que no acredita CUDA.
+
+La mutación dirigida aplicó 26 cambios en una copia aislada, comprobando que las pruebas importaban el código de esa copia. En la primera pasada se detectaron 21 de 25. Tres supervivientes mostraban huecos de prueba: el contador de términos descartados sin etiquetas, la salida de los núcleos auxiliares y una declaración cambiada al trasladar. Las pruebas añadidas los detectan. La cuarta era equivalente, porque en `first_read` la búsqueda restringida ya devuelve las posiciones del primer paso. Se retiró esa elección redundante y la mutación que elimina la restricción se detecta. Las mutaciones detectadas cambiaban la media de los términos por su suma u omitían el término, dejaban términos de un tramo en el siguiente, fijaban la selección por bloque, ignoraban el contador de cada flujo, conservaban términos en validación, aceptaban el diagnóstico o la acumulación, invertían el objetivo de la identidad, omitían el control del padre o el gemelo disabled, dejaban peso en B, quitaban la retención con centros fijos, ajustaban el núcleo de C sin C, cambiaban el núcleo de B+M, daban traslado o recibo a los auxiliares, quitaban el factor 2 del operador fijo, invertían el orden de los productos, marcaban como contraejemplo un operador expansivo o movían la base del refinamiento.
+
+Estas comprobaciones son técnicas. No miden memoria ni caudal en `cuda:0`, no ajustan ningún brazo y no aportan un efecto de C o de M sobre el error.
+
 ## Comprobaciones pendientes
 
 La [comprobación CUDA de C](../../../reports/research/cm-mechanisms-verification-20261008.json) contrasta float32, float64, complex64 y complex128 sobre dos matrices 2×2, con 17 ángulos y bloques de tres. Se comprobaron valores y gradientes de las tres penalizaciones. La diferencia máxima observada de valores fue `6,66e-16` y la de gradientes inferior a `1e-15`. El producto alternante mantiene el autovalor 2,25. El pico fue de 17,33 MB asignados por Torch, con contexto CUDA adicional y una aplicación externa activa. Esto no certifica cotas ni mide velocidad de un modelo.
