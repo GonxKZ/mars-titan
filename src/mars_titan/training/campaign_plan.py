@@ -50,6 +50,8 @@ TITANS_RECIPE = "titans_financial_chronological_v1"
 # Repite titans_walk_forward.SEARCHED sin importar PyTorch. Una prueba lo fija.
 TITANS_SEARCHED = ("learning_rate", "max_grad_norm")
 FIT, CARRY = "fit", "carry"
+# El control en línea parte del estado elegido de otro brazo en su misma ventana.
+ONLINE = "online"
 # GRU candidata con banco episódico. Repite candidate_run.RECIPE sin importar PyTorch.
 EPISODIC = "episodic_gru"
 CANDIDATE_RECIPE = "candidate_gru_chronological_v1"

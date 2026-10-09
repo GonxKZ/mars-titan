@@ -23,8 +23,11 @@ from mars_titan.data.input_policy import HISTORICAL_MASKED
 from mars_titan.data.storage import sha256
 from mars_titan.memory.financial_session import FinancialPhase
 from mars_titan.models.quantile_head import MEDIAN_INDEX
+from mars_titan.training import masked_campaign as engine
 from mars_titan.training import online_reference as online
+from mars_titan.training.campaign_plan import ONLINE
 from mars_titan.training.carried_predictions import reference_model, selected_reference
+from mars_titan.training.checkpoints import StopRequest
 from mars_titan.training.corpus_inputs import CorpusDataset
 from mars_titan.training.titans_walk_forward import _sources
 from tests.training.test_carried_predictions import cpu as cpu
@@ -505,6 +508,95 @@ def test_only_a_transformer_reference_starts_the_control(base, tmp_path, cpu):
     neural_anchor(tmp_path / "gru", base.view, kind="gru")
     with pytest.raises(ValueError, match="parte de transformer_compact"):
         run(base, tmp_path / "gru", tmp_path / "online")
+
+
+def test_the_engine_runs_the_control_and_pauses_between_instants(
+    base, anchor, tmp_path, monkeypatch
+):
+    assert engine.EXECUTORS["neural", ONLINE] == dict(
+        run=engine._online, device="cuda", resumable=False, report="online.json"
+    )
+    job_run = engine.JobRun(
+        job=dict(id="US/fold-000/transformer_compact_online/online-s42"),
+        case=dict(rule=RULE),
+        view=base.view,
+        view_sha256=sha256(base.view),
+        folder=tmp_path / "attempt",
+        policy=HISTORICAL_MASKED,
+        batch_size=2,
+        checkpoint_seconds=300,
+        stop=StopRequest(),
+        anchor=dict(folder=anchor, view=base.view),
+        bank=dict(folder=base.bank),
+    )
+    stopped = StopRequest()
+    stopped.requested = True
+    with pytest.raises(engine.Paused):
+        engine._online(replace(job_run, folder=tmp_path / "paused", stop=stopped))
+    # El ejecutor de la campaña no recibe fábrica, así que el registrador sustituye al SGD.
+    created = Factory()
+    monkeypatch.setattr(online, "_sgd", created)
+    report = engine._online(job_run)
+    assert report["status"] == "completed" and len(created.instances) == 2
+
+
+def campaign_state(tmp_path, view):
+    state = object.__new__(engine._Campaign)
+    state.campaign = dict(
+        online_controls=dict(
+            arms=dict(
+                transformer_compact_online=dict(
+                    parent_arm="transformer_compact", cap_arm="mars_titan_m1"
+                )
+            )
+        )
+    )
+    state.output = tmp_path
+    state.views = dict(US=dict(windows={"fold-000": dict(path=str(view), sha256="v")}))
+    state.receipts = {
+        "US/fold-000/transformer_compact/finalist-s43": dict(attempt="t/attempt-0001", sha256="t"),
+        "US/fold-000/mars_titan_m1/finalist-s43": dict(attempt="m/attempt-0001", sha256="m"),
+        "US/fold-000/mars_titan_m1_k2/finalist-s43": dict(attempt="k/attempt-0001", sha256="k"),
+    }
+    return state
+
+
+def test_the_engine_resolves_the_anchor_and_the_bank_of_the_same_window_and_seed(tmp_path):
+    state = campaign_state(tmp_path, tmp_path / "view.json")
+    job = dict(
+        id="US/fold-000/transformer_compact_online/online-s43",
+        scope="US",
+        window="fold-000",
+        arm="transformer_compact_online",
+        seed=43,
+        kind=ONLINE,
+        stage=ONLINE,
+        depends=list(state.receipts),
+        case=dict(rule=RULE),
+    )
+    case, anchor, sources = state.resolve(job)
+    assert case == dict(rule=RULE)
+    assert anchor == dict(
+        folder=tmp_path / "t/attempt-0001",
+        view=tmp_path / "view.json",
+        job="US/fold-000/transformer_compact/finalist-s43",
+        sha256="t",
+    )
+    assert sources == dict(
+        source="US/fold-000/transformer_compact/finalist-s43",
+        source_sha256="t",
+        bank="US/fold-000/mars_titan_m1/finalist-s43",
+        bank_sha256="m",
+    )
+    assert state.bank_of(job)["folder"] == tmp_path / "m/attempt-0001"
+    with pytest.raises(ValueError, match="no depende de los estados elegidos"):
+        state.resolve(dict(job, depends=[d for d in job["depends"] if "mars_titan_m1/" not in d]))
+    assert state.bank_of(dict(job, kind="carry")) is None
+    state.receipts[job["id"]] = dict(attempt="o/attempt-0001", sha256="o")
+    assert state.selected("US", "fold-000", job["arm"], 43) == (
+        job["id"],
+        state.receipts[job["id"]],
+    )
 
 
 def test_label_decisions_come_from_the_maturity_events_of_the_index(base, tmp_path):

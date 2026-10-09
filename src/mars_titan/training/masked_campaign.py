@@ -46,6 +46,7 @@ from .campaign_plan import (
     FIT,
     HELDOUT_RETENTION,
     NEURAL,
+    ONLINE,
     QUANTILE_HEAD,
     _arm_specs,
     _require,
@@ -220,11 +221,12 @@ def _group(job):
 
 @dataclass(frozen=True)
 class JobRun:
-    """Lo que necesita un ejecutor: trabajo, caso resuelto, vista, destino y ancla.
+    """Reúne el trabajo, el caso resuelto, la vista, el destino y el ancla de un ejecutor.
 
     `parent` solo existe en los ajustes que parten de otro predictor elegido en la misma
     ventana y semilla, como el lector de MARS-TITAN sobre Titans-MAC o un brazo de CM-v1
-    sobre su núcleo.
+    sobre su núcleo. `bank` solo existe en un control en línea y es el intento elegido
+    del brazo cuyo banco fija las etiquetas y el tope.
     """
 
     job: dict
@@ -238,6 +240,7 @@ class JobRun:
     stop: object
     anchor: dict | None = None
     parent: dict | None = None
+    bank: dict | None = None
 
 
 def _neural_fit(run):
@@ -312,6 +315,24 @@ def _carry(run):
     return carry_tabular(*sources, kind=run.job["model"], **options)
 
 
+def _online(run):
+    from .online_reference import Paused as OnlinePaused
+    from .online_reference import run_online_reference
+
+    try:
+        return run_online_reference(
+            run.anchor["folder"],
+            run.view,
+            run.bank["folder"],
+            run.folder,
+            rule=run.case["rule"],
+            input_policy=run.policy,
+            stop=run.stop,
+        )
+    except OnlinePaused as error:
+        raise Paused from error
+
+
 def _titans_fit(run):
     from .titans_walk_forward import titans_fit
 
@@ -360,6 +381,7 @@ EXECUTORS = {
     ("ridge", FIT): dict(run=_ridge_fit, device="cuda", resumable=False, report="run.json"),
     ("xgboost", FIT): dict(run=_xgboost_fit, device="cuda", resumable=True, report="run.json"),
     ("neural", CARRY): dict(run=_carry, device="cuda", resumable=False, report="carry.json"),
+    ("neural", ONLINE): dict(run=_online, device="cuda", resumable=False, report="online.json"),
     ("ridge", CARRY): dict(run=_carry, device="cuda", resumable=False, report="carry.json"),
     ("xgboost", CARRY): dict(run=_carry, device="cuda", resumable=False, report="carry.json"),
     ("episodic_gru", FIT): dict(
@@ -487,6 +509,9 @@ class _Campaign:
         carry = found.get(f"{prefix}carry-s{seed}")
         if carry is not None:
             return f"{prefix}carry-s{seed}", carry
+        online = found.get(f"{prefix}online-s{seed}")
+        if online is not None:
+            return f"{prefix}online-s{seed}", online
         finalist = found.get(f"{prefix}finalist-s{seed}")
         if finalist is not None:
             return f"{prefix}finalist-s{seed}", finalist
@@ -517,6 +542,30 @@ class _Campaign:
             )
             case = winner["identity"]["case"] | dict(seed=job["seed"])
             return case, None, dict(source=key, source_sha256=winner["sha256"], **origin)
+        if job["kind"] == ONLINE:
+            # El ancla es el estado elegido del brazo de partida y el banco fija etiquetas y
+            # tope. Los dos están en la misma ventana y semilla del control y entre sus
+            # dependencias.
+            arm = self.campaign["online_controls"]["arms"][job["arm"]]["parent_arm"]
+            key, receipt = self.selected(job["scope"], job["window"], arm, job["seed"])
+            bank = self.bank_of(job)
+            _require(
+                {key, bank["job"]} <= set(job["depends"]),
+                f"{job['id']} no depende de los estados elegidos que usa",
+            )
+            anchor = dict(
+                folder=self.output / receipt["attempt"],
+                view=Path(self.views[job["scope"]]["windows"][job["window"]]["path"]),
+                job=key,
+                sha256=receipt["sha256"],
+            )
+            sources = dict(
+                source=key,
+                source_sha256=receipt["sha256"],
+                bank=bank["job"],
+                bank_sha256=bank["sha256"],
+            )
+            return job["case"], anchor, sources
         key, receipt = self.selected(job["scope"], job["anchor"], job["arm"], job["seed"])
         anchor = dict(
             folder=self.output / receipt["attempt"],
@@ -537,6 +586,14 @@ class _Campaign:
             sha256=receipt["sha256"],
             checkpoint_sha256=receipt["parent"]["sha256"],
         )
+
+    def bank_of(self, job):
+        """Devuelve el intento elegido del brazo cuyo banco fija las etiquetas del control."""
+        if job["kind"] != ONLINE:
+            return None
+        arm = self.campaign["online_controls"]["arms"][job["arm"]]["cap_arm"]
+        key, receipt = self.selected(job["scope"], job["window"], arm, job["seed"])
+        return dict(folder=self.output / receipt["attempt"], job=key, sha256=receipt["sha256"])
 
     def job_identity(self, job, case, sources):
         view = self.views[job["scope"]]["windows"][job["window"]]
@@ -599,6 +656,7 @@ class _Campaign:
             stop=self.stop,
             anchor=anchor,
             parent=self.parent_of(job),
+            bank=self.bank_of(job),
         )
         return (run, identity), None
 
