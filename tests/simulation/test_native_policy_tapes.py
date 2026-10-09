@@ -506,11 +506,12 @@ def test_stage_writes_chinese_tapes_with_their_a_share_rules(tapes, tmp_path):
         "CN", ROLES[2][1], [asset.split("/")[1] for asset in tape.assets]
     )
     policies = dict(environment=dict(dividend_payment_lag_sessions=0), universe=dict(max_assets=8))
+    edition = folder.parents[1] / "edition"
     stage_tapes = campaign_stage._Tapes(
         policies,
         lambda *_: (window, values),
-        folder.parents[1] / "edition",
-        "fixture",
+        edition,
+        json.loads((edition / "manifest.json").read_text())["edition_id"],
         tmp_path,
         "fixture",
     )

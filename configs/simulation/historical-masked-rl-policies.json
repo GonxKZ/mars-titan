@@ -2,7 +2,7 @@
   "schema_version": 2,
   "kind": "historical_masked_rl_policies",
   "status": "declared_not_executed",
-  "predictor": {"seed": 42},
+  "predictor": {"seed": 42, "source": "posttraining_chain_v1"},
   "levels": {
     "all_predictors": {
       "predictors": "campaign_producers",
@@ -20,10 +20,19 @@
       "arms": ["ppo_clip_full_kl", "ppo_kl_penalty_adaptive", "ppo_clip_kl_epoch_stop", "double_dqn"]
     }
   },
-  "train_windows": 3,
+  "train_windows": {
+    "rule": "expanding_prior_evaluations_v1",
+    "minimum": 3,
+    "maximum": 16
+  },
   "universe": {
     "rule": "median_traded_value_in_validation_v1",
     "max_assets": 128
+  },
+  "data": {
+    "policy": "real_edition_only",
+    "edition": "unadjusted_price_edition",
+    "edition_id": "1ac3727836462ce31c39b5438918bd6f3e0d359690c7bc79bfa87cd808c8e68c"
   },
   "environment": {
     "capital": 1000000,

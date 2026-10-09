@@ -195,8 +195,18 @@ def test_first_policy_windows_follow_three_training_years_and_one_validation_yea
         "fold-016",
     ]
     assert {row["anchor"] for row in us_rows[1:3]} == {"fold-004"}
+    # Las anclas posteriores se ajustan con todas las evaluaciones fuera de muestra previas.
+    assert us_rows[-3]["window"] == "fold-016" and us_rows[-3]["trained"]
+    assert us_rows[-3]["train"] == [f"fold-{i:03d}" for i in range(15)]
     cn = policy_plan.scope_windows(stage, "CN")
     assert cn[-1]["window"] == "fold-012" and cn[-1]["anchor"] == "fold-010"
+    assert cn[-1]["train"] == [f"fold-{i:03d}" for i in range(11)]
+    stage = campaign_stage.load_stage(STAGES["A"])
+    us_rows = policy_plan.scope_windows(stage, "US")
+    # Con 16 entornos la última ancla de EE. UU. deja fuera la evaluación más antigua.
+    assert us_rows[-1]["train"] == [f"fold-{i:03d}" for i in range(1, 17)]
+    assert [len(row["train"]) for row in us_rows] == [*range(3, 17), 16]
+    assert [len(row["train"]) for row in policy_plan.scope_windows(stage, "CN")] == [*range(3, 12)]
 
 
 @pytest.mark.parametrize("variant", "AB")
@@ -228,8 +238,11 @@ def test_klpo_is_planned_first_and_each_carry_depends_on_the_fit_of_its_anchor()
         references = [r for r in REFERENCES if INDEXED[scope] or r != "market_index"]
         assert [job["arm"] for job in group] == [*expected, *references]
     for job in jobs:
+        # Después del ancla, un trabajo solo espera selecciones de la cadena de otra etapa.
+        internal = [dependency for dependency in job["depends"] if dependency in by_id]
+        assert job["depends"][: len(internal)] == internal
         if job["kind"] == "carry":
-            (anchor,) = job["depends"]
+            (anchor,) = internal
             fitted = jobs[by_id[anchor]]
             assert by_id[anchor] < by_id[job["id"]]
             assert (fitted["kind"], fitted["window"], fitted["arm"], fitted["seed"]) == (
@@ -240,11 +253,42 @@ def test_klpo_is_planned_first_and_each_carry_depends_on_the_fit_of_its_anchor()
             )
             assert (fitted["train"], fitted["validation"]) == (job["train"], job["validation"])
         else:
-            assert job["depends"] == []
+            assert internal == []
     assert Counter(job["engine"] for job in jobs if job["kind"] != "reference") == {
         "native_klpo": 264 + 528,
         "native_ppo": 192 + 384,
     }
+
+
+def test_the_chain_selection_ids_follow_the_posttraining_contract():
+    assert (
+        policy_plan.chain_job_id("US", "fold-004", "gru", 42) == "US/fold-004/gru__chain/select-s42"
+    )
+
+
+@pytest.mark.parametrize("variant", "AB")
+def test_every_job_waits_for_the_chain_selections_of_the_tapes_it_reads(variant):
+    stage = campaign_stage.load_stage(STAGES[variant])
+    assert stage["policies"]["predictor"]["source"] == policy_plan.CHAIN
+    jobs = policy_plan.plan_stage(stage)
+    universe = stage["universe_predictor"]
+    for job in jobs:
+        scope, predictor = job["scope"], job["predictor"]
+        read = [*job["train"], job["validation"]]
+        expected = [
+            policy_plan.chain_job_id(scope, w, predictor, 42) for w in [*read, job["window"]]
+        ]
+        if predictor != universe:
+            expected += [policy_plan.chain_job_id(scope, w, universe, 42) for w in read]
+        fitted = job["depends"][:1] if job["kind"] == "carry" else []
+        assert job["depends"] == fitted + expected and job["predictor_seed"] == 42
+        # Ninguna selección pertenece a una ventana posterior a la evaluada.
+        assert all(d.split("/")[1] <= job["window"] for d in expected)
+    # Con el predictor elegido de la campaña base no hay selecciones de la cadena.
+    stage["policies"]["predictor"]["source"] = policy_plan.BASE_SELECTED
+    for job in policy_plan.plan_stage(stage):
+        assert job["depends"] == ([] if job["kind"] != "carry" else job["depends"][:1])
+        assert all("__chain" not in d for d in job["depends"])
 
 
 def mutated(tmp_path, change_policies=None, change_stage=None):
@@ -325,13 +369,28 @@ INVALID_POLICIES = {
     "lag_float": lambda v: v["environment"].update(dividend_payment_lag_sessions=1.5),
     "budget_float": lambda v: v["budget"].update(transitions=1.5e5),
     "rollout_over_budget": lambda v: v["budget"].update(rollout_transitions=10**6),
-    "no_training_years": lambda v: v.update(train_windows=0),
+    "no_training_years": lambda v: v["train_windows"].update(minimum=0),
+    "training_years_as_count": lambda v: v.update(train_windows=3),
+    "unknown_training_rule": lambda v: v["train_windows"].update(rule="every_window_v1"),
+    "training_without_minimum": lambda v: v["train_windows"].pop("minimum"),
+    "training_without_maximum": lambda v: v["train_windows"].pop("maximum"),
+    "training_beyond_environments": lambda v: v["train_windows"].update(maximum=17),
+    "training_maximum_below_minimum": lambda v: v["train_windows"].update(maximum=2),
+    "fixed_training_with_other_maximum": lambda v: v["train_windows"].update(
+        rule="fixed_prior_evaluations_v1"
+    ),
+    "synthetic_domain": lambda v: v["data"].update(policy="synthetic_allowed"),
+    "other_edition_kind": lambda v: v["data"].update(edition="episode_worlds"),
+    "edition_without_identity": lambda v: v["data"].update(edition_id="fixture"),
+    "edition_extra_field": lambda v: v["data"].update(fallback="synthetic"),
     "unknown_universe_rule": lambda v: v["universe"].update(rule="best_in_evaluation"),
     "universe_too_large": lambda v: v["universe"].update(max_assets=5000),
     "predictor_without_producer": lambda v: v["levels"]["algorithms"].update(
         predictors=["gru_episodic"]
     ),
     "predictor_seed": lambda v: v["predictor"].update(seed=7),
+    "unknown_predictor_source": lambda v: v["predictor"].update(source="best_in_hindsight"),
+    "predictor_without_source": lambda v: v["predictor"].pop("source"),
     "fixed_first_level": lambda v: v["levels"]["all_predictors"].update(predictors=COMPARED),
     "first_level_without_klpo": lambda v: v["levels"]["all_predictors"]["arms"].pop(0),
     "klpo_in_algorithms": lambda v: v["levels"]["algorithms"]["arms"].insert(0, "klpo_terminal"),
@@ -393,10 +452,23 @@ REASONS = {
     "budget_float": "presupuesto de transiciones",
     "rollout_over_budget": "presupuesto de transiciones",
     "no_training_years": "ventanas de ajuste",
+    "training_years_as_count": "ventanas de ajuste",
+    "unknown_training_rule": "ventanas de ajuste",
+    "training_without_minimum": "ventanas de ajuste",
+    "training_without_maximum": "ventanas de ajuste",
+    "training_beyond_environments": "ventanas de ajuste",
+    "training_maximum_below_minimum": "ventanas de ajuste",
+    "fixed_training_with_other_maximum": "ventanas de ajuste",
+    "synthetic_domain": "edición real",
+    "other_edition_kind": "edición real",
+    "edition_without_identity": "edición real",
+    "edition_extra_field": "edición real",
     "unknown_universe_rule": "universo",
     "universe_too_large": "universo",
     "predictor_without_producer": "productor",
     "predictor_seed": "semilla declarada",
+    "unknown_predictor_source": "predictor, el universo",
+    "predictor_without_source": "predictor, el universo",
     "fixed_first_level": "nivel completo",
     "first_level_without_klpo": "nivel completo",
     "klpo_in_algorithms": "nivel completo",

@@ -23,6 +23,7 @@ aprendido multiplica los ajustes y el contraste principal es KLPO.
 """
 
 import math
+import re
 from collections import Counter
 from pathlib import Path
 
@@ -35,6 +36,7 @@ from .environment import ACTIONS
 from .evaluation import REFERENCE_ALLOCATIONS
 from .index_benchmark import BENCHMARKS
 from .market import CURRENCIES
+from .reconstructed_tape import EDITION_KIND
 
 STAGE_KIND = "historical_masked_rl_stage"
 POLICIES_KIND = "historical_masked_rl_policies"
@@ -68,6 +70,25 @@ PPO_OBJECTIVES = {
     },
 }
 KLPO = dict(objective="klpo_terminal_token_full_v1", controller="klpo_full_fresh_waves_v1")
+# Las políticas solo aprenden, se seleccionan y se evalúan con cintas reales de la edición.
+DATA_POLICY = "real_edition_only"
+# Predicciones que llevan las cintas: las del predictor elegido en la campaña base o las del
+# predictor de la cadena, el estado que el posentrenamiento elige con la validación.
+BASE_SELECTED = "base_campaign_selected_v1"
+CHAIN = "posttraining_chain_v1"
+PREDICTOR_SOURCES = (BASE_SELECTED, CHAIN)
+CHAIN_SUFFIX = "__chain"
+
+
+def chain_job_id(scope, window, arm, seed):
+    """Selección de la cadena que confirma el predictor de una ventana en el posentrenamiento.
+
+    Mismo formato que `training.campaign_chain.chain_job_id`, del plan de la campaña A. Las
+    dos definiciones se unifican al integrar las dos ramas en `develop`.
+    """
+    return f"{scope}/{window}/{arm}{CHAIN_SUFFIX}/select-s{seed}"
+
+
 _STAGE = {
     "schema_version",
     "kind",
@@ -87,6 +108,7 @@ _POLICIES = {
     "levels",
     "train_windows",
     "universe",
+    "data",
     "environment",
     "evaluation_costs_bps",
     "seeds",
@@ -291,13 +313,30 @@ def _read_policies(path):
     predictor, universe = config["predictor"], config["universe"]
     _require(
         isinstance(predictor, dict)
-        and set(predictor) == {"seed"}
+        and set(predictor) == {"seed", "source"}
+        and predictor["source"] in PREDICTOR_SOURCES
         and isinstance(universe, dict)
         and universe.get("rule") == window_tapes.UNIVERSE_RULE
         and set(universe) == {"rule", "max_assets"}
-        and _integer(universe["max_assets"], 1, 4096)
-        and _integer(config["train_windows"], 1, 12),
+        and _integer(universe["max_assets"], 1, 4096),
         "El predictor, el universo y las ventanas de ajuste deben estar declarados",
+    )
+    # KLPO asigna a cada entorno una cinta de ajuste fija en todas sus oleadas, de modo que
+    # ninguna política puede ajustarse con más ventanas que entornos.
+    _require(
+        window_tapes.train_rule(config["train_windows"])[2] <= budget["environments"],
+        "Cada entorno recorre una sola cinta de ajuste: el máximo de ventanas de ajuste no "
+        "supera los entornos",
+    )
+    data = config["data"]
+    _require(
+        isinstance(data, dict)
+        and set(data) == {"policy", "edition", "edition_id"}
+        and data["policy"] == DATA_POLICY
+        and data["edition"] == EDITION_KIND
+        and isinstance(data["edition_id"], str)
+        and re.fullmatch(r"[a-f0-9]{64}", data["edition_id"]) is not None,
+        "Las políticas aprenden solo con la edición real de precios reconstruidos declarada",
     )
     _read_report(config)
     return dict(config, sha256=digest, path=str(Path(path).resolve()), engines=engines)
@@ -443,8 +482,29 @@ def _arms(stage, predictor):
     return arms
 
 
+def _chain_depends(stage, scope, row, anchor, predictor):
+    """Selecciones de la cadena de todas las cintas que lee un trabajo.
+
+    Con el predictor de la cadena, un trabajo lee las evaluaciones de ajuste y validación de
+    su ancla y la evaluación de su ventana con ese predictor, y el universo del ancla con el
+    predictor del universo. Cada una exige su selección confirmada en el posentrenamiento.
+    """
+    policies = stage["policies"]
+    if policies["predictor"]["source"] != CHAIN:
+        return []
+    seed = policies["predictor"]["seed"]
+    read = [*anchor["train"], anchor["validation"]]
+    reads = {predictor: [*read, row["window"]]}
+    reads.setdefault(stage["universe_predictor"], read)
+    return [chain_job_id(scope, w, arm, seed) for arm, windows in reads.items() for w in windows]
+
+
 def plan_stage(stage):
-    """Enumerar ajustes, traslados y referencias por ámbito, mercado, ventana y predictor."""
+    """Enumerar ajustes, traslados y referencias por ámbito, mercado, ventana y predictor.
+
+    `depends` empieza por el ajuste del ancla en los traslados y sigue con las selecciones de
+    la cadena que confirman las predicciones de sus cintas, si las políticas las declaran.
+    """
     policies = stage["policies"]
     jobs = []
     for scope in stage["scopes"]:
@@ -456,6 +516,7 @@ def plan_stage(stage):
                 anchor = anchors[row["anchor"]]
                 for predictor in stage["predictors"]:
                     prefix = f"{scope}/{market}/{row['window']}/{predictor}"
+                    chain = _chain_depends(stage, scope, row, anchor, predictor)
                     common = dict(
                         scope=scope,
                         market=market,
@@ -464,6 +525,7 @@ def plan_stage(stage):
                         train=anchor["train"],
                         validation=anchor["validation"],
                         predictor=predictor,
+                        predictor_seed=policies["predictor"]["seed"],
                     )
                     for level, arm in _arms(stage, predictor):
                         engine = policies["engines"][arm]
@@ -481,7 +543,7 @@ def plan_stage(stage):
                                     engine=engine,
                                     seed=seed,
                                     kind=kind,
-                                    depends=[] if row["trained"] else [fitted],
+                                    depends=([] if row["trained"] else [fitted]) + chain,
                                 )
                             )
                     for reference in policies["references"]:
@@ -497,7 +559,7 @@ def plan_stage(stage):
                                 engine="reference",
                                 seed=None,
                                 kind=REFERENCE,
-                                depends=[],
+                                depends=list(chain),
                             )
                         )
     _require(len({job["id"] for job in jobs}) == len(jobs), "El plan contiene trabajos repetidos")

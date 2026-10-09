@@ -47,8 +47,6 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
-import numpy as np
-
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.environments.walk_forward_receipt import read_window_receipt
@@ -58,7 +56,9 @@ from mars_titan.training.learning_hold import LearningHoldError, require_learnin
 
 from . import native_policy_runs, window_tapes
 from .policy_plan import (
+    BASE_SELECTED,
     CARRY,
+    CHAIN_SUFFIX,
     FIT,
     MARKET_INDEX,
     REFERENCE,
@@ -137,16 +137,29 @@ def _digest(value):
 # Capacidades del motor
 
 
-def _probe_tape():
-    """Cinta sintética mínima de un activo A, solo para preguntar al motor por sus reglas."""
-    from .market import MarketTape
+# Cierres de referencia de la consulta de reglas, con redondeos de medio céntimo.
+RULE_QUERY_REFERENCES = (10.0, 9.99, 10.05, 2.675, 0.95)
 
-    day = 86_400_000_000
-    prices = np.tile([10.0, 10.0, 10.0, 10.0, 1e6], (3, 1, 1))
-    times = 1_672_704_000_000_000 + day * np.arange(3, dtype=np.int64)
-    return MarketTape(
-        prices, times, ["CN/600000.SS"], np.zeros((3, 1)), domain="synthetic", currency="CNY"
-    )
+
+def probe_cn_rules(library=None):
+    """Preguntar a la biblioteca por las reglas de las acciones A sin construir ninguna cinta.
+
+    Cargarla exige el contrato binario de reglas (tamaño del registro y paso v2). Después,
+    los límites diarios de cada banda declarada para cada tablero se calculan en C++ y deben
+    coincidir con los de Python. Ningún precio, activo ni sesión sale de esta consulta.
+    """
+    from .market_rules import PRICE_LIMITS
+    from .native_runtime import load_library
+    from .portfolio import Instrument
+
+    native = load_library(library)
+    for board, periods in PRICE_LIMITS.items():
+        instrument = Instrument("CNY", price_limits=periods, rules=f"probe_{board}")
+        for period in periods:
+            for reference in RULE_QUERY_REFERENCES:
+                expected = instrument.limits(reference, period.start)
+                if native.price_limits(reference, period.band) != expected:
+                    raise ValueError(f"Los límites de {board} no coinciden con los de Python")
 
 
 def probe_capabilities(library=None):
@@ -155,8 +168,6 @@ def probe_capabilities(library=None):
     Los binarios de política solo se lanzan con `--capabilities`: declaran su nombre, sus
     capacidades y su identidad de compilación, que se conserva en el informe.
     """
-    from .environment import FinancialEnv
-    from .market_rules import china_a_share_instrument
     from .native_runtime import load_library
 
     result = {}
@@ -167,9 +178,7 @@ def probe_capabilities(library=None):
                 load_library(library)
                 reason = None
             elif entry["probe"] == "native_cn_rules":
-                tape = _probe_tape()
-                rules = {asset: china_a_share_instrument(asset) for asset in tape.assets}
-                FinancialEnv(tape, backend="native", native_library=library, instruments=rules)
+                probe_cn_rules(library)
                 reason = None
             elif entry["probe"] in native_policy_runs.BINARIES:
                 capability = entry.get("capability", name)
@@ -561,8 +570,11 @@ def campaign_source(base, campaign_output, seed):
     """Recibo de ventana y predicciones emitidas del predictor elegido en la campaña base.
 
     El recibo publicado debe identificar al predictor elegido para la semilla y su huella
-    de evaluación del mercado debe coincidir con la del trabajo confirmado. Si el trabajo no
-    emitió filas del mercado en su evaluación, el recibo tampoco las declara y la fuente
+    de evaluación del mercado debe coincidir con la del trabajo confirmado. Su
+    `labels_used_until` debe ser la maduración real de las etiquetas que leyó ese predictor,
+    recalculada aquí desde las vistas con `training.label_maturity`, de modo que una cinta
+    nunca lleva predicciones de un predictor que ajustó pesos con sus filas. Si el trabajo
+    no emitió filas del mercado en su evaluación, el recibo tampoco las declara y la fuente
     devuelve `None` en lugar de predicciones.
     """
 
@@ -578,6 +590,11 @@ def campaign_source(base, campaign_output, seed):
             and declared == (None if expected is None else (expected["rows"], expected["sha256"])),
             f"El recibo de {scope}/{window}/{predictor} no corresponde al predictor elegido",
         )
+        _require(
+            receipt.labels_used_until == base.labels_used_until(scope, window, selected),
+            f"El recibo de {scope}/{window}/{predictor} no declara la maduración real de las "
+            "etiquetas que leyó su predictor",
+        )
         if expected is None:
             return receipt, None
         values = window_tapes.segment_predictions(
@@ -586,6 +603,109 @@ def campaign_source(base, campaign_output, seed):
         return receipt, values
 
     return source
+
+
+# Contrato de la cadena: la etapa de posentrenamiento publica, por ámbito, ventana, brazo de
+# la campaña base y semilla, un recibo #390 por mercado y una selección escrita la última.
+CHAIN_SELECTION_KIND = "campaign_chain_selection"
+CHAIN_BASE = "base"
+CHAIN_STATES = (CHAIN_BASE, "frozen_parent", "adapter", "continuation")
+
+
+def chain_source(base, chain_output, seed, campaign_output):
+    """Recibo y predicciones del predictor de la cadena de cada ventana.
+
+    El predictor de la ventana k es el estado que el posentrenamiento elige con `val_k`:
+    adaptador, continuación o padre congelado, y en la ventana 0 el estado elegido de la
+    campaña base. Su `selection.json`, escrito el último, confirma la ventana: sin él no hay
+    cinta. La huella del recibo del mercado debe ser la que fija la selección, y el recibo
+    debe identificar el trabajo elegido, con la huella de su recibo confirmado y la de sus
+    predicciones de evaluación. Su `labels_used_until` debe ser la maduración real de las
+    etiquetas de las vistas de la ventana y de la anterior (las del padre), recalculada aquí
+    con `training.label_maturity`. Así ninguna cinta lleva predicciones de un estado que
+    ajustó, eligió o calibró con etiquetas posteriores a su primera decisión.
+    """
+    from mars_titan.training.label_maturity import FIT_PARTITIONS, label_maturity
+
+    maturity = {}
+
+    def labels_used_until(scope, window):
+        windows = base.views[scope]["windows"]
+        names = list(windows)
+        index = names.index(window)
+        read = names[max(0, index - 1) : index + 1]
+        for name in read:
+            if (scope, name) not in maturity:
+                maturity[(scope, name)] = label_maturity(windows[name]["path"], FIT_PARTITIONS)[0]
+        return max(maturity[(scope, name)] for name in read)
+
+    def source(scope, market, window, predictor):
+        label = f"{scope}/{window}/{predictor}{CHAIN_SUFFIX}"
+        folder = chain_output / "windows" / label / f"seed-{seed}"
+        _require(
+            (folder / "selection.json").is_file(),
+            f"La cadena de {label} no tiene confirmada su selección",
+        )
+        selection = read_manifest(folder / "selection.json", 1024**2)[0]
+        selected = selection.get("selected")
+        _require(
+            selection.get("kind") == CHAIN_SELECTION_KIND
+            and selection.get("schema_version") == 1
+            and [selection.get(key) for key in ("scope", "window", "base_arm", "seed")]
+            == [scope, window, predictor, seed]
+            and isinstance(selected, dict)
+            and selected.get("kind") in CHAIN_STATES
+            and (selected["kind"] == CHAIN_BASE) == (selection.get("parent_window") is None),
+            f"La selección de la cadena de {label} no corresponde a la ventana pedida",
+        )
+        path = folder / f"{market}.json"
+        _require(
+            selection["markets"].get(market) is not None and path.is_file(),
+            f"La cadena de {label} no publica recibo de {market}",
+        )
+        document, digest = read_manifest(path, 1024**2)
+        _require(
+            digest == selection["markets"][market],
+            f"El recibo de {market} de {label} no es el que confirmó la selección",
+        )
+        receipt = read_window_receipt(document)
+        root = campaign_output if selected["kind"] == CHAIN_BASE else chain_output
+        emitted, emitted_digest = read_manifest(
+            root / "jobs" / selected["job"] / "receipt.json", 8 * 1024**2
+        )
+        record = emitted["predictions"][window_tapes.SEGMENT]
+        expected = record["markets"].get(market)
+        _require(
+            emitted_digest == selected["receipt_sha256"]
+            and receipt.parent == (selected["job"], selected["receipt_sha256"])
+            and expected is not None
+            and dict(receipt.predictions).get(window_tapes.SEGMENT)
+            == (expected["rows"], expected["sha256"]),
+            f"El recibo de {market} de {label} no corresponde al estado elegido",
+        )
+        _require(
+            receipt.labels_used_until
+            == selection.get("labels_used_until")
+            == labels_used_until(scope, window),
+            f"El recibo de {market} de {label} no declara la maduración real de las etiquetas "
+            "que leyó el estado elegido",
+        )
+        values = window_tapes.segment_predictions(root / record["path"], record["sha256"], market)
+        return receipt, values
+
+    return source
+
+
+def predictor_source(policies, base, campaign_output, chain_output=None):
+    """Fuente de recibos y predicciones de las cintas según la regla declarada."""
+    rule, seed = policies["predictor"]["source"], policies["predictor"]["seed"]
+    if rule == BASE_SELECTED:
+        return campaign_source(base, campaign_output, seed)
+    _require(
+        chain_output is not None,
+        "Las cintas del predictor de la cadena necesitan la salida del posentrenamiento",
+    )
+    return chain_source(base, Path(chain_output), seed, campaign_output)
 
 
 class _Tapes:
@@ -604,6 +724,10 @@ class _Tapes:
         self._source, self.edition, self.edition_id = source, edition, edition_id
         self.lag = policies["environment"]["dividend_payment_lag_sessions"]
         self.key, self.current, self.evaluations = None, None, {}
+        # Admisión de cada tramo con todos los activos, por recibo. Con la ventana en
+        # expansión, cada ancla repite las ventanas anteriores y montar una cinta de EE. UU.
+        # con todos sus activos cuesta en torno a un minuto.
+        self.admissions = {}
 
     def source(self, job, window, predictor):
         receipt, values = self._source(job["scope"], job["market"], window, predictor)
@@ -638,11 +762,14 @@ class _Tapes:
             return tuple(record["assets"])
         admitted = {}
         for window, (receipt, values) in sources.items():
-            role = "validation" if window == job["validation"] else "train"
-            tape, _ = window_tapes.build_segment_tape(
-                self.edition, receipt, values, market=job["market"], role=role, lag=self.lag
-            )
-            admitted[window] = window_tapes.admission(tape)
+            key = (job["scope"], job["market"], window, receipt.sha256)
+            if key not in self.admissions:
+                tape, _ = window_tapes.build_segment_tape(
+                    self.edition, receipt, values, market=job["market"], role="train", lag=self.lag
+                )
+                window_tapes.require_real_tape(tape, self.edition_id, f"universe-{window}")
+                self.admissions[key] = window_tapes.admission(tape)
+            admitted[window] = self.admissions[key]
         assets = window_tapes.select_universe(
             [admitted[window] for window in job["train"]],
             admitted[job["validation"]],
@@ -702,6 +829,9 @@ class _Tapes:
                 return folder, None, failure, bounds
             # Una cinta china lleva las reglas de acciones A que exige el lector nativo.
             write_tape(tape, folder, instruments=market_rules(tape, job["market"]))
+        # Ninguna cinta sintética ni de otra edición llega a un ejecutor, tampoco al reanudar
+        # desde una cinta confirmada en disco.
+        window_tapes.require_real_tape(tape, self.edition_id, folder.name)
         _require(
             tuple(tape.assets) == universe
             and [item["receipt_sha256"] for item in tape.identity["audit"]["walk_forward"]]
@@ -785,7 +915,9 @@ class _Stage:
             anchor_fit=None,
         )
         if job["kind"] == CARRY:
-            (anchor,) = job["depends"]
+            # El primer requisito de un traslado es el ajuste de su ancla. Los demás son
+            # selecciones de la cadena, confirmadas en la etapa de posentrenamiento.
+            anchor = job["depends"][0]
             _require(anchor in self.receipts, f"{job['id']} depende de {anchor}, sin confirmar")
             identity["anchor_fit"] = dict(
                 job=anchor, receipt_sha256=self.receipts[anchor]["sha256"]
@@ -910,6 +1042,12 @@ def check_stage(path, *, library=None):
         policies_sha256=policies["sha256"],
         campaign_sha256=stage["campaign"]["sha256"],
         predictor=policies["predictor"],
+        predictor_source=dict(
+            rule=policies["predictor"]["source"],
+            needs_chain_output=policies["predictor"]["source"] != BASE_SELECTED,
+        ),
+        data_policy=policies["data"]["policy"],
+        edition_id=policies["data"]["edition_id"],
         levels=stage["levels"],
         universe_predictor=stage["universe_predictor"],
         universe=policies["universe"],
@@ -926,7 +1064,16 @@ def check_stage(path, *, library=None):
 
 
 def run_stage(
-    path, views, campaign_output, edition, output, *, executors=None, capabilities=None, stop=None
+    path,
+    views,
+    campaign_output,
+    edition,
+    output,
+    *,
+    executors=None,
+    capabilities=None,
+    stop=None,
+    chain_output=None,
 ):
     """Ejecutar o reanudar la etapa sobre una campaña base confirmada.
 
@@ -962,12 +1109,21 @@ def run_stage(
     views = {scope: Path(value) for scope, value in views.items()}
     campaign_output, edition, output = Path(campaign_output), Path(edition), Path(output)
     safe_destination(output)
-    for protected in (*views.values(), campaign_output, edition, Path("dataset")):
+    chained = () if chain_output is None else (Path(chain_output),)
+    for protected in (*views.values(), campaign_output, edition, *chained, Path("dataset")):
         outside_source(protected, output)
         outside_source(output, protected)
+    # Las políticas solo aprenden con la edición real declarada: su identidad se recalcula
+    # desde el manifiesto y debe ser la de las políticas antes de leer ninguna cinta.
     edition_id = read_edition(edition)["edition_id"]
+    _require(
+        edition_id == stage["policies"]["data"]["edition_id"],
+        "La edición no es la edición real declarada por las políticas de la etapa",
+    )
     _, base = masked_campaign._confirmed_state(campaign["path"], views, campaign_output)
     _base_receipts(base, campaign, stage)
+    # La fuente de las predicciones se resuelve antes de crear la salida.
+    source = predictor_source(stage["policies"], base, campaign_output, chain_output)
     identity = _identity(stage, base.views, edition_id)
     output.mkdir(parents=True, exist_ok=True)
     descriptor = os.open(output / ".lock", os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600)
@@ -985,7 +1141,6 @@ def run_stage(
                 "La salida sin identidad contiene artefactos ajenos",
             )
             atomic_json(marker, identity)
-        source = campaign_source(base, campaign_output, stage["policies"]["predictor"]["seed"])
         tapes = _Tapes(
             stage["policies"], source, edition, edition_id, output, stage["universe_predictor"]
         )
@@ -1019,6 +1174,7 @@ def main(argv=None):
     execute.add_argument("--campaign-output", type=Path, required=True)
     execute.add_argument("--edition", type=Path, required=True)
     execute.add_argument("--output", type=Path, required=True)
+    execute.add_argument("--chain-output", type=Path)
     args = parser.parse_args(argv)
     if args.command == "check":
         result = check_stage(args.stage)
@@ -1029,6 +1185,7 @@ def main(argv=None):
             args.campaign_output,
             args.edition,
             args.output,
+            chain_output=args.chain_output,
         )
         result.pop("jobs")
     print(json.dumps(result, ensure_ascii=False, indent=2))

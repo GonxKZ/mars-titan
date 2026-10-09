@@ -6,6 +6,7 @@ que no tiene redes ni optimizador, y las referencias usan la contabilidad Python
 pruebas admiten la etapa con la protección temporal permitida de `learning_doubles`.
 """
 
+import copy
 import json
 import shutil
 from pathlib import Path
@@ -18,8 +19,9 @@ from mars_titan.data.cohort_files import read_manifest
 from mars_titan.data.storage import atomic_json
 from mars_titan.environments.walk_forward_receipt import read_window_receipt
 from mars_titan.simulation import campaign_stage, native_policy_runs, window_tapes
+from mars_titan.simulation.market import MarketTape
 from mars_titan.simulation.native_runtime import library_path
-from mars_titan.simulation.storage import read_tape
+from mars_titan.simulation.storage import read_tape, write_tape
 from mars_titan.training.learning_hold import LearningHoldError
 from tests.simulation import rl_stage_fixture as fixture
 
@@ -107,7 +109,13 @@ def test_variant_a_runs_every_policy_on_the_same_causal_tapes(base_a, tmp_path, 
     roots = tmp_path / "stage/tapes/US/US/gru"
     expected = {
         "fold-002": ["train-fold-000", "validation-fold-001", "evaluation-fold-002"],
-        "fold-003": ["train-fold-001", "validation-fold-002", "evaluation-fold-003"],
+        # Ventana en expansión: 2023 se ajusta con todas las evaluaciones previas.
+        "fold-003": [
+            "train-fold-000",
+            "train-fold-001",
+            "validation-fold-002",
+            "evaluation-fold-003",
+        ],
     }
     for anchor, names in expected.items():
         # El índice de mercado tiene su propia cinta de un activo en el tramo evaluado.
@@ -225,14 +233,13 @@ def test_a_predictor_without_training_predictions_fails_its_policies_without_run
     found = receipts(tmp_path / "stage")
     klpo = outcomes(found, "lstm", "klpo_terminal")
     if variant == "A":
-        # La política de 2023 se ajusta con 2021 y valida con 2022, que sí tienen predicciones.
-        assert klpo == {("fold-002", "fit"): {reason}, ("fold-003", "fit"): {None}}
-        called = {call["id"] for call in learner.calls if "/lstm/" in call["id"]}
-        assert called == {f"US/US/fold-003/lstm/klpo_terminal/fit-s{s}" for s in (42, 43, 44)}
+        # Con la regla en expansión, la política de 2023 también se ajusta con 2020, que no
+        # tiene predicciones, así que tampoco se ajusta.
+        assert klpo == {("fold-002", "fit"): {reason}, ("fold-003", "fit"): {reason}}
     else:
         # En B la ventana de 2023 traslada la política de 2022, que no se pudo ajustar.
         assert klpo == {("fold-002", "fit"): {reason}, ("fold-003", "carry"): {reason}}
-        assert not any("/lstm/" in call["id"] for call in learner.calls)
+    assert not any("/lstm/" in call["id"] for call in learner.calls)
     for receipt in found.values():
         if reason in {e["reason"] for e in receipt["evaluation"]}:
             assert receipt["policy"] is None and receipt["transitions"] == 0
@@ -241,7 +248,7 @@ def test_a_predictor_without_training_predictions_fails_its_policies_without_run
     assert all(value == {None} for value in outcomes(found, "lstm", "cash").values())
     assert all(value == {None} for value in outcomes(found, "gru", "klpo_terminal").values())
     failed = summary["metrics"]["lstm"]["klpo_terminal"]["10"]
-    assert failed["failure_reasons"] == {reason: 3 if variant == "A" else 6}
+    assert failed["failure_reasons"] == {reason: 6}
 
 
 def test_a_predictor_without_evaluation_predictions_fails_those_episodes(
@@ -598,8 +605,26 @@ def _predictions(base):
     path.write_bytes(path.read_bytes() + b"\0")
 
 
+def _label_limit(shift):
+    def change(base):
+        path = base.output / "windows/US/fold-001/gru/seed-42/US.json"
+        record = json.loads(path.read_text())
+        if shift is None:
+            # El límite anterior a #365: el microsegundo previo a la evaluación. Cumple el
+            # contrato del recibo, pero no es la maduración de lo que leyó el predictor.
+            record["labels_used_until"] = us(record["fold"]["evaluation"][0]) - 1
+        else:
+            record["labels_used_until"] += shift
+        atomic_json(path, record)
+
+    return change
+
+
 TAMPERED = {
     "receipt_of_a_later_fit": (_swap_receipt, "fold-001/gru no corresponde"),
+    "constant_label_limit": (_label_limit(None), "maduración real"),
+    "earlier_label_limit": (_label_limit(-86_400_000_000), "maduración real"),
+    "later_label_limit": (_label_limit(1), "maduración real"),
     "receipt_of_another_parent": (_parent, "predictor elegido"),
     "changed_predictions": (_predictions, "ha cambiado"),
 }
@@ -669,3 +694,229 @@ def test_references_with_native_accounting_match_the_python_accounting(
                     assert theirs[key] == pytest.approx(value, rel=1e-12, abs=1e-12), key
                 else:
                     assert theirs[key] == value, key
+
+
+def configured(base, root):
+    """Copia de la configuración de la etapa que una prueba puede alterar."""
+    shutil.copytree(base.stage.parent, root / "config")
+    return SimpleNamespace(**dict(vars(base), stage=root / "config" / base.stage.name))
+
+
+def test_the_stage_runs_only_on_the_declared_real_edition(base_a, tmp_path, learning_doubles):
+    base = configured(base_a, tmp_path)
+    path = base.stage.parent / "rl-policies.json"
+    policies = json.loads(path.read_text())
+    policies["data"]["edition_id"] = "0" * 64
+    atomic_json(path, policies)
+    learner = fixture.ScriptedLearner()
+    with pytest.raises(ValueError, match="edición real declarada"):
+        fixture.run(base, tmp_path / "stage", learner)
+    assert learner.calls == [] and not (tmp_path / "stage").exists()
+
+
+def test_every_tape_of_the_stage_is_real_and_no_synthetic_world_is_built(
+    base_a, tmp_path, learning_doubles, monkeypatch
+):
+    domains = []
+    original = MarketTape.__init__
+
+    def record(self, *args, **kwargs):
+        original(self, *args, **kwargs)
+        domains.append(self.domain)
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("La etapa construyó una cinta desde un mundo sintético")
+
+    monkeypatch.setattr(MarketTape, "__init__", record)
+    monkeypatch.setattr(MarketTape, "from_world", classmethod(forbidden))
+    summary = fixture.run(base_a, tmp_path / "stage", fixture.ScriptedLearner())
+    assert summary["status"] == "completed"
+    assert domains and set(domains) == {"real"}
+
+
+def test_a_universe_admission_on_a_tape_that_is_not_real_stops_the_stage(
+    base_a, tmp_path, learning_doubles, monkeypatch
+):
+    original = window_tapes.build_segment_tape
+
+    def relabeled(*args, symbols=None, **kwargs):
+        # Solo la admisión del universo monta un tramo con todos los activos.
+        tape, report = original(*args, symbols=symbols, **kwargs)
+        if symbols is None:
+            tape = copy.copy(tape)
+            tape.domain = "synthetic"
+        return tape, report
+
+    monkeypatch.setattr(window_tapes, "build_segment_tape", relabeled)
+    learner = fixture.ScriptedLearner()
+    with pytest.raises(ValueError, match="universe-fold-000 no es una cinta real"):
+        fixture.run(base_a, tmp_path / "stage", learner)
+    assert learner.calls == []
+
+
+def test_a_synthetic_tape_on_disk_stops_the_stage_before_any_executor(
+    base_a, tmp_path, learning_doubles
+):
+    fixture.run(base_a, tmp_path / "stage", fixture.ScriptedLearner())
+    folder = tmp_path / "stage/tapes/US/US/gru/fold-002/train-fold-000"
+    real = read_tape(folder)
+    synthetic = MarketTape(
+        real.prices,
+        real.close_times,
+        real.assets,
+        real.scores,
+        domain="synthetic",
+        currency=real.currency,
+        partition=real.partition,
+        open_times=real.open_times,
+    )
+    shutil.rmtree(folder)
+    write_tape(synthetic, folder)
+    learner = fixture.ScriptedLearner()
+    with pytest.raises(ValueError, match="no es una cinta real"):
+        fixture.run(base_a, tmp_path / "stage", learner)
+    assert learner.calls == []
+
+
+def test_each_window_is_admitted_once_for_every_anchor_universe(
+    base_a, tmp_path, learning_doubles, monkeypatch
+):
+    # Con la ventana en expansión, el universo de cada ancla lee todas las ventanas previas.
+    # La admisión con todos los activos se monta una vez por ventana y recibo.
+    built = []
+    original = window_tapes.build_segment_tape
+
+    def counted(edition, window, values, **options):
+        if options.get("symbols") is None:
+            built.append(window.fold)
+        return original(edition, window, values, **options)
+
+    monkeypatch.setattr(window_tapes, "build_segment_tape", counted)
+    assert fixture.run(base_a, tmp_path / "stage", fixture.ScriptedLearner())["status"] == (
+        "completed"
+    )
+    assert sorted(built) == ["fold-000", "fold-001", "fold-002"]
+
+
+def chained(base, root):
+    """Configuración alterable que declara el predictor de la cadena."""
+    base = configured(base, root)
+    path = base.stage.parent / "rl-policies.json"
+    policies = json.loads(path.read_text())
+    policies["predictor"]["source"] = "posttraining_chain_v1"
+    atomic_json(path, policies)
+    return base
+
+
+def test_the_chain_predictor_needs_the_posttraining_output(base_a, tmp_path, learning_doubles):
+    base = chained(base_a, tmp_path)
+    learner = fixture.ScriptedLearner()
+    with pytest.raises(ValueError, match="salida del posentrenamiento"):
+        fixture.run(base, tmp_path / "stage", learner)
+    assert learner.calls == [] and not (tmp_path / "stage").exists()
+
+
+def test_every_tape_carries_the_predictions_of_the_confirmed_chain_state(
+    base_a, tmp_path, learning_doubles
+):
+    base = chained(base_a, tmp_path)
+    chain = fixture.publish_chain(base, tmp_path / "chain")
+    learner = fixture.ScriptedLearner()
+    summary = fixture.run(base, tmp_path / "stage", learner, chain_output=chain)
+    assert summary["status"] == "completed" and learner.calls
+    windows = sorted(p.name for p in (chain / "windows/US").iterdir())
+    expected = {
+        window: read_window_receipt(
+            read_manifest(chain / "windows/US" / window / "gru__chain/seed-42/US.json", 1024**2)[0]
+        ).sha256
+        for window in windows
+    }
+    universes = list((tmp_path / "stage/universes/US/US").glob("*.json"))
+    assert universes
+    for path in universes:
+        segments = json.loads(path.read_text())["identity"]["segments"]
+        # El universo se fija con las cintas de la cadena, nunca con las de la base.
+        assert segments == {window: expected[window] for window in segments}
+        assert all(published(base, w).sha256 != digest for w, digest in segments.items())
+
+
+def _chain_change(field, value):
+    def change(window, arm, selection, receipt):
+        if field == "labels_used_until":
+            # Recibo y selección coherentes entre sí: solo la maduración recalculada lo detecta.
+            receipt[field] += value
+            selection[field] += value
+            return
+        target = selection if field.startswith("selection.") else receipt
+        key = field.split(".", 1)[1]
+        if key == "labels_used_until":
+            target[key] += value
+        elif key == "selected.kind":
+            if window != "fold-000":
+                selection["selected"]["kind"] = value
+        elif key == "evaluation":
+            receipt["predictions"]["evaluation"]["sha256"] = value
+        elif key == "parent.sha256":
+            receipt["parent"]["sha256"] = value
+        elif key == "selected.receipt_sha256":
+            selection["selected"]["receipt_sha256"] = value
+            receipt["parent"]["sha256"] = value
+        else:
+            target[key] = value
+
+    return change
+
+
+CHAIN_TAMPERED = {
+    "other_window": (_chain_change("selection.window", "fold-999"), "ventana pedida"),
+    "other_seed": (_chain_change("selection.seed", 43), "ventana pedida"),
+    "other_kind": (_chain_change("selection.kind", "masked_campaign_job"), "ventana pedida"),
+    "base_with_parent": (_chain_change("selection.selected.kind", "base"), "ventana pedida"),
+    "unknown_state": (_chain_change("selection.selected.kind", "best_in_test"), "ventana pedida"),
+    "other_receipt": (_chain_change("selection.markets", {"US": "0" * 64}), "confirmó"),
+    "other_job_receipt": (
+        _chain_change("selection.selected.receipt_sha256", "d" * 64),
+        "estado elegido",
+    ),
+    "checkpoint_as_parent": (_chain_change("receipt.parent.sha256", "e" * 64), "estado elegido"),
+    "other_predictions": (_chain_change("receipt.evaluation", "f" * 64), "estado elegido"),
+    "earlier_label_limit": (_chain_change("labels_used_until", -1), "maduración real"),
+    "later_label_limit": (_chain_change("labels_used_until", 1), "maduración real"),
+    "receipt_label_limit": (_chain_change("receipt.labels_used_until", -1), "maduración real"),
+    "selection_label_limit": (_chain_change("selection.labels_used_until", 1), "maduración real"),
+}
+
+
+@pytest.mark.parametrize("name", sorted(CHAIN_TAMPERED))
+def test_a_chain_that_does_not_match_its_contract_stops_before_any_executor(
+    base_a, tmp_path, learning_doubles, name
+):
+    change, message = CHAIN_TAMPERED[name]
+    base = chained(base_a, tmp_path)
+    chain = fixture.publish_chain(base, tmp_path / "chain", change=change)
+    learner = fixture.ScriptedLearner()
+    with pytest.raises(ValueError, match=message):
+        fixture.run(base, tmp_path / "stage", learner, chain_output=chain)
+    assert learner.calls == []
+
+
+def test_a_window_without_its_selection_is_not_confirmed(base_a, tmp_path, learning_doubles):
+    base = chained(base_a, tmp_path)
+    chain = fixture.publish_chain(base, tmp_path / "chain")
+    (chain / "windows/US/fold-000/gru__chain/seed-42/selection.json").unlink()
+    learner = fixture.ScriptedLearner()
+    with pytest.raises(ValueError, match="no tiene confirmada su selección"):
+        fixture.run(base, tmp_path / "stage", learner, chain_output=chain)
+    assert learner.calls == []
+
+
+def test_the_declared_stage_feeds_real_tapes_with_the_chain_predictor(monkeypatch, tmp_path):
+    missing_binaries(monkeypatch, tmp_path)
+    checked = campaign_stage.check_stage(REPOSITORY["A"])
+    assert checked["data_policy"] == "real_edition_only"
+    assert checked["predictor_source"] == dict(
+        rule="posttraining_chain_v1", needs_chain_output=True
+    )
+    assert checked["edition_id"] == (
+        "1ac3727836462ce31c39b5438918bd6f3e0d359690c7bc79bfa87cd808c8e68c"
+    )

@@ -3,9 +3,13 @@
 Una política solo ve predicciones fuera de muestra. Por eso cada cinta se monta con el
 tramo de evaluación de una ventana del predictor y con el recibo de esa ventana, cuyo
 `labels_used_until` es anterior a la primera decisión del tramo. La política de la
-ventana k se ajusta con las evaluaciones de las `train_windows` ventanas anteriores a
-su validación, valida con la evaluación de la ventana k - 1 y evalúa la de la ventana k.
-Toda la información que usa la política termina antes de la primera decisión evaluada.
+ventana k se ajusta con las evaluaciones de las ventanas anteriores a su validación, valida
+con la evaluación de la ventana k - 1 y evalúa la de la ventana k. Con la regla en
+expansión usa todas esas evaluaciones, desde la primera ventana del protocolo y hasta un
+máximo declarado de las más recientes, y con la regla fija solo las `minimum` más
+recientes. La primera ventana de política es la primera con `minimum` evaluaciones
+anteriores a su validación, en las dos reglas. Toda la información que usa la política
+termina antes de la primera decisión evaluada.
 
 El universo de activos se fija con datos de ajuste y validación: los activos admitidos en
 todos esos tramos, con alguna predicción en la validación, ordenados por la mediana del
@@ -22,9 +26,15 @@ import pyarrow as pa
 from mars_titan.environments.walk_forward_receipt import WalkForwardWindow
 from mars_titan.evaluation import walk_forward_comparison as comparison
 
-from .reconstructed_tape import build_reconstructed_tape
+from .market import RECONSTRUCTED
+from .reconstructed_tape import SOURCE_KIND, build_reconstructed_tape
 
 ROLES = ("train", "validation", "evaluation")
+# Tramos de ajuste de una política: las evaluaciones fuera de muestra anteriores a su
+# validación, todas hasta `maximum` (las más recientes) o solo las `minimum` más recientes.
+EXPANDING = "expanding_prior_evaluations_v1"
+FIXED = "fixed_prior_evaluations_v1"
+TRAIN_RULES = (EXPANDING, FIXED)
 SEGMENT = "evaluation"
 UNIVERSE_RULE = "median_traded_value_in_validation_v1"
 # Motivo de los episodios de un predictor que no emitió filas del mercado en un tramo.
@@ -41,21 +51,42 @@ def _bounds(fold):
     return tuple(int(np.datetime64(day, "us").astype(np.int64)) for day in fold[SEGMENT])
 
 
+def train_rule(value):
+    """Regla de ajuste declarada: `(regla, mínimo, máximo)` de evaluaciones anteriores.
+
+    La regla en expansión toma todas las evaluaciones anteriores a la validación hasta
+    `maximum`, las más recientes. La fija toma siempre `minimum`, así que su máximo coincide
+    con el mínimo y solo ella lo admite.
+    """
+    _require(
+        isinstance(value, dict)
+        and set(value) == {"rule", "minimum", "maximum"}
+        and value["rule"] in TRAIN_RULES
+        and type(value["minimum"]) is int
+        and type(value["maximum"]) is int
+        and 1 <= value["minimum"] <= 12
+        and value["minimum"] <= value["maximum"]
+        and (value["maximum"] == value["minimum"]) == (value["rule"] == FIXED),
+        "La política declara su regla y entre 1 y 12 ventanas de ajuste como mínimo, con un "
+        "máximo que solo coincide con el mínimo en la regla fija",
+    )
+    return value["rule"], value["minimum"], value["maximum"]
+
+
 def policy_windows(folds, train_windows):
     """Ventanas de política con sus tramos de ajuste y validación, en orden.
 
-    `folds` son las ventanas del protocolo en orden. La primera ventana de política es
-    la primera con `train_windows` evaluaciones anteriores a su validación.
+    `folds` son las ventanas del protocolo en orden y `train_windows` declara la regla, el
+    mínimo y el máximo de evaluaciones de ajuste. La primera ventana de política es la
+    primera con `minimum` evaluaciones anteriores a su validación, y ninguna se ajusta con
+    más de `maximum`.
     """
-    _require(
-        type(train_windows) is int and 1 <= train_windows <= 12,
-        "La política necesita entre 1 y 12 ventanas de ajuste",
-    )
+    _, minimum, maximum = train_rule(train_windows)
     rows = []
-    for index in range(train_windows + 1, len(folds)):
+    for index in range(minimum + 1, len(folds)):
         row = dict(
             window=folds[index]["id"],
-            train=[fold["id"] for fold in folds[index - 1 - train_windows : index - 1]],
+            train=[fold["id"] for fold in folds[max(0, index - 1 - maximum) : index - 1]],
             validation=folds[index - 1]["id"],
         )
         check_order(row, {fold["id"]: fold for fold in folds})
@@ -126,6 +157,27 @@ def build_segment_tape(edition, window, values, *, market, role, lag, symbols=No
         segment=SEGMENT,
         symbols=symbols,
     )
+
+
+def require_real_tape(tape, edition_id, label):
+    """Exigir una cinta real de la edición verificada al empezar la etapa.
+
+    Una política de la campaña solo aprende, se selecciona y se evalúa sobre precios reales
+    reconstruidos: dominio `real`, origen en la edición sin ajustar, base reconstruida con
+    su contrato (que `MarketTape` comprueba al crearla) y la misma identidad de edición que
+    la etapa verificó y declaró. Una cinta sintética o de otra edición detiene el trabajo
+    antes de lanzar ningún ejecutor.
+    """
+    audit = tape.identity.get("audit") or {}
+    source = tape.identity.get("source") or {}
+    _require(
+        tape.domain == "real"
+        and source.get("kind") == SOURCE_KIND
+        and audit.get("price_basis") == RECONSTRUCTED
+        and audit.get("edition_id") == edition_id,
+        f"La cinta {label} no es una cinta real de la edición declarada",
+    )
+    return tape
 
 
 def admission(tape):

@@ -5,6 +5,7 @@ ventanas US que evalúan 2021, 2022 y 2023. Las puntuaciones son sintéticas y n
 de ningún modelo. Las políticas son guionizadas y ningún paso ajusta parámetros.
 """
 
+import copy
 import dataclasses
 import hashlib
 from pathlib import Path
@@ -17,6 +18,8 @@ from mars_titan.evaluation.splits import build_folds
 from mars_titan.simulation import campaign_stage, window_tapes
 from mars_titan.simulation.environment import FinancialEnv
 from mars_titan.simulation.evaluation import fixed_policy
+from mars_titan.simulation.market import MarketTape
+from mars_titan.simulation.reconstructed_tape import read_edition
 from tests.environments import walk_forward_fixture as receipts
 from tests.simulation import unadjusted_edition_fixture as editions
 from tests.simulation.unadjusted_edition_fixture import Asset
@@ -97,26 +100,53 @@ def tapes(root, assets, *, source=None, output="stage"):
     path = (
         edition(root / "edition", assets) if not (root / "edition").exists() else root / "edition"
     )
+    edition_id = read_edition(path)["edition_id"]
     return campaign_stage._Tapes(
-        POLICIES, source or source_for(assets), path, "edition", root / output, "parent"
+        POLICIES, source or source_for(assets), path, edition_id, root / output, "parent"
     )
+
+
+EXPANDING = dict(rule=window_tapes.EXPANDING, minimum=3, maximum=17)
+FIXED = dict(rule=window_tapes.FIXED, minimum=3, maximum=3)
 
 
 def test_policy_windows_use_earlier_evaluations_and_anchors_end_before_their_carries():
     folds = list(FOLDS.values())
-    rows = window_tapes.policy_windows(folds, 3)
-    assert rows[0] == dict(
+    rows = window_tapes.policy_windows(folds, EXPANDING)
+    first = dict(
         window="fold-004", train=["fold-000", "fold-001", "fold-002"], validation="fold-003"
     )
+    # La primera ventana no cambia: tiene exactamente el mínimo de evaluaciones previas.
+    assert rows[0] == window_tapes.policy_windows(folds, FIXED)[0] == first
     assert [row["window"] for row in rows] == [f"fold-{i:03d}" for i in range(4, 19)]
+    # Cada ventana se ajusta con todas las evaluaciones anteriores a su validación.
+    for index, row in enumerate(rows, start=4):
+        assert row["train"] == [f"fold-{i:03d}" for i in range(index - 1)]
+        assert row["validation"] == f"fold-{index - 1:03d}"
+    assert len(rows[-1]["train"]) == 17
+    fixed = window_tapes.policy_windows(folds, FIXED)
+    assert all(
+        row["train"] == expanded["train"][-3:] for row, expanded in zip(fixed, rows, strict=True)
+    )
     scheduled = window_tapes.policy_schedule(rows, 3, FOLDS)
     assert [row["anchor"] for row in scheduled[:4]] == ["fold-004"] * 3 + ["fold-007"]
     assert [row["trained"] for row in scheduled[:4]] == [True, False, False, True]
-    for bad in (0, 13, True):
+    # Con un máximo, las anclas tardías se ajustan con las evaluaciones más recientes.
+    capped = window_tapes.policy_windows(folds, dict(EXPANDING, maximum=5))
+    for row, expanded in zip(capped, rows, strict=True):
+        assert row == dict(expanded, train=expanded["train"][-5:])
+    assert [len(row["train"]) for row in capped] == [3, 4, 5, *[5] * 12]
+    bad_rules = [3, dict(EXPANDING, minimum=0), dict(EXPANDING, minimum=13)]
+    bad_rules += [dict(EXPANDING, minimum=True), dict(EXPANDING, rule="all_windows")]
+    bad_rules += [dict(EXPANDING, extra=1), dict(rule=window_tapes.EXPANDING, minimum=3)]
+    bad_rules += [dict(EXPANDING, maximum=2), dict(EXPANDING, maximum=16.0)]
+    # La regla fija no admite otro máximo y la expansión necesita margen sobre el mínimo.
+    bad_rules += [dict(FIXED, maximum=4), dict(EXPANDING, maximum=3)]
+    for bad in bad_rules:
         with pytest.raises(ValueError, match="ventanas de ajuste"):
             window_tapes.policy_windows(folds, bad)
     with pytest.raises(ValueError, match="ventanas suficientes"):
-        window_tapes.policy_windows(folds[:4], 3)
+        window_tapes.policy_windows(folds[:4], EXPANDING)
     # Una validación posterior a la evaluación, o un ajuste solapado, se rechaza.
     swapped = dict(rows[0], validation="fold-004", window="fold-003")
     with pytest.raises(ValueError, match="posterior a su evaluación"):
@@ -322,12 +352,17 @@ def test_the_universe_predictor_must_have_training_and_validation_predictions(tm
 class Base:
     """Campaña base mínima con el trabajo elegido de una ventana."""
 
-    def __init__(self, markets):
+    def __init__(self, markets, shift=0):
         self.record = dict(path="p.parquet", sha256="c" * 64, markets=markets)
+        self.shift = shift
 
     def selected(self, scope, window, predictor, seed):
         parent = dict(receipts.PARENT)
         return "job", dict(parent=parent, predictions=dict(evaluation=self.record))
+
+    def labels_used_until(self, scope, window, selected):
+        start = FOLDS[window]["evaluation"][0]
+        return receipts.microseconds(start) - 1 + self.shift
 
 
 def test_campaign_source_reports_a_market_without_rows_as_no_predictions(tmp_path):
@@ -344,6 +379,10 @@ def test_campaign_source_reports_a_market_without_rows_as_no_predictions(tmp_pat
     declared = Base({"US": dict(rows=10, sha256="d" * 64)})
     with pytest.raises(ValueError, match="no corresponde al predictor elegido"):
         campaign_stage.campaign_source(declared, tmp_path, 42)("US", "US", "fold-016", "other")
+    # La maduración que recalcula la campaña debe coincidir con la que declara el recibo.
+    later = Base({}, shift=1)
+    with pytest.raises(ValueError, match="maduración real"):
+        campaign_stage.campaign_source(later, tmp_path, 42)("US", "US", "fold-016", "other")
 
 
 def test_tapes_from_another_market_are_rejected(tmp_path):
@@ -438,3 +477,37 @@ def test_universe_is_saved_with_its_identity(tmp_path):
     assert record["assets"] == ["US/AAA", "US/BBB"]
     assert record["identity"]["rule"] == window_tapes.UNIVERSE_RULE
     assert list(record["identity"]["segments"]) == ["fold-016", "fold-017"]
+
+
+def test_policy_tapes_must_be_real_tapes_of_the_declared_edition(tmp_path):
+    stage = tapes(tmp_path, LIQUID)
+    receipt, values = stage.source(JOB, "fold-017", "parent")
+    tape, _ = window_tapes.build_segment_tape(
+        stage.edition, receipt, values, market="US", role="validation", lag=0
+    )
+    assert window_tapes.require_real_tape(tape, stage.edition_id, "validation") is tape
+    with pytest.raises(ValueError, match="no es una cinta real"):
+        window_tapes.require_real_tape(tape, "0" * 64, "validation")
+    synthetic = MarketTape(
+        tape.prices,
+        tape.close_times,
+        tape.assets,
+        tape.scores,
+        domain="synthetic",
+        currency=tape.currency,
+        partition=tape.partition,
+        open_times=tape.open_times,
+    )
+    with pytest.raises(ValueError, match="no es una cinta real"):
+        window_tapes.require_real_tape(synthetic, stage.edition_id, "validation")
+    # Con la identidad de la edición, el dominio sintético basta para rechazarla.
+    relabeled = copy.copy(tape)
+    relabeled.domain = "synthetic"
+    with pytest.raises(ValueError, match="no es una cinta real"):
+        window_tapes.require_real_tape(relabeled, stage.edition_id, "validation")
+    # Una cinta real que declarase otro origen o precios ajustados tampoco se admite.
+    for key, field, value in (("source", "kind", "episode_world"), ("audit", "price_basis", "x")):
+        forged = copy.copy(tape)
+        forged.identity = dict(tape.identity, **{key: dict(tape.identity[key], **{field: value})})
+        with pytest.raises(ValueError, match="no es una cinta real"):
+            window_tapes.require_real_tape(forged, stage.edition_id, "validation")

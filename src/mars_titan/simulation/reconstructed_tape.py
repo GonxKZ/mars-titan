@@ -43,6 +43,8 @@ from .market import CURRENCIES, RECONSTRUCTED, RECONSTRUCTED_CONTRACT, MarketTap
 from .portfolio import CorporateAction
 
 EDITION_KIND = "unadjusted_price_edition"
+# Origen declarado de toda cinta construida aquí, con precios reales de la edición.
+SOURCE_KIND = "unadjusted_edition_tape"
 MAX_FILE_BYTES = 64 * 1024**2
 # Una última sesión sin fila se valora con el último cierre negociado si la serie tiene
 # alguna fila posterior a la cinta. Si la serie termina dentro de la cinta haría falta un
@@ -380,7 +382,7 @@ def build_reconstructed_tape(
     )
     code = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
     source = dict(
-        kind="unadjusted_edition_tape",
+        kind=SOURCE_KIND,
         builder_sha256=code,
         final_session=FINAL_SESSION_RULE,
         segment=segment,
