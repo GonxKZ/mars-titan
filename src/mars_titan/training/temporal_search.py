@@ -22,7 +22,7 @@ from .checkpoints import StopRequest
 from .cohort_contract import input_identity
 from .experiment_resources import GpuLease
 from .learning_hold import require_learning_allowed
-from .reference_search import _configuration, run_search
+from .reference_search import DEFAULT_MAX_RUNS, _configuration, run_search
 from .selection import VALIDATION_PLATEAU
 from .temporal_contract import temporal_contracts, temporal_fold
 
@@ -200,8 +200,13 @@ def _inputs(config, views):
     per_fold = len(cases) + len(plan["models"]) * (
         len(plan["finalist_seeds"]) - 1 + 2 * len(plan["finalist_seeds"])
     )
-    if per_fold * len(records) > 512:
-        raise ValueError("La campaña temporal supera el presupuesto de 512 ejecuciones")
+    limit = plan.get("max_runs", DEFAULT_MAX_RUNS)
+    if per_fold * len(records) > limit:
+        raise ValueError(
+            f"La campaña temporal prevé {per_fold * len(records)} ejecuciones "
+            f"({per_fold} por ventana en {len(records)} ventanas) y supera el límite "
+            f"declarado de {limit}. Declara max_runs en el plan antes de ejecutar"
+        )
     identity = dict(
         config_sha256=config_hash,
         views_report_sha256=report_hash,

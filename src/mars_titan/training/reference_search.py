@@ -30,6 +30,11 @@ from .reference_run import (
 from .selection import FIXED_BUDGET, VALIDATION_PLATEAU, validate_selection
 from .temporal_contract import temporal_contracts
 
+# Límite histórico de una campaña temporal. Un plan de versión 4 puede declarar otro
+# con `max_runs`, acotado por MAX_DECLARED_RUNS, antes de ejecutar.
+DEFAULT_MAX_RUNS = 512
+MAX_DECLARED_RUNS = 4096
+
 
 class _Paused(Exception):
     """Interrupción entre casos o en una barrera confirmada del entrenador."""
@@ -72,8 +77,10 @@ def _configuration(path):
     if isinstance(plan, dict) and plan.get("schema_version") == 3:
         extra.add("minimum_epochs")
     # La versión 4 declara la lectura, la parada y la retención antes de ejecutar.
+    # Puede declarar además el límite de ejecuciones de la campaña temporal.
     if isinstance(plan, dict) and plan.get("schema_version") == 4:
         extra |= {"input_policy", "stopping", "prediction_retention"}
+        extra |= {"max_runs"} & set(plan)
     if (
         not isinstance(plan, dict)
         or set(plan) != keys | extra
@@ -122,6 +129,10 @@ def _configuration(path):
         or (masked_inputs(plan["input_policy"]) and plan["context_sessions"] != 64)
     ):
         raise ValueError("La versión 4 necesita política, parada y retención admitidas")
+    if "max_runs" in plan and (
+        type(plan["max_runs"]) is not int or not 1 <= plan["max_runs"] <= MAX_DECLARED_RUNS
+    ):
+        raise ValueError(f"El límite declarado debe ser un entero entre 1 y {MAX_DECLARED_RUNS}")
     if "transformer" in plan["models"] and (
         plan["schema_version"] != 4 or plan["batch_size"] > CompactPriceTransformer.max_batch
     ):
