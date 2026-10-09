@@ -138,6 +138,18 @@ LATER_STAGES = {
         issue=137,
         pending=[],
     ),
+    # Ablación de modalidades en inferencia (`run_masked_campaign.py ablation`). Vuelve a
+    # predecir la evaluación con el estado elegido de cada brazo, sin ajustar nada.
+    "modality_ablation": dict(
+        config="configs/evaluation/historical-masked-2000-comparison.json",
+        stages=dict(
+            A="configs/evaluation/historical-masked-ablation-stage-a.json",
+            B="configs/evaluation/historical-masked-ablation-stage-b.json",
+        ),
+        entry="mars_titan.training.modality_ablation_stage:run_stage",
+        issue=414,
+        pending=[],
+    ),
 }
 _FIELDS = {
     "schema_version",

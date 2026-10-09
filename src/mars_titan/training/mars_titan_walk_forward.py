@@ -568,7 +568,9 @@ def _carried_readout(state, target):
     target.load_state_dict({**state, "_extra_state": expected})
 
 
-def carry_mars_titan(anchor, anchor_view, view, output, *, device="cuda:0", stop=None):
+def carry_mars_titan(
+    anchor, anchor_view, view, output, *, device="cuda:0", stop=None, modality_ablation=None
+):
     """Predecir una ventana posterior con el padre y el lector elegidos en el ancla.
 
     Es la pieza de la variante B. No ajusta parámetros ni selección. Cada tramo trasladado
@@ -583,13 +585,29 @@ def carry_mars_titan(anchor, anchor_view, view, output, *, device="cuda:0", stop
         output,
         device=device,
         stop=stop,
+        modality_ablation=modality_ablation,
     )
 
 
-def carry_readout(family_of, anchor, anchor_view, view, output, *, device="cuda:0", stop=None):
-    """Traslado común: `family_of` reconstruye la familia desde el informe del ancla."""
+def carry_readout(
+    family_of,
+    anchor,
+    anchor_view,
+    view,
+    output,
+    *,
+    device="cuda:0",
+    stop=None,
+    modality_ablation=None,
+):
+    """Traslado común: `family_of` reconstruye la familia desde el informe del ancla.
+
+    Con `modality_ablation` predice solo la evaluación, también en la propia ventana del
+    ancla. El calentamiento y el tramo leen las mismas entradas ablacionadas, así que la
+    memoria rápida del padre y el banco episódico también ven la ausencia.
+    """
     require_learning_allowed("la predicción trasladada de un lector episódico")
-    from .carried_predictions import carried_window
+    from .carried_predictions import ablation_record, carried_window, predicted_partitions
 
     started = time.perf_counter()
     anchor, anchor_view, view, output = (Path(v) for v in (anchor, anchor_view, view, output))
@@ -626,15 +644,21 @@ def carry_readout(family_of, anchor, anchor_view, view, output, *, device="cuda:
     options = walk_forward_options(titans)
     readout_recipe = case_recipe(identity["recipe"], request["search_case"])
     anchor_manifest, _ = read_manifest(anchor_view, 64 * 1024**2)
-    dataset = CorpusDataset(view, input_policy=HISTORICAL_MASKED)
+    dataset = CorpusDataset(
+        view, input_policy=HISTORICAL_MASKED, modality_ablation=modality_ablation
+    )
     anchor_fold, fold, age = carried_window(
-        anchor_manifest, dataset.manifest, input_policy=HISTORICAL_MASKED
+        anchor_manifest,
+        dataset.manifest,
+        input_policy=HISTORICAL_MASKED,
+        same_window=modality_ablation is not None,
     )
     _check_view(dataset, view_protocol(view), fold)
     _new_destination(output, (*dataset.roots.values(), view.parent, anchor, parent))
     phases = window_phases(fold, options["warmup_months"])
-    sources = _sources(dataset, {name: phases[name] for name in CARRIED}, output / "indices")
-    specification = sources["calibration"].specification()
+    partitions = predicted_partitions(modality_ablation)
+    sources = _sources(dataset, {name: phases[name] for name in partitions}, output / "indices")
+    specification = sources[partitions[0]].specification()
     seed = request["seed"]
     predictor = _frozen_parent(
         titans, specification, seed, device, parent, parent_report, carried=True
@@ -665,7 +689,7 @@ def carry_readout(family_of, anchor, anchor_view, view, output, *, device="cuda:
         fold=fold["id"],
     )
     predictions = {}
-    for name in CARRIED:
+    for name in partitions:
         rows = PredictionRows(inference.quantiles)
         metrics = inference.evaluate(sources[name], stop=stop, rows=rows)
         tables = checked_tables(rows, metrics, dataset, name)
@@ -702,7 +726,7 @@ def carry_readout(family_of, anchor, anchor_view, view, output, *, device="cuda:
             fast_state="never_transferred_from_the_anchor_reset_at_each_pass",
             **({"write_scalers_sha256": extra["scalers"].fingerprint()} if extra else {}),
         ),
-        phases={name: asdict(phases[name]) for name in CARRIED},
+        phases={name: asdict(phases[name]) for name in partitions},
         indices={name: source.identity for name, source in sources.items()},
         device=device,
         code=_code(family),
@@ -711,6 +735,7 @@ def carry_readout(family_of, anchor, anchor_view, view, output, *, device="cuda:
         scientific_training_started=False,
         seconds=time.perf_counter() - started,
         finished_at_utc=datetime.now(UTC).isoformat(),
+        **ablation_record(modality_ablation),
     )
     atomic_json(output / "carry.json", receipt)
     return receipt

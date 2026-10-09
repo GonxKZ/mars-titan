@@ -6,6 +6,12 @@ de la misma edición y el mismo protocolo. No se ajustan pesos, normalizadores n
 selección. Antes de leer predicciones se comprueba que el ancla dejó de aprender
 (fin de su validación) antes de que empiece la calibración de la ventana trasladada.
 Cada ventana conserva sus propias filas y su purga por intervalo de etiqueta.
+
+Con `modality_ablation`, el mismo traslado vuelve a predecir solo la evaluación con una
+variante de `data.modality_ablation` en la lectura. Es la pieza de la ablación de
+modalidades: la ventana puede ser la propia ventana del ancla, cuyo estado se eligió con
+su validación, anterior a la calibración y a la evaluación. Sin el parámetro, el traslado
+no cambia.
 """
 
 import time
@@ -14,12 +20,27 @@ from pathlib import Path
 
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.input_policy import masked_inputs, policy_identity
+from mars_titan.data.modality_ablation import ablation_identity
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 
 from .temporal_contract import temporal_contracts
 
 # Tramos que necesita la comparación walk-forward: calibración común y evaluación.
 CARRIED_PARTITIONS = ("calibration", "evaluation")
+# Tramo de la ablación de modalidades. La calibración es la de la predicción original.
+ABLATED_PARTITIONS = ("evaluation",)
+
+
+def predicted_partitions(modality_ablation):
+    """Tramos que predice un traslado, con o sin ablación de modalidades."""
+    return CARRIED_PARTITIONS if modality_ablation is None else ABLATED_PARTITIONS
+
+
+def ablation_record(modality_ablation):
+    """Campo del recibo que identifica la ablación. Un traslado normal no lo declara."""
+    if modality_ablation is None:
+        return {}
+    return dict(modality_ablation=ablation_identity(modality_ablation))
 
 
 def _months(start, end):
@@ -27,11 +48,12 @@ def _months(start, end):
     return (last.year - first.year) * 12 + last.month - first.month
 
 
-def carried_window(anchor_manifest, manifest, *, input_policy):
+def carried_window(anchor_manifest, manifest, *, input_policy, same_window=False):
     """Validar que la ventana trasladada es posterior al ancla en la misma edición.
 
     Devuelve la ventana del ancla, la trasladada y los meses entre el final de la
-    información del ancla y el comienzo de la evaluación trasladada.
+    información del ancla y el comienzo de la evaluación trasladada. `same_window` admite
+    además la misma vista del ancla, que solo usa la ablación de modalidades.
     """
     anchors = temporal_contracts(anchor_manifest, input_policy=input_policy)
     targets = temporal_contracts(manifest, input_policy=input_policy)
@@ -43,10 +65,9 @@ def carried_window(anchor_manifest, manifest, *, input_policy):
     # La unión de mercados ya exige la misma ventana en los dos calendarios.
     anchor, target = (next(iter(anchors.values()))["fold"], next(iter(targets.values()))["fold"])
     # El ancla seleccionó su estado con etiquetas maduras antes del final de su validación.
-    if not (
-        anchor["evaluation"][0] < target["evaluation"][0]
-        and anchor["validation"][1] <= target["calibration"][0]
-    ):
+    later = anchor["evaluation"][0] < target["evaluation"][0]
+    same = same_window and anchor_manifest == manifest
+    if not ((later or same) and anchor["validation"][1] <= target["calibration"][0]):
         raise ValueError("La ventana trasladada no es posterior a la información del ancla")
     return anchor, target, _months(anchor["validation"][1], target["evaluation"][0])
 
@@ -77,7 +98,15 @@ def _receipt(output, record):
 
 
 def carry_reference(
-    anchor, anchor_manifest, manifest, output, *, batch_size, input_policy, stop=None
+    anchor,
+    anchor_manifest,
+    manifest,
+    output,
+    *,
+    batch_size,
+    input_policy,
+    stop=None,
+    modality_ablation=None,
 ):
     """Aplicar el estado seleccionado de una referencia neuronal a otra ventana."""
     import torch
@@ -113,9 +142,14 @@ def carry_reference(
     if any(identity.get(key) != value for key, value in current.items()):
         raise ValueError("El entorno o el código no coincide con el ancla")
     anchor_meta, _ = read_manifest(anchor_manifest, 8 * 1024**2)
-    dataset = configured_corpus(manifest, input_policy=input_policy)
+    dataset = configured_corpus(
+        manifest, input_policy=input_policy, modality_ablation=modality_ablation
+    )
     anchor_fold, fold, age = carried_window(
-        anchor_meta, dataset.manifest, input_policy=input_policy
+        anchor_meta,
+        dataset.manifest,
+        input_policy=input_policy,
+        same_window=modality_ablation is not None,
     )
     if dataset.context != identity["context"] or dataset.manifest["scope"] != report["scope"]:
         raise ValueError("La ventana trasladada no conserva el contexto ni el alcance del ancla")
@@ -138,7 +172,7 @@ def carry_reference(
     output.mkdir(parents=True)
     predictions = {}
     torch.cuda.reset_peak_memory_stats(0)
-    for partition in CARRIED_PARTITIONS:
+    for partition in predicted_partitions(modality_ablation):
         path = output / f"{partition}-predictions.parquet"
         metrics = _evaluate(
             model,
@@ -169,6 +203,7 @@ def carry_reference(
             seconds=time.perf_counter() - started,
             peak_vram_allocated_bytes=torch.cuda.max_memory_allocated(0),
             **policy_identity(input_policy),
+            **ablation_record(modality_ablation),
         ),
     )
 
@@ -194,7 +229,17 @@ def _tabular_model(anchor, report, kind):
 TABULAR_REPORTS = {"ridge": "ridge", "xgboost": "xgboost_external_cuda"}
 
 
-def carry_tabular(anchor, anchor_manifest, manifest, output, *, kind, batch_size, input_policy):
+def carry_tabular(
+    anchor,
+    anchor_manifest,
+    manifest,
+    output,
+    *,
+    kind,
+    batch_size,
+    input_policy,
+    modality_ablation=None,
+):
     """Aplicar el modelo Ridge o XGBoost seleccionado en el ancla a otra ventana."""
     import numpy as np
 
@@ -217,9 +262,14 @@ def carry_tabular(anchor, anchor_manifest, manifest, output, *, kind, batch_size
     ):
         raise ValueError("El ancla no es un modelo tabular confirmado de la misma política")
     anchor_meta, _ = read_manifest(anchor_manifest, 8 * 1024**2)
-    dataset = CorpusDataset(manifest, input_policy=input_policy)
+    dataset = CorpusDataset(
+        manifest, input_policy=input_policy, modality_ablation=modality_ablation
+    )
     anchor_fold, fold, age = carried_window(
-        anchor_meta, dataset.manifest, input_policy=input_policy
+        anchor_meta,
+        dataset.manifest,
+        input_policy=input_policy,
+        same_window=modality_ablation is not None,
     )
     output = _destination(output, dataset.roots.values())
     masked = masked_inputs(input_policy)
@@ -230,7 +280,7 @@ def carry_tabular(anchor, anchor_manifest, manifest, output, *, kind, batch_size
     dtype = np.float64 if kind == "ridge" else np.float32
     output.mkdir(parents=True)
     predictions = {}
-    for partition in CARRIED_PARTITIONS:
+    for partition in predicted_partitions(modality_ablation):
         path = output / f"{partition}-predictions.parquet"
         metrics = _predict(
             model, None, dataset, partition, batch_size, path, dtype=dtype, presence=masked
@@ -254,5 +304,6 @@ def carry_tabular(anchor, anchor_manifest, manifest, output, *, kind, batch_size
             predictions=predictions,
             seconds=time.perf_counter() - started,
             **policy_identity(input_policy),
+            **ablation_record(modality_ablation),
         ),
     )

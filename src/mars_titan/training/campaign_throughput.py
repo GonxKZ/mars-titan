@@ -24,6 +24,10 @@ financiero y la red de las políticas por lotes, sin pasos de optimizador, y añ
 variante una estimación orientativa de esa etapa por nivel, ámbito, brazo y predictor,
 separada de las horas de GPU.
 
+Con las etapas de ablación de modalidades no se mide nada más. Cada predicción
+enmascarada recorre la evaluación de su ventana, con el calentamiento en las familias
+cronológicas, al caudal de inferencia ya medido de su brazo. Es otra estimación separada.
+
 Ridge y XGBoost no se miden: medir una ronda o una solución ya sería ajustarlos. Su
 coste queda como no medido en el informe.
 """
@@ -59,6 +63,7 @@ from .campaign_plan import (
 TRAINING_PARTITIONS = ("validation", "calibration", "evaluation", "train")
 POSTTRAINING = "posttraining_adapter_matrix"
 POLICY_STAGE = "rl_policy_comparison"
+ABLATION_STAGE = "modality_ablation"
 NOT_MEASURED = "not_measured"
 OUT_OF_MEMORY = "out_of_memory"
 # Opciones de memoria comparadas con la misma medida. Se mide además la de la receta.
@@ -292,6 +297,42 @@ def _posttraining_hours(stage, counts, rates):
     return dict(_hours(jobs, seconds), parent_caches=len(first))
 
 
+def _ablation_hours(campaign, stage, counts, rates):
+    """Horas orientativas de la ablación de modalidades, que no ajusta nada.
+
+    Cada trabajo predice una vez la evaluación de su ventana con el estado elegido. Las
+    familias cronológicas recorren además el calentamiento de esa evaluación. Se usa la
+    inferencia más lenta medida del brazo. Tabulares y familias sin medir quedan sin estimar.
+    """
+    from .modality_ablation_stage import plan_stage
+
+    _require(
+        stage["campaign"]["path"] == campaign["path"],
+        "La etapa de ablación no parte de esta campaña",
+    )
+    rows = {
+        family: _chronological_rows(campaign, family, counts)
+        for family in CHRONOLOGICAL
+        if family in rates
+    }
+    jobs, missing = [], set()
+    for job in plan_stage(stage):
+        if job["family"] in rows or (job["family"] == NEURAL and NEURAL in rates):
+            # Una predicción enmascarada nunca es un ajuste.
+            jobs.append(dict(job, kind="ablation"))
+        else:
+            missing.add(job["arm"])
+
+    def seconds(job):
+        if job["family"] == NEURAL:
+            inference = _slowest(rates[NEURAL][job["arm"]].values())["inference"]
+            return counts[job["scope"]][job["window"]]["evaluation"] / inference
+        inference = rates[job["family"]][job["arm"]]["inference"]
+        return rows[job["family"]][job["scope"]][job["window"]]["evaluation"] / inference
+
+    return dict(_hours(jobs, seconds), without_estimate=sorted(missing))
+
+
 def _totals(families):
     """Horas de GPU con las opciones declaradas y con las más rápidas que caben en memoria."""
     declared, fastest, missing = 0.0, 0.0, []
@@ -312,13 +353,14 @@ def _totals(families):
     return dict(declared_options=declared, fastest_options=fastest, without_estimate=missing)
 
 
-def estimate_hours(campaign, counts, rates, *, stage=None, policy_stage=None):
+def estimate_hours(campaign, counts, rates, *, stage=None, policy_stage=None, ablation_stage=None):
     """Horas previstas por familia, opción, ámbito y brazo de una variante.
 
     `counts` asigna a cada ámbito y ventana sus filas por tramo y `rates` a cada familia
     medida sus caudales. Las familias declaradas sin medir y los tabulares quedan como no
     medidos. Con `stage`, añade la etapa de la matriz de adaptadores de esa variante. Con
-    `policy_stage`, añade aparte la estimación orientativa de la etapa de políticas.
+    `policy_stage`, añade aparte la estimación orientativa de la etapa de políticas y con
+    `ablation_stage`, la de la ablación de modalidades.
     """
     epochs = campaign["rule"]["max_epochs"]
     jobs = plan_campaign(campaign)
@@ -378,6 +420,8 @@ def estimate_hours(campaign, counts, rates, *, stage=None, policy_stage=None):
             if POLICY_STAGE in rates
             else dict(status=NOT_MEASURED)
         )
+    if ablation_stage is not None:
+        extra[ABLATION_STAGE] = _ablation_hours(campaign, ablation_stage, counts, rates)
     return dict(
         variant=campaign["variant"],
         retrain_every_months=campaign["retrain_every_months"],
@@ -1274,6 +1318,7 @@ def measure_campaigns(
     *,
     stages=(),
     rl_stages=(),
+    ablation_stages=(),
     candidate=None,
     extensions=None,
     work=None,
@@ -1284,7 +1329,8 @@ def measure_campaigns(
 
     Mide las referencias neuronales y cada familia cronológica que la campaña declara
     (Titans-MAC, GRU candidata, MARS-TITAN y CM-v1), la matriz de adaptadores si se pasan
-    sus etapas y el entorno y la red de las políticas si se pasan `rl_stages`. `candidate`
+    sus etapas y el entorno y la red de las políticas si se pasan `rl_stages`. Las etapas de
+    `ablation_stages` solo se estiman con los caudales ya medidos. `candidate`
     añade solo la GRU candidata y `extensions`, la declaración preparada de
     `campaign_extensions` con sus tres familias y los límites de sus etapas de políticas.
     `work` guarda los índices de la primera vista y `output`, el informe.
@@ -1293,6 +1339,7 @@ def measure_campaigns(
     from mars_titan.posttraining.campaign_stage import load_stage
     from mars_titan.simulation import policy_plan, policy_throughput
 
+    from . import modality_ablation_stage
     from .experiment_resources import GpuLease
 
     settings = SETTINGS | settings
@@ -1337,6 +1384,12 @@ def measure_campaigns(
         and len({stage["policies"]["sha256"] for stage in policies}) <= 1,
         "Cada etapa de políticas parte de una campaña medida, con las mismas políticas",
     )
+    ablations = [modality_ablation_stage.load_stage(path) for path in ablation_stages]
+    by_ablation = {stage["campaign"]["path"]: stage for stage in ablations}
+    _require(
+        len(by_ablation) == len(ablations) and set(by_ablation) <= {c["path"] for c in campaigns},
+        "Cada etapa de ablación parte de una campaña medida distinta",
+    )
     if prepared is not None:
         # Con la declaración preparada, la etapa resuelve sus predictores en la campaña ampliada.
         measured = {c["path"]: c for c in campaigns}
@@ -1379,6 +1432,7 @@ def measure_campaigns(
             rates,
             stage=by_campaign.get(campaign["path"]),
             policy_stage=by_policies.get(campaign["path"]),
+            ablation_stage=by_ablation.get(campaign["path"]),
         )
         for campaign in campaigns
     ]
@@ -1415,6 +1469,7 @@ def main(argv=None):
     parser.add_argument("--first-view", type=Path, required=True)
     parser.add_argument("--stage", type=Path, action="append", default=[])
     parser.add_argument("--rl-stage", type=Path, action="append", default=[])
+    parser.add_argument("--ablation-stage", type=Path, action="append", default=[])
     parser.add_argument("--candidate-recipe", type=Path)
     parser.add_argument("--candidate-variant")
     parser.add_argument("--extensions", type=Path)
@@ -1436,6 +1491,7 @@ def main(argv=None):
         args.first_view,
         stages=args.stage,
         rl_stages=args.rl_stage,
+        ablation_stages=args.ablation_stage,
         candidate=candidate,
         extensions=args.extensions,
         work=args.work,

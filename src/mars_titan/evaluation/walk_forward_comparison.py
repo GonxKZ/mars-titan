@@ -19,6 +19,12 @@ La versión 2 de la configuración declara además los estratos por presencia de
 noticias y fundamentales (``modality_strata``), un análisis secundario que no
 cambia ninguna salida de la versión 1. Su presencia sale de la propia vista de
 cada ventana y debe cubrir exactamente las filas evaluadas por los brazos.
+
+La versión 3 añade la ablación de modalidades en inferencia (``modality_ablation``),
+otro análisis secundario. Sus predicciones enmascaradas llegan en un manifiesto propio
+de la etapa de ablación y se comparan con las originales en las mismas filas, con el
+calibrador ya ajustado. Sin ese manifiesto, la sección queda pendiente y el resto del
+informe no cambia.
 """
 
 import argparse
@@ -39,7 +45,7 @@ from mars_titan.calibration import conformal_quantiles as cqr
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.input_policy import masked_inputs, policy_identity
 from mars_titan.data.storage import atomic_json, outside_source, sha256
-from mars_titan.evaluation import modality_strata
+from mars_titan.evaluation import modality_ablation, modality_strata
 from mars_titan.evaluation.forecast_panel import WEIGHTINGS, ForecastPanel, SessionSeries
 from mars_titan.evaluation.forecast_scores import COVERAGE_ERROR, SessionScores, score_sessions
 from mars_titan.evaluation.paired_comparisons import compare_series, delta, interaction, level
@@ -84,6 +90,9 @@ _CONFIG_FIELDS = {
     "comparison",
 }
 STRATA_FIELD = "modality_strata"
+ABLATION_FIELD = "modality_ablation"
+# Secciones secundarias que añade cada versión de la configuración.
+SECTIONS = {1: set(), 2: {STRATA_FIELD}, 3: {STRATA_FIELD, ABLATION_FIELD}}
 _METRIC_FIELDS = {"primary", "market_weighting", "rank_ic_min_assets", "quantile_head"}
 _CALIBRATION_FIELDS = {"method", "partition", "nominals", "groups", "min_rows", "order_rule"}
 _COMPARISON_FIELDS = {
@@ -221,8 +230,8 @@ def load_config(path):
     _require(
         isinstance(config, dict)
         and type(version) is int
-        and version in (1, 2)
-        and set(config) == _CONFIG_FIELDS | ({STRATA_FIELD} if version == 2 else set())
+        and version in SECTIONS
+        and set(config) == _CONFIG_FIELDS | SECTIONS[version]
         and config["kind"] == CONFIG_KIND
         and config["status"] == DECLARED
         and config["partition"] == "evaluation"
@@ -293,12 +302,14 @@ def load_config(path):
         "Las comparaciones deben empezar por el MAE y usar métricas por sesión",
     )
     families = _families(comparison["families"], arms)
-    if version == 2:
+    if version >= 2:
         _require(
             masked_inputs(config["input_policy"]),
             "Los estratos de presencia necesitan la política de entradas con máscaras",
         )
         modality_strata.declaration(config[STRATA_FIELD], SERIES_METRICS)
+    if version >= 3:
+        modality_ablation.declaration(config[ABLATION_FIELD])
     resolved = {
         scope: _protocols(path.parent, scope, declared) for scope, declared in scopes.items()
     }
@@ -526,13 +537,13 @@ def _calibrated(panel, record):
     return dataclasses.replace(panel, quantiles=quantiles), adjusted, None
 
 
-def _presence_codes(sources, config, window_id, reference):
-    """Estrato de cada fila evaluada, en el orden canónico del panel de referencia.
+def _presence_bits(sources, config, window_id, reference):
+    """Presencia de cada fila evaluada, en el orden canónico del panel de referencia.
 
     La presencia se lee de la vista de la ventana y debe cubrir las mismas filas con
     los mismos objetivos que los brazos, con la misma comprobación que entre brazos.
-    Si alguna fila no tiene precios, gráficos y macro, los estratos declarados no
-    describen la ventana: no hay códigos y el registro cuenta esas filas.
+    El registro cuenta las filas sin precios, gráficos o macro. Con alguna, los estratos
+    declarados no describen la ventana.
     """
     table, bits = modality_strata.view_presence(
         sources["view_paths"][window_id], config["input_policy"], sources["views"][window_id]
@@ -549,23 +560,108 @@ def _presence_codes(sources, config, window_id, reference):
     )
     _same_rows(reference, panel, label)
     record = dict(rows=table.num_rows, incomplete=modality_strata.incomplete_rows(bits))
-    if record["incomplete"]:
-        return None, record
     order = pc.index_in(reference[1].row_id, value_set=_row_id(table)).to_numpy()
-    return modality_strata.codes(bits)[order], record
+    return bits[order], record
 
 
-def _score_window(sources, config, window_id):
+def _ablation_sources(path, config, sources):
+    """Validar el manifiesto de predicciones enmascaradas frente a las fuentes principales.
+
+    Cada variante declara, para cada brazo con predicciones, semilla y ventana, la
+    evaluación que predijo el estado elegido con la modalidad ausente. Las vistas y la
+    configuración deben ser las de la comparación.
+    """
+    path = Path(path)
+    document, digest = read_manifest(path, 16 * 1024**2)
+    fields = {"schema_version", "kind", "scope", "input_policy", "comparison_sha256", "windows"}
+    _require(
+        isinstance(document, dict)
+        and set(document) == fields | {"variants"}
+        and document["schema_version"] == 1
+        and document["kind"] == modality_ablation.SOURCES_KIND
+        and document["scope"] == sources["scope"],
+        "Las fuentes de la ablación no cumplen su contrato",
+    )
+    _require(
+        document["input_policy"] == config["input_policy"]
+        and document["comparison_sha256"] == config["sha256"]
+        and document["windows"] == sources["views"],
+        "Las fuentes de la ablación declaran otra política, comparación o vista",
+    )
+    variants = document["variants"]
+    _require(
+        isinstance(variants, dict) and set(variants) == set(modality_ablation.VARIANTS),
+        "Las fuentes de la ablación no contienen exactamente las variantes declaradas",
+    )
+    declared = {name: arm for name, arm in config["arms"].items() if arm["output"] != ZERO_CONTROL}
+    files = {}
+    for variant, arms in variants.items():
+        _require(
+            isinstance(arms, dict) and set(arms) == set(declared),
+            f"{variant} no contiene exactamente los brazos declarados con predicciones",
+        )
+        for name, arm in declared.items():
+            seeds = arms[name]
+            _require(
+                isinstance(seeds, dict) and set(seeds) == {str(seed) for seed in arm["seeds"]},
+                f"{variant} no contiene exactamente las semillas de {name}",
+            )
+            for seed, entries in seeds.items():
+                where = f"{variant} de {name} semilla {seed}"
+                _require(
+                    isinstance(entries, dict) and set(entries) == set(sources["windows"]),
+                    f"{where} no cubre exactamente las ventanas declaradas",
+                )
+                for window_id, entry in entries.items():
+                    _require(
+                        isinstance(entry, dict) and set(entry) == {"evaluation"},
+                        f"{where} en {window_id} solo declara su evaluación",
+                    )
+                    files[variant, name, int(seed), window_id] = _file(
+                        path.parent, entry["evaluation"], f"{where} en {window_id}"
+                    )
+    return dict(sha256=digest, files=files)
+
+
+def _masked_scores(ablation, sources, window_id, arm, seed, original, calibrated, record, context):
+    """Puntuaciones de las variantes de un brazo y semilla frente a su predicción original.
+
+    Las predicciones enmascaradas pasan las mismas comprobaciones de tramo y filas que las
+    originales y se corrigen con el mismo calibrador, sin volver a ajustarlo.
+    """
+    name, output, columns, bits, reference, minimum = context
+    result = {}
+    for variant in modality_ablation.VARIANTS:
+        label = f"{name} semilla {seed} en {window_id} con {variant}"
+        table = _read_predictions(ablation["files"][variant, name, seed, window_id], columns)
+        window = sources["windows"][window_id]
+        masked = _panel(table, window, "evaluation", sources, label, output=output)
+        _same_rows(reference, masked, label)
+        adjusted = None if record is None else _calibrated(masked, record)[0]
+        result[variant] = modality_ablation.score_pair(
+            original,
+            masked,
+            modality_ablation.affected_rows(bits, variant),
+            rank_ic_min_assets=minimum,
+            calibrated=tuple(
+                None if panel is None else panel.quantiles for panel in (calibrated, adjusted)
+            ),
+        )
+    return result
+
+
+def _score_window(sources, config, window_id, ablation=None):
     """Puntuar todos los brazos de una ventana. Cada calibrador se fija antes de evaluar.
 
     Devuelve las puntuaciones por brazo y semilla y, si se declaran estratos, el registro
-    de presencia de la ventana.
+    de presencia de la ventana. Con `ablation`, cada brazo con predicciones añade las
+    puntuaciones de sus variantes enmascaradas.
     """
     window = sources["windows"][window_id]
     minimum = config["metrics"]["rank_ic_min_assets"]
     calibration = config["calibration"]
     results, reference, calibration_reference = {}, None, None
-    row_codes, presence = None, None
+    row_codes, presence, bits = None, None, None
     for name, arm in config["arms"].items():
         quantile = arm["output"] == QUANTILE_HEAD
         columns = COLUMNS + (QUANTILE_COLUMNS if quantile else ())
@@ -594,7 +690,9 @@ def _score_window(sources, config, window_id):
                 reference = (label, panel)
                 targets = table.select(["asset_id", "market", "prediction_at", "target"])
                 if STRATA_FIELD in config:
-                    row_codes, presence = _presence_codes(sources, config, window_id, reference)
+                    bits, presence = _presence_bits(sources, config, window_id, reference)
+                    if not presence["incomplete"]:
+                        row_codes = modality_strata.codes(bits)
             _same_rows(reference, panel, label)
             entry["raw"] = score_sessions(panel, rank_ic_min_assets=minimum)
             calibrated = None
@@ -610,6 +708,12 @@ def _score_window(sources, config, window_id):
                     row_codes,
                     rank_ic_min_assets=minimum,
                     calibrated=None if calibrated is None else calibrated.quantiles,
+                )
+            if ablation is not None:
+                record = entry["calibrator"]["record"] if quantile else None
+                context = (name, arm["output"], columns, bits, reference, minimum)
+                entry["ablation"] = _masked_scores(
+                    ablation, sources, window_id, name, seed, panel, calibrated, record, context
                 )
             results[name, seed] = entry
     for name, arm in config["arms"].items():
@@ -775,35 +879,13 @@ def _arm_summary(windows, views, calibrated_views, missing, weighting):
     )
 
 
-def _stratum_views(scores, markets, names):
-    """Ámbito y mercados de un estrato. Un mercado sin sesiones del estrato queda vacío."""
-    if scores is None:
-        return dict.fromkeys(names)
-    views = {names[0]: scores}
-    if len(markets) > 1:
-        for code, market in enumerate(scores.markets):
-            mask = scores.session_market == code
-            views[market] = scores.select_sessions(mask, label=market) if mask.any() else None
-    return views
-
-
-def _cell(scores, thresholds, market=None):
-    """Filas, sesiones y estimabilidad del estrato en el ámbito o en un mercado."""
-    rows, sessions = 0, 0
-    if scores is not None and market is None:
-        rows, sessions = int(scores.samples.sum()), len(scores.samples)
-    elif scores is not None:
-        mask = scores.session_market == scores.markets.index(market)
-        rows, sessions = int(scores.samples[mask].sum()), int(mask.sum())
-    estimable, reason = modality_strata.estimability(rows, sessions, **thresholds)
-    return dict(rows=rows, sessions=sessions, estimable=estimable, reason=reason)
-
-
 def _stratum_arm(config, per_window, key, stratum, markets, names):
     """Vistas en bruto y calibradas de un brazo y semilla en un estrato y sus partes."""
     parts = [results[key]["strata"][stratum] for results in per_window.values()]
     raw = [part["raw"] for part in parts if part["raw"] is not None]
-    views = _stratum_views(SessionScores.concatenate(raw) if raw else None, markets, names)
+    views = modality_strata.subset_views(
+        SessionScores.concatenate(raw) if raw else None, markets, names
+    )
     calibrated = None
     # Sin calibrador en alguna ventana, el estrato tampoco tiene cobertura calibrada.
     if config["arms"][key[0]]["output"] == QUANTILE_HEAD and all(
@@ -811,7 +893,7 @@ def _stratum_arm(config, per_window, key, stratum, markets, names):
     ):
         adjusted = [part["calibrated"] for part in parts if part["calibrated"] is not None]
         joined = SessionScores.concatenate(adjusted) if adjusted else None
-        calibrated = _stratum_views(joined, markets, names)
+        calibrated = modality_strata.subset_views(joined, markets, names)
     return views, calibrated, parts
 
 
@@ -893,10 +975,12 @@ def _strata_report(config, scored, overall, markets):
         first_views, _, first_parts = by_key[keys[0]]
         whole = {}
         for view in names:
-            cell = _cell(first_views[view], thresholds)
+            cell = modality_strata.cell(first_views[view], thresholds)
             whole[view] = dict(cell, row_share=cell["rows"] / int(reference[view].samples.sum()))
         windows = {
-            window: {market: _cell(part["raw"], thresholds, market) for market in markets}
+            window: {
+                market: modality_strata.cell(part["raw"], thresholds, market) for market in markets
+            }
             for window, part in zip(per_window, first_parts, strict=True)
         }
         population[stratum] = dict(pattern=pattern, overall=whole, windows=windows)
@@ -948,13 +1032,23 @@ def _strata_report(config, scored, overall, markets):
     )
 
 
-def evaluate_walk_forward(config_path, sources_path, scope):
-    """Calcular el informe y la tabla por sesión de un ámbito sin escribir nada."""
+def evaluate_walk_forward(config_path, sources_path, scope, *, ablation_sources=None):
+    """Calcular el informe y la tabla por sesión de un ámbito sin escribir nada.
+
+    `ablation_sources` es el manifiesto de la etapa de ablación de modalidades. Solo se
+    admite si la configuración declara la ablación.
+    """
     started = time.perf_counter()
     config = load_config(config_path)
     sources = load_sources(sources_path, config, scope)
     weighting, markets = config["metrics"]["market_weighting"], sources["markets"]
-    scored = {window: _score_window(sources, config, window) for window in sources["windows"]}
+    ablation = None
+    if ablation_sources is not None:
+        _require(ABLATION_FIELD in config, "La configuración no declara la ablación de modalidades")
+        ablation = _ablation_sources(ablation_sources, config, sources)
+    scored = {
+        window: _score_window(sources, config, window, ablation) for window in sources["windows"]
+    }
     per_window = {window: results for window, (results, _) in scored.items()}
     overall, calibrated, arms, tables = {}, {}, {}, []
     for arm, seed in per_window[next(iter(per_window))]:
@@ -1032,18 +1126,44 @@ def evaluate_walk_forward(config_path, sources_path, scope):
         report[STRATA_FIELD] = strata
         for name in ("evaluation/modality_strata.py", "training/corpus_inputs.py"):
             report["analysis_source_sha256"][name] = sha256(Path(__file__).parents[1] / name)
+    if ABLATION_FIELD in config:
+        report[ABLATION_FIELD] = (
+            modality_ablation.pending(config)
+            if ablation is None
+            else modality_ablation.report(
+                config,
+                {
+                    window: {
+                        key: entry["ablation"]
+                        for key, entry in results.items()
+                        if key[1] is not None
+                    }
+                    for window, results in per_window.items()
+                },
+                markets,
+                names,
+                sources_sha256=ablation["sha256"],
+            )
+        )
+        for name in ("evaluation/modality_ablation.py", "data/modality_ablation.py"):
+            report["analysis_source_sha256"][name] = sha256(Path(__file__).parents[1] / name)
     return report, pa.concat_tables(tables, promote_options="default")
 
 
-def write_walk_forward(config_path, sources_path, scope, output):
+def write_walk_forward(config_path, sources_path, scope, output, *, ablation_sources=None):
     """Publicar el informe y las sesiones en un directorio nuevo fuera de las fuentes."""
     output = Path(output)
     safe_destination(output)
     _require(not output.exists(), "La salida debe ser nueva")
-    for source in (Path(config_path).parent, Path(sources_path).parent):
+    folders = [Path(config_path).parent, Path(sources_path).parent]
+    if ablation_sources is not None:
+        folders.append(Path(ablation_sources).parent)
+    for source in folders:
         outside_source(source, output)
         outside_source(output, source)
-    report, sessions = evaluate_walk_forward(config_path, sources_path, scope)
+    report, sessions = evaluate_walk_forward(
+        config_path, sources_path, scope, ablation_sources=ablation_sources
+    )
     json.dumps(report, allow_nan=False)
     output.mkdir(parents=True)
     pq.write_table(sessions, output / "sessions.parquet", compression="zstd")
@@ -1058,8 +1178,11 @@ def main(argv=None):
     parser.add_argument("--sources", type=Path, required=True)
     parser.add_argument("--scope", choices=tuple(SCOPES), required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--ablation-sources", type=Path)
     args = parser.parse_args(argv)
-    report = write_walk_forward(args.config, args.sources, args.scope, args.output)
+    report = write_walk_forward(
+        args.config, args.sources, args.scope, args.output, ablation_sources=args.ablation_sources
+    )
     windows = len(report["windows"])
     print(f"Comparados {len(report['arms'])} brazos en {windows} ventanas. Reserva final cerrada.")
     return 0

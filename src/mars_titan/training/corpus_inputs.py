@@ -18,6 +18,7 @@ from mars_titan.data.input_policy import (
     masked_inputs,
     validate_historical_vectors,
 )
+from mars_titan.data.modality_ablation import ablate_samples, ablated_modalities
 from mars_titan.data.storage import sha256
 
 from .cohort_contract import cohort_identity, representation_identity, validate_cohort_rows
@@ -193,7 +194,12 @@ def _price_contexts(prices, ends, context):
 
 
 class CorpusDataset:
-    """Validar una edición y reutilizar sus huellas mientras no cambien los archivos."""
+    """Validar una edición y reutilizar sus huellas mientras no cambien los archivos.
+
+    `modality_ablation` nombra una variante de `data.modality_ablation`. Solo existe con la
+    edición con máscaras: las modalidades de la variante se leen como una ausencia real en
+    todas las filas. Sin ella, la lectura no cambia.
+    """
 
     def __init__(
         self,
@@ -202,6 +208,7 @@ class CorpusDataset:
         cache_bytes: int = 1024**3,
         cache_sample_tables: bool = False,
         input_policy: str = STRICT_INPUTS,
+        modality_ablation: str | None = None,
     ):
         if type(cache_bytes) is not int or not 0 <= cache_bytes <= 4 * 1024**3:
             raise ValueError("La caché de entrada debe estar entre cero y cuatro GiB")
@@ -218,6 +225,11 @@ class CorpusDataset:
         self.manifest, self.identity = read_manifest(self.path, 8 * 1024**2)
         meta = self.manifest
         self.masked = masked_inputs(input_policy)
+        if modality_ablation is not None:
+            if not self.masked:
+                raise ValueError("La ablación de modalidades necesita la edición con máscaras")
+            ablated_modalities(modality_ablation)
+        self.modality_ablation = modality_ablation
         self.cohort = cohort_identity(meta, input_policy=input_policy)
         from .temporal_contract import temporal_contracts
 
@@ -536,6 +548,13 @@ class CorpusDataset:
         )
         if self.cache_sample_tables and cache_miss:
             self._remember(cache_key, signature, table)
+        if self.modality_ablation is not None:
+            # La lectura original ya pasó sus comprobaciones. La tabla ablacionada vuelve a
+            # pasarlas igual que una muestra con la modalidad ausente.
+            table = ablate_samples(table, self.modality_ablation)
+            vectors = _vectors(table, historical=True)
+            presence = _presence(table, vectors, self.manifest["representation"])
+            availability, availability_valid = _availability(table, presence=presence)
         return table, timestamps, ends, vectors, presence, availability, availability_valid
 
     def _blocks(self, partition, epoch, seed, cursor):

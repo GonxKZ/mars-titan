@@ -1,5 +1,5 @@
 {
-  "schema_version": 2,
+  "schema_version": 3,
   "kind": "walk_forward_comparison",
   "name": "historical-masked-2000",
   "status": "declared_before_evaluation",
@@ -375,5 +375,38 @@
     "min_rows": 1000,
     "min_sessions": 50,
     "multiplicity": "bonferroni_over_strata_and_views_with_max_t_within_family"
+  },
+  "modality_ablation": {
+    "status": "secondary_descriptive",
+    "declared_at": "2026-10-09",
+    "use": "description_only_not_for_model_selection_or_primary_conclusion",
+    "variants": {
+      "mask_news": [
+        "news"
+      ],
+      "mask_fundamentals": [
+        "fundamentals"
+      ],
+      "mask_news_and_fundamentals": [
+        "news",
+        "fundamentals"
+      ]
+    },
+    "masking": "mask_contract_v1_presence_false_missing_fill_null_availability",
+    "missing_reason": "modality_ablation",
+    "state": "selected_state_of_each_arm_seed_and_window_without_refitting",
+    "memory": "warmup_and_measured_partition_read_the_same_masked_inputs",
+    "partition": "evaluation",
+    "rows": "evaluation_rows_with_any_masked_modality_present",
+    "metric": "session_mae_masked_minus_original",
+    "recalibrate": false,
+    "min_rows": 1000,
+    "min_sessions": 50,
+    "multiplicity": "bonferroni_over_variants_and_views_with_max_t_over_arms",
+    "does_not_measure": [
+      "economic_causal_effect_of_the_modality",
+      "usefulness_of_the_modality_for_the_forecast",
+      "performance_of_a_model_trained_without_the_modality"
+    ]
   }
 }
