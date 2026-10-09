@@ -23,6 +23,7 @@ from mars_titan.training.klpo_queue import selected_parents
 from mars_titan.training.predictive_parents import _verified_file
 from mars_titan.training.run_receipts import initialize_receipt
 
+from .hold import refuse_while_blocked
 from .inputs import CONDITIONS, PairedInputs, fingerprint, fit_normalization
 from .parent_selection import matching_parents, matching_seeds, parent_for_seed
 from .parents import NEURAL, load_parent
@@ -192,6 +193,7 @@ def _prepare_augmentations(plan, train, output, binding, summary, stop, lease):
 
 def run_queue(config, reference, tabular, encoded, output, *, arm="US", stop=None):
     """Ejecutar secuencialmente la cola o recuperarla, con una única concesión de GPU."""
+    refuse_while_blocked("la cola de postentrenamiento")
     config, reference, tabular, encoded, output = map(
         Path, (config, reference, tabular, encoded, output)
     )
