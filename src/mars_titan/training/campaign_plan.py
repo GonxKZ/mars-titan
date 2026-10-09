@@ -136,10 +136,7 @@ LATER_STAGES = {
         ),
         entry="mars_titan.simulation.campaign_stage:run_stage",
         issue=137,
-        pending=[
-            "native_policy_reconstructed_tapes",
-            "native_klpo_financial_runner",
-        ],
+        pending=[],
     ),
 }
 _FIELDS = {
