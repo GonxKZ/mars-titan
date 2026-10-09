@@ -84,7 +84,8 @@ def test_auxiliary_gate_requires_gain_without_extra_ruin_or_drawdown():
 
 
 @pytest.fixture
-def catalog(tmp_path):
+def catalog(tmp_path, learning_doubles):
+    # El binario y los ejecutores son simulados. La campaña puede superar la protección.
     root = tmp_path / "scenarios"
     root.mkdir()
     records = []

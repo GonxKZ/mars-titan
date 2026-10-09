@@ -28,6 +28,7 @@ from mars_titan.simulation.adaptive_campaign import (
     _json,
     _relative,
 )
+from mars_titan.training.learning_hold import require_learning_allowed
 
 ROOT = Path(__file__).resolve().parents[1]
 LAUNCHER = ROOT / "scripts/run_native_ppo.py"
@@ -252,6 +253,7 @@ def main(argv=None):
         and (args.reference_binary or not args.reference_launcher)
     ):
         parser.error("Los límites, combinaciones o referencia no son válidos")
+    require_learning_allowed("la medición de RL nativo")
     report = None
     previous = signal.signal(signal.SIGTERM, interrupt)
     try:

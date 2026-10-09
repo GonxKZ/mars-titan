@@ -99,9 +99,9 @@ Con correcciones nulas la salida coincide exactamente con la del padre cuando am
 
 ## Protección del aprendizaje
 
-`run_case`, `run_queue`, `run_completion` y las etapas tabular y de postentrenamiento de la compleción llaman a `learning_blocked()` antes de abrir fuentes o crear salidas. Si la protección local está vigente fallan con `RuntimeError` y el mensaje «Bloqueo de aprendizaje vigente». La evaluación congelada no ajusta parámetros y no cambia. Estas llamadas son provisionales hasta que exista `require_learning_allowed` en `training/learning_hold.py`.
+`run_case`, `run_queue`, `run_completion` y las etapas tabular y de postentrenamiento de la compleción llaman a `require_learning_allowed()` de `training/learning_hold.py` antes de abrir fuentes o crear salidas. Si la protección local está vigente fallan con `LearningHoldError` y el mensaje «Bloqueo de aprendizaje vigente». La evaluación congelada no ajusta parámetros y no cambia. El inventario común de puntos de entrada protegidos está en [la guía de pruebas](../../tests/README.md#protección-del-aprendizaje).
 
-Las pruebas del bloqueo declaran una protección temporal en `tmp_path` mediante `MARS_TITAN_TRAINING_HOLD`. Para que el resto de pruebas del paquete lleguen hasta el paso del optimizador como antes, `tests/posttraining/conftest.py` sustituye la protección que leen los puntos de entrada por una que los admite. Solo lo hace cuando la protección real está vigente, es decir, cuando `tests/conftest.py` ya ha registrado el gancho que omite cualquier paso de un optimizador de PyTorch.
+Las pruebas del bloqueo declaran una protección temporal en `tmp_path` mediante `MARS_TITAN_TRAINING_HOLD`. Para que el resto de pruebas del paquete lleguen hasta el paso del optimizador como antes, `tests/posttraining/conftest.py` sustituye la protección que leen los puntos de entrada por una que los admite mediante el fixture común `learning_doubles`. Solo lo hace cuando la protección real está vigente, es decir, cuando `tests/conftest.py` ya ha registrado el gancho que omite cualquier paso de un optimizador de PyTorch.
 
 ## Comprobaciones
 
@@ -135,6 +135,5 @@ La prueba compara en `cuda:0` el padre y la copia con adaptadores nulos, exige i
 - Conectar la edición con máscaras con el controlador temporal de las diez ventanas, que pertenece a otra tarea.
 - `training.predictive_run` registra `fit_cutoff_utc` fijo en 2023. Es exacto para las dos particiones históricas, no para las ventanas. No se ha cambiado para no alterar su identidad estricta.
 - Integrar los adaptadores de Titans-MAC y de la lectura episódica en el entrenador cronológico.
-- Sustituir `refuse_while_blocked` por `require_learning_allowed` cuando se integre esa función.
 - Postentrenamiento propio de los padres de cuantiles, con su pérdida pinball, si se decide estudiarlo.
 - Ejecutar la matriz tras verificar la edición y levantar el bloqueo, con coste medido antes. No hay mejoras predictivas medidas de ningún brazo.

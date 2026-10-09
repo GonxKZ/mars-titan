@@ -57,6 +57,7 @@ if(MARS_TITAN_BUILD_ADAPTER_CONTROLS)
     include(cmake/TorchDependencies.cmake)
     mars_titan_find_torch()
     find_package(OpenSSL REQUIRED COMPONENTS Crypto)
+    include("${CMAKE_CURRENT_LIST_DIR}/LearningHold.cmake")
     if(MARS_TITAN_TEST_ADAPTER_CUDA AND NOT MARS_TITAN_TORCH_HAS_CUDA)
         message(FATAL_ERROR "Las pruebas CUDA del adaptador requieren el backend LibTorch CUDA")
     endif()
@@ -65,7 +66,8 @@ if(MARS_TITAN_BUILD_ADAPTER_CONTROLS)
     target_link_libraries(mars_titan_adapter_control PUBLIC mars_titan::torch OpenSSL::Crypto)
     mars_titan_configure_target(mars_titan_adapter_control)
     add_executable(mars-titan-adapter-control src/adapter_control_main.cpp)
-    target_link_libraries(mars-titan-adapter-control PRIVATE mars_titan_adapter_control)
+    target_link_libraries(mars-titan-adapter-control PRIVATE mars_titan_adapter_control
+        mars_titan_learning_hold)
     mars_titan_configure_target(mars-titan-adapter-control)
     if(BUILD_TESTING)
         add_executable(adapter_control_tests tests/adapter_control_tests.cpp)
@@ -78,17 +80,28 @@ if(MARS_TITAN_BUILD_ADAPTER_CONTROLS)
             "CUDA_VISIBLE_DEVICES=-1" "OMP_NUM_THREADS=1" "MKL_NUM_THREADS=1")
         add_test(NAME adapter_control_cli COMMAND mars-titan-adapter-control cpu 8 4 3 2 4 2)
         add_test(NAME adapter_control_cli_invalid COMMAND mars-titan-adapter-control cuda:1)
+        # El control ejecuta pasos SGD. Con la protección vigente se omite con su motivo.
+        add_test(NAME adapter_control_cli_hold COMMAND mars-titan-adapter-control cpu 8 4 3 2 4 2)
         set_tests_properties(adapter_control_cli_invalid PROPERTIES WILL_FAIL TRUE)
-        set_tests_properties(adapter_control_cli adapter_control_cli_invalid PROPERTIES
-            TIMEOUT 120 LABELS "integration;controls")
-        mars_titan_sanitizer_test_environment(adapter_control_cli adapter_control_cli_invalid)
-        set_property(TEST adapter_control_cli adapter_control_cli_invalid APPEND PROPERTY ENVIRONMENT
-            "CUDA_VISIBLE_DEVICES=-1" "OMP_NUM_THREADS=1" "MKL_NUM_THREADS=1")
+        set_tests_properties(adapter_control_cli PROPERTIES
+            SKIP_REGULAR_EXPRESSION "Bloqueo de aprendizaje vigente")
+        set_tests_properties(adapter_control_cli_hold PROPERTIES
+            PASS_REGULAR_EXPRESSION "Bloqueo de aprendizaje vigente: el control de adaptadores")
+        set_tests_properties(adapter_control_cli adapter_control_cli_invalid adapter_control_cli_hold
+            PROPERTIES TIMEOUT 120 LABELS "integration;controls")
+        mars_titan_sanitizer_test_environment(
+            adapter_control_cli adapter_control_cli_invalid adapter_control_cli_hold)
+        set_property(TEST adapter_control_cli adapter_control_cli_invalid adapter_control_cli_hold
+            APPEND PROPERTY ENVIRONMENT "CUDA_VISIBLE_DEVICES=-1" "OMP_NUM_THREADS=1" "MKL_NUM_THREADS=1")
+        set_property(TEST adapter_control_cli_hold APPEND PROPERTY ENVIRONMENT
+            "MARS_TITAN_TRAINING_HOLD=${MARS_TITAN_BLOCKED_HOLD}")
         if(MARS_TITAN_TEST_ADAPTER_CUDA)
             add_test(NAME adapter_control_cuda COMMAND adapter_control_tests cuda:0)
             add_test(NAME adapter_control_cli_cuda COMMAND mars-titan-adapter-control cuda:0 8 4 3 2 4 2)
             set_tests_properties(adapter_control_cuda adapter_control_cli_cuda PROPERTIES
                 TIMEOUT 120 LABELS "integration;controls;cuda" RUN_SERIAL TRUE)
+            set_tests_properties(adapter_control_cli_cuda PROPERTIES
+                SKIP_REGULAR_EXPRESSION "Bloqueo de aprendizaje vigente")
             mars_titan_sanitizer_test_environment(adapter_control_cuda adapter_control_cli_cuda)
             set_property(TEST adapter_control_cuda adapter_control_cli_cuda APPEND PROPERTY ENVIRONMENT
                 "OMP_NUM_THREADS=1" "MKL_NUM_THREADS=1")
@@ -100,6 +113,7 @@ if(MARS_TITAN_BUILD_ADAPTER_CONTROLS)
                 --extra-arg=-Xanalyzer --extra-arg=-analyzer-werror
                 "${CMAKE_CURRENT_SOURCE_DIR}/src/adapter_control.cpp"
                 "${CMAKE_CURRENT_SOURCE_DIR}/src/adapter_control_main.cpp"
+                "${CMAKE_CURRENT_SOURCE_DIR}/src/learning_hold.cpp"
             VERBATIM)
     endif()
     if(MARS_TITAN_BUILD_FUZZER)

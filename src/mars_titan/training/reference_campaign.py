@@ -22,6 +22,7 @@ from mars_titan.models.baselines.multimodal import validate_architecture
 from .checkpoints import StopRequest
 from .cohort_contract import cohort_identity
 from .corpus_inputs import CorpusDataset
+from .learning_hold import require_learning_allowed
 from .reference_run import (
     FULL_TRAIN_VALIDATION,
     PREDICTION_RETENTIONS,
@@ -139,6 +140,7 @@ def run_reference_campaign(
     config: Path, manifest: Path, output: Path, *, resume: bool = False
 ) -> dict:
     """Ejecutar los casos pendientes y conservar recibos terminados sin reentrenarlos."""
+    require_learning_allowed("la campaña de referencias neuronales")
     plan, recipe_path = _configuration(config)
     recipe = _load_config(recipe_path)
     policy = plan.get("input_policy", STRICT_INPUTS)

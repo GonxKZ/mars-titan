@@ -8,7 +8,7 @@ import pytest
 from mars_titan.posttraining import completion
 from mars_titan.posttraining.queue import run_queue
 from mars_titan.posttraining.run import run_case
-from mars_titan.training.learning_hold import HOLD_ENV
+from mars_titan.training.learning_hold import HOLD_ENV, LearningHoldError
 
 
 class Untouchable:
@@ -54,7 +54,7 @@ def entry_points(tmp_path):
 def test_entry_points_refuse_before_opening_sources_or_outputs(tmp_path, monkeypatch, name):
     hold(tmp_path, monkeypatch, False)
     output, calls = entry_points(tmp_path)
-    with pytest.raises(RuntimeError, match="Bloqueo de aprendizaje vigente"):
+    with pytest.raises(LearningHoldError, match="Bloqueo de aprendizaje vigente"):
         calls[name]()
     assert not output.exists()
     assert sorted(path.name for path in tmp_path.iterdir()) == ["hold.json"]
@@ -66,7 +66,7 @@ def test_permitted_learning_reaches_the_ordinary_checks(tmp_path, monkeypatch, n
     _, calls = entry_points(tmp_path)
     with pytest.raises(Exception) as error:
         calls[name]()
-    assert not isinstance(error.value, RuntimeError) or "Bloqueo" not in str(error.value)
+    assert not isinstance(error.value, LearningHoldError)
 
 
 def test_absent_hold_admits_and_ambiguous_hold_fails(tmp_path, monkeypatch):
@@ -96,4 +96,5 @@ def test_frozen_evaluation_stage_is_not_a_fit(tmp_path, monkeypatch):
     # La evaluación congelada no ajusta parámetros. Falla después, al leer su referencia.
     with pytest.raises(Exception) as error:
         completion._stage(args)
+    assert not isinstance(error.value, LearningHoldError)
     assert "Bloqueo" not in str(error.value)

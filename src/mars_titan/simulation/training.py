@@ -21,6 +21,7 @@ from mars_titan.training.checkpoints import (
     restore_rng,
     save_training_state,
 )
+from mars_titan.training.learning_hold import require_learning_allowed
 from mars_titan.training.run_receipts import initialize_receipt
 
 from .algorithms import FinancialNetwork, double_targets, generalized_advantage, ppo_objective
@@ -383,6 +384,7 @@ class FinancialTrainer:
         self.observation = self.env._observation()
 
     def run(self, output, *, resume=False, stop_after=None, stop=None):
+        require_learning_allowed("el ajuste de la política financiera")
         output = Path(output)
         if output.exists() and not resume or resume and not output.is_dir():
             raise ValueError("Usa una ejecución nueva o recuperación explícita")
