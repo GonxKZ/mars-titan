@@ -4,14 +4,16 @@
 vistas de cada ámbito desde la supervisión histórica. `run` ejecuta o reanuda los
 trabajos y se detiene si rige el bloqueo de aprendizaje. `sources` publica el
 manifiesto de fuentes de un ámbito. `posttraining check|run` valida o ejecuta la etapa
-de la matriz de adaptadores sobre una campaña base confirmada. `throughput` mide en la
-GPU, sin pasos de optimizador, el caudal de las familias declaradas y estima las horas
-de las variantes indicadas.
+de la matriz de adaptadores sobre una campaña base confirmada. `rl check|run` valida o
+ejecuta la etapa de políticas financieras por ventana, con las capacidades del motor que
+necesita. `throughput` mide en la GPU, sin pasos de optimizador, el caudal de las familias
+declaradas y estima las horas de las variantes indicadas.
 """
 
 import sys
 
 from mars_titan.posttraining import campaign_stage
+from mars_titan.simulation import campaign_stage as rl_stage
 from mars_titan.training import campaign_throughput, masked_campaign
 
 
@@ -21,6 +23,8 @@ def main(argv=None):
         return campaign_throughput.main(argv[1:])
     if argv[:1] == ["posttraining"]:
         return campaign_stage.main(argv[1:])
+    if argv[:1] == ["rl"]:
+        return rl_stage.main(argv[1:])
     return masked_campaign.main(argv)
 
 
