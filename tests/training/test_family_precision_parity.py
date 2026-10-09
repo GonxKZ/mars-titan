@@ -18,8 +18,8 @@ import torch
 from mars_titan.training import candidate_run, financial_run, mars_titan_run, reference_run
 
 STRICT = ("highest", False, False)
-# Lectura de los tres indicadores en la identidad de cada entrenador: precisión de matmul
-# FP32, TF32 en cuBLAS y TF32 en cuDNN.
+# Así guarda cada entrenador en su identidad los tres indicadores, que son la precisión de
+# matmul FP32, TF32 en cuBLAS y TF32 en cuDNN.
 TRAINERS = {
     "titans_mac_and_cm_v1_cores": lambda: _flags(
         financial_run._numerics(), "matmul_precision", "matmul_allow_tf32", "cudnn_allow_tf32"
@@ -45,7 +45,7 @@ RECIPES = [
     Path("configs/candidate/chronological-training.json"),
     *sorted(Path("configs/baselines").glob("historical-masked-campaign-*.json")),
 ]
-# Valores admitidos para las claves de precisión que una receta pueda declarar.
+# Estos son los valores admitidos para las claves de precisión que una receta pueda declarar.
 ALLOWED = {
     "dtype": {"float32"},
     "precision": {"float32", "fp32_strict"},
@@ -101,7 +101,7 @@ def _declared(value, path=()):
 
 
 def _violations(document):
-    """Claves de precisión de una receta con un valor distinto de FP32."""
+    """Devuelve las claves de precisión de una receta con un valor distinto de FP32."""
     found = []
     for path, value in _declared(document):
         key = path[-1] if isinstance(path[-1], str) else path[-2]

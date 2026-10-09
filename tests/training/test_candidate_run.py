@@ -149,7 +149,7 @@ def test_declared_variants_follow_the_protocol_rule_and_budget(tmp_path):
 
 
 def test_search_cases_match_titans_and_the_reader_and_cannot_be_skipped(tmp_path):
-    # La GRU candidata busca los mismos dos tasas de aprendizaje que Titans-MAC y el lector.
+    # La GRU candidata busca las mismas dos tasas de aprendizaje que Titans-MAC y el lector.
     document = json.loads(CONFIG.read_text())
     titans = json.loads(
         (ROOT / "configs/titans/chronological-training-historical-masked.json").read_text()

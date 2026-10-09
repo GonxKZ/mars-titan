@@ -1,4 +1,4 @@
-"""Parada conjunta y decisión por época, sin entrenar ni abrir datos."""
+"""Pruebas de la parada conjunta y de la decisión por época, sin entrenar ni abrir datos."""
 
 from dataclasses import dataclass, field
 
@@ -87,10 +87,10 @@ def test_epoch_decision_rejects_an_invalid_joint_epoch():
     options = policy(stopping=JOINT_PLATEAU)
     trace = states(SCORES, options)
     for state, joint_epoch in (
-        (trace[3], 3),  # anterior a la meseta del propio ajuste
-        (trace[3], 8),  # posterior al máximo de épocas
-        (trace[5], 5),  # anterior a la última época ya evaluada
-        (trace[1], 4),  # el ajuste aún no ha llegado a su meseta
+        (trace[3], 3),  # Es anterior a la meseta del propio ajuste.
+        (trace[3], 8),  # Es posterior al máximo de épocas.
+        (trace[5], 5),  # Es anterior a la última época ya evaluada.
+        (trace[1], 4),  # El ajuste aún no ha llegado a su meseta.
         (None, 4),
         (trace[3], 4.0),
         (trace[3], True),

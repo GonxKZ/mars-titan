@@ -7,8 +7,8 @@ comprueba que las filas son exactamente las de la vista y escribe un recibo walk
 por mercado. En la variante B, las ventanas intermedias se predicen con el estado elegido
 en su ancla, sin ajustar pesos, selección ni normalizadores.
 
-Política del banco y de la cola de etiquetas al cruzar del ancla a una ventana trasladada
-(`CARRY_POLICY`). Se conservan los parámetros elegidos en el ancla, las proyecciones fijas
+Al cruzar del ancla a una ventana trasladada, el banco y la cola de etiquetas siguen la
+política `CARRY_POLICY`. Se conservan los parámetros elegidos en el ancla, las proyecciones fijas
 del codec y la receta (admisión, K, capacidad, semilla y bloques del banco). Se reinician
 el banco, la admisión pendiente, la cola de predicciones que esperan etiqueta, los errores
 por sesión y el estado de la GRU. No hay calentamiento con etiquetas del ancla ni de tramos
@@ -17,7 +17,7 @@ dentro del tramo después de emitir su predicción. Es la regla que ya siguen la
 la calibración y la evaluación de una ventana ajustada, así que una ventana trasladada
 solo se diferencia de ella en los parámetros.
 
-Calentamiento. Las fases salen de `walk_forward_phases.window_phases` con los
+Las fases del calentamiento salen de `walk_forward_phases.window_phases` con los
 `warmup_months` de la receta, como en Titans-MAC, MARS-TITAN y CM-v1: validación,
 calibración y evaluación observan antes las entradas de esos meses, sin etiquetas ni
 predicciones emitidas. La GRU no conserva estado entre instantes y el banco solo admite
@@ -102,12 +102,12 @@ CARRY_POLICY = dict(
 
 
 def bank_policy(warmup_months):
-    """Política de estado de la candidata con sus meses de calentamiento de entradas."""
+    """Devuelve la política de estado de la candidata con sus meses de calentamiento de entradas."""
     return dict(CARRY_POLICY, warmup_months=checked_warmup(warmup_months))
 
 
 def _bounds(dataset):
-    """Límites de cada tramo de la vista, los mismos en todos sus mercados."""
+    """Lee los límites de cada tramo de la vista y exige que coincidan en todos sus mercados."""
     declared = {}
     for temporal in dataset.temporals.values():
         bounds = {}
@@ -123,7 +123,7 @@ def _bounds(dataset):
 
 
 def _phases(dataset, warmup_months):
-    """Fases de la ventana con el calentamiento común de los brazos con memoria.
+    """Construye las fases de la ventana con el calentamiento común de los brazos con memoria.
 
     Exige que los tramos de decisión coincidan con los límites de la vista, de modo que
     el calentamiento solo añade entradas anteriores y nunca posteriores al tramo.
@@ -536,14 +536,14 @@ def carry_window(
     )
 
 
-# Campos del caso que la campaña declara para la GRU candidata. La regla de parada solo
+# Estos son los campos del caso que la campaña declara para la GRU candidata. La regla solo
 # aparece si la campaña declara una parada temprana.
 CASE_FIELDS = {"recipe", "recipe_sha256", "variant", "seed", "search_case"}
 STOPPING_FIELD = "stopping_rule"
 
 
 def campaign_case(case):
-    """Receta del caso planificado, opciones de modelo y calentamiento, con su huella.
+    """Construye la receta del caso, las opciones de modelo y el calentamiento con su huella.
 
     Si el caso declara la parada temprana de la campaña, la receta la aplica en lugar de
     la regla del protocolo, con la misma métrica.

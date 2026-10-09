@@ -16,31 +16,31 @@ import numpy as np
 from mars_titan.memory.financial_session import FinancialPhase
 
 PREDICTED = ("validation", "calibration", "evaluation")
-# Límite de la receta: hasta cinco años de entradas antes del tramo medido.
+# La receta admite como mucho cinco años de entradas antes del tramo medido.
 MAX_WARMUP_MONTHS = 60
 
 
 def micros(day):
-    """Microsegundos UTC del inicio de un día ISO."""
+    """Devuelve los microsegundos UTC del inicio de un día ISO."""
     return int(np.datetime64(day, "us").astype(np.int64))
 
 
 def months_before(day, months):
-    """Primer día del mes que queda `months` meses antes del de `day`."""
+    """Devuelve el primer día del mes situado `months` meses antes del de `day`."""
     start = date.fromisoformat(day)
     position = start.year * 12 + start.month - 1 - months
     return date(position // 12, position % 12 + 1, 1).isoformat()
 
 
 def checked_warmup(months):
-    """Meses de calentamiento declarados por una receta, entre 0 y 60."""
+    """Lee los meses de calentamiento que declara una receta y exige que estén entre 0 y 60."""
     if type(months) is not int or not 0 <= months <= MAX_WARMUP_MONTHS:
         raise ValueError("La receta necesita walk_forward.warmup_months entero entre 0 y 60")
     return months
 
 
 def window_phases(fold, warmup_months):
-    """Fases del ajuste y de los tres tramos medidos, con el calentamiento acotado."""
+    """Construye las fases del ajuste y de los tres tramos medidos con el calentamiento acotado."""
     checked_warmup(warmup_months)
     origin, train_end = (micros(day) for day in fold["train"])
     phases = {"train": FinancialPhase("train", origin, origin, train_end, train_end)}

@@ -36,7 +36,7 @@ EARLY = dict(
     group_epoch=GROUP_EPOCH,
     groups=dict(references=["gru", "lstm"]),
 )
-# Parada individual de cada meseta por brazo y posición del caso, o finalista.
+# Esta es la parada individual de cada meseta por brazo y posición del caso, o por finalista.
 STOPS = {
     ("gru", 0): 7,
     ("gru", 1): 9,
@@ -55,7 +55,7 @@ def slot(job):
 
 
 class JointRecorder(Recorder):
-    """Meseta con parada escrita de antemano y continuación con su época común."""
+    """Simula la meseta con una parada escrita de antemano y la continuación con su época común."""
 
     def __init__(self, *, plateau_status=AWAIT, final_status=None, **options):
         super().__init__(**options)
@@ -101,8 +101,8 @@ def test_groups_wait_for_every_plateau_and_continue_to_the_latest(prepared, tmp_
     output = tmp_path / "out"
     summary = run(campaign, views, output, recorder)
     assert summary["status"] == "completed"
-    # B sobre US: 7 ventanas con 2 + 2 ajustes de cada referencia, 1 de Ridge y 3 de
-    # XGBoost, y 12 trasladadas con 3 + 3 + 1 + 3 traslados. Cada ajuste agrupado tiene
+    # La variante B sobre US tiene 7 ventanas con 2 + 2 ajustes de cada referencia, 1 de Ridge
+    # y 3 de XGBoost, y 12 trasladadas con 3 + 3 + 1 + 3 traslados. Cada ajuste agrupado tiene
     # además su meseta.
     assert summary["planned"] == dict(
         training_jobs=7 * 12, prediction_jobs=12 * 10, plateau_jobs=7 * 8
@@ -186,7 +186,7 @@ def test_joint_epoch_needs_every_plateau_of_the_group(prepared, tmp_path):
 
 
 class CheckpointingJoint(JointRecorder):
-    """Meseta con estados reales de recuperación y continuación que los cuenta al empezar."""
+    """Simula una meseta con estados reales de recuperación y una continuación que los cuenta."""
 
     def __init__(self, **options):
         super().__init__(**options)

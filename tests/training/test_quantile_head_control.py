@@ -1,4 +1,4 @@
-"""Control de la cabeza: Transformer compacto con salida escalar L1 o cuantiles.
+"""Pruebas del control de la cabeza, que compara el Transformer compacto con salida L1 o cuantiles.
 
 Se comprueban la declaración, el ejecutor con un sustituto que escribe predicciones y la
 regla de retroceso. No se ejecuta ningún ajuste ni paso de optimizador.
@@ -157,16 +157,16 @@ def test_any_change_to_the_declared_contrast_is_rejected(change):
         head_control_cases(declared)
 
 
-# Ejecutor del control. Las vistas se preparan sobre el corpus técnico y un ejecutor
-# sustituto escribe predicciones de validación con las filas exactas de la vista. No se
-# ajusta ningún modelo, no se aplican pasos de optimizador y la GPU no se usa.
+# Estas pruebas cubren el ejecutor del control. Las vistas se preparan sobre el corpus técnico y
+# un ejecutor sustituto escribe predicciones de validación con las filas exactas de la vista. No
+# se ajusta ningún modelo, no se aplican pasos de optimizador y la GPU no se usa.
 
 CONFIGS = ROOT / "configs"
 WINDOWS = ["fold-000", "fold-001", "fold-002", "fold-003", "fold-004", "fold-005"]
 
 
 def write_comparison(folder, **changes):
-    """Comparación principal reducida, con protocolos absolutos y pocas réplicas."""
+    """Escribe una comparación principal reducida, con protocolos absolutos y pocas réplicas."""
     declared = json.loads(
         (CONFIGS / "evaluation/historical-masked-2000-comparison.json").read_text()
     )
@@ -191,7 +191,7 @@ def write_comparison(folder, **changes):
 
 
 def write_campaign(folder, comparison):
-    """Campaña mínima solo para preparar las vistas US con su orden habitual."""
+    """Declara una campaña mínima que solo prepara las vistas US en su orden habitual."""
     value = json.loads((CONFIGS / "baselines/historical-masked-campaign-a.json").read_text())
     tabular = json.loads((CONFIGS / "baselines/tabular-historical-masked.json").read_text())
     tabular.update(ridge_alphas=[1.0], depths=[3], bins=[64], rates=[0.1])
@@ -219,7 +219,7 @@ def prepared(tmp_path_factory):
 
 
 def error(job_case, moment, *, worse=0.0):
-    """Error determinista por fila, distinto por semilla, índice y brazo."""
+    """Devuelve un error determinista por fila, distinto para cada semilla, índice y brazo."""
     key = f"{job_case['seed']}/{job_case['architecture']['hidden_size']}/{moment}"
     value = int(hashlib.sha256(key.encode()).hexdigest()[:8], 16) / 2**32
     sign = 1.0 if value < 0.5 else -1.0
@@ -231,7 +231,7 @@ QUANTILE = quantile_head.QUANTILE_HEAD
 
 
 class FakeFit:
-    """Sustituto de `run_reference_case`: registra la llamada y escribe la validación."""
+    """Sustituye a `run_reference_case`, registra la llamada y escribe la validación."""
 
     def __init__(self, *, worse=None, pause_at=None, stop=None, mutate=None, report=None):
         self.calls, self.cache = [], {}
@@ -457,7 +457,7 @@ def into_reserve(case, table):
     if case["seed"] != 44:
         return table
     moments = table["prediction_at"].cast(pa.int64()).to_numpy().copy()
-    moments[-1] = 1_704_153_600_000_000  # 2024-01-02
+    moments[-1] = 1_704_153_600_000_000  # Es el 2024-01-02, ya en la reserva final.
     column = pa.array(moments, type=pa.timestamp("us", tz="UTC"))
     return table.set_column(table.schema.get_field_index("prediction_at"), "prediction_at", column)
 
@@ -554,7 +554,7 @@ def test_decision_needs_every_confirmed_job(prepared, tmp_path):
 
 
 def synthetic_scores(shifts, *, days=120, assets=12, seed=0):
-    """Puntuaciones de validación con errores fijados por brazo, índice y semilla."""
+    """Construye puntuaciones de validación con errores fijados por brazo, índice y semilla."""
     rng = np.random.default_rng(seed)
     moments = np.repeat(
         np.datetime64("2010-01-04T21:00", "us") + np.arange(days) * np.timedelta64(1, "D"), assets

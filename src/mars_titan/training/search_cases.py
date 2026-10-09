@@ -1,16 +1,16 @@
 """Casos de búsqueda del optimizador que declaran las recetas cronológicas.
 
-Titans-MAC, el lector de MARS-TITAN y CM-v1, y la GRU episódica comparten la regla: de
-uno a tres casos con nombre válido, distintos, que sustituyen los mismos hiperparámetros
-del optimizador. Esos hiperparámetros no aparecen en la receta base, así que ningún valor
-base queda sin usar o sin elegir. La campaña ajusta tantos casos como índices del diseño
-ajusta cada referencia neuronal.
+Titans-MAC, el lector de MARS-TITAN y CM-v1, y la GRU episódica comparten la misma regla.
+Admite de uno a tres casos distintos y con nombre válido, que sustituyen los mismos
+hiperparámetros del optimizador. Esos hiperparámetros no aparecen en la receta base, así que
+ningún valor base queda sin usar o sin elegir. La campaña ajusta tantos casos como índices
+del diseño ajusta cada referencia neuronal.
 """
 
 import json
 import re
 
-# Hiperparámetros que puede variar un caso. La arquitectura queda fija.
+# Un caso solo puede variar estos hiperparámetros. La arquitectura queda fija.
 SEARCHED = ("learning_rate", "max_grad_norm")
 CASE_NAME = re.compile(r"[a-z][a-z0-9_-]{0,31}")
 
@@ -42,7 +42,7 @@ def checked_search_cases(cases, base, build):
 
 
 def case_options(base, cases, search_case):
-    """Opciones de la receta del caso elegido. Sin casos declarados, las de la base."""
+    """Devuelve las opciones de la receta del caso elegido, o las de la base si no hay casos."""
     if cases is None:
         if search_case is not None:
             raise ValueError("La receta no declara casos de búsqueda")

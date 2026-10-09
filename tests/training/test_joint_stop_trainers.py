@@ -23,9 +23,9 @@ NATIVE = pytest.mark.skipif(
 )
 JOINT = dict(metric="session_mae", patience=2, min_delta=0.0, stopping=JOINT_PLATEAU)
 EPOCHS = 6
-# Época 0 del estado inicial y seis épocas. Meseta en la 3 y mejora posterior en la 4.
+# La época 0 es el estado inicial y hay seis épocas. La meseta llega en la 3 y mejora en la 4.
 EARLY = [0.5, 0.4, 0.45, 0.46, 0.3, 0.35, 0.36]
-# Meseta en la 4: la época común del grupo es la máxima de las dos.
+# Esta meseta llega en la 4, así que la época común del grupo es la mayor de las dos.
 LATE = [0.5, 0.45, 0.4, 0.42, 0.43, 0.2, 0.21]
 
 
@@ -38,7 +38,7 @@ def explicit_fastpath():
 
 
 class Script:
-    """Validación escrita de antemano que falla si se pide una época de más."""
+    """Devuelve una validación escrita de antemano que falla si se pide una época de más."""
 
     def __init__(self, values):
         self.values, self.calls = list(values), 0
@@ -106,7 +106,7 @@ def test_fit_waits_at_its_plateau_and_continues_to_the_joint_epoch(
     assert report["status"] == AWAIT and report["individual_stop_epoch"] == 3
     assert (report["plateau_epoch"], report["best_epoch"], report["last_epoch"]) == (3, 1, 3)
     assert engine.global_step == 3 and script.calls == 4
-    # El estado en espera está confirmado en disco: informe, cursor y checkpoint.
+    # El estado en espera está confirmado en disco con su informe, su cursor y su checkpoint.
     stored = recorded(output)
     assert stored["status"] == AWAIT and stored["cursor"]["phase"] == "train"
     assert stored["cursor"]["epoch"] == 3 and "joint_stop_epoch" not in stored

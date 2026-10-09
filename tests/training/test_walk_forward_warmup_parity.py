@@ -1,4 +1,4 @@
-"""Mismo calentamiento de entradas en todas las familias con memoria, sin abrir datos.
+"""Comprueba que las familias con memoria comparten calentamiento de entradas, sin abrir datos.
 
 Titans-MAC y los núcleos de CM-v1 leen la receta de Titans-MAC, MARS-TITAN hereda las fases
 de su padre y la GRU candidata declara su propio calentamiento. Todas construyen las fases
@@ -66,7 +66,8 @@ def test_phases_never_observe_before_the_origin_or_after_their_partition(name):
             start, end = (day(value) for value in fold[partition])
             phase = result[partition]
             assert (phase.decision_start, phase.decision_end, phase.close_at) == (start, end, end)
-            # Doce meses antes del primer día del mes del tramo, nunca antes del origen.
+            # El calentamiento empieza doce meses antes del primer día del mes del
+            # tramo y nunca antes del origen.
             expected = max(origin, day(phases.months_before(fold[partition][0], 12)))
             assert phase.warmup_start == expected
             assert origin <= phase.warmup_start <= start

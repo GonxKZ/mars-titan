@@ -1076,7 +1076,8 @@ class ReadoutTrainer(MarsTitanInference):
             while cursor["phase"] != "done":
                 epoch = cursor["epoch"]
                 if cursor["phase"] == "train" and cursor["stage"] == "start":
-                    # Al empezar una época: esperar al grupo o terminar en la época conjunta.
+                    # Al empezar una época, el ajuste espera al grupo o
+                    # termina si ya está en la época conjunta.
                     decision = epoch_decision(
                         self.selection, options, self.recipe.epochs, joint_epoch
                     )
@@ -1105,7 +1106,8 @@ class ReadoutTrainer(MarsTitanInference):
                         )
                     )
                     self.train_metrics = None
-                    # Con presupuesto fijo o meseta conjunta, should_stop nunca corta solo.
+                    # Con presupuesto fijo o con meseta conjunta, should_stop
+                    # nunca detiene el ajuste por sí solo.
                     decision = epoch_decision(
                         self.selection, options, self.recipe.epochs, joint_epoch
                     )

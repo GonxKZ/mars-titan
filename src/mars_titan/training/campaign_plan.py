@@ -20,14 +20,14 @@ La sección opcional ``early_stop`` declara la parada temprana de la campaña, c
 métrica que el protocolo. Sin ella se conserva la regla del protocolo (presupuesto fijo) y
 la identidad de cada trabajo. Con ``validation_plateau`` cada ajuste para en su primera
 meseta. Con ``joint_plateau`` los brazos de cada grupo emparejado declarado paran en la
-misma época: la máxima de sus primeras mesetas en el mismo ámbito, ventana, semilla y caso
+misma época, que es la mayor de sus primeras mesetas en el mismo ámbito, ventana, semilla y caso
 de búsqueda (o caso elegido, en las semillas finalistas). Cada ajuste agrupado tiene dos
 trabajos: el de meseta, que se detiene en su primera meseta en un estado recuperable, y el
 final, que depende de las mesetas de todo su grupo y continúa hasta la época común. Los
 brazos sin grupo paran en su propia meseta.
 
-Variante A: cada ventana anual se reentrena desde cero. Variante B: se reentrena desde
-cero en la primera ventana y cada ``retrain_every_months`` meses. Las ventanas
+En la variante A, cada ventana anual se reentrena desde cero. En la variante B, se reentrena
+desde cero en la primera ventana y cada ``retrain_every_months`` meses. Las ventanas
 intermedias se predicen con el estado seleccionado en la última ventana reentrenada,
 que dejó de aprender al final de su validación. Cada ventana conserva sus filas, su
 purga por intervalo de etiqueta y su calibración común, ajustada con las predicciones
@@ -60,13 +60,13 @@ NEURAL, TABULAR = "neural_reference", "tabular_reference"
 TITANS = "titans_mac"
 TITANS_VARIANTS = ("transformer_direct", "mac_disabled", "mac_frozen", "mac_online")
 TITANS_RECIPE = "titans_financial_chronological_v1"
-# Hiperparámetros que puede variar un caso de búsqueda de las recetas cronológicas.
+# Un caso de búsqueda de las recetas cronológicas solo puede variar estos hiperparámetros.
 TITANS_SEARCHED = SEARCHED
 FIT, CARRY = "fit", "carry"
-# Fases de un ajuste con parada conjunta: meseta individual y continuación hasta la común.
+# Un ajuste con parada conjunta pasa por la meseta individual y por la continuación común.
 PLATEAU, JOINT = "plateau", "joint"
 EARLY_STOP = "early_stop"
-# Época común del grupo: la máxima de las primeras mesetas de sus ajustes.
+# La época común del grupo es la mayor de las primeras mesetas de sus ajustes.
 GROUP_EPOCH = "maximum_of_first_plateaus"
 # GRU candidata con banco episódico. Repite candidate_run.RECIPE sin importar PyTorch.
 EPISODIC = "episodic_gru"
@@ -220,7 +220,7 @@ def _seeds(value, label):
 
 
 def _neural(section, arms, rules, policy):
-    """Casos de las referencias neuronales con la regla de parada de cada brazo."""
+    """Devuelve los casos de las referencias neuronales con la regla de parada de cada brazo."""
     _require(isinstance(section, dict) and set(section) == _NEURAL, "La sección neuronal no cumple")
     declared = {name for name, arm in arms.items() if arm["family"] == NEURAL}
     mapping = section["arms"]
@@ -335,7 +335,7 @@ def _stopping(case, rules, arm):
 
 
 def _episodic(section, arms, rule, policy, base, count, rules=None):
-    """Brazos de la GRU candidata con su receta, variante y casos, sin importar PyTorch.
+    """Declara los brazos de la GRU candidata con su receta, variante y casos sin importar PyTorch.
 
     Para que la búsqueda sea equitativa, la receta declara tantos casos como índices del
     diseño ajusta cada referencia neuronal (`count`), como Titans-MAC y el lector.
@@ -762,7 +762,7 @@ def load_campaign(path):
         comparison_path=str(comparison_path),
         comparison_config=declared,
         input_policy=policy,
-        # La regla común de la campaña. Con parada temprana es la individual o la conjunta.
+        # Esta es la regla común de la campaña. Con parada temprana es la individual o la conjunta.
         rule=rule if early is None else early[early["stopping"]],
         protocol_rule=rule,
         early_stop=early,
@@ -775,7 +775,7 @@ def load_campaign(path):
 
 
 def _early_stop(section, rule, arms):
-    """Parada temprana declarada por la campaña, con la métrica del protocolo.
+    """Lee la parada temprana que declara la campaña, con la métrica del protocolo.
 
     Devuelve None sin sección. `validation_plateau` detiene cada ajuste en su primera
     meseta. `joint_plateau` necesita grupos de brazos con entrenador, disjuntos y de al
@@ -841,7 +841,7 @@ def _early_stop(section, rule, arms):
 
 
 def _arm_rules(rule, early):
-    """Regla de parada de cada brazo, o None si la campaña conserva la del protocolo."""
+    """Devuelve la regla de parada de cada brazo, o None si la campaña conserva la del protocolo."""
     if early is None:
         return lambda arm: None
     return lambda arm: early[JOINT_PLATEAU if arm in early["membership"] else VALIDATION_PLATEAU]
@@ -1036,7 +1036,7 @@ def plan_campaign(campaign):
 
 
 def _ancestors(arm, specs):
-    """Brazos de los que parte un brazo, siguiendo la cadena de padres."""
+    """Devuelve los brazos de los que parte un brazo siguiendo la cadena de padres."""
     found = []
     while (arm := specs[arm]["parent"]) is not None:
         found.append(arm)
@@ -1044,7 +1044,7 @@ def _ancestors(arm, specs):
 
 
 def _checked_groups(campaign, specs):
-    """Grupos conjuntos con brazos conectados que se pueden emparejar caso a caso.
+    """Comprueba que cada grupo conjunto tiene brazos conectados que se emparejan caso a caso.
 
     Los brazos de un grupo comparten semilla de búsqueda y número de casos, que se emparejan
     por posición, y ninguno parte de otro del mismo grupo, porque su parada dependería de sí
@@ -1122,7 +1122,7 @@ def _joint_phases(campaign, jobs, specs):
 
 
 def _ordered(jobs):
-    """Orden estable compatible con las dependencias: cada trabajo, tras las suyas."""
+    """Ordena los trabajos de forma estable para que cada uno vaya después de sus dependencias."""
     position = {job["id"]: index for index, job in enumerate(jobs)}
     waiting = {job["id"]: set(job["depends"]) for job in jobs}
     _require(
@@ -1194,7 +1194,7 @@ def count_jobs(campaign, jobs=None):
 
 
 def _fit(job):
-    """Ajuste completo: un trabajo de ajuste que no es la meseta de un ajuste conjunto."""
+    """Indica si es un ajuste completo, es decir, si no es la meseta de un ajuste conjunto."""
     return job["kind"] == FIT and job.get("phase") != PLATEAU
 
 
@@ -1237,7 +1237,7 @@ def check_campaign(path):
 
 
 def _early_record(early):
-    """Resumen de la parada temprana declarada, o None con la regla del protocolo."""
+    """Resume la parada temprana declarada. Devuelve None si rige la regla del protocolo."""
     if early is None:
         return None
     return dict(

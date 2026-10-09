@@ -1,4 +1,4 @@
-"""Orden del control de la cabeza de cuantiles de #22: comprobar, ejecutar y decidir.
+"""Orden de línea del control de la cabeza de cuantiles de #22 para comprobar, ejecutar y decidir.
 
 `check` valida el plan, el protocolo, la comparación y las ventanas, y cuenta los
 trabajos sin leer datos. `run` ajusta o reanuda cada trabajo con recibos y se detiene si

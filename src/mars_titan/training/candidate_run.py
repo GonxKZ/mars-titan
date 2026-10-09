@@ -1013,7 +1013,8 @@ class CandidateChronologicalTrainer(CandidateChronologicalPredictor):
             while cursor["phase"] != "predictions":
                 epoch = cursor["epoch"]
                 if cursor["phase"] == "train" and cursor["stage"] == "start":
-                    # Al empezar una época: esperar al grupo o terminar en la época conjunta.
+                    # Al empezar una época, el ajuste espera al grupo o
+                    # termina si ya está en la época conjunta.
                     decision = epoch_decision(
                         self.selection, options, self.recipe.epochs, joint_epoch
                     )

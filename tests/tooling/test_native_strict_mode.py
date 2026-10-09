@@ -1,4 +1,4 @@
-"""Modo estricto del enlace nativo en la comprobación local, sobre una prueba aparte.
+"""Comprueba el modo estricto del enlace nativo en la comprobación local con una prueba aparte.
 
 Cada caso ejecuta pytest en un directorio temporal con la configuración común como
 complemento. Una prueba marcada con `native_binding` que se omite cuenta como fallo solo

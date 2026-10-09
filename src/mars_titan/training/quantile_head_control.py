@@ -9,14 +9,14 @@ reanuda desde su carpeta, y confirma un recibo con huellas, filas de validación
 sesión. Un trabajo confirmado con la misma identidad no se repite. Todos los trabajos de
 una ventana deben evaluar las mismas filas y objetivos de validación.
 
-Ventanas. El plan fija el protocolo US v2 pero no qué ventanas recorre. Este ejecutor
+El plan fija el protocolo US v2 pero no qué ventanas recorre. Este ejecutor
 declara por defecto solo la primera (`fold-000`), la opción más barata. La potencia del
 contraste depende sobre todo del número de sesiones de validación, que es parecido en
 cualquier ventana, mientras que el coste crece con las filas de ajuste. La elección es del
 ejecutor y queda pendiente de revisión. `windows` permite declarar otras ventanas antes de
 ejecutar y forma parte de la identidad, así que una salida no se reutiliza con otras.
 
-Contraste y decisión. Para cada índice de diseño se compara
+Para cada índice de diseño se compara
 `delta = MAE(quantile_head_v1) − MAE(scalar_l1)` del MAE por sesión de la mediana en la
 validación, con las semillas promediadas sesión a sesión y las ventanas unidas, mediante
 `paired_comparisons.compare_series`. La longitud de bloque, las réplicas, la semilla, la
@@ -58,7 +58,7 @@ PARTITION = "validation"
 DEFAULT_COMPARISON = "configs/evaluation/historical-masked-2000-comparison.json"
 DEFAULT_WINDOWS = ("fold-000",)
 WINDOW_RULE = "first_protocol_window_cheapest_option_declared_by_the_executor_pending_review"
-# El mismo intervalo de checkpoints que las referencias neuronales de la campaña.
+# Se usa el mismo intervalo de checkpoints que en las referencias neuronales de la campaña.
 CHECKPOINT_SECONDS = 300
 OPTION_A, OPTION_B, UNDETERMINED = "option_a_scalar_l1", "option_b_quantile_head", "undetermined"
 CONSEQUENCES = {
@@ -77,7 +77,7 @@ _PAIR = re.compile(r"transformer-(\d{2})-s(\d+)")
 
 
 class Paused(Exception):
-    """Parada solicitada en una barrera confirmada de un trabajo."""
+    """Señala una parada solicitada en una barrera confirmada de un trabajo."""
 
 
 def _require(condition, message):
@@ -86,7 +86,7 @@ def _require(condition, message):
 
 
 def _index(item, plan):
-    """Índice de diseño de un caso a partir de su par, comprobado contra el plan."""
+    """Obtiene el índice de diseño de un caso a partir de su par y lo comprueba contra el plan."""
     match = _PAIR.fullmatch(item["pair"])
     _require(match is not None, f"El par {item['pair']} no es un caso del Transformer compacto")
     index, seed = int(match.group(1)), int(match.group(2))
@@ -197,7 +197,7 @@ def check_control(plan_path, *, windows=None, comparison_path=None):
 
 
 def _views(control, directory):
-    """Vistas US preparadas por la campaña, validadas contra la comparación del control."""
+    """Carga las vistas US que prepara la campaña y las valida contra la comparación del control."""
     from .masked_campaign import scope_views
 
     campaign = dict(
@@ -255,7 +255,7 @@ def _columns(job):
 
 
 class _Rows:
-    """Huella de filas y objetivos de validación por ventana, común a todos sus trabajos."""
+    """Calcula la huella de filas y objetivos de validación por ventana, común a sus trabajos."""
 
     def __init__(self):
         self.seen = {}
@@ -400,7 +400,7 @@ def run_control(
     lease=None,
     stop=None,
 ):
-    """Ejecutar o reanudar los trabajos del control. Ejecutor y reserva se pueden sustituir.
+    """Ejecutar o reanudar los trabajos del control. El ejecutor y la reserva se pueden sustituir.
 
     `views` es la carpeta de vistas US que prepara `run_masked_campaign.py prepare`. Cada
     trabajo se ajusta en `jobs/<ventana>/<caso>/run` y se reanuda si la carpeta existe.
@@ -472,7 +472,7 @@ def _model(arm, index):
 
 
 def contrast_scores(scores, plan, bootstrap):
-    """Contraste delta por índice con las semillas promediadas, sobre puntuaciones unidas.
+    """Contrasta el delta de cada índice con las semillas promediadas sobre puntuaciones unidas.
 
     `scores` asigna a cada (brazo, índice, semilla) su `SessionScores` de validación con
     todas las ventanas del control. El resultado es el de `compare_series`.
@@ -492,7 +492,7 @@ def contrast_scores(scores, plan, bootstrap):
 
 
 def apply_fallback(result):
-    """Regla declarada: la opción A si algún intervalo simultáneo excluye el cero en contra.
+    """Aplica la regla declarada, que elige A si algún intervalo excluye el cero en contra.
 
     `delta` es MAE de la cabeza de cuantiles menos MAE escalar, así que un límite inferior
     positivo indica que la cabeza empeora el MAE dentro de la familia.

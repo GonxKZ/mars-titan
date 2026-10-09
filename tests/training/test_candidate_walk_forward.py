@@ -56,7 +56,7 @@ SMALL = candidate_run.CandidateRecipe(
 )
 MODEL = dict(feature_seed=43, key_seed=44, dtype="float64")
 SHIFT = 0.01
-# Calentamiento de entradas que declara la receta, el mismo que Titans-MAC y MARS-TITAN.
+# La receta declara el mismo calentamiento de entradas que Titans-MAC y MARS-TITAN.
 WARMUP = json.loads(RECIPE.read_text())["walk_forward"]["warmup_months"]
 
 
@@ -161,7 +161,7 @@ def test_fit_window_writes_the_view_rows_receipts_and_selected_state(views, anch
     assert sha256(output / checkpoint["path"]) == checkpoint["sha256"]
     run = json.loads((output / report["run"]["path"]).read_text())
     assert run["best_checkpoint"]["sha256"] == checkpoint["sha256"]
-    # Las fases son las de Titans-MAC, MARS-TITAN y CM-v1 para la misma ventana: los tramos
+    # Las fases son las de Titans-MAC, MARS-TITAN y CM-v1 para la misma ventana. Los tramos
     # medidos observan antes 12 meses de entradas, sin pasar del origen del ajuste.
     fold = json.loads(view.read_text())["temporal_view"]["fold"]
     phases = window_phases(fold, WARMUP)
@@ -516,9 +516,9 @@ def test_campaign_runs_the_candidate_with_the_rows_of_the_other_arms(views, tmp_
         stop=SimpleNamespace(requested=False),
     )
     assert summary["status"] == "completed"
-    # Cinco ventanas reentrenadas y ocho trasladadas: GRU con 2 + 2 ajustes y 3 traslados,
-    # candidata con dos búsquedas, como las demás familias, y un traslado por ventana con su
-    # única semilla.
+    # Hay cinco ventanas reentrenadas y ocho trasladadas. La GRU tiene 2 + 2 ajustes y 3
+    # traslados, y la candidata tiene dos búsquedas, como las demás familias, y un traslado por
+    # ventana con su única semilla.
     assert summary["planned"] == dict(training_jobs=5 * 4 + 5 * 2, prediction_jobs=8 * 3 + 8)
     jobs = plan.plan_campaign(plan.load_campaign(campaign))
     receipts = {
@@ -592,7 +592,7 @@ def test_planner_declares_candidate_jobs_only_with_its_section(tmp_path):
     assert "episodic_gru" not in report["pending_families"]
     counts = report["counts"]
     assert (counts["training_jobs"], counts["prediction_jobs"]) == (697, 616)
-    # Dos casos de búsqueda con la semilla 42, como Titans-MAC y el lector, y un finalista
+    # Hay dos casos de búsqueda con la semilla 42, como en Titans-MAC y el lector, y un finalista
     # por semilla adicional.
     for scope, (trained, carried) in dict(US=(7, 12), CN=(5, 8)).items():
         assert counts["scopes"][scope]["arms"]["gru_episodic"] == {

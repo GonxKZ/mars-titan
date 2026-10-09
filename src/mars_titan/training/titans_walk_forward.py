@@ -154,7 +154,7 @@ def _protocol(protocol, window, seed):
 
 
 def _recipe(path, rule, search_case=None, stopping=None):
-    """Receta del caso con la regla del protocolo o, si la campaña la declara, su parada."""
+    """Devuelve la receta del caso con la regla del protocolo o la parada de la campaña."""
     _, document = load_recipe(path)
     recipe = case_recipe(document, search_case)
     selection = {key: value for key, value in rule.items() if key != "max_epochs"}
@@ -251,7 +251,7 @@ def _request(
     local_control=None,
     stopping=None,
 ):
-    """Petición verificable sin abrir la vista: huellas de sus archivos y del código.
+    """Construye una petición verificable sin abrir la vista, con huellas de archivos y código.
 
     El caso de búsqueda solo aparece si la receta los declara, el control C solo si se pide
     y la regla de parada solo si la campaña declara una parada temprana, de modo que las

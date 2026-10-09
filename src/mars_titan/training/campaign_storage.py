@@ -176,7 +176,7 @@ def index_rows(counts, warmup, *, partitions=HELD_OUT, train=True):
 
 
 def job_footprint(job, counts, storage, *, release=None, prediction_bytes=None):
-    """Bytes que un trabajo conserva al confirmarse y bytes extra mientras se ejecuta.
+    """Calcula los bytes que un trabajo conserva al confirmarse y los que añade mientras se ejecuta.
 
     `prediction_bytes(job, partition)` sustituye los bytes por fila declarados por una
     medida exacta. `release` usa por defecto la política declarada. Un traslado solo

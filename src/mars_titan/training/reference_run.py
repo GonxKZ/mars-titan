@@ -671,7 +671,7 @@ def run_reference_case(
             atomic_json(report_path, report)
         while (next_step := decision()) != FINISH:
             if next_step == AWAIT:
-                # El estado tras la validación ya está confirmado: el grupo fija la época común.
+                # El estado tras la validación ya está confirmado y la época común la fija el grupo.
                 report.update(awaiting(selection, case["epochs"]), global_step=step, epochs=history)
                 return report
             if stop.requested:

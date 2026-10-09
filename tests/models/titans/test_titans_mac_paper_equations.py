@@ -1,4 +1,4 @@
-"""Filas de la tabla ecuación → módulo → prueba de Titans-MAC que no tenían prueba propia.
+"""Pruebas para las filas de la tabla ecuación → módulo → prueba de Titans-MAC sin prueba propia.
 
 Las ecuaciones siguen la numeración de las actas de NeurIPS 2025. Solo se calculan
 forward, pérdidas y gradientes. Ninguna prueba crea un optimizador ni modifica parámetros.
@@ -22,7 +22,7 @@ def titans():
 
 
 def campaign_memory():
-    """Memoria con las opciones de la receta historical-masked, en FP64 y anchura reducida."""
+    """Construye la memoria de la receta historical-masked en FP64 y con menos anchura."""
     package = titans()
     config = package.MemoryConfig(
         dim=4,
@@ -36,7 +36,7 @@ def campaign_memory():
 
 
 def chunked_update(model, observed, state, chunk):
-    """Forma por chunks de la sección 2.2: u_t = ∇ℓ(M_t′; x_t) con t′ el inicio del chunk.
+    """Calcula la forma por chunks de 2.2, u_t = ∇ℓ(M_t′; x_t), con t′ al inicio del chunk.
 
     Después aplica la recurrencia (5) del momentum y el olvido de (3) token a token. Con
     chunk = 1, t′ = t − 1 y la forma coincide con la actualización secuencial de (3).
@@ -64,7 +64,7 @@ def test_sequential_update_is_the_chunk_size_one_case_of_the_paper_parallel_form
     generator = torch.Generator().manual_seed(11)
     observed = torch.randn((2, 6, 4), generator=generator, dtype=torch.float64)
     start = model.initial_state(2)
-    # Momentum no nulo para que (5) arrastre el término η_t S_{t−1} desde el primer token.
+    # El momentum no es nulo para que (5) arrastre el término η_t S_{t−1} desde el primer token.
     start = type(start)(
         start.weights,
         tuple(
@@ -113,7 +113,7 @@ def test_inference_writes_only_the_fast_state_and_keeps_persistent_memory_fixed(
     for name, value in core.named_parameters():
         torch.testing.assert_close(value, before[name], rtol=0, atol=0)
         assert value.grad is None
-    # P entra en la atención de (7) y (8): otro prefijo cambia la salida de la misma entrada.
+    # P entra en la atención de (7) y (8), así que otro prefijo cambia la salida de la entrada.
     with torch.no_grad():
         core.persistent.mul_(-2.0)
     changed, _ = core(x, state)

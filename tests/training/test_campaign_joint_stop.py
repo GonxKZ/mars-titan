@@ -1,4 +1,4 @@
-"""Parada temprana declarada por la campaña: modo individual, grupos conjuntos y plan.
+"""Pruebas de la parada temprana que declara la campaña, en modo individual, en grupo y en el plan.
 
 Estas pruebas no leen vistas ni datos, no reservan la GPU y no ajustan ningún modelo.
 """
@@ -42,7 +42,7 @@ def extended(campaign):
 
 def test_joint_campaign_a_keeps_the_design_and_declares_its_rule_before_results():
     joint, declared = (json.loads(path.read_text()) for path in (JOINT_CONFIG, CAMPAIGNS["A"]))
-    # Solo cambian el nombre y la parada: mismas ventanas, brazos, semillas y límites.
+    # Solo cambian el nombre y la parada. Ventanas, brazos, semillas y límites son los mismos.
     assert {key for key in joint if joint.get(key) != declared.get(key)} == {"name", "early_stop"}
     assert joint["status"] == plan.DECLARED and joint["final_test_opened"] is False
     report = plan.check_campaign(JOINT_CONFIG)
@@ -51,10 +51,10 @@ def test_joint_campaign_a_keeps_the_design_and_declares_its_rule_before_results(
     assert report["early_stop"]["individual_rule"] == dict(RULE, stopping=VALIDATION_PLATEAU)
     assert report["early_stop"]["group_epoch"] == "maximum_of_first_plateaus"
     counts = report["counts"]
-    # Los mismos 2385 ajustes completos que A. Los 720 de Titans-MAC se dividen en meseta y
-    # continuación, y la meseta no cuenta como ajuste adicional.
+    # Son los mismos 2385 ajustes completos que en A. Los 720 de Titans-MAC se dividen en
+    # meseta y continuación, y la meseta no cuenta como ajuste adicional.
     assert (counts["training_jobs"], counts["prediction_jobs"]) == (2385, 0)
-    # Cuatro controles por 45 ventanas reentrenadas (19 + 13 + 13) por 4 ajustes.
+    # Son cuatro controles por 45 ventanas reentrenadas (19 + 13 + 13) por 4 ajustes.
     assert counts["plateau_jobs"] == 4 * (19 + 13 + 13) * 4 == 720
 
 
@@ -62,8 +62,8 @@ def test_extended_joint_campaign_groups_mars_titan_and_cm_v1():
     campaign = extended(plan.load_campaign(JOINT_CONFIG))
     counts = plan.count_jobs(campaign)
     assert (counts["training_jobs"], counts["prediction_jobs"]) == (4725, 0)
-    # Titans-MAC, MARS-TITAN, núcleos y brazos de CM-v1: 16 brazos por 4 ajustes y 45
-    # ventanas. La GRU candidata usa la meseta individual.
+    # Titans-MAC, MARS-TITAN y los núcleos y brazos de CM-v1 suman 16 brazos con 4 ajustes y
+    # 45 ventanas. La GRU candidata usa la meseta individual.
     assert counts["plateau_jobs"] == 16 * 4 * 45 == 2880
     jobs = plan.plan_campaign(campaign)
     grouped = {job["arm"] for job in jobs if job.get("phase") == plan.PLATEAU}
@@ -89,7 +89,7 @@ def test_each_grouped_fit_splits_into_plateau_and_continuation_in_dependency_ord
         plateau = plateaus[final["plateau"]]
         head, _, name = final["id"].rpartition("/")
         assert plateau["id"] == f"{head}/plateau-{name}"
-        # La meseta repite el mismo ajuste: caso, semilla, ventana y dependencias.
+        # La meseta repite el mismo ajuste, con su caso, semilla, ventana y dependencias.
         assert {k: v for k, v in plateau.items() if k not in ("id", "phase")} == {
             k: v
             for k, v in final.items()
@@ -106,7 +106,7 @@ def test_each_grouped_fit_splits_into_plateau_and_continuation_in_dependency_ord
             assert final["case"]["stopping_rule"] == dict(RULE, stopping=JOINT_PLATEAU)
         else:
             assert final["case"] is None
-    # Un grupo por ámbito, ventana reentrenada, semilla y caso: 45 x (2 casos + 2 finalistas).
+    # Hay un grupo por ámbito, ventana reentrenada, semilla y caso, 45 x (2 casos + 2 finalistas).
     groups = Counter(tuple(final["joint_group"]) for final in finals)
     assert len(groups) == 45 * 4 and set(groups.values()) == {4}
     # Las referencias y los tabulares conservan sus trabajos y la parada individual.

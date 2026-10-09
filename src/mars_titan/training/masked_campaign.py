@@ -72,7 +72,7 @@ from .selection import AWAIT
 
 RUN_KIND = "historical_masked_campaign_run"
 RECEIPT_KIND = "masked_campaign_job"
-# Recibo de la meseta de un ajuste conjunto: su parada individual, sin predicciones.
+# El recibo de la meseta de un ajuste conjunto guarda su parada individual, sin predicciones.
 PLATEAU_STATUS = "plateau_confirmed"
 # Tramos que lee la comparación: calibración común y evaluación.
 COMPARED = ("calibration", "evaluation")
@@ -226,12 +226,12 @@ def _group(job):
 
 @dataclass(frozen=True)
 class JobRun:
-    """Lo que necesita un ejecutor: trabajo, caso resuelto, vista, destino y ancla.
+    """Reúne el trabajo, el caso resuelto, la vista, el destino y el ancla de un ejecutor.
 
     `parent` solo existe en los ajustes que parten de otro predictor elegido en la misma
     ventana y semilla, como el lector de MARS-TITAN sobre Titans-MAC o un brazo de CM-v1
     sobre su núcleo. `joint_epoch` solo existe en la continuación de un ajuste con parada
-    conjunta: es la época común de su grupo.
+    conjunta y es la época común de su grupo.
     """
 
     job: dict
@@ -538,7 +538,7 @@ class _Campaign:
         return None, anchor, dict(source=key, source_sha256=receipt["sha256"])
 
     def joint_epoch(self, job):
-        """Época común de un grupo conjunto: la máxima de las paradas de sus mesetas."""
+        """Calcula la época común de un grupo, que es la mayor de las paradas de sus mesetas."""
         members = {key: self.receipts[key] for key in job["joint_group"]}
         _require(
             all(receipt.get("status") == PLATEAU_STATUS for receipt in members.values()),
@@ -635,7 +635,7 @@ class _Campaign:
         return (run, identity), None
 
     def confirm_plateau(self, job, run, identity, report):
-        """Recibo de la meseta: parada individual y copia del informe, sin predicciones.
+        """Escribe el recibo de la meseta con su parada y una copia del informe, sin predicciones.
 
         El ajuste final continúa en la misma carpeta y reescribe su informe, así que el
         recibo guarda una copia propia del informe en la meseta.
@@ -763,7 +763,7 @@ class _Campaign:
         """Liberar lo que nadie vuelve a leer de un intento con su recibo ya escrito."""
         if self.disk is None:
             return
-        # La continuación de una meseta reanuda en su carpeta: se libera al confirmarla.
+        # La continuación de una meseta reanuda en su carpeta, que se libera al confirmarla.
         if self.disk[2]["release_on_confirmation"] and job.get("phase") != PLATEAU:
             release_confirmed(self.output / receipt["attempt"], job["model"])
         self.disk[0].settle(job["id"])
@@ -816,7 +816,7 @@ class _Campaign:
 
 
 def _summary(output, identity, jobs, receipts, status, **extra):
-    # La meseta de un ajuste conjunto es la primera parte del mismo ajuste: se cuenta aparte.
+    # La meseta de un ajuste conjunto es la primera parte del mismo ajuste y se cuenta aparte.
     def kind(job):
         return PLATEAU if job.get("phase") == PLATEAU else job["kind"]
 

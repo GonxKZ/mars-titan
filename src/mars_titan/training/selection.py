@@ -13,10 +13,10 @@ from dataclasses import replace
 VALIDATION_PLATEAU = "validation_plateau"
 # Recorre todas las épocas declaradas y conserva el mejor estado sin cortar el presupuesto.
 FIXED_BUDGET = "fixed_budget"
-# Parada conjunta de un grupo emparejado. La época común la fija la campaña.
+# Este modo detiene a la vez un grupo emparejado. La época común la fija la campaña.
 JOINT_PLATEAU = "joint_plateau"
 STOPPING_MODES = (VALIDATION_PLATEAU, FIXED_BUDGET, JOINT_PLATEAU)
-# Decisiones tras una validación completa.
+# Estas son las decisiones posibles tras una validación completa.
 CONTINUE, FINISH, AWAIT = "continue", "finish", "awaiting_joint_stop"
 
 
@@ -97,7 +97,7 @@ def initial_selection(score, options):
 
 
 def individual_stop(selection, epochs):
-    """Parada individual de un ajuste conjunto: primera meseta o el máximo si lo agotó.
+    """Devuelve la primera meseta de un ajuste conjunto, o el máximo de épocas si lo agotó.
 
     Devuelve None mientras el ajuste no haya alcanzado ninguna de las dos.
     """
@@ -157,7 +157,7 @@ def bind_joint_epoch(report, joint_epoch, options, epochs):
 
 
 def awaiting(selection, epochs):
-    """Campos del informe de un ajuste detenido en su meseta a la espera del grupo."""
+    """Devuelve los campos del informe de un ajuste detenido en su meseta a la espera del grupo."""
     return dict(
         status=AWAIT,
         individual_stop_epoch=individual_stop(selection, epochs),
@@ -169,7 +169,7 @@ def awaiting(selection, epochs):
 
 
 def with_rule(recipe, rule):
-    """Receta con la regla de parada de la campaña, que solo cambia épocas y selección.
+    """Devuelve la receta con la regla de parada de la campaña, que solo cambia épocas y selección.
 
     La receta declara la regla del protocolo. Una campaña con parada temprana declarada
     sustituye solo esos dos campos, así que la identidad de la receta cambia con el modo.
@@ -181,7 +181,7 @@ def with_rule(recipe, rule):
 
 
 def campaign_rule(protocol_rule, override):
-    """Regla de un ajuste: la del protocolo o la parada temprana de la campaña.
+    """Devuelve la regla de un ajuste, que es la del protocolo o la parada temprana de la campaña.
 
     La campaña puede cambiar el modo, la paciencia, la mejora mínima y las épocas mínima y
     máxima, nunca la métrica. Sin `override` se devuelve la del protocolo.

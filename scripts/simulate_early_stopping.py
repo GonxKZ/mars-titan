@@ -28,7 +28,7 @@ STAGES = ("search", "finalist")
 
 
 def histories(root):
-    """Historiales de validación de los ajustes desde cero, con su clave de grupo."""
+    """Devuelve los historiales de validación de los ajustes desde cero con su clave de grupo."""
     found, digest = [], hashlib.sha256()
     for path in sorted(Path(root).rglob("run.json")):
         relative = path.relative_to(root).parts
@@ -57,7 +57,7 @@ def histories(root):
 
 
 def run(scores, options, epochs):
-    """Selección época a época hasta la parada del modo o el final del historial."""
+    """Aplica la selección época a época hasta que para el modo o se acaba el historial."""
     state = None
     for epoch, score in enumerate(scores[:epochs], 1):
         state = advance_selection(state, score, epoch, options)
@@ -71,7 +71,7 @@ def best_until(scores, epoch):
 
 
 def simulate(fits, options, epochs):
-    """Épocas recorridas y pérdida del estado elegido frente a 30 épocas fijas."""
+    """Resume las épocas recorridas y la pérdida del estado elegido frente a 30 épocas fijas."""
     individual = dict(options, stopping=VALIDATION_PLATEAU)
     joint = dict(options, stopping=JOINT_PLATEAU)
     result = dict(individual=[], joint=[], individual_loss=[], joint_loss=[], censored=0)

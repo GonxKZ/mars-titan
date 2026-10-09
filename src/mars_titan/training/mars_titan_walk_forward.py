@@ -405,7 +405,8 @@ def run_readout_window(
         code=_code(family),
     )
     if stopping is not None:
-        # Solo con parada temprana, para que las demás peticiones conserven su forma.
+        # La regla solo se añade con parada temprana, para que las demás peticiones
+        # conserven su forma.
         request["stopping_rule"] = dict(stopping)
     safe_destination(output)
     report_path = output / "run.json"

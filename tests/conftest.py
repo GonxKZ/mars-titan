@@ -10,7 +10,7 @@ from mars_titan.training.learning_hold import HOLD_ENV, LearningHoldError, insta
 from tests.suite_support import python_shebang as _python_shebang
 from tests.suite_support import strict_problems
 
-# Modo estricto de la comprobación local: con valor 1, las pruebas marcadas con
+# La comprobación local tiene un modo estricto. Con valor 1, las pruebas marcadas con
 # `native_binding` deben ejecutarse con el enlace de MARS_TITAN_EPISODIC_NATIVE. Sin el
 # modo, la suite CPU las sigue omitiendo con su motivo cuando falta el enlace.
 REQUIRE_NATIVE_ENV = "MARS_TITAN_REQUIRE_NATIVE"
