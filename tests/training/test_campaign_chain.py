@@ -85,6 +85,12 @@ def test_new_rows_start_after_everything_the_parent_used_and_end_with_the_train_
         chain.posttraining_rows(folds["fold-001"], folds["fold-001"])
     with pytest.raises(ValueError, match="no tiene filas nuevas"):
         chain.posttraining_rows(folds["fold-002"], folds["fold-001"])
+    edge = dict(
+        folds["fold-001"],
+        train=[folds["fold-001"]["train"][0], folds["fold-000"]["calibration"][1]],
+    )
+    with pytest.raises(ValueError, match="no tiene filas nuevas"):
+        chain.posttraining_rows(folds["fold-000"], edge)
     assert chain.parent_window(value, JOINT, "fold-000") is None
     with pytest.raises(ValueError, match="no es una ventana"):
         chain.parent_window(value, JOINT, "fold-019")
@@ -735,6 +741,7 @@ def test_the_verifier_rejects_chain_receipts_that_break_a_frontier(
             None,
             "no sigue la regla",
         ),
+        (lambda d: d["selected"].update(kind="continuation"), None, "no sigue la regla"),
         (lambda d: d.update(fit_rows=None), None, "no sigue la regla"),
         (lambda d: d.update(parent_window=None), None, "elige el estado de la base"),
         (lambda d: d.update(parent_window="fold-005"), None, "no parte de la ventana anterior"),
@@ -749,6 +756,7 @@ def test_the_verifier_rejects_chain_receipts_that_break_a_frontier(
     ],
     ids=[
         "frozen_without_better_score",
+        "kind_of_another_candidate",
         "adapter_without_fit_rows",
         "first_window_with_candidates",
         "other_parent_window",
