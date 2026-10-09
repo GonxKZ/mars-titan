@@ -22,7 +22,7 @@ from mars_titan.data.input_policy import (
     masked_inputs,
     policy_identity,
 )
-from mars_titan.data.price_windows import gate_price_window
+from mars_titan.data.price_windows import PRICE_WINDOW_CHANNELS, gate_price_window
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.evaluation.session_metrics import SessionErrors
 from mars_titan.models.baselines.boosting import BoostingModel, fit_boosting_batches
@@ -53,11 +53,13 @@ def _matrix(batch, dtype=np.float64, *, presence=False):
     count = len(batch["target"])
     if ("presence" in batch) != presence:
         raise ValueError("Los bits de presencia no coinciden con la política declarada")
-    # El relleno de una sesión ausente en todo el mercado se anula antes de aplanar.
+    # El relleno de una sesión ausente en todo el mercado se anula antes de aplanar. Solo las
+    # ventanas v3.1 llevan el bit, así que el resto de formas se aplanan como antes.
+    prices = batch["inputs"]["prices"]
+    if prices.ndim == 3 and prices.shape[-1] == len(PRICE_WINDOW_CHANNELS):
+        prices = gate_price_window(prices)
     blocks = [
-        (
-            gate_price_window(batch["inputs"][name]) if name == "prices" else batch["inputs"][name]
-        ).reshape(count, -1)
+        (prices if name == "prices" else batch["inputs"][name]).reshape(count, -1)
         for name in MODALITIES
     ]
     if presence:
