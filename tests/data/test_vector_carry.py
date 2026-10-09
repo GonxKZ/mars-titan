@@ -167,3 +167,83 @@ def test_the_window_contract_must_declare_the_calendars_of_the_edition(tmp_path)
         contract = price_window_contract(calendars, dict.fromkeys(calendars, []))
         with pytest.raises(ValueError, match="no declara los calendarios"):
             encode_corpus(manifest, tmp_path / "edition", price_window=contract, **kwargs)
+
+
+def pending_count(edition):
+    from mars_titan.data.vector_carry import pending_items
+
+    return sum(1 for _ in pending_items(edition))
+
+
+def test_collection_confirms_complete_assets_and_leaves_only_missing_inputs_to_the_gpu(tmp_path):
+    from mars_titan.data.embeddings import EmbeddingCache
+    from mars_titan.data.vector_carry import CollectingEncoders, encode_pending
+
+    manifest, previous, kwargs = first_edition(tmp_path)
+    reference = pq.read_table(previous / "samples/US/A/samples.parquet")
+    collector = CollectingEncoders(Encoders.spec)
+    # Con todos los vectores disponibles, la recogida confirma el activo en una sola pasada.
+    whole = encode_corpus(
+        manifest, tmp_path / "whole", encoders=collector, vector_carry=previous, **kwargs
+    )
+    assert whole["cohort_complete"] is True and pending_count(tmp_path / "whole") == 0
+    assert pq.read_table(tmp_path / "whole/samples/US/A/samples.parquet").equals(reference)
+    # Sin los gráficos ni los textos de la edición anterior, todo queda pendiente de GPU.
+    (previous / "samples/US/A/manifest.json").unlink()
+    (previous / "embeddings.sqlite").unlink()
+    EmbeddingCache(previous / "embeddings.sqlite").close()
+    output = tmp_path / "carried"
+    first = encode_corpus(manifest, output, encoders=collector, vector_carry=previous, **kwargs)
+    assert first["failed_assets"] == 1 and "GPU" in first["coverage"][0]["detail"]
+    assert not (output / "samples/US/A/manifest.json").exists()
+    assert not (output / "collect/US/A").exists()
+    # Un resto de una recogida interrumpida nunca confirmado se descarta al repetirla.
+    (output / "collect/US/A").mkdir(parents=True)
+    (output / "collect/US/A/configuration.json").write_text("{}")
+    again = encode_corpus(manifest, output, encoders=collector, vector_carry=previous, **kwargs)
+    assert again["coverage"] == first["coverage"]
+    pending = pending_count(output)
+    charts = len(set(reference.column("chart_hash").to_pylist()))
+    assert pending >= charts > 0
+    encoders = Encoders()
+    assert encode_pending(output, encoders, max_items=1) == dict(
+        encoded=1, already=0, remaining=pending - 1
+    )
+    assert encode_pending(output, encoders) == dict(encoded=pending - 1, already=1, remaining=0)
+    # Cada gráfico distinto se codifica una sola vez.
+    assert encoders.calls == charts
+    other = type("Other", (), {"spec": {"version": 2}})()
+    for edition in (output, tmp_path / "whole"):
+        # Otro codificador se rechaza aunque no quede nada pendiente.
+        with pytest.raises(ValueError, match="codificador"):
+            encode_pending(edition, other)
+    final = encode_corpus(
+        manifest,
+        output,
+        encoders=ReuseOnlyEncoders(Encoders.spec),
+        vector_carry=previous,
+        **kwargs,
+    )
+    assert final["cohort_complete"] is True
+    # Los vectores calculados aparte coinciden con los de la codificación en línea.
+    assert pq.read_table(output / "samples/US/A/samples.parquet").equals(reference)
+
+
+def test_pending_inputs_are_read_once_and_a_corrupted_record_is_rejected(tmp_path):
+    import sqlite3
+
+    from mars_titan.data.vector_carry import PendingVectors, pending_items
+
+    identity = dict(encoder="e" * 64, kind="chart", content="c" * 64)
+    for name in ("pending-vectors-0-of-2.sqlite", "pending-vectors-1-of-2.sqlite"):
+        store = PendingVectors(tmp_path / name)
+        store.add(identity, "image", b"png")
+        store.add(identity, "image", b"png")
+        store.close()
+    assert list(pending_items(tmp_path)) == [(identity, "image", b"png")]
+    with pytest.raises(ValueError, match="texto ni un PNG"):
+        PendingVectors(tmp_path / "pending-vectors.sqlite").add(identity, "audio", b"x")
+    with sqlite3.connect(tmp_path / "pending-vectors-1-of-2.sqlite") as db:
+        db.execute("UPDATE pending SET payload = ?", (b"other",))
+    with pytest.raises(ValueError, match="corrupto"):
+        list(pending_items(tmp_path))
