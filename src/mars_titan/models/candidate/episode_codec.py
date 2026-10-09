@@ -56,6 +56,11 @@ class CandidateEncoding:
     _array_contract: tuple
     _digest: str
 
+    @property
+    def key_inputs(self):
+        """Nombre que usan las filas de sesión. El banco GRU guarda estas claves sin cambiarlas."""
+        return self.keys
+
     def _signature(self):
         return tuple((a.shape, a.dtype.str, a.strides) for a in (self.keys, self.values))
 
