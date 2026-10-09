@@ -6,6 +6,7 @@ from contextlib import contextmanager
 import pytest
 
 from mars_titan.training.learning_hold import HOLD_ENV, LearningHoldError, install_optimizer_guard
+from tests.suite_support import python_shebang as _python_shebang
 
 
 def _skip(reason: str) -> None:
@@ -61,3 +62,9 @@ def learning_doubles(learning_hold):
     instalado al inicio de la sesión sigue omitiendo cualquier paso de optimizador.
     """
     return learning_hold(True)
+
+
+@pytest.fixture(scope="session")
+def python_shebang(tmp_path_factory):
+    """Primera línea de los ejecutables falsos escritos en Python, válida con rutas con espacios."""
+    return _python_shebang(tmp_path_factory.mktemp("interpreter"))
