@@ -14,7 +14,7 @@
   "primary_metric": "session_mae",
   "selection": {
     "metric": "session_mae",
-    "minimum_epochs": 3,
+    "stopping": "fixed_budget",
     "patience": 5,
     "min_delta": 1e-05,
     "max_epochs": 30

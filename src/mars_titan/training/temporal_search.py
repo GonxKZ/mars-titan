@@ -2,7 +2,6 @@
 
 import argparse
 import fcntl
-import inspect
 import json
 import os
 import re
@@ -23,6 +22,7 @@ from .checkpoints import StopRequest
 from .cohort_contract import input_identity
 from .experiment_resources import GpuLease
 from .reference_search import _configuration, run_search
+from .selection import VALIDATION_PLATEAU
 from .temporal_contract import temporal_contracts, temporal_fold
 
 # Versión del informe de vistas según la política de entradas y si une los dos mercados.
@@ -32,7 +32,15 @@ _REPORT_VERSIONS = {
     (HISTORICAL_MASKED, False): 2,
     (HISTORICAL_MASKED, True): 3,
 }
-_PLAN_STOPPING = ("max_epochs", "patience", "min_delta", "minimum_epochs")
+
+
+def _stopping(rule):
+    """Comparar reglas de planes y protocolos con los valores implícitos de cada versión."""
+    return dict(
+        stopping=rule.get("stopping", VALIDATION_PLATEAU),
+        minimum_epochs=rule.get("minimum_epochs", 0),
+        **{key: rule[key] for key in ("max_epochs", "patience", "min_delta")},
+    )
 
 
 def _source_reports(report, views, markets, policy, joint):
@@ -76,16 +84,19 @@ def _source_reports(report, views, markets, policy, joint):
 def _inputs(config, views):
     plan, cases, config_hash = _configuration(config)
     if (
-        plan["schema_version"] not in {2, 3}
+        plan["schema_version"] not in {2, 3, 4}
         or len(plan["arms"]) != 1
         or plan["arms"][0] not in {"US", "CN", "US+CN"}
         or plan["pooled_weightings"] != ["natural"]
     ):
         raise ValueError("La campaña temporal requiere un único brazo y peso natural")
     markets = {"US", "CN"} if plan["arms"] == ["US+CN"] else set(plan["arms"])
+    # La versión 4 del plan declara la lectura. Las anteriores conservan la política estricta.
+    policy = plan.get("input_policy", STRICT_INPUTS)
     report, report_hash = read_manifest(views / "report.json", 1024**2)
-    policy = report.get("input_policy", STRICT_INPUTS) if isinstance(report, dict) else None
     joint = isinstance(report, dict) and report.get("kind") == "joint_temporal_views"
+    if isinstance(report, dict) and report.get("input_policy", STRICT_INPUTS) != policy:
+        raise ValueError("La política de entradas del plan no coincide con la de las vistas")
     if (
         not isinstance(report, dict)
         or policy not in INPUT_POLICIES
@@ -182,11 +193,9 @@ def _inputs(config, views):
     ):
         raise ValueError("La campaña no contiene todas las ventanas del protocolo")
     protocol = next(iter(protocols.values()))
-    if protocol["schema_version"] == 2:
-        # Todas las familias deben detenerse con la regla registrada en el protocolo.
-        rule = stopping_rule(protocol)
-        if plan["schema_version"] != 3 or any(plan[key] != rule[key] for key in _PLAN_STOPPING):
-            raise ValueError("El plan no aplica la regla de parada declarada por el protocolo")
+    # Todas las familias deben seleccionar y detenerse con la regla registrada en el protocolo.
+    if protocol["schema_version"] == 2 and _stopping(plan) != _stopping(stopping_rule(protocol)):
+        raise ValueError("El plan no aplica la regla de parada declarada por el protocolo")
     per_fold = len(cases) + len(plan["models"]) * (
         len(plan["finalist_seeds"]) - 1 + 2 * len(plan["finalist_seeds"])
     )
@@ -229,11 +238,6 @@ def check_temporal_search(config, views):
 def run_temporal_search(config, views, output, *, resume=False):
     config, views, output = map(Path, (config, views, output))
     records, identity, per_fold = _inputs(config, views)
-    policy = identity.get("input_policy", STRICT_INPUTS)
-    # Las vistas con máscaras requieren adhesión explícita del ejecutor antes de reservar la GPU.
-    if masked_inputs(policy) and "input_policy" not in inspect.signature(run_search).parameters:
-        raise ValueError("La búsqueda de referencias todavía no admite la política histórica")
-    options = {"input_policy": policy} if masked_inputs(policy) else {}
     safe_destination(output)
     outside_source(views, output)
     outside_source(Path("dataset"), output)
@@ -324,12 +328,7 @@ def run_temporal_search(config, views, output, *, resume=False):
 
                 folder = output / record["id"]
                 result = run_search(
-                    config,
-                    record["manifest"],
-                    folder,
-                    resume=folder.exists(),
-                    progress=observe,
-                    **options,
+                    config, record["manifest"], folder, resume=folder.exists(), progress=observe
                 )
                 resources.check()
                 observe(result)
