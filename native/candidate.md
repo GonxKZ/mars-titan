@@ -1,5 +1,9 @@
 # Referencia GRU con lectura episódica
 
+La [política histórica opt-in](candidate_historical.md) amplía esta referencia con
+máscaras explícitas. Las ecuaciones y archivos descritos aquí corresponden a la
+ruta estricta original.
+
 `mars_titan::candidate::Candidate` implementa la referencia GRU con lectura episódica. Recibe entradas ya normalizadas y una instantánea de episodios maduros. No admite, madura ni expulsa episodios. Tampoco entrena, selecciona checkpoints o recorre un corpus. La integración cronológica y la comparación científica siguen pendientes en #23. Esta identidad se conserva separada de Titans-MAC y de sus ampliaciones. Elegirla como B exige fijar el contraste correspondiente.
 
 Las entradas son precios `[N,64,Dp]`, noticias `[N,Dn]`, gráficos `[N,Dc]`, fundamentales `[N,Df]` y macro `[N,Dm]`. Las dimensiones y la identidad de normalización deben corresponder al manifiesto. `presence[N,5]` es booleana y debe ser verdadera en todas las posiciones. Una modalidad ausente se rechaza. La memoria vacía tiene otra máscara y sí está admitida.

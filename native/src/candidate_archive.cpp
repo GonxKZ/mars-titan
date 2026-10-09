@@ -19,6 +19,7 @@
 namespace mars_titan::candidate {
 namespace {
 constexpr int64_t schema_version = 2;
+constexpr int64_t historical_schema_version = 3;
 constexpr std::size_t maximum_archive_bytes = 128U << 20;
 constexpr mz_uint maximum_records = 1024;
 constexpr mz_uint maximum_record_name = 512;
@@ -141,9 +142,10 @@ void check_loaded(const torch::OrderedDict<std::string, at::Tensor>& tensors,
 
 void Candidate::save_state(std::ostream& destination) const {
     torch::serialize::OutputArchive archive;
+    const bool historical = config_.input_policy == "historical_masked_2000_v1";
     archive.write(
         "schema",
-        at::tensor({schema_version,
+        at::tensor({historical ? historical_schema_version : schema_version,
                     feature_projection_.scalar_type() == at::kDouble ? fp64_code : fp32_code,
                     static_cast<int64_t>(is_training())},
                    at::kLong),
@@ -159,6 +161,9 @@ void Candidate::save_state(std::ostream& destination) const {
         true);
     archive.write("temperature", at::scalar_tensor(config_.temperature, at::kDouble), true);
     archive.write("normalization_id", c10::IValue(config_.normalization_id));
+    if (historical) {
+        archive.write("input_policy", c10::IValue(config_.input_policy));
+    }
     archive.write("representation_id", c10::IValue(representation_id_));
     archive.write("torch_version", c10::IValue(TORCH_VERSION));
     archive.write("feature_projection", feature_projection_, true);
@@ -176,6 +181,13 @@ void Candidate::save_state(std::ostream& destination) const {
 }
 
 std::shared_ptr<Candidate> Candidate::load_state(std::istream& source, const at::Device& device) {
+    return load_state(source, device, "strict_inputs_v1");
+}
+
+std::shared_ptr<Candidate> Candidate::load_state(std::istream& source, const at::Device& device,
+                                                 const std::string& expected_policy) {
+    require(expected_policy == "strict_inputs_v1" || expected_policy == "historical_masked_2000_v1",
+            "La política esperada del archivo candidato no está admitida");
     auto bytes = read_bounded(source);
     check_archive_directory(bytes);
     std::istringstream buffer(std::move(bytes));
@@ -187,11 +199,20 @@ std::shared_ptr<Candidate> Candidate::load_state(std::istream& source, const at:
             "La versión LibTorch no coincide con el archivo candidato");
     const auto schema = read_integer_vector(archive, "schema", metadata_width);
     require(
-        schema[0].item<int64_t>() == schema_version &&
+        schema[0].item<int64_t>() == (expected_policy == "strict_inputs_v1"
+                                          ? schema_version
+                                          : historical_schema_version) &&
             (schema[1].item<int64_t>() == fp32_code || schema[1].item<int64_t>() == fp64_code) &&
             (schema[2].item<int64_t>() == 0 || schema[2].item<int64_t>() == 1),
         "Versión, precisión o modo del candidato incompatible");
     Config config;
+    config.input_policy = expected_policy;
+    if (expected_policy == "historical_masked_2000_v1") {
+        c10::IValue policy;
+        archive.read("input_policy", policy);
+        require(policy.isString() && policy.toStringRef() == expected_policy,
+                "La política del archivo candidato no coincide");
+    }
     const auto dimensions = read_integer_vector(archive, "dimensions", modality_count);
     for (std::size_t i = 0; i < config.dimensions.size(); ++i) {
         config.dimensions.at(i) = dimensions[static_cast<int64_t>(i)].item<int64_t>();

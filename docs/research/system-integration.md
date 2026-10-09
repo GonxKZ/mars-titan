@@ -1,6 +1,6 @@
 # Integración de memoria, atención y aprendizaje en MARS-TITAN
 
-La auditoría original del 4 de octubre de 2026 inspeccionó `96cab3616f78e6713b451b01437c816ba7bd010b`. La corrección arquitectónica del 8 de octubre conserva ese inventario y adopta la [separación entre GRU, Transformer, Titans-MAC y ampliaciones](titans-mac-architecture.md). Existe un componente GRU nativo en #296, pendiente de CUDA e integración completa. Titans-MAC y las ampliaciones no se consideran implementados por disponer de utilidades aisladas. No se han entrenado estas nuevas variantes.
+La auditoría original del 4 de octubre de 2026 inspeccionó `96cab3616f78e6713b451b01437c816ba7bd010b`. La corrección arquitectónica del 8 de octubre conserva ese inventario y adopta la [separación entre GRU, Transformer, Titans-MAC y ampliaciones](titans-mac-architecture.md). La revisión del 9 de octubre distingue el inventario histórico que sigue del estado actual: la [GRU histórica](../../native/candidate_historical.md) tiene comprobaciones CPU/CUDA del módulo y el [consumidor financiero](../engineering/financial-session-v2.md) integra Titans-MAC, banco y recuperación bajo M0/M1. La conexión cronológica de la GRU y la trayectoria histórica completa siguen pendientes. No se han entrenado estas nuevas variantes.
 
 ## Decisión arquitectónica
 
@@ -10,7 +10,7 @@ La capacidad no cabe en un único punto de attention, encoder o FFN. La selecci�
 
 Esta es la integración recomendada por los contratos encontrados. No se afirma haber medido un óptimo global de MAE, latencia o memoria. Esa selección requiere ejecutar los contrastes descritos después. La arquitectura original permanece como referencia y las ampliaciones se identifican por separado.
 
-## Qué existe y qué falta
+## Inventario del 4 de octubre de 2026
 
 | Parte | Estado comprobado en código | Consecuencia |
 | --- | --- | --- |
