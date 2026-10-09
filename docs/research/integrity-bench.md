@@ -50,12 +50,46 @@ El informe de cada recálculo indica las dos exclusiones.
 
 También hay dos mutaciones del código principal, una en la media por sesión y otra en la puntuación de intervalo. El recálculo las señala columna a columna sobre un estudio de juguete completo.
 
+## Mismas filas en todos los brazos
+
+La comparación ya exige que todos los brazos evalúen las mismas filas, con `ForecastPanel.cohort_sha256`. `integrity/row_identity.py` lo comprueba por otro camino:
+1. Ordena las filas de cada archivo de predicciones por mercado, activo e instante con Arrow.
+2. Calcula una huella SHA-256 propia con los bytes de esas tres claves y los bits exactos del objetivo en float64.
+3. Agrupa las huellas por ventana y tramo (calibración y evaluación) y exige que todos los pares brazo-semilla compartan una sola.
+
+Un bit distinto en un objetivo, una fila de más o una de menos separan al brazo afectado en su propio grupo, y el informe lo nombra.
+
+Además, cuenta en cada archivo:
+- las filas de la reserva de 2024;
+- las filas fuera del tramo declarado de su ventana;
+- las de mercados fuera del ámbito;
+- las claves duplicadas;
+- los objetivos no finitos.
+
+Antes de leer cada archivo comprueba su huella frente al manifiesto de fuentes.
+
+```bash
+uv run python -m mars_titan.integrity.row_identity \
+  configs/evaluation/historical-masked-2000-comparison.json SOURCES.json US+CN --output ROWS.json
+```
+
+**Coste medido.** Entre 0,6 y 0,9 s por archivo de 1,25 millones de filas en CPU, con dos hilos. Es el orden de una ventana de evaluación US+CN.
+
+**Alcance.** Cubre los archivos de calibración y evaluación que entran en la comparación. Las predicciones de validación con las que cada runner elige su punto de parada no pasan por este manifiesto. Su comprobación contra la reserva de 2024 queda en la lista siguiente.
+
+**Pruebas.** Sobre el estudio de juguete de la comparación:
+- un estudio fiel pasa en US y en US+CN;
+- se detectan un solo bit cambiado en un objetivo, una fila que falta en un brazo y una fila movida a 2024;
+- se cuentan las claves duplicadas y los objetivos no finitos;
+- se rechaza un archivo cambiado tras publicar el manifiesto;
+- la huella no depende del orden de las filas ni de su partición en bloques.
+
 ## Comprobaciones pendientes
 
 Siguen en #442, en este orden:
 1. Sondas sin ajuste:
    - canarios de información futura en entradas de prueba que los detectores deben señalar;
-   - ninguna fila de 2024 en artefactos de selección;
+   - ninguna fila de 2024 en las predicciones de validación y en los demás artefactos de selección;
    - invariantes de caja, posiciones, costes y acciones imposibles en las cintas reales con políticas fijas;
    - cota con oráculo de información futura, marcada como diagnóstico y excluida de toda comparación.
 2. Falsaciones que ajustan modelos, solo declaradas mientras dure el bloqueo de aprendizaje: placebo con etiquetas permutadas dentro de cada sesión, desplazamiento temporal de las entradas, predicción constante y aleatoria y estabilidad entre semillas. Cada una con su coste y su criterio de éxito o fracaso escritos de antemano.
