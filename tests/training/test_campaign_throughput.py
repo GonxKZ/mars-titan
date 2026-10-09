@@ -273,8 +273,10 @@ def test_candidate_hours_use_the_section_it_would_declare(variant):
     rates[EPISODIC] = chronological(["gru_episodic"])
     candidate = throughput.estimate_hours(campaign, counts, rates)["families"][EPISODIC]
     assert candidate["declared_in_campaign"] is False
+    # Dos casos de búsqueda y dos semillas más del elegido por ventana ajustada. Las tres
+    # semillas del elegido se trasladan.
     for scope, (trained, carried) in WINDOWS[variant].items():
-        expected = (3 * trained * FIT + 3 * carried * CARRY) / 3600
+        expected = (4 * trained * FIT + 3 * carried * CARRY) / 3600
         assert candidate["options"][DECLARED]["scopes"][scope]["hours"] == pytest.approx(expected)
     with pytest.raises(ValueError, match="ya declara"):
         throughput.with_candidate(campaign, CANDIDATE)
