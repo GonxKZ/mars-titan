@@ -38,9 +38,43 @@ objetivo = pérdida media de las etiquetas maduras del tramo + media_g P_g
 P_g = peso · Σ_{flujos medidos de g} max(ŵ(RᵀJR) − umbral, 0)² / n_seleccionados(g)
 ```
 
-El grupo lógico es el evento completo, con todos sus bloques físicos. La selección se fija antes de dividirlo y su contexto identifica parámetros, índice, tramo e instante, así que dividir en bloques o reanudar no cambia los flujos medidos. El término conserva el gradiente del token actual y de los parámetros de MAC, y el estado rápido medido se desacopla de la historia. Si un tramo termina sin etiquetas maduras no hay paso y su término se descarta (`control_groups_discarded`). C no añade actualizaciones, de modo que B y B+C tienen el mismo número de pasos. El modo `diagnostic` y la combinación de la penalización con `accumulation_rows` se rechazan. Sin control local, la identidad del entrenador conserva literalmente su forma anterior.
+El grupo lógico es el evento completo, con todos sus bloques físicos. La selección se fija antes de dividirlo y su contexto identifica parámetros, índice, tramo e instante, así que dividir en bloques o reanudar no cambia los flujos medidos. El término conserva el gradiente del token actual y de los parámetros de MAC, y el estado rápido medido se desacopla de la historia. Si un tramo termina sin etiquetas maduras no hay paso y su término se descarta (`control_groups_discarded`). C no añade actualizaciones, de modo que B y B+C tienen el mismo número de pasos. El modo `diagnostic` se rechaza en el ajuste, con acumulación o sin ella. Sin control local, la identidad del entrenador conserva literalmente su forma anterior.
 
 Al predecir con el núcleo congelado, C no interviene. Un núcleo ajustado con la penalización se copia a un gemelo `disabled` con la misma base mediante `copy_paired_parameters`, y su emisión es la misma.
+
+### Acumulación por bloques con C
+
+La receta del núcleo es la de Titans-MAC, que prevé `accumulation_rows=128` si el tramo completo de `mac_online` no cabe en los 8 GB de la GPU. Con acumulación, el entrenador emite cada bloque con el mismo cálculo, corta su grafo y, al actualizar, repite el tramo por bloques de flujos desde su estado inicial. La primera versión de C rechazaba esa combinación en el entrenador, y el plan de la campaña rechazaba la sección `cm_v1` si la receta fijaba la opción. Para admitirla había que comprobar que el gradiente del objetivo completo se puede repartir entre bloques sin cambiar su valor.
+
+Sea un tramo con N etiquetas maduras de pérdida ℓ_i y G grupos medidos. Cada grupo g es un evento y su selección S_g se fija sobre todos sus flujos:
+
+```text
+J(θ)   = (1/N) Σ_i ℓ_i(θ) + (1/G) Σ_g P_g(θ)
+P_g(θ) = (peso / |S_g|) Σ_{f ∈ S_g} h_{f,g}(θ)
+h_{f,g}(θ) = max(ŵ(Rᵀ ∂F/∂z(z̄_{f,g}, x_{f,g}(θ), θ) R) − umbral, 0)²
+```
+
+z̄_{f,g} es el valor desacoplado del estado rápido del flujo f al llegar al evento g y x_{f,g}(θ) su token actual. El término se descompone por flujos por tres razones:
+
+1. h_{f,g} solo depende de θ, de las entradas del flujo en ese evento y del valor z̄_{f,g}. El estado medido se copia sin grafo y el token sale de codificadores y fusión que actúan fila a fila, sin normalización por lote y con dropout nulo. El operador se calcula sobre un estado de un solo flujo, la atención de MAC no mezcla flujos y el radio se estima matriz a matriz.
+2. |S_g| y G no dependen del bloque. La selección se fija con los contadores de todos los flujos del evento antes de dividirlo, y G es el número de grupos medidos que registra la emisión.
+3. θ no cambia dentro del tramo y z̄_{f,g} solo depende del estado del flujo al empezar el tramo y de sus propias entradas, que la repetición recorre en el orden original.
+
+Entonces, para cualquier partición B_1, …, B_K de los flujos que tienen etiquetas o términos medidos en el tramo,
+
+```text
+J(θ) = Σ_k [ (N_k/N) L_k(θ) + (1/G) Σ_g (peso / |S_g|) Σ_{f ∈ S_g ∩ B_k} h_{f,g}(θ) ]
+```
+
+con L_k la pérdida media de las N_k etiquetas del bloque k. El gradiente es lineal, así que ∇J es la suma de los gradientes de los bloques. La media de la tarea se reparte por la fracción de etiquetas, como en la acumulación sin C. Cada evento ya divide su término entre |S_g| cuando se calcula por bloques físicos, de modo que la única corrección es dividir la suma de los términos del bloque entre G, el número de grupos del tramo, y no entre los términos que caen en ese bloque. Un flujo medido sin etiquetas en el tramo también tiene que repetirse, aunque solo aporte su término de C.
+
+La implementación sigue esa forma. Cada lote del tramo guarda el plan de C de su evento. La emisión cuenta el término sin conservar su grafo, que retendría las activaciones del lote, y el tramo guarda solo los flujos medidos de cada grupo. `_replay` añade esos flujos a los que tienen etiquetas, repite cada lote con su plan y suma al objetivo del bloque sus términos divididos por G. Al terminar exige que la repetición haya recalculado exactamente los flujos medidos al emitir. La identidad del entrenador añade `penalty_accumulation` solo en esta combinación, así que ninguna identidad anterior cambia.
+
+La igualdad no es bit a bit en general, porque cambian el orden de las sumas y el reparto de la división. En float64 y CPU, con tres flujos, dos configuraciones de C y bloques de 1, 2 (que deja un bloque incompleto) y 3 flujos, la mayor diferencia de los gradientes registrados frente al tramo completo fue 1,1·10⁻¹⁶ en absoluto y 2·10⁻¹⁴ relativa a la mayor magnitud de cada tensor. Con un único bloque coincidieron bit a bit en ese fixture. La prueba declara rtol 10⁻¹⁰ y atol 10⁻¹³, las mismas que la acumulación sin C.
+
+El coste añadido no está medido en `cuda:0`. Cada término de C se calcula dos veces, al emitir para los contadores y al repetir con grafo, igual que el forward de la tarea. Los flujos medidos sin etiquetas añaden su recorrido del tramo a la repetición, aunque con dos flujos medidos por evento y casi todos los flujos con etiquetas en cada tramo deberían ser pocos. En el fixture técnico, el mayor grafo guardado al retropropagar bajó de 6,6 MB con el tramo completo a 2,2 MB con bloques de un flujo, con tres flujos medidos por evento.
+
+La repetición también vuelve a validar el plan del evento en cada `prepare`, que lo valida dos veces. En CPU y con 4.202 flujos por evento, cada validación de un bloque de 128 flujos costó unos 6,2 ms. La emisión ya paga ese coste en cada lote y la repetición lo paga en cada par de bloque y lote con flujos. La medida en `cuda:0` dirá si pesa lo bastante como para validar el plan una sola vez por evento.
 
 ## M en el banco del lector
 
@@ -77,20 +111,22 @@ Todas en CPU, con `CUDA_VISIBLE_DEVICES=-1`, dos hilos y pruebas por archivo.
 
 | Archivo | Qué comprueba |
 | --- | --- |
-| `tests/training/test_financial_run_control.py` | Parámetros y base emparejados, identidad, rechazos, paridad exacta con B sin flujos medidos, objetivo de cada tramo igual a la tarea más la media de sus grupos, frecuencia según el contador de cada flujo, términos descartados sin paso, linealidad del gradiente en el peso sin recorte, la cabeza fuera del camino de C, grupo lógico frente a bloque físico, validación igual a B y reanudación exacta |
+| `tests/training/test_financial_run_control.py` | Parámetros y base emparejados, identidad, rechazos, paridad exacta con B sin flujos medidos con acumulación y sin ella, objetivo de cada tramo igual a la tarea más la media de sus grupos, frecuencia según el contador de cada flujo, términos descartados sin paso, linealidad del gradiente en el peso sin recorte, la cabeza fuera del camino de C, grupo lógico frente a bloque físico, validación igual a B y reanudación exacta con acumulación y sin ella. Con `accumulation_rows` de 1, 2 y 3, gradientes iguales al tramo completo en float64 con un flujo medido sin etiquetas en algún tramo, contadores iguales bit a bit, término emitido sin grafo y menor grafo vivo |
 | `tests/cm/test_operator_dynamics.py` | A1/A2, expresión del operador fijo, productos frente a su cálculo explícito, un operador expansivo que no se confunde con el contraejemplo y rechazos |
 | `tests/models/titans/test_transition_jacobian.py` | `RᵀJR` igual a la compresión de C, J frente a diferencias centrales en FP64, trayectoria, `I + η D_z f` en los dos modos de selección y sin banco, y `first_read` con el episodio del primer paso donde una nueva búsqueda elegiría otro |
 | `tests/training/test_cm_v1_factorial.py` | Declaración, presupuesto de C, núcleos emparejados con el mismo número de pasos, cada factor solo donde se declara, control del padre, recuperación de un brazo completo, rechazo de una declaración cambiada al ajustar y al trasladar, y retención con episodios reales dentro de la capacidad |
 | `tests/memory/test_mars_titan_session_parity.py` | El recorrido cronológico del lector emite lo mismo que `FinancialSession` también con centros fijos |
 | `tests/training/test_cm_v1_campaign.py` | Plan, dependencias, salida de los auxiliares, auxiliares sin traslado ni recibo ni papel de predictor en la etapa de políticas y campaña B reducida con los ejecutores reales hasta la tercera ventana |
 
-La [mutación dirigida](results.md#factorial-sobre-titans-mac) cubrió el objetivo de C, la selección por evento, los contadores, los rechazos, el padre, el gemelo disabled, la retención, la campaña y las lecturas del operador.
+La [mutación dirigida](results.md#factorial-sobre-titans-mac) cubrió el objetivo de C, la selección por evento, los contadores, los rechazos, el padre, el gemelo disabled, la retención, la campaña y las lecturas del operador. Para la acumulación con C se aplicaron de uno en uno siete defectos: omitir los flujos medidos sin etiquetas con la comprobación final y sin ella, no dividir entre G, dividir entre los términos del bloque, conservar el grafo del término emitido, no contar los grupos del objetivo al repetir y duplicar el peso de la tarea con C. Los siete hicieron fallar alguna prueba.
+
+Antes de cambiar el entrenador se guardaron las huellas de los gradientes registrados, la auditoría y el historial de ocho recorridos con el código de `develop`: `mac_online` sin control, B con C `disabled` sin acumulación y con bloques de 1 y 2 flujos, y la penalización sin acumulación con truncamiento 3 y 1. Con el cambio, las ocho huellas coinciden bit a bit.
 
 Con el registrador no hay pasos, así que el núcleo de C conserva los parámetros de B. La campaña reducida comprueba entonces que B y B+C, y B+M y B+C+M, emiten exactamente las mismas filas en cada ventana. Es la paridad del factorial con C sin efecto, no una medida de su efecto.
 
 ## Comprobaciones CUDA pendientes
 
-No se ha usado la GPU. `tests/training/cuda_cm_v1_control_check.py` compara en CPU y `cuda:0` un ajuste del núcleo sin pasos y su validación con C `disabled` y `penalty`, en FP32 y FP64. Su lógica se ensayó en CPU con `MARS_TITAN_CM_CONTROL_CHECK_DEVICE=cpu`, lo que no acredita CUDA:
+No se ha usado la GPU. `tests/training/cuda_cm_v1_control_check.py` compara en CPU y `cuda:0` un ajuste del núcleo sin pasos y su validación con C `disabled` y `penalty`, en FP32 y FP64, sin acumulación y con bloques de dos flujos. Su lógica se ensayó en CPU con `MARS_TITAN_CM_CONTROL_CHECK_DEVICE=cpu`, lo que no acredita CUDA:
 
 ```bash
 CUDA_VISIBLE_DEVICES=0 OMP_NUM_THREADS=2 CUBLAS_WORKSPACE_CONFIG=:4096:8 \
@@ -101,9 +137,11 @@ CUDA_VISIBLE_DEVICES=0 OMP_NUM_THREADS=2 CUBLAS_WORKSPACE_CONFIG=:4096:8 \
 
 El lector de los brazos usa la comprobación CUDA de MARS-TITAN (`tests/training/cuda_mars_titan_run_check.py`). La retención con centros fijos se calcula en CPU por diseño.
 
+La memoria y el caudal de los dos núcleos con `accumulation_rows` en `null` y en 128 se miden con la [orden de caudal de la campaña](../../research/training-campaign-2000.md#medición-de-caudal) y la declaración preparada (`--extensions`).
+
 ## Pendiente
 
 - Ajustar y comparar los cuatro brazos cuando la edición histórica desde 2000 esté verificada.
-- Medir memoria y caudal de la penalización C y del lector en `cuda:0` antes de declarar la sección en A y B. La orden de medición de la campaña no incluye todavía CM-v1.
+- Medir memoria y caudal de la penalización C y del lector en `cuda:0` antes de declarar la sección en A y B. La orden de medición recorre ya los dos núcleos con `accumulation_rows` en `null` y en 128 y el lector de cada brazo.
 - Una condición de contracción común a todos los Jacobianos admisibles, si se quiere una garantía para productos variables. Ninguna lectura actual la aporta.
 - La comparación con MAE residual por sesión, diferencias emparejadas, incertidumbre por bloques y la interacción `MAE_CM − MAE_C − MAE_M + MAE_B`, descritas en el [protocolo](protocol.md).
