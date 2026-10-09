@@ -1,4 +1,4 @@
-"""El entrenador separa sus flujos aleatorios del mundo sintético.
+"""El entrenador separa sus flujos aleatorios del mundo y rechaza cierres ausentes.
 
 Las pruebas solo construyen el entrenador. No avanzan transiciones ni llaman al optimizador.
 """
@@ -46,3 +46,9 @@ def test_exploration_stream_differs_from_the_world_generator_with_the_same_seed(
         numpy="seed_sequence_spawn_v1", torch="manual_seed"
     )
     assert first.step_count == first.updates == 0
+
+
+@pytest.mark.parametrize("algorithm", ["ppo", "double_dqn"])
+def test_training_rejects_tapes_whose_missing_closes_could_censor_losses(algorithm):
+    with pytest.raises(ValueError, match="completa"):
+        trainer(algorithm, missing=True)

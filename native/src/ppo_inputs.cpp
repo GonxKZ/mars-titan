@@ -10,6 +10,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <initializer_list>
@@ -38,6 +39,8 @@ constexpr int64_t reader_buffer_bytes = 64 * static_cast<int64_t>(simulation::by
 constexpr int64_t reader_batch_rows = 4096;
 constexpr std::size_t session_column = 0;
 constexpr std::size_t feature_column = 1;
+constexpr std::size_t price_width = 5;
+constexpr std::size_t close_column = 3;
 constexpr std::size_t value_column = 2;
 constexpr std::size_t present_column = 3;
 constexpr std::size_t available_column = 4;
@@ -292,6 +295,13 @@ std::optional<simulation::ContextTape> load_ppo_context(const std::filesystem::p
 
 simulation::BatchInput load_ppo_input(const std::filesystem::path& directory) {
     auto tape = simulation::load_market_tape(directory);
+    // Un cierre ausente invalidaría la transición y ocultaría al ajuste la pérdida de la posición.
+    for (std::size_t index = close_column; index < tape->prices.size(); index += price_width) {
+        if (std::isnan(tape->prices[index])) {
+            throw std::invalid_argument(
+                "Las fuentes PPO no admiten cierres ausentes que censuren transiciones");
+        }
+    }
     auto context = load_ppo_context(directory, *tape);
     return {std::move(tape), {}, std::move(context)};
 }

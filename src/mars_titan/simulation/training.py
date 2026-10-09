@@ -117,6 +117,8 @@ class FinancialTrainer:
             or type(seed) is not int
             or not 0 <= seed < 2**32
             or device not in {"cpu", "cuda:0"}
+            # Un cierre ausente invalidaría la transición y ocultaría la pérdida de la posición.
+            or np.isnan(env.tape.prices[:, :, 3]).any()
             or (device == "cpu" and (not diagnostic or config.total_steps > 32))
             or (
                 device == "cuda:0"
@@ -124,7 +126,7 @@ class FinancialTrainer:
             )
         ):
             raise ValueError(
-                "El entrenamiento necesita una fuente de train y admisión CUDA explícita"
+                "El entrenamiento necesita una fuente de train completa y admisión CUDA explícita"
             )
         self.env, self.algorithm, self.config, self.seed, self.device = (
             env,
