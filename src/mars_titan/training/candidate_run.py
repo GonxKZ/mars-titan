@@ -30,7 +30,7 @@ from mars_titan.data.batches import atomic_parquet_batches
 from mars_titan.data.input_policy import HISTORICAL_MASKED, MODALITIES
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.evaluation.session_metrics import SessionErrors
-from mars_titan.evaluation.splits import stopping_rule
+from mars_titan.evaluation.splits import PARTITIONS, stopping_rule
 from mars_titan.memory.candidate_bank import (
     CandidateBankConfig,
     CandidateEpisodeBank,
@@ -247,9 +247,20 @@ def _load_parameters(model, values):
             current[name].copy_(value.to(current[name].device))
 
 
-def _adapter_contract(identity):
-    """La identidad del adaptador sin sus pesos ni su modo, que cambian al ajustar."""
-    return {k: v for k, v in identity.items() if k not in ("parameters_sha256", "training")}
+def _adapter_contract(identity, *, window=True):
+    """La identidad del adaptador sin sus pesos ni su modo, que cambian al ajustar.
+
+    Sin `window` se quitan también la huella de la vista y la del índice de entrada, las
+    dos únicas partes que cambian al aplicar el estado a otra ventana de la misma edición.
+    """
+    contract = {k: v for k, v in identity.items() if k not in ("parameters_sha256", "training")}
+    if not window and isinstance(contract.get("input_specification"), dict):
+        contract["input_specification"] = {
+            k: v
+            for k, v in contract["input_specification"].items()
+            if k not in ("source_sha256", "view_sha256")
+        }
+    return contract
 
 
 def _read_report(path):
@@ -355,46 +366,35 @@ class _PredictionRows:
         self._reset()
 
 
-class CandidateChronologicalTrainer:
-    """Ajustar la GRU candidata recorriendo instantes de decisión en orden.
+class CandidateChronologicalPredictor:
+    """Recorrer fases declaradas con parámetros congelados, banco vacío y etiquetas maduras.
 
-    Solo cambian los parámetros mediante el optimizador. El banco es estado del recorrido,
-    se reinicia en cada pasada y solo admite claves y valores del codec fijo con etiquetas
-    maduras. K repite lectura y refinamiento sobre la misma instantánea y no escribe.
+    Es la parte del recorrido que no ajusta nada. El entrenador la usa para validar y
+    predecir fuera del ajuste, y la variante B la usa para predecir una ventana posterior
+    con el estado elegido en su ancla. El banco solo admite claves y valores del codec
+    fijo con etiquetas maduras. K repite lectura y refinamiento sobre la misma instantánea.
     """
 
     def __init__(
-        self,
-        adapter,
-        recipe,
-        *,
-        train,
-        validation,
-        output,
-        heldout=None,
-        world="candidate_gru",
-        fold="0",
-        optimizer_factory=None,
-        audit=False,
+        self, adapter, recipe, *, sources, output, world="candidate_gru", fold="0", audit=False
     ):
         if type(adapter) is not CandidateInputAdapter or type(recipe) is not CandidateRecipe:
-            raise ValueError("El entrenador necesita el adaptador identificado y su receta")
+            raise ValueError("El recorrido necesita el adaptador identificado y su receta")
         if torch.is_inference_mode_enabled():
             raise ValueError("El recorrido no admite inference_mode")
         if adapter.specification.input_policy != HISTORICAL_MASKED:
-            raise ValueError("El entrenador solo admite la política histórica con máscaras")
-        heldout = {} if heldout is None else dict(heldout)
-        sources = dict(train=train, validation=validation, **heldout)
+            raise ValueError("El recorrido solo admite la política histórica con máscaras")
+        sources = dict(sources)
         if (
-            not set(heldout) <= set(HELDOUT)
+            not sources
+            or not set(sources) <= set(PARTITIONS)
             or any(type(s) is not FinancialObservationSource for s in sources.values())
             or any(s.phase.partition != name for name, s in sources.items())
             or len({s.dataset.identity for s in sources.values()}) != 1
         ):
             raise ValueError("Las fases deben ser las particiones declaradas del mismo corpus")
-        ordered = [sources[name] for name in ("train", "validation", *HELDOUT) if name in sources]
         # Las particiones del mismo corpus son disjuntas y ordenadas por construcción.
-        if any(not _compatible(adapter.specification, s.specification()) for s in ordered):
+        if any(not _compatible(adapter.specification, s.specification()) for s in sources.values()):
             raise ValueError("Las vistas no conservan la entrada del candidato")
         model = adapter.model
         if any(not isinstance(text, str) or not 0 < len(text) <= 128 for text in (world, fold)):
@@ -407,70 +407,16 @@ class CandidateChronologicalTrainer:
             raise RuntimeError("cuda:0 no está disponible y no se cambia de dispositivo")
         self.adapter, self.model, self.recipe = adapter, model, recipe
         self.native, self.specification = adapter.native, adapter.specification
-        self.train, self.validation, self.heldout = train, validation, heldout
+        self.sources = sources
         self.world, self.fold = world, fold
         self.output, self.audit = Path(output), [] if audit else None
-        for protected in (
-            *train.dataset.roots.values(),
-            *(s.path.parent for s in ordered),
-        ):
+        dataset = next(iter(sources.values())).dataset
+        for protected in (*dataset.roots.values(), *(s.path.parent for s in sources.values())):
             outside_source(protected, self.output)
             outside_source(self.output, protected)
-        self.roles, self.inert = parameter_roles(model, recipe.admission)
-        named = model.named_parameters()
-        groups = [
-            dict(params=[named[name] for name in names], role=role)
-            for role, names in self.roles.items()
-        ]
-        self.trainable = [value for group in groups for value in group["params"]]
-        if not all(value.requires_grad for value in self.trainable):
-            raise ValueError("Los parámetros ajustables del candidato deben requerir gradiente")
-        factory = optimizer_factory or (
-            lambda values: torch.optim.AdamW(
-                values, lr=recipe.learning_rate, weight_decay=recipe.weight_decay
-            )
-        )
-        self.optimizer = factory(groups)
-        listed = [id(p) for group in self.optimizer.param_groups for p in group["params"]]
-        if len(listed) != len(set(listed)) or set(listed) != {id(p) for p in self.trainable}:
-            raise ValueError("El optimizador debe cubrir exactamente los parámetros ajustables")
         self.codec = FrozenCandidateCodec(adapter) if recipe.admission == "m1" else None
         self._empty = model.empty_memory()
         model.eval()
-        self.identity = dict(
-            schema_version=1,
-            recipe=recipe.identity(),
-            adapter=adapter.identity(),
-            codec=None if self.codec is None else self.codec.identity(),
-            output_head=dict(CONTRACT),
-            dtype=str(self.dtype),
-            device=self.device,
-            parameter_roles=self.roles,
-            inert_parameters=self.inert,
-            optimizer=type(self.optimizer).__module__ + "." + type(self.optimizer).__qualname__,
-            dataset_sha256=train.dataset.identity,
-            sources={
-                name: dict(index_sha256=s.identity, phase=asdict(s.phase))
-                for name, s in sources.items()
-            },
-            bank_scope=dict(world=world, fold=fold),
-            implementation=self._code(),
-            numerics=_numerics(),
-            final_test_opened=False,
-        )
-        self.run_id = hashlib.sha256(canonical(self.identity).encode()).hexdigest()
-        self.global_step, self.selection, self.history, self.train_metrics = 0, None, [], None
-
-    @staticmethod
-    def _code():
-        return {name: sha256(Path(importlib.import_module(name).__file__)) for name in _OWN_MODULES}
-
-    def _check_runtime(self):
-        if (
-            self._code() != self.identity["implementation"]
-            or _numerics() != self.identity["numerics"]
-        ):
-            raise ValueError("El código o la configuración numérica cambiaron durante el recorrido")
 
     def _new_bank(self, partition):
         if self.codec is None:
@@ -628,6 +574,147 @@ class CandidateChronologicalTrainer:
                 ("admit", source.phase.partition, at, tuple(episodes.ids.tolist()), run.bank.seen)
             )
 
+    @staticmethod
+    def _close(run):
+        run.counters["unresolved"] = len(run.pending)
+        run.pending.clear()
+        run.graphs.clear()
+        run.staged = run.memory = None
+
+    @staticmethod
+    def _metrics(run):
+        summary = run.errors.summary()
+        counters = dict(run.counters)
+        labels = counters["labels_in_loss"]
+        counters["mean_loss"] = counters.pop("loss_sum") / labels if labels else None
+        return dict(
+            samples=summary["samples"],
+            session_count=summary["session_count"],
+            session_mae=summary["session_mae"],
+            session_mse=summary["session_mse"],
+            **counters,
+        )
+
+    def evaluate(self, source, *, stop=None, destination=None):
+        """Recorrido con parámetros congelados, banco reiniciado y etiquetas maduras."""
+        if all(source is not known for known in self.sources.values()):
+            raise ValueError("La evaluación solo recorre las fases declaradas")
+        self.model.eval()
+        run = _Pass(bank=self._new_bank(source.phase.partition))
+        dtype = np.float64 if self.dtype == torch.float64 else np.float32
+        rows = None if destination is None else _PredictionRows(dtype)
+        parameters = self.model.named_parameters().values()
+        flags = [value.requires_grad for value in parameters]
+        try:
+            # La GRU de ATen en CPU no da los mismos bits si sus pesos requieren gradiente,
+            # aunque no se registre el grafo. Así coincide con FrozenCandidateConsumer.
+            for value in parameters:
+                value.requires_grad_(False)
+            with torch.no_grad():
+                for event in source.batched_events(block_rows=self.recipe.block_rows):
+                    if stop is not None and stop.requested:
+                        raise _Pause
+                    self._labels(run, source, event, train=False, rows=rows)
+                    if event.inputs:
+                        self._observe(run, source, event, train=False)
+                    self._admit(run, source, event.at)
+                    if event.close_phase:
+                        self._close(run)
+        finally:
+            for value, flag in zip(parameters, flags, strict=True):
+                value.requires_grad_(flag)
+        if run.counters["labels"] == 0:
+            raise ValueError("La fase no contiene etiquetas maduras")
+        if rows is not None:
+            rows.flush()
+            atomic_parquet_batches(Path(destination), rows.tables)
+        return self._metrics(run)
+
+
+class CandidateChronologicalTrainer(CandidateChronologicalPredictor):
+    """Ajustar la GRU candidata recorriendo instantes de decisión en orden.
+
+    Solo cambian los parámetros mediante el optimizador. El banco es estado del recorrido,
+    se reinicia en cada pasada y solo admite claves y valores del codec fijo con etiquetas
+    maduras. K repite lectura y refinamiento sobre la misma instantánea y no escribe.
+    """
+
+    def __init__(
+        self,
+        adapter,
+        recipe,
+        *,
+        train,
+        validation,
+        output,
+        heldout=None,
+        world="candidate_gru",
+        fold="0",
+        optimizer_factory=None,
+        audit=False,
+    ):
+        heldout = {} if heldout is None else dict(heldout)
+        if not set(heldout) <= set(HELDOUT):
+            raise ValueError("Las fases deben ser las particiones declaradas del mismo corpus")
+        sources = dict(train=train, validation=validation, **heldout)
+        super().__init__(
+            adapter, recipe, sources=sources, output=output, world=world, fold=fold, audit=audit
+        )
+        self.train, self.validation, self.heldout = train, validation, heldout
+        model = self.model
+        self.roles, self.inert = parameter_roles(model, recipe.admission)
+        named = model.named_parameters()
+        groups = [
+            dict(params=[named[name] for name in names], role=role)
+            for role, names in self.roles.items()
+        ]
+        self.trainable = [value for group in groups for value in group["params"]]
+        if not all(value.requires_grad for value in self.trainable):
+            raise ValueError("Los parámetros ajustables del candidato deben requerir gradiente")
+        factory = optimizer_factory or (
+            lambda values: torch.optim.AdamW(
+                values, lr=recipe.learning_rate, weight_decay=recipe.weight_decay
+            )
+        )
+        self.optimizer = factory(groups)
+        listed = [id(p) for group in self.optimizer.param_groups for p in group["params"]]
+        if len(listed) != len(set(listed)) or set(listed) != {id(p) for p in self.trainable}:
+            raise ValueError("El optimizador debe cubrir exactamente los parámetros ajustables")
+        self.identity = dict(
+            schema_version=1,
+            recipe=recipe.identity(),
+            adapter=adapter.identity(),
+            codec=None if self.codec is None else self.codec.identity(),
+            output_head=dict(CONTRACT),
+            dtype=str(self.dtype),
+            device=self.device,
+            parameter_roles=self.roles,
+            inert_parameters=self.inert,
+            optimizer=type(self.optimizer).__module__ + "." + type(self.optimizer).__qualname__,
+            dataset_sha256=train.dataset.identity,
+            sources={
+                name: dict(index_sha256=s.identity, phase=asdict(s.phase))
+                for name, s in sources.items()
+            },
+            bank_scope=dict(world=world, fold=fold),
+            implementation=self._code(),
+            numerics=_numerics(),
+            final_test_opened=False,
+        )
+        self.run_id = hashlib.sha256(canonical(self.identity).encode()).hexdigest()
+        self.global_step, self.selection, self.history, self.train_metrics = 0, None, [], None
+
+    @staticmethod
+    def _code():
+        return {name: sha256(Path(importlib.import_module(name).__file__)) for name in _OWN_MODULES}
+
+    def _check_runtime(self):
+        if (
+            self._code() != self.identity["implementation"]
+            or _numerics() != self.identity["numerics"]
+        ):
+            raise ValueError("El código o la configuración numérica cambiaron durante el recorrido")
+
     def _loss(self, quantiles, target, *, reduction="mean"):
         if self.recipe.loss == PINBALL:
             if reduction == "mean":
@@ -714,64 +801,6 @@ class CandidateChronologicalTrainer:
         run.accumulated, run.accumulated_loss = 0, 0.0
         run.instants = 0
         run.counters["segments"] += 1
-
-    @staticmethod
-    def _close(run):
-        run.counters["unresolved"] = len(run.pending)
-        run.pending.clear()
-        run.graphs.clear()
-        run.staged = run.memory = None
-
-    @staticmethod
-    def _metrics(run):
-        summary = run.errors.summary()
-        counters = dict(run.counters)
-        labels = counters["labels_in_loss"]
-        counters["mean_loss"] = counters.pop("loss_sum") / labels if labels else None
-        return dict(
-            samples=summary["samples"],
-            session_count=summary["session_count"],
-            session_mae=summary["session_mae"],
-            session_mse=summary["session_mse"],
-            **counters,
-        )
-
-    def evaluate(self, source, *, stop=None, destination=None):
-        """Recorrido con parámetros congelados, banco reiniciado y etiquetas maduras."""
-        if all(
-            source is not known for known in (self.train, self.validation, *self.heldout.values())
-        ):
-            raise ValueError("La evaluación solo recorre las fases declaradas")
-        self.model.eval()
-        run = _Pass(bank=self._new_bank(source.phase.partition))
-        dtype = np.float64 if self.dtype == torch.float64 else np.float32
-        rows = None if destination is None else _PredictionRows(dtype)
-        parameters = self.model.named_parameters().values()
-        flags = [value.requires_grad for value in parameters]
-        try:
-            # La GRU de ATen en CPU no da los mismos bits si sus pesos requieren gradiente,
-            # aunque no se registre el grafo. Así coincide con FrozenCandidateConsumer.
-            for value in parameters:
-                value.requires_grad_(False)
-            with torch.no_grad():
-                for event in source.batched_events(block_rows=self.recipe.block_rows):
-                    if stop is not None and stop.requested:
-                        raise _Pause
-                    self._labels(run, source, event, train=False, rows=rows)
-                    if event.inputs:
-                        self._observe(run, source, event, train=False)
-                    self._admit(run, source, event.at)
-                    if event.close_phase:
-                        self._close(run)
-        finally:
-            for value, flag in zip(parameters, flags, strict=True):
-                value.requires_grad_(flag)
-        if run.counters["labels"] == 0:
-            raise ValueError("La fase no contiene etiquetas maduras")
-        if rows is not None:
-            rows.flush()
-            atomic_parquet_batches(Path(destination), rows.tables)
-        return self._metrics(run)
 
     def _train_pass(self, run, cursor, stop, save):
         source = self.train
@@ -1006,17 +1035,20 @@ class CandidateChronologicalTrainer:
             atomic_json(report_path, report)
 
 
-def restore_selected(output, adapter):
+def restore_selected(output, adapter, *, carried=False):
     """Cargar el mejor estado de una ejecución completa en un adaptador del mismo contrato.
 
-    El adaptador resultante puede congelarse para `FrozenCandidateConsumer`.
+    El adaptador resultante puede congelarse para `FrozenCandidateConsumer`. Con
+    `carried` el adaptador puede pertenecer a otra ventana de la misma edición, con la
+    misma representación, configuración, codec, binario y código.
     """
     output = Path(output)
     report = _read_report(output / "run.json")
     identity = report.get("identity", {})
+    window = not carried
     if report.get("status") != "completed" or _adapter_contract(
-        adapter.identity()
-    ) != _adapter_contract(identity.get("adapter", {})):
+        adapter.identity(), window=window
+    ) != _adapter_contract(identity.get("adapter", {}), window=window):
         raise ValueError("La ejecución no está completa o pertenece a otro adaptador")
     selected = report["best_checkpoint"]
     state = load_training_state(
