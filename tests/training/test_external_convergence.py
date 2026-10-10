@@ -284,6 +284,7 @@ def test_orchestration_recovers_selected_predictions_with_explicit_cpu_fixture(
     cp = SimpleNamespace(cuda=SimpleNamespace(runtime=SimpleNamespace(memGetInfo=lambda: (0, 0))))
     monkeypatch.setattr(engine, "_load", load)
     monkeypatch.setattr(engine, "fit_external_boosting", fit)
+    # La identidad declara la construcción de la matriz, que no tiene valores por defecto.
     identity = dict(
         options=dict(
             rounds=6,
@@ -291,6 +292,10 @@ def test_orchestration_recovers_selected_predictions_with_explicit_cpu_fixture(
             selection=policy(),
             batch_size=5,
             max_validation_cache_bytes=1024**2,
+            max_bin=128,
+            max_batch_bytes=64 * 1024**2,
+            max_host_cache_bytes=1024**3,
+            on_host=True,
         )
     )
     monkeypatch.setattr(engine, "_identity", lambda *args: identity)

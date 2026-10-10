@@ -6,6 +6,8 @@ cambia pesos, sobre la vista conjunta US+CN del corpus técnico. Necesitan el en
 
 import json
 import os
+import shutil
+from dataclasses import asdict
 from pathlib import Path
 
 import numpy as np
@@ -22,8 +24,9 @@ from mars_titan.posttraining import chronological_matrix as cm
 from mars_titan.posttraining.adapter_matrix import read_matrix
 from mars_titan.training import candidate_walk_forward as walk
 from mars_titan.training.corpus_inputs import CorpusDataset
+from mars_titan.training.walk_forward_phases import window_phases
+from tests.training.test_candidate_walk_forward import WARMUP, fit
 from tests.training.test_candidate_walk_forward import allowed as allowed
-from tests.training.test_candidate_walk_forward import fit
 from tests.training.test_candidate_walk_forward import views as views
 from tests.training.test_financial_run import RecordingOptimizer
 
@@ -124,8 +127,16 @@ def _source(views):
         CorpusDataset(views.windows[SCOPE][FIRST], input_policy=HISTORICAL_MASKED),
         views.root / "specification-indices",
         ("train",),
+        WARMUP,
     )
     return sources["train"]
+
+
+def measured_phases(view):
+    """Fases de los tramos medidos de una vista con el calentamiento de la receta del padre."""
+    contracts = walk._window(CorpusDataset(view, input_policy=HISTORICAL_MASKED))
+    fold = next(iter(contracts.values()))["fold"]
+    return {name: asdict(phase) for name, phase in window_phases(fold, WARMUP).items()}
 
 
 def test_head_arm_emits_the_parent_rows_of_both_markets(arms, parent):
@@ -170,6 +181,10 @@ def test_frozen_parent_matches_the_carried_parent(frozen, parent, views, tmp_pat
     assert receipt["kind"] == ca.FROZEN_KIND and receipt["status"] == "completed"
     assert set(receipt["predictions"]) == set(ca.PREDICTED)
     assert receipt["months_since_parent_information"] > 0
+    # El padre congelado lee cada tramo con el calentamiento de su ventana, como el traslado.
+    assert receipt["warmup_months"] == WARMUP
+    expected = measured_phases(views.windows[SCOPE][NEXT])
+    assert receipt["phases"] == {name: expected[name] for name in ca.PREDICTED}
     base = walk.carry_window(
         parent,
         views.windows[SCOPE][FIRST],
@@ -217,9 +232,17 @@ def test_staged_head_fits_the_new_rows_and_reproduces_the_frozen_parent(
     train = report["sources"]["train"]["phase"]
     since = int(np.datetime64(placement["fit_start"], "us").astype(np.int64))
     until = int(np.datetime64(placement["fit_end"], "us").astype(np.int64))
-    # Sin calentamiento: las 64 sesiones de contexto viajan en cada muestra.
+    # El ajuste empieza en la primera fila nueva sin calentamiento, como el del padre en
+    # su origen. En la candidata esas entradas solo se contarían.
     assert (train["warmup_start"], train["decision_start"]) == (since, since)
     assert (train["decision_end"], train["close_at"]) == (until, until)
+    # Los tramos medidos repiten exactamente las fases del calentamiento del padre, y el
+    # calentamiento no es vacío, así que la comparación no es trivial.
+    expected = measured_phases(views.windows[SCOPE][NEXT])
+    for name in ca.PREDICTED:
+        assert report["sources"][name]["phase"] == expected[name], name
+    measured = report["sources"]["evaluation"]["phase"]
+    assert measured["warmup_start"] < measured["decision_start"]
     # Con la corrección de la cabeza a cero y sin cambios de pesos, emite al padre congelado.
     output, receipt = frozen
     for name in ca.PREDICTED:
@@ -249,4 +272,55 @@ def test_cases_from_another_matrix_or_seed_are_rejected(views, parent, matrix, t
             case=dict(case, seed=43),
             digest=digest,
             **common,
+        )
+
+
+def edited_parent(parent, folder, change):
+    """Copia del padre con otra política del banco en su informe de ventana."""
+    shutil.copytree(parent, folder)
+    path = folder / "window.json"
+    window = json.loads(path.read_text())
+    change(window["bank_policy"])
+    path.write_text(json.dumps(window))
+    return folder
+
+
+@pytest.mark.parametrize(
+    ("change", "message"),
+    [
+        (lambda policy: policy.pop("warmup_months"), "no registra su calentamiento"),
+        (lambda policy: policy.update(warmup_months=WARMUP // 2), "no corresponden"),
+    ],
+    ids=["missing", "different"],
+)
+def test_adapters_and_the_frozen_parent_never_use_another_warmup(
+    views, parent, matrix, allowed, tmp_path, change, message
+):
+    """Sin el calentamiento del padre, o con uno que no generó sus fases, nada se reutiliza."""
+    edited = edited_parent(parent, tmp_path / "parent", change)
+    document, digest = matrix
+    common = dict(
+        case=cases(matrix)["head"],
+        matrix=document,
+        digest=digest,
+        device="cpu",
+        optimizer_factory=RecordingOptimizer,
+    )
+    first, later = views.windows[SCOPE][FIRST], views.windows[SCOPE][NEXT]
+    with pytest.raises(ValueError, match=message):
+        ca.run_candidate_posttraining(edited, first, tmp_path / "same", **common)
+    with pytest.raises(ValueError, match=message):
+        ca.run_candidate_posttraining(
+            edited, later, tmp_path / "staged", parent_view=first, **common
+        )
+    with pytest.raises(ValueError, match=message):
+        ca.frozen_candidate(edited, first, later, tmp_path / "frozen", device="cpu")
+    with pytest.raises(ValueError, match=message):
+        walk.carry_window(
+            edited,
+            first,
+            later,
+            tmp_path / "carry",
+            parent_id=f"{SCOPE}/{FIRST}/gru_episodic",
+            device="cpu",
         )
