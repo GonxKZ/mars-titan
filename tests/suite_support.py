@@ -4,11 +4,16 @@ La única excepción es la carga del enlace episódico en el modo estricto, que 
 dentro de su función para que la suite general no la necesite.
 """
 
+import importlib
 import os
 import sys
+import tomllib
+from importlib import metadata
 from pathlib import Path
 
 import pytest
+
+ROOT = Path(__file__).resolve().parents[1]
 
 # Binarios nativos que la comprobación local completa debe declarar con una ruta existente.
 NATIVE_VARIABLES = (
@@ -19,9 +24,19 @@ NATIVE_VARIABLES = (
     "MARS_TITAN_KLPO_EXECUTABLE",
 )
 REQUIRE_NATIVE, REQUIRE_CUDA = "MARS_TITAN_REQUIRE_NATIVE", "MARS_TITAN_REQUIRE_CUDA"
-SWITCHES = (REQUIRE_NATIVE, REQUIRE_CUDA)
-# Marca de las pruebas del enlace episódico. En modo estricto su omisión cuenta como fallo.
+REQUIRE_REFERENCE = "MARS_TITAN_REQUIRE_REFERENCE"
+SWITCHES = (REQUIRE_NATIVE, REQUIRE_CUDA, REQUIRE_REFERENCE)
+# Marca de las pruebas que necesitan un binario nativo. En modo estricto su omisión cuenta
+# como fallo.
 NATIVE_MARKER = "native_binding"
+# Marca de las paridades con bibliotecas externas del grupo de dependencias `reference`.
+REFERENCE_MARKER = "external_reference"
+REFERENCE_GROUP = "reference"
+# Variable que convierte en fallo la omisión de cada marca y cómo se nombra la prueba.
+STRICT_MARKERS = {
+    NATIVE_MARKER: (REQUIRE_NATIVE, "del enlace nativo"),
+    REFERENCE_MARKER: (REQUIRE_REFERENCE, "de referencia externa"),
+}
 
 
 def cuda_available():
@@ -65,13 +80,82 @@ def native_required(environment):
     return environment.get(REQUIRE_NATIVE) == "1"
 
 
-def strict_problems(environment, cuda=cuda_available, episodic=episodic_load_problem):
+def strict_skip(markers, environment):
+    """Texto del fallo de una prueba omitida con estas marcas, o None si la omisión vale.
+
+    La omisión solo falla cuando todo lo que la prueba necesita está exigido. Una prueba que
+    compara el núcleo nativo con una biblioteca externa puede omitirse por falta del binario
+    si solo se exige el grupo `reference`, y al revés.
+    """
+    present = [STRICT_MARKERS[marker] for marker in STRICT_MARKERS if marker in markers]
+    if not present or any(environment.get(switch) != "1" for switch, _ in present):
+        return None
+    switches = ", ".join(f"{switch}=1" for switch, _ in present)
+    descriptions = " y ".join(description for _, description in present)
+    return f"{switches} y la prueba {descriptions} se omitió"
+
+
+def reference_pins(pyproject=ROOT / "pyproject.toml"):
+    """Distribución y versión exacta de cada biblioteca del grupo `reference`.
+
+    Se leen de `pyproject.toml` para que el modo estricto compruebe lo mismo que fija el
+    lock. Un requisito sin versión exacta se rechaza, porque las tolerancias de las paridades
+    se declararon para esas versiones.
+    """
+    document = tomllib.loads(Path(pyproject).read_text(encoding="utf-8"))
+    pins = {}
+    for requirement in document["dependency-groups"][REFERENCE_GROUP]:
+        name, separator, version = requirement.partition("==")
+        if not separator or not name or not version or any(c.isspace() for c in requirement):
+            raise ValueError(
+                f"El grupo {REFERENCE_GROUP} debe fijar versiones exactas: {requirement}"
+            )
+        pins[name] = version
+    return pins
+
+
+def reference_problems(pins=None, installed=metadata.version):
+    """Bibliotecas del grupo `reference` ausentes o con otra versión que la fijada."""
+    problems = []
+    for name, version in (reference_pins() if pins is None else pins).items():
+        try:
+            found = installed(name)
+        except metadata.PackageNotFoundError:
+            problems.append(f"falta {name}=={version} del grupo {REFERENCE_GROUP}")
+            continue
+        if found != version:
+            problems.append(f"{name} {found} instalado, el grupo {REFERENCE_GROUP} fija {version}")
+    return problems
+
+
+def reference_module(name):
+    """Importar una biblioteca del grupo `reference` u omitir la prueba con su motivo.
+
+    Solo se omite cuando falta el propio paquete. Si el paquete está pero falla una de sus
+    dependencias, la instalación está rota y el error sigue apareciendo como tal.
+    """
+    try:
+        return importlib.import_module(name)
+    except ModuleNotFoundError as error:
+        if error.name != name.partition(".")[0]:
+            raise
+        pytest.skip(
+            f"Falta {error.name} del grupo de dependencias {REFERENCE_GROUP} "
+            f"(uv sync --group {REFERENCE_GROUP})"
+        )
+
+
+def strict_problems(
+    environment, cuda=cuda_available, episodic=episodic_load_problem, reference=reference_problems
+):
     """Requisitos incumplidos de la comprobación local completa, vacío si no hay ninguno.
 
-    En la suite general las pruebas que dependen de un binario nativo o de CUDA se omiten con
-    su motivo. `MARS_TITAN_REQUIRE_NATIVE=1` exige declarar cada binario con una ruta existente
-    y además cargar el enlace episódico. `MARS_TITAN_REQUIRE_CUDA=1` exige CUDA visible, así
-    que ninguna prueba se omite por esa causa.
+    En la suite general las pruebas que dependen de un binario nativo, de CUDA o del grupo
+    `reference` se omiten con su motivo. `MARS_TITAN_REQUIRE_NATIVE=1` exige declarar cada
+    binario con una ruta existente y además cargar el enlace episódico.
+    `MARS_TITAN_REQUIRE_CUDA=1` exige CUDA visible, así que ninguna prueba se omite por esa
+    causa. `MARS_TITAN_REQUIRE_REFERENCE=1` exige el grupo `reference` con las versiones
+    exactas de `pyproject.toml`.
     """
     problems = [
         f"{switch} debe valer 0 o 1"
@@ -89,6 +173,8 @@ def strict_problems(environment, cuda=cuda_available, episodic=episodic_load_pro
                 problems.append(problem)
     if environment.get("MARS_TITAN_REQUIRE_CUDA") == "1" and not cuda():
         problems.append("CUDA no está disponible")
+    if environment.get(REQUIRE_REFERENCE) == "1":
+        problems.extend(reference())
     return problems
 
 
