@@ -32,12 +32,14 @@ MARS_TITAN_REQUIRE_NATIVE=1 \
 
 La orden necesita los cinco binarios declarados como en la [suite completa](#binarios-nativos). Si falta alguno, si una ruta no existe o si el enlace episódico no carga, el modo estricto termina con un error de uso. Con `MARS_TITAN_REQUIRE_NATIVE=0` o sin la variable, el comportamiento es el de la suite CPU.
 
-Las paridades con bibliotecas externas (PEFT, scoringrules, MAPIE y sb3-contrib) llevan la marca `external_reference` y necesitan el grupo de dependencias `reference`, que no forma parte del entorno de ejecución. Sin el grupo se omiten con su motivo. `MARS_TITAN_REQUIRE_REFERENCE=1` exige el grupo con las versiones exactas de `pyproject.toml` antes de recoger pruebas y convierte en fallo cualquier omisión de una prueba marcada. Una prueba con las dos marcas, como la que compara el núcleo QR-DQN con sb3-contrib, solo falla al omitirse si se exigen las dos cosas:
+Las paridades con bibliotecas externas (PEFT, scoringrules, MAPIE y sb3-contrib) llevan la marca `external_reference` y necesitan el grupo de dependencias `reference`, que no forma parte del entorno de ejecución. Sin el grupo se omiten con su motivo. `MARS_TITAN_REQUIRE_REFERENCE=1` exige el grupo con las versiones exactas de `pyproject.toml` antes de recoger pruebas y convierte en fallo cualquier omisión de una prueba marcada:
 
 ```bash
 uv sync --locked --group reference
 MARS_TITAN_REQUIRE_REFERENCE=1 uv run --locked pytest -q -rs -m external_reference
 ```
+
+Una prueba con las dos marcas, como la que compara el núcleo QR-DQN con sb3-contrib, solo falla por omitirse si se exigen las dos cosas. Esa prueba también necesita `rl_variety_tests` junto a `mars-titan-ppo`, que la comprobación del inicio no exige, así que con `MARS_TITAN_REQUIRE_NATIVE=1` la ausencia de ese ejecutable la hace fallar aunque no se exija el grupo.
 
 Cada prueba protege una propiedad concreta. La cobertura y las pruebas de mutación ayudan a localizar lógica poco comprobada, pero no sustituyen los casos de comportamiento ni acreditan por sí solas la reproducibilidad de un entrenamiento.
 

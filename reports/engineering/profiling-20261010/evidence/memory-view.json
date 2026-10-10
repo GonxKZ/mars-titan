@@ -1,0 +1,23 @@
+{
+ "assets": 4130,
+ "skipped": {
+  "samples_missing": 878
+ },
+ "counts": {
+  "train": 12101467,
+  "validation": 502015,
+  "calibration": 249073,
+  "evaluation": 1007633
+ },
+ "fraction": {
+  "train": 0.8266392437864587,
+  "validation": 0.8242049614999425,
+  "calibration": 0.8248078496044401,
+  "evaluation": 0.8246970507979068
+ },
+ "markets": {
+  "US": 3424,
+  "CN": 706
+ },
+ "coverage_rows_removed": 878
+}

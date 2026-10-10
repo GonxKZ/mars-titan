@@ -1,0 +1,607 @@
+{
+ "sampling_rate_hz": 100.0,
+ "pass_seconds": {
+  "all": [
+   170.3,
+   154.3
+  ],
+  "gil": [
+   158.3,
+   151.4
+  ]
+ },
+ "samples": {
+  "all": {
+   "samples": 33580,
+   "main_samples": 33380,
+   "total": 32185,
+   "pass_samples": [
+    16873,
+    15312
+   ]
+  },
+  "gil": {
+   "samples": 3437,
+   "main_samples": 3436,
+   "total": 2341,
+   "pass_samples": [
+    1190,
+    1151
+   ]
+  }
+ },
+ "active_fraction_by_capture": [
+  0.9907809747504404,
+  0.9923525599481529
+ ],
+ "gil_fraction_by_capture": [
+  0.0751737207833228,
+  0.07602377807133422
+ ],
+ "main_thread_active_fraction": 0.9915280345040048,
+ "main_thread_gil_fraction": 0.0755892799483371,
+ "self_by_function": [
+  {
+   "frame": "mars_titan/cm/medoids.py _distance",
+   "samples": 24487,
+   "share": 0.7608202578841075,
+   "gil_samples": 305,
+   "gil_fraction": 0.013054840443761985
+  },
+  {
+   "frame": "numpy/_core/einsumfunc.py einsum",
+   "samples": 3503,
+   "share": 0.10883952151623427,
+   "gil_samples": 19,
+   "gil_fraction": 0.005684873088623423
+  },
+  {
+   "frame": "mars_titan/models/titans/financial_inputs.py _digest",
+   "samples": 582,
+   "share": 0.01808295789964269,
+   "gil_samples": 57,
+   "gil_fraction": 0.10265005376004047
+  },
+  {
+   "frame": "mars_titan/memory/retention_bank.py propose",
+   "samples": 503,
+   "share": 0.015628398322199782,
+   "gil_samples": 453,
+   "gil_fraction": 0.9439250836601314
+  },
+  {
+   "frame": "mars_titan/models/titans/state.py check_finite",
+   "samples": 357,
+   "share": 0.011092123660090105,
+   "gil_samples": 50,
+   "gil_fraction": 0.14679426824006966
+  },
+  {
+   "frame": "mars_titan/memory/financial_consumers.py bank_snapshot",
+   "samples": 198,
+   "share": 0.006151934130806276,
+   "gil_samples": 196,
+   "gil_fraction": 1.0375240946761772
+  },
+  {
+   "frame": "mars_titan/training/mars_titan_run.py _observe",
+   "samples": 182,
+   "share": 0.0056548081404380925,
+   "gil_samples": 164,
+   "gil_fraction": 0.944451738123033
+  },
+  {
+   "frame": "torch/autograd/graph.py _engine_run_backward",
+   "samples": 153,
+   "share": 0.004753767282895759,
+   "gil_samples": 10,
+   "gil_fraction": 0.06850399184536585
+  },
+  {
+   "frame": "mars_titan/models/titans/financial_inputs.py device_tensor",
+   "samples": 148,
+   "share": 0.004598415410905702,
+   "gil_samples": 11,
+   "gil_fraction": 0.07790014748361535
+  },
+  {
+   "frame": "mars_titan/memory/financial_consumers.py mature_record",
+   "samples": 141,
+   "share": 0.0043809227901196205,
+   "gil_samples": 118,
+   "gil_fraction": 0.8771426019689611
+  },
+  {
+   "frame": "mars_titan/memory/episodic_codec.py encode",
+   "samples": 140,
+   "share": 0.0043498524157216095,
+   "gil_samples": 25,
+   "gil_fraction": 0.18716269200608882
+  },
+  {
+   "frame": "<string> __init__",
+   "samples": 135,
+   "share": 0.004194500543731552,
+   "gil_samples": 106,
+   "gil_fraction": 0.8229612887023282
+  },
+  {
+   "frame": "json/encoder.py iterencode",
+   "samples": 117,
+   "share": 0.003635233804567345,
+   "gil_samples": 120,
+   "gil_fraction": 1.0749857181888178
+  },
+  {
+   "frame": "mars_titan/training/mars_titan_run.py _admit",
+   "samples": 104,
+   "share": 0.0032313189373931956,
+   "gil_samples": 83,
+   "gil_fraction": 0.836473261965674
+  },
+  {
+   "frame": "mars_titan/memory/episodic_codec.py _verify_projection",
+   "samples": 93,
+   "share": 0.0028895448190150693,
+   "gil_samples": 0,
+   "gil_fraction": 0.0
+  },
+  {
+   "frame": "mars_titan/models/titans/episodic_readout.py _read",
+   "samples": 87,
+   "share": 0.002703122572627,
+   "gil_samples": 16,
+   "gil_fraction": 0.19275605981316732
+  },
+  {
+   "frame": "mars_titan/memory/retention_bank.py restore",
+   "samples": 58,
+   "share": 0.0018020817150846667,
+   "gil_samples": 50,
+   "gil_fraction": 0.9035440303742219
+  },
+  {
+   "frame": "mars_titan/memory/retention_bank.py snapshot",
+   "samples": 52,
+   "share": 0.0016156594686965978,
+   "gil_samples": 44,
+   "gil_fraction": 0.8868632175057747
+  },
+  {
+   "frame": "mars_titan/data/input_policy.py validate_historical_vectors",
+   "samples": 45,
+   "share": 0.0013981668479105174,
+   "gil_samples": 28,
+   "gil_fraction": 0.6521580023678829
+  },
+  {
+   "frame": "mars_titan/training/mars_titan_run.py _update",
+   "samples": 44,
+   "share": 0.0013670964735125058,
+   "gil_samples": 28,
+   "gil_fraction": 0.6669797751489711
+  },
+  {
+   "frame": "mars_titan/models/titans/episodic_readout.py refine",
+   "samples": 40,
+   "share": 0.0012428149759204598,
+   "gil_samples": 5,
+   "gil_fraction": 0.13101388440426218
+  },
+  {
+   "frame": "mars_titan/training/mars_titan_run.py _train_pass",
+   "samples": 38,
+   "share": 0.001180674227124437,
+   "gil_samples": 32,
+   "gil_fraction": 0.8826198528287136
+  },
+  {
+   "frame": "mars_titan/models/titans/neural_memory.py update",
+   "samples": 33,
+   "share": 0.0010253223551343793,
+   "gil_samples": 2,
+   "gil_fraction": 0.06352188334752105
+  },
+  {
+   "frame": "mars_titan/models/baselines/transformer.py _layer",
+   "samples": 33,
+   "share": 0.0010253223551343793,
+   "gil_samples": 1,
+   "gil_fraction": 0.03176094167376053
+  },
+  {
+   "frame": "torch/nn/modules/linear.py forward",
+   "samples": 33,
+   "share": 0.0010253223551343793,
+   "gil_samples": 5,
+   "gil_fraction": 0.15880470836880262
+  },
+  {
+   "frame": "mars_titan/memory/retention_bank.py records",
+   "samples": 32,
+   "share": 0.0009942519807363678,
+   "gil_samples": 35,
+   "gil_fraction": 1.1463714885372942
+  },
+  {
+   "frame": "mars_titan/models/titans/financial_inputs.py _cpu_inputs",
+   "samples": 32,
+   "share": 0.0009942519807363678,
+   "gil_samples": 4,
+   "gil_fraction": 0.13101388440426218
+  },
+  {
+   "frame": "mars_titan/memory/retention_bank.py _check_receipt",
+   "samples": 27,
+   "share": 0.0008389001087463104,
+   "gil_samples": 18,
+   "gil_fraction": 0.6987407168227316
+  },
+  {
+   "frame": "mars_titan/models/baselines/transformer.py first_flagged",
+   "samples": 27,
+   "share": 0.0008389001087463104,
+   "gil_samples": 0,
+   "gil_fraction": 0.0
+  },
+  {
+   "frame": "mars_titan/training/mars_titan_run.py _labels",
+   "samples": 27,
+   "share": 0.0008389001087463104,
+   "gil_samples": 28,
+   "gil_fraction": 1.0869300039464713
+  },
+  {
+   "frame": "mars_titan/models/titans/financial_inputs.py _decision_identity",
+   "samples": 25,
+   "share": 0.0007767593599502874,
+   "gil_samples": 12,
+   "gil_fraction": 0.5030933161123667
+  },
+  {
+   "frame": "mars_titan/models/titans/financial_inputs.py validated_cpu_batch",
+   "samples": 25,
+   "share": 0.0007767593599502874,
+   "gil_samples": 17,
+   "gil_fraction": 0.7127155311591863
+  },
+  {
+   "frame": "mars_titan/models/titans/neural_memory.py validate_state",
+   "samples": 24,
+   "share": 0.000745688985552276,
+   "gil_samples": 12,
+   "gil_fraction": 0.5240555376170487
+  },
+  {
+   "frame": "mars_titan/models/titans/financial.py _prepare",
+   "samples": 20,
+   "share": 0.0006214074879602299,
+   "gil_samples": 10,
+   "gil_fraction": 0.5240555376170487
+  },
+  {
+   "frame": "mars_titan/models/titans/state.py resolve",
+   "samples": 20,
+   "share": 0.0006214074879602299,
+   "gil_samples": 2,
+   "gil_fraction": 0.10481110752340973
+  },
+  {
+   "frame": "mars_titan/memory/episodic_codec.py _content_digest",
+   "samples": 20,
+   "share": 0.0006214074879602299,
+   "gil_samples": 2,
+   "gil_fraction": 0.10481110752340973
+  },
+  {
+   "frame": "mars_titan/cm/medoids.py _id_bytes",
+   "samples": 19,
+   "share": 0.0005903371135622185,
+   "gil_samples": 11,
+   "gil_fraction": 0.6068011488197406
+  },
+  {
+   "frame": "json/decoder.py raw_decode",
+   "samples": 19,
+   "share": 0.0005903371135622185,
+   "gil_samples": 8,
+   "gil_fraction": 0.4413099264143568
+  },
+  {
+   "frame": "numpy/_core/_methods.py _amin",
+   "samples": 17,
+   "share": 0.0005281963647661954,
+   "gil_samples": 10,
+   "gil_fraction": 0.6165359266082925
+  },
+  {
+   "frame": "mars_titan/models/titans/financial.py _tensor_digest",
+   "samples": 17,
+   "share": 0.0005281963647661954,
+   "gil_samples": 3,
+   "gil_fraction": 0.18496077798248778
+  }
+ ],
+ "inclusive_by_function": [
+  {
+   "frame": "chronological_replay.py <module>",
+   "samples": 32185,
+   "share": 1.0,
+   "gil_samples": 2341,
+   "gil_fraction": 0.07623514143616661
+  },
+  {
+   "frame": "<frozen runpy> _run_module_code",
+   "samples": 32185,
+   "share": 1.0,
+   "gil_samples": 2341,
+   "gil_fraction": 0.07623514143616661
+  },
+  {
+   "frame": "<frozen runpy> run_path",
+   "samples": 32185,
+   "share": 1.0,
+   "gil_samples": 2341,
+   "gil_fraction": 0.07623514143616661
+  },
+  {
+   "frame": "<frozen runpy> _run_code",
+   "samples": 32185,
+   "share": 1.0,
+   "gil_samples": 2341,
+   "gil_fraction": 0.07623514143616661
+  },
+  {
+   "frame": "replay_titans.py <module>",
+   "samples": 32185,
+   "share": 1.0,
+   "gil_samples": 2341,
+   "gil_fraction": 0.07623514143616661
+  },
+  {
+   "frame": "mars_titan/training/mars_titan_run.py _train_pass",
+   "samples": 32185,
+   "share": 1.0,
+   "gil_samples": 2341,
+   "gil_fraction": 0.07623514143616661
+  },
+  {
+   "frame": "mars_titan/training/mars_titan_run.py _admit",
+   "samples": 25542,
+   "share": 0.7935995028740096,
+   "gil_samples": 1174,
+   "gil_fraction": 0.0481748650193732
+  },
+  {
+   "frame": "mars_titan/memory/retention_bank.py propose",
+   "samples": 25286,
+   "share": 0.7856454870281186,
+   "gil_samples": 967,
+   "gil_fraction": 0.04008239380492653
+  },
+  {
+   "frame": "mars_titan/cm/anchored_medoids.py select_anchored_medoids",
+   "samples": 24564,
+   "share": 0.7632126767127544,
+   "gil_samples": 347,
+   "gil_fraction": 0.01480599833521543
+  },
+  {
+   "frame": "mars_titan/cm/anchored_medoids.py _background",
+   "samples": 24514,
+   "share": 0.7616591579928538,
+   "gil_samples": 317,
+   "gil_fraction": 0.013553529038476337
+  },
+  {
+   "frame": "mars_titan/cm/medoids.py _distance",
+   "samples": 24487,
+   "share": 0.7608202578841075,
+   "gil_samples": 305,
+   "gil_fraction": 0.013054840443761985
+  },
+  {
+   "frame": "mars_titan/training/mars_titan_run.py _observe",
+   "samples": 6234,
+   "share": 0.19369271399720367,
+   "gil_samples": 1012,
+   "gil_fraction": 0.17014571834085765
+  },
+  {
+   "frame": "mars_titan/memory/episodic_codec.py encode",
+   "samples": 4021,
+   "share": 0.12493397545440423,
+   "gil_samples": 109,
+   "gil_fraction": 0.028411864511444077
+  },
+  {
+   "frame": "numpy/_core/einsumfunc.py einsum",
+   "samples": 3503,
+   "share": 0.10883952151623427,
+   "gil_samples": 19,
+   "gil_fraction": 0.005684873088623423
+  },
+  {
+   "frame": "torch/nn/modules/module.py _call_impl",
+   "samples": 711,
+   "share": 0.022091036196986175,
+   "gil_samples": 136,
+   "gil_fraction": 0.20048256853985547
+  },
+  {
+   "frame": "torch/nn/modules/module.py _wrapped_call_impl",
+   "samples": 709,
+   "share": 0.02202889544819015,
+   "gil_samples": 136,
+   "gil_fraction": 0.20104810469934734
+  },
+  {
+   "frame": "mars_titan/training/mars_titan_run.py _prepare_block",
+   "samples": 660,
+   "share": 0.020506447102687588,
+   "gil_samples": 184,
+   "gil_fraction": 0.29220066339859685
+  },
+  {
+   "frame": "mars_titan/models/titans/financial_inputs.py _digest",
+   "samples": 630,
+   "share": 0.019574335870747243,
+   "gil_samples": 105,
+   "gil_fraction": 0.1746851792056829
+  },
+  {
+   "frame": "mars_titan/models/titans/financial.py prepare",
+   "samples": 624,
+   "share": 0.019387913624359175,
+   "gil_samples": 167,
+   "gil_fraction": 0.28050408583989467
+  },
+  {
+   "frame": "mars_titan/models/titans/financial.py _prepare",
+   "samples": 602,
+   "share": 0.01870436538760292,
+   "gil_samples": 163,
+   "gil_fraction": 0.2837908725301626
+  },
+  {
+   "frame": "mars_titan/models/titans/financial_inputs.py verify",
+   "samples": 454,
+   "share": 0.01410594997669722,
+   "gil_samples": 81,
+   "gil_fraction": 0.1869977909558632
+  },
+  {
+   "frame": "mars_titan/models/titans/financial_inputs.py validated_cpu_batch",
+   "samples": 376,
+   "share": 0.011682460773652323,
+   "gil_samples": 128,
+   "gil_fraction": 0.3568037702924587
+  },
+  {
+   "frame": "mars_titan/models/titans/state.py check_finite",
+   "samples": 364,
+   "share": 0.011309616280876185,
+   "gil_samples": 53,
+   "gil_fraction": 0.15260957963573396
+  },
+  {
+   "frame": "mars_titan/models/titans/financial_inputs.py from_validated",
+   "samples": 344,
+   "share": 0.010688208792915955,
+   "gil_samples": 48,
+   "gil_fraction": 0.14624805700940893
+  },
+  {
+   "frame": "mars_titan/models/titans/episodic_readout.py apply_episodic_readout",
+   "samples": 342,
+   "share": 0.010626068044119932,
+   "gil_samples": 65,
+   "gil_fraction": 0.19920239733981382
+  },
+  {
+   "frame": "mars_titan/training/mars_titan_run.py _update",
+   "samples": 317,
+   "share": 0.009849308684169644,
+   "gil_samples": 77,
+   "gil_fraction": 0.25458849461522237
+  },
+  {
+   "frame": "mars_titan/models/titans/episodic_readout.py forward",
+   "samples": 297,
+   "share": 0.009227901196209413,
+   "gil_samples": 51,
+   "gil_fraction": 0.179978669484643
+  },
+  {
+   "frame": "mars_titan/models/titans/mac.py forward",
+   "samples": 294,
+   "share": 0.00913469007301538,
+   "gil_samples": 65,
+   "gil_fraction": 0.23172523772182427
+  },
+  {
+   "frame": "mars_titan/memory/financial_consumers.py bank_snapshot",
+   "samples": 250,
+   "share": 0.007767593599502874,
+   "gil_samples": 223,
+   "gil_fraction": 0.9349150791088149
+  },
+  {
+   "frame": "mars_titan/models/titans/episodic_readout.py _read",
+   "samples": 179,
+   "share": 0.0055615970172440575,
+   "gil_samples": 31,
+   "gil_fraction": 0.1815164431969666
+  },
+  {
+   "frame": "mars_titan/models/titans/neural_memory.py update",
+   "samples": 159,
+   "share": 0.004940189529283828,
+   "gil_samples": 22,
+   "gil_fraction": 0.14502165820849147
+  },
+  {
+   "frame": "mars_titan/models/titans/financial_inputs.py device_tensor",
+   "samples": 153,
+   "share": 0.004753767282895759,
+   "gil_samples": 11,
+   "gil_fraction": 0.07535439102990243
+  },
+  {
+   "frame": "torch/autograd/graph.py _engine_run_backward",
+   "samples": 153,
+   "share": 0.004753767282895759,
+   "gil_samples": 10,
+   "gil_fraction": 0.06850399184536585
+  },
+  {
+   "frame": "mars_titan/memory/financial_consumers.py mature_record",
+   "samples": 141,
+   "share": 0.0043809227901196205,
+   "gil_samples": 118,
+   "gil_fraction": 0.8771426019689611
+  },
+  {
+   "frame": "<string> __init__",
+   "samples": 136,
+   "share": 0.004225570918129563,
+   "gil_samples": 106,
+   "gil_fraction": 0.8169101027559876
+  },
+  {
+   "frame": "json/__init__.py dumps",
+   "samples": 134,
+   "share": 0.00416343016933354,
+   "gil_samples": 126,
+   "gil_fraction": 0.9855372796977334
+  },
+  {
+   "frame": "mars_titan/training/mars_titan_run.py _backward_block",
+   "samples": 125,
+   "share": 0.003883796799751437,
+   "gil_samples": 10,
+   "gil_fraction": 0.0838488860187278
+  },
+  {
+   "frame": "torch/autograd/__init__.py backward",
+   "samples": 125,
+   "share": 0.003883796799751437,
+   "gil_samples": 10,
+   "gil_fraction": 0.0838488860187278
+  },
+  {
+   "frame": "torch/_tensor.py backward",
+   "samples": 125,
+   "share": 0.003883796799751437,
+   "gil_samples": 10,
+   "gil_fraction": 0.0838488860187278
+  },
+  {
+   "frame": "mars_titan/memory/retention_bank.py restore",
+   "samples": 120,
+   "share": 0.0037284449277613795,
+   "gil_samples": 83,
+   "gil_fraction": 0.7249434937035841
+  }
+ ]
+}
