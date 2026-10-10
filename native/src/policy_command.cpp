@@ -80,6 +80,8 @@ Arguments parse(int argc, char** argv) {
             result.experiment.resume = true;
         } else if (name == "--diagnostic") {
             result.experiment.diagnostic = true;
+        } else if (name == "--decisions") {
+            result.experiment.decisions = true;
         } else {
             if (++index >= arguments.size()) {
                 throw std::invalid_argument("Falta el valor de un argumento PPO");
@@ -127,6 +129,9 @@ Arguments parse(int argc, char** argv) {
     }
     if (!result.experiment.evaluation_costs.empty() && !result.experiment.audit_run) {
         throw std::invalid_argument("--evaluation-cost solo se admite con --audit-run");
+    }
+    if (result.experiment.decisions && !result.experiment.audit_run) {
+        throw std::invalid_argument("--decisions solo se admite con --audit-run");
     }
     return result;
 }

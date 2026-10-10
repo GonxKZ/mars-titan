@@ -691,6 +691,31 @@ def test_audit_passes_the_declared_evaluation_costs_and_training_rejects_them(se
     assert rejected.returncode == 2 and "costes de evaluación" in rejected.stderr
 
 
+@pytest.mark.parametrize("document", CATALOGS)
+def test_audit_forwards_the_decision_record_and_training_rejects_it(setup, document):
+    args = setup[0]
+    config = Path(args[args.index("--config") + 1])
+    config.write_text(json.dumps(document))
+    native = args[args.index("--binary") + 1]
+    training = list(args)
+    setup[0][:] = [
+        *args[:4],
+        "--binary",
+        native,
+        "--audit-run",
+        str(setup[2] / "frozen-run"),
+        "--audit-tape",
+        str(setup[2] / "audit-a"),
+        "--decisions",
+    ]
+    result = execute(setup, "--diagnostic")
+    assert result.returncode == 0, result.stderr
+    assert record(setup)["args"].count("--decisions") == 1
+    setup[0][:] = [*training, "--decisions"]
+    rejected = execute(setup, "--diagnostic")
+    assert rejected.returncode == 2 and "--decisions solo acompaña a --audit-run" in rejected.stderr
+
+
 def test_relative_command_paths_do_not_reuse_watch_from_another_working_directory(setup):
     args, env, directory = setup
     watch = directory / "watch.json"

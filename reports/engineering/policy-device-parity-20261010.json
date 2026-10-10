@@ -1,0 +1,239 @@
+{
+  "schema_version": 1,
+  "kind": "policy_device_parity",
+  "recorded_at_utc": "2026-10-10T19:47:43Z",
+  "edition": "/home/gonzalo/.local/state/mars-titan/unadjusted-prices-20261009/edition-v1",
+  "scores": "synthetic_not_from_any_model",
+  "weights": "initial_without_optimizer_steps",
+  "tolerance": {
+    "atol": 1e-05,
+    "rtol": 0.0001
+  },
+  "margin_limits": [
+    1e-06,
+    1e-05,
+    0.0001,
+    0.001
+  ],
+  "cpu": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+  "gpu": {
+    "nvidia_smi": "NVIDIA GeForce RTX 4070 Laptop GPU, 595.91.07, 8188 MiB",
+    "torch": "2.14.0+cu130",
+    "cuda": "13.0",
+    "cudnn": 92400
+  },
+  "results": [
+    {
+      "market": "US",
+      "engine": "double_dqn",
+      "binary_sha256": "70289f74fe940c66c49b31a1dd04d23a8ad837748e1dc1c7bfba94accb8621b2",
+      "native_source_sha256": "a56cece5912cd2323d3089e2f7851b4cc7c078fa7150e270f0b522a38bf684a8",
+      "layout_assets": 128,
+      "evaluation_sessions": 250,
+      "evaluation_tapes": [
+        {
+          "first_open": 1672756200000000,
+          "historical_basis": "US/1ac3727836462ce31c39b5438918bd6f3e0d359690c7bc79bfa87cd808c8e68c/lag-0",
+          "last_close": 1703883900000000,
+          "manifest_sha256": "556aeda7ca68aeea10ac67778e220a440e00fe161aa0ef8c054bd3649482c228",
+          "market_sha256": "2b3003b0c5366badb3705d7dbd5a8825437ed0e68322985b39433c55e08bae6a",
+          "observation_sha256": "f564a3e4aa8c234773e30fb85d3a3cad68cc8b6dc5de8563622e15606cb7cab1",
+          "role": "evaluation",
+          "sessions": 250,
+          "tape_sha256": "f3a42c0d278922799d9824546e2249e5bdfe754c383c9200c08a97dccaf6855a"
+        }
+      ],
+      "cpu": {
+        "fit_seconds": 2.98,
+        "audit_seconds": 0.72
+      },
+      "cuda": {
+        "fit_seconds": 2.3,
+        "audit_seconds": 1.34
+      },
+      "tolerance": {
+        "atol": 1e-05,
+        "rtol": 0.0001
+      },
+      "outputs": "q_values",
+      "reference_device": "cuda:0",
+      "other_device": "cpu",
+      "parameter_fingerprint": "bfcd39ec0fad7a702b0d541be5350954285f9967463217a03b251c30cc683069",
+      "episodes": 3,
+      "decisions": 747,
+      "compared_decisions": 747,
+      "exact_logits": 0,
+      "max_abs_logit_difference": 1.7881393432617188e-07,
+      "max_relative_logit_difference": 1.2272892050249515e-06,
+      "near_ties": 0,
+      "minimum_reference_margin": 0.0003726258873939514,
+      "margins_below": {
+        "1e-06": 0,
+        "1e-05": 0,
+        "0.0001": 0,
+        "0.001": 3
+      },
+      "divergences": [],
+      "identical_equity_episodes": 3
+    },
+    {
+      "market": "US",
+      "engine": "klpo",
+      "binary_sha256": "b58abf4a00733745086b4c9b87ecea1811175b8ee4eea58df62df3749efef27e",
+      "native_source_sha256": "a56cece5912cd2323d3089e2f7851b4cc7c078fa7150e270f0b522a38bf684a8",
+      "layout_assets": 128,
+      "evaluation_sessions": 250,
+      "evaluation_tapes": [
+        {
+          "first_open": 1672756200000000,
+          "historical_basis": "US/1ac3727836462ce31c39b5438918bd6f3e0d359690c7bc79bfa87cd808c8e68c/lag-0",
+          "last_close": 1703883900000000,
+          "manifest_sha256": "556aeda7ca68aeea10ac67778e220a440e00fe161aa0ef8c054bd3649482c228",
+          "market_sha256": "2b3003b0c5366badb3705d7dbd5a8825437ed0e68322985b39433c55e08bae6a",
+          "observation_sha256": "f564a3e4aa8c234773e30fb85d3a3cad68cc8b6dc5de8563622e15606cb7cab1",
+          "role": "evaluation",
+          "sessions": 250,
+          "tape_sha256": "f3a42c0d278922799d9824546e2249e5bdfe754c383c9200c08a97dccaf6855a"
+        }
+      ],
+      "cpu": {
+        "fit_seconds": 1.86,
+        "audit_seconds": 0.84
+      },
+      "cuda": {
+        "fit_seconds": 2.02,
+        "audit_seconds": 1.61
+      },
+      "tolerance": {
+        "atol": 1e-05,
+        "rtol": 0.0001
+      },
+      "outputs": "logits",
+      "reference_device": "cuda:0",
+      "other_device": "cpu",
+      "parameter_fingerprint": "494fd72a7fcf91ec4dcb0f12547c080ad8d6ec7ac4202d793cb1e94dc718d86e",
+      "episodes": 3,
+      "decisions": 747,
+      "compared_decisions": 747,
+      "exact_logits": 0,
+      "max_abs_logit_difference": 1.341104507446289e-07,
+      "max_relative_logit_difference": 9.641820302823864e-07,
+      "near_ties": 0,
+      "minimum_reference_margin": 0.00027094781398773193,
+      "margins_below": {
+        "1e-06": 0,
+        "1e-05": 0,
+        "0.0001": 0,
+        "0.001": 21
+      },
+      "divergences": [],
+      "identical_equity_episodes": 3
+    },
+    {
+      "market": "CN",
+      "engine": "double_dqn",
+      "binary_sha256": "70289f74fe940c66c49b31a1dd04d23a8ad837748e1dc1c7bfba94accb8621b2",
+      "native_source_sha256": "a56cece5912cd2323d3089e2f7851b4cc7c078fa7150e270f0b522a38bf684a8",
+      "layout_assets": 128,
+      "evaluation_sessions": 242,
+      "evaluation_tapes": [
+        {
+          "first_open": 1672709400000000,
+          "historical_basis": "CN/1ac3727836462ce31c39b5438918bd6f3e0d359690c7bc79bfa87cd808c8e68c/lag-0",
+          "last_close": 1703833500000000,
+          "manifest_sha256": "e83c6b6174cd188ae034e3af19e96d4a789daa26104e94ad2371b9c5db77397e",
+          "market_sha256": "54d0249afe952a27ac0b71d2eee0f1945b4a2d24dee16f855b2eb47f4346b743",
+          "observation_sha256": "77beb0df18b1ef9bd34db3fbf9ada7ab67c01adedde4f79ccedc330d0d24c44b",
+          "role": "evaluation",
+          "sessions": 242,
+          "tape_sha256": "2b091274092110a20f865cc876daea4c3b117091b88e66c8029888055bc79627"
+        }
+      ],
+      "cpu": {
+        "fit_seconds": 2.45,
+        "audit_seconds": 0.97
+      },
+      "cuda": {
+        "fit_seconds": 2.43,
+        "audit_seconds": 1.58
+      },
+      "tolerance": {
+        "atol": 1e-05,
+        "rtol": 0.0001
+      },
+      "outputs": "q_values",
+      "reference_device": "cuda:0",
+      "other_device": "cpu",
+      "parameter_fingerprint": "bfcd39ec0fad7a702b0d541be5350954285f9967463217a03b251c30cc683069",
+      "episodes": 3,
+      "decisions": 723,
+      "compared_decisions": 723,
+      "exact_logits": 0,
+      "max_abs_logit_difference": 1.3783574104309082e-07,
+      "max_relative_logit_difference": 1.4476198703589893e-06,
+      "near_ties": 0,
+      "minimum_reference_margin": 0.001344636082649231,
+      "margins_below": {
+        "1e-06": 0,
+        "1e-05": 0,
+        "0.0001": 0,
+        "0.001": 0
+      },
+      "divergences": [],
+      "identical_equity_episodes": 3
+    },
+    {
+      "market": "CN",
+      "engine": "klpo",
+      "binary_sha256": "b58abf4a00733745086b4c9b87ecea1811175b8ee4eea58df62df3749efef27e",
+      "native_source_sha256": "a56cece5912cd2323d3089e2f7851b4cc7c078fa7150e270f0b522a38bf684a8",
+      "layout_assets": 128,
+      "evaluation_sessions": 242,
+      "evaluation_tapes": [
+        {
+          "first_open": 1672709400000000,
+          "historical_basis": "CN/1ac3727836462ce31c39b5438918bd6f3e0d359690c7bc79bfa87cd808c8e68c/lag-0",
+          "last_close": 1703833500000000,
+          "manifest_sha256": "e83c6b6174cd188ae034e3af19e96d4a789daa26104e94ad2371b9c5db77397e",
+          "market_sha256": "54d0249afe952a27ac0b71d2eee0f1945b4a2d24dee16f855b2eb47f4346b743",
+          "observation_sha256": "77beb0df18b1ef9bd34db3fbf9ada7ab67c01adedde4f79ccedc330d0d24c44b",
+          "role": "evaluation",
+          "sessions": 242,
+          "tape_sha256": "2b091274092110a20f865cc876daea4c3b117091b88e66c8029888055bc79627"
+        }
+      ],
+      "cpu": {
+        "fit_seconds": 0.88,
+        "audit_seconds": 0.75
+      },
+      "cuda": {
+        "fit_seconds": 1.97,
+        "audit_seconds": 1.52
+      },
+      "tolerance": {
+        "atol": 1e-05,
+        "rtol": 0.0001
+      },
+      "outputs": "logits",
+      "reference_device": "cuda:0",
+      "other_device": "cpu",
+      "parameter_fingerprint": "494fd72a7fcf91ec4dcb0f12547c080ad8d6ec7ac4202d793cb1e94dc718d86e",
+      "episodes": 3,
+      "decisions": 723,
+      "compared_decisions": 723,
+      "exact_logits": 0,
+      "max_abs_logit_difference": 1.1920928955078125e-07,
+      "max_relative_logit_difference": 8.451992261355885e-07,
+      "near_ties": 0,
+      "minimum_reference_margin": 0.0013554692268371582,
+      "margins_below": {
+        "1e-06": 0,
+        "1e-05": 0,
+        "0.0001": 0,
+        "0.001": 0
+      },
+      "divergences": [],
+      "identical_equity_episodes": 3
+    }
+  ]
+}
