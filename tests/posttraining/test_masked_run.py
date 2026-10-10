@@ -6,6 +6,7 @@ lectura, forward, pérdida, backward, recorte, checkpoint, selección y evaluaci
 aplicar ninguna actualización mientras siga el bloqueo de aprendizaje.
 """
 
+import json
 from types import SimpleNamespace
 
 import numpy as np
@@ -23,6 +24,7 @@ from mars_titan.posttraining.parents import load_parent
 from mars_titan.posttraining.run import run_case
 from mars_titan.training.checkpoints import StopRequest
 from mars_titan.training.corpus_inputs import CorpusDataset
+from mars_titan.training.kernel_policy import FP32_STRICT
 from tests.posttraining.masked_fixture import masked_ordered, masked_parent, sources
 
 
@@ -138,6 +140,159 @@ def test_controls_share_budget_and_start_from_the_parent_output(
     )
     assert sum(value.numel() for value in optimizer.parameters) == expected
     for handle in handles:
+        handle.close()
+
+
+STRICT = (False, False, "highest")
+
+
+def tf32_flags():
+    return (
+        torch.backends.cuda.matmul.allow_tf32,
+        torch.backends.cudnn.allow_tf32,
+        torch.get_float32_matmul_precision(),
+    )
+
+
+def allow_tf32():
+    """Valores que PyTorch admite por defecto o que otro componente del proceso podría fijar."""
+    torch.backends.cuda.matmul.allow_tf32 = True
+    torch.backends.cudnn.allow_tf32 = True
+    torch.set_float32_matmul_precision("high")
+
+
+@pytest.fixture
+def restored_flags():
+    before = tf32_flags()
+    yield
+    torch.backends.cuda.matmul.allow_tf32, torch.backends.cudnn.allow_tf32, precision = before
+    torch.set_float32_matmul_precision(precision)
+
+
+@pytest.mark.parametrize(("kind", "arm"), [("gru", "head+fusion"), ("transformer", "readout")])
+def test_parent_and_adapter_run_with_the_strict_precision_of_the_parent_case(
+    tmp_path, recorder, edition, restored_flags, kind, arm
+):
+    path, _ = masked_parent(edition.ordered, tmp_path / "parent", kind, precision=FP32_STRICT)
+    allow_tf32()
+    parent = load_parent(edition.ordered, path, device="cpu", diagnostic=True)
+    # Cargar el padre fija la política que registró su ajuste.
+    assert tf32_flags() == STRICT
+    assert parent.precision == FP32_STRICT
+    assert parent.identity["kernel_policy"]["cudnn_allow_tf32"] is False
+    seen = []
+    # El brazo copia el padre con este gancho, así que registra también su forward.
+    parent.model.register_forward_pre_hook(lambda module, args: seen.append(tf32_flags()))
+    train, validation = sources(edition.ordered)
+    cache = ParentCache(
+        tmp_path / "parent.sqlite", parent.identity["checkpoint_sha256"], "masked", parent.predict
+    )
+    data = PairedInputs(train, validation, cache)
+    scale = fit_normalization(data, batch_size=2)
+    steps = []
+    recorder.on_step = lambda optimizer: steps.append(tf32_flags())
+    # Otro componente vuelve a permitir TF32 antes del ajuste, que debe fijar la política.
+    allow_tf32()
+    cases, _ = matrix_cases(kind)
+    report = run_case(
+        data,
+        tmp_path / "arm",
+        cases[f"seed-42/{arm}"]["case"],
+        grid=ActionGrid.from_dict(edition.report["grid"]),
+        normalization=scale,
+        parent=parent,
+        batch_size=2,
+        device="cpu",
+        diagnostic=True,
+    )
+    assert report["status"] == "completed"
+    assert seen and steps and set(seen) | set(steps) == {STRICT}
+    numerics = report["identity"]["numerics"]
+    assert (
+        numerics["cuda_matmul_allow_tf32"],
+        numerics["cudnn_allow_tf32"],
+        numerics["matmul_precision"],
+    ) == STRICT
+    assert report["identity"]["parent"]["kernel_policy"] == parent.kernel_policy
+    # Una predicción del padre con TF32 permitido se rechaza en lugar de cambiar sus bits.
+    allow_tf32()
+    raw = train(0)
+    with pytest.raises(ValueError, match="política de precisión"):
+        parent.predict(raw["inputs"], raw["presence"])
+    for handle in (train, validation, cache):
+        handle.close()
+
+
+def test_an_adapter_whose_process_allows_tf32_mid_run_fails_at_the_next_save(
+    tmp_path, recorder, edition, restored_flags
+):
+    path, _ = masked_parent(edition.ordered, tmp_path / "parent", precision=FP32_STRICT)
+    parent = load_parent(edition.ordered, path, device="cpu", diagnostic=True)
+    train, validation = sources(edition.ordered)
+    cache = ParentCache(
+        tmp_path / "parent.sqlite", parent.identity["checkpoint_sha256"], "masked", parent.predict
+    )
+    data = PairedInputs(train, validation, cache)
+    scale = fit_normalization(data, batch_size=2)
+    recorder.on_step = lambda optimizer: allow_tf32()
+    cases, _ = matrix_cases("gru")
+    with pytest.raises(ValueError, match="política de precisión"):
+        run_case(
+            data,
+            tmp_path / "arm",
+            cases["seed-42/head+fusion"]["case"],
+            ActionGrid.from_dict(edition.report["grid"]),
+            scale,
+            parent=parent,
+            batch_size=2,
+            device="cpu",
+            diagnostic=True,
+            checkpoint_seconds=1e-9,
+        )
+    # El guardado que sigue al primer paso lo detecta, sin esperar a la evaluación final.
+    assert len(recorder.optimizers[0].calls) == 1
+    for handle in (train, validation, cache):
+        handle.close()
+
+
+def test_a_final_evaluation_under_tf32_is_not_confirmed(
+    tmp_path, recorder, edition, restored_flags, monkeypatch
+):
+    from mars_titan.posttraining import run as module
+
+    path, _ = masked_parent(edition.ordered, tmp_path / "parent", precision=FP32_STRICT)
+    parent = load_parent(edition.ordered, path, device="cpu", diagnostic=True)
+    train, validation = sources(edition.ordered)
+    cache = ParentCache(
+        tmp_path / "parent.sqlite", parent.identity["checkpoint_sha256"], "masked", parent.predict
+    )
+    data = PairedInputs(train, validation, cache)
+    scale = fit_normalization(data, batch_size=2)
+    real = module.evaluate
+
+    def evaluate(*args, destination=None, **options):
+        # Solo la evaluación final escribe predicciones. Antes de ella se permite TF32.
+        if destination is not None:
+            allow_tf32()
+        return real(*args, destination=destination, **options)
+
+    monkeypatch.setattr(module, "evaluate", evaluate)
+    cases, _ = matrix_cases("gru")
+    with pytest.raises(ValueError, match="política de precisión"):
+        run_case(
+            data,
+            tmp_path / "arm",
+            cases["seed-42/head+fusion"]["case"],
+            ActionGrid.from_dict(edition.report["grid"]),
+            scale,
+            parent=parent,
+            batch_size=2,
+            device="cpu",
+            diagnostic=True,
+        )
+    report = json.loads((tmp_path / "arm/run.json").read_text())
+    assert report["status"] == "failed"
+    for handle in (train, validation, cache):
         handle.close()
 
 

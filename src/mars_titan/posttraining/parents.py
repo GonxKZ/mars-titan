@@ -22,6 +22,7 @@ from mars_titan.models.predictive_adaptation import adapted_copy, parent_copy
 from mars_titan.models.quantile_head import CONTRACT, QUANTILE_HEAD, median
 from mars_titan.profiling import CostProbe
 from mars_titan.training.experiment_resources import GpuLease
+from mars_titan.training.kernel_policy import declared_policy, require_policy
 from mars_titan.training.predictive_parents import _parent, _signature
 from mars_titan.training.reference_run import _confirmed_state
 
@@ -57,6 +58,9 @@ class FrozenParent:
         self.input_policy = identity.get("input_policy", STRICT_INPUTS)
         self.masked = masked_inputs(self.input_policy)
         self.shapes = {key: tuple(shape) for key, shape in shapes.items()}
+        # Precisión que declaró el ajuste del padre. Sin ella se conserva la del proceso.
+        self.kernel_policy = identity.get("kernel_policy")
+        self.precision = None if self.kernel_policy is None else self.kernel_policy["precision"]
         # Un padre de cuantiles aporta su mediana como predicción puntual del padre.
         self.quantiles = bool(getattr(model, "emits_quantiles", False))
         if self.quantiles != ("output_head" in identity):
@@ -95,6 +99,9 @@ class FrozenParent:
         ):
             raise ValueError("Las dimensiones o valores no coinciden con el padre")
         presence = self._presence(inputs, presence, count)
+        if self.kind in NEURAL:
+            # La predicción del padre usa la misma política numérica que su ajuste.
+            require_policy(self.precision, self.kernel_policy)
         predictions = []
         with torch.inference_mode():
             for start in range(0, count, 256):
@@ -171,6 +178,10 @@ def _neural_parent(report, source, report_path):
     if contract.get("dimensions") != dimensions or contract.get("context") != shapes["prices"][0]:
         raise ValueError("Las dimensiones del padre no corresponden al corpus")
     case = contract["case"]
+    # La precisión que declaró el ajuste se fija antes de reconstruir el padre y debe dar la
+    # política que registró su identidad (#446). Sin precisión declarada nada cambia.
+    if declared_policy(case.get("precision")) != contract.get("kernel_policy"):
+        raise ValueError("El padre no conserva la política de precisión de su ajuste")
     family = contract.get("model_family")
     fusion = contract.get("mask_fusion", STRICT_FUSION)
     if (fusion == PRESENCE_FUSION) != masked_inputs(contract.get("input_policy", STRICT_INPUTS)):
