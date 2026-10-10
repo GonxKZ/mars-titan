@@ -455,10 +455,12 @@ def anchor_adapter(anchor, anchor_view, specification, *, device):
     window, window_sha256, report, folder = _anchor(Path(anchor), Path(anchor_view))
     identity = report["identity"]
     declared = identity["recipe"]
-    # La precisión solo aparece en la identidad cuando la receta la declara.
+    # La precisión y el ancla del decaimiento solo aparecen en la identidad cuando la receta
+    # los declara.
+    optional = ("precision", "weight_decay_anchor")
     recipe = CandidateRecipe(
         **{
-            item.name: declared.get(item.name) if item.name == "precision" else declared[item.name]
+            item.name: declared.get(item.name) if item.name in optional else declared[item.name]
             for item in fields(CandidateRecipe)
         }
     )
