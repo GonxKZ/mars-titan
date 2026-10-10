@@ -15,8 +15,8 @@ Con `execution.order = "by_window"` la campaña recorre cada ventana en estas fa
 
 Después empieza la siguiente ventana. El plan solo admite dependencias hacia fases
 anteriores de la misma ventana o hacia ventanas anteriores. La selección no es un trabajo,
-sino la lectura del MAE de validación de los recibos de búsqueda, y las dos últimas fases
-son los puntos de conexión de los agregados por ventana y de la retención rodante.
+sino la lectura del MAE de validación de los recibos de búsqueda. Las dos últimas fases las
+ejecuta `rolling_retention` (retención v2) con los agregados de la ventana y la liberación.
 """
 
 import argparse

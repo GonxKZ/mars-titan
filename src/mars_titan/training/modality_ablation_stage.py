@@ -33,6 +33,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
+from mars_titan.data import prediction_files
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.modality_ablation import VARIANTS, ablation_identity
 from mars_titan.data.storage import atomic_json, outside_source, sha256
@@ -50,6 +51,7 @@ from .campaign_plan import (
     plan_campaign,
     schedule,
 )
+from .campaign_storage import release_confirmed
 from .learning_hold import LearningHoldError, hold_path, learning_blocked
 
 STAGE_KIND = "historical_masked_modality_ablation_stage"
@@ -445,11 +447,16 @@ class _Stage:
             return None
         receipt, digest = read_manifest(path, 8 * 1024**2)
         _require(receipt.get("identity") == identity, f"{job['id']} cambió de identidad")
-        for record in (receipt["report"], receipt["prediction"]):
-            _require(
-                sha256(self.output / record["path"]) == record["sha256"],
-                f"Un artefacto confirmado de {job['id']} ha cambiado",
-            )
+        _require(
+            sha256(self.output / receipt["report"]["path"]) == receipt["report"]["sha256"],
+            f"Un artefacto confirmado de {job['id']} ha cambiado",
+        )
+        record = receipt["prediction"]
+        prediction_files.verify(
+            self.output / record["path"],
+            record["sha256"],
+            label=f"Un artefacto confirmado de {job['id']} ha cambiado",
+        )
         return dict(receipt, sha256=digest)
 
     def attempt(self, job):
@@ -536,6 +543,8 @@ class _Stage:
         )
         target = self.folder(job) / "receipt.json"
         atomic_json(target, receipt)
+        # Con el recibo escrito, los índices del calentamiento ya no se leen.
+        release_confirmed(run.folder, job["model"])
         return dict(receipt, sha256=sha256(target))
 
     def execute(self, jobs):
@@ -680,13 +689,25 @@ def run_stage(
         os.close(descriptor)
 
 
-def write_sources(path, views, campaign_output, output, scope, *, comparison_path=None):
+def write_sources(
+    path, views, campaign_output, output, scope, *, comparison_path=None, window=None
+):
     """Escribir el manifiesto de predicciones enmascaradas de un ámbito y validarlo.
 
     Sin `comparison_path` se valida con la comparación de la campaña. Una comparación con
     un subconjunto de brazos publica solo esos brazos, como `masked_campaign.write_sources`.
+    Con `window` se publica solo esa ventana en `sources/windows/<ventana>/`.
     """
-    stage, base, output = _opened(path, views, campaign_output, output)
+    pairs = None
+    if window is not None:
+        # La ventana y los anclas de los que parten sus predicciones enmascaradas.
+        planned = [
+            job
+            for job in plan_stage(load_stage(path))
+            if (job["scope"], job["window"]) == (scope, window)
+        ]
+        pairs = {(scope, name) for job in planned for name in (job["window"], job["anchor"])}
+    stage, base, output = _opened(path, views, campaign_output, output, pairs)
     _require(scope in stage["scopes"], "El ámbito no pertenece a la etapa")
     identity = _identity(stage, base.views)
     _require(
@@ -697,6 +718,8 @@ def write_sources(path, views, campaign_output, output, scope, *, comparison_pat
     validation = comparison.load_config(
         Path(comparison_path or stage["campaign"]["comparison_path"]).resolve()
     )
+    if window is not None:
+        validation = comparison.restrict_windows(validation, scope, [window])
     _require(
         validation.get(comparison.ABLATION_FIELD) == stage["declaration"],
         "La comparación de validación no declara la misma ablación",
@@ -713,9 +736,11 @@ def write_sources(path, views, campaign_output, output, scope, *, comparison_pat
     state = _Stage(stage, base, output, identity, EXECUTORS, None)
     windows = base.views[scope]["windows"]
     folder = output / "sources"
+    if window is not None:
+        windows, folder = {window: windows[window]}, folder / "windows" / window
     variants = {}
     for job in plan_stage(stage):
-        if job["scope"] != scope or job["arm"] not in wanted:
+        if job["scope"] != scope or job["arm"] not in wanted or job["window"] not in windows:
             continue
         _require(
             job["seed"] in wanted[job["arm"]]["seeds"],

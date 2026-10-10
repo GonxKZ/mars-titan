@@ -15,6 +15,8 @@ etapas con los recuentos de las vistas y tablas sintéticas, sin leer objetivos 
 `budget` proyecta las horas de una campaña con un caudal supuesto o medido y el factor de
 caudal necesario para un objetivo de horas. `schedule` muestra las fases de cada ventana de
 campaña con sus trabajos, en el orden en que se ejecutan.
+`rolling` recorre la campaña ventana a ventana con la retención v2 y `regenerate` repite por
+inferencia, sin ajustar, las predicciones por fila de un trabajo confirmado.
 """
 
 import sys
@@ -28,6 +30,8 @@ from mars_titan.training import (
     campaign_throughput,
     masked_campaign,
     modality_ablation_stage,
+    prediction_regeneration,
+    rolling_retention,
     storage_budget,
 )
 
@@ -50,6 +54,10 @@ def main(argv=None):
         return modality_ablation_stage.main(argv[1:])
     if argv[:1] == ["storage"]:
         return storage_budget.main(argv[1:])
+    if argv[:1] == ["rolling"]:
+        return rolling_retention.main(argv[1:])
+    if argv[:1] == ["regenerate"]:
+        return prediction_regeneration.main(argv[1:])
     return masked_campaign.main(argv)
 
 

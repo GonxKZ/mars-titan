@@ -66,6 +66,8 @@ from .carried_predictions import (
     ablation_record,
     carried_window,
     predicted_partitions,
+    regeneration_record,
+    same_view,
 )
 from .corpus_inputs import CorpusDataset
 from .learning_hold import require_learning_allowed
@@ -447,7 +449,16 @@ def anchor_adapter(anchor, anchor_view, specification, *, device):
 
 
 def carry_window(
-    anchor, anchor_view, view, output, *, parent_id, device, stop=None, modality_ablation=None
+    anchor,
+    anchor_view,
+    view,
+    output,
+    *,
+    parent_id,
+    device,
+    stop=None,
+    modality_ablation=None,
+    regenerate=False,
 ):
     """Predecir calibración y evaluación de una ventana posterior con el estado del ancla.
 
@@ -455,7 +466,8 @@ def carry_window(
     información del ancla termine antes de la calibración trasladada. Con
     `modality_ablation` predice solo la evaluación, también en la propia ventana del ancla,
     y no escribe recibos walk-forward. La GRU y el banco empiezan vacíos en el tramo, que
-    lee las entradas ablacionadas.
+    lee las entradas ablacionadas. Con `regenerate` repite la validación, la calibración y
+    la evaluación de la propia ventana del ancla, también sin recibos walk-forward.
     """
     require_learning_allowed("la predicción trasladada de la GRU candidata")
     started = time.perf_counter()
@@ -465,16 +477,17 @@ def carry_window(
     )
     contracts = _window(dataset)
     anchor_meta, _ = read_manifest(anchor_view, 8 * 1024**2)
+    partitions = predicted_partitions(modality_ablation, regenerate)
+    same_view(anchor_meta, dataset.manifest, regenerate)
     anchor_fold, fold, months = carried_window(
         anchor_meta,
         dataset.manifest,
         input_policy=HISTORICAL_MASKED,
-        same_window=modality_ablation is not None,
+        same_window=modality_ablation is not None or regenerate,
     )
     output = _destination(output, dataset.roots.values())
     _prepare_output(view, output, dataset)
     output.mkdir(parents=True)
-    partitions = predicted_partitions(modality_ablation)
     # Cada tramo trasladado repite el calentamiento declarado en el ancla.
     anchor_window, _ = read_manifest(anchor / WINDOW_REPORT, 8 * 1024**2)
     warmup_months = anchor_window["bank_policy"]["warmup_months"]
@@ -503,8 +516,9 @@ def carry_window(
         return dict(status="paused", final_test_opened=False)
     checkpoint = window["checkpoint"]
     parent = dict(id=parent_id, sha256=checkpoint["sha256"])
-    # Una predicción ablacionada no es una predicción walk-forward del brazo.
-    receipts = {} if modality_ablation else write_receipts(output, contracts, parent, tables)
+    # Una predicción ablacionada o regenerada no es una predicción walk-forward del brazo.
+    published = not (modality_ablation or regenerate)
+    receipts = write_receipts(output, contracts, parent, tables) if published else {}
     return _receipt(
         output,
         dict(
@@ -532,6 +546,7 @@ def carry_window(
             seconds=time.perf_counter() - started,
             **policy_identity(HISTORICAL_MASKED),
             **ablation_record(modality_ablation),
+            **regeneration_record(regenerate),
         ),
     )
 
@@ -563,8 +578,23 @@ def campaign_case(case):
     return recipe, options, document["walk_forward"]["warmup_months"]
 
 
-def run_job(run, *, device="cuda:0", optimizer_factory=None):
-    """Ejecutar un trabajo de la campaña: ajuste de ventana o predicción trasladada."""
+def run_job(run, *, device="cuda:0", optimizer_factory=None, regenerate=False):
+    """Ejecutar un trabajo de la campaña: ajuste de ventana o predicción trasladada.
+
+    Con `regenerate`, `run.anchor` es el intento del propio ajuste y se repiten sus
+    predicciones por inferencia, sin ajustar nada.
+    """
+    if regenerate:
+        return carry_window(
+            run.anchor["folder"],
+            run.anchor["view"],
+            run.view,
+            run.folder,
+            parent_id=run.job["id"],
+            device=device,
+            stop=run.stop,
+            regenerate=True,
+        )
     if run.job["kind"] == "carry":
         report = carry_window(
             run.anchor["folder"],

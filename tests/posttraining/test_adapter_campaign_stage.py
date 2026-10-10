@@ -16,6 +16,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
 
+from mars_titan.data import prediction_files
 from mars_titan.data.cohort_files import read_manifest
 from mars_titan.data.storage import atomic_json
 from mars_titan.environments.walk_forward_receipt import read_window_receipt
@@ -333,6 +334,26 @@ def test_variant_a_adapts_the_previous_parent_with_new_rows_and_publishes_the_ch
     assert again["status"] == "completed" and len(recorder.optimizers) == created
     assert receipts(output) == found
     assert again["chain"] == summary["chain"]
+
+
+def test_a_confirmed_first_selection_does_not_reread_released_base_rows(base_a, tmp_path, recorder):
+    """La retención v2 libera la validación de la base al cerrar la ventana 0.
+
+    La selección confirmada de esa ventana se comprueba con los recibos, así que repetir la
+    etapa no vuelve a leer las filas liberadas.
+    """
+    base = SimpleNamespace(**vars(base_a))
+    base.output = tmp_path / "campaign"
+    shutil.copytree(base_a.output, base.output, symlinks=True)
+    output = tmp_path / "stage"
+    summary = run(base, output)
+    assert summary["status"] == "completed"
+    receipt = json.loads((base.output / "jobs" / PARENT / "receipt.json").read_text())
+    report = base.output / receipt["report"]["path"]
+    record = json.loads(report.read_text())["predictions"]["validation"]
+    prediction_files.release(report.parent / record["path"], record["sha256"], stage="fixture")
+    again = run(base, output)
+    assert again["status"] == "completed" and again["chain"] == summary["chain"]
 
 
 def test_a_strictly_better_candidate_replaces_the_frozen_parent(

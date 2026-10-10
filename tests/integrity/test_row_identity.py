@@ -11,6 +11,7 @@ import numpy as np
 import pyarrow as pa
 import pytest
 
+from mars_titan.data import prediction_files
 from mars_titan.integrity import row_identity
 from tests.evaluation.test_walk_forward_comparison import Study
 
@@ -44,6 +45,21 @@ def only(arm, seed, fold, partition):
         return applied
 
     return decorate
+
+
+def compact_all(study, rows):
+    """Compactar como la retención v2 cada archivo del estudio. Devuelve sus rutas y huellas."""
+    records = []
+    for seeds in study.sources["arms"].values():
+        for windows in seeds.values():
+            for window, entry in windows.items():
+                for part in ("calibration", "evaluation"):
+                    if part in entry:
+                        path = study.sources_path.parent / entry[part]["path"]
+                        digest = entry[part]["sha256"]
+                        prediction_files.compact(path, digest, rows / f"{window}-{part}")
+                        records.append((path, digest))
+    return records
 
 
 def failing_segments(result):
@@ -145,6 +161,19 @@ def test_the_digest_ignores_row_order_and_chunking():
     assert row_identity.row_digest(table)[0] != row_identity.row_digest(changed)[0]
     renamed = table.set_column(1, "asset_id", pa.array(["b", "a", "zz"]))
     assert row_identity.row_digest(table)[0] != row_identity.row_digest(renamed)[0]
+
+
+def test_compacted_predictions_give_the_same_check_and_released_ones_stop_it(tmp_path):
+    study = Study(tmp_path / "study", scope="US")
+    before = row_identity.check_sources(study.config_path, study.sources_path, "US")
+    records = compact_all(study, tmp_path / "rows")
+    assert all(prediction_files.verify(*r) == prediction_files.COMPACTED for r in records)
+    after = row_identity.check_sources(study.config_path, study.sources_path, "US")
+    assert after["passed"] and after["files"] == before["files"]
+    assert after["shared_rows"] == before["shared_rows"]
+    prediction_files.release(*records[0], stage="fixture")
+    with pytest.raises(prediction_files.PredictionsReleased):
+        row_identity.check_sources(study.config_path, study.sources_path, "US")
 
 
 def test_a_changed_prediction_file_is_rejected_by_its_digest(tmp_path):

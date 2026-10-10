@@ -840,6 +840,35 @@ def test_comparison_excludes_ineligible_china_rows_and_pairs_joint_with_separate
         assert dropped["excluded_rows"]["evaluation"][other] > 0
 
 
+def test_window_aggregates_score_each_scope_with_its_joint_design(joint_campaign, monkeypatch):
+    from mars_titan.evaluation import window_aggregates
+    from mars_titan.training import rolling_retention as rolling
+
+    declared = comparison.load_config(joint_campaign.comparison)
+    # Sin la cartera, que necesitaría la edición de precios, solo queda el walk-forward.
+    plain = {key: value for key, value in declared.items() if key != comparison.LONG_SHORT_FIELD}
+    monkeypatch.setattr(rolling.Rolling, "comparison_config", lambda self: plain)
+    retention = rolling.load_retention(CONFIGS / "baselines/historical-masked-retention-v2.json")
+    rows = order.campaign_windows(plan.load_campaign(joint_campaign.campaign))
+    walker = rolling.Rolling(
+        retention, joint_campaign.campaign, joint_campaign.views, joint_campaign.output, rows
+    )
+    walker.folder = joint_campaign.root / "rolling-aggregates"
+    row = next(row for row in rows if row["id"] == "fold-012")
+    assert set(walker.aggregates(row)) == {"US+CN", "US", "CN"}
+    for scope, window in row["scopes"].items():
+        path = engine.write_sources(
+            joint_campaign.campaign, joint_campaign.views, joint_campaign.output, scope
+        )
+        sources = comparison.load_sources(path, declared, scope)
+        scoped = comparison.scope_config(declared, scope)
+        stored = window_aggregates.read(walker.folder / "aggregates", scoped, sources, window)
+        assert window_aggregates.same(stored, comparison._score_window(sources, scoped, window))
+        # En un mercado, los agregados incluyen el brazo conjunto prestado.
+        if scope != "US+CN":
+            assert {arm for arm, _ in stored[0]} == {"zero", "gru", "gru_joint"}
+
+
 def pa_equal(column, value):
     import pyarrow.compute as pc
 

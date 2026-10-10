@@ -32,6 +32,7 @@ from pathlib import Path
 import numpy as np
 import pyarrow as pa
 
+from mars_titan.data import prediction_files
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.environments.walk_forward_receipt import (
@@ -338,10 +339,10 @@ def _episodic_gru(run, **options):
     return report
 
 
-def _carry(run):
+def _carry(run, *, regenerate=False):
     from .carried_predictions import carry_reference, carry_tabular
 
-    options = dict(batch_size=run.batch_size, input_policy=run.policy)
+    options = dict(batch_size=run.batch_size, input_policy=run.policy, regenerate=regenerate)
     sources = (run.anchor["folder"], run.anchor["view"], run.view, run.folder)
     if run.job["model"] == "neural":
         return carry_reference(*sources, stop=run.stop, **options)
@@ -372,10 +373,10 @@ def _titans_fit(run):
     return titans_fit(run)
 
 
-def _titans_carry(run):
+def _titans_carry(run, **options):
     from .titans_walk_forward import titans_carry
 
-    return titans_carry(run)
+    return titans_carry(run, **options)
 
 
 def _mars_titan_fit(run):
@@ -384,10 +385,10 @@ def _mars_titan_fit(run):
     return mars_titan_fit(run)
 
 
-def _mars_titan_carry(run):
+def _mars_titan_carry(run, **options):
     from .mars_titan_walk_forward import mars_titan_carry
 
-    return mars_titan_carry(run)
+    return mars_titan_carry(run, **options)
 
 
 def _cm_v1_core_fit(run):
@@ -402,10 +403,10 @@ def _cm_v1_fit(run):
     return cm_v1_fit(run)
 
 
-def _cm_v1_carry(run):
+def _cm_v1_carry(run, **options):
     from .cm_v1_factorial import cm_v1_carry
 
-    return cm_v1_carry(run)
+    return cm_v1_carry(run, **options)
 
 
 # Ejecutores por modelo y tipo, con su dispositivo y si reanudan el último intento.
@@ -465,6 +466,32 @@ def _releasing_tabular(run_function, model, kind):
 EXECUTORS = {
     key: dict(entry, run=_releasing_tabular(entry["run"], *key)) for key, entry in EXECUTORS.items()
 }
+
+
+def regenerators():
+    """Regeneración por modelo y tipo de trabajo, sin ajustar nada.
+
+    Un traslado se repite con su propio ejecutor desde el mismo ancla. Un ajuste se repite
+    con el traslado de su familia sobre su propia ventana y su intento como ancla. Los
+    núcleos auxiliares de CM-v1 no tienen traslado y sus tablas se conservan. Como los
+    traslados, la regeneración no usa la matriz ni la Gram compartidas de la ventana, así
+    que las libera antes de empezar.
+    """
+    from .prediction_regeneration import regenerator
+
+    result = {key: entry["run"] for key, entry in EXECUTORS.items() if key[1] == CARRY}
+    fits = dict(
+        neural=_carry,
+        ridge=_carry,
+        xgboost=_carry,
+        episodic_gru=_episodic_gru,
+        titans_mac=_titans_carry,
+        mars_titan=_mars_titan_carry,
+        cm_v1=_cm_v1_carry,
+    )
+    for model, run in fits.items():
+        result[model, FIT] = _releasing_tabular(regenerator(run), model, CARRY)
+    return result
 
 
 def _code():
@@ -672,10 +699,16 @@ class _Campaign:
             numerics is None or receipt.get("numerics") == numerics,
             f"El recibo de {job['id']} registra otra precisión numérica",
         )
-        for record in [receipt["report"], *receipt["predictions"].values()]:
-            _require(
-                sha256(self.output / record["path"]) == record["sha256"],
-                f"Un artefacto confirmado de {job['id']} ha cambiado",
+        _require(
+            sha256(self.output / receipt["report"]["path"]) == receipt["report"]["sha256"],
+            f"Un artefacto confirmado de {job['id']} ha cambiado",
+        )
+        # Las predicciones pueden estar compactadas o liberadas por la retención v2.
+        for record in receipt["predictions"].values():
+            prediction_files.verify(
+                self.output / record["path"],
+                record["sha256"],
+                label=f"Un artefacto confirmado de {job['id']} ha cambiado",
             )
         self.same_rows(job, receipt)
         return dict(receipt, sha256=digest)
@@ -1102,14 +1135,28 @@ def _confirmed_state(path, views, output):
     return campaign, _Campaign(campaign, checked, Path(output), identity, EXECUTORS, None)
 
 
-def write_sources(path, views, output, scope, *, comparison_path=None):
+def with_dependencies(jobs, wanted):
+    """Trabajos pedidos y sus dependencias, en el orden del plan."""
+    by_id = {job["id"]: job for job in jobs}
+    wanted, pending = set(wanted), list(wanted)
+    while pending:
+        for dependency in by_id[pending.pop()]["depends"]:
+            if dependency not in wanted:
+                wanted.add(dependency)
+                pending.append(dependency)
+    return [job for job in jobs if job["id"] in wanted]
+
+
+def write_sources(path, views, output, scope, *, comparison_path=None, window=None):
     """Escribir el manifiesto de fuentes de un ámbito y validarlo con la comparación.
 
     Sin `comparison_path` se valida con la comparación de la campaña, que incluye los
     brazos de las familias sin entrenador conectado. Una comparación declarada con un
     subconjunto de brazos permite evaluar los brazos ya producidos. Un brazo prestado del
     ámbito conjunto apunta a las predicciones del brazo conjunto en la ventana emparejada,
-    que la comparación restringe a las filas del mercado del ámbito.
+    que la comparación restringe a las filas del mercado del ámbito. Con `window` se
+    publica solo esa ventana en `sources/windows/<ventana>/`, validada con la comparación
+    limitada a ella, para guardar sus agregados en cuanto termina.
     """
     campaign, state = _confirmed_state(path, views, output)
     _require(scope in campaign["scopes"], "El ámbito no pertenece a la campaña")
@@ -1117,6 +1164,8 @@ def write_sources(path, views, output, scope, *, comparison_path=None):
         Path(comparison_path or campaign["comparison_path"]).resolve()
     )
     _require(scope in validation["resolved_scopes"], "La comparación no declara el ámbito")
+    if window is not None:
+        validation = comparison.restrict_windows(validation, scope, [window])
     resolved = validation["resolved_scopes"][scope]
     borrowed, joint = resolved["borrowed"], resolved.get("joint_scope")
     produced = {spec["arm"]: spec for spec in _arm_specs(campaign, scope)}
@@ -1150,6 +1199,15 @@ def write_sources(path, views, output, scope, *, comparison_path=None):
             for job in plan_campaign(campaign)
             if job["scope"] == joint and job["arm"] in closure
         ] + jobs
+    if window is not None:
+        # La ventana del ámbito y, con brazos prestados, su ventana conjunta emparejada.
+        pairs = {(scope, window)}
+        if borrowed:
+            pairs.add((joint, resolved["joint_windows"][window]))
+        jobs = with_dependencies(
+            plan_campaign(campaign),
+            [job["id"] for job in jobs if (job["scope"], job["window"]) in pairs],
+        )
     for job in jobs:
         case, _, sources = state.resolve(job)
         receipt = state.confirmed(job, state.job_identity(job, case, sources))
@@ -1157,6 +1215,8 @@ def write_sources(path, views, output, scope, *, comparison_path=None):
         state.receipts[job["id"]] = receipt
     windows = state.views[scope]["windows"]
     folder = Path(output) / "sources"
+    if window is not None:
+        windows, folder = {window: windows[window]}, folder / "windows" / window
     arms, rows = {}, {}
     for name, arm in wanted.items():
         origin = borrowed.get(name)

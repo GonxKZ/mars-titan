@@ -14,6 +14,9 @@ fuentes, con sus huellas, y recalcula las métricas por sesión con
 Solo se cotejan los cuantiles en bruto. Los calibrados dependen del calibrador común,
 que no tiene todavía una segunda implementación, y el informe lo dice. El control cero
 no tiene archivo de predicciones y queda fuera, también de forma explícita.
+
+Un archivo compactado por la retención v2 se lee con los mismos bits. Uno liberado detiene
+el recálculo hasta regenerarlo (`run_masked_campaign.py regenerate`).
 """
 
 import argparse
@@ -25,6 +28,7 @@ from pathlib import Path
 import numpy as np
 import pyarrow.parquet as pq
 
+from mars_titan.data import prediction_files
 from mars_titan.evaluation import walk_forward_comparison as comparison
 from mars_titan.integrity.independent_scores import (
     COUNT_COLUMNS,
@@ -165,10 +169,12 @@ def recheck(config_path, sources_path, scope, comparison_dir, *, rtol=RTOL, atol
     for (arm, seed, window_id), files in sorted(sources["files"].items()):
         quantile = config["arms"][arm]["output"] == QUANTILE_HEAD
         record = files["evaluation"]
-        _require(_sha256(record["path"]) == record["sha256"], f"Huella de {record['path']}")
         columns = ["market", "prediction_at", "target", "prediction"]
-        frame = pq.read_table(
-            record["path"], columns=columns + (list(QUANTILE_COLUMNS) if quantile else [])
+        # Comprueba la huella y lee igual un archivo presente o compactado por la retención v2.
+        frame = prediction_files.read(
+            record["path"],
+            record["sha256"],
+            columns + (list(QUANTILE_COLUMNS) if quantile else []),
         ).to_pandas()
         frame["prediction_at"] = _microseconds(frame["prediction_at"])
         independent = session_scores(

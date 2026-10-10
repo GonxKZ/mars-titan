@@ -161,7 +161,7 @@ Para liberar disco a medida que avanza, la campaña v2 se ejecuta ventana a vent
 | `comparison` | Agregados por sesión de la comparación de la ventana en los tres ámbitos |
 | `release` | Liberación de lo temporal de la ventana, a cargo de la retención rodante |
 
-El plan comprueba que ninguna dependencia apunta a una fase posterior ni a una ventana posterior. Con el reentrenamiento anual no hay dependencias entre ventanas. `run`, `posttraining run`, `ablation run` y `rl run` aceptan `--window`, ejecutan solo los trabajos de esa ventana con sus dependencias y confirman solo la base de esa ventana. `schedule` muestra el orden sin leer datos. La persistencia de los agregados por ventana, que permitiría liberar las predicciones por fila antes del informe final, está pendiente y se coordinará con la nueva versión de la comparación.
+El plan comprueba que ninguna dependencia apunta a una fase posterior ni a una ventana posterior. Con el reentrenamiento anual no hay dependencias entre ventanas. `run`, `posttraining run`, `ablation run` y `rl run` aceptan `--window`, ejecutan solo los trabajos de esa ventana con sus dependencias y confirman solo la base que leen. Los adaptadores por etapas parten del estado elegido en la ventana anterior, así que confirman también la base de esa ventana. `schedule` muestra el orden sin leer datos e incluye las selecciones de la cadena en la fase de adaptadores. Las fases `comparison` y `release` las ejecuta `rolling` con la [retención v2](#retención-v2-ventana-a-ventana): escribe los agregados de cada ámbito con fuentes de esa ventana y libera las tablas por fila que ya no se leen. En US y CN, las fuentes de una ventana confirman también los trabajos de los brazos prestados en la ventana conjunta emparejada.
 
 ```bash
 uv run --no-sync python scripts/run_masked_campaign.py check \
@@ -260,6 +260,35 @@ Cuando una semilla de un brazo ya tiene su predictor elegido en una ventana (el 
 `labels_used_until` es una cota y no la maduración exacta de la última etiqueta. La calibración común usa el tramo anterior a la evaluación y la purga por intervalo de etiqueta obliga a que todas sus etiquetas maduren antes del final del tramo, así que ninguna etiqueta usada en ajuste, selección o calibración madura después. En una ventana trasladada el modelo dejó de aprender antes, pero su calibración también usa ese tramo. Al reanudar, un recibo de ventana ya escrito debe coincidir con el que se deriva de los trabajos confirmados. No hay recibos reales porque la campaña no se ha ejecutado.
 
 `sources` publica el manifiesto de un ámbito para `evaluation.walk_forward_comparison`. Elige para cada brazo, semilla y ventana el ganador de la búsqueda, el finalista o la predicción trasladada, vuelve a exigir las mismas filas en todos ellos y valida el manifiesto con `load_sources` antes de publicarlo. Con la comparación declarada de 23 brazos falla y nombra los brazos sin productor. Para evaluar antes solo las referencias haría falta declarar, antes de ver resultados, una comparación con esos brazos.
+
+### Retención v2 ventana a ventana
+
+La [modificación del protocolo del 9 de octubre](protocol.md#modificación-del-9-de-octubre-de-2026-retención-v2-de-las-predicciones-por-fila) declara la retención v2 en `configs/baselines/historical-masked-retention-v2.json`. Su recorrido es `training/rolling_retention.py`:
+
+```bash
+uv run --no-sync python scripts/run_masked_campaign.py rolling \
+  --retention configs/baselines/historical-masked-retention-v2.json --schedule <orden> \
+  --campaign <configuración> --views US=<vistas>/US --views CN=<vistas>/CN \
+  --views US+CN=<vistas>/US+CN --output <campaña> \
+  --storage configs/baselines/historical-masked-campaign-storage.json \
+  --extras reports/engineering/campaign-storage-20261009/extras.json --adapter-blocks \
+  --ablation-stage <ablación> --ablation-output <salida de la ablación> \
+  --adapter-stage <adaptadores> --adapter-output <salida de los adaptadores> \
+  --rl-stage <políticas> --rl-output <salida de las políticas> --edition <precios>
+uv run --no-sync python scripts/run_masked_campaign.py regenerate --campaign <configuración> \
+  --views US=<vistas>/US --output <campaña> --job <trabajo> --destination <destino nuevo>
+uv run --no-sync python -m mars_titan.evaluation.walk_forward_comparison --config <comparación> \
+  --sources <campaña>/sources/US.json --scope US \
+  --aggregates <campaña>/retention/aggregates --output <informe>
+```
+
+`rolling` recorre en orden las ventanas de campaña del archivo de orden (`{campaign, windows: [{window, scopes}]}`, el mismo que publica el orden por ventanas de A v2). En cada ventana ejecuta la base, los adaptadores, la ablación y las políticas limitadas a esa ventana, escribe los agregados FP64 de la comparación de cada ámbito con fuentes de esa ventana (`sources/windows/<ventana>/<ámbito>.json`) y libera. El registro `retention/ledger.json` guarda las fases terminadas, así que un corte reanuda sin repetir ninguna. Antes de empezar una ventana nueva proyecta su crecimiento con la declaración de almacenamiento, las medidas de `--extras` y las páginas de XGBoost, y no empieza si no cabe en el espacio libre menos el margen. Dentro de la base sigue actuando la guardia de cada trabajo.
+
+Al liberar, cada tabla por fila de la base y de la ablación que ya no leerá ninguna fase posterior se regenera en `retention/regeneration/` con `training/prediction_regeneration.py` y se compara bit a bit con su huella de contenido. Solo si todas las tablas del trabajo coinciden se borra el archivo y queda `predictions-retention.json` con sus huellas, el informe de la regeneración (`retention/regeneration-reports/`) y la procedencia. Si no coinciden, o si el ajuste se predijo con TF32, la tabla se compacta sin pérdida en una tabla común por ventana y tramo (`retention/rows/`) y se conserva. Una comparación escrita es definitiva, y un error antes de comparar se vuelve a intentar en la ventana siguiente. Las evaluaciones que lee una política posterior y las tablas de los adaptadores se compactan sin pérdida. Un trabajo que el plan marca con `regenerable: false` y un control en línea (`kind: online`, como `transformer_compact_online`), cuyas predicciones dependen de pasos de optimizador, también se compactan sin intentar regenerarlos. Las lecturas de una tabla compactada devuelven los mismos bits y una tabla liberada da `PredictionsReleased`.
+
+`regenerate` repite por inferencia, sin ajustar nada, las tablas de un trabajo confirmado en un destino nuevo, con FP32 estricto, y termina con código 1 si alguna no coincide. Con `--ablation-stage` y `--ablation-output` regenera una predicción de la ablación. Se detiene con la protección de aprendizaje, como los traslados. La comparación final lee los agregados de cada ventana con `--aggregates` y no abre ninguna fila.
+
+El recorrido exige el filtro `window` de la base y de las etapas, que llega con la campaña A v2 ([#363](https://github.com/GonxKZ/mars-titan/issues/363)), y lo comprueba antes de empezar. También exige la base confirmada en la salida: sin ella se detiene sin escribir nada. Si la comparación declara la cartera larga y corta, cada ventana guarda también sus libros por sesión (`<ventana>.long_short.npz`), con la identidad de la edición de precios, y `rolling` exige `--edition`. `long_short_comparison --aggregates` calcula después la cartera sin abrir filas. Las comprobaciones de integridad (`integrity.score_recheck` y `integrity.row_identity`) leen las tablas compactadas con los mismos bits y se detienen ante una liberada hasta regenerarla.
 
 ### Puntos de extensión y etapas posteriores
 
@@ -448,7 +477,7 @@ La campaña se ejecuta en una RTX 4070 Laptop de 8 GB con el perfil de energía 
 - Comparación parcial con las referencias, si se quiere evaluarlas antes de conectar las demás familias.
 - Revisar la configuración de evaluación declarada antes de ver resultados: familias de contrastes, base de los refinamientos K, mínimo de activos del Rank IC y longitud de bloque ([#32](https://github.com/GonxKZ/mars-titan/issues/32)). La [cabeza común](../engineering/quantile-head.md) y su calibración CQR ([#22](https://github.com/GonxKZ/mars-titan/issues/22)) están implementadas y el control de la cabeza sobre el Transformer compacto está declarado sin ejecutar.
 - Semillas fijas y margen mínimo relevante de error, registrados antes de ver resultados.
-- Política de retención de predicciones y checkpoints según el disco disponible, en preparación con el presupuesto de disco de la campaña.
+- Comprobar en `cuda:0` que la regeneración de cada familia repite bit a bit sus tablas, condición para liberar filas con la [retención v2](#retención-v2-ventana-a-ventana), y decidir el destino de las tablas de los adaptadores, que no caben compactadas ([informe](../../reports/engineering/rolling-retention-20261009/README.md)).
 - Compilar con LibTorch CUDA los ajustes nativos de la [etapa de políticas](#etapa-de-políticas-por-ventana), ya implementados y comprobados sin aprendizaje, y medir su caudal en `cuda:0` antes de fijar el presupuesto de transiciones.
 - Fijar en la orden de la campaña FP32 estricto para todas las familias (`float32_matmul_precision = highest` y TF32 desactivado en cuBLAS y cuDNN) antes del primer ajuste. Hoy cada entrenador predictivo registra los indicadores, pero ninguno los fija.
 - Elegir entre el presupuesto fijo de A y su [variante con parada conjunta](walk-forward-2000.md#configuración-preparada), declarada sin resultados. La liberación al confirmar no toca la carpeta de una meseta hasta que se confirma su continuación, y la proyección de disco cuenta esa carpeta como una cota superior. El recibo de almacenamiento del 9 de octubre se calculó sin parada conjunta, con un solo caso de búsqueda de la GRU candidata (135 ajustes en vez de 180) y sin su calentamiento en los índices.
