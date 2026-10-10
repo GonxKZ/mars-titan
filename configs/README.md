@@ -12,4 +12,6 @@ La selección principal propuesta es de hasta 128 activos, con piloto de hasta 6
 
 `titans/cm-v1-factorial.json` declara el factorial CM-v1 sobre Titans-MAC: B, los valores de C y M, los dos núcleos y los cuatro brazos. Las recetas del núcleo y del lector se indican por ruta relativa a esa declaración y su huella entra en la identidad de cada brazo. No se ha ejecutado. Se describe en el [factorial CM-v1](../docs/experiments/mars_titan_cm_v1/factorial.md).
 
+`targets/residual-diagnostics-v1.json` declara el [diagnóstico de la etiqueta residual](../reports/targets/diagnostics.md) de MT-016 antes de calcularlo: la ventana principal de 252 sesiones con 126 pares, las sensibilidades de 126 y 504 sesiones y la del retorno ajustado al mercado, y los umbrales fijos de colas, beta y saltos. No se cambia después de ver los resultados y se reutiliza tal cual para repetir el diagnóstico sobre la edición v3.1.
+
 `posttraining/` contiene la matriz de adaptadores declarada antes de cualquier ajuste. Cada futura ejecución conservará la configuración resuelta y su hash. Una configuración no podrá cambiar de significado según el cuaderno o directorio desde el que se ejecute. Las credenciales, si llegan a necesitarse para fuentes externas, quedarán fuera de los archivos versionados.
