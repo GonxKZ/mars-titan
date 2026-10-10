@@ -864,6 +864,20 @@ brazos. Cada padre es un análisis secundario propio, sin corrección entre padr
 y no sirve para elegir la arquitectura base. Sin ablación de modalidades
 conectada para estos brazos, su sección queda pendiente en el informe.
 
+Con la [retención v2](training-campaign-2000.md#retención-v2-ventana-a-ventana), las
+filas de calibración y evaluación del modelo base reentrenado se liberan al terminar
+cada ventana, y la comparación de cada padre las lee. Por eso la fase de agregados del
+recorrido guarda también, para cada padre con trabajos de la etapa en la ventana, el
+manifiesto de fuentes de esa ventana (`sources/windows/<ventana>/<ámbito>/<padre>.json`
+en la salida de la etapa) y sus agregados por sesión
+(`retention/aggregates/posttraining/<padre>/<ámbito>/<ventana>.npz`), puntuados con la
+configuración del padre limitada a la ventana, que conserva su huella. Con `--aggregates`,
+`stage_comparison evaluate` lee esos agregados y no abre ninguna fila. Las pruebas
+comprueban que el informe y la tabla por sesión salen idénticos a los que leen las
+filas, intervalos del bootstrap por bloques incluidos, con la misma semilla y las
+sesiones de dos ventanas. No hace falta ninguna tolerancia. La cartera de un padre lee
+filas y no se combina con agregados.
+
 Falta conectar los productores de predicciones. Las referencias neuronales con
 retención `heldout_full_train_sessions_v1` ya escriben archivos por tramo con
 `sample_id`, `asset_id`, mercado, instante, objetivo, predicción y, con
@@ -1162,7 +1176,7 @@ frente al reentreno, al padre trasladado y a la continuación, y el Transformer 
 como control de «seguir aprendiendo». Añade la atribución por componentes de dos
 linajes, Titans y CM-v1. La [tabla del protocolo](protocol.md#qué-pregunta-responde-cada-comparación)
 resume en lenguaje llano qué pregunta responde cada bloque.
-`evaluation/comparison_matrix.py` valida la declaración y compila 47 familias con 356
+`evaluation/comparison_matrix.py` valida la declaración y compila 47 familias con 362
 contrastes. `check` los cuenta sin leer datos y `missing` calcula los brazos que faltan.
 
 ### Declaración
@@ -1249,6 +1263,34 @@ valor nulo es una sesión no definida. Cada métrica se declara en la matriz com
 (no negativa, menor es mejor) o ganancia antes de ver la tabla. Una métrica sin declarar
 se rechaza. Solo admiten medias por sesión. Un estadístico de recorrido, como el Sharpe
 de una política, necesita la vía de la cartera.
+
+### Fuentes y publicación con la campaña
+
+`session_table_contrasts.write_sources` publica el manifiesto de fuentes de la matriz a
+partir de los informes ya escritos, con rutas relativas a su carpeta y la huella de cada
+archivo. Lo escribe primero como candidato y solo lo deja visible si `load_sources` lo
+acepta, así que un informe alterado, incompleto o de otro ámbito no deja manifiesto. La
+[matriz de A v2](../../configs/evaluation/comparison-matrix-a-v2.json) es la de A sobre la
+comparación conjunta de A v2. Los siete modelos de integración que esa comparación todavía
+no declara (`mars_titan_b6`, `mars_titan_b6_bias`, `mars_titan_m1_k4_first_read` y los
+cuatro del régimen observable y su calendario, `mars_titan_b6_regime`,
+`mars_titan_b6_calendar`, `mars_titan_b6_regime_banks` y `mars_titan_b6_calendar_banks`)
+quedan condicionados a [#437](https://github.com/GonxKZ/mars-titan/issues/437) y sus
+contrastes, pendientes. Las dos matrices compilan las mismas 47 familias y 362 contrastes.
+
+Cada campaña declara su paso final antes de ver resultados
+([A](../../configs/evaluation/historical-masked-publication-a.json) y
+[A v2](../../configs/evaluation/historical-masked-publication-a-v2.json)): la campaña, su
+matriz y la comparación de su etapa de adaptadores. `training/campaign_publication.py`
+exige que la matriz lea la comparación de la campaña con la misma huella y que la
+comparación postentrenada derive de una etapa de esa misma campaña, así que una matriz
+declarada para otra campaña no llega a evaluarse. El paso final publica, por ámbito, las
+fuentes de la campaña, la comparación walk-forward, la cartera si se declara, el
+manifiesto de la matriz y la matriz, y después las fuentes y la comparación de cada padre
+de la etapa. Con los agregados de la retención v2 no abre ninguna fila. Todo se escribe en
+una carpeta provisional que solo toma el nombre del destino al terminar, con un recibo que
+guarda la huella de cada archivo. Un fallo deja la carpeta provisional marcada y la
+siguiente ejecución la descarta y repite.
 
 ### Coste por hora GPU
 

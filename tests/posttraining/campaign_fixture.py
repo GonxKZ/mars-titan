@@ -52,17 +52,19 @@ INFERENCE = (
 SCORES = {"gru-00": 0.02, "gru-10": 0.01}
 
 
-def write_configs(folder, variant, *, tabular=False):
+def write_configs(folder, variant, *, tabular=False, start="2021-04-01", comparison=None):
     """Comparación, protocolo, campaña, matriz y etapa reducidos para una variante.
 
     Con `tabular` la comparación, la campaña y la etapa declaran además Ridge, cuya cadena
-    solo tiene el padre congelado.
+    solo tiene el padre congelado. `start` es el inicio de la primera validación del
+    protocolo US: el de omisión deja dos ventanas y cada año antes añade una. `comparison`
+    recibe la comparación declarada y puede cambiarla antes de guardarla.
     """
     folder.mkdir(parents=True, exist_ok=True)
     protocol = json.loads(
         (CONFIGS / "evaluation/historical-masked-us-walk-forward-v2.json").read_text()
     )
-    protocol["first_validation_start"] = "2021-04-01"
+    protocol["first_validation_start"] = start
     atomic_json(folder / "us-protocol.json", protocol)
     declared = json.loads(
         (CONFIGS / "evaluation/historical-masked-2000-comparison.json").read_text()
@@ -80,6 +82,8 @@ def write_configs(folder, variant, *, tabular=False):
         replicates=20,
         families=dict(references_vs_zero=dict(kind="delta", base="zero", variants=["gru"])),
     )
+    if comparison is not None:
+        comparison(declared)
     atomic_json(folder / "comparison.json", declared)
     search = json.loads((CONFIGS / "baselines/tabular-historical-masked.json").read_text())
     search.update(ridge_alphas=[1.0], depths=[3], bins=[64], rates=[0.1])
@@ -265,9 +269,11 @@ class CpuLease:
         pass
 
 
-def base_campaign(root, variant, *, tabular=False):
+def base_campaign(root, variant, *, tabular=False, comparison=None):
     """Preparar vistas y ejecutar la campaña base reducida con los dobles."""
-    campaign, stage = write_configs(root / "config", variant, tabular=tabular)
+    campaign, stage = write_configs(
+        root / "config", variant, tabular=tabular, comparison=comparison
+    )
     data = fixture(root / "data", ("US",))
     hold = root / "hold.json"
     hold.write_text(json.dumps({"training_allowed": True}), encoding="utf-8")
@@ -286,5 +292,5 @@ def base_campaign(root, variant, *, tabular=False):
         )
     assert summary["status"] == "completed"
     return SimpleNamespace(
-        campaign=campaign, stage=stage, views=views, output=root / "campaign", root=root
+        campaign=campaign, stage=stage, views=views, output=root / "campaign", root=root, hold=hold
     )

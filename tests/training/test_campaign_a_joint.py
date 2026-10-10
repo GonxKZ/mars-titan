@@ -1045,6 +1045,7 @@ def test_the_plan_checks_every_declared_document_of_the_campaign_and_its_stages(
         "historical-masked-rl-stage-a-v2.json",
         "historical-masked-rl-policies.json",
         "historical-masked-ablation-stage-a-v2.json",
+        "historical-masked-publication-a-v2.json",
     ]
     assert len(plan.plan_campaign(value)) == 2341 + 133
     # Las fuentes de predictor de las políticas son estados ajustados con la edición real.

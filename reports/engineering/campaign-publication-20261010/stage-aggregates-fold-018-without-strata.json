@@ -1,0 +1,181 @@
+{
+  "schema_version": 1,
+  "kind": "stage_comparison_window_aggregates_measure",
+  "declaration": "configs/posttraining/historical-masked-adapter-comparison-a-v2.json",
+  "declaration_sha256": "fd5c6c1c08d3febee4dcf044ec179aed450c8ed088cfa0d7318b7fb6029df63a",
+  "counts": "reports/data/campaign-a-v2-window-counts-20261009.json",
+  "scope": "US+CN",
+  "window": "fold-018",
+  "strata": "without_strata",
+  "rows": {
+    "US": {
+      "train": 12363376,
+      "validation": 510913,
+      "calibration": 254563,
+      "evaluation": 1027173
+    },
+    "CN": {
+      "train": 2275981,
+      "validation": 98177,
+      "calibration": 47414,
+      "evaluation": 194649
+    }
+  },
+  "assets_per_session_max": {
+    "calibration": {
+      "US": 4106,
+      "CN": 804
+    },
+    "evaluation": {
+      "US": 4126,
+      "CN": 808
+    }
+  },
+  "parents": {
+    "rnn": {
+      "series": 36,
+      "aggregate_bytes": 8898289,
+      "sources_bytes": 25067,
+      "seconds": 133.4
+    },
+    "lstm": {
+      "series": 36,
+      "aggregate_bytes": 8898296,
+      "sources_bytes": 25079,
+      "seconds": 140.35
+    },
+    "gru": {
+      "series": 36,
+      "aggregate_bytes": 8898293,
+      "sources_bytes": 25067,
+      "seconds": 109.74
+    },
+    "dlinear": {
+      "series": 36,
+      "aggregate_bytes": 8898300,
+      "sources_bytes": 25115,
+      "seconds": 121.37
+    },
+    "transformer_compact": {
+      "series": 54,
+      "aggregate_bytes": 13346984,
+      "sources_bytes": 37724,
+      "seconds": 229.96
+    },
+    "gru_episodic": {
+      "series": 15,
+      "aggregate_bytes": 3708017,
+      "sources_bytes": 10688,
+      "seconds": 87.14
+    },
+    "titans_transformer_direct": {
+      "series": 24,
+      "aggregate_bytes": 5932419,
+      "sources_bytes": 16999,
+      "seconds": 159.93
+    },
+    "titans_mac_disabled": {
+      "series": 24,
+      "aggregate_bytes": 5932413,
+      "sources_bytes": 16951,
+      "seconds": 164.6
+    },
+    "titans_mac_frozen": {
+      "series": 36,
+      "aggregate_bytes": 8898239,
+      "sources_bytes": 25239,
+      "seconds": 249.12
+    },
+    "titans_mac_online": {
+      "series": 45,
+      "aggregate_bytes": 11122594,
+      "sources_bytes": 31465,
+      "seconds": 301.79
+    },
+    "mars_titan_m0": {
+      "series": 15,
+      "aggregate_bytes": 3708009,
+      "sources_bytes": 10693,
+      "seconds": 68.98
+    },
+    "mars_titan_m1": {
+      "series": 21,
+      "aggregate_bytes": 5190971,
+      "sources_bytes": 14848,
+      "seconds": 95.49
+    },
+    "mars_titan_m2": {
+      "series": 21,
+      "aggregate_bytes": 5190968,
+      "sources_bytes": 14848,
+      "seconds": 89.11
+    },
+    "mars_titan_m3": {
+      "series": 21,
+      "aggregate_bytes": 5190969,
+      "sources_bytes": 14848,
+      "seconds": 80.94
+    },
+    "mars_titan_m1_k2": {
+      "series": 21,
+      "aggregate_bytes": 5190972,
+      "sources_bytes": 14869,
+      "seconds": 69.2
+    },
+    "mars_titan_m1_k4": {
+      "series": 21,
+      "aggregate_bytes": 5190970,
+      "sources_bytes": 14869,
+      "seconds": 81.13
+    },
+    "cm_v1_b": {
+      "series": 21,
+      "aggregate_bytes": 5190975,
+      "sources_bytes": 14806,
+      "seconds": 113.13
+    },
+    "cm_v1_bc": {
+      "series": 21,
+      "aggregate_bytes": 5190973,
+      "sources_bytes": 14813,
+      "seconds": 112.08
+    },
+    "cm_v1_bm": {
+      "series": 21,
+      "aggregate_bytes": 5190976,
+      "sources_bytes": 14813,
+      "seconds": 119.2
+    },
+    "cm_v1_bcm": {
+      "series": 21,
+      "aggregate_bytes": 5190974,
+      "sources_bytes": 14820,
+      "seconds": 134.6
+    }
+  },
+  "series": 546,
+  "aggregate_bytes": 134960601,
+  "sources_bytes": 383621,
+  "bytes_per_series_max": 247913.66666666666,
+  "bytes_per_series_min": 247864.96296296295,
+  "seconds": 2665.7,
+  "peak_rss_bytes": 1946386432,
+  "host": {
+    "platform": "Linux-7.0.0-38-generic-x86_64-desconocido-with-glibc2.43",
+    "python": "3.12.14",
+    "numpy": "2.5.3",
+    "pyarrow": "25.0.1",
+    "threads": {
+      "OMP_NUM_THREADS": "2",
+      "MKL_NUM_THREADS": "2"
+    },
+    "load_average": [
+      33.498046875,
+      34.73095703125,
+      31.77197265625
+    ]
+  },
+  "measured_at_utc": "2026-10-10T18:26:29.571610+00:00",
+  "training_executed": false,
+  "final_test_opened": false
+}

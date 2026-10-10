@@ -557,6 +557,67 @@ def test_a_tampered_session_table_is_rejected(tmp_path, published):
         matrix_module.evaluate(toy_matrix(tmp_path, study.config_path), manifest, "US+CN")
 
 
+def write_manifest(matrix, destination, reports, scope="US+CN", hours=None):
+    loaded = matrix_module.load_matrix(matrix)
+    return tables.write_sources(
+        destination,
+        scope,
+        reports,
+        views=loaded["views"],
+        config=loaded["comparison_config"],
+        hours=hours,
+    )
+
+
+def test_the_writer_publishes_relative_sources_that_give_the_same_matrix(
+    tmp_path, published, evaluated
+):
+    _, _, _, path = published
+    matrix, _, expected = evaluated
+    destination = tmp_path / "manifest" / "sources.json"
+    written = write_manifest(matrix, destination, [dict(kind=tables.WALK_SOURCE, path=path)])
+    assert written == destination
+    manifest = json.loads(destination.read_text())
+    (entry,) = manifest["reports"]
+    # La ruta es relativa a la carpeta del manifiesto y lleva la huella del informe.
+    assert not Path(entry["path"]).is_absolute()
+    assert (destination.parent / entry["path"]).resolve() == path.resolve()
+    assert entry == dict(kind=tables.WALK_SOURCE, path=entry["path"], sha256=sha256(path))
+    assert manifest["hours"] is None and manifest["scope"] == "US+CN"
+    assert list(destination.parent.iterdir()) == [destination]
+    report = matrix_module.evaluate(matrix, destination, "US+CN")
+    assert report["views"] == expected["views"] and report["families"] == expected["families"]
+
+
+def test_the_writer_leaves_no_manifest_for_an_altered_or_foreign_report(
+    tmp_path, published, evaluated
+):
+    _, _, _, path = published
+    matrix, _, _ = evaluated
+    destination = tmp_path / "manifest" / "sources.json"
+    write_manifest(matrix, destination, [dict(kind=tables.WALK_SOURCE, path=path)])
+    before = destination.read_bytes()
+    altered = tmp_path / "altered"
+    altered.mkdir()
+    for name in ("comparison.json", "sessions.parquet"):
+        (altered / name).write_bytes((path.parent / name).read_bytes())
+    table = pq.read_table(altered / "sessions.parquet")
+    pq.write_table(table.slice(1), altered / "sessions.parquet")
+    cases = [
+        ([dict(kind=tables.WALK_SOURCE, path=altered / "comparison.json")], "US+CN", "intacta"),
+        ([dict(kind=tables.WALK_SOURCE, path=path)], "US", "otro ámbito"),
+        ([dict(path=path)], "US+CN", "declara su tipo"),
+        ([dict(kind=tables.WALK_SOURCE, path=tmp_path / "missing.json")], "US+CN", "regular"),
+        ([dict(kind="other_report", path=path)], "US+CN", "no es un informe admitido"),
+    ]
+    for reports, scope, message in cases:
+        with pytest.raises(ValueError, match=message):
+            write_manifest(matrix, destination, reports, scope=scope)
+        # El manifiesto anterior sigue intacto y no queda ningún candidato.
+        assert destination.read_bytes() == before, message
+        assert list(destination.parent.iterdir()) == [destination], message
+
+
 @pytest.mark.parametrize(
     ("field", "value"),
     [
