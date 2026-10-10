@@ -199,6 +199,33 @@
         44
       ]
     },
+    "mars_titan_m1_k4_first_read": {
+      "family": "mars_titan",
+      "output": "quantile_head_v1",
+      "seeds": [
+        42,
+        43,
+        44
+      ]
+    },
+    "mars_titan_b6": {
+      "family": "mars_titan",
+      "output": "quantile_head_v1",
+      "seeds": [
+        42,
+        43,
+        44
+      ]
+    },
+    "mars_titan_b6_bias": {
+      "family": "mars_titan",
+      "output": "quantile_head_v1",
+      "seeds": [
+        42,
+        43,
+        44
+      ]
+    },
     "cm_v1_b": {
       "family": "cm_v1",
       "output": "quantile_head_v1",
@@ -315,6 +342,28 @@
           "mars_titan_m1_k4"
         ]
       },
+      "refinement_episodes": {
+        "kind": "delta",
+        "base": "mars_titan_m1_k4",
+        "variants": [
+          "mars_titan_m1_k4_first_read"
+        ]
+      },
+      "mature_correction": {
+        "kind": "delta",
+        "base": "titans_mac_online",
+        "variants": [
+          "mars_titan_b6_bias",
+          "mars_titan_b6"
+        ]
+      },
+      "correction_key": {
+        "kind": "delta",
+        "base": "mars_titan_b6_bias",
+        "variants": [
+          "mars_titan_b6"
+        ]
+      },
       "cm_v1_factorial": {
         "kind": "factorial",
         "base": "cm_v1_b",
@@ -393,6 +442,9 @@
           "mars_titan_m3",
           "mars_titan_m1_k2",
           "mars_titan_m1_k4",
+          "mars_titan_m1_k4_first_read",
+          "mars_titan_b6",
+          "mars_titan_b6_bias",
           "cm_v1_b",
           "cm_v1_bc",
           "cm_v1_bm",

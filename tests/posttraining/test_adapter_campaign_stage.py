@@ -63,7 +63,7 @@ def matrix_cases(stage):
     matrix, digest = stage["matrix"], stage["matrix_sha256"]
     total = 0
     for spec in active.values():
-        if spec["design"] == campaign_stage.TABULAR:
+        if spec["design"] == campaign_stage.FROZEN_ONLY:
             continue
         if spec["design"] is None:
             items = adapter_matrix.cases(matrix, digest, spec["family"], head=QUANTILE_HEAD)
@@ -241,6 +241,25 @@ def test_variant_b_cannot_declare_the_chain(tmp_path):
     atomic_json(tmp_path / "stage.json", value)
     with pytest.raises(ValueError, match="Solo la variante A"):
         campaign_stage.load_stage(tmp_path / "stage.json")
+
+
+def test_variant_b_cannot_declare_the_trivial_chain_of_b6(tmp_path):
+    """B no tiene cadena, así que B6 quedaría sin trabajos en silencio si la carga lo admitiera."""
+    from tests.training.test_mars_titan_campaign import declared
+
+    value = json.loads((CONFIGS / "historical-masked-adapter-stage-b.json").read_text())
+    value.update(
+        campaign=str(declared(tmp_path, "B")),
+        matrix=str((CONFIGS / "adapter-matrix-v3.json").resolve()),
+        arms=["gru", "mars_titan_m1", "mars_titan_b6"],
+    )
+    atomic_json(tmp_path / "stage.json", value)
+    with pytest.raises(ValueError, match="cadena trivial de Ridge, XGBoost y B6"):
+        campaign_stage.load_stage(tmp_path / "stage.json")
+    # Sin B6 la misma etapa se acepta: el lector M1 sí tiene casos que ajustar en B.
+    value["arms"] = ["gru", "mars_titan_m1"]
+    atomic_json(tmp_path / "stage.json", value)
+    assert campaign_stage.load_stage(tmp_path / "stage.json")["design"] == campaign_stage.ANCHORED
 
 
 def test_loading_a_stage_requires_objectives_for_the_quantile_head(tmp_path):
@@ -628,6 +647,137 @@ def test_the_b6_correction_has_no_adapter_arm():
         mars_titan_m0=dict(family=plan.MARS, variant=None, bank=False),
         mars_titan_m1=dict(family=plan.MARS, variant=None, bank=True),
     )
+
+
+V2_STAGE = CONFIGS / "historical-masked-adapter-stage-a-v2.json"
+B6_ARMS = ("mars_titan_b6", "mars_titan_b6_bias")
+
+
+def test_b6_chains_only_the_frozen_parent_of_the_previous_window_in_v2():
+    """La cadena trivial de B6: un padre congelado por ventana y semilla, como los tabulares.
+
+    El lector con episodios de la primera lectura conserva sus casos de la matriz y la
+    comparación de la etapa deja fuera a B6, que no tiene continuación ni adaptadores.
+    """
+    from mars_titan.posttraining import stage_comparison
+
+    stage = campaign_stage.load_stage(V2_STAGE)
+    active, awaiting = campaign_stage.stage_arms(stage)
+    assert awaiting == {}
+    assert campaign_stage.correction_arms(stage["campaign"]) == set(B6_ARMS)
+    for arm in B6_ARMS:
+        assert active[arm] == dict(family="mars_titan", design=campaign_stage.FROZEN_ONLY)
+        assert campaign_stage._cases(stage, active[arm]) == []
+    first_read = active["mars_titan_m1_k4_first_read"]
+    assert first_read["design"] == cm.READOUT and first_read["bank"] is True
+    assert len(campaign_stage._cases(stage, first_read)) == len(
+        campaign_stage._cases(stage, active["mars_titan_m1_k4"])
+    )
+    jobs = campaign_stage.plan_stage(stage)
+    base = plan_campaign(stage["campaign"])
+    windows = [name for name, _ in campaign_chain.scope_windows(stage["campaign"], "US+CN")]
+    for arm in B6_ARMS:
+        own = [job for job in jobs if job["base_arm"] == arm]
+        assert [(job["window"], job["seed"]) for job in own] == [
+            (window, seed) for window in windows[1:] for seed in (42, 43, 44)
+        ]
+        for job in own:
+            assert (job["kind"], job["point"], job["case"]) == (
+                campaign_stage.FROZEN,
+                "frozen_parent",
+                None,
+            )
+            assert job["depends"] == campaign_chain.parent_jobs(
+                base, "US+CN", job["parent_window"], arm, job["seed"]
+            )
+    frozen = {(job["window"], job["base_arm"], job["seed"]): job["id"] for job in jobs}
+    chains = [c for c in campaign_stage.plan_chain(stage, jobs) if c["base_arm"] in B6_ARMS]
+    assert len(chains) == len(B6_ARMS) * 3 * len(windows)
+    for chain in chains:
+        if chain["parent_window"] is not None:
+            key = (chain["window"], chain["base_arm"], chain["seed"])
+            assert chain["depends"] == [frozen[key]]
+    assert not set(stage_comparison._groups(stage)) & set(B6_ARMS)
+
+
+def test_the_b6_frozen_parent_is_the_carry_of_k_minus_1_with_the_validation_of_k(
+    tmp_path, monkeypatch
+):
+    """El padre congelado de B6 traslada la ventana elegida en k-1 a la vista de k con
+    `frozen_parent`, en un intento nuevo, y no repite un intento ya confirmado."""
+    from functools import partial
+
+    from mars_titan.training import financial_run
+    from mars_titan.training import mars_titan_correction as mc
+
+    calls, behaviour = [], dict(frozen_parent=True, pause=False)
+
+    def carry(anchor, anchor_view, view, output, **options):
+        calls.append((anchor, anchor_view, view, output, options))
+        if behaviour["pause"]:
+            raise financial_run.Paused
+        output.mkdir(parents=True)
+        predictions = {
+            name: dict(path=f"{name}-predictions.parquet", sha256=name)
+            for name in campaign_stage.PREDICTED
+        }
+        record = dict(
+            status="completed", predictions=predictions, frozen_parent=behaviour["frozen_parent"]
+        )
+        atomic_json(output / "carry.json", record)
+        return record
+
+    monkeypatch.setattr(mc, "carry_correction", carry)
+    views = {"fold-000": dict(path="/views/0.json"), "fold-001": dict(path="/views/1.json")}
+    report = tmp_path / "base" / "attempt-0001" / "run.json"
+    receipt = dict(sha256="r" * 64, parent=dict(sha256="c" * 64))
+    state = SimpleNamespace(
+        corrections={"mars_titan_b6"},
+        device="cpu",
+        stop=None,
+        view=lambda scope, window: views[window],
+        close_window=lambda: None,
+        base_parent=lambda *key: ("US+CN/fold-000/mars_titan_b6/finalist-s43", receipt, report),
+        _chronological_predictions=campaign_stage._Stage._chronological_predictions,
+    )
+    state.frozen_correction = partial(campaign_stage._Stage.frozen_correction, state)
+    job = dict(
+        id="US+CN/fold-001/mars_titan_b6__frozen_parent/frozen-s43",
+        scope="US+CN",
+        window="fold-001",
+        parent_window="fold-000",
+        base_arm="mars_titan_b6",
+        family="mars_titan",
+        seed=43,
+    )
+    folder = tmp_path / "job"
+    result = campaign_stage._Stage.frozen(state, job, folder)
+    attempt = folder / "attempt-0001"
+    assert calls == [
+        (
+            report.parent,
+            Path("/views/0.json"),
+            Path("/views/1.json"),
+            attempt,
+            dict(device="cpu", stop=None, frozen_parent=True),
+        )
+    ]
+    assert (result["updates"], result["score"], result["selection"]) == (0, None, None)
+    assert result["parent"] == dict(id="US+CN/fold-000/mars_titan_b6/finalist-s43", sha256="c" * 64)
+    assert result["run"] == attempt / "carry.json"
+    assert {name: value["path"] for name, value in result["predictions"].items()} == {
+        name: f"attempt-0001/{name}-predictions.parquet" for name in campaign_stage.PREDICTED
+    }
+    # Un intento confirmado se reutiliza sin volver a predecir.
+    campaign_stage._Stage.frozen(state, job, folder)
+    assert len(calls) == 1
+    # Un recibo que no es de padre congelado no se acepta, y una parada se propaga como tal.
+    behaviour["frozen_parent"] = False
+    with pytest.raises(ValueError, match="padre B6 no está confirmado"):
+        campaign_stage._Stage.frozen(state, job, tmp_path / "other")
+    behaviour["pause"] = True
+    with pytest.raises(campaign_stage.Paused):
+        campaign_stage._Stage.frozen(state, job, tmp_path / "paused")
 
 
 def declare_stages(monkeypatch):

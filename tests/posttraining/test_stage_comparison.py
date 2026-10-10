@@ -483,9 +483,10 @@ def test_v2_declaration_adds_the_chain_and_the_base_retrain_on_the_joint_scope()
     loaded = compare.load_declaration(DECLARATION_V2)
     stage = loaded["stage"]
     assert stage["scopes"] == ["US+CN"]
-    # Los 22 brazos de la etapa menos la cadena trivial de Ridge y XGBoost.
-    assert len(loaded["groups"]) == 20
-    assert not {"ridge", "xgboost"} & set(loaded["groups"])
+    # Los 25 brazos de la etapa menos la cadena trivial de Ridge, XGBoost y los dos B6.
+    assert len(loaded["groups"]) == 21
+    assert not {"ridge", "xgboost", "mars_titan_b6", "mars_titan_b6_bias"} & set(loaded["groups"])
+    assert "mars_titan_m1_k4_first_read" in loaded["groups"]
     joint = stage["campaign"]["comparison_config"]["joint_design"]
     for base_arm, config in loaded["configs"].items():
         group = loaded["groups"][base_arm]

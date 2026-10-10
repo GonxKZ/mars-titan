@@ -570,7 +570,16 @@ def run_correction_window(
 
 
 def carry_correction(
-    anchor, anchor_view, view, output, *, device="cuda:0", stop=None, regenerate=False
+    anchor,
+    anchor_view,
+    view,
+    output,
+    *,
+    device="cuda:0",
+    stop=None,
+    modality_ablation=None,
+    regenerate=False,
+    frozen_parent=False,
 ):
     """Predecir una ventana posterior con el padre y el η y λ elegidos en el ancla.
 
@@ -580,9 +589,18 @@ def carry_correction(
     propio ajuste y se repiten su validación, su calibración y su evaluación en la misma
     vista. Como cada tramo empieza con A en cero, la repetición debe coincidir bit a bit con
     las tablas del ajuste antes de que la retención las libere.
+
+    Con `modality_ablation` se vuelve a predecir la evaluación de la propia ventana con la
+    variante aplicada en la lectura. El calentamiento, el núcleo y las claves del codec leen
+    las mismas entradas ablacionadas, y A se escribe con los errores de ese recorrido.
+    `frozen_parent` es el padre congelado de la cadena trivial de B6 en el walk-forward por
+    etapas: el ancla es el estado elegido en k-1 y además se predice la validación de k, con
+    la que la cadena puntúa.
     """
     from .carried_predictions import (
+        ablation_record,
         carried_window,
+        frozen_parent_record,
         predicted_partitions,
         regeneration_record,
         same_view,
@@ -631,17 +649,23 @@ def carry_correction(
         request["components"], case_values(identity["recipe"], request["search_case"])
     )
     anchor_manifest, _ = read_manifest(anchor_view, 64 * 1024**2)
-    partitions = predicted_partitions(None, regenerate)
-    dataset = CorpusDataset(view, input_policy=HISTORICAL_MASKED)
+    partitions = predicted_partitions(modality_ablation, regenerate, frozen_parent)
+    dataset = CorpusDataset(
+        view, input_policy=HISTORICAL_MASKED, modality_ablation=modality_ablation
+    )
     same_view(anchor_manifest, dataset.manifest, regenerate)
     anchor_fold, fold, age = carried_window(
-        anchor_manifest, dataset.manifest, input_policy=HISTORICAL_MASKED, same_window=regenerate
+        anchor_manifest,
+        dataset.manifest,
+        input_policy=HISTORICAL_MASKED,
+        same_window=modality_ablation is not None or regenerate,
     )
     _check_view(dataset, view_protocol(view), fold)
     _new_destination(output, (*dataset.roots.values(), view.parent, anchor, parent))
     phases = window_phases(fold, options["warmup_months"])
     sources = _sources(dataset, {name: phases[name] for name in partitions}, output / "indices")
-    specification = sources["calibration"].specification()
+    # La ablación solo predice la evaluación, así que la entrada se toma del primer tramo.
+    specification = sources[partitions[0]].specification()
     seed = request["seed"]
     predictor = _frozen_parent(
         titans, specification, seed, device, parent, parent_report, carried=True
@@ -689,7 +713,9 @@ def carry_correction(
         scientific_training_started=False,
         seconds=time.perf_counter() - started,
         finished_at_utc=datetime.now(UTC).isoformat(),
+        **ablation_record(modality_ablation),
         **regeneration_record(regenerate),
+        **frozen_parent_record(frozen_parent),
     )
     atomic_json(output / "carry.json", receipt)
     return receipt

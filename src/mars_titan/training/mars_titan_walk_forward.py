@@ -843,22 +843,31 @@ def mars_titan_fit(run, *, device="cuda:0", optimizer_factory=None):
     return report
 
 
+def carry_mars_titan_arm(anchor, anchor_view, view, output, **options):
+    """Trasladar cualquier brazo de MARS-TITAN con la función de su ventana.
+
+    El tipo del ancla decide el recorrido. Una ventana B6 no tiene lector que trasladar, así
+    que se traslada con `mars_titan_correction.carry_correction`. Lo usan la variante B, la
+    regeneración y la ablación de modalidades, que no distinguen los brazos de la familia.
+    """
+    from .mars_titan_correction import KIND as CORRECTION_KIND
+    from .mars_titan_correction import carry_correction
+
+    report, _ = read_manifest(Path(anchor) / "run.json", 16 * 1024**2)
+    carry = carry_correction if report.get("kind") == CORRECTION_KIND else carry_mars_titan
+    return carry(anchor, anchor_view, view, output, **options)
+
+
 def mars_titan_carry(run, *, device="cuda:0", regenerate=False):
     """Ejecutor de predicción trasladada para `training.masked_campaign` (variante B).
 
     Con `regenerate`, `run.anchor` es el intento del propio ajuste.
     """
-    from .mars_titan_correction import KIND as CORRECTION_KIND
-    from .mars_titan_correction import carry_correction
     from .masked_campaign import Paused as CampaignPaused
 
-    report, _ = read_manifest(Path(run.anchor["folder"]) / "run.json", 16 * 1024**2)
-    # El tipo del ancla decide el recorrido. Una ventana B6 no tiene lector que trasladar, así
-    # que se traslada con su propia función.
-    carry = carry_correction if report.get("kind") == CORRECTION_KIND else carry_mars_titan
     try:
         with unfused_attention():
-            return carry(
+            return carry_mars_titan_arm(
                 run.anchor["folder"],
                 run.anchor["view"],
                 run.view,
