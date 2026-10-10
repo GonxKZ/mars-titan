@@ -740,8 +740,8 @@ def measure_posttraining(stage, view, *, batches=50, warmup=5):
     semilla bastan: las demás solo cambian la inicialización.
     """
     from mars_titan.data.embeddings import require_cuda
-    from mars_titan.models.quantile_head import CONTRACT, QUANTILE_HEAD
-    from mars_titan.posttraining import adapter_matrix
+    from mars_titan.models.quantile_head import CONTRACT
+    from mars_titan.posttraining.campaign_stage import _cases
     from mars_titan.posttraining.parents import FrozenParent
     from mars_titan.posttraining.run import build_model
 
@@ -762,9 +762,7 @@ def measure_posttraining(stage, view, *, batches=50, warmup=5):
                 model, shapes = _reference(case, dataset, budget["batch_size"])
                 parent = FrozenParent(model, dict(identity, model=family), shapes, device)
                 points = rates[arm][name] = {}
-                for item in adapter_matrix.cases(
-                    matrix, stage["matrix_sha256"], family, head=QUANTILE_HEAD
-                ):
+                for item in _cases(stage, dict(design=None, family=family)):
                     if item["case"]["seed"] != seed:
                         continue
                     adapted = build_model(parent, item["case"], None, None).to(device)
@@ -790,17 +788,15 @@ def _measured_cases(stage):
     """Lo que mide `measure_posttraining`: brazos de las redes, sus casos y el presupuesto.
 
     Los casos se comparan sin la huella de la matriz que los declara, porque un mismo caso
-    cuesta lo mismo en la v2 y en la v3.
+    cuesta lo mismo en la v2 y en la v3. Son los que ejecuta la etapa, con sus controles
+    añadidos.
     """
-    from mars_titan.models.quantile_head import QUANTILE_HEAD
-    from mars_titan.posttraining import adapter_matrix
+    from mars_titan.posttraining.campaign_stage import _cases
 
     cases = {}
     for arm, family in stage["families"].items():
         cases[arm] = {}
-        for item in adapter_matrix.cases(
-            stage["matrix"], stage["matrix_sha256"], family, head=QUANTILE_HEAD
-        ):
+        for item in _cases(stage, dict(design=None, family=family)):
             # La continuación completa no tiene adaptador ni, por tanto, huella de la matriz.
             case = dict(item["case"])
             if "adapter" in case:

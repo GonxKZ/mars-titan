@@ -10,8 +10,9 @@ declara por cabeza del padre: los escalares conservan los de la versión 1 y los
 `quantile_head_v1` optimizan la pinball de sus cinco niveles. Un control que no tiene
 objetivo para una cabeza se excluye con su motivo, no se reinterpreta. La versión 3
 conserva todo lo anterior y añade los destinos de las familias con entrenador cronológico
-(`chronological_matrix`) y, de forma opcional, la sección `variety` de #444 con brazos de
-un solo punto (`adapter_variety`).
+(`chronological_matrix`) y, de forma opcional, dos secciones de #444: `variety`, con brazos
+de un solo punto (`adapter_variety`), y `anchored_continuation`, con el control de
+continuación completa cuyo decaimiento se ancla al padre (`anchored_continuation`).
 """
 
 import itertools
@@ -23,7 +24,8 @@ from mars_titan.data.input_policy import INPUT_POLICIES
 from mars_titan.models.predictive_adaptation import AdapterTarget, target_shape
 from mars_titan.models.quantile_head import QUANTILE_HEAD
 
-from . import adapter_variety
+from . import adapter_variety, anchored_continuation
+from .anchored_continuation import ANCHOR
 from .inputs import fingerprint
 from .selection import selection_policy
 
@@ -31,6 +33,8 @@ POINTS = ("head", "readout", "fusion")
 # Formas de los puntos y brazos de las versiones 1 a 3. La variedad declara las suyas.
 BASE_FORMS = ("residual", "low_rank")
 CONTROLS = ("frozen_parent", "linear_residual", "full_continuation")
+# Controles que ajustan todos los parámetros del padre: la continuación y su versión anclada.
+CONTINUATIONS = ("full_continuation", anchored_continuation.CONTROL)
 # Familias de MultimodalReference que el postentrenamiento puede cargar como padre.
 FAMILIES = ("rnn", "lstm", "gru", "dlinear", "transformer")
 # Solo el Transformer compacto tiene una lectura con consulta, claves y salida.
@@ -113,11 +117,12 @@ def validate_matrix(matrix):
         "selection",
         "architectures",
     }
-    # Solo la versión 3 admite la sección opcional de variedad de #444.
-    variety = isinstance(matrix, dict) and matrix.get("schema_version") == 3 and "variety" in matrix
+    # Solo la versión 3 admite las secciones opcionales de #444.
+    version_three = isinstance(matrix, dict) and matrix.get("schema_version") == 3
+    optional = {"variety", anchored_continuation.CONTROL} if version_three else set()
     _require(
         isinstance(matrix, dict)
-        and set(matrix) == keys | ({"variety"} if variety else set())
+        and keys <= set(matrix) <= keys | optional
         and matrix["schema_version"] in (1, 2, 3)
         and type(matrix["schema_version"]) is int
         and matrix["kind"] == KIND
@@ -199,8 +204,10 @@ def validate_matrix(matrix):
         combinations == expected, "La matriz contiene todas las combinaciones de 1, 2 y 3 puntos"
     )
     _architectures(matrix["architectures"], matrix["schema_version"])
-    if variety:
+    if "variety" in matrix:
         adapter_variety.validate(matrix["variety"], matrix)
+    if anchored_continuation.CONTROL in matrix:
+        anchored_continuation.validate(matrix[anchored_continuation.CONTROL], matrix)
     from .run import validate_case
 
     # Los casos derivados deben pertenecer al diseño emparejado del ajuste.
@@ -322,13 +329,15 @@ def arms(matrix, family, *, reserve=False):
     return result + adapter_variety.neural_arms(matrix, family, reserve=reserve)
 
 
-def _case(matrix, seed, mode, adapter=None):
+def _case(matrix, seed, mode, adapter=None, anchor=None):
     budget = matrix["budget"]
     case = {key: budget[key] for key in sorted(BUDGET - {"seeds", "batch_size"})} | dict(
         mode=mode, condition="real", seed=seed, selection=dict(matrix["selection"])
     )
     if adapter is not None:
         case["adapter"] = adapter
+    if anchor is not None:
+        case[ANCHOR] = anchor
     selection_policy(case)
     return case
 
@@ -337,7 +346,8 @@ def cases(matrix, digest, family, *, head=SCALAR, reserve=False):
     """Casos del ajuste, en orden fijo. El padre congelado se evalúa sin actualizaciones.
 
     Los objetivos dependen de la cabeza del padre. Un control excluido para esa cabeza
-    no genera caso. `reserve` incluye los brazos de reserva de la variedad.
+    no genera caso. La continuación anclada sigue a la completa si la matriz la propone
+    para las referencias. `reserve` incluye los brazos y controles de reserva de #444.
     """
     _family(family)
     declared = objectives(matrix, head)
@@ -358,6 +368,19 @@ def cases(matrix, digest, family, *, head=SCALAR, reserve=False):
                 case=_case(matrix, seed, declared["full_continuation"]),
             )
         )
+        if anchored_continuation.proposed(matrix, adapter_variety.REFERENCES, reserve=reserve):
+            result.append(
+                dict(
+                    id=f"seed-{seed}/{anchored_continuation.CONTROL}",
+                    control=anchored_continuation.CONTROL,
+                    case=_case(
+                        matrix,
+                        seed,
+                        declared["full_continuation"],
+                        anchor=anchored_continuation.INITIAL,
+                    ),
+                )
+            )
         for arm in arms(matrix, family, reserve=reserve):
             adapter = dict(
                 matrix_sha256=digest,
@@ -465,7 +488,8 @@ def plan(matrix, digest, family, model, *, updates_per_epoch, linear_features):
     """Registrar antes del primer ajuste brazos, controles, parámetros y actualizaciones.
 
     Los bytes de estado cuentan parámetros entrenables y los dos momentos de AdamW en
-    la precisión de los pesos. No incluyen activaciones, que se miden al ejecutar.
+    la precisión de los pesos, más las anclas en la continuación anclada. No incluyen
+    activaciones, que se miden al ejecutar.
     """
     _require(
         type(updates_per_epoch) is int
@@ -495,18 +519,20 @@ def plan(matrix, digest, family, model, *, updates_per_epoch, linear_features):
         if item["control"] == "linear_residual":
             # Una capa lineal float32 sobre modalidades, bits y predicción del padre.
             count, size, invalidates = linear_features + 1, 4, []
-        elif item["control"] == "full_continuation":
+        elif item["control"] in CONTINUATIONS:
             count = sum(value.numel() for value in model.parameters())
             size, invalidates = itemsize, every
         else:
             count = describe(case["adapter"], model)["trainable_parameters"]
             size, invalidates = itemsize, _states(case["adapter"]["points"])
+        # Pesos y dos momentos. La continuación anclada guarda además el padre como ancla.
+        copies = 4 if item["control"] == anchored_continuation.CONTROL else 3
         rows.append(
             dict(
                 id=item["id"],
                 control=item["control"],
                 trainable_parameters=count,
-                state_bytes=3 * size * count,
+                state_bytes=copies * size * count,
                 updates=updates,
                 invalidates=invalidates,
                 case=case,

@@ -221,5 +221,9 @@
       "norm": "RNN, LSTM, GRU y DLinear no tienen capas de normalización. Solo el Transformer compacto y el codificador de precios de Titans-MAC tienen LayerNorm.",
       "persistent": "Solo la atención de MAC lee la memoria persistente, en mac_frozen y mac_online. Las referencias neuronales y transformer_direct no tienen MAC y mac_disabled atiende solo al segmento."
     }
+  },
+  "anchored_continuation": {
+    "anchor": "initial_parameters",
+    "campaign": ["references"]
   }
 }

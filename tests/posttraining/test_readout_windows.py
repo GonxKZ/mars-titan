@@ -57,7 +57,12 @@ def windows(campaign_run, tmp_path_factory):  # noqa: F811
     prepared = campaign_run.prepared["US"]["windows"]
     root = tmp_path_factory.mktemp("readout-windows")
     result = {}
-    for item in cm.cases(matrix, digest, "mars_titan", bank=True):
+    # La continuación anclada (#444) queda de reserva en los lectores. Se recorre igual para
+    # comprobar que llega al entrenador con su ancla y el presupuesto de la completa.
+    reserve = cm.cases(matrix, digest, "mars_titan", bank=True, reserve=True)
+    items = cm.cases(matrix, digest, "mars_titan", bank=True)
+    items += [item for item in reserve if item["control"] == cm.ANCHORED]
+    for item in items:
         if item["case"]["seed"] != 42:
             continue
         name = item["id"].split("/", 1)[1]
@@ -107,6 +112,7 @@ def windows(campaign_run, tmp_path_factory):  # noqa: F811
 def test_matrix_declares_the_core_the_reader_and_both_with_a_bank(windows):
     assert set(windows["runs"]) == {
         "full_continuation",
+        "anchored_continuation",
         "core",
         "episodic_readout",
         "core+episodic_readout",
@@ -165,13 +171,21 @@ def test_cases_share_updates_and_train_only_their_declared_parameters(windows):
         updates.add(sum(i.calls for i in factory.instances))
         roles[name] = {group["role"] for i in factory.instances for group in i.param_groups}
         report = json.loads((run["root"] / "fit" / "fit" / "run.json").read_text())
-        adapter = report["identity"]["posttraining"]["adapter"]
-        if name == "full_continuation":
+        identity = report["identity"]
+        adapter = identity["posttraining"]["adapter"]
+        anchored = name == cm.ANCHORED
+        if name in ("full_continuation", cm.ANCHORED):
             assert adapter is None
         else:
             assert set(adapter) == set(name.split("+")), name
+        # Solo la continuación anclada declara el ancla del decaimiento y su código.
+        assert identity["recipe"].get("weight_decay_anchor") == (
+            "initial_parameters" if anchored else None
+        ), name
+        assert ("anchored_decay" in identity) is anchored, name
     assert len(updates) == 1
     assert roles["full_continuation"] != roles["core"]
+    assert roles["full_continuation"] == roles[cm.ANCHORED]
     staged = {
         sum(i.calls for i in run["staged_factory"].instances) for run in windows["runs"].values()
     }

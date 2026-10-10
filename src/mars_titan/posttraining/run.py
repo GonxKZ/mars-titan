@@ -25,6 +25,7 @@ from mars_titan.models.predictive_adaptation import (
     trainable_parameters,
 )
 from mars_titan.models.quantile_head import LEVELS, PINBALL, QUANTILE_HEAD, median, pinball_loss
+from mars_titan.training import anchored_decay
 from mars_titan.training.checkpoints import (
     StopRequest,
     capture_rng,
@@ -36,6 +37,7 @@ from mars_titan.training.learning_hold import require_learning_allowed
 from mars_titan.training.run_receipts import initialize_receipt
 
 from . import adapter_matrix
+from .anchored_continuation import ANCHOR
 from .evaluation import centers, evaluate
 from .inputs import CONDITIONS
 from .parents import require_device
@@ -47,8 +49,9 @@ MODES = ("reinforce", "expected", "mae", *KLPO, "neural_mae", "neural_mse")
 PINBALL_MODE = "neural_pinball"
 
 
-def code_identity(*, masked=False, adapters=False, quantiles=False):
-    """Huellas del código. Máscaras, adaptadores y pinball añaden solo sus propios módulos."""
+def code_identity(*, masked=False, adapters=False, quantiles=False, anchored=False):
+    """Huellas del código. Máscaras, adaptadores, pinball y el decaimiento anclado añaden
+    solo sus propios módulos."""
     root = Path(__file__).parents[1]
     names = (
         "posttraining/run.py",
@@ -93,6 +96,7 @@ def code_identity(*, masked=False, adapters=False, quantiles=False):
     names += ("data/input_policy.py",) if masked else ()
     names += ("posttraining/adapter_matrix.py",) if adapters else ()
     names += ("models/quantile_head.py",) if quantiles else ()
+    names += ("training/anchored_decay.py",) if anchored else ()
     return {name: sha256(root / name) for name in names}
 
 
@@ -102,6 +106,7 @@ def case_code(case, dataset=None, *, masked=None):
         masked=getattr(dataset, "masked", False) if masked is None else masked,
         adapters="adapter" in case,
         quantiles=case["mode"] == PINBALL_MODE,
+        anchored=ANCHOR in case,
     )
 
 
@@ -120,7 +125,7 @@ def validate_case(case):
     }
     if (
         not isinstance(case, dict)
-        or not required <= set(case) <= required | {"selection", "adapter"}
+        or not required <= set(case) <= required | {"selection", "adapter", ANCHOR}
         or case["mode"] not in (*MODES, PINBALL_MODE)
         or case["condition"] not in CONDITIONS
         or type(case["seed"]) is not int
@@ -149,6 +154,20 @@ def validate_case(case):
         if not case["mode"].startswith("neural_") or case["condition"] != "real":
             raise ValueError("Los adaptadores son continuaciones supervisadas con datos reales")
         adapter_matrix.validate_adapter(case["adapter"])
+    if ANCHOR in case:
+        # El ancla solo existe en la continuación completa supervisada: un adaptador ya
+        # decae hacia el padre y la corrección lineal no parte de sus pesos.
+        if (
+            "adapter" in case
+            or not case["mode"].startswith("neural_")
+            or case["condition"] != "real"
+            or case[ANCHOR] != anchored_decay.INITIAL
+            or case["weight_decay"] == 0
+        ):
+            raise ValueError(
+                "El decaimiento anclado pertenece a una continuación completa con datos reales "
+                "y λ positivo"
+            )
 
 
 def _statistics():
@@ -480,8 +499,11 @@ def run_case(
             if "adapter" in case
             else model.parameters()
         )
-        optimizer = torch.optim.AdamW(
-            parameters, lr=case["learning_rate"], weight_decay=case["weight_decay"]
+        optimizer = anchored_decay.adamw(
+            parameters,
+            learning_rate=case["learning_rate"],
+            weight_decay=case["weight_decay"],
+            anchor=case.get(ANCHOR),
         )
         generators = {
             name: torch.Generator(device=device).manual_seed(case["seed"] + i + 1)

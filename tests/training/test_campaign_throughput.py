@@ -41,13 +41,14 @@ CAMPAIGNS = {
 STAGES = {
     v: Path(f"configs/posttraining/historical-masked-adapter-stage-{v.lower()}.json") for v in "AB"
 }
-# Brazos de la sección `variety` de la matriz v3 (#444), que solo declara la etapa A.
+# Brazos de la sección `variety` de la matriz v3 (#444), que solo declara la etapa A, y la
+# continuación anclada, que A añade como control.
 VARIETY = {
     arm["id"]
     for arm in json.loads(Path("configs/posttraining/adapter-matrix-v3.json").read_text())[
         "variety"
     ]["arms"]
-}
+} | {"anchored_continuation"}
 CANDIDATE = Path("configs/candidate/chronological-training.json")
 EXTENSIONS = Path("configs/baselines/historical-masked-campaign-extensions.json")
 TITANS_RECIPE = Path("configs/titans/chronological-training-historical-masked.json")
@@ -374,6 +375,8 @@ def test_the_measured_stage_contains_the_cases_of_both_matrix_versions():
     for arm, cases in measured_b["cases"].items():
         extra = set(measured_a["cases"][arm]) - set(cases)
         assert extra and all(key.split("/", 1)[1] in VARIETY for key in extra), arm
+        # A mide también la continuación anclada que ejecuta, y B no la tiene.
+        assert "seed-42/anchored_continuation" in extra, arm
     # Otro presupuesto o una red que A no mide dejan a B sin medida.
     budget = copy.deepcopy(b)
     budget["matrix"]["budget"]["batch_size"] *= 2

@@ -5,6 +5,7 @@ from types import SimpleNamespace
 import pytest
 import torch
 
+from mars_titan.training import anchored_decay
 from mars_titan.training.learning_hold import learning_blocked
 
 
@@ -28,11 +29,14 @@ def recorder(monkeypatch):
 
     No hereda de `torch.optim.Optimizer`, así que el gancho global del bloqueo no lo
     intercepta. Cada paso exige pesos idénticos a los iniciales. `on_step` permite a una
-    prueba reaccionar después de un paso, por ejemplo para pedir una parada.
+    prueba reaccionar después de un paso, por ejemplo para pedir una parada. La versión
+    anclada de AdamW (#444) se sustituye igual y queda marcada con `anchored`.
     """
     record = SimpleNamespace(optimizers=[], on_step=None)
 
     class RecordingOptimizer:
+        anchored = False
+
         def __init__(self, parameters, lr, weight_decay):
             self.parameters = list(parameters)
             self.initial = [value.detach().clone() for value in self.parameters]
@@ -58,7 +62,11 @@ def recorder(monkeypatch):
         def load_state_dict(self, state):
             assert state["kind"] == "recording_without_updates"
 
+    class AnchoredRecordingOptimizer(RecordingOptimizer):
+        anchored = True
+
     deterministic = torch.are_deterministic_algorithms_enabled()
     monkeypatch.setattr(torch.optim, "AdamW", RecordingOptimizer)
+    monkeypatch.setattr(anchored_decay, "AnchoredAdamW", AnchoredRecordingOptimizer)
     yield record
     torch.use_deterministic_algorithms(deterministic)

@@ -4,7 +4,10 @@ La declaración (``posttraining_stage_comparison``) se fija antes de evaluar y e
 etapa de postentrenamiento. La comparación se deriva del plan de la etapa, sin listar
 brazos a mano. Por cada brazo base y ámbito hay una comparación walk-forward con el padre
 congelado, la continuación completa (control ``full_continuation`` de la matriz) y los
-brazos adaptados de la matriz para la familia del padre.
+brazos adaptados de la matriz para la familia del padre. Si la etapa ejecuta la
+continuación con el decaimiento anclado al padre (``anchored_continuation``, #444), entra
+con su propio papel. Una familia cuya base no existe para un padre no se deriva para él y
+un papel ausente no aporta variantes.
 
 En el walk-forward por etapas de la variante A, el padre congelado es el trabajo
 ``frozen`` de la etapa, que aplica a la ventana k el estado elegido por la base en k-1. El
@@ -62,15 +65,20 @@ KIND = "posttraining_stage_comparison"
 DECLARED = "declared_before_evaluation"
 USE = "secondary_contrasts_not_for_selecting_the_base_architecture"
 FROZEN, CONTINUATION, ADAPTED = "frozen_parent", "full_continuation", "adapted"
+ANCHORED = "anchored_continuation"
 CHAIN, BASE = "chain", "base_retrain"
-ROLES = (FROZEN, CONTINUATION, ADAPTED, CHAIN, BASE)
-# Papeles que pueden hacer de base de una familia: los dos controles y el reentreno.
-BASE_ROLES = (FROZEN, CONTINUATION, BASE)
+ROLES = (FROZEN, CONTINUATION, ANCHORED, ADAPTED, CHAIN, BASE)
+# Papeles que puede tener un control de la matriz. El padre congelado sale del plan.
+CONTROLS = (CONTINUATION, ANCHORED)
+# Papeles que pueden hacer de base de una familia: el padre congelado, los controles y el
+# reentreno.
+BASE_ROLES = (FROZEN, *CONTROLS, BASE)
 _FIELDS = {"schema_version", "kind", "status", "name", "stage", "use", "families"}
 # Familia de cada brazo derivado en la configuración de la comparación.
 ARM_FAMILIES = {
     FROZEN: "posttraining_frozen_parent",
     CONTINUATION: "posttraining_control",
+    ANCHORED: "posttraining_control",
     ADAPTED: "posttraining_adapter",
     CHAIN: "posttraining_chain",
 }
@@ -131,6 +139,7 @@ def _groups(stage):
             {
                 FROZEN: job["base_arm"],
                 CONTINUATION: None,
+                ANCHORED: None,
                 ADAPTED: [],
                 CHAIN: campaign_chain.chain_arm(job["base_arm"]) if staged else None,
                 BASE: job["base_arm"],
@@ -139,7 +148,7 @@ def _groups(stage):
         )
         control = job["control"]
         _require(
-            control in (None, CONTINUATION) or job.get("kind") == FROZEN_JOB,
+            control in (None, *CONTROLS) or job.get("kind") == FROZEN_JOB,
             f"El control {control} de {job['arm']} no tiene papel en la comparación",
         )
         if job.get("kind") == FROZEN_JOB:
@@ -148,12 +157,12 @@ def _groups(stage):
                 f"{job['base_arm']} declara dos padres congelados",
             )
             group[FROZEN] = job["arm"]
-        elif control == CONTINUATION:
+        elif control in CONTROLS:
             _require(
-                group[CONTINUATION] in (None, job["arm"]),
-                f"{job['base_arm']} declara dos continuaciones completas",
+                group[control] in (None, job["arm"]),
+                f"{job['base_arm']} declara dos brazos del control {control}",
             )
-            group[CONTINUATION] = job["arm"]
+            group[control] = job["arm"]
         elif job["arm"] not in group[ADAPTED]:
             group[ADAPTED].append(job["arm"])
         group["jobs"].setdefault(job["scope"], []).append(job)
@@ -207,7 +216,7 @@ def derive_config(declaration, stage, base_arm, groups):
     )
     roles = {
         FROZEN: [group[FROZEN]],
-        CONTINUATION: [group[CONTINUATION]],
+        **{control: [group[control]] if group[control] else [] for control in CONTROLS},
         ADAPTED: group[ADAPTED],
         # La cadena solo entra si alguna familia la contrasta, porque exige sus selecciones.
         CHAIN: [group[CHAIN]] if CHAIN in used else [],
@@ -221,6 +230,7 @@ def derive_config(declaration, stage, base_arm, groups):
             arms[arm] = dict(
                 family=ARM_FAMILIES[role], output=parent["output"], seeds=parent["seeds"]
             )
+    # Las familias de la continuación anclada solo existen en los padres que la tienen.
     families = {
         name: dict(
             kind="delta",
@@ -228,6 +238,7 @@ def derive_config(declaration, stage, base_arm, groups):
             variants=[arm for role in family["variants"] for arm in roles[role]],
         )
         for name, family in declaration["families"].items()
+        if roles[family["base"]] and any(roles[role] for role in family["variants"])
     }
     families["levels"] = dict(kind="level", arms=list(arms))
     raw = {
@@ -282,6 +293,7 @@ def check_declaration(path):
                 configuration_sha256=config["sha256"],
                 arms=len(config["arms"]),
                 continuation=loaded["groups"][base_arm][CONTINUATION],
+                anchored_continuation=loaded["groups"][base_arm][ANCHORED],
                 adapted=loaded["groups"][base_arm][ADAPTED],
                 chain=loaded["groups"][base_arm][CHAIN]
                 if loaded["groups"][base_arm][CHAIN] in config["arms"]
@@ -458,6 +470,7 @@ def evaluate(declaration_path, sources_path, scope, base_arm, *, edition=None):
         roles={
             FROZEN: loaded["groups"][base_arm][FROZEN],
             CONTINUATION: loaded["groups"][base_arm][CONTINUATION],
+            ANCHORED: loaded["groups"][base_arm][ANCHORED],
             ADAPTED: loaded["groups"][base_arm][ADAPTED],
             **(
                 {CHAIN: loaded["groups"][base_arm][CHAIN]}

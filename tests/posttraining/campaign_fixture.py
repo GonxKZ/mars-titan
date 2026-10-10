@@ -98,14 +98,19 @@ def write_configs(folder, variant, *, tabular=False):
     # La comparación reducida no declara los brazos de Titans-MAC.
     campaign.pop("titans_mac")
     atomic_json(folder / "campaign.json", campaign)
-    matrix = json.loads((CONFIGS / "posttraining/adapter-matrix-v2.json").read_text())
-    matrix["budget"].update(seeds=[42], epochs=1, batch_size=BATCH)
-    atomic_json(folder / "matrix.json", matrix)
     stage = json.loads(
         (
             CONFIGS / f"posttraining/historical-masked-adapter-stage-{variant.lower()}.json"
         ).read_text()
     )
+    # A añade la continuación anclada de la matriz v3 (#444). Su matriz reducida es la v3 sin
+    # la variedad, que conserva los casos de la v2 y declara el control.
+    added = "additional_controls" in stage
+    source = "adapter-matrix-v3.json" if added else "adapter-matrix-v2.json"
+    matrix = json.loads((CONFIGS / "posttraining" / source).read_text())
+    matrix.pop("variety", None)
+    matrix["budget"].update(seeds=[42], epochs=1, batch_size=BATCH)
+    atomic_json(folder / "matrix.json", matrix)
     stage.update(
         campaign="campaign.json",
         matrix="matrix.json",
