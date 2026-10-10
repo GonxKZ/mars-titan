@@ -6,11 +6,16 @@ ajustan parámetros:
 - `x.step()` sin argumentos (o solo con `closure`), el paso de un optimizador.
 - La construcción de un optimizador de `torch.optim`.
 - `xgboost.train`.
-- `fit` o `partial_fit` sobre un objeto que no es una clase ni un módulo del proyecto
-  (estimadores de scikit-learn, hmmlearn y similares). `ActionGrid.fit` y las demás
-  estadísticas del proyecto son funciones propias y se siguen como llamadas normales.
+- `fit`, `partial_fit`, `fit_transform` o `fit_predict` sobre un objeto que no es una clase
+  ni un módulo del proyecto (estimadores de scikit-learn, hmmlearn y similares).
+  `ActionGrid.fit` y las demás estadísticas del proyecto son funciones propias y se siguen
+  como llamadas normales.
 - Las soluciones cerradas de `linalg` (`solve`, `lstsq`, `cho_solve` y similares), como la
   ecuación normal de la ridge.
+
+Las tres reglas externas valen igual con el módulo delante (`xgb.train`) que con el nombre
+importado (`from xgboost import train`). Un `step(closure)` posicional no se reconoce como
+paso de optimizador: es un límite conocido y no hay ninguno en el proyecto.
 
 Las aristas van de cada función a las funciones y métodos del proyecto que llama o
 referencia. Un nombre se resuelve con las importaciones del módulo, `self` y `cls` se
@@ -41,6 +46,8 @@ HOOK = "register_optimizer_step_pre_hook"
 # cerrada no pasan por él, así que solo los detiene la guarda.
 TORCH_KINDS = {"paso de optimizador", "optimizador de torch.optim"}
 SOLVERS = {"solve", "lstsq", "cho_solve", "solve_triangular", "cholesky_solve", "lu_solve"}
+# Métodos de los estimadores que ajustan sus parámetros, también combinados con otra salida.
+FITS = {"fit", "partial_fit", "fit_transform", "fit_predict"}
 MODULE_SCOPE = "<module>"
 
 
@@ -360,28 +367,42 @@ class CallGraph:
             if target[0] in module.known:
                 self._add(me, target, line)
 
+    @staticmethod
+    def _imported(module, func):
+        """Nombre completo de lo que se llama, según las importaciones del módulo."""
+        name = dotted(func)
+        if not name:
+            return None
+        head, _, tail = name.partition(".")
+        target = module.imports.get(head)
+        if target is None:
+            return None
+        full = target[1] if target[0] == "module" else f"{target[1]}.{target[2]}"
+        return full + ("." + tail if tail else "")
+
     def _fitting(self, module, call):
         func = call.func
-        if not isinstance(func, ast.Attribute):
+        if not isinstance(func, (ast.Attribute, ast.Name)):
             return None
-        if func.attr == "step" and not call.args and all(k.arg == "closure" for k in call.keywords):
+        attribute = isinstance(func, ast.Attribute)
+        if (
+            attribute
+            and func.attr == "step"
+            and not call.args
+            and all(k.arg == "closure" for k in call.keywords)
+        ):
             return "paso de optimizador"
-        name, full = dotted(func), None
-        if name:
-            head, _, tail = name.partition(".")
-            target = module.imports.get(head)
-            if target and target[0] == "module":
-                full = target[1] + ("." + tail if tail else "")
-            elif target and target[0] == "symbol":
-                full = f"{target[1]}.{target[2]}" + ("." + tail if tail else "")
+        # Con `from xgboost import train` el nombre suelto resuelve al mismo destino.
+        full = self._imported(module, func)
         if full:
-            if full.startswith("torch.optim.") and full.rsplit(".", 1)[-1][:1].isupper():
+            leaf = full.rsplit(".", 1)[-1]
+            if full.startswith("torch.optim.") and leaf[:1].isupper():
                 return "optimizador de torch.optim"
             if full == "xgboost.train":
                 return "xgboost.train"
-            if func.attr in SOLVERS and (".linalg." in full or full.startswith("scipy.")):
+            if leaf in SOLVERS and (".linalg." in full or full.startswith("scipy.")):
                 return "solución cerrada"
-        if func.attr in ("fit", "partial_fit"):
+        if attribute and func.attr in FITS:
             receiver = func.value
             if isinstance(receiver, ast.Name):
                 found = self.symbol(module.name, receiver.id)

@@ -211,6 +211,73 @@ def test_estimators_xgboost_and_closed_form_solutions_are_fitting_sites(tmp_path
     }
 
 
+def test_fitting_sites_imported_by_name_are_detected(tmp_path):
+    graph = project(
+        tmp_path,
+        {
+            **HOLD,
+            "src/mars_titan/evaluation/shortcut.py": code("""
+                from numpy.linalg import lstsq
+                from scipy.linalg import cho_solve as solve_factor
+                from sklearn.preprocessing import StandardScaler
+                from torch.optim import AdamW
+                from xgboost import train
+
+                def closed_form(a, b):
+                    return lstsq(a, b)
+
+                def factor(c, b):
+                    return solve_factor(c, b)
+
+                def boosting(params, matrix):
+                    return train(params, matrix)
+
+                def optimizer(params):
+                    return AdamW(params)
+
+                def scale(x):
+                    return StandardScaler().fit_transform(x)
+
+                def cluster(model, x):
+                    return model.fit_predict(x)
+            """),
+        },
+    )
+    kinds = {site.function: site.kind for site in graph.sites}
+    assert kinds == {
+        "closed_form": "solución cerrada",
+        "factor": "solución cerrada",
+        "boosting": "xgboost.train",
+        "optimizer": "optimizador de torch.optim",
+        "scale": "fit de un estimador",
+        "cluster": "fit de un estimador",
+    }
+    assert unprotected(graph) == {f"mars_titan.evaluation.shortcut:{name}" for name in kinds}
+
+
+def test_project_functions_with_fitting_names_are_followed_not_flagged(tmp_path):
+    graph = project(
+        tmp_path,
+        {
+            **HOLD,
+            "src/mars_titan/scores.py": code("""
+                from mars_titan.grid import train, solve
+
+                def run(x):
+                    return train(x) + solve(x)
+            """),
+            "src/mars_titan/grid.py": code("""
+                def train(x):
+                    return x
+
+                def solve(x):
+                    return x
+            """),
+        },
+    )
+    assert graph.sites == []
+
+
 def test_a_guard_after_the_fitting_call_is_reported_as_late(tmp_path):
     graph = project(
         tmp_path,
