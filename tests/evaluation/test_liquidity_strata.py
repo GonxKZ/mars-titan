@@ -165,6 +165,42 @@ def test_the_label_session_is_never_read(tmp_path):
     assert names[0, 0] == "liquid" and reasons[0, 0] == "classified"
 
 
+def test_each_row_only_depends_on_the_rows_up_to_it():
+    # Series aleatorias con suspensiones y filas sin verificar: truncar la serie en cualquier
+    # punto no cambia el código ni el motivo de ninguna fila anterior al corte.
+    rng = np.random.default_rng(532)
+    days = np.array(tape_days("US"), dtype="datetime64[D]")
+    rows = len(days)
+    for _ in range(20):
+        close = np.round(np.exp(rng.normal(0, 1, rows)), 2) + 0.01
+        volume = np.where(rng.random(rows) < 0.1, 0.0, np.round(rng.lognormal(7, 1.5, rows)))
+        verified = rng.random(rows) > 0.03
+        full = ls.asset_codes("US", days, close, volume, verified, section())
+        for cut in rng.integers(1, rows, 10).tolist():
+            prefix = ls.asset_codes(
+                "US", days[:cut], close[:cut], volume[:cut], verified[:cut], section()
+            )
+            assert np.array_equal(prefix[0], full[0][:cut])
+            assert np.array_equal(prefix[1], full[1][:cut])
+        assert len(set(full[0].tolist())) >= 3
+
+
+def test_an_instance_reads_each_asset_once_and_a_new_one_checks_it_again(tmp_path):
+    write_edition(tmp_path, {"US": [Asset("E")]})
+    liquidity = ls.EditionLiquidity(tmp_path, section())
+    days = tape_days("US")
+    first = liquidity.assign(["US"], ["US/E"], [decision("US", days[40])])
+    target = tmp_path / "assets/US/E/prices.parquet"
+    target.write_bytes(target.read_bytes() + b"x")
+    # La misma instancia reutiliza lo leído, con la huella comprobada en la primera lectura.
+    again = liquidity.assign(["US"], ["US/E"], [decision("US", days[40])])
+    assert np.array_equal(first[0], again[0]) and np.array_equal(first[1], again[1])
+    with pytest.raises(ValueError, match="ha cambiado"):
+        ls.EditionLiquidity(tmp_path, section()).assign(
+            ["US"], ["US/E"], [decision("US", days[40])]
+        )
+
+
 def test_price_and_volume_thresholds_are_strict_and_use_the_traded_grid(tmp_path):
     year = range(len(tape_days("US")))
     write_edition(
@@ -175,12 +211,14 @@ def test_price_and_volume_thresholds_are_strict_and_use_the_traded_grid(tmp_path
                 Asset("SUB", overrides={i: dict(close=0.9999, open=0.9999) for i in year}),
                 Asset("VOL", overrides={i: dict(volume=1000.0) for i in year}),
                 Asset("LOW", overrides={i: dict(volume=999.0) for i in year}),
+                # Guardado justo por debajo de 1, en la rejilla de 1 USD tras la reconstrucción.
+                Asset("NEAR", overrides={i: dict(close=0.9999996, open=1.0) for i in year}),
             ]
         },
     )
     moments = [decision("US", tape_days("US")[150])]
-    names, _ = assign(tmp_path, "US", ["LOW", "ONE", "SUB", "VOL"], moments)
-    assert names.ravel().tolist() == ["thin_volume", "liquid", "low_price", "liquid"]
+    names, _ = assign(tmp_path, "US", ["LOW", "NEAR", "ONE", "SUB", "VOL"], moments)
+    assert names.ravel().tolist() == ["thin_volume", "liquid", "liquid", "low_price", "liquid"]
     # Con otro umbral declarado cambia la asignación, sin tocar los datos.
     names, _ = assign(tmp_path, "US", ["ONE"], moments, price_below=1.01)
     assert names[0, 0] == "low_price"
@@ -350,6 +388,13 @@ def liquid(tmp_path_factory):
     root = tmp_path_factory.mktemp("liquid")
     study = Study(root / "study")
     study.config[walk.LIQUIDITY_FIELD] = section(min_rows=1, min_sessions=1)
+
+    def reverse(arm, seed, fold, partition, values):
+        # Filas en orden inverso al canónico: los estratos deben seguir a cada fila.
+        for key, column in values.items():
+            values[key] = column[::-1]
+
+    study.changes.append(reverse)
     study.publish()
     edition = study_edition(root / "edition")
     report, _ = walk.evaluate_walk_forward(
