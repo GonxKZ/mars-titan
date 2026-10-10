@@ -105,6 +105,15 @@ Release utiliza `-fno-fast-math` y `-ffp-contract=off` en GCC y Clang. MSVC util
 
 `MARS_TITAN_ENABLE_IPO=ON` solicita LTO para Release y comprueba su disponibilidad. `MARS_TITAN_PGO=generate` y `MARS_TITAN_PGO=use` son opciones explícitas. GCC utiliza un directorio de perfiles. Clang genera archivos `.profraw` y consume un archivo `.profdata` combinado con `llvm-profdata`. La ruta se indica mediante `MARS_TITAN_PGO_DATA`. Estos modos necesitan una carga representativa y una comparación de paridad y tiempo total antes de adoptar sus resultados.
 
+LTO y PGO se midieron el 10 de octubre de 2026 en la etapa RL nativa con un perfil de `mars-titan-policy-benchmark` sobre cintas reales. Dieron las mismas huellas de contenido que Release, pero ninguna variante ganó de forma reproducible en los cuatro escenarios de las dos tandas, así que Release los mantiene desactivados ([informe](../reports/engineering/native-build-variants-20261010/README.md)).
+
+`native-ppo-dev` y `native-candidate-cuda-dev` son los presets de Release de PPO y de la referencia GRU en CUDA con ccache y mold, solo para desarrollo. ccache no cambia los objetos y mold reduce el enlazado a un tercio, pero cambia la disposición de los ejecutables. No deben usarse en la campaña. La identidad compilada registra el lanzador y el enlazador, pero todavía nada rechaza una identidad compilada con ccache o mold en `rl check`, `rl run` ni en los lanzadores. Necesitan `ccache`, `mold` y CMake 3.29 o posterior para `CMAKE_LINKER_TYPE`.
+
+```bash
+cmake --preset native-ppo-dev
+cmake --build --preset native-ppo-dev
+```
+
 La medición del núcleo debe incluir la preparación de entradas y el enlace con Python, además del tiempo interno. Deben registrarse las versiones, la configuración, las formas de los datos, las repeticiones, la memoria y el error frente a la referencia. Los tiempos de los perfiles instrumentados describen esas comprobaciones, no el rendimiento de Release.
 
 ## Compilación cruzada a aarch64
