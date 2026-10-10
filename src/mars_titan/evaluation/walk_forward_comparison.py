@@ -391,8 +391,9 @@ def _file(folder, record, label, *, predictions=False):
     )
     path = Path(record["path"])
     path = path if path.is_absolute() else folder / path
-    if predictions and not path.exists():
-        # La retención v2 sustituye las filas por su forma compacta o por sus huellas.
+    if predictions and not path.exists() and prediction_files.entry(path) is not None:
+        # La retención v2 sustituye las filas por su forma compacta o por sus huellas. Un
+        # archivo que falta sin ese registro se rechaza abajo como cualquier otra fuente.
         prediction_files.verify(path, record["sha256"])
         return dict(path=path, sha256=record["sha256"])
     _require(not path.is_symlink() and path.is_file(), f"{label} no es un archivo regular")
