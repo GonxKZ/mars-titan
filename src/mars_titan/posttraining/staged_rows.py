@@ -8,78 +8,42 @@ por identidad de fila (activo y fila de su archivo de muestras, que las vistas d
 edición comparten) contra los tres tramos del padre en su vista, guarda los recuentos y la
 intersección vacía y resume las filas nuevas con su huella.
 
-`posttraining_rows`, `asset_digest`, `combine` y `row_fingerprint` reproducen las de
-`training.campaign_chain` del plan de la campaña, con la misma huella, para que el
-verificador de disjunción y los recibos de la cadena coincidan. `labels_used_until` hace
-de `training.label_maturity` sobre las mismas etiquetas aceptadas. Las dos se sustituirán
-por esos módulos cuando estén en `develop`.
+`posttraining_rows`, `asset_digest`, `combine` y `row_fingerprint` son las de
+`training.campaign_chain`, con la misma huella, para que el verificador de disjunción y
+los recibos de la cadena coincidan. `labels_used_until` hace de `training.label_maturity`
+sobre las mismas etiquetas aceptadas.
 """
-
-import hashlib
 
 import numpy as np
 import pyarrow.parquet as pq
 
 from mars_titan.environments.walk_forward_receipt import _microseconds
+from mars_titan.training.campaign_chain import (
+    FINGERPRINT,
+    asset_digest,
+    combine,
+    posttraining_rows,
+    row_fingerprint,
+)
+
+__all__ = [
+    "FINGERPRINT",
+    "asset_digest",
+    "combine",
+    "fit_rows_proof",
+    "labels_used_until",
+    "partition_rows",
+    "posttraining_rows",
+    "row_fingerprint",
+]
 
 PARENT_PARTITIONS = ("train", "validation", "calibration")
 PROOF_KIND = "staged_posttraining_fit_rows"
-FINGERPRINT = b"mars-titan-chain-rows-v1"
 
 
 def _require(condition, message):
     if not condition:
         raise ValueError(message)
-
-
-def posttraining_rows(parent_fold, fold):
-    """Intervalo [inicio, fin) de decisiones de las filas nuevas de la ventana.
-
-    Empieza al final de la calibración del padre, después de todo lo que el padre usó para
-    ajustar, elegir o calibrar, y termina con el tramo de ajuste de la ventana.
-    """
-    start, end = parent_fold["calibration"][1], fold["train"][1]
-    _require(
-        all(parent_fold[name][1] <= start for name in PARENT_PARTITIONS)
-        and fold["train"][0] <= start < end
-        and parent_fold["evaluation"][0] < fold["evaluation"][0],
-        f"{fold['id']} no tiene filas nuevas después del padre {parent_fold['id']}",
-    )
-    return start, end
-
-
-def asset_digest(sample_rows):
-    """Número de filas y huella de las filas de un activo, independiente de su orden."""
-    rows = np.sort(np.asarray(sample_rows))
-    _require(
-        rows.ndim == 1 and rows.dtype.kind in "iu" and not (rows[1:] == rows[:-1]).any(),
-        "Las filas de un activo son enteros sin repetir",
-    )
-    return len(rows), hashlib.sha256(rows.astype("<i8").tobytes()).hexdigest()
-
-
-def combine(parts):
-    """Número de filas y huella de un conjunto a partir de `asset_digest` de cada activo."""
-    digest, total = hashlib.sha256(FINGERPRINT), 0
-    for (market, symbol), (rows, value) in sorted(parts.items()):
-        _require(rows > 0, f"{market}/{symbol} no aporta filas a la huella")
-        digest.update(f"{market}/{symbol}:{rows}:{value}\n".encode())
-        total += rows
-    return total, digest.hexdigest()
-
-
-def row_fingerprint(markets, symbols, sample_rows):
-    """Número de filas y huella de filas (mercado, activo, fila de la muestra)."""
-    markets, symbols = np.asarray(markets, dtype=str), np.asarray(symbols, dtype=str)
-    rows = np.asarray(sample_rows)
-    _require(
-        markets.shape == symbols.shape == rows.shape and rows.ndim == 1,
-        "Cada fila necesita mercado, activo y fila de la muestra",
-    )
-    parts = {}
-    for market, symbol in sorted(set(zip(markets.tolist(), symbols.tolist(), strict=True))):
-        parts[market, symbol] = asset_digest(rows[(markets == market) & (symbols == symbol)])
-    return combine(parts)
 
 
 def partition_rows(dataset, partitions):

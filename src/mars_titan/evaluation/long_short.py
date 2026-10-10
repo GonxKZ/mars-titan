@@ -16,14 +16,17 @@ La regla se declara antes de evaluar en la sección ``long_short`` de la compara
 Solo se usa la predicción emitida en la decisión. Los precios y permisos de ejecución
 proceden de ``simulation.session_prices``. Los estadísticos de una serie de retornos
 netos diarios son el rendimiento acumulado y anualizado, la media, la volatilidad, el
-Sharpe sin tipo libre de riesgo, el drawdown máximo y la rotación media.
+Sharpe sin tipo libre de riesgo, el drawdown máximo y la rotación media. Salvo la
+rotación, se calculan con las convenciones comunes de ``financial_conventions``, las
+mismas del informe de políticas, y las sesiones por año declaradas deben ser las suyas.
 """
 
 import math
 
 import numpy as np
 
-from mars_titan.evaluation.paired_comparisons import circular_block_indices, family_intervals
+from mars_titan.evaluation import financial_conventions as conventions
+from mars_titan.evaluation.paired_comparisons import family_intervals
 
 KIND = "quartile_long_short_v1"
 STATUS = "secondary_financial"
@@ -148,8 +151,9 @@ def declaration(section):
     _require(
         isinstance(annual, dict)
         and set(annual) == set(MARKET_RULES)
-        and all(type(value) is int and 200 <= value <= 260 for value in annual.values()),
-        "Las sesiones por año deben declararse por mercado",
+        and all(type(value) is int for value in annual.values())
+        and annual == conventions.SESSIONS_PER_YEAR,
+        "Las sesiones por año deben ser las de las convenciones comunes de cada mercado",
     )
     statistics = section["statistics"]
     _require(
@@ -232,34 +236,27 @@ def net_returns(book, costs):
     )
 
 
+def _named(values, turnover):
+    return dict(
+        cumulative_return=values["cumulative_return"],
+        annualized_return=values["annualized_return"],
+        mean_net_return=values["mean_return"],
+        volatility=values["volatility"],
+        sharpe=values["sharpe"],
+        max_drawdown=values["max_drawdown"],
+        turnover=np.broadcast_to(turnover, values["mean_return"].shape),
+    )
+
+
 def statistics(returns, traded, sessions_per_year):
     """Estadísticos de series diarias en el penúltimo eje (``[..., sesiones, brazos]``).
 
-    El rendimiento acumulado y el drawdown se calculan con la riqueza compuesta desde 1.
-    Una sesión con rendimiento de −100 % o peor arruina la serie: acumulado −1 y drawdown 1.
-    El Sharpe no está definido (NaN) con volatilidad nula.
+    Los define ``financial_conventions.statistics``. Una sesión con rendimiento de −100 %
+    o peor arruina la serie (acumulado −1 y drawdown 1) y el Sharpe no está definido (NaN)
+    con volatilidad nula. La rotación es la media del nocional negociado por sesión.
     """
-    returns = np.asarray(returns, dtype=np.float64)
-    sessions = returns.shape[-2]
-    with np.errstate(divide="ignore", invalid="ignore"):
-        log_wealth = np.cumsum(np.log(np.maximum(1 + returns, 0.0)), axis=-2)
-        total = log_wealth[..., -1, :]
-        peak = np.maximum.accumulate(np.maximum(log_wealth, 0.0), axis=-2)
-        drawdown = 1 - np.exp(log_wealth - peak)
-        mean = returns.mean(axis=-2)
-        spread = returns.std(axis=-2, ddof=1) if sessions > 1 else np.full(mean.shape, np.nan)
-        scale = math.sqrt(sessions_per_year)
-        active = spread > 64 * np.finfo(np.float64).eps * np.maximum(np.abs(mean), 1e-300)
-        sharpe = np.where(active, mean / np.where(active, spread, 1.0) * scale, np.nan)
-    return dict(
-        cumulative_return=np.expm1(total),
-        annualized_return=np.expm1(total * sessions_per_year / sessions),
-        mean_net_return=mean,
-        volatility=spread * scale,
-        sharpe=sharpe,
-        max_drawdown=np.nan_to_num(drawdown.max(axis=-2), nan=1.0),
-        turnover=np.broadcast_to(np.asarray(traded, dtype=np.float64).mean(axis=-2), mean.shape),
-    )
+    values = conventions.statistics(returns, sessions_per_year)
+    return _named(values, np.asarray(traded, dtype=np.float64).mean(axis=-2))
 
 
 def _pair(lower, upper):
@@ -268,27 +265,31 @@ def _pair(lower, upper):
     return [float(lower), float(upper)]
 
 
-def bootstrap(returns, traded, *, sessions_per_year, block_length, replicates, seed, chunk=32):
+def bootstrap(returns, traded, *, sessions_per_year, block_length, replicates, seed):
     """Estadísticos y réplicas por bloques circulares de sesiones del mismo mercado.
 
     ``returns`` tiene forma [costes, sesiones, brazos] y ``traded`` [sesiones, brazos].
-    Todas las series se remuestrean con los mismos índices, en el orden de cada réplica,
-    porque el drawdown depende del recorrido. Devuelve los estadísticos, las réplicas
+    Todas las series se remuestrean con los mismos índices de ``financial_conventions``,
+    también el drawdown en el orden de cada réplica. Devuelve los estadísticos, las réplicas
     ([réplicas, costes, brazos] por estadístico) o el motivo de no tenerlas.
     """
+    returns = np.asarray(returns, dtype=np.float64)
+    traded = np.asarray(traded, dtype=np.float64)
     sessions = returns.shape[1]
     estimate = statistics(returns, traded[None], sessions_per_year)
     if block_length >= sessions:
         return estimate, None, "Se necesitan más sesiones que la longitud del bloque"
-    rng = np.random.default_rng(seed)
-    draws = {name: [] for name in STATISTICS}
-    for offset in range(0, replicates, chunk):
-        size = min(chunk, replicates - offset)
-        index = circular_block_indices(rng, size, sessions, block_length)
-        sampled = statistics(returns[:, index, :], traded[index][None], sessions_per_year)
+    shape = (replicates, returns.shape[0], returns.shape[2])
+    draws = {name: np.empty(shape) for name in STATISTICS}
+    for offset, index in conventions.resamples(
+        sessions, block_length=block_length, replicates=replicates, seed=seed
+    ):
+        counts = conventions.session_counts(index, sessions)
+        turnover = conventions.weighted_sums(counts, traded) / sessions
+        sampled = _named(conventions.resampled(returns, sessions_per_year, index), turnover)
         for name in STATISTICS:
-            draws[name].append(np.moveaxis(sampled[name], 0, 1))
-    return estimate, {name: np.concatenate(values) for name, values in draws.items()}, None
+            draws[name][offset : offset + len(index)] = np.moveaxis(sampled[name], 0, 1)
+    return estimate, draws, None
 
 
 def contrasts(estimate, draws, arms, family, confidence):

@@ -15,7 +15,8 @@ MARS-TITAN y CM-v1 y sus recuentos. `storage` estima el disco de la campaña y d
 con los recuentos de las vistas y tablas sintéticas, sin leer objetivos ni ajustar.
 `budget` proyecta las horas de una campaña con un caudal supuesto o medido y el factor de
 caudal necesario para un objetivo de horas. `schedule` muestra las fases de cada ventana de
-campaña con sus trabajos, en el orden en que se ejecutan.
+campaña con sus trabajos, en el orden en que se ejecutan. `disjunction` comprueba sobre las
+vistas y los recibos, sin ajustar, la disjunción de filas del walk-forward por etapas.
 `rolling` recorre la campaña ventana a ventana con la retención v2 y `regenerate`
 repite por inferencia, sin ajustar, las predicciones por fila de un trabajo confirmado.
 """
@@ -34,6 +35,7 @@ COMMANDS = {
     "rl": "mars_titan.simulation.campaign_stage",
     "rl-report": "mars_titan.simulation.stage_report",
     "ablation": "mars_titan.training.modality_ablation_stage",
+    "disjunction": "mars_titan.training.chain_disjunction",
     "storage": "mars_titan.training.storage_budget",
     "rolling": "mars_titan.training.rolling_retention",
     "regenerate": "mars_titan.training.prediction_regeneration",

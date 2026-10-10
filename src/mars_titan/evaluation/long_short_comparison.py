@@ -332,6 +332,7 @@ def evaluate_long_short(config_path, sources_path, scope, edition, *, aggregates
         analysis_source_sha256={
             name: sha256(Path(__file__).parents[1] / name)
             for name in (
+                "evaluation/financial_conventions.py",
                 "evaluation/long_short.py",
                 "evaluation/long_short_comparison.py",
                 "evaluation/paired_comparisons.py",

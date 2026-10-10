@@ -495,6 +495,68 @@ def test_default_runners_require_the_window_filter_of_the_stages(base, monkeypat
         rolling.default_runners(base.campaign, base.views, base.output)
 
 
+def test_staged_runners_give_each_stage_a_fresh_report_and_the_chain(
+    base,  # noqa: F811
+    monkeypatch,
+    tmp_path,
+):
+    """Con el walk-forward por etapas, cada etapa recibe un informe calculado en ese momento.
+
+    La campaña reducida es de la versión 1, así que el diseño se añade a la campaña cargada.
+    Las etapas son dobles que registran sus argumentos, sin ajustar nada.
+    """
+    from mars_titan.posttraining import campaign_stage as adapter_stage
+    from mars_titan.simulation import campaign_stage as rl_stage
+    from mars_titan.training import campaign_chain, chain_disjunction
+
+    load = plan.load_campaign
+    monkeypatch.setattr(
+        plan,
+        "load_campaign",
+        lambda path: dict(load(path), walk_forward_stages=campaign_chain.DESIGN),
+    )
+    calls = {}
+
+    def adapters(path, views, campaign_output, output, *, stop=None, window=None, **options):
+        calls["adapters"] = dict(options, window=window)
+        return dict(status="completed")
+
+    def policies(path, views, campaign, edition, output, *, stop=None, window=None, **options):
+        calls["rl"] = dict(options, window=window)
+        return dict(status="completed")
+
+    monkeypatch.setattr(adapter_stage, "run_stage", adapters)
+    monkeypatch.setattr(rl_stage, "run_stage", policies)
+    # Copia propia de la campaña: el informe se guarda en su carpeta de retención.
+    output = tmp_path / "campaign"
+    shutil.copytree(base.output, output, symlinks=True)
+    stages = dict(
+        adapters=dict(stage="adapters.json", output=tmp_path / "adapters"),
+        rl=dict(stage="rl.json", output=tmp_path / "rl", edition=tmp_path / "edition"),
+    )
+    runners = rolling.default_runners(base.campaign, base.views, output, stages=stages)
+    runners["adapters"]("fold-000")
+    path = calls["adapters"]["disjunction"]
+    assert path == output / "retention/disjunction/fold-000-adapters.json"
+    report = json.loads(path.read_text())
+    assert report["kind"] == chain_disjunction.KIND and report["failures"] == []
+    assert report["campaign_sha256"] == plan.load_campaign(base.campaign)["sha256"]
+    runners["rl"]("fold-001")
+    assert calls["rl"]["chain_output"] == tmp_path / "adapters"
+    assert calls["rl"]["disjunction"] == output / "retention/disjunction/fold-001-rl.json"
+    # Un informe con fallos se guarda para revisarlo y detiene el recorrido antes de la etapa.
+    calls.clear()
+    monkeypatch.setattr(
+        chain_disjunction, "verify", lambda *args, **options: dict(report, failures=["x"])
+    )
+    with pytest.raises(ValueError, match="1 fallos antes de rl en fold-002"):
+        runners["rl"]("fold-002")
+    assert calls == {}
+    assert json.loads((output / "retention/disjunction/fold-002-rl.json").read_text())[
+        "failures"
+    ] == ["x"]
+
+
 class Walk:
     """Recorrido mínimo: registra las fases y prohíbe agregar o liberar."""
 

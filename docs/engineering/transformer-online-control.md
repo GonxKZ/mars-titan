@@ -56,7 +56,7 @@ La comparación de la evaluación (`configs/evaluation/historical-masked-2000-co
 
 El brazo entra también en la familia de niveles. Si el control en línea alcanza a MARS-TITAN, su mejora frente al Transformer congelado no puede atribuirse solo a la memoria. Si MARS-TITAN lo supera con un intervalo simultáneo que excluye el cero, el aprendizaje en línea con las mismas etiquetas no basta para explicar la diferencia. El contraste no separa la memoria de Titans-MAC del banco episódico, porque M1 tiene las dos. Esa separación la dan `episodic_reader` y `episodic_write_policies`.
 
-Las campañas A y B de la edición desde 2000 no declaran los trabajos del control, así que el plan lo lista entre las familias pendientes con la issue #443. La campaña A por etapas los declara en su sección `online_controls`.
+Las campañas A y B de la edición desde 2000 no declaran los trabajos del control, así que el plan lo lista entre las familias pendientes con la issue #443. La campaña A por etapas los declara en su sección `online_controls`, así que el plan ya no la cuenta entre las pendientes. Solo crea trabajos en los ámbitos cuya comparación evalúa el brazo, que en A v2 es el conjunto: 57 trabajos, 19 ventanas por tres semillas.
 
 ## Comprobaciones
 
