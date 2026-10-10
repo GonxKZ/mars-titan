@@ -354,15 +354,45 @@ Catorce manipulaciones de una cadena publicada con el contrato detienen la etapa
 
 ## Comprobaciones CUDA
 
-Ningún entorno se ejecuta en GPU y esta rama no modifica código CUDA ni políticas. Las pruebas CUDA existentes de las políticas ejecutan Adam y siguen bloqueadas. Queda pendiente, con la GPU libre y sin pasos de optimizador, comprobar que la evaluación `argmax` de una política congelada en `cuda:0` elige las mismas acciones que en CPU sobre las cintas de estas pruebas y publica el mismo patrimonio por sesión con los costes declarados. Esa prueba no existe todavía y debe escribirse sin llamar a `optimizer.step()`, con una política de pesos iniciales evaluada por `--audit-run` con `--device cpu` y con `--device cuda:0` sobre los binarios del preset `native-ppo-release`, que activa LibTorch CUDA:
+Los entornos y la contabilidad se ejecutan en CPU. Lo único que cambia de dispositivo es la inferencia de la política, y esta comprobación mide si ese cambio altera las acciones de la evaluación congelada (#439). No ejecuta pasos de optimizador ni evalúa políticas aprendidas.
+
+**Registro de decisiones.** `--audit-run` admite `--decisions`, que escribe junto a `evaluation.json` un `decisions.json` sellado. Para cada coste y cinta guarda el cursor, la acción, el modo y las salidas de la red de cada decisión (logits en PPO y KLPO, valores Q en Double DQN), convertidas de `float` a `double` sin pérdida. También guarda la huella de los parámetros, que no depende del dispositivo. La identidad de la evaluación declara la opción, así que una salida con registro no se reanuda sin él. Las métricas publicadas no cambian. Los dos binarios anuncian la capacidad `native_policy_decision_logits` y rechazan la opción en el entrenamiento y en la auditoría sintética, que ya publica su traza con probabilidades. El lector de Python comprueba el sello sobre los bytes del archivo, porque no escribe los reales con el mismo formato que nlohmann.
+
+**Políticas sin aprendizaje.** La auditoría exige el dispositivo de la selección, así que cada dispositivo ajusta su propia ejecución con la misma semilla. Double DQN recorre 32 transiciones sin llegar a su primera actualización. KLPO se detiene con su primera oleada recogida, antes de `update_ready`, y la prueba fabrica y vuelve a sellar una selección cerrada con el actor inicial para poder auditarlo. En los dos dispositivos los pesos iniciales salen del generador de CPU, y la comparación exige la misma huella de parámetros. La CPU usa el diagnóstico explícito y `cuda:0` pasa por el mismo lanzador que la etapa, que toma el bloqueo exclusivo de la GPU científica y deja su archivo con permisos privados antes de entregarlo al binario. Un primer intento con `GpuLease` falló porque ese archivo conservaba permisos de grupo y el binario lo rechaza. La ejecución en GPU usa FP32 IEEE sin TF32, algoritmos deterministas y `CUBLAS_WORKSPACE_CONFIG=:4096:8`.
+
+**Regla de comparación.** `device_parity.compare_runs` recorre cada episodio en orden. Mientras las acciones coinciden, las observaciones son las mismas y cada salida puede diferir como mucho `1e-5 + 1e-4 · max|salida|` de la referencia. La tolerancia se fijó antes de medir. Con esa condición, una acción distinta solo es posible si el margen entre las dos mejores salidas de la referencia no supera el doble de la tolerancia. Se publica como divergencia por empate, con su efecto en el patrimonio, y ahí termina la comparación de ese episodio. Sin divergencias, el patrimonio por sesión y el estado deben ser idénticos. Cualquier otra diferencia detiene la comparación. Las pruebas de `tests/simulation/test_policy_device_parity.py` cubren estas reglas. La mutación dirigida de `device_parity` (34 variantes) no dejó supervivientes y la nativa sobre el registro y su identidad (10 variantes) mató nueve. La superviviente quita la comprobación de que la identidad declara la misma opción `--decisions` que la petición. Es equivalente con los dos llamantes actuales, que construyen ambas a la vez, y se conserva por coherencia con la comprobación del coste.
+
+**Medida sobre cintas reales.** `benchmarks/policy_device_parity.py` monta con la edición sin ajustar la cinta de evaluación de 2023 de la última ventana de política (128 activos, con 250 sesiones en Estados Unidos y 242 en China) y, con los mismos activos, las cintas mensuales reales de noviembre y diciembre de 2022 para el ajuste y la validación. Las puntuaciones son sintéticas y no proceden de ningún modelo. El [recibo](../../reports/engineering/policy-device-parity-20261010.json) guarda los binarios, la GPU, las versiones y cada recuento.
+
+| Mercado | Política | Sesiones | Decisiones comparadas | Diferencia absoluta máxima | Diferencia relativa máxima | Margen mínimo de la referencia | Márgenes por debajo de `1e-3` | Empates cercanos | Divergencias | Episodios con patrimonio idéntico | Proceso CPU (ajuste y auditoría, s) | Proceso `cuda:0` (ajuste y auditoría, s) |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| US | Double DQN | 250 | 747 de 747 | `1.8e-7` | `1.2e-6` | `3.7e-4` | 3 | 0 | 0 | 3 de 3 | 2,98 y 0,72 | 2,30 y 1,34 |
+| US | KLPO | 250 | 747 de 747 | `1.3e-7` | `9.6e-7` | `2.7e-4` | 21 | 0 | 0 | 3 de 3 | 1,86 y 0,84 | 2,02 y 1,61 |
+| CN | Double DQN | 242 | 723 de 723 | `1.4e-7` | `1.4e-6` | `1.3e-3` | 0 | 0 | 0 | 3 de 3 | 2,45 y 0,97 | 2,43 y 1,58 |
+| CN | KLPO | 242 | 723 de 723 | `1.2e-7` | `8.5e-7` | `1.4e-3` | 0 | 0 | 0 | 3 de 3 | 0,88 y 0,75 | 1,97 y 1,52 |
+
+Ninguna salida coincide bit a bit entre los dos dispositivos, algo esperable porque las reducciones de cuBLAS y de la CPU suman en otro orden. La mayor diferencia relativa queda unas setenta veces por debajo de la tolerancia, y en cada decisión el margen de la referencia es al menos 4,6 veces su umbral de empate (el caso más ajustado es Double DQN en Estados Unidos, con un margen de `3.7e-4` y salidas de hasta 0,30). No hay empates cercanos ni divergencias, y los doce episodios terminan con el mismo patrimonio por sesión y el mismo estado en los dos dispositivos.
+
+**Dispositivo de referencia.** La referencia es `cuda:0`. La etapa ajusta y selecciona cada política en `cuda:0`, porque la CPU solo admite el diagnóstico de 32 transiciones, y la auditoría exige el dispositivo de la selección. La evaluación publicada es, por tanto, la de `cuda:0`, y evaluarla en otro dispositivo añadiría diferencias en los empates que la selección no vio. La CPU queda como control reproducible sin GPU, con la misma tolerancia y el recuento de empates. El tiempo no interviene en la elección. Con un solo entorno de evaluación y una red pequeña, la auditoría en `cuda:0` tarda entre 1,34 y 1,61 s de proceso frente a 0,72 a 0,97 s en CPU, porque domina el arranque del contexto CUDA. Son medidas únicas del proceso lanzado, sin repeticiones, que solo sirven para descartar que la comprobación encarezca la etapa.
+
+**Límites.** Son pesos iniciales y puntuaciones sintéticas. Una política entrenada puede concentrar más decisiones cerca de un empate, así que el recuento de esta medida no se traslada a la campaña. Tampoco puede repetirse tal cual con sus políticas: una política ajustada en `cuda:0` no se audita en CPU, porque la auditoría exige el dispositivo de la selección y el archivo guarda el estado del generador de ese dispositivo. Esa comparación necesitaría cargar el archivo en otro dispositivo, algo que los binarios no hacen todavía.
+
+La prueba CUDA y la medida necesitan la GPU libre:
+
+```bash
+MARS_TITAN_CUDA_INTEGRATION=1 memslot gpu -- uv run pytest tests/simulation/test_policy_device_parity.py
+memslot gpu -- uv run python -m benchmarks.policy_device_parity \
+  --edition ~/.local/state/mars-titan/unadjusted-prices-20261009/edition-v1 \
+  --output <carpeta temporal> --report reports/engineering/policy-device-parity-20261010.json
+```
+
+Los binarios salen del preset `native-ppo-release`, que activa LibTorch CUDA:
 
 ```bash
 cd native
 cmake --preset native-ppo-release
 cmake --build --preset native-ppo-release --target mars-titan-ppo mars-titan-klpo mars_titan_simulation
 ```
-
-Las referencias, el informe y la cinta del índice no usan la GPU.
 
 ## Reproducción
 
