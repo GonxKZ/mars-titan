@@ -3,7 +3,8 @@
 Cuenta las muestras de las pilas que pasan por la función RAÍZ y, dentro de ellas, la parte
 inclusiva de cada función pedida y las funciones hoja con más muestras propias. Una función
 se identifica por su nombre y su archivo, sin el número de línea, así que todas sus líneas
-suman juntas y una recursión cuenta una vez por muestra.
+suman juntas y una recursión cuenta una vez por muestra. `nombre@archivo` limita una función
+a los marcos cuyo archivo contiene ese texto, para separar funciones con el mismo nombre.
 
 Uso: `python benchmarks/collapsed_profile_summary.py PERFIL SALIDA.json RAÍZ [FUNCIÓN ...]`
 """
@@ -23,6 +24,12 @@ def frame_key(frame):
     return f"{match['name']} ({match['file']})" if match else frame
 
 
+def matches(function, frames):
+    """Si alguna pareja (nombre, archivo) de la pila corresponde a `nombre[@archivo]`."""
+    name, _, place = function.partition("@")
+    return any(frame == name and place in file for frame, file in frames)
+
+
 def summary(path, root, functions):
     total = inside = 0
     inclusive, leaves = Counter(), Counter()
@@ -31,12 +38,12 @@ def summary(path, root, functions):
         samples = int(count)
         total += samples
         keys = [frame_key(frame) for frame in stack.split(";")]
-        names = {key.split(" (")[0] for key in keys}
-        if root not in names:
+        frames = {(key.split(" (")[0], key.partition(" (")[2]) for key in keys}
+        if not matches(root, frames):
             continue
         inside += samples
         for function in functions:
-            if function in names:
+            if matches(function, frames):
                 inclusive[function] += samples
         leaves[keys[-1]] += samples
 
