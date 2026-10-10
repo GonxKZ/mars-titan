@@ -103,6 +103,18 @@ BASELINE = {
 }
 
 
+@pytest.fixture(autouse=True)
+def _two_threads():
+    """Las huellas FP32 de CPU dependen del reparto de las sumas entre hilos de PyTorch.
+
+    Se capturaron con dos hilos, que se fijan aquí para que no dependan de la máquina.
+    """
+    before = torch.get_num_threads()
+    torch.set_num_threads(2)
+    yield
+    torch.set_num_threads(before)
+
+
 # 4 de enero de 2021 en UTC y un día en microsegundos.
 START, DAY = 1_609_718_400_000_000, 86_400_000_000
 

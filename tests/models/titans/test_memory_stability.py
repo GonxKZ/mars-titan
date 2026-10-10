@@ -21,6 +21,19 @@ from mars_titan.models.titans import neural_memory as memory_module
 from mars_titan.models.titans.config import CERTIFIED_GATE_BOXES, PAPER_PROJECTIONS
 from mars_titan.models.titans.state import mac_tensors
 
+
+@pytest.fixture(autouse=True)
+def _two_threads():
+    """Las huellas FP32 de CPU dependen del reparto de las sumas entre hilos de PyTorch.
+
+    Se capturaron con dos hilos, que se fijan aquí para que no dependan de la máquina.
+    """
+    before = torch.get_num_threads()
+    torch.set_num_threads(2)
+    yield
+    torch.set_num_threads(before)
+
+
 # Huellas capturadas en 42e7dbca, antes de introducir PT1, con memory_stability_traces.py en
 # CPU, FP32, OMP_NUM_THREADS=2 y MKL_NUM_THREADS=2. La comprobación CUDA fija las de cuda:0.
 # Las huellas financieras se recapturaron cuando el codificador de precios pasó a calcular la

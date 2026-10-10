@@ -3,6 +3,7 @@
 import json
 import os
 from contextlib import contextmanager
+from pathlib import Path
 
 import pytest
 
@@ -103,3 +104,14 @@ def learning_doubles(learning_hold):
 def python_shebang(tmp_path_factory):
     """Primera línea de los ejecutables falsos escritos en Python, válida con rutas con espacios."""
     return _python_shebang(tmp_path_factory.mktemp("interpreter"))
+
+
+@pytest.fixture
+def source_environment():
+    """Entorno de un subproceso que importa el paquete de este árbol y no otro instalado.
+
+    Las rutas de `pythonpath` de pytest solo valen para su propio intérprete.
+    """
+    source = str(Path(__file__).resolve().parents[1] / "src")
+    current = os.environ.get("PYTHONPATH")
+    return dict(os.environ, PYTHONPATH=source + os.pathsep + current if current else source)
