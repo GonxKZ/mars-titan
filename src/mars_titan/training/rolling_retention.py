@@ -34,6 +34,7 @@ from mars_titan.evaluation import walk_forward_comparison as comparison
 from mars_titan.evaluation import window_aggregates
 
 from . import prediction_regeneration as regeneration
+from .campaign_plan import ONLINE
 
 DECLARATION_KIND = "historical_masked_prediction_retention"
 LEDGER_KIND = "historical_masked_retention_ledger"
@@ -407,9 +408,9 @@ class Rolling:
                 totals["kept_for_policies"] += 1
                 freed += self._compact(job, tables)
                 continue
-            if job.get("regenerable", True) is False:
-                # El plan declara que sus predicciones dependen de algo más que la inferencia
-                # (por ejemplo, actualizaciones en línea): se compacta sin regenerar.
+            if job.get("regenerable", True) is False or job.get("kind") == ONLINE:
+                # Sus predicciones dependen de algo más que la inferencia (un control en línea
+                # actualiza sus pesos mientras predice): se compacta sin regenerar.
                 totals["declared_not_regenerable"] += 1
                 freed += self._compact(job, tables)
                 continue

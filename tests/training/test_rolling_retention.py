@@ -562,13 +562,15 @@ def test_masked_predictions_without_aggregates_are_compacted_not_released(
         assert state_of == prediction_files.COMPACTED
 
 
+@pytest.mark.parametrize("mark", [dict(regenerable=False), dict(kind=plan.ONLINE)])
 def test_jobs_declared_not_regenerable_are_compacted_without_regenerating(
     base,  # noqa: F811
     edition,
     tmp_path,
     monkeypatch,
+    mark,
 ):
-    """Un trabajo con `regenerable=False`, como uno con actualizaciones en línea, se conserva."""
+    """Un trabajo con `regenerable=False` o un control en línea se conserva sin regenerar."""
     on_cpu(monkeypatch)
     monkeypatch.setenv(HOLD_ENV, str(base.hold))
     output = tmp_path / "campaign"
@@ -588,7 +590,7 @@ def test_jobs_declared_not_regenerable_are_compacted_without_regenerating(
 
     def marked(self, index):
         found, jobs = original(self, index)
-        return found, [dict(job, regenerable=False) if job["id"] == target else job for job in jobs]
+        return found, [dict(job, **mark) if job["id"] == target else job for job in jobs]
 
     monkeypatch.setattr(rolling.Rolling, "base_state", marked)
     rolling.run_rolling(state, Calls().runners())
