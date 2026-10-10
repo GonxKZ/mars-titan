@@ -23,12 +23,12 @@ from mars_titan.data.storage import atomic_json, sha256
 from mars_titan.environments.actions import ActionGrid
 from mars_titan.environments.corpus_source import ParquetCohortSource, prepare_causal_corpus
 from mars_titan.environments.view_cohorts import ViewCohortSource, prepare_cohort_index
-from mars_titan.episodes.parents import ParentCache
 from mars_titan.training.corpus_inputs import CorpusDataset
 
 from . import adapter_matrix
 from .heldout import PARTITIONS, _adjustment, evaluate_partition
 from .inputs import PairedInputs, fit_normalization
+from .parent_cache import ParentCache
 from .parents import load_parent
 from .run import run_case
 

@@ -18,6 +18,14 @@ from mars_titan.data.public_source_reconciliation import (
 BODY = b"DATE,OPEN,HIGH,LOW,CLOSE\n09/18/2026,15,16,14,15.5\n"
 PDF = b"%PDF-1.7 documento fijo"
 DECISION = dict(use="Contraste local", gap="Carencia comprobada", decision="pending", evidence="Ok")
+TERMS = dict(
+    reviewed_on="2026-10-10",
+    status="verified",
+    local_use="permitted",
+    redistribution="not_granted",
+    evidence_urls=["https://example.org/terms"],
+    conditions="Uso local con cita, sin permiso para redistribuir.",
+)
 
 
 def source(identifier, status, validator="vix_csv", **changes):
@@ -30,6 +38,7 @@ def source(identifier, status, validator="vix_csv", **changes):
             license_unknown=True,
             benchmark_eligible=False,
             use_decisions=[DECISION],
+            terms_review=TERMS,
         )
         | changes
     )
@@ -138,11 +147,58 @@ def test_use_decisions_are_complete_and_never_benchmark_eligible(changes, proble
     assert len(problems) == 1 and problem in problems[0]
 
 
+@pytest.mark.parametrize(
+    "changes, problem",
+    [
+        (dict(terms_review=None), "revisión de condiciones incompleta"),
+        (dict(terms_review=TERMS | {"reviewed_on": "10/10/2026"}), "incompleta"),
+        (dict(terms_review=TERMS | {"local_use": "free"}), "incompleta"),
+        (dict(terms_review=TERMS | {"conditions": " "}), "incompleta"),
+        (dict(terms_review=TERMS | {"evidence_urls": []}), "incompleta"),
+        (dict(terms_review=TERMS | {"evidence_urls": ["http://example.org"]}), "incompleta"),
+        (
+            dict(
+                use_decisions=[DECISION | {"decision": "admitted_exploratory"}],
+                terms_review=TERMS | {"local_use": "not_stated"},
+            ),
+            "uso local admitido",
+        ),
+        (dict(license_unknown=False), "license_unknown no coincide"),
+        (
+            dict(
+                license_unknown=False,
+                terms_review=TERMS
+                | {"status": "not_retrievable", "redistribution": "permitted_with_attribution"},
+            ),
+            "sin condiciones verificadas",
+        ),
+    ],
+)
+def test_terms_review_supports_each_decision_and_the_license_flag(changes, problem):
+    problems = decision_problems(source("vix", "downloaded_validated", **changes))
+    assert len(problems) == 1 and problem in problems[0]
+
+
+def test_a_source_blocked_before_its_terms_needs_no_reviewed_page():
+    review = TERMS | dict(
+        status="blocked_at_source_discovery",
+        local_use="not_verified",
+        redistribution="not_verified",
+        evidence_urls=[],
+    )
+    blocked = source("stooq", "blocked_at_source_discovery", terms_review=review)
+    assert decision_problems(blocked) == []
+    unread = source("sec", "failed", terms_review=review | {"status": "not_retrievable"})
+    assert decision_problems(unread) == ["revisión de condiciones incompleta"]
+
+
 def test_committed_catalog_declares_traceable_decisions_for_every_source():
     catalog = json.loads(Path(CATALOG).read_text(encoding="utf-8"))
     assert all(decision_problems(item) == [] for item in catalog["sources"])
     decided = {d["decision"] for item in catalog["sources"] for d in item["use_decisions"]}
     assert decided <= DECISIONS
+    # Cada fuente tiene su revisión de condiciones del 10 de octubre de 2026.
+    assert {item["terms_review"]["reviewed_on"] for item in catalog["sources"]} == {"2026-10-10"}
     # Los fallos de SEC y GDELT y el bloqueo de Stooq siguen registrados como tales.
     status = {item["id"]: item["status"] for item in catalog["sources"]}
     assert status["sec_aapl_submissions"] == status["sec_aapl_companyfacts"] == "failed"
