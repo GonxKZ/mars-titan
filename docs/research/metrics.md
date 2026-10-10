@@ -591,6 +591,15 @@ real, completa la comparación en tres puntos:
   cuartiles](long-short-portfolio.md), un análisis financiero secundario que
   calcula `long_short_comparison` con las mismas fuentes.
 
+El 10 de octubre de 2026, también antes de cualquier predicción real, la versión 4
+añade el [control en línea del Transformer](../engineering/transformer-online-control.md)
+(`transformer_compact_online`, #443) y dos familias. `online_learning` contrasta el
+control con el Transformer compacto congelado y `memory_vs_online_learning` contrasta
+MARS-TITAN M1 con el control. El control recibe las mismas etiquetas maduras que el
+banco de M1 en los mismos instantes, así que la segunda familia comprueba si la mejora
+de MARS-TITAN se explica solo por seguir aprendiendo. El brazo entra también en la
+familia de niveles, lo que añade un nivel a su corrección por máximo estudentizado.
+
 Las semillas se agregan así. La comparación solo lee el caso elegido de cada
 brazo, que la campaña A repite con las semillas 42, 43 y 44. Cada semilla tiene
 su resumen y los contrastes, la fiabilidad del signo y la cartera usan la media

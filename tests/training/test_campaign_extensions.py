@@ -63,8 +63,9 @@ def test_prepared_limits_are_the_exact_counts_of_the_campaign_and_both_stages(va
     assert (limits["max_training_jobs"], limits["max_prediction_jobs"]) == expected["extended"]
     added = [expected["families"][family] for family in ADDED]
     assert tuple(map(sum, zip(expected["declared"], *added, strict=True))) == expected["extended"]
-    # Con las tres secciones ningún brazo de la comparación queda pendiente, M3 incluido.
-    assert campaign["pending_families"] == {}
+    # Con las tres secciones solo queda pendiente el control en línea, cuyos trabajos declara
+    # la campaña A por etapas. M3 tampoco queda pendiente.
+    assert set(campaign["pending_families"]) == {plan.ONLINE_CONTROL}
     assert pair(report["adapter_stage"]["counts"]) == expected["adapters"]
     rl = report["rl_stage"]
     assert rl["predictors"] == dict(declared=11, extended=22)
@@ -128,7 +129,7 @@ def test_the_declared_configurations_stay_untouched():
     for variant in "AB":
         campaign = plan.load_campaign(CAMPAIGNS[variant])
         assert not any(campaign.get(family) for family in ADDED)
-        assert set(plan.pending_families(campaign)) == set(ADDED)
+        assert set(plan.pending_families(campaign)) == {*ADDED, plan.ONLINE_CONTROL}
         counts = plan.count_jobs(campaign)
         assert (counts["training_jobs"], counts["prediction_jobs"]) == COUNTS[variant]["declared"]
         stage = policy_plan.load_stage(RL_STAGES[variant])
