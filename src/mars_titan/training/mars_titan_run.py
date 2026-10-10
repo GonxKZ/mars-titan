@@ -29,6 +29,7 @@ from pathlib import Path
 import numpy as np
 import torch
 
+from mars_titan import nvtx_ranges
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.evaluation.session_metrics import SessionErrors
 from mars_titan.memory import write_scores
@@ -480,23 +481,27 @@ class MarsTitanInference:
         if not warmup:
             context = self._context(phase.partition, event.at)
             if run.bank is not None:
-                snapshot = bank_snapshot(
-                    run.bank,
-                    codec_id=self.codec.fingerprint(),
-                    context_id=context,
-                    cutoff=event.at,
-                    dtype=self.dtype,
-                    device=self.device,
-                )
+                with nvtx_ranges.phase("readout.snapshot"):
+                    snapshot = bank_snapshot(
+                        run.bank,
+                        codec_id=self.codec.fingerprint(),
+                        context_id=context,
+                        cutoff=event.at,
+                        dtype=self.dtype,
+                        device=self.device,
+                    )
         seen = 0 if run.bank is None else run.bank.seen
-        validated = [validated_cpu_batch(raw, specification) for raw in event.inputs]
-        plan = self._event_plan(run, phase, event, validated, train=train and not warmup)
+        with nvtx_ranges.phase("readout.validate"):
+            validated = [validated_cpu_batch(raw, specification) for raw in event.inputs]
+        with nvtx_ranges.phase("readout.event_plan"):
+            plan = self._event_plan(run, phase, event, validated, train=train and not warmup)
         for cpu in validated:
             batch = DecisionBatch.from_validated(cpu, device=self.device, dtype=self.dtype)
             new = tuple(flow for flow in batch.flow_ids if flow not in run.flows)
             if new:
                 run.flows.put(predictor.initial_state(new))
-            prepared = self._prepare_block(run, batch, plan, train=train and not warmup)
+            with nvtx_ranges.phase("readout.prepare"):
+                prepared = self._prepare_block(run, batch, plan, train=train and not warmup)
             size = len(batch.flow_ids)
             run.counters["observations"] += size
             run.counters["mac_updates"] += size
@@ -512,7 +517,7 @@ class MarsTitanInference:
                 > self.readout.config.max_working_bytes
             ):
                 raise ValueError("La repetición diferenciable supera el presupuesto del lector")
-            with torch.no_grad():
+            with nvtx_ranges.phase("readout.apply"), torch.no_grad():
                 result = apply_episodic_readout(
                     slim,
                     predictor.head,
@@ -522,13 +527,15 @@ class MarsTitanInference:
                     cutoff=event.at,
                 )
             issued = result.point_predictions.detach()
-            values = issued.cpu().tolist()
-            levels = (
-                result.quantiles.detach().cpu().tolist()
-                if self.quantiles and not train
-                else [None] * size
-            )
-            encoded = None if run.bank is None else self.codec.encode(cpu)
+            with nvtx_ranges.phase("readout.emit"):
+                values = issued.cpu().tolist()
+                levels = (
+                    result.quantiles.detach().cpu().tolist()
+                    if self.quantiles and not train
+                    else [None] * size
+                )
+            with nvtx_ranges.phase("readout.encode"):
+                encoded = None if run.bank is None else self.codec.encode(cpu)
             # Rasgos M3 con las entradas de la decisión, conocidos en su corte.
             features = write_scores.batch_features(cpu) if self.admission == "m3" else None
             block = None
@@ -850,56 +857,64 @@ class ReadoutTrainer(MarsTitanInference):
             # con una sola sincronización. El error es el de la primera comprobación fallida
             # en el orden de antes y se lanza antes del paso.
             checks, messages, losses = [], [], []
-            for block in sorted(matured):
-                record = run.blocks[block]
-                result = apply_episodic_readout(
-                    record["prepared"],
-                    self.predictor.head,
-                    self.readout,
-                    record["snapshot"],
-                    context_id=record["context"],
-                    cutoff=record["cutoff"],
-                    differentiable=True,
+            with nvtx_ranges.phase("readout.replay"):
+                for block in sorted(matured):
+                    record = run.blocks[block]
+                    result = apply_episodic_readout(
+                        record["prepared"],
+                        self.predictor.head,
+                        self.readout,
+                        record["snapshot"],
+                        context_id=record["context"],
+                        cutoff=record["cutoff"],
+                        differentiable=True,
+                    )
+                    repeated = result.point_predictions.detach()
+                    if repeated.shape != record["issued"].shape:
+                        raise ValueError(
+                            "La repetición del bloque no reproduce su predicción emitida"
+                        )
+                    checks.append((repeated == record["issued"]).all())
+                    messages.append("La repetición del bloque no reproduce su predicción emitida")
+                    labels = matured[block]
+                    positions = [i for i, key in enumerate(record["keys"]) if key in labels]
+                    index = device_tensor(
+                        np.asarray(positions, dtype=np.int64), self.device, torch.int64
+                    )
+                    target = device_tensor(
+                        np.asarray(
+                            [labels[record["keys"][i]] for i in positions], dtype=np.float64
+                        ),
+                        self.device,
+                        self.dtype,
+                    )
+                    selected = replace(
+                        result,
+                        point_predictions=result.point_predictions.index_select(0, index),
+                        quantiles=None
+                        if result.quantiles is None
+                        else result.quantiles.index_select(0, index),
+                    )
+                    loss = self._loss(selected, target) * (len(positions) / total)
+                    checks.append(torch.isfinite(loss))
+                    messages.append("La pérdida del tramo no es finita")
+                    self._backward_block(loss, record)
+                    losses.append(loss.detach())
+            with nvtx_ranges.phase("readout.checks"):
+                flags = torch.stack(checks).tolist()
+                for valid, message in zip(flags, messages, strict=True):
+                    if not valid:
+                        raise ValueError(message)
+                loss_sum = 0.0
+                for value in torch.stack(losses).tolist():
+                    loss_sum += value
+            with nvtx_ranges.phase("readout.clip"):
+                torch.nn.utils.clip_grad_norm_(
+                    self.trainable, self.recipe.max_grad_norm or math.inf, error_if_nonfinite=True
                 )
-                repeated = result.point_predictions.detach()
-                if repeated.shape != record["issued"].shape:
-                    raise ValueError("La repetición del bloque no reproduce su predicción emitida")
-                checks.append((repeated == record["issued"]).all())
-                messages.append("La repetición del bloque no reproduce su predicción emitida")
-                labels = matured[block]
-                positions = [i for i, key in enumerate(record["keys"]) if key in labels]
-                index = device_tensor(
-                    np.asarray(positions, dtype=np.int64), self.device, torch.int64
-                )
-                target = device_tensor(
-                    np.asarray([labels[record["keys"][i]] for i in positions], dtype=np.float64),
-                    self.device,
-                    self.dtype,
-                )
-                selected = replace(
-                    result,
-                    point_predictions=result.point_predictions.index_select(0, index),
-                    quantiles=None
-                    if result.quantiles is None
-                    else result.quantiles.index_select(0, index),
-                )
-                loss = self._loss(selected, target) * (len(positions) / total)
-                checks.append(torch.isfinite(loss))
-                messages.append("La pérdida del tramo no es finita")
-                self._backward_block(loss, record)
-                losses.append(loss.detach())
-            flags = torch.stack(checks).tolist()
-            for valid, message in zip(flags, messages, strict=True):
-                if not valid:
-                    raise ValueError(message)
-            loss_sum = 0.0
-            for value in torch.stack(losses).tolist():
-                loss_sum += value
-            torch.nn.utils.clip_grad_norm_(
-                self.trainable, self.recipe.max_grad_norm or math.inf, error_if_nonfinite=True
-            )
-            self.optimizer.step()
-            self.optimizer.zero_grad(set_to_none=True)
+            with nvtx_ranges.phase("readout.optimizer"):
+                self.optimizer.step()
+                self.optimizer.zero_grad(set_to_none=True)
             self.global_step += 1
             run.counters["updates"] += 1
             run.counters["labels_in_loss"] += total
@@ -921,15 +936,20 @@ class ReadoutTrainer(MarsTitanInference):
         source, phase = self.train, self.train.phase
         self.readout.train()
         start, stage = cursor["event"], cursor["stage"]
-        events = source.batched_events(start_cursor=start, block_rows=self.recipe.block_rows)
+        events = nvtx_ranges.iterate(
+            "readout.read",
+            source.batched_events(start_cursor=start, block_rows=self.recipe.block_rows),
+        )
         since, last = 0, time.perf_counter()
         for index, event in enumerate(events, start):
             if not (index == start and stage == "inputs"):
-                self._labels(run, phase, event, train=True)
+                with nvtx_ranges.phase("readout.labels"):
+                    self._labels(run, phase, event, train=True)
                 decision = bool(event.inputs) and event.at >= phase.decision_start
                 if (decision and run.instants == self.recipe.update_instants) or event.close_phase:
                     before = self.global_step
-                    self._update(run, event.at)
+                    with nvtx_ranges.phase("readout.update"):
+                        self._update(run, event.at)
                     since += self.global_step - before
                     if event.close_phase:
                         self._close(run)
@@ -939,13 +959,16 @@ class ReadoutTrainer(MarsTitanInference):
                         or since >= self.recipe.checkpoint_updates
                         or time.perf_counter() - last >= self.recipe.checkpoint_seconds
                     ):
-                        save(dict(cursor, event=index, stage="inputs"), run)
+                        with nvtx_ranges.phase("readout.checkpoint"):
+                            save(dict(cursor, event=index, stage="inputs"), run)
                         since, last = 0, time.perf_counter()
                         if stop.requested:
                             raise Paused
             if event.inputs:
-                self._observe(run, phase, event, train=True)
-            self._admit(run, phase, event.at)
+                with nvtx_ranges.phase("readout.observe"):
+                    self._observe(run, phase, event, train=True)
+            with nvtx_ranges.phase("readout.admit"):
+                self._admit(run, phase, event.at)
         raise ValueError("El recorrido de ajuste terminó sin su cierre declarado")
 
     def _export(self, run):
