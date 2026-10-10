@@ -170,7 +170,7 @@ La etapa nativa en C++ implementa PPO con penalización KL fija (`−ratio·A + 
 | [#496](https://github.com/GonxKZ/mars-titan/issues/496) | Paridad | MAPIE 1.5.0 |
 | [#497](https://github.com/GonxKZ/mars-titan/issues/497) | Paridad | sb3-contrib 2.9.0 |
 
-Las referencias de paridad deberían compartir un grupo de dependencias `reference` fuera del entorno de ejecución y un marcador de pytest cuya omisión falle con una variable de entorno, como ya hace `native_binding`.
+Las referencias de paridad comparten el grupo de dependencias `reference`, fuera del entorno de ejecución, y la marca de pytest `external_reference`. Su omisión falla con `MARS_TITAN_REQUIRE_REFERENCE=1`, como ya hace `native_binding` con su variable.
 
 ## Límites
 
