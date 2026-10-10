@@ -172,6 +172,8 @@ La etapa nativa en C++ implementa PPO con penalización KL fija (`−ratio·A + 
 
 Las referencias de paridad comparten el grupo de dependencias `reference`, fuera del entorno de ejecución, y la marca de pytest `external_reference`. Su omisión falla con `MARS_TITAN_REQUIRE_REFERENCE=1`, como ya hace `native_binding` con su variable.
 
+Veinticinco defectos aplicados de uno en uno a los adaptadores, las puntuaciones, la CQR y el oráculo QR-DQN hacen fallar las paridades en 23 casos. Los otros dos quitan κ de la rama lineal de Huber del oráculo, lo que no cambia nada con κ = 1, y los detecta la regeneración de su archivo, que incluye un caso con κ = 0,01 ([recibo](../../reports/engineering/library-parity-mutations-20261010.json)).
+
 ## Límites
 
 Las resoluciones de uv comprueban compatibilidad de versiones, no de comportamiento. La comprobación preliminar usó fixtures aleatorios pequeños en CPU y no cubre CUDA. Los repositorios se leyeron en las partes relevantes para cada pieza y puede haber detalles que solo se vean ejecutándolos. Nada de esta revisión mide rendimiento predictivo, entrena ni ejecuta pasos de optimizador, y el bloqueo de aprendizaje sigue vigente.
