@@ -48,8 +48,9 @@ def policy_readers(stage, jobs):
     primera ventana de cada ámbito. En las demás la cadena lee las tablas de los adaptadores,
     que la retención compacta y nunca libera.
     """
-    from mars_titan.posttraining.staged_chain import scope_windows
     from mars_titan.simulation.policy_plan import CHAIN, predictor_reads
+
+    from .campaign_chain import scope_windows
 
     policies = stage["policies"]
     seed = policies["predictor"]["seed"]
