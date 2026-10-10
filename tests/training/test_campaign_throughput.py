@@ -62,6 +62,8 @@ WINDOWS = dict(
     B={"US": (7, 12), "CN": (5, 8), "US+CN": (5, 8)},
 )
 DECLARED, HALVED = "accumulation_rows=null", "accumulation_rows=128"
+# La receta de Titans-MAC declara la acumulación medida en #363, que se mide primero.
+RECIPE_TITANS = "accumulation_rows=1024"
 
 
 def uniform(campaign, rows):
@@ -834,7 +836,8 @@ def test_titans_measurement_walks_the_chronological_trainer_without_changing_wei
     (record,) = rates.values()
     assert record["variant"] == "mac_online" and record["measured_case"] == "lr1e-4"
     assert record["shared_by_cases"] == ["lr1e-4", "lr1e-3"]
-    assert record["declared_option"] == DECLARED and set(record["options"]) == {DECLARED, HALVED}
+    assert record["declared_option"] == RECIPE_TITANS
+    assert list(record["options"]) == [RECIPE_TITANS, DECLARED, HALVED]
     for result in record["options"].values():
         assert result["train"] > 0 and result["measured_train_rows"] > 0
         assert result["step_calls_without_update"] == 2
@@ -867,9 +870,10 @@ def test_candidate_measurement_compares_accumulation_and_recomputation(
     # Los dos casos solo cambian la tasa de aprendizaje y comparten la medida del primero.
     assert record["measured_case"] == "lr1e-4"
     assert record["shared_by_cases"] == ["lr1e-4", "lr1e-3"]
+    declared = "accumulation_rows=128,recompute=false"
     names = [throughput.option_name(option) for option in throughput.CANDIDATE_OPTIONS]
-    assert list(record["options"]) == names
-    assert record["declared_option"] == "accumulation_rows=null,recompute=false"
+    assert list(record["options"]) == [declared, *(name for name in names if name != declared)]
+    assert record["declared_option"] == declared
     for result in record["options"].values():
         assert result["train"] > 0 and result["step_calls_without_update"] == 2
     assert record["inference"] > 0 and record["measured_inference_rows"] > 0
@@ -1037,14 +1041,14 @@ def test_cm_measurement_walks_both_cores_with_the_penalty_and_the_four_readouts(
     assert list(rates) == [*plan.CM_CORES, *plan.CM_ARMS]
     for core, mode in zip(plan.CM_CORES, ("disabled", "penalty"), strict=True):
         record = rates[core]
-        assert record["control_mode"] == mode and record["accumulation_rows"] is None
-        assert record["declared_option"] == DECLARED and record["inference"] > 0
-        # Los núcleos comparan las dos opciones de Titans-MAC, también con C.
-        assert list(record["options"]) == [DECLARED, HALVED]
+        assert record["control_mode"] == mode and record["accumulation_rows"] == 1024
+        assert record["declared_option"] == RECIPE_TITANS and record["inference"] > 0
+        # Los núcleos comparan las opciones de Titans-MAC, también con C.
+        assert list(record["options"]) == [RECIPE_TITANS, DECLARED, HALVED]
         for result in record["options"].values():
             assert result["train"] > 0 and result["step_calls_without_update"] == 2
     # Solo el núcleo con la penalización recorre flujos medidos de C en la ventana.
-    for name in (DECLARED, HALVED):
+    for name in (RECIPE_TITANS, DECLARED, HALVED):
         assert "window_counters" not in rates["cm_v1_core_b"]["options"][name]
         counters = rates["cm_v1_core_c"]["options"][name]["window_counters"]
         assert counters["end"]["control_flows"] > counters["start"]["control_flows"] >= 0
@@ -1055,10 +1059,11 @@ def test_cm_measurement_walks_both_cores_with_the_penalty_and_the_four_readouts(
         assert (record["control"], record["consolidation"]) == cm_v1_factorial.ARMS[arm]
         (result,) = record["options"].values()
         assert result["window_counters"]["end"]["admitted"] > 0
-    assert set(guarded_steps) == {1} and len(guarded_steps) == 2 * 8
+    # Tres opciones en cada núcleo y una en cada uno de los cuatro lectores.
+    assert set(guarded_steps) == {1} and len(guarded_steps) == 2 * (2 * 3 + 4)
     # Los núcleos ajustan todos sus parámetros y los lectores vigilan además su padre.
-    assert frozen_checks[:4] == [0] * 4 and all(count > 0 for count in frozen_checks[4:])
-    assert len(frozen_checks) == 8
+    assert frozen_checks[:6] == [0] * 6 and all(count > 0 for count in frozen_checks[6:])
+    assert len(frozen_checks) == 2 * 3 + 4
 
 
 def test_cm_measurement_needs_a_window_that_reaches_the_flows_of_c(tmp_path):
