@@ -522,6 +522,21 @@ def _module_key(name):
     return name.replace(".", "__")
 
 
+def parent_copy(model):
+    """Copia profunda del padre con los pesos recurrentes en la disposición del original.
+
+    `deepcopy` deja cada peso de `nn.RNN`, `nn.LSTM` y `nn.GRU` en su propia reserva y en
+    `cuda:0` cuDNN tenía que compactarlos en cada llamada, con los mismos bits. Con los
+    padres de la campaña A eso costaba en mediana un 10-16 % más por lote de ajuste y un
+    21 % en inferencia. Aplanarlos de nuevo deja la copia como el padre. En CPU no hace nada.
+    """
+    result = copy.deepcopy(model)
+    for module in result.modules():
+        if isinstance(module, nn.RNNBase):
+            module.flatten_parameters()
+    return result
+
+
 def adapted_copy(model, targets, *, seed):
     """Copiar el padre, congelar todos sus pesos y añadir correcciones nulas declaradas.
 
@@ -529,7 +544,7 @@ def adapted_copy(model, targets, *, seed):
     gradiente. Un destino repetido o inexistente se rechaza antes de copiar.
     """
     targets = _checked_targets(model, targets, seed)
-    return _attach(copy.deepcopy(model), targets, seed)
+    return _attach(parent_copy(model), targets, seed)
 
 
 def attach_adapters(model, targets, *, seed):

@@ -12,12 +12,15 @@ import pytest
 import torch
 from torch.nn.utils import parametrize
 
-from mars_titan.models.predictive_adaptation import adapted_copy, adapter_names
+from mars_titan.models.predictive_adaptation import adapted_copy, adapter_names, parent_copy
 from tests.models.test_adapter_forms import CASES, arm_targets, batch, parent, same_bits
 
 pytestmark = pytest.mark.skipif(not torch.cuda.is_available(), reason="Requiere cuda:0")
 
 
+# Una copia con los pesos recurrentes en reservas separadas obliga a cuDNN a compactarlos
+# en cada llamada. El aviso pasa a ser un fallo para que no vuelva sin que se note.
+@pytest.mark.filterwarnings("error:RNN module weights are not part of single contiguous chunk")
 @pytest.mark.parametrize(("kind", "arm"), CASES)
 def test_cuda_null_forms_reproduce_the_parent_and_match_cpu(kind, arm, monkeypatch):
     # TF32 cambiaría la referencia float32 frente a CPU.
@@ -56,3 +59,27 @@ def test_cuda_null_forms_reproduce_the_parent_and_match_cpu(kind, arm, monkeypat
         assert (value.grad is not None) == value.requires_grad, name
         if value.grad is not None:
             assert torch.isfinite(value.grad).all(), name
+
+
+@pytest.mark.parametrize("kind", ["rnn", "lstm", "gru"])
+def test_cuda_parent_copies_keep_the_recurrent_weights_in_one_chunk(kind):
+    """La copia del padre conserva sus pesos recurrentes en una sola reserva.
+
+    La usan los adaptadores y la continuación completa. No comparte memoria con el padre y
+    emite los mismos bits.
+    """
+    device = torch.device("cuda:0")
+    original = parent(kind).to(device)
+    copied = parent_copy(original)
+    for name, module in copied.named_modules():
+        if isinstance(module, torch.nn.RNNBase):
+            weights = module._flat_weights
+            assert len({value.untyped_storage().data_ptr() for value in weights}) == 1, name
+            source = original.get_submodule(name)._flat_weights
+            assert all(a.data_ptr() != b.data_ptr() for a, b in zip(weights, source, strict=True))
+            assert all(same_bits(a, b) for a, b in zip(weights, source, strict=True))
+    inputs, presence = batch()
+    gpu_inputs = {name: value.to(device) for name, value in inputs.items()}
+    with torch.inference_mode():
+        expected = original(gpu_inputs, presence.to(device))
+        assert same_bits(copied(gpu_inputs, presence.to(device)), expected)
