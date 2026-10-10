@@ -39,7 +39,7 @@ DECLARATION_KIND = "historical_masked_prediction_retention"
 LEDGER_KIND = "historical_masked_retention_ledger"
 PHASES = ("base", "adapters", "ablation", "rl", "aggregates", "release")
 STAGE_PHASES = ("base", "adapters", "ablation", "rl")
-AGGREGATES = ("walk_forward",)
+AGGREGATES = ("walk_forward", "long_short")
 _FIELDS = {
     "schema_version",
     "kind",
@@ -80,7 +80,7 @@ def load_retention(path):
     )
     _require(
         tuple(document["aggregates"]) == AGGREGATES,
-        "La retención solo libera filas con agregados de la comparación walk-forward",
+        "La retención solo libera filas con agregados de la comparación y de la cartera",
     )
     release = document["release"]
     _require(
@@ -159,10 +159,12 @@ class Rolling:
         regenerators=None,
         ablation_executors=None,
         disk=None,
+        edition=None,
     ):
         """`disk` activa la guardia por ventana: `storage` (declaración), `extras` (medidas
         de agregados, adaptadores y cintas), `adapter_blocks` (lectura sin copia ordenada) y,
-        en las pruebas, `usage` en lugar de `shutil.disk_usage`.
+        en las pruebas, `usage` en lugar de `shutil.disk_usage`. `edition` es la edición de
+        precios sin ajustar que necesita la cartera larga y corta si la comparación la declara.
         """
         from . import masked_campaign as engine
 
@@ -172,8 +174,14 @@ class Rolling:
         self.regenerators = engine.regenerators() if regenerators is None else regenerators
         self.ablation_executors = ablation_executors
         self.disk = disk
+        self.edition = None if edition is None else Path(edition)
         self.folder = self.output / "retention"
         self.campaign, _ = engine._confirmed_state(campaign_path, views, output)
+        # Sin la edición no hay agregados de la cartera y sus filas no se podrían liberar.
+        _require(
+            comparison.LONG_SHORT_FIELD not in self.comparison_config() or self.edition is not None,
+            "La comparación declara la cartera larga y corta: falta la edición de precios",
+        )
         self.positions = {
             (scope, window): index
             for index, row in enumerate(windows)
@@ -345,11 +353,7 @@ class Rolling:
         from . import modality_ablation_stage as stage_module
 
         config = self.comparison_config()
-        for name in ("long_short",):
-            _require(
-                name not in config,
-                f"La comparación declara {name} sin agregados por ventana: no se libera nada",
-            )
+        folder = self.folder / "aggregates"
         written = {}
         for scope, window in row["scopes"].items():
             restricted = comparison.restrict_windows(config, scope, [window])
@@ -368,14 +372,21 @@ class Rolling:
                     window=window,
                 )
                 masked = comparison._ablation_sources(masked_path, restricted, sources)
-            record = window_aggregates.write(
-                self.folder / "aggregates", restricted, sources, window, masked
+            records = dict(
+                walk_forward=window_aggregates.write(folder, restricted, sources, window, masked)
             )
-            written[scope] = dict(
-                path=str(Path(record["path"]).relative_to(self.folder)),
-                sha256=record["sha256"],
-                bytes=record["bytes"],
-            )
+            if comparison.LONG_SHORT_FIELD in config:
+                records["long_short"] = window_aggregates.write_long_short(
+                    folder, restricted, sources, window, self.edition
+                )
+            written[scope] = {
+                name: dict(
+                    path=str(Path(record["path"]).relative_to(self.folder)),
+                    sha256=record["sha256"],
+                    bytes=record["bytes"],
+                )
+                for name, record in records.items()
+            }
         return written
 
     def release(self, index):
@@ -633,7 +644,9 @@ def main(argv=None):
     for name in ("adapter", "ablation", "rl"):
         parser.add_argument(f"--{name}-stage", type=Path)
         parser.add_argument(f"--{name}-output", type=Path)
-    parser.add_argument("--edition", type=Path, help="Edición de precios de las políticas")
+    parser.add_argument(
+        "--edition", type=Path, help="Edición de precios sin ajustar (políticas y cartera)"
+    )
     args = parser.parse_args(argv)
     views = engine._views_argument(args.views)
     retention = load_retention(args.retention)
@@ -659,6 +672,7 @@ def main(argv=None):
         ablation=stages.get("ablation"),
         adapters=stages.get("adapters"),
         rl=stages.get("rl"),
+        edition=args.edition,
         disk=dict(
             storage=args.storage,
             extras=json.loads(args.extras.read_text()),

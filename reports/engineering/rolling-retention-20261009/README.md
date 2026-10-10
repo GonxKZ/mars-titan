@@ -22,7 +22,7 @@ Este informe acompaña a la retención v2 declarada en `configs/baselines/histor
 | Boosters de recuperación de XGBoost e índices de la ablación tras el recibo | `training/campaign_storage.py`, `modality_ablation_stage.py` | `tests/training/test_campaign_storage.py` |
 | Estimación del recorrido | `training/rolling_storage.py`, `run_masked_campaign.py storage --schedule` | `tests/training/test_rolling_storage.py` |
 
-Los agregados guardan, para cada brazo y semilla de una ventana, los resultados por sesión que calcula la comparación (errores, aciertos y fallos direccionales por signo, Rank IC, pérdida de cuantiles, cobertura y anchura de intervalos, estratos de presencia, calibrador y ablación). Se escriben en un `npz` comprimido sin pérdida, con todos los decimales en FP64 y sin redondear, y la lectura comprueba su identidad con la configuración y las fuentes. La cartera larga y corta de la comparación completa aún no tiene agregados por ventana, y el recorrido se detiene antes de liberar si la comparación la declara.
+Los agregados guardan, para cada brazo y semilla de una ventana, los resultados por sesión que calcula la comparación (errores, aciertos y fallos direccionales por signo, Rank IC, pérdida de cuantiles, cobertura y anchura de intervalos, estratos de presencia, calibrador y ablación). Se escriben en un `npz` comprimido sin pérdida, con todos los decimales en FP64 y sin redondear, y la lectura comprueba su identidad con la configuración y las fuentes. La cartera larga y corta guarda aparte los libros por sesión de cada ventana (`<ventana>.long_short.npz`), con la identidad de la edición de precios. Su informe desde esos libros es idéntico al que lee las filas.
 
 ## Regeneración exacta
 
@@ -109,6 +109,6 @@ A las 20:55 del 9 de octubre `/` tenía 47,98 GB libres. Con el margen de 8 GiB 
 
 - La comprobación de regeneración en `cuda:0` no se ha ejecutado. Si una familia no repite sus bits en la GPU, sus tablas quedan compactadas y la estimación se acerca a la columna «nada regenerado».
 - El recorrido necesita el filtro `window` de la base y de las etapas de `feat/campaign-a-joint-design`. Sin él `rolling` se niega a empezar.
-- La comparación de las etapas de adaptadores y la cartera larga y corta de `feat/evaluation-completeness` leen filas. Necesitan su registro de agregados por ventana antes de que se libere nada que lean, y los adaptadores necesitan su propia regeneración.
+- La comparación de las etapas de adaptadores lee filas. Necesita su registro de agregados por ventana, y los adaptadores su propia regeneración, antes de que se libere nada que lea. Hasta entonces sus tablas solo se compactan.
 - La estimación cuenta las tablas comunes de filas hasta el final aunque se borren antes, y la medida declarada de la guardia es una cota superior de las tablas compactadas.
 - Las cintas y estados de los ejecutores de PPO y KLPO no se pueden estimar todavía.

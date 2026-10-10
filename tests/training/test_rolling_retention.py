@@ -16,6 +16,7 @@ import pytest
 
 from mars_titan.data import prediction_files
 from mars_titan.data.storage import atomic_json
+from mars_titan.evaluation import long_short_comparison as portfolio
 from mars_titan.evaluation import walk_forward_comparison as comparison
 from mars_titan.training import campaign_plan as plan
 from mars_titan.training import masked_campaign as engine
@@ -24,6 +25,8 @@ from mars_titan.training import rolling_retention as rolling
 from mars_titan.training import rolling_storage
 from mars_titan.training.learning_hold import HOLD_ENV
 from tests.posttraining.campaign_fixture import CpuLease
+from tests.simulation import rl_stage_fixture
+from tests.simulation.unadjusted_edition_fixture import Asset
 from tests.training.test_modality_ablation_stage import RUNNING, base, on_cpu  # noqa: F401
 from tests.training.test_prediction_regeneration import flipped, strict_numerics  # noqa: F401
 
@@ -46,6 +49,16 @@ def schedule(base, folder):  # noqa: F811
     return path, campaign
 
 
+@pytest.fixture(scope="module")
+def edition(tmp_path_factory):
+    """Edición de precios sintética para la cartera larga y corta de la comparación."""
+    root = tmp_path_factory.mktemp("edition")
+    rl_stage_fixture.write_edition(
+        root, {"US": [Asset("A0000", base=20.0), Asset("B0001", base=30.0)]}
+    )
+    return root
+
+
 class Calls:
     def __init__(self):
         self.calls = []
@@ -62,7 +75,7 @@ class Calls:
 
 
 @pytest.fixture(scope="module")
-def walked(base, tmp_path_factory):  # noqa: F811
+def walked(base, edition, tmp_path_factory):  # noqa: F811
     """Recorrido completo con un trabajo cuya regeneración no repite un bit."""
     root = tmp_path_factory.mktemp("rolling")
     # Copia propia de la campaña: la liberación no toca el fixture compartido.
@@ -78,6 +91,7 @@ def walked(base, tmp_path_factory):  # noqa: F811
         expected = comparison.evaluate_walk_forward(
             base.comparison, primary, "US", ablation_sources=masked
         )
+        expected_portfolio = portfolio.evaluate_long_short(base.comparison, primary, "US", edition)
         path, campaign = schedule(base, root)
         windows = rolling.load_schedule(path, campaign)
         jobs = [j for j in plan.plan_campaign(campaign) if j["kind"] == engine.FIT]
@@ -97,6 +111,7 @@ def walked(base, tmp_path_factory):  # noqa: F811
             windows,
             ablation=dict(stage=base.stage, output=staged),
             regenerators={**available, ("neural", engine.FIT): regenerate},
+            edition=edition,
         )
         calls = Calls()
         result = rolling.run_rolling(state, calls.runners())
@@ -113,6 +128,11 @@ def walked(base, tmp_path_factory):  # noqa: F811
             ablation_sources=masked,
             aggregates=state.folder / "aggregates",
         )
+        with pytest.raises(prediction_files.PredictionsReleased):
+            portfolio.evaluate_long_short(base.comparison, primary, "US", edition)
+        from_aggregates = portfolio.evaluate_long_short(
+            base.comparison, primary, "US", edition, aggregates=state.folder / "aggregates"
+        )
         yield dict(
             base=base,
             state=state,
@@ -122,6 +142,7 @@ def walked(base, tmp_path_factory):  # noqa: F811
             staged=staged,
             expected=expected,
             report=report,
+            portfolio=(expected_portfolio, from_aggregates),
             result=result,
             resumed=resumed,
             calls=calls.calls,
@@ -162,6 +183,18 @@ def test_the_final_comparison_from_aggregates_equals_the_one_that_read_the_rows(
         k: v for k, v in expected.items() if k not in VOLATILE
     }
     assert from_aggregates.equals(sessions)
+    (expected_portfolio, expected_books), (portfolio_report, books) = walked["portfolio"]
+    volatile = {"created_at_utc", "resources"}
+    assert {k: v for k, v in portfolio_report.items() if k not in volatile} == {
+        k: v for k, v in expected_portfolio.items() if k not in volatile
+    }
+    assert books.equals(expected_books)
+    ledger = walked["state"].ledger()["windows"]
+    for row in walked["windows"]:
+        assert set(ledger[row["id"]]["phases"]["aggregates"]["written"]["US"]) == {
+            "walk_forward",
+            "long_short",
+        }
 
 
 def test_only_bit_exact_regenerations_release_their_rows(walked):
@@ -251,6 +284,7 @@ def test_policy_needs_keep_each_evaluation_until_its_last_reading_window():
 
 def test_a_policy_input_is_compacted_and_released_only_after_its_last_reader(
     base,  # noqa: F811
+    edition,
     tmp_path,
     monkeypatch,
 ):
@@ -262,7 +296,12 @@ def test_a_policy_input_is_compacted_and_released_only_after_its_last_reader(
     path, campaign = schedule(base, tmp_path)
     windows = rolling.load_schedule(path, campaign)
     state = rolling.Rolling(
-        rolling.load_retention(DECLARATION), base.campaign, base.views, output, windows
+        rolling.load_retention(DECLARATION),
+        base.campaign,
+        base.views,
+        output,
+        windows,
+        edition=edition,
     )
     first = windows[0]["scopes"]["US"]
     kept, _ = state.base_state(0)[0].selected("US", first, "gru", 42)
@@ -318,6 +357,19 @@ def test_the_schedule_must_cover_exactly_the_campaign_windows(base, tmp_path):  
             rolling.load_schedule(tmp_path / "other.json", campaign)
 
 
+def test_the_walk_needs_the_price_edition_when_the_comparison_declares_the_portfolio(
+    base,  # noqa: F811
+    tmp_path,
+):
+    path, campaign = schedule(base, tmp_path)
+    windows = rolling.load_schedule(path, campaign)
+    assert comparison.LONG_SHORT_FIELD in campaign["comparison_config"]
+    with pytest.raises(ValueError, match="falta la edición"):
+        rolling.Rolling(
+            rolling.load_retention(DECLARATION), base.campaign, base.views, base.output, windows
+        )
+
+
 def test_default_runners_require_the_window_filter_of_the_stages(base, monkeypatch):  # noqa: F811
     def without_window(path, views, output, *, storage=None, stop=None):
         return {}
@@ -363,7 +415,12 @@ def test_a_paused_phase_stops_the_walk_before_aggregates_and_release():
     assert result["status"] == "paused" and stopped.marked == []
 
 
-def test_a_window_that_does_not_fit_is_refused_before_any_phase(base, tmp_path, monkeypatch):  # noqa: F811
+def test_a_window_that_does_not_fit_is_refused_before_any_phase(
+    base,  # noqa: F811
+    edition,
+    tmp_path,
+    monkeypatch,
+):
     from mars_titan.training.campaign_storage import DiskBudgetError, load_storage
 
     on_cpu(monkeypatch)
@@ -390,6 +447,7 @@ def test_a_window_that_does_not_fit_is_refused_before_any_phase(base, tmp_path, 
         windows,
         ablation=dict(stage=base.stage, output=tmp_path / "unused"),
         disk=disk,
+        edition=edition,
     )
     increment, _ = state.disk_projection(windows[0])
     assert increment["bytes"] > 0 and increment["window"] == windows[0]["id"]
@@ -471,6 +529,7 @@ def test_a_regeneration_error_keeps_the_rows_and_is_retried_while_a_comparison_i
 
 def test_masked_predictions_without_aggregates_are_compacted_not_released(
     base,  # noqa: F811
+    edition,
     tmp_path,
     monkeypatch,
 ):
@@ -490,6 +549,7 @@ def test_masked_predictions_without_aggregates_are_compacted_not_released(
         output,
         windows,
         ablation=dict(stage=base.stage, output=staged),
+        edition=edition,
     )
     declared = state.comparison_config()
     without = {k: v for k, v in declared.items() if k != comparison.ABLATION_FIELD}
@@ -504,6 +564,7 @@ def test_masked_predictions_without_aggregates_are_compacted_not_released(
 
 def test_jobs_declared_not_regenerable_are_compacted_without_regenerating(
     base,  # noqa: F811
+    edition,
     tmp_path,
     monkeypatch,
 ):
@@ -515,7 +576,12 @@ def test_jobs_declared_not_regenerable_are_compacted_without_regenerating(
     path, campaign = schedule(base, tmp_path)
     windows = rolling.load_schedule(path, campaign)
     state = rolling.Rolling(
-        rolling.load_retention(DECLARATION), base.campaign, base.views, output, windows
+        rolling.load_retention(DECLARATION),
+        base.campaign,
+        base.views,
+        output,
+        windows,
+        edition=edition,
     )
     target = state.base_state(0)[1][0]["id"]
     original = rolling.Rolling.base_state

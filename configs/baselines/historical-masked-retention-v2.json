@@ -6,7 +6,7 @@
   "declared_on": "2026-10-09",
   "order": "by_window",
   "phases": ["base", "adapters", "ablation", "rl", "aggregates", "release"],
-  "aggregates": ["walk_forward"],
+  "aggregates": ["walk_forward", "long_short"],
   "release": {
     "stages": ["base", "ablation"],
     "partitions": ["validation", "calibration", "evaluation"],

@@ -115,6 +115,7 @@ La [declaración](../../configs/baselines/historical-masked-retention-v2.json) f
 - La campaña avanza ventana a ventana. Cada ventana termina sus ajustes, su selección, sus semillas, los adaptadores, la ablación, las políticas y sus agregados antes de liberar nada y de empezar la siguiente.
 - Todo intento conserva su recibo, su informe y su estado elegido, también los fallidos y los descartados. Nada de lo que registra un intento se borra.
 - Los agregados por sesión que usa la comparación se calculan en FP64 y se guardan sin redondear por ventana.
+- Si la comparación declara la cartera larga y corta, sus libros por sesión de cada ventana también se guardan sin pérdida, con la identidad de la edición de precios. Esta regla se añadió el 10 de octubre de 2026, al incorporarse la cartera a la comparación y antes de cualquier resultado.
 - Una tabla por fila de la base o de la ablación solo se libera si se regenera por inferencia desde el estado elegido, con el mismo código, el mismo orden de lotes y FP32 estricto (sin TF32 en cuBLAS ni en cuDNN), y sale idéntica bit a bit a la huella de contenido registrada. El ajuste que se predijo con otra precisión no se regenera.
 - Si la regeneración no es idéntica, la tabla se compacta sin pérdida (tabla común de filas por ventana y tramo y decimales propios, con lectura bit a bit) y se conserva. Nunca se cuantiza ni se guarda en float16.
 - Las evaluaciones que leerá una política posterior y las tablas de los adaptadores se compactan sin pérdida y se conservan hasta su último lector.

@@ -178,7 +178,7 @@ Al liberar, cada tabla por fila de la base y de la ablación que ya no leerá ni
 
 `regenerate` repite por inferencia, sin ajustar nada, las tablas de un trabajo confirmado en un destino nuevo, con FP32 estricto, y termina con código 1 si alguna no coincide. Con `--ablation-stage` y `--ablation-output` regenera una predicción de la ablación. Se detiene con la protección de aprendizaje, como los traslados. La comparación final lee los agregados de cada ventana con `--aggregates` y no abre ninguna fila.
 
-El recorrido exige el filtro `window` de la base y de las etapas, que llega con la campaña A v2 ([#363](https://github.com/GonxKZ/mars-titan/issues/363)). Sin él, `rolling` se niega a empezar sin escribir nada. Si la comparación declara secciones sin agregados por ventana, como la cartera larga y corta, se detiene antes de liberar nada.
+El recorrido exige el filtro `window` de la base y de las etapas, que llega con la campaña A v2 ([#363](https://github.com/GonxKZ/mars-titan/issues/363)). Sin él, `rolling` se niega a empezar sin escribir nada. Si la comparación declara la cartera larga y corta, cada ventana guarda también sus libros por sesión (`<ventana>.long_short.npz`), con la identidad de la edición de precios, y `rolling` exige `--edition`. `long_short_comparison --aggregates` calcula después la cartera sin abrir filas. Las comprobaciones de integridad (`integrity.score_recheck` y `integrity.row_identity`) leen las tablas compactadas con los mismos bits y se detienen ante una liberada hasta regenerarla.
 
 ### Puntos de extensión y etapas posteriores
 
