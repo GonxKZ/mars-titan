@@ -18,6 +18,9 @@ struct PpoExperimentOptions {
     std::vector<std::filesystem::path> validation_tapes;
     std::optional<std::filesystem::path> audit_run;
     std::vector<std::filesystem::path> audit_tapes;
+    // Costes de la evaluación congelada sobre cintas reconstruidas. Si la lista está vacía,
+    // la evaluación usa los costes por omisión.
+    std::vector<double> evaluation_costs;
     std::string device = "cuda:0";
     bool diagnostic = false;
     bool resume = false;

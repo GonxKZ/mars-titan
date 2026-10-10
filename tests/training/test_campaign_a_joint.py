@@ -304,6 +304,7 @@ def adapter_jobs(adapters):
 
 def test_window_schedule_orders_every_stage_of_the_window_and_counts_all_jobs():
     from mars_titan.posttraining import campaign_stage as adapters
+    from mars_titan.posttraining import staged_chain
     from mars_titan.simulation import policy_plan
     from mars_titan.training import modality_ablation_stage as ablation
 
@@ -313,10 +314,20 @@ def test_window_schedule_orders_every_stage_of_the_window_and_counts_all_jobs():
         ablation=ablation.plan_stage(
             ablation.load_stage(plan.LATER_STAGES["modality_ablation"]["joint_stage"])
         ),
-        rl=policy_plan.plan_stage(
-            policy_plan.load_stage(plan.LATER_STAGES["rl_policy_comparison"]["joint_stage"])
-        ),
     )
+    stage = policy_plan.load_stage(plan.LATER_STAGES["rl_policy_comparison"]["joint_stage"])
+    chains = {job["id"] for job in stages["adapters"]}
+    policies = policy_plan.plan_stage(stage)
+
+    def covered(job):
+        return all(d in chains for d in job["depends"] if staged_chain.CHAIN_SUFFIX in d)
+
+    # La cadena solo cubre hoy los cinco brazos con adaptadores. Las políticas de los demás
+    # predictores esperan su cadena (fix/rl-chain-coverage) y el orden las rechazaría.
+    stages["rl"] = [job for job in policies if covered(job)]
+    waiting = {job["predictor"] for job in policies if not covered(job)}
+    adapted = {job["base_arm"] for job in stages["adapters"]}
+    assert len(adapted) == 5 and waiting == set(stage["predictors"]) - adapted
     schedule = order.window_schedule(value, plan.plan_campaign(value), stages)
     assert [row["window"] for row in schedule] == [f"fold-{i:03d}" for i in range(19)]
     assert [entry["phase"] for entry in schedule[0]["phases"]] == list(order.PHASES)
@@ -325,7 +336,7 @@ def test_window_schedule_orders_every_stage_of_the_window_and_counts_all_jobs():
         totals.update({entry["phase"]: len(entry["jobs"]) for entry in row["phases"]})
     assert totals["base_search"] + totals["selected_case_seeds"] == 2341
     # Adaptadores: 1.566 ajustes, 270 padres congelados y 285 selecciones de la cadena.
-    assert (totals["adapters"], totals["ablation"], totals["rl"]) == (2121, 3534, 2160 + 1584)
+    assert (totals["adapters"], totals["ablation"], totals["rl"]) == (2121, 3534, 1203)
     window = schedule[6]
     selection = window["phases"][order.PHASES.index("selection")]
     assert "CN/fold-000/mars_titan_m1" in selection["decisions"]
@@ -438,7 +449,8 @@ def test_later_stages_of_v2_read_the_joint_model_in_each_market():
     assert [row["window"] for row in cn] == [f"fold-{i:03d}" for i in range(10, 19)]
     assert cn[0]["train"] == ["fold-006", "fold-007", "fold-008"]
     counts = policy_plan.count_stage(stage)
-    assert (counts["training_jobs"], counts["evaluation_jobs"]) == (2160, 1584)
+    # Referencias: cuatro por ventana y predictor, y el índice de mercado solo en US.
+    assert (counts["training_jobs"], counts["evaluation_jobs"]) == (2160, 22 * (15 * 5 + 9 * 4))
     assert counts["scopes"]["US+CN"]["markets"]["CN"][0] == "fold-010"
     jobs = policy_plan.plan_stage(stage)
     assert Counter(job["market"] for job in jobs if job["kind"] == "fit") == {
@@ -1009,6 +1021,10 @@ def test_the_plan_checks_every_declared_document_of_the_campaign_and_its_stages(
         "historical-masked-ablation-stage-a-v2.json",
     ]
     assert len(plan.plan_campaign(value)) == 2341
+    # Las fuentes de predictor de las políticas son estados ajustados con la edición real.
+    from mars_titan.simulation import policy_plan
+
+    assert set(policy_plan.PREDICTOR_SOURCES) <= data_policy.REAL_SOURCES
     assert plan.check_campaign(CAMPAIGN)["data_policy"] == "real_edition_only"
 
 

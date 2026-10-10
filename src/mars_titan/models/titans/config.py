@@ -35,6 +35,12 @@ def _logit(probability: float) -> float:
 
 # Valor por defecto de torch.nn.LayerNorm. Las fuentes no fijan el épsilon de la memoria.
 LAYER_NORM_EPS = 1e-5
+# La sección 4.4 del artículo no fija el núcleo de la convolución. Se adopta como decisión
+# propia el valor de Gated DeltaNet y de ShortConvolution en flash-linear-attention.
+PAPER_CONVOLUTION_KERNEL = 4
+# Nombre de la identidad que reúne SiLU, la convolución causal de núcleo 4 y la norma L2 de
+# q y k, tal como las describe la sección 4.4.
+PAPER_PROJECTIONS = "titans_mac_paper_projections_v2"
 
 
 @dataclass(frozen=True)
@@ -82,9 +88,20 @@ class MemoryConfig:
     gate_bias: GateBias | None = None
     # M(x) = x + LN(MLP(x)), sección 3.3 de las actas. LN sin afinidad aprendida.
     residual_layer_norm: bool = False
+    # La sección 4.4 del artículo aplica SiLU al calcular consultas, claves y valores.
+    qkv_silu: bool = False
+    # Tamaño K del núcleo de la convolución causal que sigue a cada proyección. Con 0 no hay
+    # convolución.
+    qkv_convolution: int = 0
 
     def __post_init__(self) -> None:
         bounded_integer(self.dim, "dim", 1, 512)
+        if type(self.qkv_silu) is not bool:
+            raise ValueError("qkv_silu debe ser booleano")
+        if self.qkv_convolution != 0:
+            bounded_integer(self.qkv_convolution, "qkv_convolution", 2, 8)
+        elif type(self.qkv_convolution) is not int:
+            raise ValueError("qkv_convolution debe ser 0 o un entero entre 2 y 8")
         if type(self.residual_layer_norm) is not bool:
             raise ValueError("residual_layer_norm debe ser booleano")
         if self.residual_layer_norm and self.dim < 2:
@@ -108,10 +125,17 @@ class MemoryConfig:
                 raise ValueError("gate_bias debe ser GateBias o None")
             self.gate_bias.logits(self.theta_max)
 
+    @property
+    def window(self) -> int:
+        """Entradas anteriores que guarda cada ventana causal, K − 1, o 0 sin convolución."""
+        return max(self.qkv_convolution - 1, 0)
+
     def identity(self) -> dict:
         fields = asdict(self)
         gate_bias = fields.pop("gate_bias")
         residual = fields.pop("residual_layer_norm")
+        silu = fields.pop("qkv_silu")
+        kernel = fields.pop("qkv_convolution")
         # Sin bias ni residual se conserva literalmente la identidad v1 y su huella.
         extension = (
             {}
@@ -126,6 +150,29 @@ class MemoryConfig:
                 "layer_norm_affine": False,
                 "expansion": 1,
             }
+        # Sin SiLU ni convolución se conserva también la identidad anterior y su huella.
+        if silu:
+            extension["qkv_activation"] = {
+                "function": "silu",
+                "streams": ["query", "key", "value"],
+                "source": "arxiv_2501_00663_section_4_4",
+            }
+        if kernel:
+            extension["qkv_convolution"] = {
+                "kernel": kernel,
+                "form": "causal_depthwise_per_channel",
+                "streams": ["query", "key", "value"],
+                "bias": False,
+                "initial_window": "zeros",
+                "state": "previous_projections_per_flow",
+                "init": "conv1d_default_after_previous_draws",
+                "source": "arxiv_2501_00663_section_4_4",
+                "kernel_source": "gated_deltanet_and_fla_short_convolution",
+            }
+        if silu or kernel:
+            extension["projection_order"] = "linear_convolution_silu_then_l2_query_key"
+        if silu and kernel == PAPER_CONVOLUTION_KERNEL and self.normalize_qk:
+            extension["projections"] = PAPER_PROJECTIONS
         return {
             **fields,
             **extension,

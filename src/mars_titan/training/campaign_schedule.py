@@ -93,9 +93,14 @@ def window_jobs(campaign, jobs, window):
 def stage_window(campaign, jobs, window):
     """Trabajos de una etapa posterior en una ventana y los pares que necesita de la base.
 
-    Los pares incluyen la ventana ancla de cada trabajo, de la que parte un traslado.
+    Los pares incluyen la ventana ancla de cada trabajo, de la que parte un traslado. Las
+    dependencias que no son trabajos de la etapa, como las selecciones de la cadena que leen
+    las políticas, no se siguen aquí: la etapa las comprueba al leer sus fuentes.
     """
-    jobs = window_jobs(campaign, jobs, window)
+    known = {job["id"] for job in jobs}
+    inner = [dict(job, depends=[d for d in job.get("depends", ()) if d in known]) for job in jobs]
+    kept = {job["id"] for job in window_jobs(campaign, inner, window)}
+    jobs = [job for job in jobs if job["id"] in kept]
     pairs = {(job["scope"], name) for job in jobs for name in (job["window"], job["anchor"])}
     return jobs, pairs
 

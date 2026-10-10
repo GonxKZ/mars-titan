@@ -11,13 +11,13 @@ int main(int argc, char** argv) {
         "--vram-budget-bytes N --vram-total-bytes N\n"
         "  Esquema 2: hasta 512 fuentes por partición y 16 entornos activos.\n"
         "  Esquema 4: cintas reconstruidas por ventana walk-forward y una validación.\n"
-        "  Auditoría separada: --audit-run RUN --audit-tape DIR "
-        "(sin --train-tape ni --validation-tape).\n"
+        "  Auditoría separada: --audit-run RUN --audit-tape DIR [--evaluation-cost PB ...] "
+        "(sin --train-tape ni --validation-tape). Publica el patrimonio por sesión.\n"
         "  Vigilancia Linux: --parent-pid PID detiene el hijo si muere su padre.\n"
         "  Capacidades: --capabilities, sin leer datos.\n"
         "Entrena y valida PPO en escenarios sintéticos o cintas reconstruidas, sin abrir el "
         "test.\n",
-        {"native_policy_reconstructed_tapes"},
+        {"native_policy_reconstructed_tapes", "native_policy_equity_and_costs"},
         [](const auto& options, const auto& stop) {
             return mars_titan::learning::run_ppo_experiment(options, stop);
         }};

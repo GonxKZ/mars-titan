@@ -2,8 +2,13 @@
 
 La ejecución comprueba el bloqueo de aprendizaje antes de cada trabajo, confirma un
 recibo por trabajo con huellas, tramos y filas, no repite los trabajos confirmados con
-la misma identidad y rehace los incompletos. Los trabajos CUDA se ejecutan de uno en
-uno bajo una única reserva de la GPU y los trabajos CPU con la concurrencia declarada.
+la misma identidad y rehace los incompletos. Sin declaración de ejecución, los trabajos
+CUDA se ejecutan de uno en uno en este proceso bajo una única reserva de la GPU y los
+trabajos CPU con la concurrencia declarada. Una declaración de ejecución
+(``training.campaign_resources``) puede fijar varias ranuras GPU: cada trabajo GPU corre
+entonces en su propio proceso con su VRAM acotada (``training.campaign_slots``), y la
+admisión respeta las dependencias del plan, las ranuras y la VRAM y la RAM declaradas.
+Los recibos y el resumen se escriben solo desde este proceso, de uno en uno.
 Cuando una semilla de un brazo tiene su predictor elegido en una ventana, se escribe el
 recibo walk-forward de cada mercado con el contrato de ``environments.walk_forward_receipt``.
 Al final se escribe el manifiesto de fuentes de cada ámbito que consume
@@ -23,7 +28,8 @@ import json
 import math
 import os
 from collections import Counter
-from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
+from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor
+from concurrent.futures import wait as wait_futures
 from contextlib import nullcontext
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -62,6 +68,15 @@ from .campaign_plan import (
     load_campaign,
     plan_campaign,
 )
+from .campaign_resources import (
+    Execution,
+    PeakEstimates,
+    ResourcePool,
+    check_plan,
+    environment,
+    legacy_execution,
+    load_execution,
+)
 from .campaign_storage import (
     DiskGuard,
     confirmed_ids,
@@ -71,10 +86,18 @@ from .campaign_storage import (
     release_confirmed,
     view_counts,
 )
+from .corpus_inputs import DIGEST_CACHE_ENV
+from .label_maturity import CALIBRATION_PARTITIONS, FIT_PARTITIONS, label_maturity
 from .learning_hold import LearningHoldError, require_learning_allowed
 from .selection import AWAIT
 
 RUN_KIND = "historical_masked_campaign_run"
+# Posiciones del plan que una ranura libre puede adelantar a un trabajo que espera.
+BACKFILL_JOBS = 16
+# Picos de VRAM observados por tipo de trabajo, para admitir los siguientes.
+OBSERVED_RESOURCES = "observed-resources.json"
+# Huellas de los archivos de las vistas que comparten los trabajos de la campaña.
+DIGESTS = "file-digests.json"
 RECEIPT_KIND = "masked_campaign_job"
 # El recibo de la meseta de un ajuste conjunto guarda su parada individual, sin predicciones.
 PLATEAU_STATUS = "plateau_confirmed"
@@ -442,30 +465,37 @@ EXECUTORS = {
 }
 
 
-def _releasing_tabular(run_function, model, kind):
+def _release_tabular(model, kind):
     """Liberar lo que comparten los tabulares de una ventana antes de un trabajo ajeno a ello.
 
     Los ajustes XGBoost y Ridge de una ventana son consecutivos en el plan, así que la
     matriz, la validación y la Gram solo se conservan mientras los usan esos ajustes. Los
     traslados no las usan. Sin bloqueo, un trabajo concurrente no espera a un ajuste en curso.
+    La campaña lo llama en su propio proceso antes de lanzar cada trabajo, porque ahí viven
+    la matriz y la Gram, también cuando el trabajo va a una ranura. Un cierre alrededor del
+    ejecutor no serviría, porque la ranura importa su ejecutor por nombre en un proceso nuevo.
+    """
+    from .external_corpus import SHARED
+    from .tabular_corpus import RIDGE_STATISTICS
+
+    if (model, kind) != ("xgboost", FIT):
+        SHARED.release(blocking=False)
+    if (model, kind) != ("ridge", FIT):
+        RIDGE_STATISTICS.clear(blocking=False)
+
+
+def _releasing_tabular(run_function, model, kind):
+    """El ejecutor precedido de `_release_tabular`, para recorridos en el proceso de la campaña.
+
+    Sirve a la regeneración de predicciones, que corre donde viven la matriz y la Gram. Una
+    ranura no puede importar este cierre, así que la campaña no lo usa para lanzar trabajos.
     """
 
     def run(job_run):
-        from .external_corpus import SHARED
-        from .tabular_corpus import RIDGE_STATISTICS
-
-        if (model, kind) != ("xgboost", FIT):
-            SHARED.release(blocking=False)
-        if (model, kind) != ("ridge", FIT):
-            RIDGE_STATISTICS.clear(blocking=False)
+        _release_tabular(model, kind)
         return run_function(job_run)
 
     return run
-
-
-EXECUTORS = {
-    key: dict(entry, run=_releasing_tabular(entry["run"], *key)) for key, entry in EXECUTORS.items()
-}
 
 
 def regenerators():
@@ -479,7 +509,11 @@ def regenerators():
     """
     from .prediction_regeneration import regenerator
 
-    result = {key: entry["run"] for key, entry in EXECUTORS.items() if key[1] == CARRY}
+    result = {
+        key: _releasing_tabular(entry["run"], *key)
+        for key, entry in EXECUTORS.items()
+        if key[1] == CARRY
+    }
     fits = dict(
         neural=_carry,
         ridge=_carry,
@@ -540,10 +574,14 @@ class _Campaign:
         self.identity, self.executors, self.stop = identity, executors, stop
         # Guardia, recuentos y declaración de almacenamiento, o nada sin declaración.
         self.disk = disk
+        # Última maduración de etiquetas por vista y tramos, leída una vez por ejecución.
+        self.maturity = {}
         self.identity_sha256 = hashlib.sha256(
             json.dumps(identity, sort_keys=True).encode()
         ).hexdigest()
         self.receipts = {}
+        # Picos de memoria de los trabajos que corrieron en su propio proceso.
+        self.usage = {}
         # Huella de filas y objetivos por ámbito, ventana y tramo, común a todos los brazos.
         self.rows = {}
         self.groups = {}
@@ -871,22 +909,25 @@ class _Campaign:
         )
         return dict(parent)
 
+    def _disk_need(self, job):
+        from .external_corpus import SHARED
+
+        _, counts, storage = self.disk
+        footprint = job_footprint(job, counts[job["scope"]][job["window"]], storage)
+        # La matriz XGBoost compartida se reutiliza o se borra antes de que el trabajo escriba.
+        need = footprint["retained_bytes"] + footprint["transient_bytes"]
+        return max(0, need - SHARED.reclaimable_disk_bytes())
+
+    def fits(self, job):
+        """Si el trabajo cabe ahora sobre el margen de disco, sin reservar nada."""
+        return self.disk is None or self.disk[0].admits(self._disk_need(job))
+
     def admit(self, job):
         """Empezar un trabajo solo si lo que ocupará deja intacto el margen de disco."""
         if self.disk is None:
             return
-        from .external_corpus import SHARED
-
-        guard, counts, storage = self.disk
-        footprint = job_footprint(job, counts[job["scope"]][job["window"]], storage)
-        # La matriz XGBoost compartida se reutiliza o se borra antes de que el trabajo escriba.
-        need = max(
-            0,
-            footprint["retained_bytes"]
-            + footprint["transient_bytes"]
-            - SHARED.reclaimable_disk_bytes(),
-        )
-        if not guard.admits(need, job["id"]):
+        need = self._disk_need(job)
+        if not self.disk[0].admits(need, job["id"]):
             raise DiskPaused(f"{job['id']} necesita {need} bytes sobre el margen de disco")
 
     def release(self, job, receipt):
@@ -908,14 +949,37 @@ class _Campaign:
         if compared and all(key in self.receipts for key in self.groups[group]):
             self.publish(*group)
 
+    def labels_used_until(self, scope, window, receipt):
+        """Última etiqueta que pudo fijar el predictor elegido o su calibración común.
+
+        El predictor se ajusta, selecciona y calibra en la vista de su ventana de ajuste: la
+        propia o, en un traslado, la del ancla. La calibración común de la ventana usa
+        además las etiquetas de calibración de su propia vista. El límite es la mayor
+        maduración de esas etiquetas, leída de la vista y no deducida del protocolo.
+        """
+        identity = receipt["identity"]
+        fit = identity["anchor"] if identity["kind"] == CARRY else identity["window"]
+        windows = self.views[scope]["windows"]
+        reads = [(fit, FIT_PARTITIONS)]
+        if fit != window:
+            reads.append((window, CALIBRATION_PARTITIONS))
+        values = []
+        for name, partitions in reads:
+            key = (scope, name, partitions)
+            if key not in self.maturity:
+                self.maturity[key] = label_maturity(windows[name]["path"], partitions)[0]
+            values.append(self.maturity[key])
+        return max(values)
+
     def publish(self, scope, window, arm, seed):
         """Recibo walk-forward por mercado del predictor elegido para la semilla y ventana.
 
-        La calibración común usa el tramo anterior a la evaluación y la purga obliga a que
-        sus etiquetas maduren antes del final del tramo. Por eso la última etiqueta usada se
-        acota con el microsegundo anterior a la evaluación, también en una ventana trasladada.
+        El límite de etiquetas es la maduración de las etiquetas que leyó el predictor
+        elegido. El recibo rechaza un límite que alcance la evaluación, de modo que una
+        etiqueta futura impide publicar la ventana y montar sus cintas.
         """
         _, receipt = self.selected(scope, window, arm, seed)
+        until = self.labels_used_until(scope, window, receipt)
         resolved = self.campaign["comparison_config"]["resolved_scopes"][scope]
         folder = self.output / "windows" / scope / window / arm / f"seed-{seed}"
         # Un mercado sin filas en algún tramo comparado de la ventana no tiene recibo.
@@ -930,15 +994,13 @@ class _Campaign:
                 protocol=resolved["protocols"][market],
                 fold=resolved["windows"][window],
                 parent=receipt["parent"],
-                labels_used_until=0,
+                labels_used_until=until,
                 predictions={
                     partition: value["markets"][market]
                     for partition, value in receipt["predictions"].items()
                     if market in value["markets"]
                 },
             )
-            start, _ = read_window_receipt(record).segment("evaluation")
-            record["labels_used_until"] = start - 1
             read_window_receipt(record)
             path = folder / f"{market}.json"
             if path.is_file():
@@ -951,6 +1013,8 @@ class _Campaign:
 
 
 def _summary(output, identity, jobs, receipts, status, **extra):
+    """Resumen confirmado de la campaña. Solo lo escribe el proceso de la campaña."""
+
     # La meseta de un ajuste conjunto es la primera parte del mismo ajuste y se cuenta aparte.
     def kind(job):
         return PLATEAU if job.get("phase") == PLATEAU else job["kind"]
@@ -979,12 +1043,24 @@ def _summary(output, identity, jobs, receipts, status, **extra):
 
 
 def run_campaign(
-    path, views, output, *, executors=None, lease=None, stop=None, storage=None, window=None
+    path,
+    views,
+    output,
+    *,
+    executors=None,
+    lease=None,
+    stop=None,
+    storage=None,
+    execution=None,
+    window=None,
 ):
     """Ejecutar o reanudar la campaña. Los ejecutores y la reserva se pueden sustituir.
 
     `storage` es la ruta de la declaración de almacenamiento. Con ella se comprueba el
     pico proyectado antes de escribir nada y la ejecución vigila el margen de disco.
+    `execution` es la ruta de una declaración de ejecución o una `Execution`. Sin ella se
+    conserva la ejecución anterior. La declaración no entra en la identidad de la campaña,
+    así que una campaña puede reanudarse con otra concurrencia.
     `window` limita la ejecución a una ventana de campaña (`campaign_schedule`) y a las
     dependencias que tenga en ventanas anteriores. El resumen describe entonces esa ventana.
     """
@@ -1000,6 +1076,10 @@ def run_campaign(
     if window is not None:
         jobs = campaign_schedule.window_jobs(campaign, jobs, window)
         scope_of_run = dict(window=window)
+    if execution is None:
+        execution = legacy_execution(campaign)
+    elif not isinstance(execution, Execution):
+        execution = load_execution(execution, scopes=tuple(campaign["scopes"]))
     _require(
         isinstance(views, dict) and set(views) == set(campaign["scopes"]),
         "Se necesitan las vistas de exactamente los ámbitos de la campaña",
@@ -1013,6 +1093,7 @@ def run_campaign(
     outside_source(Path("dataset"), output)
     executors = dict(EXECUTORS if executors is None else executors)
     _require(set(executors) == set(EXECUTORS), "Faltan ejecutores para algún modelo")
+    check_plan(execution, jobs, executors)
     identity = _identity(campaign, checked)
     from .external_corpus import SHARED
 
@@ -1045,10 +1126,11 @@ def run_campaign(
             atomic_json(marker, identity)
         state = _Campaign(campaign, checked, output, identity, executors, None, jobs, disk)
         uses_gpu = any(executors[j["model"], j["kind"]]["device"] == "cuda" for j in jobs)
-        reservation = (lease or _gpu_lease)() if uses_gpu else nullcontext()
+        default_lease = _slot_lease(execution) if execution.isolated else _gpu_lease
+        reservation = (lease or default_lease)() if uses_gpu else nullcontext()
         signals = StopRequest() if stop is None else nullcontext(stop)
-        workers = campaign["tabular"]["cpu_workers"]
         pause = None
+        record = dict(execution=execution.record())
 
         def disk_report():
             if disk is None:
@@ -1056,11 +1138,16 @@ def run_campaign(
             pending = {} if pause is None else dict(pause=pause)
             return dict(disk=dict(launch=launch, guard=disk[0].state(), **pending), **scope_of_run)
 
-        _summary(output, identity, jobs, state.receipts, "running", **disk_report())
+        _summary(output, identity, jobs, state.receipts, "running", **record, **disk_report())
         try:
-            with signals as requested, reservation, ThreadPoolExecutor(workers) as pool:
+            with (
+                signals as requested,
+                _environment(execution, output),
+                reservation,
+                ThreadPoolExecutor(execution.cpu_workers) as pool,
+            ):
                 state.stop = requested if disk is None else disk[0].watch(requested)
-                status = _execute(state, jobs, pool, workers)
+                status = _execute(state, jobs, pool, execution)
         except Paused as error:
             status = "paused"
             if isinstance(error, DiskPaused):
@@ -1069,15 +1156,38 @@ def run_campaign(
                 pause = "El espacio libre bajó del margen durante un trabajo"
         except LearningHoldError as error:
             _summary(
-                output, identity, jobs, state.receipts, "blocked", error=str(error), **disk_report()
+                output,
+                identity,
+                jobs,
+                state.receipts,
+                "blocked",
+                error=str(error),
+                **record,
+                **disk_report(),
             )
             raise
         except BaseException as error:
             _summary(
-                output, identity, jobs, state.receipts, "failed", error=str(error), **disk_report()
+                output,
+                identity,
+                jobs,
+                state.receipts,
+                "failed",
+                error=str(error),
+                **record,
+                **disk_report(),
             )
             raise
-        return _summary(output, identity, jobs, state.receipts, status, **disk_report())
+        return _summary(
+            output,
+            identity,
+            jobs,
+            state.receipts,
+            status,
+            **record,
+            **disk_report(),
+            usage=state.usage,
+        )
     finally:
         os.close(descriptor)
 
@@ -1088,36 +1198,286 @@ def _gpu_lease():
     return GpuLease()
 
 
-def _execute(state, jobs, pool, workers):
-    """Recorrer el plan en orden. CUDA de uno en uno y CPU con concurrencia acotada."""
-    running = {}
+class _environment:
+    """Variables de la tubería durante la campaña, restauradas al terminar.
 
-    def collect(done):
-        for future in done:
-            job, run, identity = running.pop(future)
-            state.record(job, state.confirm(job, run, identity, future.result()))
+    Las huellas de los archivos de las vistas se comparten en `file-digests.json` de la
+    salida, de modo que cada trabajo, en este proceso o en su ranura, no vuelve a leer
+    completos los archivos que ya comprobó otro con la misma firma de stat.
+    """
 
-    for job in jobs:
-        while any(dep not in state.receipts for dep in job["depends"]) and running:
-            collect(wait(running, return_when=FIRST_COMPLETED).done)
-        if state.stop.requested:
-            raise Paused
-        prepared, receipt = state.prepare(job)
-        if receipt is not None:
-            state.record(job, receipt)
-            continue
-        require_learning_allowed(f"el trabajo {job['id']}")
-        state.admit(job)
-        run, identity = prepared
-        executor = state.executors[job["model"], job["kind"]]
-        if executor["device"] == "cpu":
-            while len(running) >= workers:
-                collect(wait(running, return_when=FIRST_COMPLETED).done)
-            running[pool.submit(executor["run"], run)] = (job, run, identity)
-            continue
-        state.record(job, state.confirm(job, run, identity, executor["run"](run)))
-    while running:
-        collect(wait(running, return_when=FIRST_COMPLETED).done)
+    def __init__(self, execution, output):
+        self.values, self.previous = environment(execution), {}
+        if DIGEST_CACHE_ENV not in os.environ:
+            self.values[DIGEST_CACHE_ENV] = str(Path(output).resolve() / DIGESTS)
+
+    def __enter__(self):
+        for name, value in self.values.items():
+            self.previous[name] = os.environ.get(name)
+            os.environ[name] = value
+        return self
+
+    def __exit__(self, *_):
+        for name, value in self.previous.items():
+            if value is None:
+                os.environ.pop(name, None)
+            else:
+                os.environ[name] = value
+
+
+def _slot_lease(execution):
+    def lease():
+        from .campaign_slots import SlotLease
+
+        return SlotLease(execution)
+
+    return lease
+
+
+def _launch_order(pending, execution, estimates, executors, ready, fits):
+    """Trabajos que se intentan lanzar, en orden.
+
+    Sin ranuras aisladas, solo el primero pendiente, como en la ejecución en serie. Con
+    ranuras, los `BACKFILL_JOBS` primeros del plan de mayor a menor VRAM estimada, de modo
+    que los grandes no esperan detrás de los pequeños y estos rellenan lo que queda. Con la
+    misma VRAM se conserva el orden del plan. Si el primer trabajo listo de esa ventana no
+    cabe (`fits`), su dispositivo queda reservado para él: no se intenta ningún otro trabajo
+    de ese dispositivo hasta que los que están en curso le dejen sitio. Así un trabajo
+    grande no espera indefinidamente detrás de los pequeños que lo adelantan.
+    """
+    if not execution.isolated:
+        return pending[:1]
+    window = pending[:BACKFILL_JOBS]
+
+    def device(job):
+        return executors[job["model"], job["kind"]]["device"]
+
+    def size(job):
+        return estimates.resources(job, device(job)).vram_bytes
+
+    order = sorted(window, key=size, reverse=True)
+    head = next((job for job in window if ready(job)), None)
+    if head is None or fits(head):
+        return order
+    return [job for job in order if job is head or device(job) != device(head)]
+
+
+class _Running:
+    """Trabajo lanzado: su plan, su ejecución, su identidad y sus recursos."""
+
+    def __init__(self, job, run, identity, resources):
+        self.job, self.run, self.identity, self.resources = job, run, identity, resources
+
+
+def _execute(state, jobs, pool, execution):
+    """Recorrer el plan por orden de prioridad respetando dependencias y recursos.
+
+    Un trabajo se lanza cuando sus dependencias están confirmadas y `ResourcePool` lo
+    admite. Si no cabe, se prueban los siguientes del plan. Sin ranuras aisladas, cada
+    trabajo CUDA se ejecuta en este proceso hasta terminar, como antes. Con ranuras, cada
+    trabajo GPU corre en su proceso y este bucle solo lanza, espera y confirma. Una parada o
+    un fallo detienen los lanzamientos, piden a los trabajos en curso que se detengan en su
+    siguiente barrera y esperan a todos antes de terminar.
+    """
+    from .campaign_slots import (
+        SlotProcess,
+        SlotTask,
+        executor_name,
+        new_event,
+        run_fields,
+        slot_environment,
+        strict_fp32,
+        wait,
+    )
+
+    admission = ResourcePool(execution)
+    estimates = PeakEstimates(execution, state.output / OBSERVED_RESOURCES)
+    pending, threads, slots = list(jobs), {}, {}
+    # Trabajos CUDA declarados en el proceso de la campaña: uno a la vez, en un hilo.
+    in_process = ThreadPoolExecutor(1) if execution.isolated else None
+    event = new_event() if execution.isolated else None
+    failure, paused = None, False
+
+    def finish(entry, report):
+        admission.release(entry.resources)
+        state.record(entry.job, state.confirm(entry.job, entry.run, entry.identity, report))
+        _summary(
+            state.output,
+            state.identity,
+            jobs,
+            state.receipts,
+            "running",
+            execution=execution.record(),
+        )
+
+    def collect(block):
+        nonlocal failure, paused
+        handles = list(slots)
+        if block and (threads or slots):
+            futures = list(threads)
+            if futures and not handles:
+                wait_futures(futures, return_when=FIRST_COMPLETED, timeout=0.5)
+            elif handles:
+                wait(handles, 0.05 if futures else 0.5)
+        for future in [future for future in threads if future.done()]:
+            entry = threads.pop(future)
+            try:
+                report = future.result()
+            except Paused:
+                admission.release(entry.resources)
+                paused = True
+                continue
+            except BaseException as error:  # Se lanza al terminar los demás trabajos.
+                admission.release(entry.resources)
+                failure = failure or error
+                continue
+            try:
+                finish(entry, report)
+            except BaseException as error:
+                failure = failure or error
+        for handle in handles:
+            result = handle.poll()
+            if result is None:
+                continue
+            entry = slots.pop(handle)
+            status, value, usage = result[:3]
+            state.usage[entry.job["id"]] = usage
+            estimates.observe(entry.job, usage)
+            if status == "completed":
+                try:
+                    finish(entry, value)
+                except BaseException as error:
+                    failure = failure or error
+            else:
+                admission.release(entry.resources)
+                if status == "paused":
+                    paused = True
+                elif value["type"] == "OutOfMemoryError" and estimates.grow(
+                    entry.job, entry.resources
+                ):
+                    # Solo falló este proceso: se repite desde su intento con más VRAM.
+                    pending.insert(0, entry.job)
+                else:
+                    failure = failure or RuntimeError(
+                        f"{entry.job['id']} falló en su proceso: {value['type']}: "
+                        f"{value['message']}\n{result[3] if len(result) > 3 else ''}"
+                    )
+
+    def ready(job):
+        return all(dep in state.receipts for dep in job["depends"])
+
+    def admitted(job):
+        resources = estimates.resources(job, state.executors[job["model"], job["kind"]]["device"])
+        # Con trabajos en curso, uno que no cabe en disco espera a que liberen su reserva.
+        fits = admission.admits(resources) and (not (threads or slots) or state.fits(job))
+        return resources, fits
+
+    def reserves(job):
+        """Si el trabajo no cabe por recursos que otros lanzamientos le seguirían quitando.
+
+        Esperar al hilo de la campaña no reserva el dispositivo: las ranuras siguen llenándose
+        hasta que ese hilo quede libre.
+        """
+        resources, fits = admitted(job)
+        return not fits and not admission.waits_for_campaign(resources)
+
+    def launch():
+        """Lanzar los trabajos listos en orden. Devuelve si alguno empezó o se confirmó.
+
+        Sin ranuras aisladas solo se considera el primer trabajo pendiente, como en la
+        ejecución en serie. Con ranuras se adelantan como mucho `BACKFILL_JOBS` posiciones
+        del plan, para ocupar una ranura libre sin alejarse del orden declarado.
+        """
+        progressed = False
+        order = _launch_order(
+            pending, execution, estimates, state.executors, ready, lambda job: not reserves(job)
+        )
+        for job in order:
+            if failure is not None or paused or state.stop.requested:
+                break
+            if not ready(job):
+                continue
+            resources, fits = admitted(job)
+            if not fits:
+                continue
+            executor = state.executors[job["model"], job["kind"]]
+            prepared, receipt = state.prepare(job)
+            pending.remove(job)
+            progressed = True
+            if receipt is not None:
+                state.record(job, receipt)
+                continue
+            require_learning_allowed(f"el trabajo {job['id']}")
+            state.admit(job)
+            _release_tabular(job["model"], job["kind"])
+            run, identity = prepared
+            entry = _Running(job, run, identity, resources)
+            admission.acquire(resources)
+            if resources.device == "cpu":
+                threads[pool.submit(executor["run"], run)] = entry
+            elif execution.isolated and resources.campaign_process:
+                strict_fp32()
+                admission.hold_context()
+                threads[in_process.submit(executor["run"], run)] = entry
+            elif execution.isolated:
+                lock = state.folder(job) / ".job.lock"
+                lock.parent.mkdir(parents=True, exist_ok=True)
+                task = SlotTask(
+                    executor=executor_name(executor["run"]),
+                    run=run_fields(run),
+                    environment=slot_environment(execution, resources),
+                    vram_bytes=resources.vram_bytes,
+                    lock=str(lock),
+                )
+                slots[SlotProcess(task, event)] = entry
+            else:
+                try:
+                    if resources.device == "cuda":
+                        strict_fp32()
+                    report = executor["run"](run)
+                except BaseException:
+                    admission.release(resources)
+                    raise
+                finish(entry, report)
+                # El plan vuelve a recorrerse desde el principio, como en la ejecución en serie.
+                return True
+        return progressed
+
+    try:
+        while pending or threads or slots:
+            collect(block=False)
+            stopping = failure is not None or paused or state.stop.requested
+            if stopping:
+                if event is not None:
+                    event.set()
+                if not (threads or slots):
+                    break
+                collect(block=True)
+                continue
+            if pending and launch():
+                continue
+            if threads or slots:
+                collect(block=True)
+                continue
+            if pending:
+                blocked = pending[0]
+                raise RuntimeError(
+                    f"{blocked['id']} no puede empezar: sus dependencias no se confirmaron "
+                    "o sus recursos declarados no caben en la memoria libre"
+                )
+    except BaseException:
+        if event is not None:
+            event.set()
+        while threads or slots:
+            collect(block=True)
+        raise
+    finally:
+        if in_process is not None:
+            in_process.shutdown()
+    if failure is not None:
+        raise failure
+    if paused or state.stop.requested:
+        raise Paused
     _require(len(state.receipts) == len(jobs), "La campaña no confirmó todos sus trabajos")
     return "completed"
 
@@ -1315,6 +1675,11 @@ def main(argv=None):
         required=True,
         help="Declaración de almacenamiento con el margen de disco y los bytes medidos",
     )
+    execute.add_argument(
+        "--execution",
+        type=Path,
+        help="Declaración de ejecución con ranuras GPU, trabajadores CPU, memoria y lectura",
+    )
     execute.add_argument("--window", help="Ventana de campaña que se ejecuta, con sus fases base")
     sources.add_argument("--scope", choices=tuple(comparison.SCOPES), required=True)
     sources.add_argument("--comparison", type=Path)
@@ -1344,6 +1709,7 @@ def main(argv=None):
             _views_argument(args.views),
             args.output,
             storage=args.storage,
+            execution=args.execution,
             window=args.window,
         )
         result.pop("jobs")
