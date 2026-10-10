@@ -291,6 +291,10 @@ MEMORY_OPTIONS = {
 }
 # Clave opcional de `memory_options` con el recibo de la medida que fija sus valores.
 MEMORY_RECEIPT = "receipt"
+# Modelo con el que el recibo registra la medida de cada familia, y valor de una opción que
+# la medida no nombra porque usó el de la receta por defecto.
+RECEIPT_MODELS = {TITANS: "titans_mac", EPISODIC: "episodic_gru", CM: "cm_v1_core"}
+RECEIPT_DEFAULTS = {"recompute": False}
 _TABULAR = {"config", "arms", "cpu_workers"}
 _EPISODIC = {"recipe", "arms", "search_seed"}
 _TITANS = {"recipe", "arms", "search_seed"}
@@ -1053,8 +1057,14 @@ def _memory_options(declared, campaign, base):
         path = section["recipes"]["core_recipe"] if family == CM else section["path"]
         recipe = read_manifest(Path(path), 64 * 1024)[0]["recipe"]
         for option, value in declared[family].items():
+            # El tipo también cuenta: 1024.0 o 0 no son el 1024 o el false de la receta.
             _require(
-                value == PENDING or (option in recipe and recipe[option] == value),
+                value == PENDING
+                or (
+                    option in recipe
+                    and type(value) is type(recipe[option])
+                    and value == recipe[option]
+                ),
                 f"{family}.{option} debe estar pendiente o coincidir con su receta",
             )
         resolved[family] = dict(declared[family])
@@ -1063,11 +1073,43 @@ def _memory_options(declared, campaign, base):
         (receipt is not None) == fixed,
         "Las opciones de memoria fijadas, y solo ellas, citan el recibo de su medida",
     )
-    _require(
-        receipt is None or (isinstance(receipt, str) and (base / receipt).is_file()),
-        "El recibo de las opciones de memoria no existe",
-    )
+    if receipt is not None:
+        _require(
+            isinstance(receipt, str) and (base / receipt).is_file(),
+            "El recibo de las opciones de memoria no existe",
+        )
+        _measured(read_manifest(base / receipt, 1024**2)[0], resolved)
     return resolved
+
+
+def _measured(receipt, resolved):
+    """Exigir que el recibo contenga una medida de cada familia con sus valores fijados."""
+    entries = receipt.get("entries") if isinstance(receipt, dict) else None
+    _require(isinstance(entries, list), "El recibo de memoria no tiene medidas")
+    for family, options in resolved.items():
+        fixed = {option: value for option, value in options.items() if value != PENDING}
+        _require(
+            not fixed or any(_measures(entry, RECEIPT_MODELS[family], fixed) for entry in entries),
+            f"El recibo no contiene una medida de {family} con {fixed}",
+        )
+
+
+def _measures(entry, model, fixed):
+    """Una medida del modelo con esas opciones. El tipo cuenta, como frente a la receta."""
+    if not isinstance(entry, dict) or not isinstance(entry.get("recipe_options"), dict):
+        return False
+    measured = {
+        option: entry["recipe_options"].get(option, RECEIPT_DEFAULTS.get(option))
+        for option in fixed
+    }
+    return (
+        entry.get("model") == model
+        and entry.get("measured") is True
+        and all(
+            type(measured[option]) is type(value) and measured[option] == value
+            for option, value in fixed.items()
+        )
+    )
 
 
 def launch_blockers(campaign):

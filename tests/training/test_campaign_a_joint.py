@@ -402,6 +402,40 @@ def test_memory_options_block_the_launch_until_they_match_the_recipe(tmp_path):
     )
 
 
+RECEIPT = Path("reports/engineering/campaign-kernels-20261009/vram-throughput.json")
+
+
+@pytest.mark.parametrize(
+    ("model", "change"),
+    [
+        ("titans_mac", lambda entry: entry["recipe_options"].update(accumulation_rows=512)),
+        ("titans_mac", lambda entry: entry["recipe_options"].update(accumulation_rows=1024.0)),
+        ("episodic_gru", lambda entry: entry["recipe_options"].update(recompute=True)),
+        ("cm_v1_core", lambda entry: entry.update(measured=False)),
+        ("cm_v1_core", lambda entry: entry.update(model="cm_v1")),
+    ],
+    ids=["other_rows", "rows_as_float", "with_recompute", "not_measured", "other_model"],
+)
+def test_fixed_memory_options_need_a_measure_with_their_values_in_the_receipt(
+    tmp_path, model, change
+):
+    receipt = json.loads(RECEIPT.read_text())
+    for entry in receipt["entries"]:
+        if entry["model"] == model:
+            change(entry)
+    path = tmp_path / "receipt.json"
+    atomic_json(path, receipt)
+    with pytest.raises(ValueError, match="no contiene una medida"):
+        plan.load_campaign(
+            edited(tmp_path, lambda v: v["memory_options"].update(receipt=str(path)))
+        )
+    atomic_json(path, dict(receipt, entries={}))
+    with pytest.raises(ValueError, match="no tiene medidas"):
+        plan.load_campaign(
+            edited(tmp_path / "again", lambda v: v["memory_options"].update(receipt=str(path)))
+        )
+
+
 def test_run_refuses_a_campaign_with_pending_memory_options_before_reading_views(tmp_path):
     with pytest.raises(ValueError, match="no se puede lanzar"):
         engine.run_campaign(edited(tmp_path, pending), {}, tmp_path / "out")
