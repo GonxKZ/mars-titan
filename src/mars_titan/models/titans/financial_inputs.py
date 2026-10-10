@@ -18,7 +18,8 @@ from mars_titan.data.input_policy import (
 from mars_titan.data.price_windows import PRICE_WINDOW_CHANNELS, validate_price_window
 from mars_titan.training.cohort_contract import representation_identity
 
-from .config import bounded_integer, canonical
+from .config import MAX_BLOCK_ROWS, bounded_integer, canonical
+from .state import check_finite
 
 FINAL_TEST_US = 1_704_067_200_000_000
 HISTORICAL_START_US = 946_684_800_000_000
@@ -113,7 +114,7 @@ def _cpu_inputs(inputs, specification):
     if not isinstance(prices, np.ndarray) or prices.ndim != 3:
         raise ValueError("Los precios necesitan un lote NumPy de ventanas")
     size = len(prices)
-    bounded_integer(size, "lote", 1, 256)
+    bounded_integer(size, "lote", 1, MAX_BLOCK_ROWS)
     total, copied = 0, {}
     for name, width in specification.dimensions.items():
         value = inputs[name]
@@ -248,6 +249,29 @@ def validated_cpu_batch(batch, specification):
     return result
 
 
+_PINNED_DTYPES = {
+    np.dtype(np.float32): torch.float32,
+    np.dtype(np.float64): torch.float64,
+    np.dtype(np.bool_): torch.bool,
+    np.dtype(np.int64): torch.int64,
+}
+
+
+def device_tensor(value, device, dtype):
+    """Copiar una vista CPU al dispositivo. En CUDA pasa por memoria fijada sin esperar.
+
+    Una copia desde memoria paginable sincroniza el flujo antes de empezar. Desde memoria
+    fijada la copia es asíncrona y el asignador de PyTorch conserva el búfer hasta que
+    termina. Los valores son los mismos que con `torch.tensor`.
+    """
+    source = _PINNED_DTYPES.get(value.dtype)
+    if torch.device(device).type != "cuda" or source is None:
+        return torch.tensor(value, device=device, dtype=dtype)
+    pinned = torch.empty(value.shape, dtype=source, pin_memory=True)
+    pinned.numpy()[...] = value
+    return pinned.to(device=device, dtype=dtype, non_blocking=True)
+
+
 @dataclass(frozen=True, init=False)
 class DecisionBatch:
     inputs: dict[str, torch.Tensor]
@@ -291,8 +315,7 @@ class DecisionBatch:
         if self._signature() != self._versions:
             raise ValueError("Las entradas cambiaron después de su validación CPU")
         for value in self.inputs.values():
-            if not torch.isfinite(value).all():
-                raise ValueError("Una entrada contiene NaN o infinito")
+            check_finite(value, "Una entrada")
 
     @classmethod
     def from_corpus(cls, batch, specification, *, device="cpu", dtype=torch.float32):
@@ -309,12 +332,11 @@ class DecisionBatch:
         if dtype not in (torch.float32, torch.float64):
             raise ValueError("El cálculo requiere float32 o float64")
         tensors = {
-            name: torch.tensor(value, device=device, dtype=dtype)
-            for name, value in batch.inputs.items()
+            name: device_tensor(value, device, dtype) for name, value in batch.inputs.items()
         }
         return cls._create(
             tensors,
-            torch.tensor(batch.presence, device=device, dtype=torch.bool),
+            device_tensor(batch.presence, device, torch.bool),
             batch.flow_ids,
             batch.sample_ids,
             batch.prediction_at,

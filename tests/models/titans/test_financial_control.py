@@ -262,5 +262,8 @@ def test_mac_sdpa_math_matches_ordinary_and_probe_routes_in_each_mode(
         ("diagnostic", True, True, False),
         ("diagnostic", True, True, False),
     ]
-    assert len(native_backbone) == (2 if not training and not differentiable else 0)
+    # El codificador de precios calcula la última capa solo para el último token en todos
+    # los modos y no entra en la ruta nativa de PyTorch, que en CUDA aproxima GELU con tanh
+    # durante la inferencia sin gradiente. Entrenamiento e inferencia usan la misma GELU.
+    assert native_backbone == []
     assert diagnostic.local_control.config.identity()["mac_sdpa_backend"] == "math"

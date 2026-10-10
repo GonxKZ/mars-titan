@@ -6,6 +6,7 @@ import pytest
 from mars_titan.data.input_policy import HISTORICAL_MASKED
 from mars_titan.data.storage import sha256
 from mars_titan.memory import financial_observations as api
+from mars_titan.models.titans.config import MAX_BLOCK_ROWS
 from mars_titan.training.corpus_inputs import CorpusDataset
 from tests.training.chronological_fixture import chronological_corpus, phases
 
@@ -124,7 +125,12 @@ def test_eviction_redecodes_without_changing_the_stream(tmp_path):
 
 @pytest.mark.parametrize(
     "options",
-    [dict(block_rows=0), dict(block_rows=257), dict(block_rows=True), dict(max_cached_bytes=1)],
+    [
+        dict(block_rows=0),
+        dict(block_rows=MAX_BLOCK_ROWS + 1),
+        dict(block_rows=True),
+        dict(max_cached_bytes=1),
+    ],
 )
 def test_invalid_block_or_cache_budget_is_rejected_before_reading(tmp_path, options):
     _, streams = sources(tmp_path)
@@ -139,3 +145,19 @@ def test_changed_sample_file_is_rejected_by_the_block_reader(tmp_path):
     assert sha256(path) != dataset.assets[1]["samples_sha256"]
     with pytest.raises(ValueError):
         list(streams["train"].batched_events(block_rows=2))
+
+
+def test_blocks_above_256_rows_transform_their_price_windows_in_pieces():
+    # La receta de Titans-MAC lee bloques de 1.024 filas y _window_contexts admite 256. Cada
+    # fila debe salir igual que su ventana sola, también en las fronteras entre tramos.
+    from mars_titan.training.corpus_inputs import _price_contexts
+
+    rng = np.random.default_rng(7)
+    windows = [rng.uniform(1, 100, size=(70 + index % 9, 5)) for index in range(600)]
+    ends = np.array([63 + index % 7 for index in range(600)])
+    observed = api._block_window_contexts(windows, ends, 64)
+    expected = np.concatenate(
+        [_price_contexts(table, ends[i : i + 1], 64) for i, table in enumerate(windows)]
+    )
+    assert observed.shape == (600, 64, 5)
+    np.testing.assert_array_equal(observed, expected)

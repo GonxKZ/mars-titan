@@ -41,6 +41,10 @@ PAPER_CONVOLUTION_KERNEL = 4
 # Nombre de la identidad que reúne SiLU, la convolución causal de núcleo 4 y la norma L2 de
 # q y k, tal como las describe la sección 4.4.
 PAPER_PROJECTIONS = "titans_mac_paper_projections_v2"
+# Flujos por bloque y bytes de estado admitidos. Los valores por defecto siguen en 256 y
+# 64 MiB: un bloque mayor solo existe si la receta lo declara y cambia su identidad.
+MAX_BLOCK_ROWS = 4096
+MAX_STATE_BYTES = 1024**3
 
 
 @dataclass(frozen=True)
@@ -200,9 +204,9 @@ class MemoryConfig:
         if self.residual_layer_norm and self.dim < 2:
             raise ValueError("LayerNorm sobre una sola dimensión anula siempre la lectura")
         bounded_integer(self.depth, "depth", 1, 2)
-        bounded_integer(self.max_batch, "max_batch", 1, 256)
+        bounded_integer(self.max_batch, "max_batch", 1, MAX_BLOCK_ROWS)
         bounded_integer(self.max_tokens, "max_tokens", 1, 256)
-        bounded_integer(self.max_state_bytes, "max_state_bytes", 1, 256 * 1024 * 1024)
+        bounded_integer(self.max_state_bytes, "max_state_bytes", 1, MAX_STATE_BYTES)
         bounded_integer(self.parameter_seed, "parameter_seed", 0, 2**63 - 1)
         if type(self.normalize_qk) is not bool:
             raise ValueError("normalize_qk debe ser booleano")

@@ -473,6 +473,8 @@ def test_arms_override_their_model_in_every_scope(tmp_path):
         Path("configs/baselines/historical-masked-campaign-execution.json").read_text()
     )
     titans = document["models"]["titans_mac"]
+    # La prueba fija sus propios recursos de modelo para no depender de las cifras medidas.
+    titans.update(vram_mib=1792, scopes=dict(CN=dict(vram_mib=1280, host_mib=5120)))
     titans["arms"] = dict(
         titans_mac_online=dict(vram_mib=6000, scopes=dict(CN=dict(host_mib=4096)))
     )
