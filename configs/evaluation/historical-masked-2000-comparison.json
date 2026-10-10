@@ -566,5 +566,28 @@
       "turnover"
     ],
     "views": "per_market"
+  },
+  "predictive_ability": {
+    "kind": "daily_loss_predictive_ability_v1",
+    "status": "secondary_inferential",
+    "declared_at": "2026-10-10",
+    "use": "secondary_declared_before_results_not_for_model_selection",
+    "metrics": [
+      "mae"
+    ],
+    "unit": "utc_day_mean_of_seed_averaged_sessions_with_declared_market_weighting",
+    "min_days": 250,
+    "resampling": "circular_block_bootstrap_with_comparison_block_length_replicates_and_seed",
+    "horizon_sessions": 1,
+    "diebold_mariano": "variant_minus_base_bartlett_hac_harvey_correction_holm_within_family",
+    "hac_lags": "max_horizon_minus_one_and_integer_ceiling_of_cube_root_of_days",
+    "superior_predictive_ability": "family_base_benchmark_unstudentized_lower_consistent_upper",
+    "reality_check": "upper_pvalue_of_unstudentized_spa",
+    "stepm_size": 0.05,
+    "model_confidence_set": {
+      "size": 0.1,
+      "method": "R"
+    },
+    "block_length_diagnostic": "politis_white_2004_patton_2009_diagnostic_only"
   }
 }

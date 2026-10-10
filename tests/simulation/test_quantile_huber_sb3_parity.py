@@ -40,7 +40,7 @@ import numpy as np
 import pytest
 import torch
 
-from tests.suite_support import reference_module
+from tests.suite_support import REQUIRE_NATIVE, native_required, reference_module
 
 pytestmark = pytest.mark.external_reference
 
@@ -188,15 +188,42 @@ def test_the_parity_detects_a_changed_convention(loss, oracle, change):
 
 
 def native_check():
-    """Ejecutable `rl_variety_tests` junto al mars-titan-ppo declarado o compilado."""
+    """Ejecutable `rl_variety_tests` junto al mars-titan-ppo declarado o compilado.
+
+    Sin él la prueba se omite, salvo con MARS_TITAN_REQUIRE_NATIVE=1. La comprobación del
+    inicio de sesión solo exige mars-titan-ppo, y la prueba nativa también lleva la marca
+    `external_reference`, así que su omisión solo contaría como fallo si además se exigiera
+    el grupo `reference`. Por eso la ausencia del ejecutable falla aquí.
+    """
     declared = os.environ.get("MARS_TITAN_PPO_EXECUTABLE")
     executable = (Path(declared) if declared else PPO).parent / "rl_variety_tests"
     if not executable.is_file():
-        pytest.skip(
+        reason = (
             "Falta rl_variety_tests compilado junto a mars-titan-ppo "
             "(preset native-ppo-release o MARS_TITAN_PPO_EXECUTABLE)"
         )
+        if native_required(os.environ):
+            pytest.fail(f"{REQUIRE_NATIVE}=1 y {reason}")
+        pytest.skip(reason)
     return executable
+
+
+@pytest.mark.parametrize("strict", ["0", "1"])
+def test_a_missing_rl_variety_check_fails_only_when_native_is_required(
+    monkeypatch, tmp_path, strict
+):
+    ppo = tmp_path / "mars-titan-ppo"
+    ppo.write_bytes(b"")
+    monkeypatch.setenv("MARS_TITAN_PPO_EXECUTABLE", str(ppo))
+    monkeypatch.setenv(REQUIRE_NATIVE, strict)
+    # Se capturan las dos salidas para que una omisión inesperada no deje pasar la prueba.
+    with pytest.raises((pytest.fail.Exception, pytest.skip.Exception)) as outcome:
+        native_check()
+    expected = pytest.fail.Exception if strict == "1" else pytest.skip.Exception
+    assert outcome.type is expected
+    assert "Falta rl_variety_tests" in str(outcome.value)
+    (tmp_path / "rl_variety_tests").write_bytes(b"")
+    assert native_check() == tmp_path / "rl_variety_tests"
 
 
 def run_native(executable, document, path):
