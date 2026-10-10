@@ -26,6 +26,7 @@ from mars_titan.posttraining import adapter_matrix, campaign_stage, matrix_runs,
 from mars_titan.posttraining import chronological_matrix as cm
 from mars_titan.training import campaign_chain, chain_disjunction
 from mars_titan.training.campaign_plan import load_campaign, plan_campaign
+from mars_titan.training.label_maturity import FIT_PARTITIONS, label_maturity
 from mars_titan.training.learning_hold import LearningHoldError
 from tests.posttraining.campaign_fixture import CpuLease, base_campaign
 from tests.posttraining.real_only import real_data_only
@@ -35,6 +36,14 @@ FINAL_TEST = int(np.datetime64("2024-01-01", "us").astype(np.int64))
 # Padres congelados por ventana: uno por semilla en las cinco redes y las cuatro variantes de
 # Titans, el único de Ridge y los tres de XGBoost, cuya cadena solo tiene ese padre.
 FROZEN_PARENTS = 3 * (5 + 4) + 1 + 3
+
+
+def fit_labels(base, *windows):
+    """Última maduración de los tramos de ajuste de esas vistas, leída de sus manifiestos."""
+    return max(
+        label_maturity(base.views["US"] / window / "manifest.json", FIT_PARTITIONS)[0]
+        for window in windows
+    )
 
 
 def micros(day):
@@ -131,14 +140,14 @@ def test_jobs_depend_on_the_parent_selected_in_the_previous_window():
             )
             assert {item["case"]["mode"] for item in neural} == {"neural_pinball"}, arm
     windows = {
-        scope: [name for name, _ in staged_chain.scope_windows(stage["campaign"], scope)]
+        scope: [name for name, _ in campaign_chain.scope_windows(stage["campaign"], scope)]
         for scope in stage["scopes"]
     }
     for job in jobs:
         order = windows[job["scope"]]
         assert order.index(job["parent_window"]) == order.index(job["window"]) - 1
         # Búsquedas de la semilla 42 o finalistas de 43 y 44 del brazo base en k-1.
-        expected = staged_chain.parent_jobs(
+        expected = campaign_chain.parent_jobs(
             base, job["scope"], job["parent_window"], job["base_arm"], job["seed"]
         )
         assert job["depends"] == expected and expected
@@ -319,8 +328,12 @@ def test_variant_a_adapts_the_previous_parent_with_new_rows_and_publishes_the_ch
     assert micros("2022-01-01") <= proof["first_decision"] <= proof["last_decision"]
     assert proof["last_decision"] < micros("2022-04-01")
     assert proof["rows"] > 0 and proof["intersection"] == dict(train=0, validation=0, calibration=0)
+    assert proof["parent_labels_mature_until"] == fit_labels(base_a, "fold-000")
     assert proof["parent_labels_mature_until"] < micros("2022-01-01")
-    assert proof["labels_used_until"] < micros("2023-01-01")
+    assert proof["schema_version"] == 2 and "labels_used_until" not in proof
+    # Cualquier candidato de la cadena de fold-001 pudo usar las etiquetas de las dos vistas.
+    labels = fit_labels(base_a, "fold-000", "fold-001")
+    assert labels < micros("2023-01-01")
     # El normalizador del padre solo ve las filas nuevas de la prueba.
     parent_folder = output / "windows-data/US/fold-001/parents/gru/seed-42"
     normalization = json.loads((parent_folder / "normalization.json").read_text())
@@ -341,7 +354,7 @@ def test_variant_a_adapts_the_previous_parent_with_new_rows_and_publishes_the_ch
         identity = receipt["identity"]
         assert (identity["window"], identity["parent_window"]) == ("fold-001", "fold-000")
         assert identity["parent"]["job"] == PARENT
-        assert receipt["labels_used_until"] == proof["labels_used_until"]
+        assert receipt["labels_used_until"] == labels
         assert receipt["score"] == frozen["score"]
         if name != FROZEN:
             assert receipt["selection"]["best_epoch"] == 0
@@ -361,24 +374,25 @@ def test_variant_a_adapts_the_previous_parent_with_new_rows_and_publishes_the_ch
         )[0]
         parsed = read_window_receipt(record)
         assert record["parent"]["id"] == name
-        assert parsed.labels_used_until == proof["labels_used_until"]
+        assert parsed.labels_used_until == labels
         assert (
             dict(parsed.predictions)["validation"][0]
             == (receipt["predictions"]["validation"]["rows"])
         )
     # La cadena: en la ventana 0 el estado de la base, en la 1 el padre congelado, porque
     # ningún caso mejora estrictamente su puntuación de validación.
-    first = staged_chain.read_selection(output, "US", "fold-000", "gru", 42)
+    first = campaign_chain.read_selection(output, "US", "fold-000", "gru", 42)
     assert first["selected"]["kind"] == "base" and first["selected"]["job"] == PARENT
     assert first["parent"] is None and first["candidates"] == [] and first["fit_rows"] is None
     base_validation = json.loads((base_a.output / "jobs" / PARENT / "receipt.json").read_text())
     assert first["state"]["sha256"] == base_validation["parent"]["sha256"]
+    assert first["receipts"]["US"].labels_used_until == fit_labels(base_a, "fold-000")
     assert first["receipts"]["US"].labels_used_until < micros("2022-01-01")
-    second = staged_chain.read_selection(output, "US", "fold-001", "gru", 42)
+    second = campaign_chain.read_selection(output, "US", "fold-001", "gru", 42)
     assert second["selected"]["kind"] == "frozen_parent" and second["selected"]["job"] == FROZEN
     assert second["fit_rows"] is None and len(second["candidates"]) == 6
     assert second["parent"]["job"] == PARENT
-    assert second["labels_used_until"] == proof["labels_used_until"]
+    assert second["labels_used_until"] == labels
     assert summary["chain"] == {
         "US/fold-000/gru__chain/select-s42": dict(kind="base", job=PARENT),
         "US/fold-001/gru__chain/select-s42": dict(kind="frozen_parent", job=FROZEN),
@@ -428,7 +442,7 @@ def test_a_strictly_better_candidate_replaces_the_frozen_parent(
     monkeypatch.setattr(staged_chain, "validation_score", lower_head)
     output = tmp_path / "stage"
     assert run(base_a, output)["status"] == "completed"
-    chosen = staged_chain.read_selection(output, "US", "fold-001", "gru", 42)
+    chosen = campaign_chain.read_selection(output, "US", "fold-001", "gru", 42)
     assert chosen["selected"]["kind"] == "adapter"
     assert chosen["selected"]["job"] == "US/fold-001/gru__head/fit-s42"
     proof = json.loads((output / "windows-data/US/fold-001/fit-rows.json").read_text())
@@ -453,7 +467,7 @@ def test_a_validation_score_that_differs_from_the_fit_is_rejected(
         run(base_a, tmp_path / "stage")
 
 
-@pytest.mark.parametrize("change", ["selected", "receipt", "proof"])
+@pytest.mark.parametrize("change", ["selected", "receipt", "proof", "proof_schema"])
 def test_a_tampered_chain_or_proof_stops_the_next_run(base_a, tmp_path, recorder, change):
     output = tmp_path / "stage"
     assert run(base_a, output)["status"] == "completed"
@@ -470,11 +484,17 @@ def test_a_tampered_chain_or_proof_stops_the_next_run(base_a, tmp_path, recorder
         value["labels_used_until"] -= 1
         atomic_json(path, value)
     else:
+        # Una prueba de la versión 1, que declaraba su propio límite de etiquetas, ya no vale.
         path = output / "windows-data/US/fold-001/fit-rows.json"
         value = json.loads(path.read_text())
-        value["intersection"]["calibration"] = 1
+        if change == "proof":
+            value["intersection"]["calibration"] = 1
+        else:
+            value["schema_version"] = 1
         atomic_json(path, value)
-    with pytest.raises(ValueError):
+    # La prueba se comprueba al leerla, antes de que la huella del recibo la delate.
+    message = "no corresponde a sus vistas" if change.startswith("proof") else None
+    with pytest.raises(ValueError, match=message):
         run(base_a, output)
 
 
@@ -655,7 +675,7 @@ def test_b6_chains_only_the_frozen_parent_of_the_previous_window_in_v2():
     )
     jobs = campaign_stage.plan_stage(stage)
     base = plan_campaign(stage["campaign"])
-    windows = [name for name, _ in staged_chain.scope_windows(stage["campaign"], "US+CN")]
+    windows = [name for name, _ in campaign_chain.scope_windows(stage["campaign"], "US+CN")]
     for arm in B6_ARMS:
         own = [job for job in jobs if job["base_arm"] == arm]
         assert [(job["window"], job["seed"]) for job in own] == [
@@ -667,7 +687,7 @@ def test_b6_chains_only_the_frozen_parent_of_the_previous_window_in_v2():
                 "frozen_parent",
                 None,
             )
-            assert job["depends"] == staged_chain.parent_jobs(
+            assert job["depends"] == campaign_chain.parent_jobs(
                 base, "US+CN", job["parent_window"], arm, job["seed"]
             )
     frozen = {(job["window"], job["base_arm"], job["seed"]): job["id"] for job in jobs}

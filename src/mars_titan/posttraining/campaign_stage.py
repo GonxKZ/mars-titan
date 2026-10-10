@@ -82,6 +82,7 @@ from mars_titan.training.campaign_plan import (
     scope_arms,
 )
 from mars_titan.training.corpus_inputs import CorpusDataset
+from mars_titan.training.label_maturity import FIT_PARTITIONS
 from mars_titan.training.learning_hold import LearningHoldError, require_learning_allowed
 
 from . import adapter_matrix, staged_chain, staged_rows
@@ -206,7 +207,7 @@ def load_stage(path):
         folds = campaign["comparison_config"]["resolved_scopes"]
         _require(
             config.keys() >= _STAGED_FIELDS
-            and config["chain_rule"] == staged_chain.RULE
+            and config["chain_rule"] == campaign_chain.RULE
             and config["data_policy"] == DATA_POLICY
             and config["cohort_reading"]["source"] == BLOCKS,
             "La variante A declara la regla de la cadena, la política real_edition_only y "
@@ -392,7 +393,7 @@ def plan_stage(stage):
     cases = {base_arm: _cases(stage, spec) for base_arm, spec in active.items()}
     jobs = []
     for scope in stage["scopes"]:
-        windows = [name for name, _ in staged_chain.scope_windows(campaign, scope)]
+        windows = [name for name, _ in campaign_chain.scope_windows(campaign, scope)]
         for parent_window, window in zip(windows, windows[1:], strict=False):
             for base_arm, spec in active.items():
                 if spec["design"] == FROZEN_ONLY:
@@ -408,7 +409,7 @@ def plan_stage(stage):
                         base_arm=base_arm,
                         family=spec["family"],
                         seed=seed,
-                        depends=staged_chain.parent_jobs(
+                        depends=campaign_chain.parent_jobs(
                             base_jobs, scope, parent_window, base_arm, seed
                         ),
                     )
@@ -499,7 +500,7 @@ def plan_chain(stage, jobs):
     families = {(job["scope"], job["base_arm"]): job["family"] for job in jobs}
     chains = []
     for scope in stage["scopes"]:
-        windows = [name for name, _ in staged_chain.scope_windows(campaign, scope)]
+        windows = [name for name, _ in campaign_chain.scope_windows(campaign, scope)]
         pairs = list(
             dict.fromkeys((job["base_arm"], job["seed"]) for job in jobs if job["scope"] == scope)
         )
@@ -509,15 +510,15 @@ def plan_chain(stage, jobs):
                     depends = grouped.get((scope, window, base_arm, seed), [])
                     _require(depends, f"{scope}/{window}/{base_arm} no tiene posentrenamiento")
                 else:
-                    depends = staged_chain.parent_jobs(base_jobs, scope, window, base_arm, seed)
+                    depends = campaign_chain.parent_jobs(base_jobs, scope, window, base_arm, seed)
                 chains.append(
                     dict(
-                        id=staged_chain.chain_job_id(scope, window, base_arm, seed),
+                        id=campaign_chain.chain_job_id(scope, window, base_arm, seed),
                         scope=scope,
                         window=window,
                         anchor=window,
                         parent_window=windows[index - 1] if index else None,
-                        arm=staged_chain.chain_arm(base_arm),
+                        arm=campaign_chain.chain_arm(base_arm),
                         base_arm=base_arm,
                         family=families[scope, base_arm],
                         seed=seed,
@@ -576,7 +577,7 @@ def count_stage(stage, jobs=None):
         for job in selected:
             entry = arms.setdefault(job["arm"], {}).setdefault(str(job["seed"]), Counter())
             entry[job["kind"]] += 1
-        windows = list(staged_chain.scope_windows(stage["campaign"], scope))
+        windows = list(campaign_chain.scope_windows(stage["campaign"], scope))
         fitted = list(dict.fromkeys(job["window"] for job in selected if job["kind"] == FIT))
         scopes[scope] = dict(
             windows=len(windows),
@@ -653,6 +654,7 @@ def _code():
         "posttraining/staged_rows.py",
         "posttraining/staged_chain.py",
         "training/campaign_chain.py",
+        "training/label_maturity.py",
         "posttraining/matrix_runs.py",
         "environments/view_cohorts.py",
         "posttraining/adapter_matrix.py",
@@ -824,6 +826,16 @@ class _Stage:
             self.populations[key] = index_manifest(self.window_folder(scope, window))
         return self.populations[key]
 
+    def maturity(self, path):
+        """Maduración de los tramos de ajuste de una vista, con la caché de la campaña base."""
+        return self.base.maturity_of(path, FIT_PARTITIONS)[0]
+
+    def labels_used_until(self, scope, window):
+        """Última etiqueta que pudo fijar cualquier candidato de la cadena de la ventana."""
+        return campaign_chain.chain_labels_used_until(
+            self.campaign, scope, self.base.views[scope]["windows"], window, self.maturity
+        )
+
     def proof(self, scope, window, parent_window):
         """Prueba de disjunción de las filas nuevas de una ventana, calculada una vez."""
         key = (scope, window)
@@ -841,11 +853,13 @@ class _Stage:
                     CorpusDataset(Path(self.view(scope, window)["path"]), input_policy=self.policy),
                     parent_fold=self.fold(scope, parent_window),
                     fold=self.fold(scope, window),
+                    parent_labels_until=self.maturity(self.view(scope, parent_window)["path"]),
                 )
                 atomic_json(path, proof)
             proof, digest = read_manifest(path, 1024**2)
             _require(
                 proof.get("kind") == staged_rows.PROOF_KIND
+                and proof.get("schema_version") == staged_rows.PROOF_SCHEMA
                 and (proof["parent_view_sha256"], proof["view_sha256"]) == expected
                 and (proof["parent_window"], proof["window"]) == (parent_window, window)
                 and not any(proof["intersection"].values()),
@@ -1305,7 +1319,7 @@ class _Stage:
             updates=result["updates"],
             selection=result["selection"],
             fit_rows=fit_rows,
-            labels_used_until=proof["labels_used_until"],
+            labels_used_until=self.labels_used_until(job["scope"], job["window"]),
             predictions=predictions,
             final_test_opened=False,
             confirmed_at_utc=datetime.now(UTC).isoformat(),
@@ -1409,7 +1423,7 @@ class _Stage:
             **{name: receipt["predictions"][name] for name in masked_campaign.COMPARED},
         )
         state = dict(path=str(report_path.parent.resolve()), sha256=receipt["parent"]["sha256"])
-        labels = staged_rows.labels_used_until(self.open_dataset(scope, window))
+        labels = self.labels_used_until(scope, window)
         return None, [], selected, state, None, labels, predictions
 
     def _chain_choice(self, job):
@@ -1437,7 +1451,7 @@ class _Stage:
             == 1,
             f"{job['id']}: los candidatos no se validan con las mismas filas",
         )
-        chosen = staged_chain.choose(candidates)
+        chosen = campaign_chain.choose(candidates)
         receipt = self.receipts[chosen["job"]]
         frozen = next(c for c in candidates if c["kind"] == "frozen_parent")
         parent = dict(self.receipts[frozen["job"]]["identity"]["parent"])
@@ -1463,7 +1477,7 @@ class _Stage:
         """Elegir y publicar el predictor de la cadena. `selection.json` se escribe la última."""
         scope, window, base_arm, seed = job["scope"], job["window"], job["base_arm"], job["seed"]
         first = job["parent_window"] is None
-        existing = staged_chain.read_selection(self.output, scope, window, base_arm, seed)
+        existing = campaign_chain.read_selection(self.output, scope, window, base_arm, seed)
         if existing is not None:
             # Una selección confirmada se comprueba con los recibos, sin releer filas. La
             # retención v2 puede haber liberado la validación de la base al cerrar la ventana.
@@ -1484,7 +1498,7 @@ class _Stage:
         parent, candidates, selected, state, fit_rows, labels, predictions = (
             self._base_choice(job) if first else self._chain_choice(job)
         )
-        folder = staged_chain.chain_folder(self.output, scope, window, base_arm, seed)
+        folder = campaign_chain.chain_folder(self.output, scope, window, base_arm, seed)
         markets = self._market_receipts(
             folder,
             scope,
@@ -1494,9 +1508,9 @@ class _Stage:
             predictions,
         )
         atomic_json(
-            folder / staged_chain.SELECTION,
+            folder / campaign_chain.SELECTION,
             dict(
-                kind=staged_chain.SELECTION_KIND,
+                kind=campaign_chain.SELECTION_KIND,
                 schema_version=1,
                 campaign_sha256=self.campaign["sha256"],
                 stage_sha256=self.stage["sha256"],
@@ -1504,7 +1518,7 @@ class _Stage:
                 window=window,
                 base_arm=base_arm,
                 seed=seed,
-                rule=staged_chain.RULE,
+                rule=campaign_chain.RULE,
                 parent_window=job["parent_window"],
                 parent=parent,
                 candidates=candidates,
@@ -1516,7 +1530,7 @@ class _Stage:
                 confirmed_at_utc=datetime.now(UTC).isoformat(),
             ),
         )
-        confirmed = staged_chain.read_selection(self.output, scope, window, base_arm, seed)
+        confirmed = campaign_chain.read_selection(self.output, scope, window, base_arm, seed)
         _require(confirmed is not None, f"La selección de {job['id']} no se confirmó")
         self.selections[job["id"]] = confirmed
 

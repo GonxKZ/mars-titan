@@ -44,8 +44,8 @@ from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.evaluation import long_short_comparison
 from mars_titan.evaluation import walk_forward_comparison as walk
+from mars_titan.training import campaign_chain
 
-from . import staged_chain
 from .campaign_stage import FROZEN as FROZEN_JOB
 from .campaign_stage import (
     FROZEN_ONLY,
@@ -132,7 +132,7 @@ def _groups(stage):
                 FROZEN: job["base_arm"],
                 CONTINUATION: None,
                 ADAPTED: [],
-                CHAIN: staged_chain.chain_arm(job["base_arm"]) if staged else None,
+                CHAIN: campaign_chain.chain_arm(job["base_arm"]) if staged else None,
                 BASE: job["base_arm"],
                 "jobs": {},
             },
@@ -346,14 +346,14 @@ def _stage_receipt(stage_output, job, identity, view_sha256):
 def _chain_entry(stage_output, stage, scope, window, base_arm, seed, entries):
     """Fuentes del predictor de la cadena: las del trabajo que eligió su selección.
 
-    La selección se lee con `staged_chain.read_selection`, que exige su regla y sus
+    La selección se lee con `campaign_chain.read_selection`, que exige su regla y sus
     recibos. Debe ser de esta etapa y elegir un trabajo confirmado de la misma ventana y
     semilla, con la huella del recibo que declara. Las predicciones son las de ese trabajo,
     sin copias. `entries` asocia cada trabajo de la etapa con su ventana, su semilla y sus
     fuentes ya comprobadas.
     """
-    label = f"{scope}/{window}/{staged_chain.chain_arm(base_arm)}/seed-{seed}"
-    selection = staged_chain.read_selection(stage_output, scope, window, base_arm, seed)
+    label = f"{scope}/{window}/{campaign_chain.chain_arm(base_arm)}/seed-{seed}"
+    selection = campaign_chain.read_selection(stage_output, scope, window, base_arm, seed)
     _require(
         selection is not None
         and selection["stage_sha256"] == stage["sha256"]

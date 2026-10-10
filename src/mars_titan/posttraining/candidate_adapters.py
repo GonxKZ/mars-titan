@@ -39,6 +39,7 @@ from mars_titan.memory.financial_session import FinancialPhase
 from mars_titan.models.predictive_adaptation import adapter_names, attach_adapters
 from mars_titan.models.quantile_head import ordered_quantiles
 from mars_titan.models.titans.config import canonical
+from mars_titan.training.campaign_chain import posttraining_rows
 from mars_titan.training.candidate_run import (
     HELDOUT,
     CandidateChronologicalPredictor,
@@ -61,7 +62,6 @@ from mars_titan.training.corpus_inputs import CorpusDataset
 from mars_titan.training.learning_hold import require_learning_allowed
 
 from . import chronological_matrix as cm
-from .staged_rows import posttraining_rows
 
 KIND = "candidate_posttraining_window"
 FROZEN_KIND = "candidate_frozen_parent"

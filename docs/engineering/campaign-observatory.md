@@ -45,7 +45,7 @@ observatorio las encuentre. Mientras no exista el resumen, la etapa aparece como
 declarada y sin resumen, nunca como trabajos completados.
 
 Estas fuentes no producen registros por ejecución. A suma 22.188 trabajos entre sus
-etapas y A v2 19.416, muy por encima del presupuesto por defecto de 4.096 registros, y
+etapas y A v2 21.331, muy por encima del presupuesto por defecto de 4.096 registros, y
 la web descarga todas las páginas del historial al abrirse.
 `observatory/window_campaigns.py` convierte cada resumen en una matriz de ámbito,
 ventana, brazo y nombre con el estado de cada trabajo, la fecha de su recibo y las

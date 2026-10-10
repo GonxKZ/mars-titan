@@ -112,18 +112,24 @@
       "transformer_compact_online": {
         "parent_arm": "transformer_compact",
         "cap_arm": "mars_titan_m1",
-        "partitions": ["calibration", "evaluation"],
+        "partitions": ["validation", "calibration", "evaluation"],
         "rule": {
           "optimizer": "sgd",
-          "learning_rate": "pending",
-          "block_rows": "pending",
-          "update_every": "pending",
-          "max_grad_norm": "pending",
+          "accumulation_rows": 256,
+          "update_every": 1,
+          "max_grad_norm": 1.0,
           "update_cap": "episodic_bank_writes"
+        },
+        "search_cases": {
+          "lr0": {"learning_rate": 0.0},
+          "lr1e-3": {"learning_rate": 0.001},
+          "lr1e-2": {"learning_rate": 0.01},
+          "lr1e-1": {"learning_rate": 0.1},
+          "lr1": {"learning_rate": 1.0}
         }
       }
     },
-    "limits": {"max_online_jobs": 57}
+    "limits": {"max_online_jobs": 133}
   },
   "memory_options": {
     "titans_mac": {"accumulation_rows": "pending"},

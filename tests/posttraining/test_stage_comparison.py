@@ -20,8 +20,9 @@ from mars_titan.data.input_policy import HISTORICAL_MASKED, policy_identity
 from mars_titan.data.storage import atomic_json, sha256
 from mars_titan.environments.walk_forward_receipt import RECEIPT_KIND as WINDOW_RECEIPT_KIND
 from mars_titan.models.quantile_head import QUANTILE_COLUMNS, QUANTILE_HEAD
-from mars_titan.posttraining import adapter_matrix, campaign_stage, staged_chain
+from mars_titan.posttraining import adapter_matrix, campaign_stage
 from mars_titan.posttraining import stage_comparison as compare
+from mars_titan.training import campaign_chain
 from tests.evaluation.test_comparison_sources import masked_view, save
 from tests.posttraining.campaign_fixture import write_configs
 
@@ -198,7 +199,7 @@ class Stage:
         resolved = self.loaded["stage"]["campaign"]["comparison_config"]["resolved_scopes"]["US"]
         fold = resolved["windows"][window]
         until = int(np.datetime64(fold["evaluation"][0], "us").astype(np.int64)) - 1
-        folder = staged_chain.chain_folder(self.output, "US", window, "gru", seed)
+        folder = campaign_chain.chain_folder(self.output, "US", window, "gru", seed)
         atomic_json(
             folder / "US.json",
             dict(
@@ -213,9 +214,9 @@ class Stage:
         )
         frozen = selected["kind"] == "frozen_parent"
         atomic_json(
-            folder / staged_chain.SELECTION,
+            folder / campaign_chain.SELECTION,
             dict(
-                kind=staged_chain.SELECTION_KIND,
+                kind=campaign_chain.SELECTION_KIND,
                 schema_version=1,
                 campaign_sha256=self.loaded["stage"]["campaign"]["sha256"],
                 stage_sha256=self.loaded["stage"]["sha256"],
@@ -223,7 +224,7 @@ class Stage:
                 window=window,
                 base_arm="gru",
                 seed=seed,
-                rule=staged_chain.RULE,
+                rule=campaign_chain.RULE,
                 parent_window="fold-000",
                 parent=dict(id="US/fold-000/gru", sha256="8" * 64),
                 candidates=candidates,
@@ -489,7 +490,7 @@ def test_v2_declaration_adds_the_chain_and_the_base_retrain_on_the_joint_scope()
     joint = stage["campaign"]["comparison_config"]["joint_design"]
     for base_arm, config in loaded["configs"].items():
         group = loaded["groups"][base_arm]
-        chain = staged_chain.chain_arm(base_arm)
+        chain = campaign_chain.chain_arm(base_arm)
         assert group["chain"] == chain and group["base_retrain"] == base_arm
         assert config["arms"][chain]["family"] == "posttraining_chain"
         families = config["resolved_families"]
@@ -544,9 +545,9 @@ def test_the_chain_needs_a_confirmed_selection_of_this_stage(tmp_path):
     with pytest.raises(ValueError, match="Falta la selección de la cadena US/fold-001"):
         stage.sources()
     selected = stage.publish_selection("gru__head")
-    path = staged_chain.chain_folder(stage.output, "US", "fold-001", "gru", 42)
-    document = json.loads((path / staged_chain.SELECTION).read_text())
-    save(path / staged_chain.SELECTION, dict(document, stage_sha256="0" * 64))
+    path = campaign_chain.chain_folder(stage.output, "US", "fold-001", "gru", 42)
+    document = json.loads((path / campaign_chain.SELECTION).read_text())
+    save(path / campaign_chain.SELECTION, dict(document, stage_sha256="0" * 64))
     with pytest.raises(ValueError, match="Falta la selección de la cadena"):
         stage.sources()
     # Un recibo reescrito después de la selección ya no es el que se eligió.

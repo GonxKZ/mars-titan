@@ -8,37 +8,23 @@ por identidad de fila (activo y fila de su archivo de muestras, que las vistas d
 edición comparten) contra los tres tramos del padre en su vista, guarda los recuentos y la
 intersección vacía y resume las filas nuevas con su huella.
 
-`posttraining_rows`, `asset_digest`, `combine` y `row_fingerprint` son las de
-`training.campaign_chain`, con la misma huella, para que el verificador de disjunción y
-los recibos de la cadena coincidan. `labels_used_until` hace de `training.label_maturity`
-sobre las mismas etiquetas aceptadas.
+El intervalo de las filas nuevas y su huella son las de `training.campaign_chain`, las
+mismas que usa el verificador de disjunción. La maduración de las etiquetas del padre la
+calcula `training.label_maturity` desde el manifiesto de su vista y la etapa la pasa a la
+prueba, así que este módulo no repite ese cálculo.
 """
 
 import numpy as np
 import pyarrow.parquet as pq
 
 from mars_titan.environments.walk_forward_receipt import _microseconds
-from mars_titan.training.campaign_chain import (
-    FINGERPRINT,
-    asset_digest,
-    combine,
-    posttraining_rows,
-    row_fingerprint,
-)
-
-__all__ = [
-    "FINGERPRINT",
-    "asset_digest",
-    "combine",
-    "fit_rows_proof",
-    "labels_used_until",
-    "partition_rows",
-    "posttraining_rows",
-    "row_fingerprint",
-]
+from mars_titan.training.campaign_chain import asset_digest, combine, posttraining_rows
 
 PARENT_PARTITIONS = ("train", "validation", "calibration")
 PROOF_KIND = "staged_posttraining_fit_rows"
+# La versión 2 recibe la maduración del padre de `label_maturity` y ya no declara
+# `labels_used_until`, que la etapa calcula con `campaign_chain.chain_labels_used_until`.
+PROOF_SCHEMA = 2
 
 
 def _require(condition, message):
@@ -65,23 +51,13 @@ def partition_rows(dataset, partitions):
     return result, samples
 
 
-def _latest(rows):
-    return max((int(value[2].max()) for value in rows.values()), default=None)
-
-
-def labels_used_until(dataset, partitions=PARENT_PARTITIONS):
-    """Madurez de la última etiqueta aceptada de esos tramos de la vista."""
-    rows, _ = partition_rows(dataset, partitions)
-    latest = [value for value in (_latest(found) for found in rows.values()) if value is not None]
-    _require(latest, "La vista no tiene etiquetas en los tramos pedidos")
-    return max(latest)
-
-
-def fit_rows_proof(parent_dataset, dataset, *, parent_fold, fold):
+def fit_rows_proof(parent_dataset, dataset, *, parent_fold, fold, parent_labels_until):
     """Comprobar y resumir las filas nuevas del ajuste de una ventana frente al padre.
 
     Una fila es un activo y su fila del archivo de muestras. Para compararlas, cada activo
     presente en las dos vistas debe conservar el mismo archivo de muestras.
+    `parent_labels_until` es la maduración de los tramos de ajuste de la vista del padre
+    (`label_maturity` con `FIT_PARTITIONS`). Debe ser anterior a la primera decisión nueva.
     """
     start, end = posttraining_rows(parent_fold, fold)
     since, until = _microseconds(start), _microseconds(end)
@@ -103,19 +79,17 @@ def fit_rows_proof(parent_dataset, dataset, *, parent_fold, fold):
         for name, rows in used.items()
     }
     _require(not any(intersection.values()), "Una fila de ajuste ya la usó el padre en su ventana")
-    parent_mature = max(_latest(rows) for rows in used.values() if rows)
     _require(
-        parent_mature < since,
+        type(parent_labels_until) is int and parent_labels_until < since,
         "Una etiqueta del padre madura después del inicio de las filas nuevas",
     )
     decisions = np.concatenate([value[1] for value in fit.values()])
     mature = max(int(value[2].max()) for value in fit.values())
     _require(mature < validation, "Una etiqueta de ajuste madura dentro de la validación")
     rows, digest = combine({key: asset_digest(value[0]) for key, value in fit.items()})
-    window_mature = max(_latest(found[name]) for name in PARENT_PARTITIONS if found[name])
     return dict(
         kind=PROOF_KIND,
-        schema_version=1,
+        schema_version=PROOF_SCHEMA,
         parent_window=parent_fold["id"],
         window=fold["id"],
         parent_view_sha256=parent_dataset.identity,
@@ -128,13 +102,11 @@ def fit_rows_proof(parent_dataset, dataset, *, parent_fold, fold):
         parent_rows={
             name: int(sum(len(value[0]) for value in rows.values())) for name, rows in used.items()
         },
-        parent_labels_mature_until=parent_mature,
+        parent_labels_mature_until=parent_labels_until,
         intersection=intersection,
         rows=rows,
         sha256=digest,
         first_decision=int(decisions.min()),
         last_decision=int(decisions.max()),
         labels_mature_until=mature,
-        # Ajuste, selección y calibración del estado que salga de esta ventana, padre incluido.
-        labels_used_until=max(parent_mature, window_mature),
     )
