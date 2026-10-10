@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "kind": "mars_titan_residual_diagnostics_declaration",
+  "name": "residual-diagnostics-v1",
+  "declared_at": "2026-10-10",
+  "notes": "Diagnóstico de la etiqueta residual de MT-016 (#16) sobre entrenamiento y validación. Se declara antes de calcular ninguna cifra y no se cambia después de verla. La ventana principal es la del protocolo y de targets-v3. Las sensibilidades de ventana usan el mismo mínimo relativo y la del factor fija alfa en 0 y beta en 1. Los umbrales son fijos y no se estiman con los datos. El sector no se admite porque no hay pertenencia sectorial histórica verificable.",
+  "cutoff": "2023-12-31",
+  "partitions": ["train", "validation"],
+  "main": {"history": 252, "minimum": 126},
+  "sensitivities": [
+    {"name": "window_126", "kind": "window", "history": 126, "minimum": 63},
+    {"name": "window_504", "kind": "window", "history": 504, "minimum": 252},
+    {"name": "market_adjusted", "kind": "market_adjusted"}
+  ],
+  "return_thresholds": [0.05, 0.1, 0.2, 0.5],
+  "beta_bound": 5.0,
+  "beta_jump_thresholds": [0.05, 0.1, 0.25],
+  "quantiles": [0.001, 0.01, 0.05, 0.25, 0.5, 0.75, 0.95, 0.99, 0.999],
+  "extremes": 20,
+  "minimum_assets_per_session": 20,
+  "sector": {
+    "admitted": false,
+    "reason": "El protocolo exige pertenencia sectorial histórica y una serie de comparación verificable. La etiqueta Sector del CSV no lo acredita."
+  }
+}
