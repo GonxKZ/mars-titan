@@ -17,8 +17,8 @@ import pytest
 
 from mars_titan.data.storage import atomic_json
 from mars_titan.models.quantile_head import QUANTILE_COLUMNS
-from mars_titan.posttraining import campaign_stage, staged_chain
-from mars_titan.training import carried_predictions
+from mars_titan.posttraining import campaign_stage
+from mars_titan.training import campaign_chain, carried_predictions
 from tests.posttraining.campaign_fixture import CpuLease, base_campaign
 from tests.posttraining.real_only import real_data_only
 from tests.training.test_carried_predictions import PresenceCount
@@ -125,9 +125,9 @@ def test_the_tabular_chain_is_the_frozen_parent_carried_from_the_previous_window
         mine, theirs = by_sample(mine), by_sample(theirs)
         for column in ("sample_id", "target", "prediction"):
             np.testing.assert_array_equal(mine[column], theirs[column])
-    first = staged_chain.read_selection(output, "US", "fold-000", "ridge", 42)
+    first = campaign_chain.read_selection(output, "US", "fold-000", "ridge", 42)
     assert first["selected"]["kind"] == "base" and first["candidates"] == []
-    later = staged_chain.read_selection(output, "US", "fold-001", "ridge", 42)
+    later = campaign_chain.read_selection(output, "US", "fold-001", "ridge", 42)
     assert later["selected"]["kind"] == "frozen_parent" and later["fit_rows"] is None
     assert [c["kind"] for c in later["candidates"]] == ["frozen_parent"]
     assert later["selected"]["job"] == FROZEN

@@ -50,7 +50,6 @@ from pathlib import Path
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.environments.walk_forward_receipt import read_window_receipt
-from mars_titan.posttraining import staged_chain
 from mars_titan.training import campaign_chain, campaign_schedule, masked_campaign
 from mars_titan.training.campaign_plan import _arm_specs, plan_campaign
 from mars_titan.training.learning_hold import LearningHoldError, require_learning_allowed
@@ -582,8 +581,10 @@ def _code():
         "environments/walk_forward_receipt.py",
         "training/masked_campaign.py",
         "training/campaign_plan.py",
-        # Lectura de las selecciones de la cadena que llevan las cintas.
+        # Lectura de las selecciones de la cadena que llevan las cintas y la maduración real
+        # de las etiquetas que declaran sus recibos.
         "training/campaign_chain.py",
+        "training/label_maturity.py",
     )
     return {name: sha256(root / name) for name in names}
 
@@ -663,33 +664,31 @@ def chain_source(base, chain_output, seed, campaign_output):
     El predictor de la ventana k es el estado que el posentrenamiento elige con `val_k`:
     adaptador, continuación o padre congelado, y en la ventana 0 el estado elegido de la
     campaña base. Su `selection.json`, escrito el último, confirma la ventana: sin él no hay
-    cinta. La selección se lee con `posttraining.staged_chain.read_selection`, el mismo
+    cinta. La selección se lee con `training.campaign_chain.read_selection`, el mismo
     lector que usa la etapa que la escribe, así que la regla de elección, los candidatos y
     la huella y el padre de cada recibo de mercado se comprueban con un único contrato.
     Además, el recibo confirmado del trabajo elegido debe tener la huella que fija la
     selección y las huellas de evaluación del mercado. Su `labels_used_until` debe ser la
     maduración real de las etiquetas de las vistas de la ventana y de la anterior (las del
-    padre), recalculada aquí con `training.label_maturity`. Así ninguna cinta lleva
+    padre), recalculada aquí con `campaign_chain.chain_labels_used_until`, la misma regla
+    con la que la escribe la etapa de adaptadores. Así ninguna cinta lleva
     predicciones de un estado que ajustó, eligió o calibró con etiquetas posteriores a su
     primera decisión.
     """
-    from mars_titan.training.label_maturity import FIT_PARTITIONS, label_maturity
-
-    maturity = {}
+    from mars_titan.training.label_maturity import FIT_PARTITIONS
 
     def labels_used_until(scope, window):
-        windows = base.views[scope]["windows"]
-        names = list(windows)
-        index = names.index(window)
-        read = names[max(0, index - 1) : index + 1]
-        for name in read:
-            if (scope, name) not in maturity:
-                maturity[(scope, name)] = label_maturity(windows[name]["path"], FIT_PARTITIONS)[0]
-        return max(maturity[(scope, name)] for name in read)
+        return campaign_chain.chain_labels_used_until(
+            base.campaign,
+            scope,
+            base.views[scope]["windows"],
+            window,
+            lambda path: base.maturity_of(path, FIT_PARTITIONS)[0],
+        )
 
     def source(scope, market, window, predictor):
-        label = f"{scope}/{window}/{staged_chain.chain_arm(predictor)}"
-        selection = staged_chain.read_selection(chain_output, scope, window, predictor, seed)
+        label = f"{scope}/{window}/{campaign_chain.chain_arm(predictor)}"
+        selection = campaign_chain.read_selection(chain_output, scope, window, predictor, seed)
         _require(selection is not None, f"La cadena de {label} no tiene confirmada su selección")
         _require(
             market in selection["receipts"],
@@ -726,7 +725,7 @@ def require_chain_selections(stage, jobs, chain_output):
     Sin esta comprobación, una selección ausente solo aparece al montar la cinta de su
     trabajo, quizá horas después y con otros trabajos ya confirmados. El error enumera todas
     las que faltan para publicarlas de una vez. Una selección presente pero alterada detiene
-    la lectura con el error de `staged_chain.read_selection`. Devuelve la huella de cada
+    la lectura con el error de `campaign_chain.read_selection`. Devuelve la huella de cada
     selección con la etiqueta del informe de disjunción.
     """
     from mars_titan.training.chain_disjunction import selection_label
@@ -735,9 +734,9 @@ def require_chain_selections(stage, jobs, chain_output):
     needed = sorted({read for job in jobs for read in predictor_reads(stage, job)})
     found, missing = {}, []
     for scope, window, predictor in needed:
-        selection = staged_chain.read_selection(chain_output, scope, window, predictor, seed)
+        selection = campaign_chain.read_selection(chain_output, scope, window, predictor, seed)
         if selection is None:
-            missing.append(staged_chain.chain_job_id(scope, window, predictor, seed))
+            missing.append(campaign_chain.chain_job_id(scope, window, predictor, seed))
         else:
             found[selection_label(scope, window, predictor, seed)] = selection["sha256"]
     _require(

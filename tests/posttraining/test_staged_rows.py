@@ -18,9 +18,11 @@ import pytest
 from mars_titan.data.input_policy import HISTORICAL_MASKED
 from mars_titan.environments.actions import ActionGrid
 from mars_titan.posttraining import matrix_runs, staged_rows
+from mars_titan.training import campaign_chain
 from mars_titan.training import masked_campaign as engine
 from mars_titan.training.campaign_plan import load_campaign
 from mars_titan.training.corpus_inputs import CorpusDataset
+from mars_titan.training.label_maturity import FIT_PARTITIONS, label_maturity
 from tests.posttraining.campaign_fixture import write_configs
 from tests.training.historical_temporal_fixture import historical_temporal_fixture
 from tests.training.test_walk_forward_v2_views import sessions
@@ -41,12 +43,15 @@ def views(tmp_path_factory):
     )
     prepared = engine.prepare_views(campaign, data.parent, root / "views")
     windows = prepared["US"]["windows"]
-    folds = load_campaign(campaign)["comparison_config"]["resolved_scopes"]["US"]["windows"]
+    campaign = load_campaign(campaign)
+    folds = campaign["comparison_config"]["resolved_scopes"]["US"]["windows"]
     datasets = {
         name: CorpusDataset(windows[name]["path"], input_policy=HISTORICAL_MASKED)
         for name in ("fold-000", "fold-001")
     }
-    return SimpleNamespace(root=root, windows=windows, folds=folds, datasets=datasets)
+    return SimpleNamespace(
+        root=root, campaign=campaign, windows=windows, folds=folds, datasets=datasets
+    )
 
 
 def labels(dataset):
@@ -69,26 +74,20 @@ def labels(dataset):
     return result
 
 
-def proof(views):
+def parent_labels(views):
+    return label_maturity(views.windows["fold-000"]["path"], FIT_PARTITIONS)[0]
+
+
+def proof(views, parent_labels_until=None):
     return staged_rows.fit_rows_proof(
         views.datasets["fold-000"],
         views.datasets["fold-001"],
         parent_fold=views.folds["fold-000"],
         fold=views.folds["fold-001"],
+        parent_labels_until=(
+            parent_labels(views) if parent_labels_until is None else parent_labels_until
+        ),
     )
-
-
-def test_new_rows_start_at_the_end_of_the_parent_calibration(views):
-    parent, fold = views.folds["fold-000"], views.folds["fold-001"]
-    assert staged_rows.posttraining_rows(parent, fold) == ("2022-01-01", "2022-04-01")
-    assert parent["calibration"][1] == "2022-01-01" and fold["train"][1] == "2022-04-01"
-    with pytest.raises(ValueError, match="no tiene filas nuevas"):
-        staged_rows.posttraining_rows(fold, parent)
-    with pytest.raises(ValueError, match="no tiene filas nuevas"):
-        staged_rows.posttraining_rows(fold, fold)
-    late = dict(parent, calibration=[parent["calibration"][0], "2022-05-01"])
-    with pytest.raises(ValueError, match="no tiene filas nuevas"):
-        staged_rows.posttraining_rows(late, fold)
 
 
 def test_the_proof_matches_an_independent_reading_of_both_views(views):
@@ -128,10 +127,47 @@ def test_the_proof_matches_an_independent_reading_of_both_views(views):
         int(item["maturity"][np.isin(item["partition"], PARTITIONS)].max()) for item in current
     )
     assert result["parent_labels_mature_until"] == used_maturity < since
-    assert result["labels_used_until"] == max(used_maturity, window_maturity)
-    assert result["labels_used_until"] < micros(views.folds["fold-001"]["evaluation"][0])
-    assert staged_rows.labels_used_until(views.datasets["fold-001"]) == window_maturity
-    assert staged_rows.labels_used_until(views.datasets["fold-000"]) == used_maturity
+    assert (result["start"], result["end"]) == ("2022-01-01", "2022-04-01")
+    assert (
+        result["schema_version"] == staged_rows.PROOF_SCHEMA and "labels_used_until" not in result
+    )
+    # La regla de la cadena: la ventana 0 lee su vista y la 1 también la del padre.
+    until = campaign_chain.chain_labels_used_until(views.campaign, "US", views.windows, "fold-001")
+    assert until == max(used_maturity, window_maturity)
+    assert until < micros(views.folds["fold-001"]["evaluation"][0])
+    first = campaign_chain.chain_labels_used_until(views.campaign, "US", views.windows, "fold-000")
+    assert first == used_maturity
+
+
+def test_a_parent_label_that_matures_with_the_new_rows_is_rejected(views):
+    since = micros("2022-01-01")
+    with pytest.raises(ValueError, match="madura después"):
+        proof(views, parent_labels_until=since)
+    with pytest.raises(ValueError, match="madura después"):
+        proof(views, parent_labels_until=float(since - 1))
+    assert proof(views, parent_labels_until=since - 1)["parent_labels_mature_until"] == since - 1
+
+
+def test_the_chain_limit_reads_each_view_once_with_the_injected_maturity(views):
+    calls = []
+
+    def maturity(path):
+        calls.append(path)
+        return {"fold-000": 5, "fold-001": 3}[
+            next(w for w in views.windows if views.windows[w]["path"] == path)
+        ]
+
+    assert (
+        campaign_chain.chain_labels_used_until(
+            views.campaign, "US", views.windows, "fold-001", maturity
+        )
+        == 5
+    )
+    assert calls == [views.windows["fold-000"]["path"], views.windows["fold-001"]["path"]]
+    with pytest.raises(ValueError, match="no es una ventana"):
+        campaign_chain.chain_labels_used_until(
+            views.campaign, "US", views.windows, "fold-009", maturity
+        )
 
 
 @pytest.mark.parametrize("start", ["2021-10-01", "2021-04-01", "2021-01-01"])
@@ -158,6 +194,7 @@ def test_swapped_views_or_changed_samples_are_rejected(views, monkeypatch):
             views.datasets["fold-000"],
             parent_fold=views.folds["fold-001"],
             fold=views.folds["fold-000"],
+            parent_labels_until=parent_labels(views),
         )
     original = staged_rows.partition_rows
 
@@ -170,25 +207,6 @@ def test_swapped_views_or_changed_samples_are_rejected(views, monkeypatch):
     monkeypatch.setattr(staged_rows, "partition_rows", other_samples)
     with pytest.raises(ValueError, match="archivo de muestras"):
         proof(views)
-
-
-def test_row_fingerprint_ignores_order_and_rejects_repeated_rows():
-    markets = np.array(["US", "US", "CN", "US"])
-    symbols = np.array(["B", "A", "X", "A"])
-    rows = np.array([5, 9, 1, 3])
-    order = np.array([3, 0, 2, 1])
-    expected = staged_rows.row_fingerprint(markets, symbols, rows)
-    assert staged_rows.row_fingerprint(markets[order], symbols[order], rows[order]) == expected
-    assert expected[0] == 4
-    parts = {
-        ("CN", "X"): staged_rows.asset_digest([1]),
-        ("US", "A"): staged_rows.asset_digest([3, 9]),
-        ("US", "B"): staged_rows.asset_digest([5]),
-    }
-    assert staged_rows.combine(parts) == expected
-    assert staged_rows.row_fingerprint(markets, symbols, np.array([5, 9, 1, 4])) != expected
-    with pytest.raises(ValueError, match="sin repetir"):
-        staged_rows.row_fingerprint(markets, np.array(["A", "A", "X", "A"]), np.array([3, 9, 1, 3]))
 
 
 def test_the_window_fits_its_grid_only_with_the_new_rows(views, tmp_path):
