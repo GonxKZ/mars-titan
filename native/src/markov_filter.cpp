@@ -13,6 +13,13 @@ namespace {
 constexpr long double probability_tolerance = 1e-12L;
 constexpr long double emission_tolerance = 1e-12L;
 constexpr long double negative_infinity = -std::numeric_limits<long double>::infinity();
+// Precisión declarada del control de cancelación: el épsilon del formato extendido de x86-64,
+// con 64 bits de mantisa. En aarch64 long double es binary128 y su épsilon, mucho menor, aceptaría
+// cancelaciones que x86-64 rechaza. Con la misma cota las dos arquitecturas aplican la misma regla
+// y aarch64 calcula con más precisión de la exigida. Un long double menos preciso, como el double
+// de MSVC, conserva su propio épsilon.
+constexpr long double declared_epsilon =
+    std::max(0x1p-63L, std::numeric_limits<long double>::epsilon());
 using LogWeights = std::array<long double, maximum_markov_states>;
 
 class EmissionSum {
@@ -183,8 +190,7 @@ long double relative_emission(const MarkovParameters& parameters,
     }
     constexpr long double roundoff_factor = 16;
     constexpr long double unit_log_scale = 1;
-    const long double roundoff = roundoff_factor * std::numeric_limits<long double>::epsilon() *
-                                 magnitude / 2;
+    const long double roundoff = roundoff_factor * declared_epsilon * magnitude / 2;
     // El control del condicionamiento evita confirmar diferencias dominadas por el redondeo.
     if (roundoff > emission_tolerance * std::max(unit_log_scale, std::abs(relative))) {
         throw std::runtime_error("La cancelación entre emisiones supera la precisión disponible");
