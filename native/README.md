@@ -105,6 +105,10 @@ Release utiliza `-fno-fast-math` y `-ffp-contract=off` en GCC y Clang. MSVC util
 
 La medición del núcleo debe incluir la preparación de entradas y el enlace con Python, además del tiempo interno. Deben registrarse las versiones, la configuración, las formas de los datos, las repeticiones, la memoria y el error frente a la referencia. Los tiempos de los perfiles instrumentados describen esas comprobaciones, no el rendimiento de Release.
 
+## Compilación cruzada a aarch64
+
+`native-aarch64-release` compila PPO, KLPO, el ejecutable financiero y el enlace episódico para Linux aarch64 con Clang y lld, y ejecuta CTest con qemu-user sin las pruebas de la etiqueta `optimizer-steps`. Necesita un entorno uv aarch64 en `MARS_TITAN_AARCH64_ENVIRONMENT` y una raíz con OpenSSL, zlib y zstd aarch64 en `MARS_TITAN_AARCH64_SYSROOT`. Con `MARS_TITAN_ENABLE_CUDA` las arquitecturas declaradas son `89-real;121-real`. Las órdenes y lo comprobado están en [plataformas de hardware](../docs/engineering/hardware-platforms.md#compilación-nativa-cruzada).
+
 ## Cobertura de líneas y ramas
 
 ```bash
