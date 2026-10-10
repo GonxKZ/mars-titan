@@ -156,8 +156,10 @@ EXTENSION_POINTS = {
 # Etapas que parten de los padres seleccionados en cada ventana de una campaña base
 # confirmada. Se ejecutan con su propia orden (`run_masked_campaign.py posttraining`).
 LATER_STAGES = {
+    # A declara la matriz v3, con los casos de Titans-MAC. B conserva la v2 porque no se
+    # ejecuta, y sus casos de las redes coinciden con los de la v3 salvo por la huella.
     "posttraining_adapter_matrix": dict(
-        config="configs/posttraining/adapter-matrix-v2.json",
+        config="configs/posttraining/adapter-matrix-v3.json",
         stages=dict(
             A="configs/posttraining/historical-masked-adapter-stage-a.json",
             B="configs/posttraining/historical-masked-adapter-stage-b.json",

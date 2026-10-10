@@ -157,5 +157,6 @@ Con estas medidas, los dos brazos B6 responden a la segunda vía de memoria con 
 
 - Ejecutar ajustes y comparaciones en la campaña A. La edición histórica desde 2000 y sus objetivos ya están verificados, pero el bloqueo de aprendizaje sigue activo.
 - Copiar la sección `mars_titan` a la configuración de A con los recuentos del diseño conjunto de #363.
+- Publicar la cadena de B6 para la etapa de políticas cuando la etapa de adaptadores publique las de las familias ampliadas. B6 no tiene puntos de adaptación, así que su cadena sería trivial como la de Ridge y XGBoost (#483): el ajuste elegido en k-1 trasladado a k con `carry_correction`, que también tendría que predecir la validación de k.
 - Decidir si entra `mars_titan_m1_k4_first_read`, que cuesta lo mismo que un lector con K = 4, y repetir la medida de caudal de los lectores y de B6 con el código actual sobre las vistas v3.1, en varias ventanas y con repeticiones, antes de fijar el calendario.
 - Los seis componentes declarados sin conexión quedan [fuera de la campaña A](../research/titans-mac-architecture.md#componentes-que-no-entran-en-la-campaña-a), cada uno con su motivo y su control de descarte.

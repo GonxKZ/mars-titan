@@ -29,7 +29,7 @@ COUNTS = dict(
         declared=(2385, 0),
         families={plan.EPISODIC: (180, 0), plan.MARS: (1620, 0), plan.CM: (1080, 0)},
         extended=(5265, 0),
-        adapters=(3654, 630),
+        adapters=(7182, 1302),
         rl=dict(
             declared=dict(training_jobs=1368, carried_jobs=0, reference_jobs=1221),
             extended=dict(training_jobs=2376, carried_jobs=0, reference_jobs=2775),
@@ -175,7 +175,7 @@ def test_the_adapter_stage_must_not_change_with_the_added_families(monkeypatch):
         return result
 
     monkeypatch.setattr(adapters, "count_stage", counted)
-    with pytest.raises(ValueError, match="adaptadores solo parte de referencias neuronales"):
+    with pytest.raises(ValueError, match="adaptadores no declara las familias ampliadas"):
         extensions.check_variant(prepared, "A")
 
 

@@ -315,8 +315,12 @@ def test_posttraining_hours_cover_every_stage_job_and_each_parent_cache(
     estimate = throughput.estimate_hours(campaign, counts, rates, stage=stage)
     assert throughput.POSTTRAINING in plan.LATER_STAGES
     matrix = estimate["families"][throughput.POSTTRAINING]
+    # Solo se estiman los brazos de las redes, los únicos que mide la matriz.
     assert (matrix["training_jobs"], matrix["prediction_jobs"]) == (fits, predictions)
     assert matrix["parent_caches"] == parents
+    unmeasured = sorted(set(stage["arms"]) - set(stage["families"]))
+    assert matrix["without_estimate"] == unmeasured
+    assert bool(unmeasured) == (variant == "A")
     # La matriz ajusta 5 épocas a 50 filas/s, 7 validaciones, calibración y evaluación.
     validation = (7 * 4_000 + 10_000) / 200
     if variant == "A":
@@ -347,6 +351,18 @@ def test_posttraining_hours_cover_every_stage_job_and_each_parent_cache(
     assert unmeasured["families"][throughput.POSTTRAINING] == dict(status="not_measured")
 
 
+def test_both_stages_share_the_measured_cases_despite_their_matrix_versions():
+    # A declara la matriz v3 y B la v2: los casos de las redes solo cambian en la huella.
+    a, b = (campaign_stage.load_stage(STAGES[variant]) for variant in "AB")
+    assert a["matrix_sha256"] != b["matrix_sha256"]
+    assert throughput._measured_cases(a) == throughput._measured_cases(b)
+    budget = copy.deepcopy(b)
+    budget["matrix"]["budget"]["batch_size"] *= 2
+    fewer = dict(b, families={arm: family for arm, family in b["families"].items() if arm != "gru"})
+    for other in (budget, fewer):
+        assert throughput._measured_cases(other) != throughput._measured_cases(a)
+
+
 def test_variant_b_costs_less_than_a_with_the_same_rates():
     estimates = []
     for variant in "AB":
@@ -359,7 +375,10 @@ def test_variant_b_costs_less_than_a_with_the_same_rates():
         estimates.append(throughput.estimate_hours(campaign, counts, rates, stage=stage))
         assert json.loads(json.dumps(estimates[-1])) == estimates[-1]
     comparison = throughput._comparison(estimates)
-    assert comparison["A"]["without_estimate"] == []
+    # La matriz medida solo cubre las redes. Los brazos de Titans-MAC y la cadena trivial de
+    # Ridge y XGBoost de A quedan sin estimar, y el total lo dice.
+    assert comparison["A"]["without_estimate"] == [throughput.POSTTRAINING]
+    assert comparison["B"]["without_estimate"] == []
     assert 0 < comparison["b_over_a"]["declared_options"] < 1
     assert comparison["b_over_a"]["fastest_options"] == pytest.approx(
         comparison["B"]["fastest_options"] / comparison["A"]["fastest_options"]

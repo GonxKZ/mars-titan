@@ -28,6 +28,7 @@ from mars_titan.training.checkpoints import save_training_state
 from mars_titan.training.corpus_inputs import CorpusDataset
 from mars_titan.training.learning_hold import HOLD_ENV
 from mars_titan.training.reference_run import HELDOUT_FULL_TRAIN_SESSIONS
+from tests.training.test_carried_predictions import PresenceCount
 from tests.training.test_masked_campaign import Recorder
 from tests.training.test_walk_forward_v2_views import fixture
 
@@ -51,8 +52,12 @@ INFERENCE = (
 SCORES = {"gru-00": 0.02, "gru-10": 0.01}
 
 
-def write_configs(folder, variant):
-    """Comparación, protocolo, campaña, matriz y etapa reducidos para una variante."""
+def write_configs(folder, variant, *, tabular=False):
+    """Comparación, protocolo, campaña, matriz y etapa reducidos para una variante.
+
+    Con `tabular` la comparación, la campaña y la etapa declaran además Ridge, cuya cadena
+    solo tiene el padre congelado.
+    """
     folder.mkdir(parents=True, exist_ok=True)
     protocol = json.loads(
         (CONFIGS / "evaluation/historical-masked-us-walk-forward-v2.json").read_text()
@@ -68,16 +73,17 @@ def write_configs(folder, variant):
             for market, name in scope["protocols"].items()
         }
     declared["scopes"]["US"]["protocols"]["US"] = str((folder / "us-protocol.json").resolve())
-    declared["arms"] = {key: declared["arms"][key] for key in ("zero", "gru")}
+    names = ("zero", "gru", "ridge") if tabular else ("zero", "gru")
+    declared["arms"] = {key: declared["arms"][key] for key in names}
     declared["arms"]["gru"]["seeds"] = [42]
     declared["comparison"].update(
         replicates=20,
         families=dict(references_vs_zero=dict(kind="delta", base="zero", variants=["gru"])),
     )
     atomic_json(folder / "comparison.json", declared)
-    tabular = json.loads((CONFIGS / "baselines/tabular-historical-masked.json").read_text())
-    tabular.update(ridge_alphas=[1.0], depths=[3], bins=[64], rates=[0.1])
-    atomic_json(folder / "tabular.json", tabular)
+    search = json.loads((CONFIGS / "baselines/tabular-historical-masked.json").read_text())
+    search.update(ridge_alphas=[1.0], depths=[3], bins=[64], rates=[0.1])
+    atomic_json(folder / "tabular.json", search)
     campaign = json.loads(
         (CONFIGS / f"baselines/historical-masked-campaign-{variant.lower()}.json").read_text()
     )
@@ -88,7 +94,7 @@ def write_configs(folder, variant):
         limits=dict(max_training_jobs=100, max_prediction_jobs=100),
     )
     campaign["neural"].update(arms={"gru": "gru"}, batch_size=BATCH)
-    campaign["tabular"].update(config="tabular.json", arms={})
+    campaign["tabular"].update(config="tabular.json", arms={"ridge": "ridge"} if tabular else {})
     # La comparación reducida no declara los brazos de Titans-MAC.
     campaign.pop("titans_mac")
     atomic_json(folder / "campaign.json", campaign)
@@ -104,7 +110,7 @@ def write_configs(folder, variant):
         campaign="campaign.json",
         matrix="matrix.json",
         scopes=["US"],
-        arms=["gru"],
+        arms=["gru", "ridge"] if tabular else ["gru"],
         limits=dict(max_training_jobs=100, max_prediction_jobs=100),
     )
     atomic_json(folder / "stage.json", stage)
@@ -199,12 +205,51 @@ def quantile_reference(run):
     return report
 
 
+def fixed_tabular(run):
+    """Ejecutor Ridge sustituto: estado ficticio y el recibo que acepta un traslado tabular.
+
+    Predice con la suma fija de las presencias, sin ajustar nada. Como no depende de la
+    ventana, el padre congelado de k-1 debe repetir sobre k las predicciones de la base en k.
+    """
+    from mars_titan.data.input_policy import masked_inputs
+    from mars_titan.training.tabular_corpus import _predict, feature_order
+
+    dataset = CorpusDataset(run.view, input_policy=HISTORICAL_MASKED)
+    run.folder.mkdir(parents=True, exist_ok=True)
+    # El estado no tiene parámetros: su huella solo identifica al padre en los recibos.
+    (run.folder / "model.npz").write_text(run.job["id"])
+    predictions = {}
+    for partition in ("validation", "calibration", "evaluation"):
+        path = run.folder / f"{partition}-predictions.parquet"
+        metrics = _predict(
+            PresenceCount(),
+            None,
+            dataset,
+            partition,
+            BATCH,
+            path,
+            presence=masked_inputs(HISTORICAL_MASKED),
+        )
+        predictions[partition] = dict(path=path.name, sha256=sha256(path), metrics=metrics)
+    report = dict(
+        status="completed",
+        model="ridge",
+        final_test_opened=False,
+        manifest_sha256=sha256(run.view),
+        feature_order=feature_order(HISTORICAL_MASKED),
+        checkpoint=dict(path="model.npz", sha256=sha256(run.folder / "model.npz")),
+        samples=dataset.manifest["counts"],
+        predictions=predictions,
+        **policy_identity(HISTORICAL_MASKED),
+    )
+    atomic_json(run.folder / "run.json", report)
+    return report
+
+
 def executors():
     carry = Recorder()
-    return {
-        key: dict(entry, run=quantile_reference if key == ("neural", engine.FIT) else carry)
-        for key, entry in engine.EXECUTORS.items()
-    }
+    fits = {("neural", engine.FIT): quantile_reference, ("ridge", engine.FIT): fixed_tabular}
+    return {key: dict(entry, run=fits.get(key, carry)) for key, entry in engine.EXECUTORS.items()}
 
 
 class CpuLease:
@@ -220,9 +265,9 @@ class CpuLease:
         pass
 
 
-def base_campaign(root, variant):
+def base_campaign(root, variant, *, tabular=False):
     """Preparar vistas y ejecutar la campaña base reducida con los dobles."""
-    campaign, stage = write_configs(root / "config", variant)
+    campaign, stage = write_configs(root / "config", variant, tabular=tabular)
     data = fixture(root / "data", ("US",))
     hold = root / "hold.json"
     hold.write_text(json.dumps({"training_allowed": True}), encoding="utf-8")

@@ -187,7 +187,7 @@ El orden exacto tiene un coste de lectura. Cada bloque es una lectura completa d
 
 ## Etapa por ventana de la campaña
 
-`posttraining/campaign_stage.py` recorre la matriz sobre la [campaña con máscaras](../research/training-campaign-2000.md#orquestación-de-los-brazos-con-entrenador) ya confirmada como un walk-forward por etapas, el diseño elegido el 9 de octubre (opción 1 con control). El padre de la ventana k es el estado que la campaña base eligió en k-1 y cada caso lo ajusta solo con las filas de k que ese padre no usó. La etapa se declara en dos configuraciones, una por variante de presupuesto: [A](../../configs/posttraining/historical-masked-adapter-stage-a.json) y [B](../../configs/posttraining/historical-masked-adapter-stage-b.json). Cada una indica su campaña, la matriz de versión 2, los ámbitos, los brazos neuronales (RNN, LSTM, GRU, DLinear y Transformer compacto), la lectura de las cohortes y los límites de trabajos. `load_stage` exige que la matriz declare objetivos para `quantile_head_v1`, que comparta política y lote con la campaña, que los ámbitos sigan su orden, que los brazos pertenezcan a la comparación y que las semillas de cada brazo sean las de la matriz. A debe declarar además `chain_rule: chain_validation_score_v1`, `data_policy: real_edition_only` y la lectura por bloques, y su campaña debe reentrenar todas las ventanas. Con la matriz de versión 3 admite también los [brazos cronológicos](#brazos-cronológicos).
+`posttraining/campaign_stage.py` recorre la matriz sobre la [campaña con máscaras](../research/training-campaign-2000.md#orquestación-de-los-brazos-con-entrenador) ya confirmada como un walk-forward por etapas, el diseño elegido el 9 de octubre (opción 1 con control). El padre de la ventana k es el estado que la campaña base eligió en k-1 y cada caso lo ajusta solo con las filas de k que ese padre no usó. La etapa se declara en dos configuraciones, una por variante de presupuesto: [A](../../configs/posttraining/historical-masked-adapter-stage-a.json) y [B](../../configs/posttraining/historical-masked-adapter-stage-b.json). Cada una indica su campaña, su matriz, los ámbitos, los brazos, la lectura de las cohortes y los límites de trabajos. A declara la matriz de versión 3 y once brazos base: las cinco redes (RNN, LSTM, GRU, DLinear y Transformer compacto), Ridge, XGBoost y los cuatro brazos de Titans-MAC de la campaña (`titans_transformer_direct`, `titans_mac_disabled`, `titans_mac_frozen` y `titans_mac_online`). Son los once predictores que lee la [etapa de políticas](../../configs/simulation/historical-masked-rl-stage-a.json), así que cada uno publica su cadena. B conserva la versión 2 y las cinco redes. `load_stage` exige que la matriz declare objetivos para `quantile_head_v1`, que comparta política y lote con la campaña, que los ámbitos sigan su orden, que los brazos pertenezcan a la comparación y que las semillas de cada brazo con casos sean las de la matriz. A debe declarar además `chain_rule: chain_validation_score_v1`, `data_policy: real_edition_only` y la lectura por bloques, y su campaña debe reentrenar todas las ventanas. Con la matriz de versión 3 admite también los [brazos cronológicos](#brazos-cronológicos).
 
 | Elemento | Regla |
 | --- | --- |
@@ -229,6 +229,10 @@ Cada familia lee solo esas filas:
 
 El trabajo `frozen` de cada brazo base, semilla y ventana k ≥ 1 aplica sin ajuste el estado elegido en k-1 a validación, calibración y evaluación de k. Usa el mismo recorrido que los ajustes: `evaluate_partition` con el modelo del padre en los brazos neuronales y `frozen_titans`, `frozen_readout` o `frozen_candidate` en los cronológicos, que reinician la memoria rápida en cada tramo y leen su calentamiento como un traslado de la campaña base. Así, un caso que no cambia pesos emite exactamente las mismas filas y empata con el padre. Registra cero actualizaciones.
 
+### Cadena trivial de Ridge y XGBoost
+
+Ridge y XGBoost no tienen puntos de adaptación en la matriz, pero las políticas leen su predictor de la cadena igual que el de las demás familias. Su cadena solo tiene el padre congelado (diseño `frozen_parent_only`). En cada ventana k ≥ 1 el trabajo `frozen` aplica el estado elegido por la base en k-1 con `carry_tabular(..., frozen_parent=True)`, el mismo traslado de la campaña, que además predice la validación de k porque la cadena la puntúa. Su recibo de traslado marca `frozen_parent` y el de la etapa tiene la misma forma que el de cualquier padre congelado, sin columnas de cuantiles porque estos modelos solo emiten la predicción puntual. La selección `chain_validation_score_v1` tiene entonces un único candidato y siempre publica ese padre, con los recibos walk-forward por mercado y la madurez de etiquetas de la ventana. Las semillas son las de la campaña (42 en Ridge y 42, 43 y 44 en XGBoost). Solo existe en A, porque B no tiene cadena, y estos brazos no entran en la [comparación de los brazos postentrenados](../research/metrics.md#brazos-postentrenados) porque no tienen continuación ni adaptadores que contrastar.
+
 ### Predictor de la cadena
 
 Por ámbito, ventana, brazo base y semilla, el trabajo `<ámbito>/<ventana>/<brazo base>__chain/select-s<semilla>` elige el predictor publicado con la regla `chain_validation_score_v1`:
@@ -252,7 +256,7 @@ Con la matriz de versión 3, un brazo de Titans-MAC, MARS-TITAN, CM-v1 o la GRU 
 - Todos los ajustes de un mismo padre deben aplicar las mismas actualizaciones, y el recibo se rechaza si no.
 - Tras confirmar un trabajo cronológico se borran sus índices de observaciones, que solo reconstruiría otra ejecución del mismo trabajo. El resumen registra los bytes liberados en `released_index_bytes`.
 
-Las configuraciones A y B del repositorio todavía declaran la matriz de versión 2 y solo brazos neuronales. Declarar en ellas los brazos de Titans-MAC cambia recuentos, límites y caudal y queda pendiente.
+A declara los cuatro brazos de Titans-MAC con la matriz de versión 3. B mantiene la versión 2 y solo las redes, porque no se ejecuta. Los lectores de MARS-TITAN y CM-v1 y la GRU candidata siguen en la declaración preparada de ampliación y no entran en la etapa mientras la campaña A no declare su sección. La medición de caudal todavía no mide los casos de Titans-MAC, así que la estimación de horas los deja en `without_estimate` junto con la cadena trivial de Ridge y XGBoost.
 
 ### Variante B
 
@@ -260,11 +264,11 @@ B conserva su configuración y su plan anclado: en las ventanas reentrenadas se 
 
 ### Recuento
 
-Por ventana y semilla hay 29 casos: cinco en cada familia recurrente y en DLinear y nueve en el Transformer. Con tres semillas son 87 por ventana. En A hay 45 ventanas, 42 con postentrenamiento, y 15 padres por ventana (cinco brazos por tres semillas).
+Por ventana y semilla hay 57 casos en A: 29 en las redes (cinco en cada familia recurrente y en DLinear y nueve en el Transformer) y 28 en Titans-MAC (cinco en `transformer_direct` y en `mac_disabled` y nueve en `mac_frozen` y en `mac_online`). Con tres semillas son 171 por ventana. A tiene 45 ventanas, 42 con postentrenamiento, y 31 padres congelados por ventana: tres semillas en cada uno de los nueve brazos con casos, la semilla 42 de Ridge y las tres de XGBoost. B solo cuenta los 29 casos de las redes.
 
 | Variante | Ventanas con ajuste | Ajustes | Padres congelados | Traslados | Selecciones de la cadena | Se ejecuta |
 | --- | ---: | ---: | ---: | ---: | ---: | --- |
-| A | 42 | 3.654 | 630 | 0 | 675 | Sí |
+| A | 42 | 7.182 | 1.302 | 0 | 1.395 | Sí |
 | B | 17 | 1.479 | 0 | 2.436 | 0 | No |
 
 Los límites de cada configuración (ajustes y predicciones) son iguales a su plan, como en la campaña base. `check` los comprueba sin leer datos. En la estimación de horas de `training/campaign_throughput.py`, las filas nuevas de cada ventana se aproximan con los recuentos como el ajuste de k menos ajuste, validación y calibración de k-1. Es una cota algo mayor, porque las filas que la purga quitó en las fronteras de k-1 sí están en el ajuste de k.
@@ -292,7 +296,7 @@ uv run --no-sync python scripts/run_masked_campaign.py posttraining run \
   --views US+CN=<vistas>/US+CN --campaign-output <campaña> --output <etapa>
 ```
 
-La etapa está registrada en `LATER_STAGES` de `training/campaign_plan.py` con la matriz de versión 2, la configuración de cada variante, su punto de entrada (`campaign_stage:run_stage`) y ninguna tarea pendiente, y `check` de la campaña la informa así. La orden única de la campaña la ejecuta con el subcomando `posttraining`, que delega en `campaign_stage.main`. La orden propia del módulo sigue disponible con los mismos argumentos. La [medición de caudal](../research/training-campaign-2000.md#medición-de-caudal) de la campaña mide también sus casos y estima sus horas.
+La etapa está registrada en `LATER_STAGES` de `training/campaign_plan.py` con la matriz de versión 3 de A, la configuración de cada variante, su punto de entrada (`campaign_stage:run_stage`) y ninguna tarea pendiente, y `check` de la campaña la informa así. La orden única de la campaña la ejecuta con el subcomando `posttraining`, que delega en `campaign_stage.main`. La orden propia del módulo sigue disponible con los mismos argumentos. La [medición de caudal](../research/training-campaign-2000.md#medición-de-caudal) de la campaña mide también sus casos y estima sus horas.
 
 ## Protección del aprendizaje
 
@@ -362,7 +366,9 @@ Se ejecutaron en CPU, sin GPU visible y sin pasos de optimizador. Las que recorr
 - `tests/posttraining/test_readout_windows.py` (5) y `test_candidate_adapters.py` (6), con el enlace nativo: los casos de M1 y la cabeza de la GRU candidata ajustados con las filas nuevas de la ventana siguiente emiten las filas de su padre congelado, y este reproduce en calibración y evaluación el traslado de la campaña base.
 - `tests/posttraining/test_readout_adapters.py` (13): además, la regla de las escalas M3 por etapas (las del brazo padre, anteriores a las filas nuevas) y la del ajuste base.
 - `tests/posttraining/test_heldout.py`: la evaluación congelada admite validación y sigue rechazando ajuste y test.
-- `tests/training/test_campaign_throughput.py`, `test_campaign_plan.py`, `test_campaign_extensions.py` y `test_storage_budget.py`: recuentos de A (3.654 y 630), horas con filas nuevas, padre congelado y caché, y el rechazo de recuentos sin filas nuevas.
+- `tests/posttraining/test_tabular_chain.py` (4): la etapa A publica una cadena para cada predictor que leen las políticas, Ridge y XGBoost solo planifican el padre congelado y su selección y B rechaza la cadena trivial. El recorrido usa la campaña A reducida con Ridge sustituido por una función fija de las presencias. El padre de fold-000 aplicado a fold-001 repite filas, objetivos y predicciones de la base en fold-001, sin cuantiles, y la selección publica ese padre como único candidato.
+- `tests/training/test_carried_predictions.py`: el traslado tabular con `frozen_parent` predice también la validación de la ventana posterior y rechaza la ablación y la regeneración.
+- `tests/training/test_campaign_throughput.py`, `test_campaign_plan.py`, `test_campaign_extensions.py` y `test_storage_budget.py`: recuentos de A (7.182 y 1.302), horas con filas nuevas, padre congelado y caché, el rechazo de recuentos sin filas nuevas, los brazos sin medir en `without_estimate` y la misma medida para las matrices de A y B, cuyos casos de las redes solo difieren en la huella.
 
 Diecisiete mutaciones dirigidas, aplicadas una a una sobre una copia del árbol, hacen fallar al menos una prueba cada una. Cubren la intersección, la madurez del padre, el inicio de las filas nuevas, el archivo de muestras y la huella de `staged_rows`, la desigualdad estricta, el desempate y el orden de la puntuación de `staged_chain`, el filtro y la lectura única de `ViewCohortSource`, la rejilla de `MatrixWindow`, la fase de ajuste de Titans-MAC y de la GRU candidata, la regla de las escalas M3 y, en la etapa, el filtro de filas nuevas, la ventana del padre y la comprobación de la puntuación declarada. En la primera pasada sobrevivieron dos: recorrer la validación en el orden escrito (la prueba aleatoria no distinguía los redondeos) y retirar la comparación entre la puntuación recalculada y la declarada. Se añadió una prueba para cada una y las dos fallan ahora.
 

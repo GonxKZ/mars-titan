@@ -18,6 +18,7 @@ from mars_titan.data import prediction_files
 from mars_titan.data.storage import atomic_json
 from mars_titan.evaluation import long_short_comparison as portfolio
 from mars_titan.evaluation import walk_forward_comparison as comparison
+from mars_titan.simulation import policy_plan
 from mars_titan.training import campaign_plan as plan
 from mars_titan.training import masked_campaign as engine
 from mars_titan.training import modality_ablation_stage as ablation
@@ -50,6 +51,16 @@ def schedule(base, folder):  # noqa: F811
 
 
 @pytest.fixture(scope="module")
+def unconsumed(tmp_path_factory):
+    """Retención sin las políticas como consumidoras, para recorrer solo base y ablación."""
+    document = json.loads(open(DECLARATION).read())
+    document["consumers"] = {}
+    path = tmp_path_factory.mktemp("retention") / "retention.json"
+    atomic_json(path, document)
+    return path
+
+
+@pytest.fixture(scope="module")
 def edition(tmp_path_factory):
     """Edición de precios sintética para la cartera larga y corta de la comparación."""
     root = tmp_path_factory.mktemp("edition")
@@ -75,7 +86,7 @@ class Calls:
 
 
 @pytest.fixture(scope="module")
-def walked(base, edition, tmp_path_factory):  # noqa: F811
+def walked(base, edition, unconsumed, tmp_path_factory):  # noqa: F811
     """Recorrido completo con un trabajo cuya regeneración no repite un bit."""
     root = tmp_path_factory.mktemp("rolling")
     # Copia propia de la campaña: la liberación no toca el fixture compartido.
@@ -104,7 +115,7 @@ def walked(base, edition, tmp_path_factory):  # noqa: F811
             return available["neural", engine.FIT](run)
 
         state = rolling.Rolling(
-            rolling.load_retention(DECLARATION),
+            rolling.load_retention(unconsumed),
             base.campaign,
             base.views,
             output,
@@ -275,11 +286,33 @@ def test_policy_needs_keep_each_evaluation_until_its_last_reading_window():
         )
         for w in range(4, 8)
     ]
-    needs = rolling_storage.policy_needs(jobs, positions, 42)
+    stage = dict(
+        policies=dict(predictor=dict(seed=42, source=policy_plan.BASE_SELECTED)),
+        universe_predictor="gru",
+        scopes=["US"],
+    )
+    needs = rolling_storage.policy_needs(stage, jobs, positions)
     assert needs[("US", "fold-000", "gru", 42)] == 4
     assert needs[("US", "fold-003", "gru", 42)] == 7
     assert needs[("US", "fold-007", "gru", 42)] == 7
     assert ("US", "fold-000", "transformer", 42) not in needs
+
+
+def test_with_the_chain_the_policies_only_read_the_base_in_the_first_window():
+    # Desde la ventana 1 la cadena publica tablas de los adaptadores, que solo se compactan.
+    stage = policy_plan.load_stage("configs/simulation/historical-masked-rl-stage-a.json")
+    jobs = policy_plan.plan_stage(stage)
+    resolved = stage["campaign"]["comparison_config"]["resolved_scopes"]
+    pairs = [(scope, window) for scope in stage["scopes"] for window in resolved[scope]["windows"]]
+    positions = {pair: index for index, pair in enumerate(pairs)}
+    chained = rolling_storage.policy_needs(stage, jobs, positions)
+    assert chained and {window for _, window, _, _ in chained} == {"fold-000"}
+    assert {predictor for *_, predictor, _ in chained} <= set(stage["predictors"])
+    predictor = dict(stage["policies"]["predictor"], source=policy_plan.BASE_SELECTED)
+    selected = dict(stage, policies=dict(stage["policies"], predictor=predictor))
+    everything = rolling_storage.policy_needs(selected, jobs, positions)
+    assert set(chained) < set(everything)
+    assert all(everything[key] == last for key, last in chained.items())
 
 
 def test_a_policy_input_is_compacted_and_released_only_after_its_last_reader(
@@ -287,6 +320,7 @@ def test_a_policy_input_is_compacted_and_released_only_after_its_last_reader(
     edition,
     tmp_path,
     monkeypatch,
+    unconsumed,
 ):
     on_cpu(monkeypatch)
     monkeypatch.setenv(HOLD_ENV, str(base.hold))
@@ -296,7 +330,7 @@ def test_a_policy_input_is_compacted_and_released_only_after_its_last_reader(
     path, campaign = schedule(base, tmp_path)
     windows = rolling.load_schedule(path, campaign)
     state = rolling.Rolling(
-        rolling.load_retention(DECLARATION),
+        rolling.load_retention(unconsumed),
         base.campaign,
         base.views,
         output,
@@ -328,6 +362,9 @@ def test_a_policy_input_is_compacted_and_released_only_after_its_last_reader(
         (lambda d: d["numerics"].update(cudnn_allow_tf32=True), "FP32 estricto"),
         (lambda d: d.update(aggregates=[]), "agregados"),
         (lambda d: d.update(status="draft"), "contrato"),
+        (lambda d: d.pop("consumers"), "contrato"),
+        (lambda d: d["consumers"]["rl"].update(release_after="aggregates"), "consumidoras"),
+        (lambda d: d["consumers"].update(ablation=dict(reads="evaluation")), "consumidoras"),
         (lambda d: d["phases"].reverse(), "contrato"),
     ],
 )
@@ -339,6 +376,84 @@ def test_the_declaration_is_fixed_before_results(tmp_path, edit, message):
     atomic_json(tmp_path / "retention.json", changed)
     with pytest.raises(ValueError, match=message):
         rolling.load_retention(tmp_path / "retention.json")
+
+
+def test_the_policy_stage_comes_with_the_retention_that_declares_it(
+    base,  # noqa: F811
+    unconsumed,
+    edition,
+    tmp_path,
+):
+    path, campaign = schedule(base, tmp_path)
+    windows = rolling.load_schedule(path, campaign)
+    policies = dict(stage=tmp_path / "rl.json", output=tmp_path / "rl")
+    for declaration, rl in ((DECLARATION, None), (unconsumed, policies)):
+        with pytest.raises(ValueError, match="acompañar a la retención"):
+            rolling.Rolling(
+                rolling.load_retention(declaration),
+                base.campaign,
+                base.views,
+                base.output,
+                windows,
+                rl=rl,
+                edition=edition,
+            )
+
+
+def test_an_evaluation_read_by_a_policy_is_released_only_after_its_receipt(
+    base,  # noqa: F811
+    edition,
+    tmp_path,
+    monkeypatch,
+):
+    from mars_titan.simulation import campaign_stage as policy_stage
+
+    on_cpu(monkeypatch)
+    monkeypatch.setenv(HOLD_ENV, str(base.hold))
+    output = tmp_path / "campaign"
+    shutil.copytree(base.output, output, symlinks=True)
+    path, campaign = schedule(base, tmp_path)
+    windows = rolling.load_schedule(path, campaign)
+    policies = tmp_path / "rl"
+    state = rolling.Rolling(
+        rolling.load_retention(DECLARATION),
+        base.campaign,
+        base.views,
+        output,
+        windows,
+        rl=dict(stage=tmp_path / "rl.json", output=policies),
+        edition=edition,
+    )
+    first = windows[0]["scopes"]["US"]
+    read, _ = state.base_state(0)[0].selected("US", first, "gru", 42)
+    # Una sola política de la primera ventana lee la evaluación del predictor elegido.
+    reader = dict(id=f"US/US/{first}/gru/native_klpo/fit-s42", scope="US", window=first)
+    monkeypatch.setattr(rolling.Rolling, "policy_stage", lambda self: (dict(sha256="5" * 64), []))
+    monkeypatch.setattr(rolling.Rolling, "policy_reads", lambda self, s, index: {read: [reader]})
+    tables = tables_of(state, read, output)
+
+    def states():
+        return {prediction_files.verify(p, d) for p, d in tables.values()}
+
+    with pytest.raises(ValueError, match="Faltan 1 recibos de las políticas"):
+        state.release(0)
+    assert states() == {prediction_files.PRESENT}
+    marker = dict(kind=policy_stage.RUN_KIND, stage_sha256="5" * 64)
+    atomic_json(policies / "stage.json", marker)
+    receipt = dict(
+        kind=policy_stage.RECEIPT_KIND,
+        status="completed",
+        identity=dict(id=reader["id"], stage_identity_sha256="6" * 64),
+    )
+    atomic_json(policies / "jobs" / reader["id"] / "receipt.json", receipt)
+    # Un recibo de otra ejecución de la etapa no cuenta.
+    with pytest.raises(ValueError, match="Faltan 1 recibos de las políticas"):
+        state.release(0)
+    assert states() == {prediction_files.PRESENT}
+    receipt["identity"]["stage_identity_sha256"] = policy_stage._digest(marker)
+    atomic_json(policies / "jobs" / reader["id"] / "receipt.json", receipt)
+    totals = state.release(0)
+    assert totals["released"] >= 1 and states() == {prediction_files.RELEASED}
 
 
 def test_the_schedule_must_cover_exactly_the_campaign_windows(base, tmp_path):  # noqa: F811
@@ -360,13 +475,14 @@ def test_the_schedule_must_cover_exactly_the_campaign_windows(base, tmp_path):  
 def test_the_walk_needs_the_price_edition_when_the_comparison_declares_the_portfolio(
     base,  # noqa: F811
     tmp_path,
+    unconsumed,
 ):
     path, campaign = schedule(base, tmp_path)
     windows = rolling.load_schedule(path, campaign)
     assert comparison.LONG_SHORT_FIELD in campaign["comparison_config"]
     with pytest.raises(ValueError, match="falta la edición"):
         rolling.Rolling(
-            rolling.load_retention(DECLARATION), base.campaign, base.views, base.output, windows
+            rolling.load_retention(unconsumed), base.campaign, base.views, base.output, windows
         )
 
 
@@ -420,6 +536,7 @@ def test_a_window_that_does_not_fit_is_refused_before_any_phase(
     edition,
     tmp_path,
     monkeypatch,
+    unconsumed,
 ):
     from mars_titan.training.campaign_storage import DiskBudgetError, load_storage
 
@@ -440,7 +557,7 @@ def test_a_window_that_does_not_fit_is_refused_before_any_phase(
         usage=usage,
     )
     state = rolling.Rolling(
-        rolling.load_retention(DECLARATION),
+        rolling.load_retention(unconsumed),
         base.campaign,
         base.views,
         base.output,
@@ -532,6 +649,7 @@ def test_masked_predictions_without_aggregates_are_compacted_not_released(
     edition,
     tmp_path,
     monkeypatch,
+    unconsumed,
 ):
     """Si la comparación no declara la ablación, sus filas no tienen agregados y se conservan."""
     on_cpu(monkeypatch)
@@ -543,7 +661,7 @@ def test_masked_predictions_without_aggregates_are_compacted_not_released(
     path, campaign = schedule(base, tmp_path)
     windows = rolling.load_schedule(path, campaign)
     state = rolling.Rolling(
-        rolling.load_retention(DECLARATION),
+        rolling.load_retention(unconsumed),
         base.campaign,
         base.views,
         output,
@@ -569,6 +687,7 @@ def test_jobs_declared_not_regenerable_are_compacted_without_regenerating(
     tmp_path,
     monkeypatch,
     mark,
+    unconsumed,
 ):
     """Un trabajo con `regenerable=False` o un control en línea se conserva sin regenerar."""
     on_cpu(monkeypatch)
@@ -578,7 +697,7 @@ def test_jobs_declared_not_regenerable_are_compacted_without_regenerating(
     path, campaign = schedule(base, tmp_path)
     windows = rolling.load_schedule(path, campaign)
     state = rolling.Rolling(
-        rolling.load_retention(DECLARATION),
+        rolling.load_retention(unconsumed),
         base.campaign,
         base.views,
         output,
