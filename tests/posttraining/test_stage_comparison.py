@@ -7,6 +7,7 @@ A, así que solo la segunda ventana tiene trabajos y el padre congelado es el su
 """
 
 import json
+import os
 import zlib
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -77,9 +78,9 @@ def write_table(path, arm, window, partition, segment):
 class Stage:
     """Etapa reducida declarada, fuentes de la campaña y recibos escritos sin ejecutar."""
 
-    def __init__(self, root, families=None):
+    def __init__(self, root, families=None, start="2021-04-01"):
         self.root = root
-        _, stage_path = write_configs(root / "config", "A")
+        _, stage_path = write_configs(root / "config", "A", start=start)
         # Sin secciones secundarias: los estratos leerían muestras que estas vistas no tienen.
         comparison = json.loads((root / "config" / "comparison.json").read_text())
         for section in ("modality_strata", "modality_ablation", "long_short"):
@@ -236,6 +237,19 @@ class Stage:
             ),
         )
         return selected
+
+    def window_base_sources(self, window):
+        """Fuentes de la campaña limitadas a una ventana, como las que publica el recorrido."""
+        manifest = json.loads(self.base_sources.read_text())
+        manifest["windows"] = {window: manifest["windows"][window]}
+        manifest["arms"] = {
+            arm: {seed: {window: entries[window]} for seed, entries in seeds.items()}
+            for arm, seeds in manifest["arms"].items()
+        }
+        # En la misma carpeta, para que las rutas relativas sigan valiendo.
+        path = self.base_sources.with_name(f"US-{window}.json")
+        save(path, manifest)
+        return path
 
     def sources(self):
         return compare.write_sources(
@@ -473,6 +487,140 @@ def test_adapters_must_evaluate_the_same_rows_as_the_parent(tmp_path):
     sources = stage.sources()
     with pytest.raises(ValueError, match="70 filas con otro objetivo"):
         compare.evaluate(stage.declaration, sources, "US", "gru")
+
+
+# Agregados por ventana de la retención v2
+
+VOLATILE = {"created_at_utc", "resources"}
+
+
+@pytest.fixture(scope="module")
+def aggregated(tmp_path_factory):
+    """Etapa con tres ventanas, comparada desde las filas y desde sus agregados por ventana.
+
+    La comparación cubre fold-001 y fold-002, así que el informe une sesiones de dos
+    ventanas. Cada ventana guarda sus agregados con sus propias fuentes, como en la fase de
+    agregados del recorrido, y la lectura desde agregados no puede puntuar ninguna fila.
+    """
+    root = tmp_path_factory.mktemp("aggregated")
+    stage = Stage(root, start="2020-04-01")
+    windows = compare.compared_windows(stage.loaded, "US", "gru")
+    sources = stage.sources()
+    expected = compare.evaluate(stage.declaration, sources, "US", "gru")
+    records = {
+        window: compare.write_window_aggregates(
+            stage.declaration,
+            "US",
+            "gru",
+            window,
+            base_sources=stage.window_base_sources(window),
+            stage_output=stage.output,
+            root=root / "aggregates",
+        )
+        for window in windows
+    }
+
+    def refuse(*args, **kwargs):
+        raise AssertionError("Con agregados no se puntúa ninguna fila")
+
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setattr(compare.walk, "_score_window", refuse)
+        actual = compare.evaluate(
+            stage.declaration, sources, "US", "gru", aggregates=root / "aggregates"
+        )
+    return stage, windows, sources, records, expected, actual
+
+
+def test_the_comparison_from_window_aggregates_equals_the_one_that_reads_the_rows(aggregated):
+    stage, windows, _, records, expected, actual = aggregated
+    assert windows == ["fold-001", "fold-002"]
+    config, report, sessions, portfolio = expected
+    same_config, from_aggregates, same_sessions, no_portfolio = actual
+    assert same_config == config and portfolio is None and no_portfolio is None
+    assert report["posttraining"]["windows"] == windows
+    assert {k: v for k, v in from_aggregates.items() if k not in VOLATILE} == {
+        k: v for k, v in report.items() if k not in VOLATILE
+    }
+    assert same_sessions.equals(sessions)
+    # La igualdad incluye los intervalos del bootstrap por bloques con la misma semilla,
+    # calculados sobre las sesiones unidas de las dos ventanas.
+    rows = from_aggregates["contrasts"]["US"]["versus_frozen_parent"]["mae"]["contrasts"]
+    assert rows and all(row["interval"] for row in rows)
+    for window, record in records.items():
+        assert record["path"] == (
+            compare.aggregates_folder(stage.root / "aggregates", "gru") / "US" / f"{window}.npz"
+        )
+        folder = stage.output / "sources" / "windows" / window / "US"
+        assert record["sources"] == folder / "gru.json"
+        assert list(json.loads(record["sources"].read_text())["windows"]) == [window]
+
+
+def test_the_cli_compares_from_the_aggregates_without_rows(aggregated, tmp_path, monkeypatch):
+    stage, _, sources, _, _, actual = aggregated
+
+    def refuse(*args, **kwargs):
+        raise AssertionError("Con agregados no se puntúa ninguna fila")
+
+    monkeypatch.setattr(compare.walk, "_score_window", refuse)
+    arguments = ["evaluate", "--declaration", str(stage.declaration), "--scope", "US"]
+    arguments += ["--base-arm", "gru", "--sources", str(sources)]
+    arguments += ["--output", str(tmp_path / "out"), "--aggregates", str(stage.root / "aggregates")]
+    assert compare.main(arguments) == 0
+    report = json.loads((tmp_path / "out" / "comparison.json").read_text())
+    expected = json.loads(json.dumps(actual[1]))
+    volatile = VOLATILE | {"artifacts"}
+    assert {k: v for k, v in report.items() if k not in volatile} == {
+        k: v for k, v in expected.items() if k not in volatile
+    }
+
+
+def test_window_aggregates_reject_other_predictions_and_missing_windows(aggregated, tmp_path):
+    stage, windows, sources, _, _, _ = aggregated
+    folder = compare.aggregates_folder(stage.root / "aggregates", "gru") / "US"
+    # Una ventana sin trabajos de la etapa no tiene comparación ni agregados.
+    with pytest.raises(ValueError, match="no tiene la ventana fold-000"):
+        compare.write_window_aggregates(
+            stage.declaration,
+            "US",
+            "gru",
+            "fold-000",
+            base_sources=stage.window_base_sources("fold-000"),
+            stage_output=stage.output,
+            root=tmp_path,
+        )
+    # Unas fuentes con otra predicción válida en la segunda ventana no leen sus agregados.
+    manifest = json.loads(sources.read_text())
+    entry = manifest["arms"]["gru__head"]["42"]["fold-002"]["evaluation"]
+    table = pq.read_table(sources.parent / entry["path"])
+    column = table.schema.get_field_index("prediction")
+    changed = tmp_path / "evaluation-predictions.parquet"
+    shifted = pa.array(table["prediction"].to_numpy() + 1.0)
+    pq.write_table(table.set_column(column, "prediction", shifted), changed)
+    entry.update(path=os.path.relpath(changed, sources.parent), sha256=sha256(changed))
+    other = sources.with_name("other.json")
+    save(other, manifest)
+    aggregates = stage.root / "aggregates"
+    with pytest.raises(ValueError, match="fold-002 proceden de otras fuentes o código"):
+        compare.evaluate(stage.declaration, other, "US", "gru", aggregates=aggregates)
+    # Sin los agregados de una ventana, la comparación no se completa con filas.
+    moved = folder / "fold-001.npz"
+    moved.rename(tmp_path / "fold-001.npz")
+    try:
+        with pytest.raises(ValueError, match="Faltan los agregados de US fold-001"):
+            compare.evaluate(
+                stage.declaration, sources, "US", "gru", aggregates=stage.root / "aggregates"
+            )
+    finally:
+        (tmp_path / "fold-001.npz").rename(moved)
+    with pytest.raises(ValueError, match="no admite agregados"):
+        compare.evaluate(
+            stage.declaration,
+            sources,
+            "US",
+            "gru",
+            edition=tmp_path,
+            aggregates=stage.root / "aggregates",
+        )
 
 
 CHAIN_FAMILIES = json.loads(DECLARATION_V2.read_text())["families"]

@@ -31,6 +31,12 @@ leídas del manifiesto de fuentes ya validado de la campaña, con los recibos co
 la etapa. Antes de escribirlo se comprueba que la etapa corresponde a esta declaración y
 usó las mismas vistas. La comparación exige después las mismas filas y objetivos en todos
 los brazos. Nada de este módulo ajusta, carga modelos ni abre la reserva de 2024.
+
+Con la retención v2, las filas de calibración y evaluación del brazo base se liberan al
+terminar cada ventana. Por eso la fase de agregados del recorrido ventana a ventana guarda,
+para cada padre y ventana con trabajos de la etapa, los agregados por sesión de su
+comparación (``write_window_aggregates``) antes de liberar nada. El informe final los lee con
+``aggregates``, igual que la comparación walk-forward de la campaña, sin abrir filas.
 """
 
 import argparse
@@ -42,7 +48,7 @@ import pyarrow.parquet as pq
 
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.storage import atomic_json, outside_source, sha256
-from mars_titan.evaluation import long_short_comparison
+from mars_titan.evaluation import long_short_comparison, window_aggregates
 from mars_titan.evaluation import walk_forward_comparison as walk
 
 from . import staged_chain
@@ -309,8 +315,12 @@ def _base_sources(path, inherited, scope, base_arm):
     return walk.load_sources(path, dict(inherited, arms=arms), scope)
 
 
-def _stage_marker(stage_output, stage, views, scope):
-    """Identidad de la ejecución de la etapa: esta etapa, la reserva cerrada y las vistas."""
+def _stage_marker(stage_output, stage, views, scope, *, window=None):
+    """Identidad de la ejecución de la etapa: esta etapa, la reserva cerrada y las vistas.
+
+    Sin ``window`` la etapa debe haber usado exactamente las vistas de las fuentes de la
+    campaña. Con ella, las fuentes solo traen la vista de esa ventana y se exige esa.
+    """
     marker, _ = read_manifest(stage_output / "stage.json", 8 * 1024**2)
     _require(
         isinstance(marker, dict)
@@ -319,10 +329,10 @@ def _stage_marker(stage_output, stage, views, scope):
         and marker.get("final_test_opened") is False,
         "La salida no pertenece a la etapa declarada",
     )
-    _require(
-        marker.get("views", {}).get(scope) == views,
-        "La etapa usó otras vistas que las fuentes de la campaña",
-    )
+    used = marker.get("views", {}).get(scope)
+    if window is not None and isinstance(used, dict):
+        used = {window: used[window]} if window in used else None
+    _require(used == views, "La etapa usó otras vistas que las fuentes de la campaña")
     return _digest(marker)
 
 
@@ -370,18 +380,40 @@ def _chain_entry(stage_output, stage, scope, window, base_arm, seed, entries):
     return entries[chosen][1]
 
 
-def write_sources(declaration_path, scope, base_arm, *, base_sources, stage_output):
-    """Publicar el manifiesto de fuentes de un padre y un ámbito y validarlo."""
-    loaded = load_declaration(declaration_path)
+def compared_windows(loaded, scope, base_arm):
+    """Ventanas de la comparación de un padre en un ámbito: las que tienen trabajos de la etapa."""
+    return list(loaded["configs"][base_arm]["resolved_scopes"][scope]["windows"])
+
+
+def write_sources(
+    declaration_path, scope, base_arm, *, base_sources, stage_output, window=None, loaded=None
+):
+    """Publicar el manifiesto de fuentes de un padre y un ámbito y validarlo.
+
+    Con ``window`` el manifiesto solo cubre esa ventana y se valida con las configuraciones
+    de la campaña y del padre limitadas a ella. ``base_sources`` es entonces el manifiesto de
+    la campaña de esa misma ventana, y el resultado queda en
+    ``sources/windows/<ventana>/<ámbito>/`` de la salida de la etapa. ``loaded`` evita volver
+    a cargar una declaración ya validada.
+    """
+    loaded = load_declaration(declaration_path) if loaded is None else loaded
     stage = loaded["stage"]
     _require(scope in stage["scopes"], "El ámbito no pertenece a la etapa")
     _require(base_arm in loaded["groups"], "El brazo no es un padre de la etapa")
     inherited = stage["campaign"]["comparison_config"]
     config = loaded["configs"][base_arm]
-    base = _base_sources(Path(base_sources), inherited, scope, base_arm)
     stage_output = Path(stage_output)
-    identity = _stage_marker(stage_output, stage, base["views"], scope)
     folder = stage_output / "sources" / scope
+    if window is not None:
+        _require(
+            window in compared_windows(loaded, scope, base_arm),
+            f"La comparación de {base_arm} no tiene la ventana {window} en {scope}",
+        )
+        inherited = walk.restrict_windows(inherited, scope, [window])
+        config = walk.restrict_windows(config, scope, [window])
+        folder = stage_output / "sources" / "windows" / window / scope
+    base = _base_sources(Path(base_sources), inherited, scope, base_arm)
+    identity = _stage_marker(stage_output, stage, base["views"], scope, window=window)
     destination = folder / f"{base_arm}.json"
 
     def relative(path):
@@ -403,6 +435,8 @@ def write_sources(declaration_path, scope, base_arm, *, base_sources, stage_outp
                 entries[window][part] = dict(path=relative(record["path"]), sha256=record["sha256"])
     entries = {}
     for job in loaded["groups"][base_arm]["jobs"][scope]:
+        if job["window"] not in views:
+            continue
         view_sha256 = base["views"][job["window"]]
         receipt = _stage_receipt(stage_output, job, identity, view_sha256)
         entry = dict(input_policy=policy, view_sha256=view_sha256)
@@ -444,12 +478,61 @@ def write_sources(declaration_path, scope, base_arm, *, base_sources, stage_outp
     return destination
 
 
-def evaluate(declaration_path, sources_path, scope, base_arm, *, edition=None):
-    """Informe walk-forward del padre y, con ``edition``, su cartera larga y corta."""
-    loaded = load_declaration(declaration_path)
+def aggregates_folder(root, base_arm):
+    """Carpeta de los agregados por ventana de la comparación de un padre."""
+    return Path(root) / "posttraining" / base_arm
+
+
+def write_window_aggregates(
+    declaration_path, scope, base_arm, window, *, base_sources, stage_output, root, loaded=None
+):
+    """Publicar las fuentes de una ventana y guardar los agregados de su comparación.
+
+    ``base_sources`` es el manifiesto de la campaña limitado a esa ventana. Los agregados se
+    puntúan con la configuración del padre limitada a la ventana, que conserva su huella, y
+    quedan en ``aggregates_folder(root, base_arm)``. Devuelve el registro de
+    ``window_aggregates.write`` y la ruta de las fuentes de la ventana.
+    """
+    loaded = load_declaration(declaration_path) if loaded is None else loaded
+    path = write_sources(
+        declaration_path,
+        scope,
+        base_arm,
+        base_sources=base_sources,
+        stage_output=stage_output,
+        window=window,
+        loaded=loaded,
+    )
+    config = walk.restrict_windows(loaded["configs"][base_arm], scope, [window])
+    sources = walk.load_sources(path, config, scope)
+    record = window_aggregates.write(
+        aggregates_folder(root, base_arm), walk.scope_config(config, scope), sources, window
+    )
+    return dict(record, sources=path)
+
+
+def evaluate(
+    declaration_path, sources_path, scope, base_arm, *, edition=None, aggregates=None, loaded=None
+):
+    """Informe walk-forward del padre y, con ``edition``, su cartera larga y corta.
+
+    Con ``aggregates`` (la raíz de ``aggregates_folder``) cada ventana se lee de sus agregados
+    y no se abre ninguna fila. La cartera sí necesita las filas, así que no se combina con
+    ellos.
+    """
+    _require(
+        edition is None or aggregates is None,
+        "La cartera de la comparación postentrenada lee filas y no admite agregados",
+    )
+    loaded = load_declaration(declaration_path) if loaded is None else loaded
     _require(base_arm in loaded["configs"], "El brazo no es un padre de la etapa")
     config = loaded["configs"][base_arm]
-    report, sessions = walk.evaluate_walk_forward(config, sources_path, scope)
+    report, sessions = walk.evaluate_walk_forward(
+        config,
+        sources_path,
+        scope,
+        aggregates=None if aggregates is None else aggregates_folder(aggregates, base_arm),
+    )
     report["posttraining"] = dict(
         declaration=dict(name=loaded["name"], sha256=loaded["sha256"]),
         stage_sha256=loaded["stage"]["sha256"],
@@ -474,19 +557,34 @@ def evaluate(declaration_path, sources_path, scope, base_arm, *, edition=None):
     return config, report, sessions, portfolio
 
 
-def write(declaration_path, sources_path, scope, base_arm, output, *, edition=None):
+def write(
+    declaration_path,
+    sources_path,
+    scope,
+    base_arm,
+    output,
+    *,
+    edition=None,
+    aggregates=None,
+    loaded=None,
+):
     """Publicar configuración derivada, informe y sesiones en un directorio nuevo."""
     output = Path(output)
     safe_destination(output)
     _require(not output.exists(), "La salida debe ser nueva")
     sources = [Path(declaration_path).parent, Path(sources_path).parent]
-    if edition is not None:
-        sources.append(Path(edition))
+    sources += [Path(path) for path in (edition, aggregates) if path is not None]
     for source in sources:
         outside_source(source, output)
         outside_source(output, source)
     config, report, sessions, portfolio = evaluate(
-        declaration_path, sources_path, scope, base_arm, edition=edition
+        declaration_path,
+        sources_path,
+        scope,
+        base_arm,
+        edition=edition,
+        aggregates=aggregates,
+        loaded=loaded,
     )
     json.dumps(report, allow_nan=False)
     if portfolio is not None:
@@ -525,6 +623,7 @@ def main(argv=None):
     run.add_argument("--sources", type=Path, required=True)
     run.add_argument("--output", type=Path, required=True)
     run.add_argument("--edition", type=Path)
+    run.add_argument("--aggregates", type=Path, help="Agregados por ventana de la retención v2")
     args = parser.parse_args(argv)
     if args.command == "check":
         result = check_declaration(args.declaration)
@@ -545,6 +644,7 @@ def main(argv=None):
             args.base_arm,
             args.output,
             edition=args.edition,
+            aggregates=args.aggregates,
         )
         result = dict(arms=len(report["arms"]), windows=len(report["windows"]))
     print(json.dumps(result, ensure_ascii=False, indent=2))
