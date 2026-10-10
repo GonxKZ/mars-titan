@@ -279,15 +279,16 @@ export function statusTotals(runs, now, staleAfter) {
   return totals;
 }
 
-// Campaña por ventanas leída por el servidor local. Las celdas usan vocabularios para que
-// el evento ocupe poco y aquí se convierten en filas de ámbito y brazo.
-export function liveCampaignMatrix(state) {
+// Campaña por ventanas, leída por el servidor local o publicada en Pages. Las celdas usan
+// vocabularios para que el documento ocupe poco y aquí se convierten en filas de ámbito y
+// brazo. En la etapa de políticas el ámbito lleva el mercado y el brazo el predictor.
+export function windowCampaignMatrix(state) {
   const { scopes, windows, arms, names } = state.vocabulary;
   const rows = new Map();
   const confirmed = [];
   for (const [scope, window, arm, name, status, confirmedAt] of state.cells) {
     const key = `${scopes[scope]}|${arms[arm]}`;
-    if (!rows.has(key)) rows.set(key, { key, scope: scopes[scope], arm: arms[arm], cells: new Map() });
+    if (!rows.has(key)) rows.set(key, { key, scope: scopes[scope], arm: arms[arm], model: state.models?.[arms[arm]] ?? null, cells: new Map() });
     const cell = rows.get(key).cells;
     if (!cell.has(windows[window])) cell.set(windows[window], []);
     const label = names[name];

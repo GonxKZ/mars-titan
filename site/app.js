@@ -2,7 +2,7 @@
 // dibujo. Las vistas viven en módulos propios y reciben un contexto común, de modo que
 // todas leen los mismos registros validados y ninguna consulta la red por su cuenta.
 
-import { validateSnapshot, displayStatus, STATUS_LABELS } from "./state.mjs";
+import { validateSnapshot, validateWindowCampaign, displayStatus, STATUS_LABELS } from "./state.mjs";
 import * as fmt from "./format.mjs";
 import { groupCampaigns, statusTotals, seriesSummary, estimateRemaining, TERMINAL } from "./model.mjs";
 import { ConditionalResource, PageStore, LiveStream } from "./sources.mjs";
@@ -39,6 +39,7 @@ const store = {
   status: null,
   telemetry: null,
   liveCampaigns: new Map(),
+  windowErrors: new Map(),
   tracesVersion: 0,
   localName: "",
   version: 0,
@@ -49,6 +50,8 @@ let state = parseHash(location.hash);
 const indexResource = new ConditionalResource(new URL("./data/observatory.json", import.meta.url));
 const deploymentResource = new ConditionalResource(new URL("./data/deployment.json", import.meta.url), { maxBytes: 4096 });
 const pages = new PageStore(new URL("./data/", import.meta.url), validateSnapshot);
+// Documentos de campañas por ventanas, inmutables como las páginas.
+const windowDocs = new PageStore(new URL("./data/", import.meta.url), validateWindowCampaign);
 let pollTimer = null, ageTimer = null, healthTimer = null, stream = null, hiddenSince = null;
 const rendered = new Map();
 
@@ -85,6 +88,33 @@ export const ctx = {
   openRun(run) {
     ctx.set({ ejecucion: runToken(run) });
     openRun(ctx, run);
+  },
+  // Campañas por ventanas del índice y del directo. El estado en directo sustituye al
+  // publicado, que puede tener hasta cinco minutos de retraso.
+  windowCampaignList() {
+    const options = new Map((store.index?.window_campaigns ?? []).map(entry => [entry.id, { ...entry, live: false }]));
+    for (const [id, state] of store.liveCampaigns) {
+      if (!state.available) continue;
+      const done = state.cells.filter(cell => cell[4] === "done").length;
+      options.set(id, {
+        ...(options.get(id) ?? { id, domain: null, configuration: null, path: null }),
+        stage: state.stage, status: state.status, updated_at: state.updated_at, live: true,
+        jobs: state.cells.length, done, attempts: state.cells.filter(cell => cell[4] === "attempt").length,
+      });
+    }
+    return [...options.values()];
+  },
+  windowCampaign(option) {
+    if (option.live) return store.liveCampaigns.get(option.id);
+    if (option.path === null) return { available: false };
+    const loaded = windowDocs.pages.get(option.path);
+    if (loaded) return loaded.id === option.id ? loaded : { available: false, error: "el documento pertenece a otra campaña" };
+    if (store.windowErrors.has(option.path) && !windowDocs.inflight.has(option.path)) return { available: false, error: store.windowErrors.get(option.path) };
+    if (store.mode === "local") return { available: false, error: "un archivo local no incluye las matrices" };
+    if (!windowDocs.inflight.has(option.path)) {
+      windowDocs.one(option.path).then(() => store.windowErrors.delete(option.path), error => store.windowErrors.set(option.path, error.message)).finally(() => invalidate("campana"));
+    }
+    return { available: false, loading: true };
   },
   live: byId("chart-live"),
   invalidate: view => invalidate(view),
@@ -291,6 +321,9 @@ function flashDot() {
 
 function adoptIndex(next, path = "observatory.json") {
   store.index = next;
+  // Solo se guardan las matrices que enumera el índice vigente.
+  const current = new Set((next.window_campaigns ?? []).map(entry => entry.path));
+  for (const document of windowDocs.pages.keys()) if (!current.has(document)) windowDocs.pages.delete(document);
   const tokens = new Set();
   for (const run of next.runs) tokens.add(runToken(run));
   store.pageRuns.set(path, tokens);
@@ -357,6 +390,11 @@ async function checkIndex({ manual = false } = {}) {
       if (!saveData || manual) loadAllPages();
     } else if (pages.failed.size) {
       loadAllPages();
+    }
+    // Una matriz que no se pudo leer se vuelve a pedir tras cada consulta del índice.
+    if (store.windowErrors.size) {
+      store.windowErrors.clear();
+      invalidate("campana");
     }
     showError("");
   } catch (error) {
@@ -454,7 +492,16 @@ function handleTopic(name, payload) {
       scheduler.schedule("pulse", renderGpuPulse);
     }
   } else if (name.startsWith("campaign:")) {
-    store.liveCampaigns.set(name.slice(9), payload);
+    let state = { available: false };
+    if (payload.available) {
+      try {
+        state = validateWindowCampaign(payload);
+        showError("", name);
+      } catch (error) {
+        showError(`La campaña ${name.slice(9)} llegó con un estado no válido: ${error.message}`, name);
+      }
+    }
+    store.liveCampaigns.set(name.slice(9), state);
     invalidate("campana");
   } else if (name === "traces") {
     store.tracesVersion++;

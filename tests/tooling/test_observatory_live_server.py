@@ -13,9 +13,10 @@ from pathlib import Path
 
 import pytest
 
-from mars_titan.observatory.live_server import Hub, Limits, LiveObservatory, campaign_state
+from mars_titan.observatory.live_server import Hub, Limits, LiveObservatory
 from mars_titan.observatory.telemetry import FIELDS, SystemProbe, TelemetryRing
 from mars_titan.observatory.traces import write_trace_bundle
+from mars_titan.observatory.window_campaigns import campaign_state
 
 
 class FakeNvml:
@@ -343,7 +344,7 @@ def test_campaign_state_reads_jobs_without_locks(tmp_path):
         },
     )
     (folder / ".lock").write_text("")
-    state = campaign_state("a", folder, Limits())
+    state = campaign_state("a", folder)
     states = {tuple(cell[:4]): cell[4] for cell in state["cells"]}
     assert sorted(states.values()) == ["attempt", "done", "pending"]
     assert state["vocabulary"]["scopes"] == ["US+CN", "US"]
@@ -359,7 +360,7 @@ def test_campaign_state_reads_jobs_without_locks(tmp_path):
     assert done[5].endswith("Z")
     dump(folder / "summary.json", {"jobs": {"../escape/x/y": True}})
     with pytest.raises(ValueError):
-        campaign_state("a", folder, Limits())
+        campaign_state("a", folder)
 
 
 def test_telemetry_ring_is_bounded_and_chronological():

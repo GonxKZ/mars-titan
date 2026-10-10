@@ -81,6 +81,14 @@
       "configuration": "configs/baselines/strict-temporal-search-us.json",
       "configuration_snapshot": "data/interim/strict140-configurations-20260928/strict-temporal-search-us.json",
       "configuration_sha256": "7db9f4bda33e04eed6cf8c37c82ebd89ae3e88eb170a89e8770156fd414b7e7f"
-    }
+    },
+    {"id": "historical-masked-a-base", "path": "data/interim/historical-masked-a/base", "kind": "window_campaign", "domain": "real", "stage": "base", "configuration": "configs/baselines/historical-masked-campaign-a.json"},
+    {"id": "historical-masked-a-adapters", "path": "data/interim/historical-masked-a/adapters", "kind": "window_campaign", "domain": "real", "stage": "adapters", "configuration": "configs/posttraining/historical-masked-adapter-stage-a.json"},
+    {"id": "historical-masked-a-ablation", "path": "data/interim/historical-masked-a/ablation", "kind": "window_campaign", "domain": "real", "stage": "ablation", "configuration": "configs/evaluation/historical-masked-ablation-stage-a.json"},
+    {"id": "historical-masked-a-policies", "path": "data/interim/historical-masked-a/policies", "kind": "window_campaign", "domain": "real", "stage": "policies", "configuration": "configs/simulation/historical-masked-rl-stage-a.json"},
+    {"id": "historical-masked-a-v2-base", "path": "data/interim/historical-masked-a-v2/base", "kind": "window_campaign", "domain": "real", "stage": "base", "configuration": "configs/baselines/historical-masked-campaign-a-v2.json"},
+    {"id": "historical-masked-a-v2-adapters", "path": "data/interim/historical-masked-a-v2/adapters", "kind": "window_campaign", "domain": "real", "stage": "adapters", "configuration": "configs/posttraining/historical-masked-adapter-stage-a-v2.json"},
+    {"id": "historical-masked-a-v2-ablation", "path": "data/interim/historical-masked-a-v2/ablation", "kind": "window_campaign", "domain": "real", "stage": "ablation", "configuration": "configs/evaluation/historical-masked-ablation-stage-a-v2.json"},
+    {"id": "historical-masked-a-v2-policies", "path": "data/interim/historical-masked-a-v2/policies", "kind": "window_campaign", "domain": "real", "stage": "policies", "configuration": "configs/simulation/historical-masked-rl-stage-a-v2.json"}
   ]
 }

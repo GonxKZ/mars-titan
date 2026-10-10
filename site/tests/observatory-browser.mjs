@@ -45,6 +45,13 @@ const server = createServer(async (request, response) => {
     send(200, JSON.stringify({ frontend_sha: "a".repeat(40), data_sha: "b".repeat(40), packaged_at: "2026-10-09T11:58:00Z" }), MIME.json);
     return;
   }
+  if (path.startsWith("data/windows/")) {
+    data.windowRequests = (data.windowRequests ?? 0) + 1;
+    const body = data.snapshot.windows.get(path.slice(5));
+    if (body) send(200, body, MIME.json, { "Cache-Control": "public, max-age=31536000, immutable" });
+    else send(404, "", MIME.json);
+    return;
+  }
   if (path.startsWith("data/pages/")) {
     const key = path.slice(5);
     if (data.failOnce.delete(key)) { send(503, "", MIME.json); return; }
@@ -115,6 +122,25 @@ try {
     assert.equal(await page.locator("#matrix .cell .m").count(), 23);
     assert.equal(await page.locator("#matrix .pending-count").count(), 3);
     assert.match(await page.locator("#matrix").innerText(), /\+2/);
+  });
+
+  await check("la campaña por ventanas se elige con su selector y su matriz se descarga una vez", async () => {
+    await page.locator("#window-campaigns").waitFor({ state: "visible" });
+    await page.waitForFunction(() => /3 de 4 trabajos confirmados/.test(document.querySelector("#window-campaign .caption")?.textContent ?? ""));
+    assert.equal(await page.locator("#window-select option").count(), 2);
+    assert.equal(await page.locator("#window-select").inputValue(), "fixture-base");
+    assert.match(await page.locator("#window-campaign .eyebrow").textContent(), /Campaña base/);
+    assert.equal(await page.locator("#window-campaign tbody tr").count(), 2);
+    assert.match(await page.locator("#window-campaign tbody th").first().textContent(), /US\+CN · GRU/);
+    assert.equal(await page.locator("#window-campaign .attempt").count(), 1);
+    await page.selectOption("#window-select", "fixture-adapters");
+    await page.waitForFunction(() => /Sin resumen todavía/.test(document.querySelector("#window-campaign .caption")?.textContent ?? ""));
+    assert.match(page.url(), /matriz=fixture-adapters/);
+    const requests = data.windowRequests;
+    await page.selectOption("#window-select", "fixture-base");
+    await page.waitForFunction(() => /3 de 4/.test(document.querySelector("#window-campaign .caption")?.textContent ?? ""));
+    assert.equal(data.windowRequests, requests, "el documento inmutable no se vuelve a pedir");
+    assert.deepEqual(problems, []);
   });
 
   await check("un índice sin cambios responde 304 y no vuelve a dibujar", async () => {
