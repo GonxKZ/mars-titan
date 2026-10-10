@@ -77,6 +77,12 @@ function(mars_titan_configure_target target)
 endfunction()
 
 if(MARS_TITAN_ENABLE_CUDA)
+    # Arquitecturas declaradas: sm_89 para la RTX 4070 Laptop y sm_121 para la GB10. Solo SASS,
+    # sin PTX, de modo que otra GPU falla al cargar en lugar de compilar en ejecución sin aviso.
+    set(CMAKE_CUDA_ARCHITECTURES "89-real;121-real" CACHE STRING "Arquitecturas CUDA declaradas")
+    if(CMAKE_CUDA_ARCHITECTURES MATCHES "^(native|all|all-major)$")
+        message(FATAL_ERROR "Las arquitecturas CUDA se declaran una a una para no depender de la máquina")
+    endif()
     set(CMAKE_CUDA_STANDARD 20)
     set(CMAKE_CUDA_STANDARD_REQUIRED ON)
     set(CMAKE_CUDA_EXTENSIONS OFF)
