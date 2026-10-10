@@ -606,3 +606,24 @@ def test_stability_never_pairs_rows_of_two_assets():
     block = rd._stability(columns, {"US": 0}, declaration)["US:train"]
     assert block["adjacent_pairs"] == 2
     assert block["beta_change"]["max_absolute"] == 0
+    assert block["zero_beta"] == 0
+
+
+def test_flat_windows_are_counted_as_zero_betas():
+    columns = dict(
+        asset=np.zeros(4, dtype=np.int32),
+        slot=np.arange(4),
+        raw=np.array([0.0, 0.0, 0.01, -0.02]),
+        residual=np.array([0.0, 0.0, 0.01, -0.02]),
+        factor=np.array([0.01, -0.01, 0.0, 0.02]),
+        beta=np.array([0.0, 0.0, 0.0, 1e-12]),
+        alpha=np.zeros(4),
+        pairs=np.full(4, 252),
+        market=np.zeros(4, dtype=np.int8),
+        partition=np.zeros(4, dtype=np.int8),
+    )
+    declaration = rd.load_declaration(DECLARATION)
+    years = np.full(4, 2010, dtype=np.int16)
+    row = rd._by_year(columns, {"US": 0}, years, declaration)["US"]["2010"]
+    assert (row["zero_beta"], row["zero_raw"]) == (3, 2)
+    assert rd._stability(columns, {"US": 0}, declaration)["US:train"]["zero_beta"] == 3

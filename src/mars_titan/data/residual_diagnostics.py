@@ -645,6 +645,10 @@ def _by_year(columns, markets, years, declaration):
                 ),
                 alpha_p50=float(np.median(alpha)),
                 beta_beyond_bound=int((np.abs(beta) > bound).sum()),
+                # Una beta exactamente nula sale de una ventana sin variación propia, como
+                # una suspensión registrada con precios planos.
+                zero_beta=int((beta == 0).sum()),
+                zero_raw=int((raw == 0).sum()),
                 partial_windows=int(
                     (columns["pairs"][keep] < declaration["main"]["history"]).sum()
                 ),
@@ -706,6 +710,7 @@ def _stability(columns, markets, declaration):
                     (columns["pairs"][rows] < declaration["main"]["history"]).sum()
                 ),
                 minimum_pairs=int(columns["pairs"][rows].min()) if rows.any() else None,
+                zero_beta=int((columns["beta"][rows] == 0).sum()),
             )
     return out
 
