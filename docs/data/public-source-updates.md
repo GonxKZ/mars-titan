@@ -47,7 +47,7 @@ Todos los registros conservan `benchmark_eligible=false`. Una descarga válida n
 
 ## Reutilización y peticiones condicionales
 
-Tras confirmar el manifiesto se regenera el [índice de capturas](../../data/manifests/public-snapshots/index.json), que referencia el manifiesto inicial y los de cada ejecución con sus huellas. El índice se deriva solo de esos archivos y se puede reconstruir sin red con `uv run python -m mars_titan.data.public_snapshots`. Las capturas anteriores no se modifican. Como el índice está versionado, cada ejecución deja un cambio en Git que conviene confirmar cuando la captura se vaya a conservar o citar.
+Tras confirmar el manifiesto se regenera el [índice de capturas](../../data/manifests/public-snapshots/index.json), que referencia el manifiesto inicial y los de cada ejecución con sus huellas. El índice se deriva solo de esos archivos y se puede reconstruir sin red con `uv run python -m mars_titan.data.public_snapshots`. Las capturas anteriores no se modifican. Como el índice está versionado, cada ejecución deja un cambio en Git que conviene confirmar cuando la captura se vaya a conservar o citar. Las capturas no están en Git, así que en un clon sin `data/external/` la reconstrucción marca sus contenidos como no disponibles y la reconciliación de fuentes los clasifica como `content_missing`.
 
 Una respuesta válida con los mismos bytes que un contenido ya confirmado no se vuelve a guardar. Su registro remite al archivo existente con `content_reused=true` y `reused_from_run_id`, después de comprobar de nuevo su SHA-256. Si el archivo anterior falta o ha cambiado, se guarda otra copia. `retained_bytes` cuenta solo los bytes nuevos y `reused_bytes` los referenciados.
 
