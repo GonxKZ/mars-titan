@@ -389,7 +389,7 @@ CUBLAS_WORKSPACE_CONFIG=:4096:8 uv run pytest tests/posttraining/cuda_titans_ada
 
 Usa float64, como los brazos de la campaña, sin TF32 y con el registrador de gradientes. En `cuda:0`, cada brazo de `transformer_direct` y `mac_online` con correcciones nulas emite exactamente las predicciones y el registro del padre congelado en el mismo dispositivo. Las predicciones del brazo con los tres puntos coinciden con las de CPU con tolerancia relativa 1e-8 y absoluta 1e-10, y el ajuste recorre los mismos pasos con gradiente solo en los adaptadores y valores iguales dentro de esas tolerancias.
 
-Las formas de la variedad tienen su comprobación CUDA, que repite la identidad exacta y el contraste con CPU de cada forma en las cinco familias, y la de Titans-MAC recorre también los brazos de la variedad propuestos. Las dos pasaron el 10 de octubre en el mismo equipo, con 32 pruebas superadas en 49 s:
+Las formas de la variedad tienen su comprobación CUDA, que repite la identidad exacta y el contraste con CPU de cada forma en las cinco familias, y la de Titans-MAC recorre también los brazos de la variedad propuestos. Las dos pasaron el 10 de octubre en el mismo equipo sobre `develop` 3156ad1f, con 35 pruebas superadas y sin avisos de compactación de cuDNN:
 
 ```bash
 CUBLAS_WORKSPACE_CONFIG=:4096:8 uv run pytest tests/models/test_adapter_forms_cuda.py -q -rs
