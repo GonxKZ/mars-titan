@@ -4,7 +4,7 @@ La declaración (``posttraining_stage_comparison``) se fija antes de evaluar y e
 etapa de postentrenamiento. La comparación se deriva del plan de la etapa, sin listar
 brazos a mano. Por cada brazo base y ámbito hay una comparación walk-forward con el padre
 congelado, la continuación completa (control ``full_continuation`` de la matriz) y los
-brazos adaptados de la matriz para la familia del padre. Si la etapa ejecuta la
+modelos adaptados de la matriz para la familia del padre. Si la etapa ejecuta la
 continuación con el decaimiento anclado al padre (``anchored_continuation``, #444), entra
 con su propio papel. Una familia cuya base no existe para un padre no se deriva para él y
 un papel ausente no aporta variantes.
@@ -160,7 +160,7 @@ def _groups(stage):
         elif control in CONTROLS:
             _require(
                 group[control] in (None, job["arm"]),
-                f"{job['base_arm']} declara dos brazos del control {control}",
+                f"{job['base_arm']} declara dos modelos del control {control}",
             )
             group[control] = job["arm"]
         elif job["arm"] not in group[ADAPTED]:

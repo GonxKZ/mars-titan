@@ -357,7 +357,7 @@ def arm_name(base_arm, point):
 
 
 def _cases(stage, spec):
-    """Casos de la matriz de un brazo base: los neuronales o los cronológicos.
+    """Casos de la matriz de un modelo base: los neuronales o los cronológicos.
 
     La continuación anclada solo entra si la etapa la nombra en `additional_controls`.
     """

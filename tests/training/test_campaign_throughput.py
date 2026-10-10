@@ -41,7 +41,7 @@ CAMPAIGNS = {
 STAGES = {
     v: Path(f"configs/posttraining/historical-masked-adapter-stage-{v.lower()}.json") for v in "AB"
 }
-# Brazos de la sección `variety` de la matriz v3 (#444), que solo declara la etapa A, y la
+# Variantes de la sección `variety` de la matriz v3 (#444), que solo declara la etapa A, y la
 # continuación anclada, que A añade como control.
 VARIETY = {
     arm["id"]

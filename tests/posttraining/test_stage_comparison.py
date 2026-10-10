@@ -508,13 +508,13 @@ def test_a_control_without_a_declared_role_stops_the_derivation(monkeypatch):
     assert group["chain"] == "gru__chain" and group["base_retrain"] == "gru"
     # El plan anclado de B no tiene cadena.
     assert compare._groups(dict(design=campaign_stage.ANCHORED))["gru"]["chain"] is None
-    # La continuación anclada tiene su propio papel y un solo brazo por padre.
+    # La continuación anclada tiene su propio papel y un solo modelo por padre.
     anchored = dict(jobs[0], arm="gru__anchored_continuation", control="anchored_continuation")
     monkeypatch.setattr(compare, "plan_stage", lambda stage: [*jobs[:2], anchored])
     assert compare._groups(staged)["gru"]["anchored_continuation"] == "gru__anchored_continuation"
     twice = [*jobs[:2], anchored, dict(anchored, arm="gru__other")]
     monkeypatch.setattr(compare, "plan_stage", lambda stage: twice)
-    with pytest.raises(ValueError, match="dos brazos del control anchored_continuation"):
+    with pytest.raises(ValueError, match="dos modelos del control anchored_continuation"):
         compare._groups(staged)
 
 
@@ -677,7 +677,7 @@ def test_cli_checks_the_declaration_without_reading_predictions(capsys):
     assert compare.main(["check", "--declaration", str(DECLARATION)]) == 0
     result = json.loads(capsys.readouterr().out)
     assert result["final_test_opened"] is False
-    # La base, su padre congelado, las dos continuaciones y los brazos de la matriz.
+    # La base, su padre congelado, las dos continuaciones y las variantes de la matriz.
     stage = campaign_stage.load_stage(
         DECLARATION.parent / json.loads(DECLARATION.read_text())["stage"]
     )

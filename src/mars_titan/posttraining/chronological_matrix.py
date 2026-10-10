@@ -229,7 +229,7 @@ def _case(matrix, seed, objective, *, control=None, adapter=None):
 
 def cases(matrix, digest, family, *, variant=None, bank=True, reserve=False):
     """Casos por semilla: continuación completa, la anclada si se propone en el ámbito, y
-    brazos, sin corrección lineal ni padre. `reserve` añade también lo que no se propone."""
+    adaptadores, sin corrección lineal ni padre. `reserve` añade también lo que no se propone."""
     from . import adapter_matrix
 
     kind, _ = design(matrix, family)

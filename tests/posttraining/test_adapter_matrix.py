@@ -353,7 +353,7 @@ def test_third_version_only_adds_the_chronological_designs_and_the_variety():
     }
     assert third["architectures"]["executable"] == second["architectures"]["executable"]
     assert third["architectures"]["pending"] == {}
-    # Sin los brazos de la variedad ni la continuación anclada (#444), los casos de las
+    # Sin las variantes de la variedad ni la continuación anclada (#444), los casos de las
     # referencias son los de la v2.
     variety = {arm["id"] for arm in third["variety"]["arms"]} | {"anchored_continuation"}
     for family in adapter_matrix.FAMILIES:
