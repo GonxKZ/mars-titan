@@ -833,14 +833,18 @@ de A, el padre congelado es el trabajo `frozen` de la etapa, que aplica a la
 ventana k el estado elegido por la base en k-1, y el brazo base reentrenado en k
 queda como nivel fuera de las familias. Como la primera ventana de cada ámbito
 no tiene postentrenamiento, la comparación empieza en la segunda. Las familias
-declaradas son `versus_frozen_parent` (adaptados y continuación menos el padre
-congelado) y `versus_full_continuation` (adaptados menos la continuación), más el
-nivel de cada brazo. Todo lo demás se hereda de la comparación de la campaña:
+declaradas son `versus_frozen_parent` (adaptados y continuaciones menos el padre
+congelado), `versus_full_continuation` (adaptados menos la continuación) y
+`versus_anchored_continuation` (adaptados y continuación completa menos la
+[continuación anclada](../engineering/adapter-variety.md#asimetría-del-decaimiento-y-continuación-anclada)),
+más el nivel de cada brazo. La última solo existe en los padres que tienen esa
+continuación. Todo lo demás se hereda de la comparación de la campaña:
 protocolos, métricas, calibración común, remuestreo y secciones secundarias. Hoy
-salen nueve padres: las tres redes recurrentes y DLinear con once brazos, el
-Transformer con diecisiete porque la matriz le da puntos de lectura, y los cuatro
-brazos de Titans-MAC con entre siete y catorce. La validación de los recibos por
-etapas elige el predictor de la cadena y no entra en esta comparación.
+salen nueve padres: las tres redes recurrentes y DLinear con doce brazos, el
+Transformer con dieciocho porque la matriz le da puntos de lectura, y los cuatro
+brazos de Titans-MAC con entre siete y catorce, sin continuación anclada. La
+validación de los recibos por etapas elige el predictor de la cadena y no entra en
+esta comparación.
 
 La [declaración de A v2](../../configs/posttraining/historical-masked-adapter-comparison-a-v2.json),
 fijada el 10 de octubre antes de cualquier resultado, añade dos papeles. `chain` es
