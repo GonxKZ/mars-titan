@@ -1139,10 +1139,20 @@ def _checked_groups(campaign, specs):
     Los brazos de un grupo comparten semilla de búsqueda y número de casos, que se emparejan
     por posición, y ninguno parte de otro del mismo grupo, porque su parada dependería de sí
     misma. Cada contraste emparejado de la comparación (delta o factorial) entre brazos
-    conectados sin relación de padre debe quedar dentro de un mismo grupo.
+    conectados sin relación de padre debe quedar dentro de un mismo grupo. La corrección B6
+    no tiene épocas, así que sus contrastes no dependen de ninguna parada y no se agrupa.
     """
     early = campaign["early_stop"]
     membership = early["membership"]
+    corrections = {
+        arm
+        for arm, spec in specs.items()
+        if spec["family"] == MARS and _correction_arm(spec["candidates"][0][1]["components"])
+    }
+    _require(
+        not corrections & set(membership),
+        "La corrección B6 no tiene épocas y no puede pertenecer a un grupo de parada conjunta",
+    )
     for group, members in early["groups"].items():
         connected = [arm for arm in members if arm in specs]
         _require(
@@ -1161,7 +1171,7 @@ def _checked_groups(campaign, specs):
         else:
             continue
         for base, variant in pairs:
-            if base not in specs or variant not in specs:
+            if base not in specs or variant not in specs or {base, variant} & corrections:
                 continue
             if base in _ancestors(variant, specs) or variant in _ancestors(base, specs):
                 continue
