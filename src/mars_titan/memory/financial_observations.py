@@ -273,6 +273,28 @@ def _observation(dataset, asset, decoded, row, at, prices):
     )
 
 
+# Ventanas que `_window_contexts` transforma de una vez, el mismo tope que en `corpus_inputs`.
+_WINDOW_ROWS = 256
+
+
+def _block_window_contexts(windows, ends, context):
+    """Ventanas de un bloque de hasta MAX_BLOCK_ROWS filas, por tramos de `_WINDOW_ROWS`.
+
+    El resultado de `_window_contexts` por fila no depende de las demás filas, así que
+    transformar por tramos da los mismos bits que una sola llamada, y un bloque de la receta
+    mayor que 256 filas ya no choca con su límite de memoria.
+    """
+    ends = np.asarray(ends)
+    return np.concatenate(
+        [
+            _window_contexts(
+                windows[start : start + _WINDOW_ROWS], ends[start : start + _WINDOW_ROWS], context
+            )
+            for start in range(0, len(ends), _WINDOW_ROWS)
+        ]
+    )
+
+
 class _BlockReader:
     """Conservar el último grupo decodificado de cada activo y montar bloques por instante.
 
@@ -460,7 +482,7 @@ class _BlockReader:
             if values.ndim == 2 and not np.isfinite(values).all():
                 raise ValueError("Una modalidad contiene valores no finitos")
         if dataset.price_window is None:
-            batch["inputs"]["prices"][:] = _window_contexts(windows, ends, context)
+            batch["inputs"]["prices"][:] = _block_window_contexts(windows, ends, context)
             return batch
         # Con el contrato de ventanas por sesión del calendario, cada activo forma sus ventanas
         # con su calendario y sus ausencias de mercado, igual que en `_observation`.
