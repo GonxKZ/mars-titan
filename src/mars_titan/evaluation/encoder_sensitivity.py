@@ -3,11 +3,11 @@
 MiniLM y ResNet18 se entrenaron con textos e imágenes reunidos hasta la publicación de sus
 pesos. La edición congelada representa una noticia de 2005 con un modelo que pudo leer cómo
 terminó aquella historia. El codificador de control (`data.pretraining_free_encoders`) no
-tiene parámetros aprendidos. La sensibilidad vuelve a ajustar los brazos declarados sobre una
+tiene parámetros aprendidos. La sensibilidad vuelve a ajustar los modelos declarados sobre una
 edición con ese control, con las mismas filas, ventanas, semillas y configuración, y compara
 las dos comparaciones walk-forward publicadas.
 
-Para cada brazo y mercado, Δ de una sesión es el MAE con el control menos el MAE con los
+Para cada modelo y mercado, Δ de una sesión es el MAE con el control menos el MAE con los
 codificadores congelados, después de promediar las semillas sesión a sesión. Positivo indica
 que los codificadores congelados ayudan. Los estadísticos son medias de Δ por tramos de 30
 meses alrededor del corte, el primer mes completo después de publicar los pesos de MiniLM:
@@ -22,9 +22,9 @@ La anticipación se considera sospechosa si `break` y `break − placebo_break` 
 de cero con intervalos simultáneos. En otro caso no se sostiene. Con menos sesiones de las
 declaradas en algún tramo la decisión queda sin tomar. Los intervalos usan el bootstrap
 circular por bloques de días UTC declarado, igual al de la comparación, con una familia max-t
-por mercado sobre los brazos y los dos estadísticos de la decisión.
+por mercado sobre los modelos y los dos estadísticos de la decisión.
 
-No se ha ejecutado: necesita la edición de control y los ajustes de los brazos declarados,
+No se ha ejecutado: necesita la edición de control y los ajustes de los modelos declarados,
 que esperan al desbloqueo del aprendizaje.
 """
 
@@ -151,7 +151,7 @@ def declaration(section):
         and scopes
         and set(scopes) <= {"US", "CN", "US+CN"}
         and len(set(scopes)) == len(scopes),
-        "La sensibilidad necesita brazos y ámbitos declarados sin repetir",
+        "La sensibilidad necesita modelos y ámbitos declarados sin repetir",
     )
     options = section["bootstrap"]
     _require(
@@ -222,16 +222,16 @@ def _check_pair(frozen, control, section):
 
 
 def _rows(table, arm):
-    """Filas de un brazo ordenadas por mercado, sesión, semilla y ventana."""
+    """Filas de un modelo ordenadas por mercado, sesión, semilla y ventana."""
     columns = ("market", "prediction_at", "seed", "window")
     rows = table.filter(pc.equal(table["arm"], arm))
-    _require(rows.num_rows > 0, f"El brazo {arm} no está en las dos comparaciones")
+    _require(rows.num_rows > 0, f"El modelo {arm} no está en las dos comparaciones")
     order = pc.sort_indices(rows, sort_keys=[(name, "ascending") for name in columns])
     return rows.take(order)
 
 
 def session_deltas(frozen, control, arm, market):
-    """Instantes, días UTC y Δ por sesión de un brazo y mercado, con las semillas promediadas.
+    """Instantes, días UTC y Δ por sesión de un modelo y mercado, con las semillas promediadas.
 
     Las dos tablas deben tener las mismas sesiones, semillas y ventanas, el mismo número de
     filas por sesión y los mismos signos de los objetivos.
@@ -241,13 +241,13 @@ def session_deltas(frozen, control, arm, market):
     same = ("samples", "positive_targets", "negative_targets")
     _require(
         all(tables[0][k].equals(tables[1][k]) for k in keys + same),
-        f"El brazo {arm} no evalúa las mismas filas en las dos ediciones",
+        f"El modelo {arm} no evalúa las mismas filas en las dos ediciones",
     )
     mask = pc.equal(tables[0]["market"], market)
     times = pc.filter(tables[0]["prediction_at"], mask).cast("int64").to_numpy()
     seeds = pc.filter(tables[0]["seed"], mask).to_numpy()
     mae = [pc.filter(table["mae"], mask).to_numpy().astype(np.float64) for table in tables]
-    _require(len(times) > 0, f"El brazo {arm} no tiene sesiones de {market}")
+    _require(len(times) > 0, f"El modelo {arm} no tiene sesiones de {market}")
     unique, inverse = np.unique(times, return_inverse=True)
     count = len(np.unique(seeds))
     _require(
@@ -288,15 +288,15 @@ def _float(value):
 
 
 def market_report(section, arms):
-    """Estimaciones, intervalos y decisión de cada brazo de un mercado.
+    """Estimaciones, intervalos y decisión de cada modelo de un mercado.
 
-    `arms` asigna a cada brazo sus vectores (instantes, días, Δ). Todos los brazos de un
+    `arms` asigna a cada modelo sus vectores (instantes, días, Δ). Todos los modelos de un
     mercado se remuestrean con los mismos bloques de días.
     """
     options = section["bootstrap"]
     edges = block_edges(section)
     sessions = {tuple(value[0]) for value in arms.values()}
-    _require(len(sessions) == 1, "Los brazos de un mercado no evalúan las mismas sesiones")
+    _require(len(sessions) == 1, "Los modelos de un mercado no evalúan las mismas sesiones")
     periods = int(next(iter(arms.values()))[1].max()) + 1
     cells = {arm: _cells(*value, edges) for arm, value in arms.items()}
     draws = None

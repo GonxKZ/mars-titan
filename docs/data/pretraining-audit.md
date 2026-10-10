@@ -127,12 +127,12 @@ porque también cambian capacidad y representación.
 ## Sensibilidad declarada
 
 La [declaración](../../configs/encoders/pretraining-free-sensitivity.json) se fijó el 10 de
-octubre de 2026, antes de calcular ninguna edición de control ni ajustar ningún brazo.
+octubre de 2026, antes de calcular ninguna edición de control ni ajustar ningún modelo.
 `evaluation/encoder_sensitivity.py` la valida y compara dos comparaciones walk-forward
 publicadas que solo difieren en los codificadores: misma configuración, ámbito, ventanas,
 semillas, filas por sesión y signos de los objetivos, y ediciones distintas.
 
-Para cada brazo y mercado, Δ de una sesión es el MAE con el control menos el MAE con los
+Para cada modelo y mercado, Δ de una sesión es el MAE con el control menos el MAE con los
 codificadores congelados, con las semillas promediadas sesión a sesión. Positivo indica que
 los congelados ayudan. El corte es el 1 de julio de 2021, el primer mes completo después de
 publicar los pesos de MiniLM, y los tramos tienen 30 meses:
@@ -151,10 +151,10 @@ y `break − placebo_break` quedan por encima de cero con intervalos simultáneo
 se sostiene. Con menos de 100 sesiones en algún tramo la decisión queda sin tomar. Los
 intervalos usan el bootstrap circular por bloques de días de la comparación (bloques de 16
 días, 2.000 réplicas, semilla 20261009 y 95 %), con una familia max-t por mercado sobre los
-brazos y los dos estadísticos.
+modelos y los dos estadísticos.
 
 Se declaran la GRU de referencia y `titans_mac_online` en US y CN. Volver a ajustarlos con la
-edición de control cuesta lo mismo que esos brazos en la campaña: 2 brazos por 3 semillas en
+edición de control cuesta lo mismo que esos modelos en la campaña: 2 modelos por 3 semillas en
 19 ventanas de US y 13 de CN, 192 trabajos de ventana y semilla. Es una partida separable del
 presupuesto, que se decidirá en el resumen previo al entrenamiento. No mide cuál de los dos
 codificadores lleva el efecto, ni separa un cambio de régimen que coincida con el corte, ni
@@ -171,8 +171,8 @@ uv run python -m mars_titan.evaluation.encoder_sensitivity \
 La [ablación de modalidades en inferencia](../research/metrics.md#ablación-de-modalidades-en-inferencia)
 ([#414](https://github.com/GonxKZ/mars-titan/issues/414) y
 [#423](https://github.com/GonxKZ/mars-titan/pull/423)) mide cuánto cambia el error de cada
-brazo cuando las noticias o los fundamentales se leen como ausentes, con el mismo estado. Si
-un brazo apenas depende de las noticias, el conocimiento posterior de MiniLM tampoco puede
+modelo cuando las noticias o los fundamentales se leen como ausentes, con el mismo estado. Si
+un modelo apenas depende de las noticias, el conocimiento posterior de MiniLM tampoco puede
 mover mucho sus conclusiones. La sensibilidad responde a otra pregunta: si la parte que sí
 aporta el texto podría venir del futuro. Las dos se leen juntas y ninguna sustituye a la
 otra.

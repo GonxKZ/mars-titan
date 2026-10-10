@@ -10,8 +10,11 @@ La sensibilidad queda pendiente de la edición de control y de los ajustes de la
 
 [`real-data.json`](real-data.json) es el recibo de `benchmarks/pretraining_free_encoders_real.py`
 sobre la edición preparada v3.1 desde 2000, con el código del commit `6af4a9c4`. Los commits
-posteriores solo añaden pruebas y documentación, y las huellas de los archivos del recibo
-coinciden con las del commit final.
+posteriores añaden pruebas y documentación y, en el último, cambian el vocabulario de
+docstrings, mensajes y una línea de texto de `encoder_sensitivity.py` y del propio script. La
+huella del codificador coincide con la del commit final, pero las de esos dos archivos ya no.
+La misma corrección se aplicó a mano a la lista de tareas pendientes del recibo, sin tocar
+ninguna cifra.
 
 ```bash
 CUDA_VISIBLE_DEVICES=-1 OMP_NUM_THREADS=2 uv run --no-sync python \
@@ -51,7 +54,7 @@ coste. Las noticias de US son artículos largos (4.570 caracteres de media) y la
 resúmenes. La cota de los gráficos cuenta una ventana por cada fila de precios, más de las
 que tienen muestra. El resto de una edición de control (materialización, dibujo de gráficos,
 fundamentales y macro) cuesta lo mismo que en la edición congelada y no se ha medido aquí. La
-sensibilidad con la forma de US (4.955 sesiones, dos brazos, tres semillas y 2.000 réplicas)
+sensibilidad con la forma de US (4.955 sesiones, dos modelos, tres semillas y 2.000 réplicas)
 tardó entre 0,72 y 1,04 s. El pico de RSS del proceso fue de 2.172 MiB, sobre todo por cargar
 los pesos de MiniLM para compararlos. No se ha medido la energía por falta de instrumento.
 
@@ -67,12 +70,12 @@ con la copia sin mutar en verde (57 pruebas):
   minúsculas y admitir textos en blanco.
 - En los gráficos: el valor del canal en lugar de la tinta, los canales verde y azul, bloques
   por columnas, no comprobar el tamaño y lotes sin límite.
-- En la identidad: una sonda sin gráfico, marcarlo como no histórico y TF32 desconocido.
+- En la identidad: una entrada de control sin gráfico, marcarlo como no histórico y TF32 desconocido.
 - En la codificación: ignorar la opción, admitir las pasadas de GPU y pasar opciones CUDA.
 - En la sensibilidad: un tramo posterior el doble de largo, los signos del salto, del placebo y
   de Δ, una media de semillas mal dividida, conservar las filas calibradas, admitir sesiones
   sin todas sus semillas, no comparar recuentos de filas, admitir la misma edición, ignorar la
-  huella de la tabla, el test final y que los brazos compartan sesiones, no exigir el mínimo al
+  huella de la tabla, el test final y que los modelos compartan sesiones, no exigir el mínimo al
   tramo placebo, tratar el cero como positivo, confirmar con un solo intervalo, intervalos
   marginales, otra semilla, un bloque tan largo como la serie, un corte anterior a la
   publicación o fuera del día 1, pocas réplicas y sobrescribir el informe.

@@ -60,9 +60,9 @@ def micros(moment):
 
 
 def write_comparison(folder, deltas, *, edition, market="US", edit=None):
-    """Comparación publicada con el MAE de cada brazo, semilla y sesión.
+    """Comparación publicada con el MAE de cada modelo, semilla y sesión.
 
-    `deltas` asigna a cada brazo una función del instante que da Δ. La edición congelada usa un
+    `deltas` asigna a cada modelo una función del instante que da Δ. La edición congelada usa un
     MAE base y la de control le suma Δ. Las semillas se desplazan alrededor de la base con
     desplazamientos que suman cero, así que la media de las semillas es la base.
     """

@@ -10,7 +10,7 @@ campaña, no usa la GPU ni ejecuta pasos de optimizador:
 3. Cuenta las noticias y las filas de precios de toda la edición para estimar el coste de
    codificar una edición de control completa.
 4. Mide la sensibilidad (`evaluation.encoder_sensitivity`) con dos comparaciones sintéticas del
-   tamaño de la de US: 19 ventanas, tres semillas y los dos brazos declarados.
+   tamaño de la de US: 19 ventanas, tres semillas y los dos modelos declarados.
 5. Con `--weights-history`, descarga el `pytorch_model.bin` del commit de MiniLM del 23 de junio
    de 2021 y comprueba tensor a tensor que coincide con el `model.safetensors` fijado.
 
@@ -338,7 +338,7 @@ def main(argv=None):
             "GPU, porque el control trabaja en CPU",
             "energía, sin instrumento",
             "la codificación completa de la edición de control, solo estimada con la muestra",
-            "el ajuste de los brazos sobre la edición de control, bloqueado",
+            "el ajuste de los modelos sobre la edición de control, bloqueado",
         ],
     )
     atomic_json(args.output, receipt)
