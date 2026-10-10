@@ -12,9 +12,9 @@ from test_temporal_inputs import ordered_view
 from mars_titan.data.storage import sha256
 from mars_titan.environments.actions import ActionGrid
 from mars_titan.environments.corpus_source import ParquetCohortSource
-from mars_titan.episodes.parents import ParentCache
 from mars_titan.models.baselines.multimodal import MultimodalReference
 from mars_titan.posttraining.inputs import PairedInputs, fit_normalization
+from mars_titan.posttraining.parent_cache import ParentCache
 from mars_titan.posttraining.parents import FrozenParent
 from mars_titan.posttraining.run import run_case
 from mars_titan.training.checkpoints import StopRequest, load_training_state

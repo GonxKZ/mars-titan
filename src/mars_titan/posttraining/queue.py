@@ -22,7 +22,6 @@ from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.environments.actions import ActionGrid
 from mars_titan.environments.corpus_source import ParquetCohortSource, prepare_causal_corpus
 from mars_titan.episodes.augmentation import fit_volatility
-from mars_titan.episodes.parents import ParentCache
 from mars_titan.models.quantile_head import QUANTILE_HEAD
 from mars_titan.training.checkpoints import StopRequest
 from mars_titan.training.experiment_resources import GpuLease
@@ -35,6 +34,7 @@ from . import adapter_matrix
 from .augmented_inputs import AugmentedInputs
 from .inputs import CONDITIONS, PairedInputs, fingerprint, fit_normalization
 from .matrix_runs import MatrixParent, MatrixWindow
+from .parent_cache import ParentCache
 from .parent_selection import matching_parents, matching_seeds, parent_for_seed
 from .parents import NEURAL, load_parent
 from .preparation import EpisodeFactory, encoder_contract, prepare_augmentation
