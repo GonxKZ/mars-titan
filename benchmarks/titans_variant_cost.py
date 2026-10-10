@@ -1,11 +1,11 @@
-"""Medir el coste de PT6 con entradas reales ya materializadas, sin optimizador.
+"""Medir en CPU el coste de los modelos de una declaración de Titans, sin optimizador.
 
 Reutiliza el archivo que `titans_paper_projections_cost.py materialize` lee del tramo de
 ajuste de una vista de la campaña, con sus bits de presencia reales y sin objetivos. Para
-cada modelo de la declaración de PT6 recorre los T instantes con grafo, calcula la pinball
-frente a ceros y ejecuta un backward. Los gradientes se descartan en cada repetición y al
-final se comprueba que ningún parámetro ha cambiado. Mide también la inferencia sin grafo.
-Además cuenta las filas con alguna modalidad ausente, que son las que PT6 modula.
+cada modelo de la declaración (por ejemplo PT5 o PT6) recorre los T instantes con grafo,
+calcula la pinball frente a ceros y ejecuta un backward. Los gradientes se descartan en cada
+repetición y al final se comprueba que ningún parámetro ha cambiado. Mide también la
+inferencia sin grafo y cuenta las filas con alguna modalidad ausente.
 """
 
 import argparse
@@ -27,8 +27,6 @@ from mars_titan.data.storage import atomic_json, sha256
 from mars_titan.models.quantile_head import pinball_loss
 from mars_titan.models.titans.financial import FinancialConfig, FinancialPredictor
 from mars_titan.models.titans.financial_inputs import DecisionBatch, validated_cpu_batch
-
-DECLARATION = Path("configs/evaluation/presence-modulation-comparison.json")
 
 
 def _commit():
@@ -83,11 +81,12 @@ def _inference(model, batches, flows):
     return time.perf_counter() - started
 
 
-def measure(data, output, *, repetitions, warmup, threads):
+def measure(data, declaration_path, output, *, repetitions, warmup, threads):
     torch.set_num_threads(threads)
     torch.set_float32_matmul_precision("highest")
     metadata, spec, raws = _raw_batches(data)
-    declaration = json.loads(DECLARATION.read_text())
+    declaration_path = Path(declaration_path)
+    declaration = json.loads(declaration_path.read_text())
     recipe = Path(declaration["base_recipe"])
     document = json.loads(recipe.read_text())
     if document["predictor"]["dtype"] != "float32":
@@ -114,12 +113,12 @@ def measure(data, output, *, repetitions, warmup, threads):
         inference = [_inference(model, batches, flows) for _ in range(repetitions)]
         if _digest(model) != before:
             raise RuntimeError("La medida ha modificado parámetros")
-        identity = config.identity()
+        flows_state = model.initial_state(flows)
         models[name] = dict(
             role=arm["role"],
             predictor_changes=arm["predictor_changes"],
-            added_parameters=identity.get("presence_modulation", {}).get("parameters", 0),
             total_parameters=sum(value.numel() for value in model.parameters()),
+            state_tensor_bytes_per_flow=model.state_usage(flows_state)["tensor_bytes_per_flow"],
             forward_with_graph_seconds=_summary([value[0] for value in graph]),
             backward_seconds=_summary([value[1] for value in graph]),
             inference_seconds=_summary(inference),
@@ -128,13 +127,15 @@ def measure(data, output, *, repetitions, warmup, threads):
         print(name, round(models[name]["forward_with_graph_seconds"]["median"], 4), flush=True)
     control = next(value for value in models.values() if value["role"] == "control")
     for value in models.values():
+        value["added_parameters"] = value["total_parameters"] - control["total_parameters"]
         value["relative_to_control"] = {
             key: value[key]["median"] / control[key]["median"]
             for key in ("forward_with_graph_seconds", "backward_seconds", "inference_seconds")
         }
     receipt = dict(
         schema_version=1,
-        kind="presence_modulation_cost",
+        kind="titans_variant_cost",
+        innovation=declaration["innovation"],
         recorded_at_utc=datetime.now(UTC).isoformat(),
         commit=_commit(),
         scope=(
@@ -146,8 +147,8 @@ def measure(data, output, *, repetitions, warmup, threads):
         versions=dict(python=platform.python_version(), torch=torch.__version__),
         precision="float32",
         threads=torch.get_num_threads(),
-        declaration=str(DECLARATION),
-        declaration_sha256=sha256(DECLARATION),
+        declaration=str(declaration_path),
+        declaration_sha256=sha256(declaration_path),
         recipe=str(recipe),
         recipe_sha256=sha256(recipe),
         inputs=dict(
@@ -176,15 +177,17 @@ def measure(data, output, *, repetitions, warmup, threads):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--data", type=Path, required=True)
+    parser.add_argument("--declaration", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--repetitions", type=int, default=5)
     parser.add_argument("--warmup", type=int, default=1)
     parser.add_argument("--threads", type=int, default=2)
     args = parser.parse_args()
     if torch.cuda.is_available():
-        raise RuntimeError("La medida de PT6 se hace en CPU, con CUDA_VISIBLE_DEVICES=-1")
+        raise RuntimeError("La medida se hace en CPU, con CUDA_VISIBLE_DEVICES=-1")
     measure(
         args.data,
+        args.declaration,
         args.output,
         repetitions=args.repetitions,
         warmup=args.warmup,
