@@ -195,3 +195,33 @@ def test_the_cli_writes_the_report_and_signals_failure(tmp_path):
     assert row_identity.main(arguments) == 1
     written = json.loads(target.read_text())
     assert written["kind"] == row_identity.KIND and written["failures"] == 1
+
+
+def _joint(eligible, borrowed=None):
+    """Fuentes mínimas de un ámbito con elegibilidad por ventana y modelos prestados."""
+    return dict(
+        markets=list(eligible),
+        eligible=eligible,
+        borrowed=borrowed or {},
+        joint_scope="US+CN",
+    )
+
+
+def test_the_dropped_markets_follow_the_declared_joint_design():
+    sources = _joint({"US": ["fold-000", "fold-006"], "CN": ["fold-006"]})
+    assert row_identity.dropped_markets(sources, "fold-000", "gru") == ["CN"]
+    assert row_identity.dropped_markets(sources, "fold-006", "gru") == []
+    # En un mercado, el modelo prestado del conjunto pierde el otro mercado en cada ventana.
+    alone = _joint({"US": ["fold-000"]}, borrowed={"gru_joint": "gru"})
+    assert row_identity.dropped_markets(alone, "fold-000", "gru_joint") == ["CN"]
+    assert row_identity.dropped_markets(alone, "fold-000", "gru") == []
+
+
+def test_kept_rows_count_every_dropped_market_even_without_rows():
+    table = pa.table(dict(market=["US", "CN", "CN", "US"], value=[1, 2, 3, 4]))
+    kept, counts = row_identity.kept_rows(table, ["CN"])
+    assert kept.column("market").to_pylist() == ["US", "US"] and counts == {"CN": 2}
+    kept, counts = row_identity.kept_rows(table.slice(0, 1), ["CN"])
+    assert kept.num_rows == 1 and counts == {"CN": 0}
+    kept, counts = row_identity.kept_rows(table, [])
+    assert kept is table and counts == {}
