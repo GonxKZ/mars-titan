@@ -54,10 +54,10 @@ def matrix_cases(stage):
 
     Se leen de la matriz y de los controles que la etapa añade, no de una lista fija. Con la
     v3, su variedad y la continuación anclada son 87: diez en cada red recurrente y DLinear
-    (cuatro brazos de la v2, cuatro de la variedad y las dos continuaciones), dieciséis en
+    (cuatro variantes de la v2, cuatro de la variedad y las dos continuaciones), dieciséis en
     el Transformer compacto (ocho, seis y las dos continuaciones) y los de Titans-MAC (cinco
     en el codificador directo y en MAC sin memoria, nueve con memoria fija y doce en línea,
-    con sus tres brazos de la variedad). La continuación anclada no se propone en Titans-MAC.
+    con sus tres variantes de la variedad). La continuación anclada no se propone en Titans-MAC.
     """
     active, _ = campaign_stage.stage_arms(stage)
     total = 0
@@ -441,7 +441,7 @@ def test_a_strictly_better_candidate_replaces_the_frozen_parent(
 
     def lower_head(table):
         calls.append(None)
-        # Cuarto trabajo de la ventana: el brazo head, tras el padre y las dos continuaciones.
+        # Cuarto trabajo de la ventana: el modelo head, tras el padre y las dos continuaciones.
         return original(table) - (1e-9 if len(calls) == 4 else 0.0)
 
     monkeypatch.setattr(staged_chain, "validation_score", lower_head)

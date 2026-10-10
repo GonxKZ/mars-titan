@@ -10,7 +10,7 @@ declara por cabeza del padre: los escalares conservan los de la versión 1 y los
 `quantile_head_v1` optimizan la pinball de sus cinco niveles. Un control que no tiene
 objetivo para una cabeza se excluye con su motivo, no se reinterpreta. La versión 3
 conserva todo lo anterior y añade los destinos de las familias con entrenador cronológico
-(`chronological_matrix`) y, de forma opcional, dos secciones de #444: `variety`, con brazos
+(`chronological_matrix`) y, de forma opcional, dos secciones de #444: `variety`, con variantes
 de un solo punto (`adapter_variety`), y `anchored_continuation`, con el control de
 continuación completa cuyo decaimiento se ancla al padre (`anchored_continuation`).
 """
@@ -347,7 +347,7 @@ def cases(matrix, digest, family, *, head=SCALAR, reserve=False):
 
     Los objetivos dependen de la cabeza del padre. Un control excluido para esa cabeza
     no genera caso. La continuación anclada sigue a la completa si la matriz la propone
-    para las referencias. `reserve` incluye los brazos y controles de reserva de #444.
+    para las referencias. `reserve` incluye las variantes y los controles de reserva de #444.
     """
     _family(family)
     declared = objectives(matrix, head)

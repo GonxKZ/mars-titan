@@ -245,7 +245,7 @@ def test_only_the_stages_that_name_the_control_plan_it(name, expected):
     def key(job):
         return job["scope"], job["window"], job["base_arm"], job["seed"]
 
-    # Una por ventana, brazo de referencia y semilla, igual que la continuación completa.
+    # Una por ventana, modelo de referencia y semilla, igual que la continuación completa.
     assert sorted(map(key, anchored)) == sorted(map(key, full)) and len(anchored) == expected
     for job in anchored:
         assert job["arm"] == f"{job['base_arm']}__{ANCHORED}" and job["point"] == ANCHORED

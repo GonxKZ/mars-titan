@@ -837,12 +837,12 @@ declaradas son `versus_frozen_parent` (adaptados y continuaciones menos el padre
 congelado), `versus_full_continuation` (adaptados menos la continuación) y
 `versus_anchored_continuation` (adaptados y continuación completa menos la
 [continuación anclada](../engineering/adapter-variety.md#asimetría-del-decaimiento-y-continuación-anclada)),
-más el nivel de cada brazo. La última solo existe en los padres que tienen esa
+más el nivel de cada modelo. La última solo existe en los padres que tienen esa
 continuación. Todo lo demás se hereda de la comparación de la campaña:
 protocolos, métricas, calibración común, remuestreo y secciones secundarias. Hoy
-salen nueve padres: las tres redes recurrentes y DLinear con doce brazos, el
-Transformer con dieciocho porque la matriz le da puntos de lectura, y los cuatro
-brazos de Titans-MAC con entre siete y catorce, sin continuación anclada. La
+salen nueve padres: las tres redes recurrentes y DLinear con doce modelos, el
+Transformer con dieciocho porque la matriz le da puntos de lectura, y las cuatro
+variantes de Titans-MAC con entre siete y catorce, sin continuación anclada. La
 validación de los recibos por etapas elige el predictor de la cadena y no entra en
 esta comparación.
 
