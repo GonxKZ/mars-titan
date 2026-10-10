@@ -534,3 +534,15 @@ if(MARS_TITAN_ENABLE_STATIC_ANALYZER)
     endforeach()
 endif()
 mars_titan_coverage_report()
+
+# Pruebas que aplican pasos de optimizador sobre datos sintéticos, incluidos los programas que
+# entrenan si no encuentran la protección. Mientras rija el bloqueo de aprendizaje, todos los
+# perfiles de prueba de CMakePresets.json excluyen esta etiqueta. La prueba Python
+# test_optimizer_steps_hold.py exige que la lleve cualquier prueba que llegue a un paso.
+set(MARS_TITAN_OPTIMIZER_STEP_TESTS ppo_policy ppo_training ppo_collection ppo_gru_packing
+    ppo_variant_state adapter_control adapter_control_cli adapter_control_cuda adapter_control_cli_cuda)
+foreach(test IN LISTS MARS_TITAN_OPTIMIZER_STEP_TESTS)
+    if(TEST ${test})
+        set_property(TEST ${test} APPEND PROPERTY LABELS optimizer-steps)
+    endif()
+endforeach()
