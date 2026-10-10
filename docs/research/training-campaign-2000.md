@@ -155,6 +155,8 @@ El lanzador fija los tres indicadores en cada trabajo, antes de que su ejecutor 
 El 9 de octubre, antes de cualquier resultado, el autor eligió el walk-forward por etapas con un control en línea ([#437](https://github.com/GonxKZ/mars-titan/issues/437)). El [protocolo](walk-forward-2000.md#walk-forward-por-etapas-de-la-campaña-a-v2) describe los roles de cada ventana, la regla del predictor de la cadena, el motivo por el que el reentreno de la ventana no es candidato, el diagrama de la cadena, el contrato de los recibos y el verificador de disjunción. Aquí se recoge lo que cambia en el plan.
 
 - `walk_forward_stages` fija el diseño con un único valor admitido y exige `execution.order = "by_window"`. Con esa declaración, el calendario crea las selecciones de la cadena a partir de la etapa de adaptadores y exige dependencias concretas (`campaign_chain.check_staged`). Cada trabajo de posentrenamiento de la ventana k depende de los trabajos base que eligen su padre en k-1, y la primera ventana no tiene posentrenamiento. Cada trabajo de RL declara `predictor_seed` y depende de la selección de la cadena de su propio ámbito en todas las ventanas que lee. Las selecciones de la cadena las crea `plan_chain` de la etapa de adaptadores y el calendario las pasa a la fase `chain`. Una etapa que no cumpla el contrato se rechaza con su motivo.
+- Con esa declaración, `check_stage` y `run_stage` de los adaptadores y de las políticas comprueban también su propio plan con `check_staged`, y las políticas deben declarar la regla de la RL del diseño y el predictor de la cadena. Antes de crear su salida, las dos etapas exigen un [informe de disjunción](walk-forward-2000.md#contrato-de-los-recibos-y-verificador-de-disjunción) sin fallos sobre las vistas que usan (`--disjunction`), y el de la RL debe cubrir además cada selección de la cadena que lee. `rolling` lo calcula antes de cada una de esas etapas y pasa a las políticas la salida de los adaptadores como cadena.
+- La [comparación de los brazos postentrenados de A v2](../../configs/posttraining/historical-masked-adapter-comparison-a-v2.json) deriva veinte padres en el ámbito conjunto y contrasta el predictor de la cadena con el padre congelado, la continuación y el reentreno completo de la ventana (`versus_base_retrain`). Conserva la elegibilidad del modelo conjunto, así que China entra en sus métricas desde `fold-006`.
 - `online_controls` declara `transformer_compact_online`. El plan crea un trabajo por ventana y semilla en los ámbitos cuya comparación evalúa el brazo. En A v2 solo es el conjunto, con 57 trabajos (19 ventanas por tres semillas), porque US y CN solo comparan los controles separados. Cada uno depende de los trabajos que eligen el estado de `transformer_compact` y de `mars_titan_m1` en la misma ventana y semilla. Sus trabajos llevan `regenerable=False`, porque sus predicciones salen de pasos en línea y la retención rodante no puede regenerarlas por inferencia. Mientras su regla tenga valores `pending`, `launch_blockers` impide lanzar la campaña. El motor ejecuta estos trabajos con el [ejecutor del control](../engineering/transformer-online-control.md) y, con la sección declarada, la familia `online_control` deja de figurar entre las pendientes.
 - La ablación de modalidades no incluye el control en línea, que no tiene un estado elegido que ablacionar. La estimación de disco lo excluye hasta tener el informe de su ejecutor, y la de horas lo acota con una predicción y, como máximo, un paso por fila de calibración y evaluación.
 
@@ -193,7 +195,14 @@ uv run --no-sync python scripts/run_masked_campaign.py run \
   --views US+CN=<vistas conjuntas v3>/US+CN --views US=<vistas>/US --views CN=<vistas>/CN \
   --output <campaña> --storage configs/baselines/historical-masked-campaign-storage.json \
   --window fold-000
+uv run --no-sync python scripts/run_masked_campaign.py posttraining run \
+  --stage configs/posttraining/historical-masked-adapter-stage-a-v2.json \
+  --views US+CN=<vistas conjuntas v3>/US+CN --views US=<vistas>/US --views CN=<vistas>/CN \
+  --campaign-output <campaña> --output <adaptadores> --window fold-001 \
+  --disjunction <informe de disjunción>
 ```
+
+Fuera de `rolling`, el informe que recibe `rl run` debe calcularse con `--posttraining <adaptadores>` después de la fase `chain` de su ventana.
 
 #### Proyección de horas
 

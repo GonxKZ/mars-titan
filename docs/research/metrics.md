@@ -638,10 +638,24 @@ declaradas son `versus_frozen_parent` (adaptados y continuación menos el padre
 congelado) y `versus_full_continuation` (adaptados menos la continuación), más el
 nivel de cada brazo. Todo lo demás se hereda de la comparación de la campaña:
 protocolos, métricas, calibración común, remuestreo y secciones secundarias. Hoy
-salen cinco padres (`rnn`, `lstm`, `gru`, `dlinear` y `transformer_compact`) con
-siete brazos, salvo el Transformer, que tiene once porque la matriz le da puntos
-de lectura. La validación de los recibos por etapas elige el predictor de la
-cadena y no entra en esta comparación.
+salen nueve padres: las tres redes recurrentes y DLinear con once brazos, el
+Transformer con diecisiete porque la matriz le da puntos de lectura, y los cuatro
+brazos de Titans-MAC con entre siete y catorce. La validación de los recibos por
+etapas elige el predictor de la cadena y no entra en esta comparación.
+
+La [declaración de A v2](../../configs/posttraining/historical-masked-adapter-comparison-a-v2.json),
+fijada el 10 de octubre antes de cualquier resultado, añade dos papeles. `chain` es
+el predictor de la cadena (`<brazo>__chain`), cuyas predicciones de cada ventana y
+semilla son las del trabajo que eligió su `selection.json`, y `base_retrain` es el
+brazo base reentrenado en la ventana. Las familias `versus_frozen_parent` y
+`versus_full_continuation` incluyen la cadena como variante, y `versus_base_retrain`
+contrasta la cadena con el reentreno, la comparación que el diseño por etapas
+informa aparte. Si la campaña declara `walk_forward_stages`, la declaración debe
+contrastar esos dos papeles. Salen veinte padres en el ámbito conjunto, los 22
+brazos de la etapa salvo Ridge y XGBoost. Cada comparación conserva la
+elegibilidad por mercado del modelo conjunto, así que China solo entra en
+calibración y métricas desde `fold-006`, y deja fuera los controles separados,
+que solo actúan en los ámbitos de un mercado.
 
 El manifiesto de fuentes de un padre une las predicciones del padre, leídas del
 manifiesto ya validado de la campaña, con los recibos confirmados de la etapa. Se
