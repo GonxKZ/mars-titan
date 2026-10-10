@@ -323,6 +323,15 @@ def late_fit(manifest):
     audit["prediction_fit_ends"] = [segment(manifest)["end"]] * len(audit["prediction_fit_ends"])
 
 
+def fit_at_start(manifest):
+    # Fin de ajuste igual al inicio del tramo: cumple fin <= decisión en cada sesión, pero no
+    # el contrato del recibo, que exige dejar de ver etiquetas antes del tramo.
+    audit = manifest["identity"]["audit"]
+    start = segment(manifest)["start"]
+    segment(manifest)["labels_used_until"] = start
+    audit["prediction_fit_ends"] = [start] * len(audit["prediction_fit_ends"])
+
+
 AUDIT_CHANGES = {
     "contract": lambda m: m["identity"]["audit"].update(rows="all_rows"),
     "complete": lambda m: m["identity"]["audit"].update(corporate_actions_complete=True),
@@ -336,6 +345,9 @@ AUDIT_CHANGES = {
     "segment_test": lambda m: segment(m).update(end=1_704_067_200_000_001),
     "segment_short": lambda m: segment(m).update(end=segment(m)["start"] + 1),
     "segment_partition": lambda m: segment(m).update(partition="test"),
+    "segment_validation": lambda m: segment(m).update(partition="validation"),
+    "segment_calibration": lambda m: segment(m).update(partition="calibration"),
+    "fit_at_start": lambda m: fit_at_start(m),
     "segment_receipt": lambda m: segment(m).update(receipt_sha256="z" * 64),
     "late_fit": lambda m: late_fit(m),
     "fits": lambda m: m["identity"]["audit"]["prediction_fit_ends"].__setitem__(3, 0),
@@ -361,6 +373,12 @@ def test_altered_audit_or_rules_are_rejected_before_creating_output(tapes, tmp_p
     result = run(directory, tmp_path / "output", "--policy", "rebalance_50")
     assert result.returncode == 1 and result.stderr.startswith("Error: "), result.stderr
     assert not (tmp_path / "output").exists()
+    if change in IN_SAMPLE:
+        assert "solo lleva predicciones de evaluación" in result.stderr, result.stderr
+
+
+# Tramos que el motor rechaza aunque cada fin de ajuste sea anterior a su decisión.
+IN_SAMPLE = {"segment_validation", "segment_calibration", "fit_at_start"}
 
 
 def column_change(table, name, mutate):

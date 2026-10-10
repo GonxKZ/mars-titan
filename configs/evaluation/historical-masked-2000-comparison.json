@@ -228,6 +228,42 @@
         44
       ]
     },
+    "mars_titan_b6_regime": {
+      "family": "mars_titan",
+      "output": "quantile_head_v1",
+      "seeds": [
+        42,
+        43,
+        44
+      ]
+    },
+    "mars_titan_b6_calendar": {
+      "family": "mars_titan",
+      "output": "quantile_head_v1",
+      "seeds": [
+        42,
+        43,
+        44
+      ]
+    },
+    "mars_titan_b6_regime_banks": {
+      "family": "mars_titan",
+      "output": "quantile_head_v1",
+      "seeds": [
+        42,
+        43,
+        44
+      ]
+    },
+    "mars_titan_b6_calendar_banks": {
+      "family": "mars_titan",
+      "output": "quantile_head_v1",
+      "seeds": [
+        42,
+        43,
+        44
+      ]
+    },
     "cm_v1_b": {
       "family": "cm_v1",
       "output": "quantile_head_v1",
@@ -366,6 +402,36 @@
           "mars_titan_b6"
         ]
       },
+      "regime_bias": {
+        "kind": "delta",
+        "base": "mars_titan_b6_bias",
+        "variants": [
+          "mars_titan_b6_regime",
+          "mars_titan_b6_calendar"
+        ]
+      },
+      "regime_information": {
+        "kind": "delta",
+        "base": "mars_titan_b6_calendar",
+        "variants": [
+          "mars_titan_b6_regime"
+        ]
+      },
+      "regime_banks": {
+        "kind": "delta",
+        "base": "mars_titan_b6",
+        "variants": [
+          "mars_titan_b6_regime_banks",
+          "mars_titan_b6_calendar_banks"
+        ]
+      },
+      "regime_bank_information": {
+        "kind": "delta",
+        "base": "mars_titan_b6_calendar_banks",
+        "variants": [
+          "mars_titan_b6_regime_banks"
+        ]
+      },
       "cm_v1_factorial": {
         "kind": "factorial",
         "base": "cm_v1_b",
@@ -447,6 +513,10 @@
           "mars_titan_m1_k4_first_read",
           "mars_titan_b6",
           "mars_titan_b6_bias",
+          "mars_titan_b6_regime",
+          "mars_titan_b6_calendar",
+          "mars_titan_b6_regime_banks",
+          "mars_titan_b6_calendar_banks",
           "cm_v1_b",
           "cm_v1_bc",
           "cm_v1_bm",

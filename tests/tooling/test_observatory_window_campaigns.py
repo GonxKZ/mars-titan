@@ -23,10 +23,14 @@ from mars_titan.observatory.live_server import LABEL, Limits
 from mars_titan.observatory.publication import GitPublisher
 from mars_titan.observatory.window_campaigns import arm_model, campaign_state
 from mars_titan.posttraining import campaign_stage as adapter_stage
-from mars_titan.posttraining import staged_chain
 from mars_titan.simulation import campaign_stage as policy_stage
 from mars_titan.simulation import policy_plan
-from mars_titan.training import campaign_plan, masked_campaign, modality_ablation_stage
+from mars_titan.training import (
+    campaign_chain,
+    campaign_plan,
+    masked_campaign,
+    modality_ablation_stage,
+)
 from scripts.serve_observatory import declared_campaigns
 from tests.simulation import rl_stage_fixture
 
@@ -200,10 +204,10 @@ def adapter_output(root):
     frozen = next(job for job in jobs if job["kind"] != "fit" and job["family"] == "titans_mac")
     chain = chains[0]
     dump(root / "jobs" / fit["id"] / "receipt.json", dict(status="completed"))
-    selection = staged_chain.chain_folder(
+    selection = campaign_chain.chain_folder(
         root, chain["scope"], chain["window"], chain["base_arm"], chain["seed"]
     )
-    dump(selection / staged_chain.SELECTION, dict(kind=staged_chain.SELECTION_KIND))
+    dump(selection / campaign_chain.SELECTION, dict(kind=campaign_chain.SELECTION_KIND))
     report = dict(
         global_step=12,
         epochs=[
