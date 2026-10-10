@@ -1,8 +1,8 @@
 # Edición v3.1 de la historia desde 2000
 
-Tarea [#428](https://github.com/GonxKZ/mars-titan/issues/428), 9 de octubre de 2026. La edición v3.1 cambia solo la lectura de precios de la edición `encoded-history-v3-cpu-words`. Corrige tres cosas: la conversión del texto numérico de la fuente, las filas que se rechazaban por redondeo y las ventanas que contienen sesiones sin ninguna fila en todo el mercado. Noticias, fundamentales, macro, codificadores y política de máscaras no cambian.
+Tarea [#428](https://github.com/GonxKZ/mars-titan/issues/428), 9 y 10 de octubre de 2026. La edición v3.1 parte de la edición `encoded-history-v3-cpu-words`. Corrige tres cosas en la lectura de precios: la conversión del texto numérico de la fuente, las filas que se rechazaban por redondeo y las ventanas que contienen sesiones sin ninguna fila en todo el mercado. Además, todos sus vectores se calculan en FP32 estricto, sin TF32. Noticias, fundamentales, macro, modelos de los codificadores y política de máscaras no cambian.
 
-Este documento describe el código. La auditoría, la preparación, la codificación y los objetivos v3.1 no se han ejecutado sobre los datos y esperan aprobación. La edición v3, `targets-v3` y sus vistas siguen intactas. No se ha entrenado ni evaluado ningún modelo.
+Este documento describe el código y una medida sobre una porción de 13 activos copiada fuera de las rutas oficiales. La auditoría, la preparación, la codificación y los objetivos v3.1 completos no se han ejecutado y esperan la orden del coordinador. La edición v3, `targets-v3` y la preparación `prepared-accounting-v1` siguen intactas. No se ha entrenado ni evaluado ningún modelo.
 
 ## Conversión exacta del texto de la fuente
 
@@ -82,18 +82,99 @@ El objetivo de una decisión cuya sesión siguiente falta en todo el mercado sig
 
 La etapa de refuerzo no consume las ventanas de los modelos. Sus cintas de precios no tienen filas esas dos sesiones, igual que en la v3, y el entorno las trata como una suspensión de todos los activos. No se ha cambiado su comportamiento. Los mundos sintéticos y la preparación de algunos postentrenamientos generan ventanas de cinco canales y fallan al recibir una fuente de seis, en lugar de mezclarlas.
 
+## Precisión de los codificadores
+
+La especificación de la v3 registra `runtime_precision` con `matmul_tf32: false` y `cudnn_tf32: true`. El lanzador de la v3 activó TF32 en cuDNN, así que las convoluciones de ResNet18 se calcularon con mantisa de 10 bits. La v3.1 calcula todos sus vectores en FP32 estricto, como exige el proyecto para no perder precisión.
+
+- `embeddings.strict_fp32()` desactiva TF32 en matmul y en cuDNN y fija `float32_matmul_precision("highest")`. La orden de codificación la llama al arrancar, en todas sus pasadas.
+- `FrozenEncoders` falla al arrancar, antes de abrir CUDA o cargar pesos, si alguno de esos tres ajustes permite TF32. Antes de cada llamada comprueba además que la precisión efectiva sigue siendo la registrada.
+- `runtime_precision` registra ahora cuatro campos: `dtype`, `matmul_tf32`, `cudnn_tf32` y `float32_matmul_precision`. La identidad del codificador cambia, de modo que ningún vector de la v3 puede confundirse con uno de la v3.1.
+- `embeddings.encoder_spec` calcula esa identidad en CPU sin cargar los modelos. Las pasadas de CPU la usan para nombrar los vectores pendientes, y `FrozenEncoders` usa la misma función, así que ambas coinciden. La pasada de GPU lo comprueba antes de codificar.
+
+Un vector solo se hereda de otra edición si las dos registran la misma identidad de codificador y esa identidad declara FP32 estricto. La v3 no cumple la segunda condición. Sus vectores de gráficos se calcularon con TF32 en cuDNN y no se heredan. Para los textos, la v3 solo guarda la precisión de toda la edición, con `cudnn_tf32: true`, y ningún metadato por vector permite separar los textos, así que también se recalculan. El modelo de texto no usa convoluciones y es posible que sus vectores coincidan, pero la regla no se apoya en esa suposición. La medida de la porción compara ambos casos.
+
 ## Herramientas de la regeneración
 
-La regeneración prevista reutiliza todo lo que no depende de los precios.
+La regeneración prevista reutiliza todo lo que no depende de los precios ni de la precisión.
 
 - `price_revision.revise_prepared_prices` crea la preparación v3.1 a partir de `prepared-accounting-v1` y de la auditoría nueva. Enlaza con enlaces duros noticias y fundamentales tras comprobar su huella. Relee los precios con el lector auditado y los enlaza también si el Parquet es idéntico. Se detiene si un activo sin precios en el padre los gana.
-- `encode_corpus --price-window --vector-carry` reutiliza los vectores de la v3 cuando el PNG o el texto son idénticos y el codificador es el mismo. La v3 ya comprobó que recodificar con la caché vacía da muestras idénticas. La codificación tiene tres pasadas para que la GPU solo calcule. `--collect` recorre en CPU cada activo en `collect/`, lo confirma si tiene todos sus vectores y, si le falta alguno, lo descarta y anota su texto o su PNG en `pending-vectors*.sqlite`. Ningún vector provisional llega a `samples/`. `--encode-pending` codifica en GPU solo esas entradas, una a una con la misma llamada que la codificación en línea, y admite tramos con `--max-pending` para liberar el candado. Una última pasada en CPU con `--reuse-only` completa los activos pendientes con `computed-vectors.sqlite` y falla si todavía falta algún vector. `--shard K N` reparte las pasadas de CPU entre procesos acotados.
-- `edition_comparison.compare_editions` recorre las dos ediciones activo por activo con un registro reanudable. Cuenta sesiones nuevas y perdidas, registra cada gráfico que cambia y cualquier otra columna distinta, y mide el cambio de las ventanas comunes.
+- La codificación tiene tres pasadas para que la GPU solo calcule. `--collect` recorre en CPU cada activo en `collect/`, lo confirma si tiene todos sus vectores y, si le falta alguno, lo descarta y anota su texto o su PNG, con el activo que lo pide, en `pending-vectors*.sqlite`. Ningún vector provisional llega a `samples/`. `--encode-pending` codifica en GPU solo esas entradas, una a una con la misma llamada que la codificación en línea, y admite tramos con `--max-pending` para liberar el candado. Una última pasada en CPU con `--reuse-only` completa los activos con `computed-vectors.sqlite` y falla si todavía falta algún vector. `--shard K N` reparte las pasadas de CPU entre procesos acotados.
+- Las anotaciones y los vectores calculados se confirman en SQLite por activo y por tandas de 512. Confirmar cada fila obligaba a esperar a que el disco sincronizara el registro, unos 12 ms por fila con la carga actual del equipo, y la recogida de la porción pasó de 1.043 s a 172 s al agruparlas.
+- `--release-vectors` borra los PNG pendientes y los vectores de gráficos de `computed-vectors.sqlite` cuando todos los activos que los anotaron están confirmados. Los gráficos ya están en las muestras y los textos se conservan porque otros activos comparten noticias. Así el espacio adicional se limita al tramo de activos en curso.
+- `edition_comparison.compare_editions` recorre las dos ediciones activo por activo con un registro reanudable. Cuenta sesiones nuevas y perdidas, registra cada gráfico que cambia y cualquier otra columna distinta, y mide el cambio de las ventanas comunes. Si los codificadores de las dos ediciones difieren, el vector de un mismo PNG puede cambiar y se registran su diferencia absoluta máxima, la relativa por componente y la relativa por norma.
+- `factor_descriptor.describe_market_factors` fija el descriptor de factores de una preparación revisada, que se describe más abajo.
+
+## Sustitución activo a activo
+
+La v3 ocupa 57,8 GB en `samples/` y la v3.1 ocupará algo más, porque recupera ventanas. Con unos 48 GB libres no caben las dos. `--substitute-previous` y `--substitution-records` activan la sustitución de la v3 activo a activo:
+
+1. La pasada que confirma un activo de la v3.1 llama a `edition_substitution.substitute_asset` justo después.
+2. Se comprueba que las muestras nuevas tienen la huella de su recibo y que las muestras de la v3 tienen la del suyo.
+3. `compare_asset` compara el activo con la v3. Solo se admiten los cambios declarados: sesiones nuevas, ventanas distintas, gráficos nuevos y vectores recalculados por el cambio de codificador. Una sesión perdida o cualquier otra columna distinta detiene el recorrido.
+4. El registro de la comparación, con las huellas de ambos activos, se escribe y se sincroniza en disco.
+5. Solo entonces se borra el `samples.parquet` de la v3 de ese activo. Su manifiesto, su configuración y sus factores se conservan como constancia, igual que la configuración y el manifiesto de toda la edición.
+
+Cualquier fallo de verificación lanza `SubstitutionError` fuera del registro de fallos por activo, así que el recorrido se detiene sin borrar nada. Un activo pendiente de GPU no está confirmado y no sustituye nada. Repetir el recorrido no vuelve a verificar un activo ya sustituido. Con `--min-free-disk-bytes`, ninguna pasada empieza un activo nuevo mientras el disco libre esté por debajo de la reserva, que para la v3.1 son 15 GB. La sustitución no toca las vistas, `targets-v3`, `prepared-accounting-v1` ni `embeddings.sqlite` de la v3. A partir del primer activo sustituido, la v3 deja de poder leerse como edición completa.
+
+## Factor de mercado
+
+El factor residual de Estados Unidos es SPY tal como lo deja la preparación. La revisión reescribe sus precios, así que el descriptor v2 deja de describir el archivo de la edición nueva. `factor_descriptor.describe_market_factors` crea un descriptor con identidad propia: apunta a los precios revisados de SPY, registra `number_parsing` y la tolerancia de orden, y guarda la huella del descriptor v2 sin abrir sus precios. El CSI300 chino no cambia y conserva la huella de su informe. La auditoría repite las comprobaciones del v2 (huella, precios finitos y positivos, OHLC coherente, sesiones crecientes del calendario anterior a 2024 y disponibilidad igual a la decisión) y aplica a SPY la tolerancia de redondeo que declaró la auditoría de precios. El CSI300 se audita sin tolerancia.
+
+Aplicada a los descriptores v2, la auditoría nueva reproduce exactamente la del v2 en los dos mercados. Un ensayo con SPY revisado aparte, fuera de las rutas oficiales, recupera las dos sesiones que faltaban en el v2 (20 de julio y 29 de diciembre de 2000) y pasa de 6.035 a 6.037 filas. Cinco sesiones de 2000 quedan admitidas por redondeo, todas con un exceso relativo de entre 1,48e-16 y 1,65e-16, es decir, de una ULP. Tres de ellas ya estaban en el v2 porque el conversor de pandas movía algún precio una ULP y la fila quedaba ordenada por casualidad. Con la lectura exacta muestran el mismo desorden que las otras dos. El descriptor oficial se generará sobre la preparación v3.1 completa, cuando se ordene la regeneración.
+
+## Medida sobre una porción
+
+La medida usa 13 activos elegidos al azar con semilla 428 (8 de US y 5 de CN, incluido 600000.SS por su hueco de 2019), copiados con sus CSV fuera de las rutas oficiales. La v3 de esos activos se copió también, sin enlaces, para probar la sustitución sobre la copia. El equipo estaba compartido con otras cargas, con una carga media de 20 a 48 procesos en 16 hilos, así que los tiempos de reloj son pesimistas y los tiempos de CPU son más fiables. El recibo completo está en `reports/data/edition-v3-1-slice-20261010.json`.
+
+| Pasada | Reloj | CPU | Resultado |
+| --- | ---: | ---: | --- |
+| Recogida (`--collect`) | 172 s | 156 s | 12 activos pendientes, 43.942 gráficos y 5.165 textos anotados, 1 activo sin muestras confirmado |
+| GPU (`--encode-pending`) | 684 s | | 43.942 gráficos en 221,5 s de llamadas (198 por segundo) y 5.165 textos en 134,8 s (38 por segundo) |
+| Final con sustitución (`--reuse-only`) | 336 s | 176 s | 13 activos confirmados y sustituidos, 43.973 muestras |
+| Repetición sobre activos confirmados | 65 s | 42 s | Nada que verificar ni borrar |
+| Liberación (`--release-vectors`) | 7 s | 3 s | 43.942 gráficos y el registro de pendientes liberados |
+
+La recogida cuesta 3,6 ms de CPU por muestra y la pasada final 4,0 ms, porque las dos dibujan el gráfico. La GPU estuvo ocupada un 18 % del tiempo de media: con un gráfico por llamada, el coste lo marcan la preparación en CPU y el lanzamiento de núcleos, no el cálculo. El asignador de Torch llegó a 188 MB (210 MB reservados) y el proceso a 360 MiB según `nvidia-smi`, con el contexto CUDA incluido. El reloj de la pasada de GPU incluye la carga de los modelos y un muestreo de `nvidia-smi` cada medio segundo que competía por la CPU, así que el caudal se toma del tiempo de las llamadas.
+
+### Cambios frente a la v3
+
+La porción pasa de 40.616 a 43.973 muestras (un 8,3 % más), sin perder ninguna sesión. Las 3.357 sesiones nuevas vienen de las filas recuperadas por la tolerancia y de las ventanas con el hueco de 2019. Hay 173 gráficos distintos en sesiones comunes. Dibujar la misma ventana con los precios de la v3 y con los de la v3.1 reproduce las dos huellas en todos los casos comprobados (BBW, CHRS, CKX y 600000.SS), así que el cambio se debe a la conversión exacta, que mueve algún precio lo justo para cambiar un píxel. Una fila recuperada no altera ventanas comunes, porque la v3 excluía cualquier ventana que la contuviera, y solo crea sesiones nuevas. Además, 497 ventanas comunes cambian como mucho 2,8e-14 por la misma conversión.
+
+En las 40.443 sesiones comunes con el mismo PNG, ningún vector de gráfico coincide bit a bit con el de la v3. La diferencia absoluta máxima es 0,0070 sobre componentes de hasta 10,8 y la relativa por norma no pasa de 1,0e-3, con una mediana de 5,4e-4. Por componente, la mediana relativa es 7,6e-4 y el percentil 99 es 1,8e-2. Entre 214 y 342 componentes por activo valen cero en una codificación y no en la otra, porque sus activaciones quedan a un lado u otro del cero de la ReLU, y para ellos la diferencia relativa es 1. Ese es el efecto de calcular las convoluciones con TF32, y es la razón para recalcular todos los gráficos.
+
+Los vectores de noticias recalculados en FP32 estricto dan agregados idénticos bit a bit a los de la v3 en las 40.443 sesiones comunes. Es coherente con que el modelo de texto no use cuDNN. La regla vigente no hereda esos vectores porque la v3 no registra la precisión por vector, pero el resultado indica que heredarlos no cambiaría las muestras.
+
+### Disco
+
+| Concepto | Porción | Por muestra |
+| --- | ---: | ---: |
+| Muestras v3.1 | 149,2 MB | 3.393 B |
+| Muestras v3 sustituidas | 138,3 MB | 3.405 B |
+| Registro de pendientes | 113,6 MB | 2.584 B |
+| Vectores calculados | 203,8 MB | 4.635 B |
+
+El registro de pendientes y los gráficos calculados son temporales. Tras la liberación, el archivo de vectores calculados conserva su tamaño, pero SQLite reutiliza las páginas libres en el siguiente tramo. De la copia de la v3 quedaron 0,76 MB de manifiestos, configuraciones y factores como constancia.
+
+### Proyección a la edición completa
+
+La simulación de la revisión cuenta 18.698.976 ventanas (15.874.289 en US y 2.824.687 en CN), y la v3 tiene 1.591.529 textos distintos. Con los costes de la porción:
+
+| Concepto | Proyección |
+| --- | ---: |
+| CPU de la recogida | 18,5 h |
+| CPU de la pasada final | 20,7 h |
+| GPU para gráficos, uno por llamada | 26,2 h |
+| GPU para textos | 11,5 h |
+| Muestras v3.1 | 63,5 GB, 5,7 GB más que la v3 |
+| Vectores de texto que se conservan | unos 3,7 GB |
+| Temporales por activo en curso | unos 27 MB |
+
+Sin sustitución, la v3.1 no cabe junto a la v3 en los 48 GB libres. Con sustitución y tramos de unos 300 activos, el espacio ocupado crece como mucho unos 18 GB sobre el actual (8 GB de temporales del tramo, 3,7 GB de textos y 5,7 GB de crecimiento neto). Las pasadas de CPU se reparten entre procesos y pueden solaparse con la GPU, así que la GPU marca la duración. Repasar un activo ya confirmado cuesta hasta unos 3 s de CPU, por lo que conviene que cada tramo recorra solo sus activos con `--shard` en lugar de repasar los anteriores.
 
 ## Pruebas
 
-Las pruebas cubren el contrato, la admisión en el codificador, la lectura desde el corpus, las vistas temporales y el corpus ordenado, las familias, M3, la vista de información, la GRU nativa y las tres herramientas. La mutación dirigida se resume en la PR.
+Las pruebas cubren el contrato, la admisión en el codificador, la lectura desde el corpus, las vistas temporales y el corpus ordenado, las familias, M3, la vista de información, la GRU nativa y las herramientas. Para la precisión comprueban que cada uno de los tres ajustes detiene el codificador antes de abrir CUDA, que la identidad calculada en CPU es la del codificador cargado y que una edición con TF32 no cede vectores. La sustitución se prueba con cada fallo de verificación (huella anterior, huella nueva, columna cambiada y sesión perdida), con un registro que no se puede escribir, con un activo pendiente de GPU y con la reserva de disco, y en todos los casos la v3 queda intacta. El descriptor de factores repite cada comprobación del v2 y prueba que la tolerancia de SPY no se aplica al CSI300. La mutación dirigida se resume en la PR.
 
 ## Pendiente
 
-Falta ejecutar la auditoría con la tolerancia, la revisión de precios, la codificación, `targets-v3.1` y la verificación completa (verificador de la edición, `verify-targets` y comparación con la v3). Los recuentos esperados por la simulación son 2.824.687 ventanas CN y 15.874.289 US. Antes se medirá en una porción pequeña el tiempo de CPU, el de GPU y el disco.
+Falta ejecutar la auditoría con la tolerancia, la revisión de precios, el descriptor de factores sobre la preparación completa, la codificación, `targets-v3.1` y la verificación completa (verificador de la edición, `verify-targets` y comparación con la v3). Antes hay que decidir si los vectores de texto de la v3 se heredan, a la vista de que coinciden bit a bit, y en qué tramos se ejecuta la sustitución. Todo ello espera la orden del coordinador.
