@@ -252,15 +252,17 @@ def scripted_study(benefit_of, months=12, seed=5, start=MEASURED):
 
 
 def run_report(study, *, pairs=None, options=OPTIONS, defined=None):
+    """Informe de un mercado. `defined` asigna a algún brazo sus sesiones con métrica."""
     series = dict(memory=study["memory"], control=study["control"], twin=study["control"].copy())
     period = np.arange(len(study["times"]))
     value = dict(study["section"], pairs=pairs or study["section"]["pairs"])
-    defined = np.ones(len(period), bool) if defined is None else defined
+    defined = defined or {}
 
     def series_of(arm, market):
         if arm not in series:
             return None
-        return series[arm], defined, study["times"], period
+        mask = defined.get(arm, np.ones(len(period), bool))
+        return series[arm], mask, study["times"], period
 
     return ri.report(
         value, options, study["windows"], series_of, {"US": (study["at"], study["route"])}, ["US"]
@@ -283,7 +285,9 @@ def test_estimates_are_the_declared_differences_of_class_means():
     def benefit(classes, placebo, index):
         kind, absence, _ = classes
         revisit = kind == REVISIT
-        return np.select([revisit & (absence < 4), revisit], [0.3, 0.15], 0.0)
+        return np.select(
+            [revisit & (absence < 4), revisit, kind == NOVEL], [0.3, 0.15, 0.05], -0.05
+        )
 
     study = scripted_study(benefit)
     result = run_report(study)["markets"]["US"]
@@ -330,10 +334,13 @@ def test_sessions_without_a_defined_metric_leave_every_class_and_curve():
         return np.where(kind == REVISIT, 0.2, 0.0)
 
     study = scripted_study(benefit)
-    defined = np.ones(len(study["times"]), bool)
-    defined[::7] = False
-    study["memory"][~defined] = np.nan
-    pair = run_report(study, defined=defined)["markets"]["US"]["pairs"]["writes"]
+    memory, control = (np.ones(len(study["times"]), bool) for _ in range(2))
+    memory[::7], control[3::11] = False, False
+    study["memory"][~memory] = np.nan
+    study["control"][~control] = np.nan
+    defined = memory & control
+    masks = dict(memory=memory, control=control)
+    pair = run_report(study, defined=masks)["markets"]["US"]["pairs"]["writes"]
     b = study["control"] - study["memory"]
     kept = [values[defined] for values in study["classes"]]
     real = by_class(kept, b[defined])
@@ -453,6 +460,49 @@ def test_missing_classes_short_series_and_absent_arms_leave_the_pair_undetermine
     absent = dict(writes=dict(memory="memory", control="nobody", history=MEASURED, separates="x"))
     result = run_report(study, pairs=absent)["markets"]["US"]["pairs"]["writes"]
     assert result == dict(status="not_in_scope", reason=ri._NOT_IN_SCOPE)
+
+
+def test_a_placebo_without_enough_sessions_leaves_the_decision_undetermined():
+    # Con un retraso de 200 sesiones el placebo no tiene rutas en los primeros meses, así que
+    # sus clases son más pequeñas que las reales. Basta que falte una para no decidir.
+    study = scripted_study(lambda classes, placebo, index: np.zeros(len(index)))
+    study["section"].update(placebo_lag_sessions=200)
+    placebo = ri.session_classes(
+        study["times"],
+        (study["at"], study["route"]),
+        study["windows"],
+        study["section"],
+        MEASURED,
+        placebo=True,
+    )
+    kind = study["classes"][0]
+    smallest = min(int(np.sum(kind == NOVEL)), int(np.sum(kind == REVISIT)))
+    assert int(np.sum(placebo[0] == NOVEL)) < smallest
+    study["section"].update(min_sessions=smallest)
+    retention = run_report(study)["markets"]["US"]["pairs"]["writes"]["decisions"]["retention"]
+    assert retention["status"] == "undetermined"
+    assert retention["reason"] == "Alguna clase necesaria tiene menos sesiones de las declaradas"
+
+
+def test_noise_without_interference_is_not_detected():
+    # Las revisitas largas y cortas tienen el mismo beneficio esperado. El intervalo cruza el
+    # cero y la interferencia no se detecta aunque su extremo inferior sea negativo.
+    def benefit(classes, placebo, index):
+        kind, _, _ = classes
+        noise = np.random.default_rng(3).normal(0.0, 0.05, len(index))
+        return np.where(kind == REVISIT, 0.2, 0.0) + noise
+
+    study = scripted_study(benefit)
+    interference = run_report(study)["markets"]["US"]["pairs"]["writes"]["decisions"][
+        "interference"
+    ]
+    low, high = interference["intervals"]["interference"]
+    assert low < 0 < high
+    assert interference["status"] == "not_detected"
+    assert (
+        interference["reason"]
+        == "El intervalo de interference no excluye el cero en el sentido declarado"
+    )
 
 
 def test_a_memory_that_saw_every_regime_in_the_warmup_can_only_test_interference():

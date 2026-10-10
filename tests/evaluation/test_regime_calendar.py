@@ -235,6 +235,15 @@ def test_sessions_of_the_sealed_test_stop_the_build(tmp_path):
         rc.build(prepared, rule=RULE)
 
 
+def test_an_edition_that_considers_sessions_of_the_sealed_test_is_rejected(tmp_path):
+    prepared = write_prepared(tmp_path)
+    record = json.loads((prepared / rc.ABSENT_FILE).read_text())
+    record["US"]["last_considered_session"] = "2024-01-05"
+    (prepared / rc.ABSENT_FILE).write_text(json.dumps(record))
+    with pytest.raises(ValueError, match="considera sesiones del test final"):
+        rc.build(prepared, rule=RULE)
+
+
 def test_assets_that_disagree_on_the_instant_of_a_session_are_rejected(tmp_path):
     def shifted(market, index, table):
         if market == "US" and index == 2:
@@ -264,6 +273,10 @@ def test_an_incomplete_edition_is_rejected(tmp_path):
         (lambda c: c["markets"]["US"]["route"].pop(), "misma longitud"),
         (lambda c: c["markets"]["US"]["route"].__setitem__(70, 5), "fuera de rango"),
         (lambda c: c["markets"]["US"]["at"].__setitem__(3, 0), "no son crecientes"),
+        (
+            lambda c: c["markets"]["US"]["at"].__setitem__(3, c["markets"]["US"]["at"][2]),
+            "no son crecientes",
+        ),
         (lambda c: c["markets"]["US"]["sessions"].__setitem__(3, "2024-01-03"), "test final"),
     ],
 )

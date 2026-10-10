@@ -177,6 +177,16 @@ def test_a_calendar_needs_the_declared_section_and_every_evaluated_session(runs,
         )
 
 
+def test_the_loader_validates_the_declared_section(tmp_path):
+    study = base.Study(tmp_path / "invalid")
+    wrong = section()
+    wrong["pairs"]["titans_over_gru"]["control"] = "lstm"
+    study.config[walk.RETENTION_FIELD] = wrong
+    study.publish()
+    with pytest.raises(ValueError, match="dos brazos distintos de la comparación"):
+        walk.load_config(study.config_path)
+
+
 def test_the_command_line_publishes_the_section(runs, tmp_path, capsys):
     study, report, _, _, calendar, _ = runs
     output = tmp_path / "comparison"
