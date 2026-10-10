@@ -15,6 +15,7 @@ from mars_titan.models.baselines.multimodal import (
     SCALAR_HEAD,
     STRICT_FUSION,
     MultimodalReference,
+    transformer_batch_options,
 )
 from mars_titan.models.baselines.ridge import RidgeModel
 from mars_titan.models.predictive_adaptation import adapted_copy, parent_copy
@@ -187,6 +188,14 @@ def _neural_parent(report, source, report_path):
             mask_fusion=fusion,
             head=head,
             **case["architecture"],
+            # Un Transformer ajustado con lotes de más de 256 ventanas guarda su lote máximo
+            # en el estado, así que el padre se reconstruye con el lote de su identidad. Las
+            # demás familias no dependen del lote.
+            **(
+                transformer_batch_options(kind, contract["batch_size"])
+                if kind == "transformer"
+                else {}
+            ),
         )
     elif family == "legacy_cost_probe" and "architecture" not in case:
         model = CostProbe(kind, dimensions, context=contract["context"])

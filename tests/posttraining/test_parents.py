@@ -13,11 +13,15 @@ from mars_titan.posttraining.parents import _inference_contract, load_parent
 from mars_titan.training.checkpoints import save_training_state
 
 
-def parent_files(tmp_path):
+def parent_files(tmp_path, kind="gru", batch_size=None):
     folder = tmp_path / "parent"
     folder.mkdir()
     dimensions = dict(prices=5, news=2, charts=2, fundamentals=3, macro=2)
-    case = dict(kind="gru", architecture=dict(hidden_size=32, layers=1, dropout=0.1), epochs=1)
+    architecture = dict(hidden_size=32, layers=1, dropout=0.1)
+    if kind == "transformer":
+        architecture["transformer"] = dict(heads=2, feedforward_multiplier=2)
+    case = dict(kind=kind, architecture=architecture, epochs=1)
+    options = {} if batch_size is None else dict(max_batch=batch_size)
     identity = dict(
         manifest_sha256="a" * 64,
         case=case,
@@ -28,11 +32,13 @@ def parent_files(tmp_path):
         market_weights={"US": 1.0},
         code={
             f"models/baselines/{name}": sha256(Path("src/mars_titan/models/baselines") / name)
-            for name in ("multimodal.py", "dlinear.py")
+            for name in ("multimodal.py", "dlinear.py", "transformer.py")
         }
         | {"training/corpus_inputs.py": sha256(Path("src/mars_titan/training/corpus_inputs.py"))},
     )
-    model = MultimodalReference("gru", dimensions, context=4, **case["architecture"])
+    if batch_size is not None:
+        identity["batch_size"] = batch_size
+    model = MultimodalReference(kind, dimensions, context=4, **case["architecture"], **options)
     checkpoint = save_training_state(
         folder / "checkpoints",
         dict(
@@ -68,6 +74,16 @@ def parent_files(tmp_path):
     atomic_json(folder / "run.json", report)
     atomic_json(tmp_path / "ordered.json", ordered)
     return tmp_path / "ordered.json", folder / "run.json", report
+
+
+def test_transformer_parent_is_rebuilt_with_the_batch_of_its_identity(tmp_path):
+    # El estado del Transformer guarda su lote máximo. Sin reconstruirlo con el lote de la
+    # identidad, cargar el padre fallaría o admitiría otro presupuesto de atención.
+    ordered, report, _ = parent_files(tmp_path, kind="transformer", batch_size=512)
+    parent = load_parent(ordered, report, device="cpu", diagnostic=True)
+    assert parent.model.max_batch == 512
+    inputs = {k: np.ones((3, *shape), dtype=np.float32) for k, shape in parent.shapes.items()}
+    np.testing.assert_array_equal(parent.predict(inputs), parent.predict(inputs))
 
 
 def test_loaded_parent_is_frozen_and_continuation_owns_its_weights(tmp_path):
