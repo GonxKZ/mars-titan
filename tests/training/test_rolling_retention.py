@@ -12,6 +12,7 @@ import json
 import shutil
 from types import SimpleNamespace
 
+import pyarrow.parquet as pq
 import pytest
 
 from mars_titan.data import prediction_files
@@ -206,6 +207,57 @@ def test_the_final_comparison_from_aggregates_equals_the_one_that_read_the_rows(
             "walk_forward",
             "long_short",
         }
+
+
+def test_the_campaign_publication_reads_the_aggregates_with_portfolio_and_ablation(
+    walked, edition, tmp_path
+):
+    """El paso final sin etapa de adaptadores: cartera y ablación desde agregados."""
+    from mars_titan.training import campaign_publication as publication
+    from tests.training import publication_fixture
+
+    shared, state = walked["base"], walked["state"]
+    declared = publication_fixture.declare(tmp_path / "declared", shared.campaign, portfolio=True)
+    destination = tmp_path / "published"
+    receipt = publication.run_publication(
+        declared.publication,
+        shared.views,
+        state.output,
+        destination,
+        aggregates=state.folder / "aggregates",
+        edition=edition,
+        ablation=dict(stage=shared.stage, output=walked["staged"]),
+    )
+    volatile = {"created_at_utc", "resources", "artifacts"}
+
+    def stable(report):
+        report = json.loads(json.dumps(report))
+        return {key: value for key, value in report.items() if key not in volatile}
+
+    expected, sessions = walked["expected"]
+    folder = destination / "walk-forward" / "US"
+    assert stable(json.loads((folder / "comparison.json").read_text())) == stable(expected)
+    assert pq.read_table(folder / "sessions.parquet").equals(sessions)
+    (expected_portfolio, books), _ = walked["portfolio"]
+    folder = destination / "long-short" / "US"
+    assert stable(json.loads((folder / "long_short.json").read_text())) == stable(
+        expected_portfolio
+    )
+    assert pq.read_table(folder / "sessions.parquet").equals(books)
+    matrix = json.loads((destination / "matrix" / "US" / "matrix.json").read_text())
+    assert set(matrix["views"]) == {"forecast", "portfolio"}
+    manifest = json.loads((destination / "matrix-sources" / "US.json").read_text())
+    assert [entry["kind"] for entry in manifest["reports"]] == [
+        comparison.REPORT_KIND,
+        portfolio.REPORT_KIND,
+    ]
+    assert receipt["from_aggregates"] is True and receipt["posttraining"] is None
+    # Sin la edición, una comparación con cartera no se publica.
+    with pytest.raises(ValueError, match="falta la edición de precios"):
+        publication.run_publication(
+            declared.publication, shared.views, state.output, tmp_path / "other"
+        )
+    assert not (tmp_path / "other").exists()
 
 
 def test_only_bit_exact_regenerations_release_their_rows(walked):

@@ -8,7 +8,10 @@ v2, declarada antes de cualquier resultado, recorre cada ventana de campaña en 
    por etapas, los adaptadores y las políticas reciben un informe de disjunción calculado
    justo antes, y las políticas leen la cadena de la salida de los adaptadores.
 3. `aggregates`: agregados por sesión de la comparación de cada ámbito de la ventana
-   (`evaluation.window_aggregates`), con sus fuentes limitadas a esa ventana.
+   (`evaluation.window_aggregates`), con sus fuentes limitadas a esa ventana. Con la
+   publicación declarada (`training.campaign_publication`), también los de la comparación
+   postentrenada de cada padre con trabajos de la etapa en la ventana, porque esa
+   comparación lee la calibración y la evaluación del brazo base, que se liberan después.
 4. `release`: cada tabla por fila de la base y de la ablación que ya no lee ninguna fase
    posterior se regenera por inferencia desde el estado elegido y, solo si sale idéntica
    bit a bit, se libera conservando sus huellas. Si no sale idéntica, se compacta sin
@@ -175,13 +178,18 @@ class Rolling:
         ablation_executors=None,
         disk=None,
         edition=None,
+        publication=None,
     ):
         """`disk` activa la guardia por ventana: `storage` (declaración), `extras` (medidas
         de agregados, adaptadores y cintas), `adapter_blocks` (lectura sin copia ordenada) y,
         en las pruebas, `usage` en lugar de `shutil.disk_usage`. `edition` es la edición de
         precios sin ajustar que necesita la cartera larga y corta si la comparación la declara.
+        `publication` es la declaración del paso final. Con la etapa de adaptadores es
+        obligatoria y su comparación postentrenada debe ser la de esa etapa, porque sus
+        agregados por ventana se guardan antes de liberar.
         """
         from . import masked_campaign as engine
+        from .campaign_publication import load_publication
 
         self.retention, self.campaign_path = retention, Path(campaign_path)
         self.views, self.output, self.windows = views, Path(output), windows
@@ -200,6 +208,25 @@ class Rolling:
             "y solo a esa",
         )
         self.campaign, _ = engine._confirmed_state(campaign_path, views, output)
+        self.publication = None if publication is None else load_publication(publication)
+        stage = None if self.publication is None else self.publication["posttraining"]
+        _require(
+            self.publication is None
+            or self.publication["campaign_config"]["sha256"] == self.campaign["sha256"],
+            "La publicación declara otra campaña",
+        )
+        # Sin la comparación postentrenada declarada, la liberación borraría las filas del
+        # brazo base que esa comparación lee antes de guardar sus agregados.
+        _require(
+            (adapters is None and stage is None)
+            or (
+                adapters is not None
+                and stage is not None
+                and Path(adapters["stage"]).resolve() == Path(stage["stage"]["path"])
+            ),
+            "La etapa de adaptadores del recorrido y la comparación postentrenada de la "
+            "publicación van juntas y deben ser la misma etapa",
+        )
         # Sin la edición no hay agregados de la cartera y sus filas no se podrían liberar.
         _require(
             comparison.LONG_SHORT_FIELD not in self.comparison_config() or self.edition is not None,
@@ -448,15 +475,46 @@ class Rolling:
                 records["long_short"] = window_aggregates.write_long_short(
                     folder, restricted, sources, window, self.edition
                 )
-            written[scope] = {
-                name: dict(
-                    path=str(Path(record["path"]).relative_to(self.folder)),
-                    sha256=record["sha256"],
-                    bytes=record["bytes"],
-                )
-                for name, record in records.items()
-            }
+            written[scope] = {name: self._record(record) for name, record in records.items()}
+            parents = self.posttraining_aggregates(scope, window, path, folder)
+            if parents:
+                written[scope]["posttraining"] = parents
         return written
+
+    def _record(self, record):
+        return dict(
+            path=str(Path(record["path"]).relative_to(self.folder)),
+            sha256=record["sha256"],
+            bytes=record["bytes"],
+        )
+
+    def posttraining_aggregates(self, scope, window, base_sources, folder):
+        """Agregados de la comparación postentrenada de cada padre con trabajos en la ventana.
+
+        `base_sources` es el manifiesto de la campaña limitado a la ventana. Se escriben antes
+        de la liberación, que borra la calibración y la evaluación del brazo base que leen.
+        """
+        from mars_titan.posttraining import stage_comparison
+
+        stage = self.publication and self.publication["posttraining"]
+        if stage is None or scope not in stage["stage"]["scopes"]:
+            return {}
+        return {
+            base_arm: self._record(
+                stage_comparison.write_window_aggregates(
+                    self.publication["posttraining_path"],
+                    scope,
+                    base_arm,
+                    window,
+                    base_sources=base_sources,
+                    stage_output=self.adapters["output"],
+                    root=folder,
+                    loaded=stage,
+                )
+            )
+            for base_arm in stage["configs"]
+            if window in stage_comparison.compared_windows(stage, scope, base_arm)
+        }
 
     def release(self, index):
         """Liberar o compactar las tablas de las ventanas hasta `index` que nadie leerá."""
@@ -769,6 +827,7 @@ def main(argv=None):
     parser.add_argument(
         "--edition", type=Path, help="Edición de precios sin ajustar (políticas y cartera)"
     )
+    parser.add_argument("--publication", type=Path, help="Declaración del paso final de la campaña")
     args = parser.parse_args(argv)
     views = engine._views_argument(args.views)
     retention = load_retention(args.retention)
@@ -795,6 +854,7 @@ def main(argv=None):
         adapters=stages.get("adapters"),
         rl=stages.get("rl"),
         edition=args.edition,
+        publication=args.publication,
         disk=dict(
             storage=args.storage,
             extras=json.loads(args.extras.read_text()),
