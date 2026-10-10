@@ -30,6 +30,9 @@ using simulation::read_json_int64;
 
 constexpr std::string_view experiment_kind = "native_klpo_terminal";
 constexpr std::string_view controller_contract = "klpo_full_fresh_waves_v1";
+// Los objetivos de grupo usan el mismo esquema y las mismas oleadas. Solo cambian el tipo, el
+// objetivo y el controlador, de modo que el resto de la comparación queda fijado.
+constexpr std::string_view group_experiment_kind = "native_group_relative";
 constexpr std::string_view selection_metric = "ruin_count_then_mean_log_growth";
 constexpr std::string_view liquidated_selection_metric =
     "ruin_count_then_mean_liquidated_log_growth";
@@ -85,12 +88,15 @@ KlpoExperimentConfig configuration(const std::filesystem::path& path) {
                     "environments", "adam", "terminal", "confirmed_updates_per_reference",
                     "gradient_block_episodes", "environment", "evaluation_transitions",
                     "selection", "final_test_opened"});
+    const bool group = document.at("kind") == group_experiment_kind;
     require(read_json_int64(document.at("schema_version")) == 1 &&
-                document.at("kind") == experiment_kind &&
-                document.at("objective") == klpo_terminal_contract &&
-                document.at("controller") == controller_contract &&
+                (group ? document.at("controller") == group_relative_controller &&
+                             document.at("objective").is_string()
+                       : document.at("kind") == experiment_kind &&
+                             document.at("objective") == klpo_terminal_contract &&
+                             document.at("controller") == controller_contract) &&
                 document.at("final_test_opened") == false,
-            "La configuración no declara el objetivo y el controlador KLPO terminal");
+            "La configuración no declara un objetivo y un controlador de oleadas admitidos");
     const auto& training = document.at("training");
     require_fields(training, {"total_transitions", "seed", "workers"});
     result.total_transitions = count(training.at("total_transitions"));
@@ -143,6 +149,13 @@ KlpoExperimentConfig configuration(const std::filesystem::path& path) {
                      .gradient_norm = finite_number(adam.at("gradient_norm"))};
     learning.confirmed_updates_per_reference = count(document.at("confirmed_updates_per_reference"));
     learning.gradient_block_episodes = count(document.at("gradient_block_episodes"));
+    if (group) {
+        // Las constantes salen de la identidad publicada y no de la configuración. beta solo
+        // pertenece a KLPO y se exige igual para que la recogida sea idéntica.
+        learning.group = published_group_objective(document.at("objective").get<std::string>());
+        require(learning.collection.beta == 1 && learning.collection.gamma == 1,
+                "Los objetivos de grupo recogen como KLPO, con beta y gamma iguales a uno");
+    }
     learning.validate();
     return result;
 }
@@ -288,33 +301,41 @@ class KlpoRun {
             wave_transitions_ += input.tape->close_times.size() - 1;
             lanes_.push_back(input);
         }
+        // Cada cinta de ajuste necesita al menos dos carriles para formar un grupo con línea
+        // base. Con 16 entornos esto admite hasta ocho cintas.
+        require(!config_.learning.group || config_.environments >= 2 * (tapes.size() - 1),
+                "Los objetivos de grupo necesitan al menos dos carriles por cinta de ajuste");
         planned_waves_ = config_.total_transitions / wave_transitions_;
         require(planned_waves_ > 0, "El presupuesto KLPO no admite ni una oleada completa");
         evaluation_waves_ = std::max<std::size_t>(1, config_.evaluation_transitions / wave_transitions_);
     }
 
     Json experiment_identity() const {
-        return Json{{"schema_version", 1},
-                    {"kind", "native_klpo"},
-                    {"configuration", config_.document},
-                    {"sources", sources_},
-                    {"sources_contract", simulation::reconstructed_tape_contract},
-                    {"lane_rule", "train_tape_index_is_lane_modulo_train_tapes"},
-                    {"budget_rule", "complete_waves_within_declared_transitions"},
-                    {"wave_transitions", wave_transitions_},
-                    {"planned_waves", planned_waves_},
-                    {"evaluation_waves", evaluation_waves_},
-                    {"controller_identity_sha256", store_->identity_sha256()},
-                    {"device", options_.device},
-                    {"diagnostic", options_.diagnostic},
-                    {"representation", "adaptive_context_ppo_fixed_projection_1729_v1"},
-                    {"evaluation_policy", "greedy_argmax"},
-                    {"rollout_policy", "categorical_sampling"},
-                    {"torch_version", TORCH_VERSION},
-                    {"native_source_sha256", MARS_TITAN_NATIVE_SOURCE_SHA256},
-                    {"native_build_sha256", MARS_TITAN_NATIVE_BUILD_SHA256},
-                    {"parent_frozen", true},
-                    {"final_test_opened", false}};
+        auto identity = Json{{"schema_version", 1},
+                             {"kind", "native_klpo"},
+                             {"configuration", config_.document},
+                             {"sources", sources_},
+                             {"sources_contract", simulation::reconstructed_tape_contract},
+                             {"lane_rule", "train_tape_index_is_lane_modulo_train_tapes"},
+                             {"budget_rule", "complete_waves_within_declared_transitions"},
+                             {"wave_transitions", wave_transitions_},
+                             {"planned_waves", planned_waves_},
+                             {"evaluation_waves", evaluation_waves_},
+                             {"controller_identity_sha256", store_->identity_sha256()},
+                             {"device", options_.device},
+                             {"diagnostic", options_.diagnostic},
+                             {"representation", "adaptive_context_ppo_fixed_projection_1729_v1"},
+                             {"evaluation_policy", "greedy_argmax"},
+                             {"rollout_policy", "categorical_sampling"},
+                             {"torch_version", TORCH_VERSION},
+                             {"native_source_sha256", MARS_TITAN_NATIVE_SOURCE_SHA256},
+                             {"native_build_sha256", MARS_TITAN_NATIVE_BUILD_SHA256},
+                             {"parent_frozen", true},
+                             {"final_test_opened", false}};
+        if (config_.learning.group) {
+            identity["group_rule"] = std::string(group_wave_rule);
+        }
+        return identity;
     }
 
     bool has_recent_checkpoint() const {
@@ -518,7 +539,8 @@ class KlpoRun {
         Json report{{"schema_version", 1},
                     {"kind", "native_klpo"},
                     {"activity", "rl"},
-                    {"model", "klpo_terminal"},
+                    {"model", config_.learning.group ? Json(config_.learning.group->id())
+                                                     : Json("klpo_terminal")},
                     {"backend", "native_libtorch"},
                     {"seed", config_.learning.collection.seed},
                     {"partition", "train"},
@@ -630,7 +652,9 @@ Json run_klpo_experiment(const PpoExperimentOptions& options, const std::functio
     admit_policy_gpu(options);
     // Ajustar o evaluar sobre el histórico reconstruido se detiene antes de leer cintas o
     // crear salidas si la protección local no lo permite.
+    const bool group = config.learning.group.has_value();
     require_learning_allowed(options.audit_run ? "la evaluación KLPO nativa sobre cintas reales"
+                             : group           ? "el entrenamiento nativo con objetivo de grupo"
                                                : "el entrenamiento KLPO nativo");
     if (const auto& run = options.audit_run) {
         return run_evaluation(*run, options, config, stop);

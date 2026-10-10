@@ -181,7 +181,7 @@ SEQUENCE_NOISE = [0.00002, 0.3, 0.00001, 0.2, 0.00003, 0.25, 0.00002, 0.4]
 
 
 def group_cases():
-    base = dict(advantage_epsilon=1e-6, length_normalizer=256, kl_beta=0.0, group_size=4)
+    base = dict(advantage_epsilon=1e-6, length_normalizer=256, kl_beta=0.0)
     return [
         group_case(
             "grpo",

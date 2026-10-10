@@ -411,7 +411,6 @@
     "advantage_epsilon": 1e-06,
     "clip_high": 0.2,
     "clip_low": 0.2,
-    "group_size": 4,
     "kind": "grpo",
     "kl_beta": 0.04,
     "length_normalizer": 256
@@ -1570,7 +1569,6 @@
     "advantage_epsilon": 0.0,
     "clip_high": 0.2,
     "clip_low": 0.2,
-    "group_size": 4,
     "kind": "dr_grpo",
     "kl_beta": 0.0,
     "length_normalizer": 256
@@ -2729,7 +2727,6 @@
     "advantage_epsilon": 1e-06,
     "clip_high": 0.28,
     "clip_low": 0.2,
-    "group_size": 4,
     "kind": "dapo",
     "kl_beta": 0.0,
     "length_normalizer": 256
@@ -3888,7 +3885,6 @@
     "advantage_epsilon": 1e-06,
     "clip_high": 0.0004,
     "clip_low": 0.0003,
-    "group_size": 4,
     "kind": "gspo",
     "kl_beta": 0.0,
     "length_normalizer": 256

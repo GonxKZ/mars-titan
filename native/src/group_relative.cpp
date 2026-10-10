@@ -23,6 +23,13 @@ constexpr std::size_t bytes_per_episode = 256;
 constexpr double maximum_clip = 10;
 constexpr double maximum_kl_beta = 1e3;
 constexpr double maximum_advantage_epsilon = 1;
+// DeepSeekMath fija beta = 0,04 para el estimador k3 en su configuración de RL.
+constexpr double grpo_kl_beta = 0.04;
+// DAPO (clip-higher) usa epsilon_low = 0,2 y epsilon_high = 0,28.
+constexpr double dapo_clip_high = 0.28;
+// GSPO recorta su cociente de secuencia con rango izquierdo 3e-4 y derecho 4e-4.
+constexpr double gspo_clip_low = 3e-4;
+constexpr double gspo_clip_high = 4e-4;
 
 void require(bool value, std::string_view message) {
     if (!value) {
@@ -157,10 +164,9 @@ GroupAggregation GroupObjectiveConfig::aggregation() const noexcept {
 
 void GroupObjectiveConfig::validate() const {
     static_cast<void>(group_objective_kind(id()));
-    require(group_size >= 2 && group_size <= maximum_group_size && std::isfinite(clip_low) &&
-                std::isfinite(clip_high) && clip_low > 0 && clip_low < 1 && clip_high > 0 &&
-                clip_high <= maximum_clip && std::isfinite(kl_beta) && kl_beta >= 0 &&
-                kl_beta <= maximum_kl_beta && std::isfinite(advantage_epsilon) &&
+    require(std::isfinite(clip_low) && std::isfinite(clip_high) && clip_low > 0 && clip_low < 1 &&
+                clip_high > 0 && clip_high <= maximum_clip && std::isfinite(kl_beta) &&
+                kl_beta >= 0 && kl_beta <= maximum_kl_beta && std::isfinite(advantage_epsilon) &&
                 advantage_epsilon >= 0 && advantage_epsilon <= maximum_advantage_epsilon &&
                 length_normalizer > 0 &&
                 length_normalizer <= static_cast<std::size_t>(maximum_group_length),
@@ -176,6 +182,53 @@ void GroupObjectiveConfig::validate() const {
     require(shape, "El recorte no conserva la forma de la identidad de grupo");
     require(kind == GroupObjectiveKind::dr_grpo ? advantage_epsilon == 0 : advantage_epsilon > 0,
             "Dr. GRPO no normaliza por desviación y el resto necesita su suelo positivo");
+}
+
+GroupObjectiveConfig published_group_objective(std::string_view id) {
+    GroupObjectiveConfig result;
+    result.kind = group_objective_kind(id);
+    switch (result.kind) {
+    case GroupObjectiveKind::grpo:
+        result.kl_beta = grpo_kl_beta;
+        break;
+    case GroupObjectiveKind::dr_grpo:
+        result.advantage_epsilon = 0;
+        break;
+    case GroupObjectiveKind::dapo:
+        result.clip_high = dapo_clip_high;
+        break;
+    case GroupObjectiveKind::gspo:
+        result.clip_low = gspo_clip_low;
+        result.clip_high = gspo_clip_high;
+        break;
+    }
+    result.validate();
+    return result;
+}
+
+void accumulate_group_trace(GroupObjectiveTrace& total, const GroupObjectiveTrace& block,
+                            GroupRatio ratio) {
+    if (block.decisions == 0) {
+        return;
+    }
+    const auto previous = static_cast<double>(total.decisions);
+    const auto current = static_cast<double>(block.decisions);
+    const auto mean = [&](double& value, double addition, double before, double added) {
+        value = (value * before + addition * added) / (before + added);
+    };
+    mean(total.entropy, block.entropy, previous, current);
+    mean(total.full_kl, block.full_kl, previous, current);
+    mean(total.k3_kl, block.k3_kl, previous, current);
+    const bool sequence = ratio == GroupRatio::sequence;
+    const auto before = sequence ? static_cast<double>(total.episodes) : previous;
+    const auto added = sequence ? static_cast<double>(block.episodes) : current;
+    const bool first = total.decisions == 0;
+    mean(total.ratio_mean, block.ratio_mean, before, added);
+    mean(total.clip_fraction, block.clip_fraction, before, added);
+    total.ratio_min = first ? block.ratio_min : std::min(total.ratio_min, block.ratio_min);
+    total.ratio_max = first ? block.ratio_max : std::max(total.ratio_max, block.ratio_max);
+    total.episodes += block.episodes;
+    total.decisions += block.decisions;
 }
 
 at::Tensor group_advantages(const at::Tensor& returns, const at::Tensor& groups,
@@ -240,6 +293,10 @@ at::Tensor group_episode_weights(const at::Tensor& decisions, const GroupObjecti
                 decisions.numel() <= maximum_group_batch && (decisions >= 0).all().item<bool>() &&
                 (decisions <= maximum_group_length).all().item<bool>(),
             "Los pesos de grupo necesitan decisiones int64 acotadas por episodio en CPU");
+    // Dr. GRPO divide por la longitud máxima admitida, así que ningún episodio puede superarla.
+    require(config.aggregation() != GroupAggregation::sequence_mean_token_sum_constant ||
+                (decisions <= static_cast<int64_t>(config.length_normalizer)).all().item<bool>(),
+            "Un episodio supera la longitud máxima con la que normaliza Dr. GRPO");
     const auto episodes = static_cast<double>(decisions.numel());
     const auto counts = decisions.to(at::kDouble);
     const auto present = decisions > 0;

@@ -203,7 +203,7 @@ if(MARS_TITAN_BUILD_SIMULATION)
         target_include_directories(mars_titan_ppo_files PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
         target_link_libraries(mars_titan_ppo_files PUBLIC mars_titan_simulation_files)
         mars_titan_configure_target(mars_titan_ppo_files)
-        add_library(mars_titan_klpo_collection STATIC src/klpo_collection.cpp)
+        add_library(mars_titan_klpo_collection STATIC src/klpo_collection.cpp src/group_waves.cpp)
         target_include_directories(mars_titan_klpo_collection PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
         target_link_libraries(mars_titan_klpo_collection PUBLIC mars_titan_ppo mars_titan_ppo_files)
         mars_titan_configure_target(mars_titan_klpo_collection)
@@ -232,6 +232,7 @@ if(MARS_TITAN_BUILD_SIMULATION)
             "${CMAKE_CURRENT_SOURCE_DIR}/src/group_relative.cpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/src/quantile_dqn.cpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/src/klpo_collection.cpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/src/group_waves.cpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/src/klpo_learning.cpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/src/ppo_training.cpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/src/episodic_memory.cpp"
@@ -266,6 +267,14 @@ if(MARS_TITAN_BUILD_SIMULATION)
             set_tests_properties(qr_dqn_policy PROPERTIES TIMEOUT 120 LABELS "unit;rl-objectives")
             mars_titan_sanitizer_test_environment(qr_dqn_policy)
             set_property(TEST qr_dqn_policy APPEND PROPERTY ENVIRONMENT
+                "CUDA_VISIBLE_DEVICES=-1" "OMP_NUM_THREADS=1" "MKL_NUM_THREADS=1")
+            add_executable(group_waves_tests tests/group_waves_tests.cpp)
+            target_link_libraries(group_waves_tests PRIVATE mars_titan_klpo_learning)
+            mars_titan_configure_target(group_waves_tests)
+            add_test(NAME group_waves COMMAND group_waves_tests)
+            set_tests_properties(group_waves PROPERTIES TIMEOUT 120 LABELS "unit;rl-objectives")
+            mars_titan_sanitizer_test_environment(group_waves)
+            set_property(TEST group_waves APPEND PROPERTY ENVIRONMENT
                 "CUDA_VISIBLE_DEVICES=-1" "OMP_NUM_THREADS=1" "MKL_NUM_THREADS=1")
             add_executable(klpo_reference_tests tests/klpo_reference_tests.cpp)
             target_link_libraries(klpo_reference_tests PRIVATE mars_titan_klpo_collection)
@@ -404,6 +413,7 @@ if(MARS_TITAN_BUILD_SIMULATION)
                 "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/klpo_terminal.hpp"
                 "${CMAKE_CURRENT_SOURCE_DIR}/src/klpo_terminal.cpp"
                 "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/group_relative.hpp"
+                "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/group_waves.hpp"
                 "${CMAKE_CURRENT_SOURCE_DIR}/src/group_relative.cpp"
                 "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/quantile_dqn.hpp"
                 "${CMAKE_CURRENT_SOURCE_DIR}/src/quantile_dqn.cpp"

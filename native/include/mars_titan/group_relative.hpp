@@ -28,7 +28,6 @@ enum class GroupAggregation : uint8_t {
 inline constexpr std::string_view group_relative_controller = "group_relative_fresh_waves_v1";
 inline constexpr std::int64_t maximum_group_batch = 128;
 inline constexpr std::int64_t maximum_group_length = 256;
-inline constexpr std::size_t maximum_group_size = 64;
 inline constexpr std::size_t maximum_group_bytes = std::size_t{64} * 1024 * 1024;
 // Recorte de PPO que DeepSeekMath no publica y que Dr. GRPO y DAPO fijan en 0,2.
 inline constexpr double default_group_clip = 0.2;
@@ -36,7 +35,6 @@ inline constexpr double default_group_advantage_epsilon = 1e-6;
 
 struct GroupObjectiveConfig {
     GroupObjectiveKind kind = GroupObjectiveKind::grpo;
-    std::size_t group_size = 4;
     double clip_low = default_group_clip;
     double clip_high = default_group_clip;
     // Peso del estimador k3 de KL(pi_theta || q). Solo GRPO lo usa y en el resto vale cero.
@@ -56,6 +54,12 @@ struct GroupObjectiveConfig {
 };
 
 [[nodiscard]] GroupObjectiveKind group_objective_kind(std::string_view id);
+
+// Constantes publicadas de cada identidad, que no se leen de la configuración. GRPO usa la
+// beta 0,04 de DeepSeekMath y un recorte 0,2 que el artículo no publica. Dr. GRPO quita la
+// desviación y normaliza por una constante. DAPO recorta entre 0,2 y 0,28 y GSPO entre 3e-4 y
+// 4e-4 sobre el cociente de secuencia. Ninguno salvo GRPO lleva término KL.
+[[nodiscard]] GroupObjectiveConfig published_group_objective(std::string_view id);
 
 // Ventajas [B] FP64 de cada episodio respecto a su grupo, identificado por un entero no negativo.
 // mean_std divide por la desviación muestral (G-1) más epsilon, porque DeepSeekMath no fija el
@@ -93,6 +97,12 @@ struct GroupObjectiveTrace {
 // logp y logq [B,T,6], acciones int64 y máscara bool [B,T] con las decisiones seguidas de padding,
 // y ventajas y pesos [B] fijos. Solo logp recibe gradiente. q es el muestreador que generó la
 // oleada, así que hace a la vez de política antigua del cociente y de referencia del KL.
+// Acumula los diagnósticos de un bloque en los de la oleada. Entropía, KL y cocientes por
+// decisión se ponderan por decisiones, y los cocientes de secuencia de GSPO por episodios. Los
+// extremos se combinan con mínimo y máximo. Las ventajas se describen aparte con la oleada.
+void accumulate_group_trace(GroupObjectiveTrace& total, const GroupObjectiveTrace& block,
+                            GroupRatio ratio);
+
 [[nodiscard]] at::Tensor
 group_relative_loss(const at::Tensor& logp, const at::Tensor& logq, const at::Tensor& actions,
                     const at::Tensor& advantages, const at::Tensor& weights,

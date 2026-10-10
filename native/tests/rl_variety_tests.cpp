@@ -22,13 +22,16 @@
 // NOLINTBEGIN(cppcoreguidelines-avoid-magic-numbers)
 namespace {
 using Json = nlohmann::json;
+using mars_titan::learning::accumulate_group_trace;
 using mars_titan::learning::group_advantages;
 using mars_titan::learning::group_episode_weights;
 using mars_titan::learning::group_objective_kind;
 using mars_titan::learning::group_relative_loss;
+using mars_titan::learning::GroupAdvantage;
 using mars_titan::learning::GroupObjectiveConfig;
 using mars_titan::learning::GroupObjectiveKind;
 using mars_titan::learning::GroupObjectiveTrace;
+using mars_titan::learning::GroupRatio;
 
 constexpr double relative_tolerance = 1e-12;
 constexpr double absolute_tolerance = 1e-15;
@@ -89,7 +92,6 @@ GroupObjectiveConfig config_of(const Json& value) {
                   : kind == "dr_grpo" ? GroupObjectiveKind::dr_grpo
                   : kind == "dapo"    ? GroupObjectiveKind::dapo
                                       : GroupObjectiveKind::gspo;
-    config.group_size = value.at("group_size").get<std::size_t>();
     config.clip_low = value.at("clip_low").get<double>();
     config.clip_high = value.at("clip_high").get<double>();
     config.kl_beta = value.at("kl_beta").get<double>();
@@ -171,6 +173,31 @@ void reference_case(const Json& item) {
         const auto reference = expected.at(std::string(key)).get<double>();
         require(std::abs(value - reference) <= 1e-12 * std::max(1., std::abs(reference)),
                 name + ": traza " + std::string(key));
+    }
+
+    // Dos bloques acumulados describen la oleada igual que un único bloque.
+    GroupObjectiveTrace merged;
+    const auto half = inputs.lengths.size(0) / 2;
+    for (const auto begin : {int64_t{0}, half}) {
+        GroupObjectiveTrace block;
+        static_cast<void>(group_relative_loss(
+            inputs.logp.narrow(0, begin, half), inputs.logq.narrow(0, begin, half),
+            inputs.actions.narrow(0, begin, half), advantages.narrow(0, begin, half),
+            weights.narrow(0, begin, half), inputs.mask.narrow(0, begin, half), config, &block));
+        accumulate_group_trace(merged, block, config.ratio());
+    }
+    const std::vector<std::pair<double, double>> pairs{{merged.entropy, trace.entropy},
+                                                       {merged.full_kl, trace.full_kl},
+                                                       {merged.k3_kl, trace.k3_kl},
+                                                       {merged.ratio_mean, trace.ratio_mean},
+                                                       {merged.ratio_min, trace.ratio_min},
+                                                       {merged.ratio_max, trace.ratio_max},
+                                                       {merged.clip_fraction, trace.clip_fraction}};
+    require(merged.episodes == trace.episodes && merged.decisions == trace.decisions,
+            name + ": la acumulación pierde episodios o decisiones");
+    for (const auto& [actual, reference] : pairs) {
+        require(std::abs(actual - reference) <= 1e-12 * std::max(1., std::abs(reference)),
+                name + ": la acumulación de bloques cambia la traza");
     }
 }
 
@@ -343,8 +370,26 @@ void rejections() {
     rejected([&] { config.validate(); }, "Dr. GRPO con suelo de desviación");
     config.advantage_epsilon = 0;
     config.validate();
-    config.group_size = 1;
-    rejected([&] { config.validate(); }, "Se aceptó un grupo de tamaño uno");
+    // Las constantes publicadas de cada identidad son las de su fuente y validan.
+    const auto grpo_published = mars_titan::learning::published_group_objective("grpo_outcome_v1");
+    const auto dapo = mars_titan::learning::published_group_objective("dapo_outcome_static_v1");
+    const auto gspo = mars_titan::learning::published_group_objective("gspo_outcome_v1");
+    const auto dr = mars_titan::learning::published_group_objective("dr_grpo_outcome_v1");
+    require(grpo_published.kl_beta == 0.04 && grpo_published.clip_low == 0.2 &&
+                grpo_published.clip_high == 0.2 && dapo.clip_low == 0.2 && dapo.clip_high == 0.28 &&
+                dapo.kl_beta == 0 && gspo.clip_low == 3e-4 && gspo.clip_high == 4e-4 &&
+                gspo.ratio() == GroupRatio::sequence && dr.advantage_epsilon == 0 &&
+                dr.length_normalizer == 256 && dr.advantage() == GroupAdvantage::mean,
+            "Las constantes publicadas no corresponden a sus fuentes");
+    // Dr. GRPO no admite episodios más largos que su normalizador constante.
+    auto short_normalizer = dr;
+    short_normalizer.length_normalizer = 4;
+    rejected(
+        [&] {
+            static_cast<void>(
+                group_episode_weights(at::tensor({3, 5}, at::kLong), short_normalizer));
+        },
+        "Dr. GRPO aceptó un episodio más largo que su normalizador");
     rejected([] { static_cast<void>(group_objective_kind("grpo_plus_plus")); },
              "Se aceptó una identidad sin fuente");
 

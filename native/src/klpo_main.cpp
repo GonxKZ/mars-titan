@@ -14,9 +14,10 @@ int main(int argc, char** argv) {
         "  Vigilancia Linux: --parent-pid PID detiene el hijo si muere su padre.\n"
         "  Capacidades: --capabilities, sin leer datos.\n"
         "KLPO terminal sobre cintas reconstruidas por ventana, con selección en validación y "
-        "sin abrir el test.\n",
+        "sin abrir el test. Con el tipo native_group_relative recoge las mismas oleadas y "
+        "optimiza GRPO, Dr. GRPO, DAPO o GSPO en lugar de KLPO.\n",
         {"native_policy_reconstructed_tapes", "native_klpo_financial_runner",
-         "native_policy_equity_and_costs"},
+         "native_policy_equity_and_costs", "native_group_relative_runner"},
         [](const auto& options, const auto& stop) {
             return mars_titan::learning::run_klpo_experiment(options, stop);
         }};
