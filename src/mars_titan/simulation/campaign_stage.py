@@ -121,6 +121,20 @@ CAPABILITIES = {
             "y acepta los costes declarados por la etapa"
         ),
     ),
+    "native_group_relative_runner": dict(
+        probe="native_group_relative",
+        pending=(
+            "Compilar mars-titan-klpo con los objetivos de grupo (GRPO, Dr. GRPO, DAPO y GSPO) "
+            "sobre las mismas oleadas que KLPO"
+        ),
+    ),
+    "native_ppo_quantile_value_heads": dict(
+        probe="native_ppo",
+        pending=(
+            "Compilar mars-titan-ppo con las variantes qr_dqn y qr_dqn_cvar, que cambian el "
+            "valor escalar de Double DQN por cuantiles"
+        ),
+    ),
 }
 
 
@@ -348,7 +362,11 @@ EXECUTORS = {
     ),
     "native_ppo": dict(
         run=native_policy_runs.NativePolicyExecutor("native_ppo"),
-        requires=("native_policy_reconstructed_tapes", "native_ppo_equity_and_costs"),
+        requires=(
+            "native_policy_reconstructed_tapes",
+            "native_ppo_equity_and_costs",
+            "native_ppo_quantile_value_heads",
+        ),
         native=True,
     ),
     "native_klpo": dict(
@@ -357,6 +375,15 @@ EXECUTORS = {
             "native_policy_reconstructed_tapes",
             "native_klpo_financial_runner",
             "native_klpo_equity_and_costs",
+        ),
+        native=True,
+    ),
+    "native_group_relative": dict(
+        run=native_policy_runs.NativePolicyExecutor("native_group_relative"),
+        requires=(
+            "native_policy_reconstructed_tapes",
+            "native_klpo_equity_and_costs",
+            "native_group_relative_runner",
         ),
         native=True,
     ),
@@ -460,8 +487,9 @@ def check_report(stage, job, report, tapes, anchor=None):
     elif job["kind"] == FIT:
         selection, policy = report.get("selection"), report.get("policy")
         budget = policies["budget"]
-        if job["engine"] == "native_klpo":
-            # KLPO consume oleadas completas: las que caben en el presupuesto, sin superarlo.
+        if job["engine"] in native_policy_runs.WAVE_ENGINES:
+            # KLPO y los objetivos de grupo consumen oleadas completas: las que caben en el
+            # presupuesto, sin superarlo.
             waves, wave = native_policy_runs.klpo_waves(
                 tapes.train, budget["environments"], budget["transitions"]
             )

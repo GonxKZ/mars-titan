@@ -56,8 +56,9 @@ bool markov_variant(std::string_view variant) {
 }
 void validate_options(const PpoLearningOptions& options) {
     const std::unordered_set<std::string> variants{
-        "ppo",          "double_dqn",       "ppo_window",     "ppo_gru",       "ppo_hmm",
-        "ppo_episodic", "ppo_episodic_hmm", "ppo_recent_aux", "ppo_replay_aux"};
+        "ppo",          "double_dqn",       "ppo_window",     "ppo_gru",        "ppo_hmm",
+        "ppo_episodic", "ppo_episodic_hmm", "ppo_recent_aux", "ppo_replay_aux", "qr_dqn",
+        "qr_dqn_cvar"};
     require(variants.contains(options.variant) && options.environments > 0 &&
                 options.environments <= simulation::maximum_environments,
             "La variante o el número de entornos del contexto no están admitidos");
@@ -177,6 +178,10 @@ double read_number(torch::serialize::InputArchive& archive, const char* name) {
     return value.toDouble();
 }
 } // namespace
+
+bool value_variant(std::string_view variant) noexcept {
+    return variant == "double_dqn" || variant == "qr_dqn" || variant == "qr_dqn_cvar";
+}
 
 struct PolicyContext::Impl {
     struct Lane {
