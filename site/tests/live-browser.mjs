@@ -57,7 +57,7 @@ await json(join(folder, "campaign/jobs", open, "attempt-0001/run.json"), {
   global_step: 30, epochs: [1, 2, 3].map(epoch => ({ epoch, train: { mae: 0.02 - epoch * 0.001, samples_per_second: 4000 }, validation: { mae: 0.021 - epoch * 0.0008, session_mae: 0.0205 } })),
 });
 await json(join(folder, "campaign/summary.json"), { kind: "fixture_masked_campaign_run", status: "running", jobs });
-const traces = spawnSync(python[0], [...python.slice(1), join(repository, "site/tests/fixtures/make_traces.py"), join(folder, "traces"), "--points", "5000"], { env, encoding: "utf8" });
+const traces = spawnSync(python[0], [...python.slice(1), join(repository, "site/tests/fixtures/make_traces.py"), join(folder, "traces"), "--points", "5000", "--cadence", "4", "--truncated-at", "5000"], { env, encoding: "utf8" });
 assert.equal(traces.status, 0, traces.stderr);
 
 const port = await new Promise(resolve => {
@@ -149,7 +149,10 @@ try {
     await page.evaluate(() => { location.hash = "#vista=memoria"; });
     await page.locator("#trace-panels .trace-panel").first().waitFor();
     assert.equal(await page.locator("#trace-fixture").isVisible(), true);
-    assert.match(await page.locator("#trace-caption").textContent(), /SHA-256 [a-f0-9]{12} comprobada/);
+    const caption = await page.locator("#trace-caption").textContent();
+    assert.match(caption, /SHA-256 [a-f0-9]{12} comprobada/);
+    assert.match(caption, /un registro cada 4/);
+    assert.match(caption, /dejó de registrar en el paso 5\.?000 al agotar/);
     assert.equal(await page.locator("#trace-panels .trace-panel").count(), 4);
   });
 

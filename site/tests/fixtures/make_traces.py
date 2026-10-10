@@ -18,7 +18,7 @@ def wave(step, period, phase=0.0):
     return math.sin(2 * math.pi * step / period + phase)
 
 
-def build(folder, points):
+def build(folder, points, cadence=None, truncated_at=None):
     x = list(range(1, points + 1))
     # Hueco declarado: un tramo sin observaciones que la página debe dejar en blanco.
     gap = range(points // 3, points // 3 + max(1, points // 50))
@@ -40,6 +40,8 @@ def build(folder, points):
         model_id="fixture",
         provenance="fixture",
         x_unit="optimizer_step",
+        cadence=cadence,
+        truncated_at=truncated_at,
         series=[
             dict(
                 id="optimization.loss",
@@ -85,5 +87,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("folder")
     parser.add_argument("--points", type=int, default=20_000)
+    parser.add_argument("--cadence", type=int)
+    parser.add_argument("--truncated-at", type=int)
     arguments = parser.parse_args()
-    build(arguments.folder, arguments.points)
+    build(arguments.folder, arguments.points, arguments.cadence, arguments.truncated_at)

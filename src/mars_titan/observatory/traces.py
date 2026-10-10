@@ -79,18 +79,26 @@ def write_trace_bundle(
     series=(),
     matrices=(),
     cadence=None,
+    truncated_at=None,
     max_bytes=MAX_BUNDLE_BYTES,
 ):
     """Escribir un paquete y registrarlo en `index.json`.
 
     Cada serie es un diccionario con `id`, `group`, `label`, `unit`, `x` e `y`. Cada matriz
     añade `rows` y `values` en orden de filas, con una fila por capa o componente.
+    `truncated_at` es el paso en el que el productor dejó de registrar por agotar su
+    presupuesto. La página lo muestra para que el final de las series no se confunda
+    con el final del entrenamiento.
     """
     folder = Path(folder)
     if not NAME.fullmatch(name):
         raise ValueError("Nombre de paquete no admitido")
     if provenance not in PROVENANCES or x_unit not in X_UNITS:
         raise ValueError("Procedencia o unidad del eje no admitidas")
+    if cadence is not None and (type(cadence) is not int or cadence < 1):
+        raise ValueError("La cadencia es un número entero de pasos o None")
+    if truncated_at is not None and (type(truncated_at) is not int or truncated_at < 0):
+        raise ValueError("El paso de corte es un entero no negativo o None")
     blob, manifest_series, manifest_matrices, seen = _Blob(), [], [], set()
 
     def header(item, label):
@@ -181,6 +189,7 @@ def write_trace_bundle(
         provenance=provenance,
         x_unit=x_unit,
         cadence=cadence,
+        truncated_at=truncated_at,
         blob=blob_name,
         blob_bytes=len(body),
         blob_sha256=digest,
@@ -209,3 +218,86 @@ def write_trace_bundle(
     if previous and previous != blob_name and NAME.fullmatch(previous.removesuffix(".bin")):
         (folder / previous).unlink(missing_ok=True)
     return manifest
+
+
+# Adaptación del formato largo del registrador de trazas (`learning_traces.recorder`), que
+# guarda filas `step, phase, metric, group, stat, value` en partes Parquet. Cada
+# combinación de métrica, grupo, estadístico y fase se convierte en una serie por paso.
+# La sección del observatorio sale del primer segmento del nombre de la métrica y, si no
+# se reconoce, del grupo del registrador (por ejemplo `memory`). Las normas por grupo de
+# parámetros son la excepción: se quedan en optimización para compararlas entre grupos.
+SECTION_PREFIXES = {
+    "titans": "titans",
+    "memory": "titans",
+    "episodic": "episodic",
+    "bank": "episodic",
+    "rl": "rl",
+    "policy": "rl",
+    "critic": "rl",
+    "adapter": "adapters",
+    "adapters": "adapters",
+    "modality": "modalities",
+    "modalities": "modalities",
+    "session": "session",
+}
+PARAMETER_METRICS = {
+    "grad_l2": ("Norma L2 del gradiente", "norma L2"),
+    "weight_l2": ("Norma L2 de los pesos", "norma L2"),
+    "update_ratio": ("Razón de actualización", "fracción"),
+}
+
+
+def _section(metric, group):
+    if metric in PARAMETER_METRICS:
+        return "optimization"
+    for name in (metric, group):
+        prefix = re.split(r"[._:/-]", name, maxsplit=1)[0]
+        if prefix in SECTION_PREFIXES:
+            return SECTION_PREFIXES[prefix]
+    return "optimization"
+
+
+def _identifier(parts, seen):
+    base = re.sub(r"[^a-z0-9_.]", "_", ".".join(parts).lower())
+    base = re.sub(r"^[^a-z]+", "", base)[:90] or "serie"
+    identifier, suffix = base, 1
+    while identifier in seen:
+        suffix += 1
+        identifier = f"{base[:86]}.{suffix}"
+    seen.add(identifier)
+    return identifier
+
+
+def series_from_learning_traces(steps, phases, metrics, groups, stats, values):
+    """Convertir columnas en formato largo en series para `write_trace_bundle`.
+
+    Si un mismo paso aparece dos veces en una serie, se conserva la última fila, que es la
+    de la parte escrita después. Los NaN se mantienen: el registrador los usa cuando un
+    tensor no tuvo valores finitos y el observatorio los dibuja como ausencia.
+    """
+    columns = (steps, phases, metrics, groups, stats, values)
+    if len({len(column) for column in columns}) != 1:
+        raise ValueError("Las columnas de las trazas tienen longitudes distintas")
+    collected = {}
+    for step, phase, metric, group, stat, value in zip(*columns, strict=True):
+        if type(step) is not int or step < 0:
+            raise ValueError("El paso de una traza es un entero no negativo")
+        collected.setdefault((metric, group, stat, phase), {})[step] = float(value)
+    several_phases = len({key[3] for key in collected}) > 1
+    seen, series = set(), []
+    for (metric, group, stat, phase), points in sorted(collected.items()):
+        label, unit = PARAMETER_METRICS.get(metric, (metric, "sin unidad"))
+        unit = "fracción" if stat == "finite_fraction" else unit
+        detail = [group] + ([stat] if stat != "value" else []) + ([phase] if several_phases else [])
+        ordered = sorted(points)
+        series.append(
+            dict(
+                id=_identifier([metric, group, stat, phase], seen),
+                group=_section(metric, group),
+                label=f"{label} · {' · '.join(detail)}"[:120],
+                unit=unit,
+                x=ordered,
+                y=[points[step] for step in ordered],
+            )
+        )
+    return series

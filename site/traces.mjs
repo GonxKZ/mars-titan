@@ -38,6 +38,8 @@ export function validateManifest(input) {
   if (!["measured", "fixture"].includes(input.provenance)) fail("procedencia desconocida");
   if (!Object.hasOwn(X_UNITS, input.x_unit)) fail("unidad del eje desconocida");
   if (!Number.isSafeInteger(input.blob_bytes) || input.blob_bytes < 0 || !/^[a-f0-9]{64}$/.test(input.blob_sha256 ?? "")) fail("tamaño o huella del bloque");
+  if (input.cadence != null && !(Number.isSafeInteger(input.cadence) && input.cadence >= 1)) fail("cadencia no válida");
+  if (input.truncated_at != null && !(Number.isSafeInteger(input.truncated_at) && input.truncated_at >= 0)) fail("paso de corte no válido");
   const bytes = input.blob_bytes, seen = new Set();
   const head = (item, label) => {
     if (!ID.test(item?.id ?? "") || seen.has(item.id)) fail(`${label} con identificador repetido o inválido`);
@@ -67,7 +69,7 @@ export function validateManifest(input) {
     name: input.name, blob: input.blob, bytes, sha256: input.blob_sha256, provenance: input.provenance,
     xUnit: input.x_unit, xLabel: X_UNITS[input.x_unit], runId: text(input.run_id, "run_id", 96),
     attemptId: text(input.attempt_id, "attempt_id", 96), modelId: text(input.model_id, "model_id", 96),
-    cadence: input.cadence ?? null, series, matrices,
+    cadence: input.cadence ?? null, truncatedAt: input.truncated_at ?? null, series, matrices,
   };
 }
 

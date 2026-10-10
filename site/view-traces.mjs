@@ -120,7 +120,7 @@ function renderBundle(ctx, bundle) {
     : el("span", { className: "mono", text: bundle.runId });
   byId("trace-caption").replaceChildren(
     document.createTextNode(`${fmt.number(bundle.points)} valores de `), runLink,
-    document.createTextNode(` · ${ctx.modelName(bundle.modelId)} · eje: ${bundle.xLabel.toLowerCase()} · ${bundle.verified ? `huella SHA-256 ${fmt.shortHash(bundle.sha256)} comprobada` : "huella sin comprobar en un origen no seguro"} · leído en ${fmt.number(bundle.loadMs, 0)} ms`),
+    document.createTextNode(` · ${ctx.modelName(bundle.modelId)} · eje: ${bundle.xLabel.toLowerCase()}${bundle.cadence ? `, un registro cada ${fmt.number(bundle.cadence)}` : ""} · ${bundle.verified ? `huella SHA-256 ${fmt.shortHash(bundle.sha256)} comprobada` : "huella sin comprobar en un origen no seguro"} · leído en ${fmt.number(bundle.loadMs, 0)} ms.${bundle.truncatedAt != null ? ` El productor dejó de registrar en el paso ${fmt.number(bundle.truncatedAt)} al agotar su presupuesto de bytes, así que las series terminan ahí aunque el entrenamiento siguiera.` : ""}`),
   );
   byId("trace-fixture").hidden = bundle.provenance !== "fixture";
   const sections = Object.entries(TRACE_GROUPS).map(([id, label]) => {

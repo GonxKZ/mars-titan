@@ -168,6 +168,8 @@ test("el manifiesto rechaza referencias fuera del bloque, grupos desconocidos y 
     { ...base, series: [base.series[0], base.series[0]] },
     { ...base, matrices: [{ ...base.matrices[0], rows: ["Capa 1"] }] },
     { ...base, matrices: [{ ...base.matrices[0], range: [1, 0] }] },
+    { ...base, cadence: 0 },
+    { ...base, truncated_at: -1 },
   ];
   for (const input of broken) assert.throws(() => validateManifest(input), TypeError);
   assert.deepEqual(validateIndex({ schema_version: 1, bundles: [{ name: "a", manifest: "a.json", provenance: "fixture" }] })[0].name, "a");
