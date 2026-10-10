@@ -853,7 +853,9 @@ semilla son las del trabajo que eligió su `selection.json`, y `base_retrain` es
 brazo base reentrenado en la ventana. Las familias `versus_frozen_parent` y
 `versus_full_continuation` incluyen la cadena como variante, y `versus_base_retrain`
 contrasta la cadena con el reentreno, la comparación que el diseño por etapas
-informa aparte. Si la campaña declara `walk_forward_stages`, la declaración debe
+informa aparte. Como en A, la continuación anclada de las cinco referencias entra
+en `versus_frozen_parent` y en `versus_anchored_continuation`, que la contrasta con
+los adaptados y la continuación completa. Si la campaña declara `walk_forward_stages`, la declaración debe
 contrastar esos dos papeles. Salen veinte padres en el ámbito conjunto, los 22
 brazos de la etapa salvo Ridge y XGBoost. Cada comparación conserva la
 elegibilidad por mercado del modelo conjunto, así que China solo entra en

@@ -513,6 +513,16 @@ def test_v2_declaration_adds_the_chain_and_the_base_retrain_on_the_joint_scope()
         assert set(families["versus_base_retrain"]) == {f"{chain}-{base_arm}"}
         assert f"{chain}-{group['frozen_parent']}" in families["versus_frozen_parent"]
         assert f"{chain}-{group['full_continuation']}" in families["versus_full_continuation"]
+        # La continuación anclada solo existe en las cinco referencias, con su familia.
+        anchored = group["anchored_continuation"]
+        if base_arm in ("rnn", "lstm", "gru", "dlinear", "transformer_compact"):
+            assert anchored == f"{base_arm}__anchored_continuation"
+            assert set(families["versus_anchored_continuation"]) == {
+                f"{arm}-{anchored}" for arm in (*group["adapted"], group["full_continuation"])
+            }
+            assert f"{anchored}-{group['frozen_parent']}" in families["versus_frozen_parent"]
+        else:
+            assert anchored is None and "versus_anchored_continuation" not in families
         # Se conserva la elegibilidad del modelo conjunto: China entra en las métricas desde
         # fold-006 y los controles separados quedan fuera porque no hay ámbitos de un mercado.
         assert config["joint_design"] == dict(joint, separate_controls=[])

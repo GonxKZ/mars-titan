@@ -220,31 +220,40 @@ def _stage(name):
     return campaign_stage.load_stage(CONFIGS / f"historical-masked-adapter-stage-{name}.json")
 
 
-def test_only_the_stages_that_name_the_control_plan_it():
-    a, joint = _stage("a"), _stage("a-v2")
-    # Las dos etapas comparten la matriz v3, pero solo A añade el control.
-    assert a["matrix_sha256"] == joint["matrix_sha256"]
-    assert a["additional_controls"] == [ANCHORED] and "additional_controls" not in joint
-    jobs = campaign_stage.plan_stage(a)
+@pytest.mark.parametrize(("name", "expected"), [("a", 630), ("a-v2", 270)])
+def test_only_the_stages_that_name_the_control_plan_it(name, expected):
+    stage = _stage(name)
+    # A y A v2 comparten la matriz v3 y las dos añaden el control. A tiene tres ámbitos y
+    # 42 ventanas con padre y A v2 el ámbito conjunto con 18: 5 × 42 × 3 y 5 × 18 × 3.
+    assert stage["matrix_sha256"] == _stage("a")["matrix_sha256"]
+    assert stage["additional_controls"] == [ANCHORED]
+    jobs = campaign_stage.plan_stage(stage)
+    # Las cinco referencias neuronales de la etapa.
+    references = set(stage["families"])
+    assert len(references) == 5
     anchored = [job for job in jobs if job["control"] == ANCHORED]
     full = [
         job
         for job in jobs
-        if job["control"] == "full_continuation" and job["base_arm"] in a["families"]
+        if job["control"] == "full_continuation" and job["base_arm"] in references
     ]
-    assert {job["base_arm"] for job in anchored} == set(a["families"])
+    assert {job["base_arm"] for job in anchored} == references
 
     def key(job):
         return job["scope"], job["window"], job["base_arm"], job["seed"]
 
     # Una por ventana, brazo de referencia y semilla, igual que la continuación completa.
-    assert sorted(map(key, anchored)) == sorted(map(key, full)) and len(anchored) == 630
+    assert sorted(map(key, anchored)) == sorted(map(key, full)) and len(anchored) == expected
     for job in anchored:
         assert job["arm"] == f"{job['base_arm']}__{ANCHORED}" and job["point"] == ANCHORED
         assert job["case"]["weight_decay_anchor"] == INITIAL
         assert job["depends"] == next(j["depends"] for j in full if key(j) == key(job))
         assert campaign_stage.candidate_kind(job) == "continuation"
-    assert not any(job["control"] == ANCHORED for job in campaign_stage.plan_stage(joint))
+    # Sin nombrarlo, la misma etapa no lo planifica y conserva el resto del plan.
+    without = {key: value for key, value in stage.items() if key != "additional_controls"}
+    remaining = campaign_stage.plan_stage(without)
+    assert not any(job["control"] == ANCHORED for job in remaining)
+    assert len(remaining) == len(jobs) - expected
 
 
 def test_a_stage_cannot_add_a_control_its_matrix_does_not_declare(tmp_path):
