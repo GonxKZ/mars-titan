@@ -156,7 +156,7 @@ Cuando una semilla de un brazo ya tiene su predictor elegido en una ventana (el 
 
 `labels_used_until` es una cota y no la maduración exacta de la última etiqueta. La calibración común usa el tramo anterior a la evaluación y la purga por intervalo de etiqueta obliga a que todas sus etiquetas maduren antes del final del tramo, así que ninguna etiqueta usada en ajuste, selección o calibración madura después. En una ventana trasladada el modelo dejó de aprender antes, pero su calibración también usa ese tramo. Al reanudar, un recibo de ventana ya escrito debe coincidir con el que se deriva de los trabajos confirmados. No hay recibos reales porque la campaña no se ha ejecutado.
 
-`sources` publica el manifiesto de un ámbito para `evaluation.walk_forward_comparison`. Elige para cada brazo, semilla y ventana el ganador de la búsqueda, el finalista o la predicción trasladada, vuelve a exigir las mismas filas en todos ellos y valida el manifiesto con `load_sources` antes de publicarlo. Con la comparación declarada de 26 brazos falla y nombra los brazos sin productor. Para evaluar antes solo las referencias haría falta declarar, antes de ver resultados, una comparación con esos brazos.
+`sources` publica el manifiesto de un ámbito para `evaluation.walk_forward_comparison`. Elige para cada brazo, semilla y ventana el ganador de la búsqueda, el finalista o la predicción trasladada, vuelve a exigir las mismas filas en todos ellos y valida el manifiesto con `load_sources` antes de publicarlo. Con la comparación declarada de 27 brazos falla y nombra los brazos sin productor. Para evaluar antes solo las referencias haría falta declarar, antes de ver resultados, una comparación con esos brazos.
 
 ### Puntos de extensión y etapas posteriores
 

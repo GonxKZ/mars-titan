@@ -106,7 +106,7 @@ flowchart LR
         C4["B+C+M"]:::parcial
     end
 
-    EV["Comparación walk-forward<br/>26 brazos · MAE por sesión · CQR común<br/>estratos de presencia descriptivos"]
+    EV["Comparación walk-forward<br/>27 brazos · MAE por sesión · CQR común<br/>estratos de presencia descriptivos"]
 
     D --> REF
     D --> G
