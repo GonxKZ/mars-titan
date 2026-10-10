@@ -17,6 +17,7 @@ from pathlib import Path
 import numpy as np
 
 from mars_titan.data.storage import atomic_json, sha256
+from mars_titan.hardware.platform_identity import cpu_name
 
 
 def executable_peak_rss():
@@ -207,9 +208,7 @@ def main():
         financial_metrics_sha256=hashlib.sha256(
             json.dumps(expected, sort_keys=True).encode()
         ).hexdigest(),
-        cpu=subprocess.check_output(["rg", "-m", "1", "^model name", "/proc/cpuinfo"], text=True)
-        .split(":", 1)[1]
-        .strip(),
+        cpu=cpu_name(),
         platform=platform.platform(),
         python=platform.python_version(),
         libraries={name: importlib.metadata.version(name) for name in ("numpy", "pyarrow")},

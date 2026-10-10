@@ -26,6 +26,7 @@ from mars_titan.calibration.conformal_quantiles import (
     fit_conformal_quantiles,
 )
 from mars_titan.calibration.online_conformal import OnlineConformal, replay_online_conformal
+from mars_titan.hardware.platform_identity import cpu_name
 from mars_titan.models.quantile_head import LEVELS
 
 NOMINALS = (0.8, 0.95)
@@ -160,14 +161,7 @@ def main(argv=None):
     commit = subprocess.run(
         ["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=True
     ).stdout.strip()
-    cpu = next(
-        (
-            line.split(":", 1)[1].strip()
-            for line in Path("/proc/cpuinfo").read_text().splitlines()
-            if line.startswith("model name")
-        ),
-        platform.processor(),
-    )
+    cpu = cpu_name()
     cases = {
         name: measure_case(assets, horizon, args.repeats, args.rate_fraction)
         for name, (assets, horizon) in CASES.items()

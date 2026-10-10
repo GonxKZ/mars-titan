@@ -18,6 +18,7 @@ from benchmark_native_ppo import checkpoint_bytes, concurrent_snapshot, require
 
 from mars_titan.data.cohort_files import safe_destination
 from mars_titan.data.storage import atomic_json
+from mars_titan.hardware.platform_identity import cpu_name
 from mars_titan.simulation.adaptive_campaign import (
     AUXILIARY,
     FAMILIES,
@@ -323,14 +324,7 @@ def main(argv=None):
             python=platform.python_version(),
             platform=platform.platform(),
             machine=platform.machine(),
-            cpu_model=next(
-                (
-                    line.partition(":")[2].strip()
-                    for line in Path("/proc/cpuinfo").read_text().splitlines()
-                    if line.startswith("model name")
-                ),
-                None,
-            ),
+            cpu_model=cpu_name(),
             logical_cpus=os.cpu_count(),
             gpu=gpu,
             sources=sources,

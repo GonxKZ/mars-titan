@@ -13,6 +13,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from mars_titan.data.storage import atomic_json, outside_source, sha256
+from mars_titan.hardware.platform_identity import cpu_name
 
 
 def scientific_outputs(directory):
@@ -101,11 +102,7 @@ def main():
         )
         for cache in (0, 8)
     }
-    cpu = next(
-        line.split(":", 1)[1].strip()
-        for line in Path("/proc/cpuinfo").read_text().splitlines()
-        if line.startswith("model name")
-    )
+    cpu = cpu_name()
     atomic_json(
         args.output / "benchmark.json",
         dict(
