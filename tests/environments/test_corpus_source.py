@@ -346,3 +346,32 @@ def test_cohorts_cross_parquet_groups_without_losing_rows_or_unbounded_cache(tmp
     ) as source:
         with pytest.raises(ValueError, match="presupuesto"):
             source(0)
+
+
+def test_cohort_reader_skips_empty_groups_without_changing_cohorts(tmp_path):
+    from tests.training.empty_groups_fixture import canonical, regroup
+
+    module().prepare_causal_corpus(fixture(tmp_path / "data"), tmp_path / "ordered", batch_size=5)
+    manifest = tmp_path / "ordered/manifest.json"
+
+    def read(empty):
+        meta = json.loads(manifest.read_text())
+        record = meta["partitions"]["train"]
+        path = manifest.parent / record["path"]
+        sizes = regroup(path, 1, empty(record["rows"]))
+        digest = sha256(path)
+        record.update(path=f"train-{digest}.parquet", sha256=digest, size_bytes=path.stat().st_size)
+        path.rename(manifest.parent / record["path"])
+        manifest.write_text(json.dumps(meta))
+        with module().ParquetCohortSource(manifest, partition="train") as source:
+            requested, original = [], source._group
+            source._group = lambda index: requested.append(index) or original(index)
+            cohorts = [canonical(source(position)) for position in range(len(source))]
+        return cohorts, [sizes[index] for index in requested], sizes
+
+    compact, compact_sizes, layout = read(lambda rows: ())
+    assert 0 not in layout and len(compact) == 6 and compact_sizes
+    padded, padded_sizes, layout = read(lambda rows: range(1, rows))
+    assert layout.count(0) == 11 and padded == compact
+    # Cada cohorte de dos filas cruza un grupo vacío, que no se lee ni ocupa la caché.
+    assert 0 not in padded_sizes

@@ -45,6 +45,18 @@ cursor confirmado vuelve al siguiente ejemplo aunque se hubiera adelantado
 la lectura de otro lote. El entrenador debe guardarlo después de aplicar la
 actualización correspondiente, no al recibir datos por anticipado.
 
+Un archivo de muestras puede contener grupos Parquet sin filas. En la edición
+histórica v3, los 25 activos cuyo número de muestras es múltiplo de 128 (el
+tamaño de sus grupos) terminan con un grupo vacío. La edición no se reescribe.
+Los lectores omiten esos grupos sin renumerar los demás, así que posiciones,
+offsets y grupos de origen siguen siendo los físicos. El orden aleatorio permuta
+solo los grupos con filas y obtiene la semilla de cada grupo de su rango entre
+ellos. En un archivo sin grupos vacíos el rango coincide con el índice, de modo
+que el orden, los lotes y los cursores no cambian. En uno con grupos vacíos, el
+recorrido y el cursor coinciden con los del mismo archivo sin ellos. Un grupo
+con filas sigue validando todas sus dimensiones. Al preparar las vistas, un
+activo cuyos grupos no tienen filas se rechaza igual que uno sin grupos.
+
 Los grupos de características se limitan a 64 MiB decodificados. Los precios y
 las etiquetas se cargan por activo bajo presupuestos explícitos, de 200.000 y
 1.000.000 de filas respectivamente, además del límite de 64 MiB. No son límites

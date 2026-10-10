@@ -79,6 +79,13 @@ inválida conserva la evidencia y bloquea la oleada completa. No se retira ese
 episodio ni se usa su cero centinela como retorno. Un corte de recursos guarda
 un prefijo recuperable que todavía no puede producir la pérdida terminal.
 
+Cada paso de recogida comprueba la cabecera, los calendarios y el presupuesto de
+la oleada, pero de cada episodio solo valida los pasos añadidos y el último ya
+validado, porque su cierre depende del siguiente. La oleada completa se valida
+otra vez al guardarla en un punto de control, al restaurarla y al formar el
+objetivo. Antes se repasaba la oleada entera en cada paso, con un coste
+cuadrático en su longitud.
+
 `PpoPolicy::terminal_forward` reconstruye la historia desde estado inicial
 cero y conserva el grafo de los pasos anteriores. No usa el hidden guardado
 como sustituto ni desacopla el prefijo cada 16 pasos. El consumidor reúne las

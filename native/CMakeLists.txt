@@ -164,7 +164,8 @@ if(MARS_TITAN_BUILD_SIMULATION)
             mars_titan_find_arrow()
             find_package(OpenSSL REQUIRED COMPONENTS Crypto)
             find_package(Threads REQUIRED)
-            add_library(mars_titan_simulation_files STATIC src/financial_parquet.cpp src/simulation_files.cpp)
+            add_library(mars_titan_simulation_files STATIC src/financial_parquet.cpp src/simulation_files.cpp
+                src/reconstructed_tape.cpp)
             target_include_directories(mars_titan_simulation_files PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
             target_link_libraries(mars_titan_simulation_files PUBLIC mars_titan_financial mars_titan::parquet
                 OpenSSL::Crypto Threads::Threads nlohmann_json::nlohmann_json)
@@ -177,7 +178,8 @@ if(MARS_TITAN_BUILD_SIMULATION)
             endif()
             list(APPEND mars_analysis_sources
                 "${CMAKE_CURRENT_SOURCE_DIR}/src/financial_parquet.cpp"
-                "${CMAKE_CURRENT_SOURCE_DIR}/src/simulation_files.cpp")
+                "${CMAKE_CURRENT_SOURCE_DIR}/src/simulation_files.cpp"
+                "${CMAKE_CURRENT_SOURCE_DIR}/src/reconstructed_tape.cpp")
         endif()
     endif()
 
@@ -209,10 +211,23 @@ if(MARS_TITAN_BUILD_SIMULATION)
         target_include_directories(mars_titan_klpo_learning PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
         target_link_libraries(mars_titan_klpo_learning PUBLIC mars_titan_klpo_collection)
         mars_titan_configure_target(mars_titan_klpo_learning)
-        add_executable(mars-titan-ppo src/ppo_main.cpp src/ppo_experiment.cpp)
-        target_link_libraries(mars-titan-ppo PRIVATE mars_titan_ppo mars_titan_ppo_files
-            mars_titan_learning_hold)
+        # Experimentos de política sobre cintas reconstruidas, con la orden común de PPO y KLPO.
+        add_library(mars_titan_policy_stage STATIC src/ppo_experiment.cpp src/klpo_experiment.cpp
+            src/policy_tapes.cpp src/policy_evaluation.cpp src/policy_command.cpp)
+        target_include_directories(mars_titan_policy_stage PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
+        target_link_libraries(mars_titan_policy_stage PUBLIC mars_titan_klpo_learning mars_titan_ppo
+            mars_titan_ppo_files mars_titan_learning_hold)
+        mars_titan_configure_target(mars_titan_policy_stage)
+        add_executable(mars-titan-ppo src/ppo_main.cpp)
+        target_link_libraries(mars-titan-ppo PRIVATE mars_titan_policy_stage)
         mars_titan_configure_target(mars-titan-ppo)
+        add_executable(mars-titan-klpo src/klpo_main.cpp)
+        target_link_libraries(mars-titan-klpo PRIVATE mars_titan_policy_stage)
+        mars_titan_configure_target(mars-titan-klpo)
+        # Coste de la recogida de políticas sobre cintas reales, sin pasos de optimizador.
+        add_executable(mars-titan-policy-benchmark benchmarks/policy_collection.cpp)
+        target_link_libraries(mars-titan-policy-benchmark PRIVATE mars_titan_policy_stage)
+        mars_titan_configure_target(mars-titan-policy-benchmark)
         list(APPEND mars_analysis_sources "${CMAKE_CURRENT_SOURCE_DIR}/src/ppo_policy.cpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/src/klpo_collection.cpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/src/klpo_learning.cpp"
@@ -225,6 +240,11 @@ if(MARS_TITAN_BUILD_SIMULATION)
             "${CMAKE_CURRENT_SOURCE_DIR}/src/decision_trace.cpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/src/ppo_main.cpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/src/ppo_experiment.cpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/src/klpo_experiment.cpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/src/klpo_main.cpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/src/policy_tapes.cpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/src/policy_evaluation.cpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/src/policy_command.cpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/src/learning_hold.cpp")
         if(BUILD_TESTING)
             add_executable(klpo_reference_tests tests/klpo_reference_tests.cpp)
@@ -291,10 +311,10 @@ if(MARS_TITAN_BUILD_SIMULATION)
             mars_titan_sanitizer_test_environment(ppo_policy)
             set_property(TEST ppo_policy APPEND PROPERTY ENVIRONMENT
                 "CUDA_VISIBLE_DEVICES=-1" "OMP_NUM_THREADS=1" "MKL_NUM_THREADS=1")
-            foreach(component training checkpoint inputs gru_packing evaluation)
+            foreach(component training checkpoint inputs gru_packing evaluation collection)
                 add_executable(ppo_${component}_tests tests/ppo_${component}_tests.cpp)
                 if(component STREQUAL "training" OR component STREQUAL "gru_packing" OR
-                   component STREQUAL "evaluation")
+                   component STREQUAL "evaluation" OR component STREQUAL "collection")
                     target_link_libraries(ppo_${component}_tests PRIVATE mars_titan_ppo)
                 else()
                     target_link_libraries(ppo_${component}_tests PRIVATE mars_titan_ppo_files)
@@ -339,7 +359,8 @@ if(MARS_TITAN_BUILD_SIMULATION)
             "${CMAKE_CURRENT_SOURCE_DIR}/cmake/BuildIdentity.cmake"
             "${CMAKE_CURRENT_SOURCE_DIR}/cmake/RunnerDependencies.cmake")
         if(TARGET mars_titan_simulation_files)
-            list(APPEND identity_files "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/simulation_files.hpp")
+            list(APPEND identity_files "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/simulation_files.hpp"
+                "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/reconstructed_tape.hpp")
         endif()
         if(MARS_TITAN_BUILD_COHORT_EXECUTION)
             list(APPEND identity_files "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/cohort_execution.hpp"
@@ -371,6 +392,10 @@ if(MARS_TITAN_BUILD_SIMULATION)
                 "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/ppo_checkpoints.hpp"
                 "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/ppo_inputs.hpp"
                 "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/ppo_experiment.hpp"
+                "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/klpo_experiment.hpp"
+                "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/policy_tapes.hpp"
+                "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/policy_evaluation.hpp"
+                "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/policy_command.hpp"
                 "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/learning_hold.hpp"
                 "${CMAKE_CURRENT_SOURCE_DIR}/cmake/LearningHold.cmake"
                 "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/episodic_memory.hpp"

@@ -138,24 +138,34 @@ codificó 256 filas con las dimensiones por defecto en 0,056 s en FP32 y 0,079 s
 FP64. El RSS máximo del proceso de medida fue de 818.085.888 bytes. Son medidas del
 componente con datos manuales y no estiman el caudal del corpus.
 
-## Pendiente
+## Comprobación CUDA
 
-- CUDA del codec, el consumidor y la sesión GRU. La comprobación preparada en
-  [`cuda_gru_session_check.py`](../../tests/memory/cuda_gru_session_check.py)
-  compara CPU y `cuda:0` en FP32/FP64, K = 1 y 4, M0 y M1, y recupera tras un corte.
-  Solo se ha ensayado en CPU, lo que no acredita el dispositivo. Cuando la GPU quede
-  libre, desde `native/`:
+[`cuda_gru_session_check.py`](../../tests/memory/cuda_gru_session_check.py) compara
+CPU y `cuda:0` en FP32/FP64, K = 1 y 4, M0 y M1, y recupera tras un corte. Se
+ejecutó el 9 de octubre con el enlace `native-candidate-cuda`, sin pasos de
+optimizador ([recibo](../../reports/engineering/cuda-checks-20261009/gru-session-cuda.json)). El error máximo de predicción
+fue 2,2·10⁻⁸ en FP32 y 1,2·10⁻¹⁶ en FP64, la recuperación en el dispositivo fue
+exacta y los parámetros no cambiaron. `cuda_candidate_check.py` es un script con
+`argparse` y pytest no recoge ninguna prueba en él. Ejecutado como script con
+`--output`, sus seis casos pasaron con un error máximo de 1,5·10⁻⁶ en FP32 y
+1,6·10⁻¹⁵ en FP64 ([recibo](../../reports/engineering/cuda-checks-20261009/candidate-cuda.json)). La GRU nativa emite en CUDA
+el aviso de cuDNN de pesos no contiguos, porque `native/src/candidate.cpp` llama a
+`at::gru` sin aplanarlos. Su coste no se ha medido. Las órdenes, desde `native/`:
 
   ```bash
   cmake --preset native-candidate-cuda -B ../build/native/gru-session-cuda \
     -DMARS_TITAN_BUILD_EPISODIC_PYTHON=ON -DMARS_TITAN_BUILD_SIMULATION=ON
   cmake --build ../build/native/gru-session-cuda
   ctest --test-dir ../build/native/gru-session-cuda -R "^candidate_cuda$"
-  cd .. && MARS_TITAN_EPISODIC_NATIVE=$PWD/build/native/gru-session-cuda/_episodic_native.cpython-312-x86_64-linux-gnu.so \
-    MARS_TITAN_GRU_CHECK_REPORT=$PWD/gru-session-cuda.json \
-    uv run --no-sync --offline pytest -q tests/memory/cuda_gru_session_check.py \
-    tests/models/candidate/cuda_candidate_check.py
+  cd .. && export MARS_TITAN_EPISODIC_NATIVE=$PWD/build/native/gru-session-cuda/_episodic_native.cpython-312-x86_64-linux-gnu.so
+  MARS_TITAN_GRU_CHECK_REPORT=$PWD/gru-session-cuda.json \
+    uv run --no-sync --offline pytest -q tests/memory/cuda_gru_session_check.py
+  uv run --no-sync python tests/models/candidate/cuda_candidate_check.py \
+    --output $PWD/candidate-cuda.json
   ```
+
+## Pendiente
+
 - La aceptación sobre fases históricas completas, con su cola y almacenamiento.
 - El coste del recorrido completo con las dimensiones reales del corpus.
 - El contraste científico de la GRU frente a Titans y sus ampliaciones.

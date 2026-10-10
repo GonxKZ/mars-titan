@@ -38,19 +38,19 @@ def test_disk_plan_reports_dense_estimate_and_global_bound():
     result = plan()
     assert result["cache_location"] == "disk"
     assert result["host_cache_bytes_estimate"] == 0
-    # 128 bins y el símbolo ausente necesitan 8 bits por valor con índices locales.
-    assert result["disk_cache_bytes_estimate"] == ROWS * FEATURES
+    # 128 bins locales necesitan 7 bits por valor: las entradas no tienen ausentes.
+    assert result["disk_cache_bytes_estimate"] == -(-ROWS * FEATURES * 7 // 8)
     # 1719 * 128 bins globales más el ausente necesitan 18 bits.
     assert result["disk_cache_bytes_global_bins_bound"] == ROWS * FEATURES * 18 // 8
-    assert 26e9 < result["disk_cache_bytes_estimate"] < 27e9
+    assert 23e9 < result["disk_cache_bytes_estimate"] < 24e9
     assert 59e9 < result["disk_cache_bytes_global_bins_bound"] < 60e9
-    assert result["disk_cache_estimate_basis"].endswith("hypothesis")
+    assert result["disk_cache_estimate_basis"].endswith("measured_xgboost_3_3")
 
 
 @pytest.mark.parametrize(
-    "max_bin,bits", [(2, 2), (63, 6), (64, 7), (127, 7), (128, 8), (255, 8), (256, 9), (512, 10)]
+    "max_bin,bits", [(2, 1), (63, 6), (64, 6), (65, 7), (128, 7), (129, 8), (256, 8), (512, 9)]
 )
-def test_dense_bits_cover_every_bin_and_the_missing_symbol(max_bin, bits):
+def test_dense_bits_cover_every_local_bin_without_a_missing_symbol(max_bin, bits):
     result = plan(rows=8, features=1, max_bin=max_bin)
     assert result["disk_cache_bytes_estimate"] == bits
 
@@ -58,8 +58,8 @@ def test_dense_bits_cover_every_bin_and_the_missing_symbol(max_bin, bits):
 @pytest.mark.parametrize(
     "changes",
     [
-        dict(max_disk_cache_bytes=24 * GIB),
-        dict(free_disk=24 * GIB),
+        dict(max_disk_cache_bytes=21 * GIB),
+        dict(free_disk=21 * GIB),
         dict(other_disk_bytes=30 * GIB),
         dict(on_host=True, max_disk_cache_bytes=None, rows=4000, available_ram=1024),
         dict(on_host=True, max_disk_cache_bytes=None, rows=4000, max_host_cache_bytes=1024),
@@ -71,7 +71,7 @@ def test_each_budget_and_real_availability_fails_early(changes):
 
 
 def test_limits_are_inclusive_and_include_other_disk_artifacts():
-    dense = ROWS * FEATURES
+    dense = -(-ROWS * FEATURES * 7 // 8)
     assert plan(max_disk_cache_bytes=dense, free_disk=dense)["free_disk_bytes"] == dense
     assert plan(free_disk=dense + 10, other_disk_bytes=10)["other_disk_bytes"] == 10
     with pytest.raises(ValueError, match="disco libre"):

@@ -13,7 +13,14 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import torch
-from titans_gate_retention import CHOSEN, GRADIENT_ENDS, STREAMS, RateProbe, outer_gradients
+from titans_gate_retention import (
+    CHOSEN,
+    GRADIENT_ENDS,
+    STREAMS,
+    RateProbe,
+    outer_gradients,
+    provenance,
+)
 from titans_gate_retention import tokens_for as retention_tokens
 from torch import nn
 
@@ -135,11 +142,8 @@ def main():
         "schema_version": 1,
         "recorded_at_utc": datetime.now(UTC).isoformat(),
         "commit": commit,
-        "command": (
-            "uv run --no-sync python benchmarks/titans_mac_output_scale.py --output <recibo>"
-        ),
-        "environment": "CUDA_VISIBLE_DEVICES=-1, OMP_NUM_THREADS=2, MKL_NUM_THREADS=2",
-        "scope": "Escala técnica con fixtures aleatorios en CPU, sin optimizador ni datos",
+        **provenance("titans_mac_output_scale.py", args),
+        "scope": f"Escala técnica con fixtures aleatorios en {device}, sin optimizador ni datos",
         "hardware": {
             "machine": platform.machine(),
             "processor": platform.processor(),

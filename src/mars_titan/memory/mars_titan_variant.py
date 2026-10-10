@@ -17,16 +17,15 @@ from mars_titan.models.titans.episodic_readout import EpisodicReadout, EpisodicR
 from mars_titan.models.titans.financial import FinancialPredictor
 from mars_titan.models.titans.frozen_financial import FrozenFinancialConsumer
 
+from . import write_scores
 from .associative_memory import CORRECTION_KEYS, AssociativeMemoryConfig, MatureCorrection
 from .financial_consumers import bank_retention
 
 DECLARATION = Path("configs/titans/mars-titan-extensions.json")
 VARIANT = "mars_titan_extensions_v1"
 CONNECTED = ("episodic_bank", "refinements", "refinement_episodes", "associative_memory")
-M3_MOTIVE = (
-    "M3 no está definida: faltan a_norm y r_norm acreditados, sus escalas y sus umbrales, "
-    "así que no se construye ninguna variante con M3"
-)
+# Escrituras que usan el banco y, por tanto, el lector en modo `bank`.
+WRITES = ("m1", "m2", "m3")
 _BASE_FIELDS = {"architecture", "configuration", "dtype", "parameters_sha256", "recipe"}
 # Opciones del lector que fija la combinación de componentes y no la receta.
 _READOUT_FIELDS = {"mode", "refinements", "episode_selection", "codec_id"}
@@ -52,6 +51,8 @@ def load_declaration(path=DECLARATION):
         c.get("connection") not in ("connected", "declared") for c in components.values()
     ):
         raise ValueError("La conexión declarada no coincide con la del constructor")
+    if components["episodic_bank"].get("m3") != write_scores.declaration():
+        raise ValueError("La definición declarada de M3 no coincide con la del código")
     return document
 
 
@@ -96,8 +97,6 @@ def check_components(declaration, components):
             raise ValueError(
                 f"El componente {name} está declarado sin conexión: {component['pending']}"
             )
-        if name == "episodic_bank" and value == "m3":
-            raise ValueError(M3_MOTIVE)
         if value == component["disabled_value"]:
             raise ValueError(f"El valor apagado de {name} se expresa omitiendo el componente")
         if name != "associative_memory" and not any(
@@ -148,7 +147,7 @@ class MarsTitanVariant:
     @property
     def admission(self):
         bank = self.components.get("episodic_bank")
-        return bank if bank in ("m1", "m2") else "m0"
+        return bank if bank in WRITES else "m0"
 
     @property
     def readout_mode(self):
@@ -207,7 +206,10 @@ class MarsTitanVariant:
         return FrozenFinancialConsumer(predictor, readout=readout)
 
     def session_options(self, *, capacity, seed, policy="reservoir", **retention):
-        """Admisión, retención y corrección B6 para `FinancialSession`."""
+        """Admisión, retención y corrección B6 para `FinancialSession`.
+
+        M3 recibe en `retention` las escalas `scalers` del tramo de entrenamiento.
+        """
         options = dict(
             admission=self.admission,
             retention=bank_retention(

@@ -1,0 +1,114 @@
+[
+  {
+    "device": "cuda:0",
+    "dtype": "torch.float32",
+    "mode": "disabled",
+    "accumulation_rows": null,
+    "updates": 11,
+    "control_groups": null,
+    "seconds": {
+      "cpu": 1.3740680199989583,
+      "device": 3.4910787240078207
+    },
+    "peak_allocated_bytes": 70514688,
+    "torch": "2.14.0+cu130"
+  },
+  {
+    "device": "cuda:0",
+    "dtype": "torch.float32",
+    "mode": "disabled",
+    "accumulation_rows": 2,
+    "updates": 11,
+    "control_groups": null,
+    "seconds": {
+      "cpu": 1.7230701409862377,
+      "device": 3.1717593689973
+    },
+    "peak_allocated_bytes": 69850624,
+    "torch": "2.14.0+cu130"
+  },
+  {
+    "device": "cuda:0",
+    "dtype": "torch.float64",
+    "mode": "disabled",
+    "accumulation_rows": null,
+    "updates": 11,
+    "control_groups": null,
+    "seconds": {
+      "cpu": 1.3308674420113675,
+      "device": 2.6986566790146753
+    },
+    "peak_allocated_bytes": 73704960,
+    "torch": "2.14.0+cu130"
+  },
+  {
+    "device": "cuda:0",
+    "dtype": "torch.float64",
+    "mode": "disabled",
+    "accumulation_rows": 2,
+    "updates": 11,
+    "control_groups": null,
+    "seconds": {
+      "cpu": 1.6000046530098189,
+      "device": 2.9832594319886994
+    },
+    "peak_allocated_bytes": 72390656,
+    "torch": "2.14.0+cu130"
+  },
+  {
+    "device": "cuda:0",
+    "dtype": "torch.float32",
+    "mode": "penalty",
+    "accumulation_rows": null,
+    "updates": 11,
+    "control_groups": 31,
+    "seconds": {
+      "cpu": 2.3425463540188503,
+      "device": 4.824359107005876
+    },
+    "peak_allocated_bytes": 79450624,
+    "torch": "2.14.0+cu130"
+  },
+  {
+    "device": "cuda:0",
+    "dtype": "torch.float32",
+    "mode": "penalty",
+    "accumulation_rows": 2,
+    "updates": 11,
+    "control_groups": 31,
+    "seconds": {
+      "cpu": 2.840235554991523,
+      "device": 6.334245947015006
+    },
+    "peak_allocated_bytes": 78809088,
+    "torch": "2.14.0+cu130"
+  },
+  {
+    "device": "cuda:0",
+    "dtype": "torch.float64",
+    "mode": "penalty",
+    "accumulation_rows": null,
+    "updates": 11,
+    "control_groups": 31,
+    "seconds": {
+      "cpu": 2.2796083630237263,
+      "device": 5.438446105021285
+    },
+    "peak_allocated_bytes": 82743808,
+    "torch": "2.14.0+cu130"
+  },
+  {
+    "device": "cuda:0",
+    "dtype": "torch.float64",
+    "mode": "penalty",
+    "accumulation_rows": 2,
+    "updates": 11,
+    "control_groups": 31,
+    "seconds": {
+      "cpu": 2.697227815981023,
+      "device": 6.2738243069907185
+    },
+    "peak_allocated_bytes": 81486848,
+    "torch": "2.14.0+cu130"
+  }
+]

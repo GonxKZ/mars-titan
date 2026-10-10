@@ -2,6 +2,8 @@
 
 B usa el control en modo disabled, con SDPA Math y la misma base que B+C. Las pruebas
 recorren el bucle hasta el paso con el registrador de gradientes, que no modifica pesos.
+Con `accumulation_rows`, el gradiente de la tarea más la media de los términos de C se
+acumula por bloques de flujos y se compara en float64 con el del tramo completo.
 """
 
 import pytest
@@ -14,7 +16,8 @@ from mars_titan.models.titans.financial import (
 )
 from mars_titan.models.titans.local_control import MACProjectionConfig
 from mars_titan.training.checkpoints import load_training_state
-from mars_titan.training.financial_run import ChronologicalRecipe, ChronologicalTrainer
+from mars_titan.training.financial_run import ChronologicalRecipe, ChronologicalTrainer, _Pass
+from mars_titan.training.graph_memory import saved_graph_bytes
 from tests.training.test_financial_run import (
     SELECTION,
     RecordingOptimizer,
@@ -102,23 +105,36 @@ def test_identity_marks_the_control_and_keeps_the_plain_form(shared, tmp_path):
     assert len({plain.run_id, b.run_id, c.run_id}) == 3
 
 
-def test_diagnostic_mode_and_penalty_with_accumulation_are_rejected(shared, tmp_path):
+def test_diagnostic_mode_is_rejected_and_the_penalty_admits_accumulation(shared, tmp_path):
     _, streams = shared
-    with pytest.raises(ValueError, match="diagnóstico"):
-        engine(streams, tmp_path / "d", model(streams, control("diagnostic")))
-    with pytest.raises(ValueError, match="acumulación"):
-        engine(
-            streams, tmp_path / "a", model(streams, control("penalty", 0.5)), accumulation_rows=1
-        )
-    # B admite la acumulación porque no mide nada.
-    engine(streams, tmp_path / "b", model(streams, control("disabled")), accumulation_rows=1)
+    # El diagnóstico sigue sin admitirse en el ajuste, con acumulación o sin ella.
+    for rows in (None, 1):
+        with pytest.raises(ValueError, match="diagnóstico"):
+            engine(
+                streams,
+                tmp_path / f"d{rows}",
+                model(streams, control("diagnostic")),
+                accumulation_rows=rows,
+            )
+    full = engine(streams, tmp_path / "c", model(streams, control("penalty", 0.5)))
+    blocks = engine(
+        streams, tmp_path / "a", model(streams, control("penalty", 0.5)), accumulation_rows=1
+    )
+    b = engine(streams, tmp_path / "b", model(streams, control("disabled")), accumulation_rows=1)
+    # Solo la combinación nueva declara cómo acumula C. Las demás identidades no cambian.
+    assert "penalty_accumulation" in blocks.identity["local_control"]
+    assert "penalty_accumulation" not in full.identity["local_control"]
+    assert "penalty_accumulation" not in b.identity["local_control"]
+    objective = full.identity["local_control"]["objective"]
+    assert blocks.identity["local_control"]["objective"] == objective
 
 
-def test_penalty_without_measured_flows_is_exactly_b(shared, tmp_path):
+@pytest.mark.parametrize("rows", [None, 2])
+def test_penalty_without_measured_flows_is_exactly_b(shared, tmp_path, rows):
     _, streams = shared
     never = control("penalty", 0.5, frequency=2**31 - 1)
-    b, report_b = run(streams, tmp_path / "b", control("disabled"))
-    c, report_c = run(streams, tmp_path / "c", never)
+    b, report_b = run(streams, tmp_path / "b", control("disabled"), accumulation_rows=rows)
+    c, report_c = run(streams, tmp_path / "c", never, accumulation_rows=rows)
     assert entries(b.audit, "prediction") == entries(c.audit, "prediction")
     assert entries(b.audit, "update") == entries(c.audit, "update")
     assert_records(named_records(b), named_records(c))
@@ -241,10 +257,11 @@ def test_validation_with_the_penalty_emits_what_b_emits(shared, tmp_path):
     assert {k: v for k, v in right.items() if not k.startswith("control_")} == left
 
 
-def test_resume_with_the_penalty_reproduces_the_continuous_run(shared, tmp_path):
+@pytest.mark.parametrize("rows", [None, 2])
+def test_resume_with_the_penalty_reproduces_the_continuous_run(shared, tmp_path, rows):
     _, streams = shared
     options = dict(epochs=2, selection=dict(SELECTION, stopping="fixed_budget"))
-    options["checkpoint_updates"] = 2
+    options.update(checkpoint_updates=2, accumulation_rows=rows)
     continuous, expected = run(streams, tmp_path / "continuous", control("penalty", 0.5), **options)
     stop = StopAtStep(15)
     first = engine(streams, tmp_path / "cut", model(streams, control("penalty", 0.5)), **options)
@@ -257,3 +274,122 @@ def test_resume_with_the_penalty_reproduces_the_continuous_run(shared, tmp_path)
     assert first.audit + second.audit == continuous.audit
     assert_records(named_records(first) + named_records(second), named_records(continuous))
     assert resumed["history"] == expected["history"]
+
+
+def without_loss(metrics):
+    return {key: value for key, value in metrics.items() if key != "mean_loss"}
+
+
+# Con truncamiento 1 y un flujo medido por evento, un tramo mide A0000 en la decisión
+# cuyo objetivo se rechaza por varianza nula: un flujo medido sin etiquetas en el tramo.
+SEGMENTS = [dict(truncation=1, max_flows=1), dict(truncation=3, max_flows=3)]
+
+
+@pytest.mark.parametrize("segment", SEGMENTS, ids=["measured_without_labels", "all_measured"])
+@pytest.mark.parametrize("rows", [1, 2, 3])
+def test_accumulated_penalty_gradient_matches_the_full_segment(
+    shared, tmp_path, monkeypatch, segment, rows
+):
+    """Tarea más media de C por bloques de flujos, en float64, frente al tramo completo.
+
+    Con tres flujos, 2 deja un bloque incompleto y 3 cubre el tramo con un solo bloque.
+    """
+    _, streams = shared
+    measured = control("penalty", 0.5, max_flows=segment["max_flows"])
+    truncation = segment["truncation"]
+    full, expected = run(streams, tmp_path / "full", measured, truncation=truncation)
+    blocks = engine(
+        streams,
+        tmp_path / "blocks",
+        model(streams, measured),
+        truncation=truncation,
+        accumulation_rows=rows,
+    )
+    replay, prepare = blocks._replay, blocks.predictor.prepare
+    sizes, inside, unlabelled = [], [], []
+
+    def replay_spy(current):
+        # Con acumulación el tramo solo guarda los flujos medidos de cada grupo.
+        assert all(type(g) is tuple and all(type(f) is str for f in g) for g in current.penalties)
+        labelled = {flow for flow, _, _ in current.used}
+        unlabelled.append({flow for group in current.penalties for flow in group} - labelled)
+        inside.append(True)
+        try:
+            return replay(current)
+        finally:
+            inside.pop()
+
+    def prepare_spy(batch, state, **options):
+        if inside:
+            sizes.append(len(batch.flow_ids))
+        return prepare(batch, state, **options)
+
+    monkeypatch.setattr(blocks, "_replay", replay_spy)
+    monkeypatch.setattr(blocks.predictor, "prepare", prepare_spy)
+    report = blocks.run()
+    assert blocks.audit == full.audit
+    assert blocks.optimizer.calls == full.optimizer.calls == len(entries(full.audit, "update"))
+    for left, right in zip(report["history"], expected["history"], strict=True):
+        assert left["validation"] == right["validation"]
+        if right["train"] is not None:
+            # Grupos, flujos, términos emitidos y grupos del objetivo, bit a bit.
+            assert without_loss(left["train"]) == without_loss(right["train"])
+            assert left["train"]["mean_loss"] == pytest.approx(right["train"]["mean_loss"])
+    metrics = train_metrics(report)
+    assert metrics["control_groups_in_objective"] > 0
+    # Solo cambian el orden de las sumas y la división por grupos dentro de cada bloque.
+    for left, right in zip(named_records(blocks), named_records(full), strict=True):
+        assert left.keys() == right.keys()
+        for key, value in right.items():
+            if value is None:
+                assert left[key] is None, key
+            else:
+                torch.testing.assert_close(left[key], value, rtol=1e-10, atol=1e-13)
+    assert sizes and max(sizes) <= rows
+    if truncation == 1:
+        assert any(unlabelled)
+
+
+def test_emitted_penalty_keeps_no_graph_with_accumulation(shared, tmp_path):
+    _, streams = shared
+    trainer = engine(
+        streams, tmp_path / "c", model(streams, control("penalty", 0.5)), accumulation_rows=1
+    )
+    inner, seen = trainer._penalty, []
+
+    def spy(current, measured, *, keep, replay=False):
+        seen.append((keep, replay, [term.requires_grad for term, _ in measured]))
+        return inner(current, measured, keep=keep, replay=replay)
+
+    trainer._penalty = spy
+    trainer.run()
+    assert any(replay for _, replay, _ in seen)
+    assert all(not any(grads) for keep, replay, grads in seen if replay)
+    assert all(keep == replay for keep, replay, _ in seen)
+
+
+def peak_backward_graph(trainer, monkeypatch):
+    """Mayor grafo guardado alcanzable desde cada backward de un recorrido de ajuste."""
+    parameters, peaks = list(trainer.predictor.parameters()), []
+    backward = torch.Tensor.backward
+
+    def spy(tensor, *args, **kwargs):
+        peaks.append(saved_graph_bytes([tensor], exclude=parameters))
+        return backward(tensor, *args, **kwargs)
+
+    with monkeypatch.context() as patch:
+        patch.setattr(torch.Tensor, "backward", spy)
+        cursor = dict(epoch=0, phase="train", event=0, stage="start")
+        trainer._train_pass(_Pass(), cursor, StopAtStep(10**9), None)
+    return max(peaks)
+
+
+def test_live_graph_with_the_penalty_shrinks_with_the_block(shared, tmp_path, monkeypatch):
+    _, streams = shared
+    measured = control("penalty", 0.5, max_flows=3)
+    full = engine(streams, tmp_path / "full", model(streams, measured))
+    blocks = engine(streams, tmp_path / "one", model(streams, measured), accumulation_rows=1)
+    full_bytes = peak_backward_graph(full, monkeypatch)
+    block_bytes = peak_backward_graph(blocks, monkeypatch)
+    # Con tres flujos medidos en cada evento, un bloque de uno conserva cerca de un tercio.
+    assert 0 < block_bytes < 0.5 * full_bytes

@@ -19,6 +19,7 @@ from mars_titan.models.titans.local_control import MACProjectionConfig, MACProje
 from mars_titan.training import cm_v1_factorial as cm
 from mars_titan.training import mars_titan_run as mt
 from mars_titan.training import mars_titan_walk_forward as mw
+from tests.suite_support import skip_without_episodic_native
 from tests.training.test_financial_run import RecordingOptimizer, entries
 from tests.training.test_financial_run import shared as shared
 from tests.training.test_mars_titan_run import gradients, parent, reader, recipe
@@ -58,6 +59,7 @@ def declaration(root, core, readout, **changes):
 
 @pytest.fixture(scope="module")
 def factorial(tmp_path_factory, learning_doubles_module):
+    skip_without_episodic_native()
     root = tmp_path_factory.mktemp("cm-v1-factorial")
     view, _ = views(root / "base")
     path = declaration(root, core_recipe(root), readout_recipe(root))

@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-10-09T14:00:42.977658+00:00",
+  "torch": "2.14.0+cu130",
+  "device": "cuda:0",
+  "gpu_inventory": "NVIDIA GeForce RTX 4070 Laptop GPU, 8188 MiB, 7194 MiB",
+  "initial_free_bytes": 7400128512,
+  "allocator_limit_bytes": 134217728,
+  "peak_reserved_bytes": 54525952,
+  "source_sha256": "8154f7b1bb564f50f8297b067edc8cbf2db9974c4ec91914c13f9c8a192e4eed",
+  "native_binary_sha256": "144b7534f67ba4b95a8b075f0cd155efa32d7008cc69bb87c7172f85219bea8d",
+  "optimizer_steps": 0,
+  "cases": [
+    {
+      "dtype": "torch.float32",
+      "refinements": 1,
+      "rows": 2,
+      "bank": "empty",
+      "rtol": 0.0002,
+      "atol": 2e-06,
+      "max_absolute_error": 1.5497207641601562e-06,
+      "gradients_compared": 21,
+      "recovery_exact": true,
+      "rng_unchanged": true,
+      "incompatible_catalog_rejected": true
+    },
+    {
+      "dtype": "torch.float32",
+      "refinements": 2,
+      "rows": 2,
+      "bank": "empty",
+      "rtol": 0.0002,
+      "atol": 2e-06,
+      "max_absolute_error": 1.5497207641601562e-06,
+      "gradients_compared": 21,
+      "recovery_exact": true,
+      "rng_unchanged": true,
+      "incompatible_catalog_rejected": true
+    },
+    {
+      "dtype": "torch.float32",
+      "refinements": 4,
+      "rows": 2,
+      "bank": "empty",
+      "rtol": 0.0002,
+      "atol": 2e-06,
+      "max_absolute_error": 1.5497207641601562e-06,
+      "gradients_compared": 21,
+      "recovery_exact": true,
+      "rng_unchanged": true,
+      "incompatible_catalog_rejected": true
+    },
+    {
+      "dtype": "torch.float64",
+      "refinements": 1,
+      "rows": 2,
+      "bank": "empty",
+      "rtol": 1e-08,
+      "atol": 1e-10,
+      "max_absolute_error": 1.5543122344752192e-15,
+      "gradients_compared": 21,
+      "recovery_exact": true,
+      "rng_unchanged": true,
+      "incompatible_catalog_rejected": true
+    },
+    {
+      "dtype": "torch.float64",
+      "refinements": 2,
+      "rows": 2,
+      "bank": "empty",
+      "rtol": 1e-08,
+      "atol": 1e-10,
+      "max_absolute_error": 1.5543122344752192e-15,
+      "gradients_compared": 21,
+      "recovery_exact": true,
+      "rng_unchanged": true,
+      "incompatible_catalog_rejected": true
+    },
+    {
+      "dtype": "torch.float64",
+      "refinements": 4,
+      "rows": 2,
+      "bank": "empty",
+      "rtol": 1e-08,
+      "atol": 1e-10,
+      "max_absolute_error": 1.5543122344752192e-15,
+      "gradients_compared": 21,
+      "recovery_exact": true,
+      "rng_unchanged": true,
+      "incompatible_catalog_rejected": true
+    }
+  ]
+}

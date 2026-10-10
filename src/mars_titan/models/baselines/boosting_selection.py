@@ -1,21 +1,54 @@
 """Selección temporal de boosting tras evaluaciones completas por sesión."""
 
 import hashlib
+import json
 import math
 import time
-from pathlib import Path
 
 import numpy as np
 
 from mars_titan.evaluation.session_metrics import SessionErrors
 
 
-class ValidationCache:
-    """Materializar una vez las modalidades, con límites de bloques, sesiones y disco."""
+def _float32(values):
+    """Bloque float32 contiguo, sin desbordar valores finitos al convertirlo."""
+    try:
+        with np.errstate(over="raise", invalid="raise"):
+            return np.ascontiguousarray(values, dtype=np.float32)
+    except FloatingPointError as error:
+        raise ValueError("La validación no conserva valores finitos en float32") from error
 
-    def __init__(self, factory, directory, *, expected_rows, max_bytes):
-        self.directory, self.blocks, self.bytes = Path(directory), 0, 0
-        self.directory.mkdir(parents=True, exist_ok=False)
+
+def _base_score(booster):
+    """Base que el predictor añade a la suma de hojas, leída de la configuración."""
+    text = json.loads(booster.save_config())["learner"]["learner_model_param"]["base_score"]
+    values = text.strip("[]").split(",")
+    if len(values) != 1:
+        raise ValueError("La validación incremental solo admite una salida")
+    return np.float32(float(values[0]))
+
+
+class ResidentValidation:
+    """Validación leída una vez y conservada en RAM y, hasta un presupuesto, en la GPU.
+
+    Conserva los bloques del lector, su orden y sus tipos, igual que la antigua caché
+    en disco, así que `session_validation` agrupa los mismos errores en el mismo orden.
+    Los valores se comprueban al cargarse y cada ronda solo predice. Varias
+    configuraciones de una misma ventana pueden compartirla porque no depende de los
+    árboles.
+
+    Entre rondas consecutivas del mismo booster solo se evalúa el árbol nuevo. El
+    predictor CUDA de XGBoost suma las hojas de cada fila en orden sobre un acumulador
+    float32 y después añade la base, así que conservar esa suma y añadirle la hoja nueva
+    da los mismos bits que predecir con todos los árboles. Cada reinicio compara toda la
+    validación con la predicción completa y, si difiere, se usa siempre la completa.
+    Cada ronda incremental vuelve a comparar el primer bloque y falla si difiere.
+    """
+
+    def __init__(self, factory, *, expected_rows, max_bytes):
+        self.blocks, self.bytes, self.expected_rows = [], 0, expected_rows
+        self.device, self.placed, self.device_bytes = None, 0, 0
+        self.sums, self.incremental = None, None
         sessions = SessionErrors()
         for values, target, markets, moments in factory():
             values, target = np.asarray(values), np.asarray(target)
@@ -28,30 +61,152 @@ class ValidationCache:
                 or not np.isfinite(values).all()
                 or not np.isfinite(target).all()
                 or values.nbytes + target.nbytes > 512 * 1024**2
-                or self.blocks >= 1_000_000
+                or len(self.blocks) >= 1_000_000
             ):
                 raise ValueError(
                     "El bloque de validación no cumple el presupuesto o las dimensiones"
                 )
             sessions.update(markets, moments, np.zeros_like(target))
-            # Las cuatro cabeceras NPY y el contenedor ZIP caben en este margen.
-            needed = sum(array.nbytes for array in (values, target, markets, moments)) + 4096
-            if self.bytes + needed > max_bytes:
-                raise ValueError("La caché de validación supera el presupuesto de disco")
-            path = self.directory / f"{self.blocks:06}.npz"
-            # np.savez evita compresión repetida y conserva las etiquetas sin redondearlas.
-            np.savez(path, values=values, target=target, markets=markets, moments=moments)
-            self.bytes += path.stat().st_size
+            self.bytes += sum(array.nbytes for array in (values, target, markets, moments))
             if self.bytes > max_bytes:
-                raise ValueError("La caché de validación supera el presupuesto de disco")
-            self.blocks += 1
+                raise ValueError("La validación residente supera su presupuesto de memoria")
+            self.blocks.append((values, target, markets, moments))
         if sessions.summary()["samples"] != expected_rows or not expected_rows:
-            raise ValueError("La caché no conserva la población de validación")
+            raise ValueError("La validación no conserva la población declarada")
+        self.offsets = np.cumsum([0] + [len(block[1]) for block in self.blocks])
+
+    def place(self, device_bytes):
+        """Copiar a cuda:0, contiguos, los primeros bloques que quepan.
+
+        Cada fila se predice con independencia del resto, así que la ubicación y el
+        reparto en tramos no cambian ningún valor.
+        """
+        if type(device_bytes) is not int or device_bytes < 0:
+            raise ValueError("El presupuesto de validación en la GPU no es válido")
+        self.release_device()
+        placed, size = 0, 0
+        for values, *_ in self.blocks:
+            if size + values.size * 4 > device_bytes:
+                break
+            placed, size = placed + 1, size + values.size * 4
+        if not placed:
+            return 0
+        import cupy as cp
+
+        with cp.cuda.Device(0):
+            device = cp.empty((int(self.offsets[placed]), self.blocks[0][0].shape[1]), cp.float32)
+            for index in range(placed):
+                device[self.offsets[index] : self.offsets[index + 1]].set(
+                    _float32(self.blocks[index][0])
+                )
+        self.device, self.placed, self.device_bytes = device, placed, size
+        return size
+
+    def release_device(self):
+        self.device, self.placed, self.device_bytes, self.sums = None, 0, 0, None
 
     def __call__(self):
-        for index in range(self.blocks):
-            with np.load(self.directory / f"{index:06}.npz", allow_pickle=False) as block:
-                yield tuple(block[key] for key in ("values", "target", "markets", "moments"))
+        yield from self.blocks
+
+    def _parts(self):
+        """Tramos predichos de una vez: los bloques residentes juntos y cada bloque en RAM."""
+        first = [(0, self.placed)] if self.placed else []
+        return first + [(index, index + 1) for index in range(self.placed, len(self.blocks))]
+
+    def _values(self, part):
+        import cupy as cp
+
+        start, stop = part
+        if stop <= self.placed:
+            return self.device[self.offsets[start] : self.offsets[stop]]
+        return cp.asarray(_float32(self.blocks[start][0]))
+
+    def _full(self, model, part):
+        """Predicción con todos los árboles, igual que `session_validation`."""
+        start, stop = part
+        if stop <= self.placed:
+            return model.predict_device(self.device[self.offsets[start] : self.offsets[stop]])
+        return model.predict(self.blocks[start][0])
+
+    def _margins(self, booster, start, stop):
+        """Suma float32 de las hojas de los árboles [start, stop) para cada tramo."""
+        import cupy as cp
+
+        sums = []
+        for part in self._parts():
+            values = self._values(part)
+            zeros = cp.zeros(len(values), dtype=cp.float32)
+            sums.append(
+                booster.inplace_predict(
+                    values, iteration_range=(start, stop), predict_type="margin", base_margin=zeros
+                )
+            )
+        return sums
+
+    def _restart(self, model, count):
+        """Predicción completa y, si la suma de hojas la reproduce, nuevo estado incremental."""
+        import cupy as cp
+
+        full = [self._full(model, part) for part in self._parts()]
+        self.sums = None
+        if self.incremental is False or count < 1:
+            return full
+        with cp.cuda.Device(0):
+            base = _base_score(model.booster)
+            sums = self._margins(model.booster, 0, count)
+            if all(
+                np.array_equal((base + value).get(), expected)
+                for value, expected in zip(sums, full, strict=True)
+            ):
+                self.sums = dict(booster=model.booster, count=count, base=base, values=sums)
+                self.incremental = True
+            else:
+                self.incremental = False
+        return full
+
+    def _predictions(self, model):
+        import cupy as cp
+
+        booster, count = model.booster, model.booster.num_boosted_rounds()
+        state = self.sums
+        if state is None or state["booster"] is not booster or state["count"] != count - 1:
+            return self._restart(model, count)
+        with cp.cuda.Device(0):
+            for value, leaf in zip(
+                state["values"], self._margins(booster, count - 1, count), strict=True
+            ):
+                value += leaf
+            state["count"] = count
+            predictions = [(state["base"] + value).get() for value in state["values"]]
+        if not all(np.isfinite(prediction).all() for prediction in predictions):
+            raise ValueError("La predicción de boosting no es finita o tiene otra forma")
+        first = (0, 1)
+        if not np.array_equal(predictions[0][: self.offsets[1]], self._full(model, first)):
+            self.sums = None
+            raise ValueError("La suma incremental de hojas no reproduce la predicción completa")
+        return predictions
+
+    def evaluate(self, model):
+        """MAE por sesión con las mismas predicciones que `session_validation`.
+
+        Los bloques residentes en la GPU ya son float32 contiguos y finitos, así que
+        se omiten la copia y la comprobación repetidas de cada ronda. Los errores se
+        acumulan bloque a bloque en el orden del lector.
+        """
+        sessions = SessionErrors()
+        for (start, stop), prediction in zip(self._parts(), self._predictions(model), strict=True):
+            for index in range(start, stop):
+                _, target, markets, moments = self.blocks[index]
+                begin, end = (self.offsets[i] - self.offsets[start] for i in (index, index + 1))
+                sessions.update(markets, moments, prediction[begin:end] - target)
+        result = sessions.summary()
+        if result["samples"] != self.expected_rows:
+            raise ValueError("La validación no recorre exactamente la población declarada")
+        return result["session_mae"]
+
+    def release(self):
+        self.release_device()
+        self.blocks = []
 
 
 class BoostingSelection:
@@ -144,6 +299,10 @@ class BoostingSelection:
 
 def session_validation(model, factory, *, expected_rows):
     """Evaluar bloques sin ajustar transformaciones ni conservar predicciones completas."""
+    if isinstance(factory, ResidentValidation):
+        if factory.expected_rows != expected_rows:
+            raise ValueError("La validación no recorre exactamente la población declarada")
+        return factory.evaluate(model)
     sessions = SessionErrors()
     for values, target, markets, moments in factory():
         sessions.update(markets, moments, model.predict(values) - target)

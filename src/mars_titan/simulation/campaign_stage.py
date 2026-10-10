@@ -23,6 +23,9 @@ seleccionada en su ancla, sobre el universo del ancla.
 Cada familia de brazos tiene un ejecutor y declara las capacidades del motor que necesita.
 `run` se detiene con el bloqueo de aprendizaje antes de abrir fuentes, crear salidas o
 lanzar binarios, y después exige todas las capacidades del plan antes de crear la salida.
+PPO y Double DQN se ejecutan con `mars-titan-ppo` y KLPO con `mars-titan-klpo`, ambos sobre
+las cintas reconstruidas de la etapa (`simulation.native_policy_runs`). KLPO solo consume
+oleadas completas: usa las que caben en el presupuesto de transiciones declarado.
 Cada trabajo confirma un recibo con sus cintas, su informe y un registro por coste de
 evaluación, también cuando el episodio falla. Los trabajos confirmados no se repiten y los
 pendientes se reanudan en su carpeta.
@@ -35,6 +38,7 @@ import json
 import math
 import os
 import re
+import subprocess
 from collections import Counter
 from contextlib import nullcontext
 from dataclasses import dataclass
@@ -50,7 +54,7 @@ from mars_titan.training import masked_campaign
 from mars_titan.training.campaign_plan import plan_campaign
 from mars_titan.training.learning_hold import LearningHoldError, require_learning_allowed
 
-from . import window_tapes
+from . import native_policy_runs, window_tapes
 from .policy_plan import (
     CARRY,
     FIT,
@@ -67,8 +71,8 @@ RECEIPT_KIND = "masked_rl_job"
 STATUSES = ("completed", "ruined", "failed")
 _HEX = re.compile(r"[a-f0-9]{64}")
 
-# Capacidades del motor que puede necesitar un ejecutor. Las que tienen sonda se comprueban
-# con el motor instalado. Las demás son piezas que todavía no existen.
+# Capacidades del motor que puede necesitar un ejecutor. Cada una se comprueba con el motor
+# instalado: la biblioteca de simulación o la identidad que declaran los binarios de política.
 CAPABILITIES = {
     "native_accounting": dict(
         probe="native_library",
@@ -82,18 +86,17 @@ CAPABILITIES = {
         ),
     ),
     "native_policy_reconstructed_tapes": dict(
-        probe=None,
+        probe="native_ppo",
         pending=(
-            "mars-titan-ppo solo admite fuentes sintéticas. Falta admitir cintas reconstruidas "
-            "con su auditoría walk-forward, ajustar con el presupuesto declarado, seleccionar "
-            "con el criterio de cartera y evaluar el estado elegido sin aprendizaje"
+            "Compilar mars-titan-ppo (preset native-ppo-release) con el esquema 4, que ajusta "
+            "sobre cintas reconstruidas, selecciona en validación y evalúa el estado elegido"
         ),
     ),
     "native_klpo_financial_runner": dict(
-        probe=None,
+        probe="native_klpo",
         pending=(
-            "KlpoLearningController no tiene orden ejecutable que recoja oleadas sobre cintas, "
-            "seleccione en validación y evalúe el estado elegido"
+            "Compilar mars-titan-klpo (preset native-ppo-release), que recoge oleadas KLPO "
+            "sobre cintas reconstruidas, selecciona en validación y evalúa el estado elegido"
         ),
     ),
 }
@@ -127,7 +130,11 @@ def _probe_tape():
 
 
 def probe_capabilities(library=None):
-    """Estado de cada capacidad con el motor instalado, sin leer datos ni lanzar binarios."""
+    """Estado de cada capacidad con el motor instalado, sin leer datos.
+
+    Los binarios de política solo se lanzan con `--capabilities`: declaran su nombre, sus
+    capacidades y su identidad de compilación, que se conserva en el informe.
+    """
     from .environment import FinancialEnv
     from .market_rules import china_a_share_instrument
     from .native_runtime import load_library
@@ -144,9 +151,16 @@ def probe_capabilities(library=None):
                 rules = {asset: china_a_share_instrument(asset) for asset in tape.assets}
                 FinancialEnv(tape, backend="native", native_library=library, instruments=rules)
                 reason = None
-        except (ValueError, OSError) as error:
+            elif entry["probe"] in native_policy_runs.BINARIES:
+                identity = native_policy_runs.probe_binary(entry["probe"], name)
+                reason = None
+        except (ValueError, OSError, subprocess.SubprocessError) as error:
             reason = f"{entry['pending']}: {error}"
         result[name] = dict(available=reason is None, reason=reason)
+        if entry["probe"] in native_policy_runs.BINARIES and reason is None:
+            result[name]["binary"] = {
+                key: identity[key] for key in ("binary", "binary_sha256", "native_build_sha256")
+            }
     return result
 
 
@@ -288,24 +302,17 @@ def unfit_report(stage, tapes):
     )
 
 
-def _pending_engine(engine):
-    def run(*_args, **_kwargs):
-        raise MissingCapability(f"El ejecutor {engine} sobre cintas reconstruidas no existe")
-
-    return run
-
-
 EXECUTORS = {
     "reference": dict(
         run=reference_executor("native"), requires=("native_accounting",), native=True
     ),
     "native_ppo": dict(
-        run=_pending_engine("native_ppo"),
+        run=native_policy_runs.NativePolicyExecutor("native_ppo"),
         requires=("native_policy_reconstructed_tapes",),
         native=True,
     ),
     "native_klpo": dict(
-        run=_pending_engine("native_klpo"),
+        run=native_policy_runs.NativePolicyExecutor("native_klpo"),
         requires=("native_policy_reconstructed_tapes", "native_klpo_financial_runner"),
         native=True,
     ),
@@ -374,11 +381,21 @@ def check_report(stage, job, report, tapes, anchor=None):
         )
     elif job["kind"] == FIT:
         selection, policy = report.get("selection"), report.get("policy")
+        budget = policies["budget"]
+        if job["engine"] == "native_klpo":
+            # KLPO consume oleadas completas: las que caben en el presupuesto, sin superarlo.
+            waves, wave = native_policy_runs.klpo_waves(
+                tapes.train, budget["environments"], budget["transitions"]
+            )
+            spent = waves > 0 and report.get("waves") == waves
+            spent = spent and 0 < report["transitions"] <= waves * wave
+        else:
+            spent = report["transitions"] == budget["transitions"]
         _require(
             isinstance(selection, dict)
             and selection.get("metric") == policies["selection"]["metric"]
             and selection.get("partition") == "validation"
-            and report["transitions"] == policies["budget"]["transitions"]
+            and spent
             and report["updates"] >= 0
             and isinstance(policy, dict)
             and set(policy) == {"id", "sha256"}
@@ -611,7 +628,8 @@ class _Tapes:
                 failure = dict(reason="universe_assets_excluded", excluded=report["excluded"])
                 atomic_json(failure_path, dict(identity=expected, failure=failure))
                 return folder, None, failure, bounds
-            write_tape(tape, folder)
+            # Una cinta china lleva las reglas de acciones A que exige el lector nativo.
+            write_tape(tape, folder, instruments=market_rules(tape, job["market"]))
         _require(
             tuple(tape.assets) == universe
             and [item["receipt_sha256"] for item in tape.identity["audit"]["walk_forward"]]
@@ -715,6 +733,8 @@ class _Stage:
             identity=identity,
             run=str((self.folder(job) / "run").relative_to(self.output)),
             transitions=report["transitions"],
+            # Oleadas KLPO consumidas. Los demás brazos no las tienen.
+            waves=report.get("waves"),
             updates=report["updates"],
             selection=report["selection"],
             policy=report["policy"],

@@ -11,6 +11,8 @@ from pathlib import Path
 
 import pytest
 
+from mars_titan.training.learning_hold import HOLD_ENV
+
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / "scripts/run_native_ppo.py"
 LOCK_NAME = "mars-titan-scientific-gpu.lock"
@@ -32,8 +34,8 @@ runpy.run_path(sys.argv[0], run_name='__main__')
 """
 
 
-def executable(path, body):
-    path.write_text(f"#!{sys.executable}\n{body}")
+def executable(path, body, shebang):
+    path.write_text(shebang + body)
     path.chmod(0o700)
     return path
 
@@ -50,7 +52,7 @@ def gpu_xml(free=7400, total=8188, *, compute=False):
 
 
 @pytest.fixture
-def setup(tmp_path, learning_doubles):
+def setup(tmp_path, learning_doubles, python_shebang):
     # El hijo es un arnés sin aprendizaje, así que el lanzador puede superar la protección.
     bin_dir, runtime = tmp_path / "bin", tmp_path / "runtime"
     bin_dir.mkdir()
@@ -60,6 +62,7 @@ def setup(tmp_path, learning_doubles):
         "import os\nfrom pathlib import Path\n"
         "Path(os.environ['GPU_PROBED']).write_text('probed')\n"
         "print(os.environ['GPU_XML'])\n",
+        python_shebang,
     )
     native = executable(
         bin_dir / "native ppo",
@@ -113,6 +116,7 @@ if mode in ('wait', 'ignore'):
         signal.pause()
 raise SystemExit(int(os.environ.get('NATIVE_EXIT', '0')))
 """,
+        python_shebang,
     )
     config = tmp_path / "parameters.json"
     config.write_text("{}")
@@ -361,7 +365,7 @@ def test_owned_legacy_lock_is_hardened_only_after_exclusive_admission(setup):
     assert lock.stat().st_mode & 0o777 == 0o600
 
 
-def test_gpu_pressure_pauses_the_owned_group_and_preserves_code_two(setup):
+def test_gpu_pressure_pauses_the_owned_group_and_preserves_code_two(setup, python_shebang):
     setup[1]["NATIVE_MODE"] = "wait"
     probe = Path(setup[1]["PATH"].split(os.pathsep)[0]) / "nvidia-smi"
     executable(
@@ -372,6 +376,7 @@ def test_gpu_pressure_pauses_the_owned_group_and_preserves_code_two(setup):
         "started = Path(os.environ['NATIVE_RECORD']).exists()\n"
         "xml = os.environ['GPU_XML']\n"
         "print(xml.replace('7400 MiB','512 MiB') if started else xml)\n",
+        python_shebang,
     )
     result = execute(setup, "--poll-seconds", "0.02", "--watch-state", str(setup[2] / "watch.json"))
     assert result.returncode == 2, result.stderr
@@ -382,7 +387,7 @@ def test_gpu_pressure_pauses_the_owned_group_and_preserves_code_two(setup):
     assert status["returncode"] == 2
 
 
-def test_watcher_does_not_classify_the_native_child_as_foreign_cuda(setup):
+def test_watcher_does_not_classify_the_native_child_as_foreign_cuda(setup, python_shebang):
     setup[1]["NATIVE_MODE"] = "wait"
     probe = Path(setup[1]["PATH"].split(os.pathsep)[0]) / "nvidia-smi"
     executable(
@@ -396,6 +401,7 @@ if path.exists():
     xml=xml.replace('<processes></processes>',f'<processes><process_info><pid>{child}</pid><type>C</type></process_info></processes>')
 print(xml)
 """,
+        python_shebang,
     )
     child = subprocess.Popen(
         command([*setup[0], "--poll-seconds", "0.02"]),
@@ -566,12 +572,20 @@ def test_killing_wrapper_ends_only_its_guarded_child_and_charges_uncertainty_onc
         unrelated.wait(timeout=5)
 
 
-@pytest.mark.parametrize("schema_version", [2, 3])
+CATALOGS = [
+    dict(schema_version=2),
+    dict(schema_version=3),
+    dict(schema_version=4),
+    dict(schema_version=1, kind="native_klpo_terminal"),
+]
+
+
+@pytest.mark.parametrize("document", CATALOGS)
 def test_adaptive_versions_forward_large_catalog_without_changing_version_one_limit(
-    setup, schema_version
+    setup, document
 ):
     config = Path(setup[0][setup[0].index("--config") + 1])
-    config.write_text(json.dumps(dict(schema_version=schema_version)))
+    config.write_text(json.dumps(document))
     additional = [value for index in range(255) for value in ("--train-tape", f"train-{index}")]
     result = execute(setup, "--diagnostic", *additional)
     assert result.returncode == 0, result.stderr
@@ -616,11 +630,11 @@ def test_active_budget_requests_pause_with_shutdown_time_reserved(setup):
     assert record(setup)["signal"] == signal.SIGTERM
 
 
-@pytest.mark.parametrize("schema_version", [2, 3])
-def test_audit_uses_the_same_launcher_without_training_arguments(setup, schema_version):
+@pytest.mark.parametrize("document", CATALOGS)
+def test_audit_uses_the_same_launcher_without_training_arguments(setup, document):
     args = setup[0]
     config = Path(args[args.index("--config") + 1])
-    config.write_text(json.dumps(dict(schema_version=schema_version)))
+    config.write_text(json.dumps(document))
     native = args[args.index("--binary") + 1]
     setup[0][:] = [
         *args[:4],
@@ -674,3 +688,48 @@ def test_relative_command_paths_do_not_reuse_watch_from_another_working_director
     )
     assert second.returncode == 1 and "identidad" in second.stderr
     assert Path(env["NATIVE_RECORD"]).read_bytes() == prior
+
+
+@pytest.mark.parametrize(
+    ("document", "blocked"),
+    [
+        (dict(schema_version=2), False),
+        (dict(schema_version=4), True),
+        (dict(schema_version=1, kind="native_klpo_terminal"), True),
+    ],
+)
+def test_audits_on_reconstructed_tapes_stop_on_the_hold_before_launching(setup, document, blocked):
+    args, env, directory = setup
+    config = Path(args[args.index("--config") + 1])
+    config.write_text(json.dumps(document))
+    hold = directory / "blocking-hold.json"
+    hold.write_text(json.dumps({"training_allowed": False}))
+    env[HOLD_ENV] = str(hold)
+    setup[0][:] = [
+        *args[:4],
+        "--binary",
+        args[args.index("--binary") + 1],
+        "--audit-run",
+        str(directory / "frozen-run"),
+        "--audit-tape",
+        str(directory / "audit-a"),
+    ]
+    result = execute(setup, "--diagnostic")
+    # La auditoría sintética sigue sin bloqueo. Evaluar sobre cintas reales es un uso
+    # científico del histórico y se detiene antes de lanzar el binario.
+    assert (result.returncode != 0) is blocked, result.stderr
+    assert Path(env["NATIVE_RECORD"]).exists() is not blocked
+    if blocked:
+        assert "la evaluación nativa sobre cintas reconstruidas" in result.stderr
+
+
+def test_klpo_training_names_its_algorithm_in_the_hold(setup):
+    args, env, directory = setup
+    config = Path(args[args.index("--config") + 1])
+    config.write_text(json.dumps(dict(schema_version=1, kind="native_klpo_terminal")))
+    hold = directory / "blocking-hold.json"
+    hold.write_text(json.dumps({"training_allowed": False}))
+    env[HOLD_ENV] = str(hold)
+    result = execute(setup, "--diagnostic")
+    assert result.returncode != 0 and "el entrenamiento KLPO nativo" in result.stderr
+    assert not Path(env["NATIVE_RECORD"]).exists()

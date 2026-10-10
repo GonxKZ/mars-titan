@@ -5,8 +5,12 @@ observación equivalentes, a `MarsTitanInference`. Las predicciones dependen del
 retenido, porque llegan 16 etiquetas a un banco de capacidad 4 y el lector elige dos
 vecinos. Coincidir bit a bit acredita el mismo orden de evento, la misma admisión y los
 mismos IDs que la sesión, también con M2, con K = 2 en sus dos modos de selección y con
-la retención con centros fijos que usa M en el factorial CM-v1.
+la retención con centros fijos que usa M en el factorial CM-v1. M3 usa una variante de los
+flujos con noticias, fundamentales y últimos precios distintos, así que sus tres componentes
+cambian entre flujos e instantes.
 """
+
+import math
 
 import numpy as np
 import pytest
@@ -24,13 +28,57 @@ from mars_titan.data.input_policy import MODALITIES
 from mars_titan.memory.financial_observations import ObservationEvent
 from mars_titan.memory.financial_session import FinancialPhase
 from mars_titan.memory.retention_bank import RetentionConfig
-from mars_titan.memory.write_policy import MatureErrorConfig
+from mars_titan.memory.write_policy import CompositeScoreConfig, MatureErrorConfig
+from mars_titan.memory.write_scores import WriteScalers
 from mars_titan.models.titans.episodic_readout import EpisodicReadout, EpisodicReadoutConfig
 from mars_titan.models.titans.financial import FinancialConfig, FinancialPredictor
+from mars_titan.models.titans.financial_inputs import validated_cpu_batch
 from mars_titan.models.titans.frozen_financial import FrozenFinancialConsumer
 from mars_titan.training import mars_titan_run as mt
 
 PHASE = FinancialPhase("validation", moment(125), moment(125), moment(200), moment(201))
+# Escalas manuales, como si procedieran del tramo de entrenamiento de la ventana.
+SCALERS = WriteScalers(
+    source_sha256="c" * 64,
+    dataset_sha256="d" * 64,
+    decision_start=1,
+    decision_end=2,
+    decisions=64,
+    labels=64,
+    filing_decisions=32,
+    news_decisions=16,
+    error_median=0.25,
+    anomaly_median=1.0,
+    filing_age_median=6.0,
+    news_share=0.25,
+)
+
+
+def varied(source):
+    """Flujos con noticias en 1 y 3, fundamentales en 2 y 3 y un último precio propio."""
+    batches = {}
+    for index, group in source["batches"].items():
+        batches[index] = []
+        for position, batch in enumerate(group):
+            inputs = {name: np.array(values) for name, values in batch.inputs.items()}
+            presence = np.array(batch.presence)
+            inputs["prices"][:, -1, :4] += np.float32(0.004 * position)
+            if position in (1, 3):
+                inputs["news"][:] = (0.6, 0.8)
+                presence[:, 1] = True
+            if position in (2, 3):
+                age = 2.0 * (index - 124) + position
+                inputs["fundamentals"][:] = (0.5, 1.0, math.log1p(age))
+                presence[:, 3] = True
+            raw = dict(
+                inputs=inputs,
+                presence=presence,
+                sample_ids=list(batch.sample_ids),
+                prediction_at=np.array(batch.prediction_at, dtype="datetime64[us]"),
+                input_available_at=np.array(batch.input_available_at, dtype="datetime64[us]"),
+            )
+            batches[index].append(validated_cpu_batch(raw, source["spec"]))
+    return dict(source, batches=batches)
 
 
 def instants(batches, name):
@@ -87,15 +135,21 @@ def models(source, refinements, episodes):
         ("m1", 2, "first_read", "reservoir"),
         ("m1", 2, "per_step", "reservoir"),
         ("m1", 1, "per_step", "anchored"),
+        ("m3", 1, "per_step", "reservoir"),
+        ("m3", 2, "first_read", "reservoir"),
     ],
 )
 def test_chronological_pass_emits_exactly_what_the_session_emits(
     shared_native, four_flow_source, tmp_path, admission, refinements, episodes, policy
 ):
+    if admission == "m3":
+        four_flow_source = varied(four_flow_source)
     predictor, readout = models(four_flow_source, refinements, episodes)
     retention = (
         MatureErrorConfig(capacity=4)
         if admission == "m2"
+        else CompositeScoreConfig(SCALERS, capacity=4)
+        if admission == "m3"
         else RetentionConfig(policy=policy, capacity=4, seed=73, frontier=1)
     )
     settings = options(
@@ -130,8 +184,16 @@ def test_chronological_pass_emits_exactly_what_the_session_emits(
     assert [i for ids in admitted for i in ids] == list(range(1, 17))
     retained, episodes_kept = session["bank"]
     assert 1 <= len(retained) <= 4 and set(retained) <= set(range(1, 17))
-    # El error M2 de la sesión es el de la predicción emitida, como en el recorrido.
-    if admission == "m2":
+    # El error M2 y M3 de la sesión es el de la predicción emitida, como en el recorrido.
+    if admission in ("m2", "m3"):
         for identifier in retained:
             episode = episodes_kept[identifier]
             assert episode["error"] == episode["label"] - episode["issued_prediction"]
+    if admission == "m3":
+        final = [e for e in inference.audit if e[0] == "admit"][-1]
+        indices, components = final[5], final[6]
+        assert {i for ids in indices.values() for i in ids} == set(retained)
+        # Los tres componentes varían: la paridad no se reduce a ordenar por el error.
+        rows = [row for e in inference.audit if e[0] == "admit" for row in e[6]]
+        assert len({row[2] for row in rows}) > 2 and len({row[3] for row in rows}) > 2
+        assert {row[5] for row in rows} == {0, 1, 2, 3} and components

@@ -81,3 +81,30 @@ def test_no_sessions_before_cutoff_preserves_empty_reference():
         residual_targets(asset, market, clock, cutoff="2020-12-31"),
         check_exact=True,
     )
+
+
+def _dictionary_sessions(frame, tmp_path, name):
+    """Leer el marco como los precios preparados: sesión guardada como diccionario en Parquet."""
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+
+    table = pa.Table.from_pandas(frame, preserve_index=False)
+    position = table.schema.get_field_index("session")
+    table = table.set_column(position, "session", table["session"].dictionary_encode())
+    pq.write_table(table, tmp_path / f"{name}.parquet")
+    loaded = pq.read_table(tmp_path / f"{name}.parquet").to_pandas()
+    assert isinstance(loaded.session.dtype, pd.CategoricalDtype)
+    assert not loaded.session.cat.ordered
+    return loaded
+
+
+@pytest.mark.parametrize("implementation", ["reference", "array"])
+def test_dictionary_encoded_sessions_give_the_same_targets(tmp_path, implementation):
+    clock, asset, market = fixture_prices()
+    asset.loc[300, "close"] += 2.0
+    encoded_asset = _dictionary_sessions(asset, tmp_path, "asset")
+    encoded_market = _dictionary_sessions(market, tmp_path, "market")
+    function = residual_targets if implementation == "reference" else calculate
+    expected = function(asset, market, clock, cutoff="2023-12-31")
+    actual = function(encoded_asset, encoded_market, clock, cutoff="2023-12-31")
+    pd.testing.assert_frame_equal(actual, expected, check_exact=True)

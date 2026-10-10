@@ -7,10 +7,35 @@ import pandas as pd
 
 from .temporal import MarketClock
 
+# Las series ajustadas de la fuente redondean OHLC por separado. Un cierre puede superar al
+# máximo en una unidad de la última cifra. Por encima de este límite ya no se trata de
+# redondeo, sino de una incoherencia que debe seguir excluida.
+MAX_ORDERING_RTOL = 1e-6
+
+
+def check_ordering_rtol(value: float) -> float:
+    if type(value) is not float or not 0.0 <= value <= MAX_ORDERING_RTOL:
+        raise ValueError(
+            f"La tolerancia de orden OHLC debe ser un float entre 0 y {MAX_ORDERING_RTOL}"
+        )
+    return value
+
 
 def read_prices(
-    path: Path, clock: MarketClock, *, include_details: bool = False
+    path: Path,
+    clock: MarketClock,
+    *,
+    include_details: bool = False,
+    ordering_rtol: float = 0.0,
 ) -> tuple[pd.DataFrame, dict]:
+    """Leer OHLCV sin completar sesiones.
+
+    Con `ordering_rtol` igual a cero se conserva la auditoría estricta. Un valor positivo admite
+    filas cuyo único defecto es un desorden OHLC menor que esa fracción del máximo de la fila.
+    Esas filas conservan apertura, cierre y volumen. El máximo y el mínimo pasan a ser la
+    envolvente de los cuatro precios y la auditoría registra los valores originales.
+    """
+    check_ordering_rtol(ordering_rtol)
     frame = pd.read_csv(path, dtype=dict.fromkeys(["Date", "Dividends", "Stock Splits"], str))
     required = ["Open", "High", "Low", "Close", "Volume"]
     if not {"Date", *required} <= set(frame.columns):
@@ -26,24 +51,25 @@ def read_prices(
     duplicates = frame["session"].duplicated(keep=False) & valid_date
     finite = np.isfinite(values).all(axis=1)
     o, h, lo, c, v = (values[name] for name in required)
-    invalid = (
-        ~finite
-        | (o <= 0)
-        | (lo <= 0)
-        | (c <= 0)
-        | (h < lo)
-        | (h < o)
-        | (h < c)
-        | (lo > o)
-        | (lo > c)
-        | (v < 0)
-    )
+    broken = ~finite | (o <= 0) | (lo <= 0) | (c <= 0) | (v < 0)
+    disordered = (h < lo) | (h < o) | (h < c) | (lo > o) | (lo > c)
+    invalid = broken | disordered
+    if ordering_rtol:
+        quotes = values[required[:4]]
+        top, bottom = quotes.max(axis=1), quotes.min(axis=1)
+        excess = np.maximum(top - h, lo - bottom) / top
+        rounded = disordered & ~broken & (excess <= ordering_rtol)
+        invalid &= ~rounded
     session_values = {
         day.isoformat(): cutoff for day, cutoff in zip(clock.days, clock.decisions, strict=True)
     }
     not_session = ~frame["session"].isin(session_values) & valid_date
     excluded = duplicates | invalid | not_session | ~valid_date
     result = values.loc[~excluded].rename(columns=str.lower).copy()
+    if ordering_rtol:
+        rounded &= ~excluded
+        result.loc[rounded[rounded].index, "high"] = top[rounded]
+        result.loc[rounded[rounded].index, "low"] = bottom[rounded]
     result["session"] = frame.loc[~excluded, "session"]
     result["available_at"] = result["session"].map(session_values)
     result = result.sort_values("session").reset_index(drop=True)
@@ -61,6 +87,12 @@ def read_prices(
         "adjustments": "as_distributed_retrospective_adjustments_not_reconstructed",
         "reason_counts_overlap": True,
     }
+    if ordering_rtol:
+        audit["ordering_rtol"] = ordering_rtol
+        audit["ordering_rounded_rows"] = int(rounded.sum())
+        audit["ordering_max_relative_excess"] = (
+            float(excess[rounded].max()) if rounded.any() else 0.0
+        )
     if include_details:
         reasons = {
             "duplicate_session": duplicates,
@@ -82,6 +114,17 @@ def read_prices(
             "corporate_actions": _corporate_actions(frame),
             "coverage": _coverage(frame, valid_date, excluded, session_values),
         }
+        if ordering_rtol:
+            audit["details"]["ordering_roundings"] = [
+                {
+                    "source_row": int(index) + 1,
+                    "source_date": frame.at[index, "Date"],
+                    "source_high": float(h.at[index]),
+                    "source_low": float(lo.at[index]),
+                    "relative_excess": float(excess.at[index]),
+                }
+                for index in frame.index[rounded]
+            ]
     return result, audit
 
 

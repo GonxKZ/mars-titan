@@ -5,6 +5,7 @@
 #include <limits>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 // Registros fijos, sin actor, mercado simulado ni optimizador.
 // NOLINTBEGIN(cppcoreguidelines-avoid-magic-numbers)
@@ -191,6 +192,41 @@ void maximum_population_and_history_are_checked_before_payload() {
     rejected([&] { validate_klpo_batch(value, false); },
              "Se cortó o admitió una historia demasiado larga");
 }
+// El colector valida en cada paso solo lo añadido. Debe decidir igual que la validación completa.
+void appended_steps_match_the_complete_validation() {
+    const auto complete = batch();
+    for (std::size_t prefix = 0; prefix <= complete.episodes[0].steps.size(); ++prefix) {
+        auto value = complete;
+        value.episodes[0].steps.resize(prefix);
+        for (std::size_t validated = 0; validated <= prefix; ++validated) {
+            const std::vector<std::size_t> previous{validated};
+            validate_klpo_batch(value, false, previous);
+        }
+    }
+    // Un paso añadido tras un cierre ya validado se rechaza aunque el cierre no se repita.
+    auto closed = complete;
+    closed.episodes[0].steps[0].truncated = true;
+    closed.episodes[0].spec.close_times = {10, 20, 30, 40};
+    closed.episodes[0].steps.push_back(step(2, true, 1., true));
+    rejected([&] { validate_klpo_batch(closed, false, std::vector<std::size_t>{1}); },
+             "Se añadió un paso tras un cierre ya validado");
+    rejected([&] { validate_klpo_batch(closed, false, std::vector<std::size_t>{2}); },
+             "Se aceptó un paso posterior al cierre validado");
+    // Un paso nuevo corrupto falla. Un recuento ajeno o mayor que el registro también.
+    auto corrupt = complete;
+    corrupt.episodes[0].steps.back().cursor = 5;
+    rejected([&] { validate_klpo_batch(corrupt, false, std::vector<std::size_t>{1}); },
+             "Se aceptó un paso añadido corrupto");
+    rejected([&] { validate_klpo_batch(complete, false, std::vector<std::size_t>{3}); },
+             "Se validaron más pasos de los registrados");
+    rejected([&] { validate_klpo_batch(complete, false, std::vector<std::size_t>{0, 0}); },
+             "Se aceptó un recuento de otra oleada");
+    // Cabecera y presupuesto se comprueban aunque no se repita ningún paso.
+    auto budget = complete;
+    budget.max_bytes = 1;
+    rejected([&] { validate_klpo_batch(budget, false, std::vector<std::size_t>{2}); },
+             "Se ignoró el presupuesto en la validación incremental");
+}
 } // namespace
 
 int main() {
@@ -198,6 +234,7 @@ int main() {
         forced_steps_keep_real_reward_and_clock();
         incomplete_and_unvalued_batches_are_not_objectives();
         invalid_records_and_budgets_fail();
+        appended_steps_match_the_complete_validation();
         codec_roundtrips_exactly_and_rejects_damage();
         maximum_population_and_history_are_checked_before_payload();
         std::cout << "Registro terminal contrastado sin aprendizaje\n";

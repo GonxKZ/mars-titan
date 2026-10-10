@@ -1,0 +1,404 @@
+{
+  "schema_version": 1,
+  "recorded_at_utc": "2026-10-09T16:11:21.329860+00:00",
+  "kind": "prepared_and_verified_campaign_a_views",
+  "scope": "Vistas walk-forward v2 de la campaña A. Sin modelos ni aprendizaje.",
+  "input_policy": "historical_masked_2000_v1",
+  "campaign_config": "configs/baselines/historical-masked-campaign-a.json",
+  "campaign_config_sha256": "691581aeded25d54e0cb376cbe0c01b47aaad83ddf9c6e8c15c9d6c74cbce021",
+  "targets_manifest_sha256": "528dd13d1064caa98437676230dbf884cad062cde8b29db58004bd928637617b",
+  "runtime_commit": "7a9e93e35fa064fb55f9aa727382904235e3128a",
+  "preparation": {
+    "entry": "cuerpo del bucle de training.masked_campaign.prepare_views, un proceso de un hilo por ámbito",
+    "scopes": {
+      "US": {
+        "windows": 19,
+        "report_sha256": "0a5da671eb3c8881305db3879951904698333d0ce3c0ec2959f2f5f7e59e3a80",
+        "parent_sha256": "d1551de7608fc5342ec445113587c17e0672feee44d7656a9ab8d7d11ebd12b2",
+        "counts_total": {
+          "train": 108111890,
+          "validation": 6084968,
+          "calibration": 3087269,
+          "evaluation": 12826460
+        },
+        "purged_by_boundary_total": {
+          "train": 47587,
+          "validation": 49095,
+          "calibration": 49734,
+          "evaluation": 48433
+        },
+        "counts_by_window": [
+          {
+            "train": 1047220,
+            "validation": 159831,
+            "calibration": 82500,
+            "evaluation": 351026
+          },
+          {
+            "train": 1373725,
+            "validation": 177518,
+            "calibration": 90383,
+            "evaluation": 379845
+          },
+          {
+            "train": 1737010,
+            "validation": 189048,
+            "calibration": 96663,
+            "evaluation": 413405
+          },
+          {
+            "train": 2124328,
+            "validation": 205177,
+            "calibration": 107960,
+            "evaluation": 451569
+          },
+          {
+            "train": 2547759,
+            "validation": 230343,
+            "calibration": 112361,
+            "evaluation": 475747
+          },
+          {
+            "train": 3005665,
+            "validation": 238867,
+            "calibration": 123252,
+            "evaluation": 502951
+          },
+          {
+            "train": 3491718,
+            "validation": 251005,
+            "calibration": 129778,
+            "evaluation": 536815
+          },
+          {
+            "train": 4006035,
+            "validation": 270539,
+            "calibration": 134561,
+            "evaluation": 558205
+          },
+          {
+            "train": 4551605,
+            "validation": 280053,
+            "calibration": 139673,
+            "evaluation": 590148
+          },
+          {
+            "train": 5113609,
+            "validation": 298520,
+            "calibration": 151383,
+            "evaluation": 635880
+          },
+          {
+            "train": 5717247,
+            "validation": 319746,
+            "calibration": 164450,
+            "evaluation": 690027
+          },
+          {
+            "train": 6368893,
+            "validation": 347653,
+            "calibration": 177158,
+            "evaluation": 737095
+          },
+          {
+            "train": 7074992,
+            "validation": 372332,
+            "calibration": 185903,
+            "evaluation": 771198
+          },
+          {
+            "train": 7826630,
+            "validation": 385496,
+            "calibration": 195052,
+            "evaluation": 821962
+          },
+          {
+            "train": 8607484,
+            "validation": 414945,
+            "calibration": 209484,
+            "evaluation": 890629
+          },
+          {
+            "train": 9448837,
+            "validation": 446733,
+            "calibration": 229872,
+            "evaluation": 962580
+          },
+          {
+            "train": 10361800,
+            "validation": 481994,
+            "calibration": 247360,
+            "evaluation": 1008423
+          },
+          {
+            "train": 11343957,
+            "validation": 504255,
+            "calibration": 254913,
+            "evaluation": 1021782
+          },
+          {
+            "train": 12363376,
+            "validation": 510913,
+            "calibration": 254563,
+            "evaluation": 1027173
+          }
+        ],
+        "wall_clock_seconds": 2995.501,
+        "systemd_memory_peak": "10G",
+        "exit_code": 0,
+        "bytes_apparent": 6471744549,
+        "bytes_allocated": 6636892160,
+        "files": 79782,
+        "protocol_sha256": "c4addc74c5ac5efd76993263b31bdc49e9e9a12f745c84368f7cead35e2d6648",
+        "internal_elapsed_seconds": 2887.4,
+        "recovered_annual_candidates": 4120
+      },
+      "CN": {
+        "windows": 13,
+        "report_sha256": "0dbd5e930e98033a9c72d5dd3d8dddbcee8152ba6e04a60b7ca0b32821cd04ab",
+        "parent_sha256": "de5b18d101eeadc87352d79d50f353fa32178ee4e95a6af8b4f1642b49ed951b",
+        "counts_total": {
+          "train": 16903888,
+          "validation": 1015019,
+          "calibration": 525177,
+          "evaluation": 2105339
+        },
+        "purged_by_boundary_total": {
+          "train": 8370,
+          "validation": 8751,
+          "calibration": 8861,
+          "evaluation": 8318
+        },
+        "counts_by_window": [
+          {
+            "train": 410342,
+            "validation": 61334,
+            "calibration": 31736,
+            "evaluation": 136641
+          },
+          {
+            "train": 536372,
+            "validation": 69815,
+            "calibration": 34292,
+            "evaluation": 144664
+          },
+          {
+            "train": 675347,
+            "validation": 73081,
+            "calibration": 37219,
+            "evaluation": 147402
+          },
+          {
+            "train": 821856,
+            "validation": 74341,
+            "calibration": 37443,
+            "evaluation": 152275
+          },
+          {
+            "train": 970941,
+            "validation": 77702,
+            "calibration": 37887,
+            "evaluation": 151339
+          },
+          {
+            "train": 1123269,
+            "validation": 76939,
+            "calibration": 38317,
+            "evaluation": 160751
+          },
+          {
+            "train": 1278124,
+            "validation": 82141,
+            "calibration": 39570,
+            "evaluation": 168344
+          },
+          {
+            "train": 1441209,
+            "validation": 85643,
+            "calibration": 41927,
+            "evaluation": 172289
+          },
+          {
+            "train": 1611863,
+            "validation": 87834,
+            "calibration": 42045,
+            "evaluation": 115056
+          },
+          {
+            "train": 1772538,
+            "validation": 40605,
+            "calibration": 44558,
+            "evaluation": 179831
+          },
+          {
+            "train": 1901823,
+            "validation": 90932,
+            "calibration": 45257,
+            "evaluation": 189504
+          },
+          {
+            "train": 2084223,
+            "validation": 96475,
+            "calibration": 47512,
+            "evaluation": 192594
+          },
+          {
+            "train": 2275981,
+            "validation": 98177,
+            "calibration": 47414,
+            "evaluation": 194649
+          }
+        ],
+        "wall_clock_seconds": 968.945,
+        "systemd_memory_peak": "4.8G",
+        "exit_code": 0,
+        "bytes_apparent": 853294371,
+        "bytes_allocated": 874455040,
+        "files": 10544,
+        "protocol_sha256": "9be0cd604c4056b598ff3c8b19869f5326f4afefddce8e4791f06ed48efb186a",
+        "internal_elapsed_seconds": 861.2,
+        "recovered_annual_candidates": 806
+      },
+      "US+CN": {
+        "windows": 13,
+        "report_sha256": "c06729fc4d39ba9207ede4e35dcbf5e5a9b65d75d7f992a6972f47e7730b9b76",
+        "parent_sha256": "528dd13d1064caa98437676230dbf884cad062cde8b29db58004bd928637617b",
+        "counts_total": {
+          "train": 113180071,
+          "validation": 5899203,
+          "calibration": 2999327,
+          "evaluation": 12357256
+        },
+        "purged_by_boundary_total": {
+          "train": 46559,
+          "validation": 48096,
+          "calibration": 48763,
+          "evaluation": 46139
+        },
+        "counts_by_window": [
+          {
+            "train": 3902060,
+            "validation": 312339,
+            "calibration": 161514,
+            "evaluation": 673456
+          },
+          {
+            "train": 4542407,
+            "validation": 340354,
+            "calibration": 168853,
+            "evaluation": 702869
+          },
+          {
+            "train": 5226952,
+            "validation": 353134,
+            "calibration": 176892,
+            "evaluation": 737550
+          },
+          {
+            "train": 5935465,
+            "validation": 372861,
+            "calibration": 188826,
+            "evaluation": 788155
+          },
+          {
+            "train": 6688188,
+            "validation": 397448,
+            "calibration": 202337,
+            "evaluation": 841366
+          },
+          {
+            "train": 7492162,
+            "validation": 424592,
+            "calibration": 215475,
+            "evaluation": 897846
+          },
+          {
+            "train": 8353116,
+            "validation": 454473,
+            "calibration": 225473,
+            "evaluation": 939542
+          },
+          {
+            "train": 9267839,
+            "validation": 471139,
+            "calibration": 236979,
+            "evaluation": 994251
+          },
+          {
+            "train": 10219347,
+            "validation": 502779,
+            "calibration": 251529,
+            "evaluation": 1005685
+          },
+          {
+            "train": 11221375,
+            "validation": 487338,
+            "calibration": 274430,
+            "evaluation": 1142411
+          },
+          {
+            "train": 12263623,
+            "validation": 572926,
+            "calibration": 292617,
+            "evaluation": 1197927
+          },
+          {
+            "train": 13428180,
+            "validation": 600730,
+            "calibration": 302425,
+            "evaluation": 1214376
+          },
+          {
+            "train": 14639357,
+            "validation": 609090,
+            "calibration": 301977,
+            "evaluation": 1221822
+          }
+        ],
+        "wall_clock_seconds": 3127.211,
+        "systemd_memory_peak": "10G",
+        "exit_code": 0,
+        "bytes_apparent": 5617389762,
+        "bytes_allocated": 5751394304,
+        "files": 65148
+      }
+    },
+    "parents_bytes_apparent": 6162642,
+    "parents_bytes_allocated": 6164480,
+    "bytes_apparent": 12948591324,
+    "bytes_allocated": 13268905984,
+    "disk_usage_bytes_with_directories": 13909344256
+  },
+  "official_validation": {
+    "command": "scripts/run_masked_campaign.py prepare --campaign configs/baselines/historical-masked-campaign-a.json --parent targets-v3/manifest.json",
+    "exit_code": 0,
+    "wall_clock_seconds": 6.91
+  },
+  "independent_verification": {
+    "checked_at_utc": "2026-10-09T15:57:13.940878+00:00",
+    "verifier_sha256": "743ffaa6c3ab07ab30e923106c25290dee6755d8b57ea96cf371335e889aebd7",
+    "receipt_sha256": "2e7d6325a4cca135023903e5554fff3ca5326fe05e56d23e31db26ce804993e8",
+    "assets": 5008,
+    "windows": {
+      "US": 19,
+      "CN": 13,
+      "US+CN": 13
+    },
+    "workers": 5,
+    "wall_clock_seconds": 485.9,
+    "checks": [
+      "fronteras de cada ventana recalculadas desde los protocolos sin el código que preparó las vistas",
+      "partición por instante de decisión y purga por intervalo de etiqueta",
+      "ningún objetivo fuera de ventana, ninguna fila ni maduración desde 2024 y maduración posterior a la decisión",
+      "objetivos idénticos bit a bit a targets-v3",
+      "ninguna fila elegible perdida",
+      "recuentos iguales a los manifiestos de cada ventana",
+      "activos de las vistas iguales a los de targets-v3",
+      "US+CN idéntica a las vistas por mercado con las mismas fronteras"
+    ],
+    "exit_code": 0
+  },
+  "training_executed": false,
+  "final_test_opened": false,
+  "campaign_launched": false
+}

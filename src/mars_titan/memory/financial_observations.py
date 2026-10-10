@@ -24,6 +24,7 @@ from mars_titan.training.corpus_inputs import (
     _fill_batch,
     _historical_times,
     _new_batch,
+    _populated_groups,
     _price_contexts,
 )
 from mars_titan.training.partition_contract import LEGACY_BOUNDS
@@ -100,7 +101,7 @@ def _records(dataset, phase):
             if file.metadata.num_rows > 1_000_000:
                 raise ValueError("Un activo supera el presupuesto de muestras")
             previous = None
-            for group in range(file.num_row_groups):
+            for group in _populated_groups(file):
                 stamps = _historical_times(
                     file.read_row_group(group, columns=["prediction_at"], use_threads=False)
                 )

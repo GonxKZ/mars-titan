@@ -7,7 +7,9 @@ de trabajo de cada predicción se descarta después de usarla.
 
 Con el control local C de CM-v1, el modo disabled identifica la B del factorial (SDPA
 Math y la misma base) y el modo penalty suma al objetivo del tramo la media de los
-términos de sus grupos lógicos medidos, sin añadir pasos. El diagnóstico se rechaza.
+términos de sus grupos lógicos medidos, sin añadir pasos. Con `accumulation_rows`, cada
+bloque de flujos añade además sus términos de C divididos por el número de grupos del
+tramo. El diagnóstico se rechaza.
 """
 
 import hashlib
@@ -283,11 +285,13 @@ class _Pass:
     targets: list = field(default_factory=list)
     used: list = field(default_factory=list)
     instants: int = 0
-    # Con acumulación: lotes del tramo en orden y estado de cada flujo al empezarlo.
-    # None indica un flujo nuevo dentro del tramo. Se vacían en cada actualización.
+    # Con acumulación: lotes del tramo en orden, con el plan de C de su evento, y estado de
+    # cada flujo al empezarlo. None indica un flujo nuevo dentro del tramo. Se vacían en
+    # cada actualización.
     segment: list = field(default_factory=list)
     starts: dict = field(default_factory=dict)
-    # Con la penalización C: un término con grafo por grupo lógico medido del tramo.
+    # Con la penalización C, un elemento por grupo lógico medido del tramo: su término con
+    # grafo o, con acumulación, la tupla de sus flujos medidos, que la repetición recalcula.
     penalties: list = field(default_factory=list)
 
 
@@ -307,8 +311,6 @@ class ChronologicalInference:
             raise ValueError("El diagnóstico C pertenece a la sesión congelada, no al ajuste")
         # Solo la penalización necesita un plan de C por evento. disabled conserva SDPA Math.
         self.penalized = control is not None and control.config.mode == "penalty"
-        if self.penalized and recipe.accumulation_rows is not None:
-            raise ValueError("La penalización C no admite todavía la acumulación por bloques")
         self.quantiles = predictor.config.head == QUANTILE_HEAD
         if self.quantiles != (recipe.loss == PINBALL):
             raise ValueError("La cabeza de cuantiles se ajusta solo y siempre con pinball")
@@ -352,12 +354,15 @@ class ChronologicalInference:
                             run.starts[flow] = None
                         else:
                             ((_, run.starts[flow]),) = _split(run.flows[flow], detach=True)
-                run.segment.append(batch)
+                run.segment.append((batch, plan))
             state = _stack([run.flows[flow] for flow in batch.flow_ids])
             with torch.set_grad_enabled(grad):
                 prepared = predictor.prepare(batch, state, differentiable=grad, **plan)
-            if prepared.local_control is not None:
-                measured.append(prepared.local_control)
+            result = prepared.local_control
+            if result is not None:
+                # Con acumulación el término emitido solo cuenta: su grafo retendría el lote.
+                term = result.penalty.detach() if accumulate else result.penalty
+                measured.append((term, result.flow_ids))
             run.flows.update(_split(prepared.next_state, detach=accumulate))
             size = len(batch.flow_ids)
             run.counters["observations"] += size
@@ -382,7 +387,7 @@ class ChronologicalInference:
                     self.audit.append(("prediction", source.phase.partition, flow, at, values[row]))
             run.counters["predictions"] += size
         if measured:
-            self._penalty(run, measured, keep=grad)
+            self._penalty(run, measured, keep=grad, replay=accumulate)
         if event.inputs and not warmup:
             run.instants += 1
 
@@ -414,19 +419,25 @@ class ChronologicalInference:
         return dict(control_selection=selection, control_context_id=context)
 
     @staticmethod
-    def _penalty(run, measured, *, keep):
-        """Sumar los bloques medidos del grupo. Su suma es la media declarada del grupo."""
-        total = sum(result.penalty for result in measured)
+    def _penalty(run, measured, *, keep, replay=False):
+        """Sumar los bloques `(término, flujos)` del grupo. Su suma es la media declarada.
+
+        Con `replay` el tramo conserva los flujos medidos del grupo en lugar del término,
+        que `_replay` vuelve a calcular con grafo en el bloque de cada flujo.
+        """
+        total = sum(term for term, _ in measured)
         counters = run.counters
         for key in ("control_groups", "control_groups_kept", "control_flows"):
             counters.setdefault(key, 0)
         counters.setdefault("control_penalty_sum", 0.0)
         counters["control_groups"] += 1
-        counters["control_flows"] += sum(len(result.flow_ids) for result in measured)
+        counters["control_flows"] += sum(len(flows) for _, flows in measured)
         counters["control_penalty_sum"] += float(total.detach())
         if keep:
             counters["control_groups_kept"] += 1
-            run.penalties.append(total)
+            run.penalties.append(
+                tuple(flow for _, flows in measured for flow in flows) if replay else total
+            )
 
     def _anchor_frozen(self, states):
         """Sin escrituras, la memoria de cada flujo es M0. Cada tramo lee el M0 vigente."""
@@ -637,6 +648,11 @@ class ChronologicalTrainer(ChronologicalInference):
                 group="chronological_decision_event_v1",
                 penalty_without_labels="discarded_without_step",
             )
+            if self.penalized and recipe.accumulation_rows is not None:
+                # Combinación nueva: no altera la identidad de ninguna ejecución anterior.
+                self.identity["local_control"]["penalty_accumulation"] = (
+                    "measured_flows_replayed_in_their_flow_block_over_segment_groups_v1"
+                )
         self.run_id = hashlib.sha256(canonical(self.identity).encode()).hexdigest()
         self.global_step, self.selection, self.history, self.train_metrics = 0, None, [], None
 
@@ -675,35 +691,40 @@ class ChronologicalTrainer(ChronologicalInference):
         objective = loss
         if run.penalties:
             objective = loss + torch.stack(run.penalties).mean()
-            run.counters["control_groups_in_objective"] = run.counters.get(
-                "control_groups_in_objective", 0
-            ) + len(run.penalties)
         if not torch.isfinite(objective).item():
             raise ValueError("La pérdida del tramo no es finita")
         objective.backward()
         return loss
 
     def _replay(self, run):
-        """Recalcular el tramo por bloques de flujos y acumular el gradiente de la misma media.
+        """Recalcular el tramo por bloques de flujos y acumular el gradiente del mismo objetivo.
 
         Los flujos son independientes dados los parámetros, que no cambian dentro del tramo.
         Cada bloque parte del estado de sus flujos al empezar el tramo, recorre sus lotes en
         el orden original y pondera su pérdida media por su fracción de etiquetas. La suma
         de los bloques es la pérdida media del tramo.
+
+        Con la penalización C, cada lote se repite con el plan de su evento y el bloque suma
+        los términos de sus flujos medidos divididos por el número de grupos del tramo. El
+        término de un flujo solo depende de los parámetros, de su token y del valor
+        desacoplado de su estado rápido, y cada evento ya divide por todos sus flujos
+        medidos, así que la suma de los bloques es la media de los grupos. Los flujos medidos
+        sin etiquetas en el tramo también se repiten.
         """
         predictor, size = self.predictor, self.recipe.accumulation_rows
         targets = {
             (flow, at): value for (flow, at, _), value in zip(run.used, run.targets, strict=True)
         }
-        order = list(dict.fromkeys(flow for flow, _, _ in run.used))
-        total = 0.0
+        controlled = [flow for flows in run.penalties for flow in flows]
+        order = list(dict.fromkeys([*(flow for flow, _, _ in run.used), *controlled]))
+        total, replayed = 0.0, 0
         for start in range(0, len(order), size):
             group = order[start : start + size]
             states = {flow: run.starts[flow] for flow in group if run.starts[flow] is not None}
             if predictor.config.variant == "mac_frozen":
                 self._anchor_frozen(states)
-            members, graphs = set(group), {}
-            for batch in run.segment:
+            members, graphs, penalties = set(group), {}, []
+            for batch, plan in run.segment:
                 rows = [i for i, flow in enumerate(batch.flow_ids) if flow in members]
                 if not rows:
                     continue
@@ -713,8 +734,11 @@ class ChronologicalTrainer(ChronologicalInference):
                     states.update(_split(predictor.initial_state(new, differentiable=True)))
                 state = _stack([states[flow] for flow in batch.flow_ids])
                 with torch.enable_grad():
-                    prepared = predictor.prepare(batch, state, differentiable=True)
+                    prepared = predictor.prepare(batch, state, differentiable=True, **plan)
                 states.update(_split(prepared.next_state))
+                if prepared.local_control is not None:
+                    penalties.append(prepared.local_control.penalty)
+                    replayed += len(prepared.local_control.flow_ids)
                 outputs = prepared.quantiles if self.quantiles else prepared.point_predictions
                 for row, key in enumerate(zip(batch.flow_ids, batch.prediction_at, strict=True)):
                     if key in targets:
@@ -722,21 +746,33 @@ class ChronologicalTrainer(ChronologicalInference):
             keys = [(flow, at) for flow, at, _ in run.used if flow in members]
             if any(key not in graphs for key in keys):
                 raise ValueError("La repetición del tramo no reproduce sus predicciones")
-            prediction = torch.stack([graphs[key] for key in keys])
-            target = torch.tensor(
-                [targets[key] for key in keys], dtype=prediction.dtype, device=prediction.device
-            )
-            loss = self._loss(prediction, target) * (len(keys) / len(run.used))
-            if not torch.isfinite(loss).item():
+            terms = []
+            if keys:
+                prediction = torch.stack([graphs[key] for key in keys])
+                target = torch.tensor(
+                    [targets[key] for key in keys], dtype=prediction.dtype, device=prediction.device
+                )
+                loss = self._loss(prediction, target) * (len(keys) / len(run.used))
+                total += float(loss.detach())
+                terms.append(loss)
+            if penalties:
+                terms.append(sum(penalties) / len(run.penalties))
+            objective = sum(terms[1:], terms[0])
+            if not torch.isfinite(objective).item():
                 raise ValueError("La pérdida del tramo no es finita")
-            loss.backward()
-            total += float(loss.detach())
+            objective.backward()
+        if replayed != len(controlled):
+            raise ValueError("La repetición del tramo no reproduce los flujos medidos de C")
         return torch.tensor(total)
 
     def _update(self, run, at):
         """Un paso con las etiquetas maduras del tramo y truncamiento de todos los flujos."""
         if run.predictions:
             loss = self._replay(run) if self.recipe.accumulation_rows else self._backward(run)
+            if run.penalties:
+                run.counters["control_groups_in_objective"] = run.counters.get(
+                    "control_groups_in_objective", 0
+                ) + len(run.penalties)
             torch.nn.utils.clip_grad_norm_(
                 self.predictor.parameters(),
                 self.recipe.max_grad_norm or math.inf,

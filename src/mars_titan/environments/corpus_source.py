@@ -611,6 +611,9 @@ class ParquetCohortSource:
         for group in range(first, self.file.num_row_groups):
             if self.groups[group] >= end:
                 break
+            if self.groups[group + 1] == self.groups[group]:
+                # Un grupo sin filas no se lee ni desplaza de la caché un grupo útil.
+                continue
             begin, stop = max(start, int(self.groups[group])), min(end, int(self.groups[group + 1]))
             pieces.append(self._group(group).slice(begin - int(self.groups[group]), stop - begin))
         table = pa.concat_tables(pieces).combine_chunks()

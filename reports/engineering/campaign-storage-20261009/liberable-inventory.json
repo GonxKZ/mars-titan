@@ -1,0 +1,1845 @@
+{
+ "rows": [
+  {
+   "name": "adapters-all-families-20261009",
+   "branch": "feat/adapters-all-families",
+   "clean": false,
+   "changes": 8,
+   "head_in_develop": true,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 0,
+   "state_examples": [],
+   "bytes": 45662208,
+   "exclusive_bytes": 45240320
+  },
+  {
+   "name": "adaptive-observatory-20260929",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 5,
+   "state_examples": [
+    "~/.local/state/mars-titan/tfm-document-preparation/edition-final/campus-visible-history.txt",
+    "~/.local/state/mars-titan/training-completion-20260930/completed-results-review.json",
+    "~/.local/state/mars-titan/training-completion-20260930/branch-audit-20261001.json"
+   ],
+   "bytes": 820822016,
+   "exclusive_bytes": 28528640
+  },
+  {
+   "name": "adaptive-runtime-20260929",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 7,
+   "state_examples": [
+    "~/.local/state/mars-titan/tfm-document-preparation/edition-final/campus-visible-history.txt",
+    "~/.local/state/mars-titan/training-completion-20260930/completed-results-review.json",
+    "~/.local/state/mars-titan/training-completion-20260930/branch-audit-20261001.json"
+   ],
+   "bytes": 6388436992,
+   "exclusive_bytes": 52183040
+  },
+  {
+   "name": "alfred-metadata",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 7,
+   "state_examples": [
+    "~/.local/state/mars-titan/tfm-document-preparation/edition-final/campus-visible-history.txt",
+    "~/.local/state/mars-titan/training-completion-20260930/branch-audit-20261001.json",
+    "~/.local/state/mars-titan/titans-mac-20261008/worktrees-before-retirement.txt"
+   ],
+   "bytes": 619618304,
+   "exclusive_bytes": 49676288
+  },
+  {
+   "name": "analysis-runtime-20261006",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": true,
+   "prs": [],
+   "processes": 0,
+   "units": [
+    "mars-titan-real-expanded-analysis.service"
+   ],
+   "state_refs": 1,
+   "state_examples": [
+    "~/.local/state/mars-titan/titans-mac-20261008/worktrees-before-retirement.txt"
+   ],
+   "bytes": 33644544,
+   "exclusive_bytes": 33329152
+  },
+  {
+   "name": "anchored-medoid-retention-20261008",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 7,
+   "state_examples": [
+    "~/.local/state/mars-titan/titans-mac-20261008/worktrees-before-retirement.txt",
+    "~/.local/state/mars-titan/titans-mac-20261008/branch-retirement-plan.json",
+    "~/.local/state/mars-titan/cm-v1-20261007/anchored-selector-implementation/tests-red.txt"
+   ],
+   "bytes": 38658048,
+   "exclusive_bytes": 38248448
+  },
+  {
+   "name": "bounded-corpus-encoding-20261008",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 3,
+   "state_examples": [
+    "~/.local/state/mars-titan/titans-mac-20261008/worktrees-before-retirement.txt",
+    "~/.local/state/mars-titan/titans-mac-20261008/branch-retirement-plan.json",
+    "~/.local/state/mars-titan/history-2000-20261007/materialization/bounded-encoding-review/review.json"
+   ],
+   "bytes": 38608896,
+   "exclusive_bytes": 38232064
+  },
+  {
+   "name": "campaign-kernels-20261009",
+   "branch": "perf/campaign-kernels",
+   "clean": false,
+   "changes": 7,
+   "head_in_develop": true,
+   "prs": [],
+   "processes": 14,
+   "units": [],
+   "state_refs": 0,
+   "state_examples": [],
+   "bytes": 47226880,
+   "exclusive_bytes": 46759936
+  },
+  {
+   "name": "campaign-kernels-base-20261009",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": true,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 0,
+   "state_examples": [],
+   "bytes": 43675648,
+   "exclusive_bytes": 43294720
+  },
+  {
+   "name": "campaign-pipeline-20261009",
+   "branch": "perf/campaign-pipeline",
+   "clean": false,
+   "changes": 12,
+   "head_in_develop": true,
+   "prs": [],
+   "processes": 8,
+   "units": [],
+   "state_refs": 0,
+   "state_examples": [],
+   "bytes": 49983488,
+   "exclusive_bytes": 49516544
+  },
+  {
+   "name": "campaign-pipeline-base-20261009",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": true,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 0,
+   "state_examples": [],
+   "bytes": 46211072,
+   "exclusive_bytes": 45772800
+  },
+  {
+   "name": "campaign-receipts-20261005",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 1,
+   "state_examples": [
+    "~/.local/state/mars-titan/titans-mac-20261008/worktrees-before-retirement.txt"
+   ],
+   "bytes": 31105024,
+   "exclusive_bytes": 30736384
+  },
+  {
+   "name": "campaign-runtime-20261009",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": true,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 0,
+   "state_examples": [],
+   "bytes": 45682688,
+   "exclusive_bytes": 45256704
+  },
+  {
+   "name": "campaign-storage-budget-20261009",
+   "branch": "feat/campaign-storage-budget",
+   "clean": false,
+   "changes": 9,
+   "head_in_develop": true,
+   "prs": [],
+   "processes": 3,
+   "units": [],
+   "state_refs": 0,
+   "state_examples": [],
+   "bytes": 48558080,
+   "exclusive_bytes": 48091136
+  },
+  {
+   "name": "campaign-tabular-20261009",
+   "branch": "perf/campaign-tabular",
+   "clean": false,
+   "changes": 9,
+   "head_in_develop": true,
+   "prs": [],
+   "processes": 5,
+   "units": [],
+   "state_refs": 0,
+   "state_examples": [],
+   "bytes": 48680960,
+   "exclusive_bytes": 48193536
+  },
+  {
+   "name": "china-acquisition-runtime-20261007",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 10,
+   "state_examples": [
+    "~/.local/state/mars-titan/titans-mac-20261008/worktrees-before-retirement.txt",
+    "~/.local/state/mars-titan/joint-corpus-20261007/catalogue-extension/preflight-03.json",
+    "~/.local/state/mars-titan/joint-corpus-20261007/catalogue-extension/preflight-05.json"
+   ],
+   "bytes": 34582528,
+   "exclusive_bytes": 34271232
+  },
+  {
+   "name": "china-issuer-runtime-20261007",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 3,
+   "state_examples": [
+    "~/.local/state/mars-titan/titans-mac-20261008/worktrees-before-retirement.txt",
+    "~/.local/state/mars-titan/china-scale-20261007/issuer-live-validation/selection.json",
+    "~/.local/state/mars-titan/china-scale-20261007/admitted-issuer-announcements/verification.json"
+   ],
+   "bytes": 35717120,
+   "exclusive_bytes": 35381248
+  },
+  {
+   "name": "chinese-catalogue-progress-20261007",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 2,
+   "state_examples": [
+    "~/.local/state/mars-titan/titans-mac-20261008/worktrees-before-retirement.txt",
+    "~/.local/state/mars-titan/joint-corpus-20261007/catalogue-extension/documentation-delivery.json"
+   ],
+   "bytes": 35233792,
+   "exclusive_bytes": 34918400
+  },
+  {
+   "name": "cm-mathematical-controls-20261008",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 6,
+   "state_examples": [
+    "~/.local/state/mars-titan/titans-mac-20261008/worktrees-before-retirement.txt",
+    "~/.local/state/mars-titan/titans-mac-20261008/branch-retirement-plan.json",
+    "~/.local/state/mars-titan/cm-v1-20261007/implementation/tests-red.txt"
+   ],
+   "bytes": 37101568,
+   "exclusive_bytes": 36741120
+  },
+  {
+   "name": "cmake-sanitizers",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 53,
+   "state_examples": [
+    "~/.local/state/mars-titan/tfm-document-preparation/edition-final/campus-visible-history.txt",
+    "~/.local/state/mars-titan/training-completion-20260930/branch-audit-20261001.json",
+    "~/.local/state/mars-titan/titans-mac-20261008/worktrees-before-retirement.txt"
+   ],
+   "bytes": 468598784,
+   "exclusive_bytes": 142344192
+  },
+  {
+   "name": "compact-transformer-20261008",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 9,
+   "state_examples": [
+    "~/.local/state/mars-titan/titans-mac-20261008/transformer/review/review-fix-e9757ce7.json",
+    "~/.local/state/mars-titan/titans-mac-20261008/transformer/review/review-initial.json",
+    "~/.local/state/mars-titan/titans-mac-20261008/transformer/review/review.json"
+   ],
+   "bytes": 36995072,
+   "exclusive_bytes": 36630528
+  },
+  {
+   "name": "continuation-selection",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 6,
+   "state_examples": [
+    "~/.local/state/mars-titan/tfm-document-preparation/edition-final/campus-visible-history.txt",
+    "~/.local/state/mars-titan/training-completion-20260930/branch-audit-20261001.json",
+    "~/.local/state/mars-titan/titans-mac-20261008/worktrees-before-retirement.txt"
+   ],
+   "bytes": 7347433472,
+   "exclusive_bytes": 118140928
+  },
+  {
+   "name": "convergence-20261001",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 3,
+   "state_examples": [
+    "~/.local/state/mars-titan/tfm-document-preparation/edition-final/campus-visible-history.txt",
+    "~/.local/state/mars-titan/titans-mac-20261008/worktrees-before-retirement.txt",
+    "~/.local/state/mars-titan/convergence-20261001/branch-cleanup-proof.json"
+   ],
+   "bytes": 7243661312,
+   "exclusive_bytes": 163971072
+  },
+  {
+   "name": "convergence-boosting",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 5,
+   "state_examples": [
+    "~/.local/state/mars-titan/tfm-document-preparation/edition-final/campus-visible-history.txt",
+    "~/.local/state/mars-titan/titans-mac-20261008/worktrees-before-retirement.txt",
+    "~/.local/state/mars-titan/convergence-20261001/task-1-report.md"
+   ],
+   "bytes": 29700096,
+   "exclusive_bytes": 29351936
+  },
+  {
+   "name": "convergence-runtime-20261001",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": true,
+   "prs": [],
+   "processes": 13,
+   "units": [
+    "mars-titan-convergence-health.service",
+    "mars-titan-observatory-collector.service",
+    "mars-titan-convergence.service",
+    "default.target.wants/mars-titan-observatory-collector.service",
+    "mars-titan-convergence.service.d/211-supervisor.conf"
+   ],
+   "state_refs": 241,
+   "state_examples": [
+    "~/.local/state/mars-titan/tfm-document-preparation/edition-final/campus-visible-history.txt",
+    "~/.local/state/mars-titan/preparation-20261005/environment-after-restore.json",
+    "~/.local/state/mars-titan/titans-mac-20261008/implementation/handoff.json"
+   ],
+   "bytes": 7227109376,
+   "exclusive_bytes": 147648512
+  },
+  {
+   "name": "corpus-temporary-storage-20261007",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 1,
+   "state_examples": [
+    "~/.local/state/mars-titan/titans-mac-20261008/worktrees-before-retirement.txt"
+   ],
+   "bytes": 36286464,
+   "exclusive_bytes": 35921920
+  },
+  {
+   "name": "cuda-checks-20261009",
+   "branch": "test/cuda-checks-20261009",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [
+    [
+     417,
+     "MERGED"
+    ]
+   ],
+   "processes": 0,
+   "units": [],
+   "state_refs": 0,
+   "state_examples": [],
+   "bytes": 147435520,
+   "exclusive_bytes": 145661952
+  },
+  {
+   "name": "docs-sync-409-417",
+   "branch": "docs/sync-409-417",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [
+    [
+     419,
+     "MERGED"
+    ]
+   ],
+   "processes": 0,
+   "units": [],
+   "state_refs": 0,
+   "state_examples": [],
+   "bytes": 44666880,
+   "exclusive_bytes": 44269568
+  },
+  {
+   "name": "episodic-financial-readout-20261008",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 3,
+   "state_examples": [
+    "~/.local/state/mars-titan/titans-mac-20261008/policy-encoding-branch-retirement/branch-retirement-plan.json",
+    "~/.local/state/mars-titan/titans-mac-20261008/readout-implementation/handoff.json",
+    "~/.local/state/mars-titan/titans-mac-20261008/readout-implementation/fixture-review-update/handoff.json"
+   ],
+   "bytes": 39006208,
+   "exclusive_bytes": 38625280
+  },
+  {
+   "name": "episodic-query-20261004",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 4,
+   "state_examples": [
+    "~/.local/state/mars-titan/tfm-document-preparation/edition-final/campus-visible-history.txt",
+    "~/.local/state/mars-titan/episodic-query-20261004/reference/native-build-identity-Release.txt",
+    "~/.local/state/mars-titan/episodic-query-20261004/mutations.json"
+   ],
+   "bytes": 481570816,
+   "exclusive_bytes": 480182272
+  },
+  {
+   "name": "episodic-session-bank-20261008",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 52,
+   "state_examples": [
+    "~/.local/state/mars-titan/titans-mac-20261008/rl-memory-branch-retirement/branch-retirement-plan.json",
+    "~/.local/state/mars-titan/titans-mac-20261008/worktrees-before-retirement.txt",
+    "~/.local/state/mars-titan/titans-mac-20261008/financial-integration/episodic-consumer-design-sources.json"
+   ],
+   "bytes": 39088128,
+   "exclusive_bytes": 38662144
+  },
+  {
+   "name": "evaluation-completeness-20261009",
+   "branch": "feat/evaluation-completeness",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": true,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 0,
+   "state_examples": [],
+   "bytes": 44322816,
+   "exclusive_bytes": 43937792
+  },
+  {
+   "name": "experiment-environment",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": true,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 4,
+   "state_examples": [
+    "~/.local/state/mars-titan/tfm-document-preparation/edition-final/campus-visible-history.txt",
+    "~/.local/state/mars-titan/training-completion-20260930/branch-audit-20261001.json",
+    "~/.local/state/mars-titan/expansion-20260924/progress.md"
+   ],
+   "bytes": 7353180160,
+   "exclusive_bytes": 123904000
+  },
+  {
+   "name": "experimental-tracking",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 6,
+   "state_examples": [
+    "~/.local/state/mars-titan/tfm-document-preparation/edition-final/campus-visible-history.txt",
+    "~/.local/state/mars-titan/training-completion-20260930/branch-audit-20261001.json",
+    "~/.local/state/mars-titan/titans-mac-20261008/worktrees-before-retirement.txt"
+   ],
+   "bytes": 386637824,
+   "exclusive_bytes": 64299008
+  },
+  {
+   "name": "family-fairness-20261009",
+   "branch": "feat/family-fairness",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": true,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 0,
+   "state_examples": [],
+   "bytes": 44322816,
+   "exclusive_bytes": 43937792
+  },
+  {
+   "name": "financial-session-v2-20261008",
+   "branch": "feat/gru-financial-sessions",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [
+    [
+     376,
+     "MERGED"
+    ]
+   ],
+   "processes": 0,
+   "units": [],
+   "state_refs": 73,
+   "state_examples": [
+    "~/.local/state/mars-titan/titans-mac-20261008/gru-financial-sessions-implementation-20261009/native-release/compile_commands.json",
+    "~/.local/state/mars-titan/titans-mac-20261008/gru-financial-sessions-implementation-20261009/native-release/CMakeCache.txt",
+    "~/.local/state/mars-titan/titans-mac-20261008/gru-financial-sessions-implementation-20261009/native-release/native-build-identity-Release.txt"
+   ],
+   "bytes": 54616064,
+   "exclusive_bytes": 54091776
+  },
+  {
+   "name": "financial-state-blocks-20261008",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 4,
+   "state_examples": [
+    "~/.local/state/mars-titan/titans-mac-20261008/state-blocks/handoff.json",
+    "~/.local/state/mars-titan/titans-mac-20261008/rl-memory-branch-retirement/branch-retirement-plan.json",
+    "~/.local/state/mars-titan/titans-mac-20261008/worktrees-before-retirement.txt"
+   ],
+   "bytes": 38772736,
+   "exclusive_bytes": 38371328
+  },
+  {
+   "name": "frozen-embedding-placement-20261008",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 9,
+   "state_examples": [
+    "~/.local/state/mars-titan/titans-mac-20261008/policy-encoding-branch-retirement/branch-retirement-plan.json",
+    "~/.local/state/mars-titan/history-2000-20261007/materialization/embedding-offload-check/precision-final-paired-comparison-v2/report.json",
+    "~/.local/state/mars-titan/history-2000-20261007/materialization/embedding-offload-check/implementation/handoff.json"
+   ],
+   "bytes": 38735872,
+   "exclusive_bytes": 38371328
+  },
+  {
+   "name": "frozen-financial-controls-20261009",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 2,
+   "state_examples": [
+    "~/.local/state/mars-titan/titans-mac-20261008/verified-components-branch-retirement/branch-retirement-plan.json",
+    "~/.local/state/mars-titan/titans-mac-20261008/financial-integration/cm-consumer-check-20261009/handoff.json"
+   ],
+   "bytes": 38989824,
+   "exclusive_bytes": 38621184
+  },
+  {
+   "name": "gru-weight-packing-20261006",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 10,
+   "state_examples": [
+    "~/.local/state/mars-titan/titans-mac-20261008/worktrees-before-retirement.txt",
+    "~/.local/state/mars-titan/gru-weight-packing-20261006/verification-cpu.json",
+    "~/.local/state/mars-titan/gru-weight-packing-20261006/probe-io-close/verification.json"
+   ],
+   "bytes": 166338560,
+   "exclusive_bytes": 165240832
+  },
+  {
+   "name": "historical-accounting-context-20261008",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 3,
+   "state_examples": [
+    "~/.local/state/mars-titan/titans-mac-20261008/worktrees-before-retirement.txt",
+    "~/.local/state/mars-titan/titans-mac-20261008/branch-retirement-plan.json",
+    "~/.local/state/mars-titan/history-2000-20261007/historical-accounting-implementation/handoff.json"
+   ],
+   "bytes": 38584320,
+   "exclusive_bytes": 38207488
+  },
+  {
+   "name": "historical-accounting-runtime-20261008",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 1,
+   "state_examples": [
+    "~/.local/state/mars-titan/titans-mac-20261008/worktrees-before-retirement.txt"
+   ],
+   "bytes": 37515264,
+   "exclusive_bytes": 37191680
+  },
+  {
+   "name": "historical-corpus-inputs-20261007",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": true,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 4,
+   "state_examples": [
+    "~/.local/state/mars-titan/titans-mac-20261008/worktrees-before-retirement.txt",
+    "~/.local/state/mars-titan/history-2000-20261007/corpus-mask-consumers-implementation/handoff.json",
+    "~/.local/state/mars-titan/history-2000-20261007/corpus-mask-consumers-implementation/precision-fix/handoff.json"
+   ],
+   "bytes": 37584896,
+   "exclusive_bytes": 37224448
+  },
+  {
+   "name": "historical-encoding-cpu-runtime-20261008",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": true,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 4,
+   "state_examples": [
+    "~/.local/state/mars-titan/history-2000-20261007/materialization/embedding-offload-check/published-runtime.json",
+    "~/.local/state/mars-titan/history-2000-20261007/materialization/uniform-cpu-words-runner/handoff.json",
+    "~/.local/state/mars-titan/history-2000-20261007/materialization/uniform-cpu-words-runner/handoff-final.json"
+   ],
+   "bytes": 38559744,
+   "exclusive_bytes": 38215680
+  },
+  {
+   "name": "historical-encoding-runtime-20261008",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 5,
+   "state_examples": [
+    "~/.local/state/mars-titan/titans-mac-20261008/root-progress-before-rl-integration.json",
+    "~/.local/state/mars-titan/titans-mac-20261008/root-progress.json",
+    "~/.local/state/mars-titan/titans-mac-20261008/worktrees-before-retirement.txt"
+   ],
+   "bytes": 37699584,
+   "exclusive_bytes": 37355520
+  },
+  {
+   "name": "historical-fact-periods-20261007",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": true,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 3,
+   "state_examples": [
+    "~/.local/state/mars-titan/titans-mac-20261008/worktrees-before-retirement.txt",
+    "~/.local/state/mars-titan/history-2000-20261007/historical-fact-periods/handoff.json",
+    "~/.local/state/mars-titan/history-2000-20261007/historical-fact-periods/strict-after/receipt.json"
+   ],
+   "bytes": 37826560,
+   "exclusive_bytes": 37474304
+  },
+  {
+   "name": "historical-input-masks-20261007",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": true,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 5,
+   "state_examples": [
+    "~/.local/state/mars-titan/titans-mac-20261008/worktrees-before-retirement.txt",
+    "~/.local/state/mars-titan/history-2000-20261007/root-progress-2038.json",
+    "~/.local/state/mars-titan/history-2000-20261007/full-price-windows/publication-verification.json"
+   ],
+   "bytes": 38408192,
+   "exclusive_bytes": 38031360
+  },
+  {
+   "name": "historical-macro-runtime-20261008",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": true,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 1,
+   "state_examples": [
+    "~/.local/state/mars-titan/titans-mac-20261008/worktrees-before-retirement.txt"
+   ],
+   "bytes": 36978688,
+   "exclusive_bytes": 36659200
+  },
+  {
+   "name": "historical-preparation-runtime-20261007",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": true,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 3,
+   "state_examples": [
+    "~/.local/state/mars-titan/titans-mac-20261008/worktrees-before-retirement.txt",
+    "~/.local/state/mars-titan/history-2000-20261007/root-progress-2200.json",
+    "~/.local/state/mars-titan/history-2000-20261007/materialization/ACTG-error-traceback.txt"
+   ],
+   "bytes": 36757504,
+   "exclusive_bytes": 36438016
+  },
+  {
+   "name": "historical-preparation-runtime-v2-20261008",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 2,
+   "state_examples": [
+    "~/.local/state/mars-titan/titans-mac-20261008/worktrees-before-retirement.txt",
+    "~/.local/state/mars-titan/history-2000-20261007/root-progress-2238.json"
+   ],
+   "bytes": 36814848,
+   "exclusive_bytes": 36495360
+  },
+  {
+   "name": "historical-rate-contexts-20261007",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": true,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 62,
+   "state_examples": [
+    "~/.local/state/mars-titan/titans-mac-20261008/worktrees-before-retirement.txt",
+    "~/.local/state/mars-titan/history-2000-20261007/h15-macro-implementation/review-fixes/handoff.json",
+    "~/.local/state/mars-titan/history-2000-20261007/h15-macro-implementation/review-fixes/macro-tmp/test_recovery_rejects_changed_2/panel/configuration.json"
+   ],
+   "bytes": 38100992,
+   "exclusive_bytes": 37752832
+  },
+  {
+   "name": "historical-rate-releases-20261007",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": true,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 5,
+   "state_examples": [
+    "~/.local/state/mars-titan/titans-mac-20261008/worktrees-before-retirement.txt",
+    "~/.local/state/mars-titan/history-2000-20261007/root-progress-2038.json",
+    "~/.local/state/mars-titan/history-2000-20261007/h15-implementation/review-fixes/handoff.json"
+   ],
+   "bytes": 37629952,
+   "exclusive_bytes": 37281792
+  },
+  {
+   "name": "historical-temporal-views-20261008",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 3,
+   "state_examples": [
+    "~/.local/state/mars-titan/titans-mac-20261008/worktrees-before-retirement.txt",
+    "~/.local/state/mars-titan/titans-mac-20261008/branch-retirement-plan.json",
+    "~/.local/state/mars-titan/history-2000-20261007/historical-temporal-views-20261008/handoff.json"
+   ],
+   "bytes": 38461440,
+   "exclusive_bytes": 38088704
+  },
+  {
+   "name": "hpc-corpus-batches",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 6,
+   "state_examples": [
+    "~/.local/state/mars-titan/tfm-document-preparation/edition-final/campus-visible-history.txt",
+    "~/.local/state/mars-titan/training-completion-20260930/branch-audit-20261001.json",
+    "~/.local/state/mars-titan/titans-mac-20261008/worktrees-before-retirement.txt"
+   ],
+   "bytes": 928448512,
+   "exclusive_bytes": 604700672
+  },
+  {
+   "name": "hpc-evaluation-io",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 6,
+   "state_examples": [
+    "~/.local/state/mars-titan/tfm-document-preparation/edition-final/campus-visible-history.txt",
+    "~/.local/state/mars-titan/training-completion-20260930/branch-audit-20261001.json",
+    "~/.local/state/mars-titan/titans-mac-20261008/worktrees-before-retirement.txt"
+   ],
+   "bytes": 6477549568,
+   "exclusive_bytes": 152592384
+  },
+  {
+   "name": "hpc-session-metrics",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 6,
+   "state_examples": [
+    "~/.local/state/mars-titan/tfm-document-preparation/edition-final/campus-visible-history.txt",
+    "~/.local/state/mars-titan/training-completion-20260930/branch-audit-20261001.json",
+    "~/.local/state/mars-titan/titans-mac-20261008/worktrees-before-retirement.txt"
+   ],
+   "bytes": 5931642880,
+   "exclusive_bytes": 64819200
+  },
+  {
+   "name": "integration-20261001",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 3,
+   "state_examples": [
+    "~/.local/state/mars-titan/tfm-document-preparation/edition-final/campus-visible-history.txt",
+    "~/.local/state/mars-titan/titans-mac-20261008/worktrees-before-retirement.txt",
+    "~/.local/state/mars-titan/integration-20261001/progress.md"
+   ],
+   "bytes": 6863208448,
+   "exclusive_bytes": 126369792
+  },
+  {
+   "name": "issuer-announcements-20261007",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 45,
+   "state_examples": [
+    "~/.local/state/mars-titan/issuer-announcements-20261007-review/real-probe-review.json",
+    "~/.local/state/mars-titan/issuer-announcements-20261007-review/real-probe-fix-review.json",
+    "~/.local/state/mars-titan/titans-mac-20261008/root-progress-before-rl-integration.json"
+   ],
+   "bytes": 822579200,
+   "exclusive_bytes": 821112832
+  },
+  {
+   "name": "klpo-actor-updates-20261009",
+   "branch": "feat/klpo-actor-updates",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [
+    [
+     362,
+     "MERGED"
+    ]
+   ],
+   "processes": 0,
+   "units": [],
+   "state_refs": 25,
+   "state_examples": [
+    "~/.local/state/mars-titan/titans-mac-20261008/klpo-actor-updates-20261009/analyzer-results.json",
+    "~/.local/state/mars-titan/titans-mac-20261008/klpo-actor-updates-20261009/progress.json",
+    "~/.local/state/mars-titan/titans-mac-20261008/klpo-actor-updates-20261009/mutations-complete/results.json"
+   ],
+   "bytes": 39866368,
+   "exclusive_bytes": 39477248
+  },
+  {
+   "name": "klpo-memory-runtime",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [
+    "mars-titan-scientific-campaign.service"
+   ],
+   "state_refs": 7,
+   "state_examples": [
+    "~/.local/state/mars-titan/tfm-document-preparation/edition-final/campus-visible-history.txt",
+    "~/.local/state/mars-titan/training-completion-20260930/branch-audit-20261001.json",
+    "~/.local/state/mars-titan/titans-mac-20261008/worktrees-before-retirement.txt"
+   ],
+   "bytes": 7062544384,
+   "exclusive_bytes": 111448064
+  },
+  {
+   "name": "later-stages-cn-rules",
+   "branch": "fix/later-stages-cn-rules",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [
+    [
+     421,
+     "MERGED"
+    ]
+   ],
+   "processes": 0,
+   "units": [],
+   "state_refs": 0,
+   "state_examples": [],
+   "bytes": 47345664,
+   "exclusive_bytes": 46882816
+  },
+  {
+   "name": "mac-projected-control-20261008",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 4,
+   "state_examples": [
+    "~/.local/state/mars-titan/titans-mac-20261008/worktrees-before-retirement.txt",
+    "~/.local/state/mars-titan/titans-mac-20261008/branch-retirement-plan.json",
+    "~/.local/state/mars-titan/cm-v1-20261007/mac-c-projection/handoff-census.json"
+   ],
+   "bytes": 38506496,
+   "exclusive_bytes": 38113280
+  },
+  {
+   "name": "macro-admission",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 6,
+   "state_examples": [
+    "~/.local/state/mars-titan/tfm-document-preparation/edition-final/campus-visible-history.txt",
+    "~/.local/state/mars-titan/training-completion-20260930/branch-audit-20261001.json",
+    "~/.local/state/mars-titan/titans-mac-20261008/worktrees-before-retirement.txt"
+   ],
+   "bytes": 7130943488,
+   "exclusive_bytes": 128061440
+  },
+  {
+   "name": "mars-titan-integration-components-20261009",
+   "branch": "feat/mars-titan-integration-components",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": true,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 0,
+   "state_examples": [],
+   "bytes": 61079552,
+   "exclusive_bytes": 60329984
+  },
+  {
+   "name": "mature-error-memory-20261009",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 4,
+   "state_examples": [
+    "~/.local/state/mars-titan/titans-mac-20261008/financial-integration/m2-write-policy-20261009/handoff.json",
+    "~/.local/state/mars-titan/titans-mac-20261008/root-progress.json",
+    "~/.local/state/mars-titan/titans-mac-20261008/financial-integration/m2-write-policy-20261009/publication-handoff.json"
+   ],
+   "bytes": 39563264,
+   "exclusive_bytes": 39170048
+  },
+  {
+   "name": "mobile-phase-fix",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 6,
+   "state_examples": [
+    "~/.local/state/mars-titan/tfm-document-preparation/edition-final/campus-visible-history.txt",
+    "~/.local/state/mars-titan/training-completion-20260930/branch-audit-20261001.json",
+    "~/.local/state/mars-titan/titans-mac-20261008/worktrees-before-retirement.txt"
+   ],
+   "bytes": 26742784,
+   "exclusive_bytes": 26456064
+  },
+  {
+   "name": "mobile-phase-promotion",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 6,
+   "state_examples": [
+    "~/.local/state/mars-titan/tfm-document-preparation/edition-final/campus-visible-history.txt",
+    "~/.local/state/mars-titan/training-completion-20260930/branch-audit-20261001.json",
+    "~/.local/state/mars-titan/titans-mac-20261008/worktrees-before-retirement.txt"
+   ],
+   "bytes": 2416640,
+   "exclusive_bytes": 2289664
+  },
+  {
+   "name": "modality-ablation-20261009",
+   "branch": "feat/modality-ablation",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [
+    [
+     423,
+     "MERGED"
+    ]
+   ],
+   "processes": 0,
+   "units": [],
+   "state_refs": 0,
+   "state_examples": [],
+   "bytes": 57602048,
+   "exclusive_bytes": 57073664
+  },
+  {
+   "name": "model-vintages",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 6,
+   "state_examples": [
+    "~/.local/state/mars-titan/tfm-document-preparation/edition-final/campus-visible-history.txt",
+    "~/.local/state/mars-titan/training-completion-20260930/branch-audit-20261001.json",
+    "~/.local/state/mars-titan/titans-mac-20261008/worktrees-before-retirement.txt"
+   ],
+   "bytes": 6175883264,
+   "exclusive_bytes": 64823296
+  },
+  {
+   "name": "named-benchmarks-20261009",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 2,
+   "state_examples": [
+    "~/.local/state/mars-titan/titans-mac-20261008/verified-components-branch-retirement/branch-retirement-plan.json",
+    "~/.local/state/mars-titan/titans-mac-20261008/root-progress.json"
+   ],
+   "bytes": 39305216,
+   "exclusive_bytes": 38903808
+  },
+  {
+   "name": "native-policy-real-tapes-20261009",
+   "branch": "feat/native-policy-real-tapes",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [
+    [
+     420,
+     "MERGED"
+    ]
+   ],
+   "processes": 0,
+   "units": [],
+   "state_refs": 0,
+   "state_examples": [],
+   "bytes": 972476416,
+   "exclusive_bytes": 970944512
+  },
+  {
+   "name": "neuroarchitecture-20261004",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 2,
+   "state_examples": [
+    "~/.local/state/mars-titan/tfm-document-preparation/edition-final/campus-visible-history.txt",
+    "~/.local/state/mars-titan/titans-mac-20261008/worktrees-before-retirement.txt"
+   ],
+   "bytes": 37117952,
+   "exclusive_bytes": 36704256
+  },
+  {
+   "name": "notebook-security-20261001",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 2,
+   "state_examples": [
+    "~/.local/state/mars-titan/tfm-document-preparation/edition-final/campus-visible-history.txt",
+    "~/.local/state/mars-titan/titans-mac-20261008/worktrees-before-retirement.txt"
+   ],
+   "bytes": 28258304,
+   "exclusive_bytes": 27967488
+  },
+  {
+   "name": "observatory-runtime-20261006",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 2,
+   "units": [
+    "mars-titan-observatory-collector.service.d/234-real-expanded.conf"
+   ],
+   "state_refs": 1,
+   "state_examples": [
+    "~/.local/state/mars-titan/titans-mac-20261008/worktrees-before-retirement.txt"
+   ],
+   "bytes": 33525760,
+   "exclusive_bytes": 33206272
+  },
+  {
+   "name": "pages-promotion",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 7,
+   "state_examples": [
+    "~/.local/state/mars-titan/tfm-document-preparation/edition-final/campus-visible-history.txt",
+    "~/.local/state/mars-titan/training-completion-20260930/branch-audit-20261001.json",
+    "~/.local/state/mars-titan/expansion-20260924/progress.md"
+   ],
+   "bytes": 2535424,
+   "exclusive_bytes": 2379776
+  },
+  {
+   "name": "paired-posttraining",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 7,
+   "state_examples": [
+    "~/.local/state/mars-titan/tfm-document-preparation/edition-final/campus-visible-history.txt",
+    "~/.local/state/mars-titan/training-completion-20260930/branch-audit-20261001.json",
+    "~/.local/state/mars-titan/expansion-20260924/progress.md"
+   ],
+   "bytes": 7128317952,
+   "exclusive_bytes": 125382656
+  },
+  {
+   "name": "parameter-efficiency",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 6,
+   "state_examples": [
+    "~/.local/state/mars-titan/tfm-document-preparation/edition-final/campus-visible-history.txt",
+    "~/.local/state/mars-titan/training-completion-20260930/branch-audit-20261001.json",
+    "~/.local/state/mars-titan/titans-mac-20261008/worktrees-before-retirement.txt"
+   ],
+   "bytes": 347164672,
+   "exclusive_bytes": 24981504
+  },
+  {
+   "name": "path-reference-20261006",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": true,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 5,
+   "state_examples": [
+    "~/.local/state/mars-titan/titans-mac-20261008/worktrees-before-retirement.txt",
+    "~/.local/state/mars-titan/real-campaign-20261006/artifact-path-reuse/cuda/first-baseline-1-measurement.json",
+    "~/.local/state/mars-titan/real-campaign-20261006/artifact-path-reuse/cuda/largest-baseline-2-measurement.json"
+   ],
+   "bytes": 34287616,
+   "exclusive_bytes": 33959936
+  },
+  {
+   "name": "ppo-objective-variants-20261008",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 37,
+   "state_examples": [
+    "~/.local/state/mars-titan/titans-mac-20261008/ppo-objective-variants/legacy-gradient-parity.json",
+    "~/.local/state/mars-titan/titans-mac-20261008/ppo-objective-variants/quality-profiles.json",
+    "~/.local/state/mars-titan/titans-mac-20261008/ppo-objective-variants/native-coverage/compile_commands.json"
+   ],
+   "bytes": 38780928,
+   "exclusive_bytes": 38408192
+  },
+  {
+   "name": "promote-episodic-query-20261004",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 2,
+   "state_examples": [
+    "~/.local/state/mars-titan/tfm-document-preparation/edition-final/campus-visible-history.txt",
+    "~/.local/state/mars-titan/titans-mac-20261008/worktrees-before-retirement.txt"
+   ],
+   "bytes": 28753920,
+   "exclusive_bytes": 28467200
+  },
+  {
+   "name": "promotion-20261001",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 3,
+   "state_examples": [
+    "~/.local/state/mars-titan/tfm-document-preparation/edition-final/campus-visible-history.txt",
+    "~/.local/state/mars-titan/titans-mac-20261008/worktrees-before-retirement.txt",
+    "~/.local/state/mars-titan/convergence-20261001/branch-cleanup-proof.json"
+   ],
+   "bytes": 28573696,
+   "exclusive_bytes": 28286976
+  },
+  {
+   "name": "publish-architecture-20261008",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 2,
+   "state_examples": [
+    "~/.local/state/mars-titan/titans-mac-20261008/worktrees-before-retirement.txt",
+    "~/.local/state/mars-titan/titans-mac-20261008/branch-retirement-plan.json"
+   ],
+   "bytes": 37081088,
+   "exclusive_bytes": 36745216
+  },
+  {
+   "name": "publish-memory-controls-20261008",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 9,
+   "state_examples": [
+    "~/.local/state/mars-titan/titans-mac-20261008/cm-source-branch-retirement/branch-retirement-plan.json",
+    "~/.local/state/mars-titan/titans-mac-20261008/financial-session-branch-retirement/branch-retirement-plan.json",
+    "~/.local/state/mars-titan/titans-mac-20261008/policy-encoding-branch-retirement/branch-retirement-plan.json"
+   ],
+   "bytes": 43040768,
+   "exclusive_bytes": 42586112
+  },
+  {
+   "name": "real-runtime-20261006",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [
+    "mars-titan-real-expanded.service",
+    "mars-titan-real-expanded-health.service",
+    "mars-titan-real-expanded.service.d/20-supervisor-process-exit.conf"
+   ],
+   "state_refs": 57,
+   "state_examples": [
+    "~/.local/state/mars-titan/real-campaign-20261006/completed-neural-audit-delta-20261006T165340.json",
+    "~/.local/state/mars-titan/china-history-20261007/campaign-before.json",
+    "~/.local/state/mars-titan/china-history-20261007/campaign-paused.json"
+   ],
+   "bytes": 34885632,
+   "exclusive_bytes": 34541568
+  },
+  {
+   "name": "research-cohorts-20261005",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 14,
+   "state_examples": [
+    "~/.local/state/mars-titan/preparation-20261005/build-cohorts-release/compile_commands.json",
+    "~/.local/state/mars-titan/preparation-20261005/build-cohorts-release/CMakeCache.txt",
+    "~/.local/state/mars-titan/preparation-20261005/build-cohorts-debug/compile_commands.json"
+   ],
+   "bytes": 30117888,
+   "exclusive_bytes": 29806592
+  },
+  {
+   "name": "research-inputs-20261005",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 2,
+   "state_examples": [
+    "~/.local/state/mars-titan/preparation-20261005/environment-before-restore.json",
+    "~/.local/state/mars-titan/titans-mac-20261008/worktrees-before-retirement.txt"
+   ],
+   "bytes": 30912512,
+   "exclusive_bytes": 30564352
+  },
+  {
+   "name": "research-learning-20261005",
+   "branch": "test/cm-mature-error-parity",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [
+    [
+     367,
+     "MERGED"
+    ]
+   ],
+   "processes": 0,
+   "units": [],
+   "state_refs": 154,
+   "state_examples": [
+    "~/.local/state/mars-titan/china-macro-20261006/quality/quality.json",
+    "~/.local/state/mars-titan/real-campaign-20261006/corpus-table-cache/new-cohort/cuda/tables-1-measurement.json",
+    "~/.local/state/mars-titan/real-campaign-20261006/corpus-table-cache/new-cohort/cuda/baseline-1-measurement.json"
+   ],
+   "bytes": 1292873728,
+   "exclusive_bytes": 1290444800
+  },
+  {
+   "name": "research-memory-20261005",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 1,
+   "state_examples": [
+    "~/.local/state/mars-titan/titans-mac-20261008/worktrees-before-retirement.txt"
+   ],
+   "bytes": 347783168,
+   "exclusive_bytes": 346497024
+  },
+  {
+   "name": "rl-objective-controls-20261008",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 21,
+   "state_examples": [
+    "~/.local/state/mars-titan/titans-mac-20261008/rl-memory-branch-retirement/branch-retirement-plan.json",
+    "~/.local/state/mars-titan/titans-mac-20261008/worktrees-before-retirement.txt",
+    "~/.local/state/mars-titan/titans-mac-20261008/rl-objective-controls/cpp-mutations/results.json"
+   ],
+   "bytes": 38596608,
+   "exclusive_bytes": 38211584
+  },
+  {
+   "name": "rl-realism-reporting-20261009",
+   "branch": "fix/rl-realism-reporting",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": true,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 0,
+   "state_examples": [],
+   "bytes": 44367872,
+   "exclusive_bytes": 43970560
+  },
+  {
+   "name": "rl-stage-native-20261009",
+   "branch": "perf/rl-stage-native",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": true,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 0,
+   "state_examples": [],
+   "bytes": 91025408,
+   "exclusive_bytes": 90124288
+  },
+  {
+   "name": "rl-stage-pending-20261009",
+   "branch": "fix/rl-stage-pending-after-tapes",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [
+    [
+     422,
+     "MERGED"
+    ]
+   ],
+   "processes": 0,
+   "units": [],
+   "state_refs": 0,
+   "state_examples": [],
+   "bytes": 47370240,
+   "exclusive_bytes": 46907392
+  },
+  {
+   "name": "strict-completion-runtime-20260930",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [
+    "mars-titan-strict140-completion.service"
+   ],
+   "state_refs": 6,
+   "state_examples": [
+    "~/.local/state/mars-titan/tfm-document-preparation/edition-final/campus-visible-history.txt",
+    "~/.local/state/mars-titan/training-completion-20260930/eta-20260930.json",
+    "~/.local/state/mars-titan/training-completion-20260930/progress.md"
+   ],
+   "bytes": 6851944448,
+   "exclusive_bytes": 115134464
+  },
+  {
+   "name": "strict140-runtime-20260928",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": true,
+   "prs": [],
+   "processes": 0,
+   "units": [
+    "mars-titan-strict-temporal-search.service"
+   ],
+   "state_refs": 7,
+   "state_examples": [
+    "~/.local/state/mars-titan/tfm-document-preparation/edition-final/campus-visible-history.txt",
+    "~/.local/state/mars-titan/rl-batch-20260928/progress.md",
+    "~/.local/state/mars-titan/training-completion-20260930/completed-results-review.json"
+   ],
+   "bytes": 7331647488,
+   "exclusive_bytes": 90828800
+  },
+  {
+   "name": "supervisor-process-exit-20261007",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 3,
+   "state_examples": [
+    "~/.local/state/mars-titan/titans-mac-20261008/worktrees-before-retirement.txt",
+    "~/.local/state/mars-titan/supervisor-exit-20261007/external-guard-check.json",
+    "~/.local/state/mars-titan/supervisor-exit-20261007/verification.json"
+   ],
+   "bytes": 34848768,
+   "exclusive_bytes": 34508800
+  },
+  {
+   "name": "synthetic-episodes",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 58,
+   "state_examples": [
+    "~/.local/state/mars-titan/tfm-document-preparation/edition-final/campus-visible-history.txt",
+    "~/.local/state/mars-titan/rl-batch-20260928/cov-dump.txt",
+    "~/.local/state/mars-titan/rl-batch-20260928/profile-final.txt"
+   ],
+   "bytes": 8416702464,
+   "exclusive_bytes": 1395318784
+  },
+  {
+   "name": "target-decision-example-20261007",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 1,
+   "state_examples": [
+    "~/.local/state/mars-titan/titans-mac-20261008/worktrees-before-retirement.txt"
+   ],
+   "bytes": 35323904,
+   "exclusive_bytes": 34983936
+  },
+  {
+   "name": "targets-dictionary-sessions-20261009",
+   "branch": "fix/targets-dictionary-sessions",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [
+    [
+     413,
+     "MERGED"
+    ]
+   ],
+   "processes": 0,
+   "units": [],
+   "state_refs": 0,
+   "state_examples": [],
+   "bytes": 39862272,
+   "exclusive_bytes": 39464960
+  },
+  {
+   "name": "temporal-posttraining",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 7,
+   "state_examples": [
+    "~/.local/state/mars-titan/tfm-document-preparation/edition-final/campus-visible-history.txt",
+    "~/.local/state/mars-titan/training-completion-20260930/progress.md",
+    "~/.local/state/mars-titan/training-completion-20260930/branch-audit-20261001.json"
+   ],
+   "bytes": 7080898560,
+   "exclusive_bytes": 117587968
+  },
+  {
+   "name": "terminal-klpo-20261008",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 11,
+   "state_examples": [
+    "~/.local/state/mars-titan/titans-mac-20261008/terminal-klpo/native-coverage/compile_commands.json",
+    "~/.local/state/mars-titan/titans-mac-20261008/terminal-klpo/native-coverage/CMakeCache.txt",
+    "~/.local/state/mars-titan/titans-mac-20261008/terminal-klpo/native-release/compile_commands.json"
+   ],
+   "bytes": 38617088,
+   "exclusive_bytes": 38260736
+  },
+  {
+   "name": "terminal-klpo-collection-20261008",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 45,
+   "state_examples": [
+    "~/.local/state/mars-titan/titans-mac-20261008/terminal-klpo-consumer-review-20261009/probe-build-final.json",
+    "~/.local/state/mars-titan/titans-mac-20261008/klpo-actor-updates-20261009/native-baseline-cuda/compile_commands.json",
+    "~/.local/state/mars-titan/titans-mac-20261008/klpo-actor-updates-20261009/native-baseline-cuda/CMakeCache.txt"
+   ],
+   "bytes": 39256064,
+   "exclusive_bytes": 38899712
+  },
+  {
+   "name": "titans-financial-adapter-20261008",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 4,
+   "state_examples": [
+    "~/.local/state/mars-titan/titans-mac-20261008/financial-integration/handoff.json",
+    "~/.local/state/mars-titan/titans-mac-20261008/worktrees-before-retirement.txt",
+    "~/.local/state/mars-titan/titans-mac-20261008/branch-retirement-plan.json"
+   ],
+   "bytes": 38723584,
+   "exclusive_bytes": 38334464
+  },
+  {
+   "name": "titans-mac-core-20261008",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 3,
+   "state_examples": [
+    "~/.local/state/mars-titan/titans-mac-20261008/implementation/handoff.json",
+    "~/.local/state/mars-titan/titans-mac-20261008/worktrees-before-retirement.txt",
+    "~/.local/state/mars-titan/titans-mac-20261008/branch-retirement-plan.json"
+   ],
+   "bytes": 37158912,
+   "exclusive_bytes": 36798464
+  },
+  {
+   "name": "versioned-target-factors-20261008",
+   "branch": "HEAD",
+   "clean": true,
+   "changes": 0,
+   "head_in_develop": false,
+   "prs": [],
+   "processes": 0,
+   "units": [],
+   "state_refs": 6,
+   "state_examples": [
+    "~/.local/state/mars-titan/titans-mac-20261008/worktrees-before-retirement.txt",
+    "~/.local/state/mars-titan/titans-mac-20261008/branch-retirement-plan.json",
+    "~/.local/state/mars-titan/history-2000-20261007/target-factor-revision-20261008/review-fix/handoff.json"
+   ],
+   "bytes": 40886272,
+   "exclusive_bytes": 40472576
+  }
+ ],
+ "uv": {
+  "bytes": 14686453760,
+  "exclusive_bytes": 1222332416
+ }
+}

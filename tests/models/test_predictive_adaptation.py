@@ -7,6 +7,7 @@ import pytest
 import torch
 
 from mars_titan.data.embeddings import require_cuda
+from tests.suite_support import requires_cuda
 
 
 def module():
@@ -17,7 +18,7 @@ def grid(device):
     return torch.linspace(-0.1, 0.1, 21, dtype=torch.float64, device=device)
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda:0"])
+@pytest.mark.parametrize("device", ["cpu", pytest.param("cuda:0", marks=requires_cuda)])
 def test_enumerating_actions_matches_the_exact_expected_gradient(device):
     if device == "cuda:0":
         require_cuda()
@@ -46,6 +47,7 @@ def test_gaussian_policy_keeps_gradient_outside_grid_where_laplace_is_flat():
     assert gradient.item() > 1e-4
 
 
+@requires_cuda
 def test_supervised_control_has_same_loss_scale_and_sampling_is_reproducible():
     device = require_cuda()
     values = grid(device)
@@ -64,6 +66,7 @@ def test_supervised_control_has_same_loss_scale_and_sampling_is_reproducible():
     assert torch.equal(first[0], second[0]) and torch.equal(first[1], second[1])
 
 
+@requires_cuda
 def test_zero_residual_preserves_parent_float64_then_learns_all_features():
     device = require_cuda()
     engine = module()
@@ -81,6 +84,7 @@ def test_zero_residual_preserves_parent_float64_then_learns_all_features():
     assert torch.all(model(features, parent) < parent)
 
 
+@requires_cuda
 def test_adapter_does_not_backpropagate_into_parent_or_input_encoders():
     device = require_cuda()
     model = module().LinearResidualPolicy(np.zeros(3), np.ones(3), target_scale=0.02).to(device)

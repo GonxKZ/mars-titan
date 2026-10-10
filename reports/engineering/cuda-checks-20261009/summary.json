@@ -1,0 +1,827 @@
+{
+  "schema_version": 1,
+  "recorded_at_utc": "2026-10-09T15:26:14.774985+00:00",
+  "base_commit": "2f0e5f72",
+  "tested_commit": "f8ba6bcd85867049ead34dc4c331e0d93e95b439",
+  "hardware": {
+    "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU (Max-Q), 8188 MiB, capacidad 8.9, 36 SM",
+    "driver": "595.91.07",
+    "cpu_threads": 16,
+    "power_profile": "power-saver",
+    "device_memory_baseline_mib": 612,
+    "note": "El pico de nvidia-smi incluye unos 612 MiB del escritorio. Las cifras de PyTorch están en cada recibo"
+  },
+  "software": {
+    "python": "3.12.14",
+    "torch": "2.14.0+cu130",
+    "cuda_runtime": "13.0",
+    "cudnn": 92400,
+    "numpy": "2.5.3",
+    "pyarrow": "25.0.1",
+    "xgboost": "3.3.0",
+    "cupy": "14.2.0",
+    "clang": "21.1.8",
+    "cmake": "4.2.3",
+    "environment": "convergence-runtime-20261001/.venv sin sincronizar"
+  },
+  "policy": {
+    "learning_hold": "vigente, sin cambios en training-hold-2000.json",
+    "optimizer_guard": "tests/conftest.py activo en todas las ejecuciones",
+    "optimizer_steps": 0,
+    "concurrent_gpu_workloads": 0,
+    "threads": {
+      "OMP_NUM_THREADS": 2,
+      "MKL_NUM_THREADS": 2
+    },
+    "cublas_workspace": ":4096:8"
+  },
+  "builds": [
+    {
+      "preset": "native-candidate-cuda",
+      "directory": "build/native/candidate-cuda",
+      "options": "MARS_TITAN_BUILD_EPISODIC_PYTHON=ON, MARS_TITAN_BUILD_SIMULATION=ON, LibTorch CUDA",
+      "wall_seconds": 85.6,
+      "jobs": 2,
+      "episodic_native_sha256": "144b7534f67ba4b95a8b075f0cd155efa32d7008cc69bb87c7172f85219bea8d"
+    },
+    {
+      "preset": "native-release",
+      "directory": "build/native/native-release",
+      "options": "MARS_TITAN_BUILD_EPISODIC_PYTHON=ON añadido para comparar la huella",
+      "wall_seconds": 41.6,
+      "jobs": 2,
+      "episodic_native_sha256": "230cdc5cd29c64ad75c6074930b3e52e9d6b683db497e4a9a06bcc1a72e66817",
+      "mars_titan_sim_sha256": "8477eaa804a8462500be053291dc0cd5a1defcbc891125e4b2a20c4fe9540697"
+    },
+    {
+      "preset": "native-ppo-release",
+      "directory": "build/native/native-ppo-release",
+      "wall_seconds": 137.9,
+      "jobs": 2,
+      "mars_titan_ppo_sha256": "985a12a81dd36492a61924586ebb70f8acb28ce1687b75179e06defbb362f3c2"
+    }
+  ],
+  "m2_fingerprint": {
+    "required": "e7559ed4fba7f43d665520d7831390669d349339c05b51577da8549daf93123d",
+    "fixed_by": "NATIVE_SHA en tests/memory/cuda_mature_error_check.py, introducido en 0bf7fd0b",
+    "binary": "Compilación native-release del 8 de octubre a las 22:28 en el worktree financial-session-v2-20261008, con enlace episódico, sin candidato y sin backend CUDA de LibTorch",
+    "reason": "El binario incorpora MARS_TITAN_NATIVE_SOURCE_SHA256 y la identidad de compilación, que incluye rutas absolutas de include. Ninguna compilación de develop desde otro worktree reproduce esa huella"
+  },
+  "checks": [
+    {
+      "id": "candidate_cuda_ctest",
+      "command": "ctest --test-dir build/native/candidate-cuda -R '^candidate_cuda$' --output-on-failure",
+      "result": "1/1 pasa",
+      "run": "01-ctest-candidate-cuda",
+      "exit_code": 0,
+      "started": "2026-10-09T15:59:34+02:00",
+      "wall_seconds": 2.68,
+      "device_memory_peak_mib": 934,
+      "device_memory_over_baseline_mib": 322,
+      "gpu_temperature_max_c": 45,
+      "host_max_rss_mib": 1244
+    },
+    {
+      "id": "gru_financial_session",
+      "command": "pytest tests/memory/cuda_gru_session_check.py",
+      "result": "1 pasa. Error máximo de predicción 2,2e-8 en FP32 y 1,2e-16 en FP64, recuperación exacta",
+      "receipt": "gru-session-cuda.json",
+      "run": "02-gru-session-candidate",
+      "exit_code": 0,
+      "started": "2026-10-09T16:00:15+02:00",
+      "wall_seconds": 9.01,
+      "device_memory_peak_mib": 810,
+      "device_memory_over_baseline_mib": 198,
+      "gpu_temperature_max_c": 46,
+      "host_max_rss_mib": 1424
+    },
+    {
+      "id": "candidate_cpu_cuda_parity",
+      "command": "python tests/models/candidate/cuda_candidate_check.py --output <recibo>",
+      "result": "6 casos pasan. Error máximo 1,5e-6 en FP32 y 1,6e-15 en FP64, 21 gradientes por caso",
+      "receipt": "candidate-cuda.json",
+      "note": "Es un script con argparse. Con pytest, como figuraba en la lista, no se recoge ninguna prueba",
+      "run": "03-candidate-cuda-parity",
+      "exit_code": 0,
+      "started": "2026-10-09T16:00:39+02:00",
+      "wall_seconds": 4.76,
+      "device_memory_peak_mib": 842,
+      "device_memory_over_baseline_mib": 230,
+      "gpu_temperature_max_c": 46,
+      "host_max_rss_mib": 1406
+    },
+    {
+      "id": "xgboost_external_cache",
+      "command": "pytest tests/models/test_external_cache_cuda.py",
+      "result": "2 pasan tras la corrección. Antes, 2 omitidas por el bloqueo en la entrada del ajuste",
+      "run": "04b-xgboost-cache",
+      "exit_code": 0,
+      "started": "2026-10-09T16:01:31+02:00",
+      "wall_seconds": 4.7,
+      "device_memory_peak_mib": 1438,
+      "device_memory_over_baseline_mib": 826,
+      "gpu_temperature_max_c": 47,
+      "host_max_rss_mib": 1275
+    },
+    {
+      "id": "masked_references",
+      "command": "pytest tests/training/test_masked_reference_cuda.py tests/models/test_multimodal_reference.py tests/models/test_compact_transformer.py",
+      "result": "115 pasan tras la corrección. Antes, 113 pasan y 2 omitidas por el bloqueo",
+      "run": "05b-masked-references",
+      "exit_code": 0,
+      "started": "2026-10-09T16:02:33+02:00",
+      "wall_seconds": 6.75,
+      "device_memory_peak_mib": 928,
+      "device_memory_over_baseline_mib": 316,
+      "gpu_temperature_max_c": 47,
+      "host_max_rss_mib": 1686
+    },
+    {
+      "id": "quantiles",
+      "command": "pytest <3 pruebas CUDA de cuantiles> tests/models/test_multimodal_reference.py tests/training/test_reference_run.py",
+      "result": "24 pasan y 26 omitidas por el bloqueo (run_reference_case)",
+      "run": "06-quantiles",
+      "exit_code": 0,
+      "started": "2026-10-09T16:03:49+02:00",
+      "wall_seconds": 14.07,
+      "device_memory_peak_mib": 932,
+      "device_memory_over_baseline_mib": 320,
+      "gpu_temperature_max_c": 46,
+      "host_max_rss_mib": 1790
+    },
+    {
+      "id": "predictive_adapters",
+      "command": "pytest tests/models/test_predictive_adapters_cuda.py",
+      "result": "5 pasan tras la corrección. Antes, el Transformer fallaba por igualdad bit a bit",
+      "run": "07b-adapters",
+      "exit_code": 0,
+      "started": "2026-10-09T16:06:54+02:00",
+      "wall_seconds": 2.92,
+      "device_memory_peak_mib": 900,
+      "device_memory_over_baseline_mib": 288,
+      "gpu_temperature_max_c": 44,
+      "host_max_rss_mib": 1180
+    },
+    {
+      "id": "titans_gate_retention",
+      "command": "python benchmarks/titans_gate_retention.py --device cuda:0 --output <recibo>",
+      "result": "Completo. Frente al recibo CPU, diferencia relativa máxima 3,6e-6 en FP32 y 5,7e-14 en FP64",
+      "receipt": "titans-gate-retention-cuda.json",
+      "run": "19a-titans-gate-retention-final",
+      "exit_code": 0,
+      "started": "2026-10-09T17:15:22+02:00",
+      "wall_seconds": 454.19,
+      "device_memory_peak_mib": 955,
+      "device_memory_over_baseline_mib": 343,
+      "gpu_temperature_max_c": 53,
+      "host_max_rss_mib": 1350
+    },
+    {
+      "id": "candidate_trainer",
+      "command": "pytest tests/training/cuda_candidate_run_check.py",
+      "result": "6 pasan sin pasos de optimizador",
+      "receipt": "candidate-trainer-cuda.json",
+      "run": "09-candidate-trainer",
+      "exit_code": 0,
+      "started": "2026-10-09T16:15:10+02:00",
+      "wall_seconds": 23.35,
+      "device_memory_peak_mib": 892,
+      "device_memory_over_baseline_mib": 280,
+      "gpu_temperature_max_c": 51,
+      "host_max_rss_mib": 1731
+    },
+    {
+      "id": "candidate_memory",
+      "command": "pytest tests/training/candidate_memory_check.py (128, 256 y 512 activos)",
+      "result": "4 pasan",
+      "receipt": "candidate-memory-cuda.json",
+      "run": "10-candidate-memory",
+      "exit_code": 0,
+      "started": "2026-10-09T16:15:44+02:00",
+      "wall_seconds": 728.48,
+      "device_memory_peak_mib": 2004,
+      "device_memory_over_baseline_mib": 1392,
+      "gpu_temperature_max_c": 52,
+      "host_max_rss_mib": 1888
+    },
+    {
+      "id": "titans_financial_run",
+      "command": "pytest tests/training/test_financial_run.py::test_cuda_pass_matches_cpu_without_optimizer_steps",
+      "result": "1 pasa",
+      "run": "11a-titans-financial-run",
+      "exit_code": 0,
+      "started": "2026-10-09T16:28:31+02:00",
+      "wall_seconds": 8.49,
+      "device_memory_peak_mib": 904,
+      "device_memory_over_baseline_mib": 292,
+      "gpu_temperature_max_c": 49,
+      "host_max_rss_mib": 1522
+    },
+    {
+      "id": "titans_chronological_memory",
+      "command": "python benchmarks/titans_chronological_memory.py --device cuda:0 [--recipe historical-masked]",
+      "result": "Completo con la receta por defecto y con la receta de la campaña",
+      "receipt": [
+        "titans-chronological-memory-cuda.json",
+        "titans-chronological-memory-campaign-cuda.json"
+      ],
+      "run": "11c-titans-chronological-memory-campaign",
+      "exit_code": 0,
+      "started": "2026-10-09T16:28:53+02:00",
+      "wall_seconds": 3.65,
+      "device_memory_peak_mib": 1890,
+      "device_memory_over_baseline_mib": 1278,
+      "gpu_temperature_max_c": 49,
+      "host_max_rss_mib": 1400
+    },
+    {
+      "id": "titans_mac_output_scale",
+      "command": "python benchmarks/titans_mac_output_scale.py --device cuda:0 --output <recibo>",
+      "result": "Completo. Tres ejecuciones CUDA con 612 valores idénticos bit a bit",
+      "receipt": "titans-mac-output-scale-cuda.json",
+      "run": "19b-titans-mac-output-scale-final",
+      "exit_code": 0,
+      "started": "2026-10-09T17:22:58+02:00",
+      "wall_seconds": 174.09,
+      "device_memory_peak_mib": 918,
+      "device_memory_over_baseline_mib": 306,
+      "gpu_temperature_max_c": 52,
+      "host_max_rss_mib": 1323
+    },
+    {
+      "id": "m3_mature_error",
+      "command": "pytest tests/memory/cuda_mature_error_check.py -k m3",
+      "result": "1 pasa con el enlace de develop",
+      "receipt": "m3-mature-error-cuda.json",
+      "run": "12b-m3-mature-error-receipt",
+      "exit_code": 0,
+      "started": "2026-10-09T16:33:27+02:00",
+      "wall_seconds": 14.41,
+      "device_memory_peak_mib": 902,
+      "device_memory_over_baseline_mib": 290,
+      "gpu_temperature_max_c": 49,
+      "host_max_rss_mib": 1586
+    },
+    {
+      "id": "m2_mature_error",
+      "command": "pytest tests/memory/cuda_mature_error_check.py -k m2",
+      "result": "Falla con el enlace de develop por la huella fijada. Pasa con el binario archivado e7559ed4 y, como diagnóstico, con la huella de develop sustituida",
+      "receipt": [
+        "m2-mature-error-cuda.json",
+        "m2-mature-error-cuda-diagnostic.json"
+      ],
+      "runs": [
+        {
+          "run": "12c-m2-develop-binary",
+          "exit_code": 1,
+          "started": "2026-10-09T16:33:50+02:00",
+          "wall_seconds": 2.4,
+          "device_memory_peak_mib": 612,
+          "device_memory_over_baseline_mib": 0,
+          "gpu_temperature_max_c": 48,
+          "host_max_rss_mib": 687
+        },
+        {
+          "run": "12e-m2-archived-binary",
+          "exit_code": 0,
+          "started": "2026-10-09T16:34:37+02:00",
+          "wall_seconds": 15.63,
+          "device_memory_peak_mib": 902,
+          "device_memory_over_baseline_mib": 290,
+          "gpu_temperature_max_c": 49,
+          "host_max_rss_mib": 1624
+        },
+        {
+          "run": "12d-m2-diagnostic-develop-hash",
+          "exit_code": 0,
+          "started": "2026-10-09T16:34:01+02:00",
+          "wall_seconds": 15.67,
+          "device_memory_peak_mib": 902,
+          "device_memory_over_baseline_mib": 290,
+          "gpu_temperature_max_c": 49,
+          "host_max_rss_mib": 1626
+        }
+      ]
+    },
+    {
+      "id": "cm_v1_control",
+      "command": "pytest tests/training/cuda_cm_v1_control_check.py (B y B+C, accumulation_rows None y 2)",
+      "result": "8 pasan tras la corrección. Antes, 8 fallos por reset_peak_memory_stats sin CUDA inicializada",
+      "receipt": "cm-v1-control-cuda.json",
+      "run": "13b-cm-v1-control",
+      "exit_code": 0,
+      "started": "2026-10-09T16:36:42+02:00",
+      "wall_seconds": 56.97,
+      "device_memory_peak_mib": 965,
+      "device_memory_over_baseline_mib": 353,
+      "gpu_temperature_max_c": 49,
+      "host_max_rss_mib": 1790
+    },
+    {
+      "id": "mars_titan_extended",
+      "command": "pytest tests/training/cuda_mars_titan_run_check.py (M1 y M3, K=1 y K=4)",
+      "result": "10 pasan tras la corrección. Antes, 10 fallos por la misma causa que CM-v1",
+      "receipt": "mars-titan-readout-cuda.json",
+      "run": "14b-mars-titan-run",
+      "exit_code": 0,
+      "started": "2026-10-09T16:37:47+02:00",
+      "wall_seconds": 60.19,
+      "device_memory_peak_mib": 902,
+      "device_memory_over_baseline_mib": 289,
+      "gpu_temperature_max_c": 50,
+      "host_max_rss_mib": 1769
+    },
+    {
+      "id": "posttraining_quantiles",
+      "command": "pytest tests/posttraining/test_quantile_adaptation_cuda.py",
+      "result": "3 pasan",
+      "run": "15-posttraining-quantiles",
+      "exit_code": 0,
+      "started": "2026-10-09T16:38:59+02:00",
+      "wall_seconds": 4.42,
+      "device_memory_peak_mib": 902,
+      "device_memory_over_baseline_mib": 290,
+      "gpu_temperature_max_c": 49,
+      "host_max_rss_mib": 1365
+    },
+    {
+      "id": "ppo_inputs_ctest",
+      "command": "ctest --preset native-ppo-release -R '^ppo_inputs$' --output-on-failure",
+      "result": "1/1 pasa. Prueba sin LibTorch ni GPU",
+      "run": "16-ctest-ppo-inputs",
+      "exit_code": 0,
+      "started": "2026-10-09T16:39:10+02:00",
+      "wall_seconds": 0.05,
+      "device_memory_peak_mib": 612,
+      "device_memory_over_baseline_mib": 0,
+      "gpu_temperature_max_c": 48,
+      "host_max_rss_mib": 33
+    },
+    {
+      "id": "klpo_cuda_delta",
+      "command": "delta-cuda (sonda privada de #362 recompilada contra esta rama)",
+      "result": "MLP y GRU idénticos al recibo de be88f4d9, cero actualizaciones",
+      "receipt": "klpo-cuda-delta.json",
+      "run": "17-klpo-cuda-delta",
+      "exit_code": 0,
+      "started": "2026-10-09T16:39:20+02:00",
+      "wall_seconds": 1.13,
+      "device_memory_peak_mib": 922,
+      "device_memory_over_baseline_mib": 310,
+      "gpu_temperature_max_c": 48,
+      "host_max_rss_mib": 1175
+    },
+    {
+      "id": "pr380_cuda_selection",
+      "command": "pytest <selección CUDA de la PR #380>",
+      "result": "81 pasan y 61 omitidas por el bloqueo (57 en la entrada del ajuste y 4 en el paso de AdamW)",
+      "run": "18-pr380-cuda-tests",
+      "exit_code": 0,
+      "started": "2026-10-09T16:39:42+02:00",
+      "wall_seconds": 15.99,
+      "device_memory_peak_mib": 1147,
+      "device_memory_over_baseline_mib": 535,
+      "gpu_temperature_max_c": 48,
+      "host_max_rss_mib": 1854
+    }
+  ],
+  "failures": [
+    {
+      "id": "xgboost_external_cache",
+      "kind": "prueba",
+      "cause": "fit_external_boosting comprueba la protección en su entrada desde #388 y las pruebas se omitían",
+      "fix": "learning_doubles"
+    },
+    {
+      "id": "masked_references",
+      "kind": "prueba",
+      "cause": "run_reference_case comprueba la protección en su entrada desde #388, 2 pruebas CUDA y 17 CPU se omitían",
+      "fix": "learning_doubles con el sustituto de AdamW que no modifica pesos"
+    },
+    {
+      "id": "predictive_adapters",
+      "kind": "prueba",
+      "cause": "torch.matmul usa mm o bmm según requires_grad en la proyección no contigua de MultiheadAttention y en CUDA redondean distinto (1,5e-8)",
+      "fix": "pesos efectivos idénticos y salidas con rtol 1e-6 y atol 1e-7 en entrenamiento"
+    },
+    {
+      "id": "cm_v1_and_mars_titan",
+      "kind": "prueba",
+      "cause": "reset_peak_memory_stats(0) antes de inicializar CUDA lanza Invalid device argument",
+      "fix": "torch.cuda.init() antes del reinicio"
+    },
+    {
+      "id": "suite_collection",
+      "kind": "código de pruebas en develop",
+      "cause": "dos módulos test_campaign_stage.py en carpetas sin paquete (#397 y #401)",
+      "fix": "renombrar el de postentrenamiento a test_adapter_campaign_stage.py"
+    },
+    {
+      "id": "mars_titan_declaration",
+      "kind": "código de pruebas en develop",
+      "cause": "#410 añadió m3 a la declaración y una prueba seguía exigiendo su ausencia",
+      "fix": "los bancos declarados deben coincidir con MARS_BANKS"
+    },
+    {
+      "id": "titans_benchmark_receipts",
+      "kind": "código",
+      "cause": "los recibos fijaban CUDA_VISIBLE_DEVICES=-1, alcance en CPU y una orden sin --device",
+      "fix": "provenance() registra opciones y entorno reales, con prueba unitaria"
+    },
+    {
+      "id": "m2_fingerprint",
+      "kind": "decisión pendiente",
+      "cause": "la prueba fija el binario e7559ed4 y develop no puede reproducirlo",
+      "fix": "ninguna, pasa con el binario archivado y con la huella de develop como diagnóstico"
+    }
+  ],
+  "observations": [
+    "La GRU nativa de la candidata emite en CUDA el aviso de cuDNN de pesos no contiguos (native/src/candidate.cpp llama a at::gru sin aplanar). Coste no medido",
+    "Con residual y LayerNorm, CPU y CUDA separan sus trayectorias en la escala de MAC (1,7 % a 2.048 pasos y 4,2 % a 4.096 con gate_bias). CUDA es determinista entre ejecuciones",
+    "Con fixtures pequeños MARS-TITAN y CM-v1 tardan el doble en CUDA que en CPU por estar dominados por lanzamientos",
+    "M2 y M3 alcanzan 69 MB del asignador frente a 19 MB del recibo M2 anterior, también con el binario archivado"
+  ],
+  "cpu_suite": {
+    "environment": "CUDA_VISIBLE_DEVICES=-1 con biblioteca y mars-titan-sim de native-release, mars-titan-ppo y enlace episódico",
+    "exclusions": "13 archivos de la PR #380, sus 8 archivos mixtos completos y la prueba CUDA de test_klpo_queue",
+    "tested_commit": "24002d2a",
+    "passed": 6625,
+    "failed": 22,
+    "skipped": 360,
+    "deselected": 1,
+    "wall_seconds": 1838.2,
+    "failures": "21 exigen CUDA y no se sustituyen por CPU. 1 era la aserción de M3, corregida después en f8ba6bcd",
+    "skips": {
+      "hold_entry": 260,
+      "hold_optimizer_step": 49,
+      "cuda_unavailable_or_exclusive_window": 48,
+      "unadjusted_edition_not_declared": 3
+    },
+    "now_passing_with_binaries": {
+      "test_native_runner": 75,
+      "test_ppo_objective_config": 13,
+      "test_native_financial_lifecycle": 36,
+      "test_financial_session_gru": 19,
+      "test_native_china_rules": 23
+    }
+  },
+  "not_executed": [
+    {
+      "item": "tests/training/test_joint_temporal_cuda.py y tests/training/test_cn_temporal_cuda.py",
+      "reason": "aplican pasos de optimizador"
+    },
+    {
+      "item": "Paridad Ridge en cuda:0 y pruebas CUDA de políticas RL",
+      "reason": "ajustan modelos"
+    },
+    {
+      "item": "160 exclusiones de la PR #380",
+      "reason": "ajustan modelos fuera de PyTorch"
+    },
+    {
+      "item": "scripts/run_masked_campaign.py throughput y caudal RL",
+      "reason": "necesitan las vistas preparadas tras los objetivos"
+    },
+    {
+      "item": "Tramo de referencia y oleada forzada del delta KLPO",
+      "reason": "no forma parte de la versión final de la sonda privada"
+    }
+  ],
+  "memory": {
+    "candidate": {
+      "recipe": {
+        "update_instants": 8,
+        "block_rows": 128,
+        "bank_capacity": 1024,
+        "dtype": "float32"
+      },
+      "peak_allocated": [
+        {
+          "assets": 128,
+          "accumulation_rows": null,
+          "recompute": false,
+          "peak_allocated_mib": 357.9,
+          "seconds": 8.0,
+          "gradients_bitwise_equal": true,
+          "max_abs_gradient_difference": 0.0
+        },
+        {
+          "assets": 128,
+          "accumulation_rows": 128,
+          "recompute": false,
+          "peak_allocated_mib": 156.0,
+          "seconds": 7.7,
+          "gradients_bitwise_equal": false,
+          "max_abs_gradient_difference": 6.705522537231445e-08
+        },
+        {
+          "assets": 128,
+          "accumulation_rows": 1024,
+          "recompute": false,
+          "peak_allocated_mib": 156.0,
+          "seconds": 7.9,
+          "gradients_bitwise_equal": false,
+          "max_abs_gradient_difference": 6.705522537231445e-08
+        },
+        {
+          "assets": 128,
+          "accumulation_rows": null,
+          "recompute": true,
+          "peak_allocated_mib": 144.9,
+          "seconds": 9.0,
+          "gradients_bitwise_equal": true,
+          "max_abs_gradient_difference": 0.0
+        },
+        {
+          "assets": 128,
+          "accumulation_rows": 128,
+          "recompute": true,
+          "peak_allocated_mib": 148.2,
+          "seconds": 8.0,
+          "gradients_bitwise_equal": false,
+          "max_abs_gradient_difference": 6.705522537231445e-08
+        },
+        {
+          "assets": 256,
+          "accumulation_rows": null,
+          "recompute": false,
+          "peak_allocated_mib": 622.1,
+          "seconds": 15.7,
+          "gradients_bitwise_equal": true,
+          "max_abs_gradient_difference": 0.0
+        },
+        {
+          "assets": 256,
+          "accumulation_rows": 128,
+          "recompute": false,
+          "peak_allocated_mib": 189.5,
+          "seconds": 15.5,
+          "gradients_bitwise_equal": false,
+          "max_abs_gradient_difference": 4.470348358154297e-08
+        },
+        {
+          "assets": 256,
+          "accumulation_rows": 1024,
+          "recompute": false,
+          "peak_allocated_mib": 191.6,
+          "seconds": 15.8,
+          "gradients_bitwise_equal": false,
+          "max_abs_gradient_difference": 5.960464477539063e-08
+        },
+        {
+          "assets": 256,
+          "accumulation_rows": null,
+          "recompute": true,
+          "peak_allocated_mib": 151.5,
+          "seconds": 16.0,
+          "gradients_bitwise_equal": true,
+          "max_abs_gradient_difference": 0.0
+        },
+        {
+          "assets": 256,
+          "accumulation_rows": 128,
+          "recompute": true,
+          "peak_allocated_mib": 149.3,
+          "seconds": 16.9,
+          "gradients_bitwise_equal": false,
+          "max_abs_gradient_difference": 4.470348358154297e-08
+        },
+        {
+          "assets": 512,
+          "accumulation_rows": null,
+          "recompute": false,
+          "peak_allocated_mib": 1157.8,
+          "seconds": 33.5,
+          "gradients_bitwise_equal": true,
+          "max_abs_gradient_difference": 0.0
+        },
+        {
+          "assets": 512,
+          "accumulation_rows": 128,
+          "recompute": false,
+          "peak_allocated_mib": 256.6,
+          "seconds": 31.9,
+          "gradients_bitwise_equal": false,
+          "max_abs_gradient_difference": 8.940696716308594e-08
+        },
+        {
+          "assets": 512,
+          "accumulation_rows": 1024,
+          "recompute": false,
+          "peak_allocated_mib": 258.7,
+          "seconds": 31.3,
+          "gradients_bitwise_equal": false,
+          "max_abs_gradient_difference": 8.940696716308594e-08
+        },
+        {
+          "assets": 512,
+          "accumulation_rows": null,
+          "recompute": true,
+          "peak_allocated_mib": 164.7,
+          "seconds": 31.7,
+          "gradients_bitwise_equal": true,
+          "max_abs_gradient_difference": 0.0
+        },
+        {
+          "assets": 512,
+          "accumulation_rows": 128,
+          "recompute": true,
+          "peak_allocated_mib": 150.9,
+          "seconds": 32.7,
+          "gradients_bitwise_equal": false,
+          "max_abs_gradient_difference": 8.940696716308594e-08
+        }
+      ],
+      "recompute_one_block": {
+        "rows": 128,
+        "forward_backward_ms": 5.6,
+        "checkpoint_forward_backward_ms": 8.34,
+        "forward_without_graph_ms": 2.02,
+        "held_saved_bytes_per_row": 266531.03125,
+        "gradients_bitwise_equal": true
+      }
+    },
+    "titans": {
+      "titans-chronological-memory-cuda.json": {
+        "transformer_direct": {
+          "saved_bytes_per_row_instant": 241521,
+          "peak_with_backward_bytes": 321530880,
+          "estimated_segment_bytes": {
+            "128": {
+              "without_accumulation": 247317632,
+              "accumulation_rows_128": 254208128
+            },
+            "1024": {
+              "without_accumulation": 1978541056,
+              "accumulation_rows_128": 302441600
+            },
+            "us_4202": {
+              "without_accumulation": 8118974138,
+              "accumulation_rows_128": 473519696
+            },
+            "all_5023": {
+              "without_accumulation": 9705284887,
+              "accumulation_rows_128": 517715768
+            }
+          }
+        },
+        "mac_disabled": {
+          "saved_bytes_per_row_instant": 243314,
+          "peak_with_backward_bytes": 336229888,
+          "estimated_segment_bytes": {
+            "128": {
+              "without_accumulation": 249153024,
+              "accumulation_rows_128": 272820736
+            },
+            "1024": {
+              "without_accumulation": 1993224192,
+              "accumulation_rows_128": 438494720
+            },
+            "us_4202": {
+              "without_accumulation": 8179226616,
+              "accumulation_rows_128": 1026119632
+            },
+            "all_5023": {
+              "without_accumulation": 9777309684,
+              "accumulation_rows_128": 1177925816
+            }
+          }
+        },
+        "mac_frozen": {
+          "saved_bytes_per_row_instant": 291707,
+          "peak_with_backward_bytes": 384007168,
+          "estimated_segment_bytes": {
+            "128": {
+              "without_accumulation": 298707712,
+              "accumulation_rows_128": 322375424
+            },
+            "1024": {
+              "without_accumulation": 2389661696,
+              "accumulation_rows_128": 488049408
+            },
+            "us_4202": {
+              "without_accumulation": 9806014108,
+              "accumulation_rows_128": 1075674320
+            },
+            "all_5023": {
+              "without_accumulation": 11721944042,
+              "accumulation_rows_128": 1227480504
+            }
+          }
+        },
+        "mac_online": {
+          "saved_bytes_per_row_instant": 392847,
+          "peak_with_backward_bytes": 503317504,
+          "estimated_segment_bytes": {
+            "128": {
+              "without_accumulation": 402275168,
+              "accumulation_rows_128": 425942880
+            },
+            "1024": {
+              "without_accumulation": 3218201344,
+              "accumulation_rows_128": 591616864
+            },
+            "us_4202": {
+              "without_accumulation": 13205939500,
+              "accumulation_rows_128": 1179241776
+            },
+            "all_5023": {
+              "without_accumulation": 15786157569,
+              "accumulation_rows_128": 1331047960
+            }
+          }
+        }
+      },
+      "titans-chronological-memory-campaign-cuda.json": {
+        "transformer_direct": {
+          "saved_bytes_per_row_instant": 241521,
+          "peak_with_backward_bytes": 321530880,
+          "estimated_segment_bytes": {
+            "128": {
+              "without_accumulation": 247317632,
+              "accumulation_rows_128": 254208128
+            },
+            "1024": {
+              "without_accumulation": 1978541056,
+              "accumulation_rows_128": 302441600
+            },
+            "us_4202": {
+              "without_accumulation": 8118974138,
+              "accumulation_rows_128": 473519696
+            },
+            "all_5023": {
+              "without_accumulation": 9705284887,
+              "accumulation_rows_128": 517715768
+            }
+          }
+        },
+        "mac_disabled": {
+          "saved_bytes_per_row_instant": 243314,
+          "peak_with_backward_bytes": 336229888,
+          "estimated_segment_bytes": {
+            "128": {
+              "without_accumulation": 249153024,
+              "accumulation_rows_128": 272820736
+            },
+            "1024": {
+              "without_accumulation": 1993224192,
+              "accumulation_rows_128": 438494720
+            },
+            "us_4202": {
+              "without_accumulation": 8179226616,
+              "accumulation_rows_128": 1026119632
+            },
+            "all_5023": {
+              "without_accumulation": 9777309684,
+              "accumulation_rows_128": 1177925816
+            }
+          }
+        },
+        "mac_frozen": {
+          "saved_bytes_per_row_instant": 292235,
+          "peak_with_backward_bytes": 384514048,
+          "estimated_segment_bytes": {
+            "128": {
+              "without_accumulation": 299248384,
+              "accumulation_rows_128": 322916096
+            },
+            "1024": {
+              "without_accumulation": 2393987072,
+              "accumulation_rows_128": 488590080
+            },
+            "us_4202": {
+              "without_accumulation": 9823763356,
+              "accumulation_rows_128": 1076214992
+            },
+            "all_5023": {
+              "without_accumulation": 11743161194,
+              "accumulation_rows_128": 1228021176
+            }
+          }
+        },
+        "mac_online": {
+          "saved_bytes_per_row_instant": 393895,
+          "peak_with_backward_bytes": 504053760,
+          "estimated_segment_bytes": {
+            "128": {
+              "without_accumulation": 403348320,
+              "accumulation_rows_128": 427016032
+            },
+            "1024": {
+              "without_accumulation": 3226786560,
+              "accumulation_rows_128": 592690016
+            },
+            "us_4202": {
+              "without_accumulation": 13241169068,
+              "accumulation_rows_128": 1180314928
+            },
+            "all_5023": {
+              "without_accumulation": 15828270401,
+              "accumulation_rows_128": 1332121112
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,560 @@
+{
+  "schema_version": 1,
+  "kind": "comparison_matrix",
+  "name": "campaign-a-comparison-matrix",
+  "status": "declared_before_results",
+  "declared_at": "2026-10-10",
+  "use": "declared_contrasts_and_component_attribution_not_for_selecting_the_architecture",
+  "comparison": "historical-masked-2000-comparison.json",
+  "conditional_arms": {
+    "transformer_compact_online": {
+      "condition": "Control de la campaña por etapas: parte del estado elegido de transformer_compact y se actualiza en línea con las mismas etiquetas maduras que el banco de MARS-TITAN, con una regla declarada antes de ejecutar",
+      "issue": 363
+    },
+    "titans_reference_mac": {
+      "condition": "Brazo ajustado con una implementación pública de Titans-MAC. La revisión de #434 recomendó conservar el núcleo, que coincide en FP64 con la memoria de lucidrains/titans-pytorch, y no incorporar su código, así que no hay brazo previsto. Solo existiría con una aprobación expresa",
+      "issue": 434
+    },
+    "mars_titan_m1_k4_first_read": {
+      "condition": "Declarado en la ampliación de la campaña A con los componentes de integración (A10)",
+      "issue": 56
+    },
+    "mars_titan_b6": {
+      "condition": "Declarado en la ampliación de la campaña A con los componentes de integración (A5, clave del codec)",
+      "issue": 20
+    },
+    "mars_titan_b6_bias": {
+      "condition": "Declarado en la ampliación de la campaña A con los componentes de integración (A5, clave constante)",
+      "issue": 20
+    }
+  },
+  "derived_arms": {
+    "chain": {
+      "condition": "Predictor de la cadena por etapas elegido con la validación de cada ventana (chain_validation_score_v1)",
+      "issue": 364
+    },
+    "frozen_parent": {
+      "condition": "Padre de la ventana anterior trasladado sin cambios a la ventana evaluada",
+      "issue": 364
+    },
+    "full_continuation": {
+      "condition": "Continuación completa del padre de la ventana anterior con las filas nuevas",
+      "issue": 364
+    }
+  },
+  "groups": {
+    "family_representatives": [
+      "ridge",
+      "xgboost",
+      "rnn",
+      "lstm",
+      "gru",
+      "dlinear",
+      "transformer_compact",
+      "gru_episodic",
+      "titans_mac_online",
+      "mars_titan_m1",
+      "cm_v1_b"
+    ],
+    "references": [
+      "ridge",
+      "xgboost",
+      "rnn",
+      "lstm",
+      "gru",
+      "dlinear",
+      "transformer_compact",
+      "transformer_compact_online",
+      "gru_episodic",
+      "titans_mac_online"
+    ],
+    "mars_titan_variants": [
+      "mars_titan_m0",
+      "mars_titan_m1",
+      "mars_titan_m2",
+      "mars_titan_m3",
+      "mars_titan_m1_k2",
+      "mars_titan_m1_k4",
+      "mars_titan_m1_k4_first_read",
+      "mars_titan_b6"
+    ],
+    "cm_v1_variants": ["cm_v1_b", "cm_v1_bc", "cm_v1_bm", "cm_v1_bcm"],
+    "trained_arms": [
+      "ridge",
+      "xgboost",
+      "rnn",
+      "lstm",
+      "gru",
+      "dlinear",
+      "transformer_compact",
+      "gru_episodic",
+      "titans_transformer_direct",
+      "titans_mac_disabled",
+      "titans_mac_frozen",
+      "titans_mac_online",
+      "mars_titan_m0",
+      "mars_titan_m1",
+      "mars_titan_m2",
+      "mars_titan_m3",
+      "mars_titan_m1_k2",
+      "mars_titan_m1_k4",
+      "cm_v1_b",
+      "cm_v1_bc",
+      "cm_v1_bm",
+      "cm_v1_bcm"
+    ]
+  },
+  "questions": {
+    "between_families": {
+      "kind": "pairwise",
+      "arms": "family_representatives",
+      "question": "¿Qué familia predice mejor que cada una de las demás con las mismas filas? Cada familia entra con su brazo representativo declarado"
+    },
+    "mars_titan_vs_families": {
+      "kind": "against",
+      "each": "mars_titan_variants",
+      "references": "references",
+      "question": "¿Cuánto mejora o empeora cada variante de MARS-TITAN frente a cada familia de referencia?"
+    },
+    "cm_v1_vs_families": {
+      "kind": "against",
+      "each": "cm_v1_variants",
+      "references": "references",
+      "question": "¿Cuánto mejora o empeora cada brazo de CM-v1 frente a cada familia de referencia?"
+    },
+    "titans_reference_core": {
+      "kind": "pairs",
+      "pairs": [
+        ["titans_mac_online", "titans_reference_mac"],
+        ["titans_reference_mac", "mars_titan_m1"]
+      ],
+      "question": "¿Nuestro núcleo Titans-MAC predice distinto que la implementación de referencia y cuánto aportan nuestras ampliaciones sobre ella?"
+    },
+    "online_learning_control": {
+      "kind": "pairs",
+      "pairs": [
+        ["transformer_compact", "transformer_compact_online"],
+        ["transformer_compact_online", "titans_mac_online"],
+        ["transformer_compact_online", "mars_titan_m1"]
+      ],
+      "question": "¿La ventaja de MARS-TITAN se explica solo por seguir aprendiendo con etiquetas maduras? Se compara con un Transformer que recibe las mismas etiquetas en el mismo instante"
+    },
+    "staged_chain": {
+      "kind": "pairs",
+      "each": "trained_arms",
+      "pairs": [
+        ["{arm}", "{arm}__chain"],
+        ["{arm}__frozen_parent", "{arm}__chain"],
+        ["{arm}__full_continuation", "{arm}__chain"],
+        ["{arm}", "{arm}__frozen_parent"],
+        ["{arm}", "{arm}__full_continuation"]
+      ],
+      "question": "¿El predictor de la cadena por etapas mejora al reentreno completo, al padre trasladado y a la continuación completa de la misma familia?"
+    }
+  },
+  "lineages": {
+    "titans": {
+      "question": "¿Qué parte de la arquitectura, desde el Transformer compacto hasta MARS-TITAN con su banco M3, aporta cuánto y cómo depende de lo demás?",
+      "components": {
+        "titans_encoder": {
+          "label": "Recorrido directo de Titans-MAC en lugar del codificador del Transformer compacto",
+          "requires": []
+        },
+        "mac_attention": {
+          "label": "Atención MAC por segmentos sin prefijos de memoria ni puerta",
+          "requires": ["titans_encoder"]
+        },
+        "memory_read": {
+          "label": "Memoria persistente, lectura de la memoria neuronal y puerta, sin actualizarla",
+          "requires": ["mac_attention"]
+        },
+        "test_time_update": {
+          "label": "Actualización de la memoria neuronal durante la inferencia",
+          "requires": ["memory_read"]
+        },
+        "episodic_refiner": {
+          "label": "Parámetros y cálculo del lector episódico sin contenido (M0)",
+          "requires": ["mac_attention"]
+        },
+        "episodic_content": {
+          "label": "Contenido del banco con episodios maduros (M1)",
+          "requires": ["episodic_refiner"]
+        },
+        "error_selection": {
+          "label": "Escritura por error maduro con la misma capacidad (M2)",
+          "requires": ["episodic_content"]
+        },
+        "anomaly_relevance": {
+          "label": "Anomalía y relevancia en la puntuación de escritura (M3)",
+          "requires": ["episodic_content"]
+        },
+        "refinements_k2": {
+          "label": "Dos refinamientos del lector (K = 2)",
+          "requires": ["episodic_refiner"]
+        },
+        "refinements_k4": {
+          "label": "Cuatro refinamientos del lector (K = 4)",
+          "requires": ["episodic_refiner"]
+        },
+        "first_read_episodes": {
+          "label": "Los refinamientos solo atienden los episodios de la primera lectura",
+          "requires": ["refinements_k4", "episodic_content"]
+        },
+        "associative_correction": {
+          "label": "Corrección asociativa madura de B6 con clave constante (corrector de sesgo)",
+          "requires": ["test_time_update"]
+        },
+        "codec_key": {
+          "label": "Clave del codec en la corrección asociativa de B6",
+          "requires": ["associative_correction"]
+        }
+      },
+      "arms": {
+        "transformer_compact": [],
+        "titans_transformer_direct": ["titans_encoder"],
+        "titans_mac_disabled": ["titans_encoder", "mac_attention"],
+        "titans_mac_frozen": ["titans_encoder", "mac_attention", "memory_read"],
+        "titans_mac_online": ["titans_encoder", "mac_attention", "memory_read", "test_time_update"],
+        "mars_titan_m0": [
+          "titans_encoder",
+          "mac_attention",
+          "memory_read",
+          "test_time_update",
+          "episodic_refiner"
+        ],
+        "mars_titan_m1": [
+          "titans_encoder",
+          "mac_attention",
+          "memory_read",
+          "test_time_update",
+          "episodic_refiner",
+          "episodic_content"
+        ],
+        "mars_titan_m2": [
+          "titans_encoder",
+          "mac_attention",
+          "memory_read",
+          "test_time_update",
+          "episodic_refiner",
+          "episodic_content",
+          "error_selection"
+        ],
+        "mars_titan_m3": [
+          "titans_encoder",
+          "mac_attention",
+          "memory_read",
+          "test_time_update",
+          "episodic_refiner",
+          "episodic_content",
+          "error_selection",
+          "anomaly_relevance"
+        ],
+        "mars_titan_m1_k2": [
+          "titans_encoder",
+          "mac_attention",
+          "memory_read",
+          "test_time_update",
+          "episodic_refiner",
+          "episodic_content",
+          "refinements_k2"
+        ],
+        "mars_titan_m1_k4": [
+          "titans_encoder",
+          "mac_attention",
+          "memory_read",
+          "test_time_update",
+          "episodic_refiner",
+          "episodic_content",
+          "refinements_k4"
+        ],
+        "mars_titan_m1_k4_first_read": [
+          "titans_encoder",
+          "mac_attention",
+          "memory_read",
+          "test_time_update",
+          "episodic_refiner",
+          "episodic_content",
+          "refinements_k4",
+          "first_read_episodes"
+        ],
+        "mars_titan_b6_bias": [
+          "titans_encoder",
+          "mac_attention",
+          "memory_read",
+          "test_time_update",
+          "associative_correction"
+        ],
+        "mars_titan_b6": [
+          "titans_encoder",
+          "mac_attention",
+          "memory_read",
+          "test_time_update",
+          "associative_correction",
+          "codec_key"
+        ],
+        "mars_titan_m3_frozen_core": [
+          "titans_encoder",
+          "mac_attention",
+          "memory_read",
+          "episodic_refiner",
+          "episodic_content",
+          "error_selection",
+          "anomaly_relevance"
+        ],
+        "mars_titan_m3_disabled_core": [
+          "titans_encoder",
+          "mac_attention",
+          "episodic_refiner",
+          "episodic_content",
+          "error_selection",
+          "anomaly_relevance"
+        ],
+        "mars_titan_m3_without_error": [
+          "titans_encoder",
+          "mac_attention",
+          "memory_read",
+          "test_time_update",
+          "episodic_refiner",
+          "episodic_content",
+          "anomaly_relevance"
+        ],
+        "mars_titan_m0_frozen_core": [
+          "titans_encoder",
+          "mac_attention",
+          "memory_read",
+          "episodic_refiner"
+        ],
+        "mars_titan_m1_frozen_core": [
+          "titans_encoder",
+          "mac_attention",
+          "memory_read",
+          "episodic_refiner",
+          "episodic_content"
+        ],
+        "mars_titan_m2_k4": [
+          "titans_encoder",
+          "mac_attention",
+          "memory_read",
+          "test_time_update",
+          "episodic_refiner",
+          "episodic_content",
+          "error_selection",
+          "refinements_k4"
+        ],
+        "mars_titan_m0_b6_bias": [
+          "titans_encoder",
+          "mac_attention",
+          "memory_read",
+          "test_time_update",
+          "episodic_refiner",
+          "associative_correction"
+        ],
+        "mars_titan_m1_b6_bias": [
+          "titans_encoder",
+          "mac_attention",
+          "memory_read",
+          "test_time_update",
+          "episodic_refiner",
+          "episodic_content",
+          "associative_correction"
+        ]
+      },
+      "ladder": [
+        "titans_encoder",
+        "mac_attention",
+        "memory_read",
+        "test_time_update",
+        "episodic_refiner",
+        "episodic_content",
+        "error_selection",
+        "anomaly_relevance"
+      ],
+      "full": [
+        "titans_encoder",
+        "mac_attention",
+        "memory_read",
+        "test_time_update",
+        "episodic_refiner",
+        "episodic_content",
+        "error_selection",
+        "anomaly_relevance"
+      ],
+      "interactions": [
+        {
+          "first": "test_time_update",
+          "second": "episodic_content",
+          "context": "mars_titan_m0_frozen_core"
+        },
+        {"first": "refinements_k4", "second": "error_selection", "context": "mars_titan_m1"},
+        {
+          "first": "associative_correction",
+          "second": "episodic_content",
+          "context": "mars_titan_m0"
+        }
+      ],
+      "games": [
+        {
+          "players": ["test_time_update", "episodic_content"],
+          "context": "mars_titan_m0_frozen_core"
+        },
+        {"players": ["error_selection", "anomaly_relevance"], "context": "mars_titan_m1"},
+        {
+          "players": [
+            "titans_encoder",
+            "mac_attention",
+            "memory_read",
+            "test_time_update",
+            "episodic_refiner",
+            "episodic_content",
+            "error_selection",
+            "anomaly_relevance"
+          ],
+          "context": "transformer_compact"
+        }
+      ]
+    },
+    "cm_v1": {
+      "question": "¿Cuánto aportan la penalización contractiva C y la consolidación anclada M sobre la B de CM-v1, por separado y juntas?",
+      "components": {
+        "contraction_penalty": {
+          "label": "Penalización contractiva C sobre el operador implementado",
+          "requires": []
+        },
+        "anchored_consolidation": {
+          "label": "Consolidación anclada M de episodios",
+          "requires": []
+        }
+      },
+      "arms": {
+        "cm_v1_b": [],
+        "cm_v1_bc": ["contraction_penalty"],
+        "cm_v1_bm": ["anchored_consolidation"],
+        "cm_v1_bcm": ["contraction_penalty", "anchored_consolidation"]
+      },
+      "ladder": ["contraction_penalty", "anchored_consolidation"],
+      "full": ["contraction_penalty", "anchored_consolidation"],
+      "interactions": [
+        {
+          "first": "contraction_penalty",
+          "second": "anchored_consolidation",
+          "context": "cm_v1_b"
+        }
+      ],
+      "games": [{"players": ["contraction_penalty", "anchored_consolidation"], "context": "cm_v1_b"}]
+    }
+  },
+  "candidates": {
+    "mars_titan_m3_frozen_core": {
+      "lineage": "titans",
+      "producer": "reader_fit",
+      "code": "requires_change",
+      "change": "El lector solo admite hoy un padre Titans-MAC mac_online (parent_arm de la sección mars_titan y _parent de la ventana). Habría que aceptar mac_frozen con su identidad",
+      "cost_like": "mars_titan_m3",
+      "purpose": "Dejar fuera la actualización en inferencia dentro del MARS-TITAN completo"
+    },
+    "mars_titan_m3_disabled_core": {
+      "lineage": "titans",
+      "producer": "reader_fit",
+      "code": "requires_change",
+      "change": "Lector sobre un padre mac_disabled, con el mismo cambio de padre que el anterior",
+      "cost_like": "mars_titan_m3",
+      "purpose": "Dejar fuera la memoria persistente y la lectura de la memoria neuronal dentro del MARS-TITAN completo"
+    },
+    "mars_titan_m3_without_error": {
+      "lineage": "titans",
+      "producer": "reader_fit",
+      "code": "requires_change",
+      "change": "Política de escritura nueva con pesos (0, 1/2, 1/2) y su identidad. Los pesos de M3 son constantes en memory/write_scores.py",
+      "cost_like": "mars_titan_m3",
+      "purpose": "Dejar fuera la selección por error dentro de M3 y repartir con Shapley entre error y anomalía-relevancia"
+    },
+    "mars_titan_m0_frozen_core": {
+      "lineage": "titans",
+      "producer": "reader_fit",
+      "code": "requires_change",
+      "change": "Lector M0 sobre un padre mac_frozen, con el cambio de padre del primer candidato",
+      "cost_like": "mars_titan_m0",
+      "purpose": "Interacción entre la actualización de Titans y el contenido del banco"
+    },
+    "mars_titan_m1_frozen_core": {
+      "lineage": "titans",
+      "producer": "reader_fit",
+      "code": "requires_change",
+      "change": "Lector M1 sobre un padre mac_frozen, con el cambio de padre del primer candidato",
+      "cost_like": "mars_titan_m1",
+      "purpose": "Interacción entre la actualización de Titans y el contenido del banco"
+    },
+    "mars_titan_m2_k4": {
+      "lineage": "titans",
+      "producer": "reader_fit",
+      "code": "existing",
+      "change": "Solo un brazo más en la sección mars_titan: episodic_bank m2 con refinements 4",
+      "cost_like": "mars_titan_m1_k4",
+      "purpose": "Interacción entre los refinamientos y la selección por error"
+    },
+    "mars_titan_m0_b6_bias": {
+      "lineage": "titans",
+      "producer": "prediction_only",
+      "code": "requires_change",
+      "change": "B6 no se combina hoy con el banco. Habría que leer la corrección asociativa sobre la salida del lector en la ventana del lector",
+      "cost_like": "mars_titan_b6_bias",
+      "purpose": "Interacción entre la corrección asociativa y el contenido del banco"
+    },
+    "mars_titan_m1_b6_bias": {
+      "lineage": "titans",
+      "producer": "prediction_only",
+      "code": "requires_change",
+      "change": "Igual que el anterior sobre el lector M1",
+      "cost_like": "mars_titan_b6_bias",
+      "purpose": "Interacción entre la corrección asociativa y el contenido del banco"
+    }
+  },
+  "views": {
+    "forecast": {
+      "source": "walk_forward_comparison_report",
+      "quantiles": "raw",
+      "metrics": [
+        "mae",
+        "mse",
+        "direction_accuracy",
+        "rank_ic",
+        "pinball",
+        "up_precision",
+        "down_precision",
+        "sign_brier",
+        "sign_ece",
+        "interval_score@0.8",
+        "interval_score@0.95"
+      ]
+    },
+    "forecast_calibrated": {
+      "source": "walk_forward_comparison_report",
+      "quantiles": "calibrated",
+      "metrics": ["pinball", "sign_brier", "sign_ece", "interval_score@0.8", "interval_score@0.95"]
+    },
+    "portfolio": {
+      "source": "long_short_comparison_report",
+      "statistics": [
+        "mean_net_return",
+        "annualized_return",
+        "cumulative_return",
+        "sharpe",
+        "volatility",
+        "max_drawdown",
+        "turnover"
+      ]
+    },
+    "policies": {
+      "source": "session_metric_table",
+      "metrics": null,
+      "pending": "Las métricas por sesión de las políticas se declaran cuando la etapa de refuerzo las fije, antes de ver resultados",
+      "issue": 137
+    },
+    "architecture_diagnostics": {
+      "source": "session_metric_table",
+      "metrics": null,
+      "pending": "Retención, regímenes, maduración y Jacobiano se declaran cuando se especifiquen sus series por sesión, antes de ver resultados",
+      "issue": 27
+    }
+  }
+}

@@ -32,10 +32,15 @@ DEFAULT_DAYS = (
 )
 
 
-def historical_temporal_fixture(root, markets=("US",), days=None):
-    """Crear el corpus técnico. `days` permite fijar las sesiones de cada mercado."""
+def historical_temporal_fixture(root, markets=("US",), days=None, *, assets=1, presence=None):
+    """Crear el corpus técnico. `days` permite fijar las sesiones de cada mercado.
+
+    `presence(market, symbol, row)` puede devolver noticias, fundamentales y macro de cada
+    muestra, con vectores, recuento de noticias y disponibilidad coherentes. Sin ella, las
+    muestras no tienen noticias ni fundamentales y el macro aparece en una de cada tres.
+    """
     root = Path(root)
-    parent = corpus(root / "parent", assets=1, rows=1, markets=markets)
+    parent = corpus(root / "parent", assets=assets, rows=1, markets=markets)
     meta = json.loads(parent.read_text())
     policy = policy_identity(HISTORICAL_MASKED)
     representation = dict(
@@ -75,21 +80,24 @@ def historical_temporal_fixture(root, markets=("US",), days=None):
         for row_number, position in enumerate(positions):
             moment = clock.decisions[position]
             day = moment.date().isoformat()
-            observed_macro = row_number % 3 == 0
-            presence = [True, False, True, False, observed_macro]
+            news, fundamentals, observed_macro = False, False, row_number % 3 == 0
+            if presence is not None:
+                news, fundamentals, observed_macro = presence(market, symbol, row_number)
+            flags = [True, news, True, fundamentals, observed_macro]
             samples.append(
                 dict(
                     cohort_id="original_audited",
                     prediction_at=moment,
                     price_end_index=position,
-                    news=[0.0] * 384,
+                    news=[0.5 if news else 0.0] * 384,
                     charts=[0.25] * 512,
-                    fundamentals=[0.0] * 3,
+                    # Valor, máscara y edad del único concepto fundamental del fixture.
+                    fundamentals=[1.0, 1.0, 0.0] if fundamentals else [0.0] * 3,
                     macro=[0.0, 0.0, float(observed_macro), 0.0, 0.0, 0.0],
-                    presence=presence,
-                    news_count=0,
+                    presence=flags,
+                    news_count=int(news),
                     input_availability={
-                        name: moment if presence[index] else None
+                        name: moment if flags[index] else None
                         for index, name in enumerate(MODALITIES)
                     },
                 )
@@ -165,12 +173,11 @@ def historical_temporal_fixture(root, markets=("US",), days=None):
         )
         for part in counts:
             counts[part] += asset["counts"][part]
-        coverage.extend(
-            [
-                dict(market=market, symbol=symbol, state="encoded", samples=len(samples)),
-                dict(market=market, symbol="NO_PRICES", state="missing_required_prices"),
-            ]
-        )
+        coverage.append(dict(market=market, symbol=symbol, state="encoded", samples=len(samples)))
+        if not any(row["symbol"] == "NO_PRICES" and row["market"] == market for row in coverage):
+            coverage.append(
+                dict(market=market, symbol="NO_PRICES", state="missing_required_prices")
+            )
         config = json.loads(Path("configs/evaluation/real-expanded-walk-forward.json").read_text())
         config.update(market=market, train_start="2000-01-01")
         protocols[market] = root / f"protocol-{market}.json"

@@ -1,4 +1,10 @@
-"""Admitir PPO nativo con una única carga GPU o un diagnóstico CPU explícito."""
+"""Admitir PPO o KLPO nativo con una única carga GPU o un diagnóstico CPU explícito.
+
+El mismo lanzador sirve a mars-titan-ppo y a mars-titan-klpo (``--binary``). Los esquemas
+adaptativos 2 a 4 y la configuración KLPO admiten catálogos grandes y auditoría separada.
+El esquema 4 y KLPO usan cintas reconstruidas, así que también su evaluación se detiene con
+la protección local del aprendizaje antes de lanzar el binario.
+"""
 
 import argparse
 import fcntl
@@ -31,6 +37,22 @@ LOCK_NAME = "mars-titan-scientific-gpu.lock"
 DEFAULT_BINARY = (
     Path(__file__).resolve().parents[1] / "build/native/native-ppo-release/mars-titan-ppo"
 )
+KLPO_KIND = "native_klpo_terminal"
+RECONSTRUCTED_SCHEMA = 4
+
+
+def catalog_config(document):
+    """Configuración con catálogo de fuentes y auditoría separada."""
+    return document.get("schema_version") in (2, 3, RECONSTRUCTED_SCHEMA) or (
+        document.get("kind") == KLPO_KIND
+    )
+
+
+def reconstructed_config(document):
+    """Configuración que ajusta o evalúa sobre cintas reconstruidas del histórico."""
+    return (
+        document.get("schema_version") == RECONSTRUCTED_SCHEMA or document.get("kind") == KLPO_KIND
+    )
 
 
 class GpuWaiting(RuntimeError):
@@ -419,18 +441,18 @@ def main(argv=None):
         document, _ = read_manifest(args.config, 4 * MIB)
     except (OSError, ValueError) as error:
         parser.error(str(error))
-    maximum_sources = 512 if document.get("schema_version") in (2, 3) else 12
+    maximum_sources = 512 if catalog_config(document) else 12
     if max(len(args.train_tape), len(args.validation_tape), len(args.audit_tape)) > maximum_sources:
         parser.error(f"Se admiten como máximo {maximum_sources} fuentes por partición")
     if args.audit_run is not None:
         if (
-            document.get("schema_version") not in (2, 3)
+            not catalog_config(document)
             or not args.audit_tape
             or args.train_tape
             or args.validation_tape
         ):
             parser.error(
-                "La auditoría necesita esquema 2 o 3, --audit-run y --audit-tape, "
+                "La auditoría necesita esquema 2, 3 o 4 o KLPO, --audit-run y --audit-tape, "
                 "sin fuentes de entrenamiento"
             )
     elif args.audit_tape or not args.train_tape or not args.validation_tape:
@@ -458,7 +480,10 @@ def main(argv=None):
         ):
             parser.error("El estado de vigilancia debe quedar fuera de las fuentes y de la salida")
     if args.audit_run is None:
-        require_learning_allowed("el entrenamiento PPO nativo")
+        algorithm = "KLPO" if document.get("kind") == KLPO_KIND else "PPO"
+        require_learning_allowed(f"el entrenamiento {algorithm} nativo")
+    elif reconstructed_config(document):
+        require_learning_allowed("la evaluación nativa sobre cintas reconstruidas")
     try:
         binary = args.binary.resolve(strict=True)
         if not binary.is_file() or not os.access(binary, os.X_OK):

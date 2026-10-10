@@ -1,0 +1,190 @@
+{
+  "schema_version": 1,
+  "recorded_at_utc": "2026-10-09T15:47:07.951633+00:00",
+  "kind": "verified_historical_edition_and_residual_targets",
+  "scope": "Resumen de la edición y de los objetivos verificados. Sin modelos ni aprendizaje.",
+  "input_policy": "historical_masked_2000_v1",
+  "edition": {
+    "name": "encoded-history-v3-cpu-words",
+    "manifest_sha256": "2fa8a0ea51eb14f87257c02576b40bcd1fca92e6b18809f9b744b78a1c571658",
+    "encoded_runtime_commit": "4d88b243bf6d11bea2628473fd25e63224f3d26d",
+    "candidate_count": 5676,
+    "coverage_states": {
+      "encoded": 5023,
+      "missing_required_prices": 653
+    },
+    "encoded_assets": {
+      "US": 4213,
+      "CN": 810
+    },
+    "encoded_assets_without_samples": [
+      "US/BNKD",
+      "US/BNKU",
+      "US/CAMP",
+      "US/CGRO",
+      "US/ETH",
+      "US/FFBW",
+      "US/GERM",
+      "US/JHMU",
+      "US/LAC",
+      "US/MNR",
+      "US/NESR",
+      "US/NRGD",
+      "US/NRGU",
+      "US/UBOH",
+      "US/VRM"
+    ],
+    "samples": 17076024,
+    "samples_by_market": {
+      "US": 14407908,
+      "CN": 2668116
+    },
+    "samples_bytes": 57521573389,
+    "verification": {
+      "checked_at_utc": "2026-10-09T13:51:36.577589+00:00",
+      "validator_commit": "4d88b243bf6d11bea2628473fd25e63224f3d26d",
+      "verifier_sha256": "f42be7b16ded34e67132145034b2cd4378afa19d6ffd0a841809f2744c089cfe",
+      "verified_encoded_assets": 5023,
+      "corpus_complete": true,
+      "training_ready": false,
+      "final_test_opened": false,
+      "seconds": 658.0101946979994,
+      "peak_rss_bytes": 298704896
+    }
+  },
+  "modality_presence": {
+    "method": "Recuento de los cinco bits de presence de samples.parquet, leídos por columnas",
+    "order": [
+      "prices",
+      "news",
+      "charts",
+      "fundamentals",
+      "macro"
+    ],
+    "all": {
+      "prices": {
+        "rows": 17076024,
+        "fraction": 1.0
+      },
+      "news": {
+        "rows": 3050247,
+        "fraction": 0.178627
+      },
+      "charts": {
+        "rows": 17076024,
+        "fraction": 1.0
+      },
+      "fundamentals": {
+        "rows": 5870522,
+        "fraction": 0.343787
+      },
+      "macro": {
+        "rows": 17076024,
+        "fraction": 1.0
+      }
+    },
+    "by_market": {
+      "CN": {
+        "prices": {
+          "rows": 2668116,
+          "fraction": 1.0
+        },
+        "news": {
+          "rows": 365750,
+          "fraction": 0.137082
+        },
+        "charts": {
+          "rows": 2668116,
+          "fraction": 1.0
+        },
+        "fundamentals": {
+          "rows": 20587,
+          "fraction": 0.007716
+        },
+        "macro": {
+          "rows": 2668116,
+          "fraction": 1.0
+        }
+      },
+      "US": {
+        "prices": {
+          "rows": 14407908,
+          "fraction": 1.0
+        },
+        "news": {
+          "rows": 2684497,
+          "fraction": 0.186321
+        },
+        "charts": {
+          "rows": 14407908,
+          "fraction": 1.0
+        },
+        "fundamentals": {
+          "rows": 5849935,
+          "fraction": 0.406023
+        },
+        "macro": {
+          "rows": 14407908,
+          "fraction": 1.0
+        }
+      }
+    },
+    "seconds": 20.9
+  },
+  "targets": {
+    "name": "targets-v3",
+    "manifest_sha256": "528dd13d1064caa98437676230dbf884cad062cde8b29db58004bd928637617b",
+    "runtime_commit": "3ad472ecbb986deebff0629a1f2299cc4da9c526",
+    "backend": "numpy",
+    "started_at_utc": "2026-10-09T13:54:34.650451+00:00",
+    "finished_at_utc": "2026-10-09T14:14:35.682952+00:00",
+    "seconds": 1201.0336444829882,
+    "peak_rss_bytes": 286896128,
+    "labelled_assets": 5008,
+    "failed_assets": 0,
+    "partitions": {
+      "train": "hasta 2022",
+      "validation": "2023",
+      "final_test": "2024 sellado"
+    },
+    "counts": {
+      "train": 15560197,
+      "validation": 1221822
+    },
+    "counts_by_market": {
+      "US": {
+        "train": 13137025,
+        "validation": 1027173
+      },
+      "CN": {
+        "train": 2423172,
+        "validation": 194649
+      }
+    },
+    "excluded_reasons": {
+      "insufficient_history": 265880,
+      "missing_next_session": 18237,
+      "target_after_cutoff": 4962,
+      "target_crosses_partition_boundary": 4926
+    },
+    "excluded_total": 294005,
+    "accepted_plus_excluded_equals_samples": true,
+    "market_factors_point_in_time_verified": {
+      "US": false,
+      "CN": false
+    },
+    "independent_check": {
+      "checked_at_utc": "2026-10-09T14:19:03.122633+00:00",
+      "verifier_sha256": "191150601ff7fe6c8bd9631e5e0c73b9b950524f6593b1ae328f1875fd0b99e6",
+      "reference": "residual_targets en pandas, distinta del motor NumPy de la generación",
+      "recomputed_assets": 60,
+      "recomputed_labels": 190830,
+      "seed": 20261009,
+      "max_abs_difference": 0.0,
+      "seconds": 141.6912024189951
+    }
+  },
+  "training_hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+  "training_executed": false,
+  "final_test_opened": false
+}

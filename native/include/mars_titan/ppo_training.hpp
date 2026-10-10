@@ -104,6 +104,15 @@ private:
     std::unique_ptr<LearningReplay> replay_;
     std::size_t auxiliary_samples_ = 0;
     PpoObjectiveConfig objective_;
+    // Forward del bootstrap del paso anterior en PPO MLP sin contexto. El paso siguiente lo
+    // reutiliza para muestrear si su observación es idéntica y los pesos no han cambiado.
+    // No forma parte del estado recuperable.
+    struct BootstrapCache {
+        at::Tensor observation;
+        PpoInference output;
+        std::size_t optimizer_steps = 0;
+    };
+    std::optional<BootstrapCache> bootstrap_;
 
     void reset_pending();
     void rebuild_hidden();

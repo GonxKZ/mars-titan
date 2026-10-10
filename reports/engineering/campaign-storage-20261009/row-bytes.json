@@ -1,0 +1,123 @@
+{
+ "schema_version": 1,
+ "kind": "historical_masked_campaign_storage_row_bytes",
+ "source": "estimate.json",
+ "writers": {
+  "neural": {
+   "current": {
+    "validation": 55.00499104316182,
+    "calibration": 53.75552727272727,
+    "evaluation": 57.12139230106584
+   },
+   "large_groups": {
+    "validation": 31.290530722817387,
+    "calibration": 31.57518275775145,
+    "evaluation": 30.811070974799588
+   },
+   "shared_rows": {
+    "validation": 17.76081781719764,
+    "calibration": 17.809327452566745,
+    "evaluation": 17.691411138923655
+   },
+   "shared_rows_ordered": {
+    "validation": 22.026343172002214,
+    "calibration": 22.376856652459495,
+    "evaluation": 21.096907593072153
+   }
+  },
+  "ridge": {
+   "current": {
+    "validation": 24.430967709643312,
+    "calibration": 23.650969696969696,
+    "evaluation": 24.79321759641736
+   },
+   "large_groups": {
+    "validation": 17.148725526413003,
+    "calibration": 17.458406856566675,
+    "evaluation": 16.635297670258044
+   },
+   "shared_rows": {
+    "validation": 7.19008565226998,
+    "calibration": 7.255837072462989,
+    "evaluation": 7.185057711027674
+   },
+   "shared_rows_ordered": {
+    "validation": 11.521763212407032,
+    "calibration": 11.828083441670742,
+    "evaluation": 10.606773122520254
+   }
+  },
+  "xgboost": {
+   "current": {
+    "validation": 20.459710569288813,
+    "calibration": 19.67900606060606,
+    "evaluation": 20.821434879467617
+   },
+   "large_groups": {
+    "validation": 13.641866765176703,
+    "calibration": 13.896678850516762,
+    "evaluation": 13.149476107182943
+   },
+   "shared_rows": {
+    "validation": 3.708093424661095,
+    "calibration": 3.713057180247309,
+    "evaluation": 3.6982110981977523
+   },
+   "shared_rows_ordered": {
+    "validation": 8.050157040907475,
+    "calibration": 8.355284645474915,
+    "evaluation": 7.135382266992944
+   }
+  },
+  "episodic_gru": {
+   "current": {
+    "validation": 48.020790498586194,
+    "calibration": 47.88165759337291,
+    "evaluation": 48.21241144095815
+   },
+   "large_groups": {
+    "validation": 32.42792066286643,
+    "calibration": 32.39240483797759,
+    "evaluation": 32.47222440426177
+   },
+   "shared_rows": {
+    "validation": 17.70954665902743,
+    "calibration": 17.81761156295466,
+    "evaluation": 17.703367738939548
+   },
+   "shared_rows_ordered": {
+    "validation": 22.579125622208174,
+    "calibration": 22.60368831719057,
+    "evaluation": 22.52190618607018
+   }
+  },
+  "titans": {
+   "current": {
+    "validation": 55.2740318994076,
+    "calibration": 55.081241117953574,
+    "evaluation": 55.42647250381581
+   },
+   "large_groups": {
+    "validation": 32.76909455039418,
+    "calibration": 32.81391230053132,
+    "evaluation": 32.835156137359114
+   },
+   "shared_rows": {
+    "validation": 18.22972518529479,
+    "calibration": 18.48296978887204,
+    "evaluation": 18.142547976637463
+   },
+   "shared_rows_ordered": {
+    "validation": 22.966630146809823,
+    "calibration": 22.981918032078504,
+    "evaluation": 22.912365334525223
+   }
+  }
+ },
+ "shared_rows": {
+  "validation": 9.988474325821944,
+  "calibration": 10.228226619611798,
+  "evaluation": 9.476466130713964
+ },
+ "windows": 45
+}

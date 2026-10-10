@@ -71,6 +71,19 @@ def _ridge(tmp_path, monkeypatch):
     return lambda: ridge.fit_ridge_blocks(_blocks()), double
 
 
+def _solve_ridge(tmp_path, monkeypatch):
+    import torch
+
+    ridge = importlib.import_module("mars_titan.models.baselines.ridge")
+    double = Double()
+    monkeypatch.setattr(torch.linalg, "solve", double)
+    zeros = torch.zeros(3, dtype=torch.float64)
+    statistics = ridge.RidgeStatistics(
+        4, np.zeros(3), np.ones(3), 0.0, torch.eye(3, dtype=torch.float64), zeros, zeros
+    )
+    return lambda: ridge.solve_ridge(statistics, 1.0), double
+
+
 def _boosting(tmp_path, monkeypatch):
     boosting = importlib.import_module("mars_titan.models.baselines.boosting")
     double = Double()
@@ -314,6 +327,7 @@ ENTRY_POINTS = {
         lambda m, out: m.run_campaign(out.with_name("c.json"), out.with_name("p"), out, out),
     ),
     "fit_ridge_blocks": _ridge,
+    "solve_ridge": _solve_ridge,
     "fit_boosting_batches": _boosting,
     "fit_external_boosting": _simple(
         "mars_titan.models.baselines.external_boosting",

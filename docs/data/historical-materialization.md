@@ -2,7 +2,7 @@
 
 El recorrido de la edición `historical_masked_2000_v1` ha terminado para los 5.676 candidatos de la copia auditada. Se han preparado los 5.023 activos con precios y se han identificado 653 sin ellos. La conciliación confirma que se conservan todos los activos y todos los recuentos de precios de la [auditoría anterior](historical-price-windows.md). No se han creado observaciones anteriores a la historia real de cada activo.
 
-Estas salidas son tablas normalizadas y paneles macro. Todavía faltan su codificación conjunta, los objetivos válidos y la verificación de las mismas filas en las ventanas temporales de cada comparación. El aprendizaje continúa bloqueado y la reserva de 2024 permanece cerrada.
+Estas salidas son tablas normalizadas y paneles macro. Su codificación conjunta y los objetivos válidos se completaron y verificaron el 9 de octubre, como recoge la [sección siguiente](#edición-v3-completa-y-objetivos-residuales). Falta conciliar las mismas filas en las ventanas temporales de cada comparación, que se están preparando. El aprendizaje continúa bloqueado y la reserva de 2024 permanece cerrada.
 
 La [codificación acotada](historical-encoding-budgets.md) permite pausar por activo y omitir la copia secundaria de gráficos en caché. Conserva los vectores en Parquet y registra los límites de disco, CUDA y lotes antes de completar el recorrido.
 
@@ -11,6 +11,34 @@ La primera edición codificada y verificada reúne 11.436 muestras de dos activo
 La ruta de [tabla de palabras en CPU](frozen-embedding-placement.md) materializa otra edición uniforme y reduce la VRAM requerida en las formas comprobadas. Su primer bloque tiene 64 activos US y 230.957 muestras verificadas. El [contraste completo de ese bloque](../../reports/data/historical-cpu-encoding-20261008.json) conserva columnas no numéricas iguales y vectores idénticos bit a bit a la edición anterior. Los 480 activos anteriores mantienen su identidad y no se incorporan como si hubiesen sido calculados por la ruta nueva. La nueva supervisión deberá identificar el manifiesto codificado y sus factores efectivos. La paridad de embeddings no deriva ni verifica las etiquetas.
 
 El [avance verificado del 9 de octubre](../../reports/data/historical-cpu-encoding-progress-20261009.json) amplía esa edición nueva a 512 activos US y 1.773.121 muestras, con 6.055.749.273 bytes de Parquet y 264.189 entradas de noticias en caché. Se han comprobado todas las filas, máscaras, disponibilidades y huellas del prefijo. El pico Torch sigue en 163.579.392 bytes. Los ocho bloques procesan activos distintos, por lo que sus tiempos no son una comparación de velocidad. La paridad entre ediciones sigue acreditada para los primeros 64 activos, sin extrapolarla al resto. Los recuentos de v2 y v3 se solapan y no se suman.
+
+## Edición v3 completa y objetivos residuales
+
+La edición `encoded-history-v3-cpu-words`, con la política `historical_masked_2000_v1`, terminó de codificarse el 9 de octubre con el runtime `4d88b243`. El [recibo](../../reports/data/historical-edition-v3-targets-20261009.json) resume los manifiestos, la verificación independiente y el recuento de presencia por modalidad, con sus huellas y sin rutas locales.
+
+| Elemento | US | CN | Total |
+| --- | ---: | ---: | ---: |
+| Activos codificados | 4.213 | 810 | 5.023 |
+| Muestras | 14.407.908 | 2.668.116 | 17.076.024 |
+| Filas con noticias | 18,6 % | 13,7 % | 17,9 % |
+| Filas con fundamentales | 40,6 % | 0,8 % | 34,4 % |
+| Objetivos de entrenamiento (hasta 2022) | 13.137.025 | 2.423.172 | 15.560.197 |
+| Objetivos de validación (2023) | 1.027.173 | 194.649 | 1.221.822 |
+
+De los 5.676 candidatos, 653 no tienen los precios necesarios. Quince activos US codificados no tienen ninguna muestra, así que los objetivos cubren 5.008 activos. Precios y gráficos son obligatorios en cada fila con la política con máscaras. El bit macro está activo en todas las filas porque cada decisión tiene al menos un indicador admisible, lo que no significa que estén observados los 140: cada posición conserva su propia máscara y su antigüedad. Las muestras coinciden exactamente con las 17.076.024 ventanas del [censo](#ventanas-de-entrada-y-condiciones-del-objetivo). La verificación independiente de la edición recorrió los 5.023 activos en 658 s y terminó con `corpus_complete` verdadero, `training_ready` falso y el test sin abrir. Los Parquet de muestras ocupan 57.521.573.389 bytes.
+
+Los objetivos (`targets-v3`) se generaron con el motor NumPy en 1.201 s, con el commit `3ad472ec` de [#413](https://github.com/GonxKZ/mars-titan/pull/413). Esa corrección convierte a texto la sesión de los precios de EE. UU., que Parquet guarda como diccionario y pandas lee como categoría sin orden. El primer intento había fallado en el primer activo por ese motivo. Se excluyen 294.005 filas, cada una con su motivo:
+
+| Motivo | Filas |
+| --- | ---: |
+| Historia insuficiente para estimar el residual | 265.880 |
+| Sesión siguiente ausente | 18.237 |
+| Objetivo posterior al corte de 2023 | 4.962 |
+| Objetivo que cruza la frontera entre entrenamiento y validación (purgado) | 4.926 |
+
+Las filas aceptadas y las excluidas suman exactamente las muestras de la edición. La verificación independiente comprobó cada activo contra su recibo, la alineación fila a fila con las muestras, las particiones y que cada objetivo madura después de su predicción y antes de 2024. Después recalculó 190.830 etiquetas de 60 activos elegidos con la semilla 20261009 (40 US y 20 CN) con la referencia `residual_targets` en pandas, distinta del motor NumPy, y la diferencia absoluta máxima fue 0,0. Los factores de mercado SPY y CSI 300 se declaran sin versiones contemporáneas verificadas (`point_in_time_verified` falso).
+
+Ninguna de estas pasadas ajustó modelos ni abrió el año 2024. Al preparar las vistas aparecieron 25 archivos de muestras (22 US y 3 CN) que terminan con un grupo Parquet vacío, justo los activos cuyo número de muestras es múltiplo de 128. La edición no se reescribió. Los lectores los saltan desde [#416](https://github.com/GonxKZ/mars-titan/pull/416), con el mismo orden, lotes y cursores que el archivo sin grupos vacíos.
 
 ## Ventanas de entrada y condiciones del objetivo
 

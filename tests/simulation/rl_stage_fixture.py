@@ -17,7 +17,7 @@ from types import SimpleNamespace
 import pytest
 
 from mars_titan.data.storage import atomic_json, sha256
-from mars_titan.simulation import campaign_stage
+from mars_titan.simulation import campaign_stage, native_policy_runs
 from mars_titan.training import masked_campaign as engine
 from mars_titan.training.learning_hold import HOLD_ENV
 from tests.posttraining import campaign_fixture
@@ -53,8 +53,9 @@ def policies(**changes):
     value.update(
         train_windows=1,
         universe=dict(rule="median_traded_value_in_validation_v1", max_assets=4),
+        # Caben dos oleadas KLPO de dos episodios anuales.
         budget=dict(
-            transitions=64, environments=2, rollout_transitions=32, evaluation_transitions=32
+            transitions=1024, environments=2, rollout_transitions=32, evaluation_transitions=32
         ),
         policies={key: value["policies"][key] for key in ("klpo_terminal", "double_dqn")},
         contrasts=dict(
@@ -153,6 +154,7 @@ class ScriptedLearner:
 
     def __call__(self, job, tapes, folder, *, stage, resume, stop, anchor):
         self.calls.append(dict(id=job["id"], resume=resume, tapes=tapes, anchor=anchor))
+        extra = {}
         if job["id"] in self.pause and not resume:
             atomic_json(folder / "checkpoint.json", dict(job=job["id"], transitions=32))
             return dict(status="paused")
@@ -165,10 +167,18 @@ class ScriptedLearner:
             selection = dict(
                 metric=stage["policies"]["selection"]["metric"], partition="validation"
             )
-            transitions = stage["policies"]["budget"]["transitions"]
+            budget = stage["policies"]["budget"]
+            transitions = budget["transitions"]
+            if job["engine"] == "native_klpo":
+                # KLPO declara las oleadas completas que caben en el presupuesto.
+                waves, wave = native_policy_runs.klpo_waves(
+                    tapes.train, budget["environments"], transitions
+                )
+                extra, transitions = dict(waves=waves), waves * wave
         else:
             policy, selection, transitions = anchor["policy"], None, 0
         report = dict(
+            **extra,
             status="completed",
             transitions=transitions,
             updates=0,

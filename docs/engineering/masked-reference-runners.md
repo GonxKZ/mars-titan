@@ -78,7 +78,7 @@ La paridad con la versión anterior del código se contrastó fuera de la suite,
 
 Las 731 pruebas comunes de los módulos relacionados dan el mismo resultado en `develop` y en esta rama, salvo dos pruebas actualizadas. Una comprobaba que el diseño rechazaba el Transformer y otra sustituía `campaign_views` con la firma anterior. Los fallos compartidos por ambos árboles se deben a la GPU oculta, a `CUBLAS_WORKSPACE_CONFIG` o a vistas temporales que ya fallan en `develop`.
 
-Las comprobaciones CUDA no se han ejecutado todavía. `tests/training/test_masked_reference_cuda.py` contrasta la fusión en `cuda:0` con CPU para las cinco familias y recorre el runner con la política histórica en `cuda:0`, con el mismo sustituto sin actualizaciones. Sin GPU sus siete casos se omiten. Con la GPU libre:
+`tests/training/test_masked_reference_cuda.py` contrasta la fusión en `cuda:0` con CPU para las cinco familias y recorre el runner con la política histórica en `cuda:0`, con el mismo sustituto sin actualizaciones. Sin GPU sus siete casos se omiten. La orden siguiente se ejecutó en `cuda:0` el 9 de octubre y dio 115 pruebas superadas ([resumen](../../reports/engineering/cuda-checks-20261009/README.md)). Antes hubo que pasar las pruebas del runner a `learning_doubles`, porque la protección del aprendizaje detenía `run_reference_case` en su entrada y omitía la prueba CUDA y 17 pruebas CPU sin recorrer nada:
 
 ```bash
 CUBLAS_WORKSPACE_CONFIG=:4096:8 uv run pytest tests/training/test_masked_reference_cuda.py \
@@ -92,4 +92,4 @@ Las pruebas CUDA existentes de `test_reference_run.py`, `test_selection.py` y `t
 - Decidir el presupuesto del protocolo anual v2. Con 50 trabajos por ventana, las 19 ventanas US y las 13 conjuntas superan el límite de 512 de `temporal_search`.
 - `posttraining.parents` lee ya `mask_fusion` de la identidad del padre, como describe el [postentrenamiento con la edición histórica](masked-posttraining.md).
 - La cola de referencias, el análisis de campañas y las fuentes de comparación esperan `train` y `validation` como predicciones completas. Deben aceptar la retención nueva antes de consumir estas ejecuciones.
-- Ejecutar la campaña tras verificar la edición histórica y levantar el bloqueo, con medidas de coste previas. Las mejoras predictivas de cualquier familia siguen sin medir.
+- Ejecutar la campaña A, ya con la edición histórica y sus objetivos verificados, cuando se levante el bloqueo y con medidas de coste previas. Las mejoras predictivas de cualquier familia siguen sin medir.

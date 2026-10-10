@@ -130,7 +130,7 @@ Cada entrada escribe en `receipts/<mercado>.json` el recibo walk-forward de cada
 
 El planificador la valida sin importar PyTorch (nombre de la receta, política, cabeza, variante, semillas y regla de parada del protocolo). Con un único candidato, cada ventana reentrenada tiene una búsqueda con la semilla de búsqueda y un finalista por cada semilla restante, y cada ventana trasladada una predicción por semilla. El caso guarda la ruta y la huella de la receta, y `campaign_case` la vuelve a leer con `load_recipe` antes de ajustar.
 
-Las campañas A y B declaradas aún no incluyen la sección. En B añadiría 51 ajustes y 84 traslados (680 y 616 en total) y en A 135 ajustes (1.800). Antes hay que medir memoria y caudal en `cuda:0` y elegir entre `accumulation_rows` y `recompute`, porque la extrapolación del tramo completo supera los 8 GB con el universo completo y cada opción cambia la identidad de la receta. La [orden de medición](../research/training-campaign-2000.md#medición-de-caudal) de la campaña compara las cuatro combinaciones con la misma medida cuando recibe esta receta. Hasta entonces la comprobación de la campaña sigue informando del brazo como pendiente.
+Las configuraciones A y B aún no incluyen la sección. La campaña elegida, la A, la incorpora en su [declaración ampliada](../research/training-campaign-2000.md#declaración-preparada-de-las-familias-pendientes), donde añade 135 ajustes. En B añadiría 51 ajustes y 84 traslados. Antes de copiarla hay que elegir entre `accumulation_rows` y `recompute`, porque el tramo completo no cabe en 8 GB con el universo completo y cada opción cambia la identidad de la receta. La opción se fijará con la [memoria medida en `cuda:0`](#medida-en-cuda0). La [orden de medición](../research/training-campaign-2000.md#medición-de-caudal) de la campaña puede comparar además las cuatro combinaciones con su caudal. Hasta entonces la comprobación de la campaña sigue informando del brazo como pendiente.
 
 ## Coste y memoria medidos
 
@@ -175,7 +175,19 @@ Con N filas por evento, las medidas anteriores dan aproximadamente:
 | Recomputación | 66 MB + 65 KB × N | 0,43 GB |
 | Acumulación y recomputación | 58 MB + 8 KB × N | 0,11 GB |
 
-N = 5.676 es una cota superior, porque cada evento contiene un solo mercado. Es una estimación hasta medir en `cuda:0`. La GRU de cuDNN guarda sus propios búferes, el contexto CUDA y los espacios de trabajo de cuBLAS y cuDNN no se cuentan como tensores y el asignador con caché fragmenta la memoria. Con esas salvedades, el tramo completo no cabe en los 8 GB de la RTX 4070 Max-Q, la acumulación cabe si pocos bloques quedan retenidos y la recomputación cabe con margen cualquiera que sea el patrón de etiquetas.
+N = 5.676 es una cota superior, porque cada evento contiene un solo mercado. Es una estimación en CPU, contrastada después con la [medida en `cuda:0`](#medida-en-cuda0). La GRU de cuDNN guarda sus propios búferes, el contexto CUDA y los espacios de trabajo de cuBLAS y cuDNN no se cuentan como tensores y el asignador con caché fragmenta la memoria. Con esas salvedades, el tramo completo no cabe en los 8 GB de la RTX 4070 Max-Q, la acumulación cabe si pocos bloques quedan retenidos y la recomputación cabe con margen cualquiera que sea el patrón de etiquetas.
+
+### Medida en `cuda:0`
+
+El 9 de octubre se midió el pico neto del asignador de PyTorch durante un ajuste sin pasos, con la receta propuesta en FP32 (`update_instants=8`, `block_rows=128`, banco de 1.024) y dimensiones reales de entrada ([recibo](../../reports/engineering/cuda-checks-20261009/candidate-memory-cuda.json)):
+
+| Activos | Sin acumulación | `accumulation_rows=128` | `accumulation_rows=1024` | Recomputación | Ambas |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| 128 | 357,9 MiB | 156,0 MiB | 156,0 MiB | 144,9 MiB | 148,2 MiB |
+| 256 | 622,1 MiB | 189,5 MiB | 191,6 MiB | 151,5 MiB | 149,3 MiB |
+| 512 | 1.157,8 MiB | 256,6 MiB | 258,7 MiB | 164,7 MiB | 150,9 MiB |
+
+Sin acumulación el pico crece unos 2,1 MiB por activo entre 256 y 512, y con `accumulation_rows=128` unos 0,26 MiB. Una extrapolación lineal, no medida, sitúa el ajuste sin acumulación de 4.000 activos por encima de 8 GiB y con `accumulation_rows=128` en torno a 1,1 GiB. La recomputación de un bloque de 128 filas pasa de 5,6 a 8,3 ms en forward y backward y da gradientes idénticos bit a bit. La acumulación cambia el orden de suma y difiere hasta 9·10⁻⁸. La opción de la campaña todavía no se ha fijado.
 
 ## Comprobaciones
 
@@ -216,7 +228,7 @@ El recuento de pruebas, las mutaciones dirigidas y las versiones están en el [r
 
 ## Pendiente
 
-- CUDA. La comprobación [`cuda_candidate_run_check.py`](../../tests/training/cuda_candidate_run_check.py) compara en CPU y `cuda:0` un ajuste completo sin pasos y su validación, en FP32 y FP64 con K = 1 y 4. Cuando la GPU quede libre, desde `native/`:
+- Perfilar en `cuda:0` el recorrido completo, incluidas las sincronizaciones de las comprobaciones de finitud del nativo y la memoria de los grafos del tramo. La comprobación [`cuda_candidate_run_check.py`](../../tests/training/cuda_candidate_run_check.py), que compara en CPU y `cuda:0` un ajuste completo sin pasos y su validación en FP32 y FP64 con K = 1 y 4, además de una ventana v2 y su traslado, pasó sus seis casos el 9 de octubre ([recibo](../../reports/engineering/cuda-checks-20261009/candidate-trainer-cuda.json)). La orden, desde `native/`:
 
   ```bash
   cmake --preset native-candidate-cuda -B ../build/native/candidate-trainer-cuda \
@@ -230,13 +242,13 @@ El recuento de pruebas, las mutaciones dirigidas y las versiones están en el [r
     uv run --no-sync python -m pytest -q tests/training/cuda_candidate_run_check.py
   ```
 
-  El mismo archivo compara también el ajuste de una ventana v2 y su traslado a la siguiente en CPU y en `cuda:0`, y el traslado en `cuda:0` del estado elegido en CPU. Comprueba que la inicialización de la semilla coincide en ambos dispositivos, algo que todavía no se ha verificado. Después hay que perfilar en `cuda:0` el recorrido completo, incluidas las sincronizaciones de las comprobaciones de finitud del nativo y la memoria de los grafos del tramo.
+  El mismo archivo compara también el ajuste de una ventana v2 y su traslado a la siguiente en CPU y en `cuda:0`, y el traslado en `cuda:0` del estado elegido en CPU, con la misma inicialización de la semilla en ambos dispositivos.
 - Calentamiento episódico con etiquetas anteriores al tramo medido, que necesita indexarlas en las observaciones financieras.
 - Ventanas sobre la edición real. Las entradas por ventana solo se han comprobado con vistas v2 del corpus técnico, con un activo por mercado.
-- Declarar la sección `episodic_gru` en las campañas A y B, con la opción de memoria elegida y los límites ampliados.
+- Copiar la sección `episodic_gru` a la configuración de A, con la opción de memoria elegida y los límites ampliados.
 - Índices de observaciones compartidos. Cada ajuste y cada traslado preparan los suyos aunque solo dependen de la vista y del tramo, así que las semillas repiten ese trabajo. Conviene medir antes su coste con la edición real.
 - Presupuesto definitivo y alternativa de reentrenamiento por ventana en [#363](https://github.com/GonxKZ/mars-titan/issues/363), con el caudal medido.
-- Memoria en `cuda:0`. Con el enlace CUDA compilado como arriba, desde la raíz:
+- Elegir la opción de memoria con la [medida en `cuda:0`](#medida-en-cuda0). La medida se repite con el enlace CUDA compilado como arriba, desde la raíz:
 
   ```bash
   CUDA_VISIBLE_DEVICES=0 OMP_NUM_THREADS=2 \
@@ -248,4 +260,4 @@ El recuento de pruebas, las mutaciones dirigidas y las versiones están en el [r
     uv run --no-sync python -m pytest -q tests/training/candidate_memory_check.py
   ```
 
-  Con esa medida hay que decidir qué opción usa la campaña. La recomputación es la que acota la memoria con cualquier patrón de etiquetas sin cambiar el gradiente en las comprobaciones de CPU.
+  La recomputación es la que acota la memoria con cualquier patrón de etiquetas sin cambiar el gradiente, en CPU y en `cuda:0`.

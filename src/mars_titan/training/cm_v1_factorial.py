@@ -268,10 +268,13 @@ def run_cm_v1_window(
     )
 
 
-def carry_cm_v1(anchor, anchor_view, view, output, *, device="cuda:0", stop=None):
+def carry_cm_v1(
+    anchor, anchor_view, view, output, *, device="cuda:0", stop=None, modality_ablation=None
+):
     """Predecir una ventana posterior con el núcleo y el lector elegidos en el ancla.
 
     La declaración es la que registra la petición del ancla, con la misma huella.
+    `modality_ablation` sigue la regla común de `carry_readout`.
     """
     require_learning_allowed("la predicción trasladada de CM-v1")
 
@@ -288,7 +291,16 @@ def carry_cm_v1(anchor, anchor_view, view, output, *, device="cuda:0", stop=None
         )
         return readout_family(document, request["arm"])
 
-    return carry_readout(family_of, anchor, anchor_view, view, output, device=device, stop=stop)
+    return carry_readout(
+        family_of,
+        anchor,
+        anchor_view,
+        view,
+        output,
+        device=device,
+        stop=stop,
+        modality_ablation=modality_ablation,
+    )
 
 
 def _case(run, fields):

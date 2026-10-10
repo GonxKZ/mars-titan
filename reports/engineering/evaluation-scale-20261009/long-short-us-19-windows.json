@@ -1,0 +1,131 @@
+{
+  "what": "long_short",
+  "wall_seconds": 860.18,
+  "user_seconds": 738.29,
+  "system_seconds": 79.49,
+  "peak_rss_bytes": 2105880576,
+  "harness_seconds": 860.2063693480159,
+  "stdout": "Cartera de 23 brazos en 19 ventanas. Reserva final cerrada.",
+  "shape": {
+    "arm_seed_series": 64,
+    "arms": 23,
+    "assets_per_session_max": 4126,
+    "calibration_rows": 3087269,
+    "edition": true,
+    "evaluation_rows": 12826460,
+    "rows": [
+      {
+        "calibration": 82500,
+        "evaluation": 351026,
+        "window": "fold-000"
+      },
+      {
+        "calibration": 90383,
+        "evaluation": 379845,
+        "window": "fold-001"
+      },
+      {
+        "calibration": 96663,
+        "evaluation": 413405,
+        "window": "fold-002"
+      },
+      {
+        "calibration": 107960,
+        "evaluation": 451569,
+        "window": "fold-003"
+      },
+      {
+        "calibration": 112361,
+        "evaluation": 475747,
+        "window": "fold-004"
+      },
+      {
+        "calibration": 123252,
+        "evaluation": 502951,
+        "window": "fold-005"
+      },
+      {
+        "calibration": 129778,
+        "evaluation": 536815,
+        "window": "fold-006"
+      },
+      {
+        "calibration": 134561,
+        "evaluation": 558205,
+        "window": "fold-007"
+      },
+      {
+        "calibration": 139673,
+        "evaluation": 590148,
+        "window": "fold-008"
+      },
+      {
+        "calibration": 151383,
+        "evaluation": 635880,
+        "window": "fold-009"
+      },
+      {
+        "calibration": 164450,
+        "evaluation": 690027,
+        "window": "fold-010"
+      },
+      {
+        "calibration": 177158,
+        "evaluation": 737095,
+        "window": "fold-011"
+      },
+      {
+        "calibration": 185903,
+        "evaluation": 771198,
+        "window": "fold-012"
+      },
+      {
+        "calibration": 195052,
+        "evaluation": 821962,
+        "window": "fold-013"
+      },
+      {
+        "calibration": 209484,
+        "evaluation": 890629,
+        "window": "fold-014"
+      },
+      {
+        "calibration": 229872,
+        "evaluation": 962580,
+        "window": "fold-015"
+      },
+      {
+        "calibration": 247360,
+        "evaluation": 1008423,
+        "window": "fold-016"
+      },
+      {
+        "calibration": 254913,
+        "evaluation": 1021782,
+        "window": "fold-017"
+      },
+      {
+        "calibration": 254563,
+        "evaluation": 1027173,
+        "window": "fold-018"
+      }
+    ],
+    "scope": "US",
+    "variants": 3,
+    "windows": 19
+  },
+  "host": {
+    "platform": "Linux-7.0.0-38-generic-x86_64-desconocido-with-glibc2.43",
+    "cpus": 16,
+    "load_average": [
+      17.884765625,
+      17.87451171875,
+      16.75830078125
+    ],
+    "threads": {
+      "OMP_NUM_THREADS": "2",
+      "MKL_NUM_THREADS": "2"
+    }
+  },
+  "measured_at_utc": "2026-10-09T18:49:14.854937+00:00"
+}

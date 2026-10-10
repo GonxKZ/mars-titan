@@ -1,7 +1,9 @@
 """Caché externa de XGBoost en disco medida en CUDA, sin ejecutar rondas de boosting.
 
 La construcción de ExtMemQuantileDMatrix solo calcula cuantiles y páginas. xgb.train
-se sustituye por una excepción, de modo que ninguna prueba puede ajustar árboles.
+se sustituye por una excepción, de modo que ninguna prueba puede ajustar árboles. Por eso
+las pruebas usan `learning_doubles`: sin él, la protección del aprendizaje detiene
+`fit_external_boosting` en su entrada y la caché nunca llega a construirse.
 """
 
 import importlib
@@ -11,10 +13,13 @@ import pytest
 
 from mars_titan.models.baselines import external_boosting as external
 
-pytestmark = pytest.mark.skipif(
-    any(importlib.util.find_spec(name) is None for name in ("cupy", "xgboost")),
-    reason="La comprobación CUDA requiere el extra boosting",
-)
+pytestmark = [
+    pytest.mark.skipif(
+        any(importlib.util.find_spec(name) is None for name in ("cupy", "xgboost")),
+        reason="La comprobación CUDA requiere el extra boosting",
+    ),
+    pytest.mark.usefixtures("learning_doubles"),
+]
 
 ROWS, FEATURES, MAX_BIN = 20_000, 1719, 128
 
