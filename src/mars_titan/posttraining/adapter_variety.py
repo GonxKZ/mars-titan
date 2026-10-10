@@ -22,7 +22,9 @@ from torch import nn
 from mars_titan.models.predictive_adaptation import MODULE_ROOT, AdapterTarget
 
 SELECTIVE_POINTS = ("bias", "norm", "persistent")
-# Formas de la sección en cada punto de inserción de #364.
+# Formas admitidas en cada punto de inserción de #364. La lectura solo admite formas por
+# tensor, porque un gancho dentro de un bloque de atención apagaría la ruta rápida del
+# Transformer y cambiaría el redondeo frente al padre.
 INSERTION_FORMS = {
     "readout": ("dora", "ia3"),
     "fusion": ("dora", "ia3", "parallel_adapter", "serial_adapter"),
@@ -275,7 +277,8 @@ def _fusion(spec, modules):
         return [AdapterTarget(FUSION_BLOCK, "output", form, **_ranked(spec))]
     if form == "dora":
         return [AdapterTarget(module, "weight", "dora", **_ranked(spec)) for module in modules]
-    # (IA)³: ganancia sobre las activaciones que entran en la fusión.
+    # (IA)³: la ganancia por columnas reescala la activación de cada codificador antes de la
+    # capa lineal de la fusión, como l_ff antes de W_2 en el artículo.
     return [AdapterTarget(module, "weight", "gain_columns") for module in modules]
 
 

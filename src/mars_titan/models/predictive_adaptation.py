@@ -16,7 +16,7 @@ from torch.nn.utils import parametrize
 TENSOR_FORMS = ("residual", "low_rank", "dora", "gain_rows", "gain_columns")
 MODULE_FORMS = ("parallel_adapter", "serial_adapter")
 ADAPTER_FORMS = TENSOR_FORMS + MODULE_FORMS
-# Formas con rango r y escala alpha declarados.
+# Formas que declaran rango r y escala alpha. Las demás no tienen hiperparámetros propios.
 RANKED_FORMS = ("low_rank", "dora", *MODULE_FORMS)
 # Raíz de los módulos de adaptación por módulo. Sus parámetros son correcciones.
 MODULE_ROOT = "posttraining_modules"
