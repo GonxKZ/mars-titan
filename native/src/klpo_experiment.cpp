@@ -591,7 +591,8 @@ Json run_evaluation(const std::filesystem::path& run, const PpoExperimentOptions
             "La política KLPO elegida no conserva su huella");
     FrozenEvaluationRequest request{options.output, options.resume, nullptr, {},
                                     evaluation_context(config),
-                                    config.learning.collection.workers};
+                                    config.learning.collection.workers,
+                                    frozen_costs(options.evaluation_costs)};
     Json tapes = Json::array();
     for (const auto& path : options.audit_tapes) {
         auto tape = load_policy_tape(path, PolicyTapeRole::evaluation, config.environment);
@@ -612,7 +613,7 @@ Json run_evaluation(const std::filesystem::path& run, const PpoExperimentOptions
                             {"optimizer_steps", best.at("optimizer_steps")},
                             {"transitions", best.at("transitions")},
                             {"tapes", tapes},
-                            {"cost_bps", frozen_evaluation_costs},
+                            {"cost_bps", request.costs},
                             {"seed", config.learning.collection.seed},
                             {"device", options.device},
                             {"diagnostic", options.diagnostic},

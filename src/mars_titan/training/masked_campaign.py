@@ -85,6 +85,7 @@ from .campaign_storage import (
     view_counts,
 )
 from .corpus_inputs import DIGEST_CACHE_ENV
+from .label_maturity import CALIBRATION_PARTITIONS, FIT_PARTITIONS, label_maturity
 from .learning_hold import LearningHoldError, require_learning_allowed
 from .selection import AWAIT
 
@@ -547,6 +548,8 @@ class _Campaign:
         self.identity, self.executors, self.stop = identity, executors, stop
         # Guardia, recuentos y declaración de almacenamiento, o nada sin declaración.
         self.disk = disk
+        # Última maduración de etiquetas por vista y tramos, leída una vez por ejecución.
+        self.maturity = {}
         self.identity_sha256 = hashlib.sha256(
             json.dumps(identity, sort_keys=True).encode()
         ).hexdigest()
@@ -907,14 +910,37 @@ class _Campaign:
         if compared and all(key in self.receipts for key in self.groups[group]):
             self.publish(*group)
 
+    def labels_used_until(self, scope, window, receipt):
+        """Última etiqueta que pudo fijar el predictor elegido o su calibración común.
+
+        El predictor se ajusta, selecciona y calibra en la vista de su ventana de ajuste: la
+        propia o, en un traslado, la del ancla. La calibración común de la ventana usa
+        además las etiquetas de calibración de su propia vista. El límite es la mayor
+        maduración de esas etiquetas, leída de la vista y no deducida del protocolo.
+        """
+        identity = receipt["identity"]
+        fit = identity["anchor"] if identity["kind"] == CARRY else identity["window"]
+        windows = self.views[scope]["windows"]
+        reads = [(fit, FIT_PARTITIONS)]
+        if fit != window:
+            reads.append((window, CALIBRATION_PARTITIONS))
+        values = []
+        for name, partitions in reads:
+            key = (scope, name, partitions)
+            if key not in self.maturity:
+                self.maturity[key] = label_maturity(windows[name]["path"], partitions)[0]
+            values.append(self.maturity[key])
+        return max(values)
+
     def publish(self, scope, window, arm, seed):
         """Recibo walk-forward por mercado del predictor elegido para la semilla y ventana.
 
-        La calibración común usa el tramo anterior a la evaluación y la purga obliga a que
-        sus etiquetas maduren antes del final del tramo. Por eso la última etiqueta usada se
-        acota con el microsegundo anterior a la evaluación, también en una ventana trasladada.
+        El límite de etiquetas es la maduración de las etiquetas que leyó el predictor
+        elegido. El recibo rechaza un límite que alcance la evaluación, de modo que una
+        etiqueta futura impide publicar la ventana y montar sus cintas.
         """
         _, receipt = self.selected(scope, window, arm, seed)
+        until = self.labels_used_until(scope, window, receipt)
         resolved = self.campaign["comparison_config"]["resolved_scopes"][scope]
         folder = self.output / "windows" / scope / window / arm / f"seed-{seed}"
         for market in resolved["markets"]:
@@ -924,15 +950,13 @@ class _Campaign:
                 protocol=resolved["protocols"][market],
                 fold=resolved["windows"][window],
                 parent=receipt["parent"],
-                labels_used_until=0,
+                labels_used_until=until,
                 predictions={
                     partition: value["markets"][market]
                     for partition, value in receipt["predictions"].items()
                     if market in value["markets"]
                 },
             )
-            start, _ = read_window_receipt(record).segment("evaluation")
-            record["labels_used_until"] = start - 1
             read_window_receipt(record)
             path = folder / f"{market}.json"
             if path.is_file():

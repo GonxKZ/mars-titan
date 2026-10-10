@@ -23,7 +23,10 @@ STAGES = {v: CONFIGS / f"historical-masked-rl-stage-{v.lower()}.json" for v in "
 POLICIES = CONFIGS / "historical-masked-rl-policies.json"
 ALGORITHM_ARMS = ("ppo_clip_full_kl", "ppo_kl_penalty_adaptive", "ppo_clip_kl_epoch_stop")
 ALGORITHM_ARMS += ("double_dqn",)
-REFERENCES = ("cash", "hold_initial", "rebalance_50")
+REFERENCES = ("cash", "hold_initial", "rebalance_50", "equal_weight_monthly", "market_index")
+# El índice de mercado solo se planifica donde la edición tiene su instrumento (SPY).
+INDEXED = {"US": True, "CN": False}
+COSTS = 4
 # Brazos con productor en las campañas A y B, en el orden de su configuración.
 PRODUCERS = ["rnn", "lstm", "gru", "dlinear", "transformer_compact", "ridge", "xgboost"]
 PRODUCERS += ["titans_transformer_direct", "titans_mac_disabled", "titans_mac_frozen"]
@@ -31,8 +34,8 @@ PRODUCERS += ["titans_mac_online"]
 COMPARED = ["transformer_compact", "titans_mac_online"]
 # Ajustes, traslados y referencias por nivel en todos los ámbitos.
 LEVELS = dict(
-    A=dict(all_predictors=(792, 0, 792), algorithms=(576, 0, 0)),
-    B=dict(all_predictors=(264, 528, 792), algorithms=(192, 384, 0)),
+    A=dict(all_predictors=(792, 0, 1221), algorithms=(576, 0, 0)),
+    B=dict(all_predictors=(264, 528, 1221), algorithms=(192, 384, 0)),
 )
 # Ventanas de política por ámbito: las del protocolo menos las cuatro primeras, que
 # aportan los tres años de ajuste y el de validación de la primera política.
@@ -51,17 +54,19 @@ def test_repository_stages_count_every_level_window_predictor_arm_seed_and_refer
     fits = sum(value[0] for value in LEVELS[variant].values())
     carries = sum(value[1] for value in LEVELS[variant].values())
     assert (counts["training_jobs"], counts["carried_jobs"]) == (fits, carries)
-    assert counts["reference_jobs"] == 792 and counts["evaluation_jobs"] == carries + 792
-    assert counts["evaluation_episodes"] == (fits + carries + 792) * 3 == 6480
+    # Cinco referencias en las 15 ventanas de EE. UU. y cuatro en las 9 de China.
+    assert counts["reference_jobs"] == (15 * 5 + 9 * 4) * 11 == 1221
+    assert counts["evaluation_jobs"] == carries + 1221
+    assert counts["evaluation_episodes"] == (fits + carries + 1221) * COSTS == 10356
     for level, (fit, carry, reference) in LEVELS[variant].items():
         entry = counts["levels"][level]
         assert (entry["training_jobs"], entry["carried_jobs"]) == (fit, carry)
         assert entry["reference_jobs"] == reference
-        assert entry["evaluation_episodes"] == (fit + carry + reference) * 3
+        assert entry["evaluation_episodes"] == (fit + carry + reference) * COSTS
     assert counts["levels"]["all_predictors"]["predictors"] == PRODUCERS
     assert counts["levels"]["algorithms"]["predictors"] == COMPARED
     stage = campaign_stage.load_stage(STAGES[variant])
-    assert stage["limits"] == dict(max_training_jobs=fits, max_evaluation_jobs=carries + 792)
+    assert stage["limits"] == dict(max_training_jobs=fits, max_evaluation_jobs=carries + 1221)
     for scope, total in WINDOWS.items():
         entry = counts["scopes"][scope]
         anchors = ANCHORS[variant][scope]
@@ -70,13 +75,14 @@ def test_repository_stages_count_every_level_window_predictor_arm_seed_and_refer
         # KLPO y las referencias sobre los 11 predictores y cuatro políticas más sobre dos.
         assert entry["training_jobs"] == anchors * (11 + 2 * 4) * 3
         assert entry["carried_jobs"] == (total - anchors) * (11 + 2 * 4) * 3
-        assert entry["reference_jobs"] == total * 11 * 3
-        assert set(entry["arms"]) == {"klpo_terminal", *ALGORITHM_ARMS, *REFERENCES}
+        references = [r for r in REFERENCES if INDEXED[scope] or r != "market_index"]
+        assert entry["reference_jobs"] == total * 11 * len(references)
+        assert set(entry["arms"]) == {"klpo_terminal", *ALGORITHM_ARMS, *references}
         for arm, predictors in (("klpo_terminal", 11), *((arm, 2) for arm in ALGORITHM_ARMS)):
             fit = dict(fit=anchors * predictors) if anchors else {}
             carry = dict(carry=(total - anchors) * predictors) if total > anchors else {}
             assert entry["arms"][arm] == {str(s): fit | carry for s in (42, 43, 44)}
-        for arm in REFERENCES:
+        for arm in references:
             assert entry["arms"][arm] == {"none": dict(reference=total * 11)}
     assert result["contrasts"]["primary"] == "klpo_terminal"
     assert result["universe_predictor"] == "transformer_compact"
@@ -132,9 +138,10 @@ def test_a_producer_registered_in_the_campaign_enters_the_first_level_without_ch
         "gru_episodic",
         *PRODUCERS[7:],
     ]
-    # La candidata añade 24 ventanas por tres semillas de KLPO y tres referencias.
+    # La candidata añade 24 ventanas por tres semillas de KLPO y sus referencias: cinco en
+    # las 15 ventanas de EE. UU. y cuatro en las 9 de China, sin instrumento del índice.
     assert levels["all_predictors"]["training_jobs"] == 792 + 24 * 3
-    assert levels["all_predictors"]["reference_jobs"] == 792 + 24 * 3
+    assert levels["all_predictors"]["reference_jobs"] == 1221 + 15 * 5 + 9 * 4
     assert levels["algorithms"]["training_jobs"] == 576
 
 
@@ -149,9 +156,10 @@ def test_every_first_level_fit_shares_the_budget_and_the_portfolio_criterion():
     waves, wave = native_policy_runs.klpo_waves(tapes.train, environments, budget)
     assert 0 < waves * wave <= budget
     selection = dict(metric="ruin_count_then_mean_liquidated_log_growth", partition="validation")
+    equity = dict(basis="close_valuation", close_times=[1, 2], nav=[1.0, 1.0])
     records = [
         dict(cost_bps=cost, status="completed", reason=None, steps=1, net_return=0.0)
-        | dict(liquidated_net_return=0.0, max_drawdown=0.0)
+        | dict(liquidated_net_return=0.0, max_drawdown=0.0, equity=equity)
         for cost in stage["policies"]["evaluation_costs_bps"]
     ]
     for predictor in PRODUCERS:
@@ -187,8 +195,48 @@ def test_first_policy_windows_follow_three_training_years_and_one_validation_yea
         "fold-016",
     ]
     assert {row["anchor"] for row in us_rows[1:3]} == {"fold-004"}
+    # Cada ancla se ajusta con las tres evaluaciones fuera de muestra anteriores a su validación.
+    assert us_rows[-3]["window"] == "fold-016" and us_rows[-3]["trained"]
+    assert us_rows[-3]["train"] == ["fold-012", "fold-013", "fold-014"]
     cn = policy_plan.scope_windows(stage, "CN")
     assert cn[-1]["window"] == "fold-012" and cn[-1]["anchor"] == "fold-010"
+    assert cn[-1]["train"] == ["fold-008", "fold-009", "fold-010"]
+    stage = campaign_stage.load_stage(STAGES["A"])
+    us_rows = policy_plan.scope_windows(stage, "US")
+    assert us_rows[-1]["train"] == ["fold-014", "fold-015", "fold-016"]
+    assert {
+        len(row["train"])
+        for scope in ("US", "CN")
+        for row in policy_plan.scope_windows(stage, scope)
+    } == {3}
+    # La sensibilidad declarada usa todas las evaluaciones previas, con 16 como máximo, de modo
+    # que la última ancla de EE. UU. deja fuera la más antigua.
+    expanding = policy_plan.window_sensitivity(stage)
+    us_rows = policy_plan.scope_windows(expanding, "US")
+    assert us_rows[-1]["train"] == [f"fold-{i:03d}" for i in range(1, 17)]
+    assert [len(row["train"]) for row in us_rows] == [*range(3, 17), 16]
+    assert [len(row["train"]) for row in policy_plan.scope_windows(expanding, "CN")] == [
+        *range(3, 12)
+    ]
+
+
+@pytest.mark.parametrize(
+    ("variant", "main", "sensitivity"),
+    [("A", (75, 45), (179, 81)), ("B", (35, 21), (65, 30))],
+)
+def test_tapes_per_predictor_follow_the_training_rule(variant, main, sensitivity):
+    stage = campaign_stage.load_stage(STAGES[variant])
+    counted = policy_plan.count_tapes(stage)
+    assert (counted["US"]["total"], counted["CN"]["total"]) == main
+    # Una cinta de evaluación por ventana y una de validación por ancla, con las dos reglas.
+    assert counted["US"]["evaluation"] == 15 and counted["CN"]["evaluation"] == 9
+    expanded = policy_plan.count_tapes(policy_plan.window_sensitivity(stage))
+    assert (expanded["US"]["total"], expanded["CN"]["total"]) == sensitivity
+    # La sensibilidad no cambia los trabajos, solo las cintas de ajuste.
+    assert policy_plan.count_stage(
+        policy_plan.window_sensitivity(stage)
+    ) == policy_plan.count_stage(stage)
+    assert stage["policies"]["window_sensitivity"]["enabled"] is False
 
 
 @pytest.mark.parametrize("variant", "AB")
@@ -213,14 +261,18 @@ def test_klpo_is_planned_first_and_each_carry_depends_on_the_fit_of_its_anchor()
     groups = {}
     for job in jobs:
         groups.setdefault((job["scope"], job["window"], job["predictor"]), []).append(job)
-    for (_, _, predictor), group in groups.items():
+    for (scope, _, predictor), group in groups.items():
         # KLPO primero, las políticas de algoritmos si el predictor se compara y las referencias.
         learned = ["klpo_terminal", *(ALGORITHM_ARMS if predictor in COMPARED else ())]
         expected = [arm for arm in learned for _ in (42, 43, 44)]
-        assert [job["arm"] for job in group] == [*expected, *REFERENCES]
+        references = [r for r in REFERENCES if INDEXED[scope] or r != "market_index"]
+        assert [job["arm"] for job in group] == [*expected, *references]
     for job in jobs:
+        # Después del ancla, un trabajo solo espera selecciones de la cadena de otra etapa.
+        internal = [dependency for dependency in job["depends"] if dependency in by_id]
+        assert job["depends"][: len(internal)] == internal
         if job["kind"] == "carry":
-            (anchor,) = job["depends"]
+            (anchor,) = internal
             fitted = jobs[by_id[anchor]]
             assert by_id[anchor] < by_id[job["id"]]
             assert (fitted["kind"], fitted["window"], fitted["arm"], fitted["seed"]) == (
@@ -231,11 +283,42 @@ def test_klpo_is_planned_first_and_each_carry_depends_on_the_fit_of_its_anchor()
             )
             assert (fitted["train"], fitted["validation"]) == (job["train"], job["validation"])
         else:
-            assert job["depends"] == []
+            assert internal == []
     assert Counter(job["engine"] for job in jobs if job["kind"] != "reference") == {
         "native_klpo": 264 + 528,
         "native_ppo": 192 + 384,
     }
+
+
+def test_the_chain_selection_ids_follow_the_posttraining_contract():
+    assert (
+        policy_plan.chain_job_id("US", "fold-004", "gru", 42) == "US/fold-004/gru__chain/select-s42"
+    )
+
+
+@pytest.mark.parametrize("variant", "AB")
+def test_every_job_waits_for_the_chain_selections_of_the_tapes_it_reads(variant):
+    stage = campaign_stage.load_stage(STAGES[variant])
+    assert stage["policies"]["predictor"]["source"] == policy_plan.CHAIN
+    jobs = policy_plan.plan_stage(stage)
+    universe = stage["universe_predictor"]
+    for job in jobs:
+        scope, predictor = job["scope"], job["predictor"]
+        read = [*job["train"], job["validation"]]
+        expected = [
+            policy_plan.chain_job_id(scope, w, predictor, 42) for w in [*read, job["window"]]
+        ]
+        if predictor != universe:
+            expected += [policy_plan.chain_job_id(scope, w, universe, 42) for w in read]
+        fitted = job["depends"][:1] if job["kind"] == "carry" else []
+        assert job["depends"] == fitted + expected and job["predictor_seed"] == 42
+        # Ninguna selección pertenece a una ventana posterior a la evaluada.
+        assert all(d.split("/")[1] <= job["window"] for d in expected)
+    # Con el predictor elegido de la campaña base no hay selecciones de la cadena.
+    stage["policies"]["predictor"]["source"] = policy_plan.BASE_SELECTED
+    for job in policy_plan.plan_stage(stage):
+        assert job["depends"] == ([] if job["kind"] != "carry" else job["depends"][:1])
+        assert all("__chain" not in d for d in job["depends"])
 
 
 def mutated(tmp_path, change_policies=None, change_stage=None):
@@ -291,18 +374,68 @@ INVALID_POLICIES = {
     ].update(beta_initial=1e7),
     "klpo_other_controller": _policy("klpo_terminal", controller="ppo_epochs"),
     "unknown_engine": _policy("double_dqn", engine="python"),
-    "cost_outside_grid": lambda v: v["environment"].update(cost_bps=5),
+    "cost_outside_grid": lambda v: v["environment"].update(cost_bps=15),
+    "unordered_costs": lambda v: v.update(evaluation_costs_bps=[0, 10, 5, 20]),
+    "too_many_costs": lambda v: v.update(evaluation_costs_bps=list(range(17))),
+    "old_schema": lambda v: v.update(schema_version=1),
+    "index_path": lambda v: v["market_index"].update(US="../SPY"),
+    "index_unknown_market": lambda v: v["market_index"].update(EU="STOXX"),
+    "report_cost_outside_grid": lambda v: v["report"].update(primary_cost_bps=25),
+    "report_block_in_sensitivity": lambda v: v["report"].update(
+        block_length_sensitivity=[5, 21, 63]
+    ),
+    "report_few_replicates": lambda v: v["report"].update(replicates=10),
+    "report_integer_confidence": lambda v: v["report"].update(confidence=1),
+    "report_unknown_benchmark": lambda v: v["report"]["benchmarks"].update(CN="oracle"),
+    "report_benchmark_other_market": lambda v: v["report"]["benchmarks"].update(
+        US="csi300_price_index_v1"
+    ),
+    "report_benchmark_and_index": lambda v: v["market_index"].update(CN="SPY"),
+    "survival_primary": lambda v: v["survival_sensitivity"].update(role="primary"),
+    "survival_positive_exit": lambda v: v["survival_sensitivity"].update(exit_returns=[0.1]),
+    "survival_integer_exit": lambda v: v["survival_sensitivity"].update(exit_returns=[0]),
+    "survival_other_rule": lambda v: v["survival_sensitivity"].update(applies_to="all_assets"),
     "no_ruin_penalty": lambda v: v["environment"].update(ruin_penalty=0),
     "lag_float": lambda v: v["environment"].update(dividend_payment_lag_sessions=1.5),
     "budget_float": lambda v: v["budget"].update(transitions=1.5e5),
     "rollout_over_budget": lambda v: v["budget"].update(rollout_transitions=10**6),
-    "no_training_years": lambda v: v.update(train_windows=0),
+    "no_training_years": lambda v: v["train_windows"].update(minimum=0),
+    "training_years_as_count": lambda v: v.update(train_windows=3),
+    "unknown_training_rule": lambda v: v["train_windows"].update(rule="every_window_v1"),
+    "training_without_minimum": lambda v: v["train_windows"].pop("minimum"),
+    "training_without_maximum": lambda v: v["train_windows"].pop("maximum"),
+    "training_beyond_environments": lambda v: v["train_windows"].update(
+        rule="expanding_prior_evaluations_v1", maximum=17
+    ),
+    "expanding_training_without_room": lambda v: v["train_windows"].update(
+        rule="expanding_prior_evaluations_v1"
+    ),
+    "training_maximum_below_minimum": lambda v: v["train_windows"].update(maximum=2),
+    "fixed_training_with_other_maximum": lambda v: v["train_windows"].update(maximum=4),
+    "sensitivity_same_rule": lambda v: v["window_sensitivity"].update(
+        train_windows=dict(v["train_windows"])
+    ),
+    "sensitivity_primary": lambda v: v["window_sensitivity"].update(role="primary"),
+    "sensitivity_always_launched": lambda v: v["window_sensitivity"].update(launch="always"),
+    "sensitivity_enabled_as_text": lambda v: v["window_sensitivity"].update(enabled="false"),
+    "sensitivity_without_identity": lambda v: v["window_sensitivity"].update(id="expanding"),
+    "sensitivity_extra_field": lambda v: v["window_sensitivity"].update(cost=1),
+    "sensitivity_beyond_environments": lambda v: v["window_sensitivity"]["train_windows"].update(
+        maximum=17
+    ),
+    "no_window_sensitivity": lambda v: v.pop("window_sensitivity"),
+    "synthetic_domain": lambda v: v["data"].update(policy="synthetic_allowed"),
+    "other_edition_kind": lambda v: v["data"].update(edition="episode_worlds"),
+    "edition_without_identity": lambda v: v["data"].update(edition_id="fixture"),
+    "edition_extra_field": lambda v: v["data"].update(fallback="synthetic"),
     "unknown_universe_rule": lambda v: v["universe"].update(rule="best_in_evaluation"),
     "universe_too_large": lambda v: v["universe"].update(max_assets=5000),
     "predictor_without_producer": lambda v: v["levels"]["algorithms"].update(
         predictors=["gru_episodic"]
     ),
     "predictor_seed": lambda v: v["predictor"].update(seed=7),
+    "unknown_predictor_source": lambda v: v["predictor"].update(source="best_in_hindsight"),
+    "predictor_without_source": lambda v: v["predictor"].pop("source"),
     "fixed_first_level": lambda v: v["levels"]["all_predictors"].update(predictors=COMPARED),
     "first_level_without_klpo": lambda v: v["levels"]["all_predictors"]["arms"].pop(0),
     "klpo_in_algorithms": lambda v: v["levels"]["algorithms"]["arms"].insert(0, "klpo_terminal"),
@@ -319,7 +452,7 @@ INVALID_STAGES = {
     "unknown_scope": lambda v: v.update(scopes=["EU"]),
     "unordered_scopes": lambda v: v.update(scopes=["CN", "US"]),
     "limit": lambda v: v["limits"].update(max_training_jobs=1367),
-    "evaluation_limit": lambda v: v["limits"].update(max_evaluation_jobs=791),
+    "evaluation_limit": lambda v: v["limits"].update(max_evaluation_jobs=1220),
     "test_opened": lambda v: v.update(final_test_opened=True),
 }
 
@@ -334,8 +467,8 @@ REASONS = {
     "klpo_not_first": "va primero",
     "klpo_second_with_matching_controls": "va primero",
     "missing_control": "con todos los demás",
-    "missing_reference": "tres referencias",
-    "unknown_reference": "tres referencias",
+    "missing_reference": "cinco referencias",
+    "unknown_reference": "cinco referencias",
     "dqn_with_ppo_objective": "sin objetivo PPO",
     "unknown_ppo_objective": "objetivo PPO identificado",
     "missing_target_kl": "objetivo PPO identificado",
@@ -343,15 +476,53 @@ REASONS = {
     "klpo_other_controller": "controlador KLPO",
     "unknown_engine": "motor y una variante",
     "cost_outside_grid": "costes de evaluación",
+    "unordered_costs": "costes de evaluación",
+    "too_many_costs": "costes de evaluación",
+    "old_schema": "contrato",
+    "index_path": "instrumento de la edición",
+    "index_unknown_market": "instrumento de la edición",
+    "report_cost_outside_grid": "coste principal",
+    "report_block_in_sensitivity": "coste principal",
+    "report_few_replicates": "coste principal",
+    "report_integer_confidence": "coste principal",
+    "report_unknown_benchmark": "coste principal",
+    "report_benchmark_other_market": "coste principal",
+    "report_benchmark_and_index": "coste principal",
+    "survival_primary": "supervivencia es secundaria",
+    "survival_positive_exit": "supervivencia es secundaria",
+    "survival_integer_exit": "supervivencia es secundaria",
+    "survival_other_rule": "supervivencia es secundaria",
     "no_ruin_penalty": "costes de evaluación",
     "lag_float": "costes de evaluación",
     "budget_float": "presupuesto de transiciones",
     "rollout_over_budget": "presupuesto de transiciones",
     "no_training_years": "ventanas de ajuste",
+    "training_years_as_count": "ventanas de ajuste",
+    "unknown_training_rule": "ventanas de ajuste",
+    "training_without_minimum": "ventanas de ajuste",
+    "training_without_maximum": "ventanas de ajuste",
+    "training_beyond_environments": "ventanas de ajuste",
+    "training_maximum_below_minimum": "ventanas de ajuste",
+    "fixed_training_with_other_maximum": "ventanas de ajuste",
+    "expanding_training_without_room": "ventanas de ajuste",
+    "sensitivity_same_rule": "sensibilidad de ventanas",
+    "sensitivity_primary": "sensibilidad de ventanas",
+    "sensitivity_always_launched": "sensibilidad de ventanas",
+    "sensitivity_enabled_as_text": "sensibilidad de ventanas",
+    "sensitivity_without_identity": "sensibilidad de ventanas",
+    "sensitivity_extra_field": "sensibilidad de ventanas",
+    "sensitivity_beyond_environments": "sensibilidad de ventanas",
+    "no_window_sensitivity": "no cumplen su contrato",
+    "synthetic_domain": "edición real",
+    "other_edition_kind": "edición real",
+    "edition_without_identity": "edición real",
+    "edition_extra_field": "edición real",
     "unknown_universe_rule": "universo",
     "universe_too_large": "universo",
     "predictor_without_producer": "productor",
     "predictor_seed": "semilla declarada",
+    "unknown_predictor_source": "predictor, el universo",
+    "predictor_without_source": "predictor, el universo",
     "fixed_first_level": "nivel completo",
     "first_level_without_klpo": "nivel completo",
     "klpo_in_algorithms": "nivel completo",
@@ -366,7 +537,7 @@ REASONS = {
     "unknown_scope": "ámbitos",
     "unordered_scopes": "ámbitos",
     "limit": "max_training_jobs=1367",
-    "evaluation_limit": "max_evaluation_jobs=791",
+    "evaluation_limit": "max_evaluation_jobs=1220",
 }
 
 

@@ -35,6 +35,18 @@ def test_passive_valuation_includes_costs_without_final_liquidation():
     assert env.book.positions == {"A": 100}
 
 
+def test_equity_series_follows_the_close_valuation_of_each_session():
+    env = FinancialEnv(tape(), capital=1000, cost_bps=0)
+    report = evaluate(env, lambda observation, step: 5 if step == 0 else 0)
+    assert report["equity"] == dict(
+        basis="close_valuation", close_times=[100, 200, 300], nav=[1000, 1200.0, 900.0]
+    )
+    missing = evaluate(FinancialEnv(tape(missing=True), capital=1000, cost_bps=0), lambda *_: 5)
+    assert missing["equity"]["nav"] == [1000, 1200.0, None]
+    ruined = evaluate(FinancialEnv(tape(ruined=True), capital=1000, cost_bps=0), lambda *_: 5)
+    assert ruined["equity"]["nav"][-1] == 0
+
+
 def test_missing_held_close_is_an_incomplete_result():
     report = evaluate(FinancialEnv(tape(missing=True), capital=1000, cost_bps=0), lambda *_: 5)
     metrics = report["financial_validation"]
