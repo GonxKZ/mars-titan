@@ -59,8 +59,6 @@ def _write_price_details(frame, details: dict, folder: Path) -> dict:
             [
                 ("source_row", pa.int64()),
                 ("source_date", pa.string()),
-                ("source_high", pa.float64()),
-                ("source_low", pa.float64()),
                 ("relative_excess", pa.float64()),
             ]
         )
@@ -132,6 +130,8 @@ def audit_prices(
         "details_root": detail_location,
         "source_snapshot": snapshot,
         "files": done,
+        # Los lectores posteriores relajan su comprobación de orden con esta misma tolerancia.
+        **({"ordering_rtol": ordering_rtol} if ordering_rtol else {}),
     }
     if details_root is not None:
         atomic_json(state_path, checkpoint)

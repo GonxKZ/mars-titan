@@ -15,6 +15,7 @@ from mars_titan.data.input_policy import (
     masked_inputs,
     validate_historical_vectors,
 )
+from mars_titan.data.price_windows import PRICE_WINDOW_CHANNELS, validate_price_window
 from mars_titan.training.cohort_contract import representation_identity
 
 from .config import bounded_integer, canonical
@@ -46,8 +47,10 @@ class FinancialInputSpec:
         resolved = representation_identity(representation, input_policy=input_policy)
         context = resolved["context_sessions"]
         bounded_integer(context, "contexto", 2, 512)
-        if dimensions["prices"] != 5 or (masked_inputs(input_policy) and context != 64):
-            raise ValueError("El contexto histórico requiere 64 sesiones y cinco canales OHLCV")
+        # Desde la v3.1 la representación declara el canal de presencia de cada sesión.
+        channels = len(PRICE_WINDOW_CHANNELS) if "price_window" in resolved else 5
+        if dimensions["prices"] != channels or (masked_inputs(input_policy) and context != 64):
+            raise ValueError("El contexto histórico requiere 64 sesiones y sus canales de precio")
         if masked_inputs(input_policy) and any(
             dimensions[name] != 3 * len(resolved[catalog])
             for name, catalog in (
@@ -123,6 +126,8 @@ def _cpu_inputs(inputs, specification):
         copied[name] = value.copy()
         if not np.isfinite(copied[name]).all():
             raise ValueError("Las entradas no son finitas")
+        if name == "prices":
+            validate_price_window(copied[name])
     return copied, size
 
 

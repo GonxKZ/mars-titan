@@ -210,6 +210,50 @@ void historical_configuration_is_bounded() {
     invalid.dimensions = {5, 4096, 4096, 4095, 3777};
     rejected([&] { (void)Candidate(invalid); });
 }
+void price_presence_channel_is_validated() {
+    auto with_presence = config();
+    with_presence.dimensions[0] = 6;
+    const Candidate model(with_presence, at::kDouble);
+    auto data = inputs();
+    const auto ones = at::ones({2, price_window, 1}, at::kDouble);
+    data.prices = at::cat({data.prices, ones}, 2);
+    require(at::isfinite(model.forward(data, model.empty_memory()).quantiles).all().item<bool>(),
+            "La ventana con bit de presencia no produce cuantiles finitos");
+    auto gap = data;
+    gap.prices = data.prices.clone();
+    gap.prices.select(1, 10).zero_();
+    require(at::isfinite(model.encode(gap).fused).all().item<bool>(),
+            "Un hueco con relleno cero y bit nulo debe aceptarse");
+    auto filled = gap;
+    filled.prices = gap.prices.clone();
+    filled.prices.select(1, 10).select(1, 3).fill_(0.25);
+    rejected([&] { (void)model.encode(filled); });
+    auto negative = gap;
+    negative.prices = gap.prices.clone();
+    negative.prices.select(1, 10).select(1, 3).fill_(-0.0);
+    rejected([&] { (void)model.encode(negative); });
+    auto single = data;
+    single.prices = data.prices.clone();
+    single.prices.narrow(1, 0, price_window - 1).zero_();
+    rejected([&] { (void)model.encode(single); });
+    auto last = data;
+    last.prices = data.prices.clone();
+    last.prices.select(1, price_window - 1).zero_();
+    rejected([&] { (void)model.encode(last); });
+    auto fraction = data;
+    fraction.prices = data.prices.clone();
+    // El paso se vacía para que solo falle la regla del bit.
+    fraction.prices.select(1, 5).zero_();
+    fraction.prices.select(1, 5).select(1, 5).fill_(0.5);
+    rejected([&] { (void)model.encode(fraction); });
+    auto strict = config();
+    strict.input_policy = "strict_inputs_v1";
+    strict.dimensions[0] = 6;
+    rejected([&] { (void)Candidate(strict); });
+    auto seven = config();
+    seven.dimensions[0] = 7;
+    rejected([&] { (void)Candidate(seven); });
+}
 void fusion_consumes_presence_separately_from_projection() {
     Candidate model(config(), at::kDouble);
     {
@@ -226,7 +270,7 @@ void fusion_consumes_presence_separately_from_projection() {
 int main() {
     at::set_num_threads(1);
     at::set_num_interop_threads(1);
-    const std::array<std::pair<std::string_view, void (*)()>, 9> tests{
+    const std::array<std::pair<std::string_view, void (*)()>, 10> tests{
         {{"ausencias y codec", legitimate_absences_and_new_codec},
          {"conceptos", invalid_concepts_are_rejected},
          {"archivo histórico", historical_archive_requires_opt_in},
@@ -235,7 +279,8 @@ int main() {
          {"transferencia", transfer_preserves_full_rows_and_fixed_destination_codec},
          {"transferencia incompatible", incompatible_transfer_is_atomic},
          {"configuración", historical_configuration_is_bounded},
-         {"bits de fusión", fusion_consumes_presence_separately_from_projection}}};
+         {"bits de fusión", fusion_consumes_presence_separately_from_projection},
+         {"presencia de precios", price_presence_channel_is_validated}}};
     int failures = 0;
     for (const auto& [name, test] : tests) {
         try {

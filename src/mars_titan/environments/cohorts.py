@@ -30,7 +30,8 @@ def shapes_contract(shapes, max_assets, max_observation_bytes):
             not isinstance(shape, (tuple, list))
             or len(shape) != (2 if name == "prices" else 1)
             or any(type(size) is not int or not 1 <= size <= 4096 for size in shape)
-            or (name == "prices" and (shape[1] != 5 or not 2 <= shape[0] <= 512))
+            # Cinco canales OHLCV, o seis con el bit de presencia desde la edición v3.1.
+            or (name == "prices" and (shape[1] not in (5, 6) or not 2 <= shape[0] <= 512))
         ):
             raise ValueError("La forma de una modalidad no cumple el contrato")
     size = max_assets * (sum(int(np.prod(s)) for s in shapes.values()) * 4 + 1)

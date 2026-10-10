@@ -20,6 +20,8 @@ constexpr int64_t update_input_width = hidden_width + feature_width + hidden_wid
 constexpr double initial_step = 0.1;
 constexpr double key_tolerance = 1e-5;
 constexpr int64_t median_index = 2;
+// OHLCV. Desde la edición v3.1 se añade un canal con el bit de presencia de cada sesión.
+constexpr int64_t price_features = 5;
 
 void require(bool value, std::string_view reason) {
     if (!value) {
@@ -43,9 +45,13 @@ void check_config(const Config& config) {
             "La política de entradas del candidato no está admitida");
     (void)input_width(config);
     if (config.input_policy == "historical_masked_2000_v1") {
-        require(config.dimensions.front() == modality_count && config.dimensions.at(3) % 3 == 0 &&
-                    config.dimensions.at(4) % 3 == 0,
+        require((config.dimensions.front() == price_features ||
+                 config.dimensions.front() == price_features + 1) &&
+                    config.dimensions.at(3) % 3 == 0 && config.dimensions.at(4) % 3 == 0,
                 "La política histórica necesita OHLCV y bloques de valores, observación y edad");
+    } else {
+        require(config.dimensions.front() != price_features + 1,
+                "El bit de presencia de los precios solo existe en la política histórica");
     }
     require(config.max_batch > 0 && config.max_batch <= maximum_batch && config.max_episodes > 0 &&
                 config.max_episodes <= maximum_episodes && config.neighbors > 0 &&
@@ -212,6 +218,20 @@ int64_t Candidate::validate_inputs(const Inputs& inputs, const Config& config,
     const auto batch = inputs.prices.size(0);
     require(batch > 0 && batch <= config.max_batch, "El lote está vacío o supera el presupuesto");
     check_tensor(inputs.prices, {batch, price_window, config.dimensions.front()}, reference, true);
+    if (config.dimensions.front() == price_features + 1) {
+        // Una sesión ausente en todo el mercado llega con su bit a cero y relleno +0.0 exacto,
+        // con las mismas reglas que la validación de Python.
+        const auto present = inputs.prices.select(2, price_features);
+        const auto values = inputs.prices.narrow(2, 0, price_features);
+        require(((present == 0) | (present == 1)).all().item<bool>() &&
+                    (present.select(1, price_window - 1) == 1).all().item<bool>() &&
+                    (present.sum(1) >= 2).all().item<bool>() &&
+                    (((values == 0) & at::logical_not(at::signbit(values))) |
+                     (present.unsqueeze(2) == 1))
+                        .all()
+                        .item<bool>(),
+                "El bit de presencia o el relleno de una sesión ausente no cumple el contrato");
+    }
     const std::array<at::Tensor, modality_count - 1> blocks{inputs.news, inputs.charts,
                                                             inputs.fundamentals, inputs.macro};
     for (std::size_t i = 0; i < blocks.size(); ++i) {

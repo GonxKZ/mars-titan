@@ -89,18 +89,27 @@ class EmbeddingCache:
         return result
 
     def put(self, identity: dict, vector: np.ndarray) -> None:
-        vector = np.asarray(vector, dtype="<f4")
-        if vector.ndim != 1 or not vector.size or not np.isfinite(vector).all():
-            raise ValueError("La representación debe ser un vector no vacío de valores finitos")
-        if not self.cache_charts and identity.get("kind") == "chart":
-            return
-        key, description = self.identity(identity)
-        payload = vector.tobytes()
-        with self.db:
-            self.db.execute(
-                "INSERT OR REPLACE INTO embeddings VALUES (?,?,?,?)",
-                (key, description, payload, hashlib.sha256(payload).hexdigest()),
-            )
+        self.put_many([(identity, vector)])
+
+    def put_many(self, items) -> None:
+        """Guardar varios vectores en una sola transacción.
+
+        Cada confirmación de SQLite espera a que el disco sincronice el registro, unos 12 ms en
+        este equipo con carga. Agrupar las escrituras evita pagar esa espera por cada vector.
+        """
+        rows = []
+        for identity, vector in items:
+            vector = np.asarray(vector, dtype="<f4")
+            if vector.ndim != 1 or not vector.size or not np.isfinite(vector).all():
+                raise ValueError("La representación debe ser un vector no vacío de valores finitos")
+            if not self.cache_charts and identity.get("kind") == "chart":
+                continue
+            key, description = self.identity(identity)
+            payload = vector.tobytes()
+            rows.append((key, description, payload, hashlib.sha256(payload).hexdigest()))
+        if rows:
+            with self.db:
+                self.db.executemany("INSERT OR REPLACE INTO embeddings VALUES (?,?,?,?)", rows)
 
     def close(self) -> None:
         self.db.close()
@@ -132,6 +141,15 @@ def require_cuda(*, max_bytes=6 * 1024**3, min_free_bytes=0):
     return torch.device("cuda:0")
 
 
+def strict_fp32():
+    """Desactivar TF32 en matmul y cuDNN y fijar la precisión matmul más alta de PyTorch."""
+    import torch
+
+    torch.backends.cuda.matmul.allow_tf32 = False
+    torch.backends.cudnn.allow_tf32 = False
+    torch.set_float32_matmul_precision("highest")
+
+
 def _runtime_precision():
     import torch
 
@@ -143,7 +161,117 @@ def _runtime_precision():
         dtype="float32",
         matmul_tf32=torch.backends.cuda.matmul.allow_tf32,
         cudnn_tf32=torch.backends.cudnn.allow_tf32,
+        float32_matmul_precision=torch.get_float32_matmul_precision(),
     )
+
+
+def _strict_precision():
+    """Precisión efectiva, que debe ser FP32 estricto antes de nombrar o cargar el codificador."""
+    precision = _runtime_precision()
+    if (
+        precision["matmul_tf32"]
+        or precision["cudnn_tf32"]
+        or precision["float32_matmul_precision"] != "highest"
+    ):
+        raise ValueError(
+            "El codificador exige FP32 estricto y hay TF32 activo en matmul o cuDNN. "
+            "Llama antes a strict_fp32()"
+        )
+    return precision
+
+
+def _check_options(text_batch_size, image_batch_size, word_embedding_placement):
+    if type(word_embedding_placement) is not str or word_embedding_placement not in (
+        "cuda",
+        "cpu",
+    ):
+        raise ValueError("La ubicación de la tabla de palabras debe ser cuda o cpu")
+    if (
+        type(text_batch_size) is not int
+        or not 1 <= text_batch_size <= 32
+        or type(image_batch_size) is not int
+        or not 1 <= image_batch_size <= 64
+    ):
+        raise ValueError("Los presupuestos del codificador no son válidos")
+
+
+def _tokenizer():
+    from transformers import AutoTokenizer
+
+    tokenizer = AutoTokenizer.from_pretrained(
+        TEXT_MODEL, revision=TEXT_REVISION, trust_remote_code=False, token=False
+    )
+    if tokenizer("", add_special_tokens=True)["input_ids"] != add_special_tokens(
+        [], tokenizer.cls_token_id, tokenizer.sep_token_id
+    ):
+        raise ValueError("La disposición de tokens especiales del tokenizador fijado ha cambiado")
+    return tokenizer
+
+
+def encoder_spec(
+    *, text_batch_size=32, image_batch_size=64, word_embedding_placement="cuda", tokenizer=None
+):
+    """Identidad del codificador, calculable en CPU sin cargar los modelos ni abrir CUDA.
+
+    Las pasadas en CPU de la edición v3.1 nombran con ella los vectores que después calcula la
+    GPU. `FrozenEncoders` usa esta misma función, así que las dos identidades coinciden.
+    """
+    _check_options(text_batch_size, image_batch_size, word_embedding_placement)
+    precision = _strict_precision()
+    import tokenizers
+    import torch
+    import torchvision
+    import transformers
+    from huggingface_hub import hf_hub_download
+    from torchvision.models import ResNet18_Weights
+
+    tokenizer = tokenizer if tokenizer is not None else _tokenizer()
+    text_weights = Path(
+        hf_hub_download(
+            TEXT_MODEL,
+            "model.safetensors",
+            revision=TEXT_REVISION,
+            local_files_only=True,
+            token=False,
+        )
+    )
+    weights = ResNet18_Weights.IMAGENET1K_V1
+    weight_path = Path(torch.hub.get_dir()) / "checkpoints" / weights.url.rsplit("/", 1)[-1]
+    spec = {
+        "text_model": TEXT_MODEL,
+        "text_revision": TEXT_REVISION,
+        "text_weights_sha256": sha256(text_weights),
+        "text_artifacts_sha256": text_artifact_fingerprints(text_weights.parent),
+        "tokenizer_backend_sha256": hashlib.sha256(
+            tokenizer.backend_tokenizer.to_str().encode()
+        ).hexdigest(),
+        "tokenizers_version": tokenizers.__version__,
+        "tokenizer_class": type(tokenizer).__name__,
+        "text_policy": "all_126_token_chunks_weighted_mean_no_truncation",
+        "image_model": "resnet18.IMAGENET1K_V1",
+        "image_url": weights.url,
+        "image_weights_sha256": sha256(weight_path),
+        "image_policy": "224_rgb_imagenet_normalization_no_crop",
+        "code_sha256": sha256(Path(__file__)),
+        "torch": torch.__version__,
+        "torchvision": torchvision.__version__,
+        "transformers": transformers.__version__,
+        "device": "cuda:0",
+        "precision": "float32",
+        "runtime_precision": precision,
+        "historical_simulation": False,
+        "word_embedding_placement": word_embedding_placement,
+    }
+    if word_embedding_placement == "cpu":
+        from . import embedding_placement
+
+        spec["word_embedding_lookup"] = {
+            "policy": "cpu_word_inputs_embeds_fp32_v1",
+            "code_sha256": sha256(Path(embedding_placement.__file__)),
+        }
+    if text_batch_size != 32 or image_batch_size != 64:
+        spec["batch_sizes"] = dict(text_chunks=text_batch_size, images=image_batch_size)
+    return spec
 
 
 def _check_frozen_model(model):
@@ -172,44 +300,25 @@ class FrozenEncoders:
         image_batch_size=64,
         word_embedding_placement="cuda",
     ):
-        if type(word_embedding_placement) is not str or word_embedding_placement not in (
-            "cuda",
-            "cpu",
-        ):
-            raise ValueError("La ubicación de la tabla de palabras debe ser cuda o cpu")
+        _check_options(text_batch_size, image_batch_size, word_embedding_placement)
         if (
             type(cuda_memory_bytes) is not int
             or cuda_memory_bytes <= 0
             or type(min_free_cuda_bytes) is not int
             or min_free_cuda_bytes < 0
-            or type(text_batch_size) is not int
-            or not 1 <= text_batch_size <= 32
-            or type(image_batch_size) is not int
-            or not 1 <= image_batch_size <= 64
         ):
             raise ValueError("Los presupuestos del codificador no son válidos")
         self.text_batch_size = text_batch_size
         self.image_batch_size = image_batch_size
         self.word_embedding_placement = word_embedding_placement
-        import tokenizers
         import torch
-        import torchvision
-        import transformers
-        from huggingface_hub import hf_hub_download
         from torchvision.models import ResNet18_Weights, resnet18
-        from transformers import AutoModel, AutoTokenizer
+        from transformers import AutoModel
 
-        precision = _runtime_precision()
+        # Falla al arrancar, antes de abrir CUDA o cargar pesos, si hay TF32 activo.
+        _strict_precision()
         self.device = require_cuda(max_bytes=cuda_memory_bytes, min_free_bytes=min_free_cuda_bytes)
-        self.tokenizer = AutoTokenizer.from_pretrained(
-            TEXT_MODEL, revision=TEXT_REVISION, trust_remote_code=False, token=False
-        )
-        if self.tokenizer("", add_special_tokens=True)["input_ids"] != add_special_tokens(
-            [], self.tokenizer.cls_token_id, self.tokenizer.sep_token_id
-        ):
-            raise ValueError(
-                "La disposición de tokens especiales del tokenizador fijado ha cambiado"
-            )
+        self.tokenizer = _tokenizer()
         self.text_model = (
             AutoModel.from_pretrained(
                 TEXT_MODEL,
@@ -229,15 +338,6 @@ class FrozenEncoders:
             )
         else:
             self.text_model = self.text_model.to(self.device)
-        text_weights = Path(
-            hf_hub_download(
-                TEXT_MODEL,
-                "model.safetensors",
-                revision=TEXT_REVISION,
-                local_files_only=True,
-                token=False,
-            )
-        )
         weights = ResNet18_Weights.IMAGENET1K_V1
         self.image_model = resnet18(weights=None)
         self.image_model.load_state_dict(
@@ -253,39 +353,12 @@ class FrozenEncoders:
         ]
         _check_frozen_model(self.text_model)
         _check_frozen_model(self.image_model)
-        weight_path = Path(torch.hub.get_dir()) / "checkpoints" / weights.url.rsplit("/", 1)[-1]
-        self.spec = {
-            "text_model": TEXT_MODEL,
-            "text_revision": TEXT_REVISION,
-            "text_weights_sha256": sha256(text_weights),
-            "text_artifacts_sha256": text_artifact_fingerprints(text_weights.parent),
-            "tokenizer_backend_sha256": hashlib.sha256(
-                self.tokenizer.backend_tokenizer.to_str().encode()
-            ).hexdigest(),
-            "tokenizers_version": tokenizers.__version__,
-            "tokenizer_class": type(self.tokenizer).__name__,
-            "text_policy": "all_126_token_chunks_weighted_mean_no_truncation",
-            "image_model": "resnet18.IMAGENET1K_V1",
-            "image_url": weights.url,
-            "image_weights_sha256": sha256(weight_path),
-            "image_policy": "224_rgb_imagenet_normalization_no_crop",
-            "code_sha256": sha256(Path(__file__)),
-            "torch": torch.__version__,
-            "torchvision": torchvision.__version__,
-            "transformers": transformers.__version__,
-            "device": "cuda:0",
-            "precision": "float32",
-            "runtime_precision": precision,
-            "historical_simulation": False,
-            "word_embedding_placement": word_embedding_placement,
-        }
-        if word_embedding_placement == "cpu":
-            self.spec["word_embedding_lookup"] = {
-                "policy": "cpu_word_inputs_embeds_fp32_v1",
-                "code_sha256": sha256(Path(embedding_placement.__file__)),
-            }
-        if text_batch_size != 32 or image_batch_size != 64:
-            self.spec["batch_sizes"] = dict(text_chunks=text_batch_size, images=image_batch_size)
+        self.spec = encoder_spec(
+            text_batch_size=text_batch_size,
+            image_batch_size=image_batch_size,
+            word_embedding_placement=word_embedding_placement,
+            tokenizer=self.tokenizer,
+        )
         self.execution_budget = dict(
             cuda_memory_bytes=cuda_memory_bytes,
             min_free_cuda_bytes=min_free_cuda_bytes,

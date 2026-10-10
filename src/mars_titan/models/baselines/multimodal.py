@@ -6,6 +6,8 @@ from copy import deepcopy
 import torch
 from torch import nn
 
+from mars_titan.data.price_windows import gate_price_window
+
 from ..quantile_head import QUANTILE_HEAD, QuantileHead
 from .dlinear import DLinear
 from .transformer import CompactPriceTransformer, transformer_options
@@ -185,6 +187,8 @@ class MultimodalReference(nn.Module):
                 raise ValueError("Las modalidades y el modelo deben compartir dispositivo")
             if any(not torch.isfinite(inputs[name]).all() for name in self.encoders):
                 raise ValueError("Las modalidades contienen valores no finitos")
+        # Un hueco de mercado llega con relleno cero y su bit. El modelo nunca lee el relleno.
+        prices = gate_price_window(prices)
         if self.kind in _RECURRENT:
             _, hidden = self.price_encoder(prices)
             price = (hidden[0] if self.kind == "lstm" else hidden)[-1]

@@ -23,7 +23,17 @@ from mars_titan.data.input_policy import (
     validate_historical_vectors,
 )
 from mars_titan.data.modality_ablation import ablate_samples, ablated_modalities
+from mars_titan.data.price_windows import (
+    PRICE_FEATURES,
+    PRICE_WINDOW_CHANNELS,
+    absent_positions,
+    calendar_digest,
+    check_price_window_contract,
+    check_row_positions,
+    window_rows,
+)
 from mars_titan.data.storage import atomic_json, sha256
+from mars_titan.data.temporal import MarketClock
 
 from .cohort_contract import cohort_identity, representation_identity, validate_cohort_rows
 from .input_pipeline import PipelineOptions, background, ordered_map
@@ -357,6 +367,41 @@ def _window_features(windows):
     return result
 
 
+def _calendar_price_contexts(prices, rows):
+    """Ventanas por sesión del calendario con canal de presencia (contrato v3.1).
+
+    `rows` da la fila de cada sesión o -1 si falta en todo el mercado. Una ventana completa usa
+    exactamente las operaciones de `_price_contexts`. En una ventana con huecos, el ancla es el
+    primer cierre presente, la media del volumen solo cuenta sesiones presentes y los cinco
+    canales de un hueco quedan en +0.0. El hueco no es un dato.
+    """
+    size, context = rows.shape
+    present = rows >= 0
+    result = np.zeros((size, context, len(PRICE_WINDOW_CHANNELS)), dtype=np.float32)
+    result[:, :, len(PRICE_FEATURES)] = present
+    full = present.all(axis=1)
+    if full.any():
+        result[full, :, : len(PRICE_FEATURES)] = _price_contexts(prices, rows[full, -1], context)
+    for i in np.flatnonzero(~full):
+        keep = present[i]
+        window = prices[rows[i, keep]]
+        if (
+            len(window) < 2
+            or not np.isfinite(window).all()
+            or (window[:, :4] <= 0).any()
+            or (window[:, 4] < 0).any()
+        ):
+            raise ValueError("Los valores OHLCV del bloque no son válidos")
+        volume = window[:, 4]
+        mean = volume.mean(keepdims=True)
+        relative = np.zeros(volume.shape, dtype=np.result_type(volume.dtype, mean.dtype))
+        np.divide(volume, mean, out=relative, where=mean > 0)
+        np.log1p(relative, out=relative)
+        result[i, keep, :4] = np.log(window[:, :4] / window[0, 3])
+        result[i, keep, 4] = relative
+    return result
+
+
 class CorpusDataset:
     """Validar una edición y reutilizar sus huellas mientras no cambien los archivos.
 
@@ -451,6 +496,15 @@ class CorpusDataset:
 
         self._target_factor_sources = revision_sources(meta, input_policy=input_policy)
         self.context = meta["context_sessions"]
+        # Las ediciones desde la v3.1 declaran ventanas por sesión del calendario con presencia.
+        contract = (meta.get("representation") or {}).get("price_window")
+        if contract is not None and (
+            not self.masked or check_price_window_contract(contract)["context_sessions"] != 64
+        ):
+            raise ValueError("El contrato de ventanas requiere la edición histórica de 64 sesiones")
+        self.price_window = contract
+        self.price_channels = len(PRICE_WINDOW_CHANNELS) if contract else len(PRICE_FEATURES)
+        self._calendars = {}
         self.roots = {key: Path(value).resolve() for key, value in meta["roots"].items()}
         self.assets = meta["assets"]
         self.verified = {}
@@ -704,6 +758,37 @@ class CorpusDataset:
         self._remember(key, signature, (prices, available))
         return prices, available
 
+    def _calendar(self, market):
+        """Posiciones de decisión y ausencias de mercado del calendario declarado."""
+        if market not in self._calendars:
+            declared = self.price_window["calendars"].get(market)
+            if declared is None:
+                raise ValueError("El contrato de ventanas no declara el calendario del mercado")
+            clock = MarketClock(market, declared["start"], declared["end"])
+            if calendar_digest(clock) != declared["decisions_sha256"]:
+                raise ValueError("El calendario reconstruido no coincide con el de la edición")
+            decisions = np.array(
+                [round(t.timestamp() * 1_000_000) for t in clock.decisions], dtype=np.int64
+            )
+            absent = absent_positions(clock, self.price_window["market_absent_sessions"][market])
+            self._calendars[market] = decisions, absent
+        return self._calendars[market]
+
+    def price_windows(self, asset, prices, available, ends):
+        """Ventanas de entrada que terminan en las filas `ends`, según el contrato de la edición."""
+        if self.price_window is None:
+            return _price_contexts(prices, ends, self.context)
+        decisions, absent = self._calendar(asset["market"])
+        positions = np.searchsorted(decisions, available)
+        if (positions >= len(decisions)).any() or not np.array_equal(
+            decisions[positions], available
+        ):
+            raise ValueError("Un precio no corresponde a una decisión del calendario declarado")
+        check_row_positions(positions, absent)
+        if not 1 <= len(ends) <= 256:
+            raise ValueError("Las ventanas del bloque no tienen índices o dimensiones válidos")
+        return _calendar_price_contexts(prices, window_rows(positions, ends, self.context, absent))
+
     def _sample_columns(self, file):
         """Columnas de muestras que lee la edición, comprobadas contra el esquema."""
         columns = ["prediction_at", "price_end_index", *VECTORS] + (
@@ -915,7 +1000,7 @@ class CorpusDataset:
                 block_rows = positions[labels] - work["first_row"]
                 if (block_rows < 0).any() or (block_rows >= size).any():
                     raise ValueError("La etiqueta queda fuera de su grupo de muestras")
-                contexts = _price_contexts(prices, ends[block_rows], self.context)
+                contexts = self.price_windows(work["asset"], prices, available, ends[block_rows])
                 blocks.append(
                     dict(
                         vectors=vectors,
@@ -1081,7 +1166,7 @@ class CorpusDataset:
                         block = dict(
                             vectors=vectors,
                             rows=positions,
-                            prices=_price_contexts(prices, ends[positions], self.context),
+                            prices=self.price_windows(asset, prices, available, ends[positions]),
                             key=key,
                             prediction_at=moments[positions],
                             sample_at=moments[positions],
@@ -1093,7 +1178,12 @@ class CorpusDataset:
                             presence=presence[positions],
                         )
                         batch = _new_batch(
-                            vectors, self.context, len(positions), masked=True, supervised=False
+                            vectors,
+                            self.context,
+                            len(positions),
+                            masked=True,
+                            supervised=False,
+                            channels=self.price_channels,
                         )
                         _fill_batch(batch, 0, block, 0, len(positions))
                         batch["source_positions"] = np.asarray(positions, dtype=np.int64)
@@ -1155,6 +1245,7 @@ class CorpusDataset:
                         self.context,
                         min(batch_size, total - consumed),
                         masked=self.masked,
+                        channels=self.price_channels,
                     )
                     if self.cohort:
                         batch["cohort_id"] = self.cohort
@@ -1183,7 +1274,7 @@ class CorpusDataset:
             yield batch
 
 
-def _new_batch(vectors, context, size, *, masked=False, supervised=True):
+def _new_batch(vectors, context, size, *, masked=False, supervised=True, channels=5):
     result = {
         **({"presence": np.empty((size, len(MODALITIES)), dtype=np.bool_)} if masked else {}),
         "inputs": {
@@ -1191,7 +1282,7 @@ def _new_batch(vectors, context, size, *, masked=False, supervised=True):
                 name: np.empty((size, values.shape[1]), dtype=np.float32)
                 for name, values in vectors.items()
             },
-            "prices": np.empty((size, context, 5), dtype=np.float32),
+            "prices": np.empty((size, context, channels), dtype=np.float32),
         },
         "target": np.empty(size, dtype=np.float64),
         "sample_ids": [],

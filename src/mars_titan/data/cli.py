@@ -88,6 +88,13 @@ def main() -> int:
         default=0.0,
         help="Tolerancia relativa del redondeo en el orden OHLC. Cero conserva la vía estricta",
     )
+    numbers = commands.add_parser(
+        "verify-number-parsing",
+        help="Comparar la lectura exacta de precios con float(texto) en toda la fuente",
+    )
+    numbers.add_argument("--source", type=Path, default=Path("dataset"))
+    numbers.add_argument("--report", type=Path, required=True)
+    numbers.add_argument("--workers", type=int, default=4)
     macro = commands.add_parser(
         "macro", help="Calcular el contexto macro con unidades y versiones históricas"
     )
@@ -221,6 +228,12 @@ def main() -> int:
             details_root=args.details,
             ordering_rtol=args.ordering_rtol,
         )
+        atomic_json(args.report, result)
+    elif args.command == "verify-number-parsing":
+        from .source_numbers import number_parsing_receipt
+
+        outside_source(args.source, args.report)
+        result = number_parsing_receipt(args.source, workers=args.workers)
         atomic_json(args.report, result)
     elif args.command == "macro":
         from .macro_preparation import prepare_macro

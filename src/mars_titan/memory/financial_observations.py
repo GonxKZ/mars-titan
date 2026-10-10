@@ -25,7 +25,6 @@ from mars_titan.training.corpus_inputs import (
     _historical_times,
     _new_batch,
     _populated_groups,
-    _price_contexts,
     _window_contexts,
 )
 from mars_titan.training.input_pipeline import background, drain, submit
@@ -262,7 +261,7 @@ def _observation(dataset, asset, decoded, row, at, prices):
     return dict(
         vectors=vectors,
         rows=rows,
-        prices=_price_contexts(prices, ends[rows], dataset.context),
+        prices=dataset.price_windows(asset, prices, price_at, ends[rows]),
         key=f"{asset['market']}/{asset['symbol']}",
         prediction_at=stamps[rows],
         sample_at=stamps[rows],
@@ -278,7 +277,9 @@ class _BlockReader:
 
     Cada fila se selecciona con las mismas comprobaciones que `_observation` y `_fill_batch`
     en la lectura por observación, y las ventanas de precios de un bloque se transforman
-    juntas con `_price_contexts`, cuyo resultado por fila no depende del bloque. Con
+    juntas con `_price_contexts`, cuyo resultado por fila no depende del bloque. Si la
+    edición declara ventanas por sesión del calendario, se forman activo a activo con
+    `price_windows`, como en `_observation`. Con
     `executor`, los grupos que piden los instantes siguientes se decodifican antes en
     hilos, y cada grupo sigue siendo el resultado de `_sample_group` sobre el mismo archivo.
 
@@ -427,7 +428,14 @@ class _BlockReader:
             if not 0 <= row < len(stamps) or stamps[row] != at:
                 raise ValueError("La posición no corresponde a la observación indexada")
             if batch is None:
-                batch = _new_batch(vectors, context, len(chunk), masked=True, supervised=False)
+                batch = _new_batch(
+                    vectors,
+                    context,
+                    len(chunk),
+                    masked=True,
+                    supervised=False,
+                    channels=dataset.price_channels,
+                )
             end = group_ends[row]
             ends.append(end)
             windows.append(prices)
@@ -450,7 +458,19 @@ class _BlockReader:
         for values in batch["inputs"].values():
             if values.ndim == 2 and not np.isfinite(values).all():
                 raise ValueError("Una modalidad contiene valores no finitos")
-        batch["inputs"]["prices"][:] = _window_contexts(windows, ends, context)
+        if dataset.price_window is None:
+            batch["inputs"]["prices"][:] = _window_contexts(windows, ends, context)
+            return batch
+        # Con el contrato de ventanas por sesión del calendario, cada activo forma sus ventanas
+        # con su calendario y sus ausencias de mercado, igual que en `_observation`.
+        rows = {}
+        for filled, (identity, *_) in enumerate(chunk):
+            rows.setdefault(identity, []).append(filled)
+        for identity, filled in rows.items():
+            prices, price_at = self._asset_prices(identity)
+            batch["inputs"]["prices"][filled] = dataset.price_windows(
+                self.source._assets[identity], prices, price_at, np.asarray(ends)[filled]
+            )
         return batch
 
 
@@ -527,7 +547,14 @@ class FinancialObservationSource:
                 raise ValueError("El grupo de origen no existe")
             _, *decoded = self.dataset._sample_group(asset, file, group)
             block = _observation(self.dataset, asset, decoded, row, at, self.dataset._prices(asset))
-            batch = _new_batch(decoded[2], self.dataset.context, 1, masked=True, supervised=False)
+            batch = _new_batch(
+                decoded[2],
+                self.dataset.context,
+                1,
+                masked=True,
+                supervised=False,
+                channels=self.dataset.price_channels,
+            )
             _fill_batch(batch, 0, block, 0, 1)
             return batch
 

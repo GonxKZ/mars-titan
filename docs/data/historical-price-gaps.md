@@ -47,9 +47,9 @@ Fuera de 2019 no hay otra sesión del calendario sin ningún precio en CN ni en 
 
 ## Corrección implementada
 
-`read_prices` y `audit_prices` aceptan ahora una tolerancia explícita `ordering_rtol`, que vale cero por defecto y no puede superar 1e-6. La orden `audit-prices --ordering-rtol 1e-9` crea otra política de auditoría, con otro hash, otro estado y otro destino. Una fila se admite solo si su único defecto es ese desorden. Conserva apertura, cierre y volumen y toma como máximo y mínimo la envolvente de los cuatro precios. La auditoría añade `ordering_rounded_rows`, el exceso relativo máximo y un `ordering_roundings.parquet` con los valores originales de cada fila. El lector auditado posterior sigue exigiendo el orden estricto y acepta esa envolvente sin cambios.
+`read_prices` y `audit_prices` aceptan una tolerancia explícita `ordering_rtol`, que vale cero por defecto y no puede superar 1e-6. La orden `audit-prices --ordering-rtol 1e-9` crea otra política de auditoría, con otro hash, otro estado y otro destino. Una fila se admite solo si su único defecto es ese desorden. La primera versión de #427 sustituía el máximo y el mínimo por la envolvente de los cuatro precios. La [edición v3.1](edition-v3-1.md) la retiró: la fila conserva exactamente sus cinco valores y solo se relaja la comprobación de orden, también en la lectura auditada y en el gráfico, que reciben la tolerancia del estado de la auditoría. La auditoría añade `ordering_rounded_rows`, el exceso relativo máximo y un `ordering_roundings.parquet` con la fila de origen, la fecha y el exceso de cada fila admitida.
 
-Sobre la copia real, con 1e-9 y antes de 2024, CN pasa de 2.891.924 a 2.895.378 filas y US de 16.090.522 a 16.149.645. Ninguna fila estricta cambia. Con tolerancia cero las salidas y los campos de auditoría son los de antes. La corrección no altera la edición v3. Entrará en una edición nueva solo cuando se apruebe su regeneración.
+Sobre la copia real, con 1e-9 y antes de 2024, CN pasa de 2.891.924 a 2.895.378 filas y US de 16.090.522 a 16.149.645. Ninguna fila estricta cambia. Con tolerancia cero las salidas y los campos de auditoría son los de antes. La corrección no altera la edición v3. Entrará en la edición v3.1 cuando se apruebe su regeneración.
 
 ## Efecto en la comparación walk-forward
 
@@ -66,6 +66,6 @@ Todos los brazos se evalúan con las mismas filas, por lo que el hueco no favore
 
 ## Pendiente
 
-La regeneración con la tolerancia nueva no se ha ejecutado. Sustituiría datos verificados y necesita aprobación expresa. El plan del 9 de octubre propone una edición nueva que reutilice sin cambios los activos no afectados y vuelva a preparar, codificar y etiquetar los 2.635 afectados.
+La regeneración no se ha ejecutado. Sustituiría datos verificados y necesita aprobación expresa. La [edición v3.1](edition-v3-1.md) reúne en una sola regeneración la tolerancia de redondeo, la conversión exacta del texto de la fuente y la máscara por sesión para las sesiones ausentes en todo el mercado, que recuperaría 47.570 ventanas CN de mayo a julio de 2019 sin inventar precios.
 
-Hay dos decisiones abiertas que no forman parte de esta corrección. La primera es admitir ventanas con sesiones ausentes en todo el mercado mediante una máscara por sesión. Recuperaría 47.570 ventanas CN de mayo a julio de 2019, pero cambia la entrada de precios de todos los modelos y exigiría otra identidad y otra comparación. La segunda es si las filas planas sin volumen, que suelen representar suspensiones, deben contar como observaciones. Ya se aceptan 111.211 en CN y la corrección no cambia ese criterio.
+Sigue abierta la cuestión de si las filas planas sin volumen, que suelen representar suspensiones, deben contar como observaciones. Ya se aceptan 111.211 en CN y la v3.1 no cambia ese criterio.
