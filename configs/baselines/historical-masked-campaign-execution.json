@@ -1,6 +1,7 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "kind": "historical_masked_campaign_execution",
+  "hardware_profile": "rtx4070-laptop",
   "notes": "Recursos de ejecución de la campaña con máscaras. No entran en la identidad científica. VRAM en MiB por proceso, con su contexto de CUDA (unos 512 MiB fuera del asignador). RAM del anfitrión por proceso, con tubería y cachés. Tres ranuras con MPS y la tubería 2 y 2 según reports/engineering/campaign-pipeline-20261009: cada trabajo da los mismos bits solo y acompañado, y el caudal agregado supera al del mejor trabajo solo. MPS necesita su demonio en mps_pipe_directory antes de empezar. XGBoost y Ridge se ejecutan de uno en uno en un hilo del proceso de la campaña, para que los ajustes de una ventana compartan la matriz cuantizada y las estadísticas de Ridge. XGBoost declara todo el presupuesto hasta medir sus rondas. Las familias cronológicas declaran 9.216 MiB de RAM en US+CN: su lector midió un pico de 6,6 GiB en los últimos instantes de US+CN/fold-012, más el contexto CUDA y el entrenador. La VRAM de Titans-MAC por brazo, de los núcleos y lectores de CM-v1, de MARS-TITAN y de la GRU candidata corresponde a las recetas de reports/engineering/campaign-kernels-20261009 (bloques de 1.024 en Titans-MAC y núcleos, 512 en los lectores y acumulación de 128 en la candidata, FP32 estricto). Es la memoria del proceso medida con nvidia-smi en US+CN/fold-012, con un 5 % de margen y redondeada a 128 MiB. Vale también para US y CN, que tienen menos flujos por instante y no se midieron con esas recetas.",
   "gpu": {
     "slots": 3,

@@ -483,6 +483,48 @@ def test_sources_that_mix_policies_views_windows_or_arms_are_rejected(tmp_path, 
         study.run()
 
 
+PLATFORM = dict(platform_sha256="a" * 64, recorded=3, unrecorded=0, unrecorded_profile=None)
+
+
+def test_version_two_sources_carry_their_platform_into_the_report(tmp_path):
+    study = Study(tmp_path, scope="US")
+    rewrite_sources(study, lambda s: s.update(schema_version=2, platform=PLATFORM))
+    report, _ = study.run()
+    assert report["platform"] == PLATFORM
+    legacy = Study(tmp_path / "legacy", scope="US")
+    assert "platform" not in legacy.run()[0]
+
+
+@pytest.mark.parametrize(
+    "edit",
+    [
+        lambda s: s.update(schema_version=2),
+        lambda s: s.update(platform=PLATFORM),
+        lambda s: s.update(schema_version=2, platform=None),
+        lambda s: s.update(schema_version=2, platform=dict(PLATFORM, recorded=0)),
+        # Una huella sin recibos que la registren, o recibos registrados sin huella.
+        lambda s: s.update(schema_version=2, platform=dict(PLATFORM, platform_sha256=None)),
+        lambda s: s.update(
+            schema_version=2,
+            platform=dict(PLATFORM, recorded=0, unrecorded=1, unrecorded_profile="rtx4070-laptop"),
+        ),
+        lambda s: s.update(schema_version=2, platform=dict(PLATFORM, platform_sha256="A" * 64)),
+        lambda s: s.update(schema_version=2, platform=dict(PLATFORM, unrecorded=1)),
+        lambda s: s.update(
+            schema_version=2, platform=dict(PLATFORM, unrecorded_profile="rtx4070-laptop")
+        ),
+        lambda s: s.update(schema_version=2, platform=dict(PLATFORM, recorded=True)),
+        lambda s: s.update(schema_version=2, platform=dict(PLATFORM, extra=1)),
+        lambda s: s.update(schema_version=3, platform=PLATFORM),
+    ],
+)
+def test_sources_with_an_inconsistent_platform_are_rejected(tmp_path, edit):
+    study = Study(tmp_path, scope="US")
+    rewrite_sources(study, edit)
+    with pytest.raises(ValueError, match="contrato|plataforma de las fuentes"):
+        study.run()
+
+
 @pytest.mark.parametrize(
     "defect,message",
     [
