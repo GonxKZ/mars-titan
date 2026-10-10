@@ -49,6 +49,16 @@ Repository = "https://github.com/GonxKZ/mars-titan"
 
 [dependency-groups]
 dev = ["pytest>=8.3,<10", "ruff>=0.11,<1", "pyyaml>=6,<7", "bibtexparser>=1.4,<2"]
+# Bibliotecas externas que solo sirven de referencia en las pruebas de paridad (#494 a #497).
+# No forman parte del entorno de ejecución y se instalan con `uv sync --group reference`.
+reference = [
+    "peft==0.21.0",
+    "accelerate==1.15.0",
+    "scoringrules==0.11.0",
+    "mapie==1.5.0",
+    "sb3-contrib==2.9.0",
+    "stable-baselines3==2.9.0",
+]
 
 [tool.uv]
 package = true
@@ -70,6 +80,7 @@ pythonpath = [".", "src", "tests/models/titans"]
 addopts = "-ra"
 markers = [
     "native_binding: necesita el enlace nativo. Con MARS_TITAN_REQUIRE_NATIVE=1, omitirla falla",
+    "external_reference: compara con el grupo reference. Con MARS_TITAN_REQUIRE_REFERENCE=1, omitirla falla",
 ]
 
 [tool.ruff]

@@ -1,4 +1,9 @@
-"""Predicciones del padre ligadas a entradas, orden de activos y codificación."""
+"""Predicciones del padre ligadas a entradas, orden de activos y codificación.
+
+La caché sirve igual a cohortes reales y a los episodios de experimentos anteriores, así que
+vive en el paquete del postentrenamiento y no en el de escenarios ficticios. La etapa de
+políticas la alcanza a través de la matriz de adaptadores sin tocar ningún generador.
+"""
 
 import hashlib
 import json

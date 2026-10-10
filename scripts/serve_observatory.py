@@ -5,10 +5,12 @@ ventanas, las trazas de aprendizaje y la telemetría del equipo. Se detiene con 
 """
 
 import argparse
+import json
 import signal
 import threading
 from pathlib import Path
 
+from mars_titan.observatory.collector import WINDOW_SOURCE, identifier, safe_path
 from mars_titan.observatory.live_server import Limits, LiveObservatory
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -19,6 +21,16 @@ def campaign(value):
     if not separator:
         path, label = value, Path(value).name
     return label, Path(path)
+
+
+def declared_campaigns(config, root):
+    """Campañas por ventanas que declara la configuración del recolector."""
+    sources = json.loads(Path(config).read_text())["sources"]
+    return {
+        identifier(source["id"]): safe_path(Path(root).absolute(), source["path"])
+        for source in sources
+        if source["kind"] == WINDOW_SOURCE
+    }
 
 
 def main():
@@ -34,6 +46,12 @@ def main():
         default=[],
         help="Carpeta de una campaña por ventanas, con la forma ETIQUETA=RUTA o RUTA",
     )
+    parser.add_argument(
+        "--config",
+        type=Path,
+        help="Configuración del recolector. Se siguen sus campañas por ventanas",
+    )
+    parser.add_argument("--root", type=Path, default=ROOT, help="Raíz de las rutas de --config")
     parser.add_argument(
         "--traces-dir", type=Path, help="Carpeta con index.json y paquetes de trazas"
     )
@@ -56,11 +74,16 @@ def main():
         idle_telemetry_seconds=max(Limits.idle_telemetry_seconds, args.telemetry_seconds),
     )
     try:
+        campaigns = declared_campaigns(args.config, args.root) if args.config else {}
+        for label, path in args.campaign:
+            if label in campaigns:
+                parser.error(f"La campaña {label} ya figura en la configuración")
+            campaigns[label] = path
         server = LiveObservatory(
             (args.host, args.port),
             site_dir=args.site,
             public_dir=args.public_dir,
-            campaigns=dict(args.campaign),
+            campaigns=campaigns,
             traces_dir=args.traces_dir,
             limits=limits,
             allow_remote=args.allow_remote,

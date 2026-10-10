@@ -249,6 +249,39 @@ dependencia temporal impide asumir garantías de cobertura. Con cinco niveles,
 `mean_pinball` no es el CRPS. Tampoco permite calcular NLL, que necesitaría una
 densidad declarada.
 
+Sí tiene una relación exacta con dos medidas habituales. Con los pesos canónicos
+$w_0=\tfrac12$ y $w_k=\alpha_k/2$ de
+[Bracher et al. (2021)](https://doi.org/10.1371/journal.pcbi.1008618), la puntuación de
+intervalo ponderada de los $K$ intervalos centrales y la mediana es
+
+$$
+\operatorname{WIS}=\frac{1}{K+\tfrac12}\Bigl(\tfrac12\lvert y-m\rvert
++\sum_{k=1}^{K}\tfrac{\alpha_k}{2}\operatorname{IS}_{\alpha_k}\Bigr)
+=\frac{1}{K+\tfrac12}\sum_{j=1}^{2K+1}\rho_{\tau_j}(y-q_{\tau_j})
+=2\cdot\overline{\operatorname{PL}},
+$$
+
+porque $\tfrac12\lvert y-m\rvert=\rho_{0,5}(y-m)$ y cada intervalo cumple la identidad de
+la [puntuación de intervalo](#puntuación-de-intervalo). Con los cinco niveles del
+proyecto, $K=2$ y la media es la de `mean_pinball`. El mismo doble de la pinball media es
+la aproximación del CRPS por cuantiles de `crps_quantile` en scoringrules
+([Berrisch y Ziel, 2023](https://arxiv.org/abs/2102.00968)). Las tres cifras resumen los
+mismos cinco cuantiles, así que no añaden información a la comparación y ninguna es el
+CRPS de una distribución completa.
+
+La [paridad con scoringrules 0.11.0](../../tests/evaluation/test_scores_scoringrules_parity.py)
+compara `pinball_loss`, la pinball por nivel de `score_sessions` y la de la
+reimplementación independiente con `quantile_score`, y la puntuación de intervalo con
+`interval_score`, también sobre intervalos corregidos por la CQR estática. Cubre
+empates entre cuantiles, objetivos sobre un cuantil o un extremo, filas muy lejos del
+intervalo y objetivos de hasta 3·10⁷. La diferencia máxima fue 3,5·10⁻¹⁸ en la pinball
+de entrenamiento y 0 exacto en las demás, frente a una tolerancia declarada de
+10⁻¹² + 10⁻¹⁴ |b|. La relación de arriba se cumple con 8,9·10⁻¹⁶. La
+`weighted_interval_score` de esa versión con el motor de NumPy suma $w_0\,m$ en lugar de
+$w_0\lvert y-m\rvert$ ([frazane/scoringrules#140](https://github.com/frazane/scoringrules/issues/140)),
+así que la prueba compone la WIS con `interval_score` y fija ese defecto para detectar
+cuándo se corrige.
+
 ## Intervalos centrales y afirmaciones de signo
 
 Los pares simétricos $(\tau, 1-\tau)$ forman intervalos centrales de nivel
@@ -642,6 +675,26 @@ como mucho hasta la mediana y el intervalo del 95 % hasta el del 80 %
 (`widen_to_median_and_inner_interval`). Solo se ensancha respecto a la
 corrección CQR, nunca se estrecha, así que la cobertura en calibración no baja
 de la nominal. El informe cuenta las filas en las que se aplicó esa regla.
+
+La [paridad con MAPIE 1.5.0](../../tests/calibration/test_conformal_mapie_parity.py)
+ejecuta `ConformalizedQuantileRegressor` grupo a grupo, con estimadores ya ajustados que
+devuelven los cuantiles guardados y `symmetric_correction=True`. Con 400 y 257 filas de
+calibración, una corrección positiva y otra negativa, los extremos corregidos y la
+mediana coinciden bit a bit. Las dos implementaciones difieren en tamaños concretos,
+que la prueba recorre de $n=1$ a $n=120$:
+
+| Caso | Propia | MAPIE |
+| --- | --- | --- |
+| $k>n$ ($n\le3$ con 0,8 y $n\le18$ con 0,95) | Sin corrección, con su motivo | Rechaza la calibración |
+| $k=n$ con $n<1/\alpha$ ($n=4$ con 0,8 y $n=19$ con 0,95) | La puntuación máxima | Rechaza la calibración |
+| $(n+1)(1-\alpha)$ entero ($n+1$ múltiplo de 5 con 0,8 o de 20 con 0,95) | $E_{(k)}$ | $E_{(k+1)}$, más conservadora |
+| Resto | $E_{(k)}$ | $E_{(k)}$ |
+
+La tercera fila se debe a que MAPIE calcula `np.quantile(E, (1-α)(1+1/n), method="higher")`,
+cuyo índice desde cero es $\lceil (1-\alpha)(1+1/n)(n-1)\rceil$. Coincide con $k-1$
+salvo cuando $(n+1)(1-\alpha)$ es entero, en cuyo caso toma el estadístico siguiente.
+El orden propio es el de Romano, Patterson y Candès (2019), así que la regla del
+proyecto no cambia.
 
 ## Evaluación walk-forward de la edición desde 2000
 

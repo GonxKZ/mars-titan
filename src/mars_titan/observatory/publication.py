@@ -11,6 +11,8 @@ from mars_titan.data.storage import atomic_json
 
 from .collector import digest, safe_path
 
+DOCUMENT = re.compile(r"(pages|windows)/[a-f0-9]{64}\.json")
+
 
 @dataclass
 class PublicationSchedule:
@@ -61,7 +63,7 @@ class GitPublisher:
 
     @staticmethod
     def allowed(path):
-        return path == "observatory.json" or bool(re.fullmatch(r"pages/[a-f0-9]{64}\.json", path))
+        return path == "observatory.json" or bool(DOCUMENT.fullmatch(path))
 
     def git(self, *args):
         result = subprocess.run(
@@ -79,8 +81,9 @@ class GitPublisher:
         index = index or json.loads((output / "observatory.json").read_text())
         if index.get("schema_version") != 2 or index.get("project") != "MARS-TITAN":
             raise ValueError("La publicación no tiene el contrato del observatorio")
-        names = ["observatory.json", *index["pagination"]["pages"]]
-        if len(names) > 4097:
+        windows = [entry["path"] for entry in index.get("window_campaigns", []) if entry["path"]]
+        names = ["observatory.json", *index["pagination"]["pages"], *windows]
+        if len(index["pagination"]["pages"]) > 4096 or len(windows) > 128:
             raise ValueError("La publicación supera el máximo de páginas")
         documents = []
         for name in names:
@@ -90,11 +93,19 @@ class GitPublisher:
             if path.stat().st_size > 8 * 1024**2:
                 raise ValueError("Página pública demasiado grande")
             document = index if name == "observatory.json" else json.loads(path.read_text())
-            if name.startswith("pages/") and name != f"pages/{digest(document)}.json":
+            folder = name.partition("/")[0]
+            if name != "observatory.json" and name != f"{folder}/{digest(document)}.json":
                 raise ValueError("La huella de la página no coincide")
             documents.append((name, document))
         for name, document in documents:
             atomic_json(safe_path(self.checkout, name), document)
+        # La rama de datos solo conserva lo que enumera el índice. Lo anterior sigue en
+        # la historia de Git, y la página desplegada lee el índice y sus documentos del
+        # mismo commit.
+        current = set(names)
+        stale = [path for path in self.git("ls-files").splitlines() if path not in current]
+        for start in range(0, len(stale), 512):
+            self.git("rm", "--quiet", "--", *stale[start : start + 512])
         self.git("add", "--", *names)
         if self.git("diff", "--cached", "--name-only").strip():
             self.git("commit", "-m", "chore(observatory): update public campaign records")

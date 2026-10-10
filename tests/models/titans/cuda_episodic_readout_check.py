@@ -1,11 +1,22 @@
-"""Comprobación CUDA manual del lector puro, sin ajuste ni optimizadores."""
+"""Comprobación CUDA manual del lector puro, sin ajuste ni optimizadores.
+
+Recorre los dos modos de selección de episodios. `per_step` vuelve a elegir vecinos en cada
+refinamiento y `first_read` conserva en los pasos siguientes los de la primera lectura y
+solo recalcula sus pesos. En el dispositivo, `first_read` debe leer siempre los episodios
+del primer paso, coincidir bit a bit con `per_step` cuando K = 1 y, en el control con
+parámetros que fuerzan otra búsqueda, conservar el episodio que `per_step` cambia.
+`MARS_TITAN_EPISODIC_READOUT_CHECK_REPORT` guarda el recibo fuera de la carpeta temporal.
+"""
 
 import json
+import os
 import subprocess
 import time
+from pathlib import Path
 
 import torch
 from test_episodic_readout import CODEC, CONTEXT, source
+from test_episodic_readout_fixed_episodes import reader, reselecting, snapshot, start
 
 from mars_titan.models.titans.episodic_readout import (
     EpisodeSnapshot,
@@ -35,8 +46,14 @@ def test_cuda_readout_parity_gradients_and_recovery(tmp_path):
     cuda_rng = torch.cuda.get_rng_state(device).clone()
     records = []
     for dtype in (torch.float32, torch.float64):
-        for steps, episodes in ((1, 16), (2, 16), (4, 16), (1, 0)):
-            config = EpisodicReadoutConfig(CODEC, hidden_size=32, refinements=steps)
+        for selection, steps, episodes in [
+            (selection, steps, episodes)
+            for selection in ("per_step", "first_read")
+            for steps, episodes in ((1, 16), (2, 16), (4, 16), (1, 0))
+        ]:
+            config = EpisodicReadoutConfig(
+                CODEC, hidden_size=32, refinements=steps, episode_selection=selection
+            )
             cpu = EpisodicReadout(config, dtype=dtype)
             gpu = EpisodicReadout(config, dtype=dtype, device=device)
             gpu.load_state_dict(cpu.state_dict())
@@ -63,6 +80,19 @@ def test_cuda_readout_parity_gradients_and_recovery(tmp_path):
                 assert torch.equal(left.presence, right.presence.cpu())
                 assert torch.equal(left.ids, right.ids.cpu())
                 torch.testing.assert_close(right.weights.cpu(), left.weights, rtol=rtol, atol=atol)
+            # Con `first_read` todos los pasos leen los episodios de la primera lectura.
+            fixed = all(torch.equal(read.ids, actual.reads[0].ids) for read in actual.reads)
+            assert fixed or selection == "per_step"
+            if steps == 1 and selection == "first_read":
+                # Con K = 1 los dos modos coinciden bit a bit también en el dispositivo. La
+                # misma semilla da los mismos parámetros iniciales en los dos.
+                previous = EpisodicReadout(
+                    EpisodicReadoutConfig(CODEC, hidden_size=32), dtype=dtype, device=device
+                )
+                for left, right in zip(previous.parameters(), gpu.parameters(), strict=True):
+                    assert torch.equal(left, right)
+                same = previous(gpu_z, gpu_memory, context_id=CONTEXT, cutoff=10)
+                assert torch.equal(same.state, actual.state.detach())
             gradients = []
             for model, value, output in ((cpu, z, expected), (gpu, gpu_z, actual)):
                 gradients.append(
@@ -101,6 +131,7 @@ def test_cuda_readout_parity_gradients_and_recovery(tmp_path):
             records.append(
                 dict(
                     dtype=str(dtype),
+                    episode_selection=selection,
                     K=steps,
                     scenario="empty" if episodes == 0 else "restricted_topk",
                     episodes=episodes,
@@ -108,20 +139,25 @@ def test_cuda_readout_parity_gradients_and_recovery(tmp_path):
                     compared_gradients=5 - len(expected_missing),
                     unused_query_and_value_gradients=episodes == 0,
                     exact_ids=True,
+                    ids_fixed_after_first_read=fixed,
                     exact_recovery=True,
                     max_gradient_error=maximum,
                     rtol=rtol,
                     atol=atol,
                 )
             )
+    controls = [_reselection_control(device, steps) for steps in (2, 4)]
     assert torch.equal(cpu_rng, torch.random.get_rng_state())
     assert torch.equal(cuda_rng, torch.cuda.get_rng_state(device))
     torch.cuda.synchronize(device)
     assert torch.cuda.max_memory_allocated(device) <= cap
-    (tmp_path / "cuda-episodic-readout.json").write_text(
+    destination = os.environ.get("MARS_TITAN_EPISODIC_READOUT_CHECK_REPORT")
+    path = Path(destination) if destination else tmp_path / "cuda-episodic-readout.json"
+    path.write_text(
         json.dumps(
             dict(
                 records=records,
+                reselection_controls=controls,
                 hardware=hardware.strip(),
                 torch=torch.__version__,
                 tf32=False,
@@ -131,10 +167,39 @@ def test_cuda_readout_parity_gradients_and_recovery(tmp_path):
                 peak_torch_bytes=torch.cuda.max_memory_allocated(device),
                 peak_torch_reserved_bytes=torch.cuda.max_memory_reserved(device),
                 process_seconds=time.perf_counter() - started,
-                scope="Fixtures del lector puro, sin MAC, corpus real ni optimizador.",
+                scope="Fixtures del lector puro, sin MAC, corpus real ni optimizador. Modos "
+                "per_step y first_read.",
             ),
             ensure_ascii=False,
             indent=2,
         )
         + "\n"
     )
+
+
+def _reselection_control(device, steps):
+    """Control en el dispositivo en el que una nueva búsqueda cambiaría el episodio elegido."""
+    reads = {}
+    for selection in ("per_step", "first_read"):
+        cpu = reader(neighbors=1, refinements=steps, episode_selection=selection)
+        reselecting(cpu)
+        gpu = EpisodicReadout(cpu.config, dtype=torch.float64, device=device)
+        gpu.load_state_dict(cpu.state_dict())
+        memory = snapshot(3)
+        restored = EpisodeSnapshot.restore(
+            memory.export_cpu(),
+            codec_id=CODEC,
+            context_id=CONTEXT,
+            cutoff=10,
+            device=device,
+            dtype=torch.float64,
+        )
+        expected = cpu(start(), memory, context_id=CONTEXT, cutoff=10)
+        actual = gpu(start().to(device), restored, context_id=CONTEXT, cutoff=10)
+        ids = [read.ids.item() for read in actual.reads]
+        assert ids == [read.ids.item() for read in expected.reads]
+        torch.testing.assert_close(actual.state.cpu(), expected.state, rtol=2e-9, atol=2e-10)
+        reads[selection] = ids
+    # Como en CPU, `per_step` pasa al episodio 20 y `first_read` se queda en el 10.
+    assert reads == dict(per_step=[10] + [20] * (steps - 1), first_read=[10] * steps)
+    return dict(K=steps, dtype="torch.float64", ids=reads)
