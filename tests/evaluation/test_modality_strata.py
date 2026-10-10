@@ -653,6 +653,8 @@ def write_technical_study(root, technical):
         ),
         modality_strata=dict(config["modality_strata"], min_rows=3, min_sessions=2),
     )
+    # Los pares de retención nombran modelos que este estudio reducido no conserva.
+    config.pop(walk.RETENTION_FIELD)
     config["calibration"]["min_rows"] = 10
     config["comparison"].update(
         block_length=1,

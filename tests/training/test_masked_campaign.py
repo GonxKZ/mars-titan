@@ -52,6 +52,8 @@ def write_campaign(folder, *, variant="B", scopes=("US",), arms=ARMS, **changes)
             for market, name in scope["protocols"].items()
         }
     declared["arms"] = {k: v for k, v in declared["arms"].items() if k in {"zero", *arms}}
+    # Los pares de retención nombran modelos que esta comparación reducida no conserva.
+    declared.pop(comparison.RETENTION_FIELD)
     declared["comparison"].update(
         replicates=20,
         families=dict(references_vs_zero=dict(kind="delta", base="zero", variants=list(arms))),

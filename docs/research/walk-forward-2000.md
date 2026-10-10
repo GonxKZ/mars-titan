@@ -52,6 +52,8 @@ La comparación declara además un análisis secundario por presencia de noticia
 
 El mismo 9 de octubre de 2026, también antes de cualquier resultado, se declaró como análisis secundario la ablación de modalidades en inferencia: el estado elegido de cada brazo vuelve a predecir la evaluación con noticias, fundamentales o ambos ausentes, sin reentrenar ni recalibrar. Está definida en [métricas](metrics.md#ablación-de-modalidades-en-inferencia) y no se ha ejecutado.
 
+El 10 de octubre de 2026, antes de cualquier resultado, se declaró la retención e interferencia en las revisitas de régimen. Clasifica cada sesión evaluada según si su régimen observable es nuevo o ya apareció en el recorrido de la ventana, compara el beneficio de cada memoria frente a su control en esas clases y lo contrasta con un placebo de rutas retrasadas. Como cada ventana reinicia la memoria y se reajusta con las sesiones anteriores, la retención se mide dentro de cada recorrido y no entre ventanas. Está definida en [métricas](metrics.md#retención-e-interferencia-en-las-revisitas-de-régimen) y no se ha ejecutado.
+
 Los protocolos US y conjunto comparten cortes. Las ventanas conjuntas coinciden fecha a fecha con las ventanas US de 2011 a 2023, aunque sus identificadores empiezan en `fold-000`. Una comparación entre el brazo US y el conjunto sobre filas US se hace con esas trece ventanas, emparejadas por el intervalo de evaluación y no por el identificador.
 
 Esta sección describe el protocolo conjunto v2, que conserva la campaña A original. La campaña A v2 lo sustituye por el [protocolo conjunto v3](#protocolo-conjunto-v3-de-la-campaña-a-v2), que admite China vacía en las ventanas donde no cuenta.
