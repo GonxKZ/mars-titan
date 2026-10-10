@@ -131,6 +131,31 @@ La v3 ocupa 57,8 GB en `samples/` y la v3.1 ocupará algo más, porque recupera 
 
 Cualquier fallo de verificación lanza `SubstitutionError` fuera del registro de fallos por activo, así que el recorrido se detiene sin borrar nada. Un activo pendiente de GPU no está confirmado y no sustituye nada. Repetir el recorrido no vuelve a verificar un activo ya sustituido. Con `--min-free-disk-bytes`, ninguna pasada empieza un activo nuevo mientras el disco libre esté por debajo de la reserva, que para la v3.1 son 15 GB. La sustitución no toca las vistas, `targets-v3`, `prepared-accounting-v1` ni `embeddings.sqlite` de la v3. A partir del primer activo sustituido, la v3 deja de poder leerse como edición completa.
 
+## Paso de la v3 a la v3.1
+
+Desde el primer activo sustituido, la v3 deja de poder leerse como edición completa. Ningún archivo de configuración, orden, módulo ni prueba de `develop` o de las PR abiertas el 10 de octubre (#480, #478, #477, #462, #452, #431 y #430) nombra la v3, `targets-v3`, sus vistas ni `prepared-accounting-v1`. Todas las rutas llegan por manifiesto o por argumento. La dependencia está en los manifiestos locales y en la propia regeneración:
+
+| Artefacto | Qué lee | Efecto de la sustitución |
+| --- | --- | --- |
+| `targets-v3/manifest.json` | `roots.samples` de la v3 y `roots.prepared` de `prepared-accounting-v1` | `CorpusDataset` comprueba cada archivo al abrirlo y se detiene con el primer activo sustituido. No llega a leer datos de otra edición |
+| Vistas de la campaña A en `masked-campaign-2000-20261009/views` (padres de US y CN, US+CN y `fold-012`) | Las mismas raíces | Igual que `targets-v3` |
+| Revisión de precios (`revise_prepared_prices`) | `prepared-accounting-v1` como preparación padre, de la que enlaza noticias, fundamentales y los precios que no cambian | Debe existir hasta crear la preparación v3.1 |
+| Comparación de cada activo antes de sustituirlo | Los precios de la v3 en el `prepared_root` de su configuración, que es `prepared-accounting-v1/prepared` | Debe existir hasta el último activo sustituido |
+| Herencia de textos | `embeddings.sqlite` de la v3 | Debe conservarse hasta terminar la codificación |
+
+Los recibos de `develop` que describen la v3 (`historical-edition-v3-targets-20261009.json` y `campaign-a-views-20261009.json`) quedan como historia. El recuento de ventanas de la campaña A v2 que proponen #462 y #431 (`campaign-a-v2-window-counts-20261009.json`) se calculó sobre `targets-v3` y debe repetirse sobre `targets-v3.1`, porque la v3.1 añade ventanas.
+
+El orden previsto es este:
+
+1. Comprobar que ningún proceso usa las muestras de la v3, `targets-v3` ni sus vistas. La protección de aprendizaje sigue activa y los servicios de la campaña están deshabilitados.
+2. Integrar #445 en `develop` y ejecutar la regeneración con el código de `develop`.
+3. Auditoría con la tolerancia, revisión de precios y descriptor oficial de factores sobre la preparación v3.1.
+4. Codificación por tramos con la herencia de textos y la sustitución, conservando `prepared-accounting-v1/prepared` y `embeddings.sqlite` de la v3 hasta el final.
+5. Verificación de la edición y resumen completo de la comparación con la v3.
+6. `targets-v3.1` con el descriptor nuevo y `verify-targets`.
+7. Vistas de la campaña A v2 sobre `targets-v3.1` y nuevo recuento de ventanas.
+8. Retirar, cuando lo decida el coordinador, las vistas de la v3, `targets-v3`, `prepared-accounting-v1/prepared` y `embeddings.sqlite` de la v3, y actualizar el README y los documentos que aún presentan `targets-v3` y sus vistas como vigentes (`historical-materialization.md`, `walk-forward-2000.md` y `training-campaign-2000.md`).
+
 ## Factor de mercado
 
 El factor residual de Estados Unidos es SPY tal como lo deja la preparación. La revisión reescribe sus precios, así que el descriptor v2 deja de describir el archivo de la edición nueva. `factor_descriptor.describe_market_factors` crea un descriptor con identidad propia: apunta a los precios revisados de SPY, registra `number_parsing` y la tolerancia de orden, y guarda la huella del descriptor v2 sin abrir sus precios. El CSI300 chino no cambia y conserva la huella de su informe. La auditoría repite las comprobaciones del v2 (huella, precios finitos y positivos, OHLC coherente, sesiones crecientes del calendario anterior a 2024 y disponibilidad igual a la decisión) y aplica a SPY la tolerancia de redondeo que declaró la auditoría de precios. El CSI300 se audita sin tolerancia.
