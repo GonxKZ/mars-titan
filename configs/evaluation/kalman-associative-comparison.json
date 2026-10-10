@@ -1,0 +1,104 @@
+{
+  "schema_version": 1,
+  "kind": "innovation_arm_declaration",
+  "innovation": "pt3_kalman_associative_memory",
+  "status": "declared_not_executed",
+  "declared_at": "2026-10-10",
+  "final_test_opened": false,
+  "executions": 0,
+  "issue": 455,
+  "proposal": "docs/research/post-titans-proposals.md",
+  "specification": "docs/engineering/kalman-associative-memory.md",
+  "extensions": "configs/titans/mars-titan-extensions.json",
+  "ablation": "A12",
+  "base": "Titans-MAC mac_online seleccionado, sin banco episódico, con las mismas predicciones emitidas y las mismas claves del codec",
+  "arms": {
+    "titans_mac_online": {
+      "role": "control",
+      "associative_memory": null
+    },
+    "b6_proximal": {
+      "role": "control",
+      "associative_memory": {
+        "rule": "proximal",
+        "key": "codec",
+        "rate": "η elegido en desarrollo según #392",
+        "forgetting": "λ elegido en desarrollo según #392"
+      }
+    },
+    "b6_kalman": {
+      "role": "innovation",
+      "associative_memory": {
+        "rule": "kalman",
+        "key": "codec",
+        "process_noise_candidates": [1e-6, 1e-5],
+        "observation_noise": "varianza de los residuos etiqueta menos núcleo en la ventana de entrenamiento",
+        "cohort_correlation": "correlación intraclase de esos residuos por sesión, estimada por momentos y truncada a [0, 0,95]",
+        "prior_variance": "0,1 veces observation_noise",
+        "huber_threshold": null
+      }
+    },
+    "b6_kalman_rho0": {
+      "role": "trivial_alternative",
+      "associative_memory": {
+        "rule": "kalman",
+        "key": "codec",
+        "process_noise_candidates": [1e-6, 1e-5],
+        "observation_noise": "la misma que b6_kalman",
+        "cohort_correlation": 0.0,
+        "prior_variance": "la misma que b6_kalman",
+        "huber_threshold": null
+      }
+    }
+  },
+  "selection": "q se elige entre los dos candidatos con la misma métrica en las ventanas con evaluación entre 2005 y 2013 y se mantiene en 2014 a 2023",
+  "equal": [
+    "predictions",
+    "keys",
+    "rows",
+    "windows",
+    "cohorts",
+    "maturity",
+    "read_order"
+  ],
+  "metric": {
+    "primary": "relative_difference_of_session_mae_b6_kalman_minus_b6_proximal",
+    "secondary_not_deciding": [
+      "relative_difference_of_session_mae_b6_kalman_minus_titans_mac_online",
+      "coverage_of_correction_interval_pm_1_645_predictive_sd",
+      "D3_gain_retained_with_one_extra_session_of_delay"
+    ],
+    "pairing": "same_sessions_assets_and_windows",
+    "uncertainty": "circular_block_bootstrap",
+    "block_length": 16,
+    "replicates": 2000,
+    "confidence": 0.95,
+    "partition": "evaluation",
+    "assessment_years": [2014, 2023]
+  },
+  "decision_rule": {
+    "keep_if": [
+      "upper_bound_of_relative_mae_difference < 0",
+      "or upper_bound_of_relative_mae_difference <= 0.001 and coverage_of_correction_interval in [0.85, 0.95]",
+      "and D3 keeps at least half of the gain with one extra session of delay"
+    ],
+    "abandon_if": [
+      "relative_mae_difference_vs_b6_proximal > 0.001",
+      "gain_disappears_with_one_extra_session_of_delay"
+    ],
+    "trivial_alternative": "Si b6_kalman_rho0 iguala a b6_kalman, la correlación de cohorte no aporta y lo que quede es RLS. Si titans_mac_online iguala a ambas, ninguna corrección lineal aporta.",
+    "declared_events": ["2008-09-15", "2020-02-24/2020-03-23", "2022-03-16"]
+  },
+  "pilot": {
+    "data": "predicciones de validación ya emitidas por Titans-MAC, sin reentrenar",
+    "compute": "CPU, del orden de milisegundos por cohorte según el coste medido",
+    "gpu_hours_max": 0
+  },
+  "prediction": "La corrección apenas cambiará el MAE, con una diferencia entre −0,1 % y +0,1 % frente al núcleo y frente a B6 proximal. ϱ estimado quedará entre 0,02 y 0,15. Lo más probable es que PT3 solo aporte una varianza predictiva útil para la calibración.",
+  "pending": [
+    "Nada se ha ejecutado. El bloqueo de aprendizaje impide emitir las predicciones y estimar las varianzas.",
+    "La propuesta no fijaba p0. Se declara p0 = 0,1 σ² antes de ver datos, de modo que la corrección a priori explica como mucho un 10 % de la varianza del residuo con claves unitarias.",
+    "El recorte de Huber está implementado y comprobado, pero el brazo principal no lo usa para no añadir otro grado de libertad.",
+    "El recorrido cronológico por ventanas todavía no emite B6, igual que con las reglas delta y proximal."
+  ]
+}
