@@ -1,7 +1,7 @@
 """B6 enrutada por régimen en el recorrido por ventanas y en `FinancialSession`.
 
 Seis eventos de cinco flujos con ventanas de seis canales recorren los cuatro regímenes y
-una cohorte sin clasificar. Cada ruta se deduce de la definición y el oráculo escribe cada
+una cohorte sin clasificar. Cada ruta se deduce de la definición y la referencia escribe cada
 etiqueta en el compartimento del instante de su decisión, que aquí siempre difiere del de
 su maduración. La sesión usa el fixture de cuatro flujos, cuyas ventanas son de cinco
 canales, así que la regla se sustituye por una ruta fija por flujo y día que cambia entre

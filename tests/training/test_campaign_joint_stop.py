@@ -78,7 +78,7 @@ def test_extended_joint_campaign_groups_mars_titan_and_cm_v1():
     assert (counts["training_jobs"], counts["prediction_jobs"]) == (5985, 0)
     # El grupo de codificadores y núcleos suma siete brazos con la GRU episódica, el de los
     # lectores episódicos once y el de los núcleos de CM-v1 dos. Son 20 brazos con 4 ajustes en
-    # 45 ventanas. Los seis brazos B6 no tienen épocas y quedan fuera de los grupos.
+    # 45 ventanas. Los seis modelos B6 no tienen épocas y quedan fuera de los grupos.
     assert counts["plateau_jobs"] == 20 * 4 * 45 == 3600
     jobs = plan.plan_campaign(campaign)
     grouped = {job["arm"] for job in jobs if job.get("phase") == plan.PLATEAU}

@@ -573,7 +573,7 @@ class MatureCorrection:
             ids="write_count_plus_offset_in_native_canonical_outcome_order",
             proximal_weights="uniform_over_event_cohort",
         )
-        # Sin enrutamiento la identidad conserva su forma anterior y los brazos B6 su huella.
+        # Sin enrutamiento la identidad conserva su forma anterior y los modelos B6 su huella.
         if self.routing is not None:
             identity.update(
                 routing=self.routing.identity(),

@@ -72,7 +72,7 @@
     "unclassified_cohorts",
     "key_size_within_each_hypothesis"
   ],
-  "capacity": "Cada hipótesis compara dos brazos con la misma clave y el mismo tamaño, 5 o 320 coordenadas. Frente a los brazos sin enrutar la capacidad cambia (5 frente a 1 y 320 frente a 64). Esa diferencia se declara y es la que mide routing_slots en la matriz de comparaciones",
+  "capacity": "Cada hipótesis compara dos modelos con la misma clave y el mismo tamaño, 5 o 320 coordenadas. Frente a los modelos sin enrutar la capacidad cambia (5 frente a 1 y 320 frente a 64). Esa diferencia se declara y es la que mide routing_slots en la matriz de comparaciones",
   "metric": {
     "primary": "relative_difference_of_session_mae_regime_minus_calendar",
     "secondary_not_deciding": [
@@ -98,7 +98,7 @@
     "abandon_if": [
       "upper_bound_of_holm_adjusted_relative_mae_difference_regime_minus_calendar >= 0 in H1 and H2"
     ],
-    "trivial_alternative": "Si el calendario iguala o mejora al régimen, lo que aporte enrutar procede de la capacidad o del reparto en compartimentos y no del estado del mercado. Si los brazos sin enrutar igualan a los enrutados, enrutar no aporta. Ninguno de los dos casos demuestra equivalencia",
+    "trivial_alternative": "Si el calendario iguala o mejora al régimen, lo que aporte enrutar procede de la capacidad o del reparto en compartimentos y no del estado del mercado. Si los modelos sin enrutar igualan a los enrutados, enrutar no aporta. Ninguno de los dos casos demuestra equivalencia",
     "retained_representation": "Aunque se abandone, el régimen sigue declarado como componente apagable de MARS-TITAN con su resultado negativo registrado, sin retirarlo en silencio"
   },
   "pilot": {
@@ -108,7 +108,7 @@
   },
   "prediction": "Expectativa previa, no resultado. La diferencia entre régimen y calendario será pequeña, del orden de ±0,1 % del MAE, porque B6 con clave constante corrige sesgos lentos y λ = 0,01 reduce a la mitad un compartimento sin visitas en unas 69 escrituras, así que un régimen que vuelve tras meses encuentra su compartimento casi vacío",
   "pending": [
-    "Nada se ha ejecutado. El bloqueo de aprendizaje impide emitir las predicciones del padre y de los brazos.",
+    "Nada se ha ejecutado. El bloqueo de aprendizaje impide emitir las predicciones del padre y de los modelos.",
     "La regla no ajusta umbrales: compara la volatilidad reciente con la anterior dentro de la misma ventana y usa el signo de la tendencia. La issue preveía umbrales estimados con entrenamiento, que serían otro ajuste por ventana bloqueado y un grado de libertad más.",
     "El filtro HMM de native/src/markov_filter.cpp sigue sin conexión. Como contexto de la fusión exigiría un padre Titans-MAC propio por ventana.",
     "La partición del banco episódico por régimen solo se contrastaría después de A2 (M1 frente a M0), como fija la matriz de ablaciones."

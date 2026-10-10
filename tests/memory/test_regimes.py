@@ -448,7 +448,7 @@ def test_the_comparison_declares_both_hypotheses_with_their_discard_controls():
     assert declaration["status"] == "declared_not_executed"
     assert declaration["executions"] == 0 and declaration["final_test_opened"] is False
     for name, rule in declaration["rules"].items():
-        # La declaración repite la regla por defecto, la que reciben los brazos de la campaña.
+        # La declaración repite la regla por defecto, la que reciben los modelos de la campaña.
         default = RegimeRule(rule["name"])
         assert rule == dict(
             name=default.name,

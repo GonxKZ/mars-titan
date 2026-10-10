@@ -167,7 +167,7 @@ def test_m3_has_a_producer_and_no_mars_arm_stays_pending(tmp_path):
 
 
 def test_with_every_section_declared_no_compared_arm_lacks_a_producer(tmp_path):
-    """Los 31 brazos de la comparación tienen productor con las cuatro secciones, salvo el
+    """Los 31 modelos de la comparación tienen productor con las cuatro secciones, salvo el
     control en línea, cuyos trabajos declara la campaña A por etapas."""
     from tests.training.test_candidate_walk_forward import section as gru_section
 

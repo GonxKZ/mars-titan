@@ -30,7 +30,7 @@ La ruta cuesta lo mismo con las dos claves y crece con la cohorte (8,7 ms con 4.
 sobre todo la mediana de NumPy). Con `codec_by_regime` domina la escritura proximal con 320
 coordenadas, una factorización de Cholesky de LAPACK de 320 × 320 más el producto KᵀWK.
 Resolver solo los compartimentos con etiquetas la acercaría a la del codec, pero ahorraría
-como mucho unas diez horas de GPU entre los dos brazos en A y no se ha implementado. El recibo
+como mucho unas diez horas de GPU entre los dos modelos en A y no se ha implementado. El recibo
 es la medida repetida después de corregir la tendencia (la mediana del rendimiento de la
 ventana en lugar de la suma de las medianas diarias), con una carga media del equipo de 20
 por otros procesos. Las dos medidas anteriores del mismo día, con cargas parecidas, dieron
