@@ -1229,16 +1229,26 @@ def measure_candidate(
     work = Path(work)
     dataset = CorpusDataset(Path(view), input_policy=HISTORICAL_MASKED)
     fold = _view_fold(dataset)
-    sources = window_sources(dataset, work / "candidate-indices", ("train", "validation"))
-    inputs = _event_inputs(sources["train"])
-    specification = sources["train"].specification()
     rates, guard = {}, _forbid_steps()
     try:
         for arm, candidates in section["candidates"].items():
-            ((name, case),) = candidates
-            recipe, model = campaign_case(case)
+            # Los casos solo cambian hiperparámetros del optimizador, como en Titans-MAC.
+            _, case = candidates[0]
+            recipe, model, warmup_months = campaign_case(case)
+            sources = window_sources(
+                dataset, work / "candidate-indices", ("train", "validation"), warmup_months
+            )
+            inputs = _event_inputs(sources["train"])
+            specification = sources["train"].specification()
 
-            def build(option, case=case, recipe=recipe, model=model):
+            def build(
+                option,
+                case=case,
+                recipe=recipe,
+                model=model,
+                sources=sources,
+                specification=specification,
+            ):
                 seed_run(case["seed"])
                 adapter = CandidateInputAdapter(
                     specification,
@@ -1267,7 +1277,7 @@ def measure_candidate(
                 inputs,
                 settings,
             )
-            rates[arm] = dict(record, variant=name, max_event_inputs=max(inputs))
+            rates[arm] = dict(record, variant=case["variant"], **_shared(candidates, inputs))
     finally:
         guard.remove()
     return rates

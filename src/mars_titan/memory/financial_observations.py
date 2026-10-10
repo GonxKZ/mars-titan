@@ -688,6 +688,28 @@ class FinancialObservationSource:
             raise ValueError("La cronología no completa el índice y su cierre")
         self._confirm()
 
+    def label_decisions(self):
+        """Devuelve, por activo, los instantes de decisión cuya etiqueta madura en la fase.
+
+        Se leen las maduraciones del propio índice, sin decodificar entradas ni etiquetas.
+        Devuelve `{"mercado/símbolo": instantes ordenados}` con las mismas claves que
+        las etiquetas de los eventos.
+        """
+        path = self._confirm()
+        table = pq.read_table(
+            path, columns=["kind", "asset_id", "sample_at"], filters=[("kind", "=", 1)]
+        )
+        identities = table["asset_id"].to_numpy()
+        stamps = table["sample_at"].to_numpy()
+        result = {}
+        for identity in np.unique(identities):
+            asset = self._assets[int(identity)]
+            moments = np.sort(stamps[identities == identity])
+            if np.any(np.diff(moments) == 0):
+                raise ValueError("El índice repite la maduración de una decisión")
+            result[f"{asset['market']}/{asset['symbol']}"] = moments
+        return result
+
     def specification(self):
         for event in self.events():
             if event.inputs:

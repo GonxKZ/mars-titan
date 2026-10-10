@@ -139,6 +139,7 @@ def test_device_walk_forward_matches_cpu_without_optimizer_steps(tmp_path, dtype
             model=model,
             parent_id="US/fold-000/gru_episodic",
             device=target,
+            warmup_months=12,
             optimizer_factory=RecordingOptimizer,
         )
         carried = walk.carry_window(

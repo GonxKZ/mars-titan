@@ -12,6 +12,8 @@ GPU, sin pasos de optimizador, el caudal de las familias declaradas y estima las
 variantes indicadas. `extensions` comprueba sin leer datos la declaración preparada de la GRU
 candidata, MARS-TITAN y CM-v1 y sus recuentos. `storage` estima el disco de la campaña y de sus
 etapas con los recuentos de las vistas y tablas sintéticas, sin leer objetivos ni ajustar.
+`rolling` recorre la campaña ventana a ventana con la retención v2 y `regenerate` repite por
+inferencia, sin ajustar, las predicciones por fila de un trabajo confirmado.
 """
 
 import sys
@@ -23,6 +25,8 @@ from mars_titan.training import (
     campaign_throughput,
     masked_campaign,
     modality_ablation_stage,
+    prediction_regeneration,
+    rolling_retention,
     storage_budget,
 )
 
@@ -41,6 +45,10 @@ def main(argv=None):
         return modality_ablation_stage.main(argv[1:])
     if argv[:1] == ["storage"]:
         return storage_budget.main(argv[1:])
+    if argv[:1] == ["rolling"]:
+        return rolling_retention.main(argv[1:])
+    if argv[:1] == ["regenerate"]:
+        return prediction_regeneration.main(argv[1:])
     return masked_campaign.main(argv)
 
 

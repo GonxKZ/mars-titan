@@ -137,7 +137,28 @@ traslados, adaptadores y ablación sigue intacto.
 
 `training/campaign_storage.py` aplica esta liberación tras cada recibo cuando la
 declaración de almacenamiento lo indica (`release_on_confirmation`), junto con el
-borrado de los índices de observaciones, que se reconstruyen desde la vista. XGBoost
-conserva su estado de recuperación, porque la reanudación de un intento completo lo
-vuelve a cargar. El efecto en disco de esta política está medido en el
+borrado de los índices de observaciones, que se reconstruyen desde la vista. En
+XGBoost borra los boosters de recuperación y deja el elegido, después de comprobar la
+huella de los dos. La campaña no vuelve a ejecutar un trabajo con recibo, y el traslado
+y la regeneración solo cargan el elegido. Una llamada directa a `run_external_reference`
+sobre ese intento se rechaza porque faltan sus sustitutos, en lugar de seguir con otro
+estado. La ablación de modalidades libera también los índices de cada intento tras su
+recibo. El efecto en disco de esta política está medido en el
 [presupuesto de la campaña A](../../reports/engineering/campaign-storage-20261009/README.md).
+
+## Retención v2 por ventanas
+
+La [retención v2](../research/training-campaign-2000.md#retención-v2-ventana-a-ventana)
+añade un registro propio, `retention/ledger.json`, con las fases terminadas de cada
+ventana de campaña (`base`, `adapters`, `ablation`, `rl`, `aggregates` y `release`). Se
+escribe de forma atómica al terminar cada fase, así que un corte reanuda en la primera
+fase pendiente y las fases ya registradas no se repiten. El registro está ligado a la
+huella de la declaración de retención y a la de la campaña.
+
+Las operaciones de la liberación son idempotentes. Una regeneración sin decidir se
+repite entera en un destino nuevo. La comparación ya escrita en
+`retention/regeneration-reports/` decide la tabla sin volver a regenerar. Compactar o
+liberar escribe primero el registro `predictions-retention.json` bajo un cerrojo y
+después borra el original, y un archivo ya liberado no se vuelve a tocar. Las tablas
+comunes de `retention/rows/` se borran solo cuando ningún registro las nombra. Los
+estados elegidos, los recibos y los informes no se liberan nunca.

@@ -273,8 +273,10 @@ def test_candidate_hours_use_the_section_it_would_declare(variant):
     rates[EPISODIC] = chronological(["gru_episodic"])
     candidate = throughput.estimate_hours(campaign, counts, rates)["families"][EPISODIC]
     assert candidate["declared_in_campaign"] is False
+    # Cada ventana ajustada tiene dos casos de búsqueda y dos semillas más del elegido. Las tres
+    # semillas del elegido se trasladan.
     for scope, (trained, carried) in WINDOWS[variant].items():
-        expected = (3 * trained * FIT + 3 * carried * CARRY) / 3600
+        expected = (4 * trained * FIT + 3 * carried * CARRY) / 3600
         assert candidate["options"][DECLARED]["scopes"][scope]["hours"] == pytest.approx(expected)
     with pytest.raises(ValueError, match="ya declara"):
         throughput.with_candidate(campaign, CANDIDATE)
@@ -787,6 +789,9 @@ def test_candidate_measurement_compares_accumulation_and_recomputation(
     )
     (record,) = rates.values()
     assert record["variant"] == "m1_k1"
+    # Los dos casos solo cambian la tasa de aprendizaje y comparten la medida del primero.
+    assert record["measured_case"] == "lr1e-4"
+    assert record["shared_by_cases"] == ["lr1e-4", "lr1e-3"]
     names = [throughput.option_name(option) for option in throughput.CANDIDATE_OPTIONS]
     assert list(record["options"]) == names
     assert record["declared_option"] == "accumulation_rows=null,recompute=false"

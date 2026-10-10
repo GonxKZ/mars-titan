@@ -12,6 +12,10 @@ calendarios. Las semillas de un brazo se promedian sesión a sesión antes de ca
 estadísticos y remuestrear, y cada semilla conserva además su resumen. La incertidumbre
 usa el bootstrap circular por bloques y las familias de contrastes de la comparación, con
 la corrección por máximo estudentizado dentro de cada familia, coste y estadístico.
+
+Con ``--aggregates`` los libros de cada ventana se leen de los agregados que guardó la
+retención v2 (``window_aggregates.write_long_short``) en lugar de las predicciones por fila.
+El informe sale idéntico, porque todo lo posterior a cada ventana parte de esos libros.
 """
 
 import argparse
@@ -234,10 +238,13 @@ def _view(config, declared, keys, books, mask, market):
     )
 
 
-def evaluate_long_short(config_path, sources_path, scope, edition):
+def evaluate_long_short(config_path, sources_path, scope, edition, *, aggregates=None):
     """Calcular el informe y la tabla por sesión de la cartera sin escribir nada.
 
     `config_path` es la ruta de la configuración o una configuración ya validada.
+    `aggregates` es la carpeta de agregados por ventana de la retención v2. Con ella no se
+    lee ninguna predicción por fila y cada ventana exige agregados de estas mismas fuentes,
+    este código y esta edición de precios.
     """
     started = time.perf_counter()
     config = walk.resolve_config(config_path)
@@ -246,7 +253,15 @@ def evaluate_long_short(config_path, sources_path, scope, edition):
     sources = walk.load_sources(sources_path, config, scope)
     parts, sessions, unfilled, windows = {}, [], Counter(), {}
     for window_id in sources["windows"]:
-        books, missing, moments, record = _window(sources, config, window_id, edition, declared)
+        if aggregates is None:
+            computed = _window(sources, config, window_id, edition, declared)
+        else:
+            from . import window_aggregates
+
+            computed = window_aggregates.read_long_short(
+                aggregates, config, sources, window_id, edition
+            )
+        books, missing, moments, record = computed
         for key, book in books.items():
             parts.setdefault(key, []).append(book)
             for reason, count in missing[key].items():
@@ -328,7 +343,7 @@ def evaluate_long_short(config_path, sources_path, scope, edition):
     return report, pa.concat_tables(tables)
 
 
-def write_long_short(config_path, sources_path, scope, edition, output):
+def write_long_short(config_path, sources_path, scope, edition, output, *, aggregates=None):
     """Publicar el informe y las sesiones en un directorio nuevo fuera de las fuentes."""
     output = Path(output)
     safe_destination(output)
@@ -336,7 +351,9 @@ def write_long_short(config_path, sources_path, scope, edition, output):
     for source in (Path(config_path).parent, Path(sources_path).parent, Path(edition)):
         outside_source(source, output)
         outside_source(output, source)
-    report, sessions = evaluate_long_short(config_path, sources_path, scope, edition)
+    report, sessions = evaluate_long_short(
+        config_path, sources_path, scope, edition, aggregates=aggregates
+    )
     json.dumps(report, allow_nan=False)
     output.mkdir(parents=True)
     pq.write_table(sessions, output / "sessions.parquet", compression="zstd")
@@ -352,8 +369,16 @@ def main(argv=None):
     parser.add_argument("--scope", choices=tuple(walk.SCOPES), required=True)
     parser.add_argument("--edition", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--aggregates", type=Path, help="Agregados por ventana de la retención v2")
     args = parser.parse_args(argv)
-    report = write_long_short(args.config, args.sources, args.scope, args.edition, args.output)
+    report = write_long_short(
+        args.config,
+        args.sources,
+        args.scope,
+        args.edition,
+        args.output,
+        aggregates=args.aggregates,
+    )
     print(
         f"Cartera de {len(report['views'][report['markets'][0]]['arms'])} brazos en "
         f"{len(report['windows'])} ventanas. Reserva final cerrada."

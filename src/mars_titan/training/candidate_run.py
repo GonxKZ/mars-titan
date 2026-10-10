@@ -60,7 +60,19 @@ from .checkpoints import (
 )
 from .financial_run import _compatible
 from .learning_hold import require_learning_allowed
-from .selection import VALIDATION_PLATEAU, advance_selection, initial_selection, validate_selection
+from .search_cases import SEARCHED, case_options, checked_search_cases
+from .selection import (
+    AWAIT,
+    FINISH,
+    VALIDATION_PLATEAU,
+    advance_selection,
+    awaiting,
+    bind_joint_epoch,
+    epoch_decision,
+    initial_selection,
+    validate_selection,
+)
+from .walk_forward_phases import checked_warmup
 
 RECIPE = "candidate_gru_chronological_v1"
 ADMISSIONS = ("m0", "m1")
@@ -166,8 +178,13 @@ class CandidateRecipe:
         )
 
 
-def load_recipe(path, *, variant):
-    """Leer la receta, su variante y la regla de selección del protocolo referenciado."""
+def load_recipe(path, *, variant, search_case=None):
+    """Leer la receta, su variante, su caso de búsqueda y la regla del protocolo.
+
+    La sección `walk_forward` declara el calentamiento de entradas, el mismo que los demás
+    brazos con memoria, y los casos de búsqueda del optimizador con la regla común de
+    `search_cases`. Si la receta los declara, el caso es obligatorio.
+    """
     path = Path(path)
     if path.is_symlink() or not path.is_file() or path.stat().st_size > 64 * 1024:
         raise ValueError("La receta no es un archivo regular de hasta 64 KiB")
@@ -182,6 +199,7 @@ def load_recipe(path, *, variant):
         "recipe",
         "variants",
         "principal",
+        "walk_forward",
         "pending",
     }
     if (
@@ -192,13 +210,30 @@ def load_recipe(path, *, variant):
         or not isinstance(document["variants"], dict)
         or document["principal"] not in document["variants"]
         or variant not in document["variants"]
+        or not isinstance(document["walk_forward"], dict)
+        or not {"warmup_months"}
+        <= set(document["walk_forward"])
+        <= {"warmup_months", "search_cases"}
     ):
         raise ValueError("La receta no conserva su esquema, variantes y brazo principal")
+    checked_warmup(document["walk_forward"]["warmup_months"])
+    cases = document["walk_forward"].get("search_cases")
+    if cases is not None:
+        # Ninguna variante puede cambiar lo que elige la búsqueda.
+        if any(set(changes) & set(SEARCHED) for changes in document["variants"].values()):
+            raise ValueError("Las variantes no pueden cambiar los hiperparámetros buscados")
+        checked_search_cases(
+            cases,
+            document["recipe"],
+            lambda **options: [
+                CandidateRecipe(**(options | changes)) for changes in document["variants"].values()
+            ],
+        )
     protocol_path = (path.parent / document["protocol"]).resolve()
     protocol = json.loads(protocol_path.read_text(encoding="utf-8"))
     rule = stopping_rule(protocol)
-    options = {**document["recipe"], **document["variants"][variant]}
-    recipe = CandidateRecipe(**options)
+    base = case_options(document["recipe"], cases, search_case)
+    recipe = CandidateRecipe(**(base | document["variants"][variant]))
     if recipe.epochs != rule["max_epochs"] or recipe.selection != {
         key: value for key, value in rule.items() if key != "max_epochs"
     }:
@@ -915,8 +950,12 @@ class CandidateChronologicalTrainer(CandidateChronologicalPredictor):
             )
         return result
 
-    def run(self, *, resume=False, stop=None):
-        """Recorrer épocas con presupuesto fijo, conservar el mejor estado y predecir."""
+    def run(self, *, resume=False, stop=None, joint_epoch=None):
+        """Recorrer épocas con la regla declarada, conservar el mejor estado y predecir.
+
+        Con la meseta conjunta, el ajuste espera en su primera meseta (`AWAIT`) hasta que se
+        reanuda con la época común del grupo (`joint_epoch`).
+        """
         require_learning_allowed("el entrenador cronológico de la GRU candidata")
         output, checkpoints = self.output, self.output / "checkpoints"
         if type(resume) is not bool or output.is_symlink() or output.exists() != resume:
@@ -928,6 +967,8 @@ class CandidateChronologicalTrainer(CandidateChronologicalPredictor):
             report = _read_report(report_path)
             if report["identity"] != self.identity:
                 raise ValueError("La identidad o configuración de la ejecución ha cambiado")
+            # Una ejecución ya conjunta solo continúa o se confirma con su misma época común.
+            bind_joint_epoch(report, joint_epoch, self.recipe.selection, self.recipe.epochs)
             if report["status"] == "completed":
                 return report
             state = load_training_state(checkpoints, expected_identity=self.identity)
@@ -954,6 +995,7 @@ class CandidateChronologicalTrainer(CandidateChronologicalPredictor):
                 final_test_opened=False,
                 attempts=[],
             )
+            bind_joint_epoch(report, joint_epoch, self.recipe.selection, self.recipe.epochs)
 
         def save(position, current=None, *, best=False):
             self._check_runtime()
@@ -984,11 +1026,24 @@ class CandidateChronologicalTrainer(CandidateChronologicalPredictor):
             save(cursor)
         started = time.perf_counter()
         try:
+            options = self.recipe.selection
             while cursor["phase"] != "predictions":
                 epoch = cursor["epoch"]
+                if cursor["phase"] == "train" and cursor["stage"] == "start":
+                    # Al empezar una época, el ajuste espera al grupo o
+                    # termina si ya está en la época conjunta.
+                    decision = epoch_decision(
+                        self.selection, options, self.recipe.epochs, joint_epoch
+                    )
+                    if decision == AWAIT:
+                        report.update(awaiting(self.selection, self.recipe.epochs))
+                        return report
+                    if decision == FINISH:
+                        cursor = dict(epoch=epoch, phase="predictions")
+                        save(cursor)
+                        continue
                 if cursor["phase"] == "validation":
                     metrics = self.evaluate(self.validation, stop=stop)
-                    options = self.recipe.selection
                     self.selection = (
                         initial_selection(metrics["session_mae"], options)
                         if epoch == 0
@@ -1005,12 +1060,16 @@ class CandidateChronologicalTrainer(CandidateChronologicalPredictor):
                         )
                     )
                     self.train_metrics = None
-                    finished = epoch >= self.recipe.epochs or self.selection["should_stop"]
+                    decision = epoch_decision(
+                        self.selection, options, self.recipe.epochs, joint_epoch
+                    )
+                    finished = decision == FINISH
                     cursor = (
                         dict(epoch=epoch, phase="predictions")
                         if finished
                         else dict(epoch=epoch, phase="train", event=0, stage="start")
                     )
+                    # Con AWAIT, el cursor ya confirmado espera al grupo al empezar la época.
                     save(cursor, best=self.selection["last_improved"])
                     if stop.requested and not finished:
                         raise _Pause

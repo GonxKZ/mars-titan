@@ -12,6 +12,11 @@ variante de `data.modality_ablation` en la lectura. Es la pieza de la ablación 
 modalidades: la ventana puede ser la propia ventana del ancla, cuyo estado se eligió con
 su validación, anterior a la calibración y a la evaluación. Sin el parámetro, el traslado
 no cambia.
+
+Con `regenerate`, el traslado vuelve a predecir la validación, la calibración y la
+evaluación de la propia ventana del ancla con su estado elegido. Es la regeneración de la
+retención v2: repite por inferencia las tablas por fila que escribió el ajuste, que se
+comparan bit a bit con las huellas registradas antes de liberar nada.
 """
 
 import time
@@ -31,9 +36,28 @@ CARRIED_PARTITIONS = ("calibration", "evaluation")
 ABLATED_PARTITIONS = ("evaluation",)
 
 
-def predicted_partitions(modality_ablation):
-    """Tramos que predice un traslado, con o sin ablación de modalidades."""
+# Tramos que escribe un ajuste de la campaña y que repite su regeneración.
+REGENERATED_PARTITIONS = ("validation", "calibration", "evaluation")
+
+
+def predicted_partitions(modality_ablation, regenerate=False):
+    """Tramos que predice un traslado: normal, con ablación o como regeneración del ajuste."""
+    if regenerate:
+        if modality_ablation is not None:
+            raise ValueError("La regeneración repite el ajuste, sin ablación de modalidades")
+        return REGENERATED_PARTITIONS
     return CARRIED_PARTITIONS if modality_ablation is None else ABLATED_PARTITIONS
+
+
+def regeneration_record(regenerate):
+    """Campo del informe que marca una regeneración. Un traslado normal no lo declara."""
+    return dict(regenerated=True) if regenerate else {}
+
+
+def same_view(anchor_manifest, manifest, regenerate):
+    """Una regeneración solo predice la propia vista del ancla."""
+    if regenerate and anchor_manifest != manifest:
+        raise ValueError("La regeneración solo predice la propia ventana del ancla")
 
 
 def ablation_record(modality_ablation):
@@ -97,34 +121,15 @@ def _receipt(output, record):
     return json_record
 
 
-def carry_reference(
-    anchor,
-    anchor_manifest,
-    manifest,
-    output,
-    *,
-    batch_size,
-    input_policy,
-    stop=None,
-    modality_ablation=None,
-):
-    """Aplicar el estado seleccionado de una referencia neuronal a otra ventana."""
-    import torch
+def selected_reference(anchor, anchor_manifest, *, input_policy):
+    """Lee el informe y el estado elegido de una referencia neuronal confirmada.
 
-    from mars_titan.data.embeddings import require_cuda
-    from mars_titan.models.baselines.multimodal import STRICT_FUSION, MultimodalReference
-    from mars_titan.models.quantile_head import QUANTILE_HEAD
+    El ancla debe estar completa y seleccionada, con la reserva cerrada, la vista indicada,
+    la misma política de entradas y el mismo entorno y código.
+    """
+    from .reference_run import _confirmed_state, read_json, scientific_identity
 
-    from .reference_run import (
-        _confirmed_state,
-        _evaluate,
-        configured_corpus,
-        read_json,
-        scientific_identity,
-    )
-
-    started = time.perf_counter()
-    anchor, anchor_manifest, manifest = Path(anchor), Path(anchor_manifest), Path(manifest)
+    anchor, anchor_manifest = Path(anchor), Path(anchor_manifest)
     report = read_json(anchor / "run.json")
     identity = report["identity"]
     case = identity["case"]
@@ -141,21 +146,19 @@ def carry_reference(
     )
     if any(identity.get(key) != value for key, value in current.items()):
         raise ValueError("El entorno o el código no coincide con el ancla")
-    anchor_meta, _ = read_manifest(anchor_manifest, 8 * 1024**2)
-    dataset = configured_corpus(
-        manifest, input_policy=input_policy, modality_ablation=modality_ablation
-    )
-    anchor_fold, fold, age = carried_window(
-        anchor_meta,
-        dataset.manifest,
-        input_policy=input_policy,
-        same_window=modality_ablation is not None,
-    )
-    if dataset.context != identity["context"] or dataset.manifest["scope"] != report["scope"]:
-        raise ValueError("La ventana trasladada no conserva el contexto ni el alcance del ancla")
-    output = _destination(output, dataset.roots.values())
     state = _confirmed_state(anchor, identity, report["checkpoint"], report.get("selection"))
-    device = require_cuda()
+    return report, state
+
+
+def reference_model(identity, state, device):
+    """Construye la referencia de una identidad confirmada y carga su estado elegido.
+
+    Devuelve el modelo y si emite los cinco cuantiles de la cabeza común.
+    """
+    from mars_titan.models.baselines.multimodal import STRICT_FUSION, MultimodalReference
+    from mars_titan.models.quantile_head import QUANTILE_HEAD
+
+    case = identity["case"]
     quantiles = case.get("head") == QUANTILE_HEAD
     model = MultimodalReference(
         case["kind"],
@@ -166,13 +169,56 @@ def carry_reference(
         **({"head": QUANTILE_HEAD} if quantiles else {}),
     ).to(device)
     model.load_state_dict(state["model"])
+    return model, quantiles
+
+
+def carry_reference(
+    anchor,
+    anchor_manifest,
+    manifest,
+    output,
+    *,
+    batch_size,
+    input_policy,
+    stop=None,
+    modality_ablation=None,
+    regenerate=False,
+):
+    """Aplicar el estado seleccionado de una referencia neuronal a otra ventana."""
+    import torch
+
+    from mars_titan.data.embeddings import require_cuda
+
+    from .reference_run import _evaluate, configured_corpus
+
+    started = time.perf_counter()
+    anchor, anchor_manifest, manifest = Path(anchor), Path(anchor_manifest), Path(manifest)
+    report, state = selected_reference(anchor, anchor_manifest, input_policy=input_policy)
+    identity = report["identity"]
+    anchor_meta, _ = read_manifest(anchor_manifest, 8 * 1024**2)
+    partitions = predicted_partitions(modality_ablation, regenerate)
+    dataset = configured_corpus(
+        manifest, input_policy=input_policy, modality_ablation=modality_ablation
+    )
+    same_view(anchor_meta, dataset.manifest, regenerate)
+    anchor_fold, fold, age = carried_window(
+        anchor_meta,
+        dataset.manifest,
+        input_policy=input_policy,
+        same_window=modality_ablation is not None or regenerate,
+    )
+    if dataset.context != identity["context"] or dataset.manifest["scope"] != report["scope"]:
+        raise ValueError("La ventana trasladada no conserva el contexto ni el alcance del ancla")
+    output = _destination(output, dataset.roots.values())
+    device = require_cuda()
+    model, quantiles = reference_model(identity, state, device)
     first = next(dataset.batches(partition="train", batch_size=1, epoch=0, seed=0))
     if {name: value.shape[-1] for name, value in first["inputs"].items()} != identity["dimensions"]:
         raise ValueError("Las dimensiones de la ventana no coinciden con las del ancla")
     output.mkdir(parents=True)
     predictions = {}
     torch.cuda.reset_peak_memory_stats(0)
-    for partition in predicted_partitions(modality_ablation):
+    for partition in partitions:
         path = output / f"{partition}-predictions.parquet"
         metrics = _evaluate(
             model,
@@ -204,6 +250,7 @@ def carry_reference(
             peak_vram_allocated_bytes=torch.cuda.max_memory_allocated(0),
             **policy_identity(input_policy),
             **ablation_record(modality_ablation),
+            **regeneration_record(regenerate),
         ),
     )
 
@@ -239,6 +286,7 @@ def carry_tabular(
     batch_size,
     input_policy,
     modality_ablation=None,
+    regenerate=False,
 ):
     """Aplicar el modelo Ridge o XGBoost seleccionado en el ancla a otra ventana."""
     import numpy as np
@@ -262,14 +310,16 @@ def carry_tabular(
     ):
         raise ValueError("El ancla no es un modelo tabular confirmado de la misma política")
     anchor_meta, _ = read_manifest(anchor_manifest, 8 * 1024**2)
+    partitions = predicted_partitions(modality_ablation, regenerate)
     dataset = CorpusDataset(
         manifest, input_policy=input_policy, modality_ablation=modality_ablation
     )
+    same_view(anchor_meta, dataset.manifest, regenerate)
     anchor_fold, fold, age = carried_window(
         anchor_meta,
         dataset.manifest,
         input_policy=input_policy,
-        same_window=modality_ablation is not None,
+        same_window=modality_ablation is not None or regenerate,
     )
     output = _destination(output, dataset.roots.values())
     masked = masked_inputs(input_policy)
@@ -280,7 +330,7 @@ def carry_tabular(
     dtype = np.float64 if kind == "ridge" else np.float32
     output.mkdir(parents=True)
     predictions = {}
-    for partition in predicted_partitions(modality_ablation):
+    for partition in partitions:
         path = output / f"{partition}-predictions.parquet"
         metrics = _predict(
             model, None, dataset, partition, batch_size, path, dtype=dtype, presence=masked
@@ -305,5 +355,6 @@ def carry_tabular(
             seconds=time.perf_counter() - started,
             **policy_identity(input_policy),
             **ablation_record(modality_ablation),
+            **regeneration_record(regenerate),
         ),
     )

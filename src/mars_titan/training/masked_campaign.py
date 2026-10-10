@@ -38,6 +38,7 @@ from pathlib import Path
 import numpy as np
 import pyarrow as pa
 
+from mars_titan.data import prediction_files
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.environments.walk_forward_receipt import (
@@ -50,8 +51,12 @@ from mars_titan.evaluation.splits import PARTITIONS
 from .campaign_plan import (
     CARRY,
     FIT,
+    GROUP_EPOCH,
     HELDOUT_RETENTION,
+    JOINT,
     NEURAL,
+    ONLINE,
+    PLATEAU,
     QUANTILE_HEAD,
     _arm_specs,
     _require,
@@ -81,6 +86,7 @@ from .campaign_storage import (
 )
 from .corpus_inputs import DIGEST_CACHE_ENV
 from .learning_hold import LearningHoldError, require_learning_allowed
+from .selection import AWAIT
 
 RUN_KIND = "historical_masked_campaign_run"
 # Posiciones del plan que una ranura libre puede adelantar a un trabajo que espera.
@@ -90,6 +96,8 @@ OBSERVED_RESOURCES = "observed-resources.json"
 # Huellas de los archivos de las vistas que comparten los trabajos de la campaña.
 DIGESTS = "file-digests.json"
 RECEIPT_KIND = "masked_campaign_job"
+# El recibo de la meseta de un ajuste conjunto guarda su parada individual, sin predicciones.
+PLATEAU_STATUS = "plateau_confirmed"
 # Tramos que lee la comparación: calibración común y evaluación.
 COMPARED = ("calibration", "evaluation")
 MAX_ATTEMPTS = 32
@@ -242,11 +250,13 @@ def _group(job):
 
 @dataclass(frozen=True)
 class JobRun:
-    """Lo que necesita un ejecutor: trabajo, caso resuelto, vista, destino y ancla.
+    """Reúne el trabajo, el caso resuelto, la vista, el destino y el ancla de un ejecutor.
 
     `parent` solo existe en los ajustes que parten de otro predictor elegido en la misma
     ventana y semilla, como el lector de MARS-TITAN sobre Titans-MAC o un brazo de CM-v1
-    sobre su núcleo.
+    sobre su núcleo. `joint_epoch` solo existe en la continuación de un ajuste con parada
+    conjunta y es la época común de su grupo. `bank` solo existe en un control en línea y es
+    el intento elegido del brazo cuyo banco fija las etiquetas y el tope.
     """
 
     job: dict
@@ -260,6 +270,8 @@ class JobRun:
     stop: object
     anchor: dict | None = None
     parent: dict | None = None
+    joint_epoch: int | None = None
+    bank: dict | None = None
 
 
 def _neural_fit(run):
@@ -275,11 +287,12 @@ def _neural_fit(run):
         stop=run.stop,
         input_policy=run.policy,
         prediction_retention=HELDOUT_RETENTION,
+        joint_epoch=run.joint_epoch,
     )
     if report["status"] == "paused":
         raise Paused
     _require(
-        report["status"] == "completed"
+        report["status"] in ("completed", AWAIT)
         and report["identity"]["manifest_sha256"] == run.view_sha256
         and report["identity"]["case"] == run.case,
         "La referencia no confirma la vista y el caso del trabajo",
@@ -324,14 +337,32 @@ def _episodic_gru(run, **options):
     return report
 
 
-def _carry(run):
+def _carry(run, *, regenerate=False):
     from .carried_predictions import carry_reference, carry_tabular
 
-    options = dict(batch_size=run.batch_size, input_policy=run.policy)
+    options = dict(batch_size=run.batch_size, input_policy=run.policy, regenerate=regenerate)
     sources = (run.anchor["folder"], run.anchor["view"], run.view, run.folder)
     if run.job["model"] == "neural":
         return carry_reference(*sources, stop=run.stop, **options)
     return carry_tabular(*sources, kind=run.job["model"], **options)
+
+
+def _online(run):
+    from .online_reference import Paused as OnlinePaused
+    from .online_reference import run_online_reference
+
+    try:
+        return run_online_reference(
+            run.anchor["folder"],
+            run.view,
+            run.bank["folder"],
+            run.folder,
+            rule=run.case["rule"],
+            input_policy=run.policy,
+            stop=run.stop,
+        )
+    except OnlinePaused as error:
+        raise Paused from error
 
 
 def _titans_fit(run):
@@ -340,10 +371,10 @@ def _titans_fit(run):
     return titans_fit(run)
 
 
-def _titans_carry(run):
+def _titans_carry(run, **options):
     from .titans_walk_forward import titans_carry
 
-    return titans_carry(run)
+    return titans_carry(run, **options)
 
 
 def _mars_titan_fit(run):
@@ -352,10 +383,10 @@ def _mars_titan_fit(run):
     return mars_titan_fit(run)
 
 
-def _mars_titan_carry(run):
+def _mars_titan_carry(run, **options):
     from .mars_titan_walk_forward import mars_titan_carry
 
-    return mars_titan_carry(run)
+    return mars_titan_carry(run, **options)
 
 
 def _cm_v1_core_fit(run):
@@ -370,10 +401,10 @@ def _cm_v1_fit(run):
     return cm_v1_fit(run)
 
 
-def _cm_v1_carry(run):
+def _cm_v1_carry(run, **options):
     from .cm_v1_factorial import cm_v1_carry
 
-    return cm_v1_carry(run)
+    return cm_v1_carry(run, **options)
 
 
 # Ejecutores por modelo y tipo, con su dispositivo y si reanudan el último intento.
@@ -382,6 +413,7 @@ EXECUTORS = {
     ("ridge", FIT): dict(run=_ridge_fit, device="cuda", resumable=False, report="run.json"),
     ("xgboost", FIT): dict(run=_xgboost_fit, device="cuda", resumable=True, report="run.json"),
     ("neural", CARRY): dict(run=_carry, device="cuda", resumable=False, report="carry.json"),
+    ("neural", ONLINE): dict(run=_online, device="cuda", resumable=False, report="online.json"),
     ("ridge", CARRY): dict(run=_carry, device="cuda", resumable=False, report="carry.json"),
     ("xgboost", CARRY): dict(run=_carry, device="cuda", resumable=False, report="carry.json"),
     ("episodic_gru", FIT): dict(
@@ -425,6 +457,50 @@ def _release_tabular(model, kind):
         SHARED.release(blocking=False)
     if (model, kind) != ("ridge", FIT):
         RIDGE_STATISTICS.clear(blocking=False)
+
+
+def _releasing_tabular(run_function, model, kind):
+    """El ejecutor precedido de `_release_tabular`, para recorridos en el proceso de la campaña.
+
+    Sirve a la regeneración de predicciones, que corre donde viven la matriz y la Gram. Una
+    ranura no puede importar este cierre, así que la campaña no lo usa para lanzar trabajos.
+    """
+
+    def run(job_run):
+        _release_tabular(model, kind)
+        return run_function(job_run)
+
+    return run
+
+
+def regenerators():
+    """Regeneración por modelo y tipo de trabajo, sin ajustar nada.
+
+    Un traslado se repite con su propio ejecutor desde el mismo ancla. Un ajuste se repite
+    con el traslado de su familia sobre su propia ventana y su intento como ancla. Los
+    núcleos auxiliares de CM-v1 no tienen traslado y sus tablas se conservan. Como los
+    traslados, la regeneración no usa la matriz ni la Gram compartidas de la ventana, así
+    que las libera antes de empezar.
+    """
+    from .prediction_regeneration import regenerator
+
+    result = {
+        key: _releasing_tabular(entry["run"], *key)
+        for key, entry in EXECUTORS.items()
+        if key[1] == CARRY
+    }
+    fits = dict(
+        neural=_carry,
+        ridge=_carry,
+        xgboost=_carry,
+        episodic_gru=_episodic_gru,
+        titans_mac=_titans_carry,
+        mars_titan=_mars_titan_carry,
+        cm_v1=_cm_v1_carry,
+    )
+    for model, run in fits.items():
+        result[model, FIT] = _releasing_tabular(regenerator(run), model, CARRY)
+    return result
 
 
 def _code():
@@ -504,6 +580,9 @@ class _Campaign:
         carry = found.get(f"{prefix}carry-s{seed}")
         if carry is not None:
             return f"{prefix}carry-s{seed}", carry
+        online = found.get(f"{prefix}online-s{seed}")
+        if online is not None:
+            return f"{prefix}online-s{seed}", online
         finalist = found.get(f"{prefix}finalist-s{seed}")
         if finalist is not None:
             return f"{prefix}finalist-s{seed}", finalist
@@ -523,6 +602,8 @@ class _Campaign:
         origin = (
             {} if parent is None else dict(parent=parent["job"], parent_sha256=parent["sha256"])
         )
+        if job.get("phase") == JOINT:
+            origin["joint"] = self.joint_epoch(job)
         if job["stage"] == "search":
             return job["case"], None, origin
         if job["stage"] == "finalist":
@@ -534,6 +615,30 @@ class _Campaign:
             )
             case = winner["identity"]["case"] | dict(seed=job["seed"])
             return case, None, dict(source=key, source_sha256=winner["sha256"], **origin)
+        if job["kind"] == ONLINE:
+            # El ancla es el estado elegido del brazo de partida y el banco fija etiquetas y
+            # tope. Los dos están en la misma ventana y semilla del control y entre sus
+            # dependencias.
+            arm = self.campaign["online_controls"]["arms"][job["arm"]]["parent_arm"]
+            key, receipt = self.selected(job["scope"], job["window"], arm, job["seed"])
+            bank = self.bank_of(job)
+            _require(
+                {key, bank["job"]} <= set(job["depends"]),
+                f"{job['id']} no depende de los estados elegidos que usa",
+            )
+            anchor = dict(
+                folder=self.output / receipt["attempt"],
+                view=Path(self.views[job["scope"]]["windows"][job["window"]]["path"]),
+                job=key,
+                sha256=receipt["sha256"],
+            )
+            sources = dict(
+                source=key,
+                source_sha256=receipt["sha256"],
+                bank=bank["job"],
+                bank_sha256=bank["sha256"],
+            )
+            return job["case"], anchor, sources
         key, receipt = self.selected(job["scope"], job["anchor"], job["arm"], job["seed"])
         anchor = dict(
             folder=self.output / receipt["attempt"],
@@ -542,6 +647,19 @@ class _Campaign:
             sha256=receipt["sha256"],
         )
         return None, anchor, dict(source=key, source_sha256=receipt["sha256"])
+
+    def joint_epoch(self, job):
+        """Calcula la época común de un grupo, que es la mayor de las paradas de sus mesetas."""
+        members = {key: self.receipts[key] for key in job["joint_group"]}
+        _require(
+            all(receipt.get("status") == PLATEAU_STATUS for receipt in members.values()),
+            f"{job['id']} depende de mesetas sin confirmar",
+        )
+        return dict(
+            epoch=max(r["plateau"]["individual_stop_epoch"] for r in members.values()),
+            rule=GROUP_EPOCH,
+            members={key: receipt["sha256"] for key, receipt in sorted(members.items())},
+        )
 
     def parent_of(self, job):
         """Predictor elegido del que parte un ajuste con padre en su ventana y semilla."""
@@ -554,6 +672,14 @@ class _Campaign:
             sha256=receipt["sha256"],
             checkpoint_sha256=receipt["parent"]["sha256"],
         )
+
+    def bank_of(self, job):
+        """Devuelve el intento elegido del brazo cuyo banco fija las etiquetas del control."""
+        if job["kind"] != ONLINE:
+            return None
+        arm = self.campaign["online_controls"]["arms"][job["arm"]]["cap_arm"]
+        key, receipt = self.selected(job["scope"], job["window"], arm, job["seed"])
+        return dict(folder=self.output / receipt["attempt"], job=key, sha256=receipt["sha256"])
 
     def job_identity(self, job, case, sources):
         view = self.views[job["scope"]]["windows"][job["window"]]
@@ -577,10 +703,16 @@ class _Campaign:
             receipt.get("identity") == identity,
             f"El trabajo confirmado {job['id']} cambió de identidad",
         )
-        for record in [receipt["report"], *receipt["predictions"].values()]:
-            _require(
-                sha256(self.output / record["path"]) == record["sha256"],
-                f"Un artefacto confirmado de {job['id']} ha cambiado",
+        _require(
+            sha256(self.output / receipt["report"]["path"]) == receipt["report"]["sha256"],
+            f"Un artefacto confirmado de {job['id']} ha cambiado",
+        )
+        # Las predicciones pueden estar compactadas o liberadas por la retención v2.
+        for record in receipt["predictions"].values():
+            prediction_files.verify(
+                self.output / record["path"],
+                record["sha256"],
+                label=f"Un artefacto confirmado de {job['id']} ha cambiado",
             )
         self.same_rows(job, receipt)
         return dict(receipt, sha256=digest)
@@ -604,23 +736,70 @@ class _Campaign:
         executor = self.executors[job["model"], job["kind"]]
         section = self.campaign["neural" if job["family"] == NEURAL else "tabular"]
         view = self.views[job["scope"]]["windows"][job["window"]]
+        joint = sources.get("joint")
+        # La continuación conjunta reanuda el ajuste en la carpeta de su meseta.
+        folder = (
+            self.output / self.receipts[job["plateau"]]["attempt"]
+            if joint
+            else self.attempt(job, executor["resumable"])
+        )
         run = JobRun(
             job=job,
             case=case,
             view=Path(view["path"]),
             view_sha256=view["sha256"],
-            folder=self.attempt(job, executor["resumable"]),
+            folder=folder,
             policy=self.campaign["input_policy"],
             batch_size=section["batch_size"],
             checkpoint_seconds=self.campaign["neural"]["checkpoint_seconds"],
             stop=self.stop,
             anchor=anchor,
             parent=self.parent_of(job),
+            joint_epoch=joint["epoch"] if joint else None,
+            bank=self.bank_of(job),
         )
         return (run, identity), None
 
+    def confirm_plateau(self, job, run, identity, report):
+        """Escribe el recibo de la meseta con su parada y una copia del informe, sin predicciones.
+
+        El ajuste final continúa en la misma carpeta y reescribe su informe, así que el
+        recibo guarda una copia propia del informe en la meseta.
+        """
+        stop = report.get("individual_stop_epoch")
+        _require(
+            report.get("status") == AWAIT
+            and report.get("final_test_opened") is False
+            and type(stop) is int
+            and 1 <= stop <= self.campaign["rule"]["max_epochs"],
+            f"{job['id']} no espera la época conjunta tras su meseta o su máximo de épocas",
+        )
+        copy = self.folder(job) / "plateau-report.json"
+        atomic_json(copy, report)
+        receipt = dict(
+            schema_version=1,
+            kind=RECEIPT_KIND,
+            status=PLATEAU_STATUS,
+            identity=identity,
+            attempt=str(run.folder.relative_to(self.output)),
+            report=dict(path=str(copy.relative_to(self.output)), sha256=sha256(copy)),
+            plateau=dict(status=AWAIT, individual_stop_epoch=stop),
+            score=None,
+            predictions={},
+            final_test_opened=False,
+            confirmed_at_utc=datetime.now(UTC).isoformat(),
+        )
+        path = self.folder(job) / "receipt.json"
+        atomic_json(path, receipt)
+        return dict(receipt, sha256=sha256(path))
+
     def confirm(self, job, run, identity, report):
         """Comprobar predicciones, tramos, filas y puntuación, y escribir el recibo."""
+        if job.get("phase") == PLATEAU:
+            return self.confirm_plateau(job, run, identity, report)
+        _require(
+            report.get("status") != AWAIT, f"{job['id']} espera una época conjunta que no tiene"
+        )
         executor = self.executors[job["model"], job["kind"]]
         resolved = self.campaign["comparison_config"]["resolved_scopes"][job["scope"]]
         window = resolved["windows"][job["window"]]
@@ -713,7 +892,8 @@ class _Campaign:
         """Liberar lo que nadie vuelve a leer de un intento con su recibo ya escrito."""
         if self.disk is None:
             return
-        if self.disk[2]["release_on_confirmation"]:
+        # La continuación de una meseta reanuda en su carpeta, que se libera al confirmarla.
+        if self.disk[2]["release_on_confirmation"] and job.get("phase") != PLATEAU:
             release_confirmed(self.output / receipt["attempt"], job["model"])
         self.disk[0].settle(job["id"])
 
@@ -766,15 +946,25 @@ class _Campaign:
 
 def _summary(output, identity, jobs, receipts, status, **extra):
     """Resumen confirmado de la campaña. Solo lo escribe el proceso de la campaña."""
-    planned = Counter(job["kind"] for job in jobs)
-    done = Counter(job["kind"] for job in jobs if job["id"] in receipts)
+
+    # La meseta de un ajuste conjunto es la primera parte del mismo ajuste y se cuenta aparte.
+    def kind(job):
+        return PLATEAU if job.get("phase") == PLATEAU else job["kind"]
+
+    planned = Counter(kind(job) for job in jobs)
+    done = Counter(kind(job) for job in jobs if job["id"] in receipts)
+
+    def counts(counter):
+        result = dict(training_jobs=counter[FIT], prediction_jobs=counter[CARRY])
+        return result | ({"plateau_jobs": counter[PLATEAU]} if planned[PLATEAU] else {})
+
     summary = dict(
         schema_version=1,
         kind=RUN_KIND,
         status=status,
         identity_sha256=hashlib.sha256(json.dumps(identity, sort_keys=True).encode()).hexdigest(),
-        planned=dict(training_jobs=planned[FIT], prediction_jobs=planned[CARRY]),
-        completed=dict(training_jobs=done[FIT], prediction_jobs=done[CARRY]),
+        planned=counts(planned),
+        completed=counts(done),
         jobs={job["id"]: job["id"] in receipts for job in jobs},
         final_test_opened=False,
         updated_at_utc=datetime.now(UTC).isoformat(),
@@ -1220,18 +1410,34 @@ def _confirmed_state(path, views, output):
     return campaign, _Campaign(campaign, checked, Path(output), identity, EXECUTORS, None)
 
 
-def write_sources(path, views, output, scope, *, comparison_path=None):
+def with_dependencies(jobs, wanted):
+    """Trabajos pedidos y sus dependencias, en el orden del plan."""
+    by_id = {job["id"]: job for job in jobs}
+    wanted, pending = set(wanted), list(wanted)
+    while pending:
+        for dependency in by_id[pending.pop()]["depends"]:
+            if dependency not in wanted:
+                wanted.add(dependency)
+                pending.append(dependency)
+    return [job for job in jobs if job["id"] in wanted]
+
+
+def write_sources(path, views, output, scope, *, comparison_path=None, window=None):
     """Escribir el manifiesto de fuentes de un ámbito y validarlo con la comparación.
 
     Sin `comparison_path` se valida con la comparación de la campaña, que incluye los
     brazos de las familias sin entrenador conectado. Una comparación declarada con un
-    subconjunto de brazos permite evaluar los brazos ya producidos.
+    subconjunto de brazos permite evaluar los brazos ya producidos. Con `window` se
+    publica solo esa ventana en `sources/windows/<ventana>/`, validada con la comparación
+    limitada a ella, para guardar sus agregados en cuanto termina.
     """
     campaign, state = _confirmed_state(path, views, output)
     _require(scope in campaign["scopes"], "El ámbito no pertenece a la campaña")
     validation = comparison.load_config(
         Path(comparison_path or campaign["comparison_path"]).resolve()
     )
+    if window is not None:
+        validation = comparison.restrict_windows(validation, scope, [window])
     produced = {spec["arm"]: spec for spec in _arm_specs(campaign)}
     wanted = {
         name: arm for name, arm in validation["arms"].items() if arm["output"] != "zero_control"
@@ -1243,6 +1449,10 @@ def write_sources(path, views, output, scope, *, comparison_path=None):
         "brazos disponibles o conecta su entrenador",
     )
     jobs = [job for job in plan_campaign(campaign) if job["scope"] == scope]
+    if window is not None:
+        jobs = with_dependencies(
+            plan_campaign(campaign), [job["id"] for job in jobs if job["window"] == window]
+        )
     for job in jobs:
         case, _, sources = state.resolve(job)
         receipt = state.confirmed(job, state.job_identity(job, case, sources))
@@ -1250,6 +1460,8 @@ def write_sources(path, views, output, scope, *, comparison_path=None):
         state.receipts[job["id"]] = receipt
     windows = state.views[scope]["windows"]
     folder = Path(output) / "sources"
+    if window is not None:
+        windows, folder = {window: windows[window]}, folder / "windows" / window
     arms, rows = {}, {}
     for name, arm in wanted.items():
         _require(

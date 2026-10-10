@@ -1,0 +1,1768 @@
+{
+ "schema_version": 1,
+ "kind": "historical_masked_rolling_retention_estimate",
+ "recorded_at": "2026-10-09",
+ "campaign": {
+  "path": "configs/baselines/historical-masked-campaign-a-v2.json",
+  "sha256": "2af87ff7fdc38f0a5e1b62ec7943efb90adbb8b1dd8addd80d2f99da1f01eba2",
+  "branch": "feat/campaign-a-joint-design",
+  "commit": "4f04aebb"
+ },
+ "stages": {
+  "ablation": "configs/evaluation/historical-masked-ablation-stage-a-v2.json",
+  "adapters": "configs/posttraining/historical-masked-adapter-stage-a-v2.json",
+  "rl": "configs/simulation/historical-masked-rl-stage-a-v2.json"
+ },
+ "counts": "reports/data/campaign-a-v2-window-counts-20261009.json del diseño conjunto",
+ "row_bytes": "reports/engineering/campaign-storage-20261009/row-bytes.json",
+ "extras": "reports/engineering/campaign-storage-20261009/extras.json",
+ "tabular": {
+  "branch": "perf/campaign-tabular",
+  "commit": "496cc512"
+ },
+ "jobs": 2322,
+ "windows": [
+  "fold-000",
+  "fold-001",
+  "fold-002",
+  "fold-003",
+  "fold-004",
+  "fold-005",
+  "fold-006",
+  "fold-007",
+  "fold-008",
+  "fold-009",
+  "fold-010",
+  "fold-011",
+  "fold-012",
+  "fold-013",
+  "fold-014",
+  "fold-015",
+  "fold-016",
+  "fold-017",
+  "fold-018"
+ ],
+ "ablation_jobs": 3534,
+ "adapter_jobs": 1653,
+ "policy_inputs": 418,
+ "tape_gb": 4.04,
+ "aggregates_gb": 1.77,
+ "by_stage_without_rolling": {
+  "base": {
+   "current_without_release": {
+    "retained_gb": 277.49,
+    "peak_gb": 286.87
+   },
+   "current": {
+    "retained_gb": 162.91,
+    "peak_gb": 184.16
+   },
+   "large_groups": {
+    "retained_gb": 100.25,
+    "peak_gb": 125.8
+   },
+   "shared_rows": {
+    "retained_gb": 59.62,
+    "peak_gb": 87.93
+   },
+   "needed_large_groups": {
+    "retained_gb": 54.19,
+    "peak_gb": 82.89
+   },
+   "needed_shared_rows": {
+    "retained_gb": 35.48,
+    "peak_gb": 65.45
+   }
+  },
+  "ablation": {
+   "current": {
+    "retained_gb": 183.27,
+    "peak_gb": 183.36
+   },
+   "large_groups": {
+    "retained_gb": 118.14,
+    "peak_gb": 118.24
+   },
+   "shared_rows": {
+    "retained_gb": 77.53,
+    "peak_gb": 77.62
+   }
+  },
+  "adapters": {
+   "current": {
+    "retained_gb": 256.44,
+    "peak_gb": 396.41
+   },
+   "large_groups": {
+    "retained_gb": 178.19,
+    "peak_gb": 324.47
+   },
+   "shared_rows": {
+    "retained_gb": 118.73,
+    "peak_gb": 269.81
+   },
+   "needed_shared_rows": {
+    "retained_gb": 94.25,
+    "peak_gb": 247.37
+   }
+  }
+ },
+ "results": {
+  "develop_xgboost_cache/base": {
+   "all_regenerated": {
+    "retained_gb": 7.7,
+    "peak_gb": 41.18,
+    "peak_at": "fold-018/base",
+    "increment_gb": 33.94,
+    "increment_window": "fold-018"
+   },
+   "none_regenerated": {
+    "retained_gb": 57.12,
+    "peak_gb": 86.6,
+    "peak_at": "fold-018/base",
+    "increment_gb": 33.94,
+    "increment_window": "fold-018"
+   }
+  },
+  "develop_xgboost_cache/base_rl": {
+   "all_regenerated": {
+    "retained_gb": 11.98,
+    "peak_gb": 48.04,
+    "peak_at": "fold-018/base",
+    "increment_gb": 33.94,
+    "increment_window": "fold-018"
+   },
+   "none_regenerated": {
+    "retained_gb": 61.16,
+    "peak_gb": 90.3,
+    "peak_at": "fold-018/base",
+    "increment_gb": 33.94,
+    "increment_window": "fold-018"
+   }
+  },
+  "develop_xgboost_cache/base_rl_ablation": {
+   "all_regenerated": {
+    "retained_gb": 12.92,
+    "peak_gb": 48.93,
+    "peak_at": "fold-018/base",
+    "increment_gb": 33.94,
+    "increment_window": "fold-018"
+   },
+   "none_regenerated": {
+    "retained_gb": 112.64,
+    "peak_gb": 137.73,
+    "peak_at": "fold-018/base",
+    "increment_gb": 33.94,
+    "increment_window": "fold-018"
+   }
+  },
+  "develop_xgboost_cache/all_ordered_copy": {
+   "all_regenerated": {
+    "retained_gb": 131.65,
+    "peak_gb": 317.35,
+    "peak_at": "fold-018/adapters",
+    "increment_gb": 192.4,
+    "increment_window": "fold-018"
+   },
+   "none_regenerated": {
+    "retained_gb": 231.37,
+    "peak_gb": 406.15,
+    "peak_at": "fold-018/adapters",
+    "increment_gb": 192.4,
+    "increment_window": "fold-018"
+   }
+  },
+  "develop_xgboost_cache/all_blocks": {
+   "all_regenerated": {
+    "retained_gb": 131.65,
+    "peak_gb": 170.48,
+    "peak_at": "fold-018/release",
+    "increment_gb": 45.53,
+    "increment_window": "fold-018"
+   },
+   "none_regenerated": {
+    "retained_gb": 231.37,
+    "peak_gb": 259.28,
+    "peak_at": "fold-018/release",
+    "increment_gb": 45.53,
+    "increment_window": "fold-018"
+   }
+  },
+  "tabular_dense_pages/base": {
+   "all_regenerated": {
+    "retained_gb": 7.7,
+    "peak_gb": 34.47,
+    "peak_at": "fold-018/base",
+    "increment_gb": 27.23,
+    "increment_window": "fold-018"
+   },
+   "none_regenerated": {
+    "retained_gb": 57.12,
+    "peak_gb": 79.89,
+    "peak_at": "fold-018/base",
+    "increment_gb": 27.23,
+    "increment_window": "fold-018"
+   }
+  },
+  "tabular_dense_pages/base_rl": {
+   "all_regenerated": {
+    "retained_gb": 11.98,
+    "peak_gb": 41.33,
+    "peak_at": "fold-018/base",
+    "increment_gb": 27.23,
+    "increment_window": "fold-018"
+   },
+   "none_regenerated": {
+    "retained_gb": 61.16,
+    "peak_gb": 83.59,
+    "peak_at": "fold-018/base",
+    "increment_gb": 27.23,
+    "increment_window": "fold-018"
+   }
+  },
+  "tabular_dense_pages/base_rl_ablation": {
+   "all_regenerated": {
+    "retained_gb": 12.92,
+    "peak_gb": 42.22,
+    "peak_at": "fold-018/base",
+    "increment_gb": 27.23,
+    "increment_window": "fold-018"
+   },
+   "none_regenerated": {
+    "retained_gb": 112.64,
+    "peak_gb": 131.02,
+    "peak_at": "fold-018/base",
+    "increment_gb": 27.23,
+    "increment_window": "fold-018"
+   }
+  },
+  "tabular_dense_pages/all_ordered_copy": {
+   "all_regenerated": {
+    "retained_gb": 131.65,
+    "peak_gb": 317.35,
+    "peak_at": "fold-018/adapters",
+    "increment_gb": 192.4,
+    "increment_window": "fold-018"
+   },
+   "none_regenerated": {
+    "retained_gb": 231.37,
+    "peak_gb": 406.15,
+    "peak_at": "fold-018/adapters",
+    "increment_gb": 192.4,
+    "increment_window": "fold-018"
+   }
+  },
+  "tabular_dense_pages/all_blocks": {
+   "all_regenerated": {
+    "retained_gb": 131.65,
+    "peak_gb": 170.48,
+    "peak_at": "fold-018/release",
+    "increment_gb": 45.53,
+    "increment_window": "fold-018"
+   },
+   "none_regenerated": {
+    "retained_gb": 231.37,
+    "peak_gb": 259.28,
+    "peak_at": "fold-018/release",
+    "increment_gb": 45.53,
+    "increment_window": "fold-018"
+   }
+  }
+ },
+ "details": {
+  "develop_xgboost_cache/base_rl_ablation": {
+   "all_regenerated": [
+    {
+     "window": "fold-000",
+     "retained_bytes": 0.61,
+     "base": 4.36,
+     "adapters": 3.73,
+     "ablation": 7.34,
+     "rl": 7.34,
+     "release": 7.4
+    },
+    {
+     "window": "fold-001",
+     "retained_bytes": 1.27,
+     "base": 5.54,
+     "adapters": 4.9,
+     "ablation": 9.28,
+     "rl": 9.27,
+     "release": 9.35
+    },
+    {
+     "window": "fold-002",
+     "retained_bytes": 2.0,
+     "base": 7.04,
+     "adapters": 6.38,
+     "ablation": 11.67,
+     "rl": 11.66,
+     "release": 11.75
+    },
+    {
+     "window": "fold-003",
+     "retained_bytes": 2.77,
+     "base": 8.91,
+     "adapters": 7.71,
+     "ablation": 13.48,
+     "rl": 13.46,
+     "release": 13.56
+    },
+    {
+     "window": "fold-004",
+     "retained_bytes": 3.52,
+     "base": 10.94,
+     "adapters": 8.85,
+     "ablation": 14.93,
+     "rl": 15.08,
+     "release": 15.19
+    },
+    {
+     "window": "fold-005",
+     "retained_bytes": 4.26,
+     "base": 12.92,
+     "adapters": 9.92,
+     "ablation": 16.31,
+     "rl": 16.46,
+     "release": 16.57
+    },
+    {
+     "window": "fold-006",
+     "retained_bytes": 5.0,
+     "base": 14.95,
+     "adapters": 11.23,
+     "ablation": 18.11,
+     "rl": 18.26,
+     "release": 18.38
+    },
+    {
+     "window": "fold-007",
+     "retained_bytes": 5.72,
+     "base": 17.15,
+     "adapters": 12.34,
+     "ablation": 19.52,
+     "rl": 19.67,
+     "release": 19.8
+    },
+    {
+     "window": "fold-008",
+     "retained_bytes": 6.45,
+     "base": 19.31,
+     "adapters": 13.38,
+     "ablation": 20.92,
+     "rl": 21.07,
+     "release": 21.2
+    },
+    {
+     "window": "fold-009",
+     "retained_bytes": 7.19,
+     "base": 21.59,
+     "adapters": 14.59,
+     "ablation": 22.63,
+     "rl": 22.78,
+     "release": 22.92
+    },
+    {
+     "window": "fold-010",
+     "retained_bytes": 8.12,
+     "base": 24.01,
+     "adapters": 15.86,
+     "ablation": 24.45,
+     "rl": 24.76,
+     "release": 24.91
+    },
+    {
+     "window": "fold-011",
+     "retained_bytes": 9.06,
+     "base": 26.73,
+     "adapters": 17.34,
+     "ablation": 26.51,
+     "rl": 26.82,
+     "release": 26.98
+    },
+    {
+     "window": "fold-012",
+     "retained_bytes": 10.02,
+     "base": 29.58,
+     "adapters": 18.76,
+     "ablation": 28.35,
+     "rl": 28.66,
+     "release": 28.83
+    },
+    {
+     "window": "fold-013",
+     "retained_bytes": 10.99,
+     "base": 32.46,
+     "adapters": 20.2,
+     "ablation": 30.34,
+     "rl": 30.66,
+     "release": 30.83
+    },
+    {
+     "window": "fold-014",
+     "retained_bytes": 11.95,
+     "base": 35.5,
+     "adapters": 21.5,
+     "ablation": 31.76,
+     "rl": 32.07,
+     "release": 32.25
+    },
+    {
+     "window": "fold-015",
+     "retained_bytes": 12.94,
+     "base": 38.38,
+     "adapters": 23.3,
+     "ablation": 34.95,
+     "rl": 35.26,
+     "release": 35.45
+    },
+    {
+     "window": "fold-016",
+     "retained_bytes": 13.97,
+     "base": 42.07,
+     "adapters": 25.21,
+     "ablation": 37.42,
+     "rl": 37.73,
+     "release": 37.94
+    },
+    {
+     "window": "fold-017",
+     "retained_bytes": 14.99,
+     "base": 45.54,
+     "adapters": 26.55,
+     "ablation": 38.93,
+     "rl": 39.23,
+     "release": 39.45
+    },
+    {
+     "window": "fold-018",
+     "retained_bytes": 12.92,
+     "base": 48.93,
+     "adapters": 27.67,
+     "ablation": 40.11,
+     "rl": 40.42,
+     "release": 40.64
+    }
+   ],
+   "none_regenerated": [
+    {
+     "window": "fold-000",
+     "retained_bytes": 2.65,
+     "base": 4.36,
+     "adapters": 3.73,
+     "ablation": 7.34,
+     "rl": 7.34,
+     "release": 7.4
+    },
+    {
+     "window": "fold-001",
+     "retained_bytes": 5.73,
+     "base": 7.58,
+     "adapters": 6.94,
+     "ablation": 11.32,
+     "rl": 11.31,
+     "release": 11.38
+    },
+    {
+     "window": "fold-002",
+     "retained_bytes": 9.38,
+     "base": 11.5,
+     "adapters": 10.84,
+     "ablation": 16.13,
+     "rl": 16.12,
+     "release": 16.21
+    },
+    {
+     "window": "fold-003",
+     "retained_bytes": 13.39,
+     "base": 16.3,
+     "adapters": 15.09,
+     "ablation": 20.86,
+     "rl": 20.85,
+     "release": 20.95
+    },
+    {
+     "window": "fold-004",
+     "retained_bytes": 17.78,
+     "base": 21.56,
+     "adapters": 19.46,
+     "ablation": 25.54,
+     "rl": 25.7,
+     "release": 25.8
+    },
+    {
+     "window": "fold-005",
+     "retained_bytes": 22.39,
+     "base": 27.18,
+     "adapters": 24.18,
+     "ablation": 30.57,
+     "rl": 30.72,
+     "release": 30.84
+    },
+    {
+     "window": "fold-006",
+     "retained_bytes": 27.36,
+     "base": 33.08,
+     "adapters": 29.35,
+     "ablation": 36.24,
+     "rl": 36.39,
+     "release": 36.51
+    },
+    {
+     "window": "fold-007",
+     "retained_bytes": 32.55,
+     "base": 39.51,
+     "adapters": 34.7,
+     "ablation": 41.88,
+     "rl": 42.03,
+     "release": 42.16
+    },
+    {
+     "window": "fold-008",
+     "retained_bytes": 37.96,
+     "base": 46.14,
+     "adapters": 40.21,
+     "ablation": 47.75,
+     "rl": 47.9,
+     "release": 48.03
+    },
+    {
+     "window": "fold-009",
+     "retained_bytes": 43.7,
+     "base": 53.1,
+     "adapters": 46.1,
+     "ablation": 54.15,
+     "rl": 54.3,
+     "release": 54.44
+    },
+    {
+     "window": "fold-010",
+     "retained_bytes": 49.96,
+     "base": 60.52,
+     "adapters": 52.37,
+     "ablation": 60.96,
+     "rl": 61.28,
+     "release": 61.43
+    },
+    {
+     "window": "fold-011",
+     "retained_bytes": 56.6,
+     "base": 68.57,
+     "adapters": 59.19,
+     "ablation": 68.35,
+     "rl": 68.67,
+     "release": 68.83
+    },
+    {
+     "window": "fold-012",
+     "retained_bytes": 63.53,
+     "base": 77.11,
+     "adapters": 66.3,
+     "ablation": 75.88,
+     "rl": 76.2,
+     "release": 76.36
+    },
+    {
+     "window": "fold-013",
+     "retained_bytes": 70.79,
+     "base": 85.96,
+     "adapters": 73.71,
+     "ablation": 83.85,
+     "rl": 84.16,
+     "release": 84.34
+    },
+    {
+     "window": "fold-014",
+     "retained_bytes": 78.21,
+     "base": 95.3,
+     "adapters": 81.31,
+     "ablation": 91.56,
+     "rl": 91.88,
+     "release": 92.06
+    },
+    {
+     "window": "fold-015",
+     "retained_bytes": 86.36,
+     "base": 104.65,
+     "adapters": 89.56,
+     "ablation": 101.21,
+     "rl": 101.52,
+     "release": 101.71
+    },
+    {
+     "window": "fold-016",
+     "retained_bytes": 94.99,
+     "base": 115.48,
+     "adapters": 98.63,
+     "ablation": 110.84,
+     "rl": 111.14,
+     "release": 111.36
+    },
+    {
+     "window": "fold-017",
+     "retained_bytes": 103.79,
+     "base": 126.57,
+     "adapters": 107.58,
+     "ablation": 119.95,
+     "rl": 120.26,
+     "release": 120.48
+    },
+    {
+     "window": "fold-018",
+     "retained_bytes": 112.64,
+     "base": 137.73,
+     "adapters": 116.46,
+     "ablation": 128.91,
+     "rl": 129.22,
+     "release": 129.44
+    }
+   ]
+  },
+  "develop_xgboost_cache/all_blocks": {
+   "all_regenerated": [
+    {
+     "window": "fold-000",
+     "retained_bytes": 4.14,
+     "base": 4.36,
+     "adapters": 10.35,
+     "ablation": 13.96,
+     "rl": 13.95,
+     "release": 14.01
+    },
+    {
+     "window": "fold-001",
+     "retained_bytes": 8.67,
+     "base": 9.07,
+     "adapters": 15.92,
+     "ablation": 20.3,
+     "rl": 20.29,
+     "release": 20.36
+    },
+    {
+     "window": "fold-002",
+     "retained_bytes": 13.79,
+     "base": 14.44,
+     "adapters": 22.6,
+     "ablation": 27.89,
+     "rl": 27.88,
+     "release": 27.97
+    },
+    {
+     "window": "fold-003",
+     "retained_bytes": 19.33,
+     "base": 20.71,
+     "adapters": 29.25,
+     "ablation": 35.02,
+     "rl": 35.0,
+     "release": 35.1
+    },
+    {
+     "window": "fold-004",
+     "retained_bytes": 25.07,
+     "base": 27.51,
+     "adapters": 35.72,
+     "ablation": 41.79,
+     "rl": 41.95,
+     "release": 42.05
+    },
+    {
+     "window": "fold-005",
+     "retained_bytes": 30.98,
+     "base": 34.47,
+     "adapters": 42.25,
+     "ablation": 48.64,
+     "rl": 48.8,
+     "release": 48.91
+    },
+    {
+     "window": "fold-006",
+     "retained_bytes": 37.14,
+     "base": 41.68,
+     "adapters": 49.34,
+     "ablation": 56.22,
+     "rl": 56.37,
+     "release": 56.49
+    },
+    {
+     "window": "fold-007",
+     "retained_bytes": 43.5,
+     "base": 49.29,
+     "adapters": 56.42,
+     "ablation": 63.61,
+     "rl": 63.76,
+     "release": 63.88
+    },
+    {
+     "window": "fold-008",
+     "retained_bytes": 50.05,
+     "base": 57.09,
+     "adapters": 63.58,
+     "ablation": 71.12,
+     "rl": 71.27,
+     "release": 71.4
+    },
+    {
+     "window": "fold-009",
+     "retained_bytes": 56.9,
+     "base": 65.19,
+     "adapters": 71.32,
+     "ablation": 79.37,
+     "rl": 79.52,
+     "release": 79.66
+    },
+    {
+     "window": "fold-010",
+     "retained_bytes": 64.24,
+     "base": 73.71,
+     "adapters": 79.48,
+     "ablation": 88.07,
+     "rl": 88.39,
+     "release": 88.54
+    },
+    {
+     "window": "fold-011",
+     "retained_bytes": 71.93,
+     "base": 82.85,
+     "adapters": 88.22,
+     "ablation": 97.38,
+     "rl": 97.7,
+     "release": 97.86
+    },
+    {
+     "window": "fold-012",
+     "retained_bytes": 79.92,
+     "base": 92.45,
+     "adapters": 97.09,
+     "ablation": 106.67,
+     "rl": 106.99,
+     "release": 107.15
+    },
+    {
+     "window": "fold-013",
+     "retained_bytes": 88.19,
+     "base": 102.35,
+     "adapters": 106.27,
+     "ablation": 116.41,
+     "rl": 116.72,
+     "release": 116.9
+    },
+    {
+     "window": "fold-014",
+     "retained_bytes": 96.65,
+     "base": 112.7,
+     "adapters": 115.37,
+     "ablation": 125.63,
+     "rl": 125.94,
+     "release": 126.12
+    },
+    {
+     "window": "fold-015",
+     "retained_bytes": 105.64,
+     "base": 123.09,
+     "adapters": 125.92,
+     "ablation": 137.56,
+     "rl": 137.87,
+     "release": 138.07
+    },
+    {
+     "window": "fold-016",
+     "retained_bytes": 115.2,
+     "base": 134.77,
+     "adapters": 137.19,
+     "ablation": 149.4,
+     "rl": 149.71,
+     "release": 149.92
+    },
+    {
+     "window": "fold-017",
+     "retained_bytes": 124.95,
+     "base": 146.78,
+     "adapters": 147.54,
+     "ablation": 159.91,
+     "rl": 160.22,
+     "release": 160.44
+    },
+    {
+     "window": "fold-018",
+     "retained_bytes": 131.65,
+     "base": 158.89,
+     "adapters": 157.5,
+     "ablation": 169.95,
+     "rl": 170.26,
+     "release": 170.48
+    }
+   ],
+   "none_regenerated": [
+    {
+     "window": "fold-000",
+     "retained_bytes": 6.17,
+     "base": 4.36,
+     "adapters": 10.35,
+     "ablation": 13.96,
+     "rl": 13.95,
+     "release": 14.01
+    },
+    {
+     "window": "fold-001",
+     "retained_bytes": 13.13,
+     "base": 11.11,
+     "adapters": 17.95,
+     "ablation": 22.33,
+     "rl": 22.32,
+     "release": 22.4
+    },
+    {
+     "window": "fold-002",
+     "retained_bytes": 21.18,
+     "base": 18.9,
+     "adapters": 27.06,
+     "ablation": 32.35,
+     "rl": 32.34,
+     "release": 32.42
+    },
+    {
+     "window": "fold-003",
+     "retained_bytes": 29.95,
+     "base": 28.09,
+     "adapters": 36.63,
+     "ablation": 42.4,
+     "rl": 42.39,
+     "release": 42.49
+    },
+    {
+     "window": "fold-004",
+     "retained_bytes": 39.33,
+     "base": 38.12,
+     "adapters": 46.33,
+     "ablation": 52.41,
+     "rl": 52.56,
+     "release": 52.67
+    },
+    {
+     "window": "fold-005",
+     "retained_bytes": 49.11,
+     "base": 48.73,
+     "adapters": 56.51,
+     "ablation": 62.9,
+     "rl": 63.06,
+     "release": 63.17
+    },
+    {
+     "window": "fold-006",
+     "retained_bytes": 59.5,
+     "base": 59.81,
+     "adapters": 67.47,
+     "ablation": 74.35,
+     "rl": 74.5,
+     "release": 74.62
+    },
+    {
+     "window": "fold-007",
+     "retained_bytes": 70.33,
+     "base": 71.65,
+     "adapters": 78.78,
+     "ablation": 85.97,
+     "rl": 86.12,
+     "release": 86.24
+    },
+    {
+     "window": "fold-008",
+     "retained_bytes": 81.57,
+     "base": 83.92,
+     "adapters": 90.41,
+     "ablation": 97.95,
+     "rl": 98.1,
+     "release": 98.23
+    },
+    {
+     "window": "fold-009",
+     "retained_bytes": 93.41,
+     "base": 96.71,
+     "adapters": 102.84,
+     "ablation": 110.89,
+     "rl": 111.04,
+     "release": 111.17
+    },
+    {
+     "window": "fold-010",
+     "retained_bytes": 106.09,
+     "base": 110.23,
+     "adapters": 116.0,
+     "ablation": 124.59,
+     "rl": 124.9,
+     "release": 125.05
+    },
+    {
+     "window": "fold-011",
+     "retained_bytes": 119.47,
+     "base": 124.7,
+     "adapters": 130.07,
+     "ablation": 139.23,
+     "rl": 139.55,
+     "release": 139.7
+    },
+    {
+     "window": "fold-012",
+     "retained_bytes": 133.42,
+     "base": 139.98,
+     "adapters": 144.62,
+     "ablation": 154.21,
+     "rl": 154.52,
+     "release": 154.69
+    },
+    {
+     "window": "fold-013",
+     "retained_bytes": 147.99,
+     "base": 155.86,
+     "adapters": 159.77,
+     "ablation": 169.91,
+     "rl": 170.22,
+     "release": 170.4
+    },
+    {
+     "window": "fold-014",
+     "retained_bytes": 162.91,
+     "base": 172.5,
+     "adapters": 175.17,
+     "ablation": 185.43,
+     "rl": 185.74,
+     "release": 185.92
+    },
+    {
+     "window": "fold-015",
+     "retained_bytes": 179.05,
+     "base": 189.35,
+     "adapters": 192.18,
+     "ablation": 203.82,
+     "rl": 204.13,
+     "release": 204.33
+    },
+    {
+     "window": "fold-016",
+     "retained_bytes": 196.23,
+     "base": 208.18,
+     "adapters": 210.61,
+     "ablation": 222.82,
+     "rl": 223.12,
+     "release": 223.34
+    },
+    {
+     "window": "fold-017",
+     "retained_bytes": 213.75,
+     "base": 227.8,
+     "adapters": 228.56,
+     "ablation": 240.93,
+     "rl": 241.24,
+     "release": 241.46
+    },
+    {
+     "window": "fold-018",
+     "retained_bytes": 231.37,
+     "base": 247.69,
+     "adapters": 246.3,
+     "ablation": 258.75,
+     "rl": 259.06,
+     "release": 259.28
+    }
+   ]
+  },
+  "develop_xgboost_cache/kept_per_model_gb": {
+   "neural": {
+    "jobs": 508,
+    "states": 0.888,
+    "reports": 0.133,
+    "sessions": 0.266
+   },
+   "ridge": {
+    "jobs": 57,
+    "states": 0.002,
+    "reports": 0.015,
+    "sessions": 0.0
+   },
+   "xgboost": {
+    "jobs": 228,
+    "states": 2.152,
+    "reports": 0.06,
+    "sessions": 0.0
+   },
+   "episodic_gru": {
+    "jobs": 57,
+    "states": 0.372,
+    "reports": 0.015,
+    "sessions": 0.0
+   },
+   "titans_mac": {
+    "jobs": 432,
+    "states": 0.97,
+    "reports": 0.113,
+    "sessions": 0.0
+   },
+   "mars_titan": {
+    "jobs": 584,
+    "states": 0.168,
+    "reports": 0.153,
+    "sessions": 0.0
+   },
+   "cm_v1_core": {
+    "jobs": 152,
+    "states": 0.381,
+    "reports": 0.04,
+    "sessions": 0.0
+   },
+   "cm_v1": {
+    "jobs": 304,
+    "states": 0.088,
+    "reports": 0.08,
+    "sessions": 0.0
+   }
+  },
+  "tabular_dense_pages/base_rl_ablation": {
+   "all_regenerated": [
+    {
+     "window": "fold-000",
+     "retained_bytes": 0.61,
+     "base": 4.36,
+     "adapters": 3.73,
+     "ablation": 7.34,
+     "rl": 7.34,
+     "release": 7.4
+    },
+    {
+     "window": "fold-001",
+     "retained_bytes": 1.27,
+     "base": 5.54,
+     "adapters": 4.9,
+     "ablation": 9.28,
+     "rl": 9.27,
+     "release": 9.35
+    },
+    {
+     "window": "fold-002",
+     "retained_bytes": 2.0,
+     "base": 7.04,
+     "adapters": 6.38,
+     "ablation": 11.67,
+     "rl": 11.66,
+     "release": 11.75
+    },
+    {
+     "window": "fold-003",
+     "retained_bytes": 2.77,
+     "base": 8.38,
+     "adapters": 7.71,
+     "ablation": 13.48,
+     "rl": 13.46,
+     "release": 13.56
+    },
+    {
+     "window": "fold-004",
+     "retained_bytes": 3.52,
+     "base": 9.54,
+     "adapters": 8.85,
+     "ablation": 14.93,
+     "rl": 15.08,
+     "release": 15.19
+    },
+    {
+     "window": "fold-005",
+     "retained_bytes": 4.26,
+     "base": 10.62,
+     "adapters": 9.92,
+     "ablation": 16.31,
+     "rl": 16.46,
+     "release": 16.57
+    },
+    {
+     "window": "fold-006",
+     "retained_bytes": 5.0,
+     "base": 12.15,
+     "adapters": 11.23,
+     "ablation": 18.11,
+     "rl": 18.26,
+     "release": 18.38
+    },
+    {
+     "window": "fold-007",
+     "retained_bytes": 5.72,
+     "base": 14.05,
+     "adapters": 12.34,
+     "ablation": 19.52,
+     "rl": 19.67,
+     "release": 19.8
+    },
+    {
+     "window": "fold-008",
+     "retained_bytes": 6.45,
+     "base": 16.0,
+     "adapters": 13.38,
+     "ablation": 20.92,
+     "rl": 21.07,
+     "release": 21.2
+    },
+    {
+     "window": "fold-009",
+     "retained_bytes": 7.19,
+     "base": 18.02,
+     "adapters": 14.59,
+     "ablation": 22.63,
+     "rl": 22.78,
+     "release": 22.92
+    },
+    {
+     "window": "fold-010",
+     "retained_bytes": 8.12,
+     "base": 20.14,
+     "adapters": 15.86,
+     "ablation": 24.45,
+     "rl": 24.76,
+     "release": 24.91
+    },
+    {
+     "window": "fold-011",
+     "retained_bytes": 9.06,
+     "base": 22.53,
+     "adapters": 17.34,
+     "ablation": 26.51,
+     "rl": 26.82,
+     "release": 26.98
+    },
+    {
+     "window": "fold-012",
+     "retained_bytes": 10.02,
+     "base": 25.03,
+     "adapters": 18.76,
+     "ablation": 28.35,
+     "rl": 28.66,
+     "release": 28.83
+    },
+    {
+     "window": "fold-013",
+     "retained_bytes": 10.99,
+     "base": 27.64,
+     "adapters": 20.2,
+     "ablation": 30.34,
+     "rl": 30.66,
+     "release": 30.83
+    },
+    {
+     "window": "fold-014",
+     "retained_bytes": 11.95,
+     "base": 30.29,
+     "adapters": 21.5,
+     "ablation": 31.76,
+     "rl": 32.07,
+     "release": 32.25
+    },
+    {
+     "window": "fold-015",
+     "retained_bytes": 12.94,
+     "base": 33.1,
+     "adapters": 23.3,
+     "ablation": 34.95,
+     "rl": 35.26,
+     "release": 35.45
+    },
+    {
+     "window": "fold-016",
+     "retained_bytes": 13.97,
+     "base": 36.02,
+     "adapters": 25.21,
+     "ablation": 37.42,
+     "rl": 37.73,
+     "release": 37.94
+    },
+    {
+     "window": "fold-017",
+     "retained_bytes": 14.99,
+     "base": 39.1,
+     "adapters": 26.55,
+     "ablation": 38.93,
+     "rl": 39.23,
+     "release": 39.45
+    },
+    {
+     "window": "fold-018",
+     "retained_bytes": 12.92,
+     "base": 42.22,
+     "adapters": 27.67,
+     "ablation": 40.11,
+     "rl": 40.42,
+     "release": 40.64
+    }
+   ],
+   "none_regenerated": [
+    {
+     "window": "fold-000",
+     "retained_bytes": 2.65,
+     "base": 4.36,
+     "adapters": 3.73,
+     "ablation": 7.34,
+     "rl": 7.34,
+     "release": 7.4
+    },
+    {
+     "window": "fold-001",
+     "retained_bytes": 5.73,
+     "base": 7.58,
+     "adapters": 6.94,
+     "ablation": 11.32,
+     "rl": 11.31,
+     "release": 11.38
+    },
+    {
+     "window": "fold-002",
+     "retained_bytes": 9.38,
+     "base": 11.5,
+     "adapters": 10.84,
+     "ablation": 16.13,
+     "rl": 16.12,
+     "release": 16.21
+    },
+    {
+     "window": "fold-003",
+     "retained_bytes": 13.39,
+     "base": 15.76,
+     "adapters": 15.09,
+     "ablation": 20.86,
+     "rl": 20.85,
+     "release": 20.95
+    },
+    {
+     "window": "fold-004",
+     "retained_bytes": 17.78,
+     "base": 20.15,
+     "adapters": 19.46,
+     "ablation": 25.54,
+     "rl": 25.7,
+     "release": 25.8
+    },
+    {
+     "window": "fold-005",
+     "retained_bytes": 22.39,
+     "base": 24.88,
+     "adapters": 24.18,
+     "ablation": 30.57,
+     "rl": 30.72,
+     "release": 30.84
+    },
+    {
+     "window": "fold-006",
+     "retained_bytes": 27.36,
+     "base": 30.28,
+     "adapters": 29.35,
+     "ablation": 36.24,
+     "rl": 36.39,
+     "release": 36.51
+    },
+    {
+     "window": "fold-007",
+     "retained_bytes": 32.55,
+     "base": 36.41,
+     "adapters": 34.7,
+     "ablation": 41.88,
+     "rl": 42.03,
+     "release": 42.16
+    },
+    {
+     "window": "fold-008",
+     "retained_bytes": 37.96,
+     "base": 42.83,
+     "adapters": 40.21,
+     "ablation": 47.75,
+     "rl": 47.9,
+     "release": 48.03
+    },
+    {
+     "window": "fold-009",
+     "retained_bytes": 43.7,
+     "base": 49.54,
+     "adapters": 46.1,
+     "ablation": 54.15,
+     "rl": 54.3,
+     "release": 54.44
+    },
+    {
+     "window": "fold-010",
+     "retained_bytes": 49.96,
+     "base": 56.65,
+     "adapters": 52.37,
+     "ablation": 60.96,
+     "rl": 61.28,
+     "release": 61.43
+    },
+    {
+     "window": "fold-011",
+     "retained_bytes": 56.6,
+     "base": 64.38,
+     "adapters": 59.19,
+     "ablation": 68.35,
+     "rl": 68.67,
+     "release": 68.83
+    },
+    {
+     "window": "fold-012",
+     "retained_bytes": 63.53,
+     "base": 72.56,
+     "adapters": 66.3,
+     "ablation": 75.88,
+     "rl": 76.2,
+     "release": 76.36
+    },
+    {
+     "window": "fold-013",
+     "retained_bytes": 70.79,
+     "base": 81.14,
+     "adapters": 73.71,
+     "ablation": 83.85,
+     "rl": 84.16,
+     "release": 84.34
+    },
+    {
+     "window": "fold-014",
+     "retained_bytes": 78.21,
+     "base": 90.09,
+     "adapters": 81.31,
+     "ablation": 91.56,
+     "rl": 91.88,
+     "release": 92.06
+    },
+    {
+     "window": "fold-015",
+     "retained_bytes": 86.36,
+     "base": 99.36,
+     "adapters": 89.56,
+     "ablation": 101.21,
+     "rl": 101.52,
+     "release": 101.71
+    },
+    {
+     "window": "fold-016",
+     "retained_bytes": 94.99,
+     "base": 109.44,
+     "adapters": 98.63,
+     "ablation": 110.84,
+     "rl": 111.14,
+     "release": 111.36
+    },
+    {
+     "window": "fold-017",
+     "retained_bytes": 103.79,
+     "base": 120.13,
+     "adapters": 107.58,
+     "ablation": 119.95,
+     "rl": 120.26,
+     "release": 120.48
+    },
+    {
+     "window": "fold-018",
+     "retained_bytes": 112.64,
+     "base": 131.02,
+     "adapters": 116.46,
+     "ablation": 128.91,
+     "rl": 129.22,
+     "release": 129.44
+    }
+   ]
+  },
+  "tabular_dense_pages/all_blocks": {
+   "all_regenerated": [
+    {
+     "window": "fold-000",
+     "retained_bytes": 4.14,
+     "base": 4.36,
+     "adapters": 10.35,
+     "ablation": 13.96,
+     "rl": 13.95,
+     "release": 14.01
+    },
+    {
+     "window": "fold-001",
+     "retained_bytes": 8.67,
+     "base": 9.07,
+     "adapters": 15.92,
+     "ablation": 20.3,
+     "rl": 20.29,
+     "release": 20.36
+    },
+    {
+     "window": "fold-002",
+     "retained_bytes": 13.79,
+     "base": 14.44,
+     "adapters": 22.6,
+     "ablation": 27.89,
+     "rl": 27.88,
+     "release": 27.97
+    },
+    {
+     "window": "fold-003",
+     "retained_bytes": 19.33,
+     "base": 20.17,
+     "adapters": 29.25,
+     "ablation": 35.02,
+     "rl": 35.0,
+     "release": 35.1
+    },
+    {
+     "window": "fold-004",
+     "retained_bytes": 25.07,
+     "base": 26.1,
+     "adapters": 35.72,
+     "ablation": 41.79,
+     "rl": 41.95,
+     "release": 42.05
+    },
+    {
+     "window": "fold-005",
+     "retained_bytes": 30.98,
+     "base": 32.17,
+     "adapters": 42.25,
+     "ablation": 48.64,
+     "rl": 48.8,
+     "release": 48.91
+    },
+    {
+     "window": "fold-006",
+     "retained_bytes": 37.14,
+     "base": 38.88,
+     "adapters": 49.34,
+     "ablation": 56.22,
+     "rl": 56.37,
+     "release": 56.49
+    },
+    {
+     "window": "fold-007",
+     "retained_bytes": 43.5,
+     "base": 46.19,
+     "adapters": 56.42,
+     "ablation": 63.61,
+     "rl": 63.76,
+     "release": 63.88
+    },
+    {
+     "window": "fold-008",
+     "retained_bytes": 50.05,
+     "base": 53.78,
+     "adapters": 63.58,
+     "ablation": 71.12,
+     "rl": 71.27,
+     "release": 71.4
+    },
+    {
+     "window": "fold-009",
+     "retained_bytes": 56.9,
+     "base": 61.62,
+     "adapters": 71.32,
+     "ablation": 79.37,
+     "rl": 79.52,
+     "release": 79.66
+    },
+    {
+     "window": "fold-010",
+     "retained_bytes": 64.24,
+     "base": 69.84,
+     "adapters": 79.48,
+     "ablation": 88.07,
+     "rl": 88.39,
+     "release": 88.54
+    },
+    {
+     "window": "fold-011",
+     "retained_bytes": 71.93,
+     "base": 78.65,
+     "adapters": 88.22,
+     "ablation": 97.38,
+     "rl": 97.7,
+     "release": 97.86
+    },
+    {
+     "window": "fold-012",
+     "retained_bytes": 79.92,
+     "base": 87.9,
+     "adapters": 97.09,
+     "ablation": 106.67,
+     "rl": 106.99,
+     "release": 107.15
+    },
+    {
+     "window": "fold-013",
+     "retained_bytes": 88.19,
+     "base": 97.53,
+     "adapters": 106.27,
+     "ablation": 116.41,
+     "rl": 116.72,
+     "release": 116.9
+    },
+    {
+     "window": "fold-014",
+     "retained_bytes": 96.65,
+     "base": 107.49,
+     "adapters": 115.37,
+     "ablation": 125.63,
+     "rl": 125.94,
+     "release": 126.12
+    },
+    {
+     "window": "fold-015",
+     "retained_bytes": 105.64,
+     "base": 117.81,
+     "adapters": 125.92,
+     "ablation": 137.56,
+     "rl": 137.87,
+     "release": 138.07
+    },
+    {
+     "window": "fold-016",
+     "retained_bytes": 115.2,
+     "base": 128.72,
+     "adapters": 137.19,
+     "ablation": 149.4,
+     "rl": 149.71,
+     "release": 149.92
+    },
+    {
+     "window": "fold-017",
+     "retained_bytes": 124.95,
+     "base": 140.34,
+     "adapters": 147.54,
+     "ablation": 159.91,
+     "rl": 160.22,
+     "release": 160.44
+    },
+    {
+     "window": "fold-018",
+     "retained_bytes": 131.65,
+     "base": 152.18,
+     "adapters": 157.5,
+     "ablation": 169.95,
+     "rl": 170.26,
+     "release": 170.48
+    }
+   ],
+   "none_regenerated": [
+    {
+     "window": "fold-000",
+     "retained_bytes": 6.17,
+     "base": 4.36,
+     "adapters": 10.35,
+     "ablation": 13.96,
+     "rl": 13.95,
+     "release": 14.01
+    },
+    {
+     "window": "fold-001",
+     "retained_bytes": 13.13,
+     "base": 11.11,
+     "adapters": 17.95,
+     "ablation": 22.33,
+     "rl": 22.32,
+     "release": 22.4
+    },
+    {
+     "window": "fold-002",
+     "retained_bytes": 21.18,
+     "base": 18.9,
+     "adapters": 27.06,
+     "ablation": 32.35,
+     "rl": 32.34,
+     "release": 32.42
+    },
+    {
+     "window": "fold-003",
+     "retained_bytes": 29.95,
+     "base": 27.56,
+     "adapters": 36.63,
+     "ablation": 42.4,
+     "rl": 42.39,
+     "release": 42.49
+    },
+    {
+     "window": "fold-004",
+     "retained_bytes": 39.33,
+     "base": 36.71,
+     "adapters": 46.33,
+     "ablation": 52.41,
+     "rl": 52.56,
+     "release": 52.67
+    },
+    {
+     "window": "fold-005",
+     "retained_bytes": 49.11,
+     "base": 46.43,
+     "adapters": 56.51,
+     "ablation": 62.9,
+     "rl": 63.06,
+     "release": 63.17
+    },
+    {
+     "window": "fold-006",
+     "retained_bytes": 59.5,
+     "base": 57.01,
+     "adapters": 67.47,
+     "ablation": 74.35,
+     "rl": 74.5,
+     "release": 74.62
+    },
+    {
+     "window": "fold-007",
+     "retained_bytes": 70.33,
+     "base": 68.55,
+     "adapters": 78.78,
+     "ablation": 85.97,
+     "rl": 86.12,
+     "release": 86.24
+    },
+    {
+     "window": "fold-008",
+     "retained_bytes": 81.57,
+     "base": 80.6,
+     "adapters": 90.41,
+     "ablation": 97.95,
+     "rl": 98.1,
+     "release": 98.23
+    },
+    {
+     "window": "fold-009",
+     "retained_bytes": 93.41,
+     "base": 93.14,
+     "adapters": 102.84,
+     "ablation": 110.89,
+     "rl": 111.04,
+     "release": 111.17
+    },
+    {
+     "window": "fold-010",
+     "retained_bytes": 106.09,
+     "base": 106.36,
+     "adapters": 116.0,
+     "ablation": 124.59,
+     "rl": 124.9,
+     "release": 125.05
+    },
+    {
+     "window": "fold-011",
+     "retained_bytes": 119.47,
+     "base": 120.5,
+     "adapters": 130.07,
+     "ablation": 139.23,
+     "rl": 139.55,
+     "release": 139.7
+    },
+    {
+     "window": "fold-012",
+     "retained_bytes": 133.42,
+     "base": 135.43,
+     "adapters": 144.62,
+     "ablation": 154.21,
+     "rl": 154.52,
+     "release": 154.69
+    },
+    {
+     "window": "fold-013",
+     "retained_bytes": 147.99,
+     "base": 151.03,
+     "adapters": 159.77,
+     "ablation": 169.91,
+     "rl": 170.22,
+     "release": 170.4
+    },
+    {
+     "window": "fold-014",
+     "retained_bytes": 162.91,
+     "base": 167.29,
+     "adapters": 175.17,
+     "ablation": 185.43,
+     "rl": 185.74,
+     "release": 185.92
+    },
+    {
+     "window": "fold-015",
+     "retained_bytes": 179.05,
+     "base": 184.07,
+     "adapters": 192.18,
+     "ablation": 203.82,
+     "rl": 204.13,
+     "release": 204.33
+    },
+    {
+     "window": "fold-016",
+     "retained_bytes": 196.23,
+     "base": 202.14,
+     "adapters": 210.61,
+     "ablation": 222.82,
+     "rl": 223.12,
+     "release": 223.34
+    },
+    {
+     "window": "fold-017",
+     "retained_bytes": 213.75,
+     "base": 221.36,
+     "adapters": 228.56,
+     "ablation": 240.93,
+     "rl": 241.24,
+     "release": 241.46
+    },
+    {
+     "window": "fold-018",
+     "retained_bytes": 231.37,
+     "base": 240.98,
+     "adapters": 246.3,
+     "ablation": 258.75,
+     "rl": 259.06,
+     "release": 259.28
+    }
+   ]
+  },
+  "tabular_dense_pages/kept_per_model_gb": {
+   "neural": {
+    "jobs": 508,
+    "states": 0.888,
+    "reports": 0.133,
+    "sessions": 0.266
+   },
+   "ridge": {
+    "jobs": 57,
+    "states": 0.002,
+    "reports": 0.015,
+    "sessions": 0.0
+   },
+   "xgboost": {
+    "jobs": 228,
+    "states": 2.152,
+    "reports": 0.06,
+    "sessions": 0.0
+   },
+   "episodic_gru": {
+    "jobs": 57,
+    "states": 0.372,
+    "reports": 0.015,
+    "sessions": 0.0
+   },
+   "titans_mac": {
+    "jobs": 432,
+    "states": 0.97,
+    "reports": 0.113,
+    "sessions": 0.0
+   },
+   "mars_titan": {
+    "jobs": 584,
+    "states": 0.168,
+    "reports": 0.153,
+    "sessions": 0.0
+   },
+   "cm_v1_core": {
+    "jobs": 152,
+    "states": 0.381,
+    "reports": 0.04,
+    "sessions": 0.0
+   },
+   "cm_v1": {
+    "jobs": 304,
+    "states": 0.088,
+    "reports": 0.08,
+    "sessions": 0.0
+   }
+  }
+ },
+ "training_executed": false,
+ "final_test_opened": false
+}

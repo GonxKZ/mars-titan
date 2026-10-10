@@ -16,9 +16,8 @@ información posterior.
 
 import numpy as np
 import pyarrow as pa
-import pyarrow.parquet as pq
 
-from mars_titan.data.storage import sha256
+from mars_titan.data import prediction_files
 from mars_titan.environments.walk_forward_receipt import WalkForwardWindow
 
 from .reconstructed_tape import build_reconstructed_tape
@@ -94,9 +93,8 @@ def policy_schedule(rows, period, folds):
 
 def segment_predictions(path, digest, market):
     """Puntuaciones emitidas de un mercado: instante, activo y mediana, con su huella."""
-    _require(sha256(path) == digest, f"Las predicciones de {path.name} han cambiado")
-    table = pq.read_table(
-        path, columns=["asset_id", "market", "prediction_at", "prediction"], use_threads=False
+    table = prediction_files.read(
+        path, digest, ["asset_id", "market", "prediction_at", "prediction"]
     )
     _require(
         table["prediction_at"].type == pa.timestamp("us", tz="UTC")
