@@ -1,7 +1,10 @@
 # Contrastes secundarios de capacidad predictiva
 
 Comprobaciones técnicas de [#493](https://github.com/GonxKZ/mars-titan/issues/493) hechas el
-10 de octubre de 2026 sobre el commit `903e4fc9`, en CPU y sin ningún paso de optimizador.
+10 de octubre de 2026 en CPU y sin ningún paso de optimizador. El coste se midió sobre el
+commit `903e4fc9`. La importación, la regresión sin la sección y la mutación se repitieron
+sobre `557254be`, que solo lleva las importaciones de arch y statsmodels al interior de las
+funciones que calculan y comprueba al empezar la evaluación que están instaladas.
 Ninguna usa predicciones de la campaña ni datos de mercado. La sección `predictive_ability` y
 sus reglas están en las [métricas](../../../docs/research/metrics.md#contrastes-secundarios-de-capacidad-predictiva).
 
@@ -34,6 +37,20 @@ el mismo árbol y carga 16,2 dio 34 y 49 s. El pico de memoria reservada por Num
 de 107 MiB. Las dos repeticiones dieron un informe con la misma huella. No se midieron la GPU,
 que estos contrastes no usan, ni la energía.
 
+## Importación sin el extra research
+
+La declaración de la sección y sus constantes solo usan NumPy. `campaign_plan`, `policy_plan`,
+`simulation.campaign_stage` y `walk_forward_comparison` se cargan sin arch ni statsmodels, como
+en el entorno de `rl check` (`--extra cuda --extra reinforcement`).
+`test_campaigns_load_and_rl_check_runs_without_arch_or_statsmodels` lo comprueba en un
+subproceso que bloquea los dos paquetes: carga las campañas A y A v2, ejecuta `rl check` y
+no registra ningún intento de importarlos. La evaluación que declara la sección sí falla, con
+el nombre del paquete, antes de leer ninguna fuente.
+
+Importar `campaign_plan` y `walk_forward_comparison` en un proceso nuevo tardó 1,94 s de
+mediana con `557254be` (1,86 a 2,17 s) y 3,43 s con `ddefb48a` (3,01 a 3,82 s), en cinco
+repeticiones alternas de cada versión con una carga media de 26 a 28.
+
 ## Paridad del bootstrap
 
 [`test_arch_bootstrap_parity.py`](../../../tests/evaluation/test_arch_bootstrap_parity.py)
@@ -46,14 +63,17 @@ distintos.
 
 ## Sin cambios sin la sección
 
-La sección es opcional. Con el código de `develop` (`b92e07a0`) y el de la rama se evaluaron
-los mismos estudios sintéticos US+CN, US y CN sin la sección. Los informes, salvo la fecha, los
-recursos y las huellas del código, y las tablas `sessions.parquet` resultaron idénticos.
+La sección es opcional. Con el código de `develop` (`b92e07a0`) y el de la rama (`557254be`) se
+evaluaron los mismos estudios sintéticos US+CN, US y CN sin la sección. Los informes, salvo la
+fecha, los recursos y las huellas del código, y las tablas `sessions.parquet` resultaron
+idénticos.
 
 ## Mutación dirigida
 
-[`mutations.json`](mutations.json) recoge 23 defectos aplicados de uno en uno sobre una copia
-del árbol y ejecutados contra `test_predictive_ability.py`, `test_arch_bootstrap_parity.py` y
-`test_walk_forward_predictive_ability.py`. Fallan 22. Sobrevive `spa_studentize_true`, que es
-equivalente con arch 8.0.0, porque esa versión ignora `studentize` en el SPA. Una prueba fija
-ese comportamiento para detectar cuándo cambia.
+[`mutations.json`](mutations.json) recoge 27 defectos aplicados de uno en uno sobre una copia
+del árbol de `557254be` y ejecutados contra `test_predictive_ability.py`,
+`test_arch_bootstrap_parity.py` y `test_walk_forward_predictive_ability.py`. Fallan 26, entre
+ellos importar arch o statsmodels al cargar el módulo, no comprobar las bibliotecas al empezar
+la evaluación y comprobarlas después de leer las fuentes. Sobrevive `spa_studentize_true`, que
+es equivalente con arch 8.0.0, porque esa versión ignora `studentize` en el SPA. Una prueba
+fija ese comportamiento para detectar cuándo cambia.

@@ -2,15 +2,15 @@
  "schema_version": 1,
  "kind": "targeted_mutation_testing",
  "issue": 493,
- "commit": "903e4fc99ebc608cfdd04b092688dd3c51fe32e4",
+ "commit": "557254be8c1ad41612f086ef37d317e6068a5789",
  "tests": [
   "tests/evaluation/test_predictive_ability.py",
   "tests/evaluation/test_arch_bootstrap_parity.py",
   "tests/evaluation/test_walk_forward_predictive_ability.py"
  ],
  "method": "copia aislada del árbol versionado, un defecto cada vez, sin GPU ni optimizador",
- "killed": 22,
- "total": 23,
+ "killed": 26,
+ "total": 27,
  "equivalent": [
   "spa_studentize_true"
  ],
@@ -198,7 +198,39 @@
    "file": "src/mars_titan/evaluation/paired_comparisons.py",
    "killed": true,
    "first_failure": "FAILED tests/evaluation/test_arch_bootstrap_parity.py::test_circular_block_indices_match_arch_exactly[250-5-64]"
+  },
+  {
+   "id": "M24",
+   "name": "eager_arch_import",
+   "description": "Importación de arch al cargar el módulo",
+   "file": "src/mars_titan/evaluation/predictive_ability.py",
+   "killed": true,
+   "first_failure": "FAILED tests/evaluation/test_walk_forward_predictive_ability.py::test_campaigns_load_and_rl_check_runs_without_arch_or_statsmodels"
+  },
+  {
+   "id": "M25",
+   "name": "eager_statsmodels_import",
+   "description": "Importación de statsmodels al cargar el módulo",
+   "file": "src/mars_titan/evaluation/predictive_ability.py",
+   "killed": true,
+   "first_failure": "FAILED tests/evaluation/test_walk_forward_predictive_ability.py::test_campaigns_load_and_rl_check_runs_without_arch_or_statsmodels"
+  },
+  {
+   "id": "M26",
+   "name": "wf_no_library_check",
+   "description": "La evaluación no comprueba arch y statsmodels al empezar",
+   "file": "src/mars_titan/evaluation/walk_forward_comparison.py",
+   "killed": true,
+   "first_failure": "FAILED tests/evaluation/test_walk_forward_predictive_ability.py::test_the_section_is_optional_and_changes_no_other_output"
+  },
+  {
+   "id": "M27",
+   "name": "wf_library_check_after_sources",
+   "description": "Comprobación de las bibliotecas después de leer las fuentes",
+   "file": "src/mars_titan/evaluation/walk_forward_comparison.py",
+   "killed": true,
+   "first_failure": "FAILED tests/evaluation/test_walk_forward_predictive_ability.py::test_campaigns_load_and_rl_check_runs_without_arch_or_statsmodels"
   }
  ],
- "tree": "2193e64d07b1dbfd7a1f92ecec59821c37504cbe"
+ "tree": "f0074424f9938ff0f4467dc9be04b65c1ec220b1"
 }
