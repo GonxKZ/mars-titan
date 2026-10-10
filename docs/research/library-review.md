@@ -81,7 +81,7 @@ Resultado preliminar con los mismos pesos copiados:
 | (IA)³ con `feedforward_modules=[]` frente a `RowGain` y `SharedRowGain` | 8,9·10⁻¹⁶ en FP64, 4,8·10⁻⁷ en FP32 | No comparados |
 | LoRA con `target_parameters=["gru.weight_ih_l0"]` frente a la parametrización propia | 0 exacto | No comparados |
 
-En DoRA la magnitud de PEFT corresponde a la norma del padre más el desplazamiento que entrena el proyecto. Las cifras son diferencias absolutas máximas. Veredicto: referencia de paridad solo en pruebas, en un grupo de dependencias separado del entorno de ejecución ([#494](https://github.com/GonxKZ/mars-titan/issues/494)).
+En DoRA la magnitud de PEFT corresponde a la norma del padre más el desplazamiento que entrena el proyecto. Las cifras son diferencias absolutas máximas. Veredicto: referencia de paridad solo en pruebas, en un grupo de dependencias separado del entorno de ejecución ([#494](https://github.com/GonxKZ/mars-titan/issues/494)). La paridad ya está en las pruebas, con tolerancias declaradas, y añade LoRA por bloque de filas, `weight_hh_l0` de la GRU y (IA)³ por columnas. Sus cifras están en la [variedad de adaptadores](../engineering/adapter-variety.md#comprobaciones).
 
 ## Puntuaciones probabilísticas
 
