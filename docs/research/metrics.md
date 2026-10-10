@@ -530,6 +530,26 @@ como mucho hasta la mediana y el intervalo del 95 % hasta el del 80 %
 corrección CQR, nunca se estrecha, así que la cobertura en calibración no baja
 de la nominal. El informe cuenta las filas en las que se aplicó esa regla.
 
+La [paridad con MAPIE 1.5.0](../../tests/calibration/test_conformal_mapie_parity.py)
+ejecuta `ConformalizedQuantileRegressor` grupo a grupo, con estimadores ya ajustados que
+devuelven los cuantiles guardados y `symmetric_correction=True`. Con 400 y 257 filas de
+calibración, una corrección positiva y otra negativa, los extremos corregidos y la
+mediana coinciden bit a bit. Las dos implementaciones difieren en tamaños concretos,
+que la prueba recorre de $n=1$ a $n=120$:
+
+| Caso | Propia | MAPIE |
+| --- | --- | --- |
+| $k>n$ ($n\le3$ con 0,8 y $n\le18$ con 0,95) | Sin corrección, con su motivo | Rechaza la calibración |
+| $k=n$ con $n<1/\alpha$ ($n=4$ con 0,8 y $n=19$ con 0,95) | La puntuación máxima | Rechaza la calibración |
+| $(n+1)(1-\alpha)$ entero ($n+1$ múltiplo de 5 con 0,8 o de 20 con 0,95) | $E_{(k)}$ | $E_{(k+1)}$, más conservadora |
+| Resto | $E_{(k)}$ | $E_{(k)}$ |
+
+La tercera fila se debe a que MAPIE calcula `np.quantile(E, (1-α)(1+1/n), method="higher")`,
+cuyo índice desde cero es $\lceil (1-\alpha)(1+1/n)(n-1)\rceil$. Coincide con $k-1$
+salvo cuando $(n+1)(1-\alpha)$ es entero, en cuyo caso toma el estadístico siguiente.
+El orden propio es el de Romano, Patterson y Candès (2019), así que la regla del
+proyecto no cambia.
+
 ## Evaluación walk-forward de la edición desde 2000
 
 `evaluation/walk_forward_comparison.py` aplica estas métricas a las
