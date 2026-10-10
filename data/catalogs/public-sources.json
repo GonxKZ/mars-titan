@@ -39,7 +39,22 @@
       "pit_limitations": "La edición actual revisa periodos anteriores. No acredita la versión ni hora disponibles en cada decisión.",
       "geography": "US",
       "status": "downloaded_validated",
-      "verified_on": "2026-09-18"
+      "verified_on": "2026-09-18",
+      "benchmark_eligible": false,
+      "use_decisions": [
+        {
+          "use": "Entrada macro mensual de un experimento",
+          "gap": "El contexto macro necesita versiones fechadas de cada serie.",
+          "decision": "excluded",
+          "evidence": "La edición current.csv revisa periodos anteriores y no acredita qué versión existía en cada decisión. El catálogo macro asigna a cada serie la vía ALFRED o un archivo de publicación."
+        },
+        {
+          "use": "Contraste local de cobertura, unidades y ausencias de las series del catálogo macro",
+          "gap": "El contexto macro necesita versiones fechadas de cada serie.",
+          "decision": "admitted_exploratory",
+          "evidence": "Capturas válidas con huella en el índice. La copia inicial tiene 811 filas, 126 series y 967 celdas ausentes."
+        }
+      ]
     },
     {
       "id": "fred_qd",
@@ -62,7 +77,22 @@
       "pit_limitations": "No convertir el fin del trimestre en fecha de publicación ni tratar el histórico actual como primera estimación.",
       "geography": "US",
       "status": "downloaded_validated",
-      "verified_on": "2026-09-18"
+      "verified_on": "2026-09-18",
+      "benchmark_eligible": false,
+      "use_decisions": [
+        {
+          "use": "Entrada macro trimestral de un experimento",
+          "gap": "El contexto macro necesita versiones fechadas de cada serie.",
+          "decision": "excluded",
+          "evidence": "El fin del trimestre no es la fecha de publicación y la edición actual revisa el pasado."
+        },
+        {
+          "use": "Contraste local de magnitudes trimestrales",
+          "gap": "El contexto macro necesita versiones fechadas de cada serie.",
+          "decision": "admitted_exploratory",
+          "evidence": "Capturas válidas con huella en el índice. La copia inicial tiene 270 filas, 245 series y 2.135 ausencias."
+        }
+      ]
     },
     {
       "id": "french_factors_daily",
@@ -85,7 +115,22 @@
       "pit_limitations": "Factores y retornos revisados, cambio FIZ/CIZ documentado por el proveedor. No contiene precios por acción ni historial completo de exclusiones.",
       "geography": "US",
       "status": "downloaded_validated",
-      "verified_on": "2026-09-18"
+      "verified_on": "2026-09-18",
+      "benchmark_eligible": false,
+      "use_decisions": [
+        {
+          "use": "Revisión de la convención del factor de mercado del objetivo residual",
+          "gap": "El objetivo residual necesita un factor de mercado con una convención documentada.",
+          "decision": "pending",
+          "evidence": "El factor diario va de cierre a cierre y el protocolo usa el intervalo de apertura a cierre. El archivo corriente incorpora revisiones y el cambio FIZ/CIZ."
+        },
+        {
+          "use": "Sustituir el factor de mercado del objetivo",
+          "gap": "El objetivo residual necesita un factor de mercado con una convención documentada.",
+          "decision": "excluded",
+          "evidence": "Cambiar el factor crea otra identidad de supervisión según docs/data/target-factor-revisions.md y este archivo no es point-in-time."
+        }
+      ]
     },
     {
       "id": "ecb_usd_eur",
@@ -108,7 +153,16 @@
       "pit_limitations": "Referencia USD por EUR, no cotización ejecutable. Conservar hora de publicación efectiva y revisiones.",
       "geography": "EA_US",
       "status": "downloaded_validated",
-      "verified_on": "2026-09-18"
+      "verified_on": "2026-09-18",
+      "benchmark_eligible": false,
+      "use_decisions": [
+        {
+          "use": "Tipo USD/EUR como contexto de un experimento",
+          "gap": "El catálogo macro incluye el tipo USD/EUR con disponibilidad FED_H10.",
+          "decision": "pending",
+          "evidence": "La consulta cubre 90 días naturales del presente. El catálogo macro prevé DEXUSEU con versiones y esta descarga no reconstruye publicaciones anteriores."
+        }
+      ]
     },
     {
       "id": "nyfed_gscpi",
@@ -132,7 +186,16 @@
       "pit_limitations": "Backcast anterior a su presentación pública en 2022 y revisiones del método. No utilizar toda la historia como dato público contemporáneo.",
       "geography": "GLOBAL",
       "status": "failed",
-      "verified_on": "2026-09-18"
+      "verified_on": "2026-09-18",
+      "benchmark_eligible": false,
+      "use_decisions": [
+        {
+          "use": "Libro XLSX del GSCPI",
+          "gap": "El catálogo macro incluye la presión global de cadenas de suministro.",
+          "decision": "excluded",
+          "evidence": "HTTP 200 con un ZIP sin libro ni hojas. Lo sustituye el CSV de versiones nyfed_gscpi_vintages."
+        }
+      ]
     },
     {
       "id": "cboe_vix",
@@ -155,7 +218,16 @@
       "pit_limitations": "Índice de volatilidad implícita, no activo directamente negociable ni retorno realizado. No garantiza un feed en tiempo real.",
       "geography": "US",
       "status": "downloaded_validated",
-      "verified_on": "2026-09-18"
+      "verified_on": "2026-09-18",
+      "benchmark_eligible": false,
+      "use_decisions": [
+        {
+          "use": "Volatilidad implícita como contexto de un experimento",
+          "gap": "El catálogo macro de 140 indicadores no incluye VIX.",
+          "decision": "pending",
+          "evidence": "Archivo corriente sin versiones ni hora original por observación. Cboe reserva sus derechos y no hay permiso de redistribución acreditado."
+        }
+      ]
     },
     {
       "id": "treasury_yields",
@@ -178,7 +250,22 @@
       "pit_limitations": "Rendimientos par de referencia, no precios ni retornos de bonos. La fecha de referencia no prueba disponibilidad al cierre de la acción.",
       "geography": "US",
       "status": "downloaded_validated",
-      "verified_on": "2026-09-18"
+      "verified_on": "2026-09-18",
+      "benchmark_eligible": false,
+      "use_decisions": [
+        {
+          "use": "Curva de tipos como entrada de un experimento",
+          "gap": "Los rendimientos del catálogo macro necesitan disponibilidad H.15.",
+          "decision": "excluded",
+          "evidence": "El catálogo macro asigna a DGS3MO hasta DGS30 la vía ALFRED o un archivo de publicación. Esta consulta mensual no acredita correcciones ni su hora."
+        },
+        {
+          "use": "Contraste local de valores de la curva con H.15",
+          "gap": "Los rendimientos del catálogo macro necesitan disponibilidad H.15.",
+          "decision": "admitted_exploratory",
+          "evidence": "Capturas válidas con huella en el índice y observaciones diarias del mes consultado."
+        }
+      ]
     },
     {
       "id": "sec_aapl_submissions",
@@ -201,7 +288,16 @@
       "pit_limitations": "No equivale a texto de informes ni a una tabla histórica completa de pertenencia bursátil. Separar aceptación y disponibilidad efectiva.",
       "geography": "US",
       "status": "failed",
-      "verified_on": "2026-09-18"
+      "verified_on": "2026-09-18",
+      "benchmark_eligible": false,
+      "use_decisions": [
+        {
+          "use": "Metadatos de presentaciones con hora de aceptación",
+          "gap": "La fecha de cierre de un fundamental no equivale a su publicación.",
+          "decision": "pending",
+          "evidence": "HTTP 403 el 18 de septiembre de 2026. Sigue registrado como fallo hasta una comprobación permitida, sin cambiar de identidad ni de red."
+        }
+      ]
     },
     {
       "id": "sec_aapl_companyfacts",
@@ -225,7 +321,16 @@
       "pit_limitations": "Duplicados por presentación, periodos superpuestos, unidades y taxonomías. No incluye necesariamente conceptos personalizados ni todos los desgloses.",
       "geography": "US",
       "status": "failed",
-      "verified_on": "2026-09-18"
+      "verified_on": "2026-09-18",
+      "benchmark_eligible": false,
+      "use_decisions": [
+        {
+          "use": "Hechos XBRL con fecha de presentación",
+          "gap": "La fecha de cierre de un fundamental no equivale a su publicación.",
+          "decision": "pending",
+          "evidence": "HTTP 403 el 18 de septiembre de 2026. Sigue registrado como fallo hasta una comprobación permitida, sin cambiar de identidad ni de red."
+        }
+      ]
     },
     {
       "id": "gdelt_article_metadata",
@@ -249,7 +354,16 @@
       "pit_limitations": "Máximo 25 resultados. seenDate no es prueba de publicación original, ni de exhaustividad o relevancia para una empresa. No se descargan cuerpos de noticias ni imágenes.",
       "geography": "GLOBAL",
       "status": "failed",
-      "verified_on": "2026-09-18"
+      "verified_on": "2026-09-18",
+      "benchmark_eligible": false,
+      "use_decisions": [
+        {
+          "use": "Metadatos de noticias para descubrir publicaciones",
+          "gap": "Las noticias US conservadas comienzan en abril de 2009 y las chinas en marzo de 2020.",
+          "decision": "pending",
+          "evidence": "HTTP 200 con un esquema no válido y HTTP 429 en el diagnóstico posterior. seendate no acredita la publicación original y la consulta solo cubre el índice reciente."
+        }
+      ]
     },
     {
       "id": "nyfed_gscpi_vintages",
@@ -274,7 +388,22 @@
       "geography": "GLOBAL",
       "status": "downloaded_validated",
       "verified_on": "2026-09-18",
-      "fallback_for": "nyfed_gscpi"
+      "fallback_for": "nyfed_gscpi",
+      "benchmark_eligible": false,
+      "use_decisions": [
+        {
+          "use": "Fuente del GSCPI en la edición histórica",
+          "gap": "El catálogo macro incluye la presión global de cadenas de suministro.",
+          "decision": "excluded",
+          "evidence": "La edición descarga el mismo CSV con macro_gscpi, su recibo y la regla NYFED_MONTHLY_VINTAGES de docs/data/gscpi-vintages.md. Esta copia no la sustituye."
+        },
+        {
+          "use": "Estudio local de revisiones entre columnas de versión",
+          "gap": "El catálogo macro incluye la presión global de cadenas de suministro.",
+          "decision": "admitted_exploratory",
+          "evidence": "La copia inicial tiene 348 filas y 57 columnas de versión. Las etiquetas mensuales no son horas de publicación."
+        }
+      ]
     },
     {
       "id": "fed_monetary_rss",
@@ -299,7 +428,16 @@
       "geography": "US",
       "status": "downloaded_validated",
       "verified_on": "2026-09-18",
-      "fallback_for": "gdelt_article_metadata"
+      "fallback_for": "gdelt_article_metadata",
+      "benchmark_eligible": false,
+      "use_decisions": [
+        {
+          "use": "Comunicados monetarios oficiales como modalidad textual",
+          "gap": "Los eventos oficiales de política monetaria necesitan una hora de publicación declarada.",
+          "decision": "pending",
+          "evidence": "Quince entradas de abril a septiembre de 2026 en la copia inicial. pubDate requiere auditoría y el feed no reconstruye comunicados anteriores."
+        }
+      ]
     },
     {
       "id": "apple_fy2026_q3_financials",
@@ -330,7 +468,22 @@
       "publication_time_verified": false,
       "reference_period_end": "2026-06-27",
       "discovery_evidence": "Enlace View PDF y href extraídos del comunicado oficial de Apple.",
-      "acquisition_scope": "Un documento, dentro de 10 MiB adicionales. Alternativa corporativa directa a la indisponibilidad de SEC, sin consultas adicionales a SEC."
+      "acquisition_scope": "Un documento, dentro de 10 MiB adicionales. Alternativa corporativa directa a la indisponibilidad de SEC, sin consultas adicionales a SEC.",
+      "benchmark_eligible": false,
+      "use_decisions": [
+        {
+          "use": "Ejemplo de extracción de tablas y texto de un documento de resultados",
+          "gap": "La fecha de cierre de un fundamental no equivale a su publicación.",
+          "decision": "admitted_exploratory",
+          "evidence": "PDF de tres páginas aceptado por pdfinfo, ligado al comunicado del 30 de julio de 2026 sin hora original verificada."
+        },
+        {
+          "use": "Fundamentales de entrada de un experimento",
+          "gap": "La fecha de cierre de un fundamental no equivale a su publicación.",
+          "decision": "excluded",
+          "evidence": "Un emisor y un documento, sin historial de versiones ni permiso de redistribución acreditado."
+        }
+      ]
     },
     {
       "id": "stooq_aapl_eod",
@@ -355,7 +508,16 @@
       "status": "blocked_at_source_discovery",
       "verified_on": "2026-09-18",
       "requested_example": "AAPL.US",
-      "discovery_evidence": "La portada oficial devolvió HTTP 200 con exigencia de JavaScript para verificar el navegador. No se resolvió el reto ni se consultaron endpoints de descarga deducidos de terceros."
+      "discovery_evidence": "La portada oficial devolvió HTTP 200 con exigencia de JavaScript para verificar el navegador. No se resolvió el reto ni se consultaron endpoints de descarga deducidos de terceros.",
+      "benchmark_eligible": false,
+      "use_decisions": [
+        {
+          "use": "Precios EOD de una acción como contraste externo",
+          "gap": "Los precios de FinMultiTime necesitan contrastes externos de ajustes y ausencias.",
+          "decision": "excluded",
+          "evidence": "La verificación de navegador impidió descubrir el enlace y revisar las condiciones. No se descargaron precios ni se resolvió el reto."
+        }
+      ]
     }
   ]
 }

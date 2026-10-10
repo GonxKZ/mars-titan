@@ -31,6 +31,48 @@ y sus SHA-256. Las copias quedan separadas de las futuras salidas de las colas.
 `configuration_sha256` exige los mismos bytes en la ruta canónica y en la copia,
 también al leer desde caché. Una configuración presente con otra huella se rechaza.
 
+## Campañas por ventanas de A y A v2
+
+La campaña con máscaras desde 2000 tiene cuatro etapas por variante y cada una escribe
+su propio `summary.json` con el mapa de trabajos confirmados: la campaña base, los
+adaptadores por etapas, la ablación de modalidades y las políticas. La configuración
+declara las ocho como fuentes de tipo `window_campaign`, con su etapa y su declaración
+en `configs/`. Sus salidas previstas son `data/interim/historical-masked-a/<etapa>` y
+`data/interim/historical-masked-a-v2/<etapa>`, con `base`, `adapters`, `ablation` y
+`policies` como etapa. `run_masked_campaign.py rolling` debe recibir esas rutas en
+`--output`, `--adapter-output`, `--ablation-output` y `--rl-output` para que el
+observatorio las encuentre. Mientras no exista el resumen, la etapa aparece como
+declarada y sin resumen, nunca como trabajos completados.
+
+Estas fuentes no producen registros por ejecución. A suma 22.188 trabajos entre sus
+etapas y A v2 19.416, muy por encima del presupuesto por defecto de 4.096 registros, y
+la web descarga todas las páginas del historial al abrirse.
+`observatory/window_campaigns.py` convierte cada resumen en una matriz de ámbito,
+ventana, brazo y nombre con el estado de cada trabajo, la fecha de su recibo y las
+curvas por época de hasta ocho intentos abiertos. El mismo módulo alimenta el servidor
+en directo. La etapa de políticas usa identificadores de seis partes
+(`ámbito/mercado/ventana/predictor/brazo/nombre`), así que su ámbito lleva el mercado
+y su brazo el predictor. Las selecciones de la cadena de la etapa de adaptadores no
+tienen recibo en `jobs/` y se confirman con su `selection.json`. Un trabajo sin
+confirmar con una carpeta `attempt-*` o `run` cuenta como intento sin confirmar. El
+resumen de la etapa de políticas incluye métricas financieras, que no se copian.
+
+Cada matriz se publica en `windows/<sha256>.json` y el índice lleva solo su etapa, su
+declaración, su estado y los recuentos de trabajos, confirmados e intentos. La web
+descarga únicamente la matriz de la campaña elegida. Cada brazo lleva el modelo del
+catálogo: los adaptadores, el padre congelado y la cadena heredan el de su brazo base,
+`titans_*` es Titans-MAC, `mars_titan_*` es MARS-TITAN, `cm_v1_*` es CM-v1 y en las
+políticas cuenta el algoritmo o la referencia. Una prueba recorre los planes reales de
+las ocho etapas y exige que ningún brazo quede como modelo no identificado.
+
+Recorrer los 13.029 trabajos de los adaptadores de A con la mitad confirmados cuesta
+0,11 s, frente a 0,16 s con rutas de `pathlib` (mediana de cinco lecturas en esta
+máquina). Con el mismo resumen solo pueden cambiar los intentos abiertos, así que el
+recolector reutiliza la matriz durante 60 segundos y la recalcula en cuanto cambia la
+identidad del resumen. Las matrices que el índice deja de enumerar se borran de la
+salida una hora después de su última escritura, porque una publicación en curso o un
+navegador con el índice anterior todavía pueden pedirlas.
+
 ## Recolección local
 
 Desde un checkout dedicado al seguimiento, la siguiente orden observa las fuentes
@@ -189,9 +231,16 @@ validación, separado del caudal de entrenamiento por época.
 ## Publicación en Pages
 
 La opción `--publish-checkout` recibe un checkout independiente cuya rama debe ser
-`observatory-data`. Esa rama contiene únicamente `observatory.json` y las páginas
-JSON saneadas. Cada publicación crea un commit `chore(observatory)` y un push
-normal. Nunca cambia el checkout científico ni fuerza la historia remota.
+`observatory-data`. Esa rama contiene únicamente `observatory.json`, las páginas JSON
+saneadas y las matrices de las campañas por ventanas. Cada publicación crea un commit
+`chore(observatory)` y un push normal. Nunca cambia el checkout científico ni fuerza la
+historia remota.
+
+Cada publicación retira de la rama las páginas y matrices que el índice ya no enumera.
+Antes se conservaban todas: el 10 de octubre la rama tenía 7.773 páginas y 1,8 GB,
+mientras el índice solo enumeraba 51, y el workflow copiaba todas al paquete de Pages.
+Las versiones anteriores siguen en la historia de Git, y la página desplegada lee el
+índice y sus documentos del mismo commit.
 
 Los cambios se envían cada cinco minutos. Un cambio de estado terminal tiene
 prioridad en la siguiente recolección. Los errores de transporte aplazan el envío

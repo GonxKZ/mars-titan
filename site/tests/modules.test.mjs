@@ -11,7 +11,7 @@ import { validateManifest, decodeBundle, validateIndex, sha256Hex } from "../tra
 import { parseHash, serializeHash, runToken, rangeToken, parseRange, DEFAULTS } from "../urlstate.mjs";
 import {
   groupCampaigns, campaignMatrix, estimateRemaining, curveFacets, crossSection, curveSummary, quantile,
-  relativeToGroup, completionTimeline, resourcePoints, throughputPoints, financialPoints, liveCampaignMatrix,
+  relativeToGroup, completionTimeline, resourcePoints, throughputPoints, financialPoints, windowCampaignMatrix,
 } from "../model.mjs";
 import { ConditionalResource, PageStore, LiveStream, readLimited } from "../sources.mjs";
 import { FrameScheduler, throttle } from "../scheduler.mjs";
@@ -308,12 +308,27 @@ test("la campaña leída en directo decodifica el vocabulario y estima con recib
     vocabulary: { scopes: ["us"], windows: ["fold-001", "fold-000"], arms: ["gru"], names: ["search-0", "finalist-s43", "carry-s44"] },
     cells: [[0, 0, 0, 0, "done", "2026-10-06T12:00:00Z"], [0, 1, 0, 1, "attempt", null], [0, 1, 0, 2, "pending", null]],
   };
-  const matrix = liveCampaignMatrix(state);
+  const matrix = windowCampaignMatrix(state);
   assert.deepEqual(matrix.windows, ["fold-000", "fold-001"]);
   assert.equal(matrix.done, 1);
   assert.equal(matrix.attempts, 1);
   assert.deepEqual(matrix.rows[0].cells.get("fold-000").map(mark => mark.seed), [43, 44]);
   assert.equal(matrix.estimate, null, "una sola confirmación no basta para estimar");
+  assert.equal(matrix.rows[0].model, null, "un estado sin catálogo no inventa modelo");
+});
+
+test("la matriz de políticas separa mercado y predictor y conserva el modelo de cada brazo", () => {
+  const state = {
+    vocabulary: { scopes: ["US+CN/US", "US+CN/CN"], windows: ["fold-002"], arms: ["gru/klpo_terminal", "gru/cash"], names: ["fit-s42", "reference"] },
+    models: { "gru/klpo_terminal": "klpo", "gru/cash": "cash" },
+    cells: [[0, 0, 0, 0, "done", "2026-10-06T12:00:00Z"], [1, 0, 0, 0, "pending", null], [0, 0, 1, 1, "done", "2026-10-06T13:00:00Z"]],
+  };
+  const matrix = windowCampaignMatrix(state);
+  assert.deepEqual(matrix.rows.map(row => [row.scope, row.arm, row.model]), [
+    ["US+CN/CN", "gru/klpo_terminal", "klpo"], ["US+CN/US", "gru/cash", "cash"], ["US+CN/US", "gru/klpo_terminal", "klpo"],
+  ]);
+  assert.deepEqual(matrix.rows[1].cells.get("fold-002").map(mark => mark.seed), [null], "una referencia no tiene semilla");
+  assert.equal(matrix.done, 2);
 });
 
 function response(status, body = "", headers = {}) {
