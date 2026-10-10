@@ -43,10 +43,14 @@ from mars_titan.memory.financial_consumers import (
 from mars_titan.memory.financial_observations import FinancialObservationSource
 from mars_titan.memory.retention_bank import RetentionConfig
 from mars_titan.models.quantile_head import PINBALL, QUANTILE_HEAD, pinball_loss
-from mars_titan.models.titans.config import canonical
+from mars_titan.models.titans.config import MAX_BLOCK_ROWS, MAX_STATE_BYTES, canonical
 from mars_titan.models.titans.episodic_readout import EpisodicReadout, apply_episodic_readout
 from mars_titan.models.titans.financial import FinancialPredictor
-from mars_titan.models.titans.financial_inputs import DecisionBatch, validated_cpu_batch
+from mars_titan.models.titans.financial_inputs import (
+    DecisionBatch,
+    device_tensor,
+    validated_cpu_batch,
+)
 from mars_titan.models.titans.frozen_financial import _implementation, _numerics
 
 from .checkpoints import (
@@ -56,7 +60,8 @@ from .checkpoints import (
     restore_rng,
     save_training_state,
 )
-from .financial_run import Paused, _compatible, _read_report, _split, _stack
+from .financial_run import FlowStates, Paused, _compatible, _read_report
+from .kernel_policy import declared_policy, require_policy, valid_precision
 from .learning_hold import require_learning_allowed
 from .search_cases import case_options, checked_search_cases
 from .selection import (
@@ -117,17 +122,19 @@ class ReadoutRecipe:
     max_working_bytes: int = 128 * 1024**2
     checkpoint_updates: int = 256
     checkpoint_seconds: float = 900.0
+    # None conserva la configuración numérica del proceso y la identidad anterior.
+    precision: str | None = None
 
     def __post_init__(self):
         validate_selection(self.selection, epochs=self.epochs)
         integers = (
             (self.update_instants, 1, 256),
             (self.epochs, 1, 1000),
-            (self.block_rows, 1, 256),
+            (self.block_rows, 1, MAX_BLOCK_ROWS),
             (self.neighbors, 1, 8),
             (self.bank_capacity, 8, 1024),
             (self.bank_seed, 0, 2**64 - 1),
-            (self.max_working_bytes, 1024, 128 * 1024**2),
+            (self.max_working_bytes, 1024, MAX_STATE_BYTES),
             (self.checkpoint_updates, 1, 1_000_000),
         )
         numbers = (
@@ -145,6 +152,7 @@ class ReadoutRecipe:
             or self.weight_decay < 0
             or not 1e-4 <= self.temperature <= 100
             or self.checkpoint_seconds <= 0
+            or not valid_precision(self.precision)
             or (
                 clip is not None
                 and (type(clip) not in (int, float) or not math.isfinite(clip) or clip <= 0)
@@ -156,10 +164,13 @@ class ReadoutRecipe:
             )
 
     def identity(self):
+        fields = asdict(self)
+        if fields["precision"] is None:
+            fields.pop("precision")
         return dict(
             schema_version=1,
             recipe=RECIPE,
-            **asdict(self),
+            **fields,
             optimizer="AdamW",
             trained_parameters="episodic_readout_only_parent_frozen",
             update_unit="decision_instants_per_segment_no_bptt",
@@ -311,7 +322,7 @@ def _counters():
 class _Pass:
     """Estado de un recorrido. Se persisten flujos, pendientes, banco, admisión y errores."""
 
-    flows: dict = field(default_factory=dict)
+    flows: FlowStates = field(default_factory=FlowStates)
     bank: object = None
     staged: list = field(default_factory=list)
     pending: dict = field(default_factory=dict)
@@ -397,6 +408,8 @@ class MarsTitanInference:
         if admission != "m0" and not hasattr(native, "MemoryRecord"):
             raise ValueError("El banco necesita el enlace episódico nativo")
         self.predictor, self.readout, self.recipe = predictor, readout, recipe
+        # La política se aplica antes de calcular nada y antes de registrar `_numerics`.
+        self.kernel_policy = declared_policy(recipe.precision)
         self.admission, self.retention, self.native, self.codec = (
             admission,
             retention,
@@ -423,10 +436,10 @@ class MarsTitanInference:
 
     def _prepare_block(self, run, batch, plan, *, train):
         """Preparar el bloque desde el estado previo de sus flujos y avanzar su memoria."""
-        state = _stack([run.flows[flow] for flow in batch.flow_ids])
+        state = run.flows.gather(batch.flow_ids)
         with torch.no_grad():
             prepared = self.predictor.prepare(batch, state, **plan)
-        run.flows.update(_split(prepared.next_state))
+        run.flows.put(prepared.next_state)
         return prepared
 
     def _block_extra(self, batch, plan):
@@ -482,7 +495,7 @@ class MarsTitanInference:
             batch = DecisionBatch.from_validated(cpu, device=self.device, dtype=self.dtype)
             new = tuple(flow for flow in batch.flow_ids if flow not in run.flows)
             if new:
-                run.flows.update(_split(predictor.initial_state(new)))
+                run.flows.put(predictor.initial_state(new))
             prepared = self._prepare_block(run, batch, plan, train=train and not warmup)
             size = len(batch.flow_ids)
             run.counters["observations"] += size
@@ -780,6 +793,9 @@ class ReadoutTrainer(MarsTitanInference):
             numerics=_numerics(),
             final_test_opened=False,
         )
+        if self.kernel_policy is not None:
+            # Sin precisión declarada la identidad conserva su forma anterior.
+            self.identity["kernel_policy"] = self.kernel_policy
         # La identidad se compara con su copia JSON del informe, así que se normaliza aquí.
         self.identity = json.loads(canonical(self.identity))
         self.run_id = hashlib.sha256(canonical(self.identity).encode()).hexdigest()
@@ -812,6 +828,7 @@ class ReadoutTrainer(MarsTitanInference):
             or _numerics() != self.identity["numerics"]
         ):
             raise ValueError("El código o la configuración numérica cambiaron durante el recorrido")
+        require_policy(self.recipe.precision, self.identity.get("kernel_policy"))
         self.predictor.verify_parameter_identity()
         if self.predictor._parameter_id != self.identity["parent"]["parameters_sha256"]:
             raise ValueError("El padre congelado cambió durante el ajuste del lector")
@@ -829,7 +846,10 @@ class ReadoutTrainer(MarsTitanInference):
             matured = {}
             for flow, decision_at, block, value in run.used:
                 matured.setdefault(block, {})[flow, decision_at] = value
-            loss_sum = 0.0
+            # Las comprobaciones y pérdidas de cada bloque se leen juntas al final del tramo,
+            # con una sola sincronización. El error es el de la primera comprobación fallida
+            # en el orden de antes y se lanza antes del paso.
+            checks, messages, losses = [], [], []
             for block in sorted(matured):
                 record = run.blocks[block]
                 result = apply_episodic_readout(
@@ -841,15 +861,20 @@ class ReadoutTrainer(MarsTitanInference):
                     cutoff=record["cutoff"],
                     differentiable=True,
                 )
-                if not torch.equal(result.point_predictions.detach(), record["issued"]):
+                repeated = result.point_predictions.detach()
+                if repeated.shape != record["issued"].shape:
                     raise ValueError("La repetición del bloque no reproduce su predicción emitida")
+                checks.append((repeated == record["issued"]).all())
+                messages.append("La repetición del bloque no reproduce su predicción emitida")
                 labels = matured[block]
                 positions = [i for i, key in enumerate(record["keys"]) if key in labels]
-                index = torch.tensor(positions, dtype=torch.int64, device=self.device)
-                target = torch.tensor(
-                    [labels[record["keys"][i]] for i in positions],
-                    dtype=self.dtype,
-                    device=self.device,
+                index = device_tensor(
+                    np.asarray(positions, dtype=np.int64), self.device, torch.int64
+                )
+                target = device_tensor(
+                    np.asarray([labels[record["keys"][i]] for i in positions], dtype=np.float64),
+                    self.device,
+                    self.dtype,
                 )
                 selected = replace(
                     result,
@@ -859,10 +884,17 @@ class ReadoutTrainer(MarsTitanInference):
                     else result.quantiles.index_select(0, index),
                 )
                 loss = self._loss(selected, target) * (len(positions) / total)
-                if not torch.isfinite(loss).item():
-                    raise ValueError("La pérdida del tramo no es finita")
+                checks.append(torch.isfinite(loss))
+                messages.append("La pérdida del tramo no es finita")
                 self._backward_block(loss, record)
-                loss_sum += float(loss.detach())
+                losses.append(loss.detach())
+            flags = torch.stack(checks).tolist()
+            for valid, message in zip(flags, messages, strict=True):
+                if not valid:
+                    raise ValueError(message)
+            loss_sum = 0.0
+            for value in torch.stack(losses).tolist():
+                loss_sum += value
             torch.nn.utils.clip_grad_norm_(
                 self.trainable, self.recipe.max_grad_norm or math.inf, error_if_nonfinite=True
             )
@@ -923,7 +955,7 @@ class ReadoutTrainer(MarsTitanInference):
         predictor, size = self.predictor, self.predictor.config.max_batch
         flows = sorted(run.flows)
         fast = [
-            predictor.export_state_cpu(_stack([run.flows[f] for f in flows[i : i + size]]))
+            predictor.export_state_cpu(run.flows.gather(flows[i : i + size]))
             for i in range(0, len(flows), size)
         ]
         keys = sorted(run.pending)
@@ -1000,7 +1032,7 @@ class ReadoutTrainer(MarsTitanInference):
         if run.bank is not None:
             run.bank = run.bank.restore(_unpack_bank(payload["bank"]))
         for item in payload["fast"]:
-            run.flows.update(_split(self.predictor.restore_state(item, device=self.device)))
+            run.flows.put(self.predictor.restore_state(item, device=self.device))
         banked = run.bank is not None
         pending = payload["pending"]
         for flow, at, entry in zip(

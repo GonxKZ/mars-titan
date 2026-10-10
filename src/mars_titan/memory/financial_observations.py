@@ -17,6 +17,7 @@ from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.environments import corpus_source
 from mars_titan.environments.corpus_source import _ordered_parquet
+from mars_titan.models.titans.config import MAX_BLOCK_ROWS
 from mars_titan.models.titans.financial_inputs import FinancialInputSpec, validated_cpu_batch
 from mars_titan.training import corpus_inputs
 from mars_titan.training.corpus_inputs import (
@@ -272,6 +273,28 @@ def _observation(dataset, asset, decoded, row, at, prices):
     )
 
 
+# Ventanas que `_window_contexts` transforma de una vez, el mismo tope que en `corpus_inputs`.
+_WINDOW_ROWS = 256
+
+
+def _block_window_contexts(windows, ends, context):
+    """Ventanas de un bloque de hasta MAX_BLOCK_ROWS filas, por tramos de `_WINDOW_ROWS`.
+
+    El resultado de `_window_contexts` por fila no depende de las demás filas, así que
+    transformar por tramos da los mismos bits que una sola llamada, y un bloque de la receta
+    mayor que 256 filas ya no choca con su límite de memoria.
+    """
+    ends = np.asarray(ends)
+    return np.concatenate(
+        [
+            _window_contexts(
+                windows[start : start + _WINDOW_ROWS], ends[start : start + _WINDOW_ROWS], context
+            )
+            for start in range(0, len(ends), _WINDOW_ROWS)
+        ]
+    )
+
+
 class _BlockReader:
     """Conservar el último grupo decodificado de cada activo y montar bloques por instante.
 
@@ -296,8 +319,8 @@ class _BlockReader:
     STALE_EVENTS = 16
 
     def __init__(self, source, block_rows, max_cached_bytes, executor=None):
-        if type(block_rows) is not int or not 1 <= block_rows <= 256:
-            raise ValueError("El bloque de activos debe tener entre 1 y 256 filas")
+        if type(block_rows) is not int or not 1 <= block_rows <= MAX_BLOCK_ROWS:
+            raise ValueError(f"El bloque de activos debe tener entre 1 y {MAX_BLOCK_ROWS} filas")
         if type(max_cached_bytes) is not int or not 1024**2 <= max_cached_bytes <= 8 * 1024**3:
             raise ValueError("La caché de grupos debe estar entre 1 MiB y 8 GiB")
         self.source, self.block_rows, self.limit = source, block_rows, max_cached_bytes
@@ -459,7 +482,7 @@ class _BlockReader:
             if values.ndim == 2 and not np.isfinite(values).all():
                 raise ValueError("Una modalidad contiene valores no finitos")
         if dataset.price_window is None:
-            batch["inputs"]["prices"][:] = _window_contexts(windows, ends, context)
+            batch["inputs"]["prices"][:] = _block_window_contexts(windows, ends, context)
             return batch
         # Con el contrato de ventanas por sesión del calendario, cada activo forma sus ventanas
         # con su calendario y sus ausencias de mercado, igual que en `_observation`.

@@ -651,10 +651,17 @@ def _rate(model, dataset, partition, *, train, size, seed, warmup, batches, devi
     return rows / (time.perf_counter() - start), rows
 
 
-def _reference(case, dataset):
-    """Referencia neuronal del caso con los pesos iniciales de su semilla."""
+def _reference(case, dataset, batch_size):
+    """Referencia neuronal del caso con los pesos iniciales de su semilla.
+
+    El Transformer admite el lote medido como en `reference_run`, sin cambiar sus pesos.
+    """
     from mars_titan.budget_training import seed_run
-    from mars_titan.models.baselines.multimodal import PRESENCE_FUSION, MultimodalReference
+    from mars_titan.models.baselines.multimodal import (
+        PRESENCE_FUSION,
+        MultimodalReference,
+        transformer_batch_options,
+    )
     from mars_titan.models.quantile_head import QUANTILE_HEAD
 
     seed_run(case["seed"])
@@ -666,6 +673,7 @@ def _reference(case, dataset):
         mask_fusion=PRESENCE_FUSION,
         head=QUANTILE_HEAD,
         **case["architecture"],
+        **transformer_batch_options(case["kind"], batch_size),
     )
     return model, {key: value.shape[1:] for key, value in first["inputs"].items()}
 
@@ -701,7 +709,7 @@ def measure_rates(campaign, view, *, batches=50, warmup=5):
         for arm, candidates in campaign["neural"]["candidates"].items():
             rates[arm] = {}
             for name, case in candidates:
-                model, _ = _reference(case, dataset)
+                model, _ = _reference(case, dataset, size)
                 rates[arm][name] = _batch_rates(
                     model.to(device),
                     dataset,
@@ -744,7 +752,7 @@ def measure_posttraining(stage, view, *, batches=50, warmup=5):
         for arm, family in stage["families"].items():
             rates[arm] = {}
             for name, case in campaign["neural"]["candidates"][arm]:
-                model, shapes = _reference(case, dataset)
+                model, shapes = _reference(case, dataset, budget["batch_size"])
                 parent = FrozenParent(model, dict(identity, model=family), shapes, device)
                 points = rates[arm][name] = {}
                 for item in adapter_matrix.cases(

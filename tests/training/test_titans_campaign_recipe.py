@@ -39,8 +39,29 @@ def digest(recipe):
     return hashlib.sha256(canonical(recipe.identity()).encode()).hexdigest()
 
 
-def options(value):
-    return {key: item for key, item in value["predictor"].items() if key != "dtype"}
+# Opciones de ejecución medidas en #363. Cambian el orden de las sumas y la configuración
+# numérica, no el modelo ni sus hiperparámetros, y entran en la identidad.
+EXECUTION = dict(block_rows=1024, accumulation_rows=1024, precision="fp32_strict")
+PREDICTOR_EXECUTION = dict(max_batch=1024, max_state_bytes=128 * 1024**2)
+
+
+def options(value, *, execution=True):
+    excluded = {"dtype"} | (set() if execution else set(PREDICTOR_EXECUTION))
+    return {key: item for key, item in value["predictor"].items() if key not in excluded}
+
+
+def without_execution(campaign):
+    """La receta de campaña con las opciones de ejecución de la v1."""
+    recipe = {k: v for k, v in campaign["recipe"].items() if k not in EXECUTION}
+    return dict(campaign, recipe=dict(recipe, block_rows=128, accumulation_rows=None))
+
+
+def test_campaign_recipe_declares_the_measured_execution_options():
+    campaign = document()
+    assert {key: campaign["recipe"][key] for key in EXECUTION} == EXECUTION
+    assert {key: campaign["predictor"][key] for key in PREDICTOR_EXECUTION} == PREDICTOR_EXECUTION
+    identity = wf.case_recipe(campaign, "lr1e-3").identity()
+    assert {key: identity[key] for key in EXECUTION} == EXECUTION
 
 
 def test_v1_recipes_keep_their_files_and_identities():
@@ -50,17 +71,20 @@ def test_v1_recipes_keep_their_files_and_identities():
 
 
 def test_campaign_recipe_with_everything_disabled_gives_the_v1_identities():
-    campaign, (v1_recipe, v1) = document(), load_recipe(V1_QUANTILE)
-    # El caso con la tasa v1 reproduce la identidad de la receta v1, sin acumulación.
+    campaign, (v1_recipe, v1) = without_execution(document()), load_recipe(V1_QUANTILE)
+    # Sin las opciones de ejecución, el caso con la tasa v1 reproduce la identidad v1.
     assert wf.case_recipe(campaign, "lr1e-3").identity() == v1_recipe.identity()
     assert digest(wf.case_recipe(campaign, "lr1e-3")) == IDENTITY_RECIPES[str(V1_QUANTILE)]
     assert digest(wf.case_recipe(campaign, "lr1e-4")) != IDENTITY_RECIPES[str(V1_QUANTILE)]
-    disabled = options(campaign) | dict(memory_residual_layer_norm=False)
+    assert digest(wf.case_recipe(document(), "lr1e-3")) != IDENTITY_RECIPES[str(V1_QUANTILE)]
+    disabled = options(campaign, execution=False) | dict(memory_residual_layer_norm=False)
     assert options(v1) == {k: v for k, v in disabled.items() if k != "memory_residual_layer_norm"}
     for variant in VARIANTS:
         old = FinancialConfig(specification(), variant=variant, seed=42, **options(v1))
         same = FinancialConfig(specification(), variant=variant, seed=42, **disabled)
-        new = FinancialConfig(specification(), variant=variant, seed=42, **options(campaign))
+        new = FinancialConfig(
+            specification(), variant=variant, seed=42, **options(campaign, execution=False)
+        )
         assert same.identity() == old.identity()
         assert new.identity() == old.identity() | dict(memory_residual_layer_norm=True)
 
@@ -118,7 +142,8 @@ def test_each_search_case_applies_the_protocol_rule_and_changes_only_its_rate(pr
         recipe, value, walk = wf._recipe(CAMPAIGN, rule, name)
         assert recipe.learning_rate == rate and recipe.max_grad_norm == 1.0
         assert recipe.epochs == rule["max_epochs"] == 30
-        assert recipe.accumulation_rows is None
+        assert recipe.accumulation_rows == EXECUTION["accumulation_rows"]
+        assert recipe.precision == EXECUTION["precision"]
         assert walk["warmup_months"] == 12 and value["status"] == "declared_not_executed"
         recipes[name] = recipe.identity()
     assert {k for k in recipes["lr1e-4"] if recipes["lr1e-4"][k] != recipes["lr1e-3"][k]} == {

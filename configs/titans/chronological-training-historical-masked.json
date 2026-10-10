@@ -18,7 +18,9 @@
     "refinements": 1,
     "head": "quantile_head_v1",
     "gate_bias": {"alpha_half_life": 256.0, "eta": 0.5, "theta": 0.05},
-    "memory_residual_layer_norm": true
+    "memory_residual_layer_norm": true,
+    "max_batch": 1024,
+    "max_state_bytes": 134217728
   },
   "recipe": {
     "truncation": 8,
@@ -33,10 +35,11 @@
       "min_delta": 1e-05,
       "stopping": "fixed_budget"
     },
-    "block_rows": 128,
+    "block_rows": 1024,
     "checkpoint_updates": 256,
     "checkpoint_seconds": 900.0,
-    "accumulation_rows": null
+    "accumulation_rows": 1024,
+    "precision": "fp32_strict"
   },
   "walk_forward": {
     "warmup_months": 12,
@@ -49,7 +52,8 @@
     "Receta de la campaña con máscaras desde 2000. Las recetas chronological-training.json y chronological-training-quantile.json siguen siendo v1 y no cambian.",
     "Memoria x + LN(MLP(x)) de la sección 3.3 de las actas junto a gate_bias en los cuatro controles, decidida en #27 con fixtures técnicos. Su efecto con datos reales no se ha medido.",
     "Los dos casos de búsqueda solo cambian la tasa de aprendizaje: 1e-4, la de los casos 0 y 10 del diseño que ajusta cada referencia neuronal, y 1e-3, la de la receta v1. Se elige con session_mae de validación y el mismo presupuesto fijo de 30 épocas por caso.",
-    "accumulation_rows queda en null hasta medir la memoria del tramo en cuda:0 con benchmarks/titans_chronological_memory.py. El valor previsto es 128 si el tramo completo de mac_online no cabe en la GPU con los activos por instante de US. Fijarlo cambia la huella de la receta y la identidad de todos los trabajos Titans, así que se hará antes de lanzar la campaña.",
-    "El caudal en cuda:0 se medirá antes de elegir entre las variantes A y B de #363."
+    "Bloques de 1.024 flujos con acumulación por bloques de 1.024 filas, max_batch 1.024 y 128 MiB de estado, medidos en cuda:0 sobre US+CN fold-012 (reports/engineering/campaign-kernels-20261009). Sin acumulación mac_online no cabe en la fracción de 6 GiB con los activos por instante de US+CN. El bloque y la acumulación solo cambian el orden de las sumas: el lote efectivo de cada actualización sigue siendo el instante completo y el error frente a FP64 queda al nivel de la receta anterior.",
+    "precision fp32_strict desactiva TF32 en cuBLAS y cuDNN y fija float32_matmul_precision en highest. Entra en la identidad de cada trabajo y se comprueba en cada checkpoint.",
+    "El caudal en cuda:0 de cada brazo está en reports/engineering/campaign-kernels-20261009/vram-throughput.json."
   ]
 }

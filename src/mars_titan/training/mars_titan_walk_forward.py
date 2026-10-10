@@ -249,6 +249,8 @@ def _readout(variant, codec, predictor, recipe, seed):
         temperature=recipe.temperature,
         max_working_bytes=recipe.max_working_bytes,
         seed=seed,
+        # El lector atiende los mismos bloques que su padre. Con 256 conserva su identidad.
+        max_batch=predictor.config.max_batch,
     )
     weight = predictor.head.weight
     return EpisodicReadout(config, dtype=weight.dtype, device=weight.device)

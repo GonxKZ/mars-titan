@@ -18,6 +18,10 @@ from mars_titan.models.titans import MemoryConfig, MemoryStability, NeuralMemory
 from mars_titan.models.titans.config import PAPER_PROJECTIONS
 
 # Capturadas en 42e7dbca con memory_stability_traces.py en cuda:0, FP32 y sin TF32.
+# Las huellas financieras se recapturaron cuando el codificador de precios pasó a calcular la
+# última capa solo para el último token (perf/campaign-kernels). Ese cambio altera el redondeo
+# FP32 de los cuantiles, el estado y los gradientes del predictor, no el de la memoria sola.
+# La diferencia con las anteriores es del orden de 1e-7 a 6e-6 en relativo.
 CORE_FP32_CUDA = dict(
     memory=dict(
         fingerprint="0b0555f9f566d5436b08c121a24ab1ec1757ef8fa14aadebef62313795836987",
@@ -26,9 +30,9 @@ CORE_FP32_CUDA = dict(
         gradients="bb1a24ff1164238fb87e3abf03bbf47e4f340164e730cc0ca43bdbc4678f2819",
     ),
     financial=dict(
-        quantiles="1bf52fee41a66ea9c392289c8954db194c494eb12c0477476103caf2958cd603",
-        state="998aa6df5c6a6d042f0313e21c0dc093b2e15387a7edc321ffb65c65967d248f",
-        gradients="41e5578b95b16d47da495e96c252c653b118a62e7f4718457265e0961242bed6",
+        quantiles="563c10d95410b66531e4bb7fc5d1292daa025dd0c221dcbdeee69dc55e2b008a",
+        state="dff88139643708a64751f9e9ea78d930f3aecaf4eb3cc949fd5321701856001d",
+        gradients="0fe78edadc91dbb25b2aa6012faad749008a0cbbd4c6ea1191215f8f29a6ec89",
         unused=[],
     ),
 )
@@ -42,9 +46,9 @@ PROJECTIONS_FP32_CUDA = dict(
         gradients="d3ea938babd2f6840823b86f32beb893cf5d0d4d48b703fb327218245ed293f4",
     ),
     financial=dict(
-        quantiles="722a8975e78d5ff8b8f21f350773bbd0ec41aacaeb845c233c1bfbaa285a30a9",
-        state="771a00ed0b7b010359f1666a7d2606552ceaf8f1b33313ed1973bf973d727fb1",
-        gradients="e66a7b3cc816c51a234d54bf0b15a70815af2da0934372f13f60c4bffa29c758",
+        quantiles="2550d5bc32eca1969ba4164310ed4150e694338fcb78a2c2d8b3b59c79e3aeb8",
+        state="44a1a40cb5248a69bf6498665f16ade167332efb989e044c85f95ac8184ef390",
+        gradients="91885d5a2e91ef3b7579a4f4b7e494b169fecbbf9a3bb66b4b2272ac6df8d1eb",
         unused=[],
     ),
 )

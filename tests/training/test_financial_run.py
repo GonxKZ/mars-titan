@@ -10,6 +10,7 @@ import torch
 from mars_titan.data.input_policy import HISTORICAL_MASKED
 from mars_titan.memory import financial_observations as api
 from mars_titan.memory.financial_session import FinancialPhase
+from mars_titan.models.titans.config import MAX_BLOCK_ROWS
 from mars_titan.models.titans.financial import (
     VARIANTS,
     FinancialConfig,
@@ -146,7 +147,7 @@ def named_records(engine):
         dict(learning_rate=0.0),
         dict(weight_decay=-1.0),
         dict(max_grad_norm=float("inf")),
-        dict(block_rows=257),
+        dict(block_rows=MAX_BLOCK_ROWS + 1),
         dict(selection=dict(SELECTION, stopping="unbounded")),
         dict(selection=dict(SELECTION, minimum_epochs=1), epochs=1),
         dict(selection=dict(SELECTION, metric="mae")),

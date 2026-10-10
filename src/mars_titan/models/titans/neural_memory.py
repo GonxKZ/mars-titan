@@ -12,6 +12,7 @@ from .state import (
     check_finite,
     copy_state,
     require_payload,
+    require_true,
 )
 
 
@@ -205,8 +206,7 @@ class NeuralMemory(nn.Module):
             if storage_bytes > self.config.max_state_bytes:
                 raise ValueError("El almacenamiento del estado supera el presupuesto de bytes")
             if is_steps:
-                if (value < 0).any():
-                    raise ValueError("Los pasos del estado no pueden ser negativos")
+                require_true((value >= 0).all(), "Los pasos del estado no pueden ser negativos")
             else:
                 check_finite(value, "El estado")
         storage_bytes += self.validate_windows(
@@ -289,8 +289,10 @@ class NeuralMemory(nn.Module):
         if torch.is_inference_mode_enabled():
             raise ValueError("inference_mode impide el gradiente interno, utilice no_grad")
         self.validate_input(observed, state)
-        if (state.steps > torch.iinfo(torch.int64).max - observed.shape[1]).any():
-            raise ValueError("El contador de pasos desbordaría int64")
+        require_true(
+            (state.steps <= torch.iinfo(torch.int64).max - observed.shape[1]).all(),
+            "El contador de pasos desbordaría int64",
+        )
         weights, momentum = state.weights, state.momentum
         key_window, value_window = state.convolution or (None, None)
         stability = self.config.stability
