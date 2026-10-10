@@ -307,6 +307,10 @@ def chronological_arms(campaign):
     for arm, variant in (campaign.get(plan.TITANS) or {}).get("arms", {}).items():
         result[arm] = dict(family=plan.TITANS, variant=variant, bank=True)
     for arm, components in (campaign.get(plan.MARS) or {}).get("arms", {}).items():
+        if "episodic_bank" not in components:
+            # La corrección B6 no tiene lector ni parámetros propios que adaptar. Su único
+            # modelo es el padre Titans-MAC, que ya tiene su propio brazo en la etapa.
+            continue
         bank = components["episodic_bank"] != plan.MARS_BANKS[0]
         result[arm] = dict(family=plan.MARS, variant=None, bank=bank)
     if campaign.get(plan.CM):

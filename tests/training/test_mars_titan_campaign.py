@@ -1,9 +1,10 @@
 """MARS-TITAN dentro de la campaña con máscaras, en CPU y sin modificar pesos.
 
 El plan se comprueba sobre la comparación declarada. La ejecución registra
-`titans_mac_online`, `mars_titan_m1` y `mars_titan_m3` en una campaña B reducida sobre US con
-los ejecutores reales y el optimizador que solo registra gradientes, y se detiene tras las
-tres primeras ventanas: una reentrenada y dos trasladadas. Los demás brazos son dobles.
+`titans_mac_online`, `mars_titan_m1`, `mars_titan_m3` y la corrección `mars_titan_b6` en una
+campaña B reducida sobre US con los ejecutores reales y el optimizador que solo registra
+gradientes, y se detiene tras las tres primeras ventanas: una reentrenada y dos trasladadas.
+Los demás brazos son dobles.
 """
 
 import json
@@ -18,10 +19,12 @@ import torch
 from mars_titan.data.storage import atomic_json, sha256
 from mars_titan.environments.walk_forward_receipt import read_window_receipt
 from mars_titan.training import campaign_plan as plan
+from mars_titan.training import mars_titan_correction as mc
 from mars_titan.training import mars_titan_run, search_cases
 from mars_titan.training import mars_titan_walk_forward as mw
 from mars_titan.training import masked_campaign as engine
 from mars_titan.training import titans_walk_forward as wf
+from mars_titan.training.carried_predictions import CARRIED_PARTITIONS, REGENERATED_PARTITIONS
 from tests.suite_support import skip_without_episodic_native
 from tests.training.test_campaign_plan import CAMPAIGNS, write_variant
 from tests.training.test_masked_campaign import Recorder, doubles
@@ -32,8 +35,10 @@ from tests.training.test_titans_walk_forward import Factory
 from tests.training.test_walk_forward_v2_views import fixture
 
 DECLARED = Path("configs/titans/episodic-readout-historical-masked.json")
+CORRECTION = Path("configs/titans/mature-correction-historical-masked.json")
 ARM = "mars_titan_m1"
 M3_ARM = "mars_titan_m3"
+B6_ARM = "mars_titan_b6"
 ARMS = {
     "mars_titan_m0": {"episodic_bank": "m0_no_bank"},
     "mars_titan_m1": {"episodic_bank": "m1"},
@@ -41,7 +46,21 @@ ARMS = {
     "mars_titan_m3": {"episodic_bank": "m3"},
     "mars_titan_m1_k2": {"episodic_bank": "m1", "refinements": 2},
     "mars_titan_m1_k4": {"episodic_bank": "m1", "refinements": 4},
+    "mars_titan_m1_k4_first_read": {
+        "episodic_bank": "m1",
+        "refinements": 4,
+        "refinement_episodes": "first_read",
+    },
+    "mars_titan_b6": {"associative_memory": {"rule": "proximal", "key": "codec"}},
+    "mars_titan_b6_bias": {"associative_memory": {"rule": "proximal", "key": "constant"}},
 }
+CORRECTIONS = {"mars_titan_b6", "mars_titan_b6_bias"}
+# Brazos de MARS-TITAN que recorre la campaña B reducida con los ejecutores reales.
+RUN_ARMS = (ARM, M3_ARM, B6_ARM)
+
+
+def cases(arm):
+    return ("eta5e-2", "eta25e-2") if arm in CORRECTIONS else ("lr1e-4", "lr1e-3")
 
 
 @pytest.fixture(autouse=True)
@@ -59,8 +78,10 @@ def section(recipe=DECLARED, **changes):
         pending_arms={},
         parent_arm=TITANS_ARM,
         search_seed=42,
+        correction_recipe=str(CORRECTION.resolve()),
     )
-    return value | changes
+    # Un cambio a None retira el campo de la sección.
+    return {key: item for key, item in (value | changes).items() if item is not None}
 
 
 def declared(tmp_path, variant="A", **changes):
@@ -96,7 +117,9 @@ def test_mars_arms_search_two_cases_per_window_after_their_titans_parent(tmp_pat
         if job["stage"] == "search":
             assert job["parent"] == TITANS_ARM
             assert job["case"]["components"] == ARMS[job["arm"]]
-            assert job["case"]["search_case"] == job["candidate"] in ("lr1e-4", "lr1e-3")
+            assert job["case"]["search_case"] == job["candidate"] in cases(job["arm"])
+            recipe = CORRECTION if job["arm"] in CORRECTIONS else DECLARED
+            assert job["case"]["recipe"] == str(recipe.resolve())
             assert sorted(job["depends"]) == sorted(
                 f"{origin}search-{name}" for name in ("lr1e-4", "lr1e-3")
             )
@@ -125,7 +148,7 @@ def test_m3_has_a_producer_and_no_mars_arm_stays_pending(tmp_path):
     counts = report["counts"]["scopes"]["US"]["arms"]
     assert counts[M3_ARM] == counts["mars_titan_m2"] == counts[TITANS_ARM]
     plain = plan.check_campaign(CAMPAIGNS["B"])["pending_families"]
-    assert len(plain["mars_titan"]["arms"]) == 6 and "motives" not in plain["mars_titan"]
+    assert len(plain["mars_titan"]["arms"]) == 9 and "motives" not in plain["mars_titan"]
     # Un brazo sin productor puede seguir declarándose pendiente con su motivo.
     motive = "Brazo retirado para una comprobación"
     partial_arms = {k: v for k, v in ARMS.items() if k != M3_ARM}
@@ -136,7 +159,7 @@ def test_m3_has_a_producer_and_no_mars_arm_stays_pending(tmp_path):
 
 
 def test_with_every_section_declared_no_compared_arm_lacks_a_producer(tmp_path):
-    """Los 24 brazos de la comparación tienen productor con las cuatro secciones, salvo el
+    """Los 27 brazos de la comparación tienen productor con las cuatro secciones, salvo el
     control en línea, cuyos trabajos declara la campaña A por etapas."""
     from tests.training.test_candidate_walk_forward import section as gru_section
 
@@ -155,7 +178,7 @@ def test_with_every_section_declared_no_compared_arm_lacks_a_producer(tmp_path):
     campaign = plan.load_campaign(path)
     compared = campaign["comparison_config"]["arms"]
     planned = {job["arm"] for job in plan.plan_campaign(campaign)}
-    assert len(compared) == 24
+    assert len(compared) == 27
     controls = {name for name, arm in compared.items() if arm["family"] == "control"}
     online = {name for name, arm in compared.items() if arm["family"] == plan.ONLINE_CONTROL}
     assert online == {"transformer_compact_online"}
@@ -190,6 +213,26 @@ def recipe_with(tmp_path, change):
         (dict(arms=ARMS | {"mars_titan_m2": ARMS["mars_titan_m1"]}), "distinta"),
         (dict(search_seed=43), "semilla de búsqueda"),
         (dict(extra=True), "no cumple"),
+        (
+            dict(arms=ARMS | {B6_ARM: {"associative_memory": {"rule": "proximal"}}}),
+            "corrección B6",
+        ),
+        (
+            dict(
+                arms=ARMS
+                | {
+                    B6_ARM: {
+                        "associative_memory": {"rule": "proximal", "key": "codec", "rate": 0.1}
+                    }
+                }
+            ),
+            "corrección B6",
+        ),
+        (
+            dict(arms=ARMS | {B6_ARM: ARMS[B6_ARM] | {"episodic_bank": "m1"}}),
+            "corrección B6",
+        ),
+        (dict(correction_recipe=None), "receta de la corrección"),
     ],
 )
 def test_section_rejects_arms_parents_and_seeds_outside_the_design(tmp_path, changes, message):
@@ -218,6 +261,38 @@ def test_section_requires_the_fair_search_and_the_protocol_rule(tmp_path, change
         plan.load_campaign(declared(tmp_path, recipe=path))
 
 
+def test_correction_recipe_is_declared_only_with_correction_arms(tmp_path):
+    readers = {k: v for k, v in ARMS.items() if k not in CORRECTIONS}
+    pending = {name: "Brazo B6 retirado para una comprobación" for name in CORRECTIONS}
+    with pytest.raises(ValueError, match="receta de la corrección"):
+        plan.load_campaign(declared(tmp_path, arms=readers, pending_arms=pending))
+    changes = dict(arms=readers, pending_arms=pending, correction_recipe=None)
+    campaign = plan.load_campaign(declared(tmp_path, **changes))
+    assert set(campaign[plan.MARS]["candidates"]) == set(readers)
+
+
+@pytest.mark.parametrize(
+    ("change", "message"),
+    [
+        (lambda d: d["walk_forward"]["search_cases"].pop("eta5e-2"), "casos de η"),
+        (lambda d: d.update(recipe_name="other"), "casos de η"),
+        (
+            lambda d: d["walk_forward"].update(
+                search_cases={"a": {"learning_rate": 0.1}, "b": {"learning_rate": 0.2}}
+            ),
+            "casos de η",
+        ),
+    ],
+)
+def test_correction_recipe_needs_as_many_cases_as_the_fair_search(tmp_path, change, message):
+    document = json.loads(CORRECTION.read_text())
+    change(document)
+    path = tmp_path / "correction.json"
+    atomic_json(path, document)
+    with pytest.raises(ValueError, match=message):
+        plan.load_campaign(declared(tmp_path, correction_recipe=str(path)))
+
+
 def test_section_needs_the_titans_section_of_its_parent(tmp_path):
     path = write_variant(
         tmp_path,
@@ -231,10 +306,10 @@ def test_section_needs_the_titans_section_of_its_parent(tmp_path):
 
 
 def mars_campaign(folder):
-    """Campaña B reducida con Titans-MAC mac_online y MARS-TITAN M1 y M3, una semilla cada uno."""
+    """Preparar una campaña B reducida, con una semilla, con Titans-MAC y M1, M3 y B6."""
     path = titans_campaign(folder)
     comparison = json.loads((folder / "comparison.json").read_text())
-    for arm in (ARM, M3_ARM):
+    for arm in RUN_ARMS:
         comparison["arms"][arm] = dict(family="mars_titan", output="quantile_head_v1", seeds=[42])
         comparison["comparison"]["families"]["references_vs_zero"]["variants"].append(arm)
     atomic_json(folder / "comparison.json", comparison)
@@ -247,12 +322,14 @@ def mars_campaign(folder):
     )
     atomic_json(folder / "readout.json", document)
     campaign = json.loads(path.read_text())
+    atomic_json(folder / "correction.json", json.loads(CORRECTION.read_text()))
     campaign[plan.MARS] = dict(
         recipe="readout.json",
-        arms={arm: ARMS[arm] for arm in (ARM, M3_ARM)},
+        arms={arm: ARMS[arm] for arm in RUN_ARMS},
         pending_arms={},
         parent_arm=TITANS_ARM,
         search_seed=42,
+        correction_recipe="correction.json",
     )
     atomic_json(path, campaign)
     return path
@@ -279,7 +356,7 @@ def campaign_run(tmp_path_factory, permitted):
     views = {"US": root / "views" / "US"}
     jobs = plan.plan_campaign(plan.load_campaign(campaign))
     windows = list(prepared["US"]["windows"])[:3]
-    last = [j for j in jobs if j["arm"] in (ARM, M3_ARM) and j["window"] == windows[2]][-1]
+    last = [j for j in jobs if j["arm"] in RUN_ARMS and j["window"] == windows[2]][-1]
     factory = Factory()
     executors = doubles(Recorder())
     for model, fit, carry in (
@@ -314,7 +391,7 @@ def campaign_run(tmp_path_factory, permitted):
         summary=summary,
         factory=factory,
         windows=windows,
-        jobs=[j for j in jobs if j["arm"] in (ARM, M3_ARM, TITANS_ARM) and j["window"] in windows],
+        jobs=[j for j in jobs if j["arm"] in (*RUN_ARMS, TITANS_ARM) and j["window"] in windows],
     )
 
 
@@ -322,7 +399,7 @@ def receipt(run, job_id):
     return json.loads((run.output / "jobs" / job_id / "receipt.json").read_text())
 
 
-@pytest.mark.parametrize("arm", [ARM, M3_ARM])
+@pytest.mark.parametrize("arm", RUN_ARMS)
 def test_mars_jobs_start_from_the_selected_titans_window_and_share_its_rows(campaign_run, arm):
     assert campaign_run.summary["status"] == "paused"
     mars = [job for job in campaign_run.jobs if job["arm"] == arm]
@@ -356,7 +433,9 @@ def test_mars_jobs_start_from_the_selected_titans_window_and_share_its_rows(camp
             anchor = report["anchor"]
             assert anchor["components"] == ARMS[arm]
             assert anchor["checkpoint_sha256"] == own["parent"]["sha256"]
-            assert report["memory_policy"]["bank"].startswith("empty_at_each_pass")
+            reset = report["memory_policy"]["associative" if arm == B6_ARM else "bank"]
+            assert reset.startswith(("empty_at_each_pass", "zero_at_each_pass"))
+            assert report["kind"] == (mc.CARRY_KIND if arm == B6_ARM else mw.CARRY_KIND)
             other = receipt(campaign_run, f"US/{job['window']}/{TITANS_ARM}/carry-s42")
         for partition in ("calibration", "evaluation"):
             mine, theirs = own["predictions"][partition], other["predictions"][partition]
@@ -416,6 +495,51 @@ def test_carry_repeats_bit_for_bit_and_needs_a_new_destination(campaign_run, tmp
         mw.carry_mars_titan(anchor, anchor_view, view, tmp_path / "first", device="cpu")
     with pytest.raises(ValueError, match="no es la de su ajuste"):
         mw.carry_mars_titan(anchor, view, view, tmp_path / "other", device="cpu")
+
+
+def test_correction_carry_repeats_bit_for_bit_and_never_fits(campaign_run, tmp_path):
+    job = next(j for j in campaign_run.jobs if j["arm"] == B6_ARM and j["kind"] == "carry")
+    own = receipt(campaign_run, job["id"])
+    source = own["identity"]["sources"]["source"]
+    anchor = campaign_run.output / receipt(campaign_run, source)["attempt"]
+    windows = campaign_run.prepared["US"]["windows"]
+    anchor_view, view = windows[job["anchor"]]["path"], windows[job["window"]]["path"]
+    first = mc.carry_correction(anchor, anchor_view, view, tmp_path / "first", device="cpu")
+    report = json.loads((campaign_run.output / own["report"]["path"]).read_text())
+    assert "regenerated" not in first
+    for name in CARRIED_PARTITIONS:
+        assert first["predictions"][name]["sha256"] == report["predictions"][name]["sha256"]
+    anchored = json.loads((anchor / "run.json").read_text())
+    assert first["anchor"]["variant_sha256"] == anchored["identity"]["variant_sha256"]
+    assert not (anchor / "fit").exists()
+    with pytest.raises(ValueError, match="no es la de su ventana"):
+        mc.carry_correction(anchor, view, view, tmp_path / "other", device="cpu")
+
+
+def test_correction_fit_regenerates_its_three_partitions_bit_for_bit(campaign_run, tmp_path):
+    """La retención v2 repite el ajuste B6 por inferencia antes de liberar sus filas.
+
+    Cada tramo empieza con A en cero, así que repetir validación, calibración y evaluación
+    sobre la propia vista debe dar las mismas tablas. Otra vista no se admite.
+    """
+    job = next(j for j in campaign_run.jobs if j["arm"] == B6_ARM and j["kind"] == "fit")
+    own = receipt(campaign_run, job["id"])
+    attempt = campaign_run.output / own["attempt"]
+    windows = campaign_run.prepared["US"]["windows"]
+    view = windows[job["window"]]["path"]
+    again = mc.carry_correction(
+        attempt, view, view, tmp_path / "again", device="cpu", regenerate=True
+    )
+    report = json.loads((attempt / "run.json").read_text())
+    assert again["regenerated"] is True
+    assert set(again["predictions"]) == set(REGENERATED_PARTITIONS)
+    for name in REGENERATED_PARTITIONS:
+        assert again["predictions"][name]["sha256"] == report["predictions"][name]["sha256"]
+    later = next(w for w in windows if w > job["window"])
+    with pytest.raises(ValueError, match="propia ventana del ancla"):
+        mc.carry_correction(
+            attempt, view, windows[later]["path"], tmp_path / "later", device="cpu", regenerate=True
+        )
 
 
 def test_finalists_pick_their_own_search_and_receive_their_parent_finalist(tmp_path):

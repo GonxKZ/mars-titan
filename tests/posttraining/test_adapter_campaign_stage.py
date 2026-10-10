@@ -581,3 +581,28 @@ def test_an_unconfirmed_base_job_stops_the_stage_before_any_fit(base_a, tmp_path
     with pytest.raises(ValueError, match="Falta confirmar US/fold-001/gru/search-gru-00"):
         run(base, tmp_path / "stage")
     assert not (tmp_path / "stage").exists() and recorder.optimizers == []
+
+
+def test_the_b6_correction_has_no_adapter_arm():
+    """La corrección B6 no tiene lector que adaptar, así que no figura como brazo cronológico.
+
+    Los lectores conservan su banco. Sin esta exclusión la etapa no podría contar sus trabajos
+    con la declaración ampliada, que incluye los dos brazos B6.
+    """
+    from mars_titan.training import campaign_plan as plan
+
+    arms = campaign_stage.chronological_arms(
+        {
+            plan.MARS: dict(
+                arms=dict(
+                    mars_titan_m0=dict(episodic_bank="m0_no_bank"),
+                    mars_titan_m1=dict(episodic_bank="m1"),
+                    mars_titan_b6=dict(associative_memory=dict(rule="proximal", key="codec")),
+                )
+            )
+        }
+    )
+    assert arms == dict(
+        mars_titan_m0=dict(family=plan.MARS, variant=None, bank=False),
+        mars_titan_m1=dict(family=plan.MARS, variant=None, bank=True),
+    )

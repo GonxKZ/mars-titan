@@ -18,9 +18,17 @@
         "mars_titan_m2": {"episodic_bank": "m2"},
         "mars_titan_m3": {"episodic_bank": "m3"},
         "mars_titan_m1_k2": {"episodic_bank": "m1", "refinements": 2},
-        "mars_titan_m1_k4": {"episodic_bank": "m1", "refinements": 4}
+        "mars_titan_m1_k4": {"episodic_bank": "m1", "refinements": 4},
+        "mars_titan_m1_k4_first_read": {
+          "episodic_bank": "m1",
+          "refinements": 4,
+          "refinement_episodes": "first_read"
+        },
+        "mars_titan_b6": {"associative_memory": {"rule": "proximal", "key": "codec"}},
+        "mars_titan_b6_bias": {"associative_memory": {"rule": "proximal", "key": "constant"}}
       },
       "pending_arms": {},
+      "correction_recipe": "../titans/mature-correction-historical-masked.json",
       "parent_arm": "titans_mac_online",
       "search_seed": 42
     },
@@ -33,30 +41,30 @@
     "A": {
       "campaign": "historical-masked-campaign-a.json",
       "limits": {
-        "max_training_jobs": 4725,
+        "max_training_jobs": 5265,
         "max_prediction_jobs": 0
       },
       "adapter_stage": "../posttraining/historical-masked-adapter-stage-a.json",
       "rl_stage": {
         "path": "../simulation/historical-masked-rl-stage-a.json",
         "limits": {
-          "max_training_jobs": 2160,
-          "max_evaluation_jobs": 2442
+          "max_training_jobs": 2376,
+          "max_evaluation_jobs": 2775
         }
       }
     },
     "B": {
       "campaign": "historical-masked-campaign-b.json",
       "limits": {
-        "max_training_jobs": 1785,
-        "max_prediction_jobs": 1792
+        "max_training_jobs": 1989,
+        "max_prediction_jobs": 2044
       },
       "adapter_stage": "../posttraining/historical-masked-adapter-stage-b.json",
       "rl_stage": {
         "path": "../simulation/historical-masked-rl-stage-b.json",
         "limits": {
-          "max_training_jobs": 720,
-          "max_evaluation_jobs": 3882
+          "max_training_jobs": 792,
+          "max_evaluation_jobs": 4359
         }
       }
     }
@@ -65,9 +73,10 @@
     "Declaración preparada sin activar. Las campañas A y B y sus etapas no la incluyen hasta medir memoria y caudal en cuda:0 con la orden de campaign_throughput y --extensions.",
     "Activarla es copiar las tres secciones y los límites de cada variante a historical-masked-campaign-{a,b}.json y los límites rl_stage a historical-masked-rl-stage-{a,b}.json. La etapa de adaptadores no cambia, porque solo parte de las referencias neuronales.",
     "La GRU candidata usa la variante principal m1_k1 con dos casos de búsqueda, como las demás familias neuronales, y 12 meses de calentamiento de entradas. accumulation_rows y recompute se eligen con la medida y cambian la huella de su receta.",
-    "MARS-TITAN conecta M0, M1, M2, M3 y M1 con K = 2 y K = 4 sobre titans_mac_online. M3 estima sus escalas con el tramo de entrenamiento de cada ventana, y la medida de caudal aplica la misma regla en la ventana medida.",
+    "MARS-TITAN conecta M0, M1, M2, M3, M1 con K = 2 y K = 4, M1 con K = 4 y episodios de la primera lectura (A10) y la corrección asociativa B6 proximal con la clave del codec y con la clave constante (A5) sobre titans_mac_online. M3 estima sus escalas con el tramo de entrenamiento de cada ventana, y la medida de caudal aplica la misma regla en la ventana medida. B6 no ajusta parámetros: sus dos casos solo cambian η y cada trabajo predice una vez los tramos medidos.",
     "CM-v1 comparte la receta del núcleo con Titans-MAC, también accumulation_rows. La penalización C acumula por bloques de flujos con el mismo gradiente que el tramo completo, así que B y B+C conservan esa receta si la medida fija 128.",
-    "Con las tres secciones, la etapa de políticas pasa de 11 a 22 predictores con productor."
+    "Con las tres secciones, la etapa de políticas pasa de 11 a 25 predictores con productor.",
+    "Los recuentos corresponden a las campañas A y B declaradas en develop. El diseño conjunto US+CN de la campaña A desde 2004 cambiará ventanas, ámbitos y límites y debe recalcularlos con check_extensions."
   ],
   "final_test_opened": false
 }

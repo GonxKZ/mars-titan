@@ -172,6 +172,10 @@ def validated_job_seconds(job, rows, rate, epochs):
     inference = rate["inference"]
     if job["kind"] != FIT:
         return (rows["calibration"] + rows["evaluation"]) / inference
+    if rate["train"] is None:
+        # Un trabajo sin ajuste, como la corrección B6, predice una sola vez cada tramo medido,
+        # sin épocas ni validaciones repetidas.
+        return (rows["validation"] + rows["calibration"] + rows["evaluation"]) / inference
     predicted = (epochs + 2) * rows["validation"] + rows["calibration"] + rows["evaluation"]
     return epochs * rows["train"] / rate["train"] + predicted / inference
 
@@ -520,6 +524,8 @@ def estimate_hours(
             "con la misma arquitectura y el mismo cálculo que el padre elegido",
             "Las horas de un lector no incluyen el ajuste de su padre, que se cuenta en la "
             "familia del padre, y los núcleos de CM-v1 se cuentan en CM-v1",
+            "La corrección B6 no ajusta: cada trabajo predice una vez validación, calibración "
+            "y evaluación con el caudal medido sobre eventos de ajuste, que siempre corrigen",
             "Con presupuesto fijo, cada ajuste recorre todas sus épocas",
             "No incluye esperas de disco, índices, normalizadores, reanudaciones ni otras "
             "cargas en la GPU",
@@ -1146,6 +1152,67 @@ def _readout_record(
     return dict(record, bank_capacity=recipe.bank_capacity)
 
 
+def _correction_record(parent, case, window, device, settings):
+    """Medir la corrección B6 sobre un padre `mac_online` con pesos iniciales.
+
+    B6 no tiene ajuste. Se mide la inferencia cronológica del padre con la lectura y la
+    escritura de A sobre los eventos del tramo de ajuste, que no tienen calentamiento, así
+    que todos los eventos medidos corrigen. El caso solo cambia η y comparte la medida.
+    """
+    import torch
+
+    from mars_titan.budget_training import seed_run
+    from mars_titan.memory.episodic_codec import FrozenEpisodeCodec
+    from mars_titan.memory.mars_titan_variant import check_components, load_declaration
+
+    from . import mars_titan_correction as correction
+    from . import titans_walk_forward as titans
+    from .financial_run import Paused
+
+    fold, sources, inputs = window
+    document = correction.load_correction_recipe(case["recipe"])
+    values = correction.case_values(document, case["search_case"])
+    _, mature = check_components(
+        load_declaration(), correction.arm_components(case["components"], values)
+    )
+    specification = sources["train"].specification()
+    seed_run(case["seed"])
+    predictor, _ = titans._predictor(
+        parent["document"], specification, "mac_online", case["seed"], device
+    )
+    predictor = predictor.eval().requires_grad_(False)
+    initial = [value.detach().clone() for value in predictor.parameters()]
+    chronological = titans.case_recipe(parent["document"], parent["search_case"])
+    inference = correction.CorrectionInference(
+        predictor, chronological, mature, FrozenEpisodeCodec(specification)
+    )
+    prefix = [0]
+    for count in inputs:
+        prefix.append(prefix[-1] + count)
+    budget = _Budget(settings["event_warmup"], settings["events"], prefix.__getitem__, _synchronize)
+    torch.cuda.reset_peak_memory_stats(0)
+    events = sources["train"].batched_events(block_rows=chronological.block_rows)
+    try:
+        inference._pass(sources["train"], events, stop=budget)
+    except Paused:
+        pass
+    rate, rows = budget.rate("La corrección B6")
+    peak = torch.cuda.max_memory_allocated(0)
+    if not all(
+        torch.equal(a, b.detach()) for a, b in zip(initial, predictor.parameters(), strict=True)
+    ):
+        raise RuntimeError("La medición de caudal ha modificado parámetros")
+    return dict(
+        declared_option="recipe",
+        options={"recipe": dict(train=None, peak_vram_allocated_bytes=peak)},
+        inference=rate,
+        measured_inference_rows=rows,
+        inference_peak_vram_allocated_bytes=peak,
+        associative_writes=inference.memory.writes,
+        window=fold["id"],
+    )
+
+
 def measure_mars_titan(
     campaign, view, work, *, segments=8, segment_warmup=2, events=64, event_warmup=8
 ):
@@ -1154,7 +1221,8 @@ def measure_mars_titan(
     Cada brazo se mide por separado porque la escritura (M0, M1, M2 o M3) y K cambian el
     cálculo. Los casos de búsqueda solo cambian la tasa de aprendizaje y comparten la
     medida. Las fases son las del padre, con su calentamiento. `work` guarda los índices.
-    M3 registra además los cambios de su índice selectivo en la ventana medida.
+    M3 registra además los cambios de su índice selectivo en la ventana medida. Un brazo de
+    corrección B6 no tiene lector y solo mide su inferencia (`_correction_record`).
     """
     from mars_titan.data.embeddings import require_cuda
 
@@ -1185,6 +1253,15 @@ def measure_mars_titan(
         with titans.unfused_attention():
             for arm, candidates in section["candidates"].items():
                 _, case = candidates[0]
+                if "associative_memory" in case["components"]:
+                    record = _correction_record(parent, case, window, device, settings)
+                    rates[arm] = dict(
+                        record,
+                        components=case["components"],
+                        parent_arm=section["parent_arm"],
+                        **_shared(candidates, window[2]),
+                    )
+                    continue
                 family = readouts._mars_family(case["components"])
                 counters = BANK_COUNTERS
                 if case["components"].get("episodic_bank") == "m3":
