@@ -25,11 +25,11 @@ from .telemetry import FIELDS, SystemProbe, TelemetryRing
 
 VERSION = "observatory-live/1"
 SITE_PATH = re.compile(
-    r"(index\.html|styles\.css|[a-z][a-z0-9-]*\.m?js|vendor/uplot/(uPlot\.esm\.js|uPlot\.min\.css|LICENSE)"
+    r"(index\.html|styles\.css|[a-z][a-z0-9-]*\.m?js|vendor/uplot/(uPlot\.iife\.min\.js|uPlot\.min\.css|LICENSE)"
     r"|fonts/[a-z0-9-]+\.(woff2|txt))"
 )
 DATA_PATH = re.compile(r"data/(observatory\.json|deployment\.json|pages/[a-f0-9]{64}\.json)")
-TRACE_PATH = re.compile(r"data/traces/(index\.json|[A-Za-z0-9][\w.-]{0,95}\.(json|bin))")
+TRACE_PATH = re.compile(r"data/traces/(index\.json|[A-Za-z0-9][\w.-]{0,127}\.(json|bin))")
 LABEL = re.compile(r"[A-Za-z0-9][\w.-]{0,95}")
 JOB_PART = re.compile(r"[A-Za-z0-9][\w.+-]{0,95}")
 TYPES = {
@@ -43,10 +43,11 @@ TYPES = {
     ".bin": "application/octet-stream",
     "": "text/plain; charset=utf-8",
 }
-# La misma política que declara la página. El servidor la repite como cabecera para
-# que también cubra las respuestas JSON y binarias.
+# La misma política que declara index.html, más frame-ancestors, que solo vale como
+# cabecera. El servidor la repite para que también cubra las respuestas JSON y binarias.
+# Los estilos que fijan las gráficas pasan por CSSOM y no necesitan 'unsafe-inline'.
 POLICY = (
-    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; "
+    "default-src 'self'; script-src 'self'; style-src 'self'; "
     "img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; "
     "base-uri 'none'; frame-ancestors 'none'; form-action 'none'"
 )
@@ -409,10 +410,13 @@ class Sampler(threading.Thread):
 
 class ObservatoryHandler(BaseHTTPRequestHandler):
     server_version = VERSION
-    sys_version = ""
     protocol_version = "HTTP/1.1"
     # Una conexión persistente inactiva libera su hilo y su plaza a los 30 segundos.
     timeout = 30
+
+    def version_string(self):
+        # Sin la versión de Python, que no aporta nada al navegador.
+        return VERSION
 
     def log_message(self, format, *args):
         # Los accesos no se registran: la consola queda para errores y para la URL.

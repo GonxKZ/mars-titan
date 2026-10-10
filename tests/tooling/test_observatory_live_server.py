@@ -48,6 +48,9 @@ def tree(tmp_path):
     site.mkdir()
     (site / "index.html").write_text("<!doctype html><title>prueba</title>")
     (site / "app.js").write_text("export {};")
+    (site / "vendor/uplot").mkdir(parents=True)
+    for name in ("uPlot.iife.min.js", "uPlot.esm.js"):
+        (site / "vendor/uplot" / name).write_text("var uPlot;")
     public = tmp_path / "public"
     dump(
         public / "observatory.json",
@@ -130,7 +133,9 @@ def test_static_files_use_validators_and_conditional_requests(tree):
     try:
         response, body = request(server, "/")
         assert response.status == 200 and b"prueba" in body
-        assert "frame-ancestors 'none'" in response.getheader("Content-Security-Policy")
+        policy = response.getheader("Content-Security-Policy")
+        assert "frame-ancestors 'none'" in policy and "unsafe-inline" not in policy
+        assert response.getheader("Server") == "observatory-live/1"
         response, body = request(server, "/data/observatory.json")
         tag, modified = response.getheader("ETag"), response.getheader("Last-Modified")
         assert response.status == 200 and response.getheader("Cache-Control") == "no-cache"
@@ -165,6 +170,16 @@ def test_paths_outside_the_allowlist_are_not_served(tree, path):
     try:
         response, body = request(server, path)
         assert response.status == 404 and b"privado" not in body
+    finally:
+        stop(server, thread)
+
+
+def test_only_the_vendored_build_the_page_loads_is_served(tree):
+    server, thread = start(tree)
+    try:
+        served, _ = request(server, "/vendor/uplot/uPlot.iife.min.js")
+        other, _ = request(server, "/vendor/uplot/uPlot.esm.js")
+        assert served.status == 200 and other.status == 404
     finally:
         stop(server, thread)
 
