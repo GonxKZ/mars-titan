@@ -492,6 +492,152 @@ sean equivalentes. La familia, por ejemplo C, M, CM e I frente a B, debe
 declararse antes de evaluar. Esta corrección no cubre la búsqueda previa de
 configuraciones, que debe constar en el registro de ensayos.
 
+## Contrastes secundarios de capacidad predictiva
+
+Son análisis secundarios declarados el 10 de octubre de 2026, antes de cualquier
+resultado, en la sección `predictive_ability` de las dos comparaciones de la campaña
+([separada](../../configs/evaluation/historical-masked-2000-comparison.json) y
+[conjunta](../../configs/evaluation/historical-masked-2000-joint-comparison.json)).
+`evaluation/predictive_ability.py` los calcula con `arch` 8.0.0 y `statsmodels` 0.15.0,
+que la [revisión de bibliotecas](library-review.md) recomendó adoptar
+([#493](https://github.com/GonxKZ/mars-titan/issues/493)). Las dos pertenecen al extra
+`research` y solo se importan al calcular. Cargar una campaña o ejecutar `rl check` no las
+necesita, y la evaluación que declara la sección comprueba que están instaladas antes de
+leer ninguna fuente. No sustituyen a las
+comparaciones emparejadas, que siguen siendo el contraste principal, y no se usan para
+seleccionar modelos, configuraciones ni épocas. Responden a dos preguntas que el contraste
+principal no cubre: si alguna variante de una familia supera a su base teniendo en cuenta
+que se han probado varias a la vez, y qué brazos no se distinguen del mejor.
+
+La sección es opcional en todas las versiones de la configuración y su presencia no cambia
+ninguna otra salida. Se comprobó en procesos separados frente al código de `develop` con
+los fixtures de US, CN y US+CN: informe y `sessions.parquet` idénticos, salvo la fecha de
+creación, los recursos y la huella del código analizador. La huella SHA-256 de la sección,
+serializada con claves ordenadas y sin espacios, es
+`1adb4ad3d8b7daccd9fe5390c39966162178912cace114729ca3a4ab76bd47ef`.
+
+### Pérdida diaria
+
+La unidad es el día UTC, la misma que remuestrea el bootstrap principal. Para cada brazo,
+las semillas se promedian sesión a sesión con `SessionSeries.average` y la pérdida del día
+$t$ es la media de sus sesiones con la ponderación entre mercados declarada:
+
+$$
+L_{a,t}=\frac{1}{|S_t|}\sum_{s\in S_t}\ell_{a,s}\quad(\texttt{session}),
+\qquad
+L_{a,t}=\frac{1}{|M_t|}\sum_{m\in M_t}\frac{1}{|S_{t,m}|}\sum_{s\in S_{t,m}}\ell_{a,s}\quad(\texttt{market}).
+$$
+
+Un día solo entra si todos los brazos de la familia tienen alguna sesión definida en él, y
+el informe cuenta los excluidos. Con el MAE no hay exclusiones. La media de $L_{a,t}$ pesa
+igual cada día, así que en la vista US+CN puede diferir un poco de la media por sesiones
+del contraste principal cuando un día tiene sesiones de los dos mercados. Cada familia
+necesita al menos `min_days` días (250 en la campaña), que deben superar la longitud de
+bloque. El mínimo admitido es 3, porque el umbral del p-valor consistente usa $\log\log T$,
+que solo es positivo desde ese tamaño, y Diebold-Mariano con la corrección de Harvey
+también lo necesita.
+
+### Contrastes
+
+| Análisis | Fuente | Implementación | Qué devuelve |
+| --- | --- | --- | --- |
+| Diebold-Mariano con corrección de Harvey | [Diebold y Mariano, 1995](https://doi.org/10.1080/07350015.1995.10524599), [Harvey, Leybourne y Newbold, 1997](https://doi.org/10.1016/S0169-2070(96)00719-4) | `statsmodels.tsa.stattools.diebold_mariano_test` | Estadístico, p-valor bilateral con $t_{T-1}$, retardos, factor de Harvey y p-valor de Holm dentro de la familia |
+| SPA | [Hansen, 2005](https://doi.org/10.1198/073500105000000063) | `arch.bootstrap.SPA` | P-valores inferior, consistente y superior con la base como referencia |
+| Reality Check | [White, 2000](https://doi.org/10.1111/1468-0262.00152) | P-valor superior del mismo SPA | P-valor |
+| StepM | [Romano y Wolf, 2005](https://doi.org/10.1111/j.1468-0262.2005.00615.x) | Descenso propio sobre la API pública de `arch.bootstrap.SPA` | Variantes que superan a la base con un error de familia del 5 % |
+| MCS | [Hansen, Lunde y Nason, 2011](https://doi.org/10.3982/ECTA5771) | `arch.bootstrap.MCS`, estadístico $T_R$ | Brazos incluidos con tamaño 0,10, p-valor de cada brazo y orden de eliminación |
+| Longitud de bloque | [Politis y White, 2004](https://doi.org/10.1081/ETC-120028836), [corrección de 2009](https://doi.org/10.1080/07474930802459016) | `arch.bootstrap.optimal_block_length` | Longitudes circular y estacionaria, solo como diagnóstico |
+
+El diferencial de Diebold-Mariano es $d_t=L_{\mathrm{variante},t}-L_{\mathrm{base},t}$, de
+modo que un estadístico positivo indica que la variante pierde más. El objetivo madura en
+una sesión, así que $h=1$, y la varianza de largo plazo usa el núcleo de Bartlett con
+$\max(h-1,\lceil T^{1/3}\rceil)$ retardos, la regla por defecto de `statsmodels`, que aquí
+se pasa de forma explícita y con la raíz calculada en aritmética entera. Con la corrección
+de Harvey,
+
+$$
+\mathrm{DM}^{\mathrm{HLN}}=\sqrt{\frac{T+1-2h+h(h-1)/T}{T}}\,
+\frac{\bar d}{\sqrt{\widehat{\mathrm{LRV}}/T}}\sim t_{T-1}.
+$$
+
+El SPA, el Reality Check, el StepM y el MCS remuestrean con el bootstrap circular por
+bloques de la comparación: la misma longitud (16 días), las mismas réplicas (2.000) y la
+misma semilla. Con la misma semilla, `arch` sortea exactamente los mismos bloques de días
+que `paired_comparisons`. [`test_arch_bootstrap_parity.py`](../../tests/evaluation/test_arch_bootstrap_parity.py)
+lo comprueba índice a índice en seis formas, también sorteando por tandas como el
+contraste principal y en las réplicas internas del MCS.
+
+Qué análisis recibe cada familia depende de sus contrastes:
+
+| Familia | Diebold-Mariano y longitud de bloque | SPA, Reality Check y StepM | MCS |
+| --- | --- | --- | --- |
+| Delta, con una base y varias variantes | Cada variante frente a la base | Base como referencia | Base y variantes |
+| Factorial | Cada celda frente a B, sin la interacción | B como referencia | Las cuatro celdas |
+| Niveles | No | No | Todos sus brazos |
+| Pares con bases distintas, como `joint_vs_separate` | Cada par | No hay referencia común | No |
+
+Los p-valores no se corrigen entre familias, igual que en el contraste principal. Cada
+familia responde a una pregunta declarada.
+
+### Detalles de `arch` 8.0.0
+
+La lectura del código de la versión fijada mostró tres detalles que cambian lo que se puede
+afirmar. Las pruebas los fijan, de modo que una actualización de `arch` que los cambie
+obliga a revisar la declaración.
+
+- **El SPA no estudentiza.** `SPA` acepta `studentize=True`, pero la versión 8.0.0 compara
+  la media de cada diferencial sin dividir por su desviación. La corrección llegó al
+  repositorio después de la versión (bashtage/arch [#871](https://github.com/bashtage/arch/issues/871))
+  y su revisión sigue abierta ([#879](https://github.com/bashtage/arch/issues/879),
+  [#881](https://github.com/bashtage/arch/issues/881)). La sección declara por eso el
+  estadístico sin estudentizar y el código pasa `studentize=False`. La varianza de cada
+  diferencial, con el núcleo del bootstrap estacionario, solo interviene en el umbral del
+  p-valor consistente. Sin estudentizar, una variante muy variable pesa más en el máximo
+  que una estable, y el SPA pierde potencia frente a la versión del artículo.
+- **`RealityCheck` es el mismo SPA.** Con el estadístico sin estudentizar y todos los modelos
+  recentrados en su media, el p-valor superior es el Reality Check de White.
+- **`StepM` falla en un caso.** Si un paso selecciona unos modelos y el siguiente selecciona
+  el resto, la versión 8.0.0 intenta un SPA sin modelos y lanza un error
+  ([#862](https://github.com/bashtage/arch/issues/862)). El descenso se hace con la API
+  pública de `SPA` y la condición de parada de la corrección
+  ([#863](https://github.com/bashtage/arch/pull/863)). Una prueba reproduce el fallo con
+  una mejora grande y muy variable y otra pequeña y estable, y comprueba que el descenso
+  propio selecciona las dos.
+
+El MCS divide por la varianza de la diferencia de cada par. Dos brazos con las mismas
+pérdidas diarias la anulan, así que esa familia queda sin MCS y el informe da el motivo.
+Lo mismo ocurre con un diferencial constante en Diebold-Mariano o en el SPA.
+
+### Coste
+
+[`benchmarks/predictive_ability_cost.py`](../../benchmarks/predictive_ability_cost.py) mide
+la sección completa del ámbito conjunto con los calendarios reales de US (2005 a 2023) y
+de CN (2011 a 2023), los 24 brazos y las 13 familias de la comparación conjunta, 2.000
+réplicas y bloques de 16 días, sobre pérdidas sintéticas. El
+[recibo](../../reports/engineering/predictive-ability-20261010/cost.json) da 31 s de
+mediana para las tres vistas (29 y 33 s en las dos repeticiones, con una carga media de 8
+a 12 procesos en los 16 hilos de la CPU), con 13 a 14 s en el SPA y el StepM, 12 a 14 s en
+el MCS y menos de 0,1 s en Diebold-Mariano y la longitud de bloque, y un pico de 107 MiB en
+NumPy. Las dos repeticiones dieron el mismo informe. Frente a los unos 34 minutos que el
+[informe de escala](../../reports/engineering/evaluation-scale-20261009/README.md)
+extrapola para la comparación conjunta completa es un coste pequeño, todo el cálculo está
+en `arch`, y no se ha optimizado ni pasado a C++.
+
+### Qué no permite afirmar
+
+- Diebold-Mariano supone que el diferencial es estacionario. Con modelos que se reestiman
+  en cada ventana, su validez con parámetros estimados ([West, 1996](https://doi.org/10.2307/2171956))
+  no está garantizada. El contraste de [Giacomini y White (2006)](https://doi.org/10.1111/j.1468-0262.2006.00718.x)
+  trata ese caso y no está implementado.
+- El MCS identifica un conjunto de brazos que no se distinguen del mejor con la confianza
+  declarada. No ordena los brazos incluidos ni dice que sean equivalentes.
+- StepM controla el error de familia entre las variantes de una familia, no entre familias,
+  vistas ni métricas. La búsqueda previa de configuraciones queda fuera, como en el
+  contraste principal.
+- La longitud de Politis y White es un diagnóstico. Un valor mayor que el declarado no
+  cambia la longitud de ningún contraste, porque elegirla con los datos evaluados sería
+  ajustar el bootstrap con el futuro.
+
 ## Calibración común de intervalos
 
 `calibration/conformal_quantiles.py` implementa la corrección común de los
