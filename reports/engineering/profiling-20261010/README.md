@@ -124,6 +124,7 @@ Cada recorrido se mide sin memray, con el asignador por defecto de Arrow (mimall
 | Índice de ajuste (9.356 eventos) y validación (747) | 3,27 GiB | Índice de ajuste | 2,99 GB | 9.216 MiB por trabajo cronológico en US+CN |
 | Lectura de los 100 últimos instantes con caché de 4.096 MiB | 5,41 GiB | Lectura | 4,85 GB | 9.216 MiB por trabajo cronológico en US+CN |
 | Validación residente de XGBoost sin rondas | 5,07 y 5,23 GiB | Copia a la GPU | 11,7 GB, con proyecciones de CUDA (ver abajo) | 3.465.914.636 bytes residentes y 8.192 MiB por proceso |
+| Matriz de ajuste de XGBoost sin rondas, de 110.095 a 739.214 filas | De 1,53 a 1,74 GiB | Construcción | 0,52 GB del montículo y 21,5 GB de proyecciones | 8.192 MiB de RAM y 7.000 MiB de VRAM por proceso |
 
 ### Índice del lector cronológico
 
@@ -139,9 +140,45 @@ La declaración de 9.216 MiB de las familias cronológicas parte de un pico de 6
 
 La validación tiene 502.015 filas y 1.719 columnas en 491 bloques. Lo residente ocupa 3.463.903.500 bytes, exactamente 6.900 bytes por fila: 6.876 de valores float32 y 8 de cada clave (objetivo float64, mercado `<U2` y fecha de predicción `datetime64[us]`). La declaración que `run_external_reference` pasa al plan de caché es 3.465.914.636 bytes, la misma cifra más 4.096 bytes por bloque, así que acierta con 2.011.136 bytes de margen. memray atribuye 3,45 GB a `tabular_corpus._matrix`, que es justamente la matriz residente.
 
-El pico del proceso (5,07 y 5,23 GiB en las dos ejecuciones sin memray) suma unos 0,9 GiB al arrancar (importaciones y contexto CUDA), los 3,23 GiB residentes y alrededor de 1 GiB transitorio de la lectura (etiquetas y precios). Al liberar la validación el proceso vuelve a unos 1,9 GiB. La copia a la GPU ocupa 2.140.471.296 bytes, que es lo que cabe en el presupuesto de dispositivo. La declaración de 8.192 MiB de XGBoost cubre este pico, pero este recorrido no construye la matriz de ajuste ni hace rondas, así que no la valida completa. La primera ejecución sin memray contó los bloques después de liberarlos. Sus medidas de memoria son válidas, pero el recuento se repitió con el arnés corregido (`validation-plain-r2`).
+El pico del proceso (5,07 y 5,23 GiB en las dos ejecuciones sin memray) suma unos 0,9 GiB al arrancar (importaciones y contexto CUDA), los 3,23 GiB residentes y alrededor de 1 GiB transitorio de la lectura (etiquetas y precios). Al liberar la validación el proceso vuelve a unos 1,9 GiB. La copia a la GPU ocupa 2.140.471.296 bytes, que es lo que cabe en el presupuesto de dispositivo. La declaración de 8.192 MiB de XGBoost cubre este pico, pero este recorrido no construye la matriz de ajuste ni hace rondas, así que no la valida completa. La matriz se mide en el apartado siguiente. La primera ejecución sin memray contó los bloques después de liberarlos. Sus medidas de memoria son válidas, pero el recuento se repitió con el arnés corregido (`validation-plain-r2`).
 
 En los procesos con CUDA el máximo de memray no es memoria del anfitrión. Para la validación marca 11,7 GB, pero 4,77 GB son proyecciones `mmap` creadas al iniciar CUDA en `external_corpus._device_budget` y 2,18 GB corresponden a `cupy.empty`, la reserva en la GPU que el controlador proyecta en el espacio de direcciones del proceso. Su RSS con memray fue de 5,44 GiB. En esos procesos hay que comparar el RSS y usar memray solo para atribuir las asignaciones del anfitrión.
+
+### Matriz de ajuste de XGBoost
+
+`memory_profiles.py matrix` construye la matriz cuantizada de ajuste igual que `external_corpus._execute`. Usa la misma factoría de lotes con las claves de cada fila (`_TrainRows`), la construcción de `tabular-historical-masked.json` y `build_external_matrix`, que recorre el iterador dos veces y escribe las páginas ELLPACK en disco. No ajusta ninguna ronda. Con `--validation` lee después la validación residente y la copia a `cuda:0` con la matriz todavía viva, en el mismo orden que el ajuste. Registra el RSS cada 0,1 s con su parte anónima (`RssAnon`), la memoria del proceso en la GPU según `nvidia-smi` cada 0,5 s y, cada segundo, la caché del lector y la memoria reservada por Arrow.
+
+La matriz de la ventana completa escribiría entre 18,9 y 25,2 GB de páginas, así que se midió sobre tres vistas de `fold-012` (v3) con uno de cada 100, 33 y 16 activos cuyas tres tablas conservan su huella (`view_subset.py`, con enlaces duros y recuentos recalculados en `evidence/xgboost-matrix-views.json`). Tienen 37, 123 y 244 activos y 110.095, 364.104 y 739.214 filas de ajuste. Con 64 bins hay cuatro ejecuciones por tamaño (cinco en el intermedio) y con 256 bins otras ocho en los dos primeros, más una con memray (`evidence/xgboost-matrix-runs.json`). La carga media estuvo entre 18 y 27 y el guardián térmico no congeló el cálculo.
+
+| Bins | Filas de ajuste | Pico RSS en la construcción | Parte anónima | Caché del lector | Claves de las filas | VRAM del proceso | Páginas en disco |
+|---:|---:|---:|---:|---:|---:|---:|---:|
+| 64 | 110.095 | 1,588 a 1,617 GiB | 1,105 a 1,110 GiB | 16,2 MB | 1,9 MB | 658 MiB | 141.940.736 bytes |
+| 64 | 364.104 | 1,601 a 1,656 GiB | 1,118 a 1,168 GiB | 54,2 MB | 6,2 MB | 658 MiB | 469.423.488 bytes |
+| 64 | 739.214 | 1,711 a 1,741 GiB | 1,260 a 1,290 GiB | 110,0 MB | 12,6 MB | 658 MiB | 953.036.472 bytes |
+| 256 | 110.095 | 1,532 a 1,566 GiB | Sin medir | 16,2 MB | 1,9 MB | 786 MiB | 189.254.000 bytes |
+| 256 | 364.104 | 1,604 a 1,668 GiB | Sin medir | 54,2 MB | 6,2 MB | 818 MiB | 625.896.984 bytes |
+
+El pico llega siempre durante la construcción y el proceso parte de 0,81 a 0,98 GiB (importaciones y contexto CUDA). La parte del RSS respaldada por archivos (bibliotecas y CUDA) se queda entre 0,35 y 0,48 GiB en todos los tamaños, así que lo que crece es memoria anónima. memray atribuye a la ejecución de 364.104 filas con 256 bins 0,52 GB de montículo vivo en el pico (familia `malloc`) y 21,5 GB de proyecciones `mmap` de CUDA y de la caché de páginas, que no son RSS del anfitrión (`evidence/memray-matrix.json`). Con 256 bins el RSS queda en el mismo intervalo que con 64 o algo por debajo.
+
+Las páginas coinciden con la estimación densa del plan (`external_cache_plan`, 6 bits por valor con 64 bins y 8 con 256) con entre 695 y 4.822 bytes más por matriz. La estimación no es una cota estricta, pero el desfase es de kilobytes y la construcción vuelve a comprobar los bytes escritos contra `max_disk_cache_bytes` en cada lote. Para la ventana completa supone 18,9 GB con 64 bins y 25,2 GB con 256, por debajo de los 32 GiB declarados. Durante estas medidas el disco tenía unos 31 GB libres, de modo que la construcción con 256 bins cabe con poco margen y depende de lo que ocupen otras tareas.
+
+#### Estimación para la ventana completa
+
+De lo que crece con el tamaño, la caché del lector (unos 450 KB por activo, porque guarda etiquetas y precios de cada activo para todas las particiones) y las claves de las filas (17 bytes por fila) se miden directamente. Tras restarlas, un ajuste lineal sobre las doce ejecuciones de 64 bins con caché registrada da 1,569 GiB más 50 bytes por fila, con un error típico de 24 y un intervalo del 95 % entre −3 y 104 bytes por fila (`matrix_scaling.py`, `evidence/xgboost-matrix-scaling.json`). La ventana completa tiene 14.639.357 filas de ajuste y 609.090 de validación. La caché del lector queda en su límite de 1 GiB, porque con unos 5.000 activos ocuparía más de 2 GB, y las claves suman 0,23 GiB.
+
+La validación residente se suma en el orden de `_execute`, con 6.900 bytes por fila (3,91 GiB). En las dos ejecuciones de validación sola, lo que el pico no explica con lo residente ni con lo que queda al liberarla no pasa de 17 MB. Lo que queda (1,0 y 1,1 GiB sobre el arranque) coincide con la caché del lector en su límite, porque los 4.130 activos de aquella vista la llenan, y ya está contado en la matriz. La suma usa el pico de la construcción y no lo retenido después, así que es conservadora en unos 0,2 GiB.
+
+| Pendiente | Matriz sola | Matriz y validación residente | Sobre el arranque del proceso |
+|---|---:|---:|---:|
+| Extremo inferior (−3 bytes por fila) | 2,76 GiB | 6,69 GiB | 5,78 GiB |
+| Central (50 bytes por fila) | 3,49 GiB | 7,42 GiB | 6,51 GiB |
+| Extremo superior (104 bytes por fila) | 4,22 GiB | 8,15 GiB | 7,24 GiB |
+
+La matriz sola cabe con holgura en los 8.192 MiB (8,00 GiB) declarados para XGBoost. La secuencia que ejecuta el ajuste, con la validación residente leída sobre la matriz viva, queda entre 6,7 y 8,2 GiB por proceso, así que la declaración cubre el valor central con 0,6 GiB de margen y el extremo superior la supera. Si la declaración se interpreta como lo que añade el trabajo al proceso de la campaña, que ya tiene el contexto CUDA, el extremo superior queda en 7,24 GiB. Ninguna de las dos cifras incluye las rondas, que leen las páginas de disco y añaden sus propios búferes, y que no se pueden medir mientras siga el bloqueo de aprendizaje.
+
+En la GPU, la construcción ocupa 658 MiB con 64 bins en los tres tamaños, y 786 y 818 MiB con 256 bins, contexto CUDA incluido. Aunque esos 32 MiB crecieran en proporción a las filas, la ventana completa no pasaría de unos 2,6 GiB. A eso se añade durante el ajuste la validación copiada a la GPU, hasta 2 GiB (`VALIDATION_DEVICE_BYTES`), lejos de los 7.000 MiB declarados. La construcción tardó entre 84 y 88 s por millón de filas con la máquina cargada, entre 20 y 22 minutos para la ventana completa.
+
+Conclusión para el plan: la estimación del disco es exacta y la VRAM de la construcción queda muy por debajo de su declaración, pero la RAM de la secuencia completa no queda validada. La extrapolación multiplica por 20 el mayor tamaño medido. Antes de entrenar hay que medir la secuencia de matriz y validación sobre la v3.1 completa y, si supera los 8.192 MiB, subir la declaración o reducir una parte medida, como la caché del lector durante las pasadas de XGBoost.
 
 ## Rangos NVTX
 
@@ -208,12 +245,27 @@ python reports/engineering/profiling-20261010/nvtx_mutations.py <mutaciones>.jso
 
 `memory_profiles.py read` y `validation` siguen el mismo patrón que `index`. La validación necesita `memslot gpu` porque copia la matriz a `cuda:0`.
 
+```bash
+# Matriz de ajuste de XGBoost sin rondas sobre una vista reducida (borrar la vista al terminar)
+python reports/engineering/profiling-20261010/view_subset.py <vista> <subvista> --every 16
+TMPDIR=<temporal> memslot gpu --max 8G -- python \
+  reports/engineering/profiling-20261010/memory_profiles.py matrix <subvista>/manifest.json \
+  --max-bin 64 --validation --output <resultados>.jsonl --label <etiqueta>
+python reports/engineering/profiling-20261010/matrix_scaling.py <resultados>.jsonl <vistas>.json \
+  reports/engineering/profiling-20261010/evidence/memory-runs.json \
+  configs/baselines/historical-masked-campaign-execution.json <escala>.json
+```
+
+`<vistas>.json` reúne el `summary.json` de cada subvista bajo su nombre. Las páginas se escriben en `TMPDIR` y se borran al liberar la matriz.
+
 ## Archivos
 
 | Archivo | Contenido |
 |---|---|
 | `pyspy_split.py` | Reparto del tiempo de Python por función a partir de dos capturas de py-spy |
-| `memory_profiles.py` | Recorridos de índice, lectura y validación residente con su pico de RSS y fase |
+| `memory_profiles.py` | Recorridos de índice, lectura, validación residente y matriz de ajuste con su pico de RSS y fase |
+| `view_subset.py` | Vista con uno de cada N activos verificados, enlazados en duro |
+| `matrix_scaling.py` | Ajuste del pico de la matriz frente a las filas y estimación para la ventana completa |
 | `memray_peak.py` | Reparto del máximo de memray por función del proyecto, marco Python y asignador |
 | `duckdb_native_split.py` | Reparto nativo de la memoria viva de la ordenación con DuckDB |
 | `replay_stored_events.py` | Envoltorio que repite eventos guardados sin leer la vista |
@@ -225,6 +277,8 @@ python reports/engineering/profiling-20261010/nvtx_mutations.py <mutaciones>.jso
 | `evidence/nsys-*.csv` | Resúmenes de Nsight Systems por rango, por núcleo y por llamada CUDA |
 | `evidence/memory-runs.json` y `evidence/memray-*.json` | Picos medidos y repartos de memray |
 | `evidence/memory-view.json` | Activos y filas de la vista de medida |
+| `evidence/xgboost-matrix-runs.json`, `-views.json` y `-scaling.json` | Ejecuciones de la matriz de ajuste con sus trazas, vistas reducidas y estimación |
+| `evidence/memray-matrix.json` | Reparto de memray de la matriz de 364.104 filas con 256 bins |
 | `evidence/nvtx-parity.json`, `nvtx-cost.json` y `nvtx-mutations.json` | Paridad, coste y mutaciones de los rangos |
 
 Las capturas en bruto (perfiles plegados, trazas de Nsight Systems y capturas de memray) no se versionan por su tamaño.
@@ -235,3 +289,4 @@ Las capturas en bruto (perfiles plegados, trazas de Nsight Systems y capturas de
 - py-spy sin `--native` atribuye el tiempo nativo a la función de Python que lo llama. Separar dentro de libtorch lanzamientos, reserva de memoria y espera necesitaría `perf` o los contadores de Nsight Compute, que requieren permisos de administrador.
 - Los rangos NVTX son marcas del anfitrión. La proyección en la GPU de Nsight Systems abarca desde el primer núcleo lanzado en el rango hasta el último e incluye los huecos.
 - Las medidas de memoria cubren el 82,7 % de los activos de la ventana y deben repetirse sobre la v3.1 completa.
+- La matriz de ajuste se midió hasta 739.214 filas y su pico para la ventana completa es una extrapolación lineal. La secuencia con la validación residente debe medirse sobre la v3.1 completa antes de entrenar, y las rondas de XGBoost no se han medido.

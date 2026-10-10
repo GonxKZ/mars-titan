@@ -63,6 +63,9 @@ constexpr std::size_t iso_day_length = 10;
 constexpr double special_treatment_band = 0.05;
 constexpr std::array<std::string_view, 4> partitions{"train", "validation", "calibration",
                                                      "evaluation"};
+// Único tramo cuyas predicciones salen de un ajuste que terminó antes de su primera decisión,
+// como `market.WALK_FORWARD_SEGMENT` en Python.
+constexpr std::string_view walk_forward_segment = "evaluation";
 
 void require(bool condition, std::string_view message) {
     if (!condition) {
@@ -98,6 +101,11 @@ WalkForwardSegment segment_from(const Json& value) {
                               read_json_int64(value.at("labels_used_until"))};
     require(result.start >= 0 && result.start < result.end && result.end <= final_test_start,
             "Los tramos walk-forward de la cinta no son válidos");
+    // El contrato del recibo de ventana: el predictor dejó de ver etiquetas antes del tramo, y
+    // validación y calibración son filas con las que eligió o calibró.
+    require(value.at("partition").get_ref<const std::string&>() == walk_forward_segment &&
+                result.labels_used_until < result.start,
+            "Una cinta real solo lleva predicciones de evaluación de un ajuste previo a su tramo");
     return result;
 }
 

@@ -91,9 +91,11 @@ def test_v2_plans_the_joint_model_for_every_arm_and_three_separate_controls():
     # El control en línea solo se evalúa, y por tanto solo se ajusta, en el ámbito conjunto.
     assert set(us["arms"]) == set(cn["arms"]) == set(CONTROLS)
     assert plan.scope_arms(loaded, "US") == plan.scope_arms(loaded, "CN") == list(CONTROLS)
-    # Dos casos con la semilla 42 y el elegido repetido con 43 y 44 en cada ventana.
+    # Cinco tasas con la semilla 42 y la elegida repetida con 43 y 44 en cada ventana.
     assert joint["arms"]["transformer_compact_online"] == {
-        s: dict(fit=0, carry=0, online=19) for s in ("42", "43", "44")
+        "42": dict(fit=0, carry=0, online=5 * 19),
+        "43": dict(fit=0, carry=0, online=19),
+        "44": dict(fit=0, carry=0, online=19),
     }
     for record, windows in ((joint, 19), (us, 19), (cn, 13)):
         for arm in record["arms"]:
@@ -123,8 +125,6 @@ def test_extra_seeds_repeat_only_the_selected_case_after_every_search_of_the_sco
         # Ninguna dependencia cruza de ámbito.
         assert all(dep.split("/")[0] == job["scope"] for dep in job["depends"]), job["id"]
     for (scope, window, arm), members in groups.items():
-        if arm == "transformer_compact_online":
-            continue  # El control en línea no busca casos: parte del elegido de su padre.
         searches = sorted(job["id"] for job in members if job["stage"] == "search")
         finalists = [job for job in members if job["stage"] == "finalist"]
         assert all(job["seed"] == 42 for job in members if job["stage"] == "search")
@@ -243,10 +243,10 @@ def test_memory_options_block_the_launch_until_they_match_the_recipe(tmp_path):
         value["memory_options"]["cm_v1"]["accumulation_rows"] = rows
 
     loaded = plan.load_campaign(edited(tmp_path, fixed))
+    # La regla del control en línea ya tiene sus valores y no bloquea.
     assert [reason.split(".")[0] for reason in plan.launch_blockers(loaded)] == [
         "episodic_gru",
         "episodic_gru",
-        *["transformer_compact_online"] * 4,
     ]
     report = plan.check_campaign(CAMPAIGN)
     assert report["launch_blockers"] == blockers
@@ -296,7 +296,10 @@ def test_v2_plan_finishes_each_window_of_every_scope_before_the_next():
         for index, row in enumerate(order.campaign_windows(value))
         for pair in row["scopes"].items()
     }
-    keys = [(position[job["scope"], job["window"]], job["stage"] != "search") for job in jobs]
+    keys = [
+        (position[job["scope"], job["window"]], order.PHASES.index(order.base_phase(job)))
+        for job in jobs
+    ]
     assert keys == sorted(keys)
     seen = set()
     for job in jobs:
@@ -318,8 +321,8 @@ def adapter_jobs(adapters):
 
 def test_window_schedule_orders_every_stage_of_the_window_and_counts_all_jobs():
     from mars_titan.posttraining import campaign_stage as adapters
-    from mars_titan.posttraining import staged_chain
     from mars_titan.simulation import policy_plan
+    from mars_titan.training import campaign_chain
     from mars_titan.training import modality_ablation_stage as ablation
 
     value = campaign()
@@ -335,7 +338,7 @@ def test_window_schedule_orders_every_stage_of_the_window_and_counts_all_jobs():
     # La etapa de adaptadores da cadena a todos los predictores de las políticas, también la
     # trivial de Ridge y XGBoost, así que cada selección que leen está en el plan.
     chains = {job["id"] for job in stages["adapters"]}
-    reads = {d for job in stages["rl"] for d in job["depends"] if staged_chain.CHAIN_SUFFIX in d}
+    reads = {d for job in stages["rl"] for d in job["depends"] if campaign_chain.CHAIN_SUFFIX in d}
     assert reads and reads <= chains
     assert {job["base_arm"] for job in stages["adapters"]} == set(stage["predictors"])
     schedule = order.window_schedule(value, jobs, stages)
@@ -348,7 +351,7 @@ def test_window_schedule_orders_every_stage_of_the_window_and_counts_all_jobs():
     # Adaptadores: 6.588 ajustes y 1.116 padres congelados, y 1.178 selecciones de la cadena
     # en su propia fase.
     assert (totals["adapters"], totals["chain"]) == (6588 + 1116, 1178)
-    assert (totals["online"], totals["ablation"], totals["rl"]) == (57, 3534, 2160 + 2442)
+    assert (totals["online"], totals["ablation"], totals["rl"]) == (133, 3534, 2160 + 2442)
     window = schedule[6]
     selection = window["phases"][order.PHASES.index("selection")]
     assert "CN/fold-000/mars_titan_m1" in selection["decisions"]
@@ -1043,7 +1046,7 @@ def test_the_plan_checks_every_declared_document_of_the_campaign_and_its_stages(
         "historical-masked-rl-policies.json",
         "historical-masked-ablation-stage-a-v2.json",
     ]
-    assert len(plan.plan_campaign(value)) == 2341 + 57
+    assert len(plan.plan_campaign(value)) == 2341 + 133
     # Las fuentes de predictor de las políticas son estados ajustados con la edición real.
     from mars_titan.simulation import policy_plan
 

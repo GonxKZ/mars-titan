@@ -20,6 +20,7 @@ import pytest
 from mars_titan.data.storage import atomic_json, sha256
 from mars_titan.posttraining import staged_chain
 from mars_titan.simulation import campaign_stage, native_policy_runs, window_tapes
+from mars_titan.training import campaign_chain
 from mars_titan.training import masked_campaign as engine
 from mars_titan.training.label_maturity import FIT_PARTITIONS, label_maturity
 from mars_titan.training.learning_hold import HOLD_ENV
@@ -227,7 +228,7 @@ def publish_chain(base, chain, *, seed=42, change=None):
                 dict(selected, score=0.5),
             ]
             selection = dict(
-                kind=staged_chain.SELECTION_KIND,
+                kind=campaign_chain.SELECTION_KIND,
                 schema_version=1,
                 campaign_sha256="a" * 64,
                 stage_sha256="b" * 64,
@@ -235,7 +236,7 @@ def publish_chain(base, chain, *, seed=42, change=None):
                 window=window,
                 base_arm=arm,
                 seed=seed,
-                rule=staged_chain.RULE,
+                rule=campaign_chain.RULE,
                 parent_window=None if first else names[index - 1],
                 parent=None if first else dict(id=f"US/{names[index - 1]}/{arm}", sha256="8" * 64),
                 candidates=[] if first else candidates,
@@ -248,10 +249,10 @@ def publish_chain(base, chain, *, seed=42, change=None):
             )
             if change is not None:
                 change(window, arm, selection, receipt)
-            destination = staged_chain.chain_folder(chain, "US", window, arm, seed)
+            destination = campaign_chain.chain_folder(chain, "US", window, arm, seed)
             atomic_json(destination / "US.json", receipt)
             selection["markets"] = selection["markets"] or {"US": sha256(destination / "US.json")}
-            atomic_json(destination / staged_chain.SELECTION, selection)
+            atomic_json(destination / campaign_chain.SELECTION, selection)
     return chain
 
 
