@@ -10,7 +10,9 @@
 #include <pybind11/stl.h>
 
 #include <memory>
+#include <span>
 #include <stdexcept>
+#include <string>
 #include <utility>
 
 namespace py = pybind11;
@@ -201,6 +203,10 @@ void bind_projection(py::module_& module) {
             return out;
         },
         py::arg("block").noconvert(), py::arg("transposed").noconvert());
+    // Versión del núcleo que usa project_codec_block en este procesador, para registrarla en las
+    // medidas. Todas dan los mismos bits.
+    module.attr("codec_projection_isa") = std::string(
+        mars_titan::episodic::projection_isa_name(mars_titan::episodic::default_projection_isa()));
 }
 
 void bind_cohorts(py::module_& module) {

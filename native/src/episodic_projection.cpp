@@ -6,6 +6,8 @@
 #include <cstring>
 #include <limits>
 #include <stdexcept>
+#include <string_view>
+#include <vector>
 
 #if defined(__GNUC__) || defined(__clang__)
 #define MARS_TITAN_PROJECTION_INLINE [[gnu::always_inline]] inline
@@ -79,8 +81,7 @@ MARS_TITAN_PROJECTION_INLINE void load(Lanes& target, const double* source, std:
 
 // Un mosaico de Rows filas y Vectors vectores de salida. lane0 suma las entradas pares de cada
 // par y lane1 las impares, como los dos carriles del registro de einsum.
-template <std::size_t Rows, std::size_t Vectors>
-struct Tile {
+template <std::size_t Rows, std::size_t Vectors> struct Tile {
     const double* block{};   // Primera fila del mosaico.
     std::size_t width{};     // Entradas por fila.
     const double* columns{}; // Primera salida del mosaico en la fila 0 de la transpuesta.
@@ -149,8 +150,8 @@ MARS_TITAN_PROJECTION_INLINE void project_rows(const Problem& problem, std::size
     constexpr std::size_t covered = Vectors * projection_lanes;
     std::size_t column = 0;
     for (; problem.outputs - column >= covered; column += covered) {
-        Tile<Rows, Vectors> tile{block, problem.width, problem.transposed + column,
-                                 problem.outputs, projection_lanes};
+        Tile<Rows, Vectors> tile{block, problem.width, problem.transposed + column, problem.outputs,
+                                 projection_lanes};
         tile.run(out + column);
     }
     for (; column < problem.outputs; column += projection_lanes) {
@@ -162,12 +163,7 @@ MARS_TITAN_PROJECTION_INLINE void project_rows(const Problem& problem, std::size
 // NOLINTEND(cppcoreguidelines-pro-bounds-constant-array-index)
 // NOLINTEND(cppcoreguidelines-pro-bounds-pointer-arithmetic)
 
-// El mismo cálculo se compila para AVX-512, AVX2 y la línea base, y el cargador elige el
-// primero que admite el procesador. Fuera de x86-64 con ELF se compila una sola versión.
-#if (defined(__GNUC__) || defined(__clang__)) && defined(__x86_64__) && defined(__ELF__)
-__attribute__((target_clones("avx512f", "avx2", "default")))
-#endif
-void project_all(const Problem& problem) {
+MARS_TITAN_PROJECTION_INLINE void project_all(const Problem& problem) {
     std::size_t row = 0;
     for (; problem.rows - row >= band_rows; row += band_rows) {
         project_rows<band_rows, 1>(problem, row);
@@ -180,14 +176,84 @@ void project_all(const Problem& problem) {
     }
 }
 
+// El mismo cálculo se compila para la línea base y, en x86-64, también para AVX2 y AVX-512.
+// Se elige en tiempo de ejecución, sin ifunc, porque el resolutor de target_clones se ejecuta
+// antes de iniciar ThreadSanitizer y lo hace fallar.
+void project_portable(const Problem& problem) { project_all(problem); }
+
+#if (defined(__GNUC__) || defined(__clang__)) && defined(__x86_64__)
+#define MARS_TITAN_PROJECTION_X86
+__attribute__((target("avx2"))) void project_avx2(const Problem& problem) { project_all(problem); }
+
+__attribute__((target("avx512f"))) void project_avx512f(const Problem& problem) {
+    project_all(problem);
+}
+#endif
+
+bool supported(ProjectionIsa isa) {
+#ifdef MARS_TITAN_PROJECTION_X86
+    // Idempotente. Garantiza la detección aunque la primera llamada llegue desde un constructor
+    // estático que se ejecute antes que el de la biblioteca de soporte del compilador.
+    __builtin_cpu_init();
+#endif
+    switch (isa) {
+    case ProjectionIsa::portable:
+        return true;
+#ifdef MARS_TITAN_PROJECTION_X86
+    case ProjectionIsa::avx2:
+        return __builtin_cpu_supports("avx2") != 0;
+    case ProjectionIsa::avx512f:
+        return __builtin_cpu_supports("avx512f") != 0;
+#else
+    case ProjectionIsa::avx2:
+    case ProjectionIsa::avx512f:
+        return false;
+#endif
+    }
+    return false;
+}
+
 bool shape_matches(std::size_t first, std::size_t second, std::size_t size) {
     return first <= std::numeric_limits<std::size_t>::max() / second && first * second == size;
 }
 } // namespace
 
+std::vector<ProjectionIsa> available_projection_isas() {
+    std::vector<ProjectionIsa> result;
+    for (const ProjectionIsa isa :
+         {ProjectionIsa::portable, ProjectionIsa::avx2, ProjectionIsa::avx512f}) {
+        if (supported(isa)) {
+            result.push_back(isa);
+        }
+    }
+    return result;
+}
+
+ProjectionIsa default_projection_isa() {
+    static const ProjectionIsa widest = available_projection_isas().back();
+    return widest;
+}
+
+std::string_view projection_isa_name(ProjectionIsa isa) {
+    switch (isa) {
+    case ProjectionIsa::portable:
+        return "portable";
+    case ProjectionIsa::avx2:
+        return "avx2";
+    case ProjectionIsa::avx512f:
+        return "avx512f";
+    }
+    throw std::invalid_argument("Versión desconocida del núcleo de proyección");
+}
+
 void project_block(std::span<const double> block, std::size_t rows, std::size_t width,
-                   std::span<const double> transposed, std::size_t outputs,
-                   std::span<double> out) {
+                   std::span<const double> transposed, std::size_t outputs, std::span<double> out) {
+    project_block(block, rows, width, transposed, outputs, out, default_projection_isa());
+}
+
+void project_block(std::span<const double> block, std::size_t rows, std::size_t width,
+                   std::span<const double> transposed, std::size_t outputs, std::span<double> out,
+                   ProjectionIsa isa) {
     if (width == 0 || outputs == 0) {
         throw std::invalid_argument("La proyección del codec necesita anchura y salidas");
     }
@@ -196,8 +262,25 @@ void project_block(std::span<const double> block, std::size_t rows, std::size_t 
         !shape_matches(rows, outputs, out.size())) {
         throw std::invalid_argument("Las formas de la proyección del codec no coinciden");
     }
-    if (rows > 0) {
-        project_all(Problem{block.data(), rows, width, transposed.data(), outputs, out.data()});
+    if (!supported(isa)) {
+        throw std::invalid_argument("El procesador no admite la versión pedida de la proyección");
+    }
+    if (rows == 0) {
+        return;
+    }
+    const Problem problem{block.data(), rows, width, transposed.data(), outputs, out.data()};
+    switch (isa) {
+#ifdef MARS_TITAN_PROJECTION_X86
+    case ProjectionIsa::avx512f:
+        project_avx512f(problem);
+        return;
+    case ProjectionIsa::avx2:
+        project_avx2(problem);
+        return;
+#endif
+    default:
+        project_portable(problem);
+        return;
     }
 }
 
