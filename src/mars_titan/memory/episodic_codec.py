@@ -108,8 +108,8 @@ class FrozenEpisodeCodec:
 
     _identity_json: str
     _projection: np.ndarray
+    _projection_buffer: np.ndarray
     _input_widths: tuple[int, ...]
-    _projection_sha256: str
     _modality_weights: tuple[float, ...]
     _presence_weight: float
     _key_constant: float
@@ -190,8 +190,8 @@ class FrozenEpisodeCodec:
         for name, value in dict(
             _identity_json=_canonical(identity),
             _projection=projection,
+            _projection_buffer=projection.base,
             _input_widths=widths,
-            _projection_sha256=checksum,
             _modality_weights=weights,
             _presence_weight=presence_weight,
             _key_constant=key_constant,
@@ -227,13 +227,20 @@ class FrozenEpisodeCodec:
         return result
 
     def _verify_projection(self):
+        """Exigir la misma memoria de solo lectura cuya huella se calculó al construir el codec.
+
+        La proyección es una vista de un objeto bytes, que no se puede modificar, y NumPy no
+        permite volver a marcarla como escribible. Sustituir el atributo cambia su base. Por eso
+        basta con comprobar esa base en cada llamada, sin repetir el SHA-256 de la matriz.
+        """
         shape = (2 * WIDTH - 1, sum(self._input_widths) + len(MODALITIES))
         if (
-            self._projection.shape != shape
+            self._projection.base is not self._projection_buffer
+            or not isinstance(self._projection_buffer.base, bytes)
+            or self._projection.shape != shape
             or self._projection.dtype != np.float64
             or not self._projection.flags.c_contiguous
             or self._projection.flags.writeable
-            or hashlib.sha256(self._projection).hexdigest() != self._projection_sha256
         ):
             raise ValueError("La proyección congelada ha cambiado")
 

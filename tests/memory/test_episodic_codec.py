@@ -224,6 +224,19 @@ def test_mutated_projection_is_rejected_before_encoding():
         codec.encode(validated_cpu_batch(raw_batch(), specification()))
 
 
+def test_projection_with_the_same_bytes_in_another_buffer_is_rejected():
+    from mars_titan.memory.episodic_codec import _immutable
+
+    codec = FrozenEpisodeCodec(specification())
+    with pytest.raises(ValueError):
+        codec._projection.setflags(write=True)
+    replaced = _immutable(codec._projection)
+    np.testing.assert_array_equal(replaced, codec._projection)
+    object.__setattr__(codec, "_projection", replaced)
+    with pytest.raises(ValueError, match="proyección"):
+        codec.encode(validated_cpu_batch(raw_batch(), specification()))
+
+
 def test_encode_budget_fails_before_projection_for_an_oversized_batch():
     spec = specification()
     codec = FrozenEpisodeCodec(spec, max_buffer_bytes=2 * 1024**2)
