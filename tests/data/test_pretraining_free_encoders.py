@@ -161,6 +161,13 @@ def test_identity_records_the_rules_and_changes_with_them(encoders, monkeypatch)
     assert changed["text_hashing"] != spec["text_hashing"]
 
 
+def test_the_probe_also_follows_the_image_rule(encoders, monkeypatch):
+    # Bloques de 28 píxeles darían 8 × 8 por canal: la huella de la sonda debe cambiar.
+    monkeypatch.setattr(pf, "BLOCK", 28)
+    monkeypatch.setattr(pf, "IMAGE_WIDTH", 128)
+    assert pf.pretraining_free_spec()["probe_sha256"] != encoders.spec["probe_sha256"]
+
+
 def test_the_corpus_encoding_writes_the_control_vectors_and_identity(tmp_path):
     class Recording(pf.PretrainingFreeEncoders):
         def __init__(self):

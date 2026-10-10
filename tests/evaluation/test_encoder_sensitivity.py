@@ -76,6 +76,8 @@ def write_comparison(folder, deltas, *, edition, market="US", edit=None):
                 window = f"fold-{moment.year - 2014:03d}"
                 mae = float(base[index] + offset + shift[index])
                 rows.append((arm, seed, window, "raw", market, moment, 20, mae, 11, 9))
+                # Las filas calibradas no entran en la sensibilidad, que usa el error bruto.
+                rows.append((arm, seed, window, "calibrated", market, moment, 20, mae + 1, 11, 9))
     names = (
         "arm",
         "seed",
@@ -285,6 +287,27 @@ def test_short_blocks_or_series_leave_the_decision_undetermined(tmp_path):
     short = es.evaluate(value, frozen, control)["markets"]["US"]["gru"]
     assert short["decision"]["reason"] == "Se necesitan más días que la longitud del bloque"
     assert set(short["intervals"].values()) == {None}
+
+
+def test_a_block_as_long_as_the_series_cannot_decide(tmp_path):
+    frozen, control = pair(tmp_path, {arm: step(0.3, 0.0) for arm in ARMS})
+    value = section()
+    value["bootstrap"]["block_length"] = len(sessions())
+    record = es.evaluate(value, frozen, control)["markets"]["US"]["gru"]
+    assert record["decision"]["reason"] == "Se necesitan más días que la longitud del bloque"
+
+
+def test_arms_that_do_not_share_sessions_are_rejected(tmp_path):
+    def thin(table):
+        # Titans-MAC pierde su primera sesión en las dos ediciones y la GRU la conserva.
+        first = micros(sessions()[0])
+        titans = pc.equal(table["arm"], "titans_mac_online").to_numpy(zero_copy_only=False)
+        moments = table["prediction_at"].cast("int64").to_numpy()
+        return table.filter(pa.array(~(titans & (moments == first))))
+
+    frozen, control = pair(tmp_path, {arm: step(0.3, 0.0) for arm in ARMS}, edit=thin)
+    with pytest.raises(ValueError, match="mismas sesiones"):
+        es.evaluate(section(), frozen, control)
 
 
 def test_a_series_that_ends_before_the_cutoff_cannot_decide(tmp_path):
