@@ -13,6 +13,8 @@ medio (tau - 1/2), el mismo que da `torch.maximum` al repartir el empate. Así e
 término de la mediana vale exactamente la mitad de `l1_loss`, también en el cero.
 """
 
+import functools
+
 import torch
 from torch import nn
 from torch.nn import functional
@@ -72,6 +74,17 @@ def median(quantiles):
     return quantiles[..., MEDIAN_INDEX]
 
 
+@functools.cache
+def _levels(dtype, device):
+    """Niveles en el dispositivo, creados una vez. Copiarlos en cada llamada sincronizaba la GPU.
+
+    Solo se leen, así que compartir el tensor no cambia ningún valor ni gradiente. Se
+    crean fuera de `inference_mode` para que el ajuste pueda guardarlos en su grafo.
+    """
+    with torch.inference_mode(False):
+        return torch.tensor(LEVELS, dtype=dtype, device=device)
+
+
 def pinball_loss(quantiles, target, *, reduction="mean"):
     """Media de pinball de los cinco niveles por fila y, opcionalmente, entre filas.
 
@@ -93,7 +106,7 @@ def pinball_loss(quantiles, target, *, reduction="mean"):
         raise ValueError("Cuantiles y objetivo deben compartir precisión y dispositivo")
     if not quantiles.dtype.is_floating_point:
         raise ValueError("La pérdida pinball necesita valores reales")
-    levels = torch.tensor(LEVELS, dtype=quantiles.dtype, device=quantiles.device)
+    levels = _levels(quantiles.dtype, quantiles.device)
     residual = target.unsqueeze(-1) - quantiles
     per_row = torch.maximum(levels * residual, (levels - 1) * residual).mean(dim=-1)
     return per_row if reduction == "none" else per_row.mean()

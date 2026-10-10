@@ -291,12 +291,16 @@ def test_protocols_with_different_stopping_rules_are_rejected(tmp_path):
 def test_pending_families_and_later_stages_are_declared_not_planned():
     report = plan.check_campaign(CAMPAIGNS["B"])
     pending = report["pending_families"]
-    assert set(pending) == {"episodic_gru", "mars_titan", "cm_v1"}
+    assert set(pending) == {"episodic_gru", "mars_titan", "cm_v1", plan.ONLINE_CONTROL}
+    # El control en línea tiene ejecutor, pero sus trabajos solo los declara la campaña A por
+    # etapas.
+    assert pending[plan.ONLINE_CONTROL]["arms"] == ["transformer_compact_online"]
+    assert pending[plan.ONLINE_CONTROL]["issue"] == 443
     planned = {job["arm"] for job in plan.plan_campaign(loaded("B"))}
     assert planned == {*NEURAL_ARMS, "ridge", "xgboost", *TITANS_ARMS}
     assert not planned & {arm for entry in pending.values() for arm in entry["arms"]}
     stage = report["later_stages"]["posttraining_adapter_matrix"]
-    assert stage["config"] == "configs/posttraining/adapter-matrix-v2.json"
+    assert stage["config"] == "configs/posttraining/adapter-matrix-v3.json"
     assert Path(stage["config"]).is_file() and stage["pending"] == [] and stage["issue"] == 364
     assert stage["entry"] == "mars_titan.posttraining.campaign_stage:run_stage"
     module, _, function = stage["entry"].partition(":")
@@ -313,9 +317,11 @@ def test_later_stage_of_each_variant_starts_from_that_campaign_and_matrix(varian
     stage = campaign_stage.load_stage(declared["stages"][variant])
     assert stage["campaign"]["path"] == str(CAMPAIGNS[variant].resolve())
     assert stage["campaign"]["variant"] == variant
-    assert stage["matrix_path"] == str(Path(declared["config"]).resolve())
+    # B no se ejecuta y conserva la matriz v2, cuyos casos de las redes son los de la v3.
+    matrix = declared["config"] if variant == "A" else "configs/posttraining/adapter-matrix-v2.json"
+    assert stage["matrix_path"] == str(Path(matrix).resolve())
     counts = campaign_stage.count_stage(stage)
-    expected = dict(A=(3915, 0), B=(1479, 2436))[variant]
+    expected = dict(A=(10332, 1302), B=(1479, 2436))[variant]
     assert (counts["training_jobs"], counts["prediction_jobs"]) == expected
 
 
@@ -358,7 +364,8 @@ def test_titans_arms_search_as_many_optimizer_cases_as_the_neural_references():
     assert "learning_rate" not in recipe["recipe"]
     assert recipe["recipe"]["epochs"] == campaign["rule"]["max_epochs"] == 30
     assert recipe["predictor"]["memory_residual_layer_norm"] is True
-    assert recipe["recipe"]["accumulation_rows"] is None
+    assert recipe["recipe"]["accumulation_rows"] == recipe["recipe"]["block_rows"] == 1024
+    assert recipe["recipe"]["precision"] == "fp32_strict"
 
 
 @pytest.mark.parametrize(

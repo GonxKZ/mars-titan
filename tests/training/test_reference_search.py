@@ -2,6 +2,7 @@
 
 import importlib
 import json
+from pathlib import Path
 
 import pytest
 
@@ -265,3 +266,17 @@ def test_failed_output_verification_does_not_count_as_a_completed_trial(tmp_path
     summary = json.loads((output / "summary.json").read_text())
     assert summary["status"] == "failed" and summary["completed_runs"] == 0
     assert summary["runs"][0]["status"] == "failed"
+
+
+@pytest.mark.parametrize("batch_size", [256, 512, 4096])
+def test_a_transformer_search_accepts_the_batches_that_run_reference_case_admits(
+    tmp_path, batch_size
+):
+    plan = json.loads(
+        Path("configs/baselines/historical-masked-reference-search-us.json").read_text()
+    )
+    assert "transformer" in plan["models"]
+    config = tmp_path / "search.json"
+    config.write_text(json.dumps(dict(plan, batch_size=batch_size)))
+    accepted, _, _ = module()._configuration(config)
+    assert accepted["batch_size"] == batch_size

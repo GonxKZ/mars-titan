@@ -4,9 +4,11 @@ PPO y Double DQN usan ``mars-titan-ppo`` con la configuración de esquema 4, y K
 usa ``mars-titan-klpo``. Un ajuste escribe su configuración junto al trabajo, lanza el
 binario con ``scripts/run_native_ppo.py`` (admisión GPU, carga única, pausa y vigilancia
 del padre), lee la selección en validación y evalúa la política elegida en la cinta de
-evaluación con los tres costes declarados. Un traslado evalúa sin ajuste la política de su
-ancla con la configuración de ese ajuste. Los binarios y el lanzador comprueban la
-protección local del aprendizaje antes de leer cintas o crear salidas, igual que la etapa.
+evaluación con los costes declarados por la etapa, que el binario recibe con
+``--evaluation-cost`` y sella en su identidad. Cada episodio conserva su patrimonio por
+sesión. Un traslado evalúa sin ajuste la política de su ancla con la configuración de ese
+ajuste. Los binarios y el lanzador comprueban la protección local del aprendizaje antes de
+leer cintas o crear salidas, igual que la etapa.
 
 KLPO solo consume oleadas completas: un episodio por entorno, que recorre en ciclo las
 cintas de ajuste. Usa las oleadas enteras que caben en el presupuesto de transiciones, así
@@ -22,7 +24,7 @@ from pathlib import Path, PurePosixPath
 from mars_titan.data.cohort_files import read_manifest
 from mars_titan.data.storage import atomic_json, sha256
 
-from .policy_plan import CARRY, FIT, _require
+from .policy_plan import CARRY, FIT, WAVE_ENGINES, _require
 
 ROOT = Path(__file__).resolve().parents[3]
 LAUNCHER = ROOT / "scripts" / "run_native_ppo.py"
@@ -30,9 +32,13 @@ BUILD = ROOT / "build" / "native" / "native-ppo-release"
 BINARIES = {
     "native_ppo": ("MARS_TITAN_PPO_EXECUTABLE", "mars-titan-ppo"),
     "native_klpo": ("MARS_TITAN_KLPO_EXECUTABLE", "mars-titan-klpo"),
+    # Los objetivos de grupo comparten binario, oleadas y selección con KLPO.
+    "native_group_relative": ("MARS_TITAN_KLPO_EXECUTABLE", "mars-titan-klpo"),
 }
-# Costes de `policy_evaluation.hpp`. La etapa debe declarar los mismos.
-EVALUATION_COSTS = [0, 10, 25]
+GROUP_KIND = "native_group_relative"
+# Capacidad de los binarios que publican el patrimonio por sesión y aceptan los costes de
+# evaluación declarados por la etapa con --evaluation-cost.
+EQUITY_AND_COSTS = "native_policy_equity_and_costs"
 RECONSTRUCTED_SCHEMA = 4
 ROLLOUT_BYTES = 128 * 1024**2
 # Contrato klpo_terminal_token_full_v1: KL con peso uno y retorno terminal sin descuento.
@@ -112,13 +118,20 @@ def ppo_config(stage, job):
 
 
 def klpo_config(stage, job):
-    """Configuración KLPO terminal con el presupuesto, el entorno y la selección comunes."""
+    """Configuración de oleadas con el presupuesto, el entorno y la selección comunes.
+
+    KLPO terminal y los objetivos de grupo usan el mismo esquema. Solo cambian el tipo y el
+    objetivo, de modo que recogida, carriles, Adam y selección son idénticos. Los objetivos de
+    grupo no usan beta, y gamma igual a uno hace que el retorno sea el crecimiento logarítmico
+    neto de todo el episodio, que es su resultado.
+    """
     policies = stage["policies"]
     entry, budget = policies["policies"][job["arm"]], policies["budget"]
     hyper, selection = policies["hyperparameters"], policies["selection"]
+    group = entry["engine"] == "native_group_relative"
     return dict(
         schema_version=1,
-        kind="native_klpo_terminal",
+        kind=GROUP_KIND if group else "native_klpo_terminal",
         objective=entry["objective"],
         controller=entry["controller"],
         training=dict(total_transitions=budget["transitions"], seed=job["seed"], workers=1),
@@ -168,6 +181,8 @@ def _record(row, cost, manifest):
         costs=row["costs"],
         turnover=row["turnover"],
         steps=row["steps"],
+        # Un episodio fallido no publica patrimonio. La etapa solo lo exige en los terminados.
+        equity=None if row["status"] == "failed" else row["equity"],
     )
 
 
@@ -191,7 +206,7 @@ class NativePolicyExecutor:
     def config(self, stage, job):
         return (ppo_config if self.engine == "native_ppo" else klpo_config)(stage, job)
 
-    def launch(self, config, output, *, train=(), validation=(), audit=None, tapes=()):
+    def launch(self, config, output, *, train=(), validation=(), audit=None, tapes=(), costs=()):
         command = [self.python, str(LAUNCHER), "--binary", str(binary_path(self.engine))]
         command += ["--config", str(config), "--output", str(output)]
         for option, paths in (
@@ -203,6 +218,8 @@ class NativePolicyExecutor:
                 command += [option, str(path)]
         if audit is not None:
             command += ["--audit-run", str(audit)]
+            for cost in costs:
+                command += ["--evaluation-cost", repr(float(cost))]
         elif self.stop_after is not None:
             command += ["--stop-after", str(self.stop_after)]
         if (output / "identity.json").is_file():
@@ -223,10 +240,6 @@ class NativePolicyExecutor:
 
     def __call__(self, job, tapes, folder, *, stage, resume, stop, anchor):
         policies = stage["policies"]
-        _require(
-            policies["evaluation_costs_bps"] == EVALUATION_COSTS,
-            "Los costes de evaluación de la etapa no coinciden con los del motor nativo",
-        )
         if job["kind"] == FIT:
             config = folder / "config.json"
             document = self.config(stage, job)
@@ -257,13 +270,17 @@ class NativePolicyExecutor:
             records = [episode(cost, failure=tapes.failure["reason"]) for cost in costs]
         else:
             output = folder / "evaluation"
-            if not self.launch(config, output, audit=fit, tapes=[tapes.paths["evaluation"]]):
+            launched = self.launch(
+                config, output, audit=fit, tapes=[tapes.paths["evaluation"]], costs=costs
+            )
+            if not launched:
                 return dict(status="paused")
             evaluation = _payload(output / "evaluation.json")
             _require(
                 evaluation["status"] == "completed"
-                and evaluation["identity"]["policy_sha256"] == report["policy"]["sha256"],
-                f"{job['id']}: la evaluación no corresponde a la política elegida",
+                and evaluation["identity"]["policy_sha256"] == report["policy"]["sha256"]
+                and evaluation["identity"]["cost_bps"] == [float(cost) for cost in costs],
+                f"{job['id']}: la evaluación no corresponde a la política o a los costes",
             )
             manifest = sha256(Path(tapes.paths["evaluation"]) / "manifest.json")
             records = [
@@ -273,7 +290,7 @@ class NativePolicyExecutor:
         return dict(report, status="completed", evaluation=records)
 
     def fit_report(self, job, run, policies):
-        if self.engine == "native_klpo":
+        if self.engine in WAVE_ENGINES:
             best = run["best"]
             sha, extra = best["actor_sha256"], dict(waves=run["consumed_waves"])
         else:

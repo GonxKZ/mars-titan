@@ -1,5 +1,6 @@
 #include "mars_titan/ppo_policy.hpp"
 #include "mars_titan/ppo_objectives.hpp"
+#include "mars_titan/quantile_dqn.hpp"
 #include "mars_titan/klpo_terminal.hpp"
 #include "mars_titan/simulation_files.hpp"
 
@@ -20,10 +21,12 @@
 
 #include <algorithm>
 #include <array>
+#include <charconv>
 #include <cmath>
 #include <cstring>
 #include <istream>
 #include <limits>
+#include <memory>
 #include <mutex>
 #include <optional>
 #include <ostream>
@@ -60,6 +63,9 @@ constexpr std::string_view terminal_adam_contract = "klpo_actor_adam_zero_critic
 constexpr double terminal_adam_beta1 = .9;
 constexpr double terminal_adam_beta2 = .999;
 constexpr double terminal_adam_epsilon = 1e-8;
+// Umbral de Huber de QR-DQN. El artículo compara kappa = 0 y kappa = 1 (QR-DQN-0 y QR-DQN-1)
+// y aquí se conserva la variante QR-DQN-1.
+constexpr double qr_dqn_kappa = 1;
 constexpr int64_t metric_count = 6;
 
 struct RecurrentSequence {
@@ -89,9 +95,18 @@ at::Tensor long_tensor(std::span<const int64_t> values, const at::Device& device
     return result.to(device);
 }
 
+// Salidas de la capa final: seis logits y el valor en PPO, seis valores Q en Double DQN y
+// N cuantiles por acción en QR-DQN.
+int64_t output_count(const PpoArchitecture& architecture) {
+    if (!architecture.double_dqn) {
+        return ppo_action_count + 1;
+    }
+    return architecture.quantiles > 0 ? ppo_action_count * architecture.quantiles : ppo_action_count;
+}
+
 std::size_t model_parameters(std::size_t width, const PpoArchitecture& architecture) {
     const auto hidden = static_cast<std::size_t>(architecture.hidden_width);
-    const auto outputs = static_cast<std::size_t>(ppo_action_count + (architecture.double_dqn ? 0 : 1));
+    const auto outputs = static_cast<std::size_t>(output_count(architecture));
     const auto encoder = architecture.kind == PpoNetworkKind::mlp
         ? (width + 1) * hidden + (hidden + 1) * hidden
         : static_cast<std::size_t>(gru_gates) * hidden * (width + hidden + 2);
@@ -102,6 +117,19 @@ void require(bool condition, std::string_view message) {
     if (!condition) {
         throw std::invalid_argument(std::string(message));
     }
+}
+
+// Geometría de QR-DQN en la huella. Vacía en el resto para conservar las huellas anteriores.
+std::string quantile_geometry(const PpoArchitecture& architecture) {
+    if (architecture.quantiles == 0) {
+        return {};
+    }
+    // 32 caracteres bastan para la representación más corta de cualquier double con to_chars.
+    constexpr std::size_t alpha_characters = 32;
+    std::array<char, alpha_characters> alpha{};
+    const auto written = std::to_chars(alpha.data(), std::to_address(alpha.end()), architecture.risk_alpha);
+    require(written.ec == std::errc{}, "No se pudo representar alpha en la huella");
+    return ":" + std::to_string(architecture.quantiles) + ":" + std::string(alpha.data(), written.ptr);
 }
 
 void require_float_shape(const at::Tensor& tensor, at::IntArrayRef shape, const at::Device& device) {
@@ -201,7 +229,7 @@ public:
                 initialize("bias_ih_l0", {gru_gates * hidden}, hidden),
                 initialize("bias_hh_l0", {gru_gates * hidden}, hidden)};
         }
-        const auto outputs = ppo_action_count + (architecture_.double_dqn ? 0 : 1);
+        const auto outputs = output_count(architecture_);
         output_weight_ = initialize("output_weight", {outputs, hidden}, hidden);
         output_bias_ = initialize("output_bias", {outputs}, hidden);
         if (architecture_.auxiliary) {
@@ -216,9 +244,19 @@ public:
             const auto result = infer(observations, state);
             return {result.logits, result.values};
         }
+        if (architecture_.quantiles > 0) {
+            // La puntuación de riesgo de cada acción ocupa el lugar de los valores Q.
+            const auto scores = quantile_action_scores(quantiles(observations), architecture_.risk_alpha);
+            return {scores, std::get<0>(scores.max(1))};
+        }
         const auto output = at::linear(shared_features(observations), output_weight_, output_bias_);
         return {output.narrow(1, 0, ppo_action_count), architecture_.double_dqn ?
             std::get<0>(output.max(1)) : output.select(1, ppo_action_count)};
+    }
+
+    [[nodiscard]] at::Tensor quantiles(const at::Tensor& observations) const {
+        return at::linear(shared_features(observations), output_weight_, output_bias_)
+            .view({observations.size(0), ppo_action_count, architecture_.quantiles});
     }
 
     [[nodiscard]] PpoInference sequence(const at::Tensor& observations, const at::Tensor& state) const {
@@ -312,7 +350,7 @@ public:
             require_float(recurrent_.at(2), {gru_gates * hidden}, device);
             require_float(recurrent_.at(3), {gru_gates * hidden}, device);
         }
-        const auto outputs = ppo_action_count + (architecture_.double_dqn ? 0 : 1);
+        const auto outputs = output_count(architecture_);
         require_float(output_weight_, {outputs, hidden}, device);
         require_float(output_bias_, {outputs}, device);
         if (architecture_.auxiliary) {
@@ -1178,6 +1216,11 @@ void PpoPolicy::save(std::ostream& destination) const {
     archive.write("hidden_width", c10::IValue(impl_->architecture.hidden_width));
     archive.write("auxiliary_enabled", c10::IValue(impl_->architecture.auxiliary));
     archive.write("double_dqn", c10::IValue(impl_->architecture.double_dqn));
+    if (impl_->architecture.quantiles > 0) {
+        // Solo QR-DQN escribe su cabeza. Los archivos de Double DQN conservan sus bytes.
+        archive.write("quantiles", c10::IValue(impl_->architecture.quantiles));
+        archive.write("risk_alpha", c10::IValue(impl_->architecture.risk_alpha));
+    }
     if (impl_->objective.enabled()) {
         impl_->controller.validate(impl_->objective, static_cast<int64_t>(optimizer_steps()), impl_->parameters.epochs);
         write_controller(archive, impl_->objective, impl_->controller);
@@ -1253,6 +1296,14 @@ PpoPolicy PpoPolicy::load_mode(std::istream& source, std::string_view device_nam
         if (archive.try_read("double_dqn", double_dqn)) {
             require(double_dqn.isBool(), "El checkpoint contiene una bandera Double DQN inválida");
             architecture.double_dqn = double_dqn.toBool();
+        }
+        c10::IValue quantiles;
+        if (archive.try_read("quantiles", quantiles)) {
+            c10::IValue risk_alpha;
+            archive.read("risk_alpha", risk_alpha);
+            require(quantiles.isInt() && risk_alpha.isDouble(), "El checkpoint contiene una cabeza cuantílica inválida");
+            architecture.quantiles = quantiles.toInt();
+            architecture.risk_alpha = risk_alpha.toDouble();
         }
         architecture.validate();
     }
@@ -1395,6 +1446,13 @@ void PpoArchitecture::validate() const {
                 (!auxiliary || (kind == PpoNetworkKind::mlp && hidden_width == default_ppo_hidden_width)) &&
                 (!double_dqn || (kind == PpoNetworkKind::mlp && hidden_width == default_ppo_hidden_width && !auxiliary)),
             "La arquitectura PPO necesita una MLP acotada o una GRU de 64 unidades");
+    require((quantiles == 0 && risk_alpha == 1) ||
+                (double_dqn && quantiles >= 2 && quantiles <= maximum_quantiles),
+            "La cabeza cuantílica solo existe en Double DQN y con un número acotado de cuantiles");
+    if (quantiles > 0) {
+        // Comprueba que alpha*N sea un número entero de niveles con la misma regla que actúa.
+        static_cast<void>(quantile_action_scores(at::zeros({1, ppo_action_count, quantiles}, at::kDouble), risk_alpha));
+    }
 }
 
 at::Tensor PpoPolicy::initial_state(std::size_t batch_size) const {
@@ -1494,7 +1552,7 @@ std::string PpoPolicy::parameter_fingerprint() const {
                 std::to_string(static_cast<unsigned>(impl_->architecture.kind)) + ":" +
                 std::to_string(impl_->architecture.hidden_width) + ":" +
                 std::to_string(impl_->architecture.auxiliary) + ":" +
-                std::to_string(impl_->architecture.double_dqn) + "\n";
+                std::to_string(impl_->architecture.double_dqn) + quantile_geometry(impl_->architecture) + "\n";
     material.reserve(parameter_count() * sizeof(float) + simulation::bytes_per_kibibyte);
     for (const auto& item : impl_->network.named_parameters()) {
         const auto value = item.value().detach().to(at::kCPU).contiguous();
@@ -1711,15 +1769,14 @@ PpoAction PpoPolicy::act_double_dqn(const at::Tensor& observations, double epsil
             initial_state(static_cast<std::size_t>(observations.size(0))), probabilities};
 }
 
-DqnUpdateStats PpoPolicy::update_double_dqn(const DqnBatch& batch, std::size_t environment_step,
-                                            std::size_t target_interval) {
-    require(impl_->architecture.double_dqn && environment_step >= dqn_warmup_steps &&
-                environment_step <= static_cast<std::size_t>(std::numeric_limits<int64_t>::max()) &&
-                environment_step > impl_->dqn_environment_step && target_interval > 0 &&
-                target_interval <= static_cast<std::size_t>(maximum_samples) &&
-                (impl_->target_interval == 0 || impl_->target_interval == target_interval) &&
-                optimizer_steps() < static_cast<std::size_t>(maximum_optimizer_steps),
-            "Double DQN necesita un cursor creciente tras el calentamiento y un intervalo objetivo estable");
+at::Tensor PpoPolicy::action_quantiles(const at::Tensor& observations) const {
+    require(impl_->architecture.quantiles > 0, "La política no tiene cabeza cuantílica");
+    impl_->validate_observations(observations);
+    return impl_->network.quantiles(observations);
+}
+
+DqnLoss PpoPolicy::double_dqn_loss(const DqnBatch& batch) const {
+    require(impl_->architecture.double_dqn, "La pérdida de valor necesita Double DQN o QR-DQN");
     impl_->validate_observations(batch.observations, true);
     impl_->validate_observations(batch.next_observations, true);
     const auto samples = batch.observations.size(0);
@@ -1735,7 +1792,7 @@ DqnUpdateStats PpoPolicy::update_double_dqn(const DqnBatch& batch, std::size_t e
     require(((batch.actions >= 0) & (batch.actions < ppo_action_count)).all().item<bool>(),
             "Las acciones Double DQN exceden las seis opciones admitidas");
     const auto indices = batch.reward_valid.nonzero().squeeze(1);
-    DqnUpdateStats result;
+    DqnLoss result;
     result.valid_transitions = indices.numel();
     if (result.valid_transitions == 0) {
         return result;
@@ -1745,18 +1802,50 @@ DqnUpdateStats PpoPolicy::update_double_dqn(const DqnBatch& batch, std::size_t e
     const auto actions = batch.actions.index_select(0, indices).to(impl_->tensor_device);
     const auto rewards = batch.rewards.detach().index_select(0, indices).to(impl_->tensor_device, at::kFloat);
     const auto terminated = batch.terminated.index_select(0, indices).to(impl_->tensor_device);
+    const auto& architecture = impl_->architecture;
     at::Tensor targets;
     {
         const at::NoGradGuard no_grad;
-        targets = double_dqn_targets(rewards, terminated, impl_->network.forward(following).logits,
-                                     impl_->target->forward(following).logits, impl_->parameters.gamma);
+        targets = architecture.quantiles > 0
+            ? quantile_double_targets(rewards, terminated, impl_->network.quantiles(following),
+                                      impl_->target->quantiles(following),
+                                      {.gamma = impl_->parameters.gamma, .risk_alpha = architecture.risk_alpha})
+            : double_dqn_targets(rewards, terminated, impl_->network.forward(following).logits,
+                                 impl_->target->forward(following).logits, impl_->parameters.gamma);
     }
     const at::AutoGradMode enable_grad(true);
+    if (architecture.quantiles > 0) {
+        const auto count = architecture.quantiles;
+        const auto index = actions.view({-1, 1, 1}).expand({actions.size(0), 1, count});
+        const auto selected = impl_->network.quantiles(observations).gather(1, index).squeeze(1);
+        result.loss = quantile_huber_loss(selected, targets, qr_dqn_kappa).mean();
+        require(at::isfinite(result.loss).item<bool>(), "La pérdida cuantílica de QR-DQN no es finita");
+        return result;
+    }
     const auto selected = impl_->network.forward(observations).logits.gather(1, actions.unsqueeze(1)).squeeze(1);
-    const auto loss = at::smooth_l1_loss(selected, targets);
-    require(at::isfinite(loss).item<bool>(), "La pérdida SmoothL1 de Double DQN no es finita");
+    result.loss = at::smooth_l1_loss(selected, targets);
+    require(at::isfinite(result.loss).item<bool>(), "La pérdida SmoothL1 de Double DQN no es finita");
+    return result;
+}
+
+DqnUpdateStats PpoPolicy::update_double_dqn(const DqnBatch& batch, std::size_t environment_step,
+                                            std::size_t target_interval) {
+    require(impl_->architecture.double_dqn && environment_step >= dqn_warmup_steps &&
+                environment_step <= static_cast<std::size_t>(std::numeric_limits<int64_t>::max()) &&
+                environment_step > impl_->dqn_environment_step && target_interval > 0 &&
+                target_interval <= static_cast<std::size_t>(maximum_samples) &&
+                (impl_->target_interval == 0 || impl_->target_interval == target_interval) &&
+                optimizer_steps() < static_cast<std::size_t>(maximum_optimizer_steps),
+            "Double DQN necesita un cursor creciente tras el calentamiento y un intervalo objetivo estable");
+    const auto computed = double_dqn_loss(batch);
+    DqnUpdateStats result;
+    result.valid_transitions = computed.valid_transitions;
+    if (result.valid_transitions == 0) {
+        return result;
+    }
+    const at::AutoGradMode enable_grad(true);
     impl_->optimizer->zero_grad();
-    loss.backward();
+    computed.loss.backward();
     result.gradient_norm = torch::nn::utils::clip_grad_norm_(
         impl_->network.policy_parameters(), impl_->parameters.gradient_norm, gradient_norm_order, true);
     impl_->optimizer->step();
@@ -1768,7 +1857,7 @@ DqnUpdateStats PpoPolicy::update_double_dqn(const DqnBatch& batch, std::size_t e
     impl_->dqn_environment_step = environment_step;
     impl_->target_interval = target_interval;
     result.updates = 1;
-    result.loss = loss.item<double>();
+    result.loss = computed.loss.item<double>();
     return result;
 }
 

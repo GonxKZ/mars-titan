@@ -274,7 +274,9 @@ def _masked_sample_state(parent, asset):
             if not pa.types.is_integer(ends.type) or ends.null_count:
                 raise ValueError("La ventana histórica necesita un índice de precios entero")
             ends = ends.to_numpy()
-            if (ends < parent.context - 1).any() or (ends >= len(prices)).any():
+            # Con huecos de mercado declarados, una ventana completa puede tener menos filas.
+            first = 0 if parent.price_window else parent.context - 1
+            if (ends < first).any() or (ends >= len(prices)).any():
                 raise ValueError("La ventana histórica no tiene suficientes precios")
             available = np.maximum(available, price_available[ends])
             if not valid.all() or (available > prediction).any():
@@ -308,8 +310,14 @@ def prepare_temporal_corpus(
     *,
     recover_annual_boundaries=False,
     input_policy=STRICT_INPUTS,
+    empty_folds=(),
 ):
-    """Publicar etiquetas por ventana y referencias a las modalidades originales."""
+    """Publicar etiquetas por ventana y referencias a las modalidades originales.
+
+    `empty_folds` nombra las ventanas en las que este mercado puede quedar con algún tramo
+    sin filas. Solo lo usa la unión conjunta para las ventanas en las que el mercado no
+    cuenta en las métricas. Las demás ventanas de la versión 2 siguen sin admitirlo.
+    """
     from .corpus_inputs import CorpusDataset, _times
 
     if type(recover_annual_boundaries) is not bool:
@@ -339,6 +347,11 @@ def prepare_temporal_corpus(
         outside_source(source, output)
     protocol, protocol_hash = read_manifest(protocol_path)
     folds = build_folds(protocol)
+    empty_folds = tuple(empty_folds)
+    if len(set(empty_folds)) != len(empty_folds) or not set(empty_folds) <= {
+        fold["id"] for fold in folds
+    }:
+        raise ValueError("Las ventanas que admiten tramos vacíos deben ser del protocolo")
     interval_purge = protocol.get("purge") == LABEL_INTERVAL_PURGE
     annual_boundary = None
     if recover_annual_boundaries:
@@ -501,7 +514,7 @@ def prepare_temporal_corpus(
             f"{row['id']}:{name}"
             for row in summaries
             for name, count in row["counts"].items()
-            if interval_purge and not count
+            if interval_purge and not count and row["id"] not in empty_folds
         ]
         if empty:
             # La versión 2 no cambia la población de una ventana dejando un tramo vacío.
@@ -529,6 +542,8 @@ def prepare_temporal_corpus(
         if recover_annual_boundaries:
             report["label_admission"] = view["label_admission"]
             report["recovered_annual_candidates"] = annual_candidates
+        if empty_folds:
+            report["empty_folds_allowed"] = list(empty_folds)
         atomic_json(stage / "report.json", report)
         _publish_directory(stage, output)
         descriptor = os.open(output.parent, os.O_RDONLY | os.O_DIRECTORY)

@@ -1,7 +1,10 @@
 #ifndef MARS_TITAN_KLPO_LEARNING_HPP
 #define MARS_TITAN_KLPO_LEARNING_HPP
 
+#include "mars_titan/group_waves.hpp"
 #include "mars_titan/klpo_collection.hpp"
+
+#include <optional>
 
 namespace mars_titan::learning {
 inline constexpr std::size_t default_klpo_gradient_block = 8;
@@ -11,6 +14,9 @@ struct KlpoLearningConfig {
     PpoTerminalAdamOptions adam;
     std::size_t confirmed_updates_per_reference = 2;
     std::size_t gradient_block_episodes = default_klpo_gradient_block;
+    // Objetivo relativo al grupo que sustituye a KLPO terminal sobre las mismas oleadas, con la
+    // misma recogida, cadencia de q, bloques y Adam. Vacío conserva KLPO y su identidad intacta.
+    std::optional<GroupObjectiveConfig> group;
     void validate() const;
 };
 
@@ -58,10 +64,15 @@ class KlpoLearningController {
     bool collect_tick();
     [[nodiscard]] KlpoLearningPhase phase() const;
     [[nodiscard]] KlpoLearningCounters counters() const;
-    [[nodiscard]] KlpoGradientSummary backward_ready();
+    // Con un objetivo de grupo, trace recibe los diagnósticos de la oleada si no es nulo. Se
+    // calculan sin gradiente y el resultado es idéntico con y sin traza.
+    [[nodiscard]] KlpoGradientSummary backward_ready(GroupWaveTrace* trace = nullptr);
     [[nodiscard]] std::vector<at::Tensor> gradient_snapshot() const;
     [[nodiscard]] std::string actor_fingerprint() const;
     [[nodiscard]] std::string reference_fingerprint() const;
+    // Oleada actual tal como la registró q, para trazas y pruebas. Solo lectura.
+    [[nodiscard]] const KlpoEpisodeBatch& wave() const&;
+    const KlpoEpisodeBatch& wave() const&& = delete;
     // Pasos registrados en la oleada actual, también cuando ya está consumida.
     [[nodiscard]] std::size_t collected_steps() const;
     [[nodiscard]] nlohmann::json identity() const;

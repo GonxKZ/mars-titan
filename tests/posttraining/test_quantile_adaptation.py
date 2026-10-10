@@ -4,7 +4,6 @@ El optimizador del fixture `recorder` no hereda de `torch.optim.Optimizer`, regi
 gradientes y exige pesos sin cambios en cada paso. Las pruebas llegan hasta ese paso.
 """
 
-import copy
 import json
 from types import SimpleNamespace
 
@@ -18,7 +17,7 @@ from mars_titan.data.storage import atomic_json
 from mars_titan.environments.actions import ActionGrid
 from mars_titan.episodes.parents import ParentCache
 from mars_titan.models.baselines.multimodal import PRESENCE_FUSION, MultimodalReference
-from mars_titan.models.predictive_adaptation import adapted_copy
+from mars_titan.models.predictive_adaptation import adapted_copy, parent_copy
 from mars_titan.models.quantile_head import (
     LEVELS,
     QUANTILE_COLUMNS,
@@ -80,7 +79,8 @@ def matrix_cases(family):
 
 def model_for(parent, case):
     if "adapter" not in case:
-        return copy.deepcopy(parent).requires_grad_(True)
+        # Igual que `FrozenParent.continuation`.
+        return parent_copy(parent).requires_grad_(True)
     return adapted_copy(
         parent,
         adapter_matrix.targets(case["adapter"], parent),

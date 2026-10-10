@@ -10,7 +10,8 @@ include(CTest)
 include(cmake/TorchDependencies.cmake)
 mars_titan_find_torch()
 add_library(mars_titan_rl_objectives STATIC
-    src/ppo_objectives.cpp src/ppo_controller.cpp src/klpo_terminal.cpp src/klpo_episodes.cpp)
+    src/ppo_objectives.cpp src/ppo_controller.cpp src/klpo_terminal.cpp src/klpo_episodes.cpp
+    src/group_relative.cpp src/quantile_dqn.cpp)
 target_include_directories(mars_titan_rl_objectives PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
 target_link_libraries(mars_titan_rl_objectives PUBLIC mars_titan::torch)
 mars_titan_configure_target(mars_titan_rl_objectives)
@@ -62,6 +63,12 @@ if(MARS_TITAN_ENABLE_STATIC_ANALYZER AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         COMMAND "${MARS_TITAN_CLANG_CHECK}" --analyze "-p=${CMAKE_BINARY_DIR}"
             --extra-arg=-Xanalyzer --extra-arg=-analyzer-werror
             "${CMAKE_CURRENT_SOURCE_DIR}/src/klpo_episodes.cpp"
+        COMMAND "${MARS_TITAN_CLANG_CHECK}" --analyze "-p=${CMAKE_BINARY_DIR}"
+            --extra-arg=-Xanalyzer --extra-arg=-analyzer-werror
+            "${CMAKE_CURRENT_SOURCE_DIR}/src/group_relative.cpp"
+        COMMAND "${MARS_TITAN_CLANG_CHECK}" --analyze "-p=${CMAKE_BINARY_DIR}"
+            --extra-arg=-Xanalyzer --extra-arg=-analyzer-werror
+            "${CMAKE_CURRENT_SOURCE_DIR}/src/quantile_dqn.cpp"
         COMMENT "Analizar los objetivos y el controlador de PPO y KLPO"
         VERBATIM)
 endif()

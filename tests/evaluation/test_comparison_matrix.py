@@ -166,7 +166,13 @@ def test_the_missing_arms_report_is_reproducible_and_ranks_the_candidates(declar
         "titans__interactions/test_time_updatexepisodic_content@mars_titan_m0_frozen_core"
         in (pair["contrasts"])
     )
-    assert report["conditional_arms"]["transformer_compact_online"]["contrasts"] == 15
+    # El control en línea ya está declarado en la comparación, así que sus contrastes solo
+    # esperan a otro brazo cuando también usan uno condicionado o derivado.
+    assert "transformer_compact_online" not in report["conditional_arms"]
+    # Los tres brazos de integración de MARS-TITAN también están declarados ya. Solo queda
+    # condicionada la referencia pública de Titans-MAC.
+    assert set(report["conditional_arms"]) == {"titans_reference_mac"}
+    assert (totals["declared"], totals["planned_elsewhere"]) == (219, 112)
     assert report["derived_arms"]["chain"]["contrasts"] == 3 * 22
     assert report["scientific_training_started"] is False
 

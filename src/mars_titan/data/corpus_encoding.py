@@ -5,6 +5,7 @@ import fcntl
 import json
 import re
 import shutil
+from functools import partial
 from pathlib import Path
 
 from .accounting_catalog import HISTORICAL_ACCOUNTING, JOINT_CONCEPTS, historical_accounting_context
@@ -12,13 +13,28 @@ from .cohort_contexts import MacroVectors
 from .cohort_files import read_manifest as _read
 from .cohort_files import safe_destination
 from .cohort_news import COHORT_POLICIES
-from .cohort_samples import materialize_cohort_asset
+from .cohort_samples import _digest, materialize_cohort_asset
 from .corpus_preparation import STARTS
-from .embeddings import EmbeddingCache, FrozenEncoders
+from .embeddings import EmbeddingCache, FrozenEncoders, encoder_spec, strict_fp32
 from .input_policy import INPUT_POLICIES, STRICT_INPUTS, masked_inputs, policy_identity
+from .price_windows import calendar_digest, check_price_window_contract
 from .samples import FUNDAMENTAL_CONCEPTS
 from .storage import atomic_json, outside_source, sha256
 from .temporal import MarketClock, aware
+from .vector_carry import (
+    COMPUTED,
+    CarriedTexts,
+    CarriedVectors,
+    CollectingEncoders,
+    CollectingVectors,
+    MissingVector,
+    PendingVectors,
+    ReuseOnlyEncoders,
+    encode_pending,
+    release_vectors,
+    strict_fp32_spec,
+    text_carry_identity,
+)
 
 
 def _free_disk_bytes(path):
@@ -54,8 +70,36 @@ def encode_corpus(
     cache_charts=True,
     max_new_assets=None,
     min_free_disk_bytes=0,
+    price_window=None,
+    vector_carry=None,
+    shard=None,
+    on_confirmed=None,
+    text_carry=None,
 ):
-    """Procesar todos los candidatos y publicar solo una cobertura completa sin errores."""
+    """Procesar todos los candidatos y publicar solo una cobertura completa sin errores.
+
+    `price_window` declara las ventanas por sesión del calendario con bit de presencia de la
+    edición v3.1. Sin él, las ventanas siguen exigiendo 64 filas consecutivas. `vector_carry`
+    nombra una edición anterior con el mismo codificador en FP32 estricto cuyos gráficos y
+    textos se reutilizan cuando la entrada es idéntica. `shard=(k, n)` procesa solo los
+    candidatos con posición `i % n == k`, comparte el candado con los demás fragmentos y no
+    publica el manifiesto. La pasada sin fragmentos reutiliza después cada activo confirmado y
+    publica la edición.
+    Con `CollectingEncoders`, cada activo se materializa en `collect/` y solo se confirma si no
+    le falta ningún vector. Si falta alguno, se descarta y sus entradas quedan pendientes de GPU.
+    `on_confirmed(market, symbol)` se llama tras cada activo confirmado, fuera del registro de
+    fallos por activo, de modo que cualquier error suyo detiene el recorrido.
+    `text_carry` nombra una edición cuyos textos se reutilizan aunque su codificador registre
+    otra precisión, siempre que superen el contraste por activo de `encode_pending`. Los gráficos
+    nunca se heredan por esta vía.
+    """
+    if shard is not None and (
+        not isinstance(shard, tuple)
+        or len(shard) != 2
+        or any(type(v) is not int for v in shard)
+        or not 0 <= shard[0] < shard[1] <= 16
+    ):
+        raise ValueError("El fragmento debe ser (k, n) con 0 <= k < n <= 16")
     masked = masked_inputs(input_policy)
     if encoder_options is not None and (
         not isinstance(encoder_options, dict) or encoders is not None
@@ -219,6 +263,39 @@ def encode_corpus(
         )
     if not cache_charts:
         identity["cache_charts"] = False
+    if price_window is not None:
+        check_price_window_contract(price_window)
+        if set(price_window["calendars"]) != set(markets) or any(
+            price_window["calendars"][m]
+            != dict(
+                start=clocks[m].days[0].isoformat(),
+                end=clocks[m].days[-1].isoformat(),
+                decisions_sha256=calendar_digest(clocks[m]),
+            )
+            for m in markets
+        ):
+            raise ValueError("El contrato de ventanas no declara los calendarios de la edición")
+        identity["price_window"] = price_window
+    previous = None
+    collecting = isinstance(encoders, CollectingEncoders)
+    if vector_carry is not None:
+        previous = Path(vector_carry).resolve()
+        configured, configured_hash = _read(previous / "configuration.json")
+        if not strict_fp32_spec(configured.get("encoders")):
+            raise ValueError("La edición anterior no registra FP32 estricto y no se hereda")
+        if configured.get("encoders") != encoders.spec:
+            raise ValueError("La edición anterior usó otro codificador y sus vectores no sirven")
+        outside_source(previous, output)
+        outside_source(output, previous)
+        identity["vector_carry"] = dict(
+            edition=str(previous),
+            configuration_sha256=configured_hash,
+            rule="same_strict_fp32_encoder_and_identical_png_or_text_identity",
+        )
+    if text_carry is not None:
+        identity["text_carry"] = text_carry_identity(text_carry, encoders.spec)
+        outside_source(Path(identity["text_carry"]["edition"]), output)
+        outside_source(output, Path(identity["text_carry"]["edition"]))
     for name in (
         ".edition.lock",
         "configuration.json",
@@ -230,8 +307,10 @@ def encode_corpus(
             raise ValueError("Un artefacto de salida es un enlace")
     output.mkdir(parents=True, exist_ok=True)
     with (output / ".edition.lock").open("a+b") as lock:
-        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        fcntl.flock(lock, (fcntl.LOCK_SH if shard else fcntl.LOCK_EX) | fcntl.LOCK_NB)
         config = output / "configuration.json"
+        if shard and not config.exists():
+            raise ValueError("Los fragmentos necesitan la configuración ya publicada")
         if config.exists():
             if not _same_json(_read(config)[0], identity):
                 raise ValueError("La configuración pertenece a otra edición")
@@ -245,6 +324,31 @@ def encode_corpus(
         if cache_path.is_symlink():
             raise ValueError("La caché no puede ser un enlace")
         cache = EmbeddingCache(cache_path, cache_charts=cache_charts)
+        # Los vectores calculados en GPU para esta edición y después los de la anterior.
+        fallbacks = []
+        if (output / COMPUTED).exists():
+            fallbacks.append(EmbeddingCache(output / COMPUTED, read_only=True))
+        if previous is not None:
+            fallbacks.append(EmbeddingCache(previous / "embeddings.sqlite", read_only=True))
+        texts = (
+            CarriedTexts(output, identity["text_carry"], _digest(encoders.spec))
+            if text_carry is not None
+            else None
+        )
+        selecting = bool(fallbacks) or collecting or texts is not None
+        if selecting:
+            cache = CarriedVectors(
+                cache, previous, _digest(encoders.spec), fallbacks=fallbacks, texts=texts
+            )
+            if collecting:
+                name = (
+                    f"pending-vectors-{shard[0]}-of-{shard[1]}.sqlite"
+                    if shard
+                    else "pending-vectors.sqlite"
+                )
+                cache = CollectingVectors(
+                    cache, encoders, PendingVectors(output / name), texts=texts
+                )
         result = dict(
             **policy_identity(input_policy),
             schema_version=3 if masked else 2,
@@ -271,9 +375,17 @@ def encode_corpus(
         )
         reused = 0
         new_assets = 0
+        progress = (
+            output / f"progress-{shard[0]}-of-{shard[1]}.json"
+            if shard
+            else output / "progress.json"
+        )
         try:
-            for asset in meta["assets"]:
+            for position, asset in enumerate(meta["assets"]):
                 market, symbol = asset["market"], asset["symbol"]
+                if shard and position % shard[1] != shard[0]:
+                    continue
+                encoded = False
                 if asset["state"] in {"missing_modalities", "missing_required_prices"}:
                     result["coverage"].append(dict(asset))
                 else:
@@ -305,9 +417,19 @@ def encode_corpus(
                                 company_factors=company_factors,
                             )
                         )
+                        if selecting:
+                            cache.select(market, symbol, encoders.spec)
+                        target = output / "samples" / market / symbol
+                        staging = output / "collect" / market / symbol
+                        if collecting and not confirmed.exists():
+                            # Nunca confirmado: es un resto de una recogida interrumpida.
+                            safe_destination(staging)
+                            if staging.exists():
+                                shutil.rmtree(staging)
+                            added = cache.added
                         receipt = materialize_cohort_asset(
                             source,
-                            output / "samples" / market / symbol,
+                            staging if collecting and not confirmed.exists() else target,
                             clocks[market],
                             contexts[market],
                             encoders,
@@ -317,9 +439,12 @@ def encode_corpus(
                             **accounting,
                             admitted_decisions=admitted[market] if admitted is not None else None,
                             input_policy=input_policy,
+                            price_window=price_window,
                         )
                         if receipt["symbol"] != symbol:
                             raise ValueError("El recibo pertenece a otro activo")
+                        if collecting and not confirmed.exists():
+                            _confirm_collected(staging, target, cache.added - added)
                         reused += int(receipt["reused"])
                         result["coverage"].append(
                             dict(
@@ -335,16 +460,21 @@ def encode_corpus(
                                 dict(market=market, symbol=symbol, cohort_id=cohort)
                             )
                         result["samples"] += receipt["samples"]
+                        encoded = True
                     except (OSError, ValueError) as error:
                         result["failed_assets"] += 1
                         result["coverage"].append(
                             dict(market=market, symbol=symbol, state="failed", detail=str(error))
                         )
-                atomic_json(output / "progress.json", result)
+                atomic_json(progress, result)
+                if encoded and on_confirmed is not None:
+                    on_confirmed(market, symbol)
         finally:
             cache.close()
         if sha256(preparation) != identity["preparation_sha256"]:
             raise ValueError("La preparación cambió durante el recorrido")
+        if shard:
+            return {**result, "reused_assets": reused, "shard": list(shard)}
         if not result["failed_assets"] and len(result["coverage"]) == len(meta["assets"]):
             if meta.get("scope") != "reviewed_asset_subset":
                 result.update(scope="full_corpus", cohort_complete=True)
@@ -357,11 +487,23 @@ def encode_corpus(
         return {**result, "reused_assets": reused}
 
 
+def _confirm_collected(staging, target, pending):
+    """Mover un activo completo a su destino o descartarlo si le faltan vectores."""
+    if pending:
+        shutil.rmtree(staging)
+        raise MissingVector(f"{pending} entradas pendientes del codificador en GPU")
+    if (target / "manifest.json").exists():
+        raise ValueError("El activo ya estaba confirmado")
+    if target.exists():
+        # Solo quedan la configuración y el candado de un intento anterior sin recibo.
+        shutil.rmtree(target)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    staging.rename(target)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--prepared", type=Path, required=True, help="Manifiesto completo de preparación"
-    )
+    parser.add_argument("--prepared", type=Path, help="Manifiesto completo de preparación")
     parser.add_argument("--output", type=Path, required=True, help="Nueva edición de vectores")
     parser.add_argument("--macro-us", type=Path, help="Contextos macro estadounidenses")
     parser.add_argument("--macro-cn", type=Path, help="Contextos macro chinos")
@@ -409,25 +551,112 @@ def main():
     parser.add_argument(
         "--macro-catalog", type=Path, help="Catálogo explícito para conservar indicadores ausentes"
     )
+    parser.add_argument(
+        "--price-window", type=Path, help="Contrato JSON de ventanas por sesión del calendario"
+    )
+    parser.add_argument(
+        "--vector-carry", type=Path, help="Edición anterior con el mismo codificador"
+    )
+    parser.add_argument(
+        "--reuse-only",
+        action="store_true",
+        help="Solo CPU con vectores existentes. Un vector nuevo deja el activo pendiente",
+    )
+    parser.add_argument(
+        "--collect",
+        action="store_true",
+        help="Solo CPU. Confirma los activos completos y anota los vectores que faltan",
+    )
+    parser.add_argument(
+        "--encode-pending",
+        action="store_true",
+        help="Solo GPU. Codifica las entradas anotadas por la recogida y termina",
+    )
+    parser.add_argument("--max-pending", type=int, help="Entradas por tramo de GPU")
+    parser.add_argument(
+        "--release-vectors",
+        action="store_true",
+        help="Borra los PNG pendientes y los gráficos calculados de activos ya confirmados",
+    )
+    parser.add_argument(
+        "--substitute-previous",
+        type=Path,
+        help="Edición anterior cuyas muestras se borran tras verificar cada activo nuevo",
+    )
+    parser.add_argument(
+        "--substitution-records", type=Path, help="Registros de la sustitución activo a activo"
+    )
+    parser.add_argument(
+        "--text-carry",
+        type=Path,
+        help="Edición cuyos textos se reutilizan tras contrastar una muestra de cada activo",
+    )
+    parser.add_argument("--shard", type=int, nargs=2, metavar=("K", "N"))
     args = parser.parse_args()
+    if args.reuse_only and args.collect:
+        parser.error("--reuse-only y --collect son pasadas distintas")
+    if args.prepared is None and not (args.encode_pending or args.release_vectors):
+        parser.error("La codificación necesita --prepared")
+    if (args.substitute_previous is None) != (args.substitution_records is None):
+        parser.error("La sustitución necesita la edición anterior y la carpeta de registros")
     import torch
 
+    from .edition_substitution import substitute_asset
     from .macro_coverage import _read_catalog
 
     torch.set_num_threads(4)
+    # Todas las pasadas nombran o calculan vectores en FP32 estricto, sin TF32.
+    strict_fp32()
+    if args.release_vectors:
+        print(json.dumps(release_vectors(args.output)))
+        return 0
+    options = dict(
+        cuda_memory_bytes=args.cuda_memory_bytes,
+        min_free_cuda_bytes=args.min_free_cuda_bytes,
+        text_batch_size=args.text_batch_size,
+        image_batch_size=args.image_batch_size,
+        word_embedding_placement=args.word_embedding_placement,
+    )
+    if args.encode_pending:
+        with (args.output / ".edition.lock").open("a+b") as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            counts = encode_pending(
+                args.output, FrozenEncoders(**options), max_items=args.max_pending
+            )
+        # Memoria del asignador de Torch, sin el contexto CUDA que mide nvidia-smi.
+        counts["cuda_peak_allocated_bytes"] = torch.cuda.max_memory_allocated(0)
+        counts["cuda_peak_reserved_bytes"] = torch.cuda.max_memory_reserved(0)
+        print(json.dumps(counts))
+        return int(counts["remaining"] > 0)
+    spec = (
+        encoder_spec(
+            text_batch_size=args.text_batch_size,
+            image_batch_size=args.image_batch_size,
+            word_embedding_placement=args.word_embedding_placement,
+        )
+        if args.reuse_only or args.collect
+        else None
+    )
+    reuse = (
+        ReuseOnlyEncoders(spec)
+        if args.reuse_only
+        else CollectingEncoders(spec)
+        if args.collect
+        else None
+    )
+    substitution = (
+        partial(substitute_asset, args.substitute_previous, args.output, args.substitution_records)
+        if args.substitute_previous
+        else None
+    )
     result = encode_corpus(
         args.prepared,
         args.output,
         macros={m: p for m, p in (("US", args.macro_us), ("CN", args.macro_cn)) if p},
         market_factors=_read(args.market_factors)[0] if args.market_factors else None,
         cache_path=args.cache,
-        encoder_options=dict(
-            cuda_memory_bytes=args.cuda_memory_bytes,
-            min_free_cuda_bytes=args.min_free_cuda_bytes,
-            text_batch_size=args.text_batch_size,
-            image_batch_size=args.image_batch_size,
-            word_embedding_placement=args.word_embedding_placement,
-        ),
+        encoders=reuse,
+        encoder_options=None if reuse else options,
         cache_charts=args.cache_charts,
         max_new_assets=args.max_new_assets,
         min_free_disk_bytes=args.min_free_disk_bytes,
@@ -435,6 +664,11 @@ def main():
         input_policy=args.input_policy,
         accounting_policy=args.accounting_policy,
         macro_indicators=sorted(_read_catalog(args.macro_catalog)) if args.macro_catalog else None,
+        price_window=_read(args.price_window)[0] if args.price_window else None,
+        vector_carry=args.vector_carry,
+        shard=tuple(args.shard) if args.shard else None,
+        on_confirmed=substitution,
+        text_carry=args.text_carry,
     )
     summary = {
         k: result[k]

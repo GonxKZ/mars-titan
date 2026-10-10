@@ -52,8 +52,9 @@ def declaration():
         weights=list(WEIGHTS),
         normalization="x_over_x_plus_training_median",
         error="abs(label - issued_prediction) after maturity",
-        anomaly="abs(last close log return) / median absolute deviation of the 62 previous "
-        "returns of the 64-session price window",
+        anomaly="abs(last log return between observed closes) / median absolute deviation of "
+        "the previous returns between observed closes of the 64-session window, 62 when every "
+        "session is observed",
         relevance="max over known components: filing freshness m_f/(m_f+age) and news "
         "presence 1-p_news/2",
         missing_relevance="unknown and never zero: neutral 0.5 when no component is known",
@@ -93,10 +94,13 @@ class DecisionFeatures:
 def decision_features(prices, presence, fundamentals):
     """Anomalía y relevancia de cada decisión con sus entradas de la edición con máscaras.
 
-    `prices` es la ventana [n, 64, 5] de log-precios relativos a su primer cierre. La anomalía
-    compara el último log-rendimiento de cierre con la mediana de las desviaciones absolutas
-    de los 62 anteriores de la misma ventana, sin incluir el último. Cada fila se calcula con
-    aritmética elemental sobre sus propios valores, así que no depende del lote.
+    `prices` es la ventana [n, 64, 5] de log-precios relativos a su primer cierre, o [n, 64, 6]
+    con el bit de presencia desde la v3.1. La anomalía compara el último log-rendimiento entre
+    cierres observados con la mediana de las desviaciones absolutas de los anteriores de la
+    misma ventana, sin incluir el último. Una sesión ausente en todo el mercado no aporta cierre,
+    así que el rendimiento que la atraviesa une los dos cierres observados que la rodean y la
+    ventana tiene menos rendimientos. Cada fila se calcula con aritmética elemental sobre sus
+    propios valores, así que no depende del lote.
     """
     prices, presence = np.asarray(prices), np.asarray(presence)
     fundamentals = np.asarray(fundamentals)
@@ -104,7 +108,7 @@ def decision_features(prices, presence, fundamentals):
     if (
         prices.ndim != 3
         or prices.shape[1] < 4
-        or prices.shape[2] != 5
+        or prices.shape[2] not in (5, 6)
         or presence.shape != (size, 5)
         or presence.dtype != np.bool_
         or fundamentals.ndim != 2
@@ -113,11 +117,24 @@ def decision_features(prices, presence, fundamentals):
         or not presence[:, [0, 2]].all()
     ):
         raise ValueError("M3 necesita la ventana de precios, la presencia y los fundamentales")
-    returns = np.diff(prices[:, :, 3].astype(np.float64), axis=1)
+    closes = prices[:, :, 3].astype(np.float64)
+    observed_steps = (
+        prices[:, :, 5] == 1 if prices.shape[2] == 6 else np.ones(closes.shape, dtype=bool)
+    )
+    full = observed_steps.all(axis=1)
+    anomaly = np.empty(size, dtype=np.float64)
+    returns = np.diff(closes[full], axis=1)
     past = returns[:, :-1]
     center = np.median(past, axis=1, keepdims=True)
     spread = np.median(np.abs(past - center), axis=1)
-    anomaly = np.abs(returns[:, -1]) / np.maximum(spread, MAD_FLOOR)
+    anomaly[full] = np.abs(returns[:, -1]) / np.maximum(spread, MAD_FLOOR)
+    for row in np.flatnonzero(~full):
+        # Solo se encadenan cierres observados. El relleno de un hueco nunca entra.
+        steps = np.diff(closes[row, observed_steps[row]])
+        if len(steps) < 3 or not observed_steps[row, -1]:
+            raise ValueError("M3 necesita al menos tres rendimientos y la sesión de la decisión")
+        middle = np.median(steps[:-1])
+        anomaly[row] = abs(steps[-1]) / max(np.median(np.abs(steps[:-1] - middle)), MAD_FLOOR)
     width = fundamentals.shape[1] // 3
     observed = fundamentals[:, width : 2 * width] == 1
     log_age = fundamentals[:, 2 * width :]

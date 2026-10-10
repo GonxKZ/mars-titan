@@ -10,10 +10,12 @@ import json
 import numpy as np
 import pytest
 
+from mars_titan.data import prediction_files
 from mars_titan.evaluation import forecast_scores
 from mars_titan.evaluation import walk_forward_comparison as walk
 from mars_titan.integrity import score_recheck
 from tests.evaluation.test_walk_forward_comparison import Study
+from tests.integrity.test_row_identity import compact_all
 
 
 def publish(tmp_path, scope="US+CN"):
@@ -78,6 +80,18 @@ def test_a_bug_in_the_interval_score_is_detected(tmp_path, monkeypatch):
         if entry.get("mismatched_sessions")
     }
     assert failing == {"interval_score_0.8", "interval_score_0.95"}
+
+
+def test_the_recheck_reads_compacted_predictions_and_stops_on_released_ones(tmp_path):
+    study, output = publish(tmp_path, "US")
+    before = score_recheck.recheck(study.config_path, study.sources_path, "US", output)
+    records = compact_all(study, tmp_path / "rows")
+    after = score_recheck.recheck(study.config_path, study.sources_path, "US", output)
+    assert after["passed"]
+    assert after["windows"] == before["windows"] and after["aggregates"] == before["aggregates"]
+    prediction_files.release(*records[-1], stage="fixture")
+    with pytest.raises(prediction_files.PredictionsReleased):
+        score_recheck.recheck(study.config_path, study.sources_path, "US", output)
 
 
 def test_a_changed_session_table_is_rejected_by_its_digest(tmp_path):

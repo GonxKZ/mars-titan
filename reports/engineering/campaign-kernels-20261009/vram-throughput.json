@@ -1,0 +1,1198 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-10",
+  "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU, 8188 MiB",
+  "torch": "2.14.0+cu130",
+  "precision": "fp32_strict",
+  "process_fraction_gib": 6,
+  "target_total_mib": 7372,
+  "units": "samples_per_s son filas de observación por segundo en las familias cronológicas y muestras por segundo en las referencias. Memoria en MiB enteros. context_mib es la memoria del proceso según nvidia-smi menos el pico reservado por PyTorch.",
+  "notes": "Medidas de cálculo sin lector y sin pasos de optimizador. samples_per_s_single sale de 8 tramos de un evento cada uno. La concurrencia se midió sobre 40 eventos y se compara con su propia corrida de un trabajo. Las variantes no declaradas en la receta solo sirven para la decisión entre un trabajo grande y varios moderados.",
+  "models": {
+    "titans_mac": {
+      "max_process_mib": 5930,
+      "arms": [
+        "titans_transformer_direct",
+        "titans_mac_disabled",
+        "titans_mac_frozen",
+        "titans_mac_online"
+      ]
+    },
+    "cm_v1_core": {
+      "max_process_mib": 6018,
+      "arms": [
+        "cm_v1_core_b",
+        "cm_v1_core_c"
+      ]
+    },
+    "mars_titan": {
+      "max_process_mib": 2808,
+      "arms": [
+        "mars_titan_m0",
+        "mars_titan_m1",
+        "mars_titan_m3",
+        "mars_titan_m1_k4"
+      ]
+    },
+    "cm_v1": {
+      "max_process_mib": 2800,
+      "arms": [
+        "cm_v1_bcm"
+      ]
+    },
+    "episodic_gru": {
+      "max_process_mib": 2978,
+      "arms": [
+        "gru_episodic"
+      ]
+    },
+    "neural": {
+      "max_process_mib": 558,
+      "arms": [
+        "rnn",
+        "lstm",
+        "gru",
+        "dlinear",
+        "transformer"
+      ]
+    }
+  },
+  "entries": [
+    {
+      "model": "titans_mac",
+      "arm": "titans_transformer_direct",
+      "scope": "US+CN",
+      "window": "fold-012",
+      "measured": true,
+      "source": "replay_compute_only",
+      "recipe_options": {
+        "precision": "fp32_strict",
+        "block_rows": 1024,
+        "accumulation_rows": 1024,
+        "predictor.max_batch": 1024,
+        "predictor.max_state_bytes": 134217728
+      },
+      "samples_per_s_single": 9225,
+      "samples_per_s_before": 4320,
+      "peak_allocated_mib": 818,
+      "peak_reserved_mib": 890,
+      "process_mib": 1056,
+      "context_mib": 166,
+      "host_rss_mib": 3585,
+      "cpu_threads_per_job": 2,
+      "concurrency": {
+        "window": "US+CN fold-012, 40 eventos completos desde la mitad del tramo",
+        "runs": {
+          "k1-mps0": {
+            "jobs": 1,
+            "mps": false,
+            "aggregate_samples_per_s": 19221,
+            "per_job_samples_per_s": [
+              19221
+            ],
+            "process_mib": [
+              1056
+            ],
+            "peak_reserved_mib": [
+              890
+            ],
+            "speedup_vs_single": 1.0
+          },
+          "k2-mps0": {
+            "jobs": 2,
+            "mps": false,
+            "aggregate_samples_per_s": 40440,
+            "per_job_samples_per_s": [
+              20495,
+              19944
+            ],
+            "process_mib": [
+              1056,
+              1056
+            ],
+            "peak_reserved_mib": [
+              890,
+              890
+            ],
+            "speedup_vs_single": 2.104
+          },
+          "k2-mps1": {
+            "jobs": 2,
+            "mps": true,
+            "aggregate_samples_per_s": 43082,
+            "per_job_samples_per_s": [
+              21746,
+              21336
+            ],
+            "process_mib": [
+              1056,
+              1056
+            ],
+            "peak_reserved_mib": [
+              890,
+              890
+            ],
+            "speedup_vs_single": 2.241
+          },
+          "k3-mps0": {
+            "jobs": 3,
+            "mps": false,
+            "aggregate_samples_per_s": 34751,
+            "per_job_samples_per_s": [
+              11438,
+              11576,
+              11737
+            ],
+            "process_mib": [
+              1056,
+              1056,
+              1056
+            ],
+            "peak_reserved_mib": [
+              890,
+              890,
+              890
+            ],
+            "speedup_vs_single": 1.808
+          },
+          "k3-mps1": {
+            "jobs": 3,
+            "mps": true,
+            "aggregate_samples_per_s": 48258,
+            "per_job_samples_per_s": [
+              16519,
+              15949,
+              15790
+            ],
+            "process_mib": [
+              1056,
+              1056,
+              1056
+            ],
+            "peak_reserved_mib": [
+              890,
+              890,
+              890
+            ],
+            "speedup_vs_single": 2.511
+          }
+        }
+      },
+      "recommended_jobs": 3,
+      "recommended_mps": true,
+      "recommended_basis": "medido",
+      "max_jobs_by_memory": 6
+    },
+    {
+      "model": "titans_mac",
+      "arm": "titans_mac_disabled",
+      "scope": "US+CN",
+      "window": "fold-012",
+      "measured": true,
+      "source": "replay_compute_only",
+      "recipe_options": {
+        "precision": "fp32_strict",
+        "block_rows": 1024,
+        "accumulation_rows": 1024,
+        "predictor.max_batch": 1024,
+        "predictor.max_state_bytes": 134217728
+      },
+      "samples_per_s_single": 18526,
+      "samples_per_s_before": 3519,
+      "peak_allocated_mib": 4715,
+      "peak_reserved_mib": 5086,
+      "process_mib": 5252,
+      "context_mib": 166,
+      "host_rss_mib": 3592,
+      "cpu_threads_per_job": 2,
+      "concurrency": null,
+      "recommended_jobs": 1,
+      "recommended_mps": false,
+      "recommended_basis": "sin medida de concurrencia, se toma un trabajo hasta medirla",
+      "max_jobs_by_memory": 1
+    },
+    {
+      "model": "titans_mac",
+      "arm": "titans_mac_frozen",
+      "scope": "US+CN",
+      "window": "fold-012",
+      "measured": true,
+      "source": "replay_compute_only",
+      "recipe_options": {
+        "precision": "fp32_strict",
+        "block_rows": 1024,
+        "accumulation_rows": 1024,
+        "predictor.max_batch": 1024,
+        "predictor.max_state_bytes": 134217728
+      },
+      "samples_per_s_single": 15061,
+      "samples_per_s_before": 1826,
+      "peak_allocated_mib": 2102,
+      "peak_reserved_mib": 2198,
+      "process_mib": 2364,
+      "context_mib": 166,
+      "host_rss_mib": 3557,
+      "cpu_threads_per_job": 2,
+      "concurrency": null,
+      "recommended_jobs": 1,
+      "recommended_mps": false,
+      "recommended_basis": "sin medida de concurrencia, se toma un trabajo hasta medirla",
+      "max_jobs_by_memory": 3
+    },
+    {
+      "model": "titans_mac",
+      "arm": "titans_mac_online",
+      "scope": "US+CN",
+      "window": "fold-012",
+      "measured": true,
+      "source": "replay_compute_only",
+      "recipe_options": {
+        "precision": "fp32_strict",
+        "block_rows": 1024,
+        "accumulation_rows": 1024,
+        "predictor.max_batch": 1024,
+        "predictor.max_state_bytes": 134217728
+      },
+      "samples_per_s_single": 8360,
+      "samples_per_s_before": 1336,
+      "peak_allocated_mib": 5308,
+      "peak_reserved_mib": 5764,
+      "process_mib": 5930,
+      "context_mib": 166,
+      "host_rss_mib": 3671,
+      "cpu_threads_per_job": 2,
+      "concurrency": {
+        "window": "US+CN fold-012, 40 eventos completos desde la mitad del tramo",
+        "runs": {
+          "k1-mps0": {
+            "jobs": 1,
+            "mps": false,
+            "aggregate_samples_per_s": 14804,
+            "per_job_samples_per_s": [
+              14804
+            ],
+            "process_mib": [
+              3528
+            ],
+            "peak_reserved_mib": [
+              3362
+            ],
+            "speedup_vs_single": 1.0
+          }
+        }
+      },
+      "recommended_jobs": 1,
+      "recommended_mps": false,
+      "recommended_basis": "medido",
+      "max_jobs_by_memory": 1,
+      "full_window_samples_per_s_single_low_load": 15326,
+      "note": "La misma medida con carga media 10 dio 15326 filas por segundo, frente a 8360 con carga 28. Con 5930 MiB de proceso no cabe un segundo trabajo de la familia."
+    },
+    {
+      "model": "cm_v1_core",
+      "arm": "cm_v1_core_b",
+      "scope": "US+CN",
+      "window": "fold-012",
+      "measured": true,
+      "source": "replay_compute_only",
+      "recipe_options": {
+        "precision": "fp32_strict",
+        "block_rows": 1024,
+        "accumulation_rows": 1024,
+        "predictor.max_batch": 1024,
+        "predictor.max_state_bytes": 134217728
+      },
+      "samples_per_s_single": 5798,
+      "samples_per_s_before": 1255,
+      "peak_allocated_mib": 5317,
+      "peak_reserved_mib": 5852,
+      "process_mib": 6018,
+      "context_mib": 166,
+      "host_rss_mib": 3703,
+      "cpu_threads_per_job": 2,
+      "concurrency": null,
+      "recommended_jobs": 1,
+      "recommended_mps": false,
+      "recommended_basis": "sin medida de concurrencia, se toma un trabajo hasta medirla",
+      "max_jobs_by_memory": 1
+    },
+    {
+      "model": "cm_v1_core",
+      "arm": "cm_v1_core_c",
+      "scope": "US+CN",
+      "window": "fold-012",
+      "measured": true,
+      "source": "replay_compute_only",
+      "recipe_options": {
+        "precision": "fp32_strict",
+        "block_rows": 1024,
+        "accumulation_rows": 1024,
+        "predictor.max_batch": 1024,
+        "predictor.max_state_bytes": 134217728
+      },
+      "samples_per_s_single": 3445,
+      "samples_per_s_before": 1005,
+      "peak_allocated_mib": 5316,
+      "peak_reserved_mib": 5800,
+      "process_mib": 5978,
+      "context_mib": 178,
+      "host_rss_mib": 3840,
+      "cpu_threads_per_job": 2,
+      "concurrency": null,
+      "recommended_jobs": 1,
+      "recommended_mps": false,
+      "recommended_basis": "sin medida de concurrencia, se toma un trabajo hasta medirla",
+      "max_jobs_by_memory": 1
+    },
+    {
+      "model": "mars_titan",
+      "arm": "mars_titan_m0",
+      "scope": "US+CN",
+      "window": "fold-012",
+      "measured": true,
+      "source": "replay_compute_only",
+      "recipe_options": {
+        "precision": "fp32_strict",
+        "block_rows": 512,
+        "predictor.max_batch": 512,
+        "predictor.max_state_bytes": 134217728
+      },
+      "samples_per_s_single": 11818,
+      "samples_per_s_before": 5151,
+      "peak_allocated_mib": 2256,
+      "peak_reserved_mib": 2624,
+      "process_mib": 2788,
+      "context_mib": 164,
+      "host_rss_mib": 3556,
+      "cpu_threads_per_job": 2,
+      "concurrency": null,
+      "recommended_jobs": 1,
+      "recommended_mps": false,
+      "recommended_basis": "sin medida de concurrencia, se toma un trabajo hasta medirla",
+      "max_jobs_by_memory": 2
+    },
+    {
+      "model": "mars_titan",
+      "arm": "mars_titan_m1",
+      "scope": "US+CN",
+      "window": "fold-012",
+      "measured": true,
+      "source": "replay_compute_only",
+      "recipe_options": {
+        "precision": "fp32_strict",
+        "block_rows": 512,
+        "predictor.max_batch": 512,
+        "predictor.max_state_bytes": 134217728
+      },
+      "samples_per_s_single": 1156,
+      "samples_per_s_before": 756,
+      "peak_allocated_mib": 2261,
+      "peak_reserved_mib": 2632,
+      "process_mib": 2798,
+      "context_mib": 166,
+      "host_rss_mib": 3842,
+      "cpu_threads_per_job": 2,
+      "concurrency": {
+        "window": "US+CN fold-012, 40 eventos completos desde la mitad del tramo",
+        "runs": {
+          "k1-mps0": {
+            "jobs": 1,
+            "mps": false,
+            "aggregate_samples_per_s": 1408,
+            "per_job_samples_per_s": [
+              1408
+            ],
+            "process_mib": [
+              1754
+            ],
+            "peak_reserved_mib": [
+              1588
+            ],
+            "speedup_vs_single": 1.0
+          },
+          "k2-mps0": {
+            "jobs": 2,
+            "mps": false,
+            "aggregate_samples_per_s": 2277,
+            "per_job_samples_per_s": [
+              1158,
+              1119
+            ],
+            "process_mib": [
+              1754,
+              1754
+            ],
+            "peak_reserved_mib": [
+              1588,
+              1588
+            ],
+            "speedup_vs_single": 1.617
+          },
+          "k2-mps1": {
+            "jobs": 2,
+            "mps": true,
+            "aggregate_samples_per_s": 1972,
+            "per_job_samples_per_s": [
+              993,
+              979
+            ],
+            "process_mib": [
+              1754,
+              1754
+            ],
+            "peak_reserved_mib": [
+              1588,
+              1588
+            ],
+            "speedup_vs_single": 1.401
+          }
+        }
+      },
+      "recommended_jobs": 2,
+      "recommended_mps": false,
+      "recommended_basis": "medido",
+      "max_jobs_by_memory": 2
+    },
+    {
+      "model": "mars_titan",
+      "arm": "mars_titan_m3",
+      "scope": "US+CN",
+      "window": "fold-012",
+      "measured": true,
+      "source": "replay_compute_only",
+      "recipe_options": {
+        "precision": "fp32_strict",
+        "block_rows": 512,
+        "predictor.max_batch": 512,
+        "predictor.max_state_bytes": 134217728
+      },
+      "samples_per_s_single": 4655,
+      "samples_per_s_before": 2869,
+      "peak_allocated_mib": 2261,
+      "peak_reserved_mib": 2632,
+      "process_mib": 2798,
+      "context_mib": 166,
+      "host_rss_mib": 3838,
+      "cpu_threads_per_job": 2,
+      "concurrency": null,
+      "recommended_jobs": 1,
+      "recommended_mps": false,
+      "recommended_basis": "sin medida de concurrencia, se toma un trabajo hasta medirla",
+      "max_jobs_by_memory": 2
+    },
+    {
+      "model": "mars_titan",
+      "arm": "mars_titan_m1_k4",
+      "scope": "US+CN",
+      "window": "fold-012",
+      "measured": true,
+      "source": "replay_compute_only",
+      "recipe_options": {
+        "precision": "fp32_strict",
+        "block_rows": 512,
+        "predictor.max_batch": 512,
+        "predictor.max_state_bytes": 134217728
+      },
+      "samples_per_s_single": 935,
+      "samples_per_s_before": 644,
+      "peak_allocated_mib": 2262,
+      "peak_reserved_mib": 2642,
+      "process_mib": 2808,
+      "context_mib": 166,
+      "host_rss_mib": 3804,
+      "cpu_threads_per_job": 2,
+      "concurrency": null,
+      "recommended_jobs": 1,
+      "recommended_mps": false,
+      "recommended_basis": "sin medida de concurrencia, se toma un trabajo hasta medirla",
+      "max_jobs_by_memory": 2
+    },
+    {
+      "model": "cm_v1",
+      "arm": "cm_v1_bcm",
+      "scope": "US+CN",
+      "window": "fold-012",
+      "measured": true,
+      "source": "replay_compute_only",
+      "recipe_options": {
+        "precision": "fp32_strict",
+        "block_rows": 512,
+        "predictor.max_batch": 512,
+        "predictor.max_state_bytes": 134217728
+      },
+      "samples_per_s_single": 284,
+      "samples_per_s_before": 141,
+      "peak_allocated_mib": 2261,
+      "peak_reserved_mib": 2634,
+      "process_mib": 2800,
+      "context_mib": 166,
+      "host_rss_mib": 3812,
+      "cpu_threads_per_job": 2,
+      "concurrency": null,
+      "recommended_jobs": 1,
+      "recommended_mps": false,
+      "recommended_basis": "sin medida de concurrencia, se toma un trabajo hasta medirla",
+      "max_jobs_by_memory": 2
+    },
+    {
+      "model": "episodic_gru",
+      "arm": "gru_episodic",
+      "scope": "US+CN",
+      "window": "fold-012",
+      "measured": true,
+      "source": "replay_compute_only",
+      "recipe_options": {
+        "precision": "fp32_strict",
+        "accumulation_rows": 128
+      },
+      "samples_per_s_single": 2825,
+      "samples_per_s_before": 1589,
+      "peak_allocated_mib": 2714,
+      "peak_reserved_mib": 2808,
+      "process_mib": 2978,
+      "context_mib": 170,
+      "host_rss_mib": 3704,
+      "cpu_threads_per_job": 2,
+      "concurrency": {
+        "window": "US+CN fold-012, 40 eventos completos desde la mitad del tramo",
+        "runs": {
+          "k1-mps0": {
+            "jobs": 1,
+            "mps": false,
+            "aggregate_samples_per_s": 3968,
+            "per_job_samples_per_s": [
+              3968
+            ],
+            "process_mib": [
+              2978
+            ],
+            "peak_reserved_mib": [
+              2808
+            ],
+            "speedup_vs_single": 1.0
+          },
+          "k2-mps0": {
+            "jobs": 2,
+            "mps": false,
+            "aggregate_samples_per_s": 3049,
+            "per_job_samples_per_s": [
+              1519,
+              1530
+            ],
+            "process_mib": [
+              2978,
+              2978
+            ],
+            "peak_reserved_mib": [
+              2808,
+              2808
+            ],
+            "speedup_vs_single": 0.768
+          },
+          "k2-mps1": {
+            "jobs": 2,
+            "mps": true,
+            "aggregate_samples_per_s": 1934,
+            "per_job_samples_per_s": [
+              979,
+              955
+            ],
+            "process_mib": [
+              2978,
+              2978
+            ],
+            "peak_reserved_mib": [
+              2808,
+              2808
+            ],
+            "speedup_vs_single": 0.487
+          }
+        }
+      },
+      "recommended_jobs": 1,
+      "recommended_mps": false,
+      "recommended_basis": "medido",
+      "max_jobs_by_memory": 2,
+      "note": "Tres trabajos agotan la VRAM (2978 MiB cada uno)."
+    },
+    {
+      "model": "titans_mac",
+      "arm": "titans_mac_online",
+      "scope": "US+CN",
+      "window": "fold-012",
+      "variant": "block_rows=128",
+      "declared_in_recipe": false,
+      "measured": true,
+      "source": "replay_compute_only",
+      "recipe_options": {
+        "precision": "fp32_strict",
+        "accumulation_rows": 128
+      },
+      "samples_per_s_single": 1625,
+      "samples_per_s_before": 1336,
+      "peak_allocated_mib": 2090,
+      "peak_reserved_mib": 2168,
+      "process_mib": 2334,
+      "context_mib": 166,
+      "host_rss_mib": 3661,
+      "cpu_threads_per_job": 2,
+      "concurrency": {
+        "window": "US+CN fold-012, 40 eventos completos desde la mitad del tramo",
+        "runs": {
+          "k1-mps0": {
+            "jobs": 1,
+            "mps": false,
+            "aggregate_samples_per_s": 2597,
+            "per_job_samples_per_s": [
+              2597
+            ],
+            "process_mib": [
+              2094
+            ],
+            "peak_reserved_mib": [
+              1928
+            ],
+            "speedup_vs_single": 1.0
+          },
+          "k2-mps0": {
+            "jobs": 2,
+            "mps": false,
+            "aggregate_samples_per_s": 4804,
+            "per_job_samples_per_s": [
+              2415,
+              2388
+            ],
+            "process_mib": [
+              2094,
+              2094
+            ],
+            "peak_reserved_mib": [
+              1928,
+              1928
+            ],
+            "speedup_vs_single": 1.85
+          },
+          "k2-mps1": {
+            "jobs": 2,
+            "mps": true,
+            "aggregate_samples_per_s": 5861,
+            "per_job_samples_per_s": [
+              2937,
+              2923
+            ],
+            "process_mib": [
+              2094,
+              2094
+            ],
+            "peak_reserved_mib": [
+              1928,
+              1928
+            ],
+            "speedup_vs_single": 2.257
+          },
+          "k3-mps0": {
+            "jobs": 3,
+            "mps": false,
+            "aggregate_samples_per_s": 6383,
+            "per_job_samples_per_s": [
+              2123,
+              2144,
+              2116
+            ],
+            "process_mib": [
+              2094,
+              2094,
+              2094
+            ],
+            "peak_reserved_mib": [
+              1928,
+              1928,
+              1928
+            ],
+            "speedup_vs_single": 2.458
+          },
+          "k3-mps1": {
+            "jobs": 3,
+            "mps": true,
+            "aggregate_samples_per_s": 9563,
+            "per_job_samples_per_s": [
+              3205,
+              3195,
+              3162
+            ],
+            "process_mib": [
+              2094,
+              2094,
+              2094
+            ],
+            "peak_reserved_mib": [
+              1928,
+              1928,
+              1928
+            ],
+            "speedup_vs_single": 3.682
+          }
+        }
+      },
+      "recommended_jobs": 3,
+      "recommended_mps": true,
+      "recommended_basis": "medido",
+      "max_jobs_by_memory": 3,
+      "note": "Tres trabajos con MPS suman 9563 filas por segundo, por debajo de un trabajo con bloque 1024 en los mismos 40 eventos (14804). La receta usa un trabajo con bloque 1024."
+    },
+    {
+      "model": "titans_mac",
+      "arm": "titans_mac_online",
+      "scope": "US+CN",
+      "window": "fold-012",
+      "single_source": "concurrency_k1_40_events",
+      "variant": "block_rows=512",
+      "declared_in_recipe": false,
+      "measured": true,
+      "source": "replay_compute_only",
+      "recipe_options": {
+        "precision": "fp32_strict",
+        "block_rows": 512,
+        "accumulation_rows": 512,
+        "predictor.max_batch": 512,
+        "predictor.max_state_bytes": 134217728
+      },
+      "samples_per_s_single": 12018,
+      "samples_per_s_before": null,
+      "peak_allocated_mib": 2449,
+      "peak_reserved_mib": 3030,
+      "process_mib": 3196,
+      "context_mib": 166,
+      "host_rss_mib": 2686,
+      "cpu_threads_per_job": 2,
+      "concurrency": {
+        "window": "US+CN fold-012, 40 eventos completos desde la mitad del tramo",
+        "runs": {
+          "k1-mps0": {
+            "jobs": 1,
+            "mps": false,
+            "aggregate_samples_per_s": 12018,
+            "per_job_samples_per_s": [
+              12018
+            ],
+            "process_mib": [
+              3196
+            ],
+            "peak_reserved_mib": [
+              3030
+            ],
+            "speedup_vs_single": 1.0
+          },
+          "k2-mps0": {
+            "jobs": 2,
+            "mps": false,
+            "aggregate_samples_per_s": 18258,
+            "per_job_samples_per_s": [
+              9306,
+              8951
+            ],
+            "process_mib": [
+              3196,
+              3196
+            ],
+            "peak_reserved_mib": [
+              3030,
+              3030
+            ],
+            "speedup_vs_single": 1.519
+          },
+          "k2-mps1": {
+            "jobs": 2,
+            "mps": true,
+            "aggregate_samples_per_s": 20215,
+            "per_job_samples_per_s": [
+              10069,
+              10146
+            ],
+            "process_mib": [
+              3196,
+              3196
+            ],
+            "peak_reserved_mib": [
+              3030,
+              3030
+            ],
+            "speedup_vs_single": 1.682
+          }
+        }
+      },
+      "recommended_jobs": 1,
+      "recommended_mps": false,
+      "recommended_basis": "medido: dos trabajos agotan la VRAM en la ventana completa",
+      "max_jobs_by_memory": 2,
+      "note": "En los 100 eventos completos un trabajo ocupa 4412 MiB de proceso y dos trabajos con MPS agotan la VRAM. La ganancia de dos trabajos solo se observó en los 40 eventos.",
+      "full_window_process_mib": 4412,
+      "full_window_samples_per_s_single": 10798
+    },
+    {
+      "model": "neural",
+      "arm": "rnn",
+      "case": "rnn-10",
+      "scope": "US+CN",
+      "window": "fold-012",
+      "measured": true,
+      "source": "resident_batches_compute_only",
+      "recipe_options": {
+        "batch_size": 256,
+        "precision": "fp32_strict"
+      },
+      "samples_per_s_single": 99613,
+      "samples_per_s_before": null,
+      "peak_allocated_mib": 143,
+      "peak_reserved_mib": 288,
+      "process_mib": 504,
+      "context_mib": 216,
+      "host_rss_mib": null,
+      "cpu_threads_per_job": 2,
+      "concurrency": {
+        "window": "US+CN fold-012, lotes residentes, sin MPS (MPS no medido)",
+        "runs": {
+          "k1-mps0": {
+            "jobs": 1,
+            "mps": false,
+            "aggregate_samples_per_s": 99613,
+            "per_job_samples_per_s": [
+              99613
+            ],
+            "process_mib": [
+              504
+            ],
+            "speedup_vs_single": 1.0
+          },
+          "k2-mps0": {
+            "jobs": 2,
+            "mps": false,
+            "aggregate_samples_per_s": 163240,
+            "per_job_samples_per_s": [
+              81762,
+              81479
+            ],
+            "process_mib": [
+              504,
+              504
+            ],
+            "speedup_vs_single": 1.639
+          },
+          "k3-mps0": {
+            "jobs": 3,
+            "mps": false,
+            "aggregate_samples_per_s": 162485,
+            "per_job_samples_per_s": [
+              53958,
+              54267,
+              54261
+            ],
+            "process_mib": [
+              504,
+              504,
+              504
+            ],
+            "speedup_vs_single": 1.631
+          }
+        }
+      },
+      "note": "Sin el paso con CUDA Graphs, que lo acelera entre 1,4 y 3,0 veces. El lector entrega unas 21.800 muestras por segundo y limita el ajuste real.",
+      "recommended_jobs": 2,
+      "recommended_mps": false,
+      "recommended_basis": "medido",
+      "max_jobs_by_memory": 14
+    },
+    {
+      "model": "neural",
+      "arm": "lstm",
+      "case": "lstm-10",
+      "scope": "US+CN",
+      "window": "fold-012",
+      "measured": true,
+      "source": "resident_batches_compute_only",
+      "recipe_options": {
+        "batch_size": 256,
+        "precision": "fp32_strict"
+      },
+      "samples_per_s_single": 78158,
+      "samples_per_s_before": null,
+      "peak_allocated_mib": 191,
+      "peak_reserved_mib": 342,
+      "process_mib": 558,
+      "context_mib": 216,
+      "host_rss_mib": null,
+      "cpu_threads_per_job": 2,
+      "concurrency": {
+        "window": "US+CN fold-012, lotes residentes, sin MPS (MPS no medido)",
+        "runs": {
+          "k1-mps0": {
+            "jobs": 1,
+            "mps": false,
+            "aggregate_samples_per_s": 78158,
+            "per_job_samples_per_s": [
+              78158
+            ],
+            "process_mib": [
+              558
+            ],
+            "speedup_vs_single": 1.0
+          },
+          "k2-mps0": {
+            "jobs": 2,
+            "mps": false,
+            "aggregate_samples_per_s": 97554,
+            "per_job_samples_per_s": [
+              48691,
+              48864
+            ],
+            "process_mib": [
+              558,
+              558
+            ],
+            "speedup_vs_single": 1.248
+          },
+          "k3-mps0": {
+            "jobs": 3,
+            "mps": false,
+            "aggregate_samples_per_s": 97438,
+            "per_job_samples_per_s": [
+              32489,
+              32464,
+              32485
+            ],
+            "process_mib": [
+              558,
+              558,
+              558
+            ],
+            "speedup_vs_single": 1.247
+          }
+        }
+      },
+      "note": "Sin el paso con CUDA Graphs, que lo acelera entre 1,4 y 3,0 veces. El lector entrega unas 21.800 muestras por segundo y limita el ajuste real.",
+      "recommended_jobs": 2,
+      "recommended_mps": false,
+      "recommended_basis": "medido",
+      "max_jobs_by_memory": 13
+    },
+    {
+      "model": "neural",
+      "arm": "gru",
+      "case": "gru-10",
+      "scope": "US+CN",
+      "window": "fold-012",
+      "measured": true,
+      "source": "resident_batches_compute_only",
+      "recipe_options": {
+        "batch_size": 256,
+        "precision": "fp32_strict"
+      },
+      "samples_per_s_single": 76747,
+      "samples_per_s_before": null,
+      "peak_allocated_mib": 184,
+      "peak_reserved_mib": 322,
+      "process_mib": 538,
+      "context_mib": 216,
+      "host_rss_mib": null,
+      "cpu_threads_per_job": 2,
+      "concurrency": {
+        "window": "US+CN fold-012, lotes residentes, sin MPS (MPS no medido)",
+        "runs": {
+          "k1-mps0": {
+            "jobs": 1,
+            "mps": false,
+            "aggregate_samples_per_s": 76747,
+            "per_job_samples_per_s": [
+              76747
+            ],
+            "process_mib": [
+              538
+            ],
+            "speedup_vs_single": 1.0
+          },
+          "k2-mps0": {
+            "jobs": 2,
+            "mps": false,
+            "aggregate_samples_per_s": 99557,
+            "per_job_samples_per_s": [
+              50194,
+              49363
+            ],
+            "process_mib": [
+              538,
+              538
+            ],
+            "speedup_vs_single": 1.297
+          },
+          "k3-mps0": {
+            "jobs": 3,
+            "mps": false,
+            "aggregate_samples_per_s": 99374,
+            "per_job_samples_per_s": [
+              33155,
+              33174,
+              33045
+            ],
+            "process_mib": [
+              538,
+              538,
+              538
+            ],
+            "speedup_vs_single": 1.295
+          }
+        }
+      },
+      "note": "Sin el paso con CUDA Graphs, que lo acelera entre 1,4 y 3,0 veces. El lector entrega unas 21.800 muestras por segundo y limita el ajuste real.",
+      "recommended_jobs": 2,
+      "recommended_mps": false,
+      "recommended_basis": "medido",
+      "max_jobs_by_memory": 13
+    },
+    {
+      "model": "neural",
+      "arm": "dlinear",
+      "case": "dlinear-10",
+      "scope": "US+CN",
+      "window": "fold-012",
+      "measured": true,
+      "source": "resident_batches_compute_only",
+      "recipe_options": {
+        "batch_size": 256,
+        "precision": "fp32_strict"
+      },
+      "samples_per_s_single": 112125,
+      "samples_per_s_before": null,
+      "peak_allocated_mib": 66,
+      "peak_reserved_mib": 176,
+      "process_mib": 388,
+      "context_mib": 212,
+      "host_rss_mib": null,
+      "cpu_threads_per_job": 2,
+      "concurrency": {
+        "window": "US+CN fold-012, lotes residentes, sin MPS (MPS no medido)",
+        "runs": {
+          "k1-mps0": {
+            "jobs": 1,
+            "mps": false,
+            "aggregate_samples_per_s": 112125,
+            "per_job_samples_per_s": [
+              112125
+            ],
+            "process_mib": [
+              388
+            ],
+            "speedup_vs_single": 1.0
+          },
+          "k2-mps0": {
+            "jobs": 2,
+            "mps": false,
+            "aggregate_samples_per_s": 202992,
+            "per_job_samples_per_s": [
+              102264,
+              100728
+            ],
+            "process_mib": [
+              388,
+              388
+            ],
+            "speedup_vs_single": 1.81
+          },
+          "k3-mps0": {
+            "jobs": 3,
+            "mps": false,
+            "aggregate_samples_per_s": 246291,
+            "per_job_samples_per_s": [
+              84434,
+              77134,
+              84723
+            ],
+            "process_mib": [
+              388,
+              388,
+              388
+            ],
+            "speedup_vs_single": 2.197
+          }
+        }
+      },
+      "note": "Sin el paso con CUDA Graphs, que lo acelera entre 1,4 y 3,0 veces. El lector entrega unas 21.800 muestras por segundo y limita el ajuste real.",
+      "recommended_jobs": 3,
+      "recommended_mps": false,
+      "recommended_basis": "medido",
+      "max_jobs_by_memory": 19
+    },
+    {
+      "model": "neural",
+      "arm": "transformer",
+      "case": "transformer-10",
+      "scope": "US+CN",
+      "window": "fold-012",
+      "measured": true,
+      "source": "resident_batches_compute_only",
+      "recipe_options": {
+        "batch_size": 256,
+        "precision": "fp32_strict"
+      },
+      "samples_per_s_single": 53239,
+      "samples_per_s_before": null,
+      "peak_allocated_mib": 105,
+      "peak_reserved_mib": 234,
+      "process_mib": 446,
+      "context_mib": 212,
+      "host_rss_mib": null,
+      "cpu_threads_per_job": 2,
+      "concurrency": {
+        "window": "US+CN fold-012, lotes residentes, sin MPS (MPS no medido)",
+        "runs": {
+          "k1-mps0": {
+            "jobs": 1,
+            "mps": false,
+            "aggregate_samples_per_s": 53239,
+            "per_job_samples_per_s": [
+              53239
+            ],
+            "process_mib": [
+              446
+            ],
+            "speedup_vs_single": 1.0
+          },
+          "k2-mps0": {
+            "jobs": 2,
+            "mps": false,
+            "aggregate_samples_per_s": 99918,
+            "per_job_samples_per_s": [
+              49882,
+              50036
+            ],
+            "process_mib": [
+              446,
+              446
+            ],
+            "speedup_vs_single": 1.877
+          },
+          "k3-mps0": {
+            "jobs": 3,
+            "mps": false,
+            "aggregate_samples_per_s": 123808,
+            "per_job_samples_per_s": [
+              41812,
+              41202,
+              40794
+            ],
+            "process_mib": [
+              446,
+              446,
+              446
+            ],
+            "speedup_vs_single": 2.326
+          }
+        }
+      },
+      "note": "Sin el paso con CUDA Graphs, que lo acelera entre 1,4 y 3,0 veces. El lector entrega unas 21.800 muestras por segundo y limita el ajuste real.",
+      "recommended_jobs": 3,
+      "recommended_mps": false,
+      "recommended_basis": "medido",
+      "max_jobs_by_memory": 16
+    }
+  ]
+}

@@ -16,7 +16,7 @@ from mars_titan.data.input_policy import (
 )
 from mars_titan.data.macro_coverage import _publish_directory
 from mars_titan.data.storage import atomic_json, outside_source, sha256
-from mars_titan.evaluation.splits import PARTITIONS, build_folds
+from mars_titan.evaluation.splits import PARTITIONS, build_folds, eligible_folds
 
 from .corpus_inputs import CorpusDataset
 from .reference_campaign import campaign_views
@@ -25,9 +25,21 @@ from .temporal_corpus import prepare_temporal_corpus
 
 
 def prepare_joint_temporal_corpus(
-    parent, sources, output, *, recover_annual_boundaries=False, input_policy=STRICT_INPUTS
+    parent,
+    sources,
+    output,
+    *,
+    recover_annual_boundaries=False,
+    input_policy=STRICT_INPUTS,
+    eligibility=None,
 ):
-    """Preparar cada calendario y publicar su unión sin intersectar decisiones."""
+    """Preparar cada calendario y publicar su unión sin intersectar decisiones.
+
+    `eligibility` asigna a un mercado el protocolo propio que fija en qué ventanas cuenta
+    en las métricas (`splits.eligible_folds`). En las demás ventanas ese mercado puede
+    quedar con tramos sin filas, porque sus filas solo entran en el ajuste y la selección.
+    Sin declararla, todos los mercados necesitan filas en todos los tramos de cada ventana.
+    """
     parent, output = Path(parent), Path(output)
     masked = masked_inputs(input_policy)
     if masked and recover_annual_boundaries is not True:
@@ -53,6 +65,17 @@ def prepare_joint_temporal_corpus(
         k: v for k, v in protocols["CN"].items() if k != "market"
     }:
         raise ValueError("Los protocolos conjuntos deben compartir cortes, semillas y margen")
+    eligibility = {} if eligibility is None else dict(eligibility)
+    if not set(eligibility) <= set(protocols):
+        raise ValueError("La elegibilidad solo se declara para los mercados de la unión")
+    eligible = {
+        market: [fold["id"] for fold in build_folds(protocols["US"])] for market in protocols
+    }
+    for market, path in eligibility.items():
+        path = Path(path)
+        reference, signatures[path] = read_manifest(path, 64 * 1024)
+        eligible[market] = eligible_folds(protocols[market], reference)
+        paths[market]["eligibility"] = path
     dataset = CorpusDataset(parent, cache_bytes=0, input_policy=input_policy)
     signatures[parent] = dataset.identity
     if dataset.temporal is not None or {a["market"] for a in dataset.assets} != {"US", "CN"}:
@@ -96,6 +119,11 @@ def prepare_joint_temporal_corpus(
                 stage / "markets" / market,
                 recover_annual_boundaries=recover_annual_boundaries,
                 input_policy=input_policy,
+                empty_folds=[
+                    fold["id"]
+                    for fold in build_folds(protocols[market])
+                    if fold["id"] not in eligible[market]
+                ],
             )
         summaries = []
         for index, fold in enumerate(build_folds(protocols["US"])):
@@ -147,9 +175,19 @@ def prepare_joint_temporal_corpus(
                     counts=joined["counts"],
                     market_counts={market: view["counts"] for market, view in views.items()},
                     manifest_sha256=sha256(destination),
-                    has_all_partitions=all(all(view["counts"].values()) for view in views.values()),
+                    # Cada mercado que cuenta en la ventana tiene filas en los cuatro tramos.
+                    has_all_partitions=all(joined["counts"].values())
+                    and all(
+                        all(view["counts"].values())
+                        for market, view in views.items()
+                        if fold["id"] in eligible[market]
+                    ),
                 )
             )
+            if eligibility:
+                summaries[-1]["eligible_markets"] = [
+                    market for market in ("US", "CN") if fold["id"] in eligible[market]
+                ]
             if "purged_by_boundary" in views["US"]:
                 summaries[-1]["market_purged_by_boundary"] = {
                     market: view["purged_by_boundary"] for market, view in views.items()
@@ -180,6 +218,11 @@ def prepare_joint_temporal_corpus(
             scientific_training_started=False,
             final_test_opened=False,
         )
+        if eligibility:
+            report["market_eligibility"] = {
+                market: dict(protocol_sha256=signatures[path], folds=eligible[market])
+                for market, path in ((m, paths[m]["eligibility"]) for m in eligibility)
+            }
         atomic_json(stage / "report.json", report)
         _publish_directory(stage, output)
         descriptor = os.open(output.parent, os.O_RDONLY | os.O_DIRECTORY)
@@ -208,6 +251,8 @@ def main(argv=None):
         )
     parser.add_argument("--input-policy", choices=INPUT_POLICIES, default=STRICT_INPUTS)
     parser.add_argument("--recover-annual-boundaries", action="store_true")
+    for market in ("us", "cn"):
+        parser.add_argument(f"--{market}-eligibility", type=Path)
     args = parser.parse_args(argv)
     fields = (
         ("protocol",) if args.input_policy != STRICT_INPUTS else ("protocol", "macro", "admission")
@@ -230,6 +275,11 @@ def main(argv=None):
         args.output,
         recover_annual_boundaries=args.recover_annual_boundaries,
         input_policy=args.input_policy,
+        eligibility={
+            market.upper(): getattr(args, f"{market}_eligibility")
+            for market in ("us", "cn")
+            if getattr(args, f"{market}_eligibility") is not None
+        },
     )
     print(json.dumps(result, ensure_ascii=False))
     return 0

@@ -1,6 +1,6 @@
 # Validación walk-forward v2 de la edición desde 2000
 
-Revisión del 9 de octubre de 2026. Este documento fija el protocolo temporal con el que se entrenarán y compararán todas las familias sobre la [edición histórica con máscaras](../data/historical-temporal-views.md). Describe un diseño y sus comprobaciones técnicas. No contiene resultados predictivos, no se ha ejecutado ningún entrenamiento con él y el test de 2024 sigue cerrado. Corresponde a la etapa 4 de la [campaña sobre la edición desde 2000](training-campaign-2000.md) y a [#363](https://github.com/GonxKZ/mars-titan/issues/363).
+Revisión del 9 de octubre de 2026. Este documento fija el protocolo temporal con el que se entrenarán y compararán todas las familias sobre la [edición histórica con máscaras](../data/historical-temporal-views.md). Incluye el [protocolo conjunto v3](#protocolo-conjunto-v3-de-la-campaña-a-v2), decidido ese mismo día para la campaña A v2. Describe un diseño y sus comprobaciones técnicas. No contiene resultados predictivos, no se ha ejecutado ningún entrenamiento con él y el test de 2024 sigue cerrado. Corresponde a la etapa 4 de la [campaña sobre la edición desde 2000](training-campaign-2000.md) y a [#363](https://github.com/GonxKZ/mars-titan/issues/363).
 
 ## Por qué hace falta otra versión
 
@@ -34,6 +34,7 @@ El protocolo exige al menos tres años de etiquetas maduras antes de la primera 
 | US | 2005 a 2023 | 19 | `historical-masked-us-walk-forward-v2.json` |
 | CN | 2011 a 2023 | 13 | `historical-masked-cn-walk-forward-v2.json` |
 | US+CN | 2011 a 2023 | 13 | `historical-masked-joint-us-walk-forward-v2.json` y `historical-masked-cn-walk-forward-v2.json` |
+| US+CN v3 (campaña A v2) | 2005 a 2023, CN solo cuenta desde 2011 | 19 | `historical-masked-us-walk-forward-v2.json` y `historical-masked-joint-cn-walk-forward-v3.json` |
 
 ## Mercados sin filas en una ventana
 
@@ -52,6 +53,48 @@ La comparación declara además un análisis secundario por presencia de noticia
 El mismo 9 de octubre de 2026, también antes de cualquier resultado, se declaró como análisis secundario la ablación de modalidades en inferencia: el estado elegido de cada brazo vuelve a predecir la evaluación con noticias, fundamentales o ambos ausentes, sin reentrenar ni recalibrar. Está definida en [métricas](metrics.md#ablación-de-modalidades-en-inferencia) y no se ha ejecutado.
 
 Los protocolos US y conjunto comparten cortes. Las ventanas conjuntas coinciden fecha a fecha con las ventanas US de 2011 a 2023, aunque sus identificadores empiezan en `fold-000`. Una comparación entre el brazo US y el conjunto sobre filas US se hace con esas trece ventanas, emparejadas por el intervalo de evaluación y no por el identificador.
+
+Esta sección describe el protocolo conjunto v2, que conserva la campaña A original. La campaña A v2 lo sustituye por el [protocolo conjunto v3](#protocolo-conjunto-v3-de-la-campaña-a-v2), que admite China vacía en las ventanas donde no cuenta.
+
+## Protocolo conjunto v3 de la campaña A v2
+
+### Decisión
+
+El 9 de octubre de 2026, antes de cualquier resultado, el autor decidió cambiar el diseño de la campaña A. Todas las familias entrenan un único modelo conjunto US+CN con un protocolo nuevo que empieza como US, con la primera validación en abril de 2004 y 19 ventanas hasta 2023. China entra en el ajuste en cuanto tiene filas, pero sus métricas solo cuentan en las ventanas que cumplen su propia historia mínima. Tres familias entrenan además modelos separados de US y de CN como controles, para contrastar en cada mercado el modelo conjunto con el separado. La [campaña](training-campaign-2000.md#campaña-a-v2-con-modelo-conjunto) recoge el resto del diseño. Es una decisión de diseño previa a cualquier resultado, no una conclusión.
+
+### Cortes y filas de China
+
+`configs/evaluation/historical-masked-joint-cn-walk-forward-v3.json` es el protocolo US v2 con `market="CN"`. La unión exige que los dos protocolos solo difieran en el mercado, así que US+CN usa `historical-masked-us-walk-forward-v2.json` para US y este archivo para CN. Las ventanas conjuntas coinciden fecha a fecha con las de US, con los mismos identificadores.
+
+Las filas de China en las seis primeras ventanas salen de los objetivos `targets-v3` con la misma regla que las vistas (ajuste, validación, calibración y evaluación):
+
+| Ventana | Validación desde | Filas CN | Cuenta para CN |
+| --- | --- | --- | --- |
+| `fold-000` | 2004-04 | 0 / 0 / 0 / 0 | No |
+| `fold-001` | 2005-04 | 0 / 0 / 0 / 46.902 | No |
+| `fold-002` | 2006-04 | 0 / 22.097 / 24.394 / 103.042 | No |
+| `fold-003` | 2007-04 | 70.136 / 52.657 / 26.715 / 112.310 | No |
+| `fold-004` | 2008-04 | 177.275 / 56.079 / 28.845 / 118.266 | No |
+| `fold-005` | 2009-04 | 290.577 / 61.352 / 28.969 / 122.072 | No |
+| `fold-006` a `fold-018` | 2010-04 a 2022-04 | Las mismas que `fold-000` a `fold-012` de CN v2 | Sí |
+
+China aporta filas de ajuste desde `fold-003` y de validación desde `fold-002`. En las ventanas que no cuentan para China, esas filas entran en el ajuste y en la selección por validación del modelo conjunto, porque son pasado disponible. La selección mira el MAE de validación de todas las filas de la vista, como en cualquier otro ámbito.
+
+### Elegibilidad por mercado
+
+Una ventana conjunta cuenta para un mercado si sus cuatro tramos son idénticos a los de alguna ventana del protocolo propio de ese mercado (`splits.eligible_folds`). Para China el protocolo propio es CN v2, con 114 meses de historia mínima, así que cuentan `fold-006` a `fold-018` (2011 a 2023). US cuenta en las 19.
+
+Las predicciones de China en las ventanas no elegibles se generan y se conservan, pero quedan fuera de la calibración común y de todas las métricas (`predicted_and_kept_excluded_from_calibration_and_metrics`). La comparación cuenta las filas excluidas en cada ventana, brazo y tramo (`excluded_rows`). Se descartó marcarlas y evaluarlas aparte, porque serían años con menos de tres años de etiquetas de China y mezclarían el efecto de agrupar con el de una historia insuficiente, el segundo motivo del apartado anterior.
+
+La preparación admite tramos vacíos de un mercado solo en sus ventanas no elegibles y los declara en el informe (`empty_folds_allowed`). `has_all_partitions` exige filas en los cuatro tramos de cada mercado elegible en la ventana, y el informe de la unión guarda los mercados elegibles de cada ventana y la huella del protocolo que fija la elegibilidad. Así se responden los motivos anteriores: el contraste con los controles separados mide el efecto de agrupar, China no cuenta con historia insuficiente, la media entre mercados no se renormaliza porque las filas de China excluidas no entran en ninguna métrica, los consumidores siguen exigiendo filas donde se mide y no se pierde historia de ajuste.
+
+La vista agregada US+CN mezcla años solo con US (2005 a 2010) y años con los dos mercados. Por eso el contraste principal del diseño se hace por mercado, con las vistas US y CN del ámbito conjunto, y la vista agregada es descriptiva.
+
+### Comparación con los controles separados
+
+La [comparación conjunta](../../configs/evaluation/historical-masked-2000-joint-comparison.json) tiene versión 5, con un bloque `joint_design`. Conserva los brazos, las métricas contrastadas, las familias y la cartera larga y corta de la versión 4 de la [comparación principal](../../configs/evaluation/historical-masked-2000-comparison.json), declarados el 9 de octubre antes de cualquier predicción, y la cartera aplica las mismas exclusiones por mercado y ventana que las métricas. El ámbito US+CN compara todos los brazos, también el [control en línea](../engineering/transformer-online-control.md) `transformer_compact_online` y sus familias `online_learning` y `memory_vs_online_learning`, que la versión 4 añadió el 10 de octubre. Los ámbitos US y CN comparan cada control separado (`transformer_compact`, `titans_mac_online` y `mars_titan_m1`) con el mismo brazo del modelo conjunto restringido a las filas de ese mercado, publicado como brazo prestado `<brazo>_joint`. La familia `joint_vs_separate` declara el delta del conjunto menos el separado, con el separado como base, y hereda el remuestreo por bloques de días y el máximo estudentizado de las demás familias.
+
+Las ventanas se emparejan por intervalos idénticos: `fold-k` de US con `fold-k` del conjunto y `fold-k` de CN con `fold-(k+6)`. Las filas y los objetivos del brazo prestado deben coincidir exactamente con los del control, y la huella de la vista conjunta de cada ventana queda en el manifiesto de fuentes. Cada semilla se resume por separado y los contrastes usan la media sesión a sesión de las semillas. Ridge y XGBoost tienen una sola semilla y entran con su serie.
 
 ## Purga por el intervalo de cada etiqueta
 
@@ -75,17 +118,65 @@ El bloque `selection` es idéntico en los tres archivos y se fija antes de prepa
 
 Son los valores de la [búsqueda histórica de referencias](../../configs/baselines/historical-masked-reference-search-us.json) (versión 4), que conserva las épocas, la paciencia y la mejora mínima de la [búsqueda temporal estricta](../engineering/strict-temporal-search.md) y sustituye su meseta por el presupuesto fijo. Con la misma población, el mismo lote y las mismas épocas, todos los brazos aplican el mismo número de actualizaciones, como exige la comparación emparejada. El sobreajuste se controla con la selección del mejor estado de validación, no cortando el presupuesto. Esta selección reduce el riesgo de quedarse con un estado sobreajustado, pero no lo elimina.
 
-El esquema admite también `stopping="validation_plateau"` con `minimum_epochs`, que es el criterio de [#190](https://github.com/GonxKZ/mars-titan/issues/190). No se usa aquí porque haría que cada brazo se detuviera con un número distinto de actualizaciones, y eso sería otra comparación. Cambiar la regla exige publicar otro archivo con otra identidad antes de entrenar.
+El esquema admite también `stopping="validation_plateau"` con `minimum_epochs`, que es el criterio de [#190](https://github.com/GonxKZ/mars-titan/issues/190). No se usa aquí porque haría que cada brazo se detuviera con un número distinto de actualizaciones, y eso sería otra comparación. Cambiar la regla exige publicar otro archivo con otra identidad antes de entrenar. La [parada temprana opcional](#parada-temprana-opcional) describe cómo lo hace una campaña, con una parada individual o conjunta.
 
 La semántica es la del [selector existente](../engineering/masked-reference-runners.md#presupuesto-fijo-y-selección). Solo cuentan las evaluaciones completas, un empate no mejora, una mejora menor que `min_delta` tampoco, y una continuación incluye el padre como época 0 elegible. El estado del selector es un registro serializable, así que reanudar a mitad de la paciencia conserva la decisión. Las pruebas recorren secuencias de métricas fijadas con los dos modos, sin modelo ni pasos de optimizador.
 
 La búsqueda temporal compara la regla del plan con la del protocolo, incluidos el modo y el mínimo, y rechaza cualquier diferencia. Los planes de versiones 2 y 3 equivalen a una meseta, así que solo sirven para los protocolos v1. Los ejecutores de Titans-MAC, MARS-TITAN y CM-v1 deben leer la regla con `stopping_rule(protocol)` cuando se conecten a estas vistas. Una parada independiente que cambie el número de actualizaciones se registra como otra comparación.
 
+## Parada temprana opcional
+
+El protocolo conserva el presupuesto fijo. Una campaña puede declarar además una sección `early_stop` antes de ver resultados. Esa sección solo sustituye el modo, la paciencia, la mejora mínima y las épocas mínima y máxima de los entrenadores neuronales, nunca la métrica. La regla efectiva viaja en cada caso planificado como `stopping_rule` y cambia la identidad de la receta y del trabajo, así que una salida de un modo no se reutiliza en otro. Sin la sección, la campaña, sus trabajos y sus identidades son los de antes. XGBoost conserva su meseta por rondas y Ridge no tiene épocas.
+
+Hay dos modos, implementados en `training/selection.py` y en los entrenadores de las referencias, de Titans-MAC, del lector de MARS-TITAN y CM-v1 y de la GRU candidata:
+
+- `validation_plateau` detiene cada ajuste en su primera meseta. Es la opción más barata, pero dos brazos emparejados pueden terminar con un número distinto de actualizaciones, y entonces la diferencia entre ellos mezcla el efecto del brazo con el del presupuesto.
+- `joint_plateau` es la parada conjunta de un grupo de brazos emparejados. Ningún ajuste corta solo. Cada uno se detiene en su primera meseta, o al agotar el máximo si no la alcanza, en un estado confirmado en disco (`awaiting_joint_stop`) con su época de parada individual. Cuando todo el grupo ha llegado a ese punto, la época común es la mayor de esas paradas y cada ajuste continúa desde su checkpoint hasta exactamente esa época. Así todos aplican el mismo número de actualizaciones y de validaciones.
+
+En los dos modos la selección del mejor estado es la misma que con presupuesto fijo. Solo cuentan las evaluaciones completas, la paciencia y la meseta forman parte del registro de selección que se guarda con cada checkpoint, una reanudación conserva la decisión y una continuación sigue incluyendo el padre como época 0 elegible. El mejor estado es el mejor entre las épocas recorridas, también las posteriores a la meseta de un ajuste conjunto. La época común queda fijada en el informe de la ejecución y una reanudación con otra época se rechaza antes de escribir nada.
+
+### Grupos y época común
+
+Un grupo se declara con los nombres de sus brazos y la época común `maximum_of_first_plateaus`. Dentro de un grupo, cada ajuste se empareja con los del mismo ámbito, ventana y semilla, con el caso de búsqueda en la misma posición o, en las semillas finalistas, con el caso elegido de cada brazo. Los brazos de un grupo comparten semilla de búsqueda y número de casos, ningún brazo parte de otro del mismo grupo y un brazo solo pertenece a un grupo. Además, cada contraste emparejado de la comparación (delta o factorial) entre brazos conectados sin relación de padre debe quedar dentro de un mismo grupo, para que ninguna diferencia dependa de presupuestos distintos.
+
+En el plan, cada ajuste agrupado se divide en dos trabajos. La meseta (`plateau-...`) recorre el ajuste hasta su parada individual y escribe un recibo con esa época y una copia del informe, sin predicciones. La continuación conserva el identificador del ajuste, depende de las mesetas de todo su grupo, reanuda en la carpeta de la meseta y registra en su identidad la época común y las huellas de los recibos del grupo. Los trabajos quedan en un orden compatible con sus dependencias y la meseta no cuenta como un ajuste más.
+
+Se eligió la mayor de las primeras mesetas porque ningún brazo se corta antes de su propio criterio y porque se calcula con trabajos independientes, que es como la campaña usa la GPU, de uno en uno. Las alternativas eran peores para esta comparación:
+
+- La menor de las mesetas cortaría a los brazos que convergen más despacio, que pueden ser precisamente los de memoria, y sesgaría el contraste contra ellos.
+- Una paciencia simultánea, en la que el grupo para cuando todos sus miembros llevan a la vez `patience` épocas sin mejorar, obligaría a ejecutar todos los miembros época a época en paralelo o con pausas en cada época. Además, una mejora tardía de un solo miembro alargaría todo el grupo sin límite claro.
+- Una meseta de la media del grupo haría depender la parada de un brazo del error de los demás.
+
+El coste de la elección es que los miembros que paran antes recorren épocas de más, y que el ajuste más lento del grupo fija el coste de todos.
+
+### Valores propuestos y coste estimado
+
+Los valores se toman de la regla ya declarada en el protocolo, no de los resultados: paciencia 5, mejora mínima 0,00001 y un máximo de 30 épocas. Se añade un mínimo de 5 épocas antes de contar la paciencia, que protege de una meseta muy temprana y en los historiales apenas cambia las paradas (17,34 frente a 17,35 épocas de media). La [simulación sobre historiales registrados](../../reports/engineering/early-stopping-history-20261009.json), hecha con [`scripts/simulate_early_stopping.py`](../../scripts/simulate_early_stopping.py), aplica la misma selección a los 160 ajustes desde cero de las referencias neuronales de la edición ampliada anterior (`data/interim/real-expanded-references-20261006`, 40 grupos con la misma ventana, ámbito, etapa, semilla y caso). Sus historiales terminan donde paró su regla original, así que un ajuste que necesitaría épocas posteriores queda censurado y no se le inventa un error. La pérdida relativa compara el MAE de validación del estado elegido con el mejor de las 30 primeras épocas.
+
+| Paciencia | Épocas, individual | Épocas, conjunta | Pérdida media, individual | Pérdida media, conjunta | Pérdida máxima, conjunta | Censurados |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 3 | 12,1 | 14,9 | 0,99 % | 0,56 % | 4,4 % | 2 |
+| 5 | 17,4 | 22,1 | 0,42 % | 0,10 % | 1,5 % | 26 |
+| 8 | 23,2 | 27,6 | 0,12 % | 0,02 % | 0,8 % | 79 |
+| 10 | 25,7 | 29,0 | 0,03 % | 0 % | 0 % | 95 |
+
+Con paciencia 5, la parada individual recorre de media 17,4 de las 30 épocas (mediana 17, percentil 90 de 24), un 58 % del presupuesto fijo, y la conjunta 22,1 (mediana 22, percentil 90 de 27), un 74 %. Como cada época incluye una pasada de ajuste y otra de validación, el coste de cómputo baja en la misma proporción: en torno a un 42 % con la parada individual y un 26 % con la conjunta, para cualquier número de filas por serie. La conjunta elige el mismo estado que las 30 épocas en 101 de los 134 ajustes no censurados y la individual en 75 de 160. La continuación conjunta añade una carga y una escritura de checkpoint por ajuste y conserva el estado de recuperación de la meseta hasta que termina su grupo.
+
+Estas cifras son una estimación con limitaciones claras. Proceden de otra edición, de otras referencias, de una regla original con otra paciencia y de ajustes con TF32 activado en cuDNN, y no incluyen Titans-MAC, MARS-TITAN, CM-v1 ni la GRU candidata. El 16 % de los ajustes queda censurado con paciencia 5. La duración real de la campaña sigue sin medir. La parada temprana tampoco garantiza que no haya sobreajuste: solo limita las épocas que se recorren después de la última mejora de validación.
+
+### Configuración preparada
+
+[`historical-masked-campaign-a-joint-stop.json`](../../configs/baselines/historical-masked-campaign-a-joint-stop.json) es la campaña A con la parada conjunta, declarada antes de cualquier resultado y sin sustituir a la configuración de A. Solo cambian su nombre y la sección `early_stop`. Tiene tres grupos. El de codificadores y núcleos reúne la GRU, el Transformer compacto, la GRU candidata y los cuatro controles de Titans-MAC, porque la versión 4 de la comparación contrasta el Transformer con `transformer_direct`, la GRU con la GRU candidata y esta con `mac_online`. El de lectores episódicos reúne los seis brazos de MARS-TITAN y los cuatro brazos factoriales de CM-v1, porque M1 se contrasta con CM-v1 B. La campaña A v2 conjunta reutiliza estos grupos y todavía no declara `mars_titan_m1_k4_first_read`, así que el archivo no lo nombra. Quien declare ese brazo con la parada conjunta debe añadirlo a este grupo, porque A10 lo contrasta con K = 4, y el plan se detiene si falta. Los dos brazos B6 no tienen épocas y no pertenecen a ningún grupo. El tercero reúne los dos núcleos de CM-v1. Los brazos de MARS-TITAN no se agrupan con su padre Titans-MAC ni los de CM-v1 con sus núcleos, porque parten de ellos. Las demás referencias neuronales usan la meseta individual con los mismos valores. Con las secciones de A, el plan tiene los mismos 2.385 ajustes y 1.080 mesetas, porque la GRU candidata todavía no tiene entrenador en A. Con la declaración ampliada y el brazo de la primera lectura en el grupo de los lectores tendría 5.265 ajustes y 3.600 mesetas. La elección entre esta configuración y el presupuesto fijo sigue pendiente en [#363](https://github.com/GonxKZ/mars-titan/issues/363).
+
+### Búsqueda tabular
+
+Ridge prueba tres alfas y XGBoost doce configuraciones, frente a dos casos por brazo en las familias neuronales. Se mantiene esa asimetría y se considera conservadora: una búsqueda más amplia favorece a las referencias tabulares, así que solo puede hacer más difícil, no más fácil, que un brazo con memoria las supere.
+
 ## Estado y calentamiento por ventana
 
 Cada ventana parte de una inicialización nueva con su semilla. No hereda pesos, optimizador, normalizadores ni calibrador de otra ventana. Los pesos rápidos y el momentum de Titans, el banco episódico, la cola de etiquetas pendientes y el cursor se reinician al empezar cada ventana y al empezar cada pasada de validación, calibración o evaluación.
 
-El calentamiento de los brazos con memoria usa solo las sesiones anteriores al comienzo del tramo que se va a medir y solo etiquetas con `label_available_at` anterior a ese comienzo. Su longitud será la misma para todos los brazos con memoria. Esta política está declarada aquí y su aplicación corresponde a cada ejecutor. El [punto de entrada de Titans-MAC](../engineering/titans-chronological-trainer.md#ventana-walk-forward) la aplica con 12 meses de entradas, sin etiquetas, limitados al origen del ajuste. Los demás ejecutores todavía no la conectan a estas vistas. La separación entre el checkpoint seleccionado y los de recuperación, con rotación acotada, sigue la [política de checkpoints](../engineering/checkpoint-recovery.md) y se coordina con [#67](https://github.com/GonxKZ/mars-titan/issues/67).
+El calentamiento de los brazos con memoria usa solo las sesiones anteriores al comienzo del tramo que se va a medir y solo etiquetas con `label_available_at` anterior a ese comienzo. Su longitud es la misma para todos los brazos con memoria: 12 meses de entradas, sin etiquetas, limitados al origen del ajuste. Todos los ejecutores construyen sus fases con `training/walk_forward_phases.window_phases`. El [punto de entrada de Titans-MAC](../engineering/titans-chronological-trainer.md#ventana-walk-forward) y los núcleos de CM-v1 leen los meses de la receta de Titans-MAC, MARS-TITAN y los brazos de CM-v1 exigen las fases que registró su padre, y la [GRU candidata](../engineering/candidate-chronological-trainer.md#recorrido-y-orden-de-cada-evento) los declara en su receta con el mismo valor. En la candidata el calentamiento no cambia el estado, porque la GRU no lo conserva entre instantes y su banco solo admite etiquetas maduras, pero iguala la ventana de información observada. Una prueba recorre todas las ventanas de los protocolos de la comparación y comprueba que ninguna fase observa algo anterior al origen ni posterior al final de su tramo. La separación entre el checkpoint seleccionado y los de recuperación, con rotación acotada, sigue la [política de checkpoints](../engineering/checkpoint-recovery.md) y se coordina con [#67](https://github.com/GonxKZ/mars-titan/issues/67).
 
 ## Ventanas y filas nominales
 
@@ -156,34 +247,25 @@ uv run --no-sync python -m mars_titan.training.temporal_search \
   --config <plan de referencias de versión 4> --views <vistas conjuntas v2> --check
 ```
 
-`--check` valida informes, ventanas, población, política y regla de parada, y devuelve la identidad y el número de trabajos previstos sin reservar la GPU ni entrenar. La búsqueda lee la política de entradas del plan, como hace la búsqueda de referencias, y exige que las vistas declaren la misma. Un plan estricto no puede leer vistas con máscaras ni al revés. El plan debe usar `arms=["US+CN"]` con las vistas conjuntas y el mercado correspondiente con las vistas de un solo mercado.
+Las vistas de la campaña A v2 no se han generado. El 9 de octubre se aprobó regenerar la edición como v3.1, que recupera unos 1,58 millones de ventanas de precios rechazadas por redondeo OHLC (un 10 % más en US y un 4 % más en CN) y admite con máscara las sesiones sin datos en todo el mercado, como el 29 y el 30 de abril de 2019 en CN. Por eso los tres ámbitos (US+CN desde 2004 y los controles US y CN) se prepararán sobre la v3.1 y sus objetivos `targets-v3.1`, y no sobre la v3. Las vistas v3 de US y CN pasan la comprobación de la campaña A v2, pero la v3.1 las sustituye. Las órdenes reciben la edición como parámetro y no se ejecutarán hasta que la v3.1 esté verificada:
 
-## Vistas de la campaña A
+```bash
+uv run --no-sync python scripts/run_masked_campaign.py prepare \
+  --campaign configs/baselines/historical-masked-campaign-a-v2.json \
+  --parent <edición v3.1>/targets-v3.1/manifest.json --output <vistas A v2>
+uv run --no-sync python scripts/run_masked_campaign.py views \
+  --campaign configs/baselines/historical-masked-campaign-a-v2.json \
+  --views US+CN=<vistas A v2>/US+CN --views US=<vistas A v2>/US --views CN=<vistas A v2>/CN
+uv run --no-sync python scripts/run_masked_campaign.py budget \
+  --campaign configs/baselines/historical-masked-campaign-a-v2.json \
+  --views US+CN=<vistas A v2>/US+CN --views US=<vistas A v2>/US --views CN=<vistas A v2>/CN \
+  --write-counts <recuentos v3.1> --rate 16000 --epochs 10
+```
 
-Las vistas reales de la campaña A se prepararon el 9 de octubre sobre los objetivos `targets-v3`, con la [configuración de A](../../configs/baselines/historical-masked-campaign-a.json) y el runtime `7a9e93e3`. Cada ámbito se preparó en un proceso de un hilo que repite el cuerpo del bucle de `prepare_views`, y los tres procesos terminaron con código 0. Después, `run_masked_campaign.py prepare` con la campaña A sobre `targets-v3/manifest.json` validó los tres destinos con su comprobación oficial y también terminó con código 0. El [recibo](../../reports/data/campaign-a-views-20261009.json) conserva las huellas de los informes, los recuentos de cada ventana, las filas purgadas y los tiempos.
+Con las proporciones de la v3, las vistas ocuparían unos 17 GB (unos 9 GB las conjuntas, porque cada ventana guarda una fila por muestra de todos los activos) y tardarían unas 2,5 horas preparadas una tras otra, o algo menos de hora y media con los tres ámbitos en paralelo. Un verificador local independiente, adaptado del de la campaña A y parametrizado por la edición, recalcula las fronteras, comprueba fila a fila la purga y los objetivos de los tres ámbitos, recalcula la elegibilidad de China frente a la declarada y compara cada ventana conjunta con su gemela por mercado (US en las 19 y CN en las elegibles). Sobre vistas del corpus técnico termina sin fallos y detecta un objetivo alterado y una fila elegible perdida.
 
-| Ámbito | Ventanas | Entrenamiento | Validación | Calibración | Evaluación | Purgadas en fronteras | Preparación |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| US | 19 | 108.111.890 | 6.084.968 | 3.087.269 | 12.826.460 | 194.849 | 50 min |
-| CN | 13 | 16.903.888 | 1.015.019 | 525.177 | 2.105.339 | 34.300 | 16 min |
-| US+CN | 13 | 113.180.071 | 5.899.203 | 2.999.327 | 12.357.256 | 189.557 | 52 min |
+Los recuentos de filas de esta sección y de la [campaña](training-campaign-2000.md#campaña-a-v2-con-modelo-conjunto) salen de `targets-v3` y cambiarán con la v3.1. `budget --targets <objetivos v3.1>/labels --write-counts` los recalcula antes de preparar las vistas, y `budget --views` después.
 
-Los recuentos suman todas las ventanas de cada ámbito, así que una fila cuenta una vez por cada ventana que la usa. Las filas de entrenamiento quedan alrededor del 97 % de la cota nominal de la [tabla anterior](#ventanas-y-filas-nominales) (111,1, 17,4 y 116,1 millones). La evaluación de la última ventana, el año 2023, coincide en los tres ámbitos con las filas de validación de `targets-v3`: 1.027.173 en US, 194.649 en CN y 1.221.822 en US+CN. Las vistas ocupan 12,9 GB de datos y 13,9 GB en disco contando sus directorios. Los tiempos son de reloj, con los tres procesos ejecutándose a la vez.
-
-Una verificación independiente, escrita sin reutilizar el código que preparó las vistas, recorrió los 5.008 activos con objetivos y las 45 ventanas. Comprobó:
-
-- las fronteras de cada ventana, recalculadas desde los protocolos, y la purga por el intervalo de cada etiqueta,
-- que ningún objetivo queda fuera de su ventana y que ninguna decisión ni maduración llega a 2024,
-- que cada objetivo es idéntico bit a bit al de `targets-v3`,
-- que no se pierde ninguna fila elegible y que los recuentos coinciden con los manifiestos de cada ventana,
-- que US+CN reproduce exactamente las vistas por mercado con las mismas fronteras.
-
-Terminó sin fallos en 8 minutos con cinco procesos. Las vistas, el verificador y su informe son locales, y el recibo guarda la huella de los dos últimos. Ninguna de estas pasadas ajustó modelos ni abrió 2024. La campaña no se ha lanzado.
-
-## Comprobaciones técnicas
-
-Las pruebas de `tests/evaluation/test_walk_forward_v2.py` comprueban los límites de cada ventana, el primer año con tres años de etiquetas, la coincidencia entre ventanas conjuntas y US, la purga en cada frontera, la frontera exacta, la ausencia de filas de 2024 en tramos de desarrollo, la invariancia al cambiar o reordenar el sufijo futuro, la equivalencia con el margen anterior para etiquetas de la sesión siguiente, la regla de parada con secuencias fijadas en los dos modos y la paridad de los seis protocolos v1 mediante huellas calculadas antes del cambio.
-
-Las pruebas de `tests/training/test_walk_forward_v2_views.py` preparan vistas sobre un corpus técnico con filas en todos los años, desde febrero de 2000 en US y julio de 2006 en CN. Comparan los recuentos por ventana, tramo, mercado y año con una derivación independiente, comprueban `purged_by_boundary`, el rechazo de una ventana conjunta con CN vacío, la comprobación de la búsqueda sin GPU, la lectura de la política desde un plan de versión 4, el rechazo de planes estrictos o con otra parada y la paridad de las vistas v1. La invariancia del objetivo residual ante cambios futuros ya la cubre `tests/data/test_budget_targets.py`.
+Las pruebas de `tests/training/test_campaign_a_joint.py` comprueban la elegibilidad por intervalos idénticos, la unión con China vacía solo donde no cuenta y el rechazo en el resto, la exclusión de las filas no elegibles en calibración y evaluación con sus recuentos, el emparejamiento de los brazos prestados con su ventana y su vista y el rechazo de declaraciones ambiguas del diseño conjunto.
 
 Nada de esto ejecuta modelos, pasos de optimizador ni evaluaciones científicas, ni genera objetivos reales. Los recuentos reales por ventana y mercado están en el [recibo de las vistas de la campaña A](../../reports/data/campaign-a-views-20261009.json).

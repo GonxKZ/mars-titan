@@ -61,10 +61,12 @@ jobs:
       - name: Preparar solo los archivos públicos
         run: |
           mkdir -p _site/data
-          cp site/index.html site/styles.css site/app.js site/state.mjs _site/
+          cp site/*.html site/*.css site/*.js site/*.mjs _site/
+          cp -r site/vendor site/fonts _site/
           if [ -d public-data ]; then
             cp public-data/observatory.json _site/data/
             if [ -d public-data/pages ]; then cp -r public-data/pages _site/data/; fi
+            if [ -d public-data/traces ]; then cp -r public-data/traces _site/data/; fi
           else
             cp site/data/observatory.json _site/data/
           fi

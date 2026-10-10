@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from mars_titan.data.prices import MAX_ORDERING_RTOL, read_prices
+from mars_titan.data.prices import MAX_ORDERING_RTOL, ordering_excess, read_prices
 from mars_titan.data.temporal import MarketClock
 
 
@@ -145,27 +145,47 @@ def test_strict_reader_keeps_rejecting_rounding_and_adds_no_audit_fields(tmp_pat
     assert "ordering_roundings" not in audit["details"]
 
 
-def test_rounding_tolerance_restores_only_representation_errors(tmp_path, clock):
+def test_rounding_tolerance_admits_rows_with_their_exact_source_values(tmp_path, clock):
     path = tmp_path / "A.csv"
     path.write_text(HEADER + ROUNDED_ROW + STALE_OPEN_ROW)
     prices, audit = read_prices(path, clock, include_details=True, ordering_rtol=1e-9)
     assert prices["session"].to_list() == ["2024-07-01"]
-    row = prices.iloc[0]
-    assert row["open"] == 3.976320878595475
-    assert row["close"] == 3.991615056991577
-    assert row["volume"] == 10
-    assert row["high"] == row["close"]
-    assert row["low"] == 3.845233163135132
+    texts = ROUNDED_ROW.strip().split(",")[1:]
+    row = prices.loc[0, ["open", "high", "low", "close", "volume"]].to_numpy(dtype=np.float64)
+    # Los cinco valores son el double más cercano al texto. Nada se sustituye por la envolvente.
+    assert (
+        row.view(np.int64).tolist()
+        == np.array([float(text) for text in texts]).view(np.int64).tolist()
+    )
+    assert prices.loc[0, "close"] > prices.loc[0, "high"]
     assert audit["invalid_ohlc"] == 1
     assert audit["ordering_rounded_rows"] == 1
     assert audit["ordering_rtol"] == 1e-9
     assert 0 < audit["ordering_max_relative_excess"] < 1e-15
     assert [r["reasons"] for r in audit["details"]["exclusions"]] == [["invalid_ohlc"]]
     (rounding,) = audit["details"]["ordering_roundings"]
+    assert set(rounding) == {"source_row", "source_date", "relative_excess"}
     assert rounding["source_row"] == 1
-    assert rounding["source_high"] == 3.9916150569915767
-    assert rounding["source_low"] == 3.845233163135132
+    assert rounding["source_date"] == "2024-07-01"
     assert rounding["relative_excess"] == audit["ordering_max_relative_excess"]
+    assert rounding["relative_excess"] == ordering_excess(*row[[0, 1, 2, 3]])
+
+
+@pytest.mark.parametrize(
+    ("values", "expected"),
+    [
+        ((10.0, 12.0, 9.0, 11.0), 0.0),
+        ((10.0, 10.0, 10.0, 10.0), 0.0),
+        ((10.0, 12.0, 9.0, 12.5), 0.5 / 12.5),
+        ((13.0, 12.0, 9.0, 11.0), 1.0 / 13.0),
+        ((10.0, 12.0, 10.5, 11.0), 0.5 / 12.0),
+        ((10.0, 12.0, 9.0, 8.0), 1.0 / 12.0),
+        ((10.0, 9.0, 12.0, 11.0), 3.0 / 12.0),
+    ],
+)
+def test_ordering_excess_measures_the_largest_violation_relative_to_the_top_price(values, expected):
+    assert ordering_excess(*values) == expected
+    assert ordering_excess(*(np.array([value]) for value in values)).tolist() == [expected]
 
 
 def test_rounded_row_excluded_for_another_reason_keeps_only_that_reason(tmp_path, clock):
@@ -210,7 +230,7 @@ def test_ordering_tolerance_is_bounded_and_typed(tmp_path, clock, value):
 
 @pytest.mark.parametrize("seed", range(8))
 def test_tolerance_splits_perturbations_at_the_declared_bound(tmp_path, clock, seed):
-    """Propiedad: solo se admite el desorden menor que la tolerancia y la salida queda ordenada."""
+    """Propiedad: solo se admite el desorden menor que la tolerancia y sin tocar los valores."""
     rng = np.random.default_rng(seed)
     days = [d.isoformat() for d in clock.days[:200]]
     rtol = 1e-9
@@ -236,29 +256,20 @@ def test_tolerance_splits_perturbations_at_the_declared_bound(tmp_path, clock, s
     path.write_text(HEADER + "\n".join(lines) + "\n")
     strict, _ = read_prices(path, clock)
     tolerant, audit = read_prices(path, clock, ordering_rtol=rtol)
-    source = pd.read_csv(path)
-    disordered = (
-        (source.High < source.Low)
-        | (source.High < source.Open)
-        | (source.High < source.Close)
-        | (source.Low > source.Open)
-        | (source.Low > source.Close)
-    )
+    disordered = (high < low) | (high < open_) | (high < close) | (low > open_) | (low > close)
     small = disordered & (scale <= rtol)
     assert 0 < len(strict) == int((~disordered).sum())
     assert 0 < int(small.sum()) < int(disordered.sum())
     assert len(tolerant) == int((~disordered | small).sum())
     assert audit["ordering_rounded_rows"] == int(small.sum())
-    assert audit["ordering_max_relative_excess"] <= rtol
-    quotes = tolerant[["open", "close"]]
-    assert (tolerant.high >= quotes.max(axis=1)).all()
-    assert (tolerant.low <= quotes.min(axis=1)).all()
-    assert (tolerant.high >= tolerant.low).all()
-    merged = tolerant.merge(source, left_on="session", right_on="Date")
-    assert (merged.open == merged.Open).all()
-    assert (merged.close == merged.Close).all()
-    assert ((merged.high - merged.High).abs() <= rtol * merged.high).all()
-    assert ((merged.low - merged.Low).abs() <= rtol * merged.high).all()
+    assert 0 < audit["ordering_max_relative_excess"] <= rtol
+    kept = np.isin(days, tolerant.session)
+    assert (kept == (~disordered | small)).all()
+    # Cada valor admitido es bit a bit el que se escribió en la fuente.
+    for name, source in (("open", open_), ("high", high), ("low", low), ("close", close)):
+        assert (tolerant[name].to_numpy().view(np.int64) == source[kept].view(np.int64)).all()
+    columns = [tolerant[name].to_numpy() for name in ("open", "high", "low", "close")]
+    assert (ordering_excess(*columns) <= rtol).all()
     pd.testing.assert_frame_equal(
         strict, tolerant.loc[tolerant.session.isin(strict.session)].reset_index(drop=True)
     )

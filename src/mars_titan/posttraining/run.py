@@ -53,6 +53,7 @@ def code_identity(*, masked=False, adapters=False, quantiles=False):
     names = (
         "posttraining/run.py",
         "posttraining/inputs.py",
+        "posttraining/augmented_inputs.py",
         "posttraining/parents.py",
         "posttraining/evaluation.py",
         "posttraining/selection.py",
@@ -70,6 +71,7 @@ def code_identity(*, masked=False, adapters=False, quantiles=False):
         "environments/actions.py",
         "environments/cohorts.py",
         "environments/corpus_source.py",
+        "environments/cohort_order.py",
         "evaluation/session_metrics.py",
         "models/baselines/multimodal.py",
         "models/baselines/dlinear.py",
@@ -341,6 +343,16 @@ def _best_state(output, identity, selection, expected_sha256=None):
     return selected
 
 
+def _trace_event(epoch, state, metrics):
+    """Evento de traza de una validación completa: época, actualizaciones y puntuación."""
+    return dict(
+        kind="validation",
+        epoch=epoch,
+        global_step=state["global_step"],
+        score=metrics["session_mae"],
+    )
+
+
 def build_model(parent, case, grid, normalization, identity=None):
     """Construir la corrección, la continuación completa o el brazo de la matriz."""
     if "adapter" in case:
@@ -375,10 +387,18 @@ def run_case(
     stop=None,
     checkpoint_seconds=60,
     max_updates=None,
+    trace=None,
 ):
-    """Comparar un objetivo y condición. CPU solo admite diagnósticos de hasta 5000 filas."""
+    """Comparar un objetivo y condición. CPU solo admite diagnósticos de hasta 5000 filas.
+
+    `trace(event, modules)` se llama tras cada validación completa, también la de la época
+    cero, para las trazas de #448 (`posttraining/adapter_traces.py`). No entra en la
+    identidad, no debe cambiar el modelo ni el RNG y sin él no se llama a nada.
+    """
     require_learning_allowed("el postentrenamiento")
     started = time.perf_counter()
+    if trace is not None and not callable(trace):
+        raise ValueError("El gancho de trazas debe ser invocable")
     neural, budget = _validate_run(
         dataset,
         case,
@@ -536,6 +556,8 @@ def run_case(
                     device=device,
                     stop=stop,
                 )
+                if trace is not None:
+                    trace(_trace_event(0, state, baseline), dict(model=model))
                 state["selection"] = select_epoch(
                     None, baseline["session_mae"], 0, policy, case["epochs"]
                 )
@@ -599,6 +621,8 @@ def run_case(
                     device=device,
                     stop=stop,
                 )
+                if trace is not None:
+                    trace(_trace_event(state["epoch"] + 1, state, validation), dict(model=model))
                 state["history"].append(
                     dict(epoch=state["epoch"] + 1, train=dict(stats), validation=validation)
                 )

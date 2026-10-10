@@ -24,7 +24,9 @@ import time
 from pathlib import Path
 
 from mars_titan.data.cohort_files import read_manifest, safe_destination
-from mars_titan.data.storage import atomic_json
+from mars_titan.data.storage import atomic_json, sha256
+
+from .campaign_plan import PLATEAU
 
 STORAGE_KIND = "historical_masked_campaign_storage"
 HELD_OUT = ("validation", "calibration", "evaluation")
@@ -174,25 +176,34 @@ def index_rows(counts, warmup, *, partitions=HELD_OUT, train=True):
 
 
 def job_footprint(job, counts, storage, *, release=None, prediction_bytes=None):
-    """Bytes que un trabajo conserva al confirmarse y bytes extra mientras se ejecuta.
+    """Calcula los bytes que un trabajo conserva al confirmarse y los que añade mientras se ejecuta.
 
     `prediction_bytes(job, partition)` sustituye los bytes por fila declarados por una
     medida exacta. `release` usa por defecto la política declarada. Un traslado solo
     escribe calibración y evaluación y no tiene estados propios ni caché de XGBoost.
+
+    La meseta de un ajuste con parada conjunta no escribe tablas y conserva sus índices y
+    todos sus estados de recuperación, porque su continuación reanuda en la misma carpeta.
+    La continuación se cuenta como un ajuste completo, así que sus estados e índices se
+    cuentan dos veces y la proyección es una cota superior.
     """
     release = storage["release_on_confirmation"] if release is None else release
     model = job["model"]
     _require(model in WRITERS, f"No hay huella declarada para el modelo {model}")
     writer = WRITERS[model]
     carry = job.get("kind") == "carry"
+    plateau = job.get("phase") == PLATEAU
     partitions = HELD_OUT[1:] if carry else HELD_OUT
     measured = prediction_bytes or (
         lambda _, partition: counts[partition] * storage["prediction_row_bytes"][writer][partition]
     )
-    tables = {partition: int(measured(job, partition)) for partition in partitions}
+    predicted = () if plateau else partitions
+    tables = {partition: int(measured(job, partition)) for partition in predicted}
     state = 0 if carry else storage["state_bytes"][model]
     kept = storage["retained_states"][model]
-    releasable = release and model in CHECKPOINTS
+    # XGBoost también libera tras el recibo sus boosters de recuperación (`_release_boosters`).
+    # La meseta no libera nada, porque su continuación reanuda en la misma carpeta.
+    releasable = release and not plateau and (model in CHECKPOINTS or model == "xgboost")
     retained = dict(
         predictions=sum(tables.values()),
         reports=storage["job_report_bytes"],
@@ -203,18 +214,18 @@ def job_footprint(job, counts, storage, *, release=None, prediction_bytes=None):
     transient = dict(
         recovery=state * max(kept - 1, 0) if releasable else 0,
         mid_epoch=0 if carry else storage["recovery_state_extra_bytes"][model],
-        writing=max(tables.values()),
+        writing=max(tables.values(), default=0),
         indices=0,
         cache=0,
     )
     if model in INDEXED:
         index = storage["index"]
-        warmup = None if model == "episodic_gru" else index["warmup_partition"]
-        rows = index_rows(counts, warmup, partitions=partitions, train=not carry)
+        # Todas las familias con índice calientan con el mismo tramo declarado.
+        rows = index_rows(counts, index["warmup_partition"], partitions=partitions, train=not carry)
         built = int(rows * index["bytes_per_row"])
         largest = max(2 * counts[p] for p in ((*partitions, "train") if not carry else partitions))
         transient["indices"] = int(largest * index["build_bytes_per_row"])
-        if release:
+        if release and not plateau:
             transient["indices"] += built
         else:
             retained["indices"] = built
@@ -356,12 +367,51 @@ def _size(path):
     return sum(p.lstat().st_blocks * 512 for p in path.rglob("*") if not p.is_symlink())
 
 
+def _release_boosters(folder):
+    """Boosters de recuperación de XGBoost que no son el elegido, tras su recibo.
+
+    La búsqueda con selección guarda uno o dos boosters recientes para reanudar rondas. Con
+    el recibo escrito la campaña ya no vuelve a ejecutar el trabajo, y el traslado y la
+    regeneración solo cargan el elegido. Se comprueba su huella antes de borrar nada. Una
+    llamada posterior a `run_external_reference` sobre el intento se rechaza porque faltan
+    sus sustitutos, en lugar de seguir con otro estado.
+    """
+    path = folder / "run.json"
+    if not path.is_file():
+        return 0
+    report, _ = read_manifest(path, 16 * 1024**2)
+    recent = report.get("recovery_checkpoints")
+    if not recent:
+        return 0
+    selected = report.get("checkpoint")
+    _require(
+        report.get("status") == "completed" and isinstance(selected, dict),
+        "Solo se liberan boosters de un ajuste terminado con su elegido",
+    )
+    kept = folder / selected["path"]
+    safe_destination(kept)
+    _require(
+        kept.is_file() and sha256(kept) == selected["sha256"],
+        "El booster elegido no conserva su huella: no se borra nada",
+    )
+    released = 0
+    for record in recent:
+        target = folder / record["path"]
+        if record["path"] == selected["path"] or not target.exists():
+            continue
+        safe_destination(target)
+        _require(sha256(target) == record["sha256"], f"{target.name} ha cambiado")
+        released += target.stat().st_size
+        target.unlink()
+    return released
+
+
 def release_confirmed(folder, model):
     """Liberar lo que no vuelve a leerse de un intento cuyo recibo ya está escrito.
 
-    Borra los índices de observaciones y los puntos de control de recuperación, y deja el
-    estado elegido, los informes y las tablas por fila. Escribe `released.json` con lo
-    liberado y es idempotente.
+    Borra los índices de observaciones, los puntos de control de recuperación y los boosters
+    de recuperación de XGBoost, y deja el estado elegido, los informes y las tablas por fila.
+    Escribe `released.json` con lo liberado y es idempotente.
     """
     folder = Path(folder)
     safe_destination(folder)
@@ -377,6 +427,7 @@ def release_confirmed(folder, model):
         if directory.is_dir():
             released["recovery_states"] = release_recovery_states(directory)
     if model == "xgboost":
+        released["recovery_boosters"] = _release_boosters(folder)
         # Restos de páginas de una parada forzada. La ejecución confirmada no los usa.
         for path in folder.glob("external-*"):
             if path.is_dir() and not path.is_symlink():

@@ -19,16 +19,16 @@
     "bank_seed": 73,
     "update_instants": 8,
     "loss": "pinball",
-    "learning_rate": 0.001,
     "weight_decay": 0.0,
     "max_grad_norm": 1.0,
     "epochs": 30,
     "selection": {"metric": "session_mae", "stopping": "fixed_budget", "patience": 5, "min_delta": 1e-05},
     "block_rows": 128,
-    "accumulation_rows": null,
+    "accumulation_rows": 128,
     "recompute": false,
     "checkpoint_updates": 256,
-    "checkpoint_seconds": 900.0
+    "checkpoint_seconds": 900.0,
+    "precision": "fp32_strict"
   },
   "variants": {
     "m1_k1": {},
@@ -38,12 +38,21 @@
     "m1_k1_l1_median": {"loss": "mae"}
   },
   "principal": "m1_k1",
+  "walk_forward": {
+    "warmup_months": 12,
+    "search_cases": {
+      "lr1e-4": {"learning_rate": 0.0001},
+      "lr1e-3": {"learning_rate": 0.001}
+    }
+  },
   "pending": [
     "El presupuesto definitivo depende de la alternativa que se registre en #363 con el caudal medido en la primera ventana.",
-    "El banco empieza vacío en cada pasada. El índice de observaciones no contiene etiquetas del calentamiento, así que no hay calentamiento episódico con etiquetas anteriores al tramo.",
+    "Dos casos de búsqueda, como Titans-MAC, el lector de MARS-TITAN y las referencias neuronales. Solo cambia la tasa de aprendizaje: 1e-4, la de los casos 0 y 10 del diseño de las referencias, y 1e-3, la de la receta anterior. Se elige con session_mae de validación y la misma regla de parada.",
+    "warmup_months coincide con el de Titans-MAC, MARS-TITAN y CM-v1. Validación, calibración y evaluación observan las entradas de los 12 meses previos sin etiquetas ni predicciones. La GRU no conserva estado entre instantes y el banco solo admite etiquetas maduras, así que el calentamiento no cambia su estado. Iguala la ventana observada entre familias.",
+    "El banco empieza vacío en cada pasada. No hay calentamiento episódico con etiquetas anteriores al tramo, igual que en el banco de MARS-TITAN.",
     "La variante m1_k1_l1_median solo se usa si el control de #22 descarta la cabeza de cuantiles para la comparación principal.",
     "M2 y M3 no están definidos sobre la geometría 128x256 de este banco.",
     "El caudal y la memoria en cuda:0 se medirán antes de fijar el presupuesto común.",
-    "accumulation_rows y recompute siguen desactivados para conservar la paridad con la receta anterior. Antes de ampliar al universo completo hay que medir la memoria en cuda:0 y elegir la opción. Cada una cambia la identidad de la receta."
+    "accumulation_rows 128 con bloques de 128 flujos, medido en cuda:0 sobre US+CN fold-012 (reports/engineering/campaign-kernels-20261009). Sin acumulación la candidata no cabe en la fracción de 6 GiB con los activos por instante de US+CN. La acumulación solo cambia el orden de las sumas y recompute sigue desactivado. precision fp32_strict desactiva TF32 en cuDNN, que PyTorch activa por defecto, y entra en la identidad."
   ]
 }

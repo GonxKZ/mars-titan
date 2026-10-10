@@ -153,6 +153,8 @@ class Candidate final : public torch::nn::Module {
                                                           const at::Tensor& feature_projection,
                                                           const at::Tensor& key_projection);
     void refresh_representation();
+    // En CUDA deja los pesos de la GRU como vistas de un único bloque con el formato de cuDNN.
+    void pack_recurrent_weights();
     struct Linear {
         at::Tensor weight;
         at::Tensor bias;

@@ -27,12 +27,16 @@ def test_real_encoders_preserve_state_and_repeat_representations():
     import torch
 
     from mars_titan.data.charts import chart_png
-    from mars_titan.data.embeddings import FrozenEncoders
+    from mars_titan.data.embeddings import FrozenEncoders, encoder_spec, strict_fp32
 
+    strict_fp32()
     started = time.perf_counter()
     encoders = FrozenEncoders()
     initialization = time.perf_counter() - started
     assert encoders.device == torch.device("cuda:0")
+    # La identidad calculada en CPU para la recogida es la del codificador cargado en CUDA.
+    assert encoder_spec() == encoders.spec
+    assert encoders.spec["runtime_precision"]["cudnn_tf32"] is False
     assert len(encoders.spec["text_artifacts_sha256"]) == 4
     assert len(encoders.spec["tokenizer_backend_sha256"]) == 64
     assert encoders.spec["tokenizers_version"]

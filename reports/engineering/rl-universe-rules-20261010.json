@@ -1,0 +1,1365 @@
+{
+ "schema_version": 1,
+ "kind": "rl_universe_rule_measurement",
+ "recorded_at_utc": "2026-10-10T01:40:00+00:00",
+ "issue": [
+  137,
+  365,
+  437
+ ],
+ "decision": "fixed_prior_evaluations_v1 is the main rule and expanding_prior_evaluations_v1 a disabled sensitivity",
+ "edition_id": "1ac3727836462ce31c39b5438918bd6f3e0d359690c7bc79bfa87cd808c8e68c",
+ "predictor_population": "assets and decisions with an accepted targets-v3 label inside each evaluation segment",
+ "scores": "placeholder scores on predictor rows only, no model and no evaluation",
+ "universe_rule": "median_traded_value_in_validation_v1",
+ "max_assets": 128,
+ "rules": {
+  "fixed": {
+   "rule": "fixed_prior_evaluations_v1",
+   "minimum": 3,
+   "maximum": 3
+  },
+  "expanding": {
+   "rule": "expanding_prior_evaluations_v1",
+   "minimum": 3,
+   "maximum": 16
+  }
+ },
+ "script_sha256": "3fa0ddb43ee90dca91ecce937e654d5ae0a458589d2ac498cef18829cc6c9db1",
+ "tape_disk_bytes_128_assets": {
+  "US": 947398,
+  "CN": 674215
+ },
+ "tapes_per_predictor": {
+  "fixed": {
+   "US": 75,
+   "CN": 45
+  },
+  "expanding": {
+   "US": 179,
+   "CN": 81
+  }
+ },
+ "hardware": "AMD Ryzen 9 8945HS, 32 GB RAM, power-saver profile, other agents active",
+ "markets": {
+  "US": {
+   "label_read_seconds": 15.2,
+   "peak_rss_mib": 948.0,
+   "windows": [
+    {
+     "window": "fold-000",
+     "evaluation": [
+      "2005-01-01",
+      "2006-01-01"
+     ],
+     "predictor_rows": 352498,
+     "view_evaluation_rows": 351026,
+     "predictor_assets": 1673,
+     "admitted_assets": 1594,
+     "admitted_with_predictions": 1568,
+     "admission_build_seconds": 45.6
+    },
+    {
+     "window": "fold-001",
+     "evaluation": [
+      "2006-01-01",
+      "2007-01-01"
+     ],
+     "predictor_rows": 381434,
+     "view_evaluation_rows": 379845,
+     "predictor_assets": 1787,
+     "admitted_assets": 1702,
+     "admitted_with_predictions": 1680,
+     "admission_build_seconds": 30.7
+    },
+    {
+     "window": "fold-002",
+     "evaluation": [
+      "2007-01-01",
+      "2008-01-01"
+     ],
+     "predictor_rows": 415141,
+     "view_evaluation_rows": 413405,
+     "predictor_assets": 1972,
+     "admitted_assets": 1834,
+     "admitted_with_predictions": 1804,
+     "admission_build_seconds": 29.8
+    },
+    {
+     "window": "fold-003",
+     "evaluation": [
+      "2008-01-01",
+      "2009-01-01"
+     ],
+     "predictor_rows": 453341,
+     "view_evaluation_rows": 451569,
+     "predictor_assets": 2115,
+     "admitted_assets": 2036,
+     "admitted_with_predictions": 2011,
+     "admission_build_seconds": 34.0
+    },
+    {
+     "window": "fold-004",
+     "evaluation": [
+      "2009-01-01",
+      "2010-01-01"
+     ],
+     "predictor_rows": 477709,
+     "view_evaluation_rows": 475747,
+     "predictor_assets": 2205,
+     "admitted_assets": 2120,
+     "admitted_with_predictions": 2106,
+     "admission_build_seconds": 58.1
+    },
+    {
+     "window": "fold-005",
+     "evaluation": [
+      "2010-01-01",
+      "2011-01-01"
+     ],
+     "predictor_rows": 505032,
+     "view_evaluation_rows": 502951,
+     "predictor_assets": 2323,
+     "admitted_assets": 2193,
+     "admitted_with_predictions": 2174,
+     "admission_build_seconds": 29.7
+    },
+    {
+     "window": "fold-006",
+     "evaluation": [
+      "2011-01-01",
+      "2012-01-01"
+     ],
+     "predictor_rows": 539011,
+     "view_evaluation_rows": 536815,
+     "predictor_assets": 2434,
+     "admitted_assets": 2327,
+     "admitted_with_predictions": 2301,
+     "admission_build_seconds": 23.5
+    },
+    {
+     "window": "fold-007",
+     "evaluation": [
+      "2012-01-01",
+      "2013-01-01"
+     ],
+     "predictor_rows": 560495,
+     "view_evaluation_rows": 558205,
+     "predictor_assets": 2566,
+     "admitted_assets": 2434,
+     "admitted_with_predictions": 2409,
+     "admission_build_seconds": 26.2
+    },
+    {
+     "window": "fold-008",
+     "evaluation": [
+      "2013-01-01",
+      "2014-01-01"
+     ],
+     "predictor_rows": 592550,
+     "view_evaluation_rows": 590148,
+     "predictor_assets": 2702,
+     "admitted_assets": 2563,
+     "admitted_with_predictions": 2546,
+     "admission_build_seconds": 26.9
+    },
+    {
+     "window": "fold-009",
+     "evaluation": [
+      "2014-01-01",
+      "2015-01-01"
+     ],
+     "predictor_rows": 638514,
+     "view_evaluation_rows": 635880,
+     "predictor_assets": 2882,
+     "admitted_assets": 2710,
+     "admitted_with_predictions": 2685,
+     "admission_build_seconds": 29.9
+    },
+    {
+     "window": "fold-010",
+     "evaluation": [
+      "2015-01-01",
+      "2016-01-01"
+     ],
+     "predictor_rows": 692873,
+     "view_evaluation_rows": 690027,
+     "predictor_assets": 3072,
+     "admitted_assets": 2829,
+     "admitted_with_predictions": 2799,
+     "admission_build_seconds": 32.1
+    },
+    {
+     "window": "fold-011",
+     "evaluation": [
+      "2016-01-01",
+      "2017-01-01"
+     ],
+     "predictor_rows": 740118,
+     "view_evaluation_rows": 737095,
+     "predictor_assets": 3235,
+     "admitted_assets": 2924,
+     "admitted_with_predictions": 2907,
+     "admission_build_seconds": 30.0
+    },
+    {
+     "window": "fold-012",
+     "evaluation": [
+      "2017-01-01",
+      "2018-01-01"
+     ],
+     "predictor_rows": 774366,
+     "view_evaluation_rows": 771198,
+     "predictor_assets": 3411,
+     "admitted_assets": 2992,
+     "admitted_with_predictions": 2979,
+     "admission_build_seconds": 34.8
+    },
+    {
+     "window": "fold-013",
+     "evaluation": [
+      "2018-01-01",
+      "2019-01-01"
+     ],
+     "predictor_rows": 825382,
+     "view_evaluation_rows": 821962,
+     "predictor_assets": 3632,
+     "admitted_assets": 3103,
+     "admitted_with_predictions": 3084,
+     "admission_build_seconds": 38.2
+    },
+    {
+     "window": "fold-014",
+     "evaluation": [
+      "2019-01-01",
+      "2020-01-01"
+     ],
+     "predictor_rows": 894305,
+     "view_evaluation_rows": 890629,
+     "predictor_assets": 3895,
+     "admitted_assets": 3285,
+     "admitted_with_predictions": 3275,
+     "admission_build_seconds": 34.6
+    },
+    {
+     "window": "fold-015",
+     "evaluation": [
+      "2020-01-01",
+      "2021-01-01"
+     ],
+     "predictor_rows": 966574,
+     "view_evaluation_rows": 962580,
+     "predictor_assets": 4154,
+     "admitted_assets": 3409,
+     "admitted_with_predictions": 3408,
+     "admission_build_seconds": 34.9
+    },
+    {
+     "window": "fold-016",
+     "evaluation": [
+      "2021-01-01",
+      "2022-01-01"
+     ],
+     "predictor_rows": 1012475,
+     "view_evaluation_rows": 1008423,
+     "predictor_assets": 4165,
+     "admitted_assets": 3511,
+     "admitted_with_predictions": 3510,
+     "admission_build_seconds": 52.2
+    },
+    {
+     "window": "fold-017",
+     "evaluation": [
+      "2022-01-01",
+      "2023-01-01"
+     ],
+     "predictor_rows": 1025902,
+     "view_evaluation_rows": 1021782,
+     "predictor_assets": 4181,
+     "admitted_assets": 3548,
+     "admitted_with_predictions": 3548,
+     "admission_build_seconds": 39.0
+    },
+    {
+     "window": "fold-018",
+     "evaluation": [
+      "2023-01-01",
+      "2024-01-01"
+     ],
+     "predictor_rows": 1027173,
+     "view_evaluation_rows": 1027173,
+     "predictor_assets": 4192,
+     "admitted_assets": 3581,
+     "admitted_with_predictions": 3581,
+     "admission_build_seconds": 38.3
+    }
+   ],
+   "anchors": [
+    {
+     "window": "fold-004",
+     "train_fixed": [
+      "fold-000",
+      "fold-001",
+      "fold-002"
+     ],
+     "train_expanding": 3,
+     "predictor_assets_in_evaluation": 2205,
+     "candidates_fixed": 1578,
+     "candidates_expanding": 1578,
+     "universe_fixed": 128,
+     "universe_expanding": 128,
+     "fixed_in_predictor_population": 128,
+     "expanding_in_predictor_population": 128,
+     "overlap": 128,
+     "median_first_label_year": {
+      "fixed": 2000.0,
+      "expanding": 2000.0,
+      "predictor_population": 2000.0
+     },
+     "only_in_fixed_universe": []
+    },
+    {
+     "window": "fold-005",
+     "train_fixed": [
+      "fold-001",
+      "fold-002",
+      "fold-003"
+     ],
+     "train_expanding": 4,
+     "predictor_assets_in_evaluation": 2323,
+     "candidates_fixed": 1692,
+     "candidates_expanding": 1584,
+     "universe_fixed": 128,
+     "universe_expanding": 128,
+     "fixed_in_predictor_population": 128,
+     "expanding_in_predictor_population": 128,
+     "overlap": 126,
+     "median_first_label_year": {
+      "fixed": 2000.0,
+      "expanding": 2000.0,
+      "predictor_population": 2000.0
+     },
+     "only_in_fixed_universe": [
+      "US/BIDU",
+      "US/VWO"
+     ]
+    },
+    {
+     "window": "fold-006",
+     "train_fixed": [
+      "fold-002",
+      "fold-003",
+      "fold-004"
+     ],
+     "train_expanding": 5,
+     "predictor_assets_in_evaluation": 2434,
+     "candidates_fixed": 1819,
+     "candidates_expanding": 1580,
+     "universe_fixed": 128,
+     "universe_expanding": 128,
+     "fixed_in_predictor_population": 128,
+     "expanding_in_predictor_population": 128,
+     "overlap": 117,
+     "median_first_label_year": {
+      "fixed": 2000.0,
+      "expanding": 2000.0,
+      "predictor_population": 2000.0
+     },
+     "only_in_fixed_universe": [
+      "US/BIDU",
+      "US/CF",
+      "US/FSLR",
+      "US/GDX",
+      "US/NVDA",
+      "US/QID",
+      "US/QLD",
+      "US/USO",
+      "US/VWO",
+      "US/XME",
+      "US/XRT"
+     ]
+    },
+    {
+     "window": "fold-007",
+     "train_fixed": [
+      "fold-003",
+      "fold-004",
+      "fold-005"
+     ],
+     "train_expanding": 6,
+     "predictor_assets_in_evaluation": 2566,
+     "candidates_fixed": 2011,
+     "candidates_expanding": 1574,
+     "universe_fixed": 128,
+     "universe_expanding": 128,
+     "fixed_in_predictor_population": 128,
+     "expanding_in_predictor_population": 128,
+     "overlap": 115,
+     "median_first_label_year": {
+      "fixed": 2000.0,
+      "expanding": 2000.0,
+      "predictor_population": 2001.0
+     },
+     "only_in_fixed_universe": [
+      "US/BIDU",
+      "US/CF",
+      "US/CMG",
+      "US/FSLR",
+      "US/GDX",
+      "US/NVDA",
+      "US/QID",
+      "US/QLD",
+      "US/USO",
+      "US/VWO",
+      "US/XME",
+      "US/XOP",
+      "US/XRT"
+     ]
+    },
+    {
+     "window": "fold-008",
+     "train_fixed": [
+      "fold-004",
+      "fold-005",
+      "fold-006"
+     ],
+     "train_expanding": 7,
+     "predictor_assets_in_evaluation": 2702,
+     "candidates_fixed": 2099,
+     "candidates_expanding": 1578,
+     "universe_fixed": 128,
+     "universe_expanding": 128,
+     "fixed_in_predictor_population": 128,
+     "expanding_in_predictor_population": 128,
+     "overlap": 111,
+     "median_first_label_year": {
+      "fixed": 2000.0,
+      "expanding": 2000.0,
+      "predictor_population": 2002.0
+     },
+     "only_in_fixed_universe": [
+      "US/BIDU",
+      "US/CF",
+      "US/CMG",
+      "US/FAS",
+      "US/FAZ",
+      "US/GDX",
+      "US/JNK",
+      "US/PM",
+      "US/QLD",
+      "US/TNA",
+      "US/TZA",
+      "US/UNG",
+      "US/USO",
+      "US/V",
+      "US/VWO"
+     ]
+    },
+    {
+     "window": "fold-009",
+     "train_fixed": [
+      "fold-005",
+      "fold-006",
+      "fold-007"
+     ],
+     "train_expanding": 8,
+     "predictor_assets_in_evaluation": 2882,
+     "candidates_fixed": 2183,
+     "candidates_expanding": 1586,
+     "universe_fixed": 128,
+     "universe_expanding": 128,
+     "fixed_in_predictor_population": 128,
+     "expanding_in_predictor_population": 128,
+     "overlap": 110,
+     "median_first_label_year": {
+      "fixed": 2000.0,
+      "expanding": 2000.0,
+      "predictor_population": 2003.0
+     },
+     "only_in_fixed_universe": [
+      "US/BIDU",
+      "US/CF",
+      "US/DAL",
+      "US/DXJ",
+      "US/FAS",
+      "US/FSLR",
+      "US/GDX",
+      "US/JNK",
+      "US/PM",
+      "US/TBT",
+      "US/TNA",
+      "US/TZA",
+      "US/UPRO",
+      "US/USO",
+      "US/V"
+     ]
+    },
+    {
+     "window": "fold-010",
+     "train_fixed": [
+      "fold-006",
+      "fold-007",
+      "fold-008"
+     ],
+     "train_expanding": 9,
+     "predictor_assets_in_evaluation": 3072,
+     "candidates_fixed": 2310,
+     "candidates_expanding": 1580,
+     "universe_fixed": 128,
+     "universe_expanding": 128,
+     "fixed_in_predictor_population": 128,
+     "expanding_in_predictor_population": 128,
+     "overlap": 108,
+     "median_first_label_year": {
+      "fixed": 2000.0,
+      "expanding": 2000.0,
+      "predictor_population": 2004.0
+     },
+     "only_in_fixed_universe": [
+      "US/AAL",
+      "US/BIDU",
+      "US/CMG",
+      "US/DAL",
+      "US/DXJ",
+      "US/FAS",
+      "US/GDX",
+      "US/GM",
+      "US/HRI",
+      "US/LYB",
+      "US/PM",
+      "US/QLD",
+      "US/TNA",
+      "US/TSLA",
+      "US/TZA"
+     ]
+    },
+    {
+     "window": "fold-011",
+     "train_fixed": [
+      "fold-007",
+      "fold-008",
+      "fold-009"
+     ],
+     "train_expanding": 10,
+     "predictor_assets_in_evaluation": 3235,
+     "candidates_fixed": 2415,
+     "candidates_expanding": 1577,
+     "universe_fixed": 128,
+     "universe_expanding": 128,
+     "fixed_in_predictor_population": 128,
+     "expanding_in_predictor_population": 128,
+     "overlap": 104,
+     "median_first_label_year": {
+      "fixed": 2000.0,
+      "expanding": 2000.0,
+      "predictor_population": 2005.0
+     },
+     "only_in_fixed_universe": [
+      "US/AAL",
+      "US/AVGO",
+      "US/BIDU",
+      "US/CHTR",
+      "US/CMG",
+      "US/DAL",
+      "US/DXJ",
+      "US/GDX",
+      "US/GM",
+      "US/HCA",
+      "US/JNK",
+      "US/KMI",
+      "US/LYB",
+      "US/PM",
+      "US/TNA"
+     ]
+    },
+    {
+     "window": "fold-012",
+     "train_fixed": [
+      "fold-008",
+      "fold-009",
+      "fold-010"
+     ],
+     "train_expanding": 11,
+     "predictor_assets_in_evaluation": 3411,
+     "candidates_fixed": 2547,
+     "candidates_expanding": 1583,
+     "universe_fixed": 128,
+     "universe_expanding": 128,
+     "fixed_in_predictor_population": 128,
+     "expanding_in_predictor_population": 128,
+     "overlap": 98,
+     "median_first_label_year": {
+      "fixed": 2000.0,
+      "expanding": 2000.0,
+      "predictor_population": 2006.0
+     },
+     "only_in_fixed_universe": [
+      "US/AAL",
+      "US/ABBV",
+      "US/AVGO",
+      "US/BIDU",
+      "US/CHTR",
+      "US/CMG",
+      "US/DAL",
+      "US/DUST",
+      "US/DXJ",
+      "US/EXPE",
+      "US/GDX",
+      "US/GM",
+      "US/JNK",
+      "US/KMI",
+      "US/KRE"
+     ]
+    },
+    {
+     "window": "fold-013",
+     "train_fixed": [
+      "fold-009",
+      "fold-010",
+      "fold-011"
+     ],
+     "train_expanding": 12,
+     "predictor_assets_in_evaluation": 3632,
+     "candidates_fixed": 2696,
+     "candidates_expanding": 1587,
+     "universe_fixed": 128,
+     "universe_expanding": 128,
+     "fixed_in_predictor_population": 128,
+     "expanding_in_predictor_population": 128,
+     "overlap": 100,
+     "median_first_label_year": {
+      "fixed": 2000.0,
+      "expanding": 2000.0,
+      "predictor_population": 2007.0
+     },
+     "only_in_fixed_universe": [
+      "US/AAL",
+      "US/ABBV",
+      "US/AVGO",
+      "US/BIDU",
+      "US/CHTR",
+      "US/CMG",
+      "US/DAL",
+      "US/EXPE",
+      "US/GDX",
+      "US/GM",
+      "US/JNK",
+      "US/JNUG",
+      "US/KRE",
+      "US/NUGT",
+      "US/NVDA"
+     ]
+    },
+    {
+     "window": "fold-014",
+     "train_fixed": [
+      "fold-010",
+      "fold-011",
+      "fold-012"
+     ],
+     "train_expanding": 13,
+     "predictor_assets_in_evaluation": 3895,
+     "candidates_fixed": 2809,
+     "candidates_expanding": 1582,
+     "universe_fixed": 128,
+     "universe_expanding": 128,
+     "fixed_in_predictor_population": 128,
+     "expanding_in_predictor_population": 128,
+     "overlap": 102,
+     "median_first_label_year": {
+      "fixed": 2000.0,
+      "expanding": 2000.0,
+      "predictor_population": 2007.0
+     },
+     "only_in_fixed_universe": [
+      "US/ABBV",
+      "US/AVGO",
+      "US/BABA",
+      "US/BIDU",
+      "US/CHTR",
+      "US/CMG",
+      "US/DAL",
+      "US/EMB",
+      "US/GDX",
+      "US/GM",
+      "US/JD",
+      "US/JNK",
+      "US/KRE",
+      "US/NOW",
+      "US/NVDA"
+     ]
+    },
+    {
+     "window": "fold-015",
+     "train_fixed": [
+      "fold-011",
+      "fold-012",
+      "fold-013"
+     ],
+     "train_expanding": 14,
+     "predictor_assets_in_evaluation": 4154,
+     "candidates_fixed": 2913,
+     "candidates_expanding": 1588,
+     "universe_fixed": 128,
+     "universe_expanding": 128,
+     "fixed_in_predictor_population": 128,
+     "expanding_in_predictor_population": 128,
+     "overlap": 100,
+     "median_first_label_year": {
+      "fixed": 2000.0,
+      "expanding": 2000.0,
+      "predictor_population": 2008.0
+     },
+     "only_in_fixed_universe": [
+      "US/ABBV",
+      "US/AVGO",
+      "US/BABA",
+      "US/BIDU",
+      "US/CHTR",
+      "US/CMG",
+      "US/DAL",
+      "US/EMB",
+      "US/GDX",
+      "US/GM",
+      "US/JD",
+      "US/JNK",
+      "US/KRE",
+      "US/NOW",
+      "US/NVDA"
+     ]
+    },
+    {
+     "window": "fold-016",
+     "train_fixed": [
+      "fold-012",
+      "fold-013",
+      "fold-014"
+     ],
+     "train_expanding": 15,
+     "predictor_assets_in_evaluation": 4165,
+     "candidates_fixed": 2990,
+     "candidates_expanding": 1592,
+     "universe_fixed": 128,
+     "universe_expanding": 128,
+     "fixed_in_predictor_population": 128,
+     "expanding_in_predictor_population": 128,
+     "overlap": 91,
+     "median_first_label_year": {
+      "fixed": 2000.0,
+      "expanding": 2000.0,
+      "predictor_population": 2008.0
+     },
+     "only_in_fixed_universe": [
+      "US/AAL",
+      "US/ABBV",
+      "US/AVGO",
+      "US/BABA",
+      "US/BIDU",
+      "US/BND",
+      "US/CHTR",
+      "US/CMG",
+      "US/DAL",
+      "US/EMB",
+      "US/GDX",
+      "US/GM",
+      "US/IAU",
+      "US/JD",
+      "US/JNK"
+     ]
+    },
+    {
+     "window": "fold-017",
+     "train_fixed": [
+      "fold-013",
+      "fold-014",
+      "fold-015"
+     ],
+     "train_expanding": 16,
+     "predictor_assets_in_evaluation": 4181,
+     "candidates_fixed": 3101,
+     "candidates_expanding": 1593,
+     "universe_fixed": 128,
+     "universe_expanding": 128,
+     "fixed_in_predictor_population": 128,
+     "expanding_in_predictor_population": 128,
+     "overlap": 93,
+     "median_first_label_year": {
+      "fixed": 2000.0,
+      "expanding": 2000.0,
+      "predictor_population": 2008.0
+     },
+     "only_in_fixed_universe": [
+      "US/AAL",
+      "US/ABBV",
+      "US/AMC",
+      "US/ARKK",
+      "US/AVGO",
+      "US/BABA",
+      "US/BIDU",
+      "US/BND",
+      "US/CHTR",
+      "US/DAL",
+      "US/EMB",
+      "US/GDX",
+      "US/GM",
+      "US/JD",
+      "US/JNK"
+     ]
+    },
+    {
+     "window": "fold-018",
+     "train_fixed": [
+      "fold-014",
+      "fold-015",
+      "fold-016"
+     ],
+     "train_expanding": 16,
+     "predictor_assets_in_evaluation": 4192,
+     "candidates_fixed": 3284,
+     "candidates_expanding": 1701,
+     "universe_fixed": 128,
+     "universe_expanding": 128,
+     "fixed_in_predictor_population": 128,
+     "expanding_in_predictor_population": 128,
+     "overlap": 92,
+     "median_first_label_year": {
+      "fixed": 2000.0,
+      "expanding": 2000.0,
+      "predictor_population": 2008.0
+     },
+     "only_in_fixed_universe": [
+      "US/ABBV",
+      "US/AMC",
+      "US/ARKK",
+      "US/AVGO",
+      "US/BABA",
+      "US/BND",
+      "US/CHTR",
+      "US/EMB",
+      "US/ENPH",
+      "US/GDX",
+      "US/GM",
+      "US/JD",
+      "US/JNK",
+      "US/KRE",
+      "US/KWEB"
+     ]
+    }
+   ]
+  },
+  "CN": {
+   "label_read_seconds": 4.4,
+   "peak_rss_mib": 671.2,
+   "windows": [
+    {
+     "window": "fold-000",
+     "evaluation": [
+      "2011-01-01",
+      "2012-01-01"
+     ],
+     "predictor_rows": 137220,
+     "view_evaluation_rows": 136641,
+     "predictor_assets": 615,
+     "admitted_assets": 533,
+     "admitted_with_predictions": 533,
+     "admission_build_seconds": 7.4
+    },
+    {
+     "window": "fold-001",
+     "evaluation": [
+      "2012-01-01",
+      "2013-01-01"
+     ],
+     "predictor_rows": 145290,
+     "view_evaluation_rows": 144664,
+     "predictor_assets": 649,
+     "admitted_assets": 577,
+     "admitted_with_predictions": 577,
+     "admission_build_seconds": 5.7
+    },
+    {
+     "window": "fold-002",
+     "evaluation": [
+      "2013-01-01",
+      "2014-01-01"
+     ],
+     "predictor_rows": 148025,
+     "view_evaluation_rows": 147402,
+     "predictor_assets": 651,
+     "admitted_assets": 596,
+     "admitted_with_predictions": 596,
+     "admission_build_seconds": 6.0
+    },
+    {
+     "window": "fold-003",
+     "evaluation": [
+      "2014-01-01",
+      "2015-01-01"
+     ],
+     "predictor_rows": 152903,
+     "view_evaluation_rows": 152275,
+     "predictor_assets": 659,
+     "admitted_assets": 607,
+     "admitted_with_predictions": 607,
+     "admission_build_seconds": 5.7
+    },
+    {
+     "window": "fold-004",
+     "evaluation": [
+      "2015-01-01",
+      "2016-01-01"
+     ],
+     "predictor_rows": 151993,
+     "view_evaluation_rows": 151339,
+     "predictor_assets": 684,
+     "admitted_assets": 623,
+     "admitted_with_predictions": 623,
+     "admission_build_seconds": 5.7
+    },
+    {
+     "window": "fold-005",
+     "evaluation": [
+      "2016-01-01",
+      "2017-01-01"
+     ],
+     "predictor_rows": 161427,
+     "view_evaluation_rows": 160751,
+     "predictor_assets": 691,
+     "admitted_assets": 645,
+     "admitted_with_predictions": 645,
+     "admission_build_seconds": 5.3
+    },
+    {
+     "window": "fold-006",
+     "evaluation": [
+      "2017-01-01",
+      "2018-01-01"
+     ],
+     "predictor_rows": 169051,
+     "view_evaluation_rows": 168344,
+     "predictor_assets": 721,
+     "admitted_assets": 668,
+     "admitted_with_predictions": 668,
+     "admission_build_seconds": 5.6
+    },
+    {
+     "window": "fold-007",
+     "evaluation": [
+      "2018-01-01",
+      "2019-01-01"
+     ],
+     "predictor_rows": 173005,
+     "view_evaluation_rows": 172289,
+     "predictor_assets": 741,
+     "admitted_assets": 697,
+     "admitted_with_predictions": 697,
+     "admission_build_seconds": 5.9
+    },
+    {
+     "window": "fold-008",
+     "evaluation": [
+      "2019-01-01",
+      "2020-01-01"
+     ],
+     "predictor_rows": 115801,
+     "view_evaluation_rows": 115056,
+     "predictor_assets": 762,
+     "admitted_assets": 718,
+     "admitted_with_predictions": 718,
+     "admission_build_seconds": 6.1
+    },
+    {
+     "window": "fold-009",
+     "evaluation": [
+      "2020-01-01",
+      "2021-01-01"
+     ],
+     "predictor_rows": 180595,
+     "view_evaluation_rows": 179831,
+     "predictor_assets": 785,
+     "admitted_assets": 746,
+     "admitted_with_predictions": 746,
+     "admission_build_seconds": 6.1
+    },
+    {
+     "window": "fold-010",
+     "evaluation": [
+      "2021-01-01",
+      "2022-01-01"
+     ],
+     "predictor_rows": 190298,
+     "view_evaluation_rows": 189504,
+     "predictor_assets": 800,
+     "admitted_assets": 771,
+     "admitted_with_predictions": 771,
+     "admission_build_seconds": 6.5
+    },
+    {
+     "window": "fold-011",
+     "evaluation": [
+      "2022-01-01",
+      "2023-01-01"
+     ],
+     "predictor_rows": 193400,
+     "view_evaluation_rows": 192594,
+     "predictor_assets": 808,
+     "admitted_assets": 785,
+     "admitted_with_predictions": 785,
+     "admission_build_seconds": 6.0
+    },
+    {
+     "window": "fold-012",
+     "evaluation": [
+      "2023-01-01",
+      "2024-01-01"
+     ],
+     "predictor_rows": 194649,
+     "view_evaluation_rows": 194649,
+     "predictor_assets": 810,
+     "admitted_assets": 799,
+     "admitted_with_predictions": 799,
+     "admission_build_seconds": 5.2
+    }
+   ],
+   "anchors": [
+    {
+     "window": "fold-004",
+     "train_fixed": [
+      "fold-000",
+      "fold-001",
+      "fold-002"
+     ],
+     "train_expanding": 3,
+     "predictor_assets_in_evaluation": 684,
+     "candidates_fixed": 533,
+     "candidates_expanding": 533,
+     "universe_fixed": 128,
+     "universe_expanding": 128,
+     "fixed_in_predictor_population": 128,
+     "expanding_in_predictor_population": 128,
+     "overlap": 128,
+     "median_first_label_year": {
+      "fixed": 2006.0,
+      "expanding": 2006.0,
+      "predictor_population": 2006.0
+     },
+     "only_in_fixed_universe": []
+    },
+    {
+     "window": "fold-005",
+     "train_fixed": [
+      "fold-001",
+      "fold-002",
+      "fold-003"
+     ],
+     "train_expanding": 4,
+     "predictor_assets_in_evaluation": 691,
+     "candidates_fixed": 577,
+     "candidates_expanding": 533,
+     "universe_fixed": 128,
+     "universe_expanding": 128,
+     "fixed_in_predictor_population": 128,
+     "expanding_in_predictor_population": 128,
+     "overlap": 111,
+     "median_first_label_year": {
+      "fixed": 2006.0,
+      "expanding": 2006.0,
+      "predictor_population": 2006.0
+     },
+     "only_in_fixed_universe": [
+      "CN/002405.SZ",
+      "CN/002594.SZ",
+      "CN/300251.SZ",
+      "CN/600518.SS",
+      "CN/600795.SS",
+      "CN/601006.SS",
+      "CN/601009.SS",
+      "CN/601106.SS",
+      "CN/601166.SS",
+      "CN/601216.SS",
+      "CN/601336.SS",
+      "CN/601398.SS",
+      "CN/601519.SS",
+      "CN/601669.SS",
+      "CN/601901.SS"
+     ]
+    },
+    {
+     "window": "fold-006",
+     "train_fixed": [
+      "fold-002",
+      "fold-003",
+      "fold-004"
+     ],
+     "train_expanding": 5,
+     "predictor_assets_in_evaluation": 721,
+     "candidates_fixed": 596,
+     "candidates_expanding": 533,
+     "universe_fixed": 128,
+     "universe_expanding": 128,
+     "fixed_in_predictor_population": 128,
+     "expanding_in_predictor_population": 128,
+     "overlap": 112,
+     "median_first_label_year": {
+      "fixed": 2006.0,
+      "expanding": 2006.0,
+      "predictor_population": 2006.0
+     },
+     "only_in_fixed_universe": [
+      "CN/002405.SZ",
+      "CN/002594.SZ",
+      "CN/002601.SZ",
+      "CN/300168.SZ",
+      "CN/300315.SZ",
+      "CN/600518.SS",
+      "CN/600522.SS",
+      "CN/600886.SS",
+      "CN/601006.SS",
+      "CN/601009.SS",
+      "CN/601106.SS",
+      "CN/601166.SS",
+      "CN/601336.SS",
+      "CN/601398.SS",
+      "CN/601901.SS"
+     ]
+    },
+    {
+     "window": "fold-007",
+     "train_fixed": [
+      "fold-003",
+      "fold-004",
+      "fold-005"
+     ],
+     "train_expanding": 6,
+     "predictor_assets_in_evaluation": 741,
+     "candidates_fixed": 607,
+     "candidates_expanding": 533,
+     "universe_fixed": 128,
+     "universe_expanding": 128,
+     "fixed_in_predictor_population": 128,
+     "expanding_in_predictor_population": 128,
+     "overlap": 110,
+     "median_first_label_year": {
+      "fixed": 2006.0,
+      "expanding": 2006.0,
+      "predictor_population": 2006.0
+     },
+     "only_in_fixed_universe": [
+      "CN/000333.SZ",
+      "CN/000507.SZ",
+      "CN/000651.SZ",
+      "CN/000877.SZ",
+      "CN/002405.SZ",
+      "CN/300059.SZ",
+      "CN/600497.SS",
+      "CN/600522.SS",
+      "CN/601006.SS",
+      "CN/601009.SS",
+      "CN/601166.SS",
+      "CN/601336.SS",
+      "CN/601398.SS",
+      "CN/601669.SS",
+      "CN/601800.SS"
+     ]
+    },
+    {
+     "window": "fold-008",
+     "train_fixed": [
+      "fold-004",
+      "fold-005",
+      "fold-006"
+     ],
+     "train_expanding": 7,
+     "predictor_assets_in_evaluation": 762,
+     "candidates_fixed": 623,
+     "candidates_expanding": 533,
+     "universe_fixed": 128,
+     "universe_expanding": 128,
+     "fixed_in_predictor_population": 128,
+     "expanding_in_predictor_population": 128,
+     "overlap": 106,
+     "median_first_label_year": {
+      "fixed": 2006.0,
+      "expanding": 2006.0,
+      "predictor_population": 2006.0
+     },
+     "only_in_fixed_universe": [
+      "CN/000333.SZ",
+      "CN/000651.SZ",
+      "CN/002405.SZ",
+      "CN/002594.SZ",
+      "CN/300059.SZ",
+      "CN/300168.SZ",
+      "CN/300274.SZ",
+      "CN/300316.SZ",
+      "CN/600036.SS",
+      "CN/600436.SS",
+      "CN/600518.SS",
+      "CN/600522.SS",
+      "CN/600584.SS",
+      "CN/601006.SS",
+      "CN/601009.SS"
+     ]
+    },
+    {
+     "window": "fold-009",
+     "train_fixed": [
+      "fold-005",
+      "fold-006",
+      "fold-007"
+     ],
+     "train_expanding": 8,
+     "predictor_assets_in_evaluation": 785,
+     "candidates_fixed": 645,
+     "candidates_expanding": 533,
+     "universe_fixed": 128,
+     "universe_expanding": 128,
+     "fixed_in_predictor_population": 128,
+     "expanding_in_predictor_population": 128,
+     "overlap": 102,
+     "median_first_label_year": {
+      "fixed": 2006.5,
+      "expanding": 2006.0,
+      "predictor_population": 2006.0
+     },
+     "only_in_fixed_universe": [
+      "CN/000333.SZ",
+      "CN/000651.SZ",
+      "CN/002405.SZ",
+      "CN/002594.SZ",
+      "CN/002600.SZ",
+      "CN/002714.SZ",
+      "CN/300059.SZ",
+      "CN/300168.SZ",
+      "CN/300433.SZ",
+      "CN/300496.SZ",
+      "CN/300498.SZ",
+      "CN/600036.SS",
+      "CN/600436.SS",
+      "CN/600584.SS",
+      "CN/601009.SS"
+     ]
+    },
+    {
+     "window": "fold-010",
+     "train_fixed": [
+      "fold-006",
+      "fold-007",
+      "fold-008"
+     ],
+     "train_expanding": 9,
+     "predictor_assets_in_evaluation": 800,
+     "candidates_fixed": 668,
+     "candidates_expanding": 533,
+     "universe_fixed": 128,
+     "universe_expanding": 128,
+     "fixed_in_predictor_population": 128,
+     "expanding_in_predictor_population": 128,
+     "overlap": 90,
+     "median_first_label_year": {
+      "fixed": 2007.0,
+      "expanding": 2006.0,
+      "predictor_population": 2006.0
+     },
+     "only_in_fixed_universe": [
+      "CN/000333.SZ",
+      "CN/000651.SZ",
+      "CN/000661.SZ",
+      "CN/002405.SZ",
+      "CN/002594.SZ",
+      "CN/002600.SZ",
+      "CN/002602.SZ",
+      "CN/002603.SZ",
+      "CN/002624.SZ",
+      "CN/002714.SZ",
+      "CN/002797.SZ",
+      "CN/002812.SZ",
+      "CN/300059.SZ",
+      "CN/300207.SZ",
+      "CN/300223.SZ"
+     ]
+    },
+    {
+     "window": "fold-011",
+     "train_fixed": [
+      "fold-007",
+      "fold-008",
+      "fold-009"
+     ],
+     "train_expanding": 10,
+     "predictor_assets_in_evaluation": 808,
+     "candidates_fixed": 697,
+     "candidates_expanding": 533,
+     "universe_fixed": 128,
+     "universe_expanding": 128,
+     "fixed_in_predictor_population": 128,
+     "expanding_in_predictor_population": 128,
+     "overlap": 89,
+     "median_first_label_year": {
+      "fixed": 2006.0,
+      "expanding": 2006.0,
+      "predictor_population": 2006.0
+     },
+     "only_in_fixed_universe": [
+      "CN/000009.SZ",
+      "CN/000333.SZ",
+      "CN/000630.SZ",
+      "CN/000651.SZ",
+      "CN/000661.SZ",
+      "CN/002594.SZ",
+      "CN/002601.SZ",
+      "CN/002709.SZ",
+      "CN/002714.SZ",
+      "CN/002756.SZ",
+      "CN/002812.SZ",
+      "CN/002821.SZ",
+      "CN/300059.SZ",
+      "CN/300207.SZ",
+      "CN/300223.SZ"
+     ]
+    },
+    {
+     "window": "fold-012",
+     "train_fixed": [
+      "fold-008",
+      "fold-009",
+      "fold-010"
+     ],
+     "train_expanding": 11,
+     "predictor_assets_in_evaluation": 810,
+     "candidates_fixed": 718,
+     "candidates_expanding": 533,
+     "universe_fixed": 128,
+     "universe_expanding": 128,
+     "fixed_in_predictor_population": 128,
+     "expanding_in_predictor_population": 128,
+     "overlap": 85,
+     "median_first_label_year": {
+      "fixed": 2006.0,
+      "expanding": 2006.0,
+      "predictor_population": 2006.0
+     },
+     "only_in_fixed_universe": [
+      "CN/000009.SZ",
+      "CN/000333.SZ",
+      "CN/000651.SZ",
+      "CN/000661.SZ",
+      "CN/002074.SZ",
+      "CN/002555.SZ",
+      "CN/002594.SZ",
+      "CN/002603.SZ",
+      "CN/002709.SZ",
+      "CN/002714.SZ",
+      "CN/002756.SZ",
+      "CN/002812.SZ",
+      "CN/002821.SZ",
+      "CN/300059.SZ",
+      "CN/300207.SZ"
+     ]
+    }
+   ]
+  }
+ },
+ "training_executed": false,
+ "final_test_opened": false
+}

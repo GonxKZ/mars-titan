@@ -127,6 +127,7 @@ void Candidate::to(torch::Device device, torch::Dtype dtype, bool non_blocking) 
     check_dtype(dtype);
     const bool changed = dtype != feature_projection_.scalar_type();
     torch::nn::Module::to(device, dtype, non_blocking);
+    pack_recurrent_weights();
     feature_projection_ = feature_projection_.to(device, dtype, non_blocking);
     key_projection_ = key_projection_.to(device, dtype, non_blocking);
     if (changed) {

@@ -1,0 +1,902 @@
+{
+ "schema_version": 1,
+ "kind": "candidate_cudnn_weight_packing",
+ "recorded_at_utc": "2026-10-09",
+ "scope": "Empaquetado de los pesos de la GRU de la candidata nativa en el bloque de cuDNN. Sin pasos de optimizador, sin ajuste y sin evaluación",
+ "change": {
+  "files": [
+   "native/src/candidate.cpp",
+   "native/src/candidate_identity.cpp",
+   "native/include/mars_titan/candidate.hpp",
+   "tests/models/candidate/test_cudnn_packing.py"
+  ],
+  "function": "Candidate::pack_recurrent_weights, llamado al final de torch::nn::Module::to dentro de Candidate::to",
+  "mechanism": "at::_cudnn_rnn_flatten_weight sobre gru_ (4 pesos por capa, modo GRU 3, entrada 5, oculto 128, batch_first). Los parámetros registrados pasan a ser vistas del bloque. Solo en CUDA con cuDNN aceptable. CPU sin cambios",
+  "source_sha256": {
+   "native/src/candidate.cpp": "40fcb4fce376305cb61ae0d117cfacbca87db8e877c15d12433578e25ef55037",
+   "native/src/candidate_identity.cpp": "0f14ed551d1ce182c1e8a7032a8af2e970f8af110d53fa472420496840acbb08",
+   "native/include/mars_titan/candidate.hpp": "7822976e7efb9e698bed5eb1d733371fdc34e5f4e745e7681202c07cf02b35c6",
+   "tests/models/candidate/test_cudnn_packing.py": "f5d06c0b8f421560dba86da65b57e73421b051af0f690866e6eb317e099ab733"
+  }
+ },
+ "environment": {
+  "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU (Max-Q), 8.188 MiB, driver 595.91.07, power-saver",
+  "torch": "2.14.0+cu130",
+  "cuda": "13.0",
+  "cudnn": 92400,
+  "compiler": "Ubuntu clang 21.1.8, CMake 4.2.3, Ninja, -j 2",
+  "preset": "native-candidate-cuda con MARS_TITAN_BUILD_EPISODIC_PYTHON=ON y MARS_TITAN_BUILD_SIMULATION=ON",
+  "threads": "OMP_NUM_THREADS=2, MKL_NUM_THREADS=2, CUBLAS_WORKSPACE_CONFIG=:4096:8",
+  "numerics": {
+   "deterministic": true,
+   "cudnn_allow_tf32": true,
+   "matmul_allow_tf32": false
+  },
+  "concurrent_load": "CPU compartida con otros procesos. Carga media de 1 minuto entre 8,8 y 19,2 durante las medidas",
+  "source_snapshot": "Las medidas de tiempo usan una copia de src y configs del commit 14c6b1dd para aislarlas de cambios en curso del worktree"
+ },
+ "binaries": {
+  "before": {
+   "sha256": "3f99e1447decb5c32d6096f8751d25efe71b262b076b203a9f9530ea0645f959",
+   "sources": "develop sin cambios"
+  },
+  "after": {
+   "sha256": "8780e628ca36b1520a73f81618bc6a5a0108e94107d1c90f7eae56aeb8e9fd52",
+   "sources": "con el empaquetado"
+  },
+  "rebuild_reproducible": true
+ },
+ "data": {
+  "view": "/home/gonzalo/.local/state/mars-titan/masked-campaign-2000-20261009/views/CN/fold-012/manifest.json",
+  "start_event": 3519,
+  "start_year": 2021,
+  "block_rows": 128,
+  "case": "m1_k1"
+ },
+ "profiler_ops_per_encode_forward_backward": {
+  "before": {
+   "aten::empty": 39,
+   "aten::_cudnn_rnn": 1,
+   "aten::copy_": 10,
+   "Memcpy DtoD (Device -> Device)": 4,
+   "aten::_cudnn_rnn_backward": 1
+  },
+  "after": {
+   "aten::empty": 34,
+   "aten::_cudnn_rnn": 1,
+   "aten::copy_": 6,
+   "aten::_cudnn_rnn_backward": 1
+  }
+ },
+ "gru_weight_layout": {
+  "before": {
+   "same_storage": false,
+   "adjacent": true,
+   "storage_bytes": [
+    7680,
+    196608,
+    1536,
+    1536
+   ]
+  },
+  "after": {
+   "same_storage": true,
+   "adjacent": true,
+   "storage_bytes": [
+    207360,
+    207360,
+    207360,
+    207360
+   ]
+  }
+ },
+ "micro": {
+  "settings": {
+   "rounds": 3,
+   "interleaved": "before, after por ronda",
+   "repeats": 30,
+   "iterations": 20,
+   "rows": 128
+  },
+  "results": {
+   "encode_context_forward_backward": {
+    "before": {
+     "wall_ms_mean": 4.381911322238415,
+     "wall_ms_stdev": 0.28080890026338057,
+     "wall_ms_median": 4.416073299944401,
+     "cuda_event_ms_mean": 4.379147491455078,
+     "cuda_event_ms_stdev": 0.2801917626434965,
+     "samples": 90
+    },
+    "after": {
+     "wall_ms_mean": 4.169948776204062,
+     "wall_ms_stdev": 0.24614435378706145,
+     "wall_ms_median": 4.173250024905428,
+     "cuda_event_ms_mean": 4.167336252000597,
+     "cuda_event_ms_stdev": 0.24574592600262357,
+     "samples": 90
+    },
+    "speedup_mean_before_over_after": 1.0508309711725774,
+    "paired_round_median_ratios": [
+     1.066056274964837,
+     1.056662861071169,
+     1.0144842896496054
+    ]
+   },
+   "encode_context_forward_no_grad": {
+    "before": {
+     "wall_ms_mean": 2.1757479716486867,
+     "wall_ms_stdev": 0.18814783151616388,
+     "wall_ms_median": 2.1150694250536617,
+     "cuda_event_ms_mean": 2.17355899810791,
+     "cuda_event_ms_stdev": 0.18799275663927606,
+     "samples": 90
+    },
+    "after": {
+     "wall_ms_mean": 1.9034771566253363,
+     "wall_ms_stdev": 0.17356426271978678,
+     "wall_ms_median": 1.8437773243931588,
+     "cuda_event_ms_mean": 1.9014692052205404,
+     "cuda_event_ms_stdev": 0.1733453622326731,
+     "samples": 90
+    },
+    "speedup_mean_before_over_after": 1.1430386564270925,
+    "paired_round_median_ratios": [
+     1.2700554157072985,
+     1.1553743047268372,
+     1.063125710971737
+    ]
+   },
+   "candidate_forward_backward": {
+    "before": {
+     "wall_ms_mean": 6.070473947264771,
+     "wall_ms_stdev": 0.6757712432775385,
+     "wall_ms_median": 6.042009025259176,
+     "cuda_event_ms_mean": 6.068160620795356,
+     "cuda_event_ms_stdev": 0.6757752040657081,
+     "samples": 90
+    },
+    "after": {
+     "wall_ms_mean": 5.810676465043798,
+     "wall_ms_stdev": 0.37649714755055463,
+     "wall_ms_median": 5.795414550084388,
+     "cuda_event_ms_mean": 5.808182521396213,
+     "cuda_event_ms_stdev": 0.37583797931879986,
+     "samples": 90
+    },
+    "speedup_mean_before_over_after": 1.0447103678519838,
+    "paired_round_median_ratios": [
+     1.098058302696809,
+     1.1368773659891205,
+     0.9044296363230189
+    ]
+   }
+  }
+ },
+ "trainer": {
+  "settings": {
+   "segments": 8,
+   "segment_warmup": 2,
+   "options": [
+    {
+     "accumulation_rows": null,
+     "recompute": false
+    },
+    {
+     "accumulation_rows": 128,
+     "recompute": true
+    }
+   ],
+   "runs": [
+    "before-3",
+    "after-3",
+    "before-4",
+    "after-4"
+   ]
+  },
+  "per_side": {
+   "before": {
+    "{\"accumulation_rows\": null, \"recompute\": false}": {
+     "mean": 3.5646172578144615,
+     "stdev": 1.0597310174507644,
+     "median": 3.736452665514662,
+     "n": 16
+    },
+    "{\"accumulation_rows\": 128, \"recompute\": true}": {
+     "mean": 3.1205079232495336,
+     "stdev": 0.6126488113201428,
+     "median": 3.037280645003193,
+     "n": 16
+    }
+   },
+   "after": {
+    "{\"accumulation_rows\": null, \"recompute\": false}": {
+     "mean": 4.210905318250298,
+     "stdev": 2.2390273180248452,
+     "median": 3.567844295001123,
+     "n": 16
+    },
+    "{\"accumulation_rows\": 128, \"recompute\": true}": {
+     "mean": 3.533228126625545,
+     "stdev": 0.6400334342033352,
+     "median": 3.388988681996125,
+     "n": 16
+    }
+   }
+  },
+  "paired_segment_ratio_before_over_after": {
+   "{\"accumulation_rows\": null, \"recompute\": false}": {
+    "mean": 0.9520176925256704,
+    "stdev": 0.25741736037765356,
+    "median": 0.9477971325137136,
+    "n": 16
+   },
+   "{\"accumulation_rows\": 128, \"recompute\": true}": {
+    "mean": 0.9088219556649051,
+    "stdev": 0.2246190198331292,
+    "median": 0.925788686012008,
+    "n": 16
+   }
+  },
+  "noncontiguous_warnings_per_pass": {
+   "before": [
+    616,
+    1232
+   ],
+   "after": [
+    0,
+    0
+   ]
+  },
+  "observations_per_pass": 68655,
+  "peak_vram_allocated_bytes": {
+   "before": [
+    1885000192,
+    254452736
+   ],
+   "after": [
+    1873595392,
+    254245376
+   ]
+  },
+  "step_calls_without_update": [
+   11,
+   11
+  ],
+  "conclusion": "La diferencia por tramo queda dentro del ruido de la carga concurrente. El tramo está limitado por el recorrido Python del entrenador"
+ },
+ "parity": {
+  "method": "Mismo bloque real de 128 filas, mismos pesos iniciales. Enlace anterior y nuevo en procesos separados. Pérdida cuadrática de cuantiles más la suma escalada de la fusión",
+  "default_numerics": {
+   "cpu/float32/default/k1": {
+    "outputs_bit_equal": true,
+    "gradients_bit_equal": true,
+    "gradients_compared": 21,
+    "fingerprint_equal": true,
+    "gru_storages_before_after": [
+     4,
+     4
+    ],
+    "gru_storages_after_in_place_copy": [
+     4,
+     4
+    ],
+    "restored_gru_storages": [
+     4,
+     4
+    ],
+    "noncontiguous_warnings_first_call": [
+     0,
+     0
+    ],
+    "noncontiguous_warnings_second_call": [
+     0,
+     0
+    ],
+    "recovery_bit_equal": [
+     true,
+     true
+    ],
+    "archive_bytes": [
+     4082509,
+     4082509
+    ],
+    "archive_sha256_equal": true
+   },
+   "cpu/float32/default/k4": {
+    "outputs_bit_equal": true,
+    "gradients_bit_equal": true,
+    "gradients_compared": 21,
+    "fingerprint_equal": true,
+    "gru_storages_before_after": [
+     4,
+     4
+    ],
+    "gru_storages_after_in_place_copy": [
+     4,
+     4
+    ],
+    "restored_gru_storages": [
+     4,
+     4
+    ],
+    "noncontiguous_warnings_first_call": [
+     0,
+     0
+    ],
+    "noncontiguous_warnings_second_call": [
+     0,
+     0
+    ],
+    "recovery_bit_equal": [
+     true,
+     true
+    ],
+    "archive_bytes": [
+     4082509,
+     4082509
+    ],
+    "archive_sha256_equal": true
+   },
+   "cpu/float64/default/k1": {
+    "outputs_bit_equal": true,
+    "gradients_bit_equal": true,
+    "gradients_compared": 21,
+    "fingerprint_equal": true,
+    "gru_storages_before_after": [
+     4,
+     4
+    ],
+    "gru_storages_after_in_place_copy": [
+     4,
+     4
+    ],
+    "restored_gru_storages": [
+     4,
+     4
+    ],
+    "noncontiguous_warnings_first_call": [
+     0,
+     0
+    ],
+    "noncontiguous_warnings_second_call": [
+     0,
+     0
+    ],
+    "recovery_bit_equal": [
+     true,
+     true
+    ],
+    "archive_bytes": [
+     8153933,
+     8153933
+    ],
+    "archive_sha256_equal": true
+   },
+   "cpu/float64/default/k4": {
+    "outputs_bit_equal": true,
+    "gradients_bit_equal": true,
+    "gradients_compared": 21,
+    "fingerprint_equal": true,
+    "gru_storages_before_after": [
+     4,
+     4
+    ],
+    "gru_storages_after_in_place_copy": [
+     4,
+     4
+    ],
+    "restored_gru_storages": [
+     4,
+     4
+    ],
+    "noncontiguous_warnings_first_call": [
+     0,
+     0
+    ],
+    "noncontiguous_warnings_second_call": [
+     0,
+     0
+    ],
+    "recovery_bit_equal": [
+     true,
+     true
+    ],
+    "archive_bytes": [
+     8153933,
+     8153933
+    ],
+    "archive_sha256_equal": true
+   },
+   "cuda:0/float32/default/k1": {
+    "outputs_bit_equal": true,
+    "gradients_bit_equal": true,
+    "gradients_compared": 21,
+    "fingerprint_equal": true,
+    "gru_storages_before_after": [
+     4,
+     1
+    ],
+    "gru_storages_after_in_place_copy": [
+     4,
+     1
+    ],
+    "restored_gru_storages": [
+     4,
+     1
+    ],
+    "noncontiguous_warnings_first_call": [
+     1,
+     0
+    ],
+    "noncontiguous_warnings_second_call": [
+     1,
+     0
+    ],
+    "recovery_bit_equal": [
+     true,
+     true
+    ],
+    "archive_bytes": [
+     4082509,
+     4081878
+    ],
+    "archive_sha256_equal": false
+   },
+   "cuda:0/float32/default/k4": {
+    "outputs_bit_equal": true,
+    "gradients_bit_equal": true,
+    "gradients_compared": 21,
+    "fingerprint_equal": true,
+    "gru_storages_before_after": [
+     4,
+     1
+    ],
+    "gru_storages_after_in_place_copy": [
+     4,
+     1
+    ],
+    "restored_gru_storages": [
+     4,
+     1
+    ],
+    "noncontiguous_warnings_first_call": [
+     1,
+     0
+    ],
+    "noncontiguous_warnings_second_call": [
+     1,
+     0
+    ],
+    "recovery_bit_equal": [
+     true,
+     true
+    ],
+    "archive_bytes": [
+     4082509,
+     4081878
+    ],
+    "archive_sha256_equal": false
+   },
+   "cuda:0/float64/default/k1": {
+    "outputs_bit_equal": true,
+    "gradients_bit_equal": true,
+    "gradients_compared": 21,
+    "fingerprint_equal": true,
+    "gru_storages_before_after": [
+     4,
+     1
+    ],
+    "gru_storages_after_in_place_copy": [
+     4,
+     1
+    ],
+    "restored_gru_storages": [
+     4,
+     1
+    ],
+    "noncontiguous_warnings_first_call": [
+     1,
+     0
+    ],
+    "noncontiguous_warnings_second_call": [
+     1,
+     0
+    ],
+    "recovery_bit_equal": [
+     true,
+     true
+    ],
+    "archive_bytes": [
+     8153933,
+     8153302
+    ],
+    "archive_sha256_equal": false
+   },
+   "cuda:0/float64/default/k4": {
+    "outputs_bit_equal": true,
+    "gradients_bit_equal": true,
+    "gradients_compared": 21,
+    "fingerprint_equal": true,
+    "gru_storages_before_after": [
+     4,
+     1
+    ],
+    "gru_storages_after_in_place_copy": [
+     4,
+     1
+    ],
+    "restored_gru_storages": [
+     4,
+     1
+    ],
+    "noncontiguous_warnings_first_call": [
+     1,
+     0
+    ],
+    "noncontiguous_warnings_second_call": [
+     1,
+     0
+    ],
+    "recovery_bit_equal": [
+     true,
+     true
+    ],
+    "archive_bytes": [
+     8153933,
+     8153302
+    ],
+    "archive_sha256_equal": false
+   }
+  },
+  "ieee_numerics": {
+   "cpu/float32/ieee/k1": {
+    "outputs_bit_equal": true,
+    "gradients_bit_equal": true,
+    "gradients_compared": 21,
+    "fingerprint_equal": true,
+    "gru_storages_before_after": [
+     4,
+     4
+    ],
+    "gru_storages_after_in_place_copy": [
+     4,
+     4
+    ],
+    "restored_gru_storages": [
+     4,
+     4
+    ],
+    "noncontiguous_warnings_first_call": [
+     0,
+     0
+    ],
+    "noncontiguous_warnings_second_call": [
+     0,
+     0
+    ],
+    "recovery_bit_equal": [
+     true,
+     true
+    ],
+    "archive_bytes": [
+     4082509,
+     4082509
+    ],
+    "archive_sha256_equal": true
+   },
+   "cpu/float32/ieee/k4": {
+    "outputs_bit_equal": true,
+    "gradients_bit_equal": true,
+    "gradients_compared": 21,
+    "fingerprint_equal": true,
+    "gru_storages_before_after": [
+     4,
+     4
+    ],
+    "gru_storages_after_in_place_copy": [
+     4,
+     4
+    ],
+    "restored_gru_storages": [
+     4,
+     4
+    ],
+    "noncontiguous_warnings_first_call": [
+     0,
+     0
+    ],
+    "noncontiguous_warnings_second_call": [
+     0,
+     0
+    ],
+    "recovery_bit_equal": [
+     true,
+     true
+    ],
+    "archive_bytes": [
+     4082509,
+     4082509
+    ],
+    "archive_sha256_equal": true
+   },
+   "cpu/float64/ieee/k1": {
+    "outputs_bit_equal": true,
+    "gradients_bit_equal": true,
+    "gradients_compared": 21,
+    "fingerprint_equal": true,
+    "gru_storages_before_after": [
+     4,
+     4
+    ],
+    "gru_storages_after_in_place_copy": [
+     4,
+     4
+    ],
+    "restored_gru_storages": [
+     4,
+     4
+    ],
+    "noncontiguous_warnings_first_call": [
+     0,
+     0
+    ],
+    "noncontiguous_warnings_second_call": [
+     0,
+     0
+    ],
+    "recovery_bit_equal": [
+     true,
+     true
+    ],
+    "archive_bytes": [
+     8153933,
+     8153933
+    ],
+    "archive_sha256_equal": true
+   },
+   "cpu/float64/ieee/k4": {
+    "outputs_bit_equal": true,
+    "gradients_bit_equal": true,
+    "gradients_compared": 21,
+    "fingerprint_equal": true,
+    "gru_storages_before_after": [
+     4,
+     4
+    ],
+    "gru_storages_after_in_place_copy": [
+     4,
+     4
+    ],
+    "restored_gru_storages": [
+     4,
+     4
+    ],
+    "noncontiguous_warnings_first_call": [
+     0,
+     0
+    ],
+    "noncontiguous_warnings_second_call": [
+     0,
+     0
+    ],
+    "recovery_bit_equal": [
+     true,
+     true
+    ],
+    "archive_bytes": [
+     8153933,
+     8153933
+    ],
+    "archive_sha256_equal": true
+   },
+   "cuda:0/float32/ieee/k1": {
+    "outputs_bit_equal": true,
+    "gradients_bit_equal": true,
+    "gradients_compared": 21,
+    "fingerprint_equal": true,
+    "gru_storages_before_after": [
+     4,
+     1
+    ],
+    "gru_storages_after_in_place_copy": [
+     4,
+     1
+    ],
+    "restored_gru_storages": [
+     4,
+     1
+    ],
+    "noncontiguous_warnings_first_call": [
+     1,
+     0
+    ],
+    "noncontiguous_warnings_second_call": [
+     1,
+     0
+    ],
+    "recovery_bit_equal": [
+     true,
+     true
+    ],
+    "archive_bytes": [
+     4082509,
+     4081878
+    ],
+    "archive_sha256_equal": false
+   },
+   "cuda:0/float32/ieee/k4": {
+    "outputs_bit_equal": true,
+    "gradients_bit_equal": true,
+    "gradients_compared": 21,
+    "fingerprint_equal": true,
+    "gru_storages_before_after": [
+     4,
+     1
+    ],
+    "gru_storages_after_in_place_copy": [
+     4,
+     1
+    ],
+    "restored_gru_storages": [
+     4,
+     1
+    ],
+    "noncontiguous_warnings_first_call": [
+     1,
+     0
+    ],
+    "noncontiguous_warnings_second_call": [
+     1,
+     0
+    ],
+    "recovery_bit_equal": [
+     true,
+     true
+    ],
+    "archive_bytes": [
+     4082509,
+     4081878
+    ],
+    "archive_sha256_equal": false
+   },
+   "cuda:0/float64/ieee/k1": {
+    "outputs_bit_equal": true,
+    "gradients_bit_equal": true,
+    "gradients_compared": 21,
+    "fingerprint_equal": true,
+    "gru_storages_before_after": [
+     4,
+     1
+    ],
+    "gru_storages_after_in_place_copy": [
+     4,
+     1
+    ],
+    "restored_gru_storages": [
+     4,
+     1
+    ],
+    "noncontiguous_warnings_first_call": [
+     1,
+     0
+    ],
+    "noncontiguous_warnings_second_call": [
+     1,
+     0
+    ],
+    "recovery_bit_equal": [
+     true,
+     true
+    ],
+    "archive_bytes": [
+     8153933,
+     8153302
+    ],
+    "archive_sha256_equal": false
+   },
+   "cuda:0/float64/ieee/k4": {
+    "outputs_bit_equal": true,
+    "gradients_bit_equal": true,
+    "gradients_compared": 21,
+    "fingerprint_equal": true,
+    "gru_storages_before_after": [
+     4,
+     1
+    ],
+    "gru_storages_after_in_place_copy": [
+     4,
+     1
+    ],
+    "restored_gru_storages": [
+     4,
+     1
+    ],
+    "noncontiguous_warnings_first_call": [
+     1,
+     0
+    ],
+    "noncontiguous_warnings_second_call": [
+     1,
+     0
+    ],
+    "recovery_bit_equal": [
+     true,
+     true
+    ],
+    "archive_bytes": [
+     8153933,
+     8153302
+    ],
+    "archive_sha256_equal": false
+   }
+  },
+  "cpu_cuda_check": {
+   "script": "tests/models/candidate/cuda_candidate_check.py",
+   "cases": 6,
+   "max_abs_error": {
+    "torch.float32/k1": 1.5497207641601562e-06,
+    "torch.float32/k2": 1.5497207641601562e-06,
+    "torch.float32/k4": 1.5497207641601562e-06,
+    "torch.float64/k1": 1.5543122344752192e-15,
+    "torch.float64/k2": 1.5543122344752192e-15,
+    "torch.float64/k4": 1.5543122344752192e-15
+   },
+   "same_as_previous_receipt": true,
+   "peak_reserved_bytes": 100663296
+  }
+ },
+ "tests": {
+  "new": {
+   "file": "tests/models/candidate/test_cudnn_packing.py",
+   "cuda_passed": 9,
+   "cpu_passed": 2,
+   "cpu_skipped": 7
+  },
+  "mutations": [
+   {
+    "mutation": "sin la llamada a pack_recurrent_weights en Candidate::to",
+    "result": "7 fallan, 2 pasan (las de CPU)"
+   },
+   {
+    "mutation": "empaquetar copias de gru_ en lugar de los parámetros",
+    "result": "7 fallan, 2 pasan (las de CPU)"
+   },
+   {
+    "mutation": "enlace anterior sin cambios",
+    "result": "7 fallan, 2 pasan (las de CPU)"
+   }
+  ],
+  "python_cpu": "tests/models/candidate, test_candidate_run, test_candidate_accumulation, test_candidate_bank, test_quantile_head_native: 157 pasan y 7 omitidas (CUDA)",
+  "native": "ctest candidate_codec, candidate_historical, candidate_archives, candidate_cli, candidate_cli_invalid, candidate_contract, candidate en CPU y candidate_cuda en cuda:0: 8/8 pasan",
+  "clang_tidy": "candidate.cpp y candidate_identity.cpp sin avisos con native/.clang-tidy"
+ },
+ "identity": {
+  "changes": [
+   "native_binary_sha256 del adaptador (cualquier recompilación lo cambia)",
+   "source_sha256 de la identidad de compilación nativa"
+  ],
+  "unchanged": [
+   "parameter_fingerprint",
+   "representation_id",
+   "salidas y gradientes"
+  ],
+  "archive": "Un archivo guardado desde CUDA escribe el bloque de la GRU como un único almacenamiento (631 bytes menos). La recuperación reproduce las salidas bit a bit"
+ },
+ "other_branch_overlap": {
+  "branch": "feat/native-policy-real-tapes",
+  "touched_native": [
+   "native/CMakeLists.txt",
+   "native/cmake/*",
+   "native/src/klpo_*",
+   "native/src/ppo_*",
+   "native/src/policy_*",
+   "native/src/reconstructed_tape.cpp",
+   "native/src/financial_*",
+   "native/src/simulation_*"
+  ],
+  "overlap": "ninguno"
+ },
+ "optimizer_steps": 0,
+ "scientific_training_started": false
+}
