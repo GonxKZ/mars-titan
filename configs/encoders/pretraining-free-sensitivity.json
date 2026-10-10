@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "kind": "pretraining_free_encoder_sensitivity",
+  "issue": 10,
+  "status": "declared_before_execution",
+  "declared_at": "2026-10-10",
+  "use": "sensitivity_not_for_model_selection_or_primary_conclusion",
+  "hypothesis": "Si la ventaja de MiniLM y ResNet18 sobre un codificador sin parámetros aprendidos viniera de conocer el mundo posterior a cada decisión, existiría en las sesiones anteriores a la publicación de los pesos de MiniLM y desaparecería después, con un salto en el corte mayor que el salto entre los dos tramos anteriores.",
+  "frozen_encoders": {
+    "text": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2@e8f8c211226b894fcb81acc59f3b34ba3efd5f42",
+    "image": "resnet18.IMAGENET1K_V1"
+  },
+  "control_encoders": "pretraining_free_control_v1",
+  "knowledge_bound": {
+    "text_weights_published": "2021-06-23",
+    "text_evidence": "commit e62509716f del repositorio del modelo, con el mismo pytorch_model.bin que la revisión fijada",
+    "image_training_data": "ImageNet-1K (ILSVRC 2012)"
+  },
+  "cutoff": "2021-07-01",
+  "block_months": 30,
+  "arms": ["gru", "titans_mac_online"],
+  "scopes": ["US", "CN"],
+  "metric": "session_mae_control_encoders_minus_frozen_encoders_after_averaging_seeds",
+  "statistics": {
+    "effect": "mean_of_all_evaluated_sessions",
+    "break": "block_before_the_cutoff_minus_block_after_the_cutoff",
+    "placebo_break": "block_two_before_the_cutoff_minus_block_before_the_cutoff"
+  },
+  "decision": "anticipation_suspected_if_the_break_and_the_break_minus_the_placebo_break_exceed_zero",
+  "min_sessions": 100,
+  "bootstrap": {
+    "block_length": 16,
+    "replicates": 2000,
+    "seed": 20261009,
+    "confidence": 0.95
+  },
+  "multiplicity": "max_t_over_arms_and_both_decision_statistics_within_each_market",
+  "does_not_measure": [
+    "which_of_the_two_frozen_encoders_carries_the_effect",
+    "regime_changes_that_coincide_with_the_cutoff",
+    "knowledge_of_the_world_that_does_not_change_the_error"
+  ]
+}
