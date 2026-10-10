@@ -455,7 +455,13 @@ def anchor_adapter(anchor, anchor_view, specification, *, device):
     window, window_sha256, report, folder = _anchor(Path(anchor), Path(anchor_view))
     identity = report["identity"]
     declared = identity["recipe"]
-    recipe = CandidateRecipe(**{item.name: declared[item.name] for item in fields(CandidateRecipe)})
+    # La precisión solo aparece en la identidad cuando la receta la declara.
+    recipe = CandidateRecipe(
+        **{
+            item.name: declared.get(item.name) if item.name == "precision" else declared[item.name]
+            for item in fields(CandidateRecipe)
+        }
+    )
     if recipe.identity() != declared:
         raise ValueError("La receta del ancla no se puede reconstruir sin cambios")
     configuration = identity["adapter"]["configuration"]
