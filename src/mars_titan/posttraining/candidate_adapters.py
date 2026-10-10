@@ -31,6 +31,7 @@ from torch.nn import functional
 from mars_titan.data.cohort_files import read_manifest
 from mars_titan.data.input_policy import HISTORICAL_MASKED, policy_identity
 from mars_titan.data.storage import atomic_json, outside_source, sha256
+from mars_titan.learning_traces.trainers import attach as attach_traces
 from mars_titan.memory.financial_observations import (
     FinancialObservationSource,
     prepare_observation_index,
@@ -62,6 +63,7 @@ from mars_titan.training.corpus_inputs import CorpusDataset
 from mars_titan.training.learning_hold import require_learning_allowed
 
 from . import chronological_matrix as cm
+from .adapter_traces import AdapterObserver
 
 KIND = "candidate_posttraining_window"
 FROZEN_KIND = "candidate_frozen_parent"
@@ -254,9 +256,13 @@ def run_candidate_posttraining(
     stop=None,
     optimizer_factory=None,
     parent_view=None,
+    traces=None,
 ):
     """Postentrenar el estado elegido de la candidata en su ventana o, con `parent_view`,
-    el de la ventana anterior con las filas nuevas de esta."""
+    el de la ventana anterior con las filas nuevas de esta.
+
+    `traces` declara las trazas de #448, con la actualización de la cabeza adaptada.
+    """
     require_learning_allowed("el postentrenamiento de la GRU candidata")
     _require(device in ("cpu", "cuda:0"), "El dispositivo debe ser cpu o cuda:0 explícitos")
     cm.validate_case(case)
@@ -334,6 +340,13 @@ def run_candidate_posttraining(
         world=WORLD,
         fold=fold["id"],
         optimizer_factory=optimizer_factory,
+    )
+    attach_traces(
+        trainer,
+        output / "traces",
+        traces,
+        "posttraining_episodic_gru",
+        observers=[AdapterObserver()],
     )
     started = time.perf_counter()
     result = trainer.run(resume=(folder / "run.json").is_file(), stop=stop)

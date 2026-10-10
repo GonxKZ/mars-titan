@@ -32,6 +32,7 @@ from pathlib import Path
 import torch
 
 from mars_titan.data.storage import sha256
+from mars_titan.learning_traces.hooks import traced_update
 from mars_titan.models.predictive_adaptation import adapter_names, base_digest
 from mars_titan.models.titans.config import MAX_BLOCK_ROWS, canonical
 from mars_titan.models.titans.episodic_readout import apply_episodic_readout
@@ -263,13 +264,19 @@ class ReadoutAdapterTrainer(ReadoutTrainer):
         total = len(run.used)
         if total:
             loss_sum = self._replay(run, total)
-            torch.nn.utils.clip_grad_norm_(
-                self.trainable, self.recipe.max_grad_norm or math.inf, error_if_nonfinite=True
-            )
-            self.optimizer.step()
-            self.optimizer.zero_grad(set_to_none=True)
-            # El paso es la única modificación admitida del núcleo. Se sella de nuevo.
-            self.predictor._seal_parameters()
+            with traced_update(
+                self.traces, self.global_step + 1, self.optimizer, loss_sum
+            ) as probe:
+                norm = torch.nn.utils.clip_grad_norm_(
+                    self.trainable,
+                    self.recipe.max_grad_norm or math.inf,
+                    error_if_nonfinite=True,
+                )
+                probe.clip(norm, self.recipe.max_grad_norm)
+                self.optimizer.step()
+                self.optimizer.zero_grad(set_to_none=True)
+                # El paso es la única modificación admitida del núcleo. Se sella de nuevo.
+                self.predictor._seal_parameters()
             self.global_step += 1
             run.counters["updates"] += 1
             run.counters["labels_in_loss"] += total
