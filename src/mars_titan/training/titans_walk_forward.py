@@ -42,6 +42,7 @@ import numpy as np
 import pyarrow as pa
 import torch
 
+from mars_titan.data import prediction_files
 from mars_titan.data.batches import atomic_parquet_batches
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.input_policy import HISTORICAL_MASKED
@@ -331,10 +332,13 @@ def checked_tables(rows, metrics, dataset, partition):
 
 
 def _verify(output, report):
+    """Comprobar las predicciones confirmadas, presentes, compactadas o liberadas."""
     for record in report["predictions"].values():
         path = output / record["path"]
         safe_destination(path)
-        _require(sha256(path) == record["sha256"], "Han cambiado las predicciones confirmadas")
+        prediction_files.verify(
+            path, record["sha256"], label="Han cambiado las predicciones confirmadas"
+        )
 
 
 def run_titans_window(
@@ -585,7 +589,15 @@ def _new_destination(output, protected):
 
 
 def carry_titans(
-    anchor, anchor_view, view, output, *, device="cuda:0", stop=None, modality_ablation=None
+    anchor,
+    anchor_view,
+    view,
+    output,
+    *,
+    device="cuda:0",
+    stop=None,
+    modality_ablation=None,
+    regenerate=False,
 ):
     """Predecir una ventana posterior con el estado elegido en la ventana ancla.
 
@@ -593,10 +605,17 @@ def carry_titans(
     empieza con la memoria rápida inicial y su propio calentamiento de entradas. Con
     `modality_ablation` predice solo la evaluación, también en la propia ventana del ancla,
     y el calentamiento y el tramo leen las mismas entradas ablacionadas, así que la memoria
-    rápida también ve la ausencia.
+    rápida también ve la ausencia. Con `regenerate` repite la validación, la calibración y
+    la evaluación de la propia ventana del ancla.
     """
     require_learning_allowed("la predicción trasladada de Titans-MAC")
-    from .carried_predictions import ablation_record, carried_window, predicted_partitions
+    from .carried_predictions import (
+        ablation_record,
+        carried_window,
+        predicted_partitions,
+        regeneration_record,
+        same_view,
+    )
     from .checkpoints import load_training_state
     from .financial_run import ChronologicalInference
 
@@ -630,19 +649,20 @@ def carry_titans(
             os.environ.get("CUBLAS_WORKSPACE_CONFIG") in {":4096:8", ":16:8"},
             "Configura CUBLAS_WORKSPACE_CONFIG antes de iniciar PyTorch",
         )
+    partitions = predicted_partitions(modality_ablation, regenerate)
     dataset = CorpusDataset(
         view, input_policy=HISTORICAL_MASKED, modality_ablation=modality_ablation
     )
+    same_view(anchor_manifest, dataset.manifest, regenerate)
     anchor_fold, fold, age = carried_window(
         anchor_manifest,
         dataset.manifest,
         input_policy=HISTORICAL_MASKED,
-        same_window=modality_ablation is not None,
+        same_window=modality_ablation is not None or regenerate,
     )
     _check_view(dataset, view_protocol(view), fold)
     _new_destination(output, (*dataset.roots.values(), view.parent, anchor))
     phases = window_phases(fold, options["warmup_months"])
-    partitions = predicted_partitions(modality_ablation)
     sources = _sources(dataset, {name: phases[name] for name in partitions}, output / "indices")
     options_predictor = {k: v for k, v in document["predictor"].items() if k != "dtype"}
     predictor = FinancialPredictor(
@@ -707,6 +727,7 @@ def carry_titans(
         seconds=time.perf_counter() - started,
         finished_at_utc=datetime.now(UTC).isoformat(),
         **ablation_record(modality_ablation),
+        **regeneration_record(regenerate),
     )
     atomic_json(output / "carry.json", receipt)
     return receipt
@@ -778,8 +799,12 @@ def titans_fit(run, *, device="cuda:0", optimizer_factory=None):
     return report
 
 
-def titans_carry(run, *, device="cuda:0"):
-    """Ejecutor de predicción trasladada para `training.masked_campaign` (variante B)."""
+def titans_carry(run, *, device="cuda:0", regenerate=False):
+    """Ejecutor de predicción trasladada para `training.masked_campaign` (variante B).
+
+    Con `regenerate`, `run.anchor` es el intento del propio ajuste y se repiten sus
+    predicciones por inferencia.
+    """
     from .masked_campaign import Paused as CampaignPaused
 
     try:
@@ -791,6 +816,7 @@ def titans_carry(run, *, device="cuda:0"):
                 run.folder,
                 device=device,
                 stop=run.stop,
+                regenerate=regenerate,
             )
     except Paused as error:
         raise CampaignPaused from error

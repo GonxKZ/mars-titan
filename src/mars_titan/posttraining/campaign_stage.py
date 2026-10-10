@@ -54,6 +54,7 @@ from pathlib import Path
 
 import numpy as np
 
+from mars_titan.data import prediction_files
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.input_policy import HISTORICAL_MASKED
 from mars_titan.data.storage import atomic_json, outside_source, sha256
@@ -874,10 +875,15 @@ class _Stage:
             return None
         receipt, digest = read_manifest(path, 8 * 1024**2)
         _require(receipt.get("identity") == identity, f"{job['id']} cambió de identidad")
-        for record in [receipt["run"], *receipt["predictions"].values()]:
-            _require(
-                sha256(self.output / record["path"]) == record["sha256"],
-                f"Un artefacto confirmado de {job['id']} ha cambiado",
+        _require(
+            sha256(self.output / receipt["run"]["path"]) == receipt["run"]["sha256"],
+            f"Un artefacto confirmado de {job['id']} ha cambiado",
+        )
+        for record in receipt["predictions"].values():
+            prediction_files.verify(
+                self.output / record["path"],
+                record["sha256"],
+                label=f"Un artefacto confirmado de {job['id']} ha cambiado",
             )
         return dict(receipt, sha256=digest)
 
@@ -1206,10 +1212,18 @@ class _Stage:
                     f"{other['updates']} con el mismo padre",
                 )
 
+    def _base_selected(self, job):
+        """Ventana 0: trabajo base elegido, su recibo y su informe, sin leer filas."""
+        key, receipt, report_path = self.base_parent(
+            job["scope"], job["window"], job["base_arm"], job["seed"]
+        )
+        selected = dict(kind="base", arm=job["base_arm"], job=key, receipt_sha256=receipt["sha256"])
+        return key, receipt, report_path, selected
+
     def _base_choice(self, job):
         """Ventana 0: el estado elegido de la base, con su validación, como predictor."""
         scope, window = job["scope"], job["window"]
-        key, receipt, report_path = self.base_parent(scope, window, job["base_arm"], job["seed"])
+        key, receipt, report_path, selected = self._base_selected(job)
         resolved = self.campaign["comparison_config"]["resolved_scopes"][scope]
         report, _ = read_manifest(report_path, 16 * 1024**2)
         record = report["predictions"]["validation"]
@@ -1229,7 +1243,6 @@ class _Stage:
             validation=dict(markets=masked_campaign._fingerprints(table, resolved["markets"])),
             **{name: receipt["predictions"][name] for name in masked_campaign.COMPARED},
         )
-        selected = dict(kind="base", arm=job["base_arm"], job=key, receipt_sha256=receipt["sha256"])
         state = dict(path=str(report_path.parent.resolve()), sha256=receipt["parent"]["sha256"])
         labels = staged_rows.labels_used_until(self.open_dataset(scope, window))
         return None, [], selected, state, None, labels, predictions
@@ -1285,11 +1298,14 @@ class _Stage:
         """Elegir y publicar el predictor de la cadena. `selection.json` se escribe la última."""
         scope, window, base_arm, seed = job["scope"], job["window"], job["base_arm"], job["seed"]
         first = job["parent_window"] is None
-        parent, candidates, selected, state, fit_rows, labels, predictions = (
-            self._base_choice(job) if first else self._chain_choice(job)
-        )
         existing = staged_chain.read_selection(self.output, scope, window, base_arm, seed)
         if existing is not None:
+            # Una selección confirmada se comprueba con los recibos, sin releer filas. La
+            # retención v2 puede haber liberado la validación de la base al cerrar la ventana.
+            if first:
+                parent, candidates, selected = None, [], self._base_selected(job)[-1]
+            else:
+                parent, candidates, selected = self._chain_choice(job)[:3]
             _require(
                 existing["selected"] == selected
                 and existing["candidates"] == candidates
@@ -1300,6 +1316,9 @@ class _Stage:
             )
             self.selections[job["id"]] = existing
             return
+        parent, candidates, selected, state, fit_rows, labels, predictions = (
+            self._base_choice(job) if first else self._chain_choice(job)
+        )
         folder = staged_chain.chain_folder(self.output, scope, window, base_arm, seed)
         markets = self._market_receipts(
             folder,

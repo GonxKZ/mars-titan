@@ -591,7 +591,15 @@ def _carried_readout(state, target):
 
 
 def carry_mars_titan(
-    anchor, anchor_view, view, output, *, device="cuda:0", stop=None, modality_ablation=None
+    anchor,
+    anchor_view,
+    view,
+    output,
+    *,
+    device="cuda:0",
+    stop=None,
+    modality_ablation=None,
+    regenerate=False,
 ):
     """Predecir una ventana posterior con el padre y el lector elegidos en el ancla.
 
@@ -608,6 +616,7 @@ def carry_mars_titan(
         device=device,
         stop=stop,
         modality_ablation=modality_ablation,
+        regenerate=regenerate,
     )
 
 
@@ -621,15 +630,23 @@ def carry_readout(
     device="cuda:0",
     stop=None,
     modality_ablation=None,
+    regenerate=False,
 ):
     """Traslado común: `family_of` reconstruye la familia desde el informe del ancla.
 
     Con `modality_ablation` predice solo la evaluación, también en la propia ventana del
     ancla. El calentamiento y el tramo leen las mismas entradas ablacionadas, así que la
-    memoria rápida del padre y el banco episódico también ven la ausencia.
+    memoria rápida del padre y el banco episódico también ven la ausencia. Con
+    `regenerate` repite la validación, la calibración y la evaluación de la propia ventana.
     """
     require_learning_allowed("la predicción trasladada de un lector episódico")
-    from .carried_predictions import ablation_record, carried_window, predicted_partitions
+    from .carried_predictions import (
+        ablation_record,
+        carried_window,
+        predicted_partitions,
+        regeneration_record,
+        same_view,
+    )
 
     started = time.perf_counter()
     anchor, anchor_view, view, output = (Path(v) for v in (anchor, anchor_view, view, output))
@@ -666,19 +683,20 @@ def carry_readout(
     options = walk_forward_options(titans)
     readout_recipe = case_recipe(identity["recipe"], request["search_case"])
     anchor_manifest, _ = read_manifest(anchor_view, 64 * 1024**2)
+    partitions = predicted_partitions(modality_ablation, regenerate)
     dataset = CorpusDataset(
         view, input_policy=HISTORICAL_MASKED, modality_ablation=modality_ablation
     )
+    same_view(anchor_manifest, dataset.manifest, regenerate)
     anchor_fold, fold, age = carried_window(
         anchor_manifest,
         dataset.manifest,
         input_policy=HISTORICAL_MASKED,
-        same_window=modality_ablation is not None,
+        same_window=modality_ablation is not None or regenerate,
     )
     _check_view(dataset, view_protocol(view), fold)
     _new_destination(output, (*dataset.roots.values(), view.parent, anchor, parent))
     phases = window_phases(fold, options["warmup_months"])
-    partitions = predicted_partitions(modality_ablation)
     sources = _sources(dataset, {name: phases[name] for name in partitions}, output / "indices")
     specification = sources[partitions[0]].specification()
     seed = request["seed"]
@@ -758,6 +776,7 @@ def carry_readout(
         seconds=time.perf_counter() - started,
         finished_at_utc=datetime.now(UTC).isoformat(),
         **ablation_record(modality_ablation),
+        **regeneration_record(regenerate),
     )
     atomic_json(output / "carry.json", receipt)
     return receipt
@@ -822,8 +841,11 @@ def mars_titan_fit(run, *, device="cuda:0", optimizer_factory=None):
     return report
 
 
-def mars_titan_carry(run, *, device="cuda:0"):
-    """Ejecutor de predicción trasladada para `training.masked_campaign` (variante B)."""
+def mars_titan_carry(run, *, device="cuda:0", regenerate=False):
+    """Ejecutor de predicción trasladada para `training.masked_campaign` (variante B).
+
+    Con `regenerate`, `run.anchor` es el intento del propio ajuste.
+    """
     from .mars_titan_correction import KIND as CORRECTION_KIND
     from .mars_titan_correction import carry_correction
     from .masked_campaign import Paused as CampaignPaused
@@ -841,6 +863,7 @@ def mars_titan_carry(run, *, device="cuda:0"):
                 run.folder,
                 device=device,
                 stop=run.stop,
+                regenerate=regenerate,
             )
     except Paused as error:
         raise CampaignPaused from error

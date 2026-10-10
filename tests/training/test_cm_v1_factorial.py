@@ -429,3 +429,26 @@ def test_readout_accepts_the_b_core_and_refuses_a_penalized_core(shared, native)
     assert inference("disabled", 0.0).predictor.local_control.config.mode == "disabled"
     with pytest.raises(ValueError, match="solo en disabled"):
         inference("penalty", 0.5)
+
+
+def test_each_arm_regenerates_the_rows_of_its_own_window(factorial, tmp_path):
+    """La retención v2 solo libera filas que el traslado sobre la propia ventana repite."""
+    from mars_titan.training import prediction_regeneration as regeneration
+
+    for arm in cm.ARMS:
+        folder = factorial["root"] / "runs" / arm
+        produced = cm.carry_cm_v1(
+            folder,
+            factorial["view"],
+            factorial["view"],
+            tmp_path / arm,
+            device="cpu",
+            regenerate=True,
+        )
+        assert produced["regenerated"] is True
+        report = json.loads((folder / "run.json").read_text())
+        result = regeneration.compare(
+            regeneration.originals(folder, report), tmp_path / arm, produced
+        )
+        assert set(result["partitions"]) == {"validation", "calibration", "evaluation"}
+        assert result["identical"] is True, (arm, result)

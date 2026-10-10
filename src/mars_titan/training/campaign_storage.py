@@ -24,7 +24,7 @@ import time
 from pathlib import Path
 
 from mars_titan.data.cohort_files import read_manifest, safe_destination
-from mars_titan.data.storage import atomic_json
+from mars_titan.data.storage import atomic_json, sha256
 
 from .campaign_plan import PLATEAU
 
@@ -201,7 +201,9 @@ def job_footprint(job, counts, storage, *, release=None, prediction_bytes=None):
     tables = {partition: int(measured(job, partition)) for partition in predicted}
     state = 0 if carry else storage["state_bytes"][model]
     kept = storage["retained_states"][model]
-    releasable = release and model in CHECKPOINTS and not plateau
+    # XGBoost también libera tras el recibo sus boosters de recuperación (`_release_boosters`).
+    # La meseta no libera nada, porque su continuación reanuda en la misma carpeta.
+    releasable = release and not plateau and (model in CHECKPOINTS or model == "xgboost")
     retained = dict(
         predictions=sum(tables.values()),
         reports=storage["job_report_bytes"],
@@ -365,12 +367,51 @@ def _size(path):
     return sum(p.lstat().st_blocks * 512 for p in path.rglob("*") if not p.is_symlink())
 
 
+def _release_boosters(folder):
+    """Boosters de recuperación de XGBoost que no son el elegido, tras su recibo.
+
+    La búsqueda con selección guarda uno o dos boosters recientes para reanudar rondas. Con
+    el recibo escrito la campaña ya no vuelve a ejecutar el trabajo, y el traslado y la
+    regeneración solo cargan el elegido. Se comprueba su huella antes de borrar nada. Una
+    llamada posterior a `run_external_reference` sobre el intento se rechaza porque faltan
+    sus sustitutos, en lugar de seguir con otro estado.
+    """
+    path = folder / "run.json"
+    if not path.is_file():
+        return 0
+    report, _ = read_manifest(path, 16 * 1024**2)
+    recent = report.get("recovery_checkpoints")
+    if not recent:
+        return 0
+    selected = report.get("checkpoint")
+    _require(
+        report.get("status") == "completed" and isinstance(selected, dict),
+        "Solo se liberan boosters de un ajuste terminado con su elegido",
+    )
+    kept = folder / selected["path"]
+    safe_destination(kept)
+    _require(
+        kept.is_file() and sha256(kept) == selected["sha256"],
+        "El booster elegido no conserva su huella: no se borra nada",
+    )
+    released = 0
+    for record in recent:
+        target = folder / record["path"]
+        if record["path"] == selected["path"] or not target.exists():
+            continue
+        safe_destination(target)
+        _require(sha256(target) == record["sha256"], f"{target.name} ha cambiado")
+        released += target.stat().st_size
+        target.unlink()
+    return released
+
+
 def release_confirmed(folder, model):
     """Liberar lo que no vuelve a leerse de un intento cuyo recibo ya está escrito.
 
-    Borra los índices de observaciones y los puntos de control de recuperación, y deja el
-    estado elegido, los informes y las tablas por fila. Escribe `released.json` con lo
-    liberado y es idempotente.
+    Borra los índices de observaciones, los puntos de control de recuperación y los boosters
+    de recuperación de XGBoost, y deja el estado elegido, los informes y las tablas por fila.
+    Escribe `released.json` con lo liberado y es idempotente.
     """
     folder = Path(folder)
     safe_destination(folder)
@@ -386,6 +427,7 @@ def release_confirmed(folder, model):
         if directory.is_dir():
             released["recovery_states"] = release_recovery_states(directory)
     if model == "xgboost":
+        released["recovery_boosters"] = _release_boosters(folder)
         # Restos de páginas de una parada forzada. La ejecución confirmada no los usa.
         for path in folder.glob("external-*"):
             if path.is_dir() and not path.is_symlink():

@@ -24,6 +24,7 @@ from mars_titan.training import mars_titan_run, search_cases
 from mars_titan.training import mars_titan_walk_forward as mw
 from mars_titan.training import masked_campaign as engine
 from mars_titan.training import titans_walk_forward as wf
+from mars_titan.training.carried_predictions import CARRIED_PARTITIONS, REGENERATED_PARTITIONS
 from tests.suite_support import skip_without_episodic_native
 from tests.training.test_campaign_plan import CAMPAIGNS, write_variant
 from tests.training.test_masked_campaign import Recorder, doubles
@@ -505,13 +506,40 @@ def test_correction_carry_repeats_bit_for_bit_and_never_fits(campaign_run, tmp_p
     anchor_view, view = windows[job["anchor"]]["path"], windows[job["window"]]["path"]
     first = mc.carry_correction(anchor, anchor_view, view, tmp_path / "first", device="cpu")
     report = json.loads((campaign_run.output / own["report"]["path"]).read_text())
-    for name in mc.CARRIED:
+    assert "regenerated" not in first
+    for name in CARRIED_PARTITIONS:
         assert first["predictions"][name]["sha256"] == report["predictions"][name]["sha256"]
     anchored = json.loads((anchor / "run.json").read_text())
     assert first["anchor"]["variant_sha256"] == anchored["identity"]["variant_sha256"]
     assert not (anchor / "fit").exists()
     with pytest.raises(ValueError, match="no es la de su ventana"):
         mc.carry_correction(anchor, view, view, tmp_path / "other", device="cpu")
+
+
+def test_correction_fit_regenerates_its_three_partitions_bit_for_bit(campaign_run, tmp_path):
+    """La retención v2 repite el ajuste B6 por inferencia antes de liberar sus filas.
+
+    Cada tramo empieza con A en cero, así que repetir validación, calibración y evaluación
+    sobre la propia vista debe dar las mismas tablas. Otra vista no se admite.
+    """
+    job = next(j for j in campaign_run.jobs if j["arm"] == B6_ARM and j["kind"] == "fit")
+    own = receipt(campaign_run, job["id"])
+    attempt = campaign_run.output / own["attempt"]
+    windows = campaign_run.prepared["US"]["windows"]
+    view = windows[job["window"]]["path"]
+    again = mc.carry_correction(
+        attempt, view, view, tmp_path / "again", device="cpu", regenerate=True
+    )
+    report = json.loads((attempt / "run.json").read_text())
+    assert again["regenerated"] is True
+    assert set(again["predictions"]) == set(REGENERATED_PARTITIONS)
+    for name in REGENERATED_PARTITIONS:
+        assert again["predictions"][name]["sha256"] == report["predictions"][name]["sha256"]
+    later = next(w for w in windows if w > job["window"])
+    with pytest.raises(ValueError, match="propia ventana del ancla"):
+        mc.carry_correction(
+            attempt, view, windows[later]["path"], tmp_path / "later", device="cpu", regenerate=True
+        )
 
 
 def test_finalists_pick_their_own_search_and_receive_their_parent_finalist(tmp_path):

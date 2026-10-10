@@ -93,7 +93,6 @@ ARM_FIELDS = ("rule", "key")
 # Reglas que admite la ventana. La regla kalman (PT3) no usa η ni λ sino sus varianzas, que
 # esta receta no declara ni busca, así que todavía no tiene ventana.
 RULES = ("delta", "proximal")
-CARRIED = ("calibration", "evaluation")
 _RECIPE_FIELDS = {"schema_version", "recipe_name", "status", "recipe", "walk_forward", "pending"}
 _CODE = (
     "mars_titan.training.mars_titan_correction",
@@ -562,14 +561,24 @@ def run_correction_window(
         atomic_json(report_path, report)
 
 
-def carry_correction(anchor, anchor_view, view, output, *, device="cuda:0", stop=None):
+def carry_correction(
+    anchor, anchor_view, view, output, *, device="cuda:0", stop=None, regenerate=False
+):
     """Predecir una ventana posterior con el padre y el η y λ elegidos en el ancla.
 
     Es la pieza de la variante B, así que no selecciona nada y usa el caso que eligió la
     validación del ancla. Cada tramo trasladado empieza con A en cero, la memoria rápida
-    inicial y su propio calentamiento, como en el ancla.
+    inicial y su propio calentamiento, como en el ancla. Con `regenerate` el ancla es el
+    propio ajuste y se repiten su validación, su calibración y su evaluación en la misma
+    vista. Como cada tramo empieza con A en cero, la repetición debe coincidir bit a bit con
+    las tablas del ajuste antes de que la retención las libere.
     """
-    from .carried_predictions import carried_window
+    from .carried_predictions import (
+        carried_window,
+        predicted_partitions,
+        regeneration_record,
+        same_view,
+    )
     from .mars_titan_walk_forward import _cuda, _frozen_parent
 
     require_learning_allowed("la predicción trasladada de B6")
@@ -608,14 +617,16 @@ def carry_correction(anchor, anchor_view, view, output, *, device="cuda:0", stop
         request["components"], case_values(identity["recipe"], request["search_case"])
     )
     anchor_manifest, _ = read_manifest(anchor_view, 64 * 1024**2)
+    partitions = predicted_partitions(None, regenerate)
     dataset = CorpusDataset(view, input_policy=HISTORICAL_MASKED)
+    same_view(anchor_manifest, dataset.manifest, regenerate)
     anchor_fold, fold, age = carried_window(
-        anchor_manifest, dataset.manifest, input_policy=HISTORICAL_MASKED
+        anchor_manifest, dataset.manifest, input_policy=HISTORICAL_MASKED, same_window=regenerate
     )
     _check_view(dataset, view_protocol(view), fold)
     _new_destination(output, (*dataset.roots.values(), view.parent, anchor, parent))
     phases = window_phases(fold, options["warmup_months"])
-    sources = _sources(dataset, {name: phases[name] for name in CARRIED}, output / "indices")
+    sources = _sources(dataset, {name: phases[name] for name in partitions}, output / "indices")
     specification = sources["calibration"].specification()
     seed = request["seed"]
     predictor = _frozen_parent(
@@ -629,7 +640,7 @@ def carry_correction(anchor, anchor_view, view, output, *, device="cuda:0", stop
     codec = FrozenEpisodeCodec(specification)
     inference = CorrectionInference(predictor, chronological, variant.correction, codec)
     predictions = {}
-    for name in CARRIED:
+    for name in partitions:
         rows = PredictionRows(inference.quantiles)
         metrics = inference.predict(sources[name], rows, stop=stop)
         predictions[name] = _prediction(output, rows, metrics, dataset, name)
@@ -655,7 +666,7 @@ def carry_correction(anchor, anchor_view, view, output, *, device="cuda:0", stop
             parameters="anchor_selected_parent_and_correction_without_further_selection",
             fast_state="never_transferred_from_the_anchor_reset_at_each_pass",
         ),
-        phases={name: asdict(phases[name]) for name in CARRIED},
+        phases={name: asdict(phases[name]) for name in partitions},
         indices={name: source.identity for name, source in sources.items()},
         device=device,
         code=_code(),
@@ -664,6 +675,7 @@ def carry_correction(anchor, anchor_view, view, output, *, device="cuda:0", stop
         scientific_training_started=False,
         seconds=time.perf_counter() - started,
         finished_at_utc=datetime.now(UTC).isoformat(),
+        **regeneration_record(regenerate),
     )
     atomic_json(output / "carry.json", receipt)
     return receipt
