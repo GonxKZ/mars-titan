@@ -74,9 +74,14 @@ def fusion_input(model, batch):
 @pytest.mark.parametrize("complete", [True, False])
 def test_both_options_start_exactly_at_the_control_with_the_same_seed(modulation, complete):
     control, option = build(), build(modulation)
+    state = option.state_dict()
     for name, value in control.state_dict().items():
         if name.split(".", 1)[0] in SHARED:
-            assert torch.equal(option.state_dict()[name], value), name
+            # Algunos módulos guardan su identidad como estado extra en un diccionario.
+            same = (
+                torch.equal(state[name], value) if torch.is_tensor(value) else state[name] == value
+            )
+            assert same, name
     batch = decisions(complete=complete)
     expected, actual = prepare(control, batch), prepare(option, batch)
     torch.testing.assert_close(actual.detached_tokens, expected.detached_tokens, rtol=0, atol=0)
