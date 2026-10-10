@@ -6,10 +6,12 @@ de ajuste. El doble registra la llamada y se detiene, así que ninguna prueba aj
 
 import importlib
 import importlib.metadata
+import itertools
 import json
 import os
 import runpy
 import sys
+import traceback
 import types
 from pathlib import Path
 from types import SimpleNamespace
@@ -18,6 +20,8 @@ import numpy as np
 import pytest
 
 from mars_titan.training.learning_hold import LearningHoldError
+from tests.training.learning_hold_graph import guard_lines
+from tests.training.learning_hold_inventory import GUARDS
 
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPTS = ROOT / "scripts"
@@ -154,9 +158,9 @@ def _executable(tmp_path):
     return binary
 
 
-def _native_ppo_arguments(tmp_path, *, audit=False):
+def _native_ppo_arguments(tmp_path, *, audit=False, schema=None):
     config = tmp_path / "config.json"
-    config.write_text(json.dumps({"schema_version": 2 if audit else 1}))
+    config.write_text(json.dumps({"schema_version": schema or (2 if audit else 1)}))
     sources = (
         ["--audit-run", str(tmp_path / "run"), "--audit-tape", str(tmp_path / "audit")]
         if audit
@@ -177,6 +181,13 @@ def _native_ppo_arguments(tmp_path, *, audit=False):
 def _native_ppo(tmp_path, monkeypatch):
     main, double = _script("run_native_ppo.py", "run_child", monkeypatch)
     return lambda: main(_native_ppo_arguments(tmp_path)), double
+
+
+def _native_reconstructed_audit(tmp_path, monkeypatch):
+    # La auditoría congelada no ajusta, pero sobre cintas reconstruidas del histórico (esquema
+    # 4) evalúa la campaña nueva y también espera a que se levante el bloqueo.
+    main, double = _script("run_native_ppo.py", "run_child", monkeypatch)
+    return lambda: main(_native_ppo_arguments(tmp_path, audit=True, schema=4)), double
 
 
 def _native_benchmark(tmp_path, monkeypatch):
@@ -335,6 +346,7 @@ ENTRY_POINTS = {
         lambda m, out: m.fit_external_boosting(_blocks(), out, expected_rows=4),
     ),
     "run_native_ppo": _native_ppo,
+    "run_native_ppo_reconstructed_audit": _native_reconstructed_audit,
     "benchmark_native_ppo": _native_benchmark,
     "benchmark_adaptive_rl": _adaptive_benchmark,
     "run_financial_comparators": _financial_comparators,
@@ -381,6 +393,40 @@ ENTRY_POINTS = {
             out.with_name("a"), out.with_name("a.json"), out.with_name("v.json"), out, device="cpu"
         ),
     ),
+    # El lector común y su traslado tienen su propia guarda además de la de cada familia.
+    "readout_window": _simple(
+        "mars_titan.training.mars_titan_walk_forward",
+        "_parent",
+        lambda m, out: m.run_readout_window(
+            SimpleNamespace(label="lector de prueba", control=None),
+            out.with_name("v.json"),
+            out.with_name("parent"),
+            out.with_name("r.json"),
+            seed=42,
+            output=out,
+            search_case="lr1e-4",
+            device="cpu",
+        ),
+    ),
+    "carry_readout": _simple(
+        "mars_titan.training.mars_titan_walk_forward",
+        "read_manifest",
+        lambda m, out: m.carry_readout(
+            lambda report: None,
+            out.with_name("a"),
+            out.with_name("a.json"),
+            out.with_name("v.json"),
+            out,
+            device="cpu",
+        ),
+    ),
+    "carry_correction": _simple(
+        "mars_titan.training.mars_titan_correction",
+        "read_manifest",
+        lambda m, out: m.carry_correction(
+            out.with_name("a"), out.with_name("a.json"), out.with_name("v.json"), out, device="cpu"
+        ),
+    ),
     "cm_v1_core_window": _simple(
         "mars_titan.training.cm_v1_factorial",
         "load_declaration",
@@ -414,7 +460,87 @@ ENTRY_POINTS = {
             out.with_name("a"), out.with_name("a.json"), out.with_name("v.json"), out, device="cpu"
         ),
     ),
+    "budget_train_step": _simple(
+        "mars_titan.budget_training",
+        "_supervised_step",
+        lambda m, out: m.train_step(None, None, None, "cpu"),
+    ),
+    "online_reference": _simple(
+        "mars_titan.training.online_reference",
+        "checked_rule",
+        lambda m, out: m.run_online_reference(
+            out.with_name("anchor"),
+            out.with_name("v.json"),
+            out.with_name("bank"),
+            out,
+            rule={},
+            input_policy="historical_masked_2000_v1",
+        ),
+    ),
+    "candidate_posttraining": _simple(
+        "mars_titan.posttraining.candidate_adapters",
+        "_require",
+        lambda m, out: m.run_candidate_posttraining(
+            out.with_name("parent"), out.with_name("v.json"), out, case={}, matrix={}, digest=""
+        ),
+    ),
+    "frozen_candidate": _simple(
+        "mars_titan.posttraining.candidate_adapters",
+        "_anchor",
+        lambda m, out: m.frozen_candidate(
+            out.with_name("parent"), out.with_name("p.json"), out.with_name("v.json"), out
+        ),
+    ),
+    "titans_posttraining": _simple(
+        "mars_titan.posttraining.chronological_windows",
+        "_cuda",
+        lambda m, out: m.run_titans_posttraining(
+            out.with_name("parent"), out.with_name("v.json"), out, case={}, matrix={}, digest=""
+        ),
+    ),
+    "readout_posttraining": _simple(
+        "mars_titan.posttraining.chronological_windows",
+        "_cuda",
+        lambda m, out: m.run_readout_posttraining(
+            out.with_name("arm"), out.with_name("v.json"), out, case={}, matrix={}, digest=""
+        ),
+    ),
+    "frozen_titans": _simple(
+        "mars_titan.posttraining.chronological_windows",
+        "_cuda",
+        lambda m, out: m.frozen_titans(
+            out.with_name("parent"), out.with_name("p.json"), out.with_name("v.json"), out
+        ),
+    ),
+    "frozen_readout": _simple(
+        "mars_titan.posttraining.chronological_windows",
+        "_cuda",
+        lambda m, out: m.frozen_readout(
+            out.with_name("arm"), out.with_name("a.json"), out.with_name("v.json"), out
+        ),
+    ),
 }
+
+
+# Guarda que demuestra cada punto de entrada: función protegida y posición de su llamada.
+PROVES = {
+    reference: (guard, position)
+    for guard, references in GUARDS.items()
+    for position, reference in enumerate(references)
+    if "::" not in reference
+}
+
+
+def _stopped_by(error):
+    """Función y posición de la guarda que lanzó el bloqueo, con la etiqueta del inventario."""
+    for (caller, line), (guard, _) in itertools.pairwise(traceback.walk_tb(error.__traceback__)):
+        if guard.f_code.co_name == "require_learning_allowed":
+            path = Path(caller.f_code.co_filename)
+            parts = path.relative_to(ROOT).with_suffix("").parts
+            module = ".".join(parts[1:] if parts[0] == "src" else parts)
+            qualname = caller.f_code.co_qualname.split(".<locals>")[0]
+            return f"{module}:{qualname}", guard_lines(path, qualname).index(line)
+    return None
 
 
 def _reach(call):
@@ -432,10 +558,11 @@ def test_blocked_entry_point_stops_before_fitting_and_creates_no_output(
 ):
     call, double = ENTRY_POINTS[name](tmp_path, monkeypatch)
     learning_hold(False)
-    with pytest.raises(LearningHoldError, match="Bloqueo de aprendizaje vigente"):
+    with pytest.raises(LearningHoldError, match="Bloqueo de aprendizaje vigente") as raised:
         call()
     assert double.calls == 0
     assert not (tmp_path / "out").exists()
+    assert _stopped_by(raised.value) == PROVES[name]
 
 
 @pytest.mark.parametrize("allowed", [True, None], ids=["permitida", "ausente"])

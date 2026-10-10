@@ -175,6 +175,8 @@ def test_invalid_loss_options_fail_before_touching_a_model(loss, delta):
         training_module().run_epoch(None, None, [], None, loss=loss, huber_delta=delta)
 
 
+# La forma se rechaza antes del paso, que el gancho global seguiría impidiendo.
+@pytest.mark.usefixtures("learning_doubles")
 def test_target_broadcasting_is_rejected_before_updating_weights():
     torch = pytest.importorskip("torch")
     if not torch.cuda.is_available():
