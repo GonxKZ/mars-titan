@@ -405,6 +405,49 @@ def test_sources_point_to_the_campaign_parent_and_the_stage_receipts(study):
     ).resolve()
 
 
+def test_every_declared_contrast_is_reported_even_when_the_variant_is_worse(tmp_path, monkeypatch):
+    # La continuación anclada empeora al padre en 0,3 y las adaptaciones salvo la cabeza
+    # en 0,1. Ninguna desaparece del informe: las familias salen de la declaración y no
+    # de los resultados, y solo se comparan calibración y evaluación, no la validación.
+    original = prediction
+
+    def worse(arm, window, partition, truth):
+        value = original(arm, window, partition, truth)
+        return value + 0.3 if arm == "gru__anchored_continuation" else value
+
+    # `write_table` y `by_hand_session_mae` leen `prediction` del módulo al llamarla.
+    monkeypatch.setitem(globals(), "prediction", worse)
+    stage = Stage(tmp_path)
+    sources = stage.sources()
+    config, report, _, _ = compare.evaluate(stage.declaration, sources, "US", "gru")
+    contrasts = report["contrasts"]["US"]
+    declared = config["comparison"]["families"]
+    deltas = {name: family for name, family in declared.items() if family["kind"] == "delta"}
+    assert {"versus_frozen_parent", "versus_anchored_continuation"} <= set(deltas)
+    for name, family in deltas.items():
+        expected = {f"{variant}-{family['base']}" for variant in family["variants"]}
+        assert {row["name"] for row in contrasts[name]["mae"]["contrasts"]} == expected
+    rows = {row["name"]: row for row in contrasts["versus_frozen_parent"]["mae"]["contrasts"]}
+    mae, _ = by_hand_session_mae(stage, "gru__frozen_parent", ["fold-001"])
+    anchored, _ = by_hand_session_mae(stage, "gru__anchored_continuation", ["fold-001"])
+    assert anchored > mae
+    estimate = rows["gru__anchored_continuation-gru__frozen_parent"]["estimate"]
+    assert estimate == pytest.approx(anchored - mae, abs=1e-12) and estimate > 0
+    assert rows["gru__fusion-gru__frozen_parent"]["estimate"] > 0
+    rows = contrasts["versus_anchored_continuation"]["mae"]["contrasts"]
+    assert {row["name"] for row in rows} == {
+        *(f"{arm}-gru__anchored_continuation" for arm in ADAPTED),
+        "gru__full_continuation-gru__anchored_continuation",
+    }
+    assert report["final_test_opened"] is False
+    manifest = json.loads(sources.read_text())
+    for seeds in manifest["arms"].values():
+        for windows in seeds.values():
+            for entry in windows.values():
+                assert {"calibration", "evaluation"} <= set(entry)
+                assert "validation" not in entry
+
+
 def test_a_stage_with_other_identity_or_views_is_rejected(tmp_path):
     stage = Stage(tmp_path)
     stage.publish_stage(stage_sha256="0" * 64)
