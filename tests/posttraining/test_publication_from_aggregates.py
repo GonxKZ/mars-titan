@@ -535,6 +535,22 @@ def test_runs_reject_an_undeclared_or_a_missing_job(campaign_copy, defect):
         assert result["missing"] == [copy.jobs[0]["id"]]
 
 
+def test_runs_count_the_chain_selection_of_each_window(prepared, tmp_path):
+    adapters = tmp_path / "adapters"
+    shutil.copytree(prepared.adapters, adapters, symlinks=True)
+    loaded = publication.load_publication(prepared.declared.publication)
+    campaign, stage = loaded["campaign_config"], loaded["posttraining"]
+    _, result = gate._runs(campaign, prepared.base.output, stage, adapters)
+    chains = [entry for entry in result["posttraining"]["jobs"] if entry["status"] == "selected"]
+    assert result["posttraining"]["passed"] and chains
+    # Una ventana de la cadena sin su selección confirmada falta en el informe.
+    selections = sorted(adapters.glob("windows/**/selection.json"))
+    assert len(selections) == len(chains)
+    selections[-1].unlink()
+    _, result = gate._runs(campaign, prepared.base.output, stage, adapters)
+    assert not result["posttraining"]["passed"] and len(result["posttraining"]["missing"]) == 1
+
+
 @pytest.mark.parametrize("defect", ["seed", "window", "model"])
 def test_a_published_comparison_must_keep_every_declared_seed_and_window(prepared, defect):
     walked_report, _ = prepared.walk

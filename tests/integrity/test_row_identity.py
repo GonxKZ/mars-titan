@@ -225,3 +225,23 @@ def test_kept_rows_count_every_dropped_market_even_without_rows():
     assert kept.num_rows == 1 and counts == {"CN": 0}
     kept, counts = row_identity.kept_rows(table, [])
     assert kept is table and counts == {}
+
+
+def test_the_digest_leaves_out_the_rows_of_a_dropped_market():
+    moments = pa.array([1_700_000_000_000_000 + i for i in range(4)], pa.timestamp("us", tz="UTC"))
+    joint = pa.table(
+        dict(
+            market=["US", "CN", "US", "CN"],
+            asset_id=["US/A", "CN/A", "US/B", "CN/B"],
+            prediction_at=moments,
+            target=[0.1, 0.2, 0.3, 0.4],
+        )
+    )
+    alone = joint.filter(pa.array([True, False, True, False]))
+    segment = ("2023-11-01", "2023-12-01")
+    finding = row_identity.inspect_table(joint, segment, ["US"], ["CN"])
+    expected = row_identity.inspect_table(alone, segment, ["US"])
+    assert finding["digest"] == expected["digest"] and finding["rows"] == 2
+    assert finding["excluded_rows"] == {"CN": 2} and finding["rows_outside_scope"] == 0
+    # Sin la exclusión declarada, las filas chinas son de un mercado fuera del ámbito.
+    assert row_identity.inspect_table(joint, segment, ["US"])["rows_outside_scope"] == 2

@@ -220,3 +220,34 @@ def test_a_record_needs_sources_limited_to_its_window(tmp_path):
     window_aggregates.write(folder, config, sources, "fold-000")
     with pytest.raises(ValueError, match="limitarse a la ventana"):
         integrity.write_window(folder, config, sources, "fold-000")
+
+
+def test_rows_the_report_says_it_dropped_must_match_the_recount(tmp_path):
+    study = Study(tmp_path / "study", scope="US+CN")
+    output = publish(study, tmp_path / "result")
+    report = json.loads((output / "comparison.json").read_text())
+    window = report["arms"]["gru"]["seeds"]["42"]["windows"]["fold-001"]
+    window["excluded_rows"] = {"evaluation": {"CN": 1}}
+    atomic_json(output / "comparison.json", report)
+    result = integrity.published(study.config_path, study.sources_path, "US+CN", output)
+    assert not result["passed"] and result["rows"]["passed"]
+    assert result["excluded_rows"]["differing"] == ["gru/42/fold-001/evaluation"]
+
+
+@pytest.mark.parametrize("from_aggregates", [False, True], ids=["rows", "aggregates"])
+def test_a_published_summary_must_follow_from_its_sessions(tmp_path, from_aggregates):
+    study = Study(tmp_path / "study", scope="US")
+    folder = tmp_path / "aggregates"
+    options = {}
+    if from_aggregates:
+        aggregate(study, folder)
+        options = dict(aggregates=folder)
+    output = publish(study, tmp_path / "result", **options)
+    # Las sesiones no cambian, pero el MAE publicado de un modelo ya no sale de ellas.
+    report = json.loads((output / "comparison.json").read_text())
+    point = report["arms"]["gru"]["seeds"]["42"]["overall"]["US"]["summary"]["point"]
+    point["mae"] *= 0.9
+    atomic_json(output / "comparison.json", report)
+    result = integrity.published(study.config_path, study.sources_path, "US", output, **options)
+    assert result["scores"]["passed"] and not result["summaries"]["passed"]
+    assert not result["passed"] and result["summaries"]["failures"] == 1
