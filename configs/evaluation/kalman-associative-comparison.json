@@ -31,7 +31,7 @@
       "associative_memory": {
         "rule": "kalman",
         "key": "codec",
-        "process_noise_candidates": [1e-6, 1e-5],
+        "process_noise_relative_to_observation_noise": [1e-6, 1e-5],
         "observation_noise": "varianza de los residuos etiqueta menos núcleo en la ventana de entrenamiento",
         "cohort_correlation": "correlación intraclase de esos residuos por sesión, estimada por momentos y truncada a [0, 0,95]",
         "prior_variance": "0,1 veces observation_noise",
@@ -43,7 +43,7 @@
       "associative_memory": {
         "rule": "kalman",
         "key": "codec",
-        "process_noise_candidates": [1e-6, 1e-5],
+        "process_noise_relative_to_observation_noise": [1e-6, 1e-5],
         "observation_noise": "la misma que b6_kalman",
         "cohort_correlation": 0.0,
         "prior_variance": "la misma que b6_kalman",
@@ -51,7 +51,7 @@
       }
     }
   },
-  "selection": "q se elige entre los dos candidatos con la misma métrica en las ventanas con evaluación entre 2005 y 2013 y se mantiene en 2014 a 2023",
+  "selection": "q = κ σ² con κ elegido entre los dos candidatos por la métrica primaria en las ventanas con evaluación entre 2005 y 2013 y fijo en 2014 a 2023",
   "equal": [
     "predictions",
     "keys",
@@ -97,6 +97,7 @@
   "prediction": "La corrección apenas cambiará el MAE, con una diferencia entre −0,1 % y +0,1 % frente al núcleo y frente a B6 proximal. ϱ estimado quedará entre 0,02 y 0,15. Lo más probable es que PT3 solo aporte una varianza predictiva útil para la calibración.",
   "pending": [
     "Nada se ha ejecutado. El bloqueo de aprendizaje impide emitir las predicciones y estimar las varianzas.",
+    "La propuesta daba q ∈ {10⁻⁶, 10⁻⁵} sin unidad. Como la escala del residuo solo se conoce al estimar σ², se declaran como fracciones de σ²: q = κ σ².",
     "La propuesta no fijaba p0. Se declara p0 = 0,1 σ² antes de ver datos, de modo que la corrección a priori explica como mucho un 10 % de la varianza del residuo con claves unitarias.",
     "El recorte de Huber está implementado y comprobado, pero el brazo principal no lo usa para no añadir otro grado de libertad.",
     "El recorrido cronológico por ventanas todavía no emite B6, igual que con las reglas delta y proximal."
