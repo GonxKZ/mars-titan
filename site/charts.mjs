@@ -123,6 +123,14 @@ function axis(t, label, values, size, space) {
   };
 }
 
+// Separación mínima entre marcas de un eje de pasos. Los rótulos crecen con la magnitud
+// («1.000.000» ocupa unos 65 píxeles en la fuente monoespaciada de 12 px), así que una
+// separación fija hace que se pisen en cuanto la serie pasa del millón de pasos.
+export function stepSpace(_u, _axis, min, max) {
+  const digits = String(Math.round(Math.max(Math.abs(min), Math.abs(max)))).length;
+  return Math.max(50, (digits + Math.floor((digits - 1) / 3)) * 7.5 + 18);
+}
+
 // Decimales necesarios para que dos marcas consecutivas del eje no se lean iguales. Se
 // deciden por el paso entre marcas y no por su magnitud, así 45,2 y 45,3 no salen como
 // 45 y 45 en un eje estrecho.
@@ -387,7 +395,8 @@ export class LongSeriesChart {
     const started = performance.now();
     const data = this.prepare(this.range[0], this.range[1], Math.max(200, host.clientWidth));
     this.chart = new globalThis.uPlot({
-      width: Math.max(200, host.clientWidth), height, padding: [10, 30, 0, 0], legend: { show: false },
+      // El margen derecho deja sitio a la mitad del último rótulo, que puede ser largo.
+      width: Math.max(200, host.clientWidth), height, padding: [10, time ? 30 : 40, 0, 0], legend: { show: false },
       cursor: {
         sync: group ? { key: group.key, setSeries: false } : undefined, points: { show: false },
         drag: { x: true, y: false, setScale: true },
@@ -395,7 +404,7 @@ export class LongSeriesChart {
       },
       scales: { x: { time }, y: yRange ? { range: () => yRange } : {} },
       series: [{}, { stroke: color, width: 1.25, points: { show: false }, spanGaps: false }],
-      axes: [time ? axis(t, xLabel, timeTicks, 26, 90) : axis(t, xLabel, tickFormat, 26), axis(t, unit, tickFormat)],
+      axes: [time ? axis(t, xLabel, timeTicks, 26, 90) : axis(t, xLabel, tickFormat, 26, stepSpace), axis(t, unit, tickFormat)],
       hooks: {
         setScale: [(u, key) => { if (key === "x") this.scaled(u); }],
         setCursor: [u => this.cursorMoved(u)],

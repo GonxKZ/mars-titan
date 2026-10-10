@@ -140,7 +140,7 @@ button, input, select { font: inherit; color: inherit; }
 .eyebrow { font: 650 12px/1.3 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
 .lede { color: var(--ink-2); max-width: 72ch; margin-top: 10px; }
 .caption { color: var(--ink-3); font-size: 13px; line-height: 1.5; max-width: 96ch; }
-.tag { font: 600 11px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--ink-3); border: 1px solid var(--rule); padding: 2px 4px 1px; border-radius: 2px; vertical-align: 1px; }
+.tag { font: 600 12px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--ink-3); border: 1px solid var(--rule); padding: 2px 4px 1px; border-radius: 2px; vertical-align: 1px; }
 
 /* Barra superior: identidad, origen de los datos y su antigüedad. */
 .bar { position: sticky; top: 0; z-index: 20; background: var(--bg); border-bottom: 1px solid var(--rule); }
@@ -235,16 +235,16 @@ main { padding-block: 28px 56px; outline: none; }
 .matrix-scroll { overflow-x: auto; border: 1px solid var(--rule); background: var(--surface); }
 .matrix { border-collapse: separate; border-spacing: 0; font-size: 12px; min-width: 100%; }
 .matrix th, .matrix td { padding: 0; border-bottom: 1px solid var(--grid); }
-.matrix thead th { font: 600 11.5px/1.2 var(--mono); color: var(--ink-3); padding: 8px 6px; text-align: left; white-space: nowrap; position: sticky; top: 0; background: var(--surface); }
+.matrix thead th { font: 600 12px/1.2 var(--mono); color: var(--ink-3); padding: 8px 6px; text-align: left; white-space: nowrap; position: sticky; top: 0; background: var(--surface); }
 .matrix tbody th { position: sticky; left: 0; z-index: 1; background: var(--surface); text-align: left; padding: 6px 12px 6px 10px; font-weight: 600; white-space: nowrap; border-right: 1px solid var(--rule); }
-.matrix tbody th small { display: block; font-weight: 400; color: var(--ink-3); font-size: 11.5px; }
-.matrix .stage-row th { font: 650 11.5px/1.2 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); padding-top: 14px; border-right: 0; background: var(--surface); }
+.matrix tbody th small { display: block; font-weight: 400; color: var(--ink-3); font-size: 12px; }
+.matrix .stage-row th { font: 650 12px/1.2 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); padding-top: 14px; border-right: 0; background: var(--surface); }
 .matrix .stage-row td { padding-top: 14px; }
 .matrix td { vertical-align: middle; padding: 3px 4px; border-right: 1px solid var(--grid); }
 .cell { display: flex; flex-wrap: wrap; gap: 2px; width: 100%; min-height: 24px; align-content: center; padding: 3px; background: none; border: 1px solid transparent; border-radius: 2px; cursor: pointer; }
 .cell:hover, .cell[aria-pressed="true"] { border-color: var(--ink-3); background: var(--raised); }
 .cell-empty { color: var(--ink-3); cursor: default; }
-.pending-count { font: 500 11.5px/1 var(--mono); color: var(--ink-3); }
+.pending-count { font: 500 12px/1 var(--mono); color: var(--ink-3); }
 
 /* Marca de estado: la forma distingue el estado sin depender del color. */
 .m { display: inline-block; width: 8px; height: 8px; flex: none; border-radius: 1px; position: relative; }
@@ -431,6 +431,9 @@ td.missing { color: var(--ink-3); font-style: italic; }
   body { font-size: 15px; }
   .bar-inner { flex-wrap: wrap; gap: 8px 12px; padding-block: 8px; }
   .source { order: 3; width: 100%; margin-left: 0; }
+  /* En móvil la antigüedad y la hora de la recogida son lo que más importa de la barra,
+     así que pasan a dos líneas en lugar de cortarse con puntos suspensivos. */
+  .source-age { white-space: normal; }
   .bar-actions { margin-left: auto; }
   #refresh, #import { padding-inline: 9px; }
   .brand-sub { display: none; }

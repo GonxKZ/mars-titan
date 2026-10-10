@@ -15,7 +15,7 @@ import {
 } from "../model.mjs";
 import { ConditionalResource, PageStore, LiveStream, readLimited } from "../sources.mjs";
 import { FrameScheduler, throttle } from "../scheduler.mjs";
-import { stepDecimals, formatTicks, cividis, diverging, withAlpha } from "../charts.mjs";
+import { stepDecimals, stepSpace, formatTicks, cividis, diverging, withAlpha } from "../charts.mjs";
 
 const TIME = "2026-10-06T12:00:00Z";
 
@@ -67,6 +67,9 @@ test("las marcas del eje se distinguen por el paso y no por la magnitud", () => 
   assert.deepEqual(formatTicks([0.01, 0.1, 1], { log: true }), ["0,01", "0,1", "1"]);
   const ticks = formatTicks([-0.1, -0.05, 0, 0.05]);
   assert.equal(new Set(ticks).size, ticks.length);
+  // Un eje hasta el millón de pasos separa más las marcas que uno de 50 épocas.
+  assert.equal(stepSpace(null, 0, 1, 50), 50);
+  assert.ok(stepSpace(null, 0, 1, 1_000_000) >= 9 * 7.5);
 });
 
 test("las escalas de color son monótonas y la divergente es neutra en el centro", () => {

@@ -51,7 +51,7 @@ function events(slice) {
   return [el("strong", { text: "Reloj de la GPU reducido por" }), ...GPU_EVENTS.map(([bit, label, warn]) => {
     const share = known.filter(value => (value & bit) !== 0).length / known.length;
     const now = (latest & bit) !== 0;
-    return el("span", { className: now && warn ? "event-on" : "", text: `${label}: ${now ? "sí" : "no"}, ${fmt.percent(share, 0)} del intervalo` });
+    return el("span", { className: now && warn ? "event-on" : "", text: `${label}: ${now ? "activo" : "inactivo"} ahora, ${fmt.percent(share, 0)} del intervalo` });
   })];
 }
 
