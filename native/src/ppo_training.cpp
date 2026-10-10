@@ -1027,6 +1027,8 @@ PpoEvaluation evaluate_policy(const PpoPolicy& policy, std::vector<simulation::B
                     record.mode = eligible[lane] != 0 ? "greedy" : "warmup";
                     record.learning_allowed = false;
                     record.critic = static_cast<double>(values[lane * width + trace_action_count]);
+                    const auto scores = values.subspan(lane * width, trace_action_count);
+                    std::copy(scores.begin(), scores.end(), record.logits.begin());
                     const auto likelihood = std::span(probabilities.const_data_ptr<float>(), inputs.size() * trace_action_count)
                         .subspan(lane * trace_action_count, trace_action_count);
                     std::copy(likelihood.begin(), likelihood.end(), record.probabilities.begin());

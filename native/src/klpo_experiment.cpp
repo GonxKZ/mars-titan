@@ -614,7 +614,7 @@ Json run_evaluation(const std::filesystem::path& run, const PpoExperimentOptions
     FrozenEvaluationRequest request{options.output, options.resume, nullptr, {},
                                     evaluation_context(config),
                                     config.learning.collection.workers,
-                                    frozen_costs(options.evaluation_costs)};
+                                    frozen_costs(options.evaluation_costs), options.decisions};
     Json tapes = Json::array();
     for (const auto& path : options.audit_tapes) {
         auto tape = load_policy_tape(path, PolicyTapeRole::evaluation, config.environment);
@@ -639,6 +639,7 @@ Json run_evaluation(const std::filesystem::path& run, const PpoExperimentOptions
                             {"seed", config.learning.collection.seed},
                             {"device", options.device},
                             {"diagnostic", options.diagnostic},
+                            {"decisions", options.decisions},
                             {"native_source_sha256", MARS_TITAN_NATIVE_SOURCE_SHA256},
                             {"native_build_sha256", MARS_TITAN_NATIVE_BUILD_SHA256},
                             {"final_test_opened", false}};
