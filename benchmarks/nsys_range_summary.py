@@ -2,9 +2,10 @@
 
 Lee la exportación SQLite de `nsys export --type sqlite`. Una llamada a la API pertenece a un
 rango si empieza dentro de él, y un núcleo o una copia pertenece al rango de la llamada que
-lo lanzó (por su `correlationId`). El tiempo de GPU es la suma de duraciones de núcleos, que
-en un solo stream no se solapan. Con `--repeats N` divide además los totales entre las N
-repeticiones del rango.
+lo lanzó (por su `correlationId`). Con la traza de grafos por defecto de nsys, cada
+`cudaGraphLaunch` aparece como una ejecución completa del grafo, sin sus núcleos. El tiempo
+de GPU suma las duraciones de núcleos y de grafos, que en un solo stream no se solapan. Con
+`--repeats N` divide además los totales entre las N repeticiones del rango.
 
 Uso: `python benchmarks/nsys_range_summary.py EXPORT.sqlite SALIDA.json [--repeats N] RANGO...`
 """
@@ -42,19 +43,27 @@ def summary(path, names, repeats=1):
     calls = db.execute(
         "SELECT start, end, nameId, correlationId FROM CUPTI_ACTIVITY_KIND_RUNTIME"
     ).fetchall()
-    kernels = dict(
-        db.execute("SELECT correlationId, end - start FROM CUPTI_ACTIVITY_KIND_KERNEL").fetchall()
-    )
-    copies = {
-        row[0]: row[1:]
-        for row in db.execute(
-            "SELECT correlationId, copyKind, bytes FROM CUPTI_ACTIVITY_KIND_MEMCPY"
-        ).fetchall()
-    }
+    kernels = {}
+    for correlation, duration in db.execute(
+        "SELECT correlationId, end - start FROM CUPTI_ACTIVITY_KIND_KERNEL"
+    ):
+        count, total = kernels.get(correlation, (0, 0))
+        kernels[correlation] = (count + 1, total + duration)
+    graphs = {}
+    for correlation, duration in db.execute(
+        "SELECT correlationId, end - start FROM CUPTI_ACTIVITY_KIND_GRAPH_TRACE"
+    ):
+        count, total = graphs.get(correlation, (0, 0))
+        graphs[correlation] = (count + 1, total + duration)
+    copies = {}
+    for correlation, kind, size in db.execute(
+        "SELECT correlationId, copyKind, bytes FROM CUPTI_ACTIVITY_KIND_MEMCPY"
+    ):
+        copies.setdefault(correlation, []).append((kind, size))
     result = {}
     for name, (begin, finish) in _ranges(db, names).items():
         api, api_ns = Counter(), Counter()
-        kernel_count = kernel_ns = 0
+        kernel_count = kernel_ns = graph_count = graph_ns = 0
         copy_count, copy_bytes = Counter(), Counter()
         for start, end, name_id, correlation in calls:
             if not begin <= start <= finish:
@@ -62,11 +71,13 @@ def summary(path, names, repeats=1):
             call = strings.get(name_id, str(name_id)).split("_v")[0]
             api[call] += 1
             api_ns[call] += end - start
-            if correlation in kernels:
-                kernel_count += 1
-                kernel_ns += kernels[correlation]
-            if correlation in copies:
-                kind, size = copies[correlation]
+            count, duration = kernels.get(correlation, (0, 0))
+            kernel_count += count
+            kernel_ns += duration
+            count, duration = graphs.get(correlation, (0, 0))
+            graph_count += count
+            graph_ns += duration
+            for kind, size in copies.get(correlation, ()):
                 label = kinds.get(kind, str(kind))
                 copy_count[label] += 1
                 copy_bytes[label] += size
@@ -76,7 +87,9 @@ def summary(path, names, repeats=1):
             wall_ms_per_repeat=round(wall / repeats / 1e6, 4),
             kernels_per_repeat=round(kernel_count / repeats, 2),
             kernel_ms_per_repeat=round(kernel_ns / repeats / 1e6, 4),
-            gpu_kernel_fraction=round(kernel_ns / wall, 4) if wall else None,
+            graphs_per_repeat=round(graph_count / repeats, 2),
+            graph_ms_per_repeat=round(graph_ns / repeats / 1e6, 4),
+            gpu_busy_fraction=round((kernel_ns + graph_ns) / wall, 4) if wall else None,
             api_calls_per_repeat={
                 call: dict(
                     count=round(count / repeats, 2),

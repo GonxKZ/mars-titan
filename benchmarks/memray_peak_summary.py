@@ -2,7 +2,10 @@
 
 Funciona con capturas completas y agregadas (`memray run --aggregate`). Cada reserva viva en
 el pico se atribuye a su marco más interno de `mars_titan` o de `benchmarks` (si no hay
-ninguno, al marco más interno) y a la biblioteca de su marco de Python más interno.
+ninguno, al marco más interno), a la biblioteca de su marco de Python más interno y a su
+función de reserva (malloc, mmap...). memray cuenta el tamaño pedido, no las páginas
+residentes, así que en un proceso con CUDA el pico incluye reservas virtuales del
+controlador y del runtime que no ocupan memoria física.
 
 Uso: `python benchmarks/memray_peak_summary.py CAPTURA.bin SALIDA.json`
 """
@@ -12,7 +15,7 @@ import sys
 from collections import Counter
 from pathlib import Path
 
-from memray import FileReader
+from memray import AllocatorType, FileReader
 
 TOP = 15
 LIBRARIES = ("torch", "numpy", "mars_titan", "benchmarks", "memray")
@@ -31,7 +34,8 @@ def _library(path):
 
 def summary(path):
     reader = FileReader(path)
-    places, libraries = Counter(), Counter()
+    places, libraries, allocators = Counter(), Counter(), Counter()
+    names = {kind.value: kind.name for kind in AllocatorType}
     total = 0
     for record in reader.get_high_watermark_allocation_records(merge_threads=True):
         stack = record.stack_trace()
@@ -43,6 +47,7 @@ def summary(path):
         place = f"{own[0]} ({_short(own[1])}:{own[2]})" if own else "sin pila de Python"
         places[place] += record.size
         libraries[_library(stack[0][1]) if stack else "sin pila de Python"] += record.size
+        allocators[names.get(int(record.allocator), str(record.allocator))] += record.size
     metadata = reader.metadata
     return dict(
         capture=Path(path).name,
@@ -51,6 +56,7 @@ def summary(path):
         live_at_peak_bytes=total,
         total_allocations=metadata.total_allocations,
         by_library=dict(libraries.most_common()),
+        by_allocator=dict(allocators.most_common()),
         top_places=[dict(place=key, bytes=value) for key, value in places.most_common(TOP)],
     )
 
