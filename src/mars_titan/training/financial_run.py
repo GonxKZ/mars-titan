@@ -23,6 +23,7 @@ from pathlib import Path
 
 import torch
 
+from mars_titan import nvtx_ranges
 from mars_titan.budget_training import validate_loss
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.evaluation.session_metrics import SessionErrors
@@ -406,8 +407,10 @@ class ChronologicalInference:
         accumulate = grad and self.recipe.accumulation_rows is not None
         if grad and run.instants == 0 and predictor.config.variant == "mac_frozen":
             self._anchor_frozen(run.flows)
-        validated = [validated_cpu_batch(raw, specification) for raw in event.inputs]
-        plan = self._control_plan(run, source, event, validated) if self.penalized else {}
+        with nvtx_ranges.phase("titans.validate"):
+            validated = [validated_cpu_batch(raw, specification) for raw in event.inputs]
+        with nvtx_ranges.phase("titans.control_plan"):
+            plan = self._control_plan(run, source, event, validated) if self.penalized else {}
         measured, emitted = [], []
         for cpu in validated:
             batch = DecisionBatch.from_validated(
@@ -423,7 +426,7 @@ class ChronologicalInference:
                         run.starts[flow] = None if flow in new else run.flows.handle(flow)
                 run.segment.append((batch, plan))
             state = run.flows.gather(batch.flow_ids)
-            with torch.set_grad_enabled(grad):
+            with nvtx_ranges.phase("titans.prepare"), torch.set_grad_enabled(grad):
                 prepared = predictor.prepare(batch, state, differentiable=grad, **plan)
             result = prepared.local_control
             if result is not None:
@@ -444,9 +447,11 @@ class ChronologicalInference:
                     run.graphs[key] = _REPLAY if accumulate else graphs[row]
             emitted.append((batch, prepared))
             run.counters["predictions"] += size
-        self._emit(run, source, emitted)
+        with nvtx_ranges.phase("titans.emit"):
+            self._emit(run, source, emitted)
         if measured:
-            self._penalty(run, measured, keep=grad, replay=accumulate)
+            with nvtx_ranges.phase("titans.penalty"):
+                self._penalty(run, measured, keep=grad, replay=accumulate)
         if event.inputs and not warmup:
             run.instants += 1
 
@@ -881,20 +886,23 @@ class ChronologicalTrainer(ChronologicalInference):
     def _update(self, run, at):
         """Un paso con las etiquetas maduras del tramo y truncamiento de todos los flujos."""
         if run.predictions:
-            loss = self._replay(run) if self.recipe.accumulation_rows else self._backward(run)
+            with nvtx_ranges.phase("titans.backward"):
+                loss = self._replay(run) if self.recipe.accumulation_rows else self._backward(run)
             if run.penalties:
                 run.counters["control_groups_in_objective"] = run.counters.get(
                     "control_groups_in_objective", 0
                 ) + len(run.penalties)
-            torch.nn.utils.clip_grad_norm_(
-                self.predictor.parameters(),
-                self.recipe.max_grad_norm or math.inf,
-                error_if_nonfinite=True,
-            )
-            self.optimizer.step()
-            self.optimizer.zero_grad(set_to_none=True)
-            # El paso es la única modificación admitida de los parámetros. Se sella de nuevo.
-            self.predictor._seal_parameters()
+            with nvtx_ranges.phase("titans.clip"):
+                torch.nn.utils.clip_grad_norm_(
+                    self.predictor.parameters(),
+                    self.recipe.max_grad_norm or math.inf,
+                    error_if_nonfinite=True,
+                )
+            with nvtx_ranges.phase("titans.optimizer"):
+                self.optimizer.step()
+                self.optimizer.zero_grad(set_to_none=True)
+                # El paso es la única modificación admitida de los parámetros. Se sella de nuevo.
+                self.predictor._seal_parameters()
             self.global_step += 1
             run.counters["updates"] += 1
             run.counters["labels_in_loss"] += len(run.predictions)
@@ -907,7 +915,8 @@ class ChronologicalTrainer(ChronologicalInference):
                 "control_groups_discarded", 0
             ) + len(run.penalties)
         parameter_id = self.predictor._parameter_id
-        run.flows.detach(parameter_id)
+        with nvtx_ranges.phase("titans.truncate"):
+            run.flows.detach(parameter_id)
         run.penalties.clear()
         run.graphs.clear()
         run.predictions.clear()
@@ -932,15 +941,20 @@ class ChronologicalTrainer(ChronologicalInference):
         predictor, source = self.predictor, self.train
         predictor.train()
         start, stage = cursor["event"], cursor["stage"]
-        events = source.batched_events(start_cursor=start, block_rows=self.recipe.block_rows)
+        events = nvtx_ranges.iterate(
+            "titans.read",
+            source.batched_events(start_cursor=start, block_rows=self.recipe.block_rows),
+        )
         since, last = 0, time.perf_counter()
         for index, event in enumerate(events, start):
             if not (index == start and stage == "inputs"):
-                self._labels(run, event, train=True)
+                with nvtx_ranges.phase("titans.labels"):
+                    self._labels(run, event, train=True)
                 decision = bool(event.inputs) and event.at >= source.phase.decision_start
                 if (decision and run.instants == self.recipe.truncation) or event.close_phase:
                     before = self.global_step
-                    self._update(run, event.at)
+                    with nvtx_ranges.phase("titans.update"):
+                        self._update(run, event.at)
                     since += self.global_step - before
                     if event.close_phase:
                         self._close(run)
@@ -950,12 +964,14 @@ class ChronologicalTrainer(ChronologicalInference):
                         or since >= self.recipe.checkpoint_updates
                         or time.perf_counter() - last >= self.recipe.checkpoint_seconds
                     ):
-                        save(dict(cursor, event=index, stage="inputs"), run)
+                        with nvtx_ranges.phase("titans.checkpoint"):
+                            save(dict(cursor, event=index, stage="inputs"), run)
                         since, last = 0, time.perf_counter()
                         if stop.requested:
                             raise Paused
             if event.inputs:
-                self._observe(run, source, event, differentiable=True)
+                with nvtx_ranges.phase("titans.observe"):
+                    self._observe(run, source, event, differentiable=True)
         raise ValueError("El recorrido de ajuste terminó sin su cierre declarado")
 
     def _export(self, run):

@@ -300,9 +300,7 @@ class Session:
         if maximum <= 0 or remaining_time <= 0:
             raise ValueError("Presupuesto de bytes o tiempo agotado")
         try:
-            # Los validadores solo se pasan si existen, como quinto argumento opcional.
-            extra = (conditions,) if conditions else ()
-            body, metadata = fetch_url(url, maximum, remaining_time, self.user_agent, *extra)
+            body, metadata = fetch_url(url, maximum, remaining_time, self.user_agent, conditions)
             status = int(metadata.get("http_status") or 0)
             if not (200 <= status < 300 or (status == 304 and conditions)):
                 raise FetchError("Estado HTTP no satisfactorio", metadata)

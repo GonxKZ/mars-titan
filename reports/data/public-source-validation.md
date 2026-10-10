@@ -83,7 +83,23 @@ Las fuentes macro remiten a la edición histórica (MT-056) cuando el catálogo 
 
 ## Condiciones de uso
 
-Las condiciones se contrastaron en las páginas del productor el 18 de septiembre de 2026 y figuran en `rights` y `terms_url` de cada fuente. No se han vuelto a revisar en esta reconciliación. Trece fuentes mantienen `license_unknown=true`. El BCE es la excepción, con reutilización bajo exactitud, atribución y declaración de cambios. El acceso gratuito no se interpreta como permiso de redistribución, la licencia MIT del proyecto no cubre estos datos y los archivos siguen fuera de Git.
+Las condiciones se volvieron a leer en las páginas de cada productor el 10 de octubre de 2026. El campo `terms_review` del catálogo guarda la fecha, las páginas consultadas, el estado de la revisión, lo que permiten para el uso local y para la redistribución, y un resumen de sus condiciones. La reconciliación exige esa revisión en las catorce fuentes, rechaza un uso admitido para exploración local si las condiciones no lo permiten y comprueba que `license_unknown` solo sea falso cuando la redistribución con atribución está verificada.
+
+| Fuente | Revisión | Uso local | Redistribución | Condición principal |
+| --- | --- | --- | --- | --- |
+| FRED-MD y FRED-QD | Verificada en los términos de FRED y del St. Louis Fed | Personal, educativo y no comercial | No concedida | Las series con copyright de terceros solo admiten ese uso sin permiso del propietario. El panel no tiene una licencia única |
+| French diario | Sin declaración | No declarado | No concedida | Solo figura el copyright de Fama y French. Por eso su uso sigue pendiente |
+| BCE USD/EUR | Verificada | Permitido | Con atribución | Reproducción exacta, cita del BCE y declaración de modificaciones |
+| GSCPI (XLSX y CSV) | Verificada | Permitido | Con atribución | Licencia no exclusiva del New York Fed con aviso, atribución, cambios marcados y mismas condiciones |
+| Cboe VIX | Verificada | No declarado | No concedida | Materiales protegidos sin licencia sobre los datos |
+| Treasury | Sin declaración del Departamento | Permitido por 17 U.S.C. § 105 | Sin verificar | La ley excluye del copyright las obras federales, pero el feed no lo confirma y parte de cotizaciones de mercado |
+| SEC (dos API) | Página no accesible (HTTP 403) | Sin verificar | Sin verificar | No se conserva ningún archivo |
+| GDELT | Verificada | Permitido | Con atribución | Uso libre citando el proyecto. Los derechos de los medios sobre titulares siguen aparte |
+| RSS de la Fed | Verificada | Permitido | Con atribución | Dominio público salvo indicación contraria, citando a la Junta |
+| Apple Q3 FY2026 | Verificada | Personal y no comercial | No concedida | Sin modificar, sin retirar avisos y sin publicar copias |
+| Stooq | Bloqueada antes de las condiciones | Sin verificar | Sin verificar | No se conservan precios |
+
+Nueve fuentes mantienen `license_unknown=true` porque no tienen un permiso de redistribución verificado. Las que quedan admitidas para exploración local (FRED-MD, FRED-QD, Treasury, la matriz GSCPI y el PDF de Apple) tienen condiciones que permiten ese uso. Ninguna copia se redistribuye: los archivos siguen fuera de Git, el acceso gratuito no equivale a una licencia y la licencia MIT del proyecto no cubre estos datos.
 
 ## Lo que no cambia
 

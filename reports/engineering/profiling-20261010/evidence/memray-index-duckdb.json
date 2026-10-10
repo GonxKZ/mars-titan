@@ -1,0 +1,31 @@
+{
+ "capture": "index-memray.bin",
+ "function": "_ordered_parquet",
+ "bytes": 1297332195,
+ "split": [
+  {
+   "family": "metadatos Parquet (FileMetaData::read)",
+   "bytes": 613800654,
+   "share": 0.4731252769071995,
+   "allocations": 2827486
+  },
+  {
+   "family": "lector Parquet (resto)",
+   "bytes": 511540868,
+   "share": 0.3943021455657315,
+   "allocations": 3084385
+  },
+  {
+   "family": "gestor de bloques de DuckDB",
+   "bytes": 169114717,
+   "share": 0.13035575441030353,
+   "allocations": 11823
+  },
+  {
+   "family": "otros",
+   "bytes": 2875956,
+   "share": 0.0022168231167654017,
+   "allocations": 14495
+  }
+ ]
+}

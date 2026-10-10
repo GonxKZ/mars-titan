@@ -32,6 +32,15 @@ MARS_TITAN_REQUIRE_NATIVE=1 \
 
 La orden necesita los cinco binarios declarados como en la [suite completa](#binarios-nativos). Si falta alguno, si una ruta no existe o si el enlace episódico no carga, el modo estricto termina con un error de uso. Con `MARS_TITAN_REQUIRE_NATIVE=0` o sin la variable, el comportamiento es el de la suite CPU.
 
+Las paridades con bibliotecas externas (PEFT, scoringrules, MAPIE y sb3-contrib) llevan la marca `external_reference` y necesitan el grupo de dependencias `reference`, que no forma parte del entorno de ejecución. Sin el grupo se omiten con su motivo. `MARS_TITAN_REQUIRE_REFERENCE=1` exige el grupo con las versiones exactas de `pyproject.toml` antes de recoger pruebas y convierte en fallo cualquier omisión de una prueba marcada:
+
+```bash
+uv sync --locked --group reference
+MARS_TITAN_REQUIRE_REFERENCE=1 uv run --locked pytest -q -rs -m external_reference
+```
+
+Una prueba con las dos marcas, como la que compara el núcleo QR-DQN con sb3-contrib, solo falla por omitirse si se exigen las dos cosas. Esa prueba también necesita `rl_variety_tests` junto a `mars-titan-ppo`, que la comprobación del inicio no exige, así que con `MARS_TITAN_REQUIRE_NATIVE=1` la ausencia de ese ejecutable la hace fallar aunque no se exija el grupo.
+
 Cada prueba protege una propiedad concreta. La cobertura y las pruebas de mutación ayudan a localizar lógica poco comprobada, pero no sustituyen los casos de comportamiento ni acreditan por sí solas la reproducibilidad de un entrenamiento.
 
 ## Protección del aprendizaje
@@ -85,7 +94,7 @@ La suite general omite con su motivo las pruebas que necesitan un binario nativo
 Se prepara un entorno propio con todos los extras, sin tocar otros entornos del equipo:
 
 ```bash
-uv sync --locked --all-extras
+uv sync --locked --all-extras --group reference
 uv run --locked python -c "import torch; print(torch.__version__, torch.cuda.is_available())"
 ```
 
@@ -126,12 +135,12 @@ export MARS_TITAN_KLPO_EXECUTABLE=$B/native-ppo-release/mars-titan-klpo
 
 ### Modo estricto
 
-`MARS_TITAN_REQUIRE_NATIVE=1` detiene la sesión antes de recoger pruebas si falta declarar alguno de los cinco binarios, si su ruta no existe o si el enlace episódico no carga, por ejemplo porque se compiló con otro PyTorch. Durante la sesión, una prueba marcada con `native_binding` que se omite cuenta como fallo. `MARS_TITAN_REQUIRE_CUDA=1` detiene la sesión si CUDA no está visible. Así un binario sin compilar o una GPU no disponible no se confunden con omisiones esperadas. Fuera de este modo las pruebas que dependen de CUDA usan `requires_cuda` de `tests/suite_support.py` y se omiten con su motivo, sin pasar nunca a CPU.
+`MARS_TITAN_REQUIRE_NATIVE=1` detiene la sesión antes de recoger pruebas si falta declarar alguno de los cinco binarios, si su ruta no existe o si el enlace episódico no carga, por ejemplo porque se compiló con otro PyTorch. Durante la sesión, una prueba marcada con `native_binding` que se omite cuenta como fallo. `MARS_TITAN_REQUIRE_REFERENCE=1` hace lo mismo con el grupo `reference` y la marca `external_reference`. `MARS_TITAN_REQUIRE_CUDA=1` detiene la sesión si CUDA no está visible. Así un binario sin compilar o una GPU no disponible no se confunden con omisiones esperadas. Fuera de este modo las pruebas que dependen de CUDA usan `requires_cuda` de `tests/suite_support.py` y se omiten con su motivo, sin pasar nunca a CPU.
 
 ### Parte CPU
 
 ```bash
-export OMP_NUM_THREADS=2 MKL_NUM_THREADS=2 CUDA_VISIBLE_DEVICES=-1 MARS_TITAN_REQUIRE_NATIVE=1
+export OMP_NUM_THREADS=2 MKL_NUM_THREADS=2 CUDA_VISIBLE_DEVICES=-1 MARS_TITAN_REQUIRE_NATIVE=1 MARS_TITAN_REQUIRE_REFERENCE=1
 for part in data models training simulation memory posttraining evaluation environments episodes calibration cm native tooling; do
   uv run --locked pytest -q -rs tests/$part \
     --ignore=tests/models/test_boosting_selection.py \
