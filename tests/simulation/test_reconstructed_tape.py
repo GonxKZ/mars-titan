@@ -327,9 +327,10 @@ def test_the_reader_segment_is_the_one_the_policy_stage_builds():
 def test_in_sample_segments_cannot_feed_a_tape(edition):
     symbols = [a.symbol for a in US]
     # La calibración usa etiquetas que el predictor ya consultó: sus predicciones no valen.
+    # El lector rechaza el tramo antes de comparar cada fin de ajuste con su decisión.
     calibration = predictions("US", symbols, start="2022-10-01", end="2022-12-31")
     window = evaluation_window("US", calibration, partition="calibration")
-    with pytest.raises(ValueError, match="ajuste anterior"):
+    with pytest.raises(ValueError, match="solo lleva predicciones de evaluación"):
         build(edition, windows=[window], predictions=[calibration], segment="calibration")
     with pytest.raises(ValueError, match="etiqueta usada"):
         evaluation_window("US", calibration, until=microseconds("2023-01-01"))
