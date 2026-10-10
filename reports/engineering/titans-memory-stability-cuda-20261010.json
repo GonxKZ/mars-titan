@@ -1,0 +1,33 @@
+{
+ "schema_version": 1,
+ "kind": "titans_memory_stability_cuda_check",
+ "issue": 453,
+ "recorded_on": "2026-10-10",
+ "commit": "d642e2069c6b3210eea19243b32b830a4e427840",
+ "command": "memslot gpu -- uv run --extra cuda --extra data --extra research pytest -q -s tests/models/titans/cuda_memory_stability_check.py",
+ "check_sha256": "d0f716a05493e3b2e148770fbc785994d7382cd465bf5517b0f168998e27540a",
+ "result": "1 passed in 14.20s",
+ "checks": [
+  "memoria y predictor sin PT1 con huellas FP32 de cuda:0 capturadas en 42e7dbca, bit a bit",
+  "PT1 activa: dos ejecuciones CUDA idénticas bit a bit",
+  "PT1 activa: CPU frente a CUDA con rtol 2e-4 y atol 2e-5",
+  "caja de puertas y cota de la Proposición 5 en cuda:0 con 240 tokens de escala 60"
+ ],
+ "precision": "float32 sin TF32",
+ "optimizer_steps": 0,
+ "hardware": "NVIDIA GeForce RTX 4070 Laptop GPU, 8188 MiB, 488 MiB",
+ "torch": "2.14.0+cu130",
+ "cpu_cuda_max_abs_difference": {
+  "memory": {
+   "read": 2.2649765014648438e-06,
+   "state": 7.748603820800781e-07,
+   "gradients": 0.000133514404296875
+  },
+  "financial": {
+   "quantiles": 1.1920928955078125e-07,
+   "state": 4.76837158203125e-07,
+   "gradients": 8.469214662909508e-09
+  }
+ },
+ "peak_allocated_bytes": 19849216
+}
