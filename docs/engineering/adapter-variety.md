@@ -366,6 +366,8 @@ Con esos órdenes de magnitud, la matriz declara la propuesta por ámbitos:
 
 Las cifras son del ámbito conjunto US+CN. La etapa A declara además US y CN por separado, cuyas filas suman aproximadamente las del conjunto, así que el total con los tres ámbitos rondaría el doble. Las horas de Titans-MAC son una cota inferior porque no incluyen el calentamiento de cada tramo predicho.
 
+La [etapa A](../../configs/posttraining/historical-masked-adapter-stage-a.json) declara la matriz v3 desde [#483](https://github.com/GonxKZ/mars-titan/pull/483), así que ya programa esta propuesta. Cada brazo añade 126 ajustes (42 ventanas con postentrenamiento por tres semillas): 504 en cada familia recurrente y en DLinear, 756 en el Transformer compacto y 378 en `mac_online`, 3.150 en total. Los ajustes de la etapa pasan de 7.182 a 10.332 y su límite declarado se fijó con `count_stage`, igual que el plan. Los padres congelados (1.302) y las selecciones de la cadena (1.395) no cambian, porque dependen de los brazos base y no de sus casos.
+
 Los recibos completos de la medida (entorno, instantáneas de la GPU antes y después, caudales y picos por caso y repetición) quedan fuera del repositorio, en `~/.local/state/mars-titan/session-scratch-20261009/adapter-variety-cost/`, como los demás recibos de medidas de la sesión.
 
 
@@ -389,7 +391,7 @@ La mutación dirigida aplicó de uno en uno 27 defectos a la lógica nueva, sobr
 
 ## Pendiente
 
-- Proponer la etapa que use la matriz v3 con los brazos de la variedad y recalcular sus límites de trabajos con el coste medido.
+- Rehacer la estimación de disco de la etapa de adaptadores con los nuevos recuentos. Cada ventana tiene un 44 % más de ajustes (82 casos por ventana y semilla en lugar de 57) y cada uno conserva sus tablas por fila hasta la selección de la cadena, y el informe de la retención v2 ya señalaba que las tablas compactadas de los adaptadores no caben sin agregados y una regeneración propia.
 - Implementar y declarar el control de continuación con decaimiento anclado (L2-SP).
 - Medir el coste de los lectores con `core_persistent`, que esta medición no recorre.
 - Ejecutar la matriz tras verificar la edición y levantar el bloqueo. No hay mejoras predictivas medidas de ningún brazo.
