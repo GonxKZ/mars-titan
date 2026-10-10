@@ -10,6 +10,7 @@ import numpy as np
 import pytest
 import torch
 
+from mars_titan.data.storage import atomic_json
 from mars_titan.training import kernel_policy as policy
 from mars_titan.training import reference_run
 
@@ -46,8 +47,12 @@ def restore_numerics(monkeypatch):
     torch.backends.cudnn.benchmark = flags[4]
 
 
-def first_report(tmp_path, monkeypatch, case):
-    """Recorrer `run_reference_case` en CPU hasta su primer informe y devolverlo."""
+def first_report(tmp_path, monkeypatch, case, *, batch_size=16, write=False, resume=False):
+    """Recorrer `run_reference_case` en CPU hasta su primer informe y devolverlo.
+
+    Con `write`, el informe se escribe antes de detenerse. Con `resume`, el recorrido se
+    detiene justo después de aceptar el informe escrito, si su identidad coincide.
+    """
     batch = dict(
         inputs={
             name: np.zeros((2, 8, size) if name == "prices" else (2, size), np.float32)
@@ -68,8 +73,15 @@ def first_report(tmp_path, monkeypatch, case):
     )
 
     def stop(path, report):
+        if write:
+            atomic_json(path, report)
         raise Reached(report)
 
+    def resumed(*_):
+        raise Reached("reanudada")
+
+    if resume:
+        monkeypatch.setattr(reference_run, "bind_joint_epoch", resumed)
     monkeypatch.setattr(reference_run, "require_learning_allowed", lambda _: None)
     monkeypatch.setattr(reference_run, "require_cuda", lambda: torch.device("cpu"))
     monkeypatch.setattr(reference_run, "configured_corpus", lambda *_, **__: dataset)
@@ -77,8 +89,11 @@ def first_report(tmp_path, monkeypatch, case):
     monkeypatch.setattr(torch.cuda, "get_device_name", lambda *_: "prueba")
     monkeypatch.setattr(torch.optim.AdamW, "step", lambda *_: pytest.fail("paso del optimizador"))
     with pytest.raises(Reached) as reached:
-        reference_run.run_reference_case(tmp_path / "manifest.json", tmp_path / "run", case)
-    return reached.value.args[0]["identity"]
+        reference_run.run_reference_case(
+            tmp_path / "manifest.json", tmp_path / "run", case, batch_size=batch_size, resume=resume
+        )
+    value = reached.value.args[0]
+    return value if resume else value["identity"]
 
 
 def test_case_without_precision_keeps_the_process_numerics_and_identity(tmp_path, monkeypatch):
@@ -159,3 +174,25 @@ def test_a_numeric_change_after_starting_is_caught_before_saving(tmp_path, monke
             tmp_path / "run",
             dict(CASE, precision=policy.FP32_STRICT),
         )
+
+
+@pytest.mark.parametrize(
+    ("case", "batch_size"),
+    [
+        (dict(CASE, precision=policy.FP32_STRICT), 32),
+        (dict(CASE), 16),
+        (dict(CASE, precision=policy.FP32_STRICT, cuda_graphs=True), 16),
+    ],
+    ids=["other_batch", "without_precision", "with_graphs"],
+)
+def test_resume_keeps_the_batch_precision_and_graph_step_it_started_with(
+    tmp_path, monkeypatch, case, batch_size
+):
+    declared = dict(CASE, precision=policy.FP32_STRICT)
+    first_report(tmp_path, monkeypatch, declared, write=True)
+    assert (tmp_path / "run/run.json").is_file()
+    # Con las mismas opciones, la reanudación acepta el informe y sigue.
+    assert first_report(tmp_path, monkeypatch, declared, resume=True) == "reanudada"
+    # Cualquier opción distinta cambia la identidad y la reanudación se rechaza.
+    with pytest.raises(ValueError, match="identidad o configuración"):
+        first_report(tmp_path, monkeypatch, case, batch_size=batch_size, resume=True)
