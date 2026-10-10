@@ -39,9 +39,11 @@ from tests.training.test_mars_titan_run import native as native
 
 ROOT = Path(__file__).resolve().parents[2]
 MATRIX_PATH = ROOT / "configs/posttraining/adapter-matrix-v3.json"
+# Brazos propuestos en las referencias y, por su coste, solo tres en Titans-MAC `mac_online`.
 CAMPAIGN = {
     "fusion": ["fusion_dora", "fusion_ia3", "fusion_parallel_adapter", "bias"],
     "readout": ["fusion_dora", "readout_dora", "fusion_ia3", "readout_ia3"],
+    "titans": ["fusion_parallel_adapter", "bias", "persistent"],
 }
 
 
@@ -85,18 +87,28 @@ def test_the_matrix_declares_each_variety_arm_where_its_point_exists(matrix):
         variant: ids(cm.arms(document, "titans_mac", variant=variant))
         for variant in cm.TITANS_VARIANTS
     }
-    assert titans["transformer_direct"] == titans["mac_disabled"] == recurrent
-    reading = [*full, *CAMPAIGN["readout"], "fusion_parallel_adapter", "bias", "persistent"]
-    assert titans["mac_frozen"] == titans["mac_online"] == reading
+    assert titans["transformer_direct"] == titans["mac_disabled"] == base
+    assert titans["mac_frozen"] == full
+    assert titans["mac_online"] == [*full, *CAMPAIGN["titans"]]
+    # En reserva, cada variante recibe todos los brazos cuyo punto existe en ella.
+    reserve = {
+        variant: ids(cm.arms(document, "titans_mac", variant=variant, reserve=True))
+        for variant in cm.TITANS_VARIANTS
+    }
+    fusion = ["fusion_dora", "fusion_ia3", "fusion_parallel_adapter", "fusion_serial_adapter"]
+    assert reserve["transformer_direct"] == [*base, *fusion, "bias", "norm"]
+    every = [arm["id"] for arm in document["variety"]["arms"]]
+    assert reserve["mac_frozen"] == reserve["mac_online"] == [*full, *every]
     for family in ("mars_titan", "cm_v1"):
         assert ids(cm.arms(document, family)) == [
             "core",
             "episodic_readout",
             "core+episodic_readout",
-            "core_persistent",
         ]
-        assert ids(cm.arms(document, family, bank=False)) == ["core", "core_persistent"]
+        assert ids(cm.arms(document, family, reserve=True))[-1] == "core_persistent"
+        assert ids(cm.arms(document, family, bank=False)) == ["core"]
     assert ids(cm.arms(document, "episodic_gru")) == ["head"]
+    assert ids(cm.arms(document, "episodic_gru", reserve=True)) == ["head"]
 
 
 def _mutated(document, change):
@@ -124,7 +136,7 @@ MUTATIONS = {
                     form="parallel_adapter", rank=4, alpha=4.0, invalidates=["attention_outputs"]
                 )
             ),
-            campaign=False,
+            campaign=[],
         )
     ),
     "rank too large": lambda v: _arm(v, "fusion_dora")["overrides"]["fusion"].update(rank=65),
@@ -136,7 +148,18 @@ MUTATIONS = {
     "selective override": lambda v: _arm(v, "bias").update(
         overrides=dict(bias=dict(form="residual", invalidates=["cached_parent_predictions"]))
     ),
-    "proposal not boolean": lambda v: _arm(v, "bias").update(campaign="yes"),
+    "proposal not a list": lambda v: _arm(v, "bias").update(campaign=True),
+    "unknown scope": lambda v: _arm(v, "bias").update(campaign=["everything"]),
+    "repeated scope": lambda v: _arm(v, "bias").update(campaign=["references", "references"]),
+    "unknown variant": lambda v: _arm(v, "bias").update(campaign=["titans_mac:mac_unknown"]),
+    "persistent in references": lambda v: _arm(v, "persistent").update(campaign=["references"]),
+    "persistent without memory": lambda v: _arm(v, "persistent").update(
+        campaign=["titans_mac:mac_disabled"]
+    ),
+    "readout without memory": lambda v: _arm(v, "readout_dora").update(
+        campaign=["titans_mac:transformer_direct"]
+    ),
+    "reader not declared": lambda v: _arm(v, "bias").update(campaign=["readers"]),
     "missing reason": lambda v: v["inapplicable"].pop("persistent"),
     "short reason": lambda v: v["inapplicable"].update(norm="no aplica"),
     "unused reason": lambda v: (

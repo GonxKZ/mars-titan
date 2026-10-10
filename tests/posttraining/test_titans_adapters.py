@@ -111,15 +111,13 @@ def posttrainer(streams, output, model, *, declared=None, **options):
 
 
 def test_matrix_v3_declares_the_titans_arms_of_each_variant(matrix):
-    # Brazos de la variedad (#444) propuestos para la campaña en cada variante.
-    fusion = ["fusion_dora", "fusion_ia3", "fusion_parallel_adapter", "bias"]
-    reading = ["fusion_dora", "readout_dora", "fusion_ia3", "readout_ia3"]
-    reading += ["fusion_parallel_adapter", "bias", "persistent"]
+    # Por su coste, la variedad (#444) solo propone tres brazos en `mac_online`.
     expected = {
-        "transformer_direct": ["head", "fusion", "head+fusion", "fusion_full_rank", *fusion],
-        "mac_disabled": ["head", "fusion", "head+fusion", "fusion_full_rank", *fusion],
-        "mac_frozen": [arm["id"] for arm in matrix["arms"]] + reading,
-        "mac_online": [arm["id"] for arm in matrix["arms"]] + reading,
+        "transformer_direct": ["head", "fusion", "head+fusion", "fusion_full_rank"],
+        "mac_disabled": ["head", "fusion", "head+fusion", "fusion_full_rank"],
+        "mac_frozen": [arm["id"] for arm in matrix["arms"]],
+        "mac_online": [arm["id"] for arm in matrix["arms"]]
+        + ["fusion_parallel_adapter", "bias", "persistent"],
     }
     assert {variant: list(arm_points(matrix, variant)) for variant in VARIANTS} == expected
     titans = matrix["architectures"]["chronological"]["titans_mac"]

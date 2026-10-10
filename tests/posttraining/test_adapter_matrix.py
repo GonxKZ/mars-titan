@@ -361,15 +361,16 @@ def test_third_version_only_adds_the_chronological_designs_and_the_variety():
             for item in adapter_matrix.cases(third, digest, family, head="quantile_head_v1")
             if item["id"].split("/", 1)[1] not in variety
         ] == adapter_matrix.cases(second, digest, family, head="quantile_head_v1")
-    # Casos por semilla: los de #446 más los brazos de la variedad propuestos en cada familia.
+    # Casos por semilla: los de #446 más los tres brazos de la variedad que se proponen en
+    # `mac_online`. Las demás variantes y los lectores los tienen solo como reserva.
     per_seed = {
-        ("titans_mac", "transformer_direct", True): 5 + 4,
-        ("titans_mac", "mac_disabled", True): 5 + 4,
-        ("titans_mac", "mac_frozen", True): 9 + 7,
-        ("titans_mac", "mac_online", True): 9 + 7,
-        ("mars_titan", None, True): 4 + 1,
-        ("mars_titan", None, False): 2 + 1,
-        ("cm_v1", None, True): 4 + 1,
+        ("titans_mac", "transformer_direct", True): 5,
+        ("titans_mac", "mac_disabled", True): 5,
+        ("titans_mac", "mac_frozen", True): 9,
+        ("titans_mac", "mac_online", True): 9 + 3,
+        ("mars_titan", None, True): 4,
+        ("mars_titan", None, False): 2,
+        ("cm_v1", None, True): 4,
         ("episodic_gru", None, True): 2,
     }
     seeds = len(third["budget"]["seeds"])

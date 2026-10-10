@@ -9,9 +9,13 @@ estructura de #364, con el mismo presupuesto, los mismos objetivos y la misma se
   la memoria persistente de Titans-MAC, que es su prefijo aprendido.
 
 Cada brazo se aplica a las familias donde existe su punto. Un punto que falta en alguna
-familia necesita un motivo escrito en la matriz. `campaign` separa los brazos propuestos
-para la campaña de los que quedan implementados y comprobados como reserva: la selección
-de brazos forma parte de la matriz, de su huella y de la identidad de cada ajuste.
+familia necesita un motivo escrito en la matriz. `campaign` enumera los ámbitos donde el
+brazo se propone para la campaña: las referencias neuronales, cada variante de Titans-MAC
+o los núcleos de los lectores. En la vista conjunta, un caso de Titans-MAC cuesta entre 13 y
+104 veces uno de una referencia, así que un brazo barato en las referencias puede quedar de
+reserva en Titans-MAC.
+Fuera de sus ámbitos el brazo sigue implementado y comprobado como reserva. La selección
+forma parte de la matriz, de su huella y de la identidad de cada ajuste.
 `docs/engineering/adapter-variety.md` relaciona cada forma con su ecuación y su fuente.
 """
 
@@ -44,6 +48,10 @@ PARTIAL = ("norm", "persistent")
 TITANS_FROZEN = ("mac.memory", "mac.persistent")
 FUSION_BLOCK = "fusion"
 _MIN_REASON = 20
+# Ámbitos de la propuesta. Los de Titans-MAC llevan la variante tras el prefijo.
+REFERENCES = "references"
+READERS = "readers"
+TITANS_SCOPE = "titans_mac:"
 
 
 def _require(condition, message):
@@ -121,7 +129,9 @@ def validate(section, matrix):
         _require(
             isinstance(arm, dict)
             and {"id", "points", "campaign"} <= set(arm) <= {*_ARM, "overrides"}
-            and type(arm["campaign"]) is bool
+            and isinstance(arm["campaign"], list)
+            and all(isinstance(scope, str) for scope in arm["campaign"])
+            and len(set(arm["campaign"])) == len(arm["campaign"])
             and isinstance(arm["points"], list)
             and len(arm["points"]) == 1
             and arm["points"][0] in (*INSERTION_FORMS, *SELECTIVE_POINTS)
@@ -161,7 +171,37 @@ def validate(section, matrix):
         isinstance(readers, list) and len(set(readers)) == len(readers) and set(readers) <= titans,
         "Los brazos del núcleo de los lectores deben existir en mac_online",
     )
+    for arm in arms:
+        for scope in arm["campaign"]:
+            _require(
+                _applies(matrix, arm, scope, readers),
+                "Cada ámbito de la propuesta debe existir y contener el punto del brazo",
+            )
     return section
+
+
+def _applies(matrix, arm, scope, readers):
+    """El ámbito existe y el punto del brazo existe en él."""
+    (point,) = arm["points"]
+    if scope == REFERENCES:
+        return point != "persistent"
+    if scope == READERS:
+        return arm["id"] in readers
+    variants = matrix["architectures"]["chronological"]["titans_mac"]["variants"]
+    variant = scope.removeprefix(TITANS_SCOPE)
+    return (
+        scope.startswith(TITANS_SCOPE)
+        and variant in variants
+        and _in_variant(point, variant, variants[variant])
+    )
+
+
+def _in_variant(point, variant, allowed):
+    """El punto existe en la variante: la lectura y la fusión según la matriz y la memoria
+    persistente solo donde la atención de MAC la lee."""
+    if point in INSERTION_FORMS:
+        return point in allowed
+    return point != "persistent" or variant in PERSISTENT_VARIANTS
 
 
 def _section(matrix):
@@ -174,10 +214,11 @@ def _resolved(section, arm):
     return {point: dict(spec)}
 
 
-def _selected(section, reserve):
+def _selected(section, reserve, scope):
+    """Brazos propuestos en el ámbito o, con `reserve`, todos los implementados."""
     if section is None:
         return []
-    return [arm for arm in section["arms"] if reserve or arm["campaign"]]
+    return [arm for arm in section["arms"] if reserve or scope in arm["campaign"]]
 
 
 def neural_arms(matrix, family, *, reserve=False):
@@ -186,7 +227,7 @@ def neural_arms(matrix, family, *, reserve=False):
 
     section = _section(matrix)
     result = []
-    for arm in _selected(section, reserve):
+    for arm in _selected(section, reserve, REFERENCES):
         (point,) = arm["points"]
         if (
             (point == "readout" and family not in READOUT_FAMILIES)
@@ -202,15 +243,11 @@ def titans_arms(matrix, variant, *, reserve=False, section=None):
     """Brazos de la variedad aplicables a una variante de Titans-MAC."""
     section = section if section is not None else _section(matrix)
     allowed = matrix["architectures"]["chronological"]["titans_mac"]["variants"][variant]
-    result = []
-    for arm in _selected(section, reserve):
-        (point,) = arm["points"]
-        if (point in INSERTION_FORMS and point not in allowed) or (
-            point == "persistent" and variant not in PERSISTENT_VARIANTS
-        ):
-            continue
-        result.append(dict(id=arm["id"], points=_resolved(section, arm)))
-    return result
+    return [
+        dict(id=arm["id"], points=_resolved(section, arm))
+        for arm in _selected(section, reserve, TITANS_SCOPE + variant)
+        if _in_variant(arm["points"][0], variant, allowed)
+    ]
 
 
 def reader_arms(matrix, *, reserve=False):
@@ -218,7 +255,7 @@ def reader_arms(matrix, *, reserve=False):
     section = _section(matrix)
     if section is None:
         return []
-    chosen = {arm["id"]: arm for arm in _selected(section, reserve)}
+    chosen = {arm["id"]: arm for arm in _selected(section, reserve, READERS)}
     return [
         dict(id=f"core_{name}", core=_resolved(section, chosen[name]), episodic_readout=None)
         for name in section["readers"]
