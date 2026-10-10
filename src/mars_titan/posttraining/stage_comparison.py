@@ -48,10 +48,10 @@ from mars_titan.evaluation import walk_forward_comparison as walk
 from . import staged_chain
 from .campaign_stage import FROZEN as FROZEN_JOB
 from .campaign_stage import (
+    FROZEN_ONLY,
     RECEIPT_KIND,
     RUN_KIND,
     STAGED,
-    TABULAR,
     _digest,
     load_stage,
     plan_stage,
@@ -116,11 +116,11 @@ def _groups(stage):
     """Brazos de cada padre por papel, en el orden del plan, y sus trabajos por ámbito.
 
     Un trabajo ``frozen`` del plan por etapas fija el brazo del padre congelado. Sin él,
-    el padre congelado es el propio brazo base. Ridge y XGBoost quedan fuera: su cadena solo
-    tiene el padre congelado y no hay continuación ni adaptadores que contrastar. El
+    el padre congelado es el propio brazo base. Ridge, XGBoost y B6 quedan fuera: su cadena
+    solo tiene el padre congelado y no hay continuación ni adaptadores que contrastar. El
     predictor de la cadena solo existe en el plan por etapas.
     """
-    trivial = {arm for arm, spec in stage_arms(stage)[0].items() if spec["design"] == TABULAR}
+    trivial = {arm for arm, spec in stage_arms(stage)[0].items() if spec["design"] == FROZEN_ONLY}
     staged = stage["design"] == STAGED
     groups = {}
     for job in plan_stage(stage):

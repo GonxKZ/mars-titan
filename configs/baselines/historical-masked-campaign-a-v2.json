@@ -56,9 +56,17 @@
       "mars_titan_m2": {"episodic_bank": "m2"},
       "mars_titan_m3": {"episodic_bank": "m3"},
       "mars_titan_m1_k2": {"episodic_bank": "m1", "refinements": 2},
-      "mars_titan_m1_k4": {"episodic_bank": "m1", "refinements": 4}
+      "mars_titan_m1_k4": {"episodic_bank": "m1", "refinements": 4},
+      "mars_titan_m1_k4_first_read": {
+        "episodic_bank": "m1",
+        "refinements": 4,
+        "refinement_episodes": "first_read"
+      },
+      "mars_titan_b6": {"associative_memory": {"rule": "proximal", "key": "codec"}},
+      "mars_titan_b6_bias": {"associative_memory": {"rule": "proximal", "key": "constant"}}
     },
     "pending_arms": {},
+    "correction_recipe": "../titans/mature-correction-historical-masked.json",
     "parent_arm": "titans_mac_online",
     "search_seed": 42
   },
@@ -123,7 +131,7 @@
     "cm_v1": {"accumulation_rows": "pending"}
   },
   "limits": {
-    "max_training_jobs": 2341,
+    "max_training_jobs": 2569,
     "max_prediction_jobs": 0
   },
   "final_test_opened": false

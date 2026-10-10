@@ -37,17 +37,16 @@ EARLY = dict(
 RULE = dict(metric="session_mae", patience=5, min_delta=1e-05, minimum_epochs=5, max_epochs=30)
 
 
-# El archivo de grupos lo comparte la campaña A v2 conjunta, que todavía no declara este
-# brazo, así que no puede nombrarlo. Quien lo declare con la parada conjunta debe añadirlo al
-# grupo de los lectores, porque A10 lo contrasta con mars_titan_m1_k4.
+# El archivo de grupos lo comparte la campaña A v2 conjunta, que declara este brazo, y lo
+# pone en el grupo de los lectores porque A10 lo contrasta con mars_titan_m1_k4.
 FIRST_READ = "mars_titan_m1_k4_first_read"
 
 
 def extended(campaign, *, group_first_read=True):
-    if group_first_read:
+    if not group_first_read:
         early = campaign["early_stop"]
-        early["groups"]["episodic_readers"].append(FIRST_READ)
-        early["membership"][FIRST_READ] = "episodic_readers"
+        early["groups"]["episodic_readers"].remove(FIRST_READ)
+        del early["membership"][FIRST_READ]
     sections = json.loads(EXTENSIONS.read_text())["sections"]
     return plan.extend_campaign(
         campaign, sections, limits=dict(max_training_jobs=5265, max_prediction_jobs=0)

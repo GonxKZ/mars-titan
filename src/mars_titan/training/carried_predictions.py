@@ -43,8 +43,15 @@ REGENERATED_PARTITIONS = ("validation", "calibration", "evaluation")
 FROZEN_PARENT_PARTITIONS = ("validation", "calibration", "evaluation")
 
 
-def predicted_partitions(modality_ablation, regenerate=False):
-    """Tramos que predice un traslado: normal, con ablación o como regeneración del ajuste."""
+def predicted_partitions(modality_ablation, regenerate=False, frozen_parent=False):
+    """Tramos que predice un traslado: normal, con ablación, como regeneración del ajuste o
+    como padre congelado de la cadena por etapas."""
+    if frozen_parent:
+        if regenerate or modality_ablation is not None:
+            raise ValueError(
+                "El padre congelado predice otra ventana, sin ablación ni regeneración"
+            )
+        return FROZEN_PARENT_PARTITIONS
     if regenerate:
         if modality_ablation is not None:
             raise ValueError("La regeneración repite el ajuste, sin ablación de modalidades")
@@ -55,6 +62,11 @@ def predicted_partitions(modality_ablation, regenerate=False):
 def regeneration_record(regenerate):
     """Campo del informe que marca una regeneración. Un traslado normal no lo declara."""
     return dict(regenerated=True) if regenerate else {}
+
+
+def frozen_parent_record(frozen_parent):
+    """Campo del recibo que marca el padre congelado de la cadena. Un traslado no lo declara."""
+    return dict(frozen_parent=True) if frozen_parent else {}
 
 
 def same_view(anchor_manifest, manifest, regenerate):
@@ -308,9 +320,10 @@ def carry_tabular(
 ):
     """Aplicar el modelo Ridge o XGBoost seleccionado en el ancla a otra ventana.
 
-    `frozen_parent` lo usa la cadena del postentrenamiento por etapas con Ridge y XGBoost, que
-    no tienen adaptadores. El ancla es el estado elegido en k-1 y la ventana es k, igual que
-    un traslado, pero también se predice la validación de k, con la que la cadena elige.
+    `frozen_parent` lo usa la cadena trivial del postentrenamiento por etapas con Ridge y
+    XGBoost, que no tienen adaptadores. El ancla es el estado elegido en k-1 y la ventana es
+    k, igual que un traslado, pero también se predice la validación de k, con la que la
+    cadena elige.
     """
     import numpy as np
 
@@ -333,14 +346,7 @@ def carry_tabular(
     ):
         raise ValueError("El ancla no es un modelo tabular confirmado de la misma política")
     anchor_meta, _ = read_manifest(anchor_manifest, 8 * 1024**2)
-    if frozen_parent:
-        if regenerate or modality_ablation is not None:
-            raise ValueError(
-                "El padre congelado predice otra ventana, sin ablación ni regeneración"
-            )
-        partitions = FROZEN_PARENT_PARTITIONS
-    else:
-        partitions = predicted_partitions(modality_ablation, regenerate)
+    partitions = predicted_partitions(modality_ablation, regenerate, frozen_parent)
     dataset = CorpusDataset(
         manifest, input_policy=input_policy, modality_ablation=modality_ablation
     )
@@ -386,6 +392,6 @@ def carry_tabular(
             **policy_identity(input_policy),
             **ablation_record(modality_ablation),
             **regeneration_record(regenerate),
-            **(dict(frozen_parent=True) if frozen_parent else {}),
+            **frozen_parent_record(frozen_parent),
         ),
     )

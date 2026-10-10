@@ -6,7 +6,7 @@
   "campaign": "../baselines/historical-masked-campaign-a-v2.json",
   "scopes": ["US+CN"],
   "limits": {
-    "max_prediction_jobs": 3534
+    "max_prediction_jobs": 4047
   },
   "final_test_opened": false
 }
