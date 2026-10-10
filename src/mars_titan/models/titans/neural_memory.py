@@ -288,13 +288,23 @@ class NeuralMemory(nn.Module):
         return alpha, eta, theta
 
     def readable_weights(self, state: NeuralMemoryState) -> tuple[Tensor, ...]:
-        """Pesos que lee la memoria: el primer nivel, salvo en el banco de PT5, su media."""
+        """Pesos que lee la memoria: el primer nivel, salvo en el banco de PT5, su media.
+
+        La media se escribe como w + ((z2 - w) + (z3 - w)) / 3. Es la misma cantidad que
+        (w + z2 + z3) / 3, pero con tres copias iguales devuelve w sin redondeo, así que el
+        banco arranca leyendo exactamente los pesos del control.
+        """
         multiscale = self.config.multiscale
         if multiscale is None or multiscale.form == "cascade":
             return state.weights
         hidden = self.config.hidden_levels
         return tuple(
-            (weight + state.levels[hidden * index] + state.levels[hidden * index + 1]) / 3
+            weight
+            + (
+                (state.levels[hidden * index] - weight)
+                + (state.levels[hidden * index + 1] - weight)
+            )
+            / 3
             for index, weight in enumerate(state.weights)
         )
 

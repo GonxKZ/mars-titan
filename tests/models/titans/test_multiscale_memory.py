@@ -140,8 +140,12 @@ def test_bank_reads_the_mean_takes_the_gradient_there_and_forgets_each_level_alo
     state = scrambled(model, model.initial_state(2))
     readable = model.readable_weights(state)
     for layer in range(2):
-        mean = (state.weights[layer] + state.levels[2 * layer] + state.levels[2 * layer + 1]) / 3
-        torch.testing.assert_close(readable[layer], mean, rtol=0, atol=0)
+        weight, second, third = state.weights[layer], *state.levels[2 * layer : 2 * layer + 2]
+        torch.testing.assert_close(
+            readable[layer], weight + ((second - weight) + (third - weight)) / 3, rtol=0, atol=0
+        )
+        # Es la media de los tres niveles salvo el redondeo del orden de las sumas.
+        torch.testing.assert_close(readable[layer], (weight + second + third) / 3)
     # El control con los pesos de la media y el mismo momentum calcula la misma escritura.
     control = memory()
     reference = replace(control.initial_state(2), weights=readable, momentum=state.momentum)
@@ -288,8 +292,15 @@ def test_future_tokens_and_other_flows_do_not_change_a_flow_state(form):
         (*first.weights, *first.levels), (*second.weights, *second.levels), strict=True
     ):
         torch.testing.assert_close(left[0], right[0], rtol=0, atol=0)
+    # En la cascada el tercer nivel solo recibe la escritura a partir del tercer token.
+    step = 1 if form == "ema_bank" else 2
+    for left, right in zip(
+        (*first.weights, *first.levels[::step]),
+        (*second.weights, *second.levels[::step]),
+        strict=True,
+    ):
         assert not torch.equal(left[1], right[1])
-    assert not torch.equal(full.levels[0][0], second.levels[0][0])
+    assert not torch.equal(full.weights[0][0], second.weights[0][0])
 
 
 @pytest.mark.parametrize("form", FORMS)
