@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-10",
+  "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU, 8188 MiB, power-saver",
+  "torch": "2.14.0+cu130",
+  "split": {
+    "arm": "titans_mac_online",
+    "recipe_options": {
+      "precision": "fp32_strict",
+      "block_rows": 1024,
+      "accumulation_rows": 1024,
+      "predictor_max_batch": 1024,
+      "predictor_max_state_bytes": 134217728
+    },
+    "rows_per_s": 13345.9,
+    "measured_seconds": 11.37,
+    "note": "Tiempos acumulados con sincronización antes y después de cada llamada, en los 10 tramos incluidos los 2 de calentamiento. replay está dentro de update.",
+    "seconds": {
+      "observe": 7.57,
+      "replay": 8.65,
+      "update": 8.77
+    }
+  },
+  "emission_graph": {
+    "rows": 1024,
+    "inputs": "primer evento guardado con al menos 1.024 flujos de US+CN fold-012, pesos iniciales de la semilla 42, differentiable=True",
+    "same_bits": true,
+    "prepare_eager_ms": 12.13,
+    "compute_eager_ms": 8.46,
+    "graph_ms": 7.87,
+    "graph_pool_mib": 744,
+    "deferred_checks": 32,
+    "note": "compute_eager repite el cálculo de prepare con las comprobaciones diferidas y una sola sincronización. graph incluye copiar las entradas, repetir el grafo, clonar las salidas y leer las comprobaciones."
+  }
+}

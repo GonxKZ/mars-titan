@@ -1,0 +1,84 @@
+{
+  "capture": "m1-final-memray.bin",
+  "file_format": "AGGREGATED_ALLOCATIONS",
+  "peak_bytes": 13232570596,
+  "live_at_peak_bytes": 13232570596,
+  "total_allocations": 24284,
+  "by_library": {
+    "torch": 5437318653,
+    "mars_titan": 4441425578,
+    "otros": 3110542315,
+    "sin pila de Python": 239896710,
+    "benchmarks": 2513040,
+    "numpy": 874300
+  },
+  "by_allocator": {
+    "MALLOC": 6733165923,
+    "MMAP": 4329368502,
+    "REALLOC": 1687838547,
+    "CALLOC": 481349613,
+    "POSIX_MEMALIGN": 848011
+  },
+  "top_places": [
+    {
+      "place": "require_cuda (mars_titan/data/embeddings.py:134)",
+      "bytes": 4420923860
+    },
+    {
+      "place": "<module> (benchmarks/chronological_replay.py:243)",
+      "bytes": 1794420531
+    },
+    {
+      "place": "<genexpr> (mars_titan/models/titans/neural_memory.py:341)",
+      "bytes": 1677977487
+    },
+    {
+      "place": "__init__ (mars_titan/data/temporal.py:24)",
+      "bytes": 1076204694
+    },
+    {
+      "place": "_layer (mars_titan/models/baselines/transformer.py:266)",
+      "bytes": 1073976279
+    },
+    {
+      "place": "<genexpr> (mars_titan/models/titans/neural_memory.py:337)",
+      "bytes": 1040367680
+    },
+    {
+      "place": "require_cuda (mars_titan/data/embeddings.py:136)",
+      "bytes": 347875340
+    },
+    {
+      "place": "sin pila de Python",
+      "bytes": 239896710
+    },
+    {
+      "place": "_validated (mars_titan/models/baselines/transformer.py:250)",
+      "bytes": 164663991
+    },
+    {
+      "place": "_apply (mars_titan/models/titans/financial.py:304)",
+      "bytes": 149562178
+    },
+    {
+      "place": "forward (mars_titan/models/titans/mac.py:114)",
+      "bytes": 108148548
+    },
+    {
+      "place": "forward (mars_titan/models/titans/mac.py:104)",
+      "bytes": 89409880
+    },
+    {
+      "place": "_update (mars_titan/training/mars_titan_run.py:898)",
+      "bytes": 84113537
+    },
+    {
+      "place": "update (mars_titan/models/titans/neural_memory.py:330)",
+      "bytes": 75362610
+    },
+    {
+      "place": "check_finite (mars_titan/models/titans/state.py:117)",
+      "bytes": 74002157
+    }
+  ]
+}

@@ -1,0 +1,113 @@
+{
+  "profile": "bcm-reference-pyspy.collapsed",
+  "samples": 13017,
+  "root": "_train_pass@training/mars_titan_run.py",
+  "root_samples": 12128,
+  "inclusive": {
+    "select_anchored_medoids@cm/anchored_medoids.py": {
+      "samples": 9700,
+      "share": 0.7998
+    },
+    "_admit@training/mars_titan_run.py": {
+      "samples": 10061,
+      "share": 0.8296
+    },
+    "_observe@training/mars_titan_run.py": {
+      "samples": 1939,
+      "share": 0.1599
+    },
+    "_labels@training/mars_titan_run.py": {
+      "samples": 18,
+      "share": 0.0015
+    },
+    "_update@training/mars_titan_run.py": {
+      "samples": 93,
+      "share": 0.0077
+    },
+    "encode@memory/episodic_codec.py": {
+      "samples": 1186,
+      "share": 0.0978
+    },
+    "prepare@models/titans/financial.py": {
+      "samples": 272,
+      "share": 0.0224
+    }
+  },
+  "top_self": [
+    {
+      "frame": "_compute (mars_titan/cm/medoids.py)",
+      "samples": 9560,
+      "share": 0.7883
+    },
+    {
+      "frame": "einsum (numpy/_core/einsumfunc.py)",
+      "samples": 1061,
+      "share": 0.0875
+    },
+    {
+      "frame": "propose (mars_titan/memory/retention_bank.py)",
+      "samples": 182,
+      "share": 0.015
+    },
+    {
+      "frame": "check_finite (mars_titan/models/titans/state.py)",
+      "samples": 143,
+      "share": 0.0118
+    },
+    {
+      "frame": "_digest (mars_titan/models/titans/financial_inputs.py)",
+      "samples": 130,
+      "share": 0.0107
+    },
+    {
+      "frame": "bank_snapshot (mars_titan/memory/financial_consumers.py)",
+      "samples": 78,
+      "share": 0.0064
+    },
+    {
+      "frame": "_sum (mars_titan/cm/medoids.py)",
+      "samples": 64,
+      "share": 0.0053
+    },
+    {
+      "frame": "_observe (mars_titan/training/mars_titan_run.py)",
+      "samples": 52,
+      "share": 0.0043
+    },
+    {
+      "frame": "encode (mars_titan/memory/episodic_codec.py)",
+      "samples": 47,
+      "share": 0.0039
+    },
+    {
+      "frame": "mature_record (mars_titan/memory/financial_consumers.py)",
+      "samples": 44,
+      "share": 0.0036
+    },
+    {
+      "frame": "device_tensor (mars_titan/models/titans/financial_inputs.py)",
+      "samples": 43,
+      "share": 0.0035
+    },
+    {
+      "frame": "_admit (mars_titan/training/mars_titan_run.py)",
+      "samples": 41,
+      "share": 0.0034
+    },
+    {
+      "frame": "iterencode (json/encoder.py)",
+      "samples": 35,
+      "share": 0.0029
+    },
+    {
+      "frame": "forward (torch/nn/modules/linear.py)",
+      "samples": 33,
+      "share": 0.0027
+    },
+    {
+      "frame": "<lambda> (mars_titan/training/mars_titan_run.py)",
+      "samples": 27,
+      "share": 0.0022
+    }
+  ]
+}

@@ -1,0 +1,121 @@
+{
+  "profile": "emission-pyspy.collapsed",
+  "samples": 3650,
+  "root": "prepared@titans_emission_graph.py",
+  "root_samples": 663,
+  "inclusive": {
+    "prepare@models/titans/financial.py": {
+      "samples": 662,
+      "share": 0.9985
+    },
+    "_check_flows": {
+      "samples": 20,
+      "share": 0.0302
+    },
+    "validate_state@models/titans/neural_memory.py": {
+      "samples": 62,
+      "share": 0.0935
+    },
+    "check_finite@models/titans/state.py": {
+      "samples": 140,
+      "share": 0.2112
+    },
+    "resolve@models/titans/state.py": {
+      "samples": 54,
+      "share": 0.0814
+    },
+    "first_flagged@models/baselines/transformer.py": {
+      "samples": 33,
+      "share": 0.0498
+    },
+    "_state_size": {
+      "samples": 14,
+      "share": 0.0211
+    },
+    "_config_id": {
+      "samples": 22,
+      "share": 0.0332
+    },
+    "encode_last": {
+      "samples": 30,
+      "share": 0.0452
+    }
+  },
+  "top_self": [
+    {
+      "frame": "check_finite (mars_titan/models/titans/state.py)",
+      "samples": 140,
+      "share": 0.2112
+    },
+    {
+      "frame": "resolve (mars_titan/models/titans/state.py)",
+      "samples": 54,
+      "share": 0.0814
+    },
+    {
+      "frame": "iterencode (json/encoder.py)",
+      "samples": 42,
+      "share": 0.0633
+    },
+    {
+      "frame": "forward (torch/nn/modules/linear.py)",
+      "samples": 40,
+      "share": 0.0603
+    },
+    {
+      "frame": "_engine_run_backward (torch/autograd/graph.py)",
+      "samples": 36,
+      "share": 0.0543
+    },
+    {
+      "frame": "first_flagged (mars_titan/models/baselines/transformer.py)",
+      "samples": 33,
+      "share": 0.0498
+    },
+    {
+      "frame": "update (mars_titan/models/titans/neural_memory.py)",
+      "samples": 20,
+      "share": 0.0302
+    },
+    {
+      "frame": "validate_state (mars_titan/models/titans/neural_memory.py)",
+      "samples": 18,
+      "share": 0.0271
+    },
+    {
+      "frame": "_prepare (mars_titan/models/titans/financial.py)",
+      "samples": 18,
+      "share": 0.0271
+    },
+    {
+      "frame": "<genexpr> (mars_titan/models/titans/neural_memory.py)",
+      "samples": 17,
+      "share": 0.0256
+    },
+    {
+      "frame": "_layer (mars_titan/models/baselines/transformer.py)",
+      "samples": 16,
+      "share": 0.0241
+    },
+    {
+      "frame": "_apply_memory (mars_titan/models/titans/neural_memory.py)",
+      "samples": 14,
+      "share": 0.0211
+    },
+    {
+      "frame": "forward (mars_titan/models/titans/mac.py)",
+      "samples": 12,
+      "share": 0.0181
+    },
+    {
+      "frame": "_validate_cursor (mars_titan/models/titans/financial.py)",
+      "samples": 10,
+      "share": 0.0151
+    },
+    {
+      "frame": "<genexpr> (mars_titan/models/titans/financial.py)",
+      "samples": 10,
+      "share": 0.0151
+    }
+  ]
+}

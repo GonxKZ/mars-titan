@@ -236,6 +236,8 @@ Las opciones entran en la identidad de cada trabajo y son comunes a todos los br
 
 ## Pendiente e impedimentos
 
+Actualización del 10 de octubre. El [informe de la rama `perf/campaign-kernels-wiring`](../campaign-kernels-wiring-20261010/README.md) resuelve los puntos primero, segundo, cuarto y sexto de esta lista. La sección neuronal admite `precision`, `cuda_graphs` y lotes de hasta 4.096, y una prueba de extremo a extremo comprueba que llegan al ajuste. El padre del posentrenamiento aplica la precisión de su caso. Los módulos con huellas que dependen de los hilos fijan dos hilos durante cada prueba. Las distancias de los medoids se reducen sin cambiar sus bits (de unos 150 s a menos de 10 s por recorrido de los lectores), y CUDA Graphs en Titans-MAC, pendiente en «Decisiones», se midió en la emisión de bloques completos y no se adopta en esa rama (entre 0,98 y 1,22 veces frente al mismo cálculo sin grafo). La medida sobre la v3.1 sigue pendiente. Los puntos siguientes describen el estado del 9 de octubre.
+
 - La sección neuronal de `campaign_plan` todavía no admite `precision` ni `cuda_graphs`, y limita el lote a 256. Hasta que el plan los acepte, las referencias de la campaña se ajustan sin ellos.
 - El posentrenamiento de #446 registra las banderas de TF32 de cada ejecución, pero no fija la política que declara el caso del padre. Con esta rama el padre conserva su lote. Falta aplicarle la precisión al cargarlo, como ya hacen el ajuste y las predicciones trasladadas.
 - La medida usa la edición v3. La v3.1 (#445) añade un bit de presencia por sesión a los precios. Ninguna optimización depende de la anchura de entrada, y los archivos de eventos y de lotes permiten repetir la medida en pocos minutos cuando exista la vista.

@@ -1,0 +1,632 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-10",
+  "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU, 8188 MiB, power-saver",
+  "torch": "2.14.0+cu130",
+  "threads": 2,
+  "view": "US+CN fold-012, edición v3, eventos guardados (254 eventos desde el 127, 8 tramos medidos, 151.797 filas)",
+  "recipe_options": {
+    "precision": "fp32_strict",
+    "block_rows": 512,
+    "predictor_max_batch": 1024,
+    "predictor_max_state_bytes": 134217728
+  },
+  "optimizer": "sustituido por un registrador de gradientes, sin pasos",
+  "measurement_patches": [
+    "Sin comprobar los archivos de muestras de la vista v3, sustituidos por la ejecución de la v3.1. Los eventos guardados no leen muestras.",
+    "Índices de observaciones con la huella de código con que se generaron.",
+    "Anchuras de entrada tomadas de los eventos guardados."
+  ],
+  "bit_comparison": {
+    "reference": "m1-base-a y bcm-base-a",
+    "compared": "todas las demás ejecuciones de su lector",
+    "result": "gradientes de 11 llamadas al optimizador, 1.265 predicciones y 86 selecciones idénticos bit a bit",
+    "final": "m1-final-e frente a m1-base-a y bcm-final-e frente a bcm-base-c: gradientes de 11 llamadas al optimizador, 1.265 predicciones y 86 selecciones idénticos bit a bit"
+  },
+  "call_shapes": {
+    "mars_titan_m1": {
+      "clients": [
+        1814,
+        5074
+      ],
+      "fixed": [
+        1024,
+        1024
+      ],
+      "candidates": [
+        0,
+        0
+      ],
+      "swaps": 0
+    },
+    "cm_v1_bcm": {
+      "clients": [
+        1814,
+        5074
+      ],
+      "fixed": [
+        1016,
+        1016
+      ],
+      "candidates": [
+        8,
+        16
+      ],
+      "swaps": 0
+    }
+  },
+  "runs": [
+    {
+      "label": "m1-base-a",
+      "code": "with_threads",
+      "arm": "mars_titan_m1",
+      "options": {
+        "threads": 1,
+        "reuse_distances": false,
+        "bounded_background": false
+      },
+      "rows_per_s": 1249.3,
+      "pass_seconds": 167.6,
+      "medoid_seconds": 125.12,
+      "medoid_calls": 86,
+      "median_call_seconds": 2.0456,
+      "peak_rss_mib": 3714,
+      "process_mib": 2950,
+      "load_average": [
+        10.92,
+        10.36,
+        9.4
+      ]
+    },
+    {
+      "label": "m1-w2-a",
+      "code": "with_threads",
+      "arm": "mars_titan_m1",
+      "options": {
+        "threads": 2,
+        "reuse_distances": false,
+        "bounded_background": false
+      },
+      "rows_per_s": 2124.2,
+      "pass_seconds": 103.9,
+      "medoid_seconds": 63.96,
+      "medoid_calls": 86,
+      "median_call_seconds": 1.053,
+      "peak_rss_mib": 3719,
+      "process_mib": 2950,
+      "load_average": [
+        8.89,
+        9.74,
+        9.28
+      ]
+    },
+    {
+      "label": "m1-bound-a",
+      "code": "with_threads",
+      "arm": "mars_titan_m1",
+      "options": {
+        "threads": 1,
+        "reuse_distances": false,
+        "bounded_background": true
+      },
+      "rows_per_s": 5278.6,
+      "pass_seconds": 41.6,
+      "medoid_seconds": 3.83,
+      "medoid_calls": 86,
+      "median_call_seconds": 0.0659,
+      "peak_rss_mib": 3721,
+      "process_mib": 2950,
+      "load_average": [
+        8.33,
+        9.45,
+        9.21
+      ]
+    },
+    {
+      "label": "bcm-base-a",
+      "code": "with_threads",
+      "arm": "cm_v1_bcm",
+      "options": {
+        "threads": 1,
+        "reuse_distances": false,
+        "bounded_background": false
+      },
+      "rows_per_s": 1027.6,
+      "pass_seconds": 210.2,
+      "medoid_seconds": 167.16,
+      "medoid_calls": 86,
+      "median_call_seconds": 2.7435,
+      "peak_rss_mib": 3726,
+      "process_mib": 2950,
+      "load_average": [
+        11.16,
+        10.1,
+        9.51
+      ]
+    },
+    {
+      "label": "bcm-w2-a",
+      "code": "with_threads",
+      "arm": "cm_v1_bcm",
+      "options": {
+        "threads": 2,
+        "reuse_distances": false,
+        "bounded_background": false
+      },
+      "rows_per_s": 1477.2,
+      "pass_seconds": 145.5,
+      "medoid_seconds": 101.56,
+      "medoid_calls": 86,
+      "median_call_seconds": 1.4997,
+      "peak_rss_mib": 3726,
+      "process_mib": 2950,
+      "load_average": [
+        10.81,
+        10.81,
+        9.89
+      ]
+    },
+    {
+      "label": "bcm-reuse-a",
+      "code": "with_threads",
+      "arm": "cm_v1_bcm",
+      "options": {
+        "threads": 1,
+        "reuse_distances": true,
+        "bounded_background": false
+      },
+      "rows_per_s": 1183.5,
+      "pass_seconds": 182.2,
+      "medoid_seconds": 137.26,
+      "medoid_calls": 86,
+      "median_call_seconds": 2.2403,
+      "peak_rss_mib": 3723,
+      "process_mib": 2950,
+      "load_average": [
+        11.03,
+        10.77,
+        10.04
+      ]
+    },
+    {
+      "label": "bcm-w2reuse-a",
+      "code": "with_threads",
+      "arm": "cm_v1_bcm",
+      "options": {
+        "threads": 2,
+        "reuse_distances": true,
+        "bounded_background": false
+      },
+      "rows_per_s": 1677.9,
+      "pass_seconds": 126.6,
+      "medoid_seconds": 80.7,
+      "medoid_calls": 86,
+      "median_call_seconds": 1.1509,
+      "peak_rss_mib": 3726,
+      "process_mib": 2950,
+      "load_average": [
+        14.69,
+        12.15,
+        10.63
+      ]
+    },
+    {
+      "label": "bcm-bound-a",
+      "code": "with_threads",
+      "arm": "cm_v1_bcm",
+      "options": {
+        "threads": 1,
+        "reuse_distances": false,
+        "bounded_background": true
+      },
+      "rows_per_s": 2204.1,
+      "pass_seconds": 96.6,
+      "medoid_seconds": 48.26,
+      "medoid_calls": 86,
+      "median_call_seconds": 0.7487,
+      "peak_rss_mib": 3728,
+      "process_mib": 2950,
+      "load_average": [
+        15.58,
+        13.24,
+        11.2
+      ]
+    },
+    {
+      "label": "bcm-boundreuse-a",
+      "code": "with_threads",
+      "arm": "cm_v1_bcm",
+      "options": {
+        "threads": 1,
+        "reuse_distances": true,
+        "bounded_background": true
+      },
+      "rows_per_s": 4414.4,
+      "pass_seconds": 50.8,
+      "medoid_seconds": 8.68,
+      "medoid_calls": 86,
+      "median_call_seconds": 0.1374,
+      "peak_rss_mib": 3724,
+      "process_mib": 2950,
+      "load_average": [
+        12.16,
+        12.68,
+        11.13
+      ]
+    },
+    {
+      "label": "bcm-all-a",
+      "code": "with_threads",
+      "arm": "cm_v1_bcm",
+      "options": {
+        "threads": 2,
+        "reuse_distances": true,
+        "bounded_background": true
+      },
+      "rows_per_s": 4536.5,
+      "pass_seconds": 48.4,
+      "medoid_seconds": 8.63,
+      "medoid_calls": 86,
+      "median_call_seconds": 0.1301,
+      "peak_rss_mib": 3731,
+      "process_mib": 2950,
+      "load_average": [
+        10.26,
+        12.05,
+        11.02
+      ]
+    },
+    {
+      "label": "m1-base-b",
+      "code": "with_threads",
+      "arm": "mars_titan_m1",
+      "options": {
+        "threads": 1,
+        "reuse_distances": false,
+        "bounded_background": false
+      },
+      "rows_per_s": 1435.2,
+      "pass_seconds": 157.2,
+      "medoid_seconds": 117.45,
+      "medoid_calls": 86,
+      "median_call_seconds": 2.019,
+      "peak_rss_mib": 3721,
+      "process_mib": 2950,
+      "load_average": [
+        5.46,
+        9.46,
+        10.21
+      ]
+    },
+    {
+      "label": "m1-w2-b",
+      "code": "with_threads",
+      "arm": "mars_titan_m1",
+      "options": {
+        "threads": 2,
+        "reuse_distances": false,
+        "bounded_background": false
+      },
+      "rows_per_s": 2178.0,
+      "pass_seconds": 100.2,
+      "medoid_seconds": 61.5,
+      "medoid_calls": 86,
+      "median_call_seconds": 1.0475,
+      "peak_rss_mib": 3719,
+      "process_mib": 2950,
+      "load_average": [
+        5.7,
+        8.49,
+        9.78
+      ]
+    },
+    {
+      "label": "m1-bound-b",
+      "code": "with_threads",
+      "arm": "mars_titan_m1",
+      "options": {
+        "threads": 1,
+        "reuse_distances": false,
+        "bounded_background": true
+      },
+      "rows_per_s": 5317.3,
+      "pass_seconds": 42.0,
+      "medoid_seconds": 3.85,
+      "medoid_calls": 86,
+      "median_call_seconds": 0.0644,
+      "peak_rss_mib": 3723,
+      "process_mib": 2950,
+      "load_average": [
+        5.23,
+        7.95,
+        9.54
+      ]
+    },
+    {
+      "label": "bcm-base-b",
+      "code": "with_threads",
+      "arm": "cm_v1_bcm",
+      "options": {
+        "threads": 1,
+        "reuse_distances": false,
+        "bounded_background": false
+      },
+      "rows_per_s": 1127.8,
+      "pass_seconds": 186.5,
+      "medoid_seconds": 148.29,
+      "medoid_calls": 86,
+      "median_call_seconds": 2.6493,
+      "peak_rss_mib": 3723,
+      "process_mib": 2950,
+      "load_average": [
+        4.84,
+        6.54,
+        8.67
+      ]
+    },
+    {
+      "label": "bcm-w2-b",
+      "code": "with_threads",
+      "arm": "cm_v1_bcm",
+      "options": {
+        "threads": 2,
+        "reuse_distances": false,
+        "bounded_background": false
+      },
+      "rows_per_s": 1520.0,
+      "pass_seconds": 139.5,
+      "medoid_seconds": 97.11,
+      "medoid_calls": 86,
+      "median_call_seconds": 1.4594,
+      "peak_rss_mib": 3724,
+      "process_mib": 2950,
+      "load_average": [
+        8.52,
+        7.58,
+        8.76
+      ]
+    },
+    {
+      "label": "bcm-reuse-b",
+      "code": "with_threads",
+      "arm": "cm_v1_bcm",
+      "options": {
+        "threads": 1,
+        "reuse_distances": true,
+        "bounded_background": false
+      },
+      "rows_per_s": 1316.8,
+      "pass_seconds": 160.6,
+      "medoid_seconds": 121.2,
+      "medoid_calls": 86,
+      "median_call_seconds": 2.1348,
+      "peak_rss_mib": 3721,
+      "process_mib": 2950,
+      "load_average": [
+        5.78,
+        6.87,
+        8.3
+      ]
+    },
+    {
+      "label": "bcm-w2reuse-b",
+      "code": "with_threads",
+      "arm": "cm_v1_bcm",
+      "options": {
+        "threads": 2,
+        "reuse_distances": true,
+        "bounded_background": false
+      },
+      "rows_per_s": 2089.9,
+      "pass_seconds": 104.5,
+      "medoid_seconds": 65.5,
+      "medoid_calls": 86,
+      "median_call_seconds": 1.1153,
+      "peak_rss_mib": 3723,
+      "process_mib": 2950,
+      "load_average": [
+        6.12,
+        6.67,
+        8.06
+      ]
+    },
+    {
+      "label": "bcm-bound-b",
+      "code": "with_threads",
+      "arm": "cm_v1_bcm",
+      "options": {
+        "threads": 1,
+        "reuse_distances": false,
+        "bounded_background": true
+      },
+      "rows_per_s": 2781.4,
+      "pass_seconds": 76.1,
+      "medoid_seconds": 37.6,
+      "medoid_calls": 86,
+      "median_call_seconds": 0.6692,
+      "peak_rss_mib": 3723,
+      "process_mib": 2950,
+      "load_average": [
+        5.44,
+        6.18,
+        7.76
+      ]
+    },
+    {
+      "label": "bcm-boundreuse-b",
+      "code": "with_threads",
+      "arm": "cm_v1_bcm",
+      "options": {
+        "threads": 1,
+        "reuse_distances": true,
+        "bounded_background": true
+      },
+      "rows_per_s": 4418.1,
+      "pass_seconds": 48.6,
+      "medoid_seconds": 8.21,
+      "medoid_calls": 86,
+      "median_call_seconds": 0.1297,
+      "peak_rss_mib": 3724,
+      "process_mib": 2950,
+      "load_average": [
+        6.43,
+        6.25,
+        7.68
+      ]
+    },
+    {
+      "label": "bcm-all-b",
+      "code": "with_threads",
+      "arm": "cm_v1_bcm",
+      "options": {
+        "threads": 2,
+        "reuse_distances": true,
+        "bounded_background": true
+      },
+      "rows_per_s": 4336.5,
+      "pass_seconds": 51.5,
+      "medoid_seconds": 8.96,
+      "medoid_calls": 86,
+      "median_call_seconds": 0.1368,
+      "peak_rss_mib": 3730,
+      "process_mib": 2950,
+      "load_average": [
+        8.72,
+        6.95,
+        7.83
+      ]
+    },
+    {
+      "label": "m1-final-c",
+      "code": "final_before_buffer_rewrite",
+      "arm": "mars_titan_m1",
+      "options": {
+        "threads": 1,
+        "reuse_distances": true,
+        "bounded_background": true
+      },
+      "rows_per_s": 4736.2,
+      "pass_seconds": 45.7,
+      "medoid_seconds": 4.45,
+      "medoid_calls": 86,
+      "median_call_seconds": 0.0696,
+      "peak_rss_mib": 3708,
+      "process_mib": 2952,
+      "load_average": [
+        12.08,
+        10.37,
+        8.71
+      ]
+    },
+    {
+      "label": "bcm-final-c",
+      "code": "final_before_buffer_rewrite",
+      "arm": "cm_v1_bcm",
+      "options": {
+        "threads": 1,
+        "reuse_distances": true,
+        "bounded_background": true
+      },
+      "rows_per_s": 3856.9,
+      "pass_seconds": 54.5,
+      "medoid_seconds": 9.22,
+      "medoid_calls": 86,
+      "median_call_seconds": 0.1377,
+      "peak_rss_mib": 3712,
+      "process_mib": 2950,
+      "load_average": [
+        13.27,
+        11.06,
+        9.08
+      ]
+    },
+    {
+      "label": "bcm-base-c",
+      "code": "final_before_buffer_rewrite",
+      "arm": "cm_v1_bcm",
+      "options": {
+        "threads": 1,
+        "reuse_distances": false,
+        "bounded_background": false
+      },
+      "rows_per_s": 1154.9,
+      "pass_seconds": 188.0,
+      "medoid_seconds": 149.1,
+      "medoid_calls": 86,
+      "median_call_seconds": 2.6757,
+      "peak_rss_mib": 3724,
+      "process_mib": 2950,
+      "load_average": [
+        6.96,
+        9.42,
+        8.9
+      ]
+    },
+    {
+      "label": "bcm-final-d",
+      "code": "final_before_buffer_rewrite",
+      "arm": "cm_v1_bcm",
+      "options": {
+        "threads": 1,
+        "reuse_distances": true,
+        "bounded_background": true
+      },
+      "rows_per_s": 4952.0,
+      "pass_seconds": 44.5,
+      "medoid_seconds": 7.29,
+      "medoid_calls": 86,
+      "median_call_seconds": 0.1304,
+      "peak_rss_mib": 3730,
+      "process_mib": 2950,
+      "load_average": [
+        6.02,
+        8.82,
+        8.72
+      ]
+    },
+    {
+      "label": "m1-final-e",
+      "code": "final",
+      "arm": "mars_titan_m1",
+      "options": {
+        "threads": 1,
+        "reuse_distances": true,
+        "bounded_background": true
+      },
+      "rows_per_s": 5239.8,
+      "pass_seconds": 42.9,
+      "medoid_seconds": 3.91,
+      "medoid_calls": 86,
+      "median_call_seconds": 0.065,
+      "peak_rss_mib": 3710,
+      "process_mib": 2950,
+      "load_average": [
+        12.03,
+        12.81,
+        12.16
+      ]
+    },
+    {
+      "label": "bcm-final-e",
+      "code": "final",
+      "arm": "cm_v1_bcm",
+      "options": {
+        "threads": 1,
+        "reuse_distances": true,
+        "bounded_background": true
+      },
+      "rows_per_s": 4008.7,
+      "pass_seconds": 61.0,
+      "medoid_seconds": 9.45,
+      "medoid_calls": 86,
+      "median_call_seconds": 0.1416,
+      "peak_rss_mib": 3693,
+      "process_mib": 2950,
+      "load_average": [
+        14.98,
+        13.28,
+        12.37
+      ]
+    }
+  ]
+}
