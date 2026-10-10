@@ -1,0 +1,55 @@
+[
+  {
+    "check": "null_adapters",
+    "device": "cuda:0",
+    "arms": {
+      "full_continuation": {
+        "updates": 1,
+        "rows_equal_to_frozen_parent": true
+      },
+      "core": {
+        "updates": 1,
+        "rows_equal_to_frozen_parent": true
+      },
+      "episodic_readout": {
+        "updates": 1,
+        "rows_equal_to_frozen_parent": true
+      },
+      "core+episodic_readout": {
+        "updates": 1,
+        "rows_equal_to_frozen_parent": true
+      }
+    },
+    "frozen_parent_max_abs_difference_cpu_device": {
+      "validation": 3.3306690738754696e-16,
+      "calibration": 2.220446049250313e-16,
+      "evaluation": 4.440892098500626e-16
+    },
+    "dtype": "float64",
+    "tolerance": {
+      "rtol": 1e-08,
+      "atol": 1e-10
+    },
+    "seconds": 8.472112121002283,
+    "peak_allocated_bytes": 68561920,
+    "torch": "2.14.0+cu130"
+  },
+  {
+    "check": "core_and_reader_gradients",
+    "device": "cuda:0",
+    "updates": 9,
+    "roles": [
+      [
+        "episodic_read_adapters",
+        "core_adapters"
+      ]
+    ],
+    "max_abs_gradient_difference_cpu_device": 5.442694905877232e-17,
+    "dtype": "float64",
+    "tolerance": {
+      "rtol": 1e-08,
+      "atol": 1e-10
+    },
+    "torch": "2.14.0+cu130"
+  }
+]
