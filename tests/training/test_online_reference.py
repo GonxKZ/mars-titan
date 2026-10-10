@@ -513,9 +513,13 @@ def test_only_a_transformer_reference_starts_the_control(base, tmp_path, cpu):
 def test_the_engine_runs_the_control_and_pauses_between_instants(
     base, anchor, tmp_path, monkeypatch
 ):
-    assert engine.EXECUTORS["neural", ONLINE] == dict(
-        run=engine._online, device="cuda", resumable=False, report="online.json"
+    # El motor envuelve cada ejecutor para liberar lo que comparten los tabulares, así que la
+    # prueba usa la función registrada y no `_online` directamente.
+    entry = engine.EXECUTORS["neural", ONLINE]
+    assert {key: entry[key] for key in ("device", "resumable", "report")} == dict(
+        device="cuda", resumable=False, report="online.json"
     )
+    registered = entry["run"]
     job_run = engine.JobRun(
         job=dict(id="US/fold-000/transformer_compact_online/online-s42"),
         case=dict(rule=RULE),
@@ -532,11 +536,11 @@ def test_the_engine_runs_the_control_and_pauses_between_instants(
     stopped = StopRequest()
     stopped.requested = True
     with pytest.raises(engine.Paused):
-        engine._online(replace(job_run, folder=tmp_path / "paused", stop=stopped))
+        registered(replace(job_run, folder=tmp_path / "paused", stop=stopped))
     # El ejecutor de la campaña no recibe fábrica, así que el registrador sustituye al SGD.
     created = Factory()
     monkeypatch.setattr(online, "_sgd", created)
-    report = engine._online(job_run)
+    report = registered(job_run)
     assert report["status"] == "completed" and len(created.instances) == 2
 
 
