@@ -58,6 +58,8 @@ def test_cuda_disabled_parity_and_pt1_agreement_with_cpu():
         ["nvidia-smi", "--query-gpu=name,memory.total,memory.used", "--format=csv,noheader"],
         text=True,
     ).strip()
+    # El asignador solo acepta reiniciar sus picos después de reservar algo en el dispositivo.
+    torch.empty(0, device=device)
     torch.cuda.reset_peak_memory_stats(device)
     # Sin PT1, la salida, el estado y los gradientes coinciden bit a bit con el núcleo previo.
     assert memory_trace("cuda:0") == CORE_FP32_CUDA["memory"]
