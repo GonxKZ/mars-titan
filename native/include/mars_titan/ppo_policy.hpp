@@ -38,6 +38,10 @@ struct PpoArchitecture {
     int64_t hidden_width = default_ppo_hidden_width;
     bool auxiliary = false;
     bool double_dqn = false;
+    // QR-DQN: cero conserva la cabeza escalar. Con N > 0 la cabeza da N cuantiles por acción y
+    // la acción se elige con la media de los risk_alpha*N primeros niveles (1 = media, CVaR si < 1).
+    int64_t quantiles = 0;
+    double risk_alpha = 1;
     void validate() const;
     bool operator==(const PpoArchitecture&) const = default;
 };
@@ -146,6 +150,12 @@ struct DqnBatch {
     at::Tensor reward_valid;
 };
 
+// Pérdida de Double DQN o QR-DQN sobre las filas válidas, con su grafo y sin paso del optimizador.
+struct DqnLoss {
+    at::Tensor loss;
+    int64_t valid_transitions = 0;
+};
+
 struct DqnUpdateStats {
     int64_t valid_transitions = 0;
     int64_t updates = 0;
@@ -208,6 +218,10 @@ public:
     [[nodiscard]] PpoAuxiliaryStats consolidate(const at::Tensor& observations,
                                                 const at::Tensor& matured_rewards, int64_t steps = 1);
     [[nodiscard]] PpoAction act_double_dqn(const at::Tensor& observations, double epsilon);
+    // Cuantiles [N,6,Q] de QR-DQN en el dispositivo de la política. Conserva el modo autograd.
+    [[nodiscard]] at::Tensor action_quantiles(const at::Tensor& observations) const;
+    // Pérdida SmoothL1 de Double DQN o cuantílica de QR-DQN, sin backward ni pasos de Adam.
+    [[nodiscard]] DqnLoss double_dqn_loss(const DqnBatch& batch) const;
     // Un fallo después de Adam exige recuperar el último checkpoint confirmado.
     [[nodiscard]] DqnUpdateStats update_double_dqn(const DqnBatch& batch, std::size_t environment_step,
                                                    std::size_t target_interval = default_dqn_target_interval);

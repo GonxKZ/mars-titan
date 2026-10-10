@@ -6,6 +6,8 @@ denso para contrastar esa compresión y estudiar secuencias de operadores con
 
 - La transición rápida de MAC, `z' = F(z, x)` con `z = (vec W₁…W_L, vec m₁…m_L)`. Incluye
   lectura previa, atención, tasas dependientes de su salida y actualización asociativa.
+  Con la convolución de la sección 4.4, z añade las ventanas de k, v y q, porque la
+  transición depende de ellas. La de q solo se desplaza y recibe W_Q x, que no depende de z.
 - Cada refinamiento del lector episódico, `z_{k+1} = z_k + η tanh(u_k)` con η = σ(s) y
   `u_k = W[z_k, base, read(z_k), presencia] + b`. Su operador local es `I + η D_z f_k`.
   La base es fija y los episodios elegidos son constantes a trozos, así que la derivada
@@ -19,26 +21,45 @@ from dataclasses import replace
 import torch
 from torch.nn.attention import SDPBackend, sdpa_kernel
 
+from .config import MACConfig
 from .mac import TitansMAC
 
 MAX_DENSE_ORDER = 256
 
 
+def fast_state_dimension(config: MACConfig) -> int:
+    """Orden de z: matrices y momentum y, con convolución, las tres ventanas de un flujo."""
+    memory = config.memory
+    return 2 * memory.depth * memory.dim**2 + 3 * memory.window * memory.dim
+
+
 def fast_state_point(state):
-    """Vector z de un estado MAC: pesos rápidos y momentum por capas, en orden de filas."""
+    """Vector z de un estado MAC: pesos rápidos, momentum y ventanas k, v y q, por filas."""
     memory = state.memory
-    return torch.cat([value.flatten() for value in (*memory.weights, *memory.momentum)])
+    values = (*memory.weights, *memory.momentum, *memory.convolution, *state.convolution)
+    return torch.cat([value.flatten() for value in values])
 
 
 def fast_state_transition(mac, token, state):
     """F(·, x) de un flujo con el token fijo. Devuelve z' con la misma disposición que z."""
     memory = state.memory
     dim, depth = mac.config.memory.dim, mac.config.memory.depth
+    window, count = mac.config.memory.window, len(memory.convolution)
+    sizes = [dim**2] * (2 * depth) + [window * dim] * (count + len(state.convolution))
 
     def transition(value):
-        pieces = tuple(piece.reshape(1, dim, dim).clone() for piece in value.split(dim**2))
-        local = replace(memory, weights=pieces[:depth], momentum=pieces[depth:])
-        _, following = mac(token, replace(state, memory=local), differentiable=True)
+        pieces = value.split(sizes)
+        matrices = tuple(piece.reshape(1, dim, dim).clone() for piece in pieces[: 2 * depth])
+        windows = tuple(piece.reshape(1, window, dim).clone() for piece in pieces[2 * depth :])
+        local = replace(
+            memory,
+            weights=matrices[:depth],
+            momentum=matrices[depth:],
+            convolution=windows[:count],
+        )
+        _, following = mac(
+            token, replace(state, memory=local, convolution=windows[count:]), differentiable=True
+        )
         return fast_state_point(following)
 
     return transition
@@ -50,7 +71,7 @@ def _single_flow(mac, token, state):
     mac._validate_state(state)
     if state.memory.steps.shape != (1,) or token.shape[:2] != (1, 1):
         raise ValueError("El Jacobiano denso se calcula para un flujo y un token")
-    order = 2 * mac.config.memory.depth * mac.config.memory.dim**2
+    order = fast_state_dimension(mac.config)
     if order > MAX_DENSE_ORDER:
         raise ValueError("El Jacobiano denso solo se admite hasta orden 256")
 

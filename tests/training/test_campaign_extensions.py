@@ -31,8 +31,8 @@ COUNTS = dict(
         extended=(5265, 0),
         adapters=(3654, 630),
         rl=dict(
-            declared=dict(training_jobs=1368, carried_jobs=0, reference_jobs=792),
-            extended=dict(training_jobs=2376, carried_jobs=0, reference_jobs=1800),
+            declared=dict(training_jobs=1368, carried_jobs=0, reference_jobs=1221),
+            extended=dict(training_jobs=2376, carried_jobs=0, reference_jobs=2775),
         ),
     ),
     B=dict(
@@ -41,8 +41,8 @@ COUNTS = dict(
         extended=(1989, 2044),
         adapters=(1479, 2436),
         rl=dict(
-            declared=dict(training_jobs=456, carried_jobs=912, reference_jobs=792),
-            extended=dict(training_jobs=792, carried_jobs=1584, reference_jobs=1800),
+            declared=dict(training_jobs=456, carried_jobs=912, reference_jobs=1221),
+            extended=dict(training_jobs=792, carried_jobs=1584, reference_jobs=2775),
         ),
     ),
 )
@@ -151,7 +151,7 @@ def test_the_declared_configurations_stay_untouched():
         (("limits", "max_training_jobs"), 5264, "prevé 5265 trabajos.*max_training_jobs=5264"),
         (("limits", "max_prediction_jobs"), 1, "prevé 0 trabajos.*max_prediction_jobs=1"),
         (("rl_stage", "limits", "max_training_jobs"), 2377, "políticas ampliada prevé 2376"),
-        (("rl_stage", "limits", "max_evaluation_jobs"), 792, "prevé 1800 trabajos"),
+        (("rl_stage", "limits", "max_evaluation_jobs"), 2774, "prevé 2775 trabajos"),
     ],
 )
 def test_prepared_limits_must_match_the_counts_exactly(where, value, message):

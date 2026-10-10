@@ -9,7 +9,7 @@ from mars_titan.episodes.worlds import WorldConfig, generate_world
 from mars_titan.simulation.environment import FinancialEnv
 from mars_titan.simulation.evaluation import evaluate
 from mars_titan.simulation.market import MarketTape
-from mars_titan.simulation.portfolio import CorporateAction
+from mars_titan.simulation.portfolio import CorporateAction, Instrument, Period
 from tests.simulation.native_library import NATIVE_BACKEND
 
 DAY = 86_400_000_000
@@ -265,9 +265,32 @@ def test_ending_invested_reports_the_unpaid_exit_cost_without_changing_rewards()
     )
     assert gap == pytest.approx(exit_costs / 10_000)
     assert cash["terminal_liquidation"] == dict(
-        basis="final_close_minus_cost_bps", estimated_costs=0.0, net_return=0.0
+        basis="final_close_minus_cost_bps_and_sell_taxes", estimated_costs=0.0, net_return=0.0
     )
     assert invested["terminal_liquidation"]["net_return"] < 0
+
+
+@pytest.mark.parametrize("backend", BACKENDS)
+def test_terminal_liquidation_pays_the_sell_tax_in_force_at_the_last_close(backend):
+    # El timbre baja justo en el último cierre, como el 28 de agosto de 2023: la venta
+    # hipotética paga el tipo de esa fecha y no el de la última apertura.
+    tape = flat()
+    last = int(tape.close_times[-1])
+    rules = Instrument(
+        "USD",
+        rules="prueba_timbre",
+        taxes=(Period(0, last, sell=0.001), Period(last, 2**62, sell=0.0005)),
+    )
+    instruments = {asset: rules for asset in tape.assets}
+    result = evaluate(FinancialEnv(tape, backend=backend, instruments=instruments), lambda *_: 5)
+    held = sum(result["ending_positions"].values()) * 100.0
+    expected = held * 10 / 10000 + held * 0.0005
+    liquidation = result["terminal_liquidation"]
+    assert liquidation["estimated_costs"] == pytest.approx(expected, rel=1e-15)
+    final = 10_000 * (1 + result["financial_validation"]["net_return"])
+    assert liquidation["net_return"] == pytest.approx((final - expected) / 10_000 - 1, abs=1e-15)
+    plain = evaluate(FinancialEnv(tape, backend=backend), lambda *_: 5)
+    assert plain["terminal_liquidation"]["estimated_costs"] < liquidation["estimated_costs"]
 
 
 def test_corporate_action_before_the_first_decision_is_rejected():

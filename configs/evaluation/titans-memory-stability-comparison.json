@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "kind": "innovation_arm_declaration",
+  "innovation": "pt1_titans_memory_stability",
+  "status": "declared_not_executed",
+  "declared_at": "2026-10-10",
+  "final_test_opened": false,
+  "executions": 0,
+  "issue": 453,
+  "proposal": "docs/research/post-titans-proposals.md",
+  "specification": "docs/engineering/titans-memory-stability.md",
+  "base_recipe": "configs/titans/chronological-training-historical-masked.json",
+  "variant": "mac_online",
+  "arms": {
+    "titans_mac_online": {
+      "role": "control",
+      "predictor_changes": {}
+    },
+    "titans_mac_online_pt1": {
+      "role": "innovation",
+      "predictor_changes": {
+        "gate_bias": {"alpha_half_life": 256.0, "eta": 0.15, "theta": 0.05},
+        "memory_stability": {
+          "alpha_floor": 0.002,
+          "eta_ceiling": 0.3,
+          "gradient_clip": 4.0,
+          "gate_box": true
+        }
+      }
+    },
+    "titans_mac_online_pt1_init": {
+      "role": "trivial_alternative",
+      "predictor_changes": {
+        "gate_bias": {"alpha_half_life": 256.0, "eta": 0.15, "theta": 0.05}
+      }
+    }
+  },
+  "equal": [
+    "rows",
+    "windows",
+    "purge",
+    "seeds",
+    "search_cases",
+    "optimizer_updates",
+    "stopping_rule",
+    "truncation",
+    "accumulation_rows"
+  ],
+  "metric": {
+    "primary": "relative_difference_of_session_mae_innovation_minus_control",
+    "pairing": "same_sessions_assets_seeds_and_windows",
+    "uncertainty": "circular_block_bootstrap",
+    "block_length": 16,
+    "replicates": 2000,
+    "confidence": 0.95,
+    "partition": "validation"
+  },
+  "decision_rule": {
+    "keep_if": [
+      "upper_bound_of_relative_mae_difference <= 0.002",
+      "p95_session_mae_in_declared_events_not_worse_than_control_by_more_than 0.01"
+    ],
+    "abandon_if": [
+      "pilot_upper_bound_of_relative_mae_difference > 0.005",
+      "declared_events_show_online_equal_to_frozen"
+    ],
+    "trivial_alternative": "Si titans_mac_online_pt1_init iguala a PT1 en error y diagnósticos, la caja y el recorte no aportan nada sobre el cambio de inicialización que exigen.",
+    "secondary_not_deciding": ["maximum_lyapunov_exponent_D5", "maximum_fast_state_norm", "fraction_of_clipped_rows"],
+    "declared_events": ["2008-09-15", "2020-02-24/2020-03-23", "2022-03-16"]
+  },
+  "pilot": {
+    "assets": "hasta 64 de EE. UU. con todas las modalidades disponibles",
+    "validation_windows": [2018, 2019, 2020],
+    "training": "expansivo desde 2000",
+    "seeds": {"titans_mac_online_pt1": 1, "titans_mac_online": 1},
+    "gpu_hours_max": 6,
+    "diagnostics": ["D1", "D2", "D5"]
+  },
+  "prediction": "El MAE no cambiará de forma detectable, con una diferencia relativa entre −0,2 % y +0,2 %. La norma máxima del estado bajará al menos a la mitad en el evento de 2020. El exponente de Lyapunov estimado del control será negativo en la mayor parte de las sesiones.",
+  "pending": [
+    "Nada se ha ejecutado. El bloqueo de aprendizaje impide el piloto y la comparación.",
+    "gradient_clip = 4 se fija antes de ver datos: con LayerNorm la salida de la memoria tiene escala unitaria por coordenada y, en la memoria lineal con clave unitaria, G = 4 equivale a Huber con δ = 2. La memoria de dos capas no tiene esa equivalencia exacta, así que la fracción de filas recortadas se registra como diagnóstico y no se ajusta.",
+    "La alternativa trivial conserva las tasas iniciales de PT1 sin caja ni recorte. FinancialConfig no expone theta_max, de modo que reducirlo exigiría otra extensión y cambiaría dos cosas a la vez."
+  ]
+}

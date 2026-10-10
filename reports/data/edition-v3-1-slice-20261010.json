@@ -1,0 +1,655 @@
+{
+  "scope": "13 activos con semilla 428, copias fuera de las rutas oficiales, sin aprendizaje",
+  "assets": [
+    "CN/000623.SZ",
+    "CN/600000.SS",
+    "CN/600436.SS",
+    "CN/600928.SS",
+    "CN/688005.SS",
+    "US/BBW",
+    "US/CHRS",
+    "US/CKX",
+    "US/HQL",
+    "US/HRI",
+    "US/HUYA",
+    "US/ICE",
+    "US/UBOH"
+  ],
+  "machine_load": [
+    " 01:55:36 up 2 days,  5:57,  1 user,  load average: 20,26, 21,65, 21,79",
+    " 01:58:28 up 2 days,  5:59,  1 user,  load average: 30,43, 24,28, 22,69",
+    "",
+    " 02:45:49 up 2 days,  6:47,  1 user,  load average: 33,48, 35,63, 30,66",
+    " 02:51:25 up 2 days,  6:52,  1 user,  load average: 44,35, 38,18, 32,92",
+    ""
+  ],
+  "precision": {
+    "matmul_tf32": false,
+    "cudnn_tf32": false,
+    "float32_matmul_precision": "highest"
+  },
+  "passes": {
+    "collect": {
+      "elapsed_seconds": 171.6650229159859,
+      "cpu_user_seconds": 152.576247,
+      "cpu_system_seconds": 3.743768,
+      "pending": {
+        "image": {
+          "items": 43942,
+          "payload_bytes": 68175127
+        },
+        "text": {
+          "items": 5165,
+          "payload_bytes": 13710147
+        },
+        "assets": 12
+      },
+      "previous_attempt_with_per_row_commits_seconds": 1038.170391291991
+    },
+    "encode": {
+      "elapsed_seconds": 683.7199201140029,
+      "counts": {
+        "encoded": 49107,
+        "already": 0,
+        "remaining": 0,
+        "by_kind": {
+          "text": {
+            "encoded": 5165,
+            "seconds": 134.75139895052416
+          },
+          "image": {
+            "encoded": 43942,
+            "seconds": 221.5497144352703
+          }
+        }
+      },
+      "cuda_peak_allocated_bytes": 188418048,
+      "cuda_peak_reserved_bytes": 209715200,
+      "nvidia_smi": {
+        "device_used_mib": 855,
+        "device_total_mib": 8188,
+        "process_mib": 360,
+        "mean_utilization_percent": 18.515691263782866
+      },
+      "note": "El muestreo con nvidia-smi cada 0,5 s compartía la CPU con el proceso medido."
+    },
+    "final": {
+      "elapsed_seconds": 335.5619793339865,
+      "cpu_user_seconds": 165.905335,
+      "cpu_system_seconds": 9.653166,
+      "failed_assets": 0,
+      "cohort_complete": true
+    },
+    "reuse": {
+      "elapsed_seconds": 65.05516984098358,
+      "cpu_user_seconds": 40.065949,
+      "cpu_system_seconds": 1.830032
+    },
+    "release": {
+      "result": {
+        "assets": 12,
+        "pending_files": 1,
+        "charts_released": 43942
+      },
+      "elapsed_seconds": 6.846569682995323
+    }
+  },
+  "edition_changes": {
+    "previous_samples": 40616,
+    "samples": 43973,
+    "assets": {
+      "CN/000623.SZ": {
+        "previous_samples": 4083,
+        "samples": 4309,
+        "new_sessions": 226,
+        "changed_charts": 0,
+        "windows_changed": 80,
+        "window_max_abs_change": 1.4210854715202004e-14,
+        "reencoded_charts": {
+          "compared": 4083,
+          "identical": 0,
+          "max_abs": 0.007040500640869141,
+          "max_rel": 1.0,
+          "max_norm_rel": 0.0010074519129666917
+        },
+        "previous_still_present": false,
+        "samples_bytes": 13796135,
+        "market_absent_windows": {
+          "windows": 63,
+          "absent_sessions": 125
+        }
+      },
+      "CN/600000.SS": {
+        "previous_samples": 3952,
+        "samples": 4245,
+        "new_sessions": 293,
+        "changed_charts": 64,
+        "windows_changed": 83,
+        "window_max_abs_change": 1.4210854715202004e-14,
+        "reencoded_charts": {
+          "compared": 3888,
+          "identical": 0,
+          "max_abs": 0.006175041198730469,
+          "max_rel": 1.0,
+          "max_norm_rel": 0.0007978294014707098
+        },
+        "previous_still_present": false,
+        "samples_bytes": 14232340,
+        "market_absent_windows": {
+          "windows": 63,
+          "absent_sessions": 125
+        }
+      },
+      "CN/600436.SS": {
+        "previous_samples": 4182,
+        "samples": 4245,
+        "new_sessions": 63,
+        "changed_charts": 0,
+        "windows_changed": 20,
+        "window_max_abs_change": 7.105427357601002e-15,
+        "reencoded_charts": {
+          "compared": 4182,
+          "identical": 0,
+          "max_abs": 0.005881786346435547,
+          "max_rel": 1.0,
+          "max_norm_rel": 0.0008154066033026094
+        },
+        "previous_still_present": false,
+        "samples_bytes": 13900889,
+        "market_absent_windows": {
+          "windows": 63,
+          "absent_sessions": 125
+        }
+      },
+      "CN/600928.SS": {
+        "previous_samples": 1008,
+        "samples": 1108,
+        "new_sessions": 100,
+        "changed_charts": 0,
+        "windows_changed": 71,
+        "window_max_abs_change": 1.4210854715202004e-14,
+        "reencoded_charts": {
+          "compared": 1008,
+          "identical": 0,
+          "max_abs": 0.004510164260864258,
+          "max_rel": 1.0,
+          "max_norm_rel": 0.000781603203636838
+        },
+        "previous_still_present": false,
+        "samples_bytes": 3793998,
+        "market_absent_windows": {
+          "windows": 36,
+          "absent_sessions": 71
+        }
+      },
+      "CN/688005.SS": {
+        "previous_samples": 1018,
+        "samples": 1018,
+        "new_sessions": 0,
+        "changed_charts": 0,
+        "windows_changed": 3,
+        "window_max_abs_change": 2.220446049250313e-16,
+        "reencoded_charts": {
+          "compared": 1018,
+          "identical": 0,
+          "max_abs": 0.005337715148925781,
+          "max_rel": 1.0,
+          "max_norm_rel": 0.000818564623987325
+        },
+        "previous_still_present": false,
+        "samples_bytes": 4011036,
+        "market_absent_windows": {
+          "windows": 0,
+          "absent_sessions": 0
+        }
+      },
+      "US/BBW": {
+        "previous_samples": 4635,
+        "samples": 4763,
+        "new_sessions": 128,
+        "changed_charts": 64,
+        "windows_changed": 67,
+        "window_max_abs_change": 1.4210854715202004e-14,
+        "reencoded_charts": {
+          "compared": 4571,
+          "identical": 0,
+          "max_abs": 0.006089925765991211,
+          "max_rel": 1.0,
+          "max_norm_rel": 0.0008104320744638103
+        },
+        "previous_still_present": false,
+        "samples_bytes": 16286510,
+        "market_absent_windows": {
+          "windows": 0,
+          "absent_sessions": 0
+        }
+      },
+      "US/CHRS": {
+        "previous_samples": 2239,
+        "samples": 2239,
+        "new_sessions": 0,
+        "changed_charts": 26,
+        "windows_changed": 0,
+        "window_max_abs_change": 0.0,
+        "reencoded_charts": {
+          "compared": 2213,
+          "identical": 0,
+          "max_abs": 0.005255222320556641,
+          "max_rel": 1.0,
+          "max_norm_rel": 0.0007958999746422587
+        },
+        "previous_still_present": false,
+        "samples_bytes": 7723749,
+        "market_absent_windows": {
+          "windows": 0,
+          "absent_sessions": 0
+        }
+      },
+      "US/CKX": {
+        "previous_samples": 4918,
+        "samples": 5974,
+        "new_sessions": 1056,
+        "changed_charts": 19,
+        "windows_changed": 72,
+        "window_max_abs_change": 7.105427357601002e-15,
+        "reencoded_charts": {
+          "compared": 4899,
+          "identical": 0,
+          "max_abs": 0.006476879119873047,
+          "max_rel": 1.0,
+          "max_norm_rel": 0.0010074519129666917
+        },
+        "previous_still_present": false,
+        "samples_bytes": 18845286,
+        "market_absent_windows": {
+          "windows": 0,
+          "absent_sessions": 0
+        }
+      },
+      "US/HQL": {
+        "previous_samples": 4739,
+        "samples": 5974,
+        "new_sessions": 1235,
+        "changed_charts": 0,
+        "windows_changed": 60,
+        "window_max_abs_change": 2.842170943040401e-14,
+        "reencoded_charts": {
+          "compared": 4739,
+          "identical": 0,
+          "max_abs": 0.005948066711425781,
+          "max_rel": 1.0,
+          "max_norm_rel": 0.0008736111149804258
+        },
+        "previous_still_present": false,
+        "samples_bytes": 18877023,
+        "market_absent_windows": {
+          "windows": 0,
+          "absent_sessions": 0
+        }
+      },
+      "US/HRI": {
+        "previous_samples": 4245,
+        "samples": 4245,
+        "new_sessions": 0,
+        "changed_charts": 0,
+        "windows_changed": 18,
+        "window_max_abs_change": 7.105427357601002e-15,
+        "reencoded_charts": {
+          "compared": 4245,
+          "identical": 0,
+          "max_abs": 0.006033658981323242,
+          "max_rel": 1.0,
+          "max_norm_rel": 0.0008325575252886939
+        },
+        "previous_still_present": false,
+        "samples_bytes": 14151334,
+        "market_absent_windows": {
+          "windows": 0,
+          "absent_sessions": 0
+        }
+      },
+      "US/HUYA": {
+        "previous_samples": 1164,
+        "samples": 1356,
+        "new_sessions": 192,
+        "changed_charts": 0,
+        "windows_changed": 12,
+        "window_max_abs_change": 7.105427357601002e-15,
+        "reencoded_charts": {
+          "compared": 1164,
+          "identical": 0,
+          "max_abs": 0.005021333694458008,
+          "max_rel": 1.0,
+          "max_norm_rel": 0.0007577901215957255
+        },
+        "previous_still_present": false,
+        "samples_bytes": 5177147,
+        "market_absent_windows": {
+          "windows": 0,
+          "absent_sessions": 0
+        }
+      },
+      "US/ICE": {
+        "previous_samples": 4433,
+        "samples": 4497,
+        "new_sessions": 64,
+        "changed_charts": 0,
+        "windows_changed": 11,
+        "window_max_abs_change": 1.4210854715202004e-14,
+        "reencoded_charts": {
+          "compared": 4433,
+          "identical": 0,
+          "max_abs": 0.005731105804443359,
+          "max_rel": 1.0,
+          "max_norm_rel": 0.0007978785256621024
+        },
+        "previous_still_present": false,
+        "samples_bytes": 17646152,
+        "market_absent_windows": {
+          "windows": 0,
+          "absent_sessions": 0
+        }
+      },
+      "US/UBOH": {
+        "previous_samples": 0,
+        "samples": 0,
+        "new_sessions": 0,
+        "changed_charts": 0,
+        "windows_changed": 0,
+        "window_max_abs_change": 0.0,
+        "reencoded_charts": {
+          "compared": 0,
+          "identical": 0,
+          "max_abs": 0.0,
+          "max_rel": 0.0,
+          "max_norm_rel": 0.0
+        },
+        "previous_still_present": false,
+        "samples_bytes": 7147,
+        "market_absent_windows": {
+          "windows": 0,
+          "absent_sessions": 0
+        }
+      }
+    },
+    "same_png_charts": {
+      "compared": 40443,
+      "identical": 0,
+      "max_abs": 0.007040500640869141,
+      "max_norm_rel": 0.0010074519129666917,
+      "max_component_rel": 1.0,
+      "distribution": {
+        "US/ICE": {
+          "charts": 4433,
+          "components": 2269696,
+          "zero_in_one_only": 266,
+          "both_zero": 64082,
+          "rel_nonzero_p50": 0.0007618139848733665,
+          "rel_nonzero_p99": 0.018050725739864732,
+          "rel_nonzero_max": 0.9981337227844373,
+          "rel_large_components_max": 0.027295156613547863,
+          "abs_p99": 0.002076151967048634,
+          "abs_max": 0.005731105804443359,
+          "value_max": 9.92719841003418,
+          "norm_rel_p50": 0.0005412257331152288
+        },
+        "CN/000623.SZ": {
+          "charts": 4083,
+          "components": 2090496,
+          "zero_in_one_only": 214,
+          "both_zero": 51455,
+          "rel_nonzero_p50": 0.0007369043956619258,
+          "rel_nonzero_p99": 0.017191810755618014,
+          "rel_nonzero_max": 0.9986082812474226,
+          "rel_large_components_max": 0.023168026737990077,
+          "abs_p99": 0.0019712448120117188,
+          "abs_max": 0.007040500640869141,
+          "value_max": 9.457039833068848,
+          "norm_rel_p50": 0.0005346590639695271
+        },
+        "US/CKX": {
+          "charts": 4899,
+          "components": 2508288,
+          "zero_in_one_only": 342,
+          "both_zero": 78347,
+          "rel_nonzero_p50": 0.0008499033999133672,
+          "rel_nonzero_p99": 0.019695282300696473,
+          "rel_nonzero_max": 0.9997092618431059,
+          "rel_large_components_max": 0.02945544225469245,
+          "abs_p99": 0.0020399093627929688,
+          "abs_max": 0.006476879119873047,
+          "value_max": 10.758893013000488,
+          "norm_rel_p50": 0.0005856214645867475
+        }
+      }
+    },
+    "news_vectors": "identicos bit a bit en todas las sesiones comunes"
+  },
+  "disk": {
+    "samples_v31_bytes": 149220176,
+    "samples_v3_replaced_bytes": 137571787,
+    "v3_record_kept_bytes": 755586,
+    "pending_bytes": 113635328,
+    "computed_bytes": 203837440
+  },
+  "gpu_benchmark": {
+    "model_only_2048_charts": {
+      "images": 2048,
+      "device": "NVIDIA GeForce RTX 4070 Laptop GPU",
+      "torch": "2.14.0+cu130",
+      "single_seconds": 6.914640480012167,
+      "decode_seconds": 1.4506974020041525,
+      "batch_1": {
+        "seconds_without_decode": 4.436843195988331,
+        "identical_to_single": 2048,
+        "max_abs_vs_single": 0.0
+      },
+      "batch_8": {
+        "seconds_without_decode": 1.6038534190156497,
+        "identical_to_single": 2048,
+        "max_abs_vs_single": 0.0
+      },
+      "batch_32": {
+        "seconds_without_decode": 1.7669637750077527,
+        "identical_to_single": 0,
+        "max_abs_vs_single": 9.179115295410156e-06
+      },
+      "batch_64": {
+        "seconds_without_decode": 1.7230259109928738,
+        "identical_to_single": 0,
+        "max_abs_vs_single": 3.814697265625e-06
+      },
+      "batch_128": {
+        "seconds_without_decode": 2.0586107760027517,
+        "identical_to_single": 0,
+        "max_abs_vs_single": 5.7220458984375e-06
+      },
+      "tf32_vs_fp32_batch_1": {
+        "identical": 0,
+        "max_abs": 0.005233287811279297,
+        "max_rel": 1.0,
+        "max_norm_rel": 0.0008525638067688998
+      },
+      "device_free_after_load_bytes": 7369588736,
+      "device_free_at_end_bytes": 5706547200,
+      "device_total_bytes": 8183676928,
+      "cuda_peak_allocated_bytes": 1108469248,
+      "cuda_peak_reserved_bytes": 1803550720
+    },
+    "production_call_sizes_1_to_8": {
+      "images": 2048,
+      "size_1": {
+        "images_per_second": 326.0849145276396,
+        "identical_to_size_1": 2048
+      },
+      "size_2": {
+        "images_per_second": 542.3251735456232,
+        "identical_to_size_1": 2048
+      },
+      "size_3": {
+        "images_per_second": 596.1089863810353,
+        "identical_to_size_1": 2048
+      },
+      "size_4": {
+        "images_per_second": 697.0355444189257,
+        "identical_to_size_1": 2048
+      },
+      "size_5": {
+        "images_per_second": 755.9929914917144,
+        "identical_to_size_1": 2048
+      },
+      "size_6": {
+        "images_per_second": 798.1048952524441,
+        "identical_to_size_1": 2048
+      },
+      "size_7": {
+        "images_per_second": 804.2327132168637,
+        "identical_to_size_1": 2048
+      },
+      "size_8": {
+        "images_per_second": 805.3703669099416,
+        "identical_to_size_1": 2048
+      },
+      "cuda_peak_allocated_bytes": 193570304,
+      "cuda_peak_reserved_bytes": 234881024
+    }
+  },
+  "batch_8_run": {
+    "collect": {
+      "elapsed_seconds": 174.0064580469916,
+      "cpu_user_seconds": 136.530807,
+      "cpu_system_seconds": 5.425004
+    },
+    "first_encode_attempt": "CUDA sin memoria con el límite de 224 MiB de la v3, reanudado con 1 GiB",
+    "encode": {
+      "elapsed_seconds": 180.78435950897983,
+      "counts": {
+        "encoded": 46035,
+        "already": 3072,
+        "remaining": 0,
+        "by_kind": {
+          "text": {
+            "encoded": 5165,
+            "seconds": 88.05482114580809
+          },
+          "image": {
+            "encoded": 40870,
+            "seconds": 65.41537543979939
+          }
+        },
+        "loop_seconds": 163.22793326701503,
+        "cuda_peak_allocated_bytes": 202745344,
+        "cuda_peak_reserved_bytes": 264241152
+      }
+    },
+    "final": {
+      "elapsed_seconds": 171.52130271101487,
+      "cpu_user_seconds": 151.134329,
+      "cpu_system_seconds": 5.130959,
+      "failed_assets": 0,
+      "cohort_complete": true
+    },
+    "samples_identical_to_one_by_one": true,
+    "load": [
+      " 03:58:25 up 2 days,  7:59,  1 user,  load average: 22,61, 21,25, 24,87",
+      " 04:01:20 up 2 days,  8:02,  1 user,  load average: 21,60, 21,08, 24,15",
+      ""
+    ]
+  },
+  "text_carry_run": {
+    "rule": "v3 texts reused after a bit-identical strict FP32 sample per asset",
+    "texts_vector_level": {
+      "identical": 5051,
+      "different": 0,
+      "absent_in_v3": 114
+    },
+    "collect": {
+      "elapsed_seconds": 162.5355730529991,
+      "cpu_user_seconds": 136.041421,
+      "cpu_system_seconds": 3.23577,
+      "pending": {
+        "image": {
+          "items": 43942,
+          "payload_bytes": 68175127
+        },
+        "text": {
+          "items": 279,
+          "payload_bytes": 615368
+        },
+        "assets": 12,
+        "carried": {
+          "items": 5051,
+          "sampled": 165,
+          "payload_bytes": 13480963
+        }
+      }
+    },
+    "encode": {
+      "elapsed_seconds": 81.06541206099791,
+      "counts": {
+        "encoded": 44221,
+        "already": 0,
+        "remaining": 0,
+        "text_carry": {
+          "assets": 12,
+          "reused": 12,
+          "reencoded": 0,
+          "compared": 165,
+          "mismatched": 0,
+          "reencoded_texts": 0
+        },
+        "by_kind": {
+          "text": {
+            "encoded": 279,
+            "seconds": 3.3043398240115494
+          },
+          "image": {
+            "encoded": 43942,
+            "seconds": 60.680354739160975
+          }
+        },
+        "loop_seconds": 68.24185687399586,
+        "cuda_peak_allocated_bytes": 202745344,
+        "cuda_peak_reserved_bytes": 264241152
+      }
+    },
+    "final": {
+      "elapsed_seconds": 149.6557895670121,
+      "cpu_user_seconds": 141.412539,
+      "cpu_system_seconds": 4.682745,
+      "failed_assets": 0,
+      "cohort_complete": true,
+      "copy_bytes_before": 138327373,
+      "copy_bytes_after": 755586
+    },
+    "comparison_with_batch_8": {
+      "assets": 13,
+      "all_equal": true,
+      "rows": 43973,
+      "candidates": 5051,
+      "compared": 165,
+      "mismatched": 0,
+      "decisions": [
+        "reused_after_check"
+      ]
+    }
+  },
+  "projection": {
+    "windows": 18698976,
+    "v3_texts": 1591529,
+    "collect_cpu_hours": 18.47779275209139,
+    "final_cpu_hours": 20.737246572991612,
+    "gpu_chart_hours_one_per_call": 26.188263272748248,
+    "gpu_text_hours": 11.533868948065438,
+    "gpu_chart_hours_batch_8": 8.313626779896952,
+    "gpu_text_hours_lower_load": 7.536936723855373,
+    "final_cpu_hours_lower_load": 18.458301874288313,
+    "gpu_text_share_with_carry": 0.054017424975798645,
+    "gpu_text_hours_with_carry": [
+      0.6230299005828185,
+      0.40712591402819925
+    ],
+    "samples_v31_gb": 63.45403974574798,
+    "transient_bytes_per_sample": 7219.7204648306915
+  }
+}

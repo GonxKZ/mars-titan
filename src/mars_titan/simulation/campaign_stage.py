@@ -4,8 +4,10 @@ La etapa parte de una campaña base confirmada (`training.masked_campaign`). En 
 de política, todos los brazos de un predictor observan las mismas cintas, montadas con sus
 predicciones congeladas y sus recibos de ventana (`simulation.window_tapes`), y todos los
 predictores comparten el universo del ancla. KLPO terminal, brazo principal del contraste, y
-tres referencias sin aprendizaje (efectivo, comprar y mantener y la regla fija sobre la
-predicción) se aplican a todos los predictores con productor en la campaña. Las variantes
+cinco referencias sin aprendizaje se aplican a todos los predictores con productor en la
+campaña. Tres usan la predicción (efectivo, comprar y mantener y la regla fija del 50 %) y
+dos no la usan: la cartera 1/N reequilibrada cada 21 sesiones, con los mismos costes y
+reglas, y el índice de mercado comprado y mantenido en su propia cinta de un activo. Las variantes
 PPO identificadas y Double DQN se comparan sobre los predictores del nivel de algoritmos.
 Comparten seis acciones, las semillas 42, 43 y 44 y el presupuesto de transiciones
 declarado antes de evaluar. La selección usa el criterio de cartera declarado sobre la
@@ -45,26 +47,30 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
-import numpy as np
-
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.environments.walk_forward_receipt import read_window_receipt
+from mars_titan.posttraining import staged_chain
 from mars_titan.training import masked_campaign
 from mars_titan.training.campaign_plan import plan_campaign
 from mars_titan.training.learning_hold import LearningHoldError, require_learning_allowed
 
 from . import native_policy_runs, window_tapes
 from .policy_plan import (
+    BASE_SELECTED,
     CARRY,
     FIT,
+    MARKET_INDEX,
     REFERENCE,
     _number,
     _require,
     count_stage,
+    count_tapes,
     load_stage,
     plan_stage,
+    window_sensitivity,
 )
+from .reconstructed_tape import NoAdmittedAssets
 
 RUN_KIND = "historical_masked_rl_stage_run"
 RECEIPT_KIND = "masked_rl_job"
@@ -99,6 +105,36 @@ CAPABILITIES = {
             "sobre cintas reconstruidas, selecciona en validación y evalúa el estado elegido"
         ),
     ),
+    "native_ppo_equity_and_costs": dict(
+        probe="native_ppo",
+        capability=native_policy_runs.EQUITY_AND_COSTS,
+        pending=(
+            "Compilar mars-titan-ppo con la evaluación que publica el patrimonio por sesión "
+            "y acepta los costes declarados por la etapa"
+        ),
+    ),
+    "native_klpo_equity_and_costs": dict(
+        probe="native_klpo",
+        capability=native_policy_runs.EQUITY_AND_COSTS,
+        pending=(
+            "Compilar mars-titan-klpo con la evaluación que publica el patrimonio por sesión "
+            "y acepta los costes declarados por la etapa"
+        ),
+    ),
+    "native_group_relative_runner": dict(
+        probe="native_group_relative",
+        pending=(
+            "Compilar mars-titan-klpo con los objetivos de grupo (GRPO, Dr. GRPO, DAPO y GSPO) "
+            "sobre las mismas oleadas que KLPO"
+        ),
+    ),
+    "native_ppo_quantile_value_heads": dict(
+        probe="native_ppo",
+        pending=(
+            "Compilar mars-titan-ppo con las variantes qr_dqn y qr_dqn_cvar, que cambian el "
+            "valor escalar de Double DQN por cuantiles"
+        ),
+    ),
 }
 
 
@@ -117,16 +153,29 @@ def _digest(value):
 # Capacidades del motor
 
 
-def _probe_tape():
-    """Cinta sintética mínima de un activo A, solo para preguntar al motor por sus reglas."""
-    from .market import MarketTape
+# Cierres de referencia de la consulta de reglas, con redondeos de medio céntimo.
+RULE_QUERY_REFERENCES = (10.0, 9.99, 10.05, 2.675, 0.95)
 
-    day = 86_400_000_000
-    prices = np.tile([10.0, 10.0, 10.0, 10.0, 1e6], (3, 1, 1))
-    times = 1_672_704_000_000_000 + day * np.arange(3, dtype=np.int64)
-    return MarketTape(
-        prices, times, ["CN/600000.SS"], np.zeros((3, 1)), domain="synthetic", currency="CNY"
-    )
+
+def probe_cn_rules(library=None):
+    """Preguntar a la biblioteca por las reglas de las acciones A sin construir ninguna cinta.
+
+    Cargarla exige el contrato binario de reglas (tamaño del registro y paso v2). Después,
+    los límites diarios de cada banda declarada para cada tablero se calculan en C++ y deben
+    coincidir con los de Python. Ningún precio, activo ni sesión sale de esta consulta.
+    """
+    from .market_rules import PRICE_LIMITS
+    from .native_runtime import load_library
+    from .portfolio import Instrument
+
+    native = load_library(library)
+    for board, periods in PRICE_LIMITS.items():
+        instrument = Instrument("CNY", price_limits=periods, rules=f"probe_{board}")
+        for period in periods:
+            for reference in RULE_QUERY_REFERENCES:
+                expected = instrument.limits(reference, period.start)
+                if native.price_limits(reference, period.band) != expected:
+                    raise ValueError(f"Los límites de {board} no coinciden con los de Python")
 
 
 def probe_capabilities(library=None):
@@ -135,8 +184,6 @@ def probe_capabilities(library=None):
     Los binarios de política solo se lanzan con `--capabilities`: declaran su nombre, sus
     capacidades y su identidad de compilación, que se conserva en el informe.
     """
-    from .environment import FinancialEnv
-    from .market_rules import china_a_share_instrument
     from .native_runtime import load_library
 
     result = {}
@@ -147,12 +194,11 @@ def probe_capabilities(library=None):
                 load_library(library)
                 reason = None
             elif entry["probe"] == "native_cn_rules":
-                tape = _probe_tape()
-                rules = {asset: china_a_share_instrument(asset) for asset in tape.assets}
-                FinancialEnv(tape, backend="native", native_library=library, instruments=rules)
+                probe_cn_rules(library)
                 reason = None
             elif entry["probe"] in native_policy_runs.BINARIES:
-                identity = native_policy_runs.probe_binary(entry["probe"], name)
+                capability = entry.get("capability", name)
+                identity = native_policy_runs.probe_binary(entry["probe"], capability)
                 reason = None
         except (ValueError, OSError, subprocess.SubprocessError) as error:
             reason = f"{entry['pending']}: {error}"
@@ -213,6 +259,7 @@ def episode(cost, result=None, *, failure=None):
         costs=None,
         turnover=None,
         steps=0,
+        equity=None,
     )
     if result is None:
         return record
@@ -229,6 +276,7 @@ def episode(cost, result=None, *, failure=None):
         costs=values["costs"],
         turnover=values["turnover"],
         steps=values["steps"],
+        equity=None if not completed else result["equity"],
     )
 
 
@@ -241,9 +289,9 @@ def market_rules(tape, market):
     return {asset: china_a_share_instrument(asset) for asset in tape.assets}
 
 
-def evaluate_policy(tapes, policy, stage, market, *, backend, seed=42):
+def evaluate_policy(tapes, policy, stage, market, *, backend, seed=42, allocation=None):
     """Evaluar una política fija o congelada en la cinta de evaluación con cada coste."""
-    from .environment import FinancialEnv
+    from .environment import ALLOCATIONS, FinancialEnv
     from .evaluation import evaluate
 
     policies = stage["policies"]
@@ -261,6 +309,7 @@ def evaluate_policy(tapes, policy, stage, market, *, backend, seed=42):
             tapes.evaluation,
             backend=backend,
             instruments=market_rules(tapes.evaluation, market),
+            allocation=ALLOCATIONS[0] if allocation is None else allocation,
             **dict(environment, cost_bps=cost),
         )
         records.append(episode(cost, evaluate(env, policy, seed=seed)))
@@ -269,11 +318,16 @@ def evaluate_policy(tapes, policy, stage, market, *, backend, seed=42):
 
 def reference_executor(backend):
     """Ejecutor de las referencias sin aprendizaje con la contabilidad indicada."""
-    from .evaluation import fixed_policy
+    from .evaluation import REFERENCE_ALLOCATIONS, fixed_policy
 
     def run(job, tapes, folder, *, stage, resume, stop, anchor):
         records = evaluate_policy(
-            tapes, fixed_policy(job["arm"]), stage, job["market"], backend=backend
+            tapes,
+            fixed_policy(job["arm"]),
+            stage,
+            job["market"],
+            backend=backend,
+            allocation=REFERENCE_ALLOCATIONS[job["arm"]],
         )
         return dict(
             status="completed",
@@ -308,12 +362,29 @@ EXECUTORS = {
     ),
     "native_ppo": dict(
         run=native_policy_runs.NativePolicyExecutor("native_ppo"),
-        requires=("native_policy_reconstructed_tapes",),
+        requires=(
+            "native_policy_reconstructed_tapes",
+            "native_ppo_equity_and_costs",
+            "native_ppo_quantile_value_heads",
+        ),
         native=True,
     ),
     "native_klpo": dict(
         run=native_policy_runs.NativePolicyExecutor("native_klpo"),
-        requires=("native_policy_reconstructed_tapes", "native_klpo_financial_runner"),
+        requires=(
+            "native_policy_reconstructed_tapes",
+            "native_klpo_financial_runner",
+            "native_klpo_equity_and_costs",
+        ),
+        native=True,
+    ),
+    "native_group_relative": dict(
+        run=native_policy_runs.NativePolicyExecutor("native_group_relative"),
+        requires=(
+            "native_policy_reconstructed_tapes",
+            "native_klpo_equity_and_costs",
+            "native_group_relative_runner",
+        ),
         native=True,
     ),
 }
@@ -338,8 +409,8 @@ def _record(record, cost, failure):
         )
     if record["status"] == "failed":
         _require(
-            isinstance(record["reason"], str) and record["reason"],
-            "Un episodio fallido conserva su motivo",
+            isinstance(record["reason"], str) and record["reason"] and record.get("equity") is None,
+            "Un episodio fallido conserva su motivo y no publica patrimonio",
         )
         return
     values = [record.get(key) for key in ("net_return", "liquidated_net_return", "max_drawdown")]
@@ -349,6 +420,40 @@ def _record(record, cost, failure):
     )
     if record["status"] == "completed":
         _require(record["liquidated_net_return"] > -1, "Un episodio sin ruina conserva patrimonio")
+    _equity(record)
+
+
+# Tolerancia relativa entre el patrimonio final de la serie y el retorno publicado. El motor
+# nativo reconstruye la serie con sus recompensas logarítmicas.
+EQUITY_TOLERANCE = 1e-9
+
+
+def _equity(record):
+    """Exigir el patrimonio por sesión de un episodio terminado, coherente con su retorno."""
+    equity = record.get("equity")
+    _require(
+        isinstance(equity, dict)
+        and set(equity) == {"basis", "close_times", "nav"}
+        and isinstance(equity["close_times"], list)
+        and isinstance(equity["nav"], list)
+        and len(equity["close_times"]) == len(equity["nav"]) == record["steps"] + 1
+        and all(type(value) is int for value in equity["close_times"])
+        and all(
+            a < b for a, b in zip(equity["close_times"], equity["close_times"][1:], strict=False)
+        )
+        and all(_number(value, 0) for value in equity["nav"]),
+        "Un episodio terminado conserva su patrimonio en cada cierre",
+    )
+    nav = equity["nav"]
+    ruined = record["status"] == "ruined"
+    expected = nav[0] * (1 + record["net_return"])
+    _require(
+        nav[0] > 0
+        and (nav[-1] == 0) is ruined
+        and all(value > 0 for value in nav[:-1])
+        and abs(nav[-1] - expected) <= EQUITY_TOLERANCE * max(1.0, abs(expected)),
+        "El patrimonio por sesión no concilia con el retorno del episodio",
+    )
 
 
 def check_report(stage, job, report, tapes, anchor=None):
@@ -382,8 +487,9 @@ def check_report(stage, job, report, tapes, anchor=None):
     elif job["kind"] == FIT:
         selection, policy = report.get("selection"), report.get("policy")
         budget = policies["budget"]
-        if job["engine"] == "native_klpo":
-            # KLPO consume oleadas completas: las que caben en el presupuesto, sin superarlo.
+        if job["engine"] in native_policy_runs.WAVE_ENGINES:
+            # KLPO y los objetivos de grupo consumen oleadas completas: las que caben en el
+            # presupuesto, sin superarlo.
             waves, wave = native_policy_runs.klpo_waves(
                 tapes.train, budget["environments"], budget["transitions"]
             )
@@ -494,8 +600,11 @@ def campaign_source(base, campaign_output, seed):
     """Recibo de ventana y predicciones emitidas del predictor elegido en la campaña base.
 
     El recibo publicado debe identificar al predictor elegido para la semilla y su huella
-    de evaluación del mercado debe coincidir con la del trabajo confirmado. Si el trabajo no
-    emitió filas del mercado en su evaluación, el recibo tampoco las declara y la fuente
+    de evaluación del mercado debe coincidir con la del trabajo confirmado. Su
+    `labels_used_until` debe ser la maduración real de las etiquetas que leyó ese predictor,
+    recalculada aquí desde las vistas con `training.label_maturity`, de modo que una cinta
+    nunca lleva predicciones de un predictor que ajustó pesos con sus filas. Si el trabajo
+    no emitió filas del mercado en su evaluación, el recibo tampoco las declara y la fuente
     devuelve `None` en lugar de predicciones.
     """
 
@@ -511,6 +620,11 @@ def campaign_source(base, campaign_output, seed):
             and declared == (None if expected is None else (expected["rows"], expected["sha256"])),
             f"El recibo de {scope}/{window}/{predictor} no corresponde al predictor elegido",
         )
+        _require(
+            receipt.labels_used_until == base.labels_used_until(scope, window, selected),
+            f"El recibo de {scope}/{window}/{predictor} no declara la maduración real de las "
+            "etiquetas que leyó su predictor",
+        )
         if expected is None:
             return receipt, None
         values = window_tapes.segment_predictions(
@@ -519,6 +633,82 @@ def campaign_source(base, campaign_output, seed):
         return receipt, values
 
     return source
+
+
+def chain_source(base, chain_output, seed, campaign_output):
+    """Recibo y predicciones del predictor de la cadena de cada ventana.
+
+    El predictor de la ventana k es el estado que el posentrenamiento elige con `val_k`:
+    adaptador, continuación o padre congelado, y en la ventana 0 el estado elegido de la
+    campaña base. Su `selection.json`, escrito el último, confirma la ventana: sin él no hay
+    cinta. La selección se lee con `posttraining.staged_chain.read_selection`, el mismo
+    lector que usa la etapa que la escribe, así que la regla de elección, los candidatos y
+    la huella y el padre de cada recibo de mercado se comprueban con un único contrato.
+    Además, el recibo confirmado del trabajo elegido debe tener la huella que fija la
+    selección y las huellas de evaluación del mercado. Su `labels_used_until` debe ser la
+    maduración real de las etiquetas de las vistas de la ventana y de la anterior (las del
+    padre), recalculada aquí con `training.label_maturity`. Así ninguna cinta lleva
+    predicciones de un estado que ajustó, eligió o calibró con etiquetas posteriores a su
+    primera decisión.
+    """
+    from mars_titan.training.label_maturity import FIT_PARTITIONS, label_maturity
+
+    maturity = {}
+
+    def labels_used_until(scope, window):
+        windows = base.views[scope]["windows"]
+        names = list(windows)
+        index = names.index(window)
+        read = names[max(0, index - 1) : index + 1]
+        for name in read:
+            if (scope, name) not in maturity:
+                maturity[(scope, name)] = label_maturity(windows[name]["path"], FIT_PARTITIONS)[0]
+        return max(maturity[(scope, name)] for name in read)
+
+    def source(scope, market, window, predictor):
+        label = f"{scope}/{window}/{staged_chain.chain_arm(predictor)}"
+        selection = staged_chain.read_selection(chain_output, scope, window, predictor, seed)
+        _require(selection is not None, f"La cadena de {label} no tiene confirmada su selección")
+        _require(
+            market in selection["receipts"],
+            f"La cadena de {label} no publica recibo de {market}",
+        )
+        receipt, selected = selection["receipts"][market], selection["selected"]
+        # Solo la primera ventana elige el estado de la base, cuyo recibo está en la campaña.
+        root = campaign_output if selection["parent_window"] is None else chain_output
+        emitted, emitted_digest = read_manifest(
+            root / "jobs" / selected["job"] / "receipt.json", 8 * 1024**2
+        )
+        record = emitted["predictions"][window_tapes.SEGMENT]
+        expected = record["markets"].get(market)
+        _require(
+            emitted_digest == selected["receipt_sha256"]
+            and expected is not None
+            and dict(receipt.predictions).get(window_tapes.SEGMENT)
+            == (expected["rows"], expected["sha256"]),
+            f"El recibo de {market} de {label} no corresponde al estado elegido",
+        )
+        _require(
+            receipt.labels_used_until == labels_used_until(scope, window),
+            f"El recibo de {market} de {label} no declara la maduración real de las etiquetas "
+            "que leyó el estado elegido",
+        )
+        values = window_tapes.segment_predictions(root / record["path"], record["sha256"], market)
+        return receipt, values
+
+    return source
+
+
+def predictor_source(policies, base, campaign_output, chain_output=None):
+    """Fuente de recibos y predicciones de las cintas según la regla declarada."""
+    rule, seed = policies["predictor"]["source"], policies["predictor"]["seed"]
+    if rule == BASE_SELECTED:
+        return campaign_source(base, campaign_output, seed)
+    _require(
+        chain_output is not None,
+        "Las cintas del predictor de la cadena necesitan la salida del posentrenamiento",
+    )
+    return chain_source(base, Path(chain_output), seed, campaign_output)
 
 
 class _Tapes:
@@ -537,6 +727,10 @@ class _Tapes:
         self._source, self.edition, self.edition_id = source, edition, edition_id
         self.lag = policies["environment"]["dividend_payment_lag_sessions"]
         self.key, self.current, self.evaluations = None, None, {}
+        # Admisión de cada tramo con todos los activos, por recibo. Con la ventana en
+        # expansión, cada ancla repite las ventanas anteriores y montar una cinta de EE. UU.
+        # con todos sus activos cuesta en torno a un minuto.
+        self.admissions = {}
 
     def source(self, job, window, predictor):
         receipt, values = self._source(job["scope"], job["market"], window, predictor)
@@ -571,11 +765,14 @@ class _Tapes:
             return tuple(record["assets"])
         admitted = {}
         for window, (receipt, values) in sources.items():
-            role = "validation" if window == job["validation"] else "train"
-            tape, _ = window_tapes.build_segment_tape(
-                self.edition, receipt, values, market=job["market"], role=role, lag=self.lag
-            )
-            admitted[window] = window_tapes.admission(tape)
+            key = (job["scope"], job["market"], window, receipt.sha256)
+            if key not in self.admissions:
+                tape, _ = window_tapes.build_segment_tape(
+                    self.edition, receipt, values, market=job["market"], role="train", lag=self.lag
+                )
+                window_tapes.require_real_tape(tape, self.edition_id, f"universe-{window}")
+                self.admissions[key] = window_tapes.admission(tape)
+            admitted[window] = self.admissions[key]
         assets = window_tapes.select_universe(
             [admitted[window] for window in job["train"]],
             admitted[job["validation"]],
@@ -584,18 +781,19 @@ class _Tapes:
         atomic_json(path, dict(identity=identity, assets=assets))
         return tuple(assets)
 
-    def tape(self, job, role, window, universe):
+    def tape(self, job, role, window, universe, *, name=None):
         """Cinta de un tramo restringida al universo, confirmada en disco o construida.
 
         Devuelve carpeta, cinta, fallo y tramo del recibo. La cinta es None si el predictor
         no tiene predicciones del mercado en el tramo o si la evaluación excluye un activo del
-        universo, y el fallo guarda el motivo.
+        universo, y el fallo guarda el motivo. `name` separa la carpeta de una cinta con otros
+        activos del mismo tramo, como la del índice de mercado.
         """
         from .storage import read_tape, write_tape
 
         receipt, values = self.source(job, window, job["predictor"])
         folder = self.output / "tapes" / job["scope"] / job["market"] / job["predictor"]
-        folder = folder / job["anchor"] / f"{role}-{window}"
+        folder = folder / job["anchor"] / (name or f"{role}-{window}")
         safe_destination(folder)
         bounds = receipt.segment(window_tapes.SEGMENT)
         expected = dict(receipt_sha256=receipt.sha256, universe_sha256=_digest(list(universe)))
@@ -611,17 +809,21 @@ class _Tapes:
         if (folder / "manifest.json").is_file():
             tape = read_tape(folder)
         else:
-            tape, report = window_tapes.build_segment_tape(
-                self.edition,
-                receipt,
-                values,
-                market=job["market"],
-                role=role,
-                lag=self.lag,
-                # El universo guarda claves `mercado/símbolo` y la edición pide símbolos.
-                symbols=[asset.split("/", 1)[1] for asset in universe],
-            )
-            if tuple(tape.assets) != universe:
+            try:
+                tape, report = window_tapes.build_segment_tape(
+                    self.edition,
+                    receipt,
+                    values,
+                    market=job["market"],
+                    role=role,
+                    lag=self.lag,
+                    # El universo guarda claves `mercado/símbolo` y la edición pide símbolos.
+                    symbols=[asset.split("/", 1)[1] for asset in universe],
+                )
+            except NoAdmittedAssets as error:
+                # Excluir todo el universo es el mismo fallo que excluir una parte de él.
+                tape, report = None, dict(excluded=error.excluded)
+            if tape is None or tuple(tape.assets) != universe:
                 # Solo la evaluación puede excluir un activo del universo: el universo se
                 # eligió entre los admitidos en ajuste y validación.
                 _require(role == "evaluation", f"El universo no es admisible en {role}")
@@ -630,6 +832,9 @@ class _Tapes:
                 return folder, None, failure, bounds
             # Una cinta china lleva las reglas de acciones A que exige el lector nativo.
             write_tape(tape, folder, instruments=market_rules(tape, job["market"]))
+        # Ninguna cinta sintética ni de otra edición llega a un ejecutor, tampoco al reanudar
+        # desde una cinta confirmada en disco.
+        window_tapes.require_real_tape(tape, self.edition_id, folder.name)
         _require(
             tuple(tape.assets) == universe
             and [item["receipt_sha256"] for item in tape.identity["audit"]["walk_forward"]]
@@ -648,11 +853,15 @@ class _Tapes:
             validation = self.tape(job, "validation", job["validation"], universe)
             self.current, self.key = (universe, train, validation), key
         universe, train, validation = self.current
-        if job["window"] not in self.evaluations:
-            self.evaluations = {
-                job["window"]: self.tape(job, "evaluation", job["window"], universe)
-            }
-        evaluation = self.evaluations[job["window"]]
+        # El índice de mercado se evalúa en su propia cinta de un activo, del mismo tramo y
+        # con el mismo recibo. No usa sus predicciones: reparte por igual entre lo valorado.
+        symbol = self.policies[MARKET_INDEX][job["market"]] if job["arm"] == MARKET_INDEX else None
+        key = (job["window"], symbol)
+        if key not in self.evaluations:
+            assets = universe if symbol is None else (f"{job['market']}/{symbol}",)
+            name = None if symbol is None else f"index-{symbol}-{job['window']}"
+            self.evaluations = {key: self.tape(job, "evaluation", job["window"], assets, name=name)}
+        evaluation = self.evaluations[key]
         segments = [item[3] for item in (*train, validation, evaluation)]
         _require(
             all(a[1] <= b[0] for a, b in zip(segments, segments[1:], strict=False)),
@@ -709,7 +918,9 @@ class _Stage:
             anchor_fit=None,
         )
         if job["kind"] == CARRY:
-            (anchor,) = job["depends"]
+            # El primer requisito de un traslado es el ajuste de su ancla. Los demás son
+            # selecciones de la cadena, confirmadas en la etapa de posentrenamiento.
+            anchor = job["depends"][0]
             _require(anchor in self.receipts, f"{job['id']} depende de {anchor}, sin confirmar")
             identity["anchor_fit"] = dict(
                 job=anchor, receipt_sha256=self.receipts[anchor]["sha256"]
@@ -791,6 +1002,9 @@ def _identity(stage, views, edition_id):
         campaign_sha256=campaign["sha256"],
         edition_id=edition_id,
         variant=campaign["variant"],
+        # La sensibilidad de ventanas comparte archivos con la etapa principal, así que su
+        # identidad es lo único que separa sus salidas.
+        sensitivity=stage.get("sensitivity"),
         views={
             scope: {window: value["sha256"] for window, value in record["windows"].items()}
             for scope, record in views.items()
@@ -834,6 +1048,12 @@ def check_stage(path, *, library=None):
         policies_sha256=policies["sha256"],
         campaign_sha256=stage["campaign"]["sha256"],
         predictor=policies["predictor"],
+        predictor_source=dict(
+            rule=policies["predictor"]["source"],
+            needs_chain_output=policies["predictor"]["source"] != BASE_SELECTED,
+        ),
+        data_policy=policies["data"]["policy"],
+        edition_id=policies["data"]["edition_id"],
         levels=stage["levels"],
         universe_predictor=stage["universe_predictor"],
         universe=policies["universe"],
@@ -842,6 +1062,11 @@ def check_stage(path, *, library=None):
         seeds=policies["seeds"],
         contrasts=policies["contrasts"],
         counts=count_stage(stage, jobs),
+        tapes_per_predictor=count_tapes(stage),
+        window_sensitivity=dict(
+            policies["window_sensitivity"],
+            tapes_per_predictor=count_tapes(window_sensitivity(stage)),
+        ),
         capabilities=available,
         missing_capabilities=missing_capabilities(jobs, EXECUTORS, available),
         scientific_training_started=False,
@@ -850,13 +1075,25 @@ def check_stage(path, *, library=None):
 
 
 def run_stage(
-    path, views, campaign_output, edition, output, *, executors=None, capabilities=None, stop=None
+    path,
+    views,
+    campaign_output,
+    edition,
+    output,
+    *,
+    executors=None,
+    capabilities=None,
+    stop=None,
+    chain_output=None,
+    sensitivity=False,
 ):
     """Ejecutar o reanudar la etapa sobre una campaña base confirmada.
 
     `executors` sustituye los ejecutores por familia y `capabilities` el estado del motor.
     El bloqueo de aprendizaje se comprueba antes de todo y antes de cada trabajo pendiente.
-    Las capacidades del plan se exigen antes de abrir fuentes o crear la salida.
+    Las capacidades del plan se exigen antes de abrir fuentes o crear la salida. Con
+    `sensitivity` se ejecuta la sensibilidad de ventanas declarada, que debe estar activada
+    en la configuración y escribe en una salida con su propia identidad.
     """
     from mars_titan.training.checkpoints import StopRequest
 
@@ -864,6 +1101,13 @@ def run_stage(
 
     require_learning_allowed("la etapa de políticas financieras de la campaña")
     stage = load_stage(path)
+    if sensitivity:
+        stage = window_sensitivity(stage)
+        _require(
+            stage["sensitivity"]["enabled"],
+            f"La sensibilidad {stage['sensitivity']['id']} está declarada y desactivada. Solo "
+            "se lanza si sobra presupuesto y se activa en la configuración de las políticas",
+        )
     jobs = plan_stage(stage)
     count_stage(stage, jobs)
     executors = dict(EXECUTORS if executors is None else executors)
@@ -886,12 +1130,21 @@ def run_stage(
     views = {scope: Path(value) for scope, value in views.items()}
     campaign_output, edition, output = Path(campaign_output), Path(edition), Path(output)
     safe_destination(output)
-    for protected in (*views.values(), campaign_output, edition, Path("dataset")):
+    chained = () if chain_output is None else (Path(chain_output),)
+    for protected in (*views.values(), campaign_output, edition, *chained, Path("dataset")):
         outside_source(protected, output)
         outside_source(output, protected)
+    # Las políticas solo aprenden con la edición real declarada: su identidad se recalcula
+    # desde el manifiesto y debe ser la de las políticas antes de leer ninguna cinta.
     edition_id = read_edition(edition)["edition_id"]
+    _require(
+        edition_id == stage["policies"]["data"]["edition_id"],
+        "La edición no es la edición real declarada por las políticas de la etapa",
+    )
     _, base = masked_campaign._confirmed_state(campaign["path"], views, campaign_output)
     _base_receipts(base, campaign, stage)
+    # La fuente de las predicciones se resuelve antes de crear la salida.
+    source = predictor_source(stage["policies"], base, campaign_output, chain_output)
     identity = _identity(stage, base.views, edition_id)
     output.mkdir(parents=True, exist_ok=True)
     descriptor = os.open(output / ".lock", os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600)
@@ -909,7 +1162,6 @@ def run_stage(
                 "La salida sin identidad contiene artefactos ajenos",
             )
             atomic_json(marker, identity)
-        source = campaign_source(base, campaign_output, stage["policies"]["predictor"]["seed"])
         tapes = _Tapes(
             stage["policies"], source, edition, edition_id, output, stage["universe_predictor"]
         )
@@ -943,6 +1195,10 @@ def main(argv=None):
     execute.add_argument("--campaign-output", type=Path, required=True)
     execute.add_argument("--edition", type=Path, required=True)
     execute.add_argument("--output", type=Path, required=True)
+    execute.add_argument("--chain-output", type=Path)
+    execute.add_argument(
+        "--sensitivity", action="store_true", help="Ejecutar la sensibilidad de ventanas activada"
+    )
     args = parser.parse_args(argv)
     if args.command == "check":
         result = check_stage(args.stage)
@@ -953,6 +1209,8 @@ def main(argv=None):
             args.campaign_output,
             args.edition,
             args.output,
+            chain_output=args.chain_output,
+            sensitivity=args.sensitivity,
         )
         result.pop("jobs")
     print(json.dumps(result, ensure_ascii=False, indent=2))

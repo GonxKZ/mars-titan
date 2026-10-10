@@ -4,11 +4,12 @@ La edición de #379 no satisface por sí sola ``MarketTape``. Este módulo la co
 una cinta de un mercado con estas reglas, todas declaradas en su identidad:
 
 - Solo se leen filas verificadas. Un activo con una fila sin verificar dentro de la cinta,
-  sin cierre negociado verificado al empezar o sin fila en la última sesión se excluye con
-  su motivo. Nada se rellena con precios inventados.
+  sin cierre negociado verificado al empezar o cuya serie termina dentro de la cinta se
+  excluye con su motivo. Nada se rellena con precios inventados.
 - Una fila con volumen cero o una sesión del calendario sin fila es una sesión sin
   negociación. No tiene apertura ejecutable ni precio nuevo. La valoración conserva el
-  último cierre negociado verificado.
+  último cierre negociado verificado. La última sesión sigue la misma regla cuando la serie
+  continúa después de la cinta: el activo seguía cotizando y solo falta su fila.
 - Los precios en la rejilla de cotización se llevan a su múltiplo exacto con la tolerancia
   de la edición. Una apertura fuera de rejilla no es ejecutable.
 - Splits y dividendos proceden de los eventos del proveedor dentro de las filas
@@ -42,16 +43,30 @@ from .market import CURRENCIES, RECONSTRUCTED, RECONSTRUCTED_CONTRACT, MarketTap
 from .portfolio import CorporateAction
 
 EDITION_KIND = "unadjusted_price_edition"
+# Origen declarado de toda cinta construida aquí, con precios reales de la edición.
+SOURCE_KIND = "unadjusted_edition_tape"
 MAX_FILE_BYTES = 64 * 1024**2
+# Una última sesión sin fila se valora con el último cierre negociado si la serie tiene
+# alguna fila posterior a la cinta. Si la serie termina dentro de la cinta haría falta un
+# retorno de salida, que la edición no tiene, y el activo se excluye.
+FINAL_SESSION_RULE = "missing_row_valued_at_last_traded_close_when_series_continues_v1"
 REASONS = (
     "no_verified_rows",
     "unverified_rows_in_tape",
     "row_outside_calendar",
     "no_verified_traded_close_at_start",
-    "missing_last_session",
+    "series_ends_in_tape",
     "event_outside_calendar",
     "invalid_event",
 )
+
+
+class NoAdmittedAssets(ValueError):
+    """Ningún activo pedido cumple las condiciones de la cinta. Conserva sus motivos."""
+
+    def __init__(self, excluded):
+        super().__init__("Ningún activo cumple las condiciones de la cinta reconstruida")
+        self.excluded = dict(sorted(excluded.items()))
 
 
 def _microseconds(moment):
@@ -154,8 +169,8 @@ def _asset(market, prices, events, days):
     first = int(np.searchsorted(sessions, days[0], side="right"))
     if not len(before) or not verified[before[-1] : first].all():
         return "no_verified_traded_close_at_start", None
-    if not (sessions == days[-1]).any():
-        return "missing_last_session", None
+    if not (sessions >= days[-1]).any():
+        return "series_ends_in_tape", None
     reason, found = _events(events, days)
     if reason is not None:
         return reason, None
@@ -201,6 +216,7 @@ def _asset(market, prices, events, days):
             (snapped["close"][quiet] != frame[present & ~traded, 3]).sum()
         ),
         missing_rows=int((~present).sum()),
+        final_sessions_without_row=int(not present[-1]),
         off_grid_opens=int((~grid["open"][index]).sum()),
         off_grid_closes=int((~grid["close"][index]).sum()),
         ambiguous_same_day_events=sum(1 for event in found if event[3]),
@@ -339,7 +355,7 @@ def build_reconstructed_tape(
         for name, value in asset_counts.items():
             counts[name] = counts.get(name, 0) + value
     if not frames:
-        raise ValueError("Ningún activo cumple las condiciones de la cinta reconstruida")
+        raise NoAdmittedAssets(excluded)
     assets = [key for key, _ in frames]
     scores, dropped = _scores(windows, predictions, segment, market, decisions, owner, assets)
     exclusions = {reason: list(excluded.values()).count(reason) for reason in REASONS}
@@ -366,8 +382,9 @@ def build_reconstructed_tape(
     )
     code = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
     source = dict(
-        kind="unadjusted_edition_tape",
+        kind=SOURCE_KIND,
         builder_sha256=code,
+        final_session=FINAL_SESSION_RULE,
         segment=segment,
         parents=[[window.fold, *window.parent] for window in windows],
         requested_assets=len(chosen),

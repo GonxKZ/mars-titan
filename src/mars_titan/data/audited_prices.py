@@ -9,6 +9,7 @@ import pyarrow.parquet as pq
 
 from .batches import _check_string_width
 from .cohort_files import read_manifest, safe_destination
+from .prices import check_ordering_rtol, ordering_excess
 from .storage import sha256
 from .temporal import aware
 
@@ -25,6 +26,13 @@ def audit_catalog(path):
     ):
         raise ValueError("El estado de precios auditados no identifica sus archivos")
     root, records = Path(manifest["details_root"]), {}
+    # Una auditoría con tolerancia de redondeo la declara en su estado. Los registros la
+    # transmiten para que la lectura posterior relaje la misma comprobación sin tocar valores.
+    ordering = {}
+    if "ordering_rtol" in manifest:
+        ordering["ordering_rtol"] = check_ordering_rtol(manifest["ordering_rtol"])
+        if not ordering["ordering_rtol"]:
+            raise ValueError("Un estado con tolerancia de orden debe declararla positiva")
     safe_destination(root)
     root = root.resolve()
     for row in manifest["files"].values():
@@ -43,15 +51,21 @@ def audit_catalog(path):
             sha256=artifact.get("sha256"),
             rows=artifact.get("rows"),
             source_sha256=row.get("source_sha256"),
+            **ordering,
         )
     return records, identity
 
 
 def confirm_audited_prices(record, source_hash):
     """Confirmar la fuente ya validada sin volver a descomprimir sus valores."""
+    keys = {"path", "sha256", "rows", "source_sha256"}
+    if isinstance(record, dict) and "ordering_rtol" in record:
+        keys.add("ordering_rtol")
+        if not check_ordering_rtol(record["ordering_rtol"]):
+            raise ValueError("Un registro con tolerancia de orden debe declararla positiva")
     if (
         not isinstance(record, dict)
-        or set(record) != {"path", "sha256", "rows", "source_sha256"}
+        or set(record) != keys
         or record["source_sha256"] != source_hash
         or type(record["rows"]) is not int
         or not 0 <= record["rows"] <= MAX_PRICE_ROWS
@@ -145,17 +159,13 @@ def _read_audited_columns(record, source_hash, clock, cutoff, value_columns):
         values = frame[list(value_columns)].to_numpy(dtype=np.float64)
         if value_columns == COLUMNS[:5]:
             o, h, lo, c, v = values.T
-            invalid = (
-                (o <= 0)
-                | (lo <= 0)
-                | (c <= 0)
-                | (h < lo)
-                | (h < o)
-                | (h < c)
-                | (lo > o)
-                | (lo > c)
-                | (v < 0)
-            )
+            invalid = (o <= 0) | (lo <= 0) | (c <= 0) | (v < 0)
+            disordered = (h < lo) | (h < o) | (h < c) | (lo > o) | (lo > c)
+            rtol = record.get("ordering_rtol", 0.0)
+            if rtol:
+                with np.errstate(divide="ignore", invalid="ignore"):
+                    disordered &= ~(ordering_excess(o, h, lo, c) <= rtol)
+            invalid |= disordered
         else:
             invalid = (values <= 0).any(axis=1)
         if not np.isfinite(values).all() or np.any(invalid):
@@ -174,6 +184,8 @@ def _read_audited_columns(record, source_hash, clock, cutoff, value_columns):
             source_sha256=source_hash,
             artifact_sha256=record["sha256"],
             accepted=len(frame),
+            # La preparación la conserva para que los gráficos relajen la misma comprobación.
+            **({"ordering_rtol": record["ordering_rtol"]} if "ordering_rtol" in record else {}),
         ),
         record["rows"] - selected_rows,
     )

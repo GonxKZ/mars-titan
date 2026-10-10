@@ -6,50 +6,40 @@ trabajos y se detiene si rige el bloqueo de aprendizaje. `sources` publica el
 manifiesto de fuentes de un ámbito. `posttraining check|run` valida o ejecuta la etapa
 de la matriz de adaptadores sobre una campaña base confirmada. `rl check|run` valida o
 ejecuta la etapa de políticas financieras por ventana, con las capacidades del motor que
-necesita. `ablation check|run|sources` valida, ejecuta o publica la ablación de modalidades
-en inferencia sobre una campaña base confirmada, sin ajustar nada. `throughput` mide en la
-GPU, sin pasos de optimizador, el caudal de las familias declaradas y estima las horas de las
-variantes indicadas. `extensions` comprueba sin leer datos la declaración preparada de la GRU
-candidata, MARS-TITAN y CM-v1 y sus recuentos. `storage` estima el disco de la campaña y de sus
-etapas con los recuentos de las vistas y tablas sintéticas, sin leer objetivos ni ajustar.
-`rolling` recorre la campaña ventana a ventana con la retención v2 y `regenerate` repite por
-inferencia, sin ajustar, las predicciones por fila de un trabajo confirmado.
+necesita. `rl-report` agrega sus salidas confirmadas en el informe financiero.
+`ablation check|run|sources` valida, ejecuta o publica la ablación de modalidades en inferencia
+sobre una campaña base confirmada, sin ajustar nada. `throughput` mide en la GPU, sin pasos de
+optimizador, el caudal de las familias declaradas y estima las horas de las variantes
+indicadas. `extensions` comprueba sin leer datos la declaración preparada de la GRU candidata,
+MARS-TITAN y CM-v1 y sus recuentos. `storage` estima el disco de la campaña y de sus etapas
+con los recuentos de las vistas y tablas sintéticas, sin leer objetivos ni ajustar.
+`rolling` recorre la campaña ventana a ventana con la retención v2 y `regenerate`
+repite por inferencia, sin ajustar, las predicciones por fila de un trabajo confirmado.
 """
 
+import importlib
 import sys
 
-from mars_titan.posttraining import campaign_stage
-from mars_titan.simulation import campaign_stage as rl_stage
-from mars_titan.training import (
-    campaign_extensions,
-    campaign_throughput,
-    masked_campaign,
-    modality_ablation_stage,
-    prediction_regeneration,
-    rolling_retention,
-    storage_budget,
-)
+# Cada orden importa solo su módulo. Así `rl` no carga el código de otras etapas, como los
+# mundos sintéticos de experimentos anteriores que alcanzan los adaptadores.
+COMMANDS = {
+    "throughput": "mars_titan.training.campaign_throughput",
+    "extensions": "mars_titan.training.campaign_extensions",
+    "posttraining": "mars_titan.posttraining.campaign_stage",
+    "rl": "mars_titan.simulation.campaign_stage",
+    "rl-report": "mars_titan.simulation.stage_report",
+    "ablation": "mars_titan.training.modality_ablation_stage",
+    "storage": "mars_titan.training.storage_budget",
+    "rolling": "mars_titan.training.rolling_retention",
+    "regenerate": "mars_titan.training.prediction_regeneration",
+}
 
 
 def main(argv=None):
     argv = sys.argv[1:] if argv is None else argv
-    if argv[:1] == ["throughput"]:
-        return campaign_throughput.main(argv[1:])
-    if argv[:1] == ["extensions"]:
-        return campaign_extensions.main(argv[1:])
-    if argv[:1] == ["posttraining"]:
-        return campaign_stage.main(argv[1:])
-    if argv[:1] == ["rl"]:
-        return rl_stage.main(argv[1:])
-    if argv[:1] == ["ablation"]:
-        return modality_ablation_stage.main(argv[1:])
-    if argv[:1] == ["storage"]:
-        return storage_budget.main(argv[1:])
-    if argv[:1] == ["rolling"]:
-        return rolling_retention.main(argv[1:])
-    if argv[:1] == ["regenerate"]:
-        return prediction_regeneration.main(argv[1:])
-    return masked_campaign.main(argv)
+    if argv[:1] and argv[0] in COMMANDS:
+        return importlib.import_module(COMMANDS[argv[0]]).main(argv[1:])
+    return importlib.import_module("mars_titan.training.masked_campaign").main(argv)
 
 
 if __name__ == "__main__":

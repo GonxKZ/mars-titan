@@ -1,0 +1,96 @@
+{
+  "schema_version": 1,
+  "kind": "historical_masked_campaign_execution",
+  "notes": "Recursos de ejecución de la campaña con máscaras. No entran en la identidad científica. VRAM en MiB por proceso, con su contexto de CUDA (unos 512 MiB fuera del asignador). RAM del anfitrión por proceso, con tubería y cachés. Tres ranuras con MPS y la tubería 2 y 2 según reports/engineering/campaign-pipeline-20261009: cada trabajo da los mismos bits solo y acompañado, y el caudal agregado supera al del mejor trabajo solo. MPS necesita su demonio en mps_pipe_directory antes de empezar. XGBoost y Ridge se ejecutan de uno en uno en un hilo del proceso de la campaña, para que los ajustes de una ventana compartan la matriz cuantizada y las estadísticas de Ridge. XGBoost declara todo el presupuesto hasta medir sus rondas. Las familias cronológicas declaran 9.216 MiB de RAM en US+CN: su lector midió un pico de 6,6 GiB en los últimos instantes de US+CN/fold-012, más el contexto CUDA y el entrenador.",
+  "gpu": {
+    "slots": 3,
+    "vram_budget_mib": 7000,
+    "mps": true,
+    "mps_pipe_directory": "/run/user/1000/nvidia-mps"
+  },
+  "host": {
+    "cpu_workers": 1,
+    "threads_per_job": 2,
+    "ram_budget_mib": 22528,
+    "reserve_mib": 3072
+  },
+  "pipeline": {
+    "decode_workers": 2,
+    "prefetch_batches": 2,
+    "group_cache_mib": 4096
+  },
+  "models": {
+    "neural": {
+      "device": "cuda",
+      "vram_mib": 1024,
+      "host_mib": 4096
+    },
+    "ridge": {
+      "device": "cuda",
+      "vram_mib": 1024,
+      "host_mib": 3072,
+      "campaign_process": true
+    },
+    "xgboost": {
+      "device": "cuda",
+      "vram_mib": 7000,
+      "host_mib": 8192,
+      "campaign_process": true
+    },
+    "titans_mac": {
+      "device": "cuda",
+      "vram_mib": 1792,
+      "host_mib": 9216,
+      "scopes": {
+        "CN": {
+          "vram_mib": 1280,
+          "host_mib": 5120
+        }
+      }
+    },
+    "mars_titan": {
+      "device": "cuda",
+      "vram_mib": 1792,
+      "host_mib": 9216,
+      "scopes": {
+        "CN": {
+          "vram_mib": 1280,
+          "host_mib": 5120
+        }
+      }
+    },
+    "cm_v1_core": {
+      "device": "cuda",
+      "vram_mib": 1792,
+      "host_mib": 9216,
+      "scopes": {
+        "CN": {
+          "vram_mib": 1280,
+          "host_mib": 5120
+        }
+      }
+    },
+    "cm_v1": {
+      "device": "cuda",
+      "vram_mib": 1792,
+      "host_mib": 9216,
+      "scopes": {
+        "CN": {
+          "vram_mib": 1280,
+          "host_mib": 5120
+        }
+      }
+    },
+    "episodic_gru": {
+      "device": "cuda",
+      "vram_mib": 2048,
+      "host_mib": 9216,
+      "scopes": {
+        "CN": {
+          "vram_mib": 1024,
+          "host_mib": 5120
+        }
+      }
+    }
+  }
+}

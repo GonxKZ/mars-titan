@@ -1,22 +1,38 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "kind": "historical_masked_rl_policies",
   "status": "declared_not_executed",
-  "predictor": {"seed": 42},
+  "predictor": {"seed": 42, "source": "posttraining_chain_v1"},
   "levels": {
     "all_predictors": {
       "predictors": "campaign_producers",
-      "arms": ["klpo_terminal", "cash", "hold_initial", "rebalance_50"]
+      "arms": [
+        "klpo_terminal",
+        "cash",
+        "hold_initial",
+        "rebalance_50",
+        "equal_weight_monthly",
+        "market_index"
+      ]
     },
     "algorithms": {
       "predictors": ["transformer_compact", "titans_mac_online"],
       "arms": ["ppo_clip_full_kl", "ppo_kl_penalty_adaptive", "ppo_clip_kl_epoch_stop", "double_dqn"]
     }
   },
-  "train_windows": 3,
+  "train_windows": {
+    "rule": "fixed_prior_evaluations_v1",
+    "minimum": 3,
+    "maximum": 3
+  },
   "universe": {
     "rule": "median_traded_value_in_validation_v1",
     "max_assets": 128
+  },
+  "data": {
+    "policy": "real_edition_only",
+    "edition": "unadjusted_price_edition",
+    "edition_id": "1ac3727836462ce31c39b5438918bd6f3e0d359690c7bc79bfa87cd808c8e68c"
   },
   "environment": {
     "capital": 1000000,
@@ -26,7 +42,7 @@
     "ruin_penalty": -20,
     "dividend_payment_lag_sessions": 0
   },
-  "evaluation_costs_bps": [0, 10, 25],
+  "evaluation_costs_bps": [0, 5, 10, 20],
   "seeds": [42, 43, 44],
   "budget": {
     "transitions": 262144,
@@ -87,7 +103,29 @@
       "policy_objective": null
     }
   },
-  "references": ["cash", "hold_initial", "rebalance_50"],
+  "references": ["cash", "hold_initial", "rebalance_50", "equal_weight_monthly", "market_index"],
+  "market_index": {"US": "SPY"},
+  "report": {
+    "primary_cost_bps": 10,
+    "block_length": 21,
+    "block_length_sensitivity": [5, 63],
+    "replicates": 2000,
+    "seed": 20261009,
+    "confidence": 0.95,
+    "benchmarks": {"CN": "csi300_price_index_v1"}
+  },
+  "survival_sensitivity": {
+    "role": "secondary",
+    "applies_to": "universe_assets_whose_series_ends_in_evaluation",
+    "exit_returns": [0.0, -0.3, -1.0]
+  },
+  "window_sensitivity": {
+    "id": "expanding_train_windows_v1",
+    "role": "secondary",
+    "enabled": false,
+    "launch": "only_if_budget_remains",
+    "train_windows": {"rule": "expanding_prior_evaluations_v1", "minimum": 3, "maximum": 16}
+  },
   "contrasts": {
     "primary": "klpo_terminal",
     "controls": [
@@ -97,7 +135,9 @@
       "double_dqn",
       "cash",
       "hold_initial",
-      "rebalance_50"
+      "rebalance_50",
+      "equal_weight_monthly",
+      "market_index"
     ]
   },
   "final_test_opened": false

@@ -222,8 +222,8 @@ def test_campaign_releases_the_other_tabular_state_before_each_job(monkeypatch):
         (("ridge", "carry"), both),
     ):
         calls.clear()
-        run = masked_campaign._releasing_tabular(lambda job: "done", *key)
-        assert run(None) == "done" and calls == expected
+        masked_campaign._release_tabular(*key)
+        assert calls == expected
     assert masked_campaign.FIT == "fit" and masked_campaign.CARRY == "carry"
 
 
@@ -257,6 +257,8 @@ def test_admission_credits_the_shared_matrix_that_the_job_reuses_or_frees(monkey
     footprint = dict(retained_bytes=10, transient_bytes=90)
     monkeypatch.setattr(masked_campaign, "job_footprint", lambda *args: footprint)
     state = SimpleNamespace(disk=(guard, {"US": {"fold-000": {}}}, {}))
+    # La admisión y la comprobación previa de las ranuras comparten el cálculo de la necesidad.
+    state._disk_need = lambda job: masked_campaign._Campaign._disk_need(state, job)
     job = dict(id="US/fold-000/xgboost/search", scope="US", window="fold-000")
     for reclaimable, need in ((0, 100), (60, 40), (500, 0)):
         monkeypatch.setattr(

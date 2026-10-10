@@ -30,16 +30,12 @@ at::Tensor long_tensor(const std::vector<int64_t>& values, const at::Device& dev
 }
 } // namespace
 
-KlpoEpisodeObjective klpo_episode_objective(const PpoPolicy& policy, const KlpoEpisodeBatch& batch,
-                                            KlpoTerminalBudget budget) {
-    const auto returns = klpo_terminal_returns(batch);
+TerminalDecisions terminal_decisions(const PpoPolicy& policy, const KlpoEpisodeBatch& batch) {
     require(policy.observation_width() == batch.observation_width,
             "El actor no corresponde a la representación registrada");
     const at::Device device(policy.device());
     const auto options = at::TensorOptions().dtype(at::kDouble).device(device);
-    const auto total = static_cast<int64_t>(batch.episodes.size());
-    KlpoEpisodeObjective result{at::zeros({total}, options), at::zeros({}, options), 0, true};
-    std::vector<std::size_t> active;
+    TerminalDecisions result;
     std::size_t horizon = 0;
     std::size_t maximum_decisions = 0;
     for (std::size_t lane = 0; lane < batch.episodes.size(); ++lane) {
@@ -49,12 +45,13 @@ KlpoEpisodeObjective klpo_episode_objective(const PpoPolicy& policy, const KlpoE
         if (count == 0) {
             continue;
         }
-        active.push_back(lane);
+        result.active.push_back(lane);
+        result.counts.push_back(static_cast<int64_t>(count));
         horizon = std::max(horizon, steps.size());
         maximum_decisions = std::max(maximum_decisions, count);
         result.sampled_decisions += count;
     }
-    if (active.empty()) {
+    if (result.active.empty()) {
         return result;
     }
     // Presupuesta las copias densas y su padding antes de reservar tensores.
@@ -62,17 +59,17 @@ KlpoEpisodeObjective klpo_episode_objective(const PpoPolicy& policy, const KlpoE
     constexpr std::size_t scalar_working_bytes = 256;
     const auto row_bytes =
         history_copies * batch.observation_width * sizeof(float) + scalar_working_bytes;
-    require(horizon <= batch.max_bytes / active.size() / row_bytes,
+    require(horizon <= batch.max_bytes / result.active.size() / row_bytes,
             "El padding de la historia supera el presupuesto del consumidor");
-    const auto lanes = static_cast<int64_t>(active.size());
+    const auto lanes = static_cast<int64_t>(result.active.size());
     const auto time = static_cast<int64_t>(horizon);
     const auto decisions = static_cast<int64_t>(maximum_decisions);
     auto history =
         at::zeros({time, lanes, static_cast<int64_t>(batch.observation_width)}, at::kFloat);
     std::vector<int64_t> lengths;
-    lengths.reserve(active.size());
-    for (std::size_t column = 0; column < active.size(); ++column) {
-        const auto& steps = batch.episodes[active[column]].steps;
+    lengths.reserve(result.active.size());
+    for (std::size_t column = 0; column < result.active.size(); ++column) {
+        const auto& steps = batch.episodes[result.active[column]].steps;
         lengths.push_back(static_cast<int64_t>(steps.size()));
         for (std::size_t index = 0; index < steps.size(); ++index) {
             auto row = history[static_cast<int64_t>(index)][static_cast<int64_t>(column)];
@@ -85,10 +82,9 @@ KlpoEpisodeObjective klpo_episode_objective(const PpoPolicy& policy, const KlpoE
     std::vector<at::Tensor> logq_rows;
     auto actions = at::zeros({lanes, decisions}, at::kLong);
     auto mask = at::zeros({lanes, decisions}, at::kBool);
-    auto terminal = at::zeros({lanes}, at::kDouble);
-    for (std::size_t column = 0; column < active.size(); ++column) {
+    for (std::size_t column = 0; column < result.active.size(); ++column) {
         const auto row_index = static_cast<int64_t>(column);
-        const auto& episode = batch.episodes[active[column]];
+        const auto& episode = batch.episodes[result.active[column]];
         std::vector<int64_t> positions;
         for (const auto& step : episode.steps) {
             if (step.sampled) {
@@ -112,22 +108,49 @@ KlpoEpisodeObjective klpo_episode_objective(const PpoPolicy& policy, const KlpoE
         logp_rows.push_back(at::cat({logp, padding}, 0));
         logq_rows.push_back(at::cat({logq, padding}, 0));
         mask[row_index].narrow(0, 0, count).fill_(true);
-        terminal[row_index] = returns[active[column]];
     }
-    const auto active_loss =
-        klpo_terminal_full_loss(at::stack(logp_rows), at::stack(logq_rows), actions.to(device),
-                                terminal.to(device), mask.to(device), batch.beta, budget);
+    result.logp = at::stack(logp_rows);
+    result.logq = at::stack(logq_rows);
+    result.actions = actions.to(device);
+    result.mask = mask.to(device);
+    return result;
+}
+
+at::Tensor scatter_episodes(const at::Tensor& active_values, const std::vector<std::size_t>& active,
+                            std::size_t episodes) {
     std::vector<at::Tensor> losses;
-    losses.reserve(batch.episodes.size());
+    losses.reserve(episodes);
     std::size_t column = 0;
-    for (std::size_t index = 0; index < batch.episodes.size(); ++index) {
+    for (std::size_t index = 0; index < episodes; ++index) {
         if (column < active.size() && active[column] == index) {
-            losses.push_back(active_loss[static_cast<int64_t>(column++)]);
+            losses.push_back(active_values[static_cast<int64_t>(column++)]);
         } else {
-            losses.push_back(at::zeros({}, options));
+            losses.push_back(at::zeros({}, active_values.options()));
         }
     }
-    result.per_episode = at::stack(losses);
+    return at::stack(losses);
+}
+
+KlpoEpisodeObjective klpo_episode_objective(const PpoPolicy& policy, const KlpoEpisodeBatch& batch,
+                                            KlpoTerminalBudget budget) {
+    const auto returns = klpo_terminal_returns(batch);
+    const at::Device device(policy.device());
+    const auto options = at::TensorOptions().dtype(at::kDouble).device(device);
+    const auto total = static_cast<int64_t>(batch.episodes.size());
+    KlpoEpisodeObjective result{at::zeros({total}, options), at::zeros({}, options), 0, true};
+    const auto decisions = terminal_decisions(policy, batch);
+    result.sampled_decisions = decisions.sampled_decisions;
+    if (decisions.active.empty()) {
+        return result;
+    }
+    auto terminal = at::zeros({static_cast<int64_t>(decisions.active.size())}, at::kDouble);
+    for (std::size_t column = 0; column < decisions.active.size(); ++column) {
+        terminal[static_cast<int64_t>(column)] = returns[decisions.active[column]];
+    }
+    const auto active_loss =
+        klpo_terminal_full_loss(decisions.logp, decisions.logq, decisions.actions,
+                                terminal.to(device), decisions.mask, batch.beta, budget);
+    result.per_episode = scatter_episodes(active_loss, decisions.active, batch.episodes.size());
     result.mean = result.per_episode.sum() / static_cast<double>(batch.episodes.size());
     result.no_policy_decisions = false;
     return result;

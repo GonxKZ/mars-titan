@@ -4,11 +4,18 @@ La etapa se declara en dos archivos. Las políticas comunes fijan antes de evalu
 semilla del predictor, los dos niveles de la comparación, las ventanas de ajuste, el
 universo, el entorno, los costes, las semillas, el presupuesto de transiciones, el criterio
 de selección de cartera, los brazos aprendidos con su motor, las referencias sin
-aprendizaje y el contraste con KLPO como brazo principal. Cada variante nombra su campaña
-base, sus ámbitos y sus límites. El plan enumera cada ajuste, traslado y referencia sin
-leer datos. Este módulo no lee cintas ni ejecuta ningún ajuste.
+aprendizaje, el contraste con KLPO como brazo principal, el informe financiero y la
+sensibilidad secundaria a la supervivencia. Cada variante nombra su campaña base, sus
+ámbitos y sus límites. El plan enumera cada ajuste, traslado y referencia sin leer datos.
+Este módulo no lee cintas ni ejecuta ningún ajuste.
 
-El nivel `all_predictors` aplica KLPO y las tres referencias a todos los brazos con
+La versión 2 añade dos referencias que no usan predicciones: la cartera 1/N reequilibrada
+cada 21 sesiones y el índice de mercado comprado y mantenido. El índice se ejecuta en el
+motor con el instrumento que declara cada mercado (SPY en EE. UU.). Un mercado sin
+instrumento en la edición no planifica ese trabajo y el informe lo sustituye por el
+benchmark de niveles declarado (el CSI 300 en China, `simulation.index_benchmark`).
+
+El nivel `all_predictors` aplica KLPO y las referencias a todos los brazos con
 productor en la campaña base, resueltos desde su configuración. Una familia que la campaña
 registre más adelante entra así sin cambiar la etapa. El nivel `algorithms` compara las
 demás políticas aprendidas solo sobre los predictores que declara, porque cada brazo
@@ -16,15 +23,21 @@ aprendido multiplica los ajustes y el contraste principal es KLPO.
 """
 
 import math
+import re
 from collections import Counter
 from pathlib import Path
 
 from mars_titan.data.cohort_files import read_manifest
 from mars_titan.evaluation import walk_forward_comparison as comparison
+from mars_titan.posttraining.staged_chain import chain_job_id
 from mars_titan.training.campaign_plan import DECLARED, _arm_specs, load_campaign
 
 from . import window_tapes
 from .environment import ACTIONS
+from .evaluation import REFERENCE_ALLOCATIONS
+from .index_benchmark import BENCHMARKS
+from .market import CURRENCIES
+from .reconstructed_tape import EDITION_KIND
 
 STAGE_KIND = "historical_masked_rl_stage"
 POLICIES_KIND = "historical_masked_rl_policies"
@@ -34,7 +47,15 @@ ALL_PREDICTORS, ALGORITHMS = "all_predictors", "algorithms"
 CAMPAIGN_PRODUCERS = "campaign_producers"
 SEEDS = [42, 43, 44]
 # Referencias sin aprendizaje de `simulation.evaluation.fixed_policy`.
-REFERENCES = ("cash", "hold_initial", "rebalance_50")
+REFERENCES = tuple(REFERENCE_ALLOCATIONS)
+MARKET_INDEX = "market_index"
+POLICIES_SCHEMA = 2
+# Límite de costes de evaluación que acepta el motor nativo (`frozen_costs`).
+MAX_EVALUATION_COSTS = 16
+SURVIVAL_RULE = "universe_assets_whose_series_ends_in_evaluation"
+# La ventana de ajuste alternativa es una sensibilidad secundaria. Queda declarada con su
+# identidad y su coste, pero solo se lanza si sobra presupuesto y alguien la activa.
+WINDOW_SENSITIVITY_LAUNCH = "only_if_budget_remains"
 # Criterios de cartera del ejecutor nativo. Ninguno usa el error del predictor.
 SELECTION_METRICS = (
     "ruin_count_then_mean_liquidated_log_growth",
@@ -53,6 +74,29 @@ PPO_OBJECTIVES = {
     },
 }
 KLPO = dict(objective="klpo_terminal_token_full_v1", controller="klpo_full_fresh_waves_v1")
+# Las políticas solo aprenden, se seleccionan y se evalúan con cintas reales de la edición.
+DATA_POLICY = "real_edition_only"
+# Predicciones que llevan las cintas: las del predictor elegido en la campaña base o las del
+# predictor de la cadena, el estado que el posentrenamiento elige con la validación.
+BASE_SELECTED = "base_campaign_selected_v1"
+CHAIN = "posttraining_chain_v1"
+PREDICTOR_SOURCES = (BASE_SELECTED, CHAIN)
+# Variantes de valor de mars-titan-ppo. Las dos cuantílicas fijan en el binario 32 cuantiles y
+# actúan con la media (qr_dqn) o con el CVaR inferior al 25 % (qr_dqn_cvar).
+VALUE_VARIANTS = ("double_dqn", "qr_dqn", "qr_dqn_cvar")
+# Objetivos relativos al grupo de mars-titan-klpo. Recogen las mismas oleadas que KLPO y cada
+# identidad fija en el binario las constantes de su artículo.
+GROUP_CONTROLLER = "group_relative_fresh_waves_v1"
+# Motores que consumen oleadas completas de episodios dentro del mismo presupuesto.
+WAVE_ENGINES = ("native_klpo", "native_group_relative")
+GROUP_OBJECTIVES = (
+    "grpo_outcome_v1",
+    "dr_grpo_outcome_v1",
+    "dapo_outcome_static_v1",
+    "gspo_outcome_v1",
+)
+
+
 _STAGE = {
     "schema_version",
     "kind",
@@ -72,6 +116,7 @@ _POLICIES = {
     "levels",
     "train_windows",
     "universe",
+    "data",
     "environment",
     "evaluation_costs_bps",
     "seeds",
@@ -80,8 +125,21 @@ _POLICIES = {
     "hyperparameters",
     "policies",
     "references",
+    "market_index",
+    "report",
+    "survival_sensitivity",
+    "window_sensitivity",
     "contrasts",
     "final_test_opened",
+}
+_REPORT = {
+    "primary_cost_bps",
+    "block_length",
+    "block_length_sensitivity",
+    "replicates",
+    "seed",
+    "confidence",
+    "benchmarks",
 }
 _ENVIRONMENT = {
     "capital",
@@ -132,15 +190,24 @@ def _policy(name, entry):
             f"{name} no declara el objetivo y el controlador KLPO terminal",
         )
         return engine
+    if engine == "native_group_relative":
+        _require(
+            set(entry) == {"engine", "objective", "controller", "confirmed_updates_per_reference"}
+            and entry["objective"] in GROUP_OBJECTIVES
+            and entry["controller"] == GROUP_CONTROLLER
+            and _integer(entry["confirmed_updates_per_reference"], 1, 64),
+            f"{name} no declara un objetivo de grupo y su controlador de oleadas",
+        )
+        return engine
     objective = entry.get("policy_objective")
     _require(
         engine == "native_ppo"
         and set(entry) == {"engine", "variant", "policy_objective"}
-        and entry["variant"] in ("ppo", "double_dqn"),
+        and entry["variant"] in ("ppo", *VALUE_VARIANTS),
         f"{name} necesita un motor y una variante declarados",
     )
-    if entry["variant"] == "double_dqn":
-        _require(objective is None, "Double DQN conserva su identidad sin objetivo PPO")
+    if entry["variant"] in VALUE_VARIANTS:
+        _require(objective is None, f"{entry['variant']} conserva su identidad sin objetivo PPO")
         return engine
     _require(
         isinstance(objective, dict)
@@ -167,7 +234,7 @@ def _read_policies(path):
     _require(
         isinstance(config, dict)
         and set(config) == _POLICIES
-        and config["schema_version"] == 1
+        and config["schema_version"] == POLICIES_SCHEMA
         and config["kind"] == POLICIES_KIND
         and config["status"] == DECLARED
         and config["final_test_opened"] is False
@@ -190,11 +257,11 @@ def _read_policies(path):
         and environment["ruin_penalty"] < 0
         and _integer(environment["dividend_payment_lag_sessions"], 0, 252)
         and isinstance(costs, list)
-        and costs
-        and len(set(costs)) == len(costs)
+        and 1 <= len(costs) <= MAX_EVALUATION_COSTS
         and all(_number(cost, 0, 1000) for cost in costs)
+        and all(a < b for a, b in zip(costs, costs[1:], strict=False))
         and environment["cost_bps"] in costs,
-        "El entorno y los costes de evaluación deben declararse antes de evaluar",
+        "El entorno y los costes de evaluación, crecientes, deben declararse antes de evaluar",
     )
     _require(
         isinstance(budget, dict)
@@ -235,7 +302,7 @@ def _read_policies(path):
         and sorted(references) == sorted(REFERENCES)
         and len(set(references)) == len(references)
         and not set(policies) & set(REFERENCES),
-        "Los brazos aprendidos y las tres referencias deben ser distintos",
+        "Los brazos aprendidos y las cinco referencias deben ser distintos",
     )
     engines = {name: _policy(name, entry) for name, entry in policies.items()}
     contrasts = config["contrasts"]
@@ -264,15 +331,106 @@ def _read_policies(path):
     predictor, universe = config["predictor"], config["universe"]
     _require(
         isinstance(predictor, dict)
-        and set(predictor) == {"seed"}
+        and set(predictor) == {"seed", "source"}
+        and predictor["source"] in PREDICTOR_SOURCES
         and isinstance(universe, dict)
         and universe.get("rule") == window_tapes.UNIVERSE_RULE
         and set(universe) == {"rule", "max_assets"}
-        and _integer(universe["max_assets"], 1, 4096)
-        and _integer(config["train_windows"], 1, 12),
+        and _integer(universe["max_assets"], 1, 4096),
         "El predictor, el universo y las ventanas de ajuste deben estar declarados",
     )
+    # KLPO asigna a cada entorno una cinta de ajuste fija en todas sus oleadas, de modo que
+    # ninguna política puede ajustarse con más ventanas que entornos.
+    _require(
+        window_tapes.train_rule(config["train_windows"])[2] <= budget["environments"],
+        "Cada entorno recorre una sola cinta de ajuste: el máximo de ventanas de ajuste no "
+        "supera los entornos",
+    )
+    rule, window = window_tapes.train_rule(config["train_windows"]), config["window_sensitivity"]
+    _require(
+        isinstance(window, dict)
+        and set(window) == {"id", "role", "enabled", "launch", "train_windows"}
+        and isinstance(window["id"], str)
+        and re.fullmatch(r"[a-z0-9_]+_v[0-9]+", window["id"]) is not None
+        and window["role"] == "secondary"
+        and type(window["enabled"]) is bool
+        and window["launch"] == WINDOW_SENSITIVITY_LAUNCH
+        and window_tapes.train_rule(window["train_windows"]) != rule
+        and window["train_windows"]["maximum"] <= budget["environments"],
+        "La sensibilidad de ventanas es secundaria, tiene identidad propia, otra regla de "
+        "ajuste con tantas cintas como entornos como máximo y se lanza solo si se activa",
+    )
+    # Los objetivos de grupo comparan los episodios que parten de la misma cinta de ajuste, así
+    # que cada cinta necesita al menos dos carriles. La sensibilidad comparte los brazos de la
+    # etapa principal y por eso también debe cumplirlo, aunque esté desactivada.
+    if "native_group_relative" in engines.values():
+        _require(
+            2 * max(rule[2], window["train_windows"]["maximum"]) <= budget["environments"],
+            "Los objetivos de grupo necesitan al menos dos entornos por cinta de ajuste, "
+            "también en la sensibilidad de ventanas",
+        )
+    data = config["data"]
+    _require(
+        isinstance(data, dict)
+        and set(data) == {"policy", "edition", "edition_id"}
+        and data["policy"] == DATA_POLICY
+        and data["edition"] == EDITION_KIND
+        and isinstance(data["edition_id"], str)
+        and re.fullmatch(r"[a-f0-9]{64}", data["edition_id"]) is not None,
+        "Las políticas aprenden solo con la edición real de precios reconstruidos declarada",
+    )
+    _read_report(config)
     return dict(config, sha256=digest, path=str(Path(path).resolve()), engines=engines)
+
+
+def _read_report(config):
+    """Validar el índice de mercado, el informe financiero y la sensibilidad de supervivencia."""
+    index, report = config["market_index"], config["report"]
+    _require(
+        isinstance(index, dict)
+        and set(index) <= set(CURRENCIES)
+        and all(
+            isinstance(symbol, str) and symbol.isascii() and symbol.isalnum() and len(symbol) <= 16
+            for symbol in index.values()
+        ),
+        "El índice de mercado declara un instrumento de la edición por mercado",
+    )
+    sensitivity = report.get("block_length_sensitivity") if isinstance(report, dict) else None
+    benchmarks = report.get("benchmarks") if isinstance(report, dict) else None
+    _require(
+        isinstance(report, dict)
+        and set(report) == _REPORT
+        and report["primary_cost_bps"] in config["evaluation_costs_bps"]
+        and _integer(report["block_length"], 1, 252)
+        and isinstance(sensitivity, list)
+        and all(_integer(length, 1, 252) for length in sensitivity)
+        and report["block_length"] not in sensitivity
+        and all(a < b for a, b in zip(sensitivity, sensitivity[1:], strict=False))
+        and _integer(report["replicates"], 100, 100_000)
+        and _integer(report["seed"], 0, 2**63 - 1)
+        and type(report["confidence"]) is float
+        and 0.5 <= report["confidence"] < 1
+        and isinstance(benchmarks, dict)
+        and all(
+            BENCHMARKS.get(name, {}).get("market") == market for market, name in benchmarks.items()
+        )
+        and not set(benchmarks) & set(index),
+        "El informe declara coste principal, bootstrap por bloques y benchmarks antes de "
+        "ver resultados, con un único índice por mercado",
+    )
+    survival = config["survival_sensitivity"]
+    returns = survival.get("exit_returns") if isinstance(survival, dict) else None
+    _require(
+        isinstance(survival, dict)
+        and set(survival) == {"role", "applies_to", "exit_returns"}
+        and survival["role"] == "secondary"
+        and survival["applies_to"] == SURVIVAL_RULE
+        and isinstance(returns, list)
+        and returns
+        and all(type(value) is float and -1 <= value <= 0 for value in returns)
+        and len(set(returns)) == len(returns),
+        "La sensibilidad de supervivencia es secundaria y declara retornos de salida entre -1 y 0",
+    )
 
 
 def load_stage(path):
@@ -348,6 +506,41 @@ def resolve_levels(campaign, policies):
     }
 
 
+def window_sensitivity(stage):
+    """Etapa de la sensibilidad de ventanas, con la regla de ajuste alternativa declarada.
+
+    Comparte políticas, presupuesto, semillas y predictores con la etapa principal y solo
+    cambia las ventanas de ajuste. Lleva su propia identidad para que sus salidas nunca se
+    mezclen con las principales. Mientras la configuración la declare desactivada no se
+    puede lanzar, aunque sí contarla.
+    """
+    entry = stage["policies"]["window_sensitivity"]
+    policies = dict(stage["policies"], train_windows=entry["train_windows"])
+    return dict(stage, policies=policies, sensitivity=dict(entry))
+
+
+def count_tapes(stage):
+    """Cintas que monta cada predictor por ámbito, sin contar las del índice de mercado.
+
+    Cada ancla monta sus cintas de ajuste y su validación, y cada ventana de política su
+    evaluación. Todas se reutilizan entre brazos, semillas y referencias del predictor.
+    """
+    result = {}
+    for scope in stage["scopes"]:
+        rows = scope_windows(stage, scope)
+        markets = stage["campaign"]["comparison_config"]["resolved_scopes"][scope]["markets"]
+        anchors = [row for row in rows if row["trained"]]
+        train = sum(len(row["train"]) for row in anchors) * len(markets)
+        validation, evaluation = len(anchors) * len(markets), len(rows) * len(markets)
+        result[scope] = dict(
+            train=train,
+            validation=validation,
+            evaluation=evaluation,
+            total=train + validation + evaluation,
+        )
+    return result
+
+
 def scope_windows(stage, scope):
     """Ventanas de política de un ámbito con su ancla, con el periodo de la campaña base."""
     campaign = stage["campaign"]
@@ -365,8 +558,29 @@ def _arms(stage, predictor):
     return arms
 
 
+def _chain_depends(stage, scope, row, anchor, predictor):
+    """Selecciones de la cadena de todas las cintas que lee un trabajo.
+
+    Con el predictor de la cadena, un trabajo lee las evaluaciones de ajuste y validación de
+    su ancla y la evaluación de su ventana con ese predictor, y el universo del ancla con el
+    predictor del universo. Cada una exige su selección confirmada en el posentrenamiento.
+    """
+    policies = stage["policies"]
+    if policies["predictor"]["source"] != CHAIN:
+        return []
+    seed = policies["predictor"]["seed"]
+    read = [*anchor["train"], anchor["validation"]]
+    reads = {predictor: [*read, row["window"]]}
+    reads.setdefault(stage["universe_predictor"], read)
+    return [chain_job_id(scope, w, arm, seed) for arm, windows in reads.items() for w in windows]
+
+
 def plan_stage(stage):
-    """Enumerar ajustes, traslados y referencias por ámbito, mercado, ventana y predictor."""
+    """Enumerar ajustes, traslados y referencias por ámbito, mercado, ventana y predictor.
+
+    `depends` empieza por el ajuste del ancla en los traslados y sigue con las selecciones de
+    la cadena que confirman las predicciones de sus cintas, si las políticas las declaran.
+    """
     policies = stage["policies"]
     jobs = []
     for scope in stage["scopes"]:
@@ -378,6 +592,7 @@ def plan_stage(stage):
                 anchor = anchors[row["anchor"]]
                 for predictor in stage["predictors"]:
                     prefix = f"{scope}/{market}/{row['window']}/{predictor}"
+                    chain = _chain_depends(stage, scope, row, anchor, predictor)
                     common = dict(
                         scope=scope,
                         market=market,
@@ -386,6 +601,7 @@ def plan_stage(stage):
                         train=anchor["train"],
                         validation=anchor["validation"],
                         predictor=predictor,
+                        predictor_seed=policies["predictor"]["seed"],
                     )
                     for level, arm in _arms(stage, predictor):
                         engine = policies["engines"][arm]
@@ -403,10 +619,13 @@ def plan_stage(stage):
                                     engine=engine,
                                     seed=seed,
                                     kind=kind,
-                                    depends=[] if row["trained"] else [fitted],
+                                    depends=([] if row["trained"] else [fitted]) + chain,
                                 )
                             )
                     for reference in policies["references"]:
+                        if reference == MARKET_INDEX and market not in policies[MARKET_INDEX]:
+                            # Sin instrumento en la edición, el informe usa el benchmark.
+                            continue
                         jobs.append(
                             dict(
                                 common,
@@ -416,7 +635,7 @@ def plan_stage(stage):
                                 engine="reference",
                                 seed=None,
                                 kind=REFERENCE,
-                                depends=[],
+                                depends=list(chain),
                             )
                         )
     _require(len({job["id"] for job in jobs}) == len(jobs), "El plan contiene trabajos repetidos")

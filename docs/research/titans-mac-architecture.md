@@ -275,11 +275,11 @@ flowchart TD
         OG["Salida y_t ⊙ M_t(y_t)"]
     end
 
-    PT1["PT1 · caja de puertas y escritura recortada<br/>propuesta, #453"]:::propuesta
+    PT1["PT1 · caja de puertas y escritura recortada<br/>implementada sin entrenar, #453"]:::comprobado
 
     subgraph EXT["Ampliaciones de MARS-TITAN, desactivables"]
         BANK["Banco episódico M0 a M3<br/>y refinamientos K"]
-        B6["Corrección asociativa B6<br/>delta o proximal con resultados maduros"]
+        B6["Corrección asociativa B6<br/>delta, proximal o kalman con resultados maduros"]
     end
 
     HEAD["Cabeza común de cuantiles<br/>0,025 · 0,1 · 0,5 · 0,9 · 0,975"]
@@ -310,17 +310,16 @@ flowchart TD
     PT2 -. corrección en línea .-> CAL
 
     subgraph LEY["Leyenda"]
-        L1["Implementado y comprobado sin entrenar"]:::comprobado
-        L2["Propuesta sin implementar en esta rama"]:::propuesta
+        L1["Innovación implementada y comprobada sin entrenar"]:::comprobado
+        L2["Núcleo y ampliaciones existentes"]
     end
 
     classDef comprobado fill:#dcefdc,stroke:#2e7d32,color:#102a12
-    classDef propuesta fill:#eeeeee,stroke:#757575,color:#222222,stroke-dasharray:5 3
 ```
 
 El banco y B6 no se combinan en la misma variante, como fija la declaración de MARS-TITAN. PT1 actúa dentro de la escritura de la memoria neuronal y cambia el núcleo, así que exige reentrenar Titans-MAC. PT2 y PT3 trabajan sobre predicciones ya emitidas y solo usan resultados maduros.
 
-**PT1. Memoria de Titans acotada y contractiva** ([#453](https://github.com/GonxKZ/mars-titan/issues/453)). Propuesta, sin implementar en esta rama. Resultado experimental pendiente.
+**PT1. Memoria de Titans acotada y contractiva** ([#453](https://github.com/GonxKZ/mars-titan/issues/453)). Implementada y comprobada sin entrenar como `memory_stability`, desactivada por defecto, con ecuaciones, pruebas y coste en [su documento](../engineering/titans-memory-stability.md). Resultado experimental pendiente.
 
 **PT2. Calibración conformal en línea con etiquetas maduras** ([#454](https://github.com/GonxKZ/mars-titan/issues/454)). Implementada y comprobada sin entrenar como `OnlineConformal`, con κ = 0 idéntica a la CQR estática y sin integrar todavía en la comparación por ventanas. Ecuaciones, pruebas y coste en [su documento](../engineering/online-conformal-calibration.md). Resultado experimental pendiente.
 

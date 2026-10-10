@@ -33,6 +33,12 @@ from .input_policy import (
     policy_identity,
 )
 from .joint_projection import project_numeric_context
+from .price_windows import (
+    absent_positions,
+    check_price_window_contract,
+    check_row_positions,
+    present_slots,
+)
 from .samples import FUNDAMENTAL_CONCEPTS, numeric_context
 from .storage import atomic_json, outside_source, sha256
 from .temporal import admission_errors, aware
@@ -251,6 +257,9 @@ def _rows(
     input_policy=STRICT_INPUTS,
     missing_sources=(),
     fundamental_exclusions=(),
+    price_window=None,
+    ordering_rtol=0.0,
+    absent_windows=None,
 ):
     masked = masked_inputs(input_policy)
     positions = {day.isoformat(): i for i, day in enumerate(clock.days)}
@@ -266,6 +275,10 @@ def _rows(
         raise ValueError("Los precios contienen información futura")
     # La diferencia entre extremos acredita continuidad porque las sesiones son únicas y ordenadas.
     ohlc = prices[["open", "high", "low", "close"]].to_numpy()
+    absent = None
+    if price_window is not None:
+        absent = absent_positions(clock, price_window["market_absent_sessions"][clock.market])
+        check_row_positions(indices, absent)
     unknown_publication = {r["concept"] for r in facts if r.get("available_at") is None}
     excluded_publications = {}
     if masked:
@@ -292,9 +305,20 @@ def _rows(
         if admitted_decisions is not None and cutoff not in admitted_decisions:
             excluded["outside_macro_admission"] += 1
             continue
-        if index < context - 1 or position - indices[index - context + 1] != context - 1:
-            excluded["incomplete_price_window"] += 1
-            continue
+        slots = None
+        if absent is None:
+            if index < context - 1 or position - indices[index - context + 1] != context - 1:
+                excluded["incomplete_price_window"] += 1
+                continue
+        else:
+            # Solo se admiten huecos en sesiones sin filas en todo el mercado.
+            slots = present_slots(indices, index, context, absent)
+            if slots is None:
+                excluded["incomplete_price_window"] += 1
+                continue
+            if not slots.all():
+                absent_windows["windows"] += 1
+                absent_windows["absent_sessions"] += int(context - slots.sum())
         known = cursor.at(cutoff)
         selected = [known.get(concept) for concept in concepts]
         if not masked and not any(r is not None and r["value"] is not None for r in selected):
@@ -362,7 +386,9 @@ def _rows(
             else admission_errors(available, cutoff)
         ):
             raise ValueError("Las modalidades contienen información futura o ausente")
-        png = chart_png(ohlc, end_index=index, context=context)
+        png = chart_png(
+            ohlc, end_index=index, context=context, ordering_rtol=ordering_rtol, present=slots
+        )
         chart_hash = hashlib.sha256(png).hexdigest()
         image = _vector(
             dict(encoder=encoder_hash, kind="chart", content=chart_hash),
@@ -453,9 +479,19 @@ def materialize_cohort_asset(
     admitted_decisions=None,
     input_policy=STRICT_INPUTS,
     target_fundamental_concepts=None,
+    price_window=None,
 ):
-    """Confirmar un activo completo. La caché persiste aunque se interrumpa su escritura."""
+    """Confirmar un activo completo. La caché persiste aunque se interrumpa su escritura.
+
+    Con `price_window`, las ventanas siguen el contrato de presencia por sesión de la v3.1.
+    """
     masked = masked_inputs(input_policy)
+    if price_window is not None:
+        check_price_window_contract(price_window)
+        if not masked or context != price_window["context_sessions"]:
+            raise ValueError("El contrato de ventanas requiere la política histórica y 64 sesiones")
+        if clock.market not in price_window["calendars"]:
+            raise ValueError("El contrato de ventanas no declara el calendario del mercado")
     if masked and (context != 64 or admitted_decisions is not None):
         raise ValueError(
             "La política histórica requiere 64 sesiones y no filtra por completitud macro"
@@ -555,6 +591,12 @@ def materialize_cohort_asset(
             )
         },
     )
+    if price_window is not None:
+        if calendar != price_window["calendars"][clock.market]["decisions_sha256"]:
+            raise ValueError("El contrato de ventanas usa otro calendario")
+        identity["price_window"] = price_window
+        identity["code"]["price_windows.py"] = sha256(Path(__file__).with_name("price_windows.py"))
+        identity["code"]["prices.py"] = sha256(Path(__file__).with_name("prices.py"))
     if target_fundamental_concepts is not None:
         identity["accounting_projection"] = dict(
             source_concepts=list(concepts), target_concepts=list(target)
@@ -606,6 +648,8 @@ def materialize_cohort_asset(
             source_unit=source_unit,
             admitted_decisions_sha256=identity["admitted_decisions_sha256"],
         )
+        if price_window is not None:
+            expected["price_window"] = price_window
         if receipt.exists():
             old = json.loads(receipt.read_text())
             if (
@@ -670,6 +714,7 @@ def materialize_cohort_asset(
             )
             facts.extend(derived)
         excluded, hits, misses, missing = Counter(), Counter(), Counter(), Counter()
+        absent_windows = Counter(windows=0, absent_sessions=0)
         schema = _schema(concepts, macros.indicators, input_policy)
         with NewsWindows(
             source / "news/news.parquet", max_group_bytes=max_news_group_bytes
@@ -696,6 +741,9 @@ def materialize_cohort_asset(
                 fundamental_exclusions=origin.get("fundamentals_audit", {}).get(
                     "temporal_exclusions", ()
                 ),
+                price_window=price_window,
+                ordering_rtol=origin.get("price_audit", {}).get("ordering_rtol", 0.0),
+                absent_windows=absent_windows,
             )
 
             def batches():
@@ -750,6 +798,8 @@ def materialize_cohort_asset(
         )
         if masked:
             result["missing_input_reasons"] = dict(missing)
+        if price_window is not None:
+            result["market_absent_windows"] = dict(absent_windows)
         if target_fundamental_concepts is not None:
             result["accounting_projection"] = dict(
                 identity["accounting_projection"],

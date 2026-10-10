@@ -38,10 +38,10 @@ def sessions(stage, scope, window):
 
 
 def fit_seconds(stage, job, step, single):
-    """Ajuste: presupuesto con 16 entornos, minilotes, 17 validaciones y tres costes."""
+    """Ajuste: presupuesto con 16 entornos, minilotes, 17 validaciones y cuatro costes."""
     seconds = 262_144 * (step + 1 / 16000) + 256 * 4 * 16 / 100
     seconds += 17 * sessions(stage, job["scope"], job["validation"]) * (step + single)
-    return seconds + 3 * sessions(stage, job["scope"], job["window"]) * (step + single)
+    return seconds + 4 * sessions(stage, job["scope"], job["window"]) * (step + single)
 
 
 @pytest.mark.parametrize("variant", "AB")
@@ -49,12 +49,14 @@ def test_policy_hours_follow_budget_validations_costs_and_backends(variant):
     stage = policy_plan.load_stage(STAGES[variant])
     estimate = policy_throughput.policy_hours(stage, RATES)
     assert estimate["status"] == "approximate" and estimate["not_measured"]
-    expected_jobs = dict(A=dict(fit=1368, reference=792), B=dict(fit=456, carry=912, reference=792))
+    expected_jobs = dict(
+        A=dict(fit=1368, reference=1221), B=dict(fit=456, carry=912, reference=1221)
+    )
     assert estimate["jobs"] == expected_jobs[variant]
     levels = dict(
-        A=dict(all_predictors=dict(fit=792, reference=792), algorithms=dict(fit=576)),
+        A=dict(all_predictors=dict(fit=792, reference=1221), algorithms=dict(fit=576)),
         B=dict(
-            all_predictors=dict(fit=264, carry=528, reference=792),
+            all_predictors=dict(fit=264, carry=528, reference=1221),
             algorithms=dict(fit=192, carry=384),
         ),
     )
@@ -74,11 +76,11 @@ def test_policy_hours_follow_budget_validations_costs_and_backends(variant):
     china = [job for job in plan if job["scope"] == "CN" and job["arm"] == "klpo_terminal"]
     expected = 0.0
     for job in china:
-        evaluated = 3 * sessions(stage, "CN", job["window"]) * (1 / 400 + single)
+        evaluated = 4 * sessions(stage, "CN", job["window"]) * (1 / 400 + single)
         expected += fit_seconds(stage, job, 1 / 400, single) if job["kind"] == "fit" else evaluated
     assert estimate["scopes"]["CN"]["arms"]["klpo_terminal"] * 3600 == pytest.approx(expected)
     cash = [job for job in plan if job["scope"] == "US" and job["arm"] == "cash"]
-    expected = math.fsum(3 * sessions(stage, "US", job["window"]) / 1000 for job in cash)
+    expected = math.fsum(4 * sessions(stage, "US", job["window"]) / 1000 for job in cash)
     assert estimate["scopes"]["US"]["arms"]["cash"] * 3600 == pytest.approx(expected)
     total = math.fsum(scope["hours"] for scope in estimate["scopes"].values())
     assert estimate["hours"] == pytest.approx(total)
@@ -238,14 +240,15 @@ def test_native_hours_add_collection_updates_and_evaluations_per_job():
     stage = policy_plan.load_stage(STAGES["A"])
     estimate = policy_throughput.native_policy_hours(stage, dict(US=NATIVE, CN=NATIVE))
     assert estimate["status"] == "lower_bound_without_adam" and estimate["not_measured"]
-    assert estimate["jobs"] == dict(fit=1368, reference=792)
+    assert estimate["jobs"] == dict(fit=1368, reference=1221)
     plan = policy_plan.plan_stage(stage)
+    costs = len(stage["policies"]["evaluation_costs_bps"])
     dqn = [j for j in plan if j["arm"] == "double_dqn" and j["kind"] == "fit"]
     assert len(dqn) == 144
 
     def evaluated(job, validations):
         days = validations * sessions(stage, job["scope"], job["validation"])
-        return (days + 3 * sessions(stage, job["scope"], job["window"])) * 1e-4
+        return (days + costs * sessions(stage, job["scope"], job["window"])) * 1e-4
 
     # Recogida en pasos de 16 entornos y un forward y backward más dos forwards por minilote.
     total = math.fsum(
@@ -262,7 +265,7 @@ def test_native_hours_add_collection_updates_and_evaluations_per_job():
         total += work["collected"] * 6e-5 + evaluated(job, work["validations"])
     assert estimate["arms"]["klpo_terminal"] * 3600 == pytest.approx(total)
     references = [j for j in plan if j["arm"] == "cash"]
-    cash = math.fsum(3 * sessions(stage, j["scope"], j["window"]) * 1e-5 for j in references)
+    cash = math.fsum(costs * sessions(stage, j["scope"], j["window"]) * 1e-5 for j in references)
     assert estimate["arms"]["cash"] * 3600 == pytest.approx(cash)
     assert estimate["hours"] == pytest.approx(math.fsum(estimate["arms"].values()))
     assert estimate["hours"] == pytest.approx(math.fsum(estimate["scopes"].values()))
@@ -271,6 +274,63 @@ def test_native_hours_add_collection_updates_and_evaluations_per_job():
     assert estimate["adam_steps"]["cash"] == 0
     # Double DQN hace 16 veces más minilotes que PPO con el mismo presupuesto.
     assert estimate["arms"]["double_dqn"] > 10 * estimate["arms"]["ppo_clip_full_kl"]
+
+
+@pytest.mark.parametrize("variant", ["qr_dqn", "qr_dqn_cvar"])
+def test_quantile_variants_count_like_double_dqn_with_their_own_times(variant):
+    stage = policy_plan.load_stage(STAGES["A"])
+    plan = policy_plan.plan_stage(stage)
+    job = next(j for j in plan if j["arm"] == "double_dqn" and j["kind"] == "fit")
+    scalar = policy_throughput.native_fit_work(stage, job)
+    # El brazo conserva su nombre y solo cambia la cabeza, así que el plan no se altera.
+    stage["policies"]["policies"]["double_dqn"]["variant"] = variant
+    quantile = policy_throughput.native_fit_work(stage, job)
+    assert quantile == dict(scalar, engine=variant)
+    with pytest.raises(ValueError, match="qr_dqn_minibatch_seconds"):
+        policy_throughput.native_policy_hours(stage, dict(US=NATIVE, CN=NATIVE))
+    times = dict(
+        NATIVE, qr_dqn_tick_seconds=1e-3, qr_dqn_minibatch_seconds=4e-3, qr_dqn_forward_seconds=5e-4
+    )
+    estimate = policy_throughput.native_policy_hours(stage, dict(US=times, CN=times))
+    fits = [j for j in plan if j["arm"] == "double_dqn" and j["kind"] == "fit"]
+    costs = len(stage["policies"]["evaluation_costs_bps"])
+    days = math.fsum(
+        (
+            17 * sessions(stage, j["scope"], j["validation"])
+            + costs * sessions(stage, j["scope"], j["window"])
+        )
+        * 1e-4
+        for j in fits
+    )
+    total = len(fits) * (16_384 * 1e-3 + (262_144 - 256) * (4e-3 + 2 * 5e-4)) + days
+    assert estimate["arms"]["double_dqn"] * 3600 == pytest.approx(total)
+
+
+def test_group_arms_collect_the_klpo_waves_with_their_own_objective_time(monkeypatch):
+    stage = policy_plan.load_stage(STAGES["A"])
+    plan = policy_plan.plan_stage(stage)
+    jobs = [j for j in plan if j["arm"] == "klpo_terminal" and j["kind"] == "fit"]
+    klpo = policy_throughput.native_fit_work(stage, jobs[0])
+    group = policy_throughput.native_fit_work(stage, dict(jobs[0], engine="native_group_relative"))
+    assert group == dict(klpo, engine="group")
+    # El brazo KLPO pasa a objetivo de grupo con las mismas oleadas. Sin el tiempo de su
+    # objetivo la estimación falla en lugar de reutilizar el de KLPO.
+    grouped = [
+        dict(j, engine="native_group_relative") if j["arm"] == "klpo_terminal" else j for j in plan
+    ]
+    monkeypatch.setattr(policy_throughput, "plan_stage", lambda _: grouped)
+    with pytest.raises(ValueError, match="group_objective_transition_seconds"):
+        policy_throughput.native_policy_hours(stage, dict(US=NATIVE, CN=NATIVE))
+    times = dict(NATIVE, group_objective_transition_seconds=2e-5)
+    estimate = policy_throughput.native_policy_hours(stage, dict(US=times, CN=times))
+    costs = len(stage["policies"]["evaluation_costs_bps"])
+    total = 0.0
+    for job in jobs:
+        work = policy_throughput.native_fit_work(stage, job)
+        days = work["validations"] * sessions(stage, job["scope"], job["validation"])
+        days += costs * sessions(stage, job["scope"], job["window"])
+        total += work["collected"] * (5e-5 + 2e-5) + days * 1e-4
+    assert estimate["arms"]["klpo_terminal"] * 3600 == pytest.approx(total)
 
 
 @pytest.mark.parametrize("value", [None, -1.0, float("nan"), "1"])
@@ -284,14 +344,15 @@ def test_native_hours_reject_missing_or_invalid_times(value):
 def test_native_carry_evaluates_each_cost_without_fitting():
     stage = policy_plan.load_stage(STAGES["B"])
     estimate = policy_throughput.native_policy_hours(stage, dict(US=NATIVE, CN=NATIVE))
-    assert estimate["jobs"] == dict(fit=456, carry=912, reference=792)
+    assert estimate["jobs"] == dict(fit=456, carry=912, reference=1221)
     plan = policy_plan.plan_stage(stage)
+    costs = len(stage["policies"]["evaluation_costs_bps"])
     carried = [j for j in plan if j["arm"] == "klpo_terminal" and j["kind"] == "carry"]
     fitted = [j for j in plan if j["arm"] == "klpo_terminal" and j["kind"] == "fit"]
-    total = math.fsum(3 * sessions(stage, j["scope"], j["window"]) * 1e-4 for j in carried)
+    total = math.fsum(costs * sessions(stage, j["scope"], j["window"]) * 1e-4 for j in carried)
     for job in fitted:
         work = policy_throughput.native_fit_work(stage, job)
         days = work["validations"] * sessions(stage, job["scope"], job["validation"])
-        days += 3 * sessions(stage, job["scope"], job["window"])
+        days += costs * sessions(stage, job["scope"], job["window"])
         total += work["collected"] * 6e-5 + days * 1e-4
     assert estimate["arms"]["klpo_terminal"] * 3600 == pytest.approx(total)

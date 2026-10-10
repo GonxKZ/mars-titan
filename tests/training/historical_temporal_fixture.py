@@ -10,6 +10,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 
 from mars_titan.data.input_policy import HISTORICAL_MASKED, MODALITIES, policy_identity
+from mars_titan.data.price_windows import calendar_digest, price_window_contract
 from mars_titan.data.storage import atomic_json, sha256
 from mars_titan.data.temporal import MarketClock
 from mars_titan.training.cohort_contract import representation_hash
@@ -32,14 +33,27 @@ DEFAULT_DAYS = (
 )
 
 
-def historical_temporal_fixture(root, markets=("US",), days=None, *, assets=1, presence=None):
+def historical_temporal_fixture(
+    root,
+    markets=("US",),
+    days=None,
+    *,
+    assets=1,
+    presence=None,
+    market_absent=None,
+    price_start=None,
+):
     """Crear el corpus técnico. `days` permite fijar las sesiones de cada mercado.
 
     `presence(market, symbol, row)` puede devolver noticias, fundamentales y macro de cada
     muestra, con vectores, recuento de noticias y disponibilidad coherentes. Sin ella, las
     muestras no tienen noticias ni fundamentales y el macro aparece en una de cada tres.
+    `market_absent` declara sesiones sin filas en todo el mercado, que desaparecen de los
+    precios de cada activo y entran en el contrato de ventanas de la v3.1. `price_start` fija la
+    primera sesión con precio de cada activo.
     """
     root = Path(root)
+    clocks = {market: MarketClock(market, "1999-01-01", "2024-01-05") for market in markets}
     parent = corpus(root / "parent", assets=assets, rows=1, markets=markets)
     meta = json.loads(parent.read_text())
     policy = policy_identity(HISTORICAL_MASKED)
@@ -53,11 +67,23 @@ def historical_temporal_fixture(root, markets=("US",), days=None, *, assets=1, p
         context_sessions=64,
         news_lookback_sessions=5,
     )
-    coverage, protocols, clocks = [], {}, {}
+    if market_absent is not None:
+        representation["price_window"] = price_window_contract(
+            {
+                market: dict(
+                    start=clock.days[0].isoformat(),
+                    end=clock.days[-1].isoformat(),
+                    decisions_sha256=calendar_digest(clock),
+                )
+                for market, clock in clocks.items()
+            },
+            {market: list(market_absent.get(market, [])) for market in markets},
+        )
+    coverage, protocols = [], {}
     counts = dict(train=0, validation=0)
     for asset in meta["assets"]:
         market, symbol = asset["market"], asset["symbol"]
-        clock = clocks[market] = MarketClock(market, "1999-01-01", "2024-01-05")
+        clock = clocks[market]
         requested = DEFAULT_DAYS if days is None else days[market]
         positions = [
             clock.days.index(date.fromisoformat(day))
@@ -65,15 +91,22 @@ def historical_temporal_fixture(root, markets=("US",), days=None, *, assets=1, p
             if date.fromisoformat(day) in clock.days
         ]
         price_count = positions[-1] + 1
-        values = 10 + np.arange(price_count, dtype=np.float64) / 1000
+        # Cada fila conserva el valor de su sesión, así que quitar una sesión no cambia el resto.
+        absent = [
+            clock.days.index(date.fromisoformat(day))
+            for day in (market_absent or {}).get(market, [])
+        ]
+        start = clock.days.index(date.fromisoformat(price_start)) if price_start else 0
+        kept = np.setdiff1d(np.arange(start, price_count), absent)
+        values = 10 + kept.astype(np.float64) / 1000
         prices = pa.table(
             dict(
                 open=values,
                 high=values + 0.2,
                 low=values - 0.2,
                 close=values + 0.1,
-                volume=np.full(price_count, 100.0),
-                available_at=clock.decisions[:price_count],
+                volume=np.full(len(kept), 100.0),
+                available_at=[clock.decisions[i] for i in kept],
             )
         )
         samples, labels = [], []
@@ -88,7 +121,7 @@ def historical_temporal_fixture(root, markets=("US",), days=None, *, assets=1, p
                 dict(
                     cohort_id="original_audited",
                     prediction_at=moment,
-                    price_end_index=position,
+                    price_end_index=int(np.searchsorted(kept, position)),
                     news=[0.5 if news else 0.0] * 384,
                     charts=[0.25] * 512,
                     # Valor, máscara y edad del único concepto fundamental del fixture.

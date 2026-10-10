@@ -150,7 +150,7 @@ struct StepOutcome {
 
 struct FinancialMetrics {
     std::optional<double> net_return;
-    // Retorno si se vendiera la cartera al último cierre pagando el coste configurado.
+    // Retorno si se vendiera la cartera al último cierre pagando el coste y el impuesto de venta.
     std::optional<double> liquidated_net_return;
     std::optional<double> max_drawdown;
     double costs = 0;
@@ -160,8 +160,9 @@ struct FinancialMetrics {
     std::string invalid_reason;
 };
 
-/* Patrimonio tras vender todas las posiciones al cierre del cursor con el coste de la sesión.
- * Devuelve NaN si falta un cierre de una posición. No modifica la cartera. */
+/* Patrimonio tras vender todas las posiciones al cierre del cursor con el coste de la sesión
+ * y el impuesto de venta de cada activo vigente en ese cierre. Devuelve NaN si falta un cierre
+ * de una posición. No modifica la cartera. */
 [[nodiscard]] double liquidated_nav(const SessionSnapshot& state, const MarketTape& tape);
 
 /* Cada sesión posee su estado. Las sesiones distintas comparten únicamente la cinta inmutable. */

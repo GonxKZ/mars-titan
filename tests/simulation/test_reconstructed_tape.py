@@ -15,9 +15,14 @@ from mars_titan.environments.cohorts import FINAL_TEST_START_US
 from mars_titan.simulation.environment import FinancialEnv
 from mars_titan.simulation.market import RECONSTRUCTED_CONTRACT, MarketTape
 from mars_titan.simulation.market_rules import china_a_share_instrument
-from mars_titan.simulation.reconstructed_tape import build_reconstructed_tape, read_edition
+from mars_titan.simulation.reconstructed_tape import (
+    NoAdmittedAssets,
+    build_reconstructed_tape,
+    read_edition,
+)
 from tests.environments.walk_forward_fixture import microseconds
 from tests.simulation.native_library import requires_native_library
+from tests.simulation.policy_tape_fixture import monthly_window
 from tests.simulation.unadjusted_edition_fixture import (
     Asset,
     evaluation_window,
@@ -63,7 +68,7 @@ CN = [
 EXPECTED_EXCLUSIONS = {
     "US/CCC": "unverified_rows_in_tape",
     "US/DDD": "no_verified_traded_close_at_start",
-    "US/EEE": "missing_last_session",
+    "US/EEE": "series_ends_in_tape",
     "US/FFF": "no_verified_rows",
     "US/JJJ": "no_verified_traded_close_at_start",
 }
@@ -106,6 +111,12 @@ def test_only_verified_assets_enter_and_every_exclusion_has_a_reason(edition):
     assert cn.currency == "CNY" and len(cn.assets) == 3
 
 
+def test_a_tape_without_admitted_assets_reports_every_exclusion(edition):
+    with pytest.raises(NoAdmittedAssets) as raised:
+        build(edition, symbols=["EEE"])
+    assert raised.value.excluded == {"US/EEE": "series_ends_in_tape"}
+
+
 def test_identity_declares_the_reconstructed_treatment_and_its_limits(edition):
     tape, _ = build(edition, lag=3)
     audit = tape.identity["audit"]
@@ -116,7 +127,53 @@ def test_identity_declares_the_reconstructed_treatment_and_its_limits(edition):
     assert audit["population"] == "listed_through_2025_03"
     assert audit["assumptions"] == {"dividend_payment_lag_sessions": 3}
     assert audit["edition_id"] == read_edition(edition)["edition_id"]
-    assert tape.identity["source"]["exclusions"]["missing_last_session"] == 1
+    assert tape.identity["source"]["exclusions"]["series_ends_in_tape"] == 1
+    assert tape.identity["source"]["final_session"] == (
+        "missing_row_valued_at_last_traded_close_when_series_continues_v1"
+    )
+
+
+def test_a_final_session_without_row_is_valued_at_the_last_traded_close(tmp_path):
+    # Como DVN el 31 de diciembre de 2009: falta la fila de la última sesión, pero la serie
+    # sigue después de la cinta. Se valora con el último cierre negociado, sin ejecución, y
+    # ya no anula la ventana. Una serie que termina dentro de la cinta sigue excluida.
+    year = tape_days("US")
+    last = year.index("2023-11-30")
+    write_edition(
+        tmp_path,
+        {
+            "US": [
+                Asset("GAP", base=30.0, missing=(last,)),
+                Asset("END", base=40.0, end=last - 3),
+                Asset("REF", base=50.0),
+            ]
+        },
+    )
+    symbols = ["END", "GAP", "REF"]
+    # Solo GAP tiene puntuación positiva, así que la cartera invertida lo mantiene al final.
+    window, values = monthly_window("US", -2, symbols, score=lambda k, i: 0.02 if i == 1 else -0.01)
+    tape, report = build_reconstructed_tape(
+        tmp_path,
+        [window],
+        [values],
+        market="US",
+        partition="validation",
+        dividend_payment_lag_sessions=0,
+    )
+    assert report["excluded"] == {"US/END": "series_ends_in_tape"}
+    assert tape.assets == ["US/GAP", "US/REF"] and str(report["last_session"]) == "2023-11-30"
+    assert report["counts"]["final_sessions_without_row"] == 1
+    gap = tape.assets.index("US/GAP")
+    assert np.isnan(tape.prices[-1, gap, [0, 1, 2, 4]]).all()
+    assert tape.prices[-1, gap, 3] == tape.prices[-2, gap, 3]
+    env = FinancialEnv(tape, capital=1_000_000)
+    env.reset(seed=0)
+    while not env.done:
+        info = env.step(5 if env.cursor == 0 else 0)[4]
+    assert info["reward_valid"] and info["reason"] == "episode_limit"
+    held = env.book.positions["US/GAP"]
+    cash = env.book.cash["USD"]
+    assert env.book.nav["USD"] == pytest.approx(cash + held * tape.prices[-2, gap, 3], rel=1e-15)
 
 
 def test_sessions_and_fit_ends_come_from_the_receipt_and_never_reach_2024(edition):
@@ -521,6 +578,48 @@ def test_orders_into_suspensions_and_missing_rows_never_fill(edition):
     assert traded(outcomes, 32, "US/BBB") == []
     assert {"asset": "US/BBB", "reason": "cash_liquidity_or_lot_limit"} in outcomes[32]["unfilled"]
     assert "US/BBB" not in env.book.positions
+
+
+@pytest.mark.parametrize(
+    "backend", ["python", pytest.param("native", marks=requires_native_library)]
+)
+def test_a_session_without_any_row_creates_no_execution_no_price_and_no_reward(tmp_path, backend):
+    # Una sesión del calendario sin fila de ningún activo, como la ausencia marcada por
+    # máscara en la edición, no inventa precio, no ejecuta órdenes y no produce recompensa.
+    hole = (100, 101)
+    write_edition(
+        tmp_path, {"US": [Asset("AAA", base=30.0, missing=hole), Asset("BBB", missing=hole)]}
+    )
+    symbols = ["AAA", "BBB"]
+    values = predictions("US", symbols, score=lambda k, i: 0.02 + 0.01 * i)
+    tape, report = build_reconstructed_tape(
+        tmp_path,
+        [evaluation_window("US", values)],
+        [values],
+        market="US",
+        partition="train",
+        dividend_payment_lag_sessions=0,
+    )
+    assert report["counts"]["missing_rows"] == 4 and report["excluded"] == {}
+    for k in hole:
+        assert np.isnan(tape.prices[k, :, [0, 1, 2, 4]]).all()
+        np.testing.assert_array_equal(tape.prices[k, :, 3], tape.prices[99, :, 3])
+    env = FinancialEnv(tape, capital=1_000_000, backend=backend)
+    env.reset(seed=0)
+    rewards, outcomes = {}, {}
+    while env.cursor <= hole[-1]:
+        decision = env.cursor
+        # Compra al principio y vuelve a pedir exposición completa justo antes del hueco.
+        action = 5 if decision in (0, hole[0] - 1, hole[0]) else 0
+        _, rewards[decision], _, _, outcomes[decision] = env.step(action)
+    assert env.book.positions
+    for decision in (hole[0] - 1, hole[0]):
+        assert outcomes[decision]["trades"] == [] and outcomes[decision]["unfilled"]
+        assert all(miss["reason"] == "missing_open" for miss in outcomes[decision]["unfilled"])
+        assert outcomes[decision]["costs"] == outcomes[hole[0] - 2]["costs"]
+        assert rewards[decision] == 0.0
+    # Las órdenes que no se ejecutaron en el hueco no se arrastran a la primera apertura real.
+    assert outcomes[hole[-1]]["trades"] == []
 
 
 def test_off_grid_opens_and_ambiguous_event_sessions_never_fill(edition):

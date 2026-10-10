@@ -160,32 +160,61 @@ def test_global_float64_is_rejected_before_loading_or_cuda(monkeypatch):
         torch.set_default_dtype(previous)
 
 
-@pytest.mark.parametrize("mode,argument", [("text", "contenido"), ("images", [b"fixture"])])
-@pytest.mark.parametrize("field", ["matmul_tf32", "cudnn_tf32", "dtype", "autocast"])
-def test_precision_change_is_rejected_before_each_modality(mode, argument, field):
-    encoder = embeddings.FrozenEncoders.__new__(embeddings.FrozenEncoders)
+@pytest.fixture
+def strict_flags():
     previous = (
         torch.backends.cuda.matmul.allow_tf32,
         torch.backends.cudnn.allow_tf32,
+        torch.get_float32_matmul_precision(),
         torch.get_default_dtype(),
     )
-    encoder.spec = {"runtime_precision": dict(dtype="float32", matmul_tf32=False, cudnn_tf32=True)}
-    try:
-        torch.backends.cuda.matmul.allow_tf32 = False
+    embeddings.strict_fp32()
+    yield
+    torch.backends.cuda.matmul.allow_tf32 = previous[0]
+    torch.backends.cudnn.allow_tf32 = previous[1]
+    torch.set_float32_matmul_precision(previous[2])
+    torch.set_default_dtype(previous[3])
+
+
+def enable_tf32(field):
+    if field == "matmul_tf32":
+        torch.backends.cuda.matmul.allow_tf32 = True
+    elif field == "cudnn_tf32":
         torch.backends.cudnn.allow_tf32 = True
-        if field == "matmul_tf32":
-            torch.backends.cuda.matmul.allow_tf32 = True
-        elif field == "cudnn_tf32":
-            torch.backends.cudnn.allow_tf32 = False
-        elif field == "dtype":
-            torch.set_default_dtype(torch.float64)
-        with torch.autocast("cpu", enabled=field == "autocast"):
-            with pytest.raises(ValueError, match="precisión|FP32"):
-                getattr(encoder, mode)(argument)
-    finally:
-        torch.backends.cuda.matmul.allow_tf32 = previous[0]
-        torch.backends.cudnn.allow_tf32 = previous[1]
-        torch.set_default_dtype(previous[2])
+    elif field == "matmul_precision":
+        torch.set_float32_matmul_precision("high")
+
+
+def test_strict_fp32_records_every_flag(strict_flags):
+    assert embeddings._strict_precision() == dict(
+        dtype="float32", matmul_tf32=False, cudnn_tf32=False, float32_matmul_precision="highest"
+    )
+
+
+@pytest.mark.parametrize("field", ["matmul_tf32", "cudnn_tf32", "matmul_precision"])
+def test_tf32_stops_the_encoder_at_startup_before_cuda_or_loading(monkeypatch, strict_flags, field):
+    monkeypatch.setattr(embeddings, "require_cuda", lambda **k: pytest.fail("Se abrió CUDA"))
+    monkeypatch.setattr(embeddings, "_tokenizer", lambda: pytest.fail("Se cargó el tokenizador"))
+    enable_tf32(field)
+    with pytest.raises(ValueError, match="FP32 estricto"):
+        embeddings.FrozenEncoders(word_embedding_placement="cpu")
+    with pytest.raises(ValueError, match="FP32 estricto"):
+        embeddings.encoder_spec(word_embedding_placement="cpu")
+
+
+@pytest.mark.parametrize("mode,argument", [("text", "contenido"), ("images", [b"fixture"])])
+@pytest.mark.parametrize(
+    "field", ["matmul_tf32", "cudnn_tf32", "matmul_precision", "dtype", "autocast"]
+)
+def test_precision_change_is_rejected_before_each_modality(strict_flags, mode, argument, field):
+    encoder = embeddings.FrozenEncoders.__new__(embeddings.FrozenEncoders)
+    encoder.spec = {"runtime_precision": embeddings._strict_precision()}
+    enable_tf32(field)
+    if field == "dtype":
+        torch.set_default_dtype(torch.float64)
+    with torch.autocast("cpu", enabled=field == "autocast"):
+        with pytest.raises(ValueError, match="precisión|FP32"):
+            getattr(encoder, mode)(argument)
 
 
 @pytest.mark.parametrize("mode,placement", [("text", "cuda"), ("text", "cpu"), ("images", "cuda")])
@@ -268,7 +297,7 @@ def test_cpu_text_path_supplies_embeddings_without_transferring_ids(monkeypatch)
 
 
 def test_constructor_records_placement_and_implementation_without_changing_default(
-    monkeypatch, tmp_path
+    monkeypatch, tmp_path, strict_flags
 ):
     import huggingface_hub
     import torchvision.models
@@ -322,6 +351,7 @@ def test_constructor_records_placement_and_implementation_without_changing_defau
     host = embeddings.FrozenEncoders(word_embedding_placement="cpu")
     assert original.spec == explicit.spec
     assert original.spec["runtime_precision"] == embeddings._runtime_precision()
+    assert original.spec["runtime_precision"]["cudnn_tf32"] is False
     assert host.mean.dtype == host.std.dtype == torch.float32
     assert original.spec["word_embedding_placement"] == "cuda"
     assert "word_embedding_lookup" not in original.spec
@@ -346,6 +376,11 @@ def test_constructor_records_placement_and_implementation_without_changing_defau
     )
     with pytest.raises(ValueError, match="FP32"):
         embeddings.FrozenEncoders()
+    # La identidad calculada en CPU, sin CUDA ni modelos, es la del codificador cargado.
+    monkeypatch.setattr(embeddings, "require_cuda", lambda **k: pytest.fail("Se abrió CUDA"))
+    monkeypatch.setattr(transformers.AutoModel, "from_pretrained", lambda *a, **k: pytest.fail())
+    assert embeddings.encoder_spec() == original.spec
+    assert embeddings.encoder_spec(word_embedding_placement="cpu") == host.spec
 
 
 @pytest.mark.parametrize("field", ["placement", "matmul_tf32", "cudnn_tf32", "dtype"])

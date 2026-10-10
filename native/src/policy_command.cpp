@@ -69,7 +69,7 @@ Arguments parse(int argc, char** argv) {
     for (std::size_t index = 1; index < arguments.size(); ++index) {
         const std::string_view name(arguments[index]);
         if (name != "--train-tape" && name != "--validation-tape" && name != "--audit-tape" &&
-            !seen.insert(name).second) {
+            name != "--evaluation-cost" && !seen.insert(name).second) {
             throw std::invalid_argument("Hay un argumento PPO duplicado");
         }
         if (name == "--help") {
@@ -98,6 +98,8 @@ Arguments parse(int argc, char** argv) {
                 options.audit_run = value;
             } else if (name == "--audit-tape") {
                 options.audit_tapes.emplace_back(value);
+            } else if (name == "--evaluation-cost") {
+                options.evaluation_costs.push_back(number<double>(value));
             } else if (name == "--device") {
                 options.device = value;
             } else if (name == "--stop-after") {
@@ -122,6 +124,9 @@ Arguments parse(int argc, char** argv) {
     if (!result.help && !result.capabilities &&
         (result.experiment.config.empty() || result.experiment.output.empty())) {
         throw std::invalid_argument("Se requieren --config y --output para PPO");
+    }
+    if (!result.experiment.evaluation_costs.empty() && !result.experiment.audit_run) {
+        throw std::invalid_argument("--evaluation-cost solo se admite con --audit-run");
     }
     return result;
 }
