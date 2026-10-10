@@ -13,6 +13,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from mars_titan.data import prediction_files
 from mars_titan.environments.walk_forward_receipt import WalkForwardWindow
 from mars_titan.evaluation.splits import build_folds
 from mars_titan.simulation import campaign_stage, window_tapes
@@ -75,7 +76,7 @@ def symbols(window, assets):
 
 
 def source_for(assets, score=None):
-    """Recibo y puntuaciones de cada ventana, con la huella de su tramo de evaluación."""
+    """Recibo y lector de las puntuaciones de cada ventana, con la huella de su evaluación."""
     cache = {}
 
     def source(scope, market, window, predictor):
@@ -90,7 +91,8 @@ def source_for(assets, score=None):
             )
             index = list(FOLDS).index(window)
             cache[window] = receipts.window(market, index=index, values=values), values
-        return cache[window]
+        receipt, values = cache[window]
+        return receipt, lambda: values
 
     return source
 
@@ -262,14 +264,14 @@ def test_a_policy_cannot_train_or_validate_with_predictions_of_a_later_fit(tmp_p
             tapes(tmp_path, assets, source=later(honest, mapping), output=str(mapping)).open(JOB)
     # Las puntuaciones de 2022 presentadas con el recibo de 2023 no cumplen su huella.
     receipt, _ = honest("US", "US", "fold-018", "parent")
-    _, values = honest("US", "US", "fold-017", "parent")
+    values = honest("US", "US", "fold-017", "parent")[1]()
     with pytest.raises(ValueError):
         window_tapes.build_segment_tape(
             tmp_path / "edition", receipt, values, market="US", role="train", lag=0
         )
     # Un recibo construido a mano, sin `read_window_receipt`, que declara un ajuste con
     # etiquetas del propio tramo, se rechaza antes de leer la edición.
-    _, values = honest("US", "US", "fold-018", "parent")
+    values = honest("US", "US", "fold-018", "parent")[1]()
     start = receipt.segment("evaluation")[0]
     forged = dataclasses.replace(receipt, labels_used_until=start)
     assert isinstance(forged, WalkForwardWindow)
@@ -371,10 +373,10 @@ def test_campaign_source_reports_a_market_without_rows_as_no_predictions(tmp_pat
     folder = tmp_path / "windows/US/fold-016/other/seed-42"
     index = list(FOLDS).index("fold-016")
     atomic_json(folder / "US.json", receipts.receipt("US", index=index))
-    receipt, values = campaign_stage.campaign_source(Base({}), tmp_path, 42)(
+    receipt, load = campaign_stage.campaign_source(Base({}), tmp_path, 42)(
         "US", "US", "fold-016", "other"
     )
-    assert values is None and receipt.fold == "fold-016"
+    assert load is None and receipt.fold == "fold-016"
     # Si la campaña declara filas del mercado, el recibo sin predicciones no le corresponde.
     declared = Base({"US": dict(rows=10, sha256="d" * 64)})
     with pytest.raises(ValueError, match="no corresponde al predictor elegido"):
@@ -469,6 +471,30 @@ def test_maximum_exposure_only_trades_universe_assets_at_executable_opens(tmp_pa
     assert all(np.isnan(clean.prices[t, i, 0]) for t in blocked)
 
 
+def test_tapes_and_universes_on_disk_do_not_read_the_predictions_again(tmp_path):
+    assets = LIQUID[1:3]
+    first = tapes(tmp_path, assets).open(JOB)
+    honest = source_for(assets)
+    read = []
+
+    def released(scope, market, window, predictor):
+        # Los recibos siguen disponibles, pero las filas se liberaron tras montar las cintas.
+        receipt, _ = honest(scope, market, window, predictor)
+
+        def load():
+            read.append(window)
+            raise prediction_files.PredictionsReleased(f"{window} se liberaron")
+
+        return receipt, load
+
+    again = tapes(tmp_path, assets, source=released).open(JOB)
+    assert again.identity == first.identity and read == []
+    # Una cinta que todavía no está en disco sí necesita las filas.
+    with pytest.raises(prediction_files.PredictionsReleased):
+        tapes(tmp_path, assets, source=released, output="other").open(JOB)
+    assert read
+
+
 def test_universe_is_saved_with_its_identity(tmp_path):
     assets = LIQUID[1:3]
     tapes(tmp_path, assets).open(JOB)
@@ -481,7 +507,8 @@ def test_universe_is_saved_with_its_identity(tmp_path):
 
 def test_policy_tapes_must_be_real_tapes_of_the_declared_edition(tmp_path):
     stage = tapes(tmp_path, LIQUID)
-    receipt, values = stage.source(JOB, "fold-017", "parent")
+    receipt, load = stage.source(JOB, "fold-017", "parent")
+    values = load()
     tape, _ = window_tapes.build_segment_tape(
         stage.edition, receipt, values, market="US", role="validation", lag=0
     )
@@ -521,7 +548,6 @@ def test_segment_predictions_read_compacted_files_and_stop_on_released_ones(tmp_
     el compactado, bit a bit, y un archivo liberado debe detener la etapa con su motivo en
     lugar de dejar la cinta sin filas.
     """
-    from mars_titan.data import prediction_files
     from tests.data.test_prediction_files import writer, written
 
     path, digest = written(tmp_path / "attempt", writer(name))

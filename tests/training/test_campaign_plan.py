@@ -300,7 +300,7 @@ def test_pending_families_and_later_stages_are_declared_not_planned():
     assert planned == {*NEURAL_ARMS, "ridge", "xgboost", *TITANS_ARMS}
     assert not planned & {arm for entry in pending.values() for arm in entry["arms"]}
     stage = report["later_stages"]["posttraining_adapter_matrix"]
-    assert stage["config"] == "configs/posttraining/adapter-matrix-v2.json"
+    assert stage["config"] == "configs/posttraining/adapter-matrix-v3.json"
     assert Path(stage["config"]).is_file() and stage["pending"] == [] and stage["issue"] == 364
     assert stage["entry"] == "mars_titan.posttraining.campaign_stage:run_stage"
     module, _, function = stage["entry"].partition(":")
@@ -317,9 +317,11 @@ def test_later_stage_of_each_variant_starts_from_that_campaign_and_matrix(varian
     stage = campaign_stage.load_stage(declared["stages"][variant])
     assert stage["campaign"]["path"] == str(CAMPAIGNS[variant].resolve())
     assert stage["campaign"]["variant"] == variant
-    assert stage["matrix_path"] == str(Path(declared["config"]).resolve())
+    # B no se ejecuta y conserva la matriz v2, cuyos casos de las redes son los de la v3.
+    matrix = declared["config"] if variant == "A" else "configs/posttraining/adapter-matrix-v2.json"
+    assert stage["matrix_path"] == str(Path(matrix).resolve())
     counts = campaign_stage.count_stage(stage)
-    expected = dict(A=(3654, 630), B=(1479, 2436))[variant]
+    expected = dict(A=(7182, 1302), B=(1479, 2436))[variant]
     assert (counts["training_jobs"], counts["prediction_jobs"]) == expected
 
 

@@ -188,7 +188,7 @@ def check_variant(extensions, variant):
     _require(
         (before["training_jobs"], before["prediction_jobs"])
         == (after["training_jobs"], after["prediction_jobs"]),
-        "La etapa de adaptadores solo parte de referencias neuronales y no debe cambiar",
+        "La etapa de adaptadores no declara las familias ampliadas y no debe cambiar",
     )
     policies = policy_plan.load_stage(entry["rl_stage"]["path"])
     rl = extended_policies(extensions, policies, extended)

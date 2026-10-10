@@ -38,6 +38,9 @@ ABLATED_PARTITIONS = ("evaluation",)
 
 # Tramos que escribe un ajuste de la campaña y que repite su regeneración.
 REGENERATED_PARTITIONS = ("validation", "calibration", "evaluation")
+# Tramos del padre congelado de la cadena por etapas. La validación de la ventana posterior
+# elige el predictor de la cadena, así que el padre también la predice.
+FROZEN_PARENT_PARTITIONS = ("validation", "calibration", "evaluation")
 
 
 def predicted_partitions(modality_ablation, regenerate=False):
@@ -287,8 +290,14 @@ def carry_tabular(
     input_policy,
     modality_ablation=None,
     regenerate=False,
+    frozen_parent=False,
 ):
-    """Aplicar el modelo Ridge o XGBoost seleccionado en el ancla a otra ventana."""
+    """Aplicar el modelo Ridge o XGBoost seleccionado en el ancla a otra ventana.
+
+    `frozen_parent` lo usa la cadena del postentrenamiento por etapas con Ridge y XGBoost, que
+    no tienen adaptadores. El ancla es el estado elegido en k-1 y la ventana es k, igual que
+    un traslado, pero también se predice la validación de k, con la que la cadena elige.
+    """
     import numpy as np
 
     from .corpus_inputs import CorpusDataset
@@ -310,7 +319,14 @@ def carry_tabular(
     ):
         raise ValueError("El ancla no es un modelo tabular confirmado de la misma política")
     anchor_meta, _ = read_manifest(anchor_manifest, 8 * 1024**2)
-    partitions = predicted_partitions(modality_ablation, regenerate)
+    if frozen_parent:
+        if regenerate or modality_ablation is not None:
+            raise ValueError(
+                "El padre congelado predice otra ventana, sin ablación ni regeneración"
+            )
+        partitions = FROZEN_PARENT_PARTITIONS
+    else:
+        partitions = predicted_partitions(modality_ablation, regenerate)
     dataset = CorpusDataset(
         manifest, input_policy=input_policy, modality_ablation=modality_ablation
     )
@@ -356,5 +372,6 @@ def carry_tabular(
             **policy_identity(input_policy),
             **ablation_record(modality_ablation),
             **regeneration_record(regenerate),
+            **(dict(frozen_parent=True) if frozen_parent else {}),
         ),
     )

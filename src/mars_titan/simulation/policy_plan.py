@@ -558,21 +558,18 @@ def _arms(stage, predictor):
     return arms
 
 
-def _chain_depends(stage, scope, row, anchor, predictor):
-    """Selecciones de la cadena de todas las cintas que lee un trabajo.
+def predictor_reads(stage, job):
+    """Ámbito, ventana y predictor de cada evaluación que leen las cintas de un trabajo.
 
-    Con el predictor de la cadena, un trabajo lee las evaluaciones de ajuste y validación de
-    su ancla y la evaluación de su ventana con ese predictor, y el universo del ancla con el
-    predictor del universo. Cada una exige su selección confirmada en el posentrenamiento.
+    Un trabajo lee las evaluaciones de ajuste y validación de su ancla y la evaluación de su
+    ventana con su predictor, y el universo del ancla con el predictor del universo. Con la
+    cadena, cada una exige su selección confirmada en el posentrenamiento. La retención usa
+    la misma lista para saber qué tablas de la base sigue necesitando una política.
     """
-    policies = stage["policies"]
-    if policies["predictor"]["source"] != CHAIN:
-        return []
-    seed = policies["predictor"]["seed"]
-    read = [*anchor["train"], anchor["validation"]]
-    reads = {predictor: [*read, row["window"]]}
+    read = [*job["train"], job["validation"]]
+    reads = {job["predictor"]: [*read, job["window"]]}
     reads.setdefault(stage["universe_predictor"], read)
-    return [chain_job_id(scope, w, arm, seed) for arm, windows in reads.items() for w in windows]
+    return [(job["scope"], window, arm) for arm, windows in reads.items() for window in windows]
 
 
 def plan_stage(stage):
@@ -592,7 +589,6 @@ def plan_stage(stage):
                 anchor = anchors[row["anchor"]]
                 for predictor in stage["predictors"]:
                     prefix = f"{scope}/{market}/{row['window']}/{predictor}"
-                    chain = _chain_depends(stage, scope, row, anchor, predictor)
                     common = dict(
                         scope=scope,
                         market=market,
@@ -603,6 +599,11 @@ def plan_stage(stage):
                         predictor=predictor,
                         predictor_seed=policies["predictor"]["seed"],
                     )
+                    chain = [
+                        chain_job_id(*read, policies["predictor"]["seed"])
+                        for read in predictor_reads(stage, common)
+                        if policies["predictor"]["source"] == CHAIN
+                    ]
                     for level, arm in _arms(stage, predictor):
                         engine = policies["engines"][arm]
                         for seed in policies["seeds"]:
