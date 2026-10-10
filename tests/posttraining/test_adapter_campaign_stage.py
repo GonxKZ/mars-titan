@@ -473,7 +473,9 @@ def test_a_tampered_chain_or_proof_stops_the_next_run(base_a, tmp_path, recorder
         else:
             value["schema_version"] = 1
         atomic_json(path, value)
-    with pytest.raises(ValueError):
+    # La prueba se comprueba al leerla, antes de que la huella del recibo la delate.
+    message = "no corresponde a sus vistas" if change.startswith("proof") else None
+    with pytest.raises(ValueError, match=message):
         run(base_a, output)
 
 
