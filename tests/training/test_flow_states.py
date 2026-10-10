@@ -12,13 +12,17 @@ from mars_titan.models.titans.state import MACState, NeuralMemoryState
 from mars_titan.training.financial_run import FlowStates
 
 
-def block(flows, *, offset=0.0, steps=None, grad=True):
+def block(flows, *, offset=0.0, steps=None, grad=True, convolution=False):
     rows = len(flows)
     base = torch.arange(rows * 6, dtype=torch.float64).reshape(rows, 2, 3) + offset
     weights = (base.clone().requires_grad_(grad), (base * 2).clone().requires_grad_(grad))
     momentum = ((base / 3).clone().requires_grad_(grad),)
     counts = torch.tensor(steps or [index + 1 for index in range(rows)], dtype=torch.int64)
-    memory = NeuralMemoryState(weights, momentum, counts.clone(), "memory")
+    # Ventanas causales de k y v en la memoria y de q en MAC, como con la sección 4.4.
+    windows = tuple((base + 7 * k).clone().requires_grad_(grad) for k in range(3))
+    memory = NeuralMemoryState(
+        weights, momentum, counts.clone(), "memory", windows[:2] if convolution else ()
+    )
     return FinancialState(
         "config",
         "parameters",
@@ -26,7 +30,7 @@ def block(flows, *, offset=0.0, steps=None, grad=True):
         tuple(f"sample-{flow}" for flow in flows),
         tuple(100 + index for index in range(rows)),
         counts,
-        MACState(memory, "mac"),
+        MACState(memory, "mac", windows[2:] if convolution else ()),
     )
 
 
@@ -136,3 +140,32 @@ def test_detach_keeps_one_block_per_source_and_seals_the_parameters():
     assert states.gather(["a", "b"]) is values[0]
     states.put(block(["d"]), detach=True)
     assert not states.gather(["d"]).mac.memory.weights[0].requires_grad
+
+
+def test_gather_and_detach_keep_the_causal_convolution_windows():
+    # Las ventanas de la convolución causal son estado por flujo como los pesos rápidos. Si
+    # gather o detach las perdieran, el instante siguiente partiría de ventanas vacías.
+    left = block(["a", "b"], convolution=True)
+    right = block(["c", "d"], offset=50.0, convolution=True)
+    states = FlowStates()
+    states.put(left)
+    states.put(right)
+    gathered = states.gather(["d", "a"])
+    expected = (
+        *(
+            torch.stack([right_w[1], left_w[0]])
+            for right_w, left_w in zip(
+                right.mac.memory.convolution, left.mac.memory.convolution, strict=True
+            )
+        ),
+        torch.stack([right.mac.convolution[0][1], left.mac.convolution[0][0]]),
+    )
+    got = (*gathered.mac.memory.convolution, *gathered.mac.convolution)
+    assert len(got) == 3
+    for value, reference in zip(got, expected, strict=True):
+        assert torch.equal(value, reference)
+    states.detach("sealed")
+    detached = states.gather(["a", "b"])
+    windows = (*detached.mac.memory.convolution, *detached.mac.convolution)
+    assert len(windows) == 3 and not any(value.requires_grad for value in windows)
+    assert detached.parameter_id == "sealed"
