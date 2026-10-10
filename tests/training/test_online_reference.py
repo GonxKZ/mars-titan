@@ -3,8 +3,9 @@
 El ancla es una referencia Transformer seleccionada con los pesos iniciales de la semilla y
 el banco es una ventana MARS-TITAN M1 ajustada con el registrador de gradientes sobre un
 padre Titans-MAC. El optimizador del control solo registra llamadas y gradientes. Se
-comprueban el orden entre emisión y aprendizaje, las etiquetas del banco, el tope, la
-paridad con tope cero, la precisión y los rechazos.
+comprueban el orden entre emisión y aprendizaje, un paso por actualización con todas las
+etiquetas maduras, que la acumulación no cambia el gradiente, las etiquetas del banco, el
+tope, la paridad con tope cero, la precisión, la elección de la tasa y los rechazos.
 """
 
 import json
@@ -41,7 +42,7 @@ from tests.training.test_titans_walk_forward import recipe, unfused_attention, v
 RULE = dict(
     optimizer="sgd",
     learning_rate=1e-3,
-    block_rows=2,
+    accumulation_rows=2,
     update_every=1,
     max_grad_norm=1.0,
     update_cap="episodic_bank_writes",
@@ -53,6 +54,7 @@ class Recorder:
 
     def __init__(self, parameters, rule):
         self.parameters, self.rule, self.steps, self.norms = list(parameters), rule, 0, []
+        self.gradients = []
 
     def zero_grad(self, set_to_none=True):
         assert set_to_none is True
@@ -64,6 +66,7 @@ class Recorder:
         grads = [value.grad for value in self.parameters if value.grad is not None]
         assert grads
         self.norms.append(float(torch.sqrt(sum((g.double() ** 2).sum() for g in grads))))
+        self.gradients.append(torch.cat([g.detach().reshape(-1).clone() for g in grads]))
 
 
 class Factory:
@@ -214,7 +217,7 @@ def test_every_step_uses_labels_matured_after_their_prediction(
     _, metrics, recorder, audit = passed(
         base, anchor, tmp_path / "idx", "evaluation", cap=10**6, rule=rule
     )
-    emitted, matured, instants, used, stepped = {}, {}, [], [], set()
+    emitted, matured, instants, waiting, used, stepped = {}, {}, [], [], [], set()
     for entry in audit:
         kind, at = entry[:2]
         if kind == "predict":
@@ -226,28 +229,64 @@ def test_every_step_uses_labels_matured_after_their_prediction(
             decision = entry[2], entry[3]
             assert emitted[decision] == decision[1] < at
             matured[decision] = at
+            waiting.append(decision)
             if not instants or instants[-1] != at:
                 instants.append(at)
         else:
             refs = entry[2]
-            assert 1 <= len(refs) <= rule["block_rows"]
+            # Un solo paso con todas las etiquetas que maduraron desde la actualización
+            # anterior, aunque superen las filas de un bloque de acumulación.
+            assert list(refs) == waiting and at not in stepped
             # Cada paso usa etiquetas ya maduras, de predicciones emitidas antes.
             assert all(emitted[ref] < matured[ref] <= at for ref in refs)
             assert instants.index(at) % update_every == update_every - 1
             stepped.add(at)
             used += refs
+            waiting = []
     assert len(used) == len(set(used)) == metrics["labels_used"]
-    assert recorder.steps == metrics["updates"] > 0
-    assert metrics["update_instants"] == metrics["maturity_instants"] // update_every
+    assert recorder.steps == metrics["updates"] == metrics["update_instants"] == len(stepped)
+    assert metrics["update_instants"] == metrics["maturity_instants"] // update_every > 0
+    assert max(len(refs) for refs in (e[2] for e in audit if e[0] == "step")) > 2
     assert metrics["labels_used"] + metrics["labels_after_last_update"] == metrics["labels"]
 
 
+@pytest.mark.parametrize("partition", online.PARTITIONS)
+def test_accumulation_blocks_do_not_change_the_gradient_of_a_step(
+    base, anchor, tmp_path, partition
+):
+    """Bloques de una fila, de dos y uno que cubre el instante dan el mismo gradiente."""
+    runs = [
+        passed(
+            base,
+            anchor,
+            tmp_path / f"idx-{rows}",
+            partition,
+            cap=10**6,
+            rule=dict(RULE, accumulation_rows=rows),
+        )
+        for rows in (1, 2, 4096)
+    ]
+    reference = runs[-1][2].gradients
+    assert len(reference) == runs[-1][1]["updates"] > 0
+    for _, metrics, recorder, audit in runs[:-1]:
+        assert metrics == runs[-1][1] and audit == runs[-1][3]
+        assert len(recorder.gradients) == len(reference)
+        for found, expected in zip(recorder.gradients, reference, strict=True):
+            # Solo cambia el orden de las sumas en FP32.
+            assert torch.allclose(found, expected, rtol=1e-5, atol=1e-8)
+
+
 def test_the_cap_limits_the_labels_used(base, anchor, tmp_path):
+    _, full, _, complete = passed(base, anchor, tmp_path / "idx", "evaluation", cap=10**6)
     _, metrics, recorder, audit = passed(base, anchor, tmp_path / "idx", "evaluation", cap=3)
     steps = [entry[2] for entry in audit if entry[0] == "step"]
     assert sum(len(refs) for refs in steps) == metrics["labels_used"] == 3
-    assert recorder.steps == len(steps) and all(len(refs) <= 2 for refs in steps)
-    assert metrics["labels_beyond_cap"] == metrics["labels"] - 3
+    assert recorder.steps == len(steps) == metrics["updates"] > 0
+    assert metrics["labels_beyond_cap"] == metrics["labels"] - 3 == full["labels"] - 3
+    # Hasta el tope, los pasos son los primeros del recorrido sin tope y el último se corta.
+    unbounded = [entry[2] for entry in complete if entry[0] == "step"]
+    assert steps[:-1] == unbounded[: len(steps) - 1]
+    assert steps[-1] == unbounded[len(steps) - 1][: len(steps[-1])]
 
 
 class Shifted:
@@ -309,6 +348,80 @@ class Unlabelled(Shifted):
             yield replace(event, labels=labels)
 
 
+class Poisoned(Shifted):
+    """Envuelve el índice real y da un valor no finito a la primera etiqueta de un instante."""
+
+    def __init__(self, source):
+        super().__init__(source, 0)
+
+    def batched_events(self, **options):
+        poisoned = False
+        for event in self.source.batched_events(**options):
+            if not poisoned and len(event.labels) > 1:
+                key, decision_at, _ = event.labels[0]
+                event = replace(event, labels=((key, decision_at, math.nan), *event.labels[1:]))
+                poisoned = True
+            yield event
+
+
+def test_a_non_finite_label_in_any_block_stops_the_step(base, anchor, tmp_path):
+    _, built = sources(base, tmp_path / "idx")
+    rule = dict(RULE, accumulation_rows=1)
+    with pytest.raises(ValueError, match="pérdida en línea no es finita"):
+        passed(
+            base,
+            anchor,
+            tmp_path / "idx",
+            "evaluation",
+            cap=10**6,
+            rule=rule,
+            source=Poisoned(built["evaluation"]),
+        )
+
+
+def test_the_validation_score_ranks_fits_and_online_jobs_only():
+    report = dict(predictions=dict(validation=dict(metrics=dict(session_mae=0.25))))
+    for kind in ("fit", ONLINE):
+        assert engine.validation_score(dict(id="j", kind=kind), report) == 0.25
+    assert engine.validation_score(dict(id="j", kind="carry"), report) is None
+    for value in (math.nan, -1.0, True, None):
+        broken = dict(predictions=dict(validation=dict(metrics=dict(session_mae=value))))
+        with pytest.raises(ValueError, match="MAE de validación finito"):
+            engine.validation_score(dict(id="j", kind=ONLINE), broken)
+
+
+class Thinned(Shifted):
+    """Envuelve el índice real y deja una sola etiqueta en el primer instante con varias."""
+
+    def __init__(self, source):
+        super().__init__(source, 0)
+        events = list(source.batched_events(start_cursor=0, block_rows=2))
+        first = next(event for event in events if len(event.labels) > 1)
+        self.at, self.dropped = first.at, {label[:2] for label in first.labels[1:]}
+
+    def label_decisions(self):
+        decisions = dict(self.source.label_decisions())
+        for key, decision_at in self.dropped:
+            decisions[key] = decisions[key][decisions[key] != decision_at]
+        return decisions
+
+    def batched_events(self, **options):
+        for event in self.source.batched_events(**options):
+            labels = tuple(x for x in event.labels if x[:2] not in self.dropped)
+            yield replace(event, labels=labels)
+
+
+def test_an_instant_with_a_single_label_still_updates(base, anchor, tmp_path):
+    _, built = sources(base, tmp_path / "idx")
+    source = Thinned(built["evaluation"])
+    _, metrics, recorder, audit = passed(
+        base, anchor, tmp_path / "idx", "evaluation", cap=10**6, source=source
+    )
+    steps = {entry[1]: entry[2] for entry in audit if entry[0] == "step"}
+    assert len(steps[source.at]) == 1
+    assert recorder.steps == metrics["updates"] == metrics["update_instants"] == len(steps)
+
+
 def test_a_label_of_a_decision_never_predicted_is_refused(base, anchor, tmp_path):
     _, built = sources(base, tmp_path / "idx")
     with pytest.raises(ValueError, match="predicción emitida antes de su maduración"):
@@ -366,8 +479,13 @@ def test_the_window_writes_the_bank_rows_with_its_labels_and_cap(base, anchor, t
         report["predictions"][name]["metrics"]["updates"] for name in online.PARTITIONS
     ]
     # Cada tramo parte de un modelo nuevo con el estado elegido.
-    first, second = (item.parameters for item in factory.instances)
-    assert all(a is not b and torch.equal(a, b) for a, b in zip(first, second, strict=True))
+    first, *others = (item.parameters for item in factory.instances)
+    assert len(others) == 2
+    for other in others:
+        assert all(a is not b and torch.equal(a, b) for a, b in zip(first, other, strict=True))
+    # La validación, que elige la tasa, también recorre las etiquetas y el tope del banco.
+    assert set(report["predictions"]) == {"validation", "calibration", "evaluation"}
+    assert report["schema_version"] == 2
     for name in online.PARTITIONS:
         bank = base.report["predictions"][name]
         metrics = report["predictions"][name]["metrics"]
@@ -448,7 +566,12 @@ def test_a_generic_tf32_request_is_refused_even_when_every_backend_overrides_it(
     "changes",
     [
         dict(learning_rate="pending"),
-        dict(block_rows=0),
+        dict(learning_rate=0),
+        dict(learning_rate=-1e-3),
+        dict(learning_rate=1.5),
+        dict(accumulation_rows=0),
+        dict(accumulation_rows=4097),
+        dict(accumulation_rows=2.0),
         dict(update_every=0),
         dict(max_grad_norm=math.inf),
         dict(optimizer="adamw"),
@@ -461,6 +584,8 @@ def test_the_rule_is_declared_without_pending_values(changes):
     with pytest.raises(ValueError, match="sin valores pendientes"):
         online.checked_rule(dict(RULE, **changes))
     assert online.checked_rule(dict(RULE)) == RULE
+    # La tasa cero de la rejilla es válida: reproduce el Transformer congelado.
+    assert online.checked_rule(dict(RULE, learning_rate=0.0))["learning_rate"] == 0.0
 
 
 def bank_copy(base, folder, change):
@@ -521,7 +646,7 @@ def test_the_engine_runs_the_control_and_pauses_between_instants(
     )
     registered = entry["run"]
     job_run = engine.JobRun(
-        job=dict(id="US/fold-000/transformer_compact_online/online-s42"),
+        job=dict(id="US/fold-000/transformer_compact_online/search-lr1e-3"),
         case=dict(rule=RULE),
         view=base.view,
         view_sha256=sha256(base.view),
@@ -541,7 +666,7 @@ def test_the_engine_runs_the_control_and_pauses_between_instants(
     created = Factory()
     monkeypatch.setattr(online, "_sgd", created)
     report = registered(job_run)
-    assert report["status"] == "completed" and len(created.instances) == 2
+    assert report["status"] == "completed" and len(created.instances) == 3
 
 
 def campaign_state(tmp_path, view):
@@ -565,19 +690,27 @@ def campaign_state(tmp_path, view):
     return state
 
 
-def test_the_engine_resolves_the_anchor_and_the_bank_of_the_same_window_and_seed(tmp_path):
-    state = campaign_state(tmp_path, tmp_path / "view.json")
-    job = dict(
-        id="US/fold-000/transformer_compact_online/online-s43",
+ONLINE_PREFIX = "US/fold-000/transformer_compact_online"
+
+
+def online_job(stage, seed, depends, case=None, name=None):
+    return dict(
+        id=f"{ONLINE_PREFIX}/{f'search-{name}' if stage == 'search' else f'finalist-s{seed}'}",
         scope="US",
         window="fold-000",
         arm="transformer_compact_online",
-        seed=43,
+        seed=seed,
         kind=ONLINE,
-        stage=ONLINE,
-        depends=list(state.receipts),
-        case=dict(rule=RULE),
+        stage=stage,
+        depends=depends,
+        case=case,
     )
+
+
+def test_the_engine_resolves_the_anchor_and_the_bank_of_the_same_window_and_seed(tmp_path):
+    state = campaign_state(tmp_path, tmp_path / "view.json")
+    states = list(state.receipts)
+    job = online_job("search", 43, states, case=dict(rule=RULE), name="lr1e-3")
     case, anchor, sources = state.resolve(job)
     assert case == dict(rule=RULE)
     assert anchor == dict(
@@ -596,11 +729,43 @@ def test_the_engine_resolves_the_anchor_and_the_bank_of_the_same_window_and_seed
     with pytest.raises(ValueError, match="no depende de los estados elegidos"):
         state.resolve(dict(job, depends=[d for d in job["depends"] if "mars_titan_m1/" not in d]))
     assert state.bank_of(dict(job, kind="carry")) is None
-    state.receipts[job["id"]] = dict(attempt="o/attempt-0001", sha256="o")
-    assert state.selected("US", "fold-000", job["arm"], 43) == (
-        job["id"],
-        state.receipts[job["id"]],
+    with pytest.raises(ValueError, match="ni un finalista"):
+        state.resolve(dict(job, stage="carry"))
+
+
+def test_the_engine_gives_finalists_the_rate_with_the_best_validation(tmp_path):
+    """La tasa del finalista sale de la búsqueda propia con menor MAE y, si empata, del id."""
+    state = campaign_state(tmp_path, tmp_path / "view.json")
+    scores = {"lr0": 0.5, "lr1e-2": 0.25, "lr1e-3": 0.25, "lr1": 0.75}
+    searches = []
+    for name, score in scores.items():
+        key = f"{ONLINE_PREFIX}/search-{name}"
+        rule = dict(RULE, learning_rate=float(name[2:]) if name != "lr0" else 0.0)
+        state.receipts[key] = dict(
+            attempt=f"o/{name}",
+            sha256=name,
+            score=score,
+            identity=dict(seed=42, case=dict(rule=rule)),
+        )
+        searches.append(key)
+    finalist = online_job("finalist", 43, [*searches, *list(state.receipts)[:3]])
+    case, anchor, sources = state.resolve(finalist)
+    # Empate entre lr1e-2 y lr1e-3: gana el identificador menor.
+    assert case == dict(rule=dict(RULE, learning_rate=0.01))
+    assert anchor["job"] == "US/fold-000/transformer_compact/finalist-s43"
+    assert sources["case_source"] == f"{ONLINE_PREFIX}/search-lr1e-2"
+    assert sources["case_source_sha256"] == "lr1e-2"
+    assert sources["source"] == "US/fold-000/transformer_compact/finalist-s43"
+    # La semilla de búsqueda se queda con su mejor búsqueda y las demás con su finalista.
+    assert state.selected("US", "fold-000", finalist["arm"], 42)[0] == searches[1]
+    state.receipts[finalist["id"]] = dict(attempt="o/attempt-0001", sha256="o")
+    assert state.selected("US", "fold-000", finalist["arm"], 43) == (
+        finalist["id"],
+        state.receipts[finalist["id"]],
     )
+    # Un finalista sin las búsquedas de su ventana no tiene de dónde sacar la tasa.
+    with pytest.raises(ValueError, match="no depende de las búsquedas"):
+        state.resolve(dict(finalist, depends=list(state.receipts)[:3]))
 
 
 def test_label_decisions_come_from_the_maturity_events_of_the_index(base, tmp_path):

@@ -25,7 +25,15 @@
           "refinement_episodes": "first_read"
         },
         "mars_titan_b6": {"associative_memory": {"rule": "proximal", "key": "codec"}},
-        "mars_titan_b6_bias": {"associative_memory": {"rule": "proximal", "key": "constant"}}
+        "mars_titan_b6_bias": {"associative_memory": {"rule": "proximal", "key": "constant"}},
+        "mars_titan_b6_regime": {"associative_memory": {"rule": "proximal", "key": "regime"}},
+        "mars_titan_b6_calendar": {"associative_memory": {"rule": "proximal", "key": "calendar"}},
+        "mars_titan_b6_regime_banks": {
+          "associative_memory": {"rule": "proximal", "key": "codec_by_regime"}
+        },
+        "mars_titan_b6_calendar_banks": {
+          "associative_memory": {"rule": "proximal", "key": "codec_by_calendar"}
+        }
       },
       "pending_arms": {},
       "correction_recipe": "../titans/mature-correction-historical-masked.json",
@@ -41,30 +49,30 @@
     "A": {
       "campaign": "historical-masked-campaign-a.json",
       "limits": {
-        "max_training_jobs": 5265,
+        "max_training_jobs": 5985,
         "max_prediction_jobs": 0
       },
       "adapter_stage": "../posttraining/historical-masked-adapter-stage-a.json",
       "rl_stage": {
         "path": "../simulation/historical-masked-rl-stage-a.json",
         "limits": {
-          "max_training_jobs": 2376,
-          "max_evaluation_jobs": 2775
+          "max_training_jobs": 2664,
+          "max_evaluation_jobs": 3219
         }
       }
     },
     "B": {
       "campaign": "historical-masked-campaign-b.json",
       "limits": {
-        "max_training_jobs": 1989,
-        "max_prediction_jobs": 2044
+        "max_training_jobs": 2261,
+        "max_prediction_jobs": 2380
       },
       "adapter_stage": "../posttraining/historical-masked-adapter-stage-b.json",
       "rl_stage": {
         "path": "../simulation/historical-masked-rl-stage-b.json",
         "limits": {
-          "max_training_jobs": 792,
-          "max_evaluation_jobs": 4359
+          "max_training_jobs": 888,
+          "max_evaluation_jobs": 4995
         }
       }
     }

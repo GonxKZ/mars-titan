@@ -50,6 +50,7 @@ from mars_titan.memory.mars_titan_variant import (
     load_declaration,
     select_variant,
 )
+from mars_titan.memory.regimes import SLOTS
 from mars_titan.models.titans.config import canonical
 from mars_titan.models.titans.financial import FinancialPredictor
 from mars_titan.models.titans.financial_inputs import (
@@ -210,10 +211,12 @@ class CorrectionInference(ChronologicalInference):
         super().__init__(predictor, recipe, audit=audit)
         self.correction, self.codec = correction, codec
         self.memory = AssociativeMemory(correction.memory)
-        # Para cada decisión pendiente se guardan la predicción del núcleo y la clave del codec.
-        # Así A se escribe con el error del núcleo y no con el de la emisión corregida.
+        # Para cada decisión pendiente se guardan la predicción del núcleo, la clave del codec y
+        # la ruta del régimen. Así A se escribe con el error del núcleo y no con el de la
+        # emisión corregida, y en el compartimento del instante de la decisión.
         self._core = {}
         self._staged = []
+        self._routing = _RoutingLog()
 
     def _observe(self, run, source, event, *, differentiable):
         _require(not differentiable, "B6 no tiene parámetros que ajustar")
@@ -221,20 +224,32 @@ class CorrectionInference(ChronologicalInference):
         if event.at < source.phase.decision_start:
             return
         specification = self.predictor.config.inputs
-        decisions, keys = [], []
+        decisions, keys, prices = [], [], []
         for raw in event.inputs:
             cpu = validated_cpu_batch(raw, specification)
             decisions.extend(zip(cpu.flow_ids, cpu.prediction_at, strict=True))
             keys.append(self.codec.encode(cpu).key_inputs)
+            prices.append(cpu.inputs["prices"])
         inputs = np.concatenate(keys)
+        # El régimen se calcula una vez con todas las filas del evento, antes de leer A, así que
+        # no depende de cómo se reparta el evento en bloques.
+        routes, states = self.correction.routes(
+            np.concatenate(prices) if self.correction.routing is not None else None,
+            [flow for flow, _ in decisions],
+            decisions[0][1],
+        )
+        self._routing.event(decisions[0][1], states, routes, self.correction.routing)
         # Todas las lecturas del evento usan la A confirmada antes de él, como FinancialSession.
         # Lo que se escriba en este evento solo puede afectar a los siguientes.
-        corrections = self.memory.read(self.correction.keys(inputs))[:, 0].tolist()
-        for decision, key, correction in zip(decisions, inputs, corrections, strict=True):
+        corrections = self.memory.read(self.correction.keys(inputs, routes))[:, 0].tolist()
+        rows = routes.tolist() if routes is not None else [None] * len(decisions)
+        for decision, key, route, correction in zip(
+            decisions, inputs, rows, corrections, strict=True
+        ):
             if decision in self._core:
                 raise ValueError("La decisión ya tiene una predicción pendiente")
             core = run.pending[decision]
-            self._core[decision] = (core, key)
+            self._core[decision] = (core, key, route)
             run.pending[decision] = core + correction
             if decision in run.levels:
                 run.levels[decision] = [level + correction for level in run.levels[decision]]
@@ -247,8 +262,8 @@ class CorrectionInference(ChronologicalInference):
         _require(not train, "B6 no tiene parámetros que ajustar")
         super()._labels(run, event, train=False)
         for flow, decision_at, value in event.labels:
-            core, key = self._core.pop((flow, decision_at))
-            self._staged.append((decision_at, flow, value - core, key))
+            core, key, route = self._core.pop((flow, decision_at))
+            self._staged.append((decision_at, flow, value - core, key, route))
 
     def _write(self, at):
         """Escribir en A las etiquetas del evento cuando sus predicciones ya se han emitido.
@@ -260,12 +275,16 @@ class CorrectionInference(ChronologicalInference):
             return
         staged, self._staged = sorted(self._staged, key=lambda item: item[:2]), []
         first = self.memory.writes + 1
+        routes = None
+        if self.correction.routing is not None:
+            routes = np.array([route for *_, route in staged], dtype=np.int64)
+            self._routing.writes(routes)
         feedback = self.correction.feedback(
             ids=[first + offset for offset in range(len(staged))],
             decision_at=[decision_at for decision_at, *_ in staged],
             available_at=[at] * len(staged),
-            keys=self.correction.keys(np.stack([key for *_, key in staged])),
-            values=[value for _, _, value, _ in staged],
+            keys=self.correction.keys(np.stack([key for _, _, _, key, _ in staged]), routes),
+            values=[value for _, _, value, _, _ in staged],
         )
         self.memory = self.memory.write(feedback, cutoff=at)
 
@@ -297,6 +316,7 @@ class CorrectionInference(ChronologicalInference):
         run = _Pass(rows=rows)
         self.memory = AssociativeMemory(self.correction.memory)
         self._core, self._staged = {}, []
+        self._routing = _RoutingLog()
         self.predictor.eval()
         with torch.no_grad():
             for event in events:
@@ -311,16 +331,59 @@ class CorrectionInference(ChronologicalInference):
         if run.counters["labels"] == 0:
             raise ValueError("El tramo no contiene etiquetas maduras")
         exported = self.memory.export()
-        return dict(
+        metrics = dict(
             self._metrics(run),
             associative_writes=exported["writes"],
             associative_matrix_sha256=exported["matrix_sha256"],
         )
+        # Sin enrutamiento las métricas conservan su forma anterior.
+        if self.correction.routing is not None:
+            metrics["routing"] = self._routing.summary(self.correction.routing)
+        return metrics
 
     def predict(self, source, rows, *, stop=None):
         if not hasattr(rows, "append"):
             raise ValueError("La inferencia necesita un destino de filas")
         return self.evaluate(source, stop=stop, rows=rows)
+
+
+class _RoutingLog:
+    """Ocupación, cambios y asignaciones del régimen en un recorrido.
+
+    Cada evento emitido deja el estado de cada mercado con su corte, así que el informe
+    registra cuándo y con qué datos se asignó cada ruta. Las lecturas cuentan predicciones
+    emitidas por compartimento y las escrituras, etiquetas maduras por compartimento.
+    """
+
+    def __init__(self):
+        self.assignments, self.reads, self.written = [], [0] * SLOTS, [0] * SLOTS
+        self._last, self.transitions = {}, dict.fromkeys(("US", "CN"), 0)
+
+    def event(self, at, states, routes, rule):
+        if rule is None:
+            return
+        for state in states:
+            previous = self._last.get(state.market)
+            if previous is not None and previous != state.route:
+                self.transitions[state.market] += 1
+            self._last[state.market] = state.route
+            self.assignments.append(state.record(at, rule.labels))
+        for route in routes.tolist():
+            self.reads[route] += 1
+
+    def writes(self, routes):
+        for route in routes.tolist():
+            self.written[route] += 1
+
+    def summary(self, rule):
+        return dict(
+            rule=rule.name,
+            labels=list(rule.labels),
+            reads_by_route=list(self.reads),
+            writes_by_route=list(self.written),
+            transitions_by_market={m: n for m, n in self.transitions.items() if m in self._last},
+            assignments=self.assignments,
+        )
 
 
 def correction_memory_policy(warmup_months):

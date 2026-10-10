@@ -568,6 +568,22 @@ def _identity(campaign, views):
     )
 
 
+def validation_score(job, report):
+    """MAE por sesión de la validación con el que se elige entre búsquedas.
+
+    Lo tienen los ajustes y los trabajos del control en línea, que eligen su tasa con la
+    validación en línea. Un traslado no tiene puntuación.
+    """
+    if job["kind"] not in (FIT, ONLINE):
+        return None
+    score = report["predictions"]["validation"]["metrics"]["session_mae"]
+    _require(
+        type(score) in (int, float) and math.isfinite(score) and score >= 0,
+        f"{job['id']} no tiene un MAE de validación finito",
+    )
+    return score
+
+
 class _Campaign:
     """Estado confirmado de la campaña y verificación de cada recibo."""
 
@@ -614,9 +630,6 @@ class _Campaign:
         carry = found.get(f"{prefix}carry-s{seed}")
         if carry is not None:
             return f"{prefix}carry-s{seed}", carry
-        online = found.get(f"{prefix}online-s{seed}")
-        if online is not None:
-            return f"{prefix}online-s{seed}", online
         finalist = found.get(f"{prefix}finalist-s{seed}")
         if finalist is not None:
             return f"{prefix}finalist-s{seed}", finalist
@@ -638,41 +651,14 @@ class _Campaign:
         )
         if job.get("phase") == JOINT:
             origin["joint"] = self.joint_epoch(job)
+        if job["kind"] == ONLINE:
+            return self.resolve_online(job)
         if job["stage"] == "search":
             return job["case"], None, origin
         if job["stage"] == "finalist":
-            # El ganador sale de las búsquedas propias, nunca de las del padre.
-            own = f"{job['scope']}/{job['window']}/{job['arm']}/search-"
-            key, winner = min(
-                ((dep, self.receipts[dep]) for dep in job["depends"] if dep.startswith(own)),
-                key=lambda item: (item[1]["score"], item[0]),
-            )
+            key, winner = self.winner(job)
             case = winner["identity"]["case"] | dict(seed=job["seed"])
             return case, None, dict(source=key, source_sha256=winner["sha256"], **origin)
-        if job["kind"] == ONLINE:
-            # El ancla es el estado elegido del brazo de partida y el banco fija etiquetas y
-            # tope. Los dos están en la misma ventana y semilla del control y entre sus
-            # dependencias.
-            arm = self.campaign["online_controls"]["arms"][job["arm"]]["parent_arm"]
-            key, receipt = self.selected(job["scope"], job["window"], arm, job["seed"])
-            bank = self.bank_of(job)
-            _require(
-                {key, bank["job"]} <= set(job["depends"]),
-                f"{job['id']} no depende de los estados elegidos que usa",
-            )
-            anchor = dict(
-                folder=self.output / receipt["attempt"],
-                view=Path(self.views[job["scope"]]["windows"][job["window"]]["path"]),
-                job=key,
-                sha256=receipt["sha256"],
-            )
-            sources = dict(
-                source=key,
-                source_sha256=receipt["sha256"],
-                bank=bank["job"],
-                bank_sha256=bank["sha256"],
-            )
-            return job["case"], anchor, sources
         key, receipt = self.selected(job["scope"], job["anchor"], job["arm"], job["seed"])
         anchor = dict(
             folder=self.output / receipt["attempt"],
@@ -681,6 +667,49 @@ class _Campaign:
             sha256=receipt["sha256"],
         )
         return None, anchor, dict(source=key, source_sha256=receipt["sha256"])
+
+    def winner(self, job):
+        """Búsqueda ganadora de un finalista: el menor MAE de validación y, si empata, el id.
+
+        El ganador sale de las búsquedas propias del brazo, nunca de las del padre.
+        """
+        own = f"{job['scope']}/{job['window']}/{job['arm']}/search-"
+        searches = [(dep, self.receipts[dep]) for dep in job["depends"] if dep.startswith(own)]
+        _require(searches, f"{job['id']} no depende de las búsquedas de su brazo")
+        return min(searches, key=lambda item: (item[1]["score"], item[0]))
+
+    def resolve_online(self, job):
+        """Caso, ancla y fuentes de un trabajo del control en línea.
+
+        El ancla es el estado elegido del brazo de partida y el banco fija etiquetas y tope.
+        Los dos están en la misma ventana y semilla del control y entre sus dependencias. Una
+        búsqueda trae su tasa y un finalista toma la de la búsqueda ganadora de su ventana.
+        """
+        arm = self.campaign["online_controls"]["arms"][job["arm"]]["parent_arm"]
+        key, receipt = self.selected(job["scope"], job["window"], arm, job["seed"])
+        bank = self.bank_of(job)
+        _require(
+            {key, bank["job"]} <= set(job["depends"]),
+            f"{job['id']} no depende de los estados elegidos que usa",
+        )
+        anchor = dict(
+            folder=self.output / receipt["attempt"],
+            view=Path(self.views[job["scope"]]["windows"][job["window"]]["path"]),
+            job=key,
+            sha256=receipt["sha256"],
+        )
+        sources = dict(
+            source=key,
+            source_sha256=receipt["sha256"],
+            bank=bank["job"],
+            bank_sha256=bank["sha256"],
+        )
+        if job["stage"] == "search":
+            return job["case"], anchor, sources
+        _require(job["stage"] == "finalist", f"{job['id']} no es una búsqueda ni un finalista")
+        case_key, winner = self.winner(job)
+        sources.update(case_source=case_key, case_source_sha256=winner["sha256"])
+        return winner["identity"]["case"], anchor, sources
 
     def joint_epoch(self, job):
         """Calcula la época común de un grupo, que es la mayor de las paradas de sus mesetas."""
@@ -874,13 +903,7 @@ class _Campaign:
                 rows_sha256=_rows_digest(table),
                 markets=_fingerprints(table, resolved["markets"]),
             )
-        score = None
-        if job["kind"] == FIT:
-            score = report["predictions"]["validation"]["metrics"]["session_mae"]
-            _require(
-                type(score) in (int, float) and math.isfinite(score) and score >= 0,
-                f"{job['id']} no tiene un MAE de validación finito",
-            )
+        score = validation_score(job, report)
         report_path = run.folder / executor["report"]
         receipt = dict(
             parent=self.parent(job, identity, report),
