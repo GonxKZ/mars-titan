@@ -27,6 +27,7 @@ from mars_titan.training import mars_titan_walk_forward as mw
 from mars_titan.training import titans_walk_forward as wf
 from mars_titan.training.corpus_inputs import CorpusDataset
 from mars_titan.training.financial_run import ChronologicalInference
+from mars_titan.training.kernel_policy import FP32_STRICT, kernel_policy_identity
 from mars_titan.training.learning_hold import LearningHoldError
 from tests.training.test_titans_walk_forward import (
     learning_doubles_module as learning_doubles_module,
@@ -96,11 +97,58 @@ def base(tmp_path_factory, learning_doubles_module):
         }
     finally:
         torch.backends.mha.set_fastpath_enabled(previous)
-    return dict(root=root, view=view, parent=parent, titans=titans, zero=zero, runs=runs)
+    return dict(
+        root=root, view=view, protocol=protocol, parent=parent, titans=titans, zero=zero, runs=runs
+    )
 
 
 def table(folder, partition):
     return pq.read_table(folder / f"{partition}-predictions.parquet").sort_by("sample_id")
+
+
+def test_the_parent_precision_enters_the_identity_and_the_carry_requires_it(
+    base, tmp_path, learning_doubles
+):
+    """Con la precisión declarada en la receta del padre, B6 registra su política como los
+    lectores, y un traslado con otra política se rechaza antes de predecir."""
+    document = json.loads(recipe(tmp_path).read_text())
+    document["recipe"]["precision"] = FP32_STRICT
+    strict = tmp_path / "strict.json"
+    strict.write_text(json.dumps(document))
+    previous = torch.backends.mha.get_fastpath_enabled()
+    torch.backends.mha.set_fastpath_enabled(False)
+    try:
+        window(base["view"], base["protocol"], strict, tmp_path / "titans")
+        report = correct(base["view"], tmp_path / "titans", DECLARED, tmp_path / "b6")
+        assert report["status"] == "completed"
+        assert report["identity"]["kernel_policy"] == kernel_policy_identity(FP32_STRICT)
+        # Sin precisión en la receta del padre la identidad conserva su forma anterior.
+        assert "kernel_policy" not in base["runs"]["proximal"]["identity"]
+        again = mc.carry_correction(
+            tmp_path / "b6",
+            base["view"],
+            base["view"],
+            tmp_path / "again",
+            device="cpu",
+            regenerate=True,
+        )
+        assert again["status"] == "completed"
+        path = tmp_path / "b6" / "run.json"
+        changed = json.loads(path.read_text())
+        changed["identity"]["kernel_policy"]["matmul_allow_tf32"] = True
+        path.write_text(json.dumps(changed))
+        with pytest.raises(ValueError, match="política de precisión"):
+            mc.carry_correction(
+                tmp_path / "b6",
+                base["view"],
+                base["view"],
+                tmp_path / "other",
+                device="cpu",
+                regenerate=True,
+            )
+    finally:
+        torch.backends.mha.set_fastpath_enabled(previous)
+    assert not (tmp_path / "other").exists()
 
 
 def test_constants_repeat_the_runner_and_memory_names_without_importing_torch():

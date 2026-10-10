@@ -61,6 +61,7 @@ from mars_titan.models.titans.financial_inputs import (
 from .checkpoints import StopRequest
 from .corpus_inputs import CorpusDataset
 from .financial_run import ChronologicalInference, ChronologicalRecipe, Paused, _compatible, _Pass
+from .kernel_policy import declared_policy, require_policy
 from .learning_hold import require_learning_allowed
 from .search_cases import CASE_NAME
 from .titans_walk_forward import (
@@ -501,6 +502,11 @@ def run_correction_window(
         expected_rows={name: dataset.manifest["counts"][name] for name in PREDICTED},
         final_test_opened=False,
     )
+    if inference.kernel_policy is not None:
+        # Como en los lectores, la política de precisión de la receta del padre, que aplica
+        # la inferencia al construirse, entra en la identidad. Sin precisión declarada la
+        # identidad conserva su forma anterior.
+        identity["kernel_policy"] = inference.kernel_policy
     run_id = hashlib.sha256(canonical(identity).encode()).hexdigest()
     if report_path.exists():
         _require(report["identity"] == identity, "La identidad de la ventana ha cambiado")
@@ -544,6 +550,8 @@ def run_correction_window(
                 continue
             if stop.requested:
                 raise Paused
+            # Otro código del proceso podría haber cambiado la precisión entre tramos.
+            require_policy(chronological.precision, identity.get("kernel_policy"))
             rows = PredictionRows(inference.quantiles)
             metrics = inference.predict(sources[name], rows, stop=stop)
             report["predictions"][name] = _prediction(output, rows, metrics, dataset, name)
@@ -612,6 +620,12 @@ def carry_correction(
         "El padre del ancla ha cambiado",
     )
     titans, chronological = _parent_recipe(parent_report)
+    # El traslado aplica la política de la receta del padre, la misma que el ancla registró
+    # en su identidad, y la compara antes de escribir nada.
+    _require(
+        declared_policy(chronological.precision) == identity.get("kernel_policy"),
+        "La política de precisión no coincide con la del ancla",
+    )
     options = walk_forward_options(titans)
     combination = arm_components(
         request["components"], case_values(identity["recipe"], request["search_case"])
