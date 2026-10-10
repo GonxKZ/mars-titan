@@ -65,7 +65,12 @@ from mars_titan.environments.walk_forward_receipt import (
 from mars_titan.environments.walk_forward_receipt import read_window_receipt
 from mars_titan.evaluation import walk_forward_comparison as comparison
 from mars_titan.models.quantile_head import MEDIAN_INDEX, QUANTILE_COLUMNS, QUANTILE_HEAD
-from mars_titan.training import campaign_numerics, campaign_schedule, masked_campaign
+from mars_titan.training import (
+    campaign_chain,
+    campaign_numerics,
+    campaign_schedule,
+    masked_campaign,
+)
 from mars_titan.training.campaign_plan import (
     CARRY,
     DECLARED,
@@ -582,11 +587,25 @@ def count_stage(stage, jobs=None):
     return dict(scopes=scopes, **totals)
 
 
+def check_design(stage, jobs):
+    """Comprobar el plan con el contrato del walk-forward por etapas de la campaña.
+
+    `campaign_chain.check_staged` lo comprueba con su propio código, distinto del que crea
+    aquí las dependencias, así que un cambio en uno de los dos no pasa en silencio. Solo se
+    aplica si la campaña declara `walk_forward_stages`.
+    """
+    campaign = stage["campaign"]
+    if campaign.get("walk_forward_stages"):
+        campaign_chain.check_staged(campaign, plan_campaign(campaign), dict(adapters=jobs))
+
+
 def check_stage(path):
     """Validar, planificar y contar sin leer datos, reservar la GPU ni ajustar."""
     stage = load_stage(path)
     campaign = stage["campaign"]
     _, awaiting = stage_arms(stage)
+    jobs = plan_stage(stage)
+    check_design(stage, jobs)
     return dict(
         status="checked",
         name=stage["name"],
@@ -604,7 +623,7 @@ def check_stage(path):
         objectives=adapter_matrix.objectives(stage["matrix"], QUANTILE_HEAD),
         excluded_controls=adapter_matrix.excluded_controls(stage["matrix"], QUANTILE_HEAD),
         cohort_reading=stage["cohort_reading"],
-        counts=count_stage(stage),
+        counts=count_stage(stage, jobs),
         scientific_training_started=False,
         final_test_opened=False,
     )
@@ -1555,12 +1574,22 @@ def _gpu_lease():
 
 
 def run_stage(
-    path, views, campaign_output, output, *, lease=None, stop=None, device="cuda:0", window=None
+    path,
+    views,
+    campaign_output,
+    output,
+    *,
+    lease=None,
+    stop=None,
+    device="cuda:0",
+    window=None,
+    disjunction=None,
 ):
     """Ejecutar o reanudar el walk-forward por etapas sobre una campaña base confirmada.
 
     `window` limita la etapa a una ventana de campaña, que solo necesita la base confirmada
-    de esa ventana.
+    de esa ventana. Si la campaña declara `walk_forward_stages`, `disjunction` es el informe
+    de `chain_disjunction` sin fallos sobre las mismas vistas que se van a usar.
 
     `lease` sustituye la reserva de la GPU y `device="cpu"` limita la ejecución a los
     diagnósticos de hasta 5000 filas de `run_case`. La protección del aprendizaje se
@@ -1574,6 +1603,7 @@ def run_stage(
     _require(stage["design"] == STAGED, B_NOT_EXECUTED)
     jobs = plan_stage(stage)
     count_stage(stage, jobs)
+    check_design(stage, jobs)
     chains = plan_chain(stage, jobs)
     campaign = stage["campaign"]
     pairs = None
@@ -1593,6 +1623,15 @@ def run_stage(
         outside_source(output, protected)
     _, base = masked_campaign._confirmed_state(campaign["path"], views, campaign_output)
     _base_receipts(base, campaign, stage, pairs)
+    checked = {}
+    if campaign.get("walk_forward_stages"):
+        from mars_titan.training.chain_disjunction import require_report, used_views
+
+        # Las disjunciones se demuestran sobre estas mismas vistas antes de ajustar nada. El
+        # resumen guarda la huella del informe que autorizó esta ejecución o su reanudación.
+        checked["disjunction_sha256"] = require_report(
+            disjunction, campaign, used_views(base.views, stage["scopes"], pairs)
+        )
     identity = _identity(stage, base.views)
     output.mkdir(parents=True, exist_ok=True)
     descriptor = os.open(output / ".lock", os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600)
@@ -1618,7 +1657,7 @@ def run_stage(
         state = _Stage(
             stage, base, campaign_output, output, identity, device=device, lease=None, stop=None
         )
-        _summary(output, identity, jobs, chains, state, "running")
+        _summary(output, identity, jobs, chains, state, "running", **checked)
         try:
             with signals as state.stop, reservation as state.lease:
                 try:
@@ -1628,12 +1667,12 @@ def run_stage(
         except Paused:
             status = "paused"
         except LearningHoldError as error:
-            _summary(output, identity, jobs, chains, state, "blocked", error=str(error))
+            _summary(output, identity, jobs, chains, state, "blocked", error=str(error), **checked)
             raise
         except BaseException as error:
-            _summary(output, identity, jobs, chains, state, "failed", error=str(error))
+            _summary(output, identity, jobs, chains, state, "failed", error=str(error), **checked)
             raise
-        return _summary(output, identity, jobs, chains, state, status)
+        return _summary(output, identity, jobs, chains, state, status, **checked)
     finally:
         os.close(descriptor)
 
@@ -1659,6 +1698,9 @@ def main(argv=None):
     execute.add_argument("--campaign-output", type=Path, required=True)
     execute.add_argument("--output", type=Path, required=True)
     execute.add_argument("--window", help="Ventana de campaña que se ejecuta")
+    execute.add_argument(
+        "--disjunction", type=Path, help="Informe de disjunción sobre las vistas (por etapas)"
+    )
     args = parser.parse_args(argv)
     if args.command == "check":
         result = check_stage(args.stage)
@@ -1669,6 +1711,7 @@ def main(argv=None):
             args.campaign_output,
             args.output,
             window=args.window,
+            disjunction=args.disjunction,
         )
         result.pop("jobs")
     print(json.dumps(result, ensure_ascii=False, indent=2))

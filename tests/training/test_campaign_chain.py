@@ -16,6 +16,7 @@ import pytest
 
 from mars_titan.data.storage import atomic_json, sha256
 from mars_titan.environments.walk_forward_receipt import RECEIPT_KIND
+from mars_titan.simulation import window_tapes
 from mars_titan.training import campaign_budget as budget
 from mars_titan.training import campaign_chain as chain
 from mars_titan.training import campaign_online_controls as online
@@ -40,35 +41,37 @@ def micros(day):
 # Roles por ventana
 
 
-def test_v2_declares_the_staged_roles_of_every_window():
+def test_v2_declares_the_staged_design_with_its_windows_and_policy_rule():
     value = campaign()
     assert value["walk_forward_stages"] == chain.DESIGN
-    first = chain.window_roles(value, JOINT, "fold-000")
-    assert first["posttraining"] is None and first["rl"] is None
-    assert first["chain"]["candidates"] == ["base"]
-    assert first["test"] == ["2005-01-01", "2006-01-01"]
-    roles = chain.window_roles(value, JOINT, "fold-005")
-    assert roles["base"]["train"] == ["2000-01-01", "2009-04-01"]
-    assert roles["posttraining"] == dict(
-        parent_window="fold-004",
-        parent="base_selected_state",
-        fit=["2009-01-01", "2009-04-01"],
-        validation=["2009-04-01", "2009-10-01"],
-        calibration=["2009-10-01", "2010-01-01"],
-        evaluation=["2010-01-01", "2011-01-01"],
-    )
-    assert roles["chain"]["candidates"] == ["frozen_parent", "adapter", "continuation"]
-    assert roles["rl"] == dict(
-        train=["fold-001", "fold-002", "fold-003"],
-        validation="fold-004",
-        evaluation="fold-005",
+    folds = dict(chain.scope_windows(value, JOINT))
+    assert chain.parent_window(value, JOINT, "fold-000") is None
+    assert folds["fold-000"]["evaluation"] == ["2005-01-01", "2006-01-01"]
+    # En fold-005 el padre es el estado elegido de fold-004 y solo ajusta con las filas
+    # posteriores a todo lo que ese padre usó, hasta el final del entrenamiento de k.
+    assert chain.parent_window(value, JOINT, "fold-005") == "fold-004"
+    fold = folds["fold-005"]
+    assert fold["train"] == ["2000-01-01", "2009-04-01"]
+    assert chain.posttraining_rows(folds["fold-004"], fold) == ("2009-01-01", "2009-04-01")
+    assert (fold["validation"], fold["calibration"], fold["evaluation"]) == (
+        ["2009-04-01", "2009-10-01"],
+        ["2009-10-01", "2010-01-01"],
+        ["2010-01-01", "2011-01-01"],
     )
     # China separada empieza en 2011 y su primera ventana tampoco tiene padre.
-    assert chain.window_roles(value, "CN", "fold-000")["posttraining"] is None
-    assert chain.window_roles(value, "CN", "fold-001")["posttraining"]["fit"] == [
-        "2011-01-01",
-        "2011-04-01",
-    ]
+    cn = dict(chain.scope_windows(value, "CN"))
+    assert chain.parent_window(value, "CN", "fold-000") is None
+    assert chain.posttraining_rows(cn["fold-000"], cn["fold-001"]) == ("2011-01-01", "2011-04-01")
+    # La RL ajusta siempre con las tres evaluaciones anteriores a su validación.
+    rule = chain.policy_rule(value["walk_forward_stages"])
+    assert window_tapes.train_rule(rule) == (window_tapes.FIXED, 3, 3)
+    rows = window_tapes.policy_windows(list(folds.values()), rule)
+    assert rows[0] == dict(
+        window="fold-004", train=["fold-000", "fold-001", "fold-002"], validation="fold-003"
+    )
+    assert rows[1] == dict(
+        window="fold-005", train=["fold-001", "fold-002", "fold-003"], validation="fold-004"
+    )
 
 
 def test_new_rows_start_after_everything_the_parent_used_and_end_with_the_train_split():
@@ -96,21 +99,37 @@ def test_new_rows_start_after_everything_the_parent_used_and_end_with_the_train_
         chain.parent_window(value, JOINT, "fold-019")
 
 
-def test_rl_windows_use_the_three_evaluations_before_validation_or_the_declared_expansion():
-    windows = [f"fold-{i:03d}" for i in range(8)]
-    for rule in (chain.RL_RULE, chain.RL_EXPANDING):
-        assert [chain.rl_windows(windows, w, rule) for w in windows[:4]] == [None] * 4
-        assert chain.rl_windows(windows, "fold-004", rule) == dict(
-            train=windows[:3], validation="fold-003", evaluation="fold-004"
-        )
-    assert chain.rl_windows(windows, "fold-007") == dict(
-        train=windows[3:6], validation="fold-006", evaluation="fold-007"
+def rl_stage(root, change):
+    """Copia de la etapa de RL de A v2 con las políticas alteradas por `change`."""
+    from mars_titan.simulation import policy_plan
+
+    path = Path(plan.LATER_STAGES["rl_policy_comparison"]["joint_stage"]).resolve()
+    stage = json.loads(path.read_text())
+    policies = json.loads((path.parent / stage["policies"]).read_text())
+    change(policies)
+    root.mkdir(parents=True, exist_ok=True)
+    atomic_json(root / "policies.json", policies)
+    stage.update(
+        campaign=str((path.parent / stage["campaign"]).resolve()), policies="policies.json"
     )
-    assert chain.rl_windows(windows, "fold-007", chain.RL_EXPANDING)["train"] == windows[:6]
-    with pytest.raises(ValueError, match="no es una regla"):
-        chain.rl_windows(windows, "fold-007", "rolling_previous_evaluations")
-    with pytest.raises(ValueError, match="no tiene evaluación"):
-        chain.rl_windows(windows[1:], "fold-000")
+    atomic_json(root / "stage.json", stage)
+    return policy_plan.load_stage(root / "stage.json")
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        lambda p: p["train_windows"].update(rule="expanding_prior_evaluations_v1", maximum=6),
+        lambda p: p["train_windows"].update(minimum=4, maximum=4),
+        lambda p: p["predictor"].update(source="base_campaign_selected_v1"),
+    ],
+    ids=["expanding_rule", "four_windows", "base_predictor"],
+)
+def test_policies_of_the_staged_campaign_follow_its_rl_rule(tmp_path, change):
+    stage = rl_stage(tmp_path / "declared", lambda p: None)
+    assert stage["policies"]["train_windows"] == chain.policy_rule(chain.DESIGN)
+    with pytest.raises(ValueError, match="walk-forward por etapas: las políticas"):
+        rl_stage(tmp_path / "changed", change)
 
 
 @pytest.mark.parametrize(
@@ -188,13 +207,13 @@ def staged_jobs(value, base, *, arm="rnn", seed=42):
     # Como en la etapa de políticas de A v2, cada mercado tiene sus trabajos en el ámbito
     # conjunto, con las ventanas en las que es elegible, y lee la cadena de ese ámbito.
     eligible = value["comparison_config"]["resolved_scopes"][JOINT]["eligible"]
+    folds = dict(chain.scope_windows(value, JOINT))
+    rule = chain.policy_rule(chain.DESIGN)
     policies = []
     for market in ("US", "CN"):
         names = [name for name in windows if name in eligible[market]]
-        for window in names:
-            rows = chain.rl_windows(names, window)
-            if rows is None:
-                continue
+        for rows in window_tapes.policy_windows([folds[name] for name in names], rule):
+            window = rows["window"]
             read = [*rows["train"], rows["validation"], window]
             policies.append(
                 dict(
@@ -255,21 +274,21 @@ def test_policies_read_the_chain_of_their_scope_with_the_windows_of_the_design()
 
     stage = policy_plan.load_stage(plan.LATER_STAGES["rl_policy_comparison"]["joint_stage"])
     resolved = stage["campaign"]["comparison_config"]["resolved_scopes"][JOINT]
-    # Las ventanas de cada mercado del plan de políticas son las de `rl_windows`.
+    # Cada mercado empieza en su quinta ventana elegible: ajusta con las tres evaluaciones
+    # anteriores a la validación, que es la evaluación anterior a la suya.
+    first = {}
     for market in resolved["markets"]:
         names = [name for name in resolved["windows"] if name in resolved["eligible"][market]]
         rows = policy_plan.scope_windows(stage, JOINT, market)
-        assert [row["window"] for row in rows] == [
-            name for name in names if chain.rl_windows(names, name)
-        ]
+        assert [row["window"] for row in rows] == names[4:]
         anchors = {row["window"]: row for row in rows}
         for row in rows:
-            expected = chain.rl_windows(names, row["anchor"])
             anchor = anchors[row["anchor"]]
-            assert (anchor["train"], anchor["validation"]) == (
-                expected["train"],
-                expected["validation"],
-            )
+            index = names.index(anchor["window"])
+            assert anchor["train"] == names[index - 4 : index - 1]
+            assert anchor["validation"] == names[index - 1]
+        first[market] = rows[0]["window"]
+    assert first == {"US": "fold-004", "CN": "fold-010"}
     # Cada trabajo depende de la cadena de su ámbito en todo lo que lee `predictor_reads`.
     seed = stage["policies"]["predictor"]["seed"]
     for job in policy_plan.plan_stage(stage):
@@ -950,3 +969,66 @@ def test_the_verifier_can_check_some_scopes_only(views):
     assert list(report["scopes"]) == ["US"] and report["failures"] == []
     with pytest.raises(ValueError, match="no es de la campaña"):
         disjunction.verify(value, paths, scopes=["EU"], workers=2)
+
+
+# Consumidores del diseño y del informe
+
+
+def test_both_stages_check_their_plan_with_the_staged_contract(monkeypatch):
+    from mars_titan.posttraining import campaign_stage as adapters
+    from mars_titan.simulation import campaign_stage as policies
+    from mars_titan.simulation import policy_plan
+
+    stages = plan.LATER_STAGES
+    adapter_stage = adapters.load_stage(stages["posttraining_adapter_matrix"]["joint_stage"])
+    rl_stage = policy_plan.load_stage(stages["rl_policy_comparison"]["joint_stage"])
+    # Los planes declarados de A v2 cumplen el contrato.
+    adapters.check_design(adapter_stage, adapters.plan_stage(adapter_stage))
+    policies.check_design(rl_stage, policy_plan.plan_stage(rl_stage))
+    # `check_stage` lo exige en las dos etapas antes de contar o sondear el motor.
+    jobs = adapters.plan_stage(adapter_stage)
+    jobs.append(dict(jobs[0], id="first", window="fold-000"))
+    monkeypatch.setattr(adapters, "plan_stage", lambda stage: jobs)
+    with pytest.raises(ValueError, match="la primera ventana no tiene posentrenamiento"):
+        adapters.check_stage(stages["posttraining_adapter_matrix"]["joint_stage"])
+    jobs = policy_plan.plan_stage(rl_stage)
+    jobs[0] = dict(jobs[0], depends=[d for d in jobs[0]["depends"] if "__chain" not in d])
+    monkeypatch.setattr(policies, "plan_stage", lambda stage: jobs)
+    with pytest.raises(ValueError, match="no depende de la cadena de todas las ventanas"):
+        policies.check_stage(stages["rl_policy_comparison"]["joint_stage"])
+
+
+def test_a_stage_needs_a_clean_report_on_its_views_and_selections(views, tmp_path):
+    value, paths, report = views
+    write_selection(tmp_path / "chain", value, report)
+    checked = disjunction.verify(value, paths, posttraining=tmp_path / "chain", workers=2)
+    path = tmp_path / "report.json"
+    atomic_json(path, checked)
+    states = {scope: engine.scope_views(paths[scope], scope, value) for scope in value["scopes"]}
+    used = disjunction.used_views(states, value["scopes"])
+    assert used["US"]["fold-001"] == checked["scopes"]["US"]["fold-001"]["manifest_sha256"]
+    label = disjunction.selection_label("US", "fold-001", "gru", 42)
+    selection = chain.read_selection(tmp_path / "chain", "US", "fold-001", "gru", 42)
+    selections = {label: selection["sha256"]}
+    assert disjunction.require_report(path, value, used, selections=selections) == sha256(path)
+    # Con una ventana de campaña solo se exigen sus vistas.
+    pairs = {("US", "fold-001")}
+    assert disjunction.used_views(states, ["US"], pairs) == {
+        "US": {"fold-001": used["US"]["fold-001"]}
+    }
+    with pytest.raises(ValueError, match="falta el informe de disjunción"):
+        disjunction.require_report(None, value, used)
+    for change in (dict(campaign_sha256="0" * 64), dict(failures=["US/fold-001: x"])):
+        atomic_json(tmp_path / "other.json", dict(checked, **change))
+        with pytest.raises(ValueError, match="no es de esta campaña o registra fallos"):
+            disjunction.require_report(tmp_path / "other.json", value, used)
+    with pytest.raises(ValueError, match="no comprobó la vista US/fold-001"):
+        disjunction.require_report(
+            path, value, dict(used, US=dict(used["US"], **{"fold-001": "0" * 64}))
+        )
+    # Un informe anterior a la selección, o con otra versión de ella, no la cubre.
+    atomic_json(tmp_path / "views-only.json", report)
+    with pytest.raises(ValueError, match=f"no comprobó la selección {label}"):
+        disjunction.require_report(tmp_path / "views-only.json", value, used, selections=selections)
+    with pytest.raises(ValueError, match=f"no comprobó la selección {label}"):
+        disjunction.require_report(path, value, used, selections={label: "0" * 64})

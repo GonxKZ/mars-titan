@@ -17,7 +17,9 @@ y demuestra con recuentos y huellas (`campaign_chain.row_fingerprint`) que:
    tramo con la etiqueta madura antes de su final.
 
 Lee solo cuatro columnas de las etiquetas, por activo y en paralelo acotado. No carga
-modelos, no reserva la GPU y no escribe más que su informe.
+modelos, no reserva la GPU y no escribe más que su informe. Con `walk_forward_stages`
+declarado, las etapas de adaptadores y de políticas no se ejecutan sin un informe sin
+fallos que cubra las vistas y las selecciones que usan (`require_report`).
 """
 
 import argparse
@@ -310,8 +312,7 @@ def verify(campaign, views, *, campaign_output=None, posttraining=None, workers=
             ).items():
                 summary = scopes[scope][window]
                 for document in documents:
-                    label = f"{scope}/{window}/{chain.chain_arm(document['base_arm'])}"
-                    label += f"/seed-{document['seed']}"
+                    label = selection_label(scope, window, document["base_arm"], document["seed"])
                     found, evidence = _check_selection(label, document, summary)
                     failures += found
                     selections[label] = dict(
@@ -328,6 +329,67 @@ def verify(campaign, views, *, campaign_output=None, posttraining=None, workers=
         training_executed=False,
         final_test_opened=False,
     )
+
+
+def selection_label(scope, window, base_arm, seed):
+    """Etiqueta con la que el informe registra una selección de la cadena."""
+    return f"{scope}/{window}/{chain.chain_arm(base_arm)}/seed-{seed}"
+
+
+def used_views(views, scopes, pairs=None):
+    """Huellas de las vistas que usará una etapa por ámbito y ventana, con `pairs` si limita.
+
+    `views` es el resultado de `masked_campaign.scope_views` por ámbito, el mismo del que
+    sale `manifest_sha256` en el informe.
+    """
+    return {
+        scope: {
+            window: record["sha256"]
+            for window, record in views[scope]["windows"].items()
+            if pairs is None or (scope, window) in pairs
+        }
+        for scope in scopes
+    }
+
+
+def require_report(path, campaign, views, *, selections=None):
+    """Exige un informe sin fallos de esta campaña que cubra lo que va a leer una etapa.
+
+    `views` asigna a cada ámbito las huellas de las vistas por ventana que usará la etapa y
+    `selections`, a la etiqueta de cada selección de la cadena que leerá, la huella de su
+    `selection.json`. El informe debe haber comprobado esas mismas vistas y selecciones. Así
+    el posentrenamiento no ajusta sin haber demostrado las disjunciones sobre sus vistas y
+    la RL no lee una cadena que el verificador no haya contrastado con ellas. Devuelve la
+    huella del informe.
+    """
+    _require(
+        path is not None,
+        "La campaña declara el walk-forward por etapas y falta el informe de disjunción",
+    )
+    report, digest = read_manifest(Path(path), 256 * 1024**2)
+    _require(
+        isinstance(report, dict)
+        and report.get("kind") == KIND
+        and report.get("schema_version") == 1
+        and report.get("campaign_sha256") == campaign["sha256"]
+        and report.get("failures") == []
+        and report.get("training_executed") is False
+        and report.get("final_test_opened") is False,
+        "El informe de disjunción no es de esta campaña o registra fallos",
+    )
+    for scope, windows in views.items():
+        for window, view in windows.items():
+            checked = report["scopes"].get(scope, {}).get(window, {})
+            _require(
+                checked.get("manifest_sha256") == view,
+                f"El informe de disjunción no comprobó la vista {scope}/{window} que se usará",
+            )
+    for label, value in (selections or {}).items():
+        _require(
+            report["selections"].get(label, {}).get("sha256") == value,
+            f"El informe de disjunción no comprobó la selección {label} que se leerá",
+        )
+    return digest
 
 
 def _check_selection(label, document, summary):

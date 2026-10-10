@@ -24,8 +24,9 @@ ventana k de un ámbito, con evaluación en el año Y:
    universo de la política hacia las empresas con más historia.
 5. `test`: `eval_k`, igual para todas las familias.
 
-Este módulo declara esos roles, los identificadores de los trabajos de la cadena, las rutas
-de sus recibos y las dependencias que el calendario exige a las etapas. No lee vistas ni
+Este módulo declara el diseño, las filas nuevas de cada ventana, los identificadores de los
+trabajos de la cadena, las rutas de sus recibos, la regla de elección y las dependencias
+que exigen el calendario y las etapas al planificar y antes de ejecutar. No lee vistas ni
 ajusta nada. `chain_disjunction` comprueba las filas sobre las vistas y los recibos.
 """
 
@@ -41,8 +42,8 @@ SELECTION = "selection.json"
 SELECTION_KIND = "campaign_chain_selection"
 CANDIDATES = ("frozen_parent", "adapter", "continuation")
 SELECTED = ("base", *CANDIDATES)
-RL_RULE = "fixed_prior_evaluations_v1"
-RL_EXPANDING = "expanding_prior_evaluations_v1"
+# La RL principal ajusta con las tres evaluaciones anteriores a su validación. La regla la
+# aplica `simulation.window_tapes.policy_windows` y la etapa de políticas debe declararla.
 RL_TRAIN_WINDOWS = 3
 # Declaración única admitida en `walk_forward_stages` de la campaña.
 DESIGN = dict(
@@ -57,7 +58,7 @@ DESIGN = dict(
     ),
     chain=dict(rule=RULE, min_improvement=0.0, first_window="base"),
     rl=dict(
-        train=RL_RULE,
+        train="fixed_prior_evaluations_v1",
         train_windows=RL_TRAIN_WINDOWS,
         validation="previous_evaluation",
         evaluation="own_evaluation",
@@ -199,52 +200,14 @@ def posttraining_rows(parent_fold, fold):
     return start, end
 
 
-def window_roles(campaign, scope, window):
-    """Resume los roles de una ventana con sus intervalos de decisiones.
+def policy_rule(design):
+    """Regla de ventanas de ajuste que el diseño fija a la etapa de políticas.
 
-    Sirve para documentar y comprobar el diseño. El plan de trabajos no lo usa, así que un
-    cambio aquí no altera ninguna dependencia.
+    `policy_plan.load_stage` exige que las políticas la declaren tal cual, en el formato de
+    `window_tapes.train_rule`, que es quien la aplica al planificar las cintas.
     """
-    folds = dict(scope_windows(campaign, scope))
-    fold = folds[window]
-    parent = parent_window(campaign, scope, window)
-    base = {name: list(fold[name]) for name in ("train", "validation", "calibration")}
-    roles = dict(window=window, scope=scope, base=dict(base, evaluation=list(fold["evaluation"])))
-    if parent is None:
-        roles["posttraining"] = None
-        roles["chain"] = dict(rule=RULE, candidates=["base"])
-    else:
-        roles["posttraining"] = dict(
-            parent_window=parent,
-            parent="base_selected_state",
-            fit=list(posttraining_rows(folds[parent], fold)),
-            validation=list(fold["validation"]),
-            calibration=list(fold["calibration"]),
-            evaluation=list(fold["evaluation"]),
-        )
-        roles["chain"] = dict(rule=RULE, candidates=list(CANDIDATES))
-    roles["rl"] = rl_windows(list(folds), window)
-    roles["test"] = list(fold["evaluation"])
-    return roles
-
-
-def rl_windows(windows, window, rule=RL_RULE):
-    """Devuelve las ventanas que usa la política anclada en `window`, o None si faltan.
-
-    `windows` son, en orden, las ventanas en las que el mercado tiene evaluación. La
-    política valida con la anterior a la suya y evalúa la suya. Con la regla principal
-    ajusta con las tres anteriores a la validación. Con la sensibilidad en expansión ajusta
-    con todas ellas. En los dos casos la primera política necesita tres cintas de ajuste, así
-    que ambas reglas empiezan en la misma ventana y ninguna cinta de ajuste es posterior a la
-    de validación.
-    """
-    _require(rule in (RL_RULE, RL_EXPANDING), f"{rule} no es una regla de ventanas de la RL")
-    _require(window in windows, f"{window} no tiene evaluación en ese mercado")
-    index = windows.index(window)
-    if index - 1 < RL_TRAIN_WINDOWS:
-        return None
-    start = index - 1 - RL_TRAIN_WINDOWS if rule == RL_RULE else 0
-    return dict(train=windows[start : index - 1], validation=windows[index - 1], evaluation=window)
+    rl = design["rl"]
+    return dict(rule=rl["train"], minimum=rl["train_windows"], maximum=rl["train_windows"])
 
 
 def parent_jobs(base_jobs, scope, window, arm, seed):
@@ -275,8 +238,9 @@ def check_staged(campaign, base_jobs, stages):
     anteriores a su validación, valida antes de su evaluación y depende de la selección de
     la cadena de cada ventana que lee (ajuste, validación y evaluación) con la semilla del
     predictor que declara en `predictor_seed`. Su `predictor` puede nombrar el brazo base o
-    el brazo de la cadena. El número exacto de ventanas de ajuste lo fija la identidad de la
-    etapa de RL, que también declara la sensibilidad en expansión.
+    el brazo de la cadena. El número exacto de ventanas de ajuste lo exige
+    `policy_plan.load_stage` con `policy_rule`. Aquí solo se pide el mínimo, porque la
+    sensibilidad en expansión ajusta con más ventanas y tiene su propia identidad.
 
     La política lee siempre la cadena de su propio ámbito, como `policy_plan.predictor_reads`.
     La etapa de RL de A v2 se declara en el ámbito conjunto con un trabajo por mercado, y la

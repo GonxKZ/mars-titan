@@ -51,7 +51,7 @@ from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.environments.walk_forward_receipt import read_window_receipt
 from mars_titan.posttraining import staged_chain
-from mars_titan.training import campaign_schedule, masked_campaign
+from mars_titan.training import campaign_chain, campaign_schedule, masked_campaign
 from mars_titan.training.campaign_plan import _arm_specs, plan_campaign
 from mars_titan.training.learning_hold import LearningHoldError, require_learning_allowed
 
@@ -726,19 +726,25 @@ def require_chain_selections(stage, jobs, chain_output):
     Sin esta comprobación, una selección ausente solo aparece al montar la cinta de su
     trabajo, quizá horas después y con otros trabajos ya confirmados. El error enumera todas
     las que faltan para publicarlas de una vez. Una selección presente pero alterada detiene
-    la lectura con el error de `staged_chain.read_selection`.
+    la lectura con el error de `staged_chain.read_selection`. Devuelve la huella de cada
+    selección con la etiqueta del informe de disjunción.
     """
+    from mars_titan.training.chain_disjunction import selection_label
+
     seed = stage["policies"]["predictor"]["seed"]
     needed = sorted({read for job in jobs for read in predictor_reads(stage, job)})
-    missing = [
-        staged_chain.chain_job_id(scope, window, predictor, seed)
-        for scope, window, predictor in needed
-        if staged_chain.read_selection(chain_output, scope, window, predictor, seed) is None
-    ]
+    found, missing = {}, []
+    for scope, window, predictor in needed:
+        selection = staged_chain.read_selection(chain_output, scope, window, predictor, seed)
+        if selection is None:
+            missing.append(staged_chain.chain_job_id(scope, window, predictor, seed))
+        else:
+            found[selection_label(scope, window, predictor, seed)] = selection["sha256"]
     _require(
         not missing,
         f"Faltan {len(missing)} selecciones de la cadena antes de ejecutar: " + ", ".join(missing),
     )
+    return found
 
 
 def predictor_source(policies, base, campaign_output, chain_output=None):
@@ -1077,10 +1083,23 @@ def _summary(output, identity, jobs, state, status, **extra):
     return summary
 
 
+def check_design(stage, jobs):
+    """Comprobar el plan con el contrato del walk-forward por etapas de la campaña.
+
+    `campaign_chain.check_staged` exige con su propio código las ventanas de ajuste,
+    validación y evaluación de cada trabajo y su dependencia de la cadena de su ámbito en
+    todas ellas. Solo se aplica si la campaña declara `walk_forward_stages`.
+    """
+    campaign = stage["campaign"]
+    if campaign.get("walk_forward_stages"):
+        campaign_chain.check_staged(campaign, plan_campaign(campaign), dict(rl=jobs))
+
+
 def check_stage(path, *, library=None):
     """Validar, planificar y contar sin leer datos, e informar de las capacidades del motor."""
     stage = load_stage(path)
     jobs = plan_stage(stage)
+    check_design(stage, jobs)
     policies = stage["policies"]
     available = probe_capabilities(library)
     return dict(
@@ -1130,6 +1149,7 @@ def run_stage(
     window=None,
     chain_output=None,
     sensitivity=False,
+    disjunction=None,
 ):
     """Ejecutar o reanudar la etapa sobre una campaña base confirmada.
 
@@ -1138,7 +1158,9 @@ def run_stage(
     El bloqueo de aprendizaje se comprueba antes de todo y antes de cada trabajo pendiente.
     Las capacidades del plan se exigen antes de abrir fuentes o crear la salida. Con
     `sensitivity` se ejecuta la sensibilidad de ventanas declarada, que debe estar activada
-    en la configuración y escribe en una salida con su propia identidad.
+    en la configuración y escribe en una salida con su propia identidad. Si la campaña
+    declara `walk_forward_stages`, `disjunction` es el informe de `chain_disjunction` sin
+    fallos que comprobó las vistas y todas las selecciones de la cadena que se leerán.
     """
     from mars_titan.training.checkpoints import StopRequest
 
@@ -1155,6 +1177,7 @@ def run_stage(
         )
     jobs = plan_stage(stage)
     count_stage(stage, jobs)
+    check_design(stage, jobs)
     pairs = None
     if window is not None:
         jobs, pairs = campaign_schedule.stage_window(stage["campaign"], jobs, window)
@@ -1195,8 +1218,21 @@ def run_stage(
     _base_receipts(base, campaign, stage, pairs)
     # La fuente de las predicciones se resuelve antes de crear la salida.
     source = predictor_source(stage["policies"], base, campaign_output, chain_output)
+    selections = None
     if stage["policies"]["predictor"]["source"] == CHAIN:
-        require_chain_selections(stage, jobs, Path(chain_output))
+        selections = require_chain_selections(stage, jobs, Path(chain_output))
+    checked = {}
+    if campaign.get("walk_forward_stages"):
+        from mars_titan.training.chain_disjunction import require_report, used_views
+
+        # La RL solo lee cadenas que el verificador contrastó con sus vistas. El resumen
+        # guarda la huella del informe que autorizó esta ejecución o su reanudación.
+        checked["disjunction_sha256"] = require_report(
+            disjunction,
+            campaign,
+            used_views(base.views, stage["scopes"], pairs),
+            selections=selections,
+        )
     identity = _identity(stage, base.views, edition_id)
     output.mkdir(parents=True, exist_ok=True)
     descriptor = os.open(output / ".lock", os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600)
@@ -1219,19 +1255,19 @@ def run_stage(
         )
         state = _Stage(stage, tapes, output, identity, executors, None)
         signals = StopRequest() if stop is None else nullcontext(stop)
-        _summary(output, identity, jobs, state, "running")
+        _summary(output, identity, jobs, state, "running", **checked)
         try:
             with signals as state.stop:
                 status = state.execute(jobs)
         except Paused:
             status = "paused"
         except LearningHoldError as error:
-            _summary(output, identity, jobs, state, "blocked", error=str(error))
+            _summary(output, identity, jobs, state, "blocked", error=str(error), **checked)
             raise
         except BaseException as error:
-            _summary(output, identity, jobs, state, "failed", error=str(error))
+            _summary(output, identity, jobs, state, "failed", error=str(error), **checked)
             raise
-        return _summary(output, identity, jobs, state, status)
+        return _summary(output, identity, jobs, state, status, **checked)
     finally:
         os.close(descriptor)
 
@@ -1252,6 +1288,9 @@ def main(argv=None):
     execute.add_argument(
         "--sensitivity", action="store_true", help="Ejecutar la sensibilidad de ventanas activada"
     )
+    execute.add_argument(
+        "--disjunction", type=Path, help="Informe de disjunción con las selecciones (por etapas)"
+    )
     args = parser.parse_args(argv)
     if args.command == "check":
         result = check_stage(args.stage)
@@ -1265,6 +1304,7 @@ def main(argv=None):
             window=args.window,
             chain_output=args.chain_output,
             sensitivity=args.sensitivity,
+            disjunction=args.disjunction,
         )
         result.pop("jobs")
     print(json.dumps(result, ensure_ascii=False, indent=2))
