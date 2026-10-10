@@ -307,9 +307,9 @@ def growing(campaign, step):
 
 @pytest.mark.parametrize(
     ("variant", "fits", "predictions", "parents"),
-    # A ajusta en las redes los 51 casos de la v3 por ventana y semilla, 22 de ellos de la
-    # variedad de adaptadores, y B los 29 de la v2.
-    [("A", 6426, 630, 42 * 15), ("B", 1479, 2436, 17 * 15)],
+    # A ajusta en las redes los 56 casos de la v3 por ventana y semilla, 22 de ellos de la
+    # variedad de adaptadores y 5 de la continuación anclada, y B los 29 de la v2.
+    [("A", 7056, 630, 42 * 15), ("B", 1479, 2436, 17 * 15)],
 )
 def test_posttraining_hours_cover_every_stage_job_and_each_parent_cache(
     variant, fits, predictions, parents
