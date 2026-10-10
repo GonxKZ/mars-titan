@@ -7,6 +7,7 @@ recuperación del estado. El componente no tiene parámetros entrenables ni grad
 
 import hashlib
 import json
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -472,3 +473,30 @@ def test_undefined_static_corrections_cannot_start_the_tracking():
             min_rows=50,
             rate_fraction=0.1,
         )
+
+
+def test_comparison_arm_is_declared_with_its_control_and_rule_but_not_executed():
+    root = Path(__file__).resolve().parents[2]
+    declaration = json.loads(
+        (root / "configs/evaluation/online-conformal-comparison.json").read_text()
+    )
+    base = json.loads((root / declaration["base_comparison"]).read_text())["calibration"]
+    assert declaration["status"] == "declared_not_executed"
+    assert declaration["executions"] == 0 and declaration["final_test_opened"] is False
+    arms = declaration["arms"]
+    assert {name: arm["role"] for name, arm in arms.items()} == {
+        "cqr_static": "control",
+        "cqr_online": "innovation",
+        "cqr_monthly_refit": "trivial_alternative",
+    }
+    control = arms["cqr_static"]
+    # El control es exactamente la calibración que ya declara la comparación.
+    for field in ("method", "partition", "groups", "nominals", "min_rows", "order_rule"):
+        assert control[field] == base[field]
+    online = arms["cqr_online"]
+    assert online["method"] == online_conformal.METHOD
+    assert online["rate_scale"] == online_conformal.RATE_SCALE
+    assert online["max_pending"] <= online_conformal.MAX_PENDING
+    assert all(0 < value <= 1 for value in online["rate_fraction_candidates"])
+    assert max(declaration["metric"]["assessment_years"]) < 2024
+    assert declaration["decision_rule"]["keep_if"] and declaration["decision_rule"]["abandon_if"]
