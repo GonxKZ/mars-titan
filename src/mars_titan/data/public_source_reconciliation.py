@@ -6,11 +6,16 @@ una fuente `failed` no puede tener ninguno y un bloqueo en el descubrimiento sig
 un bloqueo. Cada fuente declara además sus decisiones por uso, con la carencia que cubriría
 y la evidencia, y ninguna es elegible para el benchmark. La reconciliación no descarga nada
 ni cambia la decisión: solo comprueba que catálogo y capturas cuentan lo mismo.
+
+Las condiciones de uso revisadas en el productor quedan en `terms_review`. Una decisión
+`admitted_exploratory` necesita que esas condiciones permitan el uso local, y
+`license_unknown` solo es falso cuando permiten redistribuir con atribución.
 """
 
 import argparse
 import hashlib
 import json
+import re
 from collections import defaultdict
 from pathlib import Path
 
@@ -26,6 +31,13 @@ EXPECTED = {
 }
 DECISIONS = frozenset({"admitted_exploratory", "pending", "excluded"})
 DECISION_TEXT = ("use", "gap", "evidence")
+# Vocabulario de la revisión de condiciones de cada fuente.
+TERMS_STATUS = frozenset(
+    {"verified", "no_statement_found", "not_retrievable", "blocked_at_source_discovery"}
+)
+LOCAL_USE = frozenset({"permitted", "permitted_non_commercial", "not_stated", "not_verified"})
+REDISTRIBUTION = frozenset({"permitted_with_attribution", "not_granted", "not_verified"})
+LOCAL_ALLOWED = frozenset({"permitted", "permitted_non_commercial"})
 
 
 def evidence(source, attempts, contents):
@@ -56,6 +68,42 @@ def decision_problems(source):
             problems.append("decisión por uso incompleta o con un valor no admitido")
     if source.get("benchmark_eligible") is not False:
         problems.append("benchmark_eligible debe ser false")
+    return problems + terms_problems(source)
+
+
+def terms_problems(source):
+    """Revisión de condiciones incompleta o incoherente con las decisiones y la licencia."""
+    review = source.get("terms_review")
+    urls = review.get("evidence_urls") if isinstance(review, dict) else None
+    if (
+        not isinstance(review, dict)
+        or not re.fullmatch(r"\d{4}-\d{2}-\d{2}", str(review.get("reviewed_on")))
+        or review.get("status") not in TERMS_STATUS
+        or review.get("local_use") not in LOCAL_USE
+        or review.get("redistribution") not in REDISTRIBUTION
+        or not isinstance(review.get("conditions"), str)
+        or not review["conditions"].strip()
+        or not isinstance(urls, list)
+        or any(not isinstance(url, str) or not url.startswith("https://") for url in urls)
+        # Solo un bloqueo previo a las condiciones puede quedarse sin página revisada.
+        or (not urls and review.get("status") != "blocked_at_source_discovery")
+    ):
+        return ["revisión de condiciones incompleta"]
+    problems = []
+    if review["status"] != "verified" and review["redistribution"] == (
+        "permitted_with_attribution"
+    ):
+        problems.append("redistribución permitida sin condiciones verificadas")
+    decided = source.get("use_decisions") if isinstance(source.get("use_decisions"), list) else []
+    if review["local_use"] not in LOCAL_ALLOWED and any(
+        isinstance(item, dict) and item.get("decision") == "admitted_exploratory"
+        for item in decided
+    ):
+        problems.append("uso local admitido sin condiciones que lo permitan")
+    if source.get("license_unknown") is not (
+        review["redistribution"] != "permitted_with_attribution"
+    ):
+        problems.append("license_unknown no coincide con la redistribución revisada")
     return problems
 
 
@@ -74,6 +122,12 @@ def reconcile(catalog, index, *, catalog_sha256=None):
         valid = [record for record in found if record["status"] in public_snapshots.VALID]
         failed = [record for record in found if record["status"] not in public_snapshots.VALID]
         kind = evidence(source, found, index["contents"])
+        review = source.get("terms_review")
+        terms = (
+            {key: review.get(key) for key in ("status", "local_use", "redistribution")}
+            if isinstance(review, dict)
+            else None
+        )
         issues = decision_problems(source)
         if kind not in EXPECTED.get(source.get("status"), ()):
             issues.append(f"estado {source.get('status')} sin evidencia coherente ({kind})")
@@ -93,6 +147,7 @@ def reconcile(catalog, index, *, catalog_sha256=None):
                 ),
                 diagnostic_http_statuses=sorted(diagnostics[source["id"]]),
                 license_unknown=source.get("license_unknown"),
+                terms=terms,
                 decisions=[
                     dict(use=item.get("use"), decision=item.get("decision"))
                     for item in source.get("use_decisions") or []
