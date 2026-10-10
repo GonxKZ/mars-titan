@@ -1,0 +1,160 @@
+{
+  "schema_version": 1,
+  "kind": "titans_memory_stability_cost",
+  "recorded_at_utc": "2026-10-10T01:46:09.587550+00:00",
+  "commit": "d642e2069c6b3210eea19243b32b830a4e427840",
+  "scope": "Un forward con grafo por eventos reales y un backward por repetici\u00f3n, sin optimizador ni pasos. Objetivo nulo solo para dar forma a la p\u00e9rdida.",
+  "device": "cuda:0",
+  "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU, 8188 MiB, 629 MiB, 595.91.07",
+  "versions": {
+    "python": "3.12.14",
+    "torch": "2.14.0+cu130"
+  },
+  "precision": "float32 sin TF32",
+  "threads": 2,
+  "recipe": "configs/titans/chronological-training-historical-masked.json",
+  "recipe_sha256": "260d38ad617874a104d9d9cee78cfde0f3bbf190bf74502d7ef98a9344d90672",
+  "declaration": "configs/evaluation/titans-memory-stability-comparison.json",
+  "declaration_sha256": "7d260437fe84a93759f4d17035ef01fbd3ff11db4b8d0b6c56e4e4ac9c02d092",
+  "inputs": {
+    "sha256": "c5beb3e136558a08729ca3be70c4ffc5abc5ff8360b6e35e8622ccc2f39dff58",
+    "view_identity": "e8234009268a5ec91b85f3bdf2b3098c2360738066951b88350bab79a89490da",
+    "fold": {
+      "id": "fold-012",
+      "train": [
+        "2000-01-01",
+        "2022-04-01"
+      ],
+      "validation": [
+        "2022-04-01",
+        "2022-10-01"
+      ],
+      "calibration": [
+        "2022-10-01",
+        "2023-01-01"
+      ],
+      "evaluation": [
+        "2023-01-01",
+        "2024-01-01"
+      ]
+    },
+    "rows": 128,
+    "events": 8,
+    "labels_saved": false
+  },
+  "repeats": 5,
+  "warmup_passes": 1,
+  "arms": {
+    "titans_mac_online": {
+      "role": "control",
+      "predictor_changes": {},
+      "forward_seconds": [
+        0.10441461301525123,
+        0.0857520480058156,
+        0.10624619000009261,
+        0.09912586899008602,
+        0.10515928399399854
+      ],
+      "backward_seconds": [
+        0.06152467799256556,
+        0.07030259899329394,
+        0.06389261499862187,
+        0.07254752499284223,
+        0.06225118599832058
+      ],
+      "forward_median": 0.10441461301525123,
+      "backward_median": 0.06389261499862187,
+      "peak_allocated_bytes": [
+        454123520,
+        454123520,
+        454123520,
+        454123520,
+        454123520
+      ],
+      "clipped_row_fraction_at_initialization": null,
+      "parameters_unchanged": true,
+      "relative_time_vs_control": 1.0
+    },
+    "titans_mac_online_pt1": {
+      "role": "innovation",
+      "predictor_changes": {
+        "gate_bias": {
+          "alpha_half_life": 256.0,
+          "eta": 0.15,
+          "theta": 0.05
+        },
+        "memory_stability": {
+          "alpha_floor": 0.002,
+          "eta_ceiling": 0.3,
+          "gradient_clip": 4.0,
+          "gate_box": true
+        }
+      },
+      "forward_seconds": [
+        0.15837535398895852,
+        0.10001362001639791,
+        0.1027337689884007,
+        0.09773951899842359,
+        0.11626728100236505
+      ],
+      "backward_seconds": [
+        0.06167833702056669,
+        0.05731437497888692,
+        0.0574383269995451,
+        0.07496983301825821,
+        0.07666895099100657
+      ],
+      "forward_median": 0.1027337689884007,
+      "backward_median": 0.06167833702056669,
+      "peak_allocated_bytes": [
+        484977664,
+        484977664,
+        484977664,
+        484977664,
+        484977664
+      ],
+      "clipped_row_fraction_at_initialization": 0.010498046875,
+      "parameters_unchanged": true,
+      "relative_time_vs_control": 0.9768570723261829
+    },
+    "titans_mac_online_pt1_init": {
+      "role": "trivial_alternative",
+      "predictor_changes": {
+        "gate_bias": {
+          "alpha_half_life": 256.0,
+          "eta": 0.15,
+          "theta": 0.05
+        }
+      },
+      "forward_seconds": [
+        0.10309125200728886,
+        0.10696686600567773,
+        0.10459705500397831,
+        0.11541153001599014,
+        0.12278441598755307
+      ],
+      "backward_seconds": [
+        0.05832024698611349,
+        0.06680482599767856,
+        0.0731043420091737,
+        0.05741634499281645,
+        0.10378786301589571
+      ],
+      "forward_median": 0.10696686600567773,
+      "backward_median": 0.06680482599767856,
+      "peak_allocated_bytes": [
+        454123520,
+        454123520,
+        454123520,
+        454123520,
+        454123520
+      ],
+      "clipped_row_fraction_at_initialization": null,
+      "parameters_unchanged": true,
+      "relative_time_vs_control": 1.0324671973626276
+    }
+  },
+  "optimizer_steps": 0,
+  "training_runs": 0,
+  "evaluation": false
+}

@@ -276,7 +276,7 @@ flowchart LR
 
 La [revisión de la memoria posterior a Titans](docs/research/post-titans-memory-review.md) deja tres innovaciones para el núcleo de la campaña, cada una desactivable y desactivada por defecto. Su punto de inserción sobre Titans-MAC y las ampliaciones de MARS-TITAN está en el [diagrama del sistema](docs/research/titans-mac-architecture.md#innovaciones-posteriores-a-titans). Ninguna se ha entrenado ni evaluado, así que no hay resultados experimentales.
 
-- **PT1, memoria de Titans acotada y contractiva** ([#453](https://github.com/GonxKZ/mars-titan/issues/453)): propuesta. Resultado experimental pendiente.
+- **PT1, memoria de Titans acotada y contractiva** ([#453](https://github.com/GonxKZ/mars-titan/issues/453)): implementada y comprobada sin entrenar ([documento](docs/engineering/titans-memory-stability.md)). Resultado experimental pendiente.
 
 - **PT2, calibración conformal en línea con etiquetas maduras** ([#454](https://github.com/GonxKZ/mars-titan/issues/454)): implementada y comprobada sin entrenar ([documento](docs/engineering/online-conformal-calibration.md)), pendiente de integrar en la comparación. Resultado experimental pendiente.
 

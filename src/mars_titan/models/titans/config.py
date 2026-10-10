@@ -65,14 +65,105 @@ class GateBias:
         object.__setattr__(self, "eta", eta)
         object.__setattr__(self, "theta", theta)
 
-    def logits(self, theta_max: float) -> tuple[float, float, float]:
-        """Bias de α, η y θ. Con α constante, (1 − α)^h = 1/2 tras h observaciones."""
+    def logits(
+        self, theta_max: float, stability: "MemoryStability | None" = None
+    ) -> tuple[float, float, float]:
+        """Bias de α, η y θ para que una entrada nula produzca las tasas declaradas.
+
+        Con α constante, (1 − α)^h = 1/2 tras h observaciones. Cuando PT1 activa la caja, las
+        puertas son α = α_lo + (1 − α_lo)σ(z) y η = η_hi σ(z), así que el bias invierte esas
+        funciones y no la sigmoide simple. Si la tasa declarada queda fuera de la caja no hay
+        ningún bias que la produzca y la configuración se rechaza.
+        """
         if not self.theta < theta_max:
             raise ValueError("theta inicial debe ser menor que theta_max")
         rate = math.log(2) / self.alpha_half_life
+        if stability is not None and stability.gate_box:
+            # α se calcula como −expm1(−rate) para no perder cifras al restar 1 − 2^(−1/h).
+            alpha = -math.expm1(-rate)
+            if not stability.alpha_floor < alpha:
+                raise ValueError("La semivida inicial exige un olvido mayor que alpha_floor")
+            if not self.eta < stability.eta_ceiling:
+                raise ValueError("eta inicial debe ser menor que eta_ceiling")
+            fraction = (alpha - stability.alpha_floor) / (1 - stability.alpha_floor)
+            return (
+                _logit(fraction),
+                _logit(self.eta / stability.eta_ceiling),
+                _logit(self.theta / theta_max),
+            )
         # logit(α) = log(α) − log(1 − α), con α = 1 − 2^(−1/h) calculado sin cancelación.
         alpha = math.log(-math.expm1(-rate)) + rate
         return alpha, _logit(self.eta), _logit(self.theta / theta_max)
+
+
+# Cajas (alpha_floor, eta_ceiling, theta_max) en las que el certificado encuentra una función
+# de Lyapunov común para la memoria lineal de profundidad 1. Una caja contenida en otra hereda
+# la garantía. La memoria de dos capas con LayerNorm no tiene certificado. La derivación está
+# en docs/research/titans-memory-certificate.md.
+CERTIFIED_GATE_BOXES = {"pt1": (1 / 500, 3 / 10, 1 / 10), "b2": (1 / 100, 1 / 2, 1 / 10)}
+
+
+@dataclass(frozen=True)
+class MemoryStability:
+    """Primera propuesta posterior a Titans (PT1), con dos piezas que se activan por separado.
+
+    Con `gate_box`, las puertas pasan a α = α_lo + (1 − α_lo)σ(·) y η = η_hi σ(·), mientras
+    que θ = θ_max σ(·) no cambia. Con `gradient_clip` igual a G, cada fila de cada matriz del
+    gradiente asociativo se reescala para que su norma euclídea no supere G antes de entrar
+    en el momentum. Así la Proposición 5 del certificado acota el estado con cualquier
+    profundidad. Las ecuaciones, su fuente y sus límites están en
+    docs/engineering/titans-memory-stability.md.
+    """
+
+    alpha_floor: float = 1 / 500
+    eta_ceiling: float = 3 / 10
+    gradient_clip: float | None = None
+    gate_box: bool = True
+
+    def __post_init__(self) -> None:
+        floor = _finite_number(self.alpha_floor, "alpha_floor")
+        ceiling = _finite_number(self.eta_ceiling, "eta_ceiling")
+        if not 0 < floor < 1:
+            raise ValueError("alpha_floor debe pertenecer a (0, 1)")
+        if not 0 < ceiling < 1:
+            raise ValueError("eta_ceiling debe pertenecer a (0, 1)")
+        if type(self.gate_box) is not bool:
+            raise ValueError("gate_box debe ser booleano")
+        clip = self.gradient_clip
+        if clip is not None:
+            clip = _finite_number(clip, "gradient_clip")
+            if not 0 < clip <= 1e6:
+                raise ValueError("gradient_clip debe pertenecer a (0, 1e6]")
+        if not self.gate_box and clip is None:
+            raise ValueError("La estabilidad declarada debe activar la caja o el recorte")
+        object.__setattr__(self, "alpha_floor", floor)
+        object.__setattr__(self, "eta_ceiling", ceiling)
+        object.__setattr__(self, "gradient_clip", clip)
+
+    def certified_box(self, theta_max: float) -> str | None:
+        """Nombre de la caja certificada que contiene la declarada, o None si no hay ninguna.
+
+        La garantía solo vale para la memoria lineal, así que no certifica la memoria de dos
+        capas con LayerNorm que usa la campaña.
+        """
+        if not self.gate_box:
+            return None
+        for name, (floor, ceiling, theta) in CERTIFIED_GATE_BOXES.items():
+            if self.alpha_floor >= floor and self.eta_ceiling <= ceiling and theta_max <= theta:
+                return name
+        return None
+
+    def identity(self) -> dict:
+        return {
+            **asdict(self),
+            "gate_map": "alpha_floor_plus_scaled_sigmoid_and_eta_scaled_sigmoid_v1"
+            if self.gate_box
+            else "unchanged",
+            "clip_rule": "inner_gradient_row_l2_before_momentum_v1"
+            if self.gradient_clip is not None
+            else "none",
+            "source": "post_titans_pt1_v1",
+        }
 
 
 @dataclass(frozen=True)
@@ -93,6 +184,8 @@ class MemoryConfig:
     # Tamaño K del núcleo de la convolución causal que sigue a cada proyección. Con 0 no hay
     # convolución.
     qkv_convolution: int = 0
+    # Sin PT1 (None) la identidad y el cálculo son los de la versión anterior, bit a bit.
+    stability: MemoryStability | None = None
 
     def __post_init__(self) -> None:
         bounded_integer(self.dim, "dim", 1, 512)
@@ -120,10 +213,12 @@ class MemoryConfig:
         ):
             raise ValueError("theta_max debe ser finito y pertenecer a (0, 1]")
         object.__setattr__(self, "theta_max", float(self.theta_max))
+        if self.stability is not None and not isinstance(self.stability, MemoryStability):
+            raise ValueError("stability debe ser MemoryStability o None")
         if self.gate_bias is not None:
             if not isinstance(self.gate_bias, GateBias):
                 raise ValueError("gate_bias debe ser GateBias o None")
-            self.gate_bias.logits(self.theta_max)
+            self.gate_bias.logits(self.theta_max, self.stability)
 
     @property
     def window(self) -> int:
@@ -136,6 +231,7 @@ class MemoryConfig:
         residual = fields.pop("residual_layer_norm")
         silu = fields.pop("qkv_silu")
         kernel = fields.pop("qkv_convolution")
+        fields.pop("stability")
         # Sin bias ni residual se conserva literalmente la identidad v1 y su huella.
         extension = (
             {}
@@ -173,6 +269,8 @@ class MemoryConfig:
             extension["projection_order"] = "linear_convolution_silu_then_l2_query_key"
         if silu and kernel == PAPER_CONVOLUTION_KERNEL and self.normalize_qk:
             extension["projections"] = PAPER_PROJECTIONS
+        if self.stability is not None:
+            extension["stability"] = self.stability.identity()
         return {
             **fields,
             **extension,
