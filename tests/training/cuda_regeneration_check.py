@@ -157,7 +157,7 @@ def test_the_mars_titan_reader_regenerates_its_rows_on_the_same_device(titans, t
 @pytest.mark.skipif(not NATIVE, reason="Falta el enlace episódico nativo")
 def test_the_episodic_gru_regenerates_its_rows_on_the_same_device(titans, tmp_path):
     from mars_titan.training import candidate_walk_forward as candidate
-    from tests.training.test_candidate_walk_forward import SMALL
+    from tests.training.test_candidate_walk_forward import SMALL, WARMUP
     from tests.training.test_financial_run import RecordingOptimizer
 
     output = titans["root"] / "episodic"
@@ -170,6 +170,7 @@ def test_the_episodic_gru_regenerates_its_rows_on_the_same_device(titans, tmp_pa
         model=model,
         parent_id="US/fold-000/gru_episodic",
         device=DEVICE,
+        warmup_months=WARMUP,
         optimizer_factory=RecordingOptimizer,
     )
     produced = candidate.carry_window(
