@@ -182,7 +182,7 @@ def test_components_map_to_their_consumer_settings(declaration, base):
         (dict(episodic_bank="m1", refinement_episodes="first_read"), "necesita refinements"),
         (dict(episodic_bank="m1", refinements=2, refinement_episodes="per_step"), "omitiendo"),
         (dict(episodic_bank="m1", associative_memory=DELTA), "sin banco"),
-        (dict(associative_memory=dict(DELTA, key="label")), "codec o constant"),
+        (dict(associative_memory=dict(DELTA, key="label")), "una de codec, constant"),
         (dict(associative_memory=dict(DELTA, rule="ridge")), "permitidos"),
         (dict(associative_memory=dict(DELTA, rate=2.0)), "η ≤ 2 − λ"),
         (dict(cm_v1="bcm"), "no está declarado"),

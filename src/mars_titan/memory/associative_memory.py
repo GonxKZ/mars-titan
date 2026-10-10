@@ -18,7 +18,10 @@ import json
 import math
 from dataclasses import asdict, dataclass
 
+import numpy as np
 import torch
+
+from .regimes import CALENDAR_RULE, REGIME_RULE, SLOTS, RegimeRule
 
 RULES = ("delta", "proximal", "kalman")
 # Las claves vienen normalizadas por el codec en FP32. Este margen admite su redondeo.
@@ -491,7 +494,32 @@ class AssociativeMemory:
         )
 
 
-CORRECTION_KEYS = ("codec", "constant")
+CODEC_WIDTH = 64
+# Regla de enrutamiento de cada clave enrutada. `regime` y `calendar` dan un corrector de
+# sesgo por compartimento. Las dos con `codec_by_` dan una matriz del codec por compartimento.
+ROUTING = {
+    "regime": REGIME_RULE,
+    "calendar": CALENDAR_RULE,
+    "codec_by_regime": REGIME_RULE,
+    "codec_by_calendar": CALENDAR_RULE,
+}
+KEY_SIZES = {
+    "codec": CODEC_WIDTH,
+    "constant": 1,
+    "regime": SLOTS,
+    "calendar": SLOTS,
+    "codec_by_regime": SLOTS * CODEC_WIDTH,
+    "codec_by_calendar": SLOTS * CODEC_WIDTH,
+}
+CORRECTION_KEYS = tuple(KEY_SIZES)
+_NORMALIZATION = {
+    "codec": "l2_fp64_of_codec_key_inputs",
+    "constant": "constant_one",
+    "regime": "one_hot_of_the_route",
+    "calendar": "one_hot_of_the_route",
+    "codec_by_regime": "one_hot_of_the_route_kronecker_l2_fp64_of_codec_key_inputs",
+    "codec_by_calendar": "one_hot_of_the_route_kronecker_l2_fp64_of_codec_key_inputs",
+}
 
 
 @dataclass(frozen=True)
@@ -502,46 +530,100 @@ class MatureCorrection:
     `constant`, la única clave es 1 y A se reduce a un corrector de sesgo, el control que
     permite descartar la dependencia de la clave. El valor escrito es la etiqueta madura menos
     la predicción del núcleo, es decir, la emitida antes de sumar la corrección.
+
+    Las claves enrutadas reparten A en cinco compartimentos según la ruta de `memory.regimes`
+    de la cohorte en el instante de la decisión. `regime` es un corrector de sesgo por
+    régimen y `codec_by_regime` una matriz del codec por régimen, ambas con norma uno. Las
+    variantes `calendar` usan los mismos compartimentos asignados por mes, el control que
+    permite descartar el régimen. La ruta de cada predicción se guarda al emitirla y se usa
+    al escribir su etiqueta, igual que la clave del codec.
     """
 
     memory: AssociativeMemoryConfig
     key: str = "codec"
+    routing: RegimeRule | None = None
 
     def __post_init__(self):
         if not isinstance(self.memory, AssociativeMemoryConfig) or self.key not in CORRECTION_KEYS:
-            raise ValueError("La corrección necesita su memoria y una clave codec o constant")
-        if self.memory.value_size != 1 or self.memory.key_size != (
-            64 if self.key == "codec" else 1
+            raise ValueError(
+                "La corrección necesita su memoria y una clave de " + ", ".join(CORRECTION_KEYS)
+            )
+        if self.memory.value_size != 1 or self.memory.key_size != KEY_SIZES[self.key]:
+            raise ValueError(
+                f"La clave {self.key} usa {KEY_SIZES[self.key]} coordenadas y la corrección valor 1"
+            )
+        rule = ROUTING.get(self.key)
+        if rule is not None and self.routing is None:
+            object.__setattr__(self, "routing", RegimeRule(rule))
+        if (self.routing is None) != (rule is None) or (
+            self.routing is not None
+            and (type(self.routing) is not RegimeRule or self.routing.name != rule)
         ):
-            raise ValueError("La corrección escalar usa claves de 64 o 1 coordenadas y valor 1")
+            raise ValueError("Solo una clave enrutada declara regla y debe ser la de su clave")
 
     def identity(self):
-        return dict(
+        identity = dict(
             schema_version=1,
             kind="mature_scalar_correction",
             memory=self.memory.identity(),
             key=self.key,
-            key_normalization="l2_fp64_of_codec_key_inputs"
-            if self.key == "codec"
-            else "constant_one",
+            key_normalization=_NORMALIZATION[self.key],
             value="mature_label_minus_core_prediction",
             read="matrix_of_previous_generation_for_the_whole_event",
             ids="write_count_plus_offset_in_native_canonical_outcome_order",
             proximal_weights="uniform_over_event_cohort",
         )
+        # Sin enrutamiento la identidad conserva su forma anterior y los brazos B6 su huella.
+        if self.routing is not None:
+            identity.update(
+                routing=self.routing.identity(),
+                route_time="decision_event_stored_until_the_label_matures",
+            )
+        return identity
 
-    def keys(self, key_inputs):
-        """Claves FP64 [filas, d] desde las entradas FP32 del codec, en el mismo orden."""
+    def routes(self, prices, flow_ids, at):
+        """Rutas de las filas de un evento y estado de cada mercado, o None sin enrutar."""
+        if self.routing is None:
+            return None, []
+        return self.routing.routes(prices, flow_ids, at)
+
+    def keys(self, key_inputs, routes=None):
+        """Claves FP64 [filas, d] desde las entradas FP32 del codec, en el mismo orden.
+
+        Las claves enrutadas necesitan la ruta de cada fila, un entero entre 0 y 4.
+        """
         values = torch.as_tensor(key_inputs)
         if values.ndim != 2 or values.shape[1] != 64 or values.dtype != torch.float32:
             raise ValueError("La corrección necesita las entradas FP32 de 64 coordenadas del codec")
+        rows = values.shape[0]
+        if (routes is None) != (self.routing is None):
+            raise ValueError("Solo las claves enrutadas reciben, y siempre, la ruta de cada fila")
+        if routes is not None:
+            routes = torch.as_tensor(np.asarray(routes))
+            if (
+                routes.dtype != torch.int64
+                or routes.shape != (rows,)
+                or (routes < 0).any()
+                or (routes >= SLOTS).any()
+            ):
+                raise ValueError(f"Cada fila necesita una ruta entera entre 0 y {SLOTS - 1}")
         if self.key == "constant":
-            return torch.ones((values.shape[0], 1), dtype=torch.float64)
+            return torch.ones((rows, 1), dtype=torch.float64)
+        if self.key in ("regime", "calendar"):
+            keys = torch.zeros((rows, SLOTS), dtype=torch.float64)
+            keys[torch.arange(rows), routes] = 1.0
+            return keys
         values = values.to(dtype=torch.float64, device="cpu")
         norms = torch.linalg.vector_norm(values, dim=1, keepdim=True)
         if not torch.isfinite(values).all() or (norms == 0).any():
             raise ValueError("La clave del codec necesita valores finitos y norma positiva")
-        return values / norms
+        values = values / norms
+        if routes is None:
+            return values
+        # Producto de Kronecker de la ruta con la clave: la fila solo ocupa su bloque.
+        keys = torch.zeros((rows, SLOTS, CODEC_WIDTH), dtype=torch.float64)
+        keys[torch.arange(rows), routes] = values
+        return keys.reshape(rows, SLOTS * CODEC_WIDTH)
 
     def feedback(self, *, ids, decision_at, available_at, keys, values):
         """Resultados maduros de un evento con pesos uniformes si la regla es proximal."""

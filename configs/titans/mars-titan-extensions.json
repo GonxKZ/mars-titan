@@ -87,21 +87,22 @@
     },
     "associative_memory": {
       "connection": "connected",
-      "map_ids": ["I11"],
+      "map_ids": ["I11", "I09"],
       "enabled": false,
       "disabled_value": "absent",
       "allowed": ["delta", "proximal", "kalman"],
-      "value": {"rule": "allowed", "key": ["codec", "constant"], "rate": "eta", "forgetting": "lambda"},
-      "kalman_value": {"rule": "kalman", "key": ["codec", "constant"], "process_noise": "q", "observation_noise": "sigma2", "cohort_correlation": "rho", "prior_variance": "p0", "huber_threshold": "c_or_null"},
+      "value": {"rule": "allowed", "key": ["codec", "constant", "regime", "calendar", "codec_by_regime", "codec_by_calendar"], "rate": "eta", "forgetting": "lambda"},
+      "kalman_value": {"rule": "kalman", "key": ["codec", "constant", "regime", "calendar", "codec_by_regime", "codec_by_calendar"], "process_noise": "q", "observation_noise": "sigma2", "cohort_correlation": "rho", "prior_variance": "p0", "huber_threshold": "c_or_null"},
       "excludes": ["episodic_bank"],
       "phases": ["evaluation"],
       "state": "associative_matrix",
       "insertion": "src/mars_titan/memory/financial_session.py:FinancialSession._prepare_event",
       "level": "N4",
-      "issues": [392, 27, 28],
-      "control": "Titans-MAC sin componente, corrector de sesgo con la coordenada constante del codec y M1 con las mismas etiquetas",
+      "issues": [392, 27, 28, 20],
+      "control": "Titans-MAC sin componente, corrector de sesgo con la coordenada constante del codec y M1 con las mismas etiquetas. Las claves enrutadas por régimen se contrastan con su clave sin enrutar y con los mismos cinco compartimentos asignados por mes de calendario",
+      "routing": "src/mars_titan/memory/regimes.py:RegimeRule",
       "window": "src/mars_titan/training/mars_titan_correction.py:CorrectionInference",
-      "pending": "Elección de q, σ², ϱ y p0 para la regla kalman (PT3, configs/evaluation/kalman-associative-comparison.json), en desarrollo. La ventana walk-forward emite B6 con las reglas delta y proximal y la receta mature-correction-historical-masked, que fija λ y dos casos de η elegidos con la validación. La regla delta queda conectada sin brazo de campaña y la regla kalman todavía no tiene ventana ni brazo. La comparación espera a la edición histórica"
+      "pending": "Elección de q, σ², ϱ y p0 para la regla kalman (PT3, configs/evaluation/kalman-associative-comparison.json), en desarrollo. La ventana walk-forward emite B6 con las reglas delta y proximal y la receta mature-correction-historical-masked, que fija λ y dos casos de η elegidos con la validación. La regla delta queda conectada sin brazo de campaña y la regla kalman todavía no tiene ventana ni brazo. Las claves regime y codec_by_regime enrutan A por el régimen observable de volatilidad y tendencia de cada cohorte (I09), con calendar y codec_by_calendar como control de capacidad. La comparación espera a la edición histórica"
     },
     "document_selection": {
       "connection": "declared",
@@ -129,7 +130,7 @@
       "level": "N2",
       "issues": [20],
       "control": "Sin régimen, reglas observables de volatilidad y tendencia y banco global a igual capacidad",
-      "pending": "No entra en la campaña A: falta el enlace Python de MarkovFilter y su ajuste por ventana. Como contexto de la fusión exige su propio padre y como partición del banco espera al resultado de A2"
+      "pending": "El HMM filtrado como contexto de la fusión no entra en la campaña A: falta el enlace Python de MarkovFilter y su ajuste por ventana, y cambiar las entradas del núcleo exige su propio padre. Como partición del banco episódico espera al resultado de A2. La representación de régimen de la campaña son las reglas observables de volatilidad y tendencia que enrutan la corrección B6 (claves regime y codec_by_regime de associative_memory, A13 y A14)"
     },
     "information_view": {
       "connection": "declared",
@@ -218,7 +219,9 @@
     {"id": "A9", "reference": "fitted_arm", "change": {"replay_schedule": ["uniform", "recent", "spaced"]}},
     {"id": "A10", "reference": "A4", "change": {"refinement_episodes": "first_read"}},
     {"id": "A11", "reference": "A3", "change": {"episodic_bank": "m3"}},
-    {"id": "A12", "reference": "A5", "change": {"associative_memory": ["kalman"]}}
+    {"id": "A12", "reference": "A5", "change": {"associative_memory": ["kalman"]}},
+    {"id": "A13", "reference": "A5", "change": {"associative_memory": {"key": ["regime", "calendar"]}}},
+    {"id": "A14", "reference": "A5", "change": {"associative_memory": {"key": ["codec_by_regime", "codec_by_calendar"]}}}
   ],
   "budget": {
     "protocol": "issue 363",
