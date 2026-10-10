@@ -10,6 +10,11 @@ namespace mars_titan::learning {
 // Cabeza cuantílica de QR-DQN sobre las seis acciones de exposición.
 inline constexpr std::int64_t maximum_quantiles = 256;
 inline constexpr std::int64_t maximum_quantile_batch = 4096;
+// Geometría fija de las identidades qr_dqn y qr_dqn_cvar. QR-DQN usa 200 cuantiles en Atari,
+// pero con seis acciones y recompensas de una sesión 32 niveles dan una resolución de 1/32 por
+// cola con un coste medido aparte. CVaR al 25 % promedia los 8 niveles inferiores.
+inline constexpr std::int64_t qr_dqn_quantiles = 32;
+inline constexpr double qr_dqn_cvar_alpha = 0.25;
 
 // Puntos medios tau_i = (2i+1)/(2N) [N] FP64 en el dispositivo pedido.
 [[nodiscard]] at::Tensor quantile_midpoints(std::int64_t quantiles, const at::Device& device);
