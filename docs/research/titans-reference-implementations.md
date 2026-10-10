@@ -1,6 +1,6 @@
 # Implementaciones públicas de Titans y paridad del núcleo
 
-El núcleo Titans-MAC de [`src/mars_titan/models/titans/`](../../src/mars_titan/models/titans/) se escribió a partir de las ecuaciones del artículo. Este documento revisa qué código público existe, si alguno es de los autores y hasta qué punto el núcleo del proyecto coincide con él. La revisión se hizo el 9 de octubre de 2026 y se sigue en [#434](https://github.com/GonxKZ/mars-titan/issues/434).
+El núcleo Titans-MAC de [`src/mars_titan/models/titans/`](../../src/mars_titan/models/titans/) se escribió a partir de las ecuaciones del artículo. Este documento revisa qué código público existe, si alguno es de los autores y hasta qué punto el núcleo del proyecto coincide con él. La revisión se hizo el 9 de octubre de 2026 y se sigue en [#434](https://github.com/GonxKZ/mars-titan/issues/434). La [actualización del 10 de octubre](#actualización-del-10-de-octubre-de-2026) añade las versiones publicadas en PyPI y el código nuevo de memorias relacionadas, dentro de la [revisión de bibliotecas científicas](library-review.md).
 
 Las conclusiones, con su evidencia en las secciones siguientes, son cuatro:
 
@@ -152,6 +152,22 @@ Adoptar lucidrains como base, la opción (a), tendría este coste. No se ha migr
 | Código nativo | No hay una implementación C++/CUDA de Titans. El código nativo es de la GRU candidata y de las políticas, así que no cambiaría |
 | Pruebas | Las 225 funciones de prueba de `tests/models/titans/` y los 76 archivos de `tests/` que mencionan Titans dependen de la API y de las identidades actuales |
 | Dependencias y licencia | Habría que añadir `tensordict`, `einops`, `einx` y `assoc-scan`, conservar el aviso MIT de lucidrains y separar sus derechos de los del proyecto |
+
+## Actualización del 10 de octubre de 2026
+
+Esta actualización forma parte de la [revisión de bibliotecas científicas](library-review.md) ([#490](https://github.com/GonxKZ/mars-titan/issues/490)). No cambia el núcleo, el arnés ni la recomendación anterior.
+
+**Código oficial.** La comprobación se repitió el 10 de octubre. `ABehrouz/Titans` sigue vacío y la cuenta no tiene repositorios nuevos. Sigue sin haber código oficial de Titans, ATLAS, MIRAS ni Nested Learning.
+
+**titans-pytorch en PyPI.** La versión 0.5.5 de [titans-pytorch](https://pypi.org/project/titans-pytorch/0.5.5/), subida el 13 de julio de 2026, contiene `neural_memory.py`, `mac_transformer.py`, `memory_models.py` y `__init__.py` con el mismo SHA-256 que esos archivos en el commit `1d40c445`. La rama por defecto sigue en ese commit. El oráculo puede fijarse por tanto con `titans-pytorch==0.5.5` además de por su commit. Instalarlo con el lock del proyecto añade 17 paquetes, entre ellos `einops`, `einx`, `tensordict`, `x-transformers`, `hyper-connections`, `assoc-scan` y `accelerated-scan`, que es una razón más para mantenerlo en un entorno aparte.
+
+**flash-linear-attention.** La versión 0.5.2 de `fla-core` (27 de julio de 2026) contiene en `fla/ops/titans/naive.py` la misma fórmula activa de la derivada de LayerNorm que la sección [Comprobaciones de fla](#comprobaciones-de-fla) encontró incorrecta. Desde esa versión el archivo solo ha cambiado por la retirada de `head_first` (`81091cc6`, 18 de agosto de 2026). La biblioteca incluye además referencias en PyTorch para la regla delta con puerta (`gated_delta_rule`), Gated DeltaNet-2 (`gdn2`), TTT (`ttt`) y otras memorias lineales. Todas convierten las entradas a FP32, también las FP64, así que no sirven como oráculo FP64. Sus núcleos de Triton dependen de `TRITON_F32_DEFAULT` y usan TF32 por defecto en esta GPU. Quedan como lectura de las ecuaciones.
+
+**Gated DeltaNet y Gated DeltaNet-2.** Los repositorios oficiales de NVIDIA, [GatedDeltaNet](https://github.com/NVlabs/GatedDeltaNet) ([Yang, Kautz y Hatamizadeh, 2024](https://arxiv.org/abs/2412.06464)) y [GatedDeltaNet-2](https://github.com/NVlabs/GatedDeltaNet-2) ([arXiv 2605.22791](https://arxiv.org/abs/2605.22791), creado el 8 de mayo de 2026), usan la NVIDIA Source Code License-NC, que no permite un uso comercial. Incorporarlos impondría esa restricción a un proyecto con licencia MIT, así que quedan como lectura. Su regla decae el estado antes de calcular el residuo de la escritura, mientras que la regla `delta` de `memory/associative_memory.py` lo calcula con el estado anterior, así que solo coinciden sin olvido.
+
+**Implementaciones nuevas o ampliadas.** `obekt/HOPE-nested-learning` implementa la arquitectura HOPE de Nested Learning, pero no tiene licencia y no puede reutilizarse. `pafos-ai/titans-trainer` (MIT, `63d86f8b`, marzo de 2026) es un entrenador al estilo de Hugging Face con su propia memoria. Se inventarió por sus metadatos y su estructura, sin leer el núcleo. `kmccleary3301/nested_learning` sigue siendo la reproducción no oficial de Nested Learning más seguida (Apache-2.0).
+
+**Qué se puede reutilizar.** Nada se incorpora al repositorio. titans-pytorch sigue como oráculo de la memoria neuronal con el arnés existente, en un entorno aparte. Las referencias de fla y el código de NVIDIA sirven para leer ecuaciones, no como referencia numérica. La adaptación financiera no cambia.
 
 ## Límites
 

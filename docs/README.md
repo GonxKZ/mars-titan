@@ -53,6 +53,7 @@ La [referencia GRU](../native/candidate.md), el [adaptador financiero de MAC](en
 | Ejecutar las preparaciones verificadas | [Controles experimentales](engineering/experimental-controls.md): memoria y ruido, documentos, vistas reducidas, replay, adaptadores y cohortes, con perfiles C++20 y límites de lo comprobado. |
 | Dimensionar y retomar el trabajo | [Dataset por bloques](engineering/full-dataset-training.md), [latencia](engineering/latency-budget.md), [plan de cómputo](engineering/compute-plan.md), [checkpoints](engineering/checkpoint-recovery.md) y [revisión de bibliotecas y herramientas de HPC, datos e infraestructura](engineering/library-review.md). |
 | Evaluar ruido y fiabilidad | [Controles y límites](research/noise-and-reliability.md). |
+| Reutilizar bibliotecas científicas | [Revisión de bibliotecas frente a las piezas propias](research/library-review.md): adopción de arch y statsmodels, referencias de paridad (PEFT, scoringrules, MAPIE y sb3-contrib) y candidatas descartadas con su motivo. |
 | Revisar los enlaces de redes sociales | [Revisión inicial financiera](references/social-finance.md), [arquitectura y rendimiento](references/social-neural.md) y [ampliación de los ocho posts](references/social-followup.md). |
 | Preparar evidencias y redacción | [Plantillas de informes](../reports/README.md) y [memoria de trabajo](../thesis/README.md). |
 
