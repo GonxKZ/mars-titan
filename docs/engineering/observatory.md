@@ -15,16 +15,17 @@ La [página pública](https://gonxkz.github.io/mars-titan/) quedó desplegada me
 
 La página de `site/` se rehízo en #451 a partir de una [auditoría previa](observatory-ux-audit.md) sobre el historial real. La misma interfaz funciona en dos modos que comparten código y contrato de datos.
 
-- **Pages.** Lee los datos estáticos de la rama `observatory-data`. El índice se consulta cada 60 segundos con `If-None-Match` y `If-Modified-Since`, y una respuesta 304 no descarga ni redibuja nada. Las páginas del historial se nombran por su huella, así que cada una se descarga una sola vez. La barra superior muestra la antigüedad de la última recogida con su zona horaria.
+- **Pages.** Lee los datos estáticos de la rama `observatory-data`. El índice se consulta cada 60 segundos con `If-None-Match` y `If-Modified-Since`, y una respuesta 304 no descarga ni redibuja nada. Las páginas del historial se nombran por su huella, así que cada una se descarga una sola vez. Las matrices de las campañas por ventanas también, y solo se pide la de la campaña elegida. La barra superior muestra la antigüedad de la última recogida con su zona horaria.
 - **Directo en local.** `scripts/serve_observatory.py` sirve el mismo sitio y empuja eventos SSE con el índice, la telemetría del equipo, el estado de las campañas por ventanas y los paquetes de trazas. Solo lee sus fuentes y por defecto escucha en `127.0.0.1`.
 
 ```mermaid
 flowchart LR
   R["Recibos de entrenamiento<br/>run.json, receipt.json"] --> C["Recolector<br/>collect_observatory.py --watch"]
-  C --> P["Salida pública<br/>observatory.json y pages/"]
+  K["Campañas por ventanas<br/>summary.json y jobs/"] --> C
+  C --> P["Salida pública<br/>observatory.json, pages/ y windows/"]
   P --> B["Rama observatory-data"] --> A["Actions: solo Pages"] --> W["Navegador en modo Pages<br/>consulta condicional cada 60 s"]
   P --> S["serve_observatory.py<br/>127.0.0.1"]
-  K["Campañas por ventanas<br/>summary.json y jobs/"] --> S
+  K --> S
   T["Paquetes de trazas<br/>manifiesto y bloque binario"] --> S
   N["NVML, /proc y statvfs"] --> S
   S -- "SSE: índice, telemetría, campañas, trazas" --> L["Navegador en directo"]
@@ -35,21 +36,22 @@ flowchart LR
 ```bash
 uv run --locked python scripts/serve_observatory.py \
   --public-dir RUTA_DE_LA_SALIDA_PUBLICA_DEL_RECOLECTOR \
+  --config configs/observatory/campaigns.json \
   --campaign A=RUTA_DE_UNA_CAMPAÑA_POR_VENTANAS \
   --traces-dir RUTA_DE_LOS_PAQUETES_DE_TRAZAS
 ```
 
-Todas las fuentes son opcionales. Para seguir el recolector que ya está en marcha basta con apuntar `--public-dir` a su salida pública. El servidor no toma su bloqueo ni el de las campañas y no escribe en ninguna de las carpetas que lee. La orden imprime la dirección, por defecto `http://127.0.0.1:8765/`, y termina con `Ctrl+C`. Escuchar fuera del bucle local exige `--allow-remote`.
+Todas las fuentes son opcionales. Para seguir el recolector que ya está en marcha basta con apuntar `--public-dir` a su salida pública. `--config` añade las campañas por ventanas que declara la configuración del recolector, con sus rutas relativas a `--root` (por defecto, el repositorio). Con la configuración actual son las cuatro etapas de A y de A v2, las ocho que admite el servidor. El servidor no toma su bloqueo ni el de las campañas y no escribe en ninguna de las carpetas que lee. La orden imprime la dirección, por defecto `http://127.0.0.1:8765/`, y termina con `Ctrl+C`. Escuchar fuera del bucle local exige `--allow-remote`.
 
 El servidor acepta cuatro clientes SSE y 24 conexiones. Envía como máximo dos eventos por segundo y cliente, y si una fuente cambia varias veces entre dos envíos solo manda la última versión. El latido es de 15 segundos y una pestaña cerrada libera su plaza como máximo en el siguiente. Con el límite de clientes alcanzado responde 503 y la página vuelve a la consulta condicional del índice. La telemetría se toma cada 5 segundos con clientes y cada 30 sin ellos. El anillo guarda 17.280 muestras (24 horas a 5 segundos) y una pestaña nueva recibe las últimas 4.320. Los límites de lectura son 8 MiB por JSON, 256 MiB por paquete de trazas, 4 MiB por evento y 20.000 trabajos por campaña. La política de seguridad no admite scripts ni estilos de otros orígenes, tampoco estilos en línea.
 
 La telemetría procede de consultas de lectura a NVML, de `/proc` y de `statvfs`. Incluye temperatura, uso, memoria, potencia, reloj y motivos de reducción del reloj de la GPU, además de CPU, carga, RAM, swap, disco libre y la CPU del propio servidor. No fija relojes, perfiles de energía ni ventiladores. Una lectura que falla se publica como ausencia, nunca como cero.
 
-Una campaña por ventanas se lee desde su `summary.json` y la carpeta `jobs/`. Un trabajo con carpeta de intento y sin recibo se muestra como «intento sin confirmar», que no equivale a un proceso vivo. La fecha de modificación de cada recibo aproxima su confirmación y alimenta el ritmo y el tiempo restante, que la página rotula siempre como estimación.
+Una campaña por ventanas se lee desde su `summary.json` y la carpeta `jobs/` con `observatory/window_campaigns.py`, el mismo módulo que usa el recolector para Pages. Sirve para las cuatro etapas de la campaña con máscaras: base, adaptadores, ablación y políticas. Un trabajo con carpeta `attempt-*` o `run` y sin recibo se muestra como «intento sin confirmar», que no equivale a un proceso vivo. La fecha de modificación de cada recibo, o del `selection.json` en las selecciones de la cadena, aproxima su confirmación y alimenta el ritmo y el tiempo restante, que la página rotula siempre como estimación. La página dibuja una campaña cada vez, elegida en su selector y guardada en la URL (`matriz=`), porque la de adaptadores de A tiene 312 filas. En directo se abre por defecto la campaña que llega por SSE, que sustituye a la publicada con el mismo nombre. El [seguimiento de campañas](campaign-observatory.md#campañas-por-ventanas-de-a-y-a-v2) describe las fuentes, el coste y la publicación.
 
 ### Despliegue sin cortar la publicación actual
 
-La página lee el formato actual del recolector y trata como opcionales los campos que añade #451, así que puede promocionarse a `main` antes de cambiar el recolector. El workflow de Pages copia entonces los módulos de `site/`, `vendor/` y `fonts/`, y también `traces/` si la rama de datos lo contiene.
+La página lee el formato actual del recolector y trata como opcionales los campos que añade #451, así que puede promocionarse a `main` antes de cambiar el recolector. Un índice sin `window_campaigns` no muestra campañas por ventanas. El workflow de Pages copia entonces los módulos de `site/`, `vendor/` y `fonts/`, y también `windows/` y `traces/` si la rama de datos los contiene. El recolector en marcha usa una configuración privada, así que al sustituirlo hay que añadirle las ocho fuentes `window_campaign` de `configs/observatory/campaigns.json`. Su primera publicación retira de `observatory-data` las páginas que el índice ya no enumera.
 
 La extensión del recolector cambia el contenido de casi todas las páginas y con ello sus huellas. La primera publicación tras el cambio sustituye las páginas una vez. Con los 3.319 registros del 10 de octubre, la salida pública pasó de 12,1 MB a 20,4 MB en las mismas 51 páginas. Si se conserva el estado del recolector, los registros cuyas fuentes siguen presentes se reconstruyen con los campos nuevos en la primera recolección, y los que ya no tienen fuente mantienen su forma anterior y se ven con esas medidas ausentes. Antes de sustituir el proceso en marcha conviene ejecutar el recolector nuevo con otro estado y otra salida, sin `--publish-checkout`, y comparar ambas salidas. Solo un recolector puede publicar en el checkout de `observatory-data`.
 

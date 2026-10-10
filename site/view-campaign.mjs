@@ -1,8 +1,8 @@
 // Vista de campaña: series, etapas y matriz de ventana por brazo y semilla.
 
-import { STATUS_LABELS, ACTIVITY_LABELS, publicMetrics } from "./state.mjs";
+import { STATUS_LABELS, ACTIVITY_LABELS, WINDOW_STAGES, publicMetrics } from "./state.mjs";
 import * as fmt from "./format.mjs";
-import { campaignMatrix, seriesSummary, liveCampaignMatrix, completionTimeline, quantile, relativeToGroup, STAGES } from "./model.mjs";
+import { campaignMatrix, seriesSummary, windowCampaignMatrix, completionTimeline, quantile, relativeToGroup, STAGES } from "./model.mjs";
 import { LineChart, LongSeriesChart, chartGroup, cividis, cividisGradient, diverging, divergingGradient, tokens } from "./charts.mjs";
 import { el, stateMark, legend, setOptions, replaceCharts, STATE_LABELS } from "./ui.mjs";
 import { runToken } from "./urlstate.mjs";
@@ -243,30 +243,49 @@ function pace(ctx, runs, planned) {
   })];
 }
 
-function liveCampaigns(ctx) {
-  const section = byId("live-campaigns");
-  const campaigns = [...ctx.store.liveCampaigns.values()].filter(c => c.available);
-  section.hidden = !campaigns.length;
+// Campañas por ventanas. Se dibuja una cada vez, porque la de adaptadores de A tiene más
+// de 300 filas. En directo el estado llega por SSE y en Pages solo se descarga el
+// documento de la campaña elegida.
+function windowCampaigns(ctx) {
+  const section = byId("window-campaigns");
+  const options = ctx.windowCampaignList();
+  section.hidden = !options.length;
+  if (!options.length) return [];
+  // Sin elección en la URL se abre la campaña en directo o, si no hay, la de resumen más reciente.
+  const latest = [...options].sort((a, b) => Number(b.live) - Number(a.live) || (b.updated_at ?? "").localeCompare(a.updated_at ?? ""))[0];
+  const selected = options.some(option => option.id === ctx.state.matriz) ? ctx.state.matriz : latest.id;
+  setOptions(byId("window-select"), options.map(option => [option.id,
+    `${option.id} · ${WINDOW_STAGES[option.stage] ?? "etapa no declarada"} · ${option.path === null && !option.live ? "sin resumen" : `${fmt.number(option.done)} de ${fmt.number(option.jobs)}`}`]), selected);
+  byId("window-select").onchange = event => ctx.set({ matriz: event.target.value });
+  const option = options.find(item => item.id === selected);
+  const state = ctx.windowCampaign(option);
+  const container = byId("window-campaign");
+  const source = option.configuration ? ` Declaración: ${option.configuration}.` : "";
+  if (!state.available) {
+    const reason = state.loading ? "Cargando la matriz de trabajos."
+      : state.error ? `No se pudo leer la matriz: ${state.error}. Se reintentará en la próxima consulta.`
+      : "Sin resumen todavía: la etapa no ha empezado o su carpeta no está disponible para el recolector.";
+    container.replaceChildren(el("p", { className: "caption", text: `${reason}${source}` }));
+    return [];
+  }
   const charts = [];
-  if (!campaigns.length) return charts;
-  byId("live-campaign-list").replaceChildren(...campaigns.map(state => {
-    const matrix = liveCampaignMatrix(state);
-    const head = el("thead", {}, el("tr", {}, el("th", { text: "Ámbito · brazo", attrs: { scope: "col" } }), ...matrix.windows.map(w => el("th", { text: w, attrs: { scope: "col" } }))));
-    const body = el("tbody", {}, ...matrix.rows.map(row => el("tr", {},
-      el("th", { attrs: { scope: "row" } }, el("span", { text: row.arm }), el("small", { text: row.scope })),
-      ...matrix.windows.map(window => {
-        const marks = row.cells.get(window) ?? [];
-        return el("td", {}, el("span", { className: "cell", attrs: { role: "img", "aria-label": `${row.arm}, ${row.scope}, ${window}: ${marks.length} trabajos, ${marks.filter(m => m.state === "done").length} confirmados` } },
-          ...marks.map(mark => stateMark(mark.state, `${mark.name} · ${STATE_LABELS[mark.state]}`))));
-      }))));
-    const estimate = matrix.estimate;
-    return el("div", { className: "live-campaign" },
-      el("p", { className: "eyebrow", text: `${state.id} · ${state.status ?? "estado no declarado"}` }),
-      el("p", { className: "caption", text: `${fmt.number(matrix.done)} de ${fmt.number(matrix.total)} trabajos confirmados. ${fmt.number(matrix.attempts)} con intento sin confirmar. ${estimate ? `Estimación: ${fmt.duration(estimate.seconds)} al ritmo mediano de ${estimate.basis} confirmaciones, según la fecha de modificación de cada recibo.` : "Sin estimación del tiempo restante."}` }),
-      el("div", { className: "matrix-scroll", attrs: { tabindex: "0", role: "region", "aria-label": `Matriz de ${state.id}` } }, el("table", { className: "matrix" }, head, body)),
-      activeAttempts(ctx, state.active, charts),
-    );
-  }));
+  const matrix = windowCampaignMatrix(state);
+  const head = el("thead", {}, el("tr", {}, el("th", { text: "Ámbito · brazo", attrs: { scope: "col" } }), ...matrix.windows.map(w => el("th", { text: w, attrs: { scope: "col" } }))));
+  const body = el("tbody", {}, ...matrix.rows.map(row => el("tr", {},
+    el("th", { attrs: { scope: "row" } }, el("span", { text: row.arm }), el("small", { text: `${row.scope} · ${ctx.modelName(row.model ?? "unknown")}` })),
+    ...matrix.windows.map(window => {
+      const marks = row.cells.get(window) ?? [];
+      return el("td", {}, el("span", { className: "cell", attrs: { role: "img", "aria-label": `${row.arm}, ${row.scope}, ${window}: ${marks.length} trabajos, ${marks.filter(m => m.state === "done").length} confirmados` } },
+        ...marks.map(mark => stateMark(mark.state, `${mark.name} · ${STATE_LABELS[mark.state]}`))));
+    }))));
+  const estimate = matrix.estimate;
+  const updated = state.updated_at ? ` Resumen escrito ${fmt.timestamp(state.updated_at).text}.` : "";
+  container.replaceChildren(el("div", { className: "live-campaign" },
+    el("p", { className: "eyebrow", text: `${state.id} · ${WINDOW_STAGES[state.stage] ?? "etapa no declarada"} · ${STATUS_LABELS[state.status] ?? state.status ?? "estado no declarado"}${option.live ? " · en directo" : ""}` }),
+    el("p", { className: "caption", text: `${fmt.number(matrix.done)} de ${fmt.number(matrix.total)} trabajos confirmados. ${fmt.number(matrix.attempts)} con intento sin confirmar. ${estimate ? `Estimación: ${fmt.duration(estimate.seconds)} al ritmo mediano de ${estimate.basis} confirmaciones, según la fecha de modificación de cada recibo.` : "Sin estimación del tiempo restante."}${updated}${source}` }),
+    el("div", { className: "matrix-scroll window-matrix", attrs: { tabindex: "0", role: "region", "aria-label": `Matriz de ${state.id}` } }, el("table", { className: "matrix" }, head, body)),
+    activeAttempts(ctx, state.active, charts),
+  ));
   return charts;
 }
 
@@ -285,7 +304,7 @@ function activeAttempts(ctx, active, charts) {
     const plot = el("div", { className: "plot", attrs: { role: "group", "aria-label": `Curvas del intento ${attempt.job}` } });
     const node = el("figure", { className: "attempt" },
       el("figcaption", {}, el("span", { className: "mono", text: attempt.job }),
-        el("span", { className: "caption", text: `${attempt.attempt} · ${fmt.number(attempt.epochs.length)} épocas · archivo modificado ${fmt.timestamp(attempt.updated_at, { seconds: true }).text}` })),
+        el("span", { className: "caption", text: `${attempt.attempt} · ${fmt.number(attempt.epochs.length)} épocas · ${attempt.updated_at ? `informe modificado ${fmt.timestamp(attempt.updated_at, { seconds: true }).text}` : "sin informe por épocas legible"}` })),
       lines.length ? plot : el("p", { className: "caption", text: "Todavía sin épocas con medidas." }));
     if (lines.length && x.every((value, i) => i === 0 || value > x[i - 1])) {
       requestAnimationFrame(() => {
@@ -307,7 +326,7 @@ export function renderCampaign(ctx) {
   const { bySeries } = seriesList(ctx, series);
   legend(byId("matrix-legend"), LEGEND.map(state => ({ state, label: STATE_LABELS[state] })));
   replaceCharts(ctx, "campana", []);
-  const liveCharts = liveCampaigns(ctx);
+  const liveCharts = windowCampaigns(ctx);
   const liveEntry = { resize: () => liveCharts.forEach(chart => chart.resize()), destroy: () => liveCharts.forEach(chart => chart.destroy()) };
   if (!series) {
     byId("series-title").textContent = "Sin campañas registradas";
