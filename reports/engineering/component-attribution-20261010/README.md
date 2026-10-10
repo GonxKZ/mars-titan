@@ -30,13 +30,16 @@ cifra.
 
 ## Recuento
 
-De los 356 contrastes de la matriz, 183 solo usan brazos de la campaña, 148 esperan brazos
+De los 356 contrastes de la matriz, 196 solo usan brazos de la campaña, 135 esperan brazos
 condicionados o derivados con plan propio y 25 necesitan algún candidato. Ninguno queda
 sin brazo con nombre.
 
+El recuento se repitió el 10 de octubre de 2026 al declarar `transformer_compact_online` en la
+comparación (#443). Antes figuraba como brazo condicionado y 15 contrastes lo esperaban. Ahora
+13 de ellos solo usan brazos de la campaña y los otros 2 siguen esperando otro brazo con plan propio.
+
 | Brazos con plan propio | Contrastes que esperan |
 | --- | ---: |
-| `transformer_compact_online` (control en línea) | 15 |
 | `titans_reference_mac` (referencia pública, sin brazo previsto tras #434) | 2 |
 | `mars_titan_m1_k4_first_read` (integración) | 11 |
 | `mars_titan_b6` (integración) | 11 |
@@ -104,7 +107,7 @@ uv run --no-sync python benchmarks/comparison_matrix.py measure --root <raíz> -
   --output <salida nueva>
 ```
 
-La evaluación completa (183 contrastes estimables en 20 familias, vistas en bruto y
+La evaluación completa, medida antes de declarar el control en línea (183 contrastes estimables en 20 familias, vistas en bruto y
 calibrada con todas las métricas, ECE del signo y escritura del informe de 5,6 MB) tardó
 152 s de reloj y 266 s de CPU de usuario, con un pico de 1,44 GiB. Se ejecutó una vez con
 NumPy 2.5.3, PyArrow 25.0.1, dos hilos, sin GPU y con la CPU compartida (carga media

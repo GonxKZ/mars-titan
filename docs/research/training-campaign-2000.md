@@ -49,6 +49,7 @@ El test de 2024 no participa en ninguna selección. Se abrirá una sola vez, con
 | GRU episódica | Candidato con banco 128×256, referencia independiente | Memoria episódica sobre un codificador recurrente |
 | Núcleo Titans-MAC | `transformer_direct`, `mac_disabled`, `mac_frozen`, `mac_online` | Cambio de codificador frente a memoria neuronal |
 | MARS-TITAN con ampliaciones | Banco episódico, escritura M0 a M3, refinamientos K=1, 2 y 4, y las modificaciones del [documento de integración](system-integration.md), cada una desactivable | Aportación de cada ampliación, una cada vez |
+| Control en línea | `transformer_compact_online`: el estado elegido de `transformer_compact` sigue aprendiendo con las etiquetas maduras del banco de M1, en el mismo instante y con su mismo número como tope ([control en línea](../engineering/transformer-online-control.md)) | Mejora de MARS-TITAN explicada solo por seguir aprendiendo |
 | CM-v1 | B, B+C, B+M y B+C+M, con B igual a Titans-MAC `mac_online` con C en `disabled` y el lector M1 con K=1, según [el factorial](../experiments/mars_titan_cm_v1/factorial.md) | Control del radio numérico en el ajuste del núcleo y consolidación del banco del lector |
 
 No se ejecuta el producto cartesiano de todas las ampliaciones. Primero se fija la base y después se estudia un mecanismo cada vez, como establece el [documento de integración](system-integration.md).

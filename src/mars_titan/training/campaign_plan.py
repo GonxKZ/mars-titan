@@ -63,6 +63,10 @@ TITANS_RECIPE = "titans_financial_chronological_v1"
 # Un caso de búsqueda de las recetas cronológicas solo puede variar estos hiperparámetros.
 TITANS_SEARCHED = SEARCHED
 FIT, CARRY = "fit", "carry"
+# El control en línea parte del estado elegido de otro brazo en su misma ventana. Su brazo
+# en la comparación pertenece a la familia ONLINE_CONTROL.
+ONLINE = "online"
+ONLINE_CONTROL = "online_control"
 # Un ajuste con parada conjunta pasa por la meseta individual y por la continuación común.
 PLATEAU, JOINT = "plateau", "joint"
 EARLY_STOP = "early_stop"
@@ -128,6 +132,16 @@ EXTENSION_POINTS = {
             "y su declaración. Falta declararla en las campañas A y B después de medir la "
             "penalización C y el lector en cuda:0. La declaración preparada está en "
             "historical-masked-campaign-extensions.json"
+        ),
+    ),
+    ONLINE_CONTROL: dict(
+        issue=443,
+        pending=(
+            "El ejecutor del control en línea existe y el motor lo registra como trabajo "
+            "online, que parte de transformer_compact y usa las etiquetas y el tope del banco "
+            "de mars_titan_m1 en la misma ventana y semilla. Sus trabajos y su regla se "
+            "declaran en la sección online_controls de la campaña A por etapas. Esta campaña "
+            "no la declara"
         ),
     ),
 }
