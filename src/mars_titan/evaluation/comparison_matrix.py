@@ -503,6 +503,7 @@ def evaluate(matrix_path, sources_path, scope):
                 "evaluation/component_attribution.py",
                 "evaluation/session_table_contrasts.py",
                 "evaluation/paired_comparisons.py",
+                "evaluation/financial_conventions.py",
                 "evaluation/long_short.py",
             )
         },

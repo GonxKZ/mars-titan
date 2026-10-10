@@ -66,6 +66,7 @@ def test_the_repository_declares_the_protocol_rule():
         lambda s: s.update(statistics=["sharpe"]),
         lambda s: s.update(exposure={"long": 1.0}),
         lambda s: s.update(annualization_sessions={"US": 252}),
+        lambda s: s.update(annualization_sessions={"US": 252, "CN": 252}),
         lambda s: s.update(views="pooled"),
         lambda s: s.pop("seeds"),
         lambda s: s.update(extra=True),
