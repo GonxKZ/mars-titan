@@ -19,6 +19,8 @@ ctest --preset native-release
 ../build/native/native-release/mars-titan-sim --help
 ```
 
+Los presets de pruebas heredan de `native-test`, que excluye la etiqueta `optimizer-steps`. La llevan las pruebas que aplican pasos de optimizador sobre datos sintéticos (PPO y los controles de adaptadores), que no se ejecutan mientras dure el bloqueo de aprendizaje. `native-ppo-release-learning` y `native-controls-release-learning` las incluyen para cuando se levante.
+
 Los perfiles habituales de Clang y GCC activan `MARS_TITAN_BUILD_RUNNER` para construir la sesión y el ejecutable. `MARS_TITAN_BUILD_RUNNER=OFF` con `MARS_TITAN_BUILD_FINANCIAL=ON` permite compilar solo la sesión y sus pruebas. El ejecutable requiere UNIX por sus bloqueos y escrituras confirmadas. Las bibliotecas pueden configurarse por separado en MSVC. Una fuente requerida que falta produce un error de configuración.
 
 El programa utiliza Arrow y Parquet C++, OpenSSL Crypto y [nlohmann_json 3.12.0](https://github.com/nlohmann/json/releases/tag/v3.12.0). La descarga de JSON se verifica con el SHA-256 publicado. CMake busca primero los paquetes del SDK Arrow/Parquet. En Linux puede localizar las cabeceras y bibliotecas C++ de PyArrow mediante `uv` durante la configuración. El ejecutable enlaza `libarrow` y `libparquet`, sin `arrow_python` ni `libpython`. JSON y las dependencias de archivos quedan fuera de la sesión pura.

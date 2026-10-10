@@ -35,7 +35,7 @@ ctest --preset native-aarch64-release
 
 La configuración consulta el intérprete aarch64 bajo qemu-user, así que su límite de tiempo es `MARS_TITAN_PROBE_TIMEOUT`. Las consultas de LibTorch y PyArrow exigen que el paquete sea de la misma arquitectura que el destino, de modo que un entorno x86-64 se rechaza al configurar y no al enlazar. Bajo emulación, la capacidad CPU que informa PyTorch se registra como `emulated:...`, porque no es la del procesador real.
 
-CTest ejecuta los binarios con qemu-user y multiplica cada límite por `MARS_TITAN_TEST_TIMEOUT_SCALE`. El preset excluye la etiqueta `optimizer-steps`, que llevan las pruebas que aplican pasos de optimizador sobre datos sintéticos. Una comprobación técnica en otra máquina no debe aprender.
+CTest ejecuta los binarios con qemu-user y multiplica cada límite por `MARS_TITAN_TEST_TIMEOUT_SCALE`. Como todos los presets de pruebas, hereda de `native-test` la exclusión de la etiqueta `optimizer-steps`, que llevan las pruebas que aplican pasos de optimizador sobre datos sintéticos. Una comprobación técnica en otra máquina no debe aprender, y mientras dure el bloqueo tampoco en esta. `native-ppo-release-learning` y `native-controls-release-learning` las incluyen para cuando se levante.
 
 `MARS_TITAN_ENABLE_CUDA` declara ahora `CMAKE_CUDA_ARCHITECTURES` como `89-real;121-real`, solo SASS para la RTX 4070 y la GB10. Una GPU distinta falla al cargar en lugar de compilar PTX en ejecución sin aviso. La identidad de compilación registra las arquitecturas, la compilación cruzada y las raíces de búsqueda.
 
