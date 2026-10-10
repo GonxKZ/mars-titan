@@ -22,7 +22,7 @@ CONFIGS = Path("configs/simulation")
 STAGES = {v: CONFIGS / f"historical-masked-rl-stage-{v.lower()}.json" for v in "AB"}
 POLICIES = CONFIGS / "historical-masked-rl-policies.json"
 ALGORITHM_ARMS = ("ppo_clip_full_kl", "ppo_kl_penalty_adaptive", "ppo_clip_kl_epoch_stop")
-ALGORITHM_ARMS += ("double_dqn",)
+ALGORITHM_ARMS += ("double_dqn", "grpo_outcome", "dr_grpo_outcome", "gspo_outcome")
 REFERENCES = ("cash", "hold_initial", "rebalance_50", "equal_weight_monthly", "market_index")
 # El índice de mercado solo se planifica donde la edición tiene su instrumento (SPY).
 INDEXED = {"US": True, "CN": False}
@@ -34,8 +34,8 @@ PRODUCERS += ["titans_mac_online"]
 COMPARED = ["transformer_compact", "titans_mac_online"]
 # Ajustes, traslados y referencias por nivel en todos los ámbitos.
 LEVELS = dict(
-    A=dict(all_predictors=(792, 0, 1221), algorithms=(576, 0, 0)),
-    B=dict(all_predictors=(264, 528, 1221), algorithms=(192, 384, 0)),
+    A=dict(all_predictors=(792, 0, 1221), algorithms=(1008, 0, 0)),
+    B=dict(all_predictors=(264, 528, 1221), algorithms=(336, 672, 0)),
 )
 # Ventanas de política por ámbito: las del protocolo menos las cuatro primeras, que
 # aportan los tres años de ajuste y el de validación de la primera política.
@@ -57,7 +57,7 @@ def test_repository_stages_count_every_level_window_predictor_arm_seed_and_refer
     # Cinco referencias en las 15 ventanas de EE. UU. y cuatro en las 9 de China.
     assert counts["reference_jobs"] == (15 * 5 + 9 * 4) * 11 == 1221
     assert counts["evaluation_jobs"] == carries + 1221
-    assert counts["evaluation_episodes"] == (fits + carries + 1221) * COSTS == 10356
+    assert counts["evaluation_episodes"] == (fits + carries + 1221) * COSTS == 12084
     for level, (fit, carry, reference) in LEVELS[variant].items():
         entry = counts["levels"][level]
         assert (entry["training_jobs"], entry["carried_jobs"]) == (fit, carry)
@@ -72,9 +72,9 @@ def test_repository_stages_count_every_level_window_predictor_arm_seed_and_refer
         anchors = ANCHORS[variant][scope]
         assert len(entry["windows"]) == total and len(entry["anchors"]) == anchors
         assert entry["carried_windows"] == total - anchors
-        # KLPO y las referencias sobre los 11 predictores y cuatro políticas más sobre dos.
-        assert entry["training_jobs"] == anchors * (11 + 2 * 4) * 3
-        assert entry["carried_jobs"] == (total - anchors) * (11 + 2 * 4) * 3
+        # KLPO y las referencias sobre los 11 predictores y siete políticas más sobre dos.
+        assert entry["training_jobs"] == anchors * (11 + 2 * 7) * 3
+        assert entry["carried_jobs"] == (total - anchors) * (11 + 2 * 7) * 3
         references = [r for r in REFERENCES if INDEXED[scope] or r != "market_index"]
         assert entry["reference_jobs"] == total * 11 * len(references)
         assert set(entry["arms"]) == {"klpo_terminal", *ALGORITHM_ARMS, *references}
@@ -85,6 +85,10 @@ def test_repository_stages_count_every_level_window_predictor_arm_seed_and_refer
         for arm in references:
             assert entry["arms"][arm] == {"none": dict(reference=total * 11)}
     assert result["contrasts"]["primary"] == "klpo_terminal"
+    # Dr. GRPO y GSPO se contrastan además con GRPO, el control que permite descartarlos.
+    assert result["contrasts"]["components"] == dict.fromkeys(
+        ("dr_grpo_outcome", "gspo_outcome"), "grpo_outcome"
+    )
     assert result["universe_predictor"] == "transformer_compact"
     assert result["selection"]["metric"] == "ruin_count_then_mean_liquidated_log_growth"
     assert result["seeds"] == [42, 43, 44] and result["budget"]["transitions"] == 262144
@@ -142,7 +146,7 @@ def test_a_producer_registered_in_the_campaign_enters_the_first_level_without_ch
     # las 15 ventanas de EE. UU. y cuatro en las 9 de China, sin instrumento del índice.
     assert levels["all_predictors"]["training_jobs"] == 792 + 24 * 3
     assert levels["all_predictors"]["reference_jobs"] == 1221 + 15 * 5 + 9 * 4
-    assert levels["algorithms"]["training_jobs"] == 576
+    assert levels["algorithms"]["training_jobs"] == 1008
 
 
 def test_every_first_level_fit_shares_the_budget_and_the_portfolio_criterion():
@@ -209,20 +213,22 @@ def test_first_policy_windows_follow_three_training_years_and_one_validation_yea
         for scope in ("US", "CN")
         for row in policy_plan.scope_windows(stage, scope)
     } == {3}
-    # La sensibilidad declarada usa todas las evaluaciones previas, con 16 como máximo, de modo
-    # que la última ancla de EE. UU. deja fuera la más antigua.
+    # La sensibilidad declarada usa todas las evaluaciones previas, con 8 como máximo para que
+    # los objetivos de grupo tengan dos entornos por cinta, de modo que desde la sexta ancla
+    # cada una deja fuera las más antiguas.
     expanding = policy_plan.window_sensitivity(stage)
     us_rows = policy_plan.scope_windows(expanding, "US")
-    assert us_rows[-1]["train"] == [f"fold-{i:03d}" for i in range(1, 17)]
-    assert [len(row["train"]) for row in us_rows] == [*range(3, 17), 16]
+    assert us_rows[-1]["train"] == [f"fold-{i:03d}" for i in range(9, 17)]
+    assert [len(row["train"]) for row in us_rows] == [*range(3, 9), *[8] * 9]
     assert [len(row["train"]) for row in policy_plan.scope_windows(expanding, "CN")] == [
-        *range(3, 12)
+        *range(3, 9),
+        *[8] * 3,
     ]
 
 
 @pytest.mark.parametrize(
     ("variant", "main", "sensitivity"),
-    [("A", (75, 45), (179, 81)), ("B", (35, 21), (65, 30))],
+    [("A", (75, 45), (135, 75)), ("B", (35, 21), (53, 29))],
 )
 def test_tapes_per_predictor_follow_the_training_rule(variant, main, sensitivity):
     stage = campaign_stage.load_stage(STAGES[variant])
@@ -287,6 +293,7 @@ def test_klpo_is_planned_first_and_each_carry_depends_on_the_fit_of_its_anchor()
     assert Counter(job["engine"] for job in jobs if job["kind"] != "reference") == {
         "native_klpo": 264 + 528,
         "native_ppo": 192 + 384,
+        "native_group_relative": 144 + 288,
     }
 
 
@@ -342,39 +349,42 @@ def _policy(name, **values):
 
 
 def _group_arm(identity, **values):
-    """Sustituir Double DQN por un brazo de objetivo de grupo con su nombre en todo el contrato."""
+    """Política de objetivo de grupo con su nombre en todo el contrato.
+
+    GRPO, Dr. GRPO y GSPO están declarados y solo cambian los campos indicados. DAPO estático,
+    fuera de la campaña principal, sustituye a Double DQN.
+    """
 
     def change(value):
-        entry = dict(
-            engine="native_group_relative",
-            objective=identity,
-            controller=policy_plan.GROUP_CONTROLLER,
-            confirmed_updates_per_reference=2,
-        )
-        entry.update(values)
         name = identity.removesuffix("_v1")
-        value["policies"] = {
-            (name if key == "double_dqn" else key): (entry if key == "double_dqn" else item)
-            for key, item in value["policies"].items()
-        }
-        for arms in (value["levels"]["algorithms"]["arms"], value["contrasts"]["controls"]):
-            arms[arms.index("double_dqn")] = name
-        # Con 16 entornos, los grupos admiten hasta 8 cintas de ajuste también en la sensibilidad.
-        value["window_sensitivity"]["train_windows"]["maximum"] = 8
+        if name not in value["policies"]:
+            entry = dict(
+                engine="native_group_relative",
+                objective=identity,
+                controller=policy_plan.GROUP_CONTROLLER,
+                confirmed_updates_per_reference=2,
+            )
+            value["policies"] = {
+                (name if key == "double_dqn" else key): (entry if key == "double_dqn" else item)
+                for key, item in value["policies"].items()
+            }
+            for arms in (value["levels"]["algorithms"]["arms"], value["contrasts"]["controls"]):
+                arms[arms.index("double_dqn")] = name
+        value["policies"][name].update(values)
 
     return change
 
 
-def _group_sensitivity(maximum):
-    def change(value):
-        _group_arm("grpo_outcome_v1")(value)
-        value["window_sensitivity"]["train_windows"]["maximum"] = maximum
+def _sensitivity_maximum(maximum):
+    return lambda v: v["window_sensitivity"]["train_windows"].update(maximum=maximum)
 
-    return change
+
+def _components(components):
+    return lambda v: v["contrasts"].update(components=components)
 
 
 def _klpo_second(value):
-    # Double DQN pasa delante de KLPO y los controles siguen ese orden declarado.
+    # La última política pasa delante de KLPO y los controles siguen ese orden declarado.
     items = list(value["policies"].items())
     value["policies"] = dict([items[-1], *items[:-1]])
     value["contrasts"]["controls"] = [*list(value["policies"])[1:], *value["references"]]
@@ -403,7 +413,19 @@ INVALID_POLICIES = {
     "group_unknown_objective": _group_arm("grpo_outcome_v1", objective="grpo_plus_plus"),
     "group_other_controller": _group_arm("gspo_outcome_v1", controller="klpo_full_fresh_waves_v1"),
     "group_extra_field": _group_arm("dapo_outcome_static_v1", group_size=8),
-    "group_lonely_sensitivity_lanes": _group_sensitivity(9),
+    "group_lonely_sensitivity_lanes": _sensitivity_maximum(9),
+    "group_lonely_training_lanes": lambda v: v["train_windows"].update(minimum=9, maximum=9),
+    "component_of_klpo": _components({"klpo_terminal": "grpo_outcome"}),
+    "component_against_klpo": _components({"dr_grpo_outcome": "klpo_terminal"}),
+    "component_against_reference": _components({"dr_grpo_outcome": "cash"}),
+    "component_of_undeclared_arm": _components({"dapo_outcome_static": "grpo_outcome"}),
+    "component_against_itself": _components({"grpo_outcome": "grpo_outcome"}),
+    "component_against_a_variant": _components(
+        {"dr_grpo_outcome": "grpo_outcome", "grpo_outcome": "gspo_outcome"}
+    ),
+    "empty_components": _components({}),
+    "components_as_list": _components(["dr_grpo_outcome"]),
+    "unknown_contrast_family": lambda v: v["contrasts"].update(ablations={}),
     "unknown_ppo_objective": _policy(
         "ppo_clip_full_kl", policy_objective={"schema_version": 1, "id": "ppo"}
     ),
@@ -493,7 +515,7 @@ INVALID_POLICIES = {
 INVALID_STAGES = {
     "unknown_scope": lambda v: v.update(scopes=["EU"]),
     "unordered_scopes": lambda v: v.update(scopes=["CN", "US"]),
-    "limit": lambda v: v["limits"].update(max_training_jobs=1367),
+    "limit": lambda v: v["limits"].update(max_training_jobs=1799),
     "evaluation_limit": lambda v: v["limits"].update(max_evaluation_jobs=1220),
     "test_opened": lambda v: v.update(final_test_opened=True),
 }
@@ -518,6 +540,16 @@ REASONS = {
     "group_other_controller": "objetivo de grupo",
     "group_extra_field": "objetivo de grupo",
     "group_lonely_sensitivity_lanes": "dos entornos por cinta",
+    "group_lonely_training_lanes": "dos entornos por cinta",
+    "component_of_klpo": "contraste de componente",
+    "component_against_klpo": "contraste de componente",
+    "component_against_reference": "contraste de componente",
+    "component_of_undeclared_arm": "contraste de componente",
+    "component_against_itself": "contraste de componente",
+    "component_against_a_variant": "contraste de componente",
+    "empty_components": "contraste de componente",
+    "components_as_list": "contraste de componente",
+    "unknown_contrast_family": "KLPO es el brazo principal",
     "unknown_ppo_objective": "objetivo PPO identificado",
     "missing_target_kl": "objetivo PPO identificado",
     "beta_outside_limits": "beta inicial",
@@ -584,20 +616,20 @@ REASONS = {
     "status": "contrato",
     "unknown_scope": "ámbitos",
     "unordered_scopes": "ámbitos",
-    "limit": "max_training_jobs=1367",
+    "limit": "max_training_jobs=1799",
     "evaluation_limit": "max_evaluation_jobs=1220",
 }
 
 
 def test_the_unchanged_declaration_is_accepted(tmp_path):
     path = mutated(tmp_path)
-    assert campaign_stage.check_stage(path)["counts"]["training_jobs"] == 1368
+    assert campaign_stage.check_stage(path)["counts"]["training_jobs"] == 1800
 
 
 @pytest.mark.parametrize("variant", ["qr_dqn", "qr_dqn_cvar"])
 def test_quantile_value_variants_are_declared_like_double_dqn(tmp_path, variant):
     path = mutated(tmp_path, change_policies=_policy("double_dqn", variant=variant))
-    assert campaign_stage.check_stage(path)["counts"]["training_jobs"] == 1368
+    assert campaign_stage.check_stage(path)["counts"]["training_jobs"] == 1800
     stage = campaign_stage.load_stage(path)
     job = next(j for j in policy_plan.plan_stage(stage) if j["arm"] == "double_dqn")
     config = native_policy_runs.ppo_config(stage, job)
@@ -607,7 +639,7 @@ def test_quantile_value_variants_are_declared_like_double_dqn(tmp_path, variant)
 @pytest.mark.parametrize("objective", policy_plan.GROUP_OBJECTIVES)
 def test_group_arms_share_the_klpo_waves_and_binary(tmp_path, objective):
     path = mutated(tmp_path, change_policies=_group_arm(objective))
-    assert campaign_stage.check_stage(path)["counts"]["training_jobs"] == 1368
+    assert campaign_stage.check_stage(path)["counts"]["training_jobs"] == 1800
     stage = campaign_stage.load_stage(path)
     name = objective.removesuffix("_v1")
     plan = policy_plan.plan_stage(stage)

@@ -17,7 +17,15 @@
     },
     "algorithms": {
       "predictors": ["transformer_compact", "titans_mac_online"],
-      "arms": ["ppo_clip_full_kl", "ppo_kl_penalty_adaptive", "ppo_clip_kl_epoch_stop", "double_dqn"]
+      "arms": [
+        "ppo_clip_full_kl",
+        "ppo_kl_penalty_adaptive",
+        "ppo_clip_kl_epoch_stop",
+        "double_dqn",
+        "grpo_outcome",
+        "dr_grpo_outcome",
+        "gspo_outcome"
+      ]
     }
   },
   "train_windows": {
@@ -101,6 +109,24 @@
       "engine": "native_ppo",
       "variant": "double_dqn",
       "policy_objective": null
+    },
+    "grpo_outcome": {
+      "engine": "native_group_relative",
+      "objective": "grpo_outcome_v1",
+      "controller": "group_relative_fresh_waves_v1",
+      "confirmed_updates_per_reference": 2
+    },
+    "dr_grpo_outcome": {
+      "engine": "native_group_relative",
+      "objective": "dr_grpo_outcome_v1",
+      "controller": "group_relative_fresh_waves_v1",
+      "confirmed_updates_per_reference": 2
+    },
+    "gspo_outcome": {
+      "engine": "native_group_relative",
+      "objective": "gspo_outcome_v1",
+      "controller": "group_relative_fresh_waves_v1",
+      "confirmed_updates_per_reference": 2
     }
   },
   "references": ["cash", "hold_initial", "rebalance_50", "equal_weight_monthly", "market_index"],
@@ -124,7 +150,7 @@
     "role": "secondary",
     "enabled": false,
     "launch": "only_if_budget_remains",
-    "train_windows": {"rule": "expanding_prior_evaluations_v1", "minimum": 3, "maximum": 16}
+    "train_windows": {"rule": "expanding_prior_evaluations_v1", "minimum": 3, "maximum": 8}
   },
   "contrasts": {
     "primary": "klpo_terminal",
@@ -133,12 +159,16 @@
       "ppo_kl_penalty_adaptive",
       "ppo_clip_kl_epoch_stop",
       "double_dqn",
+      "grpo_outcome",
+      "dr_grpo_outcome",
+      "gspo_outcome",
       "cash",
       "hold_initial",
       "rebalance_50",
       "equal_weight_monthly",
       "market_index"
-    ]
+    ],
+    "components": {"dr_grpo_outcome": "grpo_outcome", "gspo_outcome": "grpo_outcome"}
   },
   "final_test_opened": false
 }

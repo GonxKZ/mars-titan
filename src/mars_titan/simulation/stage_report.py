@@ -25,6 +25,10 @@ Reglas declaradas antes de ver resultados:
   control, con intervalos simultáneos por máximo estudentizado dentro de cada familia y
   métrica. No hay corrección entre predictores, costes ni métricas. Cada familia responde
   una pregunta separada y el coste principal declarado es el que se interpreta primero.
+- Los contrastes de componente declarados en `contrasts.components`, como Dr. GRPO y GSPO
+  frente a GRPO, usan las mismas sesiones y réplicas de la familia. Cada control forma con
+  sus variantes otra familia de multiplicidad, con diferencias variante menos control, y
+  `contrasts.csv` distingue las dos en la columna `family`.
 - El índice chino se calcula con niveles del CSI 300 (`simulation.index_benchmark`) si se
   suministran con su huella, y se marca con su base.
 - Una ventana sin evaluación porque una serie del universo termina dentro del tramo se
@@ -69,6 +73,9 @@ REPORT_KIND = "historical_masked_rl_financial_report"
 SEED_RULE = "equal_capital_per_seed_mean_nav"
 WINDOW_RULE = "liquidated_last_close_then_chained_windows"
 DIFFERENCE = "primary_minus_control"
+# Familias de multiplicidad de `contrasts.csv`: KLPO con todos sus controles y cada control
+# de componente con sus variantes.
+PRIMARY_FAMILY, COMPONENT_FAMILY = "primary", "components"
 SERIES_ENDS = "series_ends_in_tape"
 STATUSES = ("completed", "paused")
 _RECEIPT_BYTES = 64 * 1024**2
@@ -343,8 +350,22 @@ def survival(policies, output):
     )
 
 
-def _bootstrap(family, report, primary):
+def _resample(returns, report, market, base):
+    return block_bootstrap(
+        returns,
+        market=market,
+        base=base,
+        block_length=report["block_length"],
+        replicates=report["replicates"],
+        seed=report["seed"],
+        confidence=report["confidence"],
+        sensitivity=tuple(report["block_length_sensitivity"]),
+    )
+
+
+def _bootstrap(family, report, contrasts):
     returns = family.pop("returns", None)
+    family["components"] = {}
     if returns is None or len(returns) < 2:
         family["bootstrap"] = dict(reason="Una familia necesita KLPO y algún control con datos")
         return family
@@ -352,18 +373,18 @@ def _bootstrap(family, report, primary):
     if sessions <= report["block_length"]:
         family["bootstrap"] = dict(reason="Se necesitan más sesiones que la longitud del bloque")
         return family
-    family["bootstrap"] = _flip(
-        block_bootstrap(
-            returns,
-            market=family["market"],
-            base=primary,
-            block_length=report["block_length"],
-            replicates=report["replicates"],
-            seed=report["seed"],
-            confidence=report["confidence"],
-            sensitivity=tuple(report["block_length_sensitivity"]),
-        )
-    )
+    market = family["market"]
+    family["bootstrap"] = _flip(_resample(returns, report, market, contrasts["primary"]))
+    # Cada control de componente forma con sus variantes otra familia sobre las mismas
+    # sesiones y réplicas. La diferencia del bootstrap ya es variante menos control.
+    components = contrasts.get("components", {})
+    for control in dict.fromkeys(components.values()):
+        variants = [arm for arm, base in components.items() if base == control and arm in returns]
+        if control in returns and variants:
+            arms = {arm: returns[arm] for arm in (control, *variants)}
+            family["components"][control] = dict(
+                _resample(arms, report, market, control), difference=DIFFERENCE
+            )
     return family
 
 
@@ -431,21 +452,29 @@ def _tables(sections):
             for metric in RESAMPLED:
                 for arm, row in bootstrap["differences"][metric].items():
                     contrasts.append(
-                        dict(key, metric=metric, primary=bootstrap["base"], control=arm)
-                        | dict(
-                            estimate=row["estimate"],
-                            lower=None if row["interval"] is None else row["interval"][0],
-                            upper=None if row["interval"] is None else row["interval"][1],
-                            simultaneous_lower=None
-                            if row["simultaneous_interval"] is None
-                            else row["simultaneous_interval"][0],
-                            simultaneous_upper=None
-                            if row["simultaneous_interval"] is None
-                            else row["simultaneous_interval"][1],
-                            simultaneous_excludes_zero=row["simultaneous_excludes_zero"],
-                        )
+                        dict(key, family=PRIMARY_FAMILY, metric=metric)
+                        | dict(primary=bootstrap["base"], control=arm, **_interval(row))
                     )
+            for control, component in family["components"].items():
+                for metric in RESAMPLED:
+                    for arm, row in component["differences"][metric].items():
+                        contrasts.append(
+                            dict(key, family=COMPONENT_FAMILY, metric=metric)
+                            | dict(primary=arm, control=control, **_interval(row))
+                        )
     return metrics, contrasts, equity
+
+
+def _interval(row):
+    marginal, joint = row["interval"] or (None, None), row["simultaneous_interval"] or (None, None)
+    return dict(
+        estimate=row["estimate"],
+        lower=marginal[0],
+        upper=marginal[1],
+        simultaneous_lower=joint[0],
+        simultaneous_upper=joint[1],
+        simultaneous_excludes_zero=row["simultaneous_excludes_zero"],
+    )
 
 
 def build_report(stage_path, outputs, destination, *, benchmarks=None, sensitivity=False):
@@ -475,7 +504,7 @@ def build_report(stage_path, outputs, destination, *, benchmarks=None, sensitivi
     for path in outputs:
         output = read_output(stage, path)
         found = [
-            _bootstrap(family, report, policies["contrasts"]["primary"])
+            _bootstrap(family, report, policies["contrasts"])
             for family in families(stage, output, levels)
         ]
         exits = survival(policies, output)
@@ -551,6 +580,7 @@ def main(argv=None):
                 report=str(args.report / "report.json"),
                 families=len(families),
                 with_bootstrap=sum("differences" in (f["bootstrap"] or {}) for f in families),
+                component_bootstraps=sum(len(f["components"]) for f in families),
                 missing_benchmarks=result["missing_benchmarks"],
             ),
             ensure_ascii=False,
