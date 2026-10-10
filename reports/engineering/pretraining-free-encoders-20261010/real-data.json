@@ -1,0 +1,181 @@
+{
+  "schema_version": 1,
+  "kind": "pretraining_free_encoder_real_data_check",
+  "issue": 10,
+  "measured_at": "2026-10-10T17:45:55+00:00",
+  "commit": "6af4a9c419b54a6bf0b7ac29b72f6bb47359938a",
+  "encoder": {
+    "family": "pretraining_free_control_v1",
+    "text_model": "none_signed_feature_hashing",
+    "text_policy": "nfkc_char_wb_2_4_signed_murmurhash3_384_l2_no_truncation",
+    "text_hashing": {
+      "library": "scikit-learn",
+      "vectorizer": "HashingVectorizer",
+      "hash": "murmurhash3_32_seed_0",
+      "unicode_normalization": "NFKC",
+      "n_features": 384,
+      "analyzer": "char_wb",
+      "ngram_range": [
+        2,
+        4
+      ],
+      "lowercase": true,
+      "alternate_sign": true,
+      "norm": "l2"
+    },
+    "image_model": "none_box_mean",
+    "image_policy": "224_rgb_red_green_ink_14px_box_mean_16x16_channel_major",
+    "learned_parameters": 0,
+    "pretraining": "none",
+    "probe_sha256": "9558f0322ffb5a5cfe490775c3c4daf99bbf40aca26b783587329c88def58e4c",
+    "code_sha256": "c17fd0d7979a837cfbd20972cf08b9b4f47b49d3496376072636b592b8ac3f3e",
+    "numpy": "2.5.3",
+    "scikit_learn": "1.9.1",
+    "pillow": "12.3.0",
+    "device": "cpu",
+    "precision": "float32",
+    "runtime_precision": {
+      "dtype": "float32",
+      "matmul_tf32": false,
+      "cudnn_tf32": false,
+      "computation": "numpy_float64_rounded_once_to_float32"
+    },
+    "historical_simulation": true
+  },
+  "sources_sha256": {
+    "src/mars_titan/data/pretraining_free_encoders.py": "c17fd0d7979a837cfbd20972cf08b9b4f47b49d3496376072636b592b8ac3f3e",
+    "src/mars_titan/evaluation/encoder_sensitivity.py": "ecef5c40fb24591241a31a47a2d162f0b26bfc7afbe7d17eaa477651da056ddd",
+    "configs/encoders/pretraining-free-sensitivity.json": "121ab556e2ff8c9e553697cf16b39e1cca6f30a518d69c4fcaadc879d9549d72",
+    "benchmarks/pretraining_free_encoders_real.py": "7ba31dcb4d332ec18b06bffed00ca264956d35f384907fc0fb87ad2af0df0bfa"
+  },
+  "data": {
+    "prepared": "/home/gonzalo/.local/state/mars-titan/history-2000-20261007/materialization/prepared-v3.1",
+    "prepared_manifest_sha256": "0e8f6735828cd4943f920a4992e2c7bb6cc2f95b780f100fec7c316485a9aedb",
+    "note": "noticias y precios reales preparados hasta 2023. Sin modelos de la campa\u00f1a"
+  },
+  "markets": {
+    "US": {
+      "assets": 40,
+      "text": {
+        "texts": 2000,
+        "characters": 9140442,
+        "identical_between_instances": true,
+        "finite": true,
+        "max_norm_error": 3.095821377030461e-08,
+        "seconds": {
+          "p50": 9.470944782020524,
+          "min": 9.36364123999374,
+          "repeats": 3
+        },
+        "microseconds_per_text": 4681.82061999687,
+        "microseconds_per_thousand_characters": 1024.4188672707228
+      },
+      "chart": {
+        "charts": 927,
+        "identical_between_instances": true,
+        "within_unit_interval": true,
+        "seconds": {
+          "p50": 1.8709938769752625,
+          "min": 1.7858634069852997,
+          "repeats": 3
+        },
+        "microseconds_per_chart": 1926.4977421632143,
+        "rejected_windows": 73,
+        "render_seconds": 2.0649140730092768,
+        "render_microseconds_per_chart": 2227.5232718546677
+      }
+    },
+    "CN": {
+      "assets": 40,
+      "text": {
+        "texts": 2000,
+        "characters": 176622,
+        "identical_between_instances": true,
+        "finite": true,
+        "max_norm_error": 5.166974159642734e-08,
+        "seconds": {
+          "p50": 0.7834694850025699,
+          "min": 0.7103544379933737,
+          "repeats": 3
+        },
+        "microseconds_per_text": 355.17721899668686,
+        "microseconds_per_thousand_characters": 4021.891032789651
+      },
+      "chart": {
+        "charts": 952,
+        "identical_between_instances": true,
+        "within_unit_interval": true,
+        "seconds": {
+          "p50": 1.966395791998366,
+          "min": 1.923175612988416,
+          "repeats": 3
+        },
+        "microseconds_per_chart": 2020.1424506180842,
+        "rejected_windows": 48,
+        "render_seconds": 2.2189051200111862,
+        "render_microseconds_per_chart": 2330.7826890873803
+      }
+    }
+  },
+  "edition_counts": {
+    "US": {
+      "assets": 4213,
+      "news_rows": 2156832,
+      "price_rows": 16149645
+    },
+    "CN": {
+      "assets": 810,
+      "news_rows": 553392,
+      "price_rows": 2895378
+    }
+  },
+  "control_edition_estimate": {
+    "US": {
+      "text_hours": 2.804972369852525,
+      "chart_hours_upper_bound": 8.642292952565956
+    },
+    "CN": {
+      "text_hours": 0.0545978421041707,
+      "chart_hours_upper_bound": 1.624743335662691
+    }
+  },
+  "sensitivity": {
+    "sessions": 4955,
+    "arms": 2,
+    "seeds": 3,
+    "replicates": 2000,
+    "seconds": {
+      "p50": 1.0408709809998982,
+      "min": 0.7219845420040656,
+      "repeats": 3
+    }
+  },
+  "weights_history": {
+    "published_commit": "e62509716f15c5fd03a6fd3156a4bc5e43f83f26",
+    "pinned_revision": "e8f8c211226b894fcb81acc59f3b34ba3efd5f42",
+    "published_bin_sha256": "16cc9e54df6e083272378abec2d75dc34d7a48b5276db3ccc050d18de672ac59",
+    "pinned_safetensors_sha256": "eaa086f0ffee582aeb45b36e34cdd1fe2d6de2bef61f8a559a1bbc9bd955917b",
+    "tensors_compared": 200,
+    "only_in_published": [],
+    "only_in_pinned": [],
+    "identical": true,
+    "download_seconds": 28.30740097098169
+  },
+  "environment": {
+    "cpu": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+    "python": "3.12.14",
+    "omp_threads": "2",
+    "load_average_at_start": [
+      18.8935546875,
+      20.16162109375,
+      20.9130859375
+    ],
+    "process_peak_rss_mib": 2172.28125
+  },
+  "not_measured": [
+    "GPU, porque el control trabaja en CPU",
+    "energ\u00eda, sin instrumento",
+    "la codificaci\u00f3n completa de la edici\u00f3n de control, solo estimada con la muestra",
+    "el ajuste de los modelos sobre la edici\u00f3n de control, bloqueado"
+  ]
+}
