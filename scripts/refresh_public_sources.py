@@ -15,6 +15,8 @@ from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import parse_qsl, urlencode, urljoin, urlsplit, urlunsplit
 
+from mars_titan.data import public_snapshots
+
 if __package__:
     from .public_source_formats import SUPPORTED_VALIDATORS, validate
 else:
@@ -27,6 +29,8 @@ CAPS = {
     "max_total_bytes": 100 * 1024 * 1024,
     "max_source_bytes": 10 * 1024 * 1024,
     "timeout_seconds": 45,
+    # Techo de disco del almacén: archivos confirmados, ejecuciones interrumpidas y nuevos.
+    "max_store_bytes": 512 * 1024 * 1024,
 }
 EXTENSIONS = {
     "csv": ".csv",
@@ -158,14 +162,44 @@ class FetchError(RuntimeError):
         self.metadata = metadata
 
 
+def response_validators(raw: str) -> dict:
+    """ETag y Last-Modified de la última respuesta, tras las redirecciones."""
+    blocks = [block for block in raw.replace("\r\n", "\n").split("\n\n") if block.strip()]
+    found = {}
+    for line in blocks[-1].splitlines()[1:] if blocks else []:
+        name, separator, value = line.partition(":")
+        key = {"etag": "etag", "last-modified": "last_modified"}.get(name.strip().lower())
+        if separator and key:
+            found[key] = public_snapshots.header_value(value.strip())
+    return {"etag": found.get("etag"), "last_modified": found.get("last_modified")}
+
+
+def conditional_headers(conditions: dict | None) -> list[str]:
+    """Cabeceras If-None-Match e If-Modified-Since de una captura anterior."""
+    headers = []
+    for header, key in (("If-None-Match", "etag"), ("If-Modified-Since", "last_modified")):
+        value = (conditions or {}).get(key)
+        if value is None:
+            continue
+        if public_snapshots.header_value(value) is None:
+            raise ValueError(f"Validador {key} no admitido como cabecera")
+        headers.extend(["--header", f"{header}: {value}"])
+    return headers
+
+
 def fetch_url(
-    url: str, max_bytes: int, timeout_seconds: float, user_agent: str
+    url: str,
+    max_bytes: int,
+    timeout_seconds: float,
+    user_agent: str,
+    conditions: dict | None = None,
 ) -> tuple[bytes, dict]:
     require_https(url)
     if max_bytes <= 0 or timeout_seconds <= 0:
         raise ValueError("Presupuesto de descarga agotado")
     with tempfile.TemporaryDirectory(prefix="mars-public-source-") as directory:
         payload = Path(directory) / "response.bin"
+        headers = Path(directory) / "headers.txt"
         command = [
             "curl",
             "--disable",
@@ -187,6 +221,9 @@ def fetch_url(
             str(max_bytes),
             "--user-agent",
             user_agent,
+            *conditional_headers(conditions),
+            "--dump-header",
+            str(headers),
             "--output",
             str(payload),
             "--write-out",
@@ -208,9 +245,16 @@ def fetch_url(
             "elapsed_seconds": info.get("time_total"),
             "curl_exit_code": result.returncode,
             "acquired_at_utc": utc_now(),
+            "conditional_request": bool(conditions),
+            **response_validators(
+                headers.read_text(encoding="latin-1") if headers.is_file() else ""
+            ),
         }
         if result.returncode:
             raise FetchError(result.stderr.strip() or info.get("errormsg", "Fallo HTTP"), metadata)
+        if metadata["http_status"] == 304 and conditions:
+            # Sin cuerpo: el contenido es el de la captura que aportó los validadores.
+            return b"", metadata
         if not payload.is_file() or received > max_bytes:
             raise FetchError("Descarga ausente o superior al presupuesto", metadata)
         return payload.read_bytes(), metadata
@@ -232,7 +276,7 @@ class Session:
         self.source_bytes = 0
         self.deadline = time.monotonic() + self.limits["timeout_seconds"]
 
-    def request(self, url: str) -> tuple[bytes, dict]:
+    def request(self, url: str, conditions: dict | None = None) -> tuple[bytes, dict]:
         require_https(url)
         hostname = urlsplit(url).hostname
         if hostname in self.blocked_hosts:
@@ -256,8 +300,11 @@ class Session:
         if maximum <= 0 or remaining_time <= 0:
             raise ValueError("Presupuesto de bytes o tiempo agotado")
         try:
-            body, metadata = fetch_url(url, maximum, remaining_time, self.user_agent)
-            if not 200 <= int(metadata.get("http_status") or 0) < 300:
+            # Los validadores solo se pasan si existen, como quinto argumento opcional.
+            extra = (conditions,) if conditions else ()
+            body, metadata = fetch_url(url, maximum, remaining_time, self.user_agent, *extra)
+            status = int(metadata.get("http_status") or 0)
+            if not (200 <= status < 300 or (status == 304 and conditions)):
                 raise FetchError("Estado HTTP no satisfactorio", metadata)
         except FetchError as exc:
             received = int(exc.metadata.get("received_bytes", 0))
@@ -327,9 +374,29 @@ def run_refresh(
         raise ValueError("La fecha de captura debe tener zona horaria")
     when = when.astimezone(UTC)
     run_id = when.strftime("%Y%m%dT%H%M%S.%fZ")
-    output_root.mkdir(parents=True, exist_ok=True)
+    with public_snapshots.exclusive_update(output_root):
+        return capture_sources(
+            sources, limits, policy, when, run_id, output_root, catalog_reference, raw_catalog
+        )
+
+
+def capture_sources(
+    sources: list[dict],
+    limits: dict,
+    policy: dict,
+    when: datetime,
+    run_id: str,
+    output_root: Path,
+    catalog_reference: str,
+    raw_catalog: bytes,
+) -> dict:
+    # El índice previo sale de los manifiestos confirmados. Un manifiesto corrupto detiene
+    # la ejecución antes de descargar nada.
+    index = public_snapshots.build_index(ROOT, output_root)
     directory = output_root / run_id
     directory.mkdir(exist_ok=False)
+    written = {}
+    store_bytes = index["stored_bytes"] + index["interrupted_bytes"]
     session = Session(limits, policy.get("user_agent", USER_AGENT))
     pages = {}
     records = []
@@ -357,6 +424,14 @@ def run_refresh(
             "refresh_mode": "fixed_document"
             if source["validator"] == "financial_pdf"
             else "current_source",
+            "conditional_request": False,
+            "etag": None,
+            "last_modified": None,
+            "content_reused": False,
+            "reused_from_run_id": None,
+            # La hora de adquisición no acredita cuándo se publicó cada dato. Sin evidencia
+            # de publicación queda desconocida y `maturity` explica el motivo.
+            "available_at_utc": None,
         }
         try:
             html = None
@@ -381,16 +456,40 @@ def run_refresh(
                 }
             url = resolve_url(source, when.date(), page_html=html)
             record["requested_url"] = url
-            body, receipt = session.request(url)
+            previous = public_snapshots.validators(index, source["id"], url)
+            body, receipt = session.request(url, previous)
             record.update(receipt)
+            status = "downloaded_validated"
+            if receipt.get("http_status") == 304:
+                # El proveedor confirma que no ha cambiado: se valida de nuevo el contenido
+                # anterior y se conservan sus validadores si la respuesta no trae otros.
+                body, _ = public_snapshots.read_content(ROOT, index, previous["sha256"])
+                status = "not_modified"
+                record["etag"] = record["etag"] or previous["etag"]
+                record["last_modified"] = record["last_modified"] or previous["last_modified"]
             checked = validate(body, source["validator"], as_of=when.date())
-            destination = directory / (source["id"] + EXTENSIONS[source["format"]])
-            write_new_file(destination, body)
+            sha256 = hashlib.sha256(body).hexdigest()
+            # Unos bytes ya confirmados no se vuelven a guardar: el registro remite a ellos.
+            confirmed = public_snapshots.reusable_path(ROOT, index, sha256)
+            if sha256 in written:
+                local_path, origin = written[sha256], run_id
+            elif confirmed is not None:
+                local_path, origin = confirmed, index["contents"][sha256]["run_id"]
+            else:
+                if store_bytes + len(body) > limits["max_store_bytes"]:
+                    raise ValueError("Límite de disco del almacén de capturas alcanzado")
+                destination = directory / (source["id"] + EXTENSIONS[source["format"]])
+                write_new_file(destination, body)
+                store_bytes += len(body)
+                local_path, origin = destination.relative_to(ROOT).as_posix(), None
+                written[sha256] = local_path
             record.update(
-                status="downloaded_validated",
-                sha256=hashlib.sha256(body).hexdigest(),
+                status=status,
+                sha256=sha256,
                 bytes=len(body),
-                local_path=destination.relative_to(ROOT).as_posix(),
+                local_path=local_path,
+                content_reused=origin is not None,
+                reused_from_run_id=origin,
                 format_validation=checked,
             )
         except (OSError, ValueError, RuntimeError, subprocess.TimeoutExpired) as exc:
@@ -409,7 +508,12 @@ def run_refresh(
         "source_catalog_sha256": hashlib.sha256(raw_catalog).hexdigest(),
         "limits": limits | {"serial_requests": True, "minimum_pause_seconds": 1, "retries": 0},
         "transferred_bytes": session.transferred,
-        "retained_bytes": sum(record["bytes"] for record in records),
+        # Bytes nuevos guardados en esta ejecución. Los reutilizados ya estaban confirmados.
+        "retained_bytes": sum(
+            record["bytes"] for record in records if not record["content_reused"]
+        ),
+        "reused_bytes": sum(record["bytes"] for record in records if record["content_reused"]),
+        "previous_interrupted_runs": index["interrupted_runs"],
         "benchmark_eligible": False,
         "benchmark_integration": "none",
         "records": records,
@@ -418,7 +522,10 @@ def run_refresh(
     write_new_file(
         path, (json.dumps(manifest, ensure_ascii=False, indent=2, allow_nan=False) + "\n").encode()
     )
-    return {"manifest_path": path, "manifest": manifest}
+    # El índice se escribe después del manifiesto. Si falla, la captura sigue confirmada y
+    # la siguiente ejecución lo reconstruye.
+    index_path = public_snapshots.write_index(ROOT, public_snapshots.build_index(ROOT, output_root))
+    return {"manifest_path": path, "manifest": manifest, "index_path": index_path}
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -461,14 +568,17 @@ def main(argv: list[str] | None = None) -> int:
             json.dumps(
                 {
                     "manifest": result["manifest_path"].relative_to(ROOT).as_posix(),
+                    "index": result["index_path"].relative_to(ROOT).as_posix(),
                     "retained_bytes": result["manifest"]["retained_bytes"],
+                    "reused_bytes": result["manifest"]["reused_bytes"],
                 },
                 ensure_ascii=False,
             )
         )
+        # Una respuesta 304 con el contenido anterior validado también es un éxito.
         return int(
             any(
-                record["status"] != "downloaded_validated"
+                record["status"] not in public_snapshots.VALID
                 for record in result["manifest"]["records"]
             )
         )

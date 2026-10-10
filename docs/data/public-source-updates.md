@@ -2,7 +2,7 @@
 
 Autor: Gonzalo García Lama.
 
-La orden [refresh_public_sources.py](../../scripts/refresh_public_sources.py) crea capturas fechadas de los complementos del [catálogo público](../../data/catalogs/public-sources.json). Es una herramienta de adquisición y validación de formatos. No implementa modelos, no transforma el objetivo financiero y no incorpora datos al benchmark. Tampoco modifica `dataset/`, las capturas iniciales ni `data/manifests/public-snapshots.json`.
+La orden [refresh_public_sources.py](../../scripts/refresh_public_sources.py) crea capturas fechadas de los complementos del [catálogo público](../../data/catalogs/public-sources.json). Es una herramienta de adquisición y validación de formatos. No implementa modelos, no transforma el objetivo financiero y no incorpora datos al benchmark. Tampoco modifica `dataset/`, las capturas iniciales ni `data/manifests/public-snapshots.json`. Solo escribe su carpeta de ejecución y el índice de capturas.
 
 ## Uso desde la raíz del proyecto
 
@@ -39,17 +39,25 @@ El periodo más reciente del archivo puede ser anterior al día de adquisición.
 
 ## Capturas y procedencia
 
-Cada ejecución crea un directorio nuevo con identificador UTC de microsegundos, por ejemplo `data/external/20260918T160000.123456Z/`. Una colisión de nombre se rechaza. Los archivos completos se publican sin reemplazar destinos existentes y después se escribe el manifiesto de esa ejecución. Un directorio sin manifiesto completo no constituye una captura confirmada.
+Cada ejecución crea un directorio nuevo con identificador UTC de microsegundos, por ejemplo `data/external/20260918T160000.123456Z/`. Una colisión de nombre se rechaza. Los archivos completos se publican sin reemplazar destinos existentes y después se escribe el manifiesto de esa ejecución. Un directorio sin manifiesto completo no constituye una captura confirmada: sus archivos no se reutilizan y el manifiesto siguiente lo anota en `previous_interrupted_runs`. Un bloqueo de archivo impide dos ejecuciones simultáneas sobre el mismo almacén.
 
 El manifiesto registra el hash del catálogo, sus metadatos por fuente, URL del catálogo, URL solicitada y URL efectiva, estado HTTP, tipo de contenido, tiempo de adquisición, bytes y SHA-256. Añade el resultado del validador, la madurez temporal y cualquier fallo. En FRED conserva también la URL y el hash de la página usada para resolver el enlace. Las rutas locales del manifiesto son relativas a la raíz del proyecto.
 
 Todos los registros conservan `benchmark_eligible=false`. Una descarga válida no acredita un dato point-in-time. Hay que auditar revisiones, publicaciones, ajustes y correspondencia con activos antes de usarla en un experimento. La matriz de vintages GSCPI, por ejemplo, contiene etiquetas mensuales que no equivalen a horas exactas de publicación.
 
-Estas capturas no son una sincronización incremental. No se presupone ahorro mediante ETag, ni se reemplazan archivos antiguos cuando el contenido sea idéntico. Los hashes permiten comprobar posteriormente esa igualdad. El crecimiento de disco debe revisarse antes de programar descargas recurrentes.
+## Reutilización y peticiones condicionales
+
+Tras confirmar el manifiesto se regenera el [índice de capturas](../../data/manifests/public-snapshots/index.json), que referencia el manifiesto inicial y los de cada ejecución con sus huellas. El índice se deriva solo de esos archivos y se puede reconstruir sin red con `uv run python -m mars_titan.data.public_snapshots`. Las capturas anteriores no se modifican. Como el índice está versionado, cada ejecución deja un cambio en Git que conviene confirmar cuando la captura se vaya a conservar o citar.
+
+Una respuesta válida con los mismos bytes que un contenido ya confirmado no se vuelve a guardar. Su registro remite al archivo existente con `content_reused=true` y `reused_from_run_id`, después de comprobar de nuevo su SHA-256. Si el archivo anterior falta o ha cambiado, se guarda otra copia. `retained_bytes` cuenta solo los bytes nuevos y `reused_bytes` los referenciados.
+
+El manifiesto guarda el ETag y el Last-Modified de la respuesta final. La siguiente ejecución los envía como `If-None-Match` e `If-Modified-Since` a la misma fuente y URL, solo si la última captura válida los trajo y su contenido sigue íntegro. Un 304 queda como `not_modified`, se valida otra vez el contenido anterior y cuenta como éxito para el código de salida. Un 304 sin petición condicional es un fallo. Los validadores con saltos de línea o caracteres de control no se reenvían. En la comprobación del 10 de octubre de 2026 respondieron 304 French, BCE, Cboe y el RSS de la Fed. FRED, Treasury y New York Fed no enviaron validadores, así que solo se ahorra disco. La [validación de la ingesta](../../reports/data/public-ingestion-validation.md) recoge las cifras.
+
+Cada registro mantiene `available_at_utc=null`. La hora de adquisición y la confirmación del manifiesto no acreditan cuándo se publicó cada dato, y `maturity` indica el motivo.
 
 ## Límites y comprobaciones
 
-La ejecución es serial. El catálogo puede reducir los límites, pero no elevarlos por encima de 100 MiB transferidos por ejecución, 10 MiB por fuente y 45 segundos de presupuesto de peticiones por fuente. El descubrimiento de FRED consume presupuesto y no se repite para la segunda frecuencia. Se cuenta también el cuerpo de las respuestas fallidas cuando el transporte informa de sus bytes. Se deja aproximadamente un segundo entre peticiones y no se realizan reintentos automáticos.
+La ejecución es serial. El catálogo puede reducir los límites, pero no elevarlos por encima de 100 MiB transferidos por ejecución, 10 MiB por fuente, 45 segundos de presupuesto de peticiones por fuente y 512 MiB de disco para el almacén. Ese techo suma los archivos confirmados, las ejecuciones interrumpidas y los bytes nuevos. Al alcanzarlo, la fuente falla sin guardar nada, aunque puede seguir remitiendo a contenidos ya confirmados. El descubrimiento de FRED consume presupuesto y no se repite para la segunda frecuencia. Se cuenta también el cuerpo de las respuestas fallidas cuando el transporte informa de sus bytes. Se deja aproximadamente un segundo entre peticiones y no se realizan reintentos automáticos.
 
 El transporte utiliza `curl` del sistema, desactiva su configuración personal y permite únicamente HTTPS, también en redirecciones. No solicita claves ni resuelve verificaciones de navegador. La inspección de PDF requiere además `pdfinfo`. Ambos programas procesan las respuestas como datos. El contenido descargado no se ejecuta como código.
 
@@ -73,10 +81,10 @@ Antes de utilizarla deben fijarse la zona horaria del programador, el tratamient
 
 ## Verificación de la herramienta
 
-Las [pruebas sin red](../../tests/tooling/test_public_sources.py) cubren formatos, límites, enlaces de FRED, cambio de fechas, selección de fuentes, rutas locales, aislamiento de fallos y conservación de capturas existentes. Pueden ejecutarse con:
+Las [pruebas sin red](../../tests/tooling/test_public_sources.py) cubren formatos, límites, enlaces de FRED, cambio de fechas, selección de fuentes, rutas locales, aislamiento de fallos y conservación de capturas existentes. Las [pruebas de instantáneas](../../tests/data/test_public_snapshots.py) cubren reutilización, respuestas 304, validadores, interrupciones, índice, límite de disco y bloqueo. Pueden ejecutarse con:
 
 ```bash
-uv run pytest tests/tooling/test_public_sources.py
+uv run pytest tests/tooling/test_public_sources.py tests/data/test_public_snapshots.py
 ```
 
 La descarga real de comprobación se limita a un RSS oficial pequeño. Su evidencia es el manifiesto de una ejecución nueva, no una prueba de disponibilidad futura de todas las fuentes. Las condiciones y derechos siguen siendo los del catálogo y de cada productor.

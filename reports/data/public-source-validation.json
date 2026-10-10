@@ -1,0 +1,367 @@
+{
+  "schema_version": 1,
+  "project": "MARS-TITAN",
+  "kind": "public_source_reconciliation",
+  "catalog_sha256": "298053b78f09d854e8d57f1686a63113fac7200bbdbe1fd15146cd3d03d47a72",
+  "captures": [
+    {
+      "run_id": "initial",
+      "manifest": "data/manifests/public-snapshots.json",
+      "manifest_sha256": "9455a61254926edfe52c8f6b24def6af9b7bf2bee796587f593f195203e9c054"
+    },
+    {
+      "run_id": "20260918T193326.801397Z",
+      "manifest": "data/external/20260918T193326.801397Z/manifest.json",
+      "manifest_sha256": "6c32f1f0a63ed628f001577706a887c84807ee7f5cc22b6aa264fa2d9bdf60a5"
+    },
+    {
+      "run_id": "20260918T194800.921923Z",
+      "manifest": "data/external/20260918T194800.921923Z/manifest.json",
+      "manifest_sha256": "e58d52748b452f4d95fdd37331fedce3a6d41b0af7fc242f091a72f76bacef59"
+    },
+    {
+      "run_id": "20260919T010945.005748Z",
+      "manifest": "data/external/20260919T010945.005748Z/manifest.json",
+      "manifest_sha256": "99adac1419d670690824f5580089b41f3e1065eebdde3d82e7b91b65a1f85999"
+    }
+  ],
+  "interrupted_runs": [],
+  "sources": [
+    {
+      "source_id": "fred_md",
+      "provider": "Federal Reserve Bank of St. Louis",
+      "catalog_status": "downloaded_validated",
+      "evidence": "acquired_validated",
+      "attempts": 2,
+      "valid_records": 2,
+      "distinct_contents": 1,
+      "first_valid_run_id": "initial",
+      "latest_valid_run_id": "20260919T010945.005748Z",
+      "failure_http_statuses": [],
+      "diagnostic_http_statuses": [],
+      "license_unknown": true,
+      "decisions": [
+        {
+          "use": "Entrada macro mensual de un experimento",
+          "decision": "excluded"
+        },
+        {
+          "use": "Contraste local de cobertura, unidades y ausencias de las series del cat\u00e1logo macro",
+          "decision": "admitted_exploratory"
+        }
+      ],
+      "problems": []
+    },
+    {
+      "source_id": "fred_qd",
+      "provider": "Federal Reserve Bank of St. Louis",
+      "catalog_status": "downloaded_validated",
+      "evidence": "acquired_validated",
+      "attempts": 2,
+      "valid_records": 2,
+      "distinct_contents": 1,
+      "first_valid_run_id": "initial",
+      "latest_valid_run_id": "20260919T010945.005748Z",
+      "failure_http_statuses": [],
+      "diagnostic_http_statuses": [],
+      "license_unknown": true,
+      "decisions": [
+        {
+          "use": "Entrada macro trimestral de un experimento",
+          "decision": "excluded"
+        },
+        {
+          "use": "Contraste local de magnitudes trimestrales",
+          "decision": "admitted_exploratory"
+        }
+      ],
+      "problems": []
+    },
+    {
+      "source_id": "french_factors_daily",
+      "provider": "Kenneth R. French Data Library",
+      "catalog_status": "downloaded_validated",
+      "evidence": "acquired_validated",
+      "attempts": 2,
+      "valid_records": 2,
+      "distinct_contents": 1,
+      "first_valid_run_id": "initial",
+      "latest_valid_run_id": "20260919T010945.005748Z",
+      "failure_http_statuses": [],
+      "diagnostic_http_statuses": [],
+      "license_unknown": true,
+      "decisions": [
+        {
+          "use": "Revisi\u00f3n de la convenci\u00f3n del factor de mercado del objetivo residual",
+          "decision": "pending"
+        },
+        {
+          "use": "Sustituir el factor de mercado del objetivo",
+          "decision": "excluded"
+        }
+      ],
+      "problems": []
+    },
+    {
+      "source_id": "ecb_usd_eur",
+      "provider": "European Central Bank",
+      "catalog_status": "downloaded_validated",
+      "evidence": "acquired_validated",
+      "attempts": 2,
+      "valid_records": 2,
+      "distinct_contents": 2,
+      "first_valid_run_id": "initial",
+      "latest_valid_run_id": "20260919T010945.005748Z",
+      "failure_http_statuses": [],
+      "diagnostic_http_statuses": [],
+      "license_unknown": false,
+      "decisions": [
+        {
+          "use": "Tipo USD/EUR como contexto de un experimento",
+          "decision": "pending"
+        }
+      ],
+      "problems": []
+    },
+    {
+      "source_id": "nyfed_gscpi",
+      "provider": "Federal Reserve Bank of New York",
+      "catalog_status": "failed",
+      "evidence": "failed_attempt",
+      "attempts": 1,
+      "valid_records": 0,
+      "distinct_contents": 0,
+      "first_valid_run_id": null,
+      "latest_valid_run_id": null,
+      "failure_http_statuses": [
+        200
+      ],
+      "diagnostic_http_statuses": [
+        200
+      ],
+      "license_unknown": true,
+      "decisions": [
+        {
+          "use": "Libro XLSX del GSCPI",
+          "decision": "excluded"
+        }
+      ],
+      "problems": []
+    },
+    {
+      "source_id": "cboe_vix",
+      "provider": "Cboe",
+      "catalog_status": "downloaded_validated",
+      "evidence": "acquired_validated",
+      "attempts": 2,
+      "valid_records": 2,
+      "distinct_contents": 2,
+      "first_valid_run_id": "initial",
+      "latest_valid_run_id": "20260919T010945.005748Z",
+      "failure_http_statuses": [],
+      "diagnostic_http_statuses": [],
+      "license_unknown": true,
+      "decisions": [
+        {
+          "use": "Volatilidad impl\u00edcita como contexto de un experimento",
+          "decision": "pending"
+        }
+      ],
+      "problems": []
+    },
+    {
+      "source_id": "treasury_yields",
+      "provider": "U.S. Department of the Treasury",
+      "catalog_status": "downloaded_validated",
+      "evidence": "acquired_validated",
+      "attempts": 2,
+      "valid_records": 2,
+      "distinct_contents": 2,
+      "first_valid_run_id": "initial",
+      "latest_valid_run_id": "20260919T010945.005748Z",
+      "failure_http_statuses": [],
+      "diagnostic_http_statuses": [],
+      "license_unknown": true,
+      "decisions": [
+        {
+          "use": "Curva de tipos como entrada de un experimento",
+          "decision": "excluded"
+        },
+        {
+          "use": "Contraste local de valores de la curva con H.15",
+          "decision": "admitted_exploratory"
+        }
+      ],
+      "problems": []
+    },
+    {
+      "source_id": "sec_aapl_submissions",
+      "provider": "U.S. Securities and Exchange Commission",
+      "catalog_status": "failed",
+      "evidence": "failed_attempt",
+      "attempts": 1,
+      "valid_records": 0,
+      "distinct_contents": 0,
+      "first_valid_run_id": null,
+      "latest_valid_run_id": null,
+      "failure_http_statuses": [
+        403
+      ],
+      "diagnostic_http_statuses": [],
+      "license_unknown": true,
+      "decisions": [
+        {
+          "use": "Metadatos de presentaciones con hora de aceptaci\u00f3n",
+          "decision": "pending"
+        }
+      ],
+      "problems": []
+    },
+    {
+      "source_id": "sec_aapl_companyfacts",
+      "provider": "U.S. Securities and Exchange Commission",
+      "catalog_status": "failed",
+      "evidence": "failed_attempt",
+      "attempts": 1,
+      "valid_records": 0,
+      "distinct_contents": 0,
+      "first_valid_run_id": null,
+      "latest_valid_run_id": null,
+      "failure_http_statuses": [
+        403
+      ],
+      "diagnostic_http_statuses": [],
+      "license_unknown": true,
+      "decisions": [
+        {
+          "use": "Hechos XBRL con fecha de presentaci\u00f3n",
+          "decision": "pending"
+        }
+      ],
+      "problems": []
+    },
+    {
+      "source_id": "gdelt_article_metadata",
+      "provider": "The GDELT Project",
+      "catalog_status": "failed",
+      "evidence": "failed_attempt",
+      "attempts": 1,
+      "valid_records": 0,
+      "distinct_contents": 0,
+      "first_valid_run_id": null,
+      "latest_valid_run_id": null,
+      "failure_http_statuses": [
+        200
+      ],
+      "diagnostic_http_statuses": [
+        429
+      ],
+      "license_unknown": true,
+      "decisions": [
+        {
+          "use": "Metadatos de noticias para descubrir publicaciones",
+          "decision": "pending"
+        }
+      ],
+      "problems": []
+    },
+    {
+      "source_id": "nyfed_gscpi_vintages",
+      "provider": "Federal Reserve Bank of New York",
+      "catalog_status": "downloaded_validated",
+      "evidence": "acquired_validated",
+      "attempts": 3,
+      "valid_records": 2,
+      "distinct_contents": 1,
+      "first_valid_run_id": "initial",
+      "latest_valid_run_id": "20260919T010945.005748Z",
+      "failure_http_statuses": [
+        200
+      ],
+      "diagnostic_http_statuses": [],
+      "license_unknown": true,
+      "decisions": [
+        {
+          "use": "Fuente del GSCPI en la edici\u00f3n hist\u00f3rica",
+          "decision": "excluded"
+        },
+        {
+          "use": "Estudio local de revisiones entre columnas de versi\u00f3n",
+          "decision": "admitted_exploratory"
+        }
+      ],
+      "problems": []
+    },
+    {
+      "source_id": "fed_monetary_rss",
+      "provider": "Board of Governors of the Federal Reserve System",
+      "catalog_status": "downloaded_validated",
+      "evidence": "acquired_validated",
+      "attempts": 4,
+      "valid_records": 4,
+      "distinct_contents": 1,
+      "first_valid_run_id": "initial",
+      "latest_valid_run_id": "20260919T010945.005748Z",
+      "failure_http_statuses": [],
+      "diagnostic_http_statuses": [],
+      "license_unknown": true,
+      "decisions": [
+        {
+          "use": "Comunicados monetarios oficiales como modalidad textual",
+          "decision": "pending"
+        }
+      ],
+      "problems": []
+    },
+    {
+      "source_id": "apple_fy2026_q3_financials",
+      "provider": "Apple Inc.",
+      "catalog_status": "downloaded_validated",
+      "evidence": "fixed_document",
+      "attempts": 1,
+      "valid_records": 1,
+      "distinct_contents": 1,
+      "first_valid_run_id": "initial",
+      "latest_valid_run_id": "initial",
+      "failure_http_statuses": [],
+      "diagnostic_http_statuses": [],
+      "license_unknown": true,
+      "decisions": [
+        {
+          "use": "Ejemplo de extracci\u00f3n de tablas y texto de un documento de resultados",
+          "decision": "admitted_exploratory"
+        },
+        {
+          "use": "Fundamentales de entrada de un experimento",
+          "decision": "excluded"
+        }
+      ],
+      "problems": []
+    },
+    {
+      "source_id": "stooq_aapl_eod",
+      "provider": "Stooq",
+      "catalog_status": "blocked_at_source_discovery",
+      "evidence": "blocked_at_source_discovery",
+      "attempts": 1,
+      "valid_records": 0,
+      "distinct_contents": 0,
+      "first_valid_run_id": null,
+      "latest_valid_run_id": null,
+      "failure_http_statuses": [
+        200
+      ],
+      "diagnostic_http_statuses": [],
+      "license_unknown": true,
+      "decisions": [
+        {
+          "use": "Precios EOD de una acci\u00f3n como contraste externo",
+          "decision": "excluded"
+        }
+      ],
+      "problems": []
+    }
+  ],
+  "problems": [],
+  "benchmark_eligible": false
+}
