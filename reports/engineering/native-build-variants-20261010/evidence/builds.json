@@ -1,0 +1,3013 @@
+{
+ "cand-base-relink": {
+  "kind": "native_relink",
+  "label": "cand-base-relink",
+  "removed": 19,
+  "planned_edges": 19,
+  "link_seconds": 2.3604436030145735,
+  "identity": {
+   "sha256": "53b0657b4ff615ee90fd4ab55ce602da9cd215e933cd44dedf82fadb9847ff43",
+   "compiler_launcher": "",
+   "linker_type": "",
+   "ipo": "OFF",
+   "pgo": "off"
+  },
+  "linked_sha256": {
+   "count": 19
+  },
+  "started": {
+   "date": "2026-10-10T14:12:42+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 74.0,
+   "machine": "x86_64",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    13.708984375,
+    13.9658203125,
+    12.95703125
+   ],
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>",
+   "ccache_basedir": "<worktree>"
+  },
+  "environment": {
+   "date": "2026-10-10T14:12:44+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 74.0,
+   "machine": "x86_64",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    13.17138671875,
+    13.85009765625,
+    12.9248046875
+   ],
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>",
+   "ccache_basedir": "<worktree>"
+  }
+ },
+ "cand-base": {
+  "kind": "native_build_variant",
+  "label": "cand-base",
+  "preset": "native-candidate-cuda",
+  "defines": [
+   "-DMARS_TITAN_BUILD_EPISODIC_PYTHON=ON",
+   "-DMARS_TITAN_BUILD_SIMULATION=ON",
+   "-DMARS_TITAN_TORCH_ENVIRONMENT=<entorno>"
+  ],
+  "jobs": 2,
+  "configure_seconds": 8.85668756600353,
+  "build_seconds": 117.08781134599121,
+  "children_peak_rss_kib": 784912,
+  "edges": 61,
+  "ccache": null,
+  "identity": {
+   "sha256": "53b0657b4ff615ee90fd4ab55ce602da9cd215e933cd44dedf82fadb9847ff43",
+   "compiler_launcher": "",
+   "linker_type": "",
+   "ipo": "OFF",
+   "pgo": "off"
+  },
+  "linked_sha256": {
+   "count": 19
+  },
+  "objects_sha256": {
+   "count": 36
+  },
+  "started": {
+   "date": "2026-10-10T14:10:36+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 81.0,
+   "machine": "x86_64",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    19.82861328125,
+    14.16455078125,
+    12.841796875
+   ],
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>",
+   "ccache_basedir": "<worktree>"
+  },
+  "environment": {
+   "date": "2026-10-10T14:12:42+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 74.0,
+   "machine": "x86_64",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    13.708984375,
+    13.9658203125,
+    12.95703125
+   ],
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>",
+   "ccache_basedir": "<worktree>"
+  }
+ },
+ "cand-ccache-cold": {
+  "kind": "native_build_variant",
+  "label": "cand-ccache-cold",
+  "preset": "native-candidate-cuda",
+  "defines": [
+   "-DMARS_TITAN_BUILD_EPISODIC_PYTHON=ON",
+   "-DMARS_TITAN_BUILD_SIMULATION=ON",
+   "-DMARS_TITAN_TORCH_ENVIRONMENT=<entorno>",
+   "-DCMAKE_C_COMPILER_LAUNCHER=ccache",
+   "-DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
+  ],
+  "jobs": 2,
+  "configure_seconds": 8.43533648599987,
+  "build_seconds": 132.77713668800425,
+  "children_peak_rss_kib": 785596,
+  "edges": 61,
+  "ccache": {
+   "direct_cache_hit": 0,
+   "preprocessed_cache_hit": 0,
+   "cache_miss": 36,
+   "files_in_cache": 72,
+   "cache_size_kibibyte": 5280,
+   "uncacheable": 0,
+   "compiler_check_failed": 0
+  },
+  "identity": {
+   "sha256": "f604dfe5465c2d33ae73e3b69cccfb794116bdeba8b39abab7a737bf03002b9b",
+   "compiler_launcher": "ccache",
+   "linker_type": "",
+   "ipo": "OFF",
+   "pgo": "off"
+  },
+  "linked_sha256": {
+   "count": 19
+  },
+  "objects_sha256": {
+   "count": 36
+  },
+  "started": {
+   "date": "2026-10-10T14:12:44+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 74.0,
+   "machine": "x86_64",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    13.17138671875,
+    13.85009765625,
+    12.9248046875
+   ],
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>-candidate",
+   "ccache_basedir": "<worktree>"
+  },
+  "environment": {
+   "date": "2026-10-10T14:15:07+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 73.0,
+   "machine": "x86_64",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    15.37841796875,
+    14.505859375,
+    13.29296875
+   ],
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>-candidate",
+   "ccache_basedir": "<worktree>"
+  }
+ },
+ "cand-ccache-relink-r1": {
+  "kind": "native_relink",
+  "label": "cand-ccache-relink-r1",
+  "removed": 19,
+  "planned_edges": 19,
+  "link_seconds": 3.0836579329916276,
+  "identity": {
+   "sha256": "f604dfe5465c2d33ae73e3b69cccfb794116bdeba8b39abab7a737bf03002b9b",
+   "compiler_launcher": "ccache",
+   "linker_type": "",
+   "ipo": "OFF",
+   "pgo": "off"
+  },
+  "linked_sha256": {
+   "count": 19
+  },
+  "started": {
+   "date": "2026-10-10T18:27:44+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 66.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    23.2177734375,
+    19.24560546875,
+    19.58544921875
+   ],
+   "memory": {
+    "total_bytes": 32313372672,
+    "available_bytes": 6173437952
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "1936 MiB",
+    "temperature.gpu": "54"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>",
+   "ccache_basedir": ""
+  },
+  "environment": {
+   "date": "2026-10-10T18:27:48+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 65.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    22.9599609375,
+    19.25830078125,
+    19.587890625
+   ],
+   "memory": {
+    "total_bytes": 32313372672,
+    "available_bytes": 5704142848
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "1936 MiB",
+    "temperature.gpu": "54"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>",
+   "ccache_basedir": ""
+  }
+ },
+ "cand-ccache-relink-r2": {
+  "kind": "native_relink",
+  "label": "cand-ccache-relink-r2",
+  "removed": 19,
+  "planned_edges": 19,
+  "link_seconds": 2.8167162960162386,
+  "identity": {
+   "sha256": "f604dfe5465c2d33ae73e3b69cccfb794116bdeba8b39abab7a737bf03002b9b",
+   "compiler_launcher": "ccache",
+   "linker_type": "",
+   "ipo": "OFF",
+   "pgo": "off"
+  },
+  "linked_sha256": {
+   "count": 19
+  },
+  "started": {
+   "date": "2026-10-10T18:28:02+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 64.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    23.33935546875,
+    19.5107421875,
+    19.66455078125
+   ],
+   "memory": {
+    "total_bytes": 32313372672,
+    "available_bytes": 5656293376
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "1936 MiB",
+    "temperature.gpu": "53"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>",
+   "ccache_basedir": ""
+  },
+  "environment": {
+   "date": "2026-10-10T18:28:05+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 64.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    23.33935546875,
+    19.5107421875,
+    19.66455078125
+   ],
+   "memory": {
+    "total_bytes": 32313372672,
+    "available_bytes": 5421035520
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "1936 MiB",
+    "temperature.gpu": "53"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>",
+   "ccache_basedir": ""
+  }
+ },
+ "cand-ccache-relink-r3": {
+  "kind": "native_relink",
+  "label": "cand-ccache-relink-r3",
+  "removed": 19,
+  "planned_edges": 19,
+  "link_seconds": 2.639060138986679,
+  "identity": {
+   "sha256": "f604dfe5465c2d33ae73e3b69cccfb794116bdeba8b39abab7a737bf03002b9b",
+   "compiler_launcher": "ccache",
+   "linker_type": "",
+   "ipo": "OFF",
+   "pgo": "off"
+  },
+  "linked_sha256": {
+   "count": 19
+  },
+  "started": {
+   "date": "2026-10-10T18:28:17+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 64.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    24.669921875,
+    19.95263671875,
+    19.80419921875
+   ],
+   "memory": {
+    "total_bytes": 32313372672,
+    "available_bytes": 5532536832
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "1936 MiB",
+    "temperature.gpu": "53"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>",
+   "ccache_basedir": ""
+  },
+  "environment": {
+   "date": "2026-10-10T18:28:19+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 64.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    24.669921875,
+    19.95263671875,
+    19.80419921875
+   ],
+   "memory": {
+    "total_bytes": 32313372672,
+    "available_bytes": 5168132096
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "1936 MiB",
+    "temperature.gpu": "53"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>",
+   "ccache_basedir": ""
+  }
+ },
+ "cand-ccache-relink": {
+  "kind": "native_relink",
+  "label": "cand-ccache-relink",
+  "removed": 19,
+  "planned_edges": 19,
+  "link_seconds": 2.0689203749934677,
+  "identity": {
+   "sha256": "f604dfe5465c2d33ae73e3b69cccfb794116bdeba8b39abab7a737bf03002b9b",
+   "compiler_launcher": "ccache",
+   "linker_type": "",
+   "ipo": "OFF",
+   "pgo": "off"
+  },
+  "linked_sha256": {
+   "count": 19
+  },
+  "started": {
+   "date": "2026-10-10T14:15:18+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 72.0,
+   "machine": "x86_64",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    14.271484375,
+    14.30126953125,
+    13.2451171875
+   ],
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>-candidate",
+   "ccache_basedir": "<worktree>"
+  },
+  "environment": {
+   "date": "2026-10-10T14:15:20+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 72.0,
+   "machine": "x86_64",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    14.271484375,
+    14.30126953125,
+    13.2451171875
+   ],
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>-candidate",
+   "ccache_basedir": "<worktree>"
+  }
+ },
+ "cand-ccache-warm": {
+  "kind": "native_build_variant",
+  "label": "cand-ccache-warm",
+  "preset": "native-candidate-cuda",
+  "defines": [
+   "-DMARS_TITAN_BUILD_EPISODIC_PYTHON=ON",
+   "-DMARS_TITAN_BUILD_SIMULATION=ON",
+   "-DMARS_TITAN_TORCH_ENVIRONMENT=<entorno>",
+   "-DCMAKE_C_COMPILER_LAUNCHER=ccache",
+   "-DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
+  ],
+  "jobs": 2,
+  "configure_seconds": 8.111930071987445,
+  "build_seconds": 3.2246968210092746,
+  "children_peak_rss_kib": 676444,
+  "edges": 61,
+  "ccache": {
+   "direct_cache_hit": 36,
+   "preprocessed_cache_hit": 0,
+   "cache_miss": 0,
+   "files_in_cache": 72,
+   "cache_size_kibibyte": 5280,
+   "uncacheable": 0,
+   "compiler_check_failed": 0
+  },
+  "identity": {
+   "sha256": "f604dfe5465c2d33ae73e3b69cccfb794116bdeba8b39abab7a737bf03002b9b",
+   "compiler_launcher": "ccache",
+   "linker_type": "",
+   "ipo": "OFF",
+   "pgo": "off"
+  },
+  "linked_sha256": {
+   "count": 19
+  },
+  "objects_sha256": {
+   "count": 36
+  },
+  "started": {
+   "date": "2026-10-10T14:15:07+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 73.0,
+   "machine": "x86_64",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    15.37841796875,
+    14.505859375,
+    13.29296875
+   ],
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>-candidate",
+   "ccache_basedir": "<worktree>"
+  },
+  "environment": {
+   "date": "2026-10-10T14:15:18+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 72.0,
+   "machine": "x86_64",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    14.271484375,
+    14.30126953125,
+    13.2451171875
+   ],
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>-candidate",
+   "ccache_basedir": "<worktree>"
+  }
+ },
+ "cand-dev": {
+  "kind": "native_build_variant",
+  "label": "cand-dev",
+  "preset": "native-candidate-cuda-dev",
+  "defines": [
+   "-DMARS_TITAN_BUILD_EPISODIC_PYTHON=ON",
+   "-DMARS_TITAN_BUILD_SIMULATION=ON",
+   "-DMARS_TITAN_TORCH_ENVIRONMENT=<entorno>"
+  ],
+  "jobs": 2,
+  "configure_seconds": 13.357039113994688,
+  "build_seconds": 207.31570403801743,
+  "children_peak_rss_kib": 785368,
+  "edges": 61,
+  "ccache": null,
+  "identity": {
+   "sha256": "018daa0cf38064327f42e0c76ba47ffca1cc375cd3f08966a720963a6419bb3a",
+   "compiler_launcher": "ccache",
+   "linker_type": "MOLD",
+   "ipo": "OFF",
+   "pgo": "off"
+  },
+  "linked_sha256": {
+   "count": 19
+  },
+  "objects_sha256": {
+   "count": 36
+  },
+  "started": {
+   "date": "2026-10-10T19:23:24+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 72.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    25.583984375,
+    21.88037109375,
+    19.61572265625
+   ],
+   "memory": {
+    "total_bytes": 32313372672,
+    "available_bytes": 9776275456
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "1450 MiB",
+    "temperature.gpu": "58"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>",
+   "ccache_basedir": "<worktree>"
+  },
+  "environment": {
+   "date": "2026-10-10T19:27:05+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 71.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    25.2373046875,
+    23.96484375,
+    20.97021484375
+   ],
+   "memory": {
+    "total_bytes": 32313372672,
+    "available_bytes": 10423676928
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "1450 MiB",
+    "temperature.gpu": "57"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>",
+   "ccache_basedir": "<worktree>"
+  }
+ },
+ "cand-mold-clean": {
+  "kind": "native_build_variant",
+  "label": "cand-mold-clean",
+  "preset": "native-candidate-cuda",
+  "defines": [
+   "-DMARS_TITAN_BUILD_EPISODIC_PYTHON=ON",
+   "-DMARS_TITAN_BUILD_SIMULATION=ON",
+   "-DMARS_TITAN_TORCH_ENVIRONMENT=<entorno>",
+   "-DCMAKE_LINKER_TYPE=MOLD"
+  ],
+  "jobs": 2,
+  "configure_seconds": 10.157686920982087,
+  "build_seconds": 138.82428009001887,
+  "children_peak_rss_kib": 785020,
+  "edges": 61,
+  "ccache": null,
+  "identity": {
+   "sha256": "2bd0ac7783d74d534ed46f7623b06bb762e5723f2b27551cd1549cf3f62421cc",
+   "compiler_launcher": "",
+   "linker_type": "MOLD",
+   "ipo": "OFF",
+   "pgo": "off"
+  },
+  "linked_sha256": {
+   "count": 19
+  },
+  "objects_sha256": {
+   "count": 36
+  },
+  "started": {
+   "date": "2026-10-10T17:40:26+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 74.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    19.04736328125,
+    20.2294921875,
+    21.908203125
+   ],
+   "memory": {
+    "total_bytes": 32313372672,
+    "available_bytes": 16434933760
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "1303 MiB",
+    "temperature.gpu": "61"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>",
+   "ccache_basedir": ""
+  },
+  "environment": {
+   "date": "2026-10-10T17:42:55+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 73.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    20.044921875,
+    19.71044921875,
+    21.42236328125
+   ],
+   "memory": {
+    "total_bytes": 32313372672,
+    "available_bytes": 13618196480
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "1650 MiB",
+    "temperature.gpu": "61"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>",
+   "ccache_basedir": ""
+  }
+ },
+ "cand-mold-relink-r1": {
+  "kind": "native_relink",
+  "label": "cand-mold-relink-r1",
+  "removed": 19,
+  "planned_edges": 19,
+  "link_seconds": 1.2479386889899615,
+  "identity": {
+   "sha256": "2bd0ac7783d74d534ed46f7623b06bb762e5723f2b27551cd1549cf3f62421cc",
+   "compiler_launcher": "",
+   "linker_type": "MOLD",
+   "ipo": "OFF",
+   "pgo": "off"
+  },
+  "linked_sha256": {
+   "count": 19
+  },
+  "started": {
+   "date": "2026-10-10T18:27:48+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 65.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    22.9599609375,
+    19.25830078125,
+    19.587890625
+   ],
+   "memory": {
+    "total_bytes": 32313372672,
+    "available_bytes": 5718663168
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "1936 MiB",
+    "temperature.gpu": "54"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>",
+   "ccache_basedir": ""
+  },
+  "environment": {
+   "date": "2026-10-10T18:27:49+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 65.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    22.9599609375,
+    19.25830078125,
+    19.587890625
+   ],
+   "memory": {
+    "total_bytes": 32313372672,
+    "available_bytes": 6092894208
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "1935 MiB",
+    "temperature.gpu": "53"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>",
+   "ccache_basedir": ""
+  }
+ },
+ "cand-mold-relink-r2": {
+  "kind": "native_relink",
+  "label": "cand-mold-relink-r2",
+  "removed": 19,
+  "planned_edges": 19,
+  "link_seconds": 0.8790476889989804,
+  "identity": {
+   "sha256": "2bd0ac7783d74d534ed46f7623b06bb762e5723f2b27551cd1549cf3f62421cc",
+   "compiler_launcher": "",
+   "linker_type": "MOLD",
+   "ipo": "OFF",
+   "pgo": "off"
+  },
+  "linked_sha256": {
+   "count": 19
+  },
+  "started": {
+   "date": "2026-10-10T18:28:05+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 64.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    23.33935546875,
+    19.5107421875,
+    19.66455078125
+   ],
+   "memory": {
+    "total_bytes": 32313372672,
+    "available_bytes": 5410570240
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "1936 MiB",
+    "temperature.gpu": "53"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>",
+   "ccache_basedir": ""
+  },
+  "environment": {
+   "date": "2026-10-10T18:28:06+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 64.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    22.75146484375,
+    19.4521484375,
+    19.64453125
+   ],
+   "memory": {
+    "total_bytes": 32313372672,
+    "available_bytes": 6055370752
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "1936 MiB",
+    "temperature.gpu": "53"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>",
+   "ccache_basedir": ""
+  }
+ },
+ "cand-mold-relink-r3": {
+  "kind": "native_relink",
+  "label": "cand-mold-relink-r3",
+  "removed": 19,
+  "planned_edges": 19,
+  "link_seconds": 0.7747258370218333,
+  "identity": {
+   "sha256": "2bd0ac7783d74d534ed46f7623b06bb762e5723f2b27551cd1549cf3f62421cc",
+   "compiler_launcher": "",
+   "linker_type": "MOLD",
+   "ipo": "OFF",
+   "pgo": "off"
+  },
+  "linked_sha256": {
+   "count": 19
+  },
+  "started": {
+   "date": "2026-10-10T18:28:20+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 64.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    24.669921875,
+    19.95263671875,
+    19.80419921875
+   ],
+   "memory": {
+    "total_bytes": 32313372672,
+    "available_bytes": 5167411200
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "1936 MiB",
+    "temperature.gpu": "53"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>",
+   "ccache_basedir": ""
+  },
+  "environment": {
+   "date": "2026-10-10T18:28:21+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 65.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    24.0556640625,
+    19.9033203125,
+    19.7890625
+   ],
+   "memory": {
+    "total_bytes": 32313372672,
+    "available_bytes": 5409619968
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "1936 MiB",
+    "temperature.gpu": "53"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>",
+   "ccache_basedir": ""
+  }
+ },
+ "cand-mold-relink": {
+  "kind": "native_relink",
+  "label": "cand-mold-relink",
+  "removed": 19,
+  "planned_edges": 19,
+  "link_seconds": 0.6068086019949988,
+  "identity": {
+   "sha256": "08a6f8fecf5544d936e735ad270a16bb23bf7dfde744fc71b6ef23e52d7c3f2e",
+   "compiler_launcher": "ccache",
+   "linker_type": "MOLD",
+   "ipo": "OFF",
+   "pgo": "off"
+  },
+  "linked_sha256": {
+   "count": 19
+  },
+  "started": {
+   "date": "2026-10-10T14:15:40+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 71.0,
+   "machine": "x86_64",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    14.537109375,
+    14.36279296875,
+    13.2880859375
+   ],
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>-candidate",
+   "ccache_basedir": "<worktree>"
+  },
+  "environment": {
+   "date": "2026-10-10T14:15:40+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 71.0,
+   "machine": "x86_64",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    14.537109375,
+    14.36279296875,
+    13.2880859375
+   ],
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>-candidate",
+   "ccache_basedir": "<worktree>"
+  }
+ },
+ "cand-mold": {
+  "kind": "native_build_variant",
+  "label": "cand-mold",
+  "preset": "native-candidate-cuda",
+  "defines": [
+   "-DMARS_TITAN_BUILD_EPISODIC_PYTHON=ON",
+   "-DMARS_TITAN_BUILD_SIMULATION=ON",
+   "-DMARS_TITAN_TORCH_ENVIRONMENT=<entorno>",
+   "-DCMAKE_C_COMPILER_LAUNCHER=ccache",
+   "-DCMAKE_CXX_COMPILER_LAUNCHER=ccache",
+   "-DCMAKE_LINKER_TYPE=MOLD"
+  ],
+  "jobs": 2,
+  "configure_seconds": 6.778719137015287,
+  "build_seconds": 11.487658970989287,
+  "children_peak_rss_kib": 676400,
+  "edges": 61,
+  "ccache": {
+   "direct_cache_hit": 21,
+   "preprocessed_cache_hit": 12,
+   "cache_miss": 3,
+   "files_in_cache": 90,
+   "cache_size_kibibyte": 6020,
+   "uncacheable": 0,
+   "compiler_check_failed": 0
+  },
+  "identity": {
+   "sha256": "08a6f8fecf5544d936e735ad270a16bb23bf7dfde744fc71b6ef23e52d7c3f2e",
+   "compiler_launcher": "ccache",
+   "linker_type": "MOLD",
+   "ipo": "OFF",
+   "pgo": "off"
+  },
+  "linked_sha256": {
+   "count": 19
+  },
+  "objects_sha256": {
+   "count": 36
+  },
+  "started": {
+   "date": "2026-10-10T14:15:21+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 72.0,
+   "machine": "x86_64",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    14.271484375,
+    14.30126953125,
+    13.2451171875
+   ],
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>-candidate",
+   "ccache_basedir": "<worktree>"
+  },
+  "environment": {
+   "date": "2026-10-10T14:15:40+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 71.0,
+   "machine": "x86_64",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    14.537109375,
+    14.36279296875,
+    13.2880859375
+   ],
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>-candidate",
+   "ccache_basedir": "<worktree>"
+  }
+ },
+ "ppo-base-r2": {
+  "kind": "native_build_variant",
+  "label": "ppo-base-r2",
+  "preset": "native-ppo-release",
+  "defines": [
+   "-DMARS_TITAN_TORCH_ENVIRONMENT=<entorno>"
+  ],
+  "jobs": 2,
+  "configure_seconds": 5.844277205003891,
+  "build_seconds": 192.06959370101686,
+  "children_peak_rss_kib": 682080,
+  "edges": 116,
+  "ccache": null,
+  "identity": {
+   "sha256": "2a64e82666e13d83c3caac9c6dc5db926ccdd9673cc0d9e07365245f66ba1eb4",
+   "compiler_launcher": "",
+   "linker_type": "",
+   "ipo": "OFF",
+   "pgo": "off"
+  },
+  "linked_sha256": {
+   "count": 39
+  },
+  "objects_sha256": {
+   "count": 68
+  },
+  "started": {
+   "date": "2026-10-10T15:53:41+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 82.0,
+   "machine": "x86_64",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    5.8994140625,
+    5.9892578125,
+    8.7265625
+   ],
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>",
+   "ccache_basedir": ""
+  },
+  "environment": {
+   "date": "2026-10-10T15:56:59+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 81.0,
+   "machine": "x86_64",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    6.81005859375,
+    6.37646484375,
+    8.3427734375
+   ],
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>",
+   "ccache_basedir": ""
+  }
+ },
+ "ppo-base-relink": {
+  "kind": "native_relink",
+  "label": "ppo-base-relink",
+  "removed": 39,
+  "planned_edges": 39,
+  "link_seconds": 6.322394329006784,
+  "identity": {
+   "sha256": "b9eb2bf92800792a4ad8dbed3ab4a90edfd0e2879923640d3606e7f8907d4ec0",
+   "compiler_launcher": "",
+   "linker_type": "",
+   "ipo": "OFF",
+   "pgo": "off"
+  },
+  "linked_sha256": {
+   "count": 39
+  },
+  "started": {
+   "date": "2026-10-10T14:02:48+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 70.0,
+   "machine": "x86_64",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    9.9677734375,
+    12.42041015625,
+    12.46044921875
+   ],
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>",
+   "ccache_basedir": "<worktree>"
+  },
+  "environment": {
+   "date": "2026-10-10T14:02:54+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 71.0,
+   "machine": "x86_64",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    9.72998046875,
+    12.330078125,
+    12.4306640625
+   ],
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>",
+   "ccache_basedir": "<worktree>"
+  }
+ },
+ "ppo-base-touch": {
+  "kind": "native_touch_rebuild",
+  "started": {
+   "date": "2026-10-10T14:02:55+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 70.0,
+   "machine": "x86_64",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    9.72998046875,
+    12.330078125,
+    12.4306640625
+   ],
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>",
+   "ccache_basedir": "<worktree>"
+  },
+  "label": "ppo-base-touch",
+  "header": "native/include/mars_titan/financial_batch.hpp",
+  "edges": 63,
+  "seconds": 119.00693343600142,
+  "ccache": null,
+  "environment": {
+   "date": "2026-10-10T14:04:54+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 70.0,
+   "machine": "x86_64",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    10.2314453125,
+    11.73974609375,
+    12.2041015625
+   ],
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>",
+   "ccache_basedir": "<worktree>"
+  }
+ },
+ "ppo-base": {
+  "kind": "native_build_variant",
+  "label": "ppo-base",
+  "preset": "native-ppo-release",
+  "defines": [
+   "-DMARS_TITAN_TORCH_ENVIRONMENT=<entorno>"
+  ],
+  "jobs": 2,
+  "configure_seconds": 10.876309522020165,
+  "build_seconds": 270.9410359360045,
+  "children_peak_rss_kib": 681752,
+  "edges": 116,
+  "ccache": null,
+  "identity": {
+   "sha256": "b9eb2bf92800792a4ad8dbed3ab4a90edfd0e2879923640d3606e7f8907d4ec0",
+   "compiler_launcher": "",
+   "linker_type": "",
+   "ipo": "OFF",
+   "pgo": "off"
+  },
+  "linked_sha256": {
+   "count": 39
+  },
+  "objects_sha256": {
+   "count": 68
+  },
+  "started": {
+   "date": "2026-10-10T13:58:06+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 72.0,
+   "machine": "x86_64",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    15.3076171875,
+    12.34814453125,
+    12.25830078125
+   ],
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>",
+   "ccache_basedir": "<worktree>"
+  },
+  "environment": {
+   "date": "2026-10-10T14:02:48+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 70.0,
+   "machine": "x86_64",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    9.9677734375,
+    12.42041015625,
+    12.46044921875
+   ],
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>",
+   "ccache_basedir": "<worktree>"
+  }
+ },
+ "ppo-ccache-cold": {
+  "kind": "native_build_variant",
+  "label": "ppo-ccache-cold",
+  "preset": "native-ppo-release",
+  "defines": [
+   "-DMARS_TITAN_TORCH_ENVIRONMENT=<entorno>",
+   "-DCMAKE_C_COMPILER_LAUNCHER=ccache",
+   "-DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
+  ],
+  "jobs": 2,
+  "configure_seconds": 6.633909070980735,
+  "build_seconds": 245.57061348599382,
+  "children_peak_rss_kib": 681144,
+  "edges": 116,
+  "ccache": {
+   "direct_cache_hit": 0,
+   "preprocessed_cache_hit": 0,
+   "cache_miss": 68,
+   "files_in_cache": 136,
+   "cache_size_kibibyte": 11452,
+   "uncacheable": 0,
+   "compiler_check_failed": 0
+  },
+  "identity": {
+   "sha256": "13b5ff88f104f394a1513f905a353203db3c39eafc5899cfc77dec7b7519883f",
+   "compiler_launcher": "ccache",
+   "linker_type": "",
+   "ipo": "OFF",
+   "pgo": "off"
+  },
+  "linked_sha256": {
+   "count": 39
+  },
+  "objects_sha256": {
+   "count": 68
+  },
+  "started": {
+   "date": "2026-10-10T14:04:54+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 70.0,
+   "machine": "x86_64",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    10.2314453125,
+    11.73974609375,
+    12.2041015625
+   ],
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>",
+   "ccache_basedir": "<worktree>"
+  },
+  "environment": {
+   "date": "2026-10-10T14:09:06+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 77.0,
+   "machine": "x86_64",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    15.5546875,
+    12.39697265625,
+    12.22216796875
+   ],
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>",
+   "ccache_basedir": "<worktree>"
+  }
+ },
+ "ppo-ccache-relink-r1": {
+  "kind": "native_relink",
+  "label": "ppo-ccache-relink-r1",
+  "removed": 39,
+  "planned_edges": 39,
+  "link_seconds": 9.359173540986376,
+  "identity": {
+   "sha256": "13b5ff88f104f394a1513f905a353203db3c39eafc5899cfc77dec7b7519883f",
+   "compiler_launcher": "ccache",
+   "linker_type": "",
+   "ipo": "OFF",
+   "pgo": "off"
+  },
+  "linked_sha256": {
+   "count": 39
+  },
+  "started": {
+   "date": "2026-10-10T18:27:28+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 67.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    22.56689453125,
+    18.92919921875,
+    19.49072265625
+   ],
+   "memory": {
+    "total_bytes": 32313372672,
+    "available_bytes": 4916416512
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "1936 MiB",
+    "temperature.gpu": "54"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>",
+   "ccache_basedir": ""
+  },
+  "environment": {
+   "date": "2026-10-10T18:27:38+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 66.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    22.71435546875,
+    19.08056640625,
+    19.5341796875
+   ],
+   "memory": {
+    "total_bytes": 32313372672,
+    "available_bytes": 4407959552
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "1936 MiB",
+    "temperature.gpu": "54"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>",
+   "ccache_basedir": ""
+  }
+ },
+ "ppo-ccache-relink-r2": {
+  "kind": "native_relink",
+  "label": "ppo-ccache-relink-r2",
+  "removed": 39,
+  "planned_edges": 39,
+  "link_seconds": 7.976550983003108,
+  "identity": {
+   "sha256": "13b5ff88f104f394a1513f905a353203db3c39eafc5899cfc77dec7b7519883f",
+   "compiler_launcher": "ccache",
+   "linker_type": "",
+   "ipo": "OFF",
+   "pgo": "off"
+  },
+  "linked_sha256": {
+   "count": 39
+  },
+  "started": {
+   "date": "2026-10-10T18:27:50+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 65.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    22.9599609375,
+    19.25830078125,
+    19.587890625
+   ],
+   "memory": {
+    "total_bytes": 32313372672,
+    "available_bytes": 6051741696
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "1935 MiB",
+    "temperature.gpu": "54"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>",
+   "ccache_basedir": ""
+  },
+  "environment": {
+   "date": "2026-10-10T18:27:58+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 64.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    22.498046875,
+    19.28271484375,
+    19.59228515625
+   ],
+   "memory": {
+    "total_bytes": 32313372672,
+    "available_bytes": 5215723520
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "1936 MiB",
+    "temperature.gpu": "53"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>",
+   "ccache_basedir": ""
+  }
+ },
+ "ppo-ccache-relink-r3": {
+  "kind": "native_relink",
+  "label": "ppo-ccache-relink-r3",
+  "removed": 39,
+  "planned_edges": 39,
+  "link_seconds": 7.277904921997106,
+  "identity": {
+   "sha256": "13b5ff88f104f394a1513f905a353203db3c39eafc5899cfc77dec7b7519883f",
+   "compiler_launcher": "ccache",
+   "linker_type": "",
+   "ipo": "OFF",
+   "pgo": "off"
+  },
+  "linked_sha256": {
+   "count": 39
+  },
+  "started": {
+   "date": "2026-10-10T18:28:06+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 64.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    22.75146484375,
+    19.4521484375,
+    19.64453125
+   ],
+   "memory": {
+    "total_bytes": 32313372672,
+    "available_bytes": 5951664128
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "1936 MiB",
+    "temperature.gpu": "53"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>",
+   "ccache_basedir": ""
+  },
+  "environment": {
+   "date": "2026-10-10T18:28:13+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 64.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    22.29052734375,
+    19.4111328125,
+    19.6298828125
+   ],
+   "memory": {
+    "total_bytes": 32313372672,
+    "available_bytes": 5842489344
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "1936 MiB",
+    "temperature.gpu": "53"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>",
+   "ccache_basedir": ""
+  }
+ },
+ "ppo-ccache-relink": {
+  "kind": "native_relink",
+  "label": "ppo-ccache-relink",
+  "removed": 39,
+  "planned_edges": 39,
+  "link_seconds": 6.990589364984771,
+  "identity": {
+   "sha256": "13b5ff88f104f394a1513f905a353203db3c39eafc5899cfc77dec7b7519883f",
+   "compiler_launcher": "ccache",
+   "linker_type": "",
+   "ipo": "OFF",
+   "pgo": "off"
+  },
+  "linked_sha256": {
+   "count": 39
+  },
+  "started": {
+   "date": "2026-10-10T14:09:32+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 75.0,
+   "machine": "x86_64",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    15.63671875,
+    12.6962890625,
+    12.32763671875
+   ],
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>",
+   "ccache_basedir": "<worktree>"
+  },
+  "environment": {
+   "date": "2026-10-10T14:09:39+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 77.0,
+   "machine": "x86_64",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    15.43310546875,
+    12.75439453125,
+    12.3505859375
+   ],
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>",
+   "ccache_basedir": "<worktree>"
+  }
+ },
+ "ppo-ccache-touch": {
+  "kind": "native_touch_rebuild",
+  "started": {
+   "date": "2026-10-10T14:09:23+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 78.0,
+   "machine": "x86_64",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    16.3017578125,
+    12.77587890625,
+    12.35107421875
+   ],
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>",
+   "ccache_basedir": "<worktree>"
+  },
+  "label": "ppo-ccache-touch",
+  "header": "native/include/mars_titan/financial_batch.hpp",
+  "edges": 63,
+  "seconds": 8.719414252002025,
+  "ccache": {
+   "direct_cache_hit": 26,
+   "preprocessed_cache_hit": 0,
+   "cache_miss": 0,
+   "files_in_cache": 136,
+   "cache_size_kibibyte": 11452,
+   "uncacheable": 0,
+   "compiler_check_failed": 0
+  },
+  "environment": {
+   "date": "2026-10-10T14:09:31+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 75.0,
+   "machine": "x86_64",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    15.63671875,
+    12.6962890625,
+    12.32763671875
+   ],
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>",
+   "ccache_basedir": "<worktree>"
+  }
+ },
+ "ppo-ccache-warm": {
+  "kind": "native_build_variant",
+  "label": "ppo-ccache-warm",
+  "preset": "native-ppo-release",
+  "defines": [
+   "-DMARS_TITAN_TORCH_ENVIRONMENT=<entorno>",
+   "-DCMAKE_C_COMPILER_LAUNCHER=ccache",
+   "-DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
+  ],
+  "jobs": 2,
+  "configure_seconds": 6.998213653016137,
+  "build_seconds": 9.101928841002518,
+  "children_peak_rss_kib": 676716,
+  "edges": 116,
+  "ccache": {
+   "direct_cache_hit": 68,
+   "preprocessed_cache_hit": 0,
+   "cache_miss": 0,
+   "files_in_cache": 136,
+   "cache_size_kibibyte": 11452,
+   "uncacheable": 0,
+   "compiler_check_failed": 0
+  },
+  "identity": {
+   "sha256": "13b5ff88f104f394a1513f905a353203db3c39eafc5899cfc77dec7b7519883f",
+   "compiler_launcher": "ccache",
+   "linker_type": "",
+   "ipo": "OFF",
+   "pgo": "off"
+  },
+  "linked_sha256": {
+   "count": 39
+  },
+  "objects_sha256": {
+   "count": 68
+  },
+  "started": {
+   "date": "2026-10-10T14:09:06+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 77.0,
+   "machine": "x86_64",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    15.5546875,
+    12.39697265625,
+    12.22216796875
+   ],
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>",
+   "ccache_basedir": "<worktree>"
+  },
+  "environment": {
+   "date": "2026-10-10T14:09:23+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 78.0,
+   "machine": "x86_64",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    16.3017578125,
+    12.77587890625,
+    12.35107421875
+   ],
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>",
+   "ccache_basedir": "<worktree>"
+  }
+ },
+ "ppo-dev": {
+  "kind": "native_build_variant",
+  "label": "ppo-dev",
+  "preset": "native-ppo-dev",
+  "defines": [
+   "-DMARS_TITAN_TORCH_ENVIRONMENT=<entorno>"
+  ],
+  "jobs": 2,
+  "configure_seconds": 11.326461094984552,
+  "build_seconds": 69.74507085600635,
+  "children_peak_rss_kib": 658080,
+  "edges": 116,
+  "ccache": null,
+  "identity": {
+   "sha256": "990ddb4e0e029e22f4824dcf3fec198f149f64e789cb8c55190c9c68808fa234",
+   "compiler_launcher": "ccache",
+   "linker_type": "MOLD",
+   "ipo": "OFF",
+   "pgo": "off"
+  },
+  "linked_sha256": {
+   "count": 39
+  },
+  "objects_sha256": {
+   "count": 68
+  },
+  "started": {
+   "date": "2026-10-10T19:22:03+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 72.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    22.96728515625,
+    20.4697265625,
+    18.9970703125
+   ],
+   "memory": {
+    "total_bytes": 32313372672,
+    "available_bytes": 10474512384
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "1449 MiB",
+    "temperature.gpu": "57"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>",
+   "ccache_basedir": "<worktree>"
+  },
+  "environment": {
+   "date": "2026-10-10T19:23:24+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 72.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    25.583984375,
+    21.88037109375,
+    19.61572265625
+   ],
+   "memory": {
+    "total_bytes": 32313372672,
+    "available_bytes": 9666433024
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "1450 MiB",
+    "temperature.gpu": "58"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>",
+   "ccache_basedir": "<worktree>"
+  }
+ },
+ "ppo-ipo-pgo": {
+  "kind": "native_build_variant",
+  "label": "ppo-ipo-pgo",
+  "preset": "native-ppo-release",
+  "defines": [
+   "-DMARS_TITAN_TORCH_ENVIRONMENT=<entorno>",
+   "-DCMAKE_C_FLAGS=-Wno-profile-instr-unprofiled -Wno-profile-instr-out-of-date",
+   "-DCMAKE_CXX_FLAGS=-Wno-profile-instr-unprofiled -Wno-profile-instr-out-of-date",
+   "-DMARS_TITAN_ENABLE_IPO=ON",
+   "-DMARS_TITAN_PGO=use",
+   "-DMARS_TITAN_PGO_DATA=<salida>/pgo/policy.profdata"
+  ],
+  "jobs": 2,
+  "configure_seconds": 12.30707931399229,
+  "build_seconds": 337.46712818497326,
+  "children_peak_rss_kib": 681992,
+  "edges": 116,
+  "ccache": null,
+  "identity": {
+   "sha256": "a77582fea571961036d21fc6651284330bf4af53304f9f3cabb53d000f2072bc",
+   "compiler_launcher": "",
+   "linker_type": "",
+   "ipo": "ON",
+   "pgo": "use"
+  },
+  "linked_sha256": {
+   "count": 39
+  },
+  "objects_sha256": {
+   "count": 68
+  },
+  "started": {
+   "date": "2026-10-10T17:48:42+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 76.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    23.67919921875,
+    22.248046875,
+    21.984375
+   ],
+   "memory": {
+    "total_bytes": 32313372672,
+    "available_bytes": 11799752704
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "1143 MiB",
+    "temperature.gpu": "63"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>",
+   "ccache_basedir": ""
+  },
+  "environment": {
+   "date": "2026-10-10T17:54:32+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 72.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    22.75390625,
+    21.884765625,
+    21.95458984375
+   ],
+   "memory": {
+    "total_bytes": 32313372672,
+    "available_bytes": 16634875904
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "477 MiB",
+    "temperature.gpu": "58"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>",
+   "ccache_basedir": ""
+  }
+ },
+ "ppo-ipo": {
+  "kind": "native_build_variant",
+  "label": "ppo-ipo",
+  "preset": "native-ppo-release",
+  "defines": [
+   "-DMARS_TITAN_TORCH_ENVIRONMENT=<entorno>",
+   "-DMARS_TITAN_ENABLE_IPO=ON"
+  ],
+  "jobs": 2,
+  "configure_seconds": 6.1616372450080235,
+  "build_seconds": 323.8496137589973,
+  "children_peak_rss_kib": 681364,
+  "edges": 116,
+  "ccache": null,
+  "identity": {
+   "sha256": "ab503007cccc65b0f5511c6c4119a6a3bd166e45d02b44ea3ce507f7b9292260",
+   "compiler_launcher": "",
+   "linker_type": "",
+   "ipo": "ON",
+   "pgo": "off"
+  },
+  "linked_sha256": {
+   "count": 39
+  },
+  "objects_sha256": {
+   "count": 68
+  },
+  "started": {
+   "date": "2026-10-10T14:15:40+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 71.0,
+   "machine": "x86_64",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    14.537109375,
+    14.36279296875,
+    13.2880859375
+   ],
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>",
+   "ccache_basedir": "<worktree>"
+  },
+  "environment": {
+   "date": "2026-10-10T14:21:11+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 79.0,
+   "machine": "x86_64",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    24.326171875,
+    18.9052734375,
+    15.490234375
+   ],
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>",
+   "ccache_basedir": "<worktree>"
+  }
+ },
+ "ppo-mold-clean": {
+  "kind": "native_build_variant",
+  "label": "ppo-mold-clean",
+  "preset": "native-ppo-release",
+  "defines": [
+   "-DMARS_TITAN_TORCH_ENVIRONMENT=<entorno>",
+   "-DCMAKE_LINKER_TYPE=MOLD"
+  ],
+  "jobs": 2,
+  "configure_seconds": 7.916493787022773,
+  "build_seconds": 316.9169908059994,
+  "children_peak_rss_kib": 680964,
+  "edges": 116,
+  "ccache": null,
+  "identity": {
+   "sha256": "2d4a74e6b1f443aeb4b0fe9b1384d5c7f5e8dde9d40ca7937b1747108267df86",
+   "compiler_launcher": "",
+   "linker_type": "MOLD",
+   "ipo": "OFF",
+   "pgo": "off"
+  },
+  "linked_sha256": {
+   "count": 39
+  },
+  "objects_sha256": {
+   "count": 68
+  },
+  "started": {
+   "date": "2026-10-10T17:35:00+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 66.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    16.2177734375,
+    19.18359375,
+    22.361328125
+   ],
+   "memory": {
+    "total_bytes": 32313372672,
+    "available_bytes": 16854433792
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "478 MiB",
+    "temperature.gpu": "53"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>",
+   "ccache_basedir": ""
+  },
+  "environment": {
+   "date": "2026-10-10T17:40:26+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 74.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    19.04736328125,
+    20.2294921875,
+    21.908203125
+   ],
+   "memory": {
+    "total_bytes": 32313372672,
+    "available_bytes": 16391880704
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "1303 MiB",
+    "temperature.gpu": "61"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>",
+   "ccache_basedir": ""
+  }
+ },
+ "ppo-mold-relink-r1": {
+  "kind": "native_relink",
+  "label": "ppo-mold-relink-r1",
+  "removed": 39,
+  "planned_edges": 39,
+  "link_seconds": 2.46573295397684,
+  "identity": {
+   "sha256": "2d4a74e6b1f443aeb4b0fe9b1384d5c7f5e8dde9d40ca7937b1747108267df86",
+   "compiler_launcher": "",
+   "linker_type": "MOLD",
+   "ipo": "OFF",
+   "pgo": "off"
+  },
+  "linked_sha256": {
+   "count": 39
+  },
+  "started": {
+   "date": "2026-10-10T18:27:38+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 66.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    22.71435546875,
+    19.08056640625,
+    19.5341796875
+   ],
+   "memory": {
+    "total_bytes": 32313372672,
+    "available_bytes": 4445265920
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "1936 MiB",
+    "temperature.gpu": "54"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>",
+   "ccache_basedir": ""
+  },
+  "environment": {
+   "date": "2026-10-10T18:27:41+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 66.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    23.2177734375,
+    19.24560546875,
+    19.58544921875
+   ],
+   "memory": {
+    "total_bytes": 32313372672,
+    "available_bytes": 6340915200
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "1936 MiB",
+    "temperature.gpu": "54"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>",
+   "ccache_basedir": ""
+  }
+ },
+ "ppo-mold-relink-r2": {
+  "kind": "native_relink",
+  "label": "ppo-mold-relink-r2",
+  "removed": 39,
+  "planned_edges": 39,
+  "link_seconds": 3.2436659149825573,
+  "identity": {
+   "sha256": "2d4a74e6b1f443aeb4b0fe9b1384d5c7f5e8dde9d40ca7937b1747108267df86",
+   "compiler_launcher": "",
+   "linker_type": "MOLD",
+   "ipo": "OFF",
+   "pgo": "off"
+  },
+  "linked_sha256": {
+   "count": 39
+  },
+  "started": {
+   "date": "2026-10-10T18:27:58+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 64.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    22.498046875,
+    19.28271484375,
+    19.59228515625
+   ],
+   "memory": {
+    "total_bytes": 32313372672,
+    "available_bytes": 5235322880
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "1936 MiB",
+    "temperature.gpu": "53"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>",
+   "ccache_basedir": ""
+  },
+  "environment": {
+   "date": "2026-10-10T18:28:01+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 64.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    23.33935546875,
+    19.5107421875,
+    19.66455078125
+   ],
+   "memory": {
+    "total_bytes": 32313372672,
+    "available_bytes": 5470486528
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "1936 MiB",
+    "temperature.gpu": "53"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>",
+   "ccache_basedir": ""
+  }
+ },
+ "ppo-mold-relink-r3": {
+  "kind": "native_relink",
+  "label": "ppo-mold-relink-r3",
+  "removed": 39,
+  "planned_edges": 39,
+  "link_seconds": 2.644093276001513,
+  "identity": {
+   "sha256": "2d4a74e6b1f443aeb4b0fe9b1384d5c7f5e8dde9d40ca7937b1747108267df86",
+   "compiler_launcher": "",
+   "linker_type": "MOLD",
+   "ipo": "OFF",
+   "pgo": "off"
+  },
+  "linked_sha256": {
+   "count": 39
+  },
+  "started": {
+   "date": "2026-10-10T18:28:14+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 64.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    22.29052734375,
+    19.4111328125,
+    19.6298828125
+   ],
+   "memory": {
+    "total_bytes": 32313372672,
+    "available_bytes": 5774594048
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "1936 MiB",
+    "temperature.gpu": "53"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>",
+   "ccache_basedir": ""
+  },
+  "environment": {
+   "date": "2026-10-10T18:28:16+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 64.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    24.669921875,
+    19.95263671875,
+    19.80419921875
+   ],
+   "memory": {
+    "total_bytes": 32313372672,
+    "available_bytes": 5534928896
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "1936 MiB",
+    "temperature.gpu": "53"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>",
+   "ccache_basedir": ""
+  }
+ },
+ "ppo-mold-relink": {
+  "kind": "native_relink",
+  "label": "ppo-mold-relink",
+  "removed": 39,
+  "planned_edges": 39,
+  "link_seconds": 2.3321291159954853,
+  "identity": {
+   "sha256": "ac81e9cefd9371518e414cea5fa4d7f91e34f7f693580c13c09d4a1274af856d",
+   "compiler_launcher": "ccache",
+   "linker_type": "MOLD",
+   "ipo": "OFF",
+   "pgo": "off"
+  },
+  "linked_sha256": {
+   "count": 39
+  },
+  "started": {
+   "date": "2026-10-10T14:10:33+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 81.0,
+   "machine": "x86_64",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    19.82861328125,
+    14.16455078125,
+    12.841796875
+   ],
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>",
+   "ccache_basedir": "<worktree>"
+  },
+  "environment": {
+   "date": "2026-10-10T14:10:35+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 81.0,
+   "machine": "x86_64",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    19.82861328125,
+    14.16455078125,
+    12.841796875
+   ],
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>",
+   "ccache_basedir": "<worktree>"
+  }
+ },
+ "ppo-mold": {
+  "kind": "native_build_variant",
+  "label": "ppo-mold",
+  "preset": "native-ppo-release",
+  "defines": [
+   "-DMARS_TITAN_TORCH_ENVIRONMENT=<entorno>",
+   "-DCMAKE_C_COMPILER_LAUNCHER=ccache",
+   "-DCMAKE_CXX_COMPILER_LAUNCHER=ccache",
+   "-DCMAKE_LINKER_TYPE=MOLD"
+  ],
+  "jobs": 2,
+  "configure_seconds": 6.8367315150098875,
+  "build_seconds": 46.96100250200834,
+  "children_peak_rss_kib": 675576,
+  "edges": 116,
+  "ccache": {
+   "direct_cache_hit": 16,
+   "preprocessed_cache_hit": 46,
+   "cache_miss": 6,
+   "files_in_cache": 194,
+   "cache_size_kibibyte": 17604,
+   "uncacheable": 0,
+   "compiler_check_failed": 0
+  },
+  "identity": {
+   "sha256": "ac81e9cefd9371518e414cea5fa4d7f91e34f7f693580c13c09d4a1274af856d",
+   "compiler_launcher": "ccache",
+   "linker_type": "MOLD",
+   "ipo": "OFF",
+   "pgo": "off"
+  },
+  "linked_sha256": {
+   "count": 39
+  },
+  "objects_sha256": {
+   "count": 68
+  },
+  "started": {
+   "date": "2026-10-10T14:09:39+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 77.0,
+   "machine": "x86_64",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    15.43310546875,
+    12.75439453125,
+    12.3505859375
+   ],
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>",
+   "ccache_basedir": "<worktree>"
+  },
+  "environment": {
+   "date": "2026-10-10T14:10:33+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 81.0,
+   "machine": "x86_64",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    19.82861328125,
+    14.16455078125,
+    12.841796875
+   ],
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>",
+   "ccache_basedir": "<worktree>"
+  }
+ },
+ "ppo-pgo-generate": {
+  "kind": "native_build_variant",
+  "label": "ppo-pgo-generate",
+  "preset": "native-ppo-release",
+  "defines": [
+   "-DMARS_TITAN_TORCH_ENVIRONMENT=<entorno>",
+   "-DMARS_TITAN_PGO=generate",
+   "-DMARS_TITAN_PGO_DATA=<salida>/pgo/raw"
+  ],
+  "jobs": 2,
+  "configure_seconds": 8.690186954976525,
+  "build_seconds": 277.75334212600137,
+  "children_peak_rss_kib": 681620,
+  "edges": 116,
+  "ccache": null,
+  "identity": {
+   "sha256": "ac5cb24163b0fe1d2a2d0e8234e792939d18510da0da600ff3af1f16084d0af5",
+   "compiler_launcher": "",
+   "linker_type": "",
+   "ipo": "OFF",
+   "pgo": "generate"
+  },
+  "linked_sha256": {
+   "count": 39
+  },
+  "objects_sha256": {
+   "count": 68
+  },
+  "started": {
+   "date": "2026-10-10T14:21:11+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 79.0,
+   "machine": "x86_64",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    24.326171875,
+    18.9052734375,
+    15.490234375
+   ],
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>",
+   "ccache_basedir": "<worktree>"
+  },
+  "environment": {
+   "date": "2026-10-10T14:25:57+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 77.0,
+   "machine": "x86_64",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    14.71240234375,
+    16.5185546875,
+    15.34765625
+   ],
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>",
+   "ccache_basedir": "<worktree>"
+  }
+ },
+ "ppo-pgo": {
+  "kind": "native_build_variant",
+  "label": "ppo-pgo",
+  "preset": "native-ppo-release",
+  "defines": [
+   "-DMARS_TITAN_TORCH_ENVIRONMENT=<entorno>",
+   "-DCMAKE_C_FLAGS=-Wno-profile-instr-unprofiled -Wno-profile-instr-out-of-date",
+   "-DCMAKE_CXX_FLAGS=-Wno-profile-instr-unprofiled -Wno-profile-instr-out-of-date",
+   "-DMARS_TITAN_PGO=use",
+   "-DMARS_TITAN_PGO_DATA=<salida>/pgo/policy.profdata"
+  ],
+  "jobs": 2,
+  "configure_seconds": 10.73209884701646,
+  "build_seconds": 335.1333352770016,
+  "children_peak_rss_kib": 681436,
+  "edges": 116,
+  "ccache": null,
+  "identity": {
+   "sha256": "50425dd3649b1d0bc7dca7c20fece9e14f02f3683480f81b80405d63864cf31f",
+   "compiler_launcher": "",
+   "linker_type": "",
+   "ipo": "OFF",
+   "pgo": "use"
+  },
+  "linked_sha256": {
+   "count": 39
+  },
+  "objects_sha256": {
+   "count": 68
+  },
+  "started": {
+   "date": "2026-10-10T17:42:55+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 73.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    20.044921875,
+    19.71044921875,
+    21.42236328125
+   ],
+   "memory": {
+    "total_bytes": 32313372672,
+    "available_bytes": 13716828160
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "1650 MiB",
+    "temperature.gpu": "61"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>",
+   "ccache_basedir": ""
+  },
+  "environment": {
+   "date": "2026-10-10T17:48:42+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 76.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    23.67919921875,
+    22.248046875,
+    21.984375
+   ],
+   "memory": {
+    "total_bytes": 32313372672,
+    "available_bytes": 11500232704
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "1143 MiB",
+    "temperature.gpu": "63"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "<ccache>",
+   "ccache_basedir": ""
+  }
+ }
+}
