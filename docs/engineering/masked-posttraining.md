@@ -13,7 +13,7 @@ Los postentrenamientos de las campañas A y B aprenden solo con datos reales de 
 | Declaración | `load_stage` rechaza una etapa o una matriz que declare condiciones, aumento, remuestreo, episodios o mundos, o los valores `real_resampled` y `real_synthetic`, y una campaña sin la política con máscaras. Cada caso neuronal debe tener la condición real |
 | Código alcanzable | Una prueba recorre todas las importaciones de `scripts/run_masked_campaign.py`, también las que están dentro de funciones o se hacen por nombre, y comprueba que ninguna llega a `posttraining/queue.py`, `posttraining/preparation.py`, `posttraining/augmented_inputs.py`, `episodes/augmentation.py`, `episodes/worlds.py` ni `episodes/windows.py`. Otra ejecuta `posttraining check` de A y B en otro proceso con esos módulos bloqueados. Los recorridos completos de la etapa en las pruebas sustituyen esos módulos por centinelas que fallan si algo los pide |
 
-La caché de predicciones del padre (`episodes/parents.py`) sí se usa, porque guarda las predicciones del padre sobre cohortes reales. El código de #128 conserva sus pruebas para poder reproducir el experimento anterior, pero no forma parte de ninguna etapa de la campaña.
+La caché de predicciones del padre (`posttraining/parent_cache.py`) sí se usa, porque guarda las predicciones del padre sobre cohortes reales. Vivía en `episodes/parents.py` y se trasladó al paquete del postentrenamiento para que el camino real de la etapa de políticas no importe ningún módulo del paquete de escenarios ficticios. El código de #128 conserva sus pruebas para poder reproducir el experimento anterior, pero no forma parte de ninguna etapa de la campaña.
 
 ## Política de entradas
 

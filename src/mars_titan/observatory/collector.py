@@ -8,6 +8,7 @@ import os
 import re
 import sqlite3
 import stat
+import time
 from collections import Counter
 from datetime import UTC, datetime
 from pathlib import Path
@@ -24,6 +25,9 @@ from .activities import (
     financial_validation,
     native_adaptation,
 )
+from .bounded_files import signature
+from .window_campaigns import STAGES as WINDOW_STAGE_SHAPES
+from .window_campaigns import campaign_state
 
 METRICS = (
     "mae",
@@ -155,12 +159,18 @@ KINDS = {
         ("dlinear", "DLinear"),
         ("ridge", "Ridge"),
         ("xgboost", "XGBoost"),
+        ("transformer_compact", "Transformer compacto"),
+        ("titans_mac", "Titans-MAC"),
+        ("gru_episodic", "GRU episódica"),
+        ("mars_titan", "MARS-TITAN"),
+        ("cm_v1", "CM-v1"),
         ("mlp", "MLP"),
         ("boosting", "Boosting"),
         ("zero", "Residual cero"),
         ("adaptation", "Adaptación predictiva"),
         ("factor_world", "Generador de mundos sintéticos"),
         ("ppo", "PPO"),
+        ("klpo", "KLPO"),
         ("double_dqn", "Double DQN"),
         ("ppo_window", "PPO con ventana temporal"),
         ("ppo_gru", "PPO con GRU"),
@@ -173,11 +183,39 @@ KINDS = {
         ("cash", "Mantener efectivo"),
         ("hold_initial", "Conservar posiciones iniciales"),
         ("rebalance_50", "Reequilibrar al 50 %"),
+        ("equal_weight_monthly", "Pesos iguales con reequilibrio mensual"),
+        ("market_index", "Índice de mercado"),
         ("financial_comparison", "Resumen de comparación financiera"),
         ("adaptive_comparison", "Campaña de adaptación RL"),
         ("unknown", "Modelo no identificado"),
     )
 }
+
+# Categoría de cada modelo del catálogo. Los demás son referencias predictivas.
+MODEL_KINDS = {
+    "factor_world": "generator",
+    "simulator": "simulation",
+    "cash": "financial_baseline",
+    "hold_initial": "financial_baseline",
+    "rebalance_50": "financial_baseline",
+    "equal_weight_monthly": "financial_baseline",
+    "market_index": "financial_baseline",
+    "financial_comparison": "summary",
+    "adaptive_comparison": "summary",
+    "klpo": "reinforcement",
+    "titans_mac": "memory",
+    "gru_episodic": "memory",
+    "mars_titan": "memory",
+    "cm_v1": "memory",
+}
+WINDOW_SOURCE = "window_campaign"
+WINDOW_STAGES = {stage for stage, _ in WINDOW_STAGE_SHAPES.values()}
+# Con 13.029 trabajos y sus mapas de actualizaciones y de la cadena, el resumen de
+# adaptadores de A se estima en unos 2 MiB.
+WINDOW_SUMMARY_BYTES = 8 * 1024**2
+WINDOW_JOBS = 20_000
+WINDOW_GRACE_SECONDS = 3600
+WINDOW_REFRESH_SECONDS = 60
 
 
 def digest(value):
@@ -346,6 +384,7 @@ class Collector:
         self.root = Path(root).absolute()
         self.max_files, self.max_bytes = max_files, max_bytes
         self.bytes_read = 0
+        self.window_cache = {}
         Path(cache).parent.mkdir(parents=True, exist_ok=True)
         self.db = sqlite3.connect(cache)
         self.db.execute("PRAGMA journal_mode=WAL")
@@ -425,7 +464,7 @@ class Collector:
             if now is None:
                 raise ValueError("La fecha de observación no es válida")
         self.bytes_read = 0
-        campaigns, seen = [], set()
+        campaigns, windows, seen = [], [], set()
         with self.db:
             for source in sources:
                 name = identifier(source["id"])
@@ -433,6 +472,9 @@ class Collector:
                     raise ValueError("Campaña duplicada o dominio desconocido")
                 seen.add(name)
                 folder = safe_path(self.root, source["path"])
+                if source["kind"] == WINDOW_SOURCE:
+                    windows.append(self._window_campaign(source, folder))
+                    continue
                 summary_path = safe_path(folder, source.get("summary", "summary.json"))
                 cached = self.db.execute(
                     "SELECT body FROM sources WHERE path=?", (str(summary_path),)
@@ -527,21 +569,16 @@ class Collector:
                     name=v,
                     kind="reinforcement"
                     if k in ADAPTIVE_VARIANTS
-                    else {
-                        "factor_world": "generator",
-                        "simulator": "simulation",
-                        "cash": "financial_baseline",
-                        "hold_initial": "financial_baseline",
-                        "rebalance_50": "financial_baseline",
-                        "financial_comparison": "summary",
-                        "adaptive_comparison": "summary",
-                    }.get(k, "baseline"),
+                    else MODEL_KINDS.get(k, "baseline"),
                 )
                 for k, v in KINDS.items()
             ],
             runs=runs,
+            window_campaigns=windows,
             notes=[
-                "El test final permanece sellado. MARS-TITAN no está implementado.",
+                "El test final permanece sellado.",
+                "Las campañas por ventanas publican el estado de cada trabajo y la fecha de su "
+                "recibo, sin las métricas de sus resúmenes.",
                 "Las curvas sin fechas originales utilizan épocas. "
                 "La observación del proceso no acredita nuevo progreso.",
                 "El historial conserva comprobaciones técnicas y campañas con poblaciones "
@@ -550,6 +587,46 @@ class Collector:
                 "simulados. No equivalen al corpus real con 140 indicadores.",
             ],
         )
+
+    def _window_campaign(self, source, folder):
+        """Estado de una campaña por ventanas, o su ausencia si todavía no hay resumen.
+
+        Sus trabajos no pasan a registros: la campaña A tiene decenas de miles y el sitio
+        los muestra como una matriz de estados que se publica en un documento aparte.
+        """
+        declared = dict(
+            id=source["id"],
+            domain=source["domain"],
+            stage=source.get("stage"),
+            configuration=source.get("configuration"),
+        )
+        if declared["stage"] not in WINDOW_STAGES or not isinstance(declared["configuration"], str):
+            raise ValueError("La campaña por ventanas debe declarar su etapa y su configuración")
+        if not safe_path(self.root, declared["configuration"]).is_file():
+            raise ValueError("Falta la configuración declarada de la campaña por ventanas")
+        summary = folder / "summary.json"
+        if summary.is_symlink():
+            raise ValueError("No se admiten enlaces en las fuentes")
+        found = signature(summary)
+        if found is None:
+            return dict(declared, state=None)
+        # Con el mismo resumen solo pueden cambiar los intentos abiertos, que se releen
+        # como mucho cada WINDOW_REFRESH_SECONDS. Recorrer 13.029 trabajos cuesta unos
+        # 0,1 s, demasiado para repetirlo cada 15 s sin cambios.
+        cached = self.window_cache.get(source["id"])
+        now = time.monotonic()
+        if cached and cached[0] == (found, folder) and now - cached[1] < WINDOW_REFRESH_SECONDS:
+            return dict(declared, state=cached[2])
+        self.bytes_read += found[1]
+        if self.bytes_read > self.max_bytes:
+            raise ValueError("La fuente supera el presupuesto de lectura")
+        state = campaign_state(
+            source["id"], folder, max_bytes=WINDOW_SUMMARY_BYTES, max_jobs=WINDOW_JOBS
+        )
+        if state["stage"] != declared["stage"]:
+            raise ValueError("El resumen no corresponde a la etapa declarada de la campaña")
+        self.window_cache[source["id"]] = ((found, folder), now, state)
+        return dict(declared, state=state)
 
     def _tasks(self, folder, summary, *, discover):
         frozen = summary.get("kind") == "frozen_temporal_evaluation"
@@ -1183,7 +1260,7 @@ def write_pages(snapshot, output, *, page_size=64):
     if type(page_size) is not int or not 1 <= page_size <= 128:
         raise ValueError("El tamaño de página debe estar entre 1 y 128")
     output = Path(output)
-    base = {k: v for k, v in snapshot.items() if k != "runs"}
+    base = {k: v for k, v in snapshot.items() if k not in {"runs", "window_campaigns"}}
     pages = []
     for start in range(page_size, len(snapshot["runs"]), page_size):
         runs = snapshot["runs"][start : start + page_size]
@@ -1199,10 +1276,55 @@ def write_pages(snapshot, output, *, page_size=64):
         if not (output / name).exists():
             atomic_json(output / name, document)
         pages.append(name)
+    windows = [_window_entry(entry, output) for entry in snapshot.get("window_campaigns", [])]
     index = dict(
         base,
         runs=snapshot["runs"][:page_size],
         pagination=dict(total_runs=len(snapshot["runs"]), page_size=page_size, pages=pages),
+        window_campaigns=windows,
     )
     atomic_json(output / "observatory.json", index)
+    _prune_windows(output, {entry["path"] for entry in windows})
     return index
+
+
+def _prune_windows(output, current, *, grace=WINDOW_GRACE_SECONDS):
+    """Borrar los documentos de ventanas que ya no enumera el índice.
+
+    Cada confirmación cambia la matriz y su huella, así que sin limpieza la salida crecería
+    con cada trabajo. Se espera `grace` segundos desde la última escritura, porque una
+    publicación en curso o un navegador con el índice anterior todavía pueden leerlos.
+    """
+    folder = output / "windows"
+    if not folder.is_dir():
+        return
+    limit = time.time() - grace
+    for path in folder.glob("*.json"):
+        name = f"windows/{path.name}"
+        if name not in current and path.lstat().st_mtime < limit:
+            path.unlink(missing_ok=True)
+
+
+def _window_entry(entry, output):
+    """Entrada del índice de una campaña por ventanas y su documento inmutable.
+
+    El índice lleva los recuentos para elegir campaña sin descargar nada más. La matriz va
+    en `windows/<huella>.json`, que el navegador solo pide al mostrar esa campaña.
+    """
+    state = entry["state"]
+    declared = {key: entry[key] for key in ("id", "domain", "stage", "configuration")}
+    if state is None:
+        return dict(declared, path=None, status=None, updated_at=None, jobs=0, done=0, attempts=0)
+    name = f"windows/{digest(state)}.json"
+    if not (output / name).exists():
+        atomic_json(output / name, state)
+    states = Counter(cell[4] for cell in state["cells"])
+    return dict(
+        declared,
+        path=name,
+        status=state["status"],
+        updated_at=state["updated_at"],
+        jobs=len(state["cells"]),
+        done=states["done"],
+        attempts=states["attempt"],
+    )
