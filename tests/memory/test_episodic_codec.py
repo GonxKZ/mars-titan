@@ -399,6 +399,17 @@ def native():
     return module
 
 
+class Counted:
+    """Enlace que delega en el nativo y cuenta las proyecciones que recibe."""
+
+    def __init__(self, module):
+        self.module, self.calls = module, 0
+
+    def project_codec_block(self, block, transposed):
+        self.calls += 1
+        return self.module.project_codec_block(block, transposed)
+
+
 def encoded_arrays(result):
     return (
         result.key_inputs,
@@ -448,7 +459,9 @@ def test_native_projection_keeps_every_encoded_bit(native, size, absent, scale):
     view = validated_cpu_batch(raw, spec)
     assert projection_backend(native) == "native"
     expected = codec.encode(view)
-    actual = codec.encode(view, native=native)
+    counted = Counted(native)
+    actual = codec.encode(view, native=counted)
+    assert counted.calls == len(codec_module.BLOCKS)
     for left, right in zip(encoded_arrays(actual), encoded_arrays(expected), strict=True):
         assert_same_bits(left, right)
     assert actual._digest == expected._digest
@@ -500,12 +513,54 @@ def test_replaced_transposed_projection_is_rejected(native):
         codec.encode(validated_cpu_batch(raw_batch(), specification()), native=native)
 
 
-def test_native_encode_traced_allocations_stay_below_estimate(native):
+# Anchuras de la vista de la campaña. Con una fila, las dos matrices residentes dominan el
+# presupuesto y una estimación que olvidara una de ellas quedaría por debajo de lo medido.
+CAMPAIGN_DIMENSIONS = dict(prices=5, news=384, charts=512, fundamentals=78, macro=420)
+
+
+def campaign_view(size):
+    # Entradas estrictas, porque la política con máscaras exige catálogos de esas anchuras.
+    spec = FinancialInputSpec(
+        source_sha256="a" * 64,
+        view_sha256="b" * 64,
+        input_policy=STRICT_INPUTS,
+        dimensions=CAMPAIGN_DIMENSIONS,
+        representation=dict(
+            fundamental_concepts=["assets"],
+            macro_indicators=["rate"],
+            encoders={"fixture": "frozen"},
+            representation_code={"fixture.py": "c" * 64},
+            text_aggregation="mean",
+            context_sessions=64,
+            news_lookback_sessions=5,
+        ),
+    )
+    random = np.random.default_rng(520)
+    at = 1_609_459_200_000_000
+    raw = dict(
+        inputs={
+            name: random.normal(
+                size=(size, 64, width) if name == "prices" else (size, width)
+            ).astype(np.float32)
+            for name, width in CAMPAIGN_DIMENSIONS.items()
+        },
+        sample_ids=[f"US/A{i:03d}/{at}" for i in range(size)],
+        prediction_at=np.full(size, at, dtype="datetime64[us]"),
+        input_available_at=np.full(size, at - 1, dtype="datetime64[us]"),
+    )
+    return spec, validated_cpu_batch(raw, spec)
+
+
+@pytest.mark.parametrize("campaign,size", [(False, 256), (True, 1), (True, 64)])
+def test_native_encode_traced_allocations_stay_below_estimate(native, campaign, size):
     import tracemalloc
 
-    spec = specification()
+    if campaign:
+        spec, view = campaign_view(size)
+    else:
+        spec = specification()
+        view = validated_cpu_batch(raw_batch(size), spec)
     codec = FrozenEpisodeCodec(spec)
-    view = validated_cpu_batch(raw_batch(256), spec)
     codec.encode(view, native=native)
     tracemalloc.start()
     try:
