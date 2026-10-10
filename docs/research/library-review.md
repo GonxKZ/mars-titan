@@ -89,7 +89,7 @@ El proyecto calcula la pérdida pinball en `models/quantile_head.py` y en `evalu
 
 [scoringrules](https://frazane.github.io/scoringrules) 0.11.0 exige Python 3.12 o superior, depende solo de NumPy y SciPy y ofrece `quantile_score`, `interval_score`, `weighted_interval_score` y `crps_quantile`, con motores de NumPy, Numba, torch y JAX. La comprobación preliminar dio 3,5·10⁻¹⁸ entre `quantile_score` y `pinball_loss` y 0 exacto entre `interval_score` y `session_scores`. `crps_quantile` resultó igual a dos veces la pinball media sobre la rejilla de cuantiles (6,9·10⁻¹⁸). Es una aproximación del CRPS a partir de cuantiles ([Gneiting y Raftery, 2007](https://doi.org/10.1198/016214506000001437), [Bracher et al., 2021](https://doi.org/10.1371/journal.pcbi.1008618)), así que no añade una métrica nueva a la comparación.
 
-properscoring 0.1 cubre lo mismo pero no publica versiones desde 2015. Veredicto: scoringrules como referencia de paridad en pruebas ([#495](https://github.com/GonxKZ/mars-titan/issues/495)), properscoring descartado.
+properscoring 0.1 cubre lo mismo pero no publica versiones desde 2015. Veredicto: scoringrules como referencia de paridad en pruebas ([#495](https://github.com/GonxKZ/mars-titan/issues/495)), properscoring descartado. Al escribir esas pruebas apareció un defecto de la versión 0.11.0: `weighted_interval_score` con el motor de NumPy suma la mediana en lugar de su error absoluto ([frazane/scoringrules#140](https://github.com/frazane/scoringrules/issues/140)). La prueba no usa esa función para comparar y fija el defecto, como se explica en las [métricas](metrics.md#cuantiles-pérdida-pinball-y-frecuencia-por-nivel).
 
 ## Calibración conformal
 
