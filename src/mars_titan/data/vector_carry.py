@@ -273,8 +273,10 @@ def encode_pending(edition, encoders, *, max_items=None):
     # Los vectores se guardan por tandas. Un corte pierde como mucho la tanda en curso, que se
     # vuelve a codificar al reanudar.
     batch = []
-    # Tiempo de las llamadas al codificador por modalidad, para medir el caudal de la GPU.
+    # Tiempo de las llamadas al codificador por modalidad, para medir el caudal de la GPU, y
+    # tiempo total del recorrido, que añade la lectura de pendientes y las escrituras.
     by_kind = {kind: dict(encoded=0, seconds=0.0) for kind in _WIDTHS}
+    started_all = time.perf_counter()
     try:
         for identity, kind, payload in pending_items(edition):
             if identity.get("encoder") != encoder:
@@ -303,7 +305,7 @@ def encode_pending(edition, encoders, *, max_items=None):
         store.put_many(batch)
     finally:
         store.close()
-    return {**counts, "by_kind": by_kind}
+    return {**counts, "by_kind": by_kind, "loop_seconds": time.perf_counter() - started_all}
 
 
 def release_vectors(edition):
