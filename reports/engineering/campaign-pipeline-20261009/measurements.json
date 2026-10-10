@@ -410,7 +410,233 @@
     "cpu_us_row": 110.75213304550306
    }
   ],
-  "us_cn_fold_012_last_events": "Pendiente: espera turno en la cola de trabajos con más de 3 GB de RAM.",
+  "us_cn_fold_012_last_events": [
+   {
+    "label": "0/0 4096",
+    "stage": "index",
+    "t": 808.3,
+    "rss_gib": 2.064,
+    "hwm_gib": 3.546,
+    "anon_gib": 1.784,
+    "file_gib": 0.28,
+    "total_events": 9356,
+    "start": 9286
+   },
+   {
+    "label": "0/0 4096",
+    "stage": "warm",
+    "t": 1268.0,
+    "rss_gib": 6.104,
+    "hwm_gib": 6.104,
+    "anon_gib": 5.879,
+    "file_gib": 0.226,
+    "cached_gib": 3.266,
+    "peak_cached_gib": 3.266,
+    "groups": 4887,
+    "pending": 0,
+    "labels": 4877,
+    "prices": 4887,
+    "files": 4887,
+    "decoded": 5414,
+    "redecoded": 0,
+    "warm_s": 459.7
+   },
+   {
+    "label": "0/0 4096",
+    "stage": "done",
+    "t": 1296.5,
+    "rss_gib": 6.069,
+    "hwm_gib": 6.124,
+    "anon_gib": 5.953,
+    "file_gib": 0.116,
+    "cached_gib": 3.297,
+    "peak_cached_gib": 3.297,
+    "groups": 4933,
+    "pending": 0,
+    "labels": 4925,
+    "prices": 4933,
+    "files": 4933,
+    "decoded": 6446,
+    "redecoded": 0,
+    "events": 60,
+    "rows": 142404,
+    "seconds": 28.55,
+    "rows_s": 4988,
+    "cpu_us_row": 115.7,
+    "load": "18.71",
+    "cache_mib": 4096
+   },
+   {
+    "label": "2/2 4096",
+    "stage": "index",
+    "t": 23.9,
+    "rss_gib": 0.804,
+    "hwm_gib": 0.804,
+    "anon_gib": 0.534,
+    "file_gib": 0.27,
+    "total_events": 9356,
+    "start": 9246
+   },
+   {
+    "label": "2/2 4096",
+    "stage": "warm",
+    "t": 382.6,
+    "rss_gib": 6.485,
+    "hwm_gib": 6.486,
+    "anon_gib": 6.215,
+    "file_gib": 0.27,
+    "cached_gib": 3.244,
+    "peak_cached_gib": 3.244,
+    "groups": 4854,
+    "pending": 60,
+    "labels": 4847,
+    "prices": 4854,
+    "files": 4857,
+    "decoded": 4961,
+    "redecoded": 0,
+    "warm_s": 358.7
+   },
+   {
+    "label": "2/2 4096",
+    "stage": "done",
+    "t": 422.3,
+    "rss_gib": 6.383,
+    "hwm_gib": 6.629,
+    "anon_gib": 6.304,
+    "file_gib": 0.078,
+    "cached_gib": 3.305,
+    "peak_cached_gib": 3.305,
+    "groups": 4946,
+    "pending": 0,
+    "labels": 4938,
+    "prices": 4946,
+    "files": 4946,
+    "decoded": 7259,
+    "redecoded": 0,
+    "events": 100,
+    "rows": 249555,
+    "seconds": 39.73,
+    "rows_s": 6281,
+    "cpu_us_row": 141.1,
+    "load": "22.12",
+    "cache_mib": 4096
+   },
+   {
+    "label": "4/4 4096",
+    "stage": "index",
+    "t": 32.7,
+    "rss_gib": 0.783,
+    "hwm_gib": 0.783,
+    "anon_gib": 0.526,
+    "file_gib": 0.257,
+    "total_events": 9356,
+    "start": 9246
+   },
+   {
+    "label": "4/4 4096",
+    "stage": "warm",
+    "t": 1121.1,
+    "rss_gib": 5.986,
+    "hwm_gib": 5.986,
+    "anon_gib": 5.962,
+    "file_gib": 0.023,
+    "cached_gib": 3.244,
+    "peak_cached_gib": 3.244,
+    "groups": 4854,
+    "pending": 60,
+    "labels": 4847,
+    "prices": 4854,
+    "files": 4857,
+    "decoded": 4961,
+    "redecoded": 0,
+    "warm_s": 1088.5
+   },
+   {
+    "label": "4/4 4096",
+    "stage": "done",
+    "t": 1146.8,
+    "rss_gib": 6.109,
+    "hwm_gib": 6.196,
+    "anon_gib": 6.083,
+    "file_gib": 0.026,
+    "cached_gib": 3.305,
+    "peak_cached_gib": 3.305,
+    "groups": 4946,
+    "pending": 0,
+    "labels": 4938,
+    "prices": 4946,
+    "files": 4946,
+    "decoded": 7259,
+    "redecoded": 0,
+    "events": 100,
+    "rows": 249555,
+    "seconds": 25.7,
+    "rows_s": 9711,
+    "cpu_us_row": 141.6,
+    "load": "33.52",
+    "cache_mib": 4096
+   },
+   {
+    "label": "2/2 2048 cyclic",
+    "stage": "index",
+    "t": 21.7,
+    "rss_gib": 0.802,
+    "hwm_gib": 0.802,
+    "anon_gib": 0.524,
+    "file_gib": 0.277,
+    "total_events": 9356,
+    "start": 9326
+   }
+  ],
+  "us_cn_fold_012_note": "Lector de la rama tras dejar de retener los metadatos Parquet, en los últimos instantes de US+CN/fold-012 con bloques de 128 filas y 4 GiB de caché. Cada configuración en un proceso nuevo y seguidas, con la carga anotada. La comparación LRU frente a cíclica con 2 GiB no se completó: el sistema terminó su plaza de memoria durante el salto al cursor.",
+  "us_cn_fold_012_sizes": [
+   {
+    "total_events": 9356,
+    "last_events": 110,
+    "tail_rows": 540654,
+    "rows_per_event": [
+     1,
+     8101,
+     8171
+    ],
+    "assets": 4947,
+    "input_assets": 4946,
+    "input_groups": 7259,
+    "sample": 60,
+    "label_bytes_mean": 93318.4,
+    "price_bytes_mean": 180873.6,
+    "decoded_group_bytes_mean": 717568.0,
+    "decoded_group_bytes_max": 717568,
+    "parquet_metadata_bytes_mean": 114426.45,
+    "projected_gib": {
+     "groups": 3.3053488731384277,
+     "labels": 0.42994145750999446,
+     "prices": 0.8331619441509247
+    }
+   }
+  ],
+  "parquet_metadata": {
+   "files": 1000,
+   "serialized_mib": 113.4,
+   "retained_mib": 865.5,
+   "per_file_kib": 886.3,
+   "footer_reopen_ms": [
+    1.14,
+    1.263,
+    1.093
+   ],
+   "group_read_reopen_ms": [
+    5.881,
+    3.621,
+    3.293
+   ],
+   "group_read_reuse_ms": [
+    2.339,
+    2.901,
+    2.877
+   ]
+  },
+  "first_us_cn_attempt": "Con los metadatos Parquet retenidos por activo, la primera medida en US+CN/fold-012 superó los 9 GiB de su plaza y el sistema la terminó.",
   "develop_reference": "Medido en perf/campaign-kernels con el lector de develop en US+CN/fold-012: 36 filas/s con la caché LRU de 1 GiB y bloques de 128 filas, 1.930 filas/s con 6 GiB y bloques de 4.096 filas."
  },
  "slots": {
@@ -2309,6 +2535,40 @@
    },
    {
     "id": "C3 presupuesto superado",
+    "result": "detectada"
+   }
+  ],
+  "arms": [
+   {
+    "id": "B1 sin recursos por brazo",
+    "result": "detectada"
+   },
+   {
+    "id": "B2 estimación observada por modelo",
+    "result": "detectada"
+   },
+   {
+    "id": "B3 brazos del plan sin comprobar",
+    "result": "detectada"
+   },
+   {
+    "id": "B4 ámbito del modelo por encima del brazo",
+    "result": "detectada"
+   },
+   {
+    "id": "B5 brazo sin su ámbito",
+    "result": "detectada"
+   }
+  ],
+  "slot_race": [
+   {
+    "id": "P1 tubería leída antes que el estado del proceso",
+    "result": "detectada"
+   }
+  ],
+  "metadata": [
+   {
+    "id": "R1 metadatos Parquet retenidos por activo",
     "result": "detectada"
    }
   ],
