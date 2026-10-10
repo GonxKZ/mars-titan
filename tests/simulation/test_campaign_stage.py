@@ -1034,3 +1034,72 @@ def test_the_window_sensitivity_runs_only_when_enabled_and_never_mixes_outputs(
         stage_report.read_output(stage, tmp_path / "sensitivity")
     read = stage_report.read_output(policy_plan.window_sensitivity(stage), tmp_path / "sensitivity")
     assert read["receipts"]
+
+
+def test_a_staged_campaign_reads_only_selections_checked_by_the_report(
+    base_a, tmp_path, learning_doubles, monkeypatch
+):
+    """La RL exige un informe sin fallos que cubra sus vistas y cada selección que lee.
+
+    La campaña reducida es de la versión 1, así que el walk-forward por etapas se añade al
+    estado cargado. Sus políticas ajustan con menos ventanas que A v2, de modo que
+    `check_design` se prueba aparte con el plan declarado.
+    """
+    from mars_titan.data.storage import sha256
+    from mars_titan.training import campaign_chain, chain_disjunction
+
+    load = campaign_stage.load_stage
+
+    def staged(path):
+        stage = load(path)
+        campaign = dict(stage["campaign"], walk_forward_stages=campaign_chain.DESIGN)
+        return dict(stage, campaign=campaign)
+
+    monkeypatch.setattr(campaign_stage, "load_stage", staged)
+    monkeypatch.setattr(campaign_stage, "check_design", lambda stage, jobs: None)
+    base = chained(base_a, tmp_path)
+    chain = fixture.publish_chain(base, tmp_path / "chain")
+    learner = fixture.ScriptedLearner()
+    output = tmp_path / "stage"
+    with pytest.raises(ValueError, match="falta el informe de disjunción"):
+        fixture.run(base, output, learner, chain_output=chain)
+    # Un informe que comprobó las vistas pero no estas selecciones no autoriza la lectura.
+    stage = load(base.stage)
+    _, state = fixture.engine._confirmed_state(base.campaign, base.views, base.output)
+    used = chain_disjunction.used_views(state.views, list(base.views))
+    selections = campaign_stage.require_chain_selections(
+        stage, policy_plan.plan_stage(stage), chain
+    )
+    assert selections and all("__chain/seed-42" in label for label in selections)
+    report = dict(
+        schema_version=1,
+        kind=chain_disjunction.KIND,
+        campaign_sha256=stage["campaign"]["sha256"],
+        scopes={
+            scope: {window: dict(manifest_sha256=value) for window, value in windows.items()}
+            for scope, windows in used.items()
+        },
+        base_receipts={},
+        selections={},
+        failures=[],
+        training_executed=False,
+        final_test_opened=False,
+    )
+    atomic_json(tmp_path / "views-only.json", report)
+    with pytest.raises(ValueError, match="no comprobó la selección US/fold-"):
+        fixture.run(
+            base, output, learner, chain_output=chain, disjunction=tmp_path / "views-only.json"
+        )
+    assert learner.calls == [] and not output.exists()
+    report["selections"] = {label: dict(sha256=value) for label, value in selections.items()}
+    atomic_json(tmp_path / "report.json", report)
+    summary = fixture.run(
+        base,
+        output,
+        learner,
+        chain_output=chain,
+        disjunction=tmp_path / "report.json",
+        stop=SimpleNamespace(requested=True),
+    )
+    assert summary["status"] == "paused" and learner.calls == []
+    assert summary["disjunction_sha256"] == sha256(tmp_path / "report.json")

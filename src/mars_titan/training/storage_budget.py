@@ -46,14 +46,16 @@ def _require(condition, message):
 
 def campaign_jobs(campaign_path, extensions_path=None):
     """Campaña cargada, con las secciones preparadas de su variante si se dan, y sus trabajos."""
-    from .campaign_plan import load_campaign, plan_campaign
+    from .campaign_plan import ONLINE, load_campaign, plan_campaign
 
     campaign = load_campaign(campaign_path)
     if extensions_path is not None:
         from .campaign_extensions import extended_campaign, load_extensions
 
         campaign = extended_campaign(load_extensions(extensions_path), campaign)
-    return campaign, plan_campaign(campaign)
+    # El control en línea no tiene todavía ejecutor ni informe que medir. Su disco se
+    # contará con el informe de su ejecutor.
+    return campaign, [job for job in plan_campaign(campaign) if job["kind"] != ONLINE]
 
 
 def view_reports(views):

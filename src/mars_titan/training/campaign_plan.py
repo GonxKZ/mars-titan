@@ -59,7 +59,13 @@ from mars_titan.data.input_policy import HISTORICAL_MASKED, masked_inputs
 from mars_titan.evaluation import walk_forward_comparison as comparison
 from mars_titan.evaluation.splits import build_folds, stopping_rule
 
-from . import campaign_data_policy, campaign_numerics, campaign_schedule
+from . import (
+    campaign_chain,
+    campaign_data_policy,
+    campaign_numerics,
+    campaign_online_controls,
+    campaign_schedule,
+)
 from .reference_design import PINBALL, QUANTILE_HEAD, candidate_indices, design_cases
 from .search_cases import SEARCHED
 from .selection import JOINT_PLATEAU, VALIDATION_PLATEAU, campaign_rule
@@ -88,6 +94,15 @@ PLATEAU, JOINT = "plateau", "joint"
 EARLY_STOP = "early_stop"
 # La época común del grupo es la mayor de las primeras mesetas de sus ajustes.
 GROUP_EPOCH = "maximum_of_first_plateaus"
+# Campañas declaradas del repositorio que se conservan para contar y comprobar, pero no se
+# lanzan. Las copias de las pruebas, en otras rutas, siguen ejercitando su código.
+RETIRED = {
+    "configs/baselines/historical-masked-campaign-b.json": (
+        "La campaña está retirada: la variante B (reentreno cada 36 meses con traslados) no "
+        "se ejecuta por decisión del autor del 9 de octubre de 2026. Se conserva para contar "
+        "y comprobar"
+    ),
+}
 # GRU candidata con banco episódico. Repite candidate_run.RECIPE sin importar PyTorch.
 EPISODIC = "episodic_gru"
 CANDIDATE_RECIPE = "candidate_gru_chronological_v1"
@@ -250,6 +265,8 @@ _FIELDS_V2 = {
     "numerics",
     "data_policy",
 }
+# Secciones opcionales de la versión 2: el walk-forward por etapas y el control en línea.
+_OPTIONAL_V2 = {"walk_forward_stages", "online_controls"}
 _SEED_POLICY = {"search_seed", "selected_case_seeds", "deterministic_arms"}
 # Modos de parada de la versión 2: la regla del protocolo o la sección early_stop, que
 # declara la meseta individual o la parada conjunta de los grupos emparejados.
@@ -834,9 +851,10 @@ def load_campaign(path):
     config, digest = read_manifest(path, 1024**2)
     version = config.get("schema_version") if isinstance(config, dict) else None
     fields = _FIELDS | (_FIELDS_V2 if version == 2 else set())
+    optional = set(OPTIONAL) | (_OPTIONAL_V2 if version == 2 else set())
     _require(
         isinstance(config, dict)
-        and fields <= set(config) <= fields | set(OPTIONAL) | {EARLY_STOP}
+        and fields <= set(config) <= fields | optional | {EARLY_STOP}
         and version in (1, 2)
         and config["kind"] == CAMPAIGN_KIND
         and config["status"] == DECLARED
@@ -905,6 +923,12 @@ def load_campaign(path):
         )
         campaign_numerics.declared(config["numerics"])
         campaign_data_policy.declared(config["data_policy"])
+        if "walk_forward_stages" in config:
+            campaign_chain.declared(config["walk_forward_stages"])
+            _require(
+                config["execution"]["order"] == "by_window",
+                "El walk-forward por etapas recorre la campaña ventana a ventana",
+            )
     rules = _arm_rules(rule, early)
     campaign = dict(
         config,
@@ -928,6 +952,8 @@ def load_campaign(path):
     if version == 2:
         _seed_policy(config["seed_policy"], campaign)
         campaign["memory_options"] = _memory_options(config["memory_options"], campaign)
+        if "online_controls" in config:
+            campaign_online_controls.declared(config["online_controls"], campaign)
     return campaign
 
 
@@ -986,13 +1012,24 @@ def _memory_options(declared, campaign):
 
 
 def launch_blockers(campaign):
-    """Motivos que impiden lanzar la campaña aunque su plan sea válido."""
-    return [
+    """Enumera los motivos que impiden lanzar la campaña aunque su plan sea válido.
+
+    Una campaña retirada del repositorio, como la variante B declarada, se conserva para
+    contar y comprobar, pero no se ejecuta.
+    """
+    blockers = [
         f"{family}.{option} sigue pendiente de la medida de memoria en cuda:0"
         for family, options in (campaign.get("memory_options") or {}).items()
         for option, value in options.items()
         if value == PENDING
     ]
+    repository = Path(__file__).resolve().parents[3]
+    blockers += [
+        reason
+        for relative, reason in RETIRED.items()
+        if Path(campaign["path"]) == (repository / relative).resolve()
+    ]
+    return blockers + campaign_online_controls.blockers(campaign)
 
 
 def _early_stop(section, rule, arms):
@@ -1291,6 +1328,7 @@ def plan_campaign(campaign):
                 for seed in spec["seeds"]:
                     depends = searches if seed == spec["seed"] else [f"{prefix}/finalist-s{seed}"]
                     jobs.append(_job(*common, "carry", seed, anchor=row["anchor"], depends=depends))
+    jobs += campaign_online_controls.plan_online(campaign, jobs)
     _require(len({job["id"] for job in jobs}) == len(jobs), "El plan contiene trabajos repetidos")
     jobs = _joint_phases(campaign, jobs, {spec["arm"]: spec for spec in _arm_specs(campaign)})
     if execution_order(campaign) == "by_window":
@@ -1455,6 +1493,8 @@ def count_jobs(campaign, jobs=None):
         training_jobs=sum(_fit(job) for job in jobs),
         prediction_jobs=sum(job["kind"] == CARRY for job in jobs),
     )
+    if campaign.get("online_controls"):
+        totals["online_jobs"] = sum(job["kind"] == ONLINE for job in jobs)
     plateaus = sum(job.get("phase") == PLATEAU for job in jobs)
     if plateaus:
         totals["plateau_jobs"] = plateaus
@@ -1480,6 +1520,8 @@ def pending_families(campaign):
     """Brazos de la comparación que esperan un entrenador conectado, con su motivo."""
     result = {}
     connected = {spec["arm"] for spec in _arm_specs(campaign)}
+    # El control en línea no tiene caso de búsqueda: lo conecta su sección declarada.
+    connected |= set((campaign.get("online_controls") or {}).get("arms", ()))
     for name, arm in campaign["comparison_config"]["arms"].items():
         family = arm["family"]
         if family in EXTENSION_POINTS and name not in connected:
@@ -1513,6 +1555,8 @@ def check_campaign(path):
         execution_order=execution_order(campaign),
         numerics=campaign.get("numerics"),
         data_policy=campaign.get("data_policy"),
+        walk_forward_stages=campaign.get("walk_forward_stages"),
+        online_controls=campaign.get("online_controls"),
         memory_options=campaign.get("memory_options"),
         launch_blockers=launch_blockers(campaign),
         pending_families=pending_families(campaign),

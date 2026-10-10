@@ -17,15 +17,17 @@ import pyarrow.parquet as pq
 import pytest
 
 from mars_titan.data.input_policy import HISTORICAL_MASKED, policy_identity
-from mars_titan.data.storage import sha256
+from mars_titan.data.storage import atomic_json, sha256
+from mars_titan.environments.walk_forward_receipt import RECEIPT_KIND as WINDOW_RECEIPT_KIND
 from mars_titan.models.quantile_head import QUANTILE_COLUMNS, QUANTILE_HEAD
-from mars_titan.posttraining import adapter_matrix, campaign_stage
+from mars_titan.posttraining import adapter_matrix, campaign_stage, staged_chain
 from mars_titan.posttraining import stage_comparison as compare
 from tests.evaluation.test_comparison_sources import masked_view, save
 from tests.posttraining.campaign_fixture import write_configs
 
 ROOT = Path(__file__).resolve().parents[2]
 DECLARATION = ROOT / "configs/posttraining/historical-masked-adapter-comparison-a.json"
+DECLARATION_V2 = ROOT / "configs/posttraining/historical-masked-adapter-comparison-a-v2.json"
 ASSETS = tuple("ABCDEFG")
 OFFSETS = np.array([-1.96, -1.28, 0.0, 1.28, 1.96])
 ADAPTED = ["gru__head", "gru__fusion", "gru__head_fusion", "gru__fusion_full_rank"]
@@ -75,7 +77,7 @@ def write_table(path, arm, window, partition, segment):
 class Stage:
     """Etapa reducida declarada, fuentes de la campaña y recibos escritos sin ejecutar."""
 
-    def __init__(self, root):
+    def __init__(self, root, families=None):
         self.root = root
         _, stage_path = write_configs(root / "config", "A")
         # Sin secciones secundarias: los estratos leerían muestras que estas vistas no tienen.
@@ -85,6 +87,7 @@ class Stage:
         save(root / "config" / "comparison.json", dict(comparison, schema_version=1))
         self.declaration = root / "config" / "declaration.json"
         declared = json.loads(DECLARATION.read_text())
+        declared["families"] = families or declared["families"]
         save(self.declaration, dict(declared, stage=stage_path.name))
         self.loaded = compare.load_declaration(self.declaration)
         stage = self.loaded["stage"]
@@ -164,6 +167,75 @@ class Stage:
                 final_test_opened=False,
             )
             save(folder / "receipt.json", receipt)
+
+    def publish_selection(self, chosen, *, window="fold-001", seed=42):
+        """Selección confirmada de la cadena de gru con el contrato de la etapa.
+
+        Compiten el padre congelado y los casos de la ventana. `chosen` recibe el menor score
+        de validación y gana con `chain_validation_score_v1`. El recibo #390 del mercado
+        declara como padre el trabajo elegido con la huella de su recibo.
+        """
+        jobs = {
+            job["arm"]: job
+            for job in self.loaded["groups"]["gru"]["jobs"]["US"]
+            if (job["window"], job["seed"]) == (window, seed)
+        }
+        candidates = [
+            dict(
+                kind=campaign_stage.candidate_kind(job),
+                arm=arm,
+                job=job["id"],
+                receipt_sha256=sha256(self.output / "jobs" / job["id"] / "receipt.json"),
+                score=0.1 if arm == chosen else 1.0,
+            )
+            for arm, job in jobs.items()
+        ]
+        selected = next(
+            {key: c[key] for key in ("kind", "arm", "job", "receipt_sha256")}
+            for c in candidates
+            if c["arm"] == chosen
+        )
+        resolved = self.loaded["stage"]["campaign"]["comparison_config"]["resolved_scopes"]["US"]
+        fold = resolved["windows"][window]
+        until = int(np.datetime64(fold["evaluation"][0], "us").astype(np.int64)) - 1
+        folder = staged_chain.chain_folder(self.output, "US", window, "gru", seed)
+        atomic_json(
+            folder / "US.json",
+            dict(
+                kind=WINDOW_RECEIPT_KIND,
+                schema_version=1,
+                protocol=resolved["protocols"]["US"],
+                fold=fold,
+                parent=dict(id=selected["job"], sha256=selected["receipt_sha256"]),
+                labels_used_until=until,
+                predictions=dict(evaluation=dict(rows=70, sha256="a" * 64)),
+            ),
+        )
+        frozen = selected["kind"] == "frozen_parent"
+        atomic_json(
+            folder / staged_chain.SELECTION,
+            dict(
+                kind=staged_chain.SELECTION_KIND,
+                schema_version=1,
+                campaign_sha256=self.loaded["stage"]["campaign"]["sha256"],
+                stage_sha256=self.loaded["stage"]["sha256"],
+                scope="US",
+                window=window,
+                base_arm="gru",
+                seed=seed,
+                rule=staged_chain.RULE,
+                parent_window="fold-000",
+                parent=dict(id="US/fold-000/gru", sha256="8" * 64),
+                candidates=candidates,
+                selected=selected,
+                state=dict(path="state.pt", sha256="c" * 64),
+                fit_rows=None if frozen else dict(rows=1, sha256="7" * 64),
+                markets={"US": sha256(folder / "US.json")},
+                labels_used_until=until,
+                confirmed_at_utc="2026-10-10T00:00:00+00:00",
+            ),
+        )
+        return selected
 
     def sources(self):
         return compare.write_sources(
@@ -374,12 +446,16 @@ def test_a_control_without_a_declared_role_stops_the_derivation(monkeypatch):
     monkeypatch.setattr(compare, "plan_stage", lambda stage: jobs)
     # Sin brazos de la cadena trivial: todos los trabajos entran en los contrastes.
     monkeypatch.setattr(compare, "stage_arms", lambda stage: ({}, {}))
+    staged = dict(design=campaign_stage.STAGED)
     with pytest.raises(ValueError, match="linear_residual de gru__linear_residual"):
-        compare._groups({})
+        compare._groups(staged)
     monkeypatch.setattr(compare, "plan_stage", lambda stage: jobs[:2])
-    group = compare._groups({})["gru"]
+    group = compare._groups(staged)["gru"]
     assert group["full_continuation"] == "gru__full_continuation"
     assert group["adapted"] == ["gru__head"]
+    assert group["chain"] == "gru__chain" and group["base_retrain"] == "gru"
+    # El plan anclado de B no tiene cadena.
+    assert compare._groups(dict(design=campaign_stage.ANCHORED))["gru"]["chain"] is None
 
 
 def test_adapters_must_evaluate_the_same_rows_as_the_parent(tmp_path):
@@ -399,10 +475,118 @@ def test_adapters_must_evaluate_the_same_rows_as_the_parent(tmp_path):
         compare.evaluate(stage.declaration, sources, "US", "gru")
 
 
+CHAIN_FAMILIES = json.loads(DECLARATION_V2.read_text())["families"]
+
+
+def test_v2_declaration_adds_the_chain_and_the_base_retrain_on_the_joint_scope():
+    loaded = compare.load_declaration(DECLARATION_V2)
+    stage = loaded["stage"]
+    assert stage["scopes"] == ["US+CN"]
+    # Los 22 brazos de la etapa menos la cadena trivial de Ridge y XGBoost.
+    assert len(loaded["groups"]) == 20
+    assert not {"ridge", "xgboost"} & set(loaded["groups"])
+    joint = stage["campaign"]["comparison_config"]["joint_design"]
+    for base_arm, config in loaded["configs"].items():
+        group = loaded["groups"][base_arm]
+        chain = staged_chain.chain_arm(base_arm)
+        assert group["chain"] == chain and group["base_retrain"] == base_arm
+        assert config["arms"][chain]["family"] == "posttraining_chain"
+        families = config["resolved_families"]
+        # El contraste que el diseño informa aparte: la cadena frente al reentreno de k.
+        assert set(families["versus_base_retrain"]) == {f"{chain}-{base_arm}"}
+        assert f"{chain}-{group['frozen_parent']}" in families["versus_frozen_parent"]
+        assert f"{chain}-{group['full_continuation']}" in families["versus_full_continuation"]
+        # Se conserva la elegibilidad del modelo conjunto: China entra en las métricas desde
+        # fold-006 y los controles separados quedan fuera porque no hay ámbitos de un mercado.
+        assert config["joint_design"] == dict(joint, separate_controls=[])
+        resolved = config["resolved_scopes"]["US+CN"]
+        assert list(resolved["windows"]) == [f"fold-{i:03d}" for i in range(1, 19)]
+        assert resolved["eligible"]["US"] == list(resolved["windows"])
+        assert resolved["eligible"]["CN"] == [f"fold-{i:03d}" for i in range(6, 19)]
+
+
+@pytest.fixture(scope="module")
+def chain_study(tmp_path_factory):
+    stage = Stage(tmp_path_factory.mktemp("chain-comparison"), families=CHAIN_FAMILIES)
+    selected = stage.publish_selection("gru__head")
+    sources = stage.sources()
+    config, report, _, _ = compare.evaluate(stage.declaration, sources, "US", "gru")
+    return stage, selected, sources, config, report
+
+
+def test_the_chain_reads_the_predictions_of_the_selected_job(chain_study):
+    stage, selected, sources, _, report = chain_study
+    manifest = json.loads(sources.read_text())
+    assert selected["job"] == "US/fold-001/gru__head/fit-s42"
+    # Las fuentes de la cadena son las del trabajo elegido, sin copias.
+    assert manifest["arms"]["gru__chain"] == manifest["arms"]["gru__head"]
+    assert report["posttraining"]["roles"]["chain"] == "gru__chain"
+    mae, _ = by_hand_session_mae(stage, "gru", ["fold-001"])
+    contrasts = report["contrasts"]["US"]
+    rows = {row["name"]: row for row in contrasts["versus_base_retrain"]["mae"]["contrasts"]}
+    # La cabeza elegida es perfecta y el reentreno repite las predicciones del padre.
+    assert rows == {"gru__chain-gru": rows["gru__chain-gru"]}
+    assert rows["gru__chain-gru"]["estimate"] == pytest.approx(-mae, abs=1e-12)
+    rows = {row["name"]: row for row in contrasts["versus_frozen_parent"]["mae"]["contrasts"]}
+    assert rows["gru__chain-gru__frozen_parent"]["estimate"] == pytest.approx(-mae, abs=1e-12)
+
+
+def test_the_chain_can_keep_the_frozen_parent(tmp_path):
+    stage = Stage(tmp_path, families=CHAIN_FAMILIES)
+    stage.publish_selection("gru__frozen_parent")
+    manifest = json.loads(stage.sources().read_text())
+    assert manifest["arms"]["gru__chain"] == manifest["arms"]["gru__frozen_parent"]
+
+
+def test_the_chain_needs_a_confirmed_selection_of_this_stage(tmp_path):
+    stage = Stage(tmp_path, families=CHAIN_FAMILIES)
+    with pytest.raises(ValueError, match="Falta la selección de la cadena US/fold-001"):
+        stage.sources()
+    selected = stage.publish_selection("gru__head")
+    path = staged_chain.chain_folder(stage.output, "US", "fold-001", "gru", 42)
+    document = json.loads((path / staged_chain.SELECTION).read_text())
+    save(path / staged_chain.SELECTION, dict(document, stage_sha256="0" * 64))
+    with pytest.raises(ValueError, match="Falta la selección de la cadena"):
+        stage.sources()
+    # Un recibo reescrito después de la selección ya no es el que se eligió.
+    stage.publish_selection("gru__head")
+    receipt = stage.output / "jobs" / selected["job"] / "receipt.json"
+    receipt.write_text(receipt.read_text() + "\n")
+    with pytest.raises(ValueError, match="no elige un trabajo confirmado"):
+        stage.sources()
+    assert not (stage.output / "sources" / "US" / "gru.json").exists()
+
+
+@pytest.mark.parametrize("dropped", ["versus_base_retrain", "chain"])
+def test_the_staged_comparison_must_contrast_the_chain_and_the_base_retrain(tmp_path, dropped):
+    declared = json.loads(DECLARATION_V2.read_text())
+    families = {
+        name: dict(family, variants=[role for role in family["variants"] if role != dropped])
+        for name, family in declared["families"].items()
+        if name != dropped
+    }
+    path = tmp_path / "declaration.json"
+    stage = (DECLARATION_V2.parent / declared["stage"]).resolve()
+    families = {name: family for name, family in families.items() if family["variants"]}
+    save(path, dict(declared, stage=str(stage), families=families))
+    with pytest.raises(ValueError, match="contrastar la cadena y el reentreno completo"):
+        compare.load_declaration(path)
+
+
+def test_the_chain_only_exists_in_the_staged_design(tmp_path):
+    _, stage_path = write_configs(tmp_path / "config", "B")
+    path = tmp_path / "config" / "declaration.json"
+    save(path, dict(json.loads(DECLARATION_V2.read_text()), stage=stage_path.name))
+    with pytest.raises(ValueError, match="Solo el walk-forward por etapas"):
+        compare.load_declaration(path)
+
+
 @pytest.mark.parametrize(
     "families",
     [
         {"wrong": {"base": "adapted", "variants": ["full_continuation"]}},
+        {"wrong": {"base": "chain", "variants": ["full_continuation"]}},
+        {"wrong": {"base": "base_retrain", "variants": ["chain", "base_retrain"]}},
         {"wrong": {"base": "frozen_parent", "variants": ["frozen_parent"]}},
         {"wrong": {"base": "frozen_parent", "variants": ["linear_residual"]}},
         {"levels": {"base": "frozen_parent", "variants": ["adapted"]}},
