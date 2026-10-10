@@ -41,7 +41,15 @@ from mars_titan.evaluation import long_short_comparison
 from mars_titan.evaluation import walk_forward_comparison as walk
 
 from .campaign_stage import FROZEN as FROZEN_JOB
-from .campaign_stage import RECEIPT_KIND, RUN_KIND, _digest, load_stage, plan_stage
+from .campaign_stage import (
+    RECEIPT_KIND,
+    RUN_KIND,
+    TABULAR,
+    _digest,
+    load_stage,
+    plan_stage,
+    stage_arms,
+)
 
 KIND = "posttraining_stage_comparison"
 DECLARED = "declared_before_evaluation"
@@ -91,10 +99,14 @@ def _groups(stage):
     """Brazos de cada padre por papel, en el orden del plan, y sus trabajos por ámbito.
 
     Un trabajo ``frozen`` del plan por etapas fija el brazo del padre congelado. Sin él,
-    el padre congelado es el propio brazo base.
+    el padre congelado es el propio brazo base. Ridge y XGBoost quedan fuera: su cadena solo
+    tiene el padre congelado y no hay continuación ni adaptadores que contrastar.
     """
+    trivial = {arm for arm, spec in stage_arms(stage)[0].items() if spec["design"] == TABULAR}
     groups = {}
     for job in plan_stage(stage):
+        if job["base_arm"] in trivial:
+            continue
         group = groups.setdefault(
             job["base_arm"], {FROZEN: job["base_arm"], CONTINUATION: None, ADAPTED: [], "jobs": {}}
         )

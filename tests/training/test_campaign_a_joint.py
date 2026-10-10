@@ -316,18 +316,13 @@ def test_window_schedule_orders_every_stage_of_the_window_and_counts_all_jobs():
         ),
     )
     stage = policy_plan.load_stage(plan.LATER_STAGES["rl_policy_comparison"]["joint_stage"])
+    stages["rl"] = policy_plan.plan_stage(stage)
+    # La etapa de adaptadores da cadena a todos los predictores de las políticas, también la
+    # trivial de Ridge y XGBoost, así que cada selección que leen está en el plan.
     chains = {job["id"] for job in stages["adapters"]}
-    policies = policy_plan.plan_stage(stage)
-
-    def covered(job):
-        return all(d in chains for d in job["depends"] if staged_chain.CHAIN_SUFFIX in d)
-
-    # La cadena solo cubre hoy los cinco brazos con adaptadores. Las políticas de los demás
-    # predictores esperan su cadena (fix/rl-chain-coverage) y el orden las rechazaría.
-    stages["rl"] = [job for job in policies if covered(job)]
-    waiting = {job["predictor"] for job in policies if not covered(job)}
-    adapted = {job["base_arm"] for job in stages["adapters"]}
-    assert len(adapted) == 5 and waiting == set(stage["predictors"]) - adapted
+    reads = {d for job in stages["rl"] for d in job["depends"] if staged_chain.CHAIN_SUFFIX in d}
+    assert reads and reads <= chains
+    assert {job["base_arm"] for job in stages["adapters"]} == set(stage["predictors"])
     schedule = order.window_schedule(value, plan.plan_campaign(value), stages)
     assert [row["window"] for row in schedule] == [f"fold-{i:03d}" for i in range(19)]
     assert [entry["phase"] for entry in schedule[0]["phases"]] == list(order.PHASES)
@@ -335,8 +330,8 @@ def test_window_schedule_orders_every_stage_of_the_window_and_counts_all_jobs():
     for row in schedule:
         totals.update({entry["phase"]: len(entry["jobs"]) for entry in row["phases"]})
     assert totals["base_search"] + totals["selected_case_seeds"] == 2341
-    # Adaptadores: 1.566 ajustes, 270 padres congelados y 285 selecciones de la cadena.
-    assert (totals["adapters"], totals["ablation"], totals["rl"]) == (2121, 3534, 1203)
+    # Adaptadores: 5.238 ajustes, 1.116 padres congelados y 1.178 selecciones de la cadena.
+    assert (totals["adapters"], totals["ablation"], totals["rl"]) == (7532, 3534, 2160 + 2442)
     window = schedule[6]
     selection = window["phases"][order.PHASES.index("selection")]
     assert "CN/fold-000/mars_titan_m1" in selection["decisions"]
@@ -431,11 +426,17 @@ def test_later_stages_of_v2_read_the_joint_model_in_each_market():
     adapter = adapters.load_stage(plan.LATER_STAGES["posttraining_adapter_matrix"]["joint_stage"])
     assert adapter["scopes"] == ["US+CN"]
     counts = adapters.count_stage(adapter)
-    # Cada ventana con padre adapta 87 casos y congela 15 padres. Todas eligen la cadena.
+    # 20 brazos neuronales con tres semillas y los dos tabulares con una: 62 cadenas por
+    # ventana. Cada ventana con padre congela esos 62 padres y todas eligen su cadena.
     assert (counts["training_jobs"], counts["prediction_jobs"], counts["selection_jobs"]) == (
-        87 * 18,
-        15 * 18,
-        15 * 19,
+        5238,
+        62 * 18,
+        62 * 19,
+    )
+    assert set(adapter["arms"]) == set(
+        policy_plan.load_stage(plan.LATER_STAGES["rl_policy_comparison"]["joint_stage"])[
+            "predictors"
+        ]
     )
     masked = ablation.load_stage(plan.LATER_STAGES["modality_ablation"]["joint_stage"])
     # 20 brazos neuronales con tres semillas y dos tabulares con una, por tres variantes.
@@ -861,6 +862,8 @@ def test_window_aggregates_score_each_scope_with_its_joint_design(joint_campaign
     plain = {key: value for key, value in declared.items() if key != comparison.LONG_SHORT_FIELD}
     monkeypatch.setattr(rolling.Rolling, "comparison_config", lambda self: plain)
     retention = rolling.load_retention(CONFIGS / "baselines/historical-masked-retention-v2.json")
+    # Solo se prueban los agregados, así que el recorrido no lleva la etapa de políticas.
+    retention = dict(retention, consumers={})
     rows = order.campaign_windows(plan.load_campaign(joint_campaign.campaign))
     walker = rolling.Rolling(
         retention, joint_campaign.campaign, joint_campaign.views, joint_campaign.output, rows
@@ -1015,7 +1018,7 @@ def test_the_plan_checks_every_declared_document_of_the_campaign_and_its_stages(
         "episodic-readout-historical-masked.json",
         "cm-v1-factorial.json",
         "historical-masked-adapter-stage-a-v2.json",
-        "adapter-matrix-v2.json",
+        "adapter-matrix-v3.json",
         "historical-masked-rl-stage-a-v2.json",
         "historical-masked-rl-policies.json",
         "historical-masked-ablation-stage-a-v2.json",

@@ -279,12 +279,20 @@ def _posttraining_hours(stage, counts, rates):
     Cada padre predice una vez esas filas y la validación para su caché, y el padre
     congelado predice validación, calibración y evaluación, ambos con la inferencia neuronal
     más lenta del brazo base. En el plan anclado de B el ajuste recorre todo su tramo.
+
+    La medida de la matriz solo cubre las redes de referencia. Los brazos de Titans-MAC y la
+    cadena trivial de Ridge y XGBoost quedan en `without_estimate`, sin sumar sus horas.
     """
     from mars_titan.posttraining.campaign_stage import FROZEN, plan_stage
 
     measured, neural = rates[POSTTRAINING], rates[NEURAL]
     epochs = stage["matrix"]["budget"]["epochs"]
-    jobs = plan_stage(stage)
+    jobs, missing = [], set()
+    for job in plan_stage(stage):
+        if job["base_arm"] in measured and job["base_arm"] in neural:
+            jobs.append(job)
+        else:
+            missing.add(job["base_arm"])
     parents = {}
     for job in jobs:
         if job["kind"] == FIT:
@@ -313,7 +321,7 @@ def _posttraining_hours(stage, counts, rates):
             total += (rows["train"] + rows["validation"]) / cache
         return total
 
-    return dict(_hours(jobs, seconds), parent_caches=len(first))
+    return dict(_hours(jobs, seconds), parent_caches=len(first), without_estimate=sorted(missing))
 
 
 def _ablation_hours(campaign, stage, counts, rates):
@@ -353,12 +361,18 @@ def _ablation_hours(campaign, stage, counts, rates):
 
 
 def _totals(families):
-    """Horas de GPU con las opciones declaradas y con las más rápidas que caben en memoria."""
+    """Horas de GPU con las opciones declaradas y con las más rápidas que caben en memoria.
+
+    Una familia con brazos sin estimar suma las horas de los demás y también queda en
+    `without_estimate`, para que el total no parezca completo.
+    """
     declared, fastest, missing = 0.0, 0.0, []
     for name, family in families.items():
         if "hours" in family:
             declared += family["hours"]
             fastest += family["hours"]
+            if family.get("without_estimate"):
+                missing.append(name)
             continue
         fitted = [
             option["hours"] for option in family.get("options", {}).values() if "hours" in option
@@ -710,6 +724,30 @@ def measure_posttraining(stage, view, *, batches=50, warmup=5):
     finally:
         guard.remove()
     return rates
+
+
+def _measured_cases(stage):
+    """Lo que mide `measure_posttraining`: brazos de las redes, sus casos y el presupuesto.
+
+    A declara la matriz v3, que añade los casos de Titans-MAC, y B la v2. Los casos de las
+    redes solo difieren en la huella de la matriz que los declara, así que se comparan sin
+    ella y una sola medida sirve para las dos etapas.
+    """
+    from mars_titan.models.quantile_head import QUANTILE_HEAD
+    from mars_titan.posttraining import adapter_matrix
+
+    cases = {}
+    for arm, family in stage["families"].items():
+        cases[arm] = []
+        for item in adapter_matrix.cases(
+            stage["matrix"], stage["matrix_sha256"], family, head=QUANTILE_HEAD
+        ):
+            # La continuación completa no tiene adaptador ni, por tanto, huella de la matriz.
+            case = dict(item["case"])
+            if "adapter" in case:
+                case["adapter"] = dict(case["adapter"], matrix_sha256=None)
+            cases[arm].append([item["id"], case])
+    return json.dumps(dict(cases=cases, budget=stage["matrix"]["budget"]), sort_keys=True)
 
 
 def _view_fold(dataset):
@@ -1405,8 +1443,8 @@ def measure_campaigns(
     _require(
         len(by_campaign) == len(loaded)
         and set(by_campaign) <= {c["path"] for c in campaigns}
-        and len({(s["matrix_sha256"], tuple(s["families"].items())) for s in loaded}) <= 1,
-        "Cada etapa de adaptadores parte de una campaña medida, con la misma matriz y brazos",
+        and len({_measured_cases(stage) for stage in loaded}) <= 1,
+        "Cada etapa de adaptadores parte de una campaña medida, con los mismos casos medidos",
     )
     policies = [policy_plan.load_stage(path) for path in rl_stages]
     by_policies = {stage["campaign"]["path"]: stage for stage in policies}

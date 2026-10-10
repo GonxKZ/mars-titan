@@ -113,6 +113,10 @@ STAGED, ANCHORED = "staged_chain_v1", "anchored_not_executed"
 DATA_POLICY = "real_edition_only"
 # Trabajos de la etapa además de los ajustes: padre congelado y selección de la cadena.
 FROZEN, SELECT = "frozen", "select"
+# Ridge y XGBoost no tienen puntos de adaptación. Su cadena es trivial: en cada ventana k ≥ 1
+# solo compite el padre congelado de k-1, con el mismo recibo que los demás brazos, para que
+# las políticas lean de todas las familias el mismo tipo de predicción fuera de muestra.
+TABULAR = "frozen_parent_only"
 PREDICTED = ("validation", *masked_campaign.COMPARED)
 B_NOT_EXECUTED = (
     "La variante B no se ejecuta por decisión del 9 de octubre de 2026: el walk-forward por "
@@ -230,11 +234,11 @@ def load_stage(path):
         scopes == [scope for scope in campaign["scopes"] if scope in scopes],
         "Los ámbitos siguen el orden de la campaña",
     )
-    neural = campaign["neural"]["arms"]
+    neural, tabular = campaign["neural"]["arms"], campaign["tabular"]["arms"]
     declared = campaign["comparison_config"]["arms"]
     # Brazos cronológicos de la comparación, con o sin sección en la campaña.
     known = {name for name, arm in declared.items() if arm["family"] in cm.CAMPAIGN_DESIGNS}
-    arms = _names(config["arms"], {*neural, *known}, "Los brazos")
+    arms = _names(config["arms"], {*neural, *tabular, *known}, "Los brazos")
     _require(
         all(set(arms) <= set(scope_arms(campaign, scope)) for scope in scopes),
         "Cada brazo de la etapa debe ajustarse en todos sus ámbitos de la campaña",
@@ -244,7 +248,16 @@ def load_stage(path):
         "Los brazos cronológicos necesitan la matriz de versión 3",
     )
     _require(
-        all(sorted(declared[arm]["seeds"]) == sorted(matrix["budget"]["seeds"]) for arm in arms),
+        staged or not set(arms) & set(tabular),
+        "La cadena trivial de Ridge y XGBoost solo existe en el walk-forward por etapas",
+    )
+    # Los tabulares no tienen casos de la matriz: su cadena sigue las semillas de su brazo.
+    _require(
+        all(
+            sorted(declared[arm]["seeds"]) == sorted(matrix["budget"]["seeds"])
+            for arm in arms
+            if arm not in tabular
+        ),
         "Cada semilla de la matriz parte del padre elegido con esa semilla",
     )
     limits = config["limits"]
@@ -308,10 +321,13 @@ def stage_arms(stage):
     """Brazos activos de la etapa con su familia, y los que esperan su sección."""
     campaign = stage["campaign"]
     neural, chronological = campaign["neural"]["arms"], chronological_arms(campaign)
+    tabular = campaign["tabular"]["arms"]
     active, awaiting = {}, {}
     for arm in stage["arms"]:
         if arm in neural:
             active[arm] = dict(family=neural[arm], design=None)
+        elif arm in tabular:
+            active[arm] = dict(family=tabular[arm], design=TABULAR)
         elif arm in chronological:
             active[arm] = dict(
                 chronological[arm], design=cm.CAMPAIGN_DESIGNS[chronological[arm]["family"]]
@@ -329,6 +345,8 @@ def arm_name(base_arm, point):
 def _cases(stage, spec):
     """Casos de la matriz de un brazo base: los neuronales o los cronológicos."""
     matrix, digest = stage["matrix"], stage["matrix_sha256"]
+    if spec["design"] == TABULAR:
+        return []
     if spec["design"] is None:
         items = adapter_matrix.cases(matrix, digest, spec["family"], head=QUANTILE_HEAD)
     else:
@@ -351,7 +369,10 @@ def plan_stage(stage):
         windows = [name for name, _ in staged_chain.scope_windows(campaign, scope)]
         for parent_window, window in zip(windows, windows[1:], strict=False):
             for base_arm, spec in active.items():
-                seeds = list(dict.fromkeys(item["case"]["seed"] for item in cases[base_arm]))
+                if spec["design"] == TABULAR:
+                    seeds = sorted(campaign["comparison_config"]["arms"][base_arm]["seeds"])
+                else:
+                    seeds = list(dict.fromkeys(item["case"]["seed"] for item in cases[base_arm]))
                 for seed in seeds:
                     common = dict(
                         scope=scope,
@@ -1014,6 +1035,8 @@ class _Stage:
         )
         if job["family"] in cm.CAMPAIGN_DESIGNS:
             return dict(result, **self.frozen_chronological(job, folder, report))
+        if self.tabular(job):
+            return dict(result, **self.frozen_tabular(job, folder, report))
         diagnostic = self.device == "cpu"
         parent = load_parent(
             self.population(job["scope"], job["parent_window"]),
@@ -1059,6 +1082,40 @@ class _Stage:
         )
         return dict(result, run=run, predictions=predictions)
 
+    def tabular(self, job):
+        """Si el brazo base es Ridge o XGBoost, cuya cadena solo tiene el padre congelado."""
+        return job["base_arm"] in self.campaign["tabular"]["arms"]
+
+    def frozen_tabular(self, job, folder, report):
+        """Padre congelado de Ridge o XGBoost: el traslado de la campaña base desde k-1.
+
+        Usa el mismo ejecutor que los traslados de la campaña, con el estado elegido en k-1
+        como ancla, y además predice la validación de k, con la que la cadena puntúa. Las
+        tablas no tienen cuantiles porque estos modelos solo emiten la predicción puntual.
+        """
+        from mars_titan.training.carried_predictions import carry_tabular
+
+        output, result = _attempt(folder, "carry.json")
+        if result is None:
+            result = carry_tabular(
+                report.parent,
+                Path(self.view(job["scope"], job["parent_window"])["path"]),
+                Path(self.view(job["scope"], job["window"])["path"]),
+                output,
+                kind=job["family"],
+                batch_size=self.campaign["tabular"]["batch_size"],
+                input_policy=self.policy,
+                frozen_parent=True,
+            )
+        _require(
+            result.get("status") == "completed" and result.get("frozen_parent") is True,
+            f"{job['id']}: el traslado del padre tabular no está confirmado",
+        )
+        return dict(
+            run=output / "carry.json",
+            predictions=self._chronological_predictions(output, folder, result["predictions"]),
+        )
+
     def frozen_chronological(self, job, folder, report):
         """Padre congelado cronológico: sus ejecutores predicen la ventana sin ajustar."""
         from mars_titan.training.titans_walk_forward import unfused_attention
@@ -1096,7 +1153,9 @@ class _Stage:
         window = resolved["windows"][job["window"]]
         view = self.view(job["scope"], job["window"])
         proof = self.proof(job["scope"], job["window"], job["parent_window"])
-        columns = comparison.COLUMNS + QUANTILE_COLUMNS
+        # Ridge y XGBoost emiten solo la predicción puntual, sin la cabeza de cuantiles.
+        quantiles = not self.tabular(job)
+        columns = comparison.COLUMNS + (QUANTILE_COLUMNS if quantiles else ())
         if self.campaign.get("numerics"):
             campaign_numerics.require_job(self.campaign["numerics"], job["id"], result)
         predictions, score = {}, None
@@ -1111,7 +1170,8 @@ class _Stage:
                 table.num_rows == view["counts"][partition],
                 f"{label}: {table.num_rows} filas frente a {view['counts'][partition]} de la vista",
             )
-            _ordered_quantiles(table, label)
+            if quantiles:
+                _ordered_quantiles(table, label)
             rows = masked_campaign._rows_digest(table)
             if partition == "validation":
                 score = staged_chain.validation_score(table)

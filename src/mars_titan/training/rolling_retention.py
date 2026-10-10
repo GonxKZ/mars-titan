@@ -11,7 +11,9 @@ v2, declarada antes de cualquier resultado, recorre cada ventana de campaña en 
    posterior se regenera por inferencia desde el estado elegido y, solo si sale idéntica
    bit a bit, se libera conservando sus huellas. Si no sale idéntica, se compacta sin
    pérdida y se conserva. Las evaluaciones que leerán políticas posteriores y las tablas
-   de los adaptadores se compactan sin pérdida y se conservan.
+   de los adaptadores se compactan sin pérdida y se conservan. Si la declaración nombra
+   las políticas como consumidoras, una evaluación que leen solo se libera cuando cada
+   trabajo de políticas que la lee ha confirmado su recibo.
 
 Después empieza la ventana siguiente, así que el pico de disco es el de una ventana más lo
 conservado. El registro `retention/ledger.json` guarda las fases terminadas de cada ventana
@@ -53,9 +55,14 @@ _FIELDS = {
     "release",
     "compact",
     "policy_inputs",
+    "consumers",
     "numerics",
     "kept",
 }
+# Las políticas leen la evaluación de la base al montar sus cintas. Mientras falte el recibo
+# de alguna que la lee, esa evaluación no se libera, porque recuperarla exigiría regenerarla
+# en la GPU.
+POLICY_CONSUMER = dict(reads="evaluation", release_after="confirmed_policy_receipts")
 STRICT_FP32 = dict(
     float32_matmul_precision="highest", cuda_matmul_allow_tf32=False, cudnn_allow_tf32=False
 )
@@ -100,6 +107,11 @@ def load_retention(path):
         and document["numerics"] == STRICT_FP32,
         "La retención compacta los adaptadores, guarda las entradas de las políticas y exige "
         "FP32 estricto",
+    )
+    _require(
+        document["consumers"] in ({}, dict(rl=POLICY_CONSUMER)),
+        "Las políticas solo pueden declararse como consumidoras de la evaluación hasta "
+        "confirmar sus recibos",
     )
     return dict(document, path=str(Path(path).resolve()), sha256=digest)
 
@@ -172,11 +184,19 @@ class Rolling:
         self.retention, self.campaign_path = retention, Path(campaign_path)
         self.views, self.output, self.windows = views, Path(output), windows
         self.ablation, self.adapters, self.rl = ablation, adapters, rl
+        self._policies = None
         self.regenerators = engine.regenerators() if regenerators is None else regenerators
         self.ablation_executors = ablation_executors
         self.disk = disk
         self.edition = None if edition is None else Path(edition)
         self.folder = self.output / "retention"
+        # Con las políticas declaradas como consumidoras, sin su etapa no se sabría qué
+        # evaluaciones leen y se podrían liberar antes de montar sus cintas.
+        _require(
+            (rl is not None) == ("rl" in retention["consumers"]),
+            "La etapa de políticas debe acompañar a la retención que la declara consumidora, "
+            "y solo a esa",
+        )
         self.campaign, _ = engine._confirmed_state(campaign_path, views, output)
         # Sin la edición no hay agregados de la cartera y sus filas no se podrían liberar.
         _require(
@@ -267,26 +287,69 @@ class Rolling:
             state.receipts[job["id"]] = receipt
         return state, jobs
 
-    def policy_keep(self, state, index):
-        """Trabajos base cuya evaluación leerá una política, con la última ventana que la lee.
+    def policy_stage(self):
+        """Etapa de políticas cargada y su plan, que no cambian durante el recorrido."""
+        if self._policies is None:
+            from mars_titan.simulation import policy_plan
+
+            stage = policy_plan.load_stage(self.rl["stage"])
+            self._policies = stage, policy_plan.plan_stage(stage)
+        return self._policies
+
+    def policy_reads(self, state, index):
+        """Trabajos base cuya evaluación lee una política y los trabajos de políticas que la leen.
 
         Solo cuentan las ventanas hasta `index`, las únicas con recibos confirmados.
         """
         if self.rl is None:
             return {}
-        from mars_titan.simulation import policy_plan
+        from .rolling_storage import policy_readers
 
-        from .rolling_storage import policy_needs
-
-        stage = policy_plan.load_stage(self.rl["stage"])
-        seed = stage["policies"]["predictor"]["seed"]
-        needs = policy_needs(policy_plan.plan_stage(stage), self.positions, seed)
-        keep = {}
-        for (scope, window, arm, chosen), last in needs.items():
+        reads = {}
+        for (scope, window, arm, chosen), readers in policy_readers(*self.policy_stage()).items():
             if self.positions.get((scope, window), index + 1) <= index:
                 key, _ = state.selected(scope, window, arm, chosen)
-                keep[key] = max(keep.get(key, -1), last)
-        return keep
+                reads.setdefault(key, []).extend(readers)
+        return reads
+
+    def policy_keep(self, state, index):
+        """Trabajos base cuya evaluación leerá una política, con la última ventana que la lee."""
+        return {
+            key: max(self.positions[job["scope"], job["window"]] for job in readers)
+            for key, readers in self.policy_reads(state, index).items()
+        }
+
+    def require_policy_receipts(self, readers):
+        """Rechazar la liberación mientras una política que lee esas evaluaciones no confirme.
+
+        Cada trabajo de políticas debe tener su recibo completado en la salida de la etapa,
+        con la identidad registrada en su `stage.json` y esa etapa. El recibo solo se escribe
+        después de montar las cintas, así que con él la tabla ya no hace falta. Liberarla
+        antes obligaría a regenerarla en la GPU para la política atrasada.
+        """
+        from mars_titan.simulation.campaign_stage import RECEIPT_KIND, _digest
+
+        stage, _ = self.policy_stage()
+        output = Path(self.rl["output"])
+        marker = output / "stage.json"
+        identity = read_manifest(marker, 8 * 1024**2)[0] if marker.is_file() else None
+        current = isinstance(identity, dict) and identity.get("stage_sha256") == stage["sha256"]
+        missing = []
+        for job_id in sorted(readers):
+            path = output / "jobs" / job_id / "receipt.json"
+            receipt = read_manifest(path, 8 * 1024**2)[0] if current and path.is_file() else {}
+            if not (
+                receipt.get("kind") == RECEIPT_KIND
+                and receipt.get("status") == "completed"
+                and receipt.get("identity", {}).get("id") == job_id
+                and receipt["identity"].get("stage_identity_sha256") == _digest(identity)
+            ):
+                missing.append(job_id)
+        _require(
+            not missing,
+            f"Faltan {len(missing)} recibos de las políticas que leen las evaluaciones que se "
+            "iban a liberar: " + ", ".join(missing[:8]) + (" y otros" if len(missing) > 8 else ""),
+        )
 
     # Guardia de disco de cada ventana.
 
@@ -397,6 +460,18 @@ class Rolling:
         """Liberar o compactar las tablas de las ventanas hasta `index` que nadie leerá."""
         base, jobs = self.base_state(index)
         keep = self.policy_keep(base, index)
+        if self.rl is not None:
+            # Antes de liberar nada: cada evaluación que deja de conservarse ya la ha leído
+            # cada política que la necesita.
+            reads = self.policy_reads(base, index)
+            self.require_policy_receipts(
+                {
+                    reader["id"]
+                    for job in jobs
+                    if keep.get(job["id"], -1) <= index
+                    for reader in reads.get(job["id"], ())
+                }
+            )
         totals = dict(
             released=0, kept_for_policies=0, not_regenerable=0, declared_not_regenerable=0
         )

@@ -4,15 +4,27 @@
   "status": "declared_not_executed",
   "name": "historical-masked-2000-adapters-a",
   "campaign": "../baselines/historical-masked-campaign-a.json",
-  "matrix": "adapter-matrix-v2.json",
+  "matrix": "adapter-matrix-v3.json",
   "scopes": ["US", "CN", "US+CN"],
-  "arms": ["rnn", "lstm", "gru", "dlinear", "transformer_compact"],
+  "arms": [
+    "rnn",
+    "lstm",
+    "gru",
+    "dlinear",
+    "transformer_compact",
+    "ridge",
+    "xgboost",
+    "titans_transformer_direct",
+    "titans_mac_disabled",
+    "titans_mac_frozen",
+    "titans_mac_online"
+  ],
   "cohort_reading": {"source": "view_blocks", "max_block_bytes": 3221225472},
   "chain_rule": "chain_validation_score_v1",
   "data_policy": "real_edition_only",
   "limits": {
-    "max_training_jobs": 3654,
-    "max_prediction_jobs": 630
+    "max_training_jobs": 7182,
+    "max_prediction_jobs": 1302
   },
   "final_test_opened": false
 }

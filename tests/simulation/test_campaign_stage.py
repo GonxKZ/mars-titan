@@ -15,6 +15,7 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
+from mars_titan.data import prediction_files
 from mars_titan.data.cohort_files import read_manifest
 from mars_titan.data.storage import atomic_json
 from mars_titan.environments.walk_forward_receipt import read_window_receipt
@@ -587,6 +588,40 @@ def copied(base, root):
     return SimpleNamespace(**dict(vars(base), output=root / "campaign"))
 
 
+def test_the_stage_resumes_after_the_retention_releases_the_evaluations_it_read(
+    base_a, tmp_path, learning_doubles
+):
+    # La retención libera una evaluación cuando cada política que la lee ha confirmado su
+    # recibo. Al reanudar, la etapa reconoce sus cintas en disco sin volver a leer las filas.
+    base = copied(base_a, tmp_path)
+    first = fixture.run(base, tmp_path / "stage", fixture.ScriptedLearner())
+    assert first["status"] == "completed"
+    released = set()
+    for path in sorted((base.output / "windows/US").glob("*/*/seed-42/US.json")):
+        parent = json.loads(path.read_text())["parent"]["id"]
+        record = json.loads((base.output / "jobs" / parent / "receipt.json").read_text())
+        table = record["predictions"]["evaluation"]
+        if parent not in released:
+            prediction_files.release(
+                base.output / table["path"],
+                table["sha256"],
+                stage="base",
+                job=parent,
+                partition="evaluation",
+                regeneration_sha256="0" * 64,
+            )
+            released.add(parent)
+        assert (
+            prediction_files.verify(base.output / table["path"], table["sha256"])
+            == prediction_files.RELEASED
+        )
+    assert released
+    learner = fixture.ScriptedLearner()
+    again = fixture.run(base, tmp_path / "stage", learner)
+    assert again["status"] == "completed" and learner.calls == []
+    assert again["metrics"] == first["metrics"]
+
+
 def _swap_receipt(base):
     # El recibo de 2021 se sustituye por el de 2023, de un ajuste posterior. Su padre no es
     # el elegido para 2021 y la etapa lo rechaza antes de comprobar la ventana, que
@@ -930,11 +965,23 @@ def test_a_chain_that_does_not_match_its_contract_stops_before_any_executor(
     assert learner.calls == []
 
 
-def test_a_window_without_its_selection_is_not_confirmed(base_a, tmp_path, learning_doubles):
+def test_every_missing_selection_is_listed_before_any_executor(
+    base_a, tmp_path, learning_doubles, monkeypatch
+):
     base = chained(base_a, tmp_path)
     chain = fixture.publish_chain(base, tmp_path / "chain")
-    (chain / "windows/US/fold-000/gru__chain/seed-42/selection.json").unlink()
+    for window, arm in (("fold-000", "gru"), ("fold-001", "lstm")):
+        (chain / f"windows/US/{window}/{arm}__chain/seed-42/selection.json").unlink()
     learner = fixture.ScriptedLearner()
+    with pytest.raises(ValueError, match="Faltan 2 selecciones") as error:
+        fixture.run(base, tmp_path / "stage", learner, chain_output=chain)
+    for name in ("US/fold-000/gru__chain/select-s42", "US/fold-001/lstm__chain/select-s42"):
+        assert name in str(error.value)
+    # Se comprueba antes de crear la salida, así que no queda ninguna ejecución a medias.
+    assert learner.calls == [] and not (tmp_path / "stage").exists()
+    # La fuente de cada cinta conserva su propia comprobación, por si la selección
+    # desaparece después de la comprobación previa.
+    monkeypatch.setattr(campaign_stage, "require_chain_selections", lambda *args: None)
     with pytest.raises(ValueError, match="no tiene confirmada su selección"):
         fixture.run(base, tmp_path / "stage", learner, chain_output=chain)
     assert learner.calls == []

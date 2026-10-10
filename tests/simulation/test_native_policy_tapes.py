@@ -547,7 +547,7 @@ def test_stage_writes_chinese_tapes_with_their_a_share_rules(tapes, tmp_path):
     edition = folder.parents[1] / "edition"
     stage_tapes = campaign_stage._Tapes(
         policies,
-        lambda *_: (window, values),
+        lambda *_: (window, lambda: values),
         edition,
         json.loads((edition / "manifest.json").read_text())["edition_id"],
         tmp_path,
