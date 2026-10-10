@@ -492,6 +492,48 @@
     "min_sessions": 50,
     "multiplicity": "bonferroni_over_strata_and_views_with_max_t_within_family"
   },
+  "liquidity_strata": {
+    "status": "secondary_descriptive",
+    "declared_at": "2026-10-10",
+    "use": "description_only_not_for_model_selection_or_primary_conclusion",
+    "source": "unadjusted_reconstructed_verified_rows_up_to_the_last_published_session_v1",
+    "price_below": 1.0,
+    "volume_below": 1000,
+    "volume_sessions": 20,
+    "strata": {
+      "liquid": {
+        "low_price": false,
+        "thin_volume": false
+      },
+      "low_price": {
+        "low_price": true,
+        "thin_volume": false
+      },
+      "thin_volume": {
+        "low_price": false,
+        "thin_volume": true
+      },
+      "low_price_and_thin_volume": {
+        "low_price": true,
+        "thin_volume": true
+      },
+      "unclassified": null
+    },
+    "metrics": [
+      "mae",
+      "mse"
+    ],
+    "extremes": [
+      1,
+      10,
+      100
+    ],
+    "listed_rows": 10,
+    "recalibrate": false,
+    "min_rows": 1000,
+    "min_sessions": 50,
+    "multiplicity": "bonferroni_over_strata_and_views_with_max_t_within_family"
+  },
   "modality_ablation": {
     "status": "secondary_descriptive",
     "declared_at": "2026-10-09",

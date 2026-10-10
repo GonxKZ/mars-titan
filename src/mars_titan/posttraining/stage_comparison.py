@@ -445,11 +445,11 @@ def write_sources(declaration_path, scope, base_arm, *, base_sources, stage_outp
 
 
 def evaluate(declaration_path, sources_path, scope, base_arm, *, edition=None):
-    """Informe walk-forward del padre y, con ``edition``, su cartera larga y corta."""
+    """Informe walk-forward del padre y, con ``edition``, su cartera y sus estratos de liquidez."""
     loaded = load_declaration(declaration_path)
     _require(base_arm in loaded["configs"], "El brazo no es un padre de la etapa")
     config = loaded["configs"][base_arm]
-    report, sessions = walk.evaluate_walk_forward(config, sources_path, scope)
+    report, sessions = walk.evaluate_walk_forward(config, sources_path, scope, edition=edition)
     report["posttraining"] = dict(
         declaration=dict(name=loaded["name"], sha256=loaded["sha256"]),
         stage_sha256=loaded["stage"]["sha256"],

@@ -211,19 +211,20 @@ def _subset(panel, mask):
     )
 
 
-def score_strata(panel, row_codes, *, rank_ic_min_assets, calibrated=None):
+def score_strata(panel, row_codes, *, rank_ic_min_assets, calibrated=None, names=tuple(STRATA)):
     """Puntuaciones por sesión de cada estrato, en bruto y con los cuantiles ya calibrados.
 
-    ``row_codes`` sigue el orden canónico del panel. ``calibrated`` son los cuantiles del
-    panel completo corregidos por el calibrador común de la ventana. Un estrato sin filas
-    en la ventana queda sin puntuación.
+    ``row_codes`` sigue el orden canónico del panel y cada código es la posición de su
+    estrato en ``names``. ``calibrated`` son los cuantiles del panel completo corregidos por
+    el calibrador común de la ventana. Un estrato sin filas en la ventana queda sin
+    puntuación. Los estratos de liquidez usan la misma función con sus nombres.
     """
     _require(
         isinstance(row_codes, np.ndarray) and row_codes.shape == (panel.rows,),
         "Los códigos de presencia no siguen las filas del panel",
     )
     result = {}
-    for code, name in enumerate(STRATA):
+    for code, name in enumerate(names):
         mask = row_codes == code
         entry = dict(raw=None, calibrated=None)
         if mask.any():

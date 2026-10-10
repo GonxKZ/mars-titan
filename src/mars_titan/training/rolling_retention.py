@@ -179,7 +179,8 @@ class Rolling:
         """`disk` activa la guardia por ventana: `storage` (declaración), `extras` (medidas
         de agregados, adaptadores y cintas), `adapter_blocks` (lectura sin copia ordenada) y,
         en las pruebas, `usage` en lugar de `shutil.disk_usage`. `edition` es la edición de
-        precios sin ajustar que necesita la cartera larga y corta si la comparación la declara.
+        precios sin ajustar que necesitan la cartera larga y corta y los estratos de liquidez si
+        la comparación los declara.
         """
         from . import masked_campaign as engine
 
@@ -200,10 +201,16 @@ class Rolling:
             "y solo a esa",
         )
         self.campaign, _ = engine._confirmed_state(campaign_path, views, output)
-        # Sin la edición no hay agregados de la cartera y sus filas no se podrían liberar.
+        # Sin la edición no hay agregados de la cartera ni estratos de liquidez, y sus filas
+        # no se podrían liberar.
+        declared = self.comparison_config()
         _require(
-            comparison.LONG_SHORT_FIELD not in self.comparison_config() or self.edition is not None,
+            comparison.LONG_SHORT_FIELD not in declared or self.edition is not None,
             "La comparación declara la cartera larga y corta: falta la edición de precios",
+        )
+        _require(
+            comparison.LIQUIDITY_FIELD not in declared or self.edition is not None,
+            "La comparación declara estratos de liquidez: falta la edición de precios",
         )
         self.positions = {
             (scope, window): index
@@ -441,8 +448,11 @@ class Rolling:
                     window=window,
                 )
                 masked = comparison._ablation_sources(masked_path, restricted, sources)
+            liquidity = comparison.liquidity_source(restricted, self.edition)
             records = dict(
-                walk_forward=window_aggregates.write(folder, restricted, sources, window, masked)
+                walk_forward=window_aggregates.write(
+                    folder, restricted, sources, window, masked, liquidity=liquidity
+                )
             )
             if comparison.LONG_SHORT_FIELD in config:
                 records["long_short"] = window_aggregates.write_long_short(

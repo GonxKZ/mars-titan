@@ -21,6 +21,8 @@ from mars_titan.evaluation import long_short_comparison
 from mars_titan.evaluation import session_table_contrasts as tables
 from mars_titan.evaluation import walk_forward_comparison as walk
 from mars_titan.evaluation.forecast_scores import score_sessions
+from tests.evaluation.liquidity_fixture import section as liquidity_section
+from tests.evaluation.liquidity_fixture import study_edition
 from tests.evaluation.test_forecast_scores import random_panel
 from tests.evaluation.test_walk_forward_comparison import Study
 
@@ -390,9 +392,14 @@ def published(tmp_path_factory):
     root = tmp_path_factory.mktemp("matrix")
     study = Study(root / "study")
     study.config["comparison"]["metrics"] = ALL_METRICS
+    # El MSE de la matriz solo se contrasta si el informe publica sus estratos de liquidez.
+    study.config[walk.LIQUIDITY_FIELD] = liquidity_section(min_rows=1, min_sessions=1)
     study.publish()
     output = root / "walk"
-    report = walk.write_walk_forward(study.config_path, study.sources_path, "US+CN", output)
+    edition = study_edition(root / "edition")
+    report = walk.write_walk_forward(
+        study.config_path, study.sources_path, "US+CN", output, edition=edition
+    )
     return root, study, report, output / "comparison.json"
 
 
@@ -511,6 +518,7 @@ def test_an_arm_must_match_across_reports_and_a_copy_changes_nothing(tmp_path, p
     assert twice["views"] == once["views"]
     other = Study(tmp_path / "other")
     other.config["comparison"]["metrics"] = ALL_METRICS
+    other.config[walk.LIQUIDITY_FIELD] = liquidity_section(min_rows=1, min_sessions=1)
 
     def shift(arm, seed, fold, partition, values):
         if arm == "titans":
@@ -518,7 +526,13 @@ def test_an_arm_must_match_across_reports_and_a_copy_changes_nothing(tmp_path, p
 
     other.changes.append(shift)
     other.publish()
-    walk.write_walk_forward(other.config_path, other.sources_path, "US+CN", tmp_path / "w2")
+    walk.write_walk_forward(
+        other.config_path,
+        other.sources_path,
+        "US+CN",
+        tmp_path / "w2",
+        edition=study_edition(tmp_path / "edition"),
+    )
     mixed = sources(
         tmp_path,
         [
