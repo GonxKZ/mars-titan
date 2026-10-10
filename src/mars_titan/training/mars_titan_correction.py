@@ -62,8 +62,8 @@ from .checkpoints import StopRequest
 from .corpus_inputs import CorpusDataset
 from .financial_run import ChronologicalInference, ChronologicalRecipe, Paused, _compatible, _Pass
 from .learning_hold import require_learning_allowed
+from .search_cases import CASE_NAME
 from .titans_walk_forward import (
-    CASE_NAME,
     PREDICTED,
     PredictionRows,
     _check_view,
