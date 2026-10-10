@@ -104,9 +104,9 @@ Por candidato, M3 añade la mediana de 62 rendimientos dos veces, el mínimo de 
 | `tests/memory/test_financial_session_m3.py` | Etiquetas inmaduras y entradas posteriores, igualdad de candidatos y capacidad frente a M1 y M2, corte antes de publicar y contraste del error con la emisión |
 | `tests/training/test_mars_titan_run.py` | Escalas del propio tramo, bucle hasta el paso con el registrador, contadores y reanudación con escalas, rasgos y contadores |
 | `tests/training/test_mars_titan_walk_forward.py` | Ventana M3 completa, escalas guardadas, reutilización al reanudar y escalas del ancla |
-| `tests/training/test_mars_titan_campaign.py` | `mars_titan_m3` sin pendientes, la comparación de 23 brazos con productor cuando se declaran las cuatro secciones y una campaña B reducida con M3 ajustado y trasladado |
+| `tests/training/test_mars_titan_campaign.py` | `mars_titan_m3` sin pendientes, la comparación de 27 brazos con productor, salvo el control en línea, cuando se declaran las cuatro secciones y una campaña B reducida con M3 ajustado y trasladado |
 | `tests/training/test_campaign_throughput.py` | Medida del lector M3 hasta el paso sin cambiar pesos, con sus contadores del selectivo y escalas iguales a las de la regla de la campaña |
-| `tests/training/test_campaign_extensions.py` | Declaración preparada con M3 entre sus brazos: 4.725 ajustes en A, 1.785 ajustes y 1.792 traslados en B y 22 predictores en la etapa de políticas |
+| `tests/training/test_campaign_extensions.py` | Declaración preparada con M3 entre sus brazos: 5.265 ajustes en A, 1.989 ajustes y 2.044 traslados en B y 25 predictores en la etapa de políticas |
 
 Las pruebas que recorren el ajuste usan el registrador de gradientes, que no modifica pesos, con la protección de aprendizaje activa. Las etiquetas son manuales o proceden del corpus técnico sintético de las pruebas, y no se genera ningún objetivo real.
 

@@ -1057,9 +1057,11 @@ la campaña, una conversión que todavía no está escrita.
 
 ### Brazos que faltan
 
-`missing` cruza cada contraste con la clase de sus brazos. Con la declaración actual, 183
-contrastes solo usan brazos de la campaña, 148 esperan brazos condicionados o derivados y
-25 necesitan alguno de los ocho candidatos. Ningún contraste queda sin nombre. El
+`missing` cruza cada contraste con la clase de sus brazos. Con la declaración actual, 219
+contrastes solo usan brazos de la campaña, 112 esperan brazos condicionados o derivados y
+25 necesitan alguno de los ocho candidatos. Eran 183 y 148 antes de que la comparación
+declarada incluyera el control en línea y los tres brazos de integración de MARS-TITAN.
+Ningún contraste queda sin nombre. El
 [informe de brazos que faltan](../../reports/engineering/component-attribution-20261010/README.md)
 da el coste estimado de cada candidato con las horas proyectadas, lo que desbloquea por
 sí solo, los lotes que solo sirven juntos y una prioridad calculada. Ningún candidato se
@@ -1120,9 +1122,10 @@ recoge las cuatro medidas, sus condiciones y la extrapolación al diseño conjun
 
 La matriz de comparaciones se midió con `benchmarks/comparison_matrix.py` sobre una tabla
 por sesión sintética del ámbito US con las mismas sesiones, brazos y semillas que la
-campaña A (19 ventanas, 597.625 filas de sesión y 65 series). Evaluar sus 183 contrastes
-estimables en 20 familias, con las vistas en bruto y calibrada y el ECE del signo, tardó
-152 s con un pico de 1,44 GiB, dos hilos y la CPU compartida (carga media cercana a 23).
+campaña A (19 ventanas, 597.625 filas de sesión y 65 series). Evaluar los 183 contrastes
+estimables que tenía entonces, en 20 familias, con las vistas en bruto y calibrada y el
+ECE del signo, tardó 152 s con un pico de 1,44 GiB, dos hilos y la CPU compartida (carga
+media cercana a 23).
 Alrededor del 60 % del tiempo se va en generar los índices del remuestreo por bloques, que
 cada familia repite con la misma semilla. Reutilizarlos ahorraría uno o dos minutos por
 evaluación, poco frente al resto de la evaluación, y no se ha hecho. El

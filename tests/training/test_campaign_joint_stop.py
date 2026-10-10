@@ -37,10 +37,20 @@ EARLY = dict(
 RULE = dict(metric="session_mae", patience=5, min_delta=1e-05, minimum_epochs=5, max_epochs=30)
 
 
-def extended(campaign):
+# El archivo de grupos lo comparte la campaña A v2 conjunta, que todavía no declara este
+# brazo, así que no puede nombrarlo. Quien lo declare con la parada conjunta debe añadirlo al
+# grupo de los lectores, porque A10 lo contrasta con mars_titan_m1_k4.
+FIRST_READ = "mars_titan_m1_k4_first_read"
+
+
+def extended(campaign, *, group_first_read=True):
+    if group_first_read:
+        early = campaign["early_stop"]
+        early["groups"]["episodic_readers"].append(FIRST_READ)
+        early["membership"][FIRST_READ] = "episodic_readers"
     sections = json.loads(EXTENSIONS.read_text())["sections"]
     return plan.extend_campaign(
-        campaign, sections, limits=dict(max_training_jobs=4725, max_prediction_jobs=0)
+        campaign, sections, limits=dict(max_training_jobs=5265, max_prediction_jobs=0)
     )
 
 
@@ -65,11 +75,11 @@ def test_joint_campaign_a_keeps_the_design_and_declares_its_rule_before_results(
 def test_extended_joint_campaign_groups_mars_titan_and_cm_v1():
     campaign = extended(plan.load_campaign(JOINT_CONFIG))
     counts = plan.count_jobs(campaign)
-    assert (counts["training_jobs"], counts["prediction_jobs"]) == (4725, 0)
+    assert (counts["training_jobs"], counts["prediction_jobs"]) == (5265, 0)
     # El grupo de codificadores y núcleos suma siete brazos con la GRU episódica, el de los
-    # lectores episódicos diez y el de los núcleos de CM-v1 dos. Son 19 brazos con 4 ajustes en
-    # 45 ventanas.
-    assert counts["plateau_jobs"] == 19 * 4 * 45 == 3420
+    # lectores episódicos once y el de los núcleos de CM-v1 dos. Son 20 brazos con 4 ajustes en
+    # 45 ventanas. Los dos brazos B6 no tienen épocas y quedan fuera de los grupos.
+    assert counts["plateau_jobs"] == 20 * 4 * 45 == 3600
     jobs = plan.plan_campaign(campaign)
     grouped = {job["arm"] for job in jobs if job.get("phase") == plan.PLATEAU}
     assert grouped == set(campaign["early_stop"]["membership"])
@@ -80,6 +90,27 @@ def test_extended_joint_campaign_groups_mars_titan_and_cm_v1():
         if job["arm"] == "gru_episodic" and job["stage"] == "search":
             assert job["case"]["stopping_rule"] == dict(RULE, stopping=JOINT_PLATEAU)
             assert job["phase"] in (plan.PLATEAU, plan.JOINT)
+    corrections = [job for job in jobs if job["arm"] in ("mars_titan_b6", "mars_titan_b6_bias")]
+    assert corrections and all(
+        "phase" not in job and "stopping_rule" not in (job.get("case") or {}) for job in corrections
+    )
+
+
+def test_the_first_read_reader_must_share_the_readers_group():
+    """Sin grupo, su contraste con K = 4 compararía dos paradas independientes."""
+    campaign = extended(plan.load_campaign(JOINT_CONFIG), group_first_read=False)
+    with pytest.raises(ValueError, match=f"{FIRST_READ}.*necesita un mismo grupo"):
+        plan.plan_campaign(campaign)
+
+
+def test_the_b6_correction_cannot_join_a_stopping_group():
+    """B6 no tiene épocas, así que una parada conjunta no puede decidir nada sobre ella."""
+    campaign = extended(plan.load_campaign(JOINT_CONFIG))
+    early = campaign["early_stop"]
+    early["groups"]["episodic_readers"].append("mars_titan_b6")
+    early["membership"]["mars_titan_b6"] = "episodic_readers"
+    with pytest.raises(ValueError, match="no puede pertenecer a un grupo"):
+        plan.plan_campaign(campaign)
 
 
 def test_each_grouped_fit_splits_into_plateau_and_continuation_in_dependency_order():

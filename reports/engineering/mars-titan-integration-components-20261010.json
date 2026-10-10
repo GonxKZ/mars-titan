@@ -1,0 +1,394 @@
+{
+  "schema_version": 1,
+  "kind": "mars_titan_new_arms_measurement",
+  "recorded_at_utc": "2026-10-10T00:28:00.848246+00:00",
+  "commit": "39d3b00050c86b4817b1dbee5218c866f721146b",
+  "commit_note": "Medido con el código de este commit y una vista v3 de la edición, antes de rebasar la rama y de fusionarla con develop. Las proyecciones de la sección 4.4 (#474) y PT1 (#477) quedan desactivadas con la configuración de la campaña. El lector de mars_titan_run se reorganizó para los adaptadores (#446), y #482 cambió la receta de Titans-MAC (bloques de 1.024, max_batch 1.024 y fp32_strict) y el codificador de último token del Transformer compacto, que usa el núcleo de B6. Todas las cifras describen por tanto el código anterior y deben repetirse con el código actual sobre las vistas v3.1 cuando existan. El intento de repetir B6 sobre US+CN fold-012 el 10 de octubre falló porque la vista v3 ya no abre (Falta un artefacto regular dentro del origen declarado).",
+  "command": "memslot heavy -- uv run --no-sync python measure.py <vistas>/US+CN/fold-012/manifest.json <trabajo> <salida> mars_titan_b6 mars_titan_b6_bias mars_titan_m1_k4 mars_titan_m1_k4_first_read mars_titan_m1",
+  "environment": "PYTHONPATH=src, CUBLAS_WORKSPACE_CONFIG=:4096:8, OMP_NUM_THREADS=2, MKL_NUM_THREADS=2, MARS_TITAN_EPISODIC_NATIVE=<enlace nativo con candidato y CUDA>",
+  "scope": "Caudal y memoria en cuda:0 de los brazos nuevos de MARS-TITAN, con M1 y M1 con K = 4 como referencias medidas en la misma ejecución. Una sola ventana, la US+CN fold-012, que es la más poblada. El padre mac_online tiene sus pesos iniciales y ningún brazo aplica pasos de optimizador. No es un resultado predictivo. Había otros procesos de CPU en el equipo y su carga no se registró.",
+  "hardware": {
+    "device": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "torch": "2.14.0+cu130",
+    "cuda": "13.0"
+  },
+  "precision": {
+    "tf32": false,
+    "float32_matmul_precision": "highest",
+    "mha_fastpath": false
+  },
+  "view": {
+    "path": "<estado>/masked-campaign-2000-20261009/views/US+CN/fold-012/manifest.json",
+    "manifest_sha256": "2371878b94b01162a6c60566d3e1c9e152fbbfd589f4036fe4c2d973dddd421d",
+    "counts": {
+      "train": 14639357,
+      "validation": 609090,
+      "calibration": 301977,
+      "evaluation": 1221822
+    }
+  },
+  "settings": {
+    "segments": 8,
+    "segment_warmup": 2,
+    "events": 64,
+    "event_warmup": 8
+  },
+  "phases": {
+    "disk_seconds": 790.5838345630036,
+    "gpu_wait_seconds": 33.583887476997916,
+    "gpu_seconds": 772.5865123549884,
+    "total_seconds": 1596.8242616599891,
+    "process_peak_rss_bytes": 4434305024,
+    "note": "Los índices y las observaciones por evento de la ventana se preparan sin la plaza de GPU. La fase de GPU usa el candado compartido y GpuLease, que la concedió sin otra carga de cómputo activa en CUDA."
+  },
+  "resources": {
+    "device": "cuda:0",
+    "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "torch": "2.14.0+cu130",
+    "cuda": "13.0",
+    "free_vram_bytes": 7533035520,
+    "max_vram_bytes": 6442450944,
+    "max_ram_bytes": 12884901888,
+    "reserved_margin_bytes": 1073741824
+  },
+  "core_inference": {
+    "inference": 2606.768374046724,
+    "measured_inference_rows": 64133,
+    "inference_peak_vram_allocated_bytes": 1382969856,
+    "window": "fold-012",
+    "max_event_inputs": 4089
+  },
+  "rates": {
+    "mars_titan_b6": {
+      "components": {
+        "associative_memory": {
+          "rule": "proximal",
+          "key": "codec"
+        }
+      },
+      "train_rows_per_second": null,
+      "measured_train_rows": null,
+      "peak_vram_allocated_bytes": 1383720960,
+      "inference_rows_per_second": 1151.9982983435702,
+      "measured_inference_rows": 64133,
+      "inference_peak_vram_allocated_bytes": 1383720960,
+      "inference_time_relative_to_core": 2.262823111626928,
+      "max_event_inputs": 4089,
+      "associative_writes": 8711,
+      "measured_case": "eta5e-2",
+      "shared_by_cases": [
+        "eta5e-2",
+        "eta25e-2"
+      ],
+      "measurement_seconds": 136.8796611970174
+    },
+    "mars_titan_b6_bias": {
+      "components": {
+        "associative_memory": {
+          "rule": "proximal",
+          "key": "constant"
+        }
+      },
+      "train_rows_per_second": null,
+      "measured_train_rows": null,
+      "peak_vram_allocated_bytes": 1383720960,
+      "inference_rows_per_second": 2397.8104747847765,
+      "measured_inference_rows": 64133,
+      "inference_peak_vram_allocated_bytes": 1383720960,
+      "inference_time_relative_to_core": 1.0871452942004114,
+      "max_event_inputs": 4089,
+      "associative_writes": 8711,
+      "measured_case": "eta5e-2",
+      "shared_by_cases": [
+        "eta5e-2",
+        "eta25e-2"
+      ],
+      "measurement_seconds": 45.63755200797459
+    },
+    "mars_titan_m1_k4": {
+      "components": {
+        "episodic_bank": "m1",
+        "refinements": 4
+      },
+      "train_rows_per_second": 1074.2678737543736,
+      "measured_train_rows": 64401,
+      "peak_vram_allocated_bytes": 1535144448,
+      "inference_rows_per_second": 1449.155311988329,
+      "measured_inference_rows": 64133,
+      "inference_peak_vram_allocated_bytes": 1384911360,
+      "inference_time_relative_to_core": 1.7988191827900626,
+      "max_event_inputs": 4089,
+      "associative_writes": null,
+      "measured_case": "lr1e-4",
+      "shared_by_cases": [
+        "lr1e-4",
+        "lr1e-3"
+      ],
+      "measurement_seconds": 183.87400152999908
+    },
+    "mars_titan_m1_k4_first_read": {
+      "components": {
+        "episodic_bank": "m1",
+        "refinements": 4,
+        "refinement_episodes": "first_read"
+      },
+      "train_rows_per_second": 1033.365163630054,
+      "measured_train_rows": 64401,
+      "peak_vram_allocated_bytes": 1535144448,
+      "inference_rows_per_second": 1534.3954292033231,
+      "measured_inference_rows": 64133,
+      "inference_peak_vram_allocated_bytes": 1384911360,
+      "inference_time_relative_to_core": 1.6988895589973114,
+      "max_event_inputs": 4089,
+      "associative_writes": null,
+      "measured_case": "lr1e-4",
+      "shared_by_cases": [
+        "lr1e-4",
+        "lr1e-3"
+      ],
+      "measurement_seconds": 175.99456543798442
+    },
+    "mars_titan_m1": {
+      "components": {
+        "episodic_bank": "m1"
+      },
+      "train_rows_per_second": 1122.730736636629,
+      "measured_train_rows": 64401,
+      "peak_vram_allocated_bytes": 1535007744,
+      "inference_rows_per_second": 1465.078822427994,
+      "measured_inference_rows": 64133,
+      "inference_peak_vram_allocated_bytes": 1384774656,
+      "inference_time_relative_to_core": 1.7792683466181507,
+      "max_event_inputs": 4089,
+      "associative_writes": null,
+      "measured_case": "lr1e-4",
+      "shared_by_cases": [
+        "lr1e-4",
+        "lr1e-3"
+      ],
+      "measurement_seconds": 176.73071160897962
+    }
+  },
+  "counts_source": {
+    "path": "<estado>/masked-campaign-2000-20261009/views-verification-20261009T155713Z.json",
+    "sha256": "2e7d6325a4cca135023903e5554fff3ca5326fe05e56d23e31db26ce804993e8",
+    "note": "Recuentos verificados de las 45 ventanas de US, CN y US+CN. Validación, calibración y evaluación coinciden con reports/engineering/campaign-storage-20261009/window-measurements.json. Las vistas por ámbito ya no están en disco."
+  },
+  "hours_campaign_a_develop": {
+    "mars_titan_b6": {
+      "jobs": 180,
+      "total": 121.89848252932386,
+      "per_job": 0.677213791829577,
+      "training_jobs": 180,
+      "prediction_jobs": 0,
+      "by_scope": {
+        "US": {
+          "jobs": 76,
+          "hours": 57.12612797852883
+        },
+        "CN": {
+          "jobs": 52,
+          "hours": 9.51166624906369
+        },
+        "US+CN": {
+          "jobs": 52,
+          "hours": 55.260688301731335
+        }
+      }
+    },
+    "mars_titan_b6_bias": {
+      "jobs": 180,
+      "total": 58.564613809625186,
+      "per_job": 0.3253589656090288,
+      "training_jobs": 180,
+      "prediction_jobs": 0,
+      "by_scope": {
+        "US": {
+          "jobs": 76,
+          "hours": 27.445539551298005
+        },
+        "CN": {
+          "jobs": 52,
+          "hours": 4.569762059412495
+        },
+        "US+CN": {
+          "jobs": 52,
+          "hours": 26.549312198914688
+        }
+      }
+    },
+    "mars_titan_m1_k4": {
+      "jobs": 180,
+      "total": 8413.49392850775,
+      "per_job": 46.74163293615417,
+      "training_jobs": 180,
+      "prediction_jobs": 0,
+      "by_scope": {
+        "US": {
+          "jobs": 76,
+          "hours": 3833.305283767787
+        },
+        "CN": {
+          "jobs": 52,
+          "hours": 604.34702778787
+        },
+        "US+CN": {
+          "jobs": 52,
+          "hours": 3975.841616952094
+        }
+      }
+    },
+    "mars_titan_m1_k4_first_read": {
+      "jobs": 180,
+      "total": 8649.237721167576,
+      "per_job": 48.0513206731532,
+      "training_jobs": 180,
+      "prediction_jobs": 0,
+      "by_scope": {
+        "US": {
+          "jobs": 76,
+          "hours": 3939.492929436301
+        },
+        "CN": {
+          "jobs": 52,
+          "hours": 620.6729136705991
+        },
+        "US+CN": {
+          "jobs": 52,
+          "hours": 4089.0718780606758
+        }
+      }
+    },
+    "mars_titan_m1": {
+      "jobs": 180,
+      "total": 8083.348543005287,
+      "per_job": 44.907491905584926,
+      "training_jobs": 180,
+      "prediction_jobs": 0,
+      "by_scope": {
+        "US": {
+          "jobs": 76,
+          "hours": 3683.300779232857
+        },
+        "CN": {
+          "jobs": 52,
+          "hours": 580.8387787823056
+        },
+        "US+CN": {
+          "jobs": 52,
+          "hours": 3819.208984990124
+        }
+      }
+    }
+  },
+  "hours_note": "Horas de GPU de cada brazo con los recuentos de la campaña A de develop, 30 épocas como cota superior de la regla de presupuesto fijo y 12 meses de calentamiento, aplicando a todas las ventanas el caudal de fold-012. Las de un lector no incluyen el ajuste de su padre Titans-MAC. Un trabajo B6 no tiene épocas y solo predice validación, calibración y evaluación con su calentamiento.",
+  "procedure": {
+    "script_sha256": "d26397cff2ece2748c2c0d13c6ed476358e5234186fe3d69859da5d53f46fa31",
+    "script": "\"\"\"Medir en cuda:0 los brazos nuevos de MARS-TITAN sin pasos de optimizador.\n\nUso: measure.py <primera vista> <trabajo> <salida json> [brazos...]\n\"\"\"\n\nimport json\nimport os\nimport resource\nimport sys\nimport time\nfrom datetime import UTC, datetime\nfrom pathlib import Path\n\nassert os.environ.get(\"CUBLAS_WORKSPACE_CONFIG\") == \":4096:8\"\n\nimport torch\n\ntorch.backends.cuda.matmul.allow_tf32 = False\ntorch.backends.cudnn.allow_tf32 = False\ntorch.set_float32_matmul_precision(\"highest\")\n\nfrom mars_titan.training import campaign_throughput as ct\nfrom mars_titan.training import titans_walk_forward as titans\nfrom mars_titan.training.campaign_extensions import extended_campaign, load_extensions\nfrom mars_titan.training.campaign_plan import MARS, load_campaign, plan_campaign\nfrom mars_titan.training.experiment_resources import GpuLease\nfrom mars_titan.training.financial_run import ChronologicalInference, Paused, _Pass, load_recipe\n\nview, work, output = (Path(v) for v in sys.argv[1:4])\narms = sys.argv[4:]\nCOUNTS = \"<estado>/masked-campaign-2000-20261009/views-verification-20261009T155713Z.json\"\nprepared = load_extensions(Path(\"configs/baselines/historical-masked-campaign-extensions.json\"))\ncampaign = extended_campaign(\n    prepared, load_campaign(Path(\"configs/baselines/historical-masked-campaign-a.json\"))\n)\nsection = campaign[MARS]\nreduced = dict(campaign)\nreduced[MARS] = dict(section, candidates={arm: section[\"candidates\"][arm] for arm in arms})\nsettings = ct.SETTINGS\nchronological = {k: settings[k] for k in (\"segments\", \"segment_warmup\", \"events\", \"event_warmup\")}\n\n\ndef core_inference():\n    \"\"\"Inferencia del padre sin corrección sobre los mismos eventos, como referencia.\"\"\"\n    _, document = load_recipe(campaign[\"titans_mac\"][\"path\"])\n    fold, sources, inputs = ct._chronological_sources(view, document, work)\n    from mars_titan.budget_training import seed_run\n\n    specification = sources[\"train\"].specification()\n    seed_run(42)\n    predictor, _ = titans._predictor(document, specification, \"mac_online\", 42, \"cuda:0\")\n    predictor = predictor.eval().requires_grad_(False)\n    parent_case = campaign[\"titans_mac\"][\"candidates\"][section[\"parent_arm\"]][0][0]\n    recipe = titans.case_recipe(document, parent_case)\n    with titans.unfused_attention():\n        inference = ChronologicalInference(predictor, recipe)\n    prefix = [0]\n    for count in inputs:\n        prefix.append(prefix[-1] + count)\n    budget = ct._Budget(\n        settings[\"event_warmup\"], settings[\"events\"], prefix.__getitem__, ct._synchronize\n    )\n    torch.cuda.reset_peak_memory_stats(0)\n    run = _Pass()\n    try:\n        with torch.no_grad(), titans.unfused_attention():\n            for event in sources[\"train\"].batched_events(block_rows=recipe.block_rows):\n                if budget.requested:\n                    raise Paused\n                inference._labels(run, event, train=False)\n                if event.inputs:\n                    inference._observe(run, sources[\"train\"], event, differentiable=False)\n                if event.close_phase:\n                    inference._close(run)\n    except Paused:\n        pass\n    rate, rows = budget.rate(\"El núcleo\")\n    return dict(\n        inference=rate,\n        measured_inference_rows=rows,\n        inference_peak_vram_allocated_bytes=torch.cuda.max_memory_allocated(0),\n        window=fold[\"id\"],\n        max_event_inputs=max(inputs),\n    )\n\n\n# Fase de disco sin la plaza de GPU: índices y observaciones por evento de la ventana.\nimport fcntl\n\nstarted = time.perf_counter()\n_, recipe_document = load_recipe(campaign[\"titans_mac\"][\"path\"])\nwindow = ct._chronological_sources(view, recipe_document, work)\ndisk_seconds = time.perf_counter() - started\nprint(\"fase de disco\", round(disk_seconds, 1), flush=True)\noriginal_sources = ct._chronological_sources\n\n\ndef cached_sources(view_, document_, work_):\n    assert (Path(view_), Path(work_)) == (view, work) and document_ == recipe_document\n    return window\n\n\nct._chronological_sources = cached_sources\nlock = open(\"<estado>/session-scratch-20261009/gpu.lock\", \"a\")\nwaited = time.perf_counter()\nimport subprocess\n\n\ndef compute_processes():\n    \"\"\"Procesos con contexto CUDA de cómputo y su memoria, para el recibo.\"\"\"\n    out = subprocess.run(\n        [\"nvidia-smi\", \"--query-compute-apps=pid,used_memory\", \"--format=csv,noheader,nounits\"],\n        check=True, capture_output=True, text=True,\n    ).stdout\n    rows = [line.split(\", \") for line in out.splitlines() if line.strip()]\n    return [dict(pid=int(a), used_mib=int(b)) for a, b in rows]\n\n\ndef utilization():\n    out = subprocess.run(\n        [\"nvidia-smi\", \"--query-gpu=utilization.gpu,memory.used\", \"--format=csv,noheader,nounits\"],\n        check=True, capture_output=True, text=True,\n    ).stdout.strip()\n    gpu, used = out.split(\", \")\n    return dict(utilization_percent=int(gpu), memory_used_mib=int(used))\n\n\nlease, concurrent = None, None\nfor attempt in range(4):\n    fcntl.flock(lock, fcntl.LOCK_EX)\n    try:\n        lease = GpuLease().__enter__()\n        break\n    except RuntimeError as error:\n        print(\"espera\", attempt, error, flush=True)\n        if attempt == 3:\n            # Contextos CUDA ajenos fuera del candado: se mide con el candado y se registran.\n            concurrent = dict(before=compute_processes(), utilization_before=utilization())\n            break\n        fcntl.flock(lock, fcntl.LOCK_UN)\n        time.sleep(30)\n\n\nclass _Recorded:\n    record = None\n\n    def __exit__(self, *_):\n        return None\n\n\nif lease is None:\n    lease = _Recorded()\n    lease.record = dict(\n        device=\"cuda:0\",\n        gpu=torch.cuda.get_device_name(0),\n        torch=str(torch.__version__),\n        cuda=torch.version.cuda,\n        exclusive=False,\n        max_vram_bytes=6 * 1024**3,\n    )\n    # Mismo tope de VRAM que GpuLease.\n    torch.cuda.set_per_process_memory_fraction(\n        6 * 1024**3 / torch.cuda.get_device_properties(0).total_memory, 0\n    )\ngpu_started = time.perf_counter()\nguard = ct._forbid_steps()\ntry:\n    # Un brazo cada vez, guardando lo medido, para no perder los anteriores si uno falla.\n    rates, partial = {}, output.with_suffix(\".rates.json\")\n    for arm in arms:\n        single = dict(reduced)\n        single[MARS] = dict(section, candidates={arm: section[\"candidates\"][arm]})\n        arm_started = time.perf_counter()\n        rates[arm] = ct.measure_mars_titan(single, view, work, **chronological)[arm]\n        rates[arm][\"measurement_seconds\"] = time.perf_counter() - arm_started\n        partial.write_text(json.dumps(rates, ensure_ascii=False, indent=2, default=str))\n        print(\"medido\", arm, round(rates[arm][\"measurement_seconds\"], 1), flush=True)\n    core = core_inference()\n    resources = dict(lease.record)\n    if concurrent is not None:\n        resources[\"concurrent_compute\"] = dict(\n            concurrent, after=compute_processes(), utilization_after=utilization()\n        )\nfinally:\n    lease.__exit__(None, None, None)\n    guard.remove()\n    gpu_seconds = time.perf_counter() - gpu_started\n    fcntl.flock(lock, fcntl.LOCK_UN)\n    lock.close()\n\n# Las vistas por ámbito ya no están en disco. Sus recuentos verificados siguen en el recibo\n# de verificación de las vistas, el mismo origen que window-measurements.json de #425.\nverification = json.loads(Path(COUNTS).read_text())\ncounts = {}\nfor key, value in verification[\"counts\"].items():\n    scope, index = key.rsplit(\"/\", 1)\n    counts.setdefault(scope, {})[f\"fold-{int(index):03d}\"] = value\nfor scope in campaign[\"scopes\"]:\n    expected = list(campaign[\"comparison_config\"][\"resolved_scopes\"][scope][\"windows\"])\n    assert sorted(counts[scope]) == sorted(expected), scope\nepochs = campaign[\"rule\"][\"max_epochs\"]\njobs = [job for job in plan_campaign(campaign) if job[\"family\"] == MARS and job[\"arm\"] in arms]\nhours = {}\nfor arm in arms:\n    selected = [job for job in jobs if job[\"arm\"] == arm]\n    hours[arm] = dict(\n        jobs=len(selected),\n        total=ct._option_hours(campaign, MARS, selected, counts, {arm: rates[arm]}, epochs),\n        by_scope={\n            scope: dict(\n                jobs=sum(job[\"scope\"] == scope for job in selected),\n                hours=ct._option_hours(\n                    campaign, MARS, [job for job in selected if job[\"scope\"] == scope],\n                    counts, {arm: rates[arm]}, epochs,\n                ),\n            )\n            for scope in sorted({job[\"scope\"] for job in selected})\n        },\n    )\nreport = dict(\n    schema_version=1,\n    kind=\"mars_titan_new_arms_throughput\",\n    measured_at_utc=datetime.now(UTC).isoformat(),\n    view=str(view.resolve()),\n    counts_source=COUNTS,\n    settings=chronological,\n    arms=arms,\n    rates=rates,\n    core_inference=core,\n    hours=hours,\n    resources=resources,\n    torch=torch.__version__,\n    cuda=torch.version.cuda,\n    device=torch.cuda.get_device_name(0),\n    seconds=time.perf_counter() - started,\n    disk_phase_seconds=disk_seconds,\n    gpu_wait_seconds=gpu_started - waited,\n    gpu_phase_seconds=gpu_seconds,\n    process_peak_rss_bytes=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * 1024,\n    optimizer_steps=0,\n    scientific_training_started=False,\n    final_test_opened=False,\n)\noutput.write_text(json.dumps(report, ensure_ascii=False, indent=2, default=str))\nprint(json.dumps({arm: dict(train=r[\"options\"][\"recipe\"].get(\"train\"), inference=r[\"inference\"],\n    peak=r[\"options\"][\"recipe\"][\"peak_vram_allocated_bytes\"]) for arm, r in rates.items()}, indent=1))\nprint(json.dumps({arm: {k: v.get(\"hours\") for k, v in h[\"total\"][\"options\"].items()} for arm, h in hours.items()}))\nprint(\"core\", core)\n",
+    "note": "Las rutas locales del script aparecen como <estado>. La huella es la del original."
+  },
+  "cuda_check": {
+    "commit": "be30fbacc48dcee789bbb240af0ac40811e6f8d2",
+    "commit_note": "Ejecutada antes de rebasar la rama. La prueba y el código de la ventana que recorre no cambiaron en su cálculo después.",
+    "recorded_at_utc": "2026-10-09T19:52:13+00:00",
+    "command": "CUDA_VISIBLE_DEVICES=0 OMP_NUM_THREADS=2 CUBLAS_WORKSPACE_CONFIG=:4096:8 MARS_TITAN_B6_CHECK_REPORT=<recibo> memslot gpu -- uv run --no-sync python -m pytest -q tests/memory/cuda_mars_titan_correction_check.py",
+    "kind": "mars_titan_correction_cuda_check",
+    "records": [
+      {
+        "dtype": "torch.float32",
+        "correction": "delta",
+        "rule": "delta",
+        "key": "codec",
+        "emissions": 20,
+        "writes": 16,
+        "rtol": 5e-05,
+        "atol": 3e-06,
+        "max_emission_error": 0.0,
+        "max_matrix_error": 0.0,
+        "repeated_bit_for_bit": true
+      },
+      {
+        "dtype": "torch.float32",
+        "correction": "proximal",
+        "rule": "proximal",
+        "key": "codec",
+        "emissions": 20,
+        "writes": 16,
+        "rtol": 5e-05,
+        "atol": 3e-06,
+        "max_emission_error": 0.0,
+        "max_matrix_error": 0.0,
+        "repeated_bit_for_bit": true
+      },
+      {
+        "dtype": "torch.float32",
+        "correction": "constant",
+        "rule": "proximal",
+        "key": "constant",
+        "emissions": 20,
+        "writes": 16,
+        "rtol": 5e-05,
+        "atol": 3e-06,
+        "max_emission_error": 0.0,
+        "max_matrix_error": 0.0,
+        "repeated_bit_for_bit": true
+      },
+      {
+        "dtype": "torch.float64",
+        "correction": "delta",
+        "rule": "delta",
+        "key": "codec",
+        "emissions": 20,
+        "writes": 16,
+        "rtol": 2e-09,
+        "atol": 2e-10,
+        "max_emission_error": 0.0,
+        "max_matrix_error": 0.0,
+        "repeated_bit_for_bit": true
+      },
+      {
+        "dtype": "torch.float64",
+        "correction": "proximal",
+        "rule": "proximal",
+        "key": "codec",
+        "emissions": 20,
+        "writes": 16,
+        "rtol": 2e-09,
+        "atol": 2e-10,
+        "max_emission_error": 0.0,
+        "max_matrix_error": 0.0,
+        "repeated_bit_for_bit": true
+      },
+      {
+        "dtype": "torch.float64",
+        "correction": "constant",
+        "rule": "proximal",
+        "key": "constant",
+        "emissions": 20,
+        "writes": 16,
+        "rtol": 2e-09,
+        "atol": 2e-10,
+        "max_emission_error": 0.0,
+        "max_matrix_error": 0.0,
+        "repeated_bit_for_bit": true
+      }
+    ],
+    "torch": "2.14.0+cu130",
+    "cuda": "13.0",
+    "hardware": "NVIDIA GeForce RTX 4070 Laptop GPU, 8188 MiB, 7098 MiB",
+    "tf32": false,
+    "mha_fastpath": false,
+    "peak_torch_bytes": 69846016,
+    "peak_reserved_bytes": 71303168,
+    "elapsed_seconds": 3.5092072669940535,
+    "peak_rss_bytes": 1521700864,
+    "cpu_rng_unchanged": true,
+    "cuda_rng_unchanged": true,
+    "optimizer_steps": 0,
+    "scope": "Fixture de cuatro flujos, sin corpus real ni ajuste."
+  },
+  "optimizer_steps": 0,
+  "training_runs": 0,
+  "scientific_training_started": false,
+  "final_test_opened": false
+}

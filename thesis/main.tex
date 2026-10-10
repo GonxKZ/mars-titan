@@ -130,8 +130,16 @@ el error maduro, una anomalía del último rendimiento y una relevancia según l
 frescura contable y la presencia de noticias, normalizados con escalas del
 tramo de entrenamiento de cada ventana y con pesos fijos de un tercio. Sus
 comprobaciones coinciden en CPU y CUDA. La consolidación M sobre M2 y la
-aceptación de las fases históricas completas siguen pendientes. No hay una
-mejora predictiva medida de estas variantes.
+aceptación de las fases históricas completas siguen pendientes. La corrección
+asociativa B6 suma a la predicción de Titans-MAC una memoria lineal escrita
+solo con resultados maduros y se emite ya en las ventanas walk-forward con las
+mismas emisiones que la sesión. Su control es un corrector de sesgo con las
+mismas etiquetas. Otro brazo repite $K=4$ con los episodios de la primera
+lectura, de modo que el cálculo adicional no examina más episodios. El régimen
+filtrado, la vista reducida, la selección de documentos y el replay programado
+quedan fuera de la campaña A, porque cambian las entradas o el ajuste del
+núcleo y cada uno exigiría otra familia Titans-MAC. No hay una mejora
+predictiva medida de estas variantes.
 
 La comparación de refuerzo conserva PPO y Double DQN. Están implementados tres
 controladores PPO: recorte con diagnóstico KL, penalización KL adaptativa y
@@ -216,7 +224,7 @@ del lanzamiento \\
 Protocolo & Ventanas v2, purga por intervalo y regla de parada común. Vistas
 de la campaña A preparadas y verificadas & Ninguno antes del lanzamiento \\
 Campaña base & Variante A elegida, con 2.385 ajustes en su configuración y
-4.680 con la declaración ampliada de todas las familias. Recibos por trabajo y
+5.265 con la declaración ampliada de todas las familias. Recibos por trabajo y
 reanudación & Fijar las opciones de memoria, copiar a la configuración la GRU
 episódica, MARS-TITAN y CM-v1 y revisar un resumen del código antes de
 entrenar \\
@@ -225,9 +233,9 @@ con 3.915 ajustes en A. Pruebas CUDA de adaptadores y cuantiles superadas &
 Recorrido de la etapa en \texttt{cuda:0} y comparación declarada de los
 brazos postentrenados \\
 Políticas & Dos niveles sobre cintas de precios reconstruidos. KLPO terminal
-y cinco referencias sobre los 22 predictores de la declaración ampliada, y PPO
+y cinco referencias sobre los 25 predictores de la declaración ampliada, y PPO
 y Double DQN sobre el Transformer compacto y \texttt{mac\_online}. En A,
-2.160 ajustes y 2.442 referencias. Ejecutores nativos de PPO, Double DQN y
+2.376 ajustes y 2.775 referencias. Ejecutores nativos de PPO, Double DQN y
 KLPO sobre esas cintas, comprobados sin aprendizaje, compilados con LibTorch
 CUDA y perfilados sin pasos de Adam & Medir el coste de la actualización.
 Ningún ajuste ejecutado \\
@@ -255,7 +263,7 @@ como retención con centros fijos del banco del lector, de modo que B, B+C, B+M
 y B+C+M tienen identidades propias. La GRU episódica, MARS-TITAN y CM-v1
 tienen sección opcional en la orquestación. La variante A elegida las incluye
 en su declaración ampliada, todavía sin copiar a su configuración, y con ellas
-el primer nivel de la etapa de políticas cubre 22 predictores. La penalización
+el primer nivel de la etapa de políticas cubre 25 predictores. La penalización
 C acumula por bloques de flujos con el mismo gradiente que el tramo completo,
 así que los núcleos de CM-v1 conservan la receta de Titans-MAC.
 

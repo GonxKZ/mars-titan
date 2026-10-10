@@ -407,7 +407,7 @@ def test_variant_b_costs_less_than_a_with_the_same_rates():
 
 
 @pytest.mark.parametrize(
-    ("variant", "mars", "cm"), [("A", (1080, 0), (1080, 0)), ("B", (408, 504), (408, 336))]
+    ("variant", "mars", "cm"), [("A", (1620, 0), (1080, 0)), ("B", (612, 756), (408, 336))]
 )
 def test_readout_and_core_hours_follow_the_exact_plan_and_their_parents(variant, mars, cm):
     campaign = extended(variant)
@@ -892,8 +892,15 @@ MARS_ARMS = {
     "mars_titan_m2": {"episodic_bank": "m2"},
     "mars_titan_m3": {"episodic_bank": "m3"},
     "mars_titan_m1_k2": {"episodic_bank": "m1", "refinements": 2},
+    "mars_titan_m1_k4_first_read": {
+        "episodic_bank": "m1",
+        "refinements": 4,
+        "refinement_episodes": "first_read",
+    },
+    "mars_titan_b6": {"associative_memory": {"rule": "proximal", "key": "codec"}},
 }
 MEASURED = dict(segments=1, segment_warmup=0, events=1, event_warmup=0)
+CORRECTION_RECIPE = Path("configs/titans/mature-correction-historical-masked.json")
 
 
 def reduced_readout(folder):
@@ -916,10 +923,45 @@ def mars_campaign(folder, arms):
         parent_arm="titans_mac_online",
         search_seed=42,
     )
+    if any("associative_memory" in MARS_ARMS[name] for name in arms):
+        section["correction_recipe"] = str(CORRECTION_RECIPE.resolve())
     campaign[MARS] = plan._mars_titan(
         section, compared, campaign["rule"], campaign["input_policy"], folder, 2, campaign[TITANS]
     )
     return campaign
+
+
+def test_mars_measurement_walks_the_correction_without_a_reader_or_steps(
+    views, cpu, tmp_path, guarded_steps, frozen_checks
+):
+    campaign = mars_campaign(tmp_path / "config", ["mars_titan_b6"])
+    measured = dict(MEASURED, events=4)
+    rates = throughput.measure_mars_titan(
+        campaign, views / "fold-000/manifest.json", tmp_path / "work", **measured
+    )
+    record = rates["mars_titan_b6"]
+    assert record["declared_option"] == "recipe"
+    assert record["options"] == {"recipe": dict(train=None, peak_vram_allocated_bytes=0)}
+    assert record["inference"] > 0 and record["measured_inference_rows"] > 0
+    # Los eventos del tramo de ajuste no tienen calentamiento, así que A recibe etiquetas
+    # maduras durante toda la medida.
+    assert record["associative_writes"] > 0
+    assert record["measured_case"] == "eta5e-2"
+    assert record["shared_by_cases"] == ["eta5e-2", "eta25e-2"]
+    assert record["components"] == MARS_ARMS["mars_titan_b6"]
+    assert not {"loss", "mean_loss", "session_mae"} & set(record)
+    # Sin lector no hay optimizador, ni siquiera el de la medición.
+    assert guarded_steps == [] and frozen_checks == []
+
+
+def test_correction_hours_predict_each_measured_tramo_once():
+    rate = dict(train=None, inference=400.0)
+    rows = dict(train=8000, validation=400, calibration=800, evaluation=1200)
+    fit, carry = dict(kind=plan.FIT), dict(kind=plan.CARRY)
+    assert throughput.validated_job_seconds(fit, rows, rate, 30) == pytest.approx(2400 / 400)
+    assert throughput.validated_job_seconds(carry, rows, rate, 30) == pytest.approx(2000 / 400)
+    fitted = throughput.validated_job_seconds(fit, rows, dict(rate, train=100.0), 30)
+    assert fitted == pytest.approx(30 * 8000 / 100 + (32 * 400 + 2000) / 400)
 
 
 def cm_campaign(folder, *, warmup_months=12, frequency=1):
@@ -998,7 +1040,13 @@ def test_mars_measurement_walks_the_m0_readout_over_a_frozen_parent(
 def test_mars_measurement_walks_the_bank_readouts_with_their_admission_and_k(
     views, cpu, tmp_path, guarded_steps
 ):
-    arms = ["mars_titan_m1", "mars_titan_m2", "mars_titan_m3", "mars_titan_m1_k2"]
+    arms = [
+        "mars_titan_m1",
+        "mars_titan_m2",
+        "mars_titan_m3",
+        "mars_titan_m1_k2",
+        "mars_titan_m1_k4_first_read",
+    ]
     campaign = mars_campaign(tmp_path / "config", arms)
     view = views / "fold-000/manifest.json"
     rates = throughput.measure_mars_titan(campaign, view, tmp_path / "work", **MEASURED)
@@ -1351,9 +1399,9 @@ def test_campaign_report_measures_the_prepared_families_and_their_policy_stage(
         sha256=campaign_extensions.load_extensions(EXTENSIONS)["sha256"],
         status="prepared_not_declared",
     )
-    # Con las tres familias, la etapa de políticas resuelve 22 predictores en vez de 11.
-    jobs = dict(A=dict(fit=2160, reference=2442), B=dict(fit=720, carry=1440, reference=2442))
-    expected = dict(A=((1080, 0), (1080, 0)), B=((408, 504), (408, 336)))
+    # Con las tres familias, la etapa de políticas resuelve 25 predictores en vez de 11.
+    jobs = dict(A=dict(fit=2376, reference=2775), B=dict(fit=792, carry=1584, reference=2775))
+    expected = dict(A=((1620, 0), (1080, 0)), B=((612, 756), (408, 336)))
     for estimate in report["estimates"]:
         families = estimate["families"]
         assert set(families) == {NEURAL, TITANS, EPISODIC, MARS, CM, throughput.POSTTRAINING}
