@@ -375,8 +375,10 @@ def test_strict_default_and_explicit_policy_produce_the_same_outputs(tmp_path, c
         (lambda c: c.update(kind="transformer"), {}, "arquitectura"),
         (
             lambda c: c.update(kind="transformer", architecture=architecture("transformer")),
-            dict(batch_size=512),
-            "lote|presupuesto",
+            # Con `max_batch` el Transformer admite cualquier lote del contrato común, así que
+            # el límite que falla antes de leer es el de 4.096 ventanas de todas las familias.
+            dict(batch_size=4097),
+            "configuración",
         ),
         (
             lambda c: c.update(
