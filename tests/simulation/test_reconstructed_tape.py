@@ -13,7 +13,7 @@ import pytest
 
 from mars_titan.environments.cohorts import FINAL_TEST_START_US
 from mars_titan.simulation.environment import FinancialEnv
-from mars_titan.simulation.market import RECONSTRUCTED_CONTRACT, MarketTape
+from mars_titan.simulation.market import RECONSTRUCTED_CONTRACT, MarketTape, censors_fit
 from mars_titan.simulation.market_rules import china_a_share_instrument, tape_instruments
 from mars_titan.simulation.reconstructed_tape import (
     NoAdmittedAssets,
@@ -244,6 +244,66 @@ def test_a_held_position_in_an_unpriced_delisting_masks_the_episode(tmp_path, ba
     assert all(info["reward_valid"] for info in infos[:-1])
 
 
+def test_a_delisted_column_keeps_no_price_or_score_after_its_delisting(tmp_path):
+    last, window, values = delisting_edition(tmp_path)
+    tape, _ = delisting_tape(tmp_path, window, values, listing_status(tmp_path))
+    end, at = tape.assets.index("US/END"), tape.delisted_at["US/END"]
+    options = dict(
+        domain="real",
+        currency="USD",
+        partition="validation",
+        prediction_times=tape.prediction_times,
+        open_times=tape.open_times,
+        actions=tape.actions,
+        audit=tape.identity["audit"],
+    )
+    prices, scores = tape.prices.copy(), tape.scores.copy()
+    prices[at + 1, end] = 40.0
+    scores[at + 1, end] = 0.02
+    for changed in (dict(prices=prices), dict(scores=scores)):
+        arrays = {"prices": tape.prices, "scores": tape.scores, **changed}
+        with pytest.raises(ValueError, match="conserva precios o predicciones posteriores"):
+            MarketTape(arrays["prices"], tape.close_times, tape.assets, arrays["scores"], **options)
+
+
+def test_only_an_unpriced_exit_censors_a_reconstructed_fit_source(tmp_path):
+    """Las columnas sin precio de un activo fuera del universo no censuran un ajuste.
+
+    Una baja sin precio de salida sí, porque deja sin valorar una posición abierta. En una
+    cinta sintética cualquier cierre ausente sigue censurando, como antes de las bajas.
+    """
+    last, window, values = delisting_edition(tmp_path)
+    unpriced, _ = delisting_tape(tmp_path, window, values, listing_status(tmp_path))
+    days = tape_days("US")
+    exit_ = dict(last_session=last, price=41.5, currency="USD", paid_on=days[days.index(last) + 3])
+    paid = listing_status(tmp_path, exits={"US/END": exit_}, name="paid.json")
+    priced, _ = delisting_tape(tmp_path, window, values, paid)
+    outside, _ = build_reconstructed_tape(
+        tmp_path,
+        [window],
+        [values],
+        market="US",
+        partition="validation",
+        dividend_payment_lag_sessions=0,
+        listing_status=listing_status(tmp_path),
+        symbols=["END", "REF"],
+        universe=["REF"],
+    )
+    assert np.isnan(outside.prices[:, outside.assets.index("US/END"), 3]).all()
+    assert not outside.actions and not censors_fit(outside)
+    assert np.isnan(priced.prices[:, :, 3]).any() and not censors_fit(priced)
+    assert censors_fit(unpriced)
+    synthetic = MarketTape(
+        np.where(np.arange(4)[:, None, None] == 2, np.nan, np.full((4, 1, 5), 10.0)),
+        microseconds("2023-01-03") + 86_400_000_000 * np.arange(4, dtype=np.int64),
+        ["US/AAA"],
+        np.zeros((4, 1)),
+        domain="synthetic",
+        currency="USD",
+    )
+    assert censors_fit(synthetic)
+
+
 @pytest.mark.parametrize(
     "backend", ["python", pytest.param("native", marks=requires_native_library)]
 )
@@ -252,10 +312,14 @@ def test_without_a_position_an_unpriced_delisting_only_retires_the_asset(tmp_pat
     tape, _ = delisting_tape(tmp_path, window, values, listing_status(tmp_path))
     env = FinancialEnv(tape, capital=1_000_000, backend=backend)
     env.reset(seed=0)
+    at = tape.delisted_at["US/END"]
     while not env.done:
+        # Antes de la baja el activo sigue disponible. Desde ella queda retirado y ninguna
+        # orden posterior puede volver a comprarlo.
+        assert ("US/END" in env.book.retired) is (env.cursor >= at)
         info = env.step(1)[4]
     assert info["reward_valid"] and info["reason"] == "episode_limit"
-    assert env.book.nav["USD"] == pytest.approx(1_000_000)
+    assert env.book.nav["USD"] == pytest.approx(1_000_000) and "US/END" in env.book.retired
 
 
 @pytest.mark.parametrize(
@@ -299,6 +363,23 @@ def test_an_exit_for_another_last_session_contradicts_the_edition(tmp_path):
     exits = {"US/END": dict(last_session=other, price=41.5, currency="USD", paid_on=last)}
     with pytest.raises(ValueError, match="última sesión de la serie"):
         delisting_tape(tmp_path, window, values, listing_status(tmp_path, exits=exits))
+
+
+def test_an_event_after_the_last_row_of_a_series_excludes_the_asset(tmp_path):
+    """Un dividendo fechado después de la última fila contradice la baja.
+
+    La edición no puede saber si el evento o el final de la serie es el error, así que el
+    activo se excluye con su motivo en lugar de detener la cinta o pagar un dividendo a una
+    posición que ya no cotiza.
+    """
+    year = tape_days("US")
+    last = year.index("2023-11-30") - 6
+    ending = Asset("END", base=40.0, end=last, events=((last + 2, 0.5, 0.0),))
+    write_edition(tmp_path, {"US": [ending, Asset("REF", base=50.0)]})
+    window, values = monthly_window("US", -2, ["END", "REF"])
+    tape, report = delisting_tape(tmp_path, window, values, listing_status(tmp_path))
+    assert report["excluded"] == {"US/END": "invalid_event"} and report["delistings"] == {}
+    assert tape.assets == ["US/REF"] and not tape.actions
 
 
 def test_a_series_that_ended_before_the_tape_is_excluded_with_its_reason(tmp_path):
@@ -566,6 +647,11 @@ def test_tape_contract_rejects_a_softened_reconstructed_declaration(edition):
     audit = copy.deepcopy(tape.identity["audit"])
     del audit["exit_returns"]
     with pytest.raises(ValueError, match="tratamiento"):
+        rebuild(audit)
+    # Una cinta de EE. UU. no lleva estado de cotización chino para sus activos.
+    audit = copy.deepcopy(tape.identity["audit"])
+    audit["listing_status"]["assets"] = {tape.assets[0]: {}}
+    with pytest.raises(ValueError, match="estado de cotización de la cinta"):
         rebuild(audit)
     with pytest.raises(ValueError, match="tratamiento"):
         rebuild(currency="CNY")

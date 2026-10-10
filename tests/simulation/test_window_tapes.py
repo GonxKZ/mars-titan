@@ -2,7 +2,9 @@
 
 Usa la edición sintética con el formato real, identificada como fixture, y recibos de las
 ventanas US que evalúan 2021, 2022 y 2023. Las puntuaciones son sintéticas y no proceden
-de ningún modelo. Las políticas son guionizadas y ningún paso ajusta parámetros.
+de ningún modelo. Las políticas son guionizadas y ningún paso ajusta parámetros. La edición
+empieza en septiembre de 2020, así que el universo se clasifica con 20 sesiones previas en
+lugar de las 252 de la configuración real.
 """
 
 import copy
@@ -11,13 +13,14 @@ import hashlib
 from pathlib import Path
 
 import numpy as np
+import pyarrow.parquet as pq
 import pytest
 
 from mars_titan.data import prediction_files
 from mars_titan.environments.walk_forward_receipt import WalkForwardWindow
 from mars_titan.evaluation.splits import build_folds
 from mars_titan.simulation import campaign_stage, window_tapes
-from mars_titan.simulation.environment import FinancialEnv
+from mars_titan.simulation.environment import ALLOCATIONS, FinancialEnv
 from mars_titan.simulation.evaluation import fixed_policy
 from mars_titan.simulation.market import MarketTape
 from mars_titan.simulation.reconstructed_tape import read_edition
@@ -39,7 +42,7 @@ JOB = dict(
 )
 POLICIES = dict(
     environment=dict(dividend_payment_lag_sessions=0),
-    universe=dict(max_assets=3),
+    universe=dict(rule=window_tapes.UNIVERSE_RULE, max_assets=3, ranking_sessions=20),
 )
 STAGE = dict(
     predictors=["parent"],
@@ -57,8 +60,8 @@ STAGE = dict(
         references=["cash"],
     ),
 )
-# Liquidez decreciente por precio. DDD no tiene predicciones en la validación, EEE empieza
-# a cotizar en 2023 y CCC tiene una fila sin verificar en la evaluación de 2023.
+# Liquidez decreciente por precio, porque el volumen es común. DDD no tiene predicciones en la
+# validación, EEE empieza a cotizar en 2023 y CCC tiene una fila sin verificar en 2023.
 LIQUID = [Asset("DDD", base=60), Asset("AAA", base=50), Asset("BBB", base=40)]
 LIQUID += [Asset("FFF", base=5), Asset("EEE", base=10, start=100)]
 
@@ -104,8 +107,18 @@ def tapes(root, assets, *, source=None, output="stage"):
     )
     edition_id = read_edition(path)["edition_id"]
     return campaign_stage._Tapes(
-        POLICIES, source or source_for(assets), path, edition_id, root / output, "parent"
+        POLICIES,
+        source or source_for(assets),
+        path,
+        edition_id,
+        root / output,
+        "parent",
+        editions.listing_status(path),
     )
+
+
+def outside(tape):
+    return tape.identity["audit"]["outside_universe"]
 
 
 EXPANDING = dict(rule=window_tapes.EXPANDING, minimum=3, maximum=17)
@@ -160,36 +173,76 @@ def test_policy_windows_use_earlier_evaluations_and_anchors_end_before_their_car
         window_tapes.policy_schedule(rows, 0, FOLDS)
 
 
-def admission(**assets):
+def census(**assets):
     return {
-        name: dict(traded_value=value, predicted=predicted)
-        for name, (value, predicted) in assets.items()
+        name: dict(reason=reason, unpriced_exit=ends, listed=listed, value=value)
+        for name, (reason, listed, value, *ends) in assets.items()
+        for ends in [bool(ends and ends[0])]
     }
 
 
-def test_universe_rule_uses_only_training_and_validation_admission():
-    train = [admission(A=(1, True), B=(1, True), C=(1, True), D=(1, False))]
-    validation = admission(A=(5, True), B=(7, True), C=(7, True), D=(9, False), E=(99, True))
-    # E no estaba admitido en el ajuste y D no tiene predicción en la validación.
-    assert window_tapes.select_universe(train, validation, 4) == ["A", "B", "C"]
+def test_universe_rule_ranks_each_segment_with_its_own_earlier_data():
+    rows = census(
+        A=(None, True, 5),
+        B=(None, True, 7),
+        C=(None, True, 7),
+        D=(None, True, 9),
+        E=("no_verified_traded_close_at_start", False, 99),
+        F=("unverified_rows_in_tape", True, 8),
+        G=(None, True, 0),
+        H=(None, True, 6, True),
+    )
+    covered = {"A", "B", "C", "E", "F", "G", "H"}
+    # En ajuste y validación cuentan las condiciones de la cinta del tramo. D no tiene
+    # predicciones, E no cotizaba, F tiene una fila dudosa, G ningún efectivo previo y la
+    # serie de H termina en el tramo sin precio de salida.
+    assert window_tapes.select_universe(rows, covered, 4, evaluation=False) == ["A", "B", "C"]
     # Empate de efectivo: decide el identificador.
-    assert window_tapes.select_universe(train, validation, 2) == ["B", "C"]
-    assert window_tapes.select_universe(train, validation, 1) == ["B"]
+    assert window_tapes.select_universe(rows, covered, 2, evaluation=False) == ["B", "C"]
+    assert window_tapes.select_universe(rows, covered, 1, evaluation=False) == ["B"]
+    # En una evaluación basta con cotizar al empezar: la fila dudosa de F y el final de H
+    # son posteriores, y H entra aunque después se dé de baja.
+    assert window_tapes.select_universe(rows, covered, 1, evaluation=True) == ["F"]
+    everything = window_tapes.select_universe(rows, covered, 9, evaluation=True)
+    assert everything == ["A", "B", "C", "F", "H"]
+    # Una ventana intermedia elige dentro del diseño de su ancla.
+    within = window_tapes.select_universe(rows, covered, 3, evaluation=True, within={"A", "F"})
+    assert within == ["A", "F"]
     with pytest.raises(ValueError, match="Ningún activo"):
-        window_tapes.select_universe([admission(Z=(1, True))], validation, 3)
+        window_tapes.select_universe(rows, {"E", "G"}, 3, evaluation=True)
     for bad in (0, 4097, 1.0):
         with pytest.raises(ValueError, match="universo admite"):
-            window_tapes.select_universe(train, validation, bad)
+            window_tapes.select_universe(rows, covered, bad, evaluation=False)
+    good = POLICIES["universe"]
+    assert window_tapes.universe_rule(good) == (3, 20)
+    for changes in (
+        dict(rule="median_traded_value_in_validation_v1"),
+        dict(max_assets=0),
+        dict(ranking_sessions=19),
+        dict(ranking_sessions=757),
+        dict(ranking_sessions=20.0),
+        dict(extra=1),
+    ):
+        with pytest.raises(ValueError, match="El universo declara"):
+            window_tapes.universe_rule(dict(good, **changes))
+    assert window_tapes.layout_bound(good, FIXED) == 3 * (3 + 2)
 
 
 def test_tapes_share_one_universe_and_record_an_excluded_asset_as_failed_episodes(tmp_path):
     assets = [*LIQUID, Asset("CCC", base=30, unverified=(10,))]
     store = tapes(tmp_path, assets)
     opened = store.open(JOB)
-    # DDD sin predicción en la validación, EEE sin cotizar en el ajuste y FFF por liquidez.
-    assert opened.universe == ("US/AAA", "US/BBB", "US/CCC")
+    # Cada tramo elige los tres más líquidos con predicciones. DDD no tiene en la validación
+    # de 2022, así que entra CCC. EEE no cotizaba y FFF tiene poco efectivo. El diseño de la
+    # política une los tres universos y cada cinta deja sin precios lo que no es suyo.
+    assert opened.universe == ("US/AAA", "US/BBB", "US/CCC", "US/DDD")
     assert [tape.assets for tape in opened.train] == [list(opened.universe)]
     assert opened.validation.assets == list(opened.universe)
+    assert outside(opened.train[0]) == ["US/CCC"] and outside(opened.validation) == ["US/DDD"]
+    i = opened.train[0].assets.index("US/CCC")
+    assert np.isnan(opened.train[0].prices[:, i]).all()
+    assert np.isnan(opened.train[0].scores[:, i]).all()
+    # La evaluación elige con la validación del ancla y CCC tiene una fila dudosa en 2023.
     assert opened.evaluation is None and opened.paths["evaluation"] is None
     assert opened.failure == dict(
         reason="universe_assets_excluded", excluded={"US/CCC": "unverified_rows_in_tape"}
@@ -223,15 +276,130 @@ def test_tapes_share_one_universe_and_record_an_excluded_asset_as_failed_episode
     assert resumed.identity == opened.identity and resumed.universe == opened.universe
 
 
+def test_a_company_that_later_delists_stays_in_the_evaluation_universe(tmp_path):
+    """Sin sesgo de supervivencia en el universo: HHH deja de cotizar a mitad de 2023.
+
+    La regla anterior exigía que la serie siguiera después del tramo y la habría excluido. Ahora
+    el universo de 2023 se elige con lo que se sabía al empezar el año y la cinta lleva la baja.
+    Sin precio de salida, mantener la posición deja el patrimonio sin valorar y el episodio se
+    publica como fallido con su motivo, para todos los costes.
+    """
+    assets = [*LIQUID[1:3], Asset("HHH", base=70, end=150)]
+    opened = tapes(tmp_path, assets).open(JOB)
+    assert opened.universe == ("US/AAA", "US/BBB", "US/HHH")
+    tape = opened.evaluation
+    assert opened.failure is None and outside(tape) == []
+    last = editions.tape_days("US")[150]
+    assert tape.identity["audit"]["delistings"] == {"US/HHH": dict(last_session=last, exit=None)}
+    assert tape.delisted_at == {"US/HHH": 151}
+    i = tape.assets.index("US/HHH")
+    assert np.isfinite(tape.prices[:151, i, 3]).all() and np.isnan(tape.prices[151:, i]).all()
+    assert np.isnan(tape.scores[151:, i]).all()
+    # La cartera 1/N mensual reparte entre todos los activos valorados y conserva HHH.
+    records = campaign_stage.evaluate_policy(
+        opened,
+        fixed_policy("equal_weight_monthly"),
+        STAGE,
+        "US",
+        backend="python",
+        allocation=ALLOCATIONS[1],
+    )
+    assert [(r["status"], r["reason"]) for r in records] == [("failed", "unpriced_exit")] * 3
+    assert all(r["steps"] == 151 and r["equity"] is None for r in records)
+    # El efectivo no se ve afectado: la baja solo retira un activo que no se tenía.
+    cash = campaign_stage.evaluate_policy(
+        opened, fixed_policy("cash"), STAGE, "US", backend="python"
+    )
+    assert all(r["status"] == "completed" for r in cash)
+
+
+def test_a_fit_universe_leaves_out_a_series_that_ends_without_an_exit_price(tmp_path, monkeypatch):
+    """GGG deja de cotizar en junio de 2022, el tramo de validación, sin precio de salida.
+
+    Entra en el ajuste de 2021, donde cotiza todo el año, y queda fuera de la validación de
+    2022: su baja dejaría sin valorar una posición y la selección no vería la pérdida. Si el
+    universo la admitiera, la etapa se detiene antes de ajustar nada.
+    """
+    assets = [*LIQUID[1:3], Asset("GGG", base=70, end="2022-06-15")]
+    opened = tapes(tmp_path, assets).open(JOB)
+    assert opened.universe == ("US/AAA", "US/BBB", "US/GGG") and opened.unfit is None
+    (train,) = opened.train
+    assert outside(train) == [] and outside(opened.validation) == ["US/GGG"]
+    assert outside(opened.evaluation) == ["US/GGG"]
+    assert all(not tape.actions for tape in (train, opened.validation))
+    assert np.isnan(opened.validation.prices[:, opened.validation.assets.index("US/GGG")]).all()
+    monkeypatch.setattr(window_tapes, "_fit_candidate", lambda row: row["reason"] is None)
+    with pytest.raises(ValueError, match="baja sin precio de salida fuera de la evaluación"):
+        tapes(tmp_path, assets, output="admitted").open(JOB)
+
+
+def test_the_census_only_reads_rows_before_its_segment(tmp_path):
+    """El estado y el efectivo de un activo al empezar 2023 no dependen de 2023."""
+    from mars_titan.simulation.reconstructed_tape import census
+
+    bounds = receipts.window("US", index=list(FOLDS).index("fold-018")).segment("evaluation")
+    plain = [Asset("AAA", base=50), Asset("BBB", base=40, end=20), Asset("EEE", start=5)]
+    changed = [
+        dataclasses.replace(
+            plain[0], overrides={i: dict(open=90.0, close=95.0) for i in range(3, 200)}
+        ),
+        dataclasses.replace(plain[1], end=None),
+        plain[2],
+    ]
+    one, two = edition(tmp_path / "one", plain), edition(tmp_path / "two", changed)
+    status = editions.listing_status(one)
+    first = census(one, bounds, market="US", ranking_sessions=20, listing_status=status)
+    second = census(two, bounds, market="US", ranking_sessions=20, listing_status=status)
+    for key in first:
+        assert (first[key]["listed"], first[key]["value"]) == (
+            second[key]["listed"],
+            second[key]["value"],
+        )
+    # EEE todavía no cotizaba y su efectivo previo es nulo. BBB cotizaba al empezar aunque
+    # su serie termine dentro del tramo, que no la excluye de la cinta. Sin precio de salida
+    # acreditado esa baja la deja fuera de un universo de ajuste.
+    assert first["US/EEE"] == dict(
+        reason="no_verified_traded_close_at_start", unpriced_exit=False, listed=False, value=0.0
+    )
+    assert first["US/BBB"]["listed"] and first["US/BBB"]["reason"] is None
+    assert first["US/BBB"]["unpriced_exit"] and not first["US/AAA"]["unpriced_exit"]
+    assert not second["US/BBB"]["unpriced_exit"]
+    assert first["US/AAA"]["value"] > first["US/BBB"]["value"] > 0
+    # Con su salida acreditada, BBB puede entrar en el ajuste. Una salida de otra última
+    # sesión contradice la edición y detiene el censo.
+    last = pq.read_table(one / "assets" / "US" / "BBB" / "prices.parquet")
+    last = str(last.column("session").to_pylist()[-1])
+    days = editions.tape_days("US")
+    paid_on = days[days.index(last) + 2]
+    exit_ = dict(last_session=last, price=10.0, currency="USD", paid_on=paid_on)
+    paid = editions.listing_status(one, exits={"US/BBB": exit_}, name="paid.json")
+    priced = census(one, bounds, market="US", ranking_sessions=20, listing_status=paid)
+    assert not priced["US/BBB"]["unpriced_exit"]
+    wrong = dict(exit_, last_session=days[3])
+    wrong = editions.listing_status(one, exits={"US/BBB": wrong}, name="wrong.json")
+    with pytest.raises(ValueError, match="última sesión de la serie"):
+        census(one, bounds, market="US", ranking_sessions=20, listing_status=wrong)
+    # En un tramo que empieza en julio, BBB ya había dejado de cotizar: no puede entrar.
+    late = (receipts.microseconds("2023-07-03"), bounds[1])
+    gone = census(
+        one, late, market="US", ranking_sessions=20, listing_status=status, symbols=["BBB"]
+    )
+    assert gone == {
+        "US/BBB": dict(reason="delisted_before_tape", unpriced_exit=False, listed=False, value=0.0)
+    }
+    with pytest.raises(ValueError, match="sesiones de clasificación"):
+        census(one, bounds, market="US", ranking_sessions=19, listing_status=status)
+
+
 def test_only_the_evaluation_tape_may_lose_a_universe_asset(tmp_path, monkeypatch):
     assets = LIQUID[1:3]
     build = window_tapes.build_segment_tape
 
-    def losing(edition, receipt, values, *, market, role, lag, symbols=None):
-        # La cinta de ajuste pierde un activo que el universo admitió.
-        if symbols is not None and role == "train":
-            symbols = symbols[1:]
-        return build(edition, receipt, values, market=market, role=role, lag=lag, symbols=symbols)
+    def losing(edition, receipt, values, *, symbols=None, universe=None, **options):
+        # La cinta de ajuste pierde un activo que el universo de su tramo admitió.
+        if options["role"] == "train":
+            symbols, universe = symbols[1:], universe[1:]
+        return build(edition, receipt, values, symbols=symbols, universe=universe, **options)
 
     monkeypatch.setattr(window_tapes, "build_segment_tape", losing)
     with pytest.raises(ValueError, match="no es admisible en train"):
@@ -265,9 +433,16 @@ def test_a_policy_cannot_train_or_validate_with_predictions_of_a_later_fit(tmp_p
     # Las puntuaciones de 2022 presentadas con el recibo de 2023 no cumplen su huella.
     receipt, _ = honest("US", "US", "fold-018", "parent")
     values = honest("US", "US", "fold-017", "parent")[1]()
+    status = editions.listing_status(tmp_path / "edition")
     with pytest.raises(ValueError):
         window_tapes.build_segment_tape(
-            tmp_path / "edition", receipt, values, market="US", role="train", lag=0
+            tmp_path / "edition",
+            receipt,
+            values,
+            market="US",
+            role="train",
+            lag=0,
+            listing_status=status,
         )
     # Un recibo construido a mano, sin `read_window_receipt`, que declara un ajuste con
     # etiquetas del propio tramo, se rechaza antes de leer la edición.
@@ -277,7 +452,13 @@ def test_a_policy_cannot_train_or_validate_with_predictions_of_a_later_fit(tmp_p
     assert isinstance(forged, WalkForwardWindow)
     with pytest.raises(ValueError, match="etiquetas posteriores"):
         window_tapes.build_segment_tape(
-            tmp_path / "nowhere", forged, values, market="US", role="evaluation", lag=0
+            tmp_path / "nowhere",
+            forged,
+            values,
+            market="US",
+            role="evaluation",
+            lag=0,
+            listing_status=status,
         )
 
 
@@ -495,14 +676,56 @@ def test_tapes_and_universes_on_disk_do_not_read_the_predictions_again(tmp_path)
     assert read
 
 
+def test_tapes_on_disk_must_match_the_listing_status_and_the_saved_universes(tmp_path):
+    """Una cinta confirmada en disco no se reutiliza con otra tabla o con otro universo.
+
+    Las dos situaciones aparecen si se mezclan salidas: la tabla del estado de cotización
+    cambia de huella o el registro del universo deja fuera otro activo en un tramo.
+    """
+    assets = LIQUID[1:3]
+    store = tapes(tmp_path, assets)
+    store.open(JOB)
+    edition_path = tmp_path / "edition"
+    other = editions.listing_status(
+        edition_path, china={"CN/600000.SS": {}}, name="other-status.json"
+    )
+    assert other[1] != store.listing_status[1]
+    edition_id = read_edition(edition_path)["edition_id"]
+    changed = campaign_stage._Tapes(
+        POLICIES, source_for(assets), edition_path, edition_id, tmp_path / "stage", "parent", other
+    )
+    with pytest.raises(ValueError, match="no corresponde a su recibo, su diseño o su universo"):
+        changed.open(JOB)
+    path = tmp_path / "stage/universes/US/US/fold-018.json"
+    record = campaign_stage.read_manifest(path, 1024**2)[0]
+    record["universes"]["fold-016"] = ["US/AAA"]
+    campaign_stage.atomic_json(path, record)
+    with pytest.raises(ValueError, match="no corresponde a su recibo, su diseño o su universo"):
+        tapes(tmp_path, assets).open(JOB)
+
+
 def test_universe_is_saved_with_its_identity(tmp_path):
     assets = LIQUID[1:3]
-    tapes(tmp_path, assets).open(JOB)
+    opened = tapes(tmp_path, assets).open(JOB)
     path = Path(tmp_path / "stage/universes/US/US/fold-018.json")
     record = campaign_stage.read_manifest(path, 1024**2)[0]
-    assert record["assets"] == ["US/AAA", "US/BBB"]
-    assert record["identity"]["rule"] == window_tapes.UNIVERSE_RULE
-    assert list(record["identity"]["segments"]) == ["fold-016", "fold-017"]
+    assert record["layout"] == ["US/AAA", "US/BBB"]
+    assert record["universes"] == {
+        window: ["US/AAA", "US/BBB"] for window in ("fold-016", "fold-017", "fold-018")
+    }
+    identity = record["identity"]
+    assert identity["rule"] == window_tapes.UNIVERSE_RULE and identity["ranking_sessions"] == 20
+    assert list(identity["segments"]) == ["fold-016", "fold-017"]
+    assert list(identity["bounds"]) == ["fold-016", "fold-017", "fold-018"]
+    assert (
+        opened.identity["listing_status_sha256"] == editions.listing_status(tmp_path / "edition")[1]
+    )
+    # El censo de cada tramo se guarda con su identidad y solo describe el estado previo.
+    census_path = tmp_path / "stage/universes/census/US/fold-018.json"
+    saved = campaign_stage.read_manifest(census_path, 1024**2)[0]
+    assert saved["identity"]["bounds"] == identity["bounds"]["fold-018"]
+    assert set(saved["assets"]) == {"US/AAA", "US/BBB"}
+    assert all(row["listed"] and row["value"] > 0 for row in saved["assets"].values())
 
 
 def test_policy_tapes_must_be_real_tapes_of_the_declared_edition(tmp_path):
@@ -510,7 +733,13 @@ def test_policy_tapes_must_be_real_tapes_of_the_declared_edition(tmp_path):
     receipt, load = stage.source(JOB, "fold-017", "parent")
     values = load()
     tape, _ = window_tapes.build_segment_tape(
-        stage.edition, receipt, values, market="US", role="validation", lag=0
+        stage.edition,
+        receipt,
+        values,
+        market="US",
+        role="validation",
+        lag=0,
+        listing_status=stage.listing_status,
     )
     assert window_tapes.require_real_tape(tape, stage.edition_id, "validation") is tape
     with pytest.raises(ValueError, match="no es una cinta real"):

@@ -150,7 +150,9 @@ def test_warning_and_pending_reform_narrow_the_main_board_band():
     assert band_on(limits, 2018, 4, 24) == 0.05
     assert band_on(limits, 2019, 4, 2) == 0.10
     # Los tramos contiguos con la misma banda se unen.
-    assert all(a.end != b.start or a.band != b.band for a, b in zip(limits, limits[1:]))
+    assert all(
+        a.end != b.start or a.band != b.band for a, b in zip(limits, limits[1:], strict=False)
+    )
 
 
 def test_other_boards_keep_their_band_under_warning_but_not_on_free_days():

@@ -28,7 +28,8 @@ class Asset:
     symbol: str
     base: float = 20.0
     start: int | None = None
-    end: int | None = None
+    # Última fila: una posición de 2023 o, para una serie que termina antes, su fecha ISO.
+    end: int | str | None = None
     # None verifica todas las filas. Un entero verifica desde esa posición de 2023.
     verified_from: int | None = None
     unverified: tuple = ()
@@ -57,7 +58,9 @@ def _rows(market, spec):
     year = tape_days(market)
     position = {day: index for index, day in enumerate(year)}
     first = year[spec.start] if spec.start is not None else days[0]
-    last = year[spec.end] if spec.end is not None else days[-1]
+    last = (
+        days[-1] if spec.end is None else spec.end if isinstance(spec.end, str) else year[spec.end]
+    )
     missing = {year[i] for i in spec.missing}
     selected = [d for d in days if first <= d <= last and d not in missing]
     splits = [(year[i], ratio) for i, _, ratio in spec.events if ratio]
@@ -185,8 +188,9 @@ def listing_status(root, *, china=None, exits=None, name="listing-status.json"):
     """Tabla del estado de cotización de la edición sintética, identificada como fixture.
 
     Cada acción A de la edición recibe una admisión anterior a sus filas, sin exención inicial,
-    sin tramos ST o S y sin días sin límite, salvo lo que fijen las entradas de `china`. `exits` añade salidas con precio, cuya fuente
-    es la propia fixture. Devuelve la tabla y la huella de sus bytes, como `read_listing_status`.
+    sin tramos ST o S y sin días sin límite, salvo lo que fijen las entradas de `china`.
+    `exits` añade salidas con precio, cuya fuente es la propia fixture. Devuelve la tabla y la
+    huella de sus bytes, como `read_listing_status`.
     """
     manifest = json.loads((root / "manifest.json").read_text())
     empty = dict(

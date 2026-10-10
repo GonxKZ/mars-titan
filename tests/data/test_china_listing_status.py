@@ -11,12 +11,13 @@ import zipfile
 from datetime import date
 from io import BytesIO
 
+import pyarrow.parquet as parquet
 import pytest
 
 from mars_titan.data import china_listing_status as status
 from mars_titan.simulation.listing_status import read_listing_status
 from mars_titan.simulation.market_rules import china_a_share_instrument, xshg_sessions
-from tests.simulation.unadjusted_edition_fixture import Asset, write_edition
+from tests.simulation.unadjusted_edition_fixture import Asset, tape_days, write_edition
 
 SESSIONS = list(xshg_sessions())
 
@@ -75,7 +76,10 @@ def test_the_start_date_is_the_declared_start_and_not_the_suspension_day():
 
 def test_a_date_typo_falls_back_to_the_session_after_the_one_day_halt():
     # El anuncio real decía 2010 por 2011. El 2 de mayo de 2011 era festivo.
-    body = "公司股票于2011年4月29日停牌一天，并将于2010年5月3日起撤销股票交易退市风险警示，涨跌幅限制恢复为10%。"
+    body = (
+        "公司股票于2011年4月29日停牌一天，"
+        "并将于2010年5月3日起撤销股票交易退市风险警示，涨跌幅限制恢复为10%。"
+    )
     found = event("关于股票撤销退市风险警示及其他特别处理的公告", "2011-04-29", body)
     assert (found["kind"], found["effective"]) == ("end", "2011-05-03")
 
@@ -116,8 +120,13 @@ def test_an_implementation_on_a_stock_already_under_warning_is_a_switch():
 
 
 def test_a_relisting_keeps_or_drops_the_warning_from_its_second_session():
-    other = "公司股票自2009年11月13日起恢复上市，撤销退市风险警示，实行其他特别处理，以后每个交易日涨跌幅限制为5%。"
-    clean = "公司股票自2011年9月29日起恢复上市，并撤销退市风险警示，自第二个交易日起涨跌幅限制为10%。"
+    other = (
+        "公司股票自2009年11月13日起恢复上市，撤销退市风险警示，实行其他特别处理，"
+        "以后每个交易日涨跌幅限制为5%。"
+    )
+    clean = (
+        "公司股票自2011年9月29日起恢复上市，并撤销退市风险警示，自第二个交易日起涨跌幅限制为10%。"
+    )
     assert event("关于股票恢复上市的公告", "2009-11-09", other)["kind"] == "relisting_st"
     assert event("关于股票恢复上市的公告", "2011-09-23", clean)["kind"] == "relisting_end"
 
@@ -154,6 +163,8 @@ def test_a_relisting_keeps_or_drops_the_warning_from_its_second_session():
             "2011-08-29",
         ),
         ("2015-08-10", "待公告复牌后，首个交易日不设涨跌幅限制。", None),
+        # La fecha más cercana es la de una suspensión antigua, fuera de la ventana del anuncio.
+        ("2013-08-13", "公司股票自2005年8月1日起停牌。复牌首日不设涨跌幅限制。", None),
     ],
 )
 def test_the_no_limit_day_is_the_date_next_to_its_declaration(published, body, expected):
@@ -171,7 +182,12 @@ def test_spans_open_close_and_switch_without_reopening():
         mark("continue", "2021-04-30"),
         mark("end", "2022-05-06"),
     ]
-    names = [("2018-04-23", False), ("2019-03-27", True), ("2022-05-05", True), ("2022-06-01", False)]
+    names = [
+        ("2018-04-23", False),
+        ("2019-03-27", True),
+        ("2022-05-05", True),
+        ("2022-06-01", False),
+    ]
     assert status.announcement_spans(events, names) == ([["2018-04-24", "2022-05-06"]], [])
 
 
@@ -219,7 +235,12 @@ def test_official_name_changes_give_warning_and_share_reform_spans():
     assert warning == [(None, "2011-08-09"), ("2017-05-03", None)]
     assert reform == [(None, "2011-08-09")]
     assert status._clip(warning) == [["2010-01-01", "2011-08-09"], ["2017-05-03", None]]
-    for name, pending in (("S前锋", True), ("ST前锋", False), ("SST前锋", True), ("*ST前锋", False)):
+    for name, pending in (
+        ("S前锋", True),
+        ("ST前锋", False),
+        ("SST前锋", True),
+        ("*ST前锋", False),
+    ):
         assert bool(status.S_NAME.match(name)) is pending
 
 
@@ -260,7 +281,9 @@ def xlsx(rows):
 def capture(folder, capture_id, body, url="https://example.invalid/fixture"):
     body = body if isinstance(body, bytes) else body.encode()
     (folder / f"{capture_id}.body").write_bytes(body)
-    receipt = dict(capture_id=capture_id, status=200, url=url, sha256=hashlib.sha256(body).hexdigest())
+    receipt = dict(
+        capture_id=capture_id, status=200, url=url, sha256=hashlib.sha256(body).hexdigest()
+    )
     (folder / f"{capture_id}.receipt.json").write_text(json.dumps(receipt))
 
 
@@ -311,7 +334,9 @@ def sources(tmp_path):
     capture(
         folder,
         "cninfo-pdf-11",
-        html("（四）实施退市风险警示的起始日：2023年4月3日（星期一），股票简称由“浦发银行”变更为“*ST浦发”。"),
+        html(
+            "（四）实施退市风险警示的起始日：2023年4月3日（星期一），股票简称由“浦发银行”变更为“*ST浦发”。"
+        ),
     )
     capture(
         folder,
@@ -349,6 +374,37 @@ def test_the_table_joins_official_lists_names_and_announcements(sources):
     assert report["price_band_check"]["sessions_by_band"]["0.05"] > 0
 
 
+def test_the_band_check_only_compares_consecutive_traded_sessions(tmp_path):
+    """Una suspensión o una fila sin volumen acumulan variaciones que no son de un día.
+
+    El activo está bajo advertencia todo el periodo. Sube un 8 % en tres ocasiones: en una
+    sesión normal, tras una fila ausente y tras una fila sin volumen. Solo la primera es un
+    cierre fuera de la banda del 5 % entre dos sesiones consecutivas con negociación.
+    """
+    days = tape_days("CN")
+    levels = {i: 108.0 for i in range(20, 30)}
+    levels |= {i: 116.64 for i in range(31, 40)}
+    levels |= {i: 125.97 for i in range(41, len(days))}
+    overrides = {i: dict(open=value, close=value) for i, value in levels.items()}
+    asset = Asset("600000.SS", base=100.0, missing=(30,), zero_volume=(40,), overrides=overrides)
+    edition = tmp_path / "edition"
+    write_edition(edition, {"CN": [asset]})
+    entry = dict(
+        listed_on="1999-11-10",
+        limit_free_until=None,
+        special_treatment=[["2010-01-01", None]],
+        share_reform_pending=[],
+        limit_free_days=[],
+    )
+    key = "CN/600000.SS"
+    check = status.price_band_check(edition, [key], {key: entry}, xshg_sessions())
+    assert check["outside_reduced_band"] == [[key, days[20], 0.05, 0.08]]
+    assert check["outside_by_band"] == {"0.05": 1}
+    # Los pares con la sesión ausente o sin volumen no se cuentan.
+    rows = parquet.read_table(edition / "assets" / key / "prices.parquet").num_rows
+    assert sum(check["sessions_by_band"].values()) == rows - 1 - 3
+
+
 def test_a_tampered_capture_or_a_contradiction_stops_the_build(sources):
     folder, _, _ = sources
     body = folder / "cninfo-pdf-12.body"
@@ -361,7 +417,12 @@ def test_a_tampered_capture_or_a_contradiction_stops_the_build(sources):
     page = folder / "cninfo-sse-title-fixture-2023-page1.body"
     data = json.loads(page.read_text())
     data["announcements"][2]["secName"] = "*ST浦发"
-    capture(folder, "cninfo-sse-title-fixture-2023-page1", json.dumps(data), url="https://www.cninfo.com.cn/new/hisAnnouncement/query")
+    capture(
+        folder,
+        "cninfo-sse-title-fixture-2023-page1",
+        json.dumps(data),
+        url="https://www.cninfo.com.cn/new/hisAnnouncement/query",
+    )
     with pytest.raises(ValueError, match="Contradicciones"):
         build(sources)
 

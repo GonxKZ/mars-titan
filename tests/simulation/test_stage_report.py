@@ -289,15 +289,24 @@ def test_the_campaign_command_writes_the_report(base, stage_output, tmp_path, ca
 def test_a_universe_series_ending_in_evaluation_is_listed_for_the_survival_sensitivity(
     tmp_path_factory, tmp_path, learning_doubles
 ):
-    # A0000 deja de cotizar en octubre de 2023, dentro de la evaluación de fold-003.
+    # A0000 deja de cotizar en octubre de 2023, dentro de la evaluación de fold-003. Sigue
+    # en el universo, elegido al empezar el año, y la tabla no le da precio de salida. La
+    # cartera 1/N la mantiene hasta la baja y su episodio termina sin valorar con cada coste.
     base = fixture.base_campaign(tmp_path_factory.mktemp("ending"), "A", ending=200)
     fixture.run(base, tmp_path / "stage", fixture.ScriptedLearner())
     result, found = report_of(base, [tmp_path / "stage"], tmp_path / "report")
     survival = result["sections"][0]["survival"]
     assert survival["status"] == "secondary_evaluation_pending"
     assert survival["exit_returns"] == [0.0, -0.3, -1.0] and survival["role"] == "secondary"
+    assert survival["applies_to"] == "evaluations_truncated_by_unpriced_exit"
+    held = dict(arm="equal_weight_monthly", seed=None, costs=[0, 5, 10, 20])
     assert survival["affected"] == [
-        dict(scope="US", market="US", window="fold-003", assets=["US/A0000"])
+        dict(
+            scope="US",
+            market="US",
+            window="fold-003",
+            episodes=[dict(held, predictor="gru"), dict(held, predictor="lstm")],
+        )
     ]
     assert found[("gru", 10)]["windows"] == ["fold-002"]
     assert found[("gru", 10)]["excluded"]["fold-003"]["reason"] == "failed_episodes"
@@ -309,31 +318,44 @@ def test_without_ending_series_the_survival_sensitivity_has_no_window(base, stag
     assert survival["status"] == "no_affected_windows" and survival["affected"] == []
 
 
-def test_survival_lists_only_universe_exclusions_caused_by_an_ending_series():
-    # Una ventana fallida por filas sin verificar o por falta de predicciones no depende de
-    # un retorno de salida. Solo cuentan los activos del universo cuya serie termina.
+def test_survival_lists_only_episodes_truncated_by_an_unpriced_exit():
+    # Una ventana fallida por filas sin verificar, por falta de predicciones o por un cierre
+    # ausente no depende de un retorno de salida. Solo cuentan los episodios que terminan por
+    # una baja sin precio con la posición abierta, con su brazo, su semilla y sus costes.
     policies = fixture.policies()
 
-    def receipt(window, failure):
-        job = dict(scope="US", market="US", window=window)
-        return dict(job=job, identity=dict(tapes=dict(failure=failure)))
+    def receipt(window, arm, seed, *outcomes):
+        job = dict(scope="US", market="US", window=window, predictor="gru", arm=arm, seed=seed)
+        evaluation = [
+            dict(cost_bps=cost, status=status, reason=reason)
+            for cost, (status, reason) in zip((0, 5, 10), outcomes, strict=False)
+        ]
+        return dict(job=job, evaluation=evaluation)
 
-    excluded = "universe_assets_excluded"
+    exit_ = ("failed", "unpriced_exit")
     receipts = dict(
-        a=receipt(
-            "fold-005",
-            dict(
-                reason=excluded,
-                excluded={"US/X": "series_ends_in_tape", "US/Y": "unverified_rows_in_tape"},
-            ),
-        ),
-        b=receipt("fold-005", dict(reason=excluded, excluded={"US/Z": "series_ends_in_tape"})),
-        c=receipt("fold-006", dict(reason=excluded, excluded={"US/Y": "unverified_rows_in_tape"})),
-        d=receipt("fold-007", dict(reason="predictor_without_predictions")),
-        e=receipt("fold-008", None),
+        a=receipt("fold-005", "klpo_terminal", 43, exit_, ("completed", None), exit_),
+        b=receipt("fold-005", "cash", None, ("completed", None)),
+        c=receipt("fold-005", "double_dqn", 42, exit_),
+        d=receipt("fold-006", "cash", None, ("failed", "universe_assets_excluded")),
+        e=receipt("fold-007", "cash", None, ("failed", "predictor_without_predictions")),
+        f=receipt("fold-008", "cash", None, ("failed", "missing_close")),
+        g=receipt("fold-009", "cash", None, ("ruined", "ruined")),
     )
     result = stage_report.survival(policies, dict(receipts=receipts))
     assert result["status"] == "secondary_evaluation_pending"
     assert result["affected"] == [
-        dict(scope="US", market="US", window="fold-005", assets=["US/X", "US/Z"])
+        dict(
+            scope="US",
+            market="US",
+            window="fold-005",
+            episodes=[
+                dict(predictor="gru", arm="double_dqn", seed=42, costs=[0]),
+                dict(predictor="gru", arm="klpo_terminal", seed=43, costs=[0, 10]),
+            ],
+        )
     ]
+    clean = {key: receipts[key] for key in "bdefg"}
+    assert stage_report.survival(policies, dict(receipts=clean)) == dict(
+        policies["survival_sensitivity"], status="no_affected_windows", affected=[]
+    )

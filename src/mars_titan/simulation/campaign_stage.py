@@ -72,6 +72,7 @@ from .policy_plan import (
     predictor_reads,
     window_sensitivity,
 )
+from .portfolio import UNPRICED_DELISTING
 from .reconstructed_tape import NoAdmittedAssets, census
 
 RUN_KIND = "historical_masked_rl_stage_run"
@@ -801,6 +802,7 @@ class _Tapes:
             edition_id=self.edition_id,
             rule=window_tapes.UNIVERSE_RULE,
             ranking_sessions=self.ranking,
+            listing_status_sha256=self.listing_status[1],
             market=market,
             bounds=list(bounds),
         )
@@ -810,7 +812,13 @@ class _Tapes:
             record = read_manifest(path, 64 * 1024**2)[0]
             _require(record["identity"] == identity, f"El censo de {path.name} ha cambiado")
         else:
-            rows = census(self.edition, bounds, market=market, ranking_sessions=self.ranking)
+            rows = census(
+                self.edition,
+                bounds,
+                market=market,
+                ranking_sessions=self.ranking,
+                listing_status=self.listing_status,
+            )
             record = dict(identity=identity, assets=rows)
             atomic_json(path, record)
         self.censuses = {key: record["assets"]}
@@ -980,6 +988,13 @@ class _Tapes:
             and audit["listing_status"]["source_sha256"] == self.listing_status[1]
             and [item["receipt_sha256"] for item in audit["walk_forward"]] == [receipt.sha256],
             f"La cinta de {folder.name} no corresponde a su recibo, su diseño o su universo",
+        )
+        # El universo de ajuste y validación ya excluye esas bajas. Si una aparece, el censo y
+        # la cinta no coinciden, y ajustar con ella ocultaría la pérdida de la posición.
+        _require(
+            role == "evaluation"
+            or all(action.kind != UNPRICED_DELISTING for action in tape.actions),
+            f"La cinta de {folder.name} tiene una baja sin precio de salida fuera de la evaluación",
         )
         return folder, tape, None, bounds
 

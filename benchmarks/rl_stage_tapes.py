@@ -60,6 +60,7 @@ def prepare(edition, output, market, *, candidates, max_assets, status, lag=0):
             _bounds(folds[ids.index(name)]),
             market=market,
             ranking_sessions=RANKING_SESSIONS,
+            listing_status=status,
             symbols=pool,
         )
         universes[name] = window_tapes.select_universe(

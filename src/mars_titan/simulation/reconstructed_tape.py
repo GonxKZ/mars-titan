@@ -303,23 +303,31 @@ def _actions(asset, events, opens, closes, lag):
     return actions
 
 
+def _credited_exit(table, asset, last_session):
+    """Salida acreditada en la tabla del estado para una serie que termina, o None.
+
+    Una salida registrada para otra última sesión contradice la edición y detiene la lectura
+    en lugar de elegir una de las dos.
+    """
+    entry = table["exits"].get(asset)
+    if entry is not None and entry["last_session"] != last_session:
+        raise ValueError("La salida acreditada no corresponde a la última sesión de la serie")
+    return entry
+
+
 def _delisting(asset, last_session, days, opens, decisions, table):
     """Baja en la apertura siguiente a la última fila, con su salida acreditada o sin precio.
 
-    Devuelve la acción y su registro en la auditoría. Una salida de la tabla para otra
-    última sesión contradice la edición y detiene la cinta en lugar de elegir una de las dos.
-    El cobro posterior a la cinta queda pendiente después de su última decisión, como un
-    dividendo, y cuenta en el patrimonio.
+    Devuelve la acción y su registro en la auditoría. El cobro posterior a la cinta queda
+    pendiente después de su última decisión, como un dividendo, y cuenta en el patrimonio.
     """
     at = int(opens[int(np.searchsorted(days, np.datetime64(last_session))) + 1])
-    entry = table["exits"].get(asset)
+    entry = _credited_exit(table, asset, last_session)
     if entry is None:
         action = CorporateAction(
             f"{asset}/{at}/{UNPRICED_DELISTING}", asset, UNPRICED_DELISTING, at, 0.0, None, True
         )
         return action, dict(last_session=last_session, exit=None)
-    if entry["last_session"] != last_session:
-        raise ValueError("La salida acreditada no corresponde a la última sesión de la serie")
     paid = int(np.searchsorted(days, np.datetime64(entry["paid_on"])))
     pay_at = int(opens[paid]) if paid < len(days) else int(decisions[-1]) + 1
     action = CorporateAction(
@@ -401,16 +409,20 @@ def _traded_value(prices, days):
     return result
 
 
-def census(edition, bounds, *, market, ranking_sessions, symbols=None):
+def census(edition, bounds, *, market, ranking_sessions, listing_status, symbols=None):
     """Estado de cada activo de la edición al empezar el tramo `bounds`, en microsegundos.
 
     Para cada clave `mercado/símbolo` devuelve `reason` (None si el activo cumple las
-    condiciones de la cinta del tramo, que usan filas del propio tramo), `listed` (tenía
-    un cierre negociado verificado al empezar y su serie no había terminado) y `value`, la
-    mediana del efectivo negociado en las `ranking_sessions` sesiones anteriores al tramo.
-    `listed` y `value` solo usan filas anteriores a la primera decisión del tramo, así que
-    sirven para elegir el universo de una evaluación sin mirar su resultado.
+    condiciones de la cinta del tramo, que usan filas del propio tramo), `unpriced_exit`
+    (su serie termina dentro del tramo y `listing_status` no acredita su precio de salida),
+    `listed` (tenía un cierre negociado verificado al empezar y su serie no había terminado)
+    y `value`, la mediana del efectivo negociado en las `ranking_sessions` sesiones
+    anteriores al tramo. `listed` y `value` solo usan filas anteriores a la primera decisión
+    del tramo, así que sirven para elegir el universo de una evaluación sin mirar su
+    resultado. `reason` y `unpriced_exit` miran el propio tramo y solo sirven para elegir el
+    universo de un tramo de ajuste o de validación.
     """
+    table, _ = listing_status
     root = Path(edition)
     manifest = read_edition(root)
     if (
@@ -439,9 +451,15 @@ def census(edition, bounds, *, market, ranking_sessions, symbols=None):
             and sessions[-1] >= days[0]
             and _start_row(sessions, verified, volume, days[0]) is not None
         )
-        reason, _ = _asset(market, prices, events, days)
+        reason, found = _asset(market, prices, events, days)
+        ends = None if found is None else found[3]
         value = float(np.median(_traded_value(prices, ranking)))
-        result[key] = dict(reason=reason, listed=listed, value=value)
+        result[key] = dict(
+            reason=reason,
+            unpriced_exit=ends is not None and _credited_exit(table, key, ends) is None,
+            listed=listed,
+            value=value,
+        )
     return result
 
 

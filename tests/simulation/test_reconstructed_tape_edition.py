@@ -1,6 +1,7 @@
 """Prueba de humo con la edición real, solo lectura y para ejecución local explícita.
 
-Se activa declarando ``MARS_TITAN_UNADJUSTED_EDITION`` con la ruta de la edición. Construye
+Se activa declarando ``MARS_TITAN_UNADJUSTED_EDITION`` con la ruta de la edición y
+``MARS_TITAN_LISTING_STATUS`` con la tabla del estado de cotización que la acompaña. Construye
 cintas de 2023 con pocos activos y puntuaciones sintéticas, que no proceden de ningún modelo,
 y recorre los entornos con acciones fijas. La cinta china se compara también entre los motores
 Python y nativo. No aprende ni evalúa políticas.
@@ -15,16 +16,26 @@ import pytest
 from mars_titan.evaluation.splits import build_folds
 from mars_titan.simulation.environment import FinancialEnv
 from mars_titan.simulation.evaluation import REFERENCE_ALLOCATIONS, evaluate, fixed_policy
-from mars_titan.simulation.market_rules import china_a_share_instrument
+from mars_titan.simulation.listing_status import read_listing_status
+from mars_titan.simulation.market_rules import tape_instruments
 from mars_titan.simulation.reconstructed_tape import build_reconstructed_tape
 from tests.environments.walk_forward_fixture import fold, protocol
 from tests.simulation.native_library import requires_native_library
 from tests.simulation.unadjusted_edition_fixture import evaluation_window, predictions
 
 EDITION = os.environ.get("MARS_TITAN_UNADJUSTED_EDITION")
+STATUS = os.environ.get("MARS_TITAN_LISTING_STATUS")
 pytestmark = pytest.mark.skipif(
-    EDITION is None, reason="Declara MARS_TITAN_UNADJUSTED_EDITION para leer la edición real"
+    EDITION is None or STATUS is None,
+    reason="Declara MARS_TITAN_UNADJUSTED_EDITION y MARS_TITAN_LISTING_STATUS para leer la "
+    "edición real",
 )
+
+
+def status():
+    return read_listing_status(STATUS)
+
+
 ASSETS = {
     "US": ["AAPL", "IBM", "MSFT", "JNJ", "XOM"],
     "CN": ["600519.SS", "600239.SS", "000001.SZ", "300750.SZ", "688981.SS"],
@@ -41,15 +52,12 @@ def test_real_edition_builds_a_2023_tape_and_fixed_actions_keep_the_accounting(m
         market=market,
         partition="validation",
         dividend_payment_lag_sessions=0,
+        listing_status=status(),
         symbols=ASSETS[market],
     )
     assert report["assets"] + sum(report["exclusions"].values()) == len(ASSETS[market])
     assert np.isfinite(tape.prices[:, :, 3]).all() and len(tape) > 200
-    rules = (
-        {asset: china_a_share_instrument(asset) for asset in tape.assets}
-        if market == "CN"
-        else None
-    )
+    rules = tape_instruments(tape) if market == "CN" else None
     env = FinancialEnv(tape, instruments=rules)
     env.reset(seed=0)
     trades = 0
@@ -78,9 +86,10 @@ def test_real_chinese_tape_has_the_same_trajectory_in_the_native_engine():
         market="CN",
         partition="validation",
         dividend_payment_lag_sessions=2,
+        listing_status=status(),
         symbols=ASSETS["CN"],
     )
-    rules = {asset: china_a_share_instrument(asset) for asset in tape.assets}
+    rules = tape_instruments(tape)
     for plan in ((5, 0, 0, 1), (5, 1), (3, 5, 2, 0, 4)):
         reference = FinancialEnv(tape, capital=1_000_000, instruments=rules)
         native = FinancialEnv(tape, capital=1_000_000, instruments=rules, backend="native")
@@ -113,6 +122,7 @@ def test_dvn_keeps_the_2009_window_with_its_last_close_valued_at_the_previous_tr
         market="US",
         partition="validation",
         dividend_payment_lag_sessions=0,
+        listing_status=status(),
         symbols=symbols,
     )
     assert tape.identity["audit"]["walk_forward"][0]["fold"] == "fold-004"
@@ -150,6 +160,7 @@ def test_spy_index_tapes_cover_every_us_window_with_its_dividends_and_both_backe
             market="US",
             partition="validation",
             dividend_payment_lag_sessions=0,
+            listing_status=status(),
             symbols=["SPY"],
         )
         assert tape.assets == ["US/SPY"] and report["excluded"] == {}

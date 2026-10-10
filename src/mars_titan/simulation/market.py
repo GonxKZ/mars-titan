@@ -11,7 +11,14 @@ from mars_titan.environments.cohorts import FINAL_TEST_START_US, VALIDATION_STAR
 from mars_titan.evaluation.splits import PARTITIONS
 
 from .listing_status import require_tape_status
-from .portfolio import DELISTING, DELISTINGS, MAX_INSTRUMENTS, CorporateAction, Quote
+from .portfolio import (
+    DELISTING,
+    DELISTINGS,
+    MAX_INSTRUMENTS,
+    UNPRICED_DELISTING,
+    CorporateAction,
+    Quote,
+)
 
 # 4.200 activos durante un año de 251 sesiones superan el millón de celdas anterior.
 # Con 48 bytes por celda (OHLCV y predicción en float64) el máximo ocupa 96 MiB por copia.
@@ -195,6 +202,20 @@ def _reconstructed_columns(tape, audit):
             )
         ):
             raise ValueError("El registro de la baja no corresponde a su acción ni a su fuente")
+
+
+def censors_fit(tape):
+    """Si una fuente de ajuste puede dejar una posición sin valorar y ocultar su pérdida.
+
+    En una cinta reconstruida la validación ya exige cierre en cada sesión anterior a la baja
+    de cada activo de su universo, y los activos del diseño fuera de él no tienen precio ni
+    pueden comprarse. Solo censura una baja sin precio de salida, que deja la posición abierta
+    sin valor. En las demás cintas censura cualquier cierre ausente, como antes.
+    """
+    audit = tape.identity["audit"] or {}
+    if tape.domain == "real" and audit.get("price_basis") == RECONSTRUCTED:
+        return any(action.kind == UNPRICED_DELISTING for action in tape.actions)
+    return bool(np.isnan(tape.prices[:, :, 3]).any())
 
 
 class MarketTape:

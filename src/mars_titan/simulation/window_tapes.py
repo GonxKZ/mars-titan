@@ -226,23 +226,31 @@ def covered(values):
     return set(assets[np.isfinite(scores)].tolist())
 
 
+def _fit_candidate(row):
+    return row["reason"] is None and not row["unpriced_exit"]
+
+
 def select_universe(census, covered, max_assets, *, evaluation, within=None):
     """Universo de un tramo: los `max_assets` candidatos con mayor efectivo mediano previo.
 
     `census` es el de `reconstructed_tape.census` para el tramo y `covered` los activos con
     predicciones del predictor del universo: las del propio tramo en ajuste y validación y
     las de la validación del ancla en una evaluación. En ajuste y validación un candidato
-    cumple las condiciones de la cinta del tramo. En una evaluación basta con que cotizara al
-    empezar, porque esas condiciones usan filas posteriores. `within` limita la elección al
-    diseño de un ancla. Un activo sin efectivo previo positivo no es candidato. El empate se
-    resuelve por la clave del activo y el resultado se ordena.
+    cumple las condiciones de la cinta del tramo y su serie no termina en él sin precio de
+    salida acreditado, porque esa baja dejaría sin valorar una posición y ocultaría su
+    pérdida al objetivo y a la selección. Esa exclusión mira el propio tramo de ajuste, que
+    termina antes de la evaluación, y deja el sesgo de supervivencia solo en los datos de
+    ajuste. En una evaluación basta con que cotizara al empezar, porque esas condiciones usan
+    filas posteriores, y entran también las series que después terminan. `within` limita la
+    elección al diseño de un ancla. Un activo sin efectivo previo positivo no es candidato.
+    El empate se resuelve por la clave del activo y el resultado se ordena.
     """
     _require(type(max_assets) is int and 1 <= max_assets <= 4096, "El universo admite de 1 a 4096")
     ranked = sorted(
         (
             asset
             for asset, row in census.items()
-            if (row["listed"] if evaluation else row["reason"] is None)
+            if (row["listed"] if evaluation else _fit_candidate(row))
             and asset in covered
             and row["value"] > 0
             and (within is None or asset in within)

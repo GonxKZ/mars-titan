@@ -62,13 +62,19 @@ def _spans(spans, label):
 
     Solo el último puede no tener fin, si seguía vigente en el corte.
     """
-    _require(isinstance(spans, list) and len(spans) <= 30, f"Los tramos {label} deben formar una lista")
+    _require(
+        isinstance(spans, list) and len(spans) <= 30, f"Los tramos {label} deben formar una lista"
+    )
     previous = None
     for index, span in enumerate(spans):
-        _require(isinstance(span, list) and len(span) == 2, f"Un tramo {label} necesita inicio y fin")
+        _require(
+            isinstance(span, list) and len(span) == 2, f"Un tramo {label} necesita inicio y fin"
+        )
         start = day(span[0])
         end = day(span[1], optional=index == len(spans) - 1)
-        _require(start >= COVERAGE_FROM, f"Un tramo {label} empieza antes de la cobertura comprobada")
+        _require(
+            start >= COVERAGE_FROM, f"Un tramo {label} empieza antes de la cobertura comprobada"
+        )
         _require(
             (previous is None or previous <= start) and (end is None or start < end),
             f"Los tramos {label} deben estar ordenados y sin solapes",
@@ -191,7 +197,8 @@ def require_tape_status(market, assets, entries, first_close):
         "El estado de cotización de la cinta no cubre exactamente sus activos",
     )
     _require(
-        market != "CN" or first_close >= beijing_day(*date.fromisoformat(COVERAGE_FROM).timetuple()[:3]),
+        market != "CN"
+        or first_close >= beijing_day(*date.fromisoformat(COVERAGE_FROM).timetuple()[:3]),
         "Una cinta china empieza antes de la cobertura del estado de cotización",
     )
     for asset, entry in entries.items():

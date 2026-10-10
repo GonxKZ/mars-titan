@@ -82,8 +82,8 @@ SZSE_NAMES = "szse-changename-tab2-xlsx"
 # Un anuncio fija su fecha efectiva en las semanas siguientes a su publicación.
 EFFECTIVE_WINDOW = (-3, 45)
 _DATE = re.compile(r"(\d{4})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})\s*日")
-_OPEN = "[“\"「『‘]"
-_CLOSE = "[”\"」』’]"
+_OPEN = '[“"「『‘]'
+_CLOSE = '[”"」』’]'
 _RENAME = re.compile(
     r"简称\s*(?:由\s*"
     + _OPEN
@@ -94,15 +94,21 @@ _RENAME = re.compile(
     + r"\s*([^”\"」』’]{1,12}?)\s*"
     + _CLOSE
 )
-_TEN = re.compile(r"(?:变更|恢复|改|变|调整)为\s*[±+\-]?\s*10\s*[%％]|限制\s*(?:为|是)\s*[±+\-]?\s*10\s*[%％]")
+_TEN = re.compile(
+    r"(?:变更|恢复|改|变|调整)为\s*[±+\-]?\s*10\s*[%％]|限制\s*(?:为|是)\s*[±+\-]?\s*10\s*[%％]"
+)
 _STILL_FIVE = re.compile(r"仍(?:为|是)\s*[±+\-]?\s*5\s*[%％]")
-_FIVE = re.compile(r"(?:变更|改|变|调整)为\s*[±+\-]?\s*5\s*[%％]|限制\s*(?:为|是)\s*[±+\-]?\s*5\s*[%％]")
+_FIVE = re.compile(
+    r"(?:变更|改|变|调整)为\s*[±+\-]?\s*5\s*[%％]|限制\s*(?:为|是)\s*[±+\-]?\s*5\s*[%％]"
+)
 _EFFECTIVE = re.compile(
     r"(?:开市|开盘|复牌)?(?:之日)?起|开始|复牌(?:后|之日起)?[，,]?(?:将)?(?:被)?(?:实行|实施|撤销)"
     r"|(?:开市)?复牌"
 )
 _NEAR = re.compile(r"起始日|起\s*[，,被实撤停]|开始|实行|实施|撤销|撤消|恢复|复牌")
-_RECOUNT = re.compile(r"(?:之日)?起[，,]?(?:公司|本公司)?(?:股票|A股)?(?:交易)?(?:将)?(?:被)?(?:实行|实施)")
+_RECOUNT = re.compile(
+    r"(?:之日)?起[，,]?(?:公司|本公司)?(?:股票|A股)?(?:交易)?(?:将)?(?:被)?(?:实行|实施)"
+)
 # Una enumeración o un punto abren otra cláusula, que ya no describe la fecha anterior.
 _CLAUSE = re.compile(
     r"[（(][一二三四五六七八九十\d]{1,3}[）)]|(?<![\d.])\d{1,2}[、.](?!\d)"
@@ -244,7 +250,11 @@ def announcement_text(body, cache):
                 )
             finally:
                 source.unlink()
-        text = target.read_bytes()[:MAX_TEXT_BYTES].decode("utf-8", "replace") if target.is_file() else ""
+        text = (
+            target.read_bytes()[:MAX_TEXT_BYTES].decode("utf-8", "replace")
+            if target.is_file()
+            else ""
+        )
     else:
         head = body[:2048].decode("ascii", "replace")
         match = re.search(r"charset\s*=\s*[\"']?([\w-]+)", head, re.IGNORECASE)
@@ -299,7 +309,9 @@ def _candidates(body, published):
         except ValueError:
             continue
         before = body[max(0, match.start() - 14) : match.start()]
-        after = re.sub(r"^[（(](?:星期|周)[一二三四五六日天][）)]", "", body[match.end() : match.end() + 24])
+        after = re.sub(
+            r"^[（(](?:星期|周)[一二三四五六日天][）)]", "", body[match.end() : match.end() + 24]
+        )
         after = _CLAUSE.split(after)[0]
         if (
             _RECOUNT.match(after)
@@ -357,15 +369,21 @@ def read_event(row, body, sessions):
         # con ST, o la banda que «sigue en el 5 %» sin nombre nuevo, solo la cambian. Una
         # acción sin reforma accionarial también sigue en el 5 % al perder el ST, pero su
         # nombre nuevo (S前锋) ya no lo lleva.
-        leaving = [r for r in renames if not ST_NAME.match(r[1]) and (r[0] is None or ST_NAME.match(r[0]))]
-        staying = [r for r in renames if ST_NAME.match(r[1]) and (r[0] is None or ST_NAME.match(r[0]))]
+        leaving = [
+            r for r in renames if not ST_NAME.match(r[1]) and (r[0] is None or ST_NAME.match(r[0]))
+        ]
+        staying = [
+            r for r in renames if ST_NAME.match(r[1]) and (r[0] is None or ST_NAME.match(r[0]))
+        ]
         if _TEN.search(body) or leaving:
             kind = "end"
         else:
             kind = "switch" if staying or _STILL_FIVE.search(body) else "end"
     elif kind == "implement":
         # Si el valor ya llevaba ST al publicarse, se cambia de advertencia sin abrir un tramo.
-        entering = [r for r in renames if ST_NAME.match(r[1]) and not (r[0] and ST_NAME.match(r[0]))]
+        entering = [
+            r for r in renames if ST_NAME.match(r[1]) and not (r[0] and ST_NAME.match(r[0]))
+        ]
         staying = [r for r in renames if ST_NAME.match(r[1]) and r[0] and ST_NAME.match(r[0])]
         already = bool(ST_NAME.match(row["secName"] or ""))
         kind = "switch" if already or staying and not entering else "start"
@@ -455,7 +473,14 @@ def announcement_spans(events, observations, *, coverage_from=COVERAGE_FROM):
     estado del día de publicación, salvo el mismo día de un cambio, cuando el nombre todavía
     puede ser el anterior.
     """
-    order = {"start": 0, "switch": 1, "continue": 1, "relisting_st": 1, "end": 2, "relisting_end": 2}
+    order = {
+        "start": 0,
+        "switch": 1,
+        "continue": 1,
+        "relisting_st": 1,
+        "end": 2,
+        "relisting_end": 2,
+    }
     marks = sorted({(e["effective"], order[e["kind"]], e["kind"]) for e in events})
     spans, start, problems = [], None, []
 
@@ -571,7 +596,10 @@ def price_band_check(edition, assets, china, sessions, tolerance=0.02):
             period = next((p for p in limits if p.start <= at < p.end), None)
             band = None if period is None else period.band
             checked[str(band)] += 1
-            if band is not None and abs(row["close"] - previous["close"]) > band * previous["close"] + tolerance:
+            if (
+                band is not None
+                and abs(row["close"] - previous["close"]) > band * previous["close"] + tolerance
+            ):
                 outside.append([key, day, band, round(row["close"] / previous["close"] - 1, 4)])
     by_band = defaultdict(int)
     for item in outside:
@@ -651,10 +679,12 @@ def build_listing_status(captures_dir, edition, output, *, texts):
         agreement["announced_only"] += len(found - truth)
         if truth != found:
             agreement["differing_codes"].append(key)
-        for start, end in official_reform.get(code, []):
+        for _, end in official_reform.get(code, []):
             if end is not None and end >= COVERAGE_FROM:
                 announced = sorted(day for day, kind in free_days[code] if kind == "reform")
-                reform_check.append(dict(asset=key, official_end=end, announced_free_days=announced))
+                reform_check.append(
+                    dict(asset=key, official_end=end, announced_free_days=announced)
+                )
     china, problems = {}, []
     for key in assets:
         code, exchange = key[3:9], key[10:]
@@ -676,6 +706,7 @@ def build_listing_status(captures_dir, edition, output, *, texts):
                 {day for day, _ in free_days[code] if COVERAGE_FROM <= day <= CUTOFF}
             ),
         )
+
     def dated_nearby(item):
         """Un aviso sin fecha repite el día que fija otro anuncio fechado del mismo valor."""
         published = date.fromisoformat(item["published"])
@@ -694,7 +725,9 @@ def build_listing_status(captures_dir, edition, output, *, texts):
         schema_version=1,
         cutoff=CUTOFF,
         sources={
-            capture_id: dict(sha256=captures[capture_id][1]["sha256"], url=captures[capture_id][1]["url"])
+            capture_id: dict(
+                sha256=captures[capture_id][1]["sha256"], url=captures[capture_id][1]["url"]
+            )
             for capture_id in sorted(used)
         },
         china=china,
@@ -714,7 +747,9 @@ def build_listing_status(captures_dir, edition, output, *, texts):
         pdftotext=(version.stderr or version.stdout).splitlines()[0],
         assets=len(china),
         special_treatment_spans={
-            exchange: sum(len(v["special_treatment"]) for k, v in china.items() if k.endswith(exchange))
+            exchange: sum(
+                len(v["special_treatment"]) for k, v in china.items() if k.endswith(exchange)
+            )
             for exchange in (".SS", ".SZ")
         },
         share_reform_pending=sorted(k for k, v in china.items() if v["share_reform_pending"]),

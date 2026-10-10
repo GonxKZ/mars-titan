@@ -3,9 +3,9 @@
 Las ediciones son sintéticas con el formato real de la edición sin ajustar y se identifican
 como fixture: suspensiones, filas ausentes, aperturas fuera de rejilla, dividendos con plazo,
 splits y eventos ambiguos el mismo día. Las predicciones no proceden de ningún modelo. Las
-acciones son las de las referencias fijas y no hay aprendizaje. Si se declara
-``MARS_TITAN_UNADJUSTED_EDITION``, una prueba de humo repite la paridad con pocos activos
-de la edición real de EE. UU. y China.
+acciones son las de las referencias fijas y no hay aprendizaje. Si se declaran
+``MARS_TITAN_UNADJUSTED_EDITION`` y ``MARS_TITAN_LISTING_STATUS``, una prueba de humo repite
+la paridad con pocos activos de la edición real de EE. UU. y China.
 """
 
 import hashlib
@@ -21,7 +21,8 @@ import pytest
 
 from mars_titan.simulation.environment import FinancialEnv
 from mars_titan.simulation.evaluation import evaluate, fixed_policy
-from mars_titan.simulation.market_rules import tape_instruments
+from mars_titan.simulation.listing_status import read_listing_status
+from mars_titan.simulation.market_rules import china_a_share_instrument, tape_instruments
 from mars_titan.simulation.native_portfolio import REASONS
 from mars_titan.simulation.reconstructed_tape import build_reconstructed_tape
 from mars_titan.simulation.storage import write_tape
@@ -69,15 +70,20 @@ EDITION = {
 }
 
 
-# Estado de cotización de la fixture: cada campo cambia la banda de 600000.SS dentro de 2023
-# y STAR conserva su exención inicial, de modo que C++ debe reconstruir las mismas reglas.
+# Estado de cotización de la fixture: cada campo cambia la banda de 600000.SS dentro de 2023.
+# STAR conserva su exención inicial y su banda del 20 % bajo advertencia, de modo que C++
+# debe reconstruir las mismas reglas.
 STATUS = {
     "CN/600000.SS": dict(
         special_treatment=[["2023-03-01", "2023-06-01"]],
         share_reform_pending=[["2023-07-03", "2023-08-01"]],
         limit_free_days=["2023-08-01", "2023-10-09"],
     ),
-    "CN/688981.SS": dict(listed_on="2022-09-01", limit_free_until="2022-09-08"),
+    "CN/688981.SS": dict(
+        listed_on="2022-09-01",
+        limit_free_until="2022-09-08",
+        special_treatment=[["2023-04-03", "2023-09-01"]],
+    ),
 }
 
 
@@ -85,7 +91,8 @@ def rules(tape, market):
     return tape_instruments(tape) if market == "CN" else None
 
 
-def build(root, market, symbols, *, lag=2, score=None):
+def build(root, market, symbols, *, lag=2, score=None, status=None):
+    """Cinta de 2023 con la tabla de estado de la fixture o con la que se declare."""
     values = predictions(market, symbols, score=score)
     tape, _ = build_reconstructed_tape(
         root,
@@ -94,7 +101,7 @@ def build(root, market, symbols, *, lag=2, score=None):
         market=market,
         partition="validation",
         dividend_payment_lag_sessions=lag,
-        listing_status=listing_status(root, china=STATUS),
+        listing_status=status or listing_status(root, china=STATUS),
         symbols=symbols,
     )
     return tape
@@ -142,7 +149,11 @@ def assert_trace_parity(tape, market, trace, policy, cost):
         observation, reward, terminated, truncated, info = env.step(action)
         assert event["cursor"] == env.cursor
         np.testing.assert_array_equal(np.asarray(event["observation"], np.float32), observation)
-        assert (event["reward"], event["reward_valid"]) == (reward, info["reward_valid"])
+        # Una recompensa enmascarada es nula en la traza C++ y cero en la interfaz de Gymnasium,
+        # que exige un número. Las dos llevan `reward_valid` falso.
+        expected = reward if info["reward_valid"] else None
+        assert (event["reward"], event["reward_valid"]) == (expected, info["reward_valid"])
+        assert info["reward_valid"] or reward == 0.0
         assert (event["terminated"], event["truncated"]) == (terminated, truncated)
         native = {}
         unfilled = []
@@ -180,7 +191,9 @@ def assert_trace_parity(tape, market, trace, policy, cost):
             if row["target"] is not None
         }
         assert orders == state["orders"]
-    assert env.done and len(trace["steps"]) == len(tape) - 1
+    # Un episodio completo recorre la cinta entera. Uno truncado por una baja sin precio de
+    # salida termina en su cursor, y la traza tampoco puede tener pasos posteriores.
+    assert env.done and len(trace["steps"]) == env.cursor
     return env
 
 
@@ -244,6 +257,68 @@ def test_cpp_session_values_a_final_session_without_row_like_python(tmp_path, po
     env = assert_trace_parity(tape, "US", read(output / "trace.json"), policy, 10)
     assert env.book.positions["US/GAP"] > 0
     assert read(output / "run.json")["financial_validation"]["completed"] is True
+
+
+@pytest.mark.parametrize("policy", ["hold_initial", "rebalance_100"])
+@pytest.mark.parametrize("priced", [False, True], ids=["unpriced", "priced"])
+def test_cpp_session_delists_and_ignores_an_outside_column_like_python(tmp_path, policy, priced):
+    """END termina su serie en noviembre y OUT está en el diseño pero fuera del universo.
+
+    Con precio de salida acreditado, las acciones de END se cambian por un cobro pendiente y el
+    episodio sigue. Sin él, mantener END deja el patrimonio sin valorar y los dos motores
+    truncan el episodio en la baja con el motivo `unpriced_exit`. OUT no tiene precios ni
+    predicciones y ninguna política llega a comprarlo.
+    """
+    year = tape_days("US")
+    last = year.index("2023-11-30") - 6
+    assets = [Asset("END", base=40.0, end=last), Asset("OUT", base=60.0), Asset("REF", base=50.0)]
+    write_edition(tmp_path / "edition", {"US": assets})
+    window, values = monthly_window(
+        "US", -2, ["END", "REF"], score=lambda k, i: 0.02 if i == 0 else 0.01
+    )
+    exits = dict(last_session=year[last], price=41.5, currency="USD", paid_on=year[last + 3])
+    status = listing_status(tmp_path / "edition", exits={"US/END": exits} if priced else None)
+    tape, report = build_reconstructed_tape(
+        tmp_path / "edition",
+        [window],
+        [values],
+        market="US",
+        partition="validation",
+        dividend_payment_lag_sessions=0,
+        listing_status=status,
+        symbols=["END", "OUT", "REF"],
+        universe=["END", "REF"],
+    )
+    assert tape.identity["audit"]["outside_universe"] == ["US/OUT"]
+    assert np.isnan(tape.prices[:, tape.assets.index("US/OUT")]).all()
+    assert [action.kind for action in tape.actions] == [
+        "delisting" if priced else ("unpriced_delisting")
+    ]
+    write_tape(tape, tmp_path / "input")
+    output = tmp_path / "output"
+    arguments = ["--policy", policy, "--cost-bps", "10", "--capital", str(CAPITAL), "--trace"]
+    result = run(tmp_path / "input", output, *arguments)
+    assert result.returncode == 0, result.stderr
+    trace = read(output / "trace.json")
+    env = assert_trace_parity(tape, "US", trace, policy, 10)
+    at = tape.delisted_at["US/END"]
+    assert "US/OUT" not in env.book.positions
+    final = read(output / "run.json")["financial_validation"]
+    if priced:
+        # El cobro de la salida está pendiente tras la baja y cuenta en el patrimonio.
+        assert len(trace["steps"]) == len(tape) - 1 and final["completed"] is True
+        assert max(event["account"]["receivable"] for event in trace["steps"]) > 0
+        assert "US/END" in env.book.retired and "US/END" not in env.book.positions
+    else:
+        # La posición se conserva sin cotización: nada la convierte en efectivo.
+        assert env.book.positions["US/END"] > 0
+        assert len(trace["steps"]) == at and trace["steps"][-1]["truncated"]
+        assert trace["steps"][-1]["reward_valid"] is False and final["completed"] is False
+    expected = evaluate(
+        FinancialEnv(tape, capital=CAPITAL, cost_bps=10),
+        fixed_policy(policy) if policy == "hold_initial" else (lambda _o, s: POLICIES[policy](s)),
+    )
+    assert final == expected["financial_validation"]
 
 
 @pytest.mark.parametrize("market", ["US", "CN"])
@@ -368,12 +443,25 @@ AUDIT_CHANGES = {
     "status_unordered": lambda m: status(m)["limit_free_days"].reverse(),
     "status_coverage": lambda m: status(m)["special_treatment"][0].__setitem__(0, "2009-12-31"),
     "status_field": lambda m: status(m).update(note="x"),
+    "status_coverage_with_rules": lambda m: before_coverage(m),
     "writeoff": lambda m: m["actions"][0].update(kind="writeoff", value=0, pay_at=None),
 }
 
 
 def status(manifest):
     return manifest["identity"]["audit"]["listing_status"]["assets"]["CN/600000.SS"]
+
+
+def before_coverage(manifest):
+    """Tramo anterior a la cobertura con las reglas guardadas recalculadas a juego.
+
+    Sin recalcular las reglas, el lector C++ ya rechazaría la cinta por la diferencia. Así
+    solo queda la comprobación de la cobertura del estado.
+    """
+    entry = status(manifest)
+    entry["special_treatment"][0][0] = "2009-12-31"
+    rules = china_a_share_instrument("CN/600000.SS", entry).identity()
+    manifest["instruments"]["CN/600000.SS"] = rules
 
 
 @pytest.mark.parametrize("change", sorted(AUDIT_CHANGES))
@@ -469,13 +557,17 @@ def test_trace_needs_a_complete_single_run(tapes, tmp_path, arguments):
 
 
 REAL_EDITION = os.environ.get("MARS_TITAN_UNADJUSTED_EDITION")
+REAL_STATUS = os.environ.get("MARS_TITAN_LISTING_STATUS")
 REAL_ASSETS = {
     "US": ["AAPL", "IBM", "MSFT", "JNJ", "XOM"],
     "CN": ["600519.SS", "600239.SS", "000001.SZ", "300750.SZ", "688981.SS"],
 }
 
 
-@pytest.mark.skipif(REAL_EDITION is None, reason="Declara MARS_TITAN_UNADJUSTED_EDITION")
+@pytest.mark.skipif(
+    REAL_EDITION is None or REAL_STATUS is None,
+    reason="Declara MARS_TITAN_UNADJUSTED_EDITION y MARS_TITAN_LISTING_STATUS",
+)
 @pytest.mark.parametrize("market", ["US", "CN"])
 @pytest.mark.parametrize("policy", ["hold_initial", "rebalance_50", "rebalance_100"])
 def test_real_edition_smoke_with_fixed_actions(tmp_path, market, policy):
@@ -485,6 +577,7 @@ def test_real_edition_smoke_with_fixed_actions(tmp_path, market, policy):
         REAL_ASSETS[market],
         lag=0,
         score=lambda k, i: 0.01 * ((i + k) % 5 - 1),
+        status=read_listing_status(REAL_STATUS),
     )
     write_tape(tape, tmp_path / "input", instruments=rules(tape, market))
     result = run(
