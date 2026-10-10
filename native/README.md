@@ -105,7 +105,7 @@ Release utiliza `-fno-fast-math` y `-ffp-contract=off` en GCC y Clang. MSVC util
 
 LTO y PGO se midieron el 10 de octubre de 2026 en la etapa RL nativa con un perfil de `mars-titan-policy-benchmark` sobre cintas reales. Dieron las mismas huellas de contenido que Release, pero ninguna variante ganó de forma reproducible en los cuatro escenarios de las dos tandas, así que Release los mantiene desactivados ([informe](../reports/engineering/native-build-variants-20261010/README.md)).
 
-`native-ppo-dev` y `native-candidate-cuda-dev` son los presets de Release de PPO y de la referencia GRU en CUDA con ccache y mold, solo para desarrollo. ccache no cambia los objetos y mold reduce el enlazado a un tercio, pero cambia la disposición de los ejecutables. La identidad compilada registra el lanzador y el enlazador, así que estos binarios no se confunden con los de Release ni sirven para la campaña. Necesitan `ccache`, `mold` y CMake 3.29 o posterior para `CMAKE_LINKER_TYPE`.
+`native-ppo-dev` y `native-candidate-cuda-dev` son los presets de Release de PPO y de la referencia GRU en CUDA con ccache y mold, solo para desarrollo. ccache no cambia los objetos y mold reduce el enlazado a un tercio, pero cambia la disposición de los ejecutables. No deben usarse en la campaña. La identidad compilada registra el lanzador y el enlazador, pero todavía nada rechaza una identidad compilada con ccache o mold en `rl check`, `rl run` ni en los lanzadores. Necesitan `ccache`, `mold` y CMake 3.29 o posterior para `CMAKE_LINKER_TYPE`.
 
 ```bash
 cmake --preset native-ppo-dev
