@@ -108,6 +108,26 @@ def bank_policy(warmup_months):
     return dict(CARRY_POLICY, warmup_months=checked_warmup(warmup_months))
 
 
+def anchor_warmup(window):
+    """Devuelve los meses de calentamiento de la ventana del ancla, comprobados con sus fases.
+
+    Un traslado, un adaptador o el padre congelado deben repetir exactamente el
+    calentamiento con el que el ancla construyó sus índices. No hay valor por defecto: una
+    ventana que no lo registra, o cuyas fases no corresponden a él, no se reutiliza.
+    """
+    policy = window.get("bank_policy")
+    if not isinstance(policy, dict) or "warmup_months" not in policy:
+        raise ValueError("La ventana del ancla no registra su calentamiento (warmup_months)")
+    months = checked_warmup(policy["warmup_months"])
+    expected = window_phases(window["fold"], months)
+    declared = {name: record["phase"] for name, record in window["sources"].items()}
+    if not declared or any(
+        name not in expected or asdict(expected[name]) != phase for name, phase in declared.items()
+    ):
+        raise ValueError("Las fases de la ventana del ancla no corresponden a su calentamiento")
+    return months
+
+
 def _bounds(dataset):
     """Lee los límites de cada tramo de la vista y exige que coincidan en todos sus mercados."""
     declared = {}
@@ -490,7 +510,7 @@ def carry_window(
     output.mkdir(parents=True)
     # Cada tramo trasladado repite el calentamiento declarado en el ancla.
     anchor_window, _ = read_manifest(anchor / WINDOW_REPORT, 8 * 1024**2)
-    warmup_months = anchor_window["bank_policy"]["warmup_months"]
+    warmup_months = anchor_warmup(anchor_window)
     sources = window_sources(dataset, output / "indices", partitions, warmup_months)
     adapter, recipe, window, window_sha256 = anchor_adapter(
         anchor, anchor_view, sources[partitions[0]].specification(), device=device
