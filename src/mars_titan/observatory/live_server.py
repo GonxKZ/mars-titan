@@ -9,29 +9,29 @@ eventos por segundo y tamaño de lo que lee.
 
 import json
 import math
-import os
 import re
-import stat
 import threading
 import time
 from dataclasses import dataclass
-from datetime import UTC, datetime
 from email.utils import formatdate, parsedate_to_datetime
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
+from .bounded_files import open_regular, read_json, signature, utc_text
 from .telemetry import FIELDS, SystemProbe, TelemetryRing
+from .window_campaigns import campaign_state
 
 VERSION = "observatory-live/1"
 SITE_PATH = re.compile(
     r"(index\.html|styles\.css|[a-z][a-z0-9-]*\.m?js|vendor/uplot/(uPlot\.iife\.min\.js|uPlot\.min\.css|LICENSE)"
     r"|fonts/[a-z0-9-]+\.(woff2|txt))"
 )
-DATA_PATH = re.compile(r"data/(observatory\.json|deployment\.json|pages/[a-f0-9]{64}\.json)")
+DATA_PATH = re.compile(
+    r"data/(observatory\.json|deployment\.json|(pages|windows)/[a-f0-9]{64}\.json)"
+)
 TRACE_PATH = re.compile(r"data/traces/(index\.json|[A-Za-z0-9][\w.-]{0,127}\.(json|bin))")
 LABEL = re.compile(r"[A-Za-z0-9][\w.-]{0,95}")
-JOB_PART = re.compile(r"[A-Za-z0-9][\w.+-]{0,95}")
 TYPES = {
     ".html": "text/html; charset=utf-8",
     ".css": "text/css; charset=utf-8",
@@ -89,44 +89,6 @@ class Limits:
         )
         if not all(checks):
             raise ValueError("Límites del servidor en directo fuera de su rango admitido")
-
-
-def utc_text(timestamp):
-    return datetime.fromtimestamp(timestamp, UTC).isoformat().replace("+00:00", "Z")
-
-
-def open_regular(root, relative, maximum):
-    """Abrir un archivo regular dentro de `root` sin seguir enlaces y con tamaño acotado."""
-    root = Path(root).resolve()
-    path = root / relative
-    if not path.resolve().is_relative_to(root):
-        raise PermissionError(relative)
-    fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
-    try:
-        info = os.fstat(fd)
-        if not stat.S_ISREG(info.st_mode) or info.st_size > maximum:
-            raise PermissionError(relative)
-        return os.fdopen(fd, "rb"), info
-    except BaseException:
-        os.close(fd)
-        raise
-
-
-def read_json(root, relative, maximum):
-    stream, info = open_regular(root, relative, maximum)
-    with stream:
-        body = stream.read(maximum + 1)
-    if len(body) > maximum:
-        raise ValueError("El archivo ha crecido durante la lectura")
-    return json.loads(body), info
-
-
-def signature(path):
-    try:
-        info = os.stat(path, follow_symlinks=False)
-    except OSError:
-        return None
-    return info.st_ino, info.st_size, info.st_mtime_ns
 
 
 def entity_tag(info):
@@ -200,108 +162,6 @@ def summarize_index(document, info):
         total_runs=pagination.get("total_runs", len(document.get("runs", []))),
         pages=len(pagination.get("pages", [])),
         running=sum(1 for run in document.get("runs", []) if run.get("status") == "running"),
-    )
-
-
-def campaign_state(label, folder, limits):
-    """Normalizar el resumen de una campaña por ventanas sin tomar su bloqueo.
-
-    `summary.json` declara qué trabajos están confirmados. Un trabajo sin recibo con una
-    carpeta de intento se marca como «intento sin confirmar», que no equivale a que el
-    proceso siga vivo. La fecha de modificación de cada recibo aproxima su confirmación
-    y sirve al navegador para estimar el ritmo, siempre rotulado como estimación.
-    """
-    folder = Path(folder)
-    summary, info = read_json(folder, "summary.json", limits.max_file_bytes)
-    jobs = summary.get("jobs")
-    if not isinstance(jobs, dict) or len(jobs) > limits.max_campaign_jobs:
-        raise ValueError("El resumen de la campaña no declara sus trabajos dentro del límite")
-    vocabulary = {key: {} for key in ("scopes", "windows", "arms", "names")}
-
-    def code(kind, value):
-        return vocabulary[kind].setdefault(value, len(vocabulary[kind]))
-
-    cells, active = [], []
-    for job_id, done in jobs.items():
-        parts = job_id.split("/")
-        if len(parts) != 4 or not all(JOB_PART.fullmatch(part) for part in parts):
-            raise ValueError("Identificador de trabajo fuera del contrato de la campaña")
-        job_folder = folder / "jobs" / job_id
-        confirmed = None
-        state = "done" if done is True else "pending"
-        if state == "done":
-            receipt = signature(job_folder / "receipt.json")
-            confirmed = utc_text(receipt[2] / 1e9) if receipt else None
-        elif job_folder.is_dir():
-            attempts = sorted(p for p in job_folder.glob("attempt-*") if p.is_dir())
-            if attempts:
-                state = "attempt"
-                active.append((job_id, attempts[-1]))
-        scope, window, arm, name = parts
-        cells.append(
-            [
-                code("scopes", scope),
-                code("windows", window),
-                code("arms", arm),
-                code("names", name),
-                state,
-                confirmed,
-            ]
-        )
-    runs = []
-    for job_id, attempt in sorted(
-        active, key=lambda item: -(signature(item[1] / "run.json") or (0, 0, 0))[2]
-    )[: limits.max_active_jobs]:
-        try:
-            report, report_info = read_json(attempt, "run.json", limits.max_file_bytes)
-        except (OSError, ValueError):
-            runs.append(dict(job=job_id, attempt=attempt.name, updated_at=None, epochs=[]))
-            continue
-        runs.append(
-            dict(
-                job=job_id,
-                attempt=attempt.name,
-                updated_at=utc_text(report_info.st_mtime_ns / 1e9),
-                global_step=report.get("global_step")
-                if type(report.get("global_step")) is int
-                else None,
-                epochs=[
-                    epoch_point(epoch)
-                    for epoch in (report.get("epochs") or [])[:2000]
-                    if isinstance(epoch, dict)
-                ],
-            )
-        )
-    return dict(
-        id=label,
-        kind=summary.get("kind"),
-        status=summary.get("status"),
-        updated_at=summary.get("updated_at_utc"),
-        summary_modified_at=utc_text(info.st_mtime_ns / 1e9),
-        planned=summary.get("planned"),
-        completed=summary.get("completed"),
-        final_test_opened=summary.get("final_test_opened"),
-        vocabulary={kind: list(values) for kind, values in vocabulary.items()},
-        cells=cells,
-        active=runs,
-    )
-
-
-def _finite(value):
-    return value if type(value) in (int, float) and math.isfinite(value) and value >= 0 else None
-
-
-def epoch_point(epoch):
-    """Medidas observadas de una época en curso. No se calcula ninguna medida nueva."""
-    train = epoch.get("train") if isinstance(epoch.get("train"), dict) else {}
-    validation = epoch.get("validation") if isinstance(epoch.get("validation"), dict) else {}
-    return dict(
-        epoch=epoch.get("epoch") if type(epoch.get("epoch")) is int else None,
-        train_mae=_finite(train.get("mae")),
-        mae=_finite(validation.get("mae")),
-        session_mae=_finite(validation.get("session_mae")),
-        train_samples_per_second=_finite(train.get("samples_per_second")),
-        train_seconds=_finite(train.get("elapsed_seconds")),
     )
 
 
@@ -392,7 +252,14 @@ class Sampler(threading.Thread):
                 f"campaign:{label}",
                 folder / "summary.json",
                 lambda label=label, folder=folder: dict(
-                    available=True, **campaign_state(label, folder, self.limits)
+                    available=True,
+                    **campaign_state(
+                        label,
+                        folder,
+                        max_bytes=self.limits.max_file_bytes,
+                        max_jobs=self.limits.max_campaign_jobs,
+                        max_active=self.limits.max_active_jobs,
+                    ),
                 ),
             )
         if server.traces_dir is not None:

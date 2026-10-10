@@ -13,7 +13,7 @@ Los postentrenamientos de las campañas A y B aprenden solo con datos reales de 
 | Declaración | `load_stage` rechaza una etapa o una matriz que declare condiciones, aumento, remuestreo, episodios o mundos, o los valores `real_resampled` y `real_synthetic`, y una campaña sin la política con máscaras. Cada caso neuronal debe tener la condición real |
 | Código alcanzable | Una prueba recorre todas las importaciones de `scripts/run_masked_campaign.py`, también las que están dentro de funciones o se hacen por nombre, y comprueba que ninguna llega a `posttraining/queue.py`, `posttraining/preparation.py`, `posttraining/augmented_inputs.py`, `episodes/augmentation.py`, `episodes/worlds.py` ni `episodes/windows.py`. Otra ejecuta `posttraining check` de A y B en otro proceso con esos módulos bloqueados. Los recorridos completos de la etapa en las pruebas sustituyen esos módulos por centinelas que fallan si algo los pide |
 
-La caché de predicciones del padre (`episodes/parents.py`) sí se usa, porque guarda las predicciones del padre sobre cohortes reales. El código de #128 conserva sus pruebas para poder reproducir el experimento anterior, pero no forma parte de ninguna etapa de la campaña.
+La caché de predicciones del padre (`posttraining/parent_cache.py`) sí se usa, porque guarda las predicciones del padre sobre cohortes reales. Vivía en `episodes/parents.py` y se trasladó al paquete del postentrenamiento para que el camino real de la etapa de políticas no importe ningún módulo del paquete de escenarios ficticios. El código de #128 conserva sus pruebas para poder reproducir el experimento anterior, pero no forma parte de ninguna etapa de la campaña.
 
 ## Política de entradas
 
@@ -246,7 +246,7 @@ Por ámbito, ventana, brazo base y semilla, el trabajo `<ámbito>/<ventana>/<bra
 3. El padre congelado solo se sustituye con una mejora estricta. Los empates entre los demás se resuelven por el identificador del trabajo.
 4. En la primera ventana el predictor es el estado elegido de la base.
 
-La selección escribe primero los recibos de cada mercado en `windows/<ámbito>/<ventana>/<brazo base>__chain/seed-<semilla>/<mercado>.json`, con el `parent` del trabajo elegido y la huella de su recibo, y al final `selection.json`, de tipo `campaign_chain_selection`, con la campaña, la etapa, la regla, la ventana del padre, los candidatos con su puntuación, el elegido, su estado, las filas nuevas (nulas en la primera ventana y con el padre congelado), la huella de cada recibo de mercado y `labels_used_until`. `staged_chain.read_selection` comprueba todo el conjunto antes de aceptarlo y una reanudación exige la misma selección. Los identificadores, rutas y lectura reproducen los del plan de la campaña y se sustituirán por `training/campaign_chain.py` cuando esté en `develop`.
+La selección escribe primero los recibos de cada mercado en `windows/<ámbito>/<ventana>/<brazo base>__chain/seed-<semilla>/<mercado>.json`, con el `parent` del trabajo elegido y la huella de su recibo, y al final `selection.json`, de tipo `campaign_chain_selection`, con la campaña, la etapa, la regla, la ventana del padre, los candidatos con su puntuación, el elegido, su estado, las filas nuevas (nulas en la primera ventana y con el padre congelado), la huella de cada recibo de mercado y `labels_used_until`. `staged_chain.read_selection` comprueba todo el conjunto antes de aceptarlo y una reanudación exige la misma selección. Los identificadores, rutas, regla de elección y lectura son los de `training/campaign_chain.py`, que declara el diseño en el plan de la campaña, y `staged_chain` solo añade el brazo del padre congelado y la puntuación de validación. `staged_rows` toma del mismo módulo las filas nuevas y su huella, así que el plan, la etapa y el verificador de disjunción usan una sola definición.
 
 Dos límites de la regla. La igualdad solo es exacta cuando las predicciones son las mismas. Un caso con pesos casi iguales a los del padre puede ganarle por una diferencia del orden del redondeo, y la regla no fija un margen mínimo. Además, la cadena no alimenta a la ventana siguiente: el padre de k+1 sigue siendo el estado elegido por la base en k.
 
@@ -261,6 +261,12 @@ Con la matriz de versión 3, un brazo de Titans-MAC, MARS-TITAN, CM-v1 o la GRU 
 - Tras confirmar un trabajo cronológico se borran sus índices de observaciones, que solo reconstruiría otra ejecución del mismo trabajo. El resumen registra los bytes liberados en `released_index_bytes`.
 
 A declara los cuatro brazos de Titans-MAC con la matriz de versión 3. B mantiene la versión 2 y solo las redes, porque no se ejecuta. Los lectores de MARS-TITAN y CM-v1 y la GRU candidata siguen en la declaración preparada de ampliación y no entran en la etapa mientras la campaña A no declare su sección. La medición de caudal todavía no mide los casos de Titans-MAC, así que la estimación de horas los deja en `without_estimate` junto con la cadena trivial de Ridge y XGBoost.
+
+### Walk-forward por etapas en la campaña A v2
+
+La campaña A v2 declara el [walk-forward por etapas](../research/walk-forward-2000.md#walk-forward-por-etapas-de-la-campaña-a-v2) y cambia tres reglas de la tabla anterior. El padre de la ventana k es el estado elegido de la base en k-1 con el mismo brazo y semilla. El ajuste solo usa las filas del tramo de ajuste de la vista k con decisión entre el final de la calibración del padre y el final de ese tramo (`campaign_chain.posttraining_rows`), y la primera ventana no tiene posentrenamiento. Además del padre congelado y de la matriz, entra como candidata la continuación completa del padre con esas filas. El predictor de la cadena se elige con `chain_validation_score_v1` y se publica en `windows/<ámbito>/<ventana>/<brazo base>__chain/seed-<semilla>/`, con un recibo #390 por mercado y `selection.json` como marca de confirmación.
+
+La [etapa de A v2](../../configs/posttraining/historical-masked-adapter-stage-a-v2.json) sigue ese contrato en el ámbito conjunto con los 22 brazos que leen las políticas: 6.588 ajustes, 1.116 predicciones del padre congelado y 1.178 selecciones de la cadena. `check_stage` y `run_stage` comprueban su plan con `campaign_chain.check_staged` (`check_design`), que tiene su propio código y no el que crea las dependencias. `run_masked_campaign.py disjunction` comprueba las filas nuevas, la última etiqueta de cada recibo de la cadena y las huellas de su selección, y `run_stage` no crea su salida sin un informe sin fallos de la misma campaña sobre las vistas que va a usar (`--disjunction`). El resumen guarda la huella de ese informe. La [comparación de A v2](../../configs/posttraining/historical-masked-adapter-comparison-a-v2.json) contrasta el predictor de la cadena con el padre congelado, la continuación y el reentreno completo de la ventana.
 
 ### Variante B
 
@@ -401,15 +407,24 @@ Las formas de la variedad tienen su comprobación CUDA, que repite la identidad 
 CUBLAS_WORKSPACE_CONFIG=:4096:8 uv run pytest tests/models/test_adapter_forms_cuda.py -q -rs
 ```
 
+Los adaptadores de los lectores episódicos y de la GRU candidata tienen también su comprobación explícita, ejecutada el 10 de octubre en el mismo equipo sobre `develop` b92e07a0, con la plaza `gpu` de `memslot` ([recibos](../../reports/engineering/cuda-adapter-checks-20261010/README.md)):
+
+```bash
+CUBLAS_WORKSPACE_CONFIG=:4096:8 uv run pytest tests/posttraining/cuda_readout_adapters_check.py -q -rs
+CUBLAS_WORKSPACE_CONFIG=:4096:8 uv run pytest tests/posttraining/cuda_candidate_adapters_check.py -q -rs
+```
+
+Necesitan el enlace nativo con CUDA. La primera parte del lector M1 elegido en la campaña reducida de `test_mars_titan_campaign.py` y la segunda de la ventana técnica US+CN de la candidata, las dos en float64 y con el registrador de gradientes. En `cuda:0`, cada caso de la matriz v3 (núcleo, lectura episódica, ambos y continuación completa en el lector, cabeza y continuación completa en la candidata), ajustado por etapas con las filas nuevas de la ventana siguiente, emite exactamente las filas del padre congelado calculado en el mismo dispositivo. El padre congelado difiere de CPU en 4,4·10⁻¹⁶ como mucho en el lector y en 2,1·10⁻¹⁷ en la candidata, y en la ventana del padre los gradientes coinciden con CPU con tolerancia relativa 1e-8 y absoluta 1e-10, con los mismos grupos de parámetros. Pasaron 2 pruebas en cada archivo.
+
 La cola y la etapa solo se han recorrido en CPU con los diagnósticos de `run_case`. Su recorrido en `cuda:0` con la reserva de la GPU no tiene todavía una comprobación propia.
 
 ## Pendiente
 
-- Sustituir `posttraining/staged_chain.py`, la huella de `posttraining/staged_rows.py` y su `labels_used_until` por `training/campaign_chain.py` del plan de la campaña y `training/label_maturity.py` de [#430](https://github.com/GonxKZ/mars-titan/pull/430) cuando entren en `develop`, y adoptar en la carga de padres la política de precisión declarada de `perf/campaign-kernels`.
+- Sustituir `labels_used_until` de `posttraining/staged_rows.py` por `training/label_maturity.py` de [#430](https://github.com/GonxKZ/mars-titan/pull/430), que lee el manifiesto de la vista en lugar del conjunto ya abierto, y adoptar en la carga de padres la política de precisión declarada de `perf/campaign-kernels`.
 - Reconstruir en `posttraining/parents.py` el Transformer padre con el contrato de lote de `perf/campaign-kernels` (`transformer_batch_options`) cuando entre en `develop`, y rechazar un presupuesto cuyo lote supere el `max_batch` del padre. Hoy el lote de la matriz debe ser el de la campaña, que no pasa de 256.
 - Decidir cómo se reduce el coste de lectura del orden exacto antes de ejecutar la etapa con la edición real, y medir cuántas filas nuevas y de validación caben en el presupuesto de cada ventana.
-- Ejecutar la [comparación de los brazos postentrenados](../research/metrics.md#brazos-postentrenados) cuando existan sus predicciones. La declaración, la derivación por padre y la publicación del manifiesto de fuentes (`posttraining/stage_comparison.py`) están implementadas y comprobadas con recibos sintéticos. Falta declarar, antes de ver resultados, la comparación de los predictores de la cadena con el reentrenamiento base.
-- Recorrer la cola y la etapa en `cuda:0` con la reserva de la GPU. Los lectores episódicos y la GRU candidata no tienen todavía una comprobación CUDA de sus adaptadores.
+- Ejecutar la [comparación de los brazos postentrenados](../research/metrics.md#brazos-postentrenados) cuando existan sus predicciones. La declaración, la derivación por padre y la publicación del manifiesto de fuentes (`posttraining/stage_comparison.py`) están implementadas y comprobadas con recibos sintéticos. La comparación de A v2 con el predictor de la cadena y el reentreno completo quedó declarada el 10 de octubre, antes de ver resultados. Su manifiesto de fuentes necesita el de la campaña conjunta, que todavía no tiene escritor.
+- Recorrer la cola y la etapa en `cuda:0` con la reserva de la GPU.
 - Medir con la edición real el disco de los índices, las cachés de padres, los normalizadores y los checkpoints de cada ventana.
 - `training.predictive_run` registra `fit_cutoff_utc` fijo en 2023. Es exacto para las dos particiones históricas, no para las ventanas. No se ha cambiado para no alterar su identidad estricta.
 - Ejecutar la matriz tras verificar la edición y levantar el bloqueo, con coste medido antes. No hay mejoras predictivas medidas de ningún brazo.

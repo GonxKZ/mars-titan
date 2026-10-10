@@ -103,9 +103,11 @@
             <h3 class="h3" id="cell-title"></h3>
             <ul class="cell-runs" id="cell-runs"></ul>
           </div>
-          <section class="live-campaigns" id="live-campaigns" hidden aria-labelledby="live-campaigns-heading">
-            <h2 class="h3" id="live-campaigns-heading">Campañas por ventanas leídas en directo</h2>
-            <div id="live-campaign-list"></div>
+          <section class="live-campaigns" id="window-campaigns" hidden aria-labelledby="window-campaigns-heading">
+            <h2 class="h3" id="window-campaigns-heading">Campañas por ventanas</h2>
+            <p class="caption">Estado de cada trabajo según el resumen de la campaña o de su etapa. No incluye métricas.</p>
+            <label class="field field-wide"><span>Campaña y etapa</span><select id="window-select"></select></label>
+            <div id="window-campaign"></div>
           </section>
         </div>
       </div>

@@ -18,13 +18,14 @@ import pytest
 
 from mars_titan.data import prediction_files
 from mars_titan.data.cohort_files import read_manifest
-from mars_titan.data.storage import atomic_json
+from mars_titan.data.storage import atomic_json, sha256
 from mars_titan.environments.walk_forward_receipt import read_window_receipt
 from mars_titan.evaluation import walk_forward_comparison as comparison
 from mars_titan.models.quantile_head import QUANTILE_COLUMNS, QUANTILE_HEAD
 from mars_titan.posttraining import adapter_matrix, campaign_stage, matrix_runs, staged_chain
 from mars_titan.posttraining import chronological_matrix as cm
-from mars_titan.training.campaign_plan import plan_campaign
+from mars_titan.training import campaign_chain, chain_disjunction
+from mars_titan.training.campaign_plan import load_campaign, plan_campaign
 from mars_titan.training.learning_hold import LearningHoldError
 from tests.posttraining.campaign_fixture import CpuLease, base_campaign
 from tests.posttraining.real_only import real_data_only
@@ -249,7 +250,7 @@ def base_b(tmp_path_factory):
     return base_campaign(tmp_path_factory.mktemp("stage-b"), "B")
 
 
-def run(base, output, stop=None, stage=None):
+def run(base, output, stop=None, stage=None, **options):
     # Sin cola, preparación, aumento ni mundos del postentrenamiento emparejado anterior.
     with real_data_only():
         return campaign_stage.run_stage(
@@ -260,6 +261,7 @@ def run(base, output, stop=None, stage=None):
             lease=CpuLease,
             stop=stop or SimpleNamespace(requested=False),
             device="cpu",
+            **options,
         )
 
 
@@ -606,3 +608,44 @@ def test_the_b6_correction_has_no_adapter_arm():
         mars_titan_m0=dict(family=plan.MARS, variant=None, bank=False),
         mars_titan_m1=dict(family=plan.MARS, variant=None, bank=True),
     )
+
+
+def declare_stages(monkeypatch):
+    """Etapa reducida cuya campaña declara el walk-forward por etapas.
+
+    La campaña reducida es de la versión 1, que no admite la sección. Se añade al estado
+    cargado para ejercitar la puerta del informe con una campaña base confirmada.
+    """
+    load = campaign_stage.load_stage
+
+    def staged(path):
+        stage = load(path)
+        campaign = dict(stage["campaign"], walk_forward_stages=campaign_chain.DESIGN)
+        return dict(stage, campaign=campaign)
+
+    monkeypatch.setattr(campaign_stage, "load_stage", staged)
+
+
+def test_a_staged_campaign_needs_the_disjunction_report_of_its_views(
+    base_a, tmp_path, recorder, monkeypatch
+):
+    declare_stages(monkeypatch)
+    output = tmp_path / "stage"
+    with pytest.raises(ValueError, match="falta el informe de disjunción"):
+        run(base_a, output)
+    report = chain_disjunction.verify(load_campaign(base_a.campaign), base_a.views, workers=1)
+    assert report["failures"] == []
+    other = json.loads(json.dumps(report))
+    other["scopes"]["US"]["fold-001"]["manifest_sha256"] = "0" * 64
+    atomic_json(tmp_path / "other.json", other)
+    with pytest.raises(ValueError, match="no comprobó la vista US/fold-001"):
+        run(base_a, output, disjunction=tmp_path / "other.json")
+    # La puerta va antes de crear la salida: ningún intento rechazado deja artefactos.
+    assert not output.exists()
+    atomic_json(tmp_path / "report.json", report)
+    summary = run(
+        base_a, output, stop=SimpleNamespace(requested=True), disjunction=tmp_path / "report.json"
+    )
+    assert summary["status"] == "paused" and summary["completed"]["training_jobs"] == 0
+    assert summary["disjunction_sha256"] == sha256(tmp_path / "report.json")
+    assert recorder.optimizers == []

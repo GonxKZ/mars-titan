@@ -35,6 +35,7 @@ from pathlib import Path
 from mars_titan.data.cohort_files import read_manifest
 from mars_titan.evaluation import walk_forward_comparison as comparison
 from mars_titan.posttraining.staged_chain import chain_job_id
+from mars_titan.training.campaign_chain import policy_rule
 from mars_titan.training.campaign_plan import DECLARED, _arm_specs, load_campaign, scope_arms
 
 from . import window_tapes
@@ -460,6 +461,18 @@ def load_stage(path):
     base = path.parent
     campaign = load_campaign((base / config["campaign"]).resolve())
     policies = _read_policies((base / config["policies"]).resolve())
+    design = campaign.get("walk_forward_stages")
+    # El walk-forward por etapas fija la regla de ventanas de la RL y que lea la cadena. Sin
+    # esta comprobación, unas políticas con otra regla se planificarían igual.
+    _require(
+        design is None
+        or (
+            policies["train_windows"] == policy_rule(design)
+            and policies["predictor"]["source"] == CHAIN
+        ),
+        "La campaña declara el walk-forward por etapas: las políticas ajustan con la regla "
+        "de su RL y leen el predictor de la cadena",
+    )
     scopes = config["scopes"]
     _require(
         isinstance(scopes, list)

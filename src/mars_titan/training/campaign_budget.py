@@ -11,6 +11,11 @@ Las filas de cada ámbito y ventana salen de las vistas preparadas o, antes de p
 de los objetivos residuales con la misma regla que las vistas: una fila cuenta en un tramo
 si tiene objetivo, su decisión cae en el tramo y su etiqueta madura antes de su final.
 
+Con el walk-forward por etapas (`campaign_chain`), cada ventana con padre ajusta los
+adaptadores solo con sus filas nuevas, que se cuentan con la misma regla, y el padre
+congelado de la ventana anterior predice validación, calibración y evaluación. Sin ese
+recuento, `campaign_throughput` las acota con los recuentos de las ventanas.
+
 Tabulares y políticas no escalan con el caudal neuronal. Entran como horas fijas
 declaradas, y el factor de caudal necesario para un objetivo de horas es
 horas neuronales / (objetivo - horas fijas). Este módulo no reserva la GPU ni lee vistas
@@ -29,6 +34,7 @@ import pyarrow.parquet as pq
 from mars_titan.data.cohort_files import read_manifest
 from mars_titan.evaluation.splits import PARTITIONS, build_folds
 
+from . import campaign_chain
 from .campaign_plan import NEURAL, _arm_specs, _require, load_campaign
 from .campaign_throughput import ABLATION_STAGE, CHRONOLOGICAL, POSTTRAINING, estimate_hours
 
@@ -64,6 +70,63 @@ def target_window_counts(labels_root, protocol):
         fold["id"]: dict(zip(PARTITIONS, map(int, totals[i]), strict=True))
         for i, fold in enumerate(folds)
     }
+
+
+def target_posttraining_rows(labels_root, protocol):
+    """Cuenta en los objetivos las filas nuevas del posentrenamiento de cada ventana con padre.
+
+    Cuentan las filas con objetivo, decisión en `campaign_chain.posttraining_rows` y etiqueta
+    madura antes del final del tramo de ajuste, como el tramo `train` de la vista.
+    """
+    folds = build_folds(protocol)
+    spans = [
+        (fold["id"], *map(_micros, campaign_chain.posttraining_rows(parent, fold)))
+        for parent, fold in zip(folds, folds[1:], strict=False)
+    ]
+    totals = dict.fromkeys((window for window, _, _ in spans), 0)
+    for path in sorted((Path(labels_root) / protocol["market"]).glob("*/labels.parquet")):
+        table = pq.read_table(path, columns=["prediction_at", "target_available_at", "target"])
+        valid = table["target"].is_valid().to_numpy(zero_copy_only=False)
+        moment = table["prediction_at"].cast(pa.int64()).to_numpy()[valid]
+        maturity = table["target_available_at"].cast(pa.int64()).to_numpy()[valid]
+        for window, start, end in spans:
+            inside = (moment >= start) & (moment < end) & (maturity < end)
+            totals[window] += int(np.count_nonzero(inside))
+    return totals
+
+
+def campaign_posttraining_rows(campaign, labels_root):
+    """Suma por ámbito las filas nuevas de sus mercados en cada ventana con padre."""
+    resolved = campaign["comparison_config"]["resolved_scopes"]
+    rows = {}
+    for scope in campaign["scopes"]:
+        by_market = [
+            target_posttraining_rows(labels_root, protocol)
+            for protocol in resolved[scope]["protocols"].values()
+        ]
+        rows[scope] = {window: sum(part[window] for part in by_market) for window in by_market[0]}
+    return rows
+
+
+def read_posttraining_rows(path, campaign):
+    """Lee las filas nuevas de un informe de recuentos y exige todas las ventanas con padre.
+
+    Un informe sin ellas no sirve para la campaña por etapas, porque los adaptadores se
+    estimarían con todo el tramo de ajuste.
+    """
+    document, _ = read_manifest(Path(path), 16 * 1024**2)
+    rows = document.get("posttraining_rows")
+    _require(
+        isinstance(rows, dict)
+        and set(campaign["scopes"]) <= set(rows)
+        and all(
+            list(rows[scope]) == [w for w, _ in campaign_chain.scope_windows(campaign, scope)][1:]
+            and all(type(v) is int and v > 0 for v in rows[scope].values())
+            for scope in campaign["scopes"]
+        ),
+        "El informe no declara las filas nuevas de cada ventana con padre",
+    )
+    return {scope: rows[scope] for scope in campaign["scopes"]}
 
 
 def campaign_window_counts(campaign, labels_root):
@@ -153,15 +216,24 @@ def project(
     ablation_stage=None,
     fixed_hours=None,
     target_hours=None,
+    fresh=None,
 ):
     """Horas por etapa y factor de caudal necesario para un objetivo de horas.
 
     `fixed_hours` son las horas que no escalan con el caudal neuronal (tabulares y
     políticas), declaradas aparte porque no se miden sin ajustar. El factor solo se calcula
-    con las dos cifras y un objetivo mayor que las horas fijas.
+    con las dos cifras y un objetivo mayor que las horas fijas. Con `fresh`, los adaptadores
+    del walk-forward por etapas ajustan las filas nuevas contadas de cada ventana con padre.
+    Sin él se acotan con los recuentos de las ventanas.
     """
     estimate = estimate_hours(
-        campaign, counts, rates, stage=stage, ablation_stage=ablation_stage, epochs=epochs
+        campaign,
+        counts,
+        rates,
+        stage=stage,
+        ablation_stage=ablation_stage,
+        epochs=epochs,
+        fresh=fresh,
     )
     families = {
         name: family.get("hours", (family.get("options") or {}).get("recipe", {}).get("hours"))
@@ -181,6 +253,8 @@ def project(
         kind=BUDGET_KIND,
         campaign=dict(name=campaign["name"], sha256=campaign["sha256"]),
         epochs=campaign["rule"]["max_epochs"] if epochs is None else epochs,
+        adapters_design=None if stage is None else stage["design"],
+        adapters_fit_rows=(estimate["families"].get(POSTTRAINING) or {}).get("fit_rows"),
         stages=stages,
         families=families,
         neural_hours=neural,
@@ -225,10 +299,16 @@ def main(argv=None):
     parser.add_argument("--write-counts", type=Path)
     args = parser.parse_args(argv)
     campaign = load_campaign(args.campaign)
+    staged = campaign.get("walk_forward_stages") is not None
+    fresh = None
     if args.counts is not None:
         counts, _ = read_counts(args.counts, campaign)
+        if staged:
+            fresh = read_posttraining_rows(args.counts, campaign)
     elif args.targets is not None:
         counts = campaign_window_counts(campaign, args.targets)
+        if staged:
+            fresh = campaign_posttraining_rows(campaign, args.targets)
     else:
         views = _views_argument(args.views)
         counts = {
@@ -241,7 +321,10 @@ def main(argv=None):
     if args.write_counts is not None:
         from mars_titan.data.storage import atomic_json
 
-        atomic_json(args.write_counts, dict(schema_version=1, kind=COUNTS_KIND, counts=counts))
+        document = dict(schema_version=1, kind=COUNTS_KIND, counts=counts)
+        if fresh is not None:
+            document["posttraining_rows"] = fresh
+        atomic_json(args.write_counts, document)
     stage = None if args.stage is None else load_stage(args.stage)
     ablation = None
     if args.ablation_stage is not None:
@@ -261,6 +344,7 @@ def main(argv=None):
         ablation_stage=ablation,
         fixed_hours=args.fixed_hours,
         target_hours=args.target_hours,
+        fresh=fresh,
     )
     report.pop("estimate")
     print(json.dumps(report, ensure_ascii=False, indent=2))

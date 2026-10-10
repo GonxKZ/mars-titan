@@ -336,9 +336,13 @@ def _joint_design(declared, resolved, arms, families, folder):
     joint["eligibility_sha256"] = references
     controls = declared["separate_controls"]
     suffix = declared["joint_suffix"]
+    # Los controles separados solo actúan en los ámbitos de un mercado. Sin ellos, como en
+    # una comparación derivada que solo evalúa el ámbito conjunto, la lista puede quedar
+    # vacía y el diseño aporta únicamente la elegibilidad por mercado.
+    single = [name for name in resolved if name != joint_name]
     _require(
         isinstance(controls, list)
-        and controls
+        and (controls or not single)
         and len(set(controls)) == len(controls)
         and all(arms.get(arm, {}).get("output") not in (None, ZERO_CONTROL) for arm in controls)
         and not {f"{arm}{suffix}" for arm in controls} & set(arms)

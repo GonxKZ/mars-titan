@@ -168,7 +168,7 @@ def _returns(nav):
     return returns
 
 
-def _chained(pieces, capital):
+def _chained(pieces, capital, market):
     """Métricas de las ventanas encadenadas, con giro y costes sumados sobre el capital.
 
     Una ruina encadenada termina la serie de métricas, porque las ventanas siguientes ya no
@@ -180,7 +180,7 @@ def _chained(pieces, capital):
     nav = capital * (growth if len(ruin) == 0 else growth[: ruin[0] + 1])
     turnover = math.fsum(piece["turnover"] for piece in pieces)
     costs = math.fsum(piece["costs"] for piece in pieces)
-    return returns, nav, equity_metrics(nav, turnover=turnover, costs=costs)
+    return returns, nav, equity_metrics(nav, market=market, turnover=turnover, costs=costs)
 
 
 def _flip(bootstrap):
@@ -295,14 +295,14 @@ def _family(found, windows, arms, *, planned, benchmark, market, capital, cost):
         return family
     returns = {}
     for arm in arms:
-        series, nav, metrics = _chained(pieces[arm], capital)
+        series, nav, metrics = _chained(pieces[arm], capital, market)
         seeds = len(pieces[arm][0]["seeds"])
         per_seed = None
         if seeds > 1:
             per_seed = []
             for index in range(seeds):
                 chained = [dict(p, nav=p["seeds"][index]) for p in pieces[arm]]
-                per_seed.append(_chained(chained, capital)[2])
+                per_seed.append(_chained(chained, capital, market)[2])
         family["arms"][arm] = dict(
             metrics,
             seeds=seeds,
@@ -374,6 +374,7 @@ def _bootstrap(family, report, primary):
     family["bootstrap"] = _flip(
         block_bootstrap(
             returns,
+            market=family["market"],
             base=primary,
             block_length=report["block_length"],
             replicates=report["replicates"],

@@ -60,7 +60,7 @@ def code_identity(*, masked=False, adapters=False, quantiles=False):
         "training/selection.py",
         "training/checkpoints.py",
         "training/run_receipts.py",
-        "episodes/parents.py",
+        "posttraining/parent_cache.py",
         "episodes/augmentation.py",
         "episodes/windows.py",
         "episodes/worlds.py",

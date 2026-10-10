@@ -324,5 +324,62 @@
         "evaluation": 194649
       }
     }
-  }
+  },
+  "posttraining_rows": {
+    "US+CN": {
+      "fold-001": 80300,
+      "fold-002": 91087,
+      "fold-003": 119787,
+      "fold-004": 131721,
+      "fold-005": 136800,
+      "fold-006": 146157,
+      "fold-007": 158857,
+      "fold-008": 167171,
+      "fold-009": 169899,
+      "fold-010": 182047,
+      "fold-011": 194604,
+      "fold-012": 210692,
+      "fold-013": 223870,
+      "fold-014": 231961,
+      "fold-015": 235602,
+      "fold-016": 267744,
+      "fold-017": 285132,
+      "fold-018": 293536
+    },
+    "US": {
+      "fold-001": 80300,
+      "fold-002": 91087,
+      "fold-003": 96971,
+      "fold-004": 105261,
+      "fold-005": 109826,
+      "fold-006": 118170,
+      "fold-007": 127455,
+      "fold-008": 134014,
+      "fold-009": 135523,
+      "fold-010": 146611,
+      "fold-011": 159743,
+      "fold-012": 172969,
+      "fold-013": 184489,
+      "fold-014": 190977,
+      "fold-015": 206948,
+      "fold-016": 225606,
+      "fold-017": 241189,
+      "fold-018": 248133
+    },
+    "CN": {
+      "fold-001": 31402,
+      "fold-002": 33157,
+      "fold-003": 34376,
+      "fold-004": 35436,
+      "fold-005": 34861,
+      "fold-006": 37723,
+      "fold-007": 39381,
+      "fold-008": 40984,
+      "fold-009": 28654,
+      "fold-010": 42138,
+      "fold-011": 43943,
+      "fold-012": 45403
+    }
+  },
+  "posttraining_method": "training.campaign_budget.campaign_posttraining_rows: filas nuevas del posentrenamiento del walk-forward por etapas en cada ventana con padre. Una fila cuenta si tiene objetivo, su decisión cae entre el final de la calibración del padre y el final del tramo de ajuste de la ventana (campaign_chain.posttraining_rows) y su etiqueta madura antes de ese final. Solo lectura, sin vistas ni modelos. Desde fold-007, las filas de US+CN menos las de US son exactamente las de CN en la ventana con los mismos tramos."
 }
