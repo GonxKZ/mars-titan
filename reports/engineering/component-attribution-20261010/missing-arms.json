@@ -3,7 +3,7 @@
   "kind": "comparison_matrix_missing_arms",
   "matrix": {
     "name": "campaign-a-comparison-matrix",
-    "sha256": "ba0868921d9065f1b468c4b8aed7593e9a103cf1a4cba418fc840cc3e1044368"
+    "sha256": "431f67e50824fd2cf3ba9ccd9144d88e00dce547bb9b60bab6b7509fefc5d16c"
   },
   "hours": {
     "basis": "projected",
@@ -23,17 +23,12 @@
   },
   "totals": {
     "contrasts": 356,
-    "declared": 183,
-    "planned_elsewhere": 148,
+    "declared": 196,
+    "planned_elsewhere": 135,
     "candidates": 25,
     "unidentified": 0
   },
   "conditional_arms": {
-    "transformer_compact_online": {
-      "condition": "Control de la campa\u00f1a por etapas: parte del estado elegido de transformer_compact y se actualiza en l\u00ednea con las mismas etiquetas maduras que el banco de MARS-TITAN, con una regla declarada antes de ejecutar",
-      "issue": 363,
-      "contrasts": 15
-    },
     "titans_reference_mac": {
       "condition": "Brazo ajustado con una implementaci\u00f3n p\u00fablica de Titans-MAC. La revisi\u00f3n de #434 recomend\u00f3 conservar el n\u00facleo, que coincide en FP64 con la memoria de lucidrains/titans-pytorch, y no incorporar su c\u00f3digo, as\u00ed que no hay brazo previsto. Solo existir\u00eda con una aprobaci\u00f3n expresa",
       "issue": 434,
