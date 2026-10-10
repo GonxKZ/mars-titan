@@ -556,6 +556,84 @@
       ""
     ]
   },
+  "text_carry_run": {
+    "rule": "v3 texts reused after a bit-identical strict FP32 sample per asset",
+    "texts_vector_level": {
+      "identical": 5051,
+      "different": 0,
+      "absent_in_v3": 114
+    },
+    "collect": {
+      "elapsed_seconds": 162.5355730529991,
+      "cpu_user_seconds": 136.041421,
+      "cpu_system_seconds": 3.23577,
+      "pending": {
+        "image": {
+          "items": 43942,
+          "payload_bytes": 68175127
+        },
+        "text": {
+          "items": 279,
+          "payload_bytes": 615368
+        },
+        "assets": 12,
+        "carried": {
+          "items": 5051,
+          "sampled": 165,
+          "payload_bytes": 13480963
+        }
+      }
+    },
+    "encode": {
+      "elapsed_seconds": 81.06541206099791,
+      "counts": {
+        "encoded": 44221,
+        "already": 0,
+        "remaining": 0,
+        "text_carry": {
+          "assets": 12,
+          "reused": 12,
+          "reencoded": 0,
+          "compared": 165,
+          "mismatched": 0,
+          "reencoded_texts": 0
+        },
+        "by_kind": {
+          "text": {
+            "encoded": 279,
+            "seconds": 3.3043398240115494
+          },
+          "image": {
+            "encoded": 43942,
+            "seconds": 60.680354739160975
+          }
+        },
+        "loop_seconds": 68.24185687399586,
+        "cuda_peak_allocated_bytes": 202745344,
+        "cuda_peak_reserved_bytes": 264241152
+      }
+    },
+    "final": {
+      "elapsed_seconds": 149.6557895670121,
+      "cpu_user_seconds": 141.412539,
+      "cpu_system_seconds": 4.682745,
+      "failed_assets": 0,
+      "cohort_complete": true,
+      "copy_bytes_before": 138327373,
+      "copy_bytes_after": 755586
+    },
+    "comparison_with_batch_8": {
+      "assets": 13,
+      "all_equal": true,
+      "rows": 43973,
+      "candidates": 5051,
+      "compared": 165,
+      "mismatched": 0,
+      "decisions": [
+        "reused_after_check"
+      ]
+    }
+  },
   "projection": {
     "windows": 18698976,
     "v3_texts": 1591529,
@@ -566,6 +644,11 @@
     "gpu_chart_hours_batch_8": 8.313626779896952,
     "gpu_text_hours_lower_load": 7.536936723855373,
     "final_cpu_hours_lower_load": 18.458301874288313,
+    "gpu_text_share_with_carry": 0.054017424975798645,
+    "gpu_text_hours_with_carry": [
+      0.6230299005828185,
+      0.40712591402819925
+    ],
     "samples_v31_gb": 63.45403974574798,
     "transient_bytes_per_sample": 7219.7204648306915
   }

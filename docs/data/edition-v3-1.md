@@ -91,7 +91,21 @@ La especificación de la v3 registra `runtime_precision` con `matmul_tf32: false
 - `runtime_precision` registra ahora cuatro campos: `dtype`, `matmul_tf32`, `cudnn_tf32` y `float32_matmul_precision`. La identidad del codificador cambia, de modo que ningún vector de la v3 puede confundirse con uno de la v3.1.
 - `embeddings.encoder_spec` calcula esa identidad en CPU sin cargar los modelos. Las pasadas de CPU la usan para nombrar los vectores pendientes, y `FrozenEncoders` usa la misma función, así que ambas coinciden. La pasada de GPU lo comprueba antes de codificar.
 
-Un vector solo se hereda de otra edición si las dos registran la misma identidad de codificador y esa identidad declara FP32 estricto. La v3 no cumple la segunda condición. Sus vectores de gráficos se calcularon con TF32 en cuDNN y no se heredan. Para los textos, la v3 solo guarda la precisión de toda la edición, con `cudnn_tf32: true`, y ningún metadato por vector permite separar los textos, así que también se recalculan. El modelo de texto no usa convoluciones y es posible que sus vectores coincidan, pero la regla no se apoya en esa suposición. La medida de la porción compara ambos casos.
+Un vector solo se hereda de otra edición si las dos registran la misma identidad de codificador y esa identidad declara FP32 estricto. La v3 no cumple la segunda condición. Sus vectores de gráficos se calcularon con TF32 en cuDNN y se recalculan todos. Los textos de la v3 se heredan por otra vía, con un contraste por activo que se describe en la sección siguiente.
+
+## Textos heredados de la v3
+
+La v3 solo registra la precisión de toda la edición, con `cudnn_tf32: true`, y ningún metadato por vector separa los textos de los gráficos. La decisión de heredar sus textos se apoya en tres elementos.
+
+El primero es cómo se calcularon. PyTorch mantiene TF32 desactivado en matmul por defecto y la v3 lo registra así (`matmul_tf32: false`). La marca de cuDNN solo afecta a las operaciones que pasan por cuDNN, como las convoluciones de ResNet18. El modelo de texto está hecho de capas lineales, atención y normalización, que no usan cuDNN, así que la marca no debería haber cambiado ningún texto. El segundo es la medida. En la porción, los 5.051 vectores de texto que comparten la v3 y la v3.1 coinciden bit a bit uno a uno, y las medias de noticias de las 40.443 sesiones comunes también. El tercero es que ni el argumento ni una porción de 13 activos garantizan el resto del universo, y por eso cada activo vuelve a comprobarlo.
+
+1. `vector_carry.check_text_source` compara las identidades de los codificadores. Deben coincidir el modelo, el tokenizador, las versiones, la ubicación de la tabla de palabras y el lote de fragmentos de texto, y la edición de origen no puede haber usado TF32 en matmul. Solo pueden cambiar la precisión registrada, la huella del código del módulo y el lote de gráficos.
+2. En la recogida, un texto que falta en la v3.1 y que la v3 ya tiene no pasa directamente a la GPU. Se reúne con los demás textos heredables del activo, en el orden en que el activo los pide, que es determinista. Al terminar el activo se elige la muestra: el primero, el último, uno de cada 64 y, en total, al menos 8 repartidos entre todos (todos si el activo tiene 8 o menos). Solo la muestra queda pendiente de GPU, pero se guarda el contenido de todos los textos heredables.
+3. Tras codificar los pendientes, `encode_pending` compara cada texto de la muestra con su vector de la v3 y exige igualdad bit a bit. Si todos coinciden, el activo puede usar los vectores de la v3. Si alguno difiere, la misma pasada codifica en FP32 estricto todos los textos heredables del activo, que ya no usa ninguno de la v3.
+4. La constancia de cada activo queda en `text-carry/<mercado>/<símbolo>.json`, con la edición de origen, las huellas de su configuración y de su codificador, la regla, los parámetros de la muestra, el número de textos heredables, contrastados y distintos (con los primeros contenidos que difieren), la decisión y los textos recodificados. La configuración de la edición registra la herencia en `text_carry`, y todas las pasadas deben declararla igual.
+5. La pasada final busca primero los vectores calculados en FP32 estricto y solo después los de la v3, y únicamente para un activo con el contraste superado.
+
+El límite está en el muestreo. Un texto fuera de la muestra que difiriera pasaría inadvertido, y la comparación previa a la sustitución tampoco lo vería, porque el vector heredado es precisamente el de la v3. Una diferencia que afectara a muchos textos de un activo aparecería en su muestra, que nunca deja más de 63 textos seguidos sin contrastar, pero una que afectara a textos sueltos podría escapar. Los gráficos se recalculan siempre y no pasan por esta herencia.
 
 ## Herramientas de la regeneración
 
@@ -102,15 +116,16 @@ La regeneración prevista reutiliza todo lo que no depende de los precios ni de 
 - Las anotaciones y los vectores calculados se confirman en SQLite por activo y por tandas de 512. Confirmar cada fila obligaba a esperar a que el disco sincronizara el registro, unos 12 ms por fila con la carga actual del equipo, y la recogida de la porción pasó de 1.043 s a 172 s al agruparlas.
 - `--release-vectors` borra los PNG pendientes y los vectores de gráficos de `computed-vectors.sqlite` cuando todos los activos que los anotaron están confirmados. Los gráficos ya están en las muestras y los textos se conservan porque otros activos comparten noticias. Así el espacio adicional se limita al tramo de activos en curso.
 - `edition_comparison.compare_editions` recorre las dos ediciones activo por activo con un registro reanudable. Cuenta sesiones nuevas y perdidas, registra cada gráfico que cambia y cualquier otra columna distinta, y mide el cambio de las ventanas comunes. Si los codificadores de las dos ediciones difieren, el vector de un mismo PNG puede cambiar y se registran su diferencia absoluta máxima, la relativa por componente y la relativa por norma.
+- `--text-carry` nombra la edición cuyos textos se heredan con el contraste por activo descrito arriba. Se declara en la recogida y en la pasada final, y la pasada de GPU lo lee de la configuración.
 - `factor_descriptor.describe_market_factors` fija el descriptor de factores de una preparación revisada, que se describe más abajo.
 
 ## Sustitución activo a activo
 
-La v3 ocupa 57,8 GB en `samples/` y la v3.1 ocupará algo más, porque recupera ventanas. Con unos 48 GB libres no caben las dos. `--substitute-previous` y `--substitution-records` activan la sustitución de la v3 activo a activo:
+La v3 ocupa 57,8 GB en `samples/` y la v3.1 ocupará algo más, porque recupera ventanas. Con poco más de 40 GB libres no caben las dos. `--substitute-previous` y `--substitution-records` activan la sustitución de la v3 activo a activo:
 
 1. La pasada que confirma un activo de la v3.1 llama a `edition_substitution.substitute_asset` justo después.
 2. Se comprueba que las muestras nuevas tienen la huella de su recibo y que las muestras de la v3 tienen la del suyo.
-3. `compare_asset` compara el activo con la v3. Solo se admiten los cambios declarados: sesiones nuevas, ventanas distintas, gráficos nuevos y vectores recalculados por el cambio de codificador. Una sesión perdida o cualquier otra columna distinta detiene el recorrido.
+3. `compare_asset` compara el activo con la v3. Solo se admiten los cambios declarados: sesiones nuevas, ventanas distintas, gráficos nuevos y vectores de gráficos recalculados por el cambio de codificador. La media de noticias debe coincidir exactamente, salvo en un activo cuyo contraste de textos falló y que los recodificó todos, donde su cambio se mide como el de los gráficos. Una sesión perdida o cualquier otra columna distinta detiene el recorrido.
 4. El registro de la comparación, con las huellas de ambos activos, se escribe y se sincroniza en disco.
 5. Solo entonces se borra el `samples.parquet` de la v3 de ese activo. Su manifiesto, su configuración y sus factores se conservan como constancia, igual que la configuración y el manifiesto de toda la edición.
 
@@ -148,7 +163,19 @@ La porción pasa de 40.616 a 43.973 muestras (un 8,3 % más), sin perder ninguna
 
 En las 40.443 sesiones comunes con el mismo PNG, ningún vector de gráfico coincide bit a bit con el de la v3. La diferencia absoluta máxima es 0,0070 sobre componentes de hasta 10,8 y la relativa por norma no pasa de 1,0e-3, con una mediana de 5,4e-4. Por componente, la mediana relativa es 7,6e-4 y el percentil 99 es 1,8e-2. Entre 214 y 342 componentes por activo valen cero en una codificación y no en la otra, porque sus activaciones quedan a un lado u otro del cero de la ReLU, y para ellos la diferencia relativa es 1. Ese es el efecto de calcular las convoluciones con TF32, y es la razón para recalcular todos los gráficos.
 
-Los vectores de noticias recalculados en FP32 estricto dan agregados idénticos bit a bit a los de la v3 en las 40.443 sesiones comunes. Es coherente con que el modelo de texto no use cuDNN. La regla vigente no hereda esos vectores porque la v3 no registra la precisión por vector, pero el resultado indica que heredarlos no cambiaría las muestras.
+Los vectores de noticias recalculados en FP32 estricto dan agregados idénticos bit a bit a los de la v3 en las 40.443 sesiones comunes. Uno a uno, los 5.051 textos que tienen las dos ediciones coinciden bit a bit, y otros 114 textos de la v3.1 no estaban en la v3. Es coherente con que el modelo de texto no use cuDNN, y es la medida en la que se apoya la herencia de textos.
+
+### Textos heredados
+
+La porción se volvió a codificar con `--text-carry` sobre la v3 real, con lotes de 8 y la sustitución sobre otra copia de la v3.
+
+| Pasada | Reloj | CPU | Resultado |
+| --- | ---: | ---: | --- |
+| Recogida | 163 s | 136 s | 5.051 textos heredables, 165 en la muestra (3,3 %), y 279 textos pendientes de GPU contando los 114 nuevos |
+| GPU | 81 s | | 43.942 gráficos en 60,7 s de llamadas y 279 textos en 3,3 s. Los 12 activos con textos superan el contraste y ningún texto difiere |
+| Final con sustitución | 150 s | 141 s | 13 activos confirmados y sustituidos, 43.973 muestras |
+
+Las 43.973 muestras coinciden en todas sus columnas con las de la edición que recodificó todos sus textos, y la sustitución no encontró ninguna diferencia no declarada. La recogida apenas cambia de coste, porque buscar un texto en la v3 es una consulta por clave. La GPU codifica un 5,4 % de los textos que codificaba sin herencia.
 
 ### Disco
 
@@ -158,6 +185,7 @@ Los vectores de noticias recalculados en FP32 estricto dan agregados idénticos 
 | Muestras v3 sustituidas | 138,3 MB | 3.405 B |
 | Registro de pendientes | 113,6 MB | 2.584 B |
 | Vectores calculados | 203,8 MB | 4.635 B |
+| Textos heredables en el registro de pendientes | 13,5 MB | 2.669 B por texto |
 
 El registro de pendientes y los gráficos calculados son temporales. Tras la liberación, el archivo de vectores calculados conserva su tamaño, pero SQLite reutiliza las páginas libres en el siguiente tramo. De la copia de la v3 quedaron 0,76 MB de manifiestos, configuraciones y factores como constancia.
 
@@ -171,17 +199,18 @@ La simulación de la revisión cuenta 18.698.976 ventanas (15.874.289 en US y 2.
 | CPU de la pasada final | de 18,5 a 20,7 h |
 | GPU para gráficos en lotes de 8 | 8,3 h |
 | GPU para gráficos, uno por llamada | 26,2 h |
-| GPU para textos | de 7,5 a 11,5 h |
+| GPU para textos sin herencia | de 7,5 a 11,5 h |
+| GPU para textos heredados con contraste | menos de 1 h |
 | Muestras v3.1 | 63,5 GB, 5,7 GB más que la v3 |
-| Vectores de texto que se conservan | unos 3,7 GB |
+| Vectores de texto que se conservan, con herencia | unos 0,2 GB |
 | Temporales por activo en curso | unos 27 MB |
 
-Sin sustitución, la v3.1 no cabe junto a la v3 en los 48 GB libres. Con sustitución y tramos de unos 300 activos, el espacio ocupado crece como mucho unos 18 GB sobre el actual (8 GB de temporales del tramo, 3,7 GB de textos y 5,7 GB de crecimiento neto). Las pasadas de CPU se reparten entre procesos y pueden solaparse con la GPU. Con lotes de 8, la GPU necesita unas 16 a 20 h, o unas 8 h si se heredan los textos de la v3, y las dos pasadas de CPU suman de 35 a 39 h de CPU. Repasar un activo ya confirmado cuesta hasta unos 3 s de CPU, por lo que conviene que cada tramo recorra solo sus activos con `--shard` en lugar de repasar los anteriores.
+La estimación de los textos heredados supone la misma proporción que en la porción, donde un 5,4 % de los textos pasó por la GPU entre la muestra y los textos nuevos. Un activo con pocos textos contrasta una proporción mayor, porque la muestra nunca baja de 8. Sin sustitución, la v3.1 no cabe junto a la v3 en el disco libre. Con sustitución y tramos de unos 300 activos, el espacio ocupado crece como mucho unos 15 GB sobre el actual (8,4 GB de temporales del tramo, unos 0,3 GB de textos heredables pendientes, 0,2 GB de textos calculados y 5,7 GB de crecimiento neto). Las pasadas de CPU se reparten entre procesos y pueden solaparse con la GPU. Con lotes de 8 y los textos heredados, la GPU necesita unas 9 h, y las dos pasadas de CPU suman de 35 a 39 h de CPU. Repasar un activo ya confirmado cuesta hasta unos 3 s de CPU, por lo que cada tramo recorre solo sus activos con `--shard` en lugar de repasar los anteriores.
 
 ## Pruebas
 
-Las pruebas cubren el contrato, la admisión en el codificador, la lectura desde el corpus, las vistas temporales y el corpus ordenado, las familias, M3, la vista de información, la GRU nativa y las herramientas. Para la precisión comprueban que cada uno de los tres ajustes detiene el codificador antes de abrir CUDA, que la identidad calculada en CPU es la del codificador cargado y que una edición con TF32 no cede vectores. La sustitución se prueba con cada fallo de verificación (huella anterior, huella nueva, columna cambiada y sesión perdida), con un registro que no se puede escribir, con un activo pendiente de GPU y con la reserva de disco, y en todos los casos la v3 queda intacta. El descriptor de factores repite cada comprobación del v2 y prueba que la tolerancia de SPY no se aplica al CSI300. La mutación dirigida se resume en la PR.
+Las pruebas cubren el contrato, la admisión en el codificador, la lectura desde el corpus, las vistas temporales y el corpus ordenado, las familias, M3, la vista de información, la GRU nativa y las herramientas. Para la precisión comprueban que cada uno de los tres ajustes detiene el codificador antes de abrir CUDA, que la identidad calculada en CPU es la del codificador cargado y que una edición con TF32 no cede vectores. La sustitución se prueba con cada fallo de verificación (huella anterior, huella nueva, columna cambiada y sesión perdida), con un registro que no se puede escribir, con un activo pendiente de GPU y con la reserva de disco, y en todos los casos la v3 queda intacta. El descriptor de factores repite cada comprobación del v2 y prueba que la tolerancia de SPY no se aplica al CSI300. La herencia de textos se prueba con una edición de origen que registra TF32 en cuDNN: si la muestra coincide, la GPU solo codifica la muestra y las muestras finales son las de la v3. Si los textos difieren en el último bit, el activo recodifica todos sus textos, ninguno sale de la v3, las muestras coinciden con las de una codificación en FP32 estricto y la sustitución mide el cambio de la media de noticias en lugar de detenerse. También se prueban la posición de la muestra, la unión de muestras al recoger de nuevo un activo o al repartirlo entre fragmentos, la espera del contraste mientras queden pendientes, la preferencia por un vector calculado en FP32 estricto, una edición de origen modificada y las identidades incompatibles. La mutación dirigida se resume en la PR.
 
 ## Pendiente
 
-Falta ejecutar la auditoría con la tolerancia, la revisión de precios, el descriptor de factores sobre la preparación completa, la codificación, `targets-v3.1` y la verificación completa (verificador de la edición, `verify-targets` y comparación con la v3). Antes hay que decidir si los vectores de texto de la v3 se heredan, a la vista de que coinciden bit a bit, y en qué tramos se ejecuta la sustitución. Todo ello espera la orden del coordinador.
+Falta ejecutar la auditoría con la tolerancia, la revisión de precios, el descriptor de factores sobre la preparación completa, la codificación, `targets-v3.1` y la verificación completa (verificador de la edición, `verify-targets` y comparación con la v3). El plan acordado recorre la edición en tramos con `--shard`, gráficos en lotes de 8 con la comprobación de uno de cada 64, un límite del asignador de 1 GiB, textos heredados con contraste, sustitución con una reserva de 15 GB y liberación de los temporales tras cada tramo, dejando libre la GPU entre tramos. La ejecución espera la orden del coordinador.
