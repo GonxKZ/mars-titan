@@ -322,6 +322,10 @@ class _Pass:
     used: list = field(default_factory=list)
     instants: int = 0
     next_block: int = 0
+    # Solo con el núcleo ajustable del postentrenamiento: estado de cada flujo al empezar el
+    # tramo (None si es nuevo) y flujos medidos por C en cada grupo lógico del tramo.
+    starts: dict = field(default_factory=dict)
+    penalties: list = field(default_factory=list)
 
 
 class MarsTitanInference:
@@ -352,14 +356,7 @@ class MarsTitanInference:
         ):
             raise ValueError("El recorrido necesita el padre, el lector y su receta")
         config = predictor.config
-        control = predictor.local_control
-        if config.variant != "mac_online" or (
-            control is not None and control.config.mode != "disabled"
-        ):
-            # La B de CM-v1 llega con C en modo disabled. La penalización solo ajusta el núcleo.
-            raise ValueError("El lector parte de Titans-MAC mac_online, con C solo en disabled")
-        if predictor.training or any(p.requires_grad for p in predictor.parameters()):
-            raise ValueError("El padre Titans-MAC debe llegar congelado, en eval y sin gradientes")
+        self._check_parent(predictor)
         if torch.backends.mha.get_fastpath_enabled() or torch.is_inference_mode_enabled():
             raise ValueError("El recorrido exige fastpath=False declarado y sin inference_mode")
         self.quantiles = config.head == QUANTILE_HEAD
@@ -409,6 +406,33 @@ class MarsTitanInference:
         self.world, self.fold = world, fold
         self.audit = [] if audit else None
 
+    @staticmethod
+    def _check_parent(predictor):
+        control = predictor.local_control
+        if predictor.config.variant != "mac_online" or (
+            control is not None and control.config.mode != "disabled"
+        ):
+            # La B de CM-v1 llega con C en modo disabled. La penalización solo ajusta el núcleo.
+            raise ValueError("El lector parte de Titans-MAC mac_online, con C solo en disabled")
+        if predictor.training or any(p.requires_grad for p in predictor.parameters()):
+            raise ValueError("El padre Titans-MAC debe llegar congelado, en eval y sin gradientes")
+
+    def _event_plan(self, run, phase, event, batches, *, train):
+        """Plan de C del evento. El padre congelado no lo necesita."""
+        return {}
+
+    def _prepare_block(self, run, batch, plan, *, train):
+        """Preparar el bloque desde el estado previo de sus flujos y avanzar su memoria."""
+        state = _stack([run.flows[flow] for flow in batch.flow_ids])
+        with torch.no_grad():
+            prepared = self.predictor.prepare(batch, state, **plan)
+        run.flows.update(_split(prepared.next_state))
+        return prepared
+
+    def _block_extra(self, batch, plan):
+        """Lo que la repetición necesita además del estado de trabajo emitido."""
+        return {}
+
     # El contexto de una instantánea no cambia el cálculo. Solo la vincula a su evento.
     def _context(self, partition, at):
         return hashlib.sha256(
@@ -452,16 +476,14 @@ class MarsTitanInference:
                     device=self.device,
                 )
         seen = 0 if run.bank is None else run.bank.seen
-        for raw in event.inputs:
-            cpu = validated_cpu_batch(raw, specification)
+        validated = [validated_cpu_batch(raw, specification) for raw in event.inputs]
+        plan = self._event_plan(run, phase, event, validated, train=train and not warmup)
+        for cpu in validated:
             batch = DecisionBatch.from_validated(cpu, device=self.device, dtype=self.dtype)
             new = tuple(flow for flow in batch.flow_ids if flow not in run.flows)
             if new:
                 run.flows.update(_split(predictor.initial_state(new)))
-            state = _stack([run.flows[flow] for flow in batch.flow_ids])
-            with torch.no_grad():
-                prepared = predictor.prepare(batch, state)
-            run.flows.update(_split(prepared.next_state))
+            prepared = self._prepare_block(run, batch, plan, train=train and not warmup)
             size = len(batch.flow_ids)
             run.counters["observations"] += size
             run.counters["mac_updates"] += size
@@ -506,6 +528,7 @@ class MarsTitanInference:
                     cutoff=event.at,
                     issued=issued,
                     keys=tuple(zip(batch.flow_ids, batch.prediction_at, strict=True)),
+                    **self._block_extra(batch, plan),
                 )
             for row, (flow, at) in enumerate(zip(batch.flow_ids, batch.prediction_at, strict=True)):
                 if (flow, at) in run.pending:
@@ -608,6 +631,8 @@ class MarsTitanInference:
         run.pending.clear()
         run.blocks.clear()
         run.used.clear()
+        run.starts.clear()
+        run.penalties.clear()
         run.staged = []
 
     @staticmethod
@@ -699,20 +724,14 @@ class ReadoutTrainer(MarsTitanInference):
             for source in (train, validation)
         ):
             raise ValueError("Las vistas no conservan la entrada del padre")
-        if admission == "m3" and (
-            retention.scalers.source_sha256 != train.identity
-            or retention.scalers.dataset_sha256 != train.dataset.identity
-            or (retention.scalers.decision_start, retention.scalers.decision_end)
-            != (train.phase.decision_start, train.phase.decision_end)
-        ):
-            raise ValueError("Las escalas M3 no proceden del tramo de entrenamiento de este ajuste")
+        if admission == "m3":
+            self._check_scalers(retention.scalers, train)
         self.train, self.validation = train, validation
         self.output = Path(output)
         for protected in (*train.dataset.roots.values(), train.path.parent, validation.path.parent):
             outside_source(protected, self.output)
             outside_source(self.output, protected)
-        self.roles, self.inert = parameter_roles(readout, admission)
-        named = dict(readout.named_parameters())
+        self.roles, self.inert, named = self._parameter_groups(readout, admission)
         groups = [
             dict(params=[named[name] for name in names], role=role)
             for role, names in self.roles.items()
@@ -760,6 +779,22 @@ class ReadoutTrainer(MarsTitanInference):
         self.identity = json.loads(canonical(self.identity))
         self.run_id = hashlib.sha256(canonical(self.identity).encode()).hexdigest()
         self.global_step, self.selection, self.history, self.train_metrics = 0, None, [], None
+
+    @staticmethod
+    def _check_scalers(scalers, train):
+        """Las escalas M3 salen del tramo de entrenamiento de este mismo ajuste."""
+        if (
+            scalers.source_sha256 != train.identity
+            or scalers.dataset_sha256 != train.dataset.identity
+            or (scalers.decision_start, scalers.decision_end)
+            != (train.phase.decision_start, train.phase.decision_end)
+        ):
+            raise ValueError("Las escalas M3 no proceden del tramo de entrenamiento de este ajuste")
+
+    def _parameter_groups(self, readout, admission):
+        """Papeles, parámetros inertes y tensores ajustables por nombre."""
+        roles, inert = parameter_roles(readout, admission)
+        return roles, inert, dict(readout.named_parameters())
 
     @staticmethod
     def _code():
@@ -821,7 +856,7 @@ class ReadoutTrainer(MarsTitanInference):
                 loss = self._loss(selected, target) * (len(positions) / total)
                 if not torch.isfinite(loss).item():
                     raise ValueError("La pérdida del tramo no es finita")
-                loss.backward()
+                self._backward_block(loss, record)
                 loss_sum += float(loss.detach())
             torch.nn.utils.clip_grad_norm_(
                 self.trainable, self.recipe.max_grad_norm or math.inf, error_if_nonfinite=True
@@ -839,6 +874,11 @@ class ReadoutTrainer(MarsTitanInference):
         run.used.clear()
         run.instants = 0
         run.counters["segments"] += 1
+
+    @staticmethod
+    def _backward_block(loss, record):
+        """Acumular el gradiente de un bloque. El refinador siempre interviene en la pérdida."""
+        loss.backward()
 
     def _train_pass(self, run, cursor, stop, save):
         source, phase = self.train, self.train.phase
@@ -987,6 +1027,13 @@ class ReadoutTrainer(MarsTitanInference):
             for key, value in self.readout.state_dict().items()
         }
 
+    def _extra_state(self):
+        """Estado ajustable fuera del lector. El ajuste del lector no tiene ninguno."""
+        return {}
+
+    def _restore_extra(self, state):
+        """Recuperar el estado de `_extra_state` antes de reconstruir los flujos."""
+
     def _load_best(self, report):
         state = load_training_state(
             self.output / "checkpoints",
@@ -997,6 +1044,7 @@ class ReadoutTrainer(MarsTitanInference):
         self.readout.load_state_dict(state["model"])
         if _parameters_digest(self.readout) != state["readout_sha256"]:
             raise ValueError("El lector seleccionado no conserva su huella")
+        self._restore_extra(state)
         return state
 
     def run(self, *, resume=False, stop=None, joint_epoch=None):
@@ -1020,6 +1068,7 @@ class ReadoutTrainer(MarsTitanInference):
             self.readout.load_state_dict(state["model"])
             if _parameters_digest(self.readout) != state["readout_sha256"]:
                 raise ValueError("Los parámetros recuperados del lector no conservan su huella")
+            self._restore_extra(state)
             self.optimizer.load_state_dict(state["optimizer"])
             restore_rng(state["rng"], str(self.device))
             self.global_step, cursor = state["global_step"], state["cursor"]
@@ -1059,6 +1108,7 @@ class ReadoutTrainer(MarsTitanInference):
                 history=self.history,
                 train_metrics=self.train_metrics,
                 run=None if current is None else self._export(current),
+                **self._extra_state(),
             )
             path = save_training_state(checkpoints, state, identity=self.identity, best=best)
             reference = dict(path=str(path.relative_to(output)), sha256=sha256(path))

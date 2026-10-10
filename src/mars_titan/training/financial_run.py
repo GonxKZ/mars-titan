@@ -173,10 +173,16 @@ def load_recipe(path):
 
 
 def parameter_roles(predictor):
-    """Separar el ajuste externo por función. Los estados por flujo no son parámetros."""
+    """Separar el ajuste externo por función. Los estados por flujo no son parámetros.
+
+    Las correcciones de un adaptador del postentrenamiento forman su propio papel. Sin
+    adaptadores el diccionario conserva literalmente sus tres papeles anteriores.
+    """
     roles = dict(shared=[], persistent_memory=[], initial_fast_weights=[])
     for name, _ in predictor.named_parameters():
-        if name == "mac.persistent":
+        if ".parametrizations." in name and not name.endswith(".original"):
+            roles.setdefault("adapters", []).append(name)
+        elif name == "mac.persistent":
             roles["persistent_memory"].append(name)
         elif name.startswith("mac.memory.initial_weights."):
             roles["initial_fast_weights"].append(name)
@@ -573,6 +579,7 @@ class ChronologicalTrainer(ChronologicalInference):
         output,
         optimizer_factory=None,
         pairing=None,
+        posttraining=None,
         audit=False,
     ):
         super().__init__(predictor, recipe, audit=audit)
@@ -602,8 +609,23 @@ class ChronologicalTrainer(ChronologicalInference):
         for protected in (*train.dataset.roots.values(), train.path.parent, validation.path.parent):
             outside_source(protected, self.output)
             outside_source(self.output, protected)
+        if posttraining is not None and (
+            not isinstance(posttraining, dict) or pairing is not None or not posttraining
+        ):
+            raise ValueError("El postentrenamiento se declara como un objeto sin emparejamiento")
         self.roles = parameter_roles(predictor)
+        if "adapters" in self.roles and posttraining is None:
+            raise ValueError("Un predictor con adaptadores solo se ajusta en el postentrenamiento")
         named = dict(predictor.named_parameters())
+        frozen = []
+        if posttraining is not None:
+            # Solo se ajusta lo que requiere gradiente: los adaptadores o, en la continuación
+            # completa, todo el ajuste externo. Los tensores originales quedan congelados.
+            frozen = [name for name, value in named.items() if not value.requires_grad]
+            self.roles = {
+                role: [name for name in names if named[name].requires_grad]
+                for role, names in self.roles.items()
+            }
         groups = [
             dict(params=[named[name] for name in names], role=role)
             for role, names in self.roles.items()
@@ -616,7 +638,8 @@ class ChronologicalTrainer(ChronologicalInference):
         )
         self.optimizer = factory(groups)
         listed = [id(p) for group in self.optimizer.param_groups for p in group["params"]]
-        if len(listed) != len(set(listed)) or set(listed) != {id(p) for p in named.values()}:
+        trainable = {id(named[name]) for names in self.roles.values() for name in names}
+        if len(listed) != len(set(listed)) or set(listed) != trainable or not trainable:
             raise ValueError("El optimizador debe cubrir exactamente el ajuste externo")
         self.identity = dict(
             schema_version=1,
@@ -658,6 +681,9 @@ class ChronologicalTrainer(ChronologicalInference):
                 self.identity["local_control"]["penalty_accumulation"] = (
                     "measured_flows_replayed_in_their_flow_block_over_segment_groups_v1"
                 )
+        if posttraining is not None:
+            # Sin postentrenamiento la identidad conserva literalmente su forma anterior.
+            self.identity.update(posttraining=posttraining, frozen_parameters=frozen)
         self.run_id = hashlib.sha256(canonical(self.identity).encode()).hexdigest()
         self.global_step, self.selection, self.history, self.train_metrics = 0, None, [], None
 

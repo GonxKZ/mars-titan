@@ -1,15 +1,133 @@
 # Observatorio local de MARS-TITAN
 
 El [recolector de campañas](campaign-observatory.md) añade lectura incremental de
-los informes existentes e historial paginado con el contrato de versión 2. Las
-secciones siguientes documentan el exportador manual de versión 1, que sigue
-disponible para estados individuales.
+los informes existentes e historial paginado con el contrato de versión 2. La página
+y su modo en directo se describen en la sección siguiente. Las posteriores documentan
+el exportador manual de versión 1, que sigue disponible para estados individuales.
 
 El observatorio permite consultar el estado de las ejecuciones sin abrir sus datos ni sus checkpoints. El exportador de `scripts/export_observatory.py` transforma estados agregados locales en una instantánea JSON pública. No entrena modelos, no calcula resultados científicos, no abre registros completos ni publica archivos en Internet.
 
 La interfaz puede existir antes que el entrenador. Mientras no haya estados registrados, la salida contiene el catálogo de modelos, `source_status: "no_runs_registered"` y una lista vacía de ejecuciones. No se generan métricas, curvas o entrenamientos de demostración como si fueran observaciones reales.
 
 La [página pública](https://gonxkz.github.io/mars-titan/) quedó desplegada mediante [PR #73](https://github.com/GonxKZ/mars-titan/pull/73). El [despliegue de Pages](https://github.com/GonxKZ/mars-titan/actions/runs/35396836916) terminó correctamente y se comprobaron sus cinco archivos por SHA-256 frente a la versión local. La vista pública se revisó en escritorio y móvil, sin errores de ejecución. El estado inicial contiene cero ejecuciones y nueve modelos planificados.
+
+## Página y modo en directo
+
+La página de `site/` se rehízo en #451 a partir de una [auditoría previa](observatory-ux-audit.md) sobre el historial real. La misma interfaz funciona en dos modos que comparten código y contrato de datos.
+
+- **Pages.** Lee los datos estáticos de la rama `observatory-data`. El índice se consulta cada 60 segundos con `If-None-Match` y `If-Modified-Since`, y una respuesta 304 no descarga ni redibuja nada. Las páginas del historial se nombran por su huella, así que cada una se descarga una sola vez. La barra superior muestra la antigüedad de la última recogida con su zona horaria.
+- **Directo en local.** `scripts/serve_observatory.py` sirve el mismo sitio y empuja eventos SSE con el índice, la telemetría del equipo, el estado de las campañas por ventanas y los paquetes de trazas. Solo lee sus fuentes y por defecto escucha en `127.0.0.1`.
+
+```mermaid
+flowchart LR
+  R["Recibos de entrenamiento<br/>run.json, receipt.json"] --> C["Recolector<br/>collect_observatory.py --watch"]
+  C --> P["Salida pública<br/>observatory.json y pages/"]
+  P --> B["Rama observatory-data"] --> A["Actions: solo Pages"] --> W["Navegador en modo Pages<br/>consulta condicional cada 60 s"]
+  P --> S["serve_observatory.py<br/>127.0.0.1"]
+  K["Campañas por ventanas<br/>summary.json y jobs/"] --> S
+  T["Paquetes de trazas<br/>manifiesto y bloque binario"] --> S
+  N["NVML, /proc y statvfs"] --> S
+  S -- "SSE: índice, telemetría, campañas, trazas" --> L["Navegador en directo"]
+```
+
+### Arranque y límites del servidor local
+
+```bash
+uv run --locked python scripts/serve_observatory.py \
+  --public-dir RUTA_DE_LA_SALIDA_PUBLICA_DEL_RECOLECTOR \
+  --campaign A=RUTA_DE_UNA_CAMPAÑA_POR_VENTANAS \
+  --traces-dir RUTA_DE_LOS_PAQUETES_DE_TRAZAS
+```
+
+Todas las fuentes son opcionales. Para seguir el recolector que ya está en marcha basta con apuntar `--public-dir` a su salida pública. El servidor no toma su bloqueo ni el de las campañas y no escribe en ninguna de las carpetas que lee. La orden imprime la dirección, por defecto `http://127.0.0.1:8765/`, y termina con `Ctrl+C`. Escuchar fuera del bucle local exige `--allow-remote`.
+
+El servidor acepta cuatro clientes SSE y 24 conexiones. Envía como máximo dos eventos por segundo y cliente, y si una fuente cambia varias veces entre dos envíos solo manda la última versión. El latido es de 15 segundos y una pestaña cerrada libera su plaza como máximo en el siguiente. Con el límite de clientes alcanzado responde 503 y la página vuelve a la consulta condicional del índice. La telemetría se toma cada 5 segundos con clientes y cada 30 sin ellos. El anillo guarda 17.280 muestras (24 horas a 5 segundos) y una pestaña nueva recibe las últimas 4.320. Los límites de lectura son 8 MiB por JSON, 256 MiB por paquete de trazas, 4 MiB por evento y 20.000 trabajos por campaña. La política de seguridad no admite scripts ni estilos de otros orígenes, tampoco estilos en línea.
+
+La telemetría procede de consultas de lectura a NVML, de `/proc` y de `statvfs`. Incluye temperatura, uso, memoria, potencia, reloj y motivos de reducción del reloj de la GPU, además de CPU, carga, RAM, swap, disco libre y la CPU del propio servidor. No fija relojes, perfiles de energía ni ventiladores. Una lectura que falla se publica como ausencia, nunca como cero.
+
+Una campaña por ventanas se lee desde su `summary.json` y la carpeta `jobs/`. Un trabajo con carpeta de intento y sin recibo se muestra como «intento sin confirmar», que no equivale a un proceso vivo. La fecha de modificación de cada recibo aproxima su confirmación y alimenta el ritmo y el tiempo restante, que la página rotula siempre como estimación.
+
+### Despliegue sin cortar la publicación actual
+
+La página lee el formato actual del recolector y trata como opcionales los campos que añade #451, así que puede promocionarse a `main` antes de cambiar el recolector. El workflow de Pages copia entonces los módulos de `site/`, `vendor/` y `fonts/`, y también `traces/` si la rama de datos lo contiene.
+
+La extensión del recolector cambia el contenido de casi todas las páginas y con ello sus huellas. La primera publicación tras el cambio sustituye las páginas una vez. Con los 3.319 registros del 10 de octubre, la salida pública pasó de 12,1 MB a 20,4 MB en las mismas 51 páginas. Si se conserva el estado del recolector, los registros cuyas fuentes siguen presentes se reconstruyen con los campos nuevos en la primera recolección, y los que ya no tienen fuente mantienen su forma anterior y se ven con esas medidas ausentes. Antes de sustituir el proceso en marcha conviene ejecutar el recolector nuevo con otro estado y otra salida, sin `--publish-checkout`, y comparar ambas salidas. Solo un recolector puede publicar en el checkout de `observatory-data`.
+
+### Trazas de aprendizaje
+
+Las trazas de #448 pueden tener millones de puntos. Un paquete separa un manifiesto JSON pequeño de un bloque binario con columnas little-endian alineadas a 8 bytes, y el navegador crea vistas tipadas sobre ese bloque sin copiarlo. El bloque se nombra por su huella, la página comprueba el SHA-256 antes de dibujar y NaN codifica una observación ausente que nunca se interpola. El manifiesto declara procedencia (`measured` o `fixture`), unidad del eje, cadencia del registro y, si existe, el paso en el que el productor agotó su presupuesto. Un paquete `fixture` lleva un aviso visible en toda la vista.
+
+`scripts/export_learning_traces.py` convierte la carpeta del registrador de `mars_titan.learning_traces` en un paquete. Cada combinación de métrica, grupo de parámetros, estadístico y fase pasa a ser una serie por paso. Las normas por grupo de parámetros se quedan en optimización y el resto se ordena por el prefijo de la métrica o del grupo (`memory` a Titans, `policy` a RL, etc.). La orden no modifica la carpeta de origen:
+
+```bash
+uv run --locked python scripts/export_learning_traces.py \
+  --traces RUTA_DEL_REGISTRADOR --output RUTA_DE_LOS_PAQUETES \
+  --name NOMBRE --run-id RUN_ID --attempt-id ATTEMPT_ID --model-id MODEL_ID
+```
+
+Los ganchos del entrenador que llenan el registrador pertenecen a #448. Hasta que existan, la vista de memoria solo puede mostrar paquetes de prueba rotulados como tales.
+
+### Decisiones de visualización
+
+- **Campaña.** Una matriz de ventana × brazo × semilla responde qué está en marcha y cuánto falta. Cada celda se colorea por estado, por MAE final de validación con la escala secuencial cividis o por su diferencia relativa con la mediana de su ventana con una escala divergente de dos tonos y gris en el centro. Al lado, el ritmo de confirmaciones a lo largo del tiempo y el tiempo restante estimado con la mediana de las últimas 200 confirmaciones.
+- **Curvas.** Múltiplos pequeños por familia con el mismo eje de épocas, cursor y zoom enlazados, y la opción de compartir también el eje vertical. La mediana y el intervalo entre cuartiles se calculan en cada época con tres ejecuciones o más. El círculo marca la mejor época declarada por el entrenador. Entrenamiento y validación nunca comparten un segundo eje.
+- **Recursos.** Series temporales de GPU, CPU, RAM y disco con ventanas de 15 minutos a 24 horas, una franja con los motivos de reducción del reloj de la GPU y dos dispersiones con todo el historial: memoria frente a duración en escala logarítmica y caudal por modelo.
+- **Series largas.** Las líneas se dibujan con uPlot 1.6.32 en canvas. Cuando una serie supera el ancho disponible se reduce con M4 (Jugel et al., 2014), que conserva primero, último, mínimo y máximo de cada columna de píxeles y devuelve índices de la serie original. El rótulo declara cuántos puntos se dibujan de cuántos, la casilla «Dibujar todos» quita la reducción y el cursor lee siempre el valor exacto.
+- **Procedencia.** Cada ejecución abre un detalle con su página publicada, las huellas del recibo y de la configuración y sus medidas con unidad. Las estimaciones y las fases reservadas se rotulan como tales.
+- **Forma.** Atkinson Hyperlegible Next y Mono para texto y cifras, Newsreader para los titulares, temas claro y oscuro con sus propios tonos, texto de al menos 12 píxeles, teclado completo, estado en la URL y movimiento solo cuando no se pide movimiento reducido. Las escalas usan cividis (Nuñez et al., 2018) y la paleta de Okabe e Ito, legibles con las deficiencias de color habituales.
+
+Referencias de esta sección:
+
+- Jugel, U., Jerzak, Z., Hackenbroich, G. y Markl, V. (2014). M4: A visualization-oriented time series data aggregation. *Proceedings of the VLDB Endowment, 7*(10), 797-808. https://doi.org/10.14778/2732951.2732953
+- Nuñez, J. R., Anderton, C. R. y Renslow, R. S. (2018). Optimizing colormaps with consideration for color vision deficiency to enable accurate interpretation of scientific data. *PLOS ONE, 13*(8), e0199239. https://doi.org/10.1371/journal.pone.0199239
+- Okabe, M. e Ito, K. (2008). *Color Universal Design (CUD): How to make figures and presentations that are friendly to colorblind people*. https://jfly.uni-koeln.de/color/
+
+### Capturas
+
+Las capturas se tomaron el 10 de octubre de 2026 con el servidor local sobre una salida del recolector con 3.319 registros reales y la telemetría del portátil en ese momento. La vista de memoria muestra un paquete de prueba de un millón de puntos, rotulado como tal, porque todavía no hay trazas de entrenamiento.
+
+![Campaña en escritorio, tema claro](observatory-screenshots/escritorio-claro-campana.webp)
+![Matriz de campaña frente a la mediana de cada ventana](observatory-screenshots/escritorio-claro-matriz-relativo.webp)
+![Curvas por familia en escritorio, tema oscuro](observatory-screenshots/escritorio-oscuro-curvas.webp)
+![Recursos del equipo en escritorio, tema oscuro](observatory-screenshots/escritorio-oscuro-recursos.webp)
+![Trazas de prueba de un millón de puntos](observatory-screenshots/escritorio-claro-memoria.webp)
+![Campaña en móvil, tema claro](observatory-screenshots/movil-claro-campana.webp)
+![Curvas en móvil, tema oscuro](observatory-screenshots/movil-oscuro-curvas.webp)
+
+### Medidas
+
+Las medidas se tomaron el 10 de octubre de 2026 con `site/tests/benchmark-browser.mjs` en un AMD Ryzen 9 8945HS de 16 hilos, con el perfil de energía de bajo consumo, Chrome 153.0.8010.47 sin interfaz y sin GPU (`--disable-gpu`), Playwright 1.63.0 y Node 24.21.0. El índice era una salida del recolector con 3.319 registros. El equipo tenía otras cargas en marcha, así que las cifras orientan y no se pueden repetir exactamente. El porcentaje de CPU se refiere a un núcleo.
+
+| Medida | Valor observado |
+| --- | --- |
+| Lectura y comprobación SHA-256 de un paquete con tres series de un millón de puntos y una matriz de 4 × 200.000 | 427 ms |
+| Primer dibujo de cada serie con M4 | 63, 13 y 13 ms |
+| Mapa de calor de 800.000 celdas | 26 ms |
+| Ampliaciones con M4 (de 2.612 a 5.000 puntos dibujados) | de 0,3 a 22 ms |
+| Paso a todos los puntos | 97 ms |
+| Ampliaciones sin reducción (de 5.001 a un millón de puntos) | de 0,3 a 78 ms |
+| Memoria JavaScript de la pestaña con el paquete cargado | 136 MiB |
+| CPU de la pestaña en reposo, modo Pages | 0,13 % |
+| CPU de la pestaña en reposo, directo con la vista de campaña | 0,43 % |
+| CPU de la pestaña con telemetría cada 5 s en la vista de recursos | 0,63 % |
+| CPU del servidor local con una pestaña | 0,02 a 0,03 % |
+| CPU del servidor local sin pestañas | 0,10 % |
+
+Cada ventana de CPU duró 60 segundos. En modo Pages hubo dos peticiones al índice y una respondió 304. Con la copia del formato actual del recolector, sin los campos nuevos, la página cargó los 3.319 registros y sus 51 páginas en 0,8 a 1,8 segundos desde un servidor local, sin errores y sin desbordamiento horizontal a 390 píxeles. La auditoría previa midió 0,11 % de CPU en reposo para la página anterior, que dibujaba mucho menos.
+
+La pestaña oculta no dibuja. Los cambios se agrupan en un único fotograma por lote, la URL se escribe como máximo cada 250 ms y las vistas ocultas no se redibujan al cambiar el tamaño de la ventana.
+
+### Pruebas de la página
+
+```bash
+node --test site/tests/*.test.mjs
+node site/tests/observatory-browser.mjs RUTA/playwright/index.mjs [CARPETA_DE_CAPTURAS]
+OBSERVATORY_PYTHON="uv run --locked python" node site/tests/live-browser.mjs RUTA/playwright/index.mjs
+OBSERVATORY_PYTHON="uv run --locked python" node site/tests/benchmark-browser.mjs RUTA/playwright/index.mjs [CARPETA_PUBLICA] [SEGUNDOS]
+uv run --locked pytest tests/tooling/test_observatory_live_server.py tests/tooling/test_observatory_learning_traces.py
+```
+
+Las pruebas unitarias cubren contrato, reducción M4, escalas, formato, estado en la URL, paquetes de trazas y las estructuras derivadas. `observatory-browser.mjs` imita Pages con 304 y recorre consulta condicional, reintento tras un 503, URL, teclado, fase reservada, CSV, texto hostil, importación local, temas, movimiento reducido y anchos de 320 a 1440 píxeles. `live-browser.mjs` arranca el servidor real y comprueba SSE, actualización de campañas e índice, límite de clientes y liberación de plazas. Las pruebas de Python cubren rutas permitidas, validadores, límites, desconexiones, ausencia de GPU y la conversión de trazas. Todas se ejecutan en local y ninguna en GitHub Actions. `benchmark-browser.mjs` escribe un paquete de un millón de puntos en la carpeta temporal del sistema, por lo que conviene apuntar `TMPDIR` a un disco si esa carpeta está en memoria.
 
 ## Uso manual
 

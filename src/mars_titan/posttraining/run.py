@@ -53,6 +53,7 @@ def code_identity(*, masked=False, adapters=False, quantiles=False):
     names = (
         "posttraining/run.py",
         "posttraining/inputs.py",
+        "posttraining/augmented_inputs.py",
         "posttraining/parents.py",
         "posttraining/evaluation.py",
         "posttraining/selection.py",
@@ -70,6 +71,7 @@ def code_identity(*, masked=False, adapters=False, quantiles=False):
         "environments/actions.py",
         "environments/cohorts.py",
         "environments/corpus_source.py",
+        "environments/cohort_order.py",
         "evaluation/session_metrics.py",
         "models/baselines/multimodal.py",
         "models/baselines/dlinear.py",

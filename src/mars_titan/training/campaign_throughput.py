@@ -271,10 +271,15 @@ def _option_hours(campaign, family, jobs, counts, measured, epochs):
 def _posttraining_hours(stage, counts, rates):
     """Horas de la etapa de adaptadores, con la caché de cada padre ajustado.
 
-    Cada padre de una ventana reentrenada predice una vez ajuste y validación para su
-    caché. Su caudal es la inferencia neuronal más lenta del brazo base.
+    En el walk-forward por etapas cada caso ajusta solo las filas nuevas de su ventana. Se
+    estiman con los recuentos como el tramo de ajuste de la ventana menos ajuste,
+    validación y calibración de la anterior, una cota algo mayor porque las filas que la
+    purga quitó en las fronteras de la ventana anterior sí están en el ajuste de la nueva.
+    Cada padre predice una vez esas filas y la validación para su caché, y el padre
+    congelado predice validación, calibración y evaluación, ambos con la inferencia neuronal
+    más lenta del brazo base. En el plan anclado de B el ajuste recorre todo su tramo.
     """
-    from mars_titan.posttraining.campaign_stage import plan_stage
+    from mars_titan.posttraining.campaign_stage import FROZEN, plan_stage
 
     measured, neural = rates[POSTTRAINING], rates[NEURAL]
     epochs = stage["matrix"]["budget"]["epochs"]
@@ -285,12 +290,25 @@ def _posttraining_hours(stage, counts, rates):
             parents.setdefault((job["scope"], job["window"], job["base_arm"], job["seed"]), job)
     first = {job["id"] for job in parents.values()}
 
-    def seconds(job):
+    def rows_of(job):
         rows = counts[job["scope"]][job["window"]]
+        if job.get("parent_window") is None:
+            return rows
+        previous = counts[job["scope"]][job["parent_window"]]
+        fresh = rows["train"] - sum(
+            previous[name] for name in ("train", "validation", "calibration")
+        )
+        _require(fresh > 0, f"{job['id']} no tiene filas nuevas en los recuentos")
+        return dict(rows, train=fresh)
+
+    def seconds(job):
+        rows = rows_of(job)
+        cache = _slowest(neural[job["base_arm"]].values())["inference"]
+        if job["kind"] == FROZEN:
+            return (rows["validation"] + rows["calibration"] + rows["evaluation"]) / cache
         rate = _slowest([points[job["point"]] for points in measured[job["base_arm"]].values()])
         total = validated_job_seconds(job, rows, rate, epochs)
         if job["id"] in first:
-            cache = _slowest(neural[job["base_arm"]].values())["inference"]
             total += (rows["train"] + rows["validation"]) / cache
         return total
 

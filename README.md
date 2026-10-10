@@ -280,7 +280,7 @@ La [revisión de la memoria posterior a Titans](docs/research/post-titans-memory
 
 - **PT2, calibración conformal en línea con etiquetas maduras** ([#454](https://github.com/GonxKZ/mars-titan/issues/454)): implementada y comprobada sin entrenar ([documento](docs/engineering/online-conformal-calibration.md)), pendiente de integrar en la comparación. Resultado experimental pendiente.
 
-- **PT3, regla de Kalman con ruido de cohorte correlacionado en B6** ([#455](https://github.com/GonxKZ/mars-titan/issues/455)): propuesta. Resultado experimental pendiente.
+- **PT3, regla de Kalman con ruido de cohorte correlacionado en B6** ([#455](https://github.com/GonxKZ/mars-titan/issues/455)): implementada y comprobada sin entrenar ([documento](docs/engineering/kalman-associative-memory.md)). Resultado experimental pendiente.
 
 Una predicción solo puede usar datos disponibles en su instante de decisión. La actualización asociativa de Titans utiliza entradas observadas bajo una política explícita. El error financiero de escritura episódica solo se calcula cuando madura la etiqueta de la predicción realmente emitida. Las tablas contables necesitan fechas de publicación y los gráficos se construyen exclusivamente con ventanas pasadas.
 

@@ -483,12 +483,16 @@ class CandidateChronologicalPredictor:
                 )
         return run.memory
 
-    def _forward(self, batch, memory, *, grad):
+    def _inputs(self, batch):
+        """Entradas nativas del lote validado, sin grafo."""
         with torch.inference_mode(False), torch.no_grad():
             tensors = DecisionBatch.from_validated(batch, device=self.device, dtype=self.dtype)
-        inputs = self.native.CandidateInputs(
+        return self.native.CandidateInputs(
             *(tensors.inputs[name] for name in MODALITIES), tensors.presence
         )
+
+    def _forward(self, batch, memory, *, grad):
+        inputs = self._inputs(batch)
         refinements = self.recipe.refinements
         if grad and self.recipe.recompute:
             # Mismos parámetros, instantánea y K en la repetición. La salida emitida no cambia.
@@ -696,9 +700,7 @@ class CandidateChronologicalTrainer(CandidateChronologicalPredictor):
             adapter, recipe, sources=sources, output=output, world=world, fold=fold, audit=audit
         )
         self.train, self.validation, self.heldout = train, validation, heldout
-        model = self.model
-        self.roles, self.inert = parameter_roles(model, recipe.admission)
-        named = model.named_parameters()
+        self.roles, self.inert, named = self._parameter_groups(self.model, recipe.admission)
         groups = [
             dict(params=[named[name] for name in names], role=role)
             for role, names in self.roles.items()
@@ -740,6 +742,12 @@ class CandidateChronologicalTrainer(CandidateChronologicalPredictor):
         self.global_step, self.selection, self.history, self.train_metrics = 0, None, [], None
 
     @staticmethod
+    def _parameter_groups(model, admission):
+        """Papeles, parámetros inertes y tensores ajustables por nombre."""
+        roles, inert = parameter_roles(model, admission)
+        return roles, inert, model.named_parameters()
+
+    @staticmethod
     def _code():
         return {name: sha256(Path(importlib.import_module(name).__file__)) for name in _OWN_MODULES}
 
@@ -749,6 +757,13 @@ class CandidateChronologicalTrainer(CandidateChronologicalPredictor):
             or _numerics() != self.identity["numerics"]
         ):
             raise ValueError("El código o la configuración numérica cambiaron durante el recorrido")
+
+    def _extra_state(self):
+        """Estado ajustable fuera del módulo nativo. El ajuste del candidato no tiene ninguno."""
+        return {}
+
+    def _restore_extra(self, state):
+        """Recuperar el estado de `_extra_state` junto a los parámetros nativos."""
 
     def _loss(self, quantiles, target, *, reduction="mean"):
         if self.recipe.loss == PINBALL:
@@ -960,6 +975,7 @@ class CandidateChronologicalTrainer(CandidateChronologicalPredictor):
             _load_parameters(self.model, state["model"])
             if self.model.parameter_fingerprint() != state["parameters_sha256"]:
                 raise ValueError("Los parámetros recuperados no conservan su huella")
+            self._restore_extra(state)
             self.optimizer.load_state_dict(state["optimizer"])
             restore_rng(state["rng"], self.device)
             self.global_step, cursor = state["global_step"], state["cursor"]
@@ -994,6 +1010,7 @@ class CandidateChronologicalTrainer(CandidateChronologicalPredictor):
                 history=self.history,
                 train_metrics=self.train_metrics,
                 run=None if current is None else self._export(current),
+                **self._extra_state(),
             )
             path = save_training_state(checkpoints, state, identity=self.identity, best=best)
             reference = dict(path=str(path.relative_to(output)), sha256=sha256(path))
@@ -1072,6 +1089,7 @@ class CandidateChronologicalTrainer(CandidateChronologicalPredictor):
             _load_parameters(self.model, best["model"])
             if self.model.parameter_fingerprint() != best["parameters_sha256"]:
                 raise ValueError("El estado seleccionado no conserva su huella")
+            self._restore_extra(best)
             report["predictions"] = self._predict(stop)
             report.update(
                 status="completed",

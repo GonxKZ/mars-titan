@@ -2,7 +2,8 @@
 
 La etapa se toma reducida de ``campaign_fixture`` (GRU, semilla 42, dos ventanas US),
 pero no se ejecuta: sus recibos, las fuentes de la campaña y las predicciones se escriben
-aquí con valores conocidos. Ningún modelo se carga ni se ajusta.
+aquí con valores conocidos. Ningún modelo se carga ni se ajusta. Es el plan por etapas de
+A, así que solo la segunda ventana tiene trabajos y el padre congelado es el suyo.
 """
 
 import json
@@ -43,12 +44,14 @@ def target(window, partition, rows):
 
 
 def prediction(arm, window, partition, truth):
-    """Padre y continuación iguales, cabeza perfecta y el resto desplazado."""
+    """Padre congelado, base y continuación iguales, cabeza perfecta y el resto desplazado."""
     if arm == "gru__head":
         return truth.copy()
     rng = np.random.default_rng(zlib.crc32(f"parent/{window}/{partition}".encode()))
     parent = np.round(0.5 * truth + rng.normal(0, 0.5, len(truth)), 3)
-    return parent if arm in ("gru", "gru__full_continuation") else parent + 0.1
+    return (
+        parent if arm in ("gru", "gru__frozen_parent", "gru__full_continuation") else parent + 0.1
+    )
 
 
 def write_table(path, arm, window, partition, segment):
@@ -180,10 +183,10 @@ def study(tmp_path_factory):
     return stage, sources, config, report, sessions, portfolio
 
 
-def by_hand_session_mae(stage, arm):
+def by_hand_session_mae(stage, arm, windows):
     sessions = []
-    for window, fold in stage.windows.items():
-        rows = keys(fold["evaluation"])
+    for window in windows:
+        rows = keys(stage.windows[window]["evaluation"])
         truth = target(window, "evaluation", len(rows))
         error = np.abs(prediction(arm, window, "evaluation", truth) - truth)
         sessions.extend(error.reshape(-1, len(ASSETS)).mean(axis=1))
@@ -212,13 +215,28 @@ def test_repository_declaration_derives_every_parent_from_the_stage_plan():
     for base_arm, config in loaded["configs"].items():
         group = loaded["groups"][base_arm]
         inherited = loaded["stage"]["campaign"]["comparison_config"]
+        frozen = group["frozen_parent"]
+        assert frozen == f"{base_arm}__frozen_parent"
         assert config["arms"][base_arm] == inherited["arms"][base_arm]
-        assert set(config["arms"]) == {base_arm, group["full_continuation"], *group["adapted"]}
+        assert set(config["arms"]) == {
+            base_arm,
+            frozen,
+            group["full_continuation"],
+            *group["adapted"],
+        }
         assert all(arm["seeds"] == [42, 43, 44] for arm in config["arms"].values())
         families = config["resolved_families"]
         assert set(families["versus_frozen_parent"]) == {
-            f"{arm}-{base_arm}" for arm in [*group["adapted"], group["full_continuation"]]
+            f"{arm}-{frozen}" for arm in [*group["adapted"], group["full_continuation"]]
         }
+        # La base reentrenada en cada ventana queda como nivel, fuera de las familias.
+        assert base_arm in families["levels"]
+        # Sin postentrenamiento en la primera ventana, la comparación empieza en la segunda.
+        for scope, resolved in config["resolved_scopes"].items():
+            assert (
+                list(resolved["windows"])
+                == list(inherited["resolved_scopes"][scope]["windows"])[1:]
+            )
         assert set(families["versus_full_continuation"]) == {
             f"{arm}-{group['full_continuation']}" for arm in group["adapted"]
         }
@@ -232,15 +250,18 @@ def test_repository_declaration_derives_every_parent_from_the_stage_plan():
 
 def test_frozen_parent_continuation_and_adapters_are_contrasted_by_role(study):
     stage, _, config, report, _, _ = study
-    assert set(report["arms"]) == {"gru", "gru__full_continuation", *ADAPTED}
+    assert set(report["arms"]) == {"gru", "gru__frozen_parent", "gru__full_continuation", *ADAPTED}
     assert report["posttraining"]["roles"] == dict(
-        frozen_parent="gru", full_continuation="gru__full_continuation", adapted=ADAPTED
+        frozen_parent="gru__frozen_parent",
+        full_continuation="gru__full_continuation",
+        adapted=ADAPTED,
     )
+    assert report["posttraining"]["windows"] == ["fold-001"]
     assert report["final_test_opened"] is False
-    mae, _ = by_hand_session_mae(stage, "gru")
+    mae, _ = by_hand_session_mae(stage, "gru", ["fold-001"])
     contrasts = report["contrasts"]["US"]
     for family, base in (
-        ("versus_frozen_parent", "gru"),
+        ("versus_frozen_parent", "gru__frozen_parent"),
         ("versus_full_continuation", "gru__full_continuation"),
     ):
         rows = {row["name"]: row for row in contrasts[family]["mae"]["contrasts"]}
@@ -249,7 +270,7 @@ def test_frozen_parent_continuation_and_adapters_are_contrasted_by_role(study):
     rows = {row["name"]: row for row in contrasts["versus_frozen_parent"]["mae"]["contrasts"]}
     assert len(rows) == 5 and set(contrasts) >= {"versus_frozen_parent", "levels"}
     # La continuación repite las predicciones del padre: su contraste es exactamente cero.
-    assert rows["gru__full_continuation-gru"]["estimate"] == 0.0
+    assert rows["gru__full_continuation-gru__frozen_parent"]["estimate"] == 0.0
     assert config["name"] == "historical-masked-2000-adapters-a-gru"
 
 
@@ -257,10 +278,23 @@ def test_sources_point_to_the_campaign_parent_and_the_stage_receipts(study):
     stage, sources, _, _, _, _ = study
     manifest = json.loads(sources.read_text())
     assert sources == stage.output / "sources" / "US" / "gru.json"
-    assert set(manifest["arms"]) == {"gru", "gru__full_continuation", *ADAPTED}
-    parent = manifest["arms"]["gru"]["42"]["fold-000"]["evaluation"]["path"]
+    assert set(manifest["arms"]) == {
+        "gru",
+        "gru__frozen_parent",
+        "gru__full_continuation",
+        *ADAPTED,
+    }
+    assert list(manifest["windows"]) == ["fold-001"]
+    parent = manifest["arms"]["gru"]["42"]["fold-001"]["evaluation"]["path"]
     assert (sources.parent / parent).resolve() == (
-        stage.base_sources.parent / "gru" / "fold-000" / "evaluation-predictions.parquet"
+        stage.base_sources.parent / "gru" / "fold-001" / "evaluation-predictions.parquet"
+    ).resolve()
+    frozen = manifest["arms"]["gru__frozen_parent"]["42"]["fold-001"]["evaluation"]["path"]
+    assert (sources.parent / frozen).resolve() == (
+        stage.output
+        / "jobs"
+        / "US/fold-001/gru__frozen_parent/frozen-s42"
+        / "evaluation-predictions.parquet"
     ).resolve()
     head = manifest["arms"]["gru__head"]["42"]["fold-001"]["calibration"]["path"]
     assert (sources.parent / head).resolve() == (
@@ -364,4 +398,4 @@ def test_cli_checks_the_declaration_without_reading_predictions(capsys):
     assert compare.main(["check", "--declaration", str(DECLARATION)]) == 0
     result = json.loads(capsys.readouterr().out)
     assert result["final_test_opened"] is False
-    assert result["parents"]["gru"]["arms"] == 6
+    assert result["parents"]["gru"]["arms"] == 7
