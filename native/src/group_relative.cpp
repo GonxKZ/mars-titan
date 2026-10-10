@@ -393,9 +393,10 @@ at::Tensor group_relative_loss(const at::Tensor& logp, const at::Tensor& logq,
         const auto clipped = ratio.clamp(lower, upper) * token_advantage;
         auto term = at::minimum(unclipped, clipped);
         if (config.kl_beta > 0) {
-            // Estimador k3 de la ecuación 4 de DeepSeekMath con la referencia q, q/p - log(q/p)
-            // - 1. Se evalúa en acciones de q sin peso de importancia, como en la fuente, aunque
-            // Zhang et al. (2025) muestran que ese gradiente no es el del KL fuera de política.
+            // Estimador k3 de la ecuación 4 de DeepSeekMath con la referencia q, es decir
+            // q/p - log(q/p) - 1. Se evalúa en acciones de q sin peso de importancia, como en la
+            // fuente, aunque Zhang et al. (2025) muestran que ese gradiente no es el del KL fuera
+            // de política.
             const auto delta = at::where(policy_mask, old - chosen, 0.);
             term = term - config.kl_beta * (delta.exp() - delta - 1);
         }
