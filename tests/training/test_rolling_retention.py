@@ -125,7 +125,14 @@ def walked(base, edition, unconsumed, tmp_path_factory):  # noqa: F811
             edition=edition,
         )
         calls = Calls()
+        built, source = [], comparison.liquidity_source
+        patch.setattr(
+            comparison,
+            "liquidity_source",
+            lambda config, edition: built.append(edition) or source(config, edition),
+        )
         result = rolling.run_rolling(state, calls.runners())
+        patch.setattr(comparison, "liquidity_source", source)
         again = Calls()
         resumed = rolling.run_rolling(state, again.runners())
         with pytest.raises(prediction_files.PredictionsReleased):
@@ -159,6 +166,7 @@ def walked(base, edition, unconsumed, tmp_path_factory):  # noqa: F811
             resumed=resumed,
             calls=calls.calls,
             again=again.calls,
+            liquidity_built=len(built),
         )
 
 
@@ -816,3 +824,9 @@ def test_jobs_declared_not_regenerable_are_compacted_without_regenerating(
     assert not report.exists()
     release = state.ledger()["windows"][windows[0]["id"]]["phases"]["release"]
     assert release["declared_not_regenerable"] == 1
+
+
+def test_the_walk_reads_the_liquidity_edition_once_for_every_window(walked):
+    # Un solo asignador para todas las ventanas y ámbitos: cada activo se lee una vez.
+    assert len(walked["windows"]) > 1 and walked["liquidity_built"] == 1
+    assert set(walked["state"]._liquidity._assets) <= {"US/A0000", "US/B0001"}

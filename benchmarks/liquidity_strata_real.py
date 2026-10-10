@@ -11,8 +11,9 @@ año sellado, no carga modelos, no usa la GPU y no ejecuta pasos de optimizador:
    volumen de la sesión publicada por su último cierre negociado, en moneda local.
 4. Mide ``EditionLiquidity.assign`` con las decisiones de cuatro meses de todos los activos,
    con una instancia por mes (como la retención al guardar cada ventana) y con una sola (como
-   la comparación con todas sus ventanas), y ``window_extremes`` con un panel de 100.000 filas
-   y errores sintéticos.
+   la comparación con todas sus ventanas), ``window_extremes`` con un panel de 100.000 filas
+   y la puntuación de los cinco estratos de un modelo con un panel de 625.000, ambos con
+   errores sintéticos.
 
 El recibo solo contiene recuentos, cuantiles, tiempos y huellas.
 """
@@ -33,8 +34,10 @@ from mars_titan.data.storage import atomic_json, sha256
 from mars_titan.data.temporal import MarketClock
 from mars_titan.data.unadjusted_edition import PRICE_SCHEMA
 from mars_titan.evaluation import liquidity_strata as ls
+from mars_titan.evaluation import modality_strata
 from mars_titan.evaluation import walk_forward_comparison as walk
 from mars_titan.evaluation.forecast_panel import ForecastPanel
+from mars_titan.evaluation.forecast_scores import score_sessions
 from mars_titan.simulation.reconstructed_tape import _snap
 from mars_titan.simulation.session_prices import _table
 
@@ -185,6 +188,32 @@ def assignment_cost(edition, section, months):
     return result
 
 
+def strata_cost(assets, sessions, repeats, rng):
+    """Puntuar los cinco estratos de un modelo frente a puntuar la ventana entera.
+
+    Usa un panel sintético con la forma del de los estratos de modalidades (2.500 activos y
+    250 sesiones) y estratos al azar con las proporciones de US.
+    """
+    rows = assets * sessions
+    moments = np.repeat(np.arange(sessions, dtype=np.int64) * 86_400_000_000, assets)
+    ids = np.char.add("US/US/S", np.tile(np.arange(assets), sessions).astype(str))
+    ids = np.char.add(np.char.add(ids, "/"), moments.astype(str))
+    target = rng.standard_t(3, rows) * 0.02
+    panel = ForecastPanel.from_columns(
+        ids, np.full(rows, "US"), moments, target, 0.5 * target + rng.normal(0, 0.01, rows)
+    )
+    codes = rng.choice(len(ls.NAMES), rows, p=[0.82, 0.02, 0.012, 0.001, 0.147]).astype(np.int8)
+    whole, strata = [], []
+    for _ in range(repeats):
+        started = time.perf_counter()
+        score_sessions(panel, rank_ic_min_assets=30)
+        whole.append(time.perf_counter() - started)
+        started = time.perf_counter()
+        modality_strata.score_strata(panel, codes, rank_ic_min_assets=30, names=ls.NAMES)
+        strata.append(time.perf_counter() - started)
+    return dict(rows=rows, whole_best_seconds=min(whole), strata_best_seconds=min(strata))
+
+
 def extremes_cost(rows, sessions, count, repeats, rng):
     """``window_extremes`` sobre un panel sintético con las filas de una ventana."""
     markets = np.where(np.arange(rows) % 5 == 0, "CN", "US")
@@ -239,6 +268,7 @@ def main():
             population_seconds=whole,
             assignment=assignment_cost(args.edition, section, args.months.split(",")),
             extremes=extremes_cost(100_000, 42, section["extremes"][-1], args.repeats, rng),
+            strata=strata_cost(2_500, 250, args.repeats, rng),
         ),
         machine=dict(
             platform=platform.platform(),

@@ -132,6 +132,11 @@ Una comparación con la referencia cero indica si el modelo aporta algo sobre no
 predecir. Ninguna de estas cifras es un porcentaje de acierto ni una
 rentabilidad. Un MAE menor tampoco implica mejor ordenación entre activos.
 
+El MSE queda decidido por unas pocas filas ilíquidas de los residuales extremos. En la
+comparación de la campaña solo se informa junto a su versión por
+[estratos de liquidez](#estratos-de-liquidez-y-métricas-cuadráticas) y al peso de las filas
+más extremas.
+
 ## Dirección del retorno residual
 
 La convención es `zero_target_excluded_zero_prediction_is_abstention_and_miss`,
@@ -1013,6 +1018,151 @@ activo, al mercado y al periodo, así que un MAE menor en
 harían falta controles con la misma fila y la modalidad enmascarada. Los
 contrastes entre brazos dentro de un estrato sí son emparejados, porque todos los
 brazos evalúan las mismas filas.
+
+## Estratos de liquidez y métricas cuadráticas
+
+El diagnóstico del residual de [#16](https://github.com/GonxKZ/mars-titan/issues/16) mostró que
+las colas de US las dominan valores muy poco líquidos. 19 de los 20 residuales mayores son de
+acciones que abren por debajo de 1 USD o negocian menos de 1.000 títulos ese día, y una sola
+fila de KGJI (residual 49,0) aporta cerca de tres cuartos de la suma de cuadrados del residual
+de US en 2022. Una métrica o una pérdida cuadrática queda decidida por esas filas. Este análisis
+secundario, declarado el 10 de octubre de 2026 antes de cualquier resultado
+([#532](https://github.com/GonxKZ/mars-titan/issues/532)), no descarta ninguna fila. Informa el
+MSE junto a su versión por estratos de liquidez y al peso de las filas más extremas. No se usa
+para seleccionar modelos, configuraciones ni épocas, y la métrica principal sigue siendo el MAE
+residual por sesión, con el pinball para la cabeza de cuantiles.
+
+### Qué es cuadrático en la campaña
+
+| Lugar | Qué es | Papel en la campaña A |
+| --- | --- | --- |
+| `forecast_scores` | MSE por sesión, RMSE y MSE por fila de cada resumen | Descriptivo en todos los informes de la comparación |
+| Comparaciones `historical-masked-2000` | `mse` entre las métricas de los contrastes | Contraste secundario, con esta sección obligatoria |
+| `comparison-matrix-a.json` | `mse` en la vista `forecast` | La matriz exige esta sección en cada informe que lo contrasta |
+| Ridge (`models/baselines/ridge.py`) | Mínimos cuadrados con penalización L2 | Pérdida de ajuste de la referencia lineal |
+| XGBoost (`external_boosting.py`) | `objective="reg:squarederror"` | Pérdida de ajuste de la referencia de árboles |
+| Etapa de políticas (`simulation/training.py`) | `F.mse_loss` del valor frente a los retornos | Pérdida del crítico, sobre recompensas de cartera y no sobre el residual |
+| `integrity/score_recheck.py`, `prediction_review.py`, observatorio | Recálculo y presentación del MSE | Comprobación y lectura, sin decidir nada |
+
+Las referencias neuronales de A y las variantes propias se ajustan con la pinball de la cabeza
+común (`campaign_plan` sustituye la pérdida de su diseño) y los adaptadores con MAE o pinball.
+Ridge y XGBoost eligen su penalización, su profundidad y su ronda con el MAE por sesión de la
+validación, así que la selección no es cuadrática aunque el ajuste sí lo sea. La búsqueda
+histórica de referencias (`historical-masked-reference-search-us.json`) conserva un caso con MSE
+y un control postentrenado con MSE, pero es un estudio anterior y no forma parte de A. Ninguna de
+estas pérdidas se cambia aquí. Cambiar la de Ridge o XGBoost sería otra configuración de
+referencia, con su propio presupuesto de búsqueda, y queda para el resumen previo al
+entrenamiento.
+
+### Declaración
+
+La sección `liquidity_strata` de las dos comparaciones de la campaña fija la fuente, los
+umbrales (`price_below=1.0` en moneda local, `volume_below=1000` títulos y una ventana de
+`volume_sessions=20` filas), los cinco estratos, las métricas (`mae` y `mse`), los recuentos de
+filas extremas (1, 10 y 100), las 10 filas listadas, la prohibición de recalibrar, los mínimos de
+la celda (1.000 filas y 50 sesiones, los mismos que los estratos de modalidades) y la corrección
+por comparaciones múltiples. El cargador rechaza otros valores y exige que cada métrica
+cuadrática de los contrastes principales figure entre las de la sección. Es una sección
+opcional en cualquier versión de la configuración, pero una prueba exige que toda comparación de
+`configs/evaluation` que contraste el MSE la declare.
+
+| Estrato | Precio por debajo de 1 | Mediana de volumen por debajo de 1.000 |
+| --- | --- | --- |
+| `liquid` | No | No |
+| `low_price` | Sí | No |
+| `thin_volume` | No | Sí |
+| `low_price_and_thin_volume` | Sí | Sí |
+| `unclassified` | Sin precio verificado o sin ventana completa | |
+
+### Asignación causal
+
+`evaluation/liquidity_strata.py` asigna cada fila evaluada con la
+[edición sin ajustar](../data/unadjusted-prices.md). Los precios preparados están ajustados hacia
+atrás por splits y dividendos posteriores, así que un umbral de 1 USD sobre ellos usaría el
+futuro: una acción que se desdobla años después aparecería antes como acción de céntimos. La
+edición reconstruye el precio y el volumen negociados.
+
+- **Sesión publicada.** La última del mercado cuya decisión (cierre más cinco minutos, según
+  `MarketClock`) es anterior o igual al instante de la predicción. Es la misma barrera que admite
+  los precios del corpus. Un microsegundo antes de esa decisión, su barra todavía no cuenta.
+- **Precio.** Último cierre verificado con volumen positivo hasta esa sesión, llevado a su
+  múltiplo de cotización. Una sesión rellenada por el proveedor con volumen cero no aporta su
+  cierre, que puede haberse movido.
+- **Volumen.** Mediana de los títulos negociados en las 20 filas de la edición que terminan en
+  esa sesión, todas verificadas. Una suspensión rellenada cuenta como volumen cero.
+- **Sin clasificar.** `asset_not_in_edition`, `no_published_row`, `no_verified_traded_close` o
+  `incomplete_volume_window`, con su recuento por ventana en `assignment`.
+
+Ninguna fila posterior a la sesión publicada interviene, tampoco la de la etiqueta. Las pruebas
+truncan series aleatorias con suspensiones y filas sin verificar en cualquier punto y exigen los
+mismos códigos en todas las filas anteriores, y la comprobación con datos reales repite el
+truncamiento en 400 activos. La edición sí usó acciones corporativas posteriores y una constante
+terminal para deshacer el ajuste del proveedor, y su verificación por tramos decide qué filas se
+pueden clasificar. El valor recuperado es el precio negociado, que ya era público al emitir, pero
+la pertenencia a `unclassified` depende de esa reconstrucción. Todos los modelos se evalúan sobre
+las mismas filas, así que esa selección no favorece a ninguno.
+
+### Métricas por estrato y filas extremas
+
+Cada estrato se puntúa con el mismo código que los [estratos de modalidades](#estratos-por-presencia-de-modalidades):
+MAE y MSE por sesión con la ponderación declarada, contrastes con las familias, el bootstrap y
+la semilla de la comparación, Bonferroni sobre cinco estratos por ámbito (15 celdas en US+CN y
+5 en US o CN) e intervalos con el calibrador común, sin volver a ajustarlo. Los códigos se
+alinean con el orden canónico de cada fila, así que no dependen del orden de los archivos.
+
+Para cada modelo, semilla y vista, `extremes` informa dos totales:
+
+- **Por fila.** $\sum_i e_i^2$, que es el MSE por fila por el número de filas. Una fila aporta
+  $e_i^2$.
+- **Por sesión.** El MSE por sesión agregado. Con la ponderación `session`, una fila aporta
+  $e_i^2/(n_s S)$, con $n_s$ filas en su sesión y $S$ sesiones en la vista. Con `market`, aporta
+  $e_i^2/(n_s S_m M)$.
+
+Se publica qué parte del total aportan las 1, 10 y 100 filas de mayor contribución, a qué
+estratos pertenecen y las diez primeras con su activo, instante, estrato, error al cuadrado y
+filas de su sesión. Cada ventana guarda las 100 mayores de cada mercado y criterio. Como dentro
+de una vista el peso de una fila solo depende de su mercado, las mayores de la unión son
+exactamente las mayores del conjunto, y las pruebas lo comprueban partiendo un panel en dos
+ventanas. Con $k$ igual a todas las filas la parte es 1.
+
+### Informe, agregados y matriz
+
+El informe añade `liquidity_strata` con `declaration`, `status`, `prices` (edición y fuente),
+`assignment`, `population`, `arms` (MAE y MSE por estrato), `contrasts`,
+`interval_calibration` y `extremes`. Sin la edición (`--edition`) la sección queda `pending` con
+su motivo. Los agregados por ventana de la retención v2 guardan los estratos y las filas
+extremas, y su identidad incluye la edición, así que no se pueden releer sin ella ni con otra.
+La retención exige la edición cuando la comparación declara la sección. La
+[matriz de comparaciones](#matriz-de-comparaciones-y-atribución-por-componentes) rechaza una
+vista con `mse` si algún informe de origen no trae la sección calculada con esa métrica, y
+publica en `quadratic_metrics` las huellas de los informes que la acompañan.
+
+### Etapa de políticas
+
+La cartera de la etapa de políticas ya limita estas posiciones. El límite de cada orden es la
+participación declarada (0,01) por el volumen de la sesión cerrada en la decisión, que es la
+última publicada. El volumen del día de ejecución no se conoce en la apertura y no interviene.
+`Portfolio.submit` y el motor nativo (`financial_session.cpp::submit`) toman el volumen de la
+fila del cursor de decisión, y la paridad nativa compara la capacidad de cada orden con la
+referencia en Python. Una prueba nueva fija el caso con 1.000 títulos en la decisión y 0 o diez
+millones en la ejecución: se ejecutan 10 títulos en los dos. Los volúmenes de la cinta son los
+negociados de la edición sin ajustar, en las mismas unidades que sus precios, y una sesión con
+volumen cero o sin fila no ejecuta nada. El universo de cada ventana se ordena además por la
+mediana del efectivo negociado de su validación, anterior a la evaluación.
+
+### Coste
+
+COSTE_PENDIENTE
+
+### Qué no permite afirmar
+
+Las diferencias entre estratos describen subpoblaciones distintas, con otros sectores, periodos
+y mercados. Un MSE mayor en `low_price_and_thin_volume` no demuestra que la iliquidez cause el
+error, y un modelo que mejora en `liquid` no tiene por qué ser mejor negociable. Los umbrales de
+1 unidad y 1.000 títulos son los del diagnóstico de #16, en moneda local, y en China apenas
+separan nada salvo las suspensiones. `unclassified` es una parte grande de US (en torno al 15 %
+de las filas desde 2019) y no es un estrato aleatorio: reúne activos sin reconstrucción
+verificada.
 
 ## Ablación de modalidades en inferencia
 

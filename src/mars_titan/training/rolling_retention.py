@@ -192,6 +192,9 @@ class Rolling:
         self.ablation_executors = ablation_executors
         self.disk = disk
         self.edition = None if edition is None else Path(edition)
+        # Asignador de liquidez compartido por todas las ventanas y ámbitos del recorrido: lee
+        # cada activo de la edición una vez por proceso y no una por ventana.
+        self._liquidity = None
         self.folder = self.output / "retention"
         # Con las políticas declaradas como consumidoras, sin su etapa no se sabría qué
         # evaluaciones leen y se podrían liberar antes de montar sus cintas.
@@ -448,10 +451,11 @@ class Rolling:
                     window=window,
                 )
                 masked = comparison._ablation_sources(masked_path, restricted, sources)
-            liquidity = comparison.liquidity_source(restricted, self.edition)
+            if self._liquidity is None:
+                self._liquidity = comparison.liquidity_source(config, self.edition)
             records = dict(
                 walk_forward=window_aggregates.write(
-                    folder, restricted, sources, window, masked, liquidity=liquidity
+                    folder, restricted, sources, window, masked, liquidity=self._liquidity
                 )
             )
             if comparison.LONG_SHORT_FIELD in config:
