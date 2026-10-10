@@ -25,7 +25,7 @@ from collections import Counter
 
 import numpy as np
 
-from .policy_plan import FIT, REFERENCE, plan_stage
+from .policy_plan import FIT, REFERENCE, VALUE_VARIANTS, WAVE_ENGINES, plan_stage
 
 SESSIONS = 253
 UNAVAILABLE = "unavailable"
@@ -239,6 +239,12 @@ NATIVE_FIELDS = (
     "evaluation_step_seconds",
     "reference_step_seconds",
 )
+# Tiempos de la cabeza cuantílica, exigidos solo cuando la etapa declara qr_dqn o qr_dqn_cvar.
+# Ambas comparten red y coste, porque el CVaR solo cambia qué niveles se promedian.
+QUANTILE_FIELDS = ("qr_dqn_tick_seconds", "qr_dqn_minibatch_seconds", "qr_dqn_forward_seconds")
+# Objetivo de grupo por transición recogida, exigido solo si la etapa declara esos brazos. La
+# recogida es la de KLPO y usa su tiempo.
+GROUP_FIELDS = ("group_objective_transition_seconds",)
 DQN_WARMUP = 256
 
 
@@ -254,14 +260,15 @@ def native_fit_work(stage, job):
 
     PPO recoge el presupuesto en pasos de `environments` entornos y hace épocas de
     minilotes por recorrido. Double DQN hace un minilote por transición elegible a partir
-    del calentamiento. KLPO recoge oleadas completas, un episodio por entorno que recorre
-    en ciclo las ventanas de ajuste, y hace una actualización por oleada.
+    del calentamiento, también con cabeza cuantílica. KLPO y los objetivos de grupo recogen
+    oleadas completas, un episodio por entorno que recorre en ciclo las ventanas de ajuste, y
+    hacen una actualización por oleada.
     """
     policies = stage["policies"]
     budget, hyper = policies["budget"], policies["hyperparameters"]
     transitions, environments = budget["transitions"], budget["environments"]
     evaluation = budget["evaluation_transitions"]
-    if job["engine"] == "native_klpo":
+    if job["engine"] in WAVE_ENGINES:
         wave = sum(
             _sessions(stage, job["scope"], job["train"][lane % len(job["train"])]) - 1
             for lane in range(environments)
@@ -269,7 +276,7 @@ def native_fit_work(stage, job):
         waves = transitions // wave
         every = max(1, evaluation // wave)
         return dict(
-            engine="klpo",
+            engine="klpo" if job["engine"] == "native_klpo" else "group",
             collected=waves * wave,
             waves=waves,
             adam_steps=waves,
@@ -280,7 +287,7 @@ def native_fit_work(stage, job):
     minibatches = math.ceil(budget["rollout_transitions"] / hyper["minibatch_size"])
     updates = (
         transitions - DQN_WARMUP
-        if variant == "double_dqn"
+        if variant in VALUE_VARIANTS
         else rollouts * hyper["epochs"] * minibatches
     )
     return dict(
@@ -300,8 +307,10 @@ def native_policy_hours(stage, measured):
     un paso de recogida con todos los entornos, la recogida y el objetivo de KLPO por
     transición, el forward y backward y el forward sin gradiente de un minilote, la GAE de
     un recorrido y un paso de un carril con y sin red. Un minilote de Double DQN cuenta un
-    forward y backward y dos forwards sin gradiente. Sin el paso de Adam, las horas son una
-    cota inferior: el resultado cuenta esos pasos por brazo para completarla después.
+    forward y backward y dos forwards sin gradiente. QR-DQN sigue la misma cuenta con los
+    tiempos de `QUANTILE_FIELDS`, que solo se exigen si la etapa declara esas variantes. Sin el
+    paso de Adam, las horas son una cota inferior: el resultado cuenta esos pasos por brazo
+    para completarla después.
     """
     for market, values in measured.items():
         _require_fields(values, market)
@@ -329,9 +338,20 @@ def native_policy_hours(stage, measured):
                 rate["klpo_transition_seconds"] + rate["klpo_objective_transition_seconds"]
             )
             return total + work["collected"] * per_transition, work["adam_steps"]
+        if work["engine"] == "group":
+            _require_fields(rate, job["market"], GROUP_FIELDS)
+            per_transition = (
+                rate["klpo_transition_seconds"] + rate["group_objective_transition_seconds"]
+            )
+            return total + work["collected"] * per_transition, work["adam_steps"]
         if work["engine"] == "double_dqn":
             update = rate["minibatch_seconds"] + 2 * rate["forward_seconds"]
             total += work["ticks"] * rate["double_dqn_tick_seconds"]
+            return total + work["adam_steps"] * update, work["adam_steps"]
+        if work["engine"] in VALUE_VARIANTS:
+            _require_fields(rate, job["market"], QUANTILE_FIELDS)
+            update = rate["qr_dqn_minibatch_seconds"] + 2 * rate["qr_dqn_forward_seconds"]
+            total += work["ticks"] * rate["qr_dqn_tick_seconds"]
             return total + work["adam_steps"] * update, work["adam_steps"]
         total += work["ticks"] * rate["ppo_tick_seconds"] + work["rollouts"] * rate["gae_seconds"]
         return total + work["adam_steps"] * rate["minibatch_seconds"], work["adam_steps"]
@@ -357,10 +377,10 @@ def native_policy_hours(stage, measured):
     )
 
 
-def _require_fields(values, market):
+def _require_fields(values, market, fields=NATIVE_FIELDS):
     missing = [
         name
-        for name in NATIVE_FIELDS
+        for name in fields
         if type(values.get(name)) not in (int, float)
         or not math.isfinite(values[name])
         or values[name] < 0

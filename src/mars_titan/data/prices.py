@@ -5,6 +5,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from .source_numbers import exact_floats, read_source_csv
 from .temporal import MarketClock
 
 # Las series ajustadas de la fuente redondean OHLC por separado. Un cierre puede superar al
@@ -21,6 +22,16 @@ def check_ordering_rtol(value: float) -> float:
     return value
 
 
+def ordering_excess(open_, high, low, close):
+    """Desorden OHLC relativo al mayor de los cuatro precios. Es cero si la fila está ordenada.
+
+    Solo mide. Ningún consumidor sustituye los valores por su envolvente.
+    """
+    top = np.maximum(np.maximum(open_, high), np.maximum(low, close))
+    bottom = np.minimum(np.minimum(open_, high), np.minimum(low, close))
+    return np.maximum(top - high, low - bottom) / top
+
+
 def read_prices(
     path: Path,
     clock: MarketClock,
@@ -32,12 +43,13 @@ def read_prices(
 
     Con `ordering_rtol` igual a cero se conserva la auditoría estricta. Un valor positivo admite
     filas cuyo único defecto es un desorden OHLC menor que esa fracción del máximo de la fila.
-    Esas filas conservan apertura, cierre y volumen. El máximo y el mínimo pasan a ser la
-    envolvente de los cuatro precios y la auditoría registra los valores originales.
+    Esas filas conservan exactamente sus cinco valores. Solo se relaja la comprobación y la
+    auditoría registra cada fila admitida con su exceso. Los números se convierten con
+    `exact_floats`, así que cada valor es el double más cercano al texto de la fuente.
     """
     check_ordering_rtol(ordering_rtol)
-    frame = pd.read_csv(path, dtype=dict.fromkeys(["Date", "Dividends", "Stock Splits"], str))
     required = ["Open", "High", "Low", "Close", "Volume"]
+    frame = read_source_csv(path, required)
     if not {"Date", *required} <= set(frame.columns):
         raise ValueError(f"Faltan columnas OHLCV en {path.name}")
     frame["session"] = frame["Date"].str[:10]
@@ -45,9 +57,7 @@ def read_prices(
         frame["session"].str.fullmatch(r"\d{4}-\d{2}-\d{2}", na=False)
         & pd.to_datetime(frame["session"], format="%Y-%m-%d", errors="coerce").notna()
     )
-    values = frame[required].apply(pd.to_numeric, errors="coerce")
-    if frame.empty:
-        values = values.astype(float)
+    values = frame[required].astype(np.float64)
     duplicates = frame["session"].duplicated(keep=False) & valid_date
     finite = np.isfinite(values).all(axis=1)
     o, h, lo, c, v = (values[name] for name in required)
@@ -55,9 +65,8 @@ def read_prices(
     disordered = (h < lo) | (h < o) | (h < c) | (lo > o) | (lo > c)
     invalid = broken | disordered
     if ordering_rtol:
-        quotes = values[required[:4]]
-        top, bottom = quotes.max(axis=1), quotes.min(axis=1)
-        excess = np.maximum(top - h, lo - bottom) / top
+        with np.errstate(divide="ignore", invalid="ignore"):
+            excess = ordering_excess(o, h, lo, c)
         rounded = disordered & ~broken & (excess <= ordering_rtol)
         invalid &= ~rounded
     session_values = {
@@ -68,8 +77,6 @@ def read_prices(
     result = values.loc[~excluded].rename(columns=str.lower).copy()
     if ordering_rtol:
         rounded &= ~excluded
-        result.loc[rounded[rounded].index, "high"] = top[rounded]
-        result.loc[rounded[rounded].index, "low"] = bottom[rounded]
     result["session"] = frame.loc[~excluded, "session"]
     result["available_at"] = result["session"].map(session_values)
     result = result.sort_values("session").reset_index(drop=True)
@@ -119,8 +126,6 @@ def read_prices(
                 {
                     "source_row": int(index) + 1,
                     "source_date": frame.at[index, "Date"],
-                    "source_high": float(h.at[index]),
-                    "source_low": float(lo.at[index]),
                     "relative_excess": float(excess.at[index]),
                 }
                 for index in frame.index[rounded]
@@ -132,7 +137,7 @@ def _corporate_actions(frame: pd.DataFrame) -> list[dict]:
     columns = [name for name in ("Dividends", "Stock Splits") if name in frame]
     if not columns or frame.empty:
         return []
-    values = frame[columns].apply(pd.to_numeric, errors="coerce")
+    values = frame[columns].apply(lambda column: exact_floats(column.to_numpy(dtype=object)))
     valid = (np.isfinite(values) & (values >= 0)).all(axis=1)
     present = (values != 0).any(axis=1) | ~valid
     raw = frame.reindex(columns=["Date", "Dividends", "Stock Splits"]).astype(object)

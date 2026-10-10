@@ -186,7 +186,9 @@ def test_rounding_tolerance_is_a_separate_policy_with_traceable_roundings(tmp_pa
     assert rounded["policy"] != strict["policy"]
     partition = output / "US/A"
     trace = pq.read_table(partition / "ordering_roundings.parquet").to_pylist()
-    assert [(row["source_row"], row["source_high"]) for row in trace] == [(1, 3.9916150569915767)]
+    assert [set(row) for row in trace] == [{"source_row", "source_date", "relative_excess"}]
+    assert [(row["source_row"], row["source_date"]) for row in trace] == [(1, "2024-01-02")]
+    assert 0 < trace[0]["relative_excess"] < 1e-15
     assert pq.read_table(partition / "exclusions.parquet")["source_row"].to_pylist() == [2]
     assert not (tmp_path / "strict/US/A/ordering_roundings.parquet").exists()
     # La reanudación no puede mezclar tolerancias en el mismo estado y destino.
@@ -194,9 +196,10 @@ def test_rounding_tolerance_is_a_separate_policy_with_traceable_roundings(tmp_pa
         module().audit_prices(source, database, state, details_root=output, ordering_rtol=1e-8)
     with pytest.raises(ValueError, match="tolerancia"):
         module().audit_prices(source, database, tmp_path / "x.json", ordering_rtol=1e-3)
-    # El lector auditado posterior comprueba el orden estricto y acepta la envolvente.
+    # El lector auditado posterior relaja la comprobación con la tolerancia que declara el estado.
     records, _ = audit_catalog(state)
     record = records["US", "A"]
+    assert record["ordering_rtol"] == 1e-9
     clock = MarketClock("US", "2023-01-01", "2025-01-01")
     frame, receipt, reserved = read_audited_prices(
         record, record["source_sha256"], clock, "2023-12-31"
@@ -206,8 +209,25 @@ def test_rounding_tolerance_is_a_separate_policy_with_traceable_roundings(tmp_pa
         record, record["source_sha256"], clock, "2024-12-31"
     )
     assert frame["session"].tolist() == ["2024-01-02", "2024-01-04"]
-    assert frame.loc[0, "high"] == frame.loc[0, "close"] == 3.991615056991577
+    texts = ROUNDED_SOURCE.splitlines()[1].split(",")[1:5]
+    assert frame.loc[0, ["open", "high", "low", "close"]].tolist() == [float(t) for t in texts]
+    assert frame.loc[0, "close"] > frame.loc[0, "high"]
     assert receipt["accepted"] == 2 and reserved == 0
+    assert receipt["ordering_rtol"] == 1e-9
+    # Sin la tolerancia declarada, la misma partición vuelve a ser inválida.
+    strict_record = {key: value for key, value in record.items() if key != "ordering_rtol"}
+    with pytest.raises(ValueError, match="OHLCV inválido"):
+        read_audited_prices(strict_record, record["source_sha256"], clock, "2024-12-31")
+    # Una tolerancia menor que el exceso registrado tampoco la admite.
+    smaller = {**record, "ordering_rtol": trace[0]["relative_excess"] / 2}
+    with pytest.raises(ValueError, match="OHLCV inválido"):
+        read_audited_prices(smaller, record["source_sha256"], clock, "2024-12-31")
+    strict_records, _ = audit_catalog(tmp_path / "strict.json")
+    assert "ordering_rtol" not in strict_records["US", "A"]
+    _, strict_receipt, _ = read_audited_prices(
+        strict_records["US", "A"], record["source_sha256"], clock, "2024-12-31"
+    )
+    assert "ordering_rtol" not in strict_receipt
 
 
 def test_price_cli_passes_the_declared_rounding_tolerance(tmp_path, monkeypatch):

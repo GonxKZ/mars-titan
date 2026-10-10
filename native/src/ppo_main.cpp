@@ -17,7 +17,8 @@ int main(int argc, char** argv) {
         "  Capacidades: --capabilities, sin leer datos.\n"
         "Entrena y valida PPO en escenarios sintéticos o cintas reconstruidas, sin abrir el "
         "test.\n",
-        {"native_policy_reconstructed_tapes", "native_policy_equity_and_costs"},
+        {"native_policy_reconstructed_tapes", "native_policy_equity_and_costs",
+         "native_ppo_quantile_value_heads"},
         [](const auto& options, const auto& stop) {
             return mars_titan::learning::run_ppo_experiment(options, stop);
         }};

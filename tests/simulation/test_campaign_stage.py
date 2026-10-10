@@ -380,6 +380,7 @@ def test_capability_requirements_follow_engine_and_market(monkeypatch, tmp_path)
     assert campaign_stage.requirements(dict(engine="native_ppo", market="US"), executors) == [
         "native_policy_reconstructed_tapes",
         "native_ppo_equity_and_costs",
+        "native_ppo_quantile_value_heads",
     ]
     assert campaign_stage.requirements(dict(engine="reference", market="US"), executors) == [
         "native_accounting"
@@ -392,6 +393,8 @@ def test_capability_requirements_follow_engine_and_market(monkeypatch, tmp_path)
         "native_klpo_financial_runner",
         "native_ppo_equity_and_costs",
         "native_klpo_equity_and_costs",
+        "native_ppo_quantile_value_heads",
+        "native_group_relative_runner",
     ):
         assert probed[name]["available"] is False
         assert probed[name]["reason"].startswith(campaign_stage.CAPABILITIES[name]["pending"])
@@ -429,6 +432,8 @@ def test_policy_binaries_declare_their_capabilities_and_identity():
         ("native_klpo_financial_runner", "mars-titan-klpo"),
         ("native_ppo_equity_and_costs", "mars-titan-ppo"),
         ("native_klpo_equity_and_costs", "mars-titan-klpo"),
+        ("native_ppo_quantile_value_heads", "mars-titan-ppo"),
+        ("native_group_relative_runner", "mars-titan-klpo"),
     ):
         assert probed[name]["available"] is True and probed[name]["reason"] is None
         identity = probed[name]["binary"]

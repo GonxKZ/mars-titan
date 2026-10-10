@@ -139,11 +139,12 @@ void configure_agent(ExperimentConfig& config, const std::filesystem::path& path
     options.variant = agent.at("variant").get<std::string>();
     if (reconstructed(config)) {
         // Las cintas reconstruidas no tienen calentamiento ni contexto: todas las sesiones
-        // son decisiones y la etapa solo compara PPO y Double DQN con la misma representación.
-        require((options.variant == "ppo" || options.variant == "double_dqn") &&
+        // son decisiones y la etapa compara PPO con las variantes de valor (Double DQN y sus
+        // cabezas cuantílicas QR-DQN) sobre la misma representación.
+        require((options.variant == "ppo" || value_variant(options.variant)) &&
                     agent.at("trading_field").is_null() && agent.at("markov_fields") == Json::array() &&
                     agent.at("hmm_file").is_null(),
-                "El esquema 4 admite PPO o Double DQN sin contexto, máscara ni HMM");
+                "El esquema 4 admite PPO, Double DQN o QR-DQN sin contexto, máscara ni HMM");
         return;
     }
     constexpr std::array<std::string_view, 9> variants{
@@ -249,7 +250,7 @@ ExperimentConfig configuration(const std::filesystem::path& path) {
                                   "final_test_opened", "agent", "evaluation_transitions"});
         configure_agent(result, path);
         require(!result.objective.enabled() ||
-                    (result.learning.variant != "double_dqn" && result.learning.variant != "ppo_recent_aux" &&
+                    (!value_variant(result.learning.variant) && result.learning.variant != "ppo_recent_aux" &&
                      result.learning.variant != "ppo_replay_aux"),
                 "El controlador PPO no admite Double DQN ni actualizaciones auxiliares");
     } else {
@@ -318,7 +319,7 @@ ExperimentConfig configuration(const std::filesystem::path& path) {
                  1 + (result.training.total_transitions + result.evaluation_transitions - 1) /
                          result.evaluation_transitions <= maximum_selection_evaluations &&
                  (result.early_stopping || result.min_transitions == 0) &&
-                 (!result.early_stopping || result.learning.variant != "double_dqn" ||
+                 (!result.early_stopping || !value_variant(result.learning.variant) ||
                   result.min_transitions >= dqn_learning_warmup)),
             "El selector debe respetar mínimo, intervalo, presupuesto, calentamiento y hasta 4096 evaluaciones");
     require(result.environments > 0 && result.environments <= simulation::maximum_environments &&

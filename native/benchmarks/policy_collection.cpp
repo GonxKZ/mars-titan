@@ -4,13 +4,18 @@
 // y del crítico con sus copias de vuelta, las ventajas GAE, la recogida completa de PPO con
 // `PpoTrainer::advance` antes de su primera actualización, el primer paso de un entrenador
 // recién creado, que también admite la CPU, una oleada de KLPO y el forward
-// y backward de un minilote PPO. Ninguna medida crea un paso de Adam: al terminar se exige
-// que los parámetros conserven su huella y que no haya pasos de optimizador. Con `--repeat`
-// las recogidas PPO y KLPO se repiten para medir varios procesos simultáneos.
+// y backward de un minilote PPO. También mide la acción y la pérdida de valor de Double DQN y
+// de sus cabezas cuantílicas sobre transiciones recogidas de la cinta, y el forward y backward
+// de los cuatro objetivos de grupo sobre la misma oleada que KLPO. Ninguna medida crea un paso
+// de Adam: al terminar se exige que los parámetros conserven su huella y que no haya pasos de
+// optimizador. Con `--repeat` las recogidas PPO y KLPO se repiten para medir varios procesos
+// simultáneos.
 
+#include "mars_titan/group_waves.hpp"
 #include "mars_titan/klpo_collection.hpp"
 #include "mars_titan/policy_tapes.hpp"
 #include "mars_titan/ppo_training.hpp"
+#include "mars_titan/quantile_dqn.hpp"
 #include "mars_titan/simulation_files.hpp"
 
 #include <ATen/ATen.h>
@@ -23,12 +28,14 @@
 #endif
 
 #include <algorithm>
+#include <array>
 #include <charconv>
 #include <chrono>
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
+#include <functional>
 #include <iostream>
 #include <numeric>
 #include <set>
@@ -93,7 +100,8 @@ struct Options {
     int threads = 1;
     // Repeticiones de las recogidas PPO y KLPO para medir procesos simultáneos en régimen estable.
     std::size_t repeat = 1;
-    // Fases omitidas: inference, gae, gradient, trainer, first_tick, klpo o evaluation.
+    // Fases omitidas: inference, gae, gradient, trainer, first_tick, klpo, evaluation,
+    // value_minibatch o group.
     std::set<std::string, std::less<>> skip;
 };
 
@@ -136,7 +144,8 @@ Options parse(std::span<char*> arguments) {
             result.workers = count(value);
         } else if (name == "--skip") {
             require(value == "inference" || value == "gae" || value == "gradient" || value == "trainer" ||
-                        value == "first_tick" || value == "klpo" || value == "evaluation",
+                        value == "first_tick" || value == "klpo" || value == "evaluation" ||
+                        value == "value_minibatch" || value == "group",
                     "Fase desconocida");
             result.skip.emplace(value);
         } else if (name == "--threads") {
@@ -233,6 +242,10 @@ at::Tensor host_rows(std::span<const float> values, std::size_t rows, std::size_
 struct Environment {
     Json report;
     std::vector<std::vector<float>> observations;
+    // Acción, recompensa y cierre de cada paso capturado, para formar transiciones de la cinta.
+    std::vector<std::vector<uint8_t>> actions;
+    std::vector<std::vector<double>> rewards;
+    std::vector<std::vector<uint8_t>> closed;
     std::size_t width = 0;
 };
 
@@ -248,12 +261,24 @@ Environment measure_environment(const std::vector<BatchInput>& inputs, const Opt
         for (std::size_t lane = 0; lane < actions.size(); ++lane) {
             actions[lane] = static_cast<uint8_t>((lane + step) % action_count);
         }
-        if (result.observations.size() < captured_observations) {
+        const bool captured = result.observations.size() < captured_observations;
+        if (captured) {
             const auto view = batch.observations();
             result.observations.emplace_back(view.begin(), view.end());
+            result.actions.push_back(actions);
         }
         const auto elapsed = timed([&] {
             const auto& transition = batch.step(actions);
+            if (captured) {
+                result.rewards.push_back(transition.rewards);
+                std::vector<uint8_t> closed(actions.size());
+                for (std::size_t lane = 0; lane < actions.size(); ++lane) {
+                    closed[lane] = static_cast<uint8_t>(transition.terminated[lane] != 0 ||
+                                                        transition.truncated[lane] != 0 ||
+                                                        transition.reward_valid[lane] == 0);
+                }
+                result.closed.push_back(std::move(closed));
+            }
             finished.clear();
             for (std::size_t lane = 0; lane < actions.size(); ++lane) {
                 if (transition.terminated[lane] != 0 || transition.truncated[lane] != 0) {
@@ -273,18 +298,34 @@ Environment measure_environment(const std::vector<BatchInput>& inputs, const Opt
     return result;
 }
 
-PpoArchitecture architecture(bool double_dqn) {
+// Arquitecturas de la acción medidas, con el nombre que publica el informe.
+struct Head {
+    std::string_view name;
+    bool double_dqn = false;
+    int64_t quantiles = 0;
+    double risk_alpha = 1;
+};
+constexpr std::array<Head, 4> heads{
+    Head{"ppo_mlp64"}, Head{"double_dqn_mlp64", true},
+    Head{"qr_dqn_mlp64", true, mars_titan::learning::qr_dqn_quantiles},
+    Head{"qr_dqn_cvar_mlp64", true, mars_titan::learning::qr_dqn_quantiles,
+         mars_titan::learning::qr_dqn_cvar_alpha}};
+
+PpoArchitecture architecture(const Head& head) {
     PpoArchitecture result;
-    result.double_dqn = double_dqn;
+    result.double_dqn = head.double_dqn;
+    result.quantiles = head.quantiles;
+    result.risk_alpha = head.risk_alpha;
     return result;
 }
 
 // Copia, acción con muestreo y bootstrap del crítico, como en cada paso de la recogida PPO.
-Json measure_inference(const Environment& environment, const Options& options, bool double_dqn,
+Json measure_inference(const Environment& environment, const Options& options, const Head& head,
                        bool pinned) {
     const auto rows = options.environments;
+    const bool double_dqn = head.double_dqn;
     PpoPolicy policy(environment.width, PpoHyperparameters{}, seed, options.device,
-                     mars_titan::learning::default_ppo_memory_bytes, architecture(double_dqn));
+                     mars_titan::learning::default_ppo_memory_bytes, architecture(head));
     const auto fingerprint = policy.parameter_fingerprint();
     const at::Device device(options.device);
     auto state = policy.initial_state(rows);
@@ -322,7 +363,7 @@ Json measure_inference(const Environment& environment, const Options& options, b
     require(policy.parameter_fingerprint() == fingerprint && policy.optimizer_steps() == 0,
             "La inferencia cambió los parámetros");
     const auto lanes_per_call = static_cast<double>(rows);
-    return Json{{"architecture", double_dqn ? "double_dqn_mlp64" : "ppo_mlp64"},
+    return Json{{"architecture", head.name},
                 {"pinned_host_memory", pinned},
                 {"copy_two_observation_batches", summary(copy, lanes_per_call)},
                 {"act_and_copy_back", summary(act, lanes_per_call)},
@@ -533,6 +574,154 @@ Json measure_gradient(const Environment& environment, const Options& options) {
                 {"rows", gradient_rows}};
 }
 
+// Pérdida de valor de un minilote de 64 transiciones de la cinta, con los dos forwards sin
+// gradiente de sus objetivos y el backward, como cada actualización de Double DQN o QR-DQN sin
+// el paso de Adam. Las transiciones son pares consecutivos capturados al recorrer la cinta con el
+// ciclo fijo de acciones, con su recompensa contable real.
+Json measure_value_minibatch(const Environment& environment, const Options& options, const Head& head) {
+    PpoPolicy policy(environment.width, PpoHyperparameters{}, seed, options.device,
+                     mars_titan::learning::default_ppo_memory_bytes, architecture(head));
+    const auto fingerprint = policy.parameter_fingerprint();
+    std::vector<float> current;
+    std::vector<float> following;
+    std::vector<int64_t> actions;
+    std::vector<float> rewards;
+    const auto lanes_count = environment.actions.front().size();
+    for (std::size_t tick = 0; tick + 1 < environment.observations.size() && actions.size() < gradient_rows;
+         ++tick) {
+        for (std::size_t lane = 0; lane < lanes_count && actions.size() < gradient_rows; ++lane) {
+            if (environment.closed[tick][lane] != 0) {
+                continue;
+            }
+            const auto row = [&](const std::vector<float>& values) {
+                return std::span(values).subspan(lane * environment.width, environment.width);
+            };
+            const auto now = row(environment.observations[tick]);
+            const auto next = row(environment.observations[tick + 1]);
+            current.insert(current.end(), now.begin(), now.end());
+            following.insert(following.end(), next.begin(), next.end());
+            actions.push_back(environment.actions[tick][lane]);
+            rewards.push_back(static_cast<float>(environment.rewards[tick][lane]));
+        }
+    }
+    require(actions.size() == gradient_rows, "La cinta no ofrece 64 transiciones válidas");
+    const at::Device device(options.device);
+    const auto size = static_cast<int64_t>(gradient_rows);
+    const mars_titan::learning::DqnBatch batch{
+        host_rows(current, gradient_rows, environment.width, false).to(device),
+        host_rows(following, gradient_rows, environment.width, false).to(device),
+        at::tensor(actions, at::kLong).to(device),
+        at::tensor(rewards, at::kFloat).to(device),
+        at::zeros({size}, at::kBool).to(device),
+        at::ones({size}, at::kBool).to(device)};
+    std::vector<double> seconds;
+    double loss = 0;
+    for (std::size_t call = 0; call < options.warmup + options.ticks; ++call) {
+        const auto elapsed = timed([&] {
+            const auto computed = policy.double_dqn_loss(batch);
+            computed.loss.backward();
+            synchronize(options.device);
+            loss = computed.loss.item<double>();
+        });
+        if (call >= options.warmup) {
+            seconds.push_back(elapsed);
+        }
+    }
+    require(std::isfinite(loss) && policy.parameter_fingerprint() == fingerprint && policy.optimizer_steps() == 0,
+            "La pérdida de valor cambió los parámetros");
+    return Json{{"architecture", head.name},
+                {"rows", gradient_rows},
+                {"loss_forward_backward", summary(seconds, 1)},
+                {"parameters", policy.parameter_count()}};
+}
+
+// Una oleada recogida como KLPO y el forward y backward de los cuatro objetivos de grupo y del
+// objetivo KLPO por bloques de 8 episodios, como el controlador, sin Adam. Con la traza se mide
+// además lo que añaden los diagnósticos de la oleada.
+Json measure_group(const std::vector<BatchInput>& inputs, const Options& options) {
+    KlpoCollectionOptions collection;
+    collection.device = options.device;
+    collection.workers = options.workers;
+    collection.seed = seed;
+    KlpoTerminalCollector collector(inputs, collection);
+    while (collector.phase() == KlpoCollectionPhase::collecting) {
+        static_cast<void>(collector.collect_tick());
+    }
+    require(collector.phase() == KlpoCollectionPhase::ready, "La oleada de grupo no quedó lista");
+    const auto& records = collector.records();
+    PpoPolicy actor(collector.policy().observation_width(), PpoHyperparameters{}, seed, options.device);
+    const auto fingerprint = actor.parameter_fingerprint();
+    require(fingerprint == records.reference_sha256, "El actor no parte de la referencia de la oleada");
+    std::size_t transitions = 0;
+    for (const auto& episode : records.episodes) {
+        transitions += episode.steps.size();
+    }
+    constexpr std::size_t block = 8;
+    constexpr std::size_t repeats = 5;
+    const auto blocks = [&](const std::function<void(const mars_titan::learning::KlpoEpisodeBatch&, std::size_t)>&
+                                function) {
+        for (std::size_t begin = 0; begin < records.episodes.size(); begin += block) {
+            const auto end = std::min(records.episodes.size(), begin + block);
+            mars_titan::learning::KlpoEpisodeBatch part{records.fold, records.reference_sha256, records.beta,
+                                                        records.gamma, records.observation_width,
+                                                        records.max_bytes, {}};
+            part.episodes.assign(records.episodes.begin() + static_cast<std::ptrdiff_t>(begin),
+                                 records.episodes.begin() + static_cast<std::ptrdiff_t>(end));
+            function(part, begin);
+        }
+        synchronize(options.device);
+    };
+    const auto measured = [&](const std::function<void()>& function) {
+        function();
+        std::vector<double> seconds;
+        seconds.reserve(repeats);
+        for (std::size_t repeat = 0; repeat < repeats; ++repeat) {
+            seconds.push_back(timed(function));
+        }
+        return summary(seconds, static_cast<double>(transitions));
+    };
+    Json result{{"wave_transitions", transitions},
+                {"episodes", records.episodes.size()},
+                {"block_episodes", block},
+                {"records_sha256", mars_titan::simulation::content_sha256(
+                                       mars_titan::learning::serialize_klpo_batch(records))}};
+    result["klpo_terminal_token_full_v1"] = measured([&] {
+        blocks([&](const auto& part, std::size_t) {
+            const auto objective = mars_titan::learning::klpo_episode_objective(actor, part);
+            if (!objective.no_policy_decisions) {
+                (objective.per_episode.sum() / static_cast<double>(records.episodes.size())).backward();
+            }
+        });
+    });
+    for (const auto* id : {"grpo_outcome_v1", "dr_grpo_outcome_v1", "dapo_outcome_static_v1", "gspo_outcome_v1"}) {
+        const auto config = mars_titan::learning::published_group_objective(id);
+        for (const bool traced : {false, true}) {
+            auto row = measured([&] {
+                const auto wave = mars_titan::learning::group_wave(records, config);
+                mars_titan::learning::GroupObjectiveTrace merged;
+                blocks([&](const auto& part, std::size_t begin) {
+                    mars_titan::learning::GroupObjectiveTrace trace;
+                    const auto loss = mars_titan::learning::group_block_loss(actor, part, begin, wave, config,
+                                                                             traced ? &trace : nullptr);
+                    if (loss.defined()) {
+                        loss.backward();
+                        if (traced) {
+                            mars_titan::learning::accumulate_group_trace(merged, trace, config.ratio());
+                        }
+                    }
+                });
+                if (traced) {
+                    static_cast<void>(mars_titan::learning::group_wave_trace(wave));
+                }
+            });
+            result[std::string(id) + (traced ? "_with_trace" : "")] = std::move(row);
+        }
+    }
+    require(actor.parameter_fingerprint() == fingerprint && actor.optimizer_steps() == 0,
+            "Los objetivos de grupo cambiaron al actor");
+    return result;
+}
+
 // Evaluación de un carril con argmax sobre la cinta de validación, como la selección.
 Json measure_evaluation(const BatchInput& validation, std::size_t width, const Options& options) {
     PpoPolicy policy(width, PpoHyperparameters{}, seed, options.device);
@@ -665,7 +854,7 @@ int run(const Options& options) {
                 {"environment_step", environment.report}};
     const auto wanted = [&](std::string_view phase) { return !options.skip.contains(phase); };
     Json inference = Json::array();
-    for (const bool double_dqn : {false, true}) {
+    for (const auto& head : heads) {
         if (!wanted("inference")) {
             break;
         }
@@ -673,11 +862,21 @@ int run(const Options& options) {
             if (pinned && options.device == "cpu") {
                 continue;
             }
-            RECORD_USER_SCOPE(double_dqn ? "phase_inference_double_dqn" : "phase_inference_ppo");
-            inference.push_back(measure_inference(environment, options, double_dqn, pinned));
+            RECORD_USER_SCOPE(head.double_dqn ? "phase_inference_value" : "phase_inference_ppo");
+            inference.push_back(measure_inference(environment, options, head, pinned));
         }
     }
     report["inference"] = inference;
+    if (wanted("value_minibatch")) {
+        RECORD_USER_SCOPE("phase_value_minibatch");
+        Json values = Json::array();
+        for (const auto& head : heads) {
+            if (head.double_dqn) {
+                values.push_back(measure_value_minibatch(environment, options, head));
+            }
+        }
+        report["value_minibatch"] = values;
+    }
     if (wanted("gae")) {
         RECORD_USER_SCOPE("phase_gae");
         report["gae_cpu_fp64"] = measure_gae(options);
@@ -709,6 +908,10 @@ int run(const Options& options) {
     report.update(passes.front());
     if (options.repeat > 1) {
         report["repeats"] = repeated(passes, first, std::chrono::system_clock::now());
+    }
+    if (wanted("group")) {
+        RECORD_USER_SCOPE("phase_group_objectives");
+        report["group_objectives"] = measure_group(inputs, options);
     }
     if (wanted("evaluation")) {
         RECORD_USER_SCOPE("phase_evaluation");

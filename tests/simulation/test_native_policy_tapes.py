@@ -287,6 +287,38 @@ def test_klpo_rejects_a_budget_below_one_complete_wave(binaries, tapes, tmp_path
     assert result.returncode == 1 and "ni una oleada completa" in result.stderr
 
 
+def group_config(path, stage, objective="grpo_outcome_v1"):
+    """Configuración de un brazo de grupo con el mismo esquema que KLPO."""
+    stage = copy.deepcopy(stage)
+    stage["policies"]["policies"]["grpo"] = dict(
+        engine="native_group_relative",
+        objective=objective,
+        controller="group_relative_fresh_waves_v1",
+        confirmed_updates_per_reference=2,
+    )
+    return write_config(
+        path, native_policy_runs.klpo_config(stage, job("grpo", "native_group_relative"))
+    )
+
+
+def test_group_objectives_reject_lonely_lanes_and_unknown_identities(
+    binaries, tapes, tmp_path, learning_hold
+):
+    hold = learning_hold(True)
+    us = tapes["US"]
+    # Un solo carril por cinta no deja línea base y se rechaza antes de recoger.
+    config = group_config(tmp_path / "group.json", diagnostic_stage(environments=1))
+    arguments = ["--config", config, "--output", tmp_path / "lonely", *sources(us, train=(1,))]
+    result = run(binaries["native_klpo"], hold, *arguments, "--stop-after", 1)
+    assert result.returncode == 1 and "dos carriles por cinta" in result.stderr
+    stage = diagnostic_stage(environments=2)
+    unknown = group_config(tmp_path / "unknown.json", stage, objective="grpo_plus_plus")
+    arguments = ["--config", unknown, "--output", tmp_path / "unknown", *sources(us, train=(1,))]
+    result = run(binaries["native_klpo"], hold, *arguments, "--stop-after", 1)
+    assert result.returncode == 1 and "objetivo de grupo" in result.stderr
+    assert not (tmp_path / "unknown").exists()
+
+
 def blocking(tmp_path):
     path = tmp_path / "hold.json"
     path.write_text(json.dumps({"training_allowed": False}))
@@ -312,6 +344,12 @@ def test_the_learning_hold_stops_every_real_tape_command_before_outputs(binaries
         ("native_ppo", ppo, evaluation, "la evaluación nativa sobre cintas reconstruidas"),
         ("native_klpo", klpo, sources(us, train=(1,)), "el entrenamiento KLPO nativo"),
         ("native_klpo", klpo, evaluation, "la evaluación KLPO nativa"),
+        (
+            "native_klpo",
+            group_config(tmp_path / "group.json", diagnostic_stage(environments=2)),
+            sources(us, train=(1,)),
+            "el entrenamiento nativo con objetivo de grupo",
+        ),
     ]
     for number, (engine, config, arguments, action) in enumerate(cases):
         output = tmp_path / f"out-{number}"
