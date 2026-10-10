@@ -156,7 +156,7 @@ La revisión adversarial de los componentes sin conexión buscó fugas, dependen
 
 La matriz de adaptadores (I13) sigue en su propia tarea (#364 y #216) y no forma parte de los brazos de esta variante.
 
-El orden de incorporación siguió el valor de cada pregunta para el objetivo predictivo y su coste. B6 responde a la segunda vía de memoria del documento con un control fuerte (el corrector de sesgo con las mismas etiquetas) y no ajusta parámetros, así que cada trabajo solo predice los tres tramos medidos. Los episodios de la primera lectura separan en A4 más cálculo de más evidencia con el coste de un lector K = 4. Régimen, vista reducida y selección de documentos cambian las entradas del núcleo y costarían cada uno una familia Titans-MAC adicional, por lo que quedan para una decisión posterior con ese coste a la vista. K adaptativo y destilación dependen de resultados que todavía no existen. El replay programado necesita antes una definición compatible con el estado cronológico.
+El orden de incorporación siguió el valor de cada pregunta para el objetivo predictivo y su coste. B6 responde a la segunda vía de memoria del documento con un control fuerte (el corrector de sesgo con las mismas etiquetas) y no ajusta parámetros, así que cada trabajo solo predice los tres tramos medidos (0,68 horas de GPU por trabajo con la clave del codec y 0,33 con la constante, medidas en una ventana). Los episodios de la primera lectura separan en A4 más cálculo de más evidencia, pero cuestan lo mismo que un lector K = 4 (8.649 horas de GPU en A frente a 8.413), así que su entrada queda a decisión del usuario. Régimen, vista reducida y selección de documentos cambian las entradas del núcleo y costarían cada uno una familia Titans-MAC adicional, por lo que quedan para una decisión posterior con ese coste a la vista. K adaptativo y destilación dependen de resultados que todavía no existen. El replay programado necesita antes una definición compatible con el estado cronológico.
 
 ### Requisitos transversales de la revisión
 
@@ -180,7 +180,7 @@ La variante parte del brazo Titans-MAC `mac_online` con su receta cronológica y
 | `episodic_bank` (I04 a I06) | `m0_no_bank`, `m1`, `m2`, `m3` | `readout=None` y admisión m0 | Evaluación y entrenamiento del lector | N4 |
 | `refinements` (I07) | 1, 2, 4 | 1. Solo existe con banco | Preparación de cada predicción | N4 en CPU |
 | `refinement_episodes` (I07) | `first_read` | `per_step`. Solo existe con K mayor que 1 | Preparación de cada predicción | N4 en CPU |
-| `associative_memory` (I11) | `delta`, `proximal`, con clave del codec o constante | Ausente. No se combina con el banco | Evaluación en `FinancialSession` y en las ventanas walk-forward | N4 en CPU |
+| `associative_memory` (I11) | `delta`, `proximal`, con clave del codec o constante | Ausente. No se combina con el banco | Evaluación en `FinancialSession` y en las ventanas walk-forward | N4. La ventana también se comprobó en `cuda:0` |
 | `document_selection` (I10) | `attention` | Media de la ventana | Entradas | N2 |
 | `regime_context` (I09) | `filtered_hmm` | Ausente | Entradas o banco | N2 |
 | `information_view` (I03) | Identidad de una vista reducida | Vista completa | Entradas | N2 |
@@ -243,7 +243,7 @@ El [entrenador cronológico del lector](../engineering/mars-titan-extensions.md#
 ### Pendiente antes de poder ejecutarla
 
 - La decisión sobre los [componentes que no entran en la campaña A](#componentes-que-no-entran-en-la-campaña-a), con su coste a la vista.
-- La copia de la sección `mars_titan` a la configuración de A, con los recuentos del diseño conjunto de #363. El caudal de los brazos nuevos en `cuda:0` sigue sin medir.
+- La copia de la sección `mars_titan` a la configuración de A, con los recuentos del diseño conjunto de #363. Según el [coste medido](../engineering/mars-titan-extensions.md#coste-medido-de-los-brazos-nuevos), los dos brazos B6 suman 181 horas de GPU en A y `mars_titan_m1_k4_first_read` 8.649, por lo que la entrada de este último queda a decisión del usuario.
 - El levantamiento del bloqueo de aprendizaje. La edición histórica desde 2000 y sus objetivos ya están verificados, pero no se ha ejecutado ningún ajuste ni comparación.
 
 ## CM-v1 y revisión matemática
