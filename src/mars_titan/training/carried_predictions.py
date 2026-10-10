@@ -181,7 +181,9 @@ def reference_model(identity, state, device):
         mask_fusion=identity.get("mask_fusion", STRICT_FUSION),
         **case["architecture"],
         **({"head": QUANTILE_HEAD} if quantiles else {}),
-        **transformer_batch_options(case["kind"], identity["batch_size"]),
+        # reference_run siempre registra el lote. Una identidad sin él conserva el contrato
+        # por defecto, igual que al reconstruir el padre en el posentrenamiento.
+        **transformer_batch_options(case["kind"], identity.get("batch_size", 1)),
     ).to(device)
     model.load_state_dict(state["model"])
     return model, quantiles
