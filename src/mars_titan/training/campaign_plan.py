@@ -81,9 +81,10 @@ MARS_RECIPE = "mars_titan_episodic_readout_chronological_v1"
 MARS_SEARCHED = TITANS_SEARCHED
 # Escrituras con lector que ajustar. Las demás combinaciones se rechazan al ejecutar.
 MARS_BANKS = ("m0_no_bank", "m1", "m2", "m3")
-# Nombres de la corrección B6, que no tiene lector. Repiten mars_titan_correction.RECIPE y
-# SEARCHED y las reglas y claves de memory.associative_memory porque el plan no debe importar
-# PyTorch. Una prueba comprueba que siguen coincidiendo.
+# Nombres de la corrección B6, que no tiene lector. Repiten mars_titan_correction.RECIPE,
+# SEARCHED y RULES y las claves de memory.associative_memory porque el plan no debe importar
+# PyTorch. Una prueba comprueba que siguen coincidiendo. La regla kalman queda fuera porque
+# la ventana B6 todavía no la admite.
 MARS_CORRECTION_RECIPE = "mars_titan_mature_correction_v1"
 MARS_CORRECTION_SEARCHED = ("rate", "forgetting")
 MARS_CORRECTION_RULES = ("delta", "proximal")

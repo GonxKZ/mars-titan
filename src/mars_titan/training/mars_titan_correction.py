@@ -90,6 +90,9 @@ SEARCHED = ("rate", "forgetting")
 # Un brazo solo declara la regla y la clave. η y λ se añaden con el caso elegido, porque la
 # campaña los busca y no forman parte de la definición del brazo.
 ARM_FIELDS = ("rule", "key")
+# Reglas que admite la ventana. La regla kalman (PT3) no usa η ni λ sino sus varianzas, que
+# esta receta no declara ni busca, así que todavía no tiene ventana.
+RULES = ("delta", "proximal")
 CARRIED = ("calibration", "evaluation")
 _RECIPE_FIELDS = {"schema_version", "recipe_name", "status", "recipe", "walk_forward", "pending"}
 _CODE = (
@@ -171,6 +174,11 @@ def arm_components(components, values):
         and isinstance(memory, dict)
         and set(memory) == set(ARM_FIELDS),
         "Un brazo B6 declara solo associative_memory con su regla y su clave",
+    )
+    _require(
+        memory["rule"] in RULES,
+        "La ventana B6 solo admite las reglas delta y proximal. La regla kalman no usa η ni λ "
+        "y todavía no tiene ventana",
     )
     return dict(associative_memory=dict(memory, **values))
 

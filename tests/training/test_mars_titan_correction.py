@@ -106,7 +106,8 @@ def table(folder, partition):
 def test_constants_repeat_the_runner_and_memory_names_without_importing_torch():
     assert plan.MARS_CORRECTION_RECIPE == mc.RECIPE
     assert plan.MARS_CORRECTION_SEARCHED == mc.SEARCHED
-    assert plan.MARS_CORRECTION_RULES == RULES
+    assert plan.MARS_CORRECTION_RULES == mc.RULES
+    assert set(mc.RULES) == set(RULES) - {"kalman"}
     assert plan.MARS_CORRECTION_KEYS == CORRECTION_KEYS
 
 
@@ -248,7 +249,8 @@ def test_window_refuses_while_the_learning_hold_blocks(base, tmp_path, learning_
             "regla y su clave",
         ),
         (PROXIMAL | {"episodic_bank": "m1"}, "eta25e-2", "solo associative_memory"),
-        ({"associative_memory": {"rule": "lms", "key": "codec"}}, "eta25e-2", "rule"),
+        ({"associative_memory": {"rule": "lms", "key": "codec"}}, "eta25e-2", "delta y proximal"),
+        ({"associative_memory": {"rule": "kalman", "key": "codec"}}, "eta25e-2", "kalman"),
         (PROXIMAL, "eta1", "casos de búsqueda"),
     ],
 )
