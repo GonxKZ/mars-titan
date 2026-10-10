@@ -394,7 +394,7 @@ def test_window_schedule_orders_every_stage_of_the_window_and_counts_all_jobs():
     # Adaptadores: 6.804 ajustes y 1.278 padres congelados, y 1.349 selecciones de la cadena
     # en su propia fase.
     assert (totals["adapters"], totals["chain"]) == (6804 + 1278, 1349)
-    assert (totals["online"], totals["ablation"], totals["rl"]) == (57, 4047, 2376 + 2775)
+    assert (totals["online"], totals["ablation"], totals["rl"]) == (57, 4047, 2808 + 2775)
     window = schedule[6]
     selection = window["phases"][order.PHASES.index("selection")]
     assert "CN/fold-000/mars_titan_m1" in selection["decisions"]
@@ -521,14 +521,14 @@ def test_later_stages_of_v2_read_the_joint_model_in_each_market():
     assert cn[0]["train"] == ["fold-006", "fold-007", "fold-008"]
     counts = policy_plan.count_stage(stage)
     # Referencias: cuatro por ventana y predictor, y el índice de mercado solo en US.
-    assert (counts["training_jobs"], counts["evaluation_jobs"]) == (2376, 25 * (15 * 5 + 9 * 4))
+    assert (counts["training_jobs"], counts["evaluation_jobs"]) == (2808, 25 * (15 * 5 + 9 * 4))
     assert counts["scopes"]["US+CN"]["markets"]["CN"][0] == "fold-010"
     jobs = policy_plan.plan_stage(stage)
-    # Por ventana y semilla, KLPO con los 25 predictores y las cuatro políticas del nivel de
-    # algoritmos con sus dos predictores: 33 ajustes.
+    # Por ventana y semilla, KLPO con los 25 predictores y las siete políticas del nivel de
+    # algoritmos con sus dos predictores: 39 ajustes.
     assert Counter(job["market"] for job in jobs if job["kind"] == "fit") == {
-        "US": 15 * 33 * 3,
-        "CN": 9 * 33 * 3,
+        "US": 15 * 39 * 3,
+        "CN": 9 * 39 * 3,
     }
 
 

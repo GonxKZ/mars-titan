@@ -84,8 +84,8 @@ misma primera sesión y de la misma caja inicial, así que forman un grupo
 tienen 6, 5 y 5 episodios. `mars-titan-klpo` rechaza una configuración con menos de dos
 carriles por cinta, y la declaración de la etapa lo comprueba antes, también para la
 sensibilidad de ventanas en expansión, que comparte los brazos. Con 16 entornos caben como
-máximo 8 cintas de ajuste, así que esa sensibilidad, declarada hoy con un máximo de 16, debe
-bajar a 8 si los objetivos de grupo entran en la etapa. `group_wave` comprueba además, bit a
+máximo 8 cintas de ajuste, así que esa sensibilidad, declarada antes con un máximo de 16,
+bajó a 8 cuando los objetivos de grupo entraron en la etapa. `group_wave` comprueba además, bit a
 bit, que todos los episodios de un grupo tienen la misma primera observación y rechaza grupos de
 un solo episodio.
 
@@ -336,8 +336,8 @@ hace 37.711.872 pasos, y 0,0003 h a cada brazo de grupo, que hace 9.036.
 
 | Conjunto de brazos | CPU, un proceso (h) | `cuda:0`, un proceso (h) | CPU, 8 procesos (h, estimadas) |
 | --- | ---: | ---: | ---: |
-| Etapa A actual, con las cinco referencias | 18,3 | 32,0 | 3,6 |
-| Con GRPO, Dr. GRPO y GSPO | 19,8 | 34,1 | 3,9 |
+| Etapa A sin los objetivos de grupo, con las cinco referencias | 18,3 | 32,0 | 3,6 |
+| Con GRPO, Dr. GRPO y GSPO, la etapa A declarada desde #441 | 19,8 | 34,1 | 3,9 |
 | Con esos tres y el par QR-DQN | 79,6 | 103,5 | 18,1 |
 | Con los seis brazos nuevos | 80,1 | 104,3 | 18,3 |
 
@@ -349,9 +349,9 @@ varios procesos bajo MPS en `cuda:0`.
 ## Propuesta de brazos para la campaña
 
 KLPO terminal sigue como brazo principal en el nivel completo, con todos los predictores, y las
-cinco referencias no cambian. La propuesta solo afecta al nivel de algoritmos, que hoy tiene los
-tres controles PPO y Double DQN con dos predictores. No modifica la configuración de la etapa,
-que otras tareas están rediseñando, y queda como decisión del protocolo.
+cinco referencias no cambian. La propuesta solo afecta al nivel de algoritmos, que tenía los
+tres controles PPO y Double DQN con dos predictores. Los tres objetivos de grupo que entran ya
+están declarados en la etapa (véase la sección siguiente).
 
 | Brazo | Qué contrasta | Control que permite descartarlo | Coste añadido | Propuesta |
 | --- | --- | --- | --- | --- |
@@ -380,6 +380,43 @@ Cada brazo se juzga con el mismo informe de la etapa que KLPO, con contrastes em
 sesión e intervalos por bloques. Un brazo cuyo contraste con su control incluya el cero no
 aporta evidencia a favor de su componente, y así debe registrarse, sin repetir el ajuste con
 otra configuración.
+
+## Declaración en la etapa
+
+El 10 de octubre, antes de cualquier ajuste, `grpo_outcome`, `dr_grpo_outcome` y
+`gspo_outcome` entraron en las [políticas comunes](../../configs/simulation/historical-masked-rl-policies.json)
+([#441](https://github.com/GonxKZ/mars-titan/issues/441)). Las etapas A, B y A v2 las leen sin
+cambiar su configuración, porque comparten ese archivo. Cada política usa el motor
+`native_group_relative`, el controlador `group_relative_fresh_waves_v1` y dos actualizaciones
+confirmadas por referencia, igual que KLPO, y entra en el nivel de algoritmos con el
+Transformer compacto y `titans_mac_online`. La sensibilidad de ventanas en expansión bajó de
+16 a 8 cintas, el máximo con dos entornos por cinta, y `policy_plan` rechaza la declaración si
+la regla principal o la sensibilidad lo superan.
+
+Los límites se recontaron con `count_stage` y coinciden exactamente con el plan:
+
+| Etapa | Ajustes antes | Ajustes ahora | Evaluaciones antes | Evaluaciones ahora |
+| --- | ---: | ---: | ---: | ---: |
+| A | 1.368 | 1.800 | 1.221 | 1.221 |
+| B | 456 | 600 | 2.133 | 2.421 |
+| A v2 | 2.376 | 2.808 | 2.775 | 2.775 |
+| A ampliada | 2.376 | 2.808 | 2.775 | 2.775 |
+| B ampliada | 792 | 936 | 4.359 | 4.647 |
+
+Cada política nueva añade 144 ajustes en A y en A v2 (dos predictores, 24 ventanas de mercado y
+tres semillas). En B añade 48 ajustes y 96 traslados, que son evaluaciones. Las referencias no
+cambian.
+
+La pregunta de cada política está declarada en `contrasts`. GRPO entra en la familia de KLPO, como
+los demás controles, porque su control es KLPO con las mismas oleadas. Dr. GRPO y GSPO se
+declaran además en `contrasts.components`, frente a GRPO, que es el control que permite
+descartarlos según la tabla anterior. El [informe de la etapa](rl-environment-integrity.md#patrimonio-por-sesión-e-informe-financiero)
+forma con esos dos pares otra familia de multiplicidad sobre las mismas sesiones y réplicas,
+con la diferencia variante menos control, y la publica en `contrasts.csv` con
+`family=components`. Así un efecto de la normalización o del cociente de secuencia no se lee
+a través de KLPO. Declarar estos pares no cambia la familia de KLPO, pero esa familia crece de 9
+a 12 controles con las tres políticas nuevas, así que sus intervalos simultáneos son algo más
+anchos que antes. Es un coste de multiplicidad aceptado antes de ver resultados.
 
 ## Mutación dirigida
 
@@ -431,6 +468,6 @@ Ninguna prueba ejecuta pasos de optimizador. Las CTest `ppo_policy`, `ppo_traini
    bit a bit, pero el ejecutor nativo todavía no los escribe. Conectarlos al registrador de
    trazas de aprendizaje queda dentro de #448, junto con las etiquetas de los modelos nuevos en
    el observatorio.
-3. La entrada de los brazos en la configuración de la etapa, con el máximo de la sensibilidad
-   de ventanas en 8, y la decisión de dispositivo corresponden al protocolo de la campaña.
+3. La decisión de dispositivo de la etapa y la entrada del par QR-DQN corresponden al protocolo
+   de la campaña. Los objetivos de grupo ya están declarados.
 4. QR-DQN no se ha medido con varios procesos bajo MPS en `cuda:0`.

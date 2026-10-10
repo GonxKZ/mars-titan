@@ -15,6 +15,7 @@ import pytest
 
 from mars_titan.data.storage import atomic_json, sha256
 from mars_titan.simulation import campaign_stage, index_benchmark, stage_report
+from mars_titan.simulation.stage_report import DIFFERENCE
 from tests.simulation import rl_stage_fixture as fixture
 
 ARMS = ["klpo_terminal", "double_dqn", *fixture.REFERENCES]
@@ -135,6 +136,151 @@ def test_contrasts_are_klpo_minus_each_control(base, stage_output, tmp_path):
         rows = list(csv.DictReader(stream))
     assert {row["primary"] for row in rows} == {"klpo_terminal"}
     assert {(row["predictor"], row["control"]) for row in rows} >= {("lstm", "market_index")}
+
+
+GROUP = dict(
+    engine="native_group_relative",
+    controller="group_relative_fresh_waves_v1",
+    confirmed_updates_per_reference=2,
+)
+VARIANTS = ("dr_grpo_outcome", "gspo_outcome")
+
+
+class ArmLearner(fixture.ScriptedLearner):
+    """Acción fija distinta en cada política aprendida, para que los contrastes no coincidan."""
+
+    SHIFTS = dict(grpo_outcome=1, dr_grpo_outcome=2, gspo_outcome=3)
+
+    def __call__(self, job, *args, **kwargs):
+        shift = self.SHIFTS.get(job["arm"], 0)
+        self.action = lambda observation, step: (
+            (fixture.scripted_action(observation, step) + shift) % 6
+        )
+        return super().__call__(job, *args, **kwargs)
+
+
+def with_group_arms(base):
+    """Políticas reducidas con GRPO, Dr. GRPO y GSPO y sus contrastes de componente.
+
+    Los objetivos de grupo necesitan dos entornos por cinta de ajuste también en la
+    sensibilidad, así que hay cuatro entornos, una cinta fija y hasta dos en expansión.
+    """
+    path = base.root / "config" / "rl-policies.json"
+    value = json.loads(path.read_text())
+    learned = {
+        f"{name}_outcome": dict(GROUP, objective=f"{name}_outcome_v1")
+        for name in ("grpo", "dr_grpo", "gspo")
+    }
+    value["policies"] = dict(klpo_terminal=value["policies"]["klpo_terminal"], **learned)
+    value["levels"]["algorithms"]["arms"] = list(learned)
+    value["contrasts"] = dict(
+        primary="klpo_terminal",
+        controls=[*learned, *fixture.REFERENCES],
+        components={variant: "grpo_outcome" for variant in VARIANTS},
+    )
+    value["budget"]["environments"] = 4
+    value["train_windows"] = dict(rule="fixed_prior_evaluations_v1", minimum=1, maximum=1)
+    value["window_sensitivity"]["train_windows"] = dict(
+        rule="expanding_prior_evaluations_v1", minimum=1, maximum=2
+    )
+    atomic_json(path, value)
+
+
+def test_component_contrasts_pair_each_variant_with_its_control_on_the_same_sessions(
+    tmp_path_factory, tmp_path, learning_doubles
+):
+    base = fixture.base_campaign(tmp_path_factory.mktemp("components"), "A")
+    with_group_arms(base)
+    summary = fixture.run(base, tmp_path / "stage", ArmLearner())
+    assert summary["status"] == "completed"
+    result, found = report_of(base, [tmp_path / "stage"], tmp_path / "report")
+    assert result["declared"]["contrasts"]["components"] == dict.fromkeys(VARIANTS, "grpo_outcome")
+    table = pq.read_table(tmp_path / "report" / "equity.parquet").to_pylist()
+
+    def returns(arm, cost):
+        series = {}
+        for row in table:
+            if (row["predictor"], row["arm"], row["cost_bps"]) == ("gru", arm, cost):
+                series.setdefault(row["window"], []).append(row["nav"])
+        return np.concatenate([np.diff(nav) / np.asarray(nav[:-1]) for nav in series.values()])
+
+    for (predictor, cost), family in found.items():
+        if predictor == "lstm":
+            # El nivel completo no tiene políticas de grupo y la familia no tiene componentes.
+            assert family["components"] == {}
+            continue
+        # La familia de KLPO sigue igual: todos los controles, también GRPO y sus variantes.
+        primary = family["bootstrap"]
+        assert set(primary["differences"]["sharpe"]) == {
+            "grpo_outcome",
+            *VARIANTS,
+            *fixture.REFERENCES,
+        }
+        assert primary["base"] == "klpo_terminal"
+        assert primary["multiplicity"]["family_size"] == 3 + len(fixture.REFERENCES)
+        (component,) = family["components"].values()
+        assert list(family["components"]) == ["grpo_outcome"]
+        assert component["base"] == "grpo_outcome" and component["difference"] == DIFFERENCE
+        assert component["multiplicity"]["family_size"] == 2
+        assert list(component["arms"]) == ["grpo_outcome", *VARIANTS]
+        assert component["resampling"] == primary["resampling"]
+        control = returns("grpo_outcome", cost)
+        for variant in VARIANTS:
+            row = component["differences"]["mean_session_return"][variant]
+            # Variante menos control, sin invertir el signo como en la familia de KLPO.
+            expected = returns(variant, cost).mean() - control.mean()
+            assert row["estimate"] == pytest.approx(expected, abs=1e-15)
+            assert row["estimate"] != 0
+            lower, upper = row["simultaneous_interval"]
+            assert lower <= row["estimate"] <= upper
+    with (tmp_path / "report" / "contrasts.csv").open() as stream:
+        rows = list(csv.DictReader(stream))
+    components = [row for row in rows if row["family"] == "components"]
+    assert {(row["primary"], row["control"]) for row in components} == {
+        (variant, "grpo_outcome") for variant in VARIANTS
+    }
+    assert {row["predictor"] for row in components} == {"gru"}
+    assert {row["primary"] for row in rows if row["family"] == "primary"} == {"klpo_terminal"}
+    assert {row["family"] for row in rows} == {"primary", "components"}
+
+
+def test_a_component_family_never_changes_the_klpo_family():
+    rng = np.random.default_rng(7)
+    sessions = 300
+    grpo = rng.normal(2e-4, 1e-2, sessions)
+    returns = dict(
+        klpo_terminal=rng.normal(3e-4, 1e-2, sessions),
+        grpo_outcome=grpo,
+        dr_grpo_outcome=grpo + 1e-3,
+        gspo_outcome=rng.normal(1e-4, 1e-2, sessions),
+        cash=np.zeros(sessions),
+    )
+    report = fixture.policies()["report"]
+    contrasts = dict(primary="klpo_terminal", components=dict.fromkeys(VARIANTS, "grpo_outcome"))
+
+    def family(**changes):
+        value = dict(market="US", returns=dict(returns))
+        return stage_report._bootstrap(value, report, dict(contrasts, **changes))
+
+    declared, plain = family(), family(components={})
+    assert declared["bootstrap"] == plain["bootstrap"] and plain["components"] == {}
+    row = declared["components"]["grpo_outcome"]["differences"]["mean_session_return"]
+    # Dr. GRPO supera a GRPO en la misma cantidad cada sesión: la diferencia es exacta y su
+    # intervalo simultáneo excluye el cero.
+    assert row["dr_grpo_outcome"]["estimate"] == pytest.approx(1e-3, rel=1e-9)
+    assert row["dr_grpo_outcome"]["simultaneous_excludes_zero"] is True
+    # Una variante sin serie queda fuera y la familia del control solo tiene la otra.
+    partial = dict(
+        market="US", returns={k: v for k, v in returns.items() if k != "dr_grpo_outcome"}
+    )
+    (component,) = stage_report._bootstrap(partial, report, contrasts)["components"].values()
+    assert list(component["arms"]) == ["grpo_outcome", "gspo_outcome"]
+    assert component["multiplicity"]["family_size"] == 1
+    # Sin el control en la familia no hay componente, y con pocas sesiones tampoco.
+    missing = dict(market="US", returns={k: v for k, v in returns.items() if k != "grpo_outcome"})
+    assert stage_report._bootstrap(missing, report, contrasts)["components"] == {}
+    short = dict(market="US", returns={k: v[:3] for k, v in returns.items()})
+    assert stage_report._bootstrap(short, report, contrasts)["components"] == {}
 
 
 def test_a_failed_window_is_excluded_with_its_reason_for_every_arm(
@@ -283,6 +429,8 @@ def test_the_campaign_command_writes_the_report(base, stage_output, tmp_path, ca
     assert script["main"]([*arguments, "--report", str(tmp_path / "report")]) == 0
     printed = json.loads(capsys.readouterr().out)
     assert printed["families"] == 8 and printed["with_bootstrap"] == 8
+    # Las políticas reducidas no declaran contrastes de componente.
+    assert printed["component_bootstraps"] == 0
     assert printed["missing_benchmarks"] == ["CN"]
 
 

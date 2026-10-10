@@ -51,6 +51,9 @@ FIT, CARRY, REFERENCE = "fit", "carry", "reference"
 ALL_PREDICTORS, ALGORITHMS = "all_predictors", "algorithms"
 # El nivel completo se resuelve con todos los brazos con productor de la campaña base.
 CAMPAIGN_PRODUCERS = "campaign_producers"
+# Contrastes de componente: cada variante aprendida frente a la política aprendida que permite
+# descartarla, como Dr. GRPO y GSPO frente a GRPO.
+COMPONENTS = "components"
 SEEDS = [42, 43, 44]
 # Referencias sin aprendizaje de `simulation.evaluation.fixed_policy`.
 REFERENCES = tuple(REFERENCE_ALLOCATIONS)
@@ -315,10 +318,20 @@ def _read_policies(path):
     primary = [name for name, engine in engines.items() if engine == "native_klpo"]
     _require(
         isinstance(contrasts, dict)
-        and set(contrasts) == {"primary", "controls"}
+        and set(contrasts) - {COMPONENTS} == {"primary", "controls"}
         and primary == [contrasts["primary"]] == list(policies)[:1]
         and contrasts["controls"] == [*list(policies)[1:], *references],
         "KLPO es el brazo principal, va primero y se contrasta con todos los demás",
+    )
+    components, learned = contrasts.get(COMPONENTS, {}), list(policies)[1:]
+    _require(
+        isinstance(components, dict)
+        and (COMPONENTS not in contrasts or components)
+        and set(components) <= set(learned)
+        and set(components.values()) <= set(learned)
+        and not set(components.values()) & set(components),
+        "Cada contraste de componente enfrenta una política aprendida distinta de KLPO con "
+        "su control, otra política aprendida que no es a su vez una variante",
     )
     levels = config["levels"]
     _require(

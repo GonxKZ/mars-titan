@@ -701,7 +701,7 @@ def test_script_checks_the_policy_stage_and_runs_it_only_without_the_hold(
     assert script["main"](["rl", "check", "--stage", str(REPOSITORY["B"])]) == 0
     report = json.loads(capsys.readouterr().out)
     assert report["status"] == "checked" and report["variant"] == "B"
-    assert (report["counts"]["training_jobs"], report["counts"]["carried_jobs"]) == (456, 912)
+    assert (report["counts"]["training_jobs"], report["counts"]["carried_jobs"]) == (600, 1200)
     assert set(report["missing_capabilities"]) >= {"native_klpo/US", "native_ppo/CN"}
     learning_hold(False)
     arguments = ["rl", "run", "--stage", str(REPOSITORY["A"]), "--views", f"US={tmp_path}"]
@@ -997,13 +997,14 @@ def test_the_declared_stage_feeds_real_tapes_with_the_chain_predictor(monkeypatc
     assert checked["edition_id"] == (
         "1ac3727836462ce31c39b5438918bd6f3e0d359690c7bc79bfa87cd808c8e68c"
     )
-    # La regla fija es la principal y la expansión queda declarada, desactivada y contada.
+    # La regla fija es la principal y la expansión queda declarada, desactivada y contada, con
+    # 8 cintas como máximo para que los objetivos de grupo tengan dos entornos por cinta.
     assert checked["tapes_per_predictor"]["US"]["total"] == 75
     assert checked["tapes_per_predictor"]["CN"]["total"] == 45
     sensitivity = checked["window_sensitivity"]
     assert sensitivity["id"] == "expanding_train_windows_v1" and sensitivity["enabled"] is False
-    assert sensitivity["tapes_per_predictor"]["US"]["total"] == 179
-    assert sensitivity["tapes_per_predictor"]["CN"]["total"] == 81
+    assert sensitivity["tapes_per_predictor"]["US"]["total"] == 135
+    assert sensitivity["tapes_per_predictor"]["CN"]["total"] == 75
 
 
 def test_the_window_sensitivity_runs_only_when_enabled_and_never_mixes_outputs(

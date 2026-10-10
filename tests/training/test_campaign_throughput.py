@@ -1338,7 +1338,7 @@ def test_campaign_report_adds_the_policy_stage_apart_from_gpu_hours(doubled, pol
     for *_, kwargs in doubled:
         assert not any(key.startswith("policy_") for key in kwargs)
     assert report["rates"][throughput.POLICY_STAGE] == POLICY_RATES
-    jobs = dict(A=dict(fit=1368, reference=1221), B=dict(fit=456, carry=912, reference=1221))
+    jobs = dict(A=dict(fit=1800, reference=1221), B=dict(fit=600, carry=1200, reference=1221))
     for estimate, previous in zip(report["estimates"], without["estimates"], strict=True):
         stage = estimate[throughput.POLICY_STAGE]
         assert stage["status"] == "approximate" and stage["jobs"] == jobs[estimate["variant"]]
@@ -1400,7 +1400,7 @@ def test_campaign_report_measures_the_prepared_families_and_their_policy_stage(
         status="prepared_not_declared",
     )
     # Con las tres familias, la etapa de políticas resuelve 25 predictores en vez de 11.
-    jobs = dict(A=dict(fit=2376, reference=2775), B=dict(fit=792, carry=1584, reference=2775))
+    jobs = dict(A=dict(fit=2808, reference=2775), B=dict(fit=936, carry=1872, reference=2775))
     expected = dict(A=((1620, 0), (1080, 0)), B=((612, 756), (408, 336)))
     for estimate in report["estimates"]:
         families = estimate["families"]
@@ -1496,4 +1496,4 @@ def test_script_measures_the_policy_stage(doubled, policies, tmp_path, capsys):
     printed = json.loads(capsys.readouterr().out)
     assert policies == [("B", dict(steps=2048, warmup=8))]
     (estimate,) = printed["estimates"]
-    assert estimate[throughput.POLICY_STAGE]["jobs"]["carry"] == 912
+    assert estimate[throughput.POLICY_STAGE]["jobs"]["carry"] == 1200
