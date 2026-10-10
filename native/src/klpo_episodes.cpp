@@ -188,13 +188,18 @@ KlpoEpisodeStatus klpo_episode_status(const KlpoEpisodeRecord& episode) {
     return last.truncated ? KlpoEpisodeStatus::horizon : KlpoEpisodeStatus::open;
 }
 
-void validate_klpo_batch(const KlpoEpisodeBatch& batch, bool require_complete) {
+void validate_klpo_batch(const KlpoEpisodeBatch& batch, bool require_complete,
+                         std::span<const std::size_t> validated) {
     validate_header(batch);
+    require(validated.empty() || validated.size() == batch.episodes.size(),
+            "Los pasos validados no corresponden a los episodios de la oleada");
     std::size_t used = 0;
     account(1, sizeof(KlpoEpisodeBatch) + batch.fold.size() + batch.reference_sha256.size(),
             batch.max_bytes, used);
     std::unordered_set<std::string_view> identities;
-    for (const auto& episode : batch.episodes) {
+    for (std::size_t index = 0; index < batch.episodes.size(); ++index) {
+        const auto& episode = batch.episodes[index];
+        const auto previous = validated.empty() ? std::size_t{0} : validated[index];
         validate_spec(episode.spec);
         require(identities.insert(episode.spec.id).second, "El registro duplica un episodio");
         const auto planned = episode.spec.close_times.size() - 1;
@@ -206,7 +211,9 @@ void validate_klpo_batch(const KlpoEpisodeBatch& batch, bool require_complete) {
         account(planned, sizeof(KlpoEpisodeStep) + batch.observation_width * sizeof(float),
                 batch.max_bytes, used);
         require(episode.steps.size() <= planned, "El episodio excede el horizonte declarado");
-        for (std::size_t cursor = 0; cursor < episode.steps.size(); ++cursor) {
+        require(previous <= episode.steps.size(), "El episodio perdió pasos ya validados");
+        for (std::size_t cursor = previous == 0 ? 0 : previous - 1; cursor < episode.steps.size();
+             ++cursor) {
             validate_step(batch, episode, episode.steps[cursor], cursor);
         }
         if (require_complete) {

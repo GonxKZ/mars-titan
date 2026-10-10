@@ -13,6 +13,7 @@
 #include <limits>
 #include <sstream>
 #include <stdexcept>
+#include <utility>
 
 namespace mars_titan::learning {
 namespace {
@@ -440,7 +441,10 @@ bool PpoTrainer::advance(const PpoDecisionObserver& observer) {
     const auto lanes = batch_->size();
     const bool recurrent = policy_->architecture().kind == PpoNetworkKind::gru;
     const bool double_dqn = policy_->architecture().double_dqn;
+    const bool reusable = !recurrent && !double_dqn && !context_;
     const auto rng = policy_->random_state();
+    auto cached = std::exchange(bootstrap_, std::nullopt);
+    std::optional<BootstrapCache> proposed;
     std::optional<PpoTrainingState> before_reset;
     if (!reset_lanes_.empty()) {
         before_reset = snapshot();
@@ -483,8 +487,13 @@ bool PpoTrainer::advance(const PpoDecisionObserver& observer) {
         constexpr double minimum_epsilon = 0.05;
         const auto fraction = std::min(1., static_cast<double>(transitions_) /
             static_cast<double>(std::max(std::size_t{1}, config_.total_transitions / 2)));
+        // La MLP no depende del estado ni de los reinicios: el forward del bootstrap anterior
+        // sobre la misma observación y con los mismos pesos da los mismos logits y valores.
+        const bool reuse = reusable && cached && cached->optimizer_steps == policy_->optimizer_steps() &&
+                           at::equal(cached->observation, observation);
         const auto chosen = double_dqn ? policy_->act_double_dqn(observation.to(at::Device(device_)),
                             1. + fraction * (minimum_epsilon - 1.)) :
+            reuse ? policy_->sample(cached->output) :
             policy_->act_recurrent(observation.to(at::Device(device_)), hidden_, starts.to(at::Device(device_)));
         const auto packed = chosen.packed.to(at::kCPU).contiguous();
         if (objective_.enabled()) {
@@ -512,8 +521,11 @@ bool PpoTrainer::advance(const PpoDecisionObserver& observer) {
             if (double_dqn) {
                 next_for_replay = following;
             }
-            const auto values_after = policy_->infer(following.to(at::Device(device_)), chosen.next_state)
-                                          .values.to(at::kCPU, at::kDouble).contiguous();
+            auto bootstrap = policy_->infer(following.to(at::Device(device_)), chosen.next_state);
+            const auto values_after = bootstrap.values.to(at::kCPU, at::kDouble).contiguous();
+            if (reusable) {
+                proposed = BootstrapCache{following, std::move(bootstrap), policy_->optimizer_steps()};
+            }
             const std::span next_view(values_after.template const_data_ptr<double>(), lanes);
             require(std::all_of(next_view.begin(), next_view.end(), [](double value) { return std::isfinite(value); }),
                     "El bootstrap produjo un valor no finito");
@@ -576,6 +588,7 @@ bool PpoTrainer::advance(const PpoDecisionObserver& observer) {
             }
         });
         committed = true;
+        bootstrap_ = std::move(proposed);
         if (context_) {
             context_->commit();
         }
@@ -620,6 +633,7 @@ bool PpoTrainer::advance(const PpoDecisionObserver& observer) {
             }
         }
     } catch (...) {
+        bootstrap_.reset();
         if (context_) {
             context_->cancel();
         }
@@ -637,6 +651,8 @@ bool PpoTrainer::advance(const PpoDecisionObserver& observer) {
     ++collector_ticks_;
     ++ticks_;
     if (ticks_ * lanes == config_.rollout_transitions || transitions_ == config_.total_transitions) {
+        // La actualización cambia los pesos: el siguiente paso vuelve a ejecutar la red.
+        bootstrap_.reset();
         try {
             if (!double_dqn) {
                 const auto rollout = rollout_prefix(buffers_, ticks_, false);
@@ -693,6 +709,7 @@ PpoTrainingState PpoTrainer::snapshot() const {
 }
 
 void PpoTrainer::restore(const PpoTrainingState& state) {
+    bootstrap_.reset();
     const auto lanes = batch_->size();
     const auto observed = learning_.enabled ? state.observed_transitions : state.transitions;
     constexpr auto maximum_observed = maximum_transitions * static_cast<std::size_t>(ppo_maximum_history);

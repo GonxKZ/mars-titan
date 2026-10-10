@@ -4,6 +4,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <span>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -57,7 +58,11 @@ struct KlpoEpisodeBatch {
 };
 
 // Valida el presupuesto de toda la oleada prevista, incluso si está incompleta.
-void validate_klpo_batch(const KlpoEpisodeBatch& batch, bool require_complete = false);
+// `validated` indica, por episodio, cuántos pasos iniciales ya superaron esta validación sin
+// cambiar después. Cabecera, calendarios y presupuesto se comprueban siempre. De cada episodio
+// se repite el último paso ya validado, porque su cierre depende de los pasos añadidos.
+void validate_klpo_batch(const KlpoEpisodeBatch& batch, bool require_complete = false,
+                         std::span<const std::size_t> validated = {});
 [[nodiscard]] KlpoEpisodeStatus klpo_episode_status(const KlpoEpisodeRecord& episode);
 [[nodiscard]] std::vector<double> klpo_terminal_returns(const KlpoEpisodeBatch& batch);
 [[nodiscard]] std::string serialize_klpo_batch(const KlpoEpisodeBatch& batch);
