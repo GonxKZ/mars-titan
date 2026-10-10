@@ -93,6 +93,15 @@
         44
       ]
     },
+    "transformer_compact_online": {
+      "family": "online_control",
+      "output": "quantile_head_v1",
+      "seeds": [
+        42,
+        43,
+        44
+      ]
+    },
     "gru_episodic": {
       "family": "episodic_gru",
       "output": "quantile_head_v1",
@@ -350,6 +359,20 @@
           "titans_mac_online"
         ]
       },
+      "online_learning": {
+        "kind": "delta",
+        "base": "transformer_compact",
+        "variants": [
+          "transformer_compact_online"
+        ]
+      },
+      "memory_vs_online_learning": {
+        "kind": "delta",
+        "base": "transformer_compact_online",
+        "variants": [
+          "mars_titan_m1"
+        ]
+      },
       "levels": {
         "kind": "level",
         "arms": [
@@ -360,6 +383,7 @@
           "gru",
           "dlinear",
           "transformer_compact",
+          "transformer_compact_online",
           "gru_episodic",
           "titans_transformer_direct",
           "titans_mac_disabled",

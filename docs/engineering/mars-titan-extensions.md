@@ -44,7 +44,7 @@ Al resolver los resultados maduros del evento, cada etiqueta aplicada escribe A 
 
 `tests/memory/test_financial_session_associative.py` reproduce la recurrencia con un oráculo independiente que parte de la sesión sin corrección: emisiones a 10⁻¹⁵, matriz bit a bit en cada generación, cola del núcleo y pesos rápidos iguales a los de Titans-MAC, causalidad (perturbar las etiquetas de un evento solo cambia emisiones posteriores), control de clave constante, corte antes de publicar con recuperación exacta y rechazos con banco o fuera de Titans-MAC. Siete mutaciones dirigidas (signo de la corrección, escritura con la emisión, poda de la cola, admisión con banco, contrato, ausencia de escritura y normalización de clave) hicieron fallar las pruebas.
 
-El recorrido cronológico por ventanas todavía no emite B6. La elección de η y λ en desarrollo sigue pendiente.
+La regla `kalman` (PT3) usa el mismo contrato con sus propias varianzas en lugar de η y λ, y se declara como ablación A12 frente a la proximal ([documento](kalman-associative-memory.md)). El recorrido cronológico por ventanas todavía no emite B6. La elección de η y λ, y de las varianzas de kalman, en desarrollo sigue pendiente.
 
 ## Entrenador del lector episódico
 

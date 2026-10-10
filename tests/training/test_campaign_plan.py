@@ -291,7 +291,11 @@ def test_protocols_with_different_stopping_rules_are_rejected(tmp_path):
 def test_pending_families_and_later_stages_are_declared_not_planned():
     report = plan.check_campaign(CAMPAIGNS["B"])
     pending = report["pending_families"]
-    assert set(pending) == {"episodic_gru", "mars_titan", "cm_v1"}
+    assert set(pending) == {"episodic_gru", "mars_titan", "cm_v1", plan.ONLINE_CONTROL}
+    # El control en línea tiene ejecutor, pero sus trabajos solo los declara la campaña A por
+    # etapas.
+    assert pending[plan.ONLINE_CONTROL]["arms"] == ["transformer_compact_online"]
+    assert pending[plan.ONLINE_CONTROL]["issue"] == 443
     planned = {job["arm"] for job in plan.plan_campaign(loaded("B"))}
     assert planned == {*NEURAL_ARMS, "ridge", "xgboost", *TITANS_ARMS}
     assert not planned & {arm for entry in pending.values() for arm in entry["arms"]}
@@ -315,7 +319,7 @@ def test_later_stage_of_each_variant_starts_from_that_campaign_and_matrix(varian
     assert stage["campaign"]["variant"] == variant
     assert stage["matrix_path"] == str(Path(declared["config"]).resolve())
     counts = campaign_stage.count_stage(stage)
-    expected = dict(A=(3915, 0), B=(1479, 2436))[variant]
+    expected = dict(A=(3654, 630), B=(1479, 2436))[variant]
     assert (counts["training_jobs"], counts["prediction_jobs"]) == expected
 
 

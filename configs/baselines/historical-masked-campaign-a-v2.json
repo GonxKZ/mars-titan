@@ -85,7 +85,7 @@
     "cm_v1": {"accumulation_rows": "pending"}
   },
   "limits": {
-    "max_training_jobs": 2322,
+    "max_training_jobs": 2341,
     "max_prediction_jobs": 0
   },
   "final_test_opened": false

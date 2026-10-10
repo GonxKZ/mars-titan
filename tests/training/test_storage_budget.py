@@ -5,6 +5,7 @@ pruebas comprueban la contabilidad: qué ajustes se consideran elegidos, qué tr
 consumidor, la tabla común contada una vez y el pico con el original de cada ajuste.
 """
 
+import json
 from pathlib import Path
 
 import pytest
@@ -241,3 +242,44 @@ def test_formula_rebuilds_each_window_from_its_rows_and_measured_bytes_per_row()
     assert both["writers"]["ridge"]["current"]["evaluation"] == 90 / COUNTS["evaluation"]
     assert both["writers"]["neural"]["current"]["evaluation"] == 60 / COUNTS["evaluation"]
     assert both["windows"] == 2
+
+
+def test_block_reading_removes_the_ordered_corpus_from_the_adapter_peak(tmp_path):
+    from mars_titan.posttraining.campaign_stage import load_stage, plan_stage
+
+    # A solo admite la lectura por bloques que necesita su ajuste con las filas nuevas. La
+    # copia ordenada se compara con el plan de B, que aún la admite.
+    path = Path("configs/posttraining/historical-masked-adapter-stage-b.json")
+    declared = json.loads(path.read_text())
+    assert declared["cohort_reading"]["source"] == "view_blocks"
+    base = path.resolve().parent
+    declared.update(
+        campaign=str((base / declared["campaign"]).resolve()),
+        matrix=str((base / declared["matrix"]).resolve()),
+    )
+    ordered = tmp_path / "ordered.json"
+    ordered.write_text(
+        json.dumps(dict(declared, cohort_reading=dict(source="ordered_corpus", retention="keep")))
+    )
+    jobs = plan_stage(load_stage(path))
+    windows = {(j["scope"], j["window"]) for j in jobs}
+    reports = {s: {w: dict(counts=COUNTS) for t, w in windows if t == s} for s, _ in windows}
+    adapter = dict(
+        ordered_row_bytes=1000,
+        input_row_bytes=2000,
+        parent_cache_bytes=0,
+        state_bytes=0,
+        retained_states=0,
+        job_report_bytes=0,
+        row_bytes_current=1,
+        row_bytes_large_groups=1,
+        row_bytes_shared_rows=1,
+    )
+    extras = dict(adapter=adapter, aggregate_bytes_per_row=1)
+    blocks = budget.adapter_estimate(path, reports, extras)["layouts"]["current"]
+    copied = budget.adapter_estimate(ordered, reports, extras)["layouts"]["current"]
+    assert blocks["retained_bytes"] == copied["retained_bytes"]
+    # Sin copia ordenada, el pico es lo conservado. Con ella, al menos la copia ordenada.
+    assert blocks["peak_bytes"] == blocks["retained_bytes"]
+    ordered_bytes = (COUNTS["train"] + COUNTS["validation"]) * 1000
+    assert copied["peak_bytes"] >= blocks["peak_bytes"] + ordered_bytes

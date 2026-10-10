@@ -209,6 +209,9 @@ def main(argv=None):
                 f"La etapa {name} parte de otra campaña",
             )
             stages[name] = module.plan_stage(stage)
+            if name == "adapters":
+                # La cadena elige el predictor de cada ventana dentro de la misma fase.
+                stages[name] += module.plan_chain(stage, stages[name])
     schedule = window_schedule(campaign, plan_campaign(campaign), stages)
     if args.output is not None:
         from mars_titan.data.storage import atomic_json

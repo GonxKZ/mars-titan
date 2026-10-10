@@ -1,4 +1,8 @@
-"""Apoyo común de la suite que no depende de ningún dominio del proyecto."""
+"""Apoyo común de la suite que no depende de ningún dominio del proyecto.
+
+La única excepción es la carga del enlace episódico en el modo estricto, que se importa
+dentro de su función para que la suite general no la necesite.
+"""
 
 import os
 import sys
@@ -14,7 +18,10 @@ NATIVE_VARIABLES = (
     "MARS_TITAN_PPO_EXECUTABLE",
     "MARS_TITAN_KLPO_EXECUTABLE",
 )
-SWITCHES = ("MARS_TITAN_REQUIRE_NATIVE", "MARS_TITAN_REQUIRE_CUDA")
+REQUIRE_NATIVE, REQUIRE_CUDA = "MARS_TITAN_REQUIRE_NATIVE", "MARS_TITAN_REQUIRE_CUDA"
+SWITCHES = (REQUIRE_NATIVE, REQUIRE_CUDA)
+# Marca de las pruebas del enlace episódico. En modo estricto su omisión cuenta como fallo.
+NATIVE_MARKER = "native_binding"
 
 
 def cuda_available():
@@ -38,25 +45,48 @@ def skip_without_episodic_native():
         pytest.skip("Falta el enlace episódico nativo compilado (MARS_TITAN_EPISODIC_NATIVE)")
 
 
-def strict_problems(environment, cuda=cuda_available):
+def episodic_load_problem(path):
+    """Motivo por el que el enlace episódico declarado no carga, o None si carga.
+
+    Una ruta existente no basta, porque un enlace compilado con otro PyTorch u otro contrato
+    se rechaza al cargarlo y sus pruebas se omitirían después una a una.
+    """
+    from mars_titan.memory.native_backend import load_native
+
+    try:
+        load_native(path)
+    except Exception as error:
+        return f"MARS_TITAN_EPISODIC_NATIVE no carga como enlace válido: {error}"
+    return None
+
+
+def native_required(environment):
+    """Indica si la sesión exige los binarios nativos. El valor ya se validó al empezar."""
+    return environment.get(REQUIRE_NATIVE) == "1"
+
+
+def strict_problems(environment, cuda=cuda_available, episodic=episodic_load_problem):
     """Requisitos incumplidos de la comprobación local completa, vacío si no hay ninguno.
 
     En la suite general las pruebas que dependen de un binario nativo o de CUDA se omiten con
     su motivo. `MARS_TITAN_REQUIRE_NATIVE=1` exige declarar cada binario con una ruta existente
-    y `MARS_TITAN_REQUIRE_CUDA=1` exige CUDA visible, así que ninguna se omite por esa causa.
+    y además cargar el enlace episódico. `MARS_TITAN_REQUIRE_CUDA=1` exige CUDA visible, así
+    que ninguna prueba se omite por esa causa.
     """
     problems = [
         f"{switch} debe valer 0 o 1"
         for switch in SWITCHES
         if environment.get(switch, "0") not in ("0", "1")
     ]
-    if environment.get("MARS_TITAN_REQUIRE_NATIVE") == "1":
+    if native_required(environment):
         for variable in NATIVE_VARIABLES:
             value = environment.get(variable)
             if not value:
                 problems.append(f"falta declarar {variable}")
             elif not Path(value).is_file():
                 problems.append(f"{variable} no apunta a un archivo: {value}")
+            elif variable == "MARS_TITAN_EPISODIC_NATIVE" and (problem := episodic(value)):
+                problems.append(problem)
     if environment.get("MARS_TITAN_REQUIRE_CUDA") == "1" and not cuda():
         problems.append("CUDA no está disponible")
     return problems

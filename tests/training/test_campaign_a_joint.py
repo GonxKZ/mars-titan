@@ -36,6 +36,7 @@ COMPARISON = EVALUATION / "historical-masked-2000-joint-comparison.json"
 JOINT_CN = EVALUATION / "historical-masked-joint-cn-walk-forward-v3.json"
 US_V2 = EVALUATION / "historical-masked-us-walk-forward-v2.json"
 CN_V2 = EVALUATION / "historical-masked-cn-walk-forward-v2.json"
+JOINT_STOP = CONFIGS / "baselines/historical-masked-campaign-a-joint-stop.json"
 CONTROLS = ("transformer_compact", "titans_mac_online", "mars_titan_m1")
 PAIRED = ("rnn", "lstm", "gru", "dlinear", "transformer_compact", "titans_transformer_direct")
 
@@ -83,16 +84,16 @@ def edited(tmp_path, change, *, comparison_change=None):
 def test_v2_plans_the_joint_model_for_every_arm_and_three_separate_controls():
     loaded = campaign()
     counts = plan.count_jobs(loaded)
-    assert (counts["training_jobs"], counts["prediction_jobs"]) == (2322, 0)
+    assert (counts["training_jobs"], counts["prediction_jobs"]) == (2341, 0)
     joint, us, cn = (counts["scopes"][scope] for scope in ("US+CN", "US", "CN"))
     assert (joint["windows"], us["windows"], cn["windows"]) == (19, 19, 13)
-    assert (joint["training_jobs"], us["training_jobs"], cn["training_jobs"]) == (1938, 228, 156)
+    assert (joint["training_jobs"], us["training_jobs"], cn["training_jobs"]) == (1957, 228, 156)
     assert set(us["arms"]) == set(cn["arms"]) == set(CONTROLS)
     assert plan.scope_arms(loaded, "US") == plan.scope_arms(loaded, "CN") == list(CONTROLS)
     # Dos casos con la semilla 42 y el elegido repetido con 43 y 44 en cada ventana.
     for record, windows in ((joint, 19), (us, 19), (cn, 13)):
         for arm in record["arms"]:
-            if arm in {"ridge", "xgboost", "gru_episodic"}:
+            if arm in {"ridge", "xgboost"}:
                 continue
             assert record["arms"][arm] == {
                 "42": dict(fit=2 * windows, carry=0),
@@ -102,7 +103,6 @@ def test_v2_plans_the_joint_model_for_every_arm_and_three_separate_controls():
     # Los tabulares son deterministas: sus casos solo se ajustan con la semilla de búsqueda.
     assert joint["arms"]["ridge"] == {"42": dict(fit=3 * 19, carry=0)}
     assert joint["arms"]["xgboost"] == {"42": dict(fit=12 * 19, carry=0)}
-    assert joint["arms"]["gru_episodic"] == {s: dict(fit=19, carry=0) for s in ("42", "43", "44")}
     assert {"cm_v1_core_b", "cm_v1_core_c"} <= set(joint["arms"])
     assert loaded["limits"]["max_training_jobs"] == counts["training_jobs"]
 
@@ -142,7 +142,9 @@ def test_extra_seeds_repeat_only_the_selected_case_after_every_search_of_the_sco
         (lambda v: v["seed_policy"].update(selected_case_seeds=[43]), "política de semillas"),
         (lambda v: v["seed_policy"].update(deterministic_arms=["ridge", "zero"]), "productor"),
         (lambda v: v["seed_policy"].update(search_seed=41), "política de semillas"),
-        (lambda v: v.update(stopping={"mode": "joint"}), "regla de parada del protocolo"),
+        (lambda v: v.update(stopping={"mode": "joint"}), "modo de parada"),
+        (lambda v: v.update(stopping={"mode": "early_stop"}), "modo de parada"),
+        (lambda v: v.update(early_stop=json.loads(JOINT_STOP.read_text())["early_stop"]), "modo"),
         (lambda v: v["memory_options"]["titans_mac"].update(accumulation_rows=128), "receta"),
         (lambda v: v["memory_options"].pop("cm_v1"), "opciones de memoria"),
         (lambda v: v["memory_options"]["episodic_gru"].pop("recompute"), "opciones de memoria"),
@@ -162,7 +164,9 @@ def test_extra_seeds_repeat_only_the_selected_case_after_every_search_of_the_sco
         "missing_repeat_seed",
         "unknown_deterministic_arm",
         "other_search_seed",
-        "unconnected_stopping_mode",
+        "unknown_stopping_mode",
+        "early_stop_mode_without_section",
+        "early_stop_section_with_protocol_mode",
         "memory_value_differs_from_recipe",
         "missing_family_options",
         "missing_option",
@@ -182,6 +186,38 @@ def test_v2_rejects_declarations_that_break_the_seed_stopping_or_memory_rules(
 ):
     with pytest.raises(ValueError, match=message):
         plan.load_campaign(edited(tmp_path, change))
+
+
+def test_the_joint_stop_groups_keep_every_paired_contrast_inside_one_scope_and_group(tmp_path):
+    def joint_stop(value):
+        value.update(
+            stopping={"mode": plan.EARLY_STOP},
+            early_stop=json.loads(JOINT_STOP.read_text())["early_stop"],
+        )
+
+    loaded = plan.load_campaign(edited(tmp_path, joint_stop))
+    # Los contrastes del diseño conjunto, también los del control en línea, siguen dentro
+    # de los grupos de la parada conjunta (la carga los comprueba al planificar).
+    jobs = plan.plan_campaign(loaded)
+    by_id = {job["id"]: job for job in jobs}
+    membership = loaded["early_stop"]["membership"]
+    finals = [job for job in jobs if job.get("phase") == plan.JOINT]
+    assert finals and plan.count_jobs(loaded, jobs)["training_jobs"] == len(
+        [job for job in plan.plan_campaign(campaign()) if job["kind"] == plan.FIT]
+    )
+    for final in finals:
+        members = [by_id[plateau] for plateau in final["joint_group"]]
+        assert {(job["scope"], job["window"], job["seed"]) for job in members} == {
+            (final["scope"], final["window"], final["seed"])
+        }
+        assert {membership[job["arm"]] for job in members} == {membership[final["arm"]]}
+    # En un mercado solo paran juntos los controles separados de un mismo grupo.
+    us = {
+        tuple(sorted(by_id[plateau]["arm"] for plateau in final["joint_group"]))
+        for final in finals
+        if final["scope"] == "US" and final["stage"] == "search"
+    }
+    assert us == {("titans_mac_online", "transformer_compact"), ("mars_titan_m1",)}
 
 
 def test_memory_options_block_the_launch_until_they_match_the_recipe(tmp_path):
@@ -259,6 +295,13 @@ def test_v2_plan_finishes_each_window_of_every_scope_before_the_next():
     assert scopes == sorted(scopes, key=v1["scopes"].index)
 
 
+def adapter_jobs(adapters):
+    """Trabajos de la etapa de adaptadores v2 con las selecciones de su cadena."""
+    stage = adapters.load_stage(plan.LATER_STAGES["posttraining_adapter_matrix"]["joint_stage"])
+    jobs = adapters.plan_stage(stage)
+    return jobs + adapters.plan_chain(stage, jobs)
+
+
 def test_window_schedule_orders_every_stage_of_the_window_and_counts_all_jobs():
     from mars_titan.posttraining import campaign_stage as adapters
     from mars_titan.simulation import policy_plan
@@ -266,9 +309,7 @@ def test_window_schedule_orders_every_stage_of_the_window_and_counts_all_jobs():
 
     value = campaign()
     stages = dict(
-        adapters=adapters.plan_stage(
-            adapters.load_stage(plan.LATER_STAGES["posttraining_adapter_matrix"]["joint_stage"])
-        ),
+        adapters=adapter_jobs(adapters),
         ablation=ablation.plan_stage(
             ablation.load_stage(plan.LATER_STAGES["modality_ablation"]["joint_stage"])
         ),
@@ -282,8 +323,9 @@ def test_window_schedule_orders_every_stage_of_the_window_and_counts_all_jobs():
     totals = Counter()
     for row in schedule:
         totals.update({entry["phase"]: len(entry["jobs"]) for entry in row["phases"]})
-    assert totals["base_search"] + totals["selected_case_seeds"] == 2322
-    assert (totals["adapters"], totals["ablation"], totals["rl"]) == (1653, 3534, 2160 + 1584)
+    assert totals["base_search"] + totals["selected_case_seeds"] == 2341
+    # Adaptadores: 1.566 ajustes, 270 padres congelados y 285 selecciones de la cadena.
+    assert (totals["adapters"], totals["ablation"], totals["rl"]) == (2121, 3534, 2160 + 1584)
     window = schedule[6]
     selection = window["phases"][order.PHASES.index("selection")]
     assert "CN/fold-000/mars_titan_m1" in selection["decisions"]
@@ -311,7 +353,8 @@ def test_later_stages_confirm_only_the_base_of_the_window_they_run(module):
     from mars_titan.training import modality_ablation_stage as ablation
 
     value = campaign()
-    stage = dict(scopes=["US+CN"], families={"gru": "neural"}, predictors=["gru"])
+    stage = dict(scopes=["US+CN"], families={"gru": "neural"}, predictors=["gru"], arms=["gru"])
+    stage["campaign"] = value
     confirm = dict(posttraining=adapters, simulation=policies, ablation=ablation)[module]
     seen = []
     base = SimpleNamespace(
@@ -323,6 +366,22 @@ def test_later_stages_confirm_only_the_base_of_the_window_they_run(module):
     pairs = order.window_pairs(value, "fold-006")
     confirm._base_receipts(base, value, stage, pairs)
     assert seen and all((job["scope"], job["window"]) == ("US+CN", "fold-006") for job in seen)
+
+
+def test_a_staged_window_runs_its_jobs_and_confirms_the_base_of_the_parent_window():
+    from mars_titan.posttraining import campaign_stage as adapters
+
+    stage = adapters.load_stage(plan.LATER_STAGES["posttraining_adapter_matrix"]["joint_stage"])
+    jobs = adapters.plan_stage(stage)
+    chains = adapters.plan_chain(stage, jobs)
+    selected, chosen, pairs = adapters.window_plan(stage["campaign"], jobs, chains, "fold-006")
+    assert selected and chosen
+    assert {(job["scope"], job["window"]) for job in selected + chosen} == {("US+CN", "fold-006")}
+    # Los trabajos parten del estado elegido en fold-005, que es un trabajo de la base.
+    assert pairs == {("US+CN", "fold-006"), ("US+CN", "fold-005")}
+    assert len(adapters.ordered_jobs(selected, chosen)) == len(selected) + len(chosen)
+    first = adapters.window_plan(stage["campaign"], jobs, chains, "fold-000")
+    assert not first[0] and first[1] and first[2] == {("US+CN", "fold-000")}
 
 
 def test_window_jobs_follow_dependencies_through_every_level():
@@ -360,7 +419,13 @@ def test_later_stages_of_v2_read_the_joint_model_in_each_market():
 
     adapter = adapters.load_stage(plan.LATER_STAGES["posttraining_adapter_matrix"]["joint_stage"])
     assert adapter["scopes"] == ["US+CN"]
-    assert adapters.count_stage(adapter)["training_jobs"] == 87 * 19
+    counts = adapters.count_stage(adapter)
+    # Cada ventana con padre adapta 87 casos y congela 15 padres. Todas eligen la cadena.
+    assert (counts["training_jobs"], counts["prediction_jobs"], counts["selection_jobs"]) == (
+        87 * 18,
+        15 * 18,
+        15 * 19,
+    )
     masked = ablation.load_stage(plan.LATER_STAGES["modality_ablation"]["joint_stage"])
     # 20 brazos neuronales con tres semillas y dos tabulares con una, por tres variantes.
     assert ablation.count_stage(masked)["prediction_jobs"] == (20 * 3 + 2) * 3 * 19
@@ -914,7 +979,7 @@ def test_the_plan_checks_every_declared_document_of_the_campaign_and_its_stages(
         "historical-masked-rl-policies.json",
         "historical-masked-ablation-stage-a-v2.json",
     ]
-    assert len(plan.plan_campaign(value)) == 2322
+    assert len(plan.plan_campaign(value)) == 2341
     assert plan.check_campaign(CAMPAIGN)["data_policy"] == "real_edition_only"
 
 
