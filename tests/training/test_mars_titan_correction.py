@@ -250,7 +250,7 @@ def test_window_refuses_while_the_learning_hold_blocks(base, tmp_path, learning_
         ),
         (PROXIMAL | {"episodic_bank": "m1"}, "eta25e-2", "solo associative_memory"),
         ({"associative_memory": {"rule": "lms", "key": "codec"}}, "eta25e-2", "delta y proximal"),
-        ({"associative_memory": {"rule": "kalman", "key": "codec"}}, "eta25e-2", "kalman"),
+        ({"associative_memory": {"rule": "kalman", "key": "codec"}}, "eta25e-2", "no usa η ni λ"),
         (PROXIMAL, "eta1", "casos de búsqueda"),
     ],
 )
