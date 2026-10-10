@@ -45,8 +45,9 @@ observatorio las encuentre. Mientras no exista el resumen, la etapa aparece como
 declarada y sin resumen, nunca como trabajos completados.
 
 Estas fuentes no producen registros por ejecución. A suma 22.188 trabajos entre sus
-etapas y A v2 19.416, muy por encima del presupuesto por defecto de 4.096 registros, y
-la web descarga todas las páginas del historial al abrirse.
+etapas y A v2 23.159 el 10 de octubre, con las 1.904 mesetas de su parada conjunta, muy
+por encima del presupuesto por defecto de 4.096 registros, y la web descarga todas las
+páginas del historial al abrirse.
 `observatory/window_campaigns.py` convierte cada resumen en una matriz de ámbito,
 ventana, brazo y nombre con el estado de cada trabajo, la fecha de su recibo y las
 curvas por época de hasta ocho intentos abiertos. El mismo módulo alimenta el servidor
@@ -54,8 +55,11 @@ en directo. La etapa de políticas usa identificadores de seis partes
 (`ámbito/mercado/ventana/predictor/brazo/nombre`), así que su ámbito lleva el mercado
 y su brazo el predictor. Las selecciones de la cadena de la etapa de adaptadores no
 tienen recibo en `jobs/` y se confirman con su `selection.json`. Un trabajo sin
-confirmar con una carpeta `attempt-*` o `run` cuenta como intento sin confirmar. El
-resumen de la etapa de políticas incluye métricas financieras, que no se copian.
+confirmar con una carpeta `attempt-*` o `run` cuenta como intento sin confirmar. La
+continuación de un ajuste con parada conjunta no tiene carpeta propia hasta su recibo,
+porque reanuda en la de su meseta, así que su intento es el de la meseta en cuanto esta
+se confirma. El resumen de la etapa de políticas incluye métricas financieras, que no se
+copian.
 
 Cada matriz se publica en `windows/<sha256>.json` y el índice lleva solo su etapa, su
 declaración, su estado y los recuentos de trabajos, confirmados e intentos. La web

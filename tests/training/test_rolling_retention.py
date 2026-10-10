@@ -796,3 +796,55 @@ def test_jobs_declared_not_regenerable_are_compacted_without_regenerating(
     assert not report.exists()
     release = state.ledger()["windows"][windows[0]["id"]]["phases"]["release"]
     assert release["declared_not_regenerable"] == 1
+
+
+def test_a_plateau_of_a_joint_fit_has_no_tables_to_release(
+    base,  # noqa: F811
+    edition,
+    tmp_path,
+    monkeypatch,
+    unconsumed,
+):
+    """La meseta de un ajuste conjunto no escribe tablas: la liberación no la regenera."""
+    on_cpu(monkeypatch)
+    monkeypatch.setenv(HOLD_ENV, str(base.hold))
+    output = tmp_path / "campaign"
+    shutil.copytree(base.output, output, symlinks=True)
+    path, campaign = schedule(base, tmp_path)
+    windows = rolling.load_schedule(path, campaign)
+    state = rolling.Rolling(
+        rolling.load_retention(unconsumed),
+        base.campaign,
+        base.views,
+        output,
+        windows,
+        edition=edition,
+    )
+    original = rolling.Rolling.base_state
+    added = []
+
+    def with_plateau(self, index):
+        # La meseta va antes que su continuación y su recibo solo copia el informe en espera.
+        found, jobs = original(self, index)
+        target = jobs[0]
+        head, _, name = target["id"].rpartition("/")
+        plateau = dict(target, id=f"{head}/plateau-{name}", phase=plan.PLATEAU)
+        copy = output / "jobs" / plateau["id"] / "plateau-report.json"
+        copy.parent.mkdir(parents=True, exist_ok=True)
+        copy.write_text(json.dumps(dict(status="awaiting_joint_stop", individual_stop_epoch=1)))
+        found.receipts[plateau["id"]] = dict(
+            status=engine.PLATEAU_STATUS,
+            report=dict(path=str(copy.relative_to(output))),
+            predictions={},
+        )
+        added.append(plateau["id"])
+        return found, [plateau, *jobs]
+
+    monkeypatch.setattr(rolling.Rolling, "base_state", with_plateau)
+    rolling.run_rolling(state, Calls().runners())
+    assert added
+    reports = state.folder / "regeneration-reports"
+    assert not any((reports / f"{rolling._name(f'base:{key}')}.json").exists() for key in added)
+    # La continuación sí se regenera y se libera como cualquier ajuste.
+    release = state.ledger()["windows"][windows[0]["id"]]["phases"]["release"]
+    assert release["released"] > 0

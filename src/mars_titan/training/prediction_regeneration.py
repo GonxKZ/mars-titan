@@ -161,10 +161,18 @@ def regenerate_job(path, views, output, job_id, destination, *, regenerators=Non
 
 
 def _regenerate_base(campaign, state, job, destination, regenerators=None):
-    """Regenerar un trabajo cuyos recibos y dependencias ya están confirmados en `state`."""
-    from . import masked_campaign as engine
-    from .campaign_plan import FIT
+    """Regenerar un trabajo cuyos recibos y dependencias ya están confirmados en `state`.
 
+    La meseta de un ajuste conjunto no tiene tablas que regenerar: el estado elegido y las
+    predicciones son los de su continuación, así que se rechaza antes de leer nada.
+    """
+    from . import masked_campaign as engine
+    from .campaign_plan import FIT, PLATEAU
+
+    _require(
+        job.get("phase") != PLATEAU,
+        f"{job['id']} es una meseta sin predicciones: se regenera su continuación",
+    )
     receipt = state.receipts[job["id"]]
     case = state.resolve(job)[0]
     report_path = state.output / receipt["report"]["path"]

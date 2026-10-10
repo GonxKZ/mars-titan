@@ -26,7 +26,9 @@ from mars_titan.training import campaign_plan as plan
 from mars_titan.training import campaign_schedule as order
 from mars_titan.training import masked_campaign as engine
 from mars_titan.training.joint_temporal_corpus import prepare_joint_temporal_corpus
+from mars_titan.training.selection import JOINT_PLATEAU
 from tests.training.test_masked_campaign import Recorder, doubles, run
+from tests.training.test_masked_campaign_joint import COMMON, STOPS, JointRecorder, receipt, slot
 from tests.training.test_walk_forward_v2_views import expected, fixture, observed
 
 CONFIGS = Path("configs")
@@ -96,15 +98,26 @@ def test_v2_plans_the_joint_model_for_every_arm_and_three_separate_controls():
     assert joint["arms"]["transformer_compact_online"] == {
         s: dict(fit=0, carry=0, online=19) for s in ("42", "43", "44")
     }
+    # Cada ajuste de un brazo con grupo de parada empieza por su meseta, que no es otro ajuste.
+    # B6 no tiene épocas y queda fuera de los grupos.
+    membership = loaded["early_stop"]["membership"]
     for record, windows in ((joint, 19), (us, 19), (cn, 13)):
         for arm in record["arms"]:
             if arm in {"ridge", "xgboost", "transformer_compact_online"}:
                 continue
+            fits = {"42": 2 * windows, "43": windows, "44": windows}
             assert record["arms"][arm] == {
-                "42": dict(fit=2 * windows, carry=0),
-                "43": dict(fit=windows, carry=0),
-                "44": dict(fit=windows, carry=0),
+                seed: dict(fit=fit, carry=0, **({"plateau": fit} if arm in membership else {}))
+                for seed, fit in fits.items()
             }, arm
+    grouped = [arm for arm in joint["arms"] if arm in membership]
+    assert len(grouped) == 20 and not {"mars_titan_b6", "mars_titan_b6_bias"} & set(membership)
+    assert (joint["plateau_jobs"], us["plateau_jobs"], cn["plateau_jobs"]) == (
+        20 * 4 * 19,
+        3 * 4 * 19,
+        3 * 4 * 13,
+    )
+    assert counts["plateau_jobs"] == 1904
     # Los tabulares son deterministas: sus casos solo se ajustan con la semilla de búsqueda.
     assert joint["arms"]["ridge"] == {"42": dict(fit=3 * 19, carry=0)}
     assert joint["arms"]["xgboost"] == {"42": dict(fit=12 * 19, carry=0)}
@@ -116,13 +129,21 @@ def test_extra_seeds_repeat_only_the_selected_case_after_every_search_of_the_sco
     loaded = campaign()
     jobs = plan.plan_campaign(loaded)
     position = {job["id"]: index for index, job in enumerate(jobs)}
+    by_id = {job["id"]: job for job in jobs}
     groups = {}
     for job in jobs:
-        groups.setdefault((job["scope"], job["window"], job["arm"]), []).append(job)
         # Orden topológico: ninguna dependencia aparece después del trabajo.
         assert all(position[dep] < position[job["id"]] for dep in job["depends"]), job["id"]
         # Ninguna dependencia cruza de ámbito.
         assert all(dep.split("/")[0] == job["scope"] for dep in job["depends"]), job["id"]
+        if job.get("phase") == plan.PLATEAU:
+            continue
+        groups.setdefault((job["scope"], job["window"], job["arm"]), []).append(job)
+        if job.get("phase") == plan.JOINT:
+            # La continuación añade a las dependencias de su meseta las del grupo, y nada más.
+            plateau = by_id[job["plateau"]]
+            assert job["depends"] == [*plateau["depends"], *job["joint_group"]]
+            assert plateau["case"] == job["case"] and job["plateau"] in job["joint_group"]
     for (scope, window, arm), members in groups.items():
         if arm == "transformer_compact_online":
             continue  # El control en línea no busca casos: parte del elegido de su padre.
@@ -150,8 +171,8 @@ def test_extra_seeds_repeat_only_the_selected_case_after_every_search_of_the_sco
         (lambda v: v["seed_policy"].update(deterministic_arms=["ridge", "zero"]), "productor"),
         (lambda v: v["seed_policy"].update(search_seed=41), "política de semillas"),
         (lambda v: v.update(stopping={"mode": "joint"}), "modo de parada"),
-        (lambda v: v.update(stopping={"mode": "early_stop"}), "modo de parada"),
-        (lambda v: v.update(early_stop=json.loads(JOINT_STOP.read_text())["early_stop"]), "modo"),
+        (lambda v: v.pop("early_stop"), "modo de parada"),
+        (lambda v: v.update(stopping={"mode": "protocol"}), "modo"),
         (lambda v: v["memory_options"]["titans_mac"].update(accumulation_rows=128), "receta"),
         (lambda v: v["memory_options"].pop("cm_v1"), "opciones de memoria"),
         (lambda v: v["memory_options"]["episodic_gru"].pop("recompute"), "opciones de memoria"),
@@ -195,23 +216,42 @@ def test_v2_rejects_declarations_that_break_the_seed_stopping_or_memory_rules(
         plan.load_campaign(edited(tmp_path, change))
 
 
-def test_the_joint_stop_groups_keep_every_paired_contrast_inside_one_scope_and_group(tmp_path):
-    def joint_stop(value):
-        value.update(
-            stopping={"mode": plan.EARLY_STOP},
-            early_stop=json.loads(JOINT_STOP.read_text())["early_stop"],
-        )
+def test_v2_declares_the_joint_stop_of_its_groups_before_any_result():
+    """La v2 declara la misma parada que el archivo de grupos, sin copia que pueda divergir."""
+    declared = json.loads(CAMPAIGN.read_text())
+    assert declared["stopping"] == {"mode": plan.EARLY_STOP}
+    assert declared["early_stop"] == json.loads(JOINT_STOP.read_text())["early_stop"]
+    report = plan.check_campaign(CAMPAIGN)
+    assert report["protocol_stopping_rule"]["stopping"] == "fixed_budget"
+    assert report["stopping_rule"]["stopping"] == "joint_plateau"
+    assert report["early_stop"]["group_epoch"] == "maximum_of_first_plateaus"
+    groups = report["early_stop"]["groups"]
+    assert list(groups) == ["encoders_and_cores", "episodic_readers", "cm_v1_cores"]
+    # A10 contrasta el primer lector con K = 4, así que los dos paran juntos.
+    readers = groups["episodic_readers"]
+    assert readers.index("mars_titan_m1_k4") < readers.index("mars_titan_m1_k4_first_read")
 
-    loaded = plan.load_campaign(edited(tmp_path, joint_stop))
+
+def test_v2_rejects_a_first_read_reader_outside_the_readers_group(tmp_path):
+    def apart(value):
+        value["early_stop"]["groups"]["episodic_readers"].remove("mars_titan_m1_k4_first_read")
+
+    with pytest.raises(ValueError, match="mars_titan_m1_k4_first_read.*necesita un mismo grupo"):
+        plan.plan_campaign(plan.load_campaign(edited(tmp_path, apart)))
+
+
+def test_the_joint_stop_groups_keep_every_paired_contrast_inside_one_scope_and_group():
+    loaded = campaign()
     # Los contrastes del diseño conjunto, también los del control en línea, siguen dentro
     # de los grupos de la parada conjunta (la carga los comprueba al planificar).
     jobs = plan.plan_campaign(loaded)
     by_id = {job["id"]: job for job in jobs}
     membership = loaded["early_stop"]["membership"]
     finals = [job for job in jobs if job.get("phase") == plan.JOINT]
-    assert finals and plan.count_jobs(loaded, jobs)["training_jobs"] == len(
-        [job for job in plan.plan_campaign(campaign()) if job["kind"] == plan.FIT]
-    )
+    # Cada meseta precede a su continuación, que conserva el identificador del ajuste.
+    plateaus = [job for job in jobs if job.get("phase") == plan.PLATEAU]
+    assert len(finals) == len(plateaus) == plan.count_jobs(loaded, jobs)["plateau_jobs"]
+    assert {final["plateau"] for final in finals} == {job["id"] for job in plateaus}
     for final in finals:
         members = [by_id[plateau] for plateau in final["joint_group"]]
         assert {(job["scope"], job["window"], job["seed"]) for job in members} == {
@@ -252,7 +292,7 @@ def test_memory_options_block_the_launch_until_they_match_the_recipe(tmp_path):
     report = plan.check_campaign(CAMPAIGN)
     assert report["launch_blockers"] == blockers
     assert report["scope_arms"]["US"] == list(CONTROLS)
-    assert report["stopping"] == {"mode": "protocol"}
+    assert report["stopping"] == {"mode": plan.EARLY_STOP}
     assert (
         plan.check_campaign(CONFIGS / "baselines/historical-masked-campaign-a.json")[
             "launch_blockers"
@@ -345,7 +385,12 @@ def test_window_schedule_orders_every_stage_of_the_window_and_counts_all_jobs():
     totals = Counter()
     for row in schedule:
         totals.update({entry["phase"]: len(entry["jobs"]) for entry in row["phases"]})
-    assert totals["base_search"] + totals["selected_case_seeds"] == 2569
+    # Los 2.569 ajustes y las 1.904 mesetas que los preceden en la parada conjunta.
+    assert totals["base_search"] + totals["selected_case_seeds"] == 2569 + 1904
+    # Las etapas dependen del estado elegido, que fija la continuación y no su meseta.
+    plateaus = {job["id"] for job in jobs if job.get("phase") == plan.PLATEAU}
+    read = {d for stage_jobs in stages.values() for j in stage_jobs for d in j.get("depends", ())}
+    assert read and not plateaus & read
     # Adaptadores: 6.804 ajustes y 1.278 padres congelados, y 1.349 selecciones de la cadena
     # en su propia fase.
     assert (totals["adapters"], totals["chain"]) == (6804 + 1278, 1349)
@@ -390,6 +435,12 @@ def test_later_stages_confirm_only_the_base_of_the_window_they_run(module):
     pairs = order.window_pairs(value, "fold-006")
     confirm._base_receipts(base, value, stage, pairs)
     assert seen and all((job["scope"], job["window"]) == ("US+CN", "fold-006") for job in seen)
+    # Con la parada conjunta, la GRU necesita también las mesetas de su grupo, aunque sean de
+    # brazos que la etapa no lee, y cada trabajo llega después de sus dependencias.
+    confirmed = [job["id"] for job in seen]
+    ordered = all(set(job["depends"]) <= set(confirmed[:i]) for i, job in enumerate(seen))
+    assert ordered, module
+    assert "US+CN/fold-006/titans_mac_online/plateau-search-lr1e-4" in confirmed
 
 
 def test_a_staged_window_runs_its_jobs_and_confirms_the_base_of_the_parent_window():
@@ -634,8 +685,12 @@ def test_joint_views_leave_china_empty_only_where_it_does_not_count(tmp_path):
     assert markets["empty_folds_allowed"] == [f"fold-{i:03d}" for i in range(6)]
 
 
-def reduced(folder, *, controls=("gru",), arms=("gru", "ridge")):
-    """Comparación v4 y campaña v2 reducidas con protocolos y recetas versionados."""
+def reduced(folder, *, controls=("gru",), arms=("gru", "ridge"), groups=None):
+    """Comparación v4 y campaña v2 reducidas con protocolos y recetas versionados.
+
+    Sin `groups` rige la regla del protocolo, porque los grupos de la v2 nombran brazos que
+    la reducción no tiene. Con `groups` se declara la parada conjunta de la v2 sobre ellos.
+    """
     folder.mkdir(parents=True, exist_ok=True)
     declared = json.loads(COMPARISON.read_text())
     for scope in declared["scopes"].values():
@@ -666,6 +721,11 @@ def reduced(folder, *, controls=("gru",), arms=("gru", "ridge")):
     )
     value["neural"]["arms"] = {arm: arm for arm in arms if arm != "ridge"}
     value["tabular"].update(config="tabular.json", arms={"ridge": "ridge"})
+    if groups is None:
+        value.pop("early_stop")
+        value["stopping"] = {"mode": "protocol"}
+    else:
+        value["early_stop"]["groups"] = groups
     atomic_json(folder / "campaign.json", value)
     return folder / "campaign.json", folder / "comparison.json"
 
@@ -852,6 +912,100 @@ def test_a_job_that_runs_or_reports_another_precision_is_not_confirmed(
     assert not list((tmp_path / "out/jobs").rglob("receipt.json"))
 
 
+# Parada conjunta de la v2 sobre la campaña reducida: la GRU y la LSTM paran juntas en el
+# ámbito conjunto y la GRU, sola, en los controles separados.
+GROUPED = ("gru", "lstm")
+
+
+class JointPrecision(JointRecorder):
+    """Meseta y continuación de los dobles conjuntos, con una meseta que puede usar TF32."""
+
+    def __init__(self, *, plateau_recorded=None):
+        super().__init__()
+        self.plateau_recorded = plateau_recorded
+
+    def __call__(self, run):
+        report = super().__call__(run)
+        if run.job.get("phase") == plan.PLATEAU and self.plateau_recorded:
+            report["runtime"] = dict(numerics=dict(self.plateau_recorded))
+        return report
+
+
+@pytest.fixture(scope="module")
+def joint_stop(joint_campaign):
+    path, _ = reduced(
+        joint_campaign.root / "joint-stop",
+        arms=(*GROUPED, "ridge"),
+        groups=dict(references=list(GROUPED)),
+    )
+    return path
+
+
+def _joint_window(path, views, output, recorder):
+    return engine.run_campaign(
+        path,
+        views,
+        output,
+        executors=doubles(recorder),
+        lease=nullcontext,
+        stop=SimpleNamespace(requested=False),
+        window="fold-006",
+    )
+
+
+def test_v2_joint_stop_pairs_each_case_and_the_selected_case_of_every_scope(
+    joint_campaign, joint_stop, tmp_path
+):
+    output = tmp_path / "out"
+    recorder = JointRecorder()
+    summary = _joint_window(joint_stop, joint_campaign.views, output, recorder)
+    assert summary["status"] == "completed"
+    jobs = {job["id"]: job for job in plan.plan_campaign(plan.load_campaign(joint_stop))}
+    called = [jobs[call["id"]] for call in recorder.calls]
+    finals = [job for job in called if job.get("phase") == plan.JOINT]
+    # fold-006 de US+CN con la GRU y la LSTM, y fold-006 de US y fold-000 de CN con la GRU
+    # separada, cada una con dos casos y dos finalistas.
+    assert len(finals) == len([job for job in called if job.get("phase") == plan.PLATEAU])
+    assert sorted(Counter(job["scope"] for job in finals).items()) == [
+        ("CN", 4),
+        ("US", 4),
+        ("US+CN", 8),
+    ]
+    for job in finals:
+        epoch, folder = recorder.joint[job["id"]]
+        # En el ámbito conjunto, la mayor primera meseta del grupo. En un control separado
+        # la GRU forma grupo sola y sigue su propia meseta.
+        alone = STOPS["gru", slot(job)]
+        assert epoch == (COMMON[slot(job)] if job["scope"] == "US+CN" else alone)
+        plateau, final = receipt(output, job["plateau"]), receipt(output, job["id"])
+        assert plateau["numerics"] == final["numerics"] == numerics.STRICT_FP32
+        assert folder == output / plateau["attempt"] and final["attempt"] == plateau["attempt"]
+        # La meseta de una semilla extra ajusta ya el caso elegido de las búsquedas, el mismo
+        # que su continuación, con la regla conjunta.
+        assert plateau["identity"]["case"] == final["identity"]["case"]
+        assert final["identity"]["case"]["selection"]["stopping"] == JOINT_PLATEAU
+        if job["stage"] == "finalist":
+            source = final["identity"]["sources"]["source"]
+            assert source.split("/")[-1].startswith("search-")
+            assert plateau["identity"]["sources"]["source"] == source
+    # El recibo de ventana publica el estado de la continuación, nunca el de la meseta.
+    window = output / "windows/US+CN/fold-006/lstm/seed-43/US.json"
+    assert json.loads(window.read_text())["parent"]["id"] == "US+CN/fold-006/lstm/finalist-s43"
+    # Al reanudar, los recibos de meseta se aceptan con su precisión y nada se repite.
+    again = JointRecorder()
+    summary = _joint_window(joint_stop, joint_campaign.views, output, again)
+    assert summary["status"] == "completed" and again.calls == []
+
+
+def test_a_plateau_that_reports_another_precision_is_not_confirmed(
+    joint_campaign, joint_stop, tmp_path
+):
+    recorder = JointPrecision(plateau_recorded={"cudnn_allow_tf32": True})
+    with pytest.raises(ValueError, match="plateau-.*registra otra precisión"):
+        _joint_window(joint_stop, joint_campaign.views, tmp_path / "out", recorder)
+    assert not list((tmp_path / "out/jobs").rglob("plateau-*/receipt.json"))
+
+
 def test_recorded_precision_follows_every_alias_in_nested_reports():
     report = dict(
         identity=dict(numerics=dict(cudnn_allow_tf32=False, matmul_tf32=True)),
@@ -1001,6 +1155,35 @@ def test_budget_projection_applies_the_documented_formula(joint_campaign):
         budget.uniform_rates(loaded, 0)
 
 
+def test_the_joint_stop_counts_each_grouped_fit_once_in_the_hours(tmp_path):
+    """La meseta y su continuación son un solo ajuste, así que la cota de horas no cambia."""
+
+    def protocol(value):
+        value.pop("early_stop")
+        value["stopping"] = {"mode": "protocol"}
+
+    joint, alone = campaign(), plan.load_campaign(edited(tmp_path, protocol))
+    counts, _ = budget.read_counts(
+        Path("reports/data/campaign-a-v2-window-counts-20261009.json"), joint
+    )
+    rates = budget.uniform_rates(joint, 1000.0)
+    grouped, plain = (budget.project(c, counts, rates, epochs=30) for c in (joint, alone))
+    assert joint["rule"]["max_epochs"] == 30
+    assert grouped["stages"]["base"] == pytest.approx(plain["stages"]["base"], rel=1e-12)
+
+    def fits(estimate):
+        return {
+            (name, option): value["training_jobs"]
+            for name, family in estimate["families"].items()
+            for option, value in (family.get("options") or {"": family}).items()
+            if "training_jobs" in value
+        }
+
+    assert fits(grouped["estimate"]) == fits(plain["estimate"]) and fits(plain["estimate"])
+    assert grouped["estimate"]["plateau_jobs"] == 1904
+    assert "plateau_jobs" not in plain["estimate"]
+
+
 def test_declared_counts_cover_the_v2_campaign_and_reproduce_the_views_receipt():
     loaded = campaign()
     counts, _ = budget.read_counts(
@@ -1073,7 +1256,7 @@ def test_the_plan_checks_every_declared_document_of_the_campaign_and_its_stages(
         "historical-masked-rl-policies.json",
         "historical-masked-ablation-stage-a-v2.json",
     ]
-    assert len(plan.plan_campaign(value)) == 2569 + 57
+    assert len(plan.plan_campaign(value)) == 2569 + 57 + 1904
     # Las fuentes de predictor de las políticas son estados ajustados con la edición real.
     from mars_titan.simulation import policy_plan
 

@@ -24,6 +24,7 @@ absolutas para poder evaluar el mismo cálculo sobre el plan de otra rama.
 import math
 from collections import defaultdict
 
+from mars_titan.training.campaign_plan import PLATEAU
 from mars_titan.training.campaign_storage import (
     HELD_OUT,
     INDEXED,
@@ -82,7 +83,8 @@ def rolling_inputs(jobs, windows, extras, *, ablation=None, adapters=None, rl=No
 
     Una política lee la evaluación del predictor con la semilla declarada. Entre los casos
     de una búsqueda cualquiera puede ganar y todos tienen las mismas filas, así que se toma
-    el primero del plan, como en `selected_jobs`.
+    el primero del plan, como en `selected_jobs`. La meseta de un ajuste conjunto no emite
+    evaluación, así que la lectura recae en su continuación.
     """
     positions = {
         (scope, window): index
@@ -105,7 +107,8 @@ def rolling_inputs(jobs, windows, extras, *, ablation=None, adapters=None, rl=No
         planned = policy_plan.plan_stage(stage)
         first = {}
         for job in jobs:
-            first.setdefault((job["scope"], job["window"], job["arm"], job["seed"]), job["id"])
+            if job.get("phase") != PLATEAU:
+                first.setdefault((job["scope"], job["window"], job["arm"], job["seed"]), job["id"])
         reads = {}
         for key, last in policy_needs(stage, planned, positions).items():
             if key in first:
@@ -127,6 +130,9 @@ def _in(row, job):
 
 
 def _partitions(job):
+    """Tramos con tabla del trabajo. La meseta de un ajuste conjunto no escribe ninguno."""
+    if job.get("phase") == PLATEAU:
+        return ()
     return HELD_OUT[1:] if job.get("kind") == "carry" else HELD_OUT
 
 
@@ -213,9 +219,10 @@ class _Walk:
             kept += int(aggregate * sum(window[p] for p in partitions)) + RECORD_BYTES * len(
                 partitions
             )
-            regeneration = max(
-                regeneration, regeneration_bytes(job, window, measured, storage, partitions)
-            )
+            if partitions:
+                regeneration = max(
+                    regeneration, regeneration_bytes(job, window, measured, storage, partitions)
+                )
             reader = self.inputs["policy_reads"].get(job["id"], -1)
             if self.scenario == "none_regenerated" or reader > index:
                 compacted = _tables(measured, job, "shared_rows", partitions)

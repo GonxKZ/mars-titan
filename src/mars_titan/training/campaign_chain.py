@@ -215,9 +215,17 @@ def parent_jobs(base_jobs, scope, window, arm, seed):
 
     Si la ventana tiene un traslado o un finalista con esa semilla, es ese trabajo. Si no,
     son todas las búsquedas de la semilla, porque el estado elegido sale de compararlas.
+    Con la parada conjunta, la meseta no fija ningún estado: lo fija su continuación, que
+    conserva el identificador del ajuste y ya depende de las mesetas de su grupo.
     """
+    from .campaign_plan import PLATEAU
+
     prefix = f"{scope}/{window}/{arm}/"
-    found = {job["id"]: job for job in base_jobs if job["id"].startswith(prefix)}
+    found = {
+        job["id"]: job
+        for job in base_jobs
+        if job["id"].startswith(prefix) and job.get("phase") != PLATEAU
+    }
     for stage in ("carry", "finalist"):
         if f"{prefix}{stage}-s{seed}" in found:
             return [f"{prefix}{stage}-s{seed}"]
