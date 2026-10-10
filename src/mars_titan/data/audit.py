@@ -13,7 +13,7 @@ import pyarrow as pa
 from .fundamentals import read_fundamentals
 from .inventory import entries
 from .preparation import atomic_parquet
-from .prices import read_prices
+from .prices import check_ordering_rtol, read_prices
 from .storage import atomic_json, outside_source, sha256
 from .temporal import MarketClock
 
@@ -54,6 +54,16 @@ def _write_price_details(frame, details: dict, folder: Path) -> dict:
             ]
         ),
     }
+    if "ordering_roundings" in details:
+        schemas["ordering_roundings"] = pa.schema(
+            [
+                ("source_row", pa.int64()),
+                ("source_date", pa.string()),
+                ("source_high", pa.float64()),
+                ("source_low", pa.float64()),
+                ("relative_excess", pa.float64()),
+            ]
+        )
     tables = {
         name: pa.Table.from_pylist(details[name], schema=schema) for name, schema in schemas.items()
     }
@@ -71,8 +81,15 @@ def _write_price_details(frame, details: dict, folder: Path) -> dict:
 
 
 def audit_prices(
-    source: Path, database: Path, state_path: Path, *, details_root: Path | None = None
+    source: Path,
+    database: Path,
+    state_path: Path,
+    *,
+    details_root: Path | None = None,
+    ordering_rtol: float = 0.0,
 ) -> dict:
+    """Auditar precios. Una tolerancia de orden positiva crea otra política y otro estado."""
+    check_ordering_rtol(ordering_rtol)
     outside_source(source, state_path)
     if state_path.resolve() == database.resolve():
         raise ValueError("El estado no puede sobrescribir el inventario")
@@ -103,6 +120,8 @@ def audit_prices(
         Path(__file__).with_name("temporal.py")
     )
     policy += sha256(Path(__file__))
+    if ordering_rtol:
+        policy += json.dumps({"ordering_rtol": ordering_rtol})
     policy += json.dumps({m: [d.isoformat() for d in c.decisions] for m, c in clocks.items()})
     policy = hashlib.sha256(policy.encode()).hexdigest()
     if details_root is not None and previous and previous.get("policy") != policy:
@@ -145,7 +164,10 @@ def audit_prices(
             reused += 1
         else:
             frame, audit = read_prices(
-                path, clocks[entry["market"]], include_details=folder is not None
+                path,
+                clocks[entry["market"]],
+                include_details=folder is not None,
+                ordering_rtol=ordering_rtol,
             )
             if sha256(path) != entry["sha256"]:
                 raise ValueError("La fuente ha cambiado durante la auditoría")
@@ -169,6 +191,7 @@ def audit_prices(
             "duplicate_session_rows",
             "non_session_rows",
             "invalid_date_rows",
+            *(("ordering_rounded_rows",) if ordering_rtol else ()),
         ):
             totals[key] += audit[key]
         if len(current) % 64 == 0:
@@ -178,7 +201,9 @@ def audit_prices(
     artifacts = [
         artifact for audit in current.values() for artifact in audit.get("artifacts", {}).values()
     ]
+    ordering = {"ordering_rtol": ordering_rtol} if ordering_rtol else {}
     return {
+        **ordering,
         "markets": dict(markets),
         "files": len(current),
         "reused_files": reused,

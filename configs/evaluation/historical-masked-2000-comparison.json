@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 4,
   "kind": "walk_forward_comparison",
   "name": "historical-masked-2000",
   "status": "declared_before_evaluation",
@@ -252,7 +252,12 @@
       "mse",
       "direction_accuracy",
       "rank_ic",
-      "pinball"
+      "pinball",
+      "up_precision",
+      "down_precision",
+      "sign_brier",
+      "interval_score@0.8",
+      "interval_score@0.95"
     ],
     "block_length": 16,
     "sensitivity_block_lengths": [
@@ -310,6 +315,41 @@
         "second": "cm_v1_bm",
         "joint": "cm_v1_bcm"
       },
+      "episodic_gru": {
+        "kind": "delta",
+        "base": "gru",
+        "variants": [
+          "gru_episodic"
+        ]
+      },
+      "encoder_change": {
+        "kind": "delta",
+        "base": "transformer_compact",
+        "variants": [
+          "titans_transformer_direct"
+        ]
+      },
+      "episodic_reader": {
+        "kind": "delta",
+        "base": "titans_mac_online",
+        "variants": [
+          "mars_titan_m0"
+        ]
+      },
+      "cm_v1_base": {
+        "kind": "delta",
+        "base": "mars_titan_m1",
+        "variants": [
+          "cm_v1_b"
+        ]
+      },
+      "core_vs_episodic_gru": {
+        "kind": "delta",
+        "base": "gru_episodic",
+        "variants": [
+          "titans_mac_online"
+        ]
+      },
       "levels": {
         "kind": "level",
         "arms": [
@@ -338,5 +378,117 @@
         ]
       }
     }
+  },
+  "modality_strata": {
+    "status": "secondary_descriptive",
+    "declared_at": "2026-10-09",
+    "use": "description_only_not_for_model_selection_or_primary_conclusion",
+    "presence_source": "view_evaluation_labels_and_samples_presence_v1",
+    "always_present": [
+      "prices",
+      "charts",
+      "macro"
+    ],
+    "strata": {
+      "news_and_fundamentals": {
+        "news": true,
+        "fundamentals": true
+      },
+      "news_only": {
+        "news": true,
+        "fundamentals": false
+      },
+      "fundamentals_only": {
+        "news": false,
+        "fundamentals": true
+      },
+      "neither": {
+        "news": false,
+        "fundamentals": false
+      }
+    },
+    "focus": "news_and_fundamentals",
+    "metrics": [
+      "mae"
+    ],
+    "recalibrate": false,
+    "min_rows": 1000,
+    "min_sessions": 50,
+    "multiplicity": "bonferroni_over_strata_and_views_with_max_t_within_family"
+  },
+  "modality_ablation": {
+    "status": "secondary_descriptive",
+    "declared_at": "2026-10-09",
+    "use": "description_only_not_for_model_selection_or_primary_conclusion",
+    "variants": {
+      "mask_news": [
+        "news"
+      ],
+      "mask_fundamentals": [
+        "fundamentals"
+      ],
+      "mask_news_and_fundamentals": [
+        "news",
+        "fundamentals"
+      ]
+    },
+    "masking": "mask_contract_v1_presence_false_missing_fill_null_availability",
+    "missing_reason": "modality_ablation",
+    "state": "selected_state_of_each_arm_seed_and_window_without_refitting",
+    "memory": "warmup_and_measured_partition_read_the_same_masked_inputs",
+    "partition": "evaluation",
+    "rows": "evaluation_rows_with_any_masked_modality_present",
+    "metric": "session_mae_masked_minus_original",
+    "recalibrate": false,
+    "min_rows": 1000,
+    "min_sessions": 50,
+    "multiplicity": "bonferroni_over_variants_and_views_with_max_t_over_arms",
+    "does_not_measure": [
+      "economic_causal_effect_of_the_modality",
+      "usefulness_of_the_modality_for_the_forecast",
+      "performance_of_a_model_trained_without_the_modality"
+    ]
+  },
+  "long_short": {
+    "kind": "quartile_long_short_v1",
+    "status": "secondary_financial",
+    "declared_at": "2026-10-09",
+    "use": "description_and_paired_contrasts_not_for_model_selection",
+    "signal": "point_prediction",
+    "fraction": 0.25,
+    "min_assets": 30,
+    "ties": "exclude_tied_group_crossing_the_boundary",
+    "exposure": {
+      "long": 0.5,
+      "short": 0.5
+    },
+    "unfilled": "cash_without_renormalization",
+    "holding": "next_session_open_to_close_from_cash",
+    "price_basis": "unadjusted_reconstructed",
+    "market_rules": {
+      "US": "none",
+      "CN": "cn_a_share_v1"
+    },
+    "cost_bps_per_side": [
+      0,
+      5,
+      10,
+      20
+    ],
+    "annualization_sessions": {
+      "US": 252,
+      "CN": 243
+    },
+    "seeds": "mean_of_seed_session_returns",
+    "statistics": [
+      "cumulative_return",
+      "annualized_return",
+      "mean_net_return",
+      "volatility",
+      "sharpe",
+      "max_drawdown",
+      "turnover"
+    ],
+    "views": "per_market"
   }
 }

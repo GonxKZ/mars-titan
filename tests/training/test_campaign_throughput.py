@@ -1,10 +1,11 @@
 """Estimación de horas por familia y variante y medición de caudal sin pasos de optimizador.
 
 La estimación se comprueba con caudales y recuentos fijados. Las mediciones recorren en
-CPU el corpus técnico: las referencias y los adaptadores por lotes, Titans-MAC y la GRU
-candidata con su ajuste cronológico real y un optimizador que no modifica pesos. Deben
-dejar los pesos intactos, no crear optimizadores de PyTorch y retirar su gancho. No se usa
-la GPU ni se registran pérdidas.
+CPU el corpus técnico: las referencias y los adaptadores por lotes, Titans-MAC, la GRU
+candidata, los lectores de MARS-TITAN y los núcleos y lectores de CM-v1 con su ajuste
+cronológico real y un optimizador que no modifica pesos. Deben dejar los pesos intactos,
+también los del padre congelado de cada lector, no crear optimizadores de PyTorch y retirar
+su gancho. No se usa la GPU ni se registran pérdidas.
 """
 
 import copy
@@ -21,10 +22,17 @@ from mars_titan.data.storage import atomic_json
 from mars_titan.models.baselines import multimodal
 from mars_titan.models.quantile_head import QUANTILE_HEAD
 from mars_titan.posttraining import adapter_matrix, campaign_stage
+from mars_titan.training import (
+    campaign_extensions,
+    cm_v1_factorial,
+    experiment_resources,
+    financial_run,
+    mars_titan_run,
+    mars_titan_walk_forward,
+)
 from mars_titan.training import campaign_plan as plan
 from mars_titan.training import campaign_throughput as throughput
-from mars_titan.training import experiment_resources
-from mars_titan.training.campaign_plan import EPISODIC, NEURAL, TITANS, load_campaign
+from mars_titan.training.campaign_plan import CM, EPISODIC, MARS, NEURAL, TITANS, load_campaign
 from tests.training.test_walk_forward_v2_views import PROTOCOLS, fixture, prepare
 
 CAMPAIGNS = {
@@ -34,7 +42,10 @@ STAGES = {
     v: Path(f"configs/posttraining/historical-masked-adapter-stage-{v.lower()}.json") for v in "AB"
 }
 CANDIDATE = Path("configs/candidate/chronological-training.json")
+EXTENSIONS = Path("configs/baselines/historical-masked-campaign-extensions.json")
 TITANS_RECIPE = Path("configs/titans/chronological-training-historical-masked.json")
+READOUT_RECIPE = Path("configs/titans/episodic-readout-historical-masked.json")
+CM_DECLARATION = Path("configs/titans/cm-v1-factorial.json")
 ROWS = dict(train=36_000, validation=4_000, calibration=2_000, evaluation=8_000)
 # Ajuste con validación inicial: 30 épocas de 360 s y 32 validaciones, calibración y
 # evaluación a 400 filas/s. Traslado: calibración y evaluación.
@@ -74,6 +85,56 @@ def chronological(arms, *, slower=50.0, failing=None):
         arm: dict(declared_option=DECLARED, inference=400.0, options=copy.deepcopy(options))
         for arm in arms
     }
+
+
+def readouts(arms, *, failing=None):
+    """Caudales de una familia con una sola opción, la de su receta, como los lectores."""
+    return {
+        arm: dict(
+            declared_option="recipe",
+            inference=400.0,
+            options={
+                "recipe": dict(status=throughput.OUT_OF_MEMORY, peak_vram_allocated_bytes=9)
+                if arm == failing
+                else dict(train=100.0, peak_vram_allocated_bytes=5)
+            },
+        )
+        for arm in arms
+    }
+
+
+def extended(variant):
+    """Campaña de la variante con la declaración preparada de las tres familias."""
+    return campaign_extensions.extended_campaign(
+        campaign_extensions.load_extensions(EXTENSIONS), load_campaign(CAMPAIGNS[variant])
+    )
+
+
+def all_rates(campaign):
+    """Caudales uniformes de todas las familias declaradas o preparadas."""
+    counts, rates = uniform(campaign, ROWS)
+    rates[TITANS] = chronological(campaign[TITANS]["arms"])
+    if campaign.get(EPISODIC):
+        rates[EPISODIC] = chronological(["gru_episodic"])
+    if campaign.get(MARS):
+        rates[MARS] = readouts(campaign[MARS]["arms"])
+    if campaign.get(CM):
+        # Los núcleos comparan las opciones de Titans-MAC y los lectores solo su receta.
+        rates[CM] = {**chronological(plan.CM_CORES), **readouts(plan.CM_ARMS)}
+    return counts, rates
+
+
+def window_hours(campaign, scope, months, *, carried=True):
+    """Horas de un brazo con caudales uniformes: 4 ajustes por ventana reentrenada y 3 traslados."""
+    resolved = campaign["comparison_config"]["resolved_scopes"][scope]["windows"]
+    rate, total = dict(train=100.0, inference=400.0), 0.0
+    for row in plan.schedule(list(resolved.values()), campaign["period"]):
+        rows = throughput.titans_rows(ROWS, resolved[row["window"]], months)
+        if row["trained"]:
+            total += 4 * throughput.validated_job_seconds(dict(kind="fit"), rows, rate, 30)
+        elif carried:
+            total += 3 * throughput.validated_job_seconds(dict(kind="carry"), rows, rate, 30)
+    return total / 3600
 
 
 def matrix_points(stage, slower=1.0):
@@ -272,6 +333,92 @@ def test_variant_b_costs_less_than_a_with_the_same_rates():
         comparison["B"]["fastest_options"] / comparison["A"]["fastest_options"]
     )
     assert throughput._comparison(estimates[:1]) is None
+
+
+@pytest.mark.parametrize(
+    ("variant", "mars", "cm"), [("A", (1080, 0), (1080, 0)), ("B", (408, 504), (408, 336))]
+)
+def test_readout_and_core_hours_follow_the_exact_plan_and_their_parents(variant, mars, cm):
+    campaign = extended(variant)
+    counts, rates = all_rates(campaign)
+    estimate = throughput.estimate_hours(campaign, counts, rates)
+    families = estimate["families"]
+    readout, factorial = families[MARS]["options"]["recipe"], families[CM]["options"][DECLARED]
+    assert (readout["training_jobs"], readout["prediction_jobs"]) == mars
+    assert (factorial["training_jobs"], factorial["prediction_jobs"]) == cm
+    # Cada lector predice con el calentamiento de 12 meses de su padre y los núcleos solo
+    # ajustan en las ventanas reentrenadas.
+    arm, core = window_hours(campaign, "US", 12), window_hours(campaign, "US", 12, carried=False)
+    for name in campaign[MARS]["arms"]:
+        assert readout["scopes"]["US"]["arms"][name] == pytest.approx(arm)
+    for name in plan.CM_ARMS:
+        assert factorial["scopes"]["US"]["arms"][name] == pytest.approx(arm)
+    for name in plan.CM_CORES:
+        assert factorial["scopes"]["US"]["arms"][name] == pytest.approx(core)
+    assert families[MARS]["parents"] == {
+        name: dict(parent="titans_mac_online", counted_in=TITANS) for name in campaign[MARS]["arms"]
+    }
+    assert families[CM]["parents"] == {
+        name: dict(parent=core, counted_in=CM) for name, core in plan.CM_ARMS.items()
+    }
+    for family in (EPISODIC, MARS, CM):
+        assert families[family]["declared_in_campaign"] is False
+    assert not {"declared_in_campaign", "parents"} & set(families[TITANS])
+    totals = estimate["total_gpu_hours"]
+    added = sum(families[f]["options"][o]["hours"] for f, o in ((MARS, "recipe"), (CM, DECLARED)))
+    added += families[EPISODIC]["options"][DECLARED]["hours"]
+    added += families[TITANS]["options"][DECLARED]["hours"] + families[NEURAL]["hours"]
+    assert totals["declared_options"] == pytest.approx(added) and totals["without_estimate"] == []
+
+
+def test_cm_hours_take_the_warmup_of_the_core_recipe(tmp_path):
+    campaign = cm_campaign(tmp_path, warmup_months=6)
+    counts, rates = all_rates(campaign)
+    factorial = throughput.estimate_hours(campaign, counts, rates)["families"][CM]
+    hours = factorial["options"][DECLARED]["scopes"]["US"]["arms"]["cm_v1_b"]
+    assert hours == pytest.approx(window_hours(campaign, "US", 6))
+    assert hours != pytest.approx(window_hours(campaign, "US", 12))
+    # Fuera de la medición con declaración preparada, la sección viene del archivo.
+    assert factorial["declared_in_campaign"] is True
+
+
+def test_each_core_option_takes_the_recipe_measure_of_the_readouts():
+    campaign = extended("A")
+    counts, rates = all_rates(campaign)
+    rates[CM]["cm_v1_core_c"]["options"][DECLARED] = dict(
+        status=throughput.OUT_OF_MEMORY, peak_vram_allocated_bytes=9
+    )
+    estimate = throughput.estimate_hours(campaign, counts, rates)
+    factorial = estimate["families"][CM]
+    assert factorial["declared"] == DECLARED and set(factorial["options"]) == {DECLARED, HALVED}
+    assert factorial["options"][DECLARED] == dict(
+        status="out_of_memory", peak_vram_allocated_bytes=9
+    )
+    halved = factorial["options"][HALVED]
+    arms = halved["scopes"]["US"]["arms"]
+    # Los lectores conservan la medida de su receta y los núcleos usan la de 128, más lenta.
+    for name in plan.CM_ARMS:
+        assert arms[name] == pytest.approx(window_hours(campaign, "US", 12))
+    for name in plan.CM_CORES:
+        assert arms[name] > window_hours(campaign, "US", 12, carried=False)
+    assert halved["peak_vram_allocated_bytes"] == 5
+    totals = estimate["total_gpu_hours"]
+    assert totals["declared_options"] is None and totals["without_estimate"] == []
+    # Dos núcleos con opciones distintas declaradas no se combinan.
+    rates[CM]["cm_v1_core_b"]["declared_option"] = HALVED
+    with pytest.raises(ValueError, match="misma opción"):
+        throughput.estimate_hours(campaign, counts, rates)
+
+
+def test_a_core_out_of_memory_leaves_cm_without_an_estimate():
+    campaign = extended("A")
+    counts, rates = all_rates(campaign)
+    rates[CM] = readouts(campaign[CM]["arms"], failing="cm_v1_core_c")
+    estimate = throughput.estimate_hours(campaign, counts, rates)
+    assert estimate["families"][CM]["options"]["recipe"] == dict(
+        status="out_of_memory", peak_vram_allocated_bytes=9
+    )
+    assert estimate["total_gpu_hours"]["without_estimate"] == [CM]
 
 
 # Medición en CPU
@@ -620,6 +767,203 @@ def test_candidate_measurement_compares_accumulation_and_recomputation(
     assert not (tmp_path / "work/candidate-unused").exists()
 
 
+# Lectores de MARS-TITAN y núcleos de CM-v1 en CPU
+
+NATIVE = pytest.mark.skipif(
+    not os.environ.get("MARS_TITAN_EPISODIC_NATIVE"), reason="Falta el enlace nativo compilado"
+)
+MARS_ARMS = {
+    "mars_titan_m0": {"episodic_bank": "m0_no_bank"},
+    "mars_titan_m1": {"episodic_bank": "m1"},
+    "mars_titan_m2": {"episodic_bank": "m2"},
+    "mars_titan_m3": {"episodic_bank": "m3"},
+    "mars_titan_m1_k2": {"episodic_bank": "m1", "refinements": 2},
+}
+MEASURED = dict(segments=1, segment_warmup=0, events=1, event_warmup=0)
+
+
+def reduced_readout(folder):
+    """Receta del lector con tramos de tres instantes, bloques de dos activos y banco de 8."""
+    recipe = json.loads(READOUT_RECIPE.read_text())
+    recipe["recipe"].update(update_instants=3, block_rows=2, bank_capacity=8)
+    atomic_json(folder / "readout.json", recipe)
+    return folder / "readout.json"
+
+
+def mars_campaign(folder, arms):
+    """Campaña A con el control mac_online reducido y los brazos de MARS-TITAN pedidos."""
+    campaign = titans_campaign(folder)
+    declared = campaign["comparison_config"]["arms"]
+    compared = {name: declared[name] for name in ("titans_mac_online", *arms)}
+    section = dict(
+        recipe=str(reduced_readout(folder)),
+        arms={name: MARS_ARMS[name] for name in arms},
+        pending_arms={},
+        parent_arm="titans_mac_online",
+        search_seed=42,
+    )
+    campaign[MARS] = plan._mars_titan(
+        section, compared, campaign["rule"], campaign["input_policy"], folder, 2, campaign[TITANS]
+    )
+    return campaign
+
+
+def cm_campaign(folder, *, warmup_months=12, frequency=1):
+    """Campaña A con CM-v1 sobre la receta reducida. C mide flujos en cada observación."""
+    campaign = titans_campaign(folder)
+    core = json.loads((folder / "titans.json").read_text())
+    core["walk_forward"]["warmup_months"] = warmup_months
+    atomic_json(folder / "core.json", core)
+    reduced_readout(folder)
+    declaration = json.loads(CM_DECLARATION.read_text())
+    declaration["base"].update(core_recipe="core.json", readout_recipe="readout.json")
+    declaration["control"]["frequency"] = frequency
+    atomic_json(folder / "cm.json", declaration)
+    section = dict(declaration=str(folder / "cm.json"), search_seed=42)
+    campaign[CM] = plan._cm_v1(
+        section,
+        campaign["comparison_config"]["arms"],
+        campaign["rule"],
+        campaign["input_policy"],
+        folder,
+        2,
+    )
+    return campaign
+
+
+@pytest.fixture
+def frozen_checks(monkeypatch):
+    """Registrar cuántos parámetros congelados vigila cada optimizador de la medición."""
+    seen, build = [], throughput._NoStepOptimizer.__init__
+
+    def recorded(self, groups, frozen=()):
+        build(self, groups, frozen)
+        seen.append(len(self.frozen))
+
+    monkeypatch.setattr(throughput._NoStepOptimizer, "__init__", recorded)
+    return seen
+
+
+def test_the_measurement_optimizer_also_watches_the_frozen_parent():
+    trained, parent = torch.ones(2, requires_grad=True), torch.zeros(3)
+    optimizer = throughput._NoStepOptimizer([dict(params=[trained])], frozen=[parent])
+    optimizer.step()
+    assert optimizer.calls == 1 and optimizer.unchanged()
+    parent[0] = 1.0
+    assert not optimizer.unchanged()
+    assert throughput.option_name({}) == "recipe"
+
+
+def test_mars_measurement_walks_the_m0_readout_over_a_frozen_parent(
+    views, cpu, tmp_path, guarded_steps, fused, frozen_checks
+):
+    campaign = mars_campaign(tmp_path / "config", ["mars_titan_m0"])
+    rates = throughput.measure_mars_titan(
+        campaign, views / "fold-000/manifest.json", tmp_path / "work", **MEASURED
+    )
+    assert torch.backends.mha.get_fastpath_enabled() is True
+    record = rates["mars_titan_m0"]
+    assert record["declared_option"] == "recipe" and list(record["options"]) == ["recipe"]
+    (result,) = record["options"].values()
+    assert result["train"] > 0 and result["measured_train_rows"] > 0
+    assert result["step_calls_without_update"] == 2
+    assert result["window_counters"] == dict(start=dict(admitted=0), end=dict(admitted=0))
+    assert record["inference"] > 0 and 0 < record["measured_inference_rows"]
+    assert record["components"] == MARS_ARMS["mars_titan_m0"]
+    assert record["parent_arm"] == "titans_mac_online" and record["bank_capacity"] == 8
+    assert record["measured_case"] == "lr1e-4" and record["shared_by_cases"] == ["lr1e-4", "lr1e-3"]
+    assert not {"loss", "mean_loss", "session_mae"} & set(record)
+    assert guarded_steps and set(guarded_steps) == {1}
+    # El padre congelado del lector entra en la comprobación de pesos sin cambios.
+    assert len(frozen_checks) == 1 and frozen_checks[0] > 0
+    assert (tmp_path / "work/titans-indices").is_dir()
+    assert not (tmp_path / "work/readout-unused").exists()
+
+
+@NATIVE
+def test_mars_measurement_walks_the_bank_readouts_with_their_admission_and_k(
+    views, cpu, tmp_path, guarded_steps
+):
+    arms = ["mars_titan_m1", "mars_titan_m2", "mars_titan_m3", "mars_titan_m1_k2"]
+    campaign = mars_campaign(tmp_path / "config", arms)
+    view = views / "fold-000/manifest.json"
+    rates = throughput.measure_mars_titan(campaign, view, tmp_path / "work", **MEASURED)
+    assert list(rates) == arms
+    for arm, record in rates.items():
+        (result,) = record["options"].values()
+        assert result["train"] > 0 and result["step_calls_without_update"] == 2, arm
+        counters = result["window_counters"]
+        # El banco recibe episodios maduros durante la ventana medida.
+        assert counters["end"]["admitted"] > counters["start"]["admitted"], arm
+        assert record["components"] == MARS_ARMS[arm] and record["inference"] > 0
+        assert ("write_scalers" in record) == (arm == "mars_titan_m3"), arm
+    assert set(guarded_steps) == {1} and len(guarded_steps) == 2 * len(arms)
+    # M3 cuenta los cambios de su índice selectivo, que solo reciben ofertas maduras.
+    window = rates["mars_titan_m3"]["options"]["recipe"]["window_counters"]
+    start, end = window["start"], window["end"]
+    offered = end["admitted"] - start["admitted"]
+    changed = sum(end[k] - start[k] for k in ("selective_admitted", "selective_rejected"))
+    assert set(start) == {"admitted", *mars_titan_run.m3_counters()} and changed == offered
+    # Sus escalas siguen la regla de la campaña sobre el tramo de entrenamiento medido.
+    _, document = financial_run.load_recipe(campaign[TITANS]["path"])
+    _, sources, _ = throughput._chronological_sources(view, document, tmp_path / "work")
+    plan_case = mars_titan_run.case_recipe(
+        mars_titan_run.load_recipe(campaign[MARS]["path"]), "lr1e-4"
+    )
+    expected = mars_titan_walk_forward.window_scalers(sources["train"], plan_case)
+    scalers = rates["mars_titan_m3"]["write_scalers"]
+    assert scalers["sha256"] == expected.fingerprint()
+    assert scalers["source_sha256"] == sources["train"].identity and scalers["seconds"] > 0
+
+
+@NATIVE
+def test_cm_measurement_walks_both_cores_with_the_penalty_and_the_four_readouts(
+    views, cpu, tmp_path, guarded_steps, frozen_checks
+):
+    campaign = cm_campaign(tmp_path / "config")
+    rates = throughput.measure_cm_v1(
+        campaign, views / "fold-000/manifest.json", tmp_path / "work", **MEASURED
+    )
+    assert list(rates) == [*plan.CM_CORES, *plan.CM_ARMS]
+    for core, mode in zip(plan.CM_CORES, ("disabled", "penalty"), strict=True):
+        record = rates[core]
+        assert record["control_mode"] == mode and record["accumulation_rows"] is None
+        assert record["declared_option"] == DECLARED and record["inference"] > 0
+        # Los núcleos comparan las dos opciones de Titans-MAC, también con C.
+        assert list(record["options"]) == [DECLARED, HALVED]
+        for result in record["options"].values():
+            assert result["train"] > 0 and result["step_calls_without_update"] == 2
+    # Solo el núcleo con la penalización recorre flujos medidos de C en la ventana.
+    for name in (DECLARED, HALVED):
+        assert "window_counters" not in rates["cm_v1_core_b"]["options"][name]
+        counters = rates["cm_v1_core_c"]["options"][name]["window_counters"]
+        assert counters["end"]["control_flows"] > counters["start"]["control_flows"] >= 0
+        assert counters["end"]["control_groups"] > counters["start"]["control_groups"]
+    for arm, core in plan.CM_ARMS.items():
+        record = rates[arm]
+        assert record["parent_arm"] == core and record["bank_capacity"] == 8
+        assert (record["control"], record["consolidation"]) == cm_v1_factorial.ARMS[arm]
+        (result,) = record["options"].values()
+        assert result["window_counters"]["end"]["admitted"] > 0
+    assert set(guarded_steps) == {1} and len(guarded_steps) == 2 * 8
+    # Los núcleos ajustan todos sus parámetros y los lectores vigilan además su padre.
+    assert frozen_checks[:4] == [0] * 4 and all(count > 0 for count in frozen_checks[4:])
+    assert len(frozen_checks) == 8
+
+
+def test_cm_measurement_needs_a_window_that_reaches_the_flows_of_c(tmp_path):
+    extended = campaign_extensions.extended_campaign(
+        campaign_extensions.load_extensions(), load_campaign(CAMPAIGNS["A"])
+    )
+    # frequency=16 y tramos de 8 instantes: hacen falta dos tramos medidos.
+    with pytest.raises(ValueError, match="recorre 8 instantes.*frequency=16"):
+        throughput._check_cm_v1(extended, 1)
+    throughput._check_cm_v1(extended, 2)
+    throughput._check_cm_v1(load_campaign(CAMPAIGNS["A"]), 1)
+    with pytest.raises(ValueError, match="frequency=16"):
+        throughput.measure_cm_v1(extended, Path("absent.json"), tmp_path, segments=1)
+
+
 class Lease:
     record = dict(device="cuda:0", note="doble")
 
@@ -650,6 +994,8 @@ def doubled(monkeypatch):
     double("measure_rates", lambda campaign: uniform(campaign, ROWS)[1][NEURAL])
     double("measure_titans", lambda campaign: chronological(campaign[TITANS]["arms"]))
     double("measure_candidate", lambda campaign: chronological(["gru_episodic"]))
+    double("measure_mars_titan", lambda campaign: readouts(campaign[MARS]["arms"]))
+    double("measure_cm_v1", lambda campaign: readouts(campaign[CM]["arms"]))
     double("measure_posttraining", matrix_points)
     return calls
 
@@ -859,6 +1205,121 @@ def test_a_policy_stage_needs_its_measured_campaign_and_shared_policies(
         campaign, *uniform(campaign, ROWS), policy_stage=policy_stage(RL_STAGES["A"])
     )
     assert estimate[throughput.POLICY_STAGE] == dict(status=throughput.NOT_MEASURED)
+
+
+def test_campaign_report_measures_the_prepared_families_and_their_policy_stage(
+    doubled, policies, tmp_path
+):
+    report = throughput.measure_campaigns(
+        [CAMPAIGNS["A"], CAMPAIGNS["B"]],
+        {},
+        tmp_path / "v.json",
+        stages=[STAGES["A"], STAGES["B"]],
+        rl_stages=[RL_STAGES["A"], RL_STAGES["B"]],
+        extensions=EXTENSIONS,
+        work=tmp_path / "w",
+    )
+    assert [name for name, *_ in doubled] == [
+        "measure_rates",
+        "measure_titans",
+        "measure_candidate",
+        "measure_mars_titan",
+        "measure_cm_v1",
+        "measure_posttraining",
+    ]
+    for name, _, args, kwargs in doubled:
+        if name in ("measure_mars_titan", "measure_cm_v1"):
+            assert args == (tmp_path / "w",)
+            assert kwargs == dict(segments=8, segment_warmup=2, events=64, event_warmup=8)
+    assert report["extensions"] == dict(
+        path=str(EXTENSIONS.resolve()),
+        sha256=campaign_extensions.load_extensions(EXTENSIONS)["sha256"],
+        status="prepared_not_declared",
+    )
+    # Con las tres familias, la etapa de políticas resuelve 22 predictores en vez de 11.
+    jobs = dict(A=dict(fit=2160, reference=1584), B=dict(fit=720, carry=1440, reference=1584))
+    expected = dict(A=((1080, 0), (1080, 0)), B=((408, 504), (408, 336)))
+    for estimate in report["estimates"]:
+        families = estimate["families"]
+        assert set(families) == {NEURAL, TITANS, EPISODIC, MARS, CM, throughput.POSTTRAINING}
+        assert all(families[f]["declared_in_campaign"] is False for f in (EPISODIC, MARS, CM))
+        assert estimate[throughput.POLICY_STAGE]["jobs"] == jobs[estimate["variant"]]
+        counted = tuple(
+            (families[f]["options"]["recipe"]["training_jobs"],)
+            + (families[f]["options"]["recipe"]["prediction_jobs"],)
+            for f in (MARS, CM)
+        )
+        assert counted == expected[estimate["variant"]]
+    assert 0 < report["comparison"]["b_over_a"]["declared_options"] < 1
+    assert report["optimizer_steps"] == 0 and report["scientific_training_started"] is False
+
+
+@pytest.mark.parametrize("family", [MARS, CM])
+def test_each_prepared_family_is_measured_only_when_the_campaign_has_it(
+    doubled, tmp_path, monkeypatch, family
+):
+    prepared = campaign_extensions.load_extensions(EXTENSIONS)
+    sections = {key: prepared["sections"][key] for key in (family,)}
+    load = throughput.load_campaign
+    monkeypatch.setattr(
+        throughput, "load_campaign", lambda path: plan.extend_campaign(load(path), sections)
+    )
+    report = throughput.measure_campaigns([CAMPAIGNS["A"]], {}, tmp_path / "v.json", work=tmp_path)
+    measured = {MARS: "measure_mars_titan", CM: "measure_cm_v1"}
+    assert [name for name, *_ in doubled] == ["measure_rates", "measure_titans", measured[family]]
+    (estimate,) = report["estimates"]
+    assert set(estimate["families"]) == {NEURAL, TITANS, family}
+    assert estimate["families"][family]["declared_in_campaign"] is False
+
+
+def test_the_prepared_declaration_is_checked_before_measuring(doubled, policies, tmp_path):
+    paths = [CAMPAIGNS["A"], CAMPAIGNS["B"]]
+    common = dict(extensions=EXTENSIONS, work=tmp_path)
+    with pytest.raises(ValueError, match="ya incluye la GRU candidata"):
+        throughput.measure_campaigns(
+            paths, {}, tmp_path / "v.json", candidate=dict(recipe=CANDIDATE), **common
+        )
+    with pytest.raises(ValueError, match="frequency=16"):
+        throughput.measure_campaigns(paths, {}, tmp_path / "v.json", segments=1, **common)
+    # Una etapa de políticas que no es la preparada no hereda sus límites.
+    stage = json.loads(RL_STAGES["A"].read_text())
+    stage.update(
+        campaign=str(CAMPAIGNS["A"].resolve()),
+        policies=str((RL_STAGES["A"].parent / stage["policies"]).resolve()),
+    )
+    atomic_json(tmp_path / "stage.json", stage)
+    with pytest.raises(ValueError, match="no es la preparada"):
+        throughput.measure_campaigns(
+            paths[:1], {}, tmp_path / "v.json", rl_stages=[tmp_path / "stage.json"], **common
+        )
+    # La campaña declarada ya incluye la sección: la declaración preparada no la repite.
+    load = throughput.load_campaign
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setattr(
+            throughput,
+            "load_campaign",
+            lambda path: throughput.with_candidate(load(path), CANDIDATE),
+        )
+        with pytest.raises(ValueError, match="ya declara episodic_gru"):
+            throughput.measure_campaigns(paths, {}, tmp_path / "v.json", **common)
+    assert doubled == [] and policies == []
+
+
+def test_script_measures_every_family_with_the_prepared_declaration(
+    doubled, policies, tmp_path, capsys
+):
+    import runpy
+
+    script = runpy.run_path("scripts/run_masked_campaign.py", run_name="script")
+    arguments = ["throughput", "--campaign", str(CAMPAIGNS["A"]), "--views", f"US={tmp_path}"]
+    arguments += ["--extensions", str(EXTENSIONS), "--first-view", str(tmp_path / "v.json")]
+    arguments += ["--work", str(tmp_path / "work")]
+    assert script["main"](arguments) == 0
+    printed = json.loads(capsys.readouterr().out)
+    assert printed["extensions"]["status"] == "prepared_not_declared"
+    assert set(printed["rates"]) == {NEURAL, TITANS, EPISODIC, MARS, CM}
+    with pytest.raises(SystemExit):
+        script["main"]([*arguments, "--candidate-recipe", str(CANDIDATE)])
 
 
 def test_script_measures_the_policy_stage(doubled, policies, tmp_path, capsys):

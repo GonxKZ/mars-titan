@@ -46,6 +46,7 @@ from mars_titan.memory.mars_titan_variant import (
     load_declaration,
     select_variant,
 )
+from mars_titan.memory.write_scores import WriteScalers, fit_write_scalers
 from mars_titan.models.titans.config import canonical, require_identity
 from mars_titan.models.titans.episodic_readout import EpisodicReadout
 from mars_titan.models.titans.financial import (
@@ -94,6 +95,7 @@ _CODE = (
     "mars_titan.training.mars_titan_run",
     "mars_titan.training.titans_walk_forward",
     "mars_titan.memory.mars_titan_variant",
+    "mars_titan.memory.write_scores",
     "mars_titan.models.titans.episodic_readout",
     "mars_titan.data.batches",
 )
@@ -105,7 +107,8 @@ class ReadoutFamily:
 
     `request` son los campos de la petición que identifican el brazo y `control` el control
     C que debe declarar la petición del padre (None si no lo admite). `variant` construye
-    la variante sobre el padre elegido y `retention` la configuración de su banco.
+    la variante sobre el padre elegido y `retention` la configuración de su banco. M3 la
+    recibe además con las escalas congeladas de entrenamiento (`scalers`).
     """
 
     label: str
@@ -268,8 +271,43 @@ def _mars_family(components):
         request=dict(components=components),
         control=None,
         variant=lambda predictor, report: _variant(predictor, report, components),
-        retention=lambda recipe, variant: readout_retention(recipe, variant.admission),
+        retention=lambda recipe, variant, **extra: readout_retention(
+            recipe, variant.admission, **extra
+        ),
     )
+
+
+def window_scalers(train, recipe):
+    """Escalas M3 de una ventana: su tramo de entrenamiento, con el reservorio y la semilla de M3.
+
+    Es la regla única que comparten el ajuste de la campaña y la medida de caudal.
+    """
+    return fit_write_scalers(train, block_rows=recipe.block_rows)
+
+
+def _training_scalers(fit, train, recipe):
+    """Escalas M3 del tramo de entrenamiento de la ventana, estimadas una sola vez.
+
+    Una ejecución reanudada reutiliza las escalas de la identidad de su ajuste y exige que
+    procedan del mismo índice de entrenamiento. Validación y evaluación no intervienen.
+    """
+    report = fit / "run.json"
+    if report.exists():
+        manifest, _ = read_manifest(report, 16 * 1024**2)
+        retention = manifest["identity"].get("retention") or {}
+        scalers = WriteScalers.from_fields(retention.get("scalers"))
+        _require(
+            scalers.source_sha256 == train.identity,
+            "Las escalas M3 guardadas no proceden del tramo de entrenamiento de la ventana",
+        )
+        return scalers
+    return window_scalers(train, recipe)
+
+
+def _anchor_scalers(fit):
+    """Escalas M3 congeladas en el ajuste del ancla, para la predicción trasladada."""
+    retention = fit["identity"].get("retention") or {}
+    return WriteScalers.from_fields(retention.get("scalers"))
 
 
 def run_mars_titan_window(
@@ -385,12 +423,15 @@ def run_readout_window(
     variant = family.variant(predictor, parent_report)
     codec = FrozenEpisodeCodec(specification)
     readout = _readout(variant, codec, predictor, readout_recipe, seed)
+    extra = {}
+    if variant.admission == "m3":
+        extra["scalers"] = _training_scalers(output / "fit", sources["train"], readout_recipe)
     trainer = ReadoutTrainer(
         predictor,
         readout,
         readout_recipe,
         admission=variant.admission,
-        retention=family.retention(readout_recipe, variant),
+        retention=family.retention(readout_recipe, variant, **extra),
         native=_native(variant.admission),
         codec=codec,
         train=sources["train"],
@@ -527,7 +568,9 @@ def _carried_readout(state, target):
     target.load_state_dict({**state, "_extra_state": expected})
 
 
-def carry_mars_titan(anchor, anchor_view, view, output, *, device="cuda:0", stop=None):
+def carry_mars_titan(
+    anchor, anchor_view, view, output, *, device="cuda:0", stop=None, modality_ablation=None
+):
     """Predecir una ventana posterior con el padre y el lector elegidos en el ancla.
 
     Es la pieza de la variante B. No ajusta parámetros ni selección. Cada tramo trasladado
@@ -542,13 +585,29 @@ def carry_mars_titan(anchor, anchor_view, view, output, *, device="cuda:0", stop
         output,
         device=device,
         stop=stop,
+        modality_ablation=modality_ablation,
     )
 
 
-def carry_readout(family_of, anchor, anchor_view, view, output, *, device="cuda:0", stop=None):
-    """Traslado común: `family_of` reconstruye la familia desde el informe del ancla."""
+def carry_readout(
+    family_of,
+    anchor,
+    anchor_view,
+    view,
+    output,
+    *,
+    device="cuda:0",
+    stop=None,
+    modality_ablation=None,
+):
+    """Traslado común: `family_of` reconstruye la familia desde el informe del ancla.
+
+    Con `modality_ablation` predice solo la evaluación, también en la propia ventana del
+    ancla. El calentamiento y el tramo leen las mismas entradas ablacionadas, así que la
+    memoria rápida del padre y el banco episódico también ven la ausencia.
+    """
     require_learning_allowed("la predicción trasladada de un lector episódico")
-    from .carried_predictions import carried_window
+    from .carried_predictions import ablation_record, carried_window, predicted_partitions
 
     started = time.perf_counter()
     anchor, anchor_view, view, output = (Path(v) for v in (anchor, anchor_view, view, output))
@@ -585,15 +644,21 @@ def carry_readout(family_of, anchor, anchor_view, view, output, *, device="cuda:
     options = walk_forward_options(titans)
     readout_recipe = case_recipe(identity["recipe"], request["search_case"])
     anchor_manifest, _ = read_manifest(anchor_view, 64 * 1024**2)
-    dataset = CorpusDataset(view, input_policy=HISTORICAL_MASKED)
+    dataset = CorpusDataset(
+        view, input_policy=HISTORICAL_MASKED, modality_ablation=modality_ablation
+    )
     anchor_fold, fold, age = carried_window(
-        anchor_manifest, dataset.manifest, input_policy=HISTORICAL_MASKED
+        anchor_manifest,
+        dataset.manifest,
+        input_policy=HISTORICAL_MASKED,
+        same_window=modality_ablation is not None,
     )
     _check_view(dataset, view_protocol(view), fold)
     _new_destination(output, (*dataset.roots.values(), view.parent, anchor, parent))
     phases = window_phases(fold, options["warmup_months"])
-    sources = _sources(dataset, {name: phases[name] for name in CARRIED}, output / "indices")
-    specification = sources["calibration"].specification()
+    partitions = predicted_partitions(modality_ablation)
+    sources = _sources(dataset, {name: phases[name] for name in partitions}, output / "indices")
+    specification = sources[partitions[0]].specification()
     seed = request["seed"]
     predictor = _frozen_parent(
         titans, specification, seed, device, parent, parent_report, carried=True
@@ -610,19 +675,21 @@ def carry_readout(family_of, anchor, anchor_view, view, output, *, device="cuda:
     )
     _carried_readout(state["model"], readout)
     readout.eval().requires_grad_(False)
+    # M3 aplica las escalas del ancla. No se vuelven a estimar en la ventana trasladada.
+    extra = {"scalers": _anchor_scalers(fit)} if variant.admission == "m3" else {}
     inference = MarsTitanInference(
         predictor,
         readout,
         readout_recipe,
         admission=variant.admission,
-        retention=family.retention(readout_recipe, variant),
+        retention=family.retention(readout_recipe, variant, **extra),
         native=_native(variant.admission),
         codec=codec,
         world=family.world,
         fold=fold["id"],
     )
     predictions = {}
-    for name in CARRIED:
+    for name in partitions:
         rows = PredictionRows(inference.quantiles)
         metrics = inference.evaluate(sources[name], stop=stop, rows=rows)
         tables = checked_tables(rows, metrics, dataset, name)
@@ -657,8 +724,9 @@ def carry_readout(family_of, anchor, anchor_view, view, output, *, device="cuda:
             bank_memory_policy(options["warmup_months"]),
             parameters="anchor_selected_parent_and_readout_without_further_fitting",
             fast_state="never_transferred_from_the_anchor_reset_at_each_pass",
+            **({"write_scalers_sha256": extra["scalers"].fingerprint()} if extra else {}),
         ),
-        phases={name: asdict(phases[name]) for name in CARRIED},
+        phases={name: asdict(phases[name]) for name in partitions},
         indices={name: source.identity for name, source in sources.items()},
         device=device,
         code=_code(family),
@@ -667,6 +735,7 @@ def carry_readout(family_of, anchor, anchor_view, view, output, *, device="cuda:
         scientific_training_started=False,
         seconds=time.perf_counter() - started,
         finished_at_utc=datetime.now(UTC).isoformat(),
+        **ablation_record(modality_ablation),
     )
     atomic_json(output / "carry.json", receipt)
     return receipt

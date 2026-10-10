@@ -1,8 +1,9 @@
-"""Comprobación CUDA M2 con etiquetas manuales y parámetros congelados."""
+"""Comprobación CUDA M2 y M3 con etiquetas manuales y parámetros congelados."""
 
 import gc
 import hashlib
 import json
+import os
 import random
 import resource
 import subprocess
@@ -10,6 +11,7 @@ import time
 
 import numpy as np
 import test_financial_session_m2 as session_helpers
+import test_financial_session_m3 as m3_session
 import torch
 from test_financial_session import moment
 from test_financial_session_controls import FLOWS
@@ -32,7 +34,6 @@ from mars_titan.models.titans.frozen_financial import FrozenFinancialConsumer
 from mars_titan.models.titans.local_control import MACProjectionConfig
 
 CAP = 128 * 1024**2
-NATIVE_SHA = "e7559ed4fba7f43d665520d7831390669d349339c05b51577da8549daf93123d"
 LABELS = {
     moment(125): (2.0, 8.0, 4.0, 6.0),
     moment(126): (3.0, 7.0, 5.0, 1.0),
@@ -158,11 +159,8 @@ def compare(left, right, *, rtol, atol, exact_recovery=False):
     return float(np.max(np.abs(actual - expected)))
 
 
-def test_cuda_m2_manual_parity_overflow_and_recovery(
-    native, four_flow_source, tmp_path, monkeypatch
-):
-    assert native.binary_sha256 == NATIVE_SHA
-    started = time.perf_counter()
+def cuda_preflight():
+    """Hardware, límite del asignador y aritmética sin TF32 ni fastpath, comunes a M2 y M3."""
     hardware = subprocess.check_output(
         [
             "nvidia-smi",
@@ -180,11 +178,27 @@ def test_cuda_m2_manual_parity_overflow_and_recovery(
     assert free >= CAP, "La memoria CUDA libre no cubre el límite del asignador"
     torch.cuda.reset_peak_memory_stats(device)
     torch.set_num_threads(2)
-    torch.set_num_interop_threads(2)
+    # Solo se puede fijar una vez por proceso, antes de cualquier trabajo paralelo.
+    if torch.get_num_interop_threads() != 2:
+        torch.set_num_interop_threads(2)
     torch.backends.cuda.matmul.allow_tf32 = False
     torch.backends.cudnn.allow_tf32 = False
     torch.set_float32_matmul_precision("highest")
     torch.backends.mha.set_fastpath_enabled(False)
+    return device, hardware, free
+
+
+def test_cuda_m2_manual_parity_overflow_and_recovery(
+    native, four_flow_source, tmp_path, monkeypatch
+):
+    # No se fija una compilación concreta: el enlace incorpora rutas absolutas de include y
+    # solo se reproduce en su worktree. load_native ya comprueba contrato y runtime, y el
+    # recibo registra la huella del binario realmente cargado.
+    loaded = os.path.realpath(os.environ["MARS_TITAN_EPISODIC_NATIVE"])
+    with open(loaded, "rb") as handle:
+        assert native.binary_sha256 == hashlib.sha256(handle.read()).hexdigest()
+    started = time.perf_counter()
+    device, hardware, free = cuda_preflight()
     python_rng, numpy_rng = random.getstate(), np.random.get_state()
     cpu_rng = torch.random.get_rng_state().clone()
     cuda_rng = torch.cuda.get_rng_state(device).clone()
@@ -316,3 +330,159 @@ def test_cuda_m2_manual_parity_overflow_and_recovery(
     )
     destination = output / "report.json"
     destination.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n")
+
+
+# M3: mismos índices que M2 con la puntuación de error, anomalía y relevancia.
+# `MARS_TITAN_M3_CHECK_DEVICE=cpu` ensaya la lógica sin GPU y no acredita CUDA.
+M3_DEVICE = os.environ.get("MARS_TITAN_M3_CHECK_DEVICE", "cuda:0")
+
+
+def m3_margin(receipts):
+    """Menor distancia entre la puntuación elegida por el selectivo y la mejor descartada.
+
+    Compiten las ofertas de cada evento y el selectivo anterior. Un margen amplio frente a
+    la tolerancia del dispositivo evita que los IDs dependan del redondeo.
+    """
+    known, before, margins = {}, set(), []
+    for indices, receipt, _ in receipts:
+        if receipt is None:
+            continue
+        known.update((row[0], row[4]) for row in receipt["components"])
+        selected = set(indices["selective"])
+        contenders = ({row[0] for row in receipt["components"]} | before) - selected
+        if contenders and selected:
+            margins.append(min(known[i] for i in selected) - max(known[i] for i in contenders))
+        before = selected
+    return min(margins)
+
+
+def compare_m3(left, right, *, rtol, atol):
+    """IDs, ofertas y rasgos de entrada exactos. Error, puntuación y predicciones con tolerancia."""
+    (receipts, _, diagnostics, points), (other, _, other_diagnostics, other_points) = left, right
+    assert points.keys() == other_points.keys()
+    keys = sorted(points)
+    expected = np.array([points[key] for key in keys])
+    actual = np.array([other_points[key] for key in keys])
+    np.testing.assert_allclose(actual, expected, rtol=rtol, atol=atol)
+    assert diagnostics["B_mem"] == other_diagnostics["B_mem"] == 4
+    assert diagnostics["physical_slots"] == other_diagnostics["physical_slots"]
+    measured, reference = [], []
+    for (indices, receipt, features), (o_indices, o_receipt, o_features) in zip(
+        receipts, other, strict=True
+    ):
+        assert indices == o_indices and (receipt is None) == (o_receipt is None)
+        assert features.keys() == o_features.keys()
+        for key, raw in features.items():
+            assert raw[1:] == o_features[key][1:]
+            reference.append(raw[0])
+            measured.append(o_features[key][0])
+        if receipt is None:
+            continue
+        assert {k: v for k, v in receipt.items() if k != "components"} == {
+            k: v for k, v in o_receipt.items() if k != "components"
+        }
+        for row, o_row in zip(receipt["components"], o_receipt["components"], strict=True):
+            assert (row[0], row[2], row[3], row[5]) == (o_row[0], o_row[2], o_row[3], o_row[5])
+            reference.extend((row[1], row[4]))
+            measured.extend((o_row[1], o_row[4]))
+    np.testing.assert_allclose(measured, reference, rtol=rtol, atol=atol)
+    return float(np.max(np.abs(actual - expected)))
+
+
+def test_cuda_m3_scores_parity_and_recovery(native, four_flow_source, tmp_path):
+    started = time.perf_counter()
+    cuda = M3_DEVICE.startswith("cuda")
+    hardware = None
+    if cuda:
+        device, hardware, _ = cuda_preflight()
+    else:
+        device = torch.device(M3_DEVICE)
+        torch.backends.mha.set_fastpath_enabled(False)
+    python_rng, cpu_rng = random.getstate(), torch.random.get_rng_state().clone()
+    # Noticias, fundamentales y últimos precios distintos por flujo: los tres componentes varían.
+    source = m3_session.varied(four_flow_source)
+    assert source["label_origin"] == "manual_fixture_no_estimation"
+    records = []
+    for dtype, rtol, atol in ((torch.float32, 5e-5, 3e-6), (torch.float64, 2e-9, 2e-10)):
+        cpu, _ = consumer(source, dtype, "cpu")
+        other, copies = consumer(source, dtype, device, parent=cpu)
+        before = parameter_tensors(cpu)
+        assert tensor_digest(before) == tensor_digest(parameter_tensors(other))
+        paths, times = {}, {}
+        for name, engine, recover in (
+            ("cpu", cpu, False),
+            ("cpu_recovered", cpu, True),
+            ("device", other, False),
+            ("device_recovered", other, True),
+        ):
+            if cuda:
+                torch.cuda.synchronize(device)
+            begin = time.perf_counter()
+            paths[name] = m3_session.trajectory(
+                native, source, engine, tmp_path / f"m3-{dtype}-{name}", recover=recover
+            )
+            if cuda:
+                torch.cuda.synchronize(device)
+            times[name] = time.perf_counter() - begin
+        assert paths["cpu"] == paths["cpu_recovered"]
+        assert paths["device"] == paths["device_recovered"]
+        error = compare_m3(paths["cpu"], paths["device"], rtol=rtol, atol=atol)
+        receipts, final, _, _ = paths["cpu"]
+        margin = m3_margin(receipts)
+        assert margin > 1e-4, "El fixture no separa suficientemente las puntuaciones M3"
+        assert (final["issued"], final["applied"]) == (20, 16)
+        masks = {row[5] for _, receipt, _ in receipts if receipt for row in receipt["components"]}
+        assert masks == {0, 1, 2, 3}
+        for engine in (cpu, other):
+            engine.verify()
+            assert tensor_digest(parameter_tensors(engine)) == tensor_digest(before)
+            assert all(p.grad is None for p in engine.predictor.parameters())
+            assert all(p.grad is None for p in engine.readout.parameters())
+        records.append(
+            dict(
+                dtype=str(dtype),
+                rtol=rtol,
+                atol=atol,
+                max_prediction_error=error,
+                minimum_selective_score_margin=margin,
+                synchronized_walk_seconds=times,
+                paired_copies=copies,
+                retained_ids=[indices for indices, _, _ in paths["device"][0]],
+                final_receipt=paths["device"][0][-1][1],
+                exact_recovery_each_device=True,
+                parameters_unchanged=True,
+            )
+        )
+        del cpu, other, before, paths, engine
+        gc.collect()
+        if cuda:
+            torch.cuda.empty_cache()
+    assert random.getstate() == python_rng
+    assert torch.equal(cpu_rng, torch.random.get_rng_state())
+    report = dict(
+        cases=records,
+        device=str(device),
+        hardware=hardware,
+        torch=torch.__version__,
+        cuda=torch.version.cuda,
+        native_sha256=native.binary_sha256,
+        peak_torch_bytes=torch.cuda.max_memory_allocated(device) if cuda else None,
+        wall_seconds=time.perf_counter() - started,
+        B_mem=4,
+        quotas=[2, 1, 1],
+        K=1,
+        C="disabled",
+        cm_m="disabled",
+        admission="m3",
+        scalers_sha256=m3_session.M3.scalers.fingerprint(),
+        labels="manual_fixture_no_estimation",
+        target_estimation_calls=0,
+        optimizer_steps=0,
+        scientific_evaluation=False,
+        scope="Composición técnica con parámetros congelados, sin evaluar utilidad predictiva.",
+    )
+    if cuda:
+        assert report["peak_torch_bytes"] <= CAP
+    (tmp_path / "m3-report.json").write_text(
+        json.dumps(report, ensure_ascii=False, indent=2) + "\n"
+    )

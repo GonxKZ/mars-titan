@@ -15,7 +15,7 @@ import numpy as np
 import pytest
 
 from mars_titan.data.storage import atomic_json
-from mars_titan.simulation import campaign_stage, policy_plan
+from mars_titan.simulation import campaign_stage, native_policy_runs, policy_plan
 from mars_titan.training import campaign_plan as plan
 
 CONFIGS = Path("configs/simulation")
@@ -141,8 +141,13 @@ def test_a_producer_registered_in_the_campaign_enters_the_first_level_without_ch
 def test_every_first_level_fit_shares_the_budget_and_the_portfolio_criterion():
     stage = campaign_stage.load_stage(STAGES["A"])
     jobs = [job for job in policy_plan.plan_stage(stage) if job["kind"] == "fit"]
-    tapes = SimpleNamespace(failure=None, unfit=None)
+    # Tres cintas anuales de ajuste: KLPO declara las oleadas completas que caben en el
+    # presupuesto común y no puede superarlo.
+    tapes = SimpleNamespace(failure=None, unfit=None, train=(range(253),) * 3)
     budget = stage["policies"]["budget"]["transitions"]
+    environments = stage["policies"]["budget"]["environments"]
+    waves, wave = native_policy_runs.klpo_waves(tapes.train, environments, budget)
+    assert 0 < waves * wave <= budget
     selection = dict(metric="ruin_count_then_mean_liquidated_log_growth", partition="validation")
     records = [
         dict(cost_bps=cost, status="completed", reason=None, steps=1, net_return=0.0)
@@ -151,11 +156,13 @@ def test_every_first_level_fit_shares_the_budget_and_the_portfolio_criterion():
     ]
     for predictor in PRODUCERS:
         job = next(j for j in jobs if j["predictor"] == predictor and j["arm"] == "klpo_terminal")
-        report = dict(status="completed", transitions=budget, updates=1, selection=selection)
-        report.update(policy=dict(id=job["id"], sha256="a" * 64), evaluation=records)
+        report = dict(status="completed", transitions=waves * wave, waves=waves, updates=1)
+        report.update(selection=selection, policy=dict(id=job["id"], sha256="a" * 64))
+        report.update(evaluation=records)
         campaign_stage.check_report(stage, job, report, tapes)
         for change in (
-            dict(transitions=budget // 2),
+            dict(waves=waves - 1),
+            dict(transitions=budget + 1),
             dict(selection=dict(selection, metric="mae")),
         ):
             with pytest.raises(ValueError, match="presupuesto, el criterio de cartera"):
@@ -413,9 +420,11 @@ def test_later_stage_registers_both_variants_with_their_pending_capabilities():
     assert Path(declared["config"]).resolve() == POLICIES.resolve()
     assert declared["issue"] == 137 and set(declared["stages"]) == set(plan.VARIANTS)
     assert set(declared["pending"]) <= set(campaign_stage.CAPABILITIES)
-    # Las piezas sin sonda siguen pendientes hasta que exista su ejecutor.
+    # Pendientes son justo las piezas sin sonda, que aún no existen. Una capacidad con sonda
+    # ya está implementada y se comprueba con el motor instalado, como las reglas A (#406).
     unprobed = {k for k, v in campaign_stage.CAPABILITIES.items() if v["probe"] is None}
-    assert unprobed <= set(declared["pending"])
+    assert set(declared["pending"]) == unprobed
+    assert len(declared["pending"]) == len(unprobed)
     module, _, function = declared["entry"].partition(":")
     assert getattr(importlib.import_module(module), function) is campaign_stage.run_stage
     for variant, path in declared["stages"].items():

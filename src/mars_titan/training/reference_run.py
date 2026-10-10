@@ -71,11 +71,13 @@ def read_json(path):
     return json.loads(path.read_text())
 
 
-def configured_corpus(manifest, *, input_policy=STRICT_INPUTS):
+def configured_corpus(manifest, *, input_policy=STRICT_INPUTS, modality_ablation=None):
     """Activar las tablas solo con un presupuesto explícito para esta ejecución."""
     budget = os.environ.get("MARS_TITAN_INPUT_CACHE_MIB")
     if budget is None:
-        return CorpusDataset(manifest, input_policy=input_policy)
+        return CorpusDataset(
+            manifest, input_policy=input_policy, modality_ablation=modality_ablation
+        )
     if (
         not 1 <= len(budget) <= 4
         or not budget.isascii()
@@ -88,6 +90,7 @@ def configured_corpus(manifest, *, input_policy=STRICT_INPUTS):
         cache_bytes=int(budget) * 1024**2,
         cache_sample_tables=True,
         input_policy=input_policy,
+        modality_ablation=modality_ablation,
     )
 
 

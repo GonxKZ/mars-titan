@@ -211,6 +211,38 @@ def save_training_state(
                 pending.unlink()
 
 
+def release_recovery_states(directory: Path) -> int:
+    """Dejar solo el estado elegido de un ajuste confirmado y devolver los bytes liberados.
+
+    El estado elegido es `best` o, sin selección, el último confirmado. El índice se
+    reescribe primero de forma atómica con ese estado como único reciente y sin fijados.
+    Solo después se borran los demás estados, de modo que una interrupción deja siempre un
+    índice que nombra un estado íntegro.
+    """
+    directory = Path(directory)
+    marker = directory / "identity.json"
+    if not marker.is_file():
+        raise ValueError("El directorio no tiene una identidad confirmada")
+    with _locked(directory, _json(marker), create=False) as (directory, _):
+        index = _index(directory)
+        keep = index["best"] or next(iter(index["latest"]), None)
+        if keep is None or not _intact(directory, keep):
+            raise ValueError("No se libera un directorio sin un estado confirmado e íntegro")
+        if index["latest"] != [keep] or index["pinned"]:
+            atomic_json(directory / "latest.json", dict(index, latest=[keep], pinned=[]))
+        released = 0
+        for path in directory.iterdir():
+            if (
+                re.fullmatch(r"state-[a-f0-9]{64}\.pt", path.name)
+                and path.name != keep["name"]
+                and path.is_file()
+                and not path.is_symlink()
+            ):
+                released += path.stat().st_blocks * 512
+                path.unlink()
+        return released
+
+
 def load_training_state(
     directory: Path, *, expected_identity: dict, selection="latest", expected_sha256=None
 ) -> dict:

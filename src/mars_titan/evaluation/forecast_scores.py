@@ -3,6 +3,10 @@
 Todas las métricas se calculan primero dentro de cada sesión (mercado e instante)
 y después se promedian entre sesiones con la ponderación declarada. Un valor no
 definido se cuenta con su motivo y nunca se sustituye por cero en el promedio.
+
+Con cuantiles se añaden la puntuación de cada intervalo central y la probabilidad
+implícita de que el residuo sea positivo, con su Brier por sesión y los recuentos
+por intervalo de probabilidad que permiten la curva de fiabilidad y el ECE.
 """
 
 import hashlib
@@ -30,8 +34,16 @@ _SERIES = {
     "direction_accuracy": False,
     "rank_ic": False,
     "pinball": True,
+    "up_precision": False,
+    "down_precision": False,
+    "sign_brier": True,
 }
 COVERAGE_ERROR = "coverage_error@"
+INTERVAL_SCORE = "interval_score@"
+# Métricas que solo existen si el modelo emite cuantiles.
+QUANTILE_SERIES = ("pinball", "sign_brier")
+SIGN_PROBABILITY_RULE = "piecewise_linear_cdf_at_zero_flat_beyond_extreme_levels_v1"
+SIGN_BINS = 10
 # Estadísticos con una fila por sesión. El resto describe el panel completo.
 _PER_SESSION = (
     "session_market",
@@ -59,6 +71,11 @@ _PER_SESSION = (
     "commitments",
     "committed_judged",
     "committed_wrong",
+    "interval_score",
+    "sign_brier",
+    "sign_bin_rows",
+    "sign_bin_probability",
+    "sign_bin_up",
 )
 
 
@@ -174,6 +191,11 @@ class SessionScores:
     committed_judged: np.ndarray | None
     committed_wrong: np.ndarray | None
     point_equals_median: bool | None
+    interval_score: np.ndarray | None = None
+    sign_brier: np.ndarray | None = None
+    sign_bin_rows: np.ndarray | None = None
+    sign_bin_probability: np.ndarray | None = None
+    sign_bin_up: np.ndarray | None = None
 
     def _values(self, metric):
         if metric == "mae":
@@ -184,32 +206,54 @@ class SessionScores:
             return _ratio(self.direction_hits, self.direction_eligible)
         if metric == "rank_ic":
             return self.rank_ic, self.rank_ic_status == 0
+        if metric == "up_precision":
+            return _ratio(self.up_hits, self.up_calls)
+        if metric == "down_precision":
+            return _ratio(self.down_hits, self.down_calls)
+        if metric == "sign_brier":
+            _require(self.sign_brier is not None, "El modelo no emite cuantiles para el Brier")
+            return self.sign_brier, self.direction_eligible > 0
         _require(self.pinball is not None, "El modelo no emite cuantiles para la pérdida pinball")
         return self.pinball.mean(axis=1), np.ones(len(self.mae), dtype=bool)
+
+    def _interval_index(self, nominal):
+        for index, (declared, _, _) in enumerate(self.intervals):
+            if math.isclose(declared, nominal, abs_tol=1e-12):
+                return index
+        raise ValueError("El modelo no emite el intervalo central solicitado")
+
+    def _nominal(self, metric, prefix):
+        try:
+            return float(metric.removeprefix(prefix))
+        except ValueError as error:
+            raise ValueError("La cobertura nominal no es un número") from error
 
     def _coverage_error(self, metric):
         """Cobertura observada menos nominal por sesión. Negativa indica sobreconfianza."""
         _require(self.coverage is not None, "El modelo no emite intervalos para su cobertura")
-        try:
-            nominal = float(metric.removeprefix(COVERAGE_ERROR))
-        except ValueError as error:
-            raise ValueError("La cobertura nominal no es un número") from error
-        for index, (declared, _, _) in enumerate(self.intervals):
-            if math.isclose(declared, nominal, abs_tol=1e-12):
-                return self.coverage[:, index] - declared
-        raise ValueError("El modelo no emite el intervalo central solicitado")
+        index = self._interval_index(self._nominal(metric, COVERAGE_ERROR))
+        return self.coverage[:, index] - self.intervals[index][0]
 
     def series(self, metric):
         """Serie por sesión para comparaciones emparejadas con bloques temporales.
 
         ``coverage_error@0.8`` da la cobertura del intervalo central del 80 % menos
         0,8 en cada sesión. Su media con ``level`` mide la sobreconfianza.
+        ``interval_score@0.8`` da la puntuación media del mismo intervalo, una pérdida.
         """
-        if isinstance(metric, str) and metric.startswith(COVERAGE_ERROR):
-            values = self._coverage_error(metric)
+        prefixed = {COVERAGE_ERROR: False, INTERVAL_SCORE: True}
+        prefix = next(
+            (key for key in prefixed if isinstance(metric, str) and metric.startswith(key)), None
+        )
+        if prefix is not None:
+            if prefix == COVERAGE_ERROR:
+                values = self._coverage_error(metric)
+            else:
+                _require(self.interval_score is not None, "El modelo no emite intervalos")
+                values = self.interval_score[:, self._interval_index(self._nominal(metric, prefix))]
             return SessionSeries(
                 metric,
-                False,
+                prefixed[prefix],
                 self.cohort_sha256,
                 self.markets,
                 self.session_market,
@@ -292,6 +336,7 @@ class SessionScores:
                     coverage=coverage,
                     coverage_gap=coverage - nominal,
                     width=self._mean(self.width[:, index], everywhere, weighting),
+                    interval_score=self._mean(self.interval_score[:, index], everywhere, weighting),
                     sign_commitment=self._mean(commitment, everywhere, weighting),
                     committed_sign_error=self._mean(error, judged, weighting),
                     committed_sign_error_sessions=int(np.sum(judged)),
@@ -323,6 +368,41 @@ class SessionScores:
                 ],
             ),
             point_equals_median=self.point_equals_median,
+            sign_probability=self._sign_probability(weighting),
+        )
+
+    def _sign_probability(self, weighting):
+        """Brier por sesión, curva de fiabilidad y ECE de la probabilidad implícita de subida.
+
+        El ECE suma, por intervalo de probabilidad, la diferencia absoluta entre subidas
+        observadas y probabilidad emitida, y divide por las filas con objetivo no nulo de
+        todas las sesiones. Cada fila pesa lo mismo, también en el ECE de varias sesiones.
+        """
+        rows, probability, up = (
+            values.sum(axis=0)
+            for values in (self.sign_bin_rows, self.sign_bin_probability, self.sign_bin_up)
+        )
+        total = int(rows.sum())
+        curve = []
+        for index in range(SIGN_BINS):
+            count = int(rows[index])
+            curve.append(
+                dict(
+                    lower=index / SIGN_BINS,
+                    upper=(index + 1) / SIGN_BINS,
+                    rows=count,
+                    mean_probability=float(probability[index] / count) if count else None,
+                    observed_up_frequency=float(up[index] / count) if count else None,
+                )
+            )
+        return dict(
+            rule=SIGN_PROBABILITY_RULE,
+            event="residual_target_above_zero",
+            eligible_rows=total,
+            brier=self._mean(self.sign_brier, self.direction_eligible > 0, weighting),
+            ece=expected_calibration_error(rows, probability, up),
+            ece_weighting="eligible_rows_pooled_over_sessions",
+            reliability=curve,
         )
 
     def summary(self, *, market_weighting="session"):
@@ -410,6 +490,13 @@ class SessionScores:
         for index, (nominal, _, _) in enumerate(self.intervals):
             columns[f"coverage_{nominal:g}"] = self.coverage[:, index]
             columns[f"width_{nominal:g}"] = self.width[:, index]
+            columns[f"interval_score_{nominal:g}"] = self.interval_score[:, index]
+        if self.sign_brier is not None:
+            columns["sign_brier"] = pa.array(self.sign_brier, mask=self.direction_eligible == 0)
+            for name in ("sign_bin_rows", "sign_bin_probability", "sign_bin_up"):
+                values = getattr(self, name)
+                offsets = pa.array(np.arange(0, values.size + 1, SIGN_BINS), pa.int32())
+                columns[name] = pa.ListArray.from_arrays(offsets, values.ravel())
         return pa.table(columns)
 
     def _take(self, index, cohort_sha256):
@@ -505,6 +592,11 @@ def score_sessions(panel, *, rank_ic_min_assets=3):
         committed_judged=None,
         committed_wrong=None,
         point_equals_median=None,
+        interval_score=None,
+        sign_brier=None,
+        sign_bin_rows=None,
+        sign_bin_probability=None,
+        sign_bin_up=None,
     )
     if panel.levels is not None:
         quantile_fields.update(_quantile_scores(panel))
@@ -549,6 +641,7 @@ def _quantile_scores(panel):
     fields = dict(
         coverage=np.empty(shape),
         width=np.empty(shape),
+        interval_score=np.empty(shape),
         commitments=np.empty(shape, dtype=np.int64),
         committed_judged=np.empty(shape, dtype=np.int64),
         committed_wrong=np.empty(shape, dtype=np.int64),
@@ -567,6 +660,10 @@ def _quantile_scores(panel):
             panel.session_samples
         )
         fields["width"][:, index] = _mean(panel, high - low)
+        # Gneiting y Raftery (2007): anchura más 2/alfa por la distancia al extremo superado.
+        alpha = 2 * panel.levels[lower]
+        excess = np.maximum(low - target, 0.0) + np.maximum(target - high, 0.0)
+        fields["interval_score"][:, index] = _mean(panel, high - low + (2 / alpha) * excess)
         # Un intervalo que excluye el cero afirma un signo. Se cuenta si esa afirmación falla.
         claim = np.where(low > 0, 1.0, np.where(high < 0, -1.0, 0.0))
         judged = (claim != 0) & (target != 0)
@@ -582,6 +679,71 @@ def _quantile_scores(panel):
             None if median is None else bool(np.array_equal(panel.prediction, quantiles[:, median]))
         ),
         **fields,
+        **_sign_scores(panel),
+    )
+
+
+def implied_up_probability(quantiles, levels):
+    """Probabilidad implícita de un residuo positivo, 1 − F(0), con la regla declarada.
+
+    F es lineal a trozos entre los puntos (q_j, tau_j) de cada fila. Por debajo del
+    primer cuantil vale tau_1 y por encima del último tau_K, es decir, la probabilidad
+    menos segura que permiten los niveles emitidos. Con cuantiles iguales a cero se
+    toma el último nivel que no supera el cero, como una función de distribución
+    continua por la derecha. Los cuantiles deben estar ordenados en cada fila.
+    """
+    quantiles = np.asarray(quantiles, dtype=np.float64)
+    levels = np.asarray(levels, dtype=np.float64)
+    below = np.count_nonzero(quantiles <= 0, axis=1)
+    inner = (below > 0) & (below < len(levels))
+    left = np.clip(below - 1, 0, len(levels) - 2)
+    rows = np.arange(len(quantiles))
+    low, high = quantiles[rows, left], quantiles[rows, left + 1]
+    step = np.where(inner, high - low, 1.0)
+    cdf = levels[left] + (levels[left + 1] - levels[left]) * np.where(inner, -low / step, 0.0)
+    cdf = np.where(below == 0, levels[0], np.where(below == len(levels), levels[-1], cdf))
+    return 1.0 - cdf
+
+
+def expected_calibration_error(rows, probability, up):
+    """ECE con intervalos fijos: sum_b |subidas_b − probabilidad_b| / filas, por el último eje.
+
+    Los argumentos son recuentos de filas, sumas de probabilidad y subidas por intervalo.
+    Devuelve None (escalar) o NaN (matriz) si no hay filas.
+    """
+    total = np.sum(rows, axis=-1)
+    gap = np.sum(np.abs(np.asarray(up, dtype=np.float64) - probability), axis=-1)
+    if np.ndim(total) == 0:
+        return float(gap / total) if total else None
+    return np.where(total > 0, gap / np.maximum(total, 1), np.nan)
+
+
+def _sign_scores(panel):
+    """Brier por sesión y recuentos por intervalo de probabilidad en filas con objetivo no nulo."""
+    probability = implied_up_probability(panel.quantiles, panel.levels)
+    eligible = panel.target != 0
+    up = (panel.target > 0).astype(np.float64)
+    weights = np.where(eligible, 1.0, 0.0)
+    count = np.bincount(panel.session, weights=weights, minlength=panel.sessions)
+    squared = np.bincount(
+        panel.session, weights=weights * (probability - up) ** 2, minlength=panel.sessions
+    )
+    brier = np.where(count > 0, squared / np.maximum(count, 1), 0.0)
+    bins = np.minimum((probability * SIGN_BINS).astype(np.int64), SIGN_BINS - 1)
+    cell = panel.session * SIGN_BINS + bins
+    size = panel.sessions * SIGN_BINS
+    shape = (panel.sessions, SIGN_BINS)
+    return dict(
+        sign_brier=brier,
+        sign_bin_rows=np.bincount(cell, weights=weights, minlength=size)
+        .astype(np.int64)
+        .reshape(shape),
+        sign_bin_probability=np.bincount(
+            cell, weights=weights * probability, minlength=size
+        ).reshape(shape),
+        sign_bin_up=np.bincount(cell, weights=weights * up, minlength=size)
+        .astype(np.int64)
+        .reshape(shape),
     )
 
 

@@ -13,6 +13,8 @@ cronológicas. Sin ellas, sus brazos siguen declarados como punto de extensión 
 Cada ajuste de MARS-TITAN parte del Titans-MAC ``mac_online`` elegido en la misma ventana y
 semilla, así que depende de esos trabajos. La sección ``cm_v1`` conecta el factorial CM-v1:
 sus dos núcleos son trabajos auxiliares sin traslado y cada brazo parte de uno de ellos.
+`extend_campaign` añade a una campaña cargada las secciones de una declaración preparada con
+las mismas reglas, para medir y contar sin cambiar su archivo.
 
 Variante A: cada ventana anual se reentrena desde cero. Variante B: se reentrena desde
 cero en la primera ventana y cada ``retrain_every_months`` meses. Las ventanas
@@ -56,7 +58,7 @@ MARS = "mars_titan"
 MARS_RECIPE = "mars_titan_episodic_readout_chronological_v1"
 MARS_SEARCHED = TITANS_SEARCHED
 # Escrituras con lector que ajustar. Las demás combinaciones se rechazan al ejecutar.
-MARS_BANKS = ("m0_no_bank", "m1", "m2")
+MARS_BANKS = ("m0_no_bank", "m1", "m2", "m3")
 # Factorial CM-v1. Repite los nombres de training.cm_v1_factorial sin importar PyTorch.
 CM = "cm_v1"
 CM_NAME = "mars_titan_cm_v1_factorial"
@@ -80,7 +82,8 @@ EXTENSION_POINTS = {
         pending=(
             "La entrada por ventana y la predicción trasladada existen y se conectan con la "
             "sección episodic_gru. Falta declararla en las campañas A y B después de medir "
-            "memoria y caudal en cuda:0, elegir accumulation_rows o recompute y ampliar límites"
+            "memoria y caudal en cuda:0 y elegir accumulation_rows o recompute. La "
+            "declaración preparada está en historical-masked-campaign-extensions.json"
         ),
     ),
     TITANS: dict(
@@ -96,7 +99,8 @@ EXTENSION_POINTS = {
         pending=(
             "El lector por ventana y la predicción trasladada se conectan con la sección "
             "mars_titan sobre el padre titans_mac_online. Falta declararla en las campañas A "
-            "y B después de medir memoria y caudal en cuda:0"
+            "y B después de medir memoria y caudal en cuda:0. La declaración preparada está "
+            "en historical-masked-campaign-extensions.json"
         ),
     ),
     CM: dict(
@@ -104,7 +108,8 @@ EXTENSION_POINTS = {
         pending=(
             "Los núcleos y los brazos B, B+C, B+M y B+C+M se conectan con la sección cm_v1 "
             "y su declaración. Falta declararla en las campañas A y B después de medir la "
-            "penalización C y el lector en cuda:0"
+            "penalización C y el lector en cuda:0. La declaración preparada está en "
+            "historical-masked-campaign-extensions.json"
         ),
     ),
 }
@@ -131,11 +136,19 @@ LATER_STAGES = {
         ),
         entry="mars_titan.simulation.campaign_stage:run_stage",
         issue=137,
-        pending=[
-            "native_policy_reconstructed_tapes",
-            "native_klpo_financial_runner",
-            "native_cn_a_share_rules",
-        ],
+        pending=[],
+    ),
+    # Ablación de modalidades en inferencia (`run_masked_campaign.py ablation`). Vuelve a
+    # predecir la evaluación con el estado elegido de cada brazo, sin ajustar nada.
+    "modality_ablation": dict(
+        config="configs/evaluation/historical-masked-2000-comparison.json",
+        stages=dict(
+            A="configs/evaluation/historical-masked-ablation-stage-a.json",
+            B="configs/evaluation/historical-masked-ablation-stage-b.json",
+        ),
+        entry="mars_titan.training.modality_ablation_stage:run_stage",
+        issue=414,
+        pending=[],
     ),
 }
 _FIELDS = {
@@ -421,7 +434,8 @@ def _mars_titan(section, arms, rule, policy, base, count, titans):
     """Brazos de MARS-TITAN: combinación de componentes, receta del lector y padre.
 
     El padre es un brazo `mac_online` de la sección de Titans-MAC con las mismas semillas.
-    Los brazos declarados sin definición, como M3, quedan en `pending_arms` con su motivo.
+    Un brazo declarado sin productor queda en `pending_arms` con su motivo. M3 ya tiene
+    productor: estima sus escalas con el tramo de entrenamiento de cada ventana.
     `training.mars_titan_walk_forward` valida la combinación completa en cada ajuste.
     """
     if section is None:
@@ -554,6 +568,9 @@ def _cm_v1(section, arms, rule, policy, base, count):
         recipes[name] = (path.parent / value).resolve()
     core, core_sha = read_manifest(recipes["core_recipe"], 64 * 1024)
     readout, readout_sha = read_manifest(recipes["readout_recipe"], 64 * 1024)
+    # Los dos núcleos comparten receta, también `accumulation_rows`, que la penalización C
+    # admite porque su término se descompone por flujos.
+    core_cases = _titans_cases(core, rule, count)
     common = dict(declaration=str(path), declaration_sha256=digest, seed=seed)
     candidates = {
         name: [
@@ -567,7 +584,7 @@ def _cm_v1(section, arms, rule, policy, base, count):
                     search_case=case,
                 ),
             )
-            for case in _titans_cases(core, rule, count)
+            for case in core_cases
         ]
         for name in CM_CORES
     }
@@ -593,6 +610,7 @@ def _cm_v1(section, arms, rule, policy, base, count):
         path=str(path),
         sha256=digest,
         seed=seed,
+        recipes={name: str(value) for name, value in recipes.items()},
         arms=models,
         candidates=candidates,
         parents=dict(CM_ARMS),
@@ -653,13 +671,7 @@ def load_campaign(path):
         and (every == step) == (config["variant"] == "A"),
         "La variante A reentrena cada ventana y la B cada múltiplo mayor del paso",
     )
-    limits = config["limits"]
-    _require(
-        isinstance(limits, dict)
-        and set(limits) == _LIMITS
-        and all(type(v) is int and 0 <= v <= 100_000 for v in limits.values()),
-        "Los límites de trabajos deben ser enteros declarados",
-    )
+    _checked_limits(config["limits"])
     arms = declared["arms"]
     families = {arm["family"] for arm in arms.values() if arm["output"] != "zero_control"}
     _require(
@@ -667,7 +679,6 @@ def load_campaign(path):
         "La comparación declara familias sin entrenador ni punto de extensión",
     )
     count = len(config["neural"]["case_indices"])
-    titans = _titans(config.get(TITANS), arms, rule, policy, base, count)
     return dict(
         config,
         sha256=digest,
@@ -680,13 +691,65 @@ def load_campaign(path):
         period=every // step,
         neural=_neural(config["neural"], arms, rule, policy),
         tabular=_tabular(config["tabular"], arms, policy, base),
-        **{
-            EPISODIC: _episodic(config.get(EPISODIC), arms, rule, policy, base),
-            TITANS: titans,
-            MARS: _mars_titan(config.get(MARS), arms, rule, policy, base, count, titans),
-            CM: _cm_v1(config.get(CM), arms, rule, policy, base, count),
-        },
+        **_optional_sections(config, arms, rule, policy, base, count),
     )
+
+
+def _checked_limits(limits):
+    _require(
+        isinstance(limits, dict)
+        and set(limits) == _LIMITS
+        and all(type(v) is int and 0 <= v <= 100_000 for v in limits.values()),
+        "Los límites de trabajos deben ser enteros declarados",
+    )
+    return limits
+
+
+def _optional_sections(config, arms, rule, policy, base, count, titans=None):
+    """Resolver las secciones opcionales. `titans` es la ya resuelta si `config` no la trae."""
+    titans = _titans(config.get(TITANS), arms, rule, policy, base, count) or titans
+    return {
+        EPISODIC: _episodic(config.get(EPISODIC), arms, rule, policy, base),
+        TITANS: titans,
+        MARS: _mars_titan(config.get(MARS), arms, rule, policy, base, count, titans),
+        CM: _cm_v1(config.get(CM), arms, rule, policy, base, count),
+    }
+
+
+def extend_campaign(campaign, sections, *, limits=None):
+    """Añadir a una campaña cargada secciones opcionales que su archivo no declara.
+
+    Cada sección se valida con las mismas reglas que en el archivo y sus rutas relativas
+    parten de la carpeta de la campaña, así que copiarla al archivo no cambia su
+    significado. Sirve para medir y contar una declaración preparada sin activarla. Cada
+    sección añadida queda marcada con `declared_in_campaign=False` y la configuración y su
+    huella no cambian. `limits` sustituye los límites declarados.
+    """
+    _require(
+        isinstance(sections, dict)
+        and sections
+        and set(sections) <= set(OPTIONAL)
+        and all(isinstance(section, dict) for section in sections.values()),
+        "Solo se añaden secciones opcionales de la campaña",
+    )
+    repeated = sorted(family for family in sections if campaign.get(family))
+    _require(not repeated, f"La campaña ya declara {', '.join(repeated)}")
+    resolved = _optional_sections(
+        sections,
+        campaign["comparison_config"]["arms"],
+        campaign["rule"],
+        campaign["input_policy"],
+        Path(campaign["path"]).parent,
+        len(campaign["neural"]["case_indices"]),
+        titans=campaign.get(TITANS),
+    )
+    extended = dict(
+        campaign,
+        **{family: dict(resolved[family], declared_in_campaign=False) for family in sections},
+    )
+    if limits is not None:
+        extended["limits"] = _checked_limits(limits)
+    return extended
 
 
 def schedule(folds, period):

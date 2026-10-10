@@ -8,10 +8,8 @@ de 2008 a 2023. Las acciones son fijas o pseudoaleatorias. No hay aprendizaje.
 
 import json
 import math
-import os
 import subprocess
 from collections import Counter
-from pathlib import Path
 
 import numpy as np
 import pytest
@@ -25,6 +23,7 @@ from mars_titan.simulation.portfolio import CorporateAction, Instrument, Period
 from mars_titan.simulation.reconstructed_tape import build_reconstructed_tape
 from mars_titan.simulation.storage import instruments_from_manifest, read_tape, write_tape
 from tests.simulation.native_library import requires_native_library
+from tests.simulation.native_library import simulator_path as simulator
 from tests.simulation.unadjusted_edition_fixture import (
     Asset,
     evaluation_window,
@@ -385,15 +384,6 @@ def test_schema_two_manifests_carry_and_restore_the_rules(tmp_path):
     with pytest.raises(ValueError, match="moneda"):
         write_tape(tape, tmp_path / "other", instruments={a: Instrument("USD") for a in ASSETS})
     assert not (tmp_path / "other").exists()
-
-
-def simulator():
-    path = Path(
-        os.environ.get("MARS_TITAN_SIM_EXECUTABLE", "build/native/native-release/mars-titan-sim")
-    ).resolve()
-    if not path.is_file():
-        pytest.skip("Falta el ejecutable mars-titan-sim")
-    return path
 
 
 def run_simulator(source, output, *arguments):

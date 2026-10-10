@@ -690,12 +690,12 @@ os._exit(0)
     assert json.loads((tmp_path / "state.json").read_text())["status"] == "blocked"
 
 
-def test_signal_stops_the_cli_while_waiting_without_launching(tmp_path):
+def test_signal_stops_the_cli_while_waiting_without_launching(tmp_path, python_shebang):
     engine = module()
     state = tmp_path / "state.json"
     probe = tmp_path / "nvidia-smi"
     probe.write_text(
-        f"#!{sys.executable}\nprint('<nvidia_smi_log><gpu><fb_memory_usage>"
+        python_shebang + "print('<nvidia_smi_log><gpu><fb_memory_usage>"
         "<total>8188 MiB</total><free>100 MiB</free></fb_memory_usage>"
         "<processes/></gpu></nvidia_smi_log>')\n"
     )

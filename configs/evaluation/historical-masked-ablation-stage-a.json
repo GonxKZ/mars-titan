@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "kind": "historical_masked_modality_ablation_stage",
+  "status": "declared_not_executed",
+  "name": "historical-masked-2000-ablation-a",
+  "campaign": "../baselines/historical-masked-campaign-a.json",
+  "scopes": ["US", "CN", "US+CN"],
+  "limits": {
+    "max_prediction_jobs": 4185
+  },
+  "final_test_opened": false
+}

@@ -21,14 +21,38 @@
       "map_ids": ["I04", "I05", "I06"],
       "enabled": false,
       "disabled_value": "readout_none_m0",
-      "allowed": ["m0_no_bank", "m1", "m2"],
+      "allowed": ["m0_no_bank", "m1", "m2", "m3"],
       "phases": ["evaluation", "readout_training"],
       "state": "episodic_bank",
       "insertion": "src/mars_titan/models/titans/episodic_readout.py:apply_episodic_readout",
       "level": "N4",
       "issues": [18, 19, 23],
-      "control": "Titans-MAC con readout=None, M0 no_bank con el mismo ajuste y M1 a igual capacidad física",
-      "pending": "Entrenador cronológico del lector implementado sin ejecutar. M3 no está definida: faltan a_norm, r_norm, sus escalas y umbrales"
+      "control": "Titans-MAC con readout=None, M0 no_bank con el mismo ajuste, M1 a igual capacidad física y, para M3, M2 con las mismas ofertas",
+      "pending": "Entrenador cronológico del lector implementado sin ejecutar. Las escalas de M3 se estiman al ajustar cada ventana. Diversidad y relevancia macro no incluidas en M3",
+      "m3": {
+        "recipe": "episodic_m3_three_index_v1",
+        "score": "w_e*e_norm + w_a*a_norm + w_r*r_norm",
+        "weights": [
+          0.3333333333333333,
+          0.3333333333333333,
+          0.3333333333333333
+        ],
+        "normalization": "x_over_x_plus_training_median",
+        "error": "abs(label - issued_prediction) after maturity",
+        "anomaly": "abs(last close log return) / median absolute deviation of the 62 previous returns of the 64-session price window",
+        "relevance": "max over known components: filing freshness m_f/(m_f+age) and news presence 1-p_news/2",
+        "missing_relevance": "unknown and never zero: neutral 0.5 when no component is known",
+        "macro_relevance": "not_included",
+        "diversity": "not_included",
+        "thresholds": "none: the 50/25/25 quotas bound the writes",
+        "scalers": {
+          "partition": "train",
+          "sample": "uniform_reservoir",
+          "sample_capacity": 65536,
+          "seed": 19
+        },
+        "search": "fixed_weights_two_learning_rate_cases"
+      }
     },
     "refinements": {
       "connection": "connected",
@@ -190,7 +214,8 @@
     {"id": "A7", "reference": "base", "change": {"regime_context": "filtered_hmm"}},
     {"id": "A8", "reference": "base", "change": {"information_view": "reduced_view"}},
     {"id": "A9", "reference": "fitted_arm", "change": {"replay_schedule": ["uniform", "recent", "spaced"]}},
-    {"id": "A10", "reference": "A4", "change": {"refinement_episodes": "first_read"}}
+    {"id": "A10", "reference": "A4", "change": {"refinement_episodes": "first_read"}},
+    {"id": "A11", "reference": "A3", "change": {"episodic_bank": "m3"}}
   ],
   "budget": {
     "protocol": "issue 363",
@@ -199,7 +224,7 @@
   },
   "pending": [
     "Ejecutar el ajuste del lector y las comparaciones cuando la edición histórica desde 2000 esté verificada.",
-    "Definir M3 con a_norm, r_norm, escalas y umbrales acreditados antes de declararla.",
+    "Estimar las escalas de M3 con el tramo de entrenamiento de cada ventana al ejecutar, sin abrir validación ni evaluación.",
     "Conectar los componentes declarados sin conexión con su control de descarte."
   ]
 }

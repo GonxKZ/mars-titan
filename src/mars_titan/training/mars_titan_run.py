@@ -32,8 +32,10 @@ import torch
 
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.evaluation.session_metrics import SessionErrors
+from mars_titan.memory import write_scores
 from mars_titan.memory.episodic_codec import FrozenEpisodeCodec
 from mars_titan.memory.financial_consumers import (
+    THREE_INDEX,
     bank_retention,
     bank_snapshot,
     episodic_bank,
@@ -41,7 +43,6 @@ from mars_titan.memory.financial_consumers import (
 )
 from mars_titan.memory.financial_observations import FinancialObservationSource
 from mars_titan.memory.retention_bank import RetentionConfig
-from mars_titan.memory.write_policy import MatureErrorConfig
 from mars_titan.models.quantile_head import PINBALL, QUANTILE_HEAD, pinball_loss
 from mars_titan.models.titans.config import canonical
 from mars_titan.models.titans.episodic_readout import EpisodicReadout, apply_episodic_readout
@@ -70,7 +71,7 @@ RECIPE = "mars_titan_episodic_readout_chronological_v1"
 # Hiperparámetros del optimizador que puede variar un caso, los mismos que en Titans-MAC.
 SEARCHED = ("learning_rate", "max_grad_norm")
 CASE_NAME = re.compile(r"[a-z][a-z0-9_-]{0,31}")
-ADMISSIONS = ("m0", "m1", "m2")
+ADMISSIONS = ("m0", "m1", "m2", "m3")
 LOSSES = (PINBALL, "mae")
 _OWN_MODULES = (
     "mars_titan.training.mars_titan_run",
@@ -79,6 +80,7 @@ _OWN_MODULES = (
     "mars_titan.memory.financial_consumers",
     "mars_titan.memory.retention_bank",
     "mars_titan.memory.write_policy",
+    "mars_titan.memory.write_scores",
     "mars_titan.memory.episodic_codec",
     "mars_titan.training.checkpoints",
     "mars_titan.training.selection",
@@ -226,12 +228,23 @@ def case_recipe(document, search_case):
 def retention_config(recipe, admission, *, policy="reservoir", **options):
     """Configuración del banco de cada escritura. M0 no construye banco.
 
-    `options` son los límites de la retención con centros fijos de M1, como la frontera.
+    `options` son los límites de la retención con centros fijos de M1, como la frontera, o
+    las escalas `scalers` de M3 estimadas con el tramo de entrenamiento de la ventana.
     """
     if admission == "m0":
         return None
     return bank_retention(
         admission, capacity=recipe.bank_capacity, seed=recipe.bank_seed, policy=policy, **options
+    )
+
+
+def m3_counters():
+    """Contadores M3 de un recorrido: cambios del índice selectivo y relevancia conocida."""
+    return dict(
+        selective_admitted=0,
+        selective_rejected=0,
+        selective_evicted=0,
+        relevance_unknown=0,
     )
 
 
@@ -279,7 +292,10 @@ def _unpack_bank(payload):
 
 @dataclass
 class _Entry:
-    """Predicción emitida a la espera de su etiqueta. key y value solo existen con banco."""
+    """Predicción emitida a la espera de su etiqueta. key y value solo existen con banco.
+
+    `features` son los rasgos M3 de la decisión, calculados con sus entradas al emitir.
+    """
 
     issued: float
     levels: list | None = None
@@ -287,6 +303,7 @@ class _Entry:
     key: np.ndarray | None = None
     value: np.ndarray | None = None
     block: int | None = None
+    features: write_scores.DecisionFeatures | None = None
 
 
 def _counters():
@@ -366,13 +383,15 @@ class MarsTitanInference:
         if self.quantiles != (recipe.loss == PINBALL):
             raise ValueError("La cabeza de cuantiles se ajusta solo y siempre con pinball")
         if admission not in ADMISSIONS:
-            raise ValueError("M3 no tiene definición acreditada. Se admiten M0, M1 y M2")
+            raise ValueError("La escritura debe ser M0, M1, M2 o M3")
         if (admission == "m0") != (readout.config.mode == "no_bank") or (
             (admission == "m0") != (retention is None)
             or (admission == "m1" and type(retention) is not RetentionConfig)
-            or (admission == "m2" and type(retention) is not MatureErrorConfig)
+            or (admission in THREE_INDEX and type(retention) is not THREE_INDEX[admission])
         ):
-            raise ValueError("M0 usa el control no_bank sin banco y M1/M2 su banco declarado")
+            raise ValueError("M0 usa el control no_bank sin banco y M1/M2/M3 su banco declarado")
+        if admission == "m3" and not predictor.masked:
+            raise ValueError("M3 necesita la presencia y las edades de la edición con máscaras")
         if (
             type(codec) is not FrozenEpisodeCodec
             or codec.identity()["input_specification"] != config.inputs.identity()
@@ -412,6 +431,13 @@ class MarsTitanInference:
         return hashlib.sha256(
             canonical([self.world, self.fold, partition, at]).encode()
         ).hexdigest()
+
+    def _new_pass(self, partition):
+        """Recorrido con banco vacío y, en M3, sus contadores del índice selectivo."""
+        run = _Pass(bank=self._new_bank(partition))
+        if self.admission == "m3":
+            run.counters.update(m3_counters())
+        return run
 
     def _new_bank(self, partition):
         if self.admission == "m0":
@@ -485,6 +511,8 @@ class MarsTitanInference:
                 else [None] * size
             )
             encoded = None if run.bank is None else self.codec.encode(cpu)
+            # Rasgos M3 con las entradas de la decisión, conocidos en su corte.
+            features = write_scores.batch_features(cpu) if self.admission == "m3" else None
             block = None
             if train:
                 block, run.next_block = run.next_block, run.next_block + 1
@@ -504,6 +532,8 @@ class MarsTitanInference:
                     entry.available = batch.input_available_at[row]
                     entry.key = encoded.key_inputs[row].copy()
                     entry.value = encoded.values[row].copy()
+                if features is not None:
+                    entry.features = features[row]
                 run.pending[flow, at] = entry
                 if self.audit is not None:
                     self.audit.append(("prediction", phase.partition, flow, at, values[row], seen))
@@ -562,17 +592,31 @@ class MarsTitanInference:
             for offset, (decision_at, _, entry, value) in enumerate(staged)
         ]
         options = dict(confirmed_at=at)
-        if self.admission == "m2":
+        if self.admission in THREE_INDEX:
             # Error financiero maduro de la predicción emitida, como en `FinancialSession`.
             options["errors"] = {
                 record.id: value - entry.issued
                 for record, (_, _, entry, value) in zip(records, staged, strict=True)
             }
+        if self.admission == "m3":
+            options["features"] = {
+                record.id: entry.features
+                for record, (_, _, entry, _) in zip(records, staged, strict=True)
+            }
         run.bank = run.bank.propose(records, **options)
         run.counters["admitted"] += len(records)
+        receipt = run.bank.receipt if self.admission == "m3" else None
+        if receipt is not None:
+            run.counters["selective_admitted"] += len(receipt["selective_new_ids"])
+            run.counters["selective_rejected"] += len(receipt["selective_rejected_ids"])
+            run.counters["selective_evicted"] += len(receipt["selective_evicted_ids"])
+            run.counters["relevance_unknown"] += sum(row[5] == 0 for row in receipt["components"])
         if self.audit is not None:
             ids = tuple(record.id for record in records)
-            self.audit.append(("admit", phase.partition, at, ids, run.bank.seen))
+            entry = ("admit", phase.partition, at, ids, run.bank.seen)
+            if receipt is not None:
+                entry += (run.bank.index_ids(), receipt["components"])
+            self.audit.append(entry)
 
     @staticmethod
     def _close(run):
@@ -600,7 +644,7 @@ class MarsTitanInference:
     def _pass(self, phase, events, *, stop=None, rows=None):
         """Recorrer una fase sin ajustar, con banco vacío y memoria rápida inicial."""
         self.readout.eval()
-        run = _Pass(bank=self._new_bank(phase.partition))
+        run = self._new_pass(phase.partition)
         with torch.no_grad():
             for event in events:
                 if stop is not None and stop.requested:
@@ -672,6 +716,13 @@ class ReadoutTrainer(MarsTitanInference):
             for source in (train, validation)
         ):
             raise ValueError("Las vistas no conservan la entrada del padre")
+        if admission == "m3" and (
+            retention.scalers.source_sha256 != train.identity
+            or retention.scalers.dataset_sha256 != train.dataset.identity
+            or (retention.scalers.decision_start, retention.scalers.decision_end)
+            != (train.phase.decision_start, train.phase.decision_end)
+        ):
+            raise ValueError("Las escalas M3 no proceden del tramo de entrenamiento de este ajuste")
         self.train, self.validation = train, validation
         self.output = Path(output)
         for protected in (*train.dataset.roots.values(), train.path.parent, validation.path.parent):
@@ -873,10 +924,9 @@ class ReadoutTrainer(MarsTitanInference):
             next_block=run.next_block,
         )
 
-    @staticmethod
-    def _features(entries):
+    def _features(self, entries):
         width = (len(entries), 64)
-        return dict(
+        result = dict(
             available_at=torch.tensor([e.available for e in entries], dtype=torch.int64),
             keys=torch.from_numpy(np.stack([e.key for e in entries]))
             if entries
@@ -885,9 +935,19 @@ class ReadoutTrainer(MarsTitanInference):
             if entries
             else torch.empty(width, dtype=torch.float32),
         )
+        if self.admission == "m3":
+            # La antigüedad desconocida se guarda como NaN y vuelve a None al recuperar.
+            ages = [e.features.filing_age_days for e in entries]
+            result.update(
+                anomaly=torch.tensor([e.features.anomaly for e in entries], dtype=torch.float64),
+                filing_age=torch.tensor(
+                    [math.nan if age is None else age for age in ages], dtype=torch.float64
+                ),
+                news=torch.tensor([e.features.news for e in entries], dtype=torch.bool),
+            )
+        return result
 
-    @staticmethod
-    def _entries(payload, banked):
+    def _entries(self, payload, banked):
         entries = []
         for row, issued in enumerate(payload["issued"].tolist()):
             entry = _Entry(float(issued))
@@ -895,11 +955,18 @@ class ReadoutTrainer(MarsTitanInference):
                 entry.available = int(payload["available_at"][row])
                 entry.key = payload["keys"][row].numpy().copy()
                 entry.value = payload["values"][row].numpy().copy()
+            if self.admission == "m3":
+                age = float(payload["filing_age"][row])
+                entry.features = write_scores.DecisionFeatures(
+                    float(payload["anomaly"][row]),
+                    None if math.isnan(age) else age,
+                    bool(payload["news"][row]),
+                )
             entries.append(entry)
         return entries
 
     def _restore(self, payload):
-        run = _Pass(bank=self._new_bank("train"))
+        run = self._new_pass("train")
         if (payload["bank"] is None) != (run.bank is None):
             raise ValueError("El estado del banco no corresponde a la escritura declarada")
         if run.bank is not None:
@@ -1047,7 +1114,7 @@ class ReadoutTrainer(MarsTitanInference):
                         raise Paused
                     continue
                 self.train_metrics = self._train_pass(
-                    run or _Pass(bank=self._new_bank("train")), cursor, stop, save
+                    run or self._new_pass("train"), cursor, stop, save
                 )
                 run = None
                 cursor = dict(epoch=epoch + 1, phase="validation")

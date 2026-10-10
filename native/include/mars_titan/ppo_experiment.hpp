@@ -29,5 +29,12 @@ struct PpoExperimentOptions {
 
 [[nodiscard]] nlohmann::json run_ppo_experiment(const PpoExperimentOptions& options,
                                                 const std::function<bool()>& stop_requested = {});
+
+// Admisión compartida por PPO y KLPO: CPU solo en el diagnóstico explícito de hasta 32
+// transiciones y CUDA con el bloqueo GPU heredado y su presupuesto de VRAM.
+void require_policy_device(const PpoExperimentOptions& options, std::size_t total_transitions);
+void admit_policy_gpu(const PpoExperimentOptions& options);
+// Hilos, algoritmos deterministas y FP32 IEEE antes de crear tensores.
+void configure_policy_runtime(const PpoExperimentOptions& options);
 } // namespace mars_titan::learning
 #endif

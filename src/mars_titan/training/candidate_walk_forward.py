@@ -53,7 +53,13 @@ from .candidate_run import (
     load_recipe,
     restore_selected,
 )
-from .carried_predictions import CARRIED_PARTITIONS, _destination, _receipt, carried_window
+from .carried_predictions import (
+    _destination,
+    _receipt,
+    ablation_record,
+    carried_window,
+    predicted_partitions,
+)
 from .corpus_inputs import CorpusDataset
 from .learning_hold import require_learning_allowed
 from .temporal_contract import temporal_contracts
@@ -403,27 +409,38 @@ def anchor_adapter(anchor, anchor_view, specification, *, device):
     return adapter, recipe, window, window_sha256
 
 
-def carry_window(anchor, anchor_view, view, output, *, parent_id, device, stop=None):
+def carry_window(
+    anchor, anchor_view, view, output, *, parent_id, device, stop=None, modality_ablation=None
+):
     """Predecir calibración y evaluación de una ventana posterior con el estado del ancla.
 
     No ajusta nada. `carried_window` exige la misma edición y protocolo, y que la
-    información del ancla termine antes de la calibración trasladada.
+    información del ancla termine antes de la calibración trasladada. Con
+    `modality_ablation` predice solo la evaluación, también en la propia ventana del ancla,
+    y no escribe recibos walk-forward. La GRU y el banco empiezan vacíos en el tramo, que
+    lee las entradas ablacionadas.
     """
     require_learning_allowed("la predicción trasladada de la GRU candidata")
     started = time.perf_counter()
     anchor, anchor_view, view = Path(anchor), Path(anchor_view), Path(view)
-    dataset = CorpusDataset(view, input_policy=HISTORICAL_MASKED)
+    dataset = CorpusDataset(
+        view, input_policy=HISTORICAL_MASKED, modality_ablation=modality_ablation
+    )
     contracts = _window(dataset)
     anchor_meta, _ = read_manifest(anchor_view, 8 * 1024**2)
     anchor_fold, fold, months = carried_window(
-        anchor_meta, dataset.manifest, input_policy=HISTORICAL_MASKED
+        anchor_meta,
+        dataset.manifest,
+        input_policy=HISTORICAL_MASKED,
+        same_window=modality_ablation is not None,
     )
     output = _destination(output, dataset.roots.values())
     _prepare_output(view, output, dataset)
     output.mkdir(parents=True)
-    sources = window_sources(dataset, output / "indices", CARRIED_PARTITIONS)
+    partitions = predicted_partitions(modality_ablation)
+    sources = window_sources(dataset, output / "indices", partitions)
     adapter, recipe, window, window_sha256 = anchor_adapter(
-        anchor, anchor_view, sources["calibration"].specification(), device=device
+        anchor, anchor_view, sources[partitions[0]].specification(), device=device
     )
     folder = output / "predictions"
     folder.mkdir()
@@ -432,7 +449,7 @@ def carry_window(anchor, anchor_view, view, output, *, parent_id, device, stop=N
     )
     predictions, tables = {}, {}
     try:
-        for name in CARRIED_PARTITIONS:
+        for name in partitions:
             path = folder / f"{name}-predictions.parquet"
             metrics = predictor.evaluate(sources[name], stop=stop, destination=path)
             tables[name] = pq.read_table(path)
@@ -446,7 +463,8 @@ def carry_window(anchor, anchor_view, view, output, *, parent_id, device, stop=N
         return dict(status="paused", final_test_opened=False)
     checkpoint = window["checkpoint"]
     parent = dict(id=parent_id, sha256=checkpoint["sha256"])
-    receipts = write_receipts(output, contracts, parent, tables)
+    # Una predicción ablacionada no es una predicción walk-forward del brazo.
+    receipts = {} if modality_ablation else write_receipts(output, contracts, parent, tables)
     return _receipt(
         output,
         dict(
@@ -473,6 +491,7 @@ def carry_window(anchor, anchor_view, view, output, *, parent_id, device, stop=N
             receipts=receipts,
             seconds=time.perf_counter() - started,
             **policy_identity(HISTORICAL_MASKED),
+            **ablation_record(modality_ablation),
         ),
     )
 

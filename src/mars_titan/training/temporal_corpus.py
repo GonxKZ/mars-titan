@@ -167,7 +167,7 @@ class TemporalInputs:
 
 
 def _sample_state(parent, asset, temporal):
-    from .corpus_inputs import MAX_TABLE_BYTES, VECTORS, _availability, _times
+    from .corpus_inputs import MAX_TABLE_BYTES, VECTORS, _availability, _populated_groups, _times
 
     parts = []
     if parent.masked:
@@ -179,7 +179,7 @@ def _sample_state(parent, asset, temporal):
         metadata_columns = ["prediction_at", "input_availability", "price_end_index"]
         if "macro_available_at" in file.schema_arrow.names:
             metadata_columns.append("macro_available_at")
-        for group in range(file.num_row_groups):
+        for group in _populated_groups(file):
             size = file.metadata.row_group(group).total_byte_size
             if size > MAX_TABLE_BYTES:
                 raise ValueError("Un grupo de muestras supera el presupuesto")
@@ -237,6 +237,7 @@ def _masked_sample_state(parent, asset):
         VECTORS,
         _availability,
         _historical_times,
+        _populated_groups,
         _presence,
         _vectors,
     )
@@ -257,7 +258,7 @@ def _masked_sample_state(parent, asset):
         columns = [*metadata, *VECTORS]
         if not set(columns) <= set(file.schema_arrow.names):
             raise ValueError("Falta el contrato de las muestras históricas")
-        for group in range(file.num_row_groups):
+        for group in _populated_groups(file):
             if file.metadata.row_group(group).total_byte_size > MAX_TABLE_BYTES:
                 raise ValueError("Un grupo de muestras supera el presupuesto")
             table = file.read_row_group(group, columns=metadata, use_threads=False)

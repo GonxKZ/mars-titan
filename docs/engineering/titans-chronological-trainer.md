@@ -79,7 +79,7 @@ El valor por fila es el mismo con 64, 128 y 256 filas. La mayor parte correspond
 
 Son estimaciones lineales a partir de la medida, en unidades decimales, sin temporales de cada operación, contexto CUDA ni caché del asignador. Con más de unos mil activos por instante el tramo completo no cabe en los 8 GB de la GPU. El [recibo](../../reports/engineering/titans-chronological-memory-20261009.json) conserva las medidas de los cuatro controles.
 
-`ChronologicalRecipe.accumulation_rows` es opcional y vale `None` por defecto, con la identidad de receta anterior intacta. Con un entero, cada bloque del evento se predice con el mismo cálculo que en el recorrido por defecto y su grafo se corta en cuanto se emite la predicción. El tramo guarda los lotes de entrada y el estado de cada flujo al empezar. Al actualizar, `_replay` recorre los flujos con etiquetas en bloques de hasta `accumulation_rows`. Cada bloque parte de ese estado inicial, repite los lotes en el orden original, de modo que la memoria rápida avanza en el mismo orden, y retropropaga su pérdida media multiplicada por su fracción de etiquetas. La suma de los bloques es la pérdida media del tramo, así que hay un único paso por actualización. Los flujos son independientes dados los parámetros, que no cambian dentro del tramo.
+`ChronologicalRecipe.accumulation_rows` es opcional y vale `None` por defecto, con la identidad de receta anterior intacta. Con un entero, cada bloque del evento se predice con el mismo cálculo que en el recorrido por defecto y su grafo se corta en cuanto se emite la predicción. El tramo guarda los lotes de entrada y el estado de cada flujo al empezar. Al actualizar, `_replay` recorre los flujos con etiquetas en bloques de hasta `accumulation_rows`. Cada bloque parte de ese estado inicial, repite los lotes en el orden original, de modo que la memoria rápida avanza en el mismo orden, y retropropaga su pérdida media multiplicada por su fracción de etiquetas. La suma de los bloques es la pérdida media del tramo, así que hay un único paso por actualización. Los flujos son independientes dados los parámetros, que no cambian dentro del tramo. Con la penalización C de CM-v1, cada lote se repite con el plan de C de su evento, los flujos medidos sin etiquetas también se repiten y cada bloque suma sus términos de C divididos por el número de grupos del tramo. La [derivación](../experiments/mars_titan_cm_v1/factorial.md#acumulación-por-bloques-con-c) muestra que el gradiente es el del tramo completo.
 
 La memoria del tramo pasa a ser el grafo de un bloque, más los lotes de entrada (6,7 KB por fila e instante) y dos estados rápidos por flujo (64 KB cada uno en los controles con MAC). El coste previsto es un forward más por tramo. No se ha medido sobre el recorrido completo.
 
@@ -87,7 +87,18 @@ Las pruebas de [`test_financial_run_accumulation.py`](../../tests/training/test_
 
 La misma medida con la receta de la campaña, que añade la memoria con residual y LayerNorm, da 375,6 KB por fila e instante en `mac_online` frente a 374,5 KB con la memoria v1, y 273,9 KB frente a 273,4 KB en `mac_frozen`. Los otros dos controles no cambian. Con los 4.202 activos de EE. UU., el tramo completo seguiría en 12,6 GB y bajaría a 1,16 GB con `accumulation_rows=128` ([recibo](../../reports/engineering/titans-chronological-memory-campaign-20261009.json)).
 
-Las recetas v1 no declaran `accumulation_rows`. La [receta de la campaña](#receta-de-la-campaña-y-casos-de-búsqueda) lo declara `null` hasta medir la memoria en `cuda:0`. Con los activos por instante de US, la estimación en CPU del tramo completo de `mac_online` supera los 8 GB, así que el valor previsto es 128. Fijarlo cambia la huella de la receta y la identidad de todos los trabajos Titans, por lo que se hará antes de lanzar la campaña.
+La medida en `cuda:0` del 9 de octubre, con la receta de la campaña y 128 filas ([recibo](../../reports/engineering/cuda-checks-20261009/titans-chronological-memory-campaign-cuda.json)), guarda unos 16 KB más por fila e instante que en CPU:
+
+| Variante | Bytes por fila e instante | Pico medido con backward | Tramo de 5.023 flujos sin y con `accumulation_rows=128` |
+| --- | ---: | ---: | ---: |
+| `transformer_direct` | 241.521 | 307 MiB | 9,04 GiB y 494 MiB |
+| `mac_disabled` | 243.314 | 321 MiB | 9,11 GiB y 1,10 GiB |
+| `mac_frozen` | 292.235 | 367 MiB | 10,94 GiB y 1,14 GiB |
+| `mac_online` | 393.895 | 481 MiB | 14,74 GiB y 1,24 GiB |
+
+Las cifras del tramo son estimaciones del propio medidor. Según ellas, ninguna variante cabe en 8 GiB sin acumulación con la población completa y todas caben con `accumulation_rows=128`.
+
+Las recetas v1 no declaran `accumulation_rows`. La [receta de la campaña](#receta-de-la-campaña-y-casos-de-búsqueda) lo mantiene en `null` y el valor previsto es 128. Fijarlo cambia la huella de la receta y la identidad de todos los trabajos Titans, y de los núcleos de CM-v1, que comparten la receta, por lo que se hará antes de lanzar la campaña.
 
 ## Ventana walk-forward
 
@@ -122,7 +133,7 @@ Reiniciar en cada tramo hace que la predicción de evaluación no dependa de hab
 
 - `memory_residual_layer_norm: true` junto a `gate_bias`, la [memoria de la sección 3.3](titans-mac-output-scale.md) decidida en [#27](https://github.com/GonxKZ/mars-titan/issues/27). Entra en la identidad de `FinancialConfig` de las cuatro variantes, así que el emparejamiento desde `mac_online` se conserva y una variante v1 no puede emparejarse con una de la campaña.
 - `walk_forward.search_cases` declara dos casos que solo cambian la tasa de aprendizaje, `lr1e-4` y `lr1e-3`. La tasa no aparece en `recipe`, para que ningún valor base quede sin elegir. El recorte se mantiene en 1,0 en los dos.
-- `accumulation_rows: null`, pendiente de la medida en `cuda:0`.
+- `accumulation_rows: null`. La [medida en `cuda:0`](#memoria-del-tramo-y-acumulación-por-bloques) indica que hará falta 128 con la población completa, pero el valor todavía no se ha fijado.
 
 La rejilla sale del diseño de referencias y no de datos. Cada referencia neuronal de la campaña ajusta los casos 0 y 10 del diseño, con la misma semilla de búsqueda, 30 épocas de presupuesto fijo y selección por `session_mae` de validación. Esos dos casos usan la tasa 10⁻⁴ y se diferencian en la anchura y el dropout. En Titans-MAC la arquitectura no puede variar entre casos, porque las cuatro variantes comparten los parámetros iniciales emparejados y la anchura de la receta. Lo que sí cambió con la memoria residual es la escala del gradiente, así que el eje de búsqueda es el paso del optimizador. Un caso usa la tasa de las referencias (10⁻⁴) y el otro la de la receta v1 (10⁻³), los dos extremos de los tres niveles del diseño. Variar también el recorte con solo dos casos confundiría los dos factores.
 
@@ -209,10 +220,10 @@ Es una propiedad del núcleo sin entrenar, no un resultado predictivo. Puede imp
 
 ## Pendiente
 
-- Ejecución real tras levantar el bloqueo, con el protocolo y las ventanas de #363.
-- Comprobación CUDA escrita y sin ejecutar: `CUDA_VISIBLE_DEVICES=0 OMP_NUM_THREADS=2 UV_PROJECT_ENVIRONMENT=<entorno> uv run --no-sync python -m pytest -q tests/training/test_financial_run.py::test_cuda_pass_matches_cpu_without_optimizer_steps`. Después hay que perfilar una pasada en `cuda:0` con FP32, medir memoria y sincronizaciones y comprobar la recuperación en ese dispositivo.
+- Ejecución real en la campaña A cuando se levante el bloqueo, con el protocolo y las ventanas de #363.
+- Perfilar una pasada en `cuda:0` con FP32, medir sincronizaciones y comprobar la recuperación en ese dispositivo. La comprobación `CUDA_VISIBLE_DEVICES=0 OMP_NUM_THREADS=2 UV_PROJECT_ENVIRONMENT=<entorno> uv run --no-sync python -m pytest -q tests/training/test_financial_run.py::test_cuda_pass_matches_cpu_without_optimizer_steps` pasó el 9 de octubre ([resumen](../../reports/engineering/cuda-checks-20261009/README.md)).
 - La ruta de la ventana no tiene todavía una comprobación CUDA propia. Con el bloqueo levantado, una ventana se lanzaría con `CUDA_VISIBLE_DEVICES=0 CUBLAS_WORKSPACE_CONFIG=:4096:8 OMP_NUM_THREADS=2 PYTHONPATH=src:. uv run --no-sync python scripts/run_titans_walk_forward.py --view <vista>/manifest.json --protocol <protocolo> --window <ventana> --recipe configs/titans/chronological-training-historical-masked.json --variant mac_online --seed 42 --search-case lr1e-4 --output <salida> --device cuda:0`.
-- Medir en `cuda:0` el pico del asignador de un tramo antes de fijar `accumulation_rows`: `CUDA_VISIBLE_DEVICES=0 OMP_NUM_THREADS=2 PYTHONPATH=src:. uv run --no-sync python benchmarks/titans_chronological_memory.py --device cuda:0 --recipe configs/titans/chronological-training-historical-masked.json --output reports/engineering/titans-chronological-memory-cuda-<fecha>.json`. Con `--rows` igual al bloque elegido se obtiene el pico de la repetición. El coste del forward repetido sobre el recorrido completo tampoco se ha medido.
+- Fijar `accumulation_rows` en la receta con la medida anterior. El pico del asignador se obtuvo con `CUDA_VISIBLE_DEVICES=0 OMP_NUM_THREADS=2 PYTHONPATH=src:. uv run --no-sync python benchmarks/titans_chronological_memory.py --device cuda:0 --recipe configs/titans/chronological-training-historical-masked.json --output <recibo>`. Con `--rows` igual al bloque elegido se obtendría el pico de la repetición, que no se ha medido. El coste del forward repetido sobre el recorrido completo tampoco se ha medido.
 - Banco episódico, M1 a M3 y K mayor que 1 siguen fuera de este entrenador, porque `FinancialPredictor` exige banco desactivado y K=1. El control C sí entra como penalización de `mac_online` en el [factorial CM-v1](../experiments/mars_titan_cm_v1/factorial.md), con identidad propia. Sin control local la identidad del entrenador no cambia.
 - Repetir con `gate_bias` la observación de normas y gradientes del fixture de este entrenador. La inicialización ya está declarada en las recetas, pero esa medida concreta se hizo con v1.
 - Medir `labels_without_graph` en fases conjuntas de dos mercados.

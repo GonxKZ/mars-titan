@@ -1,0 +1,162 @@
+[
+  {
+    "device": "cuda:0",
+    "dtype": "torch.float32",
+    "admission": "m1",
+    "scored_offers": 0,
+    "minimum_selective_margin": null,
+    "refinements": 1,
+    "episodes": "per_step",
+    "updates": 11,
+    "seconds": {
+      "cpu": 1.64060702099232,
+      "device": 4.049045739986468
+    },
+    "peak_allocated_bytes": 67871744,
+    "torch": "2.14.0+cu130"
+  },
+  {
+    "device": "cuda:0",
+    "dtype": "torch.float64",
+    "admission": "m1",
+    "scored_offers": 0,
+    "minimum_selective_margin": null,
+    "refinements": 1,
+    "episodes": "per_step",
+    "updates": 11,
+    "seconds": {
+      "cpu": 1.5071400520100724,
+      "device": 2.993530114996247
+    },
+    "peak_allocated_bytes": 69098496,
+    "torch": "2.14.0+cu130"
+  },
+  {
+    "device": "cuda:0",
+    "dtype": "torch.float32",
+    "admission": "m1",
+    "scored_offers": 0,
+    "minimum_selective_margin": null,
+    "refinements": 4,
+    "episodes": "per_step",
+    "updates": 11,
+    "seconds": {
+      "cpu": 1.868777728988789,
+      "device": 3.745581192022655
+    },
+    "peak_allocated_bytes": 67871744,
+    "torch": "2.14.0+cu130"
+  },
+  {
+    "device": "cuda:0",
+    "dtype": "torch.float64",
+    "admission": "m1",
+    "scored_offers": 0,
+    "minimum_selective_margin": null,
+    "refinements": 4,
+    "episodes": "per_step",
+    "updates": 11,
+    "seconds": {
+      "cpu": 1.732766928995261,
+      "device": 3.584323420014698
+    },
+    "peak_allocated_bytes": 69098496,
+    "torch": "2.14.0+cu130"
+  },
+  {
+    "device": "cuda:0",
+    "dtype": "torch.float32",
+    "admission": "m1",
+    "scored_offers": 0,
+    "minimum_selective_margin": null,
+    "refinements": 4,
+    "episodes": "first_read",
+    "updates": 11,
+    "seconds": {
+      "cpu": 1.7357110609882511,
+      "device": 3.326597376988502
+    },
+    "peak_allocated_bytes": 67871744,
+    "torch": "2.14.0+cu130"
+  },
+  {
+    "device": "cuda:0",
+    "dtype": "torch.float64",
+    "admission": "m1",
+    "scored_offers": 0,
+    "minimum_selective_margin": null,
+    "refinements": 4,
+    "episodes": "first_read",
+    "updates": 11,
+    "seconds": {
+      "cpu": 1.701640789018711,
+      "device": 3.7383199100149795
+    },
+    "peak_allocated_bytes": 69098496,
+    "torch": "2.14.0+cu130"
+  },
+  {
+    "device": "cuda:0",
+    "dtype": "torch.float32",
+    "admission": "m3",
+    "scored_offers": 292,
+    "minimum_selective_margin": 0.0011253859320763393,
+    "refinements": 1,
+    "episodes": "per_step",
+    "updates": 11,
+    "seconds": {
+      "cpu": 2.0103295570006594,
+      "device": 3.286787110992009
+    },
+    "peak_allocated_bytes": 67871744,
+    "torch": "2.14.0+cu130"
+  },
+  {
+    "device": "cuda:0",
+    "dtype": "torch.float64",
+    "admission": "m3",
+    "scored_offers": 292,
+    "minimum_selective_margin": 0.0012459994703253319,
+    "refinements": 1,
+    "episodes": "per_step",
+    "updates": 11,
+    "seconds": {
+      "cpu": 1.8620074720238335,
+      "device": 3.266675449995091
+    },
+    "peak_allocated_bytes": 69098496,
+    "torch": "2.14.0+cu130"
+  },
+  {
+    "device": "cuda:0",
+    "dtype": "torch.float32",
+    "admission": "m3",
+    "scored_offers": 292,
+    "minimum_selective_margin": 0.0007809121575976796,
+    "refinements": 4,
+    "episodes": "first_read",
+    "updates": 11,
+    "seconds": {
+      "cpu": 2.1148591740056872,
+      "device": 4.066526312002679
+    },
+    "peak_allocated_bytes": 67871744,
+    "torch": "2.14.0+cu130"
+  },
+  {
+    "device": "cuda:0",
+    "dtype": "torch.float64",
+    "admission": "m3",
+    "scored_offers": 292,
+    "minimum_selective_margin": 0.0006774452860474067,
+    "refinements": 4,
+    "episodes": "first_read",
+    "updates": 11,
+    "seconds": {
+      "cpu": 2.085939059004886,
+      "device": 3.9323193000163883
+    },
+    "peak_allocated_bytes": 69098496,
+    "torch": "2.14.0+cu130"
+  }
+]

@@ -9,6 +9,7 @@ import torch
 
 from mars_titan.data.embeddings import require_cuda
 from mars_titan.models.baselines.multimodal import MultimodalReference
+from tests.suite_support import requires_cuda
 
 
 def module():
@@ -23,6 +24,7 @@ def test_benchmark_import_does_not_start_a_workload():
     assert callable(module().step)
 
 
+@requires_cuda
 def test_step_counts_rows_and_uses_all_modalities_on_cuda():
     engine = module()
     device = require_cuda()
@@ -49,6 +51,9 @@ def test_incomplete_source_cannot_produce_a_full_corpus_profile(tmp_path, monkey
     from types import SimpleNamespace
 
     engine = module()
+    # La validación del manifiesto no usa el dispositivo. Sin CUDA visible, la exigencia del
+    # dispositivo se sustituye para comprobar el rechazo y no se crea ningún tensor.
+    monkeypatch.setattr(engine, "require_cuda", lambda: "cuda:0")
     monkeypatch.setattr(
         engine,
         "CorpusDataset",

@@ -596,14 +596,19 @@ def _new_destination(output, protected):
     )
 
 
-def carry_titans(anchor, anchor_view, view, output, *, device="cuda:0", stop=None):
+def carry_titans(
+    anchor, anchor_view, view, output, *, device="cuda:0", stop=None, modality_ablation=None
+):
     """Predecir una ventana posterior con el estado elegido en la ventana ancla.
 
     Es la pieza de la variante B. No ajusta parámetros ni selección. Cada tramo trasladado
-    empieza con la memoria rápida inicial y su propio calentamiento de entradas.
+    empieza con la memoria rápida inicial y su propio calentamiento de entradas. Con
+    `modality_ablation` predice solo la evaluación, también en la propia ventana del ancla,
+    y el calentamiento y el tramo leen las mismas entradas ablacionadas, así que la memoria
+    rápida también ve la ausencia.
     """
     require_learning_allowed("la predicción trasladada de Titans-MAC")
-    from .carried_predictions import carried_window
+    from .carried_predictions import ablation_record, carried_window, predicted_partitions
     from .checkpoints import load_training_state
     from .financial_run import ChronologicalInference
 
@@ -637,18 +642,24 @@ def carry_titans(anchor, anchor_view, view, output, *, device="cuda:0", stop=Non
             os.environ.get("CUBLAS_WORKSPACE_CONFIG") in {":4096:8", ":16:8"},
             "Configura CUBLAS_WORKSPACE_CONFIG antes de iniciar PyTorch",
         )
-    dataset = CorpusDataset(view, input_policy=HISTORICAL_MASKED)
+    dataset = CorpusDataset(
+        view, input_policy=HISTORICAL_MASKED, modality_ablation=modality_ablation
+    )
     anchor_fold, fold, age = carried_window(
-        anchor_manifest, dataset.manifest, input_policy=HISTORICAL_MASKED
+        anchor_manifest,
+        dataset.manifest,
+        input_policy=HISTORICAL_MASKED,
+        same_window=modality_ablation is not None,
     )
     _check_view(dataset, view_protocol(view), fold)
     _new_destination(output, (*dataset.roots.values(), view.parent, anchor))
     phases = window_phases(fold, options["warmup_months"])
-    sources = _sources(dataset, {name: phases[name] for name in CARRIED}, output / "indices")
+    partitions = predicted_partitions(modality_ablation)
+    sources = _sources(dataset, {name: phases[name] for name in partitions}, output / "indices")
     options_predictor = {k: v for k, v in document["predictor"].items() if k != "dtype"}
     predictor = FinancialPredictor(
         FinancialConfig(
-            sources["calibration"].specification(),
+            sources[partitions[0]].specification(),
             variant=request["variant"],
             seed=request["seed"],
             **options_predictor,
@@ -667,7 +678,7 @@ def carry_titans(anchor, anchor_view, view, output, *, device="cuda:0", stop=Non
     _carried_parameters(state["model"], predictor)
     inference = ChronologicalInference(predictor, chronological)
     predictions = {}
-    for name in CARRIED:
+    for name in partitions:
         rows = PredictionRows(inference.quantiles)
         metrics = inference.predict(sources[name], rows, stop=stop)
         tables = checked_tables(rows, metrics, dataset, name)
@@ -698,7 +709,7 @@ def carry_titans(anchor, anchor_view, view, output, *, device="cuda:0", stop=Non
         fold=fold,
         months_since_anchor_information=age,
         memory_policy=carried_memory_policy(options["warmup_months"]),
-        phases={name: asdict(phases[name]) for name in CARRIED},
+        phases={name: asdict(phases[name]) for name in partitions},
         indices={name: source.identity for name, source in sources.items()},
         device=device,
         code=_code(),
@@ -707,6 +718,7 @@ def carry_titans(anchor, anchor_view, view, output, *, device="cuda:0", stop=Non
         scientific_training_started=False,
         seconds=time.perf_counter() - started,
         finished_at_utc=datetime.now(UTC).isoformat(),
+        **ablation_record(modality_ablation),
     )
     atomic_json(output / "carry.json", receipt)
     return receipt
