@@ -38,6 +38,10 @@ def clip_rows(gradient: Tensor, limit: float) -> Tensor:
 class NeuralMemory(nn.Module):
     """Los parámetros lentos son compartidos y el estado rápido pertenece al llamante."""
 
+    # Observador de las trazas de #448 (`learning_traces.memory`). Solo se activa en los pasos
+    # que tocan registro, lee copias separadas del grafo y no forma parte del estado.
+    observer = None
+
     def __init__(
         self,
         config: MemoryConfig,
@@ -493,6 +497,15 @@ class NeuralMemory(nn.Module):
                 weights, momentum, levels = self._write(
                     weights, momentum, levels, gradients, (alpha, eta, theta), differentiable
                 )
+                if self.observer is not None:
+                    self.observer(
+                        alpha=alpha,
+                        eta=eta,
+                        theta=theta,
+                        loss=loss,
+                        weights=weights,
+                        momentum=momentum,
+                    )
         windows = () if key_window is None else (key_window, value_window)
         if not differentiable:
             windows = tuple(w.detach() for w in windows)
