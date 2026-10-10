@@ -1,6 +1,8 @@
 """Ejecutar los casos de la matriz de adaptadores sobre los padres de una ventana.
 
-La ventana prepara una vez su corpus ordenado de ajuste y validación. Cada padre abre
+La ventana prepara una vez su corpus ordenado de ajuste y validación o, con un
+presupuesto de bloque, solo el índice de cohortes de la vista, que después se lee por
+bloques sin copiar filas (`environments.view_cohorts`). Cada padre abre
 su caché de predicciones, ajusta el normalizador solo con el tramo de ajuste y fija el
 plan de la matriz, con las actualizaciones de cada caso, antes del primer ajuste. Cada
 caso se ajusta o se recupera con `run_case`, que aplica la selección común con el padre
@@ -14,11 +16,15 @@ comparten estas piezas. Ninguna de ellas decide qué padres o ventanas se recorr
 import contextlib
 from pathlib import Path
 
+import numpy as np
+
 from mars_titan.data.cohort_files import read_manifest
 from mars_titan.data.storage import atomic_json, sha256
 from mars_titan.environments.actions import ActionGrid
 from mars_titan.environments.corpus_source import ParquetCohortSource, prepare_causal_corpus
+from mars_titan.environments.view_cohorts import ViewCohortSource, prepare_cohort_index
 from mars_titan.episodes.parents import ParentCache
+from mars_titan.training.corpus_inputs import CorpusDataset
 
 from . import adapter_matrix
 from .heldout import PARTITIONS, _adjustment, evaluate_partition
@@ -32,33 +38,90 @@ def _require(condition, message):
         raise ValueError(message)
 
 
-class MatrixWindow:
-    """Corpus ordenado de una vista con sus lectores de ajuste y validación."""
+def index_manifest(folder):
+    """Manifiesto del índice de cohortes de una ventana leída por bloques."""
+    return Path(folder) / "cohorts" / "manifest.json"
 
-    def __init__(self, view, folder, *, encoding, input_policy, batch_size, stop):
+
+class MatrixWindow:
+    """Lectores de ajuste y validación de una vista, ordenados o por bloques.
+
+    Sin `max_block_bytes`, la ventana prepara el corpus ordenado de siempre. Con él,
+    prepara solo el índice y lee cada tramo desde la vista con ese presupuesto de memoria.
+    Las cohortes, la rejilla y los lotes son los mismos en las dos lecturas.
+
+    Con `since` (microsegundos, solo por bloques) el ajuste usa las sesiones de `train`
+    desde ese instante y la rejilla se ajusta con sus objetivos. El índice sigue
+    describiendo la población completa, que es la que identifica a un padre de la vista.
+    """
+
+    def __init__(
+        self,
+        view,
+        folder,
+        *,
+        encoding,
+        input_policy,
+        batch_size,
+        stop,
+        max_block_bytes=None,
+        since=None,
+    ):
         self.view, self.folder = Path(view), Path(folder)
         self.encoding, self.input_policy, self.batch_size = encoding, input_policy, batch_size
-        ordered = self.folder / "ordered"
-        prepared = prepare_causal_corpus(
-            self.view,
-            ordered,
-            batch_size=batch_size,
-            resume=ordered.exists(),
-            stop=stop,
-            input_policy=input_policy,
+        _require(
+            since is None or max_block_bytes is not None,
+            "El ajuste desde un instante solo se lee por bloques",
         )
-        if prepared["status"] != "completed":
-            raise InterruptedError("La preparación del corpus ordenado quedó pendiente")
-        self.manifest = ordered / "manifest.json"
+        self.since = since
+        if max_block_bytes is None:
+            ordered = self.folder / "ordered"
+            prepared = prepare_causal_corpus(
+                self.view,
+                ordered,
+                batch_size=batch_size,
+                resume=ordered.exists(),
+                stop=stop,
+                input_policy=input_policy,
+            )
+            if prepared["status"] != "completed":
+                raise InterruptedError("La preparación del corpus ordenado quedó pendiente")
+            self.manifest = ordered / "manifest.json"
+
+            def source(name):
+                return ParquetCohortSource(self.manifest, partition=name, input_policy=input_policy)
+
+        else:
+            dataset = CorpusDataset(self.view, input_policy=input_policy)
+            self.manifest = index_manifest(self.folder)
+            prepared = prepare_cohort_index(
+                dataset, self.manifest.parent, input_policy=input_policy, stop=stop
+            )
+
+            def source(name):
+                return ViewCohortSource(
+                    self.manifest,
+                    dataset,
+                    partition=name,
+                    max_block_bytes=max_block_bytes,
+                    input_policy=input_policy,
+                    stop=stop,
+                    since=since if name == "train" else None,
+                )
+
         self.source_sha256 = prepared["source_sha256"]
         self.grid = ActionGrid.from_dict(prepared["grid"])
         with contextlib.ExitStack() as sources:
             self.train, self.validation = (
-                sources.enter_context(
-                    ParquetCohortSource(self.manifest, partition=name, input_policy=input_policy)
-                )
-                for name in ("train", "validation")
+                sources.enter_context(source(name)) for name in ("train", "validation")
             )
+            if since is not None:
+                # La rejilla solo ve los objetivos de las filas que se ajustan.
+                positions = list(range(len(self.train)))
+                targets = np.concatenate([c["target"] for c in self.train.cohorts(positions)])
+                self.grid = ActionGrid.fit(
+                    targets, source_sha256=self.source_sha256, partition="train"
+                )
             self.sources = sources.pop_all()
 
     def close(self):
@@ -101,11 +164,13 @@ def release_ordered(manifest):
     return released
 
 
-def predict_heldout(parent, run_path, report, dataset, folder, *, device, batch_size, stop):
-    """Escribir calibración y evaluación con el estado seleccionado de un ajuste."""
+def predict_heldout(
+    parent, run_path, report, dataset, folder, *, device, batch_size, stop, partitions=PARTITIONS
+):
+    """Escribir calibración y evaluación (o también validación) con el estado seleccionado."""
     model, grid, neural = _adjustment(Path(run_path), report, parent, device)
     predictions = {}
-    for partition in PARTITIONS:
+    for partition in partitions:
         path = Path(folder) / f"{partition}-predictions.parquet"
         metrics = evaluate_partition(
             dataset,
@@ -126,11 +191,29 @@ def predict_heldout(parent, run_path, report, dataset, folder, *, device, batch_
 class MatrixParent:
     """Padre congelado de una ventana, con su caché, normalizador y plan de la matriz."""
 
-    def __init__(self, window, report, folder, *, matrix, digest, seed, device, lease, stop):
+    def __init__(
+        self,
+        window,
+        report,
+        folder,
+        *,
+        matrix,
+        digest,
+        seed,
+        device,
+        lease,
+        stop,
+        population=None,
+    ):
         self.window, self.device, self.lease = window, device, lease
         self.diagnostic = device == "cpu"
+        # Un padre de otra ventana se identifica con la población de la vista que lo ajustó.
         self.parent = load_parent(
-            window.manifest, Path(report), device=device, diagnostic=self.diagnostic, lease=lease
+            population or window.manifest,
+            Path(report),
+            device=device,
+            diagnostic=self.diagnostic,
+            lease=lease,
         )
         kind = self.parent.kind
         _require(kind in adapter_matrix.FAMILIES, "La matriz solo admite padres neuronales")
