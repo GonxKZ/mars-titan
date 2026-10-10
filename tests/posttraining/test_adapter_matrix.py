@@ -342,26 +342,32 @@ def test_versions_do_not_mix_objective_layouts():
 THIRD = Path("configs/posttraining/adapter-matrix-v3.json")
 
 
-def test_third_version_only_adds_the_chronological_designs():
+def test_third_version_only_adds_the_chronological_designs_and_the_variety():
     from mars_titan.posttraining import chronological_matrix as cm
 
     second, _ = adapter_matrix.read_matrix(SECOND)
     third, digest = adapter_matrix.read_matrix(THIRD)
-    ignored = {"schema_version", "architectures"}
+    ignored = {"schema_version", "architectures", "variety"}
     assert {k: v for k, v in second.items() if k not in ignored} == {
         k: v for k, v in third.items() if k not in ignored
     }
     assert third["architectures"]["executable"] == second["architectures"]["executable"]
     assert third["architectures"]["pending"] == {}
+    # Sin los brazos de la variedad (#444), los casos de las referencias son los de la v2.
+    variety = {arm["id"] for arm in third["variety"]["arms"]}
     for family in adapter_matrix.FAMILIES:
-        assert adapter_matrix.cases(
-            third, digest, family, head="quantile_head_v1"
-        ) == adapter_matrix.cases(second, digest, family, head="quantile_head_v1")
+        assert [
+            item
+            for item in adapter_matrix.cases(third, digest, family, head="quantile_head_v1")
+            if item["id"].split("/", 1)[1] not in variety
+        ] == adapter_matrix.cases(second, digest, family, head="quantile_head_v1")
+    # Casos por semilla: los de #446 más los tres brazos de la variedad que se proponen en
+    # `mac_online`. Las demás variantes y los lectores los tienen solo como reserva.
     per_seed = {
         ("titans_mac", "transformer_direct", True): 5,
         ("titans_mac", "mac_disabled", True): 5,
         ("titans_mac", "mac_frozen", True): 9,
-        ("titans_mac", "mac_online", True): 9,
+        ("titans_mac", "mac_online", True): 9 + 3,
         ("mars_titan", None, True): 4,
         ("mars_titan", None, False): 2,
         ("cm_v1", None, True): 4,

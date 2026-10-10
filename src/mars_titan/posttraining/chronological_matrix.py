@@ -13,6 +13,10 @@ selección con las referencias. Solo cambian los tensores de cada punto:
 - GRU candidata: solo la cabeza, calculada en Python sobre el estado nativo final. Los
   demás puntos viven dentro del módulo LibTorch y se excluyen con su motivo.
 
+La sección opcional `variety` (`adapter_variety`) añade brazos de un solo punto a las
+variantes de Titans-MAC donde existe su punto y, si los nombra en `readers`, al núcleo de
+los lectores. La GRU candidata no recibe ninguno: sus otros parámetros viven en LibTorch.
+
 Los casos no incluyen la corrección lineal, excluida para padres de cuantiles, y el padre
 congelado no se ajusta. Las actualizaciones las fija el recorrido cronológico de cada
 ventana: dependen de los datos y del tramo, no de los parámetros, así que coinciden entre
@@ -21,9 +25,10 @@ los brazos de un mismo padre.
 
 import itertools
 
-from mars_titan.models.predictive_adaptation import AdapterTarget
+from mars_titan.models.predictive_adaptation import AdapterTarget, target_shape
 from mars_titan.models.quantile_head import QUANTILE_HEAD
 
+from . import adapter_variety
 from .inputs import fingerprint
 from .selection import selection_policy
 
@@ -159,10 +164,12 @@ def _spec(matrix, arm, name):
     return dict(arm.get("overrides", {}).get(name, matrix["points"][name]))
 
 
-def arms(matrix, family, *, variant=None, bank=True):
+def arms(matrix, family, *, variant=None, bank=True, reserve=False):
     """Brazos aplicables, en el orden de la matriz, con la forma resuelta de cada punto.
 
-    `variant` es la de Titans-MAC y `bank` dice si el lector consulta episodios.
+    `variant` es la de Titans-MAC y `bank` dice si el lector consulta episodios. Los brazos
+    de la variedad siguen a los de la matriz. `reserve` añade los que no se proponen para
+    la campaña.
     """
     kind, section = design(matrix, family)
     if kind == TITANS:
@@ -172,7 +179,7 @@ def arms(matrix, family, *, variant=None, bank=True):
             dict(id=arm["id"], points={name: _spec(matrix, arm, name) for name in arm["points"]})
             for arm in matrix["arms"]
             if set(arm["points"]) <= set(allowed)
-        ]
+        ] + adapter_variety.titans_arms(matrix, variant, reserve=reserve)
     if kind == CANDIDATE:
         _require(variant is None, "La GRU candidata no tiene variantes de Titans-MAC")
         return [
@@ -197,7 +204,7 @@ def arms(matrix, family, *, variant=None, bank=True):
                 episodic_readout=episodic if "episodic_readout" in components else None,
             )
         )
-    return result
+    return result + adapter_variety.reader_arms(matrix, reserve=reserve)
 
 
 def _case(matrix, seed, objective, *, control=None, adapter=None):
@@ -217,7 +224,7 @@ def _case(matrix, seed, objective, *, control=None, adapter=None):
     return case
 
 
-def cases(matrix, digest, family, *, variant=None, bank=True):
+def cases(matrix, digest, family, *, variant=None, bank=True, reserve=False):
     """Casos por semilla: continuación completa y brazos, sin corrección lineal ni padre."""
     from . import adapter_matrix
 
@@ -238,7 +245,7 @@ def cases(matrix, digest, family, *, variant=None, bank=True):
                 case=_case(matrix, seed, declared[CONTROL], control=CONTROL),
             )
         )
-        for arm in arms(matrix, family, variant=variant, bank=bank):
+        for arm in arms(matrix, family, variant=variant, bank=bank, reserve=reserve):
             adapter = dict(
                 matrix_sha256=digest,
                 input_policy=matrix["input_policy"],
@@ -315,11 +322,28 @@ def _options(spec):
     return dict(rank=spec["rank"], alpha=float(spec["alpha"]))
 
 
-def titans_targets(matrix, points):
-    """Tensores de Titans-MAC para los puntos del brazo, con su forma resuelta."""
+def variant_arm(matrix, variant, adapter):
+    """Exigir que el adaptador del caso sea un brazo, de la matriz o de reserva, de la variante."""
+    _require(
+        any(
+            arm["id"] == adapter["arm"] and arm["points"] == adapter["points"]
+            for arm in arms(matrix, "titans_mac", variant=variant, reserve=True)
+        ),
+        "El brazo no pertenece a los puntos de esta variante de Titans-MAC",
+    )
+
+
+def titans_targets(matrix, points, model=None):
+    """Tensores de Titans-MAC para los puntos del brazo, con su forma resuelta.
+
+    Los subconjuntos de la variedad (sesgos y normalizaciones) se enumeran sobre `model`.
+    """
     targets = matrix["architectures"]["chronological"][TITANS]["targets"]
     result = []
     for name, spec in points.items():
+        if adapter_variety.is_variety(name, spec):
+            result += adapter_variety.titans_targets(matrix, name, spec, model)
+            continue
         for module in targets[name]:
             result.append(AdapterTarget(module, "weight", spec["form"], **_options(spec)))
             if name == "head" and spec["form"] == "residual":
@@ -345,8 +369,5 @@ def candidate_targets(points):
 
 def describe(targets, model):
     """Identidad de los tensores modificados y recuento exacto de parámetros entrenables."""
-    rows = [
-        target.identity(tuple(getattr(model.get_submodule(target.module), target.tensor).shape))
-        for target in targets
-    ]
+    rows = [target.identity(target_shape(model, target)) for target in targets]
     return dict(targets=rows, trainable_parameters=sum(row["trainable_parameters"] for row in rows))

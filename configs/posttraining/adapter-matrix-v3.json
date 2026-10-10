@@ -121,5 +121,105 @@
       }
     },
     "pending": {}
+  },
+  "variety": {
+    "points": {
+      "bias": {
+        "form": "residual",
+        "invalidates": ["cached_parent_predictions", "attention_outputs", "fused_representations"]
+      },
+      "norm": {
+        "form": "residual",
+        "invalidates": ["cached_parent_predictions", "attention_outputs", "fused_representations"]
+      },
+      "persistent": {
+        "form": "residual",
+        "invalidates": ["cached_parent_predictions", "attention_outputs"]
+      }
+    },
+    "arms": [
+      {
+        "id": "fusion_dora",
+        "points": ["fusion"],
+        "overrides": {
+          "fusion": {
+            "form": "dora",
+            "rank": 4,
+            "alpha": 4.0,
+            "invalidates": ["cached_parent_predictions", "fused_representations"]
+          }
+        },
+        "campaign": ["references"]
+      },
+      {
+        "id": "readout_dora",
+        "points": ["readout"],
+        "overrides": {
+          "readout": {
+            "form": "dora",
+            "rank": 4,
+            "alpha": 4.0,
+            "invalidates": ["cached_parent_predictions", "attention_outputs"]
+          }
+        },
+        "campaign": ["references"]
+      },
+      {
+        "id": "fusion_ia3",
+        "points": ["fusion"],
+        "overrides": {
+          "fusion": {
+            "form": "ia3",
+            "invalidates": ["cached_parent_predictions", "fused_representations"]
+          }
+        },
+        "campaign": ["references"]
+      },
+      {
+        "id": "readout_ia3",
+        "points": ["readout"],
+        "overrides": {
+          "readout": {
+            "form": "ia3",
+            "invalidates": ["cached_parent_predictions", "attention_outputs"]
+          }
+        },
+        "campaign": ["references"]
+      },
+      {
+        "id": "fusion_parallel_adapter",
+        "points": ["fusion"],
+        "overrides": {
+          "fusion": {
+            "form": "parallel_adapter",
+            "rank": 4,
+            "alpha": 4.0,
+            "invalidates": ["cached_parent_predictions", "fused_representations"]
+          }
+        },
+        "campaign": ["references", "titans_mac:mac_online"]
+      },
+      {
+        "id": "fusion_serial_adapter",
+        "points": ["fusion"],
+        "overrides": {
+          "fusion": {
+            "form": "serial_adapter",
+            "rank": 4,
+            "alpha": 4.0,
+            "invalidates": ["cached_parent_predictions", "fused_representations"]
+          }
+        },
+        "campaign": []
+      },
+      {"id": "bias", "points": ["bias"], "campaign": ["references", "titans_mac:mac_online"]},
+      {"id": "norm", "points": ["norm"], "campaign": []},
+      {"id": "persistent", "points": ["persistent"], "campaign": ["titans_mac:mac_online"]}
+    ],
+    "readers": ["persistent"],
+    "inapplicable": {
+      "norm": "RNN, LSTM, GRU y DLinear no tienen capas de normalización. Solo el Transformer compacto y el codificador de precios de Titans-MAC tienen LayerNorm.",
+      "persistent": "Solo la atención de MAC lee la memoria persistente, en mac_frozen y mac_online. Las referencias neuronales y transformer_direct no tienen MAC y mac_disabled atiende solo al segmento."
+    }
   }
 }
