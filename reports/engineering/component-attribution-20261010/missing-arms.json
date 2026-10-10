@@ -3,12 +3,12 @@
   "kind": "comparison_matrix_missing_arms",
   "matrix": {
     "name": "campaign-a-comparison-matrix",
-    "sha256": "431f67e50824fd2cf3ba9ccd9144d88e00dce547bb9b60bab6b7509fefc5d16c"
+    "sha256": "aa8a1b50e78307f91a8ee59d8564224b36402f455d00e23c554c705871ce0f2b"
   },
   "hours": {
     "basis": "projected",
     "source": "Proyecci\u00f3n de la campa\u00f1a A v2 (#431, commit 2656031f) con 16.000 muestras-\u00e9poca por segundo, inferencia a 3 veces ese caudal y 10 \u00e9pocas efectivas, sobre los recuentos de reports/data/campaign-a-v2-window-counts-20261009.json. B6 solo predice validaci\u00f3n, calibraci\u00f3n y evaluaci\u00f3n con tres semillas y no incluye el calentamiento. Ning\u00fan caudal est\u00e1 medido en esta edici\u00f3n",
-    "sha256": "48588c7e855d49d56d0c4e567effc8e8f3089c054d2687098843fc149784f5d3"
+    "sha256": "8c5e897ff0d575e80fab27c0269f6b41be2ab597a16c03edba810cc3e56db97b"
   },
   "rule": {
     "planned_elsewhere": "Los brazos condicionados y derivados se suponen disponibles",
@@ -22,8 +22,8 @@
     "gpu_hours": "Horas propias del brazo de referencia (cost_like). Sus padres ya existen"
   },
   "totals": {
-    "contrasts": 356,
-    "declared": 219,
+    "contrasts": 362,
+    "declared": 225,
     "planned_elsewhere": 112,
     "candidates": 25,
     "unidentified": 0
