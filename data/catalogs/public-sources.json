@@ -54,7 +54,18 @@
           "decision": "admitted_exploratory",
           "evidence": "Capturas válidas con huella en el índice. La copia inicial tiene 811 filas, 126 series y 967 celdas ausentes."
         }
-      ]
+      ],
+      "terms_review": {
+        "reviewed_on": "2026-10-10",
+        "status": "verified",
+        "local_use": "permitted_non_commercial",
+        "redistribution": "not_granted",
+        "evidence_urls": [
+          "https://fred.stlouisfed.org/legal/",
+          "https://www.stlouisfed.org/about-us/legal-information"
+        ],
+        "conditions": "Los términos de FRED permiten el uso personal, educativo y no comercial de todas sus series, también las que tienen copyright de terceros, con cita de la fuente y conservando los avisos. Usos distintos o la redistribución de series con copyright requieren permiso del propietario. El panel mezcla productores y no tiene una licencia única."
+      }
     },
     {
       "id": "fred_qd",
@@ -92,7 +103,18 @@
           "decision": "admitted_exploratory",
           "evidence": "Capturas válidas con huella en el índice. La copia inicial tiene 270 filas, 245 series y 2.135 ausencias."
         }
-      ]
+      ],
+      "terms_review": {
+        "reviewed_on": "2026-10-10",
+        "status": "verified",
+        "local_use": "permitted_non_commercial",
+        "redistribution": "not_granted",
+        "evidence_urls": [
+          "https://fred.stlouisfed.org/legal/",
+          "https://www.stlouisfed.org/about-us/legal-information"
+        ],
+        "conditions": "Los términos de FRED permiten el uso personal, educativo y no comercial de todas sus series, también las que tienen copyright de terceros, con cita de la fuente y conservando los avisos. Usos distintos o la redistribución de series con copyright requieren permiso del propietario. El panel mezcla productores y no tiene una licencia única."
+      }
     },
     {
       "id": "french_factors_daily",
@@ -122,7 +144,7 @@
           "use": "Revisión de la convención del factor de mercado del objetivo residual",
           "gap": "El objetivo residual necesita un factor de mercado con una convención documentada.",
           "decision": "pending",
-          "evidence": "El factor diario va de cierre a cierre y el protocolo usa el intervalo de apertura a cierre. El archivo corriente incorpora revisiones y el cambio FIZ/CIZ."
+          "evidence": "El factor diario va de cierre a cierre y el protocolo usa el intervalo de apertura a cierre. El archivo corriente incorpora revisiones y el cambio FIZ/CIZ. La biblioteca no declara condiciones de uso, así que cualquier uso necesita antes la conformidad de sus autores."
         },
         {
           "use": "Sustituir el factor de mercado del objetivo",
@@ -130,7 +152,17 @@
           "decision": "excluded",
           "evidence": "Cambiar el factor crea otra identidad de supervisión según docs/data/target-factor-revisions.md y este archivo no es point-in-time."
         }
-      ]
+      ],
+      "terms_review": {
+        "reviewed_on": "2026-10-10",
+        "status": "no_statement_found",
+        "local_use": "not_stated",
+        "redistribution": "not_granted",
+        "evidence_urls": [
+          "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/data_library.html"
+        ],
+        "conditions": "La página solo muestra el copyright de Eugene F. Fama y Kenneth R. French. No declara condiciones de uso ni concede una licencia, y los rendimientos se construyen con datos de CRSP."
+      }
     },
     {
       "id": "ecb_usd_eur",
@@ -162,7 +194,17 @@
           "decision": "pending",
           "evidence": "La consulta cubre 90 días naturales del presente. El catálogo macro prevé DEXUSEU con versiones y esta descarga no reconstruye publicaciones anteriores."
         }
-      ]
+      ],
+      "terms_review": {
+        "reviewed_on": "2026-10-10",
+        "status": "verified",
+        "local_use": "permitted",
+        "redistribution": "permitted_with_attribution",
+        "evidence_urls": [
+          "https://www.ecb.europa.eu/services/using-our-site/disclaimer/html/index.en.html"
+        ],
+        "conditions": "La información puede distribuirse o reproducirse si aparece con exactitud, se cita al BCE y se declara cualquier modificación, como un ajuste estacional o una tasa de variación. Los documentos con autores tienen una excepción."
+      }
     },
     {
       "id": "nyfed_gscpi",
@@ -180,7 +222,7 @@
       "auth": "none",
       "rights": "Acceso público documentado. No se afirma permiso general de redistribución. Conservar atribución y comprobar condiciones del productor y de terceros.",
       "terms_url": "https://www.newyorkfed.org/research/policy/gscpi",
-      "license_unknown": true,
+      "license_unknown": false,
       "release_cadence": "Mensual, publicación anunciada a las 10:00 de Nueva York del cuarto día hábil.",
       "vintage_capability": "Libro corriente, con valores históricos reestimados. Vintages no incluidos en esta descarga.",
       "pit_limitations": "Backcast anterior a su presentación pública en 2022 y revisiones del método. No utilizar toda la historia como dato público contemporáneo.",
@@ -195,7 +237,17 @@
           "decision": "excluded",
           "evidence": "HTTP 200 con un ZIP sin libro ni hojas. Lo sustituye el CSV de versiones nyfed_gscpi_vintages."
         }
-      ]
+      ],
+      "terms_review": {
+        "reviewed_on": "2026-10-10",
+        "status": "verified",
+        "local_use": "permitted",
+        "redistribution": "permitted_with_attribution",
+        "evidence_urls": [
+          "https://www.newyorkfed.org/privacy/termsofuse"
+        ],
+        "conditions": "Licencia no exclusiva para usar, copiar y distribuir el contenido con el aviso de copyright y la atribución indicada, marcando las modificaciones y manteniendo las mismas condiciones. El contenido de terceros queda fuera."
+      }
     },
     {
       "id": "cboe_vix",
@@ -227,7 +279,17 @@
           "decision": "pending",
           "evidence": "Archivo corriente sin versiones ni hora original por observación. Cboe reserva sus derechos y no hay permiso de redistribución acreditado."
         }
-      ]
+      ],
+      "terms_review": {
+        "reviewed_on": "2026-10-10",
+        "status": "verified",
+        "local_use": "not_stated",
+        "redistribution": "not_granted",
+        "evidence_urls": [
+          "https://www.cboe.com/terms/"
+        ],
+        "conditions": "Los materiales del sitio, incluidas sus bases de datos, son propiedad de Cboe o de sus licenciantes y están protegidos. Se describen como información general y educativa sin finalidad de negociación, pero no se concede ninguna licencia de uso o redistribución de los datos."
+      }
     },
     {
       "id": "treasury_yields",
@@ -265,7 +327,18 @@
           "decision": "admitted_exploratory",
           "evidence": "Capturas válidas con huella en el índice y observaciones diarias del mes consultado."
         }
-      ]
+      ],
+      "terms_review": {
+        "reviewed_on": "2026-10-10",
+        "status": "no_statement_found",
+        "local_use": "permitted",
+        "redistribution": "not_verified",
+        "evidence_urls": [
+          "https://home.treasury.gov/subfooter/site-policies-and-notices",
+          "https://www.copyright.gov/title17/92chap1.html"
+        ],
+        "conditions": "Las políticas del sitio no declaran condiciones de reutilización. La ley federal excluye del copyright las obras del Gobierno de Estados Unidos (17 U.S.C. § 105), pero el Departamento no lo confirma para este feed y las curvas parten de cotizaciones de mercado."
+      }
     },
     {
       "id": "sec_aapl_submissions",
@@ -297,7 +370,17 @@
           "decision": "pending",
           "evidence": "HTTP 403 el 18 de septiembre de 2026. Sigue registrado como fallo hasta una comprobación permitida, sin cambiar de identidad ni de red."
         }
-      ]
+      ],
+      "terms_review": {
+        "reviewed_on": "2026-10-10",
+        "status": "not_retrievable",
+        "local_use": "not_verified",
+        "redistribution": "not_verified",
+        "evidence_urls": [
+          "https://www.sec.gov/about/privacy-and-security-policy"
+        ],
+        "conditions": "La página de condiciones devolvió HTTP 403 el 10 de octubre de 2026, igual que las API. No se ha podido leer qué permite y no se conserva ningún archivo de esta fuente."
+      }
     },
     {
       "id": "sec_aapl_companyfacts",
@@ -330,7 +413,17 @@
           "decision": "pending",
           "evidence": "HTTP 403 el 18 de septiembre de 2026. Sigue registrado como fallo hasta una comprobación permitida, sin cambiar de identidad ni de red."
         }
-      ]
+      ],
+      "terms_review": {
+        "reviewed_on": "2026-10-10",
+        "status": "not_retrievable",
+        "local_use": "not_verified",
+        "redistribution": "not_verified",
+        "evidence_urls": [
+          "https://www.sec.gov/about/privacy-and-security-policy"
+        ],
+        "conditions": "La página de condiciones devolvió HTTP 403 el 10 de octubre de 2026, igual que las API. No se ha podido leer qué permite y no se conserva ningún archivo de esta fuente."
+      }
     },
     {
       "id": "gdelt_article_metadata",
@@ -348,7 +441,7 @@
       "auth": "none",
       "rights": "Acceso público documentado. No se afirma permiso general de redistribución. Conservar atribución y comprobar condiciones del productor y de terceros.",
       "terms_url": "https://blog.gdeltproject.org/gdelt-doc-2-0-api-debuts/",
-      "license_unknown": true,
+      "license_unknown": false,
       "release_cadence": "Búsqueda sobre el índice reciente, con ventana y límite explícitos de la consulta.",
       "vintage_capability": "Metadatos de descubrimiento. No ofrece una garantía universal de primera publicación histórica.",
       "pit_limitations": "Máximo 25 resultados. seenDate no es prueba de publicación original, ni de exhaustividad o relevancia para una empresa. No se descargan cuerpos de noticias ni imágenes.",
@@ -363,7 +456,17 @@
           "decision": "pending",
           "evidence": "HTTP 200 con un esquema no válido y HTTP 429 en el diagnóstico posterior. seendate no acredita la publicación original y la consulta solo cubre el índice reciente."
         }
-      ]
+      ],
+      "terms_review": {
+        "reviewed_on": "2026-10-10",
+        "status": "verified",
+        "local_use": "permitted",
+        "redistribution": "permitted_with_attribution",
+        "evidence_urls": [
+          "https://www.gdeltproject.org/about.html"
+        ],
+        "conditions": "Los conjuntos de GDELT admiten uso académico, comercial o gubernamental sin coste y pueden redistribuirse citando el proyecto y enlazando su web. Los derechos de los medios sobre titulares y textos no quedan cubiertos por esa licencia."
+      }
     },
     {
       "id": "nyfed_gscpi_vintages",
@@ -381,7 +484,7 @@
       "auth": "none",
       "rights": "Acceso público documentado. No se afirma permiso general de redistribución. Conservar atribución y comprobar condiciones del productor y de terceros.",
       "terms_url": "https://www.newyorkfed.org/research/policy/gscpi",
-      "license_unknown": true,
+      "license_unknown": false,
       "release_cadence": "Mensual, publicación anunciada a las 10:00 de Nueva York del cuarto día hábil.",
       "vintage_capability": "Matriz pública con columnas de edición mensual desde Jan-22. Se debe verificar la fecha y hora de cada edición y si las columnas históricas se preservan sin cambios.",
       "pit_limitations": "Las etiquetas de vintage mensuales no son horas de publicación. La historia anterior a 2022 es un backcast. La matriz requiere validación temporal antes de declararse PIT.",
@@ -403,7 +506,17 @@
           "decision": "admitted_exploratory",
           "evidence": "La copia inicial tiene 348 filas y 57 columnas de versión. Las etiquetas mensuales no son horas de publicación."
         }
-      ]
+      ],
+      "terms_review": {
+        "reviewed_on": "2026-10-10",
+        "status": "verified",
+        "local_use": "permitted",
+        "redistribution": "permitted_with_attribution",
+        "evidence_urls": [
+          "https://www.newyorkfed.org/privacy/termsofuse"
+        ],
+        "conditions": "Licencia no exclusiva para usar, copiar y distribuir el contenido con el aviso de copyright y la atribución indicada, marcando las modificaciones y manteniendo las mismas condiciones. El contenido de terceros queda fuera."
+      }
     },
     {
       "id": "fed_monetary_rss",
@@ -421,7 +534,7 @@
       "auth": "none",
       "rights": "Feed público de comunicados oficiales. Conservar atribución. No se extiende ninguna autorización a materiales de terceros enlazados.",
       "terms_url": "https://www.federalreserve.gov/disclaimer.htm",
-      "license_unknown": true,
+      "license_unknown": false,
       "release_cadence": "Por evento, cuando se publican comunicados monetarios.",
       "vintage_capability": "Feed corriente con pubDate y enlaces. No es un archivo completo ni inmutable.",
       "pit_limitations": "La fecha del feed requiere contrastar publicación y cambios del comunicado. La descarga actual no acredita qué devolvía el feed en fechas pasadas.",
@@ -437,7 +550,17 @@
           "decision": "pending",
           "evidence": "Quince entradas de abril a septiembre de 2026 en la copia inicial. pubDate requiere auditoría y el feed no reconstruye comunicados anteriores."
         }
-      ]
+      ],
+      "terms_review": {
+        "reviewed_on": "2026-10-10",
+        "status": "verified",
+        "local_use": "permitted",
+        "redistribution": "permitted_with_attribution",
+        "evidence_urls": [
+          "https://www.federalreserve.gov/disclaimer.htm"
+        ],
+        "conditions": "Salvo indicación contraria, la información del sitio de la Junta es de dominio público y puede copiarse y distribuirse citando a la Junta. El material de terceros y los sellos oficiales necesitan permiso."
+      }
     },
     {
       "id": "apple_fy2026_q3_financials",
@@ -483,7 +606,17 @@
           "decision": "excluded",
           "evidence": "Un emisor y un documento, sin historial de versiones ni permiso de redistribución acreditado."
         }
-      ]
+      ],
+      "terms_review": {
+        "reviewed_on": "2026-10-10",
+        "status": "verified",
+        "local_use": "permitted_non_commercial",
+        "redistribution": "not_granted",
+        "evidence_urls": [
+          "https://www.apple.com/legal/internet-services/terms/site.html"
+        ],
+        "conditions": "La información ofrecida para descarga puede usarse con fines personales, informativos y no comerciales, sin retirar avisos, sin modificarla y sin publicarla ni copiarla en otros sistemas para su distribución."
+      }
     },
     {
       "id": "stooq_aapl_eod",
@@ -517,7 +650,15 @@
           "decision": "excluded",
           "evidence": "La verificación de navegador impidió descubrir el enlace y revisar las condiciones. No se descargaron precios ni se resolvió el reto."
         }
-      ]
+      ],
+      "terms_review": {
+        "reviewed_on": "2026-10-10",
+        "status": "blocked_at_source_discovery",
+        "local_use": "not_verified",
+        "redistribution": "not_verified",
+        "evidence_urls": [],
+        "conditions": "La verificación de navegador impidió llegar a las condiciones del proveedor. No se conservan precios de esta fuente."
+      }
     }
   ]
 }
