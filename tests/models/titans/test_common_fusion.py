@@ -49,7 +49,13 @@ def test_the_four_controls_share_the_common_modules_and_emit_the_same_token(hist
         actual = shared_state(model)
         assert actual.keys() == expected.keys()
         for name, value in expected.items():
-            assert torch.equal(actual[name], value), (variant, name)
+            # Algunos módulos guardan su identidad como estado extra en un diccionario.
+            same = (
+                torch.equal(actual[name], value)
+                if torch.is_tensor(value)
+                else actual[name] == value
+            )
+            assert same, (variant, name)
         # Lo único que añade un control con memoria es el módulo MAC.
         extra = {name.split(".", 1)[0] for name in model.state_dict()} - set(SHARED)
         assert extra == (
