@@ -1,0 +1,111 @@
+{
+ "schema_version": 1,
+ "kind": "directed_mutation",
+ "recorded_at": "2026-10-09",
+ "method": "Sustitución de una expresión por mutante en una copia aislada del árbol y ejecución de las pruebas que la cubren. Un mutante cuenta como detectado si alguna prueba falla o da error.",
+ "mutants": [
+  {
+   "name": "compare_any",
+   "module": "training/prediction_regeneration.py",
+   "change": "la comparación acepta una tabla si alguna coincide",
+   "killed_first_run": true,
+   "killed_after_new_tests": true
+  },
+  {
+   "name": "strict_ignored",
+   "module": "training/prediction_regeneration.py",
+   "change": "se ignora la política numérica registrada",
+   "killed_first_run": true,
+   "killed_after_new_tests": true
+  },
+  {
+   "name": "release_any_report",
+   "module": "training/rolling_retention.py",
+   "change": "se libera aunque la regeneración no coincida",
+   "killed_first_run": true,
+   "killed_after_new_tests": true
+  },
+  {
+   "name": "errors_final",
+   "module": "training/rolling_retention.py",
+   "change": "un error antes de comparar se toma como decisión",
+   "killed_first_run": true,
+   "killed_after_new_tests": true
+  },
+  {
+   "name": "policy_keep_ge",
+   "module": "training/rolling_retention.py",
+   "change": "una entrada de las políticas se conserva también tras su último lector",
+   "killed_first_run": true,
+   "killed_after_new_tests": true
+  },
+  {
+   "name": "policy_needs_min",
+   "module": "training/rolling_storage.py",
+   "change": "la última ventana lectora pasa a ser la primera",
+   "killed_first_run": true,
+   "killed_after_new_tests": true
+  },
+  {
+   "name": "disk_guard_off",
+   "module": "training/rolling_retention.py",
+   "change": "sin guardia de disco por ventana",
+   "killed_first_run": true,
+   "killed_after_new_tests": true
+  },
+  {
+   "name": "ablation_without_aggregates",
+   "module": "training/rolling_retention.py",
+   "change": "la ablación se libera sin su sección en la comparación",
+   "killed_first_run": false,
+   "killed_after_new_tests": true
+  },
+  {
+   "name": "same_view_off",
+   "module": "training/carried_predictions.py",
+   "change": "la regeneración acepta otra ventana",
+   "killed_first_run": true,
+   "killed_after_new_tests": true
+  },
+  {
+   "name": "boosters_drop_selected",
+   "module": "training/campaign_storage.py",
+   "change": "se borra también el booster elegido",
+   "killed_first_run": true,
+   "killed_after_new_tests": true
+  },
+  {
+   "name": "storage_policy_ge",
+   "module": "training/rolling_storage.py",
+   "change": "la estimación conserva una entrada leída por última vez en su ventana",
+   "killed_first_run": false,
+   "killed_after_new_tests": true
+  },
+  {
+   "name": "aggregates_round",
+   "module": "evaluation/window_aggregates.py",
+   "change": "los agregados se guardan en float32",
+   "killed_first_run": true,
+   "killed_after_new_tests": true
+  },
+  {
+   "name": "ledger_skip",
+   "module": "training/rolling_retention.py",
+   "change": "la reanudación repite fases registradas",
+   "killed_first_run": true,
+   "killed_after_new_tests": true
+  }
+ ],
+ "first_run": {
+  "killed": 11,
+  "total": 13
+ },
+ "after_new_tests": {
+  "killed": 13,
+  "total": 13
+ },
+ "new_tests": [
+  "tests/training/test_rolling_retention.py::test_masked_predictions_without_aggregates_are_compacted_not_released",
+  "tests/training/test_rolling_storage.py::test_an_input_read_last_in_its_own_window_is_released_with_it"
+ ]
+}
