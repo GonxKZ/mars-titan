@@ -14,7 +14,7 @@ from types import SimpleNamespace
 import pytest
 import torch
 
-from mars_titan.data.storage import atomic_json
+from mars_titan.data.storage import atomic_json, sha256
 from mars_titan.training import campaign_storage as storage
 from mars_titan.training import masked_campaign as engine
 from mars_titan.training.checkpoints import (
@@ -103,31 +103,49 @@ def test_indexed_models_keep_their_index_only_without_release():
     assert released["transient"]["mid_epoch"] == 2 * COUNTS["flows"] * value["flow_state_bytes"]
     kept = storage.job_footprint(job("titans_mac"), COUNTS, value, release=False)
     assert kept["retained"]["indices"] == built and kept["transient"]["indices"] == build
+    # La GRU candidata calienta con el mismo tramo que Titans-MAC.
     gru = storage.job_footprint(job("episodic_gru"), COUNTS, value, release=False)
-    no_warmup = 2 * COUNTS["train"] + sum(2 * COUNTS[p] for p in storage.HELD_OUT)
-    assert gru["retained"]["indices"] == int(no_warmup * index["bytes_per_row"])
+    assert gru["retained"]["indices"] == built
 
 
-def test_xgboost_keeps_its_models_and_needs_its_pages_while_running():
+def test_plateau_of_a_joint_fit_keeps_its_states_and_indices_and_writes_no_table():
+    value = declared()
+    state, kept = value["state_bytes"]["titans_mac"], value["retained_states"]["titans_mac"]
+    fit = storage.job_footprint(job("titans_mac"), COUNTS, value, release=True)
+    plateau = storage.job_footprint(job("titans_mac", phase="plateau"), COUNTS, value, release=True)
+    assert plateau["retained"]["predictions"] == plateau["transient"]["writing"] == 0
+    assert plateau["retained"]["states"] == kept * state
+    assert plateau["transient"]["recovery"] == 0
+    # La meseta conserva su índice como un ajuste sin liberación.
+    unreleased = storage.job_footprint(job("titans_mac"), COUNTS, value, release=False)
+    assert plateau["retained"]["indices"] == unreleased["retained"]["indices"] > 0
+    assert plateau["transient"]["indices"] == unreleased["transient"]["indices"]
+    assert (
+        plateau["retained"]["indices"] + plateau["transient"]["indices"]
+        == (fit["transient"]["indices"])
+    )
+    final = storage.job_footprint(job("titans_mac", phase="joint"), COUNTS, value, release=True)
+    assert final == fit
+
+
+def test_xgboost_keeps_its_selected_model_and_needs_its_pages_while_running():
     value = declared()
     boosting = value["xgboost"]
     search = storage.job_footprint(
         job("xgboost", case=dict(max_bin=64)), COUNTS, value, release=True
     )
-    pages = -(-COUNTS["train"] * boosting["features"] * 7 // 8)
-    validation = COUNTS["validation"] * boosting["validation_row_bytes"]
-    assert search["transient"]["cache"] == pages + validation
-    assert search["retained"]["states"] == 3 * value["state_bytes"]["xgboost"]
+    # Páginas densas de 6 bits con 64 contenedores. La validación no ocupa disco.
+    assert search["transient"]["cache"] == -(-COUNTS["train"] * boosting["features"] * 6 // 8)
+    # Tras el recibo solo queda el elegido. Los de recuperación existen mientras corre.
+    assert search["retained"]["states"] == value["state_bytes"]["xgboost"]
+    assert search["transient"]["recovery"] == 2 * value["state_bytes"]["xgboost"]
+    kept = storage.job_footprint(job("xgboost"), COUNTS, value, release=False)
+    assert kept["retained"]["states"] == 3 * value["state_bytes"]["xgboost"]
     finalist = storage.job_footprint(job("xgboost", case=None), COUNTS, value)
-    assert finalist["transient"]["cache"] == -(-COUNTS["train"] * boosting["features"] * 9 // 8) + (
-        validation
-    )
-    capped = dict(COUNTS, validation=10**9)
-    limit = storage.job_footprint(job("xgboost"), capped, value)["transient"]["cache"]
-    assert (
-        limit - finalist["transient"]["cache"] + validation
-        == boosting["max_validation_cache_bytes"]
-    )
+    assert finalist["transient"]["cache"] == COUNTS["train"] * boosting["features"]
+    larger = dict(COUNTS, validation=10**9)
+    cache = storage.job_footprint(job("xgboost"), larger, value)["transient"]["cache"]
+    assert cache == finalist["transient"]["cache"]
 
 
 def test_carry_jobs_write_only_calibration_and_evaluation():
@@ -296,6 +314,64 @@ def test_release_confirmed_removes_only_stale_xgboost_caches(tmp_path):
     released = storage.release_confirmed(folder, "xgboost")
     assert released["external_caches"] > 0 and model.exists()
     assert not (folder / "external-abc").exists()
+
+
+def boosters(folder, *, selected_round=10, rounds=(10, 14), status="completed"):
+    """Intento terminado de XGBoost con su elegido y sus boosters de recuperación."""
+    (folder / "checkpoints").mkdir(parents=True)
+    records = {}
+    for count in sorted({selected_round, *rounds}):
+        path = folder / f"checkpoints/attempt-0001-round-{count:04d}.ubj"
+        path.write_bytes(b"booster" * count)
+        records[count] = dict(path=str(path.relative_to(folder)), sha256=sha256(path))
+    report = dict(
+        status=status,
+        checkpoint=records[selected_round],
+        recovery_checkpoint=records[rounds[-1]],
+        recovery_checkpoints=[records[count] for count in rounds],
+    )
+    atomic_json(folder / "run.json", report)
+    return records
+
+
+def test_release_confirmed_keeps_the_selected_booster_and_drops_the_recovery_ones(tmp_path):
+    folder = tmp_path / "attempt-0001"
+    records = boosters(folder)
+    released = storage.release_confirmed(folder, "xgboost")
+    assert released["recovery_boosters"] == len(b"booster") * 14
+    assert (folder / records[10]["path"]).is_file()
+    assert not (folder / records[14]["path"]).exists()
+    assert json.loads((folder / "released.json").read_text())["recovery_boosters"] > 0
+    assert storage.release_confirmed(folder, "xgboost") == dict(recovery_boosters=0)
+    # Un elegido que coincide con la última ronda se conserva.
+    last = tmp_path / "last"
+    records = boosters(last, selected_round=14)
+    storage.release_confirmed(last, "xgboost")
+    assert (last / records[14]["path"]).is_file() and not (last / records[10]["path"]).exists()
+
+
+def test_boosters_are_not_released_without_a_completed_and_intact_selection(tmp_path):
+    running = tmp_path / "running"
+    boosters(running, status="running")
+    with pytest.raises(ValueError, match="terminado"):
+        storage.release_confirmed(running, "xgboost")
+    assert len(list((running / "checkpoints").iterdir())) == 2
+    broken = tmp_path / "broken"
+    records = boosters(broken)
+    (broken / records[10]["path"]).write_bytes(b"otro")
+    with pytest.raises(ValueError, match="elegido no conserva"):
+        storage.release_confirmed(broken, "xgboost")
+    assert (broken / records[14]["path"]).is_file()
+    changed = tmp_path / "changed"
+    records = boosters(changed)
+    (changed / records[14]["path"]).write_bytes(b"otro")
+    with pytest.raises(ValueError, match="ha cambiado"):
+        storage.release_confirmed(changed, "xgboost")
+    # Un traslado de XGBoost no tiene boosters de recuperación que liberar.
+    carry = tmp_path / "carry"
+    carry.mkdir()
+    atomic_json(carry / "carry.json", dict(status="completed"))
+    assert storage.release_confirmed(carry, "xgboost") == dict(recovery_boosters=0)
 
 
 # Integración con la campaña: dobles que no ajustan y disco libre simulado.

@@ -12,6 +12,11 @@ La estimación aplica esos caudales al presupuesto de transiciones, a las valida
 la selección y a la evaluación por coste de cada trabajo. Es orientativa: el motor nativo
 recorre sus entornos en C++ sin el control de Python, que aquí sí se mide, y no se miden
 el paso de Adam, las oleadas de KLPO, el replay de Double DQN ni los puntos de control.
+
+`native_policy_hours` usa en su lugar los tiempos del motor nativo que mide
+`mars-titan-policy-benchmark` sobre cintas reconstruidas y cuenta el trabajo de cada motor:
+minilotes por recorrido en PPO, un minilote por transición en Double DQN y oleadas completas
+con una actualización en KLPO.
 """
 
 import math
@@ -217,6 +222,153 @@ def measure_policies(stage, *, steps=2048, warmup=64, library=None):
     )
 
 
+# Lo que la estimación con el motor nativo no puede medir mientras rige el bloqueo.
+NATIVE_NOT_MEASURED = [
+    "Paso de Adam: se cuentan los pasos de cada brazo, sin tiempo",
+    "Muestreo del replay de Double DQN y sincronización de su red objetivo",
+    "Puntos de control, lectura de cintas, recibos y arranque de cada proceso",
+]
+NATIVE_FIELDS = (
+    "ppo_tick_seconds",
+    "double_dqn_tick_seconds",
+    "klpo_transition_seconds",
+    "klpo_objective_transition_seconds",
+    "minibatch_seconds",
+    "forward_seconds",
+    "gae_seconds",
+    "evaluation_step_seconds",
+    "reference_step_seconds",
+)
+DQN_WARMUP = 256
+
+
+def _sessions(stage, scope, window):
+    """Días hábiles del tramo de evaluación de una ventana, sin festivos."""
+    resolved = stage["campaign"]["comparison_config"]["resolved_scopes"]
+    start, end = resolved[scope]["windows"][window]["evaluation"]
+    return int(np.busday_count(start, end))
+
+
+def native_fit_work(stage, job):
+    """Unidades de trabajo de un ajuste nativo según su motor, sin tiempos.
+
+    PPO recoge el presupuesto en pasos de `environments` entornos y hace épocas de
+    minilotes por recorrido. Double DQN hace un minilote por transición elegible a partir
+    del calentamiento. KLPO recoge oleadas completas, un episodio por entorno que recorre
+    en ciclo las ventanas de ajuste, y hace una actualización por oleada.
+    """
+    policies = stage["policies"]
+    budget, hyper = policies["budget"], policies["hyperparameters"]
+    transitions, environments = budget["transitions"], budget["environments"]
+    evaluation = budget["evaluation_transitions"]
+    if job["engine"] == "native_klpo":
+        wave = sum(
+            _sessions(stage, job["scope"], job["train"][lane % len(job["train"])]) - 1
+            for lane in range(environments)
+        )
+        waves = transitions // wave
+        every = max(1, evaluation // wave)
+        return dict(
+            engine="klpo",
+            collected=waves * wave,
+            waves=waves,
+            adam_steps=waves,
+            validations=1 + waves // every + (1 if waves % every else 0),
+        )
+    rollouts = math.ceil(transitions / budget["rollout_transitions"])
+    variant = policies["policies"][job["arm"]]["variant"]
+    minibatches = math.ceil(budget["rollout_transitions"] / hyper["minibatch_size"])
+    updates = (
+        transitions - DQN_WARMUP
+        if variant == "double_dqn"
+        else rollouts * hyper["epochs"] * minibatches
+    )
+    return dict(
+        engine=variant,
+        collected=transitions,
+        ticks=math.ceil(transitions / environments),
+        rollouts=rollouts,
+        adam_steps=updates,
+        validations=1 + math.ceil(transitions / evaluation),
+    )
+
+
+def native_policy_hours(stage, measured):
+    """Horas de la etapa en serie con los tiempos del motor nativo medidos sin aprendizaje.
+
+    `measured` contiene, por mercado, los segundos de `NATIVE_FIELDS` en un dispositivo:
+    un paso de recogida con todos los entornos, la recogida y el objetivo de KLPO por
+    transición, el forward y backward y el forward sin gradiente de un minilote, la GAE de
+    un recorrido y un paso de un carril con y sin red. Un minilote de Double DQN cuenta un
+    forward y backward y dos forwards sin gradiente. Sin el paso de Adam, las horas son una
+    cota inferior: el resultado cuenta esos pasos por brazo para completarla después.
+    """
+    for market, values in measured.items():
+        _require_fields(values, market)
+    costs = len(stage["policies"]["evaluation_costs_bps"])
+    totals = dict(
+        hours=0.0, adam_steps=Counter(), arms=Counter(), levels=Counter(), scopes=Counter()
+    )
+
+    def seconds(job):
+        rate = measured[job["market"]]
+        evaluated = costs * _sessions(stage, job["scope"], job["window"])
+        if job["kind"] == REFERENCE:
+            return evaluated * rate["reference_step_seconds"], 0
+        total = evaluated * rate["evaluation_step_seconds"]
+        if job["kind"] != FIT:
+            return total, 0
+        work = native_fit_work(stage, job)
+        total += (
+            work["validations"]
+            * _sessions(stage, job["scope"], job["validation"])
+            * rate["evaluation_step_seconds"]
+        )
+        if work["engine"] == "klpo":
+            per_transition = (
+                rate["klpo_transition_seconds"] + rate["klpo_objective_transition_seconds"]
+            )
+            return total + work["collected"] * per_transition, work["adam_steps"]
+        if work["engine"] == "double_dqn":
+            update = rate["minibatch_seconds"] + 2 * rate["forward_seconds"]
+            total += work["ticks"] * rate["double_dqn_tick_seconds"]
+            return total + work["adam_steps"] * update, work["adam_steps"]
+        total += work["ticks"] * rate["ppo_tick_seconds"] + work["rollouts"] * rate["gae_seconds"]
+        return total + work["adam_steps"] * rate["minibatch_seconds"], work["adam_steps"]
+
+    jobs = plan_stage(stage)
+    for job in jobs:
+        value, steps = seconds(job)
+        hours = value / 3600
+        totals["hours"] += hours
+        totals["arms"][job["arm"]] += hours
+        totals["levels"][job["level"]] += hours
+        totals["scopes"][job["scope"]] += hours
+        totals["adam_steps"][job["arm"]] += steps
+    return dict(
+        status="lower_bound_without_adam",
+        hours=totals["hours"],
+        jobs=dict(Counter(job["kind"] for job in jobs)),
+        arms=dict(totals["arms"]),
+        levels=dict(totals["levels"]),
+        scopes=dict(totals["scopes"]),
+        adam_steps=dict(totals["adam_steps"]),
+        not_measured=NATIVE_NOT_MEASURED,
+    )
+
+
+def _require_fields(values, market):
+    missing = [
+        name
+        for name in NATIVE_FIELDS
+        if type(values.get(name)) not in (int, float)
+        or not math.isfinite(values[name])
+        or values[name] < 0
+    ]
+    if missing:
+        raise ValueError(f"Faltan tiempos nativos de {market}: {', '.join(missing)}")
+
+
 def policy_hours(stage, rates):
     """Horas orientativas de cada ajuste, traslado y referencia de la etapa, por nivel.
 
@@ -238,11 +390,9 @@ def policy_hours(stage, rates):
     for market, measured in rates["stepping"].items():
         backends[market] = "native" if "steps_per_second" in measured["native"] else "python"
         step[market] = 1 / measured[backends[market]]["steps_per_second"]
-    resolved = stage["campaign"]["comparison_config"]["resolved_scopes"]
 
     def sessions(scope, window):
-        start, end = resolved[scope]["windows"][window]["evaluation"]
-        return int(np.busday_count(start, end))
+        return _sessions(stage, scope, window)
 
     def seconds(job):
         per = step[job["market"]]

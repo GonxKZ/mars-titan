@@ -59,9 +59,11 @@ adaptación correspondiente.
 
 La pérdida pinball y los intervalos predictivos quedan fuera de este
 acumulador y se calculan con el contrato de comparación descrito más abajo. NLL
-y ECE no están implementadas. NLL requiere una densidad especificada y ECE
-probabilidades de un evento definido. No se deducen esas salidas de una
-predicción puntual ni de una lista de cuantiles.
+no está implementada porque requiere una densidad especificada, que una lista de
+cinco cuantiles no determina. El ECE sí se calcula, pero sobre un evento definido
+y con una regla declarada antes de los resultados: la [probabilidad implícita de
+subida](#probabilidad-implícita-de-subida-brier-y-ece) que se deduce de los
+cuantiles. Una predicción puntual no tiene esa probabilidad y no recibe ECE.
 
 La [verificación de esta agregación](../../reports/resources/session-evaluation-quality.json)
 registra ejemplos conocidos, cobertura y mutaciones dirigidas. No presenta esos
@@ -185,6 +187,14 @@ al alza 2/3, la precisión a la baja 1/2 y la exhaustividad a la baja 1/2. La
 predicción 5 sobre el objetivo cero no cuenta y la predicción cero sobre −2 es
 un fallo de exhaustividad.
 
+Desde la versión 4 de la comparación, `up_precision` y `down_precision` también
+son series contrastables. Responden a la pregunta de cuántas veces acierta un
+modelo cuando dice que el residuo sube (o baja). Una sesión sin ninguna llamada
+de ese signo no tiene precisión, y el contraste emparejado solo usa las sesiones
+definidas en todos los brazos que intervienen, con el número de sesiones excluidas
+en el informe. La exhaustividad no se contrasta porque un modelo puede subirla
+llamando siempre el mismo signo.
+
 ## Correlación de rangos por sesión
 
 El Rank IC de una sesión es la correlación de Pearson entre los rangos medios
@@ -282,6 +292,62 @@ conservadores (`overcovers`). Si contiene el cero, el resultado es
 cobertura prometida frente a la observada, junto con el error de signo
 comprometido descrito arriba. Una cobertura correcta con intervalos muy anchos
 no informa, por eso se lee siempre con la anchura.
+
+### Puntuación de intervalo
+
+La cobertura y la anchura se leen juntas, pero no se ordenan con un único número.
+La puntuación de intervalo de [Gneiting y Raftery (2007)](https://doi.org/10.1198/016214506000001437)
+las combina. Para el intervalo central $[l,u]=[q_{\tau},q_{1-\tau}]$ con
+$\alpha=2\tau$:
+
+$$
+\operatorname{IS}_\alpha(l,u;y)=(u-l)+\frac{2}{\alpha}(l-y)^{+}+\frac{2}{\alpha}(y-u)^{+},
+\qquad
+\operatorname{IS}_s=\frac{1}{n_s}\sum_{i\in s}\operatorname{IS}_\alpha(l_i,u_i;y_i).
+$$
+
+Es una pérdida propia para el par de cuantiles: menor es mejor y un intervalo
+demasiado estrecho paga cada salida con el factor $2/\alpha$, que vale 10 en el
+intervalo del 80 % ($\tau=0{,}1$) y 40 en el del 95 % ($\tau=0{,}025$). Cumple
+$\tfrac{\alpha}{2}\operatorname{IS}_\alpha=\rho_\tau(y-l)+\rho_{1-\tau}(y-u)$, que las
+pruebas comprueban fila a fila. `interval_score` se informa con cada intervalo
+del resumen y `interval_score@0.8` y `interval_score@0.95` son series por sesión
+que la comparación contrasta como pérdidas, igual que el MAE.
+
+### Probabilidad implícita de subida, Brier y ECE
+
+Los cinco cuantiles definen una función de distribución por tramos. La regla
+`piecewise_linear_cdf_at_zero_flat_beyond_extreme_levels_v1`, declarada el 9 de
+octubre de 2026 antes de cualquier resultado, interpola linealmente entre los
+puntos $(q_j,\tau_j)$ y la deja plana por debajo de $q_{0{,}025}$ y por encima de
+$q_{0{,}975}$. Con un empate entre cuantiles se toma el valor continuo por la
+derecha. La probabilidad de subida es $p_i=1-\hat F_i(0)$ y queda siempre entre
+0,025 y 0,975. La regla no supone una forma de las colas y por eso no afirma más
+seguridad que la que dan los niveles extremos.
+
+El evento es $y_i>0$ y solo se juzgan las filas con $y_i\neq 0$, como en la
+dirección. Por sesión se informa el Brier $\frac{1}{m_s}\sum_i(p_i-\mathbf 1\{y_i>0\})^2$,
+que es una regla propia para probabilidades y la serie `sign_brier` de la
+comparación (pérdida). Para la calibración, las filas se reparten en diez
+intervalos fijos de probabilidad, $[0;0{,}1)$ hasta $[0{,}9;1]$:
+
+$$
+\operatorname{ECE}=\frac{1}{M}\sum_{b=1}^{10}\Bigl|\sum_{i\in b}\mathbf 1\{y_i>0\}-\sum_{i\in b}p_i\Bigr|,
+$$
+
+con $M$ las filas juzgables de todas las sesiones. Es la media ponderada por filas
+de $|\bar y_b-\bar p_b|$ y cada fila pesa lo mismo. La curva de fiabilidad publica
+filas, probabilidad media y frecuencia observada de cada intervalo. El informe
+walk-forward da en `sign_reliability` el ECE de cada semilla, el ECE medio de las
+semillas, la curva agregada y un intervalo percentil por bloques de días: cada
+réplica remuestrea los mismos días para todas las semillas, recalcula el ECE de
+cada una y promedia. Se informa en bruto y con el calibrador común de intervalos.
+
+El ECE con intervalos fijos tiene sesgo positivo con pocas filas por intervalo y
+depende del número de intervalos. Por eso no entra en las familias de contrastes
+y se lee junto al Brier, que sí se contrasta. La probabilidad sale de cuantiles
+entrenados con pinball, no de una cabeza de clasificación, así que una mala
+calibración del signo puede convivir con buenos cuantiles en el centro.
 
 ## Riesgo-cobertura selectiva
 
@@ -504,6 +570,78 @@ de evaluar. La versión 2 de la configuración añade los
 un análisis secundario que no cambia nada de lo anterior. La versión 3 añade la
 [ablación de modalidades en inferencia](#ablación-de-modalidades-en-inferencia),
 otro análisis secundario que tampoco cambia las salidas anteriores.
+
+La versión 4, declarada el 9 de octubre de 2026 antes de cualquier predicción
+real, completa la comparación en tres puntos:
+
+- **Métricas contrastadas.** Además del MAE, el MSE, la dirección, el Rank IC y la
+  pinball, se contrastan la precisión al alza y a la baja, el Brier del signo y la
+  puntuación de los intervalos del 80 % y del 95 %. El informe añade en todas las
+  versiones la fiabilidad del signo (`sign_reliability`).
+- **Familias arquitectónicas.** GRU frente a GRU episódica (`episodic_gru`), el
+  Transformer compacto frente a Titans-MAC `transformer_direct` (`encoder_change`,
+  el cambio de codificador con fusión y cabeza comunes), `mac_online` frente a
+  MARS-TITAN M0 (`episodic_reader`, el lector episódico con la memoria del núcleo
+  activa), M1 frente a CM-v1 B (`cm_v1_base`) y la GRU episódica frente a
+  `mac_online` (`core_vs_episodic_gru`). Con el factorial CM-v1 y las familias
+  anteriores quedan cubiertos B, B+C, B+M y B+C+M, MARS-TITAN con las
+  ampliaciones apagadas (M0) frente a Titans-MAC y el núcleo frente a la GRU
+  episódica. Cada familia lleva su propia corrección por máximo estudentizado.
+- **Cartera.** La sección `long_short` declara la [cartera larga y corta por
+  cuartiles](long-short-portfolio.md), un análisis financiero secundario que
+  calcula `long_short_comparison` con las mismas fuentes.
+
+El 10 de octubre de 2026, también antes de cualquier predicción real, la versión 4
+añade el [control en línea del Transformer](../engineering/transformer-online-control.md)
+(`transformer_compact_online`, #443) y dos familias. `online_learning` contrasta el
+control con el Transformer compacto congelado y `memory_vs_online_learning` contrasta
+MARS-TITAN M1 con el control. El control recibe las mismas etiquetas maduras que el
+banco de M1 en los mismos instantes, así que la segunda familia comprueba si la mejora
+de MARS-TITAN se explica solo por seguir aprendiendo. El brazo entra también en la
+familia de niveles, lo que añade un nivel a su corrección por máximo estudentizado.
+
+Las semillas se agregan así. La comparación solo lee el caso elegido de cada
+brazo, que la campaña A repite con las semillas 42, 43 y 44. Cada semilla tiene
+su resumen y los contrastes, la fiabilidad del signo y la cartera usan la media
+de las semillas sesión a sesión. La incertidumbre sale solo del remuestreo de
+días y una semilla nunca cuenta como una sesión más. Un brazo determinista con
+una semilla, como Ridge, entra con su serie tal cual. Los casos de búsqueda, que
+solo usan la semilla 42, no entran en la comparación y quedan en los recibos de
+selección y el registro de ensayos.
+
+Con el diseño conjunto de la campaña A, el contraste del modelo conjunto frente al
+separado en cada mercado y la exclusión de las métricas chinas anteriores a 2011
+se declaran en la comparación conjunta de `feat/campaign-a-joint-design` (#363),
+que se construye sobre esta versión. No forman parte de este archivo.
+
+### Brazos postentrenados
+
+La [declaración de la comparación postentrenada](../../configs/posttraining/historical-masked-adapter-comparison-a.json)
+no enumera brazos. `posttraining/stage_comparison.py` los deriva del plan de la
+etapa de adaptadores y forma una comparación por padre y ámbito con el padre
+congelado, la continuación completa y los brazos adaptados de la matriz para su
+familia. Así una familia nueva de la matriz entra sin reescribir nada. En el
+[walk-forward por etapas](../engineering/masked-posttraining.md#etapa-por-ventana-de-la-campaña)
+de A, el padre congelado es el trabajo `frozen` de la etapa, que aplica a la
+ventana k el estado elegido por la base en k-1, y el brazo base reentrenado en k
+queda como nivel fuera de las familias. Como la primera ventana de cada ámbito
+no tiene postentrenamiento, la comparación empieza en la segunda. Las familias
+declaradas son `versus_frozen_parent` (adaptados y continuación menos el padre
+congelado) y `versus_full_continuation` (adaptados menos la continuación), más el
+nivel de cada brazo. Todo lo demás se hereda de la comparación de la campaña:
+protocolos, métricas, calibración común, remuestreo y secciones secundarias. Hoy
+salen cinco padres (`rnn`, `lstm`, `gru`, `dlinear` y `transformer_compact`) con
+siete brazos, salvo el Transformer, que tiene once porque la matriz le da puntos
+de lectura. La validación de los recibos por etapas elige el predictor de la
+cadena y no entra en esta comparación.
+
+El manifiesto de fuentes de un padre une las predicciones del padre, leídas del
+manifiesto ya validado de la campaña, con los recibos confirmados de la etapa. Se
+rechaza una etapa con otra declaración, otras vistas o un recibo de otra ejecución,
+vista o identidad, y la comparación exige las mismas filas y objetivos en todos los
+brazos. Cada padre es un análisis secundario propio, sin corrección entre padres,
+y no sirve para elegir la arquitectura base. Sin ablación de modalidades
+conectada para estos brazos, su sección queda pendiente en el informe.
 
 Falta conectar los productores de predicciones. Las referencias neuronales con
 retención `heldout_full_train_sessions_v1` ya escriben archivos por tramo con
@@ -792,6 +930,144 @@ edición real.
   diferencias entre variantes describen poblaciones distintas, igual que los
   estratos.
 
+## Matriz de comparaciones y atribución por componentes
+
+La [matriz de la campaña A](../../configs/evaluation/comparison-matrix-a.json) se
+declaró el 10 de octubre de 2026, antes de cualquier resultado. Fija todas las
+comparaciones que se medirán además de las familias de la comparación walk-forward:
+entre familias, cada variante de MARS-TITAN frente a cada referencia, el núcleo
+Titans-MAC frente a una implementación pública de referencia, la cadena por etapas
+frente al reentreno, al padre trasladado y a la continuación, y el Transformer en línea
+como control de «seguir aprendiendo». Añade la atribución por componentes de dos
+linajes, Titans y CM-v1. La [tabla del protocolo](protocol.md#qué-pregunta-responde-cada-comparación)
+resume en lenguaje llano qué pregunta responde cada bloque.
+`evaluation/comparison_matrix.py` valida la declaración y compila 47 familias con 356
+contrastes. `check` los cuenta sin leer datos y `missing` calcula los brazos que faltan.
+
+### Declaración
+
+Cada pregunta tiene un tipo. `pairwise` compara todos los pares de un grupo, `against`
+compara cada miembro de un grupo con cada referencia de otro y `pairs` declara pares
+[base, variante], con la plantilla `{arm}` repetida para cada miembro de un grupo. Cada
+contraste es variante menos base, como `delta`. Un brazo debe ser de la comparación de la
+campaña, condicionado (`transformer_compact_online`, `titans_reference_mac` y los brazos
+de integración que aún no están en `develop`), derivado (`<brazo>__chain`,
+`<brazo>__frozen_parent` y `<brazo>__full_continuation`) o candidato de atribución. Un
+nombre desconocido se rechaza al cargar. Los condicionados y derivados tienen su propio
+plan y su condición. Los candidatos no forman parte de ningún plan.
+
+La corrección múltiple es la del resto del proyecto. Cada familia es una unidad con su
+máximo estudentizado y no hay corrección entre familias. Las preguntas con plantilla
+forman una familia por miembro, igual que la comparación postentrenada forma una por
+padre. Ninguna familia supera los 64 contrastes de `compare_series`.
+
+### Atribución por componentes
+
+Un linaje declara componentes binarios, sus dependencias estructurales y el conjunto de
+componentes de cada brazo con nombre (`evaluation/component_attribution.py`). El linaje
+Titans va del Transformer compacto a M3: recorrido directo de Titans, atención MAC,
+memoria persistente con lectura y puerta, actualización en inferencia, lector sin
+contenido (M0), contenido del banco (M1), escritura por error maduro (M2) y anomalía con
+relevancia (M3). K = 2 y 4, los episodios de la primera lectura y las dos variantes de B6
+son componentes fuera de la escalera. El linaje CM-v1 tiene C y M sobre su B. Con $v(S)$
+la métrica media del brazo que activa el conjunto $S$:
+
+- **Escalera acumulada**: $v(S_{i+1})-v(S_i)$ en el orden declarado y el total
+  $v(S_n)-v(S_0)$, que es exactamente la suma de los pasos. Cada paso depende del orden.
+- **Dejar uno fuera**: $v(C)-v(C\setminus D(c))$, con $C$ el conjunto completo y $D(c)$
+  el componente y todo lo que depende de él. El informe dice qué retira cada contraste.
+- **Efectos condicionados**: $v(S\cup\{c\})-v(S)$ para cada par de brazos con nombre que
+  solo difiere en $c$. Es la respuesta directa a cuánto aporta una parte según lo demás.
+- **Interacción** en un contexto declarado:
+  $v(S+a+b)-v(S+a)-v(S+b)+v(S)$, la de CM-v1 con $S=B$.
+- **Shapley** de un juego con jugadores $P$ y contexto $S$:
+
+$$
+\phi_i=\sum_{T\subseteq P\setminus\{i\}}\frac{|T|!\,(n-|T|-1)!}{n!}
+\big[v(S\cup T\cup\{i\})-v(S\cup T)\big],
+\qquad \sum_i\phi_i=v(S\cup P)-v(S).
+$$
+
+  Solo se calcula si cada coalición respeta las dependencias. Con dos jugadores es la
+  media de los dos efectos condicionados. En el juego de los ocho componentes del linaje
+  Titans, 236 de las 256 coaliciones activan un componente sin sus dependencias (por
+  ejemplo, actualizar una memoria que no se lee). Ese valor no existe y el informe lo
+  declara como limitación en lugar de aproximarlo.
+
+Todas estas cantidades son combinaciones lineales de brazos, así que se estiman con
+`compare_series` sobre las mismas sesiones y los mismos días remuestreados. Un conjunto
+sin brazo deja su contraste pendiente con lo que falta.
+
+### Vistas de métrica
+
+La evaluación no vuelve a puntuar predicciones. `evaluation/session_table_contrasts.py`
+lee las tablas por sesión que publican la comparación walk-forward y la cartera, con su
+huella, y reconstruye las mismas series. Las pruebas comprueban que un contraste de la
+matriz coincide bit a bit con el mismo contraste del informe que publicó la tabla, en
+todas las métricas, en el conjunto y en cada mercado. Un brazo que aparezca en dos
+informes debe tener las mismas sesiones y valores, y todos los informes deben compartir
+mercados, edición y vistas.
+
+| Vista | Fuente | Métricas |
+| --- | --- | --- |
+| `forecast` | `sessions.parquet` de la comparación, cuantiles en bruto | MAE, MSE, dirección, Rank IC, pinball, precisión por lado, Brier y ECE del signo, puntuación de intervalo |
+| `forecast_calibrated` | La misma tabla con la calibración común | Pinball, Brier y ECE del signo, puntuación de intervalo |
+| `portfolio` | `sessions.parquet` de la cartera | Los siete estadísticos de la cartera por coste y mercado |
+| `policies` | Tabla por sesión de la etapa de políticas | Pendiente de declarar (#137) |
+| `architecture_diagnostics` | Tabla por sesión de los diagnósticos | Pendiente de declarar: retención, regímenes, maduración y Jacobiano |
+
+El ECE no es una media por sesión. Su contraste calcula en cada réplica el ECE de cada
+semilla con los días remuestreados, promedia las semillas y combina los brazos con los
+coeficientes del contraste. Usa los mismos días y réplicas que la fiabilidad del informe
+walk-forward, de modo que el nivel de un brazo reproduce su intervalo. La cartera
+remuestrea sesiones de cada mercado en orden, como su informe, y reutiliza sus contrastes.
+
+Las vistas de políticas y diagnósticos son el punto de conexión de otras etapas. Leen una
+tabla larga con `arm`, `seed`, `market`, `prediction_at`, `metric` y `value`, donde un
+valor nulo es una sesión no definida. Cada métrica se declara en la matriz como pérdida
+(no negativa, menor es mejor) o ganancia antes de ver la tabla. Una métrica sin declarar
+se rechaza. Solo admiten medias por sesión. Un estadístico de recorrido, como el Sharpe
+de una política, necesita la vía de la cartera.
+
+### Coste por hora GPU
+
+Si las fuentes incluyen un documento de horas por brazo, cada efecto lleva su versión por
+hora. Las horas de un brazo se acumulan con las de sus padres, cada antecesor una vez,
+porque un lector no existe sin su padre Titans-MAC. Con los mismos coeficientes del
+contraste, $\Delta h=\sum_a w_a H_a$ y
+
+$$
+\text{mejora por hora}=\frac{s\,\hat\theta}{\Delta h},
+$$
+
+con $s=-1$ si menor es mejor y $s=+1$ si mayor es mejor. El intervalo simultáneo se
+divide por la misma constante, porque las horas se tratan como medidas. Si $\Delta h\le 0$
+la variante no cuesta más y no se calcula el cociente. Un nivel no tiene coste propio.
+El documento declara si las horas son medidas o proyectadas, y el informe lo repite. Hoy
+solo existe la proyección de la campaña A v2. Las horas medidas saldrán de los recibos de
+la campaña, una conversión que todavía no está escrita.
+
+### Brazos que faltan
+
+`missing` cruza cada contraste con la clase de sus brazos. Con la declaración actual, 183
+contrastes solo usan brazos de la campaña, 148 esperan brazos condicionados o derivados y
+25 necesitan alguno de los ocho candidatos. Ningún contraste queda sin nombre. El
+[informe de brazos que faltan](../../reports/engineering/component-attribution-20261010/README.md)
+da el coste estimado de cada candidato con las horas proyectadas, lo que desbloquea por
+sí solo, los lotes que solo sirven juntos y una prioridad calculada. Ningún candidato se
+declara en el plan de la campaña desde aquí.
+
+### Qué no permite afirmar
+
+Un paso de la escalera mide el componente después de los anteriores, no su efecto en
+general. Dejar uno fuera retira también lo que depende del componente. Un efecto
+condicionado vale para su contexto. Shapley reparte una diferencia según una regla de
+simetría, no identifica un mecanismo. Ninguna de estas cantidades es un efecto causal
+económico. Todas son diferencias de error entre brazos ajustados con las mismas filas.
+Con brazos pendientes, una familia se evalúa con los contrastes disponibles y su tamaño
+cambia cuando llegan los demás. El informe lo deja escrito para que no se elija la
+familia después de ver resultados.
+
 ## Coste medido
 
 El [informe de rendimiento](../../reports/resources/forecast-metrics-benchmark.json)
@@ -824,6 +1100,26 @@ que también generó los datos, fue de 1,07 GiB. Con unos 1.250 pares de brazo,
 semilla y ventana en el ámbito US, la extrapolación lineal ronda la media hora
 en un proceso. Es una estimación, no una medida de la campaña real, y no
 justifica por ahora otra implementación.
+
+La versión 4 se midió después a la escala del ámbito US de la campaña A, con datos
+sintéticos de las mismas formas: 19 ventanas, 12.826.460 filas de evaluación,
+3.087.269 de calibración, 23 brazos y 64 series de brazo y semilla. La comparación
+sin estratos tardó 1.678 s con un pico de 1,90 GiB y la cartera larga y corta 860 s
+con 1,96 GiB, en un proceso con dos hilos y la CPU compartida (carga media de 14 a
+18). El tiempo crece casi linealmente con las filas leídas, unos 2 µs por fila y
+serie. El [informe de escala](../../reports/engineering/evaluation-scale-20261009/README.md)
+recoge las cuatro medidas, sus condiciones y la extrapolación al diseño conjunto.
+
+La matriz de comparaciones se midió con `benchmarks/comparison_matrix.py` sobre una tabla
+por sesión sintética del ámbito US con las mismas sesiones, brazos y semillas que la
+campaña A (19 ventanas, 597.625 filas de sesión y 65 series). Evaluar sus 183 contrastes
+estimables en 20 familias, con las vistas en bruto y calibrada y el ECE del signo, tardó
+152 s con un pico de 1,44 GiB, dos hilos y la CPU compartida (carga media cercana a 23).
+Alrededor del 60 % del tiempo se va en generar los índices del remuestreo por bloques, que
+cada familia repite con la misma semilla. Reutilizarlos ahorraría uno o dos minutos por
+evaluación, poco frente al resto de la evaluación, y no se ha hecho. El
+[informe de brazos que faltan](../../reports/engineering/component-attribution-20261010/README.md)
+recoge la medida y el perfil.
 
 ## Qué no demuestran estas métricas
 

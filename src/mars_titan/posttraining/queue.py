@@ -32,6 +32,7 @@ from mars_titan.training.predictive_parents import _verified_file
 from mars_titan.training.run_receipts import initialize_receipt
 
 from . import adapter_matrix
+from .augmented_inputs import AugmentedInputs
 from .inputs import CONDITIONS, PairedInputs, fingerprint, fit_normalization
 from .matrix_runs import MatrixParent, MatrixWindow
 from .parent_selection import matching_parents, matching_seeds, parent_for_seed
@@ -328,7 +329,7 @@ def run_queue(config, reference, tabular, encoded, output, *, arm="US", stop=Non
                                     else nullcontext()
                                 )
                                 with context as extras:
-                                    data = PairedInputs(
+                                    data = AugmentedInputs(
                                         train,
                                         validation,
                                         cache,

@@ -23,6 +23,7 @@ from mars_titan.simulation import campaign_stage as policy_stage
 from mars_titan.training import campaign_plan as plan
 from mars_titan.training import cm_v1_factorial as cm
 from mars_titan.training import masked_campaign as engine
+from tests.suite_support import skip_without_episodic_native
 from tests.training.test_campaign_plan import CAMPAIGNS, write_variant
 from tests.training.test_mars_titan_campaign import StopAfter
 from tests.training.test_masked_campaign import Recorder, doubles, write_campaign
@@ -218,6 +219,7 @@ def cm_campaign(folder):
 
 @pytest.fixture(scope="module")
 def campaign_run(tmp_path_factory, permitted):
+    skip_without_episodic_native()
     root = tmp_path_factory.mktemp("cm-v1-campaign")
     data = fixture(root / "data", ("US",))
     campaign = cm_campaign(root / "config")

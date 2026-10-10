@@ -1,4 +1,5 @@
 import json
+import os
 from pathlib import Path
 
 import pytest
@@ -102,7 +103,8 @@ def test_conftest_skips_hold_stops_in_setup_and_call_but_not_other_errors(
     pytester, tmp_path, monkeypatch
 ):
     monkeypatch.setenv(HOLD_ENV, str(tmp_path / "absent.json"))
-    monkeypatch.setenv("PYTHONPATH", str(ROOT / "src"))
+    # El conftest común importa tests.suite_support, así que la raíz también va en la ruta.
+    monkeypatch.setenv("PYTHONPATH", os.pathsep.join([str(ROOT / "src"), str(ROOT)]))
     pytester.makeconftest((ROOT / "tests/conftest.py").read_text(encoding="utf-8"))
     pytester.makepyfile(
         """

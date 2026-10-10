@@ -11,6 +11,7 @@ import json
 import os
 import shutil
 from contextlib import nullcontext
+from dataclasses import asdict
 from functools import partial
 from pathlib import Path
 from types import SimpleNamespace
@@ -33,6 +34,7 @@ from mars_titan.training import candidate_walk_forward as walk
 from mars_titan.training import masked_campaign as engine
 from mars_titan.training.corpus_inputs import CorpusDataset
 from mars_titan.training.learning_hold import HOLD_ENV, LearningHoldError
+from mars_titan.training.walk_forward_phases import window_phases
 from tests.training.test_financial_run import RecordingOptimizer
 from tests.training.test_masked_campaign import Recorder, doubles, write_campaign
 from tests.training.test_walk_forward_v2_views import fixture
@@ -54,6 +56,8 @@ SMALL = candidate_run.CandidateRecipe(
 )
 MODEL = dict(feature_seed=43, key_seed=44, dtype="float64")
 SHIFT = 0.01
+# La receta declara el mismo calentamiento de entradas que Titans-MAC y MARS-TITAN.
+WARMUP = json.loads(RECIPE.read_text())["walk_forward"]["warmup_months"]
 
 
 class ShiftedStart(RecordingOptimizer):
@@ -111,6 +115,7 @@ def fit(
         model=MODEL,
         parent_id=parent,
         device="cpu",
+        warmup_months=options.pop("warmup_months", WARMUP),
         optimizer_factory=optimizer,
         **options,
     )
@@ -140,7 +145,8 @@ def test_fit_window_writes_the_view_rows_receipts_and_selected_state(views, anch
     dataset = CorpusDataset(view, input_policy=HISTORICAL_MASKED)
     assert report["status"] == "completed" and report["final_test_opened"] is False
     assert report["view"]["sha256"] == sha256(view) and report["markets"] == ["US"]
-    assert report["bank_policy"] == walk.CARRY_POLICY
+    assert report["bank_policy"] == walk.bank_policy(WARMUP)
+    assert report["bank_policy"]["warmup_months"] == 12
     assert set(report["predictions"]) == {"validation", "calibration", "evaluation"}
     columns = set(comparison.COLUMNS) | set(QUANTILE_COLUMNS) | {"sample_id", "zero"}
     for name, record in report["predictions"].items():
@@ -155,10 +161,19 @@ def test_fit_window_writes_the_view_rows_receipts_and_selected_state(views, anch
     assert sha256(output / checkpoint["path"]) == checkpoint["sha256"]
     run = json.loads((output / report["run"]["path"]).read_text())
     assert run["best_checkpoint"]["sha256"] == checkpoint["sha256"]
+    # Las fases son las de Titans-MAC, MARS-TITAN y CM-v1 para la misma ventana. Los tramos
+    # medidos observan antes 12 meses de entradas, sin pasar del origen del ajuste.
+    fold = json.loads(view.read_text())["temporal_view"]["fold"]
+    phases = window_phases(fold, WARMUP)
+    assert {name: source["phase"] for name, source in report["sources"].items()} == {
+        name: asdict(phase) for name, phase in phases.items()
+    }
+    evaluation = report["sources"]["evaluation"]["phase"]
+    assert evaluation["warmup_start"] < evaluation["decision_start"]
     # Ningún paso cambia los pesos: el estado elegido es el inicial desplazado.
     train = report["sources"]["train"]
     assert train["phase"]["partition"] == "train"
-    specification = walk.window_sources(dataset, output / "indices", ("train",))["train"]
+    specification = walk.window_sources(dataset, output / "indices", ("train",), WARMUP)["train"]
     expected = shifted_parameters(specification.specification())
     assert checkpoint["parameters_sha256"] == expected
     assert anchor.optimizer.calls > 0
@@ -247,7 +262,9 @@ class StopAfter:
 def test_fit_window_resumes_after_a_pause_with_the_same_state(views, anchor, tmp_path):
     view = views.windows["US"]["fold-000"]
     output = tmp_path / "window"
-    paused, _ = fit(view, output, stop=StopAfter(8))
+    # La validación inicial observa también los 12 meses de calentamiento. Con 16 consultas
+    # la parada llega dentro de la primera época de ajuste.
+    paused, _ = fit(view, output, stop=StopAfter(16))
     assert paused == dict(status="paused", final_test_opened=False)
     assert not (output / walk.WINDOW_REPORT).exists()
     run = json.loads((output / "run/run.json").read_text())
@@ -298,7 +315,9 @@ def carried(views, anchor, allowed):
 def predictor(views, anchor, window, folder, *, adapter=None, audit=False):
     """Recorrido congelado independiente sobre los tramos trasladados de una ventana."""
     dataset = CorpusDataset(views.windows["US"][window], input_policy=HISTORICAL_MASKED)
-    sources = walk.window_sources(dataset, folder / "indices", ("calibration", "evaluation"))
+    sources = walk.window_sources(
+        dataset, folder / "indices", ("calibration", "evaluation"), WARMUP
+    )
     specification = sources["calibration"].specification()
     if adapter is None:
         adapter, recipe, _, _ = walk.anchor_adapter(
@@ -328,7 +347,7 @@ def test_carry_predicts_from_the_anchor_state_without_fitting(views, anchor, car
     assert record["anchor"]["fold"]["id"] == "fold-000" and record["fold"]["id"] == "fold-001"
     # La información del ancla termina en octubre de 2004 y la evaluación empieza en 2006.
     assert record["months_since_anchor_information"] == 15
-    assert record["bank_policy"] == walk.CARRY_POLICY
+    assert record["bank_policy"] == walk.bank_policy(WARMUP)
     assert record["bank_scope"] == dict(world=walk.WORLD, fold="fold-001")
     assert record["recipe"] == SMALL.identity()
     dataset = CorpusDataset(views.windows["US"]["fold-001"], input_policy=HISTORICAL_MASKED)
@@ -476,9 +495,9 @@ def test_campaign_runs_the_candidate_with_the_rows_of_the_other_arms(views, tmp_
     declared = walk.campaign_case
 
     def reduced(case):
-        # Comprueba receta, huella y semilla del caso y conserva su precisión declarada.
-        _, model = declared(case)
-        return SMALL, model
+        # Comprueba receta, huella y semilla del caso y conserva precisión y calentamiento.
+        _, model, warmup = declared(case)
+        return SMALL, model, warmup
 
     monkeypatch.setattr(walk, "campaign_case", reduced)
     executors = doubles(Recorder())
@@ -497,9 +516,10 @@ def test_campaign_runs_the_candidate_with_the_rows_of_the_other_arms(views, tmp_
         stop=SimpleNamespace(requested=False),
     )
     assert summary["status"] == "completed"
-    # Cinco ventanas reentrenadas y ocho trasladadas: GRU con 2 + 2 ajustes y 3 traslados,
-    # candidata con una búsqueda y un traslado por ventana con su única semilla.
-    assert summary["planned"] == dict(training_jobs=5 * 4 + 5, prediction_jobs=8 * 3 + 8)
+    # Hay cinco ventanas reentrenadas y ocho trasladadas. La GRU tiene 2 + 2 ajustes y 3
+    # traslados, y la candidata tiene dos búsquedas, como las demás familias, y un traslado por
+    # ventana con su única semilla.
+    assert summary["planned"] == dict(training_jobs=5 * 4 + 5 * 2, prediction_jobs=8 * 3 + 8)
     jobs = plan.plan_campaign(plan.load_campaign(campaign))
     receipts = {
         job["id"]: json.loads((output / "jobs" / job["id"] / "receipt.json").read_text())
@@ -517,11 +537,18 @@ def test_campaign_runs_the_candidate_with_the_rows_of_the_other_arms(views, tmp_
             }
             assert len(digests) == 1, (job["id"], partition)
         if job["kind"] == plan.CARRY:
-            anchor = receipts[job["depends"][0]]
+            # El ancla es la búsqueda elegida por validación, con desempate por nombre.
+            anchor = receipts[min(job["depends"], key=lambda key: (receipts[key]["score"], key))]
             report = json.loads((output / receipt["report"]["path"]).read_text())
             assert report["anchor"]["checkpoint_sha256"] == anchor["parent"]["sha256"]
             assert receipt["parent"] == anchor["parent"]
-        # Con un único candidato, cada trabajo es el predictor elegido de su semilla.
+        # El recibo de ventana es el del caso elegido por validación, con desempate por nombre.
+        if job["stage"] == "search":
+            prefix = job["id"].rpartition("/")[0] + "/search-"
+            searches = [key for key in receipts if key.startswith(prefix)]
+            assert len(searches) == 2
+            if job["id"] != min(searches, key=lambda key: (receipts[key]["score"], key)):
+                continue
         folder = output / "windows" / scope / job["window"] / "gru_episodic" / f"seed-{job['seed']}"
         for market in ("CN", "US"):
             own = output / receipt["attempt"] / "receipts" / f"{market}.json"
@@ -559,34 +586,46 @@ def test_planner_declares_candidate_jobs_only_with_its_section(tmp_path):
         "B",
         episodic_gru=section(),
         titans_mac=None,
-        limits=dict(max_training_jobs=629 + 17 * 3, max_prediction_jobs=532 + 28 * 3),
+        limits=dict(max_training_jobs=629 + 17 * 4, max_prediction_jobs=532 + 28 * 3),
     )
     report = plan.check_campaign(path)
     assert "episodic_gru" not in report["pending_families"]
     counts = report["counts"]
-    assert (counts["training_jobs"], counts["prediction_jobs"]) == (680, 616)
+    assert (counts["training_jobs"], counts["prediction_jobs"]) == (697, 616)
+    # Hay dos casos de búsqueda con la semilla 42, como en Titans-MAC y el lector, y un finalista
+    # por semilla adicional.
     for scope, (trained, carried) in dict(US=(7, 12), CN=(5, 8)).items():
         assert counts["scopes"][scope]["arms"]["gru_episodic"] == {
-            str(seed): dict(fit=trained, carry=carried) for seed in (42, 43, 44)
+            str(seed): dict(fit=trained * (2 if seed == 42 else 1), carry=carried)
+            for seed in (42, 43, 44)
         }
     jobs = [
         job for job in plan.plan_campaign(plan.load_campaign(path)) if job["arm"] == "gru_episodic"
     ]
-    first = next(job for job in jobs if job["stage"] == "search")
-    assert first["id"] == "US/fold-000/gru_episodic/search-m1_k1"
+    searches = [job for job in jobs if job["stage"] == "search" and job["window"] == "fold-000"]
+    first = searches[0]
+    assert [job["id"].rpartition("/")[2] for job in searches[:2]] == [
+        "search-lr1e-4",
+        "search-lr1e-3",
+    ]
     assert (first["family"], first["model"], first["seed"]) == ("episodic_gru", "episodic_gru", 42)
     assert first["case"] == dict(
-        recipe=str(RECIPE.resolve()), recipe_sha256=sha256(RECIPE), variant="m1_k1", seed=42
+        recipe=str(RECIPE.resolve()),
+        recipe_sha256=sha256(RECIPE),
+        variant="m1_k1",
+        seed=42,
+        search_case="lr1e-4",
     )
     finalists = [
         job for job in jobs if job["stage"] == "finalist" and job["id"].startswith("US/fold-000/")
     ]
-    assert [job["depends"] for job in finalists] == [[first["id"]]] * 2
+    us_searches = [job["id"] for job in searches if job["scope"] == "US"]
+    assert [job["depends"] for job in finalists] == [us_searches] * 2
     carry = next(job for job in jobs if job["id"] == "US/fold-001/gru_episodic/carry-s43")
     assert carry["anchor"] == "fold-000"
     assert carry["depends"] == ["US/fold-000/gru_episodic/finalist-s43"]
     # Con los límites declarados, que ya cuentan Titans-MAC, la sección no cabe.
-    with pytest.raises(ValueError, match="952 trabajos"):
+    with pytest.raises(ValueError, match="969 trabajos"):
         plan.check_campaign(write_variant(tmp_path, "B", episodic_gru=section()))
 
 
@@ -612,6 +651,11 @@ def edited_recipe(tmp_path, **changes):
         dict(recipe=lambda tmp: edited_recipe(tmp, model=dict(output_head="point"))),
         dict(recipe=lambda tmp: edited_recipe(tmp, model=dict(seeds=[42, 43]))),
         dict(recipe=lambda tmp: edited_recipe(tmp, arm="gru")),
+        dict(
+            recipe=lambda tmp: edited_recipe(
+                tmp, walk_forward=dict(search_cases={"lr1e-3": {"learning_rate": 0.001}})
+            )
+        ),
     ],
     ids=[
         "unknown_variant",
@@ -623,6 +667,7 @@ def edited_recipe(tmp_path, **changes):
         "point_head",
         "missing_seed",
         "other_arm",
+        "one_search_case",
     ],
 )
 def test_planner_rejects_a_candidate_section_that_changes_the_design(tmp_path, changes):
@@ -636,15 +681,40 @@ def test_planner_rejects_a_candidate_section_that_changes_the_design(tmp_path, c
 
 def test_campaign_case_reads_the_planned_recipe(tmp_path):
     case = dict(
-        recipe=str(RECIPE.resolve()), recipe_sha256=sha256(RECIPE), variant="m1_k1", seed=43
+        recipe=str(RECIPE.resolve()),
+        recipe_sha256=sha256(RECIPE),
+        variant="m1_k1",
+        seed=43,
+        search_case="lr1e-4",
     )
-    recipe, model = walk.campaign_case(case)
-    assert recipe == candidate_run.load_recipe(RECIPE, variant="m1_k1")[0]
+    recipe, model, warmup = walk.campaign_case(case)
+    assert recipe == candidate_run.load_recipe(RECIPE, variant="m1_k1", search_case="lr1e-4")[0]
+    assert recipe.learning_rate == 1e-4 and recipe.selection["stopping"] == "fixed_budget"
     assert model == dict(feature_seed=43, key_seed=44, dtype="float32")
+    assert warmup == WARMUP == 12
     with pytest.raises(ValueError, match="cambió"):
         walk.campaign_case(case | dict(recipe_sha256="0" * 64))
     with pytest.raises(ValueError, match="no pertenece"):
         walk.campaign_case(case | dict(seed=7))
+    with pytest.raises(ValueError, match="no declara un caso"):
+        walk.campaign_case({k: v for k, v in case.items() if k != "search_case"})
+    with pytest.raises(ValueError, match="no declara un caso"):
+        walk.campaign_case(case | dict(extra=1))
+    # La parada temprana de la campaña sustituye la regla con la misma métrica.
+    rule = dict(
+        metric="session_mae",
+        patience=5,
+        min_delta=1e-05,
+        minimum_epochs=5,
+        stopping="joint_plateau",
+        max_epochs=30,
+    )
+    stopped, _, _ = walk.campaign_case(case | dict(stopping_rule=rule))
+    assert stopped.epochs == 30
+    assert stopped.selection == {k: v for k, v in rule.items() if k != "max_epochs"}
+    assert stopped.learning_rate == recipe.learning_rate
+    with pytest.raises(ValueError):
+        walk.campaign_case(case | dict(stopping_rule=dict(rule, metric="mae")))
     assert plan.CANDIDATE_RECIPE == candidate_run.RECIPE
     for kind, report in ((plan.FIT, walk.WINDOW_REPORT), (plan.CARRY, "carry.json")):
         executor = engine.EXECUTORS[plan.EPISODIC, kind]

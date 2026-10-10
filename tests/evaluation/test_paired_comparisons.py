@@ -9,6 +9,7 @@ from mars_titan.evaluation.forecast_panel import ForecastPanel, SessionSeries
 from mars_titan.evaluation.forecast_scores import score_sessions
 from mars_titan.evaluation.paired_comparisons import (
     circular_block_counts,
+    circular_block_indices,
     compare_series,
     delta,
     interaction,
@@ -384,3 +385,27 @@ def test_numpy_coefficients_and_confidence_are_accepted():
     assert row["estimate"] == pytest.approx(-1.0) and row["relative_improvement_percent"] == 40.0
     with pytest.raises(ValueError, match="no usa modelos"):
         compare_series(family, {"d": {"V": True, "B": -1}}, **OPTIONS)
+
+
+def _counts_before_the_indices(rng, replicates, periods, block_length):
+    """Implementación anterior de los recuentos, conservada para comprobar la paridad."""
+    blocks = -(-periods // block_length)
+    starts = rng.integers(0, periods, size=(replicates, blocks))
+    index = (starts[:, :, None] + np.arange(block_length)) % periods
+    index = index.reshape(replicates, -1)[:, :periods] + periods * np.arange(replicates)[:, None]
+    counts = np.bincount(index.ravel(), minlength=replicates * periods)
+    return counts.reshape(replicates, periods)
+
+
+@pytest.mark.parametrize("periods,block", [(30, 7), (16, 16), (5, 1), (101, 10)])
+def test_indices_keep_the_previous_draws_and_their_counts(periods, block):
+    before = _counts_before_the_indices(np.random.default_rng(9), 300, periods, block)
+    after = circular_block_counts(np.random.default_rng(9), 300, periods, block)
+    assert np.array_equal(before, after)
+    index = circular_block_indices(np.random.default_rng(9), 300, periods, block)
+    assert index.shape == (300, periods)
+    rebuilt = np.stack([np.bincount(row, minlength=periods) for row in index])
+    assert np.array_equal(rebuilt, after)
+    # Dentro de cada bloque los días son consecutivos con recorrido circular.
+    blocks = index[:, : (periods // block) * block].reshape(300, -1, block)
+    assert np.all((np.diff(blocks, axis=2) % periods) == 1 % periods)

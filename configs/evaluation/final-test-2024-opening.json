@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "kind": "final_test_opening_procedure",
+  "status": "declared_not_executed",
+  "declared_at": "2026-10-09",
+  "final_test": {
+    "start": "2024-01-01",
+    "end": "2025-01-01"
+  },
+  "comparison": "historical-masked-2000-comparison.json",
+  "frozen_artefacts": [
+    "trial_registry",
+    "exclusions",
+    "memory_policy",
+    "selection_receipts",
+    "data_edition"
+  ],
+  "steps": [
+    "freeze",
+    "check",
+    "confirm",
+    "record_opening",
+    "prepare_final_targets",
+    "predict_with_frozen_states",
+    "evaluate_declared_comparison",
+    "publish_record"
+  ],
+  "conditions": [
+    "frozen_manifest_unchanged",
+    "repository_clean_at_frozen_commit",
+    "learning_hold_lifted",
+    "no_previous_opening"
+  ],
+  "ledger": "final-test-2024-opening.json",
+  "repository_record": "reports/evaluation/final-test-2024/opening.json",
+  "repeat": "never_even_after_a_failed_opening",
+  "opener": "not_connected"
+}

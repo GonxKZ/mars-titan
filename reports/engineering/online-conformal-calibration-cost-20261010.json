@@ -1,0 +1,224 @@
+{
+ "schema_version": 1,
+ "kind": "online_conformal_cost",
+ "issue": 454,
+ "measured_at": "2026-10-10T00:07:37+00:00",
+ "commit": "075df9f3a50e04cefa9201b723769b6138afc6eb",
+ "sources_sha256": {
+  "src/mars_titan/calibration/online_conformal.py": "a9f5cd519a76f7bd46d3b5df0f743488f86473ce73b0a6f25bd7d9ca472923aa",
+  "src/mars_titan/calibration/conformal_quantiles.py": "364ecd27c39babfe815ac08bd79bac2627fa7dc125a5f0b56148cbf706a2b8ca",
+  "benchmarks/online_conformal_cost.py": "abe39d6d099360857ae163a71dfc23f8d646bf866232ebe43f369ed64c97f231"
+ },
+ "data": "sintéticos con semilla fija, solo para fijar formas. Nada se ajusta ni evalúa",
+ "rate_fraction": 0.02,
+ "environment": {
+  "cpu": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+  "cpu_count": 16,
+  "threads": {
+   "omp": "2",
+   "mkl": "2",
+   "openblas": "2"
+  },
+  "python": "3.12.14",
+  "numpy": "2.5.3",
+  "load_average_at_start": [
+   14.77392578125,
+   20.80322265625,
+   22.40869140625
+  ],
+  "concurrent_load": "otras sesiones comparten la máquina, ver load_average_at_start"
+ },
+ "not_measured": [
+  "GPU, porque el componente no tiene tensores ni parámetros entrenables",
+  "energía, sin instrumento adecuado",
+  "integración con la comparación por ventanas, todavía pendiente"
+ ],
+ "cases": {
+  "main_h1": {
+   "assets_per_market": 128,
+   "markets": 2,
+   "sessions": 252,
+   "calibration_rows": 16128,
+   "evaluation_rows": 64512,
+   "horizon_sessions": 1,
+   "cohorts_emitted": 504,
+   "cohorts_matured": 502,
+   "start": {
+    "median_s": 0.0033541329903528094,
+    "min_s": 0.003289470972958952,
+    "max_s": 0.004100555001059547,
+    "repeats": 5
+   },
+   "static_fit": {
+    "median_s": 0.0019362280145287514,
+    "min_s": 0.0019281929999124259,
+    "max_s": 0.0019559850043151528,
+    "repeats": 5
+   },
+   "static_apply": {
+    "median_s": 0.0082705510139931,
+    "min_s": 0.0069339699984993786,
+    "max_s": 0.011204954993445426,
+    "repeats": 5
+   },
+   "online_replay": {
+    "median_s": 0.07509742499678396,
+    "min_s": 0.07177975101512857,
+    "max_s": 0.13941483400412835,
+    "repeats": 5
+   },
+   "online_over_static_apply": 9.080099363358647,
+   "emit_latency": {
+    "p50_us": 290.5965084210038,
+    "p95_us": 417.2440050751899,
+    "p99_us": 533.1854103133082,
+    "count": 504
+   },
+   "mature_latency": {
+    "p50_us": 81.04249718599021,
+    "p95_us": 134.79137705871833,
+    "p99_us": 158.05100410943854,
+    "count": 502
+   },
+   "replay_numpy_peak_bytes": 10851328,
+   "export": {
+    "median_s": 6.018299609422684e-05,
+    "min_s": 5.585502367466688e-05,
+    "max_s": 0.00014962098794057965,
+    "repeats": 5
+   },
+   "restore": {
+    "median_s": 0.00010120999650098383,
+    "min_s": 9.128099191002548e-05,
+    "max_s": 0.0001509040012024343,
+    "repeats": 5
+   },
+   "pending_quantile_bytes_at_end": 10240,
+   "median_unchanged": true
+  },
+  "main_h5": {
+   "assets_per_market": 128,
+   "markets": 2,
+   "sessions": 252,
+   "calibration_rows": 16128,
+   "evaluation_rows": 64512,
+   "horizon_sessions": 5,
+   "cohorts_emitted": 504,
+   "cohorts_matured": 494,
+   "start": {
+    "median_s": 0.003502130013657734,
+    "min_s": 0.003319618001114577,
+    "max_s": 0.0036253930011298507,
+    "repeats": 5
+   },
+   "static_fit": {
+    "median_s": 0.001949534023879096,
+    "min_s": 0.0019400150049477816,
+    "max_s": 0.001960964989848435,
+    "repeats": 5
+   },
+   "static_apply": {
+    "median_s": 0.006388996000168845,
+    "min_s": 0.006161728000734001,
+    "max_s": 0.006886270013637841,
+    "repeats": 5
+   },
+   "online_replay": {
+    "median_s": 0.07657890900736675,
+    "min_s": 0.07448801898863167,
+    "max_s": 0.07842427599825896,
+    "repeats": 5
+   },
+   "online_over_static_apply": 11.986063069274572,
+   "emit_latency": {
+    "p50_us": 285.5515049304813,
+    "p95_us": 476.2063414091244,
+    "p99_us": 499.2903748643584,
+    "count": 504
+   },
+   "mature_latency": {
+    "p50_us": 77.6859960751608,
+    "p95_us": 127.93935602530837,
+    "p99_us": 139.65134567115456,
+    "count": 494
+   },
+   "replay_numpy_peak_bytes": 10851232,
+   "export": {
+    "median_s": 0.0001305860059801489,
+    "min_s": 0.0001257859985344112,
+    "max_s": 0.00024294698960147798,
+    "repeats": 5
+   },
+   "restore": {
+    "median_s": 0.00020907301222905517,
+    "min_s": 0.00019724000594578683,
+    "max_s": 0.00025638198712840676,
+    "repeats": 5
+   },
+   "pending_quantile_bytes_at_end": 51200,
+   "median_unchanged": true
+  },
+  "population_h1": {
+   "assets_per_market": 4200,
+   "markets": 2,
+   "sessions": 252,
+   "calibration_rows": 529200,
+   "evaluation_rows": 2116800,
+   "horizon_sessions": 1,
+   "cohorts_emitted": 504,
+   "cohorts_matured": 502,
+   "start": {
+    "median_s": 0.12146041498635896,
+    "min_s": 0.12047901199548505,
+    "max_s": 0.12289299699477851,
+    "repeats": 5
+   },
+   "static_fit": {
+    "median_s": 0.07335444900672883,
+    "min_s": 0.0712106509890873,
+    "max_s": 0.0790483889868483,
+    "repeats": 5
+   },
+   "static_apply": {
+    "median_s": 0.805911079980433,
+    "min_s": 0.7235728500236291,
+    "max_s": 1.017513250990305,
+    "repeats": 5
+   },
+   "online_replay": {
+    "median_s": 1.3165123729850166,
+    "min_s": 1.2918397799949162,
+    "max_s": 1.5748869639937766,
+    "repeats": 5
+   },
+   "online_over_static_apply": 1.633570260650816,
+   "emit_latency": {
+    "p50_us": 2220.1169922482222,
+    "p95_us": 2855.0387476570895,
+    "p99_us": 3558.56576206861,
+    "count": 504
+   },
+   "mature_latency": {
+    "p50_us": 158.79848797339946,
+    "p95_us": 226.96995292790234,
+    "p99_us": 259.48268768843263,
+    "count": 502
+   },
+   "replay_numpy_peak_bytes": 355373536,
+   "export": {
+    "median_s": 0.00029921301756985486,
+    "min_s": 0.0002668410015758127,
+    "max_s": 0.0003694949846249074,
+    "repeats": 5
+   },
+   "restore": {
+    "median_s": 0.0005086160090286285,
+    "min_s": 0.0004961820086464286,
+    "max_s": 0.0005395839980337769,
+    "repeats": 5
+   },
+   "pending_quantile_bytes_at_end": 336000,
+   "median_unchanged": true
+  }
+ }
+}

@@ -259,7 +259,7 @@ def test_external_masked_run_needs_an_explicit_disk_budget_before_reading(
 
 
 def test_external_masked_plan_uses_the_five_bits_and_the_validation_cache(
-    masked, tmp_path, monkeypatch
+    masked, tmp_path, monkeypatch, learning_doubles
 ):
     plans = external(monkeypatch)
     output = tmp_path / "xgb"
@@ -280,18 +280,22 @@ def test_external_masked_plan_uses_the_five_bits_and_the_validation_cache(
     features = sum(widths(dataset)) + 5
     (plan,) = plans
     assert plan["features"] == features and plan["rows"] == 4 and plan["on_host"] is False
-    assert plan["other_disk_bytes"] == 6 * (features * 4 + 24) + 2 * 4096
+    # La validación reside en RAM y se comparte entre configuraciones: ya no ocupa disco.
+    assert plan["resident_bytes"] == 6 * (features * 4 + 24) + 2 * 4096
+    assert "other_disk_bytes" not in plan
     assert plan["max_disk_cache_bytes"] == 1024**3 and not output.exists()
 
 
-def test_strict_external_plan_keeps_its_width_and_optional_disk_budget(tmp_path, monkeypatch):
+def test_strict_external_plan_keeps_its_width_and_optional_disk_budget(
+    tmp_path, monkeypatch, learning_doubles
+):
     plans = external(monkeypatch)
     manifest = training_corpus(tmp_path / "data")
     with pytest.raises(LibrariesReached):
         external_corpus.run_external_reference(manifest, tmp_path / "xgb", on_host=False)
     dataset = CorpusDataset(manifest)
     assert plans[0]["features"] == sum(widths(dataset))
-    assert plans[0]["max_disk_cache_bytes"] is None and plans[0]["other_disk_bytes"] == 0
+    assert plans[0]["max_disk_cache_bytes"] is None and plans[0]["resident_bytes"] == 0
 
 
 def masked_search(tmp_path, monkeypatch):

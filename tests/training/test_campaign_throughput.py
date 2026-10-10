@@ -273,8 +273,10 @@ def test_candidate_hours_use_the_section_it_would_declare(variant):
     rates[EPISODIC] = chronological(["gru_episodic"])
     candidate = throughput.estimate_hours(campaign, counts, rates)["families"][EPISODIC]
     assert candidate["declared_in_campaign"] is False
+    # Cada ventana ajustada tiene dos casos de búsqueda y dos semillas más del elegido. Las tres
+    # semillas del elegido se trasladan.
     for scope, (trained, carried) in WINDOWS[variant].items():
-        expected = (3 * trained * FIT + 3 * carried * CARRY) / 3600
+        expected = (4 * trained * FIT + 3 * carried * CARRY) / 3600
         assert candidate["options"][DECLARED]["scopes"][scope]["hours"] == pytest.approx(expected)
     with pytest.raises(ValueError, match="ya declara"):
         throughput.with_candidate(campaign, CANDIDATE)
@@ -284,16 +286,27 @@ def test_candidate_hours_use_the_section_it_would_declare(variant):
         throughput.with_candidate(load_campaign(CAMPAIGNS[variant]), CANDIDATE, "m9")
 
 
+def growing(campaign, step):
+    """Recuentos uniformes salvo el ajuste, que crece `step` filas en cada ventana."""
+    counts, rates = uniform(campaign, ROWS)
+    for windows in counts.values():
+        for index, rows in enumerate(windows.values()):
+            rows["train"] += index * step
+    return counts, rates
+
+
 @pytest.mark.parametrize(
-    ("variant", "fits", "carries", "parents"),
-    [("A", 3915, 0, 45 * 15), ("B", 1479, 2436, 17 * 15)],
+    ("variant", "fits", "predictions", "parents"),
+    [("A", 3654, 630, 42 * 15), ("B", 1479, 2436, 17 * 15)],
 )
 def test_posttraining_hours_cover_every_stage_job_and_each_parent_cache(
-    variant, fits, carries, parents
+    variant, fits, predictions, parents
 ):
     stage = campaign_stage.load_stage(STAGES[variant])
     campaign = load_campaign(CAMPAIGNS[variant])
-    counts, rates = uniform(campaign, ROWS)
+    # Cada ventana añade 12.000 filas de ajuste. En A las nuevas de una ventana son esas
+    # menos la validación y la calibración de la anterior: 6.000.
+    counts, rates = growing(campaign, 12_000)
     # El segundo padre candidato de cada brazo es la mitad de rápido, también al predecir
     # la caché. Sin padre elegido, la estimación usa el más lento.
     rates[throughput.POSTTRAINING] = matrix_points(stage, slower=2.0)
@@ -302,12 +315,31 @@ def test_posttraining_hours_cover_every_stage_job_and_each_parent_cache(
     estimate = throughput.estimate_hours(campaign, counts, rates, stage=stage)
     assert throughput.POSTTRAINING in plan.LATER_STAGES
     matrix = estimate["families"][throughput.POSTTRAINING]
-    assert (matrix["training_jobs"], matrix["prediction_jobs"]) == (fits, carries)
+    assert (matrix["training_jobs"], matrix["prediction_jobs"]) == (fits, predictions)
     assert matrix["parent_caches"] == parents
-    # La matriz ajusta 5 épocas: 5 de 720 s, 7 validaciones, calibración y evaluación.
-    fit = 5 * 720 + (7 * 4_000 + 10_000) / 200
-    expected = fits * fit + carries * 10_000 / 200 + parents * (36_000 + 4_000) / 200
+    # La matriz ajusta 5 épocas a 50 filas/s, 7 validaciones, calibración y evaluación.
+    validation = (7 * 4_000 + 10_000) / 200
+    if variant == "A":
+        # Padre congelado: validación, calibración y evaluación con la inferencia del padre.
+        fit = 5 * 6_000 / 50 + validation
+        expected = fits * fit + predictions * 14_000 / 200 + parents * (6_000 + 4_000) / 200
+    else:
+        # El plan anclado ajusta el tramo entero de cada ancla y traslada a las demás.
+        jobs = [job for job in campaign_stage.plan_stage(stage) if job["kind"] == "fit"]
+        trains = [counts[job["scope"]][job["window"]]["train"] for job in jobs]
+        caches = {(job["scope"], job["window"], job["base_arm"], job["seed"]) for job in jobs}
+        cached = sum(counts[scope][window]["train"] + 4_000 for scope, window, *_ in caches)
+        expected = (
+            sum(5 * train / 50 + validation for train in trains)
+            + predictions * 10_000 / 200
+            + cached / 200
+        )
     assert matrix["hours"] == pytest.approx(expected / 3600)
+    flat = uniform(campaign, ROWS)[0]
+    if variant == "A":
+        # Sin filas nuevas en los recuentos la estimación no tiene sentido.
+        with pytest.raises(ValueError, match="no tiene filas nuevas"):
+            throughput.estimate_hours(campaign, flat, rates, stage=stage)
     other = campaign_stage.load_stage(STAGES["B" if variant == "A" else "A"])
     with pytest.raises(ValueError, match="no parte de esta campaña"):
         throughput.estimate_hours(campaign, counts, rates, stage=other)
@@ -319,7 +351,7 @@ def test_variant_b_costs_less_than_a_with_the_same_rates():
     estimates = []
     for variant in "AB":
         campaign = throughput.with_candidate(load_campaign(CAMPAIGNS[variant]), CANDIDATE)
-        counts, rates = uniform(campaign, ROWS)
+        counts, rates = growing(campaign, 12_000)
         rates[TITANS] = chronological(campaign[TITANS]["arms"])
         rates[EPISODIC] = chronological(["gru_episodic"])
         stage = campaign_stage.load_stage(STAGES[variant])
@@ -757,6 +789,9 @@ def test_candidate_measurement_compares_accumulation_and_recomputation(
     )
     (record,) = rates.values()
     assert record["variant"] == "m1_k1"
+    # Los dos casos solo cambian la tasa de aprendizaje y comparten la medida del primero.
+    assert record["measured_case"] == "lr1e-4"
+    assert record["shared_by_cases"] == ["lr1e-4", "lr1e-3"]
     names = [throughput.option_name(option) for option in throughput.CANDIDATE_OPTIONS]
     assert list(record["options"]) == names
     assert record["declared_option"] == "accumulation_rows=null,recompute=false"
@@ -981,7 +1016,7 @@ def doubled(monkeypatch):
     monkeypatch.setenv("CUBLAS_WORKSPACE_CONFIG", ":4096:8")
     monkeypatch.setattr(experiment_resources, "GpuLease", Lease)
     monkeypatch.setattr(
-        throughput, "_window_counts", lambda campaign, views: uniform(campaign, ROWS)[0]
+        throughput, "_window_counts", lambda campaign, views: growing(campaign, 12_000)[0]
     )
 
     def double(name, result):

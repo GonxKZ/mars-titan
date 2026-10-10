@@ -412,9 +412,12 @@ struct KlpoTerminalCollector::Impl {
         bool committed = false;
         busy = true;
         try {
-            const auto current = context ? context->observations()
-                                         : observations(environment->observations(), inputs.size(),
-                                                        environment->observation_width());
+            const auto current = (context ? context->observations()
+                                          : observations(environment->observations(), inputs.size(),
+                                                         environment->observation_width()))
+                                     .contiguous();
+            const auto width = static_cast<std::size_t>(current.size(1));
+            const std::span current_values(current.const_data_ptr<float>(), inputs.size() * width);
             auto proposed_hidden = hidden.clone();
             std::vector<KlpoEpisodeStep> prepared(inputs.size());
             std::vector<uint8_t> active(inputs.size(), 0), actions(inputs.size(), 1);
@@ -436,9 +439,7 @@ struct KlpoTerminalCollector::Impl {
                 step.sampled = step.cursor >= episode.spec.forced_prefix;
                 require(step.sampled == (eligible[lane] != 0),
                         "La elegibilidad cambió respecto al prefijo declarado");
-                const auto row = current[static_cast<int64_t>(lane)].contiguous();
-                const std::span values(row.const_data_ptr<float>(),
-                                       static_cast<std::size_t>(row.numel()));
+                const auto values = current_values.subspan(lane * width, width);
                 step.observation.assign(values.begin(), values.end());
                 (step.sampled ? selected : forced).push_back(static_cast<int64_t>(lane));
             }
@@ -462,14 +463,20 @@ struct KlpoTerminalCollector::Impl {
                                           packed.select(1, 1), valid);
                     require((weights > 0).all().item<bool>(),
                             "KLPO requiere soporte positivo en las seis acciones");
+                    // Filas contiguas en CPU: acción, logaritmo y valor, y los seis pesos.
+                    constexpr std::size_t packed_width = 3;
+                    const std::span packed_values(packed.const_data_ptr<double>(),
+                                                  lanes.size() * packed_width);
+                    const std::span weight_values(weights.const_data_ptr<float>(),
+                                                  lanes.size() * klpo_record_action_count);
                     for (std::size_t index = 0; index < lanes.size(); ++index) {
                         const auto lane = static_cast<std::size_t>(lanes[index]);
                         prepared[lane].action = static_cast<uint8_t>(
-                            packed[static_cast<int64_t>(index)][0].item<int64_t>());
+                            static_cast<int64_t>(packed_values[index * packed_width]));
                         actions[lane] = prepared[lane].action;
-                        const auto row = weights[static_cast<int64_t>(index)];
-                        std::copy_n(row.const_data_ptr<float>(), klpo_record_action_count,
-                                    prepared[lane].behavior.begin());
+                        const auto row = weight_values.subspan(index * klpo_record_action_count,
+                                                               klpo_record_action_count);
+                        std::copy(row.begin(), row.end(), prepared[lane].behavior.begin());
                     }
                 } else {
                     next = actor->infer(rows, state).next_state;
@@ -502,12 +509,16 @@ struct KlpoTerminalCollector::Impl {
                 context->commit();
             }
             hidden = std::move(proposed_hidden);
+            std::vector<std::size_t> validated(inputs.size());
             for (std::size_t lane = 0; lane < inputs.size(); ++lane) {
+                validated[lane] = recorded.episodes[lane].steps.size();
                 if (active[lane] != 0) {
                     recorded.episodes[lane].steps.push_back(std::move(prepared[lane]));
                 }
             }
-            validate_klpo_batch(recorded, false);
+            // Los pasos anteriores ya se validaron y solo cambian al restaurar otro estado.
+            // La oleada completa se valida entera al serializarla y al calcular su objetivo.
+            validate_klpo_batch(recorded, false, validated);
             if (failure) {
                 failure(KlpoCollectionBoundary::committed);
             }

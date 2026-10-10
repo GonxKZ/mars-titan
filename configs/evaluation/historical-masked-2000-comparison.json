@@ -1,5 +1,5 @@
 {
-  "schema_version": 3,
+  "schema_version": 4,
   "kind": "walk_forward_comparison",
   "name": "historical-masked-2000",
   "status": "declared_before_evaluation",
@@ -86,6 +86,15 @@
     },
     "transformer_compact": {
       "family": "neural_reference",
+      "output": "quantile_head_v1",
+      "seeds": [
+        42,
+        43,
+        44
+      ]
+    },
+    "transformer_compact_online": {
+      "family": "online_control",
       "output": "quantile_head_v1",
       "seeds": [
         42,
@@ -252,7 +261,12 @@
       "mse",
       "direction_accuracy",
       "rank_ic",
-      "pinball"
+      "pinball",
+      "up_precision",
+      "down_precision",
+      "sign_brier",
+      "interval_score@0.8",
+      "interval_score@0.95"
     ],
     "block_length": 16,
     "sensitivity_block_lengths": [
@@ -310,6 +324,55 @@
         "second": "cm_v1_bm",
         "joint": "cm_v1_bcm"
       },
+      "episodic_gru": {
+        "kind": "delta",
+        "base": "gru",
+        "variants": [
+          "gru_episodic"
+        ]
+      },
+      "encoder_change": {
+        "kind": "delta",
+        "base": "transformer_compact",
+        "variants": [
+          "titans_transformer_direct"
+        ]
+      },
+      "episodic_reader": {
+        "kind": "delta",
+        "base": "titans_mac_online",
+        "variants": [
+          "mars_titan_m0"
+        ]
+      },
+      "cm_v1_base": {
+        "kind": "delta",
+        "base": "mars_titan_m1",
+        "variants": [
+          "cm_v1_b"
+        ]
+      },
+      "core_vs_episodic_gru": {
+        "kind": "delta",
+        "base": "gru_episodic",
+        "variants": [
+          "titans_mac_online"
+        ]
+      },
+      "online_learning": {
+        "kind": "delta",
+        "base": "transformer_compact",
+        "variants": [
+          "transformer_compact_online"
+        ]
+      },
+      "memory_vs_online_learning": {
+        "kind": "delta",
+        "base": "transformer_compact_online",
+        "variants": [
+          "mars_titan_m1"
+        ]
+      },
       "levels": {
         "kind": "level",
         "arms": [
@@ -320,6 +383,7 @@
           "gru",
           "dlinear",
           "transformer_compact",
+          "transformer_compact_online",
           "gru_episodic",
           "titans_transformer_direct",
           "titans_mac_disabled",
@@ -408,5 +472,47 @@
       "usefulness_of_the_modality_for_the_forecast",
       "performance_of_a_model_trained_without_the_modality"
     ]
+  },
+  "long_short": {
+    "kind": "quartile_long_short_v1",
+    "status": "secondary_financial",
+    "declared_at": "2026-10-09",
+    "use": "description_and_paired_contrasts_not_for_model_selection",
+    "signal": "point_prediction",
+    "fraction": 0.25,
+    "min_assets": 30,
+    "ties": "exclude_tied_group_crossing_the_boundary",
+    "exposure": {
+      "long": 0.5,
+      "short": 0.5
+    },
+    "unfilled": "cash_without_renormalization",
+    "holding": "next_session_open_to_close_from_cash",
+    "price_basis": "unadjusted_reconstructed",
+    "market_rules": {
+      "US": "none",
+      "CN": "cn_a_share_v1"
+    },
+    "cost_bps_per_side": [
+      0,
+      5,
+      10,
+      20
+    ],
+    "annualization_sessions": {
+      "US": 252,
+      "CN": 243
+    },
+    "seeds": "mean_of_seed_session_returns",
+    "statistics": [
+      "cumulative_return",
+      "annualized_return",
+      "mean_net_return",
+      "volatility",
+      "sharpe",
+      "max_drawdown",
+      "turnover"
+    ],
+    "views": "per_market"
   }
 }

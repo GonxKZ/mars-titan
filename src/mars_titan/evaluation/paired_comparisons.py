@@ -40,17 +40,24 @@ def level(model):
     return {model: 1.0}
 
 
-def circular_block_counts(rng, replicates, periods, block_length):
-    """Veces que aparece cada día en cada réplica del bootstrap circular por bloques.
+def circular_block_indices(rng, replicates, periods, block_length):
+    """Días de cada réplica del bootstrap circular por bloques, en el orden remuestreado.
 
     Cada réplica concatena ceil(P / L) bloques de L días consecutivos con inicio
     uniforme y recorrido circular, y trunca a P días. Todos los días tienen la
-    misma probabilidad de aparecer, también los de los extremos.
+    misma probabilidad de aparecer, también los de los extremos. El orden sirve
+    a los estadísticos que dependen del recorrido, como el drawdown máximo.
     """
     blocks = -(-periods // block_length)
     starts = rng.integers(0, periods, size=(replicates, blocks))
     index = (starts[:, :, None] + np.arange(block_length)) % periods
-    index = index.reshape(replicates, -1)[:, :periods] + periods * np.arange(replicates)[:, None]
+    return index.reshape(replicates, -1)[:, :periods]
+
+
+def circular_block_counts(rng, replicates, periods, block_length):
+    """Veces que aparece cada día en cada réplica, con los mismos sorteos que los índices."""
+    index = circular_block_indices(rng, replicates, periods, block_length)
+    index = index + periods * np.arange(replicates)[:, None]
     counts = np.bincount(index.ravel(), minlength=replicates * periods)
     return counts.reshape(replicates, periods)
 
@@ -160,8 +167,12 @@ def _bootstrap(reference, values, defined, weighting, block_length, replicates, 
     return draws
 
 
-def _intervals(estimate, draws, confidence):
-    """Percentiles marginales e intervalos simultáneos por máximo estudentizado."""
+def family_intervals(estimate, draws, confidence):
+    """Percentiles marginales e intervalos simultáneos por máximo estudentizado.
+
+    ``estimate`` tiene un valor por contraste y ``draws`` una fila por réplica. Es la
+    corrección de la familia que usan todas las comparaciones emparejadas.
+    """
     tail = (1 - confidence) / 2
     lower, upper = np.quantile(draws, [tail, 1 - tail], axis=0, method="linear")
     spread = np.std(draws, axis=0, ddof=1)
@@ -209,7 +220,9 @@ def _family(reference, values, defined, estimate, options, block_length, size):
     if np.isnan(draws[:, known]).any():
         return None, "Alguna réplica no contiene sesiones definidas de un mercado necesario"
     claims = known[:size]
-    bounds = _intervals(estimate[:size][claims], draws[:, :size][:, claims], options["confidence"])
+    bounds = family_intervals(
+        estimate[:size][claims], draws[:, :size][:, claims], options["confidence"]
+    )
     family = dict(critical=bounds.pop("critical"), draws=draws)
     for key, value in bounds.items():
         family[key] = np.full(size, np.nan)

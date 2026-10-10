@@ -125,7 +125,8 @@ def test_declared_recipe_searches_two_rates_with_the_titans_budget_and_segments(
     cases = document["walk_forward"]["search_cases"]
     assert document["status"] == "declared_not_executed"
     assert cases == titans["walk_forward"]["search_cases"]
-    assert mt.SEARCHED == titans_walk_forward.SEARCHED
+    # El lector y Titans-MAC validan sus casos con la misma regla compartida.
+    assert mt.checked_search_cases is titans_walk_forward.checked_search_cases
     for name, case in cases.items():
         plan = mt.case_recipe(document, name)
         assert plan.learning_rate == case["learning_rate"]

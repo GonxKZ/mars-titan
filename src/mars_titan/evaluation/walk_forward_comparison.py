@@ -25,6 +25,12 @@ otro análisis secundario. Sus predicciones enmascaradas llegan en un manifiesto
 de la etapa de ablación y se comparan con las originales en las mismas filas, con el
 calibrador ya ajustado. Sin ese manifiesto, la sección queda pendiente y el resto del
 informe no cambia.
+
+La versión 4 declara la cartera larga y corta por cuartiles (``long_short``), que calcula
+``long_short_comparison`` con estas mismas fuentes y comprobaciones. El informe añade en
+todas las versiones la fiabilidad de la probabilidad implícita de subida
+(``sign_reliability``): ECE medio de las semillas con intervalo percentil por bloques de
+días y curva de fiabilidad, en bruto y con el calibrador común.
 """
 
 import argparse
@@ -42,13 +48,28 @@ import pyarrow.compute as pc
 import pyarrow.parquet as pq
 
 from mars_titan.calibration import conformal_quantiles as cqr
+from mars_titan.data import prediction_files
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.input_policy import masked_inputs, policy_identity
 from mars_titan.data.storage import atomic_json, outside_source, sha256
-from mars_titan.evaluation import modality_ablation, modality_strata
+from mars_titan.evaluation import long_short, modality_ablation, modality_strata
 from mars_titan.evaluation.forecast_panel import WEIGHTINGS, ForecastPanel, SessionSeries
-from mars_titan.evaluation.forecast_scores import COVERAGE_ERROR, SessionScores, score_sessions
-from mars_titan.evaluation.paired_comparisons import compare_series, delta, interaction, level
+from mars_titan.evaluation.forecast_scores import (
+    COVERAGE_ERROR,
+    INTERVAL_SCORE,
+    QUANTILE_SERIES,
+    SIGN_BINS,
+    SessionScores,
+    expected_calibration_error,
+    score_sessions,
+)
+from mars_titan.evaluation.paired_comparisons import (
+    circular_block_counts,
+    compare_series,
+    delta,
+    interaction,
+    level,
+)
 from mars_titan.evaluation.splits import build_folds
 from mars_titan.models.quantile_head import LEVELS, QUANTILE_COLUMNS, QUANTILE_HEAD
 from mars_titan.training.temporal_contract import temporal_contracts
@@ -62,7 +83,18 @@ SCOPES = {"US": ("US",), "CN": ("CN",), "US+CN": ("US", "CN")}
 ZERO_CONTROL = "zero_control"
 POINT = "point"
 OUTPUTS = (ZERO_CONTROL, POINT, QUANTILE_HEAD)
-SERIES_METRICS = ("mae", "mse", "direction_accuracy", "rank_ic", "pinball")
+SERIES_METRICS = (
+    "mae",
+    "mse",
+    "direction_accuracy",
+    "rank_ic",
+    "pinball",
+    "up_precision",
+    "down_precision",
+    "sign_brier",
+    f"{INTERVAL_SCORE}0.8",
+    f"{INTERVAL_SCORE}0.95",
+)
 COLUMNS = ("asset_id", "market", "prediction_at", "target", "prediction")
 MAX_FILE_BYTES = 4 * 1024**3
 MAX_ARMS = 64
@@ -91,8 +123,14 @@ _CONFIG_FIELDS = {
 }
 STRATA_FIELD = "modality_strata"
 ABLATION_FIELD = "modality_ablation"
+LONG_SHORT_FIELD = "long_short"
 # Secciones secundarias que añade cada versión de la configuración.
-SECTIONS = {1: set(), 2: {STRATA_FIELD}, 3: {STRATA_FIELD, ABLATION_FIELD}}
+SECTIONS = {
+    1: set(),
+    2: {STRATA_FIELD},
+    3: {STRATA_FIELD, ABLATION_FIELD},
+    4: {STRATA_FIELD, ABLATION_FIELD, LONG_SHORT_FIELD},
+}
 _METRIC_FIELDS = {"primary", "market_weighting", "rank_ic_min_assets", "quantile_head"}
 _CALIBRATION_FIELDS = {"method", "partition", "nominals", "groups", "min_rows", "order_rule"}
 _COMPARISON_FIELDS = {
@@ -226,6 +264,30 @@ def load_config(path):
     """Validar la configuración declarada antes de abrir ninguna predicción."""
     path = Path(path)
     config, digest = read_manifest(path, 1024**2)
+    return validate_config(config, digest, path.parent)
+
+
+def resolve_config(config):
+    """Ruta de una configuración declarada o configuración ya validada por ``validate_config``.
+
+    Una configuración derivada (por ejemplo, la de los brazos postentrenados de un padre)
+    llega ya validada, con su huella y sus ámbitos resueltos.
+    """
+    if isinstance(config, dict):
+        _require(
+            {"sha256", "resolved_scopes", "resolved_families"} <= set(config),
+            "La configuración en memoria debe llegar validada",
+        )
+        return config
+    return load_config(config)
+
+
+def validate_config(config, digest, folder):
+    """Validar una configuración ya leída. ``folder`` resuelve las rutas de los protocolos.
+
+    Cada versión añade las secciones secundarias de ``SECTIONS``. La 4 añade la cartera
+    larga y corta por cuartiles.
+    """
     version = config.get("schema_version") if isinstance(config, dict) else None
     _require(
         isinstance(config, dict)
@@ -310,13 +372,14 @@ def load_config(path):
         modality_strata.declaration(config[STRATA_FIELD], SERIES_METRICS)
     if version >= 3:
         modality_ablation.declaration(config[ABLATION_FIELD])
-    resolved = {
-        scope: _protocols(path.parent, scope, declared) for scope, declared in scopes.items()
-    }
+    if version >= 4:
+        long_short.declaration(config[LONG_SHORT_FIELD])
+    resolved = {scope: _protocols(folder, scope, declared) for scope, declared in scopes.items()}
     return dict(config, sha256=digest, resolved_scopes=resolved, resolved_families=families)
 
 
-def _file(folder, record, label):
+def _file(folder, record, label, *, predictions=False):
+    """Ruta y huella de una fuente. Unas predicciones pueden estar compactadas o liberadas."""
     _require(
         isinstance(record, dict)
         and set(record) == {"path", "sha256"}
@@ -328,6 +391,11 @@ def _file(folder, record, label):
     )
     path = Path(record["path"])
     path = path if path.is_absolute() else folder / path
+    if predictions and not path.exists() and prediction_files.entry(path) is not None:
+        # La retención v2 sustituye las filas por su forma compacta o por sus huellas. Un
+        # archivo que falta sin ese registro se rechaza abajo como cualquier otra fuente.
+        prediction_files.verify(path, record["sha256"])
+        return dict(path=path, sha256=record["sha256"])
     _require(not path.is_symlink() and path.is_file(), f"{label} no es un archivo regular")
     _require(0 < path.stat().st_size <= MAX_FILE_BYTES, f"{label} supera el presupuesto")
     return dict(path=path, sha256=record["sha256"])
@@ -428,7 +496,7 @@ def load_sources(path, config, scope_name):
                 _require(entry["input_policy"] == policy, f"{where} declara otra política")
                 _require(entry["view_sha256"] == views[window_id], f"{where} usa otra vista")
                 files[name, int(seed), window_id] = {
-                    part: _file(path.parent, entry[part], f"{where} ({part})")
+                    part: _file(path.parent, entry[part], f"{where} ({part})", predictions=True)
                     for part in ("calibration", "evaluation")
                     if part in entry
                 }
@@ -443,17 +511,34 @@ def load_sources(path, config, scope_name):
     )
 
 
-def _read_predictions(file, columns):
-    """Leer solo las columnas necesarias después de comprobar huella y tipos."""
-    path = file["path"]
-    _require(sha256(path) == file["sha256"], f"La huella de {path.name} no coincide")
-    schema = pq.read_schema(path)
-    _require(set(columns) <= set(schema.names), f"Faltan columnas en {path.name}")
+def restrict_windows(config, scope, windows):
+    """La configuración validada con un ámbito limitado a algunas de sus ventanas.
+
+    Conserva la huella de la configuración, porque declara lo mismo. Sirve para validar y
+    puntuar las fuentes de una ventana en cuanto termina, antes de tener las demás.
+    """
+    resolved = config["resolved_scopes"][scope]
+    windows = set(windows)
     _require(
-        schema.field("prediction_at").type == pa.timestamp("us", tz="UTC"),
+        windows and windows <= set(resolved["windows"]),
+        "Las ventanas deben ser del ámbito declarado",
+    )
+    kept = {key: value for key, value in resolved["windows"].items() if key in windows}
+    scopes = dict(config["resolved_scopes"], **{scope: dict(resolved, windows=kept)})
+    return dict(config, resolved_scopes=scopes)
+
+
+def _read_predictions(file, columns):
+    """Leer solo las columnas necesarias después de comprobar huella y tipos.
+
+    Un archivo compactado por la retención v2 se lee igual que el original. Uno liberado
+    no tiene filas: su ventana se compara con los agregados guardados o tras regenerarlo.
+    """
+    table = prediction_files.read(file["path"], file["sha256"], columns)
+    _require(
+        table.schema.field("prediction_at").type == pa.timestamp("us", tz="UTC"),
         "Los instantes deben ser timestamp UTC en microsegundos",
     )
-    table = pq.read_table(path, columns=list(columns), use_threads=False)
     _require(all(table[name].null_count == 0 for name in columns), "Hay valores ausentes")
     for name in ("asset_id", "market"):
         _require(
@@ -618,7 +703,10 @@ def _ablation_sources(path, config, sources):
                         f"{where} en {window_id} solo declara su evaluación",
                     )
                     files[variant, name, int(seed), window_id] = _file(
-                        path.parent, entry["evaluation"], f"{where} en {window_id}"
+                        path.parent,
+                        entry["evaluation"],
+                        f"{where} en {window_id}",
+                        predictions=True,
                     )
     return dict(sha256=digest, files=files)
 
@@ -748,7 +836,8 @@ def _views(scores, markets):
 
 
 def _metric_available(scores, metric):
-    return metric != "pinball" or scores.levels is not None
+    quantile = metric in QUANTILE_SERIES or metric.startswith(INTERVAL_SCORE)
+    return not quantile or scores.levels is not None
 
 
 def _seed_series(overall, arm, view, metric):
@@ -833,6 +922,100 @@ def _interval_calibration(config, overall, calibrated, views):
                     comparison=compared,
                 )
     return result
+
+
+def _period_bins(scores):
+    """Filas, probabilidad y subidas por día UTC e intervalo de probabilidad, [días, bins]."""
+    periods = int(scores.session_period.max()) + 1
+    cells = []
+    for values in (scores.sign_bin_rows, scores.sign_bin_probability, scores.sign_bin_up):
+        total = np.zeros((periods, SIGN_BINS))
+        np.add.at(total, scores.session_period, values)
+        cells.append(total)
+    return cells
+
+
+def _ece(items, comparison):
+    """ECE medio de las semillas, su curva conjunta y su intervalo percentil por bloques.
+
+    Las semillas comparten días y réplicas, así que cada réplica promedia los ECE de las
+    semillas con los mismos días remuestreados, como los contrastes de ``compare_series``.
+    El ECE tiene sesgo positivo con pocas filas por intervalo y el intervalo lo describe,
+    no lo corrige.
+    """
+    cells = [_period_bins(scores) for scores in items]
+    totals = [[cell.sum(axis=0) for cell in seed] for seed in cells]
+    estimates = [expected_calibration_error(*seed) for seed in totals]
+    rows, probability, up = (np.sum([seed[i] for seed in totals], axis=0) for i in range(3))
+    result = dict(
+        estimate=None if None in estimates else float(np.mean(estimates)),
+        per_seed=estimates,
+        reliability=[
+            dict(
+                lower=index / SIGN_BINS,
+                upper=(index + 1) / SIGN_BINS,
+                rows=int(rows[index]),
+                mean_probability=float(probability[index] / rows[index]) if rows[index] else None,
+                observed_up_frequency=float(up[index] / rows[index]) if rows[index] else None,
+            )
+            for index in range(SIGN_BINS)
+        ],
+        interval=None,
+        reason=None,
+    )
+    periods, block = cells[0][0].shape[0], comparison["block_length"]
+    if result["estimate"] is None:
+        result["reason"] = "Alguna semilla no tiene filas con objetivo no nulo"
+        return result
+    if block >= periods:
+        result["reason"] = "Se necesitan más días que la longitud del bloque"
+        return result
+    rng = np.random.default_rng(comparison["seed"])
+    draws = []
+    for offset in range(0, comparison["replicates"], 256):
+        size = min(256, comparison["replicates"] - offset)
+        counts = circular_block_counts(rng, size, periods, block).astype(np.float64)
+        values = [expected_calibration_error(*(counts @ cell for cell in seed)) for seed in cells]
+        draws.append(np.mean(values, axis=0))
+    draws = np.concatenate(draws)
+    if np.isnan(draws).any():
+        result["reason"] = "Alguna réplica no contiene filas con objetivo no nulo"
+        return result
+    tail = (1 - comparison["confidence"]) / 2
+    result["interval"] = [float(v) for v in np.quantile(draws, [tail, 1 - tail])]
+    return result
+
+
+def _sign_reliability(config, overall, calibrated, views):
+    """Fiabilidad de la probabilidad implícita de subida por brazo y vista, bruta y calibrada."""
+    comparison = config["comparison"]
+    resampling = dict(
+        method="circular_block_bootstrap",
+        unit="utc_calendar_day_with_all_sessions_and_assets",
+        block_length=comparison["block_length"],
+        replicates=comparison["replicates"],
+        seed=comparison["seed"],
+        confidence=comparison["confidence"],
+        interval="percentile_marginal",
+    )
+    result = {}
+    for arm, items in overall.items():
+        if items[0][next(iter(views))].levels is None:
+            continue
+        result[arm] = {}
+        for view in views:
+            entry = dict(raw=_ece([scores[view] for scores in items], comparison))
+            adjusted = calibrated.get(arm, [None])
+            entry["calibrated"] = (
+                None
+                if None in adjusted
+                else _ece([scores[view] for scores in adjusted], comparison)
+            )
+            entry["calibrated_reason"] = (
+                "Alguna ventana no tiene calibrador" if entry["calibrated"] is None else None
+            )
+            result[arm][view] = entry
+    return dict(resampling=resampling, bins=SIGN_BINS, arms=result)
 
 
 def _session_tables(windows, arm, seed):
@@ -1032,23 +1215,37 @@ def _strata_report(config, scored, overall, markets):
     )
 
 
-def evaluate_walk_forward(config_path, sources_path, scope, *, ablation_sources=None):
+def evaluate_walk_forward(
+    config_path, sources_path, scope, *, ablation_sources=None, aggregates=None
+):
     """Calcular el informe y la tabla por sesión de un ámbito sin escribir nada.
 
+    `config_path` es la ruta de la configuración o una configuración ya validada.
     `ablation_sources` es el manifiesto de la etapa de ablación de modalidades. Solo se
-    admite si la configuración declara la ablación.
+    admite si la configuración declara la ablación. `aggregates` es la carpeta de los
+    agregados por ventana (`window_aggregates`) que guardó la retención v2. Con ella no se
+    lee ninguna predicción por fila, y cada ventana exige agregados de estas mismas fuentes.
     """
     started = time.perf_counter()
-    config = load_config(config_path)
+    config = resolve_config(config_path)
     sources = load_sources(sources_path, config, scope)
     weighting, markets = config["metrics"]["market_weighting"], sources["markets"]
     ablation = None
     if ablation_sources is not None:
         _require(ABLATION_FIELD in config, "La configuración no declara la ablación de modalidades")
         ablation = _ablation_sources(ablation_sources, config, sources)
-    scored = {
-        window: _score_window(sources, config, window, ablation) for window in sources["windows"]
-    }
+    if aggregates is None:
+        scored = {
+            window: _score_window(sources, config, window, ablation)
+            for window in sources["windows"]
+        }
+    else:
+        from . import window_aggregates
+
+        scored = {
+            window: window_aggregates.read(aggregates, config, sources, window, ablation)
+            for window in sources["windows"]
+        }
     per_window = {window: results for window, (results, _) in scored.items()}
     overall, calibrated, arms, tables = {}, {}, {}, []
     for arm, seed in per_window[next(iter(per_window))]:
@@ -1103,6 +1300,7 @@ def evaluate_walk_forward(config_path, sources_path, scope, *, ablation_sources=
         arms=arms,
         contrasts=_contrasts(config, overall, names),
         interval_calibration=_interval_calibration(config, overall, calibrated, names),
+        sign_reliability=_sign_reliability(config, overall, calibrated, names),
         versions={name: version(name) for name in ("numpy", "pyarrow")},
         analysis_source_sha256={
             name: sha256(Path(__file__).parents[1] / name)
@@ -1150,7 +1348,9 @@ def evaluate_walk_forward(config_path, sources_path, scope, *, ablation_sources=
     return report, pa.concat_tables(tables, promote_options="default")
 
 
-def write_walk_forward(config_path, sources_path, scope, output, *, ablation_sources=None):
+def write_walk_forward(
+    config_path, sources_path, scope, output, *, ablation_sources=None, aggregates=None
+):
     """Publicar el informe y las sesiones en un directorio nuevo fuera de las fuentes."""
     output = Path(output)
     safe_destination(output)
@@ -1162,7 +1362,7 @@ def write_walk_forward(config_path, sources_path, scope, output, *, ablation_sou
         outside_source(source, output)
         outside_source(output, source)
     report, sessions = evaluate_walk_forward(
-        config_path, sources_path, scope, ablation_sources=ablation_sources
+        config_path, sources_path, scope, ablation_sources=ablation_sources, aggregates=aggregates
     )
     json.dumps(report, allow_nan=False)
     output.mkdir(parents=True)
@@ -1179,9 +1379,15 @@ def main(argv=None):
     parser.add_argument("--scope", choices=tuple(SCOPES), required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--ablation-sources", type=Path)
+    parser.add_argument("--aggregates", type=Path, help="Agregados por ventana de la retención v2")
     args = parser.parse_args(argv)
     report = write_walk_forward(
-        args.config, args.sources, args.scope, args.output, ablation_sources=args.ablation_sources
+        args.config,
+        args.sources,
+        args.scope,
+        args.output,
+        ablation_sources=args.ablation_sources,
+        aggregates=args.aggregates,
     )
     windows = len(report["windows"])
     print(f"Comparados {len(report['arms'])} brazos en {windows} ventanas. Reserva final cerrada.")

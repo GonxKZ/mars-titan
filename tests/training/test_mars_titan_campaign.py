@@ -18,10 +18,11 @@ import torch
 from mars_titan.data.storage import atomic_json, sha256
 from mars_titan.environments.walk_forward_receipt import read_window_receipt
 from mars_titan.training import campaign_plan as plan
-from mars_titan.training import mars_titan_run
+from mars_titan.training import mars_titan_run, search_cases
 from mars_titan.training import mars_titan_walk_forward as mw
 from mars_titan.training import masked_campaign as engine
 from mars_titan.training import titans_walk_forward as wf
+from tests.suite_support import skip_without_episodic_native
 from tests.training.test_campaign_plan import CAMPAIGNS, write_variant
 from tests.training.test_masked_campaign import Recorder, doubles
 from tests.training.test_titans_campaign import ARM as TITANS_ARM
@@ -69,7 +70,8 @@ def declared(tmp_path, variant="A", **changes):
 
 def test_constants_repeat_the_runner_names_without_importing_torch():
     assert plan.MARS_RECIPE == mars_titan_run.RECIPE
-    assert plan.MARS_SEARCHED == mars_titan_run.SEARCHED
+    assert plan.MARS_SEARCHED == search_cases.SEARCHED
+    assert mars_titan_run.checked_search_cases is search_cases.checked_search_cases
 
 
 @pytest.mark.parametrize("variant", ["A", "B"])
@@ -134,7 +136,8 @@ def test_m3_has_a_producer_and_no_mars_arm_stays_pending(tmp_path):
 
 
 def test_with_every_section_declared_no_compared_arm_lacks_a_producer(tmp_path):
-    """Las 23 armas de la comparación declarada tienen productor con las cuatro secciones."""
+    """Los 24 brazos de la comparación tienen productor con las cuatro secciones, salvo el
+    control en línea, cuyos trabajos declara la campaña A por etapas."""
     from tests.training.test_candidate_walk_forward import section as gru_section
 
     cm = dict(declaration=str(Path("configs/titans/cm-v1-factorial.json").resolve()))
@@ -147,15 +150,18 @@ def test_with_every_section_declared_no_compared_arm_lacks_a_producer(tmp_path):
         limits=dict(max_training_jobs=100_000, max_prediction_jobs=100_000),
     )
     report = plan.check_campaign(path)
-    assert report["pending_families"] == {}
+    # Solo queda el control en línea, cuyos trabajos declara la campaña A por etapas.
+    assert set(report["pending_families"]) == {plan.ONLINE_CONTROL}
     campaign = plan.load_campaign(path)
     compared = campaign["comparison_config"]["arms"]
     planned = {job["arm"] for job in plan.plan_campaign(campaign)}
-    assert len(compared) == 23
+    assert len(compared) == 24
     controls = {name for name, arm in compared.items() if arm["family"] == "control"}
+    online = {name for name, arm in compared.items() if arm["family"] == plan.ONLINE_CONTROL}
+    assert online == {"transformer_compact_online"}
     # Los núcleos de CM-v1 se ajustan como trabajos propios y no son brazos comparados.
     assert planned - set(compared) == set(plan.CM_CORES)
-    assert planned & set(compared) == set(compared) - controls and M3_ARM in planned
+    assert planned & set(compared) == set(compared) - controls - online and M3_ARM in planned
 
 
 def recipe_with(tmp_path, change):
@@ -265,6 +271,7 @@ class StopAfter:
 
 @pytest.fixture(scope="module")
 def campaign_run(tmp_path_factory, permitted):
+    skip_without_episodic_native()
     root = tmp_path_factory.mktemp("mars-titan-campaign")
     data = fixture(root / "data", ("US",))
     campaign = mars_campaign(root / "config")

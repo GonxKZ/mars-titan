@@ -27,9 +27,9 @@ ADDED = (plan.EPISODIC, plan.MARS, plan.CM)
 COUNTS = dict(
     A=dict(
         declared=(2385, 0),
-        families={plan.EPISODIC: (135, 0), plan.MARS: (1080, 0), plan.CM: (1080, 0)},
-        extended=(4680, 0),
-        adapters=(3915, 0),
+        families={plan.EPISODIC: (180, 0), plan.MARS: (1080, 0), plan.CM: (1080, 0)},
+        extended=(4725, 0),
+        adapters=(3654, 630),
         rl=dict(
             declared=dict(training_jobs=1368, carried_jobs=0, reference_jobs=792),
             extended=dict(training_jobs=2160, carried_jobs=0, reference_jobs=1584),
@@ -37,8 +37,8 @@ COUNTS = dict(
     ),
     B=dict(
         declared=(901, 868),
-        families={plan.EPISODIC: (51, 84), plan.MARS: (408, 504), plan.CM: (408, 336)},
-        extended=(1768, 1792),
+        families={plan.EPISODIC: (68, 84), plan.MARS: (408, 504), plan.CM: (408, 336)},
+        extended=(1785, 1792),
         adapters=(1479, 2436),
         rl=dict(
             declared=dict(training_jobs=456, carried_jobs=912, reference_jobs=792),
@@ -63,8 +63,9 @@ def test_prepared_limits_are_the_exact_counts_of_the_campaign_and_both_stages(va
     assert (limits["max_training_jobs"], limits["max_prediction_jobs"]) == expected["extended"]
     added = [expected["families"][family] for family in ADDED]
     assert tuple(map(sum, zip(expected["declared"], *added, strict=True))) == expected["extended"]
-    # Con las tres secciones ningún brazo de la comparación queda pendiente, M3 incluido.
-    assert campaign["pending_families"] == {}
+    # Con las tres secciones solo queda pendiente el control en línea, cuyos trabajos declara
+    # la campaña A por etapas. M3 tampoco queda pendiente.
+    assert set(campaign["pending_families"]) == {plan.ONLINE_CONTROL}
     assert pair(report["adapter_stage"]["counts"]) == expected["adapters"]
     rl = report["rl_stage"]
     assert rl["predictors"] == dict(declared=11, extended=22)
@@ -128,7 +129,7 @@ def test_the_declared_configurations_stay_untouched():
     for variant in "AB":
         campaign = plan.load_campaign(CAMPAIGNS[variant])
         assert not any(campaign.get(family) for family in ADDED)
-        assert set(plan.pending_families(campaign)) == set(ADDED)
+        assert set(plan.pending_families(campaign)) == {*ADDED, plan.ONLINE_CONTROL}
         counts = plan.count_jobs(campaign)
         assert (counts["training_jobs"], counts["prediction_jobs"]) == COUNTS[variant]["declared"]
         stage = policy_plan.load_stage(RL_STAGES[variant])
@@ -144,7 +145,7 @@ def test_the_declared_configurations_stay_untouched():
 @pytest.mark.parametrize(
     ("where", "value", "message"),
     [
-        (("limits", "max_training_jobs"), 4679, "prevé 4680 trabajos.*max_training_jobs=4679"),
+        (("limits", "max_training_jobs"), 4724, "prevé 4725 trabajos.*max_training_jobs=4724"),
         (("limits", "max_prediction_jobs"), 1, "prevé 0 trabajos.*max_prediction_jobs=1"),
         (("rl_stage", "limits", "max_training_jobs"), 2161, "políticas ampliada prevé 2160"),
         (("rl_stage", "limits", "max_evaluation_jobs"), 792, "prevé 1584 trabajos"),

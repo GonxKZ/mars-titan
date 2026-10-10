@@ -39,6 +39,16 @@ METRICS = (
     "ram_peak_mib",
     "elapsed_seconds",
     "samples_per_second",
+    "session_mae",
+)
+# Medidas opcionales por época que el navegador lee si existen. Un valor ausente,
+# negativo o no finito se publica como null para no rechazar recibos anteriores.
+EPOCH_MEASURES = (
+    ("train_mae", "train", "mae"),
+    ("train_samples_per_second", "train", "samples_per_second"),
+    ("train_seconds", "train", "elapsed_seconds"),
+    ("session_mae", "validation", "session_mae"),
+    ("validation_seconds", "validation", "elapsed_seconds"),
 )
 STATUS = {
     "pending": "queued",
@@ -929,6 +939,7 @@ def public_run(source, task, report, checkpoint, relative, report_path, now, liv
             recorded_at=None,
             loss=validation_metrics(e.get("validation", {}), mode)["loss"],
             mae=validation_metrics(e.get("validation", {}), mode)["mae"],
+            **epoch_measures(e, mode),
         )
         for e in epochs
         if predictive
@@ -1050,6 +1061,7 @@ def public_run(source, task, report, checkpoint, relative, report_path, now, liv
             else None,
             source_sha256=digest(report),
             history_axis="epoch" if predictive else "none",
+            **selection_summary(report, predictive),
             progress_time_source="receipt_timestamp" if observed_time else "receipt_mtime",
             train_rows=finite(samples.get("train")),
             validation_rows=finite(samples.get("validation")),
@@ -1057,6 +1069,32 @@ def public_run(source, task, report, checkpoint, relative, report_path, now, liv
             error_type=identifier(task["error_type"]) if task.get("error_type") else None,
             **memory,
         ),
+    )
+
+
+def _primary(measures, mode):
+    if mode and isinstance(measures, dict):
+        measures = measures.get("median", measures if measures.get("primary") == "median" else {})
+    return measures if isinstance(measures, dict) else {}
+
+
+def epoch_measures(epoch, mode):
+    """Copiar las medidas opcionales de una época sin calcular ninguna nueva."""
+    sections = dict(
+        train=_primary(epoch.get("train"), None), validation=_primary(epoch.get("validation"), mode)
+    )
+    return {name: finite(sections[section].get(key)) for name, section, key in EPOCH_MEASURES}
+
+
+def selection_summary(report, predictive):
+    """Mejor época y parada temprana declaradas por el entrenador, solo en validación."""
+    selection = report.get("selection") if predictive else None
+    selection = selection if isinstance(selection, dict) else {}
+    best = selection.get("best_epoch")
+    stopped = report.get("stopped_early") if predictive else None
+    return dict(
+        best_epoch=best if type(best) is int and 0 <= best <= 2**53 - 1 else None,
+        stopped_early=stopped if type(stopped) is bool else None,
     )
 
 

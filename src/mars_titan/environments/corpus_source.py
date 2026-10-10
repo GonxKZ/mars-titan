@@ -457,14 +457,91 @@ def _presence(table, inputs):
     ):
         raise ValueError("La presencia necesita cinco booleanos por fila")
     presence = column.flatten().to_numpy(zero_copy_only=False).reshape(len(table), -1)
+    return check_presence(presence, inputs)
+
+
+def check_presence(presence, inputs):
+    """Exigir precios y gráficos y el relleno nulo de cada bloque ausente."""
     if not presence[:, [PRESENCE_ORDER.index("prices"), PRESENCE_ORDER.index("charts")]].all():
         raise ValueError("Los precios y gráficos causales son obligatorios")
     for index, name in enumerate(PRESENCE_ORDER):
-        values = inputs[name].reshape(len(table), -1)
+        values = inputs[name].reshape(len(presence), -1)
         if np.any(values[~presence[:, index]] != 0):
             raise ValueError("Un bloque ausente contiene valores distintos de cero")
     presence.setflags(write=False)
     return presence
+
+
+def check_provenance(meta):
+    """Cohorte y política editorial declaradas por el corpus, iguales en su identidad."""
+    cohort, policy = meta.get("cohort_id"), meta.get("news_content_policy")
+    if (
+        meta["identity"].get("cohort_id") != cohort
+        or meta["identity"].get("news_content_policy") != policy
+        or (cohort is None and policy is not None)
+        or (cohort is not None and COHORT_POLICIES.get(cohort) != policy)
+    ):
+        raise ValueError("La cohorte no conserva su procedencia y política editorial")
+    return cohort, policy
+
+
+def checked_index(meta, record, partition, input_policy, max_assets):
+    """Límites de cada mercado e índice de cohortes que concilian con la población."""
+    markets = record.get("market_rows")
+    if (
+        not isinstance(markets, dict)
+        or not markets
+        or not set(markets) <= {"US", "CN"}
+        or any(type(count) is not int or count < 1 for count in markets.values())
+        or sum(markets.values()) != record["rows"]
+    ):
+        raise ValueError("La población ordenada necesita sus mercados explícitos")
+    market_bounds = {
+        market: ordered_bounds(meta, market=market, input_policy=input_policy)[partition]
+        for market in markets
+    }
+    bounds = next(iter(market_bounds.values())) if len(market_bounds) == 1 else None
+    low = min(value[0] for value in market_bounds.values())
+    high = max(value[1] for value in market_bounds.values())
+    # El índice no identifica mercados. Cada fila conserva además su corte propio.
+    cutoff = bounds[2] if bounds is not None else high
+    index = record["cohorts"]
+    if (
+        not isinstance(index, list)
+        or not 1 <= len(index) <= 100_000
+        or any(
+            not isinstance(row, list)
+            or len(row) != 2
+            or any(type(v) is not int for v in row)
+            or not low <= row[0] < cutoff
+            or not 1 <= row[1] <= max_assets
+            for row in index
+        )
+        or any(a[0] >= b[0] for a, b in zip(index, index[1:], strict=False))
+        or sum(row[1] for row in index) != record["rows"]
+        or record["rows"] != meta["counts"][partition]
+    ):
+        raise ValueError("El índice de cohortes no concilia con la población")
+    return market_bounds, bounds, index
+
+
+def checked_cohort(raw, presence, *, shapes, max_assets, market_bounds):
+    """Ordenar y comprobar una cohorte leída, con sus bits en el orden por activo."""
+    at = raw["prediction_at"]
+    checked = read_cohort(raw, shapes, max_assets, MAX_BLOCK_BYTES)
+    if presence is not None:
+        # read_cohort ordena por activo. Los bits siguen exactamente ese orden.
+        checked["presence"] = presence[np.argsort(raw["asset_ids"])]
+        checked["presence"].setflags(write=False)
+    markets = np.array([asset.split("/", 1)[0] for asset in checked["asset_ids"]])
+    if not set(markets) <= market_bounds.keys():
+        raise ValueError("Una fila pertenece a un mercado sin contrato temporal")
+    for market in set(markets):
+        lower, upper, cutoff = market_bounds[market]
+        selected = markets == market
+        if not lower <= at < cutoff or np.any(checked["target_available_at"][selected] >= upper):
+            raise ValueError("La etiqueta cruza la partición de su mercado")
+    return checked
 
 
 class ParquetCohortSource:
@@ -496,60 +573,15 @@ class ParquetCohortSource:
             raise ValueError("El manifiesto o el presupuesto de lectura no es válido")
         record = meta["partitions"][partition]
         self.population_counts = dict(meta["counts"])
-        self.cohort_id = meta.get("cohort_id")
-        self.news_content_policy = meta.get("news_content_policy")
-        if (
-            meta["identity"].get("cohort_id") != self.cohort_id
-            or meta["identity"].get("news_content_policy") != self.news_content_policy
-            or (self.cohort_id is None and self.news_content_policy is not None)
-            or (
-                self.cohort_id is not None
-                and COHORT_POLICIES.get(self.cohort_id) != self.news_content_policy
-            )
-        ):
-            raise ValueError("La cohorte no conserva su procedencia y política editorial")
+        self.cohort_id, self.news_content_policy = check_provenance(meta)
         self.path, verified_signature = _file(self.manifest_path.parent, partition, record)
         self.partition_sha256 = record["sha256"]
         self.shapes = shapes_contract(meta["shapes"], record["max_assets"], MAX_BLOCK_BYTES)
         self.max_assets, self.max_cache_bytes = record["max_assets"], max_cache_bytes
         self.source_sha256, self.partition = meta["source_sha256"], partition
-        self.index = record["cohorts"]
-        markets = record.get("market_rows")
-        if (
-            not isinstance(markets, dict)
-            or not markets
-            or not set(markets) <= {"US", "CN"}
-            or any(type(count) is not int or count < 1 for count in markets.values())
-            or sum(markets.values()) != record["rows"]
-        ):
-            raise ValueError("La población ordenada necesita sus mercados explícitos")
-        self.market_bounds = {
-            market: ordered_bounds(meta, market=market, input_policy=input_policy)[partition]
-            for market in markets
-        }
-        self.bounds = (
-            next(iter(self.market_bounds.values())) if len(self.market_bounds) == 1 else None
+        self.market_bounds, self.bounds, self.index = checked_index(
+            meta, record, partition, input_policy, self.max_assets
         )
-        low = min(value[0] for value in self.market_bounds.values())
-        high = max(value[1] for value in self.market_bounds.values())
-        # El índice no identifica mercados. Cada fila conserva además su corte propio.
-        cutoff = self.bounds[2] if self.bounds is not None else high
-        if (
-            not isinstance(self.index, list)
-            or not 1 <= len(self.index) <= 100_000
-            or any(
-                not isinstance(row, list)
-                or len(row) != 2
-                or any(type(v) is not int for v in row)
-                or not low <= row[0] < cutoff
-                or not 1 <= row[1] <= self.max_assets
-                for row in self.index
-            )
-            or any(a[0] >= b[0] for a, b in zip(self.index, self.index[1:], strict=False))
-            or sum(row[1] for row in self.index) != record["rows"]
-            or record["rows"] != meta["counts"][partition]
-        ):
-            raise ValueError("El índice de cohortes no concilia con la población")
         with self.path.open("rb") as stream:
             stream.seek(-8, 2)
             footer = stream.read(8)
@@ -640,21 +672,13 @@ class ParquetCohortSource:
             target=table["target"].to_numpy(),
         )
         presence = _presence(table, inputs) if self.masked else None
-        checked = read_cohort(raw, self.shapes, self.max_assets, MAX_BLOCK_BYTES)
-        if presence is not None:
-            # read_cohort ordena por activo. Los bits siguen exactamente ese orden.
-            checked["presence"] = presence[np.argsort(raw["asset_ids"])]
-            checked["presence"].setflags(write=False)
-        markets = np.array([asset.split("/", 1)[0] for asset in checked["asset_ids"]])
-        if not set(markets) <= self.market_bounds.keys():
-            raise ValueError("Una fila pertenece a un mercado sin contrato temporal")
-        for market in set(markets):
-            lower, upper, cutoff = self.market_bounds[market]
-            selected = markets == market
-            if not lower <= at < cutoff or np.any(
-                checked["target_available_at"][selected] >= upper
-            ):
-                raise ValueError("La etiqueta cruza la partición de su mercado")
+        checked = checked_cohort(
+            raw,
+            presence,
+            shapes=self.shapes,
+            max_assets=self.max_assets,
+            market_bounds=self.market_bounds,
+        )
         if self._signature() != self.signature:
             raise ValueError("El archivo ha cambiado durante la lectura de una cohorte")
         return {key: value for key, value in checked.items() if key != "sha256"}

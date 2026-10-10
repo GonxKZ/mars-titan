@@ -23,10 +23,10 @@ from mars_titan.models.baselines.external_boosting import MAX_DISK_CACHE_BYTES
 
 from .checkpoints import StopRequest
 from .cohort_contract import input_identity
-from .external_corpus import run_external_reference
+from .external_corpus import SHARED, run_external_reference
 from .learning_hold import require_learning_allowed
 from .partition_contract import supervision_bounds
-from .tabular_corpus import feature_order, run_tabular_reference
+from .tabular_corpus import RIDGE_STATISTICS, feature_order, run_tabular_reference
 from .temporal_contract import temporal_contracts
 
 
@@ -199,7 +199,8 @@ def _configuration(path):
         )
         for alpha in config["ridge_alphas"]
     ]
-    grid = list(product(config["depths"], config["bins"], config["rates"]))
+    # Primero max_bin: las configuraciones seguidas comparten la misma matriz cuantizada.
+    grid = list(product(config["bins"], config["depths"], config["rates"]))
     if len(grid) > 12:
         raise ValueError("El diseño supera doce configuraciones de boosting")
     cases.extend(
@@ -213,7 +214,7 @@ def _configuration(path):
             ),
             "search",
         )
-        for depth, bins, rate in grid
+        for bins, depth, rate in grid
     )
     if len({case["id"] for case in cases}) != len(cases):
         raise ValueError("Los casos necesitan identificadores distintos")
@@ -382,7 +383,12 @@ class _Study:
                 )
             else:
                 report = run_external_reference(
-                    self.manifest, folder, resume=resume, stop=self.stop, **task["parameters"]
+                    self.manifest,
+                    folder,
+                    resume=resume,
+                    stop=self.stop,
+                    shared_directory=self.output / "shared-matrix",
+                    **task["parameters"],
                 )
             self.check_sources()
             if report["status"] == "paused":
@@ -532,6 +538,9 @@ def run_tabular_search(
             )
             raise
         finally:
+            # La matriz y la validación compartidas solo sirven a esta población.
+            SHARED.release()
+            RIDGE_STATISTICS.clear()
             study.save()
         return summary
     finally:

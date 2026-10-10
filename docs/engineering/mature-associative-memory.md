@@ -72,4 +72,4 @@ La regla delta es secuencial por definición y su coste está dominado por el de
 
 ## Pendiente
 
-La emisión de B6 en el recorrido cronológico por ventanas, la elección de η y λ en desarrollo, el coste medido dentro de la sesión y cualquier comparación predictiva siguen pendientes. El bloqueo de aprendizaje impide elegir esos valores con datos y ejecutar la comparación. RLS con olvido, mencionado como control posible en la revisión de ampliaciones, no se implementa.
+La emisión de B6 en el recorrido cronológico por ventanas, la elección de η y λ en desarrollo, el coste medido dentro de la sesión y cualquier comparación predictiva siguen pendientes. El bloqueo de aprendizaje impide elegir esos valores con datos y ejecutar la comparación. RLS con olvido, mencionado como control posible en la revisión de ampliaciones, queda cubierto por la tercera regla, [`kalman` (PT3)](kalman-associative-memory.md): con ϱ = 0 es RLS por bloques con paseo aleatorio y con ϱ > 0 añade el ruido común de cada cohorte.

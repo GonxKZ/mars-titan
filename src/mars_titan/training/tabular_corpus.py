@@ -6,6 +6,7 @@ import json
 import math
 import platform
 import resource
+import threading
 import time
 from datetime import UTC, datetime
 from pathlib import Path
@@ -27,11 +28,48 @@ from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.evaluation.session_metrics import SessionErrors
 from mars_titan.models.baselines.boosting import BoostingModel, fit_boosting_batches
 from mars_titan.models.baselines.inputs import MODALITIES
-from mars_titan.models.baselines.ridge import RidgeModel, fit_ridge_blocks
+from mars_titan.models.baselines.ridge import RidgeModel, ridge_statistics, solve_ridge
 
 from .corpus_inputs import CorpusDataset
 from .learning_hold import require_learning_allowed
 from .reference_run import FULL_TRAIN_VALIDATION, PREDICTION_RETENTIONS
+
+
+class _SharedStatistics:
+    """Estadísticas Ridge de la última ventana, compartidas por sus alphas en este proceso.
+
+    La clave identifica el manifiesto verificado, la política de entradas, el lote y la
+    anchura, que fijan las filas, su orden y el reparto de bloques de la Gram. Cada alpha
+    resuelve sobre una copia, así que el resultado coincide bit a bit con un ajuste que
+    recorra el corpus por su cuenta. Tras reiniciar el proceso se recalculan una vez.
+    """
+
+    def __init__(self):
+        self.lock = threading.Lock()
+        self.key, self.value = None, None
+
+    def get(self, key, compute):
+        """Devolver las estadísticas y si se han calculado en esta llamada."""
+        with self.lock:
+            if self.key == key:
+                return self.value, False
+            self.key, self.value = None, None
+            value = compute()
+            self.key, self.value = key, value
+            return value, True
+
+    def clear(self, *, blocking=True):
+        """Liberar la Gram. Sin bloqueo, no espera a un cálculo en curso."""
+        if not self.lock.acquire(blocking=blocking):
+            return False
+        try:
+            self.key, self.value = None, None
+            return True
+        finally:
+            self.lock.release()
+
+
+RIDGE_STATISTICS = _SharedStatistics()
 
 
 def retained_partitions(retention):
@@ -70,6 +108,35 @@ def _matrix(batch, dtype=np.float64, *, presence=False):
     return np.concatenate(blocks, axis=1).astype(dtype, copy=False)
 
 
+class _Errors:
+    """Errores de una partición con la misma acumulación por lote en cualquier recorrido."""
+
+    def __init__(self):
+        self.count, self.square, self.absolute = 0, 0.0, 0.0
+        self.zero_square, self.zero_absolute = 0.0, 0.0
+        self.sessions = SessionErrors()
+
+    def add(self, prediction, target, markets, moments):
+        error = prediction - target
+        self.sessions.update(markets, moments, error)
+        self.square += float(np.square(error).sum())
+        self.absolute += float(np.abs(error).sum())
+        self.zero_square += float(np.square(target).sum())
+        self.zero_absolute += float(np.abs(target).sum())
+        self.count += len(target)
+
+    def summary(self):
+        count = self.count
+        return dict(
+            samples=count,
+            mse=self.square / count,
+            mae=self.absolute / count,
+            zero_mse=self.zero_square / count,
+            zero_mae=self.zero_absolute / count,
+            **{key: value for key, value in self.sessions.summary().items() if key != "samples"},
+        )
+
+
 def _predict(
     model,
     restored,
@@ -86,11 +153,9 @@ def _predict(
     Sin `restored` no se repite la comparación con el modelo recargado, como en las
     predicciones de un modelo ya confirmado en otra ventana.
     """
-    count, square, absolute, zero_square, zero_absolute = 0, 0.0, 0.0, 0.0, 0.0
-    sessions = SessionErrors()
+    errors = _Errors()
 
     def tables():
-        nonlocal count, square, absolute, zero_square, zero_absolute
         for batch in dataset.batches(partition=partition, batch_size=batch_size, epoch=0, seed=0):
             matrix, target = _matrix(batch, dtype, presence=presence), batch["target"]
             prediction = model.predict(matrix)
@@ -100,13 +165,7 @@ def _predict(
                 raise ValueError(
                     "Las predicciones restauradas difieren o contienen valores no finitos"
                 )
-            error = prediction - target
-            sessions.update(batch["market"], batch["prediction_at"], error)
-            square += float(np.square(error).sum())
-            absolute += float(np.abs(error).sum())
-            zero_square += float(np.square(target).sum())
-            zero_absolute += float(np.abs(target).sum())
-            count += len(target)
+            errors.add(prediction, target, batch["market"], batch["prediction_at"])
             yield pa.table(
                 dict(
                     sample_id=batch["sample_ids"],
@@ -126,16 +185,9 @@ def _predict(
             pass
     else:
         atomic_parquet_batches(destination, tables())
-    if count != dataset.manifest["counts"][partition] or not count:
+    if errors.count != dataset.manifest["counts"][partition] or not errors.count:
         raise ValueError("Las predicciones no recorren exactamente la población declarada")
-    return dict(
-        samples=count,
-        mse=square / count,
-        mae=absolute / count,
-        zero_mse=zero_square / count,
-        zero_mae=zero_absolute / count,
-        **{key: value for key, value in sessions.summary().items() if key != "samples"},
-    )
+    return errors.summary()
 
 
 def run_tabular_reference(
@@ -243,10 +295,11 @@ def run_tabular_reference(
     counts = []
 
     def factory():
+        # float32 es exacto para las modalidades y los bits. Ridge convierte a float64.
         visited = 0
         for batch in dataset.batches(partition="train", batch_size=batch_size, epoch=0, seed=0):
             visited += len(batch["target"])
-            yield _matrix(batch, presence=masked), batch["target"]
+            yield _matrix(batch, np.float32, presence=masked), batch["target"]
         if visited != dataset.manifest["counts"]["train"]:
             raise ValueError("El ajuste no recorre exactamente toda la población")
         counts.append(visited)
@@ -255,15 +308,29 @@ def run_tabular_reference(
         torch.cuda.reset_peak_memory_stats(0)
     try:
         fitting = time.perf_counter()
-        model = (
-            fit_ridge_blocks(factory, alpha=alpha)
-            if kind == "ridge"
-            else fit_boosting_batches(factory, max_bytes=max_matrix_bytes)
-        )
-        if not counts:
-            raise ValueError("El estimador no ha consumido la población de ajuste")
+        if kind == "ridge":
+            key = (dataset.identity, input_policy, batch_size, features)
+            statistics, computed = RIDGE_STATISTICS.get(key, lambda: ridge_statistics(factory))
+            if (computed and counts != [statistics.count] * 2) or statistics.count != (
+                dataset.manifest["counts"]["train"]
+            ):
+                raise ValueError("Las estadísticas no recorren toda la población de ajuste")
+            model = solve_ridge(statistics, alpha)
+            report["statistics"] = dict(
+                sha256=statistics.sha256(),
+                computed=computed,
+                scope="proceso: última ventana, compartida por sus alphas",
+            )
+            fitted_rows = statistics.count
+        else:
+            model = fit_boosting_batches(factory, max_bytes=max_matrix_bytes)
+            if not counts:
+                raise ValueError("El estimador no ha consumido la población de ajuste")
+            fitted_rows = counts[0]
         report.update(
-            fit_seconds=time.perf_counter() - fitting, fitted_rows=counts[0], fit_passes=len(counts)
+            fit_seconds=time.perf_counter() - fitting,
+            fitted_rows=fitted_rows,
+            fit_passes=len(counts),
         )
         checkpoint = output / ("model.npz" if kind == "ridge" else "model.joblib")
         model.save(checkpoint)
@@ -279,13 +346,20 @@ def run_tabular_reference(
         for partition in partitions:
             path = output / f"{partition}-predictions.parquet"
             metrics = _predict(
-                model, restored, dataset, partition, batch_size, path, presence=masked
+                model,
+                restored,
+                dataset,
+                partition,
+                batch_size,
+                path,
+                dtype=np.float32,
+                presence=masked,
             )
             predictions[partition] = dict(path=path.name, sha256=sha256(path), metrics=metrics)
         if "train" not in partitions:
             # Las particiones reservadas ya han comparado el modelo recargado.
             report["train_metrics"] = _predict(
-                model, None, dataset, "train", batch_size, None, presence=masked
+                model, None, dataset, "train", batch_size, None, dtype=np.float32, presence=masked
             )
         if any(sha256(root / name) != digest for name, digest in code.items()):
             raise ValueError("El código ha cambiado durante el ajuste")

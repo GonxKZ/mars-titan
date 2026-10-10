@@ -302,8 +302,9 @@ ADAPTER_SCENARIOS = {
 def adapter_estimate(path, reports, extras):
     """Etapa de adaptadores: tablas, estados, cachés de padres y corpus ordenado por ventana.
 
-    El corpus ordenado de una ventana se libera tras sus ajustes. Mientras se prepara
-    coexisten la entrada sin ordenar y el archivo ordenado de entrenamiento. Una disposición
+    Con la lectura por bloques de la vista no hay corpus ordenado. Con él, la copia de
+    una ventana se libera tras sus ajustes y, mientras se prepara, coexisten la entrada
+    sin ordenar y el archivo ordenado de entrenamiento. Una disposición
     distinta de la actual se aplica al confirmar, así que la tabla original de un ajuste
     existe mientras corre.
     """
@@ -328,8 +329,11 @@ def adapter_estimate(path, reports, extras):
         cumulative, peak, worst = 0, 0, None
         for (scope, window), members in windows:
             counts = reports[scope][window]["counts"]
-            ordered = (counts["train"] + counts["validation"]) * adapter["ordered_row_bytes"]
-            preparing = counts["train"] * adapter["input_row_bytes"]
+            ordered = preparing = 0
+            if stage["cohort_reading"]["source"] == "ordered_corpus":
+                rows = counts["train"] + counts["validation"]
+                ordered = rows * adapter["ordered_row_bytes"]
+                preparing = counts["train"] * adapter["input_row_bytes"]
             kept = sum(
                 counts[p] * (per_row if p in scenario["rows"] else aggregate) for p in HELD_OUT
             )
@@ -418,6 +422,34 @@ def estimate(args):
         result["adapters"] = adapter_estimate(args.adapter_stage, reports, extras)
     if args.rl_stage is not None:
         result["policies"] = rl_estimate(args.rl_stage, campaign, extras, args.extensions)
+    if args.schedule is not None:
+        from .rolling_retention import load_schedule
+        from .rolling_storage import rolling_estimate, rolling_inputs, window_increment
+
+        windows = load_schedule(args.schedule, campaign)
+        stages = rolling_inputs(
+            jobs,
+            windows,
+            extras,
+            ablation=args.ablation_stage,
+            adapters=args.adapter_stage,
+            rl=args.rl_stage,
+        )
+        rolling = rolling_estimate(
+            jobs,
+            windows,
+            result["counts"],
+            measured,
+            storage,
+            extras,
+            ordered_copy=not args.adapter_blocks,
+            **stages,
+        )
+        result["rolling"] = dict(
+            rolling,
+            adapter_corpus="blocks" if args.adapter_blocks else "ordered_copy",
+            increment={scenario: window_increment(rolling, scenario) for scenario in rolling},
+        )
     return result
 
 
@@ -429,6 +461,12 @@ def main(argv=None):
     parser.add_argument("--ablation-stage", type=Path)
     parser.add_argument("--adapter-stage", type=Path)
     parser.add_argument("--rl-stage", type=Path)
+    parser.add_argument("--schedule", type=Path, help="Orden por ventanas de la retención v2")
+    parser.add_argument(
+        "--adapter-blocks",
+        action="store_true",
+        help="Los adaptadores leen la vista por bloques, sin copia ordenada",
+    )
     parser.add_argument("--extras", type=Path, required=True)
     sources = parser.add_mutually_exclusive_group(required=True)
     sources.add_argument("--views", action="append")
@@ -441,6 +479,19 @@ def main(argv=None):
     result = estimate(args)
     atomic_json(args.output, result)
     print(json.dumps(result["base"]["totals"], indent=2))
+    if "rolling" in result:
+        print(
+            json.dumps(
+                {
+                    scenario: {
+                        k: result["rolling"][scenario][k]
+                        for k in ("retained_bytes", "peak_bytes", "peak_at")
+                    }
+                    for scenario in ("all_regenerated", "none_regenerated")
+                },
+                indent=2,
+            )
+        )
     return 0
 
 

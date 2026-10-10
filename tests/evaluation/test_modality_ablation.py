@@ -167,7 +167,7 @@ def by_hand(study, variant, arm, seed, *, market=None):
 def test_declared_ablation_is_a_secondary_analysis_fixed_before_results():
     config = walk.load_config(CONFIG)
     section = config["modality_ablation"]
-    assert config["schema_version"] == 3
+    assert config["schema_version"] == 4
     assert section == ablation.declaration(copy.deepcopy(section))
     assert section["status"] == "secondary_descriptive" and section["declared_at"] == "2026-10-09"
     assert "not_for_model_selection" in section["use"]
@@ -229,6 +229,8 @@ def test_configuration_version_three_requires_its_ablation_section(tmp_path):
             for market, name in scope["protocols"].items()
         }
     document.pop("modality_ablation")
+    document["schema_version"] = 3
+    document.pop("long_short", None)
     save(tmp_path / "missing.json", document)
     with pytest.raises(ValueError):
         walk.load_config(tmp_path / "missing.json")

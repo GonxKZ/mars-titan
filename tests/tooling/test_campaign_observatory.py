@@ -311,3 +311,71 @@ def test_unstarted_campaign_with_dependencies_remains_blocked(tmp_path):
     with Collector(tmp_path / "private", tmp_path / "cache.sqlite") as collector:
         campaign = collector.collect([source])["campaigns"][0]
     assert campaign["status"] == "blocked"
+
+
+def test_epoch_measures_copy_observed_values_and_publish_absences_as_null(tmp_path):
+    entry = source(tmp_path)
+    report_path = tmp_path / "private/campaign/runs/one/run.json"
+    report = json.loads(report_path.read_text())
+    report["epochs"] = [
+        {
+            "epoch": 1,
+            "train": {"mae": 0.3, "samples_per_second": 1500.0, "elapsed_seconds": 7.5},
+            "validation": {"mae": 0.2, "session_mae": 0.25, "elapsed_seconds": 2.0},
+        },
+        {
+            "epoch": 2,
+            "train": {"mae": -1, "samples_per_second": "fast", "elapsed_seconds": True},
+            "validation": {"mae": 0.19},
+        },
+    ]
+    report["global_step"] = 2
+    report["selection"] = {"best_epoch": 1}
+    report["stopped_early"] = True
+    report["predictions"]["validation"]["metrics"]["session_mae"] = 0.11
+    dump(report_path, report)
+    with Collector(tmp_path / "private", tmp_path / "cache.sqlite") as collector:
+        run = collector.collect([entry])["runs"][0]
+    first, second = run["history"]
+    assert first["train_mae"] == 0.3
+    assert first["train_samples_per_second"] == 1500.0
+    assert first["train_seconds"] == 7.5
+    assert first["session_mae"] == 0.25
+    assert first["validation_seconds"] == 2.0
+    assert {key: second[key] for key in ("train_mae", "train_samples_per_second")} == {
+        "train_mae": None,
+        "train_samples_per_second": None,
+    }
+    assert second["train_seconds"] is None and second["session_mae"] is None
+    assert run["metrics"]["session_mae"] == 0.11
+    assert run["metadata"]["best_epoch"] == 1
+    assert run["metadata"]["stopped_early"] is True
+
+
+def test_reserved_phase_hides_selection_and_epoch_measures(tmp_path):
+    entry = source(tmp_path)
+    report_path = tmp_path / "private/campaign/runs/one/run.json"
+    report = json.loads(report_path.read_text())
+    report["phase"] = "evaluation"
+    report["epochs"][0]["train"] = {"mae": 0.3}
+    report["selection"] = {"best_epoch": 1}
+    report["stopped_early"] = False
+    dump(report_path, report)
+    with Collector(tmp_path / "private", tmp_path / "cache.sqlite") as collector:
+        run = collector.collect([entry])["runs"][0]
+    assert run["history"] == []
+    assert run["metadata"]["best_epoch"] is None
+    assert run["metadata"]["stopped_early"] is None
+    assert run["metrics"]["session_mae"] is None
+
+
+@pytest.mark.parametrize("selection, stopped", [({"best_epoch": "1"}, "yes"), ("best", 1)])
+def test_malformed_selection_is_published_as_unknown(tmp_path, selection, stopped):
+    entry = source(tmp_path)
+    report_path = tmp_path / "private/campaign/runs/one/run.json"
+    report = json.loads(report_path.read_text())
+    report["selection"], report["stopped_early"] = selection, stopped
+    dump(report_path, report)
+    with Collector(tmp_path / "private", tmp_path / "cache.sqlite") as collector:
+        metadata = collector.collect([entry])["runs"][0]["metadata"]
+    assert metadata["best_epoch"] is None and metadata["stopped_early"] is None
