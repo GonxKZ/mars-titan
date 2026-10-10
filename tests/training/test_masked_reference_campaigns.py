@@ -63,7 +63,8 @@ def test_repository_configuration_declares_policy_budget_and_transformer_cases()
         (dict(stopping="never"), "versión 4"),
         (dict(prediction_retention="all"), "versión 4"),
         (dict(context_sessions=32), "versión 4"),
-        (dict(models=["transformer"], batch_size=512), "Transformer"),
+        # El Transformer comparte ahora el límite común de lote de las demás familias.
+        (dict(models=["transformer"], batch_size=4097), "contrato"),
         (
             dict(
                 continuation_selection=dict(
@@ -77,6 +78,15 @@ def test_repository_configuration_declares_policy_budget_and_transformer_cases()
 def test_search_version_four_rejects_undeclared_or_incompatible_choices(tmp_path, changes, message):
     with pytest.raises(ValueError, match=message):
         reference_search._configuration(write(tmp_path, search_plan(**changes)))
+
+
+def test_search_version_four_admits_transformer_batches_above_256(tmp_path):
+    # run_reference_case amplía el lote admitido del Transformer con el lote del plan, así
+    # que la búsqueda ya no lo rechaza por encima de 256 ventanas.
+    _, cases, _ = reference_search._configuration(
+        write(tmp_path, search_plan(models=["transformer"], batch_size=512))
+    )
+    assert cases and all(item["case"]["kind"] == "transformer" for item in cases)
 
 
 def test_previous_search_versions_keep_their_closed_family_list(tmp_path):
