@@ -31,6 +31,7 @@ from mars_titan.data.input_policy import HISTORICAL_MASKED, MODALITIES
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.evaluation.session_metrics import SessionErrors
 from mars_titan.evaluation.splits import PARTITIONS, stopping_rule
+from mars_titan.learning_traces.hooks import traced_update
 from mars_titan.memory.candidate_bank import (
     CandidateBankConfig,
     CandidateEpisodeBank,
@@ -694,6 +695,9 @@ class CandidateChronologicalTrainer(CandidateChronologicalPredictor):
     # de cada validación completa y no debe cambiar el cálculo ni el RNG. Si vale None, el
     # recorrido no llama a nada y es el mismo de antes bit a bit.
     trace = None
+    # Trazas por paso con el contrato común (`learning_traces.hooks.TrainingTraces`). Con
+    # None, `traced_update` es un bloque vacío.
+    traces = None
 
     def _trace_modules(self):
         """Módulos con parámetros del recorrido: el nativo y, en un adaptador, su cabeza."""
@@ -859,11 +863,17 @@ class CandidateChronologicalTrainer(CandidateChronologicalPredictor):
                     if value.grad is not None:
                         value.grad.div_(labels)
         if labels:
-            torch.nn.utils.clip_grad_norm_(
-                self.trainable, self.recipe.max_grad_norm or math.inf, error_if_nonfinite=True
-            )
-            self.optimizer.step()
-            self.optimizer.zero_grad(set_to_none=True)
+            with traced_update(
+                self.traces, self.global_step + 1, self.optimizer, total / labels
+            ) as probe:
+                norm = torch.nn.utils.clip_grad_norm_(
+                    self.trainable,
+                    self.recipe.max_grad_norm or math.inf,
+                    error_if_nonfinite=True,
+                )
+                probe.clip(norm, self.recipe.max_grad_norm)
+                self.optimizer.step()
+                self.optimizer.zero_grad(set_to_none=True)
             self.global_step += 1
             run.counters["updates"] += 1
             run.counters["labels_in_loss"] += labels
@@ -1009,10 +1019,14 @@ class CandidateChronologicalTrainer(CandidateChronologicalPredictor):
             self.global_step, cursor = state["global_step"], state["cursor"]
             self.selection, self.history = state["selection"], state["history"]
             self.train_metrics = state["train_metrics"]
+            if self.traces is not None:
+                self.traces.restore(state.get("traces"))
             if state["run"] is not None:
                 run = self._restore(state["run"])
         else:
             output.mkdir(parents=True)
+            if self.traces is not None:
+                self.traces.restore(None)
             report = dict(
                 schema_version=1,
                 kind="candidate_gru_chronological_run",
@@ -1040,6 +1054,8 @@ class CandidateChronologicalTrainer(CandidateChronologicalPredictor):
                 run=None if current is None else self._export(current),
                 **self._extra_state(),
             )
+            if self.traces is not None:
+                state["traces"] = self.traces.checkpoint()
             path = save_training_state(checkpoints, state, identity=self.identity, best=best)
             reference = dict(path=str(path.relative_to(output)), sha256=sha256(path))
             report.update(recovery_checkpoint=reference, global_step=self.global_step)
@@ -1072,14 +1088,17 @@ class CandidateChronologicalTrainer(CandidateChronologicalPredictor):
                         continue
                 if cursor["phase"] == "validation":
                     metrics = self.evaluate(self.validation, stop=stop)
-                    if self.trace is not None:
+                    if self.trace is not None or self.traces is not None:
                         event = dict(
                             kind="validation",
                             epoch=epoch,
                             global_step=self.global_step,
                             score=metrics["session_mae"],
                         )
-                        self.trace(event, self._trace_modules())
+                        if self.traces is not None:
+                            self.traces.validation(event)
+                        if self.trace is not None:
+                            self.trace(event, self._trace_modules())
                     self.selection = (
                         initial_selection(metrics["session_mae"], options)
                         if epoch == 0

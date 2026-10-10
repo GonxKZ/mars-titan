@@ -240,7 +240,12 @@ def test_xgboost_jobs_share_one_directory_next_to_the_jobs(monkeypatch, tmp_path
     job_id = "US+CN/fold-003/xgboost/search-xgb-d3-b64-lr0.03-s42"
     folder = tmp_path / "campaign" / "jobs" / job_id / "attempt-0001"
     run = SimpleNamespace(
-        job=dict(id=job_id), folder=folder, view=tmp_path / "view.json", stop=None, case={}
+        job=dict(id=job_id),
+        folder=folder,
+        view=tmp_path / "view.json",
+        stop=None,
+        case={},
+        traces=None,
     )
     masked_campaign._xgboost_fit(run)
     assert captured["shared_directory"] == tmp_path / "campaign" / "jobs" / ".shared-matrix"

@@ -34,6 +34,13 @@ from mars_titan.data.cohort_files import read_manifest
 from mars_titan.data.input_policy import HISTORICAL_MASKED, policy_identity
 from mars_titan.data.storage import atomic_json, sha256
 from mars_titan.evaluation.session_metrics import SessionErrors
+from mars_titan.learning_traces.hooks import (
+    EMPTY_CURSOR,
+    TrainingTraces,
+    open_recorder,
+    trace_identity,
+    traced_update,
+)
 from mars_titan.memory.financial_session import FinancialPhase
 from mars_titan.models.quantile_head import median
 
@@ -163,8 +170,12 @@ def online_pass(
     reader_rows=256,
     stop=None,
     audit=None,
+    traces=None,
+    trace_phase="train",
 ):
     """Recorre un tramo, predice cada instante y aprende después con lo que madura.
+
+    `traces` recibe las trazas de #448 de cada paso, con la fase `trace_phase`.
 
     `source` entrega los eventos del índice de observaciones de MARS-TITAN. Se omiten los
     grupos del calentamiento, que solo tienen entradas. Una etiqueta solo se acepta si su
@@ -220,10 +231,14 @@ def online_pass(
             loss.backward()
             total = loss.detach() if total is None else total + loss.detach()
         _require(torch.isfinite(total).item(), "La pérdida en línea no es finita")
-        torch.nn.utils.clip_grad_norm_(
-            model.parameters(), rule["max_grad_norm"], error_if_nonfinite=True
-        )
-        optimizer.step()
+        with traced_update(
+            traces, counters["updates"] + 1, optimizer, total, phase=trace_phase
+        ) as probe:
+            norm = torch.nn.utils.clip_grad_norm_(
+                model.parameters(), rule["max_grad_norm"], error_if_nonfinite=True
+            )
+            probe.clip(norm, rule["max_grad_norm"])
+            optimizer.step()
         counters["updates"] += 1
 
     for event in source.batched_events(start_cursor=start, block_rows=reader_rows):
@@ -339,6 +354,7 @@ def run_online_reference(
     reader_rows=256,
     stop=None,
     optimizer_factory=None,
+    traces=None,
 ):
     """Ejecuta el control en línea de una ventana y escribe sus predicciones y su informe.
 
@@ -346,7 +362,9 @@ def run_online_reference(
     `mars_titan_m1`, ambas en la misma vista y semilla. La protección del aprendizaje y la
     precisión se comprueban antes de leer ninguna fuente. El MAE por sesión de la validación
     es la puntuación con la que la campaña elige la tasa. `optimizer_factory` solo existe
-    para comprobar el recorrido con un optimizador que no modifica pesos.
+    para comprobar el recorrido con un optimizador que no modifica pesos. `traces` declara
+    las trazas de #448: cada tramo registra sus pasos con la fase `online_<tramo>` en
+    `output/traces`, y solo la validación guarda su puntuación.
     """
     from mars_titan.data.embeddings import require_cuda
 
@@ -383,6 +401,15 @@ def run_online_reference(
             "Las dimensiones de la ventana no coinciden con las del ancla",
         )
     device = require_cuda()
+    # Un solo registrador para los tres tramos. El intento no se reanuda, así que empieza
+    # siempre sin partes.
+    recorder = open_recorder(
+        output / "traces",
+        traces,
+        trace_identity("transformer_compact_online", dict(anchor=identity, rule=rule)),
+    )
+    if recorder is not None:
+        recorder.load_state_dict(EMPTY_CURSOR)
     predictions, caps = {}, {}
     for name in PARTITIONS:
         bank_metrics = bank_report["predictions"][name]["metrics"]
@@ -390,6 +417,7 @@ def run_online_reference(
         # Cada tramo parte del estado elegido, como el banco parte vacío.
         model, quantiles = reference_model(identity, state, device)
         optimizer = (optimizer_factory or _sgd)(model.parameters(), rule)
+        hooks = None if recorder is None else TrainingTraces(recorder, dict(model=model))
         rows, metrics = online_pass(
             model,
             sources[name],
@@ -401,7 +429,15 @@ def run_online_reference(
             device=device,
             reader_rows=reader_rows,
             stop=stop,
+            traces=hooks,
+            trace_phase=f"online_{name}",
         )
+        if hooks is not None:
+            if name == "validation":
+                # Solo la validación guarda su puntuación. Calibración y evaluación son las
+                # comparadas y sus trazas se limitan al aprendizaje de cada paso.
+                hooks.validation(dict(global_step=metrics["updates"], score=metrics["session_mae"]))
+            hooks.checkpoint()
         _require(
             metrics["labels"] == bank_metrics["labels"],
             f"El tramo {name} no recibe las mismas etiquetas maduras que el banco",

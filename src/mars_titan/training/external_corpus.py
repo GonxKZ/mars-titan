@@ -26,6 +26,7 @@ from mars_titan.data.input_policy import (
     policy_identity,
 )
 from mars_titan.data.storage import atomic_json, outside_source, sha256
+from mars_titan.learning_traces.hooks import EMPTY_CURSOR, open_recorder, trace_identity
 from mars_titan.models.baselines.boosting_selection import BoostingSelection, ResidentValidation
 from mars_titan.models.baselines.external_boosting import (
     ExternalBoostingModel,
@@ -347,7 +348,20 @@ def _prune_selection(output, report):
             path.unlink()
 
 
-def _confirm_selection(output, report, model):
+def _trace_round(recorder, count, state):
+    """Puntuación de validación de la ronda `count` si toca registrarla (#448)."""
+    if recorder is None or not recorder.due(count):
+        return
+    with recorder.at(count, "validation"):
+        recorder.scalar("validation.score", state["last_session_mae"])
+        recorder.scalar("validation.best_score", state["best_session_mae"])
+        recorder.scalar(
+            "validation.rounds_without_improvement", state["rounds_without_improvement"]
+        )
+
+
+def _confirm_selection(output, report, model, traces=None):
+    """Confirmar el booster de la última evaluación y, si existe, el cursor de sus trazas."""
     state = model.audit["selection"]
     options = report["identity"]["options"]
     BoostingSelection(options["selection"], options["rounds"], state=state)
@@ -377,6 +391,8 @@ def _confirm_selection(output, report, model):
         selection=dict(state),
         audit=model.audit,
     )
+    if traces is not None:
+        confirmed["traces"] = traces
     atomic_json(output / "run.json", confirmed)
     report.clear()
     report.update(confirmed)
@@ -405,6 +421,7 @@ def run_external_reference(
     max_disk_cache_bytes=None,
     prediction_retention=FULL_TRAIN_VALIDATION,
     shared_directory=None,
+    traces=None,
 ):
     """Recorrer todas las filas admitidas sin abrir el test ni reducir la población.
 
@@ -418,6 +435,10 @@ def run_external_reference(
     Con `shared_directory`, la matriz y la validación de la ventana se conservan en
     `SHARED` para las configuraciones siguientes. Es una opción de rendimiento: no
     forma parte de la identidad y el modelo es el mismo que sin compartir.
+
+    `traces` declara las trazas de #448. Con selección, cada ronda evaluada deja su
+    puntuación de validación y el cursor se confirma con el booster, de modo que una
+    reanudación repite exactamente las rondas que no llegaron a confirmarse.
     """
     require_learning_allowed("el ajuste XGBoost del corpus")
     if type(batch_size) is not int or not 1 <= batch_size <= 4096 or type(resume) is not bool:
@@ -577,6 +598,7 @@ def run_external_reference(
             plan=plan,
             shared=shared,
             shared_directory=None if shared is None else Path(shared_directory),
+            traces=traces,
         )
     finally:
         os.close(lock)
@@ -635,7 +657,17 @@ def _construction(options, rows):
 
 
 def _execute(
-    dataset, output, report, parent, cp, xgb, stop, plan=None, shared=None, shared_directory=None
+    dataset,
+    output,
+    report,
+    parent,
+    cp,
+    xgb,
+    stop,
+    plan=None,
+    shared=None,
+    shared_directory=None,
+    traces=None,
 ):
     # Este ejecutor ajusta árboles, así que también respeta el bloqueo si se llama directamente.
     require_learning_allowed("el ajuste XGBoost del corpus")
@@ -654,6 +686,15 @@ def _execute(
     report["attempts"].append(attempt)
     report["status"] = "running"
 
+    recorder = open_recorder(
+        output / "traces",
+        traces,
+        trace_identity("xgboost", report["identity"]),
+        step_unit="boosting_round",
+    )
+    if recorder is not None:
+        recorder.load_state_dict(report.get("traces") or EMPTY_CURSOR)
+
     def observed_memory():
         free, total = cp.cuda.runtime.memGetInfo()
         attempt["observed_device_used_bytes_max"] = max(
@@ -666,6 +707,7 @@ def _execute(
         count = model.booster.num_boosted_rounds()
         if "selection" in options:
             state = model.audit["selection"]
+            _trace_round(recorder, count, state)
             if (
                 state["selected_round"] == count
                 or count % options["checkpoint_interval"] == 0
@@ -673,7 +715,11 @@ def _execute(
                 or stop.requested
             ):
                 observed_memory()
-                _confirm_selection(output, report, model)
+                cursor = None
+                if recorder is not None:
+                    recorder.flush()
+                    cursor = recorder.state_dict()
+                _confirm_selection(output, report, model, cursor)
             return stop.requested
         path = output / "checkpoints" / f"attempt-{len(report['attempts']):04}-round-{count:04}.ubj"
         digest = model.save(path)

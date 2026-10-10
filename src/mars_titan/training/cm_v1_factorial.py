@@ -223,6 +223,7 @@ def run_cm_v1_core_window(
     optimizer_factory=None,
     stopping=None,
     joint_epoch=None,
+    traces=None,
 ):
     """Ajustar el núcleo de B (C disabled) o de B+C (C penalty) con la receta de la campaña."""
     require_learning_allowed("run_cm_v1_core_window de CM-v1")
@@ -244,6 +245,8 @@ def run_cm_v1_core_window(
         local_control=control_contract(document, CORES[core]),
         stopping=stopping,
         joint_epoch=joint_epoch,
+        traces=traces,
+        trace_family="cm_v1_core",
     )
 
 
@@ -262,6 +265,7 @@ def run_cm_v1_window(
     optimizer_factory=None,
     stopping=None,
     joint_epoch=None,
+    traces=None,
 ):
     """Ajustar el lector M1 con K = 1 del modelo sobre su núcleo elegido en la ventana."""
     require_learning_allowed("run_cm_v1_window de CM-v1")
@@ -280,6 +284,7 @@ def run_cm_v1_window(
         optimizer_factory=optimizer_factory,
         stopping=stopping,
         joint_epoch=joint_epoch,
+        traces=traces,
     )
 
 
@@ -368,6 +373,7 @@ def cm_v1_core_fit(run, *, device="cuda:0", optimizer_factory=None):
             optimizer_factory=optimizer_factory,
             stopping=case.get(STOPPING_FIELD),
             joint_epoch=run.joint_epoch,
+            traces=run.traces,
         )
     if report["status"] == "paused":
         raise CampaignPaused
@@ -403,6 +409,7 @@ def cm_v1_fit(run, *, device="cuda:0", optimizer_factory=None):
             optimizer_factory=optimizer_factory,
             stopping=case.get(STOPPING_FIELD),
             joint_epoch=run.joint_epoch,
+            traces=run.traces,
         )
     if report["status"] == "paused":
         raise CampaignPaused

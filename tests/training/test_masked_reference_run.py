@@ -23,6 +23,7 @@ from mars_titan.models.baselines.multimodal import PRESENCE_FUSION
 from mars_titan.training import checkpoints
 from mars_titan.training.checkpoints import StopRequest, load_training_state
 from mars_titan.training.corpus_inputs import CorpusDataset
+from tests.learning_traces.parity import EVERY_STEP, metrics, same_rows, trace_rows
 from tests.training.historical_temporal_fixture import historical_temporal_fixture
 from tests.training.test_historical_temporal import prepare
 from tests.training.test_reference_run import training_corpus
@@ -434,3 +435,72 @@ def test_presence_reaches_the_model_only_from_the_masked_reader(tmp_path, cpu_ru
     np.testing.assert_array_equal(seen["presence"].numpy(), batch["presence"])
     engine._forward(Spy(), {k: v for k, v in batch.items() if k != "presence"}, "cpu")
     assert seen["presence"] is None
+
+
+def untimed(value):
+    """Un recibo sin sus tiempos de reloj, que cambian entre dos recorridos iguales."""
+    if isinstance(value, dict):
+        return {
+            k: untimed(v)
+            for k, v in value.items()
+            if k not in {"elapsed_seconds", "samples_per_second"}
+        }
+    if isinstance(value, list):
+        return [untimed(item) for item in value]
+    return value
+
+
+@pytest.mark.parametrize("kind", ["gru", "transformer"])
+def test_traces_keep_the_reference_run_bit_for_bit(tmp_path, cpu_runner, kind):
+    """Trazas en cada paso (#448): mismos gradientes, predicciones y recibos de la referencia."""
+    manifest = masked_view(tmp_path)
+    plain = run_masked(manifest, tmp_path / "plain", masked_case(kind))
+    calls, cpu_runner.calls[:] = list(cpu_runner.calls), []
+    traced = run_masked(manifest, tmp_path / "traced", masked_case(kind), traces=EVERY_STEP)
+    assert len(cpu_runner.calls) == len(calls) == traced["global_step"] > 0
+    for one, two in zip(calls, cpu_runner.calls, strict=True):
+        assert all(
+            (a is None and b is None) or torch.equal(a, b) for a, b in zip(one, two, strict=True)
+        )
+    for key in ("selection", "global_step", "identity"):
+        assert plain[key] == traced[key], key
+    assert untimed(plain["epochs"]) == untimed(traced["epochs"])
+    for partition in HELDOUT:
+        assert (
+            plain["predictions"][partition]["sha256"] == traced["predictions"][partition]["sha256"]
+        )
+    manifest, rows = trace_rows(tmp_path / "traced" / "traces")
+    assert manifest["identity"]["family"] == "neural_reference"
+    assert {"loss", "grad_l2", "update_ratio", "grad_l2_total"} <= metrics(rows, "train")
+    steps = {row["step"] for row in rows if row["phase"] == "train"}
+    assert steps == set(range(1, traced["global_step"] + 1))
+    scores = sorted(
+        (row["step"], row["value"]) for row in rows if row["metric"] == "validation.score"
+    )
+    assert [value for _, value in scores][-len(plain["epochs"]) :] == [
+        epoch["validation"]["session_mae"] for epoch in plain["epochs"]
+    ]
+
+
+def test_traces_resume_from_the_checkpoint_without_duplicates(tmp_path, cpu_runner, monkeypatch):
+    manifest = masked_view(tmp_path)
+    case = masked_case("dlinear", epochs=2)
+    run_masked(manifest, tmp_path / "continuous", case, traces=EVERY_STEP)
+    stop = StopRequest()
+    real_save = engine.save_training_state
+
+    def pause(directory, state, **kwargs):
+        saved = real_save(directory, state, **kwargs)
+        if state["global_step"] == 1:
+            stop.request_stop()
+        return saved
+
+    monkeypatch.setattr(engine, "save_training_state", pause)
+    options = dict(checkpoint_steps=1, traces=EVERY_STEP)
+    paused = run_masked(manifest, tmp_path / "paused", case, stop=stop, **options)
+    assert paused["status"] == "paused"
+    monkeypatch.setattr(engine, "save_training_state", real_save)
+    resumed = run_masked(manifest, tmp_path / "paused", case, resume=True, **options)
+    assert resumed["status"] == "completed"
+    _, continuous = trace_rows(tmp_path / "continuous" / "traces")
+    assert same_rows(continuous, trace_rows(tmp_path / "paused" / "traces")[1])
