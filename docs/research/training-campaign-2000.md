@@ -311,7 +311,8 @@ uv run --no-sync python scripts/run_masked_campaign.py rolling \
   --extras reports/engineering/campaign-storage-20261009/extras.json --adapter-blocks \
   --ablation-stage <ablación> --ablation-output <salida de la ablación> \
   --adapter-stage <adaptadores> --adapter-output <salida de los adaptadores> \
-  --rl-stage <políticas> --rl-output <salida de las políticas> --edition <precios>
+  --rl-stage <políticas> --rl-output <salida de las políticas> --edition <precios> \
+  --publication configs/evaluation/historical-masked-publication-a-v2.json
 uv run --no-sync python scripts/run_masked_campaign.py regenerate --campaign <configuración> \
   --views US=<vistas>/US --output <campaña> --job <trabajo> --destination <destino nuevo>
 uv run --no-sync python -m mars_titan.evaluation.walk_forward_comparison --config <comparación> \
@@ -323,9 +324,27 @@ uv run --no-sync python -m mars_titan.evaluation.walk_forward_comparison --confi
 
 Al liberar, cada tabla por fila de la base y de la ablación que ya no leerá ninguna fase posterior se regenera en `retention/regeneration/` con `training/prediction_regeneration.py` y se compara bit a bit con su huella de contenido. Solo si todas las tablas del trabajo coinciden se borra el archivo y queda `predictions-retention.json` con sus huellas, el informe de la regeneración (`retention/regeneration-reports/`) y la procedencia. Si no coinciden, o si el ajuste se predijo con TF32, la tabla se compacta sin pérdida en una tabla común por ventana y tramo (`retention/rows/`) y se conserva. Una comparación escrita es definitiva, y un error antes de comparar se vuelve a intentar en la ventana siguiente. Las evaluaciones que lee una política posterior y las tablas de los adaptadores se compactan sin pérdida. Como la declaración nombra las políticas consumidoras (`consumers.rl`), `rolling` exige su etapa y, antes de liberar una evaluación que lee alguna política, comprueba el recibo confirmado de cada trabajo de políticas que la lee en la salida de esa etapa, con la identidad de su `stage.json`. Si falta alguno, la liberación se detiene sin borrar nada y enumera los recibos pendientes. Con el predictor de la cadena, `policy_needs` solo cuenta la primera ventana de cada ámbito, la única cuya evaluación de la base leen las políticas. La etapa de políticas lee las predicciones de forma diferida, solo al montar una cinta o un universo que no están en disco, así que se reanuda sobre cintas confirmadas aunque sus filas ya se hayan liberado. Un trabajo que el plan marca con `regenerable: false` y un control en línea (`kind: online`, como `transformer_compact_online`), cuyas predicciones dependen de pasos de optimizador, también se compactan sin intentar regenerarlos. Las lecturas de una tabla compactada devuelven los mismos bits y una tabla liberada da `PredictionsReleased`.
 
+Con la etapa de adaptadores, `rolling` exige `--publication` con la declaración del paso final, y la comparación postentrenada que declara debe ser la de esa etapa. La comparación de cada padre lee la calibración y la evaluación del brazo base reentrenado, que la liberación borra. Por eso la fase de agregados guarda también, para cada padre con trabajos de la etapa en la ventana, sus fuentes de esa ventana y sus agregados (`retention/aggregates/posttraining/<padre>/<ámbito>/<ventana>.npz`). Cada archivo se escribe de forma atómica y se relee igual antes de registrar la fase, y la liberación solo empieza después. Un corte entre los agregados y su registro los repite en los mismos archivos al reanudar, y un corte entre el registro y la liberación libera sin reescribirlos. Las [pruebas con la campaña reducida](../../tests/posttraining/test_publication_from_aggregates.py) comprueban los dos cortes.
+
 `regenerate` repite por inferencia, sin ajustar nada, las tablas de un trabajo confirmado en un destino nuevo, con FP32 estricto, y termina con código 1 si alguna no coincide. Con `--ablation-stage` y `--ablation-output` regenera una predicción de la ablación. Se detiene con la protección de aprendizaje, como los traslados. La comparación final lee los agregados de cada ventana con `--aggregates` y no abre ninguna fila.
 
 El recorrido exige el filtro `window` de la base y de las etapas, que llega con la campaña A v2 ([#363](https://github.com/GonxKZ/mars-titan/issues/363)), y lo comprueba antes de empezar. También exige la etapa de políticas cuando la retención la declara consumidora y la base confirmada en la salida. Sin ellas se detiene sin escribir nada. Si la comparación declara la cartera larga y corta, cada ventana guarda también sus libros por sesión (`<ventana>.long_short.npz`), con la identidad de la edición de precios, y `rolling` exige `--edition`. `long_short_comparison --aggregates` calcula después la cartera sin abrir filas. Las comprobaciones de integridad (`integrity.score_recheck` y `integrity.row_identity`) leen las tablas compactadas con los mismos bits y se detienen ante una liberada hasta regenerarla.
+
+### Paso final: publicación de la campaña
+
+Cuando la campaña y sus etapas están confirmadas, la publicación declarada calcula todo lo que se informa de ella ([#28](https://github.com/GonxKZ/mars-titan/issues/28)):
+
+```bash
+uv run --no-sync python scripts/run_masked_campaign.py publication check \
+  --declaration configs/evaluation/historical-masked-publication-a-v2.json
+uv run --no-sync python scripts/run_masked_campaign.py publication run \
+  --declaration configs/evaluation/historical-masked-publication-a-v2.json \
+  --views US+CN=<vistas>/US+CN --views US=<vistas>/US --views CN=<vistas>/CN \
+  --output <campaña> --adapter-output <salida de los adaptadores> \
+  --aggregates <campaña>/retention/aggregates --edition <precios> --destination <nueva>
+```
+
+La declaración (`training/campaign_publication.py`) nombra la campaña, la [matriz de comparaciones](metrics.md#fuentes-y-publicación-con-la-campaña) y la comparación de su etapa de adaptadores, y se rechaza si la matriz lee otra comparación o la etapa es de otra campaña. `run` publica en el destino, por ámbito, las fuentes de la campaña, la comparación walk-forward y la cartera desde los agregados por ventana, el manifiesto de fuentes de la matriz y la matriz, y para cada padre sus fuentes y su comparación postentrenada, también desde agregados. Con `--ablation-stage` y `--ablation-output` añade la ablación de modalidades y con `--hours` el coste por hora de la matriz. Todo se escribe en una carpeta provisional junto al destino, con una marca, y solo toma el nombre del destino al terminar, con `publication.json` y la huella de cada archivo. Si algo falla no queda destino, y la ejecución siguiente descarta la carpeta marcada y repite. Una carpeta provisional sin la marca no se toca. Como las comparaciones de `evaluation/`, solo lee predicciones confirmadas y no ajusta nada. Hoy no tiene nada que leer porque la campaña no se ha ejecutado. El `campaign_publication` de `LATER_STAGES` registra la declaración de A y la de A v2 como último paso de cada campaña.
 
 ### Puntos de extensión y etapas posteriores
 
