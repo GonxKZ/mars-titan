@@ -3,6 +3,7 @@
 import json
 import sqlite3
 
+import numpy as np
 import pyarrow.parquet as pq
 import pytest
 
@@ -310,3 +311,77 @@ def test_pending_inputs_are_read_once_and_a_corrupted_record_is_rejected(tmp_pat
         db.execute("UPDATE pending SET payload = ?", (b"other",))
     with pytest.raises(ValueError, match="corrupto"):
         list(pending_items(tmp_path))
+
+
+class Grouped(Encoders):
+    """Codifica los gráficos por lotes sin que el lote cambie ningún vector."""
+
+    def __init__(self, size=4, shift=0.0):
+        super().__init__()
+        self.image_batch_size, self.shift, self.sizes = size, shift, []
+
+    def images(self, pngs):
+        self.sizes.append(len(pngs))
+        vectors = super().images(pngs)
+        # Con desplazamiento, el vector depende de su posición en el lote, como con otro algoritmo.
+        return vectors + self.shift * np.arange(len(pngs), dtype=np.float32)[:, None]
+
+
+def pending_charts(root, count):
+    from mars_titan.data.cohort_samples import _digest
+    from mars_titan.data.vector_carry import PendingVectors
+
+    root.mkdir()
+    (root / "configuration.json").write_text(json.dumps({"encoders": Encoders.spec}))
+    store = PendingVectors(root / "pending-vectors.sqlite")
+    identities = []
+    for i in range(count):
+        identities.append(dict(encoder=_digest(Encoders.spec), kind="chart", content=f"{i:064x}"))
+        store.add(identities[-1], "image", f"png-{i}".encode(), ("US", "A"))
+    store.close()
+    return identities
+
+
+def test_charts_encoded_in_batches_match_the_one_by_one_vectors(tmp_path):
+    from mars_titan.data.embeddings import EmbeddingCache
+    from mars_titan.data.vector_carry import encode_pending
+
+    identities = pending_charts(tmp_path / "edition", 11)
+    encoders = Grouped()
+    counts = encode_pending(tmp_path / "edition", encoders)
+    assert counts["by_kind"]["image"]["encoded"] == 11
+    # El primer lote y el último, más corto, se contrastan con su último gráfico solo.
+    assert encoders.sizes == [4, 1, 4, 3, 1]
+    store = EmbeddingCache(tmp_path / "edition/computed-vectors.sqlite", read_only=True)
+    try:
+        for i, identity in enumerate(identities):
+            alone = Encoders().images([f"png-{i}".encode()])[0]
+            assert store.get(identity).tobytes() == alone.tobytes()
+    finally:
+        store.close()
+
+
+def test_a_batch_that_changes_a_vector_stops_the_gpu_pass(tmp_path):
+    from mars_titan.data.vector_carry import encode_pending
+
+    pending_charts(tmp_path / "edition", 11)
+    with pytest.raises(ValueError, match="no reproduce"):
+        encode_pending(tmp_path / "edition", Grouped(shift=1e-6))
+    # Ningún vector del lote rechazado llega a guardarse.
+    with sqlite3.connect(tmp_path / "edition/computed-vectors.sqlite") as db:
+        assert db.execute("SELECT count(*) FROM embeddings").fetchone() == (0,)
+
+
+def test_the_full_flow_with_batched_charts_reproduces_the_online_samples(tmp_path):
+    from mars_titan.data.vector_carry import CollectingEncoders, encode_pending
+
+    manifest, previous, kwargs = first_edition(tmp_path)
+    output = tmp_path / "grouped"
+    encode_corpus(manifest, output, encoders=CollectingEncoders(Encoders.spec), **kwargs)
+    encoders = Grouped(size=2)
+    encode_pending(output, encoders)
+    assert 2 in encoders.sizes
+    final = encode_corpus(manifest, output, encoders=ReuseOnlyEncoders(Encoders.spec), **kwargs)
+    assert final["cohort_complete"] is True
+    reference = pq.read_table(previous / "samples/US/A/samples.parquet")
+    assert pq.read_table(output / "samples/US/A/samples.parquet").equals(reference)

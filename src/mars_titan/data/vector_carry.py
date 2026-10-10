@@ -35,6 +35,8 @@ PENDING_PATTERN = "pending-vectors*.sqlite"
 COMPUTED = "computed-vectors.sqlite"
 _WIDTHS = {"text": 384, "image": 512}
 _BATCH = 512
+# Un lote de gráficos de cada 64 se contrasta con la codificación de su último gráfico solo.
+_CHECK_EVERY = 64
 
 
 class MissingVector(ValueError):
@@ -179,13 +181,17 @@ def _read_only(path):
 
 
 def pending_items(edition):
-    """Entradas pendientes de todos los registros de una edición, sin repetir identidades."""
+    """Entradas pendientes de todos los registros de una edición, sin repetir identidades.
+
+    Se leen en el orden en que se anotaron. Recorrerlas por clave obligaba a saltar por todo el
+    archivo y, con la caché del sistema fría, la lectura era unas ocho veces más lenta.
+    """
     seen = set()
     for path in sorted(Path(edition).glob(PENDING_PATTERN)):
         db = _read_only(path)
         try:
             for key, text, kind, payload, checksum in db.execute(
-                "SELECT key,identity,kind,payload,checksum FROM pending ORDER BY key"
+                "SELECT key,identity,kind,payload,checksum FROM pending ORDER BY rowid"
             ):
                 if (
                     EmbeddingCache.identity(json.loads(text)) != (key, text)
@@ -257,9 +263,12 @@ class CollectingVectors:
 def encode_pending(edition, encoders, *, max_items=None):
     """Codificar en GPU solo las entradas pendientes y guardarlas en `computed-vectors.sqlite`.
 
-    Cada entrada se codifica sola, con la misma llamada que la codificación en línea, así que el
-    vector es el que esta habría calculado. Se puede detener con `max_items` y reanudar, porque
-    las entradas ya guardadas se saltan.
+    Cada texto se codifica solo, con la misma llamada que la codificación en línea. Los gráficos
+    se agrupan en lotes de `encoders.image_batch_size`. En la RTX 4070 de este equipo, un lote de
+    8 dio vectores idénticos bit a bit a los de un gráfico por llamada, y lotes de 32 o más no.
+    Como esa igualdad depende de los algoritmos que elija cuDNN, cada cierto número de lotes se
+    vuelve a codificar solo el último gráfico del lote y cualquier diferencia detiene la pasada. Se puede
+    detener con `max_items` y reanudar, porque las entradas ya guardadas se saltan.
     """
     edition = Path(edition)
     configured, _ = read_manifest(edition / "configuration.json")
@@ -277,6 +286,35 @@ def encode_pending(edition, encoders, *, max_items=None):
     # tiempo total del recorrido, que añade la lectura de pendientes y las escrituras.
     by_kind = {kind: dict(encoded=0, seconds=0.0) for kind in _WIDTHS}
     started_all = time.perf_counter()
+    group, size, groups = [], getattr(encoders, "image_batch_size", 1), 0
+
+    def keep(identity, kind, vector):
+        nonlocal batch
+        vector = np.asarray(vector, dtype=np.float32)
+        if vector.shape != (_WIDTHS[kind],) or not np.isfinite(vector).all():
+            raise ValueError("El codificador produjo dimensiones o valores no válidos")
+        batch.append((identity, vector))
+        if len(batch) >= _BATCH:
+            store.put_many(batch)
+            batch = []
+
+    def encode_group():
+        nonlocal group, groups
+        if not group:
+            return
+        started = time.perf_counter()
+        vectors = encoders.images([payload for _, payload in group])
+        # El último lote, más corto, también se contrasta porque su forma no se ha medido.
+        if (groups % _CHECK_EVERY == 0 or len(group) < size) and len(group) > 1:
+            alone = np.asarray(encoders.images([group[-1][1]])[0], dtype=np.float32)
+            if alone.tobytes() != np.asarray(vectors[-1], dtype=np.float32).tobytes():
+                raise ValueError("El lote de gráficos no reproduce el vector de un gráfico solo")
+        by_kind["image"]["seconds"] += time.perf_counter() - started
+        by_kind["image"]["encoded"] += len(group)
+        for (identity, _), vector in zip(group, vectors, strict=True):
+            keep(identity, "image", vector)
+        group, groups = [], groups + 1
+
     try:
         for identity, kind, payload in pending_items(edition):
             if identity.get("encoder") != encoder:
@@ -287,21 +325,18 @@ def encode_pending(edition, encoders, *, max_items=None):
             if max_items is not None and counts["encoded"] >= max_items:
                 counts["remaining"] += 1
                 continue
-            started = time.perf_counter()
-            if kind == "text":
-                vector = encoders.text(payload.decode("utf-8"))
-            else:
-                vector = encoders.images([payload])[0]
-            by_kind[kind]["seconds"] += time.perf_counter() - started
-            by_kind[kind]["encoded"] += 1
-            vector = np.asarray(vector, dtype=np.float32)
-            if vector.shape != (_WIDTHS[kind],) or not np.isfinite(vector).all():
-                raise ValueError("El codificador produjo dimensiones o valores no válidos")
-            batch.append((identity, vector))
             counts["encoded"] += 1
-            if len(batch) == _BATCH:
-                store.put_many(batch)
-                batch = []
+            if kind == "image":
+                group.append((identity, payload))
+                if len(group) == size:
+                    encode_group()
+                continue
+            started = time.perf_counter()
+            vector = encoders.text(payload.decode("utf-8"))
+            by_kind["text"]["seconds"] += time.perf_counter() - started
+            by_kind["text"]["encoded"] += 1
+            keep(identity, "text", vector)
+        encode_group()
         store.put_many(batch)
     finally:
         store.close()
