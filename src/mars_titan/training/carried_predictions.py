@@ -130,6 +130,7 @@ def selected_reference(anchor, anchor_manifest, *, input_policy):
     El ancla debe estar completa y seleccionada, con la reserva cerrada, la vista indicada,
     la misma política de entradas y el mismo entorno y código.
     """
+    from .kernel_policy import declared_policy
     from .reference_run import _confirmed_state, read_json, scientific_identity
 
     anchor, anchor_manifest = Path(anchor), Path(anchor_manifest)
@@ -144,8 +145,14 @@ def selected_reference(anchor, anchor_manifest, *, input_policy):
         or any(identity.get(key) != value for key, value in policy_identity(input_policy).items())
     ):
         raise ValueError("El ancla no es una referencia seleccionada de la misma política")
+    # La precisión declarada por el ancla se fija antes de comparar los valores numéricos.
+    if declared_policy(case.get("precision")) != identity.get("kernel_policy"):
+        raise ValueError("El entorno o el código no coincide con el ancla")
     current = scientific_identity(
-        kind=case["kind"], input_policy=input_policy, head=case.get("head")
+        kind=case["kind"],
+        input_policy=input_policy,
+        head=case.get("head"),
+        graphs="cuda_graphs" in case,
     )
     if any(identity.get(key) != value for key, value in current.items()):
         raise ValueError("El entorno o el código no coincide con el ancla")
@@ -158,7 +165,11 @@ def reference_model(identity, state, device):
 
     Devuelve el modelo y si emite los cinco cuantiles de la cabeza común.
     """
-    from mars_titan.models.baselines.multimodal import STRICT_FUSION, MultimodalReference
+    from mars_titan.models.baselines.multimodal import (
+        STRICT_FUSION,
+        MultimodalReference,
+        transformer_batch_options,
+    )
     from mars_titan.models.quantile_head import QUANTILE_HEAD
 
     case = identity["case"]
@@ -170,6 +181,9 @@ def reference_model(identity, state, device):
         mask_fusion=identity.get("mask_fusion", STRICT_FUSION),
         **case["architecture"],
         **({"head": QUANTILE_HEAD} if quantiles else {}),
+        # reference_run siempre registra el lote. Una identidad sin él conserva el contrato
+        # por defecto, igual que al reconstruir el padre en el posentrenamiento.
+        **transformer_batch_options(case["kind"], identity.get("batch_size", 1)),
     ).to(device)
     model.load_state_dict(state["model"])
     return model, quantiles

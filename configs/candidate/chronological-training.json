@@ -24,10 +24,11 @@
     "epochs": 30,
     "selection": {"metric": "session_mae", "stopping": "fixed_budget", "patience": 5, "min_delta": 1e-05},
     "block_rows": 128,
-    "accumulation_rows": null,
+    "accumulation_rows": 128,
     "recompute": false,
     "checkpoint_updates": 256,
-    "checkpoint_seconds": 900.0
+    "checkpoint_seconds": 900.0,
+    "precision": "fp32_strict"
   },
   "variants": {
     "m1_k1": {},
@@ -52,6 +53,6 @@
     "La variante m1_k1_l1_median solo se usa si el control de #22 descarta la cabeza de cuantiles para la comparación principal.",
     "M2 y M3 no están definidos sobre la geometría 128x256 de este banco.",
     "El caudal y la memoria en cuda:0 se medirán antes de fijar el presupuesto común.",
-    "accumulation_rows y recompute siguen desactivados para conservar la paridad con la receta anterior. Antes de ampliar al universo completo hay que medir la memoria en cuda:0 y elegir la opción. Cada una cambia la identidad de la receta."
+    "accumulation_rows 128 con bloques de 128 flujos, medido en cuda:0 sobre US+CN fold-012 (reports/engineering/campaign-kernels-20261009). Sin acumulación la candidata no cabe en la fracción de 6 GiB con los activos por instante de US+CN. La acumulación solo cambia el orden de las sumas y recompute sigue desactivado. precision fp32_strict desactiva TF32 en cuDNN, que PyTorch activa por defecto, y entra en la identidad."
   ]
 }

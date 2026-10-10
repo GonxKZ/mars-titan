@@ -70,7 +70,9 @@ def test_future_suffix_cannot_change_prefix_or_receive_its_gradient(training):
     derivative = torch.autograd.grad(observed[:, :4, 0].sum(), prices)[0]
     assert torch.count_nonzero(derivative[:, 4:]) == 0
     assert derivative[:, :4].abs().sum() > 0
-    torch.testing.assert_close(encoder(prices), observed[:, -1], rtol=0, atol=0)
+    # forward calcula solo el último token de la última capa: mismo valor con otro redondeo.
+    # La paridad estricta en FP64 está en test_compact_transformer_last_token.py.
+    torch.testing.assert_close(encoder(prices), observed[:, -1], rtol=1e-5, atol=1e-6)
 
 
 def test_positions_distinguish_identical_observations_at_different_times():

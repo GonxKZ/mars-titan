@@ -23,6 +23,10 @@ from mars_titan.models.titans.state import mac_tensors
 
 # Huellas capturadas en 42e7dbca, antes de introducir PT1, con memory_stability_traces.py en
 # CPU, FP32, OMP_NUM_THREADS=2 y MKL_NUM_THREADS=2. La comprobación CUDA fija las de cuda:0.
+# Las huellas financieras se recapturaron cuando el codificador de precios pasó a calcular la
+# última capa solo para el último token (perf/campaign-kernels). Ese cambio altera el redondeo
+# FP32 de los cuantiles, el estado y los gradientes del predictor, no el de la memoria sola.
+# La diferencia con las anteriores es del orden de 1e-7 a 6e-6 en relativo.
 CORE_FP32_CPU = dict(
     memory=dict(
         fingerprint="0b0555f9f566d5436b08c121a24ab1ec1757ef8fa14aadebef62313795836987",
@@ -31,9 +35,9 @@ CORE_FP32_CPU = dict(
         gradients="6e555c7d0fdf3d18a927702bd92a0a703e3daa589bd17576ca0edb627b0fd6bf",
     ),
     financial=dict(
-        quantiles="51076492e02ed62e93d81f63edcf883c9647f8815f7399bc1f07451668ee55c2",
-        state="bcb3a940e7f5bbbc27b1491518281e2b3e93c9a02e8d85699e469ecfbf1bb619",
-        gradients="f926745c6e3d39a7f5f092dfd6283f1ed8a8d78884390fe43b4089109f4fc2f7",
+        quantiles="a68a109825d8d61b47c6f78a6901668300c32d56209689ea1c1e69833348a003",
+        state="4dd0d0ad0de5f47f086bba5c624e966c93f1410147a69f0a9bcea1e478d74924",
+        gradients="23c74d2666415904c96929c42ed3ddee6a867c653d92e102184f40d132b56f59",
         unused=[],
     ),
 )
@@ -47,9 +51,9 @@ PROJECTIONS_FP32_CPU = dict(
         gradients="68322ce1517a4c47592a3153a3d6c169c134434d91eab34b2f8d272cbbf4eb70",
     ),
     financial=dict(
-        quantiles="881092fbb29c3869ad756e0417662acfce235af60ff4214cd063ea32f94dab4c",
-        state="15226eeaebe926114228c1ba1bd0f1430559f6154969ec69fb51f8023b8e4864",
-        gradients="846048401408d6b5f1ef9dc7844c2971cdd78ab663c1c1c6b4ec7823e5af90b4",
+        quantiles="976802e8d11a0d33f38accf65990feeb29f8af725371c0ef78343b3767e9181a",
+        state="2c61326d0a0ee367461634ca6561bb2afebaff8066ca8e8e4a03d8b6f0d488f5",
+        gradients="c6fb2f356c1b6b0655cd4dc0d772a1f9a8ffaff22ffb619044d37b1ae0bd9fe5",
         unused=[],
     ),
 )

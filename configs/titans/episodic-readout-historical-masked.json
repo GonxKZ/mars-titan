@@ -14,14 +14,15 @@
       "min_delta": 1e-05,
       "stopping": "fixed_budget"
     },
-    "block_rows": 128,
+    "block_rows": 512,
     "neighbors": 8,
     "temperature": 1.0,
     "bank_capacity": 1024,
     "bank_seed": 73,
     "max_working_bytes": 134217728,
     "checkpoint_updates": 256,
-    "checkpoint_seconds": 900.0
+    "checkpoint_seconds": 900.0,
+    "precision": "fp32_strict"
   },
   "walk_forward": {
     "search_cases": {
@@ -35,6 +36,7 @@
     "update_instants coincide con el truncamiento de la receta de Titans-MAC. El ajuste no usa BPTT entre instantes.",
     "La capacidad física del banco es 1.024 episodios en M1, M2 y M3. M0 usa el control no_bank sin banco.",
     "M3 usa los tres índices de M2 con pesos fijos 1/3 sobre error, anomalía y relevancia. Sus escalas se estiman al empezar cada ventana con su tramo de entrenamiento y quedan en la identidad del ajuste. Los traslados aplican las del ancla. No añade casos de búsqueda.",
-    "Memoria y caudal en cuda:0 sin medir. El bloqueo de aprendizaje impide cualquier ajuste hasta verificar la edición histórica desde 2000."
+    "Bloques de 512 flujos sobre el padre con max_batch 1.024, medidos en cuda:0 sobre US+CN fold-012 (reports/engineering/campaign-kernels-20261009). El bloque solo cambia el orden de las sumas: cada actualización sigue usando los mismos instantes. precision fp32_strict desactiva TF32 y entra en la identidad.",
+    "El bloqueo de aprendizaje impide cualquier ajuste hasta verificar la edición histórica desde 2000."
   ]
 }

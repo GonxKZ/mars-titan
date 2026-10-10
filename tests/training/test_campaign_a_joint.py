@@ -224,10 +224,16 @@ def test_memory_options_block_the_launch_until_they_match_the_recipe(tmp_path):
     blockers = plan.launch_blockers(campaign())
     assert len(blockers) == 4 and all("pendiente" in reason for reason in blockers)
 
+    # Titans-MAC y los núcleos de CM-v1 comparten la receta cronológica, que ya declara la
+    # acumulación medida en cuda:0. Un valor igual al de la receta deja de bloquear.
+    recipe = json.loads(
+        (CONFIGS / "titans/chronological-training-historical-masked.json").read_text()
+    )
+    rows = recipe["recipe"]["accumulation_rows"]
+
     def fixed(value):
-        # Un valor igual al de la receta (null, sin acumulación) deja de bloquear.
-        value["memory_options"]["titans_mac"]["accumulation_rows"] = None
-        value["memory_options"]["cm_v1"]["accumulation_rows"] = None
+        value["memory_options"]["titans_mac"]["accumulation_rows"] = rows
+        value["memory_options"]["cm_v1"]["accumulation_rows"] = rows
 
     loaded = plan.load_campaign(edited(tmp_path, fixed))
     assert [reason.split(".")[0] for reason in plan.launch_blockers(loaded)] == [

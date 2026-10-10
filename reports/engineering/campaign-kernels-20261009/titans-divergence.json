@@ -1,0 +1,3559 @@
+{
+  "schema_version": 1,
+  "recorded_at_utc": "2026-10-09T16:32:59.468054+00:00",
+  "commit": "14c6b1ddff76b3fd548e7712446ff3389947f3c2",
+  "command": "uv run --no-sync python benchmarks/titans_divergence.py {extract,trajectories,lyapunov,floor,report} ...",
+  "environment": "OMP_NUM_THREADS=2, MKL_NUM_THREADS=2, CUBLAS_WORKSPACE_CONFIG=:4096:8",
+  "scope": "Trayectorias de MAC sin grafo exterior, sin optimizador, sin etiquetas y sin cambiar par\u00e1metros. No es una medida de utilidad predictiva",
+  "hardware": {
+    "machine": "x86_64",
+    "cuda_name": "NVIDIA GeForce RTX 4070 Laptop GPU"
+  },
+  "versions": {
+    "python": "3.12.14",
+    "torch": "2.14.0+cu130",
+    "cuda": "13.0",
+    "cudnn": 92400
+  },
+  "shapes": {
+    "dim": 64,
+    "depth": 2,
+    "flows": 4,
+    "heads": 4,
+    "persistent_tokens": 4
+  },
+  "candidates": {
+    "gate_bias": {
+      "gate_bias": {
+        "alpha_half_life": 256.0,
+        "eta": 0.5,
+        "theta": 0.05
+      },
+      "residual_layer_norm": false
+    },
+    "gate_bias_residual_layer_norm": {
+      "gate_bias": {
+        "alpha_half_life": 256.0,
+        "eta": 0.5,
+        "theta": 0.05
+      },
+      "residual_layer_norm": true
+    },
+    "v1_residual_layer_norm": {
+      "gate_bias": null,
+      "residual_layer_norm": true
+    }
+  },
+  "precisions": {
+    "cpu_float64": {
+      "device": "cpu",
+      "dtype": "float64",
+      "arithmetic": "exact"
+    },
+    "cuda_float64": {
+      "device": "cuda:0",
+      "dtype": "float64",
+      "arithmetic": "exact"
+    },
+    "cpu_float32": {
+      "device": "cpu",
+      "dtype": "float32",
+      "arithmetic": "exact"
+    },
+    "cuda_float32": {
+      "device": "cuda:0",
+      "dtype": "float32",
+      "arithmetic": "exact"
+    },
+    "cuda_tf32": {
+      "device": "cuda:0",
+      "dtype": "float32",
+      "arithmetic": "tf32"
+    },
+    "cuda_bf16_emulated": {
+      "device": "cuda:0",
+      "dtype": "float32",
+      "arithmetic": "bf16"
+    },
+    "cpu_bf16_emulated": {
+      "device": "cpu",
+      "dtype": "float32",
+      "arithmetic": "bf16"
+    }
+  },
+  "bf16_emulation": "Operandos y resultado de linear, bmm y SDPA redondeados a bfloat16, acumulaci\u00f3n y resto de operaciones en FP32. Cota optimista del error de autocast real",
+  "studies": {
+    "reproduction": "Par\u00e1metros y tokens FP64 como titans_mac_output_scale.py",
+    "precision": "Par\u00e1metros iniciales y tokens redondeados a FP32 y comunes a todas"
+  },
+  "streams": {
+    "fused_norm_1": "N(0, I/D)",
+    "unit_variance": "N(0, I)",
+    "recurring_unit": "cuatro prototipos N(0, I) alternos m\u00e1s 0,3\u00b7N(0, I)",
+    "real": "Tokens fusionados reales de `extract`, con el codificador inicial"
+  },
+  "real_tokens": {
+    "path": "/tmp/claude-1000/-home-gonzalo-Escritorio-TFM-TITANS/fc3c87e6-bd61-4e7b-ae95-055928458359/scratchpad/divergence/real-tokens-cn-fold012.pt",
+    "shape": [
+      3820,
+      4,
+      1,
+      64
+    ],
+    "flows": [
+      "CN/600867.SS",
+      "CN/600868.SS",
+      "CN/600871.SS",
+      "CN/600893.SS"
+    ],
+    "view": "/home/gonzalo/.local/state/mars-titan/masked-campaign-2000-20261009/views/CN/fold-012/manifest.json",
+    "recipe": "configs/titans/chronological-training-historical-masked.json",
+    "seed": 42,
+    "encoder": "FinancialPredictor inicial, mac_online, semilla de la receta",
+    "steps": 3820,
+    "token_norm_mean": 1.824112892150879
+  },
+  "reference": "cpu_float64",
+  "metrics": {
+    "output_relative_distance": "\u2016o_t \u2212 r_t\u2016/\u2016r_t\u2016 sobre flujos y dimensiones",
+    "state_relative_distance": "\u2016z \u2212 z_ref\u2016/\u2016z_ref\u2016 con pesos r\u00e1pidos y momentum",
+    "horizons": "primer paso con distancia de salida igual o mayor que el umbral",
+    "growth_rate_per_step": "pendiente de log(distancia) entre 1e-12 y 1e-3",
+    "climate": "norma media y percentil 90 de |salida| en la segunda mitad del recorrido",
+    "climate_spread": "diferencia de clima entre trayectorias FP64 con perturbaci\u00f3n inicial",
+    "lyapunov": "Benettin en FP64, \u03b4\u2080 = 1e-8\u00b7\u2016z\u2080\u2016, renormalizaci\u00f3n cada 8 pasos",
+    "free_growth": "m\u00e1ximo sobre direcciones de la distancia relativa de salida",
+    "floor": "copias exactas de cada flujo en el mismo lote, separadas solo por su fila"
+  },
+  "unit_roundoff": {
+    "float64": 1.1102230246251565e-16,
+    "float32": 5.960464477539063e-08,
+    "tf32": 0.00048828125,
+    "bf16": 0.00390625
+  },
+  "results": {
+    "reproduction": {
+      "fused_norm_1": {
+        "gate_bias": {
+          "reference_climate": {
+            "output_norm": 1.4053593291160638e-05,
+            "output_abs_p90": 3.10320479415259e-06
+          },
+          "reference_normalization": {
+            "layer_norm_calls": 0,
+            "normalize_calls": 8192,
+            "normalize_min_input_norm": 0.05302792752659261
+          },
+          "steps": 4096,
+          "cuda_float64": {
+            "output_relative_distance": {
+              "64": 6.727585210932229e-16,
+              "256": 9.725641108347849e-16,
+              "512": 1.0178271921376353e-15,
+              "1024": 1.1050410534196262e-15,
+              "1536": 5.57518146540021e-16,
+              "2048": 5.06714046655329e-16,
+              "3072": 4.073591485550978e-16,
+              "4096": 4.886605034496951e-16
+            },
+            "state_relative_distance": {
+              "64": 2.5117719284881707e-16,
+              "256": 4.774225554727553e-16,
+              "512": 6.664884440657232e-16,
+              "1024": 8.988134182099619e-16,
+              "1536": 7.912080047055853e-16,
+              "2048": 7.502363750116684e-16,
+              "3072": 8.280593963140038e-16,
+              "4096": 9.20783327708684e-16
+            },
+            "horizons": {
+              "1e-06": null,
+              "0.001": null,
+              "0.01": null
+            },
+            "growth_rate_per_step": null,
+            "climate_relative_difference": {
+              "output_norm": 1.2054325604926437e-16,
+              "output_abs_p90": 0.0
+            },
+            "climate": {
+              "output_norm": 1.4053593291160636e-05,
+              "output_abs_p90": 3.10320479415259e-06
+            },
+            "normalization": {
+              "layer_norm_calls": 0,
+              "normalize_calls": 8192,
+              "normalize_min_input_norm": 0.053027927526592626
+            },
+            "seconds": 25.809518760011997
+          }
+        },
+        "gate_bias_residual_layer_norm": {
+          "reference_climate": {
+            "output_norm": 0.5964557202973437,
+            "output_abs_p90": 0.1165370036305776
+          },
+          "reference_normalization": {
+            "layer_norm_calls": 12288,
+            "normalize_calls": 8192,
+            "normalize_min_input_norm": 0.1821245333615955,
+            "layer_norm_input_variance_quantiles": {
+              "min": 6.267084835282004e-05,
+              "p01": 0.00018060548903707778,
+              "p50": 0.0014373454202468972
+            },
+            "layer_norm_calls_below_10_eps": 6,
+            "layer_norm_max_gain": 117.30590784834119
+          },
+          "steps": 4096,
+          "cuda_float64": {
+            "output_relative_distance": {
+              "64": 1.2511598547618249e-14,
+              "256": 4.3515709541033105e-14,
+              "512": 1.734485717961262e-12,
+              "1024": 1.8568519075239648e-08,
+              "1536": 9.791753876706516e-05,
+              "2048": 0.4092899363624678,
+              "3072": 0.7464546939273006,
+              "4096": 0.6234753903942671
+            },
+            "state_relative_distance": {
+              "64": 3.654959073682279e-15,
+              "256": 1.7678092906004115e-14,
+              "512": 9.374001532548363e-13,
+              "1024": 7.075084234452782e-09,
+              "1536": 3.7573703763592644e-05,
+              "2048": 0.14986541748593551,
+              "3072": 0.4153499664394978,
+              "4096": 0.4667535394449619
+            },
+            "horizons": {
+              "1e-06": 1235,
+              "0.001": 1659,
+              "0.01": 1791
+            },
+            "growth_rate_per_step": 0.017302309833737317,
+            "climate_relative_difference": {
+              "output_norm": 0.0012631034600194971,
+              "output_abs_p90": 0.0005358538982594871
+            },
+            "climate": {
+              "output_norm": 0.5957023350132877,
+              "output_abs_p90": 0.11647455682289068
+            },
+            "normalization": {
+              "layer_norm_calls": 12288,
+              "normalize_calls": 8192,
+              "normalize_min_input_norm": 0.18212453336159554,
+              "layer_norm_input_variance_quantiles": {
+                "min": 6.149835446293916e-05,
+                "p01": 0.0001769651881157024,
+                "p50": 0.0014277315793465753
+              },
+              "layer_norm_calls_below_10_eps": 5,
+              "layer_norm_max_gain": 118.26384009747771
+            },
+            "seconds": 29.87048171600327
+          }
+        },
+        "v1_residual_layer_norm": {
+          "reference_climate": {
+            "output_norm": 0.42180013647473014,
+            "output_abs_p90": 0.08950067554190898
+          },
+          "reference_normalization": {
+            "layer_norm_calls": 12288,
+            "normalize_calls": 8192,
+            "normalize_min_input_norm": 0.06636128828017317,
+            "layer_norm_input_variance_quantiles": {
+              "min": 1.0597713922615277e-10,
+              "p01": 2.0341320347562777e-08,
+              "p50": 2.0246534590399165e-05
+            },
+            "layer_norm_calls_below_10_eps": 8806,
+            "layer_norm_max_gain": 316.226090384457
+          },
+          "steps": 4096,
+          "cuda_float64": {
+            "output_relative_distance": {
+              "64": 0.988199547159481,
+              "256": 2.099931393929435,
+              "512": 1.3988192142961635,
+              "1024": 1.4654211968563515,
+              "1536": 1.3225058633852111,
+              "2048": 1.5869119371568114,
+              "3072": 1.335045500036643,
+              "4096": 1.4588370948372922
+            },
+            "state_relative_distance": {
+              "64": 0.9671253105935195,
+              "256": 2.21868343188621,
+              "512": 1.7588098553365368,
+              "1024": 1.7027747578441808,
+              "1536": 1.0694536130290873,
+              "2048": 1.2836101076278577,
+              "3072": 2.254934431662923,
+              "4096": 1.0496753990737828
+            },
+            "horizons": {
+              "1e-06": 30,
+              "0.001": 44,
+              "0.01": 51
+            },
+            "growth_rate_per_step": 0.5766573878648079,
+            "climate_relative_difference": {
+              "output_norm": 0.009473659709689284,
+              "output_abs_p90": 0.009206471547427526
+            },
+            "climate": {
+              "output_norm": 0.42579612743319223,
+              "output_abs_p90": 0.0903246609647611
+            },
+            "normalization": {
+              "layer_norm_calls": 12288,
+              "normalize_calls": 8192,
+              "normalize_min_input_norm": 0.06552312197620977,
+              "layer_norm_input_variance_quantiles": {
+                "min": 1.8157708639518566e-10,
+                "p01": 1.9513436832656572e-08,
+                "p50": 1.9947113691946913e-05
+              },
+              "layer_norm_calls_below_10_eps": 8755,
+              "layer_norm_max_gain": 316.2248950701157
+            },
+            "seconds": 23.444134818011662
+          }
+        }
+      },
+      "unit_variance": {
+        "gate_bias": {
+          "reference_climate": {
+            "output_norm": 0.00041157266811982294,
+            "output_abs_p90": 8.370925422852721e-05
+          },
+          "reference_normalization": {
+            "layer_norm_calls": 0,
+            "normalize_calls": 8192,
+            "normalize_min_input_norm": 0.11744470992287266
+          },
+          "steps": 4096,
+          "cuda_float64": {
+            "output_relative_distance": {
+              "64": 7.199761217439424e-16,
+              "256": 1.0004174339396406e-15,
+              "512": 9.243528832241966e-16,
+              "1024": 1.248559073706341e-15,
+              "1536": 5.984422869354534e-16,
+              "2048": 5.620241769555345e-16,
+              "3072": 8.083417004862732e-16,
+              "4096": 4.632830216428443e-16
+            },
+            "state_relative_distance": {
+              "64": 2.5665703342967993e-16,
+              "256": 5.070774753748766e-16,
+              "512": 7.493504732612704e-16,
+              "1024": 8.97691543183074e-16,
+              "1536": 8.839844414948097e-16,
+              "2048": 8.807271054615612e-16,
+              "3072": 9.259644847699513e-16,
+              "4096": 9.906324654537126e-16
+            },
+            "horizons": {
+              "1e-06": null,
+              "0.001": null,
+              "0.01": null
+            },
+            "growth_rate_per_step": null,
+            "climate_relative_difference": {
+              "output_norm": 0.0,
+              "output_abs_p90": 1.618999868171117e-16
+            },
+            "climate": {
+              "output_norm": 0.00041157266811982294,
+              "output_abs_p90": 8.370925422852722e-05
+            },
+            "normalization": {
+              "layer_norm_calls": 0,
+              "normalize_calls": 8192,
+              "normalize_min_input_norm": 0.11744470992287268
+            },
+            "seconds": 18.8691110869986
+          }
+        },
+        "gate_bias_residual_layer_norm": {
+          "reference_climate": {
+            "output_norm": 0.8975839613079113,
+            "output_abs_p90": 0.17678449954083492
+          },
+          "reference_normalization": {
+            "layer_norm_calls": 12288,
+            "normalize_calls": 8192,
+            "normalize_min_input_norm": 0.20252871014235857,
+            "layer_norm_input_variance_quantiles": {
+              "min": 0.00019968229289700788,
+              "p01": 0.0008442704398680216,
+              "p50": 0.003501680312639805
+            },
+            "layer_norm_calls_below_10_eps": 0,
+            "layer_norm_max_gain": 69.05881493590107
+          },
+          "steps": 4096,
+          "cuda_float64": {
+            "output_relative_distance": {
+              "64": 1.0879820308585037e-14,
+              "256": 2.1289926393755488e-14,
+              "512": 1.1551449570410678e-13,
+              "1024": 4.6048096274434615e-12,
+              "1536": 1.82919772104026e-10,
+              "2048": 1.0236510798549703e-08,
+              "3072": 1.2831525917338417e-05,
+              "4096": 0.014050336095070148
+            },
+            "state_relative_distance": {
+              "64": 3.3356418654926298e-15,
+              "256": 9.201471387401121e-15,
+              "512": 5.144437594179706e-14,
+              "1024": 2.3966605714442716e-12,
+              "1536": 6.667745684894261e-11,
+              "2048": 4.7030135906474396e-09,
+              "3072": 6.828758722646219e-06,
+              "4096": 0.006425029571298518
+            },
+            "horizons": {
+              "1e-06": 2628,
+              "0.001": 3687,
+              "0.01": 4034
+            },
+            "growth_rate_per_step": 0.007209943345167906,
+            "climate_relative_difference": {
+              "output_norm": 1.0956177798774956e-06,
+              "output_abs_p90": 0.00023078521096194651
+            },
+            "climate": {
+              "output_norm": 0.8975849447168582,
+              "output_abs_p90": 0.17682529878885625
+            },
+            "normalization": {
+              "layer_norm_calls": 12288,
+              "normalize_calls": 8192,
+              "normalize_min_input_norm": 0.2025286578392568,
+              "layer_norm_input_variance_quantiles": {
+                "min": 0.0001996823258215434,
+                "p01": 0.0008442704564412811,
+                "p50": 0.003501680311042297
+              },
+              "layer_norm_calls_below_10_eps": 0,
+              "layer_norm_max_gain": 69.0588095140576
+            },
+            "seconds": 20.318420976022026
+          }
+        },
+        "v1_residual_layer_norm": {
+          "reference_climate": {
+            "output_norm": 0.7883099332880619,
+            "output_abs_p90": 0.1618628935062521
+          },
+          "reference_normalization": {
+            "layer_norm_calls": 12288,
+            "normalize_calls": 8192,
+            "normalize_min_input_norm": 0.13493993217765038,
+            "layer_norm_input_variance_quantiles": {
+              "min": 1.5144920034809594e-11,
+              "p01": 6.236283022428402e-08,
+              "p50": 4.785667433067659e-05
+            },
+            "layer_norm_calls_below_10_eps": 7705,
+            "layer_norm_max_gain": 316.2275265548985
+          },
+          "steps": 4096,
+          "cuda_float64": {
+            "output_relative_distance": {
+              "64": 1.0089133798565926,
+              "256": 0.9496998249502143,
+              "512": 1.3621705831200441,
+              "1024": 1.2746418995186863,
+              "1536": 1.478570502227954,
+              "2048": 1.3950671313361838,
+              "3072": 1.2097604825693404,
+              "4096": 1.284880546093436
+            },
+            "state_relative_distance": {
+              "64": 0.8122212487323093,
+              "256": 1.4138617204633734,
+              "512": 1.9913198646709924,
+              "1024": 3.535454460614557,
+              "1536": 1.308827795256426,
+              "2048": 6.9485972464031365,
+              "3072": 1.3832439265389813,
+              "4096": 1.3520824643361884
+            },
+            "horizons": {
+              "1e-06": 38,
+              "0.001": 52,
+              "0.01": 54
+            },
+            "growth_rate_per_step": 0.5456949533920799,
+            "climate_relative_difference": {
+              "output_norm": 0.003707864138897408,
+              "output_abs_p90": 0.0035767493989594295
+            },
+            "climate": {
+              "output_norm": 0.7912328794200373,
+              "output_abs_p90": 0.16128395049918978
+            },
+            "normalization": {
+              "layer_norm_calls": 12288,
+              "normalize_calls": 8192,
+              "normalize_min_input_norm": 0.1524731883683448,
+              "layer_norm_input_variance_quantiles": {
+                "min": 1.3018018782587813e-10,
+                "p01": 3.5079552915595774e-08,
+                "p50": 4.696290775179428e-05
+              },
+              "layer_norm_calls_below_10_eps": 7768,
+              "layer_norm_max_gain": 316.22570770743545
+            },
+            "seconds": 21.61749252700247
+          }
+        }
+      },
+      "recurring_unit": {
+        "gate_bias": {
+          "reference_climate": {
+            "output_norm": 0.0030757322532181113,
+            "output_abs_p90": 0.0006410241697062419
+          },
+          "reference_normalization": {
+            "layer_norm_calls": 0,
+            "normalize_calls": 8192,
+            "normalize_min_input_norm": 0.19833328387901766
+          },
+          "steps": 4096,
+          "cuda_float64": {
+            "output_relative_distance": {
+              "64": 6.635708712396435e-16,
+              "256": 7.414214524663375e-16,
+              "512": 8.358198652853281e-16,
+              "1024": 6.952183097996791e-16,
+              "1536": 5.208885653184266e-16,
+              "2048": 4.3558793480514083e-16,
+              "3072": 9.409627318753536e-16,
+              "4096": 8.706032708647875e-16
+            },
+            "state_relative_distance": {
+              "64": 2.5177080550430685e-16,
+              "256": 4.999039055091406e-16,
+              "512": 6.636175740561537e-16,
+              "1024": 7.28539183085466e-16,
+              "1536": 8.620204866215118e-16,
+              "2048": 1.119456852081952e-15,
+              "3072": 2.148688927218102e-15,
+              "4096": 3.664739886591855e-15
+            },
+            "horizons": {
+              "1e-06": null,
+              "0.001": null,
+              "0.01": null
+            },
+            "growth_rate_per_step": null,
+            "climate_relative_difference": {
+              "output_norm": 0.0,
+              "output_abs_p90": 3.3827185423674585e-16
+            },
+            "climate": {
+              "output_norm": 0.0030757322532181113,
+              "output_abs_p90": 0.0006410241697062417
+            },
+            "normalization": {
+              "layer_norm_calls": 0,
+              "normalize_calls": 8192,
+              "normalize_min_input_norm": 0.19833328387901766
+            },
+            "seconds": 20.003192055999534
+          }
+        },
+        "gate_bias_residual_layer_norm": {
+          "reference_climate": {
+            "output_norm": 0.9056717826350222,
+            "output_abs_p90": 0.18079145819797626
+          },
+          "reference_normalization": {
+            "layer_norm_calls": 12288,
+            "normalize_calls": 8192,
+            "normalize_min_input_norm": 0.2570255775205379,
+            "layer_norm_input_variance_quantiles": {
+              "min": 5.624837948576628e-05,
+              "p01": 0.0001261312732020543,
+              "p50": 0.0006201145706102277
+            },
+            "layer_norm_calls_below_10_eps": 52,
+            "layer_norm_max_gain": 122.86052599659148
+          },
+          "steps": 4096,
+          "cuda_float64": {
+            "output_relative_distance": {
+              "64": 4.330008885241906e-15,
+              "256": 3.102349565078528e-14,
+              "512": 7.295934279700787e-13,
+              "1024": 9.648048258768225e-10,
+              "1536": 1.8105935412457501e-06,
+              "2048": 0.2197164568666745,
+              "3072": 0.6615809508036226,
+              "4096": 0.5746217677926924
+            },
+            "state_relative_distance": {
+              "64": 2.3436164472281395e-15,
+              "256": 1.1707089088285892e-14,
+              "512": 3.5968429806384514e-13,
+              "1024": 3.5330814583582693e-10,
+              "1536": 8.784871965622974e-07,
+              "2048": 0.11249840701276172,
+              "3072": 0.29959449255589976,
+              "4096": 0.3659129061850296
+            },
+            "horizons": {
+              "1e-06": 1433,
+              "0.001": 1825,
+              "0.01": 1937
+            },
+            "growth_rate_per_step": 0.014309579506926084,
+            "climate_relative_difference": {
+              "output_norm": 0.008599518622678009,
+              "output_abs_p90": 0.004574296237036682
+            },
+            "climate": {
+              "output_norm": 0.8978834412742184,
+              "output_abs_p90": 0.17996446451105289
+            },
+            "normalization": {
+              "layer_norm_calls": 12288,
+              "normalize_calls": 8192,
+              "normalize_min_input_norm": 0.257025577520538,
+              "layer_norm_input_variance_quantiles": {
+                "min": 5.624837948385359e-05,
+                "p01": 0.0001244696262497775,
+                "p50": 0.0006206629301162477
+              },
+              "layer_norm_calls_below_10_eps": 54,
+              "layer_norm_max_gain": 122.86052599836505
+            },
+            "seconds": 18.27707818199997
+          }
+        },
+        "v1_residual_layer_norm": {
+          "reference_climate": {
+            "output_norm": 0.8153836962626378,
+            "output_abs_p90": 0.16640118862595354
+          },
+          "reference_normalization": {
+            "layer_norm_calls": 12288,
+            "normalize_calls": 8192,
+            "normalize_min_input_norm": 0.19333617378229978,
+            "layer_norm_input_variance_quantiles": {
+              "min": 8.004685971019273e-10,
+              "p01": 9.035914062220757e-08,
+              "p50": 4.06361965063395e-05
+            },
+            "layer_norm_calls_below_10_eps": 8062,
+            "layer_norm_max_gain": 316.2151102568118
+          },
+          "steps": 4096,
+          "cuda_float64": {
+            "output_relative_distance": {
+              "64": 0.6551644284853642,
+              "256": 1.5622766592664372,
+              "512": 1.24955806164532,
+              "1024": 1.1098036196832097,
+              "1536": 1.5428065942788378,
+              "2048": 1.2533436479440931,
+              "3072": 1.33419771722725,
+              "4096": 1.4107270470477742
+            },
+            "state_relative_distance": {
+              "64": 0.397380790777875,
+              "256": 1.2659081574644173,
+              "512": 1.3757282714202526,
+              "1024": 1.0673599142272632,
+              "1536": 5.0077802528504005,
+              "2048": 1.2634996286528202,
+              "3072": 5.350508255000602,
+              "4096": 6.27860204562856
+            },
+            "horizons": {
+              "1e-06": 33,
+              "0.001": 49,
+              "0.01": 52
+            },
+            "growth_rate_per_step": 0.535559891062615,
+            "climate_relative_difference": {
+              "output_norm": 0.00046680075054264487,
+              "output_abs_p90": 0.00018478029025081405
+            },
+            "climate": {
+              "output_norm": 0.8150030745412422,
+              "output_abs_p90": 0.16643193628588593
+            },
+            "normalization": {
+              "layer_norm_calls": 12288,
+              "normalize_calls": 8192,
+              "normalize_min_input_norm": 0.20326450398638943,
+              "layer_norm_input_variance_quantiles": {
+                "min": 5.001128869025602e-11,
+                "p01": 7.794168056827442e-08,
+                "p50": 3.817927216930752e-05
+              },
+              "layer_norm_calls_below_10_eps": 8176,
+              "layer_norm_max_gain": 316.226975271899
+            },
+            "seconds": 19.052584430988645
+          }
+        }
+      }
+    },
+    "precision": {
+      "fused_norm_1": {
+        "gate_bias": {
+          "reference_climate": {
+            "output_norm": 1.395017299156898e-05,
+            "output_abs_p90": 2.5074644213091193e-06
+          },
+          "reference_normalization": {
+            "layer_norm_calls": 0,
+            "normalize_calls": 8192,
+            "normalize_min_input_norm": 0.03754034061064993
+          },
+          "steps": 4096,
+          "cpu_float32": {
+            "output_relative_distance": {
+              "64": 4.935951392917982e-07,
+              "256": 8.495328730703446e-07,
+              "512": 1.2144922163421968e-06,
+              "1024": 5.51772880512599e-07,
+              "1536": 3.0069338458283556e-07,
+              "2048": 3.6382987063875416e-07,
+              "3072": 4.963830415752718e-07,
+              "4096": 4.231265008901097e-07
+            },
+            "state_relative_distance": {
+              "64": 3.184219605320296e-07,
+              "256": 6.333762003928057e-07,
+              "512": 9.015349586772628e-07,
+              "1024": 1.195737419788361e-06,
+              "1536": 1.0954653341982129e-06,
+              "2048": 1.027797685009765e-06,
+              "3072": 1.1474356024391546e-06,
+              "4096": 1.263433785958458e-06
+            },
+            "horizons": {
+              "1e-06": 196,
+              "0.001": null,
+              "0.01": null
+            },
+            "growth_rate_per_step": -0.00021076522418559177,
+            "climate_relative_difference": {
+              "output_norm": 1.9071928169140882e-07,
+              "output_abs_p90": 6.802210239001773e-08
+            },
+            "climate": {
+              "output_norm": 1.3950175652135952e-05,
+              "output_abs_p90": 2.507464591872121e-06
+            },
+            "normalization": {
+              "layer_norm_calls": 0,
+              "normalize_calls": 8192,
+              "normalize_min_input_norm": 0.03754034265875816
+            },
+            "seconds": 10.743702898995252
+          },
+          "cuda_bf16_emulated": {
+            "output_relative_distance": {
+              "64": 0.007954836779510845,
+              "256": 0.010554332872417803,
+              "512": 0.016995270602385162,
+              "1024": 0.013055025479714086,
+              "1536": 0.01270122113788968,
+              "2048": 0.010765676504238255,
+              "3072": 0.009114946060087808,
+              "4096": 0.011070055052851023
+            },
+            "state_relative_distance": {
+              "64": 0.001268829268618882,
+              "256": 0.004451671462102288,
+              "512": 0.008895377794479374,
+              "1024": 0.01621041049050504,
+              "1536": 0.014664047725040064,
+              "2048": 0.013064050494711491,
+              "3072": 0.017856145422509597,
+              "4096": 0.025896608388556706
+            },
+            "horizons": {
+              "1e-06": 1,
+              "0.001": 1,
+              "0.01": 15
+            },
+            "growth_rate_per_step": null,
+            "climate_relative_difference": {
+              "output_norm": 0.008444366444608817,
+              "output_abs_p90": 0.009701276928946248
+            },
+            "climate": {
+              "output_norm": 1.3832372618862487e-05,
+              "output_abs_p90": 2.4831388145685196e-06
+            },
+            "normalization": {
+              "layer_norm_calls": 0,
+              "normalize_calls": 8192,
+              "normalize_min_input_norm": 0.03749636560678482
+            },
+            "seconds": 24.4215053129883
+          },
+          "cuda_float32": {
+            "output_relative_distance": {
+              "64": 5.496199715976357e-07,
+              "256": 9.374700078814851e-07,
+              "512": 1.2326945128920376e-06,
+              "1024": 6.979973757759063e-07,
+              "1536": 4.373226174693897e-07,
+              "2048": 4.746722555586311e-07,
+              "3072": 3.9315445607656327e-07,
+              "4096": 4.913857981815006e-07
+            },
+            "state_relative_distance": {
+              "64": 3.1937037059009567e-07,
+              "256": 6.33927208489978e-07,
+              "512": 8.98042236009871e-07,
+              "1024": 1.18879027802094e-06,
+              "1536": 1.085741728399529e-06,
+              "2048": 1.0131409967419316e-06,
+              "3072": 1.0644470705194504e-06,
+              "4096": 1.1410618328749037e-06
+            },
+            "horizons": {
+              "1e-06": 222,
+              "0.001": null,
+              "0.01": null
+            },
+            "growth_rate_per_step": -0.00017696648498187465,
+            "climate_relative_difference": {
+              "output_norm": 3.5267437679307323e-07,
+              "output_abs_p90": 9.519960160131193e-08
+            },
+            "climate": {
+              "output_norm": 1.3950168071700414e-05,
+              "output_abs_p90": 2.5074641825995054e-06
+            },
+            "normalization": {
+              "layer_norm_calls": 0,
+              "normalize_calls": 8192,
+              "normalize_min_input_norm": 0.037540338933467865
+            },
+            "seconds": 20.80129046001821
+          },
+          "cuda_float64": {
+            "output_relative_distance": {
+              "64": 7.238104260259583e-16,
+              "256": 8.40644772861887e-16,
+              "512": 1.060686860662049e-15,
+              "1024": 4.868983256830852e-16,
+              "1536": 4.1759529358900644e-16,
+              "2048": 4.531860458742174e-16,
+              "3072": 4.740552060093644e-16,
+              "4096": 5.675961774446095e-16
+            },
+            "state_relative_distance": {
+              "64": 2.596762144142009e-16,
+              "256": 4.868626638176865e-16,
+              "512": 6.750390089859965e-16,
+              "1024": 9.355669343740599e-16,
+              "1536": 9.019422228656402e-16,
+              "2048": 8.710524996176824e-16,
+              "3072": 1.0482747693694214e-15,
+              "4096": 1.2897946001684269e-15
+            },
+            "horizons": {
+              "1e-06": null,
+              "0.001": null,
+              "0.01": null
+            },
+            "growth_rate_per_step": null,
+            "climate_relative_difference": {
+              "output_norm": 0.0,
+              "output_abs_p90": 1.6890228632079132e-16
+            },
+            "climate": {
+              "output_norm": 1.395017299156898e-05,
+              "output_abs_p90": 2.5074644213091197e-06
+            },
+            "normalization": {
+              "layer_norm_calls": 0,
+              "normalize_calls": 8192,
+              "normalize_min_input_norm": 0.03754034061064994
+            },
+            "seconds": 19.50815529402462
+          },
+          "cuda_tf32": {
+            "output_relative_distance": {
+              "64": 0.0005769205430546712,
+              "256": 0.0006578020609617972,
+              "512": 0.0006473559616965403,
+              "1024": 0.0006930833739806549,
+              "1536": 0.0005714591843412304,
+              "2048": 0.0007423924418573187,
+              "3072": 0.0009315687545782088,
+              "4096": 0.0007179461494440355
+            },
+            "state_relative_distance": {
+              "64": 4.3646670581795206e-05,
+              "256": 5.592157820764513e-05,
+              "512": 7.52197770406572e-05,
+              "1024": 0.00025134720662096027,
+              "1536": 0.0005187905937172592,
+              "2048": 0.0005888757647775556,
+              "3072": 0.0006227639883366886,
+              "4096": 0.0006580593933771408
+            },
+            "horizons": {
+              "1e-06": 1,
+              "0.001": 719,
+              "0.01": null
+            },
+            "growth_rate_per_step": 1.1025217809167788e-05,
+            "climate_relative_difference": {
+              "output_norm": 0.000561429568028947,
+              "output_abs_p90": 0.0005243542452748111
+            },
+            "climate": {
+              "output_norm": 1.3942340951972394e-05,
+              "output_abs_p90": 2.5061496216949303e-06
+            },
+            "normalization": {
+              "layer_norm_calls": 0,
+              "normalize_calls": 8192,
+              "normalize_min_input_norm": 0.03753224015235901
+            },
+            "seconds": 20.88048513501417
+          }
+        },
+        "gate_bias_residual_layer_norm": {
+          "reference_climate": {
+            "output_norm": 0.5423594476528487,
+            "output_abs_p90": 0.10860335496764091
+          },
+          "reference_normalization": {
+            "layer_norm_calls": 12288,
+            "normalize_calls": 8192,
+            "normalize_min_input_norm": 0.16725408511946557,
+            "layer_norm_input_variance_quantiles": {
+              "min": 6.289016225527596e-05,
+              "p01": 0.00014142234182049995,
+              "p50": 0.0012808948121434025
+            },
+            "layer_norm_calls_below_10_eps": 24,
+            "layer_norm_max_gain": 117.12929829851251
+          },
+          "steps": 4096,
+          "cpu_float32": {
+            "output_relative_distance": {
+              "64": 5.0163039674197855e-06,
+              "256": 2.784826974455788e-05,
+              "512": 0.0010920568453951407,
+              "1024": 0.6738598461007796,
+              "1536": 0.5929606492464674,
+              "2048": 0.7315568800913286,
+              "3072": 0.6472791985187415,
+              "4096": 0.7402146342993446
+            },
+            "state_relative_distance": {
+              "64": 1.7351602133197845e-06,
+              "256": 8.981704629839425e-06,
+              "512": 0.00045023855527668574,
+              "1024": 0.266032343436963,
+              "1536": 0.3841348970983868,
+              "2048": 0.4429645434420923,
+              "3072": 0.49405470664325735,
+              "4096": 0.5456960529559568
+            },
+            "horizons": {
+              "1e-06": 3,
+              "0.001": 493,
+              "0.01": 612
+            },
+            "growth_rate_per_step": 0.011669979774118334,
+            "climate_relative_difference": {
+              "output_norm": 0.002312360001757356,
+              "output_abs_p90": 0.004836721061680863
+            },
+            "climate": {
+              "output_norm": 0.541105317359521,
+              "output_abs_p90": 0.1091286391019821
+            },
+            "normalization": {
+              "layer_norm_calls": 12288,
+              "normalize_calls": 8192,
+              "normalize_min_input_norm": 0.16778624057769775,
+              "layer_norm_input_variance_quantiles": {
+                "min": 5.39736429345794e-05,
+                "p01": 0.00013133393658790738,
+                "p50": 0.0012655358877964318
+              },
+              "layer_norm_calls_below_10_eps": 21,
+              "layer_norm_max_gain": 125.02574727458139
+            },
+            "seconds": 11.35664028400788
+          },
+          "cuda_bf16_emulated": {
+            "output_relative_distance": {
+              "64": 0.029794703600153672,
+              "256": 0.13555638226166522,
+              "512": 0.6894214984397216,
+              "1024": 1.022431973017761,
+              "1536": 0.9328721936572076,
+              "2048": 0.6264697567917613,
+              "3072": 0.6133828422684255,
+              "4096": 0.6472661125880022
+            },
+            "state_relative_distance": {
+              "64": 0.009323154081619251,
+              "256": 0.047260583666100454,
+              "512": 0.28131725687033826,
+              "1024": 0.3962091765413031,
+              "1536": 0.4492317596490449,
+              "2048": 0.4941433918506544,
+              "3072": 0.554085201010359,
+              "4096": 0.5913241716734026
+            },
+            "horizons": {
+              "1e-06": 1,
+              "0.001": 1,
+              "0.01": 2
+            },
+            "growth_rate_per_step": null,
+            "climate_relative_difference": {
+              "output_norm": 0.009479010295386864,
+              "output_abs_p90": 0.0029986258880642727
+            },
+            "climate": {
+              "output_norm": 0.537218416864747,
+              "output_abs_p90": 0.10827769413590431
+            },
+            "normalization": {
+              "layer_norm_calls": 12288,
+              "normalize_calls": 8192,
+              "normalize_min_input_norm": 0.1632290929555893,
+              "layer_norm_input_variance_quantiles": {
+                "min": 4.456947499420494e-05,
+                "p01": 0.00013588727917522193,
+                "p50": 0.0012631804565899074
+              },
+              "layer_norm_calls_below_10_eps": 26,
+              "layer_norm_max_gain": 135.37083639925416
+            },
+            "seconds": 25.06962998601375
+          },
+          "cuda_float32": {
+            "output_relative_distance": {
+              "64": 3.7065637361389502e-06,
+              "256": 2.0286242024189425e-05,
+              "512": 0.0017986714716744818,
+              "1024": 0.5406958186442158,
+              "1536": 0.9246514564093284,
+              "2048": 0.5971019613846898,
+              "3072": 0.6810771305430154,
+              "4096": 0.7372107210298873
+            },
+            "state_relative_distance": {
+              "64": 1.458123211028109e-06,
+              "256": 7.538258888354007e-06,
+              "512": 0.0005407458840762149,
+              "1024": 0.28656307573987877,
+              "1536": 0.39360654620625807,
+              "2048": 0.448814364698694,
+              "3072": 0.5148698111977361,
+              "4096": 0.5441723934334617
+            },
+            "horizons": {
+              "1e-06": 3,
+              "0.001": 467,
+              "0.01": 612
+            },
+            "growth_rate_per_step": 0.012858168440832462,
+            "climate_relative_difference": {
+              "output_norm": 0.003934183824846274,
+              "output_abs_p90": 0.0003123354935688747
+            },
+            "climate": {
+              "output_norm": 0.5402257058866403,
+              "output_abs_p90": 0.10856943428516386
+            },
+            "normalization": {
+              "layer_norm_calls": 12288,
+              "normalize_calls": 8192,
+              "normalize_min_input_norm": 0.16279247403144836,
+              "layer_norm_input_variance_quantiles": {
+                "min": 5.0907907279906794e-05,
+                "p01": 0.0001327013413538225,
+                "p50": 0.0012736892676912248
+              },
+              "layer_norm_calls_below_10_eps": 38,
+              "layer_norm_max_gain": 128.13363921540764
+            },
+            "seconds": 24.847049308009446
+          },
+          "cuda_float64": {
+            "output_relative_distance": {
+              "64": 8.553113922646688e-15,
+              "256": 4.9611008270672696e-14,
+              "512": 1.7453789565950644e-12,
+              "1024": 2.4767338719936088e-08,
+              "1536": 0.00031172836197993343,
+              "2048": 0.09852456207356385,
+              "3072": 0.750693165456029,
+              "4096": 0.716509624448608
+            },
+            "state_relative_distance": {
+              "64": 3.4912677928308353e-15,
+              "256": 1.966072611568207e-14,
+              "512": 8.754061972698239e-13,
+              "1024": 9.063541513082136e-09,
+              "1536": 9.550088257279792e-05,
+              "2048": 0.06703955026636244,
+              "3072": 0.4040680194058654,
+              "4096": 0.4700683120231213
+            },
+            "horizons": {
+              "1e-06": 1236,
+              "0.001": 1625,
+              "0.01": 1834
+            },
+            "growth_rate_per_step": 0.017354449138348226,
+            "climate_relative_difference": {
+              "output_norm": 0.004849353406650018,
+              "output_abs_p90": 0.0003980069737156283
+            },
+            "climate": {
+              "output_norm": 0.5397293550177445,
+              "output_abs_p90": 0.10864657986028695
+            },
+            "normalization": {
+              "layer_norm_calls": 12288,
+              "normalize_calls": 8192,
+              "normalize_min_input_norm": 0.15603295136740958,
+              "layer_norm_input_variance_quantiles": {
+                "min": 6.066376128336813e-05,
+                "p01": 0.00013653033801209143,
+                "p50": 0.0012898931060694478
+              },
+              "layer_norm_calls_below_10_eps": 21,
+              "layer_norm_max_gain": 118.96018334226721
+            },
+            "seconds": 19.798764958017273
+          },
+          "cuda_tf32": {
+            "output_relative_distance": {
+              "64": 0.0022161331599331014,
+              "256": 0.007820517829559117,
+              "512": 0.32410004194583797,
+              "1024": 0.7108237140836745,
+              "1536": 0.8002124683344237,
+              "2048": 0.6507378362322925,
+              "3072": 0.7105625537286849,
+              "4096": 0.6960344684339486
+            },
+            "state_relative_distance": {
+              "64": 0.0008640812853321876,
+              "256": 0.0033692185526110136,
+              "512": 0.12108654818275909,
+              "1024": 0.357011846453641,
+              "1536": 0.4242230425824003,
+              "2048": 0.46445431853233876,
+              "3072": 0.5322490952336163,
+              "4096": 0.5616190987951022
+            },
+            "horizons": {
+              "1e-06": 1,
+              "0.001": 3,
+              "0.01": 242
+            },
+            "growth_rate_per_step": null,
+            "climate_relative_difference": {
+              "output_norm": 0.0017691901696605444,
+              "output_abs_p90": 0.001283891796394079
+            },
+            "climate": {
+              "output_norm": 0.5413999106496388,
+              "output_abs_p90": 0.10874278992414474
+            },
+            "normalization": {
+              "layer_norm_calls": 12288,
+              "normalize_calls": 8192,
+              "normalize_min_input_norm": 0.16305680572986603,
+              "layer_norm_input_variance_quantiles": {
+                "min": 5.8805795561056584e-05,
+                "p01": 0.00013357311647268943,
+                "p50": 0.0012787601444870234
+              },
+              "layer_norm_calls_below_10_eps": 38,
+              "layer_norm_max_gain": 120.55562797872724
+            },
+            "seconds": 23.28410955599975
+          }
+        }
+      },
+      "unit_variance": {
+        "gate_bias": {
+          "reference_climate": {
+            "output_norm": 0.0005718289629908142,
+            "output_abs_p90": 0.00011353612471522558
+          },
+          "reference_normalization": {
+            "layer_norm_calls": 0,
+            "normalize_calls": 8192,
+            "normalize_min_input_norm": 0.12266400350022882
+          },
+          "steps": 4096,
+          "cpu_float32": {
+            "output_relative_distance": {
+              "64": 6.980165726348532e-07,
+              "256": 9.308870803742508e-07,
+              "512": 1.1237545065280497e-06,
+              "1024": 6.84372878008248e-07,
+              "1536": 5.571120946459311e-07,
+              "2048": 4.279109117441127e-07,
+              "3072": 4.976526554581682e-07,
+              "4096": 7.098850562227402e-07
+            },
+            "state_relative_distance": {
+              "64": 3.192450886552993e-07,
+              "256": 6.211127725869011e-07,
+              "512": 8.420429668141158e-07,
+              "1024": 1.023176118776778e-06,
+              "1536": 9.734569636023888e-07,
+              "2048": 9.469680880658102e-07,
+              "3072": 1.0088080617966202e-06,
+              "4096": 1.0599605441044428e-06
+            },
+            "horizons": {
+              "1e-06": 147,
+              "0.001": null,
+              "0.01": null
+            },
+            "growth_rate_per_step": -0.00012551732044685252,
+            "climate_relative_difference": {
+              "output_norm": 2.4535687624167466e-07,
+              "output_abs_p90": 8.227145277376712e-07
+            },
+            "climate": {
+              "output_norm": 0.0005718291032929823,
+              "output_abs_p90": 0.0001135362181230448
+            },
+            "normalization": {
+              "layer_norm_calls": 0,
+              "normalize_calls": 8192,
+              "normalize_min_input_norm": 0.12266403436660767
+            },
+            "seconds": 12.820035512995673
+          },
+          "cuda_bf16_emulated": {
+            "output_relative_distance": {
+              "64": 0.0078041012565843145,
+              "256": 0.009556060196903417,
+              "512": 0.011078320330683771,
+              "1024": 0.01570132523849834,
+              "1536": 0.014926754279609364,
+              "2048": 0.019351685143048566,
+              "3072": 0.016793849171655523,
+              "4096": 0.0173072515063047
+            },
+            "state_relative_distance": {
+              "64": 0.0009132064895324699,
+              "256": 0.002927987831804804,
+              "512": 0.005477174182353335,
+              "1024": 0.00896992575592194,
+              "1536": 0.009962047523059566,
+              "2048": 0.010247915907107137,
+              "3072": 0.01081023450238848,
+              "4096": 0.011910381319799873
+            },
+            "horizons": {
+              "1e-06": 1,
+              "0.001": 1,
+              "0.01": 12
+            },
+            "growth_rate_per_step": null,
+            "climate_relative_difference": {
+              "output_norm": 0.015673500791708147,
+              "output_abs_p90": 0.015687879572551255
+            },
+            "climate": {
+              "output_norm": 0.000562866401286656,
+              "output_abs_p90": 0.00011175498366355896
+            },
+            "normalization": {
+              "layer_norm_calls": 0,
+              "normalize_calls": 8192,
+              "normalize_min_input_norm": 0.12268870323896408
+            },
+            "seconds": 22.720332892989973
+          },
+          "cuda_float32": {
+            "output_relative_distance": {
+              "64": 6.06823236598631e-07,
+              "256": 9.750970302198417e-07,
+              "512": 1.117719567159521e-06,
+              "1024": 7.397437984075953e-07,
+              "1536": 8.590056950918269e-07,
+              "2048": 3.08743971532899e-07,
+              "3072": 4.591409694413981e-07,
+              "4096": 5.997413730371605e-07
+            },
+            "state_relative_distance": {
+              "64": 3.1810980052275824e-07,
+              "256": 6.213657403160626e-07,
+              "512": 8.44016610790023e-07,
+              "1024": 1.0228672779831289e-06,
+              "1536": 9.668027286943306e-07,
+              "2048": 9.333973380742732e-07,
+              "3072": 9.931404069417976e-07,
+              "4096": 1.0291878142100293e-06
+            },
+            "horizons": {
+              "1e-06": 142,
+              "0.001": null,
+              "0.01": null
+            },
+            "growth_rate_per_step": -0.00018266500760936416,
+            "climate_relative_difference": {
+              "output_norm": 4.995775099074498e-08,
+              "output_abs_p90": 7.265870929793529e-07
+            },
+            "climate": {
+              "output_norm": 0.0005718289344235252,
+              "output_abs_p90": 0.00011353620720910838
+            },
+            "normalization": {
+              "layer_norm_calls": 0,
+              "normalize_calls": 8192,
+              "normalize_min_input_norm": 0.12266400456428528
+            },
+            "seconds": 25.694337565015303
+          },
+          "cuda_float64": {
+            "output_relative_distance": {
+              "64": 6.46048674399264e-16,
+              "256": 1.03701470749033e-15,
+              "512": 1.0973511093314792e-15,
+              "1024": 8.476539663673823e-16,
+              "1536": 5.827110773872155e-16,
+              "2048": 6.657768404551368e-16,
+              "3072": 5.036438171723721e-16,
+              "4096": 6.805803355838147e-16
+            },
+            "state_relative_distance": {
+              "64": 2.7149146275416204e-16,
+              "256": 5.067350043139098e-16,
+              "512": 6.832172921491047e-16,
+              "1024": 8.672750555462675e-16,
+              "1536": 8.433392667985295e-16,
+              "2048": 8.433766299510749e-16,
+              "3072": 9.458151058451873e-16,
+              "4096": 1.0642610791366699e-15
+            },
+            "horizons": {
+              "1e-06": null,
+              "0.001": null,
+              "0.01": null
+            },
+            "growth_rate_per_step": null,
+            "climate_relative_difference": {
+              "output_norm": 1.8960252849293348e-16,
+              "output_abs_p90": 3.581026001211938e-16
+            },
+            "climate": {
+              "output_norm": 0.0005718289629908143,
+              "output_abs_p90": 0.00011353612471522554
+            },
+            "normalization": {
+              "layer_norm_calls": 0,
+              "normalize_calls": 8192,
+              "normalize_min_input_norm": 0.12266400350022881
+            },
+            "seconds": 18.014431813993724
+          },
+          "cuda_tf32": {
+            "output_relative_distance": {
+              "64": 0.0006387698090401761,
+              "256": 0.0006454885347987731,
+              "512": 0.0007366879706063441,
+              "1024": 0.001173260872321083,
+              "1536": 0.000983645291795487,
+              "2048": 0.0005628795141875706,
+              "3072": 0.0010056827221450013,
+              "4096": 0.0011173228463366687
+            },
+            "state_relative_distance": {
+              "64": 4.690138982446255e-05,
+              "256": 8.386360654053831e-05,
+              "512": 0.00015055518585355642,
+              "1024": 0.00033116595549989797,
+              "1536": 0.0004366096671589624,
+              "2048": 0.0004756514645626022,
+              "3072": 0.000515828423891575,
+              "4096": 0.000546395963121639
+            },
+            "horizons": {
+              "1e-06": 1,
+              "0.001": 77,
+              "0.01": null
+            },
+            "growth_rate_per_step": 2.4166919970736792e-05,
+            "climate_relative_difference": {
+              "output_norm": 8.737291983615023e-05,
+              "output_abs_p90": 0.00018682289228933756
+            },
+            "climate": {
+              "output_norm": 0.0005718789253569576,
+              "output_abs_p90": 0.0001135573358624242
+            },
+            "normalization": {
+              "layer_norm_calls": 0,
+              "normalize_calls": 8192,
+              "normalize_min_input_norm": 0.12268918007612228
+            },
+            "seconds": 17.63823564298218
+          }
+        },
+        "gate_bias_residual_layer_norm": {
+          "reference_climate": {
+            "output_norm": 0.9052963333477362,
+            "output_abs_p90": 0.17843352063638976
+          },
+          "reference_normalization": {
+            "layer_norm_calls": 12288,
+            "normalize_calls": 8192,
+            "normalize_min_input_norm": 0.17845238080542283,
+            "layer_norm_input_variance_quantiles": {
+              "min": 0.00040970850425275484,
+              "p01": 0.0009093084277103324,
+              "p50": 0.0036267385668927463
+            },
+            "layer_norm_calls_below_10_eps": 0,
+            "layer_norm_max_gain": 48.811945247528065
+          },
+          "steps": 4096,
+          "cpu_float32": {
+            "output_relative_distance": {
+              "64": 3.820069375856339e-06,
+              "256": 8.200976794846801e-06,
+              "512": 3.55355194284832e-05,
+              "1024": 0.00470884550071629,
+              "1536": 0.19178139162134236,
+              "2048": 0.5586712373317178,
+              "3072": 0.6848831740087644,
+              "4096": 0.559721496539066
+            },
+            "state_relative_distance": {
+              "64": 1.4486698224804945e-06,
+              "256": 3.7628145838538497e-06,
+              "512": 2.1378704152036912e-05,
+              "1024": 0.0019703531607492375,
+              "1536": 0.09743802431813207,
+              "2048": 0.28399607825630485,
+              "3072": 0.4315741867850003,
+              "4096": 0.5039170112287236
+            },
+            "horizons": {
+              "1e-06": 4,
+              "0.001": 820,
+              "0.01": 1070
+            },
+            "growth_rate_per_step": 0.007393562584855246,
+            "climate_relative_difference": {
+              "output_norm": 0.0003784186816379297,
+              "output_abs_p90": 0.0005795605206273619
+            },
+            "climate": {
+              "output_norm": 0.9056389143926933,
+              "output_abs_p90": 0.17853693366050716
+            },
+            "normalization": {
+              "layer_norm_calls": 12288,
+              "normalize_calls": 8192,
+              "normalize_min_input_norm": 0.20789693295955658,
+              "layer_norm_input_variance_quantiles": {
+                "min": 0.0005267470260150731,
+                "p01": 0.0009066489699762314,
+                "p50": 0.0036082551814615726
+              },
+              "layer_norm_calls_below_10_eps": 0,
+              "layer_norm_max_gain": 43.16335325584738
+            },
+            "seconds": 13.207449038978666
+          },
+          "cuda_bf16_emulated": {
+            "output_relative_distance": {
+              "64": 0.02086031817627965,
+              "256": 0.04233950235221237,
+              "512": 0.20668750127181645,
+              "1024": 0.6055574357496721,
+              "1536": 0.5105636593146419,
+              "2048": 0.609478511078018,
+              "3072": 0.6765525271907349,
+              "4096": 0.587415490199445
+            },
+            "state_relative_distance": {
+              "64": 0.008540425072766226,
+              "256": 0.021158081131588163,
+              "512": 0.10914653990898629,
+              "1024": 0.3371917731965405,
+              "1536": 0.405411888817168,
+              "2048": 0.44458168417197175,
+              "3072": 0.5320258537890085,
+              "4096": 0.5970230816173328
+            },
+            "horizons": {
+              "1e-06": 1,
+              "0.001": 1,
+              "0.01": 2
+            },
+            "growth_rate_per_step": null,
+            "climate_relative_difference": {
+              "output_norm": 0.0007499006859203176,
+              "output_abs_p90": 0.001829219078669002
+            },
+            "climate": {
+              "output_norm": 0.9046174510063976,
+              "output_abs_p90": 0.17875991463661192
+            },
+            "normalization": {
+              "layer_norm_calls": 12288,
+              "normalize_calls": 8192,
+              "normalize_min_input_norm": 0.1997043341398239,
+              "layer_norm_input_variance_quantiles": {
+                "min": 0.00039702479261904955,
+                "p01": 0.0008964926813496277,
+                "p50": 0.0036294189048931003
+              },
+              "layer_norm_calls_below_10_eps": 0,
+              "layer_norm_max_gain": 49.5666500433734
+            },
+            "seconds": 24.221916776004946
+          },
+          "cuda_float32": {
+            "output_relative_distance": {
+              "64": 2.638957373057116e-06,
+              "256": 6.804912498155701e-06,
+              "512": 6.055914694534245e-05,
+              "1024": 0.0025261407441092482,
+              "1536": 0.06331923143870974,
+              "2048": 0.3848633878741427,
+              "3072": 0.6372681226221737,
+              "4096": 0.5940751061092603
+            },
+            "state_relative_distance": {
+              "64": 1.1629982142651944e-06,
+              "256": 3.4240409528874026e-06,
+              "512": 2.518895743446112e-05,
+              "1024": 0.0012071461098600985,
+              "1536": 0.03993941953090103,
+              "2048": 0.23577514723896045,
+              "3072": 0.41373563633102245,
+              "4096": 0.5051399478821483
+            },
+            "horizons": {
+              "1e-06": 4,
+              "0.001": 860,
+              "0.01": 1131
+            },
+            "growth_rate_per_step": 0.007490642237005767,
+            "climate_relative_difference": {
+              "output_norm": 0.0006077510784813271,
+              "output_abs_p90": 0.0006048560015969491
+            },
+            "climate": {
+              "output_norm": 0.9058465281706735,
+              "output_abs_p90": 0.17854144722223275
+            },
+            "normalization": {
+              "layer_norm_calls": 12288,
+              "normalize_calls": 8192,
+              "normalize_min_input_norm": 0.19867724180221558,
+              "layer_norm_input_variance_quantiles": {
+                "min": 0.00044636736856773496,
+                "p01": 0.0009210817521670833,
+                "p50": 0.003622059361077845
+              },
+              "layer_norm_calls_below_10_eps": 0,
+              "layer_norm_max_gain": 46.81043836248652
+            },
+            "seconds": 23.57161245000316
+          },
+          "cuda_float64": {
+            "output_relative_distance": {
+              "64": 9.45672859991373e-15,
+              "256": 2.0063599200820545e-14,
+              "512": 1.7838484325173557e-13,
+              "1024": 5.679634246150832e-12,
+              "1536": 3.2499525285602454e-10,
+              "2048": 7.568139794152088e-09,
+              "3072": 1.222981247313168e-05,
+              "4096": 0.021738298225152167
+            },
+            "state_relative_distance": {
+              "64": 3.4810383607937694e-15,
+              "256": 8.76944135064338e-15,
+              "512": 7.804795186042079e-14,
+              "1024": 2.6935932661327873e-12,
+              "1536": 1.4627436971584436e-10,
+              "2048": 4.30185429398246e-09,
+              "3072": 6.998805686843713e-06,
+              "4096": 0.010210639821322953
+            },
+            "horizons": {
+              "1e-06": 2644,
+              "0.001": 3587,
+              "0.01": 3947
+            },
+            "growth_rate_per_step": 0.007172685108796896,
+            "climate_relative_difference": {
+              "output_norm": 7.128007683894767e-07,
+              "output_abs_p90": 6.07713150187787e-05
+            },
+            "climate": {
+              "output_norm": 0.9052969786436582,
+              "output_abs_p90": 0.17842267699669725
+            },
+            "normalization": {
+              "layer_norm_calls": 12288,
+              "normalize_calls": 8192,
+              "normalize_min_input_norm": 0.17845238070449576,
+              "layer_norm_input_variance_quantiles": {
+                "min": 0.00040970818193247907,
+                "p01": 0.0009084371043357463,
+                "p50": 0.0036264071516512054
+              },
+              "layer_norm_calls_below_10_eps": 0,
+              "layer_norm_max_gain": 48.81196399040385
+            },
+            "seconds": 19.69821387299453
+          },
+          "cuda_tf32": {
+            "output_relative_distance": {
+              "64": 0.00214892741256257,
+              "256": 0.003755952534678028,
+              "512": 0.023265077529501917,
+              "1024": 0.3759182749863087,
+              "1536": 0.5357249167852028,
+              "2048": 0.5245817963758295,
+              "3072": 0.80564741429687,
+              "4096": 0.6810543274965433
+            },
+            "state_relative_distance": {
+              "64": 0.0008351658031196613,
+              "256": 0.001632686867713142,
+              "512": 0.011303507019894537,
+              "1024": 0.21157758666707488,
+              "1536": 0.34760635193949824,
+              "2048": 0.4009535254360817,
+              "3072": 0.49300194928864693,
+              "4096": 0.565412014315323
+            },
+            "horizons": {
+              "1e-06": 1,
+              "0.001": 3,
+              "0.01": 393
+            },
+            "growth_rate_per_step": null,
+            "climate_relative_difference": {
+              "output_norm": 0.001206967892665902,
+              "output_abs_p90": 0.0006696688863136148
+            },
+            "climate": {
+              "output_norm": 0.9042036697400373,
+              "output_abs_p90": 0.17855301201343535
+            },
+            "normalization": {
+              "layer_norm_calls": 12288,
+              "normalize_calls": 8192,
+              "normalize_min_input_norm": 0.19952310621738434,
+              "layer_norm_input_variance_quantiles": {
+                "min": 0.00043499068124219775,
+                "p01": 0.0009020232828333974,
+                "p50": 0.003617858747020364
+              },
+              "layer_norm_calls_below_10_eps": 0,
+              "layer_norm_max_gain": 47.405042671777494
+            },
+            "seconds": 21.95714069600217
+          }
+        }
+      },
+      "recurring_unit": {
+        "gate_bias": {
+          "reference_climate": {
+            "output_norm": 0.003186163480895317,
+            "output_abs_p90": 0.0005949207182954924
+          },
+          "reference_normalization": {
+            "layer_norm_calls": 0,
+            "normalize_calls": 8192,
+            "normalize_min_input_norm": 0.13935263740832027
+          },
+          "steps": 4096,
+          "cpu_float32": {
+            "output_relative_distance": {
+              "64": 5.774330771765832e-07,
+              "256": 9.313261590978995e-07,
+              "512": 1.4466661234827782e-06,
+              "1024": 7.919729186501027e-07,
+              "1536": 4.119020204562963e-07,
+              "2048": 5.619526107435119e-07,
+              "3072": 2.976209835839531e-06,
+              "4096": 1.764056403821015e-06
+            },
+            "state_relative_distance": {
+              "64": 3.215298754938831e-07,
+              "256": 6.149659497928165e-07,
+              "512": 8.101097319328311e-07,
+              "1024": 8.586571610282931e-07,
+              "1536": 1.008347408001071e-06,
+              "2048": 1.40205390856697e-06,
+              "3072": 2.1265126911553012e-06,
+              "4096": 2.8828556143321886e-06
+            },
+            "horizons": {
+              "1e-06": 109,
+              "0.001": null,
+              "0.01": null
+            },
+            "growth_rate_per_step": 5.005705801194896e-05,
+            "climate_relative_difference": {
+              "output_norm": 1.7388226043019343e-07,
+              "output_abs_p90": 2.822549699798782e-07
+            },
+            "climate": {
+              "output_norm": 0.0031861640349126253,
+              "output_abs_p90": 0.0005949208862148219
+            },
+            "normalization": {
+              "layer_norm_calls": 0,
+              "normalize_calls": 8192,
+              "normalize_min_input_norm": 0.13935264945030212
+            },
+            "seconds": 12.423118423990672
+          },
+          "cuda_bf16_emulated": {
+            "output_relative_distance": {
+              "64": 0.007110840202674107,
+              "256": 0.008507777131112117,
+              "512": 0.014942344961033171,
+              "1024": 0.015869166922041673,
+              "1536": 0.009525418517275657,
+              "2048": 0.011352848587288529,
+              "3072": 0.024422936602307443,
+              "4096": 0.0124351072828145
+            },
+            "state_relative_distance": {
+              "64": 0.0009399852520536909,
+              "256": 0.0029595062734467385,
+              "512": 0.005190473483012578,
+              "1024": 0.006030588976645372,
+              "1536": 0.006192292710165604,
+              "2048": 0.00759436717452016,
+              "3072": 0.011213222611811397,
+              "4096": 0.013920064376607453
+            },
+            "horizons": {
+              "1e-06": 1,
+              "0.001": 1,
+              "0.01": 2
+            },
+            "growth_rate_per_step": null,
+            "climate_relative_difference": {
+              "output_norm": 0.0014316702533143089,
+              "output_abs_p90": 0.0018147668505626839
+            },
+            "climate": {
+              "output_norm": 0.003181601945417523,
+              "output_abs_p90": 0.0005938410758972168
+            },
+            "normalization": {
+              "layer_norm_calls": 0,
+              "normalize_calls": 8192,
+              "normalize_min_input_norm": 0.13943561911582947
+            },
+            "seconds": 21.12920814700192
+          },
+          "cuda_float32": {
+            "output_relative_distance": {
+              "64": 5.673426389530142e-07,
+              "256": 1.0786985515388915e-06,
+              "512": 1.0114399834637368e-06,
+              "1024": 1.4244429957599614e-06,
+              "1536": 3.995172258183162e-07,
+              "2048": 1.1941452713516048e-06,
+              "3072": 1.7849024410205875e-06,
+              "4096": 1.4377728525609275e-06
+            },
+            "state_relative_distance": {
+              "64": 3.20251771238578e-07,
+              "256": 6.16543316154854e-07,
+              "512": 8.111833491474404e-07,
+              "1024": 8.48879209855526e-07,
+              "1536": 9.66632280134675e-07,
+              "2048": 1.3295760894525567e-06,
+              "3072": 2.034460113639072e-06,
+              "4096": 3.0606319037034932e-06
+            },
+            "horizons": {
+              "1e-06": 129,
+              "0.001": null,
+              "0.01": null
+            },
+            "growth_rate_per_step": 2.441374070418991e-05,
+            "climate_relative_difference": {
+              "output_norm": 1.4000591681192455e-08,
+              "output_abs_p90": 4.062045719998898e-08
+            },
+            "climate": {
+              "output_norm": 0.003186163525503491,
+              "output_abs_p90": 0.0005949206941295408
+            },
+            "normalization": {
+              "layer_norm_calls": 0,
+              "normalize_calls": 8192,
+              "normalize_min_input_norm": 0.13935261964797974
+            },
+            "seconds": 25.35730268698535
+          },
+          "cuda_float64": {
+            "output_relative_distance": {
+              "64": 6.649045017689805e-16,
+              "256": 9.246874990560026e-16,
+              "512": 1.434414551889919e-15,
+              "1024": 7.787243269200446e-16,
+              "1536": 7.683187053635073e-16,
+              "2048": 7.839081744495375e-16,
+              "3072": 1.3445147528179168e-15,
+              "4096": 1.6548362747922422e-15
+            },
+            "state_relative_distance": {
+              "64": 2.625012023696751e-16,
+              "256": 4.787352110019013e-16,
+              "512": 6.505384209245069e-16,
+              "1024": 7.064947047138321e-16,
+              "1536": 7.974986859906069e-16,
+              "2048": 9.511929454520854e-16,
+              "3072": 1.2520798179905094e-15,
+              "4096": 1.376703671585158e-15
+            },
+            "horizons": {
+              "1e-06": null,
+              "0.001": null,
+              "0.01": null
+            },
+            "growth_rate_per_step": null,
+            "climate_relative_difference": {
+              "output_norm": 1.3611381575195783e-16,
+              "output_abs_p90": 1.822431357899003e-16
+            },
+            "climate": {
+              "output_norm": 0.0031861634808953176,
+              "output_abs_p90": 0.0005949207182954925
+            },
+            "normalization": {
+              "layer_norm_calls": 0,
+              "normalize_calls": 8192,
+              "normalize_min_input_norm": 0.13935263740832027
+            },
+            "seconds": 18.639632251986768
+          },
+          "cuda_tf32": {
+            "output_relative_distance": {
+              "64": 0.0009063411269816266,
+              "256": 0.0006989612701941987,
+              "512": 0.0010715525049364977,
+              "1024": 0.0013174156925677978,
+              "1536": 0.0009747428262238435,
+              "2048": 0.0015250592655619288,
+              "3072": 0.0014943336564595018,
+              "4096": 0.0014612302887765862
+            },
+            "state_relative_distance": {
+              "64": 6.119017603504524e-05,
+              "256": 0.00012818860611512998,
+              "512": 0.00024970313318100484,
+              "1024": 0.00047744034424716727,
+              "1536": 0.0005498035897222365,
+              "2048": 0.0006168869919898217,
+              "3072": 0.0008023815401688417,
+              "4096": 0.001050383607073984
+            },
+            "horizons": {
+              "1e-06": 1,
+              "0.001": 52,
+              "0.01": null
+            },
+            "growth_rate_per_step": 1.349062588610266e-05,
+            "climate_relative_difference": {
+              "output_norm": 6.405000256764617e-05,
+              "output_abs_p90": 0.00016634103362400885
+            },
+            "climate": {
+              "output_norm": 0.003185959407116185,
+              "output_abs_p90": 0.0005948217585682868
+            },
+            "normalization": {
+              "layer_norm_calls": 0,
+              "normalize_calls": 8192,
+              "normalize_min_input_norm": 0.13938333094120026
+            },
+            "seconds": 18.752348809997784
+          }
+        },
+        "gate_bias_residual_layer_norm": {
+          "reference_climate": {
+            "output_norm": 0.8756257715022027,
+            "output_abs_p90": 0.1794063640756229
+          },
+          "reference_normalization": {
+            "layer_norm_calls": 12288,
+            "normalize_calls": 8192,
+            "normalize_min_input_norm": 0.2217034604697633,
+            "layer_norm_input_variance_quantiles": {
+              "min": 2.6838680597832313e-05,
+              "p01": 0.00011194001637546894,
+              "p50": 0.0006941113485963582
+            },
+            "layer_norm_calls_below_10_eps": 76,
+            "layer_norm_max_gain": 164.7585519697587
+          },
+          "steps": 4096,
+          "cpu_float32": {
+            "output_relative_distance": {
+              "64": 3.102416052272657e-06,
+              "256": 2.152311471387865e-05,
+              "512": 0.0019639617658932843,
+              "1024": 0.33753970556949575,
+              "1536": 0.5812148530635521,
+              "2048": 0.49342440295560486,
+              "3072": 0.731449234014691,
+              "4096": 0.672572458929741
+            },
+            "state_relative_distance": {
+              "64": 1.2877981749766628e-06,
+              "256": 7.465079851133683e-06,
+              "512": 0.0005272322209776599,
+              "1024": 0.11685139439760774,
+              "1536": 0.2598275511822315,
+              "2048": 0.2687837817905598,
+              "3072": 0.33115998475573,
+              "4096": 0.403440146060278
+            },
+            "horizons": {
+              "1e-06": 3,
+              "0.001": 497,
+              "0.01": 590
+            },
+            "growth_rate_per_step": 0.01363204971136309,
+            "climate_relative_difference": {
+              "output_norm": 0.008382862435823214,
+              "output_abs_p90": 0.006137641378480638
+            },
+            "climate": {
+              "output_norm": 0.8829660218899672,
+              "output_abs_p90": 0.18050749599933621
+            },
+            "normalization": {
+              "layer_norm_calls": 12288,
+              "normalize_calls": 8192,
+              "normalize_min_input_norm": 0.22041822969913483,
+              "layer_norm_input_variance_quantiles": {
+                "min": 3.8355254218913615e-05,
+                "p01": 0.00010927307484962512,
+                "p50": 0.0006684691761620343
+              },
+              "layer_norm_calls_below_10_eps": 89,
+              "layer_norm_max_gain": 143.80638348769838
+            },
+            "seconds": 13.619153667998035
+          },
+          "cuda_bf16_emulated": {
+            "output_relative_distance": {
+              "64": 0.015073880680972235,
+              "256": 0.03521977153903136,
+              "512": 0.3999517169474045,
+              "1024": 0.48533332854400063,
+              "1536": 0.4588748944188145,
+              "2048": 0.5907679389501076,
+              "3072": 0.6521223439212162,
+              "4096": 0.5785628085763217
+            },
+            "state_relative_distance": {
+              "64": 0.004943331328184969,
+              "256": 0.013333147381902681,
+              "512": 0.15361427584998197,
+              "1024": 0.2919113462489784,
+              "1536": 0.3003899619351996,
+              "2048": 0.3162752204938144,
+              "3072": 0.36248566273880906,
+              "4096": 0.4195519097596059
+            },
+            "horizons": {
+              "1e-06": 1,
+              "0.001": 1,
+              "0.01": 2
+            },
+            "growth_rate_per_step": null,
+            "climate_relative_difference": {
+              "output_norm": 0.007446398335278817,
+              "output_abs_p90": 0.01199991071786061
+            },
+            "climate": {
+              "output_norm": 0.8821460297894439,
+              "output_abs_p90": 0.18155922442674638
+            },
+            "normalization": {
+              "layer_norm_calls": 12288,
+              "normalize_calls": 8192,
+              "normalize_min_input_norm": 0.2262059450149536,
+              "layer_norm_input_variance_quantiles": {
+                "min": 4.919679486192763e-05,
+                "p01": 0.00011297711564111523,
+                "p50": 0.0006789763283450156
+              },
+              "layer_norm_calls_below_10_eps": 69,
+              "layer_norm_max_gain": 129.97232968106363
+            },
+            "seconds": 22.214753726002527
+          },
+          "cuda_float32": {
+            "output_relative_distance": {
+              "64": 2.604093262651727e-06,
+              "256": 9.81120190034869e-06,
+              "512": 0.004900494029853212,
+              "1024": 0.17611005107489575,
+              "1536": 0.45872962974492204,
+              "2048": 0.29048103565988054,
+              "3072": 0.7157583774066199,
+              "4096": 0.6055029925822745
+            },
+            "state_relative_distance": {
+              "64": 9.078627938657527e-07,
+              "256": 4.395704831869998e-06,
+              "512": 0.0011996359895208024,
+              "1024": 0.08531566304315008,
+              "1536": 0.25399782403884313,
+              "2048": 0.2732613370146826,
+              "3072": 0.3661789105605552,
+              "4096": 0.4096241478017202
+            },
+            "horizons": {
+              "1e-06": 4,
+              "0.001": 417,
+              "0.01": 536
+            },
+            "growth_rate_per_step": 0.015112349491319593,
+            "climate_relative_difference": {
+              "output_norm": 0.00010722309594716978,
+              "output_abs_p90": 0.0004986884155634221
+            },
+            "climate": {
+              "output_norm": 0.8755318841960911,
+              "output_abs_p90": 0.17931689620018004
+            },
+            "normalization": {
+              "layer_norm_calls": 12288,
+              "normalize_calls": 8192,
+              "normalize_min_input_norm": 0.22120064496994019,
+              "layer_norm_input_variance_quantiles": {
+                "min": 2.5567986085661687e-05,
+                "p01": 0.00011777010498917662,
+                "p50": 0.0006741256802342832
+              },
+              "layer_norm_calls_below_10_eps": 65,
+              "layer_norm_max_gain": 167.67579041969628
+            },
+            "seconds": 29.90754921900225
+          },
+          "cuda_float64": {
+            "output_relative_distance": {
+              "64": 5.7445039835835815e-15,
+              "256": 4.3338669941805896e-14,
+              "512": 5.431044251434131e-12,
+              "1024": 4.6197170134157144e-10,
+              "1536": 5.412255060773031e-07,
+              "2048": 0.0006929077370431062,
+              "3072": 0.6772841318952958,
+              "4096": 0.6965386882023554
+            },
+            "state_relative_distance": {
+              "64": 2.1391629719502126e-15,
+              "256": 1.4025818171041741e-14,
+              "512": 1.3360760841962825e-12,
+              "1024": 2.8721508808574216e-10,
+              "1536": 3.0141247806890294e-07,
+              "2048": 0.0002921428584200414,
+              "3072": 0.3154430753004574,
+              "4096": 0.3702224286553225
+            },
+            "horizons": {
+              "1e-06": 1543,
+              "0.001": 2028,
+              "0.01": 2087
+            },
+            "growth_rate_per_step": 0.011887475947054717,
+            "climate_relative_difference": {
+              "output_norm": 0.004851340852241177,
+              "output_abs_p90": 0.004214775979422851
+            },
+            "climate": {
+              "output_norm": 0.8798737305787665,
+              "output_abs_p90": 0.18016252170948444
+            },
+            "normalization": {
+              "layer_norm_calls": 12288,
+              "normalize_calls": 8192,
+              "normalize_min_input_norm": 0.22170417322194216,
+              "layer_norm_input_variance_quantiles": {
+                "min": 1.9615797212984308e-05,
+                "p01": 0.00010951302939769281,
+                "p50": 0.0006910560230728088
+              },
+              "layer_norm_calls_below_10_eps": 90,
+              "layer_norm_max_gain": 183.75462809439546
+            },
+            "seconds": 19.197859042003984
+          },
+          "cuda_tf32": {
+            "output_relative_distance": {
+              "64": 0.0017228575470008875,
+              "256": 0.0030466784662470177,
+              "512": 0.18761948670592285,
+              "1024": 0.580182855019626,
+              "1536": 0.585920366948996,
+              "2048": 0.38322278592237496,
+              "3072": 0.5311444234761236,
+              "4096": 0.6152514288886084
+            },
+            "state_relative_distance": {
+              "64": 0.0005533195701895218,
+              "256": 0.0011307696949088002,
+              "512": 0.05732770464180589,
+              "1024": 0.2632581109683989,
+              "1536": 0.2742802574877288,
+              "2048": 0.3017974199532039,
+              "3072": 0.3388391029533866,
+              "4096": 0.40389983957642234
+            },
+            "horizons": {
+              "1e-06": 1,
+              "0.001": 3,
+              "0.01": 302
+            },
+            "growth_rate_per_step": null,
+            "climate_relative_difference": {
+              "output_norm": 0.0005492116807832506,
+              "output_abs_p90": 0.0038690906637258863
+            },
+            "climate": {
+              "output_norm": 0.8761066754039065,
+              "output_abs_p90": 0.1801005035638809
+            },
+            "normalization": {
+              "layer_norm_calls": 12288,
+              "normalize_calls": 8192,
+              "normalize_min_input_norm": 0.24575716257095337,
+              "layer_norm_input_variance_quantiles": {
+                "min": 4.642344356398098e-05,
+                "p01": 0.00012134113334468566,
+                "p50": 0.0006689642032142729
+              },
+              "layer_norm_calls_below_10_eps": 56,
+              "layer_norm_max_gain": 133.12824475307988
+            },
+            "seconds": 19.815389586990932
+          }
+        }
+      },
+      "real": {
+        "gate_bias": {
+          "reference_climate": {
+            "output_norm": 1.1349261845923519e-05,
+            "output_abs_p90": 2.42926878700127e-06
+          },
+          "reference_normalization": {
+            "layer_norm_calls": 0,
+            "normalize_calls": 7640,
+            "normalize_min_input_norm": 0.07384963806195761
+          },
+          "steps": 3820,
+          "cpu_float32": {
+            "output_relative_distance": {
+              "64": 5.605159167116322e-07,
+              "256": 8.81582030240743e-07,
+              "512": 1.4301719878380267e-06,
+              "1024": 7.043768691814885e-07,
+              "1536": 1.216860147854749e-06,
+              "2048": 1.0247820323205304e-06,
+              "3072": 7.573881761934915e-07
+            },
+            "state_relative_distance": {
+              "64": 3.1770652395311074e-07,
+              "256": 6.224466541595924e-07,
+              "512": 8.786081693177622e-07,
+              "1024": 1.1079220086915779e-06,
+              "1536": 9.415101830638116e-07,
+              "2048": 9.025721321949714e-07,
+              "3072": 1.06973407052377e-06,
+              "3820": 1.4948835564211818e-06
+            },
+            "horizons": {
+              "1e-06": 270,
+              "0.001": null,
+              "0.01": null
+            },
+            "growth_rate_per_step": 1.2393266634945493e-05,
+            "climate_relative_difference": {
+              "output_norm": 2.0587223106584733e-07,
+              "output_abs_p90": 1.859592216931236e-07
+            },
+            "climate": {
+              "output_norm": 1.1349264182421376e-05,
+              "output_abs_p90": 2.4292692387462028e-06
+            },
+            "normalization": {
+              "layer_norm_calls": 0,
+              "normalize_calls": 7640,
+              "normalize_min_input_norm": 0.0738496407866478
+            },
+            "seconds": 12.383745523984544
+          },
+          "cuda_bf16_emulated": {
+            "output_relative_distance": {
+              "64": 0.008491320811026782,
+              "256": 0.010492090356778666,
+              "512": 0.01800128162904017,
+              "1024": 0.013134024501297206,
+              "1536": 0.029091273876620638,
+              "2048": 0.01597642658602944,
+              "3072": 0.012876993240379572
+            },
+            "state_relative_distance": {
+              "64": 0.0016506601876172798,
+              "256": 0.0062429428768337614,
+              "512": 0.012184104248490452,
+              "1024": 0.01955409261739688,
+              "1536": 0.022313202450054533,
+              "2048": 0.0345181182749269,
+              "3072": 0.08340776402594749,
+              "3820": 0.14901702351652402
+            },
+            "horizons": {
+              "1e-06": 1,
+              "0.001": 1,
+              "0.01": 2
+            },
+            "growth_rate_per_step": null,
+            "climate_relative_difference": {
+              "output_norm": 0.00924026370556448,
+              "output_abs_p90": 0.008134274139483073
+            },
+            "climate": {
+              "output_norm": 1.1454132018243353e-05,
+              "output_abs_p90": 2.4490291252732277e-06
+            },
+            "normalization": {
+              "layer_norm_calls": 0,
+              "normalize_calls": 7640,
+              "normalize_min_input_norm": 0.0740140825510025
+            },
+            "seconds": 34.16760946699651
+          },
+          "cuda_float32": {
+            "output_relative_distance": {
+              "64": 5.552328871996429e-07,
+              "256": 9.129494852691284e-07,
+              "512": 1.5194867156057696e-06,
+              "1024": 8.284914796131926e-07,
+              "1536": 9.899412784388012e-07,
+              "2048": 1.4037503761757424e-06,
+              "3072": 5.473326842022287e-07
+            },
+            "state_relative_distance": {
+              "64": 3.171317415313981e-07,
+              "256": 6.224521902267503e-07,
+              "512": 8.81735655996726e-07,
+              "1024": 1.1066789399616281e-06,
+              "1536": 9.217423263538382e-07,
+              "2048": 8.919154588798597e-07,
+              "3072": 1.0082849585626683e-06,
+              "3820": 1.4488799187567162e-06
+            },
+            "horizons": {
+              "1e-06": 258,
+              "0.001": null,
+              "0.01": null
+            },
+            "growth_rate_per_step": -2.9564380771229045e-05,
+            "climate_relative_difference": {
+              "output_norm": 2.1371120989240013e-07,
+              "output_abs_p90": 4.761117143118614e-07
+            },
+            "climate": {
+              "output_norm": 1.1349259420459038e-05,
+              "output_abs_p90": 2.4292699436045966e-06
+            },
+            "normalization": {
+              "layer_norm_calls": 0,
+              "normalize_calls": 7640,
+              "normalize_min_input_norm": 0.0738496333360672
+            },
+            "seconds": 27.13676610600669
+          },
+          "cuda_float64": {
+            "output_relative_distance": {
+              "64": 7.101118066576102e-16,
+              "256": 9.236870094134507e-16,
+              "512": 1.2390904612706566e-15,
+              "1024": 8.132099344528472e-16,
+              "1536": 2.1499385169212457e-15,
+              "2048": 1.0743077112275886e-15,
+              "3072": 1.0924553632613344e-15
+            },
+            "state_relative_distance": {
+              "64": 2.4095824511925673e-16,
+              "256": 4.698656388758529e-16,
+              "512": 6.576374701599769e-16,
+              "1024": 8.593286852933534e-16,
+              "1536": 7.358638050947994e-16,
+              "2048": 7.8008963118164805e-16,
+              "3072": 1.3502203930614195e-15,
+              "3820": 2.2510195064208013e-15
+            },
+            "horizons": {
+              "1e-06": null,
+              "0.001": null,
+              "0.01": null
+            },
+            "growth_rate_per_step": null,
+            "climate_relative_difference": {
+              "output_norm": 0.0,
+              "output_abs_p90": 3.4867815030871575e-16
+            },
+            "climate": {
+              "output_norm": 1.1349261845923519e-05,
+              "output_abs_p90": 2.4292687870012707e-06
+            },
+            "normalization": {
+              "layer_norm_calls": 0,
+              "normalize_calls": 7640,
+              "normalize_min_input_norm": 0.07384963806195761
+            },
+            "seconds": 23.892867657006718
+          },
+          "cuda_tf32": {
+            "output_relative_distance": {
+              "64": 0.0005386907194792904,
+              "256": 0.0006311604642411607,
+              "512": 0.0005240985774218295,
+              "1024": 0.0005404439492800328,
+              "1536": 0.0012657418452729603,
+              "2048": 0.002992868945582302,
+              "3072": 0.001132507517216958
+            },
+            "state_relative_distance": {
+              "64": 3.8025363993318474e-05,
+              "256": 4.533401435847865e-05,
+              "512": 7.420780230668328e-05,
+              "1024": 0.0002876168407252532,
+              "1536": 0.00046509630788570144,
+              "2048": 0.0004992112789850128,
+              "3072": 0.0005269036318371897,
+              "3820": 0.000510596629763547
+            },
+            "horizons": {
+              "1e-06": 1,
+              "0.001": 1180,
+              "0.01": 3386
+            },
+            "growth_rate_per_step": 0.0001502087248352188,
+            "climate_relative_difference": {
+              "output_norm": 0.0015010930581336802,
+              "output_abs_p90": 0.0016893508141143242
+            },
+            "climate": {
+              "output_norm": 1.1366298144095376e-05,
+              "output_abs_p90": 2.433372674204293e-06
+            },
+            "normalization": {
+              "layer_norm_calls": 0,
+              "normalize_calls": 7640,
+              "normalize_min_input_norm": 0.07384266704320908
+            },
+            "seconds": 26.21714570801123
+          }
+        },
+        "gate_bias_residual_layer_norm": {
+          "reference_climate": {
+            "output_norm": 0.5175058355546344,
+            "output_abs_p90": 0.10160940717145961
+          },
+          "reference_normalization": {
+            "layer_norm_calls": 11460,
+            "normalize_calls": 7640,
+            "normalize_min_input_norm": 0.10555537749705238,
+            "layer_norm_input_variance_quantiles": {
+              "min": 2.264538047741249e-07,
+              "p01": 4.273757005490238e-06,
+              "p50": 0.00031604427091277846
+            },
+            "layer_norm_calls_below_10_eps": 2839,
+            "layer_norm_max_gain": 312.70690383845397
+          },
+          "steps": 3820,
+          "cpu_float32": {
+            "output_relative_distance": {
+              "64": 5.044956217239147e-06,
+              "256": 0.8088280310592179,
+              "512": 1.3258301784730828,
+              "1024": 1.232868852755563,
+              "1536": 1.5606698344668775,
+              "2048": 1.2111448294545146,
+              "3072": 1.0342979425541634
+            },
+            "state_relative_distance": {
+              "64": 1.378972276661314e-06,
+              "256": 1.0730342211551183,
+              "512": 1.3136504857404707,
+              "1024": 1.3096677251250246,
+              "1536": 1.0515656724100773,
+              "2048": 1.1719234433936292,
+              "3072": 1.069045037764379,
+              "3820": 1.6208744076855608
+            },
+            "horizons": {
+              "1e-06": 7,
+              "0.001": 181,
+              "0.01": 227
+            },
+            "growth_rate_per_step": 0.030135914462479433,
+            "climate_relative_difference": {
+              "output_norm": 0.056973208971798514,
+              "output_abs_p90": 0.006262907184609794
+            },
+            "climate": {
+              "output_norm": 0.488021867441455,
+              "output_abs_p90": 0.10097303688526153
+            },
+            "normalization": {
+              "layer_norm_calls": 11460,
+              "normalize_calls": 7640,
+              "normalize_min_input_norm": 0.11682337522506714,
+              "layer_norm_input_variance_quantiles": {
+                "min": 2.8362077841848077e-07,
+                "p01": 4.219457650833647e-06,
+                "p50": 0.00024177759769372642
+              },
+              "layer_norm_calls_below_10_eps": 3494,
+              "layer_norm_max_gain": 311.8365187363247
+            },
+            "seconds": 13.145591781998519
+          },
+          "cuda_bf16_emulated": {
+            "output_relative_distance": {
+              "64": 0.020608563734018447,
+              "256": 1.114783236755604,
+              "512": 1.4965265779359447,
+              "1024": 1.307500729910982,
+              "1536": 1.4154637298280595,
+              "2048": 1.4062866914208658,
+              "3072": 1.2582319385234675
+            },
+            "state_relative_distance": {
+              "64": 0.0049374760621902335,
+              "256": 0.9862229574176866,
+              "512": 1.0142876103947045,
+              "1024": 1.1395533651831544,
+              "1536": 1.1076572942685787,
+              "2048": 1.3382396286375238,
+              "3072": 1.06114447338911,
+              "3820": 1.107572349629345
+            },
+            "horizons": {
+              "1e-06": 1,
+              "0.001": 1,
+              "0.01": 1
+            },
+            "growth_rate_per_step": null,
+            "climate_relative_difference": {
+              "output_norm": 2.429690114678491e-05,
+              "output_abs_p90": 0.02698599949369768
+            },
+            "climate": {
+              "output_norm": 0.517493261766505,
+              "output_abs_p90": 0.10435143858194354
+            },
+            "normalization": {
+              "layer_norm_calls": 11460,
+              "normalize_calls": 7640,
+              "normalize_min_input_norm": 0.13236714899539948,
+              "layer_norm_input_variance_quantiles": {
+                "min": 3.8689145753778575e-07,
+                "p01": 4.358440105534101e-06,
+                "p50": 0.0001936193075380288
+              },
+              "layer_norm_calls_below_10_eps": 4002,
+              "layer_norm_max_gain": 310.28244383158716
+            },
+            "seconds": 36.157448833982926
+          },
+          "cuda_float32": {
+            "output_relative_distance": {
+              "64": 7.699846420095758e-06,
+              "256": 0.8530553489150383,
+              "512": 1.3716343309769377,
+              "1024": 1.3013727873255458,
+              "1536": 1.4522907790192765,
+              "2048": 1.4350359553074736,
+              "3072": 1.1841813278095197
+            },
+            "state_relative_distance": {
+              "64": 1.613631180208186e-06,
+              "256": 0.6479484989264819,
+              "512": 0.9966023841595504,
+              "1024": 1.1512303317262815,
+              "1536": 1.262266229236576,
+              "2048": 1.9650928606459825,
+              "3072": 1.096495823853172,
+              "3820": 1.6010339592503486
+            },
+            "horizons": {
+              "1e-06": 7,
+              "0.001": 181,
+              "0.01": 224
+            },
+            "growth_rate_per_step": 0.025539609359188056,
+            "climate_relative_difference": {
+              "output_norm": 0.11011386382524456,
+              "output_abs_p90": 0.061227838764603845
+            },
+            "climate": {
+              "output_norm": 0.5744904026596668,
+              "output_abs_p90": 0.10783073157072072
+            },
+            "normalization": {
+              "layer_norm_calls": 11460,
+              "normalize_calls": 7640,
+              "normalize_min_input_norm": 0.12042701244354248,
+              "layer_norm_input_variance_quantiles": {
+                "min": 2.676547694591136e-07,
+                "p01": 4.952256081196538e-06,
+                "p50": 0.0003001890436280519
+              },
+              "layer_norm_calls_below_10_eps": 3194,
+              "layer_norm_max_gain": 312.07887450247154
+            },
+            "seconds": 25.842988659016555
+          },
+          "cuda_float64": {
+            "output_relative_distance": {
+              "64": 1.0677715713187162e-14,
+              "256": 3.1388111841782285e-08,
+              "512": 0.8566489291784534,
+              "1024": 1.1225146657720733,
+              "1536": 1.232418779329498,
+              "2048": 1.3896265205255913,
+              "3072": 1.2422574571900156
+            },
+            "state_relative_distance": {
+              "64": 3.397004322758243e-15,
+              "256": 1.9803001732651768e-08,
+              "512": 0.44500864041169835,
+              "1024": 1.1581141329634894,
+              "1536": 1.0918884214954416,
+              "2048": 3.4346119008195912,
+              "3072": 1.3063939099496333,
+              "3820": 1.1445208019599056
+            },
+            "horizons": {
+              "1e-06": 261,
+              "0.001": 482,
+              "0.01": 483
+            },
+            "growth_rate_per_step": 0.055302207895967195,
+            "climate_relative_difference": {
+              "output_norm": 0.04126635186712039,
+              "output_abs_p90": 0.002896984546333446
+            },
+            "climate": {
+              "output_norm": 0.53886141345792,
+              "output_abs_p90": 0.10190376805379743
+            },
+            "normalization": {
+              "layer_norm_calls": 11460,
+              "normalize_calls": 7640,
+              "normalize_min_input_norm": 0.08142476820397204,
+              "layer_norm_input_variance_quantiles": {
+                "min": 2.910679082474374e-07,
+                "p01": 1.170752805538588e-05,
+                "p50": 0.0003365635326082121
+              },
+              "layer_norm_calls_below_10_eps": 2458,
+              "layer_norm_max_gain": 311.7236680903129
+            },
+            "seconds": 27.2931858630036
+          },
+          "cuda_tf32": {
+            "output_relative_distance": {
+              "64": 0.0014323382992229984,
+              "256": 1.2164481436828445,
+              "512": 1.4349487101005907,
+              "1024": 1.2971924836591593,
+              "1536": 1.2055771946004112,
+              "2048": 1.469080537355583,
+              "3072": 1.292387369957808
+            },
+            "state_relative_distance": {
+              "64": 0.0003401832743718154,
+              "256": 1.7611390138857177,
+              "512": 1.0260870018011943,
+              "1024": 2.322494955645928,
+              "1536": 1.0517112591762723,
+              "2048": 2.1585462346958715,
+              "3072": 1.214011235856984,
+              "3820": 1.190105439917418
+            },
+            "horizons": {
+              "1e-06": 1,
+              "0.001": 2,
+              "0.01": 166
+            },
+            "growth_rate_per_step": null,
+            "climate_relative_difference": {
+              "output_norm": 0.034695714731325954,
+              "output_abs_p90": 0.07706155512048177
+            },
+            "climate": {
+              "output_norm": 0.5354610703968344,
+              "output_abs_p90": 0.10943958610296252
+            },
+            "normalization": {
+              "layer_norm_calls": 11460,
+              "normalize_calls": 7640,
+              "normalize_min_input_norm": 0.09485041350126266,
+              "layer_norm_input_variance_quantiles": {
+                "min": 1.5685299104006845e-07,
+                "p01": 3.406537764476525e-06,
+                "p50": 0.000175335822859779
+              },
+              "layer_norm_calls_below_10_eps": 4354,
+              "layer_norm_max_gain": 313.77650168025275
+            },
+            "seconds": 29.01977819899912
+          }
+        }
+      }
+    },
+    "lyapunov": {
+      "fused_norm_1": {
+        "gate_bias": {
+          "benettin": {
+            "exponent_per_step": -0.0007334223941727587,
+            "exponent_min": -0.0008391974829421701,
+            "exponent_max": -0.0006657868831284019,
+            "exponent_by_flow": [
+              -0.0007497860733058022,
+              -0.0006816823457285316,
+              -0.0007350073937086987,
+              -0.0007672137639480027
+            ],
+            "running_mean": {
+              "64": -0.0029022209249495302,
+              "256": -0.00278136453952813,
+              "512": -0.002726727890538787,
+              "1024": -0.0025378516261074634,
+              "1536": -0.002015792163602539,
+              "2048": -0.0015298401445879364,
+              "3072": -0.0010083649466923897,
+              "4096": -0.0007334223941727587
+            },
+            "epsilon": 1e-08,
+            "renormalize": 8,
+            "directions": 3,
+            "seed": 7
+          },
+          "seconds": 28.266945042007137
+        },
+        "gate_bias_residual_layer_norm": {
+          "benettin": {
+            "exponent_per_step": 0.015343896839820381,
+            "exponent_min": 0.014392752029967799,
+            "exponent_max": 0.016141651771941157,
+            "exponent_by_flow": [
+              0.015985206784433114,
+              0.014660409024511043,
+              0.015666587199613575,
+              0.015063384350723791
+            ],
+            "running_mean": {
+              "64": 0.010504106289106968,
+              "256": 0.006417274958693257,
+              "512": 0.0102044033855547,
+              "1024": 0.013225979601342872,
+              "1536": 0.014396519126623583,
+              "2048": 0.014651579095680817,
+              "3072": 0.015146873228568081,
+              "4096": 0.015343896839820381
+            },
+            "epsilon": 1e-08,
+            "renormalize": 8,
+            "directions": 3,
+            "seed": 7
+          },
+          "seconds": 64.74159792301361,
+          "free_growth": {
+            "1e-15": {
+              "climate_spread": {
+                "output_norm": 0.0038377796850764256,
+                "output_abs_p90": 0.0012485360068632068
+              },
+              "horizons": {
+                "1e-06": 1249,
+                "0.001": 1656,
+                "0.01": 1841
+              },
+              "growth_rate_per_step": 0.01622886494098999,
+              "output_relative_distance": {
+                "64": 1.1732678300664992e-14,
+                "256": 6.868854559064135e-14,
+                "512": 3.81623287309375e-12,
+                "1024": 3.166742709099036e-08,
+                "1536": 0.0001236736387124372,
+                "2048": 0.1353515698063469,
+                "3072": 0.6357821210957815,
+                "4096": 0.7147845448634718
+              }
+            },
+            "1e-07": {
+              "climate_spread": {
+                "output_norm": 0.0037930577154882874,
+                "output_abs_p90": 0.0016827350186191651
+              },
+              "horizons": {
+                "1e-06": 186,
+                "0.001": 620,
+                "0.01": 750
+              },
+              "growth_rate_per_step": 0.012893512507260998,
+              "output_relative_distance": {
+                "64": 4.065971667334042e-07,
+                "256": 1.9299852865471553e-06,
+                "512": 0.00010517914489362855,
+                "1024": 0.2597120020948367,
+                "1536": 0.7451436681325435,
+                "2048": 0.6669211657747987,
+                "3072": 0.7627085120849996,
+                "4096": 0.6695051439598739
+              }
+            }
+          },
+          "predicted_horizon_1e-2": {
+            "float64": 2094.0984366045273,
+            "float32": 784.0486854831739,
+            "tf32": 196.78500394601542,
+            "bf16": 61.26261589897884
+          }
+        },
+        "v1_residual_layer_norm": {
+          "benettin": {
+            "exponent_per_step": 0.6042837772277104,
+            "exponent_min": 0.5955426723951468,
+            "exponent_max": 0.6123507228671984,
+            "exponent_by_flow": [
+              0.5957796440102271,
+              0.6021548770323263,
+              0.6120999446312583,
+              0.6071006432370302
+            ],
+            "running_mean": {
+              "64": 0.6183393796892542,
+              "256": 0.588020690758444,
+              "512": 0.5883589964079418,
+              "1024": 0.5810363344918739,
+              "1536": 0.5951469928972147,
+              "2048": 0.5998019626732559,
+              "3072": 0.6048888398690992,
+              "4096": 0.6042837772277104
+            },
+            "epsilon": 1e-08,
+            "renormalize": 8,
+            "directions": 3,
+            "seed": 7
+          },
+          "seconds": 20.665905080008088,
+          "predicted_horizon_1e-2": {
+            "float64": 53.1730812485157,
+            "float32": 19.908464534068123,
+            "tf32": 4.9967398000054155,
+            "bf16": 1.5555725536832525
+          }
+        }
+      },
+      "unit_variance": {
+        "gate_bias": {
+          "benettin": {
+            "exponent_per_step": -0.000657201238153166,
+            "exponent_min": -0.0006817951740581423,
+            "exponent_max": -0.0006244607011680699,
+            "exponent_by_flow": [
+              -0.0006713067385449453,
+              -0.0006701424776498037,
+              -0.0006410247829971408,
+              -0.0006463309534207737
+            ],
+            "running_mean": {
+              "64": -0.0030864758418053875,
+              "256": -0.002757096368233006,
+              "512": -0.002544229270182649,
+              "1024": -0.0020633595773734874,
+              "1536": -0.0015732879662674684,
+              "2048": -0.0012279281737820839,
+              "3072": -0.0008471969287487495,
+              "4096": -0.000657201238153166
+            },
+            "epsilon": 1e-08,
+            "renormalize": 8,
+            "directions": 3,
+            "seed": 7
+          },
+          "seconds": 19.49348184900009
+        },
+        "gate_bias_residual_layer_norm": {
+          "benettin": {
+            "exponent_per_step": 0.006797584774318767,
+            "exponent_min": 0.0065534257527956495,
+            "exponent_max": 0.0070495118934154905,
+            "exponent_by_flow": [
+              0.006895141642945024,
+              0.006756379273947583,
+              0.006712269768419764,
+              0.006826548411962692
+            ],
+            "running_mean": {
+              "64": 0.007553174822532534,
+              "256": 0.002756296820789138,
+              "512": 0.00434469507559186,
+              "1024": 0.005867264156831628,
+              "1536": 0.006330441123035079,
+              "2048": 0.00635305042740929,
+              "3072": 0.006646250665907023,
+              "4096": 0.006797584774318767
+            },
+            "epsilon": 1e-08,
+            "renormalize": 8,
+            "directions": 3,
+            "seed": 7
+          },
+          "seconds": 63.974272988998564,
+          "free_growth": {
+            "1e-15": {
+              "climate_spread": {
+                "output_norm": 1.4603370774234456e-05,
+                "output_abs_p90": 0.00014822966857395918
+              },
+              "horizons": {
+                "1e-06": 2621,
+                "0.001": 3577,
+                "0.01": 3909
+              },
+              "growth_rate_per_step": 0.007021104195007172,
+              "output_relative_distance": {
+                "64": 1.2041928956269574e-14,
+                "256": 2.877332661125291e-14,
+                "512": 1.909749172501088e-13,
+                "1024": 9.207713409975397e-12,
+                "1536": 5.617190691154484e-10,
+                "2048": 8.114492488714926e-09,
+                "3072": 1.6572714855155868e-05,
+                "4096": 0.041926243764645925
+              }
+            },
+            "1e-07": {
+              "climate_spread": {
+                "output_norm": 0.0020555986933950086,
+                "output_abs_p90": 0.0043622385725730715
+              },
+              "horizons": {
+                "1e-06": 352,
+                "0.001": 1275,
+                "0.01": 1571
+              },
+              "growth_rate_per_step": 0.006903321364873544,
+              "output_relative_distance": {
+                "64": 2.891395754438529e-07,
+                "256": 5.21960194207109e-07,
+                "512": 2.1106313306284003e-06,
+                "1024": 0.00010616874567188587,
+                "1536": 0.005780742319288698,
+                "2048": 0.14047132605423415,
+                "3072": 0.6581214583732563,
+                "4096": 0.5498905965539863
+              }
+            }
+          },
+          "predicted_horizon_1e-2": {
+            "float64": 4726.918670449261,
+            "float32": 1769.799501861489,
+            "tf32": 444.1943573221427,
+            "bf16": 138.28547781306278
+          }
+        },
+        "v1_residual_layer_norm": {
+          "benettin": {
+            "exponent_per_step": 0.4771654032475894,
+            "exponent_min": 0.4641644467630714,
+            "exponent_max": 0.5016469143232246,
+            "exponent_by_flow": [
+              0.4692909939616691,
+              0.46497146546842805,
+              0.5011036205737974,
+              0.4732955329864628
+            ],
+            "running_mean": {
+              "64": 0.5235428103814778,
+              "256": 0.46315070802569575,
+              "512": 0.4704049269813533,
+              "1024": 0.47529855656705006,
+              "1536": 0.4675937262909669,
+              "2048": 0.46728426881902524,
+              "3072": 0.47534601277378713,
+              "4096": 0.4771654032475894
+            },
+            "epsilon": 1e-08,
+            "renormalize": 8,
+            "directions": 3,
+            "seed": 7
+          },
+          "seconds": 20.963646379997954,
+          "predicted_horizon_1e-2": {
+            "float64": 67.33855842230183,
+            "float32": 25.212142509854885,
+            "tf32": 6.327887100826942,
+            "bf16": 1.9699820064358784
+          }
+        }
+      },
+      "recurring_unit": {
+        "gate_bias": {
+          "benettin": {
+            "exponent_per_step": -0.00022466807141973105,
+            "exponent_min": -0.0005873693634982746,
+            "exponent_max": -1.602484658329985e-05,
+            "exponent_by_flow": [
+              -0.00017950780905568405,
+              -0.00015647403306486512,
+              -0.0004557410699370981,
+              -0.00010694937362127703
+            ],
+            "running_mean": {
+              "64": -0.0027275161159475273,
+              "256": -0.0025108561988754926,
+              "512": -0.0022547850109118934,
+              "1024": -0.0015134521607470793,
+              "1536": -0.0009916950234673209,
+              "2048": -0.0006838410467125905,
+              "3072": -0.0003629361241714714,
+              "4096": -0.00022466807141973105
+            },
+            "epsilon": 1e-08,
+            "renormalize": 8,
+            "directions": 3,
+            "seed": 7
+          },
+          "seconds": 18.58984017901821
+        },
+        "gate_bias_residual_layer_norm": {
+          "benettin": {
+            "exponent_per_step": 0.013264698040731117,
+            "exponent_min": 0.01248224823962296,
+            "exponent_max": 0.013703784530715158,
+            "exponent_by_flow": [
+              0.012744549753072367,
+              0.013466608344462222,
+              0.013675385753052771,
+              0.0131722483123371
+            ],
+            "running_mean": {
+              "64": 0.0023010517421614266,
+              "256": -0.0001709178615976827,
+              "512": 0.005627045056953202,
+              "1024": 0.00858841200654265,
+              "1536": 0.009726832286961048,
+              "2048": 0.010422531765774734,
+              "3072": 0.0122211622192783,
+              "4096": 0.013264698040731117
+            },
+            "epsilon": 1e-08,
+            "renormalize": 8,
+            "directions": 3,
+            "seed": 7
+          },
+          "seconds": 65.93141030299012,
+          "free_growth": {
+            "1e-15": {
+              "climate_spread": {
+                "output_norm": 0.002725753672251779,
+                "output_abs_p90": 0.0006645907603954757
+              },
+              "horizons": {
+                "1e-06": 1543,
+                "0.001": 2065,
+                "0.01": 2087
+              },
+              "growth_rate_per_step": 0.012062177727444064,
+              "output_relative_distance": {
+                "64": 5.4263585953979964e-15,
+                "256": 4.1024848539067313e-14,
+                "512": 3.298119545572597e-12,
+                "1024": 5.097892533574262e-10,
+                "1536": 4.99983409260047e-07,
+                "2048": 0.0004967095712139585,
+                "3072": 0.5281746101901904,
+                "4096": 0.561591473524807
+              }
+            },
+            "1e-07": {
+              "climate_spread": {
+                "output_norm": 0.005432611136815649,
+                "output_abs_p90": 0.005987849947025516
+              },
+              "horizons": {
+                "1e-06": 302,
+                "0.001": 614,
+                "0.01": 946
+              },
+              "growth_rate_per_step": 0.012592793532088429,
+              "output_relative_distance": {
+                "64": 2.522957726469978e-07,
+                "256": 3.5813168115221696e-07,
+                "512": 7.488643434997611e-05,
+                "1024": 0.0054556501508646405,
+                "1536": 0.41569594740116617,
+                "2048": 0.5960997328133223,
+                "3072": 0.5504198945756096,
+                "4096": 0.6748228291540378
+              }
+            }
+          },
+          "predicted_horizon_1e-2": {
+            "float64": 2422.3416383112776,
+            "float32": 906.9457978243968,
+            "tf32": 227.6304210544157,
+            "bf16": 70.86533410749698
+          }
+        },
+        "v1_residual_layer_norm": {
+          "benettin": {
+            "exponent_per_step": 0.42870954466594885,
+            "exponent_min": 0.4159680240788891,
+            "exponent_max": 0.45818840591731225,
+            "exponent_by_flow": [
+              0.4162663699507811,
+              0.421590012948492,
+              0.4579687106730386,
+              0.4190130850914838
+            ],
+            "running_mean": {
+              "64": 0.4259645331792679,
+              "256": 0.42194004262722046,
+              "512": 0.42255917041387986,
+              "1024": 0.41403848264588533,
+              "1536": 0.41796442278377954,
+              "2048": 0.4215594517067098,
+              "3072": 0.4306461259207492,
+              "4096": 0.42870954466594885
+            },
+            "epsilon": 1e-08,
+            "renormalize": 8,
+            "directions": 3,
+            "seed": 7
+          },
+          "seconds": 18.790756918984698,
+          "predicted_horizon_1e-2": {
+            "float64": 74.94965013836122,
+            "float32": 28.061801509048912,
+            "tf32": 7.043110744184776,
+            "bf16": 2.192643644600743
+          }
+        }
+      },
+      "real": {
+        "gate_bias": {
+          "benettin": {
+            "exponent_per_step": -0.0006549894393838462,
+            "exponent_min": -0.0008126691970153514,
+            "exponent_max": -0.0005176274086494569,
+            "exponent_by_flow": [
+              -0.0006978283660542523,
+              -0.0006439514559967433,
+              -0.0006243130896550816,
+              -0.0006538648458293076
+            ],
+            "running_mean": {
+              "64": -0.00268956896837372,
+              "256": -0.002691001693349403,
+              "512": -0.0026645194567652144,
+              "1024": -0.0023858765585500594,
+              "1536": -0.0018034354509048657,
+              "2048": -0.001374151127508199,
+              "3072": -0.0008825724201637467
+            },
+            "epsilon": 1e-08,
+            "renormalize": 8,
+            "directions": 3,
+            "seed": 7
+          },
+          "seconds": 20.35085058401455
+        },
+        "gate_bias_residual_layer_norm": {
+          "benettin": {
+            "exponent_per_step": 0.036970630617744915,
+            "exponent_min": 0.031052860426234823,
+            "exponent_max": 0.04026412064089432,
+            "exponent_by_flow": [
+              0.038845784159405365,
+              0.040041822741425176,
+              0.031059592158841503,
+              0.03793532341130761
+            ],
+            "running_mean": {
+              "64": 0.003204051952696671,
+              "256": 0.04392619442403859,
+              "512": 0.04790075606266703,
+              "1024": 0.03534724595819743,
+              "1536": 0.040919090628958175,
+              "2048": 0.03781278565455986,
+              "3072": 0.03661458118024515
+            },
+            "epsilon": 1e-08,
+            "renormalize": 8,
+            "directions": 3,
+            "seed": 7
+          },
+          "seconds": 64.54351097001927,
+          "free_growth": {
+            "1e-15": {
+              "climate_spread": {
+                "output_norm": 0.013908697443718891,
+                "output_abs_p90": 0.012665484691694455
+              },
+              "horizons": {
+                "1e-06": 264,
+                "0.001": 482,
+                "0.01": 483
+              },
+              "growth_rate_per_step": 0.05457950695894962,
+              "output_relative_distance": {
+                "64": 9.596439872966928e-15,
+                "256": 2.133309678434579e-08,
+                "512": 0.25969186957058843,
+                "1024": 1.269596911389024,
+                "1536": 1.4762646803634618,
+                "2048": 1.3914601308156784,
+                "3072": 1.3633831602052224
+              }
+            },
+            "1e-07": {
+              "climate_spread": {
+                "output_norm": 0.12131650655911726,
+                "output_abs_p90": 0.09035594007796471
+              },
+              "horizons": {
+                "1e-06": 166,
+                "0.001": 231,
+                "0.01": 239
+              },
+              "growth_rate_per_step": 0.023413048323056445,
+              "output_relative_distance": {
+                "64": 4.7546577725617605e-07,
+                "256": 0.45474608100130465,
+                "512": 1.3684049956762903,
+                "1024": 1.2225395432108983,
+                "1536": 1.2605128998803496,
+                "2048": 1.402658895758778,
+                "3072": 1.1796497979888223
+              }
+            }
+          },
+          "predicted_horizon_1e-2": {
+            "float64": 869.1123155542465,
+            "float32": 325.40321726825897,
+            "tf32": 81.67155251936796,
+            "bf16": 25.425783731162344
+          }
+        },
+        "v1_residual_layer_norm": {
+          "benettin": {
+            "exponent_per_step": 0.5764915421210105,
+            "exponent_min": 0.5682177717605424,
+            "exponent_max": 0.5922983005781959,
+            "exponent_by_flow": [
+              0.5920732776714733,
+              0.5687342112510966,
+              0.5765403812003769,
+              0.5686182983610951
+            ],
+            "running_mean": {
+              "64": 0.5712884904154056,
+              "256": 0.5855879311583907,
+              "512": 0.5795323222253344,
+              "1024": 0.577643399053605,
+              "1536": 0.5831481768200547,
+              "2048": 0.5764917442851045,
+              "3072": 0.5752260742662497
+            },
+            "epsilon": 1e-08,
+            "renormalize": 8,
+            "directions": 3,
+            "seed": 7
+          },
+          "seconds": 20.32101927199983,
+          "predicted_horizon_1e-2": {
+            "float64": 55.736516559239135,
+            "float32": 20.868237031178023,
+            "tf32": 5.237628966874763,
+            "bf16": 1.6305655674201645
+          }
+        }
+      }
+    },
+    "floor": {
+      "fused_norm_1": {
+        "cpu-torch.float32": {
+          "device": "cpu",
+          "dtype": "torch.float32",
+          "first_nonzero_step": null,
+          "horizons": {
+            "1e-06": null,
+            "0.001": null,
+            "0.01": null
+          },
+          "output_relative_distance": {
+            "64": 0.0,
+            "256": 0.0,
+            "512": 0.0,
+            "1024": 0.0,
+            "1536": 0.0,
+            "2048": 0.0,
+            "3072": 0.0,
+            "4096": 0.0
+          }
+        },
+        "cpu-torch.float64": {
+          "device": "cpu",
+          "dtype": "torch.float64",
+          "first_nonzero_step": null,
+          "horizons": {
+            "1e-06": null,
+            "0.001": null,
+            "0.01": null
+          },
+          "output_relative_distance": {
+            "64": 0.0,
+            "256": 0.0,
+            "512": 0.0,
+            "1024": 0.0,
+            "1536": 0.0,
+            "2048": 0.0,
+            "3072": 0.0,
+            "4096": 0.0
+          }
+        },
+        "cuda0-torch.float32": {
+          "device": "cuda:0",
+          "dtype": "torch.float32",
+          "first_nonzero_step": null,
+          "horizons": {
+            "1e-06": null,
+            "0.001": null,
+            "0.01": null
+          },
+          "output_relative_distance": {
+            "64": 0.0,
+            "256": 0.0,
+            "512": 0.0,
+            "1024": 0.0,
+            "1536": 0.0,
+            "2048": 0.0,
+            "3072": 0.0,
+            "4096": 0.0
+          }
+        },
+        "cuda0-torch.float64": {
+          "device": "cuda:0",
+          "dtype": "torch.float64",
+          "first_nonzero_step": null,
+          "horizons": {
+            "1e-06": null,
+            "0.001": null,
+            "0.01": null
+          },
+          "output_relative_distance": {
+            "64": 0.0,
+            "256": 0.0,
+            "512": 0.0,
+            "1024": 0.0,
+            "1536": 0.0,
+            "2048": 0.0,
+            "3072": 0.0,
+            "4096": 0.0
+          }
+        }
+      },
+      "unit_variance": {
+        "cpu-torch.float32": {
+          "device": "cpu",
+          "dtype": "torch.float32",
+          "first_nonzero_step": null,
+          "horizons": {
+            "1e-06": null,
+            "0.001": null,
+            "0.01": null
+          },
+          "output_relative_distance": {
+            "64": 0.0,
+            "256": 0.0,
+            "512": 0.0,
+            "1024": 0.0,
+            "1536": 0.0,
+            "2048": 0.0,
+            "3072": 0.0,
+            "4096": 0.0
+          }
+        },
+        "cpu-torch.float64": {
+          "device": "cpu",
+          "dtype": "torch.float64",
+          "first_nonzero_step": null,
+          "horizons": {
+            "1e-06": null,
+            "0.001": null,
+            "0.01": null
+          },
+          "output_relative_distance": {
+            "64": 0.0,
+            "256": 0.0,
+            "512": 0.0,
+            "1024": 0.0,
+            "1536": 0.0,
+            "2048": 0.0,
+            "3072": 0.0,
+            "4096": 0.0
+          }
+        },
+        "cuda0-torch.float32": {
+          "device": "cuda:0",
+          "dtype": "torch.float32",
+          "first_nonzero_step": null,
+          "horizons": {
+            "1e-06": null,
+            "0.001": null,
+            "0.01": null
+          },
+          "output_relative_distance": {
+            "64": 0.0,
+            "256": 0.0,
+            "512": 0.0,
+            "1024": 0.0,
+            "1536": 0.0,
+            "2048": 0.0,
+            "3072": 0.0,
+            "4096": 0.0
+          }
+        },
+        "cuda0-torch.float64": {
+          "device": "cuda:0",
+          "dtype": "torch.float64",
+          "first_nonzero_step": null,
+          "horizons": {
+            "1e-06": null,
+            "0.001": null,
+            "0.01": null
+          },
+          "output_relative_distance": {
+            "64": 0.0,
+            "256": 0.0,
+            "512": 0.0,
+            "1024": 0.0,
+            "1536": 0.0,
+            "2048": 0.0,
+            "3072": 0.0,
+            "4096": 0.0
+          }
+        }
+      },
+      "recurring_unit": {
+        "cpu-torch.float32": {
+          "device": "cpu",
+          "dtype": "torch.float32",
+          "first_nonzero_step": null,
+          "horizons": {
+            "1e-06": null,
+            "0.001": null,
+            "0.01": null
+          },
+          "output_relative_distance": {
+            "64": 0.0,
+            "256": 0.0,
+            "512": 0.0,
+            "1024": 0.0,
+            "1536": 0.0,
+            "2048": 0.0,
+            "3072": 0.0,
+            "4096": 0.0
+          }
+        },
+        "cpu-torch.float64": {
+          "device": "cpu",
+          "dtype": "torch.float64",
+          "first_nonzero_step": null,
+          "horizons": {
+            "1e-06": null,
+            "0.001": null,
+            "0.01": null
+          },
+          "output_relative_distance": {
+            "64": 0.0,
+            "256": 0.0,
+            "512": 0.0,
+            "1024": 0.0,
+            "1536": 0.0,
+            "2048": 0.0,
+            "3072": 0.0,
+            "4096": 0.0
+          }
+        },
+        "cuda0-torch.float32": {
+          "device": "cuda:0",
+          "dtype": "torch.float32",
+          "first_nonzero_step": null,
+          "horizons": {
+            "1e-06": null,
+            "0.001": null,
+            "0.01": null
+          },
+          "output_relative_distance": {
+            "64": 0.0,
+            "256": 0.0,
+            "512": 0.0,
+            "1024": 0.0,
+            "1536": 0.0,
+            "2048": 0.0,
+            "3072": 0.0,
+            "4096": 0.0
+          }
+        },
+        "cuda0-torch.float64": {
+          "device": "cuda:0",
+          "dtype": "torch.float64",
+          "first_nonzero_step": null,
+          "horizons": {
+            "1e-06": null,
+            "0.001": null,
+            "0.01": null
+          },
+          "output_relative_distance": {
+            "64": 0.0,
+            "256": 0.0,
+            "512": 0.0,
+            "1024": 0.0,
+            "1536": 0.0,
+            "2048": 0.0,
+            "3072": 0.0,
+            "4096": 0.0
+          }
+        }
+      },
+      "real": {
+        "cpu-torch.float32": {
+          "device": "cpu",
+          "dtype": "torch.float32",
+          "first_nonzero_step": null,
+          "horizons": {
+            "1e-06": null,
+            "0.001": null,
+            "0.01": null
+          },
+          "output_relative_distance": {
+            "64": 0.0,
+            "256": 0.0,
+            "512": 0.0,
+            "1024": 0.0,
+            "1536": 0.0,
+            "2048": 0.0,
+            "3072": 0.0
+          }
+        },
+        "cpu-torch.float64": {
+          "device": "cpu",
+          "dtype": "torch.float64",
+          "first_nonzero_step": null,
+          "horizons": {
+            "1e-06": null,
+            "0.001": null,
+            "0.01": null
+          },
+          "output_relative_distance": {
+            "64": 0.0,
+            "256": 0.0,
+            "512": 0.0,
+            "1024": 0.0,
+            "1536": 0.0,
+            "2048": 0.0,
+            "3072": 0.0
+          }
+        },
+        "cuda0-torch.float32": {
+          "device": "cuda:0",
+          "dtype": "torch.float32",
+          "first_nonzero_step": null,
+          "horizons": {
+            "1e-06": null,
+            "0.001": null,
+            "0.01": null
+          },
+          "output_relative_distance": {
+            "64": 0.0,
+            "256": 0.0,
+            "512": 0.0,
+            "1024": 0.0,
+            "1536": 0.0,
+            "2048": 0.0,
+            "3072": 0.0
+          }
+        },
+        "cuda0-torch.float64": {
+          "device": "cuda:0",
+          "dtype": "torch.float64",
+          "first_nonzero_step": null,
+          "horizons": {
+            "1e-06": null,
+            "0.001": null,
+            "0.01": null
+          },
+          "output_relative_distance": {
+            "64": 0.0,
+            "256": 0.0,
+            "512": 0.0,
+            "1024": 0.0,
+            "1536": 0.0,
+            "2048": 0.0,
+            "3072": 0.0
+          }
+        }
+      }
+    }
+  },
+  "optimizer_steps": 0,
+  "training_runs": 0
+}

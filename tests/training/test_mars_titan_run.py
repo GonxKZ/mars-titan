@@ -7,6 +7,7 @@ el aislamiento del estado rápido del padre y la reanudación desde checkpoints 
 
 import copy
 import json
+import math
 import os
 from dataclasses import replace
 from pathlib import Path
@@ -608,3 +609,35 @@ def test_scalar_parent_fits_with_l1_and_writes_no_quantiles(
     rows = []
     engine.evaluate(streams["validation"], rows=rows)
     assert rows and all(levels is None for *_, levels in rows)
+
+
+def test_a_replay_that_does_not_reproduce_its_prediction_stops_before_the_step(
+    shared, tmp_path, native, learning_doubles, monkeypatch
+):
+    """Las comprobaciones del tramo se leen juntas, pero el error y su momento no cambian."""
+    _, streams = shared
+    engine = build(streams, tmp_path / "drift", native)
+    original = mt.apply_episodic_readout
+
+    def drifted(*args, differentiable=False, **kwargs):
+        result = original(*args, differentiable=differentiable, **kwargs)
+        if not differentiable:
+            return result
+        return replace(result, point_predictions=result.point_predictions + 1e-3)
+
+    monkeypatch.setattr(mt, "apply_episodic_readout", drifted)
+    with pytest.raises(ValueError, match="^La repetición del bloque no reproduce"):
+        engine.run()
+    assert engine.optimizer.calls == 0 and engine.global_step == 0
+
+
+def test_a_non_finite_segment_loss_stops_before_the_step(
+    shared, tmp_path, native, learning_doubles, monkeypatch
+):
+    _, streams = shared
+    engine = build(streams, tmp_path / "nan", native)
+    original = engine._loss
+    monkeypatch.setattr(engine, "_loss", lambda result, target: original(result, target) * math.nan)
+    with pytest.raises(ValueError, match="^La pérdida del tramo no es finita$"):
+        engine.run()
+    assert engine.optimizer.calls == 0 and engine.global_step == 0

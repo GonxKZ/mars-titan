@@ -15,7 +15,7 @@ import torch
 
 from mars_titan.models.baselines.multimodal import SCALAR_HEAD
 from mars_titan.models.quantile_head import PINBALL, QUANTILE_HEAD
-from mars_titan.models.titans.config import canonical
+from mars_titan.models.titans.config import MAX_BLOCK_ROWS, canonical
 from mars_titan.models.titans.financial import VARIANTS, FinancialConfig, FinancialPredictor
 from mars_titan.training.financial_run import ChronologicalRecipe, _Pass, load_recipe
 from mars_titan.training.graph_memory import saved_graph_bytes
@@ -75,7 +75,7 @@ def test_default_identity_keeps_its_previous_digest():
     assert "accumulation_rows" not in ChronologicalRecipe().identity()
 
 
-@pytest.mark.parametrize("value", [0, 257, True, 1.0, "2"])
+@pytest.mark.parametrize("value", [0, MAX_BLOCK_ROWS + 1, True, 1.0, "2"])
 def test_accumulation_rows_must_be_a_bounded_integer(value):
     with pytest.raises(ValueError):
         ChronologicalRecipe(accumulation_rows=value)

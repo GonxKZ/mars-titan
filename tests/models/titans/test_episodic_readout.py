@@ -9,6 +9,8 @@ import pytest
 import torch
 from test_financial_adapter import setup
 
+from mars_titan.models.titans.config import MAX_BLOCK_ROWS
+
 CODEC = "a" * 64
 CONTEXT = "b" * 64
 
@@ -412,7 +414,7 @@ def test_recovery_with_the_same_contract_preserves_all_refinement_outputs():
         dict(temperature=float("nan")),
         dict(temperature=0),
         dict(mode="M3"),
-        dict(max_batch=257),
+        dict(max_batch=MAX_BLOCK_ROWS + 1),
         dict(seed=True),
     ],
 )

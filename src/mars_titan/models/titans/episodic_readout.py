@@ -8,7 +8,7 @@ import torch
 from torch import nn
 
 from ..quantile_head import LEVELS, QuantileHead, median
-from .config import bounded_integer, require_identity
+from .config import MAX_BLOCK_ROWS, MAX_STATE_BYTES, bounded_integer, require_identity
 from .episodic_snapshot import EpisodeSnapshot, _device, _digest_id
 from .financial import PreparedDecisions
 from .state import check_differentiable, check_finite
@@ -35,9 +35,9 @@ class EpisodicReadoutConfig:
         _digest_id(self.codec_id, "El codec")
         bounded_integer(self.hidden_size, "dimensión", 1, 128)
         bounded_integer(self.neighbors, "vecinos", 1, 8)
-        bounded_integer(self.max_batch, "lote", 1, 256)
+        bounded_integer(self.max_batch, "lote", 1, MAX_BLOCK_ROWS)
         bounded_integer(self.seed, "semilla", 0, 2**32 - 1)
-        bounded_integer(self.max_working_bytes, "presupuesto de lectura", 1024, 128 * 1024**2)
+        bounded_integer(self.max_working_bytes, "presupuesto de lectura", 1024, MAX_STATE_BYTES)
         if type(self.refinements) is not int or self.refinements not in (1, 2, 4):
             raise ValueError("K debe ser 1, 2 o 4")
         if self.mode not in ("bank", "no_bank"):

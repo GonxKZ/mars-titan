@@ -15,11 +15,16 @@ import torch
 
 from mars_titan.data.input_policy import HISTORICAL_MASKED, STRICT_INPUTS, policy_identity
 from mars_titan.data.storage import atomic_json, sha256
-from mars_titan.models.baselines.multimodal import PRESENCE_FUSION, MultimodalReference
+from mars_titan.models.baselines.multimodal import (
+    PRESENCE_FUSION,
+    MultimodalReference,
+    transformer_batch_options,
+)
 from mars_titan.models.quantile_head import MEDIAN_INDEX, QUANTILE_COLUMNS, QUANTILE_HEAD
 from mars_titan.training import carried_predictions as carry
 from mars_titan.training.checkpoints import capture_rng, save_training_state
 from mars_titan.training.corpus_inputs import CorpusDataset
+from mars_titan.training.kernel_policy import declared_policy
 from mars_titan.training.reference_run import scientific_identity
 from mars_titan.training.tabular_corpus import feature_order
 from tests.training.test_masked_reference_run import masked_case
@@ -217,9 +222,12 @@ def cpu(monkeypatch):
     monkeypatch.delenv("MARS_TITAN_INPUT_CACHE_MIB", raising=False)
 
 
-def neural_anchor(folder, view, kind="gru"):
+def neural_anchor(folder, view, kind="gru", *, precision=None, batch_size=2):
     """Recibo seleccionado con los pesos iniciales de la semilla, como en la época 0."""
     case = masked_case(kind, epochs=2) | dict(head=QUANTILE_HEAD, loss="pinball")
+    if precision is not None:
+        case["precision"] = precision
+    kernel_policy = declared_policy(precision)
     dataset = CorpusDataset(view, input_policy=HISTORICAL_MASKED)
     first = next(dataset.batches(partition="train", batch_size=1, epoch=0, seed=0))
     dimensions = {name: value.shape[-1] for name, value in first["inputs"].items()}
@@ -231,16 +239,20 @@ def neural_anchor(folder, view, kind="gru"):
         mask_fusion=PRESENCE_FUSION,
         head=QUANTILE_HEAD,
         **case["architecture"],
+        **transformer_batch_options(kind, batch_size),
     )
     identity = dict(
         **scientific_identity(kind=kind, input_policy=HISTORICAL_MASKED, head=QUANTILE_HEAD),
         manifest_sha256=sha256(view),
         case=case,
+        batch_size=batch_size,
         dimensions=dimensions,
         context=64,
         **policy_identity(HISTORICAL_MASKED),
         mask_fusion=PRESENCE_FUSION,
     )
+    if kernel_policy is not None:
+        identity["kernel_policy"] = kernel_policy
     selection = dict(
         last_epoch=1,
         best_epoch=1,
