@@ -1,0 +1,168 @@
+{
+ "schema_version": 1,
+ "kind": "targeted_mutation_testing",
+ "tests": [
+  "tests/memory/test_kalman_associative_memory.py"
+ ],
+ "baseline": {
+  "code": 0,
+  "tail": "32 passed in 2.55s"
+ },
+ "import_checked": "/home/gonzalo/.local/state/mars-titan/session-scratch-20261009/ptm/mutation/sandbox-pt3/src/mars_titan/__init__.py",
+ "mutations": [
+  {
+   "id": "K01",
+   "description": "Sin corrección de cohorte (g = 0)",
+   "file": "src/mars_titan/memory/associative_memory.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 14 passed in 1.34s",
+   "seconds": 4.57
+  },
+  {
+   "id": "K02",
+   "description": "g sin el tamaño de la cohorte",
+   "file": "src/mars_titan/memory/associative_memory.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 14 passed in 1.17s",
+   "seconds": 3.89
+  },
+  {
+   "id": "K03",
+   "description": "Sin paseo aleatorio",
+   "file": "src/mars_titan/memory/associative_memory.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 14 passed in 1.14s",
+   "seconds": 3.9
+  },
+  {
+   "id": "K04",
+   "description": "Paseo aleatorio escalado por filas",
+   "file": "src/mars_titan/memory/associative_memory.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 14 passed in 1.44s",
+   "seconds": 4.33
+  },
+  {
+   "id": "K05",
+   "description": "Evidencia sin los pesos de Huber",
+   "file": "src/mars_titan/memory/associative_memory.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 15 passed in 1.40s",
+   "seconds": 4.82
+  },
+  {
+   "id": "K06",
+   "description": "Peso de Huber con raíz",
+   "file": "src/mars_titan/memory/associative_memory.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 15 passed in 1.24s",
+   "seconds": 4.76
+  },
+  {
+   "id": "K07",
+   "description": "Estandarización sin σ²",
+   "file": "src/mars_titan/memory/associative_memory.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 15 passed in 1.41s",
+   "seconds": 4.75
+  },
+  {
+   "id": "K08",
+   "description": "Estandarización con P posterior en lugar de P⁻",
+   "file": "src/mars_titan/memory/associative_memory.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 15 passed in 1.28s",
+   "seconds": 4.88
+  },
+  {
+   "id": "K09",
+   "description": "Escala sin 1 − ϱ",
+   "file": "src/mars_titan/memory/associative_memory.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 14 passed in 1.64s",
+   "seconds": 5.29
+  },
+  {
+   "id": "K10",
+   "description": "Información sin el término de correlación",
+   "file": "src/mars_titan/memory/associative_memory.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 14 passed in 1.37s",
+   "seconds": 4.83
+  },
+  {
+   "id": "K11",
+   "description": "Covarianza sin simetrizar",
+   "file": "src/mars_titan/memory/associative_memory.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 30 passed in 1.40s",
+   "seconds": 4.47
+  },
+  {
+   "id": "K12",
+   "description": "Signo de la actualización de A",
+   "file": "src/mars_titan/memory/associative_memory.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 14 passed in 1.11s",
+   "seconds": 4.09
+  },
+  {
+   "id": "K13",
+   "description": "Residuo sin restar la lectura previa",
+   "file": "src/mars_titan/memory/associative_memory.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 14 passed in 1.25s",
+   "seconds": 4.14
+  },
+  {
+   "id": "K14",
+   "description": "Restauración sin huella de la covarianza",
+   "file": "src/mars_titan/memory/associative_memory.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 29 passed in 1.21s",
+   "seconds": 4.14
+  },
+  {
+   "id": "K15",
+   "description": "Covarianza no simétrica admitida",
+   "file": "src/mars_titan/memory/associative_memory.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 29 passed in 1.16s",
+   "seconds": 3.68
+  },
+  {
+   "id": "K16",
+   "description": "Identidad kalman sin sus varianzas",
+   "file": "src/mars_titan/memory/associative_memory.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 1 passed in 0.59s",
+   "seconds": 2.99
+  },
+  {
+   "id": "K17",
+   "description": "Identidad kalman con rate y forgetting",
+   "file": "src/mars_titan/memory/associative_memory.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 1 passed in 0.52s",
+   "seconds": 2.84
+  },
+  {
+   "id": "K18",
+   "description": "Identidad de delta y proximal con el campo kalman",
+   "file": "src/mars_titan/memory/associative_memory.py",
+   "killed": true,
+   "pytest_tail": "1 failed in 0.56s",
+   "seconds": 2.99
+  },
+  {
+   "id": "K19",
+   "description": "Varianza predictiva sin σ²",
+   "file": "src/mars_titan/memory/associative_memory.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 26 passed in 1.25s",
+   "seconds": 4.07
+  }
+ ],
+ "killed": 19,
+ "survived": 0
+}
