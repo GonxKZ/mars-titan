@@ -151,7 +151,7 @@ Las horas son de GPU y aplican el caudal de `fold-012` a los 180 trabajos de cad
 
 El brazo B6 con la clave del codec cuesta alrededor del 1,5 % de un lector y el de clave constante, la mitad. Como la regla es la misma en los dos brazos, la diferencia procede de la clave. Con la del codec la inferencia tarda 2,26 veces lo que el núcleo y con la constante solo 1,09 veces. Son 63 horas en A, así que optimizar ahora esa codificación no compensa frente al coste de los lectores. `first_read` cuesta lo mismo que un lector con K = 4.
 
-Con estas medidas, los dos brazos B6 responden a la segunda vía de memoria con un control fuerte por 181 horas de GPU en A, y se proponen para la campaña. `mars_titan_m1_k4_first_read` (A10) añadiría 8.649 horas en A, o 4.089 si solo cuenta el ámbito US+CN, y su entrada queda a decisión del usuario al copiar la sección `mars_titan` en el diseño conjunto de #363. La medida muestra además que el coste de MARS-TITAN lo dominan los lectores, de 45 a 48 horas de GPU por trabajo de media, y no los componentes nuevos.
+Con estas medidas, los dos brazos B6 responden a la segunda vía de memoria con un control fuerte por 181 horas de GPU en A, y se proponen para la campaña. `mars_titan_m1_k4_first_read` (A10) añadiría 8.649 horas en A, o 4.089 si solo cuenta el ámbito US+CN, y su entrada queda pendiente de decidir, con ese coste a la vista, al copiar la sección `mars_titan` en el diseño conjunto de #363. La medida muestra además que el coste de MARS-TITAN lo dominan los lectores, de 45 a 48 horas de GPU por trabajo de media, y no los componentes nuevos.
 
 ## Pendiente
 
