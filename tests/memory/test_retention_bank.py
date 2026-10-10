@@ -244,3 +244,52 @@ def test_anchored_all_candidates_receipt_remains_recoverable(native):
     assert bank.receipt["status"] == "all_candidates"
     restored = bank.restore(bank.snapshot())
     assert restored.snapshot() == bank.snapshot()
+
+
+def test_anchored_bank_reuses_distances_and_bounds_the_background_with_the_reference_bits(
+    native, monkeypatch
+):
+    from mars_titan.memory import retention_bank
+
+    select = retention_bank.select_anchored_medoids
+    applied = []
+
+    def spied(*args, **kwargs):
+        result = select(*args, **kwargs)
+        applied.append((result.reused_distances, result.bounded_background))
+        return result
+
+    def reference(*args, **kwargs):
+        return select(*args, **dict(kwargs, reuse_distances=False, bounded_background=False))
+
+    def stream(selection):
+        # Claves normales en 64 coordenadas: cada propuesta selecciona sobre 128 clientes.
+        monkeypatch.setattr(retention_bank, "select_anchored_medoids", selection)
+        rng = np.random.default_rng(3)
+        config = RetentionConfig(policy="anchored", capacity=64, frontier=8, new_candidates=16)
+        bank = RetentionBank(
+            native, config, codec_id="c" * 64, world="fixture", partition="train", fold="0"
+        )
+        receipts = []
+        for step in range(4):
+            incoming = []
+            for offset in range(64):
+                value = record(native, 1 + 64 * step + offset)
+                value.key = [float(x) for x in rng.standard_normal(64)]
+                incoming.append(value)
+            bank = bank.propose(incoming, confirmed_at=10_000 * (step + 1))
+            receipts.append(dict(bank.receipt))
+        return receipts, bank.snapshot()
+
+    fast, fast_state = stream(spied)
+    slow, slow_state = stream(reference)
+    # La primera propuesta cabe entera y no tiene clientes fuera de los fijos, así que no
+    # hay fondo que acotar. Las demás seleccionan entre 128 episodios con las dos opciones.
+    assert applied == [(True, False)] + [(True, True)] * 3
+    for step, (got, expected) in enumerate(zip(fast, slow, strict=True)):
+        assert repr(got["objective"]) == repr(expected["objective"])
+        # Solo cambia la memoria declarada, que suma la cota y la tabla reutilizada.
+        more, less = got.pop("estimated_peak_bytes"), expected.pop("estimated_peak_bytes")
+        assert more > less if step else more == less
+        assert got == expected
+    assert fast_state["memory"] == slow_state["memory"]
