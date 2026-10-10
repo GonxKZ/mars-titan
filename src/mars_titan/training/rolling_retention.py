@@ -38,7 +38,7 @@ from mars_titan.evaluation import walk_forward_comparison as comparison
 from mars_titan.evaluation import window_aggregates
 
 from . import prediction_regeneration as regeneration
-from .campaign_plan import ONLINE
+from .campaign_plan import ONLINE, PLATEAU
 
 DECLARATION_KIND = "historical_masked_prediction_retention"
 LEDGER_KIND = "historical_masked_retention_ledger"
@@ -479,6 +479,10 @@ class Rolling:
         )
         freed = 0
         for job in jobs:
+            if job.get("phase") == PLATEAU:
+                # La meseta de un ajuste conjunto no escribe tablas. Las del ajuste son las de
+                # su continuación, que se regenera desde el estado elegido.
+                continue
             receipt = base.receipts[job["id"]]
             report_path = self.output / receipt["report"]["path"]
             report, _ = read_manifest(report_path, 16 * 1024**2)

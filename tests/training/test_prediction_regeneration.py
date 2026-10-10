@@ -399,3 +399,11 @@ def test_the_mars_titan_reader_regenerates_its_rows(readers, titans, tmp_path, m
     )
     assert set(result["partitions"]) == set(HELD_OUT)
     assert result["identical"] is True, result
+
+
+def test_a_plateau_is_never_regenerated(tmp_path):
+    """La meseta de un ajuste conjunto no tiene tablas: se rechaza antes de leer recibos."""
+    plateau = dict(id="US/fold-000/gru/plateau-search-gru-00", phase=plan.PLATEAU)
+    with pytest.raises(ValueError, match="meseta sin predicciones"):
+        regeneration._regenerate_base(None, None, plateau, tmp_path / "again")
+    assert not (tmp_path / "again").exists()

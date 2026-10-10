@@ -801,7 +801,9 @@ class _Campaign:
         """Escribe el recibo de la meseta con su parada y una copia del informe, sin predicciones.
 
         El ajuste final continúa en la misma carpeta y reescribe su informe, así que el
-        recibo guarda una copia propia del informe en la meseta.
+        recibo guarda una copia propia del informe en la meseta. Con precisión declarada, la
+        meseta la exige y la registra igual que un ajuste completo, porque sus épocas son
+        parte del estado que hereda la continuación.
         """
         stop = report.get("individual_stop_epoch")
         _require(
@@ -811,6 +813,9 @@ class _Campaign:
             and 1 <= stop <= self.campaign["rule"]["max_epochs"],
             f"{job['id']} no espera la época conjunta tras su meseta o su máximo de épocas",
         )
+        numerics = self.campaign.get("numerics")
+        if numerics:
+            campaign_numerics.require_job(numerics, job["id"], report)
         copy = self.folder(job) / "plateau-report.json"
         atomic_json(copy, report)
         receipt = dict(
@@ -826,6 +831,8 @@ class _Campaign:
             final_test_opened=False,
             confirmed_at_utc=datetime.now(UTC).isoformat(),
         )
+        if numerics:
+            receipt["numerics"] = campaign_numerics.current()
         path = self.folder(job) / "receipt.json"
         atomic_json(path, receipt)
         return dict(receipt, sha256=sha256(path))

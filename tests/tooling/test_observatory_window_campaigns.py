@@ -266,6 +266,32 @@ def test_the_adapter_stage_summary_confirms_chain_selections_by_their_selection_
     assert state["completed"] == dict(training_jobs=1, prediction_jobs=0, selection_jobs=1)
 
 
+def test_a_joint_continuation_shows_the_attempt_of_its_confirmed_plateau(tmp_path):
+    """La continuación reanuda en la carpeta de su meseta y no crea la suya hasta el recibo."""
+    prefix = "US+CN/fold-000"
+    plateau, final = f"{prefix}/gru/plateau-search-gru-00", f"{prefix}/gru/search-gru-00"
+    waiting, pending = f"{prefix}/lstm/plateau-search-lstm-00", f"{prefix}/lstm/search-lstm-00"
+    report = dict(global_step=3, epochs=[dict(epoch=7, validation=dict(session_mae=0.02))])
+    for job_id in (plateau, waiting):
+        dump(tmp_path / "jobs" / job_id / "attempt-0001" / "run.json", report)
+    dump(tmp_path / "jobs" / plateau / "receipt.json", dict(status="plateau_confirmed"))
+    jobs = {plateau: True, final: False, waiting: False, pending: False}
+    dump(tmp_path / "summary.json", dict(kind=masked_campaign.RUN_KIND, jobs=jobs))
+    state = campaign_state("base", tmp_path)
+    active = {entry["job"]: entry for entry in state["active"]}
+    assert active[final]["attempt"] == "attempt-0001" and active[final]["global_step"] == 3
+    # La continuación de la LSTM no tiene intento mientras su meseta siga abierta.
+    assert set(active) == {final, waiting}
+    names = state["vocabulary"]["names"]
+    states = {names[cell[3]]: cell[4] for cell in state["cells"]}
+    assert states == {
+        "plateau-search-gru-00": "done",
+        "search-gru-00": "attempt",
+        "plateau-search-lstm-00": "attempt",
+        "search-lstm-00": "pending",
+    }
+
+
 @pytest.mark.parametrize(
     "summary",
     [

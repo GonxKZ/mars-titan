@@ -23,6 +23,7 @@ from pathlib import Path
 from mars_titan.data.cohort_files import read_manifest
 from mars_titan.data.storage import atomic_json
 
+from .campaign_plan import PLATEAU
 from .campaign_storage import HELD_OUT, INDEXED, WRITERS, index_rows, job_footprint, load_storage
 
 # Escenarios de retención de las predicciones del ajuste base. `rows` decide qué tablas se
@@ -135,10 +136,14 @@ def selected_jobs(jobs):
     """Un ajuste elegido por ámbito, ventana, brazo y semilla, sin conocer resultados.
 
     Un finalista o un traslado es el único trabajo de su semilla. Entre las búsquedas,
-    cualquiera puede ganar y todas tienen las mismas filas, así que se toma la primera.
+    cualquiera puede ganar y todas tienen las mismas filas, así que se toma la primera. La
+    meseta de un ajuste conjunto no escribe tablas y nunca es la elegida: lo es su
+    continuación, que va después en el plan.
     """
     chosen = {}
     for job in jobs:
+        if job.get("phase") == PLATEAU:
+            continue
         chosen.setdefault((job["scope"], job["window"], job["arm"], job["seed"]), job["id"])
     return set(chosen.values())
 
@@ -166,11 +171,17 @@ def base_estimate(campaign, jobs, reports, measured, storage, extras):
 
     Cuando solo se guardan por fila los tramos del elegido, el ganador de una búsqueda no
     se conoce hasta confirmar todos sus casos, así que las filas de los casos confirmados
-    de una búsqueda abierta cuentan en el pico hasta su último caso.
+    de una búsqueda abierta cuentan en el pico hasta su último caso. La meseta de un ajuste
+    conjunto solo suma sus estados e índices: sus tablas y agregados son los de la
+    continuación.
     """
     selected = selected_jobs(jobs)
     aggregate = extras["aggregate_bytes_per_row"]
-    last = {_search(job): i for i, job in enumerate(jobs) if job["stage"] == "search"}
+    last = {
+        _search(job): i
+        for i, job in enumerate(jobs)
+        if job["stage"] == "search" and job.get("phase") != PLATEAU
+    }
     groups = defaultdict(lambda: defaultdict(int))
     totals = {}
     for name, scenario in SCENARIOS.items():
@@ -188,13 +199,14 @@ def base_estimate(campaign, jobs, reports, measured, storage, extras):
                 job, counts, storage, release=scenario["release"], prediction_bytes=written
             )
             original = footprint["retained"]["predictions"]
+            plateau = job.get("phase") == PLATEAU
             needed = (
                 HELD_OUT
                 if scenario["rows"] == "all"
                 else needed_partitions(job, campaign, selected)
             )
             kept = 0
-            for partition in HELD_OUT:
+            for partition in () if plateau else HELD_OUT:
                 if partition in needed:
                     kept += window[partition]["writers"][writer][scenario["layout"]]
                 else:
@@ -212,7 +224,7 @@ def base_estimate(campaign, jobs, reports, measured, storage, extras):
             if moment > peak:
                 peak, worst = moment, job["id"]
             cumulative += retained
-            if scenario["rows"] == "needed" and job["stage"] == "search":
+            if scenario["rows"] == "needed" and job["stage"] == "search" and not plateau:
                 key, winner = _search(job), needed_partitions(job, campaign, {job["id"]})
                 for partition in set(winner) - set(needed):
                     provisional[key] += window[partition]["writers"][writer][scenario["layout"]]
@@ -226,7 +238,7 @@ def base_estimate(campaign, jobs, reports, measured, storage, extras):
             groups[group][name] += retained
             if name == "current":
                 groups[group]["jobs"] += 1
-                groups[group]["held_out_rows"] += sum(counts[p] for p in HELD_OUT)
+                groups[group]["held_out_rows"] += 0 if plateau else sum(counts[p] for p in HELD_OUT)
         totals[name] = dict(
             retained_bytes=cumulative, peak_bytes=peak, peak_job=worst, retained_parts=dict(parts)
         )

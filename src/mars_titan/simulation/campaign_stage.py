@@ -592,8 +592,10 @@ def _base_receipts(base, campaign, stage, pairs=None):
     """Confirmar los trabajos base de los ámbitos y predictores de la etapa.
 
     También los de los auxiliares de los que parten, como los núcleos de CM-v1, porque el
-    caso y la identidad de un brazo dependen de sus recibos. `pairs` limita la confirmación
-    a esos pares (ámbito, ventana) al ejecutar una ventana.
+    caso y la identidad de un brazo dependen de sus recibos. Con la parada conjunta se
+    confirman además las mesetas del grupo de cada continuación, que pueden ser de brazos
+    que la etapa no lee. `pairs` limita la confirmación a esos pares (ámbito, ventana) al
+    ejecutar una ventana.
     """
     predictors = set(stage["predictors"])
     predictors |= {
@@ -601,11 +603,15 @@ def _base_receipts(base, campaign, stage, pairs=None):
         for spec in _arm_specs(campaign)
         if spec["arm"] in predictors and spec["parent"]
     }
-    for job in plan_campaign(campaign):
-        if job["scope"] not in stage["scopes"] or job["arm"] not in predictors:
-            continue
-        if pairs is not None and (job["scope"], job["window"]) not in pairs:
-            continue
+    planned = plan_campaign(campaign)
+    wanted = [
+        job["id"]
+        for job in planned
+        if job["scope"] in stage["scopes"]
+        and job["arm"] in predictors
+        and (pairs is None or (job["scope"], job["window"]) in pairs)
+    ]
+    for job in masked_campaign.with_dependencies(planned, wanted):
         case, _, sources = base.resolve(job)
         receipt = base.confirmed(job, base.job_identity(job, case, sources))
         _require(receipt is not None, f"Falta confirmar {job['id']} en la campaña base")

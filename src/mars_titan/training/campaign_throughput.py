@@ -56,6 +56,7 @@ from .campaign_plan import (
     NEURAL,
     ONLINE,
     ONLINE_CONTROL,
+    PLATEAU,
     TITANS,
     _arm_specs,
     extend_campaign,
@@ -439,9 +440,14 @@ def estimate_hours(
     `ablation_stage`, la de la ablación de modalidades. `epochs` sustituye las épocas de la
     regla de parada, por ejemplo con las épocas efectivas previstas de una parada temprana.
     `fresh` son las filas nuevas contadas de cada ventana con padre de la etapa por etapas.
+
+    Con la parada conjunta, la meseta y su continuación son un mismo ajuste que se reanuda en
+    la misma carpeta y recorre a lo sumo `epochs` épocas en total. Sus horas se cuentan una
+    sola vez, en la continuación, que es la que predice los tramos finales.
     """
     epochs = campaign["rule"]["max_epochs"] if epochs is None else epochs
-    jobs = plan_campaign(campaign)
+    planned = plan_campaign(campaign)
+    jobs = [job for job in planned if job.get("phase") != PLATEAU]
     families = {}
     for family in (NEURAL, *CHRONOLOGICAL):
         selected = [job for job in jobs if job["family"] == family and job["kind"] != ONLINE]
@@ -507,6 +513,10 @@ def estimate_hours(
         )
     if ablation_stage is not None:
         extra[ABLATION_STAGE] = _ablation_hours(campaign, ablation_stage, counts, rates)
+    plateaus = len(planned) - len(jobs)
+    if plateaus:
+        # Mesetas incluidas en las horas de su continuación.
+        extra["plateau_jobs"] = plateaus
     return dict(
         variant=campaign["variant"],
         retrain_every_months=campaign["retrain_every_months"],
@@ -527,6 +537,8 @@ def estimate_hours(
             "La corrección B6 no ajusta: cada trabajo predice una vez validación, calibración "
             "y evaluación con el caudal medido sobre eventos de ajuste, que siempre corrigen",
             "Con presupuesto fijo, cada ajuste recorre todas sus épocas",
+            "Con parada conjunta, la meseta y su continuación forman un solo ajuste acotado "
+            "por el máximo de épocas de la regla",
             "No incluye esperas de disco, índices, normalizadores, reanudaciones ni otras "
             "cargas en la GPU",
         ],

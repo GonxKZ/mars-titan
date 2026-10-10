@@ -97,6 +97,27 @@ def test_released_rows_leave_states_reports_and_aggregates(declared):
     )
 
 
+@pytest.mark.parametrize("model", ["neural", "titans_mac"])
+def test_a_plateau_keeps_its_states_without_tables_aggregates_or_regeneration(declared, model):
+    # Titans-MAC además indexa observaciones, así que su regeneración tendría índice.
+    fits = [job(row["id"], model=model) for row in WINDOWS]
+    plateaus = [dict(item, id=item["id"] + "-plateau", phase="plateau") for item in fits]
+    counts = {"US": {row["id"]: COUNTS for row in WINDOWS}}
+    joint = [value for pair in zip(plateaus, fits, strict=True) for value in pair]
+    plain = rolling.rolling_estimate(fits, WINDOWS, counts, measured(), declared, EXTRAS)
+    grouped = rolling.rolling_estimate(joint, WINDOWS, counts, measured(), declared, EXTRAS)
+    footprint = storage.job_footprint(plateaus[0], COUNTS, declared, release=True)
+    assert footprint["retained"]["predictions"] == 0
+    for name in rolling.SCENARIOS:
+        pairs = zip(plain[name]["windows"], grouped[name]["windows"], strict=True)
+        for index, (before, after) in enumerate(pairs):
+            # Lo conservado crece en cada ventana con los estados de una meseta más.
+            extra = (index + 1) * footprint["retained_bytes"]
+            assert after["retained_bytes"] == before["retained_bytes"] + extra
+            # La regeneración de la liberación es la de la continuación, no la de la meseta.
+            assert after["release"] - after["rl"] == before["release"] - before["rl"]
+
+
 def test_without_exact_regeneration_everything_stays_compacted(declared):
     result = estimate(declared)
     gap = result["none_regenerated"]["retained_bytes"] - result["all_regenerated"]["retained_bytes"]
