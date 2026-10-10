@@ -6,6 +6,9 @@ cambia. Si las ediciones declaran codificadores distintos, como la v3 con TF32 e
 en FP32 estricto, el vector de un mismo PNG puede cambiar y se mide su diferencia absoluta y
 relativa. Las sesiones nuevas se cuentan, y las que desaparecen se registran porque la revisión
 no debería perder ninguna. También mide cuánto cambian las ventanas de precios comunes.
+
+Los textos heredados de la v3 deben dar la misma media de noticias. Solo un activo cuyo contraste
+de textos falló y que los recodificó todos puede cambiarla, y entonces se mide como los gráficos.
 """
 
 import json
@@ -18,6 +21,7 @@ import pyarrow.parquet as pq
 
 from .cohort_files import read_manifest
 from .storage import atomic_json
+from .vector_carry import REENCODED, text_carry_record
 
 # El gráfico se compara por su huella y la posición del precio cambia si se admiten filas
 # anteriores. Su efecto se mide sobre la ventana. El resto de columnas debe coincidir.
@@ -73,7 +77,10 @@ def compare_asset(previous_root, current_root, market, symbol):
         for root in (previous_root, current_root)
     ]
     reencoded = configurations[0]["encoders"] != configurations[1]["encoders"]
-    same = [name for name in new_columns if name not in _COMPARED_APART]
+    texts = text_carry_record(current_root, market, symbol)
+    reencoded_texts = texts is not None and texts["decision"] == REENCODED
+    apart = _COMPARED_APART | ({"news"} if reencoded_texts else set())
+    same = [name for name in new_columns if name not in apart]
     common = sorted(before.keys() & after.keys())
     record = dict(
         market=market,
@@ -87,7 +94,7 @@ def compare_asset(previous_root, current_root, market, symbol):
         changed_charts=[],
         other_differences=[],
     )
-    same_png = ([], [])
+    same_png, news = ([], []), ([], [])
     for session in common:
         old, new = before[session], after[session]
         if old["chart_hash"] != new["chart_hash"]:
@@ -97,10 +104,15 @@ def compare_asset(previous_root, current_root, market, symbol):
             same_png[1].append(new["charts"])
         elif old["charts"] != new["charts"]:
             record["other_differences"].append([session, "charts_with_same_png"])
+        if reencoded_texts:
+            # Una ventana sin noticias tiene un vector de ceros, nunca un valor nulo.
+            news[0].append(old["news"])
+            news[1].append(new["news"])
         for name in same:
             if old[name] != new[name]:
                 record["other_differences"].append([session, name])
     record["reencoded_charts"] = _vector_changes(*same_png) if reencoded else None
+    record["reencoded_texts"] = _vector_changes(*news) if reencoded_texts else None
     record.update(_window_changes(configurations, market, symbol, before, after))
     return record
 
@@ -186,6 +198,9 @@ def compare_editions(previous_root, current_root, output, *, workers=4):
         window_max_abs_change=max((r["window_max_abs_change"] for r in rows), default=0.0),
         reencoded_charts=_merge_vector_changes(
             [r["reencoded_charts"] for r in rows if r.get("reencoded_charts")]
+        ),
+        reencoded_texts=_merge_vector_changes(
+            [r["reencoded_texts"] for r in rows if r.get("reencoded_texts")]
         ),
         log=str(log),
     )

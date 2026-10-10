@@ -45,7 +45,8 @@ class Encoders:
         )
 
 
-def fixture(tmp_path):
+def fixture(tmp_path, articles=None):
+    """Activo preparado de prueba. `articles` sustituye la única noticia original."""
     raw, asset, clock = original_fixture(tmp_path)
     days = [d for d in clock.days if "2023-07-03" <= d.isoformat() <= "2023-07-14"]
     (raw / "prices.csv").write_text(
@@ -56,6 +57,9 @@ def fixture(tmp_path):
         )
     )
     asset["hashes"]["prices.csv"] = sha256(raw / "prices.csv")
+    if articles is not None:
+        (raw / "news.jsonl").write_text("".join(json.dumps(a) + "\n" for a in articles))
+        asset["hashes"]["news.jsonl"] = sha256(raw / "news.jsonl")
     root = tmp_path / "prepared"
     prepare_cohort_asset(raw, root, asset, clock, cohort="original_audited", reviews={})
     macro_path = tmp_path / "macro.parquet"

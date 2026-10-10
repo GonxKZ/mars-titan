@@ -30,8 +30,8 @@ class TF32Encoders(FixtureEncoders):
     spec = {**FixtureEncoders.spec, "runtime_precision": {**STRICT, "cudnn_tf32": True}}
 
 
-def first_edition(tmp_path, encoders=Encoders):
-    manifest, clock, macro = prepared_edition(tmp_path)
+def first_edition(tmp_path, encoders=Encoders, articles=None):
+    manifest, clock, macro = prepared_edition(tmp_path, articles)
     # Como en la v3, los gráficos no se guardan en la caché y solo viven en las muestras.
     kwargs = dict(macros={"US": macro}, clocks={"US": clock}, context=2, cache_charts=False)
     previous = tmp_path / "previous"

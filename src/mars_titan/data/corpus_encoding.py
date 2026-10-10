@@ -23,6 +23,7 @@ from .storage import atomic_json, outside_source, sha256
 from .temporal import MarketClock, aware
 from .vector_carry import (
     COMPUTED,
+    CarriedTexts,
     CarriedVectors,
     CollectingEncoders,
     CollectingVectors,
@@ -32,6 +33,7 @@ from .vector_carry import (
     encode_pending,
     release_vectors,
     strict_fp32_spec,
+    text_carry_identity,
 )
 
 
@@ -72,6 +74,7 @@ def encode_corpus(
     vector_carry=None,
     shard=None,
     on_confirmed=None,
+    text_carry=None,
 ):
     """Procesar todos los candidatos y publicar solo una cobertura completa sin errores.
 
@@ -86,6 +89,9 @@ def encode_corpus(
     le falta ningún vector. Si falta alguno, se descarta y sus entradas quedan pendientes de GPU.
     `on_confirmed(market, symbol)` se llama tras cada activo confirmado, fuera del registro de
     fallos por activo, de modo que cualquier error suyo detiene el recorrido.
+    `text_carry` nombra una edición cuyos textos se reutilizan aunque su codificador registre
+    otra precisión, siempre que superen el contraste por activo de `encode_pending`. Los gráficos
+    nunca se heredan por esta vía.
     """
     if shard is not None and (
         not isinstance(shard, tuple)
@@ -286,6 +292,10 @@ def encode_corpus(
             configuration_sha256=configured_hash,
             rule="same_strict_fp32_encoder_and_identical_png_or_text_identity",
         )
+    if text_carry is not None:
+        identity["text_carry"] = text_carry_identity(text_carry, encoders.spec)
+        outside_source(Path(identity["text_carry"]["edition"]), output)
+        outside_source(output, Path(identity["text_carry"]["edition"]))
     for name in (
         ".edition.lock",
         "configuration.json",
@@ -320,16 +330,25 @@ def encode_corpus(
             fallbacks.append(EmbeddingCache(output / COMPUTED, read_only=True))
         if previous is not None:
             fallbacks.append(EmbeddingCache(previous / "embeddings.sqlite", read_only=True))
-        selecting = bool(fallbacks) or collecting
+        texts = (
+            CarriedTexts(output, identity["text_carry"], _digest(encoders.spec))
+            if text_carry is not None
+            else None
+        )
+        selecting = bool(fallbacks) or collecting or texts is not None
         if selecting:
-            cache = CarriedVectors(cache, previous, _digest(encoders.spec), fallbacks=fallbacks)
+            cache = CarriedVectors(
+                cache, previous, _digest(encoders.spec), fallbacks=fallbacks, texts=texts
+            )
             if collecting:
                 name = (
                     f"pending-vectors-{shard[0]}-of-{shard[1]}.sqlite"
                     if shard
                     else "pending-vectors.sqlite"
                 )
-                cache = CollectingVectors(cache, encoders, PendingVectors(output / name))
+                cache = CollectingVectors(
+                    cache, encoders, PendingVectors(output / name), texts=texts
+                )
         result = dict(
             **policy_identity(input_policy),
             schema_version=3 if masked else 2,
@@ -567,6 +586,11 @@ def main():
     parser.add_argument(
         "--substitution-records", type=Path, help="Registros de la sustitución activo a activo"
     )
+    parser.add_argument(
+        "--text-carry",
+        type=Path,
+        help="Edición cuyos textos se reutilizan tras contrastar una muestra de cada activo",
+    )
     parser.add_argument("--shard", type=int, nargs=2, metavar=("K", "N"))
     args = parser.parse_args()
     if args.reuse_only and args.collect:
@@ -644,6 +668,7 @@ def main():
         vector_carry=args.vector_carry,
         shard=tuple(args.shard) if args.shard else None,
         on_confirmed=substitution,
+        text_carry=args.text_carry,
     )
     summary = {
         k: result[k]
