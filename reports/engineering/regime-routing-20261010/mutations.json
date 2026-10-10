@@ -3,13 +3,13 @@
  "kind": "targeted_mutation_receipt",
  "issue": 20,
  "executed_on": "2026-10-10",
- "base_commit": "a2bfafd47146153dc69294a2e374026857e17795",
+ "base_commit": "a381424d4d0df94894a061c672e18b92d70311af",
  "sources_sha256": {
-  "src/mars_titan/memory/regimes.py": "40e6ae1264bea36bd1f130b8259ff9c6d49acedd8707b8a4598ab04f4df716b9",
+  "src/mars_titan/memory/regimes.py": "7f9a2563f8bf56f723464b2842aa0127c3728aa3a737ecfc398e9f2bdf525b59",
   "src/mars_titan/memory/associative_memory.py": "e2b59be9ea5d7ae1e7983e31bb3b8a81bed02ce932ebf02fe79cd85538199bbf",
   "src/mars_titan/training/mars_titan_correction.py": "963917abdd0d4458a96aa31f861d11f37c8893b875c0a8466b83a10424cc9e4a",
   "src/mars_titan/memory/financial_session.py": "1846a45482e30b923798b170a2b97accca03a3b6ef30714cf17922a1a3e5759c",
-  "tests/memory/test_regimes.py": "4a83428eaf5f6e89602cc1da4352e91e389ef23b5e5c9faebdff7baaea803b34",
+  "tests/memory/test_regimes.py": "2b92e4d4cfe47f92565635082a7f0c9497c58db836ce6a14dfdbcc57433eca71",
   "tests/memory/test_regime_routing.py": "16e04d49e0716e598c8580b15e3b76ea8976cf8a976c965a11110d63b5dfb5ae"
  },
  "method": "Copia aislada de src, tests y configs. Cada mutante sustituye un único fragmento, ejecuta las dos pruebas con -x y restaura el archivo. PYTHONPATH apunta a la copia, así que las pruebas importan el código mutado",
@@ -20,12 +20,12 @@
  "environment": "CPU con CUDA_VISIBLE_DEVICES=-1, OMP_NUM_THREADS=2 y el enlace episódico nativo para las pruebas de sesión",
  "baseline": {
   "returncode": 0,
-  "seconds": 36.5,
+  "seconds": 14.4,
   "tail": [
-   "59 passed in 32.95s"
+   "60 passed in 11.75s"
   ]
  },
- "killed": 26,
+ "killed": 28,
  "survived": 0,
  "not_applied": 0,
  "mutants": [
@@ -33,20 +33,42 @@
    "name": "median_to_mean",
    "file": "src/mars_titan/memory/regimes.py",
    "status": "killed",
-   "seconds": 5.7,
+   "seconds": 5.0,
    "tail": [
-    "1 failed, 4 passed in 3.06s"
+    "1 failed, 4 passed in 2.54s"
    ],
    "original": "market_returns = np.median(np.diff(closes, axis=1), axis=0)",
    "mutated": "market_returns = np.mean(np.diff(closes, axis=1), axis=0)"
   },
   {
+   "name": "trend_mean_of_returns",
+   "file": "src/mars_titan/memory/regimes.py",
+   "status": "killed",
+   "seconds": 4.8,
+   "tail": [
+    "1 failed, 4 passed in 2.22s"
+   ],
+   "original": "trend = float(np.median(closes[:, -1] - closes[:, 0]))",
+   "mutated": "trend = float(np.mean(closes[:, -1] - closes[:, 0]))"
+  },
+  {
+   "name": "trend_sum_of_daily_medians",
+   "file": "src/mars_titan/memory/regimes.py",
+   "status": "killed",
+   "seconds": 4.7,
+   "tail": [
+    "1 failed, 6 passed in 2.26s"
+   ],
+   "original": "trend = float(np.median(closes[:, -1] - closes[:, 0]))",
+   "mutated": "trend = float(np.sum(market_returns))"
+  },
+  {
    "name": "volatility_ge",
    "file": "src/mars_titan/memory/regimes.py",
    "status": "killed",
-   "seconds": 6.2,
+   "seconds": 4.9,
    "tail": [
-    "1 failed, 6 passed in 3.18s"
+    "1 failed, 7 passed in 2.36s"
    ],
    "original": "(2 if recent_rms > earlier_rms else 0)",
    "mutated": "(2 if recent_rms >= earlier_rms else 0)"
@@ -55,9 +77,9 @@
    "name": "trend_ge",
    "file": "src/mars_titan/memory/regimes.py",
    "status": "killed",
-   "seconds": 6.5,
+   "seconds": 4.7,
    "tail": [
-    "1 failed, 6 passed in 3.12s"
+    "1 failed, 7 passed in 2.19s"
    ],
    "original": "(0 if trend > 0 else 1)",
    "mutated": "(0 if trend >= 0 else 1)"
@@ -66,9 +88,9 @@
    "name": "trend_sign",
    "file": "src/mars_titan/memory/regimes.py",
    "status": "killed",
-   "seconds": 6.6,
+   "seconds": 4.9,
    "tail": [
-    "1 failed in 3.14s"
+    "1 failed in 2.30s"
    ],
    "original": "(0 if trend > 0 else 1)",
    "mutated": "(1 if trend > 0 else 0)"
@@ -77,9 +99,9 @@
    "name": "recent_earlier_swap",
    "file": "src/mars_titan/memory/regimes.py",
    "status": "killed",
-   "seconds": 6.7,
+   "seconds": 5.1,
    "tail": [
-    "1 failed, 2 passed in 3.37s"
+    "1 failed, 2 passed in 2.42s"
    ],
    "original": "recent_rms = math.sqrt(float(np.mean(recent * recent)))",
    "mutated": "recent_rms = math.sqrt(float(np.mean(earlier * earlier)))"
@@ -88,9 +110,9 @@
    "name": "recent_window_off_by_one",
    "file": "src/mars_titan/memory/regimes.py",
    "status": "killed",
-   "seconds": 6.5,
+   "seconds": 5.0,
    "tail": [
-    "1 failed, 4 passed in 3.24s"
+    "1 failed, 4 passed in 2.37s"
    ],
    "original": "recent = market_returns[-self.recent_returns :]",
    "mutated": "recent = market_returns[-self.recent_returns - 1 :]"
@@ -99,9 +121,9 @@
    "name": "min_returns_le",
    "file": "src/mars_titan/memory/regimes.py",
    "status": "killed",
-   "seconds": 6.1,
+   "seconds": 4.9,
    "tail": [
-    "1 failed, 10 passed in 3.07s"
+    "1 failed, 11 passed in 2.40s"
    ],
    "original": "returns < self.min_returns",
    "mutated": "returns <= self.min_returns"
@@ -110,9 +132,9 @@
    "name": "min_assets_le",
    "file": "src/mars_titan/memory/regimes.py",
    "status": "killed",
-   "seconds": 6.4,
+   "seconds": 4.8,
    "tail": [
-    "1 failed in 3.11s"
+    "1 failed in 2.27s"
    ],
    "original": "assets < self.min_assets",
    "mutated": "assets <= self.min_assets"
@@ -121,9 +143,9 @@
    "name": "calendar_mod3",
    "file": "src/mars_titan/memory/regimes.py",
    "status": "killed",
-   "seconds": 6.0,
+   "seconds": 4.9,
    "tail": [
-    "1 failed, 11 passed in 2.95s"
+    "1 failed, 12 passed in 2.35s"
    ],
    "original": "route = 1 + (moment.year * 12 + moment.month - 1) % 4",
    "mutated": "route = 1 + (moment.year * 12 + moment.month - 1) % 3"
@@ -132,9 +154,9 @@
    "name": "calendar_month_shift",
    "file": "src/mars_titan/memory/regimes.py",
    "status": "killed",
-   "seconds": 6.3,
+   "seconds": 4.5,
    "tail": [
-    "1 failed, 11 passed in 3.10s"
+    "1 failed, 12 passed in 2.10s"
    ],
    "original": "route = 1 + (moment.year * 12 + moment.month - 1) % 4",
    "mutated": "route = 1 + (moment.year * 12 + moment.month) % 4"
@@ -143,9 +165,9 @@
    "name": "calendar_local_time",
    "file": "src/mars_titan/memory/regimes.py",
    "status": "killed",
-   "seconds": 6.8,
+   "seconds": 4.6,
    "tail": [
-    "1 failed, 12 passed in 3.54s"
+    "1 failed, 13 passed in 2.20s"
    ],
    "original": "datetime.fromtimestamp(at / 1_000_000, tz=UTC)",
    "mutated": "datetime.fromtimestamp(at / 1_000_000, tz=UTC).astimezone(__import__('zoneinfo').ZoneInfo('Asia/Shanghai'))"
@@ -154,9 +176,9 @@
    "name": "absent_steps_read",
    "file": "src/mars_titan/memory/regimes.py",
    "status": "killed",
-   "seconds": 6.8,
+   "seconds": 4.9,
    "tail": [
-    "1 failed, 7 passed in 3.32s"
+    "1 failed, 8 passed in 2.41s"
    ],
    "original": "steps = np.flatnonzero(present[0] == 1.0)",
    "mutated": "steps = np.arange(CONTEXT_SESSIONS)"
@@ -165,9 +187,9 @@
    "name": "shared_presence_unchecked",
    "file": "src/mars_titan/memory/regimes.py",
    "status": "killed",
-   "seconds": 7.2,
+   "seconds": 4.7,
    "tail": [
-    "1 failed, 19 passed in 3.48s"
+    "1 failed, 20 passed in 2.24s"
    ],
    "original": "if not (present == present[0]).all():",
    "mutated": "if False:"
@@ -176,9 +198,9 @@
    "name": "decision_session_unchecked",
    "file": "src/mars_titan/memory/regimes.py",
    "status": "killed",
-   "seconds": 6.4,
+   "seconds": 5.2,
    "tail": [
-    "1 failed, 17 passed in 3.16s"
+    "1 failed, 18 passed in 2.55s"
    ],
    "original": "if present[0, -1] != 1.0:",
    "mutated": "if False:"
@@ -187,9 +209,9 @@
    "name": "one_route_for_all_markets",
    "file": "src/mars_titan/memory/regimes.py",
    "status": "killed",
-   "seconds": 7.1,
+   "seconds": 4.9,
    "tail": [
-    "1 failed, 13 passed in 3.43s"
+    "1 failed, 14 passed in 2.38s"
    ],
    "original": "routes[rows] = state.route",
    "mutated": "routes[:] = state.route"
@@ -198,9 +220,9 @@
    "name": "calendar_classifies_short_cohorts",
    "file": "src/mars_titan/memory/regimes.py",
    "status": "killed",
-   "seconds": 6.5,
+   "seconds": 5.2,
    "tail": [
-    "1 failed, 11 passed in 3.13s"
+    "1 failed, 12 passed in 2.57s"
    ],
    "original": "if assets < self.min_assets or returns < self.min_returns:",
    "mutated": "if self.name == REGIME_RULE and (assets < self.min_assets or returns < self.min_returns):"
@@ -209,9 +231,9 @@
    "name": "kronecker_wrong_block",
    "file": "src/mars_titan/memory/associative_memory.py",
    "status": "killed",
-   "seconds": 6.6,
+   "seconds": 5.1,
    "tail": [
-    "1 failed, 31 passed in 3.30s"
+    "1 failed, 32 passed in 2.48s"
    ],
    "original": "keys[torch.arange(rows), routes] = values",
    "mutated": "keys[torch.arange(rows), (routes + 1) % SLOTS] = values"
@@ -220,9 +242,9 @@
    "name": "one_hot_single_slot",
    "file": "src/mars_titan/memory/associative_memory.py",
    "status": "killed",
-   "seconds": 10.2,
+   "seconds": 6.2,
    "tail": [
-    "1 failed, 31 passed in 6.80s"
+    "1 failed, 32 passed in 3.37s"
    ],
    "original": "keys[torch.arange(rows), routes] = 1.0",
    "mutated": "keys[:, 1] = 1.0"
@@ -231,9 +253,9 @@
    "name": "route_range_unchecked",
    "file": "src/mars_titan/memory/associative_memory.py",
    "status": "killed",
-   "seconds": 7.7,
+   "seconds": 6.5,
    "tail": [
-    "1 failed, 37 passed in 4.16s"
+    "1 failed, 38 passed in 3.52s"
    ],
    "original": "                or (routes >= SLOTS).any()\n            ):\n                raise ValueError(f\"Cada fila",
    "mutated": "            ):\n                raise ValueError(f\"Cada fila"
@@ -242,9 +264,9 @@
    "name": "route_at_maturation",
    "file": "src/mars_titan/training/mars_titan_correction.py",
    "status": "killed",
-   "seconds": 7.7,
+   "seconds": 6.7,
    "tail": [
-    "1 failed, 47 passed in 4.28s"
+    "1 failed, 48 passed in 3.56s"
    ],
    "original": "        self._routing.event(decisions[0][1], states, routes, self.correction.routing)\n",
    "mutated": "        self._routing.event(decisions[0][1], states, routes, self.correction.routing)\n        if routes is not None:\n            self._staged = [item[:4] + (int(routes[0]),) for item in self._staged]\n"
@@ -253,9 +275,9 @@
    "name": "write_counts_skipped",
    "file": "src/mars_titan/training/mars_titan_correction.py",
    "status": "killed",
-   "seconds": 7.4,
+   "seconds": 6.5,
    "tail": [
-    "1 failed, 47 passed in 3.99s"
+    "1 failed, 48 passed in 3.54s"
    ],
    "original": "            self._routing.writes(routes)\n",
    "mutated": "            pass\n"
@@ -266,7 +288,7 @@
    "status": "killed",
    "seconds": 6.7,
    "tail": [
-    "1 failed, 47 passed in 3.61s"
+    "1 failed, 48 passed in 3.44s"
    ],
    "original": "previous != state.route",
    "mutated": "previous == state.route"
@@ -275,9 +297,9 @@
    "name": "session_settlement_routes_flipped",
    "file": "src/mars_titan/memory/financial_session.py",
    "status": "killed",
-   "seconds": 32.6,
+   "seconds": 12.7,
    "tail": [
-    "1 failed, 56 passed in 29.74s"
+    "1 failed, 57 passed in 9.64s"
    ],
    "original": "routes.index_select(0, selected) if routes is not None else None,",
    "mutated": "routes.flip(0).index_select(0, selected) if routes is not None else None,"
@@ -286,9 +308,9 @@
    "name": "session_emission_routes_reversed",
    "file": "src/mars_titan/memory/financial_session.py",
    "status": "killed",
-   "seconds": 15.1,
+   "seconds": 12.2,
    "tail": [
-    "1 failed, 56 passed in 11.94s"
+    "1 failed, 57 passed in 8.89s"
    ],
    "original": "for r, route in zip(rows, event_routes.tolist(), strict=True)",
    "mutated": "for r, route in zip(rows, reversed(event_routes.tolist()), strict=True)"
@@ -297,9 +319,9 @@
    "name": "session_route_next_day",
    "file": "src/mars_titan/memory/financial_session.py",
    "status": "killed",
-   "seconds": 15.0,
+   "seconds": 11.9,
    "tail": [
-    "1 failed, 56 passed in 11.71s"
+    "1 failed, 57 passed in 8.74s"
    ],
    "original": "                    [r.flow_id for r in rows],\n                    cutoff,\n",
    "mutated": "                    [r.flow_id for r in rows],\n                    cutoff + 86_400_000_000,\n"
@@ -308,9 +330,9 @@
    "name": "session_pending_range_unchecked",
    "file": "src/mars_titan/memory/financial_session.py",
    "status": "killed",
-   "seconds": 27.4,
+   "seconds": 17.4,
    "tail": [
-    "1 failed, 58 passed in 24.00s"
+    "1 failed, 59 passed in 14.45s"
    ],
    "original": "            or (routes >= SLOTS).any()\n        ):\n            raise ValueError(\"Las rutas pendientes",
    "mutated": "        ):\n            raise ValueError(\"Las rutas pendientes"

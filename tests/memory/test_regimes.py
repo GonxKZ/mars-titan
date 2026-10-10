@@ -109,7 +109,7 @@ def test_the_state_follows_the_declared_formulas():
     closes = prices[:, :, 3].astype(np.float64)
     market = np.median(np.diff(closes, axis=1), axis=0)
     state = REGIME.state("US", prices, AT)
-    assert state.trend == float(np.sum(market))
+    assert state.trend == float(np.median(closes[:, -1] - closes[:, 0]))
     assert state.recent_rms == float(np.sqrt(np.mean(market[-21:] ** 2)))
     assert state.earlier_rms == float(np.sqrt(np.mean(market[:-21] ** 2)))
 
@@ -120,6 +120,22 @@ def test_the_market_proxy_is_the_median_and_one_asset_cannot_flip_it():
     closes = prices[:, :, 3].astype(np.float64)
     assert np.mean(np.diff(closes, axis=1), axis=0).sum() > 0
     assert REGIME.state("US", prices, AT).route == 2
+
+
+def test_the_trend_is_the_median_window_return_and_not_the_sum_of_daily_medians():
+    # Cada día dos de cinco activos suben 0,01 y tres bajan 0,001, rotando. La mediana diaria
+    # es siempre -0,001 y su suma -0,063, pero cada activo acumula unos +0,21 en la ventana.
+    steps = np.full((ASSETS, 63), -0.001)
+    for day in range(63):
+        steps[[day % ASSETS, (day + 1) % ASSETS], day] = 0.01
+    closes = np.concatenate([np.zeros((ASSETS, 1)), np.cumsum(steps, axis=1)], axis=1)
+    prices = np.zeros((ASSETS, 64, 6))
+    prices[:, :, 3], prices[:, :, 5] = closes, 1.0
+    daily = np.median(np.diff(closes, axis=1), axis=0)
+    assert np.all(daily < 0) and daily.sum() < 0
+    state = REGIME.state("US", prices, AT)
+    assert state.trend == float(np.median(closes[:, -1])) > 0.2
+    assert REGIME.labels[state.route].endswith("_up")
 
 
 def test_ties_count_as_calm_and_down():
@@ -141,7 +157,8 @@ def test_market_wide_absences_are_chained_and_their_fill_is_never_read():
     present = np.setdiff1d(np.arange(64), absent)
     closes = prices[:, present, 3].astype(np.float64)
     market = np.median(np.diff(closes, axis=1), axis=0)
-    assert base.returns == len(market) == 60 and base.trend == float(np.sum(market))
+    assert base.returns == len(market) == 60
+    assert base.trend == float(np.median(closes[:, -1] - closes[:, 0]))
     assert base.recent_rms == float(np.sqrt(np.mean(market[-21:] ** 2)))
 
 

@@ -12,8 +12,12 @@ las longitudes y los mínimos se fijaron antes de ejecutar y forman parte de la 
 2. La volatilidad es turbulenta si la raíz de la media de los cuadrados de los 21 últimos
    rendimientos de mercado supera la de los anteriores. Mide si la volatilidad crece dentro
    de la ventana, no su nivel frente a la historia, que exigiría estimar una escala.
-3. La tendencia es alcista si la suma de los rendimientos de mercado de la ventana, unas 63
-   sesiones, es positiva.
+3. La tendencia es alcista si la mediana transversal del log-rendimiento de cada activo en
+   la ventana (cierre de la decisión frente al primer cierre presente, unas 63 sesiones) es
+   positiva. No se suman las medianas diarias: con rendimientos asimétricos la mediana de
+   cada día queda por debajo de la media y la suma acumula ese sesgo. Con los precios reales
+   de China en 2019 la suma de las medianas diarias fue -0,156 mientras la mediana del
+   rendimiento anual por activo era +0,203, y casi todas las sesiones salían bajistas.
 
 Las dos señales dan cuatro regímenes. Una cohorte con menos activos o rendimientos de los
 declarados va a la ruta 0, sin clasificar, que tiene su propio compartimento y queda
@@ -134,7 +138,7 @@ class RegimeRule:
             market_proxy="cross_sectional_median_of_log_close_returns_between_present_sessions",
             volatility="rms_of_last_recent_returns_strictly_above_rms_of_earlier_returns",
             recent_returns=self.recent_returns,
-            trend="sum_of_window_market_returns_strictly_positive",
+            trend="median_over_assets_of_the_window_log_close_return_strictly_positive",
             routes="1_calm_up_2_calm_down_3_turbulent_up_4_turbulent_down",
         )
 
@@ -172,7 +176,7 @@ class RegimeRule:
         earlier = market_returns[: -self.recent_returns]
         recent_rms = math.sqrt(float(np.mean(recent * recent)))
         earlier_rms = math.sqrt(float(np.mean(earlier * earlier)))
-        trend = float(np.sum(market_returns))
+        trend = float(np.median(closes[:, -1] - closes[:, 0]))
         if self.name == CALENDAR_RULE:
             moment = datetime.fromtimestamp(at / 1_000_000, tz=UTC)
             route = 1 + (moment.year * 12 + moment.month - 1) % 4
