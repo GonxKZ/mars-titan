@@ -31,6 +31,7 @@ from mars_titan.training.campaign_plan import (
     pending_families,
     plan_campaign,
 )
+from mars_titan.training.search_cases import SEARCHED
 from tests.training.test_masked_campaign import Recorder, doubles, write_campaign
 from tests.training.test_titans_walk_forward import Factory, ShiftFirstTarget
 from tests.training.test_walk_forward_v2_views import fixture
@@ -232,7 +233,8 @@ def test_campaign_rejects_a_titans_recipe_without_the_protocol_rule(tmp_path):
 
 
 def test_campaign_plan_repeats_the_searched_hyperparameters():
-    assert TITANS_SEARCHED == wf.SEARCHED
+    # El plan, Titans-MAC, el lector y la GRU candidata buscan los mismos hiperparámetros.
+    assert TITANS_SEARCHED == SEARCHED == ("learning_rate", "max_grad_norm")
 
 
 def test_titans_section_requires_the_masked_input_policy(tmp_path):
@@ -258,6 +260,7 @@ def test_fit_executor_returns_the_completed_window_only_for_its_view(campaign_ru
         folder=campaign_run.output / receipt["attempt"],
         policy="historical_masked_2000_v1",
         stop=SimpleNamespace(requested=False),
+        joint_epoch=None,
     )
     report = wf.titans_fit(run, device="cpu")
     assert report["status"] == "completed"
@@ -290,6 +293,7 @@ def test_executors_declare_unfused_attention_only_while_their_job_runs(monkeypat
         folder=tmp_path,
         stop=None,
         anchor=dict(folder=tmp_path, view="a"),
+        joint_epoch=None,
     )
     previous = torch.backends.mha.get_fastpath_enabled()
     torch.backends.mha.set_fastpath_enabled(True)

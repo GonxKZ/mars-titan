@@ -27,8 +27,8 @@ ADDED = (plan.EPISODIC, plan.MARS, plan.CM)
 COUNTS = dict(
     A=dict(
         declared=(2385, 0),
-        families={plan.EPISODIC: (135, 0), plan.MARS: (1080, 0), plan.CM: (1080, 0)},
-        extended=(4680, 0),
+        families={plan.EPISODIC: (180, 0), plan.MARS: (1080, 0), plan.CM: (1080, 0)},
+        extended=(4725, 0),
         adapters=(3654, 630),
         rl=dict(
             declared=dict(training_jobs=1368, carried_jobs=0, reference_jobs=792),
@@ -37,8 +37,8 @@ COUNTS = dict(
     ),
     B=dict(
         declared=(901, 868),
-        families={plan.EPISODIC: (51, 84), plan.MARS: (408, 504), plan.CM: (408, 336)},
-        extended=(1768, 1792),
+        families={plan.EPISODIC: (68, 84), plan.MARS: (408, 504), plan.CM: (408, 336)},
+        extended=(1785, 1792),
         adapters=(1479, 2436),
         rl=dict(
             declared=dict(training_jobs=456, carried_jobs=912, reference_jobs=792),
@@ -144,7 +144,7 @@ def test_the_declared_configurations_stay_untouched():
 @pytest.mark.parametrize(
     ("where", "value", "message"),
     [
-        (("limits", "max_training_jobs"), 4679, "prevé 4680 trabajos.*max_training_jobs=4679"),
+        (("limits", "max_training_jobs"), 4724, "prevé 4725 trabajos.*max_training_jobs=4724"),
         (("limits", "max_prediction_jobs"), 1, "prevé 0 trabajos.*max_prediction_jobs=1"),
         (("rl_stage", "limits", "max_training_jobs"), 2161, "políticas ampliada prevé 2160"),
         (("rl_stage", "limits", "max_evaluation_jobs"), 792, "prevé 1584 trabajos"),

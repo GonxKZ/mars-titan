@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "kind": "historical_masked_campaign",
+  "status": "declared_not_executed",
+  "name": "historical-masked-2000-a-joint-stop",
+  "variant": "A",
+  "retrain_every_months": 12,
+  "comparison": "../evaluation/historical-masked-2000-comparison.json",
+  "scopes": ["US", "CN", "US+CN"],
+  "neural": {
+    "arms": {
+      "rnn": "rnn",
+      "lstm": "lstm",
+      "gru": "gru",
+      "dlinear": "dlinear",
+      "transformer_compact": "transformer"
+    },
+    "case_indices": [0, 10],
+    "search_seed": 42,
+    "head": "quantile_head_v1",
+    "batch_size": 256,
+    "context_sessions": 64,
+    "checkpoint_seconds": 300,
+    "prediction_retention": "heldout_full_train_sessions_v1"
+  },
+  "tabular": {
+    "config": "tabular-historical-masked.json",
+    "arms": {
+      "ridge": "ridge",
+      "xgboost": "xgboost"
+    },
+    "cpu_workers": 1
+  },
+  "titans_mac": {
+    "recipe": "../titans/chronological-training-historical-masked.json",
+    "arms": {
+      "titans_transformer_direct": "transformer_direct",
+      "titans_mac_disabled": "mac_disabled",
+      "titans_mac_frozen": "mac_frozen",
+      "titans_mac_online": "mac_online"
+    },
+    "search_seed": 42
+  },
+  "early_stop": {
+    "stopping": "joint_plateau",
+    "patience": 5,
+    "min_delta": 1e-05,
+    "minimum_epochs": 5,
+    "max_epochs": 30,
+    "group_epoch": "maximum_of_first_plateaus",
+    "groups": {
+      "encoders_and_cores": ["gru", "transformer_compact", "gru_episodic", "titans_transformer_direct", "titans_mac_disabled", "titans_mac_frozen", "titans_mac_online"],
+      "episodic_readers": ["mars_titan_m0", "mars_titan_m1", "mars_titan_m2", "mars_titan_m3", "mars_titan_m1_k2", "mars_titan_m1_k4", "cm_v1_b", "cm_v1_bc", "cm_v1_bm", "cm_v1_bcm"],
+      "cm_v1_cores": ["cm_v1_core_b", "cm_v1_core_c"]
+    }
+  },
+  "limits": {
+    "max_training_jobs": 2385,
+    "max_prediction_jobs": 0
+  },
+  "final_test_opened": false
+}

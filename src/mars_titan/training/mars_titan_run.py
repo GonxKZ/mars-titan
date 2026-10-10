@@ -21,7 +21,6 @@ import hashlib
 import importlib
 import json
 import math
-import re
 import time
 from dataclasses import asdict, dataclass, field, replace
 from datetime import UTC, datetime
@@ -59,18 +58,21 @@ from .checkpoints import (
 )
 from .financial_run import Paused, _compatible, _read_report, _split, _stack
 from .learning_hold import require_learning_allowed
+from .search_cases import case_options, checked_search_cases
 from .selection import (
+    AWAIT,
+    FINISH,
     FIXED_BUDGET,
     VALIDATION_PLATEAU,
     advance_selection,
+    awaiting,
+    bind_joint_epoch,
+    epoch_decision,
     initial_selection,
     validate_selection,
 )
 
 RECIPE = "mars_titan_episodic_readout_chronological_v1"
-# Hiperparámetros del optimizador que puede variar un caso, los mismos que en Titans-MAC.
-SEARCHED = ("learning_rate", "max_grad_norm")
-CASE_NAME = re.compile(r"[a-z][a-z0-9_-]{0,31}")
 ADMISSIONS = ("m0", "m1", "m2", "m3")
 LOSSES = (PINBALL, "mae")
 _OWN_MODULES = (
@@ -194,35 +196,16 @@ def load_recipe(path):
         or set(document["walk_forward"]) != {"search_cases"}
     ):
         raise ValueError("La receta del lector no conserva su esquema")
-    cases = document["walk_forward"]["search_cases"]
-    valid = isinstance(cases, dict) and all(
-        isinstance(case, dict) and case for case in cases.values()
+    checked_search_cases(
+        document["walk_forward"]["search_cases"], document["recipe"], ReadoutRecipe
     )
-    keys = {frozenset(case) for case in cases.values()} if valid else set()
-    if not (
-        valid
-        and 1 <= len(cases) <= 3
-        and all(isinstance(name, str) and CASE_NAME.fullmatch(name) for name in cases)
-        and len(keys) == 1
-        and next(iter(keys)) <= set(SEARCHED)
-        and not next(iter(keys)) & set(document["recipe"])
-        and len({canonical(case) for case in cases.values()}) == len(cases)
-    ):
-        raise ValueError(
-            "Los casos de búsqueda deben ser de uno a tres, distintos, con nombre válido y "
-            "sustituir los mismos hiperparámetros del optimizador, ausentes de la receta base"
-        )
-    for case in cases.values():
-        ReadoutRecipe(**(document["recipe"] | case))
     return document
 
 
 def case_recipe(document, search_case):
     """Receta del lector para el caso de búsqueda elegido."""
     cases = document["walk_forward"]["search_cases"]
-    if not isinstance(search_case, str) or search_case not in cases:
-        raise ValueError("Elige uno de los casos de búsqueda que declara la receta del lector")
-    return ReadoutRecipe(**(document["recipe"] | cases[search_case]))
+    return ReadoutRecipe(**case_options(document["recipe"], cases, search_case))
 
 
 def retention_config(recipe, admission, *, policy="reservoir", **options):
@@ -1064,8 +1047,12 @@ class ReadoutTrainer(MarsTitanInference):
         self._restore_extra(state)
         return state
 
-    def run(self, *, resume=False, stop=None):
-        """Recorrer épocas con la regla del protocolo y dejar cargado el mejor lector."""
+    def run(self, *, resume=False, stop=None, joint_epoch=None):
+        """Recorrer épocas con la regla del protocolo y dejar cargado el mejor lector.
+
+        Con la meseta conjunta, el ajuste espera en su primera meseta (`AWAIT`) hasta que se
+        reanuda con la época común del grupo (`joint_epoch`).
+        """
         require_learning_allowed("el ajuste del lector episódico de MARS-TITAN")
         output, checkpoints = self.output, self.output / "checkpoints"
         if type(resume) is not bool or output.is_symlink() or output.exists() != resume:
@@ -1089,6 +1076,8 @@ class ReadoutTrainer(MarsTitanInference):
             self.train_metrics = state["train_metrics"]
             if state["run"] is not None:
                 run = self._restore(state["run"])
+            # Una ejecución ya conjunta solo continúa o se confirma con su misma época común.
+            bind_joint_epoch(report, joint_epoch, self.recipe.selection, self.recipe.epochs)
             if report["status"] == "completed":
                 self._load_best(report)
                 return report
@@ -1104,6 +1093,7 @@ class ReadoutTrainer(MarsTitanInference):
                 final_test_opened=False,
                 attempts=[],
             )
+            bind_joint_epoch(report, joint_epoch, self.recipe.selection, self.recipe.epochs)
 
         def save(position, current=None, *, best=False):
             self._check_runtime()
@@ -1132,11 +1122,24 @@ class ReadoutTrainer(MarsTitanInference):
             save(cursor)
         started = time.perf_counter()
         try:
+            options = self.recipe.selection
             while cursor["phase"] != "done":
                 epoch = cursor["epoch"]
+                if cursor["phase"] == "train" and cursor["stage"] == "start":
+                    # Al empezar una época, el ajuste espera al grupo o
+                    # termina si ya está en la época conjunta.
+                    decision = epoch_decision(
+                        self.selection, options, self.recipe.epochs, joint_epoch
+                    )
+                    if decision == AWAIT:
+                        report.update(awaiting(self.selection, self.recipe.epochs))
+                        return report
+                    if decision == FINISH:
+                        cursor = dict(epoch=epoch, phase="done")
+                        save(cursor)
+                        continue
                 if cursor["phase"] == "validation":
                     metrics = self.evaluate(self.validation, stop=stop)
-                    options = self.recipe.selection
                     self.selection = (
                         initial_selection(metrics["session_mae"], options)
                         if epoch == 0
@@ -1153,12 +1156,18 @@ class ReadoutTrainer(MarsTitanInference):
                         )
                     )
                     self.train_metrics = None
-                    finished = epoch >= self.recipe.epochs or self.selection["should_stop"]
+                    # Con presupuesto fijo o con meseta conjunta, should_stop
+                    # nunca detiene el ajuste por sí solo.
+                    decision = epoch_decision(
+                        self.selection, options, self.recipe.epochs, joint_epoch
+                    )
+                    finished = decision == FINISH
                     cursor = (
                         dict(epoch=epoch, phase="done")
                         if finished
                         else dict(epoch=epoch, phase="train", event=0, stage="start")
                     )
+                    # Con AWAIT, el cursor ya confirmado espera al grupo al empezar la época.
                     save(cursor, best=self.selection["last_improved"])
                     if stop.requested and not finished:
                         raise Paused

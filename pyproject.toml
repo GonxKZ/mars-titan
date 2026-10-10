@@ -63,6 +63,9 @@ torchvision = [{index = "pytorch-cu130", marker = "sys_platform == 'linux' and p
 testpaths = ["tests"]
 pythonpath = [".", "src", "tests/models/titans"]
 addopts = "-ra"
+markers = [
+    "native_binding: necesita el enlace nativo. Con MARS_TITAN_REQUIRE_NATIVE=1, omitirla falla",
+]
 
 [tool.ruff]
 target-version = "py312"
