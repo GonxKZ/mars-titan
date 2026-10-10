@@ -296,6 +296,32 @@ def test_ia3_readout_equals_rescaled_keys_and_values():
     torch.testing.assert_close(output, expected, rtol=1e-12, atol=1e-13)
 
 
+def test_the_readout_ia3_targets_scale_the_query_bias_with_its_rows():
+    """La lectura (IA)³ del Transformer reescala filas y sesgo de la consulta con una ganancia.
+
+    `MultiheadAttention` inicializa sus sesgos a cero, así que se ponen valores no nulos: con
+    sesgos nulos olvidar el sesgo compartido no cambiaría nada.
+    """
+    original = parent("transformer")
+    with torch.no_grad():
+        for block in original.price_encoder.blocks:
+            block.self_attn.in_proj_bias.normal_()
+    child = adapted_copy(original, arm_targets(original, "readout_ia3"), seed=11)
+    gain = torch.linspace(-0.5, 0.5, HIDDEN)
+    for block, source in zip(
+        child.price_encoder.blocks, original.price_encoder.blocks, strict=True
+    ):
+        attention = block.self_attn
+        with torch.no_grad():
+            attention.parametrizations.in_proj_weight[0].gain.copy_(gain)
+        expected = source.self_attn.in_proj_bias.clone()
+        expected[:HIDDEN] = expected[:HIDDEN] * (1 + gain)
+        assert torch.equal(attention.in_proj_bias, expected)
+        weight = source.self_attn.in_proj_weight.clone()
+        weight[:HIDDEN] = weight[:HIDDEN] * (1 + gain)[:, None]
+        assert torch.equal(attention.in_proj_weight, weight)
+
+
 @pytest.mark.parametrize("form", ["parallel_adapter", "serial_adapter"])
 def test_bottleneck_adapters_follow_their_equation(form):
     torch.manual_seed(6)

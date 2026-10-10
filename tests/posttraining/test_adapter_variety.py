@@ -418,6 +418,62 @@ def test_variety_is_inapplicable_where_its_point_does_not_exist(matrix):
     assert set(document["variety"]["inapplicable"]) == set(adapter_variety.PARTIAL)
 
 
+def test_titans_subsets_skip_the_memory_gate_biases_of_the_recipe(shared, matrix):
+    """Con las puertas con sesgo de la receta de la campaña, BitFit no toca la memoria.
+
+    El padre de las demás pruebas no tiene esos sesgos, así que sin esta comprobación la
+    exclusión de `mac.memory` no se ejercitaría.
+    """
+    from mars_titan.models.titans.config import GateBias
+    from mars_titan.models.titans.financial import FinancialConfig, FinancialPredictor
+
+    document, _ = matrix
+    _, streams = shared
+    config = FinancialConfig(
+        streams["train"].specification(),
+        variant="mac_online",
+        hidden_size=32,
+        seed=42,
+        head=QUANTILE_HEAD,
+        gate_bias=GateBias(),
+        memory_residual_layer_norm=True,
+    )
+    model = FinancialPredictor(config, dtype=torch.float64)
+    names = [name for name, _ in model.named_parameters()]
+    assert any(name.startswith("mac.memory.") and name.endswith(".bias") for name in names)
+    points = document["variety"]["points"]
+    for name in ("bias", "norm"):
+        targets = cm.titans_targets(document, {name: points[name]}, model)
+        assert targets and not any(
+            t.module.startswith(("mac.memory", "mac.persistent")) for t in targets
+        )
+
+
+def test_a_titans_case_must_be_an_arm_of_its_variant(matrix):
+    """La ventana rechaza un brazo que la variante del padre no tiene o con otros puntos."""
+    document, digest = matrix
+    persistent = next(
+        item["case"]["adapter"]
+        for item in cm.cases(document, digest, "titans_mac", variant="mac_online")
+        if item["id"].endswith("/persistent")
+    )
+    cm.variant_arm(document, "mac_frozen", persistent)
+    for variant in ("transformer_direct", "mac_disabled"):
+        with pytest.raises(ValueError, match="no pertenece a los puntos"):
+            cm.variant_arm(document, variant, persistent)
+    # Los brazos de reserva también son brazos de la variante.
+    serial = next(
+        item["case"]["adapter"]
+        for item in cm.cases(document, digest, "titans_mac", variant="mac_disabled", reserve=True)
+        if item["id"].endswith("/fusion_serial_adapter")
+    )
+    cm.variant_arm(document, "mac_disabled", serial)
+    changed = copy.deepcopy(serial)
+    changed["points"]["fusion"]["rank"] = 8
+    with pytest.raises(ValueError, match="no pertenece a los puntos"):
+        cm.variant_arm(document, "mac_disabled", changed)
+
+
 def test_the_reader_core_learns_its_persistent_prompt_with_the_same_events(
     shared, tmp_path, native
 ):

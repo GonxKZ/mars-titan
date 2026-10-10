@@ -177,7 +177,9 @@ def test_the_chronological_trace_hook_does_not_change_a_run(matrix, tmp_path_fac
         assert left.keys() == right.keys() == set(adapter_names(plain.predictor))
         assert all(torch.equal(left[key], right[key]) for key in left)
     assert [event["epoch"] for event, _ in events] == list(range(len(events))) and events
-    assert [event["global_step"] for event, _ in events][0] == 0
+    # La primera validación es la del padre y la última llega tras todas las actualizaciones.
+    steps = [event["global_step"] for event, _ in events]
+    assert steps[0] == 0 and steps == sorted(steps) and steps[-1] == traced.optimizer.calls
     assert all(row["frobenius"] == 0.0 for _, rows in events for row in rows)
 
 
@@ -208,7 +210,9 @@ def test_update_statistics_measure_the_effective_update():
 
 
 def test_prediction_change_compares_levels_and_signs():
-    parent = torch.tensor([[-2.0, -1.0, -0.1, 1.0, 2.0], [-2.0, -1.0, 0.5, 1.0, 2.0]])
+    # En la primera fila la mediana cambia de signo y la media de los niveles no, así que
+    # la prueba distingue la mediana de cualquier otro resumen de la fila.
+    parent = torch.tensor([[-3.0, -2.0, -0.1, 1.0, 2.0], [-2.0, -1.0, 0.5, 1.0, 2.0]])
     arm = parent.clone()
     arm[0] += 0.2
     change = prediction_change(arm, parent)
