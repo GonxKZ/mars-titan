@@ -238,6 +238,31 @@
       }
     },
     {
+      "name": "native-dev-tools",
+      "hidden": true,
+      "cacheVariables": {
+        "CMAKE_C_COMPILER_LAUNCHER": "ccache",
+        "CMAKE_CXX_COMPILER_LAUNCHER": "ccache",
+        "CMAKE_LINKER_TYPE": "MOLD"
+      }
+    },
+    {
+      "name": "native-ppo-dev",
+      "displayName": "PPO Release para desarrollo con ccache y mold",
+      "inherits": [
+        "native-ppo-release",
+        "native-dev-tools"
+      ]
+    },
+    {
+      "name": "native-candidate-cuda-dev",
+      "displayName": "Referencia GRU en CUDA para desarrollo con ccache y mold",
+      "inherits": [
+        "native-candidate-cuda",
+        "native-dev-tools"
+      ]
+    },
+    {
       "name": "native-controls",
       "hidden": true,
       "cacheVariables": {
@@ -312,6 +337,8 @@
     {"name":"native-ppo-asan-ubsan","inherits":"native-build","configurePreset":"native-ppo-asan-ubsan","jobs":1},
     {"name":"native-ppo-static-analysis","inherits":"native-build","configurePreset":"native-ppo-static-analysis","jobs":1,"targets":["all","static-analysis"]},
     {"name":"native-ppo-coverage","inherits":"native-build","configurePreset":"native-ppo-coverage","jobs":1},
+    {"name":"native-ppo-dev","inherits":"native-build","configurePreset":"native-ppo-dev","jobs":1},
+    {"name":"native-candidate-cuda-dev","inherits":"native-build","configurePreset":"native-candidate-cuda-dev"},
     {"name":"native-controls-release","inherits":"native-build","configurePreset":"native-controls-release","jobs":1},
     {"name":"native-controls-asan-ubsan","inherits":"native-build","configurePreset":"native-controls-asan-ubsan","jobs":1},
     {"name":"native-controls-static-analysis","inherits":"native-build","configurePreset":"native-controls-static-analysis","jobs":1,"targets":["all","static-analysis"]},
@@ -348,6 +375,8 @@
     {"name":"native-ppo-asan-ubsan","inherits":"native-test","configurePreset":"native-ppo-asan-ubsan"},
     {"name":"native-ppo-static-analysis","inherits":"native-test","configurePreset":"native-ppo-static-analysis"},
     {"name":"native-ppo-coverage","inherits":"native-test","configurePreset":"native-ppo-coverage"},
+    {"name":"native-ppo-dev","inherits":"native-test","configurePreset":"native-ppo-dev"},
+    {"name":"native-candidate-cuda-dev","inherits":"native-test","configurePreset":"native-candidate-cuda-dev"},
     {"name":"native-controls-release","inherits":"native-test","configurePreset":"native-controls-release"},
     {"name":"native-controls-asan-ubsan","inherits":"native-test","configurePreset":"native-controls-asan-ubsan"},
     {"name":"native-controls-static-analysis","inherits":"native-test","configurePreset":"native-controls-static-analysis"},

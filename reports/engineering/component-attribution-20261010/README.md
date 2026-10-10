@@ -34,7 +34,7 @@ cifra.
 
 ## Recuento
 
-De los 356 contrastes de la matriz, 219 solo usan brazos de la campaña, 112 esperan brazos
+De los 362 contrastes de la matriz, 225 solo usan modelos de la campaña, 112 esperan modelos
 condicionados o derivados con plan propio y 25 necesitan algún candidato. Ninguno queda
 sin brazo con nombre.
 
@@ -44,7 +44,12 @@ comparación (#443). Antes figuraba como brazo condicionado y 15 contrastes lo e
 Con eso quedaban 196 y 135. Se repitió otra vez al declarar en la comparación los brazos de
 integración `mars_titan_m1_k4_first_read`, `mars_titan_b6` y `mars_titan_b6_bias` (#452). Esos
 tres brazos ya no esperan, y 23 contrastes más pasan a usar solo brazos de la campaña. Los que
-todavía esperan necesitan además un brazo condicionado o derivado.
+todavía esperan necesitan además un modelo condicionado o derivado. La última repetición es del
+mismo día, al declarar los cuatro modelos B6 enrutados de #20 (`mars_titan_b6_regime`,
+`mars_titan_b6_calendar`, `mars_titan_b6_regime_banks` y `mars_titan_b6_calendar_banks`) con los
+componentes `routing_slots` y `regime_information`. Añaden 6 contrastes que solo usan modelos de
+la campaña. En el documento de horas figuran con las mismas 0,46 h proyectadas que los otros
+dos modelos B6, porque predicen las mismas filas.
 
 | Brazos con plan propio | Contrastes que esperan |
 | --- | ---: |
