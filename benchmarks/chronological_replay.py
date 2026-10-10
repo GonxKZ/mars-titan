@@ -363,9 +363,12 @@ if args.capture is not None:
     )
     for owner in ("readout", "model"):
         if hasattr(trainer, owner) and hasattr(getattr(trainer, owner), "named_parameters"):
-            names.update(
-                {id(p): f"{owner}.{n}" for n, p in getattr(trainer, owner).named_parameters()}
-            )
+            try:
+                found = dict(getattr(trainer, owner).named_parameters())
+            except (TypeError, ValueError):
+                # El modelo nativo de la candidata no da pares (nombre, tensor). Se usan posiciones.
+                found = {}
+            names.update({id(p): f"{owner}.{n}" for n, p in found.items()})
     pending = {f"{k[0]}|{k[1]}": float(getattr(v, "issued", v)) for k, v in run.pending.items()}
     torch.save(
         dict(
