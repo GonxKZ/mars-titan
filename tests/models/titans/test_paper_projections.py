@@ -654,7 +654,7 @@ def test_financial_restore_mid_sequence_reproduces_the_same_bits(variant):
 
 
 def test_financial_selection_gathering_and_trainer_rows_carry_each_flow_window():
-    from mars_titan.training.financial_run import _split, _stack
+    from mars_titan.training.financial_run import FlowStates
 
     module, spec, model = paper_predictor()
     state = model.initial_state(("US/AAA", "US/BBB"))
@@ -669,8 +669,10 @@ def test_financial_selection_gathering_and_trainer_rows_carry_each_flow_window()
     gathered = model.gather_state(
         {flow: (payload, 1 - index) for index, flow in enumerate(reverse)}, reverse
     )
-    pieces = dict(_split(state, detach=True))
-    stacked = _stack([pieces[flow] for flow in reverse])
+    # El entrenador guarda cada flujo en su fila del bloque y lo reúne en otro orden.
+    flows = FlowStates()
+    flows.put(state, detach=True)
+    stacked = flows.gather(reverse)
     for candidate in (selected, gathered, stacked):
         assert candidate.flow_ids == reverse
         for original, value in zip(
@@ -787,22 +789,26 @@ def test_financial_state_checks_reject_a_foreign_query_window():
 def test_trainer_checkpoint_round_trip_keeps_the_windows_of_every_flow():
     import io
 
-    from mars_titan.training.financial_run import _split, _stack
+    from mars_titan.training.financial_run import FlowStates
 
     module, spec, model = paper_predictor()
     state = model.initial_state(("US/AAA", "US/BBB"))
     with torch.no_grad():
         for batch in decisions(module, spec, 3):
             state = model.prepare(batch, state).next_state
-    flows = dict(_split(state, detach=True))
+    flows = FlowStates()
+    flows.put(state, detach=True)
     # Mismo recorrido que el punto de control del entrenador, con torch.save y weights_only.
     stream = io.BytesIO()
-    torch.save(model.export_state_cpu(_stack([flows[flow] for flow in state.flow_ids])), stream)
+    torch.save(model.export_state_cpu(flows.gather(state.flow_ids)), stream)
     stream.seek(0)
     payload = torch.load(stream, map_location="cpu", weights_only=True)
-    restored = dict(_split(model.restore_state(payload, device="cpu")))
+    restored = FlowStates()
+    restored.put(model.restore_state(payload, device="cpu"))
     for flow in state.flow_ids:
-        assert_bits(state_tensors(restored[flow].mac), state_tensors(flows[flow].mac))
+        assert_bits(
+            state_tensors(restored.gather([flow]).mac), state_tensors(flows.gather([flow]).mac)
+        )
 
 
 def test_frozen_consumer_admits_the_convolution_and_reproduces_the_predictor():
