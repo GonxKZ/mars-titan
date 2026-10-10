@@ -319,7 +319,7 @@ def test_later_stage_of_each_variant_starts_from_that_campaign_and_matrix(varian
     assert stage["campaign"]["variant"] == variant
     assert stage["matrix_path"] == str(Path(declared["config"]).resolve())
     counts = campaign_stage.count_stage(stage)
-    expected = dict(A=(3915, 0), B=(1479, 2436))[variant]
+    expected = dict(A=(3654, 630), B=(1479, 2436))[variant]
     assert (counts["training_jobs"], counts["prediction_jobs"]) == expected
 
 

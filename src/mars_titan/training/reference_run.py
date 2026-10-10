@@ -51,7 +51,19 @@ from .checkpoints import (
 )
 from .corpus_inputs import CorpusDataset
 from .learning_hold import require_learning_allowed
-from .selection import FIXED_BUDGET, advance_selection, initial_selection, validate_selection
+from .selection import (
+    AWAIT,
+    CONTINUE,
+    FINISH,
+    FIXED_BUDGET,
+    JOINT_PLATEAU,
+    advance_selection,
+    awaiting,
+    bind_joint_epoch,
+    epoch_decision,
+    initial_selection,
+    validate_selection,
+)
 
 KINDS = ("rnn", "lstm", "gru", "dlinear", "transformer")
 # Política anterior: filas completas de ajuste y validación.
@@ -482,11 +494,14 @@ def run_reference_case(
     weighting: str = "natural",
     input_policy: str = STRICT_INPUTS,
     prediction_retention: str = FULL_TRAIN_VALIDATION,
+    joint_epoch: int | None = None,
 ) -> dict:
     """Ajustar una referencia sobre toda la edición, sin abrir el test final.
 
     Sin argumentos nuevos se conserva la ruta estricta: lectura, identidad y archivos.
     La política con máscaras activa la fusión con presencia y la registra en la identidad.
+    Con la meseta conjunta, el ajuste espera en su primera meseta (`awaiting_joint_stop`)
+    hasta que se reanuda con la época común del grupo (`joint_epoch`).
     """
     require_learning_allowed("el ajuste de la referencia neuronal")
     _options(
@@ -574,6 +589,8 @@ def run_reference_case(
         report = read_json(report_path)
         if report["identity"] != identity:
             raise ValueError("La identidad o configuración de la ejecución ha cambiado")
+        # Una ejecución ya conjunta solo continúa o se confirma con su misma época común.
+        bind_joint_epoch(report, joint_epoch, case.get("selection"), case["epochs"])
         if report["status"] == "completed":
             _confirmed_state(output, identity, report["checkpoint"], report.get("selection"))
             for item in retained_artifacts(report):
@@ -618,8 +635,14 @@ def run_reference_case(
         if state.get("initial_validation") is not None:
             report["initial_validation"] = state["initial_validation"]
     report["selection"] = selection
+    bind_joint_epoch(report, joint_epoch, case.get("selection"), case["epochs"])
     stop = stop or StopRequest()
     last_saved = time.perf_counter()
+
+    def decision():
+        if not selection_options:
+            return FINISH if epoch >= case["epochs"] else CONTINUE
+        return epoch_decision(selection, selection_options, case["epochs"], joint_epoch)
 
     def save(*, pin=False, best=False):
         nonlocal last_saved
@@ -659,7 +682,11 @@ def run_reference_case(
             selection = initial_selection(baseline["session_mae"], selection_options)
             save(best=True)
             atomic_json(report_path, report)
-        while epoch < case["epochs"] and not (selection and selection["should_stop"]):
+        while (next_step := decision()) != FINISH:
+            if next_step == AWAIT:
+                # El estado tras la validación ya está confirmado y la época común la fija el grupo.
+                report.update(awaiting(selection, case["epochs"]), global_step=step, epochs=history)
+                return report
             if stop.requested:
                 raise _Pause
             model.train()
@@ -773,13 +800,18 @@ def run_reference_case(
             finished_at_utc=datetime.now(UTC).isoformat(),
         )
         if selection_options and {"minimum_epochs", "stopping"} & set(selection_options):
+            joint = selection_options.get("stopping") == JOINT_PLATEAU
             report.update(
                 stop_reason=(
-                    "validation_plateau" if selection["should_stop"] else "budget_exhausted"
+                    "validation_plateau"
+                    if selection["should_stop"]
+                    else JOINT_PLATEAU
+                    if joint and epoch < case["epochs"]
+                    else "budget_exhausted"
                 ),
                 last_epoch_improved=selection["last_improved"],
             )
-            if selection_options.get("stopping") == FIXED_BUDGET:
+            if selection_options.get("stopping") in (FIXED_BUDGET, JOINT_PLATEAU):
                 report["plateau_epoch"] = selection["plateau_epoch"]
         return report
     except _Pause:

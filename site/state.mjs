@@ -32,9 +32,16 @@ export const RAM_SCOPE_LABELS = Object.freeze({
 export const METRIC_KEYS = Object.freeze([
   "mae", "mse", "rank_ic", "coverage_80", "coverage_95", "loss",
   "latency_p50_ms", "latency_p95_ms", "latency_p99_ms", "vram_peak_mib",
-  "ram_peak_mib", "elapsed_seconds", "samples_per_second",
+  "ram_peak_mib", "elapsed_seconds", "samples_per_second", "session_mae",
 ]);
 
+// Medidas opcionales por época. El recolector las publica desde octubre de 2026 y las
+// instantáneas anteriores no las tienen, así que su ausencia se lee como null.
+export const EPOCH_KEYS = Object.freeze([
+  "train_mae", "session_mae", "train_samples_per_second", "train_seconds", "validation_seconds",
+]);
+
+const LATER_METRICS = new Set(["session_mae"]);
 const RUN_STATUSES = ["blocked", "queued", "running", "paused", "completed", "failed", "cancelled"];
 const EMPTY_METRICS = Object.freeze(Object.fromEntries(METRIC_KEYS.map(key => [key, null])));
 
@@ -121,7 +128,9 @@ function validateRun(input, index, modelIds, generatedAt, version = 1) {
   result.fold = typeof input.fold === "number" ? number(input.fold, `${path}.fold`, { integer: true }) : text(input.fold, `${path}.fold`, 120, true);
   result.comparison_group = text(input.comparison_group, `${path}.comparison_group`, 240, true);
   record(input.metrics, `${path}.metrics`);
-  result.metrics = Object.fromEntries(METRIC_KEYS.map(key => [key, metric(input.metrics[key], `${path}.metrics.${key}`, key)]));
+  // Solo las medidas añadidas después del contrato inicial pueden faltar. Omitir una de las
+  // originales sigue siendo un error del productor y no se lee como ausencia.
+  result.metrics = Object.fromEntries(METRIC_KEYS.map(key => [key, metric(LATER_METRICS.has(key) ? input.metrics[key] ?? null : input.metrics[key], `${path}.metrics.${key}`, key)]));
   let previousStep = -1;
   let previousTime = null;
   result.history = list(input.history, `${path}.history`, 500).map((entry, historyIndex) => {
@@ -139,7 +148,9 @@ function validateRun(input, index, modelIds, generatedAt, version = 1) {
     if (result.completed_steps !== null && step > result.completed_steps) fail(field, "paso posterior al avance confirmado");
     previousStep = step;
     previousTime = recordedAt;
-    return { step, recorded_at: recordedAt, loss: metric(entry.loss, `${field}.loss`, "loss"), mae: metric(entry.mae, `${field}.mae`, "mae") };
+    const point = { step, recorded_at: recordedAt, loss: metric(entry.loss, `${field}.loss`, "loss"), mae: metric(entry.mae, `${field}.mae`, "mae") };
+    for (const key of EPOCH_KEYS) point[key] = number(entry[key] ?? null, `${field}.${key}`);
+    return point;
   });
   const checkpoint = record(input.checkpoint, `${path}.checkpoint`);
   result.checkpoint = {
@@ -165,6 +176,8 @@ function validateRun(input, index, modelIds, generatedAt, version = 1) {
     result.metadata.condition = meta.condition ?? null;
     if (result.metadata.condition !== null && !Object.hasOwn(CONDITION_LABELS, result.metadata.condition)) fail(`${path}.condition`);
     result.metadata.parent_model = text(meta.parent_model ?? null, `${path}.parent_model`, 96, true);
+    result.metadata.best_epoch = number(meta.best_epoch ?? null, `${path}.best_epoch`, {integer: true});
+    result.metadata.stopped_early = boolean(meta.stopped_early ?? null, `${path}.stopped_early`, true);
     result.metadata.ram_peak_scope = meta.ram_peak_scope ?? null;
     if (result.metadata.ram_peak_scope !== null && !Object.hasOwn(RAM_SCOPE_LABELS, result.metadata.ram_peak_scope)) fail(`${path}.ram_peak_scope`);
     for (const key of ["executable_peak_rss_mib", "process_lifetime_peak_rss_mib"]) {
@@ -232,7 +245,7 @@ export function resultsProtected(run) {
 
 export function publicMetrics(run) {
   const values = resultsProtected(run) ? { ...EMPTY_METRICS } : { ...run.metrics };
-  if (!isPredictive(run)) for (const key of ["mae", "mse", "loss", "rank_ic", "coverage_80", "coverage_95"]) values[key] = null;
+  if (!isPredictive(run)) for (const key of ["mae", "mse", "loss", "rank_ic", "coverage_80", "coverage_95", "session_mae"]) values[key] = null;
   return values;
 }
 

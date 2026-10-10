@@ -18,7 +18,7 @@ import torch
 from mars_titan.data.storage import atomic_json, sha256
 from mars_titan.environments.walk_forward_receipt import read_window_receipt
 from mars_titan.training import campaign_plan as plan
-from mars_titan.training import mars_titan_run
+from mars_titan.training import mars_titan_run, search_cases
 from mars_titan.training import mars_titan_walk_forward as mw
 from mars_titan.training import masked_campaign as engine
 from mars_titan.training import titans_walk_forward as wf
@@ -70,7 +70,8 @@ def declared(tmp_path, variant="A", **changes):
 
 def test_constants_repeat_the_runner_names_without_importing_torch():
     assert plan.MARS_RECIPE == mars_titan_run.RECIPE
-    assert plan.MARS_SEARCHED == mars_titan_run.SEARCHED
+    assert plan.MARS_SEARCHED == search_cases.SEARCHED
+    assert mars_titan_run.checked_search_cases is search_cases.checked_search_cases
 
 
 @pytest.mark.parametrize("variant", ["A", "B"])

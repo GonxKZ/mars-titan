@@ -103,9 +103,29 @@ def test_indexed_models_keep_their_index_only_without_release():
     assert released["transient"]["mid_epoch"] == 2 * COUNTS["flows"] * value["flow_state_bytes"]
     kept = storage.job_footprint(job("titans_mac"), COUNTS, value, release=False)
     assert kept["retained"]["indices"] == built and kept["transient"]["indices"] == build
+    # La GRU candidata calienta con el mismo tramo que Titans-MAC.
     gru = storage.job_footprint(job("episodic_gru"), COUNTS, value, release=False)
-    no_warmup = 2 * COUNTS["train"] + sum(2 * COUNTS[p] for p in storage.HELD_OUT)
-    assert gru["retained"]["indices"] == int(no_warmup * index["bytes_per_row"])
+    assert gru["retained"]["indices"] == built
+
+
+def test_plateau_of_a_joint_fit_keeps_its_states_and_indices_and_writes_no_table():
+    value = declared()
+    state, kept = value["state_bytes"]["titans_mac"], value["retained_states"]["titans_mac"]
+    fit = storage.job_footprint(job("titans_mac"), COUNTS, value, release=True)
+    plateau = storage.job_footprint(job("titans_mac", phase="plateau"), COUNTS, value, release=True)
+    assert plateau["retained"]["predictions"] == plateau["transient"]["writing"] == 0
+    assert plateau["retained"]["states"] == kept * state
+    assert plateau["transient"]["recovery"] == 0
+    # La meseta conserva su índice como un ajuste sin liberación.
+    unreleased = storage.job_footprint(job("titans_mac"), COUNTS, value, release=False)
+    assert plateau["retained"]["indices"] == unreleased["retained"]["indices"] > 0
+    assert plateau["transient"]["indices"] == unreleased["transient"]["indices"]
+    assert (
+        plateau["retained"]["indices"] + plateau["transient"]["indices"]
+        == (fit["transient"]["indices"])
+    )
+    final = storage.job_footprint(job("titans_mac", phase="joint"), COUNTS, value, release=True)
+    assert final == fit
 
 
 def test_xgboost_keeps_its_models_and_needs_its_pages_while_running():

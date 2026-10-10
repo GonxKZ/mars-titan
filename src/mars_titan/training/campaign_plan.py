@@ -16,14 +16,25 @@ sus dos núcleos son trabajos auxiliares sin traslado y cada brazo parte de uno 
 `extend_campaign` añade a una campaña cargada las secciones de una declaración preparada con
 las mismas reglas, para medir y contar sin cambiar su archivo.
 
-Variante A: cada ventana anual se reentrena desde cero. Variante B: se reentrena desde
-cero en la primera ventana y cada ``retrain_every_months`` meses. Las ventanas
+La sección opcional ``early_stop`` declara la parada temprana de la campaña, con la misma
+métrica que el protocolo. Sin ella se conserva la regla del protocolo (presupuesto fijo) y
+la identidad de cada trabajo. Con ``validation_plateau`` cada ajuste para en su primera
+meseta. Con ``joint_plateau`` los brazos de cada grupo emparejado declarado paran en la
+misma época, que es la mayor de sus primeras mesetas en el mismo ámbito, ventana, semilla y caso
+de búsqueda (o caso elegido, en las semillas finalistas). Cada ajuste agrupado tiene dos
+trabajos: el de meseta, que se detiene en su primera meseta en un estado recuperable, y el
+final, que depende de las mesetas de todo su grupo y continúa hasta la época común. Los
+brazos sin grupo paran en su propia meseta.
+
+En la variante A, cada ventana anual se reentrena desde cero. En la variante B, se reentrena
+desde cero en la primera ventana y cada ``retrain_every_months`` meses. Las ventanas
 intermedias se predicen con el estado seleccionado en la última ventana reentrenada,
 que dejó de aprender al final de su validación. Cada ventana conserva sus filas, su
 purga por intervalo de etiqueta y su calibración común, ajustada con las predicciones
 del modelo trasladado en el tramo de calibración de esa ventana.
 """
 
+import heapq
 import json
 import math
 from pathlib import Path
@@ -34,6 +45,8 @@ from mars_titan.evaluation import walk_forward_comparison as comparison
 from mars_titan.evaluation.splits import build_folds, stopping_rule
 
 from .reference_design import PINBALL, QUANTILE_HEAD, candidate_indices, design_cases
+from .search_cases import SEARCHED
+from .selection import JOINT_PLATEAU, VALIDATION_PLATEAU, campaign_rule
 
 CAMPAIGN_KIND = "historical_masked_campaign"
 DECLARED = "declared_not_executed"
@@ -47,13 +60,18 @@ NEURAL, TABULAR = "neural_reference", "tabular_reference"
 TITANS = "titans_mac"
 TITANS_VARIANTS = ("transformer_direct", "mac_disabled", "mac_frozen", "mac_online")
 TITANS_RECIPE = "titans_financial_chronological_v1"
-# Repite titans_walk_forward.SEARCHED sin importar PyTorch. Una prueba lo fija.
-TITANS_SEARCHED = ("learning_rate", "max_grad_norm")
+# Un caso de búsqueda de las recetas cronológicas solo puede variar estos hiperparámetros.
+TITANS_SEARCHED = SEARCHED
 FIT, CARRY = "fit", "carry"
 # El control en línea parte del estado elegido de otro brazo en su misma ventana. Su brazo
 # en la comparación pertenece a la familia ONLINE_CONTROL.
 ONLINE = "online"
 ONLINE_CONTROL = "online_control"
+# Un ajuste con parada conjunta pasa por la meseta individual y por la continuación común.
+PLATEAU, JOINT = "plateau", "joint"
+EARLY_STOP = "early_stop"
+# La época común del grupo es la mayor de las primeras mesetas de sus ajustes.
+GROUP_EPOCH = "maximum_of_first_plateaus"
 # GRU candidata con banco episódico. Repite candidate_run.RECIPE sin importar PyTorch.
 EPISODIC = "episodic_gru"
 CANDIDATE_RECIPE = "candidate_gru_chronological_v1"
@@ -179,6 +197,8 @@ _FIELDS = {
     "limits",
     "final_test_opened",
 }
+_EARLY_STOP = {"stopping", "patience", "min_delta", "max_epochs"}
+_EARLY_OPTIONAL = {"minimum_epochs", "groups", "group_epoch"}
 _NEURAL = {
     "arms",
     "case_indices",
@@ -213,7 +233,8 @@ def _seeds(value, label):
     return value
 
 
-def _neural(section, arms, rule, policy):
+def _neural(section, arms, rules, policy):
+    """Devuelve los casos de las referencias neuronales con la regla de parada de cada brazo."""
     _require(isinstance(section, dict) and set(section) == _NEURAL, "La sección neuronal no cumple")
     declared = {name for name, arm in arms.items() if arm["family"] == NEURAL}
     mapping = section["arms"]
@@ -248,9 +269,10 @@ def _neural(section, arms, rule, policy):
     indices = candidate_indices(
         dict(schema_version=4, case_indices=section["case_indices"], models=list(mapping.values()))
     )
-    protocol_selection = {key: value for key, value in rule.items() if key != "max_epochs"}
     candidates = {}
     for name, kind in mapping.items():
+        rule = rules(name)
+        protocol_selection = {key: value for key, value in rule.items() if key != "max_epochs"}
         design = design_cases(
             [kind],
             seed=seed,
@@ -320,8 +342,18 @@ def _tabular(section, arms, policy, base):
     )
 
 
-def _episodic(section, arms, rule, policy, base):
-    """Brazos de la GRU candidata con su receta y variante, sin importar PyTorch."""
+def _stopping(case, rules, arm):
+    """Añadir al caso la parada temprana del brazo, si la campaña la declara."""
+    rule = None if rules is None else rules(arm)
+    return case if rule is None else dict(case, stopping_rule=rule)
+
+
+def _episodic(section, arms, rule, policy, base, count, rules=None):
+    """Declara los brazos de la GRU candidata con su receta, variante y casos sin importar PyTorch.
+
+    Para que la búsqueda sea equitativa, la receta declara tantos casos como índices del
+    diseño ajusta cada referencia neuronal (`count`), como Titans-MAC y el lector.
+    """
     if section is None:
         return None
     _require(
@@ -354,6 +386,17 @@ def _episodic(section, arms, rule, policy, base):
         "política y cabeza de la comparación",
     )
     selection = {key: value for key, value in rule.items() if key != "max_epochs"}
+    cases = (document.get("walk_forward") or {}).get("search_cases")
+    _require(
+        isinstance(cases, dict)
+        and len(cases) == count
+        and all(
+            isinstance(case, dict) and case and set(case) <= set(SEARCHED)
+            for case in cases.values()
+        ),
+        f"La receta de la GRU candidata necesita {count} casos de búsqueda del optimizador, "
+        "tantos como índices ajusta cada referencia neuronal",
+    )
     candidates = {}
     for name, variant in mapping.items():
         options = document["recipe"] | document["variants"][variant]
@@ -361,12 +404,27 @@ def _episodic(section, arms, rule, policy, base):
             options.get("epochs") == rule["max_epochs"] and options.get("selection") == selection,
             "La receta de la GRU candidata no aplica la regla de parada del protocolo",
         )
-        case = dict(recipe=str(path), recipe_sha256=digest, variant=variant, seed=seed)
-        candidates[name] = [(variant, case)]
+        candidates[name] = [
+            (
+                case,
+                _stopping(
+                    dict(
+                        recipe=str(path),
+                        recipe_sha256=digest,
+                        variant=variant,
+                        seed=seed,
+                        search_case=case,
+                    ),
+                    rules,
+                    name,
+                ),
+            )
+            for case in cases
+        ]
     return dict(section, path=str(path), sha256=digest, seed=seed, candidates=candidates)
 
 
-def _titans(section, arms, rule, policy, base, count):
+def _titans(section, arms, rule, policy, base, count, rules=None):
     """Brazos de Titans-MAC con su receta común y su control, sin importar PyTorch.
 
     Para que la búsqueda sea equitativa, la receta declara tantos casos como índices del
@@ -402,12 +460,16 @@ def _titans(section, arms, rule, policy, base, count):
         name: [
             (
                 case,
-                dict(
-                    recipe=str(path),
-                    recipe_sha256=digest,
-                    variant=variant,
-                    seed=seed,
-                    search_case=case,
+                _stopping(
+                    dict(
+                        recipe=str(path),
+                        recipe_sha256=digest,
+                        variant=variant,
+                        seed=seed,
+                        search_case=case,
+                    ),
+                    rules,
+                    name,
                 ),
             )
             for case in cases
@@ -444,7 +506,7 @@ def _titans_cases(recipe, rule, count):
     return cases
 
 
-def _mars_titan(section, arms, rule, policy, base, count, titans):
+def _mars_titan(section, arms, rule, policy, base, count, titans, rules=None):
     """Brazos de MARS-TITAN: combinación de componentes, receta del lector y padre.
 
     El padre es un brazo `mac_online` de la sección de Titans-MAC con las mismas semillas.
@@ -497,13 +559,17 @@ def _mars_titan(section, arms, rule, policy, base, count, titans):
         name: [
             (
                 case,
-                dict(
-                    recipe=str(path),
-                    recipe_sha256=digest,
-                    components=components,
-                    seed=seed,
-                    search_case=case,
-                    parent_arm=parent,
+                _stopping(
+                    dict(
+                        recipe=str(path),
+                        recipe_sha256=digest,
+                        components=components,
+                        seed=seed,
+                        search_case=case,
+                        parent_arm=parent,
+                    ),
+                    rules,
+                    name,
                 ),
             )
             for case in cases
@@ -540,7 +606,7 @@ def _readout_cases(recipe, rule, count):
     return cases
 
 
-def _cm_v1(section, arms, rule, policy, base, count):
+def _cm_v1(section, arms, rule, policy, base, count, rules=None):
     """Núcleos y brazos del factorial CM-v1 desde su declaración, sin importar PyTorch.
 
     Los núcleos `cm_v1_core_b` y `cm_v1_core_c` son trabajos auxiliares sin traslado ni
@@ -590,12 +656,16 @@ def _cm_v1(section, arms, rule, policy, base, count):
         name: [
             (
                 case,
-                dict(
-                    common,
-                    recipe=str(recipes["core_recipe"]),
-                    recipe_sha256=core_sha,
-                    core=name,
-                    search_case=case,
+                _stopping(
+                    dict(
+                        common,
+                        recipe=str(recipes["core_recipe"]),
+                        recipe_sha256=core_sha,
+                        core=name,
+                        search_case=case,
+                    ),
+                    rules,
+                    name,
                 ),
             )
             for case in core_cases
@@ -606,13 +676,17 @@ def _cm_v1(section, arms, rule, policy, base, count):
         candidates[name] = [
             (
                 case,
-                dict(
-                    common,
-                    recipe=str(recipes["readout_recipe"]),
-                    recipe_sha256=readout_sha,
-                    arm=name,
-                    search_case=case,
-                    parent_arm=parent,
+                _stopping(
+                    dict(
+                        common,
+                        recipe=str(recipes["readout_recipe"]),
+                        recipe_sha256=readout_sha,
+                        arm=name,
+                        search_case=case,
+                        parent_arm=parent,
+                    ),
+                    rules,
+                    name,
                 ),
             )
             for case in _readout_cases(readout, rule, count)
@@ -640,7 +714,7 @@ def load_campaign(path):
     config, digest = read_manifest(path, 1024**2)
     _require(
         isinstance(config, dict)
-        and _FIELDS <= set(config) <= _FIELDS | set(OPTIONAL)
+        and _FIELDS <= set(config) <= _FIELDS | set(OPTIONAL) | {EARLY_STOP}
         and config["schema_version"] == 1
         and config["kind"] == CAMPAIGN_KIND
         and config["status"] == DECLARED
@@ -677,6 +751,7 @@ def load_campaign(path):
         "Todos los protocolos deben declarar la misma regla de parada y el mismo paso",
     )
     rule, step = json.loads(rules.pop()), steps.pop()
+    early = _early_stop(config.get(EARLY_STOP), rule, declared["arms"])
     every = config["retrain_every_months"]
     _require(
         type(every) is int
@@ -693,6 +768,7 @@ def load_campaign(path):
         "La comparación declara familias sin entrenador ni punto de extensión",
     )
     count = len(config["neural"]["case_indices"])
+    rules = _arm_rules(rule, early)
     return dict(
         config,
         sha256=digest,
@@ -700,13 +776,89 @@ def load_campaign(path):
         comparison_path=str(comparison_path),
         comparison_config=declared,
         input_policy=policy,
-        rule=rule,
+        # Esta es la regla común de la campaña. Con parada temprana es la individual o la conjunta.
+        rule=rule if early is None else early[early["stopping"]],
+        protocol_rule=rule,
+        early_stop=early,
         step_months=step,
         period=every // step,
-        neural=_neural(config["neural"], arms, rule, policy),
+        neural=_neural(config["neural"], arms, lambda arm: rules(arm) or rule, policy),
         tabular=_tabular(config["tabular"], arms, policy, base),
-        **_optional_sections(config, arms, rule, policy, base, count),
+        **_optional_sections(config, arms, rule, policy, base, count, rules),
     )
+
+
+def _early_stop(section, rule, arms):
+    """Lee la parada temprana que declara la campaña, con la métrica del protocolo.
+
+    Devuelve None sin sección. `validation_plateau` detiene cada ajuste en su primera
+    meseta. `joint_plateau` necesita grupos de brazos con entrenador, disjuntos y de al
+    menos dos brazos, y la época común `maximum_of_first_plateaus`. Los brazos sin grupo
+    usan la meseta individual con los mismos valores.
+    """
+    if section is None:
+        return None
+    _require(
+        isinstance(section, dict)
+        and _EARLY_STOP <= set(section) <= _EARLY_STOP | _EARLY_OPTIONAL
+        and section["stopping"] in (VALIDATION_PLATEAU, JOINT_PLATEAU),
+        "La parada temprana declara modo individual o conjunto, paciencia, mejora mínima y "
+        "máximo de épocas",
+    )
+    values = {
+        key: section[key] for key in ("patience", "min_delta", "minimum_epochs") if key in section
+    }
+    individual = campaign_rule(
+        rule,
+        dict(
+            metric=rule["metric"],
+            stopping=VALIDATION_PLATEAU,
+            max_epochs=section["max_epochs"],
+            **values,
+        ),
+    )
+    resolved = dict(section, **{VALIDATION_PLATEAU: individual, JOINT_PLATEAU: None}, membership={})
+    if section["stopping"] == VALIDATION_PLATEAU:
+        _require(
+            not {"groups", "group_epoch"} & set(section),
+            "La parada individual no declara grupos",
+        )
+        return resolved
+    groups = section.get("groups")
+    _require(
+        section.get("group_epoch") == GROUP_EPOCH
+        and isinstance(groups, dict)
+        and groups
+        and all(isinstance(name, str) and name for name in groups)
+        and all(
+            isinstance(members, list)
+            and len(members) >= 2
+            and len(set(members)) == len(members)
+            and all(isinstance(arm, str) for arm in members)
+            for members in groups.values()
+        ),
+        f"La parada conjunta declara grupos de al menos dos brazos y la época común {GROUP_EPOCH}",
+    )
+    members = [arm for names in groups.values() for arm in names]
+    trainable = {
+        name
+        for name, arm in arms.items()
+        if arm["family"] != TABULAR and arm["output"] != "zero_control"
+    } | set(CM_CORES)
+    _require(
+        len(set(members)) == len(members) and set(members) <= trainable,
+        "Cada brazo agrupado debe tener entrenador neuronal y pertenecer a un solo grupo",
+    )
+    resolved[JOINT_PLATEAU] = dict(individual, stopping=JOINT_PLATEAU)
+    resolved["membership"] = {arm: group for group, names in groups.items() for arm in names}
+    return resolved
+
+
+def _arm_rules(rule, early):
+    """Devuelve la regla de parada de cada brazo, o None si la campaña conserva la del protocolo."""
+    if early is None:
+        return lambda arm: None
+    return lambda arm: early[JOINT_PLATEAU if arm in early["membership"] else VALIDATION_PLATEAU]
 
 
 def _checked_limits(limits):
@@ -719,14 +871,18 @@ def _checked_limits(limits):
     return limits
 
 
-def _optional_sections(config, arms, rule, policy, base, count, titans=None):
-    """Resolver las secciones opcionales. `titans` es la ya resuelta si `config` no la trae."""
-    titans = _titans(config.get(TITANS), arms, rule, policy, base, count) or titans
+def _optional_sections(config, arms, rule, policy, base, count, rules, titans=None):
+    """Resolver las secciones opcionales. `titans` es la ya resuelta si `config` no la trae.
+
+    `rule` es la regla del protocolo, que declaran las recetas, y `rules(arm)` la parada
+    temprana de cada brazo si la campaña la declara.
+    """
+    titans = _titans(config.get(TITANS), arms, rule, policy, base, count, rules) or titans
     return {
-        EPISODIC: _episodic(config.get(EPISODIC), arms, rule, policy, base),
+        EPISODIC: _episodic(config.get(EPISODIC), arms, rule, policy, base, count, rules),
         TITANS: titans,
-        MARS: _mars_titan(config.get(MARS), arms, rule, policy, base, count, titans),
-        CM: _cm_v1(config.get(CM), arms, rule, policy, base, count),
+        MARS: _mars_titan(config.get(MARS), arms, rule, policy, base, count, titans, rules),
+        CM: _cm_v1(config.get(CM), arms, rule, policy, base, count, rules),
     }
 
 
@@ -751,10 +907,11 @@ def extend_campaign(campaign, sections, *, limits=None):
     resolved = _optional_sections(
         sections,
         campaign["comparison_config"]["arms"],
-        campaign["rule"],
+        campaign["protocol_rule"],
         campaign["input_policy"],
         Path(campaign["path"]).parent,
         len(campaign["neural"]["case_indices"]),
+        _arm_rules(campaign["protocol_rule"], campaign["early_stop"]),
         titans=campaign.get(TITANS),
     )
     extended = dict(
@@ -889,7 +1046,119 @@ def plan_campaign(campaign):
                     depends = searches if seed == spec["seed"] else [f"{prefix}/finalist-s{seed}"]
                     jobs.append(_job(*common, "carry", seed, anchor=row["anchor"], depends=depends))
     _require(len({job["id"] for job in jobs}) == len(jobs), "El plan contiene trabajos repetidos")
-    return jobs
+    return _joint_phases(campaign, jobs, names)
+
+
+def _ancestors(arm, specs):
+    """Devuelve los brazos de los que parte un brazo siguiendo la cadena de padres."""
+    found = []
+    while (arm := specs[arm]["parent"]) is not None:
+        found.append(arm)
+    return found
+
+
+def _checked_groups(campaign, specs):
+    """Comprueba que cada grupo conjunto tiene brazos conectados que se emparejan caso a caso.
+
+    Los brazos de un grupo comparten semilla de búsqueda y número de casos, que se emparejan
+    por posición, y ninguno parte de otro del mismo grupo, porque su parada dependería de sí
+    misma. Cada contraste emparejado de la comparación (delta o factorial) entre brazos
+    conectados sin relación de padre debe quedar dentro de un mismo grupo.
+    """
+    early = campaign["early_stop"]
+    membership = early["membership"]
+    for group, members in early["groups"].items():
+        connected = [arm for arm in members if arm in specs]
+        _require(
+            len({specs[arm]["seed"] for arm in connected}) <= 1
+            and len({len(specs[arm]["candidates"]) for arm in connected}) <= 1
+            and not any(set(_ancestors(arm, specs)) & set(members) for arm in connected),
+            f"El grupo {group} necesita la misma semilla y el mismo número de casos, sin "
+            "padres dentro",
+        )
+    for family in campaign["comparison_config"]["comparison"]["families"].values():
+        kind = family.get("kind")
+        if kind == "delta":
+            pairs = [(family["base"], variant) for variant in family["variants"]]
+        elif kind == "factorial":
+            pairs = [(family["base"], family[key]) for key in ("first", "second", "joint")]
+        else:
+            continue
+        for base, variant in pairs:
+            if base not in specs or variant not in specs:
+                continue
+            if base in _ancestors(variant, specs) or variant in _ancestors(base, specs):
+                continue
+            _require(
+                membership.get(base) is not None
+                and membership.get(base) == membership.get(variant),
+                f"El contraste {base} frente a {variant} necesita un mismo grupo de parada "
+                "conjunta",
+            )
+
+
+def _joint_phases(campaign, jobs, specs):
+    """Dividir cada ajuste agrupado en su meseta y su continuación hasta la época común.
+
+    El grupo de un ajuste es el de su brazo en el mismo ámbito, ventana y semilla, con el
+    caso de búsqueda en la misma posición o, en las semillas finalistas, con el caso elegido
+    de cada brazo. El ajuste final depende de las mesetas de todo su grupo y continúa en la
+    carpeta de su meseta. Los trabajos quedan en un orden compatible con sus dependencias.
+    """
+    early = campaign.get("early_stop")
+    if not early or early["stopping"] != JOINT_PLATEAU:
+        return jobs
+    _checked_groups(campaign, specs)
+    membership, result, members = early["membership"], [], {}
+    positions = {
+        (arm, name): index
+        for arm, spec in specs.items()
+        for index, (name, _) in enumerate(spec["candidates"])
+    }
+    for job in jobs:
+        group = membership.get(job["arm"])
+        if job["kind"] != FIT or group is None:
+            result.append(job)
+            continue
+        head, _, name = job["id"].rpartition("/")
+        plateau = dict(job, id=f"{head}/plateau-{name}", phase=PLATEAU)
+        final = dict(job, phase=JOINT, plateau=plateau["id"])
+        slot = positions[job["arm"], job["candidate"]] if job["stage"] == "search" else "selected"
+        key = (job["scope"], job["window"], job["seed"], group, slot)
+        members.setdefault(key, []).append(final)
+        result += [plateau, final]
+    for finals in members.values():
+        group = [final["plateau"] for final in finals]
+        for final in finals:
+            final["joint_group"] = group
+            final["depends"] = [*final["depends"], *group]
+    return _ordered(result)
+
+
+def _ordered(jobs):
+    """Ordena los trabajos de forma estable para que cada uno vaya después de sus dependencias."""
+    position = {job["id"]: index for index, job in enumerate(jobs)}
+    waiting = {job["id"]: set(job["depends"]) for job in jobs}
+    _require(
+        all(depends <= set(position) for depends in waiting.values()),
+        "El plan depende de trabajos que no contiene",
+    )
+    users = {}
+    for job in jobs:
+        for dependency in job["depends"]:
+            users.setdefault(dependency, []).append(job["id"])
+    ready = [position[key] for key, depends in waiting.items() if not depends]
+    heapq.heapify(ready)
+    ordered = []
+    while ready:
+        job = jobs[heapq.heappop(ready)]
+        ordered.append(job)
+        for user in users.get(job["id"], ()):
+            waiting[user].discard(job["id"])
+            if not waiting[user]:
+                heapq.heappush(ready, position[user])
+    _require(len(ordered) == len(jobs), "El plan contiene dependencias circulares")
+    return ordered
 
 
 def count_jobs(campaign, jobs=None):
@@ -904,19 +1173,27 @@ def count_jobs(campaign, jobs=None):
         for job in selected:
             seeds = arms.setdefault(job["arm"], {})
             entry = seeds.setdefault(str(job["seed"]), dict(fit=0, carry=0))
-            entry[job["kind"]] += 1
+            # La meseta de un ajuste conjunto es la primera parte del mismo ajuste.
+            kind = PLATEAU if job.get("phase") == PLATEAU else job["kind"]
+            entry[kind] = entry.get(kind, 0) + 1
         scopes[scope] = dict(
             windows=len(rows),
             retrained_windows=[row["window"] for row in rows if row["trained"]],
             carried_windows=sum(not row["trained"] for row in rows),
-            training_jobs=sum(job["kind"] == FIT for job in selected),
+            training_jobs=sum(_fit(job) for job in selected),
             prediction_jobs=sum(job["kind"] == CARRY for job in selected),
             arms=arms,
         )
+        plateaus = sum(job.get("phase") == PLATEAU for job in selected)
+        if plateaus:
+            scopes[scope]["plateau_jobs"] = plateaus
     totals = dict(
-        training_jobs=sum(job["kind"] == FIT for job in jobs),
+        training_jobs=sum(_fit(job) for job in jobs),
         prediction_jobs=sum(job["kind"] == CARRY for job in jobs),
     )
+    plateaus = sum(job.get("phase") == PLATEAU for job in jobs)
+    if plateaus:
+        totals["plateau_jobs"] = plateaus
     limits = campaign["limits"]
     for kind, limit in (
         ("training_jobs", "max_training_jobs"),
@@ -928,6 +1205,11 @@ def count_jobs(campaign, jobs=None):
                 f"declarado {limit}={limits[limit]}"
             )
     return dict(scopes=scopes, **totals)
+
+
+def _fit(job):
+    """Indica si es un ajuste completo, es decir, si no es la meseta de un ajuste conjunto."""
+    return job["kind"] == FIT and job.get("phase") != PLATEAU
 
 
 def pending_families(campaign):
@@ -957,10 +1239,25 @@ def check_campaign(path):
         comparison_sha256=campaign["comparison_config"]["sha256"],
         input_policy=campaign["input_policy"],
         stopping_rule=campaign["rule"],
+        protocol_stopping_rule=campaign["protocol_rule"],
+        early_stop=_early_record(campaign["early_stop"]),
         neural_loss=dict(head=QUANTILE_HEAD, loss=PINBALL),
         counts=count_jobs(campaign),
         pending_families=pending_families(campaign),
         later_stages=LATER_STAGES,
         scientific_training_started=False,
         final_test_opened=False,
+    )
+
+
+def _early_record(early):
+    """Resume la parada temprana declarada. Devuelve None si rige la regla del protocolo."""
+    if early is None:
+        return None
+    return dict(
+        stopping=early["stopping"],
+        individual_rule=early[VALIDATION_PLATEAU],
+        joint_rule=early[JOINT_PLATEAU],
+        groups=early.get("groups", {}),
+        group_epoch=early.get("group_epoch"),
     )

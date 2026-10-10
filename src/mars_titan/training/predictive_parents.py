@@ -20,6 +20,10 @@ from mars_titan.environments.corpus_source import ParquetCohortSource
 from .reference_run import HELDOUT_FULL_TRAIN_SESSIONS
 from .run_receipts import initialize_receipt
 
+# El corpus ordenado con sus Parquet o el índice que lee la vista por bloques. El padre
+# solo necesita su población, formas, mercados y huella de origen.
+ORDERED_KINDS = ("causal_prediction_corpus", "causal_prediction_index")
+
 
 def _signature(path):
     stat = path.stat()
@@ -71,7 +75,7 @@ def _parent(ordered, parent):
     if declared != policy_identity(policy):
         raise ValueError("El padre no comparte la política de entradas del corpus ordenado")
     if (
-        source.get("kind") != "causal_prediction_corpus"
+        source.get("kind") not in ORDERED_KINDS
         or source.get("status") != "completed"
         or report.get("status") != "completed"
         or report.get("final_test_opened") is not False

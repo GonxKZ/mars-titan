@@ -36,6 +36,9 @@ from mars_titan.models.titans.financial_inputs import validated_cpu_batch
 from mars_titan.models.titans.frozen_financial import FrozenFinancialConsumer
 from mars_titan.training import mars_titan_run as mt
 
+# La paridad se omite sin enlace en la suite CPU y falla con MARS_TITAN_REQUIRE_NATIVE=1.
+pytestmark = pytest.mark.native_binding
+
 PHASE = FinancialPhase("validation", moment(125), moment(125), moment(200), moment(201))
 # Escalas manuales, como si procedieran del tramo de entrenamiento de la ventana.
 SCALERS = WriteScalers(
