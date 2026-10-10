@@ -930,11 +930,23 @@ def test_a_chain_that_does_not_match_its_contract_stops_before_any_executor(
     assert learner.calls == []
 
 
-def test_a_window_without_its_selection_is_not_confirmed(base_a, tmp_path, learning_doubles):
+def test_every_missing_selection_is_listed_before_any_executor(
+    base_a, tmp_path, learning_doubles, monkeypatch
+):
     base = chained(base_a, tmp_path)
     chain = fixture.publish_chain(base, tmp_path / "chain")
-    (chain / "windows/US/fold-000/gru__chain/seed-42/selection.json").unlink()
+    for window, arm in (("fold-000", "gru"), ("fold-001", "lstm")):
+        (chain / f"windows/US/{window}/{arm}__chain/seed-42/selection.json").unlink()
     learner = fixture.ScriptedLearner()
+    with pytest.raises(ValueError, match="Faltan 2 selecciones") as error:
+        fixture.run(base, tmp_path / "stage", learner, chain_output=chain)
+    for name in ("US/fold-000/gru__chain/select-s42", "US/fold-001/lstm__chain/select-s42"):
+        assert name in str(error.value)
+    # Se comprueba antes de crear la salida, así que no queda ninguna ejecución a medias.
+    assert learner.calls == [] and not (tmp_path / "stage").exists()
+    # La fuente de cada cinta conserva su propia comprobación, por si la selección
+    # desaparece después de la comprobación previa.
+    monkeypatch.setattr(campaign_stage, "require_chain_selections", lambda *args: None)
     with pytest.raises(ValueError, match="no tiene confirmada su selección"):
         fixture.run(base, tmp_path / "stage", learner, chain_output=chain)
     assert learner.calls == []

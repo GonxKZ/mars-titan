@@ -64,6 +64,7 @@ from .policy_plan import (
     REFERENCE,
     _number,
     _require,
+    chain_reads,
     count_stage,
     count_tapes,
     load_stage,
@@ -699,6 +700,27 @@ def chain_source(base, chain_output, seed, campaign_output):
     return source
 
 
+def require_chain_selections(stage, jobs, chain_output):
+    """Exigir antes de ejecutar nada todas las selecciones de la cadena que leerá la etapa.
+
+    Sin esta comprobación, una selección ausente solo aparece al montar la cinta de su
+    trabajo, quizá horas después y con otros trabajos ya confirmados. El error enumera todas
+    las que faltan para publicarlas de una vez. Una selección presente pero alterada detiene
+    la lectura con el error de `staged_chain.read_selection`.
+    """
+    seed = stage["policies"]["predictor"]["seed"]
+    needed = sorted({read for job in jobs for read in chain_reads(stage, job)})
+    missing = [
+        staged_chain.chain_job_id(scope, window, predictor, seed)
+        for scope, window, predictor in needed
+        if staged_chain.read_selection(chain_output, scope, window, predictor, seed) is None
+    ]
+    _require(
+        not missing,
+        f"Faltan {len(missing)} selecciones de la cadena antes de ejecutar: " + ", ".join(missing),
+    )
+
+
 def predictor_source(policies, base, campaign_output, chain_output=None):
     """Fuente de recibos y predicciones de las cintas según la regla declarada."""
     rule, seed = policies["predictor"]["source"], policies["predictor"]["seed"]
@@ -1145,6 +1167,8 @@ def run_stage(
     _base_receipts(base, campaign, stage)
     # La fuente de las predicciones se resuelve antes de crear la salida.
     source = predictor_source(stage["policies"], base, campaign_output, chain_output)
+    if chain_output is not None:
+        require_chain_selections(stage, jobs, Path(chain_output))
     identity = _identity(stage, base.views, edition_id)
     output.mkdir(parents=True, exist_ok=True)
     descriptor = os.open(output / ".lock", os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600)
