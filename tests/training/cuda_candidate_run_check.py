@@ -3,7 +3,10 @@
 Se ejecuta de forma explícita. Compara un recorrido de ajuste y una validación en CPU y en
 el dispositivo indicado, con los mismos parámetros iniciales y el optimizador que solo
 registra gradientes. También compara el ajuste de una ventana v2 y su traslado a la
-siguiente, incluido el traslado en el dispositivo del estado elegido en CPU.
+siguiente, incluido el traslado en el dispositivo del estado elegido en CPU, con el
+calentamiento de 12 meses de la receta de campaña: ajuste y traslados registran esos meses
+y las mismas fases en CPU y en el dispositivo, y los tramos medidos observan entradas
+anteriores a su inicio.
 `MARS_TITAN_CANDIDATE_RUN_CHECK_DEVICE=cpu` ensaya la lógica sin GPU y no acredita CUDA.
 `MARS_TITAN_CANDIDATE_RUN_CHECK_REPORT` guarda las medidas en JSON.
 """
@@ -17,6 +20,7 @@ import pytest
 import torch
 
 from tests.training.test_candidate_run import SELECTION, entries, named_records, trainer
+from tests.training.test_candidate_walk_forward import WARMUP
 from tests.training.test_financial_run import corpus
 
 DEVICE = os.environ.get("MARS_TITAN_CANDIDATE_RUN_CHECK_DEVICE", "cuda:0")
@@ -120,6 +124,9 @@ def test_device_walk_forward_matches_cpu_without_optimizer_steps(tmp_path, dtype
     from tests.training.test_financial_run import RecordingOptimizer
 
     views = walk_forward_views(tmp_path / "views")
+    # El mismo calentamiento que declara la receta de campaña de la candidata.
+    warmup = WARMUP
+    assert warmup == 12
     recipe = candidate_run.CandidateRecipe(
         update_instants=2, epochs=1, block_rows=2, bank_capacity=4, selection=SELECTION
     )
@@ -139,7 +146,7 @@ def test_device_walk_forward_matches_cpu_without_optimizer_steps(tmp_path, dtype
             model=model,
             parent_id="US/fold-000/gru_episodic",
             device=target,
-            warmup_months=12,
+            warmup_months=warmup,
             optimizer_factory=RecordingOptimizer,
         )
         carried = walk.carry_window(
@@ -164,6 +171,18 @@ def test_device_walk_forward_matches_cpu_without_optimizer_steps(tmp_path, dtype
         device=DEVICE,
     )
     cpu, device = reports["cpu"], reports["device"]
+    # Ajuste y traslados repiten el calentamiento con las mismas fases en los dos dispositivos.
+    phases = {}
+    for name, report in (("fit", cpu[0]), ("carry", cpu[1])):
+        phases[name] = {key: value["phase"] for key, value in report["sources"].items()}
+    for report in (*cpu, *device, crossed):
+        assert report["bank_policy"]["warmup_months"] == warmup
+    assert walk.anchor_warmup(cpu[0]) == walk.anchor_warmup(device[0]) == warmup
+    assert {key: value["phase"] for key, value in device[0]["sources"].items()} == phases["fit"]
+    for report in (device[1], crossed):
+        assert {k: v["phase"] for k, v in report["sources"].items()} == phases["carry"]
+    measured = phases["carry"]["evaluation"]
+    assert measured["warmup_start"] < measured["decision_start"]
     pairs = [
         (tmp_path / "cpu/fit", tmp_path / "device/fit", cpu[0], device[0]),
         (tmp_path / "cpu/carry", tmp_path / "device/carry", cpu[1], device[1]),
@@ -193,6 +212,8 @@ def test_device_walk_forward_matches_cpu_without_optimizer_steps(tmp_path, dtype
                 check="walk_forward",
                 device=DEVICE,
                 dtype=dtype,
+                warmup_months=warmup,
+                phases=phases,
                 seconds=seconds,
                 peak_allocated_bytes=torch.cuda.max_memory_allocated(0) if cuda else None,
                 torch=torch.__version__,
