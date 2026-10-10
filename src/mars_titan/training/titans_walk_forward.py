@@ -87,6 +87,7 @@ _CODE = (
     "mars_titan.models.titans.financial",
     "mars_titan.models.titans.mac",
     "mars_titan.models.titans.neural_memory",
+    "mars_titan.models.titans.causal_convolution",
 )
 
 

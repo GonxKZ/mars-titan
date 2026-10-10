@@ -803,3 +803,26 @@ def test_trainer_checkpoint_round_trip_keeps_the_windows_of_every_flow():
     restored = dict(_split(model.restore_state(payload, device="cpu")))
     for flow in state.flow_ids:
         assert_bits(state_tensors(restored[flow].mac), state_tensors(flows[flow].mac))
+
+
+def test_frozen_consumer_admits_the_convolution_and_reproduces_the_predictor():
+    frozen_api = importlib.import_module("mars_titan.models.titans.frozen_financial")
+    module, spec, model = paper_predictor()
+    model.eval().requires_grad_(False)
+    previous = torch.backends.mha.get_fastpath_enabled()
+    torch.backends.mha.set_fastpath_enabled(False)
+    try:
+        engine = frozen_api.FrozenFinancialConsumer(model)
+        state = model.initial_state(("US/AAA", "US/BBB"))
+        for batch in decisions(module, spec, 2):
+            expected = model.prepare(batch, state)
+            result = engine.prepare(batch, state, context_id="c" * 64)
+            assert torch.equal(result.point_predictions, expected.point_predictions)
+            assert_bits(
+                state_tensors(result.next_state.mac), state_tensors(expected.next_state.mac)
+            )
+            state = result.next_state
+    finally:
+        torch.backends.mha.set_fastpath_enabled(previous)
+    code = engine.identity()["implementation"]
+    assert "mars_titan.models.titans.causal_convolution" in code
