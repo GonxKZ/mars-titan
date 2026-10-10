@@ -22,6 +22,7 @@ EVENTOS VISTA SALIDA [FILAS] [REPETICIONES]`
 """
 
 import json
+import os
 import pickle
 import statistics
 import sys
@@ -200,6 +201,8 @@ def main(events, view, output, count=1024, repeats=REPEATS):
         deferred_vs_prepare=round(seconds["prepare"] / seconds["deferred"], 3),
         deferred_checks=len(pending.flags),
         reserved_mib=round(torch.cuda.memory_reserved() / 2**20),
+        # La ruta eager depende del host, así que la carga de la máquina cambia sus tiempos.
+        load_average=[round(value, 2) for value in os.getloadavg()],
         warmup=WARMUP,
         repeats=repeats,
         torch=torch.__version__,
