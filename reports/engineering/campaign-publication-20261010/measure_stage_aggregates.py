@@ -6,7 +6,7 @@ de agregados de la retención v2 (`stage_comparison.write_window_aggregates`) y 
 de fuentes de esa ventana. Las predicciones son sintéticas con la forma real: las filas de
 calibración y evaluación de cada mercado en la ventana según
 `reports/data/campaign-a-v2-window-counts-20261009.json`, las decisiones del calendario de
-cada mercado, los brazos y semillas de cada padre y la cabeza de cuantiles. Ninguna sale de
+cada mercado, las configuraciones y semillas de cada padre y la cabeza de cuantiles. Ninguna sale de
 un modelo, no se lee la edición ni ninguna vista real y no se ajusta nada.
 
 Los estratos de presencia necesitan las muestras de la vista. Con `--strata` cada sesión
@@ -46,7 +46,7 @@ DECLARATION = ROOT / "configs/posttraining/historical-masked-adapter-comparison-
 COUNTS = ROOT / "reports/data/campaign-a-v2-window-counts-20261009.json"
 SCOPE = "US+CN"
 OFFSETS = np.array([-1.96, -1.28, 0.0, 1.28, 1.96])
-# Tablas distintas que comparten en ciclo los brazos y semillas, como en
+# Tablas distintas que comparten en ciclo las configuraciones y semillas, como en
 # `scripts/benchmark_evaluation_scale.py`: la puntuación se repite para cada serie.
 VARIANTS = 3
 

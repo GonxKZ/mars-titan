@@ -37,7 +37,7 @@ EXPECTED = dict(
         posttraining="posttraining/historical-masked-adapter-comparison-a-v2.json",
     ),
 )
-# Brazos de integración que la matriz declara y la comparación conjunta todavía no tiene.
+# Modelos de integración que la matriz declara y la comparación conjunta todavía no tiene.
 PENDING_IN_V2 = {"mars_titan_b6", "mars_titan_b6_bias", "mars_titan_m1_k4_first_read"}
 
 

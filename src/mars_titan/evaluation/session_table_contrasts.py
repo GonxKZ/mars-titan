@@ -301,7 +301,7 @@ def write_sources(path, scope, reports, *, views, config, hours=None):
 
     ``reports`` enumera los informes ya publicados como ``dict(kind=..., path=...)``, con
     ``view`` en una tabla por sesión. ``views`` y ``config`` son los de la matriz cargada,
-    como en ``load_sources``, y ``hours`` es el documento de horas por brazo, si lo hay. Cada
+    como en ``load_sources``, y ``hours`` es el documento de horas por modelo, si lo hay. Cada
     ruta se guarda relativa a la carpeta del manifiesto con la huella del archivo. El
     manifiesto se escribe primero como candidato en esa carpeta y solo sustituye al destino
     si ``load_sources`` lo acepta, así que un informe incompleto, alterado o de otras vistas

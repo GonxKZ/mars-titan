@@ -173,7 +173,7 @@ def run_publication(
     ``aggregates`` es la carpeta de agregados del recorrido ventana a ventana. ``edition`` es
     la edición de precios sin ajustar que pide la cartera. ``ablation`` (``stage`` y
     ``output``) añade la ablación de modalidades al informe walk-forward y debe acompañar a
-    unos agregados que la incluyan. ``hours`` es el documento de horas por brazo de la matriz.
+    unos agregados que la incluyan. ``hours`` es el documento de horas por modelo de la matriz.
     """
     loaded = load_publication(path)
     campaign, posttraining = loaded["campaign_config"], loaded["posttraining"]
@@ -302,7 +302,7 @@ def main(argv=None):
     run.add_argument("--edition", type=Path, help="Edición de precios sin ajustar")
     run.add_argument("--ablation-stage", type=Path)
     run.add_argument("--ablation-output", type=Path)
-    run.add_argument("--hours", type=Path, help="Horas GPU por brazo para la matriz")
+    run.add_argument("--hours", type=Path, help="Horas GPU por modelo para la matriz")
     args = parser.parse_args(argv)
     if args.command == "check":
         result = check_publication(args.declaration)

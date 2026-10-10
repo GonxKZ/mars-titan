@@ -258,7 +258,7 @@ def test_the_walk_saves_the_stage_aggregates_before_releasing_the_rows(walked):
     path = state.folder / record["path"]
     assert path == state.folder / "aggregates" / "posttraining" / "gru" / "US" / "fold-001.npz"
     assert sha256(path) == record["sha256"] and path.stat().st_size == record["bytes"]
-    # Las filas del brazo base que lee la comparación están liberadas.
+    # Las filas del modelo base que lee la comparación están liberadas.
     states = base_tables(state, "fold-001")
     assert states and set(states.values()) == {prediction_files.RELEASED}
     sources = state.adapters["output"] / "sources" / "windows" / "fold-001" / "US" / "gru.json"

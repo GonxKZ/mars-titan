@@ -11,7 +11,7 @@ v2, declarada antes de cualquier resultado, recorre cada ventana de campaña en 
    (`evaluation.window_aggregates`), con sus fuentes limitadas a esa ventana. Con la
    publicación declarada (`training.campaign_publication`), también los de la comparación
    postentrenada de cada padre con trabajos de la etapa en la ventana, porque esa
-   comparación lee la calibración y la evaluación del brazo base, que se liberan después.
+   comparación lee la calibración y la evaluación del modelo base, que se liberan después.
 4. `release`: cada tabla por fila de la base y de la ablación que ya no lee ninguna fase
    posterior se regenera por inferencia desde el estado elegido y, solo si sale idéntica
    bit a bit, se libera conservando sus huellas. Si no sale idéntica, se compacta sin
@@ -216,7 +216,7 @@ class Rolling:
             "La publicación declara otra campaña",
         )
         # Sin la comparación postentrenada declarada, la liberación borraría las filas del
-        # brazo base que esa comparación lee antes de guardar sus agregados.
+        # modelo base que esa comparación lee antes de guardar sus agregados.
         _require(
             (adapters is None and stage is None)
             or (
@@ -492,7 +492,7 @@ class Rolling:
         """Agregados de la comparación postentrenada de cada padre con trabajos en la ventana.
 
         `base_sources` es el manifiesto de la campaña limitado a la ventana. Se escriben antes
-        de la liberación, que borra la calibración y la evaluación del brazo base que leen.
+        de la liberación, que borra la calibración y la evaluación del modelo base que leen.
         """
         from mars_titan.posttraining import stage_comparison
 

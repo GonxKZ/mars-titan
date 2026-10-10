@@ -1,6 +1,6 @@
 """Disco de los agregados de la comparación postentrenada en todo el recorrido de A v2.
 
-Cuenta las series (brazo y semilla) de cada ventana con `rolling_storage.comparison_series`
+Cuenta las series (configuración y semilla) de cada ventana con `rolling_storage.comparison_series`
 sobre el plan de la etapa de adaptadores de A v2, comprueba que coinciden con las de la
 declaración de la comparación y las multiplica por los bytes por serie medidos en
 `fold-018` con `measure_stage_aggregates.py`. Esa ventana es la de más sesiones y filas, así

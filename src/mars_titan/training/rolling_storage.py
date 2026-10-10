@@ -155,7 +155,7 @@ def regeneration_bytes(job, counts, measured, storage, partitions):
 
 
 def comparison_series(jobs):
-    """Series (brazo y semilla) de la comparación postentrenada de una ventana de un ámbito.
+    """Series (configuración y semilla) de la comparación postentrenada de una ventana de un ámbito.
 
     Solo se comparan los padres con algún ajuste, porque los de Ridge y XGBoost solo tienen
     el padre congelado. Cada trabajo de un padre comparado es una serie, y cada padre y

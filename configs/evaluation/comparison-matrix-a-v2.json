@@ -8,19 +8,19 @@
   "comparison": "historical-masked-2000-joint-comparison.json",
   "conditional_arms": {
     "titans_reference_mac": {
-      "condition": "Brazo ajustado con una implementación pública de Titans-MAC. La revisión de #434 recomendó conservar el núcleo, que coincide en FP64 con la memoria de lucidrains/titans-pytorch, y no incorporar su código, así que no hay brazo previsto. Solo existiría con una aprobación expresa",
+      "condition": "Modelo ajustado con una implementación pública de Titans-MAC. La revisión de #434 recomendó conservar el núcleo, que coincide en FP64 con la memoria de lucidrains/titans-pytorch, y no incorporar su código, así que no hay modelo previsto. Solo existiría con una aprobación expresa",
       "issue": 434
     },
     "mars_titan_m1_k4_first_read": {
-      "condition": "Brazo de integración (A10) que la comparación conjunta de A v2 todavía no declara",
+      "condition": "Modelo de integración (A10) que la comparación conjunta de A v2 todavía no declara",
       "issue": 437
     },
     "mars_titan_b6": {
-      "condition": "Brazo de integración (A5, clave del codec) que la comparación conjunta de A v2 todavía no declara",
+      "condition": "Modelo de integración (A5, clave del codec) que la comparación conjunta de A v2 todavía no declara",
       "issue": 437
     },
     "mars_titan_b6_bias": {
-      "condition": "Brazo de integración (A5, clave constante) que la comparación conjunta de A v2 todavía no declara",
+      "condition": "Modelo de integración (A5, clave constante) que la comparación conjunta de A v2 todavía no declara",
       "issue": 437
     }
   },

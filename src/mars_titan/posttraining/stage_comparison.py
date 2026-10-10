@@ -32,7 +32,7 @@ la etapa. Antes de escribirlo se comprueba que la etapa corresponde a esta decla
 usó las mismas vistas. La comparación exige después las mismas filas y objetivos en todos
 los brazos. Nada de este módulo ajusta, carga modelos ni abre la reserva de 2024.
 
-Con la retención v2, las filas de calibración y evaluación del brazo base se liberan al
+Con la retención v2, las filas de calibración y evaluación del modelo base se liberan al
 terminar cada ventana. Por eso la fase de agregados del recorrido ventana a ventana guarda,
 para cada padre y ventana con trabajos de la etapa, los agregados por sesión de su
 comparación (``write_window_aggregates``) antes de liberar nada. El informe final los lee con

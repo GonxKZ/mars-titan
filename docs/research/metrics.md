@@ -865,7 +865,7 @@ y no sirve para elegir la arquitectura base. Sin ablación de modalidades
 conectada para estos brazos, su sección queda pendiente en el informe.
 
 Con la [retención v2](training-campaign-2000.md#retención-v2-ventana-a-ventana), las
-filas de calibración y evaluación del brazo base reentrenado se liberan al terminar
+filas de calibración y evaluación del modelo base reentrenado se liberan al terminar
 cada ventana, y la comparación de cada padre las lee. Por eso la fase de agregados del
 recorrido guarda también, para cada padre con trabajos de la etapa en la ventana, el
 manifiesto de fuentes de esa ventana (`sources/windows/<ventana>/<ámbito>/<padre>.json`
@@ -1271,7 +1271,7 @@ partir de los informes ya escritos, con rutas relativas a su carpeta y la huella
 archivo. Lo escribe primero como candidato y solo lo deja visible si `load_sources` lo
 acepta, así que un informe alterado, incompleto o de otro ámbito no deja manifiesto. La
 [matriz de A v2](../../configs/evaluation/comparison-matrix-a-v2.json) es la de A sobre la
-comparación conjunta de A v2. Los tres brazos de integración que esa comparación todavía
+comparación conjunta de A v2. Los tres modelos de integración que esa comparación todavía
 no declara (`mars_titan_b6`, `mars_titan_b6_bias` y `mars_titan_m1_k4_first_read`) quedan
 condicionados a [#437](https://github.com/GonxKZ/mars-titan/issues/437) y sus contrastes,
 pendientes. Las dos matrices compilan las mismas 47 familias y 356 contrastes.

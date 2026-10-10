@@ -7,7 +7,7 @@ Este informe acompaña a [#28](https://github.com/GonxKZ/mars-titan/issues/28). 
 | Pieza | Módulo | Comprobación |
 | --- | --- | --- |
 | Escritor del manifiesto de fuentes de la matriz, con rutas relativas y validación antes de publicar | `evaluation/session_table_contrasts.py` (`write_sources`) | `tests/evaluation/test_comparison_matrix.py` |
-| Matriz de A v2 sobre la comparación conjunta, con los brazos de integración pendientes de #437 | `configs/evaluation/comparison-matrix-a-v2.json` | `tests/training/test_campaign_publication.py` |
+| Matriz de A v2 sobre la comparación conjunta, con los modelos de integración pendientes de #437 | `configs/evaluation/comparison-matrix-a-v2.json` | `tests/training/test_campaign_publication.py` |
 | Declaración del paso final de A y de A v2 y su validación cruzada | `training/campaign_publication.py`, `configs/evaluation/historical-masked-publication-a*.json` | `tests/training/test_campaign_publication.py` |
 | Agregados por ventana de la comparación de cada padre | `posttraining/stage_comparison.py` (`write_window_aggregates`, `--aggregates`) | `tests/posttraining/test_stage_comparison.py` |
 | Fase de agregados del recorrido con la comparación postentrenada | `training/rolling_retention.py` (`--publication`) | `tests/posttraining/test_publication_from_aggregates.py` |
@@ -18,7 +18,7 @@ La publicación de cada campaña se declara antes de ver resultados y nombra la 
 
 ## Equivalencia desde los agregados
 
-Con la retención v2, las filas de calibración y evaluación del brazo base reentrenado se liberan al terminar cada ventana, y la comparación de cada padre las lee. La fase de agregados guarda ahora, para cada padre con trabajos de la etapa en la ventana, las fuentes de esa ventana y los agregados por sesión que calcula `_score_window` con la configuración del padre limitada a la ventana. La configuración limitada conserva la huella, así que la lectura final comprueba que cada archivo procede de las mismas predicciones, la misma configuración y el mismo código.
+Con la retención v2, las filas de calibración y evaluación del modelo base reentrenado se liberan al terminar cada ventana, y la comparación de cada padre las lee. La fase de agregados guarda ahora, para cada padre con trabajos de la etapa en la ventana, las fuentes de esa ventana y los agregados por sesión que calcula `_score_window` con la configuración del padre limitada a la ventana. La configuración limitada conserva la huella, así que la lectura final comprueba que cada archivo procede de las mismas predicciones, la misma configuración y el mismo código.
 
 Todo lo que el informe calcula después de puntuar las ventanas (unión de sesiones, resumen por semilla, contrastes, bootstrap por bloques, corrección múltiple y fiabilidad) parte de esas puntuaciones por sesión. No hay ninguna parte que no se descomponga por ventana, y las pruebas exigen igualdad exacta, sin tolerancia:
 
@@ -39,14 +39,14 @@ Quince mutantes dirigidos sobre estas decisiones quedan detectados (`mutation.js
 
 ## Bytes medidos
 
-`measure_stage_aggregates.py` escribe con `window_aggregates.write`, la misma función que usa la fase de agregados, los agregados de los 20 padres de la [comparación de A v2](../../../configs/posttraining/historical-masked-adapter-comparison-a-v2.json) en `fold-018` de US+CN, la ventana con más filas y sesiones. Las predicciones son sintéticas con la forma real: 254.563 filas de calibración y 1.027.173 de evaluación en US y 47.414 y 194.649 en China, según [los recuentos de A v2](../../data/campaign-a-v2-window-counts-20261009.json), con las decisiones del calendario de cada mercado, hasta 4.126 activos por sesión, los brazos y semillas de cada padre y la cabeza de cuantiles. No sale ninguna de un modelo y no se lee ninguna vista real. Los estratos de presencia necesitan las muestras de la vista. Con `--strata` cada sesión reparte sus filas entre los cuatro estratos, el caso con más series por estrato. Con la edición real puede haber sesiones sin alguno, así que esa medida es una cota superior.
+`measure_stage_aggregates.py` escribe con `window_aggregates.write`, la misma función que usa la fase de agregados, los agregados de los 20 padres de la [comparación de A v2](../../../configs/posttraining/historical-masked-adapter-comparison-a-v2.json) en `fold-018` de US+CN, la ventana con más filas y sesiones. Las predicciones son sintéticas con la forma real: 254.563 filas de calibración y 1.027.173 de evaluación en US y 47.414 y 194.649 en China, según [los recuentos de A v2](../../data/campaign-a-v2-window-counts-20261009.json), con las decisiones del calendario de cada mercado, hasta 4.126 activos por sesión, las configuraciones y semillas de cada padre y la cabeza de cuantiles. No sale ninguna de un modelo y no se lee ninguna vista real. Los estratos de presencia necesitan las muestras de la vista. Con `--strata` cada sesión reparte sus filas entre los cuatro estratos, el caso con más series por estrato. Con la edición real puede haber sesiones sin alguno, así que esa medida es una cota superior.
 
 | Medida | Series | Agregados (bytes) | Fuentes de la ventana (bytes) | Bytes por serie | Tiempo | Memoria máxima |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | Con los cuatro estratos ([medida](stage-aggregates-fold-018-strata.json)) | 546 | 644.155.610 | 383.621 | 1.180.421 a 1.180.646 | 3.288 s | 2,10 GB |
 | Sin estratos ([medida](stage-aggregates-fold-018-without-strata.json)) | 546 | 134.960.601 | 383.621 | 247.865 a 247.914 | 2.666 s | 1,95 GB |
 
-Los bytes por serie apenas cambian entre padres, porque cada serie guarda las mismas puntuaciones por sesión. Lo que más ocupa son las matrices por sesión de cada brazo y semilla (unas 490 sesiones de los dos mercados), en bruto, calibradas y por estrato. Los tiempos son de un proceso con dos hilos y la CPU compartida con otras cargas (carga media de 15 a 21).
+Los bytes por serie apenas cambian entre padres, porque cada serie guarda las mismas puntuaciones por sesión. Lo que más ocupa son las matrices por sesión de cada modelo y semilla (unas 490 sesiones de los dos mercados), en bruto, calibradas y por estrato. Los tiempos son de un proceso con dos hilos y la CPU compartida con otras cargas (carga media de 15 a 21).
 
 `project_a_v2.py` cuenta las series de cada ventana con `rolling_storage.comparison_series` sobre el plan de la etapa de A v2 y comprueba que coinciden con las de la declaración: 546 en cada una de las 18 ventanas comparadas, 9.828 en total ([proyección](projection-a-v2.json)). Con los bytes por serie de `fold-018`:
 
