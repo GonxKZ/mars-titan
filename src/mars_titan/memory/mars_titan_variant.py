@@ -20,6 +20,7 @@ from mars_titan.models.titans.frozen_financial import FrozenFinancialConsumer
 from . import write_scores
 from .associative_memory import (
     CORRECTION_KEYS,
+    KEY_SIZES,
     AssociativeMemoryConfig,
     KalmanNoise,
     MatureCorrection,
@@ -58,6 +59,12 @@ def load_declaration(path=DECLARATION):
         raise ValueError("La conexión declarada no coincide con la del constructor")
     if components["episodic_bank"].get("m3") != write_scores.declaration():
         raise ValueError("La definición declarada de M3 no coincide con la del código")
+    associative = components["associative_memory"]
+    if any(
+        (associative.get(field) or {}).get("key") != list(CORRECTION_KEYS)
+        for field in ("value", "kalman_value")
+    ):
+        raise ValueError("Las claves declaradas de B6 no coinciden con las del código")
     return document
 
 
@@ -94,15 +101,13 @@ def _associative(value, allowed):
         if not isinstance(value, dict) or set(value) != fields or value["rule"] not in allowed:
             raise ValueError("associative_memory declara rule, key, rate y forgetting permitidos")
     if value["key"] not in CORRECTION_KEYS:
-        raise ValueError("La clave de B6 debe ser codec o constant")
+        raise ValueError("La clave de B6 debe ser una de " + ", ".join(CORRECTION_KEYS))
     options = (
         dict(kalman=KalmanNoise(**{name: value[name] for name in _KALMAN_FIELDS}))
         if kalman
         else dict(rate=value["rate"], forgetting=value["forgetting"])
     )
-    memory = AssociativeMemoryConfig(
-        value["rule"], key_size=64 if value["key"] == "codec" else 1, **options
-    )
+    memory = AssociativeMemoryConfig(value["rule"], key_size=KEY_SIZES[value["key"]], **options)
     return MatureCorrection(memory, key=value["key"])
 
 
