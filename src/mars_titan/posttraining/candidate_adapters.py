@@ -212,17 +212,19 @@ def _parent_phases(report, names):
     return {name: FinancialPhase(**declared[name]["phase"]) for name in names}
 
 
-def staged_phases(parent_view, dataset):
+def staged_phases(parent_view, dataset, warmup_months):
     """Fases de esta ventana para un padre de la anterior: el ajuste solo con filas nuevas.
 
-    La candidata no tiene calentamiento: su contexto de 64 sesiones viaja en cada muestra.
+    Validación, calibración y evaluación repiten el calentamiento que declaró el padre,
+    igual que la predicción trasladada de la candidata. El ajuste no lo necesita porque su
+    contexto de 64 sesiones viaja en cada muestra, así que empieza en la primera fila nueva.
     """
     parent_manifest, _ = read_manifest(parent_view, 8 * 1024**2)
     parent_fold, fold, _ = carried_window(
         parent_manifest, dataset.manifest, input_policy=HISTORICAL_MASKED
     )
     start, end = posttraining_rows(parent_fold, fold)
-    phases = _phases(dataset)
+    phases = _phases(dataset, warmup_months)
     since, until = (int(np.datetime64(day, "us").astype(np.int64)) for day in (start, end))
     _require(until == phases["train"].decision_end, "Las filas nuevas no acaban con el ajuste")
     phases["train"] = FinancialPhase("train", since, since, until, until)
@@ -280,7 +282,7 @@ def run_candidate_posttraining(
         phases = _parent_phases(report, PARTITIONS)
     else:
         request["parent_view_sha256"] = sha256(origin)
-        phases, placement = staged_phases(origin, dataset)
+        phases, placement = staged_phases(origin, dataset, window["bank_policy"]["warmup_months"])
     path = output / "window.json"
     if path.is_file():
         previous, _ = read_manifest(path, 8 * 1024**2)
@@ -397,7 +399,9 @@ def frozen_candidate(parent, parent_view, view, output, *, device="cuda:0", stop
     _prepare_output(view, output, dataset)
     outside_source(parent, output)
     output.mkdir(parents=True)
-    sources = window_sources(dataset, output / "indices", PREDICTED)
+    # Cada tramo trasladado repite el calentamiento declarado en el padre.
+    warmup_months = window["bank_policy"]["warmup_months"]
+    sources = window_sources(dataset, output / "indices", PREDICTED, warmup_months)
     adapter, recipe, _, _ = anchor_adapter(
         parent, parent_view, sources["validation"].specification(), device=device
     )

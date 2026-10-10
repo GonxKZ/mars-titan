@@ -22,8 +22,8 @@ from mars_titan.posttraining import chronological_matrix as cm
 from mars_titan.posttraining.adapter_matrix import read_matrix
 from mars_titan.training import candidate_walk_forward as walk
 from mars_titan.training.corpus_inputs import CorpusDataset
+from tests.training.test_candidate_walk_forward import WARMUP, fit
 from tests.training.test_candidate_walk_forward import allowed as allowed
-from tests.training.test_candidate_walk_forward import fit
 from tests.training.test_candidate_walk_forward import views as views
 from tests.training.test_financial_run import RecordingOptimizer
 
@@ -124,6 +124,7 @@ def _source(views):
         CorpusDataset(views.windows[SCOPE][FIRST], input_policy=HISTORICAL_MASKED),
         views.root / "specification-indices",
         ("train",),
+        WARMUP,
     )
     return sources["train"]
 
@@ -220,6 +221,9 @@ def test_staged_head_fits_the_new_rows_and_reproduces_the_frozen_parent(
     # Sin calentamiento: las 64 sesiones de contexto viajan en cada muestra.
     assert (train["warmup_start"], train["decision_start"]) == (since, since)
     assert (train["decision_end"], train["close_at"]) == (until, until)
+    # Los tramos medidos repiten el calentamiento del padre, como la predicción trasladada.
+    measured = report["sources"]["evaluation"]["phase"]
+    assert measured["warmup_start"] < measured["decision_start"]
     # Con la corrección de la cabeza a cero y sin cambios de pesos, emite al padre congelado.
     output, receipt = frozen
     for name in ca.PREDICTED:
