@@ -318,8 +318,8 @@ def adapter_jobs(adapters):
 
 def test_window_schedule_orders_every_stage_of_the_window_and_counts_all_jobs():
     from mars_titan.posttraining import campaign_stage as adapters
-    from mars_titan.posttraining import staged_chain
     from mars_titan.simulation import policy_plan
+    from mars_titan.training import campaign_chain
     from mars_titan.training import modality_ablation_stage as ablation
 
     value = campaign()
@@ -335,7 +335,7 @@ def test_window_schedule_orders_every_stage_of_the_window_and_counts_all_jobs():
     # La etapa de adaptadores da cadena a todos los predictores de las políticas, también la
     # trivial de Ridge y XGBoost, así que cada selección que leen está en el plan.
     chains = {job["id"] for job in stages["adapters"]}
-    reads = {d for job in stages["rl"] for d in job["depends"] if staged_chain.CHAIN_SUFFIX in d}
+    reads = {d for job in stages["rl"] for d in job["depends"] if campaign_chain.CHAIN_SUFFIX in d}
     assert reads and reads <= chains
     assert {job["base_arm"] for job in stages["adapters"]} == set(stage["predictors"])
     schedule = order.window_schedule(value, jobs, stages)
