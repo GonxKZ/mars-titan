@@ -240,14 +240,15 @@ def test_native_hours_add_collection_updates_and_evaluations_per_job():
     stage = policy_plan.load_stage(STAGES["A"])
     estimate = policy_throughput.native_policy_hours(stage, dict(US=NATIVE, CN=NATIVE))
     assert estimate["status"] == "lower_bound_without_adam" and estimate["not_measured"]
-    assert estimate["jobs"] == dict(fit=1368, reference=792)
+    assert estimate["jobs"] == dict(fit=1368, reference=1221)
     plan = policy_plan.plan_stage(stage)
+    costs = len(stage["policies"]["evaluation_costs_bps"])
     dqn = [j for j in plan if j["arm"] == "double_dqn" and j["kind"] == "fit"]
     assert len(dqn) == 144
 
     def evaluated(job, validations):
         days = validations * sessions(stage, job["scope"], job["validation"])
-        return (days + 3 * sessions(stage, job["scope"], job["window"])) * 1e-4
+        return (days + costs * sessions(stage, job["scope"], job["window"])) * 1e-4
 
     # Recogida en pasos de 16 entornos y un forward y backward más dos forwards por minilote.
     total = math.fsum(
@@ -264,7 +265,7 @@ def test_native_hours_add_collection_updates_and_evaluations_per_job():
         total += work["collected"] * 6e-5 + evaluated(job, work["validations"])
     assert estimate["arms"]["klpo_terminal"] * 3600 == pytest.approx(total)
     references = [j for j in plan if j["arm"] == "cash"]
-    cash = math.fsum(3 * sessions(stage, j["scope"], j["window"]) * 1e-5 for j in references)
+    cash = math.fsum(costs * sessions(stage, j["scope"], j["window"]) * 1e-5 for j in references)
     assert estimate["arms"]["cash"] * 3600 == pytest.approx(cash)
     assert estimate["hours"] == pytest.approx(math.fsum(estimate["arms"].values()))
     assert estimate["hours"] == pytest.approx(math.fsum(estimate["scopes"].values()))
@@ -286,14 +287,15 @@ def test_native_hours_reject_missing_or_invalid_times(value):
 def test_native_carry_evaluates_each_cost_without_fitting():
     stage = policy_plan.load_stage(STAGES["B"])
     estimate = policy_throughput.native_policy_hours(stage, dict(US=NATIVE, CN=NATIVE))
-    assert estimate["jobs"] == dict(fit=456, carry=912, reference=792)
+    assert estimate["jobs"] == dict(fit=456, carry=912, reference=1221)
     plan = policy_plan.plan_stage(stage)
+    costs = len(stage["policies"]["evaluation_costs_bps"])
     carried = [j for j in plan if j["arm"] == "klpo_terminal" and j["kind"] == "carry"]
     fitted = [j for j in plan if j["arm"] == "klpo_terminal" and j["kind"] == "fit"]
-    total = math.fsum(3 * sessions(stage, j["scope"], j["window"]) * 1e-4 for j in carried)
+    total = math.fsum(costs * sessions(stage, j["scope"], j["window"]) * 1e-4 for j in carried)
     for job in fitted:
         work = policy_throughput.native_fit_work(stage, job)
         days = work["validations"] * sessions(stage, job["scope"], job["validation"])
-        days += 3 * sessions(stage, job["scope"], job["window"])
+        days += costs * sessions(stage, job["scope"], job["window"])
         total += work["collected"] * 6e-5 + days * 1e-4
     assert estimate["arms"]["klpo_terminal"] * 3600 == pytest.approx(total)
