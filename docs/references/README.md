@@ -1,6 +1,6 @@
 # Biblioteca y estado del arte
 
-La biblioteca reúne **345 referencias bibliográficas** sobre finanzas, aprendizaje y memoria, recurrencia, incertidumbre, macroeconomía y eficiencia. El manifiesto histórico registra **84 PDF** descargados desde editoriales, repositorios académicos o enlaces ofrecidos por sus autores. Incluye cinco libros completos. Otros recursos se consultan en HTML o requieren acceso editorial. Los identificadores, versiones y estados de acceso están registrados, sin equiparar descarga con lectura integral.
+La biblioteca reúne **348 referencias bibliográficas** sobre finanzas, aprendizaje y memoria, recurrencia, incertidumbre, macroeconomía y eficiencia. El manifiesto histórico registra **84 PDF** descargados desde editoriales, repositorios académicos o enlaces ofrecidos por sus autores. Incluye cinco libros completos. Otros recursos se consultan en HTML o requieren acceso editorial. Los identificadores, versiones y estados de acceso están registrados, sin equiparar descarga con lectura integral.
 
 La revisión inicial tiene alcance documentado y fecha de corte del 18 de septiembre de 2026. Las ampliaciones posteriores registran su propia fecha de consulta. No se presenta como una búsqueda sistemática exhaustiva de toda la literatura ni como lectura íntegra de todos los libros descargados. Su objetivo es sostener las decisiones iniciales y señalar qué lectura detallada necesita cada experimento.
 
@@ -35,6 +35,12 @@ cerebrales. Cada ficha declara qué partes se leyeron. Las
 [propuestas](../research/post-titans-proposals.md) y el
 [certificado de contracción](../research/titans-memory-certificate.md) derivados
 de ella separan fuente publicada, derivación propia y comprobación numérica.
+
+El 10 de octubre se añadieron al mismo catálogo tres referencias para el
+[control de varianza entre semillas](../research/protocol.md#dispersión-entre-semillas-en-los-pilotos-de-memoria)
+de los pilotos (PT7): Bouthillier et al. (2021) sobre la varianza de las
+comparaciones, Agarwal et al. (2021) sobre los intervalos con pocas ejecuciones
+y Lakens (2017) sobre los límites de equivalencia.
 
 ## Contenido
 
