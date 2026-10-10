@@ -303,7 +303,7 @@ class _BlockReader:
         self.groups, self.cached_bytes, self.decoded_groups = OrderedDict(), 0, 0
         self.peak_cached_bytes, self.redecoded_groups = 0, 0
         self.event, self._used = 0, {}
-        self._labels, self._prices, self._files = {}, {}, {}
+        self._labels, self._prices, self._group_counts = {}, {}, {}
         self._executor, self._pending, self._last = executor, {}, {}
 
     def labels(self, identity):
@@ -316,17 +316,23 @@ class _BlockReader:
         return self._labels[identity]
 
     def _file(self, identity):
-        """Ruta comprobada y metadatos Parquet del activo, leídos una vez por recorrido."""
+        """Ruta comprobada del activo y su número de grupos, leído una vez por recorrido.
+
+        No se guardan los metadatos Parquet completos. En memoria ocupan unos 0,9 MiB por
+        archivo de muestras, ocho veces su tamaño serializado, y retenerlos para los cerca de
+        5.000 activos de la ventana conjunta superaba los 4 GiB. Volver a leer el pie del
+        archivo en cada decodificación cuesta en torno a 1 ms.
+        """
         asset = self.source._assets[identity]
         path = self.source.dataset._file(asset, "samples")
-        if identity not in self._files:
+        if identity not in self._group_counts:
             with pq.ParquetFile(path) as file:
-                self._files[identity] = file.metadata
-        return asset, path, self._files[identity]
+                self._group_counts[identity] = file.metadata.num_row_groups
+        return asset, path, self._group_counts[identity]
 
-    def _decode(self, asset, path, metadata, group):
+    def _decode(self, asset, path, group):
         """Decodificar un grupo. No usa estado del lector, así que puede ir en un hilo."""
-        with pq.ParquetFile(path, metadata=metadata) as file:
+        with pq.ParquetFile(path) as file:
             _, *arrays = self.source.dataset._sample_group(asset, file, group)
         stamps, ends, vectors, *rest = arrays
         size = sum(v.nbytes for v in (stamps, ends, *vectors.values(), *rest) if v is not None)
@@ -345,10 +351,10 @@ class _BlockReader:
             cached = self.groups.get(identity)
             if (cached is not None and cached[0] == group) or (identity, group) in self._pending:
                 continue
-            asset, path, metadata = self._file(identity)
-            if 0 <= group < metadata.num_row_groups:
+            asset, path, count = self._file(identity)
+            if 0 <= group < count:
                 self._pending[identity, group] = submit(
-                    self._executor, self._decode, asset, path, metadata, group
+                    self._executor, self._decode, asset, path, group
                 )
 
     def cancel(self):
@@ -362,13 +368,11 @@ class _BlockReader:
         if cached is not None and cached[0] == group:
             self.groups.move_to_end(identity)
             return cached[1]
-        asset, path, metadata = self._file(identity)
-        if not 0 <= group < metadata.num_row_groups:
+        asset, path, count = self._file(identity)
+        if not 0 <= group < count:
             raise ValueError("El grupo de origen no existe")
         future = self._pending.pop((identity, group), None)
-        arrays, size = (
-            future.result() if future is not None else self._decode(asset, path, metadata, group)
-        )
+        arrays, size = future.result() if future is not None else self._decode(asset, path, group)
         if cached is not None:
             self.cached_bytes -= self.groups.pop(identity)[2]
         self._evict(size)

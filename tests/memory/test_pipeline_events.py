@@ -1,5 +1,8 @@
 """Eventos cronológicos idénticos bit a bit con y sin la tubería de lectura."""
 
+import gc
+
+import pyarrow.parquet as pq
 import pytest
 
 from mars_titan.memory import financial_observations as api
@@ -170,6 +173,22 @@ def test_absent_assets_leave_the_cache_before_the_recent_ones():
     # Sin activos ausentes, sale el usado más recientemente.
     reader._evict(200)
     assert list(reader.groups) == [1] and reader.cached_bytes == 100
+
+
+@pytest.mark.parametrize("pipeline", [SEQUENTIAL, *[p.values[0] for p in PIPELINES]])
+def test_the_reader_keeps_only_the_group_count_of_each_file(tmp_path, pipeline):
+    # Los metadatos Parquet ocupan en memoria unas ocho veces su tamaño serializado y la
+    # ventana conjunta tiene cerca de 5.000 activos. El lector no debe retener ninguno.
+    _, streams = sources(tmp_path, pipeline, assets=6, group_size=128)
+    source = streams["train"]
+    gc.collect()
+    before = sum(type(item) is pq.FileMetaData for item in gc.get_objects())
+    events = list(source.batched_events(block_rows=2))
+    gc.collect()
+    retained = sum(type(item) is pq.FileMetaData for item in gc.get_objects())
+    counts = source.last_reader._group_counts
+    assert events and len(counts) == 6 and retained <= before
+    assert all(type(count) is int and count > 0 for count in counts.values())
 
 
 def delivered_before_error(events):
