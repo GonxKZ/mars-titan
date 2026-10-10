@@ -33,13 +33,14 @@ async function json(path, value) {
 }
 
 async function publish(snapshot) {
-  for (const [path, body] of snapshot.pages) await writeFile(join(folder, "public/data", path), body);
+  for (const [path, body] of [...snapshot.pages, ...snapshot.windows]) await writeFile(join(folder, "public/data", path), body);
   await writeFile(join(folder, "public/data/observatory.tmp"), snapshot.index);
   await rename(join(folder, "public/data/observatory.tmp"), join(folder, "public/data/observatory.json"));
 }
 
 const now = Date.now();
 await mkdir(join(folder, "public/data/pages"), { recursive: true });
+await mkdir(join(folder, "public/data/windows"), { recursive: true });
 await publish(buildSnapshot({ now }));
 const jobs = {};
 for (const window of ["fold-000", "fold-001", "fold-002"]) {
@@ -125,15 +126,20 @@ try {
 
   await check("la campaña por ventanas se lee y se actualiza sin recargar", async () => {
     await page.evaluate(() => { location.hash = "#vista=campana"; });
-    await page.locator("#live-campaigns").waitFor({ state: "visible" });
-    const caption = () => page.locator("#live-campaign-list .caption").first().textContent();
+    await page.locator("#window-campaigns").waitFor({ state: "visible" });
+    const caption = () => page.locator("#window-campaign .caption").first().textContent();
+    // El índice puede llegar antes que el estado en directo: se espera a que lo sustituya.
+    await page.waitForFunction(() => /7 de 18 trabajos confirmados/.test(document.querySelector("#window-campaign .caption")?.textContent ?? ""), null, { timeout: 15_000 });
     assert.match(await caption(), /7 de 18 trabajos confirmados\. 1 con intento sin confirmar/);
-    assert.equal(await page.locator("#live-campaign-list .attempt").count(), 1);
+    // La campaña en directo se abre por defecto y las publicadas siguen en el selector.
+    assert.deepEqual(await page.locator("#window-select option").evaluateAll(options => options.map(option => option.value)), ["fixture-base", "fixture-adapters", "A"]);
+    assert.match(await page.locator("#window-campaign .eyebrow").textContent(), /en directo/);
+    assert.equal(await page.locator("#window-campaign .attempt").count(), 1);
     jobs[open] = true;
     await json(join(folder, "campaign/jobs", open, "receipt.json"), { status: "completed", fixture: true });
     await json(join(folder, "campaign/summary.json"), { kind: "fixture_masked_campaign_run", status: "running", jobs });
-    await page.waitForFunction(() => /8 de 18 trabajos confirmados/.test(document.querySelector("#live-campaign-list .caption")?.textContent ?? ""), null, { timeout: 15_000 });
-    assert.equal(await page.locator("#live-campaign-list .attempt").count(), 0);
+    await page.waitForFunction(() => /8 de 18 trabajos confirmados/.test(document.querySelector("#window-campaign .caption")?.textContent ?? ""), null, { timeout: 15_000 });
+    assert.equal(await page.locator("#window-campaign .attempt").count(), 0);
   });
 
   await check("un índice nuevo llega por evento y se descarga una sola vez", async () => {

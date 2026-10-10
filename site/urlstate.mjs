@@ -8,13 +8,14 @@ const IDENTIFIER = /^[\w.+:~-]{1,200}$/;
 const RANGE = /^-?\d+(\.\d+)?~-?\d+(\.\d+)?$/;
 
 export const DEFAULTS = Object.freeze({
-  vista: "campana", serie: "", celda: "", ejecucion: "", medida: "mae", ventana: "", x: "",
+  vista: "campana", serie: "", matriz: "", celda: "", ejecucion: "", medida: "mae", ventana: "", x: "",
   escala: "lin", marcas: "estado", buscar: "", estado: "", actividad: "", traza: "", rango: "1h", comun: "si",
 });
 
 const RULES = {
   vista: value => VIEWS.includes(value),
   serie: value => IDENTIFIER.test(value),
+  matriz: value => IDENTIFIER.test(value),
   celda: value => /^[\w.+:|~-]{1,200}$/.test(value),
   ejecucion: value => IDENTIFIER.test(value),
   medida: value => ["mae", "session_mae", "train_mae", "loss", "train_samples_per_second"].includes(value),

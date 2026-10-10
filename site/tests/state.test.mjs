@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   validateSnapshot,
+  validateWindowCampaign,
   displayStatus,
   progressPercent,
   publicMetrics,
@@ -309,4 +310,56 @@ test("CSV mantiene identificadores de intentos pero no exporta resultados proteg
   const csv = toCSV([run({ attempt_id: "retry-02", phase: "test", metrics: metrics({ mae: 0.987654321 }) })], [], NOW, 180);
   assert.ok(csv.includes("retry-02"));
   assert.ok(!csv.includes("0.987654321"));
+});
+
+// Estado de campaña por ventanas con la forma de `observatory/window_campaigns.py`.
+function windowState(overrides = {}) {
+  return {
+    id: "historical-masked-a-v2-policies", kind: "historical_masked_rl_stage_run", stage: "policies", status: "running",
+    updated_at: "2026-10-10T12:00:00Z", summary_modified_at: "2026-10-10T12:00:00.123456Z",
+    planned: { fit: 2, reference: 1 }, completed: { fit: 1 }, final_test_opened: false,
+    vocabulary: { scopes: ["US+CN/US"], windows: ["fold-001"], arms: ["gru/klpo_terminal", "gru/cash"], names: ["fit-s42", "reference"] },
+    models: { "gru/klpo_terminal": "klpo", "gru/cash": "cash" },
+    cells: [[0, 0, 0, 0, "done", "2026-10-10T11:00:00.5Z"], [0, 0, 1, 1, "attempt", null]],
+    active: [{ job: "US+CN/US/fold-001/gru/cash/reference", attempt: "run", updated_at: null, global_step: null, epochs: [] }],
+    ...overrides,
+  };
+}
+
+test("la matriz de una campaña por ventanas se valida contra su vocabulario", () => {
+  const state = validateWindowCampaign(windowState());
+  assert.equal(state.available, true);
+  assert.deepEqual(state.cells[0], [0, 0, 0, 0, "done", "2026-10-10T11:00:00.5Z"]);
+  assert.equal(state.active[0].attempt, "run");
+  assert.equal(validateWindowCampaign(windowState({ planned: null, stage: null })).planned, null);
+  const invalid = [
+    [{ cells: [[0, 0, 2, 0, "done", null]] }, /cells\[0\]\[2\]/],
+    [{ cells: [[0, 0, 0, 0, "pending", "2026-10-10T11:00:00Z"]] }, /sin confirmar/],
+    [{ cells: [[0, 0, 0, 0, "running", null]] }, /estado desconocido/],
+    [{ cells: [[0, 0, 0, 0, "done"]] }, /celda incompleta/],
+    [{ stage: "training" }, /stage/],
+    [{ vocabulary: { scopes: ["US", "US"], windows: [], arms: [], names: [] }, cells: [], active: [] }, /repetidos/],
+    [{ vocabulary: { scopes: ["../x"], windows: [], arms: [], names: [] }, models: {}, cells: [], active: [] }, /scopes/],
+    [{ models: { "gru/klpo_terminal": "klpo" } }, /models/],
+    [{ planned: { "Fit": 1 } }, /recuento/],
+  ];
+  for (const [change, message] of invalid) assert.throws(() => validateWindowCampaign(windowState(change)), message);
+  // Un modelo que el catálogo del índice no conoce se conserva y se muestra por su nombre.
+  assert.equal(validateWindowCampaign(windowState({ models: { "gru/klpo_terminal": "grpo", "gru/cash": "cash" } })).models["gru/klpo_terminal"], "grpo");
+  assert.throws(() => validateWindowCampaign(windowState({ models: { "gru/klpo_terminal": "<b>", "gru/cash": "cash" } })), /models/);
+});
+
+test("el índice enumera las campañas por ventanas con documentos inmutables y recuentos coherentes", () => {
+  const entry = { id: "historical-masked-a-v2-adapters", domain: "real", stage: "adapters", configuration: "configs/posttraining/x.json",
+    path: `windows/${"d".repeat(64)}.json`, status: "running", updated_at: "2026-10-10T12:00:00Z", jobs: 10, done: 4, attempts: 2 };
+  const empty = { ...entry, id: "historical-masked-a-base", stage: "base", path: null, status: null, updated_at: null, jobs: 0, done: 0, attempts: 0 };
+  const base = { ...snapshot(), schema_version: 2, campaigns: [] };
+  const result = validateSnapshot({ ...base, window_campaigns: [entry, empty] });
+  assert.deepEqual(result.window_campaigns, [entry, empty]);
+  assert.deepEqual(validateSnapshot(base).window_campaigns, [], "un índice anterior no tiene campañas por ventanas");
+  for (const change of [{ path: "pages/" + "d".repeat(64) + ".json" }, { path: "https://example.org/x.json" }, { done: 11 },
+    { attempts: 7 }, { stage: "training" }, { path: null }, { domain: "private" }]) {
+    assert.throws(() => validateSnapshot({ ...base, window_campaigns: [{ ...entry, ...change }] }), JSON.stringify(change));
+  }
+  assert.throws(() => validateSnapshot({ ...base, window_campaigns: [entry, entry] }), /repetidas/);
 });
