@@ -49,10 +49,9 @@
     "max_epochs": 30,
     "group_epoch": "maximum_of_first_plateaus",
     "groups": {
-      "titans_controls": ["titans_transformer_direct", "titans_mac_disabled", "titans_mac_frozen", "titans_mac_online"],
-      "mars_titan": ["mars_titan_m0", "mars_titan_m1", "mars_titan_m2", "mars_titan_m3", "mars_titan_m1_k2", "mars_titan_m1_k4"],
-      "cm_v1_cores": ["cm_v1_core_b", "cm_v1_core_c"],
-      "cm_v1_factorial": ["cm_v1_b", "cm_v1_bc", "cm_v1_bm", "cm_v1_bcm"]
+      "encoders_and_cores": ["gru", "transformer_compact", "gru_episodic", "titans_transformer_direct", "titans_mac_disabled", "titans_mac_frozen", "titans_mac_online"],
+      "episodic_readers": ["mars_titan_m0", "mars_titan_m1", "mars_titan_m2", "mars_titan_m3", "mars_titan_m1_k2", "mars_titan_m1_k4", "cm_v1_b", "cm_v1_bc", "cm_v1_bm", "cm_v1_bcm"],
+      "cm_v1_cores": ["cm_v1_core_b", "cm_v1_core_c"]
     }
   },
   "limits": {

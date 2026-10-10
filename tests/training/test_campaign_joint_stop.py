@@ -21,6 +21,10 @@ TITANS_GROUP = [
     "titans_mac_frozen",
     "titans_mac_online",
 ]
+# La comparación contrasta el Transformer compacto con Titans-MAC `transformer_direct` y la
+# GRU con la GRU episódica, que a su vez se contrasta con `mac_online`. Sin las ampliaciones,
+# la GRU episódica no tiene entrenador y el grupo conectado tiene seis brazos.
+ENCODER_GROUP = ["gru", "transformer_compact", *TITANS_GROUP]
 EARLY = dict(
     stopping=JOINT_PLATEAU,
     patience=5,
@@ -28,7 +32,7 @@ EARLY = dict(
     minimum_epochs=5,
     max_epochs=30,
     group_epoch=plan.GROUP_EPOCH,
-    groups=dict(titans_controls=TITANS_GROUP),
+    groups=dict(encoders_and_cores=ENCODER_GROUP),
 )
 RULE = dict(metric="session_mae", patience=5, min_delta=1e-05, minimum_epochs=5, max_epochs=30)
 
@@ -51,28 +55,31 @@ def test_joint_campaign_a_keeps_the_design_and_declares_its_rule_before_results(
     assert report["early_stop"]["individual_rule"] == dict(RULE, stopping=VALIDATION_PLATEAU)
     assert report["early_stop"]["group_epoch"] == "maximum_of_first_plateaus"
     counts = report["counts"]
-    # Son los mismos 2385 ajustes completos que en A. Los 720 de Titans-MAC se dividen en
-    # meseta y continuación, y la meseta no cuenta como ajuste adicional.
+    # Son los mismos 2385 ajustes completos que en A. Los 1080 del grupo se dividen en meseta
+    # y continuación, y la meseta no cuenta como ajuste adicional.
     assert (counts["training_jobs"], counts["prediction_jobs"]) == (2385, 0)
-    # Son cuatro controles por 45 ventanas reentrenadas (19 + 13 + 13) por 4 ajustes.
-    assert counts["plateau_jobs"] == 4 * (19 + 13 + 13) * 4 == 720
+    # Son seis brazos por 45 ventanas reentrenadas (19 + 13 + 13) por 4 ajustes.
+    assert counts["plateau_jobs"] == 6 * (19 + 13 + 13) * 4 == 1080
 
 
 def test_extended_joint_campaign_groups_mars_titan_and_cm_v1():
     campaign = extended(plan.load_campaign(JOINT_CONFIG))
     counts = plan.count_jobs(campaign)
     assert (counts["training_jobs"], counts["prediction_jobs"]) == (4725, 0)
-    # Titans-MAC, MARS-TITAN y los núcleos y brazos de CM-v1 suman 16 brazos con 4 ajustes y
-    # 45 ventanas. La GRU candidata usa la meseta individual.
-    assert counts["plateau_jobs"] == 16 * 4 * 45 == 2880
+    # El grupo de codificadores y núcleos suma siete brazos con la GRU episódica, el de los
+    # lectores episódicos diez y el de los núcleos de CM-v1 dos. Son 19 brazos con 4 ajustes en
+    # 45 ventanas.
+    assert counts["plateau_jobs"] == 19 * 4 * 45 == 3420
     jobs = plan.plan_campaign(campaign)
     grouped = {job["arm"] for job in jobs if job.get("phase") == plan.PLATEAU}
     assert grouped == set(campaign["early_stop"]["membership"])
-    assert "gru_episodic" not in grouped
+    assert campaign["early_stop"]["membership"]["gru_episodic"] == "encoders_and_cores"
+    # El contraste de M1 con CM-v1 B obliga a agrupar los lectores de MARS-TITAN y CM-v1.
+    assert campaign["early_stop"]["membership"]["cm_v1_b"] == "episodic_readers"
     for job in jobs:
         if job["arm"] == "gru_episodic" and job["stage"] == "search":
-            assert job["case"]["stopping_rule"] == dict(RULE, stopping=VALIDATION_PLATEAU)
-            assert "phase" not in job
+            assert job["case"]["stopping_rule"] == dict(RULE, stopping=JOINT_PLATEAU)
+            assert job["phase"] in (plan.PLATEAU, plan.JOINT)
 
 
 def test_each_grouped_fit_splits_into_plateau_and_continuation_in_dependency_order():
@@ -84,7 +91,7 @@ def test_each_grouped_fit_splits_into_plateau_and_continuation_in_dependency_ord
         assert all(position[dependency] < position[job["id"]] for dependency in job["depends"])
     plateaus = {job["id"]: job for job in jobs if job.get("phase") == plan.PLATEAU}
     finals = [job for job in jobs if job.get("phase") == plan.JOINT]
-    assert len(plateaus) == len(finals) == 720
+    assert len(plateaus) == len(finals) == 1080
     for final in finals:
         plateau = plateaus[final["plateau"]]
         head, _, name = final["id"].rpartition("/")
@@ -97,20 +104,26 @@ def test_each_grouped_fit_splits_into_plateau_and_continuation_in_dependency_ord
         } | dict(depends=plateau["depends"])
         assert final["depends"] == plateau["depends"] + final["joint_group"]
         members = [plateaus[key] for key in final["joint_group"]]
-        assert sorted(member["arm"] for member in members) == sorted(TITANS_GROUP)
-        assert {
-            (m["scope"], m["window"], m["seed"], m["stage"], m["candidate"]) for m in members
-        } == {(final["scope"], final["window"], final["seed"], final["stage"], final["candidate"])}
+        assert sorted(member["arm"] for member in members) == sorted(ENCODER_GROUP)
+        # Cada familia nombra sus casos a su manera y el grupo los empareja por posición.
+        assert {(m["scope"], m["window"], m["seed"], m["stage"]) for m in members} == {
+            (final["scope"], final["window"], final["seed"], final["stage"])
+        }
         # Los finalistas heredan el caso, con su regla, del ganador de la búsqueda.
-        if final["stage"] == "search":
-            assert final["case"]["stopping_rule"] == dict(RULE, stopping=JOINT_PLATEAU)
-        else:
+        if final["stage"] != "search":
             assert final["case"] is None
+        elif final["family"] == plan.NEURAL:
+            assert final["case"]["selection"]["stopping"] == JOINT_PLATEAU
+        else:
+            assert final["case"]["stopping_rule"] == dict(RULE, stopping=JOINT_PLATEAU)
     # Hay un grupo por ámbito, ventana reentrenada, semilla y caso, 45 x (2 casos + 2 finalistas).
     groups = Counter(tuple(final["joint_group"]) for final in finals)
-    assert len(groups) == 45 * 4 and set(groups.values()) == {4}
-    # Las referencias y los tabulares conservan sus trabajos y la parada individual.
-    neural = [job for job in jobs if job["family"] == plan.NEURAL]
+    assert len(groups) == 45 * 4 and set(groups.values()) == {6}
+    # Las referencias sin contraste emparejado y los tabulares conservan sus trabajos y la
+    # parada individual.
+    neural = [
+        job for job in jobs if job["family"] == plan.NEURAL and job["arm"] not in ENCODER_GROUP
+    ]
     assert neural and all("phase" not in job for job in neural)
     searches = [job["case"] for job in neural if job["stage"] == "search"]
     assert {case["selection"]["stopping"] for case in searches} == {VALIDATION_PLATEAU}
@@ -124,7 +137,7 @@ def test_finalists_wait_for_the_selected_cases_and_carry_their_own_continuation(
     searches = [f"US/fold-000/titans_mac_online/search-{case}" for case in ("lr1e-4", "lr1e-3")]
     assert jobs[final["plateau"]]["depends"] == searches
     assert sorted(final["joint_group"]) == sorted(
-        f"US/fold-000/{arm}/plateau-finalist-s43" for arm in TITANS_GROUP
+        f"US/fold-000/{arm}/plateau-finalist-s43" for arm in ENCODER_GROUP
     )
 
 
@@ -177,11 +190,11 @@ def test_early_stop_section_rejects_an_undeclared_or_ambiguous_rule(tmp_path, ea
 
 def test_paired_contrasts_must_share_a_group(tmp_path):
     # Los cuatro controles de Titans-MAC forman contrastes emparejados entre sí.
-    split = dict(EARLY, groups=dict(a=TITANS_GROUP[:2], b=TITANS_GROUP[2:]))
+    split = dict(EARLY, groups=dict(a=ENCODER_GROUP[:4], b=ENCODER_GROUP[4:]))
     with pytest.raises(ValueError, match="mismo grupo de parada conjunta"):
         plan.plan_campaign(plan.load_campaign(write_variant(tmp_path, "A", early_stop=split)))
     # Dos referencias neuronales también pueden formar un grupo con la regla conjunta.
-    other = dict(EARLY, groups=dict(a=TITANS_GROUP, b=["gru", "lstm"]))
+    other = dict(EARLY, groups=dict(a=ENCODER_GROUP[1:], b=["gru", "lstm"]))
     campaign = plan.load_campaign(write_variant(tmp_path, "A", early_stop=other))
     for name in ("gru", "lstm"):
         assert campaign["neural"]["candidates"][name][0][1]["selection"]["stopping"] == (
@@ -199,7 +212,7 @@ def test_paired_contrasts_must_share_a_group(tmp_path):
 
 def test_parent_and_child_cannot_share_a_group(tmp_path):
     campaign = extended(plan.load_campaign(JOINT_CONFIG))
-    membership = dict(campaign["early_stop"]["membership"], mars_titan_m1="titans_controls")
+    membership = dict(campaign["early_stop"]["membership"], mars_titan_m1="encoders_and_cores")
     groups = {}
     for arm, group in membership.items():
         groups.setdefault(group, []).append(arm)
