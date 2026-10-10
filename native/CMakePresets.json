@@ -352,7 +352,7 @@
     {"name": "native-candidate-static-analysis", "inherits": "native-test", "configurePreset": "native-candidate-static-analysis"},
     {"name": "native-candidate-coverage", "inherits": "native-test", "configurePreset": "native-candidate-coverage"},
     {"name": "native-candidate-fuzz", "inherits": "native-test", "configurePreset": "native-candidate-fuzz"},
-    {"name":"native-test","hidden":true,"output":{"outputOnFailure":true},"execution":{"jobs":2,"noTestsAction":"error","stopOnFailure":true},"environment":{"DEBUGINFOD_URLS":""}},
+    {"name":"native-test","hidden":true,"description":"Excluye las pruebas con pasos de optimizador mientras rija el bloqueo de aprendizaje","output":{"outputOnFailure":true},"execution":{"jobs":2,"noTestsAction":"error","stopOnFailure":true},"filter":{"exclude":{"label":"^optimizer-steps$"}},"environment":{"DEBUGINFOD_URLS":""}},
     {"name":"native-debug","inherits":"native-test","configurePreset":"native-debug"},
     {"name":"native-release","inherits":"native-test","configurePreset":"native-release"},
     {"name":"native-asan-ubsan","inherits":"native-test","configurePreset":"native-asan-ubsan"},
