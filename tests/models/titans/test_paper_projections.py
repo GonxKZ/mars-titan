@@ -21,6 +21,11 @@ from mars_titan.models.titans.transition_jacobian import (
 )
 
 # Huellas FP32 capturadas en develop 030e7b31, antes de introducir SiLU y convolución.
+# Las financieras se recapturaron cuando el codificador de precios pasó a calcular la
+# última capa solo para el último token. Ese cambio altera el redondeo FP32 de las
+# predicciones y los gradientes, pero no la identidad de la configuración. Su error
+# frente a FP64 queda en el mismo orden que el de develop, y la paridad con tolerancia
+# del codificador está en test_compact_transformer_last_token.
 BASELINE = {
     "core/disabled": dict(
         memory="63ecfe659331f93facc449d0e6b0aaf7682be5ef09897810a2f4f862a91dbd1e",
@@ -70,30 +75,30 @@ BASELINE = {
     "financial/mac_disabled": dict(
         identity="688eab085bc6e94fe70ff4469213dd4bac24a5d55afb833ee7e8bf4bcbe1478b",
         parameter_id="93940d37840ab5746da39b18964d89283eb59f4e74d5fba2496f075a5f4e5056",
-        predictions="a8f3df213e815ad2280bd1536e34ef02ec9c55ae2272d3af016ffc868c7f03c7",
+        predictions="390c977141c0141826876acfec435c551dae9d2ef658cd58434645b468345dc2",
         state="490b3e1e8d90134f4ebaf54d7659a02c376957654d0f728ce197df417393cf52",
-        gradients="f591026a0a944e8a0f20c26aac3aee7ff1bb41e23807f42912ffe173daec11ae",
+        gradients="58e970e9a86166f28474f0f49f2362a68bfd40af22a3b485d6eda1138cbf8524",
     ),
     "financial/mac_frozen": dict(
         identity="4cfac779ecc2ce675f2f4e42f09615cb1afe3eef8860352d2e1518cf53d778e1",
         parameter_id="93940d37840ab5746da39b18964d89283eb59f4e74d5fba2496f075a5f4e5056",
         predictions="2f4555d30f903581fbf89f4fb0070673b371ee848f73e1d51bbf5044cf359017",
         state="490b3e1e8d90134f4ebaf54d7659a02c376957654d0f728ce197df417393cf52",
-        gradients="ba56473b55f1c1b8acfd2bc9af32786eefc5337c08da698cf001b9d4bc459bbb",
+        gradients="ae6787c880aeb00b5f36d6984ce14b5810b19646c8afa5d6178033bed8924c2d",
     ),
     "financial/mac_online": dict(
         identity="585457bae7eb8afa326f3991c3aed54c43ac4b315bb2329ed982ff80ffa0809f",
         parameter_id="93940d37840ab5746da39b18964d89283eb59f4e74d5fba2496f075a5f4e5056",
         predictions="f25360ed13b8ccb6f3a3a9f32abd7038f1a04e70645e4e5ba14bcd616d4ee7ea",
-        state="6a754dc68a816e5e52ecbf078cf46fb00e06138b2689b90f379a1dae17defe16",
-        gradients="7da18b3077582dd8d5001d0890389cadb0145491f05168bae4c322a08a9651eb",
+        state="3a95edb7f22de77e2418fba05c6069b4beb6f598c40437ff20adafa9bc8efb0c",
+        gradients="56e23502bdc6e987cfb7b8f79f4b7dae99dd925a66e930245acc044282f4df40",
     ),
     "financial/mac_online_campaign_memory": dict(
         identity="4cf875a3e9f765dca59d1879d92e7db6a151e7ee86cba547ddc9d1bb121e1b3a",
         parameter_id="3c5bdc8a97396dd4097a6b57ad28ed2d61e42dc166028a1b1f9e0321f7a3653a",
-        predictions="0737d95f13d1a195bd33223799e6f8479d727ab27aa83519b803394b20341f39",
-        state="367d67d5f0d603ad95b3d9b6125908aacf6ad0e62b52fdf6ba475ab29aaa4367",
-        gradients="aea542c67cb1476315d183cbd0c681da1669d422504d779f974cb7935b35bad2",
+        predictions="b67556b0dd0cd98cd4ee5299c21f5baf096d7cb784baf852cb5ea98893e2bffd",
+        state="627160648a3f526b8d73178ac79abdd31b21355bc67bb2fc6f95f6f167654e55",
+        gradients="ab8f0e40aa1a536c28459b56e7afab7d78535a30cc7fcde5310f564bb52846bd",
     ),
 }
 
