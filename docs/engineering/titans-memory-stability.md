@@ -16,7 +16,7 @@ Las dos piezas viven en `NeuralMemory` (`src/mars_titan/models/titans/neural_mem
 ```mermaid
 flowchart TD
     X["Token x_t del flujo<br/>solo entradas disponibles en t, sin etiquetas"]
-    PR["Proyecciones k_t, v_t<br/>logits de α, η y θ"]
+    PR["Proyecciones k_t, v_t<br/>con convolución causal y SiLU si se declaran<br/>logits de α, η y θ"]
     BOX{"gate_box"}
     G0["Puertas del núcleo<br/>α = σ(·), η = σ(·)"]
     G1["Caja PT1<br/>α = α_lo + (1 − α_lo)σ(·)<br/>η = η_hi σ(·)"]:::pt1
@@ -59,6 +59,8 @@ flowchart TD
 
 **Estado que cambia.** Los pesos rápidos W y el momentum S de cada flujo, una vez por observación y solo en `mac_online`. `mac_frozen` y `mac_disabled` no escriben memoria, así que PT1 solo cambia en ellos la identidad, no el cálculo. PT1 no añade estado nuevo ni parámetros: la caja reparametriza las mismas proyecciones y el recorte no tiene memoria.
 
+**Composición con las proyecciones de la sección 4.4.** PT1 se combina con SiLU, la convolución causal de núcleo 4 y la norma L2 de consultas y claves sin tocarlas. Las proyecciones calculan k_t y v_t con sus ventanas por flujo y PT1 solo cambia después las puertas y el gradiente. Como la norma L2 se aplica tras la convolución y SiLU, las claves siguen siendo unitarias y el certificado de la memoria lineal conserva su hipótesis. La cota (P5) no depende de las claves. La identidad compuesta lleva las claves de los dos componentes sin colisión y el estado añade solo las ventanas causales de las proyecciones.
+
 **Qué apaga el interruptor.** `memory_stability=None` (por defecto) recorre exactamente el código anterior y deja la identidad sin cambios. `gate_box=False` conserva las puertas del núcleo y `gradient_clip=None` omite el recorte. Una declaración sin ninguna de las dos se rechaza.
 
 ## Ecuaciones, fuentes, módulos y pruebas
@@ -80,7 +82,7 @@ $$
 \alpha=\alpha_{lo}+(1-\alpha_{lo})\,\sigma(Ax+b_\alpha),\qquad \eta=\eta_{hi}\,\sigma(ex+b_\eta),\qquad \theta=\theta_{max}\,\sigma(tx+b_\theta).
 $$
 
-Módulo `NeuralMemory._rates`. Pruebas `test_gates_stay_inside_the_box_for_any_input` y la comprobación CUDA.
+Módulo `NeuralMemory._gates`. Pruebas `test_gates_stay_inside_the_box_for_any_input` y la comprobación CUDA.
 
 **(P2) Bias de las puertas dentro de la caja.** Extensión propia de la [inicialización con bias](titans-gate-initialization.md). Con semivida h, α_0 = 1 − 2^{−1/h} y
 
@@ -132,6 +134,7 @@ La [declaración del brazo](../../configs/evaluation/titans-memory-stability-com
 | --- | --- |
 | Apagado idéntico bit a bit al núcleo previo en FP32 (salida, estado y gradientes de memoria y predictor) | `test_disabled_component_keeps_fp32_outputs_gradients_and_state_bit_for_bit` con huellas de CPU capturadas en `42e7dbca`, y la comprobación CUDA con las de `cuda:0` |
 | Identidad nueva solo si se declara, mismos parámetros iniciales | `test_declared_component_is_a_new_identity_with_the_same_parameter_draws` |
+| Composición con las proyecciones de la sección 4.4: sin PT1 coincide bit a bit con el núcleo de #474, la identidad compuesta une las claves de ambos y el estado y los pesos se recuperan | `test_component_composes_with_the_section_4_4_projections` |
 | Forma, tipo y rango de las puertas | `test_gates_stay_inside_the_box_for_any_input` |
 | Declaraciones imposibles rechazadas | `test_invalid_declarations_fail_before_building_a_module` |
 | Causalidad: perturbar el futuro no cambia el pasado | `test_future_perturbation_does_not_change_past_outputs_or_states` |
@@ -143,7 +146,7 @@ La [declaración del brazo](../../configs/evaluation/titans-memory-stability-com
 
 Las pruebas están en `tests/models/titans/test_memory_stability.py` y las trazas compartidas con la comprobación CUDA en `memory_stability_traces.py`. La comprobación CUDA `tests/models/titans/cuda_memory_stability_check.py` se ejecuta a mano dentro de una plaza `memslot gpu`.
 
-La mutación dirigida aplicó 18 defectos de uno en uno en una copia aislada, tras comprobar que las pruebas importaban la copia: quitar el suelo de α o el techo de η, aplicar la caja con solo el recorte declarado, no recortar, recortar por encima de 2G, olvidar G al reescalar, recortar columnas, construir o validar los bias sin invertir la caja, invertir solo la sigmoide de α o de η, admitir una η inicial fuera de la caja, omitir PT1 de la identidad de la memoria o del predictor, no pasar PT1 del predictor a la memoria, invertir la comparación del certificado y admitir una declaración vacía. Las pruebas detectan los 18 ([recibo](../../reports/engineering/titans-memory-stability-mutations-20261010.json)). Durante el desarrollo, la prueba de los bias detectó un defecto real del mismo tipo que el mutante M08: la memoria construía los bias sin pasar la caja. Es una selección dirigida, no una campaña completa de mutación.
+La mutación dirigida aplicó 21 defectos de uno en uno en una copia aislada, tras comprobar que las pruebas importaban la copia. Dieciocho afectan a PT1 por sí sola: quitar el suelo de α o el techo de η, aplicar la caja con solo el recorte declarado, no recortar, recortar por encima de 2G, olvidar G al reescalar, recortar columnas, construir o validar los bias sin invertir la caja, invertir solo la sigmoide de α o de η, admitir una η inicial fuera de la caja, omitir PT1 de la identidad de la memoria o del predictor, no pasar PT1 del predictor a la memoria, invertir la comparación del certificado y admitir una declaración vacía. Otros tres imitan errores posibles al combinar PT1 con las proyecciones de la sección 4.4: recortar solo cuando no hay ventanas causales, conservar en `update` las puertas del núcleo y guardar PT1 bajo la clave de las proyecciones en la identidad. Las pruebas detectan los 21 ([recibo](../../reports/engineering/titans-memory-stability-mutations-20261010.json)). Durante el desarrollo, la prueba de los bias detectó un defecto real del mismo tipo que el mutante M08: la memoria construía los bias sin pasar la caja. Es una selección dirigida, no una campaña completa de mutación.
 
 ## Coste medido sin entrenar
 
@@ -157,7 +160,7 @@ Medido el 10 de octubre de 2026 en dos fases, como exige el uso compartido de la
 
 La diferencia de tiempo entre brazos queda dentro de la dispersión de las repeticiones del control, que van de 0,086 a 0,106 s en el forward, así que no se puede atribuir a PT1 ni un coste ni un ahorro. La memoria sube 30,9 MB, un 6,8 %, por los tensores del recorte que el grafo conserva para el backward. Con G = 4 y los pesos iniciales, PT1 recorta el 1,05 % de las filas del gradiente asociativo, una cifra que cambiará durante el ajuste y que no se ha medido con pesos entrenados.
 
-La comprobación CUDA ([recibo](../../reports/engineering/titans-memory-stability-cuda-20261010.json)) dio la paridad bit a bit sin PT1 con las huellas de `cuda:0` capturadas antes del cambio, dos ejecuciones con PT1 idénticas y diferencias máximas entre CPU y CUDA de 2,3e-6 en la lectura de la memoria, 1,3e-4 en sus gradientes y 1,2e-7 en los cuantiles del predictor, dentro de la tolerancia FP32 declarada. La caja y la cota de la Proposición 5 se cumplen también en la GPU.
+La comprobación CUDA ([recibo](../../reports/engineering/titans-memory-stability-cuda-20261010.json)) dio la paridad bit a bit sin PT1 con las huellas de `cuda:0` capturadas antes del cambio, tanto con las proyecciones lineales como con las de la sección 4.4 frente al núcleo de #474. Con PT1 activa, dos ejecuciones CUDA dieron los mismos bits y las diferencias máximas entre CPU y CUDA fueron de 2,3e-6 en la lectura de la memoria, 1,3e-4 en sus gradientes y 1,2e-7 en los cuantiles del predictor. Con PT1 y las proyecciones de la sección 4.4 a la vez fueron de 1,2e-6, 1,4e-4 y 2,4e-7. Todas quedan dentro de la tolerancia FP32 declarada. La caja y la cota de la Proposición 5 se cumplen también en la GPU.
 
 ## Desviaciones y límites
 
@@ -172,6 +175,7 @@ La comprobación CUDA ([recibo](../../reports/engineering/titans-memory-stabilit
 - La fracción de pasos que las puertas aprendidas pasarían fuera de la caja sin PT1 (D2) y el exponente de Lyapunov de la memoria de dos capas (D5).
 - La fracción de filas recortadas durante el ajuste. Solo se registra la del primer recorrido con los pesos iniciales.
 - El coste en la escala completa de la campaña, con `accumulation_rows` y miles de flujos por evento. La medida usa 128 flujos y ocho eventos.
+- El coste de PT1 junto a las proyecciones de la sección 4.4. La medida de coste usa la receta con proyecciones lineales y la composición solo se ha comprobado en exactitud.
 
 ## Referencias
 
