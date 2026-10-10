@@ -17,7 +17,7 @@ Ninguna medida aplica pasos de optimizador ni entrena. Los recorridos de ajuste 
 | Seguridad | `perf_event_paranoid` 4, `RmProfilingAdminOnly=1` y `ptrace_scope` 1 sin cambios |
 | Precisión | FP32 estricto, sin TF32 en cuBLAS ni en cuDNN y `float32_matmul_precision="highest"` |
 
-Cada recorrido con GPU se ejecutó en la plaza exclusiva `memslot gpu` y los de solo CPU en `memslot suite`, con dos hilos de BLAS y OpenMP. La máquina estaba compartida con suites y compilaciones de otras ramas, con una carga media entre 6 y 33. Dos ejecuciones idénticas llegan a diferir un 22 % entre tandas, así que las comparaciones se hacen dentro de la misma tanda y una diferencia menor que esa dispersión no se distingue del ruido. El guardián térmico no congeló el cálculo durante ninguna de estas medidas.
+Cada recorrido con GPU se ejecutó en la plaza exclusiva `memslot gpu` y los de solo CPU en `memslot suite`, con dos hilos de BLAS y OpenMP. La máquina estaba compartida con suites y compilaciones de otras ramas, con una carga media entre 6 y 33. Dos ejecuciones de develop sin herramienta difieren un 22 % entre tandas en mac_online y un 48 % en M1, así que las comparaciones se hacen dentro de la misma tanda y una diferencia menor que esa dispersión no se distingue del ruido. El guardián térmico no congeló el cálculo durante ninguna de estas medidas.
 
 ## Recorridos medidos
 
@@ -47,7 +47,7 @@ py-spy detiene por defecto el proceso en cada muestra para leer una pila coheren
 | M1 | py-spy `--nonblocking` | 120,5 | 109,9 | −1 % y +3 % | 1,1 % y 1,2 % |
 | M1 | py-spy `--nonblocking --gil` | 110,8 | 104,8 | −9 % y −2 % | 7,9 % y 9,4 % |
 
-El modo bloqueante alarga el recorrido entre un 22 % y un 90 %, y más cuanto más cargada está la máquina. El modo sin pausa no tiene un coste distinguible del ruido, pero pierde entre el 1 % y el 14 % de las muestras. Los dos modos ordenan igual las funciones principales y sus fracciones difieren hasta 7 puntos en mac_online y 10 en M1 (tablas siguientes), así que las conclusiones no dependen del modo. Para medir conviene `--nonblocking` y comprobar el número de muestras perdidas que imprime py-spy al terminar.
+El modo bloqueante alarga el recorrido entre un 22 % y un 90 %. El modo sin pausa no tiene un coste distinguible del ruido, pero pierde entre el 1 % y el 14 % de las muestras. Los dos modos ordenan igual las funciones principales y sus fracciones difieren hasta 7 puntos en mac_online y 10 en M1 (tablas siguientes), así que las conclusiones no dependen del modo. Para medir conviene `--nonblocking` y comprobar el número de muestras perdidas que imprime py-spy al terminar.
 
 `--native` añade los marcos de C++ pero no sirve aquí. Desenrollar las pilas de libtorch de todos los hilos tarda más que el intervalo de muestreo y mac_online pasó de 37 s a más de cinco minutos con la GPU trabajando mientras el proceso estaba detenido. Esa captura se descartó.
 
@@ -156,7 +156,7 @@ En los procesos con CUDA el máximo de memray no es memoria del anfitrión. Para
 | Coste por rango apagado (`nvtx_cost.py`) | 0,19 µs sobre una llamada vacía |
 | Coste por rango encendido sin herramienta | 0,83 µs sobre una llamada vacía |
 
-Un recorrido de mac_online abre 812 rangos y uno de M1 unos 2.480. Apagados cuestan unos 0,15 ms y 0,47 ms por recorrido, del orden de 10⁻⁵ del tiempo total. La dispersión de los recorridos completos (±20 %) no permite verlo de extremo a extremo, así que la garantía de que no cambian nada es la paridad bit a bit y no el tiempo.
+Un recorrido de mac_online abre 812 rangos y uno de M1 unos 2.480. Apagados cuestan unos 0,15 ms y 0,47 ms por recorrido, del orden de 10⁻⁵ del tiempo total. La dispersión de los recorridos completos (hasta un 48 % entre tandas) no permite verlo de extremo a extremo, así que la garantía de que no cambian nada es la paridad bit a bit y no el tiempo.
 
 ## Siguientes pasos que propone la medida
 
@@ -231,7 +231,7 @@ Las capturas en bruto (perfiles plegados, trazas de Nsight Systems y capturas de
 
 ## Límites
 
-- La máquina estaba compartida y la dispersión entre ejecuciones idénticas llega al 22 %. Las sobrecargas se dan como intervalo de dos tandas y no como valor puntual.
+- La máquina estaba compartida y la dispersión entre ejecuciones de develop llega al 22 % en mac_online y al 48 % en M1. Las sobrecargas se dan como intervalo de dos tandas y no como valor puntual.
 - py-spy sin `--native` atribuye el tiempo nativo a la función de Python que lo llama. Separar dentro de libtorch lanzamientos, reserva de memoria y espera necesitaría `perf` o los contadores de Nsight Compute, que requieren permisos de administrador.
 - Los rangos NVTX son marcas del anfitrión. La proyección en la GPU de Nsight Systems abarca desde el primer núcleo lanzado en el rango hasta el último e incluye los huecos.
 - Las medidas de memoria cubren el 82,7 % de los activos de la ventana y deben repetirse sobre la v3.1 completa.
