@@ -22,10 +22,10 @@ from mars_titan.data.storage import atomic_json
 from mars_titan.environments.walk_forward_receipt import read_window_receipt
 from mars_titan.simulation import campaign_stage, native_policy_runs, policy_plan, window_tapes
 from mars_titan.simulation.market import MarketTape
-from mars_titan.simulation.native_runtime import library_path
 from mars_titan.simulation.storage import read_tape, write_tape
 from mars_titan.training.learning_hold import LearningHoldError
 from tests.simulation import rl_stage_fixture as fixture
+from tests.suite_support import missing_native
 
 REPOSITORY = {
     v: Path(f"configs/simulation/historical-masked-rl-stage-{v.lower()}.json") for v in "AB"
@@ -431,10 +431,11 @@ def test_the_hold_stops_the_stage_before_probing_or_launching_binaries(
     assert launched == [] and not (tmp_path / "out").exists()
 
 
+@pytest.mark.native("MARS_TITAN_PPO_EXECUTABLE", "MARS_TITAN_KLPO_EXECUTABLE")
 def test_policy_binaries_declare_their_capabilities_and_identity():
     for engine in native_policy_runs.BINARIES:
         if not native_policy_runs.binary_path(engine).is_file():
-            pytest.skip("Faltan mars-titan-ppo o mars-titan-klpo compilados")
+            pytest.skip(missing_native(native_policy_runs.BINARIES[engine][0]))
     probed = campaign_stage.probe_capabilities()
     for name, binary in (
         ("native_policy_reconstructed_tapes", "mars-titan-ppo"),
@@ -721,7 +722,7 @@ def test_script_checks_the_policy_stage_and_runs_it_only_without_the_hold(
     assert not (tmp_path / "out").exists()
 
 
-@pytest.mark.skipif(library_path() is None, reason="Falta la biblioteca nativa de simulación")
+@pytest.mark.native("MARS_TITAN_NATIVE_LIBRARY")
 def test_references_with_native_accounting_match_the_python_accounting(
     base_a, tmp_path, learning_doubles
 ):

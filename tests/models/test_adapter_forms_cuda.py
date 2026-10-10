@@ -15,7 +15,7 @@ from torch.nn.utils import parametrize
 from mars_titan.models.predictive_adaptation import adapted_copy, adapter_names, parent_copy
 from tests.models.test_adapter_forms import CASES, arm_targets, batch, parent, same_bits
 
-pytestmark = pytest.mark.skipif(not torch.cuda.is_available(), reason="Requiere cuda:0")
+pytestmark = pytest.mark.cuda
 
 
 # Una copia con los pesos recurrentes en reservas separadas obliga a cuDNN a compactarlos

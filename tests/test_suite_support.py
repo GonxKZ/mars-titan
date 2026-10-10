@@ -1,5 +1,7 @@
-"""Apoyo de la suite: modos estrictos, grupo `reference` y ejecutables falsos con espacios."""
+"""Apoyo de la suite: modos estrictos, marcas de selección, grupo `reference` y ejecutables
+falsos con espacios."""
 
+import ast
 import os
 import subprocess
 import sys
@@ -9,13 +11,21 @@ from pathlib import Path
 import pytest
 
 from tests.suite_support import (
+    CUDA_REASON,
     NATIVE_VARIABLES,
+    SLOW_TESTS,
     episodic_load_problem,
+    function_id,
+    missing_extra,
+    missing_native,
+    native_available,
     native_required,
     python_shebang,
+    read_slow_tests,
     reference_module,
     reference_pins,
     reference_problems,
+    selection_skip,
     strict_problems,
     strict_skip,
 )
@@ -262,3 +272,187 @@ def test_reference_module_skips_only_when_the_package_itself_is_missing(tmp_path
     monkeypatch.syspath_prepend(str(tmp_path))
     with pytest.raises(ModuleNotFoundError, match="mars_titan_reference_dependency_absent"):
         reference_module("mars_titan_reference_broken")
+
+
+def test_selection_skip_names_the_missing_artifact_and_how_to_build_it(tmp_path):
+    episodic = {"native": [("MARS_TITAN_EPISODIC_NATIVE",)]}
+    reason = selection_skip(episodic, {}, cuda=never, root=tmp_path)
+    assert reason == missing_native("MARS_TITAN_EPISODIC_NATIVE")
+    assert "`make native-build`" in reason and "native-candidate-cuda" in reason
+    # Una variable vacía equivale a no declararla.
+    empty = {"MARS_TITAN_EPISODIC_NATIVE": ""}
+    assert selection_skip(episodic, empty, cuda=never, root=tmp_path) == reason
+    # Una ruta declarada cuenta como presente aunque no exista: la prueba falla al cargarla.
+    declared = {"MARS_TITAN_EPISODIC_NATIVE": str(tmp_path / "missing.so")}
+    assert selection_skip(episodic, declared, cuda=never, root=tmp_path) is None
+    # `native` sin variables solo selecciona.
+    assert selection_skip({"native": [()]}, {}, cuda=never, root=tmp_path) is None
+    with pytest.raises(ValueError, match="Variable nativa desconocida"):
+        selection_skip(
+            {"native": [("MARS_TITAN_UNADJUSTED_EDITION",)]}, {}, cuda=never, root=tmp_path
+        )
+
+
+def test_artifacts_with_a_default_path_are_found_where_native_build_leaves_them(tmp_path):
+    library = {"native": [("MARS_TITAN_NATIVE_LIBRARY",)]}
+    reason = selection_skip(library, {}, cuda=never, root=tmp_path)
+    assert "build/native/native-release/libmars_titan_simulation.so" in reason
+    compiled = tmp_path / "build/native/native-release/libmars_titan_simulation.so"
+    compiled.parent.mkdir(parents=True)
+    compiled.write_text("")
+    assert native_available("MARS_TITAN_NATIVE_LIBRARY", {}, tmp_path)
+    assert selection_skip(library, {}, cuda=never, root=tmp_path) is None
+    # El enlace episódico no tiene ruta por defecto y siempre hay que declararlo.
+    (tmp_path / "build/native/native-candidate-cuda").mkdir(parents=True)
+    (tmp_path / "build/native/native-candidate-cuda/_episodic_native.so").write_text("")
+    assert not native_available("MARS_TITAN_EPISODIC_NATIVE", {}, tmp_path)
+
+
+def test_every_marker_must_be_satisfied_and_cuda_never_falls_back(tmp_path):
+    both = {"native": [("MARS_TITAN_PPO_EXECUTABLE",)], "cuda": [()]}
+    present = {"MARS_TITAN_PPO_EXECUTABLE": "declared"}
+    assert selection_skip(both, present, cuda=never) == CUDA_REASON
+    assert selection_skip(both, present, cuda=lambda: True) is None
+    assert selection_skip({"cuda": [()]}, {}, cuda=never) == CUDA_REASON
+    policies = {"native": [("MARS_TITAN_PPO_EXECUTABLE", "MARS_TITAN_KLPO_EXECUTABLE")]}
+    reason = selection_skip(policies, present, cuda=never, root=tmp_path)
+    assert reason == missing_native("MARS_TITAN_KLPO_EXECUTABLE")
+    assert "Nunca se sustituye por CPU" in CUDA_REASON
+
+
+def test_missing_extra_names_module_extra_and_command():
+    assert missing_extra("duckdb", "gymnasium") == (
+        "Falta duckdb (extra data) o gymnasium (extra reinforcement). Se instala con "
+        "`make setup`, que ejecuta `uv sync --locked --all-extras`"
+    )
+
+
+def test_function_id_drops_only_the_parameters():
+    assert function_id("tests/a.py::test_x[cpu-1]") == "tests/a.py::test_x"
+    assert function_id("tests/a.py::Case::test_x") == "tests/a.py::Case::test_x"
+
+
+def defined(path, owners):
+    """Indica si el módulo define la función, dentro de sus clases si las hay."""
+    scope = ast.parse(path.read_text(encoding="utf-8")).body
+    for owner in owners[:-1]:
+        classes = [n for n in scope if isinstance(n, ast.ClassDef) and n.name == owner]
+        if not classes:
+            return False
+        scope = classes[0].body
+    return any(isinstance(n, ast.FunctionDef) and n.name == owners[-1] for n in scope)
+
+
+def test_slow_registry_lists_existing_test_functions_once():
+    lines = [line for line in SLOW_TESTS.read_text(encoding="utf-8").splitlines() if line]
+    entries = [line for line in lines if not line.startswith("#")]
+    assert entries == sorted(set(entries))
+    assert read_slow_tests() == set(entries)
+    stale = []
+    for entry in entries:
+        module, *owners = entry.split("::")
+        if not (ROOT / module).is_file() or not owners or not defined(ROOT / module, owners):
+            stale.append(entry)
+    assert stale == [], "Funciones lentas que ya no existen: regenerar tests/slow_tests.txt"
+
+
+def parametrized(path, owners):
+    """Indica si la función del registro tiene casos parametrizados."""
+    scope = ast.parse(path.read_text(encoding="utf-8")).body
+    for owner in owners[:-1]:
+        scope = next(n for n in scope if isinstance(n, ast.ClassDef) and n.name == owner).body
+    function = next(n for n in scope if isinstance(n, ast.FunctionDef) and n.name == owners[-1])
+    return any("parametrize" in ast.unparse(mark) for mark in function.decorator_list)
+
+
+def test_a_registered_slow_function_is_selected_by_its_marker():
+    # Una función parametrizada comprueba que la marca se aplica a todos sus casos.
+    entry = next(
+        entry
+        for entry in sorted(read_slow_tests())
+        if parametrized(ROOT / entry.split("::")[0], entry.split("::")[1:])
+    )
+    selected = collect(entry, "-m", "slow")
+    assert selected.returncode == 0 and f"{entry}[" in selected.stdout, selected.stdout
+    excluded = collect(entry, "-m", "not slow")
+    assert entry not in excluded.stdout
+
+
+def collect(target, *options):
+    return subprocess.run(
+        [sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider", "--collect-only"]
+        + list(options)
+        + [target],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        timeout=300,
+    )
+
+
+SELECTION_PROBE = """
+import pytest
+
+
+@pytest.mark.cuda
+def test_cuda():
+    pass
+
+
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
+def test_native():
+    pass
+
+
+@pytest.mark.native_binding
+def test_binding():
+    pass
+
+
+@pytest.mark.unguarded_fit
+def test_fit():
+    pass
+
+
+def test_plain():
+    pass
+"""
+
+
+def selection_probe(tmp_path, allowed, *options):
+    """Ejecutar la configuración común sobre un módulo con cada marca y una protección dada."""
+    (tmp_path / "test_probe.py").write_text(SELECTION_PROBE, encoding="utf-8")
+    hold = tmp_path / "hold.json"
+    hold.write_text(f'{{"training_allowed": {str(allowed).lower()}}}', encoding="utf-8")
+    environment = {
+        key: value for key, value in os.environ.items() if not key.startswith("MARS_TITAN_")
+    }
+    environment.update(
+        CUDA_VISIBLE_DEVICES="-1",
+        MARS_TITAN_TRAINING_HOLD=str(hold),
+        PYTHONPATH=os.pathsep.join([str(ROOT / "src"), str(ROOT)]),
+    )
+    command = [sys.executable, "-m", "pytest", "-p", "tests.conftest", "-q", "-rs"]
+    command += ["-c", os.devnull, "--rootdir", str(tmp_path), "-p", "no:cacheprovider"]
+    command += ["-W", "ignore::pytest.PytestUnknownMarkWarning", *options, "test_probe.py"]
+    return subprocess.run(
+        command, cwd=tmp_path, env=environment, capture_output=True, text=True, timeout=300
+    )
+
+
+def test_markers_skip_with_their_reason_and_select_with_m(tmp_path):
+    result = selection_probe(tmp_path, False)
+    output = result.stdout
+    assert result.returncode == 0, output + result.stderr
+    assert "2 passed, 3 skipped" in output
+    assert "Requiere cuda:0 visible" in output
+    assert "Falta el enlace episódico nativo" in output
+    assert "rige el bloqueo de aprendizaje" in output
+    # `native_binding` implica `native`, así que `-m "not native"` también la deja fuera.
+    fast = selection_probe(tmp_path, False, "-m", "not native and not cuda")
+    assert "1 passed, 1 skipped, 3 deselected" in fast.stdout, fast.stdout
+
+
+def test_unguarded_fits_run_when_the_hold_allows_learning(tmp_path):
+    result = selection_probe(tmp_path, True, "-m", "unguarded_fit")
+    assert "1 passed, 4 deselected" in result.stdout, result.stdout

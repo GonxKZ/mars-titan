@@ -8,7 +8,6 @@ y la GPU no se usa.
 """
 
 import json
-import os
 import shutil
 from contextlib import nullcontext
 from dataclasses import asdict
@@ -40,9 +39,7 @@ from tests.training.test_masked_campaign import Recorder, doubles, write_campaig
 from tests.training.test_walk_forward_v2_views import fixture
 
 pytestmark = [
-    pytest.mark.skipif(
-        not os.environ.get("MARS_TITAN_EPISODIC_NATIVE"), reason="Falta el enlace nativo compilado"
-    ),
+    pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE"),
     pytest.mark.usefixtures("learning_doubles"),
 ]
 

@@ -10,7 +10,6 @@ Necesita el enlace nativo del banco episódico.
 """
 
 import json
-import os
 from pathlib import Path
 
 import numpy as np
@@ -29,9 +28,7 @@ from tests.training.test_titans_campaign import permitted as permitted
 from tests.training.test_titans_walk_forward import Factory
 
 MATRIX = Path("configs/posttraining/adapter-matrix-v3.json")
-pytestmark = pytest.mark.skipif(
-    not os.environ.get("MARS_TITAN_EPISODIC_NATIVE"), reason="Falta el enlace nativo"
-)
+pytestmark = pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 
 
 def receipt(run, job_id):
