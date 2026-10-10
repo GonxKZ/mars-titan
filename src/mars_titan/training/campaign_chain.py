@@ -200,6 +200,31 @@ def posttraining_rows(parent_fold, fold):
     return start, end
 
 
+def chain_labels_used_until(campaign, scope, views, window, maturity=None):
+    """Última etiqueta que pudo fijar el predictor de la cadena de una ventana.
+
+    En la ventana k ≥ 1 el candidato elegido parte del padre de k-1, que se ajustó, eligió y
+    calibró con los tramos de ajuste de su vista, y se adapta, elige y calibra con los de la
+    vista k. La elección usa la validación de k incluso si gana el padre congelado, así que
+    el límite es la última maduración de esas dos vistas para cualquier candidato. En la
+    ventana 0 el predictor es el estado elegido de la base, con su propia vista.
+
+    `views` son las vistas del ámbito por ventana, con la ruta de su manifiesto
+    (`masked_campaign.scope_views`). `maturity(path)` es la maduración de los tramos de
+    ajuste de una vista, por omisión `label_maturity` con `FIT_PARTITIONS`. Cada etapa puede
+    pasar una versión con caché para no releer una vista.
+    """
+    if maturity is None:
+        from .label_maturity import FIT_PARTITIONS, label_maturity
+
+        def maturity(path):
+            return label_maturity(path, FIT_PARTITIONS)[0]
+
+    parent = parent_window(campaign, scope, window)
+    read = [window] if parent is None else [parent, window]
+    return max(maturity(views[name]["path"]) for name in read)
+
+
 def policy_rule(design):
     """Regla de ventanas de ajuste que el diseño fija a la etapa de políticas.
 

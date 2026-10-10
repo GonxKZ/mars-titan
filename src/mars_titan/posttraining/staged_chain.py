@@ -13,9 +13,10 @@ misma definición que elige el estado de la campaña base. Se recalcula con
 `validation_score` sobre las predicciones de validación guardadas de cada candidato, que
 salen del mismo recorrido, así que dos candidatos con las mismas predicciones empatan.
 
-Los identificadores, rutas, regla, elección y lectura vienen de `training.campaign_chain`,
-que declara el diseño en el plan de la campaña. Este módulo solo añade lo propio de la
-etapa: el brazo del padre congelado y la puntuación de validación.
+Los identificadores, rutas, regla, elección y lectura de la cadena están en
+`training.campaign_chain`, que declara el diseño en el plan de la campaña, y se importan
+desde allí. Este módulo solo añade lo propio de la etapa: el brazo del padre congelado y la
+puntuación de validación.
 """
 
 import math
@@ -24,40 +25,6 @@ import numpy as np
 import pyarrow as pa
 
 from mars_titan.evaluation.session_metrics import SessionErrors
-from mars_titan.training.campaign_chain import (
-    CANDIDATES,
-    CHAIN_SUFFIX,
-    RULE,
-    SELECTED,
-    SELECTION,
-    SELECTION_KIND,
-    chain_arm,
-    chain_folder,
-    chain_job_id,
-    choose,
-    parent_jobs,
-    read_selection,
-    scope_windows,
-)
-
-__all__ = [
-    "CANDIDATES",
-    "CHAIN_SUFFIX",
-    "FROZEN_SUFFIX",
-    "RULE",
-    "SELECTED",
-    "SELECTION",
-    "SELECTION_KIND",
-    "chain_arm",
-    "chain_folder",
-    "chain_job_id",
-    "choose",
-    "frozen_arm",
-    "parent_jobs",
-    "read_selection",
-    "scope_windows",
-    "validation_score",
-]
 
 FROZEN_SUFFIX = "__frozen_parent"
 # Filas por actualización del acumulador por sesión.

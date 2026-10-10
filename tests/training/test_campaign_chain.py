@@ -357,6 +357,22 @@ def test_the_schedule_rejects_stages_that_break_the_staged_dependencies(kind, me
         order.window_schedule(value, base, stages)
 
 
+def test_the_schedule_command_shows_the_stages_of_every_window(capsys):
+    from mars_titan.training import campaign_schedule_command
+
+    stages = plan.LATER_STAGES
+    argv = ["--campaign", str(CAMPAIGN)]
+    argv += ["--adapter-stage", stages["posttraining_adapter_matrix"]["joint_stage"]]
+    argv += ["--rl-stage", stages["rl_policy_comparison"]["joint_stage"]]
+    assert campaign_schedule_command.main(argv) == 0
+    result = json.loads(capsys.readouterr().out)
+    assert result["order"] == list(order.PHASES) and len(result["windows"]) == 19
+    first, later = result["windows"][0]["jobs"], result["windows"][5]["jobs"]
+    # La primera ventana solo publica la cadena de la base. Las siguientes la adaptan.
+    assert first["chain"] > 0 and "adapters" not in first
+    assert later["adapters"] > 0 and later["chain"] == first["chain"] and later["rl"] > 0
+
+
 def test_without_the_staged_declaration_the_schedule_keeps_the_old_contract(tmp_path):
     value = plan.load_campaign(edited(tmp_path, lambda v: v.pop("walk_forward_stages")))
     base = plan.plan_campaign(value)
@@ -391,9 +407,57 @@ def test_the_frozen_parent_is_replaced_only_by_a_strict_improvement():
         [frozen, candidate("adapter", "a", math.nan)],
         [frozen, candidate("base", "a", 0.1)],
         [frozen, dict(tie, job="p")],
+        [],
+        [frozen, candidate("adapter", "a", "0.2")],
     ):
         with pytest.raises(ValueError, match="padre congelado"):
             chain.choose(broken)
+
+
+def test_identifiers_and_folders_follow_the_campaign_plan(tmp_path):
+    assert chain.chain_arm("gru") == "gru__chain"
+    assert (
+        chain.chain_job_id("US+CN", "fold-003", "gru", 7) == "US+CN/fold-003/gru__chain/select-s7"
+    )
+    assert chain.chain_folder(tmp_path, "US", "fold-001", "dlinear", 42) == (
+        tmp_path / "windows/US/fold-001/dlinear__chain/seed-42"
+    )
+    assert chain.read_selection(tmp_path, "US", "fold-001", "dlinear", 42) is None
+
+
+def test_scope_windows_are_in_temporal_order():
+    windows = {
+        "fold-000": dict(evaluation=["2022-01-01", "2022-04-01"]),
+        "fold-001": dict(evaluation=["2022-04-01", "2022-07-01"]),
+    }
+    value = dict(comparison_config=dict(resolved_scopes=dict(US=dict(windows=windows))))
+    assert [name for name, _ in chain.scope_windows(value, "US")] == ["fold-000", "fold-001"]
+    value["comparison_config"]["resolved_scopes"]["US"]["windows"] = dict(reversed(windows.items()))
+    with pytest.raises(ValueError, match="orden temporal"):
+        chain.scope_windows(value, "US")
+
+
+def test_parent_jobs_prefer_the_carry_or_finalist_of_the_seed():
+    def job(name, stage, seed):
+        return dict(id=f"US/fold-000/gru/{name}", stage=stage, seed=seed)
+
+    searches = [job(f"search-gru-{i}", "search", 42) for i in (3, 1, 2)]
+    other = [job("search-gru-9", "search", 7), dict(id="US/fold-000/gru2/carry-s42")]
+    assert chain.parent_jobs(searches + other, "US", "fold-000", "gru", 42) == [
+        "US/fold-000/gru/search-gru-1",
+        "US/fold-000/gru/search-gru-2",
+        "US/fold-000/gru/search-gru-3",
+    ]
+    finalist = job("finalist-s7", "finalist", 7)
+    assert chain.parent_jobs([*searches, *other, finalist], "US", "fold-000", "gru", 7) == [
+        "US/fold-000/gru/finalist-s7"
+    ]
+    carry = job("carry-s42", "carry", 42)
+    assert chain.parent_jobs([*searches, carry], "US", "fold-000", "gru", 42) == [
+        "US/fold-000/gru/carry-s42"
+    ]
+    with pytest.raises(ValueError, match="no elige el estado"):
+        chain.parent_jobs(searches, "US", "fold-000", "gru", 5)
 
 
 def test_row_fingerprints_ignore_order_and_combine_asset_by_asset():
