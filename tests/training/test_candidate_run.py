@@ -106,11 +106,35 @@ def active(value):
         dict(checkpoint_seconds=0.0),
         dict(selection=dict(SELECTION, metric="mae")),
         dict(selection=dict(SELECTION, stopping="unbounded")),
+        dict(weight_decay_anchor="parent"),
     ],
 )
 def test_recipe_rejects_undeclared_or_invalid_declarations(options):
     with pytest.raises(ValueError):
         candidate_run.CandidateRecipe(**options)
+
+
+def test_the_default_optimizer_anchors_the_decay_that_the_recipe_declares(shared, tmp_path):
+    from mars_titan.training.anchored_decay import INITIAL, AnchoredAdamW
+
+    _, streams = shared
+    engine = trainer(
+        streams, tmp_path / "anchored", factory=None, weight_decay=0.01, weight_decay_anchor=INITIAL
+    )
+    assert type(engine.optimizer) is AnchoredAdamW
+    pairs = [
+        (value, anchor)
+        for group in engine.optimizer.param_groups
+        for value, anchor in zip(group["params"], group["anchors"], strict=True)
+    ]
+    assert len(pairs) == len(engine.trainable) and all(
+        torch.equal(value, anchor) and value.data_ptr() != anchor.data_ptr()
+        for value, anchor in pairs
+    )
+    assert engine.identity["recipe"]["weight_decay_anchor"] == INITIAL
+    assert engine.identity["anchored_decay"]["anchor"] == INITIAL
+    plain = trainer(streams, tmp_path / "plain", factory=None, weight_decay=0.01)
+    assert type(plain.optimizer) is torch.optim.AdamW and "anchored_decay" not in plain.identity
 
 
 def test_declared_variants_follow_the_protocol_rule_and_budget(tmp_path):

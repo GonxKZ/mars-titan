@@ -36,6 +36,8 @@ from mars_titan.models.titans.financial_inputs import DecisionBatch, validated_c
 from mars_titan.models.titans.frozen_financial import _implementation, _numerics
 from mars_titan.models.titans.state import join_mac_rows, map_mac_rows
 
+from . import anchored_decay
+from .anchored_decay import ANCHORS
 from .checkpoints import (
     StopRequest,
     capture_rng,
@@ -96,6 +98,9 @@ class ChronologicalRecipe:
     # None conserva la configuración numérica del proceso. Una precisión declarada aplica
     # `kernel_policy` al construir el recorrido y entra en su identidad.
     precision: str | None = None
+    # None conserva el decaimiento de AdamW hacia cero. `initial_parameters` lo ancla al
+    # estado con que empieza el ajuste, que en el postentrenamiento es el padre (#444).
+    weight_decay_anchor: str | None = None
 
     def __post_init__(self):
         # pinball solo corresponde a `quantile_head_v1`. huber_delta conserva su validación.
@@ -109,6 +114,7 @@ class ChronologicalRecipe:
             or self.weight_decay < 0
             or self.checkpoint_seconds <= 0
             or not valid_precision(self.precision)
+            or self.weight_decay_anchor not in ANCHORS
             or (
                 self.accumulation_rows is not None
                 and (
@@ -146,6 +152,8 @@ class ChronologicalRecipe:
             fields["gradient_accumulation"] = "flow_blocks_replayed_from_segment_start_v1"
         if fields["precision"] is None:
             fields.pop("precision")
+        if fields["weight_decay_anchor"] is None:
+            fields.pop("weight_decay_anchor")
         return dict(
             schema_version=1,
             recipe=RECIPE,
@@ -708,11 +716,7 @@ class ChronologicalTrainer(ChronologicalInference):
             for role, names in self.roles.items()
             if names
         ]
-        factory = optimizer_factory or (
-            lambda values: torch.optim.AdamW(
-                values, lr=recipe.learning_rate, weight_decay=recipe.weight_decay
-            )
-        )
+        factory = optimizer_factory or anchored_decay.recipe_factory(recipe)
         self.optimizer = factory(groups)
         listed = [id(p) for group in self.optimizer.param_groups for p in group["params"]]
         trainable = {id(named[name]) for names in self.roles.values() for name in names}
@@ -764,6 +768,10 @@ class ChronologicalTrainer(ChronologicalInference):
         if posttraining is not None:
             # Sin postentrenamiento la identidad conserva literalmente su forma anterior.
             self.identity.update(posttraining=posttraining, frozen_parameters=frozen)
+        anchored = anchored_decay.describe(self.optimizer, recipe.weight_decay_anchor)
+        if anchored is not None:
+            # Solo el decaimiento anclado añade su código. Sin él la identidad no cambia.
+            self.identity["anchored_decay"] = anchored
         self.run_id = hashlib.sha256(canonical(self.identity).encode()).hexdigest()
         self.global_step, self.selection, self.history, self.train_metrics = 0, None, [], None
 
