@@ -9,7 +9,11 @@ export const TRACE_GROUPS = Object.freeze({
   optimization: "Optimización", titans: "Memoria de Titans", episodic: "Banco episódico",
   rl: "Aprendizaje por refuerzo", session: "Por sesión", adapters: "Adaptadores", modalities: "Modalidades",
 });
-const X_UNITS = { optimizer_step: "Paso del optimizador", epoch: "Época", session: "Sesión" };
+const X_UNITS = {
+  optimizer_step: "Paso del optimizador", epoch: "Época", session: "Sesión",
+  write_event: "Escritura de la memoria asociativa", boosting_round: "Ronda de boosting",
+  fit: "Ajuste", transition: "Transición", wave: "Oleada",
+};
 const DTYPES = { f64: [Float64Array, 8], f32: [Float32Array, 4] };
 const NAME = /^[A-Za-z0-9][\w.-]{0,80}$/;
 const BLOB = /^[A-Za-z0-9][\w.-]{0,80}-[a-f0-9]{16}\.bin$/;

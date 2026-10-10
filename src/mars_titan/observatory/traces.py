@@ -25,7 +25,17 @@ from mars_titan.data.storage import atomic_json
 SCHEMA_VERSION = 1
 KIND = "mars_titan_learning_traces"
 GROUPS = {"optimization", "titans", "episodic", "rl", "session", "adapters", "modalities"}
-X_UNITS = {"optimizer_step", "epoch", "session"}
+# Las unidades de `learning_traces.recorder.STEP_UNITS` más las del observatorio.
+X_UNITS = {
+    "optimizer_step",
+    "epoch",
+    "session",
+    "write_event",
+    "boosting_round",
+    "fit",
+    "transition",
+    "wave",
+}
 PROVENANCES = {"measured", "fixture"}
 NAME = re.compile(r"[A-Za-z0-9][\w.-]{0,80}")
 IDENTIFIER = re.compile(r"[a-z][a-z0-9_.]{0,95}")
@@ -273,7 +283,10 @@ def series_from_learning_traces(steps, phases, metrics, groups, stats, values):
 
     Si un mismo paso aparece dos veces en una serie, se conserva la última fila, que es la
     de la parte escrita después. Los NaN se mantienen: el registrador los usa cuando un
-    tensor no tuvo valores finitos y el observatorio los dibuja como ausencia.
+    tensor no tuvo valores finitos y el observatorio los dibuja como ausencia. Un valor
+    infinito, por ejemplo la norma de un gradiente que diverge, también se dibuja como
+    ausencia, porque el paquete solo admite valores finitos o NaN. El análisis de
+    `learning_traces.analysis` los cuenta aparte.
     """
     columns = (steps, phases, metrics, groups, stats, values)
     if len({len(column) for column in columns}) != 1:
@@ -282,7 +295,10 @@ def series_from_learning_traces(steps, phases, metrics, groups, stats, values):
     for step, phase, metric, group, stat, value in zip(*columns, strict=True):
         if type(step) is not int or step < 0:
             raise ValueError("El paso de una traza es un entero no negativo")
-        collected.setdefault((metric, group, stat, phase), {})[step] = float(value)
+        value = float(value)
+        collected.setdefault((metric, group, stat, phase), {})[step] = (
+            value if not math.isinf(value) else math.nan
+        )
     several_phases = len({key[3] for key in collected}) > 1
     seen, series = set(), []
     for (metric, group, stat, phase), points in sorted(collected.items()):
@@ -301,3 +317,73 @@ def series_from_learning_traces(steps, phases, metrics, groups, stats, values):
             )
         )
     return series
+
+
+def bundle_name(relative):
+    """Nombre de paquete estable para una carpeta de trazas relativa a la raíz."""
+    text = re.sub(r"[^\w.-]+", ".", str(Path(relative))).strip(".-_") or "traces"
+    digest = hashlib.sha256(str(Path(relative)).encode()).hexdigest()[:8]
+    return f"{text[-70:].lstrip('.-_') or 'traces'}-{digest}"
+
+
+def _signature(folder):
+    parts = sorted((folder / "parts").glob("part-*.parquet"))
+    return (
+        (folder / "manifest.json").stat().st_mtime_ns,
+        tuple((path.name, path.stat().st_size) for path in parts),
+    )
+
+
+def sync_learning_traces(root, destination, *, limit=256, seen=None, provenance="measured"):
+    """Convertir en paquetes las carpetas de trazas de `root` que han cambiado.
+
+    Se recorren como mucho `limit` carpetas, las modificadas más recientemente. `seen`
+    guarda la firma (manifiesto y partes) de cada carpeta ya convertida entre llamadas, de
+    modo que una carpeta sin partes nuevas no se vuelve a leer. Una carpeta que no se
+    puede leer se omite y se informa en `skipped`, sin detener las demás.
+    """
+    from mars_titan.learning_traces.recorder import read_traces
+
+    if type(limit) is not int or not 1 <= limit <= 4096:
+        raise ValueError("El límite de carpetas está entre 1 y 4096")
+    root, seen = Path(root), {} if seen is None else seen
+    folders = [path.parent for path in root.rglob("traces/manifest.json")]
+    folders.sort(key=lambda path: (path / "manifest.json").stat().st_mtime_ns, reverse=True)
+    written, skipped = [], []
+    for folder in folders[:limit]:
+        relative = folder.relative_to(root)
+        try:
+            signature = _signature(folder)
+            if seen.get(relative) == signature:
+                continue
+            manifest, table = read_traces(folder)
+            columns = table.to_pydict()
+            series = series_from_learning_traces(
+                columns["step"],
+                columns["phase"],
+                columns["metric"],
+                columns["group"],
+                columns["stat"],
+                columns["value"],
+            )
+            if not series:
+                continue
+            identity = manifest["identity"]
+            write_trace_bundle(
+                destination,
+                bundle_name(relative),
+                run_id=str(identity.get("run_identity_sha256", "sin-identidad"))[:16],
+                attempt_id=f"partes-{len(signature[1])}",
+                model_id=str(identity.get("family", "desconocida"))[:96],
+                provenance=provenance,
+                x_unit=manifest["step_unit"],
+                series=series,
+                cadence=manifest["config"]["every"],
+                truncated_at=manifest["exhausted_at_step"],
+            )
+        except (OSError, ValueError, KeyError) as error:
+            skipped.append(dict(folder=str(relative), error=type(error).__name__))
+            continue
+        seen[relative] = signature
+        written.append(str(relative))
+    return dict(found=len(folders), written=written, skipped=skipped)
