@@ -13,7 +13,8 @@ si tiene objetivo, su decisión cae en el tramo y su etiqueta madura antes de su
 
 Con el walk-forward por etapas (`campaign_chain`), cada ventana con padre ajusta los
 adaptadores solo con sus filas nuevas, que se cuentan con la misma regla, y el padre
-congelado de la ventana anterior predice validación, calibración y evaluación.
+congelado de la ventana anterior predice validación, calibración y evaluación. Sin ese
+recuento, `campaign_throughput` las acota con los recuentos de las ventanas.
 
 Tabulares y políticas no escalan con el caudal neuronal. Entran como horas fijas
 declaradas, y el factor de caudal necesario para un objetivo de horas es
@@ -35,15 +36,7 @@ from mars_titan.evaluation.splits import PARTITIONS, build_folds
 
 from . import campaign_chain
 from .campaign_plan import NEURAL, _arm_specs, _require, load_campaign
-from .campaign_throughput import (
-    ABLATION_STAGE,
-    CHRONOLOGICAL,
-    POSTTRAINING,
-    _hours,
-    _slowest,
-    estimate_hours,
-    validated_job_seconds,
-)
+from .campaign_throughput import ABLATION_STAGE, CHRONOLOGICAL, POSTTRAINING, estimate_hours
 
 COUNTS_KIND = "masked_campaign_window_counts"
 BUDGET_KIND = "masked_campaign_budget_projection"
@@ -134,37 +127,6 @@ def read_posttraining_rows(path, campaign):
         "El informe no declara las filas nuevas de cada ventana con padre",
     )
     return {scope: rows[scope] for scope in campaign["scopes"]}
-
-
-def staged_posttraining_hours(stage, counts, fresh, rates):
-    """Estima las horas de la etapa de adaptadores con el walk-forward por etapas.
-
-    Solo las ventanas con padre tienen trabajos. Cada caso de la matriz recorre sus filas
-    nuevas en lugar del tramo de ajuste completo y valida, calibra y evalúa como en la base.
-    Cada padre guarda una vez la caché de filas nuevas y validación y, congelado, predice
-    validación, calibración y evaluación, con la inferencia neuronal más lenta de su brazo.
-    """
-    from mars_titan.posttraining.campaign_stage import plan_stage
-
-    measured, neural = rates[POSTTRAINING], rates[NEURAL]
-    epochs = stage["matrix"]["budget"]["epochs"]
-    jobs = [job for job in plan_stage(stage) if job["window"] in fresh[job["scope"]]]
-    parents = {}
-    for job in jobs:
-        parents.setdefault((job["scope"], job["window"], job["base_arm"], job["seed"]), job)
-    first = {job["id"] for job in parents.values()}
-
-    def seconds(job):
-        rows = dict(counts[job["scope"]][job["window"]], train=fresh[job["scope"]][job["window"]])
-        rate = _slowest([points[job["point"]] for points in measured[job["base_arm"]].values()])
-        total = validated_job_seconds(job, rows, rate, epochs)
-        if job["id"] in first:
-            cache = _slowest(neural[job["base_arm"]].values())["inference"]
-            held = rows["validation"] + rows["calibration"] + rows["evaluation"]
-            total += (rows["train"] + rows["validation"] + held) / cache
-        return total
-
-    return dict(_hours(jobs, seconds), frozen_parent_predictions=len(first))
 
 
 def campaign_window_counts(campaign, labels_root):
@@ -260,11 +222,18 @@ def project(
 
     `fixed_hours` son las horas que no escalan con el caudal neuronal (tabulares y
     políticas), declaradas aparte porque no se miden sin ajustar. El factor solo se calcula
-    con las dos cifras y un objetivo mayor que las horas fijas. Con `fresh`, las filas nuevas
-    de cada ventana con padre, los adaptadores siguen el walk-forward por etapas.
+    con las dos cifras y un objetivo mayor que las horas fijas. Con `fresh`, los adaptadores
+    del walk-forward por etapas ajustan las filas nuevas contadas de cada ventana con padre.
+    Sin él se acotan con los recuentos de las ventanas.
     """
     estimate = estimate_hours(
-        campaign, counts, rates, stage=stage, ablation_stage=ablation_stage, epochs=epochs
+        campaign,
+        counts,
+        rates,
+        stage=stage,
+        ablation_stage=ablation_stage,
+        epochs=epochs,
+        fresh=fresh,
     )
     families = {
         name: family.get("hours", (family.get("options") or {}).get("recipe", {}).get("hours"))
@@ -272,9 +241,6 @@ def project(
     }
     base = math.fsum(v for k, v in families.items() if k != POSTTRAINING and v is not None)
     adapters = families.get(POSTTRAINING)
-    if fresh is not None and stage is not None and POSTTRAINING in rates and NEURAL in rates:
-        adapters = staged_posttraining_hours(stage, counts, fresh, rates)["hours"]
-        families[POSTTRAINING] = adapters
     ablation = (estimate.get(ABLATION_STAGE) or {}).get("hours")
     stages = dict(base=base, adapters=adapters, ablation=ablation)
     neural = math.fsum(v for v in stages.values() if v is not None)
@@ -287,7 +253,8 @@ def project(
         kind=BUDGET_KIND,
         campaign=dict(name=campaign["name"], sha256=campaign["sha256"]),
         epochs=campaign["rule"]["max_epochs"] if epochs is None else epochs,
-        adapters_design="staged_chain_v1" if fresh is not None else "same_window_parent",
+        adapters_design=None if stage is None else stage["design"],
+        adapters_fit_rows=(estimate["families"].get(POSTTRAINING) or {}).get("fit_rows"),
         stages=stages,
         families=families,
         neural_hours=neural,

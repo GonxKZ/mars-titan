@@ -13,7 +13,8 @@ Se comparan tres disposiciones:
   todas las columnas.
 - ``large_groups``: las mismas columnas, tipos, valores y orden en grupos de hasta
   ``LARGE_GROUP_ROWS`` filas, diccionario solo en texto e instantes, ``byte_stream_split``
-  en los decimales y zstd de nivel ``ZSTD_LEVEL``.
+  en los decimales y zstd de nivel ``ZSTD_LEVEL``, con las opciones de
+  ``data.prediction_files``, que es el formato de la retención v2.
 - ``shared_rows``: una tabla de filas por ámbito, ventana y tramo con identificador,
   activo, mercado, instante y objetivo, escrita una sola vez, y por ajuste solo sus
   decimales con la disposición anterior, en el orden común de la tabla de filas. La
@@ -42,6 +43,14 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 
 from mars_titan.data.cohort_files import read_manifest
+from mars_titan.data.prediction_files import (
+    KEY_COLUMNS,
+    MEDIAN,
+    same_table,
+    write_large,
+)
+from mars_titan.data.prediction_files import canonical_order as _canonical_order
+from mars_titan.data.prediction_files import shared_rows as canonical_rows
 
 HELD_OUT = ("validation", "calibration", "evaluation")
 QUANTILE_COLUMNS = (
@@ -51,10 +60,6 @@ QUANTILE_COLUMNS = (
     "quantile_0900",
     "quantile_0975",
 )
-MEDIAN = "quantile_0500"
-KEY_COLUMNS = ("sample_id", "asset_id", "market", "prediction_at")
-LARGE_GROUP_ROWS = 1 << 20
-ZSTD_LEVEL = 3
 LAYOUTS = ("current", "large_groups", "shared_rows", "shared_rows_ordered")
 # Hora de cierre en UTC de cada mercado para separar sus instantes en una vista conjunta.
 _CLOSE_HOURS = {"US": 20, "CN": 7}
@@ -193,63 +198,11 @@ def writer_table(keys, writer, rng):
     return table
 
 
-def _floats(schema):
-    return [field.name for field in schema if pa.types.is_floating(field.type)]
-
-
-def _large_options(schema):
-    floats = _floats(schema)
-    return dict(
-        compression="zstd",
-        compression_level=ZSTD_LEVEL,
-        use_dictionary=[name for name in schema.names if name not in floats] or False,
-        use_byte_stream_split=floats or False,
-    )
-
-
 def write_current(table, path, writer):
     """Repetir `atomic_parquet_batches`: un grupo por lote y zstd sin más opciones."""
     with pq.ParquetWriter(path, table.schema, compression="zstd") as stream:
         for start in range(0, table.num_rows, writer.row_group):
             stream.write_table(table.slice(start, writer.row_group))
-
-
-def write_large(table, path):
-    """Las mismas columnas y filas en grupos grandes con decimales separados por bytes."""
-    pq.write_table(table, path, row_group_size=LARGE_GROUP_ROWS, **_large_options(table.schema))
-
-
-def _canonical_order(table):
-    """Orden común de un tramo: bloques por activo y, dentro de cada uno, por instante."""
-    return np.lexsort(
-        (
-            table["prediction_at"].cast(pa.int64()).to_numpy(),
-            table["asset_id"].to_numpy(zero_copy_only=False).astype(str),
-        )
-    )
-
-
-def canonical_rows(table):
-    """Tabla común de un tramo: claves y objetivo en el orden común."""
-    return table.select([*KEY_COLUMNS, "target"]).take(_canonical_order(table))
-
-
-def same_table(left, right):
-    """Mismo esquema y mismos valores, con los decimales comparados bit a bit."""
-    if not left.schema.equals(right.schema) or left.num_rows != right.num_rows:
-        return False
-    for name in left.column_names:
-        a, b = left[name], right[name]
-        if pa.types.is_floating(a.type):
-            width = {4: np.uint32, 8: np.uint64}[a.type.byte_width]
-            if not a.is_null().equals(b.is_null()):
-                return False
-            left_bits = a.fill_null(0).to_numpy().view(width)
-            if not np.array_equal(left_bits, b.fill_null(0).to_numpy().view(width)):
-                return False
-        elif not a.equals(b):
-            return False
-    return True
 
 
 def split_shared(table, rows, writer, *, keep_order=False):

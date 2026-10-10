@@ -20,10 +20,11 @@ Con `execution.order = "by_window"` la campaña recorre cada ventana en estas fa
 
 Después empieza la siguiente ventana. El plan solo admite dependencias hacia fases
 anteriores de la misma ventana o hacia ventanas anteriores. La selección no es un trabajo,
-sino la lectura del MAE de validación de los recibos de búsqueda, y las dos últimas fases
-son los puntos de conexión de los agregados por ventana y de la retención rodante. Si la
-campaña declara el walk-forward por etapas, el calendario crea las selecciones de la cadena
-a partir de la etapa de adaptadores y exige a adaptadores y RL las dependencias del diseño.
+sino la lectura del MAE de validación de los recibos de búsqueda. Las dos últimas fases las
+ejecuta `rolling_retention` (retención v2) con los agregados de la ventana y la liberación.
+Las selecciones de la cadena llegan con la etapa de adaptadores y ocupan su propia fase. Si
+la campaña declara el walk-forward por etapas, el calendario exige además a adaptadores y
+RL las dependencias del diseño.
 """
 
 import argparse
@@ -107,9 +108,14 @@ def window_jobs(campaign, jobs, window):
 def stage_window(campaign, jobs, window):
     """Trabajos de una etapa posterior en una ventana y los pares que necesita de la base.
 
-    Los pares incluyen la ventana ancla de cada trabajo, de la que parte un traslado.
+    Los pares incluyen la ventana ancla de cada trabajo, de la que parte un traslado. Las
+    dependencias que no son trabajos de la etapa, como las selecciones de la cadena que leen
+    las políticas, no se siguen aquí: la etapa las comprueba al leer sus fuentes.
     """
-    jobs = window_jobs(campaign, jobs, window)
+    known = {job["id"] for job in jobs}
+    inner = [dict(job, depends=[d for d in job.get("depends", ()) if d in known]) for job in jobs]
+    kept = {job["id"] for job in window_jobs(campaign, inner, window)}
+    jobs = [job for job in jobs if job["id"] in kept]
     pairs = {(job["scope"], name) for job in jobs for name in (job["window"], job["anchor"])}
     return jobs, pairs
 
@@ -150,15 +156,20 @@ def window_schedule(campaign, jobs, stages=None):
     """Fases de cada ventana de campaña con sus trabajos, comprobando las dependencias.
 
     `jobs` es el plan de la campaña base y `stages` asigna a `adapters`, `ablation` o `rl`
-    el plan de esa etapa, que debe partir de la misma campaña. Con el walk-forward por
-    etapas declarado, añade la fase `chain` y comprueba las dependencias del diseño.
+    el plan de esa etapa, que debe partir de la misma campaña. Los adaptadores incluyen las
+    selecciones de la cadena de `plan_chain`, que pasan a la fase `chain`. Con el
+    walk-forward por etapas declarado, comprueba además las dependencias del diseño.
     """
     stages = dict(stages or {})
     _require(set(stages) <= set(STAGES), "Las etapas posteriores son adapters, ablation o rl")
+    if "adapters" in stages:
+        # Las selecciones de la cadena (`plan_chain`) llegan con la etapa de adaptadores y
+        # ocupan su propia fase, después de los ajustes y padres congelados de la ventana.
+        adapters = stages.pop("adapters")
+        stages["adapters"] = [job for job in adapters if job.get("stage") != "chain"]
+        stages["chain"] = [job for job in adapters if job.get("stage") == "chain"]
     if campaign.get("walk_forward_stages"):
         campaign_chain.check_staged(campaign, jobs, stages)
-        if "adapters" in stages:
-            stages["chain"] = campaign_chain.chain_jobs(campaign, jobs, stages["adapters"])
     rows = campaign_windows(campaign)
     position = _position(campaign)
     located = {}
@@ -228,6 +239,10 @@ def main(argv=None):
                 f"La etapa {name} parte de otra campaña",
             )
             stages[name] = module.plan_stage(stage)
+            if name == "adapters" and stage["design"] == module.STAGED:
+                # Las selecciones de la cadena van con los adaptadores y el calendario las
+                # pasa a su fase.
+                stages[name] += module.plan_chain(stage, stages[name])
     schedule = window_schedule(campaign, plan_campaign(campaign), stages)
     if args.output is not None:
         from mars_titan.data.storage import atomic_json

@@ -1,21 +1,23 @@
-"""Lectura acotada por cohortes con presupuesto y recuperación comunes."""
+"""Lectura acotada por cohortes con presupuesto y recuperación comunes.
+
+`PairedInputs` solo lee cohortes reales. Los episodios remuestreados o sintéticos del
+diseño anterior viven en `augmented_inputs`, que este módulo no importa.
+"""
 
 import hashlib
 import json
 import math
-from dataclasses import asdict
 
 import numpy as np
 from sklearn.preprocessing import StandardScaler
 from threadpoolctl import threadpool_limits
 
 from mars_titan.data.input_policy import STRICT_INPUTS, masked_inputs, policy_identity
+from mars_titan.environments.cohort_order import real_order, validation_order
 from mars_titan.environments.cohorts import (
     read_cohort,
     shapes_contract,
 )
-from mars_titan.episodes.augmentation import training_visits
-from mars_titan.episodes.windows import EpisodeView
 from mars_titan.models.baselines.inputs import MODALITIES
 from mars_titan.training.partition_contract import LEGACY_BOUNDS
 
@@ -63,12 +65,43 @@ def _resume_point(cursor, identity, sizes, offsets, batch_size):
     return point
 
 
-class PairedInputs:
-    """Compartir la fuente real y cargar un único episodio adicional cada vez."""
+def _within(source, partition, raw):
+    """Exigir el tramo de la fuente o, con US y CN juntos, el tramo de cada mercado."""
+    bounds = getattr(source, "bounds", LEGACY_BOUNDS[partition])
+    if bounds is not None:
+        groups = [(bounds, slice(None))]
+    else:
+        markets = np.array([asset.split("/", 1)[0] for asset in raw["asset_ids"]])
+        if not set(markets) <= source.market_bounds.keys():
+            return False
+        groups = [(source.market_bounds[market], markets == market) for market in set(markets)]
+    return all(
+        low <= raw["prediction_at"] < cutoff
+        and not (raw["target_available_at"][rows] >= high).any()
+        for (low, high, cutoff), rows in groups
+    )
 
-    def __init__(
-        self, train, validation, parent, *, windows=(), synthetic=None, synthetic_identity=None
-    ):
+
+def _cohorts(source, positions):
+    """Cohortes reales en el orden de las visitas.
+
+    Una fuente con `cohorts` las lee por bloques. Las demás se leen una a una.
+    """
+    if hasattr(source, "cohorts"):
+        return source.cohorts(positions)
+    return (source(position) for position in positions)
+
+
+class PairedInputs:
+    """Cohortes reales de ajuste y validación con la predicción del padre.
+
+    No admite episodios adicionales. Una subclase de `augmented_inputs` los añade con
+    `_episodes`, `_extra_visits` y `_episode`.
+    """
+
+    windows, synthetic = (), None
+
+    def __init__(self, train, validation, parent):
         if train.partition != "train" or validation.partition != "validation":
             raise ValueError("Las fuentes deben separar entrenamiento y validación real")
         self.shapes = shapes_contract(train.shapes, train.max_assets, MAX_BYTES)
@@ -78,15 +111,11 @@ class PairedInputs:
         if getattr(validation, "input_policy", STRICT_INPUTS) != self.input_policy:
             raise ValueError("Las fuentes no comparten la política de entradas")
         self.masked = masked_inputs(self.input_policy)
-        if self.masked and (windows or synthetic is not None or synthetic_identity is not None):
-            # Los episodios sintéticos no tienen bits de presencia ni causas de ausencia.
-            raise ValueError("La edición con máscaras solo admite la condición real")
-        if len(windows) > 100_000:
-            raise ValueError("El número de episodios excede el presupuesto")
-        for window in windows:
-            EpisodeView(train, window)
+        windows, synthetic_identity = self._episodes(train)
         self.train, self.validation, self.parent = train, validation, parent
-        self.windows, self.synthetic = tuple(windows), synthetic
+        # Ajuste limitado a las sesiones desde un instante. Sin límite la identidad no cambia.
+        since = getattr(train, "since", None)
+        since = {} if since is None else dict(train_since=since)
         self.features = (
             1
             + sum(math.prod(shape) for shape in self.shapes.values())
@@ -99,10 +128,11 @@ class PairedInputs:
             validation_sha256=validation.manifest_sha256,
             parent_sha256=parent.parent_sha256,
             encoding=parent.encoding,
-            windows=[asdict(window) for window in windows],
+            windows=windows,
             synthetic=synthetic_identity,
             shapes={name: list(shape) for name, shape in self.shapes.items()},
             **policy_identity(self.input_policy),
+            **since,
         )
         self.sha256 = fingerprint(self.identity)
         self.counts = {
@@ -118,6 +148,7 @@ class PairedInputs:
                 train_bounds={
                     market: list(bounds) for market, bounds in sorted(train.market_bounds.items())
                 },
+                **since,
             )
             if self.masked
             else None
@@ -129,6 +160,10 @@ class PairedInputs:
         ):
             raise ValueError("Las fuentes no conservan la misma población temporal")
 
+    def _episodes(self, train):
+        """Identidad de los episodios adicionales: ninguno con datos solo reales."""
+        return [], None
+
     def _visits(self, partition, condition, epoch, seed):
         if partition not in {"train", "validation"} or condition not in CONDITIONS:
             raise ValueError("La partición o la condición no pertenece al diseño")
@@ -137,14 +172,15 @@ class PairedInputs:
         if partition == "validation":
             if condition != "real":
                 raise ValueError("La validación principal solo admite datos reales")
-            from mars_titan.episodes.augmentation import Visit
+            return validation_order(len(self.validation))
+        if any(type(n) is not int or not 0 <= n < 2**32 for n in (epoch, seed)):
+            raise ValueError("La época solo admite entrenamiento y semillas válidas")
+        if condition != "real":
+            return self._extra_visits(condition, epoch, seed)
+        return real_order(np.random.default_rng([seed, epoch]), len(self.train))
 
-            return [Visit("real", -1, i, True) for i in range(len(self.validation))]
-        if condition != "real" and not self.windows:
-            raise ValueError("La condición requiere un aumento confirmado")
-        return training_visits(
-            self.train, () if condition == "real" else self.windows, epoch=epoch, seed=seed
-        )
+    def _extra_visits(self, condition, epoch, seed):
+        raise ValueError("La condición requiere un aumento confirmado")
 
     def budget(self, condition, batch_size):
         if type(batch_size) is not int or not 1 <= batch_size <= 4096:
@@ -159,26 +195,7 @@ class PairedInputs:
         )
 
     def _episode(self, source, episode, condition):
-        window = self.windows[episode]
-        if condition == "real_resampled":
-            view = EpisodeView(source, window)
-        else:
-            if self.synthetic is None:
-                raise ValueError("Faltan episodios sintéticos emparejados")
-            view = self.synthetic(episode)
-            if (self.identity["synthetic"] or {}).get(str(episode)) != view.source.manifest_sha256:
-                raise ValueError("El episodio sintético no conserva su identidad")
-            counts = [source.index[i][1] for i in range(window.decision_start, window.stop)]
-            other = view.window
-            observed = [view.source.index[i][1] for i in range(other.decision_start, other.stop)]
-            if (
-                view.shapes != self.shapes
-                or view.partition != "train"
-                or counts != observed
-                or view.window.origin != "synthetic"
-            ):
-                raise ValueError("El episodio sintético no conserva el contrato emparejado")
-        return view
+        raise ValueError("Las cohortes reales no tienen episodios adicionales")
 
     def batches(self, *, partition, condition, batch_size, epoch=0, seed=0, cursor=None):
         if (
@@ -201,11 +218,15 @@ class PairedInputs:
             batch_size=batch_size,
         )
         point = _resume_point(cursor, identity, sizes, offsets, batch_size)
-        current_episode, view = None, None
+        current_episode, view, real = None, None, None
         for position in range(point["visit"], len(visits)):
             visit = visits[position]
             if visit.arm == "real":
-                raw = source(visit.cohort)
+                if real is None:
+                    real = _cohorts(
+                        source, [v.cohort for v in visits[position:] if v.arm == "real"]
+                    )
+                raw = next(real)
             else:
                 if current_episode != visit.episode:
                     view = self._episode(source, visit.episode, condition)
@@ -218,11 +239,7 @@ class PairedInputs:
             raw = read_cohort(raw, self.shapes, source.max_assets, MAX_BYTES)
             if presence is not None:
                 raw["presence"] = presence
-            low, high, cutoff = getattr(source, "bounds", LEGACY_BOUNDS[partition])
-            if (
-                not low <= raw["prediction_at"] < cutoff
-                or (raw["target_available_at"] >= high).any()
-            ):
+            if not _within(source, partition, raw):
                 raise ValueError("Una etiqueta u observación cruza la partición")
             if len(raw["target"]) != sizes[position]:
                 raise ValueError("La cohorte ha cambiado su número de filas")

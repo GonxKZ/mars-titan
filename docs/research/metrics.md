@@ -591,11 +591,22 @@ real, completa la comparación en tres puntos:
   cuartiles](long-short-portfolio.md), un análisis financiero secundario que
   calcula `long_short_comparison` con las mismas fuentes.
 
+El 10 de octubre de 2026, también antes de cualquier predicción real, la versión 4
+añade el [control en línea del Transformer](../engineering/transformer-online-control.md)
+(`transformer_compact_online`, #443) y dos familias. `online_learning` contrasta el
+control con el Transformer compacto congelado y `memory_vs_online_learning` contrasta
+MARS-TITAN M1 con el control. El control recibe las mismas etiquetas maduras que el
+banco de M1 en los mismos instantes, así que la segunda familia comprueba si la mejora
+de MARS-TITAN se explica solo por seguir aprendiendo. El brazo entra también en la
+familia de niveles, lo que añade un nivel a su corrección por máximo estudentizado.
+
 La versión 5 añade a la versión 4 el [diseño conjunto](walk-forward-2000.md#comparación-con-los-controles-separados)
 de la campaña A v2 (`joint_design`). Un mercado solo cuenta en las ventanas en las que es
 elegible y los controles separados de US y CN se comparan con el brazo conjunto
 restringido a las filas de su mercado. Las métricas, la fiabilidad del signo y la cartera
-aplican las mismas exclusiones.
+aplican las mismas exclusiones. El control en línea y sus dos familias se evalúan en el ámbito
+conjunto, porque los ámbitos de un mercado solo comparan los tres controles separados con
+su brazo conjunto.
 
 Las semillas se agregan así. La comparación solo lee el caso elegido de cada
 brazo, que la campaña A repite con las semillas 42, 43 y 44. Cada semilla tiene
@@ -616,15 +627,21 @@ que se construye sobre esta versión. No forman parte de este archivo.
 La [declaración de la comparación postentrenada](../../configs/posttraining/historical-masked-adapter-comparison-a.json)
 no enumera brazos. `posttraining/stage_comparison.py` los deriva del plan de la
 etapa de adaptadores y forma una comparación por padre y ámbito con el padre
-congelado (el propio brazo base con las predicciones de la campaña), la
-continuación completa y los brazos adaptados de la matriz para su familia. Así
-una familia nueva de la matriz entra sin reescribir nada. Las familias declaradas
-son `versus_frozen_parent` (adaptados y continuación menos el padre) y
-`versus_full_continuation` (adaptados menos la continuación), más el nivel de
-cada brazo. Todo lo demás se hereda de la comparación de la campaña: protocolos,
-métricas, calibración común, remuestreo y secciones secundarias. Hoy salen cinco
-padres (`rnn`, `lstm`, `gru`, `dlinear` y `transformer_compact`) con seis brazos,
-salvo el Transformer, que tiene diez porque la matriz le da puntos de lectura.
+congelado, la continuación completa y los brazos adaptados de la matriz para su
+familia. Así una familia nueva de la matriz entra sin reescribir nada. En el
+[walk-forward por etapas](../engineering/masked-posttraining.md#etapa-por-ventana-de-la-campaña)
+de A, el padre congelado es el trabajo `frozen` de la etapa, que aplica a la
+ventana k el estado elegido por la base en k-1, y el brazo base reentrenado en k
+queda como nivel fuera de las familias. Como la primera ventana de cada ámbito
+no tiene postentrenamiento, la comparación empieza en la segunda. Las familias
+declaradas son `versus_frozen_parent` (adaptados y continuación menos el padre
+congelado) y `versus_full_continuation` (adaptados menos la continuación), más el
+nivel de cada brazo. Todo lo demás se hereda de la comparación de la campaña:
+protocolos, métricas, calibración común, remuestreo y secciones secundarias. Hoy
+salen cinco padres (`rnn`, `lstm`, `gru`, `dlinear` y `transformer_compact`) con
+siete brazos, salvo el Transformer, que tiene once porque la matriz le da puntos
+de lectura. La validación de los recibos por etapas elige el predictor de la
+cadena y no entra en esta comparación.
 
 El manifiesto de fuentes de un padre une las predicciones del padre, leídas del
 manifiesto ya validado de la campaña, con los recibos confirmados de la etapa. Se

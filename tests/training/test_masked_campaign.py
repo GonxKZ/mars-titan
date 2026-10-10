@@ -10,9 +10,11 @@ las pruebas del bloqueo declaran la suya.
 
 import hashlib
 import json
+import shutil
 import threading
 import time
 from contextlib import nullcontext
+from datetime import UTC, datetime
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -446,6 +448,19 @@ def selected_fit(jobs, scope, window, arm, seed):
     return min(searches, key=lambda job: (scores(job), job["id"]))["id"]
 
 
+def view_maturity(root, window, partitions):
+    """Mayor maduración de las etiquetas de esos tramos, leída sin el código de la campaña."""
+    latest = None
+    for path in (root / window / "labels").rglob("labels.parquet"):
+        table = pq.read_table(path, columns=["partition", "target_available_at"])
+        table = table.filter(pa.compute.is_in(table["partition"], value_set=pa.array(partitions)))
+        if table.num_rows:
+            values = table["target_available_at"].cast(pa.timestamp("us", tz="UTC"))
+            value = int(pa.compute.max(values.cast(pa.int64())).as_py())
+            latest = value if latest is None else max(latest, value)
+    return latest
+
+
 def test_window_receipts_follow_the_selected_predictor_of_each_seed(prepared, tmp_path):
     scopes = ("US", "US+CN")
     campaign = write_campaign(tmp_path / "config", scopes=scopes)
@@ -476,7 +491,11 @@ def test_window_receipts_follow_the_selected_predictor_of_each_seed(prepared, tm
                 id=parent, sha256=hashlib.sha256(parent.encode()).hexdigest()
             )
             start = np.datetime64(record["fold"]["evaluation"][0], "us").astype(np.int64)
-            assert record["labels_used_until"] == int(start) - 1
+            # La última etiqueta leída por el predictor elegido o por su calibración común.
+            expected = view_maturity(views[scope], anchor, ("train", "validation", "calibration"))
+            if anchor != window:
+                expected = max(expected, view_maturity(views[scope], window, ("calibration",)))
+            assert record["labels_used_until"] == expected < int(start)
             assert set(record["predictions"]) == {"calibration", "evaluation"}
             for partition, declared in record["predictions"].items():
                 table = pq.read_table(output / receipt["predictions"][partition]["path"])
@@ -489,6 +508,60 @@ def test_window_receipts_follow_the_selected_predictor_of_each_seed(prepared, tm
                 assert (declared["rows"], declared["sha256"]) == expected
                 rows += declared["rows"] * (partition == "evaluation")
         assert rows == receipt["predictions"]["evaluation"]["rows"]
+
+
+def future_label_views(source, target, window):
+    """Copia de vistas con una etiqueta de ajuste que madura al empezar la evaluación.
+
+    Solo cambia el instante de maduración de una fila de ajuste. Las huellas del manifiesto
+    y del informe se recalculan para que la vista siga pasando sus comprobaciones.
+    """
+    shutil.copytree(source, target)
+    report = json.loads((target / "report.json").read_text())
+    for row in report["folds"]:
+        path = target / row["id"] / "manifest.json"
+        manifest = json.loads(path.read_text())
+        manifest["roots"]["labels"] = str((target / row["id"] / "labels").resolve())
+        if row["id"] == window:
+            asset = next(a for a in manifest["assets"] if a["counts"]["train"])
+            labels = target / window / "labels" / asset["market"] / asset["symbol"]
+            table = pq.read_table(labels / "labels.parquet")
+            first = table["partition"].to_pylist().index("train")
+            start = manifest["temporal_view"]["fold"]["evaluation"][0]
+            times = table["target_available_at"].to_pylist()
+            times[first] = datetime.fromisoformat(start).replace(tzinfo=UTC)
+            column = pa.array(times, type=table["target_available_at"].type)
+            index = table.schema.get_field_index("target_available_at")
+            table = table.set_column(index, "target_available_at", column)
+            pq.write_table(table, labels / "labels.parquet")
+            asset["labels_sha256"] = sha256(labels / "labels.parquet")
+        atomic_json(path, manifest)
+        row["manifest_sha256"] = sha256(path)
+    atomic_json(target / "report.json", report)
+    return target
+
+
+def test_a_future_label_in_the_fit_view_blocks_the_window_receipt(prepared, tmp_path):
+    # Un ejecutor que no validase sus etiquetas leería las filas sin notar la maduración
+    # adelantada. El recibo de ventana deriva su límite de la vista y la ventana no se publica.
+    campaign = write_campaign(tmp_path / "config")
+    clean = prepared.views["US"]
+    tampered = future_label_views(clean, tmp_path / "views" / "US", "fold-000")
+    with pytest.raises(ValueError, match="no concilia|no conserva"):
+        # El lector del corpus rechaza por sí mismo la etiqueta que cruza la frontera.
+        CorpusDataset(tampered / "fold-000" / "manifest.json", input_policy=HISTORICAL_MASKED)
+        Recorder().rows(tampered / "fold-000" / "manifest.json", "train")
+
+    class Unchecked(Recorder):
+        def rows(self, view, partition):
+            return super().rows(clean / Path(view).relative_to(tampered), partition)
+
+    output = tmp_path / "out"
+    with pytest.raises(ValueError, match="madurar antes de la evaluación"):
+        run(campaign, {"US": tampered}, output, Unchecked())
+    assert not (output / "windows/US/fold-000").exists()
+    summary = json.loads((output / "summary.json").read_text())
+    assert summary["status"] == "failed"
 
 
 def test_window_receipts_are_checked_on_resume_and_need_the_anchor_state(prepared, tmp_path):

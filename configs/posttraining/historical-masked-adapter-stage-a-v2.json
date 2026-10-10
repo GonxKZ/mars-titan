@@ -4,13 +4,38 @@
   "status": "declared_not_executed",
   "name": "historical-masked-2000-adapters-a-v2",
   "campaign": "../baselines/historical-masked-campaign-a-v2.json",
-  "matrix": "adapter-matrix-v2.json",
+  "matrix": "adapter-matrix-v3.json",
   "scopes": ["US+CN"],
-  "arms": ["rnn", "lstm", "gru", "dlinear", "transformer_compact"],
-  "ordered_retention": "release_after_window_fits",
+  "arms": [
+    "rnn",
+    "lstm",
+    "gru",
+    "dlinear",
+    "transformer_compact",
+    "ridge",
+    "xgboost",
+    "gru_episodic",
+    "titans_transformer_direct",
+    "titans_mac_disabled",
+    "titans_mac_frozen",
+    "titans_mac_online",
+    "mars_titan_m0",
+    "mars_titan_m1",
+    "mars_titan_m2",
+    "mars_titan_m3",
+    "mars_titan_m1_k2",
+    "mars_titan_m1_k4",
+    "cm_v1_b",
+    "cm_v1_bc",
+    "cm_v1_bm",
+    "cm_v1_bcm"
+  ],
+  "cohort_reading": {"source": "view_blocks", "max_block_bytes": 3221225472},
+  "chain_rule": "chain_validation_score_v1",
+  "data_policy": "real_edition_only",
   "limits": {
-    "max_training_jobs": 1653,
-    "max_prediction_jobs": 0
+    "max_training_jobs": 6588,
+    "max_prediction_jobs": 1116
   },
   "final_test_opened": false
 }

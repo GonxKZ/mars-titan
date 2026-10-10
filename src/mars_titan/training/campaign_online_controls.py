@@ -12,14 +12,14 @@ La sección `online_controls` de la campaña declara el brazo, su padre, el braz
 el tope, la regla y el límite de trabajos. Un valor `pending` de la regla bloquea el
 lanzamiento hasta fijarlo. El tope `episodic_bank_writes` significa que, en cada tramo, las
 etiquetas usadas en pasos no superan las escrituras del banco de `cap_arm` en el mismo
-ámbito, ventana y semilla. Es igualdad de información, no de pasos. El ejecutor todavía no
-existe y se prepara en otra rama. Este módulo solo declara y planifica los trabajos.
+ámbito, ventana y semilla. Es igualdad de información, no de pasos. Solo hay trabajos en
+los ámbitos cuya comparación evalúa el brazo, que en A v2 es el conjunto. El ejecutor lo
+registra el motor como trabajo `online`. Este módulo solo declara y planifica los trabajos.
 """
 
 ARM = "transformer_compact_online"
 PARENT_ARM = "transformer_compact"
 CAP_ARM = "mars_titan_m1"
-ONLINE = "online"
 PENDING = "pending"
 PARTITIONS = ["calibration", "evaluation"]
 CAP = "episodic_bank_writes"
@@ -40,9 +40,10 @@ def _positive(value, kind):
 def declared(section, campaign):
     """Valida la sección `online_controls` frente a los brazos ya resueltos de cada ámbito.
 
-    La regla admite valores `pending`, que aquí pasan y después bloquean el lanzamiento. El
-    padre y el brazo del tope deben ajustarse en todos los ámbitos, porque sin ellos el
-    control no tendría estado de partida ni tope.
+    La regla admite valores `pending`, que aquí pasan y después bloquean el lanzamiento. La
+    comparación debe evaluar el brazo en algún ámbito, y en cada uno de ellos deben
+    ajustarse el padre y el brazo del tope, porque sin ellos el control no tendría estado de
+    partida ni tope.
     """
     from .campaign_plan import scope_arms
 
@@ -76,13 +77,21 @@ def declared(section, campaign):
         f"{ARM} parte de {PARENT_ARM}, se limita con las escrituras del banco de {CAP_ARM} "
         "en calibración y evaluación y declara su regla con SGD",
     )
-    for scope in campaign["scopes"]:
+    _require(scopes(campaign), f"La comparación no evalúa {ARM} en ningún ámbito")
+    for scope in scopes(campaign):
         arms = scope_arms(campaign, scope)
         _require(
             PARENT_ARM in arms and CAP_ARM in arms,
             f"En {scope} el control en línea necesita {PARENT_ARM} y {CAP_ARM}",
         )
     return section
+
+
+def scopes(campaign):
+    """Ámbitos cuya comparación evalúa el control en línea con predicciones propias."""
+    from .campaign_plan import scope_arms
+
+    return [scope for scope in campaign["scopes"] if ARM in scope_arms(campaign, scope)]
 
 
 def blockers(campaign):
@@ -101,20 +110,21 @@ def blockers(campaign):
 
 
 def plan_online(campaign, base_jobs):
-    """Planifica un trabajo por ámbito, ventana y semilla del padre.
+    """Planifica un trabajo por ámbito evaluado, ventana y semilla del padre.
 
     Cada trabajo depende de los que eligen el estado de `transformer_compact` y de
     `mars_titan_m1` en su ventana y semilla, porque parte del primero y su tope son las
-    escrituras del banco del segundo.
+    escrituras del banco del segundo. Los ámbitos que no evalúan el brazo no tienen
+    trabajos, porque sus predicciones no entrarían en ninguna comparación.
     """
     from .campaign_chain import parent_jobs
-    from .campaign_plan import NEURAL
+    from .campaign_plan import NEURAL, ONLINE
 
     section = campaign.get("online_controls")
     if not section:
         return []
     jobs = []
-    for scope in campaign["scopes"]:
+    for scope in scopes(campaign):
         for window in campaign["comparison_config"]["resolved_scopes"][scope]["windows"]:
             seeds = sorted(
                 {

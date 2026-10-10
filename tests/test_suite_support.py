@@ -7,13 +7,24 @@ from pathlib import Path
 
 import pytest
 
-from tests.suite_support import NATIVE_VARIABLES, python_shebang, strict_problems
+from tests.suite_support import (
+    NATIVE_VARIABLES,
+    episodic_load_problem,
+    native_required,
+    python_shebang,
+    strict_problems,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
 def never():
     return False
+
+
+def loads(path):
+    """Sustituto del cargador del enlace episódico que siempre lo acepta."""
+    return None
 
 
 def declared_binaries(tmp_path):
@@ -32,18 +43,50 @@ def test_the_general_suite_requires_neither_binaries_nor_cuda():
 
 def test_strict_native_check_names_each_undeclared_or_missing_binary(tmp_path):
     environment = declared_binaries(tmp_path) | {"MARS_TITAN_REQUIRE_NATIVE": "1"}
-    assert strict_problems(environment, cuda=never) == []
+    assert strict_problems(environment, cuda=never, episodic=loads) == []
     del environment["MARS_TITAN_PPO_EXECUTABLE"]
     environment["MARS_TITAN_SIM_EXECUTABLE"] = str(tmp_path / "missing")
-    assert strict_problems(environment, cuda=never) == [
+    assert strict_problems(environment, cuda=never, episodic=loads) == [
         f"MARS_TITAN_SIM_EXECUTABLE no apunta a un archivo: {tmp_path / 'missing'}",
         "falta declarar MARS_TITAN_PPO_EXECUTABLE",
     ]
     environment["MARS_TITAN_SIM_EXECUTABLE"] = str(tmp_path)
     assert (
         "MARS_TITAN_SIM_EXECUTABLE no apunta a un archivo"
-        in strict_problems(environment, cuda=never)[0]
+        in strict_problems(environment, cuda=never, episodic=loads)[0]
     )
+
+
+def test_strict_native_check_loads_the_declared_episodic_binding(tmp_path):
+    environment = declared_binaries(tmp_path) | {"MARS_TITAN_REQUIRE_NATIVE": "1"}
+    calls = []
+
+    def refuses(path):
+        calls.append(path)
+        return "MARS_TITAN_EPISODIC_NATIVE no carga como enlace válido: otro PyTorch"
+
+    assert strict_problems(environment, cuda=never, episodic=refuses) == [
+        "MARS_TITAN_EPISODIC_NATIVE no carga como enlace válido: otro PyTorch"
+    ]
+    assert calls == [environment["MARS_TITAN_EPISODIC_NATIVE"]]
+    # Sin el modo estricto, o sin un archivo que cargar, el enlace no se intenta cargar.
+    assert strict_problems(dict(environment, MARS_TITAN_REQUIRE_NATIVE="0"), episodic=refuses) == []
+    environment["MARS_TITAN_EPISODIC_NATIVE"] = str(tmp_path / "missing.so")
+    assert len(strict_problems(environment, cuda=never, episodic=refuses)) == 1
+    assert len(calls) == 1
+
+
+def test_the_real_loader_rejects_a_file_that_is_not_a_binding(tmp_path):
+    empty = tmp_path / "empty.so"
+    empty.write_bytes(b"")
+    problem = episodic_load_problem(str(empty))
+    assert problem.startswith("MARS_TITAN_EPISODIC_NATIVE no carga como enlace válido")
+
+
+def test_native_required_reads_only_the_validated_switch():
+    assert native_required({"MARS_TITAN_REQUIRE_NATIVE": "1"})
+    assert not native_required({"MARS_TITAN_REQUIRE_NATIVE": "0"})
+    assert not native_required({})
 
 
 def test_strict_cuda_check_requires_a_visible_device():

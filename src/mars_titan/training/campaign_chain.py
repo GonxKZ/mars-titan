@@ -263,63 +263,27 @@ def parent_jobs(base_jobs, scope, window, arm, seed):
     return searches
 
 
-def chain_jobs(campaign, base_jobs, adapter_jobs):
-    """Crea un trabajo de selección de la cadena por ámbito, ventana, brazo base y semilla.
-
-    En la ventana 0 depende de los trabajos base que eligen su estado, que es ya el
-    predictor de la cadena. En las demás depende de todos los trabajos de posentrenamiento
-    de su ámbito, ventana, brazo y semilla, porque elige entre todos ellos.
-    """
-    keys = sorted({(job["scope"], job["base_arm"], job["seed"]) for job in adapter_jobs})
-    by_key = {}
-    for job in adapter_jobs:
-        by_key.setdefault((job["scope"], job["window"], job["base_arm"], job["seed"]), []).append(
-            job["id"]
-        )
-    jobs = []
-    for scope, base_arm, seed in keys:
-        for index, (window, _) in enumerate(scope_windows(campaign, scope)):
-            if index == 0:
-                depends = parent_jobs(base_jobs, scope, window, base_arm, seed)
-            else:
-                depends = by_key.get((scope, window, base_arm, seed), [])
-                _require(depends, f"{scope}/{window}/{base_arm} no tiene posentrenamiento")
-            jobs.append(
-                dict(
-                    id=chain_job_id(scope, window, base_arm, seed),
-                    scope=scope,
-                    window=window,
-                    anchor=window,
-                    arm=chain_arm(base_arm),
-                    base_arm=base_arm,
-                    seed=seed,
-                    kind="chain",
-                    stage="chain",
-                    depends=depends,
-                )
-            )
-    return jobs
-
-
 def check_staged(campaign, base_jobs, stages):
     """Comprueba que las etapas posteriores respetan las dependencias del diseño por etapas.
 
     Un trabajo de posentrenamiento de la ventana k ≥ 1 depende de los trabajos base que
-    eligen su padre en k-1 y no existe en la primera ventana. Un trabajo de RL ajusta con al
-    menos tres ventanas anteriores a su validación, valida antes de su evaluación y depende
-    de la selección de la cadena de cada ventana que lee (ajuste, validación y evaluación)
-    con la semilla del predictor que declara en `predictor_seed`. Su `predictor` puede
-    nombrar el brazo base o el brazo de la cadena. El número exacto de ventanas de ajuste lo
-    fija la identidad de la etapa de RL, que también declara la sensibilidad en expansión.
+    eligen su padre en k-1 y no existe en la primera ventana. Las selecciones de la cadena
+    (`stage = "chain"`) no se comprueban aquí: el calendario las coloca en su fase y exige
+    que sus dependencias estén antes. Un trabajo de RL ajusta con al menos tres ventanas
+    anteriores a su validación, valida antes de su evaluación y depende de la selección de
+    la cadena de cada ventana que lee (ajuste, validación y evaluación) con la semilla del
+    predictor que declara en `predictor_seed`. Su `predictor` puede nombrar el brazo base o
+    el brazo de la cadena. El número exacto de ventanas de ajuste lo fija la identidad de la
+    etapa de RL, que también declara la sensibilidad en expansión.
 
-    La política de un mercado puede leer la cadena de otro ámbito, como el modelo conjunto,
-    en la ventana con los mismos cuatro tramos. Por eso basta con que dependa de la cadena
-    de cualquier ámbito con esos tramos. El calendario comprueba después que esa cadena
-    existe en el plan.
+    La política lee siempre la cadena de su propio ámbito, como `policy_plan.predictor_reads`.
+    La etapa de RL de A v2 se declara en el ámbito conjunto con un trabajo por mercado, y la
+    etapa de adaptadores da cadena en ese ámbito a todos sus predictores, así que no hace
+    falta leer la cadena de otro ámbito. Una dependencia así se rechaza.
     """
-    from .campaign_schedule import campaign_windows
-
     for job in stages.get("adapters", ()):
+        if job.get("stage") == "chain":
+            continue
         parent = parent_window(campaign, job["scope"], job["window"])
         _require(parent is not None, f"{job['id']}: la primera ventana no tiene posentrenamiento")
         needed = parent_jobs(base_jobs, job["scope"], parent, job["base_arm"], job["seed"])
@@ -327,12 +291,6 @@ def check_staged(campaign, base_jobs, stages):
             set(needed) <= set(job["depends"]),
             f"{job['id']} no depende del estado elegido de la base en {parent}",
         )
-    # Ventanas de todos los ámbitos con los mismos cuatro tramos que cada (ámbito, ventana).
-    spans = {
-        pair: row["scopes"].items()
-        for row in campaign_windows(campaign)
-        for pair in row["scopes"].items()
-    }
     for job in stages.get("rl", ()):
         windows = [*job["train"], job["validation"], job["window"]]
         seed = job.get("predictor_seed")
@@ -345,13 +303,14 @@ def check_staged(campaign, base_jobs, stages):
             and order.index(job["validation"]) < order.index(job["window"]),
             f"{job['id']} no ajusta con tres ventanas anteriores a su validación y su evaluación",
         )
-        arm = job["predictor"].removesuffix(CHAIN_SUFFIX)
-        depends = set(job["depends"])
+        chains = [d for d in job["depends"] if f"{CHAIN_SUFFIX}/select-" in d]
         _require(
-            all(
-                {chain_job_id(s, w, arm, seed) for s, w in spans[job["scope"], window]} & depends
-                for window in windows
-            ),
+            all(d.split("/")[0] == job["scope"] for d in chains),
+            f"{job['id']} lee la cadena de otro ámbito",
+        )
+        arm = job["predictor"].removesuffix(CHAIN_SUFFIX)
+        _require(
+            {chain_job_id(job["scope"], window, arm, seed) for window in windows} <= set(chains),
             f"{job['id']} no depende de la cadena de todas las ventanas que lee",
         )
 

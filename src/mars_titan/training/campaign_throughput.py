@@ -55,6 +55,7 @@ from .campaign_plan import (
     MARS,
     NEURAL,
     ONLINE,
+    ONLINE_CONTROL,
     TITANS,
     _arm_specs,
     extend_campaign,
@@ -64,7 +65,6 @@ from .campaign_plan import (
 
 TRAINING_PARTITIONS = ("validation", "calibration", "evaluation", "train")
 POSTTRAINING = "posttraining_adapter_matrix"
-ONLINE_CONTROL = "online_control"
 POLICY_STAGE = "rl_policy_comparison"
 ABLATION_STAGE = "modality_ablation"
 NOT_MEASURED = "not_measured"
@@ -272,7 +272,7 @@ def _option_hours(campaign, family, jobs, counts, measured, epochs):
 
 
 def _online_hours(campaign, jobs, counts, neural):
-    """Acota por arriba las horas del control en línea, que todavía no tiene ejecutor.
+    """Acota por arriba las horas del control en línea mientras no se mida su ejecutor.
 
     Cada trabajo predice calibración y evaluación con la inferencia más lenta de su padre y,
     como cada etiqueta madura entra a lo sumo en un paso, ajusta como mucho esas mismas filas
@@ -289,33 +289,68 @@ def _online_hours(campaign, jobs, counts, neural):
     return dict(_hours(jobs, seconds), bound="each_matured_label_in_at_most_one_step")
 
 
-def _posttraining_hours(stage, counts, rates):
+def _posttraining_hours(stage, counts, rates, fresh=None):
     """Horas de la etapa de adaptadores, con la caché de cada padre ajustado.
 
-    Cada padre de una ventana reentrenada predice una vez ajuste y validación para su
-    caché. Su caudal es la inferencia neuronal más lenta del brazo base.
+    En el walk-forward por etapas cada caso ajusta solo las filas nuevas de su ventana.
+    `fresh` las da contadas por ámbito y ventana con la regla de
+    `campaign_chain.posttraining_rows`. Sin él se acotan con los recuentos como el tramo de
+    ajuste de la ventana menos ajuste, validación y calibración de la anterior, una cota algo
+    mayor porque las filas que la purga quitó en las fronteras de la ventana anterior sí
+    están en el ajuste de la nueva. Cada padre predice una vez esas filas y la validación
+    para su caché, y el padre congelado predice validación, calibración y evaluación, ambos
+    con la inferencia neuronal más lenta del brazo base. En el plan anclado de B el ajuste
+    recorre todo su tramo.
+
+    La medida de la matriz solo cubre las redes de referencia. Los brazos de Titans-MAC y la
+    cadena trivial de Ridge y XGBoost quedan en `without_estimate`, sin sumar sus horas.
     """
-    from mars_titan.posttraining.campaign_stage import plan_stage
+    from mars_titan.posttraining.campaign_stage import FROZEN, plan_stage
 
     measured, neural = rates[POSTTRAINING], rates[NEURAL]
     epochs = stage["matrix"]["budget"]["epochs"]
-    jobs = plan_stage(stage)
+    jobs, missing = [], set()
+    for job in plan_stage(stage):
+        if job["base_arm"] in measured and job["base_arm"] in neural:
+            jobs.append(job)
+        else:
+            missing.add(job["base_arm"])
     parents = {}
     for job in jobs:
         if job["kind"] == FIT:
             parents.setdefault((job["scope"], job["window"], job["base_arm"], job["seed"]), job)
     first = {job["id"] for job in parents.values()}
 
-    def seconds(job):
+    def rows_of(job):
         rows = counts[job["scope"]][job["window"]]
+        if job.get("parent_window") is None:
+            return rows
+        if fresh is not None:
+            return dict(rows, train=fresh[job["scope"]][job["window"]])
+        previous = counts[job["scope"]][job["parent_window"]]
+        bound = rows["train"] - sum(
+            previous[name] for name in ("train", "validation", "calibration")
+        )
+        _require(bound > 0, f"{job['id']} no tiene filas nuevas en los recuentos")
+        return dict(rows, train=bound)
+
+    def seconds(job):
+        rows = rows_of(job)
+        cache = _slowest(neural[job["base_arm"]].values())["inference"]
+        if job["kind"] == FROZEN:
+            return (rows["validation"] + rows["calibration"] + rows["evaluation"]) / cache
         rate = _slowest([points[job["point"]] for points in measured[job["base_arm"]].values()])
         total = validated_job_seconds(job, rows, rate, epochs)
         if job["id"] in first:
-            cache = _slowest(neural[job["base_arm"]].values())["inference"]
             total += (rows["train"] + rows["validation"]) / cache
         return total
 
-    return dict(_hours(jobs, seconds), parent_caches=len(first))
+    return dict(
+        _hours(jobs, seconds),
+        parent_caches=len(first),
+        fit_rows="counted" if fresh is not None else "bounded_from_window_counts",
+        without_estimate=sorted(missing),
+    )
 
 
 def _ablation_hours(campaign, stage, counts, rates):
@@ -355,12 +390,18 @@ def _ablation_hours(campaign, stage, counts, rates):
 
 
 def _totals(families):
-    """Horas de GPU con las opciones declaradas y con las más rápidas que caben en memoria."""
+    """Horas de GPU con las opciones declaradas y con las más rápidas que caben en memoria.
+
+    Una familia con brazos sin estimar suma las horas de los demás y también queda en
+    `without_estimate`, para que el total no parezca completo.
+    """
     declared, fastest, missing = 0.0, 0.0, []
     for name, family in families.items():
         if "hours" in family:
             declared += family["hours"]
             fastest += family["hours"]
+            if family.get("without_estimate"):
+                missing.append(name)
             continue
         fitted = [
             option["hours"] for option in family.get("options", {}).values() if "hours" in option
@@ -375,7 +416,15 @@ def _totals(families):
 
 
 def estimate_hours(
-    campaign, counts, rates, *, stage=None, policy_stage=None, ablation_stage=None, epochs=None
+    campaign,
+    counts,
+    rates,
+    *,
+    stage=None,
+    policy_stage=None,
+    ablation_stage=None,
+    epochs=None,
+    fresh=None,
 ):
     """Horas previstas por familia, opción, ámbito y brazo de una variante.
 
@@ -385,6 +434,7 @@ def estimate_hours(
     `policy_stage`, añade aparte la estimación orientativa de la etapa de políticas y con
     `ablation_stage`, la de la ablación de modalidades. `epochs` sustituye las épocas de la
     regla de parada, por ejemplo con las épocas efectivas previstas de una parada temprana.
+    `fresh` son las filas nuevas contadas de cada ventana con padre de la etapa por etapas.
     """
     epochs = campaign["rule"]["max_epochs"] if epochs is None else epochs
     jobs = plan_campaign(campaign)
@@ -434,7 +484,7 @@ def estimate_hours(
             "La etapa de adaptadores no parte de esta campaña",
         )
         families[POSTTRAINING] = (
-            _posttraining_hours(stage, counts, rates)
+            _posttraining_hours(stage, counts, rates, fresh)
             if POSTTRAINING in rates and NEURAL in rates
             else dict(status=NOT_MEASURED)
         )
@@ -719,6 +769,52 @@ def measure_posttraining(stage, view, *, batches=50, warmup=5):
     finally:
         guard.remove()
     return rates
+
+
+def _measured_cases(stage):
+    """Lo que mide `measure_posttraining`: brazos de las redes, sus casos y el presupuesto.
+
+    Los casos se comparan sin la huella de la matriz que los declara, porque un mismo caso
+    cuesta lo mismo en la v2 y en la v3.
+    """
+    from mars_titan.models.quantile_head import QUANTILE_HEAD
+    from mars_titan.posttraining import adapter_matrix
+
+    cases = {}
+    for arm, family in stage["families"].items():
+        cases[arm] = {}
+        for item in adapter_matrix.cases(
+            stage["matrix"], stage["matrix_sha256"], family, head=QUANTILE_HEAD
+        ):
+            # La continuación completa no tiene adaptador ni, por tanto, huella de la matriz.
+            case = dict(item["case"])
+            if "adapter" in case:
+                case["adapter"] = dict(case["adapter"], matrix_sha256=None)
+            cases[arm][item["id"]] = json.dumps(case, sort_keys=True)
+    return dict(cases=cases, budget=json.dumps(stage["matrix"]["budget"], sort_keys=True))
+
+
+def _covers(measured, other):
+    """True si la medida de una etapa sirve para otra: mismo presupuesto y sus casos dentro."""
+    return measured["budget"] == other["budget"] and all(
+        arm in measured["cases"]
+        and all(measured["cases"][arm].get(key) == case for key, case in cases.items())
+        for arm, cases in other["cases"].items()
+    )
+
+
+def covering_stage(stages):
+    """Etapa de adaptadores que se mide, porque contiene los casos de todas las demás.
+
+    A declara la matriz v3, con los casos de Titans-MAC y los brazos de la variedad de
+    adaptadores, y B la v2. Los casos de las redes de B están todos en A con el mismo
+    presupuesto, así que una sola medida de A estima las dos etapas.
+    """
+    measured = [_measured_cases(stage) for stage in stages]
+    for stage, cases in zip(stages, measured, strict=True):
+        if all(_covers(cases, other) for other in measured):
+            return stage
+    raise ValueError("Ninguna etapa de adaptadores contiene los casos medidos de las demás")
 
 
 def _view_fold(dataset):
@@ -1242,16 +1338,26 @@ def measure_candidate(
     work = Path(work)
     dataset = CorpusDataset(Path(view), input_policy=HISTORICAL_MASKED)
     fold = _view_fold(dataset)
-    sources = window_sources(dataset, work / "candidate-indices", ("train", "validation"))
-    inputs = _event_inputs(sources["train"])
-    specification = sources["train"].specification()
     rates, guard = {}, _forbid_steps()
     try:
         for arm, candidates in section["candidates"].items():
-            ((name, case),) = candidates
-            recipe, model = campaign_case(case)
+            # Los casos solo cambian hiperparámetros del optimizador, como en Titans-MAC.
+            _, case = candidates[0]
+            recipe, model, warmup_months = campaign_case(case)
+            sources = window_sources(
+                dataset, work / "candidate-indices", ("train", "validation"), warmup_months
+            )
+            inputs = _event_inputs(sources["train"])
+            specification = sources["train"].specification()
 
-            def build(option, case=case, recipe=recipe, model=model):
+            def build(
+                option,
+                case=case,
+                recipe=recipe,
+                model=model,
+                sources=sources,
+                specification=specification,
+            ):
                 seed_run(case["seed"])
                 adapter = CandidateInputAdapter(
                     specification,
@@ -1280,7 +1386,7 @@ def measure_candidate(
                 inputs,
                 settings,
             )
-            rates[arm] = dict(record, variant=name, max_event_inputs=max(inputs))
+            rates[arm] = dict(record, variant=case["variant"], **_shared(candidates, inputs))
     finally:
         guard.remove()
     return rates
@@ -1402,11 +1508,10 @@ def measure_campaigns(
     loaded = [load_stage(path) for path in stages]
     by_campaign = {stage["campaign"]["path"]: stage for stage in loaded}
     _require(
-        len(by_campaign) == len(loaded)
-        and set(by_campaign) <= {c["path"] for c in campaigns}
-        and len({(s["matrix_sha256"], tuple(s["families"].items())) for s in loaded}) <= 1,
-        "Cada etapa de adaptadores parte de una campaña medida, con la misma matriz y brazos",
+        len(by_campaign) == len(loaded) and set(by_campaign) <= {c["path"] for c in campaigns},
+        "Cada etapa de adaptadores parte de una campaña medida distinta",
     )
+    measured_stage = covering_stage(loaded) if loaded else None
     policies = [policy_plan.load_stage(path) for path in rl_stages]
     by_policies = {stage["campaign"]["path"]: stage for stage in policies}
     _require(
@@ -1458,7 +1563,7 @@ def measure_campaigns(
         if reference.get(CM):
             rates[CM] = measure_cm_v1(reference, first_view, work, **chronological)
         if loaded:
-            rates[POSTTRAINING] = measure_posttraining(loaded[0], first_view, **batched)
+            rates[POSTTRAINING] = measure_posttraining(measured_stage, first_view, **batched)
         if policies:
             rates[POLICY_STAGE] = policy_throughput.measure_policies(policies[0], **stepped)
         resources = lease.record

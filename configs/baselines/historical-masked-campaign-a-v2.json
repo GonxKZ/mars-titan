@@ -115,7 +115,7 @@
         }
       }
     },
-    "limits": {"max_online_jobs": 153}
+    "limits": {"max_online_jobs": 57}
   },
   "memory_options": {
     "titans_mac": {"accumulation_rows": "pending"},
@@ -123,7 +123,7 @@
     "cm_v1": {"accumulation_rows": "pending"}
   },
   "limits": {
-    "max_training_jobs": 2322,
+    "max_training_jobs": 2341,
     "max_prediction_jobs": 0
   },
   "final_test_opened": false

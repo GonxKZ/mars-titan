@@ -1,9 +1,9 @@
-"""Etapa de la matriz por ventana walk-forward, sin pasos de optimizador.
+"""Walk-forward por etapas de la matriz de adaptadores, sin pasos de optimizador.
 
 Los recuentos se comprueban con las configuraciones del repositorio. El recorrido completo
-usa la campaña base reducida de `campaign_fixture`, con padres de cuantiles reales y pesos
-iniciales, y el optimizador del fixture `recorder`, que no hereda de
-`torch.optim.Optimizer`, registra gradientes y exige pesos sin cambios. La GPU no se usa.
+usa la campaña base reducida de `campaign_fixture` (dos ventanas US), con padres de
+cuantiles reales y pesos iniciales, y el optimizador del fixture `recorder`, que no hereda
+de `torch.optim.Optimizer`, registra gradientes y exige pesos sin cambios. La GPU no se usa.
 """
 
 import json
@@ -16,81 +16,165 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
 
+from mars_titan.data import prediction_files
 from mars_titan.data.cohort_files import read_manifest
 from mars_titan.data.storage import atomic_json
 from mars_titan.environments.walk_forward_receipt import read_window_receipt
 from mars_titan.evaluation import walk_forward_comparison as comparison
 from mars_titan.models.quantile_head import QUANTILE_COLUMNS, QUANTILE_HEAD
-from mars_titan.posttraining import adapter_matrix, campaign_stage, matrix_runs
+from mars_titan.posttraining import adapter_matrix, campaign_stage, matrix_runs, staged_chain
+from mars_titan.posttraining import chronological_matrix as cm
+from mars_titan.training.campaign_plan import plan_campaign
 from mars_titan.training.learning_hold import LearningHoldError
 from tests.posttraining.campaign_fixture import CpuLease, base_campaign
+from tests.posttraining.real_only import real_data_only
 
 CONFIGS = Path("configs/posttraining")
 FINAL_TEST = int(np.datetime64("2024-01-01", "us").astype(np.int64))
+# Padres congelados por ventana: uno por semilla en las cinco redes y las cuatro variantes de
+# Titans, el único de Ridge y los tres de XGBoost, cuya cadena solo tiene ese padre.
+FROZEN_PARENTS = 3 * (5 + 4) + 1 + 3
 
 
-@pytest.mark.parametrize(
-    ("variant", "fits", "carries", "scopes"),
-    [
-        ("a", 3915, 0, {"US": (19, 0), "CN": (13, 0), "US+CN": (13, 0)}),
-        ("b", 1479, 2436, {"US": (7, 12), "CN": (5, 8), "US+CN": (5, 8)}),
-    ],
-)
-def test_repository_stages_plan_every_window_arm_seed_and_case(variant, fits, carries, scopes):
-    path = CONFIGS / f"historical-masked-adapter-stage-{variant}.json"
+def micros(day):
+    return int(np.datetime64(day, "us").astype(np.int64))
+
+
+def matrix_cases(stage):
+    """Casos de la matriz por ventana y semilla, sumados sobre los brazos base de la etapa.
+
+    Se leen de la matriz y no de una lista fija. Con la v3 y su variedad son 82: nueve en
+    cada red recurrente y DLinear (cuatro brazos de la v2, cuatro de la variedad y la
+    continuación), quince en el Transformer compacto (ocho, seis y la continuación) y los de
+    Titans-MAC (cinco en el codificador directo y en MAC sin memoria, nueve con memoria fija
+    y doce en línea, con sus tres brazos de la variedad).
+    """
+    active, _ = campaign_stage.stage_arms(stage)
+    matrix, digest = stage["matrix"], stage["matrix_sha256"]
+    total = 0
+    for spec in active.values():
+        if spec["design"] == campaign_stage.TABULAR:
+            continue
+        if spec["design"] is None:
+            items = adapter_matrix.cases(matrix, digest, spec["family"], head=QUANTILE_HEAD)
+        else:
+            items = cm.cases(
+                matrix, digest, spec["family"], variant=spec["variant"], bank=spec["bank"]
+            )
+        total += sum(item["case"]["seed"] == 42 for item in items)
+    return total
+
+
+def test_stage_a_plans_every_later_window_from_the_previous_parent():
+    path = CONFIGS / "historical-masked-adapter-stage-a.json"
     result = campaign_stage.check_stage(path)
+    assert (result["design"], result["executable"]) == ("staged_chain_v1", True)
+    assert (result["chain_rule"], result["data_policy"]) == (
+        "chain_validation_score_v1",
+        "real_edition_only",
+    )
     counts = result["counts"]
-    assert (counts["training_jobs"], counts["prediction_jobs"]) == (fits, carries)
+    assert (counts["training_jobs"], counts["prediction_jobs"]) == (10332, 1302)
+    assert counts["selection_jobs"] == 1395
     stage = campaign_stage.load_stage(path)
-    assert stage["limits"] == dict(max_training_jobs=fits, max_prediction_jobs=carries)
+    assert stage["limits"] == dict(max_training_jobs=10332, max_prediction_jobs=1302)
+    cases = matrix_cases(stage)
+    assert cases == 82
+    assert result["awaiting_sections"] == {}
     assert result["excluded_controls"].keys() == {"linear_residual"}
     assert result["objectives"]["adapters"] == "neural_pinball"
-    # Por ventana y semilla: cuatro brazos y la continuación en cada red recurrente y
-    # DLinear, ocho brazos y la continuación en el Transformer.
-    per_window = 3 * (4 * 5 + 9)
-    for scope, (trained, carried) in scopes.items():
+    for scope, windows in {"US": 19, "CN": 13, "US+CN": 13}.items():
         entry = counts["scopes"][scope]
-        assert (len(entry["retrained_windows"]), entry["carried_windows"]) == (trained, carried)
-        assert entry["training_jobs"] == trained * per_window
-        assert entry["prediction_jobs"] == carried * per_window
-        assert len(entry["arms"]) == 4 * 5 + 9
+        # La ventana 0 no tiene padre: no hay postentrenamiento, solo la cadena de la base.
+        assert entry["windows"] == windows and len(entry["fitted_windows"]) == windows - 1
+        assert "fold-000" not in entry["fitted_windows"]
+        assert entry["training_jobs"] == (windows - 1) * 3 * cases
+        assert entry["prediction_jobs"] == (windows - 1) * FROZEN_PARENTS
+        assert entry["selection_jobs"] == windows * FROZEN_PARENTS
+        assert len(entry["arms"]) == cases + 11
         for arm, seeds in entry["arms"].items():
             assert comparison._name(arm)
-            assert seeds == {
-                str(seed): dict(fit=trained, carry=carried) for seed in (42, 43, 44)
-            }, arm
+            kind = "frozen" if arm.endswith("__frozen_parent") else "fit"
+            # Ridge solo declara la semilla 42 en la campaña base.
+            declared = (42,) if arm == "ridge__frozen_parent" else (42, 43, 44)
+            assert seeds == {str(seed): {kind: windows - 1} for seed in declared}, arm
 
 
-def test_plan_carries_each_case_from_its_anchor_with_the_same_case():
-    stage = campaign_stage.load_stage(CONFIGS / "historical-masked-adapter-stage-b.json")
-    jobs = {job["id"]: job for job in campaign_stage.plan_stage(stage)}
-    matrix, digest = stage["matrix"], stage["matrix_sha256"]
-    for job in jobs.values():
-        assert job["case"]["mode"] == "neural_pinball" and job["control"] != "linear_residual"
-        expected = {
-            item["id"]: item["case"]
-            for item in adapter_matrix.cases(matrix, digest, job["family"], head=QUANTILE_HEAD)
-        }
-        assert job["case"] == expected[f"seed-{job['seed']}/{job['point']}"]
-        if job["kind"] == "carry":
-            (anchor,) = job["depends"]
-            fitted = jobs[anchor]
-            assert fitted["kind"] == "fit" and fitted["window"] == job["anchor"]
-            assert (fitted["arm"], fitted["seed"], fitted["case"]) == (
-                job["arm"],
-                job["seed"],
-                job["case"],
+def test_stage_b_keeps_its_counts_and_is_not_executable():
+    result = campaign_stage.check_stage(CONFIGS / "historical-masked-adapter-stage-b.json")
+    assert (result["design"], result["executable"]) == ("anchored_not_executed", False)
+    assert "9 de octubre" in result["not_executed_reason"]
+    counts = result["counts"]
+    assert (counts["training_jobs"], counts["prediction_jobs"], counts["selection_jobs"]) == (
+        1479,
+        2436,
+        0,
+    )
+
+
+def test_jobs_depend_on_the_parent_selected_in_the_previous_window():
+    stage = campaign_stage.load_stage(CONFIGS / "historical-masked-adapter-stage-a.json")
+    jobs = campaign_stage.plan_stage(stage)
+    base = plan_campaign(stage["campaign"])
+    by_id = {job["id"]: job for job in base}
+    active, _ = campaign_stage.stage_arms(stage)
+    cases = {
+        arm: {item["id"]: item["case"] for item in campaign_stage._cases(stage, spec)}
+        for arm, spec in active.items()
+    }
+    # Las redes de la campaña siguen la pérdida pinball de la cabeza de cuantiles.
+    for arm, spec in active.items():
+        if spec["design"] is None:
+            neural = adapter_matrix.cases(
+                stage["matrix"], stage["matrix_sha256"], spec["family"], head=QUANTILE_HEAD
             )
-            assert list(jobs).index(anchor) < list(jobs).index(job["id"])
-        else:
-            assert job["depends"] == [] and job["anchor"] == job["window"]
+            assert {item["case"]["mode"] for item in neural} == {"neural_pinball"}, arm
+    windows = {
+        scope: [name for name, _ in staged_chain.scope_windows(stage["campaign"], scope)]
+        for scope in stage["scopes"]
+    }
+    for job in jobs:
+        order = windows[job["scope"]]
+        assert order.index(job["parent_window"]) == order.index(job["window"]) - 1
+        # Búsquedas de la semilla 42 o finalistas de 43 y 44 del brazo base en k-1.
+        expected = staged_chain.parent_jobs(
+            base, job["scope"], job["parent_window"], job["base_arm"], job["seed"]
+        )
+        assert job["depends"] == expected and expected
+        for name in expected:
+            parent = by_id[name]
+            assert (parent["window"], parent["arm"]) == (job["parent_window"], job["base_arm"])
+            assert parent["stage"] == "search" or parent["seed"] == job["seed"]
+        if job["kind"] == "frozen":
+            assert job["case"] is None and job["arm"] == f"{job['base_arm']}__frozen_parent"
+            continue
+        assert job["control"] != "linear_residual"
+        assert job["case"] == cases[job["base_arm"]][f"seed-{job['seed']}/{job['point']}"]
+    chains = campaign_stage.plan_chain(stage, jobs)
+    order = campaign_stage.ordered_jobs(jobs, chains)
+    position = {job["id"]: index for index, job in enumerate(order)}
+    for chain in chains:
+        if chain["parent_window"] is None:
+            assert chain["window"] == "fold-000"
+            assert all(name in by_id for name in chain["depends"])
+            continue
+        own = [
+            job["id"]
+            for job in jobs
+            if (job["scope"], job["window"], job["base_arm"], job["seed"])
+            == (chain["scope"], chain["window"], chain["base_arm"], chain["seed"])
+        ]
+        assert chain["depends"] == own
+        seed = f"seed-{chain['seed']}/"
+        assert len(own) == 1 + sum(name.startswith(seed) for name in cases[chain["base_arm"]])
+        assert all(position[name] < position[chain["id"]] for name in own)
 
 
 def mutated(tmp_path, change):
     value = json.loads((CONFIGS / "historical-masked-adapter-stage-a.json").read_text())
     value.update(
         campaign=str(Path("configs/baselines/historical-masked-campaign-a.json").resolve()),
-        matrix=str((CONFIGS / "adapter-matrix-v2.json").resolve()),
+        matrix=str((CONFIGS / "adapter-matrix-v3.json").resolve()),
     )
     change(value)
     path = tmp_path / "stage.json"
@@ -100,14 +184,29 @@ def mutated(tmp_path, change):
 
 INVALID = {
     "scalar_matrix": lambda v: v.update(matrix=str((CONFIGS / "adapter-matrix-v1.json").resolve())),
-    "unknown_arm": lambda v: v.update(arms=["gru", "ridge"]),
+    "unknown_arm": lambda v: v.update(arms=["gru", "zero"]),
     "duplicated_arm": lambda v: v.update(arms=["gru", "gru"]),
     "unordered_scopes": lambda v: v.update(scopes=["CN", "US"]),
     "unknown_scope": lambda v: v.update(scopes=["EU"]),
-    "retention": lambda v: v.update(ordered_retention="forever"),
+    "retention": lambda v: v.update(
+        cohort_reading=dict(source="ordered_corpus", retention="forever")
+    ),
+    "ordered_reading": lambda v: v.update(
+        cohort_reading=dict(source="ordered_corpus", retention="keep")
+    ),
+    "small_block": lambda v: v.update(
+        cohort_reading=dict(source="view_blocks", max_block_bytes=1024**2)
+    ),
+    "block_without_budget": lambda v: v.update(cohort_reading=dict(source="view_blocks")),
+    "mixed_reading": lambda v: v["cohort_reading"].update(retention="keep"),
     "test_opened": lambda v: v.update(final_test_opened=True),
-    "limit": lambda v: v["limits"].update(max_training_jobs=3914),
+    "limit": lambda v: v["limits"].update(max_training_jobs=7181),
+    "frozen_limit": lambda v: v["limits"].update(max_prediction_jobs=1301),
     "status": lambda v: v.update(status="executed"),
+    "chain_rule": lambda v: v.update(chain_rule="chain_validation_score_v2"),
+    "data_policy": lambda v: v.update(data_policy="real_and_augmented"),
+    "no_chain_rule": lambda v: v.pop("chain_rule"),
+    "no_data_policy": lambda v: v.pop("data_policy"),
 }
 
 
@@ -119,6 +218,19 @@ def test_the_unchanged_declaration_is_accepted(tmp_path):
 def test_stage_rejects_inconsistent_declarations(tmp_path, name):
     with pytest.raises(ValueError):
         campaign_stage.check_stage(mutated(tmp_path, INVALID[name]))
+
+
+def test_variant_b_cannot_declare_the_chain(tmp_path):
+    value = json.loads((CONFIGS / "historical-masked-adapter-stage-b.json").read_text())
+    value.update(
+        campaign=str(Path("configs/baselines/historical-masked-campaign-b.json").resolve()),
+        matrix=str((CONFIGS / "adapter-matrix-v2.json").resolve()),
+        chain_rule="chain_validation_score_v1",
+        data_policy="real_edition_only",
+    )
+    atomic_json(tmp_path / "stage.json", value)
+    with pytest.raises(ValueError, match="Solo la variante A"):
+        campaign_stage.load_stage(tmp_path / "stage.json")
 
 
 def test_loading_a_stage_requires_objectives_for_the_quantile_head(tmp_path):
@@ -137,16 +249,18 @@ def base_b(tmp_path_factory):
     return base_campaign(tmp_path_factory.mktemp("stage-b"), "B")
 
 
-def run(base, output, stop=None):
-    return campaign_stage.run_stage(
-        base.stage,
-        base.views,
-        base.output,
-        output,
-        lease=CpuLease,
-        stop=stop or SimpleNamespace(requested=False),
-        device="cpu",
-    )
+def run(base, output, stop=None, stage=None):
+    # Sin cola, preparación, aumento ni mundos del postentrenamiento emparejado anterior.
+    with real_data_only():
+        return campaign_stage.run_stage(
+            stage or base.stage,
+            base.views,
+            base.output,
+            output,
+            lease=CpuLease,
+            stop=stop or SimpleNamespace(requested=False),
+            device="cpu",
+        )
 
 
 def receipts(output):
@@ -156,118 +270,197 @@ def receipts(output):
     }
 
 
-def base_predictions(base, job, partition):
-    receipt = json.loads((base.output / "jobs" / job / "receipt.json").read_text())
-    return pq.read_table(base.output / receipt["predictions"][partition]["path"])
-
-
 def by_sample(table):
     order = np.argsort(np.asarray(table["sample_id"].to_pylist()))
     return {name: np.asarray(table[name].to_pylist())[order] for name in table.column_names}
 
 
-def test_variant_a_fits_every_case_with_equal_updates_from_the_window_parent(
+PARENT = "US/fold-000/gru/search-gru-10"
+FROZEN = "US/fold-001/gru__frozen_parent/frozen-s42"
+
+
+def test_variant_a_adapts_the_previous_parent_with_new_rows_and_publishes_the_chain(
     base_a, tmp_path, recorder
 ):
     output = tmp_path / "stage"
     summary = run(base_a, output)
     assert summary["status"] == "completed"
-    assert summary["planned"] == summary["completed"] == dict(training_jobs=10, prediction_jobs=0)
+    assert summary["planned"] == summary["completed"]
+    assert summary["planned"] == dict(training_jobs=5, prediction_jobs=1, selection_jobs=2)
     found = receipts(output)
-    assert len(found) == 10
-    # Igualdad de actualizaciones: en cada ventana, cada brazo y la continuación aplican
-    # las del plan de su padre. Entre ventanas cambian con las sesiones de ajuste.
-    by_window = {}
-    for job_id, receipt in found.items():
-        by_window.setdefault(job_id.split("/")[1], set()).add(receipt["updates"])
-    assert all(len(values) == 1 and min(values) > 0 for values in by_window.values())
-    windows = {window: values.pop() for window, values in by_window.items()}
-    assert sorted(len(item.calls) for item in recorder.optimizers) == sorted(
-        [windows["fold-000"]] * 5 + [windows["fold-001"]] * 5
-    )
-    for name, budget in summary["budgets"].items():
-        assert budget["head"] == QUANTILE_HEAD
-        planned = {row["updates"] for row in budget["rows"][1:]}
-        assert planned == {windows[name.split("/")[1]]}
-        assert budget["updates_per_epoch"] == windows[name.split("/")[1]]
-        assert [row["control"] for row in budget["rows"]].count("full_continuation") == 1
-    stage_jobs = {
-        job["id"]: job for job in campaign_stage.plan_stage(campaign_stage.load_stage(base_a.stage))
+    assert set(found) == {FROZEN} | {
+        f"US/fold-001/gru__{point}/fit-s42"
+        for point in ("full_continuation", "head", "fusion", "head_fusion", "fusion_full_rank")
     }
-    for job_id, receipt in found.items():
-        job = stage_jobs[job_id]
-        window = job["window"]
-        # El padre de la ventana es el ganador de la búsqueda de esa ventana.
-        assert receipt["identity"]["parent"]["job"] == f"US/{window}/gru/search-gru-10"
-        assert receipt["selection"]["best_epoch"] == 0
-        assert receipt["identity"]["case"]["mode"] == "neural_pinball"
-        for partition in ("calibration", "evaluation"):
+    proof = json.loads((output / "windows-data/US/fold-001/fit-rows.json").read_text())
+    assert proof["parent_window"] == "fold-000" and proof["window"] == "fold-001"
+    assert (proof["start"], proof["end"]) == ("2022-01-01", "2022-04-01")
+    assert micros("2022-01-01") <= proof["first_decision"] <= proof["last_decision"]
+    assert proof["last_decision"] < micros("2022-04-01")
+    assert proof["rows"] > 0 and proof["intersection"] == dict(train=0, validation=0, calibration=0)
+    assert proof["parent_labels_mature_until"] < micros("2022-01-01")
+    assert proof["labels_used_until"] < micros("2023-01-01")
+    # El normalizador del padre solo ve las filas nuevas de la prueba.
+    parent_folder = output / "windows-data/US/fold-001/parents/gru/seed-42"
+    normalization = json.loads((parent_folder / "normalization.json").read_text())
+    assert normalization["samples"] == proof["rows"]
+    # Sin pasos aplicados, la época cero gana y cada caso emite las filas del padre congelado.
+    updates = {receipt["updates"] for name, receipt in found.items() if name != FROZEN}
+    assert len(updates) == 1 and min(updates) > 0
+    assert len(recorder.optimizers) == 5
+    assert all(len(item.calls) == min(updates) for item in recorder.optimizers)
+    frozen = found[FROZEN]
+    assert frozen["updates"] == 0 and frozen["reported_score"] is None
+    assert frozen["identity"]["parent"]["job"] == PARENT and frozen["fit_rows"] is None
+    tables = {
+        partition: by_sample(pq.read_table(output / frozen["predictions"][partition]["path"]))
+        for partition in campaign_stage.PREDICTED
+    }
+    for name, receipt in found.items():
+        identity = receipt["identity"]
+        assert (identity["window"], identity["parent_window"]) == ("fold-001", "fold-000")
+        assert identity["parent"]["job"] == PARENT
+        assert receipt["labels_used_until"] == proof["labels_used_until"]
+        assert receipt["score"] == frozen["score"]
+        if name != FROZEN:
+            assert receipt["selection"]["best_epoch"] == 0
+            assert receipt["fit_rows"]["rows"] == proof["rows"]
+            assert receipt["fit_rows"]["sha256"] == proof["sha256"]
+            assert receipt["fit_rows"]["intersection"] == proof["intersection"]
+        for partition in campaign_stage.PREDICTED:
             table = pq.read_table(output / receipt["predictions"][partition]["path"])
-            times = table["prediction_at"].cast(pa.int64()).to_numpy()
-            assert (times < FINAL_TEST).all()
-            levels = np.column_stack([table[name].to_numpy() for name in QUANTILE_COLUMNS])
+            assert (table["prediction_at"].cast(pa.int64()).to_numpy() < FINAL_TEST).all()
+            levels = np.column_stack([table[column].to_numpy() for column in QUANTILE_COLUMNS])
             assert (np.diff(levels, axis=1) >= 0).all()
-            # Sin pasos aplicados, cada brazo predice exactamente la salida del padre elegido.
             mine = by_sample(table)
-            parent = by_sample(
-                base_predictions(base_a, f"US/{window}/gru/search-gru-10", partition)
-            )
-            np.testing.assert_array_equal(mine["target"], parent["target"])
-            for column in ("prediction", *QUANTILE_COLUMNS):
-                np.testing.assert_array_equal(mine[column], parent[column].astype(np.float64))
-        for market in ("US",):
-            path = output / "windows/US" / window / job["arm"] / "seed-42" / f"{market}.json"
-            record = read_manifest(path)[0]
-            parsed = read_window_receipt(record)
-            assert record["parent"] == receipt["parent"]
-            assert receipt["parent"]["id"] == job_id
-            assert parsed.labels_used_until == parsed.segment("evaluation")[0] - 1
-            assert (
-                dict(parsed.predictions)["evaluation"][0]
-                == receipt["predictions"]["evaluation"]["rows"]
-            )
-    # La copia ordenada de cada ventana se retira al confirmar sus ajustes.
+            for column in ("target", "prediction", *QUANTILE_COLUMNS):
+                np.testing.assert_array_equal(mine[column], tables[partition][column])
+        record = read_manifest(
+            output / "windows/US/fold-001" / identity["arm"] / "seed-42/US.json"
+        )[0]
+        parsed = read_window_receipt(record)
+        assert record["parent"]["id"] == name
+        assert parsed.labels_used_until == proof["labels_used_until"]
+        assert (
+            dict(parsed.predictions)["validation"][0]
+            == (receipt["predictions"]["validation"]["rows"])
+        )
+    # La cadena: en la ventana 0 el estado de la base, en la 1 el padre congelado, porque
+    # ningún caso mejora estrictamente su puntuación de validación.
+    first = staged_chain.read_selection(output, "US", "fold-000", "gru", 42)
+    assert first["selected"]["kind"] == "base" and first["selected"]["job"] == PARENT
+    assert first["parent"] is None and first["candidates"] == [] and first["fit_rows"] is None
+    base_validation = json.loads((base_a.output / "jobs" / PARENT / "receipt.json").read_text())
+    assert first["state"]["sha256"] == base_validation["parent"]["sha256"]
+    assert first["receipts"]["US"].labels_used_until < micros("2022-01-01")
+    second = staged_chain.read_selection(output, "US", "fold-001", "gru", 42)
+    assert second["selected"]["kind"] == "frozen_parent" and second["selected"]["job"] == FROZEN
+    assert second["fit_rows"] is None and len(second["candidates"]) == 6
+    assert second["parent"]["job"] == PARENT
+    assert second["labels_used_until"] == proof["labels_used_until"]
+    assert summary["chain"] == {
+        "US/fold-000/gru__chain/select-s42": dict(kind="base", job=PARENT),
+        "US/fold-001/gru__chain/select-s42": dict(kind="frozen_parent", job=FROZEN),
+    }
+    # La lectura por bloques solo deja índices: el de la vista del padre y el de la ventana.
     for window in ("fold-000", "fold-001"):
-        ordered = output / "windows-data/US" / window / "ordered"
-        assert (ordered / "manifest.json").is_file()
-        assert not list(ordered.glob("*.parquet"))
-        assert summary["released_ordered_copies"][f"US/{window}"]
-    # Repetir verifica los recibos confirmados sin abrir ventanas ni crear optimizadores.
+        assert (output / "windows-data/US" / window / "cohorts/manifest.json").is_file()
+    assert not list((output / "windows-data").rglob("*.parquet"))
+    # Repetir verifica recibos y selecciones sin abrir ventanas ni crear optimizadores.
     created = len(recorder.optimizers)
     again = run(base_a, output)
     assert again["status"] == "completed" and len(recorder.optimizers) == created
     assert receipts(output) == found
+    assert again["chain"] == summary["chain"]
 
 
-def test_variant_b_carries_the_anchor_cases_without_fitting(base_b, tmp_path, recorder):
+def test_a_confirmed_first_selection_does_not_reread_released_base_rows(base_a, tmp_path, recorder):
+    """La retención v2 libera la validación de la base al cerrar la ventana 0.
+
+    La selección confirmada de esa ventana se comprueba con los recibos, así que repetir la
+    etapa no vuelve a leer las filas liberadas.
+    """
+    base = SimpleNamespace(**vars(base_a))
+    base.output = tmp_path / "campaign"
+    shutil.copytree(base_a.output, base.output, symlinks=True)
     output = tmp_path / "stage"
-    summary = run(base_b, output)
+    summary = run(base, output)
     assert summary["status"] == "completed"
-    assert summary["planned"] == dict(training_jobs=5, prediction_jobs=5)
-    found = receipts(output)
-    fits = {key: value for key, value in found.items() if key.endswith("/fit-s42")}
-    carries = {key: value for key, value in found.items() if key.endswith("/carry-s42")}
-    assert len(fits) == len(carries) == 5
-    # Solo los ajustes crean optimizadores. Los traslados no aplican ninguna actualización.
-    assert len(recorder.optimizers) == 5
-    for key, receipt in carries.items():
-        anchor = key.replace("fold-001", "fold-000").replace("carry-s42", "fit-s42")
-        assert receipt["updates"] == 0 and receipt["score"] is None
-        assert receipt["parent"] == fits[anchor]["parent"]
-        assert receipt["identity"]["anchor_fit"]["job"] == anchor
-        assert receipt["identity"]["parent"]["job"] == "US/fold-000/gru/search-gru-10"
-        for partition in ("calibration", "evaluation"):
-            table = pq.read_table(output / receipt["predictions"][partition]["path"])
-            assert (table["prediction_at"].cast(pa.int64()).to_numpy() < FINAL_TEST).all()
-            np.testing.assert_array_equal(table["prediction"], table["parent"])
-        arm = receipt["identity"]["arm"]
-        record = read_manifest(output / "windows/US/fold-001" / arm / "seed-42/US.json")[0]
-        assert read_window_receipt(record).parent == (
-            fits[anchor]["parent"]["id"],
-            fits[anchor]["parent"]["sha256"],
-        )
-    # El ancla retiró su copia ordenada antes de los traslados, que solo leen su manifiesto.
-    assert not list((output / "windows-data/US/fold-000/ordered").glob("*.parquet"))
+    receipt = json.loads((base.output / "jobs" / PARENT / "receipt.json").read_text())
+    report = base.output / receipt["report"]["path"]
+    record = json.loads(report.read_text())["predictions"]["validation"]
+    prediction_files.release(report.parent / record["path"], record["sha256"], stage="fixture")
+    again = run(base, output)
+    assert again["status"] == "completed" and again["chain"] == summary["chain"]
+
+
+def test_a_strictly_better_candidate_replaces_the_frozen_parent(
+    base_a, tmp_path, recorder, monkeypatch
+):
+    original, calls = staged_chain.validation_score, []
+
+    def lower_head(table):
+        calls.append(None)
+        # Tercer trabajo de la ventana: el brazo head, tras el padre y la continuación.
+        return original(table) - (1e-9 if len(calls) == 3 else 0.0)
+
+    monkeypatch.setattr(staged_chain, "validation_score", lower_head)
+    output = tmp_path / "stage"
+    assert run(base_a, output)["status"] == "completed"
+    chosen = staged_chain.read_selection(output, "US", "fold-001", "gru", 42)
+    assert chosen["selected"]["kind"] == "adapter"
+    assert chosen["selected"]["job"] == "US/fold-001/gru__head/fit-s42"
+    proof = json.loads((output / "windows-data/US/fold-001/fit-rows.json").read_text())
+    assert chosen["fit_rows"] == {
+        name: proof[name] for name in ("first_decision", "last_decision", "rows", "sha256")
+    }
+    assert chosen["receipts"]["US"].parent[0] == "US/fold-001/gru__head/fit-s42"
+
+
+def test_a_validation_score_that_differs_from_the_fit_is_rejected(
+    base_a, tmp_path, recorder, monkeypatch
+):
+    original, calls = staged_chain.validation_score, []
+
+    def shifted(table):
+        calls.append(None)
+        # El ajuste declara su puntuación. La recalculada difiere en una milésima relativa.
+        return original(table) * (1.001 if len(calls) == 2 else 1.0)
+
+    monkeypatch.setattr(staged_chain, "validation_score", shifted)
+    with pytest.raises(ValueError, match="no reproduce la puntuación"):
+        run(base_a, tmp_path / "stage")
+
+
+@pytest.mark.parametrize("change", ["selected", "receipt", "proof"])
+def test_a_tampered_chain_or_proof_stops_the_next_run(base_a, tmp_path, recorder, change):
+    output = tmp_path / "stage"
+    assert run(base_a, output)["status"] == "completed"
+    folder = output / "windows/US/fold-001/gru__chain/seed-42"
+    if change == "selected":
+        path = folder / "selection.json"
+        value = json.loads(path.read_text())
+        value["selected"] = dict(value["candidates"][1], kind="continuation")
+        value["selected"].pop("score")
+        atomic_json(path, value)
+    elif change == "receipt":
+        path = folder / "US.json"
+        value = json.loads(path.read_text())
+        value["labels_used_until"] -= 1
+        atomic_json(path, value)
+    else:
+        path = output / "windows-data/US/fold-001/fit-rows.json"
+        value = json.loads(path.read_text())
+        value["intersection"]["calibration"] = 1
+        atomic_json(path, value)
+    with pytest.raises(ValueError):
+        run(base_a, output)
+
+
+def test_variant_b_is_rejected_before_reading_anything(base_b, tmp_path, recorder):
+    with pytest.raises(ValueError, match="variante B no se ejecuta"):
+        run(base_b, tmp_path / "stage")
+    assert not (tmp_path / "stage").exists() and recorder.optimizers == []
 
 
 def test_a_paused_case_resumes_its_cursor_without_repeating_updates(base_a, tmp_path, recorder):
@@ -275,24 +468,25 @@ def test_a_paused_case_resumes_its_cursor_without_repeating_updates(base_a, tmp_
     stop = SimpleNamespace(requested=False)
 
     def pause(optimizer):
-        if len(recorder.optimizers) == 2 and len(optimizer.calls) == 3:
+        if len(recorder.optimizers) == 2 and len(optimizer.calls) == 1:
             stop.requested = True
 
     recorder.on_step = pause
     paused = run(base_a, output, stop)
     assert paused["status"] == "paused"
     assert paused["completed"]["training_jobs"] == 1
+    assert paused["completed"]["prediction_jobs"] == 1
     recorder.on_step = None
     stop.requested = False
     summary = run(base_a, output, stop)
     assert summary["status"] == "completed"
     found = receipts(output)
-    assert len(found) == 10
+    assert len(found) == 6
     # El caso pausado suma sus pasos antes y después de reanudar, sin repetir ninguno.
     assert sum(len(item.calls) for item in recorder.optimizers) == sum(
         receipt["updates"] for receipt in found.values()
     )
-    assert len(recorder.optimizers) == 11
+    assert len(recorder.optimizers) == 6
 
 
 def test_the_hold_blocks_before_reading_and_before_each_pending_job(
@@ -314,25 +508,8 @@ def test_the_hold_blocks_before_reading_and_before_each_pending_job(
     summary = read_manifest(output / "summary.json")[0]
     assert summary["status"] == "blocked"
     assert summary["completed"]["training_jobs"] == 1
-    # El trabajo siguiente no llega a crear su carpeta ni a abrir su ventana.
-    assert len(list((output / "jobs").glob("*/*/*/*"))) == 1
-
-
-def test_the_hold_also_stops_a_carry_that_would_not_fit(base_b, tmp_path, recorder, learning_hold):
-    allowed = learning_hold(True)
-
-    def block(optimizer):
-        if len(recorder.optimizers) == 5:
-            allowed.write_text(json.dumps({"training_allowed": False}), encoding="utf-8")
-
-    recorder.on_step = block
-    output = tmp_path / "stage"
-    with pytest.raises(LearningHoldError):
-        run(base_b, output)
-    summary = read_manifest(output / "summary.json")[0]
-    assert summary["status"] == "blocked"
-    assert summary["completed"] == dict(training_jobs=5, prediction_jobs=0)
-    assert not list((output / "jobs").rglob("carry-s42"))
+    # El padre congelado y el primer caso terminan. El siguiente no crea su carpeta.
+    assert len(list((output / "jobs").glob("*/*/*/*"))) == 2
 
 
 def tamper(kind):
@@ -369,7 +546,9 @@ def test_predictions_outside_the_contract_are_rejected(
             pq.write_table(tamper(kind)(pq.read_table(destination)), destination)
         return metrics
 
+    # El padre congelado y los casos escriben por el mismo recorrido.
     monkeypatch.setattr(matrix_runs, "evaluate_partition", altered)
+    monkeypatch.setattr(campaign_stage, "evaluate_partition", altered)
     output = tmp_path / "stage"
     with pytest.raises(ValueError, match=message):
         run(base_a, output)
@@ -382,11 +561,11 @@ def test_command_checks_the_declared_stage_without_reading_data(capsys):
     assert campaign_stage.main(["check", "--stage", str(path)]) == 0
     printed = json.loads(capsys.readouterr().out)
     assert printed["status"] == "checked" and printed["scientific_training_started"] is False
-    assert printed["counts"]["training_jobs"] == 3915
+    assert printed["counts"]["training_jobs"] == 10332
 
 
 def test_matrix_seeds_must_match_the_seeds_of_each_parent(tmp_path):
-    matrix = json.loads((CONFIGS / "adapter-matrix-v2.json").read_text())
+    matrix = json.loads((CONFIGS / "adapter-matrix-v3.json").read_text())
     matrix["budget"]["seeds"] = [42, 43]
     atomic_json(tmp_path / "matrix.json", matrix)
     path = mutated(tmp_path, lambda v: v.update(matrix=str(tmp_path / "matrix.json")))
@@ -402,19 +581,3 @@ def test_an_unconfirmed_base_job_stops_the_stage_before_any_fit(base_a, tmp_path
     with pytest.raises(ValueError, match="Falta confirmar US/fold-001/gru/search-gru-00"):
         run(base, tmp_path / "stage")
     assert not (tmp_path / "stage").exists() and recorder.optimizers == []
-
-
-def test_a_carry_requires_the_parent_that_the_base_campaign_carried(
-    base_b, tmp_path, recorder, monkeypatch
-):
-    original = campaign_stage._Stage.base_parent
-
-    def other(self, scope, window, base_arm, seed):
-        key, receipt, report = original(self, scope, window, base_arm, seed)
-        if window == "fold-001":
-            receipt = dict(receipt, parent=dict(receipt["parent"], sha256="0" * 64))
-        return key, receipt, report
-
-    monkeypatch.setattr(campaign_stage._Stage, "base_parent", other)
-    with pytest.raises(ValueError, match="padre del ancla"):
-        run(base_b, tmp_path / "stage")

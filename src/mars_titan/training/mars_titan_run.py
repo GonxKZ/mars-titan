@@ -21,7 +21,6 @@ import hashlib
 import importlib
 import json
 import math
-import re
 import time
 from dataclasses import asdict, dataclass, field, replace
 from datetime import UTC, datetime
@@ -59,18 +58,21 @@ from .checkpoints import (
 )
 from .financial_run import Paused, _compatible, _read_report, _split, _stack
 from .learning_hold import require_learning_allowed
+from .search_cases import case_options, checked_search_cases
 from .selection import (
+    AWAIT,
+    FINISH,
     FIXED_BUDGET,
     VALIDATION_PLATEAU,
     advance_selection,
+    awaiting,
+    bind_joint_epoch,
+    epoch_decision,
     initial_selection,
     validate_selection,
 )
 
 RECIPE = "mars_titan_episodic_readout_chronological_v1"
-# Hiperparámetros del optimizador que puede variar un caso, los mismos que en Titans-MAC.
-SEARCHED = ("learning_rate", "max_grad_norm")
-CASE_NAME = re.compile(r"[a-z][a-z0-9_-]{0,31}")
 ADMISSIONS = ("m0", "m1", "m2", "m3")
 LOSSES = (PINBALL, "mae")
 _OWN_MODULES = (
@@ -194,35 +196,16 @@ def load_recipe(path):
         or set(document["walk_forward"]) != {"search_cases"}
     ):
         raise ValueError("La receta del lector no conserva su esquema")
-    cases = document["walk_forward"]["search_cases"]
-    valid = isinstance(cases, dict) and all(
-        isinstance(case, dict) and case for case in cases.values()
+    checked_search_cases(
+        document["walk_forward"]["search_cases"], document["recipe"], ReadoutRecipe
     )
-    keys = {frozenset(case) for case in cases.values()} if valid else set()
-    if not (
-        valid
-        and 1 <= len(cases) <= 3
-        and all(isinstance(name, str) and CASE_NAME.fullmatch(name) for name in cases)
-        and len(keys) == 1
-        and next(iter(keys)) <= set(SEARCHED)
-        and not next(iter(keys)) & set(document["recipe"])
-        and len({canonical(case) for case in cases.values()}) == len(cases)
-    ):
-        raise ValueError(
-            "Los casos de búsqueda deben ser de uno a tres, distintos, con nombre válido y "
-            "sustituir los mismos hiperparámetros del optimizador, ausentes de la receta base"
-        )
-    for case in cases.values():
-        ReadoutRecipe(**(document["recipe"] | case))
     return document
 
 
 def case_recipe(document, search_case):
     """Receta del lector para el caso de búsqueda elegido."""
     cases = document["walk_forward"]["search_cases"]
-    if not isinstance(search_case, str) or search_case not in cases:
-        raise ValueError("Elige uno de los casos de búsqueda que declara la receta del lector")
-    return ReadoutRecipe(**(document["recipe"] | cases[search_case]))
+    return ReadoutRecipe(**case_options(document["recipe"], cases, search_case))
 
 
 def retention_config(recipe, admission, *, policy="reservoir", **options):
@@ -339,6 +322,10 @@ class _Pass:
     used: list = field(default_factory=list)
     instants: int = 0
     next_block: int = 0
+    # Solo con el núcleo ajustable del postentrenamiento: estado de cada flujo al empezar el
+    # tramo (None si es nuevo) y flujos medidos por C en cada grupo lógico del tramo.
+    starts: dict = field(default_factory=dict)
+    penalties: list = field(default_factory=list)
 
 
 class MarsTitanInference:
@@ -369,14 +356,7 @@ class MarsTitanInference:
         ):
             raise ValueError("El recorrido necesita el padre, el lector y su receta")
         config = predictor.config
-        control = predictor.local_control
-        if config.variant != "mac_online" or (
-            control is not None and control.config.mode != "disabled"
-        ):
-            # La B de CM-v1 llega con C en modo disabled. La penalización solo ajusta el núcleo.
-            raise ValueError("El lector parte de Titans-MAC mac_online, con C solo en disabled")
-        if predictor.training or any(p.requires_grad for p in predictor.parameters()):
-            raise ValueError("El padre Titans-MAC debe llegar congelado, en eval y sin gradientes")
+        self._check_parent(predictor)
         if torch.backends.mha.get_fastpath_enabled() or torch.is_inference_mode_enabled():
             raise ValueError("El recorrido exige fastpath=False declarado y sin inference_mode")
         self.quantiles = config.head == QUANTILE_HEAD
@@ -426,6 +406,33 @@ class MarsTitanInference:
         self.world, self.fold = world, fold
         self.audit = [] if audit else None
 
+    @staticmethod
+    def _check_parent(predictor):
+        control = predictor.local_control
+        if predictor.config.variant != "mac_online" or (
+            control is not None and control.config.mode != "disabled"
+        ):
+            # La B de CM-v1 llega con C en modo disabled. La penalización solo ajusta el núcleo.
+            raise ValueError("El lector parte de Titans-MAC mac_online, con C solo en disabled")
+        if predictor.training or any(p.requires_grad for p in predictor.parameters()):
+            raise ValueError("El padre Titans-MAC debe llegar congelado, en eval y sin gradientes")
+
+    def _event_plan(self, run, phase, event, batches, *, train):
+        """Plan de C del evento. El padre congelado no lo necesita."""
+        return {}
+
+    def _prepare_block(self, run, batch, plan, *, train):
+        """Preparar el bloque desde el estado previo de sus flujos y avanzar su memoria."""
+        state = _stack([run.flows[flow] for flow in batch.flow_ids])
+        with torch.no_grad():
+            prepared = self.predictor.prepare(batch, state, **plan)
+        run.flows.update(_split(prepared.next_state))
+        return prepared
+
+    def _block_extra(self, batch, plan):
+        """Lo que la repetición necesita además del estado de trabajo emitido."""
+        return {}
+
     # El contexto de una instantánea no cambia el cálculo. Solo la vincula a su evento.
     def _context(self, partition, at):
         return hashlib.sha256(
@@ -469,16 +476,14 @@ class MarsTitanInference:
                     device=self.device,
                 )
         seen = 0 if run.bank is None else run.bank.seen
-        for raw in event.inputs:
-            cpu = validated_cpu_batch(raw, specification)
+        validated = [validated_cpu_batch(raw, specification) for raw in event.inputs]
+        plan = self._event_plan(run, phase, event, validated, train=train and not warmup)
+        for cpu in validated:
             batch = DecisionBatch.from_validated(cpu, device=self.device, dtype=self.dtype)
             new = tuple(flow for flow in batch.flow_ids if flow not in run.flows)
             if new:
                 run.flows.update(_split(predictor.initial_state(new)))
-            state = _stack([run.flows[flow] for flow in batch.flow_ids])
-            with torch.no_grad():
-                prepared = predictor.prepare(batch, state)
-            run.flows.update(_split(prepared.next_state))
+            prepared = self._prepare_block(run, batch, plan, train=train and not warmup)
             size = len(batch.flow_ids)
             run.counters["observations"] += size
             run.counters["mac_updates"] += size
@@ -523,6 +528,7 @@ class MarsTitanInference:
                     cutoff=event.at,
                     issued=issued,
                     keys=tuple(zip(batch.flow_ids, batch.prediction_at, strict=True)),
+                    **self._block_extra(batch, plan),
                 )
             for row, (flow, at) in enumerate(zip(batch.flow_ids, batch.prediction_at, strict=True)):
                 if (flow, at) in run.pending:
@@ -625,6 +631,8 @@ class MarsTitanInference:
         run.pending.clear()
         run.blocks.clear()
         run.used.clear()
+        run.starts.clear()
+        run.penalties.clear()
         run.staged = []
 
     @staticmethod
@@ -672,6 +680,11 @@ class MarsTitanInference:
 class ReadoutTrainer(MarsTitanInference):
     """Ajustar el lector episódico sobre el padre congelado recorriendo instantes en orden."""
 
+    # Gancho opcional para las trazas de #448. Se llama como `trace(event, modules)` después
+    # de cada validación completa y no debe cambiar el cálculo ni el RNG. Si vale None, el
+    # recorrido no llama a nada y es el mismo de antes bit a bit.
+    trace = None
+
     def __init__(
         self,
         predictor,
@@ -716,20 +729,14 @@ class ReadoutTrainer(MarsTitanInference):
             for source in (train, validation)
         ):
             raise ValueError("Las vistas no conservan la entrada del padre")
-        if admission == "m3" and (
-            retention.scalers.source_sha256 != train.identity
-            or retention.scalers.dataset_sha256 != train.dataset.identity
-            or (retention.scalers.decision_start, retention.scalers.decision_end)
-            != (train.phase.decision_start, train.phase.decision_end)
-        ):
-            raise ValueError("Las escalas M3 no proceden del tramo de entrenamiento de este ajuste")
+        if admission == "m3":
+            self._check_scalers(retention.scalers, train)
         self.train, self.validation = train, validation
         self.output = Path(output)
         for protected in (*train.dataset.roots.values(), train.path.parent, validation.path.parent):
             outside_source(protected, self.output)
             outside_source(self.output, protected)
-        self.roles, self.inert = parameter_roles(readout, admission)
-        named = dict(readout.named_parameters())
+        self.roles, self.inert, named = self._parameter_groups(readout, admission)
         groups = [
             dict(params=[named[name] for name in names], role=role)
             for role, names in self.roles.items()
@@ -777,6 +784,22 @@ class ReadoutTrainer(MarsTitanInference):
         self.identity = json.loads(canonical(self.identity))
         self.run_id = hashlib.sha256(canonical(self.identity).encode()).hexdigest()
         self.global_step, self.selection, self.history, self.train_metrics = 0, None, [], None
+
+    @staticmethod
+    def _check_scalers(scalers, train):
+        """Las escalas M3 salen del tramo de entrenamiento de este mismo ajuste."""
+        if (
+            scalers.source_sha256 != train.identity
+            or scalers.dataset_sha256 != train.dataset.identity
+            or (scalers.decision_start, scalers.decision_end)
+            != (train.phase.decision_start, train.phase.decision_end)
+        ):
+            raise ValueError("Las escalas M3 no proceden del tramo de entrenamiento de este ajuste")
+
+    def _parameter_groups(self, readout, admission):
+        """Papeles, parámetros inertes y tensores ajustables por nombre."""
+        roles, inert = parameter_roles(readout, admission)
+        return roles, inert, dict(readout.named_parameters())
 
     @staticmethod
     def _code():
@@ -838,7 +861,7 @@ class ReadoutTrainer(MarsTitanInference):
                 loss = self._loss(selected, target) * (len(positions) / total)
                 if not torch.isfinite(loss).item():
                     raise ValueError("La pérdida del tramo no es finita")
-                loss.backward()
+                self._backward_block(loss, record)
                 loss_sum += float(loss.detach())
             torch.nn.utils.clip_grad_norm_(
                 self.trainable, self.recipe.max_grad_norm or math.inf, error_if_nonfinite=True
@@ -856,6 +879,11 @@ class ReadoutTrainer(MarsTitanInference):
         run.used.clear()
         run.instants = 0
         run.counters["segments"] += 1
+
+    @staticmethod
+    def _backward_block(loss, record):
+        """Acumular el gradiente de un bloque. El refinador siempre interviene en la pérdida."""
+        loss.backward()
 
     def _train_pass(self, run, cursor, stop, save):
         source, phase = self.train, self.train.phase
@@ -1004,6 +1032,13 @@ class ReadoutTrainer(MarsTitanInference):
             for key, value in self.readout.state_dict().items()
         }
 
+    def _extra_state(self):
+        """Estado ajustable fuera del lector. El ajuste del lector no tiene ninguno."""
+        return {}
+
+    def _restore_extra(self, state):
+        """Recuperar el estado de `_extra_state` antes de reconstruir los flujos."""
+
     def _load_best(self, report):
         state = load_training_state(
             self.output / "checkpoints",
@@ -1014,10 +1049,15 @@ class ReadoutTrainer(MarsTitanInference):
         self.readout.load_state_dict(state["model"])
         if _parameters_digest(self.readout) != state["readout_sha256"]:
             raise ValueError("El lector seleccionado no conserva su huella")
+        self._restore_extra(state)
         return state
 
-    def run(self, *, resume=False, stop=None):
-        """Recorrer épocas con la regla del protocolo y dejar cargado el mejor lector."""
+    def run(self, *, resume=False, stop=None, joint_epoch=None):
+        """Recorrer épocas con la regla del protocolo y dejar cargado el mejor lector.
+
+        Con la meseta conjunta, el ajuste espera en su primera meseta (`AWAIT`) hasta que se
+        reanuda con la época común del grupo (`joint_epoch`).
+        """
         require_learning_allowed("el ajuste del lector episódico de MARS-TITAN")
         output, checkpoints = self.output, self.output / "checkpoints"
         if type(resume) is not bool or output.is_symlink() or output.exists() != resume:
@@ -1033,6 +1073,7 @@ class ReadoutTrainer(MarsTitanInference):
             self.readout.load_state_dict(state["model"])
             if _parameters_digest(self.readout) != state["readout_sha256"]:
                 raise ValueError("Los parámetros recuperados del lector no conservan su huella")
+            self._restore_extra(state)
             self.optimizer.load_state_dict(state["optimizer"])
             restore_rng(state["rng"], str(self.device))
             self.global_step, cursor = state["global_step"], state["cursor"]
@@ -1040,6 +1081,8 @@ class ReadoutTrainer(MarsTitanInference):
             self.train_metrics = state["train_metrics"]
             if state["run"] is not None:
                 run = self._restore(state["run"])
+            # Una ejecución ya conjunta solo continúa o se confirma con su misma época común.
+            bind_joint_epoch(report, joint_epoch, self.recipe.selection, self.recipe.epochs)
             if report["status"] == "completed":
                 self._load_best(report)
                 return report
@@ -1055,6 +1098,7 @@ class ReadoutTrainer(MarsTitanInference):
                 final_test_opened=False,
                 attempts=[],
             )
+            bind_joint_epoch(report, joint_epoch, self.recipe.selection, self.recipe.epochs)
 
         def save(position, current=None, *, best=False):
             self._check_runtime()
@@ -1069,6 +1113,7 @@ class ReadoutTrainer(MarsTitanInference):
                 history=self.history,
                 train_metrics=self.train_metrics,
                 run=None if current is None else self._export(current),
+                **self._extra_state(),
             )
             path = save_training_state(checkpoints, state, identity=self.identity, best=best)
             reference = dict(path=str(path.relative_to(output)), sha256=sha256(path))
@@ -1082,11 +1127,32 @@ class ReadoutTrainer(MarsTitanInference):
             save(cursor)
         started = time.perf_counter()
         try:
+            options = self.recipe.selection
             while cursor["phase"] != "done":
                 epoch = cursor["epoch"]
+                if cursor["phase"] == "train" and cursor["stage"] == "start":
+                    # Al empezar una época, el ajuste espera al grupo o
+                    # termina si ya está en la época conjunta.
+                    decision = epoch_decision(
+                        self.selection, options, self.recipe.epochs, joint_epoch
+                    )
+                    if decision == AWAIT:
+                        report.update(awaiting(self.selection, self.recipe.epochs))
+                        return report
+                    if decision == FINISH:
+                        cursor = dict(epoch=epoch, phase="done")
+                        save(cursor)
+                        continue
                 if cursor["phase"] == "validation":
                     metrics = self.evaluate(self.validation, stop=stop)
-                    options = self.recipe.selection
+                    if self.trace is not None:
+                        event = dict(
+                            kind="validation",
+                            epoch=epoch,
+                            global_step=self.global_step,
+                            score=metrics["session_mae"],
+                        )
+                        self.trace(event, dict(predictor=self.predictor, readout=self.readout))
                     self.selection = (
                         initial_selection(metrics["session_mae"], options)
                         if epoch == 0
@@ -1103,12 +1169,18 @@ class ReadoutTrainer(MarsTitanInference):
                         )
                     )
                     self.train_metrics = None
-                    finished = epoch >= self.recipe.epochs or self.selection["should_stop"]
+                    # Con presupuesto fijo o con meseta conjunta, should_stop
+                    # nunca detiene el ajuste por sí solo.
+                    decision = epoch_decision(
+                        self.selection, options, self.recipe.epochs, joint_epoch
+                    )
+                    finished = decision == FINISH
                     cursor = (
                         dict(epoch=epoch, phase="done")
                         if finished
                         else dict(epoch=epoch, phase="train", event=0, stage="start")
                     )
+                    # Con AWAIT, el cursor ya confirmado espera al grupo al empezar la época.
                     save(cursor, best=self.selection["last_improved"])
                     if stop.requested and not finished:
                         raise Paused

@@ -2,11 +2,17 @@
 
 La declaración (``posttraining_stage_comparison``) se fija antes de evaluar y enlaza la
 etapa de postentrenamiento. La comparación se deriva del plan de la etapa, sin listar
-brazos a mano: por cada brazo base y ámbito hay una comparación walk-forward con
+brazos a mano. Por cada brazo base y ámbito hay una comparación walk-forward con el padre
+congelado, la continuación completa (control ``full_continuation`` de la matriz) y los
+brazos adaptados de la matriz para la familia del padre.
 
-- el padre congelado, que es el propio brazo base con las predicciones de la campaña,
-- la continuación completa (control ``full_continuation`` de la matriz) y
-- los brazos adaptados de la matriz para la familia del padre.
+En el walk-forward por etapas de la variante A, el padre congelado es el trabajo
+``frozen`` de la etapa, que aplica a la ventana k el estado elegido por la base en k-1. El
+brazo base, reentrenado por la campaña en k, sigue en la comparación como contraste de
+nivel y no entra en las familias declaradas. Como la primera ventana de cada ámbito no
+tiene postentrenamiento, la comparación solo cubre las ventanas con trabajos de la etapa.
+En un plan sin padre congelado, como el anclado de B, el padre congelado es el propio
+brazo base con las predicciones de la campaña.
 
 Así una familia nueva de la matriz entra sin reescribir la declaración. Cada comparación
 hereda de la comparación de la campaña la política, los protocolos, las métricas, la
@@ -34,7 +40,16 @@ from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.evaluation import long_short_comparison
 from mars_titan.evaluation import walk_forward_comparison as walk
 
-from .campaign_stage import RECEIPT_KIND, RUN_KIND, _digest, load_stage, plan_stage
+from .campaign_stage import FROZEN as FROZEN_JOB
+from .campaign_stage import (
+    RECEIPT_KIND,
+    RUN_KIND,
+    TABULAR,
+    _digest,
+    load_stage,
+    plan_stage,
+    stage_arms,
+)
 
 KIND = "posttraining_stage_comparison"
 DECLARED = "declared_before_evaluation"
@@ -43,7 +58,14 @@ FROZEN, CONTINUATION, ADAPTED = "frozen_parent", "full_continuation", "adapted"
 ROLES = (FROZEN, CONTINUATION, ADAPTED)
 _FIELDS = {"schema_version", "kind", "status", "name", "stage", "use", "families"}
 # Familia de cada brazo derivado en la configuración de la comparación.
-ARM_FAMILIES = {CONTINUATION: "posttraining_control", ADAPTED: "posttraining_adapter"}
+ARM_FAMILIES = {
+    FROZEN: "posttraining_frozen_parent",
+    CONTINUATION: "posttraining_control",
+    ADAPTED: "posttraining_adapter",
+}
+# Solo calibración y evaluación entran en la comparación. La validación de los recibos
+# por etapas sirve para elegir el predictor de la cadena, no para compararlo.
+COMPARED = ("calibration", "evaluation")
 # Secciones derivadas de la etapa. El resto se hereda de la comparación de la campaña.
 DERIVED = {"name", "arms", "scopes"}
 
@@ -74,18 +96,32 @@ def _families(families):
 
 
 def _groups(stage):
-    """Brazos de cada padre por papel, en el orden del plan, y sus trabajos por ámbito."""
+    """Brazos de cada padre por papel, en el orden del plan, y sus trabajos por ámbito.
+
+    Un trabajo ``frozen`` del plan por etapas fija el brazo del padre congelado. Sin él,
+    el padre congelado es el propio brazo base. Ridge y XGBoost quedan fuera: su cadena solo
+    tiene el padre congelado y no hay continuación ni adaptadores que contrastar.
+    """
+    trivial = {arm for arm, spec in stage_arms(stage)[0].items() if spec["design"] == TABULAR}
     groups = {}
     for job in plan_stage(stage):
+        if job["base_arm"] in trivial:
+            continue
         group = groups.setdefault(
             job["base_arm"], {FROZEN: job["base_arm"], CONTINUATION: None, ADAPTED: [], "jobs": {}}
         )
         control = job["control"]
         _require(
-            control in (None, CONTINUATION),
+            control in (None, CONTINUATION) or job.get("kind") == FROZEN_JOB,
             f"El control {control} de {job['arm']} no tiene papel en la comparación",
         )
-        if control == CONTINUATION:
+        if job.get("kind") == FROZEN_JOB:
+            _require(
+                group[FROZEN] in (job["base_arm"], job["arm"]),
+                f"{job['base_arm']} declara dos padres congelados",
+            )
+            group[FROZEN] = job["arm"]
+        elif control == CONTINUATION:
             _require(
                 group[CONTINUATION] in (None, job["arm"]),
                 f"{job['base_arm']} declara dos continuaciones completas",
@@ -128,10 +164,12 @@ def derive_config(declaration, stage, base_arm, groups):
     inherited = campaign["comparison_config"]
     group = groups[base_arm]
     parent = inherited["arms"][base_arm]
-    roles = {FROZEN: [base_arm], CONTINUATION: [group[CONTINUATION]], ADAPTED: group[ADAPTED]}
+    roles = {FROZEN: [group[FROZEN]], CONTINUATION: [group[CONTINUATION]], ADAPTED: group[ADAPTED]}
     arms = {base_arm: dict(parent)}
-    for role in (CONTINUATION, ADAPTED):
+    for role in ROLES:
         for arm in roles[role]:
+            if arm == base_arm:
+                continue
             arms[arm] = dict(
                 family=ARM_FAMILIES[role], output=parent["output"], seeds=parent["seeds"]
             )
@@ -152,12 +190,29 @@ def derive_config(declaration, stage, base_arm, groups):
     config = dict(
         raw,
         name=f"{declaration['name']}-{base_arm}",
-        scopes={scope: inherited["scopes"][scope] for scope in stage["scopes"]},
+        scopes={scope: _stage_windows(inherited, scope, group) for scope in stage["scopes"]},
         arms=arms,
         comparison=dict(inherited["comparison"], families=families),
     )
     folder = Path(campaign["comparison_path"]).parent
     return walk.validate_config(config, _digest(config), folder)
+
+
+def _stage_windows(inherited, scope, group):
+    """Ámbito heredado con solo las ventanas que tienen trabajos de la etapa.
+
+    En el plan por etapas la primera ventana no tiene postentrenamiento y queda fuera. Si la
+    etapa cubre todas las ventanas, la declaración del ámbito no cambia.
+    """
+    present = {job["window"] for job in group["jobs"].get(scope, [])}
+    windows = [
+        window for window in inherited["resolved_scopes"][scope]["windows"] if window in present
+    ]
+    _require(windows, f"La etapa no tiene trabajos de {scope}")
+    declared = inherited["scopes"][scope]
+    if len(windows) == len(inherited["resolved_scopes"][scope]["windows"]):
+        return declared
+    return dict(declared, windows=windows)
 
 
 def check_declaration(path):
@@ -251,9 +306,14 @@ def write_sources(declaration_path, scope, base_arm, *, base_sources, stage_outp
 
     arms = {name: {} for name in config["arms"]}
     policy = config["input_policy"]
+    # La comparación cubre las ventanas de la configuración derivada, que pueden ser menos
+    # que las de la campaña. La etapa, en cambio, debe haber usado todas sus vistas.
+    views = {
+        window: base["views"][window] for window in config["resolved_scopes"][scope]["windows"]
+    }
     for seed in config["arms"][base_arm]["seeds"]:
         entries = arms[base_arm][str(seed)] = {}
-        for window, view_sha256 in base["views"].items():
+        for window, view_sha256 in views.items():
             files = base["files"][base_arm, seed, window]
             entries[window] = dict(input_policy=policy, view_sha256=view_sha256)
             for part, record in files.items():
@@ -262,7 +322,8 @@ def write_sources(declaration_path, scope, base_arm, *, base_sources, stage_outp
         view_sha256 = base["views"][job["window"]]
         receipt = _stage_receipt(stage_output, job, identity, view_sha256)
         entry = dict(input_policy=policy, view_sha256=view_sha256)
-        for part, record in receipt["predictions"].items():
+        for part in COMPARED:
+            record = receipt["predictions"][part]
             entry[part] = dict(
                 path=relative(stage_output / record["path"]), sha256=record["sha256"]
             )
@@ -274,7 +335,7 @@ def write_sources(declaration_path, scope, base_arm, *, base_sources, stage_outp
         input_policy=policy,
         windows={
             window: dict(view=dict(path=relative(base["view_paths"][window]), sha256=digest))
-            for window, digest in base["views"].items()
+            for window, digest in views.items()
         },
         arms=arms,
     )
@@ -300,8 +361,9 @@ def evaluate(declaration_path, sources_path, scope, base_arm, *, edition=None):
         declaration=dict(name=loaded["name"], sha256=loaded["sha256"]),
         stage_sha256=loaded["stage"]["sha256"],
         base_arm=base_arm,
+        windows=list(config["resolved_scopes"][scope]["windows"]),
         roles={
-            FROZEN: base_arm,
+            FROZEN: loaded["groups"][base_arm][FROZEN],
             CONTINUATION: loaded["groups"][base_arm][CONTINUATION],
             ADAPTED: loaded["groups"][base_arm][ADAPTED],
         },

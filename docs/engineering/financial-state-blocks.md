@@ -4,7 +4,7 @@
 
 ## Transporte y reunión
 
-`predictor.export_state_cpu(state)` conserva el esquema de `export_state` y devuelve tensores CPU propios, contiguos y sin grafo. Los IDs y cortes se copian como tuplas. La precisión, configuración, parámetros, modo train/eval, momentum y contadores permanecen identificados. `export_state` conserva su comportamiento anterior.
+`predictor.export_state_cpu(state)` conserva el esquema de `export_state` y devuelve tensores CPU propios, contiguos y sin grafo. Los IDs y cortes se copian como tuplas. La precisión, configuración, parámetros, modo train/eval, momentum y contadores permanecen identificados. `export_state` conserva su comportamiento anterior. Con las proyecciones de la sección 4.4, el payload añade el campo `convolution` en la memoria y en MAC con las ventanas causales de cada flujo, que se copian, validan y reúnen igual que los pesos rápidos. Sin convolución los campos son los de siempre.
 
 `predictor.restore_state(payload)` sigue exigiendo el dispositivo anterior de los tensores rápidos. `restore_state(payload, device=...)` admite un payload CPU y exige que el dispositivo solicitado coincida exactamente con el del predictor. No mueve el predictor ni convierte la precisión. Valida toda la fuente en CPU antes de trasladar W, momentum y steps. `observed_steps` permanece en CPU. Ambas rutas devuelven copias sin grafo y requieren haber restaurado antes los parámetros compartidos.
 

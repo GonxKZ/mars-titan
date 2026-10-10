@@ -45,7 +45,7 @@ La prueba `test_traces_do_not_change_gradients_or_the_random_state` hace una pas
 
 ## Pendiente
 
-- Ganchos en los entrenadores de referencias, Titans-MAC, MARS-TITAN, CM-v1, posentrenamiento y RL, con la paridad bit a bit de cada familia en CPU y en `cuda:0`.
+- Ganchos en los entrenadores de referencias, Titans-MAC, MARS-TITAN, CM-v1, posentrenamiento y RL, con la paridad bit a bit de cada familia en CPU y en `cuda:0`. Ya existe un gancho por validación completa, `trace(event, modules)`, en `run_case`, `ChronologicalTrainer`, el entrenador de los lectores y el de la GRU candidata, con su paridad comprobada en CPU y las [medidas de cada adaptador](../engineering/adapter-variety.md#trazas-para-448). Faltan los ganchos por paso y la RL.
 - Trazas internas de Titans (puertas de olvido, tasa interna y momentum por capa, pérdida asociativa, normas de los pesos rápidos y masa de atención) y del banco episódico.
 - Sobrecoste medido con las formas reales de la campaña.
 - Análisis: curvas alineadas entre brazos, deriva de representaciones con CKA y sondas lineales del estado de memoria. El observatorio en directo mostrará estas trazas.

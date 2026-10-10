@@ -17,8 +17,8 @@ def encode(*args, **kwargs):
     return module.encode_corpus(*args, **kwargs)
 
 
-def prepared_edition(tmp_path):
-    source, clock, macro = fixture(tmp_path)
+def prepared_edition(tmp_path, articles=None):
+    source, clock, macro = fixture(tmp_path, articles)
     manifest = tmp_path / "prepared-cohort.json"
     manifest.write_text(
         json.dumps(

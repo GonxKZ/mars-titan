@@ -454,6 +454,44 @@ void lots_minimum_and_purchase_tax_follow_the_instrument() {
     same_state(unruled.snapshot(), reference.snapshot());
 }
 
+void terminal_liquidation_pays_the_sell_tax_of_its_close() {
+    // El timbre de venta cambia justo en el último cierre: la venta hipotética usa el nuevo.
+    constexpr int64_t forever = int64_t{1} << 62;
+    constexpr double earlier_tax = 0.001;
+    constexpr double final_tax = 0.0005;
+    constexpr double cost_bps = 10;
+    constexpr double basis_points = 10'000;
+    auto data = tape(3);
+    auto rules = a_share(1);
+    const auto last_close = data->close_times.back();
+    rules.taxes = {RulePeriod{0, last_close, 0, 0, earlier_tax},
+                   RulePeriod{last_close, forever, 0, 0, final_tax}};
+    data->instruments = {rules};
+    auto options = parameters();
+    options.cost_bps = cost_bps;
+    FinancialSession session(data, options);
+    static_cast<void>(session.step(full_exposure_action));
+    static_cast<void>(session.step(0));
+    const auto state = session.snapshot();
+    const double held = state.positions[0].quantity * price;
+    require(state.done && held > 0, "La cartera debe terminar invertida");
+    const double expected =
+        state.account.nav - (held * cost_bps / basis_points + held * final_tax);
+    require(mars_titan::simulation::liquidated_nav(state, *data) == expected,
+            "La venta final debe pagar el coste y el timbre vigente en su cierre");
+    near(session.metrics().liquidated_net_return, expected / initial_capital - 1,
+         "La métrica liquidada debe usar la misma venta final");
+    // Sin reglas la venta final solo paga el coste declarado.
+    auto plain = tape(3);
+    FinancialSession unruled(plain, options);
+    static_cast<void>(unruled.step(full_exposure_action));
+    static_cast<void>(unruled.step(0));
+    const auto bare = unruled.snapshot();
+    require(mars_titan::simulation::liquidated_nav(bare, *plain) ==
+                bare.account.nav - bare.positions[0].quantity * price * cost_bps / basis_points,
+            "Sin reglas la venta final no cobra impuestos");
+}
+
 void invalid_market_rules_are_rejected() {
     const auto invalid = [](auto change) {
         auto data = tape();
@@ -548,6 +586,7 @@ int main() {
         ties_follow_asset_identity_and_bad_tapes_fail();
         ex_rights_reference_moves_the_daily_limit();
         lots_minimum_and_purchase_tax_follow_the_instrument();
+        terminal_liquidation_pays_the_sell_tax_of_its_close();
         invalid_market_rules_are_rejected();
         real_tapes_keep_their_walk_forward_cuts();
     } catch (const std::exception& error) {

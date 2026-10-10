@@ -52,6 +52,8 @@ Mediana de tres ejecuciones intercaladas de la versión anterior (`6fee0ef2`, co
 
 La oleada KLPO tiene 243 pasos y 3.878 transiciones en EE. UU. La recogida KLPO es entre 2,4 y 3 veces más rápida y el paso de PPO en `cuda:0` un 19 % más corto. Las ejecuciones de CPU se hicieron con carga media de 15 a 16 y las de CUDA con 8, así que solo se comparan dentro de cada dispositivo.
 
+> Nota del 10 de octubre de 2026: la frase anterior atribuye a EE. UU. la oleada de China. Con 16 entornos y tres cintas de ajuste, la oleada de China tiene 243 pasos y 3.878 transiciones, y la de EE. UU. 252 pasos y 4.021 transiciones (6 × 251 + 5 × 252 + 5 × 251 con las sesiones de `fold-014` a `fold-016`). Las medidas de [variedad RL](../rl-variety-20261010/summary.json) lo confirman con `wave_ticks` y `wave_transitions` por mercado. El error solo afecta a esa frase. Los tiempos por transición de la proyección (`klpo_transition_seconds` en el [resumen](summary.json)) ya dividían cada oleada por las transiciones de su mercado, y los datos de este informe no se han modificado.
+
 ## Paridad
 
 Las huellas SHA-256 coinciden entre la versión anterior y esta rama en los dos mercados y dispositivos: recorrido PPO completo (observaciones, acciones, probabilidades, valores, recompensas, bootstrap, máscaras y pesos de acción), estado de las carteras de los 16 entornos y estado del muestreador tras 544 pasos en `cuda:0`, y registro serializado y muestreador de la oleada KLPO en CPU y `cuda:0`. En CPU, la recogida PPO solo admite el diagnóstico de 32 transiciones y sus huellas también coinciden. `mars-titan-sim --trace` con `hold_initial` y `rebalance_50` sobre las cintas de validación de los dos mercados produce trazas idénticas salvo `identity_sha256`, que cambia porque incluye la huella de las fuentes nativas. Las reglas de acciones A de China, los cortes walk-forward y la auditoría no se tocaron.
@@ -132,6 +134,8 @@ El paso de Adam no se ha medido, así que todas las horas son una cota inferior.
 | CPU, 8 procesos | 3,6 | | | | |
 
 Double DQN concentra más del 70 % de las horas por sus 261.888 minilotes por ajuste. La etapa A suma 44.839.458 pasos de Adam: 37.711.872 de Double DQN, 2.359.296 por cada brazo PPO y 49.698 de KLPO. Cada 100 µs por paso de Adam añaden 1,25 h en serie.
+
+Nota del 10 de octubre de 2026 (PR #430). La etapa declara ahora cinco referencias (se añaden 1/N mensual e índice de mercado) y cuatro costes de evaluación (0, 5, 10 y 20 pb), así que la etapa A tiene 1.221 referencias en lugar de 792. Con los mismos tiempos medidos de este informe, `native_policy_hours` da 31,97 h en `cuda:0` y 18,28 h en CPU con un trabajo cada vez, frente a las 31,9 y 18,3 h de la tabla, y los pasos de Adam no cambian. Las cifras de la tabla se conservan tal como se midieron.
 
 ## Mutación dirigida
 

@@ -5,6 +5,7 @@ import json
 
 from mars_titan.data.cohort_news import COHORT_POLICIES
 from mars_titan.data.input_policy import STRICT_INPUTS, masked_inputs, policy_identity
+from mars_titan.data.price_windows import check_price_window_contract
 
 
 def input_identity(meta, *, input_policy=STRICT_INPUTS):
@@ -127,7 +128,11 @@ def representation_identity(receipt, *, input_policy=STRICT_INPUTS):
             or len(set(items)) != len(items)
         ):
             raise ValueError("Los conceptos e indicadores deben ser únicos y explícitos")
-    return {field: receipt[field] for field in fields} | identity
+    result = {field: receipt[field] for field in fields} | identity
+    if "price_window" in receipt:
+        # Solo las ediciones desde la v3.1 lo declaran, así que las anteriores conservan su huella.
+        result["price_window"] = check_price_window_contract(receipt["price_window"])
+    return result
 
 
 def representation_hash(receipt, *, input_policy=STRICT_INPUTS):

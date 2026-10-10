@@ -1,0 +1,235 @@
+{
+ "schema_version": 1,
+ "kind": "selected_state_composition",
+ "recorded_at": "2026-10-09",
+ "method": "Estado elegido de cada familia en los fixtures de tests/training (CPU, optimizadores que solo registran gradientes), leído con torch.load. Mide qué contiene y cuánto ocupa fuera de los tensores, no el tamaño de la campaña.",
+ "families": {
+  "neural": {
+   "file_bytes": 397037,
+   "state_keys": [
+    "confirmed_cursor",
+    "epoch",
+    "global_step",
+    "history",
+    "initial_validation",
+    "model",
+    "optimizer",
+    "rng",
+    "selection",
+    "statistics"
+   ],
+   "tensor_groups": {
+    "model": {
+     "tensors": 16,
+     "elements": 92997,
+     "bytes": 371988,
+     "dtypes": [
+      "torch.float32"
+     ]
+    },
+    "rng": {
+     "tensors": 2,
+     "elements": 5680,
+     "bytes": 10048,
+     "dtypes": [
+      "torch.int64",
+      "torch.uint8"
+     ]
+    }
+   },
+   "parameters": 92997,
+   "other_bytes": 15001,
+   "composite": null
+  },
+  "titans_mac": {
+   "file_bytes": 249247,
+   "state_keys": [
+    "cursor",
+    "global_step",
+    "history",
+    "model",
+    "optimizer",
+    "rng",
+    "run",
+    "selection",
+    "train_metrics"
+   ],
+   "tensor_groups": {
+    "model": {
+     "tensors": 42,
+     "elements": 25383,
+     "bytes": 203064,
+     "dtypes": [
+      "torch.float64"
+     ]
+    },
+    "rng": {
+     "tensors": 2,
+     "elements": 5680,
+     "bytes": 10048,
+     "dtypes": [
+      "torch.int64",
+      "torch.uint8"
+     ]
+    }
+   },
+   "parameters": 25383,
+   "other_bytes": 36135,
+   "composite": null
+  },
+  "mars_titan": {
+   "file_bytes": 91977,
+   "state_keys": [
+    "cursor",
+    "global_step",
+    "history",
+    "model",
+    "optimizer",
+    "readout_sha256",
+    "rng",
+    "run",
+    "selection",
+    "train_metrics"
+   ],
+   "tensor_groups": {
+    "model": {
+     "tensors": 7,
+     "elements": 7361,
+     "bytes": 58888,
+     "dtypes": [
+      "torch.float64"
+     ]
+    },
+    "rng": {
+     "tensors": 2,
+     "elements": 5680,
+     "bytes": 10048,
+     "dtypes": [
+      "torch.int64",
+      "torch.uint8"
+     ]
+    }
+   },
+   "parameters": 7361,
+   "other_bytes": 23041,
+   "composite": {
+    "kind": "mars_titan_selected_state",
+    "parent": "estado elegido del padre Titans-MAC, por huella"
+   }
+  },
+  "episodic_gru": {
+   "file_bytes": 3892882,
+   "state_keys": [
+    "cursor",
+    "global_step",
+    "history",
+    "model",
+    "optimizer",
+    "parameters_sha256",
+    "rng",
+    "run",
+    "selection",
+    "train_metrics"
+   ],
+   "tensor_groups": {
+    "model": {
+     "tensors": 25,
+     "elements": 482438,
+     "bytes": 3859504,
+     "dtypes": [
+      "torch.float64"
+     ]
+    },
+    "rng": {
+     "tensors": 2,
+     "elements": 5680,
+     "bytes": 10048,
+     "dtypes": [
+      "torch.int64",
+      "torch.uint8"
+     ]
+    }
+   },
+   "parameters": 482438,
+   "other_bytes": 23330,
+   "composite": null
+  },
+  "cm_v1_core": {
+   "file_bytes": 318748,
+   "state_keys": [
+    "cursor",
+    "global_step",
+    "history",
+    "model",
+    "optimizer",
+    "rng",
+    "run",
+    "selection",
+    "train_metrics"
+   ],
+   "tensor_groups": {
+    "model": {
+     "tensors": 43,
+     "elements": 33575,
+     "bytes": 268600,
+     "dtypes": [
+      "torch.float64"
+     ]
+    },
+    "rng": {
+     "tensors": 2,
+     "elements": 5680,
+     "bytes": 10048,
+     "dtypes": [
+      "torch.int64",
+      "torch.uint8"
+     ]
+    }
+   },
+   "parameters": 33575,
+   "other_bytes": 40100,
+   "composite": null
+  },
+  "cm_v1": {
+   "file_bytes": 93897,
+   "state_keys": [
+    "cursor",
+    "global_step",
+    "history",
+    "model",
+    "optimizer",
+    "readout_sha256",
+    "rng",
+    "run",
+    "selection",
+    "train_metrics"
+   ],
+   "tensor_groups": {
+    "model": {
+     "tensors": 7,
+     "elements": 7361,
+     "bytes": 58888,
+     "dtypes": [
+      "torch.float64"
+     ]
+    },
+    "rng": {
+     "tensors": 2,
+     "elements": 5680,
+     "bytes": 10048,
+     "dtypes": [
+      "torch.int64",
+      "torch.uint8"
+     ]
+    }
+   },
+   "parameters": 7361,
+   "other_bytes": 24961,
+   "composite": {
+    "kind": "cm_v1_selected_state",
+    "parent": "estado elegido de su núcleo CM-v1, por huella"
+   }
+  }
+ },
+ "training_executed": false
+}

@@ -12,9 +12,12 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from mars_titan.evaluation.splits import build_folds
 from mars_titan.simulation.environment import FinancialEnv
+from mars_titan.simulation.evaluation import REFERENCE_ALLOCATIONS, evaluate, fixed_policy
 from mars_titan.simulation.market_rules import china_a_share_instrument
 from mars_titan.simulation.reconstructed_tape import build_reconstructed_tape
+from tests.environments.walk_forward_fixture import fold, protocol
 from tests.simulation.native_library import requires_native_library
 from tests.simulation.unadjusted_edition_fixture import evaluation_window, predictions
 
@@ -92,3 +95,81 @@ def test_real_chinese_tape_has_the_same_trajectory_in_the_native_engine():
             reasons.update(entry["reason"] for entry in expected[4]["unfilled"])
         assert native.done and native.book.execution_counts["native_steps"] > 0
         print(plan, native.book.execution_counts, sorted(reasons))
+
+
+@requires_native_library
+def test_dvn_keeps_the_2009_window_with_its_last_close_valued_at_the_previous_trade():
+    # DVN no tiene fila el 31 de diciembre de 2009 y vuelve a negociar el 4 de enero de 2010.
+    # Antes se excluía y anulaba la evaluación de fold-004 para todos los predictores.
+    symbols = ["DVN", "XOM", "IBM"]
+    # DVN va primero en orden alfabético y tiene la mayor puntuación, así que se mantiene.
+    values = predictions(
+        "US", symbols, start="2009-01-01", end="2009-12-31", score=lambda k, i: 0.01 * (3 - i)
+    )
+    tape, report = build_reconstructed_tape(
+        Path(EDITION),
+        [evaluation_window("US", values, index=4)],
+        [values],
+        market="US",
+        partition="validation",
+        dividend_payment_lag_sessions=0,
+        symbols=symbols,
+    )
+    assert tape.identity["audit"]["walk_forward"][0]["fold"] == "fold-004"
+    assert report["excluded"] == {} and "US/DVN" in tape.assets
+    assert report["last_session"] == "2009-12-31"
+    assert report["counts"]["final_sessions_without_row"] == 1
+    dvn = tape.assets.index("US/DVN")
+    assert np.isnan(tape.prices[-1, dvn, [0, 4]]).all()
+    assert tape.prices[-1, dvn, 3] == tape.prices[-2, dvn, 3]
+    for policy in ("hold_initial", "rebalance_50"):
+        results = [
+            evaluate(FinancialEnv(tape, capital=1_000_000, backend=backend), fixed_policy(policy))
+            for backend in ("python", "native")
+        ]
+        assert results[0]["financial_validation"]["completed"] is True
+        assert results[0]["financial_validation"] == results[1]["financial_validation"]
+        assert results[0]["equity"]["nav"] == results[1]["equity"]["nav"]
+        assert results[0]["ending_positions"].get("US/DVN", 0) > 0
+        print(policy, results[0]["financial_validation"])
+
+
+@requires_native_library
+def test_spy_index_tapes_cover_every_us_window_with_its_dividends_and_both_backends_agree():
+    # Cinta de un activo del índice de mercado, como la de la etapa: las predicciones de otro
+    # activo se descartan y SPY no tiene puntuación. Recorre todas las ventanas del protocolo.
+    reference = "market_index"
+    for index in range(len(build_folds(protocol("US")))):
+        start, end = fold("US", index)["evaluation"]
+        last = str(np.datetime64(end) - np.timedelta64(1, "D"))
+        values = predictions("US", ["IBM"], start=start, end=last, score=lambda k, i: 0.01)
+        tape, report = build_reconstructed_tape(
+            Path(EDITION),
+            [evaluation_window("US", values, index=index)],
+            [values],
+            market="US",
+            partition="validation",
+            dividend_payment_lag_sessions=0,
+            symbols=["SPY"],
+        )
+        assert tape.assets == ["US/SPY"] and report["excluded"] == {}
+        assert np.isnan(tape.scores).all() and report["dropped_predictions"] > 0
+        dividends = [a for a in tape.actions if a.kind == "dividend"]
+        assert len(dividends) >= 3, (index, len(dividends))
+        results = [
+            evaluate(
+                FinancialEnv(
+                    tape,
+                    capital=1_000_000,
+                    backend=backend,
+                    allocation=REFERENCE_ALLOCATIONS[reference],
+                ),
+                fixed_policy(reference),
+            )
+            for backend in ("python", "native")
+        ]
+        assert results[0]["financial_validation"]["completed"] is True
+        assert results[0]["financial_validation"] == results[1]["financial_validation"]
+        assert results[0]["equity"]["nav"] == results[1]["equity"]["nav"]
+        assert results[0]["ending_positions"]["US/SPY"] > 0
+        print(fold("US", index)["id"], results[0]["financial_validation"]["net_return"])

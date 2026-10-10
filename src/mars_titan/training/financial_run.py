@@ -27,12 +27,13 @@ from mars_titan.budget_training import validate_loss
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.evaluation.session_metrics import SessionErrors
 from mars_titan.memory.financial_observations import FinancialObservationSource
+from mars_titan.models.predictive_adaptation import is_adapter_name
 from mars_titan.models.quantile_head import PINBALL, QUANTILE_HEAD, pinball_loss
 from mars_titan.models.titans.config import canonical
 from mars_titan.models.titans.financial import VARIANTS, FinancialPredictor, FinancialState
 from mars_titan.models.titans.financial_inputs import DecisionBatch, validated_cpu_batch
 from mars_titan.models.titans.frozen_financial import _implementation, _numerics
-from mars_titan.models.titans.state import MACState, NeuralMemoryState
+from mars_titan.models.titans.state import join_mac_rows, map_mac_rows, map_memory_rows
 
 from .checkpoints import (
     StopRequest,
@@ -43,8 +44,13 @@ from .checkpoints import (
 )
 from .learning_hold import require_learning_allowed
 from .selection import (
+    AWAIT,
+    FINISH,
     VALIDATION_PLATEAU,
     advance_selection,
+    awaiting,
+    bind_joint_epoch,
+    epoch_decision,
     initial_selection,
     validate_selection,
 )
@@ -168,10 +174,16 @@ def load_recipe(path):
 
 
 def parameter_roles(predictor):
-    """Separar el ajuste externo por función. Los estados por flujo no son parámetros."""
+    """Separar el ajuste externo por función. Los estados por flujo no son parámetros.
+
+    Las correcciones de un adaptador del postentrenamiento forman su propio papel. Sin
+    adaptadores el diccionario conserva literalmente sus tres papeles anteriores.
+    """
     roles = dict(shared=[], persistent_memory=[], initial_fast_weights=[])
     for name, _ in predictor.named_parameters():
-        if name == "mac.persistent":
+        if is_adapter_name(name):
+            roles.setdefault("adapters", []).append(name)
+        elif name == "mac.persistent":
             roles["persistent_memory"].append(name)
         elif name.startswith("mac.memory.initial_weights."):
             roles["initial_fast_weights"].append(name)
@@ -185,20 +197,7 @@ def _stack(states):
     first = states[0]
     mac = None
     if first.mac is not None:
-        memory = first.mac.memory
-
-        def join(get):
-            return torch.cat([get(state.mac.memory) for state in states])
-
-        mac = MACState(
-            NeuralMemoryState(
-                tuple(join(lambda m, i=i: m.weights[i]) for i in range(len(memory.weights))),
-                tuple(join(lambda m, i=i: m.momentum[i]) for i in range(len(memory.momentum))),
-                join(lambda m: m.steps),
-                memory.config_id,
-            ),
-            first.mac.config_id,
-        )
+        mac = join_mac_rows([state.mac for state in states])
     return FinancialState(
         first.config_id,
         first.parameter_id,
@@ -220,16 +219,7 @@ def _split(state, *, detach=False, parameter_id=None):
     for row, flow in enumerate(state.flow_ids):
         mac = state.mac
         if mac is not None:
-            memory = mac.memory
-            mac = MACState(
-                NeuralMemoryState(
-                    tuple(take(w, row) for w in memory.weights),
-                    tuple(take(m, row) for m in memory.momentum),
-                    memory.steps[row : row + 1],
-                    memory.config_id,
-                ),
-                mac.config_id,
-            )
+            mac = map_mac_rows(mac, lambda value, row=row: take(value, row))
         yield (
             flow,
             FinancialState(
@@ -447,12 +437,9 @@ class ChronologicalInference:
             memory = self.predictor.mac.initial_state(len(chunk), differentiable=True).memory
             for row, flow in enumerate(chunk):
                 state = states[flow]
-                fresh = NeuralMemoryState(
-                    tuple(w[row : row + 1] for w in memory.weights),
-                    tuple(m[row : row + 1] for m in memory.momentum),
-                    memory.steps[row : row + 1],
-                    memory.config_id,
-                )
+                # Solo se reinicia la memoria. La ventana de q del flujo se conserva y las de k y v
+                # siguen a cero porque el control congelado no escribe.
+                fresh = map_memory_rows(memory, lambda value, row=row: value[row : row + 1])
                 states[flow] = replace(state, mac=replace(state.mac, memory=fresh))
 
     def _labels(self, run, event, *, train):
@@ -558,6 +545,11 @@ class ChronologicalTrainer(ChronologicalInference):
     instante con los parámetros vigentes.
     """
 
+    # Gancho opcional para las trazas de #448. Se llama como `trace(event, modules)` después
+    # de cada validación completa y no debe cambiar el cálculo ni el RNG. Si vale None, el
+    # recorrido no llama a nada y es el mismo de antes bit a bit.
+    trace = None
+
     def __init__(
         self,
         predictor,
@@ -568,6 +560,7 @@ class ChronologicalTrainer(ChronologicalInference):
         output,
         optimizer_factory=None,
         pairing=None,
+        posttraining=None,
         audit=False,
     ):
         super().__init__(predictor, recipe, audit=audit)
@@ -597,8 +590,23 @@ class ChronologicalTrainer(ChronologicalInference):
         for protected in (*train.dataset.roots.values(), train.path.parent, validation.path.parent):
             outside_source(protected, self.output)
             outside_source(self.output, protected)
+        if posttraining is not None and (
+            not isinstance(posttraining, dict) or pairing is not None or not posttraining
+        ):
+            raise ValueError("El postentrenamiento se declara como un objeto sin emparejamiento")
         self.roles = parameter_roles(predictor)
+        if "adapters" in self.roles and posttraining is None:
+            raise ValueError("Un predictor con adaptadores solo se ajusta en el postentrenamiento")
         named = dict(predictor.named_parameters())
+        frozen = []
+        if posttraining is not None:
+            # Solo se ajusta lo que requiere gradiente: los adaptadores o, en la continuación
+            # completa, todo el ajuste externo. Los tensores originales quedan congelados.
+            frozen = [name for name, value in named.items() if not value.requires_grad]
+            self.roles = {
+                role: [name for name in names if named[name].requires_grad]
+                for role, names in self.roles.items()
+            }
         groups = [
             dict(params=[named[name] for name in names], role=role)
             for role, names in self.roles.items()
@@ -611,7 +619,8 @@ class ChronologicalTrainer(ChronologicalInference):
         )
         self.optimizer = factory(groups)
         listed = [id(p) for group in self.optimizer.param_groups for p in group["params"]]
-        if len(listed) != len(set(listed)) or set(listed) != {id(p) for p in named.values()}:
+        trainable = {id(named[name]) for names in self.roles.values() for name in names}
+        if len(listed) != len(set(listed)) or set(listed) != trainable or not trainable:
             raise ValueError("El optimizador debe cubrir exactamente el ajuste externo")
         self.identity = dict(
             schema_version=1,
@@ -653,6 +662,9 @@ class ChronologicalTrainer(ChronologicalInference):
                 self.identity["local_control"]["penalty_accumulation"] = (
                     "measured_flows_replayed_in_their_flow_block_over_segment_groups_v1"
                 )
+        if posttraining is not None:
+            # Sin postentrenamiento la identidad conserva literalmente su forma anterior.
+            self.identity.update(posttraining=posttraining, frozen_parameters=frozen)
         self.run_id = hashlib.sha256(canonical(self.identity).encode()).hexdigest()
         self.global_step, self.selection, self.history, self.train_metrics = 0, None, [], None
 
@@ -896,8 +908,12 @@ class ChronologicalTrainer(ChronologicalInference):
         self.predictor.load_state_dict(state["model"])
         return state
 
-    def run(self, *, resume=False, stop=None):
-        """Recorrer épocas hasta la paciencia declarada o el presupuesto fijo."""
+    def run(self, *, resume=False, stop=None, joint_epoch=None):
+        """Recorrer épocas hasta la paciencia declarada o el presupuesto fijo.
+
+        Con la meseta conjunta, el ajuste espera en su primera meseta (`AWAIT`) hasta que se
+        reanuda con la época común del grupo (`joint_epoch`).
+        """
         output, checkpoints = self.output, self.output / "checkpoints"
         if isinstance(self.optimizer, torch.optim.Optimizer):
             require_learning_allowed("ChronologicalTrainer.run de Titans-MAC")
@@ -920,6 +936,8 @@ class ChronologicalTrainer(ChronologicalInference):
             if state["run"] is not None:
                 self.predictor.train()
                 run = self._restore(state["run"])
+            # Una ejecución ya conjunta solo continúa o se confirma con su misma época común.
+            bind_joint_epoch(report, joint_epoch, self.recipe.selection, self.recipe.epochs)
             if report["status"] == "completed":
                 self._load_best(report)
                 return report
@@ -935,6 +953,7 @@ class ChronologicalTrainer(ChronologicalInference):
                 final_test_opened=False,
                 attempts=[],
             )
+            bind_joint_epoch(report, joint_epoch, self.recipe.selection, self.recipe.epochs)
 
         def save(position, current=None, *, best=False):
             self._check_runtime()
@@ -961,11 +980,32 @@ class ChronologicalTrainer(ChronologicalInference):
             save(cursor)
         started = time.perf_counter()
         try:
+            options = self.recipe.selection
             while cursor["phase"] != "done":
                 epoch = cursor["epoch"]
+                if cursor["phase"] == "train" and cursor["stage"] == "start":
+                    # Al empezar una época, el ajuste espera al grupo o
+                    # termina si ya está en la época conjunta.
+                    decision = epoch_decision(
+                        self.selection, options, self.recipe.epochs, joint_epoch
+                    )
+                    if decision == AWAIT:
+                        report.update(awaiting(self.selection, self.recipe.epochs))
+                        return report
+                    if decision == FINISH:
+                        cursor = dict(epoch=epoch, phase="done")
+                        save(cursor)
+                        continue
                 if cursor["phase"] == "validation":
                     metrics = self.evaluate(self.validation, stop=stop)
-                    options = self.recipe.selection
+                    if self.trace is not None:
+                        event = dict(
+                            kind="validation",
+                            epoch=epoch,
+                            global_step=self.global_step,
+                            score=metrics["session_mae"],
+                        )
+                        self.trace(event, dict(predictor=self.predictor))
                     self.selection = (
                         initial_selection(metrics["session_mae"], options)
                         if epoch == 0
@@ -982,13 +1022,18 @@ class ChronologicalTrainer(ChronologicalInference):
                         )
                     )
                     self.train_metrics = None
-                    # Con presupuesto fijo, should_stop nunca corta y se registra plateau_epoch.
-                    finished = epoch >= self.recipe.epochs or self.selection["should_stop"]
+                    # Con presupuesto fijo o con meseta conjunta, should_stop
+                    # nunca detiene el ajuste por sí solo.
+                    decision = epoch_decision(
+                        self.selection, options, self.recipe.epochs, joint_epoch
+                    )
+                    finished = decision == FINISH
                     cursor = (
                         dict(epoch=epoch, phase="done")
                         if finished
                         else dict(epoch=epoch, phase="train", event=0, stage="start")
                     )
+                    # Con AWAIT, el cursor ya confirmado espera al grupo al empezar la época.
                     save(cursor, best=self.selection["last_improved"])
                     if stop.requested and not finished:
                         raise Paused

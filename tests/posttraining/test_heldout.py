@@ -43,7 +43,12 @@ def test_frozen_predictions_visit_only_the_requested_block(inputs, tmp_path):
         assert scores["prediction"] == scores["parent"]
         assert rows["zero"] == [0.0]
     assert seen == ["calibration", "evaluation"]
-    for forbidden in ("train", "validation", "test", "test_reserved"):
+    # La validación se recorre solo para los recibos del walk-forward por etapas.
+    path = tmp_path / "validation.parquet"
+    evaluate_partition(data, parent, "validation", path, stop=StopRequest(), device="cpu")
+    assert seen[-1] == "validation"
+    assert pq.read_table(path).num_rows == data.manifest["counts"]["validation"]
+    for forbidden in ("train", "test", "test_reserved"):
         with pytest.raises(ValueError, match="calibración|evaluación"):
             evaluate_partition(
                 data, parent, forbidden, tmp_path / "bad.parquet", stop=StopRequest(), device="cpu"

@@ -7,6 +7,7 @@ import pyarrow.parquet as pq
 import pytest
 
 from mars_titan.training.checkpoints import StopRequest
+from mars_titan.training.learning_hold import LearningHoldError
 from tests.training.test_reference_run import training_corpus
 
 pytestmark = pytest.mark.skipif(
@@ -17,6 +18,46 @@ pytestmark = pytest.mark.skipif(
 
 def module():
     return importlib.import_module("mars_titan.training.external_corpus")
+
+
+def test_matrix_construction_reads_every_declared_option_without_defaults():
+    engine = module()
+    options = dict(
+        batch_size=1024,
+        max_bin=128,
+        max_batch_bytes=64 * 1024**2,
+        max_host_cache_bytes=2 * 1024**3,
+        on_host=False,
+        max_disk_cache_bytes=32 * 1024**3,
+    )
+    # Son las mismas claves y valores que antes de extraer la función, así que la clave de la
+    # matriz compartida de cada ventana no cambia.
+    assert engine._construction(options, 10) == dict(
+        expected_rows=10,
+        max_bin=128,
+        max_batch_bytes=64 * 1024**2,
+        max_host_cache_bytes=2 * 1024**3,
+        on_host=False,
+        max_disk_cache_bytes=32 * 1024**3,
+    )
+    # Sin presupuesto de disco no hay límite, como en `run_external_reference`.
+    unbounded = {key: value for key, value in options.items() if key != "max_disk_cache_bytes"}
+    assert engine._construction(unbounded, 10)["max_disk_cache_bytes"] is None
+    for key in engine.MATRIX_OPTIONS:
+        missing = {name: value for name, value in options.items() if name != key}
+        with pytest.raises(ValueError, match=key):
+            engine._construction(missing, 10)
+
+
+def test_the_executor_stops_under_the_hold_before_touching_its_output(tmp_path, learning_hold):
+    learning_hold(False)
+    stale = tmp_path / "external-previous"
+    stale.mkdir()
+    (stale / "page").write_bytes(b"page")
+    report = dict(identity=dict(options={}), samples=dict(train=1), attempts=[])
+    with pytest.raises(LearningHoldError, match="XGBoost"):
+        module()._execute(None, tmp_path, report, None, None, None, None)
+    assert (stale / "page").read_bytes() == b"page" and report["attempts"] == []
 
 
 def test_racing_creation_does_not_replace_another_run(tmp_path, monkeypatch):

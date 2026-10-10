@@ -58,6 +58,7 @@ import pyarrow.compute as pc
 import pyarrow.parquet as pq
 
 from mars_titan.calibration import conformal_quantiles as cqr
+from mars_titan.data import prediction_files
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.input_policy import masked_inputs, policy_identity
 from mars_titan.data.storage import atomic_json, outside_source, sha256
@@ -523,7 +524,8 @@ def scope_config(config, scope):
     return dict(config, arms=resolved["arms"], resolved_families=resolved["families"])
 
 
-def _file(folder, record, label):
+def _file(folder, record, label, *, predictions=False):
+    """Ruta y huella de una fuente. Unas predicciones pueden estar compactadas o liberadas."""
     _require(
         isinstance(record, dict)
         and set(record) == {"path", "sha256"}
@@ -535,6 +537,11 @@ def _file(folder, record, label):
     )
     path = Path(record["path"])
     path = path if path.is_absolute() else folder / path
+    if predictions and not path.exists() and prediction_files.entry(path) is not None:
+        # La retención v2 sustituye las filas por su forma compacta o por sus huellas. Un
+        # archivo que falta sin ese registro se rechaza abajo como cualquier otra fuente.
+        prediction_files.verify(path, record["sha256"])
+        return dict(path=path, sha256=record["sha256"])
     _require(not path.is_symlink() and path.is_file(), f"{label} no es un archivo regular")
     _require(0 < path.stat().st_size <= MAX_FILE_BYTES, f"{label} supera el presupuesto")
     return dict(path=path, sha256=record["sha256"])
@@ -649,7 +656,7 @@ def load_sources(path, config, scope_name):
                 expected = (joint_views if name in borrowed else views)[window_id]
                 _require(entry["view_sha256"] == expected, f"{where} usa otra vista")
                 files[name, int(seed), window_id] = {
-                    part: _file(path.parent, entry[part], f"{where} ({part})")
+                    part: _file(path.parent, entry[part], f"{where} ({part})", predictions=True)
                     for part in ("calibration", "evaluation")
                     if part in entry
                 }
@@ -665,17 +672,45 @@ def load_sources(path, config, scope_name):
     )
 
 
-def _read_predictions(file, columns):
-    """Leer solo las columnas necesarias después de comprobar huella y tipos."""
-    path = file["path"]
-    _require(sha256(path) == file["sha256"], f"La huella de {path.name} no coincide")
-    schema = pq.read_schema(path)
-    _require(set(columns) <= set(schema.names), f"Faltan columnas en {path.name}")
+def restrict_windows(config, scope, windows):
+    """La configuración validada con un ámbito limitado a algunas de sus ventanas.
+
+    Conserva la huella de la configuración, porque declara lo mismo. Sirve para validar y
+    puntuar las fuentes de una ventana en cuanto termina, antes de tener las demás.
+    """
+    resolved = config["resolved_scopes"][scope]
+    windows = set(windows)
     _require(
-        schema.field("prediction_at").type == pa.timestamp("us", tz="UTC"),
+        windows and windows <= set(resolved["windows"]),
+        "Las ventanas deben ser del ámbito declarado",
+    )
+    kept = {key: value for key, value in resolved["windows"].items() if key in windows}
+    narrowed = dict(resolved, windows=kept)
+    # La elegibilidad por mercado y el emparejamiento con el conjunto siguen a las ventanas.
+    if "eligible" in resolved:
+        narrowed["eligible"] = {
+            market: [name for name in names if name in windows]
+            for market, names in resolved["eligible"].items()
+        }
+    if "joint_windows" in resolved:
+        narrowed["joint_windows"] = {
+            name: pair for name, pair in resolved["joint_windows"].items() if name in windows
+        }
+    scopes = dict(config["resolved_scopes"], **{scope: narrowed})
+    return dict(config, resolved_scopes=scopes)
+
+
+def _read_predictions(file, columns):
+    """Leer solo las columnas necesarias después de comprobar huella y tipos.
+
+    Un archivo compactado por la retención v2 se lee igual que el original. Uno liberado
+    no tiene filas: su ventana se compara con los agregados guardados o tras regenerarlo.
+    """
+    table = prediction_files.read(file["path"], file["sha256"], columns)
+    _require(
+        table.schema.field("prediction_at").type == pa.timestamp("us", tz="UTC"),
         "Los instantes deben ser timestamp UTC en microsegundos",
     )
-    table = pq.read_table(path, columns=list(columns), use_threads=False)
     _require(all(table[name].null_count == 0 for name in columns), "Hay valores ausentes")
     for name in ("asset_id", "market"):
         _require(
@@ -867,7 +902,10 @@ def _ablation_sources(path, config, sources):
                         f"{where} en {window_id} solo declara su evaluación",
                     )
                     files[variant, name, int(seed), window_id] = _file(
-                        path.parent, entry["evaluation"], f"{where} en {window_id}"
+                        path.parent,
+                        entry["evaluation"],
+                        f"{where} en {window_id}",
+                        predictions=True,
                     )
     return dict(sha256=digest, files=files)
 
@@ -1383,12 +1421,16 @@ def _strata_report(config, scored, overall, markets):
     )
 
 
-def evaluate_walk_forward(config_path, sources_path, scope, *, ablation_sources=None):
+def evaluate_walk_forward(
+    config_path, sources_path, scope, *, ablation_sources=None, aggregates=None
+):
     """Calcular el informe y la tabla por sesión de un ámbito sin escribir nada.
 
     `config_path` es la ruta de la configuración o una configuración ya validada.
     `ablation_sources` es el manifiesto de la etapa de ablación de modalidades. Solo se
-    admite si la configuración declara la ablación.
+    admite si la configuración declara la ablación. `aggregates` es la carpeta de los
+    agregados por ventana (`window_aggregates`) que guardó la retención v2. Con ella no se
+    lee ninguna predicción por fila, y cada ventana exige agregados de estas mismas fuentes.
     """
     started = time.perf_counter()
     config = resolve_config(config_path)
@@ -1400,9 +1442,18 @@ def evaluate_walk_forward(config_path, sources_path, scope, *, ablation_sources=
     if ablation_sources is not None:
         _require(ABLATION_FIELD in config, "La configuración no declara la ablación de modalidades")
         ablation = _ablation_sources(ablation_sources, config, sources)
-    scored = {
-        window: _score_window(sources, config, window, ablation) for window in sources["windows"]
-    }
+    if aggregates is None:
+        scored = {
+            window: _score_window(sources, config, window, ablation)
+            for window in sources["windows"]
+        }
+    else:
+        from . import window_aggregates
+
+        scored = {
+            window: window_aggregates.read(aggregates, config, sources, window, ablation)
+            for window in sources["windows"]
+        }
     per_window = {window: results for window, (results, _) in scored.items()}
     overall, calibrated, arms, tables = {}, {}, {}, []
     for arm, seed in per_window[next(iter(per_window))]:
@@ -1514,7 +1565,9 @@ def evaluate_walk_forward(config_path, sources_path, scope, *, ablation_sources=
     return report, pa.concat_tables(tables, promote_options="default")
 
 
-def write_walk_forward(config_path, sources_path, scope, output, *, ablation_sources=None):
+def write_walk_forward(
+    config_path, sources_path, scope, output, *, ablation_sources=None, aggregates=None
+):
     """Publicar el informe y las sesiones en un directorio nuevo fuera de las fuentes."""
     output = Path(output)
     safe_destination(output)
@@ -1526,7 +1579,7 @@ def write_walk_forward(config_path, sources_path, scope, output, *, ablation_sou
         outside_source(source, output)
         outside_source(output, source)
     report, sessions = evaluate_walk_forward(
-        config_path, sources_path, scope, ablation_sources=ablation_sources
+        config_path, sources_path, scope, ablation_sources=ablation_sources, aggregates=aggregates
     )
     json.dumps(report, allow_nan=False)
     output.mkdir(parents=True)
@@ -1543,9 +1596,15 @@ def main(argv=None):
     parser.add_argument("--scope", choices=tuple(SCOPES), required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--ablation-sources", type=Path)
+    parser.add_argument("--aggregates", type=Path, help="Agregados por ventana de la retención v2")
     args = parser.parse_args(argv)
     report = write_walk_forward(
-        args.config, args.sources, args.scope, args.output, ablation_sources=args.ablation_sources
+        args.config,
+        args.sources,
+        args.scope,
+        args.output,
+        ablation_sources=args.ablation_sources,
+        aggregates=args.aggregates,
     )
     windows = len(report["windows"])
     print(f"Comparados {len(report['arms'])} brazos en {windows} ventanas. Reserva final cerrada.")

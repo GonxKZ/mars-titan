@@ -10,6 +10,10 @@ La comparación walk-forward ya exige que todos los brazos evalúen las mismas f
    duplicada, tenga un objetivo finito y no pertenezca a la reserva de 2024.
 
 Un cambio de un solo bit en un objetivo, una fila de más o una de menos cambian la huella.
+
+Las predicciones se leen con `prediction_files.read`, que comprueba la huella del archivo
+y devuelve los mismos bits si la retención v2 lo compactó. Una ventana cuyas filas se
+liberaron debe regenerarse antes (`run_masked_campaign.py regenerate`).
 """
 
 import argparse
@@ -21,9 +25,8 @@ from pathlib import Path
 import numpy as np
 import pyarrow as pa
 import pyarrow.compute as pc
-import pyarrow.parquet as pq
 
-from mars_titan.data.storage import sha256
+from mars_titan.data import prediction_files
 from mars_titan.evaluation import walk_forward_comparison as comparison
 
 KIND = "walk_forward_row_identity"
@@ -73,9 +76,8 @@ def _duplicates(ordered):
     return int(pc.sum(same).as_py() or 0)
 
 
-def inspect_file(path, segment, markets):
-    """Huella y defectos de un archivo de predicciones frente a su tramo declarado."""
-    table = pq.read_table(path, columns=list(COLUMNS), use_threads=False)
+def inspect_table(table, segment, markets):
+    """Huella y defectos de una tabla de predicciones frente a su tramo declarado."""
     nulls = sum(table.column(name).null_count for name in COLUMNS)
     if nulls:
         return dict(rows=table.num_rows, null_values=nulls, passed=False)
@@ -101,8 +103,8 @@ def check_sources(config_path, sources_path, scope):
     files, by_segment = [], {}
     for (arm, seed, window_id), records in sorted(sources["files"].items()):
         for partition, record in sorted(records.items()):
-            _require_digest(record)
-            finding = inspect_file(record["path"], windows[window_id][partition], markets)
+            table = prediction_files.read(record["path"], record["sha256"], COLUMNS)
+            finding = inspect_table(table, windows[window_id][partition], markets)
             files.append(dict(arm=arm, seed=seed, window=window_id, partition=partition, **finding))
             if "digest" in finding:
                 by_segment.setdefault(f"{window_id}/{partition}", {})[f"{arm}/{seed}"] = finding[
@@ -133,11 +135,6 @@ def check_sources(config_path, sources_path, scope):
         failures=failures,
         passed=failures == 0,
     )
-
-
-def _require_digest(record):
-    if sha256(record["path"]) != record["sha256"]:
-        raise ValueError(f"La huella de {Path(record['path']).name} no coincide")
 
 
 def main(argv=None):

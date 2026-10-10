@@ -13,6 +13,10 @@ from .market_rules import china_a_share_instrument
 from .portfolio import NATIVE_MAX_INSTRUMENTS, Instrument, Portfolio
 
 ACTIONS = (None, 0.0, 0.25, 0.5, 0.75, 1.0)
+# Composición de la exposición. La regla común reparte por igual entre el cuartil superior de
+# puntuaciones positivas. La cartera 1/N, independiente del predictor, reparte por igual entre
+# todos los activos con cierre valorado que siguen en la cinta.
+ALLOCATIONS = ("positive_top_quartile_equal_weight", "valid_assets_equal_weight")
 
 
 class RecoverablePause(RuntimeError):
@@ -34,7 +38,10 @@ class FinancialEnv(gym.Env):
         backend="python",
         native_library=None,
         instruments=None,
+        allocation=ALLOCATIONS[0],
     ):
+        if allocation not in ALLOCATIONS:
+            raise ValueError("La regla de composición no está declarada")
         if (
             not math.isfinite(score_scale)
             or score_scale <= 0
@@ -83,6 +90,7 @@ class FinancialEnv(gym.Env):
             participation,
         )
         self.score_scale, self.ruin_penalty = score_scale, ruin_penalty
+        self.allocation = allocation
         self.identity = dict(
             tape_sha256=tape.sha256,
             capital=capital,
@@ -90,7 +98,7 @@ class FinancialEnv(gym.Env):
             participation=participation,
             score_scale=score_scale,
             ruin_penalty=ruin_penalty,
-            allocation="positive_top_quartile_equal_weight",
+            allocation=allocation,
             action_levels=list(ACTIONS),
             final_test_opened=False,
             accounting_backend=backend,
@@ -173,20 +181,21 @@ class FinancialEnv(gym.Env):
     def _targets(self, exposure):
         nav = self.book.nav[self.tape.currency]
         candidates = []
+        ranked = self.allocation == ALLOCATIONS[0]
         for i, asset in enumerate(self.tape.assets):
             score, price = self.tape.scores[self.cursor, i], self.tape.prices[self.cursor, i, 3]
             if (
-                np.isfinite(score)
-                and score > 0
+                (not ranked or (np.isfinite(score) and score > 0))
                 and np.isfinite(price)
                 and asset not in self.book.retired
             ):
-                candidates.append((-score, asset, price))
+                candidates.append((-score if ranked else 0.0, asset, price))
         candidates.sort()
-        selected = candidates[: max(1, math.ceil(len(candidates) / 4))] if candidates else []
+        if ranked and candidates:
+            candidates = candidates[: max(1, math.ceil(len(candidates) / 4))]
         targets = {asset: 0 for asset in self.book.positions.keys() | self.book.orders.keys()}
-        for _, asset, price in selected:
-            targets[asset] = float(nav * exposure / len(selected) / price)
+        for _, asset, price in candidates:
+            targets[asset] = float(nav * exposure / len(candidates) / price)
         return targets
 
     def step(self, action):

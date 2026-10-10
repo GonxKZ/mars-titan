@@ -8,7 +8,7 @@
   "scopes": ["US+CN"],
   "limits": {
     "max_training_jobs": 2160,
-    "max_evaluation_jobs": 1584
+    "max_evaluation_jobs": 2442
   },
   "final_test_opened": false
 }

@@ -607,10 +607,40 @@ def _remove_stale_temporaries(output):
     return removed
 
 
+# Opciones de la identidad que fijan la matriz cuantizada. `run_external_reference` las
+# registra siempre. El presupuesto de disco es opcional y su ausencia significa sin límite.
+MATRIX_OPTIONS = ("max_bin", "max_batch_bytes", "max_host_cache_bytes", "on_host")
+
+
+def _construction(options, rows):
+    """Construcción declarada de la matriz cuantizada, leída de la identidad del ajuste.
+
+    No hay valores por defecto. Una identidad que no declara estas opciones no permite
+    reproducir la matriz ni compartirla con otra configuración de la ventana, así que se
+    detiene antes de tocar la salida.
+    """
+    missing = [key for key in MATRIX_OPTIONS if key not in options]
+    if missing:
+        raise ValueError(
+            "La identidad del ajuste no declara la construcción de la matriz: " + ", ".join(missing)
+        )
+    return dict(
+        expected_rows=rows,
+        max_bin=options["max_bin"],
+        max_batch_bytes=options["max_batch_bytes"],
+        max_host_cache_bytes=options["max_host_cache_bytes"],
+        on_host=options["on_host"],
+        max_disk_cache_bytes=options.get("max_disk_cache_bytes"),
+    )
+
+
 def _execute(
     dataset, output, report, parent, cp, xgb, stop, plan=None, shared=None, shared_directory=None
 ):
+    # Este ejecutor ajusta árboles, así que también respeta el bloqueo si se llama directamente.
+    require_learning_allowed("el ajuste XGBoost del corpus")
     options = report["identity"]["options"]
+    construction = _construction(options, report["samples"]["train"])
     batch_size = options["batch_size"]
     policy = options.get("input_policy", STRICT_INPUTS)
     presence = masked_inputs(policy)
@@ -684,14 +714,6 @@ def _execute(
                 batch["prediction_at"],
             )
 
-    construction = dict(
-        expected_rows=report["samples"]["train"],
-        max_bin=options["max_bin"],
-        max_batch_bytes=options["max_batch_bytes"],
-        max_host_cache_bytes=options["max_host_cache_bytes"],
-        on_host=options["on_host"],
-        max_disk_cache_bytes=options.get("max_disk_cache_bytes"),
-    )
     # Las filas, su orden y sus lotes quedan fijados por el manifiesto, la política y el lote.
     source = (dataset.identity, policy, batch_size)
     matrix_key = (*source, tuple(sorted(construction.items())))

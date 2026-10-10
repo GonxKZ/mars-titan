@@ -5,6 +5,7 @@ ventanas US que evalúan 2021, 2022 y 2023. Las puntuaciones son sintéticas y n
 de ningún modelo. Las políticas son guionizadas y ningún paso ajusta parámetros.
 """
 
+import copy
 import dataclasses
 import hashlib
 from pathlib import Path
@@ -12,11 +13,14 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from mars_titan.data import prediction_files
 from mars_titan.environments.walk_forward_receipt import WalkForwardWindow
 from mars_titan.evaluation.splits import build_folds
 from mars_titan.simulation import campaign_stage, window_tapes
 from mars_titan.simulation.environment import FinancialEnv
 from mars_titan.simulation.evaluation import fixed_policy
+from mars_titan.simulation.market import MarketTape
+from mars_titan.simulation.reconstructed_tape import read_edition
 from tests.environments import walk_forward_fixture as receipts
 from tests.simulation import unadjusted_edition_fixture as editions
 from tests.simulation.unadjusted_edition_fixture import Asset
@@ -27,6 +31,7 @@ JOB = dict(
     scope="US",
     market="US",
     predictor="parent",
+    arm="cash",
     anchor="fold-018",
     window="fold-018",
     train=["fold-016"],
@@ -71,7 +76,7 @@ def symbols(window, assets):
 
 
 def source_for(assets, score=None):
-    """Recibo y puntuaciones de cada ventana, con la huella de su tramo de evaluación."""
+    """Recibo y lector de las puntuaciones de cada ventana, con la huella de su evaluación."""
     cache = {}
 
     def source(scope, market, window, predictor):
@@ -86,7 +91,8 @@ def source_for(assets, score=None):
             )
             index = list(FOLDS).index(window)
             cache[window] = receipts.window(market, index=index, values=values), values
-        return cache[window]
+        receipt, values = cache[window]
+        return receipt, lambda: values
 
     return source
 
@@ -96,26 +102,53 @@ def tapes(root, assets, *, source=None, output="stage"):
     path = (
         edition(root / "edition", assets) if not (root / "edition").exists() else root / "edition"
     )
+    edition_id = read_edition(path)["edition_id"]
     return campaign_stage._Tapes(
-        POLICIES, source or source_for(assets), path, "edition", root / output, "parent"
+        POLICIES, source or source_for(assets), path, edition_id, root / output, "parent"
     )
+
+
+EXPANDING = dict(rule=window_tapes.EXPANDING, minimum=3, maximum=17)
+FIXED = dict(rule=window_tapes.FIXED, minimum=3, maximum=3)
 
 
 def test_policy_windows_use_earlier_evaluations_and_anchors_end_before_their_carries():
     folds = list(FOLDS.values())
-    rows = window_tapes.policy_windows(folds, 3)
-    assert rows[0] == dict(
+    rows = window_tapes.policy_windows(folds, EXPANDING)
+    first = dict(
         window="fold-004", train=["fold-000", "fold-001", "fold-002"], validation="fold-003"
     )
+    # La primera ventana no cambia: tiene exactamente el mínimo de evaluaciones previas.
+    assert rows[0] == window_tapes.policy_windows(folds, FIXED)[0] == first
     assert [row["window"] for row in rows] == [f"fold-{i:03d}" for i in range(4, 19)]
+    # Cada ventana se ajusta con todas las evaluaciones anteriores a su validación.
+    for index, row in enumerate(rows, start=4):
+        assert row["train"] == [f"fold-{i:03d}" for i in range(index - 1)]
+        assert row["validation"] == f"fold-{index - 1:03d}"
+    assert len(rows[-1]["train"]) == 17
+    fixed = window_tapes.policy_windows(folds, FIXED)
+    assert all(
+        row["train"] == expanded["train"][-3:] for row, expanded in zip(fixed, rows, strict=True)
+    )
     scheduled = window_tapes.policy_schedule(rows, 3, FOLDS)
     assert [row["anchor"] for row in scheduled[:4]] == ["fold-004"] * 3 + ["fold-007"]
     assert [row["trained"] for row in scheduled[:4]] == [True, False, False, True]
-    for bad in (0, 13, True):
+    # Con un máximo, las anclas tardías se ajustan con las evaluaciones más recientes.
+    capped = window_tapes.policy_windows(folds, dict(EXPANDING, maximum=5))
+    for row, expanded in zip(capped, rows, strict=True):
+        assert row == dict(expanded, train=expanded["train"][-5:])
+    assert [len(row["train"]) for row in capped] == [3, 4, 5, *[5] * 12]
+    bad_rules = [3, dict(EXPANDING, minimum=0), dict(EXPANDING, minimum=13)]
+    bad_rules += [dict(EXPANDING, minimum=True), dict(EXPANDING, rule="all_windows")]
+    bad_rules += [dict(EXPANDING, extra=1), dict(rule=window_tapes.EXPANDING, minimum=3)]
+    bad_rules += [dict(EXPANDING, maximum=2), dict(EXPANDING, maximum=16.0)]
+    # La regla fija no admite otro máximo y la expansión necesita margen sobre el mínimo.
+    bad_rules += [dict(FIXED, maximum=4), dict(EXPANDING, maximum=3)]
+    for bad in bad_rules:
         with pytest.raises(ValueError, match="ventanas de ajuste"):
             window_tapes.policy_windows(folds, bad)
     with pytest.raises(ValueError, match="ventanas suficientes"):
-        window_tapes.policy_windows(folds[:4], 3)
+        window_tapes.policy_windows(folds[:4], EXPANDING)
     # Una validación posterior a la evaluación, o un ajuste solapado, se rechaza.
     swapped = dict(rows[0], validation="fold-004", window="fold-003")
     with pytest.raises(ValueError, match="posterior a su evaluación"):
@@ -231,14 +264,14 @@ def test_a_policy_cannot_train_or_validate_with_predictions_of_a_later_fit(tmp_p
             tapes(tmp_path, assets, source=later(honest, mapping), output=str(mapping)).open(JOB)
     # Las puntuaciones de 2022 presentadas con el recibo de 2023 no cumplen su huella.
     receipt, _ = honest("US", "US", "fold-018", "parent")
-    _, values = honest("US", "US", "fold-017", "parent")
+    values = honest("US", "US", "fold-017", "parent")[1]()
     with pytest.raises(ValueError):
         window_tapes.build_segment_tape(
             tmp_path / "edition", receipt, values, market="US", role="train", lag=0
         )
     # Un recibo construido a mano, sin `read_window_receipt`, que declara un ajuste con
     # etiquetas del propio tramo, se rechaza antes de leer la edición.
-    _, values = honest("US", "US", "fold-018", "parent")
+    values = honest("US", "US", "fold-018", "parent")[1]()
     start = receipt.segment("evaluation")[0]
     forged = dataclasses.replace(receipt, labels_used_until=start)
     assert isinstance(forged, WalkForwardWindow)
@@ -321,12 +354,17 @@ def test_the_universe_predictor_must_have_training_and_validation_predictions(tm
 class Base:
     """Campaña base mínima con el trabajo elegido de una ventana."""
 
-    def __init__(self, markets):
+    def __init__(self, markets, shift=0):
         self.record = dict(path="p.parquet", sha256="c" * 64, markets=markets)
+        self.shift = shift
 
     def selected(self, scope, window, predictor, seed):
         parent = dict(receipts.PARENT)
         return "job", dict(parent=parent, predictions=dict(evaluation=self.record))
+
+    def labels_used_until(self, scope, window, selected):
+        start = FOLDS[window]["evaluation"][0]
+        return receipts.microseconds(start) - 1 + self.shift
 
 
 def test_campaign_source_reports_a_market_without_rows_as_no_predictions(tmp_path):
@@ -335,14 +373,18 @@ def test_campaign_source_reports_a_market_without_rows_as_no_predictions(tmp_pat
     folder = tmp_path / "windows/US/fold-016/other/seed-42"
     index = list(FOLDS).index("fold-016")
     atomic_json(folder / "US.json", receipts.receipt("US", index=index))
-    receipt, values = campaign_stage.campaign_source(Base({}), tmp_path, 42)(
+    receipt, load = campaign_stage.campaign_source(Base({}), tmp_path, 42)(
         "US", "US", "fold-016", "other"
     )
-    assert values is None and receipt.fold == "fold-016"
+    assert load is None and receipt.fold == "fold-016"
     # Si la campaña declara filas del mercado, el recibo sin predicciones no le corresponde.
     declared = Base({"US": dict(rows=10, sha256="d" * 64)})
     with pytest.raises(ValueError, match="no corresponde al predictor elegido"):
         campaign_stage.campaign_source(declared, tmp_path, 42)("US", "US", "fold-016", "other")
+    # La maduración que recalcula la campaña debe coincidir con la que declara el recibo.
+    later = Base({}, shift=1)
+    with pytest.raises(ValueError, match="maduración real"):
+        campaign_stage.campaign_source(later, tmp_path, 42)("US", "US", "fold-016", "other")
 
 
 def test_tapes_from_another_market_are_rejected(tmp_path):
@@ -429,6 +471,30 @@ def test_maximum_exposure_only_trades_universe_assets_at_executable_opens(tmp_pa
     assert all(np.isnan(clean.prices[t, i, 0]) for t in blocked)
 
 
+def test_tapes_and_universes_on_disk_do_not_read_the_predictions_again(tmp_path):
+    assets = LIQUID[1:3]
+    first = tapes(tmp_path, assets).open(JOB)
+    honest = source_for(assets)
+    read = []
+
+    def released(scope, market, window, predictor):
+        # Los recibos siguen disponibles, pero las filas se liberaron tras montar las cintas.
+        receipt, _ = honest(scope, market, window, predictor)
+
+        def load():
+            read.append(window)
+            raise prediction_files.PredictionsReleased(f"{window} se liberaron")
+
+        return receipt, load
+
+    again = tapes(tmp_path, assets, source=released).open(JOB)
+    assert again.identity == first.identity and read == []
+    # Una cinta que todavía no está en disco sí necesita las filas.
+    with pytest.raises(prediction_files.PredictionsReleased):
+        tapes(tmp_path, assets, source=released, output="other").open(JOB)
+    assert read
+
+
 def test_universe_is_saved_with_its_identity(tmp_path):
     assets = LIQUID[1:3]
     tapes(tmp_path, assets).open(JOB)
@@ -437,3 +503,66 @@ def test_universe_is_saved_with_its_identity(tmp_path):
     assert record["assets"] == ["US/AAA", "US/BBB"]
     assert record["identity"]["rule"] == window_tapes.UNIVERSE_RULE
     assert list(record["identity"]["segments"]) == ["fold-016", "fold-017"]
+
+
+def test_policy_tapes_must_be_real_tapes_of_the_declared_edition(tmp_path):
+    stage = tapes(tmp_path, LIQUID)
+    receipt, load = stage.source(JOB, "fold-017", "parent")
+    values = load()
+    tape, _ = window_tapes.build_segment_tape(
+        stage.edition, receipt, values, market="US", role="validation", lag=0
+    )
+    assert window_tapes.require_real_tape(tape, stage.edition_id, "validation") is tape
+    with pytest.raises(ValueError, match="no es una cinta real"):
+        window_tapes.require_real_tape(tape, "0" * 64, "validation")
+    synthetic = MarketTape(
+        tape.prices,
+        tape.close_times,
+        tape.assets,
+        tape.scores,
+        domain="synthetic",
+        currency=tape.currency,
+        partition=tape.partition,
+        open_times=tape.open_times,
+    )
+    with pytest.raises(ValueError, match="no es una cinta real"):
+        window_tapes.require_real_tape(synthetic, stage.edition_id, "validation")
+    # Con la identidad de la edición, el dominio sintético basta para rechazarla.
+    relabeled = copy.copy(tape)
+    relabeled.domain = "synthetic"
+    with pytest.raises(ValueError, match="no es una cinta real"):
+        window_tapes.require_real_tape(relabeled, stage.edition_id, "validation")
+    # Una cinta real que declarase otro origen o precios ajustados tampoco se admite.
+    for key, field, value in (("source", "kind", "episode_world"), ("audit", "price_basis", "x")):
+        forged = copy.copy(tape)
+        forged.identity = dict(tape.identity, **{key: dict(tape.identity[key], **{field: value})})
+        with pytest.raises(ValueError, match="no es una cinta real"):
+            window_tapes.require_real_tape(forged, stage.edition_id, "validation")
+
+
+@pytest.mark.parametrize("name", ["neural", "ridge", "titans"])
+def test_segment_predictions_read_compacted_files_and_stop_on_released_ones(tmp_path, name):
+    """La retención v2 compacta las predicciones por fila de las que salen las cintas.
+
+    Las cintas deben recibir exactamente las mismas puntuaciones con el archivo original y con
+    el compactado, bit a bit, y un archivo liberado debe detener la etapa con su motivo en
+    lugar de dejar la cinta sin filas.
+    """
+    from tests.data.test_prediction_files import writer, written
+
+    path, digest = written(tmp_path / "attempt", writer(name))
+    before = {
+        market: window_tapes.segment_predictions(path, digest, market) for market in "US CN".split()
+    }
+    prediction_files.compact(path, digest, tmp_path / "rows")
+    assert not path.exists()
+    for market, values in before.items():
+        after = window_tapes.segment_predictions(path, digest, market)
+        assert len(values["score"]) > 0
+        assert np.array_equal(after["prediction_at"], values["prediction_at"])
+        assert np.array_equal(after["asset_id"], values["asset_id"])
+        assert after["score"].dtype == values["score"].dtype
+        assert after["score"].tobytes() == values["score"].tobytes()
+    prediction_files.release(path, digest, stage="fixture")
+    with pytest.raises(prediction_files.PredictionsReleased, match="se liberaron"):
+        window_tapes.segment_predictions(path, digest, "US")

@@ -19,6 +19,7 @@ _TRANSFORMER_ACTIVATION = torch.nn.functional.gelu
 _TITANS_MODULES = (
     "config",
     "state",
+    "causal_convolution",
     "neural_memory",
     "mac",
     "financial",

@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "kind": "historical_masked_prediction_retention",
+  "name": "historical-masked-retention-v2",
+  "status": "declared_before_results",
+  "declared_on": "2026-10-09",
+  "order": "by_window",
+  "phases": ["base", "adapters", "ablation", "rl", "aggregates", "release"],
+  "aggregates": ["walk_forward", "long_short"],
+  "release": {
+    "stages": ["base", "ablation"],
+    "partitions": ["validation", "calibration", "evaluation"],
+    "requires": "bit_exact_regeneration",
+    "otherwise": "compact_lossless"
+  },
+  "compact": ["adapters"],
+  "policy_inputs": "compact_until_the_last_reading_policy_window",
+  "consumers": {
+    "rl": {"reads": "evaluation", "release_after": "confirmed_policy_receipts"}
+  },
+  "numerics": {
+    "float32_matmul_precision": "highest",
+    "cuda_matmul_allow_tf32": false,
+    "cudnn_allow_tf32": false
+  },
+  "kept": [
+    "selected_state_with_parameters_optimizer_rng_and_normalisers",
+    "reports_receipts_and_failed_or_discarded_attempts",
+    "window_aggregates",
+    "views",
+    "regeneration_reports"
+  ]
+}

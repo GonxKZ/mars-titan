@@ -39,7 +39,7 @@
         ],
         "normalization": "x_over_x_plus_training_median",
         "error": "abs(label - issued_prediction) after maturity",
-        "anomaly": "abs(last close log return) / median absolute deviation of the 62 previous returns of the 64-session price window",
+        "anomaly": "abs(last log return between observed closes) / median absolute deviation of the previous returns between observed closes of the 64-session window, 62 when every session is observed",
         "relevance": "max over known components: filing freshness m_f/(m_f+age) and news presence 1-p_news/2",
         "missing_relevance": "unknown and never zero: neutral 0.5 when no component is known",
         "macro_relevance": "not_included",
@@ -90,8 +90,9 @@
       "map_ids": ["I11"],
       "enabled": false,
       "disabled_value": "absent",
-      "allowed": ["delta", "proximal"],
+      "allowed": ["delta", "proximal", "kalman"],
       "value": {"rule": "allowed", "key": ["codec", "constant"], "rate": "eta", "forgetting": "lambda"},
+      "kalman_value": {"rule": "kalman", "key": ["codec", "constant"], "process_noise": "q", "observation_noise": "sigma2", "cohort_correlation": "rho", "prior_variance": "p0", "huber_threshold": "c_or_null"},
       "excludes": ["episodic_bank"],
       "phases": ["evaluation"],
       "state": "associative_matrix",
@@ -99,7 +100,7 @@
       "level": "N4",
       "issues": [392, 27, 28],
       "control": "Titans-MAC sin componente, corrector de sesgo con la coordenada constante del codec y M1 con las mismas etiquetas",
-      "pending": "Elección de η y λ en desarrollo. El recorrido cronológico por ventanas todavía no emite B6"
+      "pending": "Elección de η y λ, y de q, σ², ϱ y p0 para la regla kalman (PT3, configs/evaluation/kalman-associative-comparison.json), en desarrollo. El recorrido cronológico por ventanas todavía no emite B6"
     },
     "document_selection": {
       "connection": "declared",
@@ -215,7 +216,8 @@
     {"id": "A8", "reference": "base", "change": {"information_view": "reduced_view"}},
     {"id": "A9", "reference": "fitted_arm", "change": {"replay_schedule": ["uniform", "recent", "spaced"]}},
     {"id": "A10", "reference": "A4", "change": {"refinement_episodes": "first_read"}},
-    {"id": "A11", "reference": "A3", "change": {"episodic_bank": "m3"}}
+    {"id": "A11", "reference": "A3", "change": {"episodic_bank": "m3"}},
+    {"id": "A12", "reference": "A5", "change": {"associative_memory": ["kalman"]}}
   ],
   "budget": {
     "protocol": "issue 363",

@@ -34,7 +34,18 @@ FORBIDDEN = re.compile(
 )
 # Claves que nombran una fuente de datos y los únicos valores admitidos.
 SOURCE_KEYS = {"source", "sources", "data_source", "dataset", "corpus", "tapes"}
-REAL_SOURCES = {"edition_views", "reconstructed_tapes"}
+# La lectura de cohortes de los adaptadores recorre la misma vista por bloques o el corpus
+# ordenado de la edición, así que sus dos fuentes también son reales. Las cintas de las
+# políticas toman las predicciones del estado elegido en la base o en la cadena del
+# postentrenamiento, ambos ajustados solo con la edición real.
+REAL_SOURCES = {
+    "edition_views",
+    "reconstructed_tapes",
+    "view_blocks",
+    "ordered_corpus",
+    "base_campaign_selected_v1",
+    "posttraining_chain_v1",
+}
 # Textos que explican una decisión o lo que falta. Se examinan sus claves, no su redacción.
 DESCRIPTIVE = {"pending", "pending_arms", "description", "notes", "rationale", "excluded"}
 REPOSITORY = Path(__file__).resolve().parents[3]

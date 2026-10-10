@@ -33,7 +33,7 @@
     "A": {
       "campaign": "historical-masked-campaign-a.json",
       "limits": {
-        "max_training_jobs": 4680,
+        "max_training_jobs": 4725,
         "max_prediction_jobs": 0
       },
       "adapter_stage": "../posttraining/historical-masked-adapter-stage-a.json",
@@ -41,14 +41,14 @@
         "path": "../simulation/historical-masked-rl-stage-a.json",
         "limits": {
           "max_training_jobs": 2160,
-          "max_evaluation_jobs": 1584
+          "max_evaluation_jobs": 2442
         }
       }
     },
     "B": {
       "campaign": "historical-masked-campaign-b.json",
       "limits": {
-        "max_training_jobs": 1768,
+        "max_training_jobs": 1785,
         "max_prediction_jobs": 1792
       },
       "adapter_stage": "../posttraining/historical-masked-adapter-stage-b.json",
@@ -56,7 +56,7 @@
         "path": "../simulation/historical-masked-rl-stage-b.json",
         "limits": {
           "max_training_jobs": 720,
-          "max_evaluation_jobs": 3024
+          "max_evaluation_jobs": 3882
         }
       }
     }
@@ -64,7 +64,7 @@
   "pending": [
     "Declaración preparada sin activar. Las campañas A y B y sus etapas no la incluyen hasta medir memoria y caudal en cuda:0 con la orden de campaign_throughput y --extensions.",
     "Activarla es copiar las tres secciones y los límites de cada variante a historical-masked-campaign-{a,b}.json y los límites rl_stage a historical-masked-rl-stage-{a,b}.json. La etapa de adaptadores no cambia, porque solo parte de las referencias neuronales.",
-    "La GRU candidata usa la variante principal m1_k1. accumulation_rows y recompute se eligen con la medida y cambian la huella de su receta.",
+    "La GRU candidata usa la variante principal m1_k1 con dos casos de búsqueda, como las demás familias neuronales, y 12 meses de calentamiento de entradas. accumulation_rows y recompute se eligen con la medida y cambian la huella de su receta.",
     "MARS-TITAN conecta M0, M1, M2, M3 y M1 con K = 2 y K = 4 sobre titans_mac_online. M3 estima sus escalas con el tramo de entrenamiento de cada ventana, y la medida de caudal aplica la misma regla en la ventana medida.",
     "CM-v1 comparte la receta del núcleo con Titans-MAC, también accumulation_rows. La penalización C acumula por bloques de flujos con el mismo gradiente que el tramo completo, así que B y B+C conservan esa receta si la medida fija 128.",
     "Con las tres secciones, la etapa de políticas pasa de 11 a 22 predictores con productor."

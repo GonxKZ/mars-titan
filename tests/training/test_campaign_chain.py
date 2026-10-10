@@ -152,10 +152,11 @@ def test_the_staged_design_runs_window_by_window(tmp_path):
 def staged_jobs(value, base, *, arm="rnn", seed=42):
     """Construye a mano planes de adaptadores y políticas que siguen el contrato de la cadena.
 
-    Solo son listas de trabajos para el calendario. No leen datos ni ajustan modelos.
+    Los adaptadores llevan detrás sus selecciones de la cadena, como `plan_chain`. Solo son
+    listas de trabajos para el calendario. No leen datos ni ajustan modelos.
     """
     windows = [name for name, _ in chain.scope_windows(value, JOINT)]
-    adapters = [
+    fits = [
         dict(
             id=f"{JOINT}/{window}/{arm}__head/fit-s{seed}",
             scope=JOINT,
@@ -167,15 +168,29 @@ def staged_jobs(value, base, *, arm="rnn", seed=42):
         )
         for parent, window in zip(windows, windows[1:], strict=False)
     ]
-    # Como en la etapa de políticas, cada mercado tiene su ámbito y lee la cadena del modelo
-    # conjunto en la ventana con los mismos tramos (CN fold-k es la conjunta fold-(k+6)).
-    joint = {}
-    for row in order.campaign_windows(value):
-        for scope, name in row["scopes"].items():
-            joint[scope, name] = row["scopes"][JOINT]
+    chains = [
+        dict(
+            id=chain.chain_job_id(JOINT, window, arm, seed),
+            scope=JOINT,
+            window=window,
+            anchor=window,
+            base_arm=arm,
+            seed=seed,
+            stage="chain",
+            depends=(
+                [fits[index - 1]["id"]]
+                if index
+                else chain.parent_jobs(base, JOINT, window, arm, seed)
+            ),
+        )
+        for index, window in enumerate(windows)
+    ]
+    # Como en la etapa de políticas de A v2, cada mercado tiene sus trabajos en el ámbito
+    # conjunto, con las ventanas en las que es elegible, y lee la cadena de ese ámbito.
+    eligible = value["comparison_config"]["resolved_scopes"][JOINT]["eligible"]
     policies = []
-    for scope in ("US", "CN"):
-        names = [name for name, _ in chain.scope_windows(value, scope)]
+    for market in ("US", "CN"):
+        names = [name for name in windows if name in eligible[market]]
         for window in names:
             rows = chain.rl_windows(names, window)
             if rows is None:
@@ -183,9 +198,9 @@ def staged_jobs(value, base, *, arm="rnn", seed=42):
             read = [*rows["train"], rows["validation"], window]
             policies.append(
                 dict(
-                    id=f"{scope}/{window}/{arm}/ppo/fit-s7",
-                    scope=scope,
-                    market=scope,
+                    id=f"{JOINT}/{market}/{window}/{arm}/ppo/fit-s7",
+                    scope=JOINT,
+                    market=market,
                     window=window,
                     anchor=window,
                     train=rows["train"],
@@ -193,10 +208,10 @@ def staged_jobs(value, base, *, arm="rnn", seed=42):
                     predictor=arm,
                     predictor_seed=seed,
                     seed=7,
-                    depends=[chain.chain_job_id(JOINT, joint[scope, n], arm, seed) for n in read],
+                    depends=[chain.chain_job_id(JOINT, name, arm, seed) for name in read],
                 )
             )
-    return adapters, policies
+    return fits + chains, policies
 
 
 def searches(base, prefix):
@@ -212,32 +227,56 @@ def test_the_schedule_selects_the_chain_after_posttraining_and_before_the_policy
     assert phase["online"] < phase["adapters"] < phase["chain"] < phase["rl"]
     chains = [row["phases"][phase["chain"]]["jobs"] for row in schedule]
     assert chains == [[chain.chain_job_id(JOINT, row["window"], "rnn", 42)] for row in schedule]
-    # US empieza en fold-004 y CN en su fold-004, que es la conjunta fold-010.
+    assert [len(row["phases"][phase["adapters"]]["jobs"]) for row in schedule] == [0] + [1] * 18
+    # US empieza en fold-004 y CN, elegible desde fold-006, en fold-010.
     assert [len(row["phases"][phase["rl"]]["jobs"]) for row in schedule] == (
         [0] * 4 + [1] * 6 + [2] * 9
     )
-    first_cn = next(job for job in policies if job["scope"] == "CN")
-    assert first_cn["window"] == "fold-004" and first_cn["train"] == [
-        "fold-000",
-        "fold-001",
-        "fold-002",
+    first_cn = next(job for job in policies if job["market"] == "CN")
+    assert first_cn["window"] == "fold-010" and first_cn["train"] == [
+        "fold-006",
+        "fold-007",
+        "fold-008",
     ]
     assert first_cn["depends"][0] == chain.chain_job_id(JOINT, "fold-006", "rnn", 42)
     # La cadena de la ventana 0 es la base y depende de las búsquedas que la eligen.
-    jobs = {job["id"]: job for job in chain.chain_jobs(value, base, adapters)}
-    first = jobs[chain.chain_job_id(JOINT, "fold-000", "rnn", 42)]
-    assert first["depends"] == searches(base, f"{JOINT}/fold-000/rnn")
-    assert len(first["depends"]) == 2
-    assert jobs[chain.chain_job_id(JOINT, "fold-003", "rnn", 42)]["depends"] == [
-        f"{JOINT}/fold-003/rnn__head/fit-s42"
-    ]
+    assert chain.parent_jobs(base, JOINT, "fold-000", "rnn", 42) == searches(
+        base, f"{JOINT}/fold-000/rnn"
+    )
     assert chain.parent_jobs(base, JOINT, "fold-002", "rnn", 43) == [
         f"{JOINT}/fold-002/rnn/finalist-s43"
     ]
-    with pytest.raises(ValueError, match="no tiene posentrenamiento"):
-        chain.chain_jobs(value, base, adapters[:-1])
     with pytest.raises(ValueError, match="no elige el estado"):
         chain.parent_jobs(base, JOINT, "fold-002", "rnn", 45)
+
+
+def test_policies_read_the_chain_of_their_scope_with_the_windows_of_the_design():
+    from mars_titan.simulation import policy_plan
+
+    stage = policy_plan.load_stage(plan.LATER_STAGES["rl_policy_comparison"]["joint_stage"])
+    resolved = stage["campaign"]["comparison_config"]["resolved_scopes"][JOINT]
+    # Las ventanas de cada mercado del plan de políticas son las de `rl_windows`.
+    for market in resolved["markets"]:
+        names = [name for name in resolved["windows"] if name in resolved["eligible"][market]]
+        rows = policy_plan.scope_windows(stage, JOINT, market)
+        assert [row["window"] for row in rows] == [
+            name for name in names if chain.rl_windows(names, name)
+        ]
+        anchors = {row["window"]: row for row in rows}
+        for row in rows:
+            expected = chain.rl_windows(names, row["anchor"])
+            anchor = anchors[row["anchor"]]
+            assert (anchor["train"], anchor["validation"]) == (
+                expected["train"],
+                expected["validation"],
+            )
+    # Cada trabajo depende de la cadena de su ámbito en todo lo que lee `predictor_reads`.
+    seed = stage["policies"]["predictor"]["seed"]
+    for job in policy_plan.plan_stage(stage):
+        reads = policy_plan.predictor_reads(stage, job)
+        assert {scope for scope, _, _ in reads} == {job["scope"]}
+        chains = {d for d in job["depends"] if chain.CHAIN_SUFFIX in d}
+        assert chains == {chain.chain_job_id(*read, seed) for read in reads}
 
 
 def _broken(kind):
@@ -263,13 +302,15 @@ def _broken(kind):
     elif kind == "policy_reads_a_later_chain":
         policies[0]["depends"].append(chain.chain_job_id(JOINT, "fold-005", "rnn", 42))
     elif kind == "policy_reads_a_chain_outside_the_plan":
-        cn = next(job for job in policies if job["scope"] == "CN")
+        policies[0]["depends"].append(chain.chain_job_id(JOINT, "fold-000", "lstm", 42))
+    elif kind == "policy_reads_the_chain_of_another_scope":
+        cn = next(job for job in policies if job["market"] == "CN")
         cn["depends"] = [
             chain.chain_job_id("CN", name, "rnn", 42)
             for name in [*cn["train"], cn["validation"], cn["window"]]
         ]
-    elif kind == "policy_reads_a_chain_with_other_spans":
-        cn = next(job for job in policies if job["scope"] == "CN")
+    elif kind == "policy_reads_the_chain_of_another_window":
+        cn = next(job for job in policies if job["market"] == "CN")
         cn["depends"][0] = chain.chain_job_id(JOINT, "fold-000", "rnn", 42)
     return value, base, dict(adapters=adapters, rl=policies)
 
@@ -287,7 +328,8 @@ def _broken(kind):
         ("policy_without_predictor_seed", "semilla de su predictor"),
         ("policy_reads_a_later_chain", "fase posterior"),
         ("policy_reads_a_chain_outside_the_plan", "ajena al plan"),
-        ("policy_reads_a_chain_with_other_spans", "no depende de la cadena de todas las ventanas"),
+        ("policy_reads_the_chain_of_another_scope", "lee la cadena de otro ámbito"),
+        ("policy_reads_the_chain_of_another_window", "no depende de la cadena de todas"),
     ],
 )
 def test_the_schedule_rejects_stages_that_break_the_staged_dependencies(kind, message):
@@ -300,6 +342,7 @@ def test_without_the_staged_declaration_the_schedule_keeps_the_old_contract(tmp_
     value = plan.load_campaign(edited(tmp_path, lambda v: v.pop("walk_forward_stages")))
     base = plan.plan_campaign(value)
     adapters, _ = staged_jobs(value, base)
+    adapters = [job for job in adapters if job.get("stage") != "chain"]
     first = dict(adapters[0], id="first", window="fold-000", depends=[])
     schedule = order.window_schedule(value, base, dict(adapters=[first, *adapters]))
     assert all(not row["phases"][order.PHASES.index("chain")]["jobs"] for row in schedule)
@@ -360,20 +403,22 @@ def test_row_fingerprints_ignore_order_and_combine_asset_by_asset():
 def test_the_online_control_starts_from_the_selected_parent_with_the_bank_cap():
     value = campaign()
     base = plan.plan_campaign(value)
-    jobs = [job for job in base if job["kind"] == online.ONLINE]
-    assert len(jobs) == 153 == value["online_controls"]["limits"]["max_online_jobs"]
-    assert plan.count_jobs(value)["online_jobs"] == 153
+    jobs = [job for job in base if job["kind"] == plan.ONLINE]
+    # Solo el ámbito conjunto evalúa el control en línea: 19 ventanas por tres semillas.
+    assert len(jobs) == 57 == value["online_controls"]["limits"]["max_online_jobs"]
+    assert {job["scope"] for job in jobs} == {JOINT} == set(online.scopes(value))
+    assert plan.count_jobs(value)["online_jobs"] == 57
     by_id = {job["id"]: job for job in jobs}
-    first = by_id["US/fold-004/transformer_compact_online/online-s42"]
+    first = by_id[f"{JOINT}/fold-004/transformer_compact_online/online-s42"]
     assert first["depends"] == [
-        *searches(base, "US/fold-004/transformer_compact"),
-        *searches(base, "US/fold-004/mars_titan_m1"),
+        *searches(base, f"{JOINT}/fold-004/transformer_compact"),
+        *searches(base, f"{JOINT}/fold-004/mars_titan_m1"),
     ]
     assert len(first["depends"]) == 4
-    other = by_id["CN/fold-012/transformer_compact_online/online-s44"]
+    other = by_id[f"{JOINT}/fold-012/transformer_compact_online/online-s44"]
     assert other["depends"] == [
-        "CN/fold-012/transformer_compact/finalist-s44",
-        "CN/fold-012/mars_titan_m1/finalist-s44",
+        f"{JOINT}/fold-012/transformer_compact/finalist-s44",
+        f"{JOINT}/fold-012/mars_titan_m1/finalist-s44",
     ]
     assert all(
         (job["model"], job["stage"], job["regenerable"], job["family"])
@@ -383,14 +428,16 @@ def test_the_online_control_starts_from_the_selected_parent_with_the_bank_cap():
     )
     # El calendario los pone tras elegir padre y tope en su ventana.
     schedule = order.window_schedule(value, plan.plan_campaign(value))
-    assert sum(len(row["phases"][order.PHASES.index("online")]["jobs"]) for row in schedule) == 153
+    assert sum(len(row["phases"][order.PHASES.index("online")]["jobs"]) for row in schedule) == 57
+    # El control conectado por su sección ya no figura entre las familias pendientes.
+    assert plan.ONLINE_CONTROL not in plan.pending_families(value)
 
 
 def test_the_online_control_respects_its_job_limit(tmp_path):
     def tight(value):
-        value["online_controls"]["limits"]["max_online_jobs"] = 152
+        value["online_controls"]["limits"]["max_online_jobs"] = 56
 
-    with pytest.raises(ValueError, match="max_online_jobs=152"):
+    with pytest.raises(ValueError, match="max_online_jobs=56"):
         plan.plan_campaign(plan.load_campaign(edited(tmp_path, tight)))
 
 
@@ -431,13 +478,27 @@ def test_the_online_control_admits_only_its_declared_rule(tmp_path, change):
         plan.load_campaign(edited(tmp_path, broken))
 
 
-def test_the_online_control_needs_its_parent_and_cap_in_every_scope(tmp_path):
-    def no_reader(declared):
-        declared["joint_design"]["separate_controls"] = ["transformer_compact"]
+def test_the_online_control_needs_its_parent_and_cap_where_it_is_evaluated(monkeypatch):
+    value = campaign()
+    section = value["online_controls"]
+    arms = plan.scope_arms
 
-    path = edited(tmp_path, lambda value: None, comparison_change=no_reader)
-    with pytest.raises(ValueError, match="En US el control en línea necesita"):
-        plan.load_campaign(path)
+    # Sin el lector en US ni en CN el control sigue siendo válido: solo se evalúa en US+CN.
+    monkeypatch.setattr(
+        plan,
+        "scope_arms",
+        lambda c, s: [a for a in arms(c, s) if s == JOINT or a != online.CAP_ARM],
+    )
+    assert online.declared(section, value) is section
+    monkeypatch.setattr(
+        plan, "scope_arms", lambda c, s: [a for a in arms(c, s) if a != online.CAP_ARM]
+    )
+    with pytest.raises(ValueError, match="En US\\+CN el control en línea necesita"):
+        online.declared(section, value)
+    monkeypatch.setattr(plan, "scope_arms", lambda c, s: [a for a in arms(c, s) if a != online.ARM])
+    with pytest.raises(ValueError, match="no evalúa transformer_compact_online en ningún"):
+        online.declared(section, value)
+    assert online.plan_online(value, plan.plan_campaign(value)) == []
 
 
 def test_the_online_rule_blocks_the_launch_until_every_value_is_declared(tmp_path):
@@ -514,36 +575,55 @@ def test_declared_new_rows_cover_every_window_with_a_parent_and_add_up_by_market
 
 def test_staged_adapters_fit_only_new_rows_and_skip_the_first_window():
     from mars_titan.posttraining import campaign_stage as adapters
+    from mars_titan.training.campaign_throughput import POSTTRAINING
 
     value = campaign()
     stage = adapters.load_stage(plan.LATER_STAGES["posttraining_adapter_matrix"]["joint_stage"])
     windows = [name for name, _ in chain.scope_windows(value, JOINT)]
+    # El ajuste crece 10.000 filas por ventana, así que la cota de filas nuevas sin recuento
+    # es 10.000 - 1.000 - 500 = 8.500 y el recuento declara 100.000.
     counts = {
         scope: {
-            w: dict(train=1_000_000, validation=1000, calibration=500, evaluation=2000)
-            for w, _ in chain.scope_windows(value, scope)
+            w: dict(train=1_000_000 + 10_000 * i, validation=1000, calibration=500, evaluation=2000)
+            for i, (w, _) in enumerate(chain.scope_windows(value, scope))
         }
         for scope in value["scopes"]
     }
     fresh = {scope: {w: 100_000 for w in list(rows)[1:]} for scope, rows in counts.items()}
     rates = budget.uniform_rates(value, 1000.0, inference_ratio=2.0, stage=stage)
-    staged = budget.staged_posttraining_hours(stage, counts, fresh, rates)
-    jobs = [job for job in adapters.plan_stage(stage) if job["window"] != windows[0]]
+    counted = budget.project(value, counts, rates, stage=stage, fresh=fresh)
+    bounded = budget.project(value, counts, rates, stage=stage)
+    staged = counted["estimate"]["families"][POSTTRAINING]
+    # La medida uniforme cubre las redes con caudal neuronal. Titans-MAC, la GRU candidata,
+    # MARS-TITAN, CM-v1 y la cadena trivial de los tabulares quedan sin estimar.
+    neural = set(rates[plan.NEURAL])
+    jobs = [job for job in adapters.plan_stage(stage) if job["base_arm"] in neural]
+    assert {job["window"] for job in jobs} == set(windows[1:])
+    assert (
+        set(staged["without_estimate"])
+        == {j["base_arm"] for j in adapters.plan_stage(stage)} - neural
+    )
     epochs = stage["matrix"]["budget"]["epochs"]
-    per_job = epochs * 100_000 / 1000 + ((epochs + 2) * 1000 + 2500) / 2000
-    parents = len({(j["window"], j["base_arm"], j["seed"]) for j in jobs})
-    cache = (100_000 + 1000 + 3500) / 2000
-    assert staged["training_jobs"] == len(jobs) and staged["frozen_parent_predictions"] == parents
-    assert math.isclose(staged["hours"] * 3600, len(jobs) * per_job + parents * cache)
-    full = budget.project(value, counts, rates, stage=stage)
-    cheap = budget.project(value, counts, rates, stage=stage, fresh=fresh)
-    assert cheap["adapters_design"] == "staged_chain_v1"
-    assert math.isclose(cheap["stages"]["adapters"], staged["hours"])
-    assert cheap["stages"]["adapters"] < full["stages"]["adapters"]
-    assert full["adapters_design"] == "same_window_parent"
+    fits = [job for job in jobs if job["kind"] == plan.FIT]
+    frozen = [job for job in jobs if job["kind"] == adapters.FROZEN]
+    parents = len({(j["scope"], j["window"], j["base_arm"], j["seed"]) for j in fits})
+    assert len(frozen) == parents == staged["parent_caches"]
+
+    def expected(train):
+        per_fit = epochs * train / 1000 + ((epochs + 2) * 1000 + 2500) / 2000
+        cache = (train + 1000) / 2000 + 3500 / 2000
+        return len(fits) * per_fit + parents * cache
+
+    assert (staged["training_jobs"], staged["prediction_jobs"]) == (len(fits), len(frozen))
+    assert staged["fit_rows"] == "counted"
+    assert math.isclose(staged["hours"] * 3600, expected(100_000))
+    assert counted["adapters_design"] == "staged_chain_v1"
+    assert math.isclose(counted["stages"]["adapters"], staged["hours"])
+    assert bounded["adapters_fit_rows"] == "bounded_from_window_counts"
+    assert math.isclose(bounded["stages"]["adapters"] * 3600, expected(8_500))
     # El control en línea predice calibración y evaluación y da como mucho un paso por fila.
-    online_seconds = 153 * (2500 / 2000 + 2500 / 1000)
-    assert math.isclose(full["families"]["online_control"] * 3600, online_seconds)
+    online_seconds = 57 * (2500 / 2000 + 2500 / 1000)
+    assert math.isclose(counted["families"]["online_control"] * 3600, online_seconds)
 
 
 # Verificador de disjunción sobre vistas preparadas
