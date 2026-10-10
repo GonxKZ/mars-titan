@@ -235,7 +235,6 @@ def _same_records(left, right):
 
 
 @pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
-@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_the_reader_trace_hook_does_not_change_a_run(tmp_path, native):
     from tests.posttraining.test_readout_adapters import build
 

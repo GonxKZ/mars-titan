@@ -218,7 +218,6 @@ def emissions(result):
 
 
 @pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
-@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_corrected_emissions_follow_the_previous_matrix_and_mature_writes(
     four_flow_source, baseline, corrected
 ):
@@ -241,7 +240,6 @@ def test_corrected_emissions_follow_the_previous_matrix_and_mature_writes(
 
 
 @pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
-@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_core_queue_and_fast_state_do_not_depend_on_the_correction(baseline, corrected):
     for left, right in zip(baseline["events"], corrected["events"], strict=True):
         assert left["fast"] == right["fast"]
@@ -252,7 +250,6 @@ def test_core_queue_and_fast_state_do_not_depend_on_the_correction(baseline, cor
         assert right["core"].dtype == torch.float64
 
 
-@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 @pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_labels_of_an_event_only_change_later_emissions(
     native, four_flow_source, frozen_consumer, baseline, corrected, tmp_path
@@ -273,7 +270,6 @@ def test_labels_of_an_event_only_change_later_emissions(
 
 
 @pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
-@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_constant_key_control_applies_one_bias_per_event(
     native, four_flow_source, frozen_consumer, baseline, tmp_path
 ):
@@ -291,7 +287,6 @@ def test_constant_key_control_applies_one_bias_per_event(
             assert value == pytest.approx(expected[asset, at], rel=0, abs=1e-15)
 
 
-@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 @pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_kalman_rule_follows_the_same_session_contract_and_recovers_its_covariance(
     native, four_flow_source, frozen_consumer, baseline, tmp_path
@@ -316,7 +311,6 @@ def test_kalman_rule_follows_the_same_session_contract_and_recovers_its_covarian
         assert torch.equal(state.matrix, matrix) and state.writes == event["applied_total"]
 
 
-@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 @pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_cut_before_commit_resumes_with_the_same_matrix(
     native, four_flow_source, frozen_consumer, corrected, tmp_path
