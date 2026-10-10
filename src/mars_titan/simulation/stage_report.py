@@ -27,8 +27,10 @@ Reglas declaradas antes de ver resultados:
   una pregunta separada y el coste principal declarado es el que se interpreta primero.
 - El índice chino se calcula con niveles del CSI 300 (`simulation.index_benchmark`) si se
   suministran con su huella, y se marca con su base.
-- Una ventana sin evaluación porque una serie del universo termina dentro del tramo se
-  publica en `survival`. La sensibilidad con retornos de salida declarada es secundaria.
+- Una baja sin precio de salida con posición abierta termina el episodio con la recompensa
+  enmascarada (`unpriced_exit`). Su ventana queda fuera de la familia como cualquier
+  episodio fallido y se publica en `survival`. La sensibilidad con retornos de salida
+  declarada es secundaria.
 """
 
 import argparse
@@ -69,7 +71,8 @@ REPORT_KIND = "historical_masked_rl_financial_report"
 SEED_RULE = "equal_capital_per_seed_mean_nav"
 WINDOW_RULE = "liquidated_last_close_then_chained_windows"
 DIFFERENCE = "primary_minus_control"
-SERIES_ENDS = "series_ends_in_tape"
+# Motivo de un episodio terminado por una baja sin precio de salida con posición abierta.
+UNPRICED_EXIT = "unpriced_exit"
 STATUSES = ("completed", "paused")
 _RECEIPT_BYTES = 64 * 1024**2
 
@@ -318,27 +321,43 @@ def _family(found, windows, arms, *, planned, benchmark, market, capital, cost):
 
 
 def survival(policies, output):
-    """Ventanas sin evaluación porque una serie del universo termina dentro del tramo.
+    """Ventanas con evaluaciones terminadas por una baja sin precio de salida.
 
-    La regla principal excluye esas ventanas para todos los brazos. La sensibilidad
-    declarada, con retornos de salida, es secundaria y queda pendiente si hay alguna.
+    La regla principal excluye esas ventanas para todos los brazos de su familia. La
+    sensibilidad declarada, con retornos de salida supuestos, es secundaria y queda pendiente
+    si hay alguna. Se publican el brazo, la semilla y los costes de cada episodio afectado.
     """
     affected = {}
     for receipt in output["receipts"].values():
-        failure = receipt["identity"]["tapes"]["failure"]
-        if not failure or failure.get("reason") != "universe_assets_excluded":
-            continue
-        ended = {a for a, reason in failure["excluded"].items() if reason == SERIES_ENDS}
-        if ended:
+        costs = sorted(
+            record["cost_bps"]
+            for record in receipt["evaluation"]
+            if record["status"] == "failed" and record["reason"] == UNPRICED_EXIT
+        )
+        if costs:
             job = receipt["job"]
             key = (job["scope"], job["market"], job["window"])
-            affected[key] = affected.get(key, set()) | ended
+            affected.setdefault(key, []).append(
+                dict(predictor=job["predictor"], arm=job["arm"], seed=job["seed"], costs=costs)
+            )
     return dict(
         policies["survival_sensitivity"],
         status="secondary_evaluation_pending" if affected else "no_affected_windows",
         affected=[
-            dict(scope=scope, market=market, window=window, assets=sorted(assets))
-            for (scope, market, window), assets in sorted(affected.items())
+            dict(
+                scope=scope,
+                market=market,
+                window=window,
+                episodes=sorted(
+                    episodes,
+                    key=lambda e: (
+                        e["predictor"],
+                        e["arm"],
+                        -1 if e["seed"] is None else e["seed"],
+                    ),
+                ),
+            )
+            for (scope, market, window), episodes in sorted(affected.items())
         ],
     )
 

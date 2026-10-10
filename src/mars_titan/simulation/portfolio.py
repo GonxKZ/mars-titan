@@ -155,6 +155,14 @@ class Quote:
             amount(self.volume)
 
 
+# Baja de cotización con el importe por acción y la fecha de pago de su fuente.
+DELISTING = "delisting"
+# Baja sin precio de salida. La posición que siga abierta queda sin valorar.
+UNPRICED_DELISTING = "unpriced_delisting"
+DELISTINGS = (DELISTING, UNPRICED_DELISTING)
+KINDS = ("split", "dividend", "writeoff", *DELISTINGS)
+
+
 @dataclass(frozen=True)
 class CorporateAction:
     id: str
@@ -169,17 +177,19 @@ class CorporateAction:
         if (
             not isinstance(self.id, str)
             or not 1 <= len(self.id) <= 128
-            or self.kind not in {"split", "dividend", "writeoff"}
+            or self.kind not in KINDS
             or self.verified is not True
         ):
             raise ValueError("La acción corporativa necesita un tratamiento acreditado")
         instant(self.effective_at)
         amount(self.value, positive=self.kind == "split")
-        if self.kind == "dividend":
+        if self.kind in ("dividend", DELISTING):
             if self.pay_at is None or instant(self.pay_at) < self.effective_at:
-                raise ValueError("El dividendo necesita una fecha de pago coherente")
-        if self.kind == "writeoff" and self.value != 0:
-            raise ValueError("La baja sin recuperación debe tener valor cero")
+                raise ValueError("El cobro de la acción corporativa necesita una fecha coherente")
+        if self.kind in ("writeoff", UNPRICED_DELISTING) and self.value != 0:
+            raise ValueError("La baja sin recuperación ni precio de salida debe tener valor cero")
+        if self.kind == UNPRICED_DELISTING and self.pay_at is not None:
+            raise ValueError("Una baja sin precio de salida no tiene fecha de cobro")
 
 
 class Portfolio:
@@ -300,7 +310,7 @@ class Portfolio:
                     order["target"] *= action.value
                     if order["capacity"] is not None:
                         order["capacity"] *= action.value
-            elif action.kind == "dividend" and quantity:
+            elif action.kind in ("dividend", DELISTING) and quantity:
                 state["receivables"].append(
                     dict(
                         id=action.id,
@@ -309,10 +319,18 @@ class Portfolio:
                         pay_at=action.pay_at,
                     )
                 )
-            elif action.kind == "writeoff":
+            if action.kind in ("writeoff", DELISTING):
+                # La baja con precio cambia las acciones por su cobro y retira el activo.
                 state["positions"].pop(asset, None)
                 state["orders"].pop(asset, None)
                 state["retired"].append(asset)
+            elif action.kind == UNPRICED_DELISTING:
+                # Sin precio de salida no hay cobro que anotar. Una posición abierta se conserva
+                # sin cotización, de modo que el patrimonio queda desconocido en lugar de
+                # inventar un valor. Sin posición, el activo se retira como cualquier baja.
+                state["orders"].pop(asset, None)
+                if not quantity:
+                    state["retired"].append(asset)
             state["applied"].append(action.id)
 
     def _fill(self, state, asset, quantity, price, trades, tax=0.0):

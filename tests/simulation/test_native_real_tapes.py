@@ -21,7 +21,7 @@ import pytest
 
 from mars_titan.simulation.environment import FinancialEnv
 from mars_titan.simulation.evaluation import evaluate, fixed_policy
-from mars_titan.simulation.market_rules import china_a_share_instrument
+from mars_titan.simulation.market_rules import tape_instruments
 from mars_titan.simulation.native_portfolio import REASONS
 from mars_titan.simulation.reconstructed_tape import build_reconstructed_tape
 from mars_titan.simulation.storage import write_tape
@@ -30,6 +30,7 @@ from tests.simulation.policy_tape_fixture import monthly_window
 from tests.simulation.unadjusted_edition_fixture import (
     Asset,
     evaluation_window,
+    listing_status,
     predictions,
     tape_days,
     write_edition,
@@ -68,8 +69,20 @@ EDITION = {
 }
 
 
+# Estado de cotización de la fixture: cada campo cambia la banda de 600000.SS dentro de 2023
+# y STAR conserva su exención inicial, de modo que C++ debe reconstruir las mismas reglas.
+STATUS = {
+    "CN/600000.SS": dict(
+        special_treatment=[["2023-03-01", "2023-06-01"]],
+        share_reform_pending=[["2023-07-03", "2023-08-01"]],
+        limit_free_days=["2023-08-01", "2023-10-09"],
+    ),
+    "CN/688981.SS": dict(listed_on="2022-09-01", limit_free_until="2022-09-08"),
+}
+
+
 def rules(tape, market):
-    return {a: china_a_share_instrument(a) for a in tape.assets} if market == "CN" else None
+    return tape_instruments(tape) if market == "CN" else None
 
 
 def build(root, market, symbols, *, lag=2, score=None):
@@ -81,6 +94,7 @@ def build(root, market, symbols, *, lag=2, score=None):
         market=market,
         partition="validation",
         dividend_payment_lag_sessions=lag,
+        listing_status=listing_status(root, china=STATUS),
         symbols=symbols,
     )
     return tape
@@ -219,6 +233,7 @@ def test_cpp_session_values_a_final_session_without_row_like_python(tmp_path, po
         market="US",
         partition="validation",
         dividend_payment_lag_sessions=0,
+        listing_status=listing_status(tmp_path / "edition"),
     )
     assert report["counts"]["final_sessions_without_row"] == 1
     write_tape(tape, tmp_path / "input")
@@ -346,8 +361,19 @@ AUDIT_CHANGES = {
         pay_at=None
     ),
     "action_id": lambda m: m["actions"][0].update(id="renamed"),
+    # El estado de la auditoría debe reproducir en C++ las reglas guardadas en la cinta.
+    "status_span": lambda m: status(m)["special_treatment"][0].__setitem__(1, "2023-06-02"),
+    "status_reform": lambda m: status(m).update(share_reform_pending=[]),
+    "status_free_day": lambda m: status(m)["limit_free_days"].pop(),
+    "status_unordered": lambda m: status(m)["limit_free_days"].reverse(),
+    "status_coverage": lambda m: status(m)["special_treatment"][0].__setitem__(0, "2009-12-31"),
+    "status_field": lambda m: status(m).update(note="x"),
     "writeoff": lambda m: m["actions"][0].update(kind="writeoff", value=0, pay_at=None),
 }
+
+
+def status(manifest):
+    return manifest["identity"]["audit"]["listing_status"]["assets"]["CN/600000.SS"]
 
 
 @pytest.mark.parametrize("change", sorted(AUDIT_CHANGES))

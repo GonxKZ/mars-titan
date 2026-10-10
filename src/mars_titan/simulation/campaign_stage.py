@@ -72,7 +72,7 @@ from .policy_plan import (
     predictor_reads,
     window_sensitivity,
 )
-from .reconstructed_tape import NoAdmittedAssets
+from .reconstructed_tape import NoAdmittedAssets, census
 
 RUN_KIND = "historical_masked_rl_stage_run"
 RECEIPT_KIND = "masked_rl_job"
@@ -283,12 +283,12 @@ def episode(cost, result=None, *, failure=None):
 
 
 def market_rules(tape, market):
-    """Reglas de acciones A para una cinta china y ninguna para EE. UU."""
-    from .market_rules import china_a_share_instrument
+    """Reglas de acciones A de una cinta china con el estado de su auditoría. EE. UU. no tiene."""
+    from .market_rules import tape_instruments
 
     if market != "CN":
         return None
-    return {asset: china_a_share_instrument(asset) for asset in tape.assets}
+    return tape_instruments(tape)
 
 
 def evaluate_policy(tapes, policy, stage, market, *, backend, seed=42, allocation=None):
@@ -758,20 +758,23 @@ class _Tapes:
     diferido de las predicciones emitidas en su tramo de evaluación, o `None` si no las hay.
     Las predicciones solo se leen al montar algo que no está en disco. Cada recibo
     debe pertenecer a la ventana y al mercado pedidos, y los tramos de ajuste y validación
-    deben terminar antes de la evaluación según los propios recibos. El universo de cada
-    ancla es común a todos los predictores y se elige con `universe_predictor`.
+    deben terminar antes de la evaluación según los propios recibos. Los universos de cada
+    tramo son comunes a todos los predictores y se eligen con `universe_predictor`.
     """
 
-    def __init__(self, policies, source, edition, edition_id, output, universe_predictor):
+    def __init__(
+        self, policies, source, edition, edition_id, output, universe_predictor, listing_status
+    ):
         self.policies, self.output = policies, output
         self.universe_predictor = universe_predictor
         self._source, self.edition, self.edition_id = source, edition, edition_id
+        self.listing_status = listing_status
         self.lag = policies["environment"]["dividend_payment_lag_sessions"]
+        self.max_assets, self.ranking = window_tapes.universe_rule(policies["universe"])
         self.key, self.current, self.evaluations = None, None, {}
-        # Admisión de cada tramo con todos los activos, por recibo. Con la ventana en
-        # expansión, cada ancla repite las ventanas anteriores y montar una cinta de EE. UU.
-        # con todos sus activos cuesta en torno a un minuto.
-        self.admissions = {}
+        # Estado de los activos al empezar cada tramo, por mercado y límites. Leer todos los
+        # activos de EE. UU. cuesta en torno a un minuto y cada tramo aparece en varias anclas.
+        self.censuses = {}
 
     def source(self, job, window, predictor):
         receipt, load = self._source(job["scope"], job["market"], window, predictor)
@@ -781,49 +784,127 @@ class _Tapes:
         )
         return receipt, load
 
+    def census(self, market, window, bounds):
+        """Estado de la edición al empezar un tramo, confirmado en disco con su identidad."""
+        key = (market, window, tuple(bounds))
+        if key in self.censuses:
+            return self.censuses[key]
+        identity = dict(
+            edition_id=self.edition_id,
+            rule=window_tapes.UNIVERSE_RULE,
+            ranking_sessions=self.ranking,
+            market=market,
+            bounds=list(bounds),
+        )
+        path = self.output / "universes" / "census" / market / f"{window}.json"
+        safe_destination(path)
+        if path.is_file():
+            record = read_manifest(path, 64 * 1024**2)[0]
+            _require(record["identity"] == identity, f"El censo de {path.name} ha cambiado")
+        else:
+            rows = census(self.edition, bounds, market=market, ranking_sessions=self.ranking)
+            record = dict(identity=identity, assets=rows)
+            atomic_json(path, record)
+        self.censuses = {key: record["assets"]}
+        return record["assets"]
+
     def universe(self, job):
-        """Universo del ancla con datos de ajuste y validación, guardado con su identidad."""
+        """Diseño del ancla y universo de cada uno de sus tramos, guardados con su identidad.
+
+        Ajuste y validación eligen entre los activos admitidos en su tramo con predicciones
+        del predictor del universo en él. La evaluación del ancla elige entre los que cotizaban
+        al empezar con predicciones en la validación. El diseño es la unión ordenada.
+        """
         predictor = self.universe_predictor
-        windows = [*job["train"], job["validation"]]
-        sources = {window: self.source(job, window, predictor) for window in windows}
+        fits = [*job["train"], job["validation"]]
+        sources = {window: self.source(job, window, predictor) for window in fits}
         _require(
             all(load is not None for _, load in sources.values()),
             f"El predictor {predictor} del universo no tiene predicciones de {job['market']} "
             f"en el ajuste o la validación de {job['anchor']}",
         )
+        anchor, _ = self.source(job, job["anchor"], job["predictor"])
+        bounds = {
+            window: receipt.segment(window_tapes.SEGMENT)
+            for window, (receipt, _) in sources.items()
+        }
+        bounds[job["anchor"]] = anchor.segment(window_tapes.SEGMENT)
         identity = dict(
             edition_id=self.edition_id,
             rule=window_tapes.UNIVERSE_RULE,
-            max_assets=self.policies["universe"]["max_assets"],
+            max_assets=self.max_assets,
+            ranking_sessions=self.ranking,
             predictor=predictor,
-            segments={window: sources[window][0].sha256 for window in windows},
+            segments={window: sources[window][0].sha256 for window in fits},
+            bounds={window: list(value) for window, value in bounds.items()},
         )
         path = self.output / "universes" / job["scope"] / job["market"] / f"{job['anchor']}.json"
         safe_destination(path)
         if path.is_file():
             record = read_manifest(path, 8 * 1024**2)[0]
             _require(record["identity"] == identity, f"El universo de {path.name} ha cambiado")
-            return tuple(record["assets"])
-        admitted = {}
-        for window, (receipt, load) in sources.items():
-            key = (job["scope"], job["market"], window, receipt.sha256)
-            if key not in self.admissions:
-                tape, _ = window_tapes.build_segment_tape(
-                    self.edition, receipt, load(), market=job["market"], role="train", lag=self.lag
+        else:
+            coverage = {
+                window: window_tapes.covered(load()) for window, (_, load) in sources.items()
+            }
+            universes = {
+                window: window_tapes.select_universe(
+                    self.census(job["market"], window, bounds[window]),
+                    coverage[window],
+                    self.max_assets,
+                    evaluation=False,
                 )
-                window_tapes.require_real_tape(tape, self.edition_id, f"universe-{window}")
-                self.admissions[key] = window_tapes.admission(tape)
-            admitted[window] = self.admissions[key]
-        assets = window_tapes.select_universe(
-            [admitted[window] for window in job["train"]],
-            admitted[job["validation"]],
-            self.policies["universe"]["max_assets"],
-        )
-        atomic_json(path, dict(identity=identity, assets=assets))
-        return tuple(assets)
+                for window in fits
+            }
+            universes[job["anchor"]] = window_tapes.select_universe(
+                self.census(job["market"], job["anchor"], bounds[job["anchor"]]),
+                coverage[job["validation"]],
+                self.max_assets,
+                evaluation=True,
+            )
+            layout = sorted(set().union(*universes.values()))
+            record = dict(identity=identity, layout=layout, universes=universes)
+            atomic_json(path, record)
+        return tuple(record["layout"]), {k: tuple(v) for k, v in record["universes"].items()}
 
-    def tape(self, job, role, window, universe, *, name=None):
-        """Cinta de un tramo restringida al universo, confirmada en disco o construida.
+    def carried(self, job, layout):
+        """Universo de una ventana intermedia dentro del diseño de su ancla.
+
+        Se elige como la evaluación del ancla: cotizaban al empezar la ventana y tenían
+        predicciones en la validación del ancla, que termina antes de la ventana.
+        """
+        receipt, _ = self.source(job, job["window"], job["predictor"])
+        validation, load = self.source(job, job["validation"], self.universe_predictor)
+        bounds = receipt.segment(window_tapes.SEGMENT)
+        identity = dict(
+            edition_id=self.edition_id,
+            rule=window_tapes.UNIVERSE_RULE,
+            max_assets=self.max_assets,
+            ranking_sessions=self.ranking,
+            predictor=self.universe_predictor,
+            layout_sha256=_digest(list(layout)),
+            validation=validation.sha256,
+            bounds=list(bounds),
+        )
+        folder = self.output / "universes" / job["scope"] / job["market"]
+        path = folder / f"{job['anchor']}-{job['window']}.json"
+        safe_destination(path)
+        if path.is_file():
+            record = read_manifest(path, 8 * 1024**2)[0]
+            _require(record["identity"] == identity, f"El universo de {path.name} ha cambiado")
+            return tuple(record["universe"])
+        universe = window_tapes.select_universe(
+            self.census(job["market"], job["window"], bounds),
+            window_tapes.covered(load()),
+            self.max_assets,
+            evaluation=True,
+            within=set(layout),
+        )
+        atomic_json(path, dict(identity=identity, universe=universe))
+        return tuple(universe)
+
+    def tape(self, job, role, window, layout, universe, *, name=None):
+        """Cinta de un tramo con el diseño y el universo pedidos, confirmada o construida.
 
         Devuelve carpeta, cinta, fallo y tramo del recibo. La cinta es None si el predictor
         no tiene predicciones del mercado en el tramo o si la evaluación excluye un activo del
@@ -837,7 +918,12 @@ class _Tapes:
         folder = folder / job["anchor"] / (name or f"{role}-{window}")
         safe_destination(folder)
         bounds = receipt.segment(window_tapes.SEGMENT)
-        expected = dict(receipt_sha256=receipt.sha256, universe_sha256=_digest(list(universe)))
+        expected = dict(
+            receipt_sha256=receipt.sha256,
+            layout_sha256=_digest(list(layout)),
+            universe_sha256=_digest(list(universe)),
+            listing_status_sha256=self.listing_status[1],
+        )
         failure_path = folder / "failure.json"
         if failure_path.is_file():
             record = read_manifest(failure_path, 8 * 1024**2)[0]
@@ -847,6 +933,7 @@ class _Tapes:
             failure = dict(reason=window_tapes.NO_PREDICTIONS, window=window)
             atomic_json(failure_path, dict(identity=expected, failure=failure))
             return folder, None, failure, bounds
+        outside = sorted(set(layout) - set(universe))
         if (folder / "manifest.json").is_file():
             tape = read_tape(folder)
         else:
@@ -858,15 +945,17 @@ class _Tapes:
                     market=job["market"],
                     role=role,
                     lag=self.lag,
-                    # El universo guarda claves `mercado/símbolo` y la edición pide símbolos.
-                    symbols=[asset.split("/", 1)[1] for asset in universe],
+                    listing_status=self.listing_status,
+                    # El diseño guarda claves `mercado/símbolo` y la edición pide símbolos.
+                    symbols=[asset.split("/", 1)[1] for asset in layout],
+                    universe=[asset.split("/", 1)[1] for asset in universe],
                 )
             except NoAdmittedAssets as error:
                 # Excluir todo el universo es el mismo fallo que excluir una parte de él.
                 tape, report = None, dict(excluded=error.excluded)
-            if tape is None or tuple(tape.assets) != universe:
-                # Solo la evaluación puede excluir un activo del universo: el universo se
-                # eligió entre los admitidos en ajuste y validación.
+            if tape is None or tuple(tape.assets) != layout:
+                # Solo la evaluación puede excluir un activo de su universo: los de ajuste y
+                # validación se eligieron entre los admitidos en su propio tramo.
                 _require(role == "evaluation", f"El universo no es admisible en {role}")
                 failure = dict(reason="universe_assets_excluded", excluded=report["excluded"])
                 atomic_json(failure_path, dict(identity=expected, failure=failure))
@@ -876,11 +965,13 @@ class _Tapes:
         # Ninguna cinta sintética ni de otra edición llega a un ejecutor, tampoco al reanudar
         # desde una cinta confirmada en disco.
         window_tapes.require_real_tape(tape, self.edition_id, folder.name)
+        audit = tape.identity["audit"]
         _require(
-            tuple(tape.assets) == universe
-            and [item["receipt_sha256"] for item in tape.identity["audit"]["walk_forward"]]
-            == [receipt.sha256],
-            f"La cinta de {folder.name} no corresponde a su recibo o su universo",
+            tuple(tape.assets) == layout
+            and audit["outside_universe"] == outside
+            and audit["listing_status"]["source_sha256"] == self.listing_status[1]
+            and [item["receipt_sha256"] for item in audit["walk_forward"]] == [receipt.sha256],
+            f"La cinta de {folder.name} no corresponde a su recibo, su diseño o su universo",
         )
         return folder, tape, None, bounds
 
@@ -889,19 +980,33 @@ class _Tapes:
         key = (job["scope"], job["market"], job["predictor"], job["anchor"])
         if self.key != key:
             self.key, self.evaluations = None, {}
-            universe = self.universe(job)
-            train = [self.tape(job, "train", window, universe) for window in job["train"]]
-            validation = self.tape(job, "validation", job["validation"], universe)
-            self.current, self.key = (universe, train, validation), key
-        universe, train, validation = self.current
+            layout, universes = self.universe(job)
+            train = [
+                self.tape(job, "train", window, layout, universes[window])
+                for window in job["train"]
+            ]
+            validation = self.tape(
+                job, "validation", job["validation"], layout, universes[job["validation"]]
+            )
+            self.current, self.key = (layout, universes, train, validation), key
+        layout, universes, train, validation = self.current
         # El índice de mercado se evalúa en su propia cinta de un activo, del mismo tramo y
         # con el mismo recibo. No usa sus predicciones: reparte por igual entre lo valorado.
         symbol = self.policies[MARKET_INDEX][job["market"]] if job["arm"] == MARKET_INDEX else None
         key = (job["window"], symbol)
         if key not in self.evaluations:
-            assets = universe if symbol is None else (f"{job['market']}/{symbol}",)
-            name = None if symbol is None else f"index-{symbol}-{job['window']}"
-            self.evaluations = {key: self.tape(job, "evaluation", job["window"], assets, name=name)}
+            if symbol is not None:
+                assets = (f"{job['market']}/{symbol}",)
+                name = f"index-{symbol}-{job['window']}"
+                built = self.tape(job, "evaluation", job["window"], assets, assets, name=name)
+            else:
+                universe = (
+                    universes[job["anchor"]]
+                    if job["window"] == job["anchor"]
+                    else self.carried(job, layout)
+                )
+                built = self.tape(job, "evaluation", job["window"], layout, universe)
+            self.evaluations = {key: built}
         evaluation = self.evaluations[key]
         segments = [item[3] for item in (*train, validation, evaluation)]
         _require(
@@ -915,7 +1020,7 @@ class _Tapes:
             return None if item[1] is None else item[1].sha256
 
         return PolicyTapes(
-            universe=universe,
+            universe=layout,
             train=tuple(item[1] for item in train),
             validation=validation[1],
             evaluation=evaluation[1],
@@ -927,7 +1032,9 @@ class _Tapes:
                 evaluation=None if evaluation[1] is None else str(evaluation[0]),
             ),
             identity=dict(
-                universe_sha256=_digest(list(universe)),
+                universe_sha256=_digest(list(layout)),
+                universes_sha256=_digest({k: list(v) for k, v in sorted(universes.items())}),
+                listing_status_sha256=self.listing_status[1],
                 train=[sha(item) for item in train],
                 validation=sha(validation),
                 evaluation=sha(evaluation),
@@ -1122,6 +1229,7 @@ def run_stage(
     edition,
     output,
     *,
+    listing_status,
     executors=None,
     capabilities=None,
     stop=None,
@@ -1136,10 +1244,12 @@ def run_stage(
     El bloqueo de aprendizaje se comprueba antes de todo y antes de cada trabajo pendiente.
     Las capacidades del plan se exigen antes de abrir fuentes o crear la salida. Con
     `sensitivity` se ejecuta la sensibilidad de ventanas declarada, que debe estar activada
-    en la configuración y escribe en una salida con su propia identidad.
+    en la configuración y escribe en una salida con su propia identidad. `listing_status`
+    es la tabla del estado de cotización, cuya huella declaran las políticas.
     """
     from mars_titan.training.checkpoints import StopRequest
 
+    from .listing_status import read_listing_status
     from .reconstructed_tape import read_edition
 
     require_learning_allowed("la etapa de políticas financieras de la campaña")
@@ -1179,7 +1289,15 @@ def run_stage(
     campaign_output, edition, output = Path(campaign_output), Path(edition), Path(output)
     safe_destination(output)
     chained = () if chain_output is None else (Path(chain_output),)
-    for protected in (*views.values(), campaign_output, edition, *chained, Path("dataset")):
+    listing_status = Path(listing_status)
+    for protected in (
+        *views.values(),
+        campaign_output,
+        edition,
+        listing_status,
+        *chained,
+        Path("dataset"),
+    ):
         outside_source(protected, output)
         outside_source(output, protected)
     # Las políticas solo aprenden con la edición real declarada: su identidad se recalcula
@@ -1188,6 +1306,12 @@ def run_stage(
     _require(
         edition_id == stage["policies"]["data"]["edition_id"],
         "La edición no es la edición real declarada por las políticas de la etapa",
+    )
+    # Bajas con precio de salida y estado de las acciones A de la tabla declarada.
+    status = read_listing_status(listing_status)
+    _require(
+        status[1] == stage["policies"]["data"]["listing_status_sha256"],
+        "La tabla del estado de cotización no es la declarada por las políticas de la etapa",
     )
     _, base = masked_campaign._confirmed_state(campaign["path"], views, campaign_output)
     _base_receipts(base, campaign, stage, pairs)
@@ -1213,7 +1337,13 @@ def run_stage(
             )
             atomic_json(marker, identity)
         tapes = _Tapes(
-            stage["policies"], source, edition, edition_id, output, stage["universe_predictor"]
+            stage["policies"],
+            source,
+            edition,
+            edition_id,
+            output,
+            stage["universe_predictor"],
+            status,
         )
         state = _Stage(stage, tapes, output, identity, executors, None)
         signals = StopRequest() if stop is None else nullcontext(stop)
@@ -1244,6 +1374,7 @@ def main(argv=None):
     execute.add_argument("--views", action="append", required=True)
     execute.add_argument("--campaign-output", type=Path, required=True)
     execute.add_argument("--edition", type=Path, required=True)
+    execute.add_argument("--listing-status", type=Path, required=True)
     execute.add_argument("--output", type=Path, required=True)
     execute.add_argument("--window", help="Ventana de campaña que se ejecuta")
     execute.add_argument("--chain-output", type=Path)
@@ -1260,6 +1391,7 @@ def main(argv=None):
             args.campaign_output,
             args.edition,
             args.output,
+            listing_status=args.listing_status,
             window=args.window,
             chain_output=args.chain_output,
             sensitivity=args.sensitivity,

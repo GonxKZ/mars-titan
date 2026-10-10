@@ -13,7 +13,7 @@ ACTIVITIES = {
 }
 PREDICTIVE = {"initial_training", "supervised_continuation", "predictive_adaptation"}
 FINANCIAL = {"rl", "simulation", "evaluation"}
-INVALID_REASONS = {None, "none", "missing_close", "ruined", "incomplete"}
+INVALID_REASONS = {None, "none", "missing_close", "unpriced_exit", "ruined", "incomplete"}
 ADAPTATION_METHODS = {"reinforce", "expected", "mae", "klpo_full", "klpo_mc", "klpo_exact"}
 NEURAL_CONTROLS = {"neural_mae", "neural_mse"}
 CONDITIONS = {"real", "real_resampled", "real_synthetic"}

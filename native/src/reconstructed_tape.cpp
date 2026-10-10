@@ -6,6 +6,8 @@
 #include <chrono>
 #include <cmath>
 #include <cstddef>
+#include <cstdio>
+#include <map>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -35,20 +37,30 @@ constexpr double cent_inverse = 100;
 constexpr double subdollar_inverse = 10'000;
 
 // RECONSTRUCTED_CONTRACT de simulation/market.py, salvo corporate_actions_complete.
-constexpr std::array<std::pair<std::string_view, std::string_view>, 9> contract{{
+constexpr std::array<std::pair<std::string_view, std::string_view>, 11> contract{{
     {"price_basis", "unadjusted_reconstructed"},
     {"corporate_actions", "provider_events_in_verified_rows"},
-    {"exit_returns", "unavailable"},
+    {"exit_returns", "source_exit_price_or_masked_position"},
     {"population", "listed_through_2025_03"},
     {"rows", "verified_only"},
     {"non_trading", "zero_volume_or_missing_row_without_execution"},
     {"valuation", "last_traded_close"},
     {"same_day_split_dividend", "lower_cash_without_execution"},
     {"off_grid_open", "without_execution"},
+    {"series_end", "delisting_at_next_open"},
+    {"outside_universe_assets", "masked_without_prices_or_predictions"},
 }};
-constexpr std::array<std::string_view, 7> audit_fields{
-    "market", "edition_id", "evidence_sha256", "walk_forward", "prediction_fit_ends",
-    "assumptions", "corporate_actions_complete"};
+constexpr std::array<std::string_view, 10> audit_fields{
+    "market",           "edition_id",     "evidence_sha256", "walk_forward",
+    "prediction_fit_ends", "assumptions", "corporate_actions_complete", "outside_universe",
+    "delistings",       "listing_status"};
+// Límites de la tabla del estado de cotización, como listing_status.py.
+constexpr std::string_view status_cutoff = "2023-12-31";
+// Primera fecha con tramos comprobados, como listing_status.COVERAGE_FROM.
+constexpr std::string_view status_coverage = "2010-01-01";
+constexpr std::size_t maximum_special_spans = 30;
+constexpr std::size_t iso_day_length = 10;
+constexpr double special_treatment_band = 0.05;
 constexpr std::array<std::string_view, 4> partitions{"train", "validation", "calibration",
                                                      "evaluation"};
 
@@ -163,10 +175,154 @@ bool on_grid(std::string_view market, std::chrono::sys_days day, double value) {
     return exact(value < 1 ? subdollar_inverse : cent_inverse);
 }
 
+std::string_view kind_name(CorporateKind kind) {
+    switch (kind) {
+    case CorporateKind::split:
+        return "split";
+    case CorporateKind::dividend:
+        return "dividend";
+    case CorporateKind::writeoff:
+        return "writeoff";
+    case CorporateKind::delisting:
+        return "delisting";
+    case CorporateKind::unpriced_delisting:
+        return "unpriced_delisting";
+    }
+    throw std::invalid_argument("La clase de acción corporativa no está admitida");
+}
+
 std::string action_id(const MarketTape& tape, const CorporateAction& action) {
     return tape.assets.at(action.asset) + "/" + std::to_string(action.effective_at) + "/" +
-           (action.kind == CorporateKind::dividend ? "dividend" : "split");
+           std::string(kind_name(action.kind));
 }
+
+bool delisting(const CorporateAction& action) {
+    return action.kind == CorporateKind::delisting ||
+           action.kind == CorporateKind::unpriced_delisting;
+}
+
+// Fecha ISO de calendario. Devuelve la fecha o lanza si no es una fecha real.
+Day iso_day(std::string_view value) {
+    const auto digits = [value](std::size_t from, std::size_t count) {
+        int result = 0;
+        for (std::size_t index = from; index < from + count; ++index) {
+            require(value[index] >= '0' && value[index] <= '9',
+                    "Una fecha del estado de cotización no es ISO");
+            result = result * 10 + (value[index] - '0');
+        }
+        return result;
+    };
+    require(value.size() == iso_day_length && value[4] == '-' && value[7] == '-',
+            "Una fecha del estado de cotización no es ISO");
+    const Day result{digits(0, 4), static_cast<unsigned>(digits(5, 2)),
+                     static_cast<unsigned>(digits(8, 2))};
+    const std::chrono::year_month_day date{std::chrono::year{result.year} /
+                                           std::chrono::month{result.month} /
+                                           std::chrono::day{result.day}};
+    require(date.ok(), "Una fecha del estado de cotización no es una fecha real");
+    return result;
+}
+
+int64_t beijing_at(std::string_view value) {
+    const auto day = iso_day(value);
+    return beijing_day(day.year, day.month, day.day);
+}
+
+// Fecha de calendario de la sesión: el cierre de EE. UU. y de China cae en el mismo día UTC.
+std::string session_day(const MarketTape& tape, std::size_t session) {
+    const std::chrono::year_month_day date{std::chrono::floor<std::chrono::days>(
+        std::chrono::sys_time<std::chrono::microseconds>{
+            std::chrono::microseconds{tape.close_times.at(session)}})};
+    std::array<char, iso_day_length + 1> text{};
+    std::snprintf(text.data(), text.size(), "%04d-%02u-%02u", static_cast<int>(date.year()),
+                  static_cast<unsigned>(date.month()), static_cast<unsigned>(date.day()));
+    return {text.data(), iso_day_length};
+}
+
+// Tramos [inicio, fin) ordenados, sin solapes y dentro de la cobertura comprobada. Solo el
+// último puede seguir abierto en el corte.
+std::vector<std::pair<std::string, std::optional<std::string>>> status_spans(const Json& spans) {
+    require(spans.is_array() && spans.size() <= maximum_special_spans,
+            "Los tramos del estado deben formar una lista");
+    std::vector<std::pair<std::string, std::optional<std::string>>> result;
+    std::optional<std::string> previous;
+    for (std::size_t index = 0; index < spans.size(); ++index) {
+        const auto& span = spans[index];
+        require(span.is_array() && span.size() == 2 && span[0].is_string() &&
+                    (span[1].is_string() || (span[1].is_null() && index + 1 == spans.size())),
+                "Un tramo del estado necesita inicio y fin");
+        const auto start = span[0].get<std::string>();
+        static_cast<void>(iso_day(start));
+        std::optional<std::string> end;
+        if (span[1].is_string()) {
+            end = span[1].get<std::string>();
+            static_cast<void>(iso_day(*end));
+            require(*end <= status_cutoff, "Un tramo del estado termina después del corte");
+        }
+        require(start >= status_coverage, "Un tramo del estado empieza antes de la cobertura");
+        require(start <= status_cutoff && (!previous || *previous <= start) &&
+                    (!end || start < *end),
+                "Los tramos del estado deben estar ordenados y sin solapes");
+        previous = end;
+        result.emplace_back(start, end);
+    }
+    return result;
+}
+
+// Misma comprobación que china_entry en Python, sin consultar calendarios.
+ChinaStatus china_status(const Json& value) {
+    require(value.is_object() && value.size() == 5 && value.contains("listed_on") &&
+                value.contains("limit_free_until") && value.contains("special_treatment") &&
+                value.contains("share_reform_pending") && value.contains("limit_free_days") &&
+                value.at("listed_on").is_string() &&
+                (value.at("limit_free_until").is_null() ||
+                 value.at("limit_free_until").is_string()) &&
+                value.at("limit_free_days").is_array() &&
+                value.at("limit_free_days").size() <= maximum_special_spans,
+            "La entrada de una acción A no conserva sus campos");
+    ChinaStatus result;
+    result.listed_on = value.at("listed_on").get<std::string>();
+    static_cast<void>(iso_day(result.listed_on));
+    require(result.listed_on <= status_cutoff, "La admisión es posterior al corte");
+    if (!value.at("limit_free_until").is_null()) {
+        result.limit_free_until = value.at("limit_free_until").get<std::string>();
+        static_cast<void>(iso_day(*result.limit_free_until));
+        require(result.listed_on < *result.limit_free_until,
+                "La exención de límites termina antes de la admisión");
+    }
+    result.special_treatment = status_spans(value.at("special_treatment"));
+    result.share_reform_pending = status_spans(value.at("share_reform_pending"));
+    for (const auto& item : value.at("limit_free_days")) {
+        require(item.is_string(), "Un día sin límite debe ser una fecha");
+        const auto day = item.get<std::string>();
+        static_cast<void>(iso_day(day));
+        require(day >= status_coverage && day <= status_cutoff &&
+                    (result.limit_free_days.empty() || result.limit_free_days.back() < day),
+                "Los días sin límite deben estar ordenados dentro de la cobertura");
+        result.limit_free_days.push_back(day);
+    }
+    return result;
+}
+
+DelistingRecord delisting_record(const Json& value) {
+    require(value.is_object() && value.size() == 2 && value.contains("last_session") &&
+                value.contains("exit") && value.at("last_session").is_string(),
+            "El registro de la baja no corresponde a su acción ni a su fuente");
+    DelistingRecord result{value.at("last_session").get<std::string>(), std::nullopt};
+    static_cast<void>(iso_day(result.last_session));
+    const auto& exit = value.at("exit");
+    if (!exit.is_null()) {
+        require(exit.is_object() && exit.size() == 3 && exit.contains("price") &&
+                    exit.contains("pay_at") && exit.at("price").is_number() &&
+                    exit.contains("source_sha256") && digest(exit.at("source_sha256")),
+                "El registro de la baja no corresponde a su acción ni a su fuente");
+        result.exit = ExitRecord{exit.at("price").get<double>(),
+                                 read_json_int64(exit.at("pay_at")),
+                                 exit.at("source_sha256").get<std::string>()};
+    }
+    return result;
+}
+
 
 void check_sessions(const MarketTape& tape, const ReconstructedAudit& audit) {
     const auto sessions = tape.close_times.size();
@@ -214,17 +370,77 @@ void check_prices(const MarketTape& tape, std::string_view market) {
     }
 }
 
+void check_delistings(const MarketTape& tape, const ReconstructedAudit& audit) {
+    // Cada baja de la cinta tiene su registro: la última sesión de la serie es la anterior a la
+    // apertura de la baja y la salida coincide con la acción, con precio o sin él.
+    std::map<std::string, const CorporateAction*> found;
+    for (const auto& action : tape.actions) {
+        if (delisting(action)) {
+            found.emplace(tape.assets.at(action.asset), &action);
+        }
+    }
+    require(found.size() == audit.delistings.size() &&
+                std::ranges::all_of(audit.delistings,
+                                    [&found](const auto& entry) {
+                                        return found.contains(entry.first);
+                                    }),
+            "Cada baja de la cinta necesita su registro de salida");
+    for (const auto& [asset, record] : audit.delistings) {
+        const auto& action = *found.at(asset);
+        const auto moment = std::ranges::lower_bound(tape.open_times, action.effective_at);
+        require(moment != tape.open_times.begin() && moment != tape.open_times.end() &&
+                    *moment == action.effective_at &&
+                    record.last_session ==
+                        session_day(tape, static_cast<std::size_t>(
+                                              moment - tape.open_times.begin() - 1)) &&
+                    record.exit.has_value() == (action.kind == CorporateKind::delisting),
+                "El registro de la baja no corresponde a su acción ni a su fuente");
+        if (record.exit) {
+            require(record.exit->price == action.value && action.pay_at == record.exit->pay_at,
+                    "El registro de la baja no corresponde a su acción ni a su fuente");
+        }
+    }
+}
+
+void check_universe(const MarketTape& tape, const ReconstructedAudit& audit) {
+    // Un activo fuera del universo no tiene precios, predicciones ni acciones en la cinta.
+    const auto count = tape.assets.size();
+    require(audit.outside_universe.size() < count,
+            "La cinta reconstruida necesita activos dentro de su universo");
+    for (const auto& name : audit.outside_universe) {
+        const auto found = std::ranges::lower_bound(tape.assets, name);
+        require(found != tape.assets.end() && *found == name,
+                "La cinta reconstruida necesita activos dentro de su universo");
+        const auto asset = static_cast<std::size_t>(found - tape.assets.begin());
+        require(std::ranges::none_of(tape.actions,
+                                     [asset](const auto& action) {
+                                         return action.asset == asset;
+                                     }),
+                "Un activo fuera del universo conserva acciones corporativas");
+        for (std::size_t session = 0; session < tape.close_times.size(); ++session) {
+            const auto row = tape.frame(session).subspan(asset * price_width, price_width);
+            require(std::ranges::all_of(row, [](double value) { return std::isnan(value); }) &&
+                        std::isnan(tape.predictions(session)[asset]),
+                    "Un activo fuera del universo conserva precios o predicciones");
+        }
+    }
+}
+
 void check_actions(const MarketTape& tape, const ReconstructedAudit& audit) {
     const auto sessions = static_cast<int64_t>(tape.open_times.size());
     for (const auto& action : tape.actions) {
-        require(action.kind == CorporateKind::dividend || action.kind == CorporateKind::split,
-                "La cinta reconstruida solo admite dividendos y splits del proveedor");
+        require(action.kind == CorporateKind::dividend || action.kind == CorporateKind::split ||
+                    delisting(action),
+                "La cinta reconstruida solo admite dividendos y splits del proveedor y bajas");
         require(action.id == action_id(tape, action),
                 "La acción corporativa no conserva la identidad de su activo y apertura");
         const auto moment = std::ranges::lower_bound(tape.open_times, action.effective_at);
         require(moment != tape.open_times.end() && *moment == action.effective_at,
                 "La acción corporativa no pertenece al calendario");
         const auto position = moment - tape.open_times.begin();
+        if (delisting(action)) {
+            continue;
+        }
         if (action.kind == CorporateKind::split) {
             require(action.value > 0 && action.value != 1 && !action.pay_at,
                     "El split necesita una proporción distinta de uno");
@@ -295,6 +511,30 @@ ReconstructedAudit read_reconstructed_audit(const Json& identity, std::string_vi
     for (const auto& value : fits) {
         result.prediction_fit_ends.push_back(read_json_int64(value));
     }
+    const auto& outside = audit.at("outside_universe");
+    require(outside.is_array() && outside.size() <= maximum_assets,
+            "La cinta reconstruida no declara su tratamiento y sus limitaciones");
+    for (const auto& value : outside) {
+        require(value.is_string() && (result.outside_universe.empty() ||
+                                      result.outside_universe.back() < value.get<std::string>()),
+                "La cinta reconstruida no declara su tratamiento y sus limitaciones");
+        result.outside_universe.push_back(value.get<std::string>());
+    }
+    const auto& delistings = audit.at("delistings");
+    require(delistings.is_object() && delistings.size() <= maximum_assets,
+            "La cinta reconstruida no declara su tratamiento y sus limitaciones");
+    for (const auto& [asset, value] : delistings.items()) {
+        result.delistings.emplace(asset, delisting_record(value));
+    }
+    const auto& status = audit.at("listing_status");
+    require(status.is_object() && status.size() == 2 && status.contains("source_sha256") &&
+                digest(status.at("source_sha256")) && status.contains("assets") &&
+                status.at("assets").is_object() && status.at("assets").size() <= maximum_assets,
+            "La cinta reconstruida no declara su tratamiento y sus limitaciones");
+    result.listing_status_sha256 = status.at("source_sha256").get<std::string>();
+    for (const auto& [asset, value] : status.at("assets").items()) {
+        result.listing_status.emplace(asset, china_status(value));
+    }
     result.basis = result.market + "/" + audit.at("edition_id").get<std::string>() + "/lag-" +
                    std::to_string(result.dividend_payment_lag_sessions);
     return result;
@@ -309,12 +549,28 @@ void admit_reconstructed_tape(MarketTape& tape, const ReconstructedAudit& audit)
     check_sessions(tape, audit);
     check_prices(tape, audit.market);
     check_actions(tape, audit);
+    check_delistings(tape, audit);
+    check_universe(tape, audit);
+    // El estado de cotización cubre exactamente los activos de una cinta china y ninguno en
+    // EE. UU., como require_tape_status en Python.
+    require(audit.listing_status.size() == (audit.market == "CN" ? tape.assets.size() : 0) &&
+                std::ranges::all_of(tape.assets,
+                                    [&audit](const std::string& asset) {
+                                        return audit.market != "CN" ||
+                                               audit.listing_status.contains(asset);
+                                    }),
+            "El estado de cotización de la cinta no cubre exactamente sus activos");
+    require(audit.market != "CN" || tape.close_times.front() >= beijing_at(status_coverage),
+            "Una cinta china empieza antes de la cobertura del estado de cotización");
     if (audit.market == "CN") {
-        // Lotes, bandas diarias y timbre solo tienen sentido con precios negociados.
+        // Lotes, bandas diarias y timbre solo tienen sentido con precios negociados. Las
+        // bandas incluyen el estado ST y la exención inicial de la auditoría de la cinta.
         require(tape.instruments.size() == tape.assets.size(),
                 "Una cinta china reconstruida necesita las reglas de acciones A");
         for (std::size_t asset = 0; asset < tape.assets.size(); ++asset) {
-            require(tape.instruments[asset] == china_a_share_rules(tape.assets[asset]),
+            const auto& name = tape.assets[asset];
+            require(tape.instruments[asset] ==
+                        china_a_share_rules(name, audit.listing_status.at(name)),
                     "Una cinta china reconstruida necesita las reglas de acciones A");
         }
     }
@@ -358,6 +614,68 @@ InstrumentRules china_a_share_rules(std::string_view asset) {
                     duty(duty_lowered, seller_only, low_duty, low_duty),
                     duty(seller_only, duty_halved, 0, low_duty),
                     duty(duty_halved, verified_end, 0, halved_duty)};
+    return result;
+}
+
+InstrumentRules china_a_share_rules(std::string_view asset, const ChinaStatus& status) {
+    constexpr Day verified_end{2024, 1, 1};
+    auto result = china_a_share_rules(asset);
+    const auto kind = board(asset);
+    result.rules = "cn_a_share_v2_" + kind;
+    const auto end = beijing_day(verified_end.year, verified_end.month, verified_end.day);
+    std::vector<std::pair<int64_t, int64_t>> special;
+    std::vector<std::pair<int64_t, int64_t>> free;
+    if (kind == "main") {
+        for (const auto* spans : {&status.special_treatment, &status.share_reform_pending}) {
+            for (const auto& [start, stop] : *spans) {
+                special.emplace_back(beijing_at(start), stop ? beijing_at(*stop) : end);
+            }
+        }
+    }
+    constexpr int64_t day_length = int64_t{86'400} * 1'000'000;
+    for (const auto& day : status.limit_free_days) {
+        free.emplace_back(beijing_at(day), beijing_at(day) + day_length);
+    }
+    if (status.limit_free_until) {
+        free.emplace_back(beijing_at(status.listed_on), beijing_at(*status.limit_free_until));
+    }
+    const auto base = result.price_limits;
+    std::vector<int64_t> cuts;
+    for (const auto& period : base) {
+        cuts.push_back(period.start);
+        cuts.push_back(period.end);
+    }
+    for (const auto& spans : {special, free}) {
+        for (const auto& [start, stop] : spans) {
+            cuts.push_back(start);
+            cuts.push_back(stop);
+        }
+    }
+    std::ranges::sort(cuts);
+    cuts.erase(std::unique(cuts.begin(), cuts.end()), cuts.end());
+    const auto inside = [](const std::vector<std::pair<int64_t, int64_t>>& spans, int64_t at) {
+        return std::ranges::any_of(spans, [at](const auto& span) {
+            return span.first <= at && at < span.second;
+        });
+    };
+    std::vector<RulePeriod> periods;
+    for (std::size_t index = 0; index + 1 < cuts.size(); ++index) {
+        const auto left = cuts[index];
+        const auto right = cuts[index + 1];
+        const auto period = std::ranges::find_if(base, [left](const RulePeriod& item) {
+            return item.start <= left && left < item.end;
+        });
+        if (period == base.end() || inside(free, left)) {
+            continue;
+        }
+        const double value = inside(special, left) ? special_treatment_band : period->band;
+        if (!periods.empty() && periods.back().end == left && periods.back().band == value) {
+            periods.back().end = right;
+        } else {
+            periods.push_back({left, right, value, 0, 0});
+        }
+    }
+    result.price_limits = std::move(periods);
     return result;
 }
 

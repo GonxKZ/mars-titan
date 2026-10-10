@@ -11,11 +11,21 @@ recientes. La primera ventana de política es la primera con `minimum` evaluacio
 anteriores a su validación, en las dos reglas. Toda la información que usa la política
 termina antes de la primera decisión evaluada.
 
-El universo de activos se fija con datos de ajuste y validación: los activos admitidos en
-todos esos tramos, con alguna predicción en la validación, ordenados por la mediana del
-efectivo negociado (cierre por volumen) de la validación. Un activo del universo que la
-cinta de evaluación excluye deja esa evaluación como fallida, sin cambiar el universo con
-información posterior.
+El universo se elige en cada tramo con datos anteriores a su primera decisión, de modo que
+incluye las empresas que después dejan de cotizar. En cada tramo son los `max_assets`
+activos con mayor mediana del efectivo negociado (cierre por volumen) en las sesiones de
+clasificación anteriores al tramo. En los tramos de ajuste y validación, que la política
+usa como historia, los candidatos cumplen las condiciones de la cinta del tramo y tienen
+alguna predicción del predictor del universo en él. Una baja dentro del tramo no excluye a
+nadie. En la evaluación los candidatos son los que cotizaban al empezar y tenían
+predicciones en la validación del ancla, sin mirar la propia evaluación. Un activo del
+universo que la cinta de evaluación excluye por la calidad de sus filas deja esa
+evaluación como fallida.
+
+La política observa un diseño fijo de activos, la unión ordenada de los universos de sus
+tramos. En cada tramo, los activos del diseño que no forman parte de su universo quedan sin
+precios ni predicciones. Una ventana intermedia, evaluada sin reajuste con la política de
+su ancla, elige su universo dentro del diseño del ancla.
 """
 
 from pathlib import Path
@@ -36,7 +46,7 @@ EXPANDING = "expanding_prior_evaluations_v1"
 FIXED = "fixed_prior_evaluations_v1"
 TRAIN_RULES = (EXPANDING, FIXED)
 SEGMENT = "evaluation"
-UNIVERSE_RULE = "median_traded_value_in_validation_v1"
+UNIVERSE_RULE = "point_in_time_median_traded_value_v2"
 # Motivo de los episodios de un predictor que no emitió filas del mercado en un tramo.
 NO_PREDICTIONS = "predictor_without_predictions"
 
@@ -141,7 +151,9 @@ def segment_predictions(path, digest, market):
     )
 
 
-def build_segment_tape(edition, window, values, *, market, role, lag, symbols=None):
+def build_segment_tape(
+    edition, window, values, *, market, role, lag, listing_status, symbols=None, universe=None
+):
     """Cinta del tramo de evaluación de una ventana del predictor para un papel de la política."""
     _require(isinstance(window, WalkForwardWindow) and role in ROLES, "Papel o recibo no válidos")
     start, _ = window.segment(SEGMENT)
@@ -154,8 +166,10 @@ def build_segment_tape(edition, window, values, *, market, role, lag, symbols=No
         market=market,
         partition="train" if role == "train" else "validation",
         dividend_payment_lag_sessions=lag,
+        listing_status=listing_status,
         segment=SEGMENT,
         symbols=symbols,
+        universe=universe,
     )
 
 
@@ -180,27 +194,60 @@ def require_real_tape(tape, edition_id, label):
     return tape
 
 
-def admission(tape):
-    """Activos admitidos en un tramo, su efectivo negociado mediano y si tienen predicción."""
-    value = tape.prices[:, :, 3] * np.nan_to_num(tape.prices[:, :, 4], nan=0.0)
-    predicted = np.isfinite(tape.scores).any(axis=0)
-    return {
-        asset: dict(traded_value=float(np.median(value[:, i])), predicted=bool(predicted[i]))
-        for i, asset in enumerate(tape.assets)
-    }
+def universe_rule(value):
+    """Regla declarada del universo: `(máximo de activos, sesiones de clasificación)`."""
+    _require(
+        isinstance(value, dict)
+        and set(value) == {"rule", "max_assets", "ranking_sessions"}
+        and value["rule"] == UNIVERSE_RULE
+        and type(value["max_assets"]) is int
+        and 1 <= value["max_assets"] <= 4096
+        and type(value["ranking_sessions"]) is int
+        and 20 <= value["ranking_sessions"] <= 756,
+        f"El universo declara {UNIVERSE_RULE}, de 1 a 4096 activos y de 20 a 756 sesiones",
+    )
+    return value["max_assets"], value["ranking_sessions"]
 
 
-def select_universe(train, validation, max_assets):
-    """Universo común de una política con la regla `median_traded_value_in_validation_v1`.
+def layout_bound(universe, train_windows):
+    """Máximo del diseño de una política: universos disjuntos en todos sus tramos.
 
-    `train` es la lista de admisiones de los tramos de ajuste y `validation` la del tramo
-    de validación. Solo intervienen datos anteriores a la evaluación.
+    El diseño une los universos de las ventanas de ajuste, la validación y la evaluación,
+    así que nunca supera `max_assets` por ese número de tramos ni el límite de 4096 activos.
+    """
+    max_assets, _ = universe_rule(universe)
+    return min(4096, max_assets * (train_rule(train_windows)[2] + 2))
+
+
+def covered(values):
+    """Activos con alguna predicción finita en las predicciones de un tramo."""
+    scores = np.asarray(values["score"], dtype=np.float64)
+    assets = np.asarray(values["asset_id"]).astype(str)
+    return set(assets[np.isfinite(scores)].tolist())
+
+
+def select_universe(census, covered, max_assets, *, evaluation, within=None):
+    """Universo de un tramo: los `max_assets` candidatos con mayor efectivo mediano previo.
+
+    `census` es el de `reconstructed_tape.census` para el tramo y `covered` los activos con
+    predicciones del predictor del universo: las del propio tramo en ajuste y validación y
+    las de la validación del ancla en una evaluación. En ajuste y validación un candidato
+    cumple las condiciones de la cinta del tramo. En una evaluación basta con que cotizara al
+    empezar, porque esas condiciones usan filas posteriores. `within` limita la elección al
+    diseño de un ancla. Un activo sin efectivo previo positivo no es candidato. El empate se
+    resuelve por la clave del activo y el resultado se ordena.
     """
     _require(type(max_assets) is int and 1 <= max_assets <= 4096, "El universo admite de 1 a 4096")
-    candidates = set(validation).intersection(*(set(item) for item in train))
     ranked = sorted(
-        (asset for asset in candidates if validation[asset]["predicted"]),
-        key=lambda asset: (-validation[asset]["traded_value"], asset),
+        (
+            asset
+            for asset, row in census.items()
+            if (row["listed"] if evaluation else row["reason"] is None)
+            and asset in covered
+            and row["value"] > 0
+            and (within is None or asset in within)
+        ),
+        key=lambda asset: (-census[asset]["value"], asset),
     )
-    _require(ranked, "Ningún activo cumple la regla del universo en ajuste y validación")
+    _require(ranked, "Ningún activo cumple la regla del universo en el tramo")
     return sorted(ranked[:max_assets])
