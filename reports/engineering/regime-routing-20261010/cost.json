@@ -1,0 +1,535 @@
+{
+ "schema_version": 1,
+ "kind": "regime_routing_cost",
+ "issue": 20,
+ "measured_at": "2026-10-10T15:56:42+00:00",
+ "commit": "a2bfafd47146153dc69294a2e374026857e17795",
+ "sources_sha256": {
+  "src/mars_titan/memory/regimes.py": "40e6ae1264bea36bd1f130b8259ff9c6d49acedd8707b8a4598ab04f4df716b9",
+  "src/mars_titan/memory/associative_memory.py": "e2b59be9ea5d7ae1e7983e31bb3b8a81bed02ce932ebf02fe79cd85538199bbf",
+  "benchmarks/regime_routing_cost.py": "6c62d3343f5078330ed24c773d8b1cd881146673b732aeacdb9dbe8f2342b6b6"
+ },
+ "data": "sintéticos con semilla fija, solo para fijar formas. Nada se ajusta ni evalúa",
+ "rule": {
+  "schema_version": 1,
+  "kind": "observable_market_regime",
+  "rule": "observable_volatility_trend_v1",
+  "slots": 5,
+  "labels": [
+   "unclassified",
+   "calm_up",
+   "calm_down",
+   "turbulent_up",
+   "turbulent_down"
+  ],
+  "grouping": "market_of_each_flow_once_per_event",
+  "window": "calendar_price_window_v1_of_64_sessions_ending_at_the_decision",
+  "min_assets": 20,
+  "min_returns": 42,
+  "unclassified": "route_0_when_fewer_assets_or_returns_than_declared",
+  "fit": "none_declared_before_execution",
+  "market_proxy": "cross_sectional_median_of_log_close_returns_between_present_sessions",
+  "volatility": "rms_of_last_recent_returns_strictly_above_rms_of_earlier_returns",
+  "recent_returns": 21,
+  "trend": "sum_of_window_market_returns_strictly_positive",
+  "routes": "1_calm_up_2_calm_down_3_turbulent_up_4_turbulent_down"
+ },
+ "shapes": {
+  "windows": [
+   64,
+   6
+  ],
+  "codec": 64,
+  "value_size": 1,
+  "cohorts": [
+   64,
+   128,
+   1024,
+   4096
+  ]
+ },
+ "core_rows_per_second": 2607.0,
+ "environment": {
+  "cpu": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+  "numpy": "2.5.3",
+  "torch": "2.14.0+cu130",
+  "torch_threads": 2,
+  "python": "3.12.14",
+  "load_average_at_start": [
+   22.359375,
+   21.642578125,
+   21.83154296875
+  ]
+ },
+ "not_measured": [
+  "GPU, porque la ruta y A trabajan en CPU y FP64",
+  "energía, sin instrumento",
+  "el caudal del núcleo, que procede de la medida indicada"
+ ],
+ "cases": {
+  "constant/64": {
+   "keys": {
+    "p50_ms": 0.0032910029403865337,
+    "p95_ms": 0.004058005288243294,
+    "min_ms": 0.0032060197554528713,
+    "repeats": 20
+   },
+   "read": {
+    "p50_ms": 0.016120000509545207,
+    "p95_ms": 0.01718199928291142,
+    "min_ms": 0.015559024177491665,
+    "repeats": 20
+   },
+   "write": {
+    "p50_ms": 0.1580975076649338,
+    "p95_ms": 0.2831229940056801,
+    "min_ms": 0.149720988702029,
+    "repeats": 20
+   },
+   "event_p50_ms": 0.17750851111486554,
+   "state_bytes": 8,
+   "key_bytes": 512,
+   "share_of_core_event": 0.007230698257444602
+  },
+  "regime/64": {
+   "route": {
+    "p50_ms": 0.1674149971222505,
+    "p95_ms": 0.19632998737506568,
+    "min_ms": 0.146845995914191,
+    "repeats": 20
+   },
+   "keys": {
+    "p50_ms": 0.02499700349289924,
+    "p95_ms": 0.10047899559140205,
+    "min_ms": 0.020268023945391178,
+    "repeats": 20
+   },
+   "read": {
+    "p50_ms": 0.021545507479459047,
+    "p95_ms": 0.022733001969754696,
+    "min_ms": 0.020848994608968496,
+    "repeats": 20
+   },
+   "write": {
+    "p50_ms": 0.2596835111035034,
+    "p95_ms": 0.6969909882172942,
+    "min_ms": 0.23475199122913182,
+    "repeats": 20
+   },
+   "event_p50_ms": 0.4736410191981122,
+   "state_bytes": 40,
+   "key_bytes": 2560,
+   "share_of_core_event": 0.0192934708913981
+  },
+  "codec/64": {
+   "keys": {
+    "p50_ms": 0.046461980673484504,
+    "p95_ms": 0.051076989620923996,
+    "min_ms": 0.042539992136880755,
+    "repeats": 20
+   },
+   "read": {
+    "p50_ms": 0.0366085150744766,
+    "p95_ms": 0.03890300286002457,
+    "min_ms": 0.034365017199888825,
+    "repeats": 20
+   },
+   "write": {
+    "p50_ms": 0.3493925032671541,
+    "p95_ms": 0.7815210265107453,
+    "min_ms": 0.3222159866709262,
+    "repeats": 20
+   },
+   "event_p50_ms": 0.4324629990151152,
+   "state_bytes": 512,
+   "key_bytes": 32768,
+   "share_of_core_event": 0.017616109975506333
+  },
+  "codec_by_regime/64": {
+   "route": {
+    "p50_ms": 0.18238299526274204,
+    "p95_ms": 0.6431599904317409,
+    "min_ms": 0.14745700173079967,
+    "repeats": 20
+   },
+   "keys": {
+    "p50_ms": 0.08512500789947808,
+    "p95_ms": 0.10015800944529474,
+    "min_ms": 0.0813129881862551,
+    "repeats": 20
+   },
+   "read": {
+    "p50_ms": 0.09642099030315876,
+    "p95_ms": 0.12081698514521122,
+    "min_ms": 0.08988898480311036,
+    "repeats": 20
+   },
+   "write": {
+    "p50_ms": 2.714978501899168,
+    "p95_ms": 6.050854979548603,
+    "min_ms": 2.2829759982414544,
+    "repeats": 20
+   },
+   "event_p50_ms": 3.0789074953645468,
+   "state_bytes": 2560,
+   "key_bytes": 163840,
+   "share_of_core_event": 0.1254173725064902
+  },
+  "regime_minus_constant/64": {
+   "event_p50_ms": 0.29613250808324665,
+   "share_of_core_event": 0.0120627726339535
+  },
+  "codec_by_regime_minus_codec/64": {
+   "event_p50_ms": 2.6464444963494316,
+   "share_of_core_event": 0.10780126253098389
+  },
+  "constant/128": {
+   "keys": {
+    "p50_ms": 0.0022945023374632,
+    "p95_ms": 0.002815009793266654,
+    "min_ms": 0.002194021362811327,
+    "repeats": 20
+   },
+   "read": {
+    "p50_ms": 0.011546493624337018,
+    "p95_ms": 0.01760301529429853,
+    "min_ms": 0.010849995305761695,
+    "repeats": 20
+   },
+   "write": {
+    "p50_ms": 0.15574850840494037,
+    "p95_ms": 0.25941801141016185,
+    "min_ms": 0.14162700972519815,
+    "repeats": 20
+   },
+   "event_p50_ms": 0.16958950436674058,
+   "state_bytes": 8,
+   "key_bytes": 1024,
+   "share_of_core_event": 0.0034540612334694747
+  },
+  "regime/128": {
+   "route": {
+    "p50_ms": 0.24643349752295762,
+    "p95_ms": 0.3489459923002869,
+    "min_ms": 0.14437100617215037,
+    "repeats": 20
+   },
+   "keys": {
+    "p50_ms": 0.02422500983811915,
+    "p95_ms": 0.026089022867381573,
+    "min_ms": 0.021090003428980708,
+    "repeats": 20
+   },
+   "read": {
+    "p50_ms": 0.023984495783224702,
+    "p95_ms": 0.02550799399614334,
+    "min_ms": 0.021661020582541823,
+    "repeats": 20
+   },
+   "write": {
+    "p50_ms": 0.2737849863478914,
+    "p95_ms": 0.3399699926376343,
+    "min_ms": 0.1653420040383935,
+    "repeats": 20
+   },
+   "event_p50_ms": 0.5684279894921929,
+   "state_bytes": 40,
+   "key_bytes": 5120,
+   "share_of_core_event": 0.011577279442235522
+  },
+  "codec/128": {
+   "keys": {
+    "p50_ms": 0.060067992308177054,
+    "p95_ms": 0.06651500007137656,
+    "min_ms": 0.050986011046916246,
+    "repeats": 20
+   },
+   "read": {
+    "p50_ms": 0.03979448229074478,
+    "p95_ms": 0.04917301703244448,
+    "min_ms": 0.038753001717850566,
+    "repeats": 20
+   },
+   "write": {
+    "p50_ms": 0.3493020049063489,
+    "p95_ms": 0.3637240151874721,
+    "min_ms": 0.3251619928050786,
+    "repeats": 20
+   },
+   "event_p50_ms": 0.4491644795052707,
+   "state_bytes": 512,
+   "key_bytes": 65536,
+   "share_of_core_event": 0.009148217172423756
+  },
+  "codec_by_regime/128": {
+   "route": {
+    "p50_ms": 0.2723825164139271,
+    "p95_ms": 0.29522500699386,
+    "min_ms": 0.25744401500560343,
+    "repeats": 20
+   },
+   "keys": {
+    "p50_ms": 0.1516754855401814,
+    "p95_ms": 0.35071998718194664,
+    "min_ms": 0.11619800352491438,
+    "repeats": 20
+   },
+   "read": {
+    "p50_ms": 0.1345584896625951,
+    "p95_ms": 0.17707300139591098,
+    "min_ms": 0.12020699796266854,
+    "repeats": 20
+   },
+   "write": {
+    "p50_ms": 2.97356050577946,
+    "p95_ms": 6.0804619861301035,
+    "min_ms": 2.6352790009696037,
+    "repeats": 20
+   },
+   "event_p50_ms": 3.5321769973961636,
+   "state_bytes": 2560,
+   "key_bytes": 327680,
+   "share_of_core_event": 0.07194051118915468
+  },
+  "regime_minus_constant/128": {
+   "event_p50_ms": 0.3988384851254523,
+   "share_of_core_event": 0.008123218208766048
+  },
+  "codec_by_regime_minus_codec/128": {
+   "event_p50_ms": 3.083012517890893,
+   "share_of_core_event": 0.06279229401673092
+  },
+  "constant/1024": {
+   "keys": {
+    "p50_ms": 0.004888992407359183,
+    "p95_ms": 0.005440990207716823,
+    "min_ms": 0.004469009581953287,
+    "repeats": 20
+   },
+   "read": {
+    "p50_ms": 0.031229006708599627,
+    "p95_ms": 0.03706998541019857,
+    "min_ms": 0.026099005481228232,
+    "repeats": 20
+   },
+   "write": {
+    "p50_ms": 0.7430529949488118,
+    "p95_ms": 0.7851079863030463,
+    "min_ms": 0.6942159961909056,
+    "repeats": 20
+   },
+   "event_p50_ms": 0.7791709940647706,
+   "state_bytes": 8,
+   "key_bytes": 8192,
+   "share_of_core_event": 0.0019836902163348213
+  },
+  "regime/1024": {
+   "route": {
+    "p50_ms": 2.2293649963103235,
+    "p95_ms": 2.3253950057551265,
+    "min_ms": 2.1250190038699657,
+    "repeats": 20
+   },
+   "keys": {
+    "p50_ms": 0.04251500649843365,
+    "p95_ms": 0.04552601603791118,
+    "min_ms": 0.04024599911645055,
+    "repeats": 20
+   },
+   "read": {
+    "p50_ms": 0.05952699575573206,
+    "p95_ms": 0.07092399755492806,
+    "min_ms": 0.054853007895872,
+    "repeats": 20
+   },
+   "write": {
+    "p50_ms": 0.8274975116364658,
+    "p95_ms": 3.3876449742820114,
+    "min_ms": 0.7887739920988679,
+    "repeats": 20
+   },
+   "event_p50_ms": 3.158904510200955,
+   "state_bytes": 40,
+   "key_bytes": 40960,
+   "share_of_core_event": 0.008042250056732314
+  },
+  "codec/1024": {
+   "keys": {
+    "p50_ms": 0.20071199105586857,
+    "p95_ms": 0.2763099910225719,
+    "min_ms": 0.1797179866116494,
+    "repeats": 20
+   },
+   "read": {
+    "p50_ms": 0.19830299424938858,
+    "p95_ms": 0.31341900466941297,
+    "min_ms": 0.17656199634075165,
+    "repeats": 20
+   },
+   "write": {
+    "p50_ms": 1.3523494999390095,
+    "p95_ms": 1.4217050047591329,
+    "min_ms": 1.2278409849386662,
+    "repeats": 20
+   },
+   "event_p50_ms": 1.7513644852442667,
+   "state_bytes": 512,
+   "key_bytes": 524288,
+   "share_of_core_event": 0.00445879610647637
+  },
+  "codec_by_regime/1024": {
+   "route": {
+    "p50_ms": 2.2036370064597577,
+    "p95_ms": 2.2985950054135174,
+    "min_ms": 1.938889006851241,
+    "repeats": 20
+   },
+   "keys": {
+    "p50_ms": 0.38663699524477124,
+    "p95_ms": 0.4597049846779555,
+    "min_ms": 0.3563700011000037,
+    "repeats": 20
+   },
+   "read": {
+    "p50_ms": 0.6494420085800812,
+    "p95_ms": 0.9482539899181575,
+    "min_ms": 0.5938480026088655,
+    "repeats": 20
+   },
+   "write": {
+    "p50_ms": 7.340708500123583,
+    "p95_ms": 9.852079005213454,
+    "min_ms": 6.313469988526776,
+    "repeats": 20
+   },
+   "event_p50_ms": 10.580424510408193,
+   "state_bytes": 2560,
+   "key_bytes": 2621440,
+   "share_of_core_event": 0.026936686229134924
+  },
+  "regime_minus_constant/1024": {
+   "event_p50_ms": 2.3797335161361843,
+   "share_of_core_event": 0.006058559840397493
+  },
+  "codec_by_regime_minus_codec/1024": {
+   "event_p50_ms": 8.829060025163926,
+   "share_of_core_event": 0.02247789012265855
+  },
+  "constant/4096": {
+   "keys": {
+    "p50_ms": 0.004884001100435853,
+    "p95_ms": 0.005551002686843276,
+    "min_ms": 0.004449015250429511,
+    "repeats": 20
+   },
+   "read": {
+    "p50_ms": 0.048590998630970716,
+    "p95_ms": 0.05274900468066335,
+    "min_ms": 0.03651899169199169,
+    "repeats": 20
+   },
+   "write": {
+    "p50_ms": 2.388534994679503,
+    "p95_ms": 2.8045480139553547,
+    "min_ms": 2.276443992741406,
+    "repeats": 20
+   },
+   "event_p50_ms": 2.4420099944109097,
+   "state_bytes": 8,
+   "key_bytes": 32768,
+   "share_of_core_event": 0.0015542773572825297
+  },
+  "regime/4096": {
+   "route": {
+    "p50_ms": 8.643669978482649,
+    "p95_ms": 9.206482995068654,
+    "min_ms": 7.471058983355761,
+    "repeats": 20
+   },
+   "keys": {
+    "p50_ms": 0.06498751463368535,
+    "p95_ms": 0.09260399383492768,
+    "min_ms": 0.054292002459988,
+    "repeats": 20
+   },
+   "read": {
+    "p50_ms": 0.12178398901596665,
+    "p95_ms": 0.1390719844494015,
+    "min_ms": 0.11487602023407817,
+    "repeats": 20
+   },
+   "write": {
+    "p50_ms": 2.5680069957161322,
+    "p95_ms": 2.981008990900591,
+    "min_ms": 1.6042179777286947,
+    "repeats": 20
+   },
+   "event_p50_ms": 11.398448477848433,
+   "state_bytes": 40,
+   "key_bytes": 163840,
+   "share_of_core_event": 0.007254823042419646
+  },
+  "codec/4096": {
+   "keys": {
+    "p50_ms": 0.6514055130537599,
+    "p95_ms": 0.6943459738977253,
+    "min_ms": 0.6087459914851934,
+    "repeats": 20
+   },
+   "read": {
+    "p50_ms": 0.6298149965004995,
+    "p95_ms": 0.6902290042489767,
+    "min_ms": 0.5741700006183237,
+    "repeats": 20
+   },
+   "write": {
+    "p50_ms": 4.521482493146323,
+    "p95_ms": 9.19648600392975,
+    "min_ms": 4.208288999507204,
+    "repeats": 20
+   },
+   "event_p50_ms": 5.802703002700582,
+   "state_bytes": 512,
+   "key_bytes": 2097152,
+   "share_of_core_event": 0.003693273126962993
+  },
+  "codec_by_regime/4096": {
+   "route": {
+    "p50_ms": 8.595438994234428,
+    "p95_ms": 8.78936899243854,
+    "min_ms": 8.28967898269184,
+    "repeats": 20
+   },
+   "keys": {
+    "p50_ms": 1.8290864973096177,
+    "p95_ms": 2.0010059815831482,
+    "min_ms": 1.6746010223869234,
+    "repeats": 20
+   },
+   "read": {
+    "p50_ms": 6.222498501301743,
+    "p95_ms": 8.320185996126384,
+    "min_ms": 3.5086529969703406,
+    "repeats": 20
+   },
+   "write": {
+    "p50_ms": 30.020615478861146,
+    "p95_ms": 34.58132199011743,
+    "min_ms": 22.60419400408864,
+    "repeats": 20
+   },
+   "event_p50_ms": 46.667639471706934,
+   "state_bytes": 2560,
+   "key_bytes": 10485760,
+   "share_of_core_event": 0.029702767603208006
+  },
+  "regime_minus_constant/4096": {
+   "event_p50_ms": 8.956438483437523,
+   "share_of_core_event": 0.005700545685137115
+  },
+  "codec_by_regime_minus_codec/4096": {
+   "event_p50_ms": 40.86493646900635,
+   "share_of_core_event": 0.026009494476245013
+  }
+ }
+}
