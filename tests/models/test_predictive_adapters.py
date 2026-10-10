@@ -14,6 +14,9 @@ from mars_titan.models.predictive_adaptation import (
     LowRankDelta,
     ResidualDelta,
     adapted_copy,
+    adapter_names,
+    attach_adapters,
+    base_digest,
     trainable_parameters,
 )
 
@@ -243,3 +246,43 @@ def test_delta_modules_validate_shapes_and_generators():
     weight = torch.randn(4, 3)
     assert torch.equal(delta(weight), weight)
     assert torch.equal(ResidualDelta((4,))(weight[:, 0]), weight[:, 0])
+
+
+@pytest.mark.parametrize("kind", ["gru", "transformer"])
+def test_in_place_attachment_equals_the_copy_and_keeps_the_base_digest(kind):
+    original = parent(kind)
+    copied = adapted_copy(original, targets(kind), seed=11)
+    rebuilt = parent(kind)
+    assert attach_adapters(rebuilt, targets(kind), seed=11) is rebuilt
+    assert list(rebuilt.state_dict()) == list(copied.state_dict())
+    for name, value in copied.state_dict().items():
+        other = rebuilt.state_dict()[name]
+        assert torch.equal(other, value) if torch.is_tensor(value) else other == value, name
+    names = adapter_names(rebuilt)
+    assert names == [name for name, value in rebuilt.named_parameters() if value.requires_grad]
+    assert all(name.endswith((".delta", ".up", ".down")) for name in names)
+    # La huella del padre no depende del orden que imponen las parametrizaciones.
+    assert base_digest(rebuilt) == base_digest(original) == base_digest(copied)
+    with torch.no_grad():
+        for name in names:
+            dict(rebuilt.named_parameters())[name].add_(1)
+    assert base_digest(rebuilt) == base_digest(original)
+    with torch.no_grad():
+        rebuilt.get_submodule("head").parametrizations.weight.original.add_(1)
+    assert base_digest(rebuilt) != base_digest(original)
+    assert adapter_names(original) == []
+
+
+def test_root_module_targets_keep_their_names_and_the_base_digest():
+    torch.manual_seed(2)
+    module = torch.nn.Linear(3, 5).requires_grad_(False)
+    declared = [AdapterTarget("", "weight", "residual"), AdapterTarget("", "bias", "residual")]
+    adapted = adapted_copy(module, declared, seed=1)
+    assert adapter_names(adapted) == [
+        "parametrizations.weight.0.delta",
+        "parametrizations.bias.0.delta",
+    ]
+    assert base_digest(adapted) == base_digest(module)
+    with torch.no_grad():
+        adapted.parametrizations.bias.original.add_(1)
+    assert base_digest(adapted) != base_digest(module)

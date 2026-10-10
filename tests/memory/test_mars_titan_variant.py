@@ -324,6 +324,7 @@ def assert_identical(left, right):
             assert torch.equal(value, right[name][key]), (name, key)
 
 
+@pytest.mark.native_binding
 def test_all_disabled_session_is_exactly_the_mac_online_session(
     declaration, base, shared_native, four_flow_source, frozen_consumer, tmp_path
 ):
@@ -344,6 +345,7 @@ def test_all_disabled_session_is_exactly_the_mac_online_session(
     assert left["bank"] == ([], {}) and len(left["emitted"][-1]) == 4
 
 
+@pytest.mark.native_binding
 def test_episodic_combination_matches_the_hand_built_consumer(
     declaration, base, shared_native, four_flow_source, frozen_consumer, tmp_path
 ):

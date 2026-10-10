@@ -104,6 +104,25 @@ flowchart LR
 
 La [búsqueda implementada para la ampliación](../engineering/reference-search.md) fija doce configuraciones por familia principal, semilla `42` para seleccionar y semillas `42`, `43` y `44` para los finalistas. Se registra cada intento, incluidos errores y descartes. Este diseño sustituye el presupuesto inicial de diez configuraciones para las nuevas campañas, sin reinterpretar los experimentos anteriores. La reserva final permanece cerrada durante esa selección.
 
+### Modificación del 9 de octubre de 2026: retención v2 de las predicciones por fila
+
+Esta modificación se declara antes de cualquier resultado de la campaña A, que no se ha ejecutado. Afecta a dos frases de este protocolo: «Se registra cada intento, incluidos errores y descartes.» y, en el orden de actualización, «Emitir y conservar las predicciones de **todos** los activos de esa sesión con ese estado.»
+
+El motivo es el disco. Con los recuentos de A v2 (2.322 ajustes en 19 ventanas), conservar todas las tablas por fila ocupa 277,5 GB en la campaña base, 183,3 GB en la ablación de modalidades y 256,4 GB en los adaptadores, frente a unos 48 GB libres y un margen declarado de 8 GiB. Ninguna disposición sin pérdida de esas tablas basta. El cálculo está en el [informe de la retención v2](../../reports/engineering/rolling-retention-20261009/README.md).
+
+La [declaración](../../configs/baselines/historical-masked-retention-v2.json) fija estas reglas:
+
+- La campaña avanza ventana a ventana. Cada ventana termina sus ajustes, su selección, sus semillas, los adaptadores, la ablación, las políticas y sus agregados antes de liberar nada y de empezar la siguiente.
+- Todo intento conserva su recibo, su informe y su estado elegido, también los fallidos y los descartados. Nada de lo que registra un intento se borra.
+- Los agregados por sesión que usa la comparación se calculan en FP64 y se guardan sin redondear por ventana.
+- Si la comparación declara la cartera larga y corta, sus libros por sesión de cada ventana también se guardan sin pérdida, con la identidad de la edición de precios. Esta regla se añadió el 10 de octubre de 2026, al incorporarse la cartera a la comparación y antes de cualquier resultado.
+- Una tabla por fila de la base o de la ablación solo se libera si se regenera por inferencia desde el estado elegido, con el mismo código, el mismo orden de lotes y FP32 estricto (sin TF32 en cuBLAS ni en cuDNN), y sale idéntica bit a bit a la huella de contenido registrada. El ajuste que se predijo con otra precisión no se regenera.
+- Si la regeneración no es idéntica, la tabla se compacta sin pérdida (tabla común de filas por ventana y tramo y decimales propios, con lectura bit a bit) y se conserva. Nunca se cuantiza ni se guarda en float16.
+- Las evaluaciones que leerá una política posterior y las tablas de los adaptadores se compactan sin pérdida y se conservan hasta su último lector.
+- Un trabajo marcado en el plan con `regenerable: false` o un control en línea (`kind: online`), cuyas predicciones dependen de actualizaciones en línea, se compacta sin pérdida y se conserva sin regenerarlo. Esta regla se añadió el 10 de octubre de 2026, también antes de cualquier resultado.
+
+Con estas reglas «conservar» significa poder recuperar exactamente. Las predicciones de cada sesión siguen emitiéndose con el estado previo a su actualización y se comparan con su huella antes de liberar el archivo. La orden `run_masked_campaign.py regenerate` las vuelve a escribir cuando alguien necesite leerlas. Las métricas o los estratos nuevos que no estén en los agregados exigirán esa regeneración, que tiene un coste de cómputo.
+
 El [plan de cómputo](../engineering/compute-plan.md) distingue el cribado, la confirmación y el análisis. La disponibilidad 24/7 no sustituye una estimación de tiempo. Las ejecuciones prolongadas cumplirán el [contrato de checkpoints](../engineering/checkpoint-recovery.md), con datos, estados, versiones y posición confirmada recuperables.
 
 ## Métricas e interpretación
@@ -121,6 +140,26 @@ Se publicarán retorno acumulado neto, drawdown máximo, rotación, exposición,
 La política financiera por refuerzo es otro experimento, distinto de la ordenación larga y corta descrita anteriormente. Su alcance previsto es efectivo o posiciones largas, sin apalancamiento, con ejecución en aperturas posteriores y cuentas separadas por moneda. No reutiliza retornos residuales como beneficios. Las restricciones de cada instrumento y fecha, incluidas las de China, deben estar acreditadas antes de simular sus operaciones. En la campaña desde 2000, la [etapa de políticas](training-campaign-2000.md#etapa-de-políticas-por-ventana) tiene dos niveles. KLPO terminal y cinco referencias sin aprendizaje (efectivo, compra inicial, regla del 50 %, cartera 1/N y el índice de mercado) se aplican a todos los predictores con productor en la campaña, y las variantes PPO y Double DQN solo al Transformer compacto y a Titans-MAC `mac_online`. La etapa solo aprende con datos reales: cintas de [precios negociados reconstruidos](../data/unadjusted-prices.md) de la edición declarada, con un corte walk-forward de toda la serie. La política de la ventana k se ajusta con los tramos de evaluación de las tres ventanas anteriores a su validación, se valida con la de k−1 y se evalúa en k. Ajustar con todas las evaluaciones anteriores queda como sensibilidad declarada y desactivada, porque exige que cada activo del universo cotice desde la primera ventana y lo sesga hacia empresas antiguas. Cada cinta lleva las predicciones fuera de muestra del predictor de la cadena de su ventana, el estado que el posentrenamiento elige con la validación, y su `labels_used_until` se recalcula desde las vistas antes de usarla. La política se selecciona con un criterio de cartera sobre la validación y nunca con el MAE del predictor. El código sintético de experimentos anteriores se conserva por trazabilidad y queda fuera de esta etapa por construcción. Las [reglas de las acciones A](../engineering/china-market-rules.md) se aplican en los motores Python y nativo con paridad paso a paso, y los ejecutores nativos de PPO, Double DQN y KLPO leen las cintas reconstruidas. El [informe financiero](../engineering/rl-environment-integrity.md#patrimonio-por-sesión-e-informe-financiero) encadena las ventanas y contrasta KLPO con cada control mediante bootstrap por bloques e intervalos simultáneos. Los resultados están condicionados a empresas que seguían cotizando en 2025.
 
 El [entorno predictivo causal](../engineering/causal-prediction-environment.md) separa observaciones, acciones y etiquetas maduras. Su implementación no acredita que estén terminados la política financiera, el ajuste conjunto o sus campañas. Los tres experimentos deben conservar padres, población y presupuestos comparables, y mantener el error predictivo como criterio principal.
+
+### Qué pregunta responde cada comparación
+
+La [matriz de comparaciones](metrics.md#matriz-de-comparaciones-y-atribución-por-componentes) se declaró el 10 de octubre de 2026, antes de cualquier resultado, sobre las mismas filas, ventanas y remuestreo que la comparación walk-forward. Cada fila de la tabla es una o varias familias de contrastes con su propia corrección múltiple. Todas se miden con el MAE residual por sesión como métrica principal y además con pinball, intervalos, Brier y ECE del signo, dirección, Rank IC y la cartera. Las políticas y los diagnósticos de arquitectura se añadirán como vistas cuando se declaren sus métricas.
+
+| Comparación | Pregunta en lenguaje llano | Estado de los brazos |
+| --- | --- | --- |
+| Entre familias | ¿Qué familia predice mejor que cada una de las demás con las mismas filas? | En la campaña |
+| MARS-TITAN frente a cada familia | ¿Cada variante de MARS-TITAN (M0 a M3, K = 2 y 4, primera lectura y B6) mejora a cada referencia, y cuánto? | En la campaña, salvo la primera lectura y B6, que entran con los componentes de integración |
+| CM-v1 frente a cada familia | ¿B, B+C, B+M y B+C+M mejoran a cada referencia? | En la campaña |
+| Núcleo frente a la referencia pública | ¿Nuestro Titans-MAC predice como la implementación pública de referencia, y cuánto añaden nuestras ampliaciones sobre ella? | Sin brazo previsto. La revisión de implementaciones de #434 recomendó conservar el núcleo, cuya memoria coincide en FP64 con la referencia |
+| Cadena por etapas | ¿Posentrenar el padre del año anterior mejora a reentrenar desde cero, a trasladarlo sin cambios o a continuarlo entero? | Pendiente del plan por etapas |
+| Control en línea | ¿La ventaja de MARS-TITAN viene solo de seguir aprendiendo con etiquetas maduras? Un Transformer recibe las mismas etiquetas en el mismo instante | Pendiente del plan por etapas |
+| Escalera de Titans | ¿Cuánto añade cada pieza, en un orden fijado, del Transformer compacto a MARS-TITAN con M3? | En la campaña |
+| Dejar uno fuera | ¿Cuánto se pierde al quitar cada pieza del MARS-TITAN completo, junto con lo que depende de ella? | Cinco de ocho en la campaña. Faltan tres brazos candidatos |
+| Efectos condicionados | ¿Cuánto aporta una pieza según lo que el modelo ya tiene? | Los pares que existen. El resto necesita candidatos |
+| Interacciones | ¿Dos piezas se suman, se refuerzan o se pisan? Actualización de Titans con banco, K con escritura por error, B6 con banco y C con M | C con M en la campaña. Las otras tres necesitan candidatos |
+| Shapley | ¿Cómo se reparte la mejora entre piezas sin depender del orden? | C y M en la campaña. Error frente a anomalía y actualización frente a banco necesitan candidatos. Las ocho piezas de Titans no admiten un reparto porque 236 de sus 256 combinaciones activan una pieza sin aquella de la que depende |
+
+Los brazos candidatos, su coste estimado y su prioridad están en el [informe de brazos que faltan](../../reports/engineering/component-attribution-20261010/README.md). Ninguno se ha añadido al plan de la campaña. Las familias de la comparación walk-forward (controles de Titans, políticas de escritura, refinamientos, factorial de CM-v1 y referencias frente al control cero) siguen respondiendo a sus propias preguntas.
 
 ## Reglas para cerrar el estudio
 

@@ -1,6 +1,6 @@
 # Biblioteca y estado del arte
 
-La biblioteca reúne **191 referencias bibliográficas** sobre finanzas, aprendizaje y memoria, recurrencia, incertidumbre, macroeconomía y eficiencia. El manifiesto histórico registra **84 PDF** descargados desde editoriales, repositorios académicos o enlaces ofrecidos por sus autores. Incluye cinco libros completos. Otros recursos se consultan en HTML o requieren acceso editorial. Los identificadores, versiones y estados de acceso están registrados, sin equiparar descarga con lectura integral.
+La biblioteca reúne **345 referencias bibliográficas** sobre finanzas, aprendizaje y memoria, recurrencia, incertidumbre, macroeconomía y eficiencia. El manifiesto histórico registra **84 PDF** descargados desde editoriales, repositorios académicos o enlaces ofrecidos por sus autores. Incluye cinco libros completos. Otros recursos se consultan en HTML o requieren acceso editorial. Los identificadores, versiones y estados de acceso están registrados, sin equiparar descarga con lectura integral.
 
 La revisión inicial tiene alcance documentado y fecha de corte del 18 de septiembre de 2026. Las ampliaciones posteriores registran su propia fecha de consulta. No se presenta como una búsqueda sistemática exhaustiva de toda la literatura ni como lectura íntegra de todos los libros descargados. Su objetivo es sostener las decisiones iniciales y señalar qué lectura detallada necesita cada experimento.
 
@@ -26,6 +26,16 @@ La revisión de [integración y adaptadores](../research/system-integration.md)
 añade LoRA al catálogo neuronal y sitúa su posible uso en los contratos y matrices
 existentes de MARS-TITAN.
 
+La revisión de [memoria posterior a Titans](../research/post-titans-memory-review.md)
+del 9 y 10 de octubre de 2026 añade 152 referencias sobre el grupo de Titans,
+regla delta y entrenamiento en tiempo de prueba, memorias en series temporales y
+finanzas, adaptación con etiquetas retrasadas, calibración en línea, problemas
+abiertos de los modelos de secuencia, capacidad por neurona y mecanismos
+cerebrales. Cada ficha declara qué partes se leyeron. Las
+[propuestas](../research/post-titans-proposals.md) y el
+[certificado de contracción](../research/titans-memory-certificate.md) derivados
+de ella separan fuente publicada, derivación propia y comprobación numérica.
+
 ## Contenido
 
 | Área | Síntesis | Metadatos | Bibliografía |
@@ -42,6 +52,7 @@ existentes de MARS-TITAN.
 | Regímenes de mercado | [Markov](../research/markov-regimes.md) | [markov-sources.json](markov-sources.json) | [markov.bib](markov.bib) |
 | Memoria, variante ampliada y fundamentos matemáticos | [Revisión](../research/neuroarchitecture-review.md), [matemáticas](../research/memory-mathematics.md) | [neuroarchitecture-sources.json](neuroarchitecture-sources.json) | [neuroarchitecture.bib](neuroarchitecture.bib) |
 | Atención, práctica, eventos y reducción de señales | [Síntesis](../research/attention-replay-review.md), [eventos y señales](../research/event-signal-comparison.md), [matemáticas](../research/attention-replay-mathematics.md) | [attention-replay-sources.json](attention-replay-sources.json) | [attention-replay.bib](attention-replay.bib) |
+| Memoria posterior a Titans, adaptación en línea y calibración | [Revisión](../research/post-titans-memory-review.md), [propuestas](../research/post-titans-proposals.md), [certificado](../research/titans-memory-certificate.md) | [post-titans-sources.json](post-titans-sources.json) | [post-titans.bib](post-titans.bib) |
 | Catálogo auxiliar de símbolos | [FinanceDatabase](../data/finance-database-review.md) | [finance-sources.json](finance-sources.json) | [finance.bib](finance.bib) |
 | Publicaciones aportadas | [Finanzas y herramientas](social-finance.md), [arquitectura y rendimiento](social-neural.md) | URL y resultado de acceso dentro de cada nota | Solo se incorporan a la base científica las fuentes primarias que correspondan. |
 
@@ -67,6 +78,7 @@ Familias de consulta utilizadas:
 - Profundidad recurrente, parada adaptativa, modelos de equilibrio y destilación.
 - Mamba, reglas delta, xLSTM, atención eficiente, MLA, MoE, Engram y restricciones de hardware.
 - TRA, FinMem, FinAgent, FinCon, MacroHFT y TIEM como antecedentes de memoria financiera y enrutamiento.
+- Trabajos posteriores a Titans, regla delta con momentum, estabilidad de memorias recurrentes, conformal en línea con retraso y filtros de Kalman para pesos rápidos (búsqueda de precedentes del 9 y 10 de octubre de 2026).
 
 Se priorizan fuentes primarias con autoría y versión verificables. Se distinguen artículos revisados por pares, preprints, documentación institucional, libros y divulgación. Se excluyen promesas de rentabilidad no comprobadas, copias sin procedencia, bibliografías automáticas con enlaces erróneos y material cuya descarga exige eludir controles.
 

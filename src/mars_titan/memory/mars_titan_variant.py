@@ -9,7 +9,7 @@ identidad es la del núcleo. Cada combinación activa tiene una identidad propia
 
 import hashlib
 import json
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from pathlib import Path
 
 from mars_titan.models.titans.config import canonical
@@ -18,7 +18,12 @@ from mars_titan.models.titans.financial import FinancialPredictor
 from mars_titan.models.titans.frozen_financial import FrozenFinancialConsumer
 
 from . import write_scores
-from .associative_memory import CORRECTION_KEYS, AssociativeMemoryConfig, MatureCorrection
+from .associative_memory import (
+    CORRECTION_KEYS,
+    AssociativeMemoryConfig,
+    KalmanNoise,
+    MatureCorrection,
+)
 from .financial_consumers import bank_retention
 
 DECLARATION = Path("configs/titans/mars-titan-extensions.json")
@@ -69,19 +74,46 @@ def core_identity(predictor, recipe):
     )
 
 
+_KALMAN_FIELDS = (
+    "process_noise",
+    "observation_noise",
+    "cohort_correlation",
+    "prior_variance",
+    "huber_threshold",
+)
+
+
 def _associative(value, allowed):
-    fields = {"rule", "key", "rate", "forgetting"}
-    if not isinstance(value, dict) or set(value) != fields or value["rule"] not in allowed:
-        raise ValueError("associative_memory declara rule, key, rate y forgetting permitidos")
+    kalman = isinstance(value, dict) and value.get("rule") == "kalman"
+    if kalman:
+        # La regla kalman (PT3) sustituye η y λ por las varianzas de su modelo dinámico.
+        if set(value) != {"rule", "key", *_KALMAN_FIELDS} or "kalman" not in allowed:
+            raise ValueError("associative_memory kalman declara rule, key y sus cinco varianzas")
+    else:
+        fields = {"rule", "key", "rate", "forgetting"}
+        if not isinstance(value, dict) or set(value) != fields or value["rule"] not in allowed:
+            raise ValueError("associative_memory declara rule, key, rate y forgetting permitidos")
     if value["key"] not in CORRECTION_KEYS:
         raise ValueError("La clave de B6 debe ser codec o constant")
+    options = (
+        dict(kalman=KalmanNoise(**{name: value[name] for name in _KALMAN_FIELDS}))
+        if kalman
+        else dict(rate=value["rate"], forgetting=value["forgetting"])
+    )
     memory = AssociativeMemoryConfig(
-        value["rule"],
-        key_size=64 if value["key"] == "codec" else 1,
-        rate=value["rate"],
-        forgetting=value["forgetting"],
+        value["rule"], key_size=64 if value["key"] == "codec" else 1, **options
     )
     return MatureCorrection(memory, key=value["key"])
+
+
+def _normalized(correction):
+    # La identidad usa los valores normalizados, así 1 y 1.0 no crean dos brazos.
+    memory = correction.memory
+    if memory.rule == "kalman":
+        return dict(rule=memory.rule, key=correction.key, **asdict(memory.kalman))
+    return dict(
+        rule=memory.rule, key=correction.key, rate=memory.rate, forgetting=memory.forgetting
+    )
 
 
 def check_components(declaration, components):
@@ -114,11 +146,7 @@ def check_components(declaration, components):
         correction = _associative(
             components["associative_memory"], declared["associative_memory"]["allowed"]
         )
-        memory = correction.memory
-        # La identidad usa los valores normalizados, así 1 y 1.0 no crean dos brazos.
-        components["associative_memory"] = dict(
-            rule=memory.rule, key=correction.key, rate=memory.rate, forgetting=memory.forgetting
-        )
+        components["associative_memory"] = _normalized(correction)
     canonical(components)
     return components, correction
 

@@ -19,6 +19,7 @@ from mars_titan.models.titans.local_control import MACProjectionConfig, MACProje
 from mars_titan.training import cm_v1_factorial as cm
 from mars_titan.training import mars_titan_run as mt
 from mars_titan.training import mars_titan_walk_forward as mw
+from tests.suite_support import skip_without_episodic_native
 from tests.training.test_financial_run import RecordingOptimizer, entries
 from tests.training.test_financial_run import shared as shared
 from tests.training.test_mars_titan_run import gradients, parent, reader, recipe
@@ -58,6 +59,7 @@ def declaration(root, core, readout, **changes):
 
 @pytest.fixture(scope="module")
 def factorial(tmp_path_factory, learning_doubles_module):
+    skip_without_episodic_native()
     root = tmp_path_factory.mktemp("cm-v1-factorial")
     view, _ = views(root / "base")
     path = declaration(root, core_recipe(root), readout_recipe(root))
@@ -427,3 +429,26 @@ def test_readout_accepts_the_b_core_and_refuses_a_penalized_core(shared, native)
     assert inference("disabled", 0.0).predictor.local_control.config.mode == "disabled"
     with pytest.raises(ValueError, match="solo en disabled"):
         inference("penalty", 0.5)
+
+
+def test_each_arm_regenerates_the_rows_of_its_own_window(factorial, tmp_path):
+    """La retención v2 solo libera filas que el traslado sobre la propia ventana repite."""
+    from mars_titan.training import prediction_regeneration as regeneration
+
+    for arm in cm.ARMS:
+        folder = factorial["root"] / "runs" / arm
+        produced = cm.carry_cm_v1(
+            folder,
+            factorial["view"],
+            factorial["view"],
+            tmp_path / arm,
+            device="cpu",
+            regenerate=True,
+        )
+        assert produced["regenerated"] is True
+        report = json.loads((folder / "run.json").read_text())
+        result = regeneration.compare(
+            regeneration.originals(folder, report), tmp_path / arm, produced
+        )
+        assert set(result["partitions"]) == {"validation", "calibration", "evaluation"}
+        assert result["identical"] is True, (arm, result)

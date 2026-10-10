@@ -51,17 +51,21 @@ def evaluate_partition(
     batch_size=256,
     predictor=None,
 ):
-    """Recorrer un bloque posterior con el estado ya seleccionado y acumuladores acotados.
+    """Recorrer un bloque con el estado ya seleccionado y acumuladores acotados.
 
     Un modelo de cuantiles escribe sus cinco niveles con las columnas de la cabeza y su
-    mediana como predicción, el esquema común de la comparación walk-forward.
+    mediana como predicción, el esquema común de la comparación walk-forward, y no
+    necesita rejilla. La validación solo se recorre cuando ya terminó la selección, para
+    los recibos del walk-forward por etapas.
     """
-    if partition not in PARTITIONS or dataset.temporal is None:
-        raise ValueError("Solo se admiten calibración y evaluación de una vista temporal")
+    if partition not in ("validation", *PARTITIONS) or dataset.temporal is None:
+        raise ValueError("Solo se admiten validación, calibración y evaluación temporales")
+    quantiles = getattr(model, "emits_quantiles", False)
     if (
         type(batch_size) is not int
         or not 1 <= batch_size <= 256
-        or (model is None) != (grid is None)
+        or (model is None and grid is not None)
+        or (model is not None and grid is None and not quantiles)
         or (model is not None and predictor is not None)
     ):
         raise ValueError("El lote o el contrato del modelo congelado no son válidos")
@@ -69,6 +73,7 @@ def evaluate_partition(
     errors = {name: SessionErrors() for name in names}
     if model is not None:
         model.eval().requires_grad_(False)
+    if grid is not None:
         values = torch.tensor(grid.values, dtype=torch.float64, device=device)
 
     def tables():

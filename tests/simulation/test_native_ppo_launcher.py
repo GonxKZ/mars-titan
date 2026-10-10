@@ -34,8 +34,8 @@ runpy.run_path(sys.argv[0], run_name='__main__')
 """
 
 
-def executable(path, body):
-    path.write_text(f"#!{sys.executable}\n{body}")
+def executable(path, body, shebang):
+    path.write_text(shebang + body)
     path.chmod(0o700)
     return path
 
@@ -52,7 +52,7 @@ def gpu_xml(free=7400, total=8188, *, compute=False):
 
 
 @pytest.fixture
-def setup(tmp_path, learning_doubles):
+def setup(tmp_path, learning_doubles, python_shebang):
     # El hijo es un arnés sin aprendizaje, así que el lanzador puede superar la protección.
     bin_dir, runtime = tmp_path / "bin", tmp_path / "runtime"
     bin_dir.mkdir()
@@ -62,6 +62,7 @@ def setup(tmp_path, learning_doubles):
         "import os\nfrom pathlib import Path\n"
         "Path(os.environ['GPU_PROBED']).write_text('probed')\n"
         "print(os.environ['GPU_XML'])\n",
+        python_shebang,
     )
     native = executable(
         bin_dir / "native ppo",
@@ -115,6 +116,7 @@ if mode in ('wait', 'ignore'):
         signal.pause()
 raise SystemExit(int(os.environ.get('NATIVE_EXIT', '0')))
 """,
+        python_shebang,
     )
     config = tmp_path / "parameters.json"
     config.write_text("{}")
@@ -363,7 +365,7 @@ def test_owned_legacy_lock_is_hardened_only_after_exclusive_admission(setup):
     assert lock.stat().st_mode & 0o777 == 0o600
 
 
-def test_gpu_pressure_pauses_the_owned_group_and_preserves_code_two(setup):
+def test_gpu_pressure_pauses_the_owned_group_and_preserves_code_two(setup, python_shebang):
     setup[1]["NATIVE_MODE"] = "wait"
     probe = Path(setup[1]["PATH"].split(os.pathsep)[0]) / "nvidia-smi"
     executable(
@@ -374,6 +376,7 @@ def test_gpu_pressure_pauses_the_owned_group_and_preserves_code_two(setup):
         "started = Path(os.environ['NATIVE_RECORD']).exists()\n"
         "xml = os.environ['GPU_XML']\n"
         "print(xml.replace('7400 MiB','512 MiB') if started else xml)\n",
+        python_shebang,
     )
     result = execute(setup, "--poll-seconds", "0.02", "--watch-state", str(setup[2] / "watch.json"))
     assert result.returncode == 2, result.stderr
@@ -384,7 +387,7 @@ def test_gpu_pressure_pauses_the_owned_group_and_preserves_code_two(setup):
     assert status["returncode"] == 2
 
 
-def test_watcher_does_not_classify_the_native_child_as_foreign_cuda(setup):
+def test_watcher_does_not_classify_the_native_child_as_foreign_cuda(setup, python_shebang):
     setup[1]["NATIVE_MODE"] = "wait"
     probe = Path(setup[1]["PATH"].split(os.pathsep)[0]) / "nvidia-smi"
     executable(
@@ -398,6 +401,7 @@ if path.exists():
     xml=xml.replace('<processes></processes>',f'<processes><process_info><pid>{child}</pid><type>C</type></process_info></processes>')
 print(xml)
 """,
+        python_shebang,
     )
     child = subprocess.Popen(
         command([*setup[0], "--poll-seconds", "0.02"]),

@@ -13,6 +13,8 @@ optimizador, el caudal de las familias declaradas y estima las horas de las vari
 indicadas. `extensions` comprueba sin leer datos la declaración preparada de la GRU candidata,
 MARS-TITAN y CM-v1 y sus recuentos. `storage` estima el disco de la campaña y de sus etapas
 con los recuentos de las vistas y tablas sintéticas, sin leer objetivos ni ajustar.
+`rolling` recorre la campaña ventana a ventana con la retención v2 y `regenerate`
+repite por inferencia, sin ajustar, las predicciones por fila de un trabajo confirmado.
 """
 
 import importlib
@@ -28,6 +30,8 @@ COMMANDS = {
     "rl-report": "mars_titan.simulation.stage_report",
     "ablation": "mars_titan.training.modality_ablation_stage",
     "storage": "mars_titan.training.storage_budget",
+    "rolling": "mars_titan.training.rolling_retention",
+    "regenerate": "mars_titan.training.prediction_regeneration",
 }
 
 

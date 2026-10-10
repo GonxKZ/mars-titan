@@ -19,6 +19,7 @@ from mars_titan.memory.mars_titan_variant import load_declaration, select_varian
 from mars_titan.models.quantile_head import QUANTILE_COLUMNS
 from mars_titan.training import mars_titan_walk_forward as mw
 from mars_titan.training.learning_hold import LearningHoldError
+from tests.suite_support import skip_without_episodic_native
 from tests.training.test_titans_walk_forward import RULE, Factory, recipe, views, window
 from tests.training.test_titans_walk_forward import (
     learning_doubles_module as learning_doubles_module,
@@ -75,6 +76,7 @@ def mars(view, parent, plan, output, components=M1, *, case="lr1e-4", **options)
 
 @pytest.fixture(scope="module")
 def base(tmp_path_factory, learning_doubles_module):
+    skip_without_episodic_native()
     root = tmp_path_factory.mktemp("mars-titan-walk-forward")
     view, protocol = views(root / "base")
     previous = torch.backends.mha.get_fastpath_enabled()

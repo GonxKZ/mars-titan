@@ -188,3 +188,112 @@ def test_synthetic_tapes_follow_the_market_rules_of_each_scope():
     us = policy_throughput.synthetic_tape("US", 4, sessions=5)
     assert us.currency == "USD" and market_rules(us, "US") is None
     assert np.isfinite(us.prices).all() and us.prices.shape == (5, 4, 5)
+
+
+NATIVE = dict(
+    ppo_tick_seconds=8e-4,
+    double_dqn_tick_seconds=9e-4,
+    klpo_transition_seconds=5e-5,
+    klpo_objective_transition_seconds=1e-5,
+    minibatch_seconds=2e-3,
+    forward_seconds=3e-4,
+    gae_seconds=1e-3,
+    evaluation_step_seconds=1e-4,
+    reference_step_seconds=1e-5,
+)
+
+
+def test_native_work_follows_each_engine():
+    stage = policy_plan.load_stage(STAGES["A"])
+    plan = policy_plan.plan_stage(stage)
+    first = {job["arm"]: job for job in plan if job["kind"] == "fit"}
+    ppo = policy_throughput.native_fit_work(stage, first["ppo_clip_full_kl"])
+    # 256 recorridos de 1024 transiciones con cuatro épocas de 16 minilotes de 64.
+    assert ppo == dict(
+        engine="ppo",
+        collected=262_144,
+        ticks=16_384,
+        rollouts=256,
+        adam_steps=16_384,
+        validations=17,
+    )
+    # Double DQN: un minilote por transición desde el calentamiento de 256.
+    dqn = policy_throughput.native_fit_work(stage, first["double_dqn"])
+    assert dqn["engine"] == "double_dqn" and dqn["adam_steps"] == 262_144 - 256
+    job = first["klpo_terminal"]
+    klpo = policy_throughput.native_fit_work(stage, job)
+    wave = sum(sessions(stage, job["scope"], job["train"][lane % 3]) - 1 for lane in range(16))
+    waves = 262_144 // wave
+    every = max(1, 16_384 // wave)
+    assert klpo == dict(
+        engine="klpo",
+        collected=waves * wave,
+        waves=waves,
+        adam_steps=waves,
+        validations=1 + waves // every + (1 if waves % every else 0),
+    )
+    # Nunca supera el presupuesto de PPO y se queda por debajo en menos de una oleada.
+    assert 262_144 - wave < klpo["collected"] <= 262_144
+
+
+def test_native_hours_add_collection_updates_and_evaluations_per_job():
+    stage = policy_plan.load_stage(STAGES["A"])
+    estimate = policy_throughput.native_policy_hours(stage, dict(US=NATIVE, CN=NATIVE))
+    assert estimate["status"] == "lower_bound_without_adam" and estimate["not_measured"]
+    assert estimate["jobs"] == dict(fit=1368, reference=792)
+    plan = policy_plan.plan_stage(stage)
+    dqn = [j for j in plan if j["arm"] == "double_dqn" and j["kind"] == "fit"]
+    assert len(dqn) == 144
+
+    def evaluated(job, validations):
+        days = validations * sessions(stage, job["scope"], job["validation"])
+        return (days + 3 * sessions(stage, job["scope"], job["window"])) * 1e-4
+
+    # Recogida en pasos de 16 entornos y un forward y backward más dos forwards por minilote.
+    total = math.fsum(
+        16_384 * 9e-4 + (262_144 - 256) * (2e-3 + 2 * 3e-4) + evaluated(j, 17) for j in dqn
+    )
+    assert estimate["arms"]["double_dqn"] * 3600 == pytest.approx(total)
+    ppo = [j for j in plan if j["arm"] == "ppo_clip_full_kl" and j["kind"] == "fit"]
+    total = math.fsum(16_384 * 8e-4 + 256 * 1e-3 + 16_384 * 2e-3 + evaluated(j, 17) for j in ppo)
+    assert estimate["arms"]["ppo_clip_full_kl"] * 3600 == pytest.approx(total)
+    klpo = [j for j in plan if j["arm"] == "klpo_terminal"]
+    total = 0.0
+    for job in klpo:
+        work = policy_throughput.native_fit_work(stage, job)
+        total += work["collected"] * 6e-5 + evaluated(job, work["validations"])
+    assert estimate["arms"]["klpo_terminal"] * 3600 == pytest.approx(total)
+    references = [j for j in plan if j["arm"] == "cash"]
+    cash = math.fsum(3 * sessions(stage, j["scope"], j["window"]) * 1e-5 for j in references)
+    assert estimate["arms"]["cash"] * 3600 == pytest.approx(cash)
+    assert estimate["hours"] == pytest.approx(math.fsum(estimate["arms"].values()))
+    assert estimate["hours"] == pytest.approx(math.fsum(estimate["scopes"].values()))
+    assert estimate["adam_steps"]["double_dqn"] == 144 * (262_144 - 256)
+    assert estimate["adam_steps"]["ppo_clip_full_kl"] == 144 * 16_384
+    assert estimate["adam_steps"]["cash"] == 0
+    # Double DQN hace 16 veces más minilotes que PPO con el mismo presupuesto.
+    assert estimate["arms"]["double_dqn"] > 10 * estimate["arms"]["ppo_clip_full_kl"]
+
+
+@pytest.mark.parametrize("value", [None, -1.0, float("nan"), "1"])
+def test_native_hours_reject_missing_or_invalid_times(value):
+    stage = policy_plan.load_stage(STAGES["A"])
+    damaged = dict(NATIVE, gae_seconds=value)
+    with pytest.raises(ValueError, match="gae_seconds"):
+        policy_throughput.native_policy_hours(stage, dict(US=NATIVE, CN=damaged))
+
+
+def test_native_carry_evaluates_each_cost_without_fitting():
+    stage = policy_plan.load_stage(STAGES["B"])
+    estimate = policy_throughput.native_policy_hours(stage, dict(US=NATIVE, CN=NATIVE))
+    assert estimate["jobs"] == dict(fit=456, carry=912, reference=792)
+    plan = policy_plan.plan_stage(stage)
+    carried = [j for j in plan if j["arm"] == "klpo_terminal" and j["kind"] == "carry"]
+    fitted = [j for j in plan if j["arm"] == "klpo_terminal" and j["kind"] == "fit"]
+    total = math.fsum(3 * sessions(stage, j["scope"], j["window"]) * 1e-4 for j in carried)
+    for job in fitted:
+        work = policy_throughput.native_fit_work(stage, job)
+        days = work["validations"] * sessions(stage, job["scope"], job["validation"])
+        days += 3 * sessions(stage, job["scope"], job["window"])
+        total += work["collected"] * 6e-5 + days * 1e-4
+    assert estimate["arms"]["klpo_terminal"] * 3600 == pytest.approx(total)

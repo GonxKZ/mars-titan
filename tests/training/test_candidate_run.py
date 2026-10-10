@@ -118,28 +118,75 @@ def test_declared_variants_follow_the_protocol_rule_and_budget(tmp_path):
     protocol = json.loads((CONFIG.parent / document["protocol"]).read_text())
     rule = stopping_rule(protocol)
     recipes = {}
+    cases = document["walk_forward"]["search_cases"]
     for variant in document["variants"]:
-        recipe, loaded = candidate_run.load_recipe(CONFIG, variant=variant)
-        assert recipe.epochs == rule["max_epochs"] == 30
-        assert recipe.selection == {k: v for k, v in rule.items() if k != "max_epochs"}
-        assert loaded["status"] == "propuesta_sin_ejecutar"
-        recipes[variant] = recipe
-    principal = recipes[document["principal"]]
+        for case in cases:
+            recipe, loaded = candidate_run.load_recipe(CONFIG, variant=variant, search_case=case)
+            assert recipe.epochs == rule["max_epochs"] == 30
+            assert recipe.selection == {k: v for k, v in rule.items() if k != "max_epochs"}
+            assert recipe.learning_rate == cases[case]["learning_rate"]
+            assert loaded["status"] == "propuesta_sin_ejecutar"
+            recipes[variant, case] = recipe
+    principal = recipes[document["principal"], "lr1e-3"]
     assert (principal.admission, principal.refinements, principal.loss) == ("m1", 1, "pinball")
-    assert recipes["m0_k1"].admission == "m0"
-    assert {recipes[name].refinements for name in ("m1_k2", "m1_k4")} == {2, 4}
-    budget = {
-        (r.epochs, r.update_instants, r.block_rows, r.learning_rate) for r in recipes.values()
-    }
-    assert len(budget) == 1
+    assert recipes["m0_k1", "lr1e-3"].admission == "m0"
+    assert {recipes[name, "lr1e-3"].refinements for name in ("m1_k2", "m1_k4")} == {2, 4}
+    for case in cases:
+        budget = {
+            (r.epochs, r.update_instants, r.block_rows, r.learning_rate)
+            for (_, name), r in recipes.items()
+            if name == case
+        }
+        assert len(budget) == 1
     drifted = dict(document, protocol=str(CONFIG.parent / document["protocol"]))
     drifted["recipe"] = dict(document["recipe"], selection=dict(SELECTION, min_delta=0.0))
     path = tmp_path / "drifted.json"
     path.write_text(json.dumps(drifted))
     with pytest.raises(ValueError, match="protocolo"):
-        candidate_run.load_recipe(path, variant="m1_k1")
+        candidate_run.load_recipe(path, variant="m1_k1", search_case="lr1e-3")
     with pytest.raises(ValueError):
-        candidate_run.load_recipe(CONFIG, variant="m2_k1")
+        candidate_run.load_recipe(CONFIG, variant="m2_k1", search_case="lr1e-3")
+
+
+def test_search_cases_match_titans_and_the_reader_and_cannot_be_skipped(tmp_path):
+    # La GRU candidata busca las mismas dos tasas de aprendizaje que Titans-MAC y el lector.
+    document = json.loads(CONFIG.read_text())
+    titans = json.loads(
+        (ROOT / "configs/titans/chronological-training-historical-masked.json").read_text()
+    )
+    assert document["walk_forward"]["search_cases"] == titans["walk_forward"]["search_cases"]
+    assert document["walk_forward"]["warmup_months"] == titans["walk_forward"]["warmup_months"]
+    assert "learning_rate" not in document["recipe"]
+    for case in (None, "lr1e-2"):
+        with pytest.raises(ValueError, match="casos de búsqueda"):
+            candidate_run.load_recipe(CONFIG, variant="m1_k1", search_case=case)
+
+    def written(change):
+        changed = json.loads(json.dumps(document))
+        changed["protocol"] = str(CONFIG.parent / document["protocol"])
+        change(changed)
+        path = tmp_path / "changed.json"
+        path.write_text(json.dumps(changed))
+        return path
+
+    def variant_rate(changed):
+        changed["variants"]["m1_k2"]["learning_rate"] = 0.01
+
+    def base_rate(changed):
+        changed["recipe"]["learning_rate"] = 0.001
+
+    def other_keys(changed):
+        changed["walk_forward"]["search_cases"]["lr1e-4"] = dict(max_grad_norm=0.5)
+
+    def no_warmup(changed):
+        del changed["walk_forward"]["warmup_months"]
+
+    def long_warmup(changed):
+        changed["walk_forward"]["warmup_months"] = 61
+
+    for change in (variant_rate, base_rate, other_keys, no_warmup, long_warmup):
+        with pytest.raises(ValueError):
+            candidate_run.load_recipe(written(change), variant="m1_k1", search_case="lr1e-4")
 
 
 @pytest.mark.parametrize("admission", ["m0", "m1"])

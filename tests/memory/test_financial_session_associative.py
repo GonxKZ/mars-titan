@@ -18,6 +18,7 @@ from test_native_episode_backend import native as native
 from mars_titan.memory.associative_memory import (
     AssociativeMemory,
     AssociativeMemoryConfig,
+    KalmanNoise,
     MatureCorrection,
 )
 from mars_titan.memory.financial_session import FinancialPhase, FinancialSession
@@ -30,6 +31,14 @@ EVENTS = (125, 126, 127, 128, 129, 130)
 DELTA = MatureCorrection(AssociativeMemoryConfig("delta", rate=0.5, forgetting=0.25))
 CONSTANT = MatureCorrection(
     AssociativeMemoryConfig("proximal", key_size=1, rate=2.0, forgetting=0.1), key="constant"
+)
+KALMAN = MatureCorrection(
+    AssociativeMemoryConfig(
+        "kalman",
+        kalman=KalmanNoise(
+            process_noise=1e-4, observation_noise=0.05, cohort_correlation=0.2, prior_variance=0.5
+        ),
+    )
 )
 
 
@@ -266,6 +275,29 @@ def test_constant_key_control_applies_one_bias_per_event(
         assert len(shifts) <= 1
         for _, asset, at, value in event["predictions"]:
             assert value == pytest.approx(expected[asset, at], rel=0, abs=1e-15)
+
+
+def test_kalman_rule_follows_the_same_session_contract_and_recovers_its_covariance(
+    native, four_flow_source, frozen_consumer, baseline, tmp_path
+):
+    # La regla kalman (PT3) usa el mismo contrato de emisión, madurez y recuperación que
+    # delta y proximal. El corte antes de publicar comprueba que la covarianza se conserva.
+    result = trajectory(
+        native,
+        four_flow_source,
+        frozen_consumer,
+        tmp_path / "kalman",
+        correction=KALMAN,
+        recover=True,
+    )
+    expected, matrices = oracle(four_flow_source, baseline, KALMAN)
+    observed = emissions(result)
+    assert observed.keys() == expected.keys()
+    for key, value in expected.items():
+        assert observed[key] == pytest.approx(value, rel=0, abs=1e-15)
+    for event, matrix in zip(result["events"], matrices, strict=True):
+        state = AssociativeMemory.restore(KALMAN.memory, event["memory"])
+        assert torch.equal(state.matrix, matrix) and state.writes == event["applied_total"]
 
 
 def test_cut_before_commit_resumes_with_the_same_matrix(

@@ -1,11 +1,30 @@
 """Configuración común de pytest."""
 
 import json
+import os
 from contextlib import contextmanager
 
 import pytest
 
 from mars_titan.training.learning_hold import HOLD_ENV, LearningHoldError, install_optimizer_guard
+from tests.suite_support import NATIVE_MARKER, REQUIRE_NATIVE, native_required, strict_problems
+from tests.suite_support import python_shebang as _python_shebang
+
+
+@pytest.hookimpl(wrapper=True)
+def pytest_runtest_makereport(item, call):
+    """En modo estricto, una prueba del enlace nativo omitida cuenta como fallo.
+
+    La comprobación del inicio ya exige que el enlace cargue, así que una omisión posterior
+    indica que la prueba no llegó a usarlo y no debe pasar desapercibida.
+    """
+    report = yield
+    if report.skipped and item.get_closest_marker(NATIVE_MARKER) and native_required(os.environ):
+        reason = report.longrepr[-1] if isinstance(report.longrepr, tuple) else report.longrepr
+        reason = str(reason).removeprefix("Skipped: ")
+        report.outcome = "failed"
+        report.longrepr = f"{REQUIRE_NATIVE}=1 y la prueba del enlace nativo se omitió: {reason}"
+    return report
 
 
 def _skip(reason: str) -> None:
@@ -15,6 +34,18 @@ def _skip(reason: str) -> None:
 # Mientras la protección local esté vigente, una prueba que intente un paso de optimizador
 # de PyTorch se omite antes de modificar pesos. Sin protección, el gancho no se instala.
 _GUARD = install_optimizer_guard(_skip)
+
+
+def pytest_sessionstart(session):
+    # La comprobación local completa declara MARS_TITAN_REQUIRE_NATIVE o MARS_TITAN_REQUIRE_CUDA
+    # para que un binario ausente, un enlace episódico que no carga o la falta de CUDA detengan
+    # la sesión antes de recoger pruebas, en vez de omitirlas.
+    problems = strict_problems(os.environ)
+    if problems:
+        pytest.exit(
+            "Comprobación estricta incumplida: " + "; ".join(problems),
+            returncode=pytest.ExitCode.USAGE_ERROR,
+        )
 
 
 @contextmanager
@@ -61,3 +92,9 @@ def learning_doubles(learning_hold):
     instalado al inicio de la sesión sigue omitiendo cualquier paso de optimizador.
     """
     return learning_hold(True)
+
+
+@pytest.fixture(scope="session")
+def python_shebang(tmp_path_factory):
+    """Primera línea de los ejecutables falsos escritos en Python, válida con rutas con espacios."""
+    return _python_shebang(tmp_path_factory.mktemp("interpreter"))

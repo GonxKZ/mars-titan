@@ -1,0 +1,333 @@
+{
+  "schema_version": 1,
+  "kind": "comparison_matrix_missing_arms",
+  "matrix": {
+    "name": "campaign-a-comparison-matrix",
+    "sha256": "431f67e50824fd2cf3ba9ccd9144d88e00dce547bb9b60bab6b7509fefc5d16c"
+  },
+  "hours": {
+    "basis": "projected",
+    "source": "Proyecci\u00f3n de la campa\u00f1a A v2 (#431, commit 2656031f) con 16.000 muestras-\u00e9poca por segundo, inferencia a 3 veces ese caudal y 10 \u00e9pocas efectivas, sobre los recuentos de reports/data/campaign-a-v2-window-counts-20261009.json. B6 solo predice validaci\u00f3n, calibraci\u00f3n y evaluaci\u00f3n con tres semillas y no incluye el calentamiento. Ning\u00fan caudal est\u00e1 medido en esta edici\u00f3n",
+    "sha256": "48588c7e855d49d56d0c4e567effc8e8f3089c054d2687098843fc149784f5d3"
+  },
+  "rule": {
+    "planned_elsewhere": "Los brazos condicionados y derivados se suponen disponibles",
+    "unlocked_alone": "El candidato es el \u00fanico brazo que le falta al contraste",
+    "tiers": {
+      "1": "C\u00f3digo existente y desbloquea contrastes por s\u00ed solo",
+      "2": "Requiere un cambio de c\u00f3digo y desbloquea contrastes por s\u00ed solo",
+      "3": "Solo desbloquea contrastes junto con otros candidatos"
+    },
+    "order": "Nivel y despu\u00e9s contrastes desbloqueados por cada 100 horas GPU",
+    "gpu_hours": "Horas propias del brazo de referencia (cost_like). Sus padres ya existen"
+  },
+  "totals": {
+    "contrasts": 356,
+    "declared": 196,
+    "planned_elsewhere": 135,
+    "candidates": 25,
+    "unidentified": 0
+  },
+  "conditional_arms": {
+    "titans_reference_mac": {
+      "condition": "Brazo ajustado con una implementaci\u00f3n p\u00fablica de Titans-MAC. La revisi\u00f3n de #434 recomend\u00f3 conservar el n\u00facleo, que coincide en FP64 con la memoria de lucidrains/titans-pytorch, y no incorporar su c\u00f3digo, as\u00ed que no hay brazo previsto. Solo existir\u00eda con una aprobaci\u00f3n expresa",
+      "issue": 434,
+      "contrasts": 2
+    },
+    "mars_titan_m1_k4_first_read": {
+      "condition": "Declarado en la ampliaci\u00f3n de la campa\u00f1a A con los componentes de integraci\u00f3n (A10)",
+      "issue": 56,
+      "contrasts": 11
+    },
+    "mars_titan_b6": {
+      "condition": "Declarado en la ampliaci\u00f3n de la campa\u00f1a A con los componentes de integraci\u00f3n (A5, clave del codec)",
+      "issue": 20,
+      "contrasts": 11
+    },
+    "mars_titan_b6_bias": {
+      "condition": "Declarado en la ampliaci\u00f3n de la campa\u00f1a A con los componentes de integraci\u00f3n (A5, clave constante)",
+      "issue": 20,
+      "contrasts": 3
+    }
+  },
+  "derived_arms": {
+    "chain": {
+      "condition": "Predictor de la cadena por etapas elegido con la validaci\u00f3n de cada ventana (chain_validation_score_v1)",
+      "issue": 364,
+      "contrasts": 66
+    },
+    "frozen_parent": {
+      "condition": "Padre de la ventana anterior trasladado sin cambios a la ventana evaluada",
+      "issue": 364,
+      "contrasts": 44
+    },
+    "full_continuation": {
+      "condition": "Continuaci\u00f3n completa del padre de la ventana anterior con las filas nuevas",
+      "issue": 364,
+      "contrasts": 44
+    }
+  },
+  "candidates": [
+    {
+      "arm": "mars_titan_m2_k4",
+      "lineage": "titans",
+      "producer": "reader_fit",
+      "code": "existing",
+      "change": "Solo un brazo m\u00e1s en la secci\u00f3n mars_titan: episodic_bank m2 con refinements 4",
+      "cost_like": "mars_titan_m1_k4",
+      "purpose": "Interacci\u00f3n entre los refinamientos y la selecci\u00f3n por error",
+      "components": [
+        "titans_encoder",
+        "mac_attention",
+        "memory_read",
+        "test_time_update",
+        "episodic_refiner",
+        "episodic_content",
+        "error_selection",
+        "refinements_k4"
+      ],
+      "gpu_hours": 94.401354,
+      "contrasts_needing": 3,
+      "unlocked_alone": [
+        "titans__conditional_effects/refinements_k4@mars_titan_m2",
+        "titans__conditional_effects/error_selection@mars_titan_m1_k4",
+        "titans__interactions/refinements_k4xerror_selection@mars_titan_m1"
+      ],
+      "unlocked_per_100_gpu_hours": 3.177920520080676,
+      "tier": 1
+    },
+    {
+      "arm": "mars_titan_m0_b6_bias",
+      "lineage": "titans",
+      "producer": "prediction_only",
+      "code": "requires_change",
+      "change": "B6 no se combina hoy con el banco. Habr\u00eda que leer la correcci\u00f3n asociativa sobre la salida del lector en la ventana del lector",
+      "cost_like": "mars_titan_b6_bias",
+      "purpose": "Interacci\u00f3n entre la correcci\u00f3n asociativa y el contenido del banco",
+      "components": [
+        "titans_encoder",
+        "mac_attention",
+        "memory_read",
+        "test_time_update",
+        "episodic_refiner",
+        "associative_correction"
+      ],
+      "gpu_hours": 0.459165,
+      "contrasts_needing": 4,
+      "unlocked_alone": [
+        "titans__conditional_effects/associative_correction@mars_titan_m0",
+        "titans__conditional_effects/episodic_refiner@mars_titan_b6_bias"
+      ],
+      "unlocked_per_100_gpu_hours": 435.57326886848955,
+      "tier": 2
+    },
+    {
+      "arm": "mars_titan_m1_b6_bias",
+      "lineage": "titans",
+      "producer": "prediction_only",
+      "code": "requires_change",
+      "change": "Igual que el anterior sobre el lector M1",
+      "cost_like": "mars_titan_b6_bias",
+      "purpose": "Interacci\u00f3n entre la correcci\u00f3n asociativa y el contenido del banco",
+      "components": [
+        "titans_encoder",
+        "mac_attention",
+        "memory_read",
+        "test_time_update",
+        "episodic_refiner",
+        "episodic_content",
+        "associative_correction"
+      ],
+      "gpu_hours": 0.459165,
+      "contrasts_needing": 3,
+      "unlocked_alone": [
+        "titans__conditional_effects/associative_correction@mars_titan_m1"
+      ],
+      "unlocked_per_100_gpu_hours": 217.78663443424477,
+      "tier": 2
+    },
+    {
+      "arm": "mars_titan_m3_without_error",
+      "lineage": "titans",
+      "producer": "reader_fit",
+      "code": "requires_change",
+      "change": "Pol\u00edtica de escritura nueva con pesos (0, 1/2, 1/2) y su identidad. Los pesos de M3 son constantes en memory/write_scores.py",
+      "cost_like": "mars_titan_m3",
+      "purpose": "Dejar fuera la selecci\u00f3n por error dentro de M3 y repartir con Shapley entre error y anomal\u00eda-relevancia",
+      "components": [
+        "titans_encoder",
+        "mac_attention",
+        "memory_read",
+        "test_time_update",
+        "episodic_refiner",
+        "episodic_content",
+        "anomaly_relevance"
+      ],
+      "gpu_hours": 94.401354,
+      "contrasts_needing": 5,
+      "unlocked_alone": [
+        "titans__leave_one_out/-error_selection",
+        "titans__conditional_effects/anomaly_relevance@mars_titan_m1",
+        "titans__conditional_effects/error_selection@mars_titan_m3_without_error",
+        "titans__shapley/phi_error_selection@mars_titan_m1",
+        "titans__shapley/phi_anomaly_relevance@mars_titan_m1"
+      ],
+      "unlocked_per_100_gpu_hours": 5.29653420013446,
+      "tier": 2
+    },
+    {
+      "arm": "mars_titan_m0_frozen_core",
+      "lineage": "titans",
+      "producer": "reader_fit",
+      "code": "requires_change",
+      "change": "Lector M0 sobre un padre mac_frozen, con el cambio de padre del primer candidato",
+      "cost_like": "mars_titan_m0",
+      "purpose": "Interacci\u00f3n entre la actualizaci\u00f3n de Titans y el contenido del banco",
+      "components": [
+        "titans_encoder",
+        "mac_attention",
+        "memory_read",
+        "episodic_refiner"
+      ],
+      "gpu_hours": 94.401354,
+      "contrasts_needing": 7,
+      "unlocked_alone": [
+        "titans__conditional_effects/episodic_refiner@titans_mac_frozen",
+        "titans__conditional_effects/test_time_update@mars_titan_m0_frozen_core",
+        "titans__shapley/total@mars_titan_m0_frozen_core"
+      ],
+      "unlocked_per_100_gpu_hours": 3.177920520080676,
+      "tier": 2
+    },
+    {
+      "arm": "mars_titan_m3_frozen_core",
+      "lineage": "titans",
+      "producer": "reader_fit",
+      "code": "requires_change",
+      "change": "El lector solo admite hoy un padre Titans-MAC mac_online (parent_arm de la secci\u00f3n mars_titan y _parent de la ventana). Habr\u00eda que aceptar mac_frozen con su identidad",
+      "cost_like": "mars_titan_m3",
+      "purpose": "Dejar fuera la actualizaci\u00f3n en inferencia dentro del MARS-TITAN completo",
+      "components": [
+        "titans_encoder",
+        "mac_attention",
+        "memory_read",
+        "episodic_refiner",
+        "episodic_content",
+        "error_selection",
+        "anomaly_relevance"
+      ],
+      "gpu_hours": 94.401354,
+      "contrasts_needing": 3,
+      "unlocked_alone": [
+        "titans__leave_one_out/-test_time_update",
+        "titans__conditional_effects/test_time_update@mars_titan_m3_frozen_core"
+      ],
+      "unlocked_per_100_gpu_hours": 2.118613680053784,
+      "tier": 2
+    },
+    {
+      "arm": "mars_titan_m1_frozen_core",
+      "lineage": "titans",
+      "producer": "reader_fit",
+      "code": "requires_change",
+      "change": "Lector M1 sobre un padre mac_frozen, con el cambio de padre del primer candidato",
+      "cost_like": "mars_titan_m1",
+      "purpose": "Interacci\u00f3n entre la actualizaci\u00f3n de Titans y el contenido del banco",
+      "components": [
+        "titans_encoder",
+        "mac_attention",
+        "memory_read",
+        "episodic_refiner",
+        "episodic_content"
+      ],
+      "gpu_hours": 94.401354,
+      "contrasts_needing": 5,
+      "unlocked_alone": [
+        "titans__conditional_effects/test_time_update@mars_titan_m1_frozen_core"
+      ],
+      "unlocked_per_100_gpu_hours": 1.059306840026892,
+      "tier": 2
+    },
+    {
+      "arm": "mars_titan_m3_disabled_core",
+      "lineage": "titans",
+      "producer": "reader_fit",
+      "code": "requires_change",
+      "change": "Lector sobre un padre mac_disabled, con el mismo cambio de padre que el anterior",
+      "cost_like": "mars_titan_m3",
+      "purpose": "Dejar fuera la memoria persistente y la lectura de la memoria neuronal dentro del MARS-TITAN completo",
+      "components": [
+        "titans_encoder",
+        "mac_attention",
+        "episodic_refiner",
+        "episodic_content",
+        "error_selection",
+        "anomaly_relevance"
+      ],
+      "gpu_hours": 94.401354,
+      "contrasts_needing": 2,
+      "unlocked_alone": [
+        "titans__leave_one_out/-memory_read"
+      ],
+      "unlocked_per_100_gpu_hours": 1.059306840026892,
+      "tier": 2
+    }
+  ],
+  "bundles": [
+    {
+      "arms": [
+        "mars_titan_m0_b6_bias",
+        "mars_titan_m1_b6_bias"
+      ],
+      "contrasts": [
+        "titans__conditional_effects/episodic_content@mars_titan_m0_b6_bias",
+        "titans__interactions/associative_correctionxepisodic_content@mars_titan_m0"
+      ],
+      "gpu_hours": 0.91833
+    },
+    {
+      "arms": [
+        "mars_titan_m0_frozen_core",
+        "mars_titan_m1_frozen_core"
+      ],
+      "contrasts": [
+        "titans__conditional_effects/episodic_content@mars_titan_m0_frozen_core",
+        "titans__interactions/test_time_updatexepisodic_content@mars_titan_m0_frozen_core",
+        "titans__shapley/phi_test_time_update@mars_titan_m0_frozen_core",
+        "titans__shapley/phi_episodic_content@mars_titan_m0_frozen_core"
+      ],
+      "gpu_hours": 188.802708
+    },
+    {
+      "arms": [
+        "mars_titan_m3_disabled_core",
+        "mars_titan_m3_frozen_core"
+      ],
+      "contrasts": [
+        "titans__conditional_effects/memory_read@mars_titan_m3_disabled_core"
+      ],
+      "gpu_hours": 188.802708
+    }
+  ],
+  "unidentified": [],
+  "limitations": [
+    {
+      "lineage": "titans",
+      "players": [
+        "titans_encoder",
+        "mac_attention",
+        "memory_read",
+        "test_time_update",
+        "episodic_refiner",
+        "episodic_content",
+        "error_selection",
+        "anomaly_relevance"
+      ],
+      "context": "transformer_compact",
+      "coalitions": 256,
+      "structurally_invalid": 236,
+      "reason": "Alguna coalici\u00f3n activa un componente sin sus dependencias, as\u00ed que su valor no existe y el reparto de Shapley no est\u00e1 identificado"
+    }
+  ],
+  "scientific_training_started": false
+}

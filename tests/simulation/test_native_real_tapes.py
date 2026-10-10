@@ -25,6 +25,7 @@ from mars_titan.simulation.market_rules import china_a_share_instrument
 from mars_titan.simulation.native_portfolio import REASONS
 from mars_titan.simulation.reconstructed_tape import build_reconstructed_tape
 from mars_titan.simulation.storage import write_tape
+from tests.simulation.native_library import simulator_path as simulator
 from tests.simulation.policy_tape_fixture import monthly_window
 from tests.simulation.unadjusted_edition_fixture import (
     Asset,
@@ -65,15 +66,6 @@ EDITION = {
         Asset("688981.SS", base=40.0, events=((170, 0.1, 1.5),)),
     ],
 }
-
-
-def simulator():
-    path = Path(
-        os.environ.get("MARS_TITAN_SIM_EXECUTABLE", "build/native/native-release/mars-titan-sim")
-    ).resolve()
-    if not path.is_file():
-        pytest.skip("Falta el ejecutable mars-titan-sim")
-    return path
 
 
 def rules(tape, market):

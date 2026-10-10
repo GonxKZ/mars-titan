@@ -15,8 +15,11 @@ import numpy as np
 import pyarrow as pa
 import pytest
 
+from mars_titan.data import prediction_files
 from mars_titan.data.temporal import MarketClock
 from mars_titan.evaluation import long_short_comparison as comparison
+from mars_titan.evaluation import walk_forward_comparison as walk
+from mars_titan.evaluation import window_aggregates
 from mars_titan.models.quantile_head import QUANTILE_COLUMNS
 from tests.evaluation.test_walk_forward_comparison import ARMS, OFFSETS, Study
 from tests.simulation.unadjusted_edition_fixture import Asset, write_edition
@@ -243,6 +246,49 @@ def test_cli_writes_the_report_and_the_session_table(tmp_path, edition, capsys):
     assert report["prices"]["CN"]["market_rules"] == "cn_a_share_v1"
     with pytest.raises(ValueError, match="nueva"):
         comparison.main(arguments)
+
+
+def test_the_portfolio_from_window_aggregates_is_identical_after_releasing_the_rows(
+    tmp_path, edition, monkeypatch
+):
+    """Los libros por ventana bastan para el informe de la cartera, sin abrir filas."""
+    study = PortfolioStudy(tmp_path / "study", edition)
+    study.declare()
+    expected, expected_sessions = study.run()
+    config = walk.resolve_config(study.config_path)
+    sources = walk.load_sources(study.sources_path, config, study.scope)
+    folder = tmp_path / "aggregates"
+    for window in sources["windows"]:
+        record = window_aggregates.write_long_short(folder, config, sources, window, edition)
+        assert record["path"].name == f"{window}.long_short.npz"
+    for entries in study.sources["arms"].values():
+        for windows in entries.values():
+            for entry in windows.values():
+                for part in ("calibration", "evaluation"):
+                    if part in entry:
+                        path = study.sources_path.parent / entry[part]["path"]
+                        prediction_files.release(path, entry[part]["sha256"], stage="fixture")
+    with pytest.raises(prediction_files.PredictionsReleased):
+        study.run()
+    report, sessions = comparison.evaluate_long_short(
+        study.config_path, study.sources_path, study.scope, edition, aggregates=folder
+    )
+    volatile = {"created_at_utc", "resources"}
+    assert {k: v for k, v in report.items() if k not in volatile} == {
+        k: v for k, v in expected.items() if k not in volatile
+    }
+    assert sessions.equals(expected_sessions)
+    # Otra edición de precios, aunque las predicciones sean las mismas, no los acepta.
+    from mars_titan.simulation.session_prices import SessionPrices
+
+    original = SessionPrices.identity
+    monkeypatch.setattr(
+        SessionPrices, "identity", lambda self: dict(original(self), edition_id="other")
+    )
+    with pytest.raises(ValueError, match="prices"):
+        comparison.evaluate_long_short(
+            study.config_path, study.sources_path, study.scope, edition, aggregates=folder
+        )
 
 
 def test_seeds_are_averaged_session_by_session_before_the_statistics():

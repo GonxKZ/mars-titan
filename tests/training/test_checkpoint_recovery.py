@@ -12,6 +12,8 @@ import numpy as np
 import pytest
 import torch
 
+from tests.suite_support import requires_cuda
+
 
 def module():
     return importlib.import_module("mars_titan.training.checkpoints")
@@ -149,13 +151,11 @@ save_training_state(Path(sys.argv[1]), {'global_step': 2},
         process.stdout.close()
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda:0"])
+@pytest.mark.parametrize("device", ["cpu", pytest.param("cuda:0", marks=requires_cuda)])
 def test_resume_reproduces_optimizer_rng_and_next_update_exactly(tmp_path, device):
     from mars_titan.budget_training import seed_run
     from mars_titan.profiling import CostProbe
 
-    if device == "cuda:0" and not torch.cuda.is_available():
-        pytest.fail("Se requiere cuda:0 para comprobar la equivalencia neuronal")
     checkpoint = module()
     seed_run(42)
     dimensions = dict(prices=5, news=2, charts=1, fundamentals=1, macro=1)
