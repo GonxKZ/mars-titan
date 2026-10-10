@@ -9,7 +9,8 @@ from mars_titan.simulation.environment import FinancialEnv
 from mars_titan.simulation.market import MarketTape
 from mars_titan.simulation.native_runtime import NativeLibrary, library_path, load_library
 from mars_titan.simulation.training import FinancialTrainer, TrainConfig
-from tests.simulation.native_library import requires_native_library
+from tests.simulation import native_library
+from tests.simulation.native_library import requires_native_library, simulator_path
 
 
 def tape():
@@ -80,3 +81,34 @@ def test_a_declared_library_is_never_treated_as_missing(tmp_path, monkeypatch):
     assert library_path(tmp_path / "explicit.so") == tmp_path / "explicit.so"
     with pytest.raises(FileNotFoundError):
         load_library()
+
+
+def resolved_simulator():
+    # Una omisión dentro de la prueba la marcaría como omitida y escondería el defecto.
+    try:
+        return simulator_path()
+    except pytest.skip.Exception as error:
+        pytest.fail(f"La resolución de mars-titan-sim se omitió: {error}")
+
+
+def test_a_declared_simulator_is_never_treated_as_missing(tmp_path, monkeypatch):
+    declared = tmp_path / "mars-titan-sim"
+    monkeypatch.setenv("MARS_TITAN_SIM_EXECUTABLE", str(declared))
+    monkeypatch.setattr(native_library, "SIMULATOR", tmp_path / "compiled")
+    (tmp_path / "compiled").write_text("")
+    with pytest.raises(FileNotFoundError):
+        resolved_simulator()
+    declared.write_text("")
+    assert resolved_simulator() == declared
+
+
+def test_without_declaration_the_compiled_simulator_is_used_or_the_test_is_skipped(
+    tmp_path, monkeypatch
+):
+    monkeypatch.delenv("MARS_TITAN_SIM_EXECUTABLE", raising=False)
+    compiled = tmp_path / "mars-titan-sim"
+    monkeypatch.setattr(native_library, "SIMULATOR", compiled)
+    with pytest.raises(pytest.skip.Exception, match="MARS_TITAN_SIM_EXECUTABLE"):
+        simulator_path()
+    compiled.write_text("")
+    assert resolved_simulator() == compiled
