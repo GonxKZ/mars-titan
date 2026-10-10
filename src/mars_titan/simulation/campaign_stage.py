@@ -59,16 +59,17 @@ from . import native_policy_runs, window_tapes
 from .policy_plan import (
     BASE_SELECTED,
     CARRY,
+    CHAIN,
     FIT,
     MARKET_INDEX,
     REFERENCE,
     _number,
     _require,
-    chain_reads,
     count_stage,
     count_tapes,
     load_stage,
     plan_stage,
+    predictor_reads,
     window_sensitivity,
 )
 from .reconstructed_tape import NoAdmittedAssets
@@ -606,7 +607,7 @@ def campaign_source(base, campaign_output, seed):
     recalculada aquí desde las vistas con `training.label_maturity`, de modo que una cinta
     nunca lleva predicciones de un predictor que ajustó pesos con sus filas. Si el trabajo
     no emitió filas del mercado en su evaluación, el recibo tampoco las declara y la fuente
-    devuelve `None` en lugar de predicciones.
+    devuelve `None` en lugar del lector de las predicciones.
     """
 
     def source(scope, market, window, predictor):
@@ -628,12 +629,18 @@ def campaign_source(base, campaign_output, seed):
         )
         if expected is None:
             return receipt, None
-        values = window_tapes.segment_predictions(
-            campaign_output / record["path"], record["sha256"], market
-        )
-        return receipt, values
+        return receipt, _reader(campaign_output / record["path"], record["sha256"], market)
 
     return source
+
+
+def _reader(path, digest, market):
+    """Lector diferido de las predicciones de un mercado en la evaluación de un recibo.
+
+    Solo se lee al montar una cinta o un universo que no están en disco. Así la etapa se
+    reanuda aunque la retención haya liberado una tabla cuyas cintas ya están confirmadas.
+    """
+    return lambda: window_tapes.segment_predictions(path, digest, market)
 
 
 def chain_source(base, chain_output, seed, campaign_output):
@@ -694,8 +701,7 @@ def chain_source(base, chain_output, seed, campaign_output):
             f"El recibo de {market} de {label} no declara la maduración real de las etiquetas "
             "que leyó el estado elegido",
         )
-        values = window_tapes.segment_predictions(root / record["path"], record["sha256"], market)
-        return receipt, values
+        return receipt, _reader(root / record["path"], record["sha256"], market)
 
     return source
 
@@ -709,7 +715,7 @@ def require_chain_selections(stage, jobs, chain_output):
     la lectura con el error de `staged_chain.read_selection`.
     """
     seed = stage["policies"]["predictor"]["seed"]
-    needed = sorted({read for job in jobs for read in chain_reads(stage, job)})
+    needed = sorted({read for job in jobs for read in predictor_reads(stage, job)})
     missing = [
         staged_chain.chain_job_id(scope, window, predictor, seed)
         for scope, window, predictor in needed
@@ -736,8 +742,9 @@ def predictor_source(policies, base, campaign_output, chain_output=None):
 class _Tapes:
     """Universos y cintas confirmados de la etapa, con un conjunto abierto como máximo.
 
-    `source(ámbito, mercado, ventana, predictor)` devuelve el recibo de la ventana y las
-    predicciones emitidas en su tramo de evaluación, o `None` si no las hay. Cada recibo
+    `source(ámbito, mercado, ventana, predictor)` devuelve el recibo de la ventana y el lector
+    diferido de las predicciones emitidas en su tramo de evaluación, o `None` si no las hay.
+    Las predicciones solo se leen al montar algo que no está en disco. Cada recibo
     debe pertenecer a la ventana y al mercado pedidos, y los tramos de ajuste y validación
     deben terminar antes de la evaluación según los propios recibos. El universo de cada
     ancla es común a todos los predictores y se elige con `universe_predictor`.
@@ -755,12 +762,12 @@ class _Tapes:
         self.admissions = {}
 
     def source(self, job, window, predictor):
-        receipt, values = self._source(job["scope"], job["market"], window, predictor)
+        receipt, load = self._source(job["scope"], job["market"], window, predictor)
         _require(
             receipt.fold == window and receipt.market == job["market"],
             f"El recibo pedido para {window} pertenece a otra ventana o a otro mercado",
         )
-        return receipt, values
+        return receipt, load
 
     def universe(self, job):
         """Universo del ancla con datos de ajuste y validación, guardado con su identidad."""
@@ -768,7 +775,7 @@ class _Tapes:
         windows = [*job["train"], job["validation"]]
         sources = {window: self.source(job, window, predictor) for window in windows}
         _require(
-            all(values is not None for _, values in sources.values()),
+            all(load is not None for _, load in sources.values()),
             f"El predictor {predictor} del universo no tiene predicciones de {job['market']} "
             f"en el ajuste o la validación de {job['anchor']}",
         )
@@ -786,11 +793,11 @@ class _Tapes:
             _require(record["identity"] == identity, f"El universo de {path.name} ha cambiado")
             return tuple(record["assets"])
         admitted = {}
-        for window, (receipt, values) in sources.items():
+        for window, (receipt, load) in sources.items():
             key = (job["scope"], job["market"], window, receipt.sha256)
             if key not in self.admissions:
                 tape, _ = window_tapes.build_segment_tape(
-                    self.edition, receipt, values, market=job["market"], role="train", lag=self.lag
+                    self.edition, receipt, load(), market=job["market"], role="train", lag=self.lag
                 )
                 window_tapes.require_real_tape(tape, self.edition_id, f"universe-{window}")
                 self.admissions[key] = window_tapes.admission(tape)
@@ -813,7 +820,7 @@ class _Tapes:
         """
         from .storage import read_tape, write_tape
 
-        receipt, values = self.source(job, window, job["predictor"])
+        receipt, load = self.source(job, window, job["predictor"])
         folder = self.output / "tapes" / job["scope"] / job["market"] / job["predictor"]
         folder = folder / job["anchor"] / (name or f"{role}-{window}")
         safe_destination(folder)
@@ -824,7 +831,7 @@ class _Tapes:
             record = read_manifest(failure_path, 8 * 1024**2)[0]
             _require(record["identity"] == expected, f"La cinta fallida {folder.name} cambió")
             return folder, None, record["failure"], bounds
-        if values is None:
+        if load is None:
             failure = dict(reason=window_tapes.NO_PREDICTIONS, window=window)
             atomic_json(failure_path, dict(identity=expected, failure=failure))
             return folder, None, failure, bounds
@@ -835,7 +842,7 @@ class _Tapes:
                 tape, report = window_tapes.build_segment_tape(
                     self.edition,
                     receipt,
-                    values,
+                    load(),
                     market=job["market"],
                     role=role,
                     lag=self.lag,
@@ -1167,7 +1174,7 @@ def run_stage(
     _base_receipts(base, campaign, stage)
     # La fuente de las predicciones se resuelve antes de crear la salida.
     source = predictor_source(stage["policies"], base, campaign_output, chain_output)
-    if chain_output is not None:
+    if stage["policies"]["predictor"]["source"] == CHAIN:
         require_chain_selections(stage, jobs, Path(chain_output))
     identity = _identity(stage, base.views, edition_id)
     output.mkdir(parents=True, exist_ok=True)

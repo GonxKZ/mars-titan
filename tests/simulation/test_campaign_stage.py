@@ -15,6 +15,7 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
+from mars_titan.data import prediction_files
 from mars_titan.data.cohort_files import read_manifest
 from mars_titan.data.storage import atomic_json
 from mars_titan.environments.walk_forward_receipt import read_window_receipt
@@ -585,6 +586,40 @@ def copied(base, root):
     """Copia de la salida de la campaña base que una prueba puede alterar."""
     shutil.copytree(base.output, root / "campaign")
     return SimpleNamespace(**dict(vars(base), output=root / "campaign"))
+
+
+def test_the_stage_resumes_after_the_retention_releases_the_evaluations_it_read(
+    base_a, tmp_path, learning_doubles
+):
+    # La retención libera una evaluación cuando cada política que la lee ha confirmado su
+    # recibo. Al reanudar, la etapa reconoce sus cintas en disco sin volver a leer las filas.
+    base = copied(base_a, tmp_path)
+    first = fixture.run(base, tmp_path / "stage", fixture.ScriptedLearner())
+    assert first["status"] == "completed"
+    released = set()
+    for path in sorted((base.output / "windows/US").glob("*/*/seed-42/US.json")):
+        parent = json.loads(path.read_text())["parent"]["id"]
+        record = json.loads((base.output / "jobs" / parent / "receipt.json").read_text())
+        table = record["predictions"]["evaluation"]
+        if parent not in released:
+            prediction_files.release(
+                base.output / table["path"],
+                table["sha256"],
+                stage="base",
+                job=parent,
+                partition="evaluation",
+                regeneration_sha256="0" * 64,
+            )
+            released.add(parent)
+        assert (
+            prediction_files.verify(base.output / table["path"], table["sha256"])
+            == prediction_files.RELEASED
+        )
+    assert released
+    learner = fixture.ScriptedLearner()
+    again = fixture.run(base, tmp_path / "stage", learner)
+    assert again["status"] == "completed" and learner.calls == []
+    assert again["metrics"] == first["metrics"]
 
 
 def _swap_receipt(base):

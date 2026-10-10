@@ -558,16 +558,14 @@ def _arms(stage, predictor):
     return arms
 
 
-def chain_reads(stage, job):
-    """Ámbito, ventana y predictor de cada selección de la cadena que lee un trabajo.
+def predictor_reads(stage, job):
+    """Ámbito, ventana y predictor de cada evaluación que leen las cintas de un trabajo.
 
-    Con el predictor de la cadena, un trabajo lee las evaluaciones de ajuste y validación de
-    su ancla y la evaluación de su ventana con ese predictor, y el universo del ancla con el
-    predictor del universo. Cada una exige su selección confirmada en el posentrenamiento.
-    Con el predictor elegido de la base no lee ninguna.
+    Un trabajo lee las evaluaciones de ajuste y validación de su ancla y la evaluación de su
+    ventana con su predictor, y el universo del ancla con el predictor del universo. Con la
+    cadena, cada una exige su selección confirmada en el posentrenamiento. La retención usa
+    la misma lista para saber qué tablas de la base sigue necesitando una política.
     """
-    if stage["policies"]["predictor"]["source"] != CHAIN:
-        return []
     read = [*job["train"], job["validation"]]
     reads = {job["predictor"]: [*read, job["window"]]}
     reads.setdefault(stage["universe_predictor"], read)
@@ -603,7 +601,8 @@ def plan_stage(stage):
                     )
                     chain = [
                         chain_job_id(*read, policies["predictor"]["seed"])
-                        for read in chain_reads(stage, common)
+                        for read in predictor_reads(stage, common)
+                        if policies["predictor"]["source"] == CHAIN
                     ]
                     for level, arm in _arms(stage, predictor):
                         engine = policies["engines"][arm]
