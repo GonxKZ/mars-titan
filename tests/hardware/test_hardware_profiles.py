@@ -95,6 +95,13 @@ def test_each_difference_is_reported_once(rtx, changes, message):
     assert len(found) == 1 and message in found[0]
 
 
+def test_every_gpu_of_the_machine_must_match_the_profile(rtx):
+    # nvidia-smi lista todas las GPU NVIDIA, también las que CUDA_VISIBLE_DEVICES oculta.
+    other = gpu(name="NVIDIA GeForce RTX 4060 Laptop GPU", uuid="GPU-other")[0]
+    found = profiles.hardware_mismatches(rtx, laptop(gpus=[*gpu(), other]))
+    assert len(found) == 1 and "RTX 4060" in found[0]
+
+
 def test_limits_at_the_boundary_still_match(rtx, spark):
     exact = laptop(gpus=gpu(memory_total_mib=7680), memory_total_bytes=24576 * MIB)
     assert profiles.hardware_mismatches(rtx, exact) == []
@@ -183,6 +190,9 @@ def test_unrecorded_runs_need_a_declared_profile_that_the_others_match(rtx, spar
         profiles.same_platform(records)
     result = profiles.same_platform(records, unrecorded=rtx)
     assert result["unrecorded"] == 1 and result["unrecorded_profile"] == "rtx4070-laptop"
+    # Sin ejecuciones anteriores al registro, el perfil declarado no se atribuye a ninguna.
+    complete = profiles.same_platform(dict(new=laptop()), unrecorded=rtx)
+    assert complete["unrecorded"] == 0 and complete["unrecorded_profile"] is None
     with pytest.raises(ValueError, match="perfil dgx-gb10 atribuido"):
         profiles.same_platform(records, unrecorded=spark)
     only_old = profiles.same_platform(dict(old=None), unrecorded=spark)
