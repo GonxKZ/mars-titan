@@ -120,9 +120,10 @@
     "limits": {"max_online_jobs": 57}
   },
   "memory_options": {
-    "titans_mac": {"accumulation_rows": "pending"},
-    "episodic_gru": {"accumulation_rows": "pending", "recompute": "pending"},
-    "cm_v1": {"accumulation_rows": "pending"}
+    "receipt": "../../reports/engineering/campaign-kernels-20261009/vram-throughput.json",
+    "titans_mac": {"accumulation_rows": 1024},
+    "episodic_gru": {"accumulation_rows": 128, "recompute": false},
+    "cm_v1": {"accumulation_rows": 1024}
   },
   "limits": {
     "max_training_jobs": 2341,

@@ -289,6 +289,8 @@ MEMORY_OPTIONS = {
     EPISODIC: ("accumulation_rows", "recompute"),
     CM: ("accumulation_rows",),
 }
+# Clave opcional de `memory_options` con el recibo de la medida que fija sus valores.
+MEMORY_RECEIPT = "receipt"
 _TABULAR = {"config", "arms", "cpu_workers"}
 _EPISODIC = {"recipe", "arms", "search_seed"}
 _TITANS = {"recipe", "arms", "search_seed"}
@@ -993,7 +995,7 @@ def load_campaign(path):
         _arm_specs(campaign, scope)
     if version == 2:
         _seed_policy(config["seed_policy"], campaign)
-        campaign["memory_options"] = _memory_options(config["memory_options"], campaign)
+        campaign["memory_options"] = _memory_options(config["memory_options"], campaign, base)
         if "online_controls" in config:
             campaign_online_controls.declared(config["online_controls"], campaign)
     return campaign
@@ -1027,12 +1029,18 @@ def _seed_policy(policy, campaign):
         )
 
 
-def _memory_options(declared, campaign):
-    """Opciones de memoria de cada receta: pendientes o iguales al valor de la receta."""
+def _memory_options(declared, campaign, base):
+    """Opciones de memoria de cada receta: pendientes o iguales al valor de la receta.
+
+    Un valor fijado necesita el recibo de la medida en cuda:0 que lo justifica, un archivo
+    que `receipt` nombra respecto a la configuración. Sin valores fijados no se declara.
+    """
     families = {family: options for family, options in MEMORY_OPTIONS.items() if campaign[family]}
+    _require(isinstance(declared, dict), "La campaña declara sus opciones de memoria")
+    declared = dict(declared)
+    receipt = declared.pop(MEMORY_RECEIPT, None)
     _require(
-        isinstance(declared, dict)
-        and set(declared) == set(families)
+        set(declared) == set(families)
         and all(
             isinstance(declared[family], dict) and set(declared[family]) == set(options)
             for family, options in families.items()
@@ -1050,6 +1058,15 @@ def _memory_options(declared, campaign):
                 f"{family}.{option} debe estar pendiente o coincidir con su receta",
             )
         resolved[family] = dict(declared[family])
+    fixed = any(value != PENDING for options in resolved.values() for value in options.values())
+    _require(
+        (receipt is not None) == fixed,
+        "Las opciones de memoria fijadas, y solo ellas, citan el recibo de su medida",
+    )
+    _require(
+        receipt is None or (isinstance(receipt, str) and (base / receipt).is_file()),
+        "El recibo de las opciones de memoria no existe",
+    )
     return resolved
 
 

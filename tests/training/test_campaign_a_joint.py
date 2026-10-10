@@ -73,6 +73,9 @@ def edited(tmp_path, change, *, comparison_change=None):
         ("cm_v1", "declaration"),
     ):
         value[section][key] = str((CAMPAIGN.parent / value[section][key]).resolve())
+    receipt = value["memory_options"].get("receipt")
+    if receipt is not None:
+        value["memory_options"]["receipt"] = str((CAMPAIGN.parent / receipt).resolve())
     change(value)
     atomic_json(folder / "baselines/campaign.json", value)
     return folder / "baselines/campaign.json"
@@ -152,8 +155,16 @@ def test_extra_seeds_repeat_only_the_selected_case_after_every_search_of_the_sco
         (lambda v: v.update(stopping={"mode": "early_stop"}), "modo de parada"),
         (lambda v: v.update(early_stop=json.loads(JOINT_STOP.read_text())["early_stop"]), "modo"),
         (lambda v: v["memory_options"]["titans_mac"].update(accumulation_rows=128), "receta"),
+        (lambda v: v["memory_options"]["episodic_gru"].update(recompute=True), "receta"),
         (lambda v: v["memory_options"].pop("cm_v1"), "opciones de memoria"),
         (lambda v: v["memory_options"]["episodic_gru"].pop("recompute"), "opciones de memoria"),
+        (lambda v: v["memory_options"].pop("receipt"), "recibo de su medida"),
+        (
+            lambda v: v["memory_options"].update(receipt=str(Path("missing.json").resolve())),
+            "no existe",
+        ),
+        (lambda v: pending(v, receipt=True), "recibo de su medida"),
+        (lambda v: v.update(memory_options=["pending"]), "opciones de memoria"),
         (lambda v: v.pop("seed_policy"), "contrato"),
         (lambda v: v.update(execution={"order": "random"}), "orden de ejecución"),
         (lambda v: v.pop("execution"), "contrato"),
@@ -174,8 +185,13 @@ def test_extra_seeds_repeat_only_the_selected_case_after_every_search_of_the_sco
         "early_stop_mode_without_section",
         "early_stop_section_with_protocol_mode",
         "memory_value_differs_from_recipe",
+        "recompute_differs_from_recipe",
         "missing_family_options",
         "missing_option",
+        "fixed_options_without_receipt",
+        "missing_receipt_file",
+        "pending_options_with_receipt",
+        "memory_options_not_a_mapping",
         "v2_without_seed_policy",
         "unknown_execution_order",
         "v2_without_execution_order",
@@ -323,30 +339,59 @@ def test_the_joint_stop_groups_keep_every_paired_contrast_inside_one_scope_and_g
     assert us == {("titans_mac_online", "transformer_compact"), ("mars_titan_m1",)}
 
 
+def pending(value, *, receipt=False):
+    """Devolver las opciones de memoria al estado previo a la medida."""
+    value["memory_options"] = {
+        family: dict.fromkeys(options, "pending")
+        for family, options in value["memory_options"].items()
+        if family != "receipt"
+    } | ({"receipt": value["memory_options"]["receipt"]} if receipt else {})
+
+
 def test_memory_options_block_the_launch_until_they_match_the_recipe(tmp_path):
-    blockers = plan.launch_blockers(campaign())
+    # La campaña declarada fija los valores medidos en cuda:0, iguales a los de sus recetas.
+    titans = json.loads(
+        (CONFIGS / "titans/chronological-training-historical-masked.json").read_text()
+    )["recipe"]
+    candidate = json.loads((CONFIGS / "candidate/chronological-training.json").read_text())[
+        "recipe"
+    ]
+    declared = campaign()
+    assert declared["memory_options"] == dict(
+        titans_mac=dict(accumulation_rows=titans["accumulation_rows"]),
+        episodic_gru=dict(
+            accumulation_rows=candidate["accumulation_rows"], recompute=candidate["recompute"]
+        ),
+        cm_v1=dict(accumulation_rows=titans["accumulation_rows"]),
+    )
+    assert (titans["accumulation_rows"], candidate["accumulation_rows"]) == (1024, 128)
+    assert candidate["recompute"] is False
+    # Solo queda pendiente la regla del control en línea, que no depende de la memoria.
+    online = ["transformer_compact_online"] * 4
+    assert [reason.split(".")[0] for reason in plan.launch_blockers(declared)] == online
+
+    loaded = plan.load_campaign(edited(tmp_path / "pending", pending))
+    blockers = plan.launch_blockers(loaded)
     memory = [reason for reason in blockers if "medida de memoria" in reason]
     assert len(memory) == 4 and all("pendiente" in reason for reason in blockers)
 
-    # Titans-MAC y los núcleos de CM-v1 comparten la receta cronológica, que ya declara la
-    # acumulación medida en cuda:0. Un valor igual al de la receta deja de bloquear.
-    recipe = json.loads(
-        (CONFIGS / "titans/chronological-training-historical-masked.json").read_text()
-    )
-    rows = recipe["recipe"]["accumulation_rows"]
-
+    # Un valor igual al de la receta deja de bloquear aunque los demás sigan pendientes.
     def fixed(value):
-        value["memory_options"]["titans_mac"]["accumulation_rows"] = rows
-        value["memory_options"]["cm_v1"]["accumulation_rows"] = rows
+        receipt = value["memory_options"]["receipt"]
+        pending(value)
+        value["memory_options"]["titans_mac"]["accumulation_rows"] = titans["accumulation_rows"]
+        value["memory_options"]["cm_v1"]["accumulation_rows"] = titans["accumulation_rows"]
+        value["memory_options"]["receipt"] = receipt
 
-    loaded = plan.load_campaign(edited(tmp_path, fixed))
+    loaded = plan.load_campaign(edited(tmp_path / "fixed", fixed))
     assert [reason.split(".")[0] for reason in plan.launch_blockers(loaded)] == [
         "episodic_gru",
         "episodic_gru",
-        *["transformer_compact_online"] * 4,
+        *online,
     ]
     report = plan.check_campaign(CAMPAIGN)
-    assert report["launch_blockers"] == blockers
+    assert report["launch_blockers"] == plan.launch_blockers(declared)
+    assert report["memory_options"] == declared["memory_options"]
     assert report["scope_arms"]["US"] == list(CONTROLS)
     assert report["stopping"] == {"mode": "protocol"}
     assert (
@@ -359,7 +404,7 @@ def test_memory_options_block_the_launch_until_they_match_the_recipe(tmp_path):
 
 def test_run_refuses_a_campaign_with_pending_memory_options_before_reading_views(tmp_path):
     with pytest.raises(ValueError, match="no se puede lanzar"):
-        engine.run_campaign(CAMPAIGN, {}, tmp_path / "out")
+        engine.run_campaign(edited(tmp_path, pending), {}, tmp_path / "out")
     assert not (tmp_path / "out").exists()
 
 
