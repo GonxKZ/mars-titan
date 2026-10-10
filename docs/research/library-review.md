@@ -113,7 +113,7 @@ Comprobaciones hechas:
 
 Riesgos. La última versión de `arch` es del 21 de octubre de 2025, anterior a pandas 3.0.0, aunque el repositorio sigue recibiendo cambios y la comprobación no mostró problemas. Las pruebas de paridad deben detectar cualquier rotura al actualizar. `optimal_block_length` calculado con datos de evaluación sería una forma de ajustar el bootstrap con el futuro, así que solo se usa como diagnóstico sobre desarrollo. DM, SPA y MCS suponen estacionariedad de las diferencias de pérdida y no corrigen por sí mismos la selección entre muchas variantes que no se hayan conservado. Por eso se declaran como análisis secundarios antes de ver resultados, con el test final cerrado.
 
-Veredicto: adoptar como dependencia del extra `research` ([#493](https://github.com/GonxKZ/mars-titan/issues/493)), sin sustituir el bootstrap propio, que sigue siendo el contraste principal.
+Veredicto: adoptar como dependencia del extra `research` ([#493](https://github.com/GonxKZ/mars-titan/issues/493)), sin sustituir el bootstrap propio, que sigue siendo el contraste principal. La adopción ya está hecha: `evaluation/predictive_ability.py` calcula los contrastes secundarios declarados en las comparaciones de la campaña y una prueba fija la paridad de índices. Al leer la versión 8.0.0 aparecieron dos detalles más, un SPA que ignora `studentize` y un StepM que falla cuando los modelos se seleccionan en pasos distintos, que se describen en las [métricas](metrics.md#detalles-de-arch-800).
 
 ## Métricas de cartera
 
