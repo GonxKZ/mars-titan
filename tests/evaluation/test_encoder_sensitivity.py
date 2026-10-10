@@ -310,6 +310,28 @@ def test_arms_that_do_not_share_sessions_are_rejected(tmp_path):
         es.evaluate(section(), frozen, control)
 
 
+def test_identical_editions_suspect_nothing(tmp_path):
+    frozen, control = pair(tmp_path, {arm: step(0.0, 0.0) for arm in ARMS})
+    record = es.evaluate(section(), frozen, control)["markets"]["US"]["gru"]
+    assert set(record["estimates"].values()) == {0.0}
+    assert record["decision"]["intervals"]["break"] == [0.0, 0.0]
+    assert record["decision"]["status"] == "not_supported"
+
+
+def test_a_short_placebo_block_leaves_the_decision_undetermined(tmp_path):
+    # La serie empieza en 2018: el tramo placebo solo tiene un año y el resto, dos y medio.
+    def from_2018(table):
+        moments = table["prediction_at"].cast("int64").to_numpy()
+        return table.filter(pa.array(moments >= micros(datetime(2018, 1, 1, tzinfo=UTC))))
+
+    frozen, control = pair(tmp_path, {arm: step(0.3, 0.0) for arm in ARMS}, edit=from_2018)
+    record = es.evaluate(section(min_sessions=400), frozen, control)["markets"]["US"]["gru"]
+    sessions = record["sessions"]
+    assert sessions["placebo"] < 400 <= min(sessions["before"], sessions["after"])
+    assert record["decision"]["status"] == "undetermined"
+    assert record["decision"]["reason"] == "Algún tramo tiene menos sesiones de las declaradas"
+
+
 def test_a_series_that_ends_before_the_cutoff_cannot_decide(tmp_path):
     def before(table):
         moments = table["prediction_at"].cast("int64").to_numpy()
