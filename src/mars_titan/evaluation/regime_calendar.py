@@ -13,8 +13,8 @@ falta otra sesión de la ventana no entra. Con todas las ventanas válidas del m
 llama a `RegimeRule.state`. Por tanto, cambiar o quitar precios posteriores a t no cambia
 la etiqueta de t, y una prueba lo comprueba recortando la historia.
 
-La cohorte es el mercado completo de la edición preparada, no las filas de un brazo. Así
-la etiqueta es la misma para todos los brazos y no depende de qué activos tengan objetivo
+La cohorte es el mercado completo de la edición preparada, no las filas de un modelo. Así
+la etiqueta es la misma para todos los modelos y no depende de qué activos tengan objetivo
 en una vista. B6 resume en cambio las filas de cada evento, así que su ruta puede diferir
 en una sesión concreta. Las dos usan la misma regla y los mismos mínimos.
 

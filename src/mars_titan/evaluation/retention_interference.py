@@ -131,7 +131,7 @@ MAX_PAIRS = 16
 MAX_SESSIONS = 1_000
 # Grupos de sesiones de cada recorrido, en este orden en las matrices del bootstrap.
 _GROUPS = ("classified", *CLASSES, "revisit_long", "revisit_short")
-_NOT_IN_SCOPE = "Algún brazo del par no se compara en este ámbito"
+_NOT_IN_SCOPE = "Algún modelo del par no se compara en este ámbito"
 
 
 def _require(condition, message):
@@ -208,7 +208,7 @@ def declaration(section, arms):
         memory, control = pair["memory"], pair["control"]
         _require(
             memory in arms and control in arms and memory != control,
-            f"El par {name} debe comparar dos brazos distintos de la comparación",
+            f"El par {name} debe comparar dos modelos distintos de la comparación",
         )
         _require(
             all(arms[arm]["seeds"] for arm in (memory, control)),
@@ -514,8 +514,8 @@ def report(section, options, windows, series_of, calendar, markets):
     """Sección del informe para cada mercado del ámbito.
 
     `windows` son los intervalos [inicio, fin) de evaluación de las ventanas, `series_of`
-    devuelve para un brazo y un mercado (MAE por sesión, definido, instantes, días) o None
-    si el brazo no se compara en el ámbito, y `calendar` asigna a cada mercado sus
+    devuelve para un modelo y un mercado (MAE por sesión, definido, instantes, días) o None
+    si el modelo no se compara en el ámbito, y `calendar` asigna a cada mercado sus
     instantes y rutas.
     """
     result = {}
@@ -532,7 +532,7 @@ def report(section, options, windows, series_of, calendar, markets):
                 _require(
                     np.array_equal(series[2], reference[2])
                     and np.array_equal(series[3], reference[3]),
-                    "Los brazos del análisis no evalúan las mismas sesiones",
+                    "Los modelos del análisis no evalúan las mismas sesiones",
                 )
             inputs[name] = (control[0] - memory[0], memory[1] & control[1])
         if reference is None:

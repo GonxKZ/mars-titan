@@ -183,7 +183,7 @@ def test_the_loader_validates_the_declared_section(tmp_path):
     wrong["pairs"]["titans_over_gru"]["control"] = "lstm"
     study.config[walk.RETENTION_FIELD] = wrong
     study.publish()
-    with pytest.raises(ValueError, match="dos brazos distintos de la comparación"):
+    with pytest.raises(ValueError, match="dos modelos distintos de la comparación"):
         walk.load_config(study.config_path)
 
 

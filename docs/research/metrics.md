@@ -1175,7 +1175,7 @@ una ventana posterior y compararlo con el estado de entonces. Se descartó por t
    recorrido en su estado inicial. Entre ventanas no se arrastra ningún contenido de
    memoria que pueda retenerse.
 3. Solo en US, con 19 ventanas, harían falta 171 pares de ventana anterior y posterior por
-   brazo y semilla: 4.617 predicciones de ventana con los nueve brazos de los pares y tres
+   modelo y semilla: 4.617 predicciones de ventana con los nueve modelos de los pares y tres
    semillas, o 486 mirando solo la ventana anterior.
 
 Dentro de un recorrido, en cambio, el contenido de la memoria es el que realmente se
@@ -1188,8 +1188,8 @@ GPU.
 `observable_volatility_trend_v1` de `memory/regimes.py`, la misma que enruta B6. Para la
 sesión t forma las ventanas de 64 sesiones del calendario que terminan en t, con la
 presencia del contrato v3.1, sobre todos los activos preparados del mercado con una
-ventana válida. La cohorte es el mercado completo y no las filas de un brazo, así que la
-etiqueta es la misma para todos los brazos. Solo usa precios hasta la decisión: recortar
+ventana válida. La cohorte es el mercado completo y no las filas de un modelo, así que la
+etiqueta es la misma para todos los modelos. Solo usa precios hasta la decisión: recortar
 la historia en cualquier fecha no cambia las rutas anteriores. Las sesiones sin ventanas
 válidas, o con menos de 20 activos o 42 rendimientos, quedan en la ruta 0 sin clasificar.
 Ningún modelo recibe estas etiquetas. Una sesión de 2024 en los precios preparados detiene
@@ -1277,7 +1277,7 @@ La sección es opcional en todas las versiones de la configuración. Sin calenda
 `not_computed` y el resto del informe no cambia. Su huella SHA-256, serializada con claves
 ordenadas, sin espacios y en UTF-8, es
 `0fa3c875fc091aadcb29a0db99118dc7c707cfe1d0516e9c0411eaafc8462525` en las dos
-comparaciones. El cargador rechaza pares con brazos que no estén en la comparación, con el
+comparaciones. El cargador rechaza pares con modelos que no estén en la comparación, con el
 control cero o repetidos, umbrales fuera de rango y cualquier otro valor de los campos
 fijos.
 

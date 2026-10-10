@@ -176,7 +176,7 @@ def write_comparison(folder, **changes):
             for market, name in scope["protocols"].items()
         }
     declared["arms"] = {k: v for k, v in declared["arms"].items() if k in {"zero", "gru", "ridge"}}
-    # Los pares de retención nombran brazos que esta comparación reducida no conserva.
+    # Los pares de retención nombran modelos que esta comparación reducida no conserva.
     declared.pop("retention_interference")
     declared["comparison"].update(
         block_length=2,

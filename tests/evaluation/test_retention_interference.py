@@ -94,11 +94,11 @@ def test_the_declared_section_is_valid_in_both_comparisons():
         (lambda s: s.update(pairs={}), "entre 1 y 16 pares"),
         (
             lambda s: s["pairs"]["fast_weight_writes"].update(control="titans_mac_online"),
-            "dos brazos distintos",
+            "dos modelos distintos",
         ),
         (
             lambda s: s["pairs"]["fast_weight_writes"].update(control="missing"),
-            "dos brazos distintos",
+            "dos modelos distintos",
         ),
         (lambda s: s["pairs"]["fast_weight_writes"].update(control="zero"), "control cero"),
         (
@@ -252,7 +252,7 @@ def scripted_study(benefit_of, months=12, seed=5, start=MEASURED):
 
 
 def run_report(study, *, pairs=None, options=OPTIONS, defined=None):
-    """Informe de un mercado. `defined` asigna a algún brazo sus sesiones con métrica."""
+    """Informe de un mercado. `defined` asigna a algún modelo sus sesiones con métrica."""
     series = dict(memory=study["memory"], control=study["control"], twin=study["control"].copy())
     period = np.arange(len(study["times"]))
     value = dict(study["section"], pairs=pairs or study["section"]["pairs"])

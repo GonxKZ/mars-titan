@@ -10,8 +10,10 @@ Su ejecución científica queda pendiente de las predicciones de la campaña.
 
 [`real-data.json`](real-data.json) es el recibo de `benchmarks/retention_interference_real.py`
 sobre la edición preparada v3.1 desde 2000, con el código del commit `373739e2`. Los cambios
-posteriores de la rama solo añaden pruebas y documentación, y las huellas de los módulos del
-recibo coinciden con las del commit final.
+posteriores de la rama añaden pruebas y documentación y, en el último commit, cambian el
+vocabulario de docstrings y mensajes de error de `regime_calendar.py` y
+`retention_interference.py`. Ninguno toca el cálculo, pero las huellas de esos dos módulos en
+el recibo ya no coinciden con las del commit final.
 
 ```bash
 CUDA_VISIBLE_DEVICES=-1 OMP_NUM_THREADS=2 uv run --no-sync python \

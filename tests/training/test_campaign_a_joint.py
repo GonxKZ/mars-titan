@@ -620,7 +620,7 @@ def reduced(folder, *, controls=("gru",), arms=("gru", "ridge")):
         market_eligibility={"CN": str(CN_V2.resolve())}, separate_controls=list(controls)
     )
     declared["arms"] = {k: v for k, v in declared["arms"].items() if k in {"zero", *arms}}
-    # Los pares de retención nombran brazos que esta comparación reducida no conserva.
+    # Los pares de retención nombran modelos que esta comparación reducida no conserva.
     declared.pop(comparison.RETENTION_FIELD)
     declared["comparison"].update(
         replicates=20,

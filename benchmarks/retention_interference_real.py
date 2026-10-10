@@ -14,7 +14,7 @@ modelos, predicciones aprendidas ni pasos de optimizador:
    con los ocho pares declarados y las réplicas de la comparación.
 
 Los beneficios inyectados no son resultados de ningún modelo. El recibo no contiene errores
-de predicción ni estadísticos de ningún brazo.
+de predicción ni estadísticos de ningún modelo.
 """
 
 import argparse
