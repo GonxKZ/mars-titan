@@ -63,11 +63,15 @@ def parent(views, allowed):
 
 
 def cases(matrix):
+    """Casos propuestos y la continuación anclada de reserva (#444), que se recorre igual."""
     document, digest = matrix
-    return {
-        row["id"].split("/", 1)[1]: row["case"]
-        for row in cm.cases(document, digest, "episodic_gru")
-    }
+    rows = cm.cases(document, digest, "episodic_gru")
+    rows += [
+        row
+        for row in cm.cases(document, digest, "episodic_gru", reserve=True)
+        if row["control"] == cm.ANCHORED
+    ]
+    return {row["id"].split("/", 1)[1]: row["case"] for row in rows}
 
 
 @pytest.fixture(scope="module")
@@ -165,6 +169,22 @@ def test_arms_share_updates_and_only_the_head_corrections_move(arms):
     assert all(value is not None and value.abs().sum() > 0 for value in first.values())
     assert {group["role"] for group in full_optimizer.param_groups} >= {"encoder", "head"}
     assert full["posttraining"]["native_parameters_sha256"] is None
+
+
+def test_the_anchored_continuation_reaches_the_trainer_with_its_anchor(arms):
+    _, full, full_optimizer = arms["full_continuation"]
+    output, anchored, anchored_optimizer = arms[cm.ANCHORED]
+    assert anchored["status"] == "completed"
+    assert anchored["global_step"] == full["global_step"] == anchored_optimizer.calls > 0
+    assert [group["role"] for group in anchored_optimizer.param_groups] == [
+        group["role"] for group in full_optimizer.param_groups
+    ]
+    assert anchored["posttraining"]["case"]["control"] == cm.ANCHORED
+    identity = json.loads((output / "run" / "run.json").read_text())["identity"]
+    assert identity["recipe"]["weight_decay_anchor"] == "initial_parameters"
+    assert identity["anchored_decay"]["anchor"] == "initial_parameters"
+    full_identity = json.loads((arms["full_continuation"][0] / "run" / "run.json").read_text())
+    assert "anchored_decay" not in full_identity["identity"]
 
 
 @pytest.fixture(scope="module")

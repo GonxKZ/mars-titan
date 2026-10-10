@@ -29,7 +29,7 @@ COUNTS = dict(
         declared=(2385, 0),
         families={plan.EPISODIC: (180, 0), plan.MARS: (2340, 0), plan.CM: (1080, 0)},
         extended=(5985, 0),
-        adapters=(10332, 1302),
+        adapters=(10962, 1302),
         rl=dict(
             declared=dict(training_jobs=1368, carried_jobs=0, reference_jobs=1221),
             extended=dict(training_jobs=2664, carried_jobs=0, reference_jobs=3219),

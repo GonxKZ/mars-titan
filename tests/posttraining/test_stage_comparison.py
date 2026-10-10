@@ -32,6 +32,8 @@ DECLARATION_V2 = ROOT / "configs/posttraining/historical-masked-adapter-comparis
 ASSETS = tuple("ABCDEFG")
 OFFSETS = np.array([-1.96, -1.28, 0.0, 1.28, 1.96])
 ADAPTED = ["gru__head", "gru__fusion", "gru__head_fusion", "gru__fusion_full_rank"]
+# Las dos continuaciones repiten las predicciones del padre en el fixture.
+PARENT_LIKE = ("gru", "gru__frozen_parent", "gru__full_continuation", "gru__anchored_continuation")
 
 
 def keys(segment):
@@ -47,14 +49,12 @@ def target(window, partition, rows):
 
 
 def prediction(arm, window, partition, truth):
-    """Padre congelado, base y continuación iguales, cabeza perfecta y el resto desplazado."""
+    """Padre congelado, base y continuaciones iguales, cabeza perfecta y el resto desplazado."""
     if arm == "gru__head":
         return truth.copy()
     rng = np.random.default_rng(zlib.crc32(f"parent/{window}/{partition}".encode()))
     parent = np.round(0.5 * truth + rng.normal(0, 0.5, len(truth)), 3)
-    return (
-        parent if arm in ("gru", "gru__frozen_parent", "gru__full_continuation") else parent + 0.1
-    )
+    return parent if arm in PARENT_LIKE else parent + 0.1
 
 
 def write_table(path, arm, window, partition, segment):
@@ -313,17 +313,23 @@ def test_repository_declaration_derives_every_parent_from_the_stage_plan():
         frozen = group["frozen_parent"]
         assert frozen == f"{base_arm}__frozen_parent"
         assert config["arms"][base_arm] == inherited["arms"][base_arm]
-        assert set(config["arms"]) == {
-            base_arm,
-            frozen,
-            group["full_continuation"],
-            *group["adapted"],
-        }
+        # La continuación anclada (#444) solo existe en las referencias neuronales.
+        anchored = group["anchored_continuation"]
+        neural = base_arm in loaded["stage"]["families"]
+        assert anchored == (f"{base_arm}__anchored_continuation" if neural else None)
+        controls = [group["full_continuation"], *([anchored] if anchored else [])]
+        assert set(config["arms"]) == {base_arm, frozen, *controls, *group["adapted"]}
         assert all(arm["seeds"] == [42, 43, 44] for arm in config["arms"].values())
         families = config["resolved_families"]
         assert set(families["versus_frozen_parent"]) == {
-            f"{arm}-{frozen}" for arm in [*group["adapted"], group["full_continuation"]]
+            f"{arm}-{frozen}" for arm in [*group["adapted"], *controls]
         }
+        if anchored:
+            assert set(families["versus_anchored_continuation"]) == {
+                f"{arm}-{anchored}" for arm in [*group["adapted"], group["full_continuation"]]
+            }
+        else:
+            assert "versus_anchored_continuation" not in families
         # La base reentrenada en cada ventana queda como nivel, fuera de las familias.
         assert base_arm in families["levels"]
         # Sin postentrenamiento en la primera ventana, la comparación empieza en la segunda.
@@ -345,10 +351,11 @@ def test_repository_declaration_derives_every_parent_from_the_stage_plan():
 
 def test_frozen_parent_continuation_and_adapters_are_contrasted_by_role(study):
     stage, _, config, report, _, _ = study
-    assert set(report["arms"]) == {"gru", "gru__frozen_parent", "gru__full_continuation", *ADAPTED}
+    assert set(report["arms"]) == {*PARENT_LIKE, *ADAPTED}
     assert report["posttraining"]["roles"] == dict(
         frozen_parent="gru__frozen_parent",
         full_continuation="gru__full_continuation",
+        anchored_continuation="gru__anchored_continuation",
         adapted=ADAPTED,
     )
     assert report["posttraining"]["windows"] == ["fold-001"]
@@ -358,14 +365,20 @@ def test_frozen_parent_continuation_and_adapters_are_contrasted_by_role(study):
     for family, base in (
         ("versus_frozen_parent", "gru__frozen_parent"),
         ("versus_full_continuation", "gru__full_continuation"),
+        ("versus_anchored_continuation", "gru__anchored_continuation"),
     ):
         rows = {row["name"]: row for row in contrasts[family]["mae"]["contrasts"]}
         assert rows[f"gru__head-{base}"]["estimate"] == pytest.approx(-mae, abs=1e-12)
         assert contrasts[family]["mae"]["multiplicity"]["family_size"] == len(rows)
     rows = {row["name"]: row for row in contrasts["versus_frozen_parent"]["mae"]["contrasts"]}
-    assert len(rows) == 5 and set(contrasts) >= {"versus_frozen_parent", "levels"}
-    # La continuación repite las predicciones del padre: su contraste es exactamente cero.
+    assert len(rows) == 6 and set(contrasts) >= {"versus_frozen_parent", "levels"}
+    # Las continuaciones repiten las predicciones del padre: sus contrastes son exactamente cero.
     assert rows["gru__full_continuation-gru__frozen_parent"]["estimate"] == 0.0
+    assert rows["gru__anchored_continuation-gru__frozen_parent"]["estimate"] == 0.0
+    rows = contrasts["versus_anchored_continuation"]["mae"]["contrasts"]
+    rows = {row["name"]: row for row in rows}
+    assert len(rows) == len(ADAPTED) + 1
+    assert rows["gru__full_continuation-gru__anchored_continuation"]["estimate"] == 0.0
     assert config["name"] == "historical-masked-2000-adapters-a-gru"
 
 
@@ -373,12 +386,7 @@ def test_sources_point_to_the_campaign_parent_and_the_stage_receipts(study):
     stage, sources, _, _, _, _ = study
     manifest = json.loads(sources.read_text())
     assert sources == stage.output / "sources" / "US" / "gru.json"
-    assert set(manifest["arms"]) == {
-        "gru",
-        "gru__frozen_parent",
-        "gru__full_continuation",
-        *ADAPTED,
-    }
+    assert set(manifest["arms"]) == {*PARENT_LIKE, *ADAPTED}
     assert list(manifest["windows"]) == ["fold-001"]
     parent = manifest["arms"]["gru"]["42"]["fold-001"]["evaluation"]["path"]
     assert (sources.parent / parent).resolve() == (
@@ -453,10 +461,18 @@ def test_a_control_without_a_declared_role_stops_the_derivation(monkeypatch):
     monkeypatch.setattr(compare, "plan_stage", lambda stage: jobs[:2])
     group = compare._groups(staged)["gru"]
     assert group["full_continuation"] == "gru__full_continuation"
-    assert group["adapted"] == ["gru__head"]
+    assert group["adapted"] == ["gru__head"] and group["anchored_continuation"] is None
     assert group["chain"] == "gru__chain" and group["base_retrain"] == "gru"
     # El plan anclado de B no tiene cadena.
     assert compare._groups(dict(design=campaign_stage.ANCHORED))["gru"]["chain"] is None
+    # La continuación anclada tiene su propio papel y un solo brazo por padre.
+    anchored = dict(jobs[0], arm="gru__anchored_continuation", control="anchored_continuation")
+    monkeypatch.setattr(compare, "plan_stage", lambda stage: [*jobs[:2], anchored])
+    assert compare._groups(staged)["gru"]["anchored_continuation"] == "gru__anchored_continuation"
+    twice = [*jobs[:2], anchored, dict(anchored, arm="gru__other")]
+    monkeypatch.setattr(compare, "plan_stage", lambda stage: twice)
+    with pytest.raises(ValueError, match="dos brazos del control anchored_continuation"):
+        compare._groups(staged)
 
 
 def test_adapters_must_evaluate_the_same_rows_as_the_parent(tmp_path):
@@ -589,6 +605,7 @@ def test_the_chain_only_exists_in_the_staged_design(tmp_path):
         {"wrong": {"base": "chain", "variants": ["full_continuation"]}},
         {"wrong": {"base": "base_retrain", "variants": ["chain", "base_retrain"]}},
         {"wrong": {"base": "frozen_parent", "variants": ["frozen_parent"]}},
+        {"wrong": {"base": "anchored_continuation", "variants": ["anchored_continuation"]}},
         {"wrong": {"base": "frozen_parent", "variants": ["linear_residual"]}},
         {"levels": {"base": "frozen_parent", "variants": ["adapted"]}},
         {},
@@ -607,8 +624,10 @@ def test_cli_checks_the_declaration_without_reading_predictions(capsys):
     assert compare.main(["check", "--declaration", str(DECLARATION)]) == 0
     result = json.loads(capsys.readouterr().out)
     assert result["final_test_opened"] is False
-    # La base, su padre congelado, la continuación completa y los brazos de la matriz.
+    # La base, su padre congelado, las dos continuaciones y los brazos de la matriz.
     stage = campaign_stage.load_stage(
         DECLARATION.parent / json.loads(DECLARATION.read_text())["stage"]
     )
-    assert result["parents"]["gru"]["arms"] == 3 + len(matrix_arms(stage, "gru", "gru"))
+    assert result["parents"]["gru"]["arms"] == 4 + len(matrix_arms(stage, "gru", "gru"))
+    assert result["parents"]["gru"]["anchored_continuation"] == "gru__anchored_continuation"
+    assert result["parents"]["titans_mac_online"]["anchored_continuation"] is None

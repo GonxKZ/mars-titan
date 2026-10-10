@@ -84,7 +84,7 @@ from mars_titan.training.corpus_inputs import CorpusDataset
 from mars_titan.training.label_maturity import FIT_PARTITIONS
 from mars_titan.training.learning_hold import LearningHoldError, require_learning_allowed
 
-from . import adapter_matrix, staged_chain, staged_rows
+from . import adapter_matrix, anchored_continuation, staged_chain, staged_rows
 from . import chronological_matrix as cm
 from .heldout import evaluate_partition
 from .matrix_runs import MatrixParent, MatrixWindow, index_manifest, predict_heldout
@@ -113,6 +113,8 @@ _FIELDS = {
 }
 # Campos que solo declara la variante A, la única con walk-forward por etapas.
 _STAGED_FIELDS = {"chain_rule", "data_policy"}
+# Controles de la matriz que una etapa ejecuta solo si los nombra (#444).
+ADDITIONAL = "additional_controls"
 _LIMITS = {"max_training_jobs", "max_prediction_jobs"}
 # Diseños de la etapa: por etapas en A y el plan anclado de B, que no se ejecuta.
 STAGED, ANCHORED = "staged_chain_v1", "anchored_not_executed"
@@ -187,7 +189,7 @@ def load_stage(path):
     _require(not declares_other_data(config), REAL_ONLY)
     _require(
         isinstance(config, dict)
-        and set(config) in (_FIELDS, _FIELDS | _STAGED_FIELDS)
+        and set(config) - {ADDITIONAL} in (_FIELDS, _FIELDS | _STAGED_FIELDS)
         and config["schema_version"] == 1
         and config["kind"] == STAGE_KIND
         and config["status"] == DECLARED
@@ -235,6 +237,8 @@ def load_stage(path):
         and matrix["budget"]["batch_size"] == campaign["neural"]["batch_size"],
         "La matriz debe compartir la política y el lote de la campaña",
     )
+    if ADDITIONAL in config:
+        anchored_continuation.stage_controls(config[ADDITIONAL], matrix)
     scopes = _names(config["scopes"], campaign["scopes"], "Los ámbitos")
     _require(
         scopes == [scope for scope in campaign["scopes"] if scope in scopes],
@@ -353,7 +357,10 @@ def arm_name(base_arm, point):
 
 
 def _cases(stage, spec):
-    """Casos de la matriz de un brazo base: los neuronales o los cronológicos."""
+    """Casos de la matriz de un brazo base: los neuronales o los cronológicos.
+
+    La continuación anclada solo entra si la etapa la nombra en `additional_controls`.
+    """
     matrix, digest = stage["matrix"], stage["matrix_sha256"]
     if spec["design"] == TABULAR:
         return []
@@ -361,6 +368,12 @@ def _cases(stage, spec):
         items = adapter_matrix.cases(matrix, digest, spec["family"], head=QUANTILE_HEAD)
     else:
         items = cm.cases(matrix, digest, spec["family"], variant=spec["variant"], bank=spec["bank"])
+    chosen = stage.get(ADDITIONAL, [])
+    items = [
+        item
+        for item in items
+        if item["control"] != anchored_continuation.CONTROL or item["control"] in chosen
+    ]
     for item in items:
         _require(item["case"].get("condition", REAL) == REAL, REAL_ONLY)
     return items
@@ -623,6 +636,7 @@ def check_stage(path):
         input_policy=campaign["input_policy"],
         objectives=adapter_matrix.objectives(stage["matrix"], QUANTILE_HEAD),
         excluded_controls=adapter_matrix.excluded_controls(stage["matrix"], QUANTILE_HEAD),
+        additional_controls=stage.get(ADDITIONAL, []),
         cohort_reading=stage["cohort_reading"],
         counts=count_stage(stage, jobs),
         scientific_training_started=False,
@@ -641,6 +655,9 @@ def _code():
         "posttraining/matrix_runs.py",
         "environments/view_cohorts.py",
         "posttraining/adapter_matrix.py",
+        "posttraining/adapter_variety.py",
+        "posttraining/anchored_continuation.py",
+        "training/anchored_decay.py",
         "posttraining/run.py",
         "posttraining/heldout.py",
         "posttraining/evaluation.py",
@@ -736,7 +753,7 @@ def candidate_kind(job):
     """Clase del candidato de la cadena que aporta un trabajo de la ventana."""
     if job["kind"] == FROZEN:
         return "frozen_parent"
-    return "continuation" if job["control"] == "full_continuation" else "adapter"
+    return "continuation" if job["control"] in adapter_matrix.CONTINUATIONS else "adapter"
 
 
 class _Stage:
