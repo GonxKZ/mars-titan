@@ -163,6 +163,43 @@ def test_tabular_carry_rejects_anchors_that_do_not_match(views, tmp_path, monkey
     assert not (tmp_path / "carry").exists()
 
 
+def test_the_frozen_tabular_parent_also_predicts_the_validation_of_the_next_window(
+    views, tmp_path, monkeypatch
+):
+    monkeypatch.setattr(carry, "_tabular_model", lambda *args: PresenceCount())
+    anchor = tabular_anchor(tmp_path / "anchor", views.view(0))
+    options = dict(kind="ridge", batch_size=3, input_policy=HISTORICAL_MASKED)
+    output = tmp_path / "frozen"
+    receipt = carry.carry_tabular(
+        anchor, views.view(0), views.view(1), output, frozen_parent=True, **options
+    )
+    assert receipt["frozen_parent"] is True
+    assert set(receipt["predictions"]) == set(carry.FROZEN_PARENT_PARTITIONS)
+    # La validación de k la lee la cadena para elegir. Las filas son las de la vista de k.
+    for partition in carry.FROZEN_PARENT_PARTITIONS:
+        ids, presence, _, _ = reader(views.view(1), partition)
+        rows = pq.read_table(output / receipt["predictions"][partition]["path"]).to_pylist()
+        assert [row["sample_id"] for row in rows] == ids and ids
+        np.testing.assert_array_equal([row["prediction"] for row in rows], presence.sum(axis=1))
+    # Un traslado normal no lleva la marca ni predice la validación.
+    normal = carry.carry_tabular(
+        anchor, views.view(0), views.view(1), tmp_path / "carry", **options
+    )
+    assert "frozen_parent" not in normal and "validation" not in normal["predictions"]
+    for changes in (dict(regenerate=True), dict(modality_ablation="mask_news")):
+        with pytest.raises(ValueError, match="sin ablación ni regeneración"):
+            carry.carry_tabular(
+                anchor,
+                views.view(0),
+                views.view(1),
+                tmp_path / "rejected",
+                frozen_parent=True,
+                **options,
+                **changes,
+            )
+    assert not (tmp_path / "rejected").exists()
+
+
 @pytest.fixture
 def cpu(monkeypatch):
     """Sustituir CUDA por CPU solo en la prueba, sin optimizadores ni pasos."""

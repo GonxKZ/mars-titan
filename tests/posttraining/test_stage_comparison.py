@@ -195,7 +195,18 @@ def by_hand_session_mae(stage, arm, windows):
 
 def test_repository_declaration_derives_every_parent_from_the_stage_plan():
     loaded = compare.load_declaration(DECLARATION)
-    assert list(loaded["groups"]) == ["rnn", "lstm", "gru", "dlinear", "transformer_compact"]
+    # Ridge y XGBoost solo tienen el padre congelado en su cadena y no entran en los contrastes.
+    assert list(loaded["groups"]) == [
+        "rnn",
+        "lstm",
+        "gru",
+        "dlinear",
+        "transformer_compact",
+        "titans_transformer_direct",
+        "titans_mac_disabled",
+        "titans_mac_frozen",
+        "titans_mac_online",
+    ]
     transformer = loaded["groups"]["transformer_compact"]
     assert transformer["full_continuation"] == "transformer_compact__full_continuation"
     # La matriz da a transformer_compact los puntos de lectura que no tienen las demás.
@@ -350,6 +361,8 @@ def test_a_control_without_a_declared_role_stops_the_derivation(monkeypatch):
         )
     ]
     monkeypatch.setattr(compare, "plan_stage", lambda stage: jobs)
+    # Sin brazos de la cadena trivial: todos los trabajos entran en los contrastes.
+    monkeypatch.setattr(compare, "stage_arms", lambda stage: ({}, {}))
     with pytest.raises(ValueError, match="linear_residual de gru__linear_residual"):
         compare._groups({})
     monkeypatch.setattr(compare, "plan_stage", lambda stage: jobs[:2])
