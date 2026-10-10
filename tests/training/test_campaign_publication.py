@@ -38,7 +38,15 @@ EXPECTED = dict(
     ),
 )
 # Modelos de integración que la matriz declara y la comparación conjunta todavía no tiene.
-PENDING_IN_V2 = {"mars_titan_b6", "mars_titan_b6_bias", "mars_titan_m1_k4_first_read"}
+PENDING_IN_V2 = {
+    "mars_titan_b6",
+    "mars_titan_b6_bias",
+    "mars_titan_m1_k4_first_read",
+    "mars_titan_b6_regime",
+    "mars_titan_b6_calendar",
+    "mars_titan_b6_regime_banks",
+    "mars_titan_b6_calendar_banks",
+}
 
 
 @pytest.fixture(scope="module", params=sorted(DECLARATIONS))
@@ -61,7 +69,7 @@ def test_each_campaign_publishes_the_matrix_and_the_stage_of_its_own_comparison(
     stage = loaded["posttraining"]["stage"]
     assert stage["campaign"]["sha256"] == campaign["sha256"]
     summary = comparison_matrix.summary(matrix)
-    assert (summary["families"], summary["contrasts"]) == (47, 356)
+    assert (summary["families"], summary["contrasts"]) == (47, 362)
     assert loaded["final_test_opened"] is False
 
 

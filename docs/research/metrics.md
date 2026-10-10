@@ -1176,7 +1176,7 @@ frente al reentreno, al padre trasladado y a la continuación, y el Transformer 
 como control de «seguir aprendiendo». Añade la atribución por componentes de dos
 linajes, Titans y CM-v1. La [tabla del protocolo](protocol.md#qué-pregunta-responde-cada-comparación)
 resume en lenguaje llano qué pregunta responde cada bloque.
-`evaluation/comparison_matrix.py` valida la declaración y compila 47 familias con 356
+`evaluation/comparison_matrix.py` valida la declaración y compila 47 familias con 362
 contrastes. `check` los cuenta sin leer datos y `missing` calcula los brazos que faltan.
 
 ### Declaración
@@ -1271,10 +1271,12 @@ partir de los informes ya escritos, con rutas relativas a su carpeta y la huella
 archivo. Lo escribe primero como candidato y solo lo deja visible si `load_sources` lo
 acepta, así que un informe alterado, incompleto o de otro ámbito no deja manifiesto. La
 [matriz de A v2](../../configs/evaluation/comparison-matrix-a-v2.json) es la de A sobre la
-comparación conjunta de A v2. Los tres modelos de integración que esa comparación todavía
-no declara (`mars_titan_b6`, `mars_titan_b6_bias` y `mars_titan_m1_k4_first_read`) quedan
-condicionados a [#437](https://github.com/GonxKZ/mars-titan/issues/437) y sus contrastes,
-pendientes. Las dos matrices compilan las mismas 47 familias y 356 contrastes.
+comparación conjunta de A v2. Los siete modelos de integración que esa comparación todavía
+no declara (`mars_titan_b6`, `mars_titan_b6_bias`, `mars_titan_m1_k4_first_read` y los
+cuatro del régimen observable y su calendario, `mars_titan_b6_regime`,
+`mars_titan_b6_calendar`, `mars_titan_b6_regime_banks` y `mars_titan_b6_calendar_banks`)
+quedan condicionados a [#437](https://github.com/GonxKZ/mars-titan/issues/437) y sus
+contrastes, pendientes. Las dos matrices compilan las mismas 47 familias y 362 contrastes.
 
 Cada campaña declara su paso final antes de ver resultados
 ([A](../../configs/evaluation/historical-masked-publication-a.json) y
