@@ -3,14 +3,15 @@
  "kind": "titans_memory_stability_cuda_check",
  "issue": 453,
  "recorded_on": "2026-10-10",
- "commit": "d642e2069c6b3210eea19243b32b830a4e427840",
+ "commit": "a03d24cc0d05ba52d995a5c742326056d30790bf",
  "command": "memslot gpu -- uv run --extra cuda --extra data --extra research pytest -q -s tests/models/titans/cuda_memory_stability_check.py",
- "check_sha256": "d0f716a05493e3b2e148770fbc785994d7382cd465bf5517b0f168998e27540a",
- "result": "1 passed in 14.20s",
+ "check_sha256": "2e36bb9bf401086eca77f47e7741f60ee2536ae81f08c540c80384b7e5a53251",
+ "result": "1 passed in 5.72s",
  "checks": [
   "memoria y predictor sin PT1 con huellas FP32 de cuda:0 capturadas en 42e7dbca, bit a bit",
-  "PT1 activa: dos ejecuciones CUDA idénticas bit a bit",
-  "PT1 activa: CPU frente a CUDA con rtol 2e-4 y atol 2e-5",
+  "memoria y predictor sin PT1 con las proyecciones de la sección 4.4, bit a bit frente a las huellas de cuda:0 del núcleo de #474",
+  "PT1 activa, sola y con las proyecciones de la sección 4.4: dos ejecuciones CUDA idénticas bit a bit",
+  "PT1 activa, sola y con las proyecciones de la sección 4.4: CPU frente a CUDA con rtol 2e-4 y atol 2e-5",
   "caja de puertas y cota de la Proposición 5 en cuda:0 con 240 tokens de escala 60"
  ],
  "precision": "float32 sin TF32",
@@ -27,7 +28,17 @@
    "quantiles": 1.1920928955078125e-07,
    "state": 4.76837158203125e-07,
    "gradients": 8.469214662909508e-09
+  },
+  "memory_with_projections": {
+   "read": 1.1920928955078125e-06,
+   "state": 6.854534149169922e-07,
+   "gradients": 0.0001373291015625
+  },
+  "financial_with_projections": {
+   "quantiles": 2.384185791015625e-07,
+   "state": 4.76837158203125e-07,
+   "gradients": 5.093170329928398e-09
   }
  },
- "peak_allocated_bytes": 19849216
+ "peak_allocated_bytes": 19887104
 }

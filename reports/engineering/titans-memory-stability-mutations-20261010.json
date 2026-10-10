@@ -6,7 +6,7 @@
  ],
  "baseline": {
   "code": 0,
-  "tail": "27 passed in 7.96s"
+  "tail": "30 passed in 3.90s"
  },
  "import_checked": "copia aislada (ruta local omitida)",
  "mutations": [
@@ -15,150 +15,175 @@
    "description": "Quitar el suelo de α en la caja",
    "file": "src/mars_titan/models/titans/neural_memory.py",
    "killed": true,
-   "pytest_tail": "1 failed, 14 passed in 4.17s",
-   "seconds": 12.21
+   "pytest_tail": "1 failed, 14 passed in 1.01s",
+   "seconds": 3.35
   },
   {
    "id": "M02",
    "description": "Quitar el techo de η en la caja",
    "file": "src/mars_titan/models/titans/neural_memory.py",
    "killed": true,
-   "pytest_tail": "1 failed, 13 passed in 0.94s",
-   "seconds": 5.78
+   "pytest_tail": "1 failed, 13 passed in 1.15s",
+   "seconds": 3.59
   },
   {
    "id": "M03",
    "description": "Aplicar la caja aunque solo se declare el recorte",
    "file": "src/mars_titan/models/titans/neural_memory.py",
    "killed": true,
-   "pytest_tail": "1 failed, 13 passed in 1.03s",
-   "seconds": 3.24
+   "pytest_tail": "1 failed, 13 passed in 1.21s",
+   "seconds": 3.84
   },
   {
    "id": "M04",
    "description": "No recortar el gradiente interno",
    "file": "src/mars_titan/models/titans/neural_memory.py",
    "killed": true,
-   "pytest_tail": "1 failed, 17 passed in 0.96s",
-   "seconds": 3.26
+   "pytest_tail": "1 failed, 17 passed in 1.04s",
+   "seconds": 3.51
   },
   {
    "id": "M05",
    "description": "Recortar solo por encima de 2G",
    "file": "src/mars_titan/models/titans/neural_memory.py",
    "killed": true,
-   "pytest_tail": "1 failed, 16 passed in 1.13s",
-   "seconds": 3.38
+   "pytest_tail": "1 failed, 16 passed in 1.06s",
+   "seconds": 3.59
   },
   {
    "id": "M06",
    "description": "Olvidar el factor G al reescalar",
    "file": "src/mars_titan/models/titans/neural_memory.py",
    "killed": true,
-   "pytest_tail": "1 failed, 16 passed in 0.96s",
-   "seconds": 3.33
+   "pytest_tail": "1 failed, 16 passed in 0.98s",
+   "seconds": 3.49
   },
   {
    "id": "M07",
    "description": "Recortar columnas en lugar de filas",
    "file": "src/mars_titan/models/titans/neural_memory.py",
    "killed": true,
-   "pytest_tail": "1 failed, 16 passed in 1.10s",
-   "seconds": 3.47
+   "pytest_tail": "1 failed, 16 passed in 0.91s",
+   "seconds": 3.1
   },
   {
    "id": "M08",
    "description": "Construir los bias sin invertir la caja",
    "file": "src/mars_titan/models/titans/neural_memory.py",
    "killed": true,
-   "pytest_tail": "1 failed, 15 passed in 1.01s",
-   "seconds": 3.55
+   "pytest_tail": "1 failed, 15 passed in 1.03s",
+   "seconds": 3.18
   },
   {
    "id": "M09",
    "description": "Invertir solo la sigmoide de α",
    "file": "src/mars_titan/models/titans/config.py",
    "killed": true,
-   "pytest_tail": "1 failed, 15 passed in 1.18s",
-   "seconds": 3.54
+   "pytest_tail": "1 failed, 15 passed in 0.96s",
+   "seconds": 3.04
   },
   {
    "id": "M10",
    "description": "Invertir solo la sigmoide de η",
    "file": "src/mars_titan/models/titans/config.py",
    "killed": true,
-   "pytest_tail": "1 failed, 15 passed in 0.95s",
-   "seconds": 3.27
+   "pytest_tail": "1 failed, 15 passed in 0.84s",
+   "seconds": 2.95
   },
   {
    "id": "M11",
    "description": "Invertir la caja aunque solo haya recorte",
    "file": "src/mars_titan/models/titans/config.py",
    "killed": true,
-   "pytest_tail": "1 failed, 15 passed in 0.88s",
-   "seconds": 3.12
+   "pytest_tail": "1 failed, 15 passed in 0.87s",
+   "seconds": 3.03
   },
   {
    "id": "M12",
    "description": "Admitir una η inicial fuera de la caja",
    "file": "src/mars_titan/models/titans/config.py",
    "killed": true,
-   "pytest_tail": "1 failed, 15 passed in 1.03s",
-   "seconds": 3.46
+   "pytest_tail": "1 failed, 15 passed in 0.88s",
+   "seconds": 2.99
   },
   {
    "id": "M13",
    "description": "Omitir PT1 de la identidad de la memoria",
    "file": "src/mars_titan/models/titans/config.py",
    "killed": true,
-   "pytest_tail": "1 failed, 1 passed in 1.07s",
-   "seconds": 3.39
+   "pytest_tail": "1 failed, 1 passed in 0.96s",
+   "seconds": 3.09
   },
   {
    "id": "M14",
    "description": "Invertir la comparación del suelo en el certificado",
    "file": "src/mars_titan/models/titans/config.py",
    "killed": true,
-   "pytest_tail": "1 failed, 12 passed in 1.32s",
-   "seconds": 4.02
+   "pytest_tail": "1 failed, 12 passed in 0.83s",
+   "seconds": 2.91
   },
   {
    "id": "M15",
    "description": "Admitir una declaración que no activa nada",
    "file": "src/mars_titan/models/titans/config.py",
    "killed": true,
-   "pytest_tail": "1 failed, 9 passed in 0.94s",
-   "seconds": 3.23
+   "pytest_tail": "1 failed, 9 passed in 0.87s",
+   "seconds": 2.96
   },
   {
    "id": "M16",
    "description": "No pasar PT1 del predictor a la memoria",
    "file": "src/mars_titan/models/titans/financial.py",
    "killed": true,
-   "pytest_tail": "1 failed, 24 passed in 2.13s",
-   "seconds": 4.21
+   "pytest_tail": "1 failed, 26 passed in 2.79s",
+   "seconds": 5.07
   },
   {
    "id": "M17",
    "description": "Omitir PT1 de la identidad del predictor",
    "file": "src/mars_titan/models/titans/financial.py",
    "killed": true,
-   "pytest_tail": "1 failed, 25 passed in 2.95s",
-   "seconds": 5.78
+   "pytest_tail": "1 failed, 27 passed in 2.60s",
+   "seconds": 4.82
   },
   {
    "id": "M18",
    "description": "Validar el bias del predictor sin la caja",
    "file": "src/mars_titan/models/titans/financial.py",
    "killed": true,
-   "pytest_tail": "1 failed, 25 passed in 2.22s",
-   "seconds": 4.76
+   "pytest_tail": "1 failed, 28 passed in 3.09s",
+   "seconds": 5.13
+  },
+  {
+   "id": "M19",
+   "description": "Recortar solo cuando no hay ventanas causales de la sección 4.4",
+   "file": "src/mars_titan/models/titans/neural_memory.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 19 passed in 1.13s",
+   "seconds": 3.38
+  },
+  {
+   "id": "M20",
+   "description": "Resolver la fusión con #474 conservando en update las puertas del núcleo",
+   "file": "src/mars_titan/models/titans/neural_memory.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 17 passed in 0.96s",
+   "seconds": 3.23
+  },
+  {
+   "id": "M21",
+   "description": "Guardar PT1 bajo la clave de las proyecciones en la identidad",
+   "file": "src/mars_titan/models/titans/config.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 1 passed in 0.84s",
+   "seconds": 2.95
   }
  ],
- "killed": 18,
+ "killed": 21,
  "survived": 0,
  "recorded_at": "2026-10-10",
- "commit_base": "42e7dbca4e677800c92003233a85cca2d4353a09",
- "scope": "Mutaciones dirigidas sobre PT1, aplicadas de una en una en una copia aislada de src, tests y configs. No es una campaña completa de mutación.",
- "environment": "CPU, CUDA_VISIBLE_DEVICES=-1, OMP_NUM_THREADS=2, MKL_NUM_THREADS=2"
+ "commit_base": "1c58115419fcd6a6554cdbdf1e34105f0f3f0605",
+ "commit": "a03d24cc0d05ba52d995a5c742326056d30790bf",
+ "scope": "Mutaciones dirigidas sobre PT1 y su composición con las proyecciones de la sección 4.4, aplicadas de una en una en una copia aislada de src, tests y configs. No es una campaña completa de mutación.",
+ "environment": "CPU, OMP_NUM_THREADS=2, MKL_NUM_THREADS=2"
 }
