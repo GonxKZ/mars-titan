@@ -11,17 +11,34 @@ Las pruebas se agrupan por la responsabilidad que comprueban:
 
 Las pruebas de herramientas no acceden a la red. Comprueban identificadores, metadatos, integridad, formatos, límites de descarga y conservación de archivos anteriores. Las pruebas científicas usan datos sintéticos o artefactos locales controlados y distinguen las medidas de coste de los resultados predictivos.
 
-Desde la raíz del repositorio se puede ejecutar el conjunto completo:
+Desde la raíz del repositorio, `make test-fast` ejecuta en pocos minutos las pruebas de CPU sin las marcas `slow`, `native` ni `cuda`, y `make test` recorre la suite CPU completa por carpetas. Las [órdenes habituales](../CONTRIBUTING.md#órdenes-habituales) explican qué necesita cada objetivo.
+
+Las pruebas que requieren CUDA, un binario nativo o Node.js comprueban su disponibilidad y, si falta, se omiten con un motivo que dice qué falta y cómo conseguirlo. Nunca cambian a CPU de forma silenciosa. La [suite completa en condiciones reales](#suite-completa-en-condiciones-reales) describe cómo ejecutarlas todas.
+
+## Marcas de selección
+
+| Marca | Significado | Cómo se aplica |
+| --- | --- | --- |
+| `slow` | La suma de los casos de la función alcanza dos segundos | `tests/conftest.py` la añade a las funciones de [slow_tests.txt](slow_tests.txt) |
+| `cuda` | Necesita `cuda:0` | `@pytest.mark.cuda` o `requires_cuda`. Sin CUDA la sesión la omite con un motivo común |
+| `native` | Necesita un artefacto nativo | `@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")` omite la prueba si falta el artefacto. Sin argumentos solo selecciona. `native_binding` la implica |
+| `unguarded_fit` | Ajusta sin pasar por un punto de entrada protegido | Se omite mientras rige la protección del aprendizaje |
+
+`tests/suite_support.py` reúne los motivos de omisión comunes (`missing_native`, `missing_extra`, `CUDA_REASON` y los de las capacidades del enlace) para que todos digan qué preset, extra u orden resuelve la ausencia. Las marcas se combinan con `-m`:
 
 ```bash
-uv run --locked pytest
+uv run --locked pytest -q -m "not slow and not native and not cuda"
+uv run --locked pytest -q -rs -m "native and not cuda" tests/memory
 ```
 
-Las pruebas que requieren CUDA, un binario nativo o Node.js comprueban su disponibilidad y, si falta, se omiten con su motivo. Nunca cambian a CPU de forma silenciosa. La [suite completa en condiciones reales](#suite-completa-en-condiciones-reales) describe cómo ejecutarlas todas. Para ejecutar solo las comprobaciones compatibles con CPU se deben seleccionar los módulos correspondientes, por ejemplo:
+La lista de pruebas lentas procede de una ejecución completa con sus informes JUnit. La del 10 de octubre de 2026 se midió con cobertura, que alarga los tiempos, sobre la suite CPU con los binarios nativos. Para regenerarla se ejecuta la suite con `--junitxml` y se revisa el diff:
 
 ```bash
-uv run --locked pytest tests/tooling tests/native
+uv run --locked pytest -q --junitxml=suite.xml
+uv run --locked python scripts/list_slow_tests.py --threshold 2 suite.xml > tests/slow_tests.txt
 ```
+
+`tests/test_suite_support.py` comprueba que cada función de la lista sigue existiendo.
 
 Las pruebas que necesitan el enlace episódico nativo leen su ruta en `MARS_TITAN_EPISODIC_NATIVE` y, sin ella, se omiten con su motivo para que la suite CPU siga funcionando. Las paridades de MARS-TITAN llevan además la marca `native_binding`. La comprobación local debe exigirlas con el [modo estricto](#modo-estricto), que comprueba los binarios y carga el enlace antes de recoger ninguna prueba. Con ese modo, cualquier omisión de una prueba marcada cuenta como fallo:
 
@@ -35,7 +52,7 @@ La orden necesita los cinco binarios declarados como en la [suite completa](#bin
 Las paridades con bibliotecas externas (PEFT, scoringrules, MAPIE y sb3-contrib) llevan la marca `external_reference` y necesitan el grupo de dependencias `reference`, que no forma parte del entorno de ejecución. Sin el grupo se omiten con su motivo. `MARS_TITAN_REQUIRE_REFERENCE=1` exige el grupo con las versiones exactas de `pyproject.toml` antes de recoger pruebas y convierte en fallo cualquier omisión de una prueba marcada:
 
 ```bash
-uv sync --locked --group reference
+uv sync --locked --all-extras --group reference
 MARS_TITAN_REQUIRE_REFERENCE=1 uv run --locked pytest -q -rs -m external_reference
 ```
 
@@ -85,7 +102,7 @@ La preparación de objetivos (`prepare_corpus_targets`), la codificación (`enco
 - Las pruebas de CTest que aplican pasos de optimizador sobre datos sintéticos llevan la etiqueta `optimizer-steps`: `ppo_policy`, `ppo_training`, `ppo_collection`, `ppo_gru_packing`, `ppo_variant_state`, `adapter_control` y, cuando se registran, `adapter_control_cli`, `adapter_control_cuda` y `adapter_control_cli_cuda`. El perfil base `native-test` de `native/CMakePresets.json` excluye esa etiqueta y todos los perfiles de prueba la heredan, sea cual sea la arquitectura. Una llamada sin perfil, como `ctest --test-dir`, necesita `-LE '^optimizer-steps$'` mientras rija el bloqueo. Al levantarlo, esas pruebas se ejecutan con `ctest --test-dir <build> -L '^optimizer-steps$'`.
 - `tests/native/test_optimizer_steps_hold.py` lee CMake, las fuentes C++ y los perfiles sin configurar ni compilar. Localiza los ejecutables de cada prueba y exige que la lleven justo las que llaman a una función que aplica o propaga un paso (`PpoPolicy::update` y sus variantes, `PpoTrainer::advance`, `KlpoLearningController::update_ready`, `AdapterControl::train` y los experimentos PPO y KLPO). También exige que cada perfil visible excluya la etiqueta y ninguna otra, y que todo archivo de `native/src` que use `torch::optim` o llame a esas funciones esté declarado. `adapter_control_cli_hold` y `adapter_control_cli_invalid` ejecutan el programa del adaptador, pero se detienen antes del primer paso por la protección bloqueada o por el argumento `cuda:1`.
 
-Siguen requiriendo una selección explícita las pruebas que ajustan sin pasar por un punto de entrada protegido: `tests/models/test_boosting_selection.py` y `tests/training/test_external_convergence.py` (llaman a `xgb.train`) y `tests/models/test_ridge_normal_equations.py` (resuelve el sistema normal de la ridge).
+Las pruebas que ajustan sin pasar por un punto de entrada protegido llevan la marca `unguarded_fit` y se omiten mientras rige la protección: `tests/models/test_boosting_selection.py` y `tests/training/test_external_convergence.py` (llaman a `xgb.train`) y `tests/models/test_ridge_normal_equations.py` (resuelve el sistema normal de la ridge). `make test-native` excluye en CTest las etiquetas `optimizer-steps` y `cuda`.
 
 ## Suite completa en condiciones reales
 
@@ -104,7 +121,7 @@ La versión de PyTorch debe terminar en `+cu130`. `uv run --locked` no retira lo
 
 ### Binarios nativos
 
-Se compilan desde `native/` y desde el mismo commit que se prueba, con dos trabajos:
+Se compilan desde el mismo commit que se prueba con `make native-build`, que configura y compila con dos trabajos estos presets desde `native/`:
 
 ```bash
 cmake --preset native-release -DMARS_TITAN_BUILD_EPISODIC_PYTHON=ON
@@ -115,15 +132,7 @@ cmake --preset native-candidate-cuda -DMARS_TITAN_BUILD_EPISODIC_PYTHON=ON -DMAR
 cmake --build --preset native-candidate-cuda -j 2
 ```
 
-| Variable | Artefacto | Sin ella |
-| --- | --- | --- |
-| `MARS_TITAN_EPISODIC_NATIVE` | `build/native/native-candidate-cuda/_episodic_native.cpython-312-x86_64-linux-gnu.so` | Se omiten el banco episódico, la GRU candidata, MARS-TITAN, CM-v1 y sus sesiones |
-| `MARS_TITAN_NATIVE_LIBRARY` | `build/native/native-release/libmars_titan_simulation.so` | Se usa la de `native-release` si existe, si no se omiten las variantes nativas |
-| `MARS_TITAN_SIM_EXECUTABLE` | `build/native/native-release/mars-titan-sim` | Igual que la biblioteca |
-| `MARS_TITAN_PPO_EXECUTABLE` | `build/native/native-ppo-release/mars-titan-ppo` | Se omiten las pruebas del binario PPO real |
-| `MARS_TITAN_KLPO_EXECUTABLE` | `build/native/native-ppo-release/mars-titan-klpo` | Se usa el de `native-ppo-release` si existe |
-| `MARS_TITAN_UNADJUSTED_EDITION` | Edición de precios sin ajustar, solo lectura | Se omiten las pruebas de humo con la edición real |
-| `MARS_TITAN_LISTING_STATUS` | `listing-status.json` de esa edición, solo lectura | Igual que la edición |
+La [tabla de variables de entorno](../docs/engineering/environment-variables.md#binarios-nativos) indica qué variable declara cada artefacto y qué ocurre sin ella. Los objetivos `test`, `test-native` y `test-cuda` del Makefile declaran los que existen en `build/native/`.
 
 El enlace episódico debe ser el de `native-candidate-cuda`. El de `native-release` no incluye el candidato GRU y deja sin ejecutar las pruebas de la GRU en sesiones financieras. Una ruta declarada que no existe nunca se trata como ausente y hace fallar la prueba. Desde la raíz del repositorio:
 
@@ -143,25 +152,18 @@ export MARS_TITAN_KLPO_EXECUTABLE=$B/native-ppo-release/mars-titan-klpo
 ### Parte CPU
 
 ```bash
-export OMP_NUM_THREADS=2 MKL_NUM_THREADS=2 CUDA_VISIBLE_DEVICES=-1 MARS_TITAN_REQUIRE_NATIVE=1 MARS_TITAN_REQUIRE_REFERENCE=1
-for part in data models training simulation memory posttraining evaluation environments episodes calibration cm native tooling; do
-  uv run --locked pytest -q -rs tests/$part \
-    --ignore=tests/models/test_boosting_selection.py \
-    --ignore=tests/training/test_external_convergence.py \
-    --ignore=tests/models/test_ridge_normal_equations.py
-done
-uv run --locked pytest -q -rs tests/test_suite_support.py
+MARS_TITAN_REQUIRE_NATIVE=1 MARS_TITAN_REQUIRE_REFERENCE=1 make test
 ```
 
-Las tres exclusiones son las pruebas que ajustan sin pasar por un punto de entrada protegido, descritas al final de la sección anterior. Cada carpeta en su propio proceso acota la memoria al pico de la más pesada. En la verificación del 9 de octubre de 2026, `tests/training` llegó a unos 5,7 GiB de memoria residente y el resto de carpetas se quedó por debajo de 1,1 GiB. Si otras sesiones de pytest comparten el directorio temporal, cada parte necesita su propio `--basetemp`, porque pytest borra los `pytest-N` antiguos de las demás sesiones y las pruebas en curso pierden sus archivos.
+`make test` fija dos hilos, oculta la GPU y declara los binarios que existan en `build/native/`. Las pruebas `unguarded_fit` se omiten mientras rige la protección. Cada carpeta corre en su propio proceso, lo que acota la memoria al pico de la más pesada. En la verificación del 9 de octubre de 2026, `tests/training` llegó a unos 5,7 GiB de memoria residente y el resto de carpetas se quedó por debajo de 1,1 GiB. Si otras sesiones de pytest comparten el directorio temporal, cada parte necesita su propio `--basetemp`, porque pytest borra los `pytest-N` antiguos de las demás sesiones y las pruebas en curso pierden sus archivos.
 
 ### Parte CUDA
 
-Las pruebas CUDA son las que la parte CPU omite por falta de CUDA, que se reconocen por su motivo en la salida de `-rs`. Se repiten con la GPU visible, por tandas cortas de pocos archivos y con la GPU reservada en exclusiva durante cada tanda si otras cargas la comparten:
+Las pruebas CUDA llevan la marca `cuda`, que la parte CPU omite. `make test-cuda` las ejecuta todas con la GPU visible. Si otras cargas comparten la GPU, conviene repetirlas por tandas cortas de pocos archivos, con la GPU reservada en exclusiva durante cada tanda:
 
 ```bash
 export CUDA_VISIBLE_DEVICES=0 CUBLAS_WORKSPACE_CONFIG=:4096:8 MARS_TITAN_REQUIRE_CUDA=1 MARS_TITAN_REQUIRE_NATIVE=1
-uv run --locked pytest -q -rs <archivos o identificadores de la tanda>
+uv run --locked pytest -q -rs -m cuda <archivos o identificadores de la tanda>
 ```
 
 Las pruebas que aplican pasos de optimizador en CUDA se omiten igualmente por la protección. Las que exigen `MARS_TITAN_CUDA_INTEGRATION=1` aplican esos pasos y quedan fuera mientras rija el bloqueo de aprendizaje. `MARS_ENCODER_INTEGRATION=1` activa la extracción con los codificadores reales y es una comprobación aparte. Las ocho pruebas de escenarios con HMM necesitan `hmmlearn==0.3.3`, que no forma parte de `uv.lock` y se añade con `uv run --with hmmlearn==0.3.3`. Como ajustan el HMM, también esperan al levantamiento del bloqueo.

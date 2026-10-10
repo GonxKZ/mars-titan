@@ -21,3 +21,16 @@ Este directorio contiene la lógica reutilizable de MARS-TITAN. El paquete se or
 Estas responsabilidades siguen el [protocolo de investigación](../../docs/research/protocol.md) y la [arquitectura](../../docs/engineering/architecture.md). Los módulos rechazan entradas que incumplen sus límites o su contrato temporal, y conservan por separado los artefactos de preparación y las salidas de cada ejecución.
 
 La evaluación no reajustará modelos a partir de la prueba final. La memoria solo recibirá la información autorizada por la política temporal. La integración con código nativo dependerá de evidencia de perfilado y de una comparación numérica con la referencia Python.
+
+## Módulos históricos
+
+Estos módulos reproducen ediciones o campañas ya cerradas. No están en el recorrido de la campaña con máscaras desde 2000 (`scripts/run_masked_campaign.py` y lo que importa) y solo los usan las órdenes de su edición. Se conservan sin cambios de comportamiento porque los recibos de esas ediciones incluyen la huella de su código.
+
+| Módulos y órdenes | Edición o campaña | Documento |
+| --- | --- | --- |
+| `training/real_campaign.py` y `scripts/finish_real_campaign.py` | Edición real ampliada del 6 de octubre | [Comparación sobre la edición real ampliada](../../docs/engineering/real-expanded-comparison.md) |
+| `posttraining/completion.py` y `posttraining/analysis.py` | Postentrenamiento y análisis de las ventanas estrictas de 140 indicadores | [Postentrenamiento de las ventanas temporales](../../docs/engineering/temporal-posttraining.md) |
+| `simulation/adaptive_campaign.py`, `scripts/run_adaptive_campaign.py`, `scripts/benchmark_adaptive_rl.py` y `configs/systemd/mars-titan-adaptive-rl.service` | Campaña RL sobre mundos financieros sintéticos | [Adaptación en escenarios sintéticos](../../docs/engineering/adaptive-rl.md) y [parada de la comparación](../../docs/engineering/adaptive-convergence.md) |
+| `posttraining/augmented_inputs.py` | Episodios remuestreados o sintéticos del diseño de #128 | [Postentrenamiento con máscaras](../../docs/engineering/masked-posttraining.md) |
+
+`augmented_inputs.py` sigue importado por `posttraining/queue.py` y forma parte de la huella de `posttraining/run.py`, así que retirarlo cambiaría esas identidades. Otros módulos tampoco están en el recorrido de la campaña, pero siguen en uso y no son históricos: `training/temporal_search.py` (vistas anuales v2), la comparación de campañas de `evaluation/` (admite la política con máscaras), `simulation/adaptation_scenarios.py` (benchmarks con nombre) y las herramientas de `data/` que expone `mars-data`. La [auditoría de la estructura](../../docs/engineering/repository-structure.md) recoge además los módulos sin consumidor, que son piezas pendientes de integrar.

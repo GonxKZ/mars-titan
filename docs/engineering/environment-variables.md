@@ -40,6 +40,7 @@ Una variable vacía equivale a no declararla. Una ruta declarada que no existe n
 | `MARS_TITAN_CUDA_INTEGRATION` | `1` activa las integraciones CUDA que aplican pasos de optimizador. Solo procede fuera del bloqueo de aprendizaje | Se omiten |
 | `MARS_ENCODER_INTEGRATION` | `1` activa la extracción con los codificadores reales en `cuda:0` | Se omite |
 | `MARS_TITAN_UNADJUSTED_EDITION` | Ruta de una edición de precios sin ajustar para las pruebas de humo, que solo la leen | Se omiten |
+| `MARS_TITAN_LISTING_STATUS` | Ruta del `listing-status.json` de esa edición, que las mismas pruebas leen junto a ella | Se omiten |
 
 Las comprobaciones CUDA que se ejecutan de forma explícita (`tests/**/cuda_*_check.py` y `tests/training/candidate_memory_check.py`) eligen el dispositivo y el recibo con variables propias. Con `cpu` ensayan la misma lógica sin GPU y no acreditan CUDA.
 
