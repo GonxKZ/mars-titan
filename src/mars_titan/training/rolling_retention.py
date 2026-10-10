@@ -4,7 +4,9 @@ La campaña completa no cabe en el disco si conserva todas las tablas por fila. 
 v2, declarada antes de cualquier resultado, recorre cada ventana de campaña en este orden:
 
 1. `base`: ajustes de todos los brazos, selección, semillas extra del elegido y traslados.
-2. `adapters`, `ablation` y `rl`: etapas posteriores de esa ventana.
+2. `adapters`, `ablation` y `rl`: etapas posteriores de esa ventana. Con el walk-forward
+   por etapas, los adaptadores y las políticas reciben un informe de disjunción calculado
+   justo antes, y las políticas leen la cadena de la salida de los adaptadores.
 3. `aggregates`: agregados por sesión de la comparación de cada ámbito de la ventana
    (`evaluation.window_aggregates`), con sus fuentes limitadas a esa ventana.
 4. `release`: cada tabla por fila de la base y de la ablación que ya no lee ninguna fase
@@ -630,19 +632,52 @@ def _supports_window(runner):
     return "window" in inspect.signature(runner).parameters
 
 
+def disjunction_report(campaign, views, output, posttraining, window, phase):
+    """Calcular y guardar el informe de disjunción que exige una etapa por etapas.
+
+    Se calcula de nuevo antes de cada etapa que lo necesita, porque la RL lee selecciones de
+    la cadena que la etapa de adaptadores acaba de confirmar. Recorre las vistas, los recibos
+    de la campaña base y, si existe, la salida del posentrenamiento. El informe se guarda en
+    `retention/disjunction/<ventana>-<fase>.json` también cuando registra fallos, para
+    revisarlos, y en ese caso el recorrido se detiene antes de la etapa.
+    """
+    from .chain_disjunction import verify
+
+    report = verify(campaign, views, campaign_output=output, posttraining=posttraining)
+    path = Path(output) / "retention" / "disjunction" / f"{window}-{phase}.json"
+    atomic_json(path, report)
+    _require(
+        not report["failures"],
+        f"La disjunción registra {len(report['failures'])} fallos antes de {phase} en "
+        f"{window}: revisa {path}",
+    )
+    return path
+
+
 def default_runners(campaign_path, views, output, *, storage=None, stages=None, stop=None):
     """Órdenes de cada fase limitadas a una ventana de campaña.
 
     Necesitan el filtro `window` de las etapas, que define el orden por ventanas de la
-    campaña A v2. Sin él se rechaza el recorrido antes de ejecutar nada.
+    campaña A v2. Sin él se rechaza el recorrido antes de ejecutar nada. Si la campaña
+    declara `walk_forward_stages`, los adaptadores y las políticas reciben un informe de
+    disjunción recién calculado y las políticas leen la cadena de la salida de los adaptadores.
     """
     from mars_titan.posttraining import campaign_stage as adapter_stage
     from mars_titan.simulation import campaign_stage as rl_stage
 
     from . import masked_campaign as engine
     from . import modality_ablation_stage as ablation_stage
+    from .campaign_plan import load_campaign
 
     stages = stages or {}
+    campaign = load_campaign(campaign_path)
+    chain_output = stages.get("adapters", {}).get("output")
+
+    def checked(window, phase):
+        if not campaign.get("walk_forward_stages"):
+            return None
+        return disjunction_report(campaign, views, output, chain_output, window, phase)
+
     for runner in (engine.run_campaign, ablation_stage.run_stage, adapter_stage.run_stage):
         _require(
             _supports_window(runner),
@@ -656,7 +691,13 @@ def default_runners(campaign_path, views, output, *, storage=None, stages=None, 
     if "adapters" in stages:
         entry = stages["adapters"]
         runners["adapters"] = lambda window: adapter_stage.run_stage(
-            entry["stage"], views, output, entry["output"], stop=stop, window=window
+            entry["stage"],
+            views,
+            output,
+            entry["output"],
+            stop=stop,
+            window=window,
+            disjunction=checked(window, "adapters"),
         )
     if "ablation" in stages:
         entry = stages["ablation"]
@@ -674,6 +715,8 @@ def default_runners(campaign_path, views, output, *, storage=None, stages=None, 
             entry["output"],
             stop=stop,
             window=window,
+            chain_output=chain_output,
+            disjunction=checked(window, "rl"),
         )
     return runners
 

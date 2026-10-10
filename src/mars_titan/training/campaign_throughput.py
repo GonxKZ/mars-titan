@@ -54,6 +54,8 @@ from .campaign_plan import (
     FIT,
     MARS,
     NEURAL,
+    ONLINE,
+    ONLINE_CONTROL,
     TITANS,
     _arm_specs,
     extend_campaign,
@@ -273,16 +275,36 @@ def _option_hours(campaign, family, jobs, counts, measured, epochs):
     return result
 
 
-def _posttraining_hours(stage, counts, rates):
+def _online_hours(campaign, jobs, counts, neural):
+    """Acota por arriba las horas del control en línea mientras no se mida su ejecutor.
+
+    Cada trabajo predice calibración y evaluación con la inferencia más lenta de su padre y,
+    como cada etiqueta madura entra a lo sumo en un paso, ajusta como mucho esas mismas filas
+    una vez con el caudal de ajuste más lento del padre.
+    """
+    parent = campaign["online_controls"]["arms"][jobs[0]["arm"]]["parent_arm"]
+    rate = _slowest(neural[parent].values())
+
+    def seconds(job):
+        rows = counts[job["scope"]][job["window"]]
+        held = rows["calibration"] + rows["evaluation"]
+        return held / rate["inference"] + held / rate["train"]
+
+    return dict(_hours(jobs, seconds), bound="each_matured_label_in_at_most_one_step")
+
+
+def _posttraining_hours(stage, counts, rates, fresh=None):
     """Horas de la etapa de adaptadores, con la caché de cada padre ajustado.
 
-    En el walk-forward por etapas cada caso ajusta solo las filas nuevas de su ventana. Se
-    estiman con los recuentos como el tramo de ajuste de la ventana menos ajuste,
-    validación y calibración de la anterior, una cota algo mayor porque las filas que la
-    purga quitó en las fronteras de la ventana anterior sí están en el ajuste de la nueva.
-    Cada padre predice una vez esas filas y la validación para su caché, y el padre
-    congelado predice validación, calibración y evaluación, ambos con la inferencia neuronal
-    más lenta del brazo base. En el plan anclado de B el ajuste recorre todo su tramo.
+    En el walk-forward por etapas cada caso ajusta solo las filas nuevas de su ventana.
+    `fresh` las da contadas por ámbito y ventana con la regla de
+    `campaign_chain.posttraining_rows`. Sin él se acotan con los recuentos como el tramo de
+    ajuste de la ventana menos ajuste, validación y calibración de la anterior, una cota algo
+    mayor porque las filas que la purga quitó en las fronteras de la ventana anterior sí
+    están en el ajuste de la nueva. Cada padre predice una vez esas filas y la validación
+    para su caché, y el padre congelado predice validación, calibración y evaluación, ambos
+    con la inferencia neuronal más lenta del brazo base. En el plan anclado de B el ajuste
+    recorre todo su tramo.
 
     La medida de la matriz solo cubre las redes de referencia. Los brazos de Titans-MAC y la
     cadena trivial de Ridge y XGBoost quedan en `without_estimate`, sin sumar sus horas.
@@ -307,12 +329,14 @@ def _posttraining_hours(stage, counts, rates):
         rows = counts[job["scope"]][job["window"]]
         if job.get("parent_window") is None:
             return rows
+        if fresh is not None:
+            return dict(rows, train=fresh[job["scope"]][job["window"]])
         previous = counts[job["scope"]][job["parent_window"]]
-        fresh = rows["train"] - sum(
+        bound = rows["train"] - sum(
             previous[name] for name in ("train", "validation", "calibration")
         )
-        _require(fresh > 0, f"{job['id']} no tiene filas nuevas en los recuentos")
-        return dict(rows, train=fresh)
+        _require(bound > 0, f"{job['id']} no tiene filas nuevas en los recuentos")
+        return dict(rows, train=bound)
 
     def seconds(job):
         rows = rows_of(job)
@@ -325,7 +349,12 @@ def _posttraining_hours(stage, counts, rates):
             total += (rows["train"] + rows["validation"]) / cache
         return total
 
-    return dict(_hours(jobs, seconds), parent_caches=len(first), without_estimate=sorted(missing))
+    return dict(
+        _hours(jobs, seconds),
+        parent_caches=len(first),
+        fit_rows="counted" if fresh is not None else "bounded_from_window_counts",
+        without_estimate=sorted(missing),
+    )
 
 
 def _ablation_hours(campaign, stage, counts, rates):
@@ -391,7 +420,15 @@ def _totals(families):
 
 
 def estimate_hours(
-    campaign, counts, rates, *, stage=None, policy_stage=None, ablation_stage=None, epochs=None
+    campaign,
+    counts,
+    rates,
+    *,
+    stage=None,
+    policy_stage=None,
+    ablation_stage=None,
+    epochs=None,
+    fresh=None,
 ):
     """Horas previstas por familia, opción, ámbito y brazo de una variante.
 
@@ -401,12 +438,13 @@ def estimate_hours(
     `policy_stage`, añade aparte la estimación orientativa de la etapa de políticas y con
     `ablation_stage`, la de la ablación de modalidades. `epochs` sustituye las épocas de la
     regla de parada, por ejemplo con las épocas efectivas previstas de una parada temprana.
+    `fresh` son las filas nuevas contadas de cada ventana con padre de la etapa por etapas.
     """
     epochs = campaign["rule"]["max_epochs"] if epochs is None else epochs
     jobs = plan_campaign(campaign)
     families = {}
     for family in (NEURAL, *CHRONOLOGICAL):
-        selected = [job for job in jobs if job["family"] == family]
+        selected = [job for job in jobs if job["family"] == family and job["kind"] != ONLINE]
         if not selected:
             continue
         measured = rates.get(family)
@@ -421,6 +459,13 @@ def estimate_hours(
             )
         else:
             families[family] = _option_hours(campaign, family, selected, counts, measured, epochs)
+    online = [job for job in jobs if job["kind"] == ONLINE]
+    if online:
+        families[ONLINE_CONTROL] = (
+            _online_hours(campaign, online, counts, rates[NEURAL])
+            if NEURAL in rates
+            else dict(status=NOT_MEASURED)
+        )
     specs = {spec["arm"]: spec for spec in _arm_specs(campaign)}
     # Familias que A y B todavía no declaran: el informe dice de dónde viene su sección.
     for family in PREPARED:
@@ -443,7 +488,7 @@ def estimate_hours(
             "La etapa de adaptadores no parte de esta campaña",
         )
         families[POSTTRAINING] = (
-            _posttraining_hours(stage, counts, rates)
+            _posttraining_hours(stage, counts, rates, fresh)
             if POSTTRAINING in rates and NEURAL in rates
             else dict(status=NOT_MEASURED)
         )

@@ -216,3 +216,38 @@ def test_cases_must_change_the_same_hyperparameters():
     }
     with pytest.raises(ValueError, match="mismos hiperparámetros"):
         wf.walk_forward_options(value)
+
+
+def test_the_campaign_recipe_can_adopt_the_paper_projections_without_other_changes(tmp_path):
+    """La receta admite `titans_mac_paper_projections_v2` en `predictor`, sin adoptarlo aún.
+
+    Adoptarlo es una decisión del autor. La prueba solo comprueba que bastaría con declarar
+    el campo: la receta se lee, las cuatro variantes se construyen con la misma configuración
+    que su emparejamiento y en el plan de A v2 solo cambian los casos de búsqueda de
+    Titans-MAC, que llevan la huella de la receta. Los finalistas, MARS-TITAN y los
+    adaptadores toman la receta de la identidad del padre elegido, así que la siguen sin
+    cambiar su plan.
+    """
+    from mars_titan.models.titans.config import PAPER_PROJECTIONS
+    from mars_titan.training import campaign_plan as plan
+    from tests.training.test_campaign_a_joint import campaign, edited
+
+    value = document()
+    assert "memory_projections" not in value["predictor"]
+    value["predictor"]["memory_projections"] = PAPER_PROJECTIONS
+    path = tmp_path / "titans-recipe.json"
+    path.write_text(json.dumps(value))
+    _, adopted = load_recipe(path)
+    for variant in VARIANTS:
+        model, _ = wf._predictor(adopted, specification(), variant, 42, "cpu")
+        assert model.config.identity()["memory_projections"] == PAPER_PROJECTIONS
+    changed_campaign = edited(tmp_path, lambda v: v["titans_mac"].update(recipe=str(path)))
+    jobs = plan.plan_campaign(plan.load_campaign(changed_campaign))
+    original = {job["id"]: job for job in plan.plan_campaign(campaign())}
+    assert [job["id"] for job in jobs] == list(original)
+    changed = {job["id"] for job in jobs if job != original[job["id"]]}
+    assert changed == {
+        key
+        for key, job in original.items()
+        if job["family"] == plan.TITANS and job["stage"] == "search"
+    }

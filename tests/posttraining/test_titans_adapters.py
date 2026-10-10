@@ -18,6 +18,7 @@ from mars_titan.models.predictive_adaptation import (
     trainable_parameters,
 )
 from mars_titan.models.quantile_head import QUANTILE_HEAD
+from mars_titan.models.titans.config import PAPER_PROJECTIONS
 from mars_titan.models.titans.financial import VARIANTS, FinancialConfig, FinancialPredictor
 from mars_titan.posttraining import chronological_matrix as cm
 from mars_titan.posttraining.adapter_matrix import read_matrix
@@ -60,11 +61,11 @@ def shared(tmp_path_factory):
     return corpus(tmp_path_factory.mktemp("titans-adapters"))
 
 
-def predictor(streams, variant, seed=42):
+def predictor(streams, variant, seed=42, **options):
     """Padre de cuantiles en float64, como los brazos de la campaña con máscaras."""
     specification = streams["train"].specification()
     config = FinancialConfig(
-        specification, variant=variant, hidden_size=32, seed=seed, head=QUANTILE_HEAD
+        specification, variant=variant, hidden_size=32, seed=seed, head=QUANTILE_HEAD, **options
     )
     return FinancialPredictor(config, dtype=torch.float64)
 
@@ -147,6 +148,31 @@ def test_null_adapters_reproduce_the_parent_predictions_exactly(shared, matrix, 
         assert left[4] == pytest.approx(right[4], rel=1e-12, abs=1e-15)
     for arm, points in arm_points(matrix, variant).items():
         model = adapted(parent, matrix, points).eval()
+        engine = ChronologicalInference(model, recipe(), audit=True)
+        assert engine.evaluate(streams["validation"]) == expected, arm
+        assert engine.audit == reference.audit, arm
+        assert base_digest(model) == base_digest(parent)
+
+
+@pytest.mark.parametrize("variant", ["mac_frozen", "mac_online"])
+def test_the_paper_projections_keep_every_titans_arm_and_its_frozen_memory(shared, matrix, variant):
+    """Con `titans_mac_paper_projections_v2` la matriz v3 se aplica igual que hoy.
+
+    La receta de la campaña sigue con las proyecciones lineales hasta que el autor decida.
+    Esta prueba comprueba que adoptarlas no exige cambiar los brazos: la convolución y las
+    proyecciones nuevas quedan dentro de la memoria congelada y los adaptadores nulos
+    reproducen las predicciones del padre. Solo cambian las variantes que leen la memoria.
+    """
+    _, streams = shared
+    parent = predictor(streams, variant, memory_projections=PAPER_PROJECTIONS).eval()
+    assert parent.config.identity()["memory_projections"] == PAPER_PROJECTIONS
+    names = [name for name, _ in parent.named_parameters()]
+    assert "mac.memory.key_convolution.weight" in names
+    reference = ChronologicalInference(clone(parent).requires_grad_(False), recipe(), audit=True)
+    expected = reference.evaluate(streams["validation"])
+    for arm, points in arm_points(matrix, variant).items():
+        model = adapted(parent, matrix, points).eval()
+        assert not any(name.startswith("mac.memory.") for name in adapter_names(model)), arm
         engine = ChronologicalInference(model, recipe(), audit=True)
         assert engine.evaluate(streams["validation"]) == expected, arm
         assert engine.audit == reference.audit, arm
