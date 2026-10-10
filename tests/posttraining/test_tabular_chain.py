@@ -103,8 +103,9 @@ def test_the_tabular_chain_is_the_frozen_parent_carried_from_the_previous_window
             device="cpu",
         )
     assert summary["status"] == "completed"
-    # La GRU ajusta sus cinco casos y Ridge solo predice con su padre congelado.
-    assert summary["planned"] == dict(training_jobs=5, prediction_jobs=2, selection_jobs=4)
+    # La GRU ajusta sus cinco casos de la v2 y la continuación anclada, y Ridge solo predice
+    # con su padre congelado.
+    assert summary["planned"] == dict(training_jobs=6, prediction_jobs=2, selection_jobs=4)
     assert summary["planned"] == summary["completed"]
     receipt = json.loads((output / "jobs" / FROZEN / "receipt.json").read_text())
     assert receipt["updates"] == 0 and receipt["fit_rows"] is None

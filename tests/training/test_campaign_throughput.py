@@ -41,13 +41,14 @@ CAMPAIGNS = {
 STAGES = {
     v: Path(f"configs/posttraining/historical-masked-adapter-stage-{v.lower()}.json") for v in "AB"
 }
-# Brazos de la sección `variety` de la matriz v3 (#444), que solo declara la etapa A.
+# Variantes de la sección `variety` de la matriz v3 (#444), que solo declara la etapa A, y la
+# continuación anclada, que A añade como control.
 VARIETY = {
     arm["id"]
     for arm in json.loads(Path("configs/posttraining/adapter-matrix-v3.json").read_text())[
         "variety"
     ]["arms"]
-}
+} | {"anchored_continuation"}
 CANDIDATE = Path("configs/candidate/chronological-training.json")
 EXTENSIONS = Path("configs/baselines/historical-masked-campaign-extensions.json")
 TITANS_RECIPE = Path("configs/titans/chronological-training-historical-masked.json")
@@ -306,9 +307,9 @@ def growing(campaign, step):
 
 @pytest.mark.parametrize(
     ("variant", "fits", "predictions", "parents"),
-    # A ajusta en las redes los 51 casos de la v3 por ventana y semilla, 22 de ellos de la
-    # variedad de adaptadores, y B los 29 de la v2.
-    [("A", 6426, 630, 42 * 15), ("B", 1479, 2436, 17 * 15)],
+    # A ajusta en las redes los 56 casos de la v3 por ventana y semilla, 22 de ellos de la
+    # variedad de adaptadores y 5 de la continuación anclada, y B los 29 de la v2.
+    [("A", 7056, 630, 42 * 15), ("B", 1479, 2436, 17 * 15)],
 )
 def test_posttraining_hours_cover_every_stage_job_and_each_parent_cache(
     variant, fits, predictions, parents
@@ -374,6 +375,8 @@ def test_the_measured_stage_contains_the_cases_of_both_matrix_versions():
     for arm, cases in measured_b["cases"].items():
         extra = set(measured_a["cases"][arm]) - set(cases)
         assert extra and all(key.split("/", 1)[1] in VARIETY for key in extra), arm
+        # A mide también la continuación anclada que ejecuta, y B no la tiene.
+        assert "seed-42/anchored_continuation" in extra, arm
     # Otro presupuesto o una red que A no mide dejan a B sin medida.
     budget = copy.deepcopy(b)
     budget["matrix"]["budget"]["batch_size"] *= 2

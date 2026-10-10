@@ -348,9 +348,9 @@ def test_window_schedule_orders_every_stage_of_the_window_and_counts_all_jobs():
     for row in schedule:
         totals.update({entry["phase"]: len(entry["jobs"]) for entry in row["phases"]})
     assert totals["base_search"] + totals["selected_case_seeds"] == 2341
-    # Adaptadores: 6.588 ajustes y 1.116 padres congelados, y 1.178 selecciones de la cadena
-    # en su propia fase.
-    assert (totals["adapters"], totals["chain"]) == (6588 + 1116, 1178)
+    # Adaptadores: 6.858 ajustes (270 de la continuación anclada) y 1.116 padres congelados,
+    # y 1.178 selecciones de la cadena en su propia fase.
+    assert (totals["adapters"], totals["chain"]) == (6858 + 1116, 1178)
     assert (totals["online"], totals["ablation"], totals["rl"]) == (133, 3534, 2160 + 2442)
     window = schedule[6]
     selection = window["phases"][order.PHASES.index("selection")]
@@ -447,9 +447,11 @@ def test_later_stages_of_v2_read_the_joint_model_in_each_market():
     assert adapter["scopes"] == ["US+CN"]
     counts = adapters.count_stage(adapter)
     # 20 brazos neuronales con tres semillas y los dos tabulares con una: 62 cadenas por
-    # ventana. Cada ventana con padre congela esos 62 padres y todas eligen su cadena.
+    # ventana. Cada ventana con padre congela esos 62 padres y todas eligen su cadena. Los
+    # ajustes incluyen la continuación anclada de las cinco referencias (5 × 18 × 3 = 270).
+    assert adapter["additional_controls"] == ["anchored_continuation"]
     assert (counts["training_jobs"], counts["prediction_jobs"], counts["selection_jobs"]) == (
-        6588,
+        6858,
         62 * 18,
         62 * 19,
     )

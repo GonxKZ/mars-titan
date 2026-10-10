@@ -23,7 +23,6 @@ from mars_titan.environments.walk_forward_receipt import read_window_receipt
 from mars_titan.evaluation import walk_forward_comparison as comparison
 from mars_titan.models.quantile_head import QUANTILE_COLUMNS, QUANTILE_HEAD
 from mars_titan.posttraining import adapter_matrix, campaign_stage, matrix_runs, staged_chain
-from mars_titan.posttraining import chronological_matrix as cm
 from mars_titan.training import campaign_chain, chain_disjunction
 from mars_titan.training.campaign_plan import load_campaign, plan_campaign
 from mars_titan.training.label_maturity import FIT_PARTITIONS, label_maturity
@@ -53,24 +52,17 @@ def micros(day):
 def matrix_cases(stage):
     """Casos de la matriz por ventana y semilla, sumados sobre los brazos base de la etapa.
 
-    Se leen de la matriz y no de una lista fija. Con la v3 y su variedad son 82: nueve en
-    cada red recurrente y DLinear (cuatro brazos de la v2, cuatro de la variedad y la
-    continuación), quince en el Transformer compacto (ocho, seis y la continuación) y los de
-    Titans-MAC (cinco en el codificador directo y en MAC sin memoria, nueve con memoria fija
-    y doce en línea, con sus tres brazos de la variedad).
+    Se leen de la matriz y de los controles que la etapa añade, no de una lista fija. Con la
+    v3, su variedad y la continuación anclada son 87: diez en cada red recurrente y DLinear
+    (cuatro variantes de la v2, cuatro de la variedad y las dos continuaciones), dieciséis en
+    el Transformer compacto (ocho, seis y las dos continuaciones) y los de Titans-MAC (cinco
+    en el codificador directo y en MAC sin memoria, nueve con memoria fija y doce en línea,
+    con sus tres variantes de la variedad). La continuación anclada no se propone en Titans-MAC.
     """
     active, _ = campaign_stage.stage_arms(stage)
-    matrix, digest = stage["matrix"], stage["matrix_sha256"]
     total = 0
     for spec in active.values():
-        if spec["design"] == campaign_stage.TABULAR:
-            continue
-        if spec["design"] is None:
-            items = adapter_matrix.cases(matrix, digest, spec["family"], head=QUANTILE_HEAD)
-        else:
-            items = cm.cases(
-                matrix, digest, spec["family"], variant=spec["variant"], bank=spec["bank"]
-            )
+        items = campaign_stage._cases(stage, spec)
         total += sum(item["case"]["seed"] == 42 for item in items)
     return total
 
@@ -84,14 +76,15 @@ def test_stage_a_plans_every_later_window_from_the_previous_parent():
         "real_edition_only",
     )
     counts = result["counts"]
-    assert (counts["training_jobs"], counts["prediction_jobs"]) == (10332, 1302)
+    assert (counts["training_jobs"], counts["prediction_jobs"]) == (10962, 1302)
     assert counts["selection_jobs"] == 1395
     stage = campaign_stage.load_stage(path)
-    assert stage["limits"] == dict(max_training_jobs=10332, max_prediction_jobs=1302)
+    assert stage["limits"] == dict(max_training_jobs=10962, max_prediction_jobs=1302)
     cases = matrix_cases(stage)
-    assert cases == 82
+    assert cases == 87
     assert result["awaiting_sections"] == {}
     assert result["excluded_controls"].keys() == {"linear_residual"}
+    assert result["additional_controls"] == ["anchored_continuation"]
     assert result["objectives"]["adapters"] == "neural_pinball"
     for scope, windows in {"US": 19, "CN": 13, "US+CN": 13}.items():
         entry = counts["scopes"][scope]
@@ -217,6 +210,12 @@ INVALID = {
     "data_policy": lambda v: v.update(data_policy="real_and_augmented"),
     "no_chain_rule": lambda v: v.pop("chain_rule"),
     "no_data_policy": lambda v: v.pop("data_policy"),
+    "unknown_additional_control": lambda v: v.update(additional_controls=["l2_sp"]),
+    "empty_additional_controls": lambda v: v.update(additional_controls=[]),
+    "repeated_additional_control": lambda v: v.update(
+        additional_controls=["anchored_continuation"] * 2
+    ),
+    "matrix_control_as_additional": lambda v: v.update(additional_controls=["full_continuation"]),
 }
 
 
@@ -297,11 +296,11 @@ def test_variant_a_adapts_the_previous_parent_with_new_rows_and_publishes_the_ch
     summary = run(base_a, output)
     assert summary["status"] == "completed"
     assert summary["planned"] == summary["completed"]
-    assert summary["planned"] == dict(training_jobs=5, prediction_jobs=1, selection_jobs=2)
+    assert summary["planned"] == dict(training_jobs=6, prediction_jobs=1, selection_jobs=2)
     found = receipts(output)
+    points = ("full_continuation", "anchored_continuation", "head", "fusion", "head_fusion")
     assert set(found) == {FROZEN} | {
-        f"US/fold-001/gru__{point}/fit-s42"
-        for point in ("full_continuation", "head", "fusion", "head_fusion", "fusion_full_rank")
+        f"US/fold-001/gru__{point}/fit-s42" for point in (*points, "fusion_full_rank")
     }
     proof = json.loads((output / "windows-data/US/fold-001/fit-rows.json").read_text())
     assert proof["parent_window"] == "fold-000" and proof["window"] == "fold-001"
@@ -322,8 +321,14 @@ def test_variant_a_adapts_the_previous_parent_with_new_rows_and_publishes_the_ch
     # Sin pasos aplicados, la época cero gana y cada caso emite las filas del padre congelado.
     updates = {receipt["updates"] for name, receipt in found.items() if name != FROZEN}
     assert len(updates) == 1 and min(updates) > 0
-    assert len(recorder.optimizers) == 5
+    assert len(recorder.optimizers) == 6
     assert all(len(item.calls) == min(updates) for item in recorder.optimizers)
+    # Solo la continuación anclada construye la versión anclada de AdamW, con el mismo λ.
+    assert [item.anchored for item in recorder.optimizers].count(True) == 1
+    assert {item.weight_decay for item in recorder.optimizers} == {0.01}
+    anchored = found["US/fold-001/gru__anchored_continuation/fit-s42"]["identity"]
+    assert anchored["control"] == "anchored_continuation"
+    assert anchored["case"]["weight_decay_anchor"] == "initial_parameters"
     frozen = found[FROZEN]
     assert frozen["updates"] == 0 and frozen["reported_score"] is None
     assert frozen["identity"]["parent"]["job"] == PARENT and frozen["fit_rows"] is None
@@ -342,6 +347,22 @@ def test_variant_a_adapts_the_previous_parent_with_new_rows_and_publishes_the_ch
             assert receipt["fit_rows"]["rows"] == proof["rows"]
             assert receipt["fit_rows"]["sha256"] == proof["sha256"]
             assert receipt["fit_rows"]["intersection"] == proof["intersection"]
+        # La puntuación que elige en la cadena sale solo de la validación de la ventana, que
+        # termina antes de su calibración y de su evaluación. Las etiquetas usadas maduran
+        # antes de la evaluación, así que ningún caso, el anclado incluido, se elige con ella.
+        moments = {
+            partition: pq.read_table(output / receipt["predictions"][partition]["path"])[
+                "prediction_at"
+            ]
+            .cast(pa.int64())
+            .to_numpy()
+            for partition in campaign_stage.PREDICTED
+        }
+        assert moments["validation"].max() < moments["calibration"].min()
+        assert moments["calibration"].max() < moments["evaluation"].min()
+        assert labels < moments["evaluation"].min()
+        validation = pq.read_table(output / receipt["predictions"]["validation"]["path"])
+        assert receipt["score"] == staged_chain.validation_score(validation)
         for partition in campaign_stage.PREDICTED:
             table = pq.read_table(output / receipt["predictions"][partition]["path"])
             assert (table["prediction_at"].cast(pa.int64()).to_numpy() < FINAL_TEST).all()
@@ -371,7 +392,10 @@ def test_variant_a_adapts_the_previous_parent_with_new_rows_and_publishes_the_ch
     assert first["receipts"]["US"].labels_used_until < micros("2022-01-01")
     second = campaign_chain.read_selection(output, "US", "fold-001", "gru", 42)
     assert second["selected"]["kind"] == "frozen_parent" and second["selected"]["job"] == FROZEN
-    assert second["fit_rows"] is None and len(second["candidates"]) == 6
+    assert second["fit_rows"] is None and len(second["candidates"]) == 7
+    # Las dos continuaciones compiten en la cadena como candidatas de tipo continuación.
+    kinds = {item["arm"]: item["kind"] for item in second["candidates"]}
+    assert kinds["gru__full_continuation"] == kinds["gru__anchored_continuation"] == "continuation"
     assert second["parent"]["job"] == PARENT
     assert second["labels_used_until"] == labels
     assert summary["chain"] == {
@@ -417,8 +441,8 @@ def test_a_strictly_better_candidate_replaces_the_frozen_parent(
 
     def lower_head(table):
         calls.append(None)
-        # Tercer trabajo de la ventana: el brazo head, tras el padre y la continuación.
-        return original(table) - (1e-9 if len(calls) == 3 else 0.0)
+        # Cuarto trabajo de la ventana: el modelo head, tras el padre y las dos continuaciones.
+        return original(table) - (1e-9 if len(calls) == 4 else 0.0)
 
     monkeypatch.setattr(staged_chain, "validation_score", lower_head)
     output = tmp_path / "stage"
@@ -503,12 +527,12 @@ def test_a_paused_case_resumes_its_cursor_without_repeating_updates(base_a, tmp_
     summary = run(base_a, output, stop)
     assert summary["status"] == "completed"
     found = receipts(output)
-    assert len(found) == 6
+    assert len(found) == 7
     # El caso pausado suma sus pasos antes y después de reanudar, sin repetir ninguno.
     assert sum(len(item.calls) for item in recorder.optimizers) == sum(
         receipt["updates"] for receipt in found.values()
     )
-    assert len(recorder.optimizers) == 6
+    assert len(recorder.optimizers) == 7
 
 
 def test_the_hold_blocks_before_reading_and_before_each_pending_job(
@@ -583,7 +607,7 @@ def test_command_checks_the_declared_stage_without_reading_data(capsys):
     assert campaign_stage.main(["check", "--stage", str(path)]) == 0
     printed = json.loads(capsys.readouterr().out)
     assert printed["status"] == "checked" and printed["scientific_training_started"] is False
-    assert printed["counts"]["training_jobs"] == 10332
+    assert printed["counts"]["training_jobs"] == 10962
 
 
 def test_matrix_seeds_must_match_the_seeds_of_each_parent(tmp_path):

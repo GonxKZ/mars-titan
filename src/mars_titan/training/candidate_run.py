@@ -51,6 +51,8 @@ from mars_titan.models.quantile_head import (
 from mars_titan.models.titans.config import canonical
 from mars_titan.models.titans.financial_inputs import DecisionBatch, validated_cpu_batch
 
+from . import anchored_decay
+from .anchored_decay import ANCHORS
 from .checkpoints import (
     StopRequest,
     capture_rng,
@@ -122,6 +124,9 @@ class CandidateRecipe:
     checkpoint_seconds: float = 900.0
     # None conserva la configuración numérica del proceso y la identidad anterior.
     precision: str | None = None
+    # None conserva el decaimiento de AdamW hacia cero. `initial_parameters` lo ancla al
+    # estado con que empieza el ajuste, que en el postentrenamiento es el padre (#444).
+    weight_decay_anchor: str | None = None
 
     def __post_init__(self):
         validate_selection(self.selection, epochs=self.epochs)
@@ -147,6 +152,7 @@ class CandidateRecipe:
             or self.weight_decay < 0
             or self.checkpoint_seconds <= 0
             or not valid_precision(self.precision)
+            or self.weight_decay_anchor not in ANCHORS
             or (
                 rows is not None
                 and (type(rows) is not int or not self.block_rows <= rows <= 65_536)
@@ -165,6 +171,8 @@ class CandidateRecipe:
         fields = asdict(self)
         if fields["precision"] is None:
             fields.pop("precision")
+        if fields["weight_decay_anchor"] is None:
+            fields.pop("weight_decay_anchor")
         return dict(
             schema_version=1,
             recipe=RECIPE,
@@ -732,11 +740,7 @@ class CandidateChronologicalTrainer(CandidateChronologicalPredictor):
         self.trainable = [value for group in groups for value in group["params"]]
         if not all(value.requires_grad for value in self.trainable):
             raise ValueError("Los parámetros ajustables del candidato deben requerir gradiente")
-        factory = optimizer_factory or (
-            lambda values: torch.optim.AdamW(
-                values, lr=recipe.learning_rate, weight_decay=recipe.weight_decay
-            )
-        )
+        factory = optimizer_factory or anchored_decay.recipe_factory(recipe)
         self.optimizer = factory(groups)
         listed = [id(p) for group in self.optimizer.param_groups for p in group["params"]]
         if len(listed) != len(set(listed)) or set(listed) != {id(p) for p in self.trainable}:
@@ -765,6 +769,10 @@ class CandidateChronologicalTrainer(CandidateChronologicalPredictor):
         if self.kernel_policy is not None:
             # Sin precisión declarada la identidad conserva su forma anterior.
             self.identity["kernel_policy"] = self.kernel_policy
+        anchored = anchored_decay.describe(self.optimizer, recipe.weight_decay_anchor)
+        if anchored is not None:
+            # Solo el decaimiento anclado añade su código. Sin él la identidad no cambia.
+            self.identity["anchored_decay"] = anchored
         self.run_id = hashlib.sha256(canonical(self.identity).encode()).hexdigest()
         self.global_step, self.selection, self.history, self.train_metrics = 0, None, [], None
 

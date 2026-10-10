@@ -833,14 +833,18 @@ de A, el padre congelado es el trabajo `frozen` de la etapa, que aplica a la
 ventana k el estado elegido por la base en k-1, y el brazo base reentrenado en k
 queda como nivel fuera de las familias. Como la primera ventana de cada ámbito
 no tiene postentrenamiento, la comparación empieza en la segunda. Las familias
-declaradas son `versus_frozen_parent` (adaptados y continuación menos el padre
-congelado) y `versus_full_continuation` (adaptados menos la continuación), más el
-nivel de cada brazo. Todo lo demás se hereda de la comparación de la campaña:
+declaradas son `versus_frozen_parent` (adaptados y continuaciones menos el padre
+congelado), `versus_full_continuation` (adaptados menos la continuación) y
+`versus_anchored_continuation` (adaptados y continuación completa menos la
+[continuación anclada](../engineering/adapter-variety.md#asimetría-del-decaimiento-y-continuación-anclada)),
+más el nivel de cada modelo. La última solo existe en los padres que tienen esa
+continuación. Todo lo demás se hereda de la comparación de la campaña:
 protocolos, métricas, calibración común, remuestreo y secciones secundarias. Hoy
-salen nueve padres: las tres redes recurrentes y DLinear con once brazos, el
-Transformer con diecisiete porque la matriz le da puntos de lectura, y los cuatro
-brazos de Titans-MAC con entre siete y catorce. La validación de los recibos por
-etapas elige el predictor de la cadena y no entra en esta comparación.
+salen nueve padres: las tres redes recurrentes y DLinear con doce modelos, el
+Transformer con dieciocho porque la matriz le da puntos de lectura, y las cuatro
+variantes de Titans-MAC con entre siete y catorce, sin continuación anclada. La
+validación de los recibos por etapas elige el predictor de la cadena y no entra en
+esta comparación.
 
 La [declaración de A v2](../../configs/posttraining/historical-masked-adapter-comparison-a-v2.json),
 fijada el 10 de octubre antes de cualquier resultado, añade dos papeles. `chain` es
@@ -849,7 +853,9 @@ semilla son las del trabajo que eligió su `selection.json`, y `base_retrain` es
 brazo base reentrenado en la ventana. Las familias `versus_frozen_parent` y
 `versus_full_continuation` incluyen la cadena como variante, y `versus_base_retrain`
 contrasta la cadena con el reentreno, la comparación que el diseño por etapas
-informa aparte. Si la campaña declara `walk_forward_stages`, la declaración debe
+informa aparte. Como en A, la continuación anclada de las cinco referencias entra
+en `versus_frozen_parent` y en `versus_anchored_continuation`, que la contrasta con
+los adaptados y la continuación completa. Si la campaña declara `walk_forward_stages`, la declaración debe
 contrastar esos dos papeles. Salen veinte padres en el ámbito conjunto, los 22
 brazos de la etapa salvo Ridge y XGBoost. Cada comparación conserva la
 elegibilidad por mercado del modelo conjunto, así que China solo entra en
