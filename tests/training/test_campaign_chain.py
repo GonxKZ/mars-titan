@@ -419,44 +419,73 @@ def test_row_fingerprints_ignore_order_and_combine_asset_by_asset():
 # Control en línea y variante B
 
 
-def test_the_online_control_starts_from_the_selected_parent_with_the_bank_cap():
+RATES = {"lr0": 0.0, "lr1e-3": 1e-3, "lr1e-2": 1e-2, "lr1e-1": 1e-1, "lr1": 1.0}
+
+
+def test_the_online_control_searches_its_rate_from_the_selected_parent_with_the_bank_cap():
     value = campaign()
     base = plan.plan_campaign(value)
     jobs = [job for job in base if job["kind"] == plan.ONLINE]
-    # Solo el ámbito conjunto evalúa el control en línea: 19 ventanas por tres semillas.
-    assert len(jobs) == 57 == value["online_controls"]["limits"]["max_online_jobs"]
+    # Solo el ámbito conjunto evalúa el control: 19 ventanas, cinco tasas con la semilla 42
+    # y la elegida con 43 y 44.
+    assert len(jobs) == 19 * (5 + 2) == value["online_controls"]["limits"]["max_online_jobs"]
     assert {job["scope"] for job in jobs} == {JOINT} == set(online.scopes(value))
-    assert plan.count_jobs(value)["online_jobs"] == 57
+    assert plan.count_jobs(value)["online_jobs"] == 133
+    assert not [r for r in plan.launch_blockers(value) if r.startswith(online.ARM)]
     by_id = {job["id"]: job for job in jobs}
-    first = by_id[f"{JOINT}/fold-004/transformer_compact_online/online-s42"]
-    assert first["depends"] == [
+    prefix = f"{JOINT}/fold-004/transformer_compact_online"
+    states = [
         *searches(base, f"{JOINT}/fold-004/transformer_compact"),
         *searches(base, f"{JOINT}/fold-004/mars_titan_m1"),
     ]
-    assert len(first["depends"]) == 4
-    other = by_id[f"{JOINT}/fold-012/transformer_compact_online/online-s44"]
+    rule = dict(
+        optimizer="sgd",
+        accumulation_rows=256,
+        update_every=1,
+        max_grad_norm=1.0,
+        update_cap=online.CAP,
+    )
+    for name, rate in RATES.items():
+        job = by_id[f"{prefix}/search-{name}"]
+        assert (job["stage"], job["seed"], job["candidate"]) == ("search", 42, name)
+        assert job["case"] == dict(rule=dict(rule, learning_rate=rate))
+        assert job["depends"] == states and len(states) == 4
+    other = by_id[f"{JOINT}/fold-012/transformer_compact_online/finalist-s44"]
+    assert other["case"] is None and other["candidate"] is None
     assert other["depends"] == [
+        *(f"{JOINT}/fold-012/transformer_compact_online/search-{name}" for name in RATES),
         f"{JOINT}/fold-012/transformer_compact/finalist-s44",
         f"{JOINT}/fold-012/mars_titan_m1/finalist-s44",
     ]
     assert all(
-        (job["model"], job["stage"], job["regenerable"], job["family"])
+        (job["model"], job["kind"], job["regenerable"], job["family"])
         == ("neural", "online", False, plan.NEURAL)
-        and job["case"]["rule"]["update_cap"] == online.CAP
         for job in jobs
     )
-    # El calendario los pone tras elegir padre y tope en su ventana.
+    assert sorted({job["seed"] for job in jobs if job["stage"] == "finalist"}) == [43, 44]
+    # El calendario pone búsqueda y finalistas en su fase, tras elegir padre y tope, y la
+    # elección de la tasa no figura entre las de la base.
     schedule = order.window_schedule(value, plan.plan_campaign(value))
-    assert sum(len(row["phases"][order.PHASES.index("online")]["jobs"]) for row in schedule) == 57
+    phases = [row["phases"] for row in schedule]
+    assert sum(len(p[order.PHASES.index("online")]["jobs"]) for p in phases) == 133
+    assert not any(
+        online.ARM in decision
+        for p in phases
+        for decision in p[order.PHASES.index("selection")]["decisions"]
+    )
+    window = phases[4][order.PHASES.index("online")]["jobs"]
+    assert window == [f"{prefix}/search-{name}" for name in RATES] + [
+        f"{prefix}/finalist-s{seed}" for seed in (43, 44)
+    ]
     # El control conectado por su sección ya no figura entre las familias pendientes.
     assert plan.ONLINE_CONTROL not in plan.pending_families(value)
 
 
 def test_the_online_control_respects_its_job_limit(tmp_path):
     def tight(value):
-        value["online_controls"]["limits"]["max_online_jobs"] = 56
+        value["online_controls"]["limits"]["max_online_jobs"] = 132
 
-    with pytest.raises(ValueError, match="max_online_jobs=56"):
+    with pytest.raises(ValueError, match="max_online_jobs=132"):
         plan.plan_campaign(plan.load_campaign(edited(tmp_path, tight)))
 
 
@@ -465,35 +494,57 @@ def test_the_online_control_respects_its_job_limit(tmp_path):
     [
         lambda arm: arm.update(cap_arm="mars_titan_m2"),
         lambda arm: arm.update(parent_arm="gru"),
-        lambda arm: arm.update(partitions=["evaluation"]),
+        lambda arm: arm.update(partitions=["calibration", "evaluation"]),
         lambda arm: arm["rule"].update(optimizer="adam"),
         lambda arm: arm["rule"].update(update_cap="rows"),
-        lambda arm: arm["rule"].update(learning_rate=0.0),
-        lambda arm: arm["rule"].update(learning_rate=1),
-        lambda arm: arm["rule"].update(block_rows=64.0),
-        lambda arm: arm["rule"].update(update_every=0),
+        lambda arm: arm["rule"].update(learning_rate=1e-3),
+        lambda arm: arm["rule"].update(accumulation_rows=64.0),
+        lambda arm: arm["rule"].update(accumulation_rows=0),
+        lambda arm: arm["rule"].update(accumulation_rows=4097),
+        lambda arm: arm["rule"].update(update_every=2),
+        lambda arm: arm["rule"].update(update_every=True),
+        lambda arm: arm["rule"].update(update_every="pending"),
         lambda arm: arm["rule"].update(max_grad_norm=-1.0),
+        lambda arm: arm["rule"].update(max_grad_norm=1),
         lambda arm: arm["rule"].pop("max_grad_norm"),
+        lambda arm: arm["search_cases"].pop("lr0"),
+        lambda arm: arm["search_cases"].update(lr2={"learning_rate": 2.0}),
+        lambda arm: arm["search_cases"]["lr1"].update(learning_rate=1),
+        lambda arm: arm["search_cases"].update(again={"learning_rate": 0.01}),
+        lambda arm: arm["search_cases"]["lr1"].update(momentum=0.9),
+        lambda arm: arm.update(search_cases={"lr0": {"learning_rate": 0.0}}),
+        lambda arm: arm.pop("search_cases"),
     ],
     ids=[
         "other_cap",
         "other_parent",
-        "evaluation_only",
+        "without_validation",
         "adam",
         "row_cap",
-        "zero_rate",
-        "integer_rate",
+        "rate_in_rule",
         "float_block",
-        "zero_frequency",
+        "zero_block",
+        "large_block",
+        "slower_than_the_bank",
+        "boolean_frequency",
+        "pending_frequency",
         "negative_clip",
+        "integer_clip",
         "missing_clip",
+        "without_zero_rate",
+        "rate_above_one",
+        "integer_rate",
+        "repeated_rate",
+        "other_option",
+        "single_rate",
+        "without_grid",
     ],
 )
 def test_the_online_control_admits_only_its_declared_rule(tmp_path, change):
     def broken(value):
         change(value["online_controls"]["arms"][online.ARM])
 
-    with pytest.raises(ValueError, match="se limita con las escrituras del banco"):
+    with pytest.raises(ValueError, match="tope y su cadencia"):
         plan.load_campaign(edited(tmp_path, broken))
 
 
@@ -520,20 +571,21 @@ def test_the_online_control_needs_its_parent_and_cap_where_it_is_evaluated(monke
     assert online.plan_online(value, plan.plan_campaign(value)) == []
 
 
-def test_the_online_rule_blocks_the_launch_until_every_value_is_declared(tmp_path):
-    pending = [r for r in plan.launch_blockers(campaign()) if r.startswith(online.ARM)]
-    assert pending == [
-        f"{online.ARM}.rule.{name} sigue pendiente"
-        for name in ("learning_rate", "block_rows", "update_every", "max_grad_norm")
-    ]
+def test_an_infinite_clip_read_from_json_is_refused():
+    # JSON admite Infinity al leer, aunque la campaña nunca lo escribe.
+    value = campaign()
+    section = json.loads(json.dumps(value["online_controls"]))
+    section["arms"][online.ARM]["rule"]["max_grad_norm"] = json.loads("Infinity")
+    with pytest.raises(ValueError, match="tope y su cadencia"):
+        online.declared(section, value)
+    assert online.declared(value["online_controls"], value) is value["online_controls"]
 
-    def declared(value):
-        value["online_controls"]["arms"][online.ARM]["rule"].update(
-            learning_rate=1e-4, block_rows=64, update_every=1, max_grad_norm=1.0
-        )
 
-    loaded = plan.load_campaign(edited(tmp_path, declared))
-    assert not [r for r in plan.launch_blockers(loaded) if r.startswith(online.ARM)]
+def test_the_online_partitions_are_those_of_the_executor():
+    from mars_titan.training import online_reference
+
+    assert tuple(online.PARTITIONS) == online_reference.PARTITIONS
+    assert online.CAP == online_reference.CAP_RULE
 
 
 def test_variant_b_is_counted_but_never_launched(tmp_path, learning_doubles):
@@ -640,8 +692,9 @@ def test_staged_adapters_fit_only_new_rows_and_skip_the_first_window():
     assert math.isclose(counted["stages"]["adapters"], staged["hours"])
     assert bounded["adapters_fit_rows"] == "bounded_from_window_counts"
     assert math.isclose(bounded["stages"]["adapters"] * 3600, expected(8_500))
-    # El control en línea predice calibración y evaluación y da como mucho un paso por fila.
-    online_seconds = 57 * (2500 / 2000 + 2500 / 1000)
+    # Cada trabajo del control predice validación, calibración y evaluación y ajusta como
+    # mucho una vez cada etiqueta madura.
+    online_seconds = 133 * (3500 / 2000 + 3500 / 1000)
     assert math.isclose(counted["families"]["online_control"] * 3600, online_seconds)
 
 
