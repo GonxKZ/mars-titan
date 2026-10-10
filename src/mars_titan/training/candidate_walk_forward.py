@@ -70,6 +70,7 @@ from .carried_predictions import (
     same_view,
 )
 from .corpus_inputs import CorpusDataset
+from .label_maturity import window_labels_until
 from .learning_hold import require_learning_allowed
 from .selection import AWAIT, campaign_rule, with_rule
 from .temporal_contract import temporal_contracts
@@ -256,8 +257,13 @@ def check_view_rows(table, dataset, partition):
     return table.num_rows
 
 
-def write_receipts(output, contracts, parent, tables):
-    """Escribir y validar el recibo walk-forward de cada mercado de la ventana."""
+def write_receipts(output, contracts, parent, tables, labels_used_until):
+    """Escribir y validar el recibo walk-forward de cada mercado de la ventana.
+
+    `labels_used_until` es la maduración medida de `label_maturity.window_labels_until`,
+    la misma que publica la campaña. `read_window_receipt` rechaza el recibo si alcanza la
+    evaluación.
+    """
     records = {}
     for market, view in sorted(contracts.items()):
         predictions = {}
@@ -276,12 +282,9 @@ def write_receipts(output, contracts, parent, tables):
             protocol=view["protocol"],
             fold=view["fold"],
             parent=parent,
-            labels_used_until=0,
+            labels_used_until=labels_used_until,
             predictions=predictions,
         )
-        # Ajuste, selección y calibración usan etiquetas maduras antes de la evaluación.
-        start, _ = read_window_receipt(record).segment("evaluation")
-        record["labels_used_until"] = start - 1
         read_window_receipt(record)
         path = Path(output) / "receipts" / f"{market}.json"
         atomic_json(path, record)
@@ -384,7 +387,9 @@ def fit_window(
         parameters_sha256=best["parameters_sha256"],
     )
     parent = dict(id=parent_id, sha256=checkpoint["sha256"])
-    receipts = write_receipts(output, contracts, parent, {n: tables[n] for n in PUBLISHED})
+    # El ajuste, la selección y la calibración leen las etiquetas de la propia vista.
+    until = window_labels_until(view, view)
+    receipts = write_receipts(output, contracts, parent, {n: tables[n] for n in PUBLISHED}, until)
     window = dict(
         schema_version=1,
         kind=WINDOW_KIND,
@@ -538,7 +543,12 @@ def carry_window(
     parent = dict(id=parent_id, sha256=checkpoint["sha256"])
     # Una predicción ablacionada o regenerada no es una predicción walk-forward del brazo.
     published = not (modality_ablation or regenerate)
-    receipts = write_receipts(output, contracts, parent, tables) if published else {}
+    receipts = {}
+    if published:
+        # Los parámetros se fijaron en la vista del ancla y la calibración común usa además
+        # la calibración de esta ventana.
+        until = window_labels_until(anchor_view, view)
+        receipts = write_receipts(output, contracts, parent, tables, until)
     return _receipt(
         output,
         dict(

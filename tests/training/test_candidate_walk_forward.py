@@ -129,6 +129,21 @@ def anchor(views, allowed):
     return SimpleNamespace(output=output, report=report, optimizer=made[0])
 
 
+def labels_maturity(view, partitions):
+    """Mayor maduración de esos tramos de la vista, leída sin `label_maturity`."""
+    manifest = json.loads(Path(view).read_text())
+    root, latest = Path(manifest["roots"]["labels"]), None
+    for asset in manifest["assets"]:
+        path = root / asset["market"] / asset["symbol"] / "labels.parquet"
+        table = pq.read_table(path, columns=["partition", "target_available_at"])
+        table = table.filter(pa.compute.is_in(table["partition"], value_set=pa.array(partitions)))
+        if table.num_rows:
+            values = table["target_available_at"].cast(pa.timestamp("us", tz="UTC"))
+            value = int(pa.compute.max(values.cast(pa.int64())).as_py())
+            latest = value if latest is None else max(latest, value)
+    return latest
+
+
 def shifted_parameters(specification, seed=42):
     adapter = candidate_run.CandidateInputAdapter(
         specification, dtype=torch.float64, parameter_seed=seed, feature_seed=43, key_seed=44
@@ -186,7 +201,13 @@ def test_fit_window_writes_the_view_rows_receipts_and_selected_state(views, anch
     record = json.loads((output / report["receipts"]["US"]["path"]).read_text())
     checked = read_window_receipt(record)
     assert record["parent"] == dict(id="US/fold-000/gru_episodic", sha256=checkpoint["sha256"])
-    assert checked.labels_used_until == checked.segment("evaluation")[0] - 1
+    # La última etiqueta usada es la maduración medida de ajuste, validación y calibración
+    # de la propia vista, como en el recibo que publica la campaña, y no una cota.
+    expected = labels_maturity(view, ("train", "validation", "calibration"))
+    assert checked.labels_used_until == expected < checked.segment("evaluation")[0]
+    # En esta vista queda antes del microsegundo previo a la evaluación, la cota anterior,
+    # así que la prueba distingue las dos reglas.
+    assert expected < checked.segment("evaluation")[0] - 1
     assert set(record["predictions"]) == {"calibration", "evaluation"}
     assert (
         record["predictions"]["evaluation"]["rows"] == report["predictions"]["evaluation"]["rows"]
@@ -357,7 +378,15 @@ def test_carry_predicts_from_the_anchor_state_without_fitting(views, anchor, car
         assert value["rows"] == dataset.manifest["counts"][name]
     receipt = json.loads((output / record["receipts"]["US"]["path"]).read_text())
     assert receipt["parent"] == dict(id="US/fold-000/gru_episodic", sha256=checkpoint["sha256"])
-    assert read_window_receipt(receipt).fold == "fold-001"
+    checked = read_window_receipt(receipt)
+    assert checked.fold == "fold-001"
+    # Los parámetros se fijaron en la vista del ancla y la calibración común usa además la
+    # calibración de esta ventana.
+    expected = max(
+        labels_maturity(views.windows["US"]["fold-000"], ("train", "validation", "calibration")),
+        labels_maturity(views.windows["US"]["fold-001"], ("calibration",)),
+    )
+    assert checked.labels_used_until == expected < checked.segment("evaluation")[0]
     # Un recorrido independiente con el estado del ancla da los mismos bits.
     engine_, sources = predictor(views, anchor, "fold-001", tmp_path / "same")
     path = tmp_path / "same.parquet"
