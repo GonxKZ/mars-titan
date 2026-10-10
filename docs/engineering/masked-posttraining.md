@@ -143,6 +143,10 @@ Las actualizaciones de un caso cronológico las fija el recorrido de su ventana 
 
 Con correcciones nulas la salida coincide exactamente con la del padre cuando ambos recorren los mismos núcleos. En CPU, el modo de autograd cambia la ruta de LSTM y de la atención también para el propio padre, con diferencias de hasta 1,5e-8 en el fixture. Por eso la paridad exacta se comprueba en inferencia y en entrenamiento por separado, y la validación siempre se calcula en `inference_mode`.
 
+### Variedad de adaptadores
+
+La sección opcional `variety` de la versión 3 añade brazos de un solo punto con formas nuevas en la lectura y la fusión (DoRA, (IA)³ y adaptadores en cuello de botella en paralelo y en serie) y subconjuntos del padre (todos los sesgos, las normalizaciones y la memoria persistente de Titans-MAC). Cada brazo tiene su identidad, el mismo presupuesto y la misma selección, parte exactamente del padre y declara en qué ámbitos se propone para la campaña (referencias, cada variante de Titans-MAC o lectores). En los demás queda como reserva. Las [fuentes, descartes, ecuaciones y comprobaciones](adapter-variety.md) están en su propio documento. La etapa A declara la versión 3, así que programa los brazos propuestos para las referencias y para `titans_mac_online` y sus ajustes pasan de 7.182 a 10.332. B sigue en la versión 2 y no cambia.
+
 ## Ejecución de la matriz
 
 `posttraining/matrix_runs.py` reúne las piezas que comparten la cola y la etapa de la campaña. Ninguna decide qué padres o ventanas se recorren.
@@ -264,11 +268,11 @@ B conserva su configuración y su plan anclado: en las ventanas reentrenadas se 
 
 ### Recuento
 
-Por ventana y semilla hay 57 casos en A: 29 en las redes (cinco en cada familia recurrente y en DLinear y nueve en el Transformer) y 28 en Titans-MAC (cinco en `transformer_direct` y en `mac_disabled` y nueve en `mac_frozen` y en `mac_online`). Con tres semillas son 171 por ventana. A tiene 45 ventanas, 42 con postentrenamiento, y 31 padres congelados por ventana: tres semillas en cada uno de los nueve brazos con casos, la semilla 42 de Ridge y las tres de XGBoost. B solo cuenta los 29 casos de las redes.
+Por ventana y semilla hay 82 casos en A: 51 en las redes (nueve en cada familia recurrente y en DLinear y quince en el Transformer) y 31 en Titans-MAC (cinco en `transformer_direct` y en `mac_disabled`, nueve en `mac_frozen` y doce en `mac_online`). De ellos, 25 son brazos de la [variedad](adapter-variety.md): cuatro en cada familia recurrente y en DLinear, seis en el Transformer y tres en `mac_online`. Con tres semillas son 246 por ventana. A tiene 45 ventanas, 42 con postentrenamiento, y 31 padres congelados por ventana: tres semillas en cada uno de los nueve brazos con casos, la semilla 42 de Ridge y las tres de XGBoost. B solo cuenta los 29 casos de las redes de la versión 2.
 
 | Variante | Ventanas con ajuste | Ajustes | Padres congelados | Traslados | Selecciones de la cadena | Se ejecuta |
 | --- | ---: | ---: | ---: | ---: | ---: | --- |
-| A | 42 | 7.182 | 1.302 | 0 | 1.395 | Sí |
+| A | 42 | 10.332 | 1.302 | 0 | 1.395 | Sí |
 | B | 17 | 1.479 | 0 | 2.436 | 0 | No |
 
 Los límites de cada configuración (ajustes y predicciones) son iguales a su plan, como en la campaña base. `check` los comprueba sin leer datos. En la estimación de horas de `training/campaign_throughput.py`, las filas nuevas de cada ventana se aproximan con los recuentos como el ajuste de k menos ajuste, validación y calibración de k-1. Es una cota algo mayor, porque las filas que la purga quitó en las fronteras de k-1 sí están en el ajuste de k.
@@ -368,7 +372,7 @@ Se ejecutaron en CPU, sin GPU visible y sin pasos de optimizador. Las que recorr
 - `tests/posttraining/test_heldout.py`: la evaluación congelada admite validación y sigue rechazando ajuste y test.
 - `tests/posttraining/test_tabular_chain.py` (4): la etapa A publica una cadena para cada predictor que leen las políticas, Ridge y XGBoost solo planifican el padre congelado y su selección y B rechaza la cadena trivial. El recorrido usa la campaña A reducida con Ridge sustituido por una función fija de las presencias. El padre de fold-000 aplicado a fold-001 repite filas, objetivos y predicciones de la base en fold-001, sin cuantiles, y la selección publica ese padre como único candidato.
 - `tests/training/test_carried_predictions.py`: el traslado tabular con `frozen_parent` predice también la validación de la ventana posterior y rechaza la ablación y la regeneración.
-- `tests/training/test_campaign_throughput.py`, `test_campaign_plan.py`, `test_campaign_extensions.py` y `test_storage_budget.py`: recuentos de A (7.182 y 1.302), horas con filas nuevas, padre congelado y caché, el rechazo de recuentos sin filas nuevas, los brazos sin medir en `without_estimate` y la misma medida para las matrices de A y B, cuyos casos de las redes solo difieren en la huella.
+- `tests/training/test_campaign_throughput.py`, `test_campaign_plan.py`, `test_campaign_extensions.py` y `test_storage_budget.py`: recuentos de A (10.332 y 1.302), horas con filas nuevas, padre congelado y caché, el rechazo de recuentos sin filas nuevas, los brazos sin medir en `without_estimate` y una sola medida de A para las dos etapas, porque los casos de las redes de B están en A salvo por la huella de la matriz y A añade los de la variedad.
 
 Diecisiete mutaciones dirigidas, aplicadas una a una sobre una copia del árbol, hacen fallar al menos una prueba cada una. Cubren la intersección, la madurez del padre, el inicio de las filas nuevas, el archivo de muestras y la huella de `staged_rows`, la desigualdad estricta, el desempate y el orden de la puntuación de `staged_chain`, el filtro y la lectura única de `ViewCohortSource`, la rejilla de `MatrixWindow`, la fase de ajuste de Titans-MAC y de la GRU candidata, la regla de las escalas M3 y, en la etapa, el filtro de filas nuevas, la ventana del padre y la comprobación de la puntuación declarada. En la primera pasada sobrevivieron dos: recorrer la validación en el orden escrito (la prueba aleatoria no distinguía los redondeos) y retirar la comparación entre la puntuación recalculada y la declarada. Se añadió una prueba para cada una y las dos fallan ahora.
 
@@ -390,6 +394,12 @@ CUBLAS_WORKSPACE_CONFIG=:4096:8 uv run pytest tests/posttraining/cuda_titans_ada
 ```
 
 Usa float64, como los brazos de la campaña, sin TF32 y con el registrador de gradientes. En `cuda:0`, cada brazo de `transformer_direct` y `mac_online` con correcciones nulas emite exactamente las predicciones y el registro del padre congelado en el mismo dispositivo. Las predicciones del brazo con los tres puntos coinciden con las de CPU con tolerancia relativa 1e-8 y absoluta 1e-10, y el ajuste recorre los mismos pasos con gradiente solo en los adaptadores y valores iguales dentro de esas tolerancias.
+
+Las formas de la variedad tienen su comprobación CUDA, que repite la identidad exacta y el contraste con CPU de cada forma en las cinco familias, y la de Titans-MAC recorre también los brazos de la variedad propuestos. Las dos pasaron el 10 de octubre en el mismo equipo sobre `develop` 3156ad1f, con 35 pruebas superadas y sin avisos de compactación de cuDNN:
+
+```bash
+CUBLAS_WORKSPACE_CONFIG=:4096:8 uv run pytest tests/models/test_adapter_forms_cuda.py -q -rs
+```
 
 La cola y la etapa solo se han recorrido en CPU con los diagnósticos de `run_case`. Su recorrido en `cuda:0` con la reserva de la GPU no tiene todavía una comprobación propia.
 

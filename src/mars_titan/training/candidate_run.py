@@ -678,6 +678,18 @@ class CandidateChronologicalTrainer(CandidateChronologicalPredictor):
     maduras. K repite lectura y refinamiento sobre la misma instantánea y no escribe.
     """
 
+    # Gancho opcional para las trazas de #448. Se llama como `trace(event, modules)` después
+    # de cada validación completa y no debe cambiar el cálculo ni el RNG. Si vale None, el
+    # recorrido no llama a nada y es el mismo de antes bit a bit.
+    trace = None
+
+    def _trace_modules(self):
+        """Módulos con parámetros del recorrido: el nativo y, en un adaptador, su cabeza."""
+        head = getattr(self, "head", None)
+        return dict(model=self.model) | (
+            dict(head=head) if isinstance(head, torch.nn.Module) else {}
+        )
+
     def __init__(
         self,
         adapter,
@@ -1044,6 +1056,14 @@ class CandidateChronologicalTrainer(CandidateChronologicalPredictor):
                         continue
                 if cursor["phase"] == "validation":
                     metrics = self.evaluate(self.validation, stop=stop)
+                    if self.trace is not None:
+                        event = dict(
+                            kind="validation",
+                            epoch=epoch,
+                            global_step=self.global_step,
+                            score=metrics["session_mae"],
+                        )
+                        self.trace(event, self._trace_modules())
                     self.selection = (
                         initial_selection(metrics["session_mae"], options)
                         if epoch == 0

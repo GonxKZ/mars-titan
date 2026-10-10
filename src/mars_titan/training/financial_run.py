@@ -27,6 +27,7 @@ from mars_titan.budget_training import validate_loss
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.evaluation.session_metrics import SessionErrors
 from mars_titan.memory.financial_observations import FinancialObservationSource
+from mars_titan.models.predictive_adaptation import is_adapter_name
 from mars_titan.models.quantile_head import PINBALL, QUANTILE_HEAD, pinball_loss
 from mars_titan.models.titans.config import canonical
 from mars_titan.models.titans.financial import VARIANTS, FinancialPredictor, FinancialState
@@ -180,7 +181,7 @@ def parameter_roles(predictor):
     """
     roles = dict(shared=[], persistent_memory=[], initial_fast_weights=[])
     for name, _ in predictor.named_parameters():
-        if ".parametrizations." in name and not name.endswith(".original"):
+        if is_adapter_name(name):
             roles.setdefault("adapters", []).append(name)
         elif name == "mac.persistent":
             roles["persistent_memory"].append(name)
@@ -543,6 +544,11 @@ class ChronologicalTrainer(ChronologicalInference):
     con esas etiquetas y se cortan los grafos. Después se predicen las entradas del
     instante con los parámetros vigentes.
     """
+
+    # Gancho opcional para las trazas de #448. Se llama como `trace(event, modules)` después
+    # de cada validación completa y no debe cambiar el cálculo ni el RNG. Si vale None, el
+    # recorrido no llama a nada y es el mismo de antes bit a bit.
+    trace = None
 
     def __init__(
         self,
@@ -992,6 +998,14 @@ class ChronologicalTrainer(ChronologicalInference):
                         continue
                 if cursor["phase"] == "validation":
                     metrics = self.evaluate(self.validation, stop=stop)
+                    if self.trace is not None:
+                        event = dict(
+                            kind="validation",
+                            epoch=epoch,
+                            global_step=self.global_step,
+                            score=metrics["session_mae"],
+                        )
+                        self.trace(event, dict(predictor=self.predictor))
                     self.selection = (
                         initial_selection(metrics["session_mae"], options)
                         if epoch == 0

@@ -330,8 +330,8 @@ def test_window_schedule_orders_every_stage_of_the_window_and_counts_all_jobs():
     for row in schedule:
         totals.update({entry["phase"]: len(entry["jobs"]) for entry in row["phases"]})
     assert totals["base_search"] + totals["selected_case_seeds"] == 2341
-    # Adaptadores: 5.238 ajustes, 1.116 padres congelados y 1.178 selecciones de la cadena.
-    assert (totals["adapters"], totals["ablation"], totals["rl"]) == (7532, 3534, 2160 + 2442)
+    # Adaptadores: 6.588 ajustes, 1.116 padres congelados y 1.178 selecciones de la cadena.
+    assert (totals["adapters"], totals["ablation"], totals["rl"]) == (8882, 3534, 2160 + 2442)
     window = schedule[6]
     selection = window["phases"][order.PHASES.index("selection")]
     assert "CN/fold-000/mars_titan_m1" in selection["decisions"]
@@ -429,7 +429,7 @@ def test_later_stages_of_v2_read_the_joint_model_in_each_market():
     # 20 brazos neuronales con tres semillas y los dos tabulares con una: 62 cadenas por
     # ventana. Cada ventana con padre congela esos 62 padres y todas eligen su cadena.
     assert (counts["training_jobs"], counts["prediction_jobs"], counts["selection_jobs"]) == (
-        5238,
+        6588,
         62 * 18,
         62 * 19,
     )

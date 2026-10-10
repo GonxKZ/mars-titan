@@ -34,7 +34,7 @@
   "chain_rule": "chain_validation_score_v1",
   "data_policy": "real_edition_only",
   "limits": {
-    "max_training_jobs": 5238,
+    "max_training_jobs": 6588,
     "max_prediction_jobs": 1116
   },
   "final_test_opened": false

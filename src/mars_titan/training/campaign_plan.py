@@ -166,8 +166,9 @@ EXTENSION_POINTS = {
 # `stages` son las de las campañas A y B de tres ámbitos y `joint_stage`, la de la campaña
 # A v2 con el modelo conjunto y los controles separados.
 LATER_STAGES = {
-    # A declara la matriz v3, con los casos de Titans-MAC. B conserva la v2 porque no se
-    # ejecuta, y sus casos de las redes coinciden con los de la v3 salvo por la huella.
+    # A declara la matriz v3, con los casos de Titans-MAC y la variedad de adaptadores. B
+    # conserva la v2 porque no se ejecuta, y sus casos de las redes están en la v3 salvo por
+    # la huella.
     "posttraining_adapter_matrix": dict(
         config="configs/posttraining/adapter-matrix-v3.json",
         stages=dict(
