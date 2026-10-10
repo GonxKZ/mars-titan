@@ -3,6 +3,7 @@
   "kind": "mars_titan_new_arms_measurement",
   "recorded_at_utc": "2026-10-10T00:28:00.848246+00:00",
   "commit": "39d3b00050c86b4817b1dbee5218c866f721146b",
+  "commit_note": "Medido antes de rebasar la rama sobre develop. Tras el rebase, el commit equivalente es 4f1ff36c398e949aa9f9e34f93dcb5e6cda50501 y ningún archivo del recorrido medido de MARS-TITAN y Titans-MAC cambia. En los archivos de ese recorrido, develop solo aportó cambios al RL nativo y a las referencias tabulares, que la medida no usa.",
   "command": "memslot heavy -- uv run --no-sync python measure.py <vistas>/US+CN/fold-012/manifest.json <trabajo> <salida> mars_titan_b6 mars_titan_b6_bias mars_titan_m1_k4 mars_titan_m1_k4_first_read mars_titan_m1",
   "environment": "PYTHONPATH=src, CUBLAS_WORKSPACE_CONFIG=:4096:8, OMP_NUM_THREADS=2, MKL_NUM_THREADS=2, MARS_TITAN_EPISODIC_NATIVE=<enlace nativo con candidato y CUDA>",
   "scope": "Caudal y memoria en cuda:0 de los brazos nuevos de MARS-TITAN, con M1 y M1 con K = 4 como referencias medidas en la misma ejecución. Una sola ventana, la US+CN fold-012, que es la más poblada. El padre mac_online tiene sus pesos iniciales y ningún brazo aplica pasos de optimizador. No es un resultado predictivo.",
@@ -288,6 +289,7 @@
   },
   "cuda_check": {
     "commit": "be30fbacc48dcee789bbb240af0ac40811e6f8d2",
+    "commit_note": "Ejecutada antes de rebasar. El commit equivalente tras el rebase es 969fb4e0a4472bddbd8abcce04079650b881daff, con la misma prueba y el mismo código de la ventana.",
     "recorded_at_utc": "2026-10-09T19:52:13+00:00",
     "command": "CUDA_VISIBLE_DEVICES=0 OMP_NUM_THREADS=2 CUBLAS_WORKSPACE_CONFIG=:4096:8 MARS_TITAN_B6_CHECK_REPORT=<recibo> memslot gpu -- uv run --no-sync python -m pytest -q tests/memory/cuda_mars_titan_correction_check.py",
     "kind": "mars_titan_correction_cuda_check",
