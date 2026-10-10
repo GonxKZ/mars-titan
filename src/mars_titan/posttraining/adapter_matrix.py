@@ -10,7 +10,8 @@ declara por cabeza del padre: los escalares conservan los de la versión 1 y los
 `quantile_head_v1` optimizan la pinball de sus cinco niveles. Un control que no tiene
 objetivo para una cabeza se excluye con su motivo, no se reinterpreta. La versión 3
 conserva todo lo anterior y añade los destinos de las familias con entrenador cronológico
-(`chronological_matrix`).
+(`chronological_matrix`) y, de forma opcional, la sección `variety` de #444 con brazos de
+un solo punto (`adapter_variety`).
 """
 
 import itertools
@@ -19,13 +20,16 @@ from pathlib import Path
 
 from mars_titan.data.cohort_files import read_manifest
 from mars_titan.data.input_policy import INPUT_POLICIES
-from mars_titan.models.predictive_adaptation import ADAPTER_FORMS, AdapterTarget
+from mars_titan.models.predictive_adaptation import AdapterTarget, target_shape
 from mars_titan.models.quantile_head import QUANTILE_HEAD
 
+from . import adapter_variety
 from .inputs import fingerprint
 from .selection import selection_policy
 
 POINTS = ("head", "readout", "fusion")
+# Formas de los puntos y brazos de las versiones 1 a 3. La variedad declara las suyas.
+BASE_FORMS = ("residual", "low_rank")
 CONTROLS = ("frozen_parent", "linear_residual", "full_continuation")
 # Familias de MultimodalReference que el postentrenamiento puede cargar como padre.
 FAMILIES = ("rnn", "lstm", "gru", "dlinear", "transformer")
@@ -66,7 +70,7 @@ def _require(condition, message):
 def _point(spec):
     _require(
         isinstance(spec, dict)
-        and spec.get("form") in ADAPTER_FORMS
+        and spec.get("form") in BASE_FORMS
         and set(spec)
         == {"form", "invalidates"} | ({"rank", "alpha"} if spec["form"] == "low_rank" else set()),
         "Cada punto declara forma, estados invalidados y, si es de bajo rango, rango y escala",
@@ -109,9 +113,11 @@ def validate_matrix(matrix):
         "selection",
         "architectures",
     }
+    # Solo la versión 3 admite la sección opcional de variedad de #444.
+    variety = isinstance(matrix, dict) and matrix.get("schema_version") == 3 and "variety" in matrix
     _require(
         isinstance(matrix, dict)
-        and set(matrix) == keys
+        and set(matrix) == keys | ({"variety"} if variety else set())
         and matrix["schema_version"] in (1, 2, 3)
         and type(matrix["schema_version"]) is int
         and matrix["kind"] == KIND
@@ -193,11 +199,13 @@ def validate_matrix(matrix):
         combinations == expected, "La matriz contiene todas las combinaciones de 1, 2 y 3 puntos"
     )
     _architectures(matrix["architectures"], matrix["schema_version"])
+    if variety:
+        adapter_variety.validate(matrix["variety"], matrix)
     from .run import validate_case
 
     # Los casos derivados deben pertenecer al diseño emparejado del ajuste.
     for head in declared:
-        for item in cases(matrix, "0" * 64, READOUT_FAMILIES[0], head=head):
+        for item in cases(matrix, "0" * 64, READOUT_FAMILIES[0], head=head, reserve=True):
             validate_case(item["case"])
     return matrix
 
@@ -295,8 +303,12 @@ def _family(family):
     return family
 
 
-def arms(matrix, family):
-    """Brazos aplicables a la familia, con la forma resuelta de cada punto."""
+def arms(matrix, family, *, reserve=False):
+    """Brazos aplicables a la familia, con la forma resuelta de cada punto.
+
+    Los de la variedad siguen a los de la matriz. `reserve` añade los brazos de la variedad
+    implementados que la matriz no propone para la campaña.
+    """
     _family(family)
     result = []
     for arm in matrix["arms"]:
@@ -307,7 +319,7 @@ def arms(matrix, family):
             for name in arm["points"]
         }
         result.append(dict(id=arm["id"], points=points))
-    return result
+    return result + adapter_variety.neural_arms(matrix, family, reserve=reserve)
 
 
 def _case(matrix, seed, mode, adapter=None):
@@ -321,11 +333,11 @@ def _case(matrix, seed, mode, adapter=None):
     return case
 
 
-def cases(matrix, digest, family, *, head=SCALAR):
+def cases(matrix, digest, family, *, head=SCALAR, reserve=False):
     """Casos del ajuste, en orden fijo. El padre congelado se evalúa sin actualizaciones.
 
     Los objetivos dependen de la cabeza del padre. Un control excluido para esa cabeza
-    no genera caso.
+    no genera caso. `reserve` incluye los brazos de reserva de la variedad.
     """
     _family(family)
     declared = objectives(matrix, head)
@@ -346,7 +358,7 @@ def cases(matrix, digest, family, *, head=SCALAR):
                 case=_case(matrix, seed, declared["full_continuation"]),
             )
         )
-        for arm in arms(matrix, family):
+        for arm in arms(matrix, family, reserve=reserve):
             adapter = dict(
                 matrix_sha256=digest,
                 input_policy=matrix["input_policy"],
@@ -364,6 +376,7 @@ def cases(matrix, digest, family, *, head=SCALAR):
 
 
 def validate_adapter(adapter):
+    names = POINTS + adapter_variety.SELECTIVE_POINTS
     _require(
         isinstance(adapter, dict)
         and set(adapter) == {"matrix_sha256", "input_policy", "arm", "points"}
@@ -373,11 +386,17 @@ def validate_adapter(adapter):
         and isinstance(adapter["arm"], str)
         and isinstance(adapter["points"], dict)
         and 1 <= len(adapter["points"]) <= 3
-        and list(adapter["points"]) == [name for name in POINTS if name in adapter["points"]],
+        and list(adapter["points"]) == [name for name in names if name in adapter["points"]],
         "El adaptador del caso no pertenece a una matriz declarada",
     )
-    for spec in adapter["points"].values():
-        _point(spec)
+    variety = [adapter_variety.is_variety(*item) for item in adapter["points"].items()]
+    # Un brazo de la variedad tiene un solo punto y no se combina con los de la matriz.
+    _require(not any(variety) or len(variety) == 1, "La variedad declara brazos de un punto")
+    for name, spec in adapter["points"].items():
+        if adapter_variety.is_variety(name, spec):
+            adapter_variety.check_spec(name, spec)
+        else:
+            _point(spec)
     return adapter
 
 
@@ -388,6 +407,13 @@ def targets(adapter, model):
     hidden = model.architecture["hidden_size"]
     result = []
     for name, spec in adapter["points"].items():
+        if adapter_variety.is_variety(name, spec):
+            _require(
+                name != "readout" or family in READOUT_FAMILIES,
+                "La familia no tiene una lectura con consulta",
+            )
+            result += adapter_variety.neural_targets(model, name, spec)
+            continue
         options = (
             {}
             if spec["form"] == "residual"
@@ -427,10 +453,7 @@ def adapter_seed(case):
 def describe(adapter, model):
     """Identidad de los tensores modificados y recuento exacto de parámetros entrenables."""
     resolved = targets(adapter, model)
-    rows = [
-        target.identity(tuple(getattr(model.get_submodule(target.module), target.tensor).shape))
-        for target in resolved
-    ]
+    rows = [target.identity(target_shape(model, target)) for target in resolved]
     return dict(targets=rows, trainable_parameters=sum(row["trainable_parameters"] for row in rows))
 
 
