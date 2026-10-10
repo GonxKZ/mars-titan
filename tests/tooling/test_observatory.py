@@ -3,6 +3,7 @@
 import importlib.util
 import json
 import os
+import shutil
 import subprocess
 import sys
 from datetime import UTC, datetime
@@ -459,6 +460,9 @@ def test_signed_finite_loss_is_preserved_in_metrics_and_history(exporter, tmp_pa
     assert run["metrics"]["mae"] == 0.02
 
 
+@pytest.mark.skipif(
+    shutil.which("node") is None, reason="Falta Node.js para ejecutar el validador de la web"
+)
 def test_cli_snapshot_is_accepted_by_real_frontend_validator(tmp_path):
     """Detecta divergencias del contrato público entre el exportador y la web."""
     state = Path(__file__).resolve().parents[2] / "site" / "state.mjs"
