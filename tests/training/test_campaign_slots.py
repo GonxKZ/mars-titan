@@ -242,6 +242,24 @@ def test_declared_execution_matches_the_campaign_plan():
         dict(host=dict(cpu_workers=9)),
         dict(pipeline=dict(decode_workers=17)),
         dict(kind="otra"),
+        dict(
+            models=dict(neural=dict(device="cuda", vram_mib=1024, host_mib=4096, arms=dict(gru={})))
+        ),
+        dict(
+            models=dict(
+                neural=dict(device="cuda", vram_mib=1024, host_mib=4096, arms=dict(gru=dict(lr=1)))
+            )
+        ),
+        dict(
+            models=dict(
+                neural=dict(
+                    device="cuda",
+                    vram_mib=1024,
+                    host_mib=4096,
+                    arms=dict(gru=dict(scopes=dict(EU=dict(vram_mib=512)))),
+                )
+            )
+        ),
     ],
 )
 def test_invalid_execution_is_rejected(tmp_path, changes):
@@ -334,7 +352,8 @@ def test_a_job_that_runs_out_of_vram_is_repeated_alone_with_more(prepared, tmp_p
     first, second = (int(e["environment"]["MARS_TITAN_SLOT_VRAM_MIB"]) for e in entries)
     assert second >= first + 1024
     observed = json.loads((tmp_path / "out" / engine.OBSERVED_RESOURCES).read_text())
-    assert observed["observed"]["neural/US"]["oom"] == 1
+    job = next(job for job in plan_campaign(load_campaign(campaign)) if job["id"] == planned[1])
+    assert observed["observed"][PeakEstimates.key(job)]["oom"] == 1
     assert execute(campaign, views, tmp_path / "serial", slots(1))["status"] == "completed"
     assert receipts(tmp_path / "out") == receipts(tmp_path / "serial")
 
@@ -343,7 +362,7 @@ def test_estimates_follow_the_observed_peak_within_the_budget(tmp_path):
     execution = Execution(
         gpu_slots=2,
         vram_budget_bytes=4096 * MIB,
-        models={"neural": dict(default=JobResources("cuda", 1024 * MIB, GIB), scopes={})},
+        models={"neural": dict(default=JobResources("cuda", 1024 * MIB, GIB), scopes={}, arms={})},
     )
     job = dict(id="US/fold-000/gru/search-gru-00", model="neural", scope="US")
     path = tmp_path / "observed.json"
@@ -369,7 +388,7 @@ def test_an_observed_peak_keeps_the_campaign_process(tmp_path):
     execution = Execution(
         gpu_slots=2,
         vram_budget_bytes=4096 * MIB,
-        models={"xgboost": dict(default=exclusive, scopes={})},
+        models={"xgboost": dict(default=exclusive, scopes={}, arms={})},
     )
     job = dict(id="US/fold-000/xgboost/search-xgboost-00", model="xgboost", scope="US")
     estimates = PeakEstimates(execution, tmp_path / "observed.json")
@@ -379,12 +398,61 @@ def test_an_observed_peak_keeps_the_campaign_process(tmp_path):
     )
 
 
+def test_each_arm_corrects_only_its_own_estimate(tmp_path):
+    declared = JobResources("cuda", 1792 * MIB, GIB)
+    execution = Execution(
+        gpu_slots=2,
+        vram_budget_bytes=7000 * MIB,
+        models={"titans_mac": dict(default=declared, scopes={}, arms={})},
+    )
+    online = dict(id="a", model="titans_mac", arm="titans_mac_online", scope="US")
+    frozen = dict(online, id="b", arm="titans_mac_frozen")
+    estimates = PeakEstimates(execution, tmp_path / "observed.json")
+    estimates.observe(online, dict(peak_vram_reserved_bytes=5000 * MIB))
+    assert estimates.resources(online, "cuda").vram_bytes == (5000 + CONTEXT_MIB) * MIB
+    # El pico de un brazo grande no impide empaquetar los pequeños del mismo modelo.
+    assert estimates.resources(frozen, "cuda") == declared
+
+
+def test_arms_override_their_model_in_every_scope(tmp_path):
+    document = json.loads(
+        Path("configs/baselines/historical-masked-campaign-execution.json").read_text()
+    )
+    titans = document["models"]["titans_mac"]
+    titans["arms"] = dict(
+        titans_mac_online=dict(vram_mib=6000, scopes=dict(CN=dict(host_mib=4096)))
+    )
+    path = tmp_path / "execution.json"
+    path.write_text(json.dumps(document))
+    execution = load_execution(path)
+
+    def resources(arm, scope):
+        job = dict(id="x", model="titans_mac", arm=arm, scope=scope)
+        return execution.resources(job, "cuda")
+
+    # La VRAM del brazo sustituye a la del modelo en todos los ámbitos y su RAM solo en CN.
+    assert resources("titans_mac_online", "US+CN") == JobResources("cuda", 6000 * MIB, 8 * GIB)
+    assert resources("titans_mac_online", "CN") == JobResources("cuda", 6000 * MIB, 4 * GIB)
+    # Los demás brazos conservan lo del modelo en cada ámbito.
+    assert resources("titans_mac_frozen", "CN") == JobResources("cuda", 1280 * MIB, 5 * GIB)
+    campaign = load_campaign("configs/baselines/historical-masked-campaign-a.json")
+    check_plan(execution, plan_campaign(campaign), engine.EXECUTORS)
+    for arms, message in (
+        (dict(titans_mac_paper=dict(vram_mib=1024)), "brazos que no tiene"),
+        (dict(titans_mac_online=dict(vram_mib=8000)), "supera el presupuesto"),
+    ):
+        titans["arms"] = arms
+        path.write_text(json.dumps(document))
+        with pytest.raises(ValueError, match=message):
+            check_plan(load_execution(path), plan_campaign(campaign), engine.EXECUTORS)
+
+
 def test_slots_launch_the_largest_ready_jobs_first():
     execution = Execution(
         gpu_slots=3,
         models={
-            "neural": dict(default=JobResources("cuda", 512 * MIB, GIB), scopes={}),
-            "titans_mac": dict(default=JobResources("cuda", 1792 * MIB, GIB), scopes={}),
+            "neural": dict(default=JobResources("cuda", 512 * MIB, GIB), scopes={}, arms={}),
+            "titans_mac": dict(default=JobResources("cuda", 1792 * MIB, GIB), scopes={}, arms={}),
         },
     )
     jobs = [
@@ -411,9 +479,9 @@ def test_a_blocked_first_job_reserves_its_device():
         gpu_slots=3,
         cpu_workers=2,
         models={
-            "neural": dict(default=JobResources("cuda", 512 * MIB, GIB), scopes={}),
-            "xgboost": dict(default=JobResources("cuda", 4096 * MIB, GIB), scopes={}),
-            "ridge": dict(default=JobResources("cpu", 0, GIB), scopes={}),
+            "neural": dict(default=JobResources("cuda", 512 * MIB, GIB), scopes={}, arms={}),
+            "xgboost": dict(default=JobResources("cuda", 4096 * MIB, GIB), scopes={}, arms={}),
+            "ridge": dict(default=JobResources("cpu", 0, GIB), scopes={}, arms={}),
         },
     )
     models = ["neural", "xgboost", "neural", "ridge", "neural"]
@@ -495,8 +563,8 @@ def test_campaign_process_jobs_run_there(prepared, tmp_path, monkeypatch, ridge_
         3,
         vram_budget_bytes=4096 * MIB,
         models=dict(
-            neural=dict(default=JobResources("cuda", 1024 * MIB, GIB), scopes={}),
-            ridge=dict(default=ridge, scopes={}),
+            neural=dict(default=JobResources("cuda", 1024 * MIB, GIB), scopes={}, arms={}),
+            ridge=dict(default=ridge, scopes={}, arms={}),
         ),
     )
     assert execute(campaign, views, tmp_path / "out", execution)["status"] == "completed"

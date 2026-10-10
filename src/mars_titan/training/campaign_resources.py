@@ -36,7 +36,8 @@ OBSERVED_KIND = "historical_masked_campaign_observed_resources"
 _FIELDS = {"schema_version", "kind", "gpu", "host", "pipeline", "models", "notes"}
 _GPU = {"slots", "vram_budget_mib", "mps", "mps_pipe_directory"}
 _HOST = {"cpu_workers", "threads_per_job", "ram_budget_mib", "reserve_mib"}
-_MODEL = {"device", "vram_mib", "host_mib", "scopes", "campaign_process"}
+_MODEL = {"device", "vram_mib", "host_mib", "scopes", "arms", "campaign_process"}
+_SIZES = {"vram_mib", "host_mib"}
 _PIPELINE = {"decode_workers", "prefetch_batches", "group_cache_mib"}
 
 
@@ -92,10 +93,11 @@ class Execution:
         return self.gpu_slots > 1
 
     def resources(self, job, default_device):
-        """Recursos del trabajo: los de su modelo y ámbito, o su dispositivo sin estimación."""
+        """Recursos del trabajo: los de su brazo, modelo y ámbito, o su dispositivo sin más."""
         declared = self.models.get(job["model"])
         if declared is None:
             return JobResources(device=default_device)
+        declared = declared["arms"].get(job.get("arm"), declared)
         return declared["scopes"].get(job["scope"], declared["default"])
 
     def record(self):
@@ -126,9 +128,12 @@ def _model(name, value, scopes):
         f"{name} solo puede ejecutarse en el proceso de la campaña si es CUDA",
     )
 
-    def resources(entry, label):
-        vram = entry.get("vram_mib", value.get("vram_mib"))
-        host = entry.get("host_mib", value["host_mib"])
+    def resources(label, *entries):
+        # Cada entrada sustituye a las anteriores: modelo, ámbito, brazo y brazo en el ámbito.
+        sizes = {}
+        for entry in entries:
+            sizes.update(entry)
+        vram, host = sizes.get("vram_mib"), sizes["host_mib"]
         if device == "cuda":
             _require(vram is not None, f"{label} necesita su VRAM estimada")
             vram_bytes = _mib(vram, f"La VRAM de {label}", lower=1)
@@ -138,22 +143,56 @@ def _model(name, value, scopes):
         host_bytes = _mib(host, f"La RAM de {label}", lower=1)
         return JobResources(device, vram_bytes, host_bytes, campaign_process)
 
-    overrides = value.get("scopes", {})
+    def scoped(entry, label):
+        overrides = entry.get("scopes", {})
+        _require(
+            isinstance(overrides, dict)
+            and set(overrides) <= set(scopes)
+            and all(
+                isinstance(sizes, dict) and sizes and set(sizes) <= _SIZES
+                for sizes in overrides.values()
+            ),
+            f"Los ámbitos de {label} no pertenecen a la campaña o no declaran VRAM o RAM",
+        )
+        return overrides
+
+    base = {key: value[key] for key in _SIZES & set(value)}
+    model_scopes = scoped(value, name)
+    arms = value.get("arms", {})
     _require(
-        isinstance(overrides, dict)
-        and set(overrides) <= set(scopes)
+        isinstance(arms, dict)
         and all(
-            isinstance(entry, dict) and entry and set(entry) <= {"vram_mib", "host_mib"}
-            for entry in overrides.values()
+            isinstance(entry, dict) and entry and set(entry) <= _SIZES | {"scopes"}
+            for entry in arms.values()
         ),
-        f"Los ámbitos de {name} no pertenecen a la campaña o no declaran VRAM o RAM",
+        f"Los brazos de {name} deben declarar VRAM, RAM o ámbitos",
     )
-    return dict(
-        default=resources({}, name),
+    declared = dict(
+        default=resources(name, base),
         scopes={
-            scope: resources(entry, f"{name} en {scope}") for scope, entry in overrides.items()
+            scope: resources(f"{name} en {scope}", base, sizes)
+            for scope, sizes in model_scopes.items()
         },
+        arms={},
     )
+    # Un brazo hereda lo del modelo en cada ámbito y lo sustituye con lo suyo. Sus recursos
+    # se resuelven aquí para todos los ámbitos y un error aparece al cargar la declaración.
+    for arm, entry in arms.items():
+        own, arm_scopes = {key: entry[key] for key in _SIZES & set(entry)}, scoped(entry, arm)
+        declared["arms"][arm] = dict(
+            default=resources(f"{name}/{arm}", base, own),
+            scopes={
+                scope: resources(
+                    f"{name}/{arm} en {scope}",
+                    base,
+                    model_scopes.get(scope, {}),
+                    own,
+                    arm_scopes.get(scope, {}),
+                )
+                for scope in scopes
+            },
+        )
+    return declared
 
 
 def load_execution(path, *, scopes=("US", "CN", "US+CN")):
@@ -223,8 +262,9 @@ def check_plan(execution, jobs, executors):
     Sin ranuras la ejecución es en serie, así que un trabajo anterior a su dependencia
     dejaría la campaña detenida.
     """
-    seen = set()
+    seen, arms = set(), {}
     for job in jobs:
+        arms.setdefault(job["model"], set()).add(job.get("arm"))
         _require(
             all(dependency in seen for dependency in job["depends"]),
             f"{job['id']} aparece en el plan antes que alguna de sus dependencias",
@@ -252,6 +292,9 @@ def check_plan(execution, jobs, executors):
                 f"{job['id']} estima {resources.host_bytes // MIB} MiB de RAM y supera el "
                 f"presupuesto de {execution.host_budget_bytes // MIB} MiB",
             )
+    for name, declared in execution.models.items():
+        unknown = sorted(set(declared["arms"]) - arms.get(name, set()))
+        _require(not unknown, f"{name} declara brazos que no tiene en el plan: {unknown}")
 
 
 def available_host_bytes():
@@ -348,9 +391,9 @@ def environment(execution):
 class PeakEstimates:
     """VRAM de cada tipo de trabajo: la declarada o la observada, la mayor de las dos.
 
-    El tipo es el modelo y el ámbito. Cuando un trabajo termina en su proceso, su pico
-    reservado por el asignador más `CONTEXT_MIB` sustituye a la estimación si es mayor, de
-    modo que los siguientes trabajos del mismo tipo se admiten con lo observado. Nunca baja
+    El tipo es el modelo, el brazo y el ámbito. Cuando un trabajo termina en su proceso, su
+    pico reservado por el asignador más `CONTEXT_MIB` sustituye a la estimación si es mayor,
+    de modo que los siguientes trabajos del mismo tipo se admiten con lo observado. Nunca baja
     de lo declarado, que se mide en la ventana más poblada. Si un trabajo agota su VRAM, la
     estimación sube la mitad (al menos 1 GiB) sin pasar del presupuesto y el trabajo se
     repite, como mucho `MAX_OOM_RETRIES` veces. El estado se guarda de forma atómica en
@@ -376,7 +419,9 @@ class PeakEstimates:
 
     @staticmethod
     def key(job):
-        return f"{job['model']}/{job['scope']}"
+        # Los brazos de un mismo modelo pueden diferir mucho en VRAM, así que cada uno corrige
+        # solo su propia estimación.
+        return f"{job['model']}/{job.get('arm')}/{job['scope']}"
 
     def resources(self, job, default_device):
         declared = self.execution.resources(job, default_device)
