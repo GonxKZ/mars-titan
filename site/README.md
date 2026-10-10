@@ -1,28 +1,70 @@
 # Observatorio de MARS-TITAN
 
-La página estática consulta el registro público de campañas y permite importar un JSON local. Muestra origen, actividad, avance observado, recuperación y métricas de validación. La importación permanece en memoria y no se envía a ningún servidor.
+La página sigue las campañas de entrenamiento con los recibos que publica el recolector. Tiene siete vistas: campaña, curvas por época, recursos, trazas de memoria, políticas financieras, registros y método. La misma interfaz funciona en dos modos que comparten código y contrato de datos.
 
-El contrato de versión 2 divide el historial en páginas de 64 registros, cargadas bajo demanda. La interfaz también admite las instantáneas anteriores de versión 1. Cada archivo tiene un límite de 8 MiB, cada página admite hasta 128 registros y cada curva hasta 500 puntos. Los valores desconocidos son `null`.
+- **Pages.** Datos estáticos de la rama `observatory-data`. El índice se consulta cada 60 segundos con `If-None-Match`. Una respuesta 304 no descarga ni redibuja nada. La barra superior muestra la antigüedad de la recogida con su zona horaria.
+- **Directo en local.** `scripts/serve_observatory.py` sirve el sitio y empuja eventos SSE. Añade telemetría del equipo, campañas por ventanas y trazas de aprendizaje, todo en solo lectura. Escucha en `127.0.0.1` salvo que se pida otra cosa de forma expresa.
 
-Las comparaciones predictivas exigen la misma población y definición de medida. La generación sintética y la evaluación financiera tienen vistas separadas. La pérdida de un optimizador financiero no se interpreta como MAE. Las fases reservadas y el test permanecen ocultos. El productor excluye estos datos antes de publicarlos, porque ocultarlos en pantalla no protegería el archivo descargable.
+## Flujo de datos
 
-La fecha del último progreso, la observación del proceso y la preparación del paquete publicado son distintas. Un proceso sin una observación reciente se muestra como «Sin actualización». La interfaz no deduce que se haya pausado. El navegador consulta cada 60 segundos mientras la pestaña está visible y conserva la última página válida si la red o el contrato fallan.
+```mermaid
+flowchart LR
+  R["Recibos de entrenamiento<br/>run.json, receipt.json"] --> C["Recolector<br/>collect_observatory.py --watch"]
+  C --> P["Salida pública<br/>observatory.json y pages/"]
+  P --> B["Rama observatory-data"] --> A["Actions: solo Pages"] --> W["Navegador en modo Pages<br/>consulta condicional cada 60 s"]
+  P --> S["serve_observatory.py<br/>127.0.0.1"]
+  K["Campañas por ventanas<br/>summary.json y jobs/"] --> S
+  T["Paquetes de trazas<br/>manifiesto y bloque binario"] --> S
+  N["NVML, /proc y statvfs"] --> S
+  S -- "SSE: índice, telemetría, campañas, trazas" --> L["Navegador en directo"]
+```
 
-El recolector local observa las campañas cada 15 segundos y publica los cambios ordinarios cada cinco minutos. Los estados terminales tienen prioridad. Pages sirve un paquete estático identificado por los SHA del frontend y de los datos, sin ejecutar entrenamientos ni recolección en Actions. La [guía del recolector](https://github.com/GonxKZ/mars-titan/blob/develop/docs/engineering/campaign-observatory.md) describe fuentes, límites y recuperación.
+El servidor local no escribe en ninguna de sus fuentes ni toma el bloqueo de las campañas. Lee el índice cuando cambia su identidad de archivo y avisa al navegador, que lo descarga con la misma petición condicional que en Pages.
 
-## Código y comprobaciones
+## Modo directo
 
-`state.mjs` valida contratos y resuelve visibilidad, comparación y CSV. `app.js` gestiona controles, peticiones y DOM. `index.html` y `styles.css` definen la presentación adaptable. No hay servidor de aplicación, bibliotecas remotas, fuentes descargadas ni telemetría.
+```bash
+uv run --locked python scripts/serve_observatory.py \
+  --public-dir RUTA_DE_LA_SALIDA_PUBLICA_DEL_RECOLECTOR \
+  --campaign A=RUTA_DE_UNA_CAMPAÑA_POR_VENTANAS \
+  --traces-dir RUTA_DE_LOS_PAQUETES_DE_TRAZAS
+```
+
+Todas las fuentes son opcionales. Sin `--public-dir` solo hay telemetría. La orden imprime la dirección, por defecto `http://127.0.0.1:8765/`, y termina con `Ctrl+C`. Los límites son de cuatro clientes SSE, dos eventos por segundo y cliente, 24 conexiones, 8 MiB por archivo JSON y 256 MiB por paquete de trazas. `--allow-remote` es necesario para escuchar fuera del bucle local.
+
+Los paquetes de trazas se preparan a partir de la carpeta del registrador de aprendizaje, sin modificarla:
+
+```bash
+uv run --locked python scripts/export_learning_traces.py \
+  --traces RUTA_DEL_REGISTRADOR --output RUTA_DE_LOS_PAQUETES \
+  --name NOMBRE --run-id RUN_ID --attempt-id ATTEMPT_ID --model-id MODEL_ID
+```
+
+## Código
+
+| Archivo | Responsabilidad |
+| --- | --- |
+| `state.mjs` | Contrato del índice y de las páginas, visibilidad de fases reservadas y CSV. |
+| `model.mjs` | Estructuras derivadas puras: series de campañas, matrices, curvas, medianas, ritmo y estimaciones. |
+| `sources.mjs` | Lectura condicional, páginas inmutables y flujo SSE. |
+| `scheduler.mjs` | Un único fotograma por lote de cambios y pausa con la pestaña oculta. |
+| `decimate.mjs` | Reducción M4 de series largas con índices de la serie original. |
+| `traces.mjs` | Lectura y verificación de paquetes de trazas binarios. |
+| `charts.mjs` | Líneas sobre uPlot, dispersión y mapas de calor en canvas, escalas cividis y divergente. |
+| `view-*.mjs`, `drawer.mjs` | Una vista por archivo y el detalle de una ejecución. |
+| `app.js` | Estado de la página, modos, URL, avisos y planificación. |
+
+uPlot 1.6.32 y las fuentes Atkinson Hyperlegible Next, Atkinson Hyperlegible Mono y Newsreader se sirven desde `vendor/` y `fonts/`, con sus licencias. La política de seguridad no admite scripts ni estilos de otros orígenes.
+
+## Pruebas
 
 ```bash
 node --test site/tests/*.test.mjs
-uv run --no-sync python -m http.server 8000 --bind 127.0.0.1 --directory site
+node site/tests/observatory-browser.mjs RUTA/playwright/index.mjs [CARPETA_DE_CAPTURAS]
+OBSERVATORY_PYTHON="uv run --locked python" node site/tests/live-browser.mjs RUTA/playwright/index.mjs
+OBSERVATORY_PYTHON="uv run --locked python" node site/tests/benchmark-browser.mjs RUTA/playwright/index.mjs [CARPETA_PUBLICA] [SEGUNDOS]
 ```
 
-El servidor permite abrir `http://127.0.0.1:8000`. Se termina con `Ctrl+C`. Los módulos y las peticiones requieren un origen HTTP.
+Las pruebas unitarias no necesitan navegador. `observatory-browser.mjs` imita Pages con un servidor de Node que responde 304 y recorre consulta condicional, reintento tras un 503, URL, teclado, fase reservada, CSV, texto hostil, importación local, temas, movimiento reducido y anchos de 320 a 1440 píxeles. `live-browser.mjs` arranca el servidor de Python real y comprueba SSE, actualización de campañas e índice, límite de clientes y liberación de plazas. `benchmark-browser.mjs` mide un millón de puntos y la CPU en reposo y no aprueba ni suspende. Las tres usan Playwright y Chrome locales y datos ficticios rotulados como prueba. Ninguna se ejecuta en GitHub Actions.
 
-Las pruebas de navegador de `site/tests/` usan una instalación local de Playwright y Chrome. Comprueban escritorio, móvil, teclado, importación local, separación de actividades, carga paginada y conservación de la página anterior tras un HTTP 503. Los datos ficticios de estas pruebas no se publican como resultados científicos.
-
-`display-browser.mjs` comprueba anchos entre 320 y 1440 px, solapes del catálogo, etiquetas estables al paginar, magnitudes sin duplicar y selección de la medida dentro de los 240 puntos visibles. Recibe como primer argumento la ruta de `playwright/index.mjs` y admite un segundo argumento para guardar cobertura V8. El [informe de revisión](../reports/observatory-display-review.json) registra las pruebas y sus límites.
-
-Trabajo vinculado a [MT-068](https://github.com/GonxKZ/mars-titan/issues/70).
+La auditoría previa al rediseño, las decisiones y las medidas están en [docs/engineering/observatory.md](../docs/engineering/observatory.md) y en [docs/engineering/observatory-ux-audit.md](../docs/engineering/observatory-ux-audit.md).

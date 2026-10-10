@@ -23,6 +23,15 @@ Las pruebas que requieren CUDA, un binario nativo o Node.js comprueban su dispon
 uv run --locked pytest tests/tooling tests/native
 ```
 
+Las pruebas que necesitan el enlace episódico nativo leen su ruta en `MARS_TITAN_EPISODIC_NATIVE` y, sin ella, se omiten con su motivo para que la suite CPU siga funcionando. Las paridades de MARS-TITAN llevan además la marca `native_binding`. La comprobación local debe exigirlas con el [modo estricto](#modo-estricto), que comprueba los binarios y carga el enlace antes de recoger ninguna prueba. Con ese modo, cualquier omisión de una prueba marcada cuenta como fallo:
+
+```bash
+MARS_TITAN_REQUIRE_NATIVE=1 \
+  uv run --locked pytest tests/memory/test_mars_titan_session_parity.py tests/memory/test_mars_titan_variant.py
+```
+
+La orden necesita los cinco binarios declarados como en la [suite completa](#binarios-nativos). Si falta alguno, si una ruta no existe o si el enlace episódico no carga, el modo estricto termina con un error de uso. Con `MARS_TITAN_REQUIRE_NATIVE=0` o sin la variable, el comportamiento es el de la suite CPU.
+
 Cada prueba protege una propiedad concreta. La cobertura y las pruebas de mutación ayudan a localizar lógica poco comprobada, pero no sustituyen los casos de comportamiento ni acreditan por sí solas la reproducibilidad de un entrenamiento.
 
 ## Protección del aprendizaje
@@ -117,7 +126,7 @@ export MARS_TITAN_KLPO_EXECUTABLE=$B/native-ppo-release/mars-titan-klpo
 
 ### Modo estricto
 
-`MARS_TITAN_REQUIRE_NATIVE=1` detiene la sesión antes de recoger pruebas si falta declarar alguno de los cinco binarios o su ruta no existe. `MARS_TITAN_REQUIRE_CUDA=1` hace lo mismo si CUDA no está visible. Así un binario sin compilar o una GPU no disponible no se confunden con omisiones esperadas. Fuera de este modo las pruebas que dependen de CUDA usan `requires_cuda` de `tests/suite_support.py` y se omiten con su motivo, sin pasar nunca a CPU.
+`MARS_TITAN_REQUIRE_NATIVE=1` detiene la sesión antes de recoger pruebas si falta declarar alguno de los cinco binarios, si su ruta no existe o si el enlace episódico no carga, por ejemplo porque se compiló con otro PyTorch. Durante la sesión, una prueba marcada con `native_binding` que se omite cuenta como fallo. `MARS_TITAN_REQUIRE_CUDA=1` detiene la sesión si CUDA no está visible. Así un binario sin compilar o una GPU no disponible no se confunden con omisiones esperadas. Fuera de este modo las pruebas que dependen de CUDA usan `requires_cuda` de `tests/suite_support.py` y se omiten con su motivo, sin pasar nunca a CPU.
 
 ### Parte CPU
 

@@ -41,6 +41,40 @@ Las rutas escalares no cambian. En el mismo proceso, el código de `origin/devel
 
 El contraste es `delta(scalar_l1, quantile_head_v1)` del MAE por sesión de la mediana en la partición de validación, con un intervalo simultáneo del 95 % por bootstrap circular por bloques y un contraste por índice de diseño. Si algún intervalo excluye el cero en contra de la cabeza, la comparación principal pasa a la opción A. Usar validación y no evaluación es una concreción de esta rama: el factor se fija antes de la comparación principal y no debe elegirse con los años que esta informa. La concreción queda pendiente de revisión. La función rechaza cualquier cambio del contraste, la parada, la política de entrada o el estado declarado.
 
+## Ejecutor del control
+
+`training/quantile_head_control.py` ejecuta el control y aplica su regla, y `scripts/run_quantile_head_control.py` lo envuelve con tres órdenes. Está implementado y comprobado técnicamente con un ejecutor sustituto. No se ha ejecutado ningún ajuste del control y el bloqueo de aprendizaje sigue vigente.
+
+| Orden | Qué hace |
+| --- | --- |
+| `check` | Valida plan, protocolo US, comparación principal y ventanas, y cuenta los trabajos sin leer datos |
+| `run` | Ajusta o reanuda cada trabajo con `run_reference_case` y confirma su recibo. Se detiene con el bloqueo antes de abrir fuentes o crear salidas y antes de cada trabajo |
+| `decide` | Calcula el contraste con las predicciones de validación confirmadas, aplica la regla de retroceso y escribe `decision.json` |
+
+**Trabajos.** Cada trabajo es una ventana, una semilla, un índice de diseño y un brazo, así que una ventana tiene doce. El ajuste usa el lote de 256 filas del plan, checkpoints cada 300 segundos como las referencias de la campaña y la retención `heldout_full_train_sessions_v1`. Cada trabajo vive en `jobs/<ventana>/<caso>/run` y se reanuda si esa carpeta existe. El recibo guarda la identidad del trabajo, las huellas del informe y de las predicciones de validación, sus filas, la huella de filas y objetivos y el MAE por sesión. Antes de escribirlo se comprueba que el informe confirma la vista, el caso y la reserva cerrada, que las filas están dentro del tramo de validación y fuera de 2024, que coinciden en número con la vista y que todos los trabajos de la ventana evalúan las mismas filas y objetivos. Un recibo existente solo se reutiliza si conserva identidad y huellas.
+
+**Identidad.** La salida guarda en `control.json` las huellas del plan, del protocolo y de la comparación, la política de entradas, las ventanas, las huellas de sus vistas, el lote, los checkpoints, la retención y el código. Una salida con otra identidad se rechaza, de modo que cambiar de ventanas exige otra carpeta.
+
+**Ventanas.** El plan fija el protocolo US v2 pero no qué ventanas recorre. Por defecto el ejecutor usa solo la primera, `fold-000`, porque es la opción más barata. La potencia del contraste depende sobre todo del número de sesiones de validación, unas 126 en cualquier ventana, mientras que el coste crece con las filas de ajuste. Es una elección del ejecutor pendiente de revisión, no una decisión registrada en #22. `--windows` declara otras ventanas antes de ejecutar y entra en la identidad.
+
+**Contraste y decisión.** Para cada índice de diseño se calcula `delta = MAE(quantile_head_v1) − MAE(scalar_l1)` del MAE por sesión de la mediana en validación, con las semillas promediadas sesión a sesión y las ventanas unidas, mediante `paired_comparisons.compare_series`. Longitud de bloque (16 días), réplicas (2.000), semilla, confianza (0,95) y ponderación son las de la [comparación principal](../../configs/evaluation/historical-masked-2000-comparison.json), declaradas antes de evaluar. La familia tiene dos contrastes y sus intervalos simultáneos usan el máximo estudentizado. Si algún intervalo simultáneo tiene el límite inferior positivo, la cabeza empeora el MAE y la decisión es la opción A: salida escalar L1 común, con la variante `m1_k1_l1_median` en la GRU candidata. Si ninguno lo excluye y todos están definidos, se mantiene la opción B. Si falta algún intervalo y ninguno excluye el cero en contra, la decisión queda indeterminada. Repetir `decide` con los mismos recibos produce los mismos bytes y una decisión distinta ya escrita se rechaza.
+
+Órdenes previstas para cuando se levante el bloqueo. Las vistas US las prepara la campaña:
+
+```bash
+uv run --no-sync python scripts/run_masked_campaign.py prepare \
+  --campaign configs/baselines/historical-masked-campaign-a.json \
+  --parent <supervisión histórica> --output <vistas>
+uv run --no-sync python scripts/run_quantile_head_control.py check \
+  --plan configs/baselines/quantile-head-control-us.json
+CUBLAS_WORKSPACE_CONFIG=:4096:8 uv run --no-sync python scripts/run_quantile_head_control.py run \
+  --plan configs/baselines/quantile-head-control-us.json --views <vistas>/US --output <salida>
+uv run --no-sync python scripts/run_quantile_head_control.py decide \
+  --plan configs/baselines/quantile-head-control-us.json --views <vistas>/US --output <salida>
+```
+
+**Coste estimado.** No se ha medido el caudal del Transformer compacto sobre esta edición. Con la hipótesis de 58 a 85 microsegundos por fila y época de la [estimación de la campaña](../research/walk-forward-2000.md#coste-y-alternativas-de-presupuesto), que procede de la GRU, 30 épocas y las filas nominales de ajuste US, los doce trabajos de `fold-000` (1,13 millones de filas) costarían entre 6,6 y 9,6 horas. Con la última ventana (12,6 millones) serían entre 73 y 107 horas y con las 19 ventanas entre 644 y 944 horas. Las cifras no incluyen las pasadas de validación, en torno a un 5 % más, ni las predicciones finales.
+
 ## Comprobaciones
 
 Las pruebas usan CPU con `CUDA_VISIBLE_DEVICES=-1` y no aplican pasos de optimizador. Los recorridos de los runners usan sustitutos que registran gradientes sin modificar pesos.
@@ -53,7 +87,7 @@ Las pruebas usan CPU con `CUDA_VISIBLE_DEVICES=-1` y no aplican pasos de optimiz
 | `tests/training/test_quantile_reference_run.py` | Identidad nueva, gradiente registrado igual al de la pinball sobre el primer lote, tablas aceptadas por el panel, identidad y columnas escalares sin cambios y fallos tempranos |
 | `tests/models/titans/test_financial_quantiles.py` | Tronco y estados de Titans iguales a los escalares, identidad, gradientes, lectura episódica, consumidor congelado y rechazos |
 | `tests/training/test_financial_run_quantiles.py` | Pinball sobre `[etiquetas, 5]` en cada tramo, mediana emitida igual a la del consumidor congelado, emparejamiento de cabeza y pérdida y receta declarada |
-| `tests/training/test_quantile_head_control.py` | Pares que solo difieren en salida y pérdida, coherencia con la búsqueda histórica, validación del runner y rechazo de cambios del contraste |
+| `tests/training/test_quantile_head_control.py` | Pares que solo difieren en salida y pérdida, coherencia con la búsqueda histórica, validación del runner y rechazo de cambios del contraste. Con vistas técnicas y un ejecutor sustituto, también recuento, bloqueo antes de crear salidas, un único ajuste por trabajo, reanudación en su carpeta, rechazo de identidades, artefactos, filas, objetivos y filas de 2024, contraste con semillas promediadas, regla de retroceso en ambos sentidos, decisión indeterminada sin días suficientes y decisión reproducible |
 
 La paridad nativa usa el enlace `_episodic_native` compilado en CPU con el candidato, según [la entrada histórica de la GRU](../../native/candidate_historical.md), y se ejecuta con `MARS_TITAN_EPISODIC_NATIVE` apuntando a ese archivo. Sin la variable la prueba se omite.
 
@@ -62,7 +96,7 @@ La mutación dirigida introdujo 26 defectos, uno cada vez, y ejecutó las prueba
 ## Pendiente
 
 - La calibración común al estilo CQR está implementada en `src/mars_titan/calibration/conformal_quantiles.py` y la aplica la [evaluación walk-forward](../research/metrics.md#calibración-común-de-intervalos), ajustada en el tramo de calibración de cada ventana y congelada antes de evaluar. No se ha aplicado a predicciones reales.
-- Ejecutar el control de la cabeza cuando se levante el bloqueo y repetir la búsqueda de tasas de aprendizaje.
+- Ejecutar el control de la cabeza cuando se levante el bloqueo, revisar la elección de ventanas del ejecutor y repetir la búsqueda de tasas de aprendizaje.
 - Integrar los cuantiles en los consumidores de sesión de `memory/`. Los padres de `posttraining/` ya se reconstruyen con la cabeza declarada y aportan su mediana, como describe el [postentrenamiento con la edición histórica](masked-posttraining.md).
 - Las comprobaciones CUDA de las rutas nuevas se ejecutaron el 9 de octubre sin pasos de optimizador ([resumen](../../reports/engineering/cuda-checks-20261009/README.md)). Las tres pruebas CUDA de cuantiles con `test_multimodal_reference.py` y `test_reference_run.py` dieron 24 superadas y 26 omitidas por la protección del aprendizaje en `run_reference_case`, y las tres del postentrenamiento con cuantiles pasaron. Las rutas omitidas siguen sin recorrerse en `cuda:0`.
 - Medir el coste de la cabeza en la integración. Se espera pequeño frente a los codificadores, pero no se ha medido.

@@ -174,6 +174,18 @@ pero no aumenta épocas ni pasos. La fecha de modificación del recibo se identi
 como tal. Cuando no hay fechas originales por época, `recorded_at` es `null` y el
 eje representa épocas. No se reconstruyen horas de entrenamiento.
 
+Desde #451, cada punto del historial predictivo copia también las medidas de la
+época que declare el recibo: `train_mae`, `train_samples_per_second` y
+`train_seconds` del entrenamiento, y `session_mae` y `validation_seconds` de la
+validación. `metrics.session_mae` acompaña al MAE del resumen y sale de la misma validación.
+`metadata.best_epoch` y `metadata.stopped_early` copian la selección declarada por
+el entrenador. `best_epoch` cuenta las épocas desde 1 y el cero corresponde al estado
+inicial del padre. El recolector no calcula ninguna medida nueva. Un valor ausente,
+negativo o no finito se publica como `null`, de modo que los recibos anteriores
+siguen siendo válidos y la página muestra la ausencia. `metrics.samples_per_second`
+sigue procediendo de la validación y la página lo rotula como caudal de la última
+validación, separado del caudal de entrenamiento por época.
+
 ## Publicación en Pages
 
 La opción `--publish-checkout` recibe un checkout independiente cuya rama debe ser
@@ -266,6 +278,7 @@ uv run --locked python scripts/benchmark_campaign_observatory.py \
   --root . --output reports/campaign-observatory-benchmark.json
 ```
 
-`site/tests/experiments-browser.mjs` recibe la ruta del módulo Playwright y la carpeta
-de páginas generada por el recolector. Selecciona un recibo nativo real y construye
-la fixture técnica en memoria, sin modificar las páginas de entrada.
+Las pruebas de navegador de la página rehecha en #451 están descritas en
+[observatory.md](observatory.md#pruebas-de-la-página). Sustituyen a los recorridos
+anteriores, cuyas huellas siguen registradas en los informes de calidad de cada
+ampliación.

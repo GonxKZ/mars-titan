@@ -33,7 +33,7 @@ MAC recupera información desde el estado previo, la incorpora con los parámetr
 
 Hay una discrepancia de orden que debe quedar visible: la ecuación (7) de las actas escribe `[P; S; h]`, mientras que la figura 4a presenta `[P; h; S]`, como la ecuación (22) del [preprint v1](https://arxiv.org/abs/2501.00663v1). La convención de implementación propuesta es `[P; h; S]`. Debe conservarla en configuración y pruebas, sin mezclar las dos versiones.
 
-La máscara necesita una comprobación adicional. Si `h_j` se obtiene consultando con `S_j`, ya contiene una dependencia de esa entrada. Una máscara triangular sobre la secuencia concatenada no impide por sí sola que `S_i` lea un `h_j` construido desde una entrada posterior. Las salidas por token necesitan una máscara cruzada compatible con esos índices. Una salida emitida únicamente al terminar el segmento debe declarar esa granularidad y no presentarse como causal para prefijos incompletos. La prueba perturbando entradas futuras distingue ambos contratos.
+La máscara necesita una comprobación adicional. Si `h_j` se obtiene consultando con `S_j`, ya contiene una dependencia de esa entrada. Una máscara triangular sobre la secuencia concatenada no impide por sí sola que `S_i` lea un `h_j` construido desde una entrada posterior. Las salidas por token necesitan una máscara cruzada compatible con esos índices. Una salida emitida únicamente al terminar el segmento debe declarar esa granularidad y no presentarse como causal para prefijos incompletos. La prueba perturbando entradas futuras distingue ambos contratos. La [tabla de ecuaciones](../engineering/titans-mac-equations.md) relaciona cada ecuación con su función y su prueba, y declara las desviaciones de la adaptación financiera.
 
 ## Estados y disponibilidad
 
@@ -260,7 +260,7 @@ flowchart TD
 
     HEAD["Cabeza común de cuantiles<br/>0,025 · 0,1 · 0,5 · 0,9 · 0,975"]
 
-    PT3["PT3 · regla kalman de B6<br/>propuesta, #455"]:::propuesta
+    PT3["PT3 · regla kalman de B6<br/>implementada sin entrenar, #455"]:::comprobado
 
     CAL["Calibración CQR por mercado<br/>ajustada una vez y congelada"]
 
@@ -300,4 +300,4 @@ El banco y B6 no se combinan en la misma variante, como fija la declaración de 
 
 **PT2. Calibración conformal en línea con etiquetas maduras** ([#454](https://github.com/GonxKZ/mars-titan/issues/454)). Implementada y comprobada sin entrenar como `OnlineConformal`, con κ = 0 idéntica a la CQR estática y sin integrar todavía en la comparación por ventanas. Ecuaciones, pruebas y coste en [su documento](../engineering/online-conformal-calibration.md). Resultado experimental pendiente.
 
-**PT3. Regla de Kalman con ruido de cohorte correlacionado en B6** ([#455](https://github.com/GonxKZ/mars-titan/issues/455)). Propuesta, sin implementar en esta rama. Resultado experimental pendiente.
+**PT3. Regla de Kalman con ruido de cohorte correlacionado en B6** ([#455](https://github.com/GonxKZ/mars-titan/issues/455)). Implementada y comprobada sin entrenar como `rule="kalman"` de B6, con las reglas delta y proximal idénticas a las anteriores y declarada como ablación A12. Ecuaciones, pruebas y coste en [su documento](../engineering/kalman-associative-memory.md). Resultado experimental pendiente.

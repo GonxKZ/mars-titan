@@ -45,8 +45,11 @@ from mars_titan.evaluation.splits import PARTITIONS
 from .campaign_plan import (
     CARRY,
     FIT,
+    GROUP_EPOCH,
     HELDOUT_RETENTION,
+    JOINT,
     NEURAL,
+    PLATEAU,
     QUANTILE_HEAD,
     _arm_specs,
     _require,
@@ -66,9 +69,12 @@ from .campaign_storage import (
     view_counts,
 )
 from .learning_hold import LearningHoldError, require_learning_allowed
+from .selection import AWAIT
 
 RUN_KIND = "historical_masked_campaign_run"
 RECEIPT_KIND = "masked_campaign_job"
+# El recibo de la meseta de un ajuste conjunto guarda su parada individual, sin predicciones.
+PLATEAU_STATUS = "plateau_confirmed"
 # Tramos que lee la comparación: calibración común y evaluación.
 COMPARED = ("calibration", "evaluation")
 MAX_ATTEMPTS = 32
@@ -221,11 +227,12 @@ def _group(job):
 
 @dataclass(frozen=True)
 class JobRun:
-    """Lo que necesita un ejecutor: trabajo, caso resuelto, vista, destino y ancla.
+    """Reúne el trabajo, el caso resuelto, la vista, el destino y el ancla de un ejecutor.
 
     `parent` solo existe en los ajustes que parten de otro predictor elegido en la misma
     ventana y semilla, como el lector de MARS-TITAN sobre Titans-MAC o un brazo de CM-v1
-    sobre su núcleo.
+    sobre su núcleo. `joint_epoch` solo existe en la continuación de un ajuste con parada
+    conjunta y es la época común de su grupo.
     """
 
     job: dict
@@ -239,6 +246,7 @@ class JobRun:
     stop: object
     anchor: dict | None = None
     parent: dict | None = None
+    joint_epoch: int | None = None
 
 
 def _neural_fit(run):
@@ -254,11 +262,12 @@ def _neural_fit(run):
         stop=run.stop,
         input_policy=run.policy,
         prediction_retention=HELDOUT_RETENTION,
+        joint_epoch=run.joint_epoch,
     )
     if report["status"] == "paused":
         raise Paused
     _require(
-        report["status"] == "completed"
+        report["status"] in ("completed", AWAIT)
         and report["identity"]["manifest_sha256"] == run.view_sha256
         and report["identity"]["case"] == run.case,
         "La referencia no confirma la vista y el caso del trabajo",
@@ -533,6 +542,8 @@ class _Campaign:
         origin = (
             {} if parent is None else dict(parent=parent["job"], parent_sha256=parent["sha256"])
         )
+        if job.get("phase") == JOINT:
+            origin["joint"] = self.joint_epoch(job)
         if job["stage"] == "search":
             return job["case"], None, origin
         if job["stage"] == "finalist":
@@ -552,6 +563,19 @@ class _Campaign:
             sha256=receipt["sha256"],
         )
         return None, anchor, dict(source=key, source_sha256=receipt["sha256"])
+
+    def joint_epoch(self, job):
+        """Calcula la época común de un grupo, que es la mayor de las paradas de sus mesetas."""
+        members = {key: self.receipts[key] for key in job["joint_group"]}
+        _require(
+            all(receipt.get("status") == PLATEAU_STATUS for receipt in members.values()),
+            f"{job['id']} depende de mesetas sin confirmar",
+        )
+        return dict(
+            epoch=max(r["plateau"]["individual_stop_epoch"] for r in members.values()),
+            rule=GROUP_EPOCH,
+            members={key: receipt["sha256"] for key, receipt in sorted(members.items())},
+        )
 
     def parent_of(self, job):
         """Predictor elegido del que parte un ajuste con padre en su ventana y semilla."""
@@ -620,23 +644,69 @@ class _Campaign:
         executor = self.executors[job["model"], job["kind"]]
         section = self.campaign["neural" if job["family"] == NEURAL else "tabular"]
         view = self.views[job["scope"]]["windows"][job["window"]]
+        joint = sources.get("joint")
+        # La continuación conjunta reanuda el ajuste en la carpeta de su meseta.
+        folder = (
+            self.output / self.receipts[job["plateau"]]["attempt"]
+            if joint
+            else self.attempt(job, executor["resumable"])
+        )
         run = JobRun(
             job=job,
             case=case,
             view=Path(view["path"]),
             view_sha256=view["sha256"],
-            folder=self.attempt(job, executor["resumable"]),
+            folder=folder,
             policy=self.campaign["input_policy"],
             batch_size=section["batch_size"],
             checkpoint_seconds=self.campaign["neural"]["checkpoint_seconds"],
             stop=self.stop,
             anchor=anchor,
             parent=self.parent_of(job),
+            joint_epoch=joint["epoch"] if joint else None,
         )
         return (run, identity), None
 
+    def confirm_plateau(self, job, run, identity, report):
+        """Escribe el recibo de la meseta con su parada y una copia del informe, sin predicciones.
+
+        El ajuste final continúa en la misma carpeta y reescribe su informe, así que el
+        recibo guarda una copia propia del informe en la meseta.
+        """
+        stop = report.get("individual_stop_epoch")
+        _require(
+            report.get("status") == AWAIT
+            and report.get("final_test_opened") is False
+            and type(stop) is int
+            and 1 <= stop <= self.campaign["rule"]["max_epochs"],
+            f"{job['id']} no espera la época conjunta tras su meseta o su máximo de épocas",
+        )
+        copy = self.folder(job) / "plateau-report.json"
+        atomic_json(copy, report)
+        receipt = dict(
+            schema_version=1,
+            kind=RECEIPT_KIND,
+            status=PLATEAU_STATUS,
+            identity=identity,
+            attempt=str(run.folder.relative_to(self.output)),
+            report=dict(path=str(copy.relative_to(self.output)), sha256=sha256(copy)),
+            plateau=dict(status=AWAIT, individual_stop_epoch=stop),
+            score=None,
+            predictions={},
+            final_test_opened=False,
+            confirmed_at_utc=datetime.now(UTC).isoformat(),
+        )
+        path = self.folder(job) / "receipt.json"
+        atomic_json(path, receipt)
+        return dict(receipt, sha256=sha256(path))
+
     def confirm(self, job, run, identity, report):
         """Comprobar predicciones, tramos, filas y puntuación, y escribir el recibo."""
+        if job.get("phase") == PLATEAU:
+            return self.confirm_plateau(job, run, identity, report)
+        _require(
+            report.get("status") != AWAIT, f"{job['id']} espera una época conjunta que no tiene"
+        )
         executor = self.executors[job["model"], job["kind"]]
         resolved = self.campaign["comparison_config"]["resolved_scopes"][job["scope"]]
         window = resolved["windows"][job["window"]]
@@ -726,7 +796,8 @@ class _Campaign:
         """Liberar lo que nadie vuelve a leer de un intento con su recibo ya escrito."""
         if self.disk is None:
             return
-        if self.disk[2]["release_on_confirmation"]:
+        # La continuación de una meseta reanuda en su carpeta, que se libera al confirmarla.
+        if self.disk[2]["release_on_confirmation"] and job.get("phase") != PLATEAU:
             release_confirmed(self.output / receipt["attempt"], job["model"])
         self.disk[0].settle(job["id"])
 
@@ -778,15 +849,24 @@ class _Campaign:
 
 
 def _summary(output, identity, jobs, receipts, status, **extra):
-    planned = Counter(job["kind"] for job in jobs)
-    done = Counter(job["kind"] for job in jobs if job["id"] in receipts)
+    # La meseta de un ajuste conjunto es la primera parte del mismo ajuste y se cuenta aparte.
+    def kind(job):
+        return PLATEAU if job.get("phase") == PLATEAU else job["kind"]
+
+    planned = Counter(kind(job) for job in jobs)
+    done = Counter(kind(job) for job in jobs if job["id"] in receipts)
+
+    def counts(counter):
+        result = dict(training_jobs=counter[FIT], prediction_jobs=counter[CARRY])
+        return result | ({"plateau_jobs": counter[PLATEAU]} if planned[PLATEAU] else {})
+
     summary = dict(
         schema_version=1,
         kind=RUN_KIND,
         status=status,
         identity_sha256=hashlib.sha256(json.dumps(identity, sort_keys=True).encode()).hexdigest(),
-        planned=dict(training_jobs=planned[FIT], prediction_jobs=planned[CARRY]),
-        completed=dict(training_jobs=done[FIT], prediction_jobs=done[CARRY]),
+        planned=counts(planned),
+        completed=counts(done),
         jobs={job["id"]: job["id"] in receipts for job in jobs},
         final_test_opened=False,
         updated_at_utc=datetime.now(UTC).isoformat(),
