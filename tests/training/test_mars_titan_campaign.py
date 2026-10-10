@@ -135,7 +135,8 @@ def test_m3_has_a_producer_and_no_mars_arm_stays_pending(tmp_path):
 
 
 def test_with_every_section_declared_no_compared_arm_lacks_a_producer(tmp_path):
-    """Las 23 armas de la comparación declarada tienen productor con las cuatro secciones."""
+    """Los 24 brazos de la comparación tienen productor con las cuatro secciones, salvo el
+    control en línea, cuyos trabajos declara la campaña A por etapas."""
     from tests.training.test_candidate_walk_forward import section as gru_section
 
     cm = dict(declaration=str(Path("configs/titans/cm-v1-factorial.json").resolve()))
@@ -153,11 +154,13 @@ def test_with_every_section_declared_no_compared_arm_lacks_a_producer(tmp_path):
     campaign = plan.load_campaign(path)
     compared = campaign["comparison_config"]["arms"]
     planned = {job["arm"] for job in plan.plan_campaign(campaign)}
-    assert len(compared) == 23
+    assert len(compared) == 24
     controls = {name for name, arm in compared.items() if arm["family"] == "control"}
+    online = {name for name, arm in compared.items() if arm["family"] == plan.ONLINE_CONTROL}
+    assert online == {"transformer_compact_online"}
     # Los núcleos de CM-v1 se ajustan como trabajos propios y no son brazos comparados.
     assert planned - set(compared) == set(plan.CM_CORES)
-    assert planned & set(compared) == set(compared) - controls and M3_ARM in planned
+    assert planned & set(compared) == set(compared) - controls - online and M3_ARM in planned
 
 
 def recipe_with(tmp_path, change):
