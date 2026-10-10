@@ -205,6 +205,29 @@ def test_each_fit_model_has_a_regenerator_except_the_cm_v1_cores():
     }
 
 
+def test_regenerating_a_tabular_fit_releases_the_shared_window_state_first(monkeypatch):
+    """La regeneración no usa la matriz ni la Gram de la ventana, como los traslados."""
+    from mars_titan.training import external_corpus, tabular_corpus
+
+    calls = []
+    monkeypatch.setattr(
+        external_corpus.SHARED, "release", lambda blocking=True: calls.append(("xgb", blocking))
+    )
+    monkeypatch.setattr(
+        tabular_corpus.RIDGE_STATISTICS,
+        "clear",
+        lambda blocking=True: calls.append(("ridge", blocking)),
+    )
+    monkeypatch.setattr(
+        engine, "_carry", lambda run, **options: calls.append(("carry", options)) or "done"
+    )
+    available = engine.regenerators()
+    for model in ("xgboost", "ridge"):
+        calls.clear()
+        assert available[model, engine.FIT](None) == "done"
+        assert calls == [("xgb", False), ("ridge", False), ("carry", dict(regenerate=True))]
+
+
 def test_an_ablation_prediction_regenerates_bit_for_bit(allowed, tmp_path):
     output = tmp_path / "ablation"
     summary = ablation.run_stage(
