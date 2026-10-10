@@ -19,7 +19,7 @@ Las pruebas de `tests/training/test_pipeline_batches.py` comparan cada configura
 
 Cada instante recorre los activos de su mercado en el mismo orden. Con ese acceso cíclico, descartar el grupo usado hace más tiempo descarta justo el siguiente que se pedirá, y con un presupuesto menor que el conjunto activo no se reutilizaría ningún grupo. Por eso, al superar el presupuesto, salen primero los grupos de activos que no aparecen desde hace 16 instantes y después los usados más recientemente, y la parte que cabe se sigue reutilizando. En `US+CN/fold-012` los grupos tienen 128 filas y ocupan unos 0,7 MB decodificados, así que un grupo por cada uno de los cerca de 5.000 activos del recorrido son unos 3,2 GiB y caben en el presupuesto por defecto.
 
-Esta lectura retiene también las etiquetas y los precios de cada activo que aparece en el recorrido. Con la ventana conjunta `US+CN/fold-012`, un recorrido cronológico ocupa varios GiB de RAM, que deben figurar en la RAM declarada de su modelo.
+Esta lectura retiene también las etiquetas y los precios de cada activo que aparece en el recorrido, y el número de grupos de su archivo de muestras. Los metadatos Parquet completos no se guardan. En memoria ocupan unos 0,9 MiB por archivo, ocho veces su tamaño serializado, y con los cerca de 5.000 activos de la ventana conjunta sumaban más de 4 GiB. Volver a leer el pie del archivo cuesta en torno a 1 ms por grupo decodificado. En los últimos 100 instantes de `US+CN/fold-012`, el pico de RSS del recorrido fue de 6,1 GiB en serie y de 6,2 a 6,6 GiB con hilos, con 3,3 GiB de grupos en la caché. Antes de leer, la construcción del índice llegó a 3,5 GiB. Por eso las familias cronológicas declaran 9.216 MiB de RAM en esa ventana.
 
 ## Huellas compartidas
 
@@ -68,3 +68,5 @@ La lectura de cada trabajo GPU usa sus hilos de decodificación y su prefetch, a
 - La transferencia a la GPU con memoria fijada y un stream propio no está en esta capa, sino en los entrenadores.
 - Las estimaciones de VRAM por modelo proceden de las medidas de memoria de la ventana más poblada. XGBoost declara el presupuesto completo hasta medir sus rondas reales.
 - La admisión no cuenta los hilos de CPU. Las ranuras, los hilos por trabajo y la tubería se declaran juntos con las medidas del informe.
+- Empezar la lectura cronológica en un cursor avanzado recorre en Python todas las filas anteriores del índice para conciliar su resumen. En el instante 9.286 de los 9.356 de `US+CN/fold-012` eso tardó entre 6 y 18 minutos según la carga del equipo, y lo pagan las reanudaciones de los entrenadores cronológicos.
+- M3 estima sus escalas con un recorrido completo del tramo de ajuste (`fit_write_scalers`) antes de su primera actualización, dentro de su trabajo GPU. La admisión no separa esa fase de lectura del cálculo, así que la ranura queda reservada mientras lee. Separarla exigiría un trabajo CPU previo en el plan.

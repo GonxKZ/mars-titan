@@ -485,7 +485,7 @@ def test_arms_override_their_model_in_every_scope(tmp_path):
         return execution.resources(job, "cuda")
 
     # La VRAM del brazo sustituye a la del modelo en todos los ámbitos y su RAM solo en CN.
-    assert resources("titans_mac_online", "US+CN") == JobResources("cuda", 6000 * MIB, 8 * GIB)
+    assert resources("titans_mac_online", "US+CN") == JobResources("cuda", 6000 * MIB, 9 * GIB)
     assert resources("titans_mac_online", "CN") == JobResources("cuda", 6000 * MIB, 4 * GIB)
     # Los demás brazos conservan lo del modelo en cada ámbito.
     assert resources("titans_mac_frozen", "CN") == JobResources("cuda", 1280 * MIB, 5 * GIB)
