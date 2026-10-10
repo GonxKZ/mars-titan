@@ -407,6 +407,15 @@ Las formas de la variedad tienen su comprobación CUDA, que repite la identidad 
 CUBLAS_WORKSPACE_CONFIG=:4096:8 uv run pytest tests/models/test_adapter_forms_cuda.py -q -rs
 ```
 
+Los adaptadores de los lectores episódicos y de la GRU candidata tienen también su comprobación explícita, ejecutada el 10 de octubre en el mismo equipo sobre `develop` b92e07a0, con la plaza `gpu` de `memslot` ([recibos](../../reports/engineering/cuda-adapter-checks-20261010/README.md)):
+
+```bash
+CUBLAS_WORKSPACE_CONFIG=:4096:8 uv run pytest tests/posttraining/cuda_readout_adapters_check.py -q -rs
+CUBLAS_WORKSPACE_CONFIG=:4096:8 uv run pytest tests/posttraining/cuda_candidate_adapters_check.py -q -rs
+```
+
+Necesitan el enlace nativo con CUDA. La primera parte del lector M1 elegido en la campaña reducida de `test_mars_titan_campaign.py` y la segunda de la ventana técnica US+CN de la candidata, las dos en float64 y con el registrador de gradientes. En `cuda:0`, cada caso de la matriz v3 (núcleo, lectura episódica, ambos y continuación completa en el lector, cabeza y continuación completa en la candidata), ajustado por etapas con las filas nuevas de la ventana siguiente, emite exactamente las filas del padre congelado calculado en el mismo dispositivo. El padre congelado difiere de CPU en 4,4·10⁻¹⁶ como mucho en el lector y en 2,1·10⁻¹⁷ en la candidata, y en la ventana del padre los gradientes coinciden con CPU con tolerancia relativa 1e-8 y absoluta 1e-10, con los mismos grupos de parámetros. Pasaron 2 pruebas en cada archivo.
+
 La cola y la etapa solo se han recorrido en CPU con los diagnósticos de `run_case`. Su recorrido en `cuda:0` con la reserva de la GPU no tiene todavía una comprobación propia.
 
 ## Pendiente
@@ -415,7 +424,7 @@ La cola y la etapa solo se han recorrido en CPU con los diagnósticos de `run_ca
 - Reconstruir en `posttraining/parents.py` el Transformer padre con el contrato de lote de `perf/campaign-kernels` (`transformer_batch_options`) cuando entre en `develop`, y rechazar un presupuesto cuyo lote supere el `max_batch` del padre. Hoy el lote de la matriz debe ser el de la campaña, que no pasa de 256.
 - Decidir cómo se reduce el coste de lectura del orden exacto antes de ejecutar la etapa con la edición real, y medir cuántas filas nuevas y de validación caben en el presupuesto de cada ventana.
 - Ejecutar la [comparación de los brazos postentrenados](../research/metrics.md#brazos-postentrenados) cuando existan sus predicciones. La declaración, la derivación por padre y la publicación del manifiesto de fuentes (`posttraining/stage_comparison.py`) están implementadas y comprobadas con recibos sintéticos. La comparación de A v2 con el predictor de la cadena y el reentreno completo quedó declarada el 10 de octubre, antes de ver resultados. Su manifiesto de fuentes necesita el de la campaña conjunta, que todavía no tiene escritor.
-- Recorrer la cola y la etapa en `cuda:0` con la reserva de la GPU. Los lectores episódicos y la GRU candidata no tienen todavía una comprobación CUDA de sus adaptadores.
+- Recorrer la cola y la etapa en `cuda:0` con la reserva de la GPU.
 - Medir con la edición real el disco de los índices, las cachés de padres, los normalizadores y los checkpoints de cada ventana.
 - `training.predictive_run` registra `fit_cutoff_utc` fijo en 2023. Es exacto para las dos particiones históricas, no para las ventanas. No se ha cambiado para no alterar su identidad estricta.
 - Ejecutar la matriz tras verificar la edición y levantar el bloqueo, con coste medido antes. No hay mejoras predictivas medidas de ningún brazo.
