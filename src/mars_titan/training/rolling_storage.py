@@ -38,21 +38,43 @@ PHASES = ("base", "adapters", "ablation", "rl", "release")
 RECORD_BYTES = 4096
 
 
-def policy_needs(jobs, positions, seed):
-    """Última ventana de campaña que lee la evaluación de cada predictor de las políticas.
+def policy_readers(stage, jobs):
+    """Trabajos de las políticas que leen la evaluación de cada predictor elegido de la base.
+
+    Las claves son ámbito, ventana, predictor y la semilla declarada del predictor. Con el
+    predictor elegido de la base, un trabajo lee las evaluaciones que da
+    `policy_plan.predictor_reads`. Con la cadena, la base solo aporta el predictor de la
+    primera ventana de cada ámbito. En las demás la cadena lee las tablas de los adaptadores,
+    que la retención compacta y nunca libera.
+    """
+    from mars_titan.posttraining.staged_chain import scope_windows
+    from mars_titan.simulation.policy_plan import CHAIN, predictor_reads
+
+    policies = stage["policies"]
+    seed = policies["predictor"]["seed"]
+    chain = policies["predictor"]["source"] == CHAIN
+    first = {}
+    if chain:
+        first = {scope: scope_windows(stage["campaign"], scope)[0][0] for scope in stage["scopes"]}
+    readers = {}
+    for job in jobs:
+        for scope, window, predictor in dict.fromkeys(predictor_reads(stage, job)):
+            if chain and window != first[scope]:
+                continue
+            readers.setdefault((scope, window, predictor, seed), []).append(job)
+    return readers
+
+
+def policy_needs(stage, jobs, positions):
+    """Última ventana de campaña que lee la evaluación de cada predictor elegido de la base.
 
     `jobs` es el plan de la etapa de políticas y `positions` da la posición de cada par
-    (ámbito, ventana). Una política lee las evaluaciones de sus ventanas de ajuste, de su
-    validación y de la propia ventana, siempre con la semilla declarada del predictor.
+    (ámbito, ventana).
     """
-    needs = {}
-    for job in jobs:
-        read = {*job["train"], job["validation"], job["window"]}
-        last = positions[job["scope"], job["window"]]
-        for window in read:
-            key = (job["scope"], window, job["predictor"], seed)
-            needs[key] = max(needs.get(key, -1), last)
-    return needs
+    return {
+        key: max(positions[job["scope"], job["window"]] for job in readers)
+        for key, readers in policy_readers(stage, jobs).items()
+    }
 
 
 def rolling_inputs(jobs, windows, extras, *, ablation=None, adapters=None, rl=None):
@@ -81,12 +103,11 @@ def rolling_inputs(jobs, windows, extras, *, ablation=None, adapters=None, rl=No
 
         stage = policy_plan.load_stage(rl)
         planned = policy_plan.plan_stage(stage)
-        seed = stage["policies"]["predictor"]["seed"]
         first = {}
         for job in jobs:
             first.setdefault((job["scope"], job["window"], job["arm"], job["seed"]), job["id"])
         reads = {}
-        for key, last in policy_needs(planned, positions, seed).items():
+        for key, last in policy_needs(stage, planned, positions).items():
             if key in first:
                 reads[first[key]] = max(reads.get(first[key], -1), last)
         anchors = {}
