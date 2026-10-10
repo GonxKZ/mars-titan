@@ -33,7 +33,7 @@ import torch
 
 from mars_titan.data.storage import sha256
 from mars_titan.models.predictive_adaptation import adapter_names, base_digest
-from mars_titan.models.titans.config import canonical
+from mars_titan.models.titans.config import MAX_BLOCK_ROWS, canonical
 from mars_titan.models.titans.episodic_readout import apply_episodic_readout
 from mars_titan.models.titans.frozen_financial import _numerics
 from mars_titan.training.financial_run import ChronologicalInference, FlowStates
@@ -56,8 +56,14 @@ class ReadoutAdapterTrainer(ReadoutTrainer):
     def __init__(self, predictor, readout, recipe, *, posttraining, core_rows=None, **options):
         if not isinstance(posttraining, dict) or not posttraining:
             raise ValueError("El postentrenamiento del lector necesita su declaración")
-        if core_rows is not None and (type(core_rows) is not int or not 1 <= core_rows <= 256):
-            raise ValueError("Los bloques de flujos del núcleo deben ser un entero de 1 a 256")
+        # El núcleo repite el tramo con los bloques de la receta del padre, que comparte el
+        # límite de filas del predictor y de las observaciones.
+        if core_rows is not None and (
+            type(core_rows) is not int or not 1 <= core_rows <= MAX_BLOCK_ROWS
+        ):
+            raise ValueError(
+                f"Los bloques de flujos del núcleo deben ser un entero de 1 a {MAX_BLOCK_ROWS}"
+            )
         self.core = bool(adapter_names(predictor))
         self.core_rows, self._source, self._measured = core_rows, None, None
         # Por etapas, las escalas M3 son las congeladas del brazo padre en su ventana.
