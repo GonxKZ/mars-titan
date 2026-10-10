@@ -74,7 +74,9 @@ y anualizado (riqueza compuesta desde 1), la media diaria, la volatilidad anuali
 con $\sqrt{A}$, el Sharpe sin tipo libre de riesgo, el drawdown máximo y la rotación
 media $\overline{N}$. La anualización usa $A=252$ sesiones en Estados Unidos y $A=243$
 en China. Una sesión con pérdida del 100 % o mayor arruina la serie. El Sharpe no
-está definido con volatilidad nula.
+está definido con volatilidad nula. Estas convenciones están en
+`evaluation/financial_conventions.py`, que comparte el informe de las políticas
+financieras, y la declaración debe usar sus sesiones por año.
 
 Las semillas de un brazo se promedian sesión a sesión antes de calcular
 estadísticos, lo que equivale a repartir el capital entre las tres. Cada semilla

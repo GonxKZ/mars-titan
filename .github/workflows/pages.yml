@@ -66,6 +66,7 @@ jobs:
           if [ -d public-data ]; then
             cp public-data/observatory.json _site/data/
             if [ -d public-data/pages ]; then cp -r public-data/pages _site/data/; fi
+            if [ -d public-data/windows ]; then cp -r public-data/windows _site/data/; fi
             if [ -d public-data/traces ]; then cp -r public-data/traces _site/data/; fi
           else
             cp site/data/observatory.json _site/data/
