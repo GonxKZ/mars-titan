@@ -1,0 +1,471 @@
+{
+ "kind": "native_build_comparison",
+ "first": "ppo-base",
+ "second": "ppo-ccache-warm",
+ "identity_sha256": [
+  "b9eb2bf92800792a4ad8dbed3ab4a90edfd0e2879923640d3606e7f8907d4ec0",
+  "13b5ff88f104f394a1513f905a353203db3c39eafc5899cfc77dec7b7519883f"
+ ],
+ "objects_sha256": {
+  "total": 68,
+  "equal": 62,
+  "identity_only": 6,
+  "identity_and_link_metadata": 0,
+  "content": 0,
+  "differences": {
+   "CMakeFiles/mars-titan-batch-benchmark.dir/benchmarks/batch_rollout.cpp.o": {
+    "class": "identity_only",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": []
+   },
+   "CMakeFiles/mars_titan_klpo_collection.dir/src/klpo_collection.cpp.o": {
+    "class": "identity_only",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": []
+   },
+   "CMakeFiles/mars_titan_policy_stage.dir/src/klpo_experiment.cpp.o": {
+    "class": "identity_only",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": []
+   },
+   "CMakeFiles/mars_titan_policy_stage.dir/src/policy_command.cpp.o": {
+    "class": "identity_only",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": []
+   },
+   "CMakeFiles/mars_titan_policy_stage.dir/src/ppo_experiment.cpp.o": {
+    "class": "identity_only",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": []
+   },
+   "CMakeFiles/mars_titan_simulation_files.dir/src/simulation_files.cpp.o": {
+    "class": "identity_only",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": []
+   }
+  }
+ },
+ "linked_sha256": {
+  "total": 39,
+  "equal": 6,
+  "identity_only": 0,
+  "identity_and_link_metadata": 33,
+  "content": 0,
+  "differences": {
+   "c_abi_test": {
+    "class": "identity_and_link_metadata",
+    "identity_occurrences": [
+     0,
+     0
+    ],
+    "differing_sections": [
+     ".dynamic",
+     ".dynstr",
+     ".note.gnu.build-id"
+    ]
+   },
+   "decision_trace_tests": {
+    "class": "identity_and_link_metadata",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": [
+     ".dynamic",
+     ".dynstr",
+     ".note.gnu.build-id"
+    ]
+   },
+   "episodic_memory_tests": {
+    "class": "identity_and_link_metadata",
+    "identity_occurrences": [
+     0,
+     0
+    ],
+    "differing_sections": [
+     ".dynamic",
+     ".dynstr",
+     ".note.gnu.build-id"
+    ]
+   },
+   "financial_batch_tests": {
+    "class": "identity_and_link_metadata",
+    "identity_occurrences": [
+     0,
+     0
+    ],
+    "differing_sections": [
+     ".dynamic",
+     ".dynstr",
+     ".note.gnu.build-id"
+    ]
+   },
+   "financial_session_tests": {
+    "class": "identity_and_link_metadata",
+    "identity_occurrences": [
+     0,
+     0
+    ],
+    "differing_sections": [
+     ".dynamic",
+     ".dynstr",
+     ".note.gnu.build-id"
+    ]
+   },
+   "group_waves_tests": {
+    "class": "identity_and_link_metadata",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": [
+     ".dynamic",
+     ".dynstr",
+     ".note.gnu.build-id"
+    ]
+   },
+   "klpo_actor_tests": {
+    "class": "identity_and_link_metadata",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": [
+     ".dynamic",
+     ".dynstr",
+     ".note.gnu.build-id"
+    ]
+   },
+   "klpo_collection_tests": {
+    "class": "identity_and_link_metadata",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": [
+     ".dynamic",
+     ".dynstr",
+     ".note.gnu.build-id"
+    ]
+   },
+   "klpo_learning_tests": {
+    "class": "identity_and_link_metadata",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": [
+     ".dynamic",
+     ".dynstr",
+     ".note.gnu.build-id"
+    ]
+   },
+   "klpo_policy_tests": {
+    "class": "identity_and_link_metadata",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": [
+     ".dynamic",
+     ".dynstr",
+     ".note.gnu.build-id"
+    ]
+   },
+   "klpo_reference_tests": {
+    "class": "identity_and_link_metadata",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": [
+     ".dynamic",
+     ".dynstr",
+     ".note.gnu.build-id"
+    ]
+   },
+   "learning_replay_tests": {
+    "class": "identity_and_link_metadata",
+    "identity_occurrences": [
+     0,
+     0
+    ],
+    "differing_sections": [
+     ".dynamic",
+     ".dynstr",
+     ".note.gnu.build-id"
+    ]
+   },
+   "markov_filter_tests": {
+    "class": "identity_and_link_metadata",
+    "identity_occurrences": [
+     0,
+     0
+    ],
+    "differing_sections": [
+     ".dynamic",
+     ".dynstr",
+     ".note.gnu.build-id"
+    ]
+   },
+   "mars-titan-batch-benchmark": {
+    "class": "identity_and_link_metadata",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": [
+     ".dynamic",
+     ".dynstr",
+     ".note.gnu.build-id"
+    ]
+   },
+   "mars-titan-klpo": {
+    "class": "identity_and_link_metadata",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": [
+     ".dynamic",
+     ".dynstr",
+     ".note.gnu.build-id"
+    ]
+   },
+   "mars-titan-memory-benchmark": {
+    "class": "identity_and_link_metadata",
+    "identity_occurrences": [
+     0,
+     0
+    ],
+    "differing_sections": [
+     ".dynamic",
+     ".dynstr",
+     ".note.gnu.build-id"
+    ]
+   },
+   "mars-titan-policy-benchmark": {
+    "class": "identity_and_link_metadata",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": [
+     ".dynamic",
+     ".dynstr",
+     ".note.gnu.build-id"
+    ]
+   },
+   "mars-titan-ppo": {
+    "class": "identity_and_link_metadata",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": [
+     ".dynamic",
+     ".dynstr",
+     ".note.gnu.build-id"
+    ]
+   },
+   "mars-titan-sim": {
+    "class": "identity_and_link_metadata",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": [
+     ".dynamic",
+     ".dynstr",
+     ".note.gnu.build-id"
+    ]
+   },
+   "policy_context_tests": {
+    "class": "identity_and_link_metadata",
+    "identity_occurrences": [
+     0,
+     0
+    ],
+    "differing_sections": [
+     ".dynamic",
+     ".dynstr",
+     ".note.gnu.build-id"
+    ]
+   },
+   "ppo_checkpoint_tests": {
+    "class": "identity_and_link_metadata",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": [
+     ".dynamic",
+     ".dynstr",
+     ".note.gnu.build-id"
+    ]
+   },
+   "ppo_collection_tests": {
+    "class": "identity_and_link_metadata",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": [
+     ".dynamic",
+     ".dynstr",
+     ".note.gnu.build-id"
+    ]
+   },
+   "ppo_evaluation_tests": {
+    "class": "identity_and_link_metadata",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": [
+     ".dynamic",
+     ".dynstr",
+     ".note.gnu.build-id"
+    ]
+   },
+   "ppo_gru_packing_tests": {
+    "class": "identity_and_link_metadata",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": [
+     ".dynamic",
+     ".dynstr",
+     ".note.gnu.build-id"
+    ]
+   },
+   "ppo_inputs_tests": {
+    "class": "identity_and_link_metadata",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": [
+     ".dynamic",
+     ".dynstr",
+     ".note.gnu.build-id"
+    ]
+   },
+   "ppo_policy_tests": {
+    "class": "identity_and_link_metadata",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": [
+     ".dynamic",
+     ".dynstr",
+     ".note.gnu.build-id"
+    ]
+   },
+   "ppo_training_tests": {
+    "class": "identity_and_link_metadata",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": [
+     ".dynamic",
+     ".dynstr",
+     ".note.gnu.build-id"
+    ]
+   },
+   "ppo_variant_objective_tests": {
+    "class": "identity_and_link_metadata",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": [
+     ".dynamic",
+     ".dynstr",
+     ".note.gnu.build-id"
+    ]
+   },
+   "ppo_variant_state_tests": {
+    "class": "identity_and_link_metadata",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": [
+     ".dynamic",
+     ".dynstr",
+     ".note.gnu.build-id"
+    ]
+   },
+   "qr_dqn_policy_tests": {
+    "class": "identity_and_link_metadata",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": [
+     ".dynamic",
+     ".dynstr",
+     ".note.gnu.build-id"
+    ]
+   },
+   "rl_variety_tests": {
+    "class": "identity_and_link_metadata",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": [
+     ".dynamic",
+     ".dynstr",
+     ".note.gnu.build-id"
+    ]
+   },
+   "simulation_tests": {
+    "class": "identity_and_link_metadata",
+    "identity_occurrences": [
+     0,
+     0
+    ],
+    "differing_sections": [
+     ".dynamic",
+     ".dynstr",
+     ".note.gnu.build-id"
+    ]
+   },
+   "threaded_simulation": {
+    "class": "identity_and_link_metadata",
+    "identity_occurrences": [
+     0,
+     0
+    ],
+    "differing_sections": [
+     ".dynamic",
+     ".dynstr",
+     ".note.gnu.build-id"
+    ]
+   }
+  }
+ }
+}
