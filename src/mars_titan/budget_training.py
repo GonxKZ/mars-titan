@@ -80,6 +80,7 @@ def _supervised_step(model, optimizer, batch, device, loss, huber_delta):
 
 def train_step(model, optimizer, batch, device):
     """Conservar el paso MSE utilizado por las sondas originales."""
+    require_learning_allowed("el paso supervisado de las sondas")
     return _supervised_step(model, optimizer, batch, device, "mse", 0.01)[0]
 
 

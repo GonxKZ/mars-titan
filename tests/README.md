@@ -45,20 +45,33 @@ La protección local `~/.local/state/mars-titan/training-hold-2000.json`, o la r
 | Ámbito | Puntos de entrada |
 | --- | --- |
 | Referencias neuronales | `run_reference_case`, `run_search`, `run_temporal_search`, `run_reference_campaign` y `training/real_campaign.run_campaign` |
-| Referencias tabulares | `run_tabular_reference`, `run_external_reference`, `run_tabular_search` y `baseline_queue.run_queue` |
-| Campaña con máscaras | `masked_campaign.run_campaign`, al empezar y antes de cada trabajo, y `candidate_walk_forward.fit_window` y `carry_window` |
+| Referencias tabulares | `run_tabular_reference`, `run_external_reference` y su ejecutor `_execute`, `run_tabular_search` y `baseline_queue.run_queue` |
+| Campaña con máscaras | `masked_campaign.run_campaign`, al empezar y antes de cada trabajo, `candidate_walk_forward.fit_window` y `carry_window`, `online_reference.run_online_reference`, `prediction_regeneration.regenerate_job` y `regenerate_ablation`, y `quantile_head_control.run_control`, al empezar y antes de cada trabajo |
 | Adaptador predictivo | `run_predictive_case`, `run_predictive_study` y `klpo_queue.run_queue` |
-| Postentrenamiento | `posttraining/run.run_case`, `posttraining/queue.run_queue`, `run_completion` y las etapas tabular y de postentrenamiento de la compleción |
-| Sondas y mediciones | `train_budget_grid`, `run_temporal_probe`, `profile_case`, `run_reference_probe` y `models/baselines/campaign.run_campaign` |
-| Primitivas de ajuste | `fit_ridge_blocks`, `fit_boosting_batches`, `fit_external_boosting` y `fit_hmm` |
-| Simulación y refuerzo | `FinancialTrainer.run`, `simulation/campaign.run_campaign`, `run_adaptive_campaign` y `prepare_adaptation_scenarios` con `fit_markov=True` |
+| Postentrenamiento | `posttraining/run.run_case`, `posttraining/queue.run_queue` y `run_matrix_queue`, `run_completion` y las etapas tabular y de postentrenamiento de la compleción, `posttraining/campaign_stage.run_stage`, al empezar y antes de cada trabajo, `candidate_adapters.run_candidate_posttraining` y `frozen_candidate`, y `chronological_windows.run_titans_posttraining`, `run_readout_posttraining`, `frozen_titans` y `frozen_readout` |
+| Sondas y mediciones | `train_budget_grid` y su paso público `train_step`, `run_temporal_probe`, `profile_case`, `run_reference_probe` y `models/baselines/campaign.run_campaign` |
+| Primitivas de ajuste | `fit_ridge_blocks`, `solve_ridge`, `fit_boosting_batches`, `fit_external_boosting` y `fit_hmm` |
+| Simulación y refuerzo | `FinancialTrainer.run`, `simulation/campaign.run_campaign`, `run_adaptive_campaign`, `prepare_adaptation_scenarios` con `fit_markov=True` y `simulation/campaign_stage.run_stage`, al empezar y antes de cada trabajo |
 | Titans-MAC | `titans_walk_forward.run_titans_window`, `carry_titans` y `ChronologicalTrainer.run` cuando recibe un optimizador de `torch.optim` |
-| MARS-TITAN | `mars_titan_walk_forward.run_mars_titan_window`, `carry_mars_titan` y `ReadoutTrainer.run` con cualquier optimizador |
+| MARS-TITAN | `mars_titan_walk_forward.run_mars_titan_window`, `carry_mars_titan`, el recorrido común `run_readout_window` y `carry_readout`, `ReadoutTrainer.run` con cualquier optimizador y la corrección B6 `mars_titan_correction.run_correction_window` y `carry_correction` |
 | CM-v1 | `cm_v1_factorial.run_cm_v1_core_window`, `run_cm_v1_window` y `carry_cm_v1`, antes de leer la declaración o las fuentes |
-| Scripts | `run_native_ppo.py` en modo de entrenamiento, `benchmark_native_ppo.py`, `benchmark_adaptive_rl.py`, `run_financial_comparators.py` y `run_titans_walk_forward.py` |
+| Scripts | `run_native_ppo.py` en modo de entrenamiento y en la auditoría sobre cintas reconstruidas, `benchmark_native_ppo.py`, `benchmark_adaptive_rl.py`, `run_financial_comparators.py` y `run_titans_walk_forward.py` |
 | Ejecutables nativos | `mars-titan-ppo` en modo de entrenamiento, después de validar argumentos y antes de leer fuentes, y `mars-titan-adapter-control` |
 
 `ChronologicalTrainer.run` en `src/mars_titan/training/financial_run.py` solo aplica la protección con un optimizador de `torch.optim`. Así sus pruebas recorren el bucle con un optimizador propio que registra llamadas sin modificar pesos. `CandidateChronologicalTrainer.run` en `src/mars_titan/training/candidate_run.py` llama a `require_learning_allowed()` con cualquier optimizador, y sus pruebas usan `learning_doubles` porque el suyo solo registra gradientes. `ReadoutTrainer.run` en `src/mars_titan/training/mars_titan_run.py` también la aplica con cualquier optimizador y sus pruebas usan `learning_doubles`. `carry_window`, `carry_titans`, `carry_mars_titan` y `carry_cm_v1` también comprueban la protección aunque no ajustan, porque producen las predicciones de una ventana de la campaña.
+
+### Inventario y grafo de llamadas
+
+`tests/training/learning_hold_inventory.py` enumera cada función que llama a `require_learning_allowed()` con una prueba de rechazo por llamada, en el orden del código. Una referencia corta es un caso de `ENTRY_POINTS` en `test_learning_hold_guards.py`, que además comprueba con la traza de la excepción que lo detiene justo esa guarda. Las demás nombran una prueba de otro módulo.
+
+`tests/training/test_learning_hold_inventory.py` construye con `ast` un grafo de llamadas de `src/mars_titan` y `scripts` (`tests/training/learning_hold_graph.py`) y exige cuatro cosas:
+
+- Todo sitio que ajusta se alcanza solo a través de una función protegida. Cuentan como sitios `x.step()` sin argumentos, la construcción de un optimizador de `torch.optim`, `xgboost.train`, `fit` y `partial_fit` sobre estimadores ajenos al proyecto y las soluciones cerradas de `linalg`. Las raíces son las funciones sin llamadores y el código de nivel de módulo, incluidos los scripts.
+- Ninguna función protegida llama antes de su primera guarda a algo que pueda ajustar.
+- Las guardas del código coinciden con el inventario, también en número por función, y cada referencia existe y usa la protección.
+- Los ganchos sin pasos y las exenciones declaradas siguen siendo necesarios. Los ganchos de `campaign_throughput._forbid_steps` y `modality_ablation_stage.forbid_optimizer_steps` solo cubren los pasos de PyTorch. La única exención es la escritura de Kalman de la memoria asociativa de B6, que actualiza su estado con resultados maduros durante la inferencia.
+
+El grafo resuelve importaciones, `self`, herencia, constructores y atributos tipados. Con un receptor desconocido enlaza todos los métodos con ese nombre de los módulos importados, así que puede añadir cadenas que no existen pero no pierde las reales. Las normalizaciones con `StandardScaler.partial_fit` (`fit_standardizer` y `fit_normalization`) también cuentan como sitios. No llaman a la guarda, pero hoy solo se alcanzan desde puntos protegidos, y un uso nuevo fuera de ellos tendría que declararse como exención con su motivo. Un punto de entrada nuevo necesita su guarda, su prueba de rechazo y su línea en el inventario. Los ejecutables nativos comprueban la protección en C++ y quedan fuera de este recorrido.
 
 ### Lo que no se bloquea
 
