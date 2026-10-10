@@ -30,6 +30,7 @@ from .config import (
     GateBias,
     MACConfig,
     MemoryConfig,
+    MemoryMultiscale,
     MemoryStability,
     bounded_integer,
     canonical,
@@ -93,6 +94,8 @@ class FinancialConfig:
     # PT6, film_v1 o su alternativa trivial wide_fusion_v1. Solo existe con la política con
     # máscaras, que es la única con bits de presencia. Sin declararla nada cambia.
     presence_modulation: str | None = None
+    # PT5, cascada o banco EMA sobre los pesos rápidos. Sin declararla nada cambia.
+    memory_multiscale: MemoryMultiscale | None = None
 
     def __post_init__(self):
         if not isinstance(self.inputs, FinancialInputSpec) or self.variant not in VARIANTS:
@@ -120,6 +123,17 @@ class FinancialConfig:
             if not isinstance(self.gate_bias, GateBias):
                 raise ValueError("gate_bias debe ser GateBias, sus tres valores o None")
             self.gate_bias.logits(MemoryConfig.theta_max, self.memory_stability)
+        if isinstance(self.memory_multiscale, dict):
+            # Las recetas JSON declaran la forma y el acoplamiento de forma explícita.
+            if set(self.memory_multiscale) != {field.name for field in fields(MemoryMultiscale)}:
+                raise ValueError("memory_multiscale debe declarar form y coupling")
+            object.__setattr__(
+                self, "memory_multiscale", MemoryMultiscale(**self.memory_multiscale)
+            )
+        if self.memory_multiscale is not None and not isinstance(
+            self.memory_multiscale, MemoryMultiscale
+        ):
+            raise ValueError("memory_multiscale debe ser MemoryMultiscale, sus valores o None")
         if self.presence_modulation is not None and (
             not isinstance(self.presence_modulation, str)
             or self.presence_modulation not in PRESENCE_MODULATIONS
@@ -185,6 +199,9 @@ class FinancialConfig:
         # porque el emparejamiento desde mac_online compara configuraciones completas.
         if self.memory_stability is not None:
             result.update(memory_stability=asdict(self.memory_stability))
+        # PT5 sigue la regla de PT1: solo aparece si se declara y figura en las cuatro variantes.
+        if self.memory_multiscale is not None:
+            result.update(memory_multiscale=asdict(self.memory_multiscale))
         # PT6 registra el número real de parámetros añadidos. La rama ancha redondea sus
         # unidades, así que su cuenta se compara con la de FiLM en la propia identidad.
         if self.presence_modulation == FILM:
@@ -306,6 +323,7 @@ class FinancialPredictor(nn.Module):
                         residual_layer_norm=config.memory_residual_layer_norm,
                         **MEMORY_PROJECTIONS[config.memory_projections],
                         stability=config.memory_stability,
+                        multiscale=config.memory_multiscale,
                     ),
                     heads=4,
                     persistent_tokens=config.persistent_tokens,
@@ -425,7 +443,13 @@ class FinancialPredictor(nn.Module):
         fast = (
             0
             if self.mac is None
-            else (4 * self.config.hidden_size + 3 * self.mac.config.memory.window)
+            else (
+                4 * self.config.hidden_size
+                + self.mac.config.memory.depth
+                * self.mac.config.memory.hidden_levels
+                * self.config.hidden_size
+                + 3 * self.mac.config.memory.window
+            )
             * self.config.hidden_size
             * self.head.weight.element_size()
             + 8
