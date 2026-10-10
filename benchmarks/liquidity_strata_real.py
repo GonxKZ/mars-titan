@@ -10,10 +10,10 @@ año sellado, no carga modelos, no usa la GPU y no ejecuta pasos de optimizador:
 3. Resume el límite de participación de la etapa de políticas en cada estrato: el 1 % del
    volumen de la sesión publicada por su último cierre negociado, en moneda local.
 4. Mide ``EditionLiquidity.assign`` con las decisiones de cuatro meses de todos los activos,
-   con una instancia por mes (como la retención al guardar cada ventana) y con una sola (como
-   la comparación con todas sus ventanas), ``window_extremes`` con un panel de 100.000 filas
-   y la puntuación de los cinco estratos de un modelo con un panel de 625.000, ambos con
-   errores sintéticos.
+   con una instancia por mes, como si cada ventana leyera de nuevo la edición, y con una sola,
+   como hacen la comparación y la retención con todas sus ventanas. Mide también
+   ``window_extremes`` con un panel de 100.000 filas y la puntuación de los cinco estratos de
+   un modelo con un panel de 625.000, ambos con errores sintéticos.
 
 El recibo solo contiene recuentos, cuantiles, tiempos y huellas.
 """
@@ -146,9 +146,9 @@ def _month(market, month, keys):
 def assignment_cost(edition, section, months):
     """Asignación de las decisiones de varios meses de todos los activos de cada mercado.
 
-    ``fresh`` crea una instancia por mes, como la retención al guardar cada ventana, y
-    ``shared`` reutiliza una, como la comparación con todas sus ventanas. Las dos deben dar
-    los mismos códigos.
+    ``fresh`` crea una instancia por mes, como si cada ventana leyera de nuevo la edición, y
+    ``shared`` reutiliza una, como hacen la comparación y la retención. Las dos deben dar los
+    mismos códigos.
     """
     result = {}
     for market in ("US", "CN"):

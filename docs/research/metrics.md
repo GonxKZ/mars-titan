@@ -1152,7 +1152,17 @@ mediana del efectivo negociado de su validación, anterior a la evaluación.
 
 ### Coste
 
-COSTE_PENDIENTE
+Medido el 10 de octubre de 2026 en CPU, con dos hilos y una carga media del equipo de 25 por
+otros procesos al empezar
+([recibo](../../reports/engineering/liquidity-strata-20261010/real-data.json)). Asignar las
+decisiones de un mes de todos los activos de US (unas 80.000 filas de 4.202 activos) cuesta
+entre 17 y 21 s si la instancia vuelve a leer la edición, casi todo lectura de Parquet. Con una
+sola instancia el primer mes cuesta lo mismo y los siguientes entre 0,18 y 0,23 s, con los
+mismos códigos y una caché de 96,5 MB en US y 17,4 MB en CN. Por eso la comparación y la
+retención usan una sola instancia para todas sus ventanas. Puntuar los cinco estratos de un
+modelo sobre 625.000 filas tarda 0,45 s, frente a 0,25 s de la ventana completa, y elegir las
+filas extremas de 100.000 filas, 0,02 s. Recorrer toda la edición para los recuentos y los
+truncamientos llevó 45 s, con un pico de 1.073 MiB.
 
 ### Qué no permite afirmar
 
@@ -1160,9 +1170,9 @@ Las diferencias entre estratos describen subpoblaciones distintas, con otros sec
 y mercados. Un MSE mayor en `low_price_and_thin_volume` no demuestra que la iliquidez cause el
 error, y un modelo que mejora en `liquid` no tiene por qué ser mejor negociable. Los umbrales de
 1 unidad y 1.000 títulos son los del diagnóstico de #16, en moneda local, y en China apenas
-separan nada salvo las suspensiones. `unclassified` es una parte grande de US (en torno al 15 %
-de las filas desde 2019) y no es un estrato aleatorio: reúne activos sin reconstrucción
-verificada.
+separan nada salvo las suspensiones. `unclassified` es una parte grande de US (entre el 13,5 % y el
+16,2 % de las filas anuales de la edición desde 2018) y no es un estrato aleatorio: reúne
+activos sin reconstrucción verificada.
 
 ## Ablación de modalidades en inferencia
 
