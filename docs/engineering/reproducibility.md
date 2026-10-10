@@ -25,7 +25,7 @@ Para preparar las herramientas de documentación y calidad:
 uv sync --locked
 ```
 
-El grupo `dev` contiene las utilidades de comprobación. Los extras `data`, `research` y `notebooks` añaden herramientas opcionales. `cuda` y `encoders` se han usado en la preparación multimodal y las mediciones locales. No hace falta PyTorch para revisar documentación o validar formatos. Las pruebas que lo necesitan se omiten de forma explícita si no está instalado.
+El grupo `dev` contiene las utilidades de comprobación. El grupo `reference` contiene las bibliotecas externas que solo se usan como referencia en las pruebas de paridad, con versiones exactas, y se instala con `uv sync --locked --group reference`. Los extras `data`, `research` y `notebooks` añaden herramientas opcionales. `cuda` y `encoders` se han usado en la preparación multimodal y las mediciones locales. No hace falta PyTorch para revisar documentación o validar formatos. Las pruebas que lo necesitan se omiten de forma explícita si no está instalado.
 
 Para reproducir la preparación y sus comprobaciones con GPU:
 
