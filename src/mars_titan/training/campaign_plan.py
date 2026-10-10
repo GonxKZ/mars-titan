@@ -17,9 +17,11 @@ sus dos núcleos son trabajos auxiliares sin traslado y cada brazo parte de uno 
 las mismas reglas, para medir y contar sin cambiar su archivo.
 
 La versión 2 de la configuración declara además la política de semillas, el modo de parada,
-las opciones de memoria pendientes, el orden de ejecución, la precisión numérica, que solo
-admite FP32 estricto (`campaign_numerics`), y la política de datos, que solo admite la edición
-real verificada (`campaign_data_policy`). Con `by_window` el plan recorre
+las opciones de memoria (pendientes, o fijadas con el recibo de su medida), el orden de
+ejecución, la precisión numérica, que solo admite FP32 estricto (`campaign_numerics`), y la
+política de datos, que solo admite la edición real verificada (`campaign_data_policy`). Su
+sección neuronal admite también `precision`, `cuda_graphs` y lotes de hasta
+`MAX_BATCH_SIZE`, que entran en el caso de cada referencia. Con `by_window` el plan recorre
 cada ventana de campaña completa antes de la siguiente (`campaign_schedule`). Los brazos de
 cada ámbito salen de la comparación: con su diseño conjunto, el ámbito conjunto ajusta todos
 los brazos y cada ámbito de un mercado solo los controles separados, con los auxiliares que
