@@ -22,6 +22,22 @@
     "mars_titan_b6_bias": {
       "condition": "Declarado en la ampliación de la campaña A con los componentes de integración (A5, clave constante)",
       "issue": 20
+    },
+    "mars_titan_b6_regime": {
+      "condition": "Declarado en la ampliación de la campaña A con los componentes de integración (A13, corrector de sesgo por régimen observable)",
+      "issue": 20
+    },
+    "mars_titan_b6_calendar": {
+      "condition": "Declarado en la ampliación de la campaña A con los componentes de integración (A13, control de calendario con la misma capacidad)",
+      "issue": 20
+    },
+    "mars_titan_b6_regime_banks": {
+      "condition": "Declarado en la ampliación de la campaña A con los componentes de integración (A14, matriz del codec por régimen observable)",
+      "issue": 20
+    },
+    "mars_titan_b6_calendar_banks": {
+      "condition": "Declarado en la ampliación de la campaña A con los componentes de integración (A14, control de calendario con la misma capacidad)",
+      "issue": 20
     }
   },
   "derived_arms": {
@@ -203,6 +219,14 @@
         "codec_key": {
           "label": "Clave del codec en la corrección asociativa de B6",
           "requires": ["associative_correction"]
+        },
+        "routing_slots": {
+          "label": "Cinco compartimentos de A asignados por el mes de la decisión, con las mismas cohortes sin clasificar que el régimen",
+          "requires": ["associative_correction"]
+        },
+        "regime_information": {
+          "label": "Compartimentos asignados por el régimen observable de volatilidad y tendencia en lugar del mes",
+          "requires": ["routing_slots"]
         }
       },
       "arms": {
@@ -287,6 +311,42 @@
           "test_time_update",
           "associative_correction",
           "codec_key"
+        ],
+        "mars_titan_b6_calendar": [
+          "titans_encoder",
+          "mac_attention",
+          "memory_read",
+          "test_time_update",
+          "associative_correction",
+          "routing_slots"
+        ],
+        "mars_titan_b6_regime": [
+          "titans_encoder",
+          "mac_attention",
+          "memory_read",
+          "test_time_update",
+          "associative_correction",
+          "routing_slots",
+          "regime_information"
+        ],
+        "mars_titan_b6_calendar_banks": [
+          "titans_encoder",
+          "mac_attention",
+          "memory_read",
+          "test_time_update",
+          "associative_correction",
+          "codec_key",
+          "routing_slots"
+        ],
+        "mars_titan_b6_regime_banks": [
+          "titans_encoder",
+          "mac_attention",
+          "memory_read",
+          "test_time_update",
+          "associative_correction",
+          "codec_key",
+          "routing_slots",
+          "regime_information"
         ],
         "mars_titan_m3_frozen_core": [
           "titans_encoder",

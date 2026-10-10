@@ -9,6 +9,7 @@ Ninguna prueba ajusta parámetros ni recorre datos reales.
 import hashlib
 import json
 from datetime import UTC, datetime
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -420,6 +421,48 @@ def test_a_routed_bias_write_has_its_closed_form():
         share = len(chosen) / len(values)
         expected[slot] = (retention + rate * sum(chosen) / len(values)) / (1 + rate * share)
     torch.testing.assert_close(written.matrix, expected, rtol=0, atol=1e-14)
+
+
+def test_the_comparison_declares_both_hypotheses_with_their_discard_controls():
+    root = Path(__file__).resolve().parents[2]
+    declaration = json.loads(
+        (root / "configs/evaluation/regime-routing-comparison.json").read_text()
+    )
+    assert declaration["status"] == "declared_not_executed"
+    assert declaration["executions"] == 0 and declaration["final_test_opened"] is False
+    for name, rule in declaration["rules"].items():
+        # La declaración repite la regla por defecto, la que reciben los brazos de la campaña.
+        default = RegimeRule(rule["name"])
+        assert rule == dict(
+            name=default.name,
+            min_assets=default.min_assets,
+            recent_returns=default.recent_returns,
+            min_returns=default.min_returns,
+        )
+        assert ROUTING[name] == rule["name"]
+    campaign = json.loads(
+        (root / "configs/baselines/historical-masked-campaign-extensions.json").read_text()
+    )["sections"]["mars_titan"]["arms"]
+    comparison = json.loads(
+        (root / "configs/evaluation/historical-masked-2000-comparison.json").read_text()
+    )["comparison"]["families"]
+    for arm, entry in declaration["arms"].items():
+        assert campaign[arm] == {"associative_memory": {"rule": "proximal", "key": entry["key"]}}
+        assert entry["key_size"] == KEY_SIZES[entry["key"]]
+    for hypothesis in declaration["hypotheses"].values():
+        variant, control = (declaration["arms"][hypothesis[k]] for k in ("variant", "control"))
+        assert (variant["role"], control["role"]) == ("innovation", "discard_control")
+        assert variant["key_size"] == control["key_size"]
+        assert ROUTING[variant["key"]] == REGIME_RULE and ROUTING[control["key"]] == CALENDAR_RULE
+        family = comparison[hypothesis["family"]]
+        assert family["base"] == hypothesis["control"]
+        assert family["variants"] == [hypothesis["variant"]]
+    extensions = json.loads((root / "configs/titans/mars-titan-extensions.json").read_text())
+    ablations = {a["id"]: a for a in extensions["ablations"]}
+    assert ablations["A13"]["change"] == {"associative_memory": {"key": ["regime", "calendar"]}}
+    assert ablations["A14"]["change"] == {
+        "associative_memory": {"key": ["codec_by_regime", "codec_by_calendar"]}
+    }
 
 
 def test_the_variant_builds_each_routed_arm_with_its_default_rule():
