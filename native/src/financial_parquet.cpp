@@ -112,6 +112,10 @@ std::vector<CorporateAction> actions_from(const Json& values,
             action.kind = CorporateKind::dividend;
         } else if (kind == "writeoff") {
             action.kind = CorporateKind::writeoff;
+        } else if (kind == "delisting") {
+            action.kind = CorporateKind::delisting;
+        } else if (kind == "unpriced_delisting") {
+            action.kind = CorporateKind::unpriced_delisting;
         } else {
             throw std::invalid_argument("La acción corporativa tiene un tipo desconocido");
         }

@@ -58,6 +58,19 @@ def test_training_does_not_admit_validation_data():
         )
 
 
+def test_training_rejects_a_source_that_can_hide_a_position_loss(monkeypatch):
+    from mars_titan.simulation import training
+
+    seen = []
+    monkeypatch.setattr(training, "censors_fit", lambda tape: seen.append(tape) or True)
+    env = environment()
+    with pytest.raises(ValueError):
+        FinancialTrainer(
+            env, "ppo", TrainConfig(total_steps=8), seed=42, device="cpu", diagnostic=True
+        )
+    assert seen == [env.tape]
+
+
 def test_failure_before_first_step_can_resume(tmp_path, monkeypatch):
     config = TrainConfig(total_steps=4, batch_size=2, rollout_steps=4, replay_capacity=8)
     trainer = FinancialTrainer(environment(), "ppo", config, seed=42, device="cpu", diagnostic=True)

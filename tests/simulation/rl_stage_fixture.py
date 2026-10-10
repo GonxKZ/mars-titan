@@ -19,7 +19,7 @@ import pytest
 
 from mars_titan.data.storage import atomic_json, sha256
 from mars_titan.posttraining import staged_chain
-from mars_titan.simulation import campaign_stage, native_policy_runs
+from mars_titan.simulation import campaign_stage, native_policy_runs, window_tapes
 from mars_titan.training import campaign_chain
 from mars_titan.training import masked_campaign as engine
 from mars_titan.training.label_maturity import FIT_PARTITIONS, label_maturity
@@ -65,7 +65,9 @@ def policies(**changes):
             value["window_sensitivity"],
             train_windows=dict(rule="fixed_prior_evaluations_v1", minimum=1, maximum=1),
         ),
-        universe=dict(rule="median_traded_value_in_validation_v1", max_assets=4),
+        # La edición sintética empieza en septiembre de 2019, así que el universo de cada tramo
+        # se clasifica con las 20 sesiones anteriores en lugar de 252.
+        universe=dict(rule=window_tapes.UNIVERSE_RULE, max_assets=4, ranking_sessions=20),
         # Caben dos oleadas KLPO de dos episodios anuales.
         budget=dict(
             transitions=1024, environments=2, rollout_transitions=32, evaluation_transitions=32
@@ -112,10 +114,16 @@ def write_configs(folder, variant):
 
 
 def declare_edition(policies_path, edition):
-    """Declarar en las políticas la edición de la prueba, como la etapa exige a la real."""
+    """Declarar en las políticas la edición de la prueba y su tabla del estado de cotización.
+
+    La etapa exige ambas a la real. La tabla es la de la fixture, sin acciones chinas ni
+    salidas con precio, y se escribe junto a la edición. Devuelve su ruta.
+    """
     value = json.loads(policies_path.read_text())
     value["data"]["edition_id"] = json.loads((edition / "manifest.json").read_text())["edition_id"]
+    _, value["data"]["listing_status_sha256"] = edition_fixture.listing_status(edition)
     atomic_json(policies_path, value)
+    return edition.parent / "listing-status.json"
 
 
 def base_campaign(root, variant, *, ending=None):
@@ -154,13 +162,14 @@ def base_campaign(root, variant, *, ending=None):
         ]
     }
     write_edition(root / "edition", assets)
-    declare_edition(root / "config" / "rl-policies.json", root / "edition")
+    status = declare_edition(root / "config" / "rl-policies.json", root / "edition")
     return SimpleNamespace(
         campaign=campaign,
         stage=stage,
         views=views,
         output=root / "campaign",
         edition=root / "edition",
+        listing_status=status,
         root=root,
     )
 
@@ -314,6 +323,7 @@ def executors(learner, backend="python"):
 
 
 def run(base, output, learner, *, stop=None, backend="python", chain_output=None, **options):
+    options.setdefault("listing_status", base.listing_status)
     return campaign_stage.run_stage(
         base.stage,
         base.views,

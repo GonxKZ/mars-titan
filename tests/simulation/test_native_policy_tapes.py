@@ -22,11 +22,22 @@ import numpy as np
 import pytest
 
 from mars_titan.data.storage import sha256
-from mars_titan.simulation import campaign_stage, native_policy_runs
+from mars_titan.simulation import campaign_stage, native_policy_runs, window_tapes
 from mars_titan.simulation.market import MarketTape
 from mars_titan.simulation.storage import read_tape, write_tape
 from mars_titan.training.learning_hold import HOLD_ENV
-from tests.simulation.policy_tape_fixture import ROLES, monthly_window, write_policy_tapes
+from tests.simulation.policy_tape_fixture import (
+    EDITION,
+    ROLES,
+    monthly_window,
+    write_policy_tapes,
+)
+from tests.simulation.unadjusted_edition_fixture import (
+    Asset,
+    listing_status,
+    tape_days,
+    write_edition,
+)
 
 ROOT = Path(__file__).resolve().parents[2]
 POLICIES = ROOT / "configs/simulation/historical-masked-rl-policies.json"
@@ -269,6 +280,130 @@ def test_klpo_collects_a_full_wave_and_pauses_before_update_ready(
     assert document["identity"]["policy_sha256"] == payload["best"]["actor_sha256"]
     assert document["identity"]["optimizer_steps"] == 0
     assert [row["cost_bps"] for row in document["metrics"]] == [0.0, 10.0, 25.0]
+
+
+@pytest.fixture(scope="module")
+def ending(tmp_path_factory):
+    """Cintas con el diseño de la etapa: columnas fuera del universo y bajas sin precio.
+
+    GON termina su serie a mitad de noviembre y END el 6 de diciembre, sin salida
+    acreditada. El ajuste de septiembre y octubre deja END, GON y OUT fuera de su universo,
+    con todas sus columnas ausentes. La validación de noviembre ya no admite GON y la
+    evaluación de diciembre lleva la baja de END, la única puntuación positiva, de modo que
+    cualquier reparto por puntuación la compra. Dos cintas de noviembre con GON en el
+    universo, una de ajuste y otra de validación, solo sirven para comprobar el rechazo.
+    """
+    root = tmp_path_factory.mktemp("ending-tapes")
+    days = tape_days("US")
+    extra = [
+        Asset("END", base=30.0, end=days.index("2023-12-06")),
+        Asset("GON", base=35.0, end=days.index("2023-11-15")),
+        Asset("OUT", base=60.0),
+    ]
+    write_edition(root / "edition", {"US": [*EDITION["US"], *extra]})
+    status = listing_status(root / "edition")
+    layout = ["AAA", "BBB", "CCC", "END", "GON", "OUT"]
+    base = ["AAA", "BBB", "CCC"]
+    plan = {
+        "train-0": ("train", -4, base),
+        "train-1": ("train", -3, base),
+        "validation": ("validation", -2, [*base, "END"]),
+        "evaluation": ("evaluation", -1, [*base, "END"]),
+        "gone-train": ("train", -2, [*base, "GON"]),
+        "gone-validation": ("validation", -2, [*base, "GON"]),
+        "late-validation": ("validation", -1, base),
+    }
+    result = {}
+    for name, (role, index, universe) in plan.items():
+        score = lambda k, i, universe=universe: 0.03 if universe[i] == "END" else 0.01  # noqa: E731
+        window, values = monthly_window("US", index, universe, score=score)
+        tape, _ = window_tapes.build_segment_tape(
+            root / "edition",
+            window,
+            values,
+            market="US",
+            role=role,
+            lag=0,
+            listing_status=status,
+            symbols=layout,
+            universe=universe,
+        )
+        write_tape(tape, root / name)
+        result[name] = root / name, tape
+    return result
+
+
+def test_fit_sources_accept_masked_columns_and_reject_an_unpriced_exit(
+    binaries, ending, tmp_path, learning_hold
+):
+    hold = learning_hold(True)
+    train = [ending["train-0"][0], ending["train-1"][0]]
+    tapes_ = {name: tape for name, (_, tape) in ending.items()}
+    assert tapes_["train-0"].identity["audit"]["outside_universe"] == ["US/END", "US/GON", "US/OUT"]
+    assert np.isnan(tapes_["train-0"].prices[:, 3:, 3]).all()
+    assert {a.kind for a in tapes_["train-0"].actions} <= {"dividend", "split"}
+    for name in ("gone-train", "gone-validation", "evaluation"):
+        kinds = [a.kind for a in tapes_[name].actions if a.kind.endswith("delisting")]
+        assert kinds == ["unpriced_delisting"], name
+    stage = diagnostic_stage(rollout_transitions=16)
+    ppo = write_config(
+        tmp_path / "dqn.json", native_policy_runs.ppo_config(stage, job("double_dqn", "native_ppo"))
+    )
+    klpo = write_config(
+        tmp_path / "klpo.json",
+        native_policy_runs.klpo_config(
+            diagnostic_stage(environments=1), job("klpo_terminal", "native_klpo")
+        ),
+    )
+    message = "Las cintas de ajuste y validación no admiten bajas sin precio de salida"
+    rejected = {
+        "train": ([train[0], ending["gone-train"][0]], ending["late-validation"][0]),
+        "validation": (train, ending["gone-validation"][0]),
+    }
+    # KLPO con un entorno admite una sola cinta de ajuste: recibe la última de cada caso.
+    for engine, config, kept in (("native_ppo", ppo, 0), ("native_klpo", klpo, -1)):
+        for role, (train_paths, validation) in rejected.items():
+            output = tmp_path / f"{engine}-{role}"
+            arguments = ["--config", config, "--output", output, "--validation-tape", validation]
+            for path in train_paths[kept:]:
+                arguments += ["--train-tape", path]
+            result = run(binaries[engine], hold, *arguments)
+            assert result.returncode == 1 and message in result.stderr, (engine, role)
+            assert not output.exists()
+    # Las columnas ausentes del diseño no impiden ajustar: Double DQN termina sus 32
+    # transiciones sin ninguna actualización.
+    fit = tmp_path / "fit"
+    arguments = ["--config", ppo, "--output", fit, "--validation-tape", ending["validation"][0]]
+    arguments += ["--train-tape", train[0], "--train-tape", train[1]]
+    result = run(binaries["native_ppo"], hold, *arguments)
+    assert result.returncode == 0, result.stderr
+    report = read(fit / "run.json")
+    assert (report["status"], report["transitions"], report["optimizer_steps"]) == (
+        "completed",
+        32,
+        0,
+    )
+    # La evaluación congelada sí admite la baja sin precio. Si la política mantiene END,
+    # el episodio termina en la baja como fallido con su motivo, como en la etapa en Python.
+    folder, tape = ending["evaluation"]
+    audit = ["--config", ppo, "--output", tmp_path / "audit", "--audit-run", fit]
+    result = run(binaries["native_ppo"], hold, *audit, "--audit-tape", folder)
+    assert result.returncode == 0, result.stderr
+    document = sealed(tmp_path / "audit/evaluation.json")
+    assert document["identity"]["optimizer_steps"] == 0
+    at = tape.delisted_at["US/END"]
+    for row in document["metrics"]:
+        assert (row["status"], row["reason"], row["steps"]) in (
+            ("completed", None, len(tape) - 1),
+            ("failed", "unpriced_exit", at),
+        ), row
+        nav = row["equity"]["nav"]
+        assert len(nav) == row["steps"] + 1 and all(value is not None for value in nav[:-1])
+        assert (nav[-1] is None) is (row["status"] == "failed")
+        assert (row["net_return"] is None) is (row["status"] == "failed")
+    # Con esta semilla la política inicial ya ha comprado END antes de su baja, así que la
+    # prueba recorre el episodio truncado y no solo la admisión de la cinta.
+    assert any(row["status"] == "failed" for row in document["metrics"])
 
 
 def test_klpo_rejects_a_budget_below_one_complete_wave(binaries, tapes, tmp_path, learning_hold):
@@ -543,7 +678,8 @@ def test_stage_writes_chinese_tapes_with_their_a_share_rules(tapes, tmp_path):
     window, values = monthly_window(
         "CN", ROLES[2][1], [asset.split("/")[1] for asset in tape.assets]
     )
-    policies = dict(environment=dict(dividend_payment_lag_sessions=0), universe=dict(max_assets=8))
+    universe = dict(rule=window_tapes.UNIVERSE_RULE, max_assets=8, ranking_sessions=20)
+    policies = dict(environment=dict(dividend_payment_lag_sessions=0), universe=universe)
     edition = folder.parents[1] / "edition"
     stage_tapes = campaign_stage._Tapes(
         policies,
@@ -552,11 +688,11 @@ def test_stage_writes_chinese_tapes_with_their_a_share_rules(tapes, tmp_path):
         json.loads((edition / "manifest.json").read_text())["edition_id"],
         tmp_path,
         "fixture",
+        listing_status(edition),
     )
     job = dict(scope="CN", market="CN", predictor="fixture", anchor="fixture")
-    written, built, failure, _ = stage_tapes.tape(
-        job, "validation", window.fold, tuple(tape.assets)
-    )
+    assets = tuple(tape.assets)
+    written, built, failure, _ = stage_tapes.tape(job, "validation", window.fold, assets, assets)
     assert failure is None and tuple(built.assets) == tuple(tape.assets)
     manifest = read(written / "manifest.json")
     assert manifest["schema_version"] == 2 and set(manifest["instruments"]) == set(tape.assets)

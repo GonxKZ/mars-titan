@@ -26,13 +26,15 @@
     "maximum": 3
   },
   "universe": {
-    "rule": "median_traded_value_in_validation_v1",
-    "max_assets": 128
+    "rule": "point_in_time_median_traded_value_v2",
+    "max_assets": 128,
+    "ranking_sessions": 252
   },
   "data": {
     "policy": "real_edition_only",
     "edition": "unadjusted_price_edition",
-    "edition_id": "1ac3727836462ce31c39b5438918bd6f3e0d359690c7bc79bfa87cd808c8e68c"
+    "edition_id": "1ac3727836462ce31c39b5438918bd6f3e0d359690c7bc79bfa87cd808c8e68c",
+    "listing_status_sha256": "645d78434ded6f139f0decd6bc85e19202eebe994e27d80e062641d0ec809ac8"
   },
   "environment": {
     "capital": 1000000,
@@ -116,7 +118,7 @@
   },
   "survival_sensitivity": {
     "role": "secondary",
-    "applies_to": "universe_assets_whose_series_ends_in_evaluation",
+    "applies_to": "evaluations_truncated_by_unpriced_exit",
     "exit_returns": [0.0, -0.3, -1.0]
   },
   "window_sensitivity": {

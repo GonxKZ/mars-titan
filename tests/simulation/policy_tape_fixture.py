@@ -11,10 +11,15 @@ import numpy as np
 from mars_titan.environments.walk_forward_receipt import RECEIPT_KIND, read_window_receipt
 from mars_titan.evaluation.splits import build_folds
 from mars_titan.simulation import window_tapes
-from mars_titan.simulation.market_rules import china_a_share_instrument
+from mars_titan.simulation.market_rules import tape_instruments
 from mars_titan.simulation.storage import write_tape
 from tests.environments.walk_forward_fixture import PARENT, microseconds, protocol, record
-from tests.simulation.unadjusted_edition_fixture import Asset, predictions, write_edition
+from tests.simulation.unadjusted_edition_fixture import (
+    Asset,
+    listing_status,
+    predictions,
+    write_edition,
+)
 
 LAG = 0
 EDITION = {
@@ -69,7 +74,7 @@ def monthly_window(market, index, symbols, *, parent=None, score=None):
 def instruments(tape, market):
     if market != "CN":
         return None
-    return {asset: china_a_share_instrument(asset) for asset in tape.assets}
+    return tape_instruments(tape)
 
 
 def write_policy_tapes(root, market, *, lag=LAG):
@@ -78,11 +83,12 @@ def write_policy_tapes(root, market, *, lag=LAG):
     if not edition.exists():
         write_edition(edition, EDITION)
     symbols = [asset.symbol for asset in EDITION[market]]
+    status = listing_status(edition)
     result = {"train": [], "validation": [], "evaluation": []}
     for number, (role, index) in enumerate(ROLES):
         window, values = monthly_window(market, index, symbols)
         tape, _ = window_tapes.build_segment_tape(
-            edition, window, values, market=market, role=role, lag=lag
+            edition, window, values, market=market, role=role, lag=lag, listing_status=status
         )
         folder = root / f"{market}-lag{lag}" / f"{number}-{role}"
         write_tape(tape, folder, instruments=instruments(tape, market))
@@ -91,7 +97,7 @@ def write_policy_tapes(root, market, *, lag=LAG):
     # de la cinta de ajuste, pero termina antes de la selección.
     window, values = monthly_window(market, ROLES[0][1], symbols)
     tape, _ = window_tapes.build_segment_tape(
-        edition, window, values, market=market, role="evaluation", lag=lag
+        edition, window, values, market=market, role="evaluation", lag=lag, listing_status=status
     )
     folder = root / f"{market}-lag{lag}" / "early-evaluation"
     write_tape(tape, folder, instruments=instruments(tape, market))

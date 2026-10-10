@@ -121,6 +121,7 @@ cmake --build --preset native-candidate-cuda -j 2
 | `MARS_TITAN_PPO_EXECUTABLE` | `build/native/native-ppo-release/mars-titan-ppo` | Se omiten las pruebas del binario PPO real |
 | `MARS_TITAN_KLPO_EXECUTABLE` | `build/native/native-ppo-release/mars-titan-klpo` | Se usa el de `native-ppo-release` si existe |
 | `MARS_TITAN_UNADJUSTED_EDITION` | Edición de precios sin ajustar, solo lectura | Se omiten las pruebas de humo con la edición real |
+| `MARS_TITAN_LISTING_STATUS` | `listing-status.json` de esa edición, solo lectura | Igual que la edición |
 
 El enlace episódico debe ser el de `native-candidate-cuda`. El de `native-release` no incluye el candidato GRU y deja sin ejecutar las pruebas de la GRU en sesiones financieras. Una ruta declarada que no existe nunca se trata como ausente y hace fallar la prueba. Desde la raíz del repositorio:
 

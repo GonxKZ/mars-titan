@@ -9,8 +9,8 @@ import gymnasium as gym
 import numpy as np
 
 from .market import RECONSTRUCTED
-from .market_rules import china_a_share_instrument
-from .portfolio import NATIVE_MAX_INSTRUMENTS, Instrument, Portfolio
+from .market_rules import tape_instruments
+from .portfolio import NATIVE_MAX_INSTRUMENTS, UNPRICED_DELISTING, Instrument, Portfolio
 
 ACTIONS = (None, 0.0, 0.25, 0.5, 0.75, 1.0)
 # Composición de la exposición. La regla común reparte por igual entre el cuartil superior de
@@ -21,6 +21,21 @@ ALLOCATIONS = ("positive_top_quartile_equal_weight", "valid_assets_equal_weight"
 
 class RecoverablePause(RuntimeError):
     """Pausa administrativa sin transición, recompensa ni final de episodio."""
+
+
+def unvalued_reason(tape, unvalued, at):
+    """Motivo de un patrimonio desconocido: baja sin precio de salida o cierre ausente.
+
+    Una posición abierta en una baja sin precio de salida no puede valorarse sin inventar un
+    importe. El episodio termina con la recompensa enmascarada, como con un cierre ausente,
+    pero con su propio motivo para que el informe no confunda ambos casos.
+    """
+    masked = {
+        action.asset
+        for action in tape.actions
+        if action.kind == UNPRICED_DELISTING and action.effective_at <= at
+    }
+    return "unpriced_exit" if masked & set(unvalued) else "missing_close"
 
 
 class FinancialEnv(gym.Env):
@@ -69,9 +84,10 @@ class FinancialEnv(gym.Env):
             tape.domain == "real"
             and audit.get("price_basis") == RECONSTRUCTED
             and tape.currency == "CNY"
-            and instruments != {asset: china_a_share_instrument(asset) for asset in tape.assets}
+            and instruments != tape_instruments(tape)
         ):
-            # Lotes, bandas diarias y timbre solo tienen sentido con precios negociados.
+            # Lotes, bandas diarias y timbre solo tienen sentido con precios negociados. Las
+            # bandas incluyen el estado ST y la exención inicial de la auditoría de la cinta.
             raise ValueError("Una cinta china reconstruida necesita las reglas de acciones A")
         self.instruments = (
             dict(instruments)
@@ -248,7 +264,7 @@ class FinancialEnv(gym.Env):
         valid, terminated = nav is not None, nav is not None and nav <= 0
         truncated = not valid or (following == len(self.tape) - 1 and not terminated)
         reason = (
-            "missing_close"
+            unvalued_reason(self.tape, result["unvalued"], at)
             if not valid
             else "ruin"
             if terminated

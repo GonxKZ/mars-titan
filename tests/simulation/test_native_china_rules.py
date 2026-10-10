@@ -17,7 +17,11 @@ import pytest
 from mars_titan.simulation.environment import FinancialEnv
 from mars_titan.simulation.evaluation import evaluate, fixed_policy
 from mars_titan.simulation.market import MarketTape
-from mars_titan.simulation.market_rules import beijing_day, china_a_share_instrument
+from mars_titan.simulation.market_rules import (
+    beijing_day,
+    china_a_share_instrument,
+    tape_instruments,
+)
 from mars_titan.simulation.native_runtime import RULES_CONTRACT, load_library
 from mars_titan.simulation.portfolio import CorporateAction, Instrument, Period
 from mars_titan.simulation.reconstructed_tape import build_reconstructed_tape
@@ -27,6 +31,7 @@ from tests.simulation.native_library import simulator_path as simulator
 from tests.simulation.unadjusted_edition_fixture import (
     Asset,
     evaluation_window,
+    listing_status,
     predictions,
     write_edition,
 )
@@ -276,7 +281,17 @@ EDITION_ASSETS = [
     # Split con resto impar, dividendo y evento ambiguo en la misma sesión.
     Asset("000001.SZ", base=12.0, events=((100, 0.046154, 1.25), (150, 0.2, 0))),
     Asset("688981.SS", base=40.0, events=((170, 0.1, 1.5),)),
-    Asset("600519.SS", base=1700.0),
+    # Apertura en el límite del 5 % dentro del tramo ST y salto del 17,6 % en un día sin límite.
+    Asset(
+        "600519.SS",
+        base=1700.0,
+        overrides={
+            46: dict(close=1700.00),
+            47: dict(open=1785.00 * (1 - 5e-7) / (1 + 4e-7), close=1785.00),
+            117: dict(close=1700.00),
+            118: dict(open=2000.00, close=2000.00),
+        },
+    ),
 ]
 
 
@@ -287,7 +302,18 @@ def edition(tmp_path_factory):
     return root
 
 
-def reconstructed(root, *, score=None, lag=2):
+# Estado de cotización de la fixture. Los tramos ST y S de 600519.SS reducen su banda al 5 %
+# en parte de 2023 y dos días quedan sin límite, así que la paridad recorre esas bandas.
+STATUS = {
+    "CN/600519.SS": dict(
+        special_treatment=[["2023-02-01", "2023-05-04"]],
+        share_reform_pending=[["2023-06-01", "2023-07-03"]],
+        limit_free_days=["2023-07-03", "2023-09-12"],
+    ),
+}
+
+
+def reconstructed(root, *, score=None, lag=2, status=None):
     symbols = [asset.symbol for asset in EDITION_ASSETS]
     values = predictions("CN", symbols, score=score)
     tape, _ = build_reconstructed_tape(
@@ -297,8 +323,9 @@ def reconstructed(root, *, score=None, lag=2):
         market="CN",
         partition="validation",
         dividend_payment_lag_sessions=lag,
+        listing_status=listing_status(root, china=STATUS if status is None else status),
     )
-    return tape, rules(tape.assets)
+    return tape, tape_instruments(tape)
 
 
 @requires_native_library
@@ -321,6 +348,24 @@ def test_reconstructed_limit_opens_block_in_the_native_engine(edition):
     seen, native = assert_parity(tape, instruments, actions)
     assert seen["limit_up"] >= 1 and seen["limit_down"] >= 1
     assert native.book.positions["CN/600000.SS"] % 100 == 0
+
+
+@requires_native_library
+def test_listing_status_bands_block_and_free_orders_in_both_engines(edition):
+    # Solo 600519.SS tiene predicción positiva. Su apertura del 2023-03-16 queda en el límite
+    # del 5 % del tramo ST y la del 2023-07-03, sin límite, sube un 17,6 % y se ejecuta.
+    tape, instruments = reconstructed(edition, score=lambda k, i: 0.05 if i == 3 else -0.01)
+    limits = instruments["CN/600519.SS"].price_limits
+    assert {period.band for period in limits} == {0.05, 0.10}
+    plan = {46: 5, 47: 1, 117: 5}
+    actions = [plan.get(k, 1) for k in range(118)]
+    seen, native = assert_parity(tape, instruments, actions)
+    assert seen["limit_up"] >= 1 and seen["buy"] >= 1
+    assert native.book.positions["CN/600519.SS"] > 0
+    # Con las reglas del tablero, sin estado, la primera apertura sí se ejecutaría.
+    board = rules(tape.assets)
+    upper, _ = board["CN/600519.SS"].limits(1700.0 * (1 + 4e-7), tape.open_times[47])
+    assert upper == 1870.0
 
 
 @requires_native_library

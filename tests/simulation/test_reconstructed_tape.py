@@ -17,8 +17,9 @@ from mars_titan.simulation.market import (
     RECONSTRUCTED_CONTRACT,
     WALK_FORWARD_SEGMENT,
     MarketTape,
+    censors_fit,
 )
-from mars_titan.simulation.market_rules import china_a_share_instrument
+from mars_titan.simulation.market_rules import china_a_share_instrument, tape_instruments
 from mars_titan.simulation.reconstructed_tape import (
     NoAdmittedAssets,
     build_reconstructed_tape,
@@ -31,6 +32,7 @@ from tests.simulation.policy_tape_fixture import monthly_window
 from tests.simulation.unadjusted_edition_fixture import (
     Asset,
     evaluation_window,
+    listing_status,
     predictions,
     tape_days,
     write_edition,
@@ -73,7 +75,6 @@ CN = [
 EXPECTED_EXCLUSIONS = {
     "US/CCC": "unverified_rows_in_tape",
     "US/DDD": "no_verified_traded_close_at_start",
-    "US/EEE": "series_ends_in_tape",
     "US/FFF": "no_verified_rows",
     "US/JJJ": "no_verified_traded_close_at_start",
 }
@@ -90,6 +91,7 @@ def build(edition, market="US", *, values=None, lag=0, **options):
     symbols = [asset.symbol for asset in (US if market == "US" else CN)]
     values = predictions(market, symbols) if values is None else values
     windows = options.pop("windows", None) or [evaluation_window(market, values)]
+    status = options.pop("listing_status", None) or listing_status(edition)
     return build_reconstructed_tape(
         edition,
         windows,
@@ -97,6 +99,7 @@ def build(edition, market="US", *, values=None, lag=0, **options):
         market=market,
         partition=options.pop("partition", "train"),
         dividend_payment_lag_sessions=lag,
+        listing_status=status,
         **options,
     )
 
@@ -108,9 +111,11 @@ def column(tape, asset):
 def test_only_verified_assets_enter_and_every_exclusion_has_a_reason(edition):
     tape, report = build(edition)
     assert report["excluded"] == EXPECTED_EXCLUSIONS
-    assert tape.assets == ["US/AAA", "US/BBB", "US/GGG", "US/HHH", "US/III"]
+    # EEE termina su serie cinco sesiones antes del final: entra y sale con una baja.
+    assert tape.assets == ["US/AAA", "US/BBB", "US/EEE", "US/GGG", "US/HHH", "US/III"]
     assert sum(report["exclusions"].values()) == len(EXPECTED_EXCLUSIONS)
     assert report["dropped_predictions"] == len(EXPECTED_EXCLUSIONS) * len(tape)
+    assert report["predictions_after_series_end"] == 4
     cn, cn_report = build(edition, "CN")
     assert cn_report["excluded"] == {"CN/600010.SS": "unverified_rows_in_tape"}
     assert cn.currency == "CNY" and len(cn.assets) == 3
@@ -118,8 +123,11 @@ def test_only_verified_assets_enter_and_every_exclusion_has_a_reason(edition):
 
 def test_a_tape_without_admitted_assets_reports_every_exclusion(edition):
     with pytest.raises(NoAdmittedAssets) as raised:
-        build(edition, symbols=["EEE"])
-    assert raised.value.excluded == {"US/EEE": "series_ends_in_tape"}
+        build(edition, symbols=["FFF", "JJJ"])
+    assert raised.value.excluded == {
+        "US/FFF": "no_verified_rows",
+        "US/JJJ": "no_verified_traded_close_at_start",
+    }
 
 
 def test_identity_declares_the_reconstructed_treatment_and_its_limits(edition):
@@ -128,20 +136,24 @@ def test_identity_declares_the_reconstructed_treatment_and_its_limits(edition):
     assert audit["price_basis"] == "unadjusted_reconstructed"
     assert {key: audit[key] for key in RECONSTRUCTED_CONTRACT} == RECONSTRUCTED_CONTRACT
     assert audit["corporate_actions_complete"] is False
-    assert audit["exit_returns"] == "unavailable"
+    assert audit["exit_returns"] == "source_exit_price_or_masked_position"
+    assert audit["series_end"] == "delisting_at_next_open"
     assert audit["population"] == "listed_through_2025_03"
     assert audit["assumptions"] == {"dividend_payment_lag_sessions": 3}
     assert audit["edition_id"] == read_edition(edition)["edition_id"]
-    assert tape.identity["source"]["exclusions"]["series_ends_in_tape"] == 1
+    assert audit["outside_universe"] == [] and audit["listing_status"]["assets"] == {}
+    assert audit["delistings"] == {"US/EEE": {"last_session": tape_days("US")[-5], "exit": None}}
+    assert "series_ends_in_tape" not in tape.identity["source"]["exclusions"]
+    assert tape.identity["source"]["counts"]["series_ends_in_tape"] == 1
     assert tape.identity["source"]["final_session"] == (
-        "missing_row_valued_at_last_traded_close_when_series_continues_v1"
+        "missing_row_valued_at_last_traded_close_until_series_end_v2"
     )
 
 
 def test_a_final_session_without_row_is_valued_at_the_last_traded_close(tmp_path):
     # Como DVN el 31 de diciembre de 2009: falta la fila de la última sesión, pero la serie
     # sigue después de la cinta. Se valora con el último cierre negociado, sin ejecución, y
-    # ya no anula la ventana. Una serie que termina dentro de la cinta sigue excluida.
+    # ya no anula la ventana. Una serie que termina dentro de la cinta sale con una baja.
     year = tape_days("US")
     last = year.index("2023-11-30")
     write_edition(
@@ -164,9 +176,13 @@ def test_a_final_session_without_row_is_valued_at_the_last_traded_close(tmp_path
         market="US",
         partition="validation",
         dividend_payment_lag_sessions=0,
+        listing_status=listing_status(tmp_path),
     )
-    assert report["excluded"] == {"US/END": "series_ends_in_tape"}
-    assert tape.assets == ["US/GAP", "US/REF"] and str(report["last_session"]) == "2023-11-30"
+    assert report["excluded"] == {} and report["delistings"] == {
+        "US/END": {"last_session": year[last - 3], "exit": None}
+    }
+    assert tape.assets == ["US/END", "US/GAP", "US/REF"]
+    assert str(report["last_session"]) == "2023-11-30"
     assert report["counts"]["final_sessions_without_row"] == 1
     gap = tape.assets.index("US/GAP")
     assert np.isnan(tape.prices[-1, gap, [0, 1, 2, 4]]).all()
@@ -179,6 +195,268 @@ def test_a_final_session_without_row_is_valued_at_the_last_traded_close(tmp_path
     held = env.book.positions["US/GAP"]
     cash = env.book.cash["USD"]
     assert env.book.nav["USD"] == pytest.approx(cash + held * tape.prices[-2, gap, 3], rel=1e-15)
+
+
+def delisting_edition(root, *, end_offset=6):
+    """Edición con END, que termina su serie en noviembre, y REF, que sigue cotizando."""
+    year = tape_days("US")
+    last = year.index("2023-11-30") - end_offset
+    write_edition(root, {"US": [Asset("END", base=40.0, end=last), Asset("REF", base=50.0)]})
+    window, values = monthly_window(
+        "US", -2, ["END", "REF"], score=lambda k, i: 0.02 if i == 0 else -0.01
+    )
+    return year[last], window, values
+
+
+def delisting_tape(root, window, values, status):
+    return build_reconstructed_tape(
+        root,
+        [window],
+        [values],
+        market="US",
+        partition="validation",
+        dividend_payment_lag_sessions=0,
+        listing_status=status,
+    )
+
+
+def hold_end(env):
+    """Comprar END al empezar y mantenerlo. Devuelve la información de cada paso."""
+    env.reset(seed=0)
+    infos = []
+    while not env.done:
+        infos.append(env.step(5 if env.cursor == 0 else 0)[4])
+    return infos
+
+
+@pytest.mark.parametrize(
+    "backend", ["python", pytest.param("native", marks=requires_native_library)]
+)
+def test_a_held_position_in_an_unpriced_delisting_masks_the_episode(tmp_path, backend):
+    last, window, values = delisting_edition(tmp_path)
+    tape, report = delisting_tape(tmp_path, window, values, listing_status(tmp_path))
+    end = tape.assets.index("US/END")
+    at = tape.delisted_at["US/END"]
+    assert tape.prices[at - 1, end, 3] > 0 and np.isnan(tape.prices[at:, end]).all()
+    assert np.isnan(tape.scores[at:, end]).all() and report["predictions_after_series_end"] > 0
+    (action,) = [a for a in tape.actions if a.asset == "US/END"]
+    assert (action.kind, action.value, action.pay_at) == ("unpriced_delisting", 0.0, None)
+    assert action.effective_at == tape.open_times[at]
+    infos = hold_end(FinancialEnv(tape, capital=1_000_000, backend=backend))
+    # El patrimonio pasa a ser desconocido al primer cierre sin cotización: no se inventa
+    # ningún precio de salida y la recompensa queda enmascarada.
+    assert len(infos) == at and not infos[-1]["reward_valid"]
+    assert infos[-1]["reason"] == "unpriced_exit" and infos[-1]["nav"]["USD"] is None
+    assert all(info["reward_valid"] for info in infos[:-1])
+
+
+def test_a_delisted_column_keeps_no_price_or_score_after_its_delisting(tmp_path):
+    last, window, values = delisting_edition(tmp_path)
+    tape, _ = delisting_tape(tmp_path, window, values, listing_status(tmp_path))
+    end, at = tape.assets.index("US/END"), tape.delisted_at["US/END"]
+    options = dict(
+        domain="real",
+        currency="USD",
+        partition="validation",
+        prediction_times=tape.prediction_times,
+        open_times=tape.open_times,
+        actions=tape.actions,
+        audit=tape.identity["audit"],
+    )
+    prices, scores = tape.prices.copy(), tape.scores.copy()
+    prices[at + 1, end] = 40.0
+    scores[at + 1, end] = 0.02
+    for changed in (dict(prices=prices), dict(scores=scores)):
+        arrays = {"prices": tape.prices, "scores": tape.scores, **changed}
+        with pytest.raises(ValueError, match="conserva precios o predicciones posteriores"):
+            MarketTape(arrays["prices"], tape.close_times, tape.assets, arrays["scores"], **options)
+
+
+def test_only_an_unpriced_exit_censors_a_reconstructed_fit_source(tmp_path):
+    """Las columnas sin precio de un activo fuera del universo no censuran un ajuste.
+
+    Una baja sin precio de salida sí, porque deja sin valorar una posición abierta. En una
+    cinta sintética cualquier cierre ausente sigue censurando, como antes de las bajas.
+    """
+    last, window, values = delisting_edition(tmp_path)
+    unpriced, _ = delisting_tape(tmp_path, window, values, listing_status(tmp_path))
+    days = tape_days("US")
+    exit_ = dict(last_session=last, price=41.5, currency="USD", paid_on=days[days.index(last) + 3])
+    paid = listing_status(tmp_path, exits={"US/END": exit_}, name="paid.json")
+    priced, _ = delisting_tape(tmp_path, window, values, paid)
+    outside, _ = build_reconstructed_tape(
+        tmp_path,
+        [window],
+        [values],
+        market="US",
+        partition="validation",
+        dividend_payment_lag_sessions=0,
+        listing_status=listing_status(tmp_path),
+        symbols=["END", "REF"],
+        universe=["REF"],
+    )
+    assert np.isnan(outside.prices[:, outside.assets.index("US/END"), 3]).all()
+    assert not outside.actions and not censors_fit(outside)
+    assert np.isnan(priced.prices[:, :, 3]).any() and not censors_fit(priced)
+    assert censors_fit(unpriced)
+    synthetic = MarketTape(
+        np.where(np.arange(4)[:, None, None] == 2, np.nan, np.full((4, 1, 5), 10.0)),
+        microseconds("2023-01-03") + 86_400_000_000 * np.arange(4, dtype=np.int64),
+        ["US/AAA"],
+        np.zeros((4, 1)),
+        domain="synthetic",
+        currency="USD",
+    )
+    assert censors_fit(synthetic)
+
+
+@pytest.mark.parametrize(
+    "backend", ["python", pytest.param("native", marks=requires_native_library)]
+)
+def test_without_a_position_an_unpriced_delisting_only_retires_the_asset(tmp_path, backend):
+    _, window, values = delisting_edition(tmp_path)
+    tape, _ = delisting_tape(tmp_path, window, values, listing_status(tmp_path))
+    env = FinancialEnv(tape, capital=1_000_000, backend=backend)
+    env.reset(seed=0)
+    at = tape.delisted_at["US/END"]
+    while not env.done:
+        # Antes de la baja el activo sigue disponible. Desde ella queda retirado y ninguna
+        # orden posterior puede volver a comprarlo.
+        assert ("US/END" in env.book.retired) is (env.cursor >= at)
+        info = env.step(1)[4]
+    assert info["reward_valid"] and info["reason"] == "episode_limit"
+    assert env.book.nav["USD"] == pytest.approx(1_000_000) and "US/END" in env.book.retired
+
+
+@pytest.mark.parametrize(
+    "backend", ["python", pytest.param("native", marks=requires_native_library)]
+)
+def test_a_source_exit_price_pays_the_held_shares_on_its_payment_date(tmp_path, backend):
+    last, window, values = delisting_edition(tmp_path)
+    paid = tape_days("US")[tape_days("US").index(last) + 3]
+    exits = {"US/END": dict(last_session=last, price=41.5, currency="USD", paid_on=paid)}
+    status = listing_status(tmp_path, exits=exits)
+    tape, report = delisting_tape(tmp_path, window, values, status)
+    at = tape.delisted_at["US/END"]
+    (action,) = [a for a in tape.actions if a.asset == "US/END"]
+    assert (action.kind, action.value) == ("delisting", 41.5)
+    assert action.pay_at == tape.open_times[at + 2]
+    assert report["delistings"]["US/END"]["exit"] == dict(
+        price=41.5, pay_at=action.pay_at, source_sha256=status[0]["sources"]["fixture"]["sha256"]
+    )
+    env = FinancialEnv(tape, capital=1_000_000, backend=backend)
+    env.reset(seed=0)
+    while env.cursor < at - 1:
+        assert env.step(5 if env.cursor == 0 else 0)[4]["reward_valid"]
+    held = env.book.snapshot()["state"]["positions"]["US/END"]
+    info = env.step(0)[4]
+    state = env.book.snapshot()["state"]
+    # La baja cambia las acciones por el cobro pendiente, que cuenta en el patrimonio.
+    assert held > 0 and info["reward_valid"]
+    assert "US/END" not in state["positions"] and "US/END" in state["retired"]
+    assert [entry["amount"] for entry in state["receivables"]] == [
+        pytest.approx(held * 41.5, rel=1e-12)
+    ]
+    while not env.done:
+        info = env.step(0)[4]
+        assert info["reward_valid"]
+    assert env.book.snapshot()["state"]["receivables"] == []
+
+
+def test_an_exit_for_another_last_session_contradicts_the_edition(tmp_path):
+    last, window, values = delisting_edition(tmp_path)
+    other = tape_days("US")[tape_days("US").index(last) - 1]
+    exits = {"US/END": dict(last_session=other, price=41.5, currency="USD", paid_on=last)}
+    with pytest.raises(ValueError, match="última sesión de la serie"):
+        delisting_tape(tmp_path, window, values, listing_status(tmp_path, exits=exits))
+
+
+def test_an_event_after_the_last_row_of_a_series_excludes_the_asset(tmp_path):
+    """Un dividendo fechado después de la última fila contradice la baja.
+
+    La edición no puede saber si el evento o el final de la serie es el error, así que el
+    activo se excluye con su motivo en lugar de detener la cinta o pagar un dividendo a una
+    posición que ya no cotiza.
+    """
+    year = tape_days("US")
+    last = year.index("2023-11-30") - 6
+    ending = Asset("END", base=40.0, end=last, events=((last + 2, 0.5, 0.0),))
+    write_edition(tmp_path, {"US": [ending, Asset("REF", base=50.0)]})
+    window, values = monthly_window("US", -2, ["END", "REF"])
+    tape, report = delisting_tape(tmp_path, window, values, listing_status(tmp_path))
+    assert report["excluded"] == {"US/END": "invalid_event"} and report["delistings"] == {}
+    assert tape.assets == ["US/REF"] and not tape.actions
+
+
+def test_a_series_that_ended_before_the_tape_is_excluded_with_its_reason(tmp_path):
+    year = tape_days("US")
+    write_edition(
+        tmp_path,
+        {"US": [Asset("OLD", end=year.index("2023-10-31")), Asset("REF", base=50.0)]},
+    )
+    window, values = monthly_window("US", -2, ["OLD", "REF"])
+    tape, report = delisting_tape(tmp_path, window, values, listing_status(tmp_path))
+    assert report["excluded"] == {"US/OLD": "delisted_before_tape"}
+    assert tape.assets == ["US/REF"] and report["dropped_predictions"] > 0
+
+
+def test_assets_outside_the_universe_keep_their_column_without_prices(edition):
+    tape, report = build(edition, symbols=["AAA", "BBB", "GGG"], universe=["AAA", "GGG"])
+    assert tape.assets == ["US/AAA", "US/BBB", "US/GGG"]
+    b = column(tape, "US/BBB")
+    assert np.isnan(tape.prices[:, b]).all() and np.isnan(tape.scores[:, b]).all()
+    assert report["outside_universe"] == 1 and report["outside_universe_predictions"] == len(tape)
+    assert tape.identity["audit"]["outside_universe"] == ["US/BBB"]
+    assert not [a for a in tape.actions if a.asset == "US/BBB"]
+    assert tape.identity["source"]["universe_assets"] == 2
+    # La cartera nunca opera ni valora el activo fuera del universo.
+    env = FinancialEnv(tape)
+    env.reset(seed=0)
+    while not env.done:
+        info = env.step(5)[4]
+        assert all(trade["asset"] != "US/BBB" for trade in info["trades"])
+    assert info["reward_valid"]
+    with pytest.raises(ValueError, match="diseño"):
+        build(edition, symbols=["AAA"], universe=["AAA", "BBB"])
+
+
+def test_a_universe_column_outside_the_audit_or_with_prices_is_rejected(edition):
+    tape, _ = build(edition, symbols=["AAA", "BBB"], universe=["AAA"])
+    options = dict(
+        domain="real",
+        currency="USD",
+        partition="train",
+        prediction_times=tape.prediction_times,
+        open_times=tape.open_times,
+        actions=tape.actions,
+    )
+
+    def rebuild(audit=None, prices=None, scores=None):
+        return MarketTape(
+            tape.prices if prices is None else prices,
+            tape.close_times,
+            tape.assets,
+            tape.scores if scores is None else scores,
+            audit=audit or copy.deepcopy(tape.identity["audit"]),
+            **options,
+        )
+
+    assert rebuild().identity["audit"] == tape.identity["audit"]
+    prices = tape.prices.copy()
+    prices[10, 1, 3] = 50.0
+    with pytest.raises(ValueError, match="fuera del universo"):
+        rebuild(prices=prices)
+    scores = tape.scores.copy()
+    scores[10, 1] = 0.5
+    with pytest.raises(ValueError, match="fuera del universo"):
+        rebuild(scores=scores)
+    audit = copy.deepcopy(tape.identity["audit"])
+    audit["outside_universe"] = []
+    with pytest.raises(ValueError, match="cierre valorado"):
+        rebuild(audit)
+    audit["outside_universe"] = ["US/AAA", "US/BBB"]
+    with pytest.raises(ValueError, match="dentro de su universo"):
+        rebuild(audit)
 
 
 def test_sessions_and_fit_ends_come_from_the_receipt_and_never_reach_2024(edition):
@@ -216,7 +494,11 @@ def test_carry_at_the_start_uses_only_verified_traded_closes(edition):
     i = column(tape, "US/III")
     assert np.isnan(tape.prices[0, i, 0]) and tape.prices[0, i, 4] == 0
     assert np.isfinite(tape.prices[:, i, 3]).all()
-    assert np.isfinite(tape.prices[:, :, 3]).all()
+    # Solo la baja de EEE deja sesiones sin cierre, todas posteriores a su última fila.
+    listed = [k for k, asset in enumerate(tape.assets) if asset != "US/EEE"]
+    assert np.isfinite(tape.prices[:, listed, 3]).all()
+    e = column(tape, "US/EEE")
+    assert np.isfinite(tape.prices[:-4, e, 3]).all() and np.isnan(tape.prices[-4:, e]).all()
 
 
 def test_prices_on_the_quote_grid_are_exact_and_off_grid_opens_do_not_execute(edition):
@@ -338,12 +620,14 @@ def test_in_sample_segments_cannot_feed_a_tape(edition):
 
 def test_tape_contract_rejects_a_softened_reconstructed_declaration(edition):
     tape, _ = build(edition)
+    # Las bajas de la cinta viajan como acciones, sin ellas sus cierres ausentes no se admiten.
     options = dict(
         domain="real",
         currency="USD",
         partition="train",
         prediction_times=tape.prediction_times,
         open_times=tape.open_times,
+        actions=tape.actions,
     )
 
     def rebuild(audit=None, prices=None, currency="USD"):
@@ -374,6 +658,11 @@ def test_tape_contract_rejects_a_softened_reconstructed_declaration(edition):
     audit = copy.deepcopy(tape.identity["audit"])
     del audit["exit_returns"]
     with pytest.raises(ValueError, match="tratamiento"):
+        rebuild(audit)
+    # Una cinta de EE. UU. no lleva estado de cotización chino para sus activos.
+    audit = copy.deepcopy(tape.identity["audit"])
+    audit["listing_status"]["assets"] = {tape.assets[0]: {}}
+    with pytest.raises(ValueError, match="estado de cotización de la cinta"):
         rebuild(audit)
     with pytest.raises(ValueError, match="tratamiento"):
         rebuild(currency="CNY")
@@ -486,7 +775,7 @@ def test_scripted_policies_never_trade_in_suspensions_gaps_or_ambiguous_sessions
 @pytest.mark.parametrize("name", sorted(POLICIES))
 def test_china_rules_apply_lots_and_daily_limits_on_reconstructed_prices(edition, name):
     tape, _ = build(edition, "CN")
-    rules = {asset: china_a_share_instrument(asset) for asset in tape.assets}
+    rules = tape_instruments(tape)
 
     def checks(tape, decision, execution, i, trade):
         ordinary(tape, decision, execution, i, trade)
@@ -507,8 +796,7 @@ def test_orders_at_reconstructed_daily_limit_opens_do_not_fill(edition):
     values = predictions("CN", symbols, score=lambda k, i: 0.05 if i == 2 else -0.01)
     tape, _ = build(edition, "CN", values=values)
     i = column(tape, "CN/600000.SS")
-    rules = {asset: china_a_share_instrument(asset) for asset in tape.assets}
-    env = FinancialEnv(tape, instruments=rules)
+    env = FinancialEnv(tape, instruments=tape_instruments(tape))
     env.reset(seed=0)
     plan = {39: 5, 41: 5, 42: 0, 43: 0, 44: 1}
     outcomes = {}
@@ -532,11 +820,16 @@ def test_reconstructed_chinese_tapes_require_the_a_share_rules(edition):
     tape, _ = build(edition, "CN")
     with pytest.raises(ValueError, match="reglas de acciones A"):
         FinancialEnv(tape)
-    plain = {asset: china_a_share_instrument(asset) for asset in tape.assets}
+    plain = dict(tape_instruments(tape))
     plain[tape.assets[0]] = dataclasses.replace(plain[tape.assets[0]], lot=1)
     with pytest.raises(ValueError, match="reglas de acciones A"):
         FinancialEnv(tape, instruments=plain)
-    rules = {asset: china_a_share_instrument(asset) for asset in tape.assets}
+    # Las reglas del tablero sin el estado de cotización tampoco bastan en una cinta real.
+    board = {asset: china_a_share_instrument(asset) for asset in tape.assets}
+    with pytest.raises(ValueError, match="reglas de acciones A"):
+        FinancialEnv(tape, instruments=board)
+    rules = tape_instruments(tape)
+    assert {rule.rules[:13] for rule in rules.values()} == {"cn_a_share_v2"}
     assert FinancialEnv(tape, instruments=rules).identity["instruments_sha256"]
 
 
@@ -624,6 +917,7 @@ def test_a_session_without_any_row_creates_no_execution_no_price_and_no_reward(t
         market="US",
         partition="train",
         dividend_payment_lag_sessions=0,
+        listing_status=listing_status(tmp_path),
     )
     assert report["counts"]["missing_rows"] == 4 and report["excluded"] == {}
     for k in hole:

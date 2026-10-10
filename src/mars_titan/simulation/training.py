@@ -25,6 +25,7 @@ from mars_titan.training.learning_hold import require_learning_allowed
 from mars_titan.training.run_receipts import initialize_receipt
 
 from .algorithms import FinancialNetwork, double_targets, generalized_advantage, ppo_objective
+from .market import censors_fit
 from .replay import Replay
 
 
@@ -119,7 +120,7 @@ class FinancialTrainer:
             or not 0 <= seed < 2**32
             or device not in {"cpu", "cuda:0"}
             # Un cierre ausente invalidaría la transición y ocultaría la pérdida de la posición.
-            or np.isnan(env.tape.prices[:, :, 3]).any()
+            or censors_fit(env.tape)
             or (device == "cpu" and (not diagnostic or config.total_steps > 32))
             or (
                 device == "cuda:0"
