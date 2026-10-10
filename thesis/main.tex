@@ -204,7 +204,7 @@ pendientes y revisar un resumen de su estado.
 \begin{table}[htbp]
 \centering
 \small
-\caption{Estado de las etapas de la campaña a 9 de octubre de 2026. Ninguna se
+\caption{Estado de las etapas de la campaña a 10 de octubre de 2026. Ninguna se
 ha ejecutado con aprendizaje y la campaña no se ha lanzado.}
 \begin{tabular}{p{3cm}p{5.4cm}p{4.4cm}}
 \toprule
@@ -228,12 +228,13 @@ Políticas & Dos niveles sobre cintas de precios reconstruidos. KLPO terminal
 y tres referencias sobre los 22 predictores de la declaración ampliada, y PPO
 y Double DQN sobre el Transformer compacto y \texttt{mac\_online}. En A,
 2.160 ajustes y 1.584 referencias. Ejecutores nativos de PPO, Double DQN y
-KLPO sobre esas cintas, comprobados sin aprendizaje &
-Compilar los ejecutores con LibTorch CUDA y medir su rendimiento. Ningún
-ajuste ejecutado \\
+KLPO sobre esas cintas, comprobados sin aprendizaje, compilados con LibTorch
+CUDA y perfilados sin pasos de Adam & Medir el coste de la actualización.
+Ningún ajuste ejecutado \\
 Evaluación & Métricas por sesión, contrastes por bloques, calibración CQR
-común por mercado y estratos descriptivos por presencia de noticias y
-fundamentales & Aplicarla a predicciones reales \\
+común por mercado, estratos por presencia de noticias y fundamentales, cartera
+larga y corta, matriz de 356 contrastes con atribución por componentes y banco
+de integridad & Aplicarla a predicciones reales \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -269,6 +270,18 @@ las medidas de memoria en \texttt{cuda:0}, un tramo de
 y 1,24~GiB con bloques de 128 filas, así que la campaña necesitará esa
 acumulación en una GPU de 8~GB. Ninguna cifra de este apartado procede de un
 entrenamiento ni de una evaluación.
+
+La evaluación se acompaña de un banco de integridad que recalcula las métricas
+con una segunda implementación, exige la misma huella de filas en todos los
+brazos de cada ventana, comprueba que ninguna fila llega a 2024, registra los
+análisis en una cadena de huellas antes de ver resultados, busca entradas que
+contengan el objetivo y acota el rendimiento de las políticas con un oráculo de
+un paso que queda fuera de toda comparación. La matriz de comparaciones fija
+47 familias y 356 contrastes antes de los resultados y separa la aportación de
+cada componente de MARS-TITAN con escalera acumulada, dejar uno fuera,
+interacciones y valores de Shapley, declarando como limitación los efectos que
+ningún brazo del plan permite identificar. Ambos se han comprobado con datos
+escritos en las pruebas, sin predicciones reales.
 
 \chapter{Resultados y discusión}
 Los ensayos de GRU y DLinear están documentados en el informe de variantes del
