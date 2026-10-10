@@ -612,6 +612,7 @@ def _code():
         "posttraining/campaign_stage.py",
         "posttraining/staged_rows.py",
         "posttraining/staged_chain.py",
+        "training/campaign_chain.py",
         "posttraining/matrix_runs.py",
         "environments/view_cohorts.py",
         "posttraining/adapter_matrix.py",

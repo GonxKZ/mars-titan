@@ -191,7 +191,9 @@ def posttraining_rows(parent_fold, fold):
     # La calibración es el último tramo que el padre usa: ajuste y validación acaban antes.
     start, end = parent_fold["calibration"][1], fold["train"][1]
     _require(
-        fold["train"][0] <= start < end,
+        all(parent_fold[name][1] <= start for name in ("train", "validation", "calibration"))
+        and fold["train"][0] <= start < end
+        and parent_fold["evaluation"][0] < fold["evaluation"][0],
         f"{fold['id']} no tiene filas nuevas después del padre {parent_fold['id']}",
     )
     return start, end

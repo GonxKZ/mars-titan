@@ -582,6 +582,8 @@ def _code():
         "environments/walk_forward_receipt.py",
         "training/masked_campaign.py",
         "training/campaign_plan.py",
+        # Lectura de las selecciones de la cadena que llevan las cintas.
+        "training/campaign_chain.py",
     )
     return {name: sha256(root / name) for name in names}
 
