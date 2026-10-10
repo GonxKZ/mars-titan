@@ -535,7 +535,7 @@ class MarsTitanInference:
                     else [None] * size
                 )
             with nvtx_ranges.phase("readout.encode"):
-                encoded = None if run.bank is None else self.codec.encode(cpu)
+                encoded = None if run.bank is None else self.codec.encode(cpu, native=self.native)
             # Rasgos M3 con las entradas de la decisión, conocidos en su corte.
             features = write_scores.batch_features(cpu) if self.admission == "m3" else None
             block = None

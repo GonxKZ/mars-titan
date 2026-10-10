@@ -1,12 +1,15 @@
 """Representación fija de las entradas verificadas, sin ejecutar un predictor."""
 
 import copy
+import os
 
 import numpy as np
 import pytest
 
+import mars_titan.memory.episodic_codec as codec_module
 from mars_titan.data.input_policy import HISTORICAL_MASKED, STRICT_INPUTS, policy_identity
-from mars_titan.memory.episodic_codec import FrozenEpisodeCodec
+from mars_titan.memory.episodic_codec import FrozenEpisodeCodec, projection_backend
+from mars_titan.memory.native_backend import load_native
 from mars_titan.models.titans.financial_inputs import FinancialInputSpec, validated_cpu_batch
 
 DIMENSIONS = dict(prices=5, news=4, charts=6, fundamentals=3, macro=3)
@@ -256,7 +259,7 @@ def test_large_batch_traced_allocations_stay_below_estimate():
         _, peak = tracemalloc.get_traced_memory()
     finally:
         tracemalloc.stop()
-    assert peak + codec._projection.nbytes <= result.estimated_peak_bytes
+    assert peak + codec._projection.nbytes + codec._transposed.nbytes <= result.estimated_peak_bytes
 
 
 @pytest.mark.parametrize("constant", [1e-100, 1e300, float("inf"), True])
@@ -351,7 +354,7 @@ def test_narrow_strict_blocks_fit_the_declared_working_memory(context, long_ids)
         _, peak = tracemalloc.get_traced_memory()
     finally:
         tracemalloc.stop()
-    observed = peak + codec._projection.nbytes
+    observed = peak + codec._projection.nbytes + codec._transposed.nbytes
     assert observed <= result.estimated_peak_bytes <= codec.max_buffer_bytes
 
 
@@ -383,3 +386,131 @@ def test_budget_below_estimate_fails_before_numeric_buffers(monkeypatch):
     monkeypatch.setattr(module.np, "einsum", forbidden)
     with pytest.raises(ValueError, match="presupuesto"):
         limited.encode(view)
+
+
+@pytest.fixture
+def native():
+    path = os.environ.get("MARS_TITAN_EPISODIC_NATIVE")
+    if not path:
+        pytest.skip("Falta el enlace nativo CPU compilado")
+    module = load_native(path)
+    if not hasattr(module, "project_codec_block"):
+        pytest.skip("El enlace nativo es anterior a la proyección del codec")
+    return module
+
+
+def encoded_arrays(result):
+    return (
+        result.key_inputs,
+        result.values,
+        result.input_l2,
+        result.normalized_l2,
+        result.key_contribution_l2,
+        result.value_contribution_l2,
+    )
+
+
+def assert_same_bits(left, right):
+    assert left.dtype == right.dtype and left.shape == right.shape
+    assert left.tobytes() == right.tobytes()
+
+
+def test_einsum_of_this_installation_follows_the_declared_order():
+    # La referencia del orden debe describir el einsum real. Si falla en otra plataforma, el
+    # codec no usa el núcleo nativo allí y esta prueba lo señala.
+    random = np.random.default_rng(91)
+    for width in (1, 5, 8, 13, 64, 320, 513):
+        block = random.normal(size=(7, width)) * np.ldexp(1.0, random.integers(-80, 80, (7, 1)))
+        weights = random.normal(size=(127, width))
+        expected = np.einsum("bi,oi->bo", block, weights, optimize=False)
+        actual = codec_module._declared_order(block, np.ascontiguousarray(weights.T))
+        assert_same_bits(actual, expected)
+    assert codec_module._einsum_follows_declared_order()
+
+
+def test_native_kernel_matches_the_declared_order_on_any_platform(native):
+    random = np.random.default_rng(92)
+    for rows, width, outputs in ((1, 1, 1), (2, 7, 9), (3, 8, 31), (5, 17, 127), (9, 513, 127)):
+        block = random.normal(size=(rows, width))
+        block[random.random(block.shape) < 0.2] = 0.0
+        block[random.random(block.shape) < 0.1] = -0.0
+        transposed = random.normal(size=(width, outputs))
+        actual = native.project_codec_block(block, transposed)
+        assert_same_bits(actual, codec_module._declared_order(block, transposed))
+
+
+@pytest.mark.parametrize("size,absent,scale", [(1, True, 1.0), (17, True, 1.0), (5, False, 1e30)])
+def test_native_projection_keeps_every_encoded_bit(native, size, absent, scale):
+    spec = specification()
+    raw = raw_batch(size, absent=absent)
+    raw["inputs"]["prices"] *= np.float32(scale)
+    codec = FrozenEpisodeCodec(spec, modality_weights=(1, 2, 3, 4, 5), presence_weight=2)
+    view = validated_cpu_batch(raw, spec)
+    assert projection_backend(native) == "native"
+    expected = codec.encode(view)
+    actual = codec.encode(view, native=native)
+    for left, right in zip(encoded_arrays(actual), encoded_arrays(expected), strict=True):
+        assert_same_bits(left, right)
+    assert actual._digest == expected._digest
+    assert actual.estimated_peak_bytes == expected.estimated_peak_bytes
+
+
+def test_projection_falls_back_to_einsum_only_with_the_same_bits(monkeypatch):
+    class Without:
+        pass
+
+    class Refused:
+        def project_codec_block(self, block, transposed):
+            raise AssertionError("El núcleo no debe usarse si einsum suma en otro orden")
+
+    assert projection_backend(None) == "numpy_einsum"
+    assert projection_backend(Without()) == "numpy_einsum"
+    spec = specification()
+    view = validated_cpu_batch(raw_batch(), spec)
+    codec = FrozenEpisodeCodec(spec)
+    expected = codec.encode(view)
+    monkeypatch.setattr(codec_module, "_einsum_follows_declared_order", lambda: False)
+    assert projection_backend(Refused()) == "numpy_einsum"
+    actual = codec.encode(view, native=Refused())
+    for left, right in zip(encoded_arrays(actual), encoded_arrays(expected), strict=True):
+        assert_same_bits(left, right)
+
+
+def test_native_projection_rejects_converted_or_mismatched_arrays(native):
+    block = np.ones((2, 3))
+    transposed = np.ones((3, 4))
+    assert native.project_codec_block(block, transposed).shape == (2, 4)
+    for wrong in (block.astype(np.float32), np.asfortranarray(np.ones((2, 3)))[:, :], block.T):
+        with pytest.raises(TypeError):
+            native.project_codec_block(wrong, transposed)
+    with pytest.raises(TypeError):
+        native.project_codec_block(block, transposed[:, ::2])
+    with pytest.raises(ValueError):
+        native.project_codec_block(block, np.ones((4, 4)))
+    with pytest.raises(ValueError):
+        native.project_codec_block(np.ones((2, 0)), np.ones((0, 4)))
+
+
+def test_replaced_transposed_projection_is_rejected(native):
+    codec = FrozenEpisodeCodec(specification())
+    changed = codec._transposed.copy()
+    changed[0, 0] += 1
+    object.__setattr__(codec, "_transposed", codec_module._immutable(changed))
+    with pytest.raises(ValueError, match="proyección"):
+        codec.encode(validated_cpu_batch(raw_batch(), specification()), native=native)
+
+
+def test_native_encode_traced_allocations_stay_below_estimate(native):
+    import tracemalloc
+
+    spec = specification()
+    codec = FrozenEpisodeCodec(spec)
+    view = validated_cpu_batch(raw_batch(256), spec)
+    codec.encode(view, native=native)
+    tracemalloc.start()
+    try:
+        result = codec.encode(view, native=native)
+        _, peak = tracemalloc.get_traced_memory()
+    finally:
+        tracemalloc.stop()
+    assert peak + codec._projection.nbytes + codec._transposed.nbytes <= result.estimated_peak_bytes
