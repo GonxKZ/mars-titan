@@ -8,7 +8,14 @@ import torch
 
 from .config import bounded_integer, canonical, require_identity
 from .financial import FinancialState
-from .state import MACState, NeuralMemoryState, require_payload
+from .state import (
+    MACState,
+    NeuralMemoryState,
+    join_mac_rows,
+    mac_tensors,
+    map_mac_rows,
+    require_payload,
+)
 
 MAX_REFERENCE_FLOWS = 8192
 MAX_REFERENCE_BYTES = 16 * 1024**2
@@ -24,11 +31,7 @@ REFERENCE_FIELDS = {
 
 
 def _tensors(state):
-    return (state.observed_steps,) + (
-        (*state.mac.memory.weights, *state.mac.memory.momentum, state.mac.memory.steps)
-        if state.mac
-        else ()
-    )
+    return (state.observed_steps,) + (mac_tensors(state.mac) if state.mac else ())
 
 
 def _decode(predictor, payload, *, device):
@@ -58,22 +61,14 @@ def _decode(predictor, payload, *, device):
     )
     predictor._validate_cursor(state)
     if predictor.mac:
-        mac = require_payload(value["mac"], {"schema_version", "configuration", "memory"})
+        mac = require_payload(value["mac"], predictor.mac.payload_fields())
         require_identity(mac["configuration"], predictor.mac.config.identity())
-        memory = require_payload(
-            mac["memory"],
-            {
-                "schema_version",
-                "configuration",
-                "weights",
-                "momentum",
-                "steps",
-            },
-        )
+        memory = require_payload(mac["memory"], predictor.mac.memory.payload_fields())
         require_identity(memory["configuration"], predictor.mac.memory.config.identity())
         for name in ("weights", "momentum"):
             if type(memory[name]) is not tuple or len(memory[name]) != 2:
                 raise ValueError("El estado no conserva las dos capas de memoria")
+        # Las ventanas solo existen con convolución y su forma la comprueba _validate_state.
         state = replace(
             state,
             mac=MACState(
@@ -82,8 +77,10 @@ def _decode(predictor, payload, *, device):
                     memory["momentum"],
                     memory["steps"],
                     predictor.mac.memory.config.fingerprint(),
+                    memory.get("convolution", ()),
                 ),
                 predictor.mac.config.fingerprint(),
+                mac.get("convolution", ()),
             ),
         )
     elif value["mac"] is not None:
@@ -99,16 +96,7 @@ def _copy_to(state, device):
 
     mac = state.mac
     if mac:
-        memory = mac.memory
-        mac = replace(
-            mac,
-            memory=replace(
-                memory,
-                weights=tuple(copy(w, device) for w in memory.weights),
-                momentum=tuple(copy(m, device) for m in memory.momentum),
-                steps=copy(memory.steps, device),
-            ),
-        )
+        mac = map_mac_rows(mac, lambda value: copy(value, device))
     return replace(
         state,
         flow_ids=tuple(state.flow_ids),
@@ -145,6 +133,9 @@ def _cpu_payload(predictor, copied):
             momentum=copied.mac.memory.momentum,
             steps=copied.mac.memory.steps,
         )
+        if predictor.mac.config.memory.window:
+            payload["mac"]["memory"]["convolution"] = copied.mac.memory.convolution
+            payload["mac"]["convolution"] = copied.mac.convolution
     return payload
 
 
@@ -207,20 +198,11 @@ def _gather_cpu(predictor, blocks, flow_ids, *, max_source_bytes=512 * 1024**2):
 
     mac = selected[0][0].mac
     if mac:
-        mac = replace(
-            mac,
-            memory=replace(
-                mac.memory,
-                weights=tuple(
-                    collect(lambda state, layer=layer: state.mac.memory.weights[layer])
-                    for layer in range(2)
-                ),
-                momentum=tuple(
-                    collect(lambda state, layer=layer: state.mac.memory.momentum[layer])
-                    for layer in range(2)
-                ),
-                steps=collect(lambda state: state.mac.memory.steps),
-            ),
+        mac = join_mac_rows(
+            [
+                map_mac_rows(state.mac, lambda value, row=row: value[row : row + 1])
+                for state, row in selected
+            ]
         )
     result = FinancialState(
         predictor._config_id(),

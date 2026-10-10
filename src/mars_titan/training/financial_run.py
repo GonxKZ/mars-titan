@@ -32,7 +32,7 @@ from mars_titan.models.titans.config import canonical
 from mars_titan.models.titans.financial import VARIANTS, FinancialPredictor, FinancialState
 from mars_titan.models.titans.financial_inputs import DecisionBatch, validated_cpu_batch
 from mars_titan.models.titans.frozen_financial import _implementation, _numerics
-from mars_titan.models.titans.state import MACState, NeuralMemoryState
+from mars_titan.models.titans.state import join_mac_rows, map_mac_rows, map_memory_rows
 
 from .checkpoints import (
     StopRequest,
@@ -196,20 +196,7 @@ def _stack(states):
     first = states[0]
     mac = None
     if first.mac is not None:
-        memory = first.mac.memory
-
-        def join(get):
-            return torch.cat([get(state.mac.memory) for state in states])
-
-        mac = MACState(
-            NeuralMemoryState(
-                tuple(join(lambda m, i=i: m.weights[i]) for i in range(len(memory.weights))),
-                tuple(join(lambda m, i=i: m.momentum[i]) for i in range(len(memory.momentum))),
-                join(lambda m: m.steps),
-                memory.config_id,
-            ),
-            first.mac.config_id,
-        )
+        mac = join_mac_rows([state.mac for state in states])
     return FinancialState(
         first.config_id,
         first.parameter_id,
@@ -231,16 +218,7 @@ def _split(state, *, detach=False, parameter_id=None):
     for row, flow in enumerate(state.flow_ids):
         mac = state.mac
         if mac is not None:
-            memory = mac.memory
-            mac = MACState(
-                NeuralMemoryState(
-                    tuple(take(w, row) for w in memory.weights),
-                    tuple(take(m, row) for m in memory.momentum),
-                    memory.steps[row : row + 1],
-                    memory.config_id,
-                ),
-                mac.config_id,
-            )
+            mac = map_mac_rows(mac, lambda value, row=row: take(value, row))
         yield (
             flow,
             FinancialState(
@@ -458,12 +436,9 @@ class ChronologicalInference:
             memory = self.predictor.mac.initial_state(len(chunk), differentiable=True).memory
             for row, flow in enumerate(chunk):
                 state = states[flow]
-                fresh = NeuralMemoryState(
-                    tuple(w[row : row + 1] for w in memory.weights),
-                    tuple(m[row : row + 1] for m in memory.momentum),
-                    memory.steps[row : row + 1],
-                    memory.config_id,
-                )
+                # Solo se reinicia la memoria. La ventana de q del flujo se conserva y las de k y v
+                # siguen a cero porque el control congelado no escribe.
+                fresh = map_memory_rows(memory, lambda value, row=row: value[row : row + 1])
                 states[flow] = replace(state, mac=replace(state.mac, memory=fresh))
 
     def _labels(self, run, event, *, train):

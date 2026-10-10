@@ -19,6 +19,8 @@ from mars_titan.models.baselines.multimodal import (
 from mars_titan.models.quantile_head import CONTRACT, QUANTILE_HEAD, QuantileHead, median
 
 from .config import (
+    PAPER_CONVOLUTION_KERNEL,
+    PAPER_PROJECTIONS,
     GateBias,
     MACConfig,
     MemoryConfig,
@@ -29,9 +31,17 @@ from .config import (
 from .financial_inputs import FINAL_TEST_US, HISTORICAL_START_US, DecisionBatch, FinancialInputSpec
 from .local_control import MACProjectionConfig, MACProjectionControl, ProjectedMACResult
 from .mac import TitansMAC
-from .state import MACState, check_differentiable, check_finite
+from .state import MACState, check_differentiable, check_finite, mac_tensors, map_mac_rows
 
 VARIANTS = ("transformer_direct", "mac_disabled", "mac_frozen", "mac_online")
+# Opciones de MemoryConfig de cada nombre de proyecciones. linear_v1 no añade ninguna y
+# conserva el núcleo anterior a la sección 4.4.
+MEMORY_PROJECTIONS = {
+    "linear_v1": dict(),
+    PAPER_PROJECTIONS: dict(
+        normalize_qk=True, qkv_silu=True, qkv_convolution=PAPER_CONVOLUTION_KERNEL
+    ),
+}
 
 
 @dataclass(frozen=True)
@@ -50,6 +60,9 @@ class FinancialConfig:
     gate_bias: GateBias | None = None
     # Memoria M(x) = x + LN(MLP(x)) de la sección 3.3 de las actas. False conserva v1.
     memory_residual_layer_norm: bool = False
+    # Con linear_v1 la identidad no cambia. Con el nombre del artículo la memoria usa SiLU,
+    # la convolución causal y la norma L2 de la sección 4.4.
+    memory_projections: str = "linear_v1"
 
     def __post_init__(self):
         if not isinstance(self.inputs, FinancialInputSpec) or self.variant not in VARIANTS:
@@ -67,6 +80,10 @@ class FinancialConfig:
             self.gate_bias.logits(MemoryConfig.theta_max)
         if type(self.memory_residual_layer_norm) is not bool:
             raise ValueError("memory_residual_layer_norm debe ser booleano")
+        if not isinstance(self.memory_projections, str) or (
+            self.memory_projections not in MEMORY_PROJECTIONS
+        ):
+            raise ValueError("memory_projections debe ser linear_v1 o " + PAPER_PROJECTIONS)
         validate_architecture(self.hidden_size, self.layers, 0.0)
         bounded_integer(self.seed, "semilla", 0, 2**32 - 1)
         bounded_integer(self.persistent_tokens, "prefijo", 0, 64)
@@ -112,6 +129,8 @@ class FinancialConfig:
         # Igual que gate_bias: solo aparece si se declara y se registra en las cuatro variantes.
         if self.memory_residual_layer_norm:
             result.update(memory_residual_layer_norm=True)
+        if self.memory_projections != "linear_v1":
+            result.update(memory_projections=self.memory_projections)
         return result
 
 
@@ -200,6 +219,7 @@ class FinancialPredictor(nn.Module):
                         parameter_seed=config.seed,
                         gate_bias=config.gate_bias,
                         residual_layer_norm=config.memory_residual_layer_norm,
+                        **MEMORY_PROJECTIONS[config.memory_projections],
                     ),
                     heads=4,
                     persistent_tokens=config.persistent_tokens,
@@ -319,7 +339,10 @@ class FinancialPredictor(nn.Module):
         fast = (
             0
             if self.mac is None
-            else 4 * self.config.hidden_size**2 * self.head.weight.element_size() + 8
+            else (4 * self.config.hidden_size + 3 * self.mac.config.memory.window)
+            * self.config.hidden_size
+            * self.head.weight.element_size()
+            + 8
         )
         return fast + 8
 
@@ -366,9 +389,7 @@ class FinancialPredictor(nn.Module):
     def _usage(self, state):
         tensors = [state.observed_steps]
         if state.mac:
-            tensors.extend(
-                (*state.mac.memory.weights, *state.mac.memory.momentum, state.mac.memory.steps)
-            )
+            tensors.extend(mac_tensors(state.mac))
         tensor_bytes = self._storage_bytes(tensors)
         metadata = len(
             canonical(
@@ -422,6 +443,7 @@ class FinancialPredictor(nn.Module):
             self.mac.memory.validate_state(state.mac.memory, device=device)
             if state.mac.config_id != self.mac.config.fingerprint():
                 raise ValueError("El contrato MAC del estado no coincide")
+            self.mac.validate_query_window(state.mac, device=device)
             expected = (
                 state.observed_steps
                 if self.config.variant == "mac_online"
@@ -478,16 +500,7 @@ class FinancialPredictor(nn.Module):
         indices = [state.flow_ids.index(flow) for flow in flow_ids]
         mac = state.mac
         if mac:
-            memory = mac.memory
-            mac = replace(
-                mac,
-                memory=replace(
-                    memory,
-                    weights=tuple(w[indices] for w in memory.weights),
-                    momentum=tuple(m[indices] for m in memory.momentum),
-                    steps=memory.steps[indices],
-                ),
-            )
+            mac = map_mac_rows(mac, lambda value: value[indices])
         return replace(
             state,
             flow_ids=tuple(flow_ids),
