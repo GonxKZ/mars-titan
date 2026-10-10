@@ -31,8 +31,14 @@ from tests.posttraining.real_only import real_data_only
 CONFIGS = Path("configs/posttraining")
 FINAL_TEST = int(np.datetime64("2024-01-01", "us").astype(np.int64))
 # Por ventana y semilla: cuatro brazos y la continuación en cada red recurrente y DLinear,
-# ocho brazos y la continuación en el Transformer, y el padre congelado de cada brazo base.
-CASES = 4 * 5 + 9
+# ocho brazos y la continuación en el Transformer compacto, y los casos de Titans-MAC de la
+# matriz v3 (cinco en el codificador directo y en MAC sin memoria, nueve con memoria fija o
+# en línea).
+NEURAL, TITANS = 4 * 5 + 9, 5 + 5 + 9 + 9
+CASES = NEURAL + TITANS
+# Padres congelados por ventana: uno por semilla en las cinco redes y las cuatro variantes de
+# Titans, el único de Ridge y los tres de XGBoost, cuya cadena solo tiene ese padre.
+FROZEN_PARENTS = 3 * (5 + 4) + 1 + 3
 
 
 def micros(day):
@@ -48,10 +54,11 @@ def test_stage_a_plans_every_later_window_from_the_previous_parent():
         "real_edition_only",
     )
     counts = result["counts"]
-    assert (counts["training_jobs"], counts["prediction_jobs"]) == (3654, 630)
-    assert counts["selection_jobs"] == 675
+    assert (counts["training_jobs"], counts["prediction_jobs"]) == (7182, 1302)
+    assert counts["selection_jobs"] == 1395
     stage = campaign_stage.load_stage(path)
-    assert stage["limits"] == dict(max_training_jobs=3654, max_prediction_jobs=630)
+    assert stage["limits"] == dict(max_training_jobs=7182, max_prediction_jobs=1302)
+    assert result["awaiting_sections"] == {}
     assert result["excluded_controls"].keys() == {"linear_residual"}
     assert result["objectives"]["adapters"] == "neural_pinball"
     for scope, windows in {"US": 19, "CN": 13, "US+CN": 13}.items():
@@ -60,13 +67,15 @@ def test_stage_a_plans_every_later_window_from_the_previous_parent():
         assert entry["windows"] == windows and len(entry["fitted_windows"]) == windows - 1
         assert "fold-000" not in entry["fitted_windows"]
         assert entry["training_jobs"] == (windows - 1) * 3 * CASES
-        assert entry["prediction_jobs"] == (windows - 1) * 3 * 5
-        assert entry["selection_jobs"] == windows * 3 * 5
-        assert len(entry["arms"]) == CASES + 5
+        assert entry["prediction_jobs"] == (windows - 1) * FROZEN_PARENTS
+        assert entry["selection_jobs"] == windows * FROZEN_PARENTS
+        assert len(entry["arms"]) == CASES + 11
         for arm, seeds in entry["arms"].items():
             assert comparison._name(arm)
             kind = "frozen" if arm.endswith("__frozen_parent") else "fit"
-            assert seeds == {str(seed): {kind: windows - 1} for seed in (42, 43, 44)}, arm
+            # Ridge solo declara la semilla 42 en la campaña base.
+            declared = (42,) if arm == "ridge__frozen_parent" else (42, 43, 44)
+            assert seeds == {str(seed): {kind: windows - 1} for seed in declared}, arm
 
 
 def test_stage_b_keeps_its_counts_and_is_not_executable():
@@ -86,7 +95,18 @@ def test_jobs_depend_on_the_parent_selected_in_the_previous_window():
     jobs = campaign_stage.plan_stage(stage)
     base = plan_campaign(stage["campaign"])
     by_id = {job["id"]: job for job in base}
-    matrix, digest = stage["matrix"], stage["matrix_sha256"]
+    active, _ = campaign_stage.stage_arms(stage)
+    cases = {
+        arm: {item["id"]: item["case"] for item in campaign_stage._cases(stage, spec)}
+        for arm, spec in active.items()
+    }
+    # Las redes de la campaña siguen la pérdida pinball de la cabeza de cuantiles.
+    for arm, spec in active.items():
+        if spec["design"] is None:
+            neural = adapter_matrix.cases(
+                stage["matrix"], stage["matrix_sha256"], spec["family"], head=QUANTILE_HEAD
+            )
+            assert {item["case"]["mode"] for item in neural} == {"neural_pinball"}, arm
     windows = {
         scope: [name for name, _ in staged_chain.scope_windows(stage["campaign"], scope)]
         for scope in stage["scopes"]
@@ -106,12 +126,8 @@ def test_jobs_depend_on_the_parent_selected_in_the_previous_window():
         if job["kind"] == "frozen":
             assert job["case"] is None and job["arm"] == f"{job['base_arm']}__frozen_parent"
             continue
-        assert job["case"]["mode"] == "neural_pinball" and job["control"] != "linear_residual"
-        cases = {
-            item["id"]: item["case"]
-            for item in adapter_matrix.cases(matrix, digest, job["family"], head=QUANTILE_HEAD)
-        }
-        assert job["case"] == cases[f"seed-{job['seed']}/{job['point']}"]
+        assert job["control"] != "linear_residual"
+        assert job["case"] == cases[job["base_arm"]][f"seed-{job['seed']}/{job['point']}"]
     chains = campaign_stage.plan_chain(stage, jobs)
     order = campaign_stage.ordered_jobs(jobs, chains)
     position = {job["id"]: index for index, job in enumerate(order)}
@@ -126,9 +142,9 @@ def test_jobs_depend_on_the_parent_selected_in_the_previous_window():
             if (job["scope"], job["window"], job["base_arm"], job["seed"])
             == (chain["scope"], chain["window"], chain["base_arm"], chain["seed"])
         ]
-        assert chain["depends"] == own and len(own) == 1 + (
-            9 if "transformer" in chain["arm"] else 5
-        )
+        assert chain["depends"] == own
+        seed = f"seed-{chain['seed']}/"
+        assert len(own) == 1 + sum(name.startswith(seed) for name in cases[chain["base_arm"]])
         assert all(position[name] < position[chain["id"]] for name in own)
 
 
@@ -136,7 +152,7 @@ def mutated(tmp_path, change):
     value = json.loads((CONFIGS / "historical-masked-adapter-stage-a.json").read_text())
     value.update(
         campaign=str(Path("configs/baselines/historical-masked-campaign-a.json").resolve()),
-        matrix=str((CONFIGS / "adapter-matrix-v2.json").resolve()),
+        matrix=str((CONFIGS / "adapter-matrix-v3.json").resolve()),
     )
     change(value)
     path = tmp_path / "stage.json"
@@ -146,7 +162,7 @@ def mutated(tmp_path, change):
 
 INVALID = {
     "scalar_matrix": lambda v: v.update(matrix=str((CONFIGS / "adapter-matrix-v1.json").resolve())),
-    "unknown_arm": lambda v: v.update(arms=["gru", "ridge"]),
+    "unknown_arm": lambda v: v.update(arms=["gru", "zero"]),
     "duplicated_arm": lambda v: v.update(arms=["gru", "gru"]),
     "unordered_scopes": lambda v: v.update(scopes=["CN", "US"]),
     "unknown_scope": lambda v: v.update(scopes=["EU"]),
@@ -162,8 +178,8 @@ INVALID = {
     "block_without_budget": lambda v: v.update(cohort_reading=dict(source="view_blocks")),
     "mixed_reading": lambda v: v["cohort_reading"].update(retention="keep"),
     "test_opened": lambda v: v.update(final_test_opened=True),
-    "limit": lambda v: v["limits"].update(max_training_jobs=3653),
-    "frozen_limit": lambda v: v["limits"].update(max_prediction_jobs=629),
+    "limit": lambda v: v["limits"].update(max_training_jobs=7181),
+    "frozen_limit": lambda v: v["limits"].update(max_prediction_jobs=1301),
     "status": lambda v: v.update(status="executed"),
     "chain_rule": lambda v: v.update(chain_rule="chain_validation_score_v2"),
     "data_policy": lambda v: v.update(data_policy="real_and_augmented"),
@@ -523,11 +539,11 @@ def test_command_checks_the_declared_stage_without_reading_data(capsys):
     assert campaign_stage.main(["check", "--stage", str(path)]) == 0
     printed = json.loads(capsys.readouterr().out)
     assert printed["status"] == "checked" and printed["scientific_training_started"] is False
-    assert printed["counts"]["training_jobs"] == 3654
+    assert printed["counts"]["training_jobs"] == 7182
 
 
 def test_matrix_seeds_must_match_the_seeds_of_each_parent(tmp_path):
-    matrix = json.loads((CONFIGS / "adapter-matrix-v2.json").read_text())
+    matrix = json.loads((CONFIGS / "adapter-matrix-v3.json").read_text())
     matrix["budget"]["seeds"] = [42, 43]
     atomic_json(tmp_path / "matrix.json", matrix)
     path = mutated(tmp_path, lambda v: v.update(matrix=str(tmp_path / "matrix.json")))

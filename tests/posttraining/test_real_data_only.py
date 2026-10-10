@@ -133,7 +133,7 @@ print(json.dumps(dict(loaded=loaded)))
 
 
 def stage_with(tmp_path, stage_change=None, matrix_change=None):
-    matrix = json.loads((CONFIGS / "adapter-matrix-v2.json").read_text())
+    matrix = json.loads((CONFIGS / "adapter-matrix-v3.json").read_text())
     if matrix_change:
         matrix_change(matrix)
     atomic_json(tmp_path / "matrix.json", matrix)
