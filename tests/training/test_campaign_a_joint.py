@@ -194,6 +194,103 @@ def test_v2_rejects_declarations_that_break_the_seed_stopping_or_memory_rules(
         plan.load_campaign(edited(tmp_path, change))
 
 
+def without_kernels(value):
+    for key in ("precision", "cuda_graphs"):
+        value["neural"].pop(key)
+
+
+def test_v2_neural_cases_carry_strict_precision_and_the_graph_step_into_their_identity(tmp_path):
+    from mars_titan.training.reference_run import HELDOUT_FULL_TRAIN_SESSIONS, _options
+
+    loaded = campaign()
+    neural = loaded["neural"]
+    plain = plan.load_campaign(edited(tmp_path, without_kernels))["neural"]
+    assert (neural["precision"], neural["cuda_graphs"], neural["batch_size"]) == (
+        "fp32_strict",
+        True,
+        256,
+    )
+    for arm, candidates in neural["candidates"].items():
+        # Solo cambian los dos campos de núcleo frente a los casos sin declararlos.
+        assert [(name, case) for name, case in candidates] == [
+            (name, case | dict(precision="fp32_strict", cuda_graphs=True))
+            for name, case in plain["candidates"][arm]
+        ]
+        for _, case in candidates:
+            _options(
+                case,
+                neural["batch_size"],
+                neural["checkpoint_seconds"],
+                0,
+                input_policy=loaded["input_policy"],
+                prediction_retention=HELDOUT_FULL_TRAIN_SESSIONS,
+            )
+    # Cada búsqueda lleva su caso completo, que la campaña entrega al ejecutor y a la identidad.
+    searches = [
+        job
+        for job in plan.plan_campaign(loaded)
+        if job["family"] == plan.NEURAL and job["stage"] == "search"
+    ]
+    assert searches
+    for job in searches:
+        assert job["case"] in [case for _, case in neural["candidates"][job["arm"]]]
+
+
+@pytest.mark.parametrize(
+    ("change", "message"),
+    [
+        (lambda n: n.update(precision="tf32"), "precisión neuronal"),
+        (lambda n: n.update(precision=None), "precisión neuronal"),
+        (lambda n: n.update(cuda_graphs="true"), "booleano"),
+        (lambda n: n.update(cuda_graphs=1), "booleano"),
+        (lambda n: n.update(compile=True), "sección neuronal no cumple"),
+        (lambda n: n.update(batch_size=4097), "Lote"),
+        (lambda n: n.update(batch_size=0), "Lote"),
+        (lambda n: n.update(batch_size=512.0), "Lote"),
+    ],
+    ids=[
+        "tf32",
+        "null_precision",
+        "graphs_text",
+        "graphs_integer",
+        "undeclared_option",
+        "batch_over_limit",
+        "empty_batch",
+        "float_batch",
+    ],
+)
+def test_v2_neural_section_rejects_undeclared_kernels_and_batches(tmp_path, change, message):
+    with pytest.raises(ValueError, match=message):
+        plan.load_campaign(edited(tmp_path, lambda value: change(value["neural"])))
+
+
+def test_neural_graphs_require_families_with_checked_parity(tmp_path, monkeypatch):
+    monkeypatch.setattr(plan, "GRAPH_KINDS", ("rnn", "lstm", "gru", "dlinear"))
+    with pytest.raises(ValueError, match="paridad comprobada"):
+        plan.load_campaign(edited(tmp_path, lambda value: None))
+
+
+@pytest.mark.parametrize("batch", [1024, 4096])
+def test_v2_neural_section_keeps_the_declared_batch_above_256(tmp_path, batch):
+    loaded = plan.load_campaign(
+        edited(tmp_path, lambda value: value["neural"].update(batch_size=batch))
+    )
+    assert loaded["neural"]["batch_size"] == batch
+    assert loaded["neural"]["candidates"] == campaign()["neural"]["candidates"]
+
+
+def test_v2_neural_graphs_false_and_absent_options_leave_the_cases_untouched(tmp_path):
+    plain = plan.load_campaign(edited(tmp_path / "plain", without_kernels))["neural"]
+    graphs_off = plan.load_campaign(
+        edited(tmp_path / "off", lambda value: value["neural"].update(cuda_graphs=False))
+    )["neural"]
+    for arm, candidates in plain["candidates"].items():
+        assert all("precision" not in case and "cuda_graphs" not in case for _, case in candidates)
+        assert graphs_off["candidates"][arm] == [
+            (name, case | dict(precision="fp32_strict")) for name, case in candidates
+        ]
+
+
 def test_the_joint_stop_groups_keep_every_paired_contrast_inside_one_scope_and_group(tmp_path):
     def joint_stop(value):
         value.update(
@@ -832,6 +929,19 @@ def test_recorded_precision_follows_every_alias_in_nested_reports():
         "informe.cases[1].cudnn_tf32=True",
     ]
     assert numerics.recorded(dict(a=[dict(b=1)]), numerics.STRICT_FP32) == []
+
+
+def test_neural_receipts_record_the_declared_kernels_in_their_identity(joint_campaign):
+    receipts = [
+        json.loads(path.read_text())
+        for path in (joint_campaign.output / "jobs").rglob("receipt.json")
+    ]
+    neural = [receipt for receipt in receipts if receipt["identity"]["family"] == plan.NEURAL]
+    # Búsquedas y finalistas: el finalista hereda el caso del ganador con su semilla.
+    assert {receipt["identity"]["stage"] for receipt in neural} == {"search", "finalist"}
+    for receipt in neural:
+        case = receipt["identity"]["case"]
+        assert (case["precision"], case["cuda_graphs"]) == ("fp32_strict", True)
 
 
 def test_comparison_excludes_ineligible_china_rows_and_pairs_joint_with_separate(joint_campaign):

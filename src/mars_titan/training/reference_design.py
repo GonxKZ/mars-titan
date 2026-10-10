@@ -4,6 +4,10 @@ from copy import deepcopy
 
 from .selection import FIXED_BUDGET, validate_selection
 
+# Lote máximo de una referencia neuronal. El ajuste, la búsqueda y la campaña comparten este
+# límite, y el Transformer amplía su presupuesto de atención con el lote que declara el caso.
+MAX_BATCH_SIZE = 4096
+
 
 def candidate_indices(config):
     """Compartir el recuento del diseño con los lectores de registros, sin importar CUDA."""

@@ -66,7 +66,15 @@ from . import (
     campaign_online_controls,
     campaign_schedule,
 )
-from .reference_design import PINBALL, QUANTILE_HEAD, candidate_indices, design_cases
+from .kernel_policy import PRECISIONS
+from .reference_design import (
+    MAX_BATCH_SIZE,
+    PINBALL,
+    QUANTILE_HEAD,
+    candidate_indices,
+    design_cases,
+)
+from .reference_step_graph import GRAPH_KINDS
 from .search_cases import SEARCHED
 from .selection import JOINT_PLATEAU, VALIDATION_PLATEAU, campaign_rule
 
@@ -256,6 +264,9 @@ _NEURAL = {
     "checkpoint_seconds",
     "prediction_retention",
 }
+# Opciones de núcleo de la sección neuronal. Cada una entra en el caso y, con él, en la
+# identidad de cada ajuste. Sin ellas los casos y sus identidades no cambian.
+_NEURAL_KERNELS = {"precision", "cuda_graphs"}
 # Campos que añade la versión 2 de la configuración.
 _FIELDS_V2 = {
     "seed_policy",
@@ -307,7 +318,10 @@ def _seeds(value, label):
 
 def _neural(section, arms, rules, policy):
     """Devuelve los casos de las referencias neuronales con la regla de parada de cada brazo."""
-    _require(isinstance(section, dict) and set(section) == _NEURAL, "La sección neuronal no cumple")
+    _require(
+        isinstance(section, dict) and _NEURAL <= set(section) <= _NEURAL | _NEURAL_KERNELS,
+        "La sección neuronal no cumple",
+    )
     declared = {name for name, arm in arms.items() if arm["family"] == NEURAL}
     mapping = section["arms"]
     _require(
@@ -329,7 +343,7 @@ def _neural(section, arms, rules, policy):
     )
     _require(
         type(section["batch_size"]) is int
-        and 1 <= section["batch_size"] <= 256
+        and 1 <= section["batch_size"] <= MAX_BATCH_SIZE
         and section["context_sessions"] == 64
         and type(section["checkpoint_seconds"]) in (int, float)
         and math.isfinite(section["checkpoint_seconds"])
@@ -338,6 +352,7 @@ def _neural(section, arms, rules, policy):
         and masked_inputs(policy),
         "Lote, contexto, checkpoints o retención neuronales no válidos",
     )
+    kernels = _neural_kernels(section, mapping.values())
     indices = candidate_indices(
         dict(schema_version=4, case_indices=section["case_indices"], models=list(mapping.values()))
     )
@@ -357,13 +372,40 @@ def _neural(section, arms, rules, policy):
         candidates[name] = []
         for index in indices:
             # La familia de pérdidas del diseño se sustituye por la pinball de la cabeza común.
-            case = design[index]["case"] | dict(head=QUANTILE_HEAD, loss=PINBALL)
+            case = design[index]["case"] | dict(head=QUANTILE_HEAD, loss=PINBALL) | kernels
             _require(
                 case["selection"] == protocol_selection and case["epochs"] == rule["max_epochs"],
                 "El caso neuronal no aplica la regla de parada del protocolo",
             )
             candidates[name].append((f"{kind}-{index:02d}", case))
     return dict(section, arms=mapping, seed=seed, candidates=candidates)
+
+
+def _neural_kernels(section, kinds):
+    """Campos de núcleo que la sección añade a cada caso, comprobados antes de crearlos.
+
+    `precision` fija la política de `kernel_policy` y `cuda_graphs` el paso con grafo de
+    `reference_step_graph`. reference_run vuelve a validar los dos y los registra en la
+    identidad. Un `cuda_graphs` falso equivale a no declararlo y no añade el campo.
+    """
+    kernels = {}
+    if "precision" in section:
+        precision = section["precision"]
+        _require(
+            type(precision) is str and precision in PRECISIONS,
+            f"La precisión neuronal debe ser una de {', '.join(PRECISIONS)}",
+        )
+        kernels["precision"] = precision
+    if "cuda_graphs" in section:
+        graphs = section["cuda_graphs"]
+        _require(type(graphs) is bool, "cuda_graphs de la sección neuronal debe ser booleano")
+        _require(
+            not graphs or all(kind in GRAPH_KINDS for kind in kinds),
+            "CUDA Graphs solo se declara para familias con paridad comprobada",
+        )
+        if graphs:
+            kernels["cuda_graphs"] = True
+    return kernels
 
 
 def _tabular(section, arms, policy, base):

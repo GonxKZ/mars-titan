@@ -21,7 +21,9 @@
     "batch_size": 256,
     "context_sessions": 64,
     "checkpoint_seconds": 300,
-    "prediction_retention": "heldout_full_train_sessions_v1"
+    "prediction_retention": "heldout_full_train_sessions_v1",
+    "precision": "fp32_strict",
+    "cuda_graphs": true
   },
   "tabular": {
     "config": "tabular-historical-masked-v2.json",
