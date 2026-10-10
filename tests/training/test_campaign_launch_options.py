@@ -44,7 +44,7 @@ TRAINERS = {
 
 
 def declared_config(folder, change=None):
-    """Campaña v2 reducida a los brazos que reciben opciones, con sus recetas declaradas."""
+    """Campaña v2 reducida a los modelos que reciben opciones, con sus recetas declaradas."""
     path, _ = reduced(folder, arms=ARMS)
     value = json.loads(path.read_text())
     declared = json.loads(CAMPAIGN.read_text())

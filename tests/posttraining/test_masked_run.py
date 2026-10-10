@@ -181,7 +181,7 @@ def test_parent_and_adapter_run_with_the_strict_precision_of_the_parent_case(
     assert parent.precision == FP32_STRICT
     assert parent.identity["kernel_policy"]["cudnn_allow_tf32"] is False
     seen = []
-    # El brazo copia el padre con este gancho, así que registra también su forward.
+    # La variante copia el padre con este gancho, así que registra también su forward.
     parent.model.register_forward_pre_hook(lambda module, args: seen.append(tf32_flags()))
     train, validation = sources(edition.ordered)
     cache = ParentCache(
