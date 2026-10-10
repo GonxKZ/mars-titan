@@ -132,6 +132,8 @@ con $K^\top\Sigma^{-1}K=\frac{1}{\sigma^2(1-\varrho)}\big(K^\top K-g\,(K^\top\ma
 
 **Revisión adversarial.** El contraejemplo más fuerte es la baja señal: si el residuo no tiene estructura lineal estable en las claves del codec, cualquier corrección persigue ruido y la mejor regla es no corregir. El control sin corrección lo detecta. La segunda objeción es que RLS con un paso bien elegido sea equivalente a la regla proximal. La alternativa con $\varrho=0$ y la comparación con proximal lo separan.
 
+**Implementación (10 de octubre de 2026).** Implementada y comprobada sin entrenar en [su documento](../engineering/kalman-associative-memory.md). Antes de ver datos quedan fijadas tres precisiones. q pasa a expresarse como fracción de σ², q = κσ² con κ ∈ {10⁻⁶, 10⁻⁵}, porque la escala del residuo solo se conoce al estimar σ². La varianza inicial es p0 = 0,1 σ². El crecimiento de P en direcciones no excitadas se declara con su cota λ_max(P_t) ≤ p0 + qt en lugar de acotarlo.
+
 ---
 
 ## PT4. Memoria de mercado compartida (línea posterior)
