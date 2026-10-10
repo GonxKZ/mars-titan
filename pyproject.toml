@@ -29,7 +29,10 @@ data = [
     "protego>=0.5,<1",
     "lxml>=6,<7",
 ]
-research = ["scikit-learn>=1.6,<2", "matplotlib>=3.9,<4", "scipy>=1.14,<2"]
+research = [
+    "scikit-learn>=1.6,<2", "matplotlib>=3.9,<4", "scipy>=1.14,<2",
+    "arch==8.0.0", "statsmodels==0.15.0",
+]
 cuda = ["torch>=2.8,<3; sys_platform == 'linux' and platform_machine == 'x86_64'"]
 encoders = ["torchvision>=0.23,<1", "transformers>=4.57,<6", "huggingface-hub>=0.34,<2", "safetensors>=0.5,<1"]
 notebooks = ["jupyterlab>=4.6.4,<5", "ipykernel>=6,<8"]
@@ -45,7 +48,10 @@ reinforcement = [
 Repository = "https://github.com/GonxKZ/mars-titan"
 
 [dependency-groups]
-dev = ["pytest>=8.3,<10", "ruff>=0.11,<1", "pyyaml>=6,<7", "bibtexparser>=1.4,<2"]
+dev = [
+    "pytest>=8.3,<10", "ruff>=0.11,<1", "pyyaml>=6,<7", "bibtexparser>=1.4,<2",
+    "memray==1.20.0 ; sys_platform == 'linux'",
+]
 # Bibliotecas externas que solo sirven de referencia en las pruebas de paridad (#494 a #497).
 # No forman parte del entorno de ejecución y se instalan con `uv sync --group reference`.
 reference = [
