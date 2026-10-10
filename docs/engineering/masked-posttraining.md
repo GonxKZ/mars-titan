@@ -143,6 +143,10 @@ Las actualizaciones de un caso cronológico las fija el recorrido de su ventana 
 
 Con correcciones nulas la salida coincide exactamente con la del padre cuando ambos recorren los mismos núcleos. En CPU, el modo de autograd cambia la ruta de LSTM y de la atención también para el propio padre, con diferencias de hasta 1,5e-8 en el fixture. Por eso la paridad exacta se comprueba en inferencia y en entrenamiento por separado, y la validación siempre se calcula en `inference_mode`.
 
+### Variedad de adaptadores
+
+La sección opcional `variety` de la versión 3 añade brazos de un solo punto con formas nuevas en la lectura y la fusión (DoRA, (IA)³ y adaptadores en cuello de botella en paralelo y en serie) y subconjuntos del padre (todos los sesgos, las normalizaciones y la memoria persistente de Titans-MAC). Cada brazo tiene su identidad, el mismo presupuesto y la misma selección, parte exactamente del padre y declara en qué ámbitos se propone para la campaña (referencias, cada variante de Titans-MAC o lectores). En los demás queda como reserva. Las [fuentes, descartes, ecuaciones y comprobaciones](adapter-variety.md) están en su propio documento. Las etapas A y B siguen apuntando a la versión 2, así que la variedad no cambia sus recuentos.
+
 ## Ejecución de la matriz
 
 `posttraining/matrix_runs.py` reúne las piezas que comparten la cola y la etapa de la campaña. Ninguna decide qué padres o ventanas se recorren.
@@ -384,6 +388,12 @@ CUBLAS_WORKSPACE_CONFIG=:4096:8 uv run pytest tests/posttraining/cuda_titans_ada
 ```
 
 Usa float64, como los brazos de la campaña, sin TF32 y con el registrador de gradientes. En `cuda:0`, cada brazo de `transformer_direct` y `mac_online` con correcciones nulas emite exactamente las predicciones y el registro del padre congelado en el mismo dispositivo. Las predicciones del brazo con los tres puntos coinciden con las de CPU con tolerancia relativa 1e-8 y absoluta 1e-10, y el ajuste recorre los mismos pasos con gradiente solo en los adaptadores y valores iguales dentro de esas tolerancias.
+
+Las formas de la variedad tienen su comprobación CUDA, que repite la identidad exacta y el contraste con CPU de cada forma en las cinco familias, y la de Titans-MAC recorre también los brazos de la variedad propuestos. Las dos pasaron el 10 de octubre en el mismo equipo, con 32 pruebas superadas en 49 s:
+
+```bash
+CUBLAS_WORKSPACE_CONFIG=:4096:8 uv run pytest tests/models/test_adapter_forms_cuda.py -q -rs
+```
 
 La cola y la etapa solo se han recorrido en CPU con los diagnósticos de `run_case`. Su recorrido en `cuda:0` con la reserva de la GPU no tiene todavía una comprobación propia.
 
