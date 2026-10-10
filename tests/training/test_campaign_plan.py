@@ -364,7 +364,8 @@ def test_titans_arms_search_as_many_optimizer_cases_as_the_neural_references():
     assert "learning_rate" not in recipe["recipe"]
     assert recipe["recipe"]["epochs"] == campaign["rule"]["max_epochs"] == 30
     assert recipe["predictor"]["memory_residual_layer_norm"] is True
-    assert recipe["recipe"]["accumulation_rows"] is None
+    assert recipe["recipe"]["accumulation_rows"] == recipe["recipe"]["block_rows"] == 1024
+    assert recipe["recipe"]["precision"] == "fp32_strict"
 
 
 @pytest.mark.parametrize(
