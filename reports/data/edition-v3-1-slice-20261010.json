@@ -432,8 +432,130 @@
     "pending_bytes": 113635328,
     "computed_bytes": 203837440
   },
-  "gpu_benchmark": null,
-  "gpu_overhead_run": null,
+  "gpu_benchmark": {
+    "model_only_2048_charts": {
+      "images": 2048,
+      "device": "NVIDIA GeForce RTX 4070 Laptop GPU",
+      "torch": "2.14.0+cu130",
+      "single_seconds": 6.914640480012167,
+      "decode_seconds": 1.4506974020041525,
+      "batch_1": {
+        "seconds_without_decode": 4.436843195988331,
+        "identical_to_single": 2048,
+        "max_abs_vs_single": 0.0
+      },
+      "batch_8": {
+        "seconds_without_decode": 1.6038534190156497,
+        "identical_to_single": 2048,
+        "max_abs_vs_single": 0.0
+      },
+      "batch_32": {
+        "seconds_without_decode": 1.7669637750077527,
+        "identical_to_single": 0,
+        "max_abs_vs_single": 9.179115295410156e-06
+      },
+      "batch_64": {
+        "seconds_without_decode": 1.7230259109928738,
+        "identical_to_single": 0,
+        "max_abs_vs_single": 3.814697265625e-06
+      },
+      "batch_128": {
+        "seconds_without_decode": 2.0586107760027517,
+        "identical_to_single": 0,
+        "max_abs_vs_single": 5.7220458984375e-06
+      },
+      "tf32_vs_fp32_batch_1": {
+        "identical": 0,
+        "max_abs": 0.005233287811279297,
+        "max_rel": 1.0,
+        "max_norm_rel": 0.0008525638067688998
+      },
+      "device_free_after_load_bytes": 7369588736,
+      "device_free_at_end_bytes": 5706547200,
+      "device_total_bytes": 8183676928,
+      "cuda_peak_allocated_bytes": 1108469248,
+      "cuda_peak_reserved_bytes": 1803550720
+    },
+    "production_call_sizes_1_to_8": {
+      "images": 2048,
+      "size_1": {
+        "images_per_second": 326.0849145276396,
+        "identical_to_size_1": 2048
+      },
+      "size_2": {
+        "images_per_second": 542.3251735456232,
+        "identical_to_size_1": 2048
+      },
+      "size_3": {
+        "images_per_second": 596.1089863810353,
+        "identical_to_size_1": 2048
+      },
+      "size_4": {
+        "images_per_second": 697.0355444189257,
+        "identical_to_size_1": 2048
+      },
+      "size_5": {
+        "images_per_second": 755.9929914917144,
+        "identical_to_size_1": 2048
+      },
+      "size_6": {
+        "images_per_second": 798.1048952524441,
+        "identical_to_size_1": 2048
+      },
+      "size_7": {
+        "images_per_second": 804.2327132168637,
+        "identical_to_size_1": 2048
+      },
+      "size_8": {
+        "images_per_second": 805.3703669099416,
+        "identical_to_size_1": 2048
+      },
+      "cuda_peak_allocated_bytes": 193570304,
+      "cuda_peak_reserved_bytes": 234881024
+    }
+  },
+  "batch_8_run": {
+    "collect": {
+      "elapsed_seconds": 174.0064580469916,
+      "cpu_user_seconds": 136.530807,
+      "cpu_system_seconds": 5.425004
+    },
+    "first_encode_attempt": "CUDA sin memoria con el límite de 224 MiB de la v3, reanudado con 1 GiB",
+    "encode": {
+      "elapsed_seconds": 180.78435950897983,
+      "counts": {
+        "encoded": 46035,
+        "already": 3072,
+        "remaining": 0,
+        "by_kind": {
+          "text": {
+            "encoded": 5165,
+            "seconds": 88.05482114580809
+          },
+          "image": {
+            "encoded": 40870,
+            "seconds": 65.41537543979939
+          }
+        },
+        "loop_seconds": 163.22793326701503,
+        "cuda_peak_allocated_bytes": 202745344,
+        "cuda_peak_reserved_bytes": 264241152
+      }
+    },
+    "final": {
+      "elapsed_seconds": 171.52130271101487,
+      "cpu_user_seconds": 151.134329,
+      "cpu_system_seconds": 5.130959,
+      "failed_assets": 0,
+      "cohort_complete": true
+    },
+    "samples_identical_to_one_by_one": true,
+    "load": [
+      " 03:58:25 up 2 days,  7:59,  1 user,  load average: 22,61, 21,25, 24,87",
+      " 04:01:20 up 2 days,  8:02,  1 user,  load average: 21,60, 21,08, 24,15",
+      ""
+    ]
+  },
   "projection": {
     "windows": 18698976,
     "v3_texts": 1591529,
@@ -441,6 +563,9 @@
     "final_cpu_hours": 20.737246572991612,
     "gpu_chart_hours_one_per_call": 26.188263272748248,
     "gpu_text_hours": 11.533868948065438,
+    "gpu_chart_hours_batch_8": 8.313626779896952,
+    "gpu_text_hours_lower_load": 7.536936723855373,
+    "final_cpu_hours_lower_load": 18.458301874288313,
     "samples_v31_gb": 63.45403974574798,
     "transient_bytes_per_sample": 7219.7204648306915
   }

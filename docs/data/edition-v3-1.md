@@ -98,7 +98,7 @@ Un vector solo se hereda de otra edición si las dos registran la misma identida
 La regeneración prevista reutiliza todo lo que no depende de los precios ni de la precisión.
 
 - `price_revision.revise_prepared_prices` crea la preparación v3.1 a partir de `prepared-accounting-v1` y de la auditoría nueva. Enlaza con enlaces duros noticias y fundamentales tras comprobar su huella. Relee los precios con el lector auditado y los enlaza también si el Parquet es idéntico. Se detiene si un activo sin precios en el padre los gana.
-- La codificación tiene tres pasadas para que la GPU solo calcule. `--collect` recorre en CPU cada activo en `collect/`, lo confirma si tiene todos sus vectores y, si le falta alguno, lo descarta y anota su texto o su PNG, con el activo que lo pide, en `pending-vectors*.sqlite`. Ningún vector provisional llega a `samples/`. `--encode-pending` codifica en GPU solo esas entradas, una a una con la misma llamada que la codificación en línea, y admite tramos con `--max-pending` para liberar el candado. Una última pasada en CPU con `--reuse-only` completa los activos con `computed-vectors.sqlite` y falla si todavía falta algún vector. `--shard K N` reparte las pasadas de CPU entre procesos acotados.
+- La codificación tiene tres pasadas para que la GPU solo calcule. `--collect` recorre en CPU cada activo en `collect/`, lo confirma si tiene todos sus vectores y, si le falta alguno, lo descarta y anota su texto o su PNG, con el activo que lo pide, en `pending-vectors*.sqlite`. Ningún vector provisional llega a `samples/`. `--encode-pending` codifica en GPU solo esas entradas, cada texto por separado y los gráficos en lotes de `--image-batch-size`, y admite tramos con `--max-pending` para liberar el candado. Un lote de cada 64, y siempre el último si es más corto, se contrasta con la codificación de su último gráfico solo, y cualquier diferencia detiene la pasada. Una última pasada en CPU con `--reuse-only` completa los activos con `computed-vectors.sqlite` y falla si todavía falta algún vector. `--shard K N` reparte las pasadas de CPU entre procesos acotados.
 - Las anotaciones y los vectores calculados se confirman en SQLite por activo y por tandas de 512. Confirmar cada fila obligaba a esperar a que el disco sincronizara el registro, unos 12 ms por fila con la carga actual del equipo, y la recogida de la porción pasó de 1.043 s a 172 s al agruparlas.
 - `--release-vectors` borra los PNG pendientes y los vectores de gráficos de `computed-vectors.sqlite` cuando todos los activos que los anotaron están confirmados. Los gráficos ya están en las muestras y los textos se conservan porque otros activos comparten noticias. Así el espacio adicional se limita al tramo de activos en curso.
 - `edition_comparison.compare_editions` recorre las dos ediciones activo por activo con un registro reanudable. Cuenta sesiones nuevas y perdidas, registra cada gráfico que cambia y cualquier otra columna distinta, y mide el cambio de las ventanas comunes. Si los codificadores de las dos ediciones difieren, el vector de un mismo PNG puede cambiar y se registran su diferencia absoluta máxima, la relativa por componente y la relativa por norma.
@@ -129,12 +129,18 @@ La medida usa 13 activos elegidos al azar con semilla 428 (8 de US y 5 de CN, in
 | Pasada | Reloj | CPU | Resultado |
 | --- | ---: | ---: | --- |
 | Recogida (`--collect`) | 172 s | 156 s | 12 activos pendientes, 43.942 gráficos y 5.165 textos anotados, 1 activo sin muestras confirmado |
-| GPU (`--encode-pending`) | 684 s | | 43.942 gráficos en 221,5 s de llamadas (198 por segundo) y 5.165 textos en 134,8 s (38 por segundo) |
+| GPU (`--encode-pending`), un gráfico por llamada | 684 s | | 43.942 gráficos en 221,5 s de llamadas (198 por segundo) y 5.165 textos en 134,8 s (38 por segundo) |
 | Final con sustitución (`--reuse-only`) | 336 s | 176 s | 13 activos confirmados y sustituidos, 43.973 muestras |
 | Repetición sobre activos confirmados | 65 s | 42 s | Nada que verificar ni borrar |
 | Liberación (`--release-vectors`) | 7 s | 3 s | 43.942 gráficos y el registro de pendientes liberados |
 
 La recogida cuesta 3,6 ms de CPU por muestra y la pasada final 4,0 ms, porque las dos dibujan el gráfico. La GPU estuvo ocupada un 18 % del tiempo de media: con un gráfico por llamada, el coste lo marcan la preparación en CPU y el lanzamiento de núcleos, no el cálculo. El asignador de Torch llegó a 188 MB (210 MB reservados) y el proceso a 360 MiB según `nvidia-smi`, con el contexto CUDA incluido. El reloj de la pasada de GPU incluye la carga de los modelos y un muestreo de `nvidia-smi` cada medio segundo que competía por la CPU, así que el caudal se toma del tiempo de las llamadas.
+
+### Lotes de gráficos
+
+Con un gráfico por llamada, la GPU pasa la mayor parte del tiempo esperando. Se midió en la misma GPU, con la llamada de producción y en FP32 estricto, cada tamaño de lote de 1 a 8 sobre 2.048 PNG reales de la porción. Todos los tamaños dieron vectores idénticos bit a bit a los de un gráfico por llamada, y el caudal subió de 326 a 805 gráficos por segundo. Con el modelo solo, lotes de 32, 64 y 128 ya no coinciden (hasta 9,2e-6 de diferencia absoluta) y tampoco son más rápidos que el de 8. Con TF32 activo en el mismo proceso, los 2.048 vectores difieren hasta 0,0052 y 8,5e-4 por norma, lo mismo que frente a la v3.
+
+La porción se volvió a codificar entera con lotes de 8. Las 43.973 muestras de los 13 activos coinciden en todas sus columnas con las de la edición codificada de uno en uno. La pasada de GPU tardó 181 s de reloj, con 65,4 s de llamadas para 40.870 gráficos (625 por segundo, incluida la comprobación, porque los otros 3.072 ya se habían guardado) y 88,1 s para 5.165 textos, con menos carga en el equipo que la primera vez. El primer intento agotó el límite del asignador de 224 MiB que usaba la v3, y la pasada se reanudó con 1 GiB. El asignador llegó a 203 MB (264 MB reservados). La identidad del codificador registra el tamaño del lote, así que la edición se codifica entera con el mismo.
 
 ### Cambios frente a la v3
 
@@ -157,19 +163,20 @@ El registro de pendientes y los gráficos calculados son temporales. Tras la lib
 
 ### Proyección a la edición completa
 
-La simulación de la revisión cuenta 18.698.976 ventanas (15.874.289 en US y 2.824.687 en CN), y la v3 tiene 1.591.529 textos distintos. Con los costes de la porción:
+La simulación de la revisión cuenta 18.698.976 ventanas (15.874.289 en US y 2.824.687 en CN), y la v3 tiene 1.591.529 textos distintos. Con los costes de la porción, donde los intervalos recogen la diferencia entre las dos cargas del equipo:
 
 | Concepto | Proyección |
 | --- | ---: |
-| CPU de la recogida | 18,5 h |
-| CPU de la pasada final | 20,7 h |
+| CPU de la recogida | de 16,8 a 18,5 h |
+| CPU de la pasada final | de 18,5 a 20,7 h |
+| GPU para gráficos en lotes de 8 | 8,3 h |
 | GPU para gráficos, uno por llamada | 26,2 h |
-| GPU para textos | 11,5 h |
+| GPU para textos | de 7,5 a 11,5 h |
 | Muestras v3.1 | 63,5 GB, 5,7 GB más que la v3 |
 | Vectores de texto que se conservan | unos 3,7 GB |
 | Temporales por activo en curso | unos 27 MB |
 
-Sin sustitución, la v3.1 no cabe junto a la v3 en los 48 GB libres. Con sustitución y tramos de unos 300 activos, el espacio ocupado crece como mucho unos 18 GB sobre el actual (8 GB de temporales del tramo, 3,7 GB de textos y 5,7 GB de crecimiento neto). Las pasadas de CPU se reparten entre procesos y pueden solaparse con la GPU, así que la GPU marca la duración. Repasar un activo ya confirmado cuesta hasta unos 3 s de CPU, por lo que conviene que cada tramo recorra solo sus activos con `--shard` en lugar de repasar los anteriores.
+Sin sustitución, la v3.1 no cabe junto a la v3 en los 48 GB libres. Con sustitución y tramos de unos 300 activos, el espacio ocupado crece como mucho unos 18 GB sobre el actual (8 GB de temporales del tramo, 3,7 GB de textos y 5,7 GB de crecimiento neto). Las pasadas de CPU se reparten entre procesos y pueden solaparse con la GPU. Con lotes de 8, la GPU necesita unas 16 a 20 h, o unas 8 h si se heredan los textos de la v3, y las dos pasadas de CPU suman de 35 a 39 h de CPU. Repasar un activo ya confirmado cuesta hasta unos 3 s de CPU, por lo que conviene que cada tramo recorra solo sus activos con `--shard` en lugar de repasar los anteriores.
 
 ## Pruebas
 
