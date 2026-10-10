@@ -18,7 +18,8 @@ from torch.nn import functional as F
 
 from mars_titan.models.quantile_head import pinball_loss
 from mars_titan.models.titans import neural_memory as memory_module
-from mars_titan.models.titans.config import CERTIFIED_GATE_BOXES
+from mars_titan.models.titans.config import CERTIFIED_GATE_BOXES, PAPER_PROJECTIONS
+from mars_titan.models.titans.state import mac_tensors
 
 # Huellas capturadas en 42e7dbca, antes de introducir PT1, con memory_stability_traces.py en
 # CPU, FP32, OMP_NUM_THREADS=2 y MKL_NUM_THREADS=2. La comprobación CUDA fija las de cuda:0.
@@ -36,6 +37,23 @@ CORE_FP32_CPU = dict(
         unused=[],
     ),
 )
+# Huellas del núcleo de #474 sin PT1, con SiLU, convolución causal de núcleo 4 y L2 de q y k,
+# capturadas con las mismas trazas, en CPU, FP32 y dos hilos, sobre el código de esa rama.
+PROJECTIONS_FP32_CPU = dict(
+    memory=dict(
+        fingerprint="210cdd4321cc59c88c26579c4213d433e40c5c5414370262da13b60bd1bfe5e0",
+        read="54e550996a0caa2af66ad933551e75a6a53b3ab171038f734ff3540d57800f0c",
+        state="9457ac07426e0900aacbc78b72ee2c59f80bdd8fecc63a3569b299e9bee29d66",
+        gradients="68322ce1517a4c47592a3153a3d6c169c134434d91eab34b2f8d272cbbf4eb70",
+    ),
+    financial=dict(
+        quantiles="881092fbb29c3869ad756e0417662acfce235af60ff4214cd063ea32f94dab4c",
+        state="15226eeaebe926114228c1ba1bd0f1430559f6154969ec69fb51f8023b8e4864",
+        gradients="846048401408d6b5f1ef9dc7844c2971cdd78ab663c1c1c6b4ec7823e5af90b4",
+        unused=[],
+    ),
+)
+PROJECTIONS = dict(qkv_silu=True, qkv_convolution=4)
 GATES = ("alpha_projection", "eta_projection", "theta_projection")
 DAY = 86_400_000_000
 START = 1_609_459_200_000_000
@@ -302,12 +320,15 @@ def test_depth_one_clip_is_the_gradient_of_a_huber_loss_with_half_the_limit():
     torch.testing.assert_close(updated.weights[0], expected, rtol=1e-12, atol=1e-14)
 
 
+# La cota no depende de cómo se calculen las claves, así que también se comprueba con las
+# proyecciones de la sección 4.4.
+@pytest.mark.parametrize("options", [{}, PROJECTIONS], ids=["linear", "section_4_4"])
 @pytest.mark.parametrize("depth", [1, 2])
-def test_state_stays_inside_the_bound_of_proposition_5(depth):
+def test_state_stays_inside_the_bound_of_proposition_5(depth, options):
     limit, floor, ceiling = 0.5, 0.002, 0.3
     declared = stability(alpha_floor=floor, eta_ceiling=ceiling, gradient_clip=limit)
-    model = memory(dim=4, depth=depth, residual=depth == 2, stability=declared)
-    plain = memory(dim=4, depth=depth, residual=depth == 2)
+    model = memory(dim=4, depth=depth, residual=depth == 2, stability=declared, **options)
+    plain = memory(dim=4, depth=depth, residual=depth == 2, **options)
     momentum_bound = model.config.theta_max * limit / (1 - ceiling)
     generator = torch.Generator().manual_seed(13)
     tokens = 40.0 * torch.randn(3, 300, 4, generator=generator, dtype=torch.float64)
@@ -436,6 +457,62 @@ def test_recovery_from_an_exported_state_continues_bit_for_bit():
     assert memory_payload["configuration"]["stability"]["gradient_clip"] == 0.5
     with pytest.raises(ValueError):
         plain.mac.memory.restore_state(memory_payload)
+
+
+def test_component_composes_with_the_section_4_4_projections():
+    # Sin PT1, el núcleo con las proyecciones del artículo es el de #474 bit a bit.
+    assert memory_trace(**PROJECTIONS) == PROJECTIONS_FP32_CPU["memory"]
+    assert (
+        financial_trace(memory_projections=PAPER_PROJECTIONS) == PROJECTIONS_FP32_CPU["financial"]
+    )
+    # Cada componente añade sus propias claves a la identidad y la composición es su unión.
+    bias = api().GateBias(alpha_half_life=256.0, eta=0.15, theta=0.05)
+    declared = stability(**pt1())
+    cases = dict(pt1=dict(stability=declared), projections=PROJECTIONS)
+    cases["both"] = cases["pt1"] | cases["projections"]
+    core = api().MemoryConfig(dim=8, gate_bias=bias)
+    configs = {name: replace(core, **options) for name, options in cases.items()}
+    added = {
+        name: {key for key, value in config.identity().items() if core.identity().get(key) != value}
+        for name, config in configs.items()
+    }
+    assert added["pt1"] == {"stability"} and "stability" not in added["projections"]
+    assert added["both"] == added["pt1"] | added["projections"]
+    for name in ("pt1", "projections"):
+        assert all(
+            configs["both"].identity()[key] == configs[name].identity()[key] for key in added[name]
+        )
+    assert len({config.fingerprint() for config in (core, *configs.values())}) == 4
+    both = dict(memory_stability=pt1(), memory_projections=PAPER_PROJECTIONS)
+    model = predictor(dtype=torch.float32, **both)
+    identity = model.config.identity()
+    assert identity["memory_stability"] == pt1()
+    assert identity["memory_projections"] == PAPER_PROJECTIONS
+    # Con las dos, el estado lleva las ventanas causales y se recupera bit a bit desde el
+    # estado exportado y desde los pesos guardados.
+    flows = ("US/AAA", "US/BBB")
+    outputs, states = run(model, flows, range(5))
+    assert states[1].mac.convolution and states[1].mac.memory.convolution
+    payload = model.export_state_cpu(states[1])
+    twin = predictor(dtype=torch.float32, **both)
+    twin.load_state_dict(model.state_dict())
+    resumed, resumed_states = run(twin, flows, range(2, 5), state=twin.restore_state(payload))
+    for left, right in zip(outputs[2:], resumed, strict=True):
+        assert torch.equal(left, right)
+    for left, right in zip(
+        mac_tensors(states[-1].mac), mac_tensors(resumed_states[-1].mac), strict=True
+    ):
+        assert torch.equal(left, right)
+    # PT1 sigue actuando dentro del núcleo compuesto y ninguna configuración parcial acepta
+    # los pesos ni el estado de la compuesta.
+    for options in (dict(memory_projections=PAPER_PROJECTIONS), dict(memory_stability=pt1())):
+        partial = predictor(dtype=torch.float32, **options)
+        if "memory_projections" in options:
+            assert not torch.equal(run(partial, flows, range(5))[0][-1], outputs[-1])
+        with pytest.raises(ValueError):
+            partial.load_state_dict(model.state_dict())
+        with pytest.raises(ValueError):
+            partial.restore_state(payload)
 
 
 def test_recipe_declaration_pairing_and_quantile_backward_with_the_component():

@@ -2,9 +2,10 @@
 
 Se ejecuta con pytest indicando la ruta del archivo dentro de una plaza `memslot gpu`. Fija
 las huellas FP32 del núcleo sin PT1 capturadas en cuda:0 antes de introducir el componente,
-contrasta PT1 activa entre CPU y CUDA y repite las propiedades de la caja y de la cota del
-estado en la GPU. Las tolerancias entre dispositivos son las de FP32 en un recorrido corto,
-porque CPU y CUDA redondean de forma distinta la LayerNorm y las multiplicaciones.
+con las proyecciones lineales y con las de la sección 4.4, contrasta PT1 activa entre CPU y
+CUDA en los dos núcleos y repite las propiedades de la caja y de la cota del estado en la GPU.
+Las tolerancias entre dispositivos son las de FP32 en un recorrido corto, porque CPU y CUDA
+redondean de forma distinta la LayerNorm y las multiplicaciones.
 """
 
 import json
@@ -14,6 +15,7 @@ import torch
 from memory_stability_traces import financial_run, financial_trace, memory_run, memory_trace
 
 from mars_titan.models.titans import MemoryConfig, MemoryStability, NeuralMemory
+from mars_titan.models.titans.config import PAPER_PROJECTIONS
 
 # Capturadas en 42e7dbca con memory_stability_traces.py en cuda:0, FP32 y sin TF32.
 CORE_FP32_CUDA = dict(
@@ -30,6 +32,23 @@ CORE_FP32_CUDA = dict(
         unused=[],
     ),
 )
+# Núcleo de #474 sin PT1, con SiLU, convolución causal de núcleo 4 y L2 de q y k, capturado
+# en cuda:0 sobre el código de esa rama con las mismas trazas.
+PROJECTIONS_FP32_CUDA = dict(
+    memory=dict(
+        fingerprint="210cdd4321cc59c88c26579c4213d433e40c5c5414370262da13b60bd1bfe5e0",
+        read="f09d7b128c7f36aaf1126d44b0a36e61330d904a5d30a5ce61b7370626e71a87",
+        state="1881c59fedff794c7685b66813897673a9cf377c703f083261eb3cd8b02f9841",
+        gradients="d3ea938babd2f6840823b86f32beb893cf5d0d4d48b703fb327218245ed293f4",
+    ),
+    financial=dict(
+        quantiles="722a8975e78d5ff8b8f21f350773bbd0ec41aacaeb845c233c1bfbaa285a30a9",
+        state="771a00ed0b7b010359f1666a7d2606552ceaf8f1b33313ed1973bf973d727fb1",
+        gradients="e66a7b3cc816c51a234d54bf0b15a70815af2da0934372f13f60c4bffa29c758",
+        unused=[],
+    ),
+)
+PROJECTIONS = dict(qkv_silu=True, qkv_convolution=4)
 PT1_GATE_BIAS = dict(alpha_half_life=256.0, eta=0.15, theta=0.05)
 PT1 = dict(alpha_floor=0.002, eta_ceiling=0.3, gradient_clip=4.0, gate_box=True)
 
@@ -64,11 +83,25 @@ def test_cuda_disabled_parity_and_pt1_agreement_with_cpu():
     # Sin PT1, la salida, el estado y los gradientes coinciden bit a bit con el núcleo previo.
     assert memory_trace("cuda:0") == CORE_FP32_CUDA["memory"]
     assert financial_trace("cuda:0") == CORE_FP32_CUDA["financial"]
+    # Lo mismo con las proyecciones de la sección 4.4 frente al núcleo de #474.
+    assert memory_trace("cuda:0", **PROJECTIONS) == PROJECTIONS_FP32_CUDA["memory"]
+    projected = financial_trace("cuda:0", memory_projections=PAPER_PROJECTIONS)
+    assert projected == PROJECTIONS_FP32_CUDA["financial"]
     stability = MemoryStability(**PT1)
     records = {}
     for name, run in (
         ("memory", lambda where: memory_run(where, PT1_GATE_BIAS, stability=stability)),
         ("financial", lambda where: financial_run(where, PT1_GATE_BIAS, memory_stability=PT1)),
+        (
+            "memory_with_projections",
+            lambda where: memory_run(where, PT1_GATE_BIAS, stability=stability, **PROJECTIONS),
+        ),
+        (
+            "financial_with_projections",
+            lambda where: financial_run(
+                where, PT1_GATE_BIAS, memory_stability=PT1, memory_projections=PAPER_PROJECTIONS
+            ),
+        ),
     ):
         cpu, first, second = run("cpu"), run("cuda:0"), run("cuda:0")
         keys = [key for key in cpu if key not in ("fingerprint", "unused")]
