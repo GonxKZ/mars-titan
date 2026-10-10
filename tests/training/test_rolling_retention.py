@@ -578,11 +578,22 @@ def test_a_window_that_does_not_fit_is_refused_before_any_phase(
     assert launched["peak_bytes"] == increment["bytes"]
 
 
-def test_the_campaign_script_refuses_the_walk_until_the_stages_accept_a_window(
+def test_the_campaign_script_accepts_the_window_and_still_refuses_an_incomplete_walk(
     base,  # noqa: F811
     tmp_path,
 ):
-    """Sin el filtro `window` de la campaña A v2 no se ejecuta ni se escribe nada."""
+    """Con el filtro `window` de la campaña A v2, el recorrido pasa a la siguiente guarda.
+
+    La base y las etapas ya admiten una ventana, así que el recorrido pasa esa comprobación
+    y se detiene porque la retención declara las políticas como consumidoras y la orden no
+    trae su etapa. No ejecuta ni escribe nada.
+    """
+    from mars_titan.posttraining import campaign_stage as adapter_stage
+    from mars_titan.training import masked_campaign as engine
+    from mars_titan.training import modality_ablation_stage as ablation_stage
+
+    for runner in (engine.run_campaign, ablation_stage.run_stage, adapter_stage.run_stage):
+        assert rolling._supports_window(runner)
     import runpy
 
     script = runpy.run_path("scripts/run_masked_campaign.py", run_name="script")
@@ -592,7 +603,7 @@ def test_the_campaign_script_refuses_the_walk_until_the_stages_accept_a_window(
     arguments += ["--output", str(tmp_path / "campaign")]
     arguments += ["--storage", "configs/baselines/historical-masked-campaign-storage.json"]
     arguments += ["--extras", "reports/engineering/campaign-storage-20261009/extras.json"]
-    with pytest.raises(ValueError, match="no admite una ventana"):
+    with pytest.raises(ValueError, match="acompañar a la retención"):
         script["main"](arguments)
     assert not (tmp_path / "campaign").exists()
 

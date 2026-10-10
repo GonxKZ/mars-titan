@@ -425,6 +425,9 @@ class Rolling:
                 self.campaign_path, self.views, self.output, scope, window=window
             )
             sources = comparison.load_sources(path, restricted, scope)
+            # Los agregados se puntúan con los brazos y familias del ámbito, como la
+            # comparación final que los leerá (en US y CN, los del diseño conjunto).
+            restricted = comparison.scope_config(restricted, scope)
             masked = None
             if self.ablation is not None and comparison.ABLATION_FIELD in config:
                 masked_path = stage_module.write_sources(

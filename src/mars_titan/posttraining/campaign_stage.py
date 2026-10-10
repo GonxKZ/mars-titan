@@ -65,7 +65,7 @@ from mars_titan.environments.walk_forward_receipt import (
 from mars_titan.environments.walk_forward_receipt import read_window_receipt
 from mars_titan.evaluation import walk_forward_comparison as comparison
 from mars_titan.models.quantile_head import MEDIAN_INDEX, QUANTILE_COLUMNS, QUANTILE_HEAD
-from mars_titan.training import masked_campaign
+from mars_titan.training import campaign_numerics, campaign_schedule, masked_campaign
 from mars_titan.training.campaign_plan import (
     CARRY,
     DECLARED,
@@ -73,6 +73,7 @@ from mars_titan.training.campaign_plan import (
     load_campaign,
     plan_campaign,
     schedule,
+    scope_arms,
 )
 from mars_titan.training.corpus_inputs import CorpusDataset
 from mars_titan.training.learning_hold import LearningHoldError, require_learning_allowed
@@ -238,6 +239,10 @@ def load_stage(path):
     # Brazos cronológicos de la comparación, con o sin sección en la campaña.
     known = {name for name, arm in declared.items() if arm["family"] in cm.CAMPAIGN_DESIGNS}
     arms = _names(config["arms"], {*neural, *tabular, *known}, "Los brazos")
+    _require(
+        all(set(arms) <= set(scope_arms(campaign, scope)) for scope in scopes),
+        "Cada brazo de la etapa debe ajustarse en todos sus ámbitos de la campaña",
+    )
     _require(
         matrix["schema_version"] >= 3 or not set(arms) & known,
         "Los brazos cronológicos necesitan la matriz de versión 3",
@@ -498,6 +503,23 @@ def plan_chain(stage, jobs):
     return chains
 
 
+def window_plan(campaign, jobs, chains, window):
+    """Trabajos y selecciones de una ventana de campaña y los pares de la base que leen.
+
+    Cada trabajo parte del estado elegido en la ventana anterior de su ámbito, que es un
+    trabajo de la campaña base y no de la etapa. Por eso los pares incluyen esa ventana
+    además de la propia, y la reanudación confirma sus recibos antes de seguir.
+    """
+    pairs = campaign_schedule.window_pairs(campaign, window)
+    jobs = [job for job in jobs if (job["scope"], job["window"]) in pairs]
+    chains = [job for job in chains if (job["scope"], job["window"]) in pairs]
+    # Cada brazo base y semilla tiene una selección por ventana, así que las selecciones
+    # nombran todos los pares de los ámbitos de la etapa.
+    own = {(job["scope"], job["window"]) for job in chains}
+    parents = {(job["scope"], job["parent_window"]) for job in chains if job["parent_window"]}
+    return jobs, chains, own | parents
+
+
 def ordered_jobs(jobs, chains):
     """Orden de ejecución: por ventana, los trabajos de cada brazo base y semilla y su
     selección de la cadena justo después."""
@@ -619,11 +641,12 @@ def _digest(value):
     return hashlib.sha256(json.dumps(value, sort_keys=True).encode()).hexdigest()
 
 
-def _base_receipts(base, campaign, stage):
+def _base_receipts(base, campaign, stage, pairs=None):
     """Confirmar los trabajos base de los ámbitos y brazos de la etapa, en orden del plan.
 
     Un brazo que parte de otro predictor elegido (MARS-TITAN, CM-v1) necesita también los
-    recibos de sus padres, aunque la etapa no los adapte.
+    recibos de sus padres, aunque la etapa no los adapte. `pairs` limita la confirmación a
+    esos pares (ámbito, ventana) al ejecutar una sola ventana.
     """
     jobs = [job for job in plan_campaign(campaign) if job["scope"] in stage["scopes"]]
     needed, size = set(stage_arms(stage)[0]), 0
@@ -632,6 +655,8 @@ def _base_receipts(base, campaign, stage):
         needed |= {job["parent"] for job in jobs if job["arm"] in needed and job.get("parent")}
     for job in jobs:
         if job["arm"] not in needed:
+            continue
+        if pairs is not None and (job["scope"], job["window"]) not in pairs:
             continue
         case, _, sources = base.resolve(job)
         receipt = base.confirmed(job, base.job_identity(job, case, sources))
@@ -1131,6 +1156,8 @@ class _Stage:
         # Ridge y XGBoost emiten solo la predicción puntual, sin la cabeza de cuantiles.
         quantiles = not self.tabular(job)
         columns = comparison.COLUMNS + (QUANTILE_COLUMNS if quantiles else ())
+        if self.campaign.get("numerics"):
+            campaign_numerics.require_job(self.campaign["numerics"], job["id"], result)
         predictions, score = {}, None
         for partition in PREDICTED:
             record = result["predictions"][partition]
@@ -1522,8 +1549,13 @@ def _gpu_lease():
     return GpuLease()
 
 
-def run_stage(path, views, campaign_output, output, *, lease=None, stop=None, device="cuda:0"):
+def run_stage(
+    path, views, campaign_output, output, *, lease=None, stop=None, device="cuda:0", window=None
+):
     """Ejecutar o reanudar el walk-forward por etapas sobre una campaña base confirmada.
+
+    `window` limita la etapa a una ventana de campaña, que solo necesita la base confirmada
+    de esa ventana.
 
     `lease` sustituye la reserva de la GPU y `device="cpu"` limita la ejecución a los
     diagnósticos de hasta 5000 filas de `run_case`. La protección del aprendizaje se
@@ -1538,8 +1570,11 @@ def run_stage(path, views, campaign_output, output, *, lease=None, stop=None, de
     jobs = plan_stage(stage)
     count_stage(stage, jobs)
     chains = plan_chain(stage, jobs)
-    order = ordered_jobs(jobs, chains)
     campaign = stage["campaign"]
+    pairs = None
+    if window is not None:
+        jobs, chains, pairs = window_plan(campaign, jobs, chains, window)
+    order = ordered_jobs(jobs, chains)
     _require(device in ("cpu", "cuda:0"), "El dispositivo debe ser cpu o cuda:0")
     _require(
         isinstance(views, dict) and set(views) == set(campaign["scopes"]),
@@ -1552,7 +1587,7 @@ def run_stage(path, views, campaign_output, output, *, lease=None, stop=None, de
         outside_source(protected, output)
         outside_source(output, protected)
     _, base = masked_campaign._confirmed_state(campaign["path"], views, campaign_output)
-    _base_receipts(base, campaign, stage)
+    _base_receipts(base, campaign, stage, pairs)
     identity = _identity(stage, base.views)
     output.mkdir(parents=True, exist_ok=True)
     descriptor = os.open(output / ".lock", os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600)
@@ -1572,6 +1607,9 @@ def run_stage(path, views, campaign_output, output, *, lease=None, stop=None, de
             atomic_json(marker, identity)
         signals = StopRequest() if stop is None else nullcontext(stop)
         reservation = (lease or _gpu_lease)()
+        if campaign.get("numerics"):
+            # La precisión de la campaña base, antes de crear cualquier modelo.
+            campaign_numerics.apply(campaign["numerics"])
         state = _Stage(
             stage, base, campaign_output, output, identity, device=device, lease=None, stop=None
         )
@@ -1615,12 +1653,17 @@ def main(argv=None):
     execute.add_argument("--views", action="append", required=True)
     execute.add_argument("--campaign-output", type=Path, required=True)
     execute.add_argument("--output", type=Path, required=True)
+    execute.add_argument("--window", help="Ventana de campaña que se ejecuta")
     args = parser.parse_args(argv)
     if args.command == "check":
         result = check_stage(args.stage)
     else:
         result = run_stage(
-            args.stage, _views_argument(args.views), args.campaign_output, args.output
+            args.stage,
+            _views_argument(args.views),
+            args.campaign_output,
+            args.output,
+            window=args.window,
         )
         result.pop("jobs")
     print(json.dumps(result, ensure_ascii=False, indent=2))

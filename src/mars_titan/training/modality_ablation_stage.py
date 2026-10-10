@@ -40,7 +40,7 @@ from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.evaluation import modality_ablation as analysis
 from mars_titan.evaluation import walk_forward_comparison as comparison
 
-from . import masked_campaign
+from . import campaign_numerics, campaign_schedule, masked_campaign
 from .campaign_plan import (
     DECLARED,
     NEURAL,
@@ -143,8 +143,13 @@ def load_stage(path):
         and 0 <= limits["max_prediction_jobs"] <= 1_000_000,
         "El límite de predicciones debe ser un entero declarado",
     )
-    # Brazos comparados con productor en la campaña. Los auxiliares no se comparan.
+    # Brazos comparados con productor en la campaña. Los auxiliares no se comparan. Cada
+    # ámbito vuelve a predecir solo los brazos que la campaña ajusta en él.
     specs = [spec for spec in _arm_specs(campaign) if not spec["helper"]]
+    scope_specs = {
+        scope: [spec for spec in _arm_specs(campaign, scope) if not spec["helper"]]
+        for scope in scopes
+    }
     return dict(
         config,
         sha256=digest,
@@ -152,6 +157,7 @@ def load_stage(path):
         campaign=campaign,
         declaration=declared[comparison.ABLATION_FIELD],
         specs=specs,
+        scope_specs=scope_specs,
     )
 
 
@@ -161,7 +167,7 @@ def plan_stage(stage):
     for scope in stage["scopes"]:
         folds = list(campaign["comparison_config"]["resolved_scopes"][scope]["windows"].values())
         for row in schedule(folds, campaign["period"]):
-            for spec in stage["specs"]:
+            for spec in stage["scope_specs"][scope]:
                 for seed in spec["seeds"]:
                     for variant in VARIANTS:
                         jobs.append(
@@ -484,6 +490,8 @@ class _Stage:
         resolved = self.campaign["comparison_config"]["resolved_scopes"][job["scope"]]
         label = f"{job['id']} ({PARTITION})"
         _require(report.get("final_test_opened") is False, f"{job['id']} abre la reserva final")
+        if self.campaign.get("numerics"):
+            campaign_numerics.require_job(self.campaign["numerics"], job["id"], report)
         _require(
             report.get("modality_ablation") == identity["modality_ablation"],
             f"{job['id']} no declara la ablación pedida",
@@ -620,11 +628,14 @@ def _opened(path, views, campaign_output, output, pairs=None):
     return stage, base, output
 
 
-def run_stage(path, views, campaign_output, output, *, executors=None, lease=None, stop=None):
+def run_stage(
+    path, views, campaign_output, output, *, executors=None, lease=None, stop=None, window=None
+):
     """Ejecutar o reanudar la etapa sobre una campaña base confirmada.
 
     `executors` sustituye los ejecutores por modelo y `lease`, la reserva de la GPU. La
     protección se comprueba antes de abrir fuentes y antes de cada trabajo pendiente.
+    `window` limita la etapa a una ventana de campaña y a la base confirmada de esa ventana.
     """
     from .checkpoints import StopRequest
 
@@ -632,9 +643,12 @@ def run_stage(path, views, campaign_output, output, *, executors=None, lease=Non
     stage = load_stage(path)
     jobs = plan_stage(stage)
     count_stage(stage, jobs)
+    pairs = None
+    if window is not None:
+        jobs, pairs = campaign_schedule.stage_window(stage["campaign"], jobs, window)
     executors = dict(EXECUTORS if executors is None else executors)
     _require(set(executors) == set(EXECUTORS), "Faltan ejecutores para algún modelo")
-    stage, base, output = _opened(path, views, campaign_output, output)
+    stage, base, output = _opened(path, views, campaign_output, output, pairs)
     identity = _identity(stage, base.views)
     output.mkdir(parents=True, exist_ok=True)
     descriptor = os.open(output / ".lock", os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600)
@@ -652,6 +666,9 @@ def run_stage(path, views, campaign_output, output, *, executors=None, lease=Non
                 "La salida sin identidad contiene artefactos ajenos",
             )
             atomic_json(marker, identity)
+        if stage["campaign"].get("numerics"):
+            # La precisión de la campaña base, antes de crear cualquier modelo.
+            campaign_numerics.apply(stage["campaign"]["numerics"])
         state = _Stage(stage, base, output, identity, executors, None)
         signals = StopRequest() if stop is None else nullcontext(stop)
         reservation = (lease or _gpu_lease)()
@@ -707,7 +724,8 @@ def write_sources(
         validation.get(comparison.ABLATION_FIELD) == stage["declaration"],
         "La comparación de validación no declara la misma ablación",
     )
-    produced = {spec["arm"]: spec for spec in stage["specs"]}
+    produced = {spec["arm"]: spec for spec in stage["scope_specs"][scope]}
+    validation = comparison.scope_config(validation, scope)
     wanted = {
         name: arm
         for name, arm in validation["arms"].items()
@@ -776,6 +794,7 @@ def main(argv=None):
         command.add_argument("--views", action="append", required=True)
         command.add_argument("--campaign-output", type=Path, required=True)
         command.add_argument("--output", type=Path, required=True)
+    execute.add_argument("--window", help="Ventana de campaña que se ejecuta")
     sources.add_argument("--scope", choices=tuple(comparison.SCOPES), required=True)
     sources.add_argument("--comparison", type=Path)
     args = parser.parse_args(argv)
@@ -783,7 +802,7 @@ def main(argv=None):
         result = check_stage(args.stage)
     elif args.command == "run":
         views = masked_campaign._views_argument(args.views)
-        result = run_stage(args.stage, views, args.campaign_output, args.output)
+        result = run_stage(args.stage, views, args.campaign_output, args.output, window=args.window)
         result.pop("jobs")
     else:
         destination = write_sources(

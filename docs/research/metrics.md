@@ -600,6 +600,14 @@ banco de M1 en los mismos instantes, así que la segunda familia comprueba si la
 de MARS-TITAN se explica solo por seguir aprendiendo. El brazo entra también en la
 familia de niveles, lo que añade un nivel a su corrección por máximo estudentizado.
 
+La versión 5 añade a la versión 4 el [diseño conjunto](walk-forward-2000.md#comparación-con-los-controles-separados)
+de la campaña A v2 (`joint_design`). Un mercado solo cuenta en las ventanas en las que es
+elegible y los controles separados de US y CN se comparan con el brazo conjunto
+restringido a las filas de su mercado. Las métricas, la fiabilidad del signo y la cartera
+aplican las mismas exclusiones. El control en línea y sus dos familias se evalúan en el ámbito
+conjunto, porque los ámbitos de un mercado solo comparan los tres controles separados con
+su brazo conjunto.
+
 Las semillas se agregan así. La comparación solo lee el caso elegido de cada
 brazo, que la campaña A repite con las semillas 42, 43 y 44. Cada semilla tiene
 su resumen y los contrastes, la fiabilidad del signo y la cartera usan la media

@@ -73,9 +73,8 @@ def main(argv=None):
         parser.add_argument(name, type=Path, required=True)
     args = parser.parse_args(argv)
     # Plan, orden y etapas de A v2: módulos de la copia del diseño conjunto en PYTHONPATH.
-    from mars_titan.training.campaign_schedule import window_schedule
-
     from mars_titan.training.campaign_plan import load_campaign, plan_campaign
+    from mars_titan.training.campaign_schedule import window_schedule
     from mars_titan.training.storage_budget import (
         ablation_estimate,
         adapter_estimate,
