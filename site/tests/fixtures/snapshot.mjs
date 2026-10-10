@@ -120,12 +120,41 @@ export function buildSnapshot({ now = Date.parse("2026-10-09T12:00:00Z"), extraR
     const body = JSON.stringify(document);
     pages.set(`pages/${createHash("sha256").update(body).digest("hex")}.json`, body);
   }
+  const windows = new Map();
+  const windowEntries = windowCampaigns(now).map(({ entry, state }) => {
+    if (!state) return entry;
+    const body = JSON.stringify(state);
+    const path = `windows/${createHash("sha256").update(body).digest("hex")}.json`;
+    windows.set(path, body);
+    return { ...entry, path };
+  });
   const index = {
     schema_version: 2, project: "MARS-TITAN", generated_at: iso(now), source_status: "available", poll_interval_seconds: 60, stale_after_seconds: 900,
     models: MODELS, notes: ["Registro ficticio de las pruebas de interfaz."], campaigns, runs: head,
     pagination: { total_runs: runs.length, page_size: pageSize, pages: [...pages.keys()] },
+    window_campaigns: windowEntries,
   };
-  return { index: JSON.stringify(index), pages, runs };
+  return { index: JSON.stringify(index), pages, windows, runs };
+}
+
+// Dos campañas por ventanas ficticias: una etapa base con su matriz y una etapa de
+// adaptadores declarada que todavía no tiene resumen.
+function windowCampaigns(now) {
+  const cells = [[0, 0, 0, 0, "done", iso(now - 3 * 3600_000)], [0, 0, 0, 1, "done", iso(now - 2 * 3600_000)],
+    [0, 1, 1, 0, "done", iso(now - 3600_000)], [0, 1, 1, 1, "attempt", null]];
+  const state = {
+    id: "fixture-base", kind: "historical_masked_campaign_run", stage: "base", status: "running", updated_at: iso(now - 600_000),
+    summary_modified_at: iso(now - 600_000), planned: { training_jobs: 4, prediction_jobs: 0 }, completed: { training_jobs: 3, prediction_jobs: 0 },
+    final_test_opened: false, vocabulary: { scopes: ["US+CN"], windows: ["fold-000", "fold-001"], arms: ["gru", "lstm"], names: ["finalist-s42", "finalist-s43"] },
+    models: { gru: "gru", lstm: "lstm" }, cells,
+    active: [{ job: "US+CN/fold-001/lstm/finalist-s43", attempt: "attempt-0001", updated_at: iso(now - 60_000), global_step: 20,
+      epochs: [1, 2].map(epoch => ({ epoch, train_mae: 0.02 - epoch * 0.001, mae: 0.021 - epoch * 0.0008, session_mae: null, train_samples_per_second: 4000, train_seconds: 30 })) }],
+  };
+  const declared = { domain: "real", configuration: "configs/fixture.json", status: null, updated_at: null };
+  return [
+    { entry: { ...declared, id: "fixture-base", stage: "base", status: "running", updated_at: state.updated_at, jobs: 4, done: 3, attempts: 1 }, state },
+    { entry: { ...declared, id: "fixture-adapters", stage: "adapters", path: null, jobs: 0, done: 0, attempts: 0 }, state: null },
+  ];
 }
 
 export { trainingRun };

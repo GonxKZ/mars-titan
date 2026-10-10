@@ -41,6 +41,17 @@ export const EPOCH_KEYS = Object.freeze([
   "train_mae", "session_mae", "train_samples_per_second", "train_seconds", "validation_seconds",
 ]);
 
+// Etapas de las campañas por ventanas y estados de sus trabajos, como los escribe
+// `observatory/window_campaigns.py`.
+export const WINDOW_STAGES = Object.freeze({
+  base: "Campaña base", adapters: "Adaptadores por etapas", ablation: "Ablación de modalidades", policies: "Políticas",
+});
+const CELL_STATES = ["done", "pending", "attempt"];
+const SLUG = /^[a-z][a-z0-9_]{0,95}$/;
+const JOB_PART = /^[A-Za-z0-9][\w.+-]{0,95}$/;
+const WINDOW_DOCUMENT = /^windows\/[a-f0-9]{64}\.json$/;
+const VOCABULARY_LIMITS = Object.freeze({ scopes: 16, windows: 64, arms: 1024, names: 4096 });
+
 const LATER_METRICS = new Set(["session_mae"]);
 const RUN_STATUSES = ["blocked", "queued", "running", "paused", "completed", "failed", "cancelled"];
 const EMPTY_METRICS = Object.freeze(Object.fromEntries(METRIC_KEYS.map(key => [key, null])));
@@ -227,6 +238,100 @@ export function validateSnapshot(input) {
   };
 }
 
+function slug(value, path) {
+  if (value === null || value === undefined) return null;
+  if (typeof value !== "string" || !SLUG.test(value)) fail(path);
+  return value;
+}
+
+function counts(value, path) {
+  if (value === null || value === undefined) return null;
+  const entries = Object.entries(record(value, path));
+  if (entries.length > 16) fail(path, "demasiados recuentos");
+  return Object.fromEntries(entries.map(([key, count]) => {
+    if (!/^[a-z][a-z_]{0,39}$/.test(key)) fail(path, "recuento desconocido");
+    return [key, number(count, `${path}.${key}`, { integer: true, nullable: false })];
+  }));
+}
+
+// Estado de una campaña por ventanas, llegue por SSE o como documento de Pages. Los
+// índices de cada celda deben apuntar a su vocabulario y solo un trabajo confirmado puede
+// llevar fecha de confirmación. Un modelo fuera del catálogo del índice no invalida la
+// matriz: el servidor en directo puede leer la salida de un recolector anterior, y la
+// página muestra entonces el identificador del modelo.
+export function validateWindowCampaign(input) {
+  record(input, "campaña");
+  const vocabulary = record(input.vocabulary, "campaña.vocabulary");
+  const decoded = {};
+  for (const [key, maximum] of Object.entries(VOCABULARY_LIMITS)) {
+    decoded[key] = list(vocabulary[key], `vocabulary.${key}`, maximum).map((value, index) => {
+      const parts = typeof value === "string" ? value.split("/") : [];
+      if (!parts.length || parts.length > 2 || !parts.every(part => JOB_PART.test(part))) fail(`vocabulary.${key}[${index}]`);
+      return value;
+    });
+    if (new Set(decoded[key]).size !== decoded[key].length) fail(`vocabulary.${key}`, "valores repetidos");
+  }
+  const models = record(input.models, "campaña.models");
+  const arms = {};
+  for (const arm of decoded.arms) {
+    arms[arm] = slug(models[arm] ?? "", `models.${arm}`);
+  }
+  const keys = Object.keys(VOCABULARY_LIMITS);
+  const cells = list(input.cells, "campaña.cells", 100_000).map((cell, index) => {
+    const path = `cells[${index}]`;
+    if (!Array.isArray(cell) || cell.length !== 6) fail(path, "celda incompleta");
+    keys.forEach((key, position) => number(cell[position], `${path}[${position}]`, { integer: true, nullable: false, max: decoded[key].length - 1 }));
+    if (!CELL_STATES.includes(cell[4])) fail(path, "estado desconocido");
+    const confirmed = timestamp(cell[5], `${path}[5]`, true);
+    if (confirmed !== null && cell[4] !== "done") fail(path, "fecha de confirmación en un trabajo sin confirmar");
+    return [cell[0], cell[1], cell[2], cell[3], cell[4], confirmed];
+  });
+  const active = list(input.active, "campaña.active", 64).map((attempt, index) => {
+    const path = `active[${index}]`;
+    record(attempt, path);
+    return {
+      job: text(attempt.job, `${path}.job`, 600), attempt: text(attempt.attempt, `${path}.attempt`, 96),
+      updated_at: timestamp(attempt.updated_at, `${path}.updated_at`, true),
+      global_step: number(attempt.global_step ?? null, `${path}.global_step`, { integer: true }),
+      epochs: list(attempt.epochs, `${path}.epochs`, 2000).map((epoch, position) => {
+        const field = `${path}.epochs[${position}]`;
+        record(epoch, field);
+        const point = { epoch: number(epoch.epoch, `${field}.epoch`, { integer: true }) };
+        for (const key of ["train_mae", "mae", "session_mae", "train_samples_per_second", "train_seconds"]) point[key] = number(epoch[key], `${field}.${key}`);
+        return point;
+      }),
+    };
+  });
+  const stage = input.stage ?? null;
+  if (stage !== null && !Object.hasOwn(WINDOW_STAGES, stage)) fail("campaña.stage");
+  return {
+    available: true, id: text(input.id, "campaña.id", 96), stage, kind: slug(input.kind, "campaña.kind"),
+    status: slug(input.status, "campaña.status"), updated_at: timestamp(input.updated_at ?? null, "campaña.updated_at", true),
+    summary_modified_at: timestamp(input.summary_modified_at ?? null, "campaña.summary_modified_at", true),
+    planned: counts(input.planned, "campaña.planned"), completed: counts(input.completed, "campaña.completed"),
+    final_test_opened: boolean(input.final_test_opened ?? null, "campaña.final_test_opened", true),
+    vocabulary: decoded, models: arms, cells, active,
+  };
+}
+
+function validateWindowEntry(entry, index) {
+  const path = `window_campaigns[${index}]`;
+  record(entry, path);
+  if (!Object.hasOwn(WINDOW_STAGES, entry.stage)) fail(`${path}.stage`);
+  const jobs = number(entry.jobs, `${path}.jobs`, { integer: true, nullable: false, max: 100_000 });
+  const done = number(entry.done, `${path}.done`, { integer: true, nullable: false, max: jobs });
+  const attempts = number(entry.attempts, `${path}.attempts`, { integer: true, nullable: false, max: jobs - done });
+  if (entry.path !== null && (typeof entry.path !== "string" || !WINDOW_DOCUMENT.test(entry.path))) fail(`${path}.path`, "ruta no admitida");
+  if (entry.path === null && jobs) fail(`${path}.path`, "trabajos sin documento");
+  if (!["real", "synthetic", "technical"].includes(entry.domain)) fail(`${path}.domain`, "dominio desconocido");
+  return {
+    id: text(entry.id, `${path}.id`, 96), domain: entry.domain, stage: entry.stage,
+    configuration: text(entry.configuration, `${path}.configuration`, 200, true), path: entry.path,
+    status: slug(entry.status, `${path}.status`), updated_at: timestamp(entry.updated_at, `${path}.updated_at`, true),
+    jobs, done, attempts,
+  };
+}
+
 export function displayStatus(run, now = Date.now(), staleAfterSeconds = 180) {
   if (run.status === null) return "unknown";
   if (run.status !== "running") return run.status;
@@ -321,6 +426,8 @@ function validatePagination(input) {
         return [key, number(value, key, {integer: true, nullable: false})];
       }))};
   })};
+  result.window_campaigns = list(input.window_campaigns ?? [], "window_campaigns", 128).map(validateWindowEntry);
+  if (new Set(result.window_campaigns.map(entry => entry.id)).size !== result.window_campaigns.length) fail("window_campaigns", "campañas repetidas");
   if (input.pagination) {
     const p = record(input.pagination, "pagination");
     result.pagination = {total_runs: number(p.total_runs, "total_runs", {integer: true, nullable: false}),
