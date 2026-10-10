@@ -70,6 +70,7 @@ from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.input_policy import masked_inputs, policy_identity
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.evaluation import (
+    liquidity_strata,
     long_short,
     modality_ablation,
     modality_strata,
@@ -148,6 +149,7 @@ ABLATION_FIELD = "modality_ablation"
 LONG_SHORT_FIELD = "long_short"
 JOINT_FIELD = "joint_design"
 PREDICTIVE_FIELD = "predictive_ability"
+LIQUIDITY_FIELD = "liquidity_strata"
 # Secciones secundarias que exige cada versión de la configuración.
 SECTIONS = {
     1: set(),
@@ -157,7 +159,7 @@ SECTIONS = {
     5: {STRATA_FIELD, ABLATION_FIELD, LONG_SHORT_FIELD, JOINT_FIELD},
 }
 # Secciones secundarias que cualquier versión admite sin exigirlas.
-OPTIONAL_SECTIONS = {PREDICTIVE_FIELD}
+OPTIONAL_SECTIONS = {PREDICTIVE_FIELD, LIQUIDITY_FIELD}
 _JOINT_FIELDS = {
     "declared_at",
     "joint_scope",
@@ -534,6 +536,8 @@ def validate_config(config, digest, folder):
         long_short.declaration(config[LONG_SHORT_FIELD])
     if PREDICTIVE_FIELD in config:
         predictive_ability.declaration(config[PREDICTIVE_FIELD], comparison)
+    if LIQUIDITY_FIELD in config:
+        liquidity_strata.declaration(config[LIQUIDITY_FIELD], SERIES_METRICS, comparison["metrics"])
     resolved = {scope: _protocols(folder, scope, declared) for scope, declared in scopes.items()}
     if JOINT_FIELD in config:
         _joint_design(config[JOINT_FIELD], resolved, arms, families, folder)
@@ -962,18 +966,37 @@ def _masked_scores(ablation, sources, window_id, arm, seed, original, calibrated
     return result
 
 
-def _score_window(sources, config, window_id, ablation=None):
+def _liquidity_codes(liquidity, table, reference):
+    """Estrato de liquidez de cada fila evaluada, en el orden canónico del panel de referencia.
+
+    Solo se leen el mercado, el activo y el instante de cada fila. El objetivo no interviene.
+    """
+    codes, reasons = liquidity.assign(
+        table["market"].cast(pa.string()).to_numpy(zero_copy_only=False),
+        table["asset_id"].cast(pa.string()).to_numpy(zero_copy_only=False),
+        table["prediction_at"].cast(pa.int64()).to_numpy(),
+    )
+    order = pc.index_in(reference[1].row_id, value_set=_row_id(table)).to_numpy()
+    codes = codes[order]
+    codes.setflags(write=False)
+    return codes, liquidity_strata.record(codes, reasons[order])
+
+
+def _score_window(sources, config, window_id, ablation=None, liquidity=None):
     """Puntuar todos los brazos de una ventana. Cada calibrador se fija antes de evaluar.
 
-    Devuelve las puntuaciones por brazo y semilla y, si se declaran estratos, el registro
-    de presencia de la ventana. Con `ablation`, cada brazo con predicciones añade las
-    puntuaciones de sus variantes enmascaradas.
+    Devuelve las puntuaciones por brazo y semilla, el registro de presencia de la ventana
+    si se declaran estratos de modalidades (o None) y el de liquidez si se pasa
+    `liquidity` (``liquidity_strata.EditionLiquidity``, o None). Con `ablation`, cada brazo
+    con predicciones añade las puntuaciones de sus variantes enmascaradas.
     """
     window = sources["windows"][window_id]
     minimum = config["metrics"]["rank_ic_min_assets"]
     calibration = config["calibration"]
     results, reference, calibration_reference = {}, None, None
     row_codes, presence, bits = None, None, None
+    liquid_codes, liquid_record = None, None
+    extremes = None if liquidity is None else config[LIQUIDITY_FIELD]["extremes"][-1]
     for name, arm in config["arms"].items():
         quantile = arm["output"] == QUANTILE_HEAD
         columns = COLUMNS + (QUANTILE_COLUMNS if quantile else ())
@@ -1010,6 +1033,8 @@ def _score_window(sources, config, window_id, ablation=None):
                     bits, presence = _presence_bits(sources, config, window_id, reference)
                     if not presence["incomplete"]:
                         row_codes = modality_strata.codes(bits)
+                if liquidity is not None:
+                    liquid_codes, liquid_record = _liquidity_codes(liquidity, table, reference)
             _same_rows(reference, panel, label)
             entry["raw"] = score_sessions(panel, rank_ic_min_assets=minimum)
             calibrated = None
@@ -1026,6 +1051,15 @@ def _score_window(sources, config, window_id, ablation=None):
                     rank_ic_min_assets=minimum,
                     calibrated=None if calibrated is None else calibrated.quantiles,
                 )
+            if liquid_codes is not None:
+                entry["liquidity"] = modality_strata.score_strata(
+                    panel,
+                    liquid_codes,
+                    rank_ic_min_assets=minimum,
+                    calibrated=None if calibrated is None else calibrated.quantiles,
+                    names=liquidity_strata.NAMES,
+                )
+                entry["extremes"] = liquidity_strata.window_extremes(panel, liquid_codes, extremes)
             if ablation is not None:
                 record = entry["calibrator"]["record"] if quantile else None
                 context = (name, arm["output"], columns, bits, reference, minimum)
@@ -1052,7 +1086,14 @@ def _score_window(sources, config, window_id, ablation=None):
             results[name, None]["strata"] = modality_strata.score_strata(
                 panel, row_codes, rank_ic_min_assets=minimum
             )
-    return results, presence
+        if liquid_codes is not None:
+            results[name, None]["liquidity"] = modality_strata.score_strata(
+                panel, liquid_codes, rank_ic_min_assets=minimum, names=liquidity_strata.NAMES
+            )
+            results[name, None]["extremes"] = liquidity_strata.window_extremes(
+                panel, liquid_codes, extremes
+            )
+    return results, presence, liquid_record
 
 
 def _views(scores, markets):
@@ -1310,9 +1351,9 @@ def _arm_summary(windows, views, calibrated_views, missing, weighting):
     )
 
 
-def _stratum_arm(config, per_window, key, stratum, markets, names):
+def _stratum_arm(config, per_window, key, stratum, markets, names, field="strata"):
     """Vistas en bruto y calibradas de un brazo y semilla en un estrato y sus partes."""
-    parts = [results[key]["strata"][stratum] for results in per_window.values()]
+    parts = [results[key][field][stratum] for results in per_window.values()]
     raw = [part["raw"] for part in parts if part["raw"] is not None]
     views = modality_strata.subset_views(
         SessionScores.concatenate(raw) if raw else None, markets, names
@@ -1328,15 +1369,26 @@ def _stratum_arm(config, per_window, key, stratum, markets, names):
     return views, calibrated, parts
 
 
-def _stratum_summary(scores, calibrated, quantile, cell, weighting):
-    """MAE por sesión y cobertura y anchura calibradas de una celda estimable."""
+def _stratum_summary(scores, calibrated, quantile, cell, weighting, extra=()):
+    """MAE por sesión y cobertura y anchura calibradas de una celda estimable.
+
+    ``extra`` son otras métricas puntuales que la sección informa junto al MAE, como el MSE
+    de los estratos de liquidez, con la clave ``session_<métrica>``.
+    """
     result = dict(
-        session_mae=None, reason=cell["reason"], calibrated_intervals=None, calibrated_reason=None
+        session_mae=None,
+        **{f"session_{metric}": None for metric in extra},
+        reason=cell["reason"],
+        calibrated_intervals=None,
+        calibrated_reason=None,
     )
     if not cell["estimable"]:
         result["calibrated_reason"] = cell["reason"]
         return result
-    result["session_mae"] = scores.summary(market_weighting=weighting)["point"]["mae"]
+    point = scores.summary(market_weighting=weighting)["point"]
+    result["session_mae"] = point["mae"]
+    for metric in extra:
+        result[f"session_{metric}"] = point[metric]
     if not quantile:
         result["calibrated_reason"] = "El brazo no emite cuantiles"
     elif calibrated is None:
@@ -1364,43 +1416,30 @@ def _window_mae(parts, cells, weighting):
     return result
 
 
-def _strata_report(config, scored, overall, markets):
-    """Sección secundaria por estrato de presencia, con los umbrales y la confianza declarados.
+def _stratified(config, declared, per_window, overall, markets, strata, field, extra=()):
+    """Población, puntuaciones, contrastes y coberturas por estrato de una sección secundaria.
 
-    Las celdas por debajo del umbral aparecen con su motivo y sin métricas. La confianza de
-    contrastes y coberturas corrige por Bonferroni el número de celdas de estrato y ámbito.
-    Si alguna ventana tiene filas sin precios, gráficos y macro, la sección entera queda no
-    estimable con sus recuentos. La métrica principal no depende de este resultado.
+    ``strata`` son los estratos declarados (nombre y patrón) y ``field`` la clave de cada
+    entrada de ventana con sus puntuaciones. Las celdas por debajo del umbral aparecen con
+    su motivo y sin métricas. La confianza de contrastes y coberturas corrige por Bonferroni
+    el número de celdas de estrato y ámbito.
     """
-    declared = config[STRATA_FIELD]
-    presence = {window: record for window, (_, record) in scored.items()}
-    incomplete = {window: record["incomplete"] for window, record in presence.items()}
-    if any(incomplete.values()):
-        return dict(
-            declaration=declared,
-            status="not_estimable",
-            reason=(
-                f"{sum(incomplete.values())} filas de evaluación no tienen precios, gráficos y "
-                "macro, así que los estratos declarados no describen la población"
-            ),
-            presence=presence,
-        )
-    per_window = {window: results for window, (results, _) in scored.items()}
     thresholds = {key: declared[key] for key in ("min_rows", "min_sessions")}
     weighting = config["metrics"]["market_weighting"]
     keys = list(per_window[next(iter(per_window))])
     reference = overall[keys[0][0]][0]
     names = list(reference)
-    cells = len(modality_strata.STRATA) * len(names)
+    cells = len(strata) * len(names)
     confidence = modality_strata.adjusted_confidence(config["comparison"]["confidence"], cells)
     local = dict(
         config,
         comparison=dict(config["comparison"], metrics=declared["metrics"], confidence=confidence),
     )
     population, arms, contrasts, calibration = {}, {}, {}, {}
-    for stratum, pattern in modality_strata.STRATA.items():
+    for stratum, pattern in strata.items():
         by_key = {
-            key: _stratum_arm(config, per_window, key, stratum, markets, names) for key in keys
+            key: _stratum_arm(config, per_window, key, stratum, markets, names, field)
+            for key in keys
         }
         # Todos los brazos evalúan las mismas filas, así que la población es la del primero.
         first_views, _, first_parts = by_key[keys[0]]
@@ -1430,6 +1469,7 @@ def _strata_report(config, scored, overall, markets):
                         quantile,
                         whole[view],
                         weighting,
+                        extra,
                     )
                     for view in names
                 },
@@ -1445,13 +1485,9 @@ def _strata_report(config, scored, overall, markets):
             for arm in calibrated
         }
     return dict(
-        declaration=declared,
-        status="computed",
-        reason=None,
-        presence=presence,
         recalibrated=False,
         multiplicity=dict(
-            method=modality_strata.MULTIPLICITY,
+            method=declared["multiplicity"],
             cells=cells,
             family_confidence=config["comparison"]["confidence"],
             confidence=confidence,
@@ -1463,8 +1499,88 @@ def _strata_report(config, scored, overall, markets):
     )
 
 
+def _strata_report(config, scored, overall, markets):
+    """Sección secundaria por estrato de presencia, con los umbrales y la confianza declarados.
+
+    Si alguna ventana tiene filas sin precios, gráficos y macro, la sección entera queda no
+    estimable con sus recuentos. La métrica principal no depende de este resultado.
+    """
+    declared = config[STRATA_FIELD]
+    presence = {window: record for window, (_, record, _) in scored.items()}
+    incomplete = {window: record["incomplete"] for window, record in presence.items()}
+    if any(incomplete.values()):
+        return dict(
+            declaration=declared,
+            status="not_estimable",
+            reason=(
+                f"{sum(incomplete.values())} filas de evaluación no tienen precios, gráficos y "
+                "macro, así que los estratos declarados no describen la población"
+            ),
+            presence=presence,
+        )
+    per_window = {window: results for window, (results, _, _) in scored.items()}
+    computed = _stratified(
+        config, declared, per_window, overall, markets, modality_strata.STRATA, "strata"
+    )
+    return dict(declaration=declared, status="computed", reason=None, presence=presence, **computed)
+
+
+def _liquidity_report(config, scored, overall, markets, liquidity):
+    """Sección de estratos de liquidez y peso de las filas extremas de cada brazo y semilla.
+
+    Sin la edición sin ajustar la sección queda pendiente con su motivo. El MSE de los
+    contrastes principales se lee junto a esta sección, nunca solo.
+    """
+    declared = config[LIQUIDITY_FIELD]
+    if liquidity is None:
+        return liquidity_strata.pending(
+            declared, "No se ha indicado la edición sin ajustar que asigna los estratos"
+        )
+    per_window = {window: results for window, (results, _, _) in scored.items()}
+    computed = _stratified(
+        config,
+        declared,
+        per_window,
+        overall,
+        markets,
+        liquidity_strata.STRATA,
+        "liquidity",
+        tuple(metric for metric in declared["metrics"] if metric in liquidity_strata.QUADRATIC),
+    )
+    weighting = config["metrics"]["market_weighting"]
+    extremes = {}
+    for arm, seed in per_window[next(iter(per_window))]:
+        parts = [results[arm, seed]["extremes"] for results in per_window.values()]
+        views = _views(
+            SessionScores.concatenate(
+                [results[arm, seed]["raw"] for results in per_window.values()]
+            ),
+            markets,
+        )
+        label = "deterministic" if seed is None else str(seed)
+        extremes.setdefault(arm, {})[label] = liquidity_strata.extremes_report(
+            parts, views, markets, weighting, declared
+        )
+    return dict(
+        declaration=declared,
+        status="computed",
+        reason=None,
+        prices=liquidity.identity(),
+        assignment={window: record for window, (_, _, record) in scored.items()},
+        **computed,
+        extremes=extremes,
+    )
+
+
+def liquidity_source(config, edition):
+    """Asignador de estratos de liquidez si la configuración los declara y hay edición."""
+    if LIQUIDITY_FIELD not in config or edition is None:
+        return None
+    return liquidity_strata.EditionLiquidity(edition, config[LIQUIDITY_FIELD])
+
+
 def evaluate_walk_forward(
-    config_path, sources_path, scope, *, ablation_sources=None, aggregates=None
+    config_path, sources_path, scope, *, ablation_sources=None, aggregates=None, edition=None
 ):
     """Calcular el informe y la tabla por sesión de un ámbito sin escribir nada.
 
@@ -1473,6 +1589,8 @@ def evaluate_walk_forward(
     admite si la configuración declara la ablación. `aggregates` es la carpeta de los
     agregados por ventana (`window_aggregates`) que guardó la retención v2. Con ella no se
     lee ninguna predicción por fila, y cada ventana exige agregados de estas mismas fuentes.
+    `edition` es la edición sin ajustar que asigna los estratos de liquidez. Sin ella, una
+    sección de liquidez declarada queda pendiente.
     """
     started = time.perf_counter()
     config = resolve_config(config_path)
@@ -1486,19 +1604,22 @@ def evaluate_walk_forward(
     if ablation_sources is not None:
         _require(ABLATION_FIELD in config, "La configuración no declara la ablación de modalidades")
         ablation = _ablation_sources(ablation_sources, config, sources)
+    liquidity = liquidity_source(config, edition)
     if aggregates is None:
         scored = {
-            window: _score_window(sources, config, window, ablation)
+            window: _score_window(sources, config, window, ablation, liquidity)
             for window in sources["windows"]
         }
     else:
         from . import window_aggregates
 
         scored = {
-            window: window_aggregates.read(aggregates, config, sources, window, ablation)
+            window: window_aggregates.read(
+                aggregates, config, sources, window, ablation, liquidity=liquidity
+            )
             for window in sources["windows"]
         }
-    per_window = {window: results for window, (results, _) in scored.items()}
+    per_window = {window: results for window, (results, _, _) in scored.items()}
     overall, calibrated, arms, tables = {}, {}, {}, []
     for arm, seed in per_window[next(iter(per_window))]:
         windows = {window: results[arm, seed] for window, results in per_window.items()}
@@ -1591,6 +1712,15 @@ def evaluate_walk_forward(
         report[STRATA_FIELD] = strata
         for name in ("evaluation/modality_strata.py", "training/corpus_inputs.py"):
             report["analysis_source_sha256"][name] = sha256(Path(__file__).parents[1] / name)
+    if LIQUIDITY_FIELD in config:
+        report[LIQUIDITY_FIELD] = _liquidity_report(config, scored, overall, markets, liquidity)
+        for name in (
+            "evaluation/liquidity_strata.py",
+            "evaluation/modality_strata.py",
+            "simulation/session_prices.py",
+            "simulation/reconstructed_tape.py",
+        ):
+            report["analysis_source_sha256"][name] = sha256(Path(__file__).parents[1] / name)
     if ABLATION_FIELD in config:
         report[ABLATION_FIELD] = (
             modality_ablation.pending(config)
@@ -1616,7 +1746,14 @@ def evaluate_walk_forward(
 
 
 def write_walk_forward(
-    config_path, sources_path, scope, output, *, ablation_sources=None, aggregates=None
+    config_path,
+    sources_path,
+    scope,
+    output,
+    *,
+    ablation_sources=None,
+    aggregates=None,
+    edition=None,
 ):
     """Publicar el informe y las sesiones en un directorio nuevo fuera de las fuentes."""
     output = Path(output)
@@ -1625,11 +1762,18 @@ def write_walk_forward(
     folders = [Path(config_path).parent, Path(sources_path).parent]
     if ablation_sources is not None:
         folders.append(Path(ablation_sources).parent)
+    if edition is not None:
+        folders.append(Path(edition))
     for source in folders:
         outside_source(source, output)
         outside_source(output, source)
     report, sessions = evaluate_walk_forward(
-        config_path, sources_path, scope, ablation_sources=ablation_sources, aggregates=aggregates
+        config_path,
+        sources_path,
+        scope,
+        ablation_sources=ablation_sources,
+        aggregates=aggregates,
+        edition=edition,
     )
     json.dumps(report, allow_nan=False)
     output.mkdir(parents=True)
@@ -1647,6 +1791,9 @@ def main(argv=None):
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--ablation-sources", type=Path)
     parser.add_argument("--aggregates", type=Path, help="Agregados por ventana de la retención v2")
+    parser.add_argument(
+        "--edition", type=Path, help="Edición sin ajustar para los estratos de liquidez"
+    )
     args = parser.parse_args(argv)
     report = write_walk_forward(
         args.config,
@@ -1655,6 +1802,7 @@ def main(argv=None):
         args.output,
         ablation_sources=args.ablation_sources,
         aggregates=args.aggregates,
+        edition=args.edition,
     )
     windows = len(report["windows"])
     print(f"Comparados {len(report['arms'])} brazos en {windows} ventanas. Reserva final cerrada.")

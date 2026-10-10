@@ -177,3 +177,16 @@ def test_recovery_cannot_pay_the_same_dividend_twice():
     ).hexdigest()
     with pytest.raises(ValueError, match="dividendo"):
         portfolio.restore(state)
+
+
+@pytest.mark.parametrize("execution_volume", [0.0, 10_000_000.0])
+def test_the_participation_cap_uses_the_volume_published_at_the_decision(execution_volume):
+    # El límite sale del volumen de la sesión ya cerrada al decidir (1 % de 1.000 títulos).
+    # El volumen del día de ejecución todavía no se conoce en la apertura y no interviene.
+    portfolio = Portfolio({"A": Instrument("USD")}, {"USD": 1e6}, cost_bps=0, participation=0.01)
+    portfolio.start(1, {"A": Quote(10, 10, 1000)})
+    portfolio.submit({"A": 500}, decision_at=1)
+    assert portfolio.orders["A"]["capacity"] == 10
+    result = portfolio.advance(2, 3, {"A": Quote(10, 10, execution_volume)})
+    assert [trade["quantity"] for trade in result["trades"]] == [10]
+    assert portfolio.positions == {"A": 10}

@@ -494,6 +494,7 @@ def evaluate(matrix_path, sources_path, scope):
         else dict(basis=hours["basis"], source=hours["source"], sha256=hours["sha256"]),
         families=families,
         limitations=matrix["limitations"],
+        quadratic_metrics=sources["quadratic"],
         views=views,
         versions={name: version(name) for name in ("numpy", "pyarrow")},
         analysis_source_sha256={

@@ -62,7 +62,7 @@ def unconsumed(tmp_path_factory):
 
 @pytest.fixture(scope="module")
 def edition(tmp_path_factory):
-    """Edición de precios sintética para la cartera larga y corta de la comparación."""
+    """Edición de precios sintética para la cartera y los estratos de liquidez."""
     root = tmp_path_factory.mktemp("edition")
     rl_stage_fixture.write_edition(
         root, {"US": [Asset("A0000", base=20.0), Asset("B0001", base=30.0)]}
@@ -100,7 +100,7 @@ def walked(base, edition, unconsumed, tmp_path_factory):  # noqa: F811
         masked = ablation.write_sources(base.stage, base.views, output, staged, "US")
         primary = engine.write_sources(base.campaign, base.views, output, "US")
         expected = comparison.evaluate_walk_forward(
-            base.comparison, primary, "US", ablation_sources=masked
+            base.comparison, primary, "US", ablation_sources=masked, edition=edition
         )
         expected_portfolio = portfolio.evaluate_long_short(base.comparison, primary, "US", edition)
         path, campaign = schedule(base, root)
@@ -125,7 +125,14 @@ def walked(base, edition, unconsumed, tmp_path_factory):  # noqa: F811
             edition=edition,
         )
         calls = Calls()
+        built, source = [], comparison.liquidity_source
+        patch.setattr(
+            comparison,
+            "liquidity_source",
+            lambda config, edition: built.append(edition) or source(config, edition),
+        )
         result = rolling.run_rolling(state, calls.runners())
+        patch.setattr(comparison, "liquidity_source", source)
         again = Calls()
         resumed = rolling.run_rolling(state, again.runners())
         with pytest.raises(prediction_files.PredictionsReleased):
@@ -138,6 +145,7 @@ def walked(base, edition, unconsumed, tmp_path_factory):  # noqa: F811
             "US",
             ablation_sources=masked,
             aggregates=state.folder / "aggregates",
+            edition=edition,
         )
         with pytest.raises(prediction_files.PredictionsReleased):
             portfolio.evaluate_long_short(base.comparison, primary, "US", edition)
@@ -158,6 +166,7 @@ def walked(base, edition, unconsumed, tmp_path_factory):  # noqa: F811
             resumed=resumed,
             calls=calls.calls,
             again=again.calls,
+            liquidity_built=len(built),
         )
 
 
@@ -486,6 +495,25 @@ def test_the_walk_needs_the_price_edition_when_the_comparison_declares_the_portf
         )
 
 
+def test_the_walk_needs_the_price_edition_for_the_liquidity_strata(
+    base,  # noqa: F811
+    tmp_path,
+    unconsumed,
+    monkeypatch,
+):
+    path, campaign = schedule(base, tmp_path)
+    windows = rolling.load_schedule(path, campaign)
+    declared = comparison.load_config(base.comparison)
+    assert comparison.LIQUIDITY_FIELD in declared
+    # Sin la cartera, solo los estratos de liquidez piden la edición.
+    plain = {k: v for k, v in declared.items() if k != comparison.LONG_SHORT_FIELD}
+    monkeypatch.setattr(rolling.Rolling, "comparison_config", lambda self: plain)
+    with pytest.raises(ValueError, match="estratos de liquidez: falta la edición"):
+        rolling.Rolling(
+            rolling.load_retention(unconsumed), base.campaign, base.views, base.output, windows
+        )
+
+
 def test_default_runners_require_the_window_filter_of_the_stages(base, monkeypatch):  # noqa: F811
     def without_window(path, views, output, *, storage=None, stop=None):
         return {}
@@ -796,3 +824,9 @@ def test_jobs_declared_not_regenerable_are_compacted_without_regenerating(
     assert not report.exists()
     release = state.ledger()["windows"][windows[0]["id"]]["phases"]["release"]
     assert release["declared_not_regenerable"] == 1
+
+
+def test_the_walk_reads_the_liquidity_edition_once_for_every_window(walked):
+    # Un solo asignador para todas las ventanas y ámbitos: cada activo se lee una vez.
+    assert len(walked["windows"]) > 1 and walked["liquidity_built"] == 1
+    assert set(walked["state"]._liquidity._assets) <= {"US/A0000", "US/B0001"}

@@ -881,8 +881,13 @@ def test_window_aggregates_score_each_scope_with_its_joint_design(joint_campaign
     from mars_titan.training import rolling_retention as rolling
 
     declared = comparison.load_config(joint_campaign.comparison)
-    # Sin la cartera, que necesitaría la edición de precios, solo queda el walk-forward.
-    plain = {key: value for key, value in declared.items() if key != comparison.LONG_SHORT_FIELD}
+    # Sin la cartera ni los estratos de liquidez, que necesitarían la edición de precios,
+    # solo queda el walk-forward.
+    plain = {
+        key: value
+        for key, value in declared.items()
+        if key not in (comparison.LONG_SHORT_FIELD, comparison.LIQUIDITY_FIELD)
+    }
     monkeypatch.setattr(rolling.Rolling, "comparison_config", lambda self: plain)
     retention = rolling.load_retention(CONFIGS / "baselines/historical-masked-retention-v2.json")
     # Solo se prueban los agregados, así que el recorrido no lleva la etapa de políticas.

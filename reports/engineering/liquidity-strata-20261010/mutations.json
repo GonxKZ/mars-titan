@@ -1,0 +1,442 @@
+{
+ "schema_version": 1,
+ "kind": "targeted_mutation_receipt",
+ "issue": 532,
+ "executed_on": "2026-10-10",
+ "base_commit": "2cd8a3525c641a9f5aa5f01015466cb74bedf44d",
+ "sources_sha256": {
+  "src/mars_titan/evaluation/liquidity_strata.py": "5076a0ebe49ba6b750cace5b007b4fa1ec6347ba5abcbb547822aa7b5c96ff81",
+  "src/mars_titan/evaluation/modality_strata.py": "cd5a4805d5ee352b71bc68c315384731ff48e8e06ca03c7d2acd91687efccb0b",
+  "src/mars_titan/evaluation/session_table_contrasts.py": "6bae3860a0fab1917556e766140380daec17233f42946c94c0c354516dfa3076",
+  "src/mars_titan/evaluation/walk_forward_comparison.py": "5b665338c89adbcafe7c3551a09b32003c24c793b35e6b7ebc15604bee3222ed",
+  "src/mars_titan/evaluation/window_aggregates.py": "9029a7c00a0a8da875345edb4f1aca419224d9967ba82f119777697c54ce69a7",
+  "src/mars_titan/simulation/portfolio.py": "b428a88164aaaf22d7c42bcc9ad9461a1b2d4982b78e1a8ab49c14ee84e68851",
+  "src/mars_titan/training/rolling_retention.py": "f62ab83310ba434cd89e4f8027f61897f130f04c7edbb300fbb3087400e793ff",
+  "tests/evaluation/test_liquidity_strata.py": "c65befbc0653bfb3bb2384eeb823b0341532154b192f1204bc1246a9631d70f2",
+  "tests/simulation/test_portfolio.py": "c6020c35235ee2a9b3e1c111e725a95d40047754fad492fd5fe49e1d6299d58d",
+  "tests/training/test_rolling_retention.py": "75119762357a7563982d929c5aeb7067444a4dc1048a91d0683a2a879c65eaf0"
+ },
+ "method": "Copia aislada de src, tests y configs. Cada mutante sustituye un único fragmento, ejecuta las pruebas de los estratos y de la cartera con -x (las dos pruebas de la retención si muta rolling_retention.py) y restaura el archivo. PYTHONPATH apunta a la copia, así que las pruebas importan el código mutado",
+ "tests": [
+  "tests/evaluation/test_liquidity_strata.py",
+  "tests/simulation/test_portfolio.py",
+  "tests/training/test_rolling_retention.py::test_the_walk_needs_the_price_edition_for_the_liquidity_strata",
+  "tests/training/test_rolling_retention.py::test_the_walk_reads_the_liquidity_edition_once_for_every_window"
+ ],
+ "environment": "CPU con CUDA_VISIBLE_DEVICES=-1 y OMP_NUM_THREADS=2",
+ "baseline": {
+  "returncode": 0,
+  "seconds": 23.3,
+  "tail": [
+   "62 passed in 20.23s"
+  ],
+  "rolling": {
+   "returncode": 0,
+   "seconds": 25.8,
+   "tail": [
+    "2 passed in 22.38s"
+   ]
+  }
+ },
+ "killed": 36,
+ "survived": 0,
+ "not_applied": 0,
+ "mutants": [
+  {
+   "name": "decision_in_the_same_instant_is_unpublished",
+   "file": "src/mars_titan/evaluation/liquidity_strata.py",
+   "status": "killed",
+   "seconds": 7.0,
+   "tail": [
+    "1 failed, 28 passed in 4.53s"
+   ],
+   "original": "index = np.searchsorted(decisions, moments, side=\"right\") - 1",
+   "mutated": "index = np.searchsorted(decisions, moments, side=\"left\") - 1"
+  },
+  {
+   "name": "next_session_is_read",
+   "file": "src/mars_titan/evaluation/liquidity_strata.py",
+   "status": "killed",
+   "seconds": 6.8,
+   "tail": [
+    "1 failed, 28 passed in 4.41s"
+   ],
+   "original": "index = np.searchsorted(decisions, moments, side=\"right\") - 1",
+   "mutated": "index = np.minimum(np.searchsorted(decisions, moments, side=\"right\"), len(days) - 1)"
+  },
+  {
+   "name": "row_after_the_published_day",
+   "file": "src/mars_titan/evaluation/liquidity_strata.py",
+   "status": "killed",
+   "seconds": 5.3,
+   "tail": [
+    "1 failed, 28 passed in 3.36s"
+   ],
+   "original": "position = np.searchsorted(sessions, published, \"right\")",
+   "mutated": "position = np.searchsorted(sessions, published, \"right\") + 1"
+  },
+  {
+   "name": "filled_close_counts_as_traded",
+   "file": "src/mars_titan/evaluation/liquidity_strata.py",
+   "status": "killed",
+   "seconds": 10.1,
+   "tail": [
+    "1 failed, 33 passed in 7.96s"
+   ],
+   "original": "traded = verified & (volume > 0)",
+   "mutated": "traded = verified"
+  },
+  {
+   "name": "unverified_close_counts",
+   "file": "src/mars_titan/evaluation/liquidity_strata.py",
+   "status": "killed",
+   "seconds": 4.5,
+   "tail": [
+    "1 failed, 26 passed in 2.53s"
+   ],
+   "original": "traded = verified & (volume > 0)",
+   "mutated": "traded = volume > 0"
+  },
+  {
+   "name": "price_without_grid",
+   "file": "src/mars_titan/evaluation/liquidity_strata.py",
+   "status": "killed",
+   "seconds": 9.0,
+   "tail": [
+    "1 failed, 32 passed in 6.84s"
+   ],
+   "original": "closed, _ = _snap(market, sessions, close)",
+   "mutated": "closed = np.asarray(close, dtype=np.float64)"
+  },
+  {
+   "name": "price_threshold_inclusive",
+   "file": "src/mars_titan/evaluation/liquidity_strata.py",
+   "status": "killed",
+   "seconds": 8.6,
+   "tail": [
+    "1 failed, 32 passed in 6.58s"
+   ],
+   "original": "low = price < section[\"price_below\"]",
+   "mutated": "low = price <= section[\"price_below\"]"
+  },
+  {
+   "name": "volume_threshold_inclusive",
+   "file": "src/mars_titan/evaluation/liquidity_strata.py",
+   "status": "killed",
+   "seconds": 8.4,
+   "tail": [
+    "1 failed, 32 passed in 6.22s"
+   ],
+   "original": "thin = median < section[\"volume_below\"]",
+   "mutated": "thin = median <= section[\"volume_below\"]"
+  },
+  {
+   "name": "mean_instead_of_median",
+   "file": "src/mars_titan/evaluation/liquidity_strata.py",
+   "status": "killed",
+   "seconds": 8.3,
+   "tail": [
+    "1 failed, 33 passed in 6.32s"
+   ],
+   "original": "np.median(windows[complete], axis=1)",
+   "mutated": "np.mean(windows[complete], axis=1)"
+  },
+  {
+   "name": "window_looks_ahead",
+   "file": "src/mars_titan/evaluation/liquidity_strata.py",
+   "status": "killed",
+   "seconds": 5.5,
+   "tail": [
+    "1 failed, 28 passed in 3.47s"
+   ],
+   "original": "median[width - 1 :][complete] = ",
+   "mutated": "median[: rows - width + 1][complete] = "
+  },
+  {
+   "name": "unclassified_rows_get_a_code",
+   "file": "src/mars_titan/evaluation/liquidity_strata.py",
+   "status": "killed",
+   "seconds": 4.6,
+   "tail": [
+    "1 failed, 26 passed in 2.59s"
+   ],
+   "original": "reason == 0, _CODES[low.astype(np.intp), thin.astype(np.intp)], UNCLASSIFIED",
+   "mutated": "reason >= 0, _CODES[low.astype(np.intp), thin.astype(np.intp)], UNCLASSIFIED"
+  },
+  {
+   "name": "price_and_volume_swapped",
+   "file": "src/mars_titan/evaluation/liquidity_strata.py",
+   "status": "killed",
+   "seconds": 4.3,
+   "tail": [
+    "1 failed, 26 passed in 2.42s"
+   ],
+   "original": "_CODES[low.astype(np.intp), thin.astype(np.intp)]",
+   "mutated": "_CODES[thin.astype(np.intp), low.astype(np.intp)]"
+  },
+  {
+   "name": "missing_rows_keep_the_wrong_reason",
+   "file": "src/mars_titan/evaluation/liquidity_strata.py",
+   "status": "killed",
+   "seconds": 9.5,
+   "tail": [
+    "1 failed, 34 passed in 7.55s"
+   ],
+   "original": "                reasons[group] = REASONS.index(\"no_published_row\")\n",
+   "mutated": ""
+  },
+  {
+   "name": "other_market_assets_admitted",
+   "file": "src/mars_titan/evaluation/liquidity_strata.py",
+   "status": "killed",
+   "seconds": 12.3,
+   "tail": [
+    "1 failed, 35 passed in 10.20s"
+   ],
+   "original": "_require(str(key).startswith(f\"{market}/\"), \"El activo no es de su mercado\")",
+   "mutated": "pass"
+  },
+  {
+   "name": "each_call_reads_again",
+   "file": "src/mars_titan/evaluation/liquidity_strata.py",
+   "status": "killed",
+   "seconds": 7.8,
+   "tail": [
+    "1 failed, 31 passed in 5.68s"
+   ],
+   "original": "        if key not in self._assets:",
+   "mutated": "        if True:"
+  },
+  {
+   "name": "session_weight_ignores_rows",
+   "file": "src/mars_titan/evaluation/liquidity_strata.py",
+   "status": "killed",
+   "seconds": 12.7,
+   "tail": [
+    "1 failed, 36 passed in 10.30s"
+   ],
+   "original": "per_session = error / rows_in_session",
+   "mutated": "per_session = error"
+  },
+  {
+   "name": "smallest_rows_kept",
+   "file": "src/mars_titan/evaluation/liquidity_strata.py",
+   "status": "killed",
+   "seconds": 11.9,
+   "tail": [
+    "1 failed, 38 passed in 9.30s"
+   ],
+   "original": "return rows[np.argsort(-values[rows], kind=\"stable\")[:count]]",
+   "mutated": "return rows[np.argsort(values[rows], kind=\"stable\")[:count]]"
+  },
+  {
+   "name": "market_weighting_ignored",
+   "file": "src/mars_titan/evaluation/liquidity_strata.py",
+   "status": "killed",
+   "seconds": 12.6,
+   "tail": [
+    "1 failed, 37 passed in 10.16s"
+   ],
+   "original": "weight = 1.0 / (len(present) * sessions[market])",
+   "mutated": "weight = 1.0 / sum(sessions.values())"
+  },
+  {
+   "name": "row_total_ignores_rows",
+   "file": "src/mars_titan/evaluation/liquidity_strata.py",
+   "status": "killed",
+   "seconds": 10.9,
+   "tail": [
+    "1 failed, 36 passed in 8.58s"
+   ],
+   "original": "total = fsum((scores.samples * scores.mse).tolist())",
+   "mutated": "total = fsum(scores.mse.tolist())"
+  },
+  {
+   "name": "one_row_too_many",
+   "file": "src/mars_titan/evaluation/liquidity_strata.py",
+   "status": "killed",
+   "seconds": 10.2,
+   "tail": [
+    "1 failed, 36 passed in 8.26s"
+   ],
+   "original": "        top = order[:k]",
+   "mutated": "        top = order[: k + 1]"
+  },
+  {
+   "name": "asset_keeps_the_market_prefix",
+   "file": "src/mars_titan/evaluation/liquidity_strata.py",
+   "status": "killed",
+   "seconds": 10.3,
+   "tail": [
+    "1 failed, 36 passed in 8.22s"
+   ],
+   "original": "return row_id[len(market) + 1 : row_id.rindex(\"/\")]",
+   "mutated": "return row_id[: row_id.rindex(\"/\")]"
+  },
+  {
+   "name": "quadratic_metric_not_required",
+   "file": "src/mars_titan/evaluation/liquidity_strata.py",
+   "status": "killed",
+   "seconds": 3.0,
+   "tail": [
+    "1 failed, 14 passed in 0.83s"
+   ],
+   "original": "        and set(quadratic) <= set(metrics),",
+   "mutated": "        and True,"
+  },
+  {
+   "name": "mae_not_first",
+   "file": "src/mars_titan/evaluation/liquidity_strata.py",
+   "status": "killed",
+   "seconds": 2.8,
+   "tail": [
+    "1 failed, 15 passed in 0.89s"
+   ],
+   "original": "        and metrics[0] == \"mae\"\n        and len(set(metrics))",
+   "mutated": "        and len(set(metrics))"
+  },
+  {
+   "name": "strata_not_checked",
+   "file": "src/mars_titan/evaluation/liquidity_strata.py",
+   "status": "killed",
+   "seconds": 2.8,
+   "tail": [
+    "1 failed, 7 passed in 0.81s"
+   ],
+   "original": "section[\"strata\"] == STRATA, \"Los estratos son",
+   "mutated": "True, \"Los estratos son"
+  },
+  {
+   "name": "extremes_unordered",
+   "file": "src/mars_titan/evaluation/liquidity_strata.py",
+   "status": "killed",
+   "seconds": 2.8,
+   "tail": [
+    "1 failed, 17 passed in 0.86s"
+   ],
+   "original": "and all(a < b for a, b in zip(extremes, extremes[1:], strict=False)),",
+   "mutated": "and True,"
+  },
+  {
+   "name": "listed_rows_unbounded",
+   "file": "src/mars_titan/evaluation/liquidity_strata.py",
+   "status": "killed",
+   "seconds": 3.0,
+   "tail": [
+    "1 failed, 20 passed in 0.99s"
+   ],
+   "original": "_integer(section[\"listed_rows\"], 1, min(MAX_LISTED, extremes[-1])),",
+   "mutated": "_integer(section[\"listed_rows\"], 1, MAX_LISTED),"
+  },
+  {
+   "name": "window_up_to_a_year",
+   "file": "src/mars_titan/evaluation/liquidity_strata.py",
+   "status": "killed",
+   "seconds": 3.2,
+   "tail": [
+    "1 failed, 13 passed in 0.92s"
+   ],
+   "original": "MAX_VOLUME_SESSIONS = 250",
+   "mutated": "MAX_VOLUME_SESSIONS = 260"
+  },
+  {
+   "name": "codes_not_reordered",
+   "file": "src/mars_titan/evaluation/walk_forward_comparison.py",
+   "status": "killed",
+   "seconds": 13.6,
+   "tail": [
+    "1 failed, 42 passed in 11.37s"
+   ],
+   "original": "    codes = codes[order]\n",
+   "mutated": ""
+  },
+  {
+   "name": "quadratic_metric_not_reported",
+   "file": "src/mars_titan/evaluation/walk_forward_comparison.py",
+   "status": "killed",
+   "seconds": 13.8,
+   "tail": [
+    "1 failed, 42 passed in 11.58s"
+   ],
+   "original": "tuple(metric for metric in declared[\"metrics\"] if metric in liquidity_strata.QUADRATIC)",
+   "mutated": "()"
+  },
+  {
+   "name": "edition_ignored",
+   "file": "src/mars_titan/evaluation/walk_forward_comparison.py",
+   "status": "killed",
+   "seconds": 13.8,
+   "tail": [
+    "1 failed, 42 passed in 11.48s"
+   ],
+   "original": "    liquidity = liquidity_source(config, edition)\n",
+   "mutated": "    liquidity = None\n"
+  },
+  {
+   "name": "names_ignored",
+   "file": "src/mars_titan/evaluation/modality_strata.py",
+   "status": "killed",
+   "seconds": 13.1,
+   "tail": [
+    "42 passed, 1 error in 10.77s"
+   ],
+   "original": "    for code, name in enumerate(names):",
+   "mutated": "    for code, name in enumerate(STRATA):"
+  },
+  {
+   "name": "aggregates_forget_the_edition",
+   "file": "src/mars_titan/evaluation/window_aggregates.py",
+   "status": "killed",
+   "seconds": 13.8,
+   "tail": [
+    "1 failed, 45 passed in 11.54s"
+   ],
+   "original": "liquidity=None if liquidity is None else liquidity.identity(),",
+   "mutated": "liquidity=None,"
+  },
+  {
+   "name": "matrix_accepts_mse_without_strata",
+   "file": "src/mars_titan/evaluation/session_table_contrasts.py",
+   "status": "killed",
+   "seconds": 21.9,
+   "tail": [
+    "1 failed, 46 passed in 19.14s"
+   ],
+   "original": "            and section.get(\"status\") == \"computed\"\n",
+   "mutated": ""
+  },
+  {
+   "name": "retention_without_edition",
+   "file": "src/mars_titan/training/rolling_retention.py",
+   "status": "killed",
+   "seconds": 12.2,
+   "tail": [
+    "1 failed in 9.26s"
+   ],
+   "original": "comparison.LIQUIDITY_FIELD not in declared or self.edition is not None,",
+   "mutated": "True,"
+  },
+  {
+   "name": "each_window_builds_its_assigner",
+   "file": "src/mars_titan/training/rolling_retention.py",
+   "status": "killed",
+   "seconds": 23.6,
+   "tail": [
+    "1 failed, 1 passed in 19.54s"
+   ],
+   "original": "            if self._liquidity is None:",
+   "mutated": "            if True:"
+  },
+  {
+   "name": "cap_from_the_execution_day",
+   "file": "src/mars_titan/simulation/portfolio.py",
+   "status": "killed",
+   "seconds": 18.7,
+   "tail": [
+    "1 failed, 58 passed in 16.00s"
+   ],
+   "original": "quantity = min(abs(delta), order[\"capacity\"])",
+   "mutated": "quantity = min(abs(delta), (quote.volume or 0) * self.participation)"
+  }
+ ]
+}
