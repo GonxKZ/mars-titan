@@ -203,10 +203,11 @@ def test_the_final_comparison_from_aggregates_equals_the_one_that_read_the_rows(
     assert books.equals(expected_books)
     ledger = walked["state"].ledger()["windows"]
     for row in walked["windows"]:
-        assert set(ledger[row["id"]]["phases"]["aggregates"]["written"]["US"]) == {
-            "walk_forward",
-            "long_short",
-        }
+        written = ledger[row["id"]]["phases"]["aggregates"]["written"]["US"]
+        assert set(written) == {"walk_forward", "integrity", "long_short"}
+        # La integridad de la ventana, con la ablación, quedó superada antes de liberar.
+        record = json.loads((walked["state"].folder / written["integrity"]["path"]).read_text())
+        assert record["passed"] and record["identity"]["ablation"]
 
 
 def test_the_campaign_publication_reads_the_aggregates_with_portfolio_and_ablation(
@@ -252,6 +253,9 @@ def test_the_campaign_publication_reads_the_aggregates_with_portfolio_and_ablati
         portfolio.REPORT_KIND,
     ]
     assert receipt["from_aggregates"] is True and receipt["posttraining"] is None
+    assert receipt["integrity"]["passed"] is True
+    report = json.loads((destination / "integrity.json").read_text())
+    assert report["comparisons"]["walk-forward/US"]["passed"] and "chain" not in report["selection"]
     # Sin la edición, una comparación con cartera no se publica.
     with pytest.raises(ValueError, match="falta la edición de precios"):
         publication.run_publication(

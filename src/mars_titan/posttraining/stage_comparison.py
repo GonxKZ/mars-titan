@@ -48,8 +48,9 @@ import pyarrow.parquet as pq
 
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.storage import atomic_json, outside_source, sha256
-from mars_titan.evaluation import long_short_comparison, window_aggregates
+from mars_titan.evaluation import long_short_comparison
 from mars_titan.evaluation import walk_forward_comparison as walk
+from mars_titan.integrity import comparison_integrity
 from mars_titan.training import campaign_chain
 
 from .campaign_stage import FROZEN as FROZEN_JOB
@@ -490,8 +491,10 @@ def write_window_aggregates(
 
     ``base_sources`` es el manifiesto de la campaña limitado a esa ventana. Los agregados se
     puntúan con la configuración del padre limitada a la ventana, que conserva su huella, y
-    quedan en ``aggregates_folder(root, base_arm)``. Devuelve el registro de
-    ``window_aggregates.write`` y la ruta de las fuentes de la ventana.
+    quedan en ``aggregates_folder(root, base_arm)`` con su registro de integridad
+    (``integrity.comparison_integrity``), comprobado antes de que se libere ninguna fila.
+    Devuelve el registro de ``window_aggregates.write``, el de la integridad en
+    ``integrity`` y la ruta de las fuentes de la ventana.
     """
     loaded = load_declaration(declaration_path) if loaded is None else loaded
     path = write_sources(
@@ -505,10 +508,10 @@ def write_window_aggregates(
     )
     config = walk.restrict_windows(loaded["configs"][base_arm], scope, [window])
     sources = walk.load_sources(path, config, scope)
-    record = window_aggregates.write(
+    record, checked = comparison_integrity.write_checked(
         aggregates_folder(root, base_arm), walk.scope_config(config, scope), sources, window
     )
-    return dict(record, sources=path)
+    return dict(record, sources=path, integrity=checked)
 
 
 def evaluate(
