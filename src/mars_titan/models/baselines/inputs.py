@@ -5,7 +5,12 @@ import numpy as np
 MODALITIES = ("prices", "news", "charts", "fundamentals", "macro")
 
 
-def validated_blocks(factory):
+def validated_blocks(factory, *, keep_float32=False):
+    """Bloques finitos en float64. Con `keep_float32` un bloque float32 conserva su tipo.
+
+    La conversión de float32 a float64 es exacta, así que conservarlo solo reduce bytes
+    copiados y transferidos, sin cambiar ningún valor.
+    """
     dimensions = None
     for x, y in factory():
         x, y = np.asarray(x), np.asarray(y)
@@ -16,7 +21,9 @@ def validated_blocks(factory):
             or y.shape != (len(x),)
         ):
             raise ValueError("El bloque de regresión no es válido o supera sus límites")
-        x, y = x.astype(np.float64, copy=False), y.astype(np.float64, copy=False)
+        if not (keep_float32 and x.dtype == np.float32):
+            x = x.astype(np.float64, copy=False)
+        y = y.astype(np.float64, copy=False)
         if not np.isfinite(x).all() or not np.isfinite(y).all():
             raise ValueError("El bloque de regresión contiene valores no finitos")
         dimensions = dimensions or x.shape[1]

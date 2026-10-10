@@ -25,10 +25,10 @@ def instrument(monkeypatch):
 
 
 @pytest.fixture
-def benchmark(catalog, tmp_path, monkeypatch):
+def benchmark(catalog, tmp_path, monkeypatch, python_shebang):
     source, binary, _ = catalog
     binary.write_text(
-        f"#!{sys.executable}\n"
+        python_shebang
         + """import ctypes, hashlib, json, os, signal, sys
 from pathlib import Path
 
@@ -89,7 +89,7 @@ if os.environ.get('BENCHMARK_MUTATE'):
     tools.mkdir()
     probe = tools / "nvidia-smi"
     probe.write_text(
-        f"#!{sys.executable}\nimport sys\n"
+        python_shebang + "import sys\n"
         "print('fixture GPU, fixture driver, 8188' if "
         "'--query-gpu=name,driver_version,memory.total' "
         "in sys.argv else '<nvidia_smi_log><gpu><fb_memory_usage><total>8188 MiB</total>"

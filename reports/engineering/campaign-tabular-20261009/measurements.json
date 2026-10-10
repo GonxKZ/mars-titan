@@ -1,0 +1,879 @@
+{
+ "schema_version": 1,
+ "date": "2026-10-09",
+ "note": "Medidas sin ajuste: ninguna orden llama a xgb.train, a un optimizador ni a un solver Ridge.",
+ "gram": {
+  "command": "gram",
+  "environment": {
+   "python": "3.12.14",
+   "numpy": "2.5.3",
+   "torch": "2.14.0+cu130",
+   "cuda": "13.0",
+   "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+   "commit": "7a9e93e35fa064fb55f9aa727382904235e3128a",
+   "xgboost": "3.3.0",
+   "cupy": "14.2.0"
+  },
+  "result": {
+   "previous_cpu_standardize_pageable_fp64": {
+    "ms_per_block": 23.92,
+    "rows_per_second": 42809
+   },
+   "current_pinned_fp32_gpu_standardize_fp64": {
+    "ms_per_block": 22.204,
+    "rows_per_second": 46117
+   },
+   "gemm_fp64": {
+    "ms_per_block": 21.261,
+    "rows_per_second": 48164
+   },
+   "gemm_fp32_accumulate_fp64": {
+    "ms_per_block": 0.743,
+    "rows_per_second": 1378378
+   },
+   "gemm_tf32_accumulate_fp64": {
+    "ms_per_block": 0.661,
+    "rows_per_second": 1549801
+   },
+   "tf32_max_abs_error_over_max": 2.7163551744887877e-05,
+   "fp32_max_abs_error_over_max": 8.024497470956142e-07,
+   "gemm_fp64_tflops": 0.285,
+   "gemm_fp32_accumulate_fp64_tflops": 8.145,
+   "gemm_tf32_accumulate_fp64_tflops": 9.155,
+   "rows_per_block": 1024,
+   "features": 1719,
+   "peak_vram_mib": 226.3
+  }
+ },
+ "ridge_real_rows": {
+  "command": "ridge",
+  "environment": {
+   "python": "3.12.14",
+   "numpy": "2.5.3",
+   "torch": "2.14.0+cu130",
+   "cuda": "13.0",
+   "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+   "commit": "496cc5122c00ad4de2491f67501a653ef4c495bc",
+   "xgboost": "3.3.0",
+   "cupy": "14.2.0"
+  },
+  "result": {
+   "manifest": "<vistas>/CN/fold-000/manifest.json",
+   "reference": "7a9e93e3",
+   "rows": 100352,
+   "features": 1719,
+   "reference_gram_pass_seconds": 3.637,
+   "current_both_passes_seconds": 4.26,
+   "gram_equal": true,
+   "rhs_equal": true,
+   "sum_x_equal": true,
+   "mean_scale_equal": true,
+   "target_mean_equal": true,
+   "count_equal": true,
+   "constant_columns": 697,
+   "predictions_equal": true,
+   "predict_blocks": 40,
+   "reference_predict_seconds": 0.941,
+   "current_predict_seconds": 0.078,
+   "peak_vram_mib": 119.1,
+   "peak_rss_mib": 1757.5
+  }
+ },
+ "reader": {
+  "command": "read",
+  "environment": {
+   "python": "3.12.14",
+   "numpy": "2.5.3",
+   "torch": "2.14.0+cu130",
+   "cuda": "13.0",
+   "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+   "commit": "496cc5122c00ad4de2491f67501a653ef4c495bc",
+   "xgboost": "3.3.0",
+   "cupy": "14.2.0"
+  },
+  "result": {
+   "manifest": "<vistas>/US+CN/fold-012/manifest.json",
+   "partition": "train",
+   "batch_size": 1024,
+   "features": 1719,
+   "rows": 100352,
+   "seconds": 616.3,
+   "rows_per_second": 163,
+   "peak_rss_mib": 857.8
+  }
+ },
+ "matrix_real_rows": {
+  "command": "matrix",
+  "environment": {
+   "python": "3.12.14",
+   "numpy": "2.5.3",
+   "torch": "2.14.0+cu130",
+   "cuda": "13.0",
+   "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+   "commit": "9ad4cb066bcd62233c9f5a2817a1eb233e3d1b77",
+   "xgboost": "3.3.0",
+   "cupy": "14.2.0"
+  },
+  "result": {
+   "manifest": "<vistas>/CN/fold-000/manifest.json",
+   "rows": 410342,
+   "features": 1719,
+   "max_batch_bytes": 67108864,
+   "builds": [
+    {
+     "max_bin": 64,
+     "construction_seconds": 12.5,
+     "rows_per_second": 32832,
+     "passes": [
+      410342,
+      410342
+     ],
+     "disk_bytes": 529036152,
+     "bits_per_value": 6.0,
+     "cuts_sha256": "d48a32fe494e0a8a1ae0afbb0c76736e3909eb22ef804aad4e78e423149bac0a",
+     "pages_sha256": "cc5f26301f220bb0109967c878930702b831420a0ad18e80935edd3e16bd3754",
+     "device_used_before_mib": 679,
+     "device_used_peak_mib": 1209,
+     "rss_peak_mib": 3947,
+     "disk_peak_bytes": 515591728,
+     "left_after_close": false
+    },
+    {
+     "max_bin": 64,
+     "construction_seconds": 6.91,
+     "rows_per_second": 59368,
+     "passes": [
+      410342,
+      410342
+     ],
+     "disk_bytes": 529036152,
+     "bits_per_value": 6.0,
+     "cuts_sha256": "d48a32fe494e0a8a1ae0afbb0c76736e3909eb22ef804aad4e78e423149bac0a",
+     "pages_sha256": "cc5f26301f220bb0109967c878930702b831420a0ad18e80935edd3e16bd3754",
+     "device_used_before_mib": 1209,
+     "device_used_peak_mib": 1209,
+     "rss_peak_mib": 3948,
+     "disk_peak_bytes": 515591728,
+     "left_after_close": false
+    },
+    {
+     "max_bin": 128,
+     "construction_seconds": 7.83,
+     "rows_per_second": 52388,
+     "passes": [
+      410342,
+      410342
+     ],
+     "disk_bytes": 617208272,
+     "bits_per_value": 7.0,
+     "cuts_sha256": "cc66afb492ca4208097d31886b228d0c057816f5dc73eba9b1f66cf24c0fee03",
+     "pages_sha256": "cc5a63c097066e89db586c7fb2ac827ec60f6a2fea872417d81f38323096756d",
+     "device_used_before_mib": 1209,
+     "device_used_peak_mib": 1209,
+     "rss_peak_mib": 3948,
+     "disk_peak_bytes": 616194432,
+     "left_after_close": false
+    },
+    {
+     "max_bin": 128,
+     "construction_seconds": 8.41,
+     "rows_per_second": 48784,
+     "passes": [
+      410342,
+      410342
+     ],
+     "disk_bytes": 617208272,
+     "bits_per_value": 7.0,
+     "cuts_sha256": "cc66afb492ca4208097d31886b228d0c057816f5dc73eba9b1f66cf24c0fee03",
+     "pages_sha256": "cc5a63c097066e89db586c7fb2ac827ec60f6a2fea872417d81f38323096756d",
+     "device_used_before_mib": 1207,
+     "device_used_peak_mib": 1239,
+     "rss_peak_mib": 3962,
+     "disk_peak_bytes": 610271232,
+     "left_after_close": false
+    },
+    {
+     "max_bin": 256,
+     "construction_seconds": 7.09,
+     "rows_per_second": 57858,
+     "passes": [
+      410342,
+      410342
+     ],
+     "disk_bytes": 705380392,
+     "bits_per_value": 8.0,
+     "cuts_sha256": "01b90ce37ad88fa9e4822c5949665f6c6358d0822eb951ee744e9288918423cc",
+     "pages_sha256": "c4d813fe4eacee316fe356ee3ac17276bd435e756bfdfd493d5e2f8b184cf890",
+     "device_used_before_mib": 1239,
+     "device_used_peak_mib": 1368,
+     "rss_peak_mib": 3953,
+     "disk_peak_bytes": 687454544,
+     "left_after_close": false
+    },
+    {
+     "max_bin": 256,
+     "construction_seconds": 6.91,
+     "rows_per_second": 59417,
+     "passes": [
+      410342,
+      410342
+     ],
+     "disk_bytes": 705380392,
+     "bits_per_value": 8.0,
+     "cuts_sha256": "01b90ce37ad88fa9e4822c5949665f6c6358d0822eb951ee744e9288918423cc",
+     "pages_sha256": "c4d813fe4eacee316fe356ee3ac17276bd435e756bfdfd493d5e2f8b184cf890",
+     "device_used_before_mib": 1368,
+     "device_used_peak_mib": 1368,
+     "rss_peak_mib": 3953,
+     "disk_peak_bytes": 687454544,
+     "left_after_close": false
+    }
+   ],
+   "identical_repeats": {
+    "64": true,
+    "128": true,
+    "256": true
+   },
+   "entries_left_in_cache_root": 0,
+   "peak_rss_mib": 3961.8
+  }
+ },
+ "matrix_synthetic_variants": {
+  "note": "200.000 a 2.300.000 filas aleatorias de 1.719 columnas con una versión previa de la orden matrix (mismas llamadas a XGBoost 3.3.0 y CuPy 14.2.0)",
+  "runs": [
+   {
+    "arguments": [
+     "--rows",
+     "200000",
+     "--max-bin",
+     "128"
+    ],
+    "rows": 200000,
+    "max_bin": 128,
+    "batch_rows": 9754,
+    "nthread": 4,
+    "on_host": false,
+    "in_core": false,
+    "cache_host_ratio": 1.0,
+    "iterator_passes": [
+     200000,
+     0,
+     200000
+    ],
+    "construction_seconds": 1.46,
+    "rows_per_second": 137164,
+    "cache_bytes": 300826272,
+    "cache_bits_per_value": 7.0,
+    "cuts_sha256": "896bd7c352d9a9c7b81a871ffd8fa98781236581e17ae15fe11163593890deb8",
+    "pages_sha256": "72bbc3b8806c4660da362063ffab5d148852438c18653f281b6e5ee826d59a22",
+    "device_used_peak_mib": 1318,
+    "device_used_before_mib": 756,
+    "peak_rss_mib": 1474,
+    "cache_left_after_delete": 0
+   },
+   {
+    "arguments": [
+     "--rows",
+     "200000",
+     "--max-bin",
+     "128"
+    ],
+    "rows": 200000,
+    "max_bin": 128,
+    "batch_rows": 9754,
+    "nthread": 4,
+    "on_host": false,
+    "in_core": false,
+    "cache_host_ratio": 1.0,
+    "iterator_passes": [
+     200000,
+     0,
+     200000
+    ],
+    "construction_seconds": 1.48,
+    "rows_per_second": 134849,
+    "cache_bytes": 300826272,
+    "cache_bits_per_value": 7.0,
+    "cuts_sha256": "896bd7c352d9a9c7b81a871ffd8fa98781236581e17ae15fe11163593890deb8",
+    "pages_sha256": "72bbc3b8806c4660da362063ffab5d148852438c18653f281b6e5ee826d59a22",
+    "device_used_peak_mib": 1350,
+    "device_used_before_mib": 756,
+    "peak_rss_mib": 1456,
+    "cache_left_after_delete": 0
+   },
+   {
+    "arguments": [
+     "--rows",
+     "200000",
+     "--max-bin",
+     "128",
+     "--nthread",
+     "1"
+    ],
+    "rows": 200000,
+    "max_bin": 128,
+    "batch_rows": 9754,
+    "nthread": 1,
+    "on_host": false,
+    "in_core": false,
+    "cache_host_ratio": 1.0,
+    "iterator_passes": [
+     200000,
+     0,
+     200000
+    ],
+    "construction_seconds": 1.31,
+    "rows_per_second": 152902,
+    "cache_bytes": 300826272,
+    "cache_bits_per_value": 7.0,
+    "cuts_sha256": "896bd7c352d9a9c7b81a871ffd8fa98781236581e17ae15fe11163593890deb8",
+    "pages_sha256": "72bbc3b8806c4660da362063ffab5d148852438c18653f281b6e5ee826d59a22",
+    "device_used_peak_mib": 1318,
+    "device_used_before_mib": 756,
+    "peak_rss_mib": 1446,
+    "cache_left_after_delete": 0
+   },
+   {
+    "arguments": [
+     "--rows",
+     "200000",
+     "--max-bin",
+     "128",
+     "--nthread",
+     "16"
+    ],
+    "rows": 200000,
+    "max_bin": 128,
+    "batch_rows": 9754,
+    "nthread": 16,
+    "on_host": false,
+    "in_core": false,
+    "cache_host_ratio": 1.0,
+    "iterator_passes": [
+     200000,
+     0,
+     200000
+    ],
+    "construction_seconds": 1.3,
+    "rows_per_second": 153871,
+    "cache_bytes": 300826272,
+    "cache_bits_per_value": 7.0,
+    "cuts_sha256": "896bd7c352d9a9c7b81a871ffd8fa98781236581e17ae15fe11163593890deb8",
+    "pages_sha256": "72bbc3b8806c4660da362063ffab5d148852438c18653f281b6e5ee826d59a22",
+    "device_used_peak_mib": 1319,
+    "device_used_before_mib": 757,
+    "peak_rss_mib": 1443,
+    "cache_left_after_delete": 0
+   },
+   {
+    "arguments": [
+     "--rows",
+     "200000",
+     "--max-bin",
+     "128",
+     "--batch-bytes",
+     "16777216"
+    ],
+    "rows": 200000,
+    "max_bin": 128,
+    "batch_rows": 2438,
+    "nthread": 4,
+    "on_host": false,
+    "in_core": false,
+    "cache_host_ratio": 1.0,
+    "iterator_passes": [
+     200000,
+     0,
+     200000
+    ],
+    "construction_seconds": 1.54,
+    "rows_per_second": 130161,
+    "cache_bytes": 300830248,
+    "cache_bits_per_value": 7.0,
+    "cuts_sha256": "7f2c9fe538bd3a392b35227ec300dc2d81188166278dd28da1c90d102f511f6f",
+    "pages_sha256": "f5455e8dc59cf1dd6b0c3c2b970268896315450cddc970580b33123133fa7bd6",
+    "device_used_peak_mib": 1094,
+    "device_used_before_mib": 756,
+    "peak_rss_mib": 999,
+    "cache_left_after_delete": 0
+   },
+   {
+    "arguments": [
+     "--rows",
+     "200000",
+     "--max-bin",
+     "128",
+     "--batch-bytes",
+     "134217728"
+    ],
+    "rows": 200000,
+    "max_bin": 128,
+    "batch_rows": 19508,
+    "nthread": 4,
+    "on_host": false,
+    "in_core": false,
+    "cache_host_ratio": 1.0,
+    "iterator_passes": [
+     200000,
+     0,
+     200000
+    ],
+    "construction_seconds": 1.71,
+    "rows_per_second": 116845,
+    "cache_bytes": 300825632,
+    "cache_bits_per_value": 7.0,
+    "cuts_sha256": "89717529dfc3fcf54172d4bf469b5c8c8d63da55c05ef728d04fb2cdf48dbd37",
+    "pages_sha256": "fc10a4d9c977abef3151d6adfc807335f784ee425d62ad35c49146da0b672e92",
+    "device_used_peak_mib": 1702,
+    "device_used_before_mib": 756,
+    "peak_rss_mib": 2131,
+    "cache_left_after_delete": 0
+   },
+   {
+    "arguments": [
+     "--rows",
+     "200000",
+     "--max-bin",
+     "128",
+     "--cache-host-ratio",
+     "0.5"
+    ],
+    "rows": 200000,
+    "max_bin": 128,
+    "batch_rows": 9754,
+    "nthread": 4,
+    "on_host": false,
+    "in_core": false,
+    "cache_host_ratio": 0.5,
+    "iterator_passes": [
+     200000,
+     0,
+     200000
+    ],
+    "construction_seconds": 1.56,
+    "rows_per_second": 128478,
+    "cache_bytes": 300826272,
+    "cache_bits_per_value": 7.0,
+    "cuts_sha256": "896bd7c352d9a9c7b81a871ffd8fa98781236581e17ae15fe11163593890deb8",
+    "pages_sha256": "72bbc3b8806c4660da362063ffab5d148852438c18653f281b6e5ee826d59a22",
+    "device_used_peak_mib": 1350,
+    "device_used_before_mib": 756,
+    "peak_rss_mib": 1443,
+    "cache_left_after_delete": 0
+   },
+   {
+    "arguments": [
+     "--rows",
+     "200000",
+     "--max-bin",
+     "128",
+     "--on-host"
+    ],
+    "rows": 200000,
+    "max_bin": 128,
+    "batch_rows": 9754,
+    "nthread": 4,
+    "on_host": true,
+    "in_core": false,
+    "cache_host_ratio": 1.0,
+    "iterator_passes": [
+     200000,
+     0,
+     200000
+    ],
+    "construction_seconds": 1.37,
+    "rows_per_second": 146137,
+    "cache_bytes": 0,
+    "cache_bits_per_value": 0.0,
+    "cuts_sha256": "896bd7c352d9a9c7b81a871ffd8fa98781236581e17ae15fe11163593890deb8",
+    "pages_sha256": null,
+    "device_used_peak_mib": 1350,
+    "device_used_before_mib": 756,
+    "peak_rss_mib": 1683,
+    "cache_left_after_delete": 0
+   },
+   {
+    "arguments": [
+     "--rows",
+     "200000",
+     "--max-bin",
+     "128",
+     "--on-host",
+     "--cache-host-ratio",
+     "0.5"
+    ],
+    "rows": 200000,
+    "max_bin": 128,
+    "batch_rows": 9754,
+    "nthread": 4,
+    "on_host": true,
+    "in_core": false,
+    "cache_host_ratio": 0.5,
+    "iterator_passes": [
+     200000,
+     0,
+     200000
+    ],
+    "construction_seconds": 1.35,
+    "rows_per_second": 147669,
+    "cache_bytes": 0,
+    "cache_bits_per_value": 0.0,
+    "cuts_sha256": "896bd7c352d9a9c7b81a871ffd8fa98781236581e17ae15fe11163593890deb8",
+    "pages_sha256": null,
+    "device_used_peak_mib": 1350,
+    "device_used_before_mib": 756,
+    "peak_rss_mib": 1544,
+    "cache_left_after_delete": 0
+   },
+   {
+    "arguments": [
+     "--rows",
+     "200000",
+     "--max-bin",
+     "128",
+     "--in-core"
+    ],
+    "error": "QuantileDMatrix no admite cache_prefix en el iterador"
+   },
+   {
+    "arguments": [
+     "--rows",
+     "200000",
+     "--max-bin",
+     "64"
+    ],
+    "rows": 200000,
+    "max_bin": 64,
+    "batch_rows": 9754,
+    "nthread": 4,
+    "on_host": false,
+    "in_core": false,
+    "cache_host_ratio": 1.0,
+    "iterator_passes": [
+     200000,
+     0,
+     200000
+    ],
+    "construction_seconds": 1.5,
+    "rows_per_second": 133251,
+    "cache_bytes": 257851328,
+    "cache_bits_per_value": 6.0,
+    "cuts_sha256": "0ae7335993dfad18b6c89f96fb16815c7ce71a9b528d6b7bab36adb22520ac19",
+    "pages_sha256": "a0675a356759f3c3730b4408b25aac57f56f3228a9ee14c6ea94d8e62f6fc4af",
+    "device_used_peak_mib": 1254,
+    "device_used_before_mib": 756,
+    "peak_rss_mib": 1446,
+    "cache_left_after_delete": 0
+   },
+   {
+    "arguments": [
+     "--rows",
+     "200000",
+     "--max-bin",
+     "256"
+    ],
+    "rows": 200000,
+    "max_bin": 256,
+    "batch_rows": 9754,
+    "nthread": 4,
+    "on_host": false,
+    "in_core": false,
+    "cache_host_ratio": 1.0,
+    "iterator_passes": [
+     200000,
+     0,
+     200000
+    ],
+    "construction_seconds": 1.85,
+    "rows_per_second": 108018,
+    "cache_bytes": 343801216,
+    "cache_bits_per_value": 8.0,
+    "cuts_sha256": "0a99b44fb99cd8d9cea33c80358da1d73c9f8e97bbd0eeec525cba8355d59b44",
+    "pages_sha256": "0eda4ec109f952750b0972c0938d5e42bba01fc3d71548c67142da1b3be3e1c5",
+    "device_used_peak_mib": 1446,
+    "device_used_before_mib": 756,
+    "peak_rss_mib": 1475,
+    "cache_left_after_delete": 0
+   },
+   {
+    "arguments": [
+     "--rows",
+     "1000000",
+     "--max-bin",
+     "256"
+    ],
+    "rows": 1000000,
+    "max_bin": 256,
+    "batch_rows": 9754,
+    "nthread": 4,
+    "on_host": false,
+    "in_core": false,
+    "cache_host_ratio": 1.0,
+    "iterator_passes": [
+     1000000,
+     0,
+     1000000
+    ],
+    "construction_seconds": 8.37,
+    "rows_per_second": 119537,
+    "cache_bytes": 1719005976,
+    "cache_bits_per_value": 8.0,
+    "cuts_sha256": "48b6b60547cbd3b95aadcee86525b746c86914757ee34c92ec94cd9cc7c45bf0",
+    "pages_sha256": "f65c571a993640a27ddc9c1f657dda7fe28c53ac19bc768d842ae0fec7a90dcc",
+    "device_used_peak_mib": 1542,
+    "device_used_before_mib": 756,
+    "peak_rss_mib": 1436,
+    "cache_left_after_delete": 0
+   },
+   {
+    "arguments": [
+     "--rows",
+     "2300000",
+     "--max-bin",
+     "256"
+    ],
+    "rows": 2300000,
+    "max_bin": 256,
+    "batch_rows": 9754,
+    "nthread": 4,
+    "on_host": false,
+    "in_core": false,
+    "cache_host_ratio": 1.0,
+    "iterator_passes": [
+     2300000,
+     0,
+     2300000
+    ],
+    "construction_seconds": 17.27,
+    "rows_per_second": 133197,
+    "cache_bytes": 3953713688,
+    "cache_bits_per_value": 8.0,
+    "cuts_sha256": "6ace97a505de00f5f30acd1803a4204e105a4e576462f534b9fe304ef641ad07",
+    "pages_sha256": "e156559638f8ce92d4c4592edba21fdafdb09fb7f5c6e6073523c854bb9c0038",
+    "device_used_peak_mib": 1542,
+    "device_used_before_mib": 756,
+    "peak_rss_mib": 1472,
+    "cache_left_after_delete": 0
+   }
+  ]
+ },
+ "validation_round": [
+  {
+   "command": "validation",
+   "environment": {
+    "python": "3.12.14",
+    "numpy": "2.5.3",
+    "torch": "2.14.0+cu130",
+    "cuda": "13.0",
+    "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "commit": "9ad4cb066bcd62233c9f5a2817a1eb233e3d1b77",
+    "xgboost": "3.3.0",
+    "cupy": "14.2.0"
+   },
+   "result": {
+    "rows": 100000,
+    "features": 1719,
+    "trees": 300,
+    "depth": 6,
+    "batch_size": 1024,
+    "repeat": 3,
+    "npz_disk_bytes": 690098196,
+    "resident_ram_bytes": 690000000,
+    "previous_npz": {
+     "median_seconds": 0.865,
+     "max_seconds": 0.8847,
+     "rows_per_second": 115614
+    },
+    "ram": {
+     "device_bytes": 0,
+     "full_round": {
+      "median_seconds": 0.3304,
+      "max_seconds": 0.3713,
+      "rows_per_second": 302678
+     },
+     "incremental_restart_seconds": 0.3754,
+     "incremental_last_rounds": {
+      "median_seconds": 0.2166,
+      "max_seconds": 0.2307,
+      "rows_per_second": 461666
+     },
+     "incremental_all_rounds_seconds": 55.14,
+     "leaf_sums": true,
+     "checked_rounds": 9,
+     "identical": true
+    },
+    "device": {
+     "device_bytes": 687600000,
+     "full_round": {
+      "median_seconds": 0.091,
+      "max_seconds": 0.0936,
+      "rows_per_second": 1099255
+     },
+     "incremental_restart_seconds": 0.0155,
+     "incremental_last_rounds": {
+      "median_seconds": 0.0179,
+      "max_seconds": 0.0264,
+      "rows_per_second": 5599874
+     },
+     "incremental_all_rounds_seconds": 5.0,
+     "leaf_sums": true,
+     "checked_rounds": 9,
+     "identical": true
+    },
+    "peak_rss_mib": 941.1
+   }
+  },
+  {
+   "command": "validation",
+   "environment": {
+    "python": "3.12.14",
+    "numpy": "2.5.3",
+    "torch": "2.14.0+cu130",
+    "cuda": "13.0",
+    "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "commit": "496cc5122c00ad4de2491f67501a653ef4c495bc",
+    "xgboost": "3.3.0",
+    "cupy": "14.2.0"
+   },
+   "result": {
+    "rows": 100000,
+    "features": 1719,
+    "trees": 1000,
+    "depth": 6,
+    "batch_size": 1024,
+    "repeat": 3,
+    "npz_disk_bytes": 690098196,
+    "resident_ram_bytes": 690000000,
+    "previous_npz": {
+     "median_seconds": 1.0676,
+     "max_seconds": 1.9394,
+     "rows_per_second": 93670
+    },
+    "ram": {
+     "device_bytes": 0,
+     "full_round": {
+      "median_seconds": 0.6212,
+      "max_seconds": 0.6834,
+      "rows_per_second": 160991
+     },
+     "incremental_restart_seconds": 0.6116,
+     "incremental_last_rounds": {
+      "median_seconds": 0.1715,
+      "max_seconds": 0.2534,
+      "rows_per_second": 583228
+     },
+     "incremental_all_rounds_seconds": 178.92,
+     "leaf_sums": true,
+     "checked_rounds": 8,
+     "identical": true
+    },
+    "device": {
+     "device_bytes": 687600000,
+     "full_round": {
+      "median_seconds": 0.2417,
+      "max_seconds": 0.2423,
+      "rows_per_second": 413751
+     },
+     "incremental_restart_seconds": 0.0109,
+     "incremental_last_rounds": {
+      "median_seconds": 0.0295,
+      "max_seconds": 0.0415,
+      "rows_per_second": 3392166
+     },
+     "incremental_all_rounds_seconds": 20.25,
+     "leaf_sums": true,
+     "checked_rounds": 8,
+     "identical": true
+    },
+    "peak_rss_mib": 1035.0
+   }
+  }
+ ],
+ "validation_first_runs": {
+  "note": "Primera versión de la orden validation: bloques separados en la GPU y solo rutas completas",
+  "runs": [
+   {
+    "command": "validation",
+    "environment": {
+     "python": "3.12.14",
+     "numpy": "2.5.3",
+     "torch": "2.14.0+cu130",
+     "cuda": "13.0",
+     "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+     "commit": "7a9e93e35fa064fb55f9aa727382904235e3128a",
+     "xgboost": "3.3.0",
+     "cupy": "14.2.0"
+    },
+    "result": {
+     "rows": 100000,
+     "features": 1719,
+     "trees": 100,
+     "depth": 6,
+     "batch_size": 1024,
+     "repeat": 5,
+     "npz_disk_bytes": 690098196,
+     "resident_ram_bytes": 690000000,
+     "device_bytes": 687600000,
+     "previous_npz": {
+      "median_seconds": 0.7491,
+      "max_seconds": 0.7713,
+      "rows_per_second": 133492
+     },
+     "resident_ram": {
+      "median_seconds": 0.2671,
+      "max_seconds": 0.3306,
+      "rows_per_second": 374370
+     },
+     "resident_device": {
+      "median_seconds": 0.1426,
+      "max_seconds": 0.15,
+      "rows_per_second": 701508
+     },
+     "identical": true,
+     "peak_rss_mib": 919.6
+    }
+   },
+   {
+    "command": "validation",
+    "environment": {
+     "python": "3.12.14",
+     "numpy": "2.5.3",
+     "torch": "2.14.0+cu130",
+     "cuda": "13.0",
+     "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+     "commit": "7a9e93e35fa064fb55f9aa727382904235e3128a",
+     "xgboost": "3.3.0",
+     "cupy": "14.2.0"
+    },
+    "result": {
+     "rows": 100000,
+     "features": 1719,
+     "trees": 1000,
+     "depth": 6,
+     "batch_size": 1024,
+     "repeat": 5,
+     "npz_disk_bytes": 690098196,
+     "resident_ram_bytes": 690000000,
+     "device_bytes": 687600000,
+     "previous_npz": {
+      "median_seconds": 0.9236,
+      "max_seconds": 0.9912,
+      "rows_per_second": 108267
+     },
+     "resident_ram": {
+      "median_seconds": 0.5735,
+      "max_seconds": 0.5987,
+      "rows_per_second": 174375
+     },
+     "resident_device": {
+      "median_seconds": 0.4541,
+      "max_seconds": 0.4568,
+      "rows_per_second": 220236
+     },
+     "identical": true,
+     "peak_rss_mib": 981.8
+    }
+   }
+  ]
+ }
+}

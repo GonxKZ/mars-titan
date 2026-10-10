@@ -114,20 +114,14 @@ def test_xgboost_keeps_its_models_and_needs_its_pages_while_running():
     search = storage.job_footprint(
         job("xgboost", case=dict(max_bin=64)), COUNTS, value, release=True
     )
-    pages = -(-COUNTS["train"] * boosting["features"] * 7 // 8)
-    validation = COUNTS["validation"] * boosting["validation_row_bytes"]
-    assert search["transient"]["cache"] == pages + validation
+    # Páginas densas de 6 bits con 64 contenedores. La validación no ocupa disco.
+    assert search["transient"]["cache"] == -(-COUNTS["train"] * boosting["features"] * 6 // 8)
     assert search["retained"]["states"] == 3 * value["state_bytes"]["xgboost"]
     finalist = storage.job_footprint(job("xgboost", case=None), COUNTS, value)
-    assert finalist["transient"]["cache"] == -(-COUNTS["train"] * boosting["features"] * 9 // 8) + (
-        validation
-    )
-    capped = dict(COUNTS, validation=10**9)
-    limit = storage.job_footprint(job("xgboost"), capped, value)["transient"]["cache"]
-    assert (
-        limit - finalist["transient"]["cache"] + validation
-        == boosting["max_validation_cache_bytes"]
-    )
+    assert finalist["transient"]["cache"] == COUNTS["train"] * boosting["features"]
+    larger = dict(COUNTS, validation=10**9)
+    cache = storage.job_footprint(job("xgboost"), larger, value)["transient"]["cache"]
+    assert cache == finalist["transient"]["cache"]
 
 
 def test_carry_jobs_write_only_calibration_and_evaluation():

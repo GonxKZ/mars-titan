@@ -104,21 +104,20 @@ def test_new_design_accepts_declared_selection_without_changing_old_design():
     )
 
 
-def test_validation_cache_reuses_one_traversal_and_rejects_storage_overflow(tmp_path):
+def test_resident_validation_reuses_one_traversal_and_rejects_its_budget():
     calls = []
 
     def blocks():
         calls.append(1)
         yield np.ones((2, 3)), np.array([1.0, 2.0]), ["US", "CN"], np.array([1, 1])
 
-    cached = selection.ValidationCache(blocks, tmp_path / "cache", expected_rows=2, max_bytes=8192)
-    first, second = list(cached()), list(cached())
+    resident = selection.ResidentValidation(blocks, expected_rows=2, max_bytes=8192)
+    first, second = list(resident()), list(resident())
     assert calls == [1]
     for left, right in zip(first[0], second[0], strict=True):
         np.testing.assert_array_equal(left, right)
     with pytest.raises(ValueError, match="presupuesto"):
-        selection.ValidationCache(blocks, tmp_path / "small", expected_rows=2, max_bytes=1)
-    assert not list((tmp_path / "small").iterdir())
+        selection.ResidentValidation(blocks, expected_rows=2, max_bytes=1)
 
 
 @pytest.mark.parametrize(
@@ -174,12 +173,11 @@ def test_admission_conciles_declared_early_stopping(tmp_path, monkeypatch, chang
             search._completed(folder, case, source, receipt["manifest_sha256"])
 
 
-def test_cache_rejects_complex_or_object_data_before_creating_unreadable_artifacts(tmp_path):
-    for index, values in enumerate([np.ones((2, 1), dtype=complex), np.array([["1"], ["2"]])]):
+def test_resident_validation_rejects_complex_or_object_data():
+    for values in (np.ones((2, 1), dtype=complex), np.array([["1"], ["2"]])):
         with pytest.raises(ValueError):
-            selection.ValidationCache(
+            selection.ResidentValidation(
                 lambda values=values: iter([(values, np.zeros(2), ["US", "CN"], np.array([1, 1]))]),
-                tmp_path / str(index),
                 expected_rows=2,
                 max_bytes=4096,
             )

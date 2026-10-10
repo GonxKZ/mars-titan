@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "kind": "innovation_arm_declaration",
+  "innovation": "pt2_online_conformal_calibration",
+  "status": "declared_not_executed",
+  "declared_at": "2026-10-10",
+  "final_test_opened": false,
+  "executions": 0,
+  "issue": 454,
+  "proposal": "docs/research/post-titans-proposals.md",
+  "specification": "docs/engineering/online-conformal-calibration.md",
+  "base_comparison": "configs/evaluation/historical-masked-2000-comparison.json",
+  "predictions": "Cuantiles ya emitidos por los brazos con quantile_head_v1 en las particiones de calibración y evaluación de cada ventana anterior a 2024. No se reentrena ningún predictor.",
+  "arms": {
+    "cqr_static": {
+      "role": "control",
+      "method": "cqr_symmetric_score_v1",
+      "partition": "calibration",
+      "groups": "market",
+      "nominals": [0.8, 0.95],
+      "min_rows": 1000,
+      "order_rule": "widen_to_median_and_inner_interval"
+    },
+    "cqr_online": {
+      "role": "innovation",
+      "method": "cqr_score_quantile_tracking_matured_cohorts_v1",
+      "start": "corrección de cqr_static de la misma ventana",
+      "rate_scale": "max_abs_calibration_score",
+      "rate_fraction_candidates": [0.005, 0.02],
+      "rate_selection": "La fracción κ se elige en las ventanas con evaluación entre 2005 y 2013 por la métrica primaria y se mantiene fija en 2014 a 2023",
+      "cohort": "filas de un mercado con el mismo prediction_at",
+      "maturity": "mayor target_available_at de la cohorte, aplicada antes de emitir en ese mismo instante",
+      "max_pending": 64,
+      "carry_over_between_windows": false
+    },
+    "cqr_monthly_refit": {
+      "role": "trivial_alternative",
+      "method": "cqr_symmetric_score_v1",
+      "refit_every_sessions": 21,
+      "window": "filas maduras de los últimos tres meses antes de cada recálculo",
+      "implementation": "pendiente, reutiliza fit_conformal_quantiles sobre filas maduras"
+    }
+  },
+  "equal": [
+    "predictions",
+    "rows",
+    "windows",
+    "markets",
+    "nominals",
+    "order_rule",
+    "min_rows",
+    "calibration_rows"
+  ],
+  "metric": {
+    "primary": "mean_absolute_deviation_of_coverage_from_nominal_by_year_and_market_averaged_over_80_and_95",
+    "secondary_not_deciding": [
+      "paired_session_interval_score",
+      "coverage_in_declared_events",
+      "mean_interval_width"
+    ],
+    "pairing": "same_predictions_rows_and_sessions",
+    "uncertainty": "circular_block_bootstrap",
+    "block_length": 16,
+    "replicates": 2000,
+    "confidence": 0.95,
+    "partition": "evaluation",
+    "assessment_years": [2014, 2023]
+  },
+  "decision_rule": {
+    "keep_if": [
+      "relative_reduction_of_primary_vs_cqr_static >= 0.25 with the 95% interval excluding zero",
+      "paired_session_interval_score_not_worse_than_cqr_static_by_more_than 0.01 relative"
+    ],
+    "abandon_if": [
+      "paired_session_interval_score_worse_than_cqr_static_by_more_than 0.01 relative",
+      "primary_does_not_decrease"
+    ],
+    "trivial_alternative": "Si cqr_monthly_refit iguala a cqr_online en la métrica primaria y en el interval score, el seguimiento por cohortes no aporta sobre una recalibración periódica más simple.",
+    "declared_events": ["2008-09-15", "2020-02-24/2020-03-23", "2022-03-16"]
+  },
+  "pilot": {
+    "data": "predicciones ya emitidas, sin reentrenar",
+    "compute": "CPU, menos de un minuto por ventana según el coste medido",
+    "gpu_hours_max": 0
+  },
+  "prediction": "La CQR estática quedará infracubierta en 2008 y 2020 y sobrecubierta en años tranquilos. cqr_online reducirá la desviación media de cobertura entre un 30 % y un 60 %. El interval score mejorará menos de un 2 % porque la anchura la fija sobre todo el cuantil base.",
+  "pending": [
+    "Nada se ha ejecutado. El bloqueo de aprendizaje impide emitir las predicciones que el brazo necesita.",
+    "La propuesta escribía γ ∈ {0,005, 0,02} sin unidad. La implementación fija γ = κ · B̂ con B̂ la mayor puntuación absoluta de calibración, de modo que esos valores son fracciones de la escala de cada mercado e intervalo.",
+    "La propuesta usaba como alternativa trivial una recalibración anual, pero la CQR estática de la comparación ya se ajusta en cada ventana anual. La alternativa pasa a ser una recalibración mensual con filas maduras.",
+    "El panel de predicciones no lleva target_available_at. La integración en walk_forward_comparison debe leerlo de la vista de cada ventana."
+  ]
+}

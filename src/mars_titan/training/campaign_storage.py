@@ -127,8 +127,7 @@ def load_storage(path):
         and _positive(index["build_bytes_per_row"])
         and index["warmup_partition"] in HELD_OUT
         and isinstance(boosting, dict)
-        and set(boosting)
-        == {"features", "max_bin", "validation_row_bytes", "max_validation_cache_bytes"}
+        and set(boosting) == {"features", "max_bin"}
         and all(type(v) is int and v > 0 for v in boosting.values())
         and all(
             type(document[name]) is int and document[name] >= 0
@@ -223,13 +222,10 @@ def job_footprint(job, counts, storage, *, release=None, prediction_bytes=None):
         transient["mid_epoch"] += 2 * counts.get("flows", 0) * storage["flow_state_bytes"]
     if model == "xgboost" and not carry:
         boosting = storage["xgboost"]
-        bits = int(_case_bins(job, boosting)).bit_length()
-        pages = math.ceil(counts["train"] * boosting["features"] * bits / 8)
-        validation = min(
-            counts["validation"] * boosting["validation_row_bytes"],
-            boosting["max_validation_cache_bytes"],
-        )
-        transient["cache"] = pages + validation
+        # Páginas ELLPACK densas: ⌈log₂ max_bin⌉ bits por valor, medidos con filas reales.
+        # La validación reside en RAM y en la GPU, sin caché en disco.
+        bits = (int(_case_bins(job, boosting)) - 1).bit_length()
+        transient["cache"] = math.ceil(counts["train"] * boosting["features"] * bits / 8)
     return dict(
         retained=retained,
         transient=transient,

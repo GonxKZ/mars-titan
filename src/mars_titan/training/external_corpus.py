@@ -1,13 +1,18 @@
 """Referencia XGBoost CUDA recuperable, con lecturas acotadas del corpus supervisado."""
 
 import argparse
+import atexit
 import fcntl
 import math
 import os
 import re
 import resource
+import shutil
 import tempfile
+import threading
 import time
+from contextlib import contextmanager
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -21,11 +26,13 @@ from mars_titan.data.input_policy import (
     policy_identity,
 )
 from mars_titan.data.storage import atomic_json, outside_source, sha256
-from mars_titan.models.baselines.boosting_selection import BoostingSelection, ValidationCache
+from mars_titan.models.baselines.boosting_selection import BoostingSelection, ResidentValidation
 from mars_titan.models.baselines.external_boosting import (
     ExternalBoostingModel,
     _libraries,
     available_ram_bytes,
+    build_external_matrix,
+    directory_bytes,
     external_cache_plan,
     fit_external_boosting,
     free_disk_bytes,
@@ -35,7 +42,7 @@ from .checkpoints import StopRequest
 from .corpus_inputs import CorpusDataset
 from .learning_hold import require_learning_allowed
 from .reference_run import FULL_TRAIN_VALIDATION, PREDICTION_RETENTIONS
-from .tabular_corpus import _matrix, _predict, feature_order, retained_partitions
+from .tabular_corpus import _Errors, _matrix, _predict, feature_order, retained_partitions
 
 # Opciones del recorrido que no son parámetros del ajuste externo.
 _READER_OPTIONS = {
@@ -49,6 +56,216 @@ _READER_OPTIONS = {
 def _partitions(options):
     """Las opciones sin el campo conservan la retención anterior de ajuste y validación."""
     return retained_partitions(options.get("prediction_retention", FULL_TRAIN_VALIDATION))
+
+
+# Validación residente en la GPU: el resto queda en RAM y se copia en cada ronda. La
+# reserva deja sitio a las páginas, gradientes e histogramas del ajuste en 8 GB.
+VALIDATION_DEVICE_BYTES = 2 * 1024**3
+DEVICE_RESERVE_BYTES = 3 * 1024**3
+
+
+@dataclass
+class _TrainRows:
+    """Mercado, instante y objetivo float64 de cada fila de la matriz, en su orden.
+
+    Se registran en la primera pasada de la construcción y permiten resumir el ajuste
+    con las predicciones de la matriz cuantizada, sin volver a leer el corpus.
+    """
+
+    expected: int
+    china: np.ndarray | None = None
+    moments: np.ndarray | None = None
+    target: np.ndarray | None = None
+    parts: list | None = None
+
+    def start(self):
+        """Registrar solo la primera pasada completa."""
+        recording = self.target is None
+        if recording:
+            self.parts = []
+        return recording
+
+    def add(self, batch):
+        self.parts.append(
+            (
+                np.asarray(batch["market"]) == "CN",
+                np.asarray(batch["prediction_at"], dtype="datetime64[us]").astype(np.int64),
+                np.array(batch["target"], dtype=np.float64),
+            )
+        )
+
+    def finish(self):
+        china, moments, target = (
+            np.concatenate(values) for values in zip(*self.parts, strict=True)
+        )
+        if len(target) != self.expected:
+            raise ValueError("Las claves de la matriz no conservan la población")
+        self.china, self.moments, self.target, self.parts = china, moments, target, None
+
+
+@dataclass
+class _TrainingMatrix:
+    matrix: object
+    rows: _TrainRows
+
+    def close(self):
+        self.matrix.close()
+
+
+class SharedWindow:
+    """Matriz cuantizada y validación de una ventana, vivas mientras su clave no cambie.
+
+    Las configuraciones con el mismo `max_bin`, filas y lotes comparten los mismos cortes
+    y páginas, y todas comparten la validación. Solo hay una matriz viva por proceso y su
+    uso es exclusivo durante cada ajuste. `release` libera páginas, RAM y GPU.
+
+    Entre procesos, un cerrojo de archivo junto al directorio compartido lo reserva para
+    el proceso que conserva la matriz. Otro proceso, como una ranura GPU con un proceso
+    por trabajo, espera a que se libere en vez de borrar páginas ajenas o duplicar el pico
+    de disco. El sistema suelta el cerrojo si el proceso muere, y el siguiente borra sus
+    restos antes de construir.
+    """
+
+    def __init__(self):
+        self.lock = threading.RLock()
+        self.matrix_key = self.matrix = self.directory = self.handle = None
+        self.validation_key = self.validation = None
+        self.constructions = 0
+
+    def reclaimable_disk_bytes(self):
+        with self.lock:
+            return self.matrix.matrix.disk_bytes() if self.matrix else 0
+
+    def resident_bytes(self):
+        with self.lock:
+            rows = self.matrix.rows.expected * 17 if self.matrix else 0
+            return rows + (self.validation.bytes if self.validation else 0)
+
+    @contextmanager
+    def training_matrix(self, key, directory, build, *, stopped=None):
+        """Ceder la matriz de la clave, construyéndola en `directory` si no existe.
+
+        Mientras otro proceso reserva el directorio se espera, y `stopped` permite atender
+        una parada durante la espera.
+        """
+        with self.lock:
+            built = self.matrix_key != key
+            if built:
+                self._release_matrix()
+                directory = Path(directory)
+                safe_destination(directory)
+                self._reserve(directory, stopped)
+                try:
+                    if directory.exists():
+                        # Restos de un proceso terminado: el cerrojo impide que alguien los use.
+                        shutil.rmtree(directory)
+                    self.matrix = build(directory)
+                except BaseException:
+                    if directory.exists():
+                        shutil.rmtree(directory)
+                    self._unreserve()
+                    raise
+                self.matrix_key, self.directory = key, directory
+                self.constructions += 1
+            yield self.matrix, built
+
+    def _reserve(self, directory, stopped):
+        directory.parent.mkdir(parents=True, exist_ok=True)
+        handle = (directory.parent / f"{directory.name}.lock").open("a")
+        try:
+            while True:
+                try:
+                    fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    break
+                except BlockingIOError:
+                    if stopped is not None and stopped():
+                        raise _Paused from None
+                    time.sleep(1.0)
+        except BaseException:
+            handle.close()
+            raise
+        self.handle = handle
+
+    def _unreserve(self):
+        if self.handle is not None:
+            self.handle.close()
+            self.handle = None
+
+    def discard_stale(self, directory):
+        """Borrar las páginas de un proceso terminado si nadie reserva el directorio."""
+        directory = Path(directory)
+        with self.lock:
+            if not directory.exists():
+                return 0
+            with (directory.parent / f"{directory.name}.lock").open("a") as handle:
+                try:
+                    fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                except BlockingIOError:
+                    return 0
+                safe_destination(directory)
+                size = directory_bytes(directory)
+                shutil.rmtree(directory)
+                return size
+
+    def resident_validation(self, key, build):
+        with self.lock:
+            if self.validation_key != key:
+                self._release_validation()
+                self.validation = build()
+                self.validation_key = key
+            return self.validation
+
+    def _release_matrix(self):
+        if self.matrix is not None:
+            self.matrix.close()
+        self._unreserve()
+        self.matrix_key = self.matrix = self.directory = None
+
+    def _release_validation(self):
+        if self.validation is not None:
+            self.validation.release()
+        self.validation_key = self.validation = None
+
+    def release(self, *, blocking=True):
+        """Liberar todo. Sin bloqueo, no espera a un ajuste que esté usando la matriz."""
+        if not self.lock.acquire(blocking=blocking):
+            return False
+        try:
+            self._release_matrix()
+            self._release_validation()
+            return True
+        finally:
+            self.lock.release()
+
+
+SHARED = SharedWindow()
+atexit.register(SHARED.release)
+
+
+def _device_budget(cp):
+    free, _ = cp.cuda.runtime.memGetInfo()
+    return max(0, min(VALIDATION_DEVICE_BYTES, free - DEVICE_RESERVE_BYTES))
+
+
+def _matrix_metrics(model, training, batch_size):
+    """Resumir el ajuste con las predicciones de la matriz, con los lotes del lector.
+
+    Los árboles hist dividen en cortes de la propia matriz y el predictor de ELLPACK
+    devuelve el límite inferior de cada bin, así que cada fila toma las mismas ramas que
+    con sus float32. Los lotes de `batch_size` filas reproducen la acumulación de
+    `_predict` sobre el corpus.
+    """
+    prediction, rows = model.predict_matrix(training.matrix), training.rows
+    errors = _Errors()
+    for start in range(0, rows.expected, batch_size):
+        end = start + batch_size
+        errors.add(
+            prediction[start:end],
+            rows.target[start:end],
+            np.where(rows.china[start:end], "CN", "US"),
+            rows.moments[start:end],
+        )
+    return errors.summary()
 
 
 class _Paused(Exception):
@@ -187,14 +404,20 @@ def run_external_reference(
     input_policy=STRICT_INPUTS,
     max_disk_cache_bytes=None,
     prediction_retention=FULL_TRAIN_VALIDATION,
+    shared_directory=None,
 ):
     """Recorrer todas las filas admitidas sin abrir el test ni reducir la población.
 
     Con la retención reservada se escriben validación, calibración y evaluación por
-    fila del modelo seleccionado y el ajuste solo se resume.
+    fila del modelo seleccionado y el ajuste solo se resume con las predicciones de la
+    matriz cuantizada.
 
     Antes de crear la salida se estima la caché con la población declarada y se
     falla si no cabe en los presupuestos de RAM o disco ni en lo disponible.
+
+    Con `shared_directory`, la matriz y la validación de la ventana se conservan en
+    `SHARED` para las configuraciones siguientes. Es una opción de rendimiento: no
+    forma parte de la identidad y el modelo es el mismo que sin compartir.
     """
     require_learning_allowed("el ajuste XGBoost del corpus")
     if type(batch_size) is not int or not 1 <= batch_size <= 4096 or type(resume) is not bool:
@@ -235,6 +458,8 @@ def run_external_reference(
         if selection is not None
         else 0
     )
+    shared = SHARED if shared_directory is not None else None
+    # Lo que ya ocupa la ventana compartida se reutiliza o se libera antes de construir.
     plan = external_cache_plan(
         rows=dataset.manifest["counts"]["train"],
         features=features,
@@ -242,9 +467,9 @@ def run_external_reference(
         on_host=on_host,
         max_host_cache_bytes=max_host_cache_bytes,
         max_disk_cache_bytes=max_disk_cache_bytes,
-        available_ram=available_ram_bytes(),
-        free_disk=free_disk_bytes(output),
-        other_disk_bytes=validation_bytes,
+        available_ram=available_ram_bytes() + (shared.resident_bytes() if shared else 0),
+        free_disk=free_disk_bytes(output) + (shared.reclaimable_disk_bytes() if shared else 0),
+        resident_bytes=validation_bytes,
     )
     cp, xgb = _libraries()
     options = dict(
@@ -341,20 +566,60 @@ def run_external_reference(
             return report
         if len(report["attempts"]) >= 9999:
             raise ValueError("Se ha alcanzado el límite de intentos de recuperación")
-        return _execute(dataset, output, report, parent, cp, xgb, stop or StopRequest(), plan=plan)
+        return _execute(
+            dataset,
+            output,
+            report,
+            parent,
+            cp,
+            xgb,
+            stop or StopRequest(),
+            plan=plan,
+            shared=shared,
+            shared_directory=None if shared is None else Path(shared_directory),
+        )
     finally:
         os.close(lock)
 
 
-def _execute(dataset, output, report, parent, cp, xgb, stop, plan=None):
+@contextmanager
+def _training_matrix(shared, key, directory, build, stopped=None):
+    """Matriz propia, liberada al terminar, o cedida por la ventana compartida."""
+    if shared is None:
+        training = build(directory)
+        try:
+            yield training, True
+        finally:
+            training.close()
+        return
+    with shared.training_matrix(key, directory, build, stopped=stopped) as (training, built):
+        yield training, built
+
+
+def _remove_stale_temporaries(output):
+    """Un intento interrumpido puede dejar páginas y validación en su directorio temporal."""
+    removed = 0
+    for path in output.glob("external-*"):
+        if path.is_dir() and not path.is_symlink():
+            safe_destination(path)
+            removed += sum(item.stat().st_size for item in path.rglob("*") if item.is_file())
+            shutil.rmtree(path)
+    return removed
+
+
+def _execute(
+    dataset, output, report, parent, cp, xgb, stop, plan=None, shared=None, shared_directory=None
+):
     options = report["identity"]["options"]
     batch_size = options["batch_size"]
-    presence = masked_inputs(options.get("input_policy", STRICT_INPUTS))
+    policy = options.get("input_policy", STRICT_INPUTS)
+    presence = masked_inputs(policy)
     started = time.perf_counter()
     attempt = dict(
         started_at_utc=datetime.now(UTC).isoformat(),
         observed_device_used_bytes_max=0,
         memory_plan=plan,
+        stale_temporary_bytes_removed=_remove_stale_temporaries(output),
     )
     report["attempts"].append(attempt)
     report["status"] = "running"
@@ -393,11 +658,18 @@ def _execute(dataset, output, report, parent, cp, xgb, stop, plan=None):
         if stop.requested:
             raise _Paused
 
+    rows = _TrainRows(report["samples"]["train"])
+
     def factory():
+        recording = rows.start()
         for batch in dataset.batches(partition="train", batch_size=batch_size, epoch=0, seed=0):
             if stop.requested:
                 raise _Paused
+            if recording:
+                rows.add(batch)
             yield _matrix(batch, np.float32, presence=presence), batch["target"]
+        if recording:
+            rows.finish()
 
     def validation():
         for batch in dataset.batches(
@@ -412,24 +684,64 @@ def _execute(dataset, output, report, parent, cp, xgb, stop, plan=None):
                 batch["prediction_at"],
             )
 
+    construction = dict(
+        expected_rows=report["samples"]["train"],
+        max_bin=options["max_bin"],
+        max_batch_bytes=options["max_batch_bytes"],
+        max_host_cache_bytes=options["max_host_cache_bytes"],
+        on_host=options["on_host"],
+        max_disk_cache_bytes=options.get("max_disk_cache_bytes"),
+    )
+    # Las filas, su orden y sus lotes quedan fijados por el manifiesto, la política y el lote.
+    source = (dataset.identity, policy, batch_size)
+    matrix_key = (*source, tuple(sorted(construction.items())))
+
+    def build_matrix(directory):
+        return _TrainingMatrix(build_external_matrix(factory, directory, **construction), rows)
+
+    def build_validation():
+        return ResidentValidation(
+            validation,
+            expected_rows=report["samples"]["validation"],
+            max_bytes=options["max_validation_cache_bytes"],
+        )
+
+    resident = None
     try:
         observed_memory()
         atomic_json(output / "run.json", report)
         if stop.requested:
             raise _Paused
         fit_start = time.perf_counter()
-        with tempfile.TemporaryDirectory(prefix="external-", dir=output) as temporary:
+        with (
+            tempfile.TemporaryDirectory(prefix="external-", dir=output) as temporary,
+            _training_matrix(
+                shared,
+                matrix_key,
+                shared_directory or Path(temporary) / "pages",
+                build_matrix,
+                lambda: stop.requested,
+            ) as (training, built),
+        ):
+            attempt["matrix"] = dict(
+                shared=shared is not None,
+                constructed=built,
+                construction_passes=list(training.matrix.iterator.completed),
+                disk_bytes=training.matrix.disk_bytes(),
+            )
             validation_options = {}
             if "selection" in options:
-                cached = ValidationCache(
-                    validation,
-                    Path(temporary) / "validation",
-                    expected_rows=report["samples"]["validation"],
-                    max_bytes=options["max_validation_cache_bytes"],
+                resident = (
+                    shared.resident_validation(
+                        (*source, options["max_validation_cache_bytes"]), build_validation
+                    )
+                    if shared
+                    else build_validation()
                 )
-                attempt["validation_cache_bytes"] = cached.bytes
+                attempt["validation_cache_bytes"] = resident.bytes
+                attempt["validation_device_bytes"] = resident.place(_device_budget(cp))
                 validation_options = dict(
-                    validation_factory=cached,
+                    validation_factory=resident,
                     validation_rows=report["samples"]["validation"],
                     stop_requested=lambda: stop.requested,
                 )
@@ -440,48 +752,44 @@ def _execute(dataset, output, report, parent, cp, xgb, stop, plan=None):
                 **{key: value for key, value in options.items() if key not in _READER_OPTIONS},
                 resume=parent,
                 checkpoint=confirm,
+                matrix=training.matrix,
                 **validation_options,
             )
-        attempt["fit_seconds"] = time.perf_counter() - fit_start
-        if "selection" in options:
-            attempt["replayed_rounds"] = model.audit.get("replayed_rounds", 0)
-            attempt["replay_seconds"] = model.audit.get("replay_seconds", 0.0)
-            attempt["replayed_training_rows"] = (
-                attempt["replayed_rounds"] * report["samples"]["train"]
-            )
-        if stop.requested:
-            raise _Paused
-        if "selection" not in options and report["completed_rounds"] != options["rounds"]:
-            confirm(model)
-        restored = _load(output, report["checkpoint"], report["samples"]["train"])
-        predictions = {}
-        for partition in _partitions(options):
+            if resident is not None:
+                # True si las rondas sumaron solo el árbol nuevo, False si se usó la completa.
+                attempt["validation_leaf_sums"] = resident.incremental
+                resident.release_device()
+            attempt["fit_seconds"] = time.perf_counter() - fit_start
+            if "selection" in options:
+                attempt["replayed_rounds"] = model.audit.get("replayed_rounds", 0)
+                attempt["replay_seconds"] = model.audit.get("replay_seconds", 0.0)
+                attempt["replayed_training_rows"] = (
+                    attempt["replayed_rounds"] * report["samples"]["train"]
+                )
             if stop.requested:
                 raise _Paused
-            path = output / f"{partition}-predictions.parquet"
-            metrics = _predict(
-                model,
-                restored,
-                dataset,
-                partition,
-                batch_size,
-                path,
-                dtype=np.float32,
-                presence=presence,
-            )
-            predictions[partition] = dict(path=path.name, sha256=sha256(path), metrics=metrics)
-        if "train" not in predictions:
-            # Las particiones reservadas ya han comparado el modelo recargado.
-            report["train_metrics"] = _predict(
-                model,
-                None,
-                dataset,
-                "train",
-                batch_size,
-                None,
-                dtype=np.float32,
-                presence=presence,
-            )
+            if "selection" not in options and report["completed_rounds"] != options["rounds"]:
+                confirm(model)
+            restored = _load(output, report["checkpoint"], report["samples"]["train"])
+            predictions = {}
+            for partition in _partitions(options):
+                if stop.requested:
+                    raise _Paused
+                path = output / f"{partition}-predictions.parquet"
+                metrics = _predict(
+                    model,
+                    restored,
+                    dataset,
+                    partition,
+                    batch_size,
+                    path,
+                    dtype=np.float32,
+                    presence=presence,
+                )
+                predictions[partition] = dict(path=path.name, sha256=sha256(path), metrics=metrics)
+            if "train" not in predictions:
+                # Las particiones reservadas ya han comparado el modelo recargado.
+                report["train_metrics"] = _matrix_metrics(restored, training, batch_size)
         if "selection" in options and (
             not report["selection"]["stop_reason"]
             or report["selected_round"] != restored.booster.num_boosted_rounds()
@@ -498,6 +806,10 @@ def _execute(dataset, output, report, parent, cp, xgb, stop, plan=None):
         report.update(status="failed", error_type=type(error).__name__, error=str(error))
         raise
     finally:
+        if resident is not None:
+            resident.release_device()
+            if shared is None:
+                resident.release()
         observed_memory()
         attempt.update(
             status=report["status"],

@@ -10,6 +10,7 @@ import torch
 
 from mars_titan.data.storage import sha256
 from mars_titan.training.checkpoints import StopRequest, load_training_state
+from tests.suite_support import requires_cuda
 from tests.training.test_corpus_inputs import corpus
 
 
@@ -150,6 +151,7 @@ def test_scientific_configuration_changes_capacity_and_rejects_other_parent_arch
         )
 
 
+@requires_cuda
 def test_evaluation_averages_sessions_without_company_count_weighting(tmp_path):
     from mars_titan.data.embeddings import require_cuda
     from mars_titan.training.corpus_inputs import CorpusDataset
