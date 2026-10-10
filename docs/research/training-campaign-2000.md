@@ -123,8 +123,8 @@ El control de MARS-TITAN es `mars_titan_m1` por cuatro motivos fijados antes de 
 | `numerics` | FP32 estricto: `float32_matmul_precision="highest"`, `cuda_matmul_allow_tf32=false` y `cudnn_allow_tf32=false`. Es el único valor admitido |
 | `data_policy` | `real_edition_only`, el único valor admitido. Solo datos reales de la edición verificada, sin condiciones sintéticas, remuestreadas ni de aumento |
 | `walk_forward_stages` | El [walk-forward por etapas](walk-forward-2000.md#walk-forward-por-etapas-de-la-campaña-a-v2) `staged_chain_v1`, único valor admitido: posentrenamiento desde la base k-1 con filas nuevas, predictor de la cadena con mejora estricta y RL con las tres evaluaciones anteriores a su validación (`fixed_prior_evaluations_v1`) |
-| `online_controls` | El control `transformer_compact_online`, con padre `transformer_compact`, tope de escrituras del banco de `mars_titan_m1` y regla SGD con tasa, filas por paso, frecuencia y recorte pendientes |
-| Límites | 2.341 ajustes, ninguna predicción trasladada y 57 trabajos del control en línea, que solo se evalúa en el ámbito conjunto |
+| `online_controls` | El control `transformer_compact_online`, con padre `transformer_compact`, tope de escrituras del banco de `mars_titan_m1`, un paso SGD por instante de maduración con bloques de acumulación de 256 filas, recorte 1,0 y la tasa elegida en validación entre 0, 1e-3, 1e-2, 1e-1 y 1 |
+| Límites | 2.341 ajustes, ninguna predicción trasladada y 133 trabajos del control en línea, que solo se evalúa en el ámbito conjunto |
 
 Cada finalista depende de todas las búsquedas de su brazo y ventana y, si el brazo parte de otro, del finalista del padre con la misma semilla. Su identidad guarda el caso elegido, la búsqueda ganadora y la huella de su recibo, de modo que un cambio en una búsqueda confirmada invalida el finalista al reanudar. La selección solo lee el MAE por sesión de validación del recibo, con desempate por identificador. La comparación resume cada semilla por separado y contrasta la media sesión a sesión de las semillas.
 
@@ -157,8 +157,8 @@ El 9 de octubre, antes de cualquier resultado, el autor eligió el walk-forward 
 - `walk_forward_stages` fija el diseño con un único valor admitido y exige `execution.order = "by_window"`. Con esa declaración, el calendario crea las selecciones de la cadena a partir de la etapa de adaptadores y exige dependencias concretas (`campaign_chain.check_staged`). Cada trabajo de posentrenamiento de la ventana k depende de los trabajos base que eligen su padre en k-1, y la primera ventana no tiene posentrenamiento. Cada trabajo de RL declara `predictor_seed` y depende de la selección de la cadena de su propio ámbito en todas las ventanas que lee. Las selecciones de la cadena las crea `plan_chain` de la etapa de adaptadores y el calendario las pasa a la fase `chain`. Una etapa que no cumpla el contrato se rechaza con su motivo.
 - Con esa declaración, `check_stage` y `run_stage` de los adaptadores y de las políticas comprueban también su propio plan con `check_staged`, y las políticas deben declarar la regla de la RL del diseño y el predictor de la cadena. Antes de crear su salida, las dos etapas exigen un [informe de disjunción](walk-forward-2000.md#contrato-de-los-recibos-y-verificador-de-disjunción) sin fallos sobre las vistas que usan (`--disjunction`), y el de la RL debe cubrir además cada selección de la cadena que lee. `rolling` lo calcula antes de cada una de esas etapas y pasa a las políticas la salida de los adaptadores como cadena.
 - La [comparación de los brazos postentrenados de A v2](../../configs/posttraining/historical-masked-adapter-comparison-a-v2.json) deriva veinte padres en el ámbito conjunto y contrasta el predictor de la cadena con el padre congelado, la continuación y el reentreno completo de la ventana (`versus_base_retrain`). Conserva la elegibilidad del modelo conjunto, así que China entra en sus métricas desde `fold-006`.
-- `online_controls` declara `transformer_compact_online`. El plan crea un trabajo por ventana y semilla en los ámbitos cuya comparación evalúa el brazo. En A v2 solo es el conjunto, con 57 trabajos (19 ventanas por tres semillas), porque US y CN solo comparan los controles separados. Cada uno depende de los trabajos que eligen el estado de `transformer_compact` y de `mars_titan_m1` en la misma ventana y semilla. Sus trabajos llevan `regenerable=False`, porque sus predicciones salen de pasos en línea y la retención rodante no puede regenerarlas por inferencia. Mientras su regla tenga valores `pending`, `launch_blockers` impide lanzar la campaña. El motor ejecuta estos trabajos con el [ejecutor del control](../engineering/transformer-online-control.md) y, con la sección declarada, la familia `online_control` deja de figurar entre las pendientes.
-- La ablación de modalidades no incluye el control en línea, que no tiene un estado elegido que ablacionar. La estimación de disco lo excluye hasta tener el informe de su ejecutor, y la de horas lo acota con una predicción y, como máximo, un paso por fila de calibración y evaluación.
+- `online_controls` declara `transformer_compact_online`. El plan crea, en los ámbitos cuya comparación evalúa el brazo, una búsqueda por tasa con la semilla 42 y un finalista con 43 y otro con 44 por ventana. En A v2 solo es el conjunto, con 133 trabajos (19 ventanas por cinco búsquedas y dos finalistas), porque US y CN solo comparan los controles separados. Cada uno depende de los trabajos que eligen el estado de `transformer_compact` y de `mars_titan_m1` en la misma ventana y semilla, y cada finalista también de las búsquedas de su ventana. Sus trabajos llevan `regenerable=False`, porque sus predicciones salen de pasos en línea y la retención rodante no puede regenerarlas por inferencia. La regla tiene sus valores desde el 10 de octubre y ya no bloquea el lanzamiento. El motor ejecuta estos trabajos con el [ejecutor del control](../engineering/transformer-online-control.md) y, con la sección declarada, la familia `online_control` deja de figurar entre las pendientes.
+- La ablación de modalidades no incluye el control en línea, que no tiene un estado elegido que ablacionar. La estimación de disco lo excluye hasta tener el informe de su ejecutor, y la de horas lo acota con una predicción y, como máximo, un paso por fila de validación, calibración y evaluación.
 
 #### Orden ventana a ventana
 
@@ -169,7 +169,7 @@ Para liberar disco a medida que avanza, la campaña v2 se ejecuta ventana a vent
 | `base_search` | Casos de búsqueda de todos los brazos y ámbitos con la semilla 42 |
 | `selection` | Caso elegido de cada brazo con el MAE de validación de sus recibos. No es un trabajo |
 | `selected_case_seeds` | El caso elegido con 43 y 44 |
-| `online` | El control en línea, desde el estado elegido de su padre y con el tope de su lector |
+| `online` | El control en línea, desde el estado elegido de su padre y con el tope de su lector: búsqueda de la tasa, elección con la validación y finalistas |
 | `adapters` | Posentrenamiento desde la base de la ventana anterior con las filas nuevas |
 | `chain` | Selección del predictor de la cadena de cada brazo base y semilla |
 | `ablation`, `rl` | Ablación de modalidades y políticas, que leen la cadena de esta ventana y de las anteriores |
@@ -210,11 +210,11 @@ Fuera de `rolling`, el informe que recibe `rl run` debe calcularse con `--posttr
 
 | Etapa | A ampliada, 30 épocas (9 de octubre) | A v2, 30 épocas | A v2, unas 10 épocas efectivas |
 | --- | ---: | ---: | ---: |
-| Base neuronal y control en línea | 11.373 h | 6.905 h | 2.343 h |
+| Base neuronal y control en línea | 11.373 h | 6.908 h | 2.346 h |
 | Adaptadores (cinco redes) | 1.884 h | 108 h | 108 h |
 | Ablación de modalidades | | 27 h | 27 h |
 
-Las columnas de A v2 se recalcularon el 10 de octubre con la GRU candidata de dos casos, los 57 trabajos del control en línea (1,3 h) y los adaptadores del walk-forward por etapas, que solo ajustan las filas nuevas de cada ventana contadas en el informe de recuentos. Por eso los adaptadores de las cinco redes bajan de 995 h a 108 h, ya con las formas de adaptador de #480. Sin ese recuento, `budget` acota las filas nuevas con los tramos de cada ventana y da 110 h. La medida de la matriz solo cubre esas redes, así que los adaptadores de Titans-MAC, la GRU candidata, MARS-TITAN y CM-v1 y la cadena trivial de Ridge y XGBoost quedan sin estimar y no suman horas. La columna de A ampliada conserva la proyección del 9 de octubre, con la GRU de un caso y los adaptadores sobre todo el tramo, y no se ha recalculado.
+Las columnas de A v2 se recalcularon el 10 de octubre con la GRU candidata de dos casos, los 133 trabajos del control en línea (4,3 h, antes 57 trabajos y 1,3 h) y los adaptadores del walk-forward por etapas, que solo ajustan las filas nuevas de cada ventana contadas en el informe de recuentos. Por eso los adaptadores de las cinco redes bajan de 995 h a 108 h, ya con las formas de adaptador de #480. Sin ese recuento, `budget` acota las filas nuevas con los tramos de cada ventana y da 110 h. La medida de la matriz solo cubre esas redes, así que los adaptadores de Titans-MAC, la GRU candidata, MARS-TITAN y CM-v1 y la cadena trivial de Ridge y XGBoost quedan sin estimar y no suman horas. La columna de A ampliada conserva la proyección del 9 de octubre, con la GRU de un caso y los adaptadores sobre todo el tramo, y no se ha recalculado.
 
 Las 10 épocas efectivas son una estimación para la parada conjunta (rango de 8 a 14): la mediana de la mejor época en la campaña de referencias fue 3, la paciencia es 5 y el grupo para con su miembro más lento. Ridge, XGBoost y las políticas no escalan con el caudal neuronal y se estiman aparte entre 145 y 340 h sin medir. Con 4 semanas de reloj (672 h) y unas 580 h útiles, el factor de caudal necesario es horas neuronales / (580 − horas fijas): 7,5 con 250 h fijas y 5,2 con 100 h. Todo son hipótesis hasta medir el caudal de cada familia en esta edición.
 
@@ -222,12 +222,12 @@ Con el walk-forward por etapas, los adaptadores solo recorren las filas nuevas d
 
 | Etapa | 33.300 filas/s | 44.100 filas/s |
 | --- | ---: | ---: |
-| Base neuronal y control en línea | 1.126 h | 850 h |
+| Base neuronal y control en línea | 1.127 h | 851 h |
 | Adaptadores (cinco redes) | 52 h | 39 h |
 | Ablación de modalidades | 13 h | 10 h |
-| Total neuronal | 1.191 h | 899 h |
+| Total neuronal | 1.192 h | 900 h |
 
-El control en línea suma 0,6 h a 33.300 filas/s, acotado con una predicción y como mucho un paso por fila de calibración y evaluación. Con 33.300 filas/s, el factor de caudal necesario para 580 h útiles es 3,6 con 250 h fijas y 2,5 con 100 h. Con 44.100 filas/s baja a 2,7 y 1,9. Ninguna de las dos cifras cabe todavía en cuatro semanas, y las dos se quedan cortas porque los adaptadores de Titans-MAC, la GRU candidata, MARS-TITAN, CM-v1 y la cadena trivial de los tabulares no suman horas. Las dos tasas son hipótesis de trabajo. La primera aplica el caudal de un Transformer solo a todas las familias, y Titans-MAC, MARS-TITAN, CM-v1 y la GRU candidata no se han medido, así que los brazos recurrentes y con memoria pueden ser más lentos. La segunda supone tres ranuras ocupadas todo el tiempo con el peor agregado medido. Las horas de la RL y de las referencias tabulares siguen fuera de la cuenta neuronal.
+El control en línea suma 2,1 h a 33.300 filas/s, acotado con una predicción y como mucho un paso por fila de validación, calibración y evaluación en cada búsqueda y finalista. Con 33.300 filas/s, el factor de caudal necesario para 580 h útiles es 3,6 con 250 h fijas y 2,5 con 100 h. Con 44.100 filas/s baja a 2,7 y 1,9. Ninguna de las dos cifras cabe todavía en cuatro semanas, y las dos se quedan cortas porque los adaptadores de Titans-MAC, la GRU candidata, MARS-TITAN, CM-v1 y la cadena trivial de los tabulares no suman horas. Las dos tasas son hipótesis de trabajo. La primera aplica el caudal de un Transformer solo a todas las familias, y Titans-MAC, MARS-TITAN, CM-v1 y la GRU candidata no se han medido, así que los brazos recurrentes y con memoria pueden ser más lentos. La segunda supone tres ranuras ocupadas todo el tiempo con el peor agregado medido. Las horas de la RL y de las referencias tabulares siguen fuera de la cuenta neuronal.
 
 ```bash
 uv run --no-sync python scripts/run_masked_campaign.py budget \
@@ -538,7 +538,7 @@ La campaña se ejecuta en una RTX 4070 Laptop de 8 GB con el perfil de energía 
 - Registrar la huella de la configuración que se lance. La campaña A v2 ya copia la declaración ampliada ([#363](https://github.com/GonxKZ/mars-titan/issues/363)).
 - Preparar y verificar las vistas de los tres ámbitos de la campaña v2 sobre la edición v3.1, cuando esa edición esté verificada, y recalcular con ella los recuentos y la proyección de horas.
 - Fijar las opciones de memoria pendientes de la campaña A v2 y conectar la parada conjunta en su sección `stopping`.
-- Fijar la regla del control `transformer_compact_online` (tasa, filas por paso, frecuencia y recorte) y medir su huella de disco.
+- Medir el coste real y la huella de disco del control `transformer_compact_online`.
 - Ejecutar el verificador de disjunción sobre las vistas v3.1 y, después, sobre los recibos de cada ventana. Las etapas v2 de adaptadores y de políticas ya siguen el contrato de la cadena.
 - Elegir, si la medida de caudal no cabe en el presupuesto, entre las palancas de la [proyección de horas](#proyección-de-horas).
 - Comparación parcial con las referencias, si se quiere evaluarlas antes de conectar las demás familias.
