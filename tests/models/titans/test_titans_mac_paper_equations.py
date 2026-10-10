@@ -12,7 +12,7 @@ from test_financial_adapter import api as financial
 from test_financial_adapter import raw_batch, setup, specification
 from torch.nn import functional as F
 
-from mars_titan.training.financial_run import _split, _stack
+from mars_titan.training.financial_run import FlowStates
 
 DAY = 86_400_000_000
 
@@ -128,8 +128,11 @@ def test_trainer_boundary_cuts_the_outer_gradient_through_the_fast_state(detach)
     state = model.initial_state(first.flow_ids, differentiable=True)
     prepared = model.prepare(first, state, differentiable=True)
     # Es la operación con la que el entrenador separa el tramo siguiente tras cada paso.
-    rows = [row for _, row in _split(prepared.next_state, detach=detach)]
-    continued = model.prepare(second, _stack(rows), differentiable=True)
+    flows = FlowStates()
+    flows.put(prepared.next_state, detach=detach)
+    continued = model.prepare(
+        second, flows.gather(prepared.next_state.flow_ids), differentiable=True
+    )
     (gradient,) = torch.autograd.grad(
         continued.point_predictions.square().sum(),
         model.mac.memory.initial_weights[0],
