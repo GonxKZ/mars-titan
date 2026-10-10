@@ -125,3 +125,24 @@ def test_digest_and_dimensions_protect_the_second_pass():
         centered_normal_equations(
             blocks(x[:, :2], y, 5), mean, scale, target_mean, 20, device="cpu"
         )
+
+
+def test_float32_blocks_give_the_same_gram_as_their_float64_conversion():
+    """La conversión exacta se hace en el dispositivo y no cambia ningún bit."""
+    rng = np.random.default_rng(23)
+    x = rng.normal(loc=2.0, size=(300, 9)).astype(np.float32)
+    x[:, 3] = 4.0
+    y = rng.normal(size=300)
+    mean, scale, target_mean = statistics(x.astype(np.float64), y)
+    single = centered_normal_equations(
+        blocks(x, y, 64), mean, scale, target_mean, len(x), device="cpu"
+    )
+    double = centered_normal_equations(
+        blocks(x.astype(np.float64), y, 64), mean, scale, target_mean, len(x), device="cpu"
+    )
+    for a, b in zip(single[:3], double[:3], strict=True):
+        assert torch.equal(a, b)
+    with pytest.raises(ValueError, match="float32 o float64"):
+        centered_normal_equations(
+            blocks(x.astype(np.int64), y, 64), mean, scale, target_mean, len(x), device="cpu"
+        )

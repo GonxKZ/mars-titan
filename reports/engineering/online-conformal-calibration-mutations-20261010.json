@@ -1,0 +1,168 @@
+{
+ "schema_version": 1,
+ "kind": "targeted_mutation_testing",
+ "tests": [
+  "tests/calibration/test_online_conformal.py"
+ ],
+ "baseline": {
+  "code": 0,
+  "tail": "28 passed in 0.69s"
+ },
+ "import_checked": "/home/gonzalo/.local/state/mars-titan/session-scratch-20261009/ptm/mutation/sandbox-pt2/src/mars_titan/__init__.py",
+ "mutations": [
+  {
+   "id": "M01",
+   "description": "Signo de la actualización invertido",
+   "file": "src/mars_titan/calibration/online_conformal.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 3 passed in 0.18s",
+   "seconds": 2.3
+  },
+  {
+   "id": "M02",
+   "description": "Tasa sin la escala de calibración (γ = κ)",
+   "file": "src/mars_titan/calibration/online_conformal.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 1 passed in 0.19s",
+   "seconds": 2.53
+  },
+  {
+   "id": "M03",
+   "description": "Error medido con la corrección vigente y no con la emitida",
+   "file": "src/mars_titan/calibration/online_conformal.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 4 passed in 0.17s",
+   "seconds": 2.44
+  },
+  {
+   "id": "M04",
+   "description": "Objetivo a sustituido por la cobertura nominal",
+   "file": "src/mars_titan/calibration/online_conformal.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 3 passed in 0.14s",
+   "seconds": 2.12
+  },
+  {
+   "id": "M05",
+   "description": "Error con desigualdad no estricta (E = Q cuenta como fallo)",
+   "file": "src/mars_titan/calibration/online_conformal.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 3 passed in 0.14s",
+   "seconds": 2.13
+  },
+  {
+   "id": "M06",
+   "description": "Escala sin valor absoluto",
+   "file": "src/mars_titan/calibration/online_conformal.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 2 passed in 0.15s",
+   "seconds": 2.12
+  },
+  {
+   "id": "M07",
+   "description": "Madurez comprobada contra la fecha de predicción",
+   "file": "src/mars_titan/calibration/online_conformal.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 20 passed in 0.47s",
+   "seconds": 2.41
+  },
+  {
+   "id": "M08",
+   "description": "Sin orden de maduración (FIFO)",
+   "file": "src/mars_titan/calibration/online_conformal.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 20 passed in 0.54s",
+   "seconds": 2.6
+  },
+  {
+   "id": "M09",
+   "description": "Emisión anterior a una actualización aplicada",
+   "file": "src/mars_titan/calibration/online_conformal.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 21 passed in 0.52s",
+   "seconds": 2.62
+  },
+  {
+   "id": "M10",
+   "description": "Suma de errores en lugar de media de la cohorte",
+   "file": "src/mars_titan/calibration/online_conformal.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 3 passed in 0.17s",
+   "seconds": 2.39
+  },
+  {
+   "id": "M11",
+   "description": "Restauración sin comprobar la huella",
+   "file": "src/mars_titan/calibration/online_conformal.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 19 passed in 0.57s",
+   "seconds": 2.6
+  },
+  {
+   "id": "M12",
+   "description": "Objetivo a calculado en coma flotante (1 − nominal)",
+   "file": "src/mars_titan/calibration/online_conformal.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 1 passed in 0.16s",
+   "seconds": 2.22
+  },
+  {
+   "id": "M13",
+   "description": "La réplica no aplica etiquetas disponibles en el mismo instante",
+   "file": "src/mars_titan/calibration/online_conformal.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 6 passed in 0.19s",
+   "seconds": 2.26
+  },
+  {
+   "id": "M14",
+   "description": "Madurez de la cohorte con la primera fila y no con la última",
+   "file": "src/mars_titan/calibration/online_conformal.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 15 passed in 0.52s",
+   "seconds": 2.51
+  },
+  {
+   "id": "M15",
+   "description": "Suma de errores acumulada reemplazada por el último",
+   "file": "src/mars_titan/calibration/online_conformal.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 7 passed in 0.21s",
+   "seconds": 2.14
+  },
+  {
+   "id": "M16",
+   "description": "Restauración sin comprobar el orden de la cola",
+   "file": "src/mars_titan/calibration/online_conformal.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 19 passed in 0.45s",
+   "seconds": 2.41
+  },
+  {
+   "id": "M17",
+   "description": "La emisión aplica una corrección distinta de la registrada",
+   "file": "src/mars_titan/calibration/online_conformal.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 3 passed in 0.14s",
+   "seconds": 2.05
+  },
+  {
+   "id": "M18",
+   "description": "El reloj avanza antes de validar las etiquetas (rechazo no atómico)",
+   "file": "src/mars_titan/calibration/online_conformal.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 20 passed in 0.48s",
+   "seconds": 2.28
+  },
+  {
+   "id": "M19",
+   "description": "Maduración con un reloj que retrocede",
+   "file": "src/mars_titan/calibration/online_conformal.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 21 passed in 0.51s",
+   "seconds": 2.53
+  }
+ ],
+ "killed": 19,
+ "survived": 0
+}

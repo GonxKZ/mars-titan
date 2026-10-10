@@ -4,20 +4,13 @@ import hashlib
 import json
 import os
 import subprocess
-from pathlib import Path
 
 import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
 
-
-def binary():
-    result = Path(
-        os.environ.get("MARS_TITAN_SIM_EXECUTABLE", "build/native/native-debug/mars-titan-sim")
-    ).resolve()
-    assert result.is_file(), "Compila mars-titan-sim antes de ejecutar esta integración"
-    return result
+from tests.simulation.native_library import simulator_path as binary
 
 
 def source(tmp_path):

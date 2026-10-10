@@ -300,12 +300,16 @@ def _ridge_fit(run):
 def _xgboost_fit(run):
     from .external_corpus import run_external_reference
 
+    # Directorio común de la matriz compartida, junto a los trabajos: jobs/<ámbito>/...
+    jobs = run.folder.parents[run.job["id"].count("/") + 1]
+    _require(jobs.name == "jobs", "El trabajo no está dentro del directorio de trabajos")
     report = run_external_reference(
         run.view,
         run.folder,
         resume=(run.folder / "run.json").is_file(),
         stop=run.stop,
         prediction_retention=HELDOUT_RETENTION,
+        shared_directory=jobs / ".shared-matrix",
         **run.case,
     )
     if report["status"] == "paused":
@@ -403,6 +407,32 @@ EXECUTORS = {
     ),
     ("cm_v1", FIT): dict(run=_cm_v1_fit, device="cuda", resumable=True, report="run.json"),
     ("cm_v1", CARRY): dict(run=_cm_v1_carry, device="cuda", resumable=False, report="carry.json"),
+}
+
+
+def _releasing_tabular(run_function, model, kind):
+    """Liberar lo que comparten los tabulares de una ventana antes de un trabajo ajeno a ello.
+
+    Los ajustes XGBoost y Ridge de una ventana son consecutivos en el plan, así que la
+    matriz, la validación y la Gram solo se conservan mientras los usan esos ajustes. Los
+    traslados no las usan. Sin bloqueo, un trabajo concurrente no espera a un ajuste en curso.
+    """
+
+    def run(job_run):
+        from .external_corpus import SHARED
+        from .tabular_corpus import RIDGE_STATISTICS
+
+        if (model, kind) != ("xgboost", FIT):
+            SHARED.release(blocking=False)
+        if (model, kind) != ("ridge", FIT):
+            RIDGE_STATISTICS.clear(blocking=False)
+        return run_function(job_run)
+
+    return run
+
+
+EXECUTORS = {
+    key: dict(entry, run=_releasing_tabular(entry["run"], *key)) for key, entry in EXECUTORS.items()
 }
 
 
@@ -684,9 +714,17 @@ class _Campaign:
         """Empezar un trabajo solo si lo que ocupará deja intacto el margen de disco."""
         if self.disk is None:
             return
+        from .external_corpus import SHARED
+
         guard, counts, storage = self.disk
         footprint = job_footprint(job, counts[job["scope"]][job["window"]], storage)
-        need = footprint["retained_bytes"] + footprint["transient_bytes"]
+        # La matriz XGBoost compartida se reutiliza o se borra antes de que el trabajo escriba.
+        need = max(
+            0,
+            footprint["retained_bytes"]
+            + footprint["transient_bytes"]
+            - SHARED.reclaimable_disk_bytes(),
+        )
         if not guard.admits(need, job["id"]):
             raise DiskPaused(f"{job['id']} necesita {need} bytes sobre el margen de disco")
 
@@ -805,6 +843,10 @@ def run_campaign(
     executors = dict(EXECUTORS if executors is None else executors)
     _require(set(executors) == set(EXECUTORS), "Faltan ejecutores para algún modelo")
     identity = _identity(campaign, checked)
+    from .external_corpus import SHARED
+
+    # Una matriz XGBoost que dejó un proceso terminado no debe contar como espacio ocupado.
+    SHARED.discard_stale(output / "jobs" / ".shared-matrix")
     disk, launch = None, None
     if storage is not None:
         declared = load_storage(storage)

@@ -224,6 +224,10 @@ if(MARS_TITAN_BUILD_SIMULATION)
         add_executable(mars-titan-klpo src/klpo_main.cpp)
         target_link_libraries(mars-titan-klpo PRIVATE mars_titan_policy_stage)
         mars_titan_configure_target(mars-titan-klpo)
+        # Coste de la recogida de políticas sobre cintas reales, sin pasos de optimizador.
+        add_executable(mars-titan-policy-benchmark benchmarks/policy_collection.cpp)
+        target_link_libraries(mars-titan-policy-benchmark PRIVATE mars_titan_policy_stage)
+        mars_titan_configure_target(mars-titan-policy-benchmark)
         list(APPEND mars_analysis_sources "${CMAKE_CURRENT_SOURCE_DIR}/src/ppo_policy.cpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/src/klpo_collection.cpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/src/klpo_learning.cpp"
@@ -307,10 +311,10 @@ if(MARS_TITAN_BUILD_SIMULATION)
             mars_titan_sanitizer_test_environment(ppo_policy)
             set_property(TEST ppo_policy APPEND PROPERTY ENVIRONMENT
                 "CUDA_VISIBLE_DEVICES=-1" "OMP_NUM_THREADS=1" "MKL_NUM_THREADS=1")
-            foreach(component training checkpoint inputs gru_packing evaluation)
+            foreach(component training checkpoint inputs gru_packing evaluation collection)
                 add_executable(ppo_${component}_tests tests/ppo_${component}_tests.cpp)
                 if(component STREQUAL "training" OR component STREQUAL "gru_packing" OR
-                   component STREQUAL "evaluation")
+                   component STREQUAL "evaluation" OR component STREQUAL "collection")
                     target_link_libraries(ppo_${component}_tests PRIVATE mars_titan_ppo)
                 else()
                     target_link_libraries(ppo_${component}_tests PRIVATE mars_titan_ppo_files)

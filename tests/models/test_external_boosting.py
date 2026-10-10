@@ -10,6 +10,8 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from tests.suite_support import requires_cuda
+
 pytestmark = pytest.mark.skipif(
     any(importlib.util.find_spec(name) is None for name in ("cupy", "xgboost")),
     reason="La comprobación CUDA requiere el extra boosting",
@@ -38,6 +40,7 @@ def arrays():
     return x, x[:, 0] * 0.02
 
 
+@requires_cuda
 def test_external_initialization_keeps_torch_matmul_valid_in_fresh_process():
     code = (
         "from mars_titan.models.baselines.external_boosting import _libraries\n"

@@ -22,6 +22,7 @@ from mars_titan.training import mars_titan_run
 from mars_titan.training import mars_titan_walk_forward as mw
 from mars_titan.training import masked_campaign as engine
 from mars_titan.training import titans_walk_forward as wf
+from tests.suite_support import skip_without_episodic_native
 from tests.training.test_campaign_plan import CAMPAIGNS, write_variant
 from tests.training.test_masked_campaign import Recorder, doubles
 from tests.training.test_titans_campaign import ARM as TITANS_ARM
@@ -265,6 +266,7 @@ class StopAfter:
 
 @pytest.fixture(scope="module")
 def campaign_run(tmp_path_factory, permitted):
+    skip_without_episodic_native()
     root = tmp_path_factory.mktemp("mars-titan-campaign")
     data = fixture(root / "data", ("US",))
     campaign = mars_campaign(root / "config")

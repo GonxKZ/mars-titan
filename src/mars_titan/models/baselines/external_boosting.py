@@ -67,14 +67,17 @@ def external_cache_plan(
     available_ram,
     free_disk,
     other_disk_bytes=0,
+    resident_bytes=0,
 ):
     """Comprobar antes de recorrer el corpus que la caché cabe en sus presupuestos reales.
 
     La cota host repite la fórmula float32 que el ajuste ya aplica. Para disco se
     estiman páginas ELLPACK densas con índice de bin local por característica,
-    ceil(log2(max_bin + 1)) bits por valor. Es una hipótesis sobre XGBoost 3.3 que
-    el ajuste contrasta con los bytes observados. También se informa de la cota sin
-    esa compresión, con índices globales de ceil(log2(features * max_bin + 1)) bits.
+    ceil(log2(max_bin)) bits por valor, sin símbolo de ausente porque las entradas son
+    finitas. Con XGBoost 3.3 se midieron exactamente 6, 7 y 8 bits con 64, 128 y 256
+    bins sobre filas reales, y la construcción vuelve a contrastar los bytes escritos.
+    También se informa de la cota con índices globales, ceil(log2(features * max_bin + 1))
+    bits. La validación residente ocupa RAM y se contrasta con la memoria disponible.
     """
     for value, low, high in (
         (rows, 1, 2**63 - 1),
@@ -84,6 +87,7 @@ def external_cache_plan(
         (available_ram, 0, 2**63 - 1),
         (free_disk, 0, 2**63 - 1),
         (other_disk_bytes, 0, 2**63 - 1),
+        (resident_bytes, 0, 2**63 - 1),
     ):
         if type(value) is not int or not low <= value <= high:
             raise ValueError("El plan de memoria externa necesita enteros acotados")
@@ -97,7 +101,7 @@ def external_cache_plan(
     ):
         raise ValueError("El presupuesto de disco solo se declara para la caché en disco")
     host = rows * (features * 4 + 16)
-    local_bits, global_bits = max_bin.bit_length(), (features * max_bin).bit_length()
+    local_bits, global_bits = (max_bin - 1).bit_length(), (features * max_bin).bit_length()
     dense = math.ceil(rows * features * local_bits / 8)
     upper = math.ceil(rows * features * global_bits / 8)
     disk = 0 if on_host else dense
@@ -111,16 +115,19 @@ def external_cache_plan(
         max_host_cache_bytes=max_host_cache_bytes,
         available_ram_bytes=available_ram,
         disk_cache_bytes_estimate=disk,
-        disk_cache_estimate_basis="ellpack_dense_feature_local_bins_hypothesis",
+        disk_cache_estimate_basis="ellpack_dense_feature_local_bins_measured_xgboost_3_3",
         disk_cache_bytes_global_bins_bound=0 if on_host else upper,
         max_disk_cache_bytes=max_disk_cache_bytes,
         other_disk_bytes=other_disk_bytes,
         free_disk_bytes=free_disk,
+        resident_validation_bytes=resident_bytes,
     )
     if on_host and host > min(max_host_cache_bytes, available_ram):
         raise ValueError(
             "La caché host estimada supera el presupuesto declarado o la RAM disponible"
         )
+    if resident_bytes + (host if on_host else 0) > available_ram:
+        raise ValueError("La validación residente y la caché host no caben en la RAM disponible")
     if max_disk_cache_bytes is not None and disk > max_disk_cache_bytes:
         raise ValueError("Las páginas estimadas superan el presupuesto de disco declarado")
     if disk + other_disk_bytes > free_disk:
@@ -228,13 +235,54 @@ class ExternalBoostingModel:
             raise ValueError("Las entradas no conservan valores finitos en float32") from error
         import cupy as cp
 
+        with cp.cuda.Device(0):
+            return self.predict_device(cp.asarray(values, dtype=cp.float32))
+
+    def predict_device(self, values):
+        """Predecir un bloque float32 que ya reside en cuda:0 y se comprobó al cargarlo."""
+        import cupy as cp
+
+        if (
+            not isinstance(values, cp.ndarray)
+            or values.dtype != cp.float32
+            or values.ndim != 2
+            or values.shape[1] != self.features
+            or not values.flags.c_contiguous
+        ):
+            raise ValueError("El bloque residente no es una matriz float32 contigua en CUDA")
         _device(self.booster)
         with cp.cuda.Device(0):
-            result = self.booster.inplace_predict(cp.asarray(values, dtype=cp.float32))
+            result = self.booster.inplace_predict(values)
             if not isinstance(result, cp.ndarray):
                 raise RuntimeError("La predicción no se ha ejecutado en CUDA")
             result = result.get()
         if result.shape != (len(values),) or not np.isfinite(result).all():
+            raise ValueError("La predicción de boosting no es finita o tiene otra forma")
+        return result
+
+    def predict_matrix(self, matrix):
+        """Predecir en orden todas las filas de la matriz cuantizada de entrenamiento.
+
+        Un árbol hist divide en cortes de esa matriz y el predictor de ELLPACK compara el
+        límite inferior de cada bin, así que cada fila sigue las mismas ramas que con sus
+        valores float32. La matriz no vuelve a recorrer su factoría.
+        """
+        if (
+            not isinstance(matrix, ExternalMatrix)
+            or matrix.data is None
+            or matrix.features != self.features
+            or matrix.rows != self.training_rows
+        ):
+            raise ValueError("La matriz no corresponde a las filas y dimensiones del modelo")
+        import cupy as cp
+
+        _device(self.booster)
+        passes = list(matrix.iterator.completed)
+        with cp.cuda.Device(0):
+            result = np.asarray(self.booster.predict(matrix.data))
+        if matrix.iterator.completed != passes:
+            raise ValueError("La predicción ha vuelto a recorrer la factoría de la matriz")
+        if result.shape != (matrix.rows,) or not np.isfinite(result).all():
             raise ValueError("La predicción de boosting no es finita o tiene otra forma")
         return result
 
@@ -310,81 +358,101 @@ class ExternalBoostingModel:
         return cls(booster, count, booster.num_features(), meta["audit"], budget)
 
 
-def fit_external_boosting(
-    factory,
-    cache_directory,
-    *,
-    expected_rows,
-    rounds=100,
-    max_depth=4,
-    max_bin=128,
-    learning_rate=0.05,
-    seed=42,
-    max_batch_bytes=256 * 1024**2,
-    max_host_cache_bytes=16 * 1024**3,
-    on_host=True,
-    max_disk_cache_bytes=None,
-    resume=None,
-    checkpoint=None,
-    checkpoint_interval=10,
-    selection=None,
-    validation_factory=None,
-    validation_rows=None,
-    stop_requested=None,
-):
-    """Ajustar todas las filas mediante ExtMemQuantileDMatrix, sin concatenación global.
+@dataclass
+class ExternalMatrix:
+    """Matriz cuantizada viva con sus páginas, su construcción y la auditoría de sus pasadas.
 
-    Con un presupuesto de disco declarado, cada lote comprueba los bytes ya escritos
-    en la caché y la construcción falla antes de entrenar si los supera.
+    Los cortes y las páginas solo dependen de las filas, su orden, el reparto en lotes y
+    `max_bin`. Dos construcciones con la misma `construction` producen los mismos bytes,
+    así que una matriz viva puede servir a varias configuraciones de árboles.
     """
-    require_learning_allowed("el ajuste XGBoost con páginas externas")
+
+    data: object
+    iterator: object
+    directory: Path
+    rows: int
+    features: int
+    construction: dict
+    audit: dict
+
+    def disk_bytes(self):
+        return directory_bytes(self.directory) if self.directory.exists() else 0
+
+    def close(self):
+        """Liberar la matriz. XGBoost borra sus páginas al destruirla y después el directorio.
+
+        El manejador se libera aunque otro objeto conserve la referencia de Python, para
+        que las páginas desaparezcan antes de borrar el directorio y no al recolectarla.
+        """
+        iterator, data = self.iterator, self.data
+        self.data = self.iterator = None
+        if iterator is not None and iterator.iterator is not None:
+            if hasattr(iterator.iterator, "close"):
+                iterator.iterator.close()
+        if data is not None:
+            data.__del__()
+        del iterator, data
+        if self.directory.exists():
+            safe_destination(self.directory)
+            shutil.rmtree(self.directory)
+
+
+def _construction(
+    *, expected_rows, max_bin, max_batch_bytes, max_host_cache_bytes, on_host, max_disk_cache_bytes
+):
     for value, low, high in (
         (expected_rows, 1, 2**63 - 1),
-        (rounds, 1, 2000 if selection is not None else 1000),
-        (max_depth, 1, 12),
         (max_bin, 2, 512),
         (max_batch_bytes, 1, 512 * 1024**2),
         (max_host_cache_bytes, 1, 24 * 1024**3),
-        (seed, 0, 2**31 - 1),
-        (checkpoint_interval, 1, 1000),
     ):
         if type(value) is not int or not low <= value <= high:
             raise ValueError("Los presupuestos y parámetros de boosting no son válidos")
-    if (
-        not callable(factory)
-        or type(on_host) is not bool
-        or type(learning_rate) not in (int, float)
-        or not math.isfinite(learning_rate)
-        or not 0 < learning_rate <= 1
-        or (resume is not None and not isinstance(resume, ExternalBoostingModel))
-        or (checkpoint is not None and not callable(checkpoint))
-        or (stop_requested is not None and not callable(stop_requested))
-    ):
-        raise ValueError("La factoría o la tasa de aprendizaje no son válidas")
+    if type(on_host) is not bool:
+        raise ValueError("La ubicación de la caché debe ser booleana")
     if max_disk_cache_bytes is not None and (
         on_host
         or type(max_disk_cache_bytes) is not int
         or not 1 <= max_disk_cache_bytes <= MAX_DISK_CACHE_BYTES
     ):
         raise ValueError("El presupuesto de disco solo se declara para la caché en disco")
-    selector = None
-    if selection is not None:
-        selector = BoostingSelection(
-            selection, rounds, state=resume.audit.get("selection") if resume else None
-        )
-        if (
-            not callable(validation_factory)
-            or type(validation_rows) is not int
-            or validation_rows < 1
-            or resume is not None
-            and (
-                resume.audit.get("selection") is None
-                or resume.audit.get("selection_policy") != selection
-            )
-        ):
-            raise ValueError("La selección necesita validación completa y un estado recuperable")
-    elif validation_factory is not None or validation_rows is not None:
-        raise ValueError("La validación durante el ajuste necesita una edición de selección")
+    return dict(
+        expected_rows=expected_rows,
+        max_bin=max_bin,
+        max_batch_bytes=max_batch_bytes,
+        max_host_cache_bytes=max_host_cache_bytes,
+        on_host=on_host,
+        max_disk_cache_bytes=max_disk_cache_bytes,
+    )
+
+
+def build_external_matrix(
+    factory,
+    cache_directory,
+    *,
+    expected_rows,
+    max_bin=128,
+    max_batch_bytes=256 * 1024**2,
+    max_host_cache_bytes=16 * 1024**3,
+    on_host=True,
+    max_disk_cache_bytes=None,
+):
+    """Cuantizar todas las filas en páginas externas, sin ajustar ningún árbol.
+
+    El iterador recorre la factoría dos veces (bosquejo de cuantiles y páginas) y exige
+    las mismas filas y valores en ambas. Con un presupuesto de disco declarado, cada lote
+    comprueba los bytes ya escritos y la construcción falla si los supera.
+    """
+    construction = _construction(
+        expected_rows=expected_rows,
+        max_bin=max_bin,
+        max_batch_bytes=max_batch_bytes,
+        max_host_cache_bytes=max_host_cache_bytes,
+        on_host=on_host,
+        max_disk_cache_bytes=max_disk_cache_bytes,
+    )
+    if not callable(factory):
+        raise ValueError("La factoría no es válida")
     cache_directory = Path(cache_directory)
     safe_destination(cache_directory)
     if cache_directory.exists():
@@ -500,6 +568,123 @@ def fit_external_boosting(
                 disk_audit = dict(
                     disk_cache=dict(max_bytes=max_disk_cache_bytes, observed_bytes=observed)
                 )
+        # El último lote ya está en las páginas. No se retiene en la GPU mientras viva la matriz.
+        iterator.values = iterator.target = None
+        matrix = ExternalMatrix(
+            data,
+            iterator,
+            cache_directory,
+            expected_rows,
+            iterator.features,
+            construction,
+            dict(
+                cache_location="host" if on_host else "disk",
+                completed_pass_rows=list(iterator.completed),
+                data_sha256=iterator.confirmed_digest,
+                max_input_batch_bytes=iterator.max_bytes,
+                **disk_audit,
+            ),
+        )
+        data = iterator = None
+        return matrix
+    finally:
+        if (
+            iterator is not None
+            and iterator.iterator is not None
+            and hasattr(iterator.iterator, "close")
+        ):
+            iterator.iterator.close()
+        del data, iterator
+
+
+def fit_external_boosting(
+    factory,
+    cache_directory,
+    *,
+    expected_rows,
+    rounds=100,
+    max_depth=4,
+    max_bin=128,
+    learning_rate=0.05,
+    seed=42,
+    max_batch_bytes=256 * 1024**2,
+    max_host_cache_bytes=16 * 1024**3,
+    on_host=True,
+    max_disk_cache_bytes=None,
+    resume=None,
+    checkpoint=None,
+    checkpoint_interval=10,
+    selection=None,
+    validation_factory=None,
+    validation_rows=None,
+    stop_requested=None,
+    matrix=None,
+):
+    """Ajustar todas las filas mediante ExtMemQuantileDMatrix, sin concatenación global.
+
+    Sin `matrix` se construye una matriz propia en `cache_directory` y se libera al
+    terminar. Una `matrix` ya construida con la misma construcción declarada se usa sin
+    recorrer de nuevo la factoría y la libera quien la creó.
+    """
+    require_learning_allowed("el ajuste XGBoost con páginas externas")
+    construction = _construction(
+        expected_rows=expected_rows,
+        max_bin=max_bin,
+        max_batch_bytes=max_batch_bytes,
+        max_host_cache_bytes=max_host_cache_bytes,
+        on_host=on_host,
+        max_disk_cache_bytes=max_disk_cache_bytes,
+    )
+    for value, low, high in (
+        (rounds, 1, 2000 if selection is not None else 1000),
+        (max_depth, 1, 12),
+        (seed, 0, 2**31 - 1),
+        (checkpoint_interval, 1, 1000),
+    ):
+        if type(value) is not int or not low <= value <= high:
+            raise ValueError("Los presupuestos y parámetros de boosting no son válidos")
+    if (
+        not callable(factory)
+        or type(learning_rate) not in (int, float)
+        or not math.isfinite(learning_rate)
+        or not 0 < learning_rate <= 1
+        or (resume is not None and not isinstance(resume, ExternalBoostingModel))
+        or (checkpoint is not None and not callable(checkpoint))
+        or (stop_requested is not None and not callable(stop_requested))
+        or (matrix is not None and not isinstance(matrix, ExternalMatrix))
+    ):
+        raise ValueError("La factoría o la tasa de aprendizaje no son válidas")
+    selector = None
+    if selection is not None:
+        selector = BoostingSelection(
+            selection, rounds, state=resume.audit.get("selection") if resume else None
+        )
+        if (
+            not callable(validation_factory)
+            or type(validation_rows) is not int
+            or validation_rows < 1
+            or resume is not None
+            and (
+                resume.audit.get("selection") is None
+                or resume.audit.get("selection_policy") != selection
+            )
+        ):
+            raise ValueError("La selección necesita validación completa y un estado recuperable")
+    elif validation_factory is not None or validation_rows is not None:
+        raise ValueError("La validación durante el ajuste necesita una edición de selección")
+    owned = matrix is None
+    if not owned and (matrix.construction != construction or matrix.data is None):
+        raise ValueError("La matriz compartida no corresponde a esta construcción")
+    if owned:
+        matrix = build_external_matrix(factory, cache_directory, **construction)
+    cp, xgb = _libraries()
+    pool = cp.cuda.MemoryAsyncPool("default")
+    try:
+        with (
+            cp.cuda.Device(0),
+            cp.cuda.using_allocator(pool.malloc),
+            xgb.config_context(use_cuda_async_pool=True),
+        ):
             params = dict(
                 device="cuda:0",
                 tree_method="hist",
@@ -511,29 +696,30 @@ def fit_external_boosting(
                 seed=seed,
                 nthread=4,
             )
+            built = matrix.audit
             audit = dict(
                 device="cuda:0",
                 external_memory=True,
-                cache_location="host" if on_host else "disk",
-                completed_pass_rows=iterator.completed,
-                data_sha256=iterator.confirmed_digest,
-                max_input_batch_bytes=iterator.max_bytes,
+                cache_location=built["cache_location"],
+                completed_pass_rows=list(built["completed_pass_rows"]),
+                data_sha256=built["data_sha256"],
+                max_input_batch_bytes=built["max_input_batch_bytes"],
                 rows=expected_rows,
                 xgboost=xgb.__version__,
                 cupy=cp.__version__,
                 params=params,
                 precision="float32_features_labels",
                 cuda_async_pool=True,
-                **disk_audit,
+                **({"disk_cache": dict(built["disk_cache"])} if "disk_cache" in built else {}),
             )
             completed = 0
             if resume is not None:
                 completed = resume.booster.num_boosted_rounds()
                 if (
                     resume.training_rows != expected_rows
-                    or resume.features != iterator.features
+                    or resume.features != matrix.features
                     or resume.max_batch_bytes != max_batch_bytes
-                    or resume.audit.get("data_sha256") != iterator.confirmed_digest
+                    or resume.audit.get("data_sha256") != built["data_sha256"]
                     or resume.audit.get("params") != params
                     or resume.audit.get("xgboost") != xgb.__version__
                     or resume.audit.get("cupy") != cp.__version__
@@ -544,7 +730,7 @@ def fit_external_boosting(
                 ):
                     raise ValueError("La continuación cambió de datos, parámetros o presupuesto")
 
-            features = iterator.features
+            features = matrix.features
             recovery_callback = None
 
             def wrap(booster):
@@ -595,17 +781,20 @@ def fit_external_boosting(
                     stop_requested=stop_requested,
                 )
                 callbacks = [recovery_callback]
+            passes = list(matrix.iterator.completed)
             booster = (
                 resume.booster
                 if completed == rounds or selector and selector.state["stop_reason"]
                 else xgb.train(
                     params,
-                    data,
+                    matrix.data,
                     num_boost_round=rounds if selector else rounds - completed,
                     xgb_model=resume.booster if resume is not None and not selector else None,
                     callbacks=callbacks,
                 )
             )
+            if matrix.iterator.completed != passes:
+                raise ValueError("El ajuste ha vuelto a recorrer la factoría de la matriz")
             if selector:
                 if booster.num_boosted_rounds() < completed:
                     if not stop_requested or not stop_requested():
@@ -614,10 +803,5 @@ def fit_external_boosting(
                 booster = booster[: selector.state["selected_round"]]
             return wrap(booster)
     finally:
-        if (
-            iterator is not None
-            and iterator.iterator is not None
-            and hasattr(iterator.iterator, "close")
-        ):
-            iterator.iterator.close()
-        del data, iterator
+        if owned:
+            matrix.close()

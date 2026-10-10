@@ -191,6 +191,9 @@ public:
                                              const at::Tensor& lengths) const;
     [[nodiscard]] PpoAction act_recurrent(const at::Tensor& observations, const at::Tensor& state = {},
                                           const at::Tensor& episode_starts = {}, bool deterministic = false);
+    // Muestreo de act_recurrent sobre una inferencia ya calculada por esta política con los
+    // pesos actuales. Consume el mismo generador y no vuelve a ejecutar la red.
+    [[nodiscard]] PpoAction sample(const PpoInference& output, bool deterministic = false);
     // Normaliza las ventajas válidas con desviación poblacional y suelo de 1e-8.
     // Un fallo durante la optimización exige recuperar un checkpoint confirmado.
     [[nodiscard]] PpoUpdateStats update(const PpoRollout& rollout);

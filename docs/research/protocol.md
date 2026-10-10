@@ -122,6 +122,26 @@ La política financiera por refuerzo es otro experimento, distinto de la ordenac
 
 El [entorno predictivo causal](../engineering/causal-prediction-environment.md) separa observaciones, acciones y etiquetas maduras. Su implementación no acredita que estén terminados la política financiera, el ajuste conjunto o sus campañas. Los tres experimentos deben conservar padres, población y presupuestos comparables, y mantener el error predictivo como criterio principal.
 
+### Qué pregunta responde cada comparación
+
+La [matriz de comparaciones](metrics.md#matriz-de-comparaciones-y-atribución-por-componentes) se declaró el 10 de octubre de 2026, antes de cualquier resultado, sobre las mismas filas, ventanas y remuestreo que la comparación walk-forward. Cada fila de la tabla es una o varias familias de contrastes con su propia corrección múltiple. Todas se miden con el MAE residual por sesión como métrica principal y además con pinball, intervalos, Brier y ECE del signo, dirección, Rank IC y la cartera. Las políticas y los diagnósticos de arquitectura se añadirán como vistas cuando se declaren sus métricas.
+
+| Comparación | Pregunta en lenguaje llano | Estado de los brazos |
+| --- | --- | --- |
+| Entre familias | ¿Qué familia predice mejor que cada una de las demás con las mismas filas? | En la campaña |
+| MARS-TITAN frente a cada familia | ¿Cada variante de MARS-TITAN (M0 a M3, K = 2 y 4, primera lectura y B6) mejora a cada referencia, y cuánto? | En la campaña, salvo la primera lectura y B6, que entran con los componentes de integración |
+| CM-v1 frente a cada familia | ¿B, B+C, B+M y B+C+M mejoran a cada referencia? | En la campaña |
+| Núcleo frente a la referencia pública | ¿Nuestro Titans-MAC predice como la implementación pública de referencia, y cuánto añaden nuestras ampliaciones sobre ella? | Sin brazo previsto. La revisión de implementaciones de #434 recomendó conservar el núcleo, cuya memoria coincide en FP64 con la referencia |
+| Cadena por etapas | ¿Posentrenar el padre del año anterior mejora a reentrenar desde cero, a trasladarlo sin cambios o a continuarlo entero? | Pendiente del plan por etapas |
+| Control en línea | ¿La ventaja de MARS-TITAN viene solo de seguir aprendiendo con etiquetas maduras? Un Transformer recibe las mismas etiquetas en el mismo instante | Pendiente del plan por etapas |
+| Escalera de Titans | ¿Cuánto añade cada pieza, en un orden fijado, del Transformer compacto a MARS-TITAN con M3? | En la campaña |
+| Dejar uno fuera | ¿Cuánto se pierde al quitar cada pieza del MARS-TITAN completo, junto con lo que depende de ella? | Cinco de ocho en la campaña. Faltan tres brazos candidatos |
+| Efectos condicionados | ¿Cuánto aporta una pieza según lo que el modelo ya tiene? | Los pares que existen. El resto necesita candidatos |
+| Interacciones | ¿Dos piezas se suman, se refuerzan o se pisan? Actualización de Titans con banco, K con escritura por error, B6 con banco y C con M | C con M en la campaña. Las otras tres necesitan candidatos |
+| Shapley | ¿Cómo se reparte la mejora entre piezas sin depender del orden? | C y M en la campaña. Error frente a anomalía y actualización frente a banco necesitan candidatos. Las ocho piezas de Titans no admiten un reparto porque 236 de sus 256 combinaciones activan una pieza sin aquella de la que depende |
+
+Los brazos candidatos, su coste estimado y su prioridad están en el [informe de brazos que faltan](../../reports/engineering/component-attribution-20261010/README.md). Ninguno se ha añadido al plan de la campaña. Las familias de la comparación walk-forward (controles de Titans, políticas de escritura, refinamientos, factorial de CM-v1 y referencias frente al control cero) siguen respondiendo a sus propias preguntas.
+
 ## Reglas para cerrar el estudio
 
 Una afirmación de mejora exige datos y particiones comparables, una magnitud relevante y variabilidad reportada. Un valor p aislado no basta. Si el modelo no supera una referencia, se analizará si el límite procede de la señal, los datos, la capacidad, la actualización o el presupuesto. La discusión diferenciará asociación, contribución de un componente y causalidad económica.

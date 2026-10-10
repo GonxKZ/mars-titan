@@ -233,3 +233,71 @@ Cada modificación propia debe declarar una hipótesis, un mecanismo, sus supues
 Las pruebas técnicas deben cubrir ecuaciones, gradientes, inmutabilidad del estado de entrada, aislamiento entre recorridos, perturbación del futuro, recuperación de la siguiente predicción y paridad al desactivar ampliaciones. El núcleo MAC, el Transformer y el estimador C ya tienen comprobaciones CUDA acotadas y documentadas. Los caminos de integración nuevos necesitan sus propias verificaciones. No se atribuye aceleración a C++ o CUDA sin una comparación medida.
 
 La edición con todos los datos utilizables desde 2000, con [ausencias explícitas](../data/historical-input-masks.md), y sus objetivos residuales están verificados, y la comparación estricta permanece separada. El bloqueo vigente sigue impidiendo entrenamientos, postentrenamientos, pilotos y evaluaciones científicas. La implementación y las pruebas técnicas no levantan ese bloqueo ni acreditan una mejora predictiva.
+
+## Innovaciones posteriores a Titans
+
+La [revisión de la memoria posterior a Titans](post-titans-memory-review.md) dejó tres [propuestas](post-titans-proposals.md) para el núcleo de la campaña. Cada una es un componente desactivable, desactivado por defecto y con identidad propia. El diagrama sitúa su punto de inserción sobre el núcleo Titans-MAC y las ampliaciones de MARS-TITAN. Las líneas continuas son el recorrido de una decisión y las discontinuas el estado que pasa a la decisión siguiente o los resultados que maduran después de emitir.
+
+```mermaid
+flowchart TD
+    IN["Entradas de la vista con máscaras<br/>precios · noticias · gráficos · fundamentales · macro<br/>bits de presencia"]
+    ENC["Codificadores y fusión<br/>un token x_t por decisión y flujo"]
+
+    subgraph MAC["Núcleo Titans-MAC, estado propio de cada flujo"]
+        P["Memoria persistente P<br/>parámetros aprendidos"]
+        RD["Lectura h_t = M_{t-1}(q_t)"]
+        ATT["Atención sobre [P; h_t; x_t]"]
+        WR["Escritura de la memoria neuronal<br/>sorpresa ∇ℓ, momentum η, paso θ, olvido α"]
+        OG["Salida y_t ⊙ M_t(y_t)"]
+    end
+
+    PT1["PT1 · caja de puertas y escritura recortada<br/>propuesta, #453"]:::propuesta
+
+    subgraph EXT["Ampliaciones de MARS-TITAN, desactivables"]
+        BANK["Banco episódico M0 a M3<br/>y refinamientos K"]
+        B6["Corrección asociativa B6<br/>delta o proximal con resultados maduros"]
+    end
+
+    HEAD["Cabeza común de cuantiles<br/>0,025 · 0,1 · 0,5 · 0,9 · 0,975"]
+
+    PT3["PT3 · regla kalman de B6<br/>propuesta, #455"]:::propuesta
+
+    CAL["Calibración CQR por mercado<br/>ajustada una vez y congelada"]
+
+    PT2["PT2 · calibración conformal en línea<br/>implementada sin entrenar, #454"]:::comprobado
+
+    OUT["Predicción e intervalos emitidos"]
+    Q["Cola de predicciones emitidas<br/>etiquetas que maduran en t+1"]
+
+    IN --> ENC --> ATT
+    ENC -- consulta q_t --> RD
+    P --> ATT
+    RD --> ATT
+    ATT --> WR
+    ATT --> OG
+    WR -. M_t para la decisión siguiente .-> RD
+    OG --> BANK --> HEAD --> B6 --> CAL --> OUT
+    OUT --> Q
+    Q -. resultados maduros .-> BANK
+    Q -. resultados maduros .-> B6
+    Q -. errores con la corrección emitida .-> PT2
+    PT1 -. puertas y gradiente interno .-> WR
+    PT3 -. regla alternativa .-> B6
+    PT2 -. corrección en línea .-> CAL
+
+    subgraph LEY["Leyenda"]
+        L1["Implementado y comprobado sin entrenar"]:::comprobado
+        L2["Propuesta sin implementar en esta rama"]:::propuesta
+    end
+
+    classDef comprobado fill:#dcefdc,stroke:#2e7d32,color:#102a12
+    classDef propuesta fill:#eeeeee,stroke:#757575,color:#222222,stroke-dasharray:5 3
+```
+
+El banco y B6 no se combinan en la misma variante, como fija la declaración de MARS-TITAN. PT1 actúa dentro de la escritura de la memoria neuronal y cambia el núcleo, así que exige reentrenar Titans-MAC. PT2 y PT3 trabajan sobre predicciones ya emitidas y solo usan resultados maduros.
+
+**PT1. Memoria de Titans acotada y contractiva** ([#453](https://github.com/GonxKZ/mars-titan/issues/453)). Propuesta, sin implementar en esta rama. Resultado experimental pendiente.
+
+**PT2. Calibración conformal en línea con etiquetas maduras** ([#454](https://github.com/GonxKZ/mars-titan/issues/454)). Implementada y comprobada sin entrenar como `OnlineConformal`, con κ = 0 idéntica a la CQR estática y sin integrar todavía en la comparación por ventanas. Ecuaciones, pruebas y coste en [su documento](../engineering/online-conformal-calibration.md). Resultado experimental pendiente.
+
+**PT3. Regla de Kalman con ruido de cohorte correlacionado en B6** ([#455](https://github.com/GonxKZ/mars-titan/issues/455)). Propuesta, sin implementar en esta rama. Resultado experimental pendiente.
