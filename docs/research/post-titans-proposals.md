@@ -89,6 +89,8 @@ La mediana no cambia, así que el MAE tampoco.
 
 **Revisión adversarial.** El contraejemplo más fuerte es una secuencia en la que la volatilidad cambia más rápido que la madurez de las etiquetas. Con retraso de una sesión, PT2 siempre llega tarde a un salto y lo corrige después. La garantía es de largo plazo y no protege la sesión del salto. La alternativa trivial de recalibración anual separa lo que aporta la adaptación dentro del año. La evidencia externa es favorable pero no financiera en su mayor parte: Manokhin (2026) observa en 2.217 series que los métodos adaptativos en línea superan a los estáticos en un 9 a 33 % de Winkler relativo, y Gibbs y Candès (2024) la aplican a volatilidad bursátil.
 
+**Implementación (10 de octubre de 2026).** Implementada y comprobada sin entrenar en [su documento](../engineering/online-conformal-calibration.md). Dos correcciones de esta propuesta quedan fijadas antes de ver datos. La tasa no tenía unidad: ahora γ = κ B̂, con B̂ la mayor puntuación absoluta de calibración del mercado y el intervalo, y {0,005, 0,02} son los valores de κ. La alternativa trivial de recalibrar una vez al año coincide con el control, porque la CQR estática ya se ajusta en cada ventana anual, así que pasa a ser una recalibración mensual con filas maduras.
+
 ---
 
 ## PT3. Corrección madura bayesiana con ruido de cohorte correlacionado
