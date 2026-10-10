@@ -8,8 +8,12 @@ ajustado y no se ejecuta ningún paso de optimizador.
 
 import copy
 import json
+import os
+import subprocess
+import sys
 from datetime import UTC, datetime, timedelta
 from importlib.metadata import version
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -21,6 +25,52 @@ from mars_titan.evaluation import walk_forward_comparison as walk
 from tests.evaluation import test_walk_forward_comparison as base
 
 DAYS = 20
+ROOT = Path(__file__).parents[2]
+# Sonda de un entorno sin el extra research, como el de `rl check` (--extra cuda
+# --extra reinforcement). Un buscador al principio de sys.meta_path hace fallar cualquier
+# importación de arch o statsmodels y anota el intento. Recibe las dos campañas, la etapa
+# de RL y la comparación que declara la sección.
+WITHOUT_RESEARCH = """
+import json, runpy, sys
+
+blocked = ("arch", "statsmodels")
+attempts = []
+
+
+class Missing:
+    def find_spec(self, name, path=None, target=None):
+        if name.split(".")[0] in blocked:
+            attempts.append(name)
+            raise ModuleNotFoundError(f"No module named {name!r}", name=name)
+        return None
+
+
+sys.meta_path.insert(0, Missing())
+from mars_titan.evaluation import predictive_ability, walk_forward_comparison
+from mars_titan.simulation import campaign_stage, policy_plan
+from mars_titan.training import campaign_plan
+
+first, second, stage, comparison = sys.argv[1:]
+campaigns = [
+    campaign_plan.load_campaign(path)["comparison_config"]["predictive_ability"]["kind"]
+    for path in (first, second)
+]
+script = runpy.run_path("scripts/run_masked_campaign.py", run_name="script")
+status = script["main"](["rl", "check", "--stage", stage])
+loaded = sorted(name for name in sys.modules if name.split(".")[0] in blocked)
+before = list(attempts)
+failures = []
+for call in (
+    predictive_ability.library_versions,
+    lambda: walk_forward_comparison.evaluate_walk_forward(comparison, "sin-fuentes", "US"),
+):
+    try:
+        call()
+    except ModuleNotFoundError as error:
+        failures.append(error.name)
+result = dict(campaigns=campaigns, status=status, loaded=loaded, attempts=before)
+print("PROBE=" + json.dumps(dict(result, failures=failures)))
+"""
 
 
 def long_decisions(month):
@@ -173,3 +223,38 @@ def test_campaign_comparisons_validate_with_the_section(tmp_path):
         config = walk.load_config(path)
         assert config[walk.PREDICTIVE_FIELD]["metrics"] == ["mae"]
         assert config["schema_version"] in (4, 5)
+
+
+def test_campaigns_load_and_rl_check_runs_without_arch_or_statsmodels(tmp_path):
+    """Cargar las campañas A y A v2 y `rl check` no importan arch ni statsmodels.
+
+    La evaluación que declara la sección sí los pide, y falla antes de leer las fuentes.
+    """
+    arguments = [
+        "configs/baselines/historical-masked-campaign-a.json",
+        "configs/baselines/historical-masked-campaign-a-v2.json",
+        "configs/simulation/historical-masked-rl-stage-a.json",
+        str(base.CONFIG),
+    ]
+    environment = dict(
+        os.environ,
+        PYTHONPATH=os.pathsep.join([str(ROOT / "src"), str(ROOT)]),
+        CUDA_VISIBLE_DEVICES="-1",
+        MARS_TITAN_PPO_EXECUTABLE=str(tmp_path / "missing-ppo"),
+        MARS_TITAN_KLPO_EXECUTABLE=str(tmp_path / "missing-klpo"),
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", WITHOUT_RESEARCH, *arguments],
+        cwd=ROOT,
+        env=environment,
+        capture_output=True,
+        text=True,
+        timeout=600,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    line = next(line for line in result.stdout.splitlines() if line.startswith("PROBE="))
+    probe = json.loads(line.removeprefix("PROBE="))
+    assert probe["campaigns"] == [pa.KIND, pa.KIND]
+    assert probe["status"] == 0
+    assert probe["loaded"] == [] and probe["attempts"] == []
+    assert probe["failures"] == ["arch", "arch"]

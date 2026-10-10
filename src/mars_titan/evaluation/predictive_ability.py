@@ -41,15 +41,20 @@ Detalles de ``arch`` 8.0.0 que cambian lo que se puede afirmar:
 
 Los p-valores no se corrigen entre familias, igual que en el contraste principal. Cada
 familia responde a una pregunta declarada.
+
+La declaración y sus constantes solo necesitan NumPy. ``arch`` y ``statsmodels`` pertenecen
+al extra ``research`` y se importan dentro de las funciones que calculan, así que validar
+o cargar una configuración de campaña no los necesita. La evaluación llama a
+``library_versions`` al empezar para que un entorno sin ese extra falle antes de leer
+ninguna fuente.
 """
 
+import importlib
 import math
 from datetime import date
+from importlib.metadata import version
 
 import numpy as np
-from arch.bootstrap import MCS, SPA, optimal_block_length
-from statsmodels.stats.multitest import multipletests
-from statsmodels.tsa.stattools import diebold_mariano_test
 
 from mars_titan.evaluation.forecast_panel import WEIGHTINGS, SessionSeries
 from mars_titan.evaluation.forecast_scores import is_loss_series
@@ -67,6 +72,7 @@ SUPERIOR_PREDICTIVE_ABILITY = "family_base_benchmark_unstudentized_lower_consist
 REALITY_CHECK = "upper_pvalue_of_unstudentized_spa"
 BLOCK_LENGTH_DIAGNOSTIC = "politis_white_2004_patton_2009_diagnostic_only"
 MCS_METHODS = ("R", "max")
+LIBRARIES = ("arch", "statsmodels")
 FIELDS = {
     "kind",
     "status",
@@ -101,6 +107,16 @@ def _require(condition, message):
 
 def _probability(value, upper):
     return isinstance(value, float) and math.isfinite(value) and 0 < value <= upper
+
+
+def library_versions():
+    """Importar ``arch`` y ``statsmodels`` y devolver sus versiones instaladas.
+
+    Sin el extra ``research`` lanza ``ModuleNotFoundError`` con el nombre del paquete.
+    """
+    for name in LIBRARIES:
+        importlib.import_module(name)
+    return {name: version(name) for name in LIBRARIES}
 
 
 def declaration(section, comparison):
@@ -253,6 +269,8 @@ def diebold_mariano(variant, base, *, horizon=HORIZON_SESSIONS):
     row = dict(days=len(variant), mean_differential=float(np.mean(differential)))
     if not _varies(differential):
         return dict(row, reason="El diferencial diario es constante")
+    from statsmodels.tsa.stattools import diebold_mariano_test
+
     lags = hac_lags(len(variant), horizon)
     with np.errstate(**_NUMERIC):
         result = diebold_mariano_test(
@@ -276,6 +294,8 @@ def diebold_mariano(variant, base, *, horizon=HORIZON_SESSIONS):
 
 def holm(rows):
     """Añadir a cada fila contrastada su p-valor de Holm dentro de la familia."""
+    from statsmodels.stats.multitest import multipletests
+
     tested = [row for row in rows if "pvalue" in row]
     if tested:
         adjusted = multipletests([row["pvalue"] for row in tested], method="holm")[1]
@@ -285,6 +305,8 @@ def holm(rows):
 
 
 def _spa(benchmark, models, block_length, replicates, seed):
+    from arch.bootstrap import SPA
+
     return SPA(
         benchmark,
         models,
@@ -368,6 +390,8 @@ def model_confidence_set(losses, *, size, method, block_length, replicates, seed
         for second in range(first + 1, columns):
             if not _varies(losses[:, first] - losses[:, second]):
                 return dict(reason="Dos brazos tienen un diferencial diario constante")
+    from arch.bootstrap import MCS
+
     with np.errstate(**_NUMERIC):
         mcs = MCS(
             losses,
@@ -401,6 +425,8 @@ def block_length_diagnostic(differential, declared):
     _require(differential.ndim == 1, "El diagnóstico necesita una serie diaria")
     if not _varies(differential):
         return dict(reason="El diferencial diario es constante")
+    from arch.bootstrap import optimal_block_length
+
     try:
         with np.errstate(**_NUMERIC):
             table = optimal_block_length(differential)

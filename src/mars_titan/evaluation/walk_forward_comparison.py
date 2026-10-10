@@ -46,7 +46,8 @@ Cualquier versión admite además la sección opcional de contrastes secundarios
 predictiva (``predictive_ability``): Diebold-Mariano con la corrección de Harvey, SPA,
 Reality Check, StepM, MCS y el diagnóstico de longitud de bloque de Politis y White,
 calculados con ``arch`` y ``statsmodels`` sobre las pérdidas diarias de cada familia. Su
-presencia no cambia ninguna otra salida del informe.
+presencia no cambia ninguna otra salida del informe. Esas dos bibliotecas son del extra
+``research`` y solo se cargan al evaluar una configuración que declara la sección.
 """
 
 import argparse
@@ -1475,6 +1476,8 @@ def evaluate_walk_forward(
     """
     started = time.perf_counter()
     config = resolve_config(config_path)
+    # Sin el extra research, la sección secundaria falla aquí y no tras puntuar las ventanas.
+    libraries = predictive_ability.library_versions() if PREDICTIVE_FIELD in config else {}
     sources = load_sources(sources_path, config, scope)
     # Desde aquí, los brazos y las familias son los del ámbito evaluado.
     config = scope_config(config, scope)
@@ -1580,7 +1583,7 @@ def evaluate_walk_forward(
         )
     if PREDICTIVE_FIELD in config:
         report[PREDICTIVE_FIELD] = _predictive_ability(config, overall, names)
-        report["versions"].update({name: version(name) for name in ("arch", "statsmodels")})
+        report["versions"].update(libraries)
         report["analysis_source_sha256"]["evaluation/predictive_ability.py"] = sha256(
             Path(__file__).parents[1] / "evaluation/predictive_ability.py"
         )

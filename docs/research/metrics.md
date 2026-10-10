@@ -467,7 +467,10 @@ resultado, en la sección `predictive_ability` de las dos comparaciones de la ca
 [conjunta](../../configs/evaluation/historical-masked-2000-joint-comparison.json)).
 `evaluation/predictive_ability.py` los calcula con `arch` 8.0.0 y `statsmodels` 0.15.0,
 que la [revisión de bibliotecas](library-review.md) recomendó adoptar
-([#493](https://github.com/GonxKZ/mars-titan/issues/493)). No sustituyen a las
+([#493](https://github.com/GonxKZ/mars-titan/issues/493)). Las dos pertenecen al extra
+`research` y solo se importan al calcular. Cargar una campaña o ejecutar `rl check` no las
+necesita, y la evaluación que declara la sección comprueba que están instaladas antes de
+leer ninguna fuente. No sustituyen a las
 comparaciones emparejadas, que siguen siendo el contraste principal, y no se usan para
 seleccionar modelos, configuraciones ni épocas. Responden a dos preguntas que el contraste
 principal no cubre: si alguna variante de una familia supera a su base teniendo en cuenta
