@@ -597,8 +597,14 @@ def test_selection_follows_declared_patience_and_keeps_the_best_state(
 
 
 def test_real_optimizer_is_refused_while_the_learning_hold_blocks(shared, tmp_path, monkeypatch):
+    from mars_titan.training import financial_run
     from mars_titan.training.learning_hold import HOLD_ENV, LearningHoldError
 
+    def past_the_guard():
+        # Sin la protección, el recorrido llegaría al paso y el gancho global lo omitiría.
+        raise AssertionError("El ajuste pasó de la protección del aprendizaje")
+
+    monkeypatch.setattr(financial_run, "StopRequest", past_the_guard)
     _, streams = shared
     hold = tmp_path / "hold.json"
     hold.write_text(json.dumps(dict(training_allowed=False)))
