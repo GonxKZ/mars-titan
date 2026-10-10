@@ -2,6 +2,7 @@
 
 import json
 import subprocess
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -159,3 +160,19 @@ def test_this_machine_reports_a_consistent_identity():
     assert record["machine"] == identity_module.platform.machine()
     if subprocess.run(["which", "nvidia-smi"], capture_output=True).returncode == 0:
         assert record["gpus"] and all(gpu["name"] for gpu in record["gpus"])
+
+
+def test_only_the_platform_identity_reads_the_processor_from_proc():
+    # En aarch64 el cpuinfo de /proc no tiene `model name`, así que una lectura propia registraría
+    # un nombre vacío o la arquitectura. El resto del código usa cpu_name() o cpu_record().
+    root = Path(__file__).resolve().parents[2]
+    needle = "/proc/" + "cpuinfo"
+    allowed = root / "src/mars_titan/hardware/platform_identity.py"
+    readers = [
+        path.relative_to(root)
+        for folder in ("src", "scripts", "benchmarks", "tests", "native")
+        for pattern in ("*.py", "*.sh", "*.cpp", "*.hpp")
+        for path in (root / folder).rglob(pattern)
+        if path != allowed and needle in path.read_text(errors="replace")
+    ]
+    assert readers == []
