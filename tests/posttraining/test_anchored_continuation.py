@@ -69,6 +69,9 @@ def test_the_references_add_the_anchored_continuation_after_the_full_one(matrix,
             full, anchored = (own[expected.index(name)] for name in expected[-2:])
             # Mismo objetivo, presupuesto, λ y selección. Solo cambia el ancla.
             assert anchored["case"] == dict(full["case"], weight_decay_anchor=INITIAL)
+            # Presupuesto fijo sin paciencia: ninguna de las dos para antes que la otra, así
+            # que el par conserva el mismo número de actualizaciones.
+            assert anchored["case"]["selection"]["patience"] is None
             assert anchored["id"] == f"seed-{seed}/{ANCHORED}"
             validate_case(anchored["case"])
             assert "training/anchored_decay.py" in case_code(anchored["case"], masked=True)

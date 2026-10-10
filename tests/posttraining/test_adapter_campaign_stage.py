@@ -347,6 +347,22 @@ def test_variant_a_adapts_the_previous_parent_with_new_rows_and_publishes_the_ch
             assert receipt["fit_rows"]["rows"] == proof["rows"]
             assert receipt["fit_rows"]["sha256"] == proof["sha256"]
             assert receipt["fit_rows"]["intersection"] == proof["intersection"]
+        # La puntuación que elige en la cadena sale solo de la validación de la ventana, que
+        # termina antes de su calibración y de su evaluación. Las etiquetas usadas maduran
+        # antes de la evaluación, así que ningún caso, el anclado incluido, se elige con ella.
+        moments = {
+            partition: pq.read_table(output / receipt["predictions"][partition]["path"])[
+                "prediction_at"
+            ]
+            .cast(pa.int64())
+            .to_numpy()
+            for partition in campaign_stage.PREDICTED
+        }
+        assert moments["validation"].max() < moments["calibration"].min()
+        assert moments["calibration"].max() < moments["evaluation"].min()
+        assert labels < moments["evaluation"].min()
+        validation = pq.read_table(output / receipt["predictions"]["validation"]["path"])
+        assert receipt["score"] == staged_chain.validation_score(validation)
         for partition in campaign_stage.PREDICTED:
             table = pq.read_table(output / receipt["predictions"][partition]["path"])
             assert (table["prediction_at"].cast(pa.int64()).to_numpy() < FINAL_TEST).all()
