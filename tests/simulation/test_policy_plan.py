@@ -359,6 +359,16 @@ def _group_arm(identity, **values):
         }
         for arms in (value["levels"]["algorithms"]["arms"], value["contrasts"]["controls"]):
             arms[arms.index("double_dqn")] = name
+        # Con 16 entornos, los grupos admiten hasta 8 cintas de ajuste también en la sensibilidad.
+        value["window_sensitivity"]["train_windows"]["maximum"] = 8
+
+    return change
+
+
+def _group_sensitivity(maximum):
+    def change(value):
+        _group_arm("grpo_outcome_v1")(value)
+        value["window_sensitivity"]["train_windows"]["maximum"] = maximum
 
     return change
 
@@ -393,6 +403,7 @@ INVALID_POLICIES = {
     "group_unknown_objective": _group_arm("grpo_outcome_v1", objective="grpo_plus_plus"),
     "group_other_controller": _group_arm("gspo_outcome_v1", controller="klpo_full_fresh_waves_v1"),
     "group_extra_field": _group_arm("dapo_outcome_static_v1", group_size=8),
+    "group_lonely_sensitivity_lanes": _group_sensitivity(9),
     "unknown_ppo_objective": _policy(
         "ppo_clip_full_kl", policy_objective={"schema_version": 1, "id": "ppo"}
     ),
@@ -506,6 +517,7 @@ REASONS = {
     "group_unknown_objective": "objetivo de grupo",
     "group_other_controller": "objetivo de grupo",
     "group_extra_field": "objetivo de grupo",
+    "group_lonely_sensitivity_lanes": "dos entornos por cinta",
     "unknown_ppo_objective": "objetivo PPO identificado",
     "missing_target_kl": "objetivo PPO identificado",
     "beta_outside_limits": "beta inicial",

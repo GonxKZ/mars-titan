@@ -360,6 +360,15 @@ def _read_policies(path):
         "La sensibilidad de ventanas es secundaria, tiene identidad propia, otra regla de "
         "ajuste con tantas cintas como entornos como máximo y se lanza solo si se activa",
     )
+    # Los objetivos de grupo comparan los episodios que parten de la misma cinta de ajuste, así
+    # que cada cinta necesita al menos dos carriles. La sensibilidad comparte los brazos de la
+    # etapa principal y por eso también debe cumplirlo, aunque esté desactivada.
+    if "native_group_relative" in engines.values():
+        _require(
+            2 * max(rule[2], window["train_windows"]["maximum"]) <= budget["environments"],
+            "Los objetivos de grupo necesitan al menos dos entornos por cinta de ajuste, "
+            "también en la sensibilidad de ventanas",
+        )
     data = config["data"]
     _require(
         isinstance(data, dict)
