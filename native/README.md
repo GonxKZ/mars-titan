@@ -19,6 +19,8 @@ ctest --preset native-release
 ../build/native/native-release/mars-titan-sim --help
 ```
 
+Los presets de pruebas heredan de `native-test`, que excluye la etiqueta `optimizer-steps`. La llevan las pruebas que aplican pasos de optimizador sobre datos sintéticos (PPO y los controles de adaptadores), que no se ejecutan mientras dure el bloqueo de aprendizaje. `native-ppo-release-learning` y `native-controls-release-learning` las incluyen para cuando se levante.
+
 Los perfiles habituales de Clang y GCC activan `MARS_TITAN_BUILD_RUNNER` para construir la sesión y el ejecutable. `MARS_TITAN_BUILD_RUNNER=OFF` con `MARS_TITAN_BUILD_FINANCIAL=ON` permite compilar solo la sesión y sus pruebas. El ejecutable requiere UNIX por sus bloqueos y escrituras confirmadas. Las bibliotecas pueden configurarse por separado en MSVC. Una fuente requerida que falta produce un error de configuración.
 
 El programa utiliza Arrow y Parquet C++, OpenSSL Crypto y [nlohmann_json 3.12.0](https://github.com/nlohmann/json/releases/tag/v3.12.0). La descarga de JSON se verifica con el SHA-256 publicado. CMake busca primero los paquetes del SDK Arrow/Parquet. En Linux puede localizar las cabeceras y bibliotecas C++ de PyArrow mediante `uv` durante la configuración. El ejecutable enlaza `libarrow` y `libparquet`, sin `arrow_python` ni `libpython`. JSON y las dependencias de archivos quedan fuera de la sesión pura.
@@ -113,6 +115,10 @@ cmake --build --preset native-ppo-dev
 ```
 
 La medición del núcleo debe incluir la preparación de entradas y el enlace con Python, además del tiempo interno. Deben registrarse las versiones, la configuración, las formas de los datos, las repeticiones, la memoria y el error frente a la referencia. Los tiempos de los perfiles instrumentados describen esas comprobaciones, no el rendimiento de Release.
+
+## Compilación cruzada a aarch64
+
+`native-aarch64-release` compila PPO, KLPO, el ejecutable financiero y el enlace episódico para Linux aarch64 con Clang y lld, y ejecuta CTest con qemu-user sin las pruebas de la etiqueta `optimizer-steps`. Necesita un entorno uv aarch64 en `MARS_TITAN_AARCH64_ENVIRONMENT` y una raíz con OpenSSL, zlib y zstd aarch64 en `MARS_TITAN_AARCH64_SYSROOT`. Con `MARS_TITAN_ENABLE_CUDA` las arquitecturas declaradas son `89-real;121-real`. Las órdenes y lo comprobado están en [plataformas de hardware](../docs/engineering/hardware-platforms.md#compilación-nativa-cruzada).
 
 ## Cobertura de líneas y ramas
 

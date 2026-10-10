@@ -238,6 +238,28 @@
       }
     },
     {
+      "name": "native-aarch64-release",
+      "displayName": "aarch64 cruzado con Clang y lld, pruebas con qemu-user",
+      "inherits": "native-base",
+      "toolchainFile": "${sourceDir}/cmake/toolchains/aarch64-linux-gnu-clang.cmake",
+      "environment": {
+        "QEMU_LD_PREFIX": "/usr/aarch64-linux-gnu",
+        "QEMU_SET_ENV": "LD_LIBRARY_PATH=$env{MARS_TITAN_AARCH64_SYSROOT}/usr/lib/aarch64-linux-gnu",
+        "UV_PROJECT_ENVIRONMENT": "$env{MARS_TITAN_AARCH64_ENVIRONMENT}"
+      },
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "MARS_TITAN_TORCH_ENVIRONMENT": "$env{MARS_TITAN_AARCH64_ENVIRONMENT}",
+        "MARS_TITAN_AARCH64_SYSROOT": "$env{MARS_TITAN_AARCH64_SYSROOT}",
+        "MARS_TITAN_LIBTORCH_ENABLE_CUDA": "OFF",
+        "MARS_TITAN_BUILD_PPO": "ON",
+        "MARS_TITAN_BUILD_RUNNER": "ON",
+        "MARS_TITAN_BUILD_EPISODIC_PYTHON": "ON",
+        "MARS_TITAN_PROBE_TIMEOUT": "900",
+        "MARS_TITAN_TEST_TIMEOUT_SCALE": "10"
+      }
+    },
+    {
       "name": "native-dev-tools",
       "hidden": true,
       "cacheVariables": {
@@ -337,6 +359,7 @@
     {"name":"native-ppo-asan-ubsan","inherits":"native-build","configurePreset":"native-ppo-asan-ubsan","jobs":1},
     {"name":"native-ppo-static-analysis","inherits":"native-build","configurePreset":"native-ppo-static-analysis","jobs":1,"targets":["all","static-analysis"]},
     {"name":"native-ppo-coverage","inherits":"native-build","configurePreset":"native-ppo-coverage","jobs":1},
+    {"name":"native-aarch64-release","inherits":"native-build","configurePreset":"native-aarch64-release"},
     {"name":"native-ppo-dev","inherits":"native-build","configurePreset":"native-ppo-dev","jobs":1},
     {"name":"native-candidate-cuda-dev","inherits":"native-build","configurePreset":"native-candidate-cuda-dev"},
     {"name":"native-controls-release","inherits":"native-build","configurePreset":"native-controls-release","jobs":1},
@@ -352,7 +375,8 @@
     {"name": "native-candidate-static-analysis", "inherits": "native-test", "configurePreset": "native-candidate-static-analysis"},
     {"name": "native-candidate-coverage", "inherits": "native-test", "configurePreset": "native-candidate-coverage"},
     {"name": "native-candidate-fuzz", "inherits": "native-test", "configurePreset": "native-candidate-fuzz"},
-    {"name":"native-test","hidden":true,"output":{"outputOnFailure":true},"execution":{"jobs":2,"noTestsAction":"error","stopOnFailure":true},"environment":{"DEBUGINFOD_URLS":""}},
+    {"name":"native-test","hidden":true,"output":{"outputOnFailure":true},"execution":{"jobs":2,"noTestsAction":"error","stopOnFailure":true},"environment":{"DEBUGINFOD_URLS":""},"filter":{"exclude":{"label":"optimizer-steps"}}},
+    {"name":"native-test-learning","hidden":true,"output":{"outputOnFailure":true},"execution":{"jobs":2,"noTestsAction":"error","stopOnFailure":true},"environment":{"DEBUGINFOD_URLS":""}},
     {"name":"native-debug","inherits":"native-test","configurePreset":"native-debug"},
     {"name":"native-release","inherits":"native-test","configurePreset":"native-release"},
     {"name":"native-asan-ubsan","inherits":"native-test","configurePreset":"native-asan-ubsan"},
@@ -375,11 +399,14 @@
     {"name":"native-ppo-asan-ubsan","inherits":"native-test","configurePreset":"native-ppo-asan-ubsan"},
     {"name":"native-ppo-static-analysis","inherits":"native-test","configurePreset":"native-ppo-static-analysis"},
     {"name":"native-ppo-coverage","inherits":"native-test","configurePreset":"native-ppo-coverage"},
+    {"name":"native-aarch64-release","inherits":"native-test","configurePreset":"native-aarch64-release","execution":{"jobs":1,"noTestsAction":"error","stopOnFailure":false}},
     {"name":"native-ppo-dev","inherits":"native-test","configurePreset":"native-ppo-dev"},
     {"name":"native-candidate-cuda-dev","inherits":"native-test","configurePreset":"native-candidate-cuda-dev"},
     {"name":"native-controls-release","inherits":"native-test","configurePreset":"native-controls-release"},
     {"name":"native-controls-asan-ubsan","inherits":"native-test","configurePreset":"native-controls-asan-ubsan"},
     {"name":"native-controls-static-analysis","inherits":"native-test","configurePreset":"native-controls-static-analysis"},
-    {"name":"native-controls-coverage","inherits":"native-test","configurePreset":"native-controls-coverage"}
+    {"name":"native-controls-coverage","inherits":"native-test","configurePreset":"native-controls-coverage"},
+    {"name":"native-ppo-release-learning","inherits":"native-test-learning","configurePreset":"native-ppo-release"},
+    {"name":"native-controls-release-learning","inherits":"native-test-learning","configurePreset":"native-controls-release"}
   ]
 }

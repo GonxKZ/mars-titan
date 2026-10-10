@@ -12,6 +12,8 @@ import time
 from datetime import UTC, datetime
 from pathlib import Path
 
+from mars_titan.hardware.platform_identity import cpu_name
+
 ROOT = Path(__file__).resolve().parents[1]
 EXPORTER = ROOT / "scripts/export_observatory.py"
 STAMP = "2020-01-02T12:00:00Z"
@@ -115,11 +117,7 @@ def measure_exports(source, output):
 
 def provenance():
     """Recoge procedencia después de terminar la medida de los procesos hijos."""
-    cpu = next(
-        line.split(":", 1)[1].strip()
-        for line in Path("/proc/cpuinfo").read_text().splitlines()
-        if line.startswith("model name")
-    )
+    cpu = cpu_name()
     paths = ["scripts/export_observatory.py", "scripts/benchmark_observatory.py"]
     commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True, timeout=5)
     dirty = subprocess.check_output(

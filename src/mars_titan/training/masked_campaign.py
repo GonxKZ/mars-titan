@@ -47,6 +47,8 @@ from mars_titan.environments.walk_forward_receipt import (
 from mars_titan.environments.walk_forward_receipt import prediction_fingerprint, read_window_receipt
 from mars_titan.evaluation import walk_forward_comparison as comparison
 from mars_titan.evaluation.splits import PARTITIONS
+from mars_titan.hardware import hardware_profiles
+from mars_titan.hardware.platform_identity import platform_identity
 
 from . import campaign_numerics, campaign_schedule
 from .campaign_plan import (
@@ -596,6 +598,9 @@ class _Campaign:
             json.dumps(identity, sort_keys=True).encode()
         ).hexdigest()
         self.receipts = {}
+        # Plataforma en la que confirma este proceso. Queda en cada recibo nuevo, fuera de la
+        # identidad, para que los recibos anteriores a este registro sigan siendo válidos.
+        self.platform = None
         # Picos de memoria de los trabajos que corrieron en su propio proceso.
         self.usage = {}
         # Huella de filas y objetivos por ámbito, ventana y tramo, común a todos los brazos.
@@ -855,6 +860,8 @@ class _Campaign:
             final_test_opened=False,
             confirmed_at_utc=datetime.now(UTC).isoformat(),
         )
+        if self.platform is not None:
+            receipt["platform"] = self.platform
         path = self.folder(job) / "receipt.json"
         atomic_json(path, receipt)
         return dict(receipt, sha256=sha256(path))
@@ -913,6 +920,8 @@ class _Campaign:
         )
         if numerics:
             receipt["numerics"] = campaign_numerics.current()
+        if self.platform is not None:
+            receipt["platform"] = self.platform
         self.same_rows(job, receipt)
         path = self.folder(job) / "receipt.json"
         atomic_json(path, receipt)
@@ -1073,6 +1082,7 @@ def run_campaign(
     storage=None,
     execution=None,
     window=None,
+    platform=None,
 ):
     """Ejecutar o reanudar la campaña. Los ejecutores y la reserva se pueden sustituir.
 
@@ -1083,6 +1093,9 @@ def run_campaign(
     así que una campaña puede reanudarse con otra concurrencia.
     `window` limita la ejecución a una ventana de campaña (`campaign_schedule`) y a las
     dependencias que tenga en ventanas anteriores. El resumen describe entonces esa ventana.
+    `platform` sustituye la identidad de la plataforma detectada, solo en las pruebas. Esa
+    identidad queda en el resumen y en cada recibo nuevo, y se comprueba contra el perfil de
+    hardware de la declaración de ejecución.
     """
     from .checkpoints import StopRequest
 
@@ -1100,6 +1113,11 @@ def run_campaign(
         execution = legacy_execution(campaign)
     elif not isinstance(execution, Execution):
         execution = load_execution(execution, scopes=tuple(campaign["scopes"]))
+    # Plataforma de este proceso, detectada salvo que una prueba la sustituya. Una declaración
+    # medida en otra máquina detiene la campaña antes de escribir nada.
+    platform = platform_identity() if platform is None else platform
+    if execution.hardware_profile is not None:
+        hardware_profiles.check_profile(execution.hardware_profile, platform)
     _require(
         isinstance(views, dict) and set(views) == set(campaign["scopes"]),
         "Se necesitan las vistas de exactamente los ámbitos de la campaña",
@@ -1145,12 +1163,13 @@ def run_campaign(
             )
             atomic_json(marker, identity)
         state = _Campaign(campaign, checked, output, identity, executors, None, jobs, disk)
+        state.platform = platform
         uses_gpu = any(executors[j["model"], j["kind"]]["device"] == "cuda" for j in jobs)
         default_lease = _slot_lease(execution) if execution.isolated else _gpu_lease
         reservation = (lease or default_lease)() if uses_gpu else nullcontext()
         signals = StopRequest() if stop is None else nullcontext(stop)
         pause = None
-        record = dict(execution=execution.record())
+        record = dict(execution=execution.record(), platform=platform)
 
         def disk_report():
             if disk is None:
@@ -1328,6 +1347,7 @@ def _execute(state, jobs, pool, execution):
             state.receipts,
             "running",
             execution=execution.record(),
+            platform=state.platform,
         )
 
     def collect(block):
@@ -1527,7 +1547,9 @@ def with_dependencies(jobs, wanted):
     return [job for job in jobs if job["id"] in wanted]
 
 
-def write_sources(path, views, output, scope, *, comparison_path=None, window=None):
+def write_sources(
+    path, views, output, scope, *, comparison_path=None, window=None, unrecorded_platform=None
+):
     """Escribir el manifiesto de fuentes de un ámbito y validarlo con la comparación.
 
     Sin `comparison_path` se valida con la comparación de la campaña, que incluye los
@@ -1537,6 +1559,10 @@ def write_sources(path, views, output, scope, *, comparison_path=None, window=No
     que la comparación restringe a las filas del mercado del ámbito. Con `window` se
     publica solo esa ventana en `sources/windows/<ventana>/`, validada con la comparación
     limitada a ella, para guardar sus agregados en cuanto termina.
+
+    Todos los recibos que entran en las fuentes deben venir de la misma plataforma. Los
+    recibos anteriores a su registro solo se admiten si `unrecorded_platform` nombra el
+    perfil de hardware al que se atribuyen. El manifiesto conserva esa decisión.
     """
     campaign, state = _confirmed_state(path, views, output)
     _require(scope in campaign["scopes"], "El ámbito no pertenece a la campaña")
@@ -1593,6 +1619,12 @@ def write_sources(path, views, output, scope, *, comparison_path=None, window=No
         receipt = state.confirmed(job, state.job_identity(job, case, sources))
         _require(receipt is not None, f"Falta confirmar {job['id']} antes de publicar fuentes")
         state.receipts[job["id"]] = receipt
+    platform = hardware_profiles.same_platform(
+        {job["id"]: state.receipts[job["id"]].get("platform") for job in jobs},
+        unrecorded=None
+        if unrecorded_platform is None
+        else hardware_profiles.load_profile(unrecorded_platform),
+    )
     windows = state.views[scope]["windows"]
     folder = Path(output) / "sources"
     if window is not None:
@@ -1642,12 +1674,13 @@ def write_sources(path, views, output, scope, *, comparison_path=None, window=No
         return entry
 
     manifest = dict(
-        schema_version=1,
+        schema_version=2,
         kind=comparison.SOURCES_KIND,
         scope=scope,
         input_policy=campaign["input_policy"],
         windows={w: window_entry(w, v) for w, v in windows.items()},
         arms=arms,
+        platform=platform,
     )
     destination = folder / f"{scope}.json"
     candidate = folder / f".{scope}.candidate.json"
@@ -1703,6 +1736,10 @@ def main(argv=None):
     execute.add_argument("--window", help="Ventana de campaña que se ejecuta, con sus fases base")
     sources.add_argument("--scope", choices=tuple(comparison.SCOPES), required=True)
     sources.add_argument("--comparison", type=Path)
+    sources.add_argument(
+        "--unrecorded-platform",
+        help="Perfil de hardware al que se atribuyen los recibos sin plataforma registrada",
+    )
     args = parser.parse_args(argv)
     if args.command == "check":
         result = check_campaign(args.campaign)
@@ -1740,6 +1777,7 @@ def main(argv=None):
             args.output,
             args.scope,
             comparison_path=args.comparison,
+            unrecorded_platform=args.unrecorded_platform,
         )
         result = dict(sources=str(destination), sha256=sha256(destination))
     print(json.dumps(result, ensure_ascii=False, indent=2))

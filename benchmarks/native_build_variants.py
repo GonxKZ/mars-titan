@@ -33,6 +33,8 @@ import sys
 import time
 from pathlib import Path
 
+from mars_titan.hardware.platform_identity import cpu_name
+
 ROOT = Path(__file__).resolve().parents[1]
 NATIVE = ROOT / "native"
 # Fases del recorrido que se resumen. Cada ruta baja por el informe de
@@ -170,12 +172,6 @@ def temperature():
     return None if value is None else int(value) / 1000
 
 
-def cpu_model():
-    text = read_text("/proc/cpuinfo") or ""
-    found = re.search(r"^model name\s*:\s*(.+)$", text, flags=re.M)
-    return found.group(1).strip() if found else platform.processor() or None
-
-
 def memory_record():
     """Memoria total y disponible del equipo según /proc/meminfo, en bytes."""
     text = read_text("/proc/meminfo") or ""
@@ -219,7 +215,7 @@ def environment_record():
         "platform_profile": read_text("/sys/firmware/acpi/platform_profile"),
         "thermal_zone0_celsius": temperature(),
         "machine": platform.machine(),
-        "cpu_model": cpu_model(),
+        "cpu_model": cpu_name(),
         "kernel": platform.release(),
         "cpus": os.cpu_count(),
         "load_average": os.getloadavg(),

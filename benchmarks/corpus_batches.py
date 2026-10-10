@@ -18,6 +18,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 
 from mars_titan.data.storage import sha256
+from mars_titan.hardware.platform_identity import cpu_name
 from mars_titan.training import corpus_inputs
 
 DIMENSIONS = dict(news=384, charts=512, fundamentals=45, macro=420)
@@ -357,11 +358,7 @@ def benchmark(output, reference, repetitions, baseline_only=False):
         numpy=np.__version__,
         pyarrow=pa.__version__,
         platform=platform.platform(),
-        cpu=next(
-            line.split(":", 1)[1].strip()
-            for line in Path("/proc/cpuinfo").read_text().splitlines()
-            if line.startswith("model name")
-        ),
+        cpu=cpu_name(),
         logical_cpus=os.cpu_count(),
         load_average_before=load_before,
         load_average_after=list(os.getloadavg()),
