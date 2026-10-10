@@ -511,3 +511,32 @@ def test_policy_tapes_must_be_real_tapes_of_the_declared_edition(tmp_path):
         forged.identity = dict(tape.identity, **{key: dict(tape.identity[key], **{field: value})})
         with pytest.raises(ValueError, match="no es una cinta real"):
             window_tapes.require_real_tape(forged, stage.edition_id, "validation")
+
+
+@pytest.mark.parametrize("name", ["neural", "ridge", "titans"])
+def test_segment_predictions_read_compacted_files_and_stop_on_released_ones(tmp_path, name):
+    """La retención v2 compacta las predicciones por fila de las que salen las cintas.
+
+    Las cintas deben recibir exactamente las mismas puntuaciones con el archivo original y con
+    el compactado, bit a bit, y un archivo liberado debe detener la etapa con su motivo en
+    lugar de dejar la cinta sin filas.
+    """
+    from mars_titan.data import prediction_files
+    from tests.data.test_prediction_files import writer, written
+
+    path, digest = written(tmp_path / "attempt", writer(name))
+    before = {
+        market: window_tapes.segment_predictions(path, digest, market) for market in "US CN".split()
+    }
+    prediction_files.compact(path, digest, tmp_path / "rows")
+    assert not path.exists()
+    for market, values in before.items():
+        after = window_tapes.segment_predictions(path, digest, market)
+        assert len(values["score"]) > 0
+        assert np.array_equal(after["prediction_at"], values["prediction_at"])
+        assert np.array_equal(after["asset_id"], values["asset_id"])
+        assert after["score"].dtype == values["score"].dtype
+        assert after["score"].tobytes() == values["score"].tobytes()
+    prediction_files.release(path, digest, stage="fixture")
+    with pytest.raises(prediction_files.PredictionsReleased, match="se liberaron"):
+        window_tapes.segment_predictions(path, digest, "US")
