@@ -87,7 +87,7 @@ from .campaign_storage import (
     view_counts,
 )
 from .corpus_inputs import DIGEST_CACHE_ENV
-from .label_maturity import CALIBRATION_PARTITIONS, FIT_PARTITIONS, label_maturity
+from .label_maturity import label_maturity, window_labels_until
 from .learning_hold import LearningHoldError, require_learning_allowed
 from .selection import AWAIT
 
@@ -952,24 +952,21 @@ class _Campaign:
     def labels_used_until(self, scope, window, receipt):
         """Última etiqueta que pudo fijar el predictor elegido o su calibración común.
 
-        El predictor se ajusta, selecciona y calibra en la vista de su ventana de ajuste: la
-        propia o, en un traslado, la del ancla. La calibración común de la ventana usa
-        además las etiquetas de calibración de su propia vista. El límite es la mayor
-        maduración de esas etiquetas, leída de la vista y no deducida del protocolo.
+        La vista de ajuste es la propia o, en un traslado, la del ancla. La regla es la de
+        `label_maturity.window_labels_until`, la misma que usan los recibos propios de la
+        candidata, y se lee de las vistas en lugar de deducirse del protocolo.
         """
         identity = receipt["identity"]
         fit = identity["anchor"] if identity["kind"] == CARRY else identity["window"]
         windows = self.views[scope]["windows"]
-        reads = [(fit, FIT_PARTITIONS)]
-        if fit != window:
-            reads.append((window, CALIBRATION_PARTITIONS))
-        values = []
-        for name, partitions in reads:
-            key = (scope, name, partitions)
-            if key not in self.maturity:
-                self.maturity[key] = label_maturity(windows[name]["path"], partitions)[0]
-            values.append(self.maturity[key])
-        return max(values)
+        return window_labels_until(windows[fit]["path"], windows[window]["path"], self.maturity_of)
+
+    def maturity_of(self, path, partitions):
+        """Lee una sola vez por ejecución la maduración de esos tramos de una vista."""
+        key = (str(path), tuple(partitions))
+        if key not in self.maturity:
+            self.maturity[key] = label_maturity(path, partitions)
+        return self.maturity[key]
 
     def publish(self, scope, window, arm, seed):
         """Recibo walk-forward por mercado del predictor elegido para la semilla y ventana.

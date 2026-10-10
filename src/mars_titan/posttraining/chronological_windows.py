@@ -86,8 +86,7 @@ from mars_titan.training.titans_walk_forward import (
     window_phases,
 )
 from mars_titan.training.titans_walk_forward import KIND as TITANS_KIND
-from mars_titan.training.walk_forward_phases import micros as _micros
-from mars_titan.training.walk_forward_phases import months_before as _months_before
+from mars_titan.training.walk_forward_phases import micros, months_before
 
 from . import chronological_matrix as cm
 from .readout_adapters import ReadoutAdapterTrainer
@@ -333,8 +332,8 @@ def staged_window(parent_view, view, warmup_months):
     parent_fold, fold, _ = carried_window(parent_manifest, manifest, input_policy=HISTORICAL_MASKED)
     start, end = posttraining_rows(parent_fold, fold)
     phases = window_phases(fold, warmup_months)
-    origin, since, until = (_micros(day) for day in (fold["train"][0], start, end))
-    warmup = max(origin, _micros(_months_before(start, warmup_months)))
+    origin, since, until = (micros(day) for day in (fold["train"][0], start, end))
+    warmup = max(origin, micros(months_before(start, warmup_months)))
     phases["train"] = FinancialPhase("train", warmup, since, until, until)
     placement = dict(
         design=STAGED,

@@ -71,3 +71,18 @@ def label_maturity(manifest_path, partitions):
         rows += expected
     _require(latest is not None, "La vista no tiene etiquetas en los tramos pedidos")
     return latest, rows
+
+
+def window_labels_until(fit_view, view, maturity=label_maturity):
+    """Última etiqueta que pudo fijar el predictor de una ventana o su calibración común.
+
+    El predictor se ajusta, selecciona y calibra con los tramos de `FIT_PARTITIONS` de la
+    vista en que se fijó (`fit_view`), que es la de su ventana o, en un traslado, la del
+    ancla. La calibración común de la ventana usa además la calibración de su propia vista
+    (`view`). El límite es la mayor maduración de esas etiquetas. `maturity` permite a la
+    campaña reutilizar las lecturas que ya hizo de una vista.
+    """
+    reads = [(fit_view, FIT_PARTITIONS)]
+    if Path(fit_view) != Path(view):
+        reads.append((view, CALIBRATION_PARTITIONS))
+    return max(maturity(path, partitions)[0] for path, partitions in reads)
