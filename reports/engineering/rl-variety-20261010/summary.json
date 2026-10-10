@@ -1117,9 +1117,9 @@
   "note": "fingerprint_without_geometry did not compile in its first form and was rewritten so that the geometry string is always empty"
  },
  "checks": {
-  "ctest_release": "29/29 without the three Adam tests",
-  "ctest_asan_ubsan": "29/29 without the three Adam tests, LibTorch without CUDA, no sanitizer reports",
-  "pytest": "339 passed: test_policy_plan, test_policy_throughput, test_campaign_stage, test_native_ppo_launcher, test_native_policy_tapes, test_rl_variety_reference, test_native_real_tapes (with the 6 real-edition smoke tests), test_stage_report and test_rl_real_data_only",
+  "ctest_release": "29/29 without the three Adam tests, after the rebase on develop",
+  "ctest_asan_ubsan": "29/29 without the three Adam tests, LibTorch without CUDA, no sanitizer reports, after the rebase on develop",
+  "pytest": "372 passed after the rebase on develop: test_policy_plan, test_policy_throughput, test_campaign_stage, test_native_ppo_launcher, test_native_policy_tapes, test_rl_variety_reference, test_native_real_tapes (with the 6 real-edition smoke tests), test_stage_report, test_rl_real_data_only, test_window_tapes and test_reference_portfolios",
   "clang_tidy": "no warnings on new and changed native sources",
   "ruff": "passed",
   "check_repository": "passed"

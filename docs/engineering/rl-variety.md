@@ -402,7 +402,7 @@ Ninguna prueba ejecuta pasos de optimizador. Las CTest `ppo_policy`, `ppo_traini
 | Causalidad de QR-DQN | No cambia la recogida ni la réplica de Double DQN. Su objetivo solo usa la recompensa, la observación siguiente ya ocurrida y el cierre de cada transición, comprobado contra la referencia FP64 |
 | CTest en Release sin las tres pruebas con Adam | 29 de 29 |
 | CTest con ASan y UBSan sin las tres pruebas con Adam | 29 de 29 |
-| Pruebas Python de plan, rendimiento, etapa, lanzador, cintas nativas, informe y datos reales, con los binarios de esta compilación | 339 pasan, incluidas las 6 de humo sobre la edición real |
+| Pruebas Python de plan, rendimiento, etapa, lanzador, cintas nativas, referencia FP64, informe, datos reales, cintas por ventana y referencias de cartera, con los binarios de esta compilación | 372 pasan, incluidas las 6 de humo sobre la edición real |
 | Mutación dirigida | 21 de 21 defectos detectados (9 de grupo, 9 de QR-DQN y 3 de la declaración) |
 | clang-tidy | Sin avisos |
 
