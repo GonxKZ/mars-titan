@@ -578,11 +578,14 @@ Lo mismo ocurre con un diferencial constante en Diebold-Mariano o en el SPA.
 la sección completa del ámbito conjunto con los calendarios reales de US (2005 a 2023) y
 de CN (2011 a 2023), los 24 brazos y las 13 familias de la comparación conjunta, 2.000
 réplicas y bloques de 16 días, sobre pérdidas sintéticas. El
-[recibo](../../reports/engineering/predictive-ability-20261010/cost.json) da COSTE_TOTAL
-de mediana para las tres vistas, con COSTE_SPA en el SPA y el StepM, COSTE_MCS en el MCS y
-menos de un segundo en Diebold-Mariano y la longitud de bloque, y un pico de MEMORIA en
-NumPy. Frente a los unos 34 minutos que se estiman para la comparación conjunta completa,
-es un coste pequeño y no se ha optimizado.
+[recibo](../../reports/engineering/predictive-ability-20261010/cost.json) da 31 s de
+mediana para las tres vistas (29 y 33 s en las dos repeticiones, con una carga media de 8
+a 12 procesos en los 16 hilos de la CPU), con 13 a 14 s en el SPA y el StepM, 12 a 14 s en
+el MCS y menos de 0,1 s en Diebold-Mariano y la longitud de bloque, y un pico de 107 MiB en
+NumPy. Las dos repeticiones dieron el mismo informe. Frente a los unos 34 minutos que el
+[informe de escala](../../reports/engineering/evaluation-scale-20261009/README.md)
+extrapola para la comparación conjunta completa es un coste pequeño, todo el cálculo está
+en `arch`, y no se ha optimizado ni pasado a C++.
 
 ### Qué no permite afirmar
 
