@@ -16,6 +16,12 @@ código. Las estructuras se codifican sin pickle: el esqueleto es JSON, los deci
 Python se guardan con sus bits y las matrices de NumPy van en un ``.npz`` sin objetos.
 Los agregados se calculan en float64 y se guardan sin redondear ni comprimir con pérdida:
 una matriz o un escalar decimal de otra precisión se rechaza.
+
+La cartera larga y corta (``long_short_comparison``) también trabaja ventana a ventana: cada
+una produce los libros por sesión de todos los brazos, las órdenes sin ejecutar y la
+identidad de los precios. Se guardan aparte, con el código de la cartera y la identidad de
+la edición de precios en su identidad, para que el informe de la cartera tampoco necesite
+las filas.
 """
 
 import dataclasses
@@ -34,6 +40,7 @@ from mars_titan.data.storage import sha256
 from . import walk_forward_comparison as walk
 
 KIND = "walk_forward_window_aggregates"
+LONG_SHORT_KIND = "long_short_window_aggregates"
 SCHEMA_VERSION = 1
 _SKELETON = "__skeleton__"
 _MAX_BYTES = 1024**3
@@ -45,6 +52,15 @@ SCORING_SOURCES = (
     "evaluation/modality_strata.py",
     "evaluation/modality_ablation.py",
     "calibration/conformal_quantiles.py",
+)
+# Código de la cartera larga y corta, que lee los precios de la edición sin ajustar.
+LONG_SHORT_SOURCES = (
+    "evaluation/walk_forward_comparison.py",
+    "evaluation/forecast_panel.py",
+    "evaluation/long_short.py",
+    "evaluation/long_short_comparison.py",
+    "simulation/session_prices.py",
+    "simulation/market_rules.py",
 )
 # Solo se reconstruyen clases de datos del propio proyecto.
 _ALLOWED_MODULES = ("mars_titan.evaluation.", "mars_titan.calibration.")
@@ -157,7 +173,7 @@ def same(left, right):
     return left == right
 
 
-def identity(config, sources, window_id, ablation=None):
+def identity(config, sources, window_id, ablation=None, *, code=SCORING_SOURCES):
     """Lo que determina los agregados de una ventana, sin leer predicciones."""
     files = {
         f"{name}/{seed}/{part}": record["sha256"]
@@ -181,7 +197,7 @@ def identity(config, sources, window_id, ablation=None):
         view_sha256=sources["views"][window_id],
         predictions=files,
         ablation=masked,
-        code={name: sha256(root / name) for name in SCORING_SOURCES},
+        code={name: sha256(root / name) for name in code},
     )
     # La misma forma que tendrá al releerla del JSON, con listas en lugar de tuplas.
     return json.loads(json.dumps(value))
@@ -191,20 +207,19 @@ def path_for(folder, scope, window_id):
     return Path(folder) / scope / f"{window_id}.npz"
 
 
-def write(folder, config, sources, window_id, ablation=None):
-    """Puntuar una ventana y guardar sus agregados. Devuelve su ruta y su huella."""
-    scored = walk._score_window(sources, config, window_id, ablation)
+def long_short_path(folder, scope, window_id):
+    return Path(folder) / scope / f"{window_id}.long_short.npz"
+
+
+def _save(path, kind, expected, value):
+    """Escribir el esqueleto y las matrices de `value` de forma atómica."""
     arrays = {}
     document = dict(
-        schema_version=SCHEMA_VERSION,
-        kind=KIND,
-        identity=identity(config, sources, window_id, ablation),
-        scores=encode(scored, arrays),
+        schema_version=SCHEMA_VERSION, kind=kind, identity=expected, scores=encode(value, arrays)
     )
     # Sin ordenar claves: el orden de cada diccionario forma parte de lo que se restaura.
     text = json.dumps(document, ensure_ascii=True).encode()
     arrays[_SKELETON] = np.frombuffer(text, dtype=np.uint8)
-    path = path_for(folder, sources["scope"], window_id)
     path.parent.mkdir(parents=True, exist_ok=True)
     buffer = io.BytesIO()
     np.savez_compressed(buffer, **arrays)
@@ -218,31 +233,75 @@ def write(folder, config, sources, window_id, ablation=None):
     finally:
         if os.path.exists(name):
             os.unlink(name)
-    restored = read(folder, config, sources, window_id, ablation)
-    _require(same(restored, scored), f"Los agregados de {window_id} no se releen igual")
     return dict(path=path, sha256=sha256(path), bytes=path.stat().st_size)
 
 
-def read(folder, config, sources, window_id, ablation=None):
-    """Agregados de una ventana, comprobando que proceden de estas mismas fuentes y código."""
-    path = path_for(folder, sources["scope"], window_id)
-    _require(
-        path.is_file() and not path.is_symlink(),
-        f"Faltan los agregados de {sources['scope']} {window_id}",
-    )
+def _load(path, kind, expected, label):
+    """Releer unos agregados y exigir que su identidad sea la de las fuentes actuales."""
+    _require(path.is_file() and not path.is_symlink(), f"Faltan los agregados de {label}")
     _require(path.stat().st_size <= _MAX_BYTES, f"{path.name} supera su presupuesto")
     with np.load(path, allow_pickle=False) as stored:
         arrays = {key: stored[key] for key in stored.files}
     document = json.loads(arrays.pop(_SKELETON).tobytes())
     _require(
-        document.get("kind") == KIND and document.get("schema_version") == SCHEMA_VERSION,
+        document.get("kind") == kind and document.get("schema_version") == SCHEMA_VERSION,
         f"{path.name} no son agregados de una ventana",
     )
-    expected = identity(config, sources, window_id, ablation)
     stored_identity = document["identity"]
     changed = sorted(key for key in expected if stored_identity.get(key) != expected[key])
     _require(
         not changed,
-        f"Los agregados de {window_id} proceden de otras fuentes o código: {', '.join(changed)}",
+        f"Los agregados de {label} proceden de otras fuentes o código: {', '.join(changed)}",
     )
     return decode(document["scores"], arrays)
+
+
+def write(folder, config, sources, window_id, ablation=None):
+    """Puntuar una ventana y guardar sus agregados. Devuelve su ruta y su huella."""
+    scored = walk._score_window(sources, config, window_id, ablation)
+    path = path_for(folder, sources["scope"], window_id)
+    record = _save(path, KIND, identity(config, sources, window_id, ablation), scored)
+    restored = read(folder, config, sources, window_id, ablation)
+    _require(same(restored, scored), f"Los agregados de {window_id} no se releen igual")
+    return record
+
+
+def read(folder, config, sources, window_id, ablation=None):
+    """Agregados de una ventana, comprobando que proceden de estas mismas fuentes y código."""
+    path = path_for(folder, sources["scope"], window_id)
+    expected = identity(config, sources, window_id, ablation)
+    return _load(path, KIND, expected, f"{sources['scope']} {window_id}")
+
+
+def _long_short_identity(config, sources, window_id, edition):
+    """Identidad de la ventana con el código de la cartera y la edición de precios."""
+    from mars_titan.simulation.session_prices import SessionPrices
+
+    start, end = sources["windows"][window_id]["evaluation"]
+    prices = {
+        market: SessionPrices(edition, market, start, end).identity()
+        for market in sources["markets"]
+    }
+    value = dict(identity(config, sources, window_id, code=LONG_SHORT_SOURCES), prices=prices)
+    return json.loads(json.dumps(value))
+
+
+def write_long_short(folder, config, sources, window_id, edition):
+    """Calcular los libros de la cartera de una ventana y guardarlos sin pérdida."""
+    from . import long_short_comparison as portfolio
+
+    declared = config[portfolio.SECTION]
+    books = portfolio._window(sources, config, window_id, edition, declared)
+    path = long_short_path(folder, sources["scope"], window_id)
+    expected = _long_short_identity(config, sources, window_id, edition)
+    record = _save(path, LONG_SHORT_KIND, expected, books)
+    restored = read_long_short(folder, config, sources, window_id, edition)
+    _require(same(restored, books), f"La cartera de {window_id} no se relee igual")
+    return record
+
+
+def read_long_short(folder, config, sources, window_id, edition):
+    """Libros de la cartera de una ventana, con la misma identidad de fuentes y precios."""
+    path = long_short_path(folder, sources["scope"], window_id)
+    expected = _long_short_identity(config, sources, window_id, edition)
+    return _load(path, LONG_SHORT_KIND, expected, f"la cartera de {sources['scope']} {window_id}")
