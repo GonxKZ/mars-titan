@@ -22,7 +22,9 @@ from mars_titan.simulation.storage import write_tape
 from tests.environments.walk_forward_fixture import protocol, window
 from tests.simulation.unadjusted_edition_fixture import predictions
 
-TRAIN_WINDOWS = 3
+# Es la regla principal de la etapa, con las tres evaluaciones anteriores a la validación,
+# y reproduce las ventanas de ajuste que recoge el informe de la medición.
+TRAIN_WINDOWS = dict(rule=window_tapes.FIXED, minimum=3, maximum=3)
 
 
 def _segment_values(market, fold, symbols):
