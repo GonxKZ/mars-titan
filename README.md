@@ -274,6 +274,14 @@ flowchart LR
     E --> C[Análisis crítico<br/>mejoras, fallos y límites]
 ```
 
+La [revisión de la memoria posterior a Titans](docs/research/post-titans-memory-review.md) deja tres innovaciones para el núcleo de la campaña, cada una desactivable y desactivada por defecto. Su punto de inserción sobre Titans-MAC y las ampliaciones de MARS-TITAN está en el [diagrama del sistema](docs/research/titans-mac-architecture.md#innovaciones-posteriores-a-titans). Ninguna se ha entrenado ni evaluado, así que no hay resultados experimentales.
+
+- **PT1, memoria de Titans acotada y contractiva** ([#453](https://github.com/GonxKZ/mars-titan/issues/453)): propuesta. Resultado experimental pendiente.
+
+- **PT2, calibración conformal en línea con etiquetas maduras** ([#454](https://github.com/GonxKZ/mars-titan/issues/454)): propuesta. Resultado experimental pendiente.
+
+- **PT3, regla de Kalman con ruido de cohorte correlacionado en B6** ([#455](https://github.com/GonxKZ/mars-titan/issues/455)): propuesta. Resultado experimental pendiente.
+
 Una predicción solo puede usar datos disponibles en su instante de decisión. La actualización asociativa de Titans utiliza entradas observadas bajo una política explícita. El error financiero de escritura episódica solo se calcula cuando madura la etiqueta de la predicción realmente emitida. Las tablas contables necesitan fechas de publicación y los gráficos se construyen exclusivamente con ventanas pasadas.
 
 ## Objetivos y evidencias
@@ -295,6 +303,7 @@ Los objetivos se gestionan como seis hitos y 64 tareas canónicas, con prioridad
 - [Protocolo de investigación](docs/research/protocol.md), [experimentos](docs/research/experiment-matrix.md) y [revisión del documento inicial](docs/research/original-review.md).
 - [Arquitectura candidata](docs/research/candidate-architecture.md), [capacidad y coste por parámetro](docs/research/parameter-efficiency.md), [hipótesis y antecedentes](docs/research/novelty-ledger.md) y [revisión adversarial](docs/research/adversarial-review.md).
 - [Titans-MAC, Transformer y referencia GRU](docs/research/titans-mac-architecture.md), con estados, correspondencia matemática, controles y límites de implementación.
+- [Memoria posterior a Titans](docs/research/post-titans-memory-review.md), con [propuestas](docs/research/post-titans-proposals.md), [certificado de contracción](docs/research/titans-memory-certificate.md) y [diagnósticos](docs/research/memory-diagnostics.md).
 - [Variante ampliada y comparaciones justas](docs/research/neuroarchitecture-review.md), con [condiciones de memoria y contraejemplos](docs/research/memory-mathematics.md). La variante sigue en diseño. El candidato base está en implementación y todavía no se ha entrenado.
 - [Atención, repetición y autoevaluación](docs/research/attention-replay-review.md), [eventos públicos y señales reducidas](docs/research/event-signal-comparison.md), con [límites de información y replay](docs/research/attention-replay-mathematics.md).
 - [Integración arquitectónica y postentrenamiento](docs/research/system-integration.md), con responsabilidades, puntos de extensión, dependencias de estado y estimaciones matemáticas.

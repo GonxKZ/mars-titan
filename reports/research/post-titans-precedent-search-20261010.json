@@ -1,0 +1,1494 @@
+{
+ "schema_version": 1,
+ "kind": "precedent_search_log",
+ "issue": 436,
+ "searches": [
+  {
+   "date": "2026-10-09",
+   "started_utc": "2026-10-09T19:48:34.474500+00:00",
+   "finished_utc": "2026-10-09T20:16:55.689421+00:00",
+   "sources": [
+    "arXiv API",
+    "OpenReview API v2",
+    "Semantic Scholar Graph API",
+    "GitHub search (gh)"
+   ],
+   "notes": "Semantic Scholar devolvió HTTP 429 en la mayoría de consultas. Los reintentos con pausas de 20 s no completaron la serie y esas consultas cuentan como no ejecutadas en esa fuente. OpenReview devolvió identificadores de foro sin título en la API v2.",
+   "groups": {
+    "O1_certificado_titans": [
+     {
+      "query": "all:\"Titans\" AND all:\"memory\" AND (all:\"stability\" OR all:\"contraction\" OR all:\"Lyapunov\")",
+      "plain_query": "Titans memory stability contraction Lyapunov",
+      "arxiv": {
+       "total": 9,
+       "top": [
+        {
+         "title": "Titans-QFWP: A Regime-Aware Hybrid Quantum Fast Weight Programmer for Portfolio Optimization",
+         "id": "2608.29093v1",
+         "published": "2026-08-29"
+        },
+        {
+         "title": "Wormhole Memory: A Rubik's Cube for Cross-Dialogue Retrieval",
+         "id": "2501.14846v5",
+         "published": "2025-01-24"
+        },
+        {
+         "title": "Topological Textures in Zr-Substituted Barium Titanate",
+         "id": "2509.26023v3",
+         "published": "2025-09-30"
+        },
+        {
+         "title": "Stability and low-energy orientations of interphase boundaries in multiaxial ferroelectrics: Phase-field simulations",
+         "id": "2201.10074v1",
+         "published": "2022-01-25"
+        },
+        {
+         "title": "It's All Connected: A Journey Through Test-Time Memorization, Attentional Bias, Retention, and Online Optimization",
+         "id": "2504.13173v1",
+         "published": "2025-04-17"
+        },
+        {
+         "title": "DC Electrical Degradation of YSZ: Voltage Controlled Electrical Metallization of A Fast Ion Conducting Insulator",
+         "id": "1907.05479v2",
+         "published": "2019-07-11"
+        },
+        {
+         "title": "CoreInfer: Accelerating Large Language Model Inference with Semantics-Inspired Adaptive Sparse Activation",
+         "id": "2410.18311v1",
+         "published": "2024-10-23"
+        },
+        {
+         "title": "Phase transitions and thermal-stress-induced structural changes in a ferroelectric Pb(Zr0.80Ti0.20)O3 single crystal",
+         "id": "1410.4979v1",
+         "published": "2014-10-18"
+        },
+        {
+         "title": "PZT Optical Memristors",
+         "id": "2411.04665v4",
+         "published": "2024-11-07"
+        }
+       ]
+      },
+      "openreview": {
+       "returned": 10,
+       "forum_ids": [
+        "AAxoilVBgp",
+        "SKVbtpld3s",
+        "XqDM97DtMf",
+        "ZzC26cS22K",
+        "fWx1CKgPCc",
+        "hxwV5EubAw",
+        "kOMrm4ZJ3m"
+       ]
+      },
+      "semantic_scholar": {
+       "total": 23,
+       "error": null,
+       "top": [
+        {
+         "title": "A Caputo fractional-order model for Marburg virus disease incorporating environmental contamination, non-human primates, and unsafe burial practices: stability, sensitivity, and memory effects",
+         "year": 2026,
+         "venue": "Malaya Journal of Matematik"
+        },
+        {
+         "title": "Error Analysis of Generalized Langevin Equations with Approximated Memory Kernels",
+         "year": 2025,
+         "venue": "SIAM/ASA Journal on Uncertainty Quantification"
+        },
+        {
+         "title": "Fixed-point topology meets fractal memory: a Kutumba-stabilized framework for nonlocal fractal–fractional dynamics",
+         "year": 2026,
+         "venue": "Scientific Reports"
+        },
+        {
+         "title": "Stability Analysis for a Class of Impulsive Bidirectional Associative Memory (BAM) Neural Networks with Distributed Delays and Leakage Time-Varying Delays",
+         "year": 2018,
+         "venue": "Neural Processing Letters"
+        },
+        {
+         "title": "Contraction, Criticality, and Capacity: A Dynamical-Systems Perspective on Echo-State Networks",
+         "year": 2025,
+         "venue": "arXiv.org"
+        },
+        {
+         "title": "Global Exponential Stability of Impulsive Fuzzy High-Order BAM Neural Networks With Continuously Distributed Delays",
+         "year": 2018,
+         "venue": "IEEE Transactions on Neural Networks and Learning Systems"
+        }
+       ]
+      },
+      "github": {
+       "returned": 0
+      }
+     },
+     {
+      "query": "all:\"momentum\" AND all:\"delta rule\" AND (all:\"stability\" OR all:\"eigenvalue\")",
+      "plain_query": "momentum delta rule stability eigenvalue",
+      "arxiv": {
+       "total": 0,
+       "top": []
+      },
+      "openreview": {
+       "returned": 10,
+       "forum_ids": [
+        "3Q2CseQN37",
+        "EeagsbjdRY",
+        "UvTo3tVBk2",
+        "VGR4cfy8lc",
+        "ar8EnfwITb",
+        "czTaUHz4G4",
+        "dQU7OKCagD",
+        "r8H7xhYPwz",
+        "tldWaQEOfC",
+        "tw4QaiiJex"
+       ]
+      },
+      "semantic_scholar": {
+       "total": null,
+       "error": "ERROR HTTP Error 429: ",
+       "top": []
+      },
+      "github": {
+       "returned": 0
+      }
+     },
+     {
+      "query": "all:\"test-time training\" AND (all:\"Lyapunov\" OR all:\"contraction\")",
+      "plain_query": "test-time training Lyapunov contraction",
+      "arxiv": {
+       "total": 0,
+       "top": []
+      },
+      "openreview": {
+       "returned": 10,
+       "forum_ids": [
+        "ArRycLMoUg",
+        "UHZVrhQuO1",
+        "XqDM97DtMf",
+        "ZtOnddFVT3",
+        "ZzC26cS22K",
+        "aMs6FtNaY5",
+        "jEQRoJzDx8",
+        "kOMrm4ZJ3m",
+        "yTTomSJsSW"
+       ]
+      },
+      "semantic_scholar": {
+       "total": 1536,
+       "error": null,
+       "top": [
+        {
+         "title": "Control the GNN: Utilizing Neural Controller with Lyapunov Stability for Test-Time Feature Reconstruction",
+         "year": 2024,
+         "venue": "arXiv.org"
+        },
+        {
+         "title": "Lyapunov-Guided Self-Alignment: Test-Time Adaptation for Offline Safe Reinforcement Learning",
+         "year": 2026,
+         "venue": "arXiv.org"
+        },
+        {
+         "title": "Certified Training with Branch-and-Bound: A Case Study on Lyapunov-stable Neural Control",
+         "year": 2024,
+         "venue": "arXiv.org"
+        },
+        {
+         "title": "Certified Training with Branch-and-Bound for Lyapunov-stable Neural Control",
+         "year": 2024,
+         "venue": ""
+        },
+        {
+         "title": "State Synchronization for Dual Digital Twin of EV Batteries by Lyapunov Stability Condition and Contraction Analysis",
+         "year": 2023,
+         "venue": "Annual Conference of the IEEE Industrial Electronics Society"
+        },
+        {
+         "title": "Continuous-Time Critic as a Lyapunov Function: Projected Adaptation and Cart-Pole Stabilization",
+         "year": 2026,
+         "venue": ""
+        }
+       ]
+      },
+      "github": {
+       "returned": 0
+      }
+     },
+     {
+      "query": "all:\"fast weights\" AND (all:\"Lyapunov\" OR all:\"joint spectral radius\" OR all:\"contraction\")",
+      "plain_query": "fast weights Lyapunov joint spectral radius contraction",
+      "arxiv": {
+       "total": 2,
+       "top": [
+        {
+         "title": "Customizable Contraction Hierarchies",
+         "id": "1402.0402v5",
+         "published": "2014-02-03"
+        },
+        {
+         "title": "Don't Read Everything: A Curvature-Conditioned Query for Linear Attention",
+         "id": "2606.01294v2",
+         "published": "2026-05-31"
+        }
+       ]
+      },
+      "openreview": {
+       "returned": 10,
+       "forum_ids": [
+        "2ohYTgJNYK",
+        "EIYltBaUzL",
+        "FPffwvChoL",
+        "Q3FXnCPZ1X",
+        "SP5RfsxsN2",
+        "XnDyddPcBT",
+        "XqDM97DtMf",
+        "ZzC26cS22K",
+        "y6e8g5ZR5Z",
+        "yLqXIADFUj"
+       ]
+      },
+      "semantic_scholar": {
+       "total": null,
+       "error": "ERROR HTTP Error 429: ",
+       "top": []
+      },
+      "github": {
+       "returned": 0
+      }
+     },
+     {
+      "query": "all:\"linear attention\" AND all:\"momentum\" AND (all:\"stability\" OR all:\"eigenvalue\")",
+      "plain_query": "linear attention momentum stability eigenvalue",
+      "arxiv": {
+       "total": 1,
+       "top": [
+        {
+         "title": "MDN: Parallelizing Stepwise Momentum for Delta Linear Attention",
+         "id": "2605.05838v1",
+         "published": "2026-05-07"
+        }
+       ]
+      },
+      "openreview": {
+       "returned": 10,
+       "forum_ids": [
+        "3Q2CseQN37",
+        "9Q0dNBYeEY",
+        "ALf0xHCCaP",
+        "CMMpcs9prj",
+        "JZdd7EUefP",
+        "Sh3rKEAxlW",
+        "UvTo3tVBk2",
+        "VGR4cfy8lc",
+        "XfO8npR1fb",
+        "ar8EnfwITb"
+       ]
+      },
+      "semantic_scholar": {
+       "total": 509,
+       "error": null,
+       "top": [
+        {
+         "title": "Bidispersive Double‐Diffusive Convection in a Porous Layer: Influence of Throughflow and Gravity Variations Using a Darcy–Brinkman Model",
+         "year": 2025,
+         "venue": "Heat Transfer"
+        },
+        {
+         "title": "Instability of opposing double diffusive convection in 2D boundary layer stagnation point flow",
+         "year": 2015,
+         "venue": ""
+        },
+        {
+         "title": "MDN: Parallelizing Stepwise Momentum for Delta Linear Attention",
+         "year": 2026,
+         "venue": "arXiv.org"
+        },
+        {
+         "title": "Influence of vertical throughflow on the linear and nonlinear stability analyses of Rayleigh–Bénard convection in a biviscous Bingham fluid saturating a porous medium",
+         "year": 2025,
+         "venue": "European Physical Journal B : Condensed Matter Physics"
+        },
+        {
+         "title": "Stability of mixed convective Jeffrey fluid flow in anisotropic porous media: LTNE effects and non-linear dynamics",
+         "year": 2025,
+         "venue": "Multiscale and Multidisciplinary Modeling Experiments and Design"
+        },
+        {
+         "title": "Stability and limiting properties of generalized principal eigenvalue for inhomogeneous nonlocal cooperative system",
+         "year": 2023,
+         "venue": ""
+        }
+       ]
+      },
+      "github": {
+       "returned": 0
+      }
+     },
+     {
+      "query": "all:\"momentum LMS\" AND all:\"stability\"",
+      "plain_query": "momentum LMS stability",
+      "arxiv": {
+       "total": 1,
+       "top": [
+        {
+         "title": "Momentum LMS Theory beyond Stationarity: Stability, Tracking, and Regret",
+         "id": "2602.11995v2",
+         "published": "2026-02-12"
+        }
+       ]
+      },
+      "openreview": {
+       "returned": 10,
+       "forum_ids": [
+        "3jgXe8mIun",
+        "5Lt6sBoemN",
+        "AjgyGqMw1P",
+        "DnL8VX8rKk",
+        "DpP5F3UfKw",
+        "ETT804iVAt",
+        "L9eBxTCpQG",
+        "Qn4HEhezKW",
+        "VGR4cfy8lc",
+        "tznvtmSEiN"
+       ]
+      },
+      "semantic_scholar": {
+       "total": 18906,
+       "error": null,
+       "top": [
+        {
+         "title": "Momentum LMS Theory beyond Stationarity: Stability, Tracking, and Regret",
+         "year": 2026,
+         "venue": "arXiv.org"
+        },
+        {
+         "title": "Widely Linear Momentum LMS Based Control Algorithm for Dual Stage SPVA Grid Coupled System With DAB",
+         "year": 2025,
+         "venue": "2025 IEEE 5th International Conference on Sustainable Energy and Future Electric Transportation (SEFET)"
+        },
+        {
+         "title": "Widely Linear Momentum LMS Algorithm for Second Order Noncircular Signals and Performance Analysis",
+         "year": 2024,
+         "venue": "IEEE Signal Processing Letters"
+        },
+        {
+         "title": "Performance Analysis of Momentum-Based Complex LMS Adaptive Filter for Non-circular Signals",
+         "year": 2025,
+         "venue": "Circuits, systems, and signal processing"
+        },
+        {
+         "title": "An Adaptive Momentum Driven Variable Step-Size Filtered-X Weight Accumulated LMS for Improved HNANC",
+         "year": 2024,
+         "venue": "2024 IEEE International Smart Cities Conference (ISC2)"
+        },
+        {
+         "title": "QLMS-QHM: Accelerated Quaternion LMS Algorithm With Quasi-Hyperbolic Momentum",
+         "year": 2026,
+         "venue": "IEEE Transactions on Signal Processing"
+        }
+       ]
+      },
+      "github": {
+       "returned": 0
+      }
+     },
+     {
+      "query": "all:\"heavy ball\" AND (all:\"switched\" OR all:\"time-varying\") AND all:\"Lyapunov\"",
+      "plain_query": "heavy ball switched time-varying Lyapunov",
+      "arxiv": {
+       "total": 0,
+       "top": []
+      },
+      "openreview": {
+       "returned": 10,
+       "forum_ids": [
+        "ArRycLMoUg",
+        "E9dpl7U9Rv",
+        "J506O7mBSM",
+        "JD9cGvibsP",
+        "QNXzwBo8IO",
+        "ZvyQTNt2qp",
+        "j7vyoxUlgw",
+        "nCsEIZXlkI",
+        "uKt1Q6Yw4c",
+        "y4oV5Y6Uvu"
+       ]
+      },
+      "semantic_scholar": {
+       "total": null,
+       "error": "ERROR HTTP Error 429: ",
+       "top": []
+      },
+      "github": {
+       "returned": 0
+      }
+     }
+    ],
+    "O2_memoria_de_mercado": [
+     {
+      "query": "all:\"Titans\" AND (all:\"stock\" OR all:\"financial\" OR all:\"asset\")",
+      "plain_query": "Titans stock financial asset",
+      "arxiv": {
+       "total": 3,
+       "top": [
+        {
+         "title": "Titans-QFWP: A Regime-Aware Hybrid Quantum Fast Weight Programmer for Portfolio Optimization",
+         "id": "2608.29093v1",
+         "published": "2026-08-29"
+        },
+        {
+         "title": "Titan's Fluvial and Lacustrine Landscapes",
+         "id": "2502.02556v1",
+         "published": "2025-02-04"
+        },
+        {
+         "title": "TALUS: Reinforcing TEE Confidentiality with Cryptographic Coprocessors (Technical Report)",
+         "id": "2306.03643v1",
+         "published": "2023-06-06"
+        }
+       ]
+      },
+      "openreview": {
+       "returned": 10,
+       "forum_ids": [
+        "08FTG45E9m",
+        "HHhuPIQWO4",
+        "KsWRLyIAKP",
+        "MzmeLlDOkN",
+        "N5ggpxl8Os",
+        "bRMfqThoVC",
+        "o2Gg2tSKBn",
+        "obYDlJN0oU"
+       ]
+      },
+      "semantic_scholar": {
+       "total": null,
+       "error": "ERROR HTTP Error 429: ",
+       "top": []
+      },
+      "github": {
+       "returned": 0
+      }
+     },
+     {
+      "query": "all:\"test-time training\" AND (all:\"stock\" OR all:\"financial\")",
+      "plain_query": "test-time training stock financial",
+      "arxiv": {
+       "total": 0,
+       "top": []
+      },
+      "openreview": {
+       "returned": 10,
+       "forum_ids": [
+        "08FTG45E9m",
+        "0x8wWloW2O",
+        "HHhuPIQWO4",
+        "KsWRLyIAKP",
+        "MzmeLlDOkN",
+        "N5ggpxl8Os",
+        "PcjIe5xNaY",
+        "obYDlJN0oU"
+       ]
+      },
+      "semantic_scholar": {
+       "total": null,
+       "error": "ERROR HTTP Error 429: ",
+       "top": []
+      },
+      "github": {
+       "returned": 0
+      }
+     },
+     {
+      "query": "all:\"shared memory\" AND all:\"stock\" AND all:\"prediction\"",
+      "plain_query": "shared memory stock prediction",
+      "arxiv": {
+       "total": 0,
+       "top": []
+      },
+      "openreview": {
+       "returned": 10,
+       "forum_ids": [
+        "0x8wWloW2O",
+        "5BXXoJh0Vr",
+        "FL1VmOgiO8",
+        "MzmeLlDOkN",
+        "PyqP125nbI",
+        "bRMfqThoVC",
+        "bsXxNkhvm6",
+        "obYDlJN0oU"
+       ]
+      },
+      "semantic_scholar": {
+       "total": null,
+       "error": "ERROR HTTP Error 429: ",
+       "top": []
+      },
+      "github": {
+       "returned": 0
+      }
+     },
+     {
+      "query": "all:\"market memory\" AND all:\"stock\"",
+      "plain_query": "market memory stock",
+      "arxiv": {
+       "total": 3,
+       "top": [
+        {
+         "title": "From Knowing to Doing: A Memory-Controlled Benchmark for LLM Trading Agents on Stock Markets",
+         "id": "2605.28359v1",
+         "published": "2026-05-27"
+        },
+        {
+         "title": "Brownian markets",
+         "id": "1010.2061v7",
+         "published": "2010-10-11"
+        },
+        {
+         "title": "Memory effect and multifractality of cross-correlations in financial markets",
+         "id": "1004.5547v1",
+         "published": "2010-04-30"
+        }
+       ]
+      },
+      "openreview": {
+       "returned": 10,
+       "forum_ids": [
+        "0x8wWloW2O",
+        "FL1VmOgiO8",
+        "KvEbCXQkzR",
+        "MY4Y9KpjWQ",
+        "PyqP125nbI",
+        "bRMfqThoVC",
+        "uzg1LnILk5",
+        "zaDU4vMAUr"
+       ]
+      },
+      "semantic_scholar": {
+       "total": 252331,
+       "error": null,
+       "top": [
+        {
+         "title": "Advanced Stock Market Prediction Using Long Short-Term Memory Networks: A Comprehensive Deep Learning Framework",
+         "year": 2025,
+         "venue": "arXiv.org"
+        },
+        {
+         "title": "Fractional Transfer Entropy Networks: Short- and Long-Memory Perspectives on Global Stock Market Interactions",
+         "year": 2025,
+         "venue": "Fractal and Fractional"
+        },
+        {
+         "title": "A Hybrid Approach for Stock Market Price Forecasting Using Long Short-Term Memory and Seahorse Optimization Algorithm",
+         "year": 2025,
+         "venue": "Annals of Data Science"
+        },
+        {
+         "title": "Stock Market Prediction With Transductive Long Short-Term Memory and Social Media Sentiment Analysis",
+         "year": 2024,
+         "venue": "IEEE Access"
+        },
+        {
+         "title": "RETRACTED ARTICLE: Stock market forecasting using deep learning with long short-term memory and gated recurrent unit",
+         "year": 2024,
+         "venue": "Soft Computing - A Fusion of Foundations, Methodologies and Applications"
+        },
+        {
+         "title": "A long memory property of stock market returns and a new model",
+         "year": 1993,
+         "venue": ""
+        }
+       ]
+      },
+      "github": {
+       "returned": 0
+      }
+     },
+     {
+      "query": "all:\"cross-sectional\" AND all:\"memory\" AND all:\"stock\" AND all:\"neural\"",
+      "plain_query": "cross-sectional memory stock neural",
+      "arxiv": {
+       "total": 1,
+       "top": [
+        {
+         "title": "An Optimal Control Strategy for Execution of Large Stock Orders Using LSTMs",
+         "id": "2301.09705v4",
+         "published": "2023-01-23"
+        }
+       ]
+      },
+      "openreview": {
+       "returned": 10,
+       "forum_ids": [
+        "08FTG45E9m",
+        "0x8wWloW2O",
+        "3POV2mBEVl",
+        "C2lAhZjEFX",
+        "FL1VmOgiO8",
+        "GcaoFKQDbT",
+        "OyeVMQicBx",
+        "PyqP125nbI",
+        "S4hWhmOG9x",
+        "s3hxkvMFck"
+       ]
+      },
+      "semantic_scholar": {
+       "total": 587,
+       "error": null,
+       "top": [
+        {
+         "title": "Deep learning and stock returns: neural networks combining sequential information and cross-sectional information",
+         "year": 2026,
+         "venue": "Humanities and Social Sciences Communications"
+        },
+        {
+         "title": "Forecasting stock prices changes using long-short term memory neural network with symbolic genetic programming",
+         "year": 2024,
+         "venue": "Scientific Reports"
+        },
+        {
+         "title": "Machine Learning-Based Portfolio Optimization Using Cross-Sectional Signals: Evidence from the NSE Market",
+         "year": 2026,
+         "venue": "Engineering, Technology &amp; Applied Science Research"
+        },
+        {
+         "title": "Deep order flow imbalance: Extracting alpha at multiple horizons from the limit order book",
+         "year": 2023,
+         "venue": "Social Science Research Network"
+        },
+        {
+         "title": "Workload characterization of a time-series prediction system for spatio-temporal data",
+         "year": 2022,
+         "venue": "ACM International Conference on Computing Frontiers"
+        },
+        {
+         "title": "Cross-sectional analysis of timber boards using convolutional long short-term memory neural networks",
+         "year": 2024,
+         "venue": "Construction and Building Materials"
+        }
+       ]
+      },
+      "github": {
+       "returned": 0
+      }
+     },
+     {
+      "query": "all:\"global memory\" AND all:\"time series\" AND (all:\"fast weights\" OR all:\"test-time\")",
+      "plain_query": "global memory time series fast weights test-time",
+      "arxiv": {
+       "total": 0,
+       "top": []
+      },
+      "openreview": {
+       "returned": 10,
+       "forum_ids": [
+        "6nsKVatyHk",
+        "91K0IgdtrZ",
+        "JtjDELD2kb",
+        "KXOB15k1br",
+        "LbzSpcu9HQ",
+        "OM8nxf0C5U",
+        "fSaT9Tz85v",
+        "fwYkatbJu6",
+        "hKEiRLoyFz",
+        "tNHluL0FLd"
+       ]
+      },
+      "semantic_scholar": {
+       "total": null,
+       "error": "ERROR HTTP Error 429: ",
+       "top": []
+      },
+      "github": {
+       "returned": 0
+      }
+     }
+    ],
+    "O3_cascada_benna_fusi": [
+     {
+      "query": "all:\"Benna\" AND all:\"Fusi\"",
+      "plain_query": "Benna Fusi",
+      "arxiv": {
+       "total": 4,
+       "top": [
+        {
+         "title": "Emulating Complex Synapses Using Interlinked Proton Conductors",
+         "id": "2401.15045v1",
+         "published": "2024-01-26"
+        },
+        {
+         "title": "Computational principles of biological memory",
+         "id": "1507.07580v1",
+         "published": "2015-07-27"
+        },
+        {
+         "title": "Continual Reinforcement Learning with Complex Synapses",
+         "id": "1802.07239v2",
+         "published": "2018-02-20"
+        },
+        {
+         "title": "Continual Knowledge Updating in LLM Systems: Learning Through Multi-Timescale Memory Dynamics",
+         "id": "2605.05097v3",
+         "published": "2026-05-06"
+        }
+       ]
+      },
+      "openreview": {
+       "returned": 10,
+       "forum_ids": [
+        "4naoku2Ak0",
+        "FwRpz6EEFp",
+        "KfEjpHIgp3",
+        "Lt7VDm7zTL",
+        "Lwmldw5W3P",
+        "Qkgl3Z3jRH",
+        "SbOzVVh3kr",
+        "sOQmgO0PTv",
+        "yVGGtsOgc7",
+        "zLLb9vcqgB"
+       ]
+      },
+      "semantic_scholar": {
+       "total": null,
+       "error": "ERROR HTTP Error 429: ",
+       "top": []
+      },
+      "github": {
+       "returned": 1
+      }
+     },
+     {
+      "query": "all:\"complex synapses\" AND all:\"neural network\"",
+      "plain_query": "complex synapses neural network",
+      "arxiv": {
+       "total": 2,
+       "top": [
+        {
+         "title": "Emulating Complex Synapses Using Interlinked Proton Conductors",
+         "id": "2401.15045v1",
+         "published": "2024-01-26"
+        },
+        {
+         "title": "Continual Reinforcement Learning with Complex Synapses",
+         "id": "1802.07239v2",
+         "published": "2018-02-20"
+        }
+       ]
+      },
+      "openreview": {
+       "returned": 10,
+       "forum_ids": [
+        "0CtIt485ew",
+        "5ZkF6jsk6j",
+        "96UB3vQpAA",
+        "9GPXJbgt0v",
+        "9hmDl8fFDs",
+        "CTgFauxxY1",
+        "HNf5kqmYOw",
+        "IQLXFRiyC6",
+        "dSRyKIYRnP"
+       ]
+      },
+      "semantic_scholar": {
+       "total": null,
+       "error": "ERROR HTTP Error 429: ",
+       "top": []
+      },
+      "github": {
+       "returned": 0
+      }
+     },
+     {
+      "query": "all:\"power-law forgetting\" AND (all:\"neural network\" OR all:\"memory\")",
+      "plain_query": "power-law forgetting neural network memory",
+      "arxiv": {
+       "total": 10,
+       "top": [
+        {
+         "title": "Power-law forgetting in synapses with metaplasticity",
+         "id": "1107.1160v2",
+         "published": "2011-07-06"
+        },
+        {
+         "title": "Input anticipating critical reservoirs show power law forgetting of unexpected input events",
+         "id": "1404.6334v5",
+         "published": "2014-04-25"
+        },
+        {
+         "title": "The Price of Meaning: Why Every Semantic Memory System Forgets",
+         "id": "2603.27116v1",
+         "published": "2026-03-28"
+        },
+        {
+         "title": "Slow synaptic dynamics in a network: from exponential to power-law forgetting",
+         "id": "1409.4185v1",
+         "published": "2014-09-15"
+        },
+        {
+         "title": "Retroactive Interference Model of Power-Law Forgetting",
+         "id": "1907.08946v1",
+         "published": "2019-07-21"
+        },
+        {
+         "title": "The Geometry of Forgetting",
+         "id": "2604.06222v1",
+         "published": "2026-03-27"
+        },
+        {
+         "title": "Slower is Better: Revisiting the Forgetting Mechanism in LSTM for Slower Information Decay",
+         "id": "2105.05944v1",
+         "published": "2021-05-12"
+        },
+        {
+         "title": "Ultraslow diffusion in language: Dynamics of appearance of already popular adjectives on Japanese blogs",
+         "id": "1707.07066v3",
+         "published": "2017-07-21"
+        },
+        {
+         "title": "Recommending Items in Social Tagging Systems Using Tag and Time Information",
+         "id": "1406.7727v1",
+         "published": "2014-06-30"
+        },
+        {
+         "title": "Anti-Collapse Dynamics and the Emergence of Multi-Time-Scale Learning in Recurrent Neural Networks",
+         "id": "2606.29519v3",
+         "published": "2026-06-28"
+        }
+       ]
+      },
+      "openreview": {
+       "returned": 10,
+       "forum_ids": [
+        "D6Htk1rwkK",
+        "H4GsteoL0M",
+        "KnoS9XxIlK",
+        "PXWgzUkVwo",
+        "Pwz8xOM9jz",
+        "Q3yLIIkt7z",
+        "dEypApI1MZ",
+        "dwNXKkiP51",
+        "wFD16gwpze"
+       ]
+      },
+      "semantic_scholar": {
+       "total": null,
+       "error": "ERROR HTTP Error 429: ",
+       "top": []
+      },
+      "github": {
+       "returned": 0
+      }
+     },
+     {
+      "query": "all:\"synaptic consolidation\" AND all:\"cascade\" AND all:\"network\"",
+      "plain_query": "synaptic consolidation cascade network",
+      "arxiv": {
+       "total": 0,
+       "top": []
+      },
+      "openreview": {
+       "returned": 10,
+       "forum_ids": [
+        "0CtIt485ew",
+        "KjxS4AgFol",
+        "Lt7VDm7zTL",
+        "QPbTbVAG2J",
+        "ZIcRM4SFOC",
+        "eUBBvBGCNB",
+        "hyYP9MZeYn",
+        "wkgK6GQB3e"
+       ]
+      },
+      "semantic_scholar": {
+       "total": null,
+       "error": "ERROR HTTP Error 429: ",
+       "top": []
+      },
+      "github": {
+       "returned": 0
+      }
+     },
+     {
+      "query": "all:\"multi-timescale\" AND all:\"fast weights\"",
+      "plain_query": "multi-timescale fast weights",
+      "arxiv": {
+       "total": 0,
+       "top": []
+      },
+      "openreview": {
+       "returned": 10,
+       "forum_ids": [
+        "6CIGhcJYJH",
+        "95sD6KKq51",
+        "BjJ8yNgEMZ",
+        "GFC3vv4cl9",
+        "WaLvMNqrJi",
+        "eecCPK8upD",
+        "jh3UNSQK0l",
+        "ko7fZCMylM",
+        "nQRPHjucHJ"
+       ]
+      },
+      "semantic_scholar": {
+       "total": null,
+       "error": "ERROR HTTP Error 429: ",
+       "top": []
+      },
+      "github": {
+       "returned": 0
+      }
+     },
+     {
+      "query": "all:\"test-time training\" AND all:\"forgetting\" AND all:\"timescale\"",
+      "plain_query": "test-time training forgetting timescale",
+      "arxiv": {
+       "total": 0,
+       "top": []
+      },
+      "openreview": {
+       "returned": 10,
+       "forum_ids": [
+        "6CIGhcJYJH",
+        "IPcxsRthEK",
+        "b1ZNTgThgw",
+        "e0LwFqw4Bi",
+        "fRNDDFkPiv",
+        "nQRPHjucHJ",
+        "qCIg2WGudx",
+        "wqCwcTZsrv",
+        "yTTomSJsSW"
+       ]
+      },
+      "semantic_scholar": {
+       "total": 876,
+       "error": null,
+       "top": [
+        {
+         "title": "Fast Spatial Memory with Elastic Test-Time Training",
+         "year": 2026,
+         "venue": "arXiv.org"
+        },
+        {
+         "title": "Continual Test-Time Training on Graphs via Adaptive Prompts Integration",
+         "year": 2026,
+         "venue": "IEEE Transactions on Pattern Analysis and Machine Intelligence"
+        },
+        {
+         "title": "Mem3R: Streaming 3D Reconstruction with Hybrid Memory via Test-Time Training",
+         "year": 2026,
+         "venue": "arXiv.org"
+        },
+        {
+         "title": "Forget, Anticipate and Adapt: Test Time Training for Long Videos",
+         "year": 2026,
+         "venue": "arXiv.org"
+        },
+        {
+         "title": "Remembering by Reconstructing: Domain Incremental Learning With Test-Time Training on Video Streams",
+         "year": 2026,
+         "venue": "arXiv.org"
+        },
+        {
+         "title": "SPARNet: Continual Test-Time Adaptation via Sample Partitioning Strategy and Anti-Forgetting Regularization",
+         "year": 2025,
+         "venue": "arXiv.org"
+        }
+       ]
+      },
+      "github": {
+       "returned": 0
+      }
+     }
+    ],
+    "O4_kalman_equicorrelado": [
+     {
+      "query": "all:\"Kalman\" AND all:\"last layer\" AND all:\"online\"",
+      "plain_query": "Kalman last layer online",
+      "arxiv": {
+       "total": 0,
+       "top": []
+      },
+      "openreview": {
+       "returned": 10,
+       "forum_ids": [
+        "BllUWdpIOA",
+        "VKdjNCmXGk",
+        "XZhpS5Imzx",
+        "ZzmKEpze8e",
+        "dnB71DMyDD",
+        "kshC3NOP6h",
+        "vlRu6sRsSL"
+       ]
+      },
+      "semantic_scholar": {
+       "total": null,
+       "error": "ERROR HTTP Error 429: ",
+       "top": []
+      },
+      "github": {
+       "returned": 0
+      }
+     },
+     {
+      "query": "all:\"Kalman\" AND all:\"delayed\" AND (all:\"labels\" OR all:\"measurements\") AND all:\"neural network\"",
+      "plain_query": "Kalman delayed labels measurements neural network",
+      "arxiv": {
+       "total": 5,
+       "top": [
+        {
+         "title": "Q-Net: Queue Length Estimation via Kalman-based Neural Networks",
+         "id": "2509.24725v4",
+         "published": "2025-09-29"
+        },
+        {
+         "title": "A Deep Learning Approach To Estimation Using Measurements Received Over a Network",
+         "id": "2201.08020v2",
+         "published": "2022-01-20"
+        },
+        {
+         "title": "Stability Analysis and Data-Driven State Estimation for Generalized Persidskii Systems with Time Delays: Theory and Experimental Validation on PMSM Drives",
+         "id": "2604.27509v2",
+         "published": "2026-04-30"
+        },
+        {
+         "title": "Diffusion Model-Based Data Assimilation for Real-World Energy Consumption Forecasting",
+         "id": "2605.29072v3",
+         "published": "2026-05-27"
+        },
+        {
+         "title": "Physics-constrained inference of somatic dynamics from dendritic recordings with sparse somatic supervision in weakly coupled two-compartment neuron model",
+         "id": "2609.25436v1",
+         "published": "2026-09-21"
+        }
+       ]
+      },
+      "openreview": {
+       "returned": 10,
+       "forum_ids": [
+        "AMegoEnlpS",
+        "BllUWdpIOA",
+        "FbtmBWI7DF",
+        "LZIOBA2oDU",
+        "OI3xUsGiPh",
+        "XZhpS5Imzx",
+        "Xz72CeyTWk",
+        "hwqtQej1fU",
+        "pZVt8bOe0i"
+       ]
+      },
+      "semantic_scholar": {
+       "total": null,
+       "error": "ERROR HTTP Error 429: ",
+       "top": []
+      },
+      "github": {
+       "returned": 0
+      }
+     },
+     {
+      "query": "all:\"Kalman\" AND all:\"stock\" AND all:\"neural network\" AND all:\"online\"",
+      "plain_query": "Kalman stock neural network online",
+      "arxiv": {
+       "total": 0,
+       "top": []
+      },
+      "openreview": {
+       "returned": 10,
+       "forum_ids": [
+        "AMegoEnlpS",
+        "BllUWdpIOA",
+        "FL1VmOgiO8",
+        "LZIOBA2oDU",
+        "ZzmKEpze8e",
+        "kV80nC1afE"
+       ]
+      },
+      "semantic_scholar": {
+       "total": null,
+       "error": "ERROR HTTP Error 429: ",
+       "top": []
+      },
+      "github": {
+       "returned": 0
+      }
+     },
+     {
+      "query": "all:\"equicorrelated\" AND all:\"Kalman\"",
+      "plain_query": "equicorrelated Kalman",
+      "arxiv": {
+       "total": 0,
+       "top": []
+      },
+      "openreview": {
+       "returned": 10,
+       "forum_ids": [
+        "8S9Fbee743",
+        "BllUWdpIOA",
+        "LZIOBA2oDU",
+        "Lfy9q7Icp9",
+        "RkOT8rAmRR",
+        "XZhpS5Imzx",
+        "dnB71DMyDD",
+        "vlRu6sRsSL"
+       ]
+      },
+      "semantic_scholar": {
+       "total": null,
+       "error": "ERROR HTTP Error 429: ",
+       "top": []
+      },
+      "github": {
+       "returned": 0
+      }
+     }
+    ],
+    "O5_fusion_por_presencia": [
+     {
+      "query": "all:\"missing modality\" AND (all:\"multiplicative\" OR all:\"hypernetwork\") AND all:\"fusion\"",
+      "plain_query": "missing modality multiplicative hypernetwork fusion",
+      "arxiv": {
+       "total": 56,
+       "top": [
+        {
+         "title": "A Multimodal Sensor Fusion Framework Robust to Missing Modalities for Person Recognition",
+         "id": "2210.10972v2",
+         "published": "2022-10-20"
+        },
+        {
+         "title": "Towards Good Practices for Missing Modality Robust Action Recognition",
+         "id": "2211.13916v2",
+         "published": "2022-11-25"
+        },
+        {
+         "title": "Multi-modal Learning with Missing Modality via Shared-Specific Feature Modelling",
+         "id": "2307.14126v2",
+         "published": "2023-07-26"
+        },
+        {
+         "title": "Missing Modality Robustness in Semi-Supervised Multi-Modal Semantic Segmentation",
+         "id": "2304.10756v1",
+         "published": "2023-04-21"
+        },
+        {
+         "title": "Tag-assisted Multimodal Sentiment Analysis under Uncertain Missing Modalities",
+         "id": "2204.13707v1",
+         "published": "2022-04-28"
+        },
+        {
+         "title": "An Attention-based Model for Robust Forecasting with Missing Modality",
+         "id": "2606.13970v1",
+         "published": "2026-06-11"
+        },
+        {
+         "title": "MDA: An Interpretable and Scalable Multi-Modal Fusion under Missing Modalities and Intrinsic Noise Conditions",
+         "id": "2406.10569v3",
+         "published": "2024-06-15"
+        },
+        {
+         "title": "D3Seg: Dependency-Aware Diffusion for Brain Tumor Segmentation with Missing Modalities",
+         "id": "2605.22249v2",
+         "published": "2026-05-21"
+        },
+        {
+         "title": "Reinforcement Learning-Guided Retrieval with Soft Fusion for Robust Multimodal Imitation Learning under Missing Modalities",
+         "id": "2606.15514v1",
+         "published": "2026-06-13"
+        },
+        {
+         "title": "Modality Invariant Multimodal Learning to Handle Missing Modalities: A Single-Branch Approach",
+         "id": "2408.07445v1",
+         "published": "2024-08-14"
+        }
+       ]
+      },
+      "openreview": {
+       "returned": 10,
+       "forum_ids": [
+        "3u2L0GVern",
+        "KrRhFdn8kv",
+        "NoRvNK9eDp",
+        "QTkWE35rTd",
+        "WDZg4P97gr",
+        "ZgQnIPG4uV",
+        "h0iRgjTmVs",
+        "qezVbskHmi",
+        "vmYY8iqNyC"
+       ]
+      },
+      "semantic_scholar": {
+       "total": null,
+       "error": "ERROR HTTP Error 429: ",
+       "top": []
+      },
+      "github": {
+       "returned": 0
+      }
+     },
+     {
+      "query": "all:\"modality dropout\" AND (all:\"time series\" OR all:\"financial\")",
+      "plain_query": "modality dropout time series financial",
+      "arxiv": {
+       "total": 2,
+       "top": [
+        {
+         "title": "Frequency-Aware Masked Autoencoders for Multimodal Pretraining on Biosignals",
+         "id": "2309.05927v2",
+         "published": "2023-09-12"
+        },
+        {
+         "title": "Source-Learned Reliance for Selective Test-Time Adaptation of Multimodal Time Series",
+         "id": "2610.07499v1",
+         "published": "2026-10-05"
+        }
+       ]
+      },
+      "openreview": {
+       "returned": 10,
+       "forum_ids": [
+        "2L1OxhQCwS",
+        "53gU1BASrd",
+        "8RJ9WqVfZ5",
+        "CdjnzWsQax",
+        "PcjIe5xNaY",
+        "dHqPm0Rtdr",
+        "qU1GtrDDst",
+        "wSUysJXv07"
+       ]
+      },
+      "semantic_scholar": {
+       "total": null,
+       "error": "ERROR HTTP Error 429: ",
+       "top": []
+      },
+      "github": {
+       "returned": 0
+      }
+     }
+    ]
+   }
+  },
+  {
+   "date": "2026-10-10",
+   "sources": [
+    "arXiv API"
+   ],
+   "notes": "Consultas de seguimiento para PT1, PT2 y PT3 tras leer los informes bibliográficos.",
+   "groups": {
+    "PT1_memoria_contractiva": [
+     {
+      "query": "all:\"common quadratic Lyapunov\" AND (all:\"linear attention\" OR all:\"state space\" OR all:\"fast weights\")",
+      "plain_query": null,
+      "arxiv": {
+       "total": 1,
+       "top": [
+        {
+         "title": "Positive recurrence of piecewise Ornstein-Uhlenbeck processes and common quadratic Lyapunov functions",
+         "id": "1107.2873v3",
+         "published": "2011-07-14"
+        }
+       ]
+      }
+     },
+     {
+      "query": "all:\"momentum\" AND all:\"delta rule\" AND all:\"gating\" AND all:\"stability\"",
+      "plain_query": null,
+      "arxiv": {
+       "total": 0,
+       "top": []
+      }
+     },
+     {
+      "query": "all:\"test-time\" AND all:\"memory\" AND all:\"Huber\"",
+      "plain_query": null,
+      "arxiv": {
+       "total": 0,
+       "top": []
+      }
+     },
+     {
+      "query": "all:\"linear parameter-varying\" AND (all:\"Mamba\" OR all:\"linear attention\" OR all:\"recurrent\")",
+      "plain_query": null,
+      "arxiv": {
+       "total": 1,
+       "top": [
+        {
+         "title": "RNN-based linear parameter varying adaptive model predictive control for autonomous driving",
+         "id": "2511.00610v1",
+         "published": "2025-11-01"
+        }
+       ]
+      }
+     },
+     {
+      "query": "all:\"joint spectral radius\" AND (all:\"recurrent neural\" OR all:\"linear attention\")",
+      "plain_query": null,
+      "arxiv": {
+       "total": 0,
+       "top": []
+      }
+     }
+    ],
+    "PT2_conformal_retardado": [
+     {
+      "query": "all:\"adaptive conformal\" AND all:\"delayed\"",
+      "plain_query": null,
+      "arxiv": {
+       "total": 6,
+       "top": [
+        {
+         "title": "Adaptive Conformal Inference Under Delayed Feedback: Coverage Guarantees and a Delay-to-Memory Diagnostic",
+         "id": "2609.07251v1",
+         "published": "2026-09-07"
+        },
+        {
+         "title": "Adaptive Conformal Prediction for Motion Planning among Dynamic Agents",
+         "id": "2212.00278v1",
+         "published": "2022-12-01"
+        },
+        {
+         "title": "ConformalShift: Targeted Event Reordering Against Adaptive ECG Monitoring",
+         "id": "2608.03628v1",
+         "published": "2026-08-04"
+        },
+        {
+         "title": "CF-HFC:Calibrated Federated based Hardware-aware Fuzzy Clustering for Intrusion Detection in Heterogeneous IoTs",
+         "id": "2602.12557v1",
+         "published": "2026-02-13"
+        },
+        {
+         "title": "BACC: Budget-Aware Calibration and Control for Horizontal Autoscaling",
+         "id": "2606.20575v1",
+         "published": "2026-05-01"
+        },
+        {
+         "title": "Prediction-Powered Communication with Distortion Guarantees",
+         "id": "2509.24373v1",
+         "published": "2025-09-29"
+        }
+       ]
+      }
+     },
+     {
+      "query": "all:\"conformal\" AND all:\"multi-step\" AND all:\"online\" AND all:\"time series\"",
+      "plain_query": null,
+      "arxiv": {
+       "total": 5,
+       "top": [
+        {
+         "title": "Online conformal inference for multi-step time series forecasting",
+         "id": "2410.13115v2",
+         "published": "2024-10-17"
+        },
+        {
+         "title": "Adaptive Conformal Inference for Multi-Step Ahead Time-Series Forecasting Online",
+         "id": "2409.14792v1",
+         "published": "2024-09-23"
+        },
+        {
+         "title": "Optimization-based Online Conformal Prediction for Multi-step Forecasting",
+         "id": "2508.13362v3",
+         "published": "2025-08-18"
+        },
+        {
+         "title": "Conformal Prediction Algorithms for Time Series Forecasting: Methods and Benchmarking",
+         "id": "2601.18509v2",
+         "published": "2026-01-26"
+        },
+        {
+         "title": "Report the Floor: A Training-Free Conformal Interval Is a Mandatory Baseline for Probabilistic Time-Series Forecasting",
+         "id": "2606.09473v1",
+         "published": "2026-06-08"
+        }
+       ]
+      }
+     },
+     {
+      "query": "all:\"conformal\" AND all:\"stock returns\" AND all:\"online\"",
+      "plain_query": null,
+      "arxiv": {
+       "total": 0,
+       "top": []
+      }
+     }
+    ],
+    "PT3_kalman_cohorte": [
+     {
+      "query": "all:\"Kalman\" AND all:\"cross-sectional\" AND all:\"returns\"",
+      "plain_query": null,
+      "arxiv": {
+       "total": 1,
+       "top": [
+        {
+         "title": "A tale of two sentiment scales: Disentangling short-run and long-run components in multivariate sentiment dynamics",
+         "id": "1910.01407v4",
+         "published": "2019-10-03"
+        }
+       ]
+      }
+     },
+     {
+      "query": "all:\"dynamic linear model\" AND all:\"stock\" AND all:\"cross-section\"",
+      "plain_query": null,
+      "arxiv": {
+       "total": 0,
+       "top": []
+      }
+     },
+     {
+      "query": "all:\"recursive least squares\" AND all:\"delayed\" AND all:\"labels\"",
+      "plain_query": null,
+      "arxiv": {
+       "total": 1,
+       "top": [
+        {
+         "title": "Training on the Future: A Delay-Aware Audit of Test-Time Adaptation for Time-Series Forecasting",
+         "id": "2610.12232v1",
+         "published": "2026-10-08"
+        }
+       ]
+      }
+     },
+     {
+      "query": "all:\"Kalman\" AND all:\"equicorrelated\" OR all:\"random effects\" AND all:\"Kalman\" AND all:\"panel\"",
+      "plain_query": null,
+      "arxiv": {
+       "total": 0,
+       "top": []
+      }
+     }
+    ]
+   }
+  }
+ ],
+ "manual_checks_20261010": [
+  {
+   "source": "PMLR v306 (ICML 2026), índice completo",
+   "query": "títulos con Momentum, Stability o Titans",
+   "closest": [
+    "huang26af (MDN)",
+    "cao26l (A Control-Theoretic View of Mamba on Stability and Robustness)"
+   ]
+  },
+  {
+   "source": "arXiv id_list",
+   "ids": [
+    "2602.11995",
+    "2605.05838",
+    "2606.01294",
+    "2610.12232",
+    "2606.09473",
+    "2409.14792",
+    "2508.13362"
+   ]
+  }
+ ],
+ "group_to_proposal": {
+  "O1_certificado_titans": "PT1",
+  "O2_memoria_de_mercado": "PT4",
+  "O3_cascada_benna_fusi": "PT5",
+  "O4_kalman_equicorrelado": "PT3",
+  "O5_fusion_por_presencia": "PT6",
+  "PT1_memoria_contractiva": "PT1",
+  "PT2_conformal_retardado": "PT2",
+  "PT3_kalman_cohorte": "PT3"
+ }
+}
