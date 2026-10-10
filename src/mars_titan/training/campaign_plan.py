@@ -229,6 +229,17 @@ LATER_STAGES = {
         issue=414,
         pending=[],
     ),
+    # Paso final (`run_masked_campaign.py publication`): comparación, cartera, matriz de
+    # comparaciones y comparación postentrenada. La matriz de cada declaración lee la
+    # comparación de su campaña. B no se ejecuta y no tiene matriz.
+    "campaign_publication": dict(
+        config="configs/evaluation/comparison-matrix-a.json",
+        stages=dict(A="configs/evaluation/historical-masked-publication-a.json"),
+        joint_stage="configs/evaluation/historical-masked-publication-a-v2.json",
+        entry="mars_titan.training.campaign_publication:run_publication",
+        issue=28,
+        pending=[],
+    ),
 }
 _FIELDS = {
     "schema_version",
