@@ -28,6 +28,7 @@ from mars_titan.training.campaign_slots import (
     SlotProcess,
     SlotTask,
     bound_vram,
+    executor_name,
     new_event,
     parse_gpu_processes,
     wait,
@@ -329,6 +330,24 @@ def test_a_result_sent_just_before_the_process_exits_is_not_lost():
     handle.receiver, handle.result = Receiver(handle.process), None
     assert handle.poll() is None
     assert handle.poll() == ("completed", {}, {})
+
+
+def test_every_campaign_executor_can_run_in_a_slot():
+    # Una ranura importa su ejecutor por nombre en un proceso nuevo, así que ninguno de los
+    # ejecutores de la campaña puede ser un cierre.
+    for entry in engine.EXECUTORS.values():
+        assert executor_name(entry["run"])
+
+
+def test_tabular_state_is_released_before_each_launch(prepared, tmp_path, monkeypatch):  # noqa: F811
+    campaign = campaign_file(tmp_path)
+    views = {"US": prepared.views["US"]}
+    released = []
+    monkeypatch.setattr(engine, "_release_tabular", lambda *key: released.append(key))
+    summary = execute(campaign, views, tmp_path / "out", slots(2), cpu={("ridge", "fit")})
+    assert summary["status"] == "completed"
+    planned = plan_campaign(load_campaign(campaign))
+    assert sorted(released) == sorted((job["model"], job["kind"]) for job in planned)
 
 
 def test_a_job_locked_by_another_process_is_not_run_twice(tmp_path):

@@ -408,30 +408,23 @@ EXECUTORS = {
 }
 
 
-def _releasing_tabular(run_function, model, kind):
+def _release_tabular(model, kind):
     """Liberar lo que comparten los tabulares de una ventana antes de un trabajo ajeno a ello.
 
     Los ajustes XGBoost y Ridge de una ventana son consecutivos en el plan, así que la
     matriz, la validación y la Gram solo se conservan mientras los usan esos ajustes. Los
     traslados no las usan. Sin bloqueo, un trabajo concurrente no espera a un ajuste en curso.
+    La campaña lo llama en su propio proceso antes de lanzar cada trabajo, porque ahí viven
+    la matriz y la Gram, también cuando el trabajo va a una ranura. Un cierre alrededor del
+    ejecutor no serviría, porque la ranura importa su ejecutor por nombre en un proceso nuevo.
     """
+    from .external_corpus import SHARED
+    from .tabular_corpus import RIDGE_STATISTICS
 
-    def run(job_run):
-        from .external_corpus import SHARED
-        from .tabular_corpus import RIDGE_STATISTICS
-
-        if (model, kind) != ("xgboost", FIT):
-            SHARED.release(blocking=False)
-        if (model, kind) != ("ridge", FIT):
-            RIDGE_STATISTICS.clear(blocking=False)
-        return run_function(job_run)
-
-    return run
-
-
-EXECUTORS = {
-    key: dict(entry, run=_releasing_tabular(entry["run"], *key)) for key, entry in EXECUTORS.items()
-}
+    if (model, kind) != ("xgboost", FIT):
+        SHARED.release(blocking=False)
+    if (model, kind) != ("ridge", FIT):
+        RIDGE_STATISTICS.clear(blocking=False)
 
 
 def _code():
@@ -1141,6 +1134,7 @@ def _execute(state, jobs, pool, execution):
                 continue
             require_learning_allowed(f"el trabajo {job['id']}")
             state.admit(job)
+            _release_tabular(job["model"], job["kind"])
             run, identity = prepared
             entry = _Running(job, run, identity, resources)
             admission.acquire(resources)

@@ -222,8 +222,8 @@ def test_campaign_releases_the_other_tabular_state_before_each_job(monkeypatch):
         (("ridge", "carry"), both),
     ):
         calls.clear()
-        run = masked_campaign._releasing_tabular(lambda job: "done", *key)
-        assert run(None) == "done" and calls == expected
+        masked_campaign._release_tabular(*key)
+        assert calls == expected
     assert masked_campaign.FIT == "fit" and masked_campaign.CARRY == "carry"
 
 
