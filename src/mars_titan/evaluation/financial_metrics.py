@@ -1,42 +1,37 @@
-"""Métricas financieras comunes sobre series de patrimonio por sesión.
+"""Métricas financieras de series de patrimonio por sesión para el informe de políticas.
 
-Las usa el informe de la etapa de políticas financieras y están pensadas para la cartera
-larga y corta de la comparación predictiva, que hoy calcula las suyas con las mismas
-convenciones. Parten del patrimonio valorado en cada cierre, nunca de retornos residuales.
+Parten del patrimonio valorado en cada cierre, nunca de retornos residuales. Las
+convenciones son las de `financial_conventions`, comunes con la cartera larga y corta de
+la comparación predictiva: sesiones por año del mercado (252 en US y 243 en CN), tipo sin
+riesgo cero, rentabilidad anualizada geométrica, volatilidad muestral, Sortino con objetivo
+cero y drawdown desde el máximo previo incluido el capital inicial. Una misma serie da las
+mismas cifras en los dos informes.
 
-Convenciones declaradas antes de ver resultados:
-
-- Un año tiene 252 sesiones. La rentabilidad anualizada es geométrica.
-- El tipo sin riesgo es cero, porque el efectivo de la simulación no remunera. Sharpe y
-  Sortino usan retornos simples por sesión, sin restar ningún tipo.
-- La desviación a la baja de Sortino es la raíz de la media de min(r, 0)², con objetivo cero
-  y denominador igual al número de sesiones.
-- La volatilidad usa la desviación típica muestral (ddof=1) de los retornos por sesión.
-
-El remuestreo usa el bootstrap circular por bloques de `paired_comparisons`: cada réplica
-cuenta cuántas veces aparece cada sesión, y todas las series de una familia comparten las
-mismas réplicas. Las métricas remuestreadas no dependen del orden de las sesiones. El
-drawdown máximo sí depende de él y solo se publica como estimación puntual.
+El remuestreo usa los índices del bootstrap circular por bloques de `financial_conventions`,
+y todas las series de una familia comparten las mismas réplicas. Las métricas remuestreadas
+no dependen del orden de las sesiones y se calculan con las veces que aparece cada una. El
+drawdown máximo sí depende del orden y aquí solo se publica como estimación puntual, porque
+recorrer cada réplica en orden multiplica el coste del informe.
 """
 
 import math
 
 import numpy as np
 
-from .paired_comparisons import circular_block_counts, family_intervals
-
-PERIODS_PER_YEAR = 252
-CONVENTIONS = dict(
-    periods_per_year=PERIODS_PER_YEAR,
-    risk_free_rate=0.0,
-    returns="simple_session_returns_from_close_valuation",
-    annualized_return="geometric",
-    volatility="sample_std_ddof_1",
-    downside_deviation="root_mean_square_of_negative_returns_target_zero",
+from . import financial_conventions
+from .financial_conventions import (
+    CONVENTIONS,
+    resampled,
+    resamples,
+    sessions_per_year,
+    statistics,
 )
+from .paired_comparisons import family_intervals
+
 RESAMPLED = ("annualized_return", "volatility", "sharpe", "sortino", "mean_session_return")
+# Nombre de cada métrica del informe en las convenciones comunes.
+_COMMON = dict(mean_session_return="mean_return")
 MAX_REPLICATES = 100_000
-_CHUNK = 256
 
 
 def _require(condition, message):
@@ -69,42 +64,26 @@ def session_returns(nav):
 
 def max_drawdown(nav):
     """Mayor caída relativa desde un máximo anterior, entre 0 y 1."""
-    values = check_nav(nav)
-    return float(np.max(1 - values / np.maximum.accumulate(values)))
+    return float(financial_conventions.max_drawdown(session_returns(nav)[:, None])[0])
 
 
-def _ratio(numerator, denominator):
-    return None if denominator == 0 else float(numerator / denominator)
+def _defined(value):
+    value = float(value)
+    return value if math.isfinite(value) else None
 
 
-def _moments(returns):
-    """Estadísticos que solo dependen de los retornos, no de su orden."""
-    count = len(returns)
-    mean = math.fsum(returns) / count
-    variance = math.fsum((returns - mean) ** 2) / (count - 1) if count > 1 else 0.0
-    downside = math.sqrt(math.fsum(np.minimum(returns, 0) ** 2) / count)
-    growth = math.fsum(np.log1p(returns)) if (returns > -1).all() else -math.inf
-    return mean, math.sqrt(variance), downside, growth
-
-
-def _annualized(growth, sessions):
-    if growth == -math.inf:
-        return -1.0
-    return math.expm1(growth * PERIODS_PER_YEAR / sessions)
-
-
-def equity_metrics(nav, *, turnover=None, costs=None):
-    """Métricas de una serie de patrimonio. `turnover` y `costs` vienen de la contabilidad.
+def equity_metrics(nav, *, market, turnover=None, costs=None):
+    """Métricas de una serie de patrimonio del mercado, con giro y costes de la contabilidad.
 
     Las rentabilidades se dan en tanto por uno y en porcentaje. Sharpe y Sortino son None
-    si su denominador es cero, por ejemplo con la cartera siempre en efectivo.
+    si no están definidos, por ejemplo con la cartera siempre en efectivo.
     """
     values = check_nav(nav)
     returns = values[1:] / values[:-1] - 1
-    mean, deviation, downside, growth = _moments(returns)
-    scale = math.sqrt(PERIODS_PER_YEAR)
-    cumulative = values[-1] / values[0] - 1
-    annualized = _annualized(growth, len(returns))
+    point = {
+        name: float(value[0])
+        for name, value in statistics(returns[:, None], sessions_per_year(market)).items()
+    }
     for name, value in (("turnover", turnover), ("costs", costs)):
         _require(
             value is None or (type(value) in (int, float) and math.isfinite(value) and value >= 0),
@@ -114,56 +93,19 @@ def equity_metrics(nav, *, turnover=None, costs=None):
         sessions=len(returns),
         initial_nav=float(values[0]),
         final_nav=float(values[-1]),
-        cumulative_return=float(cumulative),
-        cumulative_return_percent=float(100 * cumulative),
-        annualized_return=annualized,
-        annualized_return_percent=100 * annualized,
-        log_growth=growth if math.isfinite(growth) else None,
-        mean_session_return=mean,
-        volatility=deviation * scale,
-        sharpe=None if deviation == 0 else mean / deviation * scale,
-        sortino=None if downside == 0 else mean / downside * scale,
-        max_drawdown=max_drawdown(values),
+        cumulative_return=point["cumulative_return"],
+        cumulative_return_percent=100 * point["cumulative_return"],
+        annualized_return=point["annualized_return"],
+        annualized_return_percent=100 * point["annualized_return"],
+        log_growth=_defined(point["log_growth"]),
+        mean_session_return=point["mean_return"],
+        volatility=point["volatility"],
+        sharpe=_defined(point["sharpe"]),
+        sortino=_defined(point["sortino"]),
+        max_drawdown=point["max_drawdown"],
         turnover=turnover,
         costs=costs,
         ruined=bool(values[-1] == 0),
-    )
-
-
-def _resampled(returns, counts):
-    """Métricas de cada réplica a partir de cuántas veces aparece cada sesión."""
-    weights = counts.astype(np.float64)
-    sessions = weights.sum(axis=1)
-    mean = weights @ returns / sessions
-    second = weights @ returns**2 / sessions
-    variance = np.maximum(second - mean**2, 0) * sessions / (sessions - 1)
-    deviation = np.sqrt(variance)
-    downside = np.sqrt(weights @ np.minimum(returns, 0) ** 2 / sessions)
-    # Una ruina (retorno −1) solo cuenta en las réplicas que la contienen.
-    ruin = returns <= -1
-    growth = weights @ np.log1p(np.where(ruin, 0.0, returns))
-    growth[weights[:, ruin].sum(axis=1) > 0] = -math.inf
-    scale = math.sqrt(PERIODS_PER_YEAR)
-    with np.errstate(divide="ignore", invalid="ignore", over="ignore"):
-        result = dict(
-            annualized_return=np.expm1(growth * PERIODS_PER_YEAR / sessions),
-            volatility=deviation * scale,
-            sharpe=np.where(deviation > 0, mean / deviation * scale, np.nan),
-            sortino=np.where(downside > 0, mean / downside * scale, np.nan),
-            mean_session_return=mean,
-        )
-    return result
-
-
-def _point(returns):
-    mean, deviation, downside, growth = _moments(returns)
-    scale = math.sqrt(PERIODS_PER_YEAR)
-    return dict(
-        annualized_return=_annualized(growth, len(returns)),
-        volatility=deviation * scale,
-        sharpe=math.nan if deviation == 0 else mean / deviation * scale,
-        sortino=math.nan if downside == 0 else mean / downside * scale,
-        mean_session_return=mean,
     )
 
 
@@ -174,12 +116,12 @@ def _pair(lower, upper):
 
 
 def block_bootstrap(
-    returns, *, base, block_length, replicates, seed, confidence=0.95, sensitivity=()
+    returns, *, market, base, block_length, replicates, seed, confidence=0.95, sensitivity=()
 ):
     """Intervalos por bloques de cada serie y diferencias emparejadas frente a `base`.
 
-    `returns` asigna a cada brazo sus retornos simples sobre las mismas sesiones, en el
-    mismo orden. Todas las series se remuestrean con las mismas réplicas. Para cada
+    `returns` asigna a cada brazo sus retornos simples sobre las mismas sesiones del
+    mercado, en el mismo orden. Todas las series se remuestrean con las mismas réplicas. Para cada
     métrica, las diferencias `brazo − base` forman una familia con intervalos marginales
     percentiles e intervalos simultáneos por máximo estudentizado. Un intervalo simultáneo
     que excluye el cero es la regla para afirmar una diferencia dentro de la familia.
@@ -202,20 +144,23 @@ def block_bootstrap(
         isinstance(confidence, float) and 0.5 <= confidence < 1,
         "El nivel de confianza no es válido",
     )
-    points = {arm: _point(matrix[:, j]) for j, arm in enumerate(arms)}
+    annual = sessions_per_year(market)
+    estimate = statistics(matrix, annual)
+    points = {
+        arm: {name: float(estimate[_COMMON.get(name, name)][j]) for name in RESAMPLED}
+        for j, arm in enumerate(arms)
+    }
 
     def family(length):
         if length >= sessions:
             return None, "Se necesitan más sesiones que la longitud del bloque"
-        rng = np.random.default_rng(seed)
         draws = {name: np.empty((replicates, len(arms))) for name in RESAMPLED}
-        for offset in range(0, replicates, _CHUNK):
-            size = min(_CHUNK, replicates - offset)
-            counts = circular_block_counts(rng, size, sessions, length)
-            for j in range(len(arms)):
-                values = _resampled(matrix[:, j], counts)
-                for name in RESAMPLED:
-                    draws[name][offset : offset + size, j] = values[name]
+        for offset, index in resamples(
+            sessions, block_length=length, replicates=replicates, seed=seed
+        ):
+            values = resampled(matrix, annual, index, path=False)
+            for name in RESAMPLED:
+                draws[name][offset : offset + len(index)] = values[_COMMON.get(name, name)]
         return draws, None
 
     def summarize(draws, reason):
@@ -273,6 +218,8 @@ def block_bootstrap(
         schema_version=1,
         kind="financial_block_bootstrap",
         conventions=CONVENTIONS,
+        market=market,
+        sessions_per_year=annual,
         base=base,
         resampling=dict(
             method="circular_block_bootstrap",

@@ -57,6 +57,7 @@ SCORING_SOURCES = (
 LONG_SHORT_SOURCES = (
     "evaluation/walk_forward_comparison.py",
     "evaluation/forecast_panel.py",
+    "evaluation/financial_conventions.py",
     "evaluation/long_short.py",
     "evaluation/long_short_comparison.py",
     "simulation/session_prices.py",
