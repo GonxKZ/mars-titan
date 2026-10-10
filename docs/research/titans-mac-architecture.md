@@ -264,7 +264,7 @@ flowchart TD
 
     CAL["Calibración CQR por mercado<br/>ajustada una vez y congelada"]
 
-    PT2["PT2 · calibración conformal en línea<br/>propuesta, #454"]:::propuesta
+    PT2["PT2 · calibración conformal en línea<br/>implementada sin entrenar, #454"]:::comprobado
 
     OUT["Predicción e intervalos emitidos"]
     Q["Cola de predicciones emitidas<br/>etiquetas que maduran en t+1"]
@@ -298,6 +298,6 @@ El banco y B6 no se combinan en la misma variante, como fija la declaración de 
 
 **PT1. Memoria de Titans acotada y contractiva** ([#453](https://github.com/GonxKZ/mars-titan/issues/453)). Propuesta, sin implementar en esta rama. Resultado experimental pendiente.
 
-**PT2. Calibración conformal en línea con etiquetas maduras** ([#454](https://github.com/GonxKZ/mars-titan/issues/454)). Propuesta, sin implementar en esta rama. Resultado experimental pendiente.
+**PT2. Calibración conformal en línea con etiquetas maduras** ([#454](https://github.com/GonxKZ/mars-titan/issues/454)). Implementada y comprobada sin entrenar como `OnlineConformal`, con κ = 0 idéntica a la CQR estática y sin integrar todavía en la comparación por ventanas. Ecuaciones, pruebas y coste en [su documento](../engineering/online-conformal-calibration.md). Resultado experimental pendiente.
 
 **PT3. Regla de Kalman con ruido de cohorte correlacionado en B6** ([#455](https://github.com/GonxKZ/mars-titan/issues/455)). Propuesta, sin implementar en esta rama. Resultado experimental pendiente.
