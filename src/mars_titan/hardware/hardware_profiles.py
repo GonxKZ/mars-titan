@@ -142,7 +142,7 @@ def check_profile(profile, identity, *, memory_limit=None):
                 "MiB como mucho"
             )
     _require(
-        not found, f"La plataforma no corresponde al perfil {profile['name']}: {'; '.join(found)}"
+        not found, f"La plataforma no corresponde al perfil {profile['name']}: {', '.join(found)}"
     )
 
 
@@ -198,7 +198,7 @@ def same_platform(records, *, unrecorded=None):
             _require(
                 not found,
                 f"{label} no corresponde al perfil {unrecorded['name']} atribuido a las "
-                f"ejecuciones sin plataforma: {'; '.join(found)}",
+                f"ejecuciones sin plataforma: {', '.join(found)}",
             )
     return dict(
         platform_sha256=next(iter(digests), None),
