@@ -27,6 +27,7 @@ from mars_titan.budget_training import validate_loss
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.evaluation.session_metrics import SessionErrors
 from mars_titan.memory.financial_observations import FinancialObservationSource
+from mars_titan.models.predictive_adaptation import is_adapter_name
 from mars_titan.models.quantile_head import PINBALL, QUANTILE_HEAD, pinball_loss
 from mars_titan.models.titans.config import canonical
 from mars_titan.models.titans.financial import VARIANTS, FinancialPredictor, FinancialState
@@ -180,7 +181,7 @@ def parameter_roles(predictor):
     """
     roles = dict(shared=[], persistent_memory=[], initial_fast_weights=[])
     for name, _ in predictor.named_parameters():
-        if ".parametrizations." in name and not name.endswith(".original"):
+        if is_adapter_name(name):
             roles.setdefault("adapters", []).append(name)
         elif name == "mac.persistent":
             roles["persistent_memory"].append(name)
