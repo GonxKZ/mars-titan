@@ -118,6 +118,20 @@ def test_a_plateau_keeps_its_states_without_tables_aggregates_or_regeneration(de
             assert after["release"] - after["rl"] == before["release"] - before["rl"]
 
 
+def test_a_policy_reads_the_continuation_of_a_joint_fit_and_never_its_plateau():
+    from mars_titan.training import campaign_plan as plan
+    from mars_titan.training import campaign_schedule as order
+
+    campaign = plan.load_campaign(Path("configs/baselines/historical-masked-campaign-a-v2.json"))
+    jobs = plan.plan_campaign(campaign)
+    windows = order.campaign_windows(campaign)
+    stage = plan.LATER_STAGES["rl_policy_comparison"]["joint_stage"]
+    reads = rolling.rolling_inputs(jobs, windows, dict(tape_bytes=1), rl=stage)["policy_reads"]
+    phases = {job["id"]: job.get("phase") for job in jobs}
+    assert reads and all(phases[key] != plan.PLATEAU for key in reads)
+    assert {phases[key] for key in reads} == {plan.JOINT, None}
+
+
 def test_without_exact_regeneration_everything_stays_compacted(declared):
     result = estimate(declared)
     gap = result["none_regenerated"]["retained_bytes"] - result["all_regenerated"]["retained_bytes"]
