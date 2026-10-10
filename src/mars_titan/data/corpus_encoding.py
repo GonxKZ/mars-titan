@@ -5,6 +5,7 @@ import fcntl
 import json
 import re
 import shutil
+from functools import partial
 from pathlib import Path
 
 from .accounting_catalog import HISTORICAL_ACCOUNTING, JOINT_CONCEPTS, historical_accounting_context
@@ -14,7 +15,7 @@ from .cohort_files import safe_destination
 from .cohort_news import COHORT_POLICIES
 from .cohort_samples import _digest, materialize_cohort_asset
 from .corpus_preparation import STARTS
-from .embeddings import EmbeddingCache, FrozenEncoders
+from .embeddings import EmbeddingCache, FrozenEncoders, encoder_spec, strict_fp32
 from .input_policy import INPUT_POLICIES, STRICT_INPUTS, masked_inputs, policy_identity
 from .price_windows import calendar_digest, check_price_window_contract
 from .samples import FUNDAMENTAL_CONCEPTS
@@ -29,6 +30,8 @@ from .vector_carry import (
     PendingVectors,
     ReuseOnlyEncoders,
     encode_pending,
+    release_vectors,
+    strict_fp32_spec,
 )
 
 
@@ -68,17 +71,21 @@ def encode_corpus(
     price_window=None,
     vector_carry=None,
     shard=None,
+    on_confirmed=None,
 ):
     """Procesar todos los candidatos y publicar solo una cobertura completa sin errores.
 
     `price_window` declara las ventanas por sesión del calendario con bit de presencia de la
     edición v3.1. Sin él, las ventanas siguen exigiendo 64 filas consecutivas. `vector_carry`
-    nombra una edición anterior con el mismo codificador cuyos gráficos y textos se reutilizan
-    cuando la entrada es idéntica. `shard=(k, n)` procesa solo los candidatos con posición
-    `i % n == k`, comparte el candado con los demás fragmentos y no publica el manifiesto. La
-    pasada sin fragmentos reutiliza después cada activo confirmado y publica la edición.
+    nombra una edición anterior con el mismo codificador en FP32 estricto cuyos gráficos y
+    textos se reutilizan cuando la entrada es idéntica. `shard=(k, n)` procesa solo los
+    candidatos con posición `i % n == k`, comparte el candado con los demás fragmentos y no
+    publica el manifiesto. La pasada sin fragmentos reutiliza después cada activo confirmado y
+    publica la edición.
     Con `CollectingEncoders`, cada activo se materializa en `collect/` y solo se confirma si no
     le falta ningún vector. Si falta alguno, se descarta y sus entradas quedan pendientes de GPU.
+    `on_confirmed(market, symbol)` se llama tras cada activo confirmado, fuera del registro de
+    fallos por activo, de modo que cualquier error suyo detiene el recorrido.
     """
     if shard is not None and (
         not isinstance(shard, tuple)
@@ -265,11 +272,11 @@ def encode_corpus(
         identity["price_window"] = price_window
     previous = None
     collecting = isinstance(encoders, CollectingEncoders)
-    if collecting and vector_carry is None:
-        raise ValueError("La recogida necesita la edición anterior")
     if vector_carry is not None:
         previous = Path(vector_carry).resolve()
         configured, configured_hash = _read(previous / "configuration.json")
+        if not strict_fp32_spec(configured.get("encoders")):
+            raise ValueError("La edición anterior no registra FP32 estricto y no se hereda")
         if configured.get("encoders") != encoders.spec:
             raise ValueError("La edición anterior usó otro codificador y sus vectores no sirven")
         outside_source(previous, output)
@@ -277,7 +284,7 @@ def encode_corpus(
         identity["vector_carry"] = dict(
             edition=str(previous),
             configuration_sha256=configured_hash,
-            rule="same_encoder_and_identical_png_or_text_identity",
+            rule="same_strict_fp32_encoder_and_identical_png_or_text_identity",
         )
     for name in (
         ".edition.lock",
@@ -307,11 +314,14 @@ def encode_corpus(
         if cache_path.is_symlink():
             raise ValueError("La caché no puede ser un enlace")
         cache = EmbeddingCache(cache_path, cache_charts=cache_charts)
+        # Los vectores calculados en GPU para esta edición y después los de la anterior.
+        fallbacks = []
+        if (output / COMPUTED).exists():
+            fallbacks.append(EmbeddingCache(output / COMPUTED, read_only=True))
         if previous is not None:
-            # Los vectores calculados en GPU para esta edición y después los de la anterior.
-            fallbacks = [EmbeddingCache(previous / "embeddings.sqlite", read_only=True)]
-            if (output / COMPUTED).exists():
-                fallbacks.insert(0, EmbeddingCache(output / COMPUTED, read_only=True))
+            fallbacks.append(EmbeddingCache(previous / "embeddings.sqlite", read_only=True))
+        selecting = bool(fallbacks) or collecting
+        if selecting:
             cache = CarriedVectors(cache, previous, _digest(encoders.spec), fallbacks=fallbacks)
             if collecting:
                 name = (
@@ -356,6 +366,7 @@ def encode_corpus(
                 market, symbol = asset["market"], asset["symbol"]
                 if shard and position % shard[1] != shard[0]:
                     continue
+                encoded = False
                 if asset["state"] in {"missing_modalities", "missing_required_prices"}:
                     result["coverage"].append(dict(asset))
                 else:
@@ -387,7 +398,7 @@ def encode_corpus(
                                 company_factors=company_factors,
                             )
                         )
-                        if previous is not None:
+                        if selecting:
                             cache.select(market, symbol, encoders.spec)
                         target = output / "samples" / market / symbol
                         staging = output / "collect" / market / symbol
@@ -430,12 +441,15 @@ def encode_corpus(
                                 dict(market=market, symbol=symbol, cohort_id=cohort)
                             )
                         result["samples"] += receipt["samples"]
+                        encoded = True
                     except (OSError, ValueError) as error:
                         result["failed_assets"] += 1
                         result["coverage"].append(
                             dict(market=market, symbol=symbol, state="failed", detail=str(error))
                         )
                 atomic_json(progress, result)
+                if encoded and on_confirmed is not None:
+                    on_confirmed(market, symbol)
         finally:
             cache.close()
         if sha256(preparation) != identity["preparation_sha256"]:
@@ -540,19 +554,38 @@ def main():
         help="Solo GPU. Codifica las entradas anotadas por la recogida y termina",
     )
     parser.add_argument("--max-pending", type=int, help="Entradas por tramo de GPU")
+    parser.add_argument(
+        "--release-vectors",
+        action="store_true",
+        help="Borra los PNG pendientes y los gráficos calculados de activos ya confirmados",
+    )
+    parser.add_argument(
+        "--substitute-previous",
+        type=Path,
+        help="Edición anterior cuyas muestras se borran tras verificar cada activo nuevo",
+    )
+    parser.add_argument(
+        "--substitution-records", type=Path, help="Registros de la sustitución activo a activo"
+    )
     parser.add_argument("--shard", type=int, nargs=2, metavar=("K", "N"))
     args = parser.parse_args()
-    if (args.reuse_only or args.collect) and args.vector_carry is None:
-        parser.error("--reuse-only y --collect necesitan --vector-carry")
     if args.reuse_only and args.collect:
         parser.error("--reuse-only y --collect son pasadas distintas")
-    if args.prepared is None and not args.encode_pending:
+    if args.prepared is None and not (args.encode_pending or args.release_vectors):
         parser.error("La codificación necesita --prepared")
+    if (args.substitute_previous is None) != (args.substitution_records is None):
+        parser.error("La sustitución necesita la edición anterior y la carpeta de registros")
     import torch
 
+    from .edition_substitution import substitute_asset
     from .macro_coverage import _read_catalog
 
     torch.set_num_threads(4)
+    # Todas las pasadas nombran o calculan vectores en FP32 estricto, sin TF32.
+    strict_fp32()
+    if args.release_vectors:
+        print(json.dumps(release_vectors(args.output)))
+        return 0
     options = dict(
         cuda_memory_bytes=args.cuda_memory_bytes,
         min_free_cuda_bytes=args.min_free_cuda_bytes,
@@ -566,11 +599,18 @@ def main():
             counts = encode_pending(
                 args.output, FrozenEncoders(**options), max_items=args.max_pending
             )
+        # Memoria del asignador de Torch, sin el contexto CUDA que mide nvidia-smi.
+        counts["cuda_peak_allocated_bytes"] = torch.cuda.max_memory_allocated(0)
+        counts["cuda_peak_reserved_bytes"] = torch.cuda.max_memory_reserved(0)
         print(json.dumps(counts))
         return int(counts["remaining"] > 0)
     spec = (
-        _read(args.vector_carry / "configuration.json")[0]["encoders"]
-        if args.vector_carry
+        encoder_spec(
+            text_batch_size=args.text_batch_size,
+            image_batch_size=args.image_batch_size,
+            word_embedding_placement=args.word_embedding_placement,
+        )
+        if args.reuse_only or args.collect
         else None
     )
     reuse = (
@@ -578,6 +618,11 @@ def main():
         if args.reuse_only
         else CollectingEncoders(spec)
         if args.collect
+        else None
+    )
+    substitution = (
+        partial(substitute_asset, args.substitute_previous, args.output, args.substitution_records)
+        if args.substitute_previous
         else None
     )
     result = encode_corpus(
@@ -598,6 +643,7 @@ def main():
         price_window=_read(args.price_window)[0] if args.price_window else None,
         vector_carry=args.vector_carry,
         shard=tuple(args.shard) if args.shard else None,
+        on_confirmed=substitution,
     )
     summary = {
         k: result[k]

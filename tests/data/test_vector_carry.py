@@ -1,6 +1,7 @@
 """Reutilización de vectores entre ediciones y recorrido por fragmentos, sin modelos."""
 
 import json
+import sqlite3
 
 import pyarrow.parquet as pq
 import pytest
@@ -8,16 +9,32 @@ import pytest
 from mars_titan.data.corpus_encoding import encode_corpus
 from mars_titan.data.storage import sha256
 from mars_titan.data.vector_carry import MissingVector, ReuseOnlyEncoders
-from tests.data.test_cohort_samples import Encoders
+from tests.data.test_cohort_samples import Encoders as FixtureEncoders
 from tests.data.test_corpus_encoding import prepared_edition
 
+STRICT = dict(
+    dtype="float32", matmul_tf32=False, cudnn_tf32=False, float32_matmul_precision="highest"
+)
 
-def first_edition(tmp_path):
+
+class Encoders(FixtureEncoders):
+    """Codificador de prueba cuya identidad registra FP32 estricto, como la v3.1."""
+
+    spec = {**FixtureEncoders.spec, "runtime_precision": STRICT}
+
+
+class TF32Encoders(FixtureEncoders):
+    """Mismos vectores, pero la identidad registra TF32 en cuDNN, como la v3."""
+
+    spec = {**FixtureEncoders.spec, "runtime_precision": {**STRICT, "cudnn_tf32": True}}
+
+
+def first_edition(tmp_path, encoders=Encoders):
     manifest, clock, macro = prepared_edition(tmp_path)
     # Como en la v3, los gráficos no se guardan en la caché y solo viven en las muestras.
     kwargs = dict(macros={"US": macro}, clocks={"US": clock}, context=2, cache_charts=False)
     previous = tmp_path / "previous"
-    result = encode_corpus(manifest, previous, encoders=Encoders(), **kwargs)
+    result = encode_corpus(manifest, previous, encoders=encoders(), **kwargs)
     assert result["cohort_complete"] is True
     return manifest, previous, kwargs
 
@@ -70,6 +87,37 @@ def test_another_encoder_cannot_reuse_the_previous_vectors(tmp_path):
     other = ReuseOnlyEncoders({**Encoders.spec, "version": 2})
     with pytest.raises(ValueError, match="otro codificador"):
         encode_corpus(manifest, tmp_path / "other", encoders=other, vector_carry=previous, **kwargs)
+
+
+def test_vectors_computed_with_tf32_are_never_inherited(tmp_path):
+    from mars_titan.data.cohort_samples import _digest
+    from mars_titan.data.embeddings import EmbeddingCache
+    from mars_titan.data.vector_carry import CarriedVectors, strict_fp32_spec
+
+    manifest, previous, kwargs = first_edition(tmp_path, TF32Encoders)
+    assert strict_fp32_spec(Encoders.spec) and not strict_fp32_spec(TF32Encoders.spec)
+    for field in ("matmul_tf32", "cudnn_tf32"):
+        assert not strict_fp32_spec({"runtime_precision": {**STRICT, field: True}})
+    assert not strict_fp32_spec({"runtime_precision": {**STRICT, "dtype": "float64"}})
+    assert not strict_fp32_spec(FixtureEncoders.spec) and not strict_fp32_spec(None)
+    # Ni con la identidad de la v3 ni con la nueva se heredan sus gráficos o textos.
+    for spec in (TF32Encoders.spec, Encoders.spec):
+        with pytest.raises(ValueError, match="FP32 estricto"):
+            encode_corpus(
+                manifest,
+                tmp_path / "other",
+                encoders=ReuseOnlyEncoders(spec),
+                vector_carry=previous,
+                **kwargs,
+            )
+    carried = CarriedVectors(
+        EmbeddingCache(tmp_path / "cache.sqlite"), previous, _digest(TF32Encoders.spec)
+    )
+    try:
+        with pytest.raises(ValueError, match="FP32 estricto"):
+            carried.select("US", "A", TF32Encoders.spec)
+    finally:
+        carried.close()
 
 
 def test_shards_share_the_edition_and_leave_publication_to_the_full_pass(tmp_path):
@@ -176,8 +224,7 @@ def pending_count(edition):
 
 
 def test_collection_confirms_complete_assets_and_leaves_only_missing_inputs_to_the_gpu(tmp_path):
-    from mars_titan.data.embeddings import EmbeddingCache
-    from mars_titan.data.vector_carry import CollectingEncoders, encode_pending
+    from mars_titan.data.vector_carry import CollectingEncoders, encode_pending, release_vectors
 
     manifest, previous, kwargs = first_edition(tmp_path)
     reference = pq.read_table(previous / "samples/US/A/samples.parquet")
@@ -188,28 +235,34 @@ def test_collection_confirms_complete_assets_and_leaves_only_missing_inputs_to_t
     )
     assert whole["cohort_complete"] is True and pending_count(tmp_path / "whole") == 0
     assert pq.read_table(tmp_path / "whole/samples/US/A/samples.parquet").equals(reference)
-    # Sin los gráficos ni los textos de la edición anterior, todo queda pendiente de GPU.
-    (previous / "samples/US/A/manifest.json").unlink()
-    (previous / "embeddings.sqlite").unlink()
-    EmbeddingCache(previous / "embeddings.sqlite").close()
+    # Sin edición anterior, como la v3.1 frente a la v3, todo queda pendiente de GPU.
     output = tmp_path / "carried"
-    first = encode_corpus(manifest, output, encoders=collector, vector_carry=previous, **kwargs)
+    first = encode_corpus(manifest, output, encoders=collector, **kwargs)
     assert first["failed_assets"] == 1 and "GPU" in first["coverage"][0]["detail"]
     assert not (output / "samples/US/A/manifest.json").exists()
     assert not (output / "collect/US/A").exists()
     # Un resto de una recogida interrumpida nunca confirmado se descarta al repetirla.
     (output / "collect/US/A").mkdir(parents=True)
     (output / "collect/US/A/configuration.json").write_text("{}")
-    again = encode_corpus(manifest, output, encoders=collector, vector_carry=previous, **kwargs)
+    again = encode_corpus(manifest, output, encoders=collector, **kwargs)
     assert again["coverage"] == first["coverage"]
     pending = pending_count(output)
     charts = len(set(reference.column("chart_hash").to_pylist()))
-    assert pending >= charts > 0
+    assert pending > charts > 0
+    with pytest.raises(ValueError, match="sin confirmar"):
+        release_vectors(output)
     encoders = Encoders()
-    assert encode_pending(output, encoders, max_items=1) == dict(
+    counts = encode_pending(output, encoders, max_items=1)
+    assert {k: counts[k] for k in ("encoded", "already", "remaining")} == dict(
         encoded=1, already=0, remaining=pending - 1
     )
-    assert encode_pending(output, encoders) == dict(encoded=pending - 1, already=1, remaining=0)
+    counts = encode_pending(output, encoders)
+    assert {k: counts[k] for k in ("encoded", "already", "remaining")} == dict(
+        encoded=pending - 1, already=1, remaining=0
+    )
+    assert counts["by_kind"]["image"]["encoded"] + counts["by_kind"]["text"]["encoded"] == (
+        pending - 1
+    )
     # Cada gráfico distinto se codifica una sola vez.
     assert encoders.calls == charts
     other = type("Other", (), {"spec": {"version": 2}})()
@@ -217,32 +270,42 @@ def test_collection_confirms_complete_assets_and_leaves_only_missing_inputs_to_t
         # Otro codificador se rechaza aunque no quede nada pendiente.
         with pytest.raises(ValueError, match="codificador"):
             encode_pending(edition, other)
-    final = encode_corpus(
-        manifest,
-        output,
-        encoders=ReuseOnlyEncoders(Encoders.spec),
-        vector_carry=previous,
-        **kwargs,
-    )
+    final = encode_corpus(manifest, output, encoders=ReuseOnlyEncoders(Encoders.spec), **kwargs)
     assert final["cohort_complete"] is True
     # Los vectores calculados aparte coinciden con los de la codificación en línea.
     assert pq.read_table(output / "samples/US/A/samples.parquet").equals(reference)
+    # Con el activo confirmado se liberan los PNG y los gráficos, y se conservan los textos.
+    released = release_vectors(output)
+    assert released == dict(assets=1, pending_files=1, charts_released=charts)
+    assert not list(output.glob("pending-vectors*")) and pending_count(output) == 0
+    with sqlite3.connect(output / "computed-vectors.sqlite") as db:
+        kinds = dict(
+            db.execute("SELECT json_extract(identity,'$.kind'),count(*) FROM embeddings GROUP BY 1")
+        )
+    assert kinds == {"news": pending - charts}
+    assert release_vectors(output) == dict(assets=0, pending_files=0, charts_released=0)
+    again = encode_corpus(manifest, output, encoders=ReuseOnlyEncoders(Encoders.spec), **kwargs)
+    assert again["cohort_complete"] is True and again["reused_assets"] == 1
 
 
 def test_pending_inputs_are_read_once_and_a_corrupted_record_is_rejected(tmp_path):
-    import sqlite3
-
     from mars_titan.data.vector_carry import PendingVectors, pending_items
 
     identity = dict(encoder="e" * 64, kind="chart", content="c" * 64)
     for name in ("pending-vectors-0-of-2.sqlite", "pending-vectors-1-of-2.sqlite"):
         store = PendingVectors(tmp_path / name)
-        store.add(identity, "image", b"png")
-        store.add(identity, "image", b"png")
+        store.add(identity, "image", b"png", ("US", "A"))
+        store.add(identity, "image", b"png", ("US", "B"))
         store.close()
     assert list(pending_items(tmp_path)) == [(identity, "image", b"png")]
+    store = PendingVectors(tmp_path / "pending-vectors.sqlite")
     with pytest.raises(ValueError, match="texto ni un PNG"):
-        PendingVectors(tmp_path / "pending-vectors.sqlite").add(identity, "audio", b"x")
+        store.add(identity, "audio", b"x", ("US", "A"))
+    for asset in (None, ("US",), ("US", "")):
+        with pytest.raises(ValueError, match="activo"):
+            store.add(identity, "image", b"png", asset)
+    store.close()
+    (tmp_path / "pending-vectors.sqlite").unlink()
     with sqlite3.connect(tmp_path / "pending-vectors-1-of-2.sqlite") as db:
         db.execute("UPDATE pending SET payload = ?", (b"other",))
     with pytest.raises(ValueError, match="corrupto"):

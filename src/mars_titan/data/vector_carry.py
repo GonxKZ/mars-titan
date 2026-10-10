@@ -1,22 +1,26 @@
-"""Reutilizar los vectores de una edición anterior cuando la entrada codificada es idéntica.
+"""Vectores de la edición v3.1: tres pasadas y herencia solo desde FP32 estricto.
 
 Un gráfico se codifica a partir de su PNG y un texto a partir de su contenido. Con el mismo
-codificador, la misma entrada da el mismo vector. La edición v3 lo comprobó al recodificar
-activos con la caché vacía y obtener muestras idénticas bit a bit. Por eso un gráfico de la v3.1
-cuyo PNG tiene la huella de uno de la v3 recibe el vector ya calculado, y solo los gráficos
-nuevos o cambiados necesitan la GPU. Los textos se buscan primero en la caché nueva y después,
-en solo lectura, en las cachés de respaldo.
+codificador, la misma entrada da el mismo vector. Por eso una edición puede heredar los vectores
+de otra cuya identidad de codificador sea idéntica, siempre que esa identidad registre FP32
+estricto, sin TF32 en matmul ni en cuDNN. La v3 registra TF32 en cuDNN, así que la v3.1 no hereda
+ninguno de sus vectores y los recalcula todos.
 
 La regeneración tiene tres pasadas. La de recogida, en CPU, recorre cada activo con los vectores
 existentes, confirma los activos completos y anota en `pending-vectors*.sqlite` el texto o el PNG
-de cada vector que falta. `encode_pending` codifica en GPU solo esas entradas, una a una como en
-la codificación en línea, y las guarda en `computed-vectors.sqlite`. La pasada final, otra vez en
-CPU, completa los activos pendientes con esos vectores. La GPU no espera a ningún dibujo.
+de cada vector que falta, junto con el activo que lo necesita. `encode_pending` codifica en GPU
+solo esas entradas, una a una como en la codificación en línea, y las guarda en
+`computed-vectors.sqlite`. La pasada final, otra vez en CPU, completa los activos pendientes con
+esos vectores. La GPU no espera a ningún dibujo. Cuando todos los activos anotados están
+confirmados, `release_vectors` borra los PNG pendientes y los vectores de gráficos ya escritos en
+las muestras, de modo que el disco adicional se limita al tramo de activos en curso.
 """
 
+import fcntl
 import hashlib
 import json
 import sqlite3
+import time
 from pathlib import Path
 
 import numpy as np
@@ -30,6 +34,7 @@ from .storage import sha256
 PENDING_PATTERN = "pending-vectors*.sqlite"
 COMPUTED = "computed-vectors.sqlite"
 _WIDTHS = {"text": 384, "image": 512}
+_BATCH = 512
 
 
 class MissingVector(ValueError):
@@ -55,15 +60,26 @@ class ReuseOnlyEncoders:
         raise MissingVector("Falta el vector de un gráfico y hace falta el codificador en GPU")
 
 
+def strict_fp32_spec(spec):
+    """La identidad del codificador registra FP32 sin TF32 en matmul ni en cuDNN."""
+    precision = spec.get("runtime_precision") if isinstance(spec, dict) else None
+    return (
+        isinstance(precision, dict)
+        and precision.get("dtype") == "float32"
+        and precision.get("matmul_tf32") is False
+        and precision.get("cudnn_tf32") is False
+    )
+
+
 class CarriedVectors:
-    """Caché que añade los gráficos de la edición anterior, activo por activo.
+    """Caché con respaldos de solo lectura y, si hay edición anterior, sus gráficos por activo.
 
     `fallbacks` son cachés de solo lectura que se consultan en orden cuando falta un vector.
     """
 
     def __init__(self, cache, previous_root, encoder_hash, *, fallbacks=()):
         self.cache, self.fallbacks = cache, tuple(fallbacks)
-        self.previous = Path(previous_root)
+        self.previous = Path(previous_root) if previous_root is not None else None
         self.encoder_hash = encoder_hash
         self.cache_charts = cache.cache_charts
         self.charts = {}
@@ -72,12 +88,14 @@ class CarriedVectors:
     def select(self, market, symbol, encoders_spec):
         """Cargar los gráficos ya codificados del mismo activo en la edición anterior."""
         self.charts = {}
+        if self.previous is None:
+            return 0
         folder = self.previous / "samples" / market / symbol
         if not (folder / "manifest.json").exists():
             return 0
         receipt, _ = read_manifest(folder / "manifest.json")
-        if receipt.get("encoders") != encoders_spec:
-            raise ValueError("La edición anterior usó otro codificador")
+        if receipt.get("encoders") != encoders_spec or not strict_fp32_spec(encoders_spec):
+            raise ValueError("La edición anterior usó otro codificador o no registra FP32 estricto")
         if sha256(folder / "samples.parquet") != receipt.get("samples_sha256"):
             raise ValueError("Las muestras de la edición anterior cambiaron")
         with pq.ParquetFile(folder / "samples.parquet") as file:
@@ -114,13 +132,8 @@ class CarriedVectors:
             fallback.close()
 
 
-def _key(identity):
-    text = json.dumps(identity, sort_keys=True, allow_nan=False)
-    return hashlib.sha256(text.encode()).hexdigest(), text
-
-
 class PendingVectors:
-    """Registro de las entradas sin vector, con el texto o el PNG que hay que codificar."""
+    """Registro de las entradas sin vector, con el texto o el PNG y los activos que las piden."""
 
     def __init__(self, path):
         path = Path(path)
@@ -131,32 +144,51 @@ class PendingVectors:
             "CREATE TABLE IF NOT EXISTS pending "
             "(key TEXT PRIMARY KEY, identity TEXT, kind TEXT, payload BLOB, checksum TEXT)"
         )
+        self.db.execute(
+            "CREATE TABLE IF NOT EXISTS assets "
+            "(market TEXT, symbol TEXT, PRIMARY KEY(market, symbol))"
+        )
 
-    def add(self, identity, kind, payload):
+    def add(self, identity, kind, payload, asset):
         if kind not in _WIDTHS or not isinstance(payload, bytes) or not payload:
             raise ValueError("La entrada pendiente no es un texto ni un PNG")
-        key, text = _key(identity)
-        with self.db:
-            self.db.execute(
-                "INSERT OR IGNORE INTO pending VALUES (?,?,?,?,?)",
-                (key, text, kind, payload, hashlib.sha256(payload).hexdigest()),
-            )
+        if not isinstance(asset, tuple) or len(asset) != 2 or not all(asset):
+            raise ValueError("La entrada pendiente necesita el activo que la pide")
+        key, text = EmbeddingCache.identity(identity)
+        self.db.execute("INSERT OR IGNORE INTO assets VALUES (?,?)", asset)
+        self.db.execute(
+            "INSERT OR IGNORE INTO pending VALUES (?,?,?,?,?)",
+            (key, text, kind, payload, hashlib.sha256(payload).hexdigest()),
+        )
+
+    def flush(self):
+        """Confirmar las entradas anotadas. Se llama una vez por activo y no por entrada.
+
+        Si el proceso se corta antes, el activo sigue sin confirmar y la recogida siguiente lo
+        vuelve a anotar entero.
+        """
+        self.db.commit()
 
     def close(self):
+        self.flush()
         self.db.close()
+
+
+def _read_only(path):
+    return sqlite3.connect(Path(path).resolve().as_uri() + "?mode=ro", uri=True)
 
 
 def pending_items(edition):
     """Entradas pendientes de todos los registros de una edición, sin repetir identidades."""
     seen = set()
     for path in sorted(Path(edition).glob(PENDING_PATTERN)):
-        db = sqlite3.connect(path.resolve().as_uri() + "?mode=ro", uri=True)
+        db = _read_only(path)
         try:
             for key, text, kind, payload, checksum in db.execute(
                 "SELECT key,identity,kind,payload,checksum FROM pending ORDER BY key"
             ):
                 if (
-                    _key(json.loads(text)) != (key, text)
+                    EmbeddingCache.identity(json.loads(text)) != (key, text)
                     or kind not in _WIDTHS
                     or hashlib.sha256(payload).hexdigest() != checksum
                 ):
@@ -198,10 +230,13 @@ class CollectingVectors:
     def __init__(self, cache, encoders, pending):
         self.cache, self.encoders, self.pending = cache, encoders, pending
         self.cache_charts = cache.cache_charts
+        self.asset = None
         self.added = 0
 
-    def select(self, *args):
-        return self.cache.select(*args)
+    def select(self, market, symbol, encoders_spec):
+        self.pending.flush()
+        self.asset = (market, symbol)
+        return self.cache.select(market, symbol, encoders_spec)
 
     def get(self, identity, **kwargs):
         return self.cache.get(identity, **kwargs)
@@ -211,7 +246,7 @@ class CollectingVectors:
             raise ValueError("No hay ninguna entrada que anotar como pendiente")
         kind, payload = self.encoders.last
         self.encoders.last = None
-        self.pending.add(identity, kind, payload)
+        self.pending.add(identity, kind, payload, self.asset)
         self.added += 1
 
     def close(self):
@@ -235,6 +270,11 @@ def encode_pending(edition, encoders, *, max_items=None):
     encoder = _digest(encoders.spec)
     store = EmbeddingCache(edition / COMPUTED)
     counts = dict(encoded=0, already=0, remaining=0)
+    # Los vectores se guardan por tandas. Un corte pierde como mucho la tanda en curso, que se
+    # vuelve a codificar al reanudar.
+    batch = []
+    # Tiempo de las llamadas al codificador por modalidad, para medir el caudal de la GPU.
+    by_kind = {kind: dict(encoded=0, seconds=0.0) for kind in _WIDTHS}
     try:
         for identity, kind, payload in pending_items(edition):
             if identity.get("encoder") != encoder:
@@ -245,15 +285,63 @@ def encode_pending(edition, encoders, *, max_items=None):
             if max_items is not None and counts["encoded"] >= max_items:
                 counts["remaining"] += 1
                 continue
+            started = time.perf_counter()
             if kind == "text":
                 vector = encoders.text(payload.decode("utf-8"))
             else:
                 vector = encoders.images([payload])[0]
+            by_kind[kind]["seconds"] += time.perf_counter() - started
+            by_kind[kind]["encoded"] += 1
             vector = np.asarray(vector, dtype=np.float32)
             if vector.shape != (_WIDTHS[kind],) or not np.isfinite(vector).all():
                 raise ValueError("El codificador produjo dimensiones o valores no válidos")
-            store.put(identity, vector)
+            batch.append((identity, vector))
             counts["encoded"] += 1
+            if len(batch) == _BATCH:
+                store.put_many(batch)
+                batch = []
+        store.put_many(batch)
     finally:
         store.close()
-    return counts
+    return {**counts, "by_kind": by_kind}
+
+
+def release_vectors(edition):
+    """Borrar los PNG pendientes y los vectores de gráficos que ya están en las muestras.
+
+    Solo procede si todos los activos que anotaron entradas están confirmados, con el candado
+    exclusivo de la edición. Los textos calculados se conservan porque otros activos comparten
+    noticias. Un gráfico repetido en un activo posterior se vuelve a anotar y a codificar.
+    """
+    edition = Path(edition)
+    with (edition / ".edition.lock").open("a+b") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        files = sorted(edition.glob(PENDING_PATTERN))
+        assets = set()
+        for path in files:
+            db = _read_only(path)
+            try:
+                assets.update(db.execute("SELECT market,symbol FROM assets").fetchall())
+            finally:
+                db.close()
+        waiting = sorted(
+            f"{market}/{symbol}"
+            for market, symbol in assets
+            if not (edition / "samples" / market / symbol / "manifest.json").exists()
+        )
+        if waiting:
+            raise ValueError(f"Hay activos con vectores pendientes sin confirmar: {waiting[:5]}")
+        released = 0
+        if (edition / COMPUTED).exists():
+            db = sqlite3.connect(edition / COMPUTED)
+            try:
+                with db:
+                    released = db.execute(
+                        "DELETE FROM embeddings WHERE json_extract(identity,'$.kind')='chart'"
+                    ).rowcount
+            finally:
+                db.close()
+        for path in files:
+            for name in (path, Path(f"{path}-wal"), Path(f"{path}-shm")):
+                name.unlink(missing_ok=True)
+    return dict(assets=len(assets), pending_files=len(files), charts_released=released)

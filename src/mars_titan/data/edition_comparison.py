@@ -1,9 +1,11 @@
 """Comparar dos ediciones codificadas activo por activo y registrar cada diferencia.
 
 Sirve para verificar la v3.1 frente a la v3. Para cada sesión común exige vectores idénticos
-cuando el gráfico tiene la misma huella y registra cada gráfico que cambia. Las sesiones nuevas
-se cuentan, y las que desaparecen se registran porque la revisión no debería perder ninguna.
-También mide cuánto cambian las ventanas de precios de las sesiones comunes.
+cuando el gráfico tiene la misma huella y el mismo codificador, y registra cada gráfico que
+cambia. Si las ediciones declaran codificadores distintos, como la v3 con TF32 en cuDNN y la v3.1
+en FP32 estricto, el vector de un mismo PNG puede cambiar y se mide su diferencia absoluta y
+relativa. Las sesiones nuevas se cuentan, y las que desaparecen se registran porque la revisión
+no debería perder ninguna. También mide cuánto cambian las ventanas de precios comunes.
 """
 
 import json
@@ -29,12 +31,48 @@ def _table(root, market, symbol):
     return receipt, {row["session"]: row for row in table.to_pylist()}, table.column_names
 
 
+def _vector_changes(old, new):
+    """Diferencias entre los vectores FP32 de los mismos PNG con dos codificadores."""
+    if not old:
+        return dict(compared=0, identical=0, max_abs=0.0, max_rel=0.0, max_norm_rel=0.0)
+    old, new = np.asarray(old, dtype=np.float32), np.asarray(new, dtype=np.float32)
+    identical = (old.view(np.uint32) == new.view(np.uint32)).all(axis=1)
+    old, new = old.astype(np.float64), new.astype(np.float64)
+    gap = np.abs(old - new)
+    scale = np.maximum(np.abs(old), np.abs(new))
+    norms = np.linalg.norm(old, axis=1)
+    return dict(
+        compared=len(old),
+        identical=int(identical.sum()),
+        max_abs=float(gap.max()),
+        max_rel=float((gap[scale > 0] / scale[scale > 0]).max(initial=0.0)),
+        max_norm_rel=float(
+            (np.linalg.norm(old - new, axis=1)[norms > 0] / norms[norms > 0]).max(initial=0.0)
+        ),
+    )
+
+
+def _merge_vector_changes(records):
+    if not records:
+        return None
+    return dict(
+        compared=sum(r["compared"] for r in records),
+        identical=sum(r["identical"] for r in records),
+        **{key: max(r[key] for r in records) for key in ("max_abs", "max_rel", "max_norm_rel")},
+    )
+
+
 def compare_asset(previous_root, current_root, market, symbol):
     """Diferencias de un activo entre la edición anterior y la nueva."""
     _, before, old_columns = _table(previous_root, market, symbol)
     receipt, after, new_columns = _table(current_root, market, symbol)
     if old_columns != new_columns:
         raise ValueError("Las ediciones comparadas tienen columnas distintas")
+    configurations = [
+        json.loads((Path(root) / "configuration.json").read_text())
+        for root in (previous_root, current_root)
+    ]
+    reencoded = configurations[0]["encoders"] != configurations[1]["encoders"]
     same = [name for name in new_columns if name not in _COMPARED_APART]
     common = sorted(before.keys() & after.keys())
     record = dict(
@@ -49,26 +87,30 @@ def compare_asset(previous_root, current_root, market, symbol):
         changed_charts=[],
         other_differences=[],
     )
+    same_png = ([], [])
     for session in common:
         old, new = before[session], after[session]
         if old["chart_hash"] != new["chart_hash"]:
             record["changed_charts"].append([session, old["chart_hash"], new["chart_hash"]])
+        elif reencoded:
+            same_png[0].append(old["charts"])
+            same_png[1].append(new["charts"])
         elif old["charts"] != new["charts"]:
             record["other_differences"].append([session, "charts_with_same_png"])
         for name in same:
             if old[name] != new[name]:
                 record["other_differences"].append([session, name])
-    record.update(_window_changes(previous_root, current_root, market, symbol, before, after))
+    record["reencoded_charts"] = _vector_changes(*same_png) if reencoded else None
+    record.update(_window_changes(configurations, market, symbol, before, after))
     return record
 
 
-def _window_changes(previous_root, current_root, market, symbol, before, after):
+def _window_changes(configurations, market, symbol, before, after):
     """Cambio de las ventanas de precio de las sesiones comunes, canales OHLCV."""
     from mars_titan.training.corpus_inputs import _price_contexts
 
     prices, contexts = {}, set()
-    for name, root in (("before", previous_root), ("after", current_root)):
-        configuration = json.loads((Path(root) / "configuration.json").read_text())
+    for name, configuration in zip(("before", "after"), configurations, strict=True):
         contexts.add(configuration["context_sessions"])
         path = Path(configuration["prepared_root"]) / market / symbol / "prices.parquet"
         table = pq.read_table(path, columns=["open", "high", "low", "close", "volume"])
@@ -142,6 +184,9 @@ def compare_editions(previous_root, current_root, output, *, workers=4):
         windows_compared=sum(r["windows_compared"] for r in rows),
         windows_changed=sum(r["windows_changed"] for r in rows),
         window_max_abs_change=max((r["window_max_abs_change"] for r in rows), default=0.0),
+        reencoded_charts=_merge_vector_changes(
+            [r["reencoded_charts"] for r in rows if r.get("reencoded_charts")]
+        ),
         log=str(log),
     )
     atomic_json(output / "summary.json", summary)
