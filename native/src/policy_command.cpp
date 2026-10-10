@@ -114,6 +114,10 @@ Arguments parse(int argc, char** argv) {
                 options.vram_budget_bytes = number<std::size_t>(value);
             } else if (name == "--vram-total-bytes") {
                 options.vram_total_bytes = number<std::size_t>(value);
+            } else if (name == "--learning-trace-every") {
+                options.learning_traces.every = number<std::size_t>(value);
+            } else if (name == "--learning-trace-max-bytes") {
+                options.learning_traces.max_bytes = number<std::size_t>(value);
             } else {
                 throw std::invalid_argument("El argumento PPO no está reconocido: " +
                                             std::string(name));
@@ -132,6 +136,15 @@ Arguments parse(int argc, char** argv) {
     }
     if (result.experiment.decisions && !result.experiment.audit_run) {
         throw std::invalid_argument("--decisions solo se admite con --audit-run");
+    }
+    const auto& traces = result.experiment.learning_traces;
+    if (seen.contains("--learning-trace-every") != seen.contains("--learning-trace-max-bytes") ||
+        (seen.contains("--learning-trace-every") &&
+         (traces.every == 0 || traces.max_bytes < minimum_learning_trace_bytes ||
+          traces.max_bytes > maximum_learning_trace_bytes || result.experiment.audit_run))) {
+        throw std::invalid_argument(
+            "Las trazas de aprendizaje necesitan una cadencia positiva y entre 1 KiB y 1 GiB, y "
+            "no se admiten en la evaluación congelada");
     }
     return result;
 }

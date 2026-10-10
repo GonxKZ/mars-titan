@@ -15,11 +15,13 @@ int main(int argc, char** argv) {
         "(sin --train-tape ni --validation-tape). Publica el patrimonio por sesión.\n"
         "  Con --decisions guarda la acción y las salidas de la red de cada decisión.\n"
         "  Vigilancia Linux: --parent-pid PID detiene el hijo si muere su padre.\n"
+        "  Trazas de aprendizaje: --learning-trace-every N --learning-trace-max-bytes B.\n"
         "  Capacidades: --capabilities, sin leer datos.\n"
         "Entrena y valida PPO en escenarios sintéticos o cintas reconstruidas, sin abrir el "
         "test.\n",
         {"native_policy_reconstructed_tapes", "native_policy_equity_and_costs",
-         "native_ppo_quantile_value_heads", "native_policy_decision_logits"},
+         "native_policy_learning_traces", "native_ppo_quantile_value_heads",
+         "native_policy_decision_logits"},
         [](const auto& options, const auto& stop) {
             return mars_titan::learning::run_ppo_experiment(options, stop);
         }};

@@ -118,7 +118,7 @@ class RecoveringLearner(fixture.ScriptedLearner):
         self.algorithm, self.job = algorithm, JOBS[algorithm]
         self.paused = self.trainer = self.tape = None
 
-    def __call__(self, job, tapes, folder, *, stage, resume, stop, anchor):
+    def __call__(self, job, tapes, folder, *, stage, resume, stop, anchor, traces=None):
         if job["id"] == self.job:
             # Con una ventana de ajuste, el trabajo recorre la cinta de su único tramo.
             (train,) = tapes.train
