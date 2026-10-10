@@ -524,6 +524,8 @@ def test_eligibility_keeps_only_folds_with_identical_partitions():
     [
         (lambda d: d["joint_design"].update(joint_suffix=""), "alias"),
         (lambda d: d["joint_design"].update(separate_controls=["zero"]), "controles separados"),
+        # Sin controles solo vale cuando no hay ámbitos de un mercado que contrastar.
+        (lambda d: d["joint_design"].update(separate_controls=[]), "controles separados"),
         (lambda d: d["joint_design"].update(contrast_family="levels"), "contrato"),
         (lambda d: d["joint_design"].update(joint_scope="US"), "varios mercados"),
         (lambda d: d["joint_design"].update(ineligible_rows="dropped"), "contrato"),
@@ -536,6 +538,7 @@ def test_eligibility_keeps_only_folds_with_identical_partitions():
     ids=[
         "alias_equals_arm",
         "zero_control",
+        "no_controls_with_single_scopes",
         "family_collision",
         "single_market_joint",
         "other_row_rule",

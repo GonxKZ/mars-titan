@@ -9,8 +9,13 @@ brazos adaptados de la matriz para la familia del padre.
 En el walk-forward por etapas de la variante A, el padre congelado es el trabajo
 ``frozen`` de la etapa, que aplica a la ventana k el estado elegido por la base en k-1. El
 brazo base, reentrenado por la campaña en k, sigue en la comparación como contraste de
-nivel y no entra en las familias declaradas. Como la primera ventana de cada ámbito no
-tiene postentrenamiento, la comparación solo cubre las ventanas con trabajos de la etapa.
+nivel y solo entra en una familia si la declaración usa su papel ``base_retrain``. Con el
+papel ``chain``, la comparación añade el predictor de la cadena (``<brazo>__chain``), cuyas
+predicciones son las del trabajo que eligió `chain_validation_score_v1` en cada ventana y
+semilla, leído de su ``selection.json``. Es el contraste que el diseño por etapas informa
+aparte: el reentreno completo de k frente a la cadena, con las mismas filas de test. Como
+la primera ventana de cada ámbito no tiene postentrenamiento, la comparación solo cubre las
+ventanas con trabajos de la etapa.
 En un plan sin padre congelado, como el anclado de B, el padre congelado es el propio
 brazo base con las predicciones de la campaña.
 
@@ -40,10 +45,12 @@ from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.evaluation import long_short_comparison
 from mars_titan.evaluation import walk_forward_comparison as walk
 
+from . import staged_chain
 from .campaign_stage import FROZEN as FROZEN_JOB
 from .campaign_stage import (
     RECEIPT_KIND,
     RUN_KIND,
+    STAGED,
     TABULAR,
     _digest,
     load_stage,
@@ -55,13 +62,17 @@ KIND = "posttraining_stage_comparison"
 DECLARED = "declared_before_evaluation"
 USE = "secondary_contrasts_not_for_selecting_the_base_architecture"
 FROZEN, CONTINUATION, ADAPTED = "frozen_parent", "full_continuation", "adapted"
-ROLES = (FROZEN, CONTINUATION, ADAPTED)
+CHAIN, BASE = "chain", "base_retrain"
+ROLES = (FROZEN, CONTINUATION, ADAPTED, CHAIN, BASE)
+# Papeles que pueden hacer de base de una familia: los dos controles y el reentreno.
+BASE_ROLES = (FROZEN, CONTINUATION, BASE)
 _FIELDS = {"schema_version", "kind", "status", "name", "stage", "use", "families"}
 # Familia de cada brazo derivado en la configuración de la comparación.
 ARM_FAMILIES = {
     FROZEN: "posttraining_frozen_parent",
     CONTINUATION: "posttraining_control",
     ADAPTED: "posttraining_adapter",
+    CHAIN: "posttraining_chain",
 }
 # Solo calibración y evaluación entran en la comparación. La validación de los recibos
 # por etapas sirve para elegir el predictor de la cadena, no para compararlo.
@@ -84,15 +95,21 @@ def _families(families):
             and name != "levels"
             and isinstance(family, dict)
             and set(family) == {"base", "variants"}
-            and family["base"] in (FROZEN, CONTINUATION)
+            and family["base"] in BASE_ROLES
             and isinstance(family["variants"], list)
             and family["variants"]
             and len(set(family["variants"])) == len(family["variants"])
+            and family["base"] not in family["variants"]
             and all(role in ROLES for role in family["variants"]),
-            f"La familia {name} debe contrastar papeles declarados con una base congelada "
-            "o de continuación",
+            f"La familia {name} debe contrastar papeles declarados con una base congelada, "
+            "de continuación o reentrenada",
         )
     return families
+
+
+def _used(families):
+    """Papeles que intervienen en alguna familia, como base o como variante."""
+    return {role for family in families.values() for role in (family["base"], *family["variants"])}
 
 
 def _groups(stage):
@@ -100,15 +117,25 @@ def _groups(stage):
 
     Un trabajo ``frozen`` del plan por etapas fija el brazo del padre congelado. Sin él,
     el padre congelado es el propio brazo base. Ridge y XGBoost quedan fuera: su cadena solo
-    tiene el padre congelado y no hay continuación ni adaptadores que contrastar.
+    tiene el padre congelado y no hay continuación ni adaptadores que contrastar. El
+    predictor de la cadena solo existe en el plan por etapas.
     """
     trivial = {arm for arm, spec in stage_arms(stage)[0].items() if spec["design"] == TABULAR}
+    staged = stage["design"] == STAGED
     groups = {}
     for job in plan_stage(stage):
         if job["base_arm"] in trivial:
             continue
         group = groups.setdefault(
-            job["base_arm"], {FROZEN: job["base_arm"], CONTINUATION: None, ADAPTED: [], "jobs": {}}
+            job["base_arm"],
+            {
+                FROZEN: job["base_arm"],
+                CONTINUATION: None,
+                ADAPTED: [],
+                CHAIN: staged_chain.chain_arm(job["base_arm"]) if staged else None,
+                BASE: job["base_arm"],
+                "jobs": {},
+            },
         )
         control = job["control"]
         _require(
@@ -153,6 +180,15 @@ def load_declaration(path):
     )
     _families(declaration["families"])
     stage = load_stage((path.parent / declaration["stage"]).resolve())
+    design = stage["campaign"].get("walk_forward_stages")
+    # El diseño por etapas informa aparte del reentreno completo y da a la RL el predictor
+    # de la cadena: la comparación de su etapa debe contrastar los dos.
+    _require(
+        not design
+        or {CHAIN, *design["posttraining"]["reported_apart"]} <= _used(declaration["families"]),
+        "La comparación del walk-forward por etapas debe contrastar la cadena y el reentreno "
+        "completo que el diseño informa aparte",
+    )
     groups = _groups(stage)
     configs = {base_arm: derive_config(declaration, stage, base_arm, groups) for base_arm in groups}
     return dict(declaration, sha256=digest, stage=stage, groups=groups, configs=configs)
@@ -164,7 +200,19 @@ def derive_config(declaration, stage, base_arm, groups):
     inherited = campaign["comparison_config"]
     group = groups[base_arm]
     parent = inherited["arms"][base_arm]
-    roles = {FROZEN: [group[FROZEN]], CONTINUATION: [group[CONTINUATION]], ADAPTED: group[ADAPTED]}
+    used = _used(declaration["families"])
+    _require(
+        CHAIN not in used or group[CHAIN] is not None,
+        "Solo el walk-forward por etapas tiene predictor de la cadena que comparar",
+    )
+    roles = {
+        FROZEN: [group[FROZEN]],
+        CONTINUATION: [group[CONTINUATION]],
+        ADAPTED: group[ADAPTED],
+        # La cadena solo entra si alguna familia la contrasta, porque exige sus selecciones.
+        CHAIN: [group[CHAIN]] if CHAIN in used else [],
+        BASE: [base_arm],
+    }
     arms = {base_arm: dict(parent)}
     for role in ROLES:
         for arm in roles[role]:
@@ -187,6 +235,11 @@ def derive_config(declaration, stage, base_arm, groups):
         for key, value in inherited.items()
         if key not in {"sha256", "resolved_scopes", "resolved_families", *DERIVED}
     }
+    if walk.JOINT_FIELD in raw:
+        # La etapa del modelo conjunto solo evalúa su ámbito. Se conserva la elegibilidad por
+        # mercado (China en las métricas desde su primera ventana elegible) y se retiran los
+        # controles separados, que contrastan los ámbitos de un mercado.
+        raw[walk.JOINT_FIELD] = dict(raw[walk.JOINT_FIELD], separate_controls=[])
     config = dict(
         raw,
         name=f"{declaration['name']}-{base_arm}",
@@ -230,6 +283,9 @@ def check_declaration(path):
                 arms=len(config["arms"]),
                 continuation=loaded["groups"][base_arm][CONTINUATION],
                 adapted=loaded["groups"][base_arm][ADAPTED],
+                chain=loaded["groups"][base_arm][CHAIN]
+                if loaded["groups"][base_arm][CHAIN] in config["arms"]
+                else None,
                 families={
                     name: list(contrasts) for name, contrasts in config["resolved_families"].items()
                 },
@@ -287,6 +343,33 @@ def _stage_receipt(stage_output, job, identity, view_sha256):
     return receipt
 
 
+def _chain_entry(stage_output, stage, scope, window, base_arm, seed, entries):
+    """Fuentes del predictor de la cadena: las del trabajo que eligió su selección.
+
+    La selección se lee con `staged_chain.read_selection`, que exige su regla y sus
+    recibos. Debe ser de esta etapa y elegir un trabajo confirmado de la misma ventana y
+    semilla, con la huella del recibo que declara. Las predicciones son las de ese trabajo,
+    sin copias. `entries` asocia cada trabajo de la etapa con su ventana, su semilla y sus
+    fuentes ya comprobadas.
+    """
+    label = f"{scope}/{window}/{staged_chain.chain_arm(base_arm)}/seed-{seed}"
+    selection = staged_chain.read_selection(stage_output, scope, window, base_arm, seed)
+    _require(
+        selection is not None
+        and selection["stage_sha256"] == stage["sha256"]
+        and selection["campaign_sha256"] == stage["campaign"]["sha256"],
+        f"Falta la selección de la cadena {label} de esta etapa",
+    )
+    chosen = selection["selected"]["job"]
+    receipt = stage_output / "jobs" / chosen / "receipt.json"
+    _require(
+        entries.get(chosen, (None,))[0] == (window, seed)
+        and sha256(receipt) == selection["selected"]["receipt_sha256"],
+        f"La selección {label} no elige un trabajo confirmado de la etapa en su ventana",
+    )
+    return entries[chosen][1]
+
+
 def write_sources(declaration_path, scope, base_arm, *, base_sources, stage_output):
     """Publicar el manifiesto de fuentes de un padre y un ámbito y validarlo."""
     loaded = load_declaration(declaration_path)
@@ -318,6 +401,7 @@ def write_sources(declaration_path, scope, base_arm, *, base_sources, stage_outp
             entries[window] = dict(input_policy=policy, view_sha256=view_sha256)
             for part, record in files.items():
                 entries[window][part] = dict(path=relative(record["path"]), sha256=record["sha256"])
+    entries = {}
     for job in loaded["groups"][base_arm]["jobs"][scope]:
         view_sha256 = base["views"][job["window"]]
         receipt = _stage_receipt(stage_output, job, identity, view_sha256)
@@ -327,7 +411,16 @@ def write_sources(declaration_path, scope, base_arm, *, base_sources, stage_outp
             entry[part] = dict(
                 path=relative(stage_output / record["path"]), sha256=record["sha256"]
             )
-        arms[job["arm"]].setdefault(str(job["seed"]), {})[job["window"]] = entry
+        entries[job["id"]] = (job["window"], job["seed"]), entry
+        if job["arm"] in arms:
+            arms[job["arm"]].setdefault(str(job["seed"]), {})[job["window"]] = entry
+    chain = loaded["groups"][base_arm][CHAIN]
+    if chain in arms:
+        for seed in config["arms"][chain]["seeds"]:
+            for window in views:
+                arms[chain].setdefault(str(seed), {})[window] = _chain_entry(
+                    stage_output, stage, scope, window, base_arm, seed, entries
+                )
     manifest = dict(
         schema_version=1,
         kind=walk.SOURCES_KIND,
@@ -366,6 +459,11 @@ def evaluate(declaration_path, sources_path, scope, base_arm, *, edition=None):
             FROZEN: loaded["groups"][base_arm][FROZEN],
             CONTINUATION: loaded["groups"][base_arm][CONTINUATION],
             ADAPTED: loaded["groups"][base_arm][ADAPTED],
+            **(
+                {CHAIN: loaded["groups"][base_arm][CHAIN]}
+                if loaded["groups"][base_arm][CHAIN] in config["arms"]
+                else {}
+            ),
         },
         families=loaded["families"],
         use=USE,
