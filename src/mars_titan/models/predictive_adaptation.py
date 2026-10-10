@@ -1,6 +1,7 @@
 """Adaptador residual común, adaptadores sobre un padre congelado y objetivos predictivos."""
 
 import copy
+import hashlib
 import math
 from dataclasses import dataclass
 
@@ -251,12 +252,7 @@ class AdapterTarget:
         )
 
 
-def adapted_copy(model, targets, *, seed):
-    """Copiar el padre, congelar todos sus pesos y añadir correcciones nulas declaradas.
-
-    El padre recibido no cambia. Solo los parámetros de los adaptadores requieren
-    gradiente. Un destino repetido o inexistente se rechaza antes de copiar.
-    """
+def _checked_targets(model, targets, seed):
     targets = tuple(targets)
     if (
         not isinstance(model, nn.Module)
@@ -274,7 +270,31 @@ def adapted_copy(model, targets, *, seed):
             module, target.tensor
         ):
             raise ValueError("El destino del adaptador no es un parámetro original del padre")
-    result = copy.deepcopy(model).requires_grad_(False)
+    return targets
+
+
+def adapted_copy(model, targets, *, seed):
+    """Copiar el padre, congelar todos sus pesos y añadir correcciones nulas declaradas.
+
+    El padre recibido no cambia. Solo los parámetros de los adaptadores requieren
+    gradiente. Un destino repetido o inexistente se rechaza antes de copiar.
+    """
+    targets = _checked_targets(model, targets, seed)
+    return _attach(copy.deepcopy(model), targets, seed)
+
+
+def attach_adapters(model, targets, *, seed):
+    """Congelar un modelo propio y añadirle en su sitio las correcciones nulas declaradas.
+
+    Es `adapted_copy` sin la copia, para un padre que se acaba de reconstruir desde su
+    checkpoint y que nadie más usa. Un módulo que sella sus parámetros debe volver a
+    sellarlos después, porque las parametrizaciones cambian sus nombres y tensores.
+    """
+    return _attach(model, _checked_targets(model, targets, seed), seed)
+
+
+def _attach(result, targets, seed):
+    result.requires_grad_(False)
     generator = torch.Generator(device="cpu").manual_seed(seed)
     for target in targets:
         module = result.get_submodule(target.module)
@@ -298,3 +318,37 @@ def adapted_copy(model, targets, *, seed):
 
 def trainable_parameters(model):
     return sum(value.numel() for value in model.parameters() if value.requires_grad)
+
+
+def _parametrized(name):
+    return name.startswith("parametrizations.") or ".parametrizations." in name
+
+
+def adapter_names(model):
+    """Nombres de los parámetros de corrección, en el orden de `named_parameters`."""
+    return [
+        name
+        for name, _ in model.named_parameters()
+        if _parametrized(name) and not name.endswith(".original")
+    ]
+
+
+def base_digest(model):
+    """Huella de los tensores originales del padre, sin las correcciones de los adaptadores.
+
+    Comprueba que el ajuste solo cambia los adaptadores. Una parametrización conserva el
+    tensor original con el sufijo `.original`, que aquí recupera su nombre del padre.
+    """
+    adapters = set(adapter_names(model))
+    # Una parametrización mueve el tensor al final del orden de su módulo: se ordena por nombre.
+    values = {
+        ("." + name).replace(".parametrizations.", ".").removesuffix(".original")[1:]: value
+        for name, value in model.named_parameters()
+        if name not in adapters
+    }
+    digest = hashlib.sha256()
+    for name in sorted(values):
+        array = values[name].detach().cpu().contiguous()
+        digest.update(f"{name}:{tuple(array.shape)}:{array.dtype}".encode())
+        digest.update(array.numpy().tobytes())
+    return digest.hexdigest()

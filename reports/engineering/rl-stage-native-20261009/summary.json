@@ -1,0 +1,2062 @@
+{
+ "kind": "rl_stage_native_performance",
+ "date": "2026-10-09",
+ "issue": 365,
+ "learning": "none_no_optimizer_steps",
+ "excluded_ctest": [
+  "ppo_policy",
+  "ppo_training",
+  "ppo_gru_packing"
+ ],
+ "baseline_commit": "6fee0ef2",
+ "environment": {
+  "cpu": "AMD Ryzen 9 8945HS, 8 cores, 16 threads, AVX-512",
+  "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU, 8188 MiB, compute 8.9, driver 595.91.07",
+  "power_profile": "power-saver",
+  "kernel": "7.0.0-38-generic",
+  "torch": "2.14.0+cu130, CUDA 13.0, cuDNN 9.24",
+  "compiler": "Clang 21.1.8, CMake 4.2.3, Ninja, Release, -j 2",
+  "nsys": "2026.3.2.476",
+  "threads": "at::set_num_threads(1), interop 1",
+  "precision": "FP32 IEEE, deterministic algorithms, CUBLAS_WORKSPACE_CONFIG=:4096:8",
+  "shared_machine": "other agents active, load average 8 to 16 on 16 threads",
+  "perf": "unavailable: perf_event_paranoid=4, not changed"
+ },
+ "build": {
+  "preset": "native-ppo-release",
+  "cuda": true,
+  "configure_seconds": 7.71,
+  "build_seconds": 245.0,
+  "build_peak_rss_kib": 680180,
+  "targets": 103,
+  "nvjitlink": "resolved from /usr/local/cuda-13.4"
+ },
+ "tapes": {
+  "script": "benchmarks/rl_stage_tapes.py",
+  "edition": "unadjusted-prices-20261009/edition-v1",
+  "scores": "synthetic_not_from_any_model",
+  "candidates": 400,
+  "assets": 128,
+  "observation_width": 770,
+  "US": {
+   "policy_window": "fold-018",
+   "train": [
+    "fold-014",
+    "fold-015",
+    "fold-016"
+   ],
+   "train_sessions": [
+    252,
+    253,
+    252
+   ],
+   "validation": "fold-017",
+   "validation_sessions": 251
+  },
+  "CN": {
+   "policy_window": "fold-012",
+   "train": [
+    "fold-008",
+    "fold-009",
+    "fold-010"
+   ],
+   "validation": "fold-011"
+  }
+ },
+ "benchmark": {
+  "binary": "mars-titan-policy-benchmark",
+  "environments": 16,
+  "ticks": 512,
+  "warmup": 32,
+  "first_tick_repeats": 64,
+  "gae_transitions": 1024,
+  "minibatch_rows": 64,
+  "evaluation_repeats": 3,
+  "repetitions_per_case": 3,
+  "statistic": "median of three runs of each p50"
+ },
+ "base_versus_optimized": {
+  "note": "base and optimized runs interleaved, CPU at load 15-16 and CUDA at load 8, metrics in microseconds except *_s (seconds) and rss_mib",
+  "medians": {
+   "base-CN-cpu": {
+    "env": {
+     "median": 285.466,
+     "min": 195.678,
+     "max": 293.551,
+     "n": 3
+    },
+    "inf:ppo_mlp64:False:act_and_copy_back": {
+     "median": 185.128,
+     "min": 150.983,
+     "max": 186.981,
+     "n": 3
+    },
+    "inf:ppo_mlp64:False:bootstrap_and_copy_back": {
+     "median": 119.845,
+     "min": 100.388,
+     "max": 121.718,
+     "n": 3
+    },
+    "inf:ppo_mlp64:False:copy_two_observation_batches": {
+     "median": 13.706,
+     "min": 11.312,
+     "max": 13.766,
+     "n": 3
+    },
+    "inf:double_dqn_mlp64:False:act_and_copy_back": {
+     "median": 219.653,
+     "min": 153.859,
+     "max": 228.6,
+     "n": 3
+    },
+    "gae": {
+     "median": 1613.871,
+     "min": 1561.632,
+     "max": 1649.788,
+     "n": 3
+    },
+    "grad": {
+     "median": 1450.053,
+     "min": 1196.316,
+     "max": 1450.413,
+     "n": 3
+    },
+    "fwd64": {
+     "median": 335.37,
+     "min": 313.088,
+     "max": 336.121,
+     "n": 3
+    },
+    "klpo_tick": {
+     "median": 2233.794,
+     "min": 2140.549,
+     "max": 2342.87,
+     "n": 3
+    },
+    "klpo_wave_s": {
+     "median": 0.549,
+     "min": 0.536,
+     "max": 0.596,
+     "n": 3
+    },
+    "klpo_obj_s": {
+     "median": 0.088,
+     "min": 0.072,
+     "max": 0.1,
+     "n": 3
+    },
+    "eval_ms": {
+     "median": 18.19,
+     "min": 9.935,
+     "max": 20.39,
+     "n": 3
+    },
+    "rss_mib": {
+     "median": 483.664,
+     "min": 479.094,
+     "max": 483.809,
+     "n": 3
+    }
+   },
+   "base-CN-cuda": {
+    "env": {
+     "median": 160.082,
+     "min": 159.101,
+     "max": 168.267,
+     "n": 3
+    },
+    "inf:ppo_mlp64:False:act_and_copy_back": {
+     "median": 256.404,
+     "min": 245.213,
+     "max": 263.127,
+     "n": 3
+    },
+    "inf:ppo_mlp64:False:bootstrap_and_copy_back": {
+     "median": 120.207,
+     "min": 115.187,
+     "max": 126.619,
+     "n": 3
+    },
+    "inf:ppo_mlp64:False:copy_two_observation_batches": {
+     "median": 44.063,
+     "min": 42.901,
+     "max": 45.897,
+     "n": 3
+    },
+    "inf:ppo_mlp64:True:copy_two_observation_batches": {
+     "median": 35.948,
+     "min": 35.917,
+     "max": 36.119,
+     "n": 3
+    },
+    "inf:double_dqn_mlp64:False:act_and_copy_back": {
+     "median": 417.107,
+     "min": 414.622,
+     "max": 419.011,
+     "n": 3
+    },
+    "gae": {
+     "median": 849.073,
+     "min": 841.518,
+     "max": 853.511,
+     "n": 3
+    },
+    "grad": {
+     "median": 1633.193,
+     "min": 1613.706,
+     "max": 2000.386,
+     "n": 3
+    },
+    "fwd64": {
+     "median": 98.015,
+     "min": 97.504,
+     "max": 114.066,
+     "n": 3
+    },
+    "trainer": {
+     "median": 687.878,
+     "min": 678.13,
+     "max": 785.643,
+     "n": 3
+    },
+    "trainer_rate": {
+     "median": 20622.376,
+     "min": 18804.636,
+     "max": 20674.684,
+     "n": 3
+    },
+    "klpo_tick": {
+     "median": 1661.245,
+     "min": 1658.171,
+     "max": 1692.826,
+     "n": 3
+    },
+    "klpo_wave_s": {
+     "median": 0.404,
+     "min": 0.403,
+     "max": 0.42,
+     "n": 3
+    },
+    "klpo_obj_s": {
+     "median": 0.034,
+     "min": 0.034,
+     "max": 0.039,
+     "n": 3
+    },
+    "eval_ms": {
+     "median": 34.309,
+     "min": 33.504,
+     "max": 35.729,
+     "n": 3
+    },
+    "rss_mib": {
+     "median": 1288.859,
+     "min": 1288.527,
+     "max": 1288.879,
+     "n": 3
+    }
+   },
+   "base-US-cpu": {
+    "env": {
+     "median": 244.159,
+     "min": 214.183,
+     "max": 257.674,
+     "n": 3
+    },
+    "inf:ppo_mlp64:False:act_and_copy_back": {
+     "median": 160.922,
+     "min": 151.494,
+     "max": 179.567,
+     "n": 3
+    },
+    "inf:ppo_mlp64:False:bootstrap_and_copy_back": {
+     "median": 105.318,
+     "min": 102.523,
+     "max": 116.178,
+     "n": 3
+    },
+    "inf:ppo_mlp64:False:copy_two_observation_batches": {
+     "median": 11.782,
+     "min": 10.319,
+     "max": 11.833,
+     "n": 3
+    },
+    "inf:double_dqn_mlp64:False:act_and_copy_back": {
+     "median": 142.758,
+     "min": 132.93,
+     "max": 152.908,
+     "n": 3
+    },
+    "gae": {
+     "median": 1613.419,
+     "min": 1312.435,
+     "max": 1728.766,
+     "n": 3
+    },
+    "grad": {
+     "median": 1343.673,
+     "min": 1229.028,
+     "max": 1389.75,
+     "n": 3
+    },
+    "fwd64": {
+     "median": 272.162,
+     "min": 266.23,
+     "max": 317.707,
+     "n": 3
+    },
+    "klpo_tick": {
+     "median": 2157.411,
+     "min": 1910.488,
+     "max": 2185.985,
+     "n": 3
+    },
+    "klpo_wave_s": {
+     "median": 0.554,
+     "min": 0.511,
+     "max": 0.555,
+     "n": 3
+    },
+    "klpo_obj_s": {
+     "median": 0.084,
+     "min": 0.08,
+     "max": 0.1,
+     "n": 3
+    },
+    "eval_ms": {
+     "median": 17.13,
+     "min": 13.088,
+     "max": 19.988,
+     "n": 3
+    },
+    "rss_mib": {
+     "median": 481.105,
+     "min": 477.945,
+     "max": 482.191,
+     "n": 3
+    }
+   },
+   "base-US-cuda": {
+    "env": {
+     "median": 143.701,
+     "min": 140.736,
+     "max": 144.323,
+     "n": 3
+    },
+    "inf:ppo_mlp64:False:act_and_copy_back": {
+     "median": 246.355,
+     "min": 244.231,
+     "max": 285.539,
+     "n": 3
+    },
+    "inf:ppo_mlp64:False:bootstrap_and_copy_back": {
+     "median": 116.36,
+     "min": 114.647,
+     "max": 131.629,
+     "n": 3
+    },
+    "inf:ppo_mlp64:False:copy_two_observation_batches": {
+     "median": 42.48,
+     "min": 42.42,
+     "max": 47.67,
+     "n": 3
+    },
+    "inf:ppo_mlp64:True:copy_two_observation_batches": {
+     "median": 35.718,
+     "min": 34.746,
+     "max": 40.526,
+     "n": 3
+    },
+    "inf:double_dqn_mlp64:False:act_and_copy_back": {
+     "median": 420.914,
+     "min": 406.187,
+     "max": 499.864,
+     "n": 3
+    },
+    "gae": {
+     "median": 854.022,
+     "min": 840.076,
+     "max": 857.91,
+     "n": 3
+    },
+    "grad": {
+     "median": 1743.07,
+     "min": 1702.264,
+     "max": 1795.83,
+     "n": 3
+    },
+    "fwd64": {
+     "median": 102.854,
+     "min": 98.236,
+     "max": 126.459,
+     "n": 3
+    },
+    "trainer": {
+     "median": 646.911,
+     "min": 642.904,
+     "max": 676.668,
+     "n": 3
+    },
+    "trainer_rate": {
+     "median": 21150.209,
+     "min": 19986.157,
+     "max": 21541.415,
+     "n": 3
+    },
+    "klpo_tick": {
+     "median": 1726.179,
+     "min": 1672.878,
+     "max": 1813.583,
+     "n": 3
+    },
+    "klpo_wave_s": {
+     "median": 0.439,
+     "min": 0.427,
+     "max": 0.442,
+     "n": 3
+    },
+    "klpo_obj_s": {
+     "median": 0.04,
+     "min": 0.035,
+     "max": 0.044,
+     "n": 3
+    },
+    "eval_ms": {
+     "median": 34.823,
+     "min": 33.215,
+     "max": 35.485,
+     "n": 3
+    },
+    "rss_mib": {
+     "median": 1286.836,
+     "min": 1286.766,
+     "max": 1287.039,
+     "n": 3
+    }
+   },
+   "opt-CN-cpu": {
+    "env": {
+     "median": 208.271,
+     "min": 171.793,
+     "max": 242.826,
+     "n": 3
+    },
+    "inf:ppo_mlp64:False:act_and_copy_back": {
+     "median": 122.981,
+     "min": 101.892,
+     "max": 161.373,
+     "n": 3
+    },
+    "inf:ppo_mlp64:False:bootstrap_and_copy_back": {
+     "median": 84.018,
+     "min": 70.693,
+     "max": 107.501,
+     "n": 3
+    },
+    "inf:ppo_mlp64:False:copy_two_observation_batches": {
+     "median": 8.886,
+     "min": 7.114,
+     "max": 11.602,
+     "n": 3
+    },
+    "inf:double_dqn_mlp64:False:act_and_copy_back": {
+     "median": 170.22,
+     "min": 135.214,
+     "max": 194.816,
+     "n": 3
+    },
+    "gae": {
+     "median": 1671.589,
+     "min": 1265.797,
+     "max": 1704.641,
+     "n": 3
+    },
+    "grad": {
+     "median": 1164.757,
+     "min": 878.52,
+     "max": 1267.56,
+     "n": 3
+    },
+    "fwd64": {
+     "median": 274.496,
+     "min": 264.837,
+     "max": 305.974,
+     "n": 3
+    },
+    "klpo_tick": {
+     "median": 741.222,
+     "min": 639.631,
+     "max": 842.172,
+     "n": 3
+    },
+    "klpo_wave_s": {
+     "median": 0.184,
+     "min": 0.153,
+     "max": 0.195,
+     "n": 3
+    },
+    "klpo_obj_s": {
+     "median": 0.079,
+     "min": 0.076,
+     "max": 0.082,
+     "n": 3
+    },
+    "eval_ms": {
+     "median": 13.848,
+     "min": 11.563,
+     "max": 19.528,
+     "n": 3
+    },
+    "rss_mib": {
+     "median": 482.688,
+     "min": 477.211,
+     "max": 484.691,
+     "n": 3
+    }
+   },
+   "opt-CN-cuda": {
+    "env": {
+     "median": 161.244,
+     "min": 160.523,
+     "max": 161.906,
+     "n": 3
+    },
+    "inf:ppo_mlp64:False:act_and_copy_back": {
+     "median": 248.329,
+     "min": 247.878,
+     "max": 254.4,
+     "n": 3
+    },
+    "inf:ppo_mlp64:False:bootstrap_and_copy_back": {
+     "median": 117.261,
+     "min": 115.629,
+     "max": 124.535,
+     "n": 3
+    },
+    "inf:ppo_mlp64:False:copy_two_observation_batches": {
+     "median": 42.961,
+     "min": 42.55,
+     "max": 43.873,
+     "n": 3
+    },
+    "inf:ppo_mlp64:True:copy_two_observation_batches": {
+     "median": 35.437,
+     "min": 35.396,
+     "max": 35.948,
+     "n": 3
+    },
+    "inf:double_dqn_mlp64:False:act_and_copy_back": {
+     "median": 417.157,
+     "min": 415.985,
+     "max": 417.588,
+     "n": 3
+    },
+    "gae": {
+     "median": 848.151,
+     "min": 840.597,
+     "max": 849.814,
+     "n": 3
+    },
+    "grad": {
+     "median": 1628.254,
+     "min": 1605.369,
+     "max": 2160.447,
+     "n": 3
+    },
+    "fwd64": {
+     "median": 101.272,
+     "min": 98.425,
+     "max": 112.032,
+     "n": 3
+    },
+    "trainer": {
+     "median": 553.996,
+     "min": 544.237,
+     "max": 563.974,
+     "n": 3
+    },
+    "trainer_rate": {
+     "median": 24627.642,
+     "min": 23414.215,
+     "max": 25403.649,
+     "n": 3
+    },
+    "klpo_tick": {
+     "median": 693.76,
+     "min": 688.88,
+     "max": 715.24,
+     "n": 3
+    },
+    "klpo_wave_s": {
+     "median": 0.173,
+     "min": 0.169,
+     "max": 0.177,
+     "n": 3
+    },
+    "klpo_obj_s": {
+     "median": 0.038,
+     "min": 0.034,
+     "max": 0.044,
+     "n": 3
+    },
+    "eval_ms": {
+     "median": 35.43,
+     "min": 33.731,
+     "max": 35.54,
+     "n": 3
+    },
+    "rss_mib": {
+     "median": 1289.086,
+     "min": 1288.578,
+     "max": 1289.387,
+     "n": 3
+    }
+   },
+   "opt-US-cpu": {
+    "env": {
+     "median": 232.026,
+     "min": 200.046,
+     "max": 250.149,
+     "n": 3
+    },
+    "inf:ppo_mlp64:False:act_and_copy_back": {
+     "median": 164.368,
+     "min": 144.501,
+     "max": 174.688,
+     "n": 3
+    },
+    "inf:ppo_mlp64:False:bootstrap_and_copy_back": {
+     "median": 108.534,
+     "min": 99.837,
+     "max": 115.126,
+     "n": 3
+    },
+    "inf:ppo_mlp64:False:copy_two_observation_batches": {
+     "median": 11.883,
+     "min": 10.289,
+     "max": 12.423,
+     "n": 3
+    },
+    "inf:double_dqn_mlp64:False:act_and_copy_back": {
+     "median": 214.443,
+     "min": 164.579,
+     "max": 216.266,
+     "n": 3
+    },
+    "gae": {
+     "median": 1550.461,
+     "min": 1426.338,
+     "max": 1696.035,
+     "n": 3
+    },
+    "grad": {
+     "median": 1494.386,
+     "min": 1171.24,
+     "max": 1517.66,
+     "n": 3
+    },
+    "fwd64": {
+     "median": 310.664,
+     "min": 272.441,
+     "max": 322.375,
+     "n": 3
+    },
+    "klpo_tick": {
+     "median": 815.08,
+     "min": 719.05,
+     "max": 957.107,
+     "n": 3
+    },
+    "klpo_wave_s": {
+     "median": 0.208,
+     "min": 0.197,
+     "max": 0.243,
+     "n": 3
+    },
+    "klpo_obj_s": {
+     "median": 0.091,
+     "min": 0.088,
+     "max": 0.106,
+     "n": 3
+    },
+    "eval_ms": {
+     "median": 16.833,
+     "min": 13.626,
+     "max": 17.579,
+     "n": 3
+    },
+    "rss_mib": {
+     "median": 480.184,
+     "min": 476.59,
+     "max": 481.262,
+     "n": 3
+    }
+   },
+   "opt-US-cuda": {
+    "env": {
+     "median": 141.978,
+     "min": 141.016,
+     "max": 142.409,
+     "n": 3
+    },
+    "inf:ppo_mlp64:False:act_and_copy_back": {
+     "median": 246.725,
+     "min": 244.542,
+     "max": 253.268,
+     "n": 3
+    },
+    "inf:ppo_mlp64:False:bootstrap_and_copy_back": {
+     "median": 115.318,
+     "min": 114.466,
+     "max": 122.472,
+     "n": 3
+    },
+    "inf:ppo_mlp64:False:copy_two_observation_batches": {
+     "median": 42.651,
+     "min": 42.6,
+     "max": 43.742,
+     "n": 3
+    },
+    "inf:ppo_mlp64:True:copy_two_observation_batches": {
+     "median": 35.688,
+     "min": 35.657,
+     "max": 35.918,
+     "n": 3
+    },
+    "inf:double_dqn_mlp64:False:act_and_copy_back": {
+     "median": 418.5,
+     "min": 417.889,
+     "max": 422.989,
+     "n": 3
+    },
+    "gae": {
+     "median": 860.154,
+     "min": 847.47,
+     "max": 860.355,
+     "n": 3
+    },
+    "grad": {
+     "median": 1774.158,
+     "min": 1614.708,
+     "max": 1877.945,
+     "n": 3
+    },
+    "fwd64": {
+     "median": 97.765,
+     "min": 96.923,
+     "max": 117.101,
+     "n": 3
+    },
+    "trainer": {
+     "median": 525.773,
+     "min": 520.833,
+     "max": 529.991,
+     "n": 3
+    },
+    "trainer_rate": {
+     "median": 25026.547,
+     "min": 24550.846,
+     "max": 25923.778,
+     "n": 3
+    },
+    "klpo_tick": {
+     "median": 679.933,
+     "min": 675.635,
+     "max": 709.36,
+     "n": 3
+    },
+    "klpo_wave_s": {
+     "median": 0.177,
+     "min": 0.174,
+     "max": 0.182,
+     "n": 3
+    },
+    "klpo_obj_s": {
+     "median": 0.036,
+     "min": 0.035,
+     "max": 0.039,
+     "n": 3
+    },
+    "eval_ms": {
+     "median": 34.773,
+     "min": 33.93,
+     "max": 37.028,
+     "n": 3
+    },
+    "rss_mib": {
+     "median": 1287.086,
+     "min": 1286.809,
+     "max": 1287.125,
+     "n": 3
+    }
+   }
+  },
+  "loads": {
+   "base-CN-cpu-1.json": {
+    "load_average": "15,34, 15,35, 13,94",
+    "gpu": null
+   },
+   "base-CN-cpu-2.json": {
+    "load_average": "16,42, 15,58, 14,04",
+    "gpu": null
+   },
+   "base-CN-cpu-3.json": {
+    "load_average": "16,46, 15,61, 14,06",
+    "gpu": null
+   },
+   "base-CN-cuda-1.json": {
+    "load_average": "8,52, 8,93, 10,95",
+    "gpu": "574 MiB, 24 %, 58, 1605 MHz, 16.91 W"
+   },
+   "base-CN-cuda-2.json": {
+    "load_average": "8,57, 8,92, 10,90",
+    "gpu": "575 MiB, 7 %, 58, 1605 MHz, 16.90 W"
+   },
+   "base-CN-cuda-3.json": {
+    "load_average": "8,32, 8,84, 10,83",
+    "gpu": "574 MiB, 20 %, 58, 1605 MHz, 14.65 W"
+   },
+   "base-US-cpu-1.json": {
+    "load_average": "15,20, 15,32, 13,92",
+    "gpu": null
+   },
+   "base-US-cpu-2.json": {
+    "load_average": "15,47, 15,38, 13,96",
+    "gpu": null
+   },
+   "base-US-cpu-3.json": {
+    "load_average": "16,15, 15,54, 14,03",
+    "gpu": null
+   },
+   "base-US-cuda-1.json": {
+    "load_average": "8,34, 8,91, 10,96",
+    "gpu": "574 MiB, 0 %, 57, 1995 MHz, 17.51 W"
+   },
+   "base-US-cuda-2.json": {
+    "load_average": "8,50, 8,92, 10,92",
+    "gpu": "575 MiB, 0 %, 58, 1605 MHz, 14.39 W"
+   },
+   "base-US-cuda-3.json": {
+    "load_average": "8,39, 8,87, 10,86",
+    "gpu": "575 MiB, 14 %, 58, 1605 MHz, 15.93 W"
+   },
+   "opt-CN-cpu-1.json": {
+    "load_average": "15,47, 15,38, 13,96",
+    "gpu": null
+   },
+   "opt-CN-cpu-2.json": {
+    "load_average": "16,42, 15,58, 14,04",
+    "gpu": null
+   },
+   "opt-CN-cpu-3.json": {
+    "load_average": "16,58, 15,65, 14,09",
+    "gpu": null
+   },
+   "opt-CN-cuda-1.json": {
+    "load_average": "8,64, 8,95, 10,94",
+    "gpu": "574 MiB, 11 %, 57, 1605 MHz, 16.88 W"
+   },
+   "opt-CN-cuda-2.json": {
+    "load_average": "8,68, 8,94, 10,89",
+    "gpu": "575 MiB, 11 %, 58, 1605 MHz, 15.61 W"
+   },
+   "opt-CN-cuda-3.json": {
+    "load_average": "8,38, 8,85, 10,82",
+    "gpu": "574 MiB, 0 %, 58, 1605 MHz, 14.45 W"
+   },
+   "opt-US-cpu-1.json": {
+    "load_average": "15,20, 15,32, 13,92",
+    "gpu": null
+   },
+   "opt-US-cpu-2.json": {
+    "load_average": "15,68, 15,42, 13,98",
+    "gpu": null
+   },
+   "opt-US-cpu-3.json": {
+    "load_average": "16,46, 15,61, 14,06",
+    "gpu": null
+   },
+   "opt-US-cuda-1.json": {
+    "load_average": "8,47, 8,93, 10,96",
+    "gpu": "574 MiB, 10 %, 57, 1605 MHz, 14.20 W"
+   },
+   "opt-US-cuda-2.json": {
+    "load_average": "8,70, 8,95, 10,92",
+    "gpu": "575 MiB, 5 %, 58, 1605 MHz, 14.15 W"
+   },
+   "opt-US-cuda-3.json": {
+    "load_average": "8,44, 8,87, 10,85",
+    "gpu": "575 MiB, 5 %, 58, 1605 MHz, 15.90 W"
+   }
+  },
+  "digests": {
+   "base-CN-cpu-1": {
+    "klpo_records": "4dfeecdedf0a72c2d28c59033961573dff30543ab1fc5bc859c009dae722335c",
+    "klpo_sampler": "01797ea37a862150c5e1b51e5914c4f9107cf11f1cf23ebca9b1ee45dd7fe0b2",
+    "ppo_rollout": "bffff312865b034926c9aae0ac9cc1846ca5fe14facec85c8cedf8f5228ca91e",
+    "ppo_environment": "85150c34524513f7b291f5a549830ef3000f12101e7a924dada8fd4a7668ca0a",
+    "ppo_sampler": "89a0ce39955a19495a78a8a453054034fefcbc2645a313370e912949ccc54389",
+    "ppo_diagnostic": true
+   },
+   "base-CN-cpu-2": {
+    "klpo_records": "4dfeecdedf0a72c2d28c59033961573dff30543ab1fc5bc859c009dae722335c",
+    "klpo_sampler": "01797ea37a862150c5e1b51e5914c4f9107cf11f1cf23ebca9b1ee45dd7fe0b2",
+    "ppo_rollout": "bffff312865b034926c9aae0ac9cc1846ca5fe14facec85c8cedf8f5228ca91e",
+    "ppo_environment": "85150c34524513f7b291f5a549830ef3000f12101e7a924dada8fd4a7668ca0a",
+    "ppo_sampler": "89a0ce39955a19495a78a8a453054034fefcbc2645a313370e912949ccc54389",
+    "ppo_diagnostic": true
+   },
+   "base-CN-cpu-3": {
+    "klpo_records": "4dfeecdedf0a72c2d28c59033961573dff30543ab1fc5bc859c009dae722335c",
+    "klpo_sampler": "01797ea37a862150c5e1b51e5914c4f9107cf11f1cf23ebca9b1ee45dd7fe0b2",
+    "ppo_rollout": "bffff312865b034926c9aae0ac9cc1846ca5fe14facec85c8cedf8f5228ca91e",
+    "ppo_environment": "85150c34524513f7b291f5a549830ef3000f12101e7a924dada8fd4a7668ca0a",
+    "ppo_sampler": "89a0ce39955a19495a78a8a453054034fefcbc2645a313370e912949ccc54389",
+    "ppo_diagnostic": true
+   },
+   "base-CN-cuda-1": {
+    "klpo_records": "1dcb359d9f2be630ce80521532b9d645343338740fc0b3ec537a881c467903d7",
+    "klpo_sampler": "8d668329f6774bcdd8fe09906142e65d4d3d62ee64c77432080f3a1a730f1aeb",
+    "ppo_rollout": "5d3dab321b37a82f343420e3701504e1ef03ab01a212a19b42aa2f2e1a47cb38",
+    "ppo_environment": "6998624c37c70b0d9272b542cad79402eafa53d5a6703da33f6f93c7e074638b",
+    "ppo_sampler": "7bb79a202a10bef8b9547e8d5b3b2f060ff460075ecc5878de6cbdea9ed633d0",
+    "ppo_diagnostic": false
+   },
+   "base-CN-cuda-2": {
+    "klpo_records": "1dcb359d9f2be630ce80521532b9d645343338740fc0b3ec537a881c467903d7",
+    "klpo_sampler": "8d668329f6774bcdd8fe09906142e65d4d3d62ee64c77432080f3a1a730f1aeb",
+    "ppo_rollout": "5d3dab321b37a82f343420e3701504e1ef03ab01a212a19b42aa2f2e1a47cb38",
+    "ppo_environment": "6998624c37c70b0d9272b542cad79402eafa53d5a6703da33f6f93c7e074638b",
+    "ppo_sampler": "7bb79a202a10bef8b9547e8d5b3b2f060ff460075ecc5878de6cbdea9ed633d0",
+    "ppo_diagnostic": false
+   },
+   "base-CN-cuda-3": {
+    "klpo_records": "1dcb359d9f2be630ce80521532b9d645343338740fc0b3ec537a881c467903d7",
+    "klpo_sampler": "8d668329f6774bcdd8fe09906142e65d4d3d62ee64c77432080f3a1a730f1aeb",
+    "ppo_rollout": "5d3dab321b37a82f343420e3701504e1ef03ab01a212a19b42aa2f2e1a47cb38",
+    "ppo_environment": "6998624c37c70b0d9272b542cad79402eafa53d5a6703da33f6f93c7e074638b",
+    "ppo_sampler": "7bb79a202a10bef8b9547e8d5b3b2f060ff460075ecc5878de6cbdea9ed633d0",
+    "ppo_diagnostic": false
+   },
+   "base-US-cpu-1": {
+    "klpo_records": "8365c38f78c510a2f408bc3d891e69e5047a83d83833052006783cf9a44b9347",
+    "klpo_sampler": "3d7352332c6dfb5cc3de80236ac6853c9b7d090e1e4b8e418ed94cbc04512b2a",
+    "ppo_rollout": "48d6aa0c8179fc4deefa8ea8ddf3326d98644a974e1b6dac56f9925736f4e840",
+    "ppo_environment": "8dd3b0af4a89cf321d5706fe8adc3eae83a6147f55235115921d7735e96a1d8e",
+    "ppo_sampler": "89a0ce39955a19495a78a8a453054034fefcbc2645a313370e912949ccc54389",
+    "ppo_diagnostic": true
+   },
+   "base-US-cpu-2": {
+    "klpo_records": "8365c38f78c510a2f408bc3d891e69e5047a83d83833052006783cf9a44b9347",
+    "klpo_sampler": "3d7352332c6dfb5cc3de80236ac6853c9b7d090e1e4b8e418ed94cbc04512b2a",
+    "ppo_rollout": "48d6aa0c8179fc4deefa8ea8ddf3326d98644a974e1b6dac56f9925736f4e840",
+    "ppo_environment": "8dd3b0af4a89cf321d5706fe8adc3eae83a6147f55235115921d7735e96a1d8e",
+    "ppo_sampler": "89a0ce39955a19495a78a8a453054034fefcbc2645a313370e912949ccc54389",
+    "ppo_diagnostic": true
+   },
+   "base-US-cpu-3": {
+    "klpo_records": "8365c38f78c510a2f408bc3d891e69e5047a83d83833052006783cf9a44b9347",
+    "klpo_sampler": "3d7352332c6dfb5cc3de80236ac6853c9b7d090e1e4b8e418ed94cbc04512b2a",
+    "ppo_rollout": "48d6aa0c8179fc4deefa8ea8ddf3326d98644a974e1b6dac56f9925736f4e840",
+    "ppo_environment": "8dd3b0af4a89cf321d5706fe8adc3eae83a6147f55235115921d7735e96a1d8e",
+    "ppo_sampler": "89a0ce39955a19495a78a8a453054034fefcbc2645a313370e912949ccc54389",
+    "ppo_diagnostic": true
+   },
+   "base-US-cuda-1": {
+    "klpo_records": "e4dc748adc327d307ab9598885539915baaef114882096ccd15e4af6cb1e3e2a",
+    "klpo_sampler": "d9734fee16b18d5b50283944f5d7eb8f1aeaca808e0a08d96c61dd596a17ed3d",
+    "ppo_rollout": "2afde8670a3a1d54026215d8827d9efaced6fa56500217b97f699c818e8e055b",
+    "ppo_environment": "34f821bf329581711456ff5340b71a3e28cc34e4206cf9cd12a2aa69ee6734d2",
+    "ppo_sampler": "7bb79a202a10bef8b9547e8d5b3b2f060ff460075ecc5878de6cbdea9ed633d0",
+    "ppo_diagnostic": false
+   },
+   "base-US-cuda-2": {
+    "klpo_records": "e4dc748adc327d307ab9598885539915baaef114882096ccd15e4af6cb1e3e2a",
+    "klpo_sampler": "d9734fee16b18d5b50283944f5d7eb8f1aeaca808e0a08d96c61dd596a17ed3d",
+    "ppo_rollout": "2afde8670a3a1d54026215d8827d9efaced6fa56500217b97f699c818e8e055b",
+    "ppo_environment": "34f821bf329581711456ff5340b71a3e28cc34e4206cf9cd12a2aa69ee6734d2",
+    "ppo_sampler": "7bb79a202a10bef8b9547e8d5b3b2f060ff460075ecc5878de6cbdea9ed633d0",
+    "ppo_diagnostic": false
+   },
+   "base-US-cuda-3": {
+    "klpo_records": "e4dc748adc327d307ab9598885539915baaef114882096ccd15e4af6cb1e3e2a",
+    "klpo_sampler": "d9734fee16b18d5b50283944f5d7eb8f1aeaca808e0a08d96c61dd596a17ed3d",
+    "ppo_rollout": "2afde8670a3a1d54026215d8827d9efaced6fa56500217b97f699c818e8e055b",
+    "ppo_environment": "34f821bf329581711456ff5340b71a3e28cc34e4206cf9cd12a2aa69ee6734d2",
+    "ppo_sampler": "7bb79a202a10bef8b9547e8d5b3b2f060ff460075ecc5878de6cbdea9ed633d0",
+    "ppo_diagnostic": false
+   },
+   "opt-CN-cpu-1": {
+    "klpo_records": "4dfeecdedf0a72c2d28c59033961573dff30543ab1fc5bc859c009dae722335c",
+    "klpo_sampler": "01797ea37a862150c5e1b51e5914c4f9107cf11f1cf23ebca9b1ee45dd7fe0b2",
+    "ppo_rollout": "bffff312865b034926c9aae0ac9cc1846ca5fe14facec85c8cedf8f5228ca91e",
+    "ppo_environment": "85150c34524513f7b291f5a549830ef3000f12101e7a924dada8fd4a7668ca0a",
+    "ppo_sampler": "89a0ce39955a19495a78a8a453054034fefcbc2645a313370e912949ccc54389",
+    "ppo_diagnostic": true
+   },
+   "opt-CN-cpu-2": {
+    "klpo_records": "4dfeecdedf0a72c2d28c59033961573dff30543ab1fc5bc859c009dae722335c",
+    "klpo_sampler": "01797ea37a862150c5e1b51e5914c4f9107cf11f1cf23ebca9b1ee45dd7fe0b2",
+    "ppo_rollout": "bffff312865b034926c9aae0ac9cc1846ca5fe14facec85c8cedf8f5228ca91e",
+    "ppo_environment": "85150c34524513f7b291f5a549830ef3000f12101e7a924dada8fd4a7668ca0a",
+    "ppo_sampler": "89a0ce39955a19495a78a8a453054034fefcbc2645a313370e912949ccc54389",
+    "ppo_diagnostic": true
+   },
+   "opt-CN-cpu-3": {
+    "klpo_records": "4dfeecdedf0a72c2d28c59033961573dff30543ab1fc5bc859c009dae722335c",
+    "klpo_sampler": "01797ea37a862150c5e1b51e5914c4f9107cf11f1cf23ebca9b1ee45dd7fe0b2",
+    "ppo_rollout": "bffff312865b034926c9aae0ac9cc1846ca5fe14facec85c8cedf8f5228ca91e",
+    "ppo_environment": "85150c34524513f7b291f5a549830ef3000f12101e7a924dada8fd4a7668ca0a",
+    "ppo_sampler": "89a0ce39955a19495a78a8a453054034fefcbc2645a313370e912949ccc54389",
+    "ppo_diagnostic": true
+   },
+   "opt-CN-cuda-1": {
+    "klpo_records": "1dcb359d9f2be630ce80521532b9d645343338740fc0b3ec537a881c467903d7",
+    "klpo_sampler": "8d668329f6774bcdd8fe09906142e65d4d3d62ee64c77432080f3a1a730f1aeb",
+    "ppo_rollout": "5d3dab321b37a82f343420e3701504e1ef03ab01a212a19b42aa2f2e1a47cb38",
+    "ppo_environment": "6998624c37c70b0d9272b542cad79402eafa53d5a6703da33f6f93c7e074638b",
+    "ppo_sampler": "7bb79a202a10bef8b9547e8d5b3b2f060ff460075ecc5878de6cbdea9ed633d0",
+    "ppo_diagnostic": false
+   },
+   "opt-CN-cuda-2": {
+    "klpo_records": "1dcb359d9f2be630ce80521532b9d645343338740fc0b3ec537a881c467903d7",
+    "klpo_sampler": "8d668329f6774bcdd8fe09906142e65d4d3d62ee64c77432080f3a1a730f1aeb",
+    "ppo_rollout": "5d3dab321b37a82f343420e3701504e1ef03ab01a212a19b42aa2f2e1a47cb38",
+    "ppo_environment": "6998624c37c70b0d9272b542cad79402eafa53d5a6703da33f6f93c7e074638b",
+    "ppo_sampler": "7bb79a202a10bef8b9547e8d5b3b2f060ff460075ecc5878de6cbdea9ed633d0",
+    "ppo_diagnostic": false
+   },
+   "opt-CN-cuda-3": {
+    "klpo_records": "1dcb359d9f2be630ce80521532b9d645343338740fc0b3ec537a881c467903d7",
+    "klpo_sampler": "8d668329f6774bcdd8fe09906142e65d4d3d62ee64c77432080f3a1a730f1aeb",
+    "ppo_rollout": "5d3dab321b37a82f343420e3701504e1ef03ab01a212a19b42aa2f2e1a47cb38",
+    "ppo_environment": "6998624c37c70b0d9272b542cad79402eafa53d5a6703da33f6f93c7e074638b",
+    "ppo_sampler": "7bb79a202a10bef8b9547e8d5b3b2f060ff460075ecc5878de6cbdea9ed633d0",
+    "ppo_diagnostic": false
+   },
+   "opt-US-cpu-1": {
+    "klpo_records": "8365c38f78c510a2f408bc3d891e69e5047a83d83833052006783cf9a44b9347",
+    "klpo_sampler": "3d7352332c6dfb5cc3de80236ac6853c9b7d090e1e4b8e418ed94cbc04512b2a",
+    "ppo_rollout": "48d6aa0c8179fc4deefa8ea8ddf3326d98644a974e1b6dac56f9925736f4e840",
+    "ppo_environment": "8dd3b0af4a89cf321d5706fe8adc3eae83a6147f55235115921d7735e96a1d8e",
+    "ppo_sampler": "89a0ce39955a19495a78a8a453054034fefcbc2645a313370e912949ccc54389",
+    "ppo_diagnostic": true
+   },
+   "opt-US-cpu-2": {
+    "klpo_records": "8365c38f78c510a2f408bc3d891e69e5047a83d83833052006783cf9a44b9347",
+    "klpo_sampler": "3d7352332c6dfb5cc3de80236ac6853c9b7d090e1e4b8e418ed94cbc04512b2a",
+    "ppo_rollout": "48d6aa0c8179fc4deefa8ea8ddf3326d98644a974e1b6dac56f9925736f4e840",
+    "ppo_environment": "8dd3b0af4a89cf321d5706fe8adc3eae83a6147f55235115921d7735e96a1d8e",
+    "ppo_sampler": "89a0ce39955a19495a78a8a453054034fefcbc2645a313370e912949ccc54389",
+    "ppo_diagnostic": true
+   },
+   "opt-US-cpu-3": {
+    "klpo_records": "8365c38f78c510a2f408bc3d891e69e5047a83d83833052006783cf9a44b9347",
+    "klpo_sampler": "3d7352332c6dfb5cc3de80236ac6853c9b7d090e1e4b8e418ed94cbc04512b2a",
+    "ppo_rollout": "48d6aa0c8179fc4deefa8ea8ddf3326d98644a974e1b6dac56f9925736f4e840",
+    "ppo_environment": "8dd3b0af4a89cf321d5706fe8adc3eae83a6147f55235115921d7735e96a1d8e",
+    "ppo_sampler": "89a0ce39955a19495a78a8a453054034fefcbc2645a313370e912949ccc54389",
+    "ppo_diagnostic": true
+   },
+   "opt-US-cuda-1": {
+    "klpo_records": "e4dc748adc327d307ab9598885539915baaef114882096ccd15e4af6cb1e3e2a",
+    "klpo_sampler": "d9734fee16b18d5b50283944f5d7eb8f1aeaca808e0a08d96c61dd596a17ed3d",
+    "ppo_rollout": "2afde8670a3a1d54026215d8827d9efaced6fa56500217b97f699c818e8e055b",
+    "ppo_environment": "34f821bf329581711456ff5340b71a3e28cc34e4206cf9cd12a2aa69ee6734d2",
+    "ppo_sampler": "7bb79a202a10bef8b9547e8d5b3b2f060ff460075ecc5878de6cbdea9ed633d0",
+    "ppo_diagnostic": false
+   },
+   "opt-US-cuda-2": {
+    "klpo_records": "e4dc748adc327d307ab9598885539915baaef114882096ccd15e4af6cb1e3e2a",
+    "klpo_sampler": "d9734fee16b18d5b50283944f5d7eb8f1aeaca808e0a08d96c61dd596a17ed3d",
+    "ppo_rollout": "2afde8670a3a1d54026215d8827d9efaced6fa56500217b97f699c818e8e055b",
+    "ppo_environment": "34f821bf329581711456ff5340b71a3e28cc34e4206cf9cd12a2aa69ee6734d2",
+    "ppo_sampler": "7bb79a202a10bef8b9547e8d5b3b2f060ff460075ecc5878de6cbdea9ed633d0",
+    "ppo_diagnostic": false
+   },
+   "opt-US-cuda-3": {
+    "klpo_records": "e4dc748adc327d307ab9598885539915baaef114882096ccd15e4af6cb1e3e2a",
+    "klpo_sampler": "d9734fee16b18d5b50283944f5d7eb8f1aeaca808e0a08d96c61dd596a17ed3d",
+    "ppo_rollout": "2afde8670a3a1d54026215d8827d9efaced6fa56500217b97f699c818e8e055b",
+    "ppo_environment": "34f821bf329581711456ff5340b71a3e28cc34e4206cf9cd12a2aa69ee6734d2",
+    "ppo_sampler": "7bb79a202a10bef8b9547e8d5b3b2f060ff460075ecc5878de6cbdea9ed633d0",
+    "ppo_diagnostic": false
+   }
+  }
+ },
+ "cpu_versus_cuda": {
+  "note": "optimized build, CPU and CUDA runs interleaved at load 13-14",
+  "medians": {
+   "opt-CN-cpu": {
+    "env": {
+     "median": 164.718,
+     "min": 161.493,
+     "max": 168.395,
+     "n": 3
+    },
+    "inf:ppo_mlp64:False:act_and_copy_back": {
+     "median": 102.502,
+     "min": 98.584,
+     "max": 119.614,
+     "n": 3
+    },
+    "inf:ppo_mlp64:False:bootstrap_and_copy_back": {
+     "median": 71.473,
+     "min": 69.791,
+     "max": 81.112,
+     "n": 3
+    },
+    "inf:ppo_mlp64:False:copy_two_observation_batches": {
+     "median": 7.995,
+     "min": 7.704,
+     "max": 9.568,
+     "n": 3
+    },
+    "inf:double_dqn_mlp64:False:act_and_copy_back": {
+     "median": 111.619,
+     "min": 105.788,
+     "max": 111.629,
+     "n": 3
+    },
+    "gae": {
+     "median": 924.069,
+     "min": 922.756,
+     "max": 953.083,
+     "n": 3
+    },
+    "grad": {
+     "median": 764.491,
+     "min": 762.527,
+     "max": 868.786,
+     "n": 3
+    },
+    "fwd64": {
+     "median": 211.296,
+     "min": 207.127,
+     "max": 251.35,
+     "n": 3
+    },
+    "klpo_tick": {
+     "median": 453.989,
+     "min": 451.965,
+     "max": 546.031,
+     "n": 3
+    },
+    "klpo_wave_s": {
+     "median": 0.115,
+     "min": 0.111,
+     "max": 0.144,
+     "n": 3
+    },
+    "klpo_obj_s": {
+     "median": 0.063,
+     "min": 0.062,
+     "max": 0.064,
+     "n": 3
+    },
+    "eval_ms": {
+     "median": 9.431,
+     "min": 8.956,
+     "max": 9.787,
+     "n": 3
+    },
+    "rss_mib": {
+     "median": 484.449,
+     "min": 480.934,
+     "max": 484.863,
+     "n": 3
+    }
+   },
+   "opt-CN-cuda": {
+    "env": {
+     "median": 161.312,
+     "min": 160.44,
+     "max": 166.302,
+     "n": 3
+    },
+    "inf:ppo_mlp64:False:act_and_copy_back": {
+     "median": 272.319,
+     "min": 257.632,
+     "max": 274.855,
+     "n": 3
+    },
+    "inf:ppo_mlp64:False:bootstrap_and_copy_back": {
+     "median": 127.319,
+     "min": 120.486,
+     "max": 127.499,
+     "n": 3
+    },
+    "inf:ppo_mlp64:False:copy_two_observation_batches": {
+     "median": 46.477,
+     "min": 44.283,
+     "max": 46.537,
+     "n": 3
+    },
+    "inf:ppo_mlp64:True:copy_two_observation_batches": {
+     "median": 38.772,
+     "min": 37.59,
+     "max": 39.514,
+     "n": 3
+    },
+    "inf:double_dqn_mlp64:False:act_and_copy_back": {
+     "median": 500.307,
+     "min": 449.872,
+     "max": 574.876,
+     "n": 3
+    },
+    "gae": {
+     "median": 894.063,
+     "min": 891.749,
+     "max": 941.382,
+     "n": 3
+    },
+    "grad": {
+     "median": 1921.024,
+     "min": 1878.606,
+     "max": 2424.978,
+     "n": 3
+    },
+    "fwd64": {
+     "median": 102.051,
+     "min": 100.328,
+     "max": 117.43,
+     "n": 3
+    },
+    "trainer": {
+     "median": 604.321,
+     "min": 575.797,
+     "max": 870.118,
+     "n": 3
+    },
+    "trainer_rate": {
+     "median": 22061.686,
+     "min": 16509.389,
+     "max": 23426.139,
+     "n": 3
+    },
+    "klpo_tick": {
+     "median": 829.683,
+     "min": 803.493,
+     "max": 957.231,
+     "n": 3
+    },
+    "klpo_wave_s": {
+     "median": 0.208,
+     "min": 0.198,
+     "max": 0.244,
+     "n": 3
+    },
+    "klpo_obj_s": {
+     "median": 0.039,
+     "min": 0.035,
+     "max": 0.04,
+     "n": 3
+    },
+    "eval_ms": {
+     "median": 38.531,
+     "min": 34.767,
+     "max": 41.386,
+     "n": 3
+    },
+    "rss_mib": {
+     "median": 1291.984,
+     "min": 1287.355,
+     "max": 1294.16,
+     "n": 3
+    }
+   },
+   "opt-US-cpu": {
+    "env": {
+     "median": 145.503,
+     "min": 142.406,
+     "max": 149.6,
+     "n": 3
+    },
+    "inf:ppo_mlp64:False:act_and_copy_back": {
+     "median": 104.957,
+     "min": 99.206,
+     "max": 108.513,
+     "n": 3
+    },
+    "inf:ppo_mlp64:False:bootstrap_and_copy_back": {
+     "median": 73.397,
+     "min": 69.56,
+     "max": 75.381,
+     "n": 3
+    },
+    "inf:ppo_mlp64:False:copy_two_observation_batches": {
+     "median": 7.494,
+     "min": 6.492,
+     "max": 7.925,
+     "n": 3
+    },
+    "inf:double_dqn_mlp64:False:act_and_copy_back": {
+     "median": 137.317,
+     "min": 109.094,
+     "max": 149.94,
+     "n": 3
+    },
+    "gae": {
+     "median": 933.918,
+     "min": 932.875,
+     "max": 940.78,
+     "n": 3
+    },
+    "grad": {
+     "median": 816.327,
+     "min": 801.59,
+     "max": 850.542,
+     "n": 3
+    },
+    "fwd64": {
+     "median": 206.427,
+     "min": 203.19,
+     "max": 210.844,
+     "n": 3
+    },
+    "klpo_tick": {
+     "median": 435.324,
+     "min": 428.702,
+     "max": 469.258,
+     "n": 3
+    },
+    "klpo_wave_s": {
+     "median": 0.119,
+     "min": 0.113,
+     "max": 0.127,
+     "n": 3
+    },
+    "klpo_obj_s": {
+     "median": 0.064,
+     "min": 0.063,
+     "max": 0.068,
+     "n": 3
+    },
+    "eval_ms": {
+     "median": 8.593,
+     "min": 8.479,
+     "max": 8.867,
+     "n": 3
+    },
+    "rss_mib": {
+     "median": 483.164,
+     "min": 482.523,
+     "max": 483.402,
+     "n": 3
+    }
+   },
+   "opt-US-cuda": {
+    "env": {
+     "median": 143.98,
+     "min": 141.114,
+     "max": 145.923,
+     "n": 3
+    },
+    "inf:ppo_mlp64:False:act_and_copy_back": {
+     "median": 251.03,
+     "min": 247.143,
+     "max": 252.302,
+     "n": 3
+    },
+    "inf:ppo_mlp64:False:bootstrap_and_copy_back": {
+     "median": 119.394,
+     "min": 116.828,
+     "max": 120.134,
+     "n": 3
+    },
+    "inf:ppo_mlp64:False:copy_two_observation_batches": {
+     "median": 43.301,
+     "min": 42.609,
+     "max": 43.461,
+     "n": 3
+    },
+    "inf:ppo_mlp64:True:copy_two_observation_batches": {
+     "median": 35.467,
+     "min": 35.116,
+     "max": 36.709,
+     "n": 3
+    },
+    "inf:double_dqn_mlp64:False:act_and_copy_back": {
+     "median": 424.505,
+     "min": 423.322,
+     "max": 453.789,
+     "n": 3
+    },
+    "gae": {
+     "median": 877.802,
+     "min": 852.114,
+     "max": 880.818,
+     "n": 3
+    },
+    "grad": {
+     "median": 1889.386,
+     "min": 1884.306,
+     "max": 1991.726,
+     "n": 3
+    },
+    "fwd64": {
+     "median": 110.176,
+     "min": 100.498,
+     "max": 111.699,
+     "n": 3
+    },
+    "trainer": {
+     "median": 570.347,
+     "min": 557.133,
+     "max": 591.737,
+     "n": 3
+    },
+    "trainer_rate": {
+     "median": 22858.781,
+     "min": 22439.521,
+     "max": 23597.495,
+     "n": 3
+    },
+    "klpo_tick": {
+     "median": 816.277,
+     "min": 802.281,
+     "max": 1032.722,
+     "n": 3
+    },
+    "klpo_wave_s": {
+     "median": 0.22,
+     "min": 0.212,
+     "max": 0.258,
+     "n": 3
+    },
+    "klpo_obj_s": {
+     "median": 0.041,
+     "min": 0.037,
+     "max": 0.061,
+     "n": 3
+    },
+    "eval_ms": {
+     "median": 36.064,
+     "min": 35.353,
+     "max": 36.193,
+     "n": 3
+    },
+    "rss_mib": {
+     "median": 1291.895,
+     "min": 1290.539,
+     "max": 1292.16,
+     "n": 3
+    }
+   }
+  },
+  "first_tick_p50_us": {
+   "opt-US-cpu": {
+    "median": 479.317,
+    "values": [
+     435.244,
+     486.39,
+     479.317
+    ]
+   },
+   "opt-US-cuda": {
+    "median": 937.625,
+    "values": [
+     937.625,
+     948.705,
+     913.871
+    ]
+   },
+   "opt-CN-cpu": {
+    "median": 461.865,
+    "values": [
+     448.429,
+     556.161,
+     461.865
+    ]
+   },
+   "opt-CN-cuda": {
+    "median": 1030.718,
+    "values": [
+     1030.718,
+     1115.708,
+     846.424
+    ]
+   }
+  },
+  "loads": {
+   "opt-CN-cpu-1.json": {
+    "load_average": "14,07, 13,99, 15,26",
+    "gpu": "543 MiB, 18 %, 54, 1605 MHz, 13.88 W"
+   },
+   "opt-CN-cpu-2.json": {
+    "load_average": "13,54, 13,87, 15,20",
+    "gpu": "736 MiB, 26 %, 54, 1605 MHz, 14.12 W"
+   },
+   "opt-CN-cpu-3.json": {
+    "load_average": "13,47, 13,83, 15,16",
+    "gpu": "737 MiB, 14 %, 55, 1605 MHz, 14.53 W"
+   },
+   "opt-CN-cuda-1.json": {
+    "load_average": "13,75, 13,92, 15,23",
+    "gpu": "543 MiB, 1 %, 53, 465 MHz, 10.27 W"
+   },
+   "opt-CN-cuda-2.json": {
+    "load_average": "13,42, 13,84, 15,18",
+    "gpu": "736 MiB, 1 %, 54, 1605 MHz, 14.61 W"
+   },
+   "opt-CN-cuda-3.json": {
+    "load_average": "13,47, 13,83, 15,16",
+    "gpu": "737 MiB, 1 %, 54, 495 MHz, 12.90 W"
+   },
+   "opt-US-cpu-1.json": {
+    "load_average": "14,35, 14,04, 15,29",
+    "gpu": "543 MiB, 0 %, 54, 1605 MHz, 14.35 W"
+   },
+   "opt-US-cpu-2.json": {
+    "load_average": "13,77, 13,92, 15,22",
+    "gpu": "736 MiB, 0 %, 54, 1605 MHz, 13.85 W"
+   },
+   "opt-US-cpu-3.json": {
+    "load_average": "13,47, 13,85, 15,17",
+    "gpu": "736 MiB, 18 %, 55, 1605 MHz, 13.96 W"
+   },
+   "opt-US-cuda-1.json": {
+    "load_average": "14,17, 14,01, 15,27",
+    "gpu": "543 MiB, 2 %, 53, 300 MHz, 10.14 W"
+   },
+   "opt-US-cuda-2.json": {
+    "load_average": "13,77, 13,92, 15,22",
+    "gpu": "736 MiB, 0 %, 54, 1605 MHz, 14.61 W"
+   },
+   "opt-US-cuda-3.json": {
+    "load_average": "13,51, 13,85, 15,17",
+    "gpu": "736 MiB, 3 %, 54, 480 MHz, 10.17 W"
+   }
+  },
+  "digests": {
+   "opt-CN-cpu-1": {
+    "klpo_records": "4dfeecdedf0a72c2d28c59033961573dff30543ab1fc5bc859c009dae722335c",
+    "klpo_sampler": "01797ea37a862150c5e1b51e5914c4f9107cf11f1cf23ebca9b1ee45dd7fe0b2",
+    "ppo_rollout": "bffff312865b034926c9aae0ac9cc1846ca5fe14facec85c8cedf8f5228ca91e",
+    "ppo_environment": "85150c34524513f7b291f5a549830ef3000f12101e7a924dada8fd4a7668ca0a",
+    "ppo_sampler": "89a0ce39955a19495a78a8a453054034fefcbc2645a313370e912949ccc54389",
+    "ppo_diagnostic": true
+   },
+   "opt-CN-cpu-2": {
+    "klpo_records": "4dfeecdedf0a72c2d28c59033961573dff30543ab1fc5bc859c009dae722335c",
+    "klpo_sampler": "01797ea37a862150c5e1b51e5914c4f9107cf11f1cf23ebca9b1ee45dd7fe0b2",
+    "ppo_rollout": "bffff312865b034926c9aae0ac9cc1846ca5fe14facec85c8cedf8f5228ca91e",
+    "ppo_environment": "85150c34524513f7b291f5a549830ef3000f12101e7a924dada8fd4a7668ca0a",
+    "ppo_sampler": "89a0ce39955a19495a78a8a453054034fefcbc2645a313370e912949ccc54389",
+    "ppo_diagnostic": true
+   },
+   "opt-CN-cpu-3": {
+    "klpo_records": "4dfeecdedf0a72c2d28c59033961573dff30543ab1fc5bc859c009dae722335c",
+    "klpo_sampler": "01797ea37a862150c5e1b51e5914c4f9107cf11f1cf23ebca9b1ee45dd7fe0b2",
+    "ppo_rollout": "bffff312865b034926c9aae0ac9cc1846ca5fe14facec85c8cedf8f5228ca91e",
+    "ppo_environment": "85150c34524513f7b291f5a549830ef3000f12101e7a924dada8fd4a7668ca0a",
+    "ppo_sampler": "89a0ce39955a19495a78a8a453054034fefcbc2645a313370e912949ccc54389",
+    "ppo_diagnostic": true
+   },
+   "opt-CN-cuda-1": {
+    "klpo_records": "1dcb359d9f2be630ce80521532b9d645343338740fc0b3ec537a881c467903d7",
+    "klpo_sampler": "8d668329f6774bcdd8fe09906142e65d4d3d62ee64c77432080f3a1a730f1aeb",
+    "ppo_rollout": "5d3dab321b37a82f343420e3701504e1ef03ab01a212a19b42aa2f2e1a47cb38",
+    "ppo_environment": "6998624c37c70b0d9272b542cad79402eafa53d5a6703da33f6f93c7e074638b",
+    "ppo_sampler": "7bb79a202a10bef8b9547e8d5b3b2f060ff460075ecc5878de6cbdea9ed633d0",
+    "ppo_diagnostic": false
+   },
+   "opt-CN-cuda-2": {
+    "klpo_records": "1dcb359d9f2be630ce80521532b9d645343338740fc0b3ec537a881c467903d7",
+    "klpo_sampler": "8d668329f6774bcdd8fe09906142e65d4d3d62ee64c77432080f3a1a730f1aeb",
+    "ppo_rollout": "5d3dab321b37a82f343420e3701504e1ef03ab01a212a19b42aa2f2e1a47cb38",
+    "ppo_environment": "6998624c37c70b0d9272b542cad79402eafa53d5a6703da33f6f93c7e074638b",
+    "ppo_sampler": "7bb79a202a10bef8b9547e8d5b3b2f060ff460075ecc5878de6cbdea9ed633d0",
+    "ppo_diagnostic": false
+   },
+   "opt-CN-cuda-3": {
+    "klpo_records": "1dcb359d9f2be630ce80521532b9d645343338740fc0b3ec537a881c467903d7",
+    "klpo_sampler": "8d668329f6774bcdd8fe09906142e65d4d3d62ee64c77432080f3a1a730f1aeb",
+    "ppo_rollout": "5d3dab321b37a82f343420e3701504e1ef03ab01a212a19b42aa2f2e1a47cb38",
+    "ppo_environment": "6998624c37c70b0d9272b542cad79402eafa53d5a6703da33f6f93c7e074638b",
+    "ppo_sampler": "7bb79a202a10bef8b9547e8d5b3b2f060ff460075ecc5878de6cbdea9ed633d0",
+    "ppo_diagnostic": false
+   },
+   "opt-US-cpu-1": {
+    "klpo_records": "8365c38f78c510a2f408bc3d891e69e5047a83d83833052006783cf9a44b9347",
+    "klpo_sampler": "3d7352332c6dfb5cc3de80236ac6853c9b7d090e1e4b8e418ed94cbc04512b2a",
+    "ppo_rollout": "48d6aa0c8179fc4deefa8ea8ddf3326d98644a974e1b6dac56f9925736f4e840",
+    "ppo_environment": "8dd3b0af4a89cf321d5706fe8adc3eae83a6147f55235115921d7735e96a1d8e",
+    "ppo_sampler": "89a0ce39955a19495a78a8a453054034fefcbc2645a313370e912949ccc54389",
+    "ppo_diagnostic": true
+   },
+   "opt-US-cpu-2": {
+    "klpo_records": "8365c38f78c510a2f408bc3d891e69e5047a83d83833052006783cf9a44b9347",
+    "klpo_sampler": "3d7352332c6dfb5cc3de80236ac6853c9b7d090e1e4b8e418ed94cbc04512b2a",
+    "ppo_rollout": "48d6aa0c8179fc4deefa8ea8ddf3326d98644a974e1b6dac56f9925736f4e840",
+    "ppo_environment": "8dd3b0af4a89cf321d5706fe8adc3eae83a6147f55235115921d7735e96a1d8e",
+    "ppo_sampler": "89a0ce39955a19495a78a8a453054034fefcbc2645a313370e912949ccc54389",
+    "ppo_diagnostic": true
+   },
+   "opt-US-cpu-3": {
+    "klpo_records": "8365c38f78c510a2f408bc3d891e69e5047a83d83833052006783cf9a44b9347",
+    "klpo_sampler": "3d7352332c6dfb5cc3de80236ac6853c9b7d090e1e4b8e418ed94cbc04512b2a",
+    "ppo_rollout": "48d6aa0c8179fc4deefa8ea8ddf3326d98644a974e1b6dac56f9925736f4e840",
+    "ppo_environment": "8dd3b0af4a89cf321d5706fe8adc3eae83a6147f55235115921d7735e96a1d8e",
+    "ppo_sampler": "89a0ce39955a19495a78a8a453054034fefcbc2645a313370e912949ccc54389",
+    "ppo_diagnostic": true
+   },
+   "opt-US-cuda-1": {
+    "klpo_records": "e4dc748adc327d307ab9598885539915baaef114882096ccd15e4af6cb1e3e2a",
+    "klpo_sampler": "d9734fee16b18d5b50283944f5d7eb8f1aeaca808e0a08d96c61dd596a17ed3d",
+    "ppo_rollout": "2afde8670a3a1d54026215d8827d9efaced6fa56500217b97f699c818e8e055b",
+    "ppo_environment": "34f821bf329581711456ff5340b71a3e28cc34e4206cf9cd12a2aa69ee6734d2",
+    "ppo_sampler": "7bb79a202a10bef8b9547e8d5b3b2f060ff460075ecc5878de6cbdea9ed633d0",
+    "ppo_diagnostic": false
+   },
+   "opt-US-cuda-2": {
+    "klpo_records": "e4dc748adc327d307ab9598885539915baaef114882096ccd15e4af6cb1e3e2a",
+    "klpo_sampler": "d9734fee16b18d5b50283944f5d7eb8f1aeaca808e0a08d96c61dd596a17ed3d",
+    "ppo_rollout": "2afde8670a3a1d54026215d8827d9efaced6fa56500217b97f699c818e8e055b",
+    "ppo_environment": "34f821bf329581711456ff5340b71a3e28cc34e4206cf9cd12a2aa69ee6734d2",
+    "ppo_sampler": "7bb79a202a10bef8b9547e8d5b3b2f060ff460075ecc5878de6cbdea9ed633d0",
+    "ppo_diagnostic": false
+   },
+   "opt-US-cuda-3": {
+    "klpo_records": "e4dc748adc327d307ab9598885539915baaef114882096ccd15e4af6cb1e3e2a",
+    "klpo_sampler": "d9734fee16b18d5b50283944f5d7eb8f1aeaca808e0a08d96c61dd596a17ed3d",
+    "ppo_rollout": "2afde8670a3a1d54026215d8827d9efaced6fa56500217b97f699c818e8e055b",
+    "ppo_environment": "34f821bf329581711456ff5340b71a3e28cc34e4206cf9cd12a2aa69ee6734d2",
+    "ppo_sampler": "7bb79a202a10bef8b9547e8d5b3b2f060ff460075ecc5878de6cbdea9ed633d0",
+    "ppo_diagnostic": false
+   }
+  }
+ },
+ "cuda_calls_per_ppo_tick": {
+  "method": "nsys --trace=cuda, difference between 192 and 64 measured ticks divided by 128, US tapes",
+  "base": {
+   "api": {
+    "cudaLaunchKernel": 60.0,
+    "cuKernelGetName": 60.0,
+    "cudaMemcpyAsync": 8.0,
+    "cudaStreamSynchronize": 8.0,
+    "cudaStreamIsCapturing": 6.0,
+    "cudaStreamGetCaptureInfo": 3.0
+   },
+   "api_total_per_tick": 145.0,
+   "kern": {
+    "void at::native::vectorized_elementwise_kernel<(int)4, at::n": 1.0,
+    "void gemmSN_TN_kernel<float, (int)128, (int)16, (int)2, (int": 6.0,
+    "void at::native::vectorized_elementwise_kernel<(int)2, at::n": 2.0,
+    "void at::native::reduce_kernel<(int)512, (int)1, at::native:": 1.0,
+    "void at::native::vectorized_elementwise_kernel<(int)4, void ": 2.0,
+    "void at::native::elementwise_kernel<(int)128, (int)2, void a": 2.0,
+    "void at::native::unrolled_elementwise_kernel<at::native::dir": 2.0,
+    "void at::native::_assert_async_cuda_kernel<bool>(const T1 *,": 2.0,
+    "void at::native::elementwise_kernel<(int)128, (int)4, void a": 1.0,
+    "void at::native::_scatter_gather_elementwise_kernel<(int)128": 1.0,
+    "void at::native::<unnamed>::CatArrayBatchedCopy_alignedK_con": 1.0,
+    "void at::native::<unnamed>::distribution_elementwise_grid_st": 1.0,
+    "void <unnamed>::softmax_warp_forward<float, float, float, (i": 1.0
+   },
+   "kern_total_per_tick": 60.0,
+   "mem": {
+    "[CUDA memcpy Device-to-Host]": 5.0,
+    "[CUDA memcpy Host-to-Device]": 3.0
+   },
+   "mem_total_per_tick": 8.0
+  },
+  "opt": {
+   "api": {
+    "cudaLaunchKernel": 44.0,
+    "cuKernelGetName": 44.0,
+    "cudaMemcpyAsync": 5.0,
+    "cudaStreamSynchronize": 5.0,
+    "cudaStreamIsCapturing": 4.0,
+    "cudaStreamGetCaptureInfo": 3.0
+   },
+   "api_total_per_tick": 105.0,
+   "kern": {
+    "void at::native::vectorized_elementwise_kernel<(int)4, at::n": 1.0,
+    "void gemmSN_TN_kernel<float, (int)128, (int)16, (int)2, (int": 3.0,
+    "void at::native::vectorized_elementwise_kernel<(int)2, at::n": 2.0,
+    "void at::native::vectorized_elementwise_kernel<(int)4, void ": 2.0,
+    "void at::native::elementwise_kernel<(int)128, (int)2, void a": 2.0,
+    "void at::native::unrolled_elementwise_kernel<at::native::dir": 2.0,
+    "void at::native::_assert_async_cuda_kernel<bool>(const T1 *,": 2.0,
+    "void at::native::reduce_kernel<(int)512, (int)1, at::native:": 1.0,
+    "void at::native::elementwise_kernel<(int)128, (int)4, void a": 1.0,
+    "void at::native::_scatter_gather_elementwise_kernel<(int)128": 1.0,
+    "void at::native::<unnamed>::CatArrayBatchedCopy_alignedK_con": 1.0,
+    "void at::native::<unnamed>::distribution_elementwise_grid_st": 1.0,
+    "void <unnamed>::softmax_warp_forward<float, float, float, (i": 1.0
+   },
+   "kern_total_per_tick": 44.0,
+   "mem": {
+    "[CUDA memcpy Device-to-Host]": 4.0,
+    "[CUDA memcpy Host-to-Device]": 1.0
+   },
+   "mem_total_per_tick": 5.0
+  }
+ },
+ "concurrency": {
+  "method": "K processes of the optimized benchmark on US tapes with --repeat (12 on CUDA, 20 on CPU), first repetition discarded, aggregate = sum of per-process rates, MPS with a private pipe directory",
+  "results": {
+   "cpu-k1": {
+    "processes": 1,
+    "overlap_fraction": 1.0,
+    "klpo_wave_seconds_median": 0.10576441300000002,
+    "klpo_transitions_per_second_aggregate": 38018.45900662257,
+    "klpo_digests_identical": true,
+    "peak_rss_mib_max": 486.24609375,
+    "klpo_transitions_per_second_speedup": 1.0
+   },
+   "cpu-k2": {
+    "processes": 2,
+    "overlap_fraction": 0.9978096314885301,
+    "klpo_wave_seconds_median": 0.113267482,
+    "klpo_transitions_per_second_aggregate": 71003.10148670258,
+    "klpo_digests_identical": true,
+    "peak_rss_mib_max": 483.6640625,
+    "klpo_transitions_per_second_speedup": 1.8675954613082633
+   },
+   "cpu-k4": {
+    "processes": 4,
+    "overlap_fraction": 0.9670332207356397,
+    "klpo_wave_seconds_median": 0.113733473,
+    "klpo_transitions_per_second_aggregate": 141967.46221159826,
+    "klpo_digests_identical": true,
+    "peak_rss_mib_max": 484.5859375,
+    "klpo_transitions_per_second_speedup": 3.7341719238769895
+   },
+   "cpu-k8": {
+    "processes": 8,
+    "overlap_fraction": 0.9065539229558632,
+    "klpo_wave_seconds_median": 0.16783245799999996,
+    "klpo_transitions_per_second_aggregate": 192698.67120247136,
+    "klpo_digests_identical": true,
+    "peak_rss_mib_max": 488.1953125,
+    "klpo_transitions_per_second_speedup": 5.068555544792189
+   },
+   "cuda-k1": {
+    "processes": 1,
+    "overlap_fraction": 1.0,
+    "trainer_tick_p50_us_median": 575.929,
+    "trainer_transitions_per_second_aggregate": 27781.202196798564,
+    "trainer_digests_identical": true,
+    "klpo_wave_seconds_median": 0.19232184200000005,
+    "klpo_transitions_per_second_aggregate": 20907.661647708213,
+    "klpo_digests_identical": true,
+    "peak_rss_mib_max": 1205.03515625,
+    "trainer_transitions_per_second_speedup": 1.0,
+    "klpo_transitions_per_second_speedup": 1.0
+   },
+   "cuda-k2": {
+    "processes": 2,
+    "overlap_fraction": 0.9945927343954345,
+    "trainer_tick_p50_us_median": 839.7425,
+    "trainer_transitions_per_second_aggregate": 38108.153662724915,
+    "trainer_digests_identical": true,
+    "klpo_wave_seconds_median": 0.2331493264999999,
+    "klpo_transitions_per_second_aggregate": 34497.68409263274,
+    "klpo_digests_identical": true,
+    "peak_rss_mib_max": 1201.53515625,
+    "trainer_transitions_per_second_speedup": 1.3717244269262185,
+    "klpo_transitions_per_second_speedup": 1.650002026717043
+   },
+   "cuda-k4": {
+    "processes": 4,
+    "overlap_fraction": 0.9908645762375093,
+    "trainer_tick_p50_us_median": 1282.1305,
+    "trainer_transitions_per_second_aggregate": 49768.25060242474,
+    "trainer_digests_identical": true,
+    "klpo_wave_seconds_median": 0.3526737685000001,
+    "klpo_transitions_per_second_aggregate": 45448.36151109335,
+    "klpo_digests_identical": true,
+    "peak_rss_mib_max": 1200.390625,
+    "trainer_transitions_per_second_speedup": 1.7914361750752423,
+    "klpo_transitions_per_second_speedup": 2.173765879556175
+   },
+   "mps-k1": {
+    "processes": 1,
+    "overlap_fraction": 1.0,
+    "trainer_tick_p50_us_median": 564.8470000000001,
+    "trainer_transitions_per_second_aggregate": 28326.254720304787,
+    "trainer_digests_identical": true,
+    "klpo_wave_seconds_median": 0.17800787099999996,
+    "klpo_transitions_per_second_aggregate": 22588.888780092206,
+    "klpo_digests_identical": true,
+    "peak_rss_mib_max": 1183.484375,
+    "trainer_transitions_per_second_speedup": 1.0,
+    "klpo_transitions_per_second_speedup": 1.0
+   },
+   "mps-k2": {
+    "processes": 2,
+    "overlap_fraction": 0.9939589578581901,
+    "trainer_tick_p50_us_median": 578.6995000000001,
+    "trainer_transitions_per_second_aggregate": 55296.68395056601,
+    "trainer_digests_identical": true,
+    "klpo_wave_seconds_median": 0.19239341450000008,
+    "klpo_transitions_per_second_aggregate": 41803.096841699706,
+    "klpo_digests_identical": true,
+    "peak_rss_mib_max": 1182.1953125,
+    "trainer_transitions_per_second_speedup": 1.9521353774640853,
+    "klpo_transitions_per_second_speedup": 1.850604394428696
+   },
+   "mps-k4": {
+    "processes": 4,
+    "overlap_fraction": 0.9811869423961079,
+    "trainer_tick_p50_us_median": 613.053,
+    "trainer_transitions_per_second_aggregate": 104095.05930563231,
+    "trainer_digests_identical": true,
+    "klpo_wave_seconds_median": 0.21307501049999994,
+    "klpo_transitions_per_second_aggregate": 75262.07455017316,
+    "klpo_digests_identical": true,
+    "peak_rss_mib_max": 1181.46875,
+    "trainer_transitions_per_second_speedup": 3.6748613727255313,
+    "klpo_transitions_per_second_speedup": 3.331818367997912
+   }
+  },
+  "loads": {
+   "cpu-k1": {
+    "load_average": "14,11, 13,86, 15,02",
+    "gpu": "541 MiB, 14 %, 61, 2505 MHz, 26.71 W"
+   },
+   "cpu-k2": {
+    "load_average": "13,86, 13,81, 14,99",
+    "gpu": "544 MiB, 1 %, 58, 315 MHz, 7.19 W"
+   },
+   "cpu-k4": {
+    "load_average": "13,86, 13,81, 14,99",
+    "gpu": "544 MiB, 0 %, 57, 210 MHz, 7.10 W"
+   },
+   "cpu-k8": {
+    "load_average": "14,03, 13,84, 15,00",
+    "gpu": "544 MiB, 1 %, 57, 210 MHz, 7.06 W"
+   },
+   "cuda-k1": {
+    "load_average": "12,68, 13,61, 15,04",
+    "gpu": "736 MiB, 3 %, 54, 420 MHz, 13.02 W"
+   },
+   "cuda-k2": {
+    "load_average": "13,05, 13,66, 15,04",
+    "gpu": "736 MiB, 7 %, 55, 1605 MHz, 13.90 W"
+   },
+   "cuda-k4": {
+    "load_average": "13,05, 13,64, 15,01",
+    "gpu": "736 MiB, 41 %, 58, 2505 MHz, 26.40 W"
+   },
+   "mps-k1": {
+    "load_average": "14,50, 13,91, 15,07",
+    "gpu": "761 MiB, 81 %, 61, 2505 MHz, 29.36 W"
+   },
+   "mps-k2": {
+    "load_average": "14,11, 13,84, 15,04",
+    "gpu": "797 MiB, 6 %, 58, 1605 MHz, 14.71 W"
+   },
+   "mps-k4": {
+    "load_average": "14,02, 13,83, 15,03",
+    "gpu": "797 MiB, 0 %, 58, 1605 MHz, 15.92 W"
+   }
+  }
+ },
+ "memory": {
+  "mars_titan_sim": [
+   {
+    "tag": "parent_small",
+    "exit": 0,
+    "parent_vmhwm_bytes": 15032320,
+    "child_wait4_ru_maxrss_bytes": 40120320,
+    "child_report_vmhwm_bytes": 40120320
+   },
+   {
+    "tag": "parent_with_640MiB",
+    "exit": 0,
+    "parent_vmhwm_bytes": 686149632,
+    "child_wait4_ru_maxrss_bytes": 685903872,
+    "child_report_vmhwm_bytes": 39972864
+   }
+  ],
+  "mars_titan_sim_note": "ru_maxrss from wait4 keeps the pre-exec peak of the parent image, VmHWM counts only the executed image",
+  "benchmark_vmhwm_mib": {
+   "cpu": 483,
+   "cuda": 1292
+  },
+  "per_process_increment_mib": {
+   "cpu_ram": 267,
+   "cuda_ram": 833,
+   "cuda_mps_ram": 780,
+   "cuda_vram": 331,
+   "cuda_mps_vram_with_four": 272
+  }
+ },
+ "trace_parity": {
+  "US-hold_initial": {
+   "content_without_identity": "7c2adf4195e98fc9c6de842200af41004da00dfea243a395e21cdb5ef4ef2dc6",
+   "identical": true
+  },
+  "US-rebalance_50": {
+   "content_without_identity": "463e359a4d641c27fa1d8a2e43e3f1064c1d5216bc7a47438aed7409cf659e81",
+   "identical": true
+  },
+  "CN-hold_initial": {
+   "content_without_identity": "6ad689c06810c304af634b6108ef65d54cd08637ca90f7fe76bb3f2c1396dae6",
+   "identical": true
+  },
+  "CN-rebalance_50": {
+   "content_without_identity": "ab58b591350d8f8595b100d6805f80ab356517d375dc58e8f37592d42b5a8e31",
+   "identical": true
+  }
+ },
+ "trace_parity_note": "mars-titan-sim --trace on the validation tapes, base versus optimized build, JSON identical except identity_sha256",
+ "projection": {
+  "stage": "configs/simulation/historical-masked-rl-stage-a.json",
+  "function": "native_policy_hours",
+  "status": "lower_bound_without_adam",
+  "assumptions": [
+   "CPU PPO tick uses the first step of a new trainer, without bootstrap reuse, because CPU only admits the 32-transition diagnostic",
+   "Double DQN tick = first step - PPO act + Double DQN act on both devices, on CUDA the first step is 1.6 times the steady step",
+   "reference steps use the single-lane evaluation step, an upper bound",
+   "parallel hours divide by the aggregate speedup measured on KLPO collection (CPU) or the smaller of trainer and KLPO speedups (MPS)"
+  ],
+  "measured_seconds": {
+   "cpu": {
+    "CN": {
+     "ppo_tick_seconds": 0.000461865,
+     "double_dqn_tick_seconds": 0.000469069,
+     "klpo_transition_seconds": 2.9564230789066535e-05,
+     "klpo_objective_transition_seconds": 1.6239352243424446e-05,
+     "minibatch_seconds": 0.000764491,
+     "forward_seconds": 0.00021129599999999998,
+     "gae_seconds": 0.000924069,
+     "evaluation_step_seconds": 3.913481327800831e-05,
+     "reference_step_seconds": 3.913481327800831e-05
+    },
+    "US": {
+     "ppo_tick_seconds": 0.000479317,
+     "double_dqn_tick_seconds": 0.0005187499999999999,
+     "klpo_transition_seconds": 2.9668785376771922e-05,
+     "klpo_objective_transition_seconds": 1.5803224322307885e-05,
+     "minibatch_seconds": 0.0008163269999999999,
+     "forward_seconds": 0.000206427,
+     "gae_seconds": 0.0009339179999999999,
+     "evaluation_step_seconds": 3.437202000000001e-05,
+     "reference_step_seconds": 3.437202000000001e-05
+    }
+   },
+   "cuda": {
+    "CN": {
+     "ppo_tick_seconds": 0.000604321,
+     "double_dqn_tick_seconds": 0.0013332749999999997,
+     "klpo_transition_seconds": 5.3665932439401755e-05,
+     "klpo_objective_transition_seconds": 9.935642083548221e-06,
+     "minibatch_seconds": 0.0019210239999999997,
+     "forward_seconds": 0.000102051,
+     "gae_seconds": 0.000894063,
+     "evaluation_step_seconds": 0.00015988104979253108,
+     "reference_step_seconds": 0.00015988104979253108
+    },
+    "US": {
+     "ppo_tick_seconds": 0.0005703469999999999,
+     "double_dqn_tick_seconds": 0.001126067,
+     "klpo_transition_seconds": 5.474661029594627e-05,
+     "klpo_objective_transition_seconds": 1.0142915692613778e-05,
+     "minibatch_seconds": 0.0018893859999999998,
+     "forward_seconds": 0.000110176,
+     "gae_seconds": 0.000877802,
+     "evaluation_step_seconds": 0.00014425716800000002,
+     "reference_step_seconds": 0.00014425716800000002
+    }
+   }
+  },
+  "scenarios": {
+   "cpu": {
+    "hours": 18.269434140286723,
+    "hours_without_update_gradients": 3.0751221098152115,
+    "arms": {
+     "klpo_terminal": 2.6694975496584656,
+     "cash": 0.0020745335325319542,
+     "hold_initial": 0.0020745335325319542,
+     "rebalance_50": 0.0020745335325319542,
+     "ppo_clip_full_kl": 0.849157347987625,
+     "ppo_kl_penalty_adaptive": 0.849157347987625,
+     "ppo_clip_kl_epoch_stop": 0.849157347987625,
+     "double_dqn": 13.046240946067629
+    },
+    "levels": {
+     "all_predictors": 2.675721150256034,
+     "algorithms": 15.593712990030498
+    },
+    "scopes": {
+     "US": 11.553735382818825,
+     "CN": 6.715698757467765
+    },
+    "adam_steps": {
+     "klpo_terminal": 49698,
+     "cash": 0,
+     "hold_initial": 0,
+     "rebalance_50": 0,
+     "ppo_clip_full_kl": 2359296,
+     "ppo_kl_penalty_adaptive": 2359296,
+     "ppo_clip_kl_epoch_stop": 2359296,
+     "double_dqn": 37711872
+    },
+    "jobs": {
+     "fit": 1368,
+     "reference": 792
+    },
+    "status": "lower_bound_without_adam",
+    "hours_with_4_processes": 4.892724729589374,
+    "hours_with_8_processes": 3.6041495640731354
+   },
+   "cuda": {
+    "hours": 31.925546718236664,
+    "hours_without_update_gradients": 5.448661767623294,
+    "arms": {
+     "klpo_terminal": 3.9128669573463752,
+     "cash": 0.008612769596558162,
+     "hold_initial": 0.008612769596558162,
+     "rebalance_50": 0.008612769596558162,
+     "ppo_clip_full_kl": 1.6685184254252317,
+     "ppo_kl_penalty_adaptive": 1.6685184254252317,
+     "ppo_clip_kl_epoch_stop": 1.6685184254252317,
+     "double_dqn": 22.981286175825243
+    },
+    "levels": {
+     "all_predictors": 3.9387052661360102,
+     "algorithms": 27.98684145210088
+    },
+    "scopes": {
+     "US": 19.861255300153555,
+     "CN": 12.064291418083275
+    },
+    "adam_steps": {
+     "klpo_terminal": 49698,
+     "cash": 0,
+     "hold_initial": 0,
+     "rebalance_50": 0,
+     "ppo_clip_full_kl": 2359296,
+     "ppo_kl_penalty_adaptive": 2359296,
+     "ppo_clip_kl_epoch_stop": 2359296,
+     "double_dqn": 37711872
+    },
+    "jobs": {
+     "fit": 1368,
+     "reference": 792
+    },
+    "status": "lower_bound_without_adam",
+    "hours_with_4mps_processes": 9.581496614116647,
+    "hours_with_4_processes": 17.825542556246045
+   }
+  }
+ },
+ "mutation": {
+  "applied": 16,
+  "killed": 15,
+  "survived": [
+   "collector computes the validated count after appending the step"
+  ]
+ },
+ "checks": {
+  "ctest": "26/26 without the three Adam tests",
+  "pytest": "168 passed with this build, including 6 real-edition smoke tests",
+  "clang_tidy": "no warnings on changed sources",
+  "ruff": "passed",
+  "check_repository": "passed"
+ }
+}

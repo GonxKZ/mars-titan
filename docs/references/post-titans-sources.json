@@ -1,0 +1,3330 @@
+[
+  {
+    "id": "abraham1996metaplasticity",
+    "title": "Metaplasticity: the plasticity of synaptic plasticity",
+    "authors": [
+      "Wickliffe C. Abraham",
+      "Mark F. Bear"
+    ],
+    "year": 1996,
+    "url": "https://doi.org/10.1016/S0166-2236(96)80018-X",
+    "access": "Revisión publicada. Leído el resumen.",
+    "redistribution": "unknown",
+    "relevance": "Mecanismo biológico o modelo computacional citado como inspiración. No se replica el cerebro y la traducción algorítmica necesita su propio control.",
+    "phase": [
+      3,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "ahamed2024timemachine",
+    "title": "TimeMachine: A Time Series is Worth 4 Mambas for Long-Term Forecasting",
+    "authors": [
+      "Md Atik Ahamed",
+      "Qiang Cheng"
+    ],
+    "year": 2024,
+    "url": "https://doi.org/10.3233/FAIA240677",
+    "access": "Revisado por pares (ECAI 2024). Versión consultada: arXiv:2403.09898v2 (22 ago. 2024). Páginas no verificadas",
+    "redistribution": "unknown",
+    "relevance": "Evidencia de modelos secuenciales, fundacionales o de aprendizaje automático sobre series y rentabilidades. Fija la señal esperable y los controles mínimos de la comparación.",
+    "phase": [
+      2,
+      4,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "ahmad2019dense",
+    "title": "How Can We Be So Dense? The Benefits of Using Highly Sparse Representations",
+    "authors": [
+      "Subutai Ahmad",
+      "Luiz Scheinkman"
+    ],
+    "year": 2019,
+    "url": "https://arxiv.org/abs/1903.11257",
+    "access": "Preprint sin sede revisada encontrada. Leídas las ecuaciones de solapamiento y el resultado en Google Speech Commands. Igualdad de parámetros no declarada.",
+    "redistribution": "unknown",
+    "relevance": "Capacidad por neurona o por parámetro. Solo justificaría un brazo con el control de más parámetros y el mismo presupuesto.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "alharthi2024xlstmtime",
+    "title": "xLSTMTime: Long-Term Time Series Forecasting with xLSTM",
+    "authors": [
+      "Musleh Alharthi",
+      "Ausif Mahmood"
+    ],
+    "year": 2024,
+    "url": "https://doi.org/10.3390/ai5030071",
+    "access": "Revisado por pares. Versión consultada: arXiv:2407.10240v3",
+    "redistribution": "unknown",
+    "relevance": "Evidencia de modelos secuenciales, fundacionales o de aprendizaje automático sobre series y rentabilidades. Fija la señal esperable y los controles mínimos de la comparación.",
+    "phase": [
+      2,
+      4,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "angelopoulos2023pid",
+    "title": "Conformal PID Control for Time Series Prediction",
+    "authors": [
+      "Anastasios N. Angelopoulos",
+      "Emmanuel J. Candès",
+      "Ryan J. Tibshirani"
+    ],
+    "year": 2023,
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2023/hash/47f2fad8c1111d07f83c91be7870f8db-Abstract-Conference.html",
+    "access": "Revisado por pares (NeurIPS 2023). Leída la copia arXiv:2307.16895v1",
+    "redistribution": "unknown",
+    "relevance": "Calibración conformal en línea o con retroalimentación retrasada. Motiva PT2 y el diagnóstico D9.",
+    "phase": [
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "ash2020warmstart",
+    "title": "On Warm-Starting Neural Network Training",
+    "authors": [
+      "Jordan T. Ash",
+      "Ryan P. Adams"
+    ],
+    "year": 2020,
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2020/hash/288cd2567953f06e460a33951f55daaf-Abstract.html",
+    "access": "La ficha de NeurIPS abrevia los nombres. Leídos resumen, secciones 1 a 3 y Tabla 1 de arXiv:1910.08475v3",
+    "redistribution": "unknown",
+    "relevance": "Problema abierto de modelos de secuencia y de lenguaje (2023 a 2026). La revisión lo traduce a una medida concreta de MARS-TITAN sin trasladar sus cifras.",
+    "phase": [
+      3,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "auer2023hopcpt",
+    "title": "Conformal Prediction for Time Series with Modern Hopfield Networks",
+    "authors": [
+      "Andreas Auer",
+      "Martin Gauch",
+      "Daniel Klotz",
+      "Sepp Hochreiter"
+    ],
+    "year": 2023,
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2023/hash/aef75887979ae1287b5deb54a1e3cbda-Abstract-Conference.html",
+    "access": "Revisado por pares (NeurIPS 2023). Lectura parcial: resumen, método y tabla 1",
+    "redistribution": "unknown",
+    "relevance": "Calibración conformal en línea o con retroalimentación retrasada. Motiva PT2 y el diagnóstico D9.",
+    "phase": [
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "auer2025tirex",
+    "title": "TiRex: Zero-Shot Forecasting Across Long and Short Horizons with Enhanced In-Context Learning",
+    "authors": [
+      "Andreas Auer",
+      "Patrick Podest",
+      "Daniel Klotz",
+      "Sebastian B\\\"ock",
+      "Günter Klambauer",
+      "Sepp Hochreiter"
+    ],
+    "year": 2025,
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/5356603f9c47399adfd372f77a677057-Abstract-Conference.html",
+    "access": "NeurIPS 2025, revisado por pares. Versión consultada: arXiv:2505.23719v2 (2 nov. 2025)",
+    "redistribution": "unknown",
+    "relevance": "Evidencia de modelos secuenciales, fundacionales o de aprendizaje automático sobre series y rentabilidades. Fija la señal esperable y los controles mínimos de la comparación.",
+    "phase": [
+      2,
+      4,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "baltagi2021panel",
+    "title": "Econometric Analysis of Panel Data",
+    "authors": [
+      "Badi H. Baltagi"
+    ],
+    "year": 2021,
+    "url": "https://doi.org/10.1007/978-3-030-53953-5",
+    "access": "Metadatos verificados en Crossref. Se cita por los efectos temporales aleatorios en datos de panel",
+    "redistribution": "unknown",
+    "relevance": "Fundamento de la regla bayesiana de corrección madura de PT3.",
+    "phase": [
+      3,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "bansal2022overthinking",
+    "title": "End-to-end Algorithm Synthesis with Recurrent Networks: Extrapolation without Overthinking",
+    "authors": [
+      "Arpit Bansal",
+      "Avi Schwarzschild",
+      "Eitan Borgnia",
+      "Zeyad Emam",
+      "Furong Huang",
+      "Micah Goldblum",
+      "Tom Goldstein"
+    ],
+    "year": 2022,
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2022/hash/7f70331dbe58ad59d83941dfa7d975aa-Abstract-Conference.html",
+    "access": "El título de arXiv:2202.05826 añade «Logical». Leídas secciones 4 y 5 y figuras 3, 4 y 6 de arXiv v3",
+    "redistribution": "unknown",
+    "relevance": "Problema abierto de modelos de secuencia y de lenguaje (2023 a 2026). La revisión lo traduce a una medida concreta de MARS-TITAN sin trasladar sus cifras.",
+    "phase": [
+      3,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "behrens2007volatility",
+    "title": "Learning the value of information in an uncertain world",
+    "authors": [
+      "Timothy E. J. Behrens",
+      "Mark W. Woolrich",
+      "Mark E. Walton",
+      "Matthew F. S. Rushworth"
+    ],
+    "year": 2007,
+    "url": "https://doi.org/10.1038/nn1954",
+    "access": "Leído solo el resumen en PubMed. El texto completo y el suplemento no fueron accesibles y las ecuaciones no se verificaron.",
+    "redistribution": "unknown",
+    "relevance": "Mecanismo biológico o modelo computacional citado como inspiración. No se replica el cerebro y la traducción algorítmica necesita su propio control.",
+    "phase": [
+      3,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "behrouz2026sleep",
+    "title": "Language Models Need Sleep: Learning to Self-Modify and Consolidate Memories",
+    "authors": [
+      "Ali Behrouz",
+      "Farnoosh Hashemi",
+      "Adel Javanmard",
+      "Vahab Mirrokni"
+    ],
+    "year": 2026,
+    "url": "https://arxiv.org/abs/2606.03979",
+    "access": "Preprint arXiv:2606.03979v2 (10/07/2026). Rechazado en ICLR 2026",
+    "redistribution": "unknown",
+    "relevance": "Trabajo del grupo de Titans o crítica directa posterior al artículo original. Sitúa las variantes de memoria frente al núcleo Titans-MAC. Sin evidencia en retornos de acciones.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "beniaguev2021singleneuron",
+    "title": "Single cortical neurons as deep artificial neural networks",
+    "authors": [
+      "David Beniaguev",
+      "Idan Segev",
+      "Michael London"
+    ],
+    "year": 2021,
+    "url": "https://doi.org/10.1016/j.neuron.2021.07.002",
+    "access": "Leído el resumen.",
+    "redistribution": "unknown",
+    "relevance": "Capacidad por neurona o por parámetro. Solo justificaría un brazo con el control de más parámetros y el mismo presupuesto.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "benna2016consolidation",
+    "title": "Computational Principles of Synaptic Memory Consolidation",
+    "authors": [
+      "Marcus K. Benna",
+      "Stefano Fusi"
+    ],
+    "year": 2016,
+    "url": "https://doi.org/10.1038/nn.4401",
+    "access": "Leídas la Fig. 1, el pie de la Fig. 2, la ecuación 2 y las secciones de capacidad y robustez de una copia docente del PDF publicado, y los métodos M.3 y M.4 del preprint arXiv:1507.07580. Metadatos verificados en Crossref.",
+    "redistribution": "unknown",
+    "relevance": "Mecanismo biológico o modelo computacional citado como inspiración. No se replica el cerebro y la traducción algorítmica necesita su propio control.",
+    "phase": [
+      3,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "bienenstock1982bcm",
+    "title": "Theory for the development of neuron selectivity: orientation specificity and binocular interaction in visual cortex",
+    "authors": [
+      "Elie L. Bienenstock",
+      "Leon N. Cooper",
+      "Paul W. Munro"
+    ],
+    "year": 1982,
+    "url": "https://doi.org/10.1523/JNEUROSCI.02-01-00032.1982",
+    "access": "Leído el resumen. La forma exacta de la regla y del umbral deslizante no se verificó porque el PDF no fue accesible.",
+    "redistribution": "unknown",
+    "relevance": "Mecanismo biológico o modelo computacional citado como inspiración. No se replica el cerebro y la traducción algorítmica necesita su propio control.",
+    "phase": [
+      3,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "boyd1994lmi",
+    "title": "Linear Matrix Inequalities in System and Control Theory",
+    "authors": [
+      "Stephen Boyd",
+      "Laurent El Ghaoui",
+      "Eric Feron",
+      "Venkataramanan Balakrishnan"
+    ],
+    "year": 1994,
+    "url": "https://web.stanford.edu/~boyd/lmibook/",
+    "access": "Metadatos verificados en Crossref. Los autores mantienen una copia en su página",
+    "redistribution": "unknown",
+    "relevance": "Fundamento matemático o precedente metodológico del certificado de contracción de PT1.",
+    "phase": [
+      3,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "cao2026mambastability",
+    "title": "A Control-Theoretic View of Mamba on Stability and Robustness",
+    "authors": [
+      "Liang Cao",
+      "Weide Liu",
+      "Zhuo Chen",
+      "Yan Qin"
+    ],
+    "year": 2026,
+    "url": "https://proceedings.mlr.press/v306/cao26l.html",
+    "access": "Actas de ICML 2026. Leído el resumen de la página de actas. Funciones de Lyapunov cuadráticas comunes para SSM selectivos, precedente metodológico del certificado de PT1",
+    "redistribution": "unknown",
+    "relevance": "Fundamento matemático o precedente metodológico del certificado de contracción de PT1.",
+    "phase": [
+      3,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "chen2024deepassetpricing",
+    "title": "Deep Learning in Asset Pricing",
+    "authors": [
+      "Luyang Chen",
+      "Markus Pelger",
+      "Jason Zhu"
+    ],
+    "year": 2024,
+    "url": "https://doi.org/10.1287/mnsc.2023.4695",
+    "access": "Revisado por pares. Versión consultada: arXiv:1904.00745v6 (11 ago. 2021)",
+    "redistribution": "unknown",
+    "relevance": "Evidencia de modelos secuenciales, fundacionales o de aprendizaje automático sobre series y rentabilidades. Fija la señal esperable y los controles mínimos de la comparación.",
+    "phase": [
+      2,
+      4,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "chen2024solid",
+    "title": "Calibration of Time-Series Forecasting: Detecting and Adapting Context-Driven Distribution Shift",
+    "authors": [
+      "Mouxiang Chen",
+      "Lefei Shen",
+      "Han Fu",
+      "Zhuo Li",
+      "Jianling Sun",
+      "Chenghao Liu"
+    ],
+    "year": 2024,
+    "url": "https://doi.org/10.1145/3637528.3671926",
+    "access": "Revisado por pares (KDD 2024). Leída la copia arXiv:2310.14838v2",
+    "redistribution": "unknown",
+    "relevance": "Adaptación en línea con etiquetas retrasadas y control de fugas de información. Motiva PT3 y el diagnóstico D3.",
+    "phase": [
+      3,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "chen2025overthinking",
+    "title": "Do NOT Think That Much for 2+3=? On the Overthinking of Long Reasoning Models",
+    "authors": [
+      "Xingyu Chen",
+      "Jiahao Xu",
+      "Tian Liang",
+      "Zhiwei He",
+      "Jianhui Pang",
+      "Dian Yu",
+      "Linfeng Song",
+      "Qiuzhi Liu",
+      "Mengfei Zhou",
+      "Zhuosheng Zhang",
+      "et al."
+    ],
+    "year": 2025,
+    "url": "https://proceedings.mlr.press/v267/chen25bx.html",
+    "access": "14 autores. El preprint arXiv:2412.21187 termina en «o1-Like LLMs». Cifras leídas en arXiv v2",
+    "redistribution": "unknown",
+    "relevance": "Problema abierto de modelos de secuencia y de lenguaje (2023 a 2026). La revisión lo traduce a una medida concreta de MARS-TITAN sin trasladar sus cifras.",
+    "phase": [
+      3,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "christou2024ttlts",
+    "title": "Test Time Learning for Time Series Forecasting",
+    "authors": [
+      "Panayiotis Christou",
+      "Shichu Chen",
+      "Xupeng Chen",
+      "Parijat Dube"
+    ],
+    "year": 2024,
+    "url": "https://arxiv.org/abs/2409.14012v3",
+    "access": "Preprint v3 del 30 de noviembre de 2024, póster en el taller TSALM de NeurIPS 2024. Leída la Tabla 1",
+    "redistribution": "unknown",
+    "relevance": "Aplicación de memorias de pesos rápidos, TTT o regla delta a series temporales o finanzas. Evidencia preliminar, casi siempre preprint, que no sustituye la comparación propia.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "clopath2008tagtric",
+    "title": "Tag-Trigger-Consolidation: A Model of Early and Late Long-Term-Potentiation and Depression",
+    "authors": [
+      "Claudia Clopath",
+      "Lorric Ziegler",
+      "Eleni Vasilaki",
+      "Lars Büsing",
+      "Wulfram Gerstner"
+    ],
+    "year": 2008,
+    "url": "https://doi.org/10.1371/journal.pcbi.1000248",
+    "access": "Acceso abierto. Leídos los métodos con sus ecuaciones.",
+    "redistribution": "unknown",
+    "relevance": "Mecanismo biológico o modelo computacional citado como inspiración. No se replica el cerebro y la traducción algorítmica necesita su propio control.",
+    "phase": [
+      3,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "de2024griffin",
+    "title": "Griffin: Mixing Gated Linear Recurrences with Local Attention for Efficient Language Models",
+    "authors": [
+      "Soham De",
+      "Samuel L. Smith",
+      "Anushan Fernando",
+      "Aleksandar Botev",
+      "George Cristian-Muraru",
+      "Albert Gu",
+      "Ruba Haroun",
+      "Leonard Berrada",
+      "Yutian Chen",
+      "Srivatsan Srinivasan",
+      "Guillaume Desjardins",
+      "Arnaud Doucet",
+      "David Budden",
+      "Yee Whye Teh",
+      "Razvan Pascanu",
+      "Nando De Freitas",
+      "Caglar Gulcehre"
+    ],
+    "year": 2024,
+    "url": "https://arxiv.org/abs/2402.19427",
+    "access": "Preprint arXiv:2402.19427v1 (29 feb. 2024)",
+    "redistribution": "unknown",
+    "relevance": "Evidencia de modelos secuenciales, fundacionales o de aprendizaje automático sobre series y rentabilidades. Fija la señal esperable y los controles mínimos de la comparación.",
+    "phase": [
+      2,
+      4,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "dehghani2023vit22b",
+    "title": "Scaling Vision Transformers to 22 Billion Parameters",
+    "authors": [
+      "Mostafa Dehghani",
+      "Josip Djolonga",
+      "Basil Mustafa",
+      "Piotr Padlewski",
+      "Jonathan Heek",
+      "Justin Gilmer",
+      "Andreas Peter Steiner",
+      "Mathilde Caron",
+      "Robert Geirhos",
+      "Ibrahim Alabdulmohsin",
+      "et al."
+    ],
+    "year": 2023,
+    "url": "https://proceedings.mlr.press/v202/dehghani23a.html",
+    "access": "42 autores. Leídos sección 2, Figura 1 y apéndice B de arXiv:2302.05442v1",
+    "redistribution": "unknown",
+    "relevance": "Problema abierto de modelos de secuencia y de lenguaje (2023 a 2026). La revisión lo traduce a una medida concreta de MARS-TITAN sin trasladar sus cifras.",
+    "phase": [
+      3,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "dinepi2025titansrevisited",
+    "title": "Titans Revisited: A Lightweight Reimplementation and Critical Analysis of a Test-Time Memory Model",
+    "authors": [
+      "Gavriel Di Nepi",
+      "Federico Siciliano",
+      "Fabrizio Silvestri"
+    ],
+    "year": 2025,
+    "url": "https://arxiv.org/abs/2510.09551",
+    "access": "Preprint arXiv:2510.09551v1 (10/10/2025)",
+    "redistribution": "unknown",
+    "relevance": "Trabajo del grupo de Titans o crítica directa posterior al artículo original. Sitúa las variantes de memoria frente al núcleo Titans-MAC. Sin evidencia en retornos de acciones.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "fan2023dishts",
+    "title": "Dish-TS: A General Paradigm for Alleviating Distribution Shift in Time Series Forecasting",
+    "authors": [
+      "Wei Fan",
+      "Pengyang Wang",
+      "Dongkun Wang",
+      "Dongjie Wang",
+      "Yuanchun Zhou",
+      "Yanjie Fu"
+    ],
+    "year": 2023,
+    "url": "https://doi.org/10.1609/aaai.v37i6.25914",
+    "access": "Revisado por pares (AAAI 2023). Leída la copia arXiv:2302.14829v3",
+    "redistribution": "unknown",
+    "relevance": "Normalización frente a no estacionariedad. Contexto para el codificador de precios, sin propuesta asociada.",
+    "phase": [
+      4,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "feng2024minrnn",
+    "title": "Were RNNs All We Needed?",
+    "authors": [
+      "Leo Feng",
+      "Frederick Tung",
+      "Mohamed Osama Ahmed",
+      "Yoshua Bengio",
+      "Hossein Hajimirsadeghi"
+    ],
+    "year": 2024,
+    "url": "https://arxiv.org/abs/2410.01201",
+    "access": "Preprint arXiv:2410.01201v3 (28 nov. 2024). Publicación revisada no verificada",
+    "redistribution": "unknown",
+    "relevance": "Evidencia de modelos secuenciales, fundacionales o de aprendizaje automático sobre series y rentabilidades. Fija la señal esperable y los controles mínimos de la comparación.",
+    "phase": [
+      2,
+      4,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "fentazi2026delayaudit",
+    "title": "Training on the Future: A Delay-Aware Audit of Test-Time Adaptation for Time-Series Forecasting",
+    "authors": [
+      "Mohamed Readh Fentazi",
+      "Mazene Ameur",
+      "Adlen Ksentini"
+    ],
+    "year": 2026,
+    "url": "https://arxiv.org/abs/2610.12232v1",
+    "access": "Preprint v1 del 8 de octubre de 2026. Leído el resumen. Sin revisión por pares",
+    "redistribution": "unknown",
+    "relevance": "Adaptación en línea con etiquetas retrasadas y control de fugas de información. Motiva PT3 y el diagnóstico D3.",
+    "phase": [
+      3,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "frey1997tagging",
+    "title": "Synaptic tagging and long-term potentiation",
+    "authors": [
+      "Uwe Frey",
+      "Richard G. M. Morris"
+    ],
+    "year": 1997,
+    "url": "https://doi.org/10.1038/385533a0",
+    "access": "Leído el resumen.",
+    "redistribution": "unknown",
+    "relevance": "Mecanismo biológico o modelo computacional citado como inspiración. No se replica el cerebro y la traducción algorítmica necesita su propio control.",
+    "phase": [
+      3,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "fu2025financialtimesfm",
+    "title": "Financial Fine-Tuning a Large Time Series Model",
+    "authors": [
+      "Xinghong Fu",
+      "Masanori Hirano",
+      "Kentaro Imajo"
+    ],
+    "year": 2025,
+    "url": "https://doi.org/10.1109/cifer64978.2025.10975735",
+    "access": "Revisado por pares. Contenido verificado en arXiv:2412.09880v1 (13 dic. 2024)",
+    "redistribution": "unknown",
+    "relevance": "Evidencia de modelos secuenciales, fundacionales o de aprendizaje automático sobre series y rentabilidades. Fija la señal esperable y los controles mínimos de la comparación.",
+    "phase": [
+      2,
+      4,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "fu2026reverso",
+    "title": "Reverso: Efficient Time Series Foundation Models for Zero-shot Forecasting",
+    "authors": [
+      "Xinghong Fu",
+      "Yanhong Li",
+      "Georgios Papaioannou",
+      "Yoon Kim"
+    ],
+    "year": 2026,
+    "url": "https://arxiv.org/abs/2602.17634v2",
+    "access": "Preprint v2 del 27 de julio de 2026. Leída la Tabla 15. Código shinfxh/reverso con licencia MIT",
+    "redistribution": "unknown",
+    "relevance": "Aplicación de memorias de pesos rápidos, TTT o regla delta a series temporales o finanzas. Evidencia preliminar, casi siempre preprint, que no sustituye la comparación propia.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "fusi2005cascade",
+    "title": "Cascade Models of Synaptically Stored Memories",
+    "authors": [
+      "Stefano Fusi",
+      "Patrick J. Drew",
+      "L. F. Abbott"
+    ],
+    "year": 2005,
+    "url": "https://doi.org/10.1016/j.neuron.2005.02.001",
+    "access": "Leído el texto completo de una copia de un club de lectura universitario. Hay una discrepancia sin resolver entre las figuras 4 y 5 y la definición de q_n.",
+    "redistribution": "unknown",
+    "relevance": "Mecanismo biológico o modelo computacional citado como inspiración. No se replica el cerebro y la traducción algorítmica necesita su propio control.",
+    "phase": [
+      3,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "gema2025inversescaling",
+    "title": "Inverse Scaling in Test-Time Compute",
+    "authors": [
+      "Aryo Pradipta Gema",
+      "Alexander Hägele",
+      "Runjin Chen",
+      "Andy Arditi",
+      "Jacob Goldman-Wetzler",
+      "Kit Fraser-Taliente",
+      "Henry Sleight",
+      "Linda Petrini",
+      "Julian Michael",
+      "Beatrice Alex",
+      "et al."
+    ],
+    "year": 2025,
+    "url": "https://openreview.net/forum?id=NXgyHW1c7M",
+    "access": "TMLR, 12/2025. 14 autores. Leída la versión arXiv:2507.14417v2, Tabla 1 y sección 4.2",
+    "redistribution": "unknown",
+    "relevance": "Problema abierto de modelos de secuencia y de lenguaje (2023 a 2026). La revisión lo traduce a una medida concreta de MARS-TITAN sin trasladar sus cifras.",
+    "phase": [
+      3,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "gu2020hippo",
+    "title": "HiPPO: Recurrent Memory with Optimal Polynomial Projections",
+    "authors": [
+      "Albert Gu",
+      "Tri Dao",
+      "Stefano Ermon",
+      "Atri Rudra",
+      "Christopher Ré"
+    ],
+    "year": 2020,
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2020/hash/102f0bb6efb3a6128a3c750dd16729be-Abstract.html",
+    "access": "Leídas las secciones 2 a 4.1 y la Tabla 1 de arXiv:2008.07669. Código HazyResearch/hippo-code con licencia Apache-2.0.",
+    "redistribution": "unknown",
+    "relevance": "Mecanismo biológico o modelo computacional citado como inspiración. No se replica el cerebro y la traducción algorítmica necesita su propio control.",
+    "phase": [
+      3,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "guijarro2026statarb",
+    "title": "Deep Learning Statistical Arbitrage",
+    "authors": [
+      "Jorge Guijarro-Ordonez",
+      "Markus Pelger",
+      "Greg Zanotti"
+    ],
+    "year": 2026,
+    "url": "https://doi.org/10.1287/mnsc.2022.03132",
+    "access": "Revisado por pares. Cifras contrastadas en arXiv:2106.04028v2 (7 oct. 2022), versión publicada no leída",
+    "redistribution": "unknown",
+    "relevance": "Evidencia de modelos secuenciales, fundacionales o de aprendizaje automático sobre series y rentabilidades. Fija la señal esperable y los controles mínimos de la comparación.",
+    "phase": [
+      2,
+      4,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "guo2017calibration",
+    "title": "On Calibration of Modern Neural Networks",
+    "authors": [
+      "Chuan Guo",
+      "Geoff Pleiss",
+      "Yu Sun",
+      "Kilian Q. Weinberger"
+    ],
+    "year": 2017,
+    "url": "https://proceedings.mlr.press/v70/guo17a.html",
+    "access": "Actas de ICML 2017 (PMLR 70). Leídos el resumen, las secciones 1 y 2, la Figura 1 y la Tabla 1 con el ECE antes y después del escalado de temperatura.",
+    "redistribution": "unknown",
+    "relevance": "Problema abierto de modelos de secuencia y de lenguaje (2023 a 2026). La revisión lo traduce a una medida concreta de MARS-TITAN sin trasladar sus cifras.",
+    "phase": [
+      3,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "halabi2026delayedaci",
+    "title": "Adaptive Conformal Inference Under Delayed Feedback: Coverage Guarantees and a Delay-to-Memory Diagnostic",
+    "authors": [
+      "Lama El Halabi",
+      "Adam Brandt"
+    ],
+    "year": 2026,
+    "url": "https://arxiv.org/abs/2609.07251v1",
+    "access": "Preprint v1 del 7 de septiembre de 2026. Sin revisión por pares",
+    "redistribution": "unknown",
+    "relevance": "Calibración conformal en línea o con retroalimentación retrasada. Motiva PT2 y el diagnóstico D9.",
+    "phase": [
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "han2025raft",
+    "title": "Retrieval Augmented Time Series Forecasting",
+    "authors": [
+      "Sungwon Han",
+      "Seungeon Lee",
+      "Meeyoung Cha",
+      "Sercan O. Arik",
+      "Jinsung Yoon"
+    ],
+    "year": 2025,
+    "url": "https://proceedings.mlr.press/v267/han25d.html",
+    "access": "Revisado por pares (ICML 2025). Leída la copia arXiv:2505.04163v1",
+    "redistribution": "unknown",
+    "relevance": "Recuperación y memoria episódica para series temporales. Las ganancias son pequeñas cuando el control iguala parámetros. Contexto para el banco episódico.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "hong2025contextrot",
+    "title": "Context Rot: How Increasing Input Tokens Impacts LLM Performance",
+    "authors": [
+      "Kelly Hong",
+      "Anton Troynikov",
+      "Jeff Huber"
+    ],
+    "year": 2025,
+    "url": "https://www.trychroma.com/research/context-rot",
+    "access": "Informe técnico de empresa publicado el 14 de julio de 2025. Sin revisión por pares conocida",
+    "redistribution": "unknown",
+    "relevance": "Problema abierto de modelos de secuencia y de lenguaje (2023 a 2026). La revisión lo traduce a una medida concreta de MARS-TITAN sin trasladar sus cifras.",
+    "phase": [
+      3,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "howard2015distributed",
+    "title": "A distributed representation of internal time",
+    "authors": [
+      "Marc W. Howard",
+      "Karthik H. Shankar",
+      "William R. Aue",
+      "Amy H. Criss"
+    ],
+    "year": 2015,
+    "url": "https://doi.org/10.1037/a0037840",
+    "access": "Leídas las páginas 24 a 27 del PDF del autor. Publicado en línea en octubre de 2014 y fechado en 2015.",
+    "redistribution": "unknown",
+    "relevance": "Mecanismo biológico o modelo computacional citado como inspiración. No se replica el cerebro y la traducción algorítmica necesita su propio control.",
+    "phase": [
+      3,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "hsieh2024ruler",
+    "title": "RULER: What's the Real Context Size of Your Long-Context Language Models?",
+    "authors": [
+      "Cheng-Ping Hsieh",
+      "Simeng Sun",
+      "Samuel Kriman",
+      "Shantanu Acharya",
+      "Dima Rekesh",
+      "Fei Jia",
+      "Yang Zhang",
+      "Boris Ginsburg"
+    ],
+    "year": 2024,
+    "url": "https://openreview.net/forum?id=kIoBbc76Sy",
+    "access": "Venue confirmado con la API de OpenReview. Leída la versión arXiv:2404.06654v3, sección 5 y Tabla 3",
+    "redistribution": "unknown",
+    "relevance": "Problema abierto de modelos de secuencia y de lenguaje (2023 a 2026). La revisión lo traduce a una medida concreta de MARS-TITAN sin trasladar sus cifras.",
+    "phase": [
+      3,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "huang2025timekan",
+    "title": "TimeKAN: KAN-based Frequency Decomposition Learning Architecture for Long-term Time Series Forecasting",
+    "authors": [
+      "Songtao Huang",
+      "Zhen Zhao",
+      "Can Li",
+      "Lei Bai"
+    ],
+    "year": 2025,
+    "url": "https://openreview.net/forum?id=wTLc79YNbh",
+    "access": "ICLR 2025, póster. Leídas las tablas 3 y 5. Igualdad de parámetros no declarada en la ablación.",
+    "redistribution": "unknown",
+    "relevance": "Capacidad por neurona o por parámetro. Solo justificaría un brazo con el control de más parámetros y el mismo presupuesto.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "huang2026mdn",
+    "title": "MDN: Parallelizing Stepwise Momentum for Delta Linear Attention",
+    "authors": [
+      "Yulong Huang",
+      "Xiang Liu",
+      "Hongxiang Huang",
+      "Xiaopeng Lin",
+      "Zunchang Liu",
+      "Xiaowen Chu",
+      "Zeke Xie",
+      "Bojun Cheng"
+    ],
+    "year": 2026,
+    "url": "https://proceedings.mlr.press/v306/huang26af.html",
+    "access": "Actas de ICML 2026. Preprint asociado arXiv:2605.05838v1 del 7 de mayo de 2026 con el mismo título y autoría. Leída la sección 3.2 de análisis de autovalores y la restricción de cuadrantes. Código en HuuYuLong/MomentumDeltaNet sin licencia declarada",
+    "redistribution": "unknown",
+    "relevance": "Memoria de pesos rápidos por regresión en tiempo de prueba, regla delta o recurrencia lineal relacionada. Referencia de mecanismo, estabilidad y coste para el núcleo y PT1. Sin evidencia en retornos.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "hung2026titansqfwp",
+    "title": "Titans-QFWP: A Regime-Aware Hybrid Quantum Fast Weight Programmer for Portfolio Optimization",
+    "authors": [
+      "Ming-Kai Hung",
+      "Jun-Hao Chen",
+      "Yun-Cheng Tsai",
+      "Samuel Yen-Chi Chen"
+    ],
+    "year": 2026,
+    "url": "https://arxiv.org/abs/2608.29093v1",
+    "access": "Preprint v1 del 29 de agosto de 2026. El comentario de arXiv indica aceptación en el taller QCRL de IEEE QCE 2026, no comprobada en actas. Leída la Tabla II",
+    "redistribution": "unknown",
+    "relevance": "Aplicación de memorias de pesos rápidos, TTT o regla delta a series temporales o finanzas. Evidencia preliminar, casi siempre preprint, que no sustituye la comparación propia.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "ioannou1984leakage",
+    "title": "Instability Analysis and Improvement of Robustness of Adaptive Control",
+    "authors": [
+      "Petros A. Ioannou",
+      "Petar V. Kokotovic"
+    ],
+    "year": 1984,
+    "url": "https://doi.org/10.1016/0005-1098(84)90009-8",
+    "access": "Metadatos verificados en Crossref. Se cita por la modificación sigma, que acota parámetros con olvido explícito",
+    "redistribution": "unknown",
+    "relevance": "Fundamento matemático o precedente metodológico del certificado de contracción de PT1.",
+    "phase": [
+      3,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "iyer2022activedendrites",
+    "title": "Avoiding Catastrophe: Active Dendrites Enable Multi-Task Learning in Dynamic Environments",
+    "authors": [
+      "Abhiram Iyer",
+      "Karan Grewal",
+      "Akash Velu",
+      "Lucas Oliveira Souza",
+      "Jeremy Forest",
+      "Subutai Ahmad"
+    ],
+    "year": 2022,
+    "url": "https://doi.org/10.3389/fnbot.2022.846219",
+    "access": "Acceso abierto. Leídos el modelo y los resultados de MT10 y permutedMNIST. Código numenta/htmpapers con licencia AGPL-3.0 según GitHub.",
+    "redistribution": "unknown",
+    "relevance": "Capacidad por neurona o por parámetro. Solo justificaría un brazo con el control de más parámetros y el mismo presupuesto.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "izmailov2018swa",
+    "title": "Averaging Weights Leads to Wider Optima and Better Generalization",
+    "authors": [
+      "Pavel Izmailov",
+      "Dmitrii Podoprikhin",
+      "Timur Garipov",
+      "Dmitry Vetrov",
+      "Andrew Gordon Wilson"
+    ],
+    "year": 2018,
+    "url": "https://www.auai.org/uai2018/proceedings/papers/313.pdf",
+    "access": "Revisado por pares (UAI 2018). Leída arXiv:1803.05407v3 y la primera página del PDF de las actas",
+    "redistribution": "unknown",
+    "relevance": "Promedio de pesos y ensembles. Contexto para el control de varianza PT7.",
+    "phase": [
+      4,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "jacques2021deepsith",
+    "title": "DeepSITH: Efficient Learning via Decomposition of What and When Across Time Scales",
+    "authors": [
+      "Brandon G. Jacques",
+      "Zoran Tiganj",
+      "Marc W. Howard",
+      "Per B. Sederberg"
+    ],
+    "year": 2021,
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2021/hash/e7dfca01f394755c11f853602cb2608a-Abstract.html",
+    "access": "Leídas las secciones 1 a 3 y la Tabla 2 de arXiv:2104.04646. Código compmem/DeepSITH sin licencia detectada.",
+    "redistribution": "unknown",
+    "relevance": "Mecanismo biológico o modelo computacional citado como inspiración. No se replica el cerebro y la traducción algorítmica necesita su propio control.",
+    "phase": [
+      3,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "jayakumar2020multiplicative",
+    "title": "Multiplicative Interactions and Where to Find Them",
+    "authors": [
+      "Siddhant M. Jayakumar",
+      "Wojciech M. Czarnecki",
+      "Jacob Menick",
+      "Jonathan Schwarz",
+      "Jack Rae",
+      "Simon Osindero",
+      "Yee Whye Teh",
+      "Tim Harley",
+      "Razvan Pascanu"
+    ],
+    "year": 2020,
+    "url": "https://openreview.net/forum?id=rylnK6VtDH",
+    "access": "Leída una copia espejo no oficial porque el PDF de OpenReview pedía verificación de navegador.",
+    "redistribution": "unknown",
+    "relevance": "Capacidad por neurona o por parámetro. Solo justificaría un brazo con el control de más parámetros y el mismo presupuesto.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "jensen2023replication",
+    "title": "Is There a Replication Crisis in Finance?",
+    "authors": [
+      "Theis Ingerslev Jensen",
+      "Bryan Kelly",
+      "Lasse Heje Pedersen"
+    ],
+    "year": 2023,
+    "url": "https://doi.org/10.1111/jofi.13249",
+    "access": "Revisado por pares. Contrastado en NBER Working Paper 28432 (feb. 2021)",
+    "redistribution": "unknown",
+    "relevance": "Evidencia de modelos secuenciales, fundacionales o de aprendizaje automático sobre series y rentabilidades. Fija la señal esperable y los controles mínimos de la comparación.",
+    "phase": [
+      2,
+      4,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "jin2026mlms",
+    "title": "Momentum LMS Theory beyond Stationarity: Stability, Tracking, and Regret",
+    "authors": [
+      "Yifei Jin",
+      "Xin Zheng",
+      "Lei Guo"
+    ],
+    "year": 2026,
+    "url": "https://arxiv.org/abs/2602.11995v2",
+    "access": "Preprint v2 del 10 de junio de 2026. Leídos resumen, supuestos y enunciados de los teoremas. Paso y momentum constantes con excitación estocástica. Sin revisión por pares confirmada",
+    "redistribution": "unknown",
+    "relevance": "Memoria de pesos rápidos por regresión en tiempo de prueba, regla delta o recurrencia lineal relacionada. Referencia de mecanismo, estabilidad y coste para el núcleo y PT1. Sin evidencia en retornos.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "jungers2009jsr",
+    "title": "The Joint Spectral Radius: Theory and Applications",
+    "authors": [
+      "Raphaël Jungers"
+    ],
+    "year": 2009,
+    "url": "https://doi.org/10.1007/978-3-540-95980-9",
+    "access": "Metadatos verificados en Crossref",
+    "redistribution": "unknown",
+    "relevance": "Fundamento matemático o precedente metodológico del certificado de contracción de PT1.",
+    "phase": [
+      3,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "kadavath2022know",
+    "title": "Language Models (Mostly) Know What They Know",
+    "authors": [
+      "Saurav Kadavath",
+      "Tom Conerly",
+      "Amanda Askell",
+      "Tom Henighan",
+      "Dawn Drain",
+      "Ethan Perez",
+      "Nicholas Schiefer",
+      "Zac Hatfield-Dodds",
+      "Nova DasSarma",
+      "Eli Tran-Johnson",
+      "et al."
+    ],
+    "year": 2022,
+    "url": "https://arxiv.org/abs/2207.05221v4",
+    "access": "Preprint v4, 21 de noviembre de 2022. 36 autores. Publicación revisada por pares no verificada",
+    "redistribution": "unknown",
+    "relevance": "Problema abierto de modelos de secuencia y de lenguaje (2023 a 2026). La revisión lo traduce a una medida concreta de MARS-TITAN sin trasladar sus cifras.",
+    "phase": [
+      3,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "kalai2024calibrated",
+    "title": "Calibrated Language Models Must Hallucinate",
+    "authors": [
+      "Adam Tauman Kalai",
+      "Santosh S. Vempala"
+    ],
+    "year": 2024,
+    "url": "https://doi.org/10.1145/3618260.3649777",
+    "access": "STOC 2024. Metadatos verificados en Crossref. Leída la versión arXiv:2311.14648v3",
+    "redistribution": "unknown",
+    "relevance": "Problema abierto de modelos de secuencia y de lenguaje (2023 a 2026). La revisión lo traduce a una medida concreta de MARS-TITAN sin trasladar sus cifras.",
+    "phase": [
+      3,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "kalai2025whyhallucinate",
+    "title": "Why Language Models Hallucinate",
+    "authors": [
+      "Adam Tauman Kalai",
+      "Ofir Nachum",
+      "Santosh S. Vempala",
+      "Edwin Zhang"
+    ],
+    "year": 2025,
+    "url": "https://arxiv.org/abs/2509.04664v1",
+    "access": "Preprint v1, 4 de septiembre de 2025. Versión revisada publicada en Nature con otro título",
+    "redistribution": "unknown",
+    "relevance": "Problema abierto de modelos de secuencia y de lenguaje (2023 a 2026). La revisión lo traduce a una medida concreta de MARS-TITAN sin trasladar sus cifras.",
+    "phase": [
+      3,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "kalai2026hallucinations",
+    "title": "Evaluating large language models for accuracy incentivizes hallucinations",
+    "authors": [
+      "Adam Tauman Kalai",
+      "Ofir Nachum",
+      "Santosh S. Vempala",
+      "Edwin Zhang"
+    ],
+    "year": 2026,
+    "url": "https://www.nature.com/articles/s41586-026-10549-w",
+    "access": "Recibido el 1 de julio de 2025, aceptado el 15 de abril de 2026 y publicado el 22 de abril de 2026. Acceso abierto. Título distinto del preprint arXiv:2509.04664",
+    "redistribution": "unknown",
+    "relevance": "Problema abierto de modelos de secuencia y de lenguaje (2023 a 2026). La revisión lo traduce a una medida concreta de MARS-TITAN sin trasladar sus cifras.",
+    "phase": [
+      3,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "kalman1960filter",
+    "title": "A New Approach to Linear Filtering and Prediction Problems",
+    "authors": [
+      "Rudolf E. Kalman"
+    ],
+    "year": 1960,
+    "url": "https://doi.org/10.1115/1.3662552",
+    "access": "Metadatos verificados en Crossref",
+    "redistribution": "unknown",
+    "relevance": "Fundamento de la regla bayesiana de corrección madura de PT3.",
+    "phase": [
+      3,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "kaplanis2018complexsynapses",
+    "title": "Continual Reinforcement Learning with Complex Synapses",
+    "authors": [
+      "Christos Kaplanis",
+      "Murray Shanahan",
+      "Claudia Clopath"
+    ],
+    "year": 2018,
+    "url": "https://proceedings.mlr.press/v80/kaplanis18a.html",
+    "access": "Leído arXiv:1802.07239 completo y la ficha de PMLR. No hay control con estado equivalente.",
+    "redistribution": "unknown",
+    "relevance": "Mecanismo biológico o modelo computacional citado como inspiración. No se replica el cerebro y la traducción algorítmica necesita su propio control.",
+    "phase": [
+      3,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "kaplanis2019policy",
+    "title": "Policy Consolidation for Continual Reinforcement Learning",
+    "authors": [
+      "Christos Kaplanis",
+      "Murray Shanahan",
+      "Claudia Clopath"
+    ],
+    "year": 2019,
+    "url": "https://proceedings.mlr.press/v97/kaplanis19a.html",
+    "access": "Leído el resumen.",
+    "redistribution": "unknown",
+    "relevance": "Mecanismo biológico o modelo computacional citado como inspiración. No se replica el cerebro y la traducción algorítmica necesita su propio control.",
+    "phase": [
+      3,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "kelly2024virtue",
+    "title": "The Virtue of Complexity in Return Prediction",
+    "authors": [
+      "Bryan Kelly",
+      "Semyon Malamud",
+      "Kangying Zhou"
+    ],
+    "year": 2024,
+    "url": "https://doi.org/10.1111/jofi.13298",
+    "access": "Revisado por pares. Cifras contrastadas en NBER Working Paper 30217 (rev. oct. 2022)",
+    "redistribution": "unknown",
+    "relevance": "Evidencia de modelos secuenciales, fundacionales o de aprendizaje automático sobre series y rentabilidades. Fija la señal esperable y los controles mínimos de la comparación.",
+    "phase": [
+      2,
+      4,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "kim2022revin",
+    "title": "Reversible Instance Normalization for Accurate Time-Series Forecasting against Distribution Shift",
+    "authors": [
+      "Taesung Kim",
+      "Jinhee Kim",
+      "Yunwon Tae",
+      "Cheonbok Park",
+      "Jang-Ho Choi",
+      "Jaegul Choo"
+    ],
+    "year": 2022,
+    "url": "https://openreview.net/forum?id=cGDAkQo1C0p",
+    "access": "Revisado por pares (ICLR 2022, póster según iclr.cc). PDF no leído porque OpenReview exigió verificación. Datos de iclr.cc, README oficial y tablas de terceros",
+    "redistribution": "unknown",
+    "relevance": "Normalización frente a no estacionariedad. Contexto para el codificador de precios, sin propuesta asociada.",
+    "phase": [
+      4,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "kim2025tafas",
+    "title": "Battling the Non-stationarity in Time Series Forecasting via Test-time Adaptation",
+    "authors": [
+      "HyunGi Kim",
+      "Siwon Kim",
+      "Jisoo Mok",
+      "Sungroh Yoon"
+    ],
+    "year": 2025,
+    "url": "https://doi.org/10.1609/aaai.v39i17.33965",
+    "access": "Revisado por pares (AAAI 2025). Leída la copia arXiv:2501.04970v1",
+    "redistribution": "unknown",
+    "relevance": "Adaptación en línea con etiquetas retrasadas y control de fugas de información. Motiva PT3 y el diagnóstico D3.",
+    "phase": [
+      3,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "kraus2025xlstmmixer",
+    "title": "xLSTM-Mixer: Multivariate Time Series Forecasting by Mixing via Scalar Memories",
+    "authors": [
+      "Maurice Kraus",
+      "Felix Divo",
+      "Devendra Singh Dhami",
+      "Kristian Kersting"
+    ],
+    "year": 2025,
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/09e38101e74a89129ccd0d0756ed36b3-Abstract-Conference.html",
+    "access": "NeurIPS 2025, revisado por pares. Versión consultada: arXiv:2410.16928v4 (20 nov. 2025)",
+    "redistribution": "unknown",
+    "relevance": "Evidencia de modelos secuenciales, fundacionales o de aprendizaje automático sobre series y rentabilidades. Fija la señal esperable y los controles mínimos de la comparación.",
+    "phase": [
+      2,
+      4,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "krotov2016dense",
+    "title": "Dense Associative Memory for Pattern Recognition",
+    "authors": [
+      "Dmitry Krotov",
+      "John J. Hopfield"
+    ],
+    "year": 2016,
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2016/hash/eaae339c4d89fc102edd9dbdb6a28915-Abstract.html",
+    "access": "Leídos el modelo, la capacidad y la Fig. 1. Las páginas solo constan en la referencia de arXiv.",
+    "redistribution": "unknown",
+    "relevance": "Capacidad por neurona o por parámetro. Solo justificaría un brazo con el control de más parámetros y el mismo presupuesto.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "kuratov2024babilong",
+    "title": "BABILong: Testing the Limits of LLMs with Long Context Reasoning-in-a-Haystack",
+    "authors": [
+      "Yuri Kuratov",
+      "Aydar Bulatov",
+      "Petr Anokhin",
+      "Ivan Rodkin",
+      "Dmitry Sorokin",
+      "Artyom Sorokin",
+      "Mikhail Burtsev"
+    ],
+    "year": 2024,
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/c0d62e70dbc659cc9bd44cbcf1cb652f-Abstract-Datasets_and_Benchmarks_Track.html",
+    "access": "Datasets and Benchmarks Track. Cifras leídas en arXiv:2406.10149v2, sección 3.1 y Figura 2",
+    "redistribution": "unknown",
+    "relevance": "Problema abierto de modelos de secuencia y de lenguaje (2023 a 2026). La revisión lo traduce a una medida concreta de MARS-TITAN sin trasladar sus cifras.",
+    "phase": [
+      3,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "laborieux2021metaplasticity",
+    "title": "Synaptic metaplasticity in binarized neural networks",
+    "authors": [
+      "Axel Laborieux",
+      "Maxence Ernoult",
+      "Tifenn Hirtzlin",
+      "Damien Querlioz"
+    ],
+    "year": 2021,
+    "url": "https://doi.org/10.1038/s41467-021-22768-y",
+    "access": "Acceso abierto. Leídos el algoritmo 1, las ecuaciones 1 a 7 y la Tabla 1. Código con licencia MIT.",
+    "redistribution": "unknown",
+    "relevance": "Mecanismo biológico o modelo computacional citado como inspiración. No se replica el cerebro y la traducción algorítmica necesita su propio control.",
+    "phase": [
+      3,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "lau2025dsof",
+    "title": "Fast and Slow Streams for Online Time Series Forecasting Without Information Leakage",
+    "authors": [
+      "Ying-yee Ava Lau",
+      "Zhiwen Shao",
+      "Dit-Yan Yeung"
+    ],
+    "year": 2025,
+    "url": "https://proceedings.iclr.cc/paper_files/paper/2025/hash/46e624c244cff669223d488defd4e835-Abstract-Conference.html",
+    "access": "Revisado por pares (ICLR 2025). Leído el PDF de las actas",
+    "redistribution": "unknown",
+    "relevance": "Adaptación en línea con etiquetas retrasadas y control de fugas de información. Motiva PT3 y el diagnóstico D3.",
+    "phase": [
+      3,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "lee2025elf",
+    "title": "Lightweight Online Adaption for Time Series Foundation Model Forecasts",
+    "authors": [
+      "Thomas L. Lee",
+      "William Toner",
+      "Rajkarn Singh",
+      "Artjom Joosen",
+      "Martin Asenov"
+    ],
+    "year": 2025,
+    "url": "https://proceedings.mlr.press/v267/lee25ag.html",
+    "access": "Revisado por pares (ICML 2025). Lectura parcial del PDF de PMLR. El PDF titula «Adaption of»",
+    "redistribution": "unknown",
+    "relevance": "Adaptación en línea con etiquetas retrasadas y control de fugas de información. Motiva PT3 y el diagnóstico D3.",
+    "phase": [
+      3,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "li2026tnt",
+    "title": "TNT: Improving Chunkwise Training for Test-Time Memorization",
+    "authors": [
+      "Zeman Li",
+      "Ali Behrouz",
+      "Yuan Deng",
+      "Peilin Zhong",
+      "Praneeth Kacham",
+      "Mahdi Karami",
+      "Meisam Razaviyayn",
+      "Vahab Mirrokni"
+    ],
+    "year": 2026,
+    "url": "https://proceedings.iclr.cc/paper_files/paper/2026/hash/bdb30687f1c2255c29b11b0b45204ebe-Abstract-Conference.html",
+    "access": "ICLR 2026, revisado por pares (póster, OpenReview rajioNWfRs). arXiv:2511.07343v1 (10/11/2025)",
+    "redistribution": "unknown",
+    "relevance": "Trabajo del grupo de Titans o crítica directa posterior al artículo original. Sitúa las variantes de memoria frente al núcleo Titans-MAC. Sin evidencia en retornos de acciones.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "liang2024actnow",
+    "title": "Act Now: A Novel Online Forecasting Framework for Large-Scale Streaming Data",
+    "authors": [
+      "Daojun Liang",
+      "Haixia Zhang",
+      "Jing Wang",
+      "Dongfeng Yuan",
+      "Minggao Zhang"
+    ],
+    "year": 2024,
+    "url": "https://arxiv.org/abs/2412.00108v1",
+    "access": "Preprint v1 del 28 de noviembre de 2024. Sin revisión por pares confirmada",
+    "redistribution": "unknown",
+    "relevance": "Adaptación en línea con etiquetas retrasadas y control de fugas de información. Motiva PT3 y el diagnóstico D3.",
+    "phase": [
+      3,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "liberzon2003switching",
+    "title": "Switching in Systems and Control",
+    "authors": [
+      "Daniel Liberzon"
+    ],
+    "year": 2003,
+    "url": "https://doi.org/10.1007/978-1-4612-0017-8",
+    "access": "Metadatos verificados en Crossref. Se cita por el resultado conocido de que subsistemas estables pueden dar trayectorias no acotadas al conmutar",
+    "redistribution": "unknown",
+    "relevance": "Fundamento matemático o precedente metodológico del certificado de contracción de PT1.",
+    "phase": [
+      3,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "lisman2013thetagamma",
+    "title": "The Theta-Gamma Neural Code",
+    "authors": [
+      "John E. Lisman",
+      "Ole Jensen"
+    ],
+    "year": 2013,
+    "url": "https://doi.org/10.1016/j.neuron.2013.03.007",
+    "access": "Revisión publicada. Leído el resumen.",
+    "redistribution": "unknown",
+    "relevance": "Mecanismo biológico o modelo computacional citado como inspiración. No se replica el cerebro y la traducción algorítmica necesita su propio control.",
+    "phase": [
+      3,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "liu2022nonstationary",
+    "title": "Non-stationary Transformers: Exploring the Stationarity in Time Series Forecasting",
+    "authors": [
+      "Yong Liu",
+      "Haixu Wu",
+      "Jianmin Wang",
+      "Mingsheng Long"
+    ],
+    "year": 2022,
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2022/hash/4054556fcaa934b0bf76da52cf4f92cb-Abstract-Conference.html",
+    "access": "Revisado por pares (NeurIPS 2022). Leída la copia arXiv:2205.14415v4",
+    "redistribution": "unknown",
+    "relevance": "Normalización frente a no estacionariedad. Contexto para el codificador de precios, sin propuesta asociada.",
+    "phase": [
+      4,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "liu2023san",
+    "title": "Adaptive Normalization for Non-stationary Time Series Forecasting: A Temporal Slice Perspective",
+    "authors": [
+      "Zhiding Liu",
+      "Mingyue Cheng",
+      "Zhi Li",
+      "Zhenya Huang",
+      "Qi Liu",
+      "Yanhu Xie",
+      "Enhong Chen"
+    ],
+    "year": 2023,
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2023/hash/2e19dab94882bc95ed094c4399cfda02-Abstract-Conference.html",
+    "access": "Revisado por pares (NeurIPS 2023). Leído el PDF de las actas",
+    "redistribution": "unknown",
+    "relevance": "Normalización frente a no estacionariedad. Contexto para el codificador de precios, sin propuesta asociada.",
+    "phase": [
+      4,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "liu2024lostmiddle",
+    "title": "Lost in the Middle: How Language Models Use Long Contexts",
+    "authors": [
+      "Nelson F. Liu",
+      "Kevin Lin",
+      "John Hewitt",
+      "Ashwin Paranjape",
+      "Michele Bevilacqua",
+      "Fabio Petroni",
+      "Percy Liang"
+    ],
+    "year": 2024,
+    "url": "https://aclanthology.org/2024.tacl-1.9/",
+    "access": "Versión editorial TACL. Cifras leídas en arXiv:2307.03172v3, sección 2.3, Figura 5 y tablas 1, 6 y 7",
+    "redistribution": "unknown",
+    "relevance": "Problema abierto de modelos de secuencia y de lenguaje (2023 a 2026). La revisión lo traduce a una medida concreta de MARS-TITAN sin trasladar sus cifras.",
+    "phase": [
+      3,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "liu2024ratd",
+    "title": "Retrieval-Augmented Diffusion Models for Time Series Forecasting",
+    "authors": [
+      "Jingwei Liu",
+      "Ling Yang",
+      "Hongyan Li",
+      "Shenda Hong"
+    ],
+    "year": 2024,
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/053ee34c0971568bfa5c773015c10502-Abstract-Conference.html",
+    "access": "Revisado por pares (NeurIPS 2024). Leída la copia arXiv:2410.18712v1",
+    "redistribution": "unknown",
+    "relevance": "Recuperación y memoria episódica para series temporales. Las ganancias son pequeñas cuando el control iguala parámetros. Contexto para el banco episódico.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "liu2025kan",
+    "title": "KAN: Kolmogorov--Arnold Networks",
+    "authors": [
+      "Ziming Liu",
+      "Yixuan Wang",
+      "Sachin Vaidya",
+      "Fabian Ruehle",
+      "James Halverson",
+      "Marin Soljacić",
+      "Thomas Y. Hou",
+      "Max Tegmark"
+    ],
+    "year": 2025,
+    "url": "https://openreview.net/forum?id=Ozo7qJ5vZi",
+    "access": "ICLR 2025, presentación oral. Leídos el modelo y las afirmaciones de escalado. Código pykan con licencia MIT.",
+    "redistribution": "unknown",
+    "relevance": "Capacidad por neurona o por parámetro. Solo justificaría un brazo con el control de más parámetros y el mismo presupuesto.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "liu2025longhorn",
+    "title": "Longhorn: State Space Models are Amortized Online Learners",
+    "authors": [
+      "Bo Liu",
+      "Rui Wang",
+      "Lemeng Wu",
+      "Yihao Feng",
+      "Peter Stone",
+      "Qiang Liu"
+    ],
+    "year": 2025,
+    "url": "https://proceedings.iclr.cc/paper_files/paper/2025/hash/ee0e45ff4de76cbfdf07015a7839f339-Abstract-Conference.html",
+    "access": "Actas de ICLR 2025 (póster). Preprint asociado arXiv:2407.14207v5 del 2 de octubre de 2024, anterior a la versión de actas",
+    "redistribution": "unknown",
+    "relevance": "Memoria de pesos rápidos por regresión en tiempo de prueba, regla delta o recurrencia lineal relacionada. Referencia de mecanismo, estabilidad y coste para el núcleo y PT1. Sin evidencia en retornos.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "liu2026steps",
+    "title": "STEPS: A Temporal Smooth Error Propagation Solver on the Manifolds for Test-Time Adaptation in Time Series Forecasting",
+    "authors": [
+      "Jiaqi Liu",
+      "Yifan Ouyang",
+      "Zhifei Song",
+      "Sim Kuan Goh",
+      "Ashwaq Qasem"
+    ],
+    "year": 2026,
+    "url": "https://arxiv.org/abs/2605.08005v1",
+    "access": "Preprint v1 del 8 de mayo de 2026. Sin revisión por pares. arXiv indica envío a NeurIPS 2026",
+    "redistribution": "unknown",
+    "relevance": "Adaptación en línea con etiquetas retrasadas y control de fugas de información. Motiva PT3 y el diagnóstico D3.",
+    "phase": [
+      3,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "liu2026tttla",
+    "title": "Test-Time Training with KV Binding Is Secretly Linear Attention",
+    "authors": [
+      "Junchen Liu",
+      "Sven Elflein",
+      "Or Litany",
+      "Zan Gojcic",
+      "Ruilong Li"
+    ],
+    "year": 2026,
+    "url": "https://proceedings.mlr.press/v306/liu26ae.html",
+    "access": "Actas de ICML 2026. Experimentos sobre LaCT y ViTTT. Código en nv-tlabs/tttla sin licencia declarada",
+    "redistribution": "unknown",
+    "relevance": "Memoria de pesos rápidos por regresión en tiempo de prueba, regla delta o recurrencia lineal relacionada. Referencia de mecanismo, estabilidad y coste para el núcleo y PT1. Sin evidencia en retornos.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "lohmiller1998contraction",
+    "title": "On Contraction Analysis for Non-linear Systems",
+    "authors": [
+      "Winfried Lohmiller",
+      "Jean-Jacques E. Slotine"
+    ],
+    "year": 1998,
+    "url": "https://doi.org/10.1016/S0005-1098(98)00019-3",
+    "access": "Metadatos verificados en Crossref",
+    "redistribution": "unknown",
+    "relevance": "Fundamento matemático o precedente metodológico del certificado de contracción de PT1.",
+    "phase": [
+      3,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "ludziejewski2024finegrained",
+    "title": "Scaling Laws for Fine-Grained Mixture of Experts",
+    "authors": [
+      "Jan Ludziejewski",
+      "Jakub Krajewski",
+      "Kamil Adamczewski",
+      "Maciej Pióro",
+      "Michał Krutul",
+      "Szymon Antoniak",
+      "Kamil Ciebiera",
+      "Krystian Król",
+      "Tomasz Odrzygóźdź",
+      "Piotr Sankowski",
+      "Marek Cygan",
+      "Sebastian Jaszczur"
+    ],
+    "year": 2024,
+    "url": "https://proceedings.mlr.press/v235/ludziejewski24a.html",
+    "access": "ICML 2024. En arXiv el primer autor es Krajewski. Leída la ley de escalado ajustada. Código con licencia Apache-2.0.",
+    "redistribution": "unknown",
+    "relevance": "Capacidad por neurona o por parámetro. Solo justificaría un brazo con el control de más parámetros y el mismo presupuesto.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "luo2025forgetting",
+    "title": "An Empirical Study of Catastrophic Forgetting in Large Language Models During Continual Fine-Tuning",
+    "authors": [
+      "Yun Luo",
+      "Zhen Yang",
+      "Fandong Meng",
+      "Yafu Li",
+      "Jie Zhou",
+      "Yue Zhang"
+    ],
+    "year": 2025,
+    "url": "https://doi.org/10.1109/TASLPRO.2025.3606231",
+    "access": "Metadatos editoriales verificados en Crossref. Texto editorial no leído. Cifras leídas en arXiv:2308.08747v5, ecuación 1 y tablas 4 y 6",
+    "redistribution": "unknown",
+    "relevance": "Problema abierto de modelos de secuencia y de lenguaje (2023 a 2026). La revisión lo traduce a una medida concreta de MARS-TITAN sin trasladar sus cifras.",
+    "phase": [
+      3,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "lyle2023plasticity",
+    "title": "Understanding Plasticity in Neural Networks",
+    "authors": [
+      "Clare Lyle",
+      "Zeyu Zheng",
+      "Evgenii Nikishin",
+      "Bernardo Avila Pires",
+      "Razvan Pascanu",
+      "Will Dabney"
+    ],
+    "year": 2023,
+    "url": "https://proceedings.mlr.press/v202/lyle23b.html",
+    "access": "ICML 2023, presentación oral según arXiv:2303.01486v4. Leídos el resumen, las secciones 1 y 6 y la Fig. 7.",
+    "redistribution": "unknown",
+    "relevance": "Problema abierto de modelos de secuencia y de lenguaje (2023 a 2026). La revisión lo traduce a una medida concreta de MARS-TITAN sin trasladar sus cifras.",
+    "phase": [
+      3,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "lyle2025plasticitycauses",
+    "title": "Disentangling the Causes of Plasticity Loss in Neural Networks",
+    "authors": [
+      "Clare Lyle",
+      "Zeyu Zheng",
+      "Khimya Khetarpal",
+      "Hado van Hasselt",
+      "Razvan Pascanu",
+      "James Martens",
+      "Will Dabney"
+    ],
+    "year": 2025,
+    "url": "https://proceedings.mlr.press/v274/lyle25a.html",
+    "access": "CoLLAs 2024, volumen publicado el 17 de febrero de 2025. El PDF arXiv:2402.18762v1 ordena a los autores de otra forma",
+    "redistribution": "unknown",
+    "relevance": "Problema abierto de modelos de secuencia y de lenguaje (2023 a 2026). La revisión lo traduce a una medida concreta de MARS-TITAN sin trasladar sus cifras.",
+    "phase": [
+      3,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "lyu2026tsmemory",
+    "title": "TS-Memory: Plug-and-Play Memory for Time Series Foundation Models",
+    "authors": [
+      "Sisuo Lyu",
+      "Siru Zhong",
+      "Tiegang Chen",
+      "Weilin Ruan",
+      "Qingxiang Liu",
+      "Taiqiang Lv",
+      "Qingsong Wen",
+      "Raymond Chi-Wing Wong",
+      "Yuxuan Liang"
+    ],
+    "year": 2026,
+    "url": "https://doi.org/10.1145/3770855.3817614",
+    "access": "Revisado por pares (KDD 2026). Leída la copia arXiv:2602.11550v2",
+    "redistribution": "unknown",
+    "relevance": "Recuperación y memoria episódica para series temporales. Las ganancias son pequeñas cuando el control iguala parámetros. Contexto para el banco episódico.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "manokhin2026floor",
+    "title": "Report the Floor: A Training-Free Conformal Interval Is a Mandatory Baseline for Probabilistic Time-Series Forecasting",
+    "authors": [
+      "Valery Manokhin"
+    ],
+    "year": 2026,
+    "url": "https://arxiv.org/abs/2606.09473v1",
+    "access": "Preprint v1 del 8 de junio de 2026. Leído el resumen. Sin revisión por pares",
+    "redistribution": "unknown",
+    "relevance": "Calibración conformal en línea o con retroalimentación retrasada. Motiva PT2 y el diagnóstico D9.",
+    "phase": [
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "meskin2025hydra",
+    "title": "Hydra: Dual Exponentiated Memory for Multivariate Time Series Analysis",
+    "authors": [
+      "Asal Meskin",
+      "Alireza Mirrokni",
+      "Ali Najar",
+      "Ali Behrouz"
+    ],
+    "year": 2025,
+    "url": "https://arxiv.org/abs/2511.00989",
+    "access": "Preprint arXiv:2511.00989v1 (02/11/2025), sin revisión por pares verificada",
+    "redistribution": "unknown",
+    "relevance": "Trabajo del grupo de Titans o crítica directa posterior al artículo original. Sitúa las variantes de memoria frente al núcleo Titans-MAC. Sin evidencia en retornos de acciones.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "modarressi2025nolima",
+    "title": "NoLiMa: Long-Context Evaluation Beyond Literal Matching",
+    "authors": [
+      "Ali Modarressi",
+      "Hanieh Deilamsalehy",
+      "Franck Dernoncourt",
+      "Trung Bui",
+      "Ryan A. Rossi",
+      "Seunghyun Yoon",
+      "Hinrich Schütze"
+    ],
+    "year": 2025,
+    "url": "https://proceedings.mlr.press/v267/modarressi25a.html",
+    "access": "PMLR escribe «Hinrich Schuetze». Cifras leídas en arXiv:2502.05167v3, sección 4 y Tabla 3",
+    "redistribution": "unknown",
+    "relevance": "Problema abierto de modelos de secuencia y de lenguaje (2023 a 2026). La revisión lo traduce a una medida concreta de MARS-TITAN sin trasladar sus cifras.",
+    "phase": [
+      3,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "moralesbrotons2024ema",
+    "title": "Exponential Moving Average of Weights in Deep Learning: Dynamics and Benefits",
+    "authors": [
+      "Daniel Morales-Brotons",
+      "Thijs Vogels",
+      "Hadrien Hendrikx"
+    ],
+    "year": 2024,
+    "url": "https://openreview.net/forum?id=2M9CUnYnBA",
+    "access": "Revisado por pares (TMLR, abril de 2024, según la cabecera del PDF). Leída arXiv:2411.18704v1",
+    "redistribution": "unknown",
+    "relevance": "Promedio de pesos y ensembles. Contexto para el control de varianza PT7.",
+    "phase": [
+      4,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "moroshan2026tempopfn",
+    "title": "TempoPFN: Synthetic Pre-training of Linear RNNs for Zero-shot Time Series Forecasting",
+    "authors": [
+      "Vladyslav Moroshan",
+      "Julien Siems",
+      "Arber Zela",
+      "Timur Carstensen",
+      "Frank Hutter"
+    ],
+    "year": 2025,
+    "url": "https://arxiv.org/abs/2510.25502v4",
+    "access": "Preprint v4 del 5 de febrero de 2026. Código automl/TempoPFN con licencia Apache-2.0. Sin revisión por pares confirmada",
+    "redistribution": "unknown",
+    "relevance": "Aplicación de memorias de pesos rápidos, TTT o regla delta a series temporales o finanzas. Evidencia preliminar, casi siempre preprint, que no sustituye la comparación propia.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "muennighoff2025s1",
+    "title": "s1: Simple test-time scaling",
+    "authors": [
+      "Niklas Muennighoff",
+      "Zitong Yang",
+      "Weijia Shi",
+      "Xiang Lisa Li",
+      "Li Fei-Fei",
+      "Hannaneh Hajishirzi",
+      "Luke Zettlemoyer",
+      "Percy Liang",
+      "Emmanuel Candès",
+      "Tatsunori Hashimoto"
+    ],
+    "year": 2025,
+    "url": "https://aclanthology.org/2025.emnlp-main.1025/",
+    "access": "Páginas según ACL Anthology. Crossref registra 20286--20332. Cifras leídas en arXiv:2501.19393v3",
+    "redistribution": "unknown",
+    "relevance": "Problema abierto de modelos de secuencia y de lenguaje (2023 a 2026). La revisión lo traduce a una medida concreta de MARS-TITAN sin trasladar sus cifras.",
+    "phase": [
+      3,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "nagashima2026tern",
+    "title": "TERN: A Delta-rule Memory with a Seasonal Reference and Online Adaptation for Epidemic Forecasting",
+    "authors": [
+      "Shunya Nagashima",
+      "Yuta Funayama"
+    ],
+    "year": 2026,
+    "url": "https://arxiv.org/abs/2609.18407v2",
+    "access": "Preprint v2 del 24 de septiembre de 2026. Adaptación en línea solo con objetivos maduros. Leída la Tabla 1",
+    "redistribution": "unknown",
+    "relevance": "Aplicación de memorias de pesos rápidos, TTT o regla delta a series temporales o finanzas. Evidencia preliminar, casi siempre preprint, que no sustituye la comparación propia.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "nagel2025seemingly",
+    "title": "Seemingly Virtuous Complexity in Return Prediction",
+    "authors": [
+      "Stefan Nagel"
+    ],
+    "year": 2025,
+    "url": "https://www.nber.org/papers/w34104",
+    "access": "Documento de trabajo sin revisión por pares (agosto de 2025)",
+    "redistribution": "unknown",
+    "relevance": "Evidencia de modelos secuenciales, fundacionales o de aprendizaje automático sobre series y rentabilidades. Fija la señal esperable y los controles mínimos de la comparación.",
+    "phase": [
+      2,
+      4,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "nassar2010deltarule",
+    "title": "An Approximately Bayesian Delta-Rule Model Explains the Dynamics of Belief Updating in a Changing Environment",
+    "authors": [
+      "Matthew R. Nassar",
+      "Robert C. Wilson",
+      "Benjamin Heasly",
+      "Joshua I. Gold"
+    ],
+    "year": 2010,
+    "url": "https://doi.org/10.1523/JNEUROSCI.0822-10.2010",
+    "access": "Leídos los métodos del modelo bayesiano reducido con las ecuaciones 14 a 21 en PMC2945906.",
+    "redistribution": "unknown",
+    "relevance": "Mecanismo biológico o modelo computacional citado como inspiración. No se replica el cerebro y la traducción algorítmica necesita su propio control.",
+    "phase": [
+      3,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "ning2025tsrag",
+    "title": "TS-RAG: Retrieval-Augmented Generation based Time Series Foundation Models are Stronger Zero-Shot Forecaster",
+    "authors": [
+      "Kanghui Ning",
+      "Zijie Pan",
+      "Yu Liu",
+      "Yushan Jiang",
+      "James Yiming Zhang",
+      "Kashif Rasul",
+      "Anderson Schneider",
+      "Lintao Ma",
+      "Yuriy Nevmyvaka",
+      "Dongjin Song"
+    ],
+    "year": 2025,
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/eed25c037bc08afcbefab6f7a6b700e0-Abstract-Conference.html",
+    "access": "Revisado por pares (NeurIPS 2025). Leída la copia arXiv:2503.07649v4",
+    "redistribution": "unknown",
+    "relevance": "Recuperación y memoria episódica para series temporales. Las ganancias son pequeñas cuando el control iguala parámetros. Contexto para el banco episódico.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "noguer2026tsfmreturns",
+    "title": "Pretrained Time-Series Foundation Models for Financial Return Forecasting",
+    "authors": [
+      "Miquel Noguer i Alonso",
+      "Rodolfo Pereira Franklin"
+    ],
+    "year": 2026,
+    "url": "https://arxiv.org/abs/2606.27100",
+    "access": "Preprint arXiv:2606.27100v1 (25 jun. 2026). Sin revisión por pares verificada",
+    "redistribution": "unknown",
+    "relevance": "Evidencia de modelos secuenciales, fundacionales o de aprendizaje automático sobre series y rentabilidades. Fija la señal esperable y los controles mínimos de la comparación.",
+    "phase": [
+      2,
+      4,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "olshausen1996sparse",
+    "title": "Emergence of simple-cell receptive field properties by learning a sparse code for natural images",
+    "authors": [
+      "Bruno A. Olshausen",
+      "David J. Field"
+    ],
+    "year": 1996,
+    "url": "https://doi.org/10.1038/381607a0",
+    "access": "Leído el resumen. La función de coste exacta no se verificó.",
+    "redistribution": "unknown",
+    "relevance": "Capacidad por neurona o por parámetro. Solo justificaría un brazo con el control de más parámetros y el mismo presupuesto.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "openai2023gpt4",
+    "title": "GPT-4 Technical Report",
+    "authors": [
+      "OpenAI",
+      "Josh Achiam",
+      "Steven Adler",
+      "Sandhini Agarwal",
+      "Lama Ahmad",
+      "Ilge Akkaya",
+      "Florencia Leoni Aleman",
+      "Diogo Almeida",
+      "Janko Altenschmidt",
+      "Sam Altman",
+      "et al."
+    ],
+    "year": 2023,
+    "url": "https://arxiv.org/abs/2303.08774v6",
+    "access": "Informe técnico, v6 del 4 de marzo de 2024. Sin revisión por pares. 281 entradas de autoría en arXiv. Figura 8 y sección 5",
+    "redistribution": "unknown",
+    "relevance": "Problema abierto de modelos de secuencia y de lenguaje (2023 a 2026). La revisión lo traduce a una medida concreta de MARS-TITAN sin trasladar sus cifras.",
+    "phase": [
+      3,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "oreshkin2020nbeats",
+    "title": "N-BEATS: Neural basis expansion analysis for interpretable time series forecasting",
+    "authors": [
+      "Boris N. Oreshkin",
+      "Dmitri Carpov",
+      "Nicolas Chapados",
+      "Yoshua Bengio"
+    ],
+    "year": 2020,
+    "url": "https://arxiv.org/abs/1905.10437v4",
+    "access": "ICLR 2020 según la cabecera del PDF arXiv v4. OpenReview no consultado",
+    "redistribution": "unknown",
+    "relevance": "Promedio de pesos y ensembles. Contexto para el control de varianza PT7.",
+    "phase": [
+      4,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "orvieto2023lru",
+    "title": "Resurrecting Recurrent Neural Networks for Long Sequences",
+    "authors": [
+      "Antonio Orvieto",
+      "Samuel L. Smith",
+      "Albert Gu",
+      "Anushan Fernando",
+      "Caglar Gulcehre",
+      "Razvan Pascanu",
+      "Soham De"
+    ],
+    "year": 2023,
+    "url": "https://proceedings.mlr.press/v202/orvieto23a.html",
+    "access": "Revisado por pares. Versión arXiv:2303.06349v1",
+    "redistribution": "unknown",
+    "relevance": "Evidencia de modelos secuenciales, fundacionales o de aprendizaje automático sobre series y rentabilidades. Fija la señal esperable y los controles mínimos de la comparación.",
+    "phase": [
+      2,
+      4,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "ovadia2019shift",
+    "title": "Can You Trust Your Model's Uncertainty? Evaluating Predictive Uncertainty Under Dataset Shift",
+    "authors": [
+      "Yaniv Ovadia",
+      "Emily Fertig",
+      "Jie Ren",
+      "Zachary Nado",
+      "D. Sculley",
+      "Sebastian Nowozin",
+      "Joshua V. Dillon",
+      "Balaji Lakshminarayanan",
+      "Jasper Snoek"
+    ],
+    "year": 2019,
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2019/hash/8558cb408c1d76621371888657d2eb1d-Abstract.html",
+    "access": "La ficha de NeurIPS no indica páginas. Leídos resumen, secciones 4 y 5 y apéndice G de arXiv:1906.02530v2",
+    "redistribution": "unknown",
+    "relevance": "Problema abierto de modelos de secuencia y de lenguaje (2023 a 2026). La revisión lo traduce a una medida concreta de MARS-TITAN sin trasladar sus cifras.",
+    "phase": [
+      3,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "pattichis2026memini",
+    "title": "Continual Knowledge Updating in LLM Systems: Learning Through Multi-Timescale Memory Dynamics",
+    "authors": [
+      "Andreas Pattichis",
+      "Constantine Dovrolis"
+    ],
+    "year": 2026,
+    "url": "https://arxiv.org/abs/2605.05097",
+    "access": "Preprint de taller. Su resumen declara que no tiene evaluación experimental. Leído el resumen.",
+    "redistribution": "unknown",
+    "relevance": "Mecanismo biológico o modelo computacional citado como inspiración. No se replica el cerebro y la traducción algorítmica necesita su propio control.",
+    "phase": [
+      3,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "peng2025rwkv7",
+    "title": "RWKV-7 ``Goose'' with Expressive Dynamic State Evolution",
+    "authors": [
+      "Bo Peng",
+      "Ruichong Zhang",
+      "Daniel Goldstein",
+      "Eric Alcaide",
+      "Xingjian Du",
+      "Haowen Hou",
+      "Jiaju Lin",
+      "Jiaxing Liu",
+      "Janna Lu",
+      "William Merrill",
+      "Guangyu Song",
+      "Kaifeng Tan",
+      "Saiteja Utpala",
+      "Nathan Wilce",
+      "Johan S. Wind",
+      "Tianyi Wu",
+      "Daniel Wuttke",
+      "Christian Zhou-Zheng"
+    ],
+    "year": 2025,
+    "url": "https://openreview.net/forum?id=ayB1PACN5j",
+    "access": "Aceptado en COLM 2025 según la lista oficial de artículos aceptados, con actas alojadas en OpenReview. Preprint asociado arXiv:2503.14456v2 del 30 de marzo de 2025",
+    "redistribution": "unknown",
+    "relevance": "Memoria de pesos rápidos por regresión en tiempo de prueba, regla delta o recurrencia lineal relacionada. Referencia de mecanismo, estabilidad y coste para el núcleo y PT1. Sin evidencia en retornos.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "perez2018film",
+    "title": "FiLM: Visual Reasoning with a General Conditioning Layer",
+    "authors": [
+      "Ethan Perez",
+      "Florian Strub",
+      "Harm de Vries",
+      "Vincent Dumoulin",
+      "Aaron Courville"
+    ],
+    "year": 2018,
+    "url": "https://doi.org/10.1609/aaai.v32i1.11671",
+    "access": "Metadatos verificados en Crossref",
+    "redistribution": "unknown",
+    "relevance": "Capacidad por neurona o por parámetro. Solo justificaría un brazo con el control de más parámetros y el mismo presupuesto.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "pham2023fsnet",
+    "title": "Learning Fast and Slow for Online Time Series Forecasting",
+    "authors": [
+      "Quang Pham",
+      "Chenghao Liu",
+      "Doyen Sahoo",
+      "Steven C. H. Hoi"
+    ],
+    "year": 2023,
+    "url": "https://openreview.net/forum?id=q-PbpHD3EOk",
+    "access": "Revisado por pares (ICLR 2023, póster según iclr.cc). Leída la copia arXiv:2202.11672v2. OpenReview no accesible",
+    "redistribution": "unknown",
+    "relevance": "Adaptación en línea con etiquetas retrasadas y control de fugas de información. Motiva PT3 y el diagnóstico D3.",
+    "phase": [
+      3,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "poirazi2003twolayer",
+    "title": "Pyramidal Neuron as Two-Layer Neural Network",
+    "authors": [
+      "Panayiota Poirazi",
+      "Terrence Brannon",
+      "Bartlett W. Mel"
+    ],
+    "year": 2003,
+    "url": "https://doi.org/10.1016/S0896-6273(03)00149-1",
+    "access": "Leído el resumen.",
+    "redistribution": "unknown",
+    "relevance": "Capacidad por neurona o por parámetro. Solo justificaría un brazo con el control de más parámetros y el mismo presupuesto.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "qiu2024tfb",
+    "title": "TFB: Towards Comprehensive and Fair Benchmarking of Time Series Forecasting Methods",
+    "authors": [
+      "Xiangfei Qiu",
+      "Jilin Hu",
+      "Lekui Zhou",
+      "Xingjian Wu",
+      "Junyang Du",
+      "Buang Zhang",
+      "Chenjuan Guo",
+      "Aoying Zhou",
+      "Christian S. Jensen",
+      "Zhenli Sheng",
+      "Bin Yang"
+    ],
+    "year": 2024,
+    "url": "https://doi.org/10.14778/3665844.3665863",
+    "access": "Revisado por pares. Versión consultada: arXiv:2403.20150v4 (18 ago. 2025)",
+    "redistribution": "unknown",
+    "relevance": "Evidencia de modelos secuenciales, fundacionales o de aprendizaje automático sobre series y rentabilidades. Fija la señal esperable y los controles mínimos de la comparación.",
+    "phase": [
+      2,
+      4,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "rahimikia2025tsfmfinance",
+    "title": "Re(Visiting) Time Series Foundation Models in Finance",
+    "authors": [
+      "Eghbal Rahimikia",
+      "Hao Ni",
+      "Weiguan Wang"
+    ],
+    "year": 2025,
+    "url": "https://arxiv.org/abs/2511.18578",
+    "access": "Preprint arXiv:2511.18578v1 (23 nov. 2025), también en SSRN (doi:10.2139/ssrn.5770562). Revisión por pares no verificada",
+    "redistribution": "unknown",
+    "relevance": "Evidencia de modelos secuenciales, fundacionales o de aprendizaje automático sobre series y rentabilidades. Fija la señal esperable y los controles mínimos de la comparación.",
+    "phase": [
+      2,
+      4,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "ramsauer2021hopfield",
+    "title": "Hopfield Networks is All You Need",
+    "authors": [
+      "Hubert Ramsauer",
+      "Bernhard Schäfl",
+      "Johannes Lehner",
+      "Philipp Seidl",
+      "Michael Widrich",
+      "Lukas Gruber",
+      "Markus Holzleitner",
+      "Thomas Adler",
+      "David P. Kreil",
+      "Michael K. Kopp",
+      "Günter Klambauer",
+      "Johannes Brandstetter",
+      "Sepp Hochreiter"
+    ],
+    "year": 2021,
+    "url": "https://openreview.net/forum?id=tL89RnzIiCd",
+    "access": "Versión de ICLR 2021 con 13 autores. arXiv v3 añade tres autores. Leídos el modelo y el Teorema 3.",
+    "redistribution": "unknown",
+    "relevance": "Capacidad por neurona o por parámetro. Solo justificaría un brazo con el control de más parámetros y el mismo presupuesto.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "rao1999predictive",
+    "title": "Predictive coding in the visual cortex: a functional interpretation of some extra-classical receptive-field effects",
+    "authors": [
+      "Rajesh P. N. Rao",
+      "Dana H. Ballard"
+    ],
+    "year": 1999,
+    "url": "https://doi.org/10.1038/4580",
+    "access": "Leído el resumen.",
+    "redistribution": "unknown",
+    "relevance": "Mecanismo biológico o modelo computacional citado como inspiración. No se replica el cerebro y la traducción algorítmica necesita su propio control.",
+    "phase": [
+      3,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "rapach2010combination",
+    "title": "Out-of-Sample Equity Premium Prediction: Combination Forecasts and Links to the Real Economy",
+    "authors": [
+      "David E. Rapach",
+      "Jack K. Strauss",
+      "Guofu Zhou"
+    ],
+    "year": 2010,
+    "url": "https://doi.org/10.1093/rfs/hhp063",
+    "access": "Revisado por pares. Solo se ha leído el resumen",
+    "redistribution": "unknown",
+    "relevance": "Evidencia de modelos secuenciales, fundacionales o de aprendizaje automático sobre series y rentabilidades. Fija la señal esperable y los controles mínimos de la comparación.",
+    "phase": [
+      2,
+      4,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "redondo2011stc",
+    "title": "Making memories last: the synaptic tagging and capture hypothesis",
+    "authors": [
+      "Roger L. Redondo",
+      "Richard G. M. Morris"
+    ],
+    "year": 2011,
+    "url": "https://doi.org/10.1038/nrn2963",
+    "access": "Revisión publicada en el fascículo de enero de 2011. Leído el resumen.",
+    "redistribution": "unknown",
+    "relevance": "Mecanismo biológico o modelo computacional citado como inspiración. No se replica el cerebro y la traducción algorítmica necesita su propio control.",
+    "phase": [
+      3,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "saidd2026harn",
+    "title": "HARN: Hierarchical Associative Resonance Network for Event-Driven Multi-Timeframe Forecasting",
+    "authors": [
+      "Nabeel Ahmad Saidd"
+    ],
+    "year": 2026,
+    "url": "https://arxiv.org/abs/2609.26822v1",
+    "access": "Preprint v1 del 20 de septiembre de 2026. Sin revisión por pares",
+    "redistribution": "unknown",
+    "relevance": "Aplicación de memorias de pesos rápidos, TTT o regla delta a series temporales o finanzas. Evidencia preliminar, casi siempre preprint, que no sustituye la comparación propia.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "shankar2012scaleinvariant",
+    "title": "A Scale-Invariant Internal Representation of Time",
+    "authors": [
+      "Karthik H. Shankar",
+      "Marc W. Howard"
+    ],
+    "year": 2012,
+    "url": "https://doi.org/10.1162/NECO_a_00212",
+    "access": "Leídas las secciones 2.1 y 6.1 a 6.2 del PDF del laboratorio.",
+    "redistribution": "unknown",
+    "relevance": "Mecanismo biológico o modelo computacional citado como inspiración. No se replica el cerebro y la traducción algorítmica necesita su propio control.",
+    "phase": [
+      3,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "shazeer2020glu",
+    "title": "GLU Variants Improve Transformer",
+    "authors": [
+      "Noam Shazeer"
+    ],
+    "year": 2020,
+    "url": "https://arxiv.org/abs/2002.05202",
+    "access": "Preprint sin sede revisada encontrada. Leída la Tabla 1.",
+    "redistribution": "unknown",
+    "relevance": "Capacidad por neurona o por parámetro. Solo justificaría un brazo con el control de más parámetros y el mismo presupuesto.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "shi2025clsurvey",
+    "title": "Continual Learning of Large Language Models: A Comprehensive Survey",
+    "authors": [
+      "Haizhou Shi",
+      "Zihao Xu",
+      "Hengyi Wang",
+      "Weiyi Qin",
+      "Wenyuan Wang",
+      "Yibin Wang",
+      "Zifeng Wang",
+      "Sayna Ebrahimi",
+      "Hao Wang"
+    ],
+    "year": 2025,
+    "url": "https://doi.org/10.1145/3735633",
+    "access": "Publicación en línea el 20 de noviembre de 2025 según Crossref. Texto editorial no leído. Leídos resumen e introducción de arXiv:2404.16789v3",
+    "redistribution": "unknown",
+    "relevance": "Problema abierto de modelos de secuencia y de lenguaje (2023 a 2026). La revisión lo traduce a una medida concreta de MARS-TITAN sin trasladar sus cifras.",
+    "phase": [
+      3,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "shi2025kronos",
+    "title": "Kronos: A Foundation Model for the Language of Financial Markets",
+    "authors": [
+      "Yu Shi",
+      "Zongliang Fu",
+      "Shuo Chen",
+      "Bohan Zhao",
+      "Wei Xu",
+      "Changshui Zhang",
+      "Jian Li"
+    ],
+    "year": 2025,
+    "url": "https://arxiv.org/abs/2508.02739",
+    "access": "Preprint arXiv:2508.02739v1 (2 ago. 2025). Publicación revisada no verificada",
+    "redistribution": "unknown",
+    "relevance": "Evidencia de modelos secuenciales, fundacionales o de aprendizaje automático sobre series y rentabilidades. Fija la señal esperable y los controles mínimos de la comparación.",
+    "phase": [
+      2,
+      4,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "shi2025timemoe",
+    "title": "Time-MoE: Billion-Scale Time Series Foundation Models with Mixture of Experts",
+    "authors": [
+      "Xiaoming Shi",
+      "Shiyu Wang",
+      "Yuqi Nie",
+      "Dianqi Li",
+      "Zhou Ye",
+      "Qingsong Wen",
+      "Ming Jin"
+    ],
+    "year": 2025,
+    "url": "https://openreview.net/forum?id=e1wDDFmlVu",
+    "access": "ICLR 2025, spotlight. Leídos el modelo, los tamaños y la comparación con modelos densos de igual número de parámetros activos.",
+    "redistribution": "unknown",
+    "relevance": "Capacidad por neurona o por parámetro. Solo justificaría un brazo con el control de más parámetros y el mismo presupuesto.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "siems2025deltaproduct",
+    "title": "DeltaProduct: Improving State-Tracking in Linear RNNs via Householder Products",
+    "authors": [
+      "Julien Siems",
+      "Timur Carstensen",
+      "Arber Zela",
+      "Frank Hutter",
+      "Massimiliano Pontil",
+      "Riccardo Grazzi"
+    ],
+    "year": 2025,
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/e1ea2520fbf9cd1600b287dde67e0a3c-Abstract-Conference.html",
+    "access": "Actas de NeurIPS 2025. Preprint asociado arXiv:2502.10297v7 del 22 de octubre de 2025",
+    "redistribution": "unknown",
+    "relevance": "Memoria de pesos rápidos por regresión en tiempo de prueba, regla delta o recurrencia lineal relacionada. Referencia de mecanismo, estabilidad y coste para el núcleo y PT1. Sin evidencia en retornos.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "snell2025ttcompute",
+    "title": "Scaling LLM Test-Time Compute Optimally Can be More Effective than Scaling Parameters for Reasoning",
+    "authors": [
+      "Charlie Snell",
+      "Jaehoon Lee",
+      "Kelvin Xu",
+      "Aviral Kumar"
+    ],
+    "year": 2025,
+    "url": "https://proceedings.iclr.cc/paper_files/paper/2025/hash/1b623663fd9b874366f3ce019fdfdd44-Abstract-Conference.html",
+    "access": "ICLR 2025, presentación oral según OpenReview. Título distinto del preprint arXiv:2408.03314. Leídas Figura 1 y Figura 8 de la versión ICLR",
+    "redistribution": "unknown",
+    "relevance": "Problema abierto de modelos de secuencia y de lenguaje (2023 a 2026). La revisión lo traduce a una medida concreta de MARS-TITAN sin trasladar sus cifras.",
+    "phase": [
+      3,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "szabadvary2024multistep",
+    "title": "Adaptive Conformal Inference for Multi-Step Ahead Time-Series Forecasting Online",
+    "authors": [
+      "Johan Hallberg Szabadváry"
+    ],
+    "year": 2024,
+    "url": "https://arxiv.org/abs/2409.14792v1",
+    "access": "Preprint v1 del 23 de septiembre de 2024. Según arXiv, la versión de congreso está en PMLR 230:250-263 (COPA 2024), no consultada. Leído el resumen",
+    "redistribution": "unknown",
+    "relevance": "Calibración conformal en línea o con retroalimentación retrasada. Motiva PT2 y el diagnóstico D9.",
+    "phase": [
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "tadros2022sleep",
+    "title": "Sleep-like unsupervised replay reduces catastrophic forgetting in artificial neural networks",
+    "authors": [
+      "Timothy Tadros",
+      "Giri P. Krishnan",
+      "Ramyaa Ramyaa",
+      "Maxim Bazhenov"
+    ],
+    "year": 2022,
+    "url": "https://doi.org/10.1038/s41467-022-34938-7",
+    "access": "Acceso abierto. Leídas las tablas 1 a 3. Código sin licencia.",
+    "redistribution": "unknown",
+    "relevance": "Mecanismo biológico o modelo computacional citado como inspiración. No se replica el cerebro y la traducción algorítmica necesita su propio control.",
+    "phase": [
+      3,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "tan2024llmts",
+    "title": "Are Language Models Actually Useful for Time Series Forecasting?",
+    "authors": [
+      "Mingtian Tan",
+      "Mike A. Merrill",
+      "Vinayak Gupta",
+      "Tim Althoff",
+      "Thomas Hartvigsen"
+    ],
+    "year": 2024,
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/6ed5bf446f59e2c6646d23058c86424b-Abstract-Conference.html",
+    "access": "NeurIPS 2024, revisado por pares. Versión consultada: arXiv:2406.16964v2 (26 oct. 2024)",
+    "redistribution": "unknown",
+    "relevance": "Evidencia de modelos secuenciales, fundacionales o de aprendizaje automático sobre series y rentabilidades. Fija la señal esperable y los controles mínimos de la comparación.",
+    "phase": [
+      2,
+      4,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "tao2026memcast",
+    "title": "MemCast: Memory-Driven Time Series Forecasting with Experience-Conditioned Reasoning",
+    "authors": [
+      "Xiaoyu Tao",
+      "Mingyue Cheng",
+      "Ze Guo",
+      "Shuo Yu",
+      "Yaguo Liu",
+      "Qi Liu",
+      "Shijin Wang"
+    ],
+    "year": 2026,
+    "url": "https://proceedings.mlr.press/v306/tao26a.html",
+    "access": "Revisado por pares (ICML 2026). Leída la copia arXiv:2602.03164v2",
+    "redistribution": "unknown",
+    "relevance": "Recuperación y memoria episódica para series temporales. Las ganancias son pequeñas cuando el control iguala parámetros. Contexto para el banco episódico.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "tire2024raf",
+    "title": "Retrieval Augmented Time Series Forecasting",
+    "authors": [
+      "Kutay Tire",
+      "Ege Onur Taga",
+      "Muhammed Emrullah Ildiz",
+      "Samet Oymak"
+    ],
+    "year": 2024,
+    "url": "https://arxiv.org/abs/2411.08249v2",
+    "access": "Preprint. Versión consultada v2 del 6 de abril de 2026. Comparte título con han2025raft",
+    "redistribution": "unknown",
+    "relevance": "Recuperación y memoria episódica para series temporales. Las ganancias son pequeñas cuando el control iguala parámetros. Contexto para el banco episódico.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "toner2024linear",
+    "title": "An Analysis of Linear Time Series Forecasting Models",
+    "authors": [
+      "William Toner",
+      "Luke Nicholas Darlow"
+    ],
+    "year": 2024,
+    "url": "https://proceedings.mlr.press/v235/toner24a.html",
+    "access": "Revisado por pares. Versión consultada: arXiv:2403.14587v2",
+    "redistribution": "unknown",
+    "relevance": "Evidencia de modelos secuenciales, fundacionales o de aprendizaje automático sobre series y rentabilidades. Fija la señal esperable y los controles mínimos de la comparación.",
+    "phase": [
+      2,
+      4,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "turrigiano2008scaling",
+    "title": "The Self-Tuning Neuron: Synaptic Scaling of Excitatory Synapses",
+    "authors": [
+      "Gina G. Turrigiano"
+    ],
+    "year": 2008,
+    "url": "https://doi.org/10.1016/j.cell.2008.10.008",
+    "access": "Revisión publicada. Texto de PMC leído parcialmente.",
+    "redistribution": "unknown",
+    "relevance": "Mecanismo biológico o modelo computacional citado como inspiración. No se replica el cerebro y la traducción algorítmica necesita su propio control.",
+    "phase": [
+      3,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "voelker2019lmu",
+    "title": "Legendre Memory Units: Continuous-Time Representation in Recurrent Neural Networks",
+    "authors": [
+      "Aaron Voelker",
+      "Ivana Kajić",
+      "Chris Eliasmith"
+    ],
+    "year": 2019,
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2019/hash/952285b9b7e7a1be5aa7849f32ffff05-Abstract.html",
+    "access": "Leídas las secciones 2 y 3.2 a 3.3 del PDF de NeurIPS.",
+    "redistribution": "unknown",
+    "relevance": "Mecanismo biológico o modelo computacional citado como inspiración. No se replica el cerebro y la traducción algorítmica necesita su propio control.",
+    "phase": [
+      3,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "vonoswald2023mesaopt",
+    "title": "Uncovering mesa-optimization algorithms in Transformers",
+    "authors": [
+      "Johannes von Oswald",
+      "Maximilian Schlegel",
+      "Alexander Meulemans",
+      "Seijin Kobayashi",
+      "Eyvind Niklasson",
+      "Nicolas Zucchet",
+      "Nino Scherrer",
+      "Nolan Miller",
+      "Mark Sandler",
+      "Blaise Agüera y Arcas",
+      "Max Vladymyrov",
+      "Razvan Pascanu",
+      "João Sacramento"
+    ],
+    "year": 2023,
+    "url": "https://arxiv.org/abs/2309.05858v2",
+    "access": "Preprint arXiv v2 del 15 de octubre de 2024 (v1 del 11 de septiembre de 2023). No se ha corroborado publicación editorial",
+    "redistribution": "unknown",
+    "relevance": "Memoria de pesos rápidos por regresión en tiempo de prueba, regla delta o recurrencia lineal relacionada. Referencia de mecanismo, estabilidad y coste para el núcleo y PT1. Sin evidencia en retornos.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "vonoswald2026mesanet",
+    "title": "MesaNet: Sequence Modeling by Locally Optimal Test-Time Training",
+    "authors": [
+      "Johannes von Oswald",
+      "Nino Scherrer",
+      "Seijin Kobayashi",
+      "Luca Versari",
+      "Songlin Yang",
+      "Maximilian Schlegel",
+      "Kaitlin Maile",
+      "Yanick Schimpf",
+      "Oliver Sieberling",
+      "Alexander Meulemans",
+      "Rif A. Saurous",
+      "Guillaume Lajoie",
+      "Charlotte Frenkel",
+      "Razvan Pascanu",
+      "Blaise Agüera y Arcas",
+      "João Sacramento"
+    ],
+    "year": 2026,
+    "url": "https://proceedings.iclr.cc/paper_files/paper/2026/hash/2c3d5a4eff20d24390a445762d61bfbb-Abstract-Conference.html",
+    "access": "Actas de ICLR 2026 (póster). Autoría según el PDF de actas, con 16 autores. El preprint arXiv:2506.05233v2 del 3 de junio de 2026 añade a Sarthak Mittal",
+    "redistribution": "unknown",
+    "relevance": "Memoria de pesos rápidos por regresión en tiempo de prueba, regla delta o recurrencia lineal relacionada. Referencia de mecanismo, estabilidad y coste para el núcleo y PT1. Sin evidencia en retornos.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "wang2024multistepcp",
+    "title": "Online conformal inference for multi-step time series forecasting",
+    "authors": [
+      "Xiaoqian Wang",
+      "Rob J. Hyndman"
+    ],
+    "year": 2024,
+    "url": "https://arxiv.org/abs/2410.13115v2",
+    "access": "Preprint. Versión consultada v2 del 2 de febrero de 2026",
+    "redistribution": "unknown",
+    "relevance": "Calibración conformal en línea o con retroalimentación retrasada. Motiva PT2 y el diagnóstico D9.",
+    "phase": [
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "wang2025smamba",
+    "title": "Is Mamba Effective for Time Series Forecasting?",
+    "authors": [
+      "Zihan Wang",
+      "Fanheng Kong",
+      "Shi Feng",
+      "Ming Wang",
+      "Xiaocui Yang",
+      "Han Zhao",
+      "Daling Wang",
+      "Yifei Zhang"
+    ],
+    "year": 2025,
+    "url": "https://doi.org/10.1016/j.neucom.2024.129178",
+    "access": "Artículo revisado por pares. Versión consultada: arXiv:2403.11144v3 (27 abr. 2024)",
+    "redistribution": "unknown",
+    "relevance": "Evidencia de modelos secuenciales, fundacionales o de aprendizaje automático sobre series y rentabilidades. Fija la señal esperable y los controles mínimos de la comparación.",
+    "phase": [
+      2,
+      4,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "wang2026testtimeregression",
+    "title": "Test-time regression: a unifying framework for designing sequence models with associative memory",
+    "authors": [
+      "Ke Alexander Wang",
+      "Jiaxin Shi",
+      "Emily B. Fox"
+    ],
+    "year": 2026,
+    "url": "https://www.jmlr.org/papers/v27/25-0903.html",
+    "access": "Publicado en junio de 2026, recibido en abril de 2025 y revisado en marzo de 2026. Licencia CC BY 4.0. Preprint asociado arXiv:2501.12352v3 del 2 de mayo de 2025",
+    "redistribution": "unknown",
+    "relevance": "Memoria de pesos rápidos por regresión en tiempo de prueba, regla delta o recurrencia lineal relacionada. Referencia de mecanismo, estabilidad y coste para el núcleo y PT1. Sin evidencia en retornos.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "west1997bayesian",
+    "title": "Bayesian Forecasting and Dynamic Models",
+    "authors": [
+      "Mike West",
+      "Jeff Harrison"
+    ],
+    "year": 1997,
+    "url": "https://doi.org/10.1007/b98971",
+    "access": "Metadatos verificados en Crossref, que no lista autores. Autoría según la editorial",
+    "redistribution": "unknown",
+    "relevance": "Fundamento de la regla bayesiana de corrección madura de PT3.",
+    "phase": [
+      3,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "whittington2017predictive",
+    "title": "An Approximation of the Error Backpropagation Algorithm in a Predictive Coding Network with Local Hebbian Synaptic Plasticity",
+    "authors": [
+      "James C. R. Whittington",
+      "Rafal Bogacz"
+    ],
+    "year": 2017,
+    "url": "https://doi.org/10.1162/NECO_a_00949",
+    "access": "Leídas las ecuaciones 2.17 a 2.19 y el resultado en MNIST.",
+    "redistribution": "unknown",
+    "relevance": "Mecanismo biológico o modelo computacional citado como inspiración. No se replica el cerebro y la traducción algorítmica necesita su propio control.",
+    "phase": [
+      3,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "wortsman2022soups",
+    "title": "Model soups: averaging weights of multiple fine-tuned models improves accuracy without increasing inference time",
+    "authors": [
+      "Mitchell Wortsman",
+      "Gabriel Ilharco",
+      "Samir Yitzhak Gadre",
+      "Rebecca Roelofs",
+      "Raphael Gontijo-Lopes",
+      "Ari S. Morcos",
+      "Hongseok Namkoong",
+      "Ali Farhadi",
+      "Yair Carmon",
+      "Simon Kornblith",
+      "Ludwig Schmidt"
+    ],
+    "year": 2022,
+    "url": "https://proceedings.mlr.press/v162/wortsman22a.html",
+    "access": "Revisado por pares (ICML 2022). Leída arXiv:2203.05482v3",
+    "redistribution": "unknown",
+    "relevance": "Promedio de pesos y ensembles. Contexto para el control de varianza PT7.",
+    "phase": [
+      4,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "wortsman2024proxies",
+    "title": "Small-scale proxies for large-scale Transformer training instabilities",
+    "authors": [
+      "Mitchell Wortsman",
+      "Peter J. Liu",
+      "Lechao Xiao",
+      "Katie Everett",
+      "Alexander Alemi",
+      "Ben Adlam",
+      "John D. Co-Reyes",
+      "Izzeddin Gur",
+      "Abhishek Kumar",
+      "Roman Novak",
+      "et al."
+    ],
+    "year": 2024,
+    "url": "https://proceedings.iclr.cc/paper_files/paper/2024/hash/d848cb2c84f0bba7f1f73cf232734c40-Abstract-Conference.html",
+    "access": "ICLR 2024, oral según OpenReview. 16 autores. Leídas figuras 1 y 2 de arXiv:2309.14322v2",
+    "redistribution": "unknown",
+    "relevance": "Problema abierto de modelos de secuencia y de lenguaje (2023 a 2026). La revisión lo traduce a una medida concreta de MARS-TITAN sin trasladar sus cifras.",
+    "phase": [
+      3,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "wu2026channelssm",
+    "title": "Channel-Dependent State Space Model for Multivariate Time Series Forecasting",
+    "authors": [
+      "Yu-Cheng Wu",
+      "Fan-Keng Sun",
+      "Li-Chun Lu",
+      "Duane S. Boning"
+    ],
+    "year": 2026,
+    "url": "https://arxiv.org/abs/2609.36453v1",
+    "access": "Preprint v1 del 29 de septiembre de 2026. Usa Gated DeltaNet por variable. Leída la Tabla 3. Sin revisión por pares",
+    "redistribution": "unknown",
+    "relevance": "Aplicación de memorias de pesos rápidos, TTT o regla delta a series temporales o finanzas. Evidencia preliminar, casi siempre preprint, que no sustituye la comparación propia.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "xiao2025finseer",
+    "title": "Retrieval-augmented Large Language Models for Financial Time Series Forecasting",
+    "authors": [
+      "Mengxi Xiao",
+      "Zihao Jiang",
+      "Lingfei Qian",
+      "Zhengyu Chen",
+      "Yueru He",
+      "Yijing Xu",
+      "Yuecheng Jiang",
+      "Dong Li",
+      "Ruey-Ling Weng",
+      "Min Peng",
+      "Jimin Huang",
+      "Sophia Ananiadou",
+      "Qianqian Xie"
+    ],
+    "year": 2025,
+    "url": "https://arxiv.org/abs/2502.05878v3",
+    "access": "Preprint v3 del 7 de junio de 2025. Autoría según metadatos de arXiv. El PDF v3 añade a Jian-Yun Nie",
+    "redistribution": "unknown",
+    "relevance": "Recuperación y memoria episódica para series temporales. Las ganancias son pequeñas cuando el control iguala parámetros. Contexto para el banco episódico.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "yang2021mup",
+    "title": "Tuning Large Neural Networks via Zero-Shot Hyperparameter Transfer",
+    "authors": [
+      "Greg Yang",
+      "Edward J. Hu",
+      "Igor Babuschkin",
+      "Szymon Sidor",
+      "Xiaodong Liu",
+      "David Farhi",
+      "Nick Ryder",
+      "Jakub Pachocki",
+      "Weizhu Chen",
+      "Jianfeng Gao"
+    ],
+    "year": 2021,
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2021/hash/8df7c2e3c3c3be098ef7b382bd2c37ba-Abstract.html",
+    "access": "En arXiv:2203.03466 el título lleva el prefijo «Tensor Programs V». La ficha de NeurIPS escribe «Ge Yang» y arXiv «Greg Yang»",
+    "redistribution": "unknown",
+    "relevance": "Problema abierto de modelos de secuencia y de lenguaje (2023 a 2026). La revisión lo traduce a una medida concreta de MARS-TITAN sin trasladar sus cifras.",
+    "phase": [
+      3,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "yang2024bci",
+    "title": "Bellman Conformal Inference: Calibrating Prediction Intervals For Time Series",
+    "authors": [
+      "Zitong Yang",
+      "Emmanuel Candès",
+      "Lihua Lei"
+    ],
+    "year": 2024,
+    "url": "https://arxiv.org/abs/2402.05203v2",
+    "access": "Preprint v2 del 9 de febrero de 2024. No localizada versión revisada en los índices consultados",
+    "redistribution": "unknown",
+    "relevance": "Calibración conformal en línea o con retroalimentación retrasada. Motiva PT2 y el diagnóstico D9.",
+    "phase": [
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "yang2024deltanet",
+    "title": "Parallelizing Linear Transformers with the Delta Rule over Sequence Length",
+    "authors": [
+      "Songlin Yang",
+      "Bailin Wang",
+      "Yu Zhang",
+      "Yikang Shen",
+      "Yoon Kim"
+    ],
+    "year": 2024,
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/d13a3eae72366e61dfdc7eea82eeb685-Abstract-Conference.html",
+    "access": "Actas de NeurIPS 2024. Preprint asociado arXiv:2406.06484v6 del 15 de enero de 2025, versión final",
+    "redistribution": "unknown",
+    "relevance": "Memoria de pesos rápidos por regresión en tiempo de prueba, regla delta o recurrencia lineal relacionada. Referencia de mecanismo, estabilidad y coste para el núcleo y PT1. Sin evidencia en retornos.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "yang2024fla",
+    "title": "FLA: A Triton-Based Library for Hardware-Efficient Implementations of Linear Attention Mechanism",
+    "authors": [
+      "Songlin Yang",
+      "Yu Zhang"
+    ],
+    "year": 2024,
+    "url": "https://github.com/fla-org/flash-linear-attention",
+    "access": "Licencia MIT. Consultado el commit 855e502613d47d8cc139153f0d87ecae5831ac3c del 9 de octubre de 2026. Versión publicada más reciente v0.5.2 del 27 de julio de 2026",
+    "redistribution": "unknown",
+    "relevance": "Memoria de pesos rápidos por regresión en tiempo de prueba, regla delta o recurrencia lineal relacionada. Referencia de mecanismo, estabilidad y coste para el núcleo y PT1. Sin evidencia en retornos.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "ye2024fan",
+    "title": "Frequency Adaptive Normalization For Non-stationary Time Series Forecasting",
+    "authors": [
+      "Weiwei Ye",
+      "Songgaojun Deng",
+      "Qiaosha Zou",
+      "Ning Gui"
+    ],
+    "year": 2024,
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/37c6d0bc4d2917dcbea693b18504bd87-Abstract-Conference.html",
+    "access": "Revisado por pares (NeurIPS 2024). Leída la copia arXiv:2409.20371v1",
+    "redistribution": "unknown",
+    "relevance": "Normalización frente a no estacionariedad. Contexto para el codificador de precios, sin propuesta asociada.",
+    "phase": [
+      4,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "yu2005uncertainty",
+    "title": "Uncertainty, Neuromodulation, and Attention",
+    "authors": [
+      "Angela J. Yu",
+      "Peter Dayan"
+    ],
+    "year": 2005,
+    "url": "https://doi.org/10.1016/j.neuron.2005.04.026",
+    "access": "Leídos el texto principal y los procedimientos experimentales del PDF del autor. La extracción de símbolos fue defectuosa.",
+    "redistribution": "unknown",
+    "relevance": "Mecanismo biológico o modelo computacional citado como inspiración. No se replica el cerebro y la traducción algorítmica necesita su propio control.",
+    "phase": [
+      3,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "yu2024kanmlp",
+    "title": "KAN or MLP: A Fairer Comparison",
+    "authors": [
+      "Runpeng Yu",
+      "Weihao Yu",
+      "Xinchao Wang"
+    ],
+    "year": 2024,
+    "url": "https://arxiv.org/abs/2407.16674",
+    "access": "Informe técnico sin sede revisada encontrada. Leída la Fig. 1. Código sin licencia.",
+    "redistribution": "unknown",
+    "relevance": "Capacidad por neurona o por parámetro. Solo justificaría un brazo con el control de más parámetros y el mismo presupuesto.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "zhai2023entropy",
+    "title": "Stabilizing Transformer Training by Preventing Attention Entropy Collapse",
+    "authors": [
+      "Shuangfei Zhai",
+      "Tatiana Likhomanenko",
+      "Etai Littwin",
+      "Dan Busbridge",
+      "Jason Ramapuram",
+      "Yizhe Zhang",
+      "Jiatao Gu",
+      "Joshua M. Susskind"
+    ],
+    "year": 2023,
+    "url": "https://proceedings.mlr.press/v202/zhai23a.html",
+    "access": "ICML 2023. Leídos el resumen, las figuras 1 y 2 y las tablas 1 y 4 de arXiv:2303.06296v2.",
+    "redistribution": "unknown",
+    "relevance": "Problema abierto de modelos de secuencia y de lenguaje (2023 a 2026). La revisión lo traduce a una medida concreta de MARS-TITAN sin trasladar sus cifras.",
+    "phase": [
+      3,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "zhang2023onenet",
+    "title": "OneNet: Enhancing Time Series Forecasting Models under Concept Drift by Online Ensembling",
+    "authors": [
+      "Yi-Fan Zhang",
+      "Qingsong Wen",
+      "Xue Wang",
+      "Weiqi Chen",
+      "Liang Sun",
+      "Zhang Zhang",
+      "Liang Wang",
+      "Rong Jin",
+      "Tieniu Tan"
+    ],
+    "year": 2023,
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2023/hash/dd6a47bc0aad6f34aa5e77706d90cdc4-Abstract-Conference.html",
+    "access": "Revisado por pares (NeurIPS 2023). Leída la copia arXiv:2309.12659v1, incluido el apéndice C.8",
+    "redistribution": "unknown",
+    "relevance": "Adaptación en línea con etiquetas retrasadas y control de fugas de información. Motiva PT3 y el diagnóstico D3.",
+    "phase": [
+      3,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "zhang2025timeraf",
+    "title": "TimeRAF: Retrieval-Augmented Foundation Model for Zero-Shot Time Series Forecasting",
+    "authors": [
+      "Huanyu Zhang",
+      "Chang Xu",
+      "Yi-Fan Zhang",
+      "Zhang Zhang",
+      "Liang Wang",
+      "Jiang Bian"
+    ],
+    "year": 2025,
+    "url": "https://doi.org/10.1109/TKDE.2025.3579137",
+    "access": "Revisado por pares según Crossref. Solo se leyó arXiv:2412.20810v1, que añade a Tieniu Tan como autor",
+    "redistribution": "unknown",
+    "relevance": "Recuperación y memoria episódica para series temporales. Las ganancias son pequeñas cuando el control iguala parámetros. Contexto para el banco episódico.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "zhang2026lact",
+    "title": "Test-Time Training Done Right",
+    "authors": [
+      "Tianyuan Zhang",
+      "Sai Bi",
+      "Yicong Hong",
+      "Kai Zhang",
+      "Fujun Luan",
+      "Songlin Yang",
+      "Kalyan Sunkavalli",
+      "William T. Freeman",
+      "Hao Tan"
+    ],
+    "year": 2026,
+    "url": "https://proceedings.iclr.cc/paper_files/paper/2026/hash/ffbfff81fb78e4bb558273b91e12e318-Abstract-Conference.html",
+    "access": "Actas de ICLR 2026 (póster). Preprint asociado arXiv:2505.23884v1 del 29 de mayo de 2025. La versión de actas añade la Tabla 9 de evaluación posterior",
+    "redistribution": "unknown",
+    "relevance": "Memoria de pesos rápidos por regresión en tiempo de prueba, regla delta o recurrencia lineal relacionada. Referencia de mecanismo, estabilidad y coste para el núcleo y PT1. Sin evidencia en retornos.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  },
+  {
+    "id": "zhao2025proceed",
+    "title": "Proactive Model Adaptation Against Concept Drift for Online Time Series Forecasting",
+    "authors": [
+      "Lifan Zhao",
+      "Yanyan Shen"
+    ],
+    "year": 2025,
+    "url": "https://doi.org/10.1145/3690624.3709210",
+    "access": "Revisado por pares (KDD 2025). Versión leída: arXiv:2412.08435v5, 18 de diciembre de 2025",
+    "redistribution": "unknown",
+    "relevance": "Adaptación en línea con etiquetas retrasadas y control de fugas de información. Motiva PT3 y el diagnóstico D3.",
+    "phase": [
+      3,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-10"
+  }
+]

@@ -16,6 +16,7 @@ from mars_titan.training import external_corpus
 from mars_titan.training.checkpoints import StopRequest
 from mars_titan.training.corpus_inputs import CorpusDataset
 from mars_titan.training.tabular_corpus import _matrix
+from tests.suite_support import requires_cuda
 from tests.training.test_reference_run import training_corpus
 
 
@@ -47,6 +48,7 @@ def _validation_disagrees_with_training(directory):
     return manifest
 
 
+@requires_cuda
 def test_cuda_selection_recovers_patience_best_model_and_session_metric(
     tmp_path, monkeypatch, recwarn
 ):
