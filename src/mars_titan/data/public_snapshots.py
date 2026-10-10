@@ -12,6 +12,7 @@ existe, es regular y sus bytes tienen la huella del manifiesto. Las capturas sig
 del benchmark: el índice no cambia `benchmark_eligible` ni la decisión de incorporarlas.
 """
 
+import argparse
 import fcntl
 import hashlib
 import json
@@ -104,6 +105,16 @@ def _records(document, run_id):
     return result
 
 
+def _diagnostics(document):
+    """Peticiones de diagnóstico sin contenido conservado, como el 429 de GDELT."""
+    found = document.get("diagnostics")
+    return [
+        dict(source_id=item.get("source_id"), http_status=item.get("http_status"))
+        for item in (found if isinstance(found, list) else [])
+        if isinstance(item, dict) and isinstance(item.get("source_id"), str)
+    ]
+
+
 def _folder_bytes(folder):
     """Bytes de los archivos regulares de una carpeta de ejecución, sin seguir enlaces."""
     total = 0
@@ -167,6 +178,7 @@ def build_index(root, output_root, *, initial=INITIAL):
                 started_at_utc=document.get("started_at_utc"),
                 finished_at_utc=document.get("finished_at_utc"),
                 records=records,
+                diagnostics=_diagnostics(document),
             )
         )
         for record in records:
@@ -282,3 +294,18 @@ def validators(index, source_id, requested_url):
                 run_id=capture["run_id"],
             )
     return None
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description="Reconstruir el índice de capturas públicas.")
+    parser.add_argument("--root", type=Path, default=Path("."))
+    parser.add_argument("--output-root", default="data/external")
+    args = parser.parse_args(argv)
+    index = build_index(args.root, args.root / args.output_root)
+    path = write_index(args.root, index)
+    print(json.dumps(dict(index=path.as_posix(), captures=len(index["captures"]))))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

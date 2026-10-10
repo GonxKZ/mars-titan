@@ -456,3 +456,12 @@ def test_transport_sends_conditions_and_reads_a_304_without_body(monkeypatch):
     with pytest.raises(refresh_public_sources.FetchError, match="ausente"):
         refresh_public_sources.fetch_url(URL, 1024, 45, "research")
     assert "--header" not in commands[1]
+
+
+def test_index_command_rebuilds_without_network(refresh, tmp_path, monkeypatch, capsys):
+    first = run(refresh, tmp_path, monkeypatch, Provider(response(VIX)), 0)
+    expected = first["index_path"].read_bytes()
+    first["index_path"].unlink()
+    assert public_snapshots.main(["--root", str(tmp_path)]) == 0
+    assert first["index_path"].read_bytes() == expected
+    assert json.loads(capsys.readouterr().out)["captures"] == 1
