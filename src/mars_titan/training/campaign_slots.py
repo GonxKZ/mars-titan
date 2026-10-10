@@ -197,12 +197,16 @@ class SlotProcess:
         """`None` mientras corre. Después, `(estado, informe o error, uso, [traza])`."""
         if self.result is not None:
             return self.result
+        # El estado del proceso se lee antes que la tubería. Si el hijo envía su resultado y
+        # termina entre las dos lecturas, sigue vivo en esta vuelta y el resultado se recoge
+        # en la siguiente, en lugar de darlo por perdido.
+        alive = self.process.is_alive()
         if self.receiver.poll():
             try:
                 self.result = self.receiver.recv()
             except EOFError:
                 self.result = None
-        if self.result is None and not self.process.is_alive():
+        if self.result is None and not alive:
             self.process.join()
             self.result = (
                 "failed",

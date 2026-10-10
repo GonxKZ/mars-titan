@@ -296,6 +296,41 @@ def test_device_must_agree_with_the_executor(tmp_path):
         check_plan(load_execution(path), plan_campaign(campaign), engine.EXECUTORS)
 
 
+def test_a_result_sent_just_before_the_process_exits_is_not_lost():
+    class Child:
+        alive, exitcode = True, None
+
+        def is_alive(self):
+            return self.alive
+
+        def join(self):
+            pass
+
+    class Receiver:
+        sent = False
+
+        def __init__(self, child):
+            self.child = child
+
+        def poll(self):
+            ready = self.sent
+            # El hijo envía su resultado y termina justo después de esta comprobación.
+            self.sent, self.child.alive, self.child.exitcode = True, False, 0
+            return ready
+
+        def recv(self):
+            return "completed", {}, {}
+
+        def close(self):
+            pass
+
+    handle = SlotProcess.__new__(SlotProcess)
+    handle.process = Child()
+    handle.receiver, handle.result = Receiver(handle.process), None
+    assert handle.poll() is None
+    assert handle.poll() == ("completed", {}, {})
+
+
 def test_a_job_locked_by_another_process_is_not_run_twice(tmp_path):
     lock = tmp_path / ".job.lock"
     with lock.open("a") as held:
