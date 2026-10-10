@@ -406,13 +406,9 @@ def run_titans_posttraining(
     adapter = case["adapter"]
     description = None
     if adapter is not None:
-        allowed = matrix["architectures"]["chronological"][cm.TITANS]["variants"]
-        _require(
-            adapter["design"] == cm.TITANS
-            and set(adapter["points"]) <= set(allowed[original["variant"]]),
-            "El brazo no pertenece a los puntos de esta variante de Titans-MAC",
-        )
-        targets = cm.titans_targets(matrix, adapter["points"])
+        _require(adapter["design"] == cm.TITANS, "El caso no adapta Titans-MAC")
+        cm.variant_arm(matrix, original["variant"], adapter)
+        targets = cm.titans_targets(matrix, adapter["points"], predictor)
         description = _attach(predictor, targets, cm.component_seed(case, "core"), seal=True)
     base = base_digest(predictor)
     posttraining = dict(
@@ -610,7 +606,7 @@ def run_readout_posttraining(
                 parent_state["model"],
                 carried=staged,
             ).eval()
-            targets = cm.titans_targets(matrix, adapter["core"])
+            targets = cm.titans_targets(matrix, adapter["core"], predictor)
             description["core"] = _attach(
                 predictor, targets, cm.component_seed(case, "core"), seal=True
             )

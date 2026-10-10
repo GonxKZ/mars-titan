@@ -1,0 +1,328 @@
+{
+  "schema_version": 1,
+  "kind": "masked_campaign_window_counts",
+  "recorded_at": "2026-10-09",
+  "campaign_config": "configs/baselines/historical-masked-campaign-a-v2.json",
+  "source": {
+    "labels": "targets-v3/labels de la edición histórica desde 2000",
+    "targets_manifest_sha256": "528dd13d1064caa98437676230dbf884cad062cde8b29db58004bd928637617b"
+  },
+  "method": "training.campaign_budget.campaign_window_counts: una fila cuenta en un tramo si tiene objetivo, su decisión cae en el tramo y su etiqueta madura antes de su final. Solo lectura, sin vistas ni modelos.",
+  "cross_check": "Los recuentos de US (19 ventanas) y CN (13 ventanas) coinciden exactamente con los de las vistas preparadas y verificadas del recibo campaign-a-views-20261009.json.",
+  "training_executed": false,
+  "final_test_opened": false,
+  "counts": {
+    "US+CN": {
+      "fold-000": {
+        "train": 1047220,
+        "validation": 159831,
+        "calibration": 82500,
+        "evaluation": 351026
+      },
+      "fold-001": {
+        "train": 1373725,
+        "validation": 177518,
+        "calibration": 90383,
+        "evaluation": 426747
+      },
+      "fold-002": {
+        "train": 1737010,
+        "validation": 211145,
+        "calibration": 121057,
+        "evaluation": 516447
+      },
+      "fold-003": {
+        "train": 2194464,
+        "validation": 257834,
+        "calibration": 134675,
+        "evaluation": 563879
+      },
+      "fold-004": {
+        "train": 2725034,
+        "validation": 286422,
+        "calibration": 141206,
+        "evaluation": 594013
+      },
+      "fold-005": {
+        "train": 3296242,
+        "validation": 300219,
+        "calibration": 152221,
+        "evaluation": 625023
+      },
+      "fold-006": {
+        "train": 3902060,
+        "validation": 312339,
+        "calibration": 161514,
+        "evaluation": 673456
+      },
+      "fold-007": {
+        "train": 4542407,
+        "validation": 340354,
+        "calibration": 168853,
+        "evaluation": 702869
+      },
+      "fold-008": {
+        "train": 5226952,
+        "validation": 353134,
+        "calibration": 176892,
+        "evaluation": 737550
+      },
+      "fold-009": {
+        "train": 5935465,
+        "validation": 372861,
+        "calibration": 188826,
+        "evaluation": 788155
+      },
+      "fold-010": {
+        "train": 6688188,
+        "validation": 397448,
+        "calibration": 202337,
+        "evaluation": 841366
+      },
+      "fold-011": {
+        "train": 7492162,
+        "validation": 424592,
+        "calibration": 215475,
+        "evaluation": 897846
+      },
+      "fold-012": {
+        "train": 8353116,
+        "validation": 454473,
+        "calibration": 225473,
+        "evaluation": 939542
+      },
+      "fold-013": {
+        "train": 9267839,
+        "validation": 471139,
+        "calibration": 236979,
+        "evaluation": 994251
+      },
+      "fold-014": {
+        "train": 10219347,
+        "validation": 502779,
+        "calibration": 251529,
+        "evaluation": 1005685
+      },
+      "fold-015": {
+        "train": 11221375,
+        "validation": 487338,
+        "calibration": 274430,
+        "evaluation": 1142411
+      },
+      "fold-016": {
+        "train": 12263623,
+        "validation": 572926,
+        "calibration": 292617,
+        "evaluation": 1197927
+      },
+      "fold-017": {
+        "train": 13428180,
+        "validation": 600730,
+        "calibration": 302425,
+        "evaluation": 1214376
+      },
+      "fold-018": {
+        "train": 14639357,
+        "validation": 609090,
+        "calibration": 301977,
+        "evaluation": 1221822
+      }
+    },
+    "US": {
+      "fold-000": {
+        "train": 1047220,
+        "validation": 159831,
+        "calibration": 82500,
+        "evaluation": 351026
+      },
+      "fold-001": {
+        "train": 1373725,
+        "validation": 177518,
+        "calibration": 90383,
+        "evaluation": 379845
+      },
+      "fold-002": {
+        "train": 1737010,
+        "validation": 189048,
+        "calibration": 96663,
+        "evaluation": 413405
+      },
+      "fold-003": {
+        "train": 2124328,
+        "validation": 205177,
+        "calibration": 107960,
+        "evaluation": 451569
+      },
+      "fold-004": {
+        "train": 2547759,
+        "validation": 230343,
+        "calibration": 112361,
+        "evaluation": 475747
+      },
+      "fold-005": {
+        "train": 3005665,
+        "validation": 238867,
+        "calibration": 123252,
+        "evaluation": 502951
+      },
+      "fold-006": {
+        "train": 3491718,
+        "validation": 251005,
+        "calibration": 129778,
+        "evaluation": 536815
+      },
+      "fold-007": {
+        "train": 4006035,
+        "validation": 270539,
+        "calibration": 134561,
+        "evaluation": 558205
+      },
+      "fold-008": {
+        "train": 4551605,
+        "validation": 280053,
+        "calibration": 139673,
+        "evaluation": 590148
+      },
+      "fold-009": {
+        "train": 5113609,
+        "validation": 298520,
+        "calibration": 151383,
+        "evaluation": 635880
+      },
+      "fold-010": {
+        "train": 5717247,
+        "validation": 319746,
+        "calibration": 164450,
+        "evaluation": 690027
+      },
+      "fold-011": {
+        "train": 6368893,
+        "validation": 347653,
+        "calibration": 177158,
+        "evaluation": 737095
+      },
+      "fold-012": {
+        "train": 7074992,
+        "validation": 372332,
+        "calibration": 185903,
+        "evaluation": 771198
+      },
+      "fold-013": {
+        "train": 7826630,
+        "validation": 385496,
+        "calibration": 195052,
+        "evaluation": 821962
+      },
+      "fold-014": {
+        "train": 8607484,
+        "validation": 414945,
+        "calibration": 209484,
+        "evaluation": 890629
+      },
+      "fold-015": {
+        "train": 9448837,
+        "validation": 446733,
+        "calibration": 229872,
+        "evaluation": 962580
+      },
+      "fold-016": {
+        "train": 10361800,
+        "validation": 481994,
+        "calibration": 247360,
+        "evaluation": 1008423
+      },
+      "fold-017": {
+        "train": 11343957,
+        "validation": 504255,
+        "calibration": 254913,
+        "evaluation": 1021782
+      },
+      "fold-018": {
+        "train": 12363376,
+        "validation": 510913,
+        "calibration": 254563,
+        "evaluation": 1027173
+      }
+    },
+    "CN": {
+      "fold-000": {
+        "train": 410342,
+        "validation": 61334,
+        "calibration": 31736,
+        "evaluation": 136641
+      },
+      "fold-001": {
+        "train": 536372,
+        "validation": 69815,
+        "calibration": 34292,
+        "evaluation": 144664
+      },
+      "fold-002": {
+        "train": 675347,
+        "validation": 73081,
+        "calibration": 37219,
+        "evaluation": 147402
+      },
+      "fold-003": {
+        "train": 821856,
+        "validation": 74341,
+        "calibration": 37443,
+        "evaluation": 152275
+      },
+      "fold-004": {
+        "train": 970941,
+        "validation": 77702,
+        "calibration": 37887,
+        "evaluation": 151339
+      },
+      "fold-005": {
+        "train": 1123269,
+        "validation": 76939,
+        "calibration": 38317,
+        "evaluation": 160751
+      },
+      "fold-006": {
+        "train": 1278124,
+        "validation": 82141,
+        "calibration": 39570,
+        "evaluation": 168344
+      },
+      "fold-007": {
+        "train": 1441209,
+        "validation": 85643,
+        "calibration": 41927,
+        "evaluation": 172289
+      },
+      "fold-008": {
+        "train": 1611863,
+        "validation": 87834,
+        "calibration": 42045,
+        "evaluation": 115056
+      },
+      "fold-009": {
+        "train": 1772538,
+        "validation": 40605,
+        "calibration": 44558,
+        "evaluation": 179831
+      },
+      "fold-010": {
+        "train": 1901823,
+        "validation": 90932,
+        "calibration": 45257,
+        "evaluation": 189504
+      },
+      "fold-011": {
+        "train": 2084223,
+        "validation": 96475,
+        "calibration": 47512,
+        "evaluation": 192594
+      },
+      "fold-012": {
+        "train": 2275981,
+        "validation": 98177,
+        "calibration": 47414,
+        "evaluation": 194649
+      }
+    }
+  }
+}

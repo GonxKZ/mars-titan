@@ -48,6 +48,7 @@ from mars_titan.environments.walk_forward_receipt import prediction_fingerprint,
 from mars_titan.evaluation import walk_forward_comparison as comparison
 from mars_titan.evaluation.splits import PARTITIONS
 
+from . import campaign_numerics, campaign_schedule
 from .campaign_plan import (
     CARRY,
     FIT,
@@ -63,6 +64,7 @@ from .campaign_plan import (
     arm_output,
     check_campaign,
     count_jobs,
+    launch_blockers,
     load_campaign,
     plan_campaign,
 )
@@ -162,8 +164,24 @@ def scope_views(directory, scope, campaign):
     return dict(report_sha256=digest, edition=edition, windows=windows)
 
 
-def prepare_views(path, parent, output):
-    """Preparar las vistas de cada ámbito desde la supervisión histórica, sin ajustar nada."""
+def _eligibility(campaign, scope):
+    """Protocolos de elegibilidad por mercado que la comparación declara para un ámbito."""
+    declared = campaign["comparison_config"]
+    design = declared.get(comparison.JOINT_FIELD)
+    if design is None or design["joint_scope"] != scope:
+        return None
+    folder = Path(campaign["comparison_path"]).parent
+    return {
+        market: (folder / name).resolve() for market, name in design["market_eligibility"].items()
+    }
+
+
+def prepare_views(path, parent, output, *, scopes=None):
+    """Preparar las vistas de cada ámbito desde la supervisión histórica, sin ajustar nada.
+
+    `scopes` limita la preparación a algunos ámbitos de la campaña. Un ámbito con
+    elegibilidad por mercado en la comparación la aplica al preparar la unión.
+    """
     from .joint_temporal_corpus import prepare_joint_temporal_corpus
     from .reference_campaign import campaign_views
     from .temporal_corpus import prepare_temporal_corpus
@@ -173,8 +191,13 @@ def prepare_views(path, parent, output):
     parent, output = Path(parent), Path(output)
     declared = campaign["comparison_config"]
     folder = Path(campaign["comparison_path"]).parent
+    scopes = list(campaign["scopes"]) if scopes is None else list(scopes)
+    _require(
+        scopes and len(set(scopes)) == len(scopes) and set(scopes) <= set(campaign["scopes"]),
+        "Los ámbitos que se preparan deben ser de la campaña",
+    )
     prepared = {}
-    for scope in campaign["scopes"]:
+    for scope in scopes:
         destination = output / scope
         protocols = {
             market: (folder / name).resolve()
@@ -188,6 +211,7 @@ def prepare_views(path, parent, output):
                     destination,
                     input_policy=policy,
                     recover_annual_boundaries=True,
+                    eligibility=_eligibility(campaign, scope),
                 )
             else:
                 market = next(iter(protocols))
@@ -528,6 +552,8 @@ def _identity(campaign, views):
         input_policy=campaign["input_policy"],
         stopping_rule=campaign["rule"],
         variant=campaign["variant"],
+        # Solo la versión 2 declara la precisión, así que la identidad de la 1 no cambia.
+        **({"numerics": campaign["numerics"]} if campaign.get("numerics") else {}),
         views={
             scope: dict(
                 report_sha256=record["report_sha256"],
@@ -706,6 +732,11 @@ class _Campaign:
             receipt.get("identity") == identity,
             f"El trabajo confirmado {job['id']} cambió de identidad",
         )
+        numerics = self.campaign.get("numerics")
+        _require(
+            numerics is None or receipt.get("numerics") == numerics,
+            f"El recibo de {job['id']} registra otra precisión numérica",
+        )
         _require(
             sha256(self.output / receipt["report"]["path"]) == receipt["report"]["sha256"],
             f"Un artefacto confirmado de {job['id']} ha cambiado",
@@ -737,6 +768,9 @@ class _Campaign:
         if receipt is not None:
             return None, receipt
         executor = self.executors[job["model"], job["kind"]]
+        if self.campaign.get("numerics"):
+            # En cada trabajo, antes de que su ejecutor cree modelos.
+            campaign_numerics.apply(self.campaign["numerics"])
         section = self.campaign["neural" if job["family"] == NEURAL else "tabular"]
         view = self.views[job["scope"]]["windows"][job["window"]]
         joint = sources.get("joint")
@@ -810,6 +844,9 @@ class _Campaign:
         quantile = arm_output(self.campaign, job["arm"]) == QUANTILE_HEAD
         columns = comparison.COLUMNS + (comparison.QUANTILE_COLUMNS if quantile else ())
         _require(report.get("final_test_opened") is False, f"{job['id']} abre la reserva final")
+        numerics = self.campaign.get("numerics")
+        if numerics:
+            campaign_numerics.require_job(numerics, job["id"], report)
         predictions = {}
         for partition in COMPARED:
             record = report["predictions"][partition]
@@ -851,6 +888,8 @@ class _Campaign:
             final_test_opened=False,
             confirmed_at_utc=datetime.now(UTC).isoformat(),
         )
+        if numerics:
+            receipt["numerics"] = campaign_numerics.current()
         self.same_rows(job, receipt)
         path = self.folder(job) / "receipt.json"
         atomic_json(path, receipt)
@@ -940,7 +979,12 @@ class _Campaign:
         until = self.labels_used_until(scope, window, receipt)
         resolved = self.campaign["comparison_config"]["resolved_scopes"][scope]
         folder = self.output / "windows" / scope / window / arm / f"seed-{seed}"
-        for market in resolved["markets"]:
+        # Un mercado sin filas en algún tramo comparado de la ventana no tiene recibo.
+        for market in [
+            market
+            for market in resolved["markets"]
+            if all(market in value["markets"] for value in receipt["predictions"].values())
+        ]:
             record = dict(
                 kind=WINDOW_RECEIPT_KIND,
                 schema_version=1,
@@ -996,7 +1040,16 @@ def _summary(output, identity, jobs, receipts, status, **extra):
 
 
 def run_campaign(
-    path, views, output, *, executors=None, lease=None, stop=None, storage=None, execution=None
+    path,
+    views,
+    output,
+    *,
+    executors=None,
+    lease=None,
+    stop=None,
+    storage=None,
+    execution=None,
+    window=None,
 ):
     """Ejecutar o reanudar la campaña. Los ejecutores y la reserva se pueden sustituir.
 
@@ -1005,13 +1058,21 @@ def run_campaign(
     `execution` es la ruta de una declaración de ejecución o una `Execution`. Sin ella se
     conserva la ejecución anterior. La declaración no entra en la identidad de la campaña,
     así que una campaña puede reanudarse con otra concurrencia.
+    `window` limita la ejecución a una ventana de campaña (`campaign_schedule`) y a las
+    dependencias que tenga en ventanas anteriores. El resumen describe entonces esa ventana.
     """
     from .checkpoints import StopRequest
 
     require_learning_allowed("la campaña con máscaras")
     campaign = load_campaign(path)
+    blockers = launch_blockers(campaign)
+    _require(not blockers, "La campaña no se puede lanzar: " + "; ".join(blockers))
     jobs = plan_campaign(campaign)
     count_jobs(campaign, jobs)
+    scope_of_run = {}
+    if window is not None:
+        jobs = campaign_schedule.window_jobs(campaign, jobs, window)
+        scope_of_run = dict(window=window)
     if execution is None:
         execution = legacy_execution(campaign)
     elif not isinstance(execution, Execution):
@@ -1070,9 +1131,9 @@ def run_campaign(
 
         def disk_report():
             if disk is None:
-                return {}
+                return dict(scope_of_run)
             pending = {} if pause is None else dict(pause=pause)
-            return dict(disk=dict(launch=launch, guard=disk[0].state(), **pending))
+            return dict(disk=dict(launch=launch, guard=disk[0].state(), **pending), **scope_of_run)
 
         _summary(output, identity, jobs, state.receipts, "running", **record, **disk_report())
         try:
@@ -1448,7 +1509,9 @@ def write_sources(path, views, output, scope, *, comparison_path=None, window=No
 
     Sin `comparison_path` se valida con la comparación de la campaña, que incluye los
     brazos de las familias sin entrenador conectado. Una comparación declarada con un
-    subconjunto de brazos permite evaluar los brazos ya producidos. Con `window` se
+    subconjunto de brazos permite evaluar los brazos ya producidos. Un brazo prestado del
+    ámbito conjunto apunta a las predicciones del brazo conjunto en la ventana emparejada,
+    que la comparación restringe a las filas del mercado del ámbito. Con `window` se
     publica solo esa ventana en `sources/windows/<ventana>/`, validada con la comparación
     limitada a ella, para guardar sus agregados en cuanto termina.
     """
@@ -1457,22 +1520,50 @@ def write_sources(path, views, output, scope, *, comparison_path=None, window=No
     validation = comparison.load_config(
         Path(comparison_path or campaign["comparison_path"]).resolve()
     )
+    _require(scope in validation["resolved_scopes"], "La comparación no declara el ámbito")
     if window is not None:
         validation = comparison.restrict_windows(validation, scope, [window])
-    produced = {spec["arm"]: spec for spec in _arm_specs(campaign)}
+    resolved = validation["resolved_scopes"][scope]
+    borrowed, joint = resolved["borrowed"], resolved.get("joint_scope")
+    produced = {spec["arm"]: spec for spec in _arm_specs(campaign, scope)}
     wanted = {
-        name: arm for name, arm in validation["arms"].items() if arm["output"] != "zero_control"
+        name: arm for name, arm in resolved["arms"].items() if arm["output"] != "zero_control"
     }
-    missing = sorted(set(wanted) - set(produced))
+    missing = sorted(set(wanted) - set(produced) - set(borrowed))
     _require(
         not missing,
         f"Faltan productores para {', '.join(missing)}. Declara una comparación con los "
         "brazos disponibles o conecta su entrenador",
     )
     jobs = [job for job in plan_campaign(campaign) if job["scope"] == scope]
+    origins = {}
+    if borrowed:
+        _require(joint in campaign["scopes"], f"La campaña no ajusta el ámbito {joint}")
+        origins = {spec["arm"]: spec for spec in _arm_specs(campaign, joint)}
+        _require(
+            set(borrowed.values()) <= set(origins),
+            f"Los brazos prestados no se ajustan en {joint}",
+        )
+        # Los trabajos conjuntos de los brazos prestados y de los padres de los que parten.
+        closure, pending = set(), list(borrowed.values())
+        while pending:
+            arm = pending.pop()
+            if arm not in closure:
+                closure.add(arm)
+                pending += [origins[arm]["parent"]] if origins[arm]["parent"] else []
+        jobs = [
+            job
+            for job in plan_campaign(campaign)
+            if job["scope"] == joint and job["arm"] in closure
+        ] + jobs
     if window is not None:
+        # La ventana del ámbito y, con brazos prestados, su ventana conjunta emparejada.
+        pairs = {(scope, window)}
+        if borrowed:
+            pairs.add((joint, resolved["joint_windows"][window]))
         jobs = with_dependencies(
-            plan_campaign(campaign), [job["id"] for job in jobs if job["window"] == window]
+            plan_campaign(campaign),
+            [job["id"] for job in jobs if (job["scope"], job["window"]) in pairs],
         )
     for job in jobs:
         case, _, sources = state.resolve(job)
@@ -1485,20 +1576,28 @@ def write_sources(path, views, output, scope, *, comparison_path=None, window=No
         windows, folder = {window: windows[window]}, folder / "windows" / window
     arms, rows = {}, {}
     for name, arm in wanted.items():
+        origin = borrowed.get(name)
+        spec = origins[origin] if origin else produced[name]
         _require(
-            sorted(arm["seeds"]) == sorted(produced[name]["seeds"]),
+            sorted(arm["seeds"]) == sorted(spec["seeds"]),
             f"La comparación declara otras semillas para {name}",
         )
         arms[name] = {}
         for seed in arm["seeds"]:
             entries = arms[name][str(seed)] = {}
             for window in windows:
-                key, receipt = state.selected(scope, window, name, seed)
-                entry = dict(
-                    input_policy=campaign["input_policy"], view_sha256=windows[window]["sha256"]
-                )
+                if origin:
+                    pair = resolved["joint_windows"][window]
+                    key, receipt = state.selected(joint, pair, origin, seed)
+                    view_sha256 = state.views[joint]["windows"][pair]["sha256"]
+                else:
+                    key, receipt = state.selected(scope, window, name, seed)
+                    view_sha256 = windows[window]["sha256"]
+                entry = dict(input_policy=campaign["input_policy"], view_sha256=view_sha256)
                 for partition, record in receipt["predictions"].items():
-                    rows.setdefault((window, partition), {})[key] = record["rows_sha256"]
+                    # Las filas de un brazo prestado incluyen el otro mercado del conjunto.
+                    if not origin:
+                        rows.setdefault((window, partition), {})[key] = record["rows_sha256"]
                     # Una salida puntual no tiene cuantiles que calibrar.
                     if partition == "evaluation" or arm["output"] == QUANTILE_HEAD:
                         entry[partition] = dict(
@@ -1511,14 +1610,20 @@ def write_sources(path, views, output, scope, *, comparison_path=None, window=No
             len(set(digests.values())) == 1,
             f"{len(set(digests.values()))} conjuntos de filas distintos en {window} ({partition})",
         )
+
+    def window_entry(window, value):
+        entry = dict(view=dict(path=value["path"], sha256=value["sha256"]))
+        if borrowed:
+            pair = state.views[joint]["windows"][resolved["joint_windows"][window]]
+            entry["joint_view"] = dict(path=pair["path"], sha256=pair["sha256"])
+        return entry
+
     manifest = dict(
         schema_version=1,
         kind=comparison.SOURCES_KIND,
         scope=scope,
         input_policy=campaign["input_policy"],
-        windows={
-            w: dict(view=dict(path=v["path"], sha256=v["sha256"])) for w, v in windows.items()
-        },
+        windows={w: window_entry(w, v) for w, v in windows.items()},
         arms=arms,
     )
     destination = folder / f"{scope}.json"
@@ -1551,12 +1656,15 @@ def main(argv=None):
     prepare = commands.add_parser("prepare", help="Preparar las vistas de cada ámbito")
     execute = commands.add_parser("run", help="Ejecutar o reanudar la campaña")
     sources = commands.add_parser("sources", help="Publicar el manifiesto de fuentes")
-    for command in (check, prepare, execute, sources):
+    views = commands.add_parser("views", help="Validar vistas ya preparadas sin ajustar nada")
+    for command in (check, prepare, execute, sources, views):
         command.add_argument("--campaign", type=Path, required=True)
     prepare.add_argument("--parent", type=Path, required=True)
     prepare.add_argument("--output", type=Path, required=True)
-    for command in (execute, sources):
+    prepare.add_argument("--scope", action="append", choices=tuple(comparison.SCOPES))
+    for command in (execute, sources, views):
         command.add_argument("--views", action="append", required=True)
+    for command in (execute, sources):
         command.add_argument("--output", type=Path, required=True)
     execute.add_argument(
         "--storage",
@@ -1569,17 +1677,29 @@ def main(argv=None):
         type=Path,
         help="Declaración de ejecución con ranuras GPU, trabajadores CPU, memoria y lectura",
     )
+    execute.add_argument("--window", help="Ventana de campaña que se ejecuta, con sus fases base")
     sources.add_argument("--scope", choices=tuple(comparison.SCOPES), required=True)
     sources.add_argument("--comparison", type=Path)
     args = parser.parse_args(argv)
     if args.command == "check":
         result = check_campaign(args.campaign)
     elif args.command == "prepare":
-        prepared = prepare_views(args.campaign, args.parent, args.output)
+        prepared = prepare_views(args.campaign, args.parent, args.output, scopes=args.scope)
         result = {
             scope: dict(record, windows=len(record["windows"]))
             for scope, record in prepared.items()
         }
+    elif args.command == "views":
+        campaign = load_campaign(args.campaign)
+        checked = {
+            scope: scope_views(directory, scope, campaign)
+            for scope, directory in _views_argument(args.views).items()
+        }
+        _require(set(checked) == set(campaign["scopes"]), "Faltan vistas de algún ámbito")
+        result = dict(
+            status="checked",
+            views={scope: dict(r, windows=len(r["windows"])) for scope, r in checked.items()},
+        )
     elif args.command == "run":
         result = run_campaign(
             args.campaign,
@@ -1587,6 +1707,7 @@ def main(argv=None):
             args.output,
             storage=args.storage,
             execution=args.execution,
+            window=args.window,
         )
         result.pop("jobs")
     else:

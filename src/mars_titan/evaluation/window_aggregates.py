@@ -278,9 +278,11 @@ def _long_short_identity(config, sources, window_id, edition):
     from mars_titan.simulation.session_prices import SessionPrices
 
     start, end = sources["windows"][window_id]["evaluation"]
+    # Como en los libros, solo los mercados elegibles de la ventana tienen precios.
     prices = {
         market: SessionPrices(edition, market, start, end).identity()
         for market in sources["markets"]
+        if window_id in sources["eligible"][market]
     }
     value = dict(identity(config, sources, window_id, code=LONG_SHORT_SOURCES), prices=prices)
     return json.loads(json.dumps(value))

@@ -321,7 +321,7 @@ def test_later_stage_of_each_variant_starts_from_that_campaign_and_matrix(varian
     matrix = declared["config"] if variant == "A" else "configs/posttraining/adapter-matrix-v2.json"
     assert stage["matrix_path"] == str(Path(matrix).resolve())
     counts = campaign_stage.count_stage(stage)
-    expected = dict(A=(7182, 1302), B=(1479, 2436))[variant]
+    expected = dict(A=(10332, 1302), B=(1479, 2436))[variant]
     assert (counts["training_jobs"], counts["prediction_jobs"]) == expected
 
 

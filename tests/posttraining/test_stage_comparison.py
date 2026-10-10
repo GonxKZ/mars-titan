@@ -18,8 +18,8 @@ import pytest
 
 from mars_titan.data.input_policy import HISTORICAL_MASKED, policy_identity
 from mars_titan.data.storage import sha256
-from mars_titan.models.quantile_head import QUANTILE_COLUMNS
-from mars_titan.posttraining import campaign_stage
+from mars_titan.models.quantile_head import QUANTILE_COLUMNS, QUANTILE_HEAD
+from mars_titan.posttraining import adapter_matrix, campaign_stage
 from mars_titan.posttraining import stage_comparison as compare
 from tests.evaluation.test_comparison_sources import masked_view, save
 from tests.posttraining.campaign_fixture import write_configs
@@ -193,6 +193,21 @@ def by_hand_session_mae(stage, arm, windows):
     return float(np.mean(sessions)), len(sessions)
 
 
+def matrix_arms(stage, base_arm, family):
+    """Brazos adaptados de una red según la matriz que declara la etapa, en su orden.
+
+    Son los casos de una semilla sin papel de control, con el nombre que les da la etapa.
+    """
+    items = adapter_matrix.cases(
+        stage["matrix"], stage["matrix_sha256"], family, head=QUANTILE_HEAD
+    )
+    return [
+        campaign_stage.arm_name(base_arm, item["id"].split("/", 1)[1])
+        for item in items
+        if item["case"]["seed"] == 42 and item["control"] is None
+    ]
+
+
 def test_repository_declaration_derives_every_parent_from_the_stage_plan():
     loaded = compare.load_declaration(DECLARATION)
     # Ridge y XGBoost solo tienen el padre congelado en su cadena y no entran en los contrastes.
@@ -209,20 +224,16 @@ def test_repository_declaration_derives_every_parent_from_the_stage_plan():
     ]
     transformer = loaded["groups"]["transformer_compact"]
     assert transformer["full_continuation"] == "transformer_compact__full_continuation"
-    # La matriz da a transformer_compact los puntos de lectura que no tienen las demás.
-    assert transformer["adapted"] == [
-        f"transformer_compact__{point}"
-        for point in (
-            "head",
-            "readout",
-            "fusion",
-            "head_readout",
-            "head_fusion",
-            "readout_fusion",
-            "head_readout_fusion",
-            "fusion_full_rank",
+    # Los brazos adaptados salen de la matriz, con la variedad de #444 incluida. Solo
+    # transformer_compact tiene los puntos de lectura.
+    for base_arm, family in loaded["stage"]["campaign"]["neural"]["arms"].items():
+        assert loaded["groups"][base_arm]["adapted"] == matrix_arms(
+            loaded["stage"], base_arm, family
         )
-    ]
+    assert {"transformer_compact__readout", "transformer_compact__readout_dora"} <= set(
+        transformer["adapted"]
+    )
+    assert not any("readout" in arm for arm in loaded["groups"]["gru"]["adapted"])
     for base_arm, config in loaded["configs"].items():
         group = loaded["groups"][base_arm]
         inherited = loaded["stage"]["campaign"]["comparison_config"]
@@ -411,4 +422,8 @@ def test_cli_checks_the_declaration_without_reading_predictions(capsys):
     assert compare.main(["check", "--declaration", str(DECLARATION)]) == 0
     result = json.loads(capsys.readouterr().out)
     assert result["final_test_opened"] is False
-    assert result["parents"]["gru"]["arms"] == 7
+    # La base, su padre congelado, la continuación completa y los brazos de la matriz.
+    stage = campaign_stage.load_stage(
+        DECLARATION.parent / json.loads(DECLARATION.read_text())["stage"]
+    )
+    assert result["parents"]["gru"]["arms"] == 3 + len(matrix_arms(stage, "gru", "gru"))

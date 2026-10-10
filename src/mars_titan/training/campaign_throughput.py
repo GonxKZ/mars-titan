@@ -45,6 +45,7 @@ from pathlib import Path
 from mars_titan.data.cohort_files import read_manifest
 from mars_titan.data.input_policy import HISTORICAL_MASKED
 
+from . import campaign_numerics
 from .campaign_plan import (
     CM,
     CM_ARMS,
@@ -389,16 +390,19 @@ def _totals(families):
     return dict(declared_options=declared, fastest_options=fastest, without_estimate=missing)
 
 
-def estimate_hours(campaign, counts, rates, *, stage=None, policy_stage=None, ablation_stage=None):
+def estimate_hours(
+    campaign, counts, rates, *, stage=None, policy_stage=None, ablation_stage=None, epochs=None
+):
     """Horas previstas por familia, opción, ámbito y brazo de una variante.
 
     `counts` asigna a cada ámbito y ventana sus filas por tramo y `rates` a cada familia
     medida sus caudales. Las familias declaradas sin medir y los tabulares quedan como no
     medidos. Con `stage`, añade la etapa de la matriz de adaptadores de esa variante. Con
     `policy_stage`, añade aparte la estimación orientativa de la etapa de políticas y con
-    `ablation_stage`, la de la ablación de modalidades.
+    `ablation_stage`, la de la ablación de modalidades. `epochs` sustituye las épocas de la
+    regla de parada, por ejemplo con las épocas efectivas previstas de una parada temprana.
     """
-    epochs = campaign["rule"]["max_epochs"]
+    epochs = campaign["rule"]["max_epochs"] if epochs is None else epochs
     jobs = plan_campaign(campaign)
     families = {}
     for family in (NEURAL, *CHRONOLOGICAL):
@@ -731,16 +735,15 @@ def measure_posttraining(stage, view, *, batches=50, warmup=5):
 def _measured_cases(stage):
     """Lo que mide `measure_posttraining`: brazos de las redes, sus casos y el presupuesto.
 
-    A declara la matriz v3, que añade los casos de Titans-MAC, y B la v2. Los casos de las
-    redes solo difieren en la huella de la matriz que los declara, así que se comparan sin
-    ella y una sola medida sirve para las dos etapas.
+    Los casos se comparan sin la huella de la matriz que los declara, porque un mismo caso
+    cuesta lo mismo en la v2 y en la v3.
     """
     from mars_titan.models.quantile_head import QUANTILE_HEAD
     from mars_titan.posttraining import adapter_matrix
 
     cases = {}
     for arm, family in stage["families"].items():
-        cases[arm] = []
+        cases[arm] = {}
         for item in adapter_matrix.cases(
             stage["matrix"], stage["matrix_sha256"], family, head=QUANTILE_HEAD
         ):
@@ -748,8 +751,31 @@ def _measured_cases(stage):
             case = dict(item["case"])
             if "adapter" in case:
                 case["adapter"] = dict(case["adapter"], matrix_sha256=None)
-            cases[arm].append([item["id"], case])
-    return json.dumps(dict(cases=cases, budget=stage["matrix"]["budget"]), sort_keys=True)
+            cases[arm][item["id"]] = json.dumps(case, sort_keys=True)
+    return dict(cases=cases, budget=json.dumps(stage["matrix"]["budget"], sort_keys=True))
+
+
+def _covers(measured, other):
+    """True si la medida de una etapa sirve para otra: mismo presupuesto y sus casos dentro."""
+    return measured["budget"] == other["budget"] and all(
+        arm in measured["cases"]
+        and all(measured["cases"][arm].get(key) == case for key, case in cases.items())
+        for arm, cases in other["cases"].items()
+    )
+
+
+def covering_stage(stages):
+    """Etapa de adaptadores que se mide, porque contiene los casos de todas las demás.
+
+    A declara la matriz v3, con los casos de Titans-MAC y los brazos de la variedad de
+    adaptadores, y B la v2. Los casos de las redes de B están todos en A con el mismo
+    presupuesto, así que una sola medida de A estima las dos etapas.
+    """
+    measured = [_measured_cases(stage) for stage in stages]
+    for stage, cases in zip(stages, measured, strict=True):
+        if all(_covers(cases, other) for other in measured):
+            return stage
+    raise ValueError("Ninguna etapa de adaptadores contiene los casos medidos de las demás")
 
 
 def _view_fold(dataset):
@@ -1514,11 +1540,10 @@ def measure_campaigns(
     loaded = [load_stage(path) for path in stages]
     by_campaign = {stage["campaign"]["path"]: stage for stage in loaded}
     _require(
-        len(by_campaign) == len(loaded)
-        and set(by_campaign) <= {c["path"] for c in campaigns}
-        and len({_measured_cases(stage) for stage in loaded}) <= 1,
-        "Cada etapa de adaptadores parte de una campaña medida, con los mismos casos medidos",
+        len(by_campaign) == len(loaded) and set(by_campaign) <= {c["path"] for c in campaigns},
+        "Cada etapa de adaptadores parte de una campaña medida distinta",
     )
+    measured_stage = covering_stage(loaded) if loaded else None
     policies = [policy_plan.load_stage(path) for path in rl_stages]
     by_policies = {stage["campaign"]["path"]: stage for stage in policies}
     _require(
@@ -1552,6 +1577,12 @@ def measure_campaigns(
         work is not None or not any(reference.get(family) for family in CHRONOLOGICAL),
         "Las familias cronológicas necesitan un directorio de trabajo para sus índices",
     )
+    declared = {json.dumps(c.get("numerics"), sort_keys=True) for c in campaigns}
+    _require(len(declared) == 1, "Las variantes medidas deben declarar la misma precisión")
+    numerics = reference.get("numerics")
+    if numerics:
+        # Se mide con la precisión con la que se entrenará.
+        campaign_numerics.apply(numerics)
     started = time.perf_counter()
     with GpuLease() as lease:
         rates = {NEURAL: measure_rates(reference, first_view, **batched)}
@@ -1564,7 +1595,7 @@ def measure_campaigns(
         if reference.get(CM):
             rates[CM] = measure_cm_v1(reference, first_view, work, **chronological)
         if loaded:
-            rates[POSTTRAINING] = measure_posttraining(loaded[0], first_view, **batched)
+            rates[POSTTRAINING] = measure_posttraining(measured_stage, first_view, **batched)
         if policies:
             rates[POLICY_STAGE] = policy_throughput.measure_policies(policies[0], **stepped)
         resources = lease.record
@@ -1589,6 +1620,7 @@ def measure_campaigns(
         if prepared is None
         else dict(path=prepared["path"], sha256=prepared["sha256"], status=prepared["status"]),
         rates=rates,
+        numerics=None if numerics is None else campaign_numerics.current(),
         estimates=estimates,
         comparison=_comparison(estimates),
         resources=resources,

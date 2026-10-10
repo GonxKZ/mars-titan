@@ -183,6 +183,35 @@ def test_contrasts_use_the_declared_families_with_paired_sessions(joint):
     assert report["assumptions"]["china_t_plus_one"]
 
 
+def test_a_market_outside_its_eligible_windows_stays_out_of_the_portfolio(joint, tmp_path):
+    """Con el diseño conjunto, un mercado no elegible en una ventana no entra en sus libros.
+
+    La elegibilidad se cambia en las fuentes ya validadas, como la dejaría `joint_design`
+    para China antes de su historia mínima, sin declarar un diseño conjunto completo.
+    """
+    study = joint[0]
+    config = walk.resolve_config(study.config_path)
+    sources = walk.load_sources(study.sources_path, config, study.scope)
+    sources["eligible"]["CN"] = ["fold-001"]
+    scoped = walk.scope_config(config, study.scope)
+    declared = config["long_short"]
+    books, _, sessions, record = comparison._window(
+        sources, scoped, "fold-000", study.edition, declared
+    )
+    assert set(record["prices"]) == {"US"}
+    assert set(sessions["market"].tolist()) == {sources["markets"].index("US")}
+    assert all(len(book["gross_return"]) == len(sessions["time"]) for book in books.values())
+    _, _, both, record = comparison._window(sources, scoped, "fold-001", study.edition, declared)
+    assert set(record["prices"]) == {"US", "CN"} and len(set(both["market"].tolist())) == 2
+    # Los agregados de la retención v2 guardan los mismos libros y solo los precios elegibles.
+    folder = tmp_path / "aggregates"
+    window_aggregates.write_long_short(folder, scoped, sources, "fold-000", study.edition)
+    stored = window_aggregates.read_long_short(folder, scoped, sources, "fold-000", study.edition)
+    assert window_aggregates.same(stored[0], books)
+    identity = window_aggregates._long_short_identity(scoped, sources, "fold-000", study.edition)
+    assert set(identity["prices"]) == {"US"}
+
+
 def test_unexecutable_rows_leave_cash_and_are_counted(tmp_path, edition):
     study = PortfolioStudy(tmp_path, edition, scope="US")
 

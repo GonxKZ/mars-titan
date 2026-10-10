@@ -226,9 +226,10 @@ def families(stage, output, benchmarks):
     )
     result = []
     for scope in stage["scopes"]:
-        windows = [row["window"] for row in scope_windows(stage, scope)]
         markets = stage["campaign"]["comparison_config"]["resolved_scopes"][scope]["markets"]
         for market in markets:
+            # En el ámbito conjunto, cada mercado solo tiene sus ventanas elegibles.
+            windows = [row["window"] for row in scope_windows(stage, scope, market)]
             for predictor in stage["predictors"]:
                 arms = [
                     arm

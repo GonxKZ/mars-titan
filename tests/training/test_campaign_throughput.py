@@ -41,6 +41,13 @@ CAMPAIGNS = {
 STAGES = {
     v: Path(f"configs/posttraining/historical-masked-adapter-stage-{v.lower()}.json") for v in "AB"
 }
+# Brazos de la sección `variety` de la matriz v3 (#444), que solo declara la etapa A.
+VARIETY = {
+    arm["id"]
+    for arm in json.loads(Path("configs/posttraining/adapter-matrix-v3.json").read_text())[
+        "variety"
+    ]["arms"]
+}
 CANDIDATE = Path("configs/candidate/chronological-training.json")
 EXTENSIONS = Path("configs/baselines/historical-masked-campaign-extensions.json")
 TITANS_RECIPE = Path("configs/titans/chronological-training-historical-masked.json")
@@ -297,7 +304,9 @@ def growing(campaign, step):
 
 @pytest.mark.parametrize(
     ("variant", "fits", "predictions", "parents"),
-    [("A", 3654, 630, 42 * 15), ("B", 1479, 2436, 17 * 15)],
+    # A ajusta en las redes los 51 casos de la v3 por ventana y semilla, 22 de ellos de la
+    # variedad de adaptadores, y B los 29 de la v2.
+    [("A", 6426, 630, 42 * 15), ("B", 1479, 2436, 17 * 15)],
 )
 def test_posttraining_hours_cover_every_stage_job_and_each_parent_cache(
     variant, fits, predictions, parents
@@ -351,16 +360,25 @@ def test_posttraining_hours_cover_every_stage_job_and_each_parent_cache(
     assert unmeasured["families"][throughput.POSTTRAINING] == dict(status="not_measured")
 
 
-def test_both_stages_share_the_measured_cases_despite_their_matrix_versions():
-    # A declara la matriz v3 y B la v2: los casos de las redes solo cambian en la huella.
+def test_the_measured_stage_contains_the_cases_of_both_matrix_versions():
+    # A declara la matriz v3 y B la v2. Los casos de las redes de B están en A salvo por la
+    # huella, y A añade los brazos de la variedad, así que se mide A en cualquier orden.
     a, b = (campaign_stage.load_stage(STAGES[variant]) for variant in "AB")
     assert a["matrix_sha256"] != b["matrix_sha256"]
-    assert throughput._measured_cases(a) == throughput._measured_cases(b)
+    measured_a, measured_b = (throughput._measured_cases(stage) for stage in (a, b))
+    assert throughput._covers(measured_a, measured_b)
+    assert not throughput._covers(measured_b, measured_a)
+    assert throughput.covering_stage([b, a]) is a and throughput.covering_stage([a, b]) is a
+    for arm, cases in measured_b["cases"].items():
+        extra = set(measured_a["cases"][arm]) - set(cases)
+        assert extra and all(key.split("/", 1)[1] in VARIETY for key in extra), arm
+    # Otro presupuesto o una red que A no mide dejan a B sin medida.
     budget = copy.deepcopy(b)
     budget["matrix"]["budget"]["batch_size"] *= 2
-    fewer = dict(b, families={arm: family for arm, family in b["families"].items() if arm != "gru"})
-    for other in (budget, fewer):
-        assert throughput._measured_cases(other) != throughput._measured_cases(a)
+    fewer = dict(a, families={arm: family for arm, family in a["families"].items() if arm != "gru"})
+    for stages in ([a, budget], [fewer, b]):
+        with pytest.raises(ValueError, match="Ninguna etapa"):
+            throughput.covering_stage(stages)
 
 
 def test_variant_b_costs_less_than_a_with_the_same_rates():
@@ -564,11 +582,22 @@ def test_matrix_measurement_covers_every_case_without_changing_the_parent(
     rates = throughput.measure_posttraining(
         stage, views / "fold-018/manifest.json", batches=1, warmup=0
     )
-    assert built == [42] * 5
+    # Los puntos medidos son los casos de una semilla que la matriz da a la GRU, también los
+    # de la variedad de adaptadores.
+    declared = [
+        item["id"].split("/", 1)[1]
+        for item in adapter_matrix.cases(
+            stage["matrix"], stage["matrix_sha256"], "gru", head=QUANTILE_HEAD
+        )
+        if item["case"]["seed"] == 42
+    ]
+    assert built == [42] * len(declared)
     assert len(optim_module._global_optimizer_pre_hooks) == hooks
     ((name, points),) = rates["gru"].items()
     assert name == "gru-00"
-    assert set(points) == {"full_continuation", "head", "fusion", "head+fusion", "fusion_full_rank"}
+    assert list(points) == declared
+    assert {"full_continuation", "head", "fusion", "head+fusion", "fusion_full_rank"} < set(points)
+    assert {"fusion_dora", "fusion_ia3", "fusion_parallel_adapter", "bias"} < set(points)
     for point, record in points.items():
         assert record["train"] > 0 and record["inference"] > 0, point
         assert record["measured_train_rows"] == record["measured_inference_rows"] == 1

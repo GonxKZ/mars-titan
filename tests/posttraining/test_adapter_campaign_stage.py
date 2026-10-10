@@ -23,6 +23,7 @@ from mars_titan.environments.walk_forward_receipt import read_window_receipt
 from mars_titan.evaluation import walk_forward_comparison as comparison
 from mars_titan.models.quantile_head import QUANTILE_COLUMNS, QUANTILE_HEAD
 from mars_titan.posttraining import adapter_matrix, campaign_stage, matrix_runs, staged_chain
+from mars_titan.posttraining import chronological_matrix as cm
 from mars_titan.training.campaign_plan import plan_campaign
 from mars_titan.training.learning_hold import LearningHoldError
 from tests.posttraining.campaign_fixture import CpuLease, base_campaign
@@ -30,12 +31,6 @@ from tests.posttraining.real_only import real_data_only
 
 CONFIGS = Path("configs/posttraining")
 FINAL_TEST = int(np.datetime64("2024-01-01", "us").astype(np.int64))
-# Por ventana y semilla: cuatro brazos y la continuación en cada red recurrente y DLinear,
-# ocho brazos y la continuación en el Transformer compacto, y los casos de Titans-MAC de la
-# matriz v3 (cinco en el codificador directo y en MAC sin memoria, nueve con memoria fija o
-# en línea).
-NEURAL, TITANS = 4 * 5 + 9, 5 + 5 + 9 + 9
-CASES = NEURAL + TITANS
 # Padres congelados por ventana: uno por semilla en las cinco redes y las cuatro variantes de
 # Titans, el único de Ridge y los tres de XGBoost, cuya cadena solo tiene ese padre.
 FROZEN_PARENTS = 3 * (5 + 4) + 1 + 3
@@ -43,6 +38,31 @@ FROZEN_PARENTS = 3 * (5 + 4) + 1 + 3
 
 def micros(day):
     return int(np.datetime64(day, "us").astype(np.int64))
+
+
+def matrix_cases(stage):
+    """Casos de la matriz por ventana y semilla, sumados sobre los brazos base de la etapa.
+
+    Se leen de la matriz y no de una lista fija. Con la v3 y su variedad son 82: nueve en
+    cada red recurrente y DLinear (cuatro brazos de la v2, cuatro de la variedad y la
+    continuación), quince en el Transformer compacto (ocho, seis y la continuación) y los de
+    Titans-MAC (cinco en el codificador directo y en MAC sin memoria, nueve con memoria fija
+    y doce en línea, con sus tres brazos de la variedad).
+    """
+    active, _ = campaign_stage.stage_arms(stage)
+    matrix, digest = stage["matrix"], stage["matrix_sha256"]
+    total = 0
+    for spec in active.values():
+        if spec["design"] == campaign_stage.TABULAR:
+            continue
+        if spec["design"] is None:
+            items = adapter_matrix.cases(matrix, digest, spec["family"], head=QUANTILE_HEAD)
+        else:
+            items = cm.cases(
+                matrix, digest, spec["family"], variant=spec["variant"], bank=spec["bank"]
+            )
+        total += sum(item["case"]["seed"] == 42 for item in items)
+    return total
 
 
 def test_stage_a_plans_every_later_window_from_the_previous_parent():
@@ -54,10 +74,12 @@ def test_stage_a_plans_every_later_window_from_the_previous_parent():
         "real_edition_only",
     )
     counts = result["counts"]
-    assert (counts["training_jobs"], counts["prediction_jobs"]) == (7182, 1302)
+    assert (counts["training_jobs"], counts["prediction_jobs"]) == (10332, 1302)
     assert counts["selection_jobs"] == 1395
     stage = campaign_stage.load_stage(path)
-    assert stage["limits"] == dict(max_training_jobs=7182, max_prediction_jobs=1302)
+    assert stage["limits"] == dict(max_training_jobs=10332, max_prediction_jobs=1302)
+    cases = matrix_cases(stage)
+    assert cases == 82
     assert result["awaiting_sections"] == {}
     assert result["excluded_controls"].keys() == {"linear_residual"}
     assert result["objectives"]["adapters"] == "neural_pinball"
@@ -66,10 +88,10 @@ def test_stage_a_plans_every_later_window_from_the_previous_parent():
         # La ventana 0 no tiene padre: no hay postentrenamiento, solo la cadena de la base.
         assert entry["windows"] == windows and len(entry["fitted_windows"]) == windows - 1
         assert "fold-000" not in entry["fitted_windows"]
-        assert entry["training_jobs"] == (windows - 1) * 3 * CASES
+        assert entry["training_jobs"] == (windows - 1) * 3 * cases
         assert entry["prediction_jobs"] == (windows - 1) * FROZEN_PARENTS
         assert entry["selection_jobs"] == windows * FROZEN_PARENTS
-        assert len(entry["arms"]) == CASES + 11
+        assert len(entry["arms"]) == cases + 11
         for arm, seeds in entry["arms"].items():
             assert comparison._name(arm)
             kind = "frozen" if arm.endswith("__frozen_parent") else "fit"
@@ -539,7 +561,7 @@ def test_command_checks_the_declared_stage_without_reading_data(capsys):
     assert campaign_stage.main(["check", "--stage", str(path)]) == 0
     printed = json.loads(capsys.readouterr().out)
     assert printed["status"] == "checked" and printed["scientific_training_started"] is False
-    assert printed["counts"]["training_jobs"] == 7182
+    assert printed["counts"]["training_jobs"] == 10332
 
 
 def test_matrix_seeds_must_match_the_seeds_of_each_parent(tmp_path):

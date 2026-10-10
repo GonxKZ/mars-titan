@@ -13,6 +13,9 @@ optimizador, el caudal de las familias declaradas y estima las horas de las vari
 indicadas. `extensions` comprueba sin leer datos la declaración preparada de la GRU candidata,
 MARS-TITAN y CM-v1 y sus recuentos. `storage` estima el disco de la campaña y de sus etapas
 con los recuentos de las vistas y tablas sintéticas, sin leer objetivos ni ajustar.
+`budget` proyecta las horas de una campaña con un caudal supuesto o medido y el factor de
+caudal necesario para un objetivo de horas. `schedule` muestra las fases de cada ventana de
+campaña con sus trabajos, en el orden en que se ejecutan.
 `rolling` recorre la campaña ventana a ventana con la retención v2 y `regenerate`
 repite por inferencia, sin ajustar, las predicciones por fila de un trabajo confirmado.
 """
@@ -24,6 +27,8 @@ import sys
 # mundos sintéticos de experimentos anteriores que alcanzan los adaptadores.
 COMMANDS = {
     "throughput": "mars_titan.training.campaign_throughput",
+    "budget": "mars_titan.training.campaign_budget",
+    "schedule": "mars_titan.training.campaign_schedule",
     "extensions": "mars_titan.training.campaign_extensions",
     "posttraining": "mars_titan.posttraining.campaign_stage",
     "rl": "mars_titan.simulation.campaign_stage",

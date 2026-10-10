@@ -1,10 +1,13 @@
 """Comparar la cartera larga y corta por cuartiles de los brazos de una comparación walk-forward.
 
-Lee la configuración declarada (versión 4, sección ``long_short``) y el mismo manifiesto
-de fuentes que ``walk_forward_comparison``, con sus comprobaciones: política, vistas,
-ventanas, tramo de evaluación, reserva de 2024 cerrada y mismas filas y objetivos en todos
-los brazos. Las predicciones se leen con ``_read_predictions``, la única lectura por fila.
-Los precios proceden de la edición sin ajustar (``simulation.session_prices``).
+Lee la configuración declarada (versión 4 o posterior, sección ``long_short``) y el mismo
+manifiesto de fuentes que ``walk_forward_comparison``, con sus comprobaciones: política,
+vistas, ventanas, tramo de evaluación, reserva de 2024 cerrada y mismas filas y objetivos
+en todos los brazos. Las predicciones se leen con ``_read_predictions``, la única lectura
+por fila. Los precios proceden de la edición sin ajustar (``simulation.session_prices``).
+Con el diseño conjunto de la versión 5 se aplican las mismas exclusiones que en la
+comparación: un mercado solo entra en las ventanas en las que es elegible y un brazo
+prestado del modelo conjunto conserva solo las filas del mercado de su ámbito.
 
 Cada ventana y brazo produce un libro por sesión. Las sesiones de todas las ventanas se
 unen y cada mercado se informa por separado, porque una cartera no mezcla monedas ni
@@ -85,7 +88,8 @@ def _window(sources, config, window_id, edition, declared):
     """Libros por sesión de todos los brazos y semillas en una ventana, con las mismas filas."""
     window = sources["windows"][window_id]
     start, end = window["evaluation"]
-    prices = {market: SessionPrices(edition, market, start, end) for market in sources["markets"]}
+    markets = [market for market in sources["markets"] if window_id in sources["eligible"][market]]
+    prices = {market: SessionPrices(edition, market, start, end) for market in markets}
     options = {key: declared[key] for key in ("fraction", "min_assets", "exposure")}
     books, unfilled, reference, targets, execution = {}, {}, None, None, None
     for name, arm in _ordered(config["arms"]):
@@ -96,6 +100,7 @@ def _window(sources, config, window_id, edition, declared):
             else:
                 record = sources["files"][name, seed, window_id]["evaluation"]
                 table, prediction = walk._read_predictions(record, walk.COLUMNS), None
+                table = walk._restricted(table, sources, window_id, name)[0]
             panel = walk._panel(
                 table,
                 window,
@@ -251,6 +256,8 @@ def evaluate_long_short(config_path, sources_path, scope, edition, *, aggregates
     _require(SECTION in config, "La configuración no declara la cartera larga y corta")
     declared = config[SECTION]
     sources = walk.load_sources(sources_path, config, scope)
+    # Desde aquí, los brazos y las familias son los del ámbito evaluado.
+    config = walk.scope_config(config, scope)
     parts, sessions, unfilled, windows = {}, [], Counter(), {}
     for window_id in sources["windows"]:
         if aggregates is None:

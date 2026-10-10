@@ -40,8 +40,8 @@ def explicit_fastpath():
 
 
 def spec(arm):
-    """Puntos del núcleo y forma de la lectura episódica del brazo en la matriz."""
-    found = {item["id"]: item for item in cm.arms(MATRIX, "mars_titan")}
+    """Puntos del núcleo y forma de la lectura del brazo en la matriz, incluida la reserva."""
+    found = {item["id"]: item for item in cm.arms(MATRIX, "mars_titan", reserve=True)}
     return found[arm]
 
 
