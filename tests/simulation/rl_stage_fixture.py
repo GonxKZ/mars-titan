@@ -18,6 +18,7 @@ from types import SimpleNamespace
 import pytest
 
 from mars_titan.data.storage import atomic_json, sha256
+from mars_titan.posttraining import staged_chain
 from mars_titan.simulation import campaign_stage, native_policy_runs
 from mars_titan.training import masked_campaign as engine
 from mars_titan.training.label_maturity import FIT_PARTITIONS, label_maturity
@@ -166,11 +167,13 @@ def base_campaign(root, variant, *, ending=None):
 def publish_chain(base, chain, *, seed=42, change=None):
     """Publicar la cadena de cada ventana y predictor con el contrato del posentrenamiento.
 
-    La ventana 0 elige el estado de la base. En las demás el estado elegido es una
-    continuación cuyo recibo copia las predicciones del estado elegido de la base en esa
-    ventana: la prueba solo necesita predicciones fuera de muestra con sus huellas, no un
-    ajuste. `change(window, arm, selection, receipt)` altera la selección o el recibo del
-    mercado antes de escribirlos, y la selección se escribe la última, como en la etapa.
+    La ventana 0 elige el estado de la base. En las demás compiten el padre congelado y una
+    continuación con mejor validación, que gana con `chain_validation_score_v1`. Su recibo
+    copia las predicciones del estado elegido de la base en esa ventana: la prueba solo
+    necesita predicciones fuera de muestra con sus huellas, no un ajuste. La selección tiene
+    los campos que escribe la etapa de adaptadores y se comprueba con su propio lector.
+    `change(window, arm, selection, receipt)` altera la selección o el recibo del mercado
+    antes de escribirlos, y la selección se escribe la última, como en la etapa.
     """
     _, state = engine._confirmed_state(base.campaign, base.views, base.output)
     views = state.views["US"]["windows"]
@@ -202,8 +205,20 @@ def publish_chain(base, chain, *, seed=42, change=None):
                 parent=dict(id=selected_job, sha256=receipt_sha256),
                 labels_used_until=until,
             )
+            selected = dict(kind=kind, arm=arm, job=selected_job, receipt_sha256=receipt_sha256)
+            first = index == 0
+            candidates = [
+                dict(
+                    kind="frozen_parent",
+                    arm=staged_chain.frozen_arm(arm),
+                    job=f"US/{window}/{staged_chain.frozen_arm(arm)}/frozen-s{seed}",
+                    receipt_sha256="9" * 64,
+                    score=1.0,
+                ),
+                dict(selected, score=0.5),
+            ]
             selection = dict(
-                kind=campaign_stage.CHAIN_SELECTION_KIND,
+                kind=staged_chain.SELECTION_KIND,
                 schema_version=1,
                 campaign_sha256="a" * 64,
                 stage_sha256="b" * 64,
@@ -211,28 +226,23 @@ def publish_chain(base, chain, *, seed=42, change=None):
                 window=window,
                 base_arm=arm,
                 seed=seed,
-                rule="chain_validation_score_v1",
-                parent_window=None if index == 0 else names[index - 1],
-                parent=None,
-                candidates=[],
-                selected=dict(
-                    kind=kind,
-                    arm=arm,
-                    job=selected_job,
-                    receipt_sha256=receipt_sha256,
-                    state=dict(path="state.pt", sha256="c" * 64),
-                ),
-                fit_rows=None,
+                rule=staged_chain.RULE,
+                parent_window=None if first else names[index - 1],
+                parent=None if first else dict(id=f"US/{names[index - 1]}/{arm}", sha256="8" * 64),
+                candidates=[] if first else candidates,
+                selected=selected,
+                state=dict(path="state.pt", sha256="c" * 64),
+                fit_rows=None if first else dict(rows=1, sha256="7" * 64),
                 markets={},
                 labels_used_until=until,
                 confirmed_at_utc="2026-10-09T00:00:00+00:00",
             )
             if change is not None:
                 change(window, arm, selection, receipt)
-            destination = chain / "windows/US" / window / f"{arm}__chain" / f"seed-{seed}"
+            destination = staged_chain.chain_folder(chain, "US", window, arm, seed)
             atomic_json(destination / "US.json", receipt)
             selection["markets"] = selection["markets"] or {"US": sha256(destination / "US.json")}
-            atomic_json(destination / "selection.json", selection)
+            atomic_json(destination / staged_chain.SELECTION, selection)
     return chain
 
 

@@ -29,6 +29,7 @@ from pathlib import Path
 
 from mars_titan.data.cohort_files import read_manifest
 from mars_titan.evaluation import walk_forward_comparison as comparison
+from mars_titan.posttraining.staged_chain import chain_job_id
 from mars_titan.training.campaign_plan import DECLARED, _arm_specs, load_campaign
 
 from . import window_tapes
@@ -80,16 +81,6 @@ DATA_POLICY = "real_edition_only"
 BASE_SELECTED = "base_campaign_selected_v1"
 CHAIN = "posttraining_chain_v1"
 PREDICTOR_SOURCES = (BASE_SELECTED, CHAIN)
-CHAIN_SUFFIX = "__chain"
-
-
-def chain_job_id(scope, window, arm, seed):
-    """Selección de la cadena que confirma el predictor de una ventana en el posentrenamiento.
-
-    Mismo formato que `training.campaign_chain.chain_job_id`, del plan de la campaña A. Las
-    dos definiciones se unifican al integrar las dos ramas en `develop`.
-    """
-    return f"{scope}/{window}/{arm}{CHAIN_SUFFIX}/select-s{seed}"
 
 
 _STAGE = {

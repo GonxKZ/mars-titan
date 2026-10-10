@@ -50,6 +50,7 @@ from pathlib import Path
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.environments.walk_forward_receipt import read_window_receipt
+from mars_titan.posttraining import staged_chain
 from mars_titan.training import masked_campaign
 from mars_titan.training.campaign_plan import plan_campaign
 from mars_titan.training.learning_hold import LearningHoldError, require_learning_allowed
@@ -58,7 +59,6 @@ from . import native_policy_runs, window_tapes
 from .policy_plan import (
     BASE_SELECTED,
     CARRY,
-    CHAIN_SUFFIX,
     FIT,
     MARKET_INDEX,
     REFERENCE,
@@ -607,25 +607,21 @@ def campaign_source(base, campaign_output, seed):
     return source
 
 
-# Contrato de la cadena: la etapa de posentrenamiento publica, por ámbito, ventana, brazo de
-# la campaña base y semilla, un recibo #390 por mercado y una selección escrita la última.
-CHAIN_SELECTION_KIND = "campaign_chain_selection"
-CHAIN_BASE = "base"
-CHAIN_STATES = (CHAIN_BASE, "frozen_parent", "adapter", "continuation")
-
-
 def chain_source(base, chain_output, seed, campaign_output):
     """Recibo y predicciones del predictor de la cadena de cada ventana.
 
     El predictor de la ventana k es el estado que el posentrenamiento elige con `val_k`:
     adaptador, continuación o padre congelado, y en la ventana 0 el estado elegido de la
     campaña base. Su `selection.json`, escrito el último, confirma la ventana: sin él no hay
-    cinta. La huella del recibo del mercado debe ser la que fija la selección, y el recibo
-    debe identificar el trabajo elegido, con la huella de su recibo confirmado y la de sus
-    predicciones de evaluación. Su `labels_used_until` debe ser la maduración real de las
-    etiquetas de las vistas de la ventana y de la anterior (las del padre), recalculada aquí
-    con `training.label_maturity`. Así ninguna cinta lleva predicciones de un estado que
-    ajustó, eligió o calibró con etiquetas posteriores a su primera decisión.
+    cinta. La selección se lee con `posttraining.staged_chain.read_selection`, el mismo
+    lector que usa la etapa que la escribe, así que la regla de elección, los candidatos y
+    la huella y el padre de cada recibo de mercado se comprueban con un único contrato.
+    Además, el recibo confirmado del trabajo elegido debe tener la huella que fija la
+    selección y las huellas de evaluación del mercado. Su `labels_used_until` debe ser la
+    maduración real de las etiquetas de las vistas de la ventana y de la anterior (las del
+    padre), recalculada aquí con `training.label_maturity`. Así ninguna cinta lleva
+    predicciones de un estado que ajustó, eligió o calibró con etiquetas posteriores a su
+    primera decisión.
     """
     from mars_titan.training.label_maturity import FIT_PARTITIONS, label_maturity
 
@@ -642,36 +638,16 @@ def chain_source(base, chain_output, seed, campaign_output):
         return max(maturity[(scope, name)] for name in read)
 
     def source(scope, market, window, predictor):
-        label = f"{scope}/{window}/{predictor}{CHAIN_SUFFIX}"
-        folder = chain_output / "windows" / label / f"seed-{seed}"
+        label = f"{scope}/{window}/{staged_chain.chain_arm(predictor)}"
+        selection = staged_chain.read_selection(chain_output, scope, window, predictor, seed)
+        _require(selection is not None, f"La cadena de {label} no tiene confirmada su selección")
         _require(
-            (folder / "selection.json").is_file(),
-            f"La cadena de {label} no tiene confirmada su selección",
-        )
-        selection = read_manifest(folder / "selection.json", 1024**2)[0]
-        selected = selection.get("selected")
-        _require(
-            selection.get("kind") == CHAIN_SELECTION_KIND
-            and selection.get("schema_version") == 1
-            and [selection.get(key) for key in ("scope", "window", "base_arm", "seed")]
-            == [scope, window, predictor, seed]
-            and isinstance(selected, dict)
-            and selected.get("kind") in CHAIN_STATES
-            and (selected["kind"] == CHAIN_BASE) == (selection.get("parent_window") is None),
-            f"La selección de la cadena de {label} no corresponde a la ventana pedida",
-        )
-        path = folder / f"{market}.json"
-        _require(
-            selection["markets"].get(market) is not None and path.is_file(),
+            market in selection["receipts"],
             f"La cadena de {label} no publica recibo de {market}",
         )
-        document, digest = read_manifest(path, 1024**2)
-        _require(
-            digest == selection["markets"][market],
-            f"El recibo de {market} de {label} no es el que confirmó la selección",
-        )
-        receipt = read_window_receipt(document)
-        root = campaign_output if selected["kind"] == CHAIN_BASE else chain_output
+        receipt, selected = selection["receipts"][market], selection["selected"]
+        # Solo la primera ventana elige el estado de la base, cuyo recibo está en la campaña.
+        root = campaign_output if selection["parent_window"] is None else chain_output
         emitted, emitted_digest = read_manifest(
             root / "jobs" / selected["job"] / "receipt.json", 8 * 1024**2
         )
@@ -679,16 +655,13 @@ def chain_source(base, chain_output, seed, campaign_output):
         expected = record["markets"].get(market)
         _require(
             emitted_digest == selected["receipt_sha256"]
-            and receipt.parent == (selected["job"], selected["receipt_sha256"])
             and expected is not None
             and dict(receipt.predictions).get(window_tapes.SEGMENT)
             == (expected["rows"], expected["sha256"]),
             f"El recibo de {market} de {label} no corresponde al estado elegido",
         )
         _require(
-            receipt.labels_used_until
-            == selection.get("labels_used_until")
-            == labels_used_until(scope, window),
+            receipt.labels_used_until == labels_used_until(scope, window),
             f"El recibo de {market} de {label} no declara la maduración real de las etiquetas "
             "que leyó el estado elegido",
         )

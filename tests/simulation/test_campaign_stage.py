@@ -859,8 +859,16 @@ def _chain_change(field, value):
         elif key == "parent.sha256":
             receipt["parent"]["sha256"] = value
         elif key == "selected.receipt_sha256":
+            # Selección, candidato y recibo coinciden: solo el recibo del trabajo lo detecta.
             selection["selected"]["receipt_sha256"] = value
+            for candidate in selection["candidates"]:
+                if candidate["job"] == selection["selected"]["job"]:
+                    candidate["receipt_sha256"] = value
             receipt["parent"]["sha256"] = value
+        elif key == "candidates.score":
+            for candidate in selection["candidates"]:
+                if candidate["kind"] == "frozen_parent":
+                    candidate["score"] = value
         else:
             target[key] = value
 
@@ -868,22 +876,39 @@ def _chain_change(field, value):
 
 
 CHAIN_TAMPERED = {
-    "other_window": (_chain_change("selection.window", "fold-999"), "ventana pedida"),
-    "other_seed": (_chain_change("selection.seed", 43), "ventana pedida"),
-    "other_kind": (_chain_change("selection.kind", "masked_campaign_job"), "ventana pedida"),
-    "base_with_parent": (_chain_change("selection.selected.kind", "base"), "ventana pedida"),
-    "unknown_state": (_chain_change("selection.selected.kind", "best_in_test"), "ventana pedida"),
-    "other_receipt": (_chain_change("selection.markets", {"US": "0" * 64}), "confirmó"),
+    "other_window": (_chain_change("selection.window", "fold-999"), "no cumple su contrato"),
+    "other_seed": (_chain_change("selection.seed", 43), "no cumple su contrato"),
+    "other_kind": (_chain_change("selection.kind", "masked_campaign_job"), "no cumple su contrato"),
+    "base_with_parent": (_chain_change("selection.selected.kind", "base"), "no sigue la regla"),
+    "unknown_state": (
+        _chain_change("selection.selected.kind", "best_in_test"),
+        "no sigue la regla",
+    ),
+    # El padre congelado empata con la continuación y solo se sustituye con una mejora estricta.
+    "parent_not_beaten": (_chain_change("selection.candidates.score", 0.5), "no sigue la regla"),
+    "other_receipt": (
+        _chain_change("selection.markets", {"US": "0" * 64}),
+        "no corresponde a su selección",
+    ),
     "other_job_receipt": (
         _chain_change("selection.selected.receipt_sha256", "d" * 64),
         "estado elegido",
     ),
-    "checkpoint_as_parent": (_chain_change("receipt.parent.sha256", "e" * 64), "estado elegido"),
+    "checkpoint_as_parent": (
+        _chain_change("receipt.parent.sha256", "e" * 64),
+        "no es el del predictor elegido",
+    ),
     "other_predictions": (_chain_change("receipt.evaluation", "f" * 64), "estado elegido"),
     "earlier_label_limit": (_chain_change("labels_used_until", -1), "maduración real"),
     "later_label_limit": (_chain_change("labels_used_until", 1), "maduración real"),
-    "receipt_label_limit": (_chain_change("receipt.labels_used_until", -1), "maduración real"),
-    "selection_label_limit": (_chain_change("selection.labels_used_until", 1), "maduración real"),
+    "receipt_label_limit": (
+        _chain_change("receipt.labels_used_until", -1),
+        "no es el del predictor elegido",
+    ),
+    "selection_label_limit": (
+        _chain_change("selection.labels_used_until", 1),
+        "no es el del predictor elegido",
+    ),
 }
 
 
