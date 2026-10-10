@@ -41,6 +41,13 @@ solo mercado compara los controles separados con el mismo brazo conjunto restrin
 las filas de su mercado (``<brazo><sufijo>``), en la ventana con los mismos tramos, con una
 familia de diferencias conjunto menos separado. Sin esta sección cada ámbito compara todos
 los brazos con todas sus filas, como antes.
+
+Cualquier versión admite además la sección opcional de contrastes secundarios de capacidad
+predictiva (``predictive_ability``): Diebold-Mariano con la corrección de Harvey, SPA,
+Reality Check, StepM, MCS y el diagnóstico de longitud de bloque de Politis y White,
+calculados con ``arch`` y ``statsmodels`` sobre las pérdidas diarias de cada familia. Su
+presencia no cambia ninguna otra salida del informe. Esas dos bibliotecas son del extra
+``research`` y solo se cargan al evaluar una configuración que declara la sección.
 """
 
 import argparse
@@ -62,7 +69,12 @@ from mars_titan.data import prediction_files
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.input_policy import masked_inputs, policy_identity
 from mars_titan.data.storage import atomic_json, outside_source, sha256
-from mars_titan.evaluation import long_short, modality_ablation, modality_strata
+from mars_titan.evaluation import (
+    long_short,
+    modality_ablation,
+    modality_strata,
+    predictive_ability,
+)
 from mars_titan.evaluation.forecast_panel import WEIGHTINGS, ForecastPanel, SessionSeries
 from mars_titan.evaluation.forecast_scores import (
     COVERAGE_ERROR,
@@ -135,7 +147,8 @@ STRATA_FIELD = "modality_strata"
 ABLATION_FIELD = "modality_ablation"
 LONG_SHORT_FIELD = "long_short"
 JOINT_FIELD = "joint_design"
-# Secciones secundarias que añade cada versión de la configuración.
+PREDICTIVE_FIELD = "predictive_ability"
+# Secciones secundarias que exige cada versión de la configuración.
 SECTIONS = {
     1: set(),
     2: {STRATA_FIELD},
@@ -143,6 +156,8 @@ SECTIONS = {
     4: {STRATA_FIELD, ABLATION_FIELD, LONG_SHORT_FIELD},
     5: {STRATA_FIELD, ABLATION_FIELD, LONG_SHORT_FIELD, JOINT_FIELD},
 }
+# Secciones secundarias que cualquier versión admite sin exigirlas.
+OPTIONAL_SECTIONS = {PREDICTIVE_FIELD}
 _JOINT_FIELDS = {
     "declared_at",
     "joint_scope",
@@ -426,14 +441,17 @@ def validate_config(config, digest, folder):
     """Validar una configuración ya leída. ``folder`` resuelve las rutas de los protocolos.
 
     Cada versión añade las secciones secundarias de ``SECTIONS``. La 4 añade la cartera
-    larga y corta por cuartiles y la 5 el diseño conjunto con controles separados.
+    larga y corta por cuartiles y la 5 el diseño conjunto con controles separados. Los
+    contrastes de capacidad predictiva son opcionales en todas.
     """
     version = config.get("schema_version") if isinstance(config, dict) else None
+    sections = set(config) - _CONFIG_FIELDS if isinstance(config, dict) else set()
     _require(
         isinstance(config, dict)
         and type(version) is int
         and version in SECTIONS
-        and set(config) == _CONFIG_FIELDS | SECTIONS[version]
+        and _CONFIG_FIELDS <= set(config)
+        and SECTIONS[version] <= sections <= SECTIONS[version] | OPTIONAL_SECTIONS
         and config["kind"] == CONFIG_KIND
         and config["status"] == DECLARED
         and config["partition"] == "evaluation"
@@ -514,6 +532,8 @@ def validate_config(config, digest, folder):
         modality_ablation.declaration(config[ABLATION_FIELD])
     if version >= 4:
         long_short.declaration(config[LONG_SHORT_FIELD])
+    if PREDICTIVE_FIELD in config:
+        predictive_ability.declaration(config[PREDICTIVE_FIELD], comparison)
     resolved = {scope: _protocols(folder, scope, declared) for scope, declared in scopes.items()}
     if JOINT_FIELD in config:
         _joint_design(config[JOINT_FIELD], resolved, arms, families, folder)
@@ -1079,6 +1099,24 @@ def _contrasts(config, overall, views):
     return result
 
 
+def _predictive_ability(config, overall, views):
+    """Contrastes secundarios de capacidad predictiva con las mismas series que ``_contrasts``."""
+
+    def series(arm, view, metric):
+        if not _metric_available(overall[arm][0][view], metric):
+            return None
+        return _seed_series(overall, arm, view, metric)
+
+    return predictive_ability.report(
+        config[PREDICTIVE_FIELD],
+        config["comparison"],
+        config["metrics"]["market_weighting"],
+        config["resolved_families"],
+        views,
+        series,
+    )
+
+
 def _status(row):
     joint = row["simultaneous_interval"]
     if joint is None:
@@ -1438,6 +1476,8 @@ def evaluate_walk_forward(
     """
     started = time.perf_counter()
     config = resolve_config(config_path)
+    # Sin el extra research, la sección secundaria falla aquí y no tras puntuar las ventanas.
+    libraries = predictive_ability.library_versions() if PREDICTIVE_FIELD in config else {}
     sources = load_sources(sources_path, config, scope)
     # Desde aquí, los brazos y las familias son los del ámbito evaluado.
     config = scope_config(config, scope)
@@ -1540,6 +1580,12 @@ def evaluate_walk_forward(
             borrowed=sources["borrowed"],
             joint_windows=sources["joint_windows"],
             joint_views=sources["joint_views"],
+        )
+    if PREDICTIVE_FIELD in config:
+        report[PREDICTIVE_FIELD] = _predictive_ability(config, overall, names)
+        report["versions"].update(libraries)
+        report["analysis_source_sha256"]["evaluation/predictive_ability.py"] = sha256(
+            Path(__file__).parents[1] / "evaluation/predictive_ability.py"
         )
     if strata is not None:
         report[STRATA_FIELD] = strata

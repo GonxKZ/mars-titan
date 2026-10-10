@@ -19,6 +19,8 @@ La captura de [fuentes públicas](../data/public-source-updates.md) utiliza `cur
 
 Python se gestiona con uv. El entorno local es `.venv/`, con Python 3.12 como versión de trabajo. `pyproject.toml` declara las dependencias y `uv.lock` conserva la resolución. El paquete se construye con Hatchling y se instala en modo editable durante el desarrollo. La orden `mars-data` expone las operaciones de preparación.
 
+La resolución solo admite versiones publicadas hasta el 26 de septiembre de 2026 (`exclude-newer` en `[tool.uv]`), dos semanas antes de la [revisión de bibliotecas](../research/library-review.md). Con esa fecha, `arch` 8.0.0 resuelve con `wrapt` 2.4.1 en lugar de la 2.5.0, publicada un día después. Mover la fecha es una decisión explícita que obliga a volver a resolver y a revisar el diff de `uv.lock`, porque `uv` vuelve a resolver todo el lock cuando cambia.
+
 Para preparar las herramientas de documentación y calidad:
 
 ```bash
