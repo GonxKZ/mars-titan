@@ -38,20 +38,22 @@ DEFAULT_BINARY = (
     Path(__file__).resolve().parents[1] / "build/native/native-ppo-release/mars-titan-ppo"
 )
 KLPO_KIND = "native_klpo_terminal"
+# Configuraciones de mars-titan-klpo: KLPO terminal y objetivos de grupo con las mismas oleadas.
+WAVE_KINDS = (KLPO_KIND, "native_group_relative")
 RECONSTRUCTED_SCHEMA = 4
 
 
 def catalog_config(document):
     """Configuración con catálogo de fuentes y auditoría separada."""
     return document.get("schema_version") in (2, 3, RECONSTRUCTED_SCHEMA) or (
-        document.get("kind") == KLPO_KIND
+        document.get("kind") in WAVE_KINDS
     )
 
 
 def reconstructed_config(document):
     """Configuración que ajusta o evalúa sobre cintas reconstruidas del histórico."""
     return (
-        document.get("schema_version") == RECONSTRUCTED_SCHEMA or document.get("kind") == KLPO_KIND
+        document.get("schema_version") == RECONSTRUCTED_SCHEMA or document.get("kind") in WAVE_KINDS
     )
 
 
@@ -427,6 +429,13 @@ def main(argv=None):
     parser.add_argument("--validation-tape", type=Path, action="append", default=[])
     parser.add_argument("--audit-run", type=Path)
     parser.add_argument("--audit-tape", type=Path, action="append", default=[])
+    parser.add_argument(
+        "--evaluation-cost",
+        type=float,
+        action="append",
+        default=[],
+        help="Coste en pb de la evaluación separada. Repetible y solo con --audit-run",
+    )
     parser.add_argument("--binary", type=Path, default=DEFAULT_BINARY)
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--stop-after", type=int)
@@ -457,6 +466,16 @@ def main(argv=None):
             )
     elif args.audit_tape or not args.train_tape or not args.validation_tape:
         parser.error("El entrenamiento necesita --train-tape y --validation-tape")
+    if args.evaluation_cost and (
+        args.audit_run is None
+        or len(args.evaluation_cost) > 16
+        or any(not math.isfinite(cost) or not 0 <= cost <= 1000 for cost in args.evaluation_cost)
+        or any(a >= b for a, b in zip(args.evaluation_cost, args.evaluation_cost[1:], strict=False))
+    ):
+        parser.error(
+            "Los costes de evaluación solo acompañan a --audit-run y deben ser crecientes, "
+            "finitos y estar entre 0 y 1000 pb"
+        )
     if args.stop_after is not None and not 0 <= args.stop_after <= 2**63 - 1:
         parser.error("La parada debe ser un número entero no negativo de 64 bits")
     if not math.isfinite(args.poll_seconds) or not 0.01 <= args.poll_seconds <= 60:
@@ -480,8 +499,11 @@ def main(argv=None):
         ):
             parser.error("El estado de vigilancia debe quedar fuera de las fuentes y de la salida")
     if args.audit_run is None:
-        algorithm = "KLPO" if document.get("kind") == KLPO_KIND else "PPO"
-        require_learning_allowed(f"el entrenamiento {algorithm} nativo")
+        activity = {
+            KLPO_KIND: "el entrenamiento KLPO nativo",
+            "native_group_relative": "el entrenamiento nativo con objetivo de grupo",
+        }.get(document.get("kind"), "el entrenamiento PPO nativo")
+        require_learning_allowed(activity)
     elif reconstructed_config(document):
         require_learning_allowed("la evaluación nativa sobre cintas reconstruidas")
     try:
@@ -498,6 +520,8 @@ def main(argv=None):
                 command.extend((option, str(source)))
         if args.audit_run is not None:
             command.extend(("--audit-run", str(args.audit_run)))
+        for cost in args.evaluation_cost:
+            command.extend(("--evaluation-cost", repr(cost)))
         if args.resume:
             command.append("--resume")
         if args.stop_after is not None:

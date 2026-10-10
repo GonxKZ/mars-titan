@@ -1,0 +1,225 @@
+{
+  "schema_version": 3,
+  "kind": "posttraining_adapter_matrix",
+  "input_policy": "historical_masked_2000_v1",
+  "final_test_opened": false,
+  "points": {
+    "head": {"form": "residual", "invalidates": ["cached_parent_predictions"]},
+    "readout": {
+      "form": "low_rank",
+      "rank": 4,
+      "alpha": 4.0,
+      "invalidates": ["cached_parent_predictions", "attention_outputs"]
+    },
+    "fusion": {
+      "form": "low_rank",
+      "rank": 4,
+      "alpha": 4.0,
+      "invalidates": ["cached_parent_predictions", "fused_representations"]
+    }
+  },
+  "arms": [
+    {"id": "head", "points": ["head"]},
+    {"id": "readout", "points": ["readout"]},
+    {"id": "fusion", "points": ["fusion"]},
+    {"id": "head+readout", "points": ["head", "readout"]},
+    {"id": "head+fusion", "points": ["head", "fusion"]},
+    {"id": "readout+fusion", "points": ["readout", "fusion"]},
+    {
+      "id": "head+readout+fusion",
+      "points": ["head", "readout", "fusion"]
+    },
+    {
+      "id": "fusion_full_rank",
+      "points": ["fusion"],
+      "overrides": {
+        "fusion": {
+          "form": "residual",
+          "invalidates": ["cached_parent_predictions", "fused_representations"]
+        }
+      }
+    }
+  ],
+  "controls": ["frozen_parent", "linear_residual", "full_continuation"],
+  "objectives": {
+    "scalar": {
+      "adapters": "neural_mae",
+      "full_continuation": "neural_mae",
+      "linear_residual": "mae"
+    },
+    "quantile_head_v1": {
+      "adapters": "neural_pinball",
+      "full_continuation": "neural_pinball",
+      "linear_residual": {
+        "excluded": "La corrección lineal residual corrige la predicción escalar del padre que guarda su caché, que en un padre de cuantiles es solo la mediana. No produce cinco niveles ordenados ni puede optimizar su pinball. El brazo head ya es una corrección por nivel inicializada a cero cuyo orden garantiza la parametrización de la cabeza."
+      }
+    }
+  },
+  "budget": {
+    "seeds": [42, 43, 44],
+    "epochs": 5,
+    "batch_size": 256,
+    "learning_rate": 0.0001,
+    "weight_decay": 0.01,
+    "clip_norm": 1.0,
+    "beta": 0.1,
+    "behavior_epsilon": 1e-06,
+    "auxiliary_samples": 128
+  },
+  "selection": {
+    "version": 2,
+    "metric": "session_mae",
+    "patience": null,
+    "min_delta": 1e-05
+  },
+  "architectures": {
+    "executable": {
+      "rnn": ["head", "fusion"],
+      "lstm": ["head", "fusion"],
+      "gru": ["head", "fusion"],
+      "dlinear": ["head", "fusion"],
+      "transformer": ["head", "readout", "fusion"]
+    },
+    "chronological": {
+      "titans_mac": {
+        "targets": {
+          "head": ["head"],
+          "readout": ["mac.query_projection", "mac.attention.out_proj"],
+          "fusion": ["fusion.0"]
+        },
+        "frozen": ["mac.memory", "mac.persistent"],
+        "variants": {
+          "transformer_direct": ["head", "fusion"],
+          "mac_disabled": ["head", "fusion"],
+          "mac_frozen": ["head", "readout", "fusion"],
+          "mac_online": ["head", "readout", "fusion"]
+        },
+        "inapplicable": {
+          "readout": "transformer_direct no tiene MAC y mac_disabled no lee la memoria, así que su proyección de consulta no interviene en la predicción. Adaptar solo out_proj sería otro punto con otros parámetros."
+        }
+      },
+      "episodic_readout": {
+        "families": ["mars_titan", "cm_v1"],
+        "components": {
+          "core": {"family": "titans_mac", "variant": "mac_online"},
+          "episodic_readout": {
+            "point": "readout",
+            "targets": ["query_projection", "value_projection"]
+          }
+        },
+        "arms": [["core"], ["episodic_readout"], ["core", "episodic_readout"]],
+        "frozen": ["refinement", "step_logit"],
+        "without_bank": "M0 no consulta episodios, así que query_projection y value_projection del lector no reciben gradiente. Sin banco solo se ejecuta el brazo del núcleo."
+      },
+      "episodic_gru": {
+        "points": ["head"],
+        "targets": {"head": ["head_weight", "head_bias"]},
+        "excluded": {
+          "readout": "query_ y value_ viven en el módulo nativo y se aplican dentro de Candidate::read. Un adaptador exigiría nuevos parámetros, archivo, huella y enlace en LibTorch, con su referencia Python y sus compilaciones CPU y CUDA.",
+          "fusion": "La fusión y la GRU de precios se calculan dentro de Candidate::encode_context con at::gru. Su adaptador tiene el mismo coste nativo que la lectura."
+        }
+      }
+    },
+    "pending": {}
+  },
+  "variety": {
+    "points": {
+      "bias": {
+        "form": "residual",
+        "invalidates": ["cached_parent_predictions", "attention_outputs", "fused_representations"]
+      },
+      "norm": {
+        "form": "residual",
+        "invalidates": ["cached_parent_predictions", "attention_outputs", "fused_representations"]
+      },
+      "persistent": {
+        "form": "residual",
+        "invalidates": ["cached_parent_predictions", "attention_outputs"]
+      }
+    },
+    "arms": [
+      {
+        "id": "fusion_dora",
+        "points": ["fusion"],
+        "overrides": {
+          "fusion": {
+            "form": "dora",
+            "rank": 4,
+            "alpha": 4.0,
+            "invalidates": ["cached_parent_predictions", "fused_representations"]
+          }
+        },
+        "campaign": ["references"]
+      },
+      {
+        "id": "readout_dora",
+        "points": ["readout"],
+        "overrides": {
+          "readout": {
+            "form": "dora",
+            "rank": 4,
+            "alpha": 4.0,
+            "invalidates": ["cached_parent_predictions", "attention_outputs"]
+          }
+        },
+        "campaign": ["references"]
+      },
+      {
+        "id": "fusion_ia3",
+        "points": ["fusion"],
+        "overrides": {
+          "fusion": {
+            "form": "ia3",
+            "invalidates": ["cached_parent_predictions", "fused_representations"]
+          }
+        },
+        "campaign": ["references"]
+      },
+      {
+        "id": "readout_ia3",
+        "points": ["readout"],
+        "overrides": {
+          "readout": {
+            "form": "ia3",
+            "invalidates": ["cached_parent_predictions", "attention_outputs"]
+          }
+        },
+        "campaign": ["references"]
+      },
+      {
+        "id": "fusion_parallel_adapter",
+        "points": ["fusion"],
+        "overrides": {
+          "fusion": {
+            "form": "parallel_adapter",
+            "rank": 4,
+            "alpha": 4.0,
+            "invalidates": ["cached_parent_predictions", "fused_representations"]
+          }
+        },
+        "campaign": ["references", "titans_mac:mac_online"]
+      },
+      {
+        "id": "fusion_serial_adapter",
+        "points": ["fusion"],
+        "overrides": {
+          "fusion": {
+            "form": "serial_adapter",
+            "rank": 4,
+            "alpha": 4.0,
+            "invalidates": ["cached_parent_predictions", "fused_representations"]
+          }
+        },
+        "campaign": []
+      },
+      {"id": "bias", "points": ["bias"], "campaign": ["references", "titans_mac:mac_online"]},
+      {"id": "norm", "points": ["norm"], "campaign": []},
+      {"id": "persistent", "points": ["persistent"], "campaign": ["titans_mac:mac_online"]}
+    ],
+    "readers": ["persistent"],
+    "inapplicable": {
+      "norm": "RNN, LSTM, GRU y DLinear no tienen capas de normalización. Solo el Transformer compacto y el codificador de precios de Titans-MAC tienen LayerNorm.",
+      "persistent": "Solo la atención de MAC lee la memoria persistente, en mac_frozen y mac_online. Las referencias neuronales y transformer_direct no tienen MAC y mac_disabled atiende solo al segmento."
+    }
+  }
+}

@@ -6,9 +6,11 @@ from copy import deepcopy
 import torch
 from torch import nn
 
+from mars_titan.data.price_windows import gate_price_window
+
 from ..quantile_head import QUANTILE_HEAD, QuantileHead
 from .dlinear import DLinear
-from .transformer import CompactPriceTransformer, transformer_options
+from .transformer import CompactPriceTransformer, raise_nonfinite, transformer_options
 
 # El orden coincide con data.input_policy.MODALITIES y con los bits de presencia.
 MODALITIES = ("prices", "news", "charts", "fundamentals", "macro")
@@ -35,6 +37,17 @@ def validate_architecture(hidden_size, layers, dropout):
     return dict(hidden_size=hidden_size, layers=layers, dropout=float(dropout))
 
 
+def transformer_batch_options(kind, batch_size):
+    """Opción de lote del Transformer solo cuando el lote supera el contrato por defecto.
+
+    Un caso con lotes de hasta 256 ventanas conserva el contrato y los checkpoints previos.
+    Quien reconstruye el modelo desde el lote de su identidad obtiene el mismo contrato.
+    """
+    if kind == "transformer" and batch_size > CompactPriceTransformer.max_batch:
+        return {"max_batch": batch_size}
+    return {}
+
+
 class MultimodalReference(nn.Module):
     """Fusión común con un codificador de precios y estado reiniciado por ventana.
 
@@ -47,6 +60,8 @@ class MultimodalReference(nn.Module):
     La cabeza `quantile_head_v1` sustituye la salida escalar por cinco cuantiles
     ordenados. Se construye la última, así que el tronco consume el mismo
     generador y recibe los mismos pesos iniciales que la variante escalar.
+    `max_batch` solo existe para el Transformer y amplía su lote admitido. Sin él,
+    la configuración y los pesos coinciden con los anteriores.
     """
 
     def __init__(
@@ -61,6 +76,7 @@ class MultimodalReference(nn.Module):
         transformer=None,
         mask_fusion=STRICT_FUSION,
         head=SCALAR_HEAD,
+        max_batch=None,
     ):
         super().__init__()
         self.architecture = validate_architecture(hidden_size, layers, dropout)
@@ -78,10 +94,11 @@ class MultimodalReference(nn.Module):
             or not 2 <= context <= 512
         ):
             raise ValueError("La arquitectura, las dimensiones o el contexto no son válidos")
-        if kind != "transformer" and transformer is not None:
+        if kind != "transformer" and (transformer is not None or max_batch is not None):
             raise ValueError("Las opciones Transformer requieren su codificador explícito")
         if kind == "transformer":
             self.architecture["transformer"] = transformer_options(transformer)
+        self.max_batch = max_batch
         self.kind, self.dimensions, self.context = kind, dict(dimensions), context
         if kind in _RECURRENT:
             self.price_encoder = _RECURRENT[kind](
@@ -98,6 +115,7 @@ class MultimodalReference(nn.Module):
                 hidden_size=hidden_size,
                 layers=layers,
                 **self.architecture["transformer"],
+                **({} if max_batch is None else {"max_batch": max_batch}),
             )
         else:
             kernel = min(25, context if context % 2 else context - 1)
@@ -132,6 +150,9 @@ class MultimodalReference(nn.Module):
         )
         if self.kind == "transformer":
             result["price_encoder_contract"] = self.price_encoder.configuration
+        # Solo un lote máximo explícito añade el campo. Así la configuración se reconstruye.
+        if self.max_batch is not None:
+            result["max_batch"] = self.max_batch
         if self.presence_fusion:
             result["mask_fusion"] = PRESENCE_FUSION
         # La configuración escalar no cambia. Solo la variante de cuantiles añade el campo.
@@ -159,6 +180,18 @@ class MultimodalReference(nn.Module):
         El lector garantiza precios y gráficos presentes. Como en FinancialPredictor,
         la proyección de precios no se multiplica y las cuatro restantes sí.
         """
+        fused, checks = self._encode(inputs, presence)
+        raise_nonfinite(checks)
+        return fused
+
+    def _encode(self, inputs, presence):
+        """Representación y comprobaciones de finitud del Transformer, aún sin sincronizar.
+
+        Las comprobaciones conservan el orden anterior: modalidades, precios, representación
+        de precios y fusión. Se evalúan juntas al final, así que un valor no finito produce
+        el mismo error sin esperar a la GPU en cada una.
+        """
+        checks = []
         if set(inputs) != set(MODALITIES):
             raise ValueError("Se requieren las cuatro modalidades y el contexto macro")
         if self.kind == "transformer" and any(
@@ -183,11 +216,18 @@ class MultimodalReference(nn.Module):
                 raise ValueError("Las modalidades y el modelo deben compartir dtype")
             if any(value.device != weights.device for value in inputs.values()):
                 raise ValueError("Las modalidades y el modelo deben compartir dispositivo")
-            if any(not torch.isfinite(inputs[name]).all() for name in self.encoders):
-                raise ValueError("Las modalidades contienen valores no finitos")
+            checks.extend(
+                (inputs[name], "Las modalidades contienen valores no finitos")
+                for name in self.encoders
+            )
+        # Un hueco de mercado llega con relleno cero y su bit. El modelo nunca lee el relleno.
+        prices = gate_price_window(prices)
         if self.kind in _RECURRENT:
             _, hidden = self.price_encoder(prices)
             price = (hidden[0] if self.kind == "lstm" else hidden)[-1]
+        elif self.kind == "transformer":
+            price, encoder_checks = self.price_encoder.encode_last(prices)
+            checks.extend(encoder_checks)
         else:
             price = self.price_encoder(prices)
         representations = [price]
@@ -200,15 +240,26 @@ class MultimodalReference(nn.Module):
         if presence is not None:
             representations.append(presence.to(dtype=self.head.weight.dtype))
         fused = self.fusion(torch.cat(representations, dim=-1))
-        if self.kind == "transformer" and not torch.isfinite(fused).all():
-            raise ValueError("La fusión Transformer contiene valores no finitos")
-        return fused
+        if self.kind == "transformer":
+            checks.append((fused, "La fusión Transformer contiene valores no finitos"))
+        return fused, checks
 
     def forward(self, inputs, presence=None):
         """Devolver [lote] con la cabeza escalar o [lote, 5] cuantiles ordenados."""
-        output = self.head(self.encode(inputs, presence))
+        output, checks = self.forward_pending(inputs, presence)
+        raise_nonfinite(checks)
+        return output
+
+    def forward_pending(self, inputs, presence=None):
+        """Salida de `forward` y sus comprobaciones de finitud, todavía sin sincronizar.
+
+        Solo el Transformer tiene comprobaciones. Quien llama debe evaluarlas en el mismo
+        orden antes de usar la salida, como hace `forward` con `raise_nonfinite`.
+        """
+        fused, checks = self._encode(inputs, presence)
+        output = self.head(fused)
         if not self.emits_quantiles:
             output = output.squeeze(-1)
-        if self.kind == "transformer" and not torch.isfinite(output).all():
-            raise ValueError("La salida Transformer contiene valores no finitos")
-        return output
+        if self.kind == "transformer":
+            checks.append((output, "La salida Transformer contiene valores no finitos"))
+        return output, checks

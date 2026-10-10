@@ -652,6 +652,45 @@ def test_audit_uses_the_same_launcher_without_training_arguments(setup, document
     assert "--train-tape" not in actual and "--validation-tape" not in actual
 
 
+@pytest.mark.parametrize("document", CATALOGS)
+def test_audit_passes_the_declared_evaluation_costs_and_training_rejects_them(setup, document):
+    args = setup[0]
+    config = Path(args[args.index("--config") + 1])
+    config.write_text(json.dumps(document))
+    native = args[args.index("--binary") + 1]
+    training = list(args)
+    setup[0][:] = [
+        *args[:4],
+        "--binary",
+        native,
+        "--audit-run",
+        str(setup[2] / "frozen-run"),
+        "--audit-tape",
+        str(setup[2] / "audit-a"),
+        "--evaluation-cost",
+        "0",
+        "--evaluation-cost",
+        "5",
+        "--evaluation-cost",
+        "20",
+    ]
+    result = execute(setup, "--diagnostic")
+    assert result.returncode == 0, result.stderr
+    actual = record(setup)["args"]
+    costs = [actual[i + 1] for i, value in enumerate(actual) if value == "--evaluation-cost"]
+    assert costs == ["0.0", "5.0", "20.0"]
+    for invalid in (
+        ["--evaluation-cost", "5", "--evaluation-cost", "5"],
+        ["--evaluation-cost", "-1"],
+    ):
+        setup[0][:] = [*setup[0][:10], *invalid]
+        rejected = execute(setup, "--diagnostic")
+        assert rejected.returncode == 2 and "costes de evaluación" in rejected.stderr
+    setup[0][:] = [*training, "--evaluation-cost", "5"]
+    rejected = execute(setup, "--diagnostic")
+    assert rejected.returncode == 2 and "costes de evaluación" in rejected.stderr
+
+
 def test_relative_command_paths_do_not_reuse_watch_from_another_working_directory(setup):
     args, env, directory = setup
     watch = directory / "watch.json"
@@ -696,6 +735,7 @@ def test_relative_command_paths_do_not_reuse_watch_from_another_working_director
         (dict(schema_version=2), False),
         (dict(schema_version=4), True),
         (dict(schema_version=1, kind="native_klpo_terminal"), True),
+        (dict(schema_version=1, kind="native_group_relative"), True),
     ],
 )
 def test_audits_on_reconstructed_tapes_stop_on_the_hold_before_launching(setup, document, blocked):
@@ -732,4 +772,17 @@ def test_klpo_training_names_its_algorithm_in_the_hold(setup):
     env[HOLD_ENV] = str(hold)
     result = execute(setup, "--diagnostic")
     assert result.returncode != 0 and "el entrenamiento KLPO nativo" in result.stderr
+    assert not Path(env["NATIVE_RECORD"]).exists()
+
+
+def test_group_objective_training_names_its_algorithm_in_the_hold(setup):
+    args, env, directory = setup
+    config = Path(args[args.index("--config") + 1])
+    config.write_text(json.dumps(dict(schema_version=1, kind="native_group_relative")))
+    hold = directory / "blocking-hold.json"
+    hold.write_text(json.dumps({"training_allowed": False}))
+    env[HOLD_ENV] = str(hold)
+    result = execute(setup, "--diagnostic")
+    assert result.returncode != 0
+    assert "el entrenamiento nativo con objetivo de grupo" in result.stderr
     assert not Path(env["NATIVE_RECORD"]).exists()

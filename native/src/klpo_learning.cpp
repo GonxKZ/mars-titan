@@ -80,10 +80,29 @@ KlpoLearningPhase phase_of(const KlpoTerminalCollector& collector, bool consumed
     }
     throw std::invalid_argument("La recogida no conserva su fase");
 }
+
+// Constantes de la identidad de grupo, que quedan en la identidad del controlador y por tanto
+// en la huella de la ejecución.
+Json group_identity(const GroupObjectiveConfig& group) {
+    return {{"id", group.id()},
+            {"clip_low", group.clip_low},
+            {"clip_high", group.clip_high},
+            {"kl_beta", group.kl_beta},
+            {"advantage_epsilon", group.advantage_epsilon},
+            {"length_normalizer", group.length_normalizer},
+            {"group_rule", std::string(group_wave_rule)},
+            {"old_policy", "wave_sampler_q"},
+            {"kl_reference", "wave_sampler_q"}};
+}
 } // namespace
 
 void KlpoLearningConfig::validate() const {
     adam.validate();
+    if (group) {
+        group->validate();
+        require(collection.gamma == 1,
+                "Los objetivos de grupo usan el retorno completo del episodio, sin descuento");
+    }
     require(confirmed_updates_per_reference > 0 &&
                 confirmed_updates_per_reference <= maximum_reference_updates &&
                 gradient_block_episodes > 0 && gradient_block_episodes <= maximum_klpo_episodes,
@@ -153,6 +172,12 @@ struct KlpoLearningController::Impl {
             {"policy_budget_per_instance", default_ppo_memory_bytes},
             {"episode_identity", "run_identity_wave_index_source_record_id"},
             {"reference_refresh", "confirmed_cadence_before_next_collection"}};
+        if (config.group) {
+            // Mismas oleadas y cadencia que KLPO con otro objetivo. KLPO conserva su identidad.
+            identity_value["kind"] = "group_relative_actor_updates";
+            identity_value["algorithm"] = std::string(group_relative_controller);
+            identity_value["objective"] = group_identity(*config.group);
+        }
     }
 
     void healthy() const {
@@ -285,6 +310,10 @@ std::string KlpoLearningController::reference_fingerprint() const {
     impl_->healthy();
     return impl_->collector->records().reference_sha256;
 }
+const KlpoEpisodeBatch& KlpoLearningController::wave() const& {
+    impl_->healthy();
+    return impl_->collector->records();
+}
 std::size_t KlpoLearningController::collected_steps() const {
     impl_->healthy();
     std::size_t result = 0;
@@ -303,18 +332,32 @@ Json KlpoLearningController::save(PpoCheckpointStore& store) const {
     return store.save(state.metadata, state.policy_archive, state.rollout_archive);
 }
 
-KlpoGradientSummary KlpoLearningController::backward_ready() {
+KlpoGradientSummary KlpoLearningController::backward_ready(GroupWaveTrace* trace) {
     require(phase() == KlpoLearningPhase::ready && at::GradMode::is_enabled(),
             "Los gradientes requieren una oleada completa y autograd habilitado");
+    const auto& group = impl_->config.group;
+    require(trace == nullptr || group.has_value(),
+            "Las trazas de grupo necesitan un objetivo de grupo");
     const auto& records = impl_->collector->records();
     KlpoGradientSummary summary;
     summary.episodes = records.episodes.size();
     summary.sampled_decisions = decisions(records);
     summary.no_policy_decisions = summary.sampled_decisions == 0;
     impl_->actor->terminal_zero_grad();
+    if (trace != nullptr) {
+        *trace = {};
+    }
     if (summary.no_policy_decisions) {
         return summary;
     }
+    // Las ventajas y los pesos de grupo se fijan con la oleada completa antes de dividirla, de
+    // modo que el tamaño de bloque no cambia el gradiente.
+    const GroupObjectiveConfig* objective = group ? &group.value() : nullptr;
+    GroupWave wave;
+    if (objective != nullptr) {
+        wave = group_wave(records, *objective);
+    }
+    GroupObjectiveTrace merged;
     for (std::size_t begin = 0; begin < summary.episodes;
          begin += impl_->config.gradient_block_episodes) {
         const auto end = std::min(summary.episodes, begin + impl_->config.gradient_block_episodes);
@@ -327,15 +370,40 @@ KlpoGradientSummary KlpoLearningController::backward_ready() {
                                {}};
         block.episodes.assign(records.episodes.begin() + static_cast<std::ptrdiff_t>(begin),
                               records.episodes.begin() + static_cast<std::ptrdiff_t>(end));
-        const auto result = klpo_episode_objective(*impl_->actor, block);
-        if (!result.no_policy_decisions) {
-            const auto loss = result.per_episode.sum() / static_cast<double>(summary.episodes);
-            summary.surrogate += loss.item<double>();
-            loss.backward();
+        if (objective != nullptr) {
+            GroupObjectiveTrace block_trace;
+            const auto loss = group_block_loss(*impl_->actor, block, begin, wave, *objective,
+                                               trace != nullptr ? &block_trace : nullptr);
+            if (loss.defined()) {
+                summary.surrogate += loss.item<double>();
+                loss.backward();
+                if (trace != nullptr) {
+                    accumulate_group_trace(merged, block_trace, objective->ratio());
+                }
+            }
+        } else {
+            const auto result = klpo_episode_objective(*impl_->actor, block);
+            if (!result.no_policy_decisions) {
+                const auto loss = result.per_episode.sum() / static_cast<double>(summary.episodes);
+                summary.surrogate += loss.item<double>();
+                loss.backward();
+            }
         }
         ++summary.blocks;
     }
     require(std::isfinite(summary.surrogate), "El sustituto acumulado no es finito");
+    if (trace != nullptr) {
+        // Las ventajas y los grupos se describen con la oleada completa y el resto con la
+        // acumulación de los bloques, ponderada por decisiones o por episodios.
+        *trace = group_wave_trace(wave);
+        trace->objective.entropy = merged.entropy;
+        trace->objective.full_kl = merged.full_kl;
+        trace->objective.k3_kl = merged.k3_kl;
+        trace->objective.ratio_mean = merged.ratio_mean;
+        trace->objective.ratio_min = merged.ratio_min;
+        trace->objective.ratio_max = merged.ratio_max;
+        trace->objective.clip_fraction = merged.clip_fraction;
+    }
     summary.gradient_norm = impl_->actor->validate_terminal_gradients();
     return summary;
 }

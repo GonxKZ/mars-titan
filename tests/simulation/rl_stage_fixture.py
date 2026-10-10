@@ -10,6 +10,7 @@ fixture, cubre desde septiembre de 2019. Los ejecutores aprendidos se sustituyen
 
 import hashlib
 import json
+import shutil
 from contextlib import contextmanager
 from pathlib import Path
 from types import SimpleNamespace
@@ -17,15 +18,17 @@ from types import SimpleNamespace
 import pytest
 
 from mars_titan.data.storage import atomic_json, sha256
+from mars_titan.posttraining import staged_chain
 from mars_titan.simulation import campaign_stage, native_policy_runs
 from mars_titan.training import masked_campaign as engine
+from mars_titan.training.label_maturity import FIT_PARTITIONS, label_maturity
 from mars_titan.training.learning_hold import HOLD_ENV
 from tests.posttraining import campaign_fixture
 from tests.simulation import unadjusted_edition_fixture as edition_fixture
 from tests.training.test_walk_forward_v2_views import fixture
 
 CONFIGS = Path("configs").resolve()
-REFERENCES = ["cash", "hold_initial", "rebalance_50"]
+REFERENCES = ["cash", "hold_initial", "rebalance_50", "equal_weight_monthly", "market_index"]
 HISTORY = "2019-09-01"
 
 
@@ -43,7 +46,12 @@ def write_edition(root, assets):
 
 
 def policies(**changes):
-    """Políticas reducidas: KLPO y Double DQN, las tres referencias y un año de ajuste.
+    """Políticas reducidas: KLPO y Double DQN, las cinco referencias y ajuste en expansión.
+
+    Cada ancla se ajusta con todas sus evaluaciones anteriores a la validación, como mínimo
+    una y como máximo dos, tantas como entornos. Así la etapa reducida recorre la regla en
+    expansión, que en la configuración real es la sensibilidad, y la sensibilidad de la
+    prueba es la regla fija de una evaluación.
 
     La campaña reducida produce los brazos GRU y LSTM. Los dos entran en el nivel completo
     y solo la GRU en el de algoritmos, que también fija el universo.
@@ -51,7 +59,11 @@ def policies(**changes):
     value = json.loads((CONFIGS / "simulation/historical-masked-rl-policies.json").read_text())
     value["levels"]["algorithms"].update(predictors=["gru"], arms=["double_dqn"])
     value.update(
-        train_windows=1,
+        train_windows=dict(rule="expanding_prior_evaluations_v1", minimum=1, maximum=2),
+        window_sensitivity=dict(
+            value["window_sensitivity"],
+            train_windows=dict(rule="fixed_prior_evaluations_v1", minimum=1, maximum=1),
+        ),
         universe=dict(rule="median_traded_value_in_validation_v1", max_assets=4),
         # Caben dos oleadas KLPO de dos episodios anuales.
         budget=dict(
@@ -60,10 +72,13 @@ def policies(**changes):
         policies={key: value["policies"][key] for key in ("klpo_terminal", "double_dqn")},
         contrasts=dict(
             primary="klpo_terminal",
-            controls=["double_dqn", "cash", "hold_initial", "rebalance_50"],
+            controls=["double_dqn", *REFERENCES],
         ),
     )
     value["hyperparameters"]["minibatch_size"] = 16
+    # La campaña reducida no tiene posentrenamiento: las cintas llevan las predicciones del
+    # predictor elegido en la campaña base.
+    value["predictor"]["source"] = "base_campaign_selected_v1"
     value.update(changes)
     return value
 
@@ -95,8 +110,19 @@ def write_configs(folder, variant):
     return campaign, folder / "rl-stage.json"
 
 
-def base_campaign(root, variant):
-    """Vistas, campaña base con los dobles de la etapa de adaptadores y edición sintética."""
+def declare_edition(policies_path, edition):
+    """Declarar en las políticas la edición de la prueba, como la etapa exige a la real."""
+    value = json.loads(policies_path.read_text())
+    value["data"]["edition_id"] = json.loads((edition / "manifest.json").read_text())["edition_id"]
+    atomic_json(policies_path, value)
+
+
+def base_campaign(root, variant, *, ending=None):
+    """Vistas, campaña base con los dobles de la etapa de adaptadores y edición sintética.
+
+    `ending` es la posición de 2023 en la que termina la serie de A0000, el activo con
+    predicciones que forma el universo, si termina.
+    """
     campaign, stage = write_configs(root / "config", variant)
     data = fixture(root / "data", ("US",))
     hold = root / "hold.json"
@@ -120,11 +146,14 @@ def base_campaign(root, variant):
     assert summary["status"] == "completed"
     assets = {
         "US": [
-            edition_fixture.Asset("A0000", base=20.0),
+            edition_fixture.Asset("A0000", base=20.0, end=ending),
             edition_fixture.Asset("B0001", base=30.0),
+            # Instrumento del índice de mercado. Sin predicciones, no entra en el universo.
+            edition_fixture.Asset("SPY", base=300.0),
         ]
     }
     write_edition(root / "edition", assets)
+    declare_edition(root / "config" / "rl-policies.json", root / "edition")
     return SimpleNamespace(
         campaign=campaign,
         stage=stage,
@@ -133,6 +162,88 @@ def base_campaign(root, variant):
         edition=root / "edition",
         root=root,
     )
+
+
+def publish_chain(base, chain, *, seed=42, change=None):
+    """Publicar la cadena de cada ventana y predictor con el contrato del posentrenamiento.
+
+    La ventana 0 elige el estado de la base. En las demás compiten el padre congelado y una
+    continuación con mejor validación, que gana con `chain_validation_score_v1`. Su recibo
+    copia las predicciones del estado elegido de la base en esa ventana: la prueba solo
+    necesita predicciones fuera de muestra con sus huellas, no un ajuste. La selección tiene
+    los campos que escribe la etapa de adaptadores y se comprueba con su propio lector.
+    `change(window, arm, selection, receipt)` altera la selección o el recibo del mercado
+    antes de escribirlos, y la selección se escribe la última, como en la etapa.
+    """
+    _, state = engine._confirmed_state(base.campaign, base.views, base.output)
+    views = state.views["US"]["windows"]
+    names = list(views)
+    maturity = {name: label_maturity(views[name]["path"], FIT_PARTITIONS)[0] for name in names}
+    for index, window in enumerate(names):
+        for arm in ("gru", "lstm"):
+            folder = base.output / "windows/US" / window / arm / f"seed-{seed}"
+            published = json.loads((folder / "US.json").read_text())
+            job = published["parent"]["id"]
+            emitted = json.loads((base.output / "jobs" / job / "receipt.json").read_text())
+            if index == 0:
+                kind, root, selected_job = "base", base.output, job
+            else:
+                kind, root = "continuation", chain
+                selected_job = f"US/{window}/{arm}/continuation-s{seed}"
+                target = chain / "jobs" / selected_job
+                target.mkdir(parents=True, exist_ok=True)
+                record = emitted["predictions"]["evaluation"]
+                shutil.copyfile(base.output / record["path"], target / "evaluation.parquet")
+                predictions = dict(
+                    record, path=str((target / "evaluation.parquet").relative_to(chain))
+                )
+                atomic_json(target / "receipt.json", dict(predictions=dict(evaluation=predictions)))
+            receipt_sha256 = sha256(root / "jobs" / selected_job / "receipt.json")
+            until = max(maturity[name] for name in names[max(0, index - 1) : index + 1])
+            receipt = dict(
+                published,
+                parent=dict(id=selected_job, sha256=receipt_sha256),
+                labels_used_until=until,
+            )
+            selected = dict(kind=kind, arm=arm, job=selected_job, receipt_sha256=receipt_sha256)
+            first = index == 0
+            candidates = [
+                dict(
+                    kind="frozen_parent",
+                    arm=staged_chain.frozen_arm(arm),
+                    job=f"US/{window}/{staged_chain.frozen_arm(arm)}/frozen-s{seed}",
+                    receipt_sha256="9" * 64,
+                    score=1.0,
+                ),
+                dict(selected, score=0.5),
+            ]
+            selection = dict(
+                kind=staged_chain.SELECTION_KIND,
+                schema_version=1,
+                campaign_sha256="a" * 64,
+                stage_sha256="b" * 64,
+                scope="US",
+                window=window,
+                base_arm=arm,
+                seed=seed,
+                rule=staged_chain.RULE,
+                parent_window=None if first else names[index - 1],
+                parent=None if first else dict(id=f"US/{names[index - 1]}/{arm}", sha256="8" * 64),
+                candidates=[] if first else candidates,
+                selected=selected,
+                state=dict(path="state.pt", sha256="c" * 64),
+                fit_rows=None if first else dict(rows=1, sha256="7" * 64),
+                markets={},
+                labels_used_until=until,
+                confirmed_at_utc="2026-10-09T00:00:00+00:00",
+            )
+            if change is not None:
+                change(window, arm, selection, receipt)
+            destination = staged_chain.chain_folder(chain, "US", window, arm, seed)
+            atomic_json(destination / "US.json", receipt)
+            selection["markets"] = selection["markets"] or {"US": sha256(destination / "US.json")}
+            atomic_json(destination / staged_chain.SELECTION, selection)
+    return chain
 
 
 def scripted_action(observation, step):
@@ -201,7 +312,7 @@ def executors(learner, backend="python"):
     }
 
 
-def run(base, output, learner, *, stop=None, backend="python"):
+def run(base, output, learner, *, stop=None, backend="python", chain_output=None, **options):
     return campaign_stage.run_stage(
         base.stage,
         base.views,
@@ -211,4 +322,6 @@ def run(base, output, learner, *, stop=None, backend="python"):
         executors=executors(learner, backend),
         capabilities={},
         stop=stop or SimpleNamespace(requested=False),
+        chain_output=chain_output,
+        **options,
     )

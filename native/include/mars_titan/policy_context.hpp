@@ -9,6 +9,10 @@ namespace mars_titan::learning {
 inline constexpr std::size_t policy_window = 16;
 inline constexpr uint64_t policy_projection_seed = 1729;
 
+// Variantes que aprenden valores de acción con Double DQN. qr_dqn y qr_dqn_cvar cambian el valor
+// escalar por cuantiles y comparten con double_dqn la representación, la réplica y la recogida.
+[[nodiscard]] bool value_variant(std::string_view variant) noexcept;
+
 struct PpoLearningOptions {
     bool enabled = false;
     std::string variant = "ppo";

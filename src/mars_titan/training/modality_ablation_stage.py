@@ -33,13 +33,14 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
+from mars_titan.data import prediction_files
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.modality_ablation import VARIANTS, ablation_identity
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.evaluation import modality_ablation as analysis
 from mars_titan.evaluation import walk_forward_comparison as comparison
 
-from . import masked_campaign
+from . import campaign_numerics, campaign_schedule, masked_campaign
 from .campaign_plan import (
     DECLARED,
     NEURAL,
@@ -50,6 +51,7 @@ from .campaign_plan import (
     plan_campaign,
     schedule,
 )
+from .campaign_storage import release_confirmed
 from .learning_hold import LearningHoldError, hold_path, learning_blocked
 
 STAGE_KIND = "historical_masked_modality_ablation_stage"
@@ -141,8 +143,13 @@ def load_stage(path):
         and 0 <= limits["max_prediction_jobs"] <= 1_000_000,
         "El límite de predicciones debe ser un entero declarado",
     )
-    # Brazos comparados con productor en la campaña. Los auxiliares no se comparan.
+    # Brazos comparados con productor en la campaña. Los auxiliares no se comparan. Cada
+    # ámbito vuelve a predecir solo los brazos que la campaña ajusta en él.
     specs = [spec for spec in _arm_specs(campaign) if not spec["helper"]]
+    scope_specs = {
+        scope: [spec for spec in _arm_specs(campaign, scope) if not spec["helper"]]
+        for scope in scopes
+    }
     return dict(
         config,
         sha256=digest,
@@ -150,6 +157,7 @@ def load_stage(path):
         campaign=campaign,
         declaration=declared[comparison.ABLATION_FIELD],
         specs=specs,
+        scope_specs=scope_specs,
     )
 
 
@@ -159,7 +167,7 @@ def plan_stage(stage):
     for scope in stage["scopes"]:
         folds = list(campaign["comparison_config"]["resolved_scopes"][scope]["windows"].values())
         for row in schedule(folds, campaign["period"]):
-            for spec in stage["specs"]:
+            for spec in stage["scope_specs"][scope]:
                 for seed in spec["seeds"]:
                     for variant in VARIANTS:
                         jobs.append(
@@ -370,10 +378,15 @@ def _digest(value):
     return hashlib.sha256(json.dumps(value, sort_keys=True).encode()).hexdigest()
 
 
-def _base_receipts(base, campaign, stage):
-    """Confirmar los trabajos base de los ámbitos de la etapa, en el orden del plan."""
+def _base_receipts(base, campaign, stage, pairs=None):
+    """Confirmar los trabajos base de los ámbitos de la etapa, en el orden del plan.
+
+    `pairs` limita la confirmación a esos pares (ámbito, ventana) al ejecutar una ventana.
+    """
     for job in plan_campaign(campaign):
         if job["scope"] not in stage["scopes"]:
+            continue
+        if pairs is not None and (job["scope"], job["window"]) not in pairs:
             continue
         case, _, sources = base.resolve(job)
         receipt = base.confirmed(job, base.job_identity(job, case, sources))
@@ -434,11 +447,16 @@ class _Stage:
             return None
         receipt, digest = read_manifest(path, 8 * 1024**2)
         _require(receipt.get("identity") == identity, f"{job['id']} cambió de identidad")
-        for record in (receipt["report"], receipt["prediction"]):
-            _require(
-                sha256(self.output / record["path"]) == record["sha256"],
-                f"Un artefacto confirmado de {job['id']} ha cambiado",
-            )
+        _require(
+            sha256(self.output / receipt["report"]["path"]) == receipt["report"]["sha256"],
+            f"Un artefacto confirmado de {job['id']} ha cambiado",
+        )
+        record = receipt["prediction"]
+        prediction_files.verify(
+            self.output / record["path"],
+            record["sha256"],
+            label=f"Un artefacto confirmado de {job['id']} ha cambiado",
+        )
         return dict(receipt, sha256=digest)
 
     def attempt(self, job):
@@ -472,6 +490,8 @@ class _Stage:
         resolved = self.campaign["comparison_config"]["resolved_scopes"][job["scope"]]
         label = f"{job['id']} ({PARTITION})"
         _require(report.get("final_test_opened") is False, f"{job['id']} abre la reserva final")
+        if self.campaign.get("numerics"):
+            campaign_numerics.require_job(self.campaign["numerics"], job["id"], report)
         _require(
             report.get("modality_ablation") == identity["modality_ablation"],
             f"{job['id']} no declara la ablación pedida",
@@ -523,6 +543,8 @@ class _Stage:
         )
         target = self.folder(job) / "receipt.json"
         atomic_json(target, receipt)
+        # Con el recibo escrito, los índices del calentamiento ya no se leen.
+        release_confirmed(run.folder, job["model"])
         return dict(receipt, sha256=sha256(target))
 
     def execute(self, jobs):
@@ -587,7 +609,7 @@ def _gpu_lease():
     return GpuLease()
 
 
-def _opened(path, views, campaign_output, output):
+def _opened(path, views, campaign_output, output, pairs=None):
     """Etapa, campaña base confirmada y destino comprobados, sin crear nada."""
     stage = load_stage(path)
     campaign = stage["campaign"]
@@ -602,15 +624,18 @@ def _opened(path, views, campaign_output, output):
         outside_source(protected, output)
         outside_source(output, protected)
     _, base = masked_campaign._confirmed_state(campaign["path"], views, campaign_output)
-    _base_receipts(base, campaign, stage)
+    _base_receipts(base, campaign, stage, pairs)
     return stage, base, output
 
 
-def run_stage(path, views, campaign_output, output, *, executors=None, lease=None, stop=None):
+def run_stage(
+    path, views, campaign_output, output, *, executors=None, lease=None, stop=None, window=None
+):
     """Ejecutar o reanudar la etapa sobre una campaña base confirmada.
 
     `executors` sustituye los ejecutores por modelo y `lease`, la reserva de la GPU. La
     protección se comprueba antes de abrir fuentes y antes de cada trabajo pendiente.
+    `window` limita la etapa a una ventana de campaña y a la base confirmada de esa ventana.
     """
     from .checkpoints import StopRequest
 
@@ -618,9 +643,12 @@ def run_stage(path, views, campaign_output, output, *, executors=None, lease=Non
     stage = load_stage(path)
     jobs = plan_stage(stage)
     count_stage(stage, jobs)
+    pairs = None
+    if window is not None:
+        jobs, pairs = campaign_schedule.stage_window(stage["campaign"], jobs, window)
     executors = dict(EXECUTORS if executors is None else executors)
     _require(set(executors) == set(EXECUTORS), "Faltan ejecutores para algún modelo")
-    stage, base, output = _opened(path, views, campaign_output, output)
+    stage, base, output = _opened(path, views, campaign_output, output, pairs)
     identity = _identity(stage, base.views)
     output.mkdir(parents=True, exist_ok=True)
     descriptor = os.open(output / ".lock", os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600)
@@ -638,6 +666,9 @@ def run_stage(path, views, campaign_output, output, *, executors=None, lease=Non
                 "La salida sin identidad contiene artefactos ajenos",
             )
             atomic_json(marker, identity)
+        if stage["campaign"].get("numerics"):
+            # La precisión de la campaña base, antes de crear cualquier modelo.
+            campaign_numerics.apply(stage["campaign"]["numerics"])
         state = _Stage(stage, base, output, identity, executors, None)
         signals = StopRequest() if stop is None else nullcontext(stop)
         reservation = (lease or _gpu_lease)()
@@ -658,13 +689,25 @@ def run_stage(path, views, campaign_output, output, *, executors=None, lease=Non
         os.close(descriptor)
 
 
-def write_sources(path, views, campaign_output, output, scope, *, comparison_path=None):
+def write_sources(
+    path, views, campaign_output, output, scope, *, comparison_path=None, window=None
+):
     """Escribir el manifiesto de predicciones enmascaradas de un ámbito y validarlo.
 
     Sin `comparison_path` se valida con la comparación de la campaña. Una comparación con
     un subconjunto de brazos publica solo esos brazos, como `masked_campaign.write_sources`.
+    Con `window` se publica solo esa ventana en `sources/windows/<ventana>/`.
     """
-    stage, base, output = _opened(path, views, campaign_output, output)
+    pairs = None
+    if window is not None:
+        # La ventana y los anclas de los que parten sus predicciones enmascaradas.
+        planned = [
+            job
+            for job in plan_stage(load_stage(path))
+            if (job["scope"], job["window"]) == (scope, window)
+        ]
+        pairs = {(scope, name) for job in planned for name in (job["window"], job["anchor"])}
+    stage, base, output = _opened(path, views, campaign_output, output, pairs)
     _require(scope in stage["scopes"], "El ámbito no pertenece a la etapa")
     identity = _identity(stage, base.views)
     _require(
@@ -675,11 +718,14 @@ def write_sources(path, views, campaign_output, output, scope, *, comparison_pat
     validation = comparison.load_config(
         Path(comparison_path or stage["campaign"]["comparison_path"]).resolve()
     )
+    if window is not None:
+        validation = comparison.restrict_windows(validation, scope, [window])
     _require(
         validation.get(comparison.ABLATION_FIELD) == stage["declaration"],
         "La comparación de validación no declara la misma ablación",
     )
-    produced = {spec["arm"]: spec for spec in stage["specs"]}
+    produced = {spec["arm"]: spec for spec in stage["scope_specs"][scope]}
+    validation = comparison.scope_config(validation, scope)
     wanted = {
         name: arm
         for name, arm in validation["arms"].items()
@@ -690,9 +736,11 @@ def write_sources(path, views, campaign_output, output, scope, *, comparison_pat
     state = _Stage(stage, base, output, identity, EXECUTORS, None)
     windows = base.views[scope]["windows"]
     folder = output / "sources"
+    if window is not None:
+        windows, folder = {window: windows[window]}, folder / "windows" / window
     variants = {}
     for job in plan_stage(stage):
-        if job["scope"] != scope or job["arm"] not in wanted:
+        if job["scope"] != scope or job["arm"] not in wanted or job["window"] not in windows:
             continue
         _require(
             job["seed"] in wanted[job["arm"]]["seeds"],
@@ -746,6 +794,7 @@ def main(argv=None):
         command.add_argument("--views", action="append", required=True)
         command.add_argument("--campaign-output", type=Path, required=True)
         command.add_argument("--output", type=Path, required=True)
+    execute.add_argument("--window", help="Ventana de campaña que se ejecuta")
     sources.add_argument("--scope", choices=tuple(comparison.SCOPES), required=True)
     sources.add_argument("--comparison", type=Path)
     args = parser.parse_args(argv)
@@ -753,7 +802,7 @@ def main(argv=None):
         result = check_stage(args.stage)
     elif args.command == "run":
         views = masked_campaign._views_argument(args.views)
-        result = run_stage(args.stage, views, args.campaign_output, args.output)
+        result = run_stage(args.stage, views, args.campaign_output, args.output, window=args.window)
         result.pop("jobs")
     else:
         destination = write_sources(

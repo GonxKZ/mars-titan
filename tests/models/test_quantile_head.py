@@ -21,6 +21,7 @@ import torch
 from sklearn.metrics import mean_pinball_loss
 
 from mars_titan.evaluation.forecast_panel import central_intervals
+from mars_titan.models import quantile_head
 from mars_titan.models.quantile_head import (
     CONTRACT,
     LEVELS,
@@ -297,3 +298,19 @@ def test_cuda_head_and_loss_match_cpu(dtype):
     for cpu, cuda in zip(*values, strict=True):
         torch.testing.assert_close(cuda.cpu(), cpu, **tolerance)
     assert (values[1][0].diff(dim=1) >= 0).all()
+
+
+def test_cached_levels_work_after_inference_mode_and_keep_the_loss():
+    quantiles = torch.tensor([[0.1, 0.2, 0.3, 0.4, 0.5]], dtype=torch.float32)
+    target = torch.tensor([0.25], dtype=torch.float32)
+    expected = torch.tensor(LEVELS, dtype=torch.float32)
+    quantile_head._levels.cache_clear()
+    with torch.inference_mode():
+        first = pinball_loss(quantiles.clone(), target.clone())
+    trained = quantiles.clone().requires_grad_(True)
+    loss = pinball_loss(trained, target)
+    loss.backward()
+    residual = target.unsqueeze(-1) - quantiles
+    reference = torch.maximum(expected * residual, (expected - 1) * residual).mean()
+    assert torch.equal(first, reference) and torch.equal(loss.detach(), reference)
+    assert trained.grad is not None

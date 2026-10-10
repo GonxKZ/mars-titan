@@ -41,6 +41,13 @@ CAMPAIGNS = {
 STAGES = {
     v: Path(f"configs/posttraining/historical-masked-adapter-stage-{v.lower()}.json") for v in "AB"
 }
+# Brazos de la sección `variety` de la matriz v3 (#444), que solo declara la etapa A.
+VARIETY = {
+    arm["id"]
+    for arm in json.loads(Path("configs/posttraining/adapter-matrix-v3.json").read_text())[
+        "variety"
+    ]["arms"]
+}
 CANDIDATE = Path("configs/candidate/chronological-training.json")
 EXTENSIONS = Path("configs/baselines/historical-masked-campaign-extensions.json")
 TITANS_RECIPE = Path("configs/titans/chronological-training-historical-masked.json")
@@ -55,6 +62,8 @@ WINDOWS = dict(
     B={"US": (7, 12), "CN": (5, 8), "US+CN": (5, 8)},
 )
 DECLARED, HALVED = "accumulation_rows=null", "accumulation_rows=128"
+# La receta de Titans-MAC declara la acumulación medida en #363, que se mide primero.
+RECIPE_TITANS = "accumulation_rows=1024"
 
 
 def uniform(campaign, rows):
@@ -273,8 +282,10 @@ def test_candidate_hours_use_the_section_it_would_declare(variant):
     rates[EPISODIC] = chronological(["gru_episodic"])
     candidate = throughput.estimate_hours(campaign, counts, rates)["families"][EPISODIC]
     assert candidate["declared_in_campaign"] is False
+    # Cada ventana ajustada tiene dos casos de búsqueda y dos semillas más del elegido. Las tres
+    # semillas del elegido se trasladan.
     for scope, (trained, carried) in WINDOWS[variant].items():
-        expected = (3 * trained * FIT + 3 * carried * CARRY) / 3600
+        expected = (4 * trained * FIT + 3 * carried * CARRY) / 3600
         assert candidate["options"][DECLARED]["scopes"][scope]["hours"] == pytest.approx(expected)
     with pytest.raises(ValueError, match="ya declara"):
         throughput.with_candidate(campaign, CANDIDATE)
@@ -284,16 +295,29 @@ def test_candidate_hours_use_the_section_it_would_declare(variant):
         throughput.with_candidate(load_campaign(CAMPAIGNS[variant]), CANDIDATE, "m9")
 
 
+def growing(campaign, step):
+    """Recuentos uniformes salvo el ajuste, que crece `step` filas en cada ventana."""
+    counts, rates = uniform(campaign, ROWS)
+    for windows in counts.values():
+        for index, rows in enumerate(windows.values()):
+            rows["train"] += index * step
+    return counts, rates
+
+
 @pytest.mark.parametrize(
-    ("variant", "fits", "carries", "parents"),
-    [("A", 3915, 0, 45 * 15), ("B", 1479, 2436, 17 * 15)],
+    ("variant", "fits", "predictions", "parents"),
+    # A ajusta en las redes los 51 casos de la v3 por ventana y semilla, 22 de ellos de la
+    # variedad de adaptadores, y B los 29 de la v2.
+    [("A", 6426, 630, 42 * 15), ("B", 1479, 2436, 17 * 15)],
 )
 def test_posttraining_hours_cover_every_stage_job_and_each_parent_cache(
-    variant, fits, carries, parents
+    variant, fits, predictions, parents
 ):
     stage = campaign_stage.load_stage(STAGES[variant])
     campaign = load_campaign(CAMPAIGNS[variant])
-    counts, rates = uniform(campaign, ROWS)
+    # Cada ventana añade 12.000 filas de ajuste. En A las nuevas de una ventana son esas
+    # menos la validación y la calibración de la anterior: 6.000.
+    counts, rates = growing(campaign, 12_000)
     # El segundo padre candidato de cada brazo es la mitad de rápido, también al predecir
     # la caché. Sin padre elegido, la estimación usa el más lento.
     rates[throughput.POSTTRAINING] = matrix_points(stage, slower=2.0)
@@ -302,12 +326,35 @@ def test_posttraining_hours_cover_every_stage_job_and_each_parent_cache(
     estimate = throughput.estimate_hours(campaign, counts, rates, stage=stage)
     assert throughput.POSTTRAINING in plan.LATER_STAGES
     matrix = estimate["families"][throughput.POSTTRAINING]
-    assert (matrix["training_jobs"], matrix["prediction_jobs"]) == (fits, carries)
+    # Solo se estiman los brazos de las redes, los únicos que mide la matriz.
+    assert (matrix["training_jobs"], matrix["prediction_jobs"]) == (fits, predictions)
     assert matrix["parent_caches"] == parents
-    # La matriz ajusta 5 épocas: 5 de 720 s, 7 validaciones, calibración y evaluación.
-    fit = 5 * 720 + (7 * 4_000 + 10_000) / 200
-    expected = fits * fit + carries * 10_000 / 200 + parents * (36_000 + 4_000) / 200
+    unmeasured = sorted(set(stage["arms"]) - set(stage["families"]))
+    assert matrix["without_estimate"] == unmeasured
+    assert bool(unmeasured) == (variant == "A")
+    # La matriz ajusta 5 épocas a 50 filas/s, 7 validaciones, calibración y evaluación.
+    validation = (7 * 4_000 + 10_000) / 200
+    if variant == "A":
+        # Padre congelado: validación, calibración y evaluación con la inferencia del padre.
+        fit = 5 * 6_000 / 50 + validation
+        expected = fits * fit + predictions * 14_000 / 200 + parents * (6_000 + 4_000) / 200
+    else:
+        # El plan anclado ajusta el tramo entero de cada ancla y traslada a las demás.
+        jobs = [job for job in campaign_stage.plan_stage(stage) if job["kind"] == "fit"]
+        trains = [counts[job["scope"]][job["window"]]["train"] for job in jobs]
+        caches = {(job["scope"], job["window"], job["base_arm"], job["seed"]) for job in jobs}
+        cached = sum(counts[scope][window]["train"] + 4_000 for scope, window, *_ in caches)
+        expected = (
+            sum(5 * train / 50 + validation for train in trains)
+            + predictions * 10_000 / 200
+            + cached / 200
+        )
     assert matrix["hours"] == pytest.approx(expected / 3600)
+    flat = uniform(campaign, ROWS)[0]
+    if variant == "A":
+        # Sin filas nuevas en los recuentos la estimación no tiene sentido.
+        with pytest.raises(ValueError, match="no tiene filas nuevas"):
+            throughput.estimate_hours(campaign, flat, rates, stage=stage)
     other = campaign_stage.load_stage(STAGES["B" if variant == "A" else "A"])
     with pytest.raises(ValueError, match="no parte de esta campaña"):
         throughput.estimate_hours(campaign, counts, rates, stage=other)
@@ -315,11 +362,32 @@ def test_posttraining_hours_cover_every_stage_job_and_each_parent_cache(
     assert unmeasured["families"][throughput.POSTTRAINING] == dict(status="not_measured")
 
 
+def test_the_measured_stage_contains_the_cases_of_both_matrix_versions():
+    # A declara la matriz v3 y B la v2. Los casos de las redes de B están en A salvo por la
+    # huella, y A añade los brazos de la variedad, así que se mide A en cualquier orden.
+    a, b = (campaign_stage.load_stage(STAGES[variant]) for variant in "AB")
+    assert a["matrix_sha256"] != b["matrix_sha256"]
+    measured_a, measured_b = (throughput._measured_cases(stage) for stage in (a, b))
+    assert throughput._covers(measured_a, measured_b)
+    assert not throughput._covers(measured_b, measured_a)
+    assert throughput.covering_stage([b, a]) is a and throughput.covering_stage([a, b]) is a
+    for arm, cases in measured_b["cases"].items():
+        extra = set(measured_a["cases"][arm]) - set(cases)
+        assert extra and all(key.split("/", 1)[1] in VARIETY for key in extra), arm
+    # Otro presupuesto o una red que A no mide dejan a B sin medida.
+    budget = copy.deepcopy(b)
+    budget["matrix"]["budget"]["batch_size"] *= 2
+    fewer = dict(a, families={arm: family for arm, family in a["families"].items() if arm != "gru"})
+    for stages in ([a, budget], [fewer, b]):
+        with pytest.raises(ValueError, match="Ninguna etapa"):
+            throughput.covering_stage(stages)
+
+
 def test_variant_b_costs_less_than_a_with_the_same_rates():
     estimates = []
     for variant in "AB":
         campaign = throughput.with_candidate(load_campaign(CAMPAIGNS[variant]), CANDIDATE)
-        counts, rates = uniform(campaign, ROWS)
+        counts, rates = growing(campaign, 12_000)
         rates[TITANS] = chronological(campaign[TITANS]["arms"])
         rates[EPISODIC] = chronological(["gru_episodic"])
         stage = campaign_stage.load_stage(STAGES[variant])
@@ -327,7 +395,10 @@ def test_variant_b_costs_less_than_a_with_the_same_rates():
         estimates.append(throughput.estimate_hours(campaign, counts, rates, stage=stage))
         assert json.loads(json.dumps(estimates[-1])) == estimates[-1]
     comparison = throughput._comparison(estimates)
-    assert comparison["A"]["without_estimate"] == []
+    # La matriz medida solo cubre las redes. Los brazos de Titans-MAC y la cadena trivial de
+    # Ridge y XGBoost de A quedan sin estimar, y el total lo dice.
+    assert comparison["A"]["without_estimate"] == [throughput.POSTTRAINING]
+    assert comparison["B"]["without_estimate"] == []
     assert 0 < comparison["b_over_a"]["declared_options"] < 1
     assert comparison["b_over_a"]["fastest_options"] == pytest.approx(
         comparison["B"]["fastest_options"] / comparison["A"]["fastest_options"]
@@ -336,7 +407,7 @@ def test_variant_b_costs_less_than_a_with_the_same_rates():
 
 
 @pytest.mark.parametrize(
-    ("variant", "mars", "cm"), [("A", (1080, 0), (1080, 0)), ("B", (408, 504), (408, 336))]
+    ("variant", "mars", "cm"), [("A", (1620, 0), (1080, 0)), ("B", (612, 756), (408, 336))]
 )
 def test_readout_and_core_hours_follow_the_exact_plan_and_their_parents(variant, mars, cm):
     campaign = extended(variant)
@@ -491,6 +562,33 @@ def test_measurement_runs_forward_and_backward_without_changing_weights(views, c
     unchanged(recorded)
 
 
+def test_the_measured_transformer_admits_the_measured_batch_with_the_same_weights(views, cpu):
+    from mars_titan.training.reference_run import configured_corpus
+
+    campaign = load_campaign(CAMPAIGNS["A"])
+    ((_, case), *_) = campaign["neural"]["candidates"]["transformer_compact"]
+    dataset = configured_corpus(
+        views / "fold-018/manifest.json", input_policy=campaign["input_policy"]
+    )
+    declared, _ = throughput._reference(case, dataset, 256)
+    wider, _ = throughput._reference(case, dataset, 512)
+    assert declared.max_batch is None and declared.price_encoder.max_batch == 256
+    assert wider.max_batch == wider.price_encoder.max_batch == 512
+    assert declared.state_dict().keys() == wider.state_dict().keys()
+    for name, value in declared.state_dict().items():
+        other = wider.state_dict()[name]
+        if isinstance(value, torch.Tensor):
+            assert torch.equal(value, other), name
+        elif name.endswith("price_encoder._extra_state"):
+            # Solo cambia el contrato del lote: el máximo y su presupuesto de atención.
+            changed = {
+                key for key in value.keys() | other.keys() if value.get(key) != other.get(key)
+            }
+            assert changed == {"max_batch", "max_attention_elements"} and other["max_batch"] == 512
+        else:
+            assert value == other, name
+
+
 def test_matrix_measurement_covers_every_case_without_changing_the_parent(
     views, cpu, recorded, monkeypatch
 ):
@@ -513,11 +611,22 @@ def test_matrix_measurement_covers_every_case_without_changing_the_parent(
     rates = throughput.measure_posttraining(
         stage, views / "fold-018/manifest.json", batches=1, warmup=0
     )
-    assert built == [42] * 5
+    # Los puntos medidos son los casos de una semilla que la matriz da a la GRU, también los
+    # de la variedad de adaptadores.
+    declared = [
+        item["id"].split("/", 1)[1]
+        for item in adapter_matrix.cases(
+            stage["matrix"], stage["matrix_sha256"], "gru", head=QUANTILE_HEAD
+        )
+        if item["case"]["seed"] == 42
+    ]
+    assert built == [42] * len(declared)
     assert len(optim_module._global_optimizer_pre_hooks) == hooks
     ((name, points),) = rates["gru"].items()
     assert name == "gru-00"
-    assert set(points) == {"full_continuation", "head", "fusion", "head+fusion", "fusion_full_rank"}
+    assert list(points) == declared
+    assert {"full_continuation", "head", "fusion", "head+fusion", "fusion_full_rank"} < set(points)
+    assert {"fusion_dora", "fusion_ia3", "fusion_parallel_adapter", "bias"} < set(points)
     for point, record in points.items():
         assert record["train"] > 0 and record["inference"] > 0, point
         assert record["measured_train_rows"] == record["measured_inference_rows"] == 1
@@ -727,7 +836,8 @@ def test_titans_measurement_walks_the_chronological_trainer_without_changing_wei
     (record,) = rates.values()
     assert record["variant"] == "mac_online" and record["measured_case"] == "lr1e-4"
     assert record["shared_by_cases"] == ["lr1e-4", "lr1e-3"]
-    assert record["declared_option"] == DECLARED and set(record["options"]) == {DECLARED, HALVED}
+    assert record["declared_option"] == RECIPE_TITANS
+    assert list(record["options"]) == [RECIPE_TITANS, DECLARED, HALVED]
     for result in record["options"].values():
         assert result["train"] > 0 and result["measured_train_rows"] > 0
         assert result["step_calls_without_update"] == 2
@@ -757,9 +867,13 @@ def test_candidate_measurement_compares_accumulation_and_recomputation(
     )
     (record,) = rates.values()
     assert record["variant"] == "m1_k1"
+    # Los dos casos solo cambian la tasa de aprendizaje y comparten la medida del primero.
+    assert record["measured_case"] == "lr1e-4"
+    assert record["shared_by_cases"] == ["lr1e-4", "lr1e-3"]
+    declared = "accumulation_rows=128,recompute=false"
     names = [throughput.option_name(option) for option in throughput.CANDIDATE_OPTIONS]
-    assert list(record["options"]) == names
-    assert record["declared_option"] == "accumulation_rows=null,recompute=false"
+    assert list(record["options"]) == [declared, *(name for name in names if name != declared)]
+    assert record["declared_option"] == declared
     for result in record["options"].values():
         assert result["train"] > 0 and result["step_calls_without_update"] == 2
     assert record["inference"] > 0 and record["measured_inference_rows"] > 0
@@ -778,8 +892,15 @@ MARS_ARMS = {
     "mars_titan_m2": {"episodic_bank": "m2"},
     "mars_titan_m3": {"episodic_bank": "m3"},
     "mars_titan_m1_k2": {"episodic_bank": "m1", "refinements": 2},
+    "mars_titan_m1_k4_first_read": {
+        "episodic_bank": "m1",
+        "refinements": 4,
+        "refinement_episodes": "first_read",
+    },
+    "mars_titan_b6": {"associative_memory": {"rule": "proximal", "key": "codec"}},
 }
 MEASURED = dict(segments=1, segment_warmup=0, events=1, event_warmup=0)
+CORRECTION_RECIPE = Path("configs/titans/mature-correction-historical-masked.json")
 
 
 def reduced_readout(folder):
@@ -802,10 +923,45 @@ def mars_campaign(folder, arms):
         parent_arm="titans_mac_online",
         search_seed=42,
     )
+    if any("associative_memory" in MARS_ARMS[name] for name in arms):
+        section["correction_recipe"] = str(CORRECTION_RECIPE.resolve())
     campaign[MARS] = plan._mars_titan(
         section, compared, campaign["rule"], campaign["input_policy"], folder, 2, campaign[TITANS]
     )
     return campaign
+
+
+def test_mars_measurement_walks_the_correction_without_a_reader_or_steps(
+    views, cpu, tmp_path, guarded_steps, frozen_checks
+):
+    campaign = mars_campaign(tmp_path / "config", ["mars_titan_b6"])
+    measured = dict(MEASURED, events=4)
+    rates = throughput.measure_mars_titan(
+        campaign, views / "fold-000/manifest.json", tmp_path / "work", **measured
+    )
+    record = rates["mars_titan_b6"]
+    assert record["declared_option"] == "recipe"
+    assert record["options"] == {"recipe": dict(train=None, peak_vram_allocated_bytes=0)}
+    assert record["inference"] > 0 and record["measured_inference_rows"] > 0
+    # Los eventos del tramo de ajuste no tienen calentamiento, así que A recibe etiquetas
+    # maduras durante toda la medida.
+    assert record["associative_writes"] > 0
+    assert record["measured_case"] == "eta5e-2"
+    assert record["shared_by_cases"] == ["eta5e-2", "eta25e-2"]
+    assert record["components"] == MARS_ARMS["mars_titan_b6"]
+    assert not {"loss", "mean_loss", "session_mae"} & set(record)
+    # Sin lector no hay optimizador, ni siquiera el de la medición.
+    assert guarded_steps == [] and frozen_checks == []
+
+
+def test_correction_hours_predict_each_measured_tramo_once():
+    rate = dict(train=None, inference=400.0)
+    rows = dict(train=8000, validation=400, calibration=800, evaluation=1200)
+    fit, carry = dict(kind=plan.FIT), dict(kind=plan.CARRY)
+    assert throughput.validated_job_seconds(fit, rows, rate, 30) == pytest.approx(2400 / 400)
+    assert throughput.validated_job_seconds(carry, rows, rate, 30) == pytest.approx(2000 / 400)
+    fitted = throughput.validated_job_seconds(fit, rows, dict(rate, train=100.0), 30)
+    assert fitted == pytest.approx(30 * 8000 / 100 + (32 * 400 + 2000) / 400)
 
 
 def cm_campaign(folder, *, warmup_months=12, frequency=1):
@@ -884,7 +1040,13 @@ def test_mars_measurement_walks_the_m0_readout_over_a_frozen_parent(
 def test_mars_measurement_walks_the_bank_readouts_with_their_admission_and_k(
     views, cpu, tmp_path, guarded_steps
 ):
-    arms = ["mars_titan_m1", "mars_titan_m2", "mars_titan_m3", "mars_titan_m1_k2"]
+    arms = [
+        "mars_titan_m1",
+        "mars_titan_m2",
+        "mars_titan_m3",
+        "mars_titan_m1_k2",
+        "mars_titan_m1_k4_first_read",
+    ]
     campaign = mars_campaign(tmp_path / "config", arms)
     view = views / "fold-000/manifest.json"
     rates = throughput.measure_mars_titan(campaign, view, tmp_path / "work", **MEASURED)
@@ -927,14 +1089,14 @@ def test_cm_measurement_walks_both_cores_with_the_penalty_and_the_four_readouts(
     assert list(rates) == [*plan.CM_CORES, *plan.CM_ARMS]
     for core, mode in zip(plan.CM_CORES, ("disabled", "penalty"), strict=True):
         record = rates[core]
-        assert record["control_mode"] == mode and record["accumulation_rows"] is None
-        assert record["declared_option"] == DECLARED and record["inference"] > 0
-        # Los núcleos comparan las dos opciones de Titans-MAC, también con C.
-        assert list(record["options"]) == [DECLARED, HALVED]
+        assert record["control_mode"] == mode and record["accumulation_rows"] == 1024
+        assert record["declared_option"] == RECIPE_TITANS and record["inference"] > 0
+        # Los núcleos comparan las opciones de Titans-MAC, también con C.
+        assert list(record["options"]) == [RECIPE_TITANS, DECLARED, HALVED]
         for result in record["options"].values():
             assert result["train"] > 0 and result["step_calls_without_update"] == 2
     # Solo el núcleo con la penalización recorre flujos medidos de C en la ventana.
-    for name in (DECLARED, HALVED):
+    for name in (RECIPE_TITANS, DECLARED, HALVED):
         assert "window_counters" not in rates["cm_v1_core_b"]["options"][name]
         counters = rates["cm_v1_core_c"]["options"][name]["window_counters"]
         assert counters["end"]["control_flows"] > counters["start"]["control_flows"] >= 0
@@ -945,10 +1107,11 @@ def test_cm_measurement_walks_both_cores_with_the_penalty_and_the_four_readouts(
         assert (record["control"], record["consolidation"]) == cm_v1_factorial.ARMS[arm]
         (result,) = record["options"].values()
         assert result["window_counters"]["end"]["admitted"] > 0
-    assert set(guarded_steps) == {1} and len(guarded_steps) == 2 * 8
+    # Tres opciones en cada núcleo y una en cada uno de los cuatro lectores.
+    assert set(guarded_steps) == {1} and len(guarded_steps) == 2 * (2 * 3 + 4)
     # Los núcleos ajustan todos sus parámetros y los lectores vigilan además su padre.
-    assert frozen_checks[:4] == [0] * 4 and all(count > 0 for count in frozen_checks[4:])
-    assert len(frozen_checks) == 8
+    assert frozen_checks[:6] == [0] * 6 and all(count > 0 for count in frozen_checks[6:])
+    assert len(frozen_checks) == 2 * 3 + 4
 
 
 def test_cm_measurement_needs_a_window_that_reaches_the_flows_of_c(tmp_path):
@@ -981,7 +1144,7 @@ def doubled(monkeypatch):
     monkeypatch.setenv("CUBLAS_WORKSPACE_CONFIG", ":4096:8")
     monkeypatch.setattr(experiment_resources, "GpuLease", Lease)
     monkeypatch.setattr(
-        throughput, "_window_counts", lambda campaign, views: uniform(campaign, ROWS)[0]
+        throughput, "_window_counts", lambda campaign, views: growing(campaign, 12_000)[0]
     )
 
     def double(name, result):
@@ -1175,7 +1338,7 @@ def test_campaign_report_adds_the_policy_stage_apart_from_gpu_hours(doubled, pol
     for *_, kwargs in doubled:
         assert not any(key.startswith("policy_") for key in kwargs)
     assert report["rates"][throughput.POLICY_STAGE] == POLICY_RATES
-    jobs = dict(A=dict(fit=1368, reference=792), B=dict(fit=456, carry=912, reference=792))
+    jobs = dict(A=dict(fit=1368, reference=1221), B=dict(fit=456, carry=912, reference=1221))
     for estimate, previous in zip(report["estimates"], without["estimates"], strict=True):
         stage = estimate[throughput.POLICY_STAGE]
         assert stage["status"] == "approximate" and stage["jobs"] == jobs[estimate["variant"]]
@@ -1236,9 +1399,9 @@ def test_campaign_report_measures_the_prepared_families_and_their_policy_stage(
         sha256=campaign_extensions.load_extensions(EXTENSIONS)["sha256"],
         status="prepared_not_declared",
     )
-    # Con las tres familias, la etapa de políticas resuelve 22 predictores en vez de 11.
-    jobs = dict(A=dict(fit=2160, reference=1584), B=dict(fit=720, carry=1440, reference=1584))
-    expected = dict(A=((1080, 0), (1080, 0)), B=((408, 504), (408, 336)))
+    # Con las tres familias, la etapa de políticas resuelve 25 predictores en vez de 11.
+    jobs = dict(A=dict(fit=2376, reference=2775), B=dict(fit=792, carry=1584, reference=2775))
+    expected = dict(A=((1620, 0), (1080, 0)), B=((612, 756), (408, 336)))
     for estimate in report["estimates"]:
         families = estimate["families"]
         assert set(families) == {NEURAL, TITANS, EPISODIC, MARS, CM, throughput.POSTTRAINING}

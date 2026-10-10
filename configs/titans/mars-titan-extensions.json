@@ -39,7 +39,7 @@
         ],
         "normalization": "x_over_x_plus_training_median",
         "error": "abs(label - issued_prediction) after maturity",
-        "anomaly": "abs(last close log return) / median absolute deviation of the 62 previous returns of the 64-session price window",
+        "anomaly": "abs(last log return between observed closes) / median absolute deviation of the previous returns between observed closes of the 64-session window, 62 when every session is observed",
         "relevance": "max over known components: filing freshness m_f/(m_f+age) and news presence 1-p_news/2",
         "missing_relevance": "unknown and never zero: neutral 0.5 when no component is known",
         "macro_relevance": "not_included",
@@ -90,8 +90,9 @@
       "map_ids": ["I11"],
       "enabled": false,
       "disabled_value": "absent",
-      "allowed": ["delta", "proximal"],
+      "allowed": ["delta", "proximal", "kalman"],
       "value": {"rule": "allowed", "key": ["codec", "constant"], "rate": "eta", "forgetting": "lambda"},
+      "kalman_value": {"rule": "kalman", "key": ["codec", "constant"], "process_noise": "q", "observation_noise": "sigma2", "cohort_correlation": "rho", "prior_variance": "p0", "huber_threshold": "c_or_null"},
       "excludes": ["episodic_bank"],
       "phases": ["evaluation"],
       "state": "associative_matrix",
@@ -99,7 +100,8 @@
       "level": "N4",
       "issues": [392, 27, 28],
       "control": "Titans-MAC sin componente, corrector de sesgo con la coordenada constante del codec y M1 con las mismas etiquetas",
-      "pending": "Elección de η y λ en desarrollo. El recorrido cronológico por ventanas todavía no emite B6"
+      "window": "src/mars_titan/training/mars_titan_correction.py:CorrectionInference",
+      "pending": "Elección de q, σ², ϱ y p0 para la regla kalman (PT3, configs/evaluation/kalman-associative-comparison.json), en desarrollo. La ventana walk-forward emite B6 con las reglas delta y proximal y la receta mature-correction-historical-masked, que fija λ y dos casos de η elegidos con la validación. La regla delta queda conectada sin brazo de campaña y la regla kalman todavía no tiene ventana ni brazo. La comparación espera a la edición histórica"
     },
     "document_selection": {
       "connection": "declared",
@@ -113,7 +115,7 @@
       "level": "N2",
       "issues": [17, 213],
       "control": "Media de la misma ventana, que los pesos uniformes deben reproducir",
-      "pending": "Materializar conjuntos de documentos por decisión desde DocumentIndex con coste medido"
+      "pending": "No entra en la campaña A: sustituye la entrada de noticias del núcleo y exige su propio padre Titans-MAC. Falta materializar conjuntos de documentos por decisión desde DocumentIndex con coste medido"
     },
     "regime_context": {
       "connection": "declared",
@@ -127,7 +129,7 @@
       "level": "N2",
       "issues": [20],
       "control": "Sin régimen, reglas observables de volatilidad y tendencia y banco global a igual capacidad",
-      "pending": "Enlace Python de MarkovFilter, parámetros por fold y entrada en la fusión"
+      "pending": "No entra en la campaña A: falta el enlace Python de MarkovFilter y su ajuste por ventana. Como contexto de la fusión exige su propio padre y como partición del banco espera al resultado de A2"
     },
     "information_view": {
       "connection": "declared",
@@ -141,7 +143,7 @@
       "level": "N2",
       "issues": [214, 28],
       "control": "Vista completa con paridad exacta y margen de no inferioridad fijado antes",
-      "pending": "El índice de observaciones exige un CorpusDataset exacto"
+      "pending": "No entra en la campaña A: cambia las entradas del núcleo y exige su propio padre. El índice de observaciones exige un CorpusDataset exacto"
     },
     "adaptive_refinements": {
       "connection": "declared",
@@ -156,7 +158,7 @@
       "level": "N1",
       "issues": [56],
       "control": "K fijo y asignación aleatoria con el mismo cómputo medio",
-      "pending": "Utilidad obtenida de rutas emitidas, con su coste registrado"
+      "pending": "No entra en la campaña A: espera a los resultados de A4 y A10. La utilidad se obtendría de rutas emitidas, con su coste registrado"
     },
     "replay_schedule": {
       "connection": "declared",
@@ -170,7 +172,7 @@
       "level": "N2",
       "issues": [55, 215],
       "control": "Los tres calendarios con el mismo multiconjunto, lotes y actualizaciones",
-      "pending": "Enlace Python de ReplaySchedule y conexión con un entrenador cronológico"
+      "pending": "No entra en la campaña A: falta definir la repetición en un entrenador con estado cronológico, el enlace Python de ReplaySchedule y su conexión"
     },
     "adapters": {
       "connection": "declared",
@@ -215,7 +217,8 @@
     {"id": "A8", "reference": "base", "change": {"information_view": "reduced_view"}},
     {"id": "A9", "reference": "fitted_arm", "change": {"replay_schedule": ["uniform", "recent", "spaced"]}},
     {"id": "A10", "reference": "A4", "change": {"refinement_episodes": "first_read"}},
-    {"id": "A11", "reference": "A3", "change": {"episodic_bank": "m3"}}
+    {"id": "A11", "reference": "A3", "change": {"episodic_bank": "m3"}},
+    {"id": "A12", "reference": "A5", "change": {"associative_memory": ["kalman"]}}
   ],
   "budget": {
     "protocol": "issue 363",
@@ -225,6 +228,6 @@
   "pending": [
     "Ejecutar el ajuste del lector y las comparaciones cuando la edición histórica desde 2000 esté verificada.",
     "Estimar las escalas de M3 con el tramo de entrenamiento de cada ventana al ejecutar, sin abrir validación ni evaluación.",
-    "Conectar los componentes declarados sin conexión con su control de descarte."
+    "Los componentes declarados sin conexión no entran en la campaña A. Su motivo, su control de descarte y el trabajo que los habilitaría están en docs/research/titans-mac-architecture.md."
   ]
 }

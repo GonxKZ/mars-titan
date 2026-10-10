@@ -59,8 +59,21 @@ from .checkpoints import (
     save_training_state,
 )
 from .financial_run import _compatible
+from .kernel_policy import declared_policy, require_policy, valid_precision
 from .learning_hold import require_learning_allowed
-from .selection import VALIDATION_PLATEAU, advance_selection, initial_selection, validate_selection
+from .search_cases import SEARCHED, case_options, checked_search_cases
+from .selection import (
+    AWAIT,
+    FINISH,
+    VALIDATION_PLATEAU,
+    advance_selection,
+    awaiting,
+    bind_joint_epoch,
+    epoch_decision,
+    initial_selection,
+    validate_selection,
+)
+from .walk_forward_phases import checked_warmup
 
 RECIPE = "candidate_gru_chronological_v1"
 ADMISSIONS = ("m0", "m1")
@@ -107,6 +120,8 @@ class CandidateRecipe:
     recompute: bool = False
     checkpoint_updates: int = 256
     checkpoint_seconds: float = 900.0
+    # None conserva la configuración numérica del proceso y la identidad anterior.
+    precision: str | None = None
 
     def __post_init__(self):
         validate_selection(self.selection, epochs=self.epochs)
@@ -131,6 +146,7 @@ class CandidateRecipe:
             or not 0 < self.learning_rate <= 1
             or self.weight_decay < 0
             or self.checkpoint_seconds <= 0
+            or not valid_precision(self.precision)
             or (
                 rows is not None
                 and (type(rows) is not int or not self.block_rows <= rows <= 65_536)
@@ -146,10 +162,13 @@ class CandidateRecipe:
             )
 
     def identity(self):
+        fields = asdict(self)
+        if fields["precision"] is None:
+            fields.pop("precision")
         return dict(
             schema_version=1,
             recipe=RECIPE,
-            **asdict(self),
+            **fields,
             optimizer="AdamW",
             update_unit="decision_instants_per_segment_no_bptt",
             label_rule="loss_only_after_maturity_event_then_next_segment_update",
@@ -166,8 +185,13 @@ class CandidateRecipe:
         )
 
 
-def load_recipe(path, *, variant):
-    """Leer la receta, su variante y la regla de selección del protocolo referenciado."""
+def load_recipe(path, *, variant, search_case=None):
+    """Leer la receta, su variante, su caso de búsqueda y la regla del protocolo.
+
+    La sección `walk_forward` declara el calentamiento de entradas, el mismo que los demás
+    brazos con memoria, y los casos de búsqueda del optimizador con la regla común de
+    `search_cases`. Si la receta los declara, el caso es obligatorio.
+    """
     path = Path(path)
     if path.is_symlink() or not path.is_file() or path.stat().st_size > 64 * 1024:
         raise ValueError("La receta no es un archivo regular de hasta 64 KiB")
@@ -182,6 +206,7 @@ def load_recipe(path, *, variant):
         "recipe",
         "variants",
         "principal",
+        "walk_forward",
         "pending",
     }
     if (
@@ -192,13 +217,30 @@ def load_recipe(path, *, variant):
         or not isinstance(document["variants"], dict)
         or document["principal"] not in document["variants"]
         or variant not in document["variants"]
+        or not isinstance(document["walk_forward"], dict)
+        or not {"warmup_months"}
+        <= set(document["walk_forward"])
+        <= {"warmup_months", "search_cases"}
     ):
         raise ValueError("La receta no conserva su esquema, variantes y brazo principal")
+    checked_warmup(document["walk_forward"]["warmup_months"])
+    cases = document["walk_forward"].get("search_cases")
+    if cases is not None:
+        # Ninguna variante puede cambiar lo que elige la búsqueda.
+        if any(set(changes) & set(SEARCHED) for changes in document["variants"].values()):
+            raise ValueError("Las variantes no pueden cambiar los hiperparámetros buscados")
+        checked_search_cases(
+            cases,
+            document["recipe"],
+            lambda **options: [
+                CandidateRecipe(**(options | changes)) for changes in document["variants"].values()
+            ],
+        )
     protocol_path = (path.parent / document["protocol"]).resolve()
     protocol = json.loads(protocol_path.read_text(encoding="utf-8"))
     rule = stopping_rule(protocol)
-    options = {**document["recipe"], **document["variants"][variant]}
-    recipe = CandidateRecipe(**options)
+    base = case_options(document["recipe"], cases, search_case)
+    recipe = CandidateRecipe(**(base | document["variants"][variant]))
     if recipe.epochs != rule["max_epochs"] or recipe.selection != {
         key: value for key, value in rule.items() if key != "max_epochs"
     }:
@@ -406,6 +448,8 @@ class CandidateChronologicalPredictor:
         if self.device == "cuda:0" and not torch.cuda.is_available():
             raise RuntimeError("cuda:0 no está disponible y no se cambia de dispositivo")
         self.adapter, self.model, self.recipe = adapter, model, recipe
+        # La política se aplica antes de calcular nada y antes de registrar `_numerics`.
+        self.kernel_policy = declared_policy(recipe.precision)
         self.native, self.specification = adapter.native, adapter.specification
         self.sources = sources
         self.world, self.fold = world, fold
@@ -448,12 +492,16 @@ class CandidateChronologicalPredictor:
                 )
         return run.memory
 
-    def _forward(self, batch, memory, *, grad):
+    def _inputs(self, batch):
+        """Entradas nativas del lote validado, sin grafo."""
         with torch.inference_mode(False), torch.no_grad():
             tensors = DecisionBatch.from_validated(batch, device=self.device, dtype=self.dtype)
-        inputs = self.native.CandidateInputs(
+        return self.native.CandidateInputs(
             *(tensors.inputs[name] for name in MODALITIES), tensors.presence
         )
+
+    def _forward(self, batch, memory, *, grad):
+        inputs = self._inputs(batch)
         refinements = self.recipe.refinements
         if grad and self.recipe.recompute:
             # Mismos parámetros, instantánea y K en la repetición. La salida emitida no cambia.
@@ -482,6 +530,9 @@ class CandidateChronologicalPredictor:
             if train:
                 run.outstanding[block] = size
             emitted = quantiles.detach()
+            # Un único nodo de autograd para las filas del bloque. Indexar fila a fila creaba
+            # uno por fila, y cada backward rellenaba con ceros un gradiente del bloque entero.
+            graphs = quantiles.unbind(0) if train else None
             issued = emitted[:, MEDIAN_INDEX].cpu().tolist()
             levels = None if train else emitted.cpu().numpy()
             encoded = None if self.codec is None else self.codec.encode(batch)
@@ -498,7 +549,7 @@ class CandidateChronologicalPredictor:
                 run.pending[flow, at] = entry
                 if train:
                     entry.block = block
-                    run.graphs[flow, at] = quantiles[row]
+                    run.graphs[flow, at] = graphs[row]
                 if self.audit is not None:
                     self.audit.append(("prediction", partition, flow, at, issued[row], seen))
             run.counters["predictions"] += size
@@ -639,6 +690,18 @@ class CandidateChronologicalTrainer(CandidateChronologicalPredictor):
     maduras. K repite lectura y refinamiento sobre la misma instantánea y no escribe.
     """
 
+    # Gancho opcional para las trazas de #448. Se llama como `trace(event, modules)` después
+    # de cada validación completa y no debe cambiar el cálculo ni el RNG. Si vale None, el
+    # recorrido no llama a nada y es el mismo de antes bit a bit.
+    trace = None
+
+    def _trace_modules(self):
+        """Módulos con parámetros del recorrido: el nativo y, en un adaptador, su cabeza."""
+        head = getattr(self, "head", None)
+        return dict(model=self.model) | (
+            dict(head=head) if isinstance(head, torch.nn.Module) else {}
+        )
+
     def __init__(
         self,
         adapter,
@@ -661,9 +724,7 @@ class CandidateChronologicalTrainer(CandidateChronologicalPredictor):
             adapter, recipe, sources=sources, output=output, world=world, fold=fold, audit=audit
         )
         self.train, self.validation, self.heldout = train, validation, heldout
-        model = self.model
-        self.roles, self.inert = parameter_roles(model, recipe.admission)
-        named = model.named_parameters()
+        self.roles, self.inert, named = self._parameter_groups(self.model, recipe.admission)
         groups = [
             dict(params=[named[name] for name in names], role=role)
             for role, names in self.roles.items()
@@ -701,8 +762,17 @@ class CandidateChronologicalTrainer(CandidateChronologicalPredictor):
             numerics=_numerics(),
             final_test_opened=False,
         )
+        if self.kernel_policy is not None:
+            # Sin precisión declarada la identidad conserva su forma anterior.
+            self.identity["kernel_policy"] = self.kernel_policy
         self.run_id = hashlib.sha256(canonical(self.identity).encode()).hexdigest()
         self.global_step, self.selection, self.history, self.train_metrics = 0, None, [], None
+
+    @staticmethod
+    def _parameter_groups(model, admission):
+        """Papeles, parámetros inertes y tensores ajustables por nombre."""
+        roles, inert = parameter_roles(model, admission)
+        return roles, inert, model.named_parameters()
 
     @staticmethod
     def _code():
@@ -714,6 +784,14 @@ class CandidateChronologicalTrainer(CandidateChronologicalPredictor):
             or _numerics() != self.identity["numerics"]
         ):
             raise ValueError("El código o la configuración numérica cambiaron durante el recorrido")
+        require_policy(self.recipe.precision, self.kernel_policy)
+
+    def _extra_state(self):
+        """Estado ajustable fuera del módulo nativo. El ajuste del candidato no tiene ninguno."""
+        return {}
+
+    def _restore_extra(self, state):
+        """Recuperar el estado de `_extra_state` junto a los parámetros nativos."""
 
     def _loss(self, quantiles, target, *, reduction="mean"):
         if self.recipe.loss == PINBALL:
@@ -900,8 +978,12 @@ class CandidateChronologicalTrainer(CandidateChronologicalPredictor):
             )
         return result
 
-    def run(self, *, resume=False, stop=None):
-        """Recorrer épocas con presupuesto fijo, conservar el mejor estado y predecir."""
+    def run(self, *, resume=False, stop=None, joint_epoch=None):
+        """Recorrer épocas con la regla declarada, conservar el mejor estado y predecir.
+
+        Con la meseta conjunta, el ajuste espera en su primera meseta (`AWAIT`) hasta que se
+        reanuda con la época común del grupo (`joint_epoch`).
+        """
         require_learning_allowed("el entrenador cronológico de la GRU candidata")
         output, checkpoints = self.output, self.output / "checkpoints"
         if type(resume) is not bool or output.is_symlink() or output.exists() != resume:
@@ -913,12 +995,15 @@ class CandidateChronologicalTrainer(CandidateChronologicalPredictor):
             report = _read_report(report_path)
             if report["identity"] != self.identity:
                 raise ValueError("La identidad o configuración de la ejecución ha cambiado")
+            # Una ejecución ya conjunta solo continúa o se confirma con su misma época común.
+            bind_joint_epoch(report, joint_epoch, self.recipe.selection, self.recipe.epochs)
             if report["status"] == "completed":
                 return report
             state = load_training_state(checkpoints, expected_identity=self.identity)
             _load_parameters(self.model, state["model"])
             if self.model.parameter_fingerprint() != state["parameters_sha256"]:
                 raise ValueError("Los parámetros recuperados no conservan su huella")
+            self._restore_extra(state)
             self.optimizer.load_state_dict(state["optimizer"])
             restore_rng(state["rng"], self.device)
             self.global_step, cursor = state["global_step"], state["cursor"]
@@ -938,6 +1023,7 @@ class CandidateChronologicalTrainer(CandidateChronologicalPredictor):
                 final_test_opened=False,
                 attempts=[],
             )
+            bind_joint_epoch(report, joint_epoch, self.recipe.selection, self.recipe.epochs)
 
         def save(position, current=None, *, best=False):
             self._check_runtime()
@@ -952,6 +1038,7 @@ class CandidateChronologicalTrainer(CandidateChronologicalPredictor):
                 history=self.history,
                 train_metrics=self.train_metrics,
                 run=None if current is None else self._export(current),
+                **self._extra_state(),
             )
             path = save_training_state(checkpoints, state, identity=self.identity, best=best)
             reference = dict(path=str(path.relative_to(output)), sha256=sha256(path))
@@ -967,11 +1054,32 @@ class CandidateChronologicalTrainer(CandidateChronologicalPredictor):
             save(cursor)
         started = time.perf_counter()
         try:
+            options = self.recipe.selection
             while cursor["phase"] != "predictions":
                 epoch = cursor["epoch"]
+                if cursor["phase"] == "train" and cursor["stage"] == "start":
+                    # Al empezar una época, el ajuste espera al grupo o
+                    # termina si ya está en la época conjunta.
+                    decision = epoch_decision(
+                        self.selection, options, self.recipe.epochs, joint_epoch
+                    )
+                    if decision == AWAIT:
+                        report.update(awaiting(self.selection, self.recipe.epochs))
+                        return report
+                    if decision == FINISH:
+                        cursor = dict(epoch=epoch, phase="predictions")
+                        save(cursor)
+                        continue
                 if cursor["phase"] == "validation":
                     metrics = self.evaluate(self.validation, stop=stop)
-                    options = self.recipe.selection
+                    if self.trace is not None:
+                        event = dict(
+                            kind="validation",
+                            epoch=epoch,
+                            global_step=self.global_step,
+                            score=metrics["session_mae"],
+                        )
+                        self.trace(event, self._trace_modules())
                     self.selection = (
                         initial_selection(metrics["session_mae"], options)
                         if epoch == 0
@@ -988,12 +1096,16 @@ class CandidateChronologicalTrainer(CandidateChronologicalPredictor):
                         )
                     )
                     self.train_metrics = None
-                    finished = epoch >= self.recipe.epochs or self.selection["should_stop"]
+                    decision = epoch_decision(
+                        self.selection, options, self.recipe.epochs, joint_epoch
+                    )
+                    finished = decision == FINISH
                     cursor = (
                         dict(epoch=epoch, phase="predictions")
                         if finished
                         else dict(epoch=epoch, phase="train", event=0, stage="start")
                     )
+                    # Con AWAIT, el cursor ya confirmado espera al grupo al empezar la época.
                     save(cursor, best=self.selection["last_improved"])
                     if stop.requested and not finished:
                         raise _Pause
@@ -1013,6 +1125,7 @@ class CandidateChronologicalTrainer(CandidateChronologicalPredictor):
             _load_parameters(self.model, best["model"])
             if self.model.parameter_fingerprint() != best["parameters_sha256"]:
                 raise ValueError("El estado seleccionado no conserva su huella")
+            self._restore_extra(best)
             report["predictions"] = self._predict(stop)
             report.update(
                 status="completed",

@@ -1,5 +1,6 @@
 #include "mars_titan/ppo_training.hpp"
 #include "mars_titan/ppo_objectives.hpp"
+#include "mars_titan/quantile_dqn.hpp"
 #include "accurate_sum.hpp"
 
 #include <ATen/ATen.h>
@@ -231,7 +232,11 @@ PpoArchitecture architecture_for(const PpoLearningOptions& learning, std::size_t
     }
     result.auxiliary = learning.enabled &&
         (learning.variant == "ppo_recent_aux" || learning.variant == "ppo_replay_aux");
-    result.double_dqn = learning.enabled && learning.variant == "double_dqn";
+    result.double_dqn = learning.enabled && value_variant(learning.variant);
+    if (result.double_dqn && learning.variant != "double_dqn") {
+        result.quantiles = qr_dqn_quantiles;
+        result.risk_alpha = learning.variant == "qr_dqn_cvar" ? qr_dqn_cvar_alpha : 1;
+    }
     return result;
 }
 

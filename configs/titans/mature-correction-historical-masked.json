@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "recipe_name": "mars_titan_mature_correction_v1",
+  "status": "declared_not_executed",
+  "recipe": {
+    "forgetting": 0.01
+  },
+  "walk_forward": {
+    "search_cases": {
+      "eta5e-2": {"rate": 0.05},
+      "eta25e-2": {"rate": 0.25}
+    }
+  },
+  "pending": [
+    "Receta de la corrección asociativa B6 de MARS-TITAN sobre el Titans-MAC mac_online elegido en la misma ventana y semilla. Declarada sin ejecutar. No tiene parámetros entrenables, épocas ni optimizador.",
+    "Dos casos de búsqueda, como Titans-MAC y las referencias neuronales. Solo cambia η y la campaña elige el caso con session_mae de validación. λ = 0,01 es común a los dos casos y a las dos claves.",
+    "Con la regla proximal y pesos uniformes, la clave constante da a la media de la cohorte madura un peso η/(1+η) por evento: 0,048 con η = 0,05 y 0,2 con η = 0,25. Con retención ρ = 0,99 equivalen a recordar unas 17 y 5 sesiones. Con la clave del codec, una dirección que deja de recibir etiquetas se reduce a la mitad en unas 69 sesiones. Son valores fijados antes de ejecutar, sin datos.",
+    "La regla delta escribe fila a fila y con cohortes de miles de etiquetas su resultado depende del orden canónico de los activos salvo que η sea del orden del inverso de la cohorte. Queda conectada en la ventana sin brazo declarado. Los brazos de la campaña usan la regla proximal, invariante al orden dentro de la cohorte.",
+    "A empieza en cero en cada tramo medido y solo se escribe con etiquetas maduras de ese tramo. No se usa el tramo de entrenamiento del padre."
+  ]
+}

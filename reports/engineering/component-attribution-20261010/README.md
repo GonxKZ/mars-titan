@@ -20,9 +20,13 @@ muestras-época por segundo, inferencia a tres veces ese caudal y 10 épocas efe
 los recuentos de filas de su informe de ventanas. Con ese supuesto cada brazo neuronal o
 lector del ámbito conjunto cuesta unas 94 h, porque el caudal es el mismo para todos. Los
 brazos de B6 solo predicen validación, calibración y evaluación con tres semillas, unas
-0,46 h sin contar el calentamiento. Ningún caudal está medido todavía en esta edición.
-Cuando exista el informe de `throughput`, basta con regenerar el documento de horas y
-repetir la orden.
+0,46 h sin contar el calentamiento. Cuando se generó, ningún caudal estaba medido en esta
+edición. El 10 de octubre se midieron en `cuda:0` los brazos de integración y dos lectores
+en una ventana ([coste](../../../docs/engineering/mars-titan-extensions.md#coste-medido-de-los-brazos-nuevos)).
+Los lectores ajustaron unas 1.100 filas por segundo sin pasos de optimizador, muy por debajo
+del supuesto si una muestra equivale a una fila. El documento de horas no se ha regenerado
+con esa medida. Cuando exista el informe de `throughput`, basta con regenerar el documento
+de horas y repetir la orden.
 
 Como referencia, la misma proyección da 3.314 h neuronales para la campaña A v2 frente a
 unas 580 h útiles en cuatro semanas. Cada lector candidato añadiría cerca de un 3 % a esa
@@ -30,17 +34,21 @@ cifra.
 
 ## Recuento
 
-De los 356 contrastes de la matriz, 183 solo usan brazos de la campaña, 148 esperan brazos
+De los 356 contrastes de la matriz, 219 solo usan brazos de la campaña, 112 esperan brazos
 condicionados o derivados con plan propio y 25 necesitan algún candidato. Ninguno queda
 sin brazo con nombre.
 
+El recuento se repitió el 10 de octubre de 2026 al declarar `transformer_compact_online` en la
+comparación (#443). Antes figuraba como brazo condicionado y 15 contrastes lo esperaban. Ahora
+13 de ellos solo usan brazos de la campaña y los otros 2 siguen esperando otro brazo con plan propio.
+Con eso quedaban 196 y 135. Se repitió otra vez al declarar en la comparación los brazos de
+integración `mars_titan_m1_k4_first_read`, `mars_titan_b6` y `mars_titan_b6_bias` (#452). Esos
+tres brazos ya no esperan, y 23 contrastes más pasan a usar solo brazos de la campaña. Los que
+todavía esperan necesitan además un brazo condicionado o derivado.
+
 | Brazos con plan propio | Contrastes que esperan |
 | --- | ---: |
-| `transformer_compact_online` (control en línea) | 15 |
 | `titans_reference_mac` (referencia pública, sin brazo previsto tras #434) | 2 |
-| `mars_titan_m1_k4_first_read` (integración) | 11 |
-| `mars_titan_b6` (integración) | 11 |
-| `mars_titan_b6_bias` (integración) | 3 |
 | `<brazo>__chain` | 66 |
 | `<brazo>__frozen_parent` | 44 |
 | `<brazo>__full_continuation` | 44 |
@@ -104,7 +112,7 @@ uv run --no-sync python benchmarks/comparison_matrix.py measure --root <raíz> -
   --output <salida nueva>
 ```
 
-La evaluación completa (183 contrastes estimables en 20 familias, vistas en bruto y
+La evaluación completa, medida antes de declarar el control en línea (183 contrastes estimables en 20 familias, vistas en bruto y
 calibrada con todas las métricas, ECE del signo y escritura del informe de 5,6 MB) tardó
 152 s de reloj y 266 s de CPU de usuario, con un pico de 1,44 GiB. Se ejecutó una vez con
 NumPy 2.5.3, PyArrow 25.0.1, dos hilos, sin GPU y con la CPU compartida (carga media

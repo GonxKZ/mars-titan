@@ -10,6 +10,7 @@ from mars_titan.data.input_policy import HISTORICAL_MASKED, policy_identity
 from mars_titan.environments.actions import ActionGrid
 from mars_titan.episodes.parents import ParentCache
 from mars_titan.posttraining import run
+from mars_titan.posttraining.augmented_inputs import AugmentedInputs
 from mars_titan.posttraining.inputs import PairedInputs, fit_normalization
 from tests.posttraining.masked_fixture import change_after_training, masked_ordered, sources
 
@@ -79,6 +80,8 @@ def test_masked_edition_only_admits_the_real_condition(tmp_path, condition):
         data.budget(condition, 2)
     train, validation, cache = handles
     with pytest.raises(ValueError, match="real"):
+        AugmentedInputs(train, validation, cache, synthetic=lambda index: None)
+    with pytest.raises(TypeError):
         PairedInputs(train, validation, cache, synthetic=lambda index: None)
     close(handles)
 

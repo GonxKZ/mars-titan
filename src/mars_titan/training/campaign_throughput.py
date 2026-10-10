@@ -45,6 +45,7 @@ from pathlib import Path
 from mars_titan.data.cohort_files import read_manifest
 from mars_titan.data.input_policy import HISTORICAL_MASKED
 
+from . import campaign_numerics
 from .campaign_plan import (
     CM,
     CM_ARMS,
@@ -169,6 +170,10 @@ def validated_job_seconds(job, rows, rate, epochs):
     inference = rate["inference"]
     if job["kind"] != FIT:
         return (rows["calibration"] + rows["evaluation"]) / inference
+    if rate["train"] is None:
+        # Un trabajo sin ajuste, como la corrección B6, predice una sola vez cada tramo medido,
+        # sin épocas ni validaciones repetidas.
+        return (rows["validation"] + rows["calibration"] + rows["evaluation"]) / inference
     predicted = (epochs + 2) * rows["validation"] + rows["calibration"] + rows["evaluation"]
     return epochs * rows["train"] / rate["train"] + predicted / inference
 
@@ -271,30 +276,56 @@ def _option_hours(campaign, family, jobs, counts, measured, epochs):
 def _posttraining_hours(stage, counts, rates):
     """Horas de la etapa de adaptadores, con la caché de cada padre ajustado.
 
-    Cada padre de una ventana reentrenada predice una vez ajuste y validación para su
-    caché. Su caudal es la inferencia neuronal más lenta del brazo base.
+    En el walk-forward por etapas cada caso ajusta solo las filas nuevas de su ventana. Se
+    estiman con los recuentos como el tramo de ajuste de la ventana menos ajuste,
+    validación y calibración de la anterior, una cota algo mayor porque las filas que la
+    purga quitó en las fronteras de la ventana anterior sí están en el ajuste de la nueva.
+    Cada padre predice una vez esas filas y la validación para su caché, y el padre
+    congelado predice validación, calibración y evaluación, ambos con la inferencia neuronal
+    más lenta del brazo base. En el plan anclado de B el ajuste recorre todo su tramo.
+
+    La medida de la matriz solo cubre las redes de referencia. Los brazos de Titans-MAC y la
+    cadena trivial de Ridge y XGBoost quedan en `without_estimate`, sin sumar sus horas.
     """
-    from mars_titan.posttraining.campaign_stage import plan_stage
+    from mars_titan.posttraining.campaign_stage import FROZEN, plan_stage
 
     measured, neural = rates[POSTTRAINING], rates[NEURAL]
     epochs = stage["matrix"]["budget"]["epochs"]
-    jobs = plan_stage(stage)
+    jobs, missing = [], set()
+    for job in plan_stage(stage):
+        if job["base_arm"] in measured and job["base_arm"] in neural:
+            jobs.append(job)
+        else:
+            missing.add(job["base_arm"])
     parents = {}
     for job in jobs:
         if job["kind"] == FIT:
             parents.setdefault((job["scope"], job["window"], job["base_arm"], job["seed"]), job)
     first = {job["id"] for job in parents.values()}
 
-    def seconds(job):
+    def rows_of(job):
         rows = counts[job["scope"]][job["window"]]
+        if job.get("parent_window") is None:
+            return rows
+        previous = counts[job["scope"]][job["parent_window"]]
+        fresh = rows["train"] - sum(
+            previous[name] for name in ("train", "validation", "calibration")
+        )
+        _require(fresh > 0, f"{job['id']} no tiene filas nuevas en los recuentos")
+        return dict(rows, train=fresh)
+
+    def seconds(job):
+        rows = rows_of(job)
+        cache = _slowest(neural[job["base_arm"]].values())["inference"]
+        if job["kind"] == FROZEN:
+            return (rows["validation"] + rows["calibration"] + rows["evaluation"]) / cache
         rate = _slowest([points[job["point"]] for points in measured[job["base_arm"]].values()])
         total = validated_job_seconds(job, rows, rate, epochs)
         if job["id"] in first:
-            cache = _slowest(neural[job["base_arm"]].values())["inference"]
             total += (rows["train"] + rows["validation"]) / cache
         return total
 
-    return dict(_hours(jobs, seconds), parent_caches=len(first))
+    return dict(_hours(jobs, seconds), parent_caches=len(first), without_estimate=sorted(missing))
 
 
 def _ablation_hours(campaign, stage, counts, rates):
@@ -334,12 +365,18 @@ def _ablation_hours(campaign, stage, counts, rates):
 
 
 def _totals(families):
-    """Horas de GPU con las opciones declaradas y con las más rápidas que caben en memoria."""
+    """Horas de GPU con las opciones declaradas y con las más rápidas que caben en memoria.
+
+    Una familia con brazos sin estimar suma las horas de los demás y también queda en
+    `without_estimate`, para que el total no parezca completo.
+    """
     declared, fastest, missing = 0.0, 0.0, []
     for name, family in families.items():
         if "hours" in family:
             declared += family["hours"]
             fastest += family["hours"]
+            if family.get("without_estimate"):
+                missing.append(name)
             continue
         fitted = [
             option["hours"] for option in family.get("options", {}).values() if "hours" in option
@@ -353,16 +390,19 @@ def _totals(families):
     return dict(declared_options=declared, fastest_options=fastest, without_estimate=missing)
 
 
-def estimate_hours(campaign, counts, rates, *, stage=None, policy_stage=None, ablation_stage=None):
+def estimate_hours(
+    campaign, counts, rates, *, stage=None, policy_stage=None, ablation_stage=None, epochs=None
+):
     """Horas previstas por familia, opción, ámbito y brazo de una variante.
 
     `counts` asigna a cada ámbito y ventana sus filas por tramo y `rates` a cada familia
     medida sus caudales. Las familias declaradas sin medir y los tabulares quedan como no
     medidos. Con `stage`, añade la etapa de la matriz de adaptadores de esa variante. Con
     `policy_stage`, añade aparte la estimación orientativa de la etapa de políticas y con
-    `ablation_stage`, la de la ablación de modalidades.
+    `ablation_stage`, la de la ablación de modalidades. `epochs` sustituye las épocas de la
+    regla de parada, por ejemplo con las épocas efectivas previstas de una parada temprana.
     """
-    epochs = campaign["rule"]["max_epochs"]
+    epochs = campaign["rule"]["max_epochs"] if epochs is None else epochs
     jobs = plan_campaign(campaign)
     families = {}
     for family in (NEURAL, *CHRONOLOGICAL):
@@ -439,6 +479,8 @@ def estimate_hours(campaign, counts, rates, *, stage=None, policy_stage=None, ab
             "con la misma arquitectura y el mismo cálculo que el padre elegido",
             "Las horas de un lector no incluyen el ajuste de su padre, que se cuenta en la "
             "familia del padre, y los núcleos de CM-v1 se cuentan en CM-v1",
+            "La corrección B6 no ajusta: cada trabajo predice una vez validación, calibración "
+            "y evaluación con el caudal medido sobre eventos de ajuste, que siempre corrigen",
             "Con presupuesto fijo, cada ajuste recorre todas sus épocas",
             "No incluye esperas de disco, índices, normalizadores, reanudaciones ni otras "
             "cargas en la GPU",
@@ -570,10 +612,17 @@ def _rate(model, dataset, partition, *, train, size, seed, warmup, batches, devi
     return rows / (time.perf_counter() - start), rows
 
 
-def _reference(case, dataset):
-    """Referencia neuronal del caso con los pesos iniciales de su semilla."""
+def _reference(case, dataset, batch_size):
+    """Referencia neuronal del caso con los pesos iniciales de su semilla.
+
+    El Transformer admite el lote medido como en `reference_run`, sin cambiar sus pesos.
+    """
     from mars_titan.budget_training import seed_run
-    from mars_titan.models.baselines.multimodal import PRESENCE_FUSION, MultimodalReference
+    from mars_titan.models.baselines.multimodal import (
+        PRESENCE_FUSION,
+        MultimodalReference,
+        transformer_batch_options,
+    )
     from mars_titan.models.quantile_head import QUANTILE_HEAD
 
     seed_run(case["seed"])
@@ -585,6 +634,7 @@ def _reference(case, dataset):
         mask_fusion=PRESENCE_FUSION,
         head=QUANTILE_HEAD,
         **case["architecture"],
+        **transformer_batch_options(case["kind"], batch_size),
     )
     return model, {key: value.shape[1:] for key, value in first["inputs"].items()}
 
@@ -620,7 +670,7 @@ def measure_rates(campaign, view, *, batches=50, warmup=5):
         for arm, candidates in campaign["neural"]["candidates"].items():
             rates[arm] = {}
             for name, case in candidates:
-                model, _ = _reference(case, dataset)
+                model, _ = _reference(case, dataset, size)
                 rates[arm][name] = _batch_rates(
                     model.to(device),
                     dataset,
@@ -663,7 +713,7 @@ def measure_posttraining(stage, view, *, batches=50, warmup=5):
         for arm, family in stage["families"].items():
             rates[arm] = {}
             for name, case in campaign["neural"]["candidates"][arm]:
-                model, shapes = _reference(case, dataset)
+                model, shapes = _reference(case, dataset, budget["batch_size"])
                 parent = FrozenParent(model, dict(identity, model=family), shapes, device)
                 points = rates[arm][name] = {}
                 for item in adapter_matrix.cases(
@@ -688,6 +738,52 @@ def measure_posttraining(stage, view, *, batches=50, warmup=5):
     finally:
         guard.remove()
     return rates
+
+
+def _measured_cases(stage):
+    """Lo que mide `measure_posttraining`: brazos de las redes, sus casos y el presupuesto.
+
+    Los casos se comparan sin la huella de la matriz que los declara, porque un mismo caso
+    cuesta lo mismo en la v2 y en la v3.
+    """
+    from mars_titan.models.quantile_head import QUANTILE_HEAD
+    from mars_titan.posttraining import adapter_matrix
+
+    cases = {}
+    for arm, family in stage["families"].items():
+        cases[arm] = {}
+        for item in adapter_matrix.cases(
+            stage["matrix"], stage["matrix_sha256"], family, head=QUANTILE_HEAD
+        ):
+            # La continuación completa no tiene adaptador ni, por tanto, huella de la matriz.
+            case = dict(item["case"])
+            if "adapter" in case:
+                case["adapter"] = dict(case["adapter"], matrix_sha256=None)
+            cases[arm][item["id"]] = json.dumps(case, sort_keys=True)
+    return dict(cases=cases, budget=json.dumps(stage["matrix"]["budget"], sort_keys=True))
+
+
+def _covers(measured, other):
+    """True si la medida de una etapa sirve para otra: mismo presupuesto y sus casos dentro."""
+    return measured["budget"] == other["budget"] and all(
+        arm in measured["cases"]
+        and all(measured["cases"][arm].get(key) == case for key, case in cases.items())
+        for arm, cases in other["cases"].items()
+    )
+
+
+def covering_stage(stages):
+    """Etapa de adaptadores que se mide, porque contiene los casos de todas las demás.
+
+    A declara la matriz v3, con los casos de Titans-MAC y los brazos de la variedad de
+    adaptadores, y B la v2. Los casos de las redes de B están todos en A con el mismo
+    presupuesto, así que una sola medida de A estima las dos etapas.
+    """
+    measured = [_measured_cases(stage) for stage in stages]
+    for stage, cases in zip(stages, measured, strict=True):
+        if all(_covers(cases, other) for other in measured):
+            return stage
+    raise ValueError("Ninguna etapa de adaptadores contiene los casos medidos de las demás")
 
 
 def _view_fold(dataset):
@@ -1011,6 +1107,67 @@ def _readout_record(
     return dict(record, bank_capacity=recipe.bank_capacity)
 
 
+def _correction_record(parent, case, window, device, settings):
+    """Medir la corrección B6 sobre un padre `mac_online` con pesos iniciales.
+
+    B6 no tiene ajuste. Se mide la inferencia cronológica del padre con la lectura y la
+    escritura de A sobre los eventos del tramo de ajuste, que no tienen calentamiento, así
+    que todos los eventos medidos corrigen. El caso solo cambia η y comparte la medida.
+    """
+    import torch
+
+    from mars_titan.budget_training import seed_run
+    from mars_titan.memory.episodic_codec import FrozenEpisodeCodec
+    from mars_titan.memory.mars_titan_variant import check_components, load_declaration
+
+    from . import mars_titan_correction as correction
+    from . import titans_walk_forward as titans
+    from .financial_run import Paused
+
+    fold, sources, inputs = window
+    document = correction.load_correction_recipe(case["recipe"])
+    values = correction.case_values(document, case["search_case"])
+    _, mature = check_components(
+        load_declaration(), correction.arm_components(case["components"], values)
+    )
+    specification = sources["train"].specification()
+    seed_run(case["seed"])
+    predictor, _ = titans._predictor(
+        parent["document"], specification, "mac_online", case["seed"], device
+    )
+    predictor = predictor.eval().requires_grad_(False)
+    initial = [value.detach().clone() for value in predictor.parameters()]
+    chronological = titans.case_recipe(parent["document"], parent["search_case"])
+    inference = correction.CorrectionInference(
+        predictor, chronological, mature, FrozenEpisodeCodec(specification)
+    )
+    prefix = [0]
+    for count in inputs:
+        prefix.append(prefix[-1] + count)
+    budget = _Budget(settings["event_warmup"], settings["events"], prefix.__getitem__, _synchronize)
+    torch.cuda.reset_peak_memory_stats(0)
+    events = sources["train"].batched_events(block_rows=chronological.block_rows)
+    try:
+        inference._pass(sources["train"], events, stop=budget)
+    except Paused:
+        pass
+    rate, rows = budget.rate("La corrección B6")
+    peak = torch.cuda.max_memory_allocated(0)
+    if not all(
+        torch.equal(a, b.detach()) for a, b in zip(initial, predictor.parameters(), strict=True)
+    ):
+        raise RuntimeError("La medición de caudal ha modificado parámetros")
+    return dict(
+        declared_option="recipe",
+        options={"recipe": dict(train=None, peak_vram_allocated_bytes=peak)},
+        inference=rate,
+        measured_inference_rows=rows,
+        inference_peak_vram_allocated_bytes=peak,
+        associative_writes=inference.memory.writes,
+        window=fold["id"],
+    )
+
+
 def measure_mars_titan(
     campaign, view, work, *, segments=8, segment_warmup=2, events=64, event_warmup=8
 ):
@@ -1019,7 +1176,8 @@ def measure_mars_titan(
     Cada brazo se mide por separado porque la escritura (M0, M1, M2 o M3) y K cambian el
     cálculo. Los casos de búsqueda solo cambian la tasa de aprendizaje y comparten la
     medida. Las fases son las del padre, con su calentamiento. `work` guarda los índices.
-    M3 registra además los cambios de su índice selectivo en la ventana medida.
+    M3 registra además los cambios de su índice selectivo en la ventana medida. Un brazo de
+    corrección B6 no tiene lector y solo mide su inferencia (`_correction_record`).
     """
     from mars_titan.data.embeddings import require_cuda
 
@@ -1050,6 +1208,15 @@ def measure_mars_titan(
         with titans.unfused_attention():
             for arm, candidates in section["candidates"].items():
                 _, case = candidates[0]
+                if "associative_memory" in case["components"]:
+                    record = _correction_record(parent, case, window, device, settings)
+                    rates[arm] = dict(
+                        record,
+                        components=case["components"],
+                        parent_arm=section["parent_arm"],
+                        **_shared(candidates, window[2]),
+                    )
+                    continue
                 family = readouts._mars_family(case["components"])
                 counters = BANK_COUNTERS
                 if case["components"].get("episodic_bank") == "m3":
@@ -1211,16 +1378,26 @@ def measure_candidate(
     work = Path(work)
     dataset = CorpusDataset(Path(view), input_policy=HISTORICAL_MASKED)
     fold = _view_fold(dataset)
-    sources = window_sources(dataset, work / "candidate-indices", ("train", "validation"))
-    inputs = _event_inputs(sources["train"])
-    specification = sources["train"].specification()
     rates, guard = {}, _forbid_steps()
     try:
         for arm, candidates in section["candidates"].items():
-            ((name, case),) = candidates
-            recipe, model = campaign_case(case)
+            # Los casos solo cambian hiperparámetros del optimizador, como en Titans-MAC.
+            _, case = candidates[0]
+            recipe, model, warmup_months = campaign_case(case)
+            sources = window_sources(
+                dataset, work / "candidate-indices", ("train", "validation"), warmup_months
+            )
+            inputs = _event_inputs(sources["train"])
+            specification = sources["train"].specification()
 
-            def build(option, case=case, recipe=recipe, model=model):
+            def build(
+                option,
+                case=case,
+                recipe=recipe,
+                model=model,
+                sources=sources,
+                specification=specification,
+            ):
                 seed_run(case["seed"])
                 adapter = CandidateInputAdapter(
                     specification,
@@ -1249,7 +1426,7 @@ def measure_candidate(
                 inputs,
                 settings,
             )
-            rates[arm] = dict(record, variant=name, max_event_inputs=max(inputs))
+            rates[arm] = dict(record, variant=case["variant"], **_shared(candidates, inputs))
     finally:
         guard.remove()
     return rates
@@ -1371,11 +1548,10 @@ def measure_campaigns(
     loaded = [load_stage(path) for path in stages]
     by_campaign = {stage["campaign"]["path"]: stage for stage in loaded}
     _require(
-        len(by_campaign) == len(loaded)
-        and set(by_campaign) <= {c["path"] for c in campaigns}
-        and len({(s["matrix_sha256"], tuple(s["families"].items())) for s in loaded}) <= 1,
-        "Cada etapa de adaptadores parte de una campaña medida, con la misma matriz y brazos",
+        len(by_campaign) == len(loaded) and set(by_campaign) <= {c["path"] for c in campaigns},
+        "Cada etapa de adaptadores parte de una campaña medida distinta",
     )
+    measured_stage = covering_stage(loaded) if loaded else None
     policies = [policy_plan.load_stage(path) for path in rl_stages]
     by_policies = {stage["campaign"]["path"]: stage for stage in policies}
     _require(
@@ -1409,6 +1585,12 @@ def measure_campaigns(
         work is not None or not any(reference.get(family) for family in CHRONOLOGICAL),
         "Las familias cronológicas necesitan un directorio de trabajo para sus índices",
     )
+    declared = {json.dumps(c.get("numerics"), sort_keys=True) for c in campaigns}
+    _require(len(declared) == 1, "Las variantes medidas deben declarar la misma precisión")
+    numerics = reference.get("numerics")
+    if numerics:
+        # Se mide con la precisión con la que se entrenará.
+        campaign_numerics.apply(numerics)
     started = time.perf_counter()
     with GpuLease() as lease:
         rates = {NEURAL: measure_rates(reference, first_view, **batched)}
@@ -1421,7 +1603,7 @@ def measure_campaigns(
         if reference.get(CM):
             rates[CM] = measure_cm_v1(reference, first_view, work, **chronological)
         if loaded:
-            rates[POSTTRAINING] = measure_posttraining(loaded[0], first_view, **batched)
+            rates[POSTTRAINING] = measure_posttraining(measured_stage, first_view, **batched)
         if policies:
             rates[POLICY_STAGE] = policy_throughput.measure_policies(policies[0], **stepped)
         resources = lease.record
@@ -1446,6 +1628,7 @@ def measure_campaigns(
         if prepared is None
         else dict(path=prepared["path"], sha256=prepared["sha256"], status=prepared["status"]),
         rates=rates,
+        numerics=None if numerics is None else campaign_numerics.current(),
         estimates=estimates,
         comparison=_comparison(estimates),
         resources=resources,

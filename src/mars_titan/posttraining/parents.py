@@ -1,6 +1,5 @@
 """Cargar referencias completas y recalcular sus predicciones sobre entradas efectivas."""
 
-import copy
 import math
 from pathlib import Path
 
@@ -16,9 +15,10 @@ from mars_titan.models.baselines.multimodal import (
     SCALAR_HEAD,
     STRICT_FUSION,
     MultimodalReference,
+    transformer_batch_options,
 )
 from mars_titan.models.baselines.ridge import RidgeModel
-from mars_titan.models.predictive_adaptation import adapted_copy
+from mars_titan.models.predictive_adaptation import adapted_copy, parent_copy
 from mars_titan.models.quantile_head import CONTRACT, QUANTILE_HEAD, median
 from mars_titan.profiling import CostProbe
 from mars_titan.training.experiment_resources import GpuLease
@@ -125,7 +125,7 @@ class FrozenParent:
 
     def continuation(self):
         self._require_neural()
-        return copy.deepcopy(self.model).requires_grad_(True)
+        return parent_copy(self.model).requires_grad_(True)
 
     def adapted(self, targets, *, seed):
         """Copiar el padre congelado con correcciones nulas en los destinos declarados."""
@@ -188,6 +188,11 @@ def _neural_parent(report, source, report_path):
             mask_fusion=fusion,
             head=head,
             **case["architecture"],
+            # Un Transformer ajustado con lotes de más de 256 ventanas guarda su lote máximo
+            # en el estado, así que el padre se reconstruye con el lote de su identidad. Una
+            # identidad sin lote conserva el contrato por defecto, y las demás familias no
+            # dependen del lote.
+            **transformer_batch_options(kind, contract.get("batch_size", 1)),
         )
     elif family == "legacy_cost_probe" and "architecture" not in case:
         model = CostProbe(kind, dimensions, context=contract["context"])

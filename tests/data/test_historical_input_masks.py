@@ -12,6 +12,7 @@ from mars_titan.data.cohort_contexts import MacroVectors
 from mars_titan.data.cohort_preparation import prepare_cohort_asset
 from mars_titan.data.cohort_samples import materialize_cohort_asset
 from mars_titan.data.embeddings import EmbeddingCache
+from mars_titan.data.price_windows import calendar_digest, price_window_contract
 from mars_titan.data.prices import read_prices
 from mars_titan.data.samples import macro_vector
 from mars_titan.data.storage import sha256
@@ -27,8 +28,9 @@ def prices_only(tmp_path, *, gap=False):
     raw.mkdir()
     clock = MarketClock("US", "2023-01-01", "2025-01-01")
     days = list(clock.days[:68])
-    if gap:
-        days.pop(10)
+    # `gap` quita la sesión 10, o las posiciones indicadas.
+    for position in sorted((10,) if gap is True else gap or (), reverse=True):
+        days.pop(position)
     path = raw / "prices.csv"
     path.write_text(
         "Date,Open,High,Low,Close,Volume\n"
@@ -59,7 +61,7 @@ def prepare_missing(tmp_path, **kwargs):
     return tmp_path / "prepared/US/A", clock, report
 
 
-def encode_missing(source, output, clock, *, macro=None):
+def encode_missing(source, output, clock, *, macro=None, price_window=None):
     macro = macro or MacroVectors(None, indicators=["a", "b"], input_policy=HISTORICAL)
     cache = EmbeddingCache(output.parent / "cache.sqlite")
     try:
@@ -75,6 +77,7 @@ def encode_missing(source, output, clock, *, macro=None):
             company_factors=False,
             fundamental_concepts=CONCEPTS,
             input_policy=HISTORICAL,
+            price_window=price_window,
         )
         return report, pq.read_table(output / "samples.parquet")
     finally:
@@ -174,6 +177,76 @@ def test_price_gaps_are_not_padded_or_hidden_as_optional_missing(tmp_path):
     report, table = encode_missing(tmp_path / "prepared/US/A", tmp_path / "encoded", clock)
     assert table.num_rows == 0
     assert report["excluded_reasons"] == {"incomplete_price_window": 67}
+
+
+def window_contract(clock, absent):
+    calendar = dict(
+        start=clock.days[0].isoformat(),
+        end=clock.days[-1].isoformat(),
+        decisions_sha256=calendar_digest(clock),
+    )
+    return price_window_contract({"US": calendar}, {"US": absent})
+
+
+def prepared_with_gap(tmp_path, *, gap=True):
+    raw, asset, clock = prices_only(tmp_path, gap=gap)
+    prepare_cohort_asset(
+        raw,
+        tmp_path / "prepared",
+        asset,
+        clock,
+        cohort="original_audited",
+        reviews={},
+        input_policy=HISTORICAL,
+    )
+    return tmp_path / "prepared/US/A", clock
+
+
+def test_market_absent_session_is_admitted_with_its_slot_and_without_a_price(tmp_path):
+    source, clock = prepared_with_gap(tmp_path)
+    missing = clock.days[10].isoformat()
+    contract = window_contract(clock, [missing])
+    report, table = encode_missing(source, tmp_path / "encoded", clock, price_window=contract)
+    assert report["samples"] == 5
+    assert report["excluded_reasons"] == {"incomplete_price_window": 62}
+    assert report["market_absent_windows"] == {"windows": 5, "absent_sessions": 5}
+    assert report["price_window"] == contract
+    rows = table.to_pylist()
+    assert [row["price_end_index"] for row in rows] == [62, 63, 64, 65, 66]
+    assert missing not in {row["session"] for row in rows}
+    assert all(row["presence"][0] for row in rows)
+    configuration = json.loads((tmp_path / "encoded/configuration.json").read_text())
+    assert configuration["price_window"] == contract
+    assert "price_windows.py" in configuration["code"]
+    # La misma serie sin la ausencia declarada conserva la exclusión anterior.
+    other, empty = encode_missing(
+        source, tmp_path / "strict", clock, price_window=window_contract(clock, [])
+    )
+    assert empty.num_rows == 0 and other["excluded_reasons"] == {"incomplete_price_window": 67}
+    # Un contrato con otro calendario no puede codificar este activo.
+    wrong = window_contract(clock, [missing])
+    wrong["calendars"]["US"]["decisions_sha256"] = "0" * 64
+    with pytest.raises(ValueError, match="otro calendario"):
+        encode_missing(source, tmp_path / "wrong", clock, price_window=wrong)
+
+
+def test_two_consecutive_market_absences_count_each_absent_session(tmp_path):
+    source, clock = prepared_with_gap(tmp_path, gap=(10, 11))
+    missing = [clock.days[10].isoformat(), clock.days[11].isoformat()]
+    report, table = encode_missing(
+        source, tmp_path / "encoded", clock, price_window=window_contract(clock, missing)
+    )
+    assert report["samples"] == 5
+    assert report["excluded_reasons"] == {"incomplete_price_window": 61}
+    assert report["market_absent_windows"] == {"windows": 5, "absent_sessions": 10}
+    assert table.column("price_end_index").to_pylist() == [61, 62, 63, 64, 65]
+
+
+def test_declared_market_absence_cannot_hide_an_existing_price(tmp_path):
+    source, clock = prepared_with_gap(tmp_path, gap=False)
+    contract = window_contract(clock, [clock.days[10].isoformat()])
+    with pytest.raises(ValueError, match="ausente en todo el mercado tiene precios"):
+        encode_missing(source, tmp_path / "encoded", clock, price_window=contract)
 
 
 def test_audited_prices_are_reused_and_their_hash_is_checked(tmp_path, monkeypatch):

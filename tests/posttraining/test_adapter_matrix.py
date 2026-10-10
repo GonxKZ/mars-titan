@@ -337,3 +337,119 @@ def test_versions_do_not_mix_objective_layouts():
     for value in (nested, flat):
         with pytest.raises(ValueError, match="versión|objetivo"):
             adapter_matrix.validate_matrix(value)
+
+
+THIRD = Path("configs/posttraining/adapter-matrix-v3.json")
+
+
+def test_third_version_only_adds_the_chronological_designs_and_the_variety():
+    from mars_titan.posttraining import chronological_matrix as cm
+
+    second, _ = adapter_matrix.read_matrix(SECOND)
+    third, digest = adapter_matrix.read_matrix(THIRD)
+    ignored = {"schema_version", "architectures", "variety"}
+    assert {k: v for k, v in second.items() if k not in ignored} == {
+        k: v for k, v in third.items() if k not in ignored
+    }
+    assert third["architectures"]["executable"] == second["architectures"]["executable"]
+    assert third["architectures"]["pending"] == {}
+    # Sin los brazos de la variedad (#444), los casos de las referencias son los de la v2.
+    variety = {arm["id"] for arm in third["variety"]["arms"]}
+    for family in adapter_matrix.FAMILIES:
+        assert [
+            item
+            for item in adapter_matrix.cases(third, digest, family, head="quantile_head_v1")
+            if item["id"].split("/", 1)[1] not in variety
+        ] == adapter_matrix.cases(second, digest, family, head="quantile_head_v1")
+    # Casos por semilla: los de #446 más los tres brazos de la variedad que se proponen en
+    # `mac_online`. Las demás variantes y los lectores los tienen solo como reserva.
+    per_seed = {
+        ("titans_mac", "transformer_direct", True): 5,
+        ("titans_mac", "mac_disabled", True): 5,
+        ("titans_mac", "mac_frozen", True): 9,
+        ("titans_mac", "mac_online", True): 9 + 3,
+        ("mars_titan", None, True): 4,
+        ("mars_titan", None, False): 2,
+        ("cm_v1", None, True): 4,
+        ("episodic_gru", None, True): 2,
+    }
+    seeds = len(third["budget"]["seeds"])
+    for (family, variant, bank), count in per_seed.items():
+        rows = cm.cases(third, digest, family, variant=variant, bank=bank)
+        assert len(rows) == seeds * count, (family, variant, bank)
+        assert {row["case"]["objective"] for row in rows} == {"neural_pinball"}
+        assert sum(row["control"] == "full_continuation" for row in rows) == seeds
+        assert len({row["id"] for row in rows}) == len(rows)
+        for row in rows:
+            cm.validate_case(row["case"])
+
+
+def test_chronological_cases_fix_the_recipe_and_component_seeds():
+    from mars_titan.posttraining import chronological_matrix as cm
+
+    third, digest = adapter_matrix.read_matrix(THIRD)
+    rows = {row["id"]: row["case"] for row in cm.cases(third, digest, "mars_titan")}
+    both = rows["seed-42/core+episodic_readout"]
+    options = cm.recipe_options(both)
+    assert options["loss"] == "pinball" and options["epochs"] == third["budget"]["epochs"]
+    assert options["learning_rate"] == third["budget"]["learning_rate"]
+    assert options["max_grad_norm"] == third["budget"]["clip_norm"]
+    # Sin paciencia la selección recorre el presupuesto y conserva el mejor estado.
+    assert options["selection"]["patience"] == third["budget"]["epochs"]
+    core, episodic = (cm.component_seed(both, name) for name in cm.COMPONENTS)
+    assert core != episodic
+    assert cm.component_seed(rows["seed-43/core+episodic_readout"], "core") != core
+    assert cm.component_seed(both, "core") == core
+    online = third["architectures"]["chronological"]["titans_mac"]["variants"]["mac_online"]
+    assert both["adapter"]["core"] == {name: third["points"][name] for name in online}
+    with pytest.raises(ValueError):
+        cm.validate_case(dict(both, control="full_continuation"))
+    with pytest.raises(ValueError):
+        cm.validate_case(dict(both, objective="neural_mae"))
+    with pytest.raises(ValueError, match="cronológico"):
+        cm.design(third, "transformer")
+
+
+def mutate_third(change):
+    declared = copy.deepcopy(json.loads(THIRD.read_text()))
+    change(declared["architectures"]["chronological"])
+    return declared
+
+
+INVALID_THIRD = {
+    "memory_target": lambda c: c["titans_mac"]["targets"]["readout"].append(
+        "mac.memory.key_projection"
+    ),
+    "persistent_target": lambda c: c["titans_mac"]["targets"]["fusion"].append("mac.persistent"),
+    "unfrozen_memory": lambda c: c["titans_mac"]["frozen"].remove("mac.memory"),
+    "silent_inapplicable": lambda c: c["titans_mac"].__setitem__("inapplicable", {}),
+    "short_inapplicable": lambda c: c["titans_mac"]["inapplicable"].__setitem__("readout", "no"),
+    "online_without_readout": lambda c: c["titans_mac"]["variants"].__setitem__(
+        "mac_online", ["head", "fusion"]
+    ),
+    "missing_variant": lambda c: c["titans_mac"]["variants"].pop("mac_frozen"),
+    "core_other_variant": lambda c: c["episodic_readout"]["components"]["core"].__setitem__(
+        "variant", "mac_frozen"
+    ),
+    "joined_components": lambda c: c["episodic_readout"].__setitem__(
+        "arms", [["core", "episodic_readout"]]
+    ),
+    "frozen_readout_target": lambda c: c["episodic_readout"]["frozen"].append("query_projection"),
+    "no_bank_reason": lambda c: c["episodic_readout"].__setitem__("without_bank", ""),
+    "candidate_fusion": lambda c: c["episodic_gru"].__setitem__("points", ["head", "fusion"]),
+    "candidate_silent_exclusion": lambda c: c["episodic_gru"]["excluded"].pop("fusion"),
+    "missing_design": lambda c: c.pop("episodic_gru"),
+}
+
+
+@pytest.mark.parametrize("name", sorted(INVALID_THIRD))
+def test_third_version_rejects_open_or_memory_touching_designs(name):
+    with pytest.raises(ValueError):
+        adapter_matrix.validate_matrix(mutate_third(INVALID_THIRD[name]))
+
+
+def test_second_version_does_not_accept_the_chronological_section():
+    declared = copy.deepcopy(json.loads(THIRD.read_text()))
+    declared["schema_version"] = 2
+    with pytest.raises(ValueError):
+        adapter_matrix.validate_matrix(declared)

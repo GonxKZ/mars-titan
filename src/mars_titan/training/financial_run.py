@@ -27,12 +27,13 @@ from mars_titan.budget_training import validate_loss
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.evaluation.session_metrics import SessionErrors
 from mars_titan.memory.financial_observations import FinancialObservationSource
+from mars_titan.models.predictive_adaptation import is_adapter_name
 from mars_titan.models.quantile_head import PINBALL, QUANTILE_HEAD, pinball_loss
-from mars_titan.models.titans.config import canonical
+from mars_titan.models.titans.config import MAX_BLOCK_ROWS, canonical
 from mars_titan.models.titans.financial import VARIANTS, FinancialPredictor, FinancialState
 from mars_titan.models.titans.financial_inputs import DecisionBatch, validated_cpu_batch
 from mars_titan.models.titans.frozen_financial import _implementation, _numerics
-from mars_titan.models.titans.state import MACState, NeuralMemoryState
+from mars_titan.models.titans.state import join_mac_rows, map_mac_rows
 
 from .checkpoints import (
     StopRequest,
@@ -41,10 +42,16 @@ from .checkpoints import (
     restore_rng,
     save_training_state,
 )
+from .kernel_policy import declared_policy, require_policy, valid_precision
 from .learning_hold import require_learning_allowed
 from .selection import (
+    AWAIT,
+    FINISH,
     VALIDATION_PLATEAU,
     advance_selection,
+    awaiting,
+    bind_joint_epoch,
+    epoch_decision,
     initial_selection,
     validate_selection,
 )
@@ -85,6 +92,9 @@ class ChronologicalRecipe:
     # None conserva el grafo de todos los flujos del tramo. Un entero recalcula el tramo
     # por bloques de hasta ese número de flujos y acumula sus gradientes antes del paso.
     accumulation_rows: int | None = None
+    # None conserva la configuración numérica del proceso. Una precisión declarada aplica
+    # `kernel_policy` al construir el recorrido y entra en su identidad.
+    precision: str | None = None
 
     def __post_init__(self):
         # pinball solo corresponde a `quantile_head_v1`. huber_delta conserva su validación.
@@ -97,11 +107,12 @@ class ChronologicalRecipe:
             or not 0 < self.learning_rate <= 1
             or self.weight_decay < 0
             or self.checkpoint_seconds <= 0
+            or not valid_precision(self.precision)
             or (
                 self.accumulation_rows is not None
                 and (
                     type(self.accumulation_rows) is not int
-                    or not 1 <= self.accumulation_rows <= 256
+                    or not 1 <= self.accumulation_rows <= MAX_BLOCK_ROWS
                 )
             )
             or (
@@ -121,7 +132,7 @@ class ChronologicalRecipe:
         return (
             (self.truncation, 256),
             (self.epochs, 1000),
-            (self.block_rows, 256),
+            (self.block_rows, MAX_BLOCK_ROWS),
             (self.checkpoint_updates, 1_000_000),
         )
 
@@ -132,6 +143,8 @@ class ChronologicalRecipe:
             fields.pop("accumulation_rows")
         else:
             fields["gradient_accumulation"] = "flow_blocks_replayed_from_segment_start_v1"
+        if fields["precision"] is None:
+            fields.pop("precision")
         return dict(
             schema_version=1,
             recipe=RECIPE,
@@ -168,10 +181,16 @@ def load_recipe(path):
 
 
 def parameter_roles(predictor):
-    """Separar el ajuste externo por función. Los estados por flujo no son parámetros."""
+    """Separar el ajuste externo por función. Los estados por flujo no son parámetros.
+
+    Las correcciones de un adaptador del postentrenamiento forman su propio papel. Sin
+    adaptadores el diccionario conserva literalmente sus tres papeles anteriores.
+    """
     roles = dict(shared=[], persistent_memory=[], initial_fast_weights=[])
     for name, _ in predictor.named_parameters():
-        if name == "mac.persistent":
+        if is_adapter_name(name):
+            roles.setdefault("adapters", []).append(name)
+        elif name == "mac.persistent":
             roles["persistent_memory"].append(name)
         elif name.startswith("mac.memory.initial_weights."):
             roles["initial_fast_weights"].append(name)
@@ -180,67 +199,116 @@ def parameter_roles(predictor):
     return roles
 
 
-def _stack(states):
-    """Unir filas por flujo conservando el grafo del tramo diferenciable."""
-    first = states[0]
-    mac = None
-    if first.mac is not None:
-        memory = first.mac.memory
+class _Block:
+    """Estado por bloques producido por una llamada, con los contadores ya en Python."""
 
-        def join(get):
-            return torch.cat([get(state.mac.memory) for state in states])
+    __slots__ = ("state", "steps")
 
-        mac = MACState(
-            NeuralMemoryState(
-                tuple(join(lambda m, i=i: m.weights[i]) for i in range(len(memory.weights))),
-                tuple(join(lambda m, i=i: m.momentum[i]) for i in range(len(memory.momentum))),
-                join(lambda m: m.steps),
-                memory.config_id,
-            ),
-            first.mac.config_id,
-        )
-    return FinancialState(
-        first.config_id,
-        first.parameter_id,
-        tuple(flow for state in states for flow in state.flow_ids),
-        tuple(item for state in states for item in state.last_sample_ids),
-        tuple(item for state in states for item in state.last_prediction_at),
-        torch.cat([state.observed_steps for state in states]),
-        mac,
-    )
+    def __init__(self, state):
+        self.state = state
+        self.steps = state.observed_steps.tolist()
 
 
-def _split(state, *, detach=False, parameter_id=None):
-    """Separar filas. detach corta el BPTT y parameter_id confirma el sellado posterior."""
+def _detached(state, parameter_id=None):
+    """El mismo estado sin grafo. parameter_id confirma el sellado posterior a un paso."""
+    mac = state.mac
+    if mac is not None:
+        # Todos los tensores del estado MAC, también las ventanas de la convolución causal.
+        mac = map_mac_rows(mac, lambda value: value.detach())
+    return replace(state, parameter_id=parameter_id or state.parameter_id, mac=mac)
 
-    def take(value, row):
-        piece = value[row : row + 1]
-        return piece.detach() if detach else piece
 
-    for row, flow in enumerate(state.flow_ids):
-        mac = state.mac
-        if mac is not None:
-            memory = mac.memory
-            mac = MACState(
-                NeuralMemoryState(
-                    tuple(take(w, row) for w in memory.weights),
-                    tuple(take(m, row) for m in memory.momentum),
-                    memory.steps[row : row + 1],
-                    memory.config_id,
-                ),
-                mac.config_id,
-            )
-        yield (
-            flow,
-            FinancialState(
-                state.config_id,
-                parameter_id or state.parameter_id,
-                (flow,),
-                (state.last_sample_ids[row],),
-                (state.last_prediction_at[row],),
-                state.observed_steps[row : row + 1],
-                mac,
-            ),
+class FlowStates:
+    """Estado rápido de cada flujo, guardado en el bloque que lo produjo.
+
+    Cada flujo apunta a su fila dentro del último estado por bloques que lo actualizó.
+    `gather` devuelve ese mismo bloque si las filas pedidas lo cubren completo y en orden, y
+    si no concatena los tramos contiguos de cada bloque de origen. Separar el estado en una
+    vista por fila creaba un nodo de autograd por fila, cuyo backward rellenaba con ceros un
+    gradiente del tamaño del bloque, y el coste crecía con el cuadrado de las filas. Los
+    valores y los gradientes de cada fila no cambian: solo se copian o se reutilizan.
+    """
+
+    def __init__(self, rows=None):
+        # Cada flujo apunta a su bloque y a su fila dentro de él. El diccionario conserva el
+        # orden en que aparecen los flujos, que es el que usan los recorridos.
+        self._rows = {} if rows is None else dict(rows)
+
+    def __contains__(self, flow):
+        return flow in self._rows
+
+    def __len__(self):
+        return len(self._rows)
+
+    def __iter__(self):
+        return iter(self._rows)
+
+    def __bool__(self):
+        return bool(self._rows)
+
+    def clear(self):
+        self._rows.clear()
+
+    def values(self):
+        """Estados por bloques que conservan al menos un flujo vigente, sin repetirlos."""
+        blocks = {id(block): block for block, _ in self._rows.values()}
+        return [block.state for block in blocks.values()]
+
+    def handle(self, flow):
+        return self._rows[flow]
+
+    def subset(self, flows):
+        return FlowStates((flow, self._rows[flow]) for flow in flows)
+
+    def steps(self, flow):
+        block, row = self._rows[flow]
+        return block.steps[row]
+
+    def put(self, state, *, detach=False):
+        """Registrar cada fila de un estado por bloques como la vigente de su flujo."""
+        block = _Block(_detached(state) if detach else state)
+        for row, flow in enumerate(state.flow_ids):
+            self._rows[flow] = (block, row)
+
+    def detach(self, parameter_id=None):
+        """Cortar el BPTT de todos los flujos. parameter_id confirma el sellado posterior."""
+        replaced = {}
+        for flow, (block, row) in self._rows.items():
+            fresh = replaced.get(id(block))
+            if fresh is None:
+                fresh = replaced[id(block)] = _Block(_detached(block.state, parameter_id))
+            self._rows[flow] = (fresh, row)
+
+    def gather(self, flows):
+        """Estado por bloques de `flows` en ese orden, conservando el grafo del tramo."""
+        entries = [self._rows[flow] for flow in flows]
+        first = entries[0][0]
+        if len(entries) == len(first.steps) and all(
+            block is first and row == index for index, (block, row) in enumerate(entries)
+        ):
+            return first.state
+        runs = []
+        for block, row in entries:
+            if runs and runs[-1][0] is block and runs[-1][2] == row:
+                runs[-1][2] += 1
+            else:
+                runs.append([block, row, row + 1])
+
+        state, mac = first.state, None
+        if state.mac is not None:
+            parts = [
+                map_mac_rows(block.state.mac, lambda value, a=start, b=stop: value[a:b])
+                for block, start, stop in runs
+            ]
+            mac = parts[0] if len(parts) == 1 else join_mac_rows(parts)
+        return FinancialState(
+            state.config_id,
+            state.parameter_id,
+            tuple(flows),
+            tuple(block.state.last_sample_ids[row] for block, row in entries),
+            tuple(block.state.last_prediction_at[row] for block, row in entries),
+            torch.tensor([block.steps[row] for block, row in entries], dtype=torch.int64),
+            mac,
         )
 
 
@@ -260,7 +328,7 @@ class Paused(Exception):
 class _Pass:
     """Estado de un recorrido. Solo flows, pending, errores y contadores se persisten."""
 
-    flows: dict = field(default_factory=dict)
+    flows: FlowStates = field(default_factory=FlowStates)
     pending: dict = field(default_factory=dict)
     errors: SessionErrors = field(default_factory=SessionErrors)
     counters: dict = field(
@@ -326,6 +394,8 @@ class ChronologicalInference:
             raise ValueError("El recorrido admite cpu o cuda:0 explícitos")
         self.predictor, self.recipe = predictor, recipe
         self.audit = [] if audit else None
+        # La política se aplica antes de calcular nada y antes de registrar `_numerics`.
+        self.kernel_policy = declared_policy(recipe.precision)
 
     def _observe(self, run, source, event, *, differentiable):
         """Predecir cada bloque desde el estado previo de sus flujos, sin efectos cruzados."""
@@ -338,24 +408,21 @@ class ChronologicalInference:
             self._anchor_frozen(run.flows)
         validated = [validated_cpu_batch(raw, specification) for raw in event.inputs]
         plan = self._control_plan(run, source, event, validated) if self.penalized else {}
-        measured = []
+        measured, emitted = [], []
         for cpu in validated:
             batch = DecisionBatch.from_validated(
                 cpu, device=self.device, dtype=predictor.head.weight.dtype
             )
             new = tuple(flow for flow in batch.flow_ids if flow not in run.flows)
             if new:
-                run.flows.update(_split(predictor.initial_state(new, differentiable=grad)))
+                run.flows.put(predictor.initial_state(new, differentiable=grad))
             if accumulate:
                 for flow in batch.flow_ids:
                     if flow not in run.starts:
-                        # Sin grafo: la repetición no reutiliza nada del cálculo emitido.
-                        if flow in new:
-                            run.starts[flow] = None
-                        else:
-                            ((_, run.starts[flow]),) = _split(run.flows[flow], detach=True)
+                        # La repetición parte del estado sin grafo de cada flujo al empezar.
+                        run.starts[flow] = None if flow in new else run.flows.handle(flow)
                 run.segment.append((batch, plan))
-            state = _stack([run.flows[flow] for flow in batch.flow_ids])
+            state = run.flows.gather(batch.flow_ids)
             with torch.set_grad_enabled(grad):
                 prepared = predictor.prepare(batch, state, differentiable=grad, **plan)
             result = prepared.local_control
@@ -363,33 +430,51 @@ class ChronologicalInference:
                 # Con acumulación el término emitido solo cuenta: su grafo retendría el lote.
                 term = result.penalty.detach() if accumulate else result.penalty
                 measured.append((term, result.flow_ids))
-            run.flows.update(_split(prepared.next_state, detach=accumulate))
+            run.flows.put(prepared.next_state, detach=accumulate)
             size = len(batch.flow_ids)
             run.counters["observations"] += size
             if warmup:
                 run.counters["warmup_observations"] += size
                 continue
-            values = prepared.point_predictions.detach().cpu().tolist()
             # El error y la selección usan la mediana emitida. La pérdida usa los cinco niveles.
-            graphs = prepared.quantiles if self.quantiles else prepared.point_predictions
-            levels = (
-                prepared.quantiles.detach().cpu().tolist()
-                if run.rows is not None and self.quantiles
-                else None
-            )
-            for row, (flow, at) in enumerate(zip(batch.flow_ids, batch.prediction_at, strict=True)):
-                run.pending[flow, at] = values[row]
-                if levels is not None:
-                    run.levels[flow, at] = levels[row]
-                if grad:
-                    run.graphs[flow, at] = _REPLAY if accumulate else graphs[row]
-                if self.audit is not None:
-                    self.audit.append(("prediction", source.phase.partition, flow, at, values[row]))
+            # `unbind` deja un solo nodo de autograd para las filas del bloque.
+            graphs = (prepared.quantiles if self.quantiles else prepared.point_predictions).unbind()
+            if grad:
+                for row, key in enumerate(zip(batch.flow_ids, batch.prediction_at, strict=True)):
+                    run.graphs[key] = _REPLAY if accumulate else graphs[row]
+            emitted.append((batch, prepared))
             run.counters["predictions"] += size
+        self._emit(run, source, emitted)
         if measured:
             self._penalty(run, measured, keep=grad, replay=accumulate)
         if event.inputs and not warmup:
             run.instants += 1
+
+    def _emit(self, run, source, emitted):
+        """Registrar las predicciones emitidas del evento con una sola copia al anfitrión.
+
+        Copiar cada bloque obligaba a esperar a la GPU antes de preparar el siguiente.
+        Las predicciones solo se consultan al llegar sus etiquetas, en eventos posteriores.
+        """
+        if not emitted:
+            return
+        values = torch.cat(
+            [prepared.point_predictions.detach() for _, prepared in emitted]
+        ).tolist()
+        levels = None
+        if run.rows is not None and self.quantiles:
+            levels = torch.cat([prepared.quantiles.detach() for _, prepared in emitted]).tolist()
+        keys = [
+            key
+            for batch, _ in emitted
+            for key in zip(batch.flow_ids, batch.prediction_at, strict=True)
+        ]
+        for index, (flow, at) in enumerate(keys):
+            run.pending[flow, at] = values[index]
+            if levels is not None:
+                run.levels[flow, at] = levels[index]
+            if self.audit is not None:
+                self.audit.append(("prediction", source.phase.partition, flow, at, values[index]))
 
     def _control_plan(self, run, source, event, batches):
         """Fijar la selección de C sobre todos los flujos del evento antes de dividirlo.
@@ -399,7 +484,7 @@ class ChronologicalInference:
         """
         flows = tuple(flow for batch in batches for flow in batch.flow_ids)
         steps = torch.tensor(
-            [int(run.flows[f].observed_steps[0]) if f in run.flows else 0 for f in flows],
+            [run.flows.steps(f) if f in run.flows else 0 for f in flows],
             dtype=torch.int64,
             device="cpu",
         )
@@ -445,15 +530,8 @@ class ChronologicalInference:
         for start in range(0, len(flows), size):
             chunk = flows[start : start + size]
             memory = self.predictor.mac.initial_state(len(chunk), differentiable=True).memory
-            for row, flow in enumerate(chunk):
-                state = states[flow]
-                fresh = NeuralMemoryState(
-                    tuple(w[row : row + 1] for w in memory.weights),
-                    tuple(m[row : row + 1] for m in memory.momentum),
-                    memory.steps[row : row + 1],
-                    memory.config_id,
-                )
-                states[flow] = replace(state, mac=replace(state.mac, memory=fresh))
+            state = states.gather(chunk)
+            states.put(replace(state, mac=replace(state.mac, memory=memory)))
 
     def _labels(self, run, event, *, train):
         """Resolver etiquetas maduras contra la predicción emitida y su grafo vigente."""
@@ -558,6 +636,11 @@ class ChronologicalTrainer(ChronologicalInference):
     instante con los parámetros vigentes.
     """
 
+    # Gancho opcional para las trazas de #448. Se llama como `trace(event, modules)` después
+    # de cada validación completa y no debe cambiar el cálculo ni el RNG. Si vale None, el
+    # recorrido no llama a nada y es el mismo de antes bit a bit.
+    trace = None
+
     def __init__(
         self,
         predictor,
@@ -568,6 +651,7 @@ class ChronologicalTrainer(ChronologicalInference):
         output,
         optimizer_factory=None,
         pairing=None,
+        posttraining=None,
         audit=False,
     ):
         super().__init__(predictor, recipe, audit=audit)
@@ -597,8 +681,23 @@ class ChronologicalTrainer(ChronologicalInference):
         for protected in (*train.dataset.roots.values(), train.path.parent, validation.path.parent):
             outside_source(protected, self.output)
             outside_source(self.output, protected)
+        if posttraining is not None and (
+            not isinstance(posttraining, dict) or pairing is not None or not posttraining
+        ):
+            raise ValueError("El postentrenamiento se declara como un objeto sin emparejamiento")
         self.roles = parameter_roles(predictor)
+        if "adapters" in self.roles and posttraining is None:
+            raise ValueError("Un predictor con adaptadores solo se ajusta en el postentrenamiento")
         named = dict(predictor.named_parameters())
+        frozen = []
+        if posttraining is not None:
+            # Solo se ajusta lo que requiere gradiente: los adaptadores o, en la continuación
+            # completa, todo el ajuste externo. Los tensores originales quedan congelados.
+            frozen = [name for name, value in named.items() if not value.requires_grad]
+            self.roles = {
+                role: [name for name in names if named[name].requires_grad]
+                for role, names in self.roles.items()
+            }
         groups = [
             dict(params=[named[name] for name in names], role=role)
             for role, names in self.roles.items()
@@ -611,7 +710,8 @@ class ChronologicalTrainer(ChronologicalInference):
         )
         self.optimizer = factory(groups)
         listed = [id(p) for group in self.optimizer.param_groups for p in group["params"]]
-        if len(listed) != len(set(listed)) or set(listed) != {id(p) for p in named.values()}:
+        trainable = {id(named[name]) for names in self.roles.values() for name in names}
+        if len(listed) != len(set(listed)) or set(listed) != trainable or not trainable:
             raise ValueError("El optimizador debe cubrir exactamente el ajuste externo")
         self.identity = dict(
             schema_version=1,
@@ -634,6 +734,9 @@ class ChronologicalTrainer(ChronologicalInference):
             numerics=_numerics(),
             final_test_opened=False,
         )
+        if self.kernel_policy is not None:
+            # Sin precisión declarada la identidad conserva su forma anterior.
+            self.identity["kernel_policy"] = self.kernel_policy
         control = predictor.local_control
         if control is not None:
             # Sin control local, la identidad conserva literalmente su forma anterior.
@@ -653,6 +756,9 @@ class ChronologicalTrainer(ChronologicalInference):
                 self.identity["local_control"]["penalty_accumulation"] = (
                     "measured_flows_replayed_in_their_flow_block_over_segment_groups_v1"
                 )
+        if posttraining is not None:
+            # Sin postentrenamiento la identidad conserva literalmente su forma anterior.
+            self.identity.update(posttraining=posttraining, frozen_parameters=frozen)
         self.run_id = hashlib.sha256(canonical(self.identity).encode()).hexdigest()
         self.global_step, self.selection, self.history, self.train_metrics = 0, None, [], None
 
@@ -667,6 +773,7 @@ class ChronologicalTrainer(ChronologicalInference):
             or _numerics() != self.identity["numerics"]
         ):
             raise ValueError("El código o la configuración numérica cambiaron durante el recorrido")
+        require_policy(self.recipe.precision, self.kernel_policy)
 
     def _loss(self, prediction, target):
         """Pérdida del tramo. Con la cabeza de cuantiles, `prediction` es [etiquetas, 5]."""
@@ -720,7 +827,11 @@ class ChronologicalTrainer(ChronologicalInference):
         total, replayed = 0.0, 0
         for start in range(0, len(order), size):
             group = order[start : start + size]
-            states = {flow: run.starts[flow] for flow in group if run.starts[flow] is not None}
+            states = FlowStates(
+                (flow, run.starts[flow]) for flow in group if run.starts[flow] is not None
+            )
+            # Sin grafo: la repetición no reutiliza nada del cálculo emitido.
+            states.detach()
             if predictor.config.variant == "mac_frozen":
                 self._anchor_frozen(states)
             members, graphs, penalties = set(group), {}, []
@@ -731,15 +842,17 @@ class ChronologicalTrainer(ChronologicalInference):
                 batch = batch.select(rows)
                 new = tuple(flow for flow in batch.flow_ids if flow not in states)
                 if new:
-                    states.update(_split(predictor.initial_state(new, differentiable=True)))
-                state = _stack([states[flow] for flow in batch.flow_ids])
+                    states.put(predictor.initial_state(new, differentiable=True))
+                state = states.gather(batch.flow_ids)
                 with torch.enable_grad():
                     prepared = predictor.prepare(batch, state, differentiable=True, **plan)
-                states.update(_split(prepared.next_state))
+                states.put(prepared.next_state)
                 if prepared.local_control is not None:
                     penalties.append(prepared.local_control.penalty)
                     replayed += len(prepared.local_control.flow_ids)
-                outputs = prepared.quantiles if self.quantiles else prepared.point_predictions
+                outputs = (
+                    prepared.quantiles if self.quantiles else prepared.point_predictions
+                ).unbind()
                 for row, key in enumerate(zip(batch.flow_ids, batch.prediction_at, strict=True)):
                     if key in targets:
                         graphs[key] = outputs[row]
@@ -794,8 +907,7 @@ class ChronologicalTrainer(ChronologicalInference):
                 "control_groups_discarded", 0
             ) + len(run.penalties)
         parameter_id = self.predictor._parameter_id
-        for state in list(run.flows.values()):
-            run.flows.update(_split(state, detach=True, parameter_id=parameter_id))
+        run.flows.detach(parameter_id)
         run.penalties.clear()
         run.graphs.clear()
         run.predictions.clear()
@@ -852,7 +964,7 @@ class ChronologicalTrainer(ChronologicalInference):
         predictor, size = self.predictor, self.predictor.config.max_batch
         flows = sorted(run.flows)
         fast = [
-            predictor.export_state_cpu(_stack([run.flows[f] for f in flows[i : i + size]]))
+            predictor.export_state_cpu(run.flows.gather(flows[i : i + size]))
             for i in range(0, len(flows), size)
         ]
         keys = sorted(run.pending)
@@ -870,7 +982,7 @@ class ChronologicalTrainer(ChronologicalInference):
     def _restore(self, payload):
         run = _Pass()
         for item in payload["fast"]:
-            run.flows.update(_split(self.predictor.restore_state(item, device=self.device)))
+            run.flows.put(self.predictor.restore_state(item, device=self.device))
         pending = payload["pending"]
         run.pending = {
             (flow, int(at)): float(value)
@@ -896,8 +1008,12 @@ class ChronologicalTrainer(ChronologicalInference):
         self.predictor.load_state_dict(state["model"])
         return state
 
-    def run(self, *, resume=False, stop=None):
-        """Recorrer épocas hasta la paciencia declarada o el presupuesto fijo."""
+    def run(self, *, resume=False, stop=None, joint_epoch=None):
+        """Recorrer épocas hasta la paciencia declarada o el presupuesto fijo.
+
+        Con la meseta conjunta, el ajuste espera en su primera meseta (`AWAIT`) hasta que se
+        reanuda con la época común del grupo (`joint_epoch`).
+        """
         output, checkpoints = self.output, self.output / "checkpoints"
         if isinstance(self.optimizer, torch.optim.Optimizer):
             require_learning_allowed("ChronologicalTrainer.run de Titans-MAC")
@@ -920,6 +1036,8 @@ class ChronologicalTrainer(ChronologicalInference):
             if state["run"] is not None:
                 self.predictor.train()
                 run = self._restore(state["run"])
+            # Una ejecución ya conjunta solo continúa o se confirma con su misma época común.
+            bind_joint_epoch(report, joint_epoch, self.recipe.selection, self.recipe.epochs)
             if report["status"] == "completed":
                 self._load_best(report)
                 return report
@@ -935,6 +1053,7 @@ class ChronologicalTrainer(ChronologicalInference):
                 final_test_opened=False,
                 attempts=[],
             )
+            bind_joint_epoch(report, joint_epoch, self.recipe.selection, self.recipe.epochs)
 
         def save(position, current=None, *, best=False):
             self._check_runtime()
@@ -961,11 +1080,32 @@ class ChronologicalTrainer(ChronologicalInference):
             save(cursor)
         started = time.perf_counter()
         try:
+            options = self.recipe.selection
             while cursor["phase"] != "done":
                 epoch = cursor["epoch"]
+                if cursor["phase"] == "train" and cursor["stage"] == "start":
+                    # Al empezar una época, el ajuste espera al grupo o
+                    # termina si ya está en la época conjunta.
+                    decision = epoch_decision(
+                        self.selection, options, self.recipe.epochs, joint_epoch
+                    )
+                    if decision == AWAIT:
+                        report.update(awaiting(self.selection, self.recipe.epochs))
+                        return report
+                    if decision == FINISH:
+                        cursor = dict(epoch=epoch, phase="done")
+                        save(cursor)
+                        continue
                 if cursor["phase"] == "validation":
                     metrics = self.evaluate(self.validation, stop=stop)
-                    options = self.recipe.selection
+                    if self.trace is not None:
+                        event = dict(
+                            kind="validation",
+                            epoch=epoch,
+                            global_step=self.global_step,
+                            score=metrics["session_mae"],
+                        )
+                        self.trace(event, dict(predictor=self.predictor))
                     self.selection = (
                         initial_selection(metrics["session_mae"], options)
                         if epoch == 0
@@ -982,13 +1122,18 @@ class ChronologicalTrainer(ChronologicalInference):
                         )
                     )
                     self.train_metrics = None
-                    # Con presupuesto fijo, should_stop nunca corta y se registra plateau_epoch.
-                    finished = epoch >= self.recipe.epochs or self.selection["should_stop"]
+                    # Con presupuesto fijo o con meseta conjunta, should_stop
+                    # nunca detiene el ajuste por sí solo.
+                    decision = epoch_decision(
+                        self.selection, options, self.recipe.epochs, joint_epoch
+                    )
+                    finished = decision == FINISH
                     cursor = (
                         dict(epoch=epoch, phase="done")
                         if finished
                         else dict(epoch=epoch, phase="train", event=0, stage="start")
                     )
+                    # Con AWAIT, el cursor ya confirmado espera al grupo al empezar la época.
                     save(cursor, best=self.selection["last_improved"])
                     if stop.requested and not finished:
                         raise Paused

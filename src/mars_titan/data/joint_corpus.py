@@ -17,7 +17,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 
 from mars_titan.training.cohort_contract import representation_hash, representation_identity
-from mars_titan.training.corpus_inputs import CorpusDataset, _availability, _price_contexts
+from mars_titan.training.corpus_inputs import CorpusDataset, _availability
 
 from .accounting_catalog import CNY_CONCEPTS, COMMON_CONCEPTS
 from .accounting_catalog import JOINT_CONCEPTS as CONCEPTS
@@ -213,7 +213,7 @@ def _project(source, destination, source_concepts, expected_rows, cohort, *, rea
                     raise ValueError("La muestra necesita un índice de precios entero y completo")
                 ends = column.to_numpy()
                 for start in range(0, len(ends), 256):
-                    _price_contexts(prices, ends[start : start + 256], reader.context)
+                    reader.price_windows(asset, prices, price_available, ends[start : start + 256])
                 if np.any(price_available[ends] > moments):
                     raise ValueError("Una muestra utiliza precios posteriores a su decisión")
                 for positions, prediction, _, _ in labels:

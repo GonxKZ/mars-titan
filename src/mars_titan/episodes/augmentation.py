@@ -1,20 +1,14 @@
 """Presupuestos de aumento por cohortes y orden compartido de cada época."""
 
 import math
-from dataclasses import dataclass, replace
+from dataclasses import replace
 
 import numpy as np
 
+from mars_titan.environments.cohort_order import Visit, real_order
+
 from .windows import EpisodeWindow, resample_windows
 from .worlds import WorldConfig, generate_world
-
-
-@dataclass(frozen=True)
-class Visit:
-    arm: str
-    episode: int
-    cohort: int
-    reset: bool
 
 
 def augmentation_windows(source, *, seed, decisions=16, warmup=16, fraction=0.25):
@@ -48,7 +42,7 @@ def training_visits(source, windows, *, epoch, seed):
     if any(window.source_sha256 != source.manifest_sha256 for window in windows):
         raise ValueError("El aumento pertenece a otra fuente")
     rng = np.random.default_rng([seed, epoch])
-    visits = [Visit("real", -1, int(i), True) for i in rng.permutation(len(source))]
+    visits = real_order(rng, len(source))
     for episode in rng.permutation(len(windows)):
         window = windows[int(episode)]
         visits.extend(

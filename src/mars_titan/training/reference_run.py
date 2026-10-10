@@ -24,10 +24,10 @@ from mars_titan.models.baselines.multimodal import (
     PRESENCE_FUSION,
     STRICT_FUSION,
     MultimodalReference,
+    transformer_batch_options,
     validate_architecture,
 )
 from mars_titan.models.baselines.transformer import (
-    CompactPriceTransformer,
     transformer_options,
     validate_attention_budget,
 )
@@ -50,8 +50,22 @@ from .checkpoints import (
     save_training_state,
 )
 from .corpus_inputs import CorpusDataset
+from .kernel_policy import PRECISIONS, declared_policy, require_policy
 from .learning_hold import require_learning_allowed
-from .selection import FIXED_BUDGET, advance_selection, initial_selection, validate_selection
+from .reference_step_graph import GRAPH_KINDS, ReferenceStepGraph
+from .selection import (
+    AWAIT,
+    CONTINUE,
+    FINISH,
+    FIXED_BUDGET,
+    JOINT_PLATEAU,
+    advance_selection,
+    awaiting,
+    bind_joint_epoch,
+    epoch_decision,
+    initial_selection,
+    validate_selection,
+)
 
 KINDS = ("rnn", "lstm", "gru", "dlinear", "transformer")
 # Política anterior: filas completas de ajuste y validación.
@@ -122,11 +136,11 @@ _SOURCES = (
 )
 
 
-def scientific_identity(*, kind=None, input_policy=STRICT_INPUTS, head=None):
+def scientific_identity(*, kind=None, input_policy=STRICT_INPUTS, head=None, graphs=False):
     """Compartir versiones, política numérica y transformaciones entre todos los casos.
 
-    El Transformer, la lectura con máscaras y la cabeza de cuantiles añaden sus
-    huellas solo en esos casos. Así, la identidad de las referencias estrictas y
+    El Transformer, la lectura con máscaras, la cabeza de cuantiles y el paso con CUDA
+    Graphs añaden sus huellas solo en esos casos. Así, la identidad de las referencias estrictas y
     escalares anteriores conserva sus campos.
     """
     root = Path(__file__).parents[1]
@@ -137,6 +151,8 @@ def scientific_identity(*, kind=None, input_policy=STRICT_INPUTS, head=None):
         sources += ("data/input_policy.py",)
     if head == QUANTILE_HEAD:
         sources += ("models/quantile_head.py",)
+    if graphs:
+        sources += ("training/reference_step_graph.py",)
     return dict(
         torch=str(torch.__version__),
         cuda=torch.version.cuda,
@@ -168,7 +184,9 @@ def _options(
 ):
     required = {"kind", "loss", "learning_rate", "seed", "epochs", "huber_delta"}
     if (
-        not required <= set(case) <= required | {"architecture", "selection", "head"}
+        not required
+        <= set(case)
+        <= required | {"architecture", "selection", "head", "precision", "cuda_graphs"}
         or case["kind"] not in KINDS
         or type(case["epochs"]) is not int
         or not 1 <= case["epochs"] <= 1000
@@ -186,13 +204,24 @@ def _options(
         raise ValueError("La configuración del entrenamiento no es válida")
     if prediction_retention not in PREDICTION_RETENTIONS:
         raise ValueError("La retención de predicciones no pertenece al contrato")
+    # Sin el campo se conserva la configuración numérica del proceso y la identidad previa.
+    if "precision" in case and (
+        type(case["precision"]) is not str or case["precision"] not in PRECISIONS
+    ):
+        raise ValueError("La precisión del caso no pertenece a la política de núcleos")
+    # Sin el campo el paso es eager. El campo solo se admite en las familias cuya paridad
+    # bit a bit con la ruta eager comprueban las pruebas del paso con grafo.
+    if "cuda_graphs" in case and (
+        case["cuda_graphs"] is not True
+        or case["kind"] not in GRAPH_KINDS
+        or "architecture" not in case
+    ):
+        raise ValueError("CUDA Graphs solo se declara en una familia con paridad comprobada")
     transformer = case["kind"] == "transformer"
     if (transformer or masked_inputs(input_policy)) and "architecture" not in case:
         raise ValueError(
             "El Transformer y la política con máscaras requieren una arquitectura científica"
         )
-    if transformer and batch_size > CompactPriceTransformer.max_batch:
-        raise ValueError("El lote supera el presupuesto de la referencia Transformer")
     if "architecture" in case:
         architecture = case["architecture"]
         expected = {"hidden_size", "layers", "dropout"} | (
@@ -258,6 +287,19 @@ def _update(statistics, prediction, target):
     statistics["absolute_error"] += sums[1]
 
 
+def row_loss(case, emitted, prediction, target, quantiles):
+    """Calcula la pérdida por fila, pinball con la cabeza de cuantiles o la escalar del caso."""
+    if quantiles:
+        return pinball_loss(emitted, target, reduction="none")
+    if case["loss"] == "huber":
+        return torch.nn.functional.huber_loss(
+            prediction, target, delta=case["huber_delta"], reduction="none"
+        )
+    if case["loss"] == "mae":
+        return torch.nn.functional.l1_loss(prediction, target, reduction="none")
+    return torch.nn.functional.mse_loss(prediction, target, reduction="none")
+
+
 def _session_table(errors, zero):
     """Resumir errores por mercado e instante, junto al control de predicción nula."""
     keys = sorted(errors.sessions, key=lambda key: (key[1], key[0]))
@@ -288,6 +330,19 @@ def _point(emitted, target, quantiles):
     if prediction.shape != target.shape:
         raise ValueError("Predicción y etiqueta no tienen la misma forma")
     return prediction
+
+
+def _training_loss(case, quantiles):
+    """Predicción puntual y pérdida media del ajuste, común a la ruta eager y al grafo."""
+
+    def step_loss(emitted, target, rows):
+        prediction = _point(emitted, target, quantiles)
+        loss = row_loss(case, emitted, prediction, target, quantiles)
+        if rows is not None:
+            loss = loss * rows
+        return prediction, loss.mean()
+
+    return step_loss
 
 
 def _evaluate(
@@ -438,6 +493,7 @@ def _parent(parent, dataset, case, model, batch_size, weighting, input_policy=ST
         or identity["case"]["seed"] != case["seed"]
         or identity["case"].get("architecture") != case.get("architecture")
         or identity["case"].get("head") != case.get("head")
+        or identity["case"].get("precision") != case.get("precision")
         or identity["batch_size"] != batch_size
         or identity["weighting"] != weighting
         or any(identity.get(key) != inputs.get(key) for key in ("input_policy", "mask_contract"))
@@ -446,7 +502,10 @@ def _parent(parent, dataset, case, model, batch_size, weighting, input_policy=ST
         raise ValueError("El origen no corresponde a la población, arquitectura y semilla")
     checkpoint = report["checkpoint"]
     current = scientific_identity(
-        kind=case["kind"], input_policy=input_policy, head=case.get("head")
+        kind=case["kind"],
+        input_policy=input_policy,
+        head=case.get("head"),
+        graphs="cuda_graphs" in identity["case"],
     )
     if any(identity.get(k) != v for k, v in current.items()):
         raise ValueError("El entorno o el código no coincide con el origen de la continuación")
@@ -469,11 +528,14 @@ def run_reference_case(
     weighting: str = "natural",
     input_policy: str = STRICT_INPUTS,
     prediction_retention: str = FULL_TRAIN_VALIDATION,
+    joint_epoch: int | None = None,
 ) -> dict:
     """Ajustar una referencia sobre toda la edición, sin abrir el test final.
 
     Sin argumentos nuevos se conserva la ruta estricta: lectura, identidad y archivos.
     La política con máscaras activa la fusión con presencia y la registra en la identidad.
+    Con la meseta conjunta, el ajuste espera en su primera meseta (`awaiting_joint_stop`)
+    hasta que se reanuda con la época común del grupo (`joint_epoch`).
     """
     require_learning_allowed("el ajuste de la referencia neuronal")
     _options(
@@ -484,6 +546,8 @@ def run_reference_case(
         input_policy=input_policy,
         prediction_retention=prediction_retention,
     )
+    # La política se fija antes de construir el modelo y de registrar los valores numéricos.
+    kernel_policy = declared_policy(case.get("precision"))
     masked = masked_inputs(input_policy)
     quantiles = case.get("head") == QUANTILE_HEAD
     start = time.perf_counter()
@@ -498,6 +562,7 @@ def run_reference_case(
             context=dataset.context,
             heads=architecture["transformer"]["heads"],
             layers=architecture["layers"],
+            **transformer_batch_options(case["kind"], batch_size),
         )
     for protected in (*dataset.roots.values(), Path("dataset")):
         outside_source(protected, output)
@@ -517,6 +582,7 @@ def run_reference_case(
             mask_fusion=PRESENCE_FUSION if masked else STRICT_FUSION,
             **case["architecture"],
             **({"head": QUANTILE_HEAD} if quantiles else {}),
+            **transformer_batch_options(case["kind"], batch_size),
         )
         if "architecture" in case
         else CostProbe(case["kind"], dimensions, context=dataset.context)
@@ -526,7 +592,12 @@ def run_reference_case(
         initialize_from, dataset, case, model, batch_size, weighting, input_policy
     )
     identity = dict(
-        **scientific_identity(kind=case["kind"], input_policy=input_policy, head=case.get("head")),
+        **scientific_identity(
+            kind=case["kind"],
+            input_policy=input_policy,
+            head=case.get("head"),
+            graphs="cuda_graphs" in case,
+        ),
         manifest_sha256=dataset.identity,
         case=case,
         model_family="scientific_multimodal_reference"
@@ -555,12 +626,16 @@ def run_reference_case(
         identity["prediction_retention"] = prediction_retention
     if quantiles:
         identity["output_head"] = dict(CONTRACT)
+    if kernel_policy is not None:
+        identity["kernel_policy"] = kernel_policy
     optimizer = torch.optim.AdamW(model.parameters(), lr=case["learning_rate"])
     report_path = output / "run.json"
     if resume and report_path.exists():
         report = read_json(report_path)
         if report["identity"] != identity:
             raise ValueError("La identidad o configuración de la ejecución ha cambiado")
+        # Una ejecución ya conjunta solo continúa o se confirma con su misma época común.
+        bind_joint_epoch(report, joint_epoch, case.get("selection"), case["epochs"])
         if report["status"] == "completed":
             _confirmed_state(output, identity, report["checkpoint"], report.get("selection"))
             for item in retained_artifacts(report):
@@ -605,8 +680,14 @@ def run_reference_case(
         if state.get("initial_validation") is not None:
             report["initial_validation"] = state["initial_validation"]
     report["selection"] = selection
+    bind_joint_epoch(report, joint_epoch, case.get("selection"), case["epochs"])
     stop = stop or StopRequest()
     last_saved = time.perf_counter()
+
+    def decision():
+        if not selection_options:
+            return FINISH if epoch >= case["epochs"] else CONTINUE
+        return epoch_decision(selection, selection_options, case["epochs"], joint_epoch)
 
     def save(*, pin=False, best=False):
         nonlocal last_saved
@@ -615,6 +696,7 @@ def run_reference_case(
             for name, expected in identity["code"].items()
         ):
             raise ValueError("El código ha cambiado durante la ejecución")
+        require_policy(case.get("precision"), kernel_policy)
         state = dict(
             global_step=step,
             epoch=epoch,
@@ -635,6 +717,10 @@ def run_reference_case(
         report["selection"] = selection
         last_saved = time.perf_counter()
 
+    step_loss = _training_loss(case, quantiles)
+    step_graph = (
+        ReferenceStepGraph(model, step_loss, batch_size) if case.get("cuda_graphs") else None
+    )
     torch.cuda.reset_peak_memory_stats(0)
     try:
         save()
@@ -646,7 +732,11 @@ def run_reference_case(
             selection = initial_selection(baseline["session_mae"], selection_options)
             save(best=True)
             atomic_json(report_path, report)
-        while epoch < case["epochs"] and not (selection and selection["should_stop"]):
+        while (next_step := decision()) != FINISH:
+            if next_step == AWAIT:
+                # El estado tras la validación ya está confirmado y la época común la fija el grupo.
+                report.update(awaiting(selection, case["epochs"]), global_step=step, epochs=history)
+                return report
             if stop.requested:
                 raise _Pause
             model.train()
@@ -659,26 +749,21 @@ def run_reference_case(
             )
             segment = time.perf_counter()
             for batch in iterator:
-                optimizer.zero_grad(set_to_none=True)
                 target = torch.from_numpy(batch["target"]).to(device, dtype=torch.float32)
-                emitted = _forward(model, batch, device)
-                prediction = _point(emitted, target, quantiles)
-                if quantiles:
-                    loss = pinball_loss(emitted, target, reduction="none")
-                elif case["loss"] == "huber":
-                    loss = torch.nn.functional.huber_loss(
-                        prediction, target, delta=case["huber_delta"], reduction="none"
-                    )
-                elif case["loss"] == "mae":
-                    loss = torch.nn.functional.l1_loss(prediction, target, reduction="none")
+                rows = (
+                    None
+                    if weighting == "natural"
+                    else torch.tensor([weights[m] for m in batch["market"]], device=device)
+                )
+                if step_graph is not None and step_graph.admits(batch):
+                    prediction = step_graph.step(batch, target, rows)
                 else:
-                    loss = torch.nn.functional.mse_loss(prediction, target, reduction="none")
-                if weighting != "natural":
-                    loss = loss * torch.tensor([weights[m] for m in batch["market"]], device=device)
-                loss = loss.mean()
-                if not torch.isfinite(loss).item():
-                    raise ValueError("La pérdida no es finita")
-                loss.backward()
+                    optimizer.zero_grad(set_to_none=True)
+                    emitted = _forward(model, batch, device)
+                    prediction, loss = step_loss(emitted, target, rows)
+                    if not torch.isfinite(loss).item():
+                        raise ValueError("La pérdida no es finita")
+                    loss.backward()
                 torch.nn.utils.clip_grad_norm_(
                     model.parameters(), math.inf, error_if_nonfinite=True
                 )
@@ -769,13 +854,18 @@ def run_reference_case(
             finished_at_utc=datetime.now(UTC).isoformat(),
         )
         if selection_options and {"minimum_epochs", "stopping"} & set(selection_options):
+            joint = selection_options.get("stopping") == JOINT_PLATEAU
             report.update(
                 stop_reason=(
-                    "validation_plateau" if selection["should_stop"] else "budget_exhausted"
+                    "validation_plateau"
+                    if selection["should_stop"]
+                    else JOINT_PLATEAU
+                    if joint and epoch < case["epochs"]
+                    else "budget_exhausted"
                 ),
                 last_epoch_improved=selection["last_improved"],
             )
-            if selection_options.get("stopping") == FIXED_BUDGET:
+            if selection_options.get("stopping") in (FIXED_BUDGET, JOINT_PLATEAU):
                 report["plateau_epoch"] = selection["plateau_epoch"]
         return report
     except _Pause:

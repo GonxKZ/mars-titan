@@ -33,7 +33,14 @@ from .financial_run import Paused
 from .learning_hold import require_learning_allowed
 from .mars_titan_run import retention_config
 from .mars_titan_walk_forward import ReadoutFamily, carry_readout, run_readout_window
-from .titans_walk_forward import _require, run_titans_window, unfused_attention, view_protocol
+from .selection import AWAIT
+from .titans_walk_forward import (
+    STOPPING_FIELD,
+    _require,
+    run_titans_window,
+    unfused_attention,
+    view_protocol,
+)
 
 DECLARATION = Path(__file__).resolve().parents[3] / "configs/titans/cm-v1-factorial.json"
 NAME = "mars_titan_cm_v1_factorial"
@@ -214,6 +221,8 @@ def run_cm_v1_core_window(
     indices=None,
     stop=None,
     optimizer_factory=None,
+    stopping=None,
+    joint_epoch=None,
 ):
     """Ajustar el núcleo de B (C disabled) o de B+C (C penalty) con la receta de la campaña."""
     require_learning_allowed("run_cm_v1_core_window de CM-v1")
@@ -233,6 +242,8 @@ def run_cm_v1_core_window(
         optimizer_factory=optimizer_factory,
         search_case=search_case,
         local_control=control_contract(document, CORES[core]),
+        stopping=stopping,
+        joint_epoch=joint_epoch,
     )
 
 
@@ -249,6 +260,8 @@ def run_cm_v1_window(
     indices=None,
     stop=None,
     optimizer_factory=None,
+    stopping=None,
+    joint_epoch=None,
 ):
     """Ajustar el lector M1 con K = 1 del brazo sobre su núcleo elegido en la ventana."""
     require_learning_allowed("run_cm_v1_window de CM-v1")
@@ -265,11 +278,21 @@ def run_cm_v1_window(
         indices=indices,
         stop=stop,
         optimizer_factory=optimizer_factory,
+        stopping=stopping,
+        joint_epoch=joint_epoch,
     )
 
 
 def carry_cm_v1(
-    anchor, anchor_view, view, output, *, device="cuda:0", stop=None, modality_ablation=None
+    anchor,
+    anchor_view,
+    view,
+    output,
+    *,
+    device="cuda:0",
+    stop=None,
+    modality_ablation=None,
+    regenerate=False,
 ):
     """Predecir una ventana posterior con el núcleo y el lector elegidos en el ancla.
 
@@ -300,6 +323,7 @@ def carry_cm_v1(
         device=device,
         stop=stop,
         modality_ablation=modality_ablation,
+        regenerate=regenerate,
     )
 
 
@@ -307,7 +331,7 @@ def _case(run, fields):
     case = run.case
     _require(
         isinstance(case, dict)
-        and set(case) == fields
+        and set(case) - {STOPPING_FIELD} == fields
         and case["seed"] == run.job["seed"]
         and run.policy == HISTORICAL_MASKED,
         "El trabajo no declara un caso de CM-v1 de la campaña con máscaras",
@@ -342,11 +366,14 @@ def cm_v1_core_fit(run, *, device="cuda:0", optimizer_factory=None):
             device=device,
             stop=run.stop,
             optimizer_factory=optimizer_factory,
+            stopping=case.get(STOPPING_FIELD),
+            joint_epoch=run.joint_epoch,
         )
     if report["status"] == "paused":
         raise CampaignPaused
     _require(
-        report["status"] == "completed" and report["request"]["view_sha256"] == run.view_sha256,
+        report["status"] in ("completed", AWAIT)
+        and report["request"]["view_sha256"] == run.view_sha256,
         "La ventana del núcleo de CM-v1 no confirma la vista del trabajo",
     )
     return report
@@ -374,11 +401,13 @@ def cm_v1_fit(run, *, device="cuda:0", optimizer_factory=None):
             device=device,
             stop=run.stop,
             optimizer_factory=optimizer_factory,
+            stopping=case.get(STOPPING_FIELD),
+            joint_epoch=run.joint_epoch,
         )
     if report["status"] == "paused":
         raise CampaignPaused
     _require(
-        report["status"] == "completed"
+        report["status"] in ("completed", AWAIT)
         and report["request"]["view_sha256"] == run.view_sha256
         and report["request"]["parent"]["checkpoint_sha256"] == run.parent["checkpoint_sha256"],
         "La ventana de CM-v1 no confirma la vista ni el núcleo del trabajo",
@@ -386,8 +415,11 @@ def cm_v1_fit(run, *, device="cuda:0", optimizer_factory=None):
     return report
 
 
-def cm_v1_carry(run, *, device="cuda:0"):
-    """Ejecutor de predicción trasladada del brazo (variante B de la campaña)."""
+def cm_v1_carry(run, *, device="cuda:0", regenerate=False):
+    """Ejecutor de predicción trasladada del brazo (variante B de la campaña).
+
+    Con `regenerate`, `run.anchor` es el intento del propio ajuste.
+    """
     from .masked_campaign import Paused as CampaignPaused
 
     try:
@@ -399,6 +431,7 @@ def cm_v1_carry(run, *, device="cuda:0"):
                 run.folder,
                 device=device,
                 stop=run.stop,
+                regenerate=regenerate,
             )
     except Paused as error:
         raise CampaignPaused from error

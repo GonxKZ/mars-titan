@@ -616,6 +616,43 @@ def test_version_four_declares_every_architectural_pair_and_the_new_metrics():
     ]
 
 
+def test_the_online_control_is_paired_with_the_frozen_transformer_and_mars_titan():
+    """El control en línea se contrasta con su padre congelado y con MARS-TITAN M1.
+
+    Las dos familias usan las mismas filas y semillas que sus brazos de referencia. Si el
+    control en línea alcanza a MARS-TITAN, la mejora frente al Transformer congelado no
+    puede atribuirse solo a la memoria.
+    """
+    config = walk.load_config(CONFIG)
+    arms, families = config["arms"], config["comparison"]["families"]
+    online = arms["transformer_compact_online"]
+    assert online["family"] == "online_control"
+    assert {key: online[key] for key in ("output", "seeds")} == {
+        key: arms["transformer_compact"][key] for key in ("output", "seeds")
+    }
+    assert online["seeds"] == arms["mars_titan_m1"]["seeds"]
+    assert families["online_learning"] == dict(
+        kind="delta", base="transformer_compact", variants=["transformer_compact_online"]
+    )
+    assert families["memory_vs_online_learning"] == dict(
+        kind="delta", base="transformer_compact_online", variants=["mars_titan_m1"]
+    )
+    assert "transformer_compact_online" in families["levels"]["arms"]
+    resolved = config["resolved_families"]
+    assert resolved["online_learning"] == {
+        "transformer_compact_online-transformer_compact": {
+            "transformer_compact": -1.0,
+            "transformer_compact_online": 1.0,
+        }
+    }
+    assert resolved["memory_vs_online_learning"] == {
+        "mars_titan_m1-transformer_compact_online": {
+            "transformer_compact_online": -1.0,
+            "mars_titan_m1": 1.0,
+        }
+    }
+
+
 def test_version_four_requires_the_portfolio_and_older_versions_reject_it(tmp_path):
     document = json.loads(CONFIG.read_text())
     for scope in document["scopes"].values():

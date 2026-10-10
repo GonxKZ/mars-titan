@@ -46,14 +46,14 @@ def monthly_protocol(market):
     )
 
 
-def monthly_window(market, index, symbols, *, parent=None):
+def monthly_window(market, index, symbols, *, parent=None, score=None):
     """Recibo de la ventana mensual ``index`` con sus puntuaciones de evaluación."""
     rules = monthly_protocol(market)
     fold = build_folds(rules)[index]
     start, end = fold["evaluation"]
     # El tramo excluye su final y el reloj incluye su último día.
     last = str(np.datetime64(end, "D") - np.timedelta64(1, "D"))
-    values = predictions(market, symbols, start=start, end=last)
+    values = predictions(market, symbols, start=start, end=last, score=score)
     receipt = dict(
         kind=RECEIPT_KIND,
         schema_version=1,

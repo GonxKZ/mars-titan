@@ -1,0 +1,168 @@
+{
+  "batch_size": 256,
+  "batches": 64,
+  "torch": "2.14.0+cu130",
+  "cuda": "13.0",
+  "cudnn": 92400,
+  "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+  "results": {
+    "rnn-10": {
+      "identical_predictions_and_gradients": true,
+      "step_ms": {
+        "eager": [
+          4.429093442311449,
+          4.7445981310046905,
+          4.780133426109267,
+          5.1184821149647295,
+          5.52268731159723
+        ],
+        "graph": [
+          2.4719934258800857,
+          2.6089703276768694,
+          2.633852000084904,
+          2.6595596721220276,
+          3.0309734097872787
+        ]
+      },
+      "median_ms": {
+        "eager": 4.780133426109267,
+        "graph": 2.633852000084904
+      },
+      "replays": 328,
+      "speedup": 1.8148830784551204
+    },
+    "lstm-10": {
+      "identical_predictions_and_gradients": true,
+      "step_ms": {
+        "eager": [
+          5.064820098312816,
+          5.341597278812351,
+          5.360094229232703,
+          5.498609278965589,
+          5.6014644095605455
+        ],
+        "graph": [
+          3.525052967263752,
+          3.5440877373864663,
+          3.718626557097419,
+          3.825795754206321,
+          3.8270628362222285
+        ]
+      },
+      "median_ms": {
+        "eager": 5.360094229232703,
+        "graph": 3.718626557097419
+      },
+      "replays": 328,
+      "speedup": 1.441417724240784
+    },
+    "gru-10": {
+      "identical_predictions_and_gradients": true,
+      "step_ms": {
+        "eager": [
+          5.092040852731338,
+          5.199996557002735,
+          5.274331753932275,
+          5.440630589814124,
+          5.62885367229474
+        ],
+        "graph": [
+          3.580975688356509,
+          3.6280134914168083,
+          3.703173754267303,
+          3.816949869181625,
+          3.9242887378051936
+        ]
+      },
+      "median_ms": {
+        "eager": 5.274331753932275,
+        "graph": 3.703173754267303
+      },
+      "replays": 328,
+      "speedup": 1.4242733676361983
+    },
+    "dlinear-10": {
+      "identical_predictions_and_gradients": true,
+      "step_ms": {
+        "eager": [
+          3.3027096064646777,
+          3.741316950582273,
+          4.0611038361408855,
+          4.191605770219972,
+          4.560588327996036
+        ],
+        "graph": [
+          1.2193154591349427,
+          1.2578085245236326,
+          1.3713769015443864,
+          1.5334394425497253,
+          1.5526292621364177
+        ]
+      },
+      "median_ms": {
+        "eager": 4.0611038361408855,
+        "graph": 1.3713769015443864
+      },
+      "replays": 328,
+      "speedup": 2.9613331182459346
+    },
+    "transformer-10": {
+      "identical_predictions_and_gradients": true,
+      "step_ms": {
+        "eager": [
+          6.301890376890384,
+          8.28186741010973,
+          8.375761098682606,
+          8.719377196775596,
+          9.6213579670236
+        ],
+        "graph": [
+          3.3982509668901195,
+          3.440136901488467,
+          3.4643278359893523,
+          3.663682393618997,
+          3.798460819735573
+        ]
+      },
+      "median_ms": {
+        "eager": 8.375761098682606,
+        "graph": 3.4643278359893523
+      },
+      "replays": 328,
+      "speedup": 2.4177160751562163
+    },
+    "transformer-11": {
+      "identical_predictions_and_gradients": true,
+      "step_ms": {
+        "eager": [
+          10.270521065246955,
+          10.42897157374861,
+          11.44946275420151,
+          11.77349472160787,
+          12.022176163927575
+        ],
+        "graph": [
+          7.752511573985951,
+          7.882436049422707,
+          7.916429967497338,
+          7.968495639525812,
+          8.066825524304582
+        ]
+      },
+      "median_ms": {
+        "eager": 11.44946275420151,
+        "graph": 7.916429967497338
+      },
+      "replays": 328,
+      "speedup": 1.4462911692783014
+    }
+  },
+  "command": "CUBLAS_WORKSPACE_CONFIG=:4096:8 PYTHONPATH=src:benchmarks python benchmarks/reference_step_graph.py batches-uscn12-b512.pt reference-step-graph.json",
+  "batches_source": "reference_kernels.py materialize, US+CN fold-012 v3, train, seed 42, 32 lotes de 512 divididos en 64 de 256",
+  "mutations": {
+    "no_gradient_rebind": "detectada",
+    "no_rng_restore": "detectada",
+    "capture_with_warmup_gradients": "detectada",
+    "skip_flags": "detectada"
+  }
+}

@@ -2,7 +2,8 @@
 
 La etapa se toma reducida de ``campaign_fixture`` (GRU, semilla 42, dos ventanas US),
 pero no se ejecuta: sus recibos, las fuentes de la campaña y las predicciones se escriben
-aquí con valores conocidos. Ningún modelo se carga ni se ajusta.
+aquí con valores conocidos. Ningún modelo se carga ni se ajusta. Es el plan por etapas de
+A, así que solo la segunda ventana tiene trabajos y el padre congelado es el suyo.
 """
 
 import json
@@ -17,8 +18,8 @@ import pytest
 
 from mars_titan.data.input_policy import HISTORICAL_MASKED, policy_identity
 from mars_titan.data.storage import sha256
-from mars_titan.models.quantile_head import QUANTILE_COLUMNS
-from mars_titan.posttraining import campaign_stage
+from mars_titan.models.quantile_head import QUANTILE_COLUMNS, QUANTILE_HEAD
+from mars_titan.posttraining import adapter_matrix, campaign_stage
 from mars_titan.posttraining import stage_comparison as compare
 from tests.evaluation.test_comparison_sources import masked_view, save
 from tests.posttraining.campaign_fixture import write_configs
@@ -43,12 +44,14 @@ def target(window, partition, rows):
 
 
 def prediction(arm, window, partition, truth):
-    """Padre y continuación iguales, cabeza perfecta y el resto desplazado."""
+    """Padre congelado, base y continuación iguales, cabeza perfecta y el resto desplazado."""
     if arm == "gru__head":
         return truth.copy()
     rng = np.random.default_rng(zlib.crc32(f"parent/{window}/{partition}".encode()))
     parent = np.round(0.5 * truth + rng.normal(0, 0.5, len(truth)), 3)
-    return parent if arm in ("gru", "gru__full_continuation") else parent + 0.1
+    return (
+        parent if arm in ("gru", "gru__frozen_parent", "gru__full_continuation") else parent + 0.1
+    )
 
 
 def write_table(path, arm, window, partition, segment):
@@ -180,45 +183,82 @@ def study(tmp_path_factory):
     return stage, sources, config, report, sessions, portfolio
 
 
-def by_hand_session_mae(stage, arm):
+def by_hand_session_mae(stage, arm, windows):
     sessions = []
-    for window, fold in stage.windows.items():
-        rows = keys(fold["evaluation"])
+    for window in windows:
+        rows = keys(stage.windows[window]["evaluation"])
         truth = target(window, "evaluation", len(rows))
         error = np.abs(prediction(arm, window, "evaluation", truth) - truth)
         sessions.extend(error.reshape(-1, len(ASSETS)).mean(axis=1))
     return float(np.mean(sessions)), len(sessions)
 
 
+def matrix_arms(stage, base_arm, family):
+    """Brazos adaptados de una red según la matriz que declara la etapa, en su orden.
+
+    Son los casos de una semilla sin papel de control, con el nombre que les da la etapa.
+    """
+    items = adapter_matrix.cases(
+        stage["matrix"], stage["matrix_sha256"], family, head=QUANTILE_HEAD
+    )
+    return [
+        campaign_stage.arm_name(base_arm, item["id"].split("/", 1)[1])
+        for item in items
+        if item["case"]["seed"] == 42 and item["control"] is None
+    ]
+
+
 def test_repository_declaration_derives_every_parent_from_the_stage_plan():
     loaded = compare.load_declaration(DECLARATION)
-    assert list(loaded["groups"]) == ["rnn", "lstm", "gru", "dlinear", "transformer_compact"]
+    # Ridge y XGBoost solo tienen el padre congelado en su cadena y no entran en los contrastes.
+    assert list(loaded["groups"]) == [
+        "rnn",
+        "lstm",
+        "gru",
+        "dlinear",
+        "transformer_compact",
+        "titans_transformer_direct",
+        "titans_mac_disabled",
+        "titans_mac_frozen",
+        "titans_mac_online",
+    ]
     transformer = loaded["groups"]["transformer_compact"]
     assert transformer["full_continuation"] == "transformer_compact__full_continuation"
-    # La matriz da a transformer_compact los puntos de lectura que no tienen las demás.
-    assert transformer["adapted"] == [
-        f"transformer_compact__{point}"
-        for point in (
-            "head",
-            "readout",
-            "fusion",
-            "head_readout",
-            "head_fusion",
-            "readout_fusion",
-            "head_readout_fusion",
-            "fusion_full_rank",
+    # Los brazos adaptados salen de la matriz, con la variedad de #444 incluida. Solo
+    # transformer_compact tiene los puntos de lectura.
+    for base_arm, family in loaded["stage"]["campaign"]["neural"]["arms"].items():
+        assert loaded["groups"][base_arm]["adapted"] == matrix_arms(
+            loaded["stage"], base_arm, family
         )
-    ]
+    assert {"transformer_compact__readout", "transformer_compact__readout_dora"} <= set(
+        transformer["adapted"]
+    )
+    assert not any("readout" in arm for arm in loaded["groups"]["gru"]["adapted"])
     for base_arm, config in loaded["configs"].items():
         group = loaded["groups"][base_arm]
         inherited = loaded["stage"]["campaign"]["comparison_config"]
+        frozen = group["frozen_parent"]
+        assert frozen == f"{base_arm}__frozen_parent"
         assert config["arms"][base_arm] == inherited["arms"][base_arm]
-        assert set(config["arms"]) == {base_arm, group["full_continuation"], *group["adapted"]}
+        assert set(config["arms"]) == {
+            base_arm,
+            frozen,
+            group["full_continuation"],
+            *group["adapted"],
+        }
         assert all(arm["seeds"] == [42, 43, 44] for arm in config["arms"].values())
         families = config["resolved_families"]
         assert set(families["versus_frozen_parent"]) == {
-            f"{arm}-{base_arm}" for arm in [*group["adapted"], group["full_continuation"]]
+            f"{arm}-{frozen}" for arm in [*group["adapted"], group["full_continuation"]]
         }
+        # La base reentrenada en cada ventana queda como nivel, fuera de las familias.
+        assert base_arm in families["levels"]
+        # Sin postentrenamiento en la primera ventana, la comparación empieza en la segunda.
+        for scope, resolved in config["resolved_scopes"].items():
+            assert (
+                list(resolved["windows"])
+                == list(inherited["resolved_scopes"][scope]["windows"])[1:]
+            )
         assert set(families["versus_full_continuation"]) == {
             f"{arm}-{group['full_continuation']}" for arm in group["adapted"]
         }
@@ -232,15 +272,18 @@ def test_repository_declaration_derives_every_parent_from_the_stage_plan():
 
 def test_frozen_parent_continuation_and_adapters_are_contrasted_by_role(study):
     stage, _, config, report, _, _ = study
-    assert set(report["arms"]) == {"gru", "gru__full_continuation", *ADAPTED}
+    assert set(report["arms"]) == {"gru", "gru__frozen_parent", "gru__full_continuation", *ADAPTED}
     assert report["posttraining"]["roles"] == dict(
-        frozen_parent="gru", full_continuation="gru__full_continuation", adapted=ADAPTED
+        frozen_parent="gru__frozen_parent",
+        full_continuation="gru__full_continuation",
+        adapted=ADAPTED,
     )
+    assert report["posttraining"]["windows"] == ["fold-001"]
     assert report["final_test_opened"] is False
-    mae, _ = by_hand_session_mae(stage, "gru")
+    mae, _ = by_hand_session_mae(stage, "gru", ["fold-001"])
     contrasts = report["contrasts"]["US"]
     for family, base in (
-        ("versus_frozen_parent", "gru"),
+        ("versus_frozen_parent", "gru__frozen_parent"),
         ("versus_full_continuation", "gru__full_continuation"),
     ):
         rows = {row["name"]: row for row in contrasts[family]["mae"]["contrasts"]}
@@ -249,7 +292,7 @@ def test_frozen_parent_continuation_and_adapters_are_contrasted_by_role(study):
     rows = {row["name"]: row for row in contrasts["versus_frozen_parent"]["mae"]["contrasts"]}
     assert len(rows) == 5 and set(contrasts) >= {"versus_frozen_parent", "levels"}
     # La continuación repite las predicciones del padre: su contraste es exactamente cero.
-    assert rows["gru__full_continuation-gru"]["estimate"] == 0.0
+    assert rows["gru__full_continuation-gru__frozen_parent"]["estimate"] == 0.0
     assert config["name"] == "historical-masked-2000-adapters-a-gru"
 
 
@@ -257,10 +300,23 @@ def test_sources_point_to_the_campaign_parent_and_the_stage_receipts(study):
     stage, sources, _, _, _, _ = study
     manifest = json.loads(sources.read_text())
     assert sources == stage.output / "sources" / "US" / "gru.json"
-    assert set(manifest["arms"]) == {"gru", "gru__full_continuation", *ADAPTED}
-    parent = manifest["arms"]["gru"]["42"]["fold-000"]["evaluation"]["path"]
+    assert set(manifest["arms"]) == {
+        "gru",
+        "gru__frozen_parent",
+        "gru__full_continuation",
+        *ADAPTED,
+    }
+    assert list(manifest["windows"]) == ["fold-001"]
+    parent = manifest["arms"]["gru"]["42"]["fold-001"]["evaluation"]["path"]
     assert (sources.parent / parent).resolve() == (
-        stage.base_sources.parent / "gru" / "fold-000" / "evaluation-predictions.parquet"
+        stage.base_sources.parent / "gru" / "fold-001" / "evaluation-predictions.parquet"
+    ).resolve()
+    frozen = manifest["arms"]["gru__frozen_parent"]["42"]["fold-001"]["evaluation"]["path"]
+    assert (sources.parent / frozen).resolve() == (
+        stage.output
+        / "jobs"
+        / "US/fold-001/gru__frozen_parent/frozen-s42"
+        / "evaluation-predictions.parquet"
     ).resolve()
     head = manifest["arms"]["gru__head"]["42"]["fold-001"]["calibration"]["path"]
     assert (sources.parent / head).resolve() == (
@@ -316,6 +372,8 @@ def test_a_control_without_a_declared_role_stops_the_derivation(monkeypatch):
         )
     ]
     monkeypatch.setattr(compare, "plan_stage", lambda stage: jobs)
+    # Sin brazos de la cadena trivial: todos los trabajos entran en los contrastes.
+    monkeypatch.setattr(compare, "stage_arms", lambda stage: ({}, {}))
     with pytest.raises(ValueError, match="linear_residual de gru__linear_residual"):
         compare._groups({})
     monkeypatch.setattr(compare, "plan_stage", lambda stage: jobs[:2])
@@ -364,4 +422,8 @@ def test_cli_checks_the_declaration_without_reading_predictions(capsys):
     assert compare.main(["check", "--declaration", str(DECLARATION)]) == 0
     result = json.loads(capsys.readouterr().out)
     assert result["final_test_opened"] is False
-    assert result["parents"]["gru"]["arms"] == 6
+    # La base, su padre congelado, la continuación completa y los brazos de la matriz.
+    stage = campaign_stage.load_stage(
+        DECLARATION.parent / json.loads(DECLARATION.read_text())["stage"]
+    )
+    assert result["parents"]["gru"]["arms"] == 3 + len(matrix_arms(stage, "gru", "gru"))

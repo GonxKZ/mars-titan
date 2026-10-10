@@ -116,6 +116,7 @@ def episodic(tmp_path_factory):
                 model=MODEL,
                 parent_id="US/fold-000/gru_episodic",
                 device="cpu",
+                warmup_months=12,
                 optimizer_factory=RecordingOptimizer,
             )
             runs[name] = SimpleNamespace(view=view, output=root / name / "anchor")
