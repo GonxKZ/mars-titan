@@ -51,10 +51,8 @@
     "warmup_partition": "evaluation"
   },
   "xgboost": {
-    "features": 1686,
-    "max_bin": 256,
-    "validation_row_bytes": 6744,
-    "max_validation_cache_bytes": 17179869184
+    "features": 1719,
+    "max_bin": 256
   },
   "measurement": {
     "date": "2026-10-09",
@@ -64,6 +62,7 @@
     "duckdb": "1.5.5",
     "state_bytes": "12,0 bytes por parámetro y 38.423 de cabecera, medidos en un estado real de 50.881 parámetros con AdamW (648.995 bytes), por el número de parámetros de cada modelo",
     "xgboost_state_bytes": "Cota del inventario para profundidad 6 y 2000 rondas, sin medir",
+    "xgboost_pages": "Páginas ELLPACK densas medidas con filas reales de 1719 columnas: 6, 7 y 8 bits por valor con 64, 128 y 256 contenedores (reports/engineering/campaign-tabular-20261009). La validación reside en RAM y en la GPU",
     "flow_state_bytes": "Pesos rápidos y momentum por flujo del estado a mitad de época de Titans-MAC, según el inventario del código",
     "index": "Índice ordenado de muestras y etiquetas maduras con DuckDB (grupos de 2048 filas, ZSTD) sobre las filas reales de la ventana más poblada de cada ámbito. Bytes por evento, dos eventos por muestra, y bytes del índice sin ordenar que coexiste al construirlo"
   }
