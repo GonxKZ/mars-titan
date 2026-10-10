@@ -323,9 +323,9 @@ def _family(found, windows, arms, *, planned, benchmark, market, capital, cost):
 def survival(policies, output):
     """Ventanas con evaluaciones terminadas por una baja sin precio de salida.
 
-    La regla principal excluye esas ventanas para todos los brazos de su familia. La
+    La regla principal excluye esas ventanas para todos los modelos de su familia. La
     sensibilidad declarada, con retornos de salida supuestos, es secundaria y queda pendiente
-    si hay alguna. Se publican el brazo, la semilla y los costes de cada episodio afectado.
+    si hay alguna. Se publican el modelo, la semilla y los costes de cada episodio afectado.
     """
     affected = {}
     for receipt in output["receipts"].values():

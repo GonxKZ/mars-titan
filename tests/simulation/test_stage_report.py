@@ -321,7 +321,7 @@ def test_without_ending_series_the_survival_sensitivity_has_no_window(base, stag
 def test_survival_lists_only_episodes_truncated_by_an_unpriced_exit():
     # Una ventana fallida por filas sin verificar, por falta de predicciones o por un cierre
     # ausente no depende de un retorno de salida. Solo cuentan los episodios que terminan por
-    # una baja sin precio con la posición abierta, con su brazo, su semilla y sus costes.
+    # una baja sin precio con la posición abierta, con su modelo, su semilla y sus costes.
     policies = fixture.policies()
 
     def receipt(window, arm, seed, *outcomes):

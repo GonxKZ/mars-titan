@@ -2,7 +2,7 @@
 
 Usa la edición sintética con el formato real, identificada como fixture, y recibos de las
 ventanas US que evalúan 2021, 2022 y 2023. Las puntuaciones son sintéticas y no proceden
-de ningún modelo. Las políticas son guionizadas y ningún paso ajusta parámetros. La edición
+de ningún modelo. Las políticas siguen reglas fijas y ningún paso ajusta parámetros. La edición
 empieza en septiembre de 2020, así que el universo se clasifica con 20 sesiones previas en
 lugar de las 252 de la configuración real.
 """
