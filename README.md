@@ -274,7 +274,7 @@ La [revisión de la memoria posterior a Titans](docs/research/post-titans-memory
 
 - **PT1, memoria de Titans acotada y contractiva** ([#453](https://github.com/GonxKZ/mars-titan/issues/453)): propuesta. Resultado experimental pendiente.
 
-- **PT2, calibración conformal en línea con etiquetas maduras** ([#454](https://github.com/GonxKZ/mars-titan/issues/454)): propuesta. Resultado experimental pendiente.
+- **PT2, calibración conformal en línea con etiquetas maduras** ([#454](https://github.com/GonxKZ/mars-titan/issues/454)): implementada y comprobada sin entrenar ([documento](docs/engineering/online-conformal-calibration.md)), pendiente de integrar en la comparación. Resultado experimental pendiente.
 
 - **PT3, regla de Kalman con ruido de cohorte correlacionado en B6** ([#455](https://github.com/GonxKZ/mars-titan/issues/455)): propuesta. Resultado experimental pendiente.
 
