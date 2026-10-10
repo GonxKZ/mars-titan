@@ -13,10 +13,10 @@ from mars_titan.data.storage import atomic_json, sha256
 from mars_titan.environments import corpus_source
 from mars_titan.environments.cohorts import MAX_COHORT_ASSETS, VALIDATION_START_US, shapes_contract
 from mars_titan.environments.corpus_source import MAX_BLOCK_BYTES, ParquetCohortSource
-from mars_titan.episodes.parents import ParentCache
 from mars_titan.models.baselines.multimodal import MultimodalReference
 from mars_titan.posttraining import parents
 from mars_titan.posttraining.inputs import PairedInputs
+from mars_titan.posttraining.parent_cache import ParentCache
 from mars_titan.posttraining.parents import FrozenParent
 from mars_titan.training.predictive_parents import ParentPredictions
 
