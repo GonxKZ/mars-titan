@@ -10,7 +10,9 @@ pesos, y `device_parity.compare_runs` compara acciones, logits y patrimonio.
 
 Los binarios exigen la protección de aprendizaje para leer cintas reconstruidas. La medida
 la levanta solo para sus procesos con un archivo temporal, porque no ajusta ni evalúa
-ninguna política aprendida. Se ejecuta con `memslot gpu` y la GPU libre.
+ninguna política aprendida. Los binarios se lanzan con el lanzador de la etapa, que en
+`cuda:0` toma el bloqueo GPU exclusivo y el presupuesto de VRAM. Se ejecuta con `memslot gpu`
+y la GPU libre.
 """
 
 import argparse
@@ -20,6 +22,7 @@ import os
 import platform
 import shutil
 import subprocess
+import sys
 import time
 from datetime import UTC, datetime
 from pathlib import Path
@@ -90,29 +93,15 @@ def prepare(edition, root, market, *, candidates, max_assets):
     return paths, len(symbols)
 
 
-def launch(binary, hold, arguments, lease=None):
+def launch(binary, hold, arguments, cuda=False):
+    """Lanzar un binario con el lanzador de la etapa, en el diagnóstico CPU o en cuda:0."""
     environment = dict(os.environ, **{HOLD_ENV: str(hold)})
-    if lease is None:
-        environment["CUDA_VISIBLE_DEVICES"] = "-1"
-        device, descriptors = ["--device", "cpu", "--diagnostic"], ()
-    else:
-        import torch
-
-        environment.update(CUDA_VISIBLE_DEVICES="0", CUBLAS_WORKSPACE_CONFIG=":4096:8")
-        descriptor = lease.handle.fileno()
-        device = ["--device", "cuda:0", "--gpu-lease-fd", str(descriptor)]
-        device += ["--vram-budget-bytes", str(lease.record["max_vram_bytes"])]
-        device += ["--vram-total-bytes", str(torch.cuda.get_device_properties(0).total_memory)]
-        descriptors = (descriptor,)
+    environment["CUDA_VISIBLE_DEVICES"] = "0" if cuda else "-1"
+    command = [sys.executable, str(native_policy_runs.LAUNCHER), "--binary", str(binary)]
+    command += [*map(str, arguments)] + ([] if cuda else ["--diagnostic"])
     started = time.perf_counter()
     result = subprocess.run(
-        [str(binary), *map(str, arguments), *device],
-        env=environment,
-        pass_fds=descriptors,
-        capture_output=True,
-        text=True,
-        timeout=3600,
-        check=False,
+        command, env=environment, capture_output=True, text=True, timeout=3600, check=False
     )
     return result, time.perf_counter() - started
 
@@ -126,7 +115,7 @@ def _seal(path, changes):
     )
 
 
-def evaluate(engine, market, paths, root, hold, lease=None):
+def evaluate(engine, market, paths, root, hold, cuda=False):
     """Ajuste sin actualizaciones y evaluación con registro en un dispositivo."""
     root.mkdir(parents=True)
     name = "native_ppo" if engine == "double_dqn" else "native_klpo"
@@ -142,7 +131,7 @@ def evaluate(engine, market, paths, root, hold, lease=None):
     arguments += ["--validation-tape", paths["validation"]]
     if engine == "klpo":
         arguments += ["--stop-after", len(read_tape(paths["train"])) - 1]
-    result, fit_seconds = launch(binary, hold, arguments, lease)
+    result, fit_seconds = launch(binary, hold, arguments, cuda)
     if result.returncode not in (0, 2):
         raise RuntimeError(result.stderr)
     run = json.loads((fit / "run.json").read_text())
@@ -153,10 +142,11 @@ def evaluate(engine, market, paths, root, hold, lease=None):
         # Selección cerrada con el actor inicial, solo para recorrer la evaluación congelada.
         selection = root / "closed"
         shutil.copytree(fit, selection)
-        _seal(selection / "selection.json", dict(status="completed", evaluated_waves=1))
+        planned = json.loads((fit / "experiment.json").read_text())["payload"]["planned_waves"]
+        _seal(selection / "selection.json", dict(status="completed", evaluated_waves=planned))
     output = root / "evaluation"
     audit = ["--config", config, "--audit-run", selection, "--audit-tape", paths["evaluation"]]
-    result, audit_seconds = launch(binary, hold, [*audit, "--output", output, "--decisions"], lease)
+    result, audit_seconds = launch(binary, hold, [*audit, "--output", output, "--decisions"], cuda)
     if result.returncode != 0:
         raise RuntimeError(result.stderr)
     return device_parity.read_run(output), dict(
@@ -196,8 +186,6 @@ def main():
     parser.add_argument("--candidates", type=int, default=400)
     parser.add_argument("--max-assets", type=int, default=128)
     args = parser.parse_args()
-    from mars_titan.training.experiment_resources import GpuLease
-
     names = {"double_dqn": "native_ppo", "klpo": "native_klpo"}
     binaries = {
         engine: native_policy_runs.probe_binary(names[engine], device_parity.DECISION_LOGITS)
@@ -218,8 +206,7 @@ def main():
         for engine in args.engines:
             root = args.output / market / engine
             cpu, cpu_times = evaluate(engine, market, paths, root / "cpu", hold)
-            with GpuLease(max_vram=1024**3) as lease:
-                cuda, cuda_times = evaluate(engine, market, paths, root / "cuda", hold, lease)
+            cuda, cuda_times = evaluate(engine, market, paths, root / "cuda", hold, cuda=True)
             # La referencia es cuda:0, donde la etapa selecciona y audita cada política.
             summary = device_parity.compare_runs(cuda, cpu)
             results.append(

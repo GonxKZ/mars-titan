@@ -14,6 +14,7 @@ import math
 import os
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -271,26 +272,12 @@ def test_ties_follow_the_first_maximum_like_the_binary():
     assert device_parity.bound([0.0] * 6, device_parity.TOLERANCE) == 1e-5
 
 
-def launch(binary, hold, *arguments, lease=None):
-    """Lanzar un binario en el diagnóstico CPU o en cuda:0 con el bloqueo GPU heredado."""
-    environment = dict(os.environ, **{HOLD_ENV: str(hold)})
-    if lease is None:
-        environment["CUDA_VISIBLE_DEVICES"] = "-1"
-        device, descriptors = ["--device", "cpu", "--diagnostic"], ()
-    else:
-        import torch
-
-        environment.update(CUDA_VISIBLE_DEVICES="0", CUBLAS_WORKSPACE_CONFIG=":4096:8")
-        descriptor = lease.handle.fileno()
-        total = torch.cuda.get_device_properties(0).total_memory
-        device = ["--device", "cuda:0", "--gpu-lease-fd", str(descriptor)]
-        device += ["--vram-budget-bytes", str(lease.record["max_vram_bytes"])]
-        device += ["--vram-total-bytes", str(total)]
-        descriptors = (descriptor,)
+def direct(binary, hold, *arguments):
+    """Lanzar un binario sin el lanzador, en el diagnóstico CPU, para sus propios rechazos."""
+    environment = dict(os.environ, **{HOLD_ENV: str(hold)}, CUDA_VISIBLE_DEVICES="-1")
     return subprocess.run(
-        [str(binary), *map(str, arguments), *device],
+        [str(binary), *map(str, arguments), "--device", "cpu", "--diagnostic"],
         env=environment,
-        pass_fds=descriptors,
         capture_output=True,
         text=True,
         timeout=600,
@@ -298,7 +285,22 @@ def launch(binary, hold, *arguments, lease=None):
     )
 
 
-def evaluate_dqn(binary, hold, root, market_tapes, *, lease=None):
+def launch(binary, hold, *arguments, cuda=False):
+    """Lanzar un binario con el lanzador de la etapa, en el diagnóstico CPU o en cuda:0.
+
+    En cuda:0 el lanzador toma el bloqueo GPU exclusivo, mide la VRAM libre y pasa el
+    descriptor y el presupuesto al binario, igual que en la etapa de políticas.
+    """
+    environment = dict(os.environ, **{HOLD_ENV: str(hold)})
+    environment["CUDA_VISIBLE_DEVICES"] = "0" if cuda else "-1"
+    command = [sys.executable, str(native_policy_runs.LAUNCHER), "--binary", str(binary)]
+    command += [*map(str, arguments)] + ([] if cuda else ["--diagnostic"])
+    return subprocess.run(
+        command, env=environment, capture_output=True, text=True, timeout=600, check=False
+    )
+
+
+def evaluate_dqn(binary, hold, root, market_tapes, *, cuda=False):
     """Double DQN con sus pesos iniciales: 32 transiciones sin actualizar y evaluación."""
     stage = diagnostic_stage(rollout_transitions=16)
     config = write_config(
@@ -306,7 +308,7 @@ def evaluate_dqn(binary, hold, root, market_tapes, *, lease=None):
     )
     fit, output = root / "fit", root / "evaluation"
     arguments = ["--config", config, "--output", fit, *sources(market_tapes)]
-    result = launch(binary, hold, *arguments, lease=lease)
+    result = launch(binary, hold, *arguments, cuda=cuda)
     assert result.returncode == 0, result.stderr
     report = read(fit / "run.json")
     assert (report["status"], report["transitions"], report["optimizer_steps"]) == (
@@ -316,12 +318,12 @@ def evaluate_dqn(binary, hold, root, market_tapes, *, lease=None):
     )
     audit = ["--config", config, "--audit-run", fit, "--output", output, "--decisions"]
     audit += ["--audit-tape", market_tapes["evaluation"][0][0]]
-    result = launch(binary, hold, *audit, lease=lease)
+    result = launch(binary, hold, *audit, cuda=cuda)
     assert result.returncode == 0, result.stderr
     return device_parity.read_run(output)
 
 
-def evaluate_klpo(binary, hold, root, market_tapes, *, lease=None):
+def evaluate_klpo(binary, hold, root, market_tapes, *, cuda=False):
     """KLPO con su actor inicial: una oleada sin `update_ready` y una selección fabricada."""
     config = write_config(
         root / "klpo.json",
@@ -332,20 +334,22 @@ def evaluate_klpo(binary, hold, root, market_tapes, *, lease=None):
     fit, closed, output = root / "fit", root / "closed", root / "evaluation"
     wave = len(market_tapes["train"][1][1]) - 1
     arguments = ["--config", config, "--output", fit, *sources(market_tapes, train=(1,))]
-    result = launch(binary, hold, *arguments, "--stop-after", wave, lease=lease)
+    result = launch(binary, hold, *arguments, "--stop-after", wave, cuda=cuda)
     assert result.returncode == 2, result.stderr
     report = read(fit / "run.json")
     assert (report["optimizer_steps"], report["consumed_waves"]) == (0, 0)
     shutil.copytree(fit, closed)
     path = closed / "selection.json"
-    payload = dict(sealed(path), status="completed", evaluated_waves=1)
+    # La selección cerrada declara evaluadas todas las oleadas previstas del ajuste.
+    planned = sealed(closed / "experiment.json")["planned_waves"]
+    payload = dict(sealed(path), status="completed", evaluated_waves=planned)
     encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
     path.write_text(
         json.dumps(dict(payload=payload, sha256=hashlib.sha256(encoded.encode()).hexdigest()))
     )
     audit = ["--config", config, "--audit-run", closed, "--output", output, "--decisions"]
     audit += ["--audit-tape", market_tapes["evaluation"][0][0]]
-    result = launch(binary, hold, *audit, lease=lease)
+    result = launch(binary, hold, *audit, cuda=cuda)
     assert result.returncode == 0, result.stderr
     return device_parity.read_run(output)
 
@@ -389,7 +393,7 @@ def test_decisions_record_every_greedy_choice_without_changing_the_evaluation(
     assert sealed(plain / "evaluation.json")["metrics"] == evaluation["metrics"]
     resumed = launch(binary, hold, *audit, "--output", tmp_path / "evaluation", "--resume")
     assert resumed.returncode == 1 and "otra evaluación" in resumed.stderr
-    rejected = launch(
+    rejected = direct(
         binary, hold, "--config", config, "--output", tmp_path / "x", *sources(us), "--decisions"
     )
     assert rejected.returncode == 1
@@ -414,7 +418,7 @@ def test_a_synthetic_audit_rejects_decisions_before_reading_anything(
     path = write_config(tmp_path / "adaptive.json", config)
     output = tmp_path / "audit"
     arguments = ["--config", path, "--audit-run", tmp_path / "run", "--output", output]
-    result = launch(
+    result = direct(
         binaries["native_ppo"],
         learning_hold(False),
         *arguments,
@@ -443,14 +447,11 @@ def test_cpu_and_cuda_choose_the_same_actions_outside_near_ties(
 ):
     import torch
 
-    from mars_titan.training.experiment_resources import GpuLease
-
     assert torch.cuda.is_available(), "CUDA no está disponible y la prueba no cambia a CPU"
     hold = learning_hold(True)
     binary, evaluate = binaries[ENGINES[engine][0]], ENGINES[engine][1]
     cpu = evaluate(binary, hold, tmp_path / "cpu", tapes[market])
-    with GpuLease(max_vram=1024**3) as lease:
-        cuda = evaluate(binary, hold, tmp_path / "cuda", tapes[market], lease=lease)
+    cuda = evaluate(binary, hold, tmp_path / "cuda", tapes[market], cuda=True)
     # La referencia es cuda:0, el dispositivo que selecciona y audita en la etapa.
     summary = device_parity.compare_runs(cuda, cpu)
     assert summary["reference_device"] == "cuda:0" and summary["other_device"] == "cpu"
