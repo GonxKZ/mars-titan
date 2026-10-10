@@ -15,6 +15,19 @@ from .state import (
 )
 
 
+def clip_rows(gradient: Tensor, limit: float) -> Tensor:
+    """Reescala cada fila del gradiente para que su norma euclídea no supere `limit` (PT1).
+
+    Las filas que ya cumplen la cota se multiplican exactamente por 1. La rama que `where`
+    descarta usa la norma al cuadrado acotada por debajo, de modo que su derivada es finita
+    también en una fila nula y el grafo de segundo orden no produce NaN.
+    """
+    squared = gradient.square().sum(dim=-1, keepdim=True)
+    bound = limit * limit
+    scale = torch.where(squared > bound, limit * squared.clamp(min=bound).rsqrt(), 1.0)
+    return gradient * scale
+
+
 class NeuralMemory(nn.Module):
     """Los parámetros lentos son compartidos y el estado rápido pertenece al llamante."""
 
@@ -48,7 +61,7 @@ class NeuralMemory(nn.Module):
             if config.gate_bias is not None:
                 # Los bias constantes no consumen RNG: los pesos coinciden con los de v1.
                 gates = (self.alpha_projection, self.eta_projection, self.theta_projection)
-                logits = config.gate_bias.logits(config.theta_max)
+                logits = config.gate_bias.logits(config.theta_max, config.stability)
                 for gate, value in zip(gates, logits, strict=True):
                     gate.bias = nn.Parameter(torch.full((gate.out_features,), value, dtype=dtype))
             if config.qkv_convolution:
@@ -240,6 +253,27 @@ class NeuralMemory(nn.Module):
             values = F.silu(values)
         return values, window
 
+    def _gates(
+        self, alpha_logits: Tensor, eta_logits: Tensor, theta_logits: Tensor
+    ) -> tuple[Tensor, Tensor, Tensor]:
+        """Convierte los logits de un token en las tasas de olvido, momentum y paso.
+
+        α tiene una tasa por fila de salida, con forma [B, D, 1], y η y θ son escalares por
+        flujo, con forma [B, 1, 1]. Con la caja de PT1 las tasas quedan dentro de la región
+        del certificado para cualquier entrada.
+        """
+        stability = self.config.stability
+        if stability is not None and stability.gate_box:
+            # Ninguna entrada puede llevar las puertas fuera de α ∈ [α_lo, 1] y η ∈ [0, η_hi].
+            floor = stability.alpha_floor
+            alpha = (floor + (1 - floor) * alpha_logits.sigmoid()).unsqueeze(-1)
+            eta = (stability.eta_ceiling * eta_logits.sigmoid()).unsqueeze(-1)
+        else:
+            alpha = alpha_logits.sigmoid().unsqueeze(-1)
+            eta = eta_logits.sigmoid().unsqueeze(-1)
+        theta = self.config.theta_max * theta_logits.sigmoid().unsqueeze(-1)
+        return alpha, eta, theta
+
     def read(self, query: Tensor, state: NeuralMemoryState) -> Tensor:
         """Lee sin escribir. La proyección y normalización de queries corresponden a MAC."""
         self.validate_input(query, state)
@@ -259,6 +293,8 @@ class NeuralMemory(nn.Module):
             raise ValueError("El contador de pasos desbordaría int64")
         weights, momentum = state.weights, state.momentum
         key_window, value_window = state.convolution or (None, None)
+        stability = self.config.stability
+        clip = None if stability is None else stability.gradient_clip
         with torch.enable_grad():
             for token in observed.unbind(1):
                 if not differentiable:
@@ -282,9 +318,7 @@ class NeuralMemory(nn.Module):
                     keys, values = keys.squeeze(1), values.squeeze(1)
                 if self.config.normalize_qk:
                     keys = F.normalize(keys, dim=-1, eps=1e-12)
-                alpha = alpha_logits.sigmoid().unsqueeze(-1)
-                eta = eta_logits.sigmoid().unsqueeze(-1)
-                theta = self.config.theta_max * theta_logits.sigmoid().unsqueeze(-1)
+                alpha, eta, theta = self._gates(alpha_logits, eta_logits, theta_logits)
                 # La copia separa la variable de derivación interna de y(M_prev).
                 local = tuple(
                     (w.clone() if differentiable else w.detach().clone()).requires_grad_(True)
@@ -294,6 +328,9 @@ class NeuralMemory(nn.Module):
                 loss = residual.square().sum()
                 check_finite(loss, "La pérdida asociativa")
                 gradients = torch.autograd.grad(loss, local, create_graph=differentiable)
+                if clip is not None:
+                    # PT1 recorta antes del momentum para que cada escritura quede acotada.
+                    gradients = tuple(clip_rows(gradient, clip) for gradient in gradients)
                 momentum = tuple(
                     eta * previous - theta * gradient
                     for previous, gradient in zip(momentum, gradients, strict=True)
