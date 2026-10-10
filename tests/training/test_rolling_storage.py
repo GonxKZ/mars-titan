@@ -47,6 +47,7 @@ ADAPTER = dict(
     row_bytes_current=100,
     row_bytes_large_groups=60,
     row_bytes_shared_rows=40,
+    comparison_aggregate_bytes_per_series=17,
 )
 EXTRAS = dict(aggregate_bytes_per_row=AGGREGATE, adapter=ADAPTER)
 
@@ -125,6 +126,24 @@ def test_adapter_corpus_only_occupies_disk_with_an_ordered_copy():
     corpus = (COUNTS["train"] + COUNTS["validation"]) * 3 + COUNTS["train"] * 5
     assert ordered["transient"] == corpus
     assert rolling.adapter_window([], COUNTS, EXTRAS, ordered_copy=True)["transient"] == 0
+
+
+def test_the_stage_comparison_keeps_the_aggregates_of_every_compared_series():
+    def stage_job(base_arm, seed, kind):
+        return dict(scope="US", window="fold-001", base_arm=base_arm, seed=seed, kind=kind)
+
+    jobs = [stage_job("gru", s, k) for s in (42, 43) for k in ("frozen", "fit", "fit")]
+    # Ridge solo tiene el padre congelado y no entra en la comparación.
+    jobs.append(stage_job("ridge", 42, "frozen"))
+    # Seis trabajos comparados más el reentreno de la base y la cadena de cada semilla.
+    assert rolling.comparison_series(jobs) == 6 + 2 * 2
+    assert rolling.comparison_series(jobs[-1:]) == 0
+    counted = rolling.adapter_window(jobs, COUNTS, EXTRAS, ordered_copy=False)
+    free = dict(EXTRAS, adapter=dict(ADAPTER, comparison_aggregate_bytes_per_series=0))
+    without = rolling.adapter_window(jobs, COUNTS, free, ordered_copy=False)
+    for key in ("written", "compacted"):
+        assert counted[key] - without[key] == 10 * 17
+    assert counted["transient"] == without["transient"]
 
 
 def test_adapters_ablation_and_tapes_add_to_their_window(declared):

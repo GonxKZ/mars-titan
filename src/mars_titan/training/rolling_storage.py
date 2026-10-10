@@ -12,7 +12,8 @@ declaración de almacenamiento y los bytes por fila medidos:
   regeneración es exacta. Las evaluaciones que leerá una política posterior y las tablas de
   los adaptadores quedan compactadas sin pérdida (tabla común y decimales propios).
 - Se conservan siempre el estado elegido de cada ajuste, los informes y recibos, los
-  agregados por sesión y las cintas de las políticas.
+  agregados por sesión (también los de la comparación postentrenada de cada ventana) y las
+  cintas de las políticas.
 
 `all_regenerated` supone que todas las regeneraciones salen idénticas y `none_regenerated`
 que ninguna lo hace, de modo que todo queda compactado. La realidad está entre los dos. Las
@@ -152,11 +153,27 @@ def regeneration_bytes(job, counts, measured, storage, partitions):
     return written + int(rows * index["bytes_per_row"] + largest * index["build_bytes_per_row"])
 
 
+def comparison_series(jobs):
+    """Series (brazo y semilla) de la comparación postentrenada de una ventana de un ámbito.
+
+    Solo se comparan los padres con algún ajuste, porque los de Ridge y XGBoost solo tienen
+    el padre congelado. Cada trabajo de un padre comparado es una serie, y cada padre y
+    semilla añade el reentreno de la base y la cadena. La cadena se cuenta siempre, aunque
+    la declaración no la contraste, así que es una cota superior.
+    """
+    # "fit" es `campaign_stage.FIT`, sin importar la etapa para poder evaluar otras ramas.
+    compared = {(job["base_arm"], job["seed"]) for job in jobs if job.get("kind") == "fit"}
+    return sum((job["base_arm"], job["seed"]) in compared for job in jobs) + 2 * len(compared)
+
+
 def adapter_window(jobs, counts, extras, *, ordered_copy):
     """Adaptadores de una ventana de un ámbito: escrito, compactado y corpus transitorio.
 
     Sin `ordered_copy` (lectura por bloques desde la vista) el corpus no ocupa disco. Las
-    cachés de los padres se conservan como en `storage_budget.adapter_estimate`.
+    cachés de los padres se conservan como en `storage_budget.adapter_estimate`. Los
+    agregados por ventana de la comparación postentrenada y sus fuentes se conservan siempre
+    con la medida por serie `comparison_aggregate_bytes_per_series`, tomada en la ventana
+    con más sesiones y con los cuatro estratos en cada sesión, una cota superior.
     """
     if not jobs:
         return dict(written=0, compacted=0, transient=0)
@@ -164,13 +181,17 @@ def adapter_window(jobs, counts, extras, *, ordered_copy):
     held = sum(counts[p] for p in HELD_OUT)
     fixed = adapter["state_bytes"] * adapter["retained_states"] + adapter["job_report_bytes"]
     caches = len({(j["base_arm"], j["seed"]) for j in jobs}) * adapter["parent_cache_bytes"]
+    aggregates = math.ceil(
+        comparison_series(jobs) * adapter["comparison_aggregate_bytes_per_series"]
+    )
     corpus = 0
     if ordered_copy:
         ordered = (counts["train"] + counts["validation"]) * adapter["ordered_row_bytes"]
         corpus = ordered + counts["train"] * adapter["input_row_bytes"]
+    kept = caches + aggregates
     return dict(
-        written=len(jobs) * (int(held * adapter["row_bytes_current"]) + fixed) + caches,
-        compacted=len(jobs) * (int(held * adapter["row_bytes_shared_rows"]) + fixed) + caches,
+        written=len(jobs) * (int(held * adapter["row_bytes_current"]) + fixed) + kept,
+        compacted=len(jobs) * (int(held * adapter["row_bytes_shared_rows"]) + fixed) + kept,
         transient=corpus,
     )
 

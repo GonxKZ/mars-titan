@@ -1,0 +1,117 @@
+{
+  "schema_version": 1,
+  "kind": "stage_comparison_aggregates_projection",
+  "stage": "configs/posttraining/historical-masked-adapter-stage-a-v2.json",
+  "stage_sha256": "8ec5c626d16eec361f9cca7c6c8c8c4b7cea9be9bf78780597170f20d92a283b",
+  "declaration": "configs/posttraining/historical-masked-adapter-comparison-a-v2.json",
+  "declaration_sha256": "fd5c6c1c08d3febee4dcf044ec179aed450c8ed088cfa0d7318b7fb6029df63a",
+  "measured_window": "fold-018",
+  "windows": [
+    {
+      "scope": "US+CN",
+      "window": "fold-001",
+      "series": 546
+    },
+    {
+      "scope": "US+CN",
+      "window": "fold-002",
+      "series": 546
+    },
+    {
+      "scope": "US+CN",
+      "window": "fold-003",
+      "series": 546
+    },
+    {
+      "scope": "US+CN",
+      "window": "fold-004",
+      "series": 546
+    },
+    {
+      "scope": "US+CN",
+      "window": "fold-005",
+      "series": 546
+    },
+    {
+      "scope": "US+CN",
+      "window": "fold-006",
+      "series": 546
+    },
+    {
+      "scope": "US+CN",
+      "window": "fold-007",
+      "series": 546
+    },
+    {
+      "scope": "US+CN",
+      "window": "fold-008",
+      "series": 546
+    },
+    {
+      "scope": "US+CN",
+      "window": "fold-009",
+      "series": 546
+    },
+    {
+      "scope": "US+CN",
+      "window": "fold-010",
+      "series": 546
+    },
+    {
+      "scope": "US+CN",
+      "window": "fold-011",
+      "series": 546
+    },
+    {
+      "scope": "US+CN",
+      "window": "fold-012",
+      "series": 546
+    },
+    {
+      "scope": "US+CN",
+      "window": "fold-013",
+      "series": 546
+    },
+    {
+      "scope": "US+CN",
+      "window": "fold-014",
+      "series": 546
+    },
+    {
+      "scope": "US+CN",
+      "window": "fold-015",
+      "series": 546
+    },
+    {
+      "scope": "US+CN",
+      "window": "fold-016",
+      "series": 546
+    },
+    {
+      "scope": "US+CN",
+      "window": "fold-017",
+      "series": 546
+    },
+    {
+      "scope": "US+CN",
+      "window": "fold-018",
+      "series": 546
+    }
+  ],
+  "series": 9828,
+  "totals": {
+    "strata": {
+      "bytes_per_series": 1180647,
+      "bytes": 11603398716,
+      "gb": 11.6
+    },
+    "plain": {
+      "bytes_per_series": 247914,
+      "bytes": 2436498792,
+      "gb": 2.44
+    }
+  },
+  "bound": "upper_measured_window_with_most_sessions",
+  "training_executed": false,
+  "final_test_opened": false
+}

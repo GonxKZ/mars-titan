@@ -1,0 +1,162 @@
+{
+ "schema_version": 1,
+ "kind": "targeted_mutation_report",
+ "recorded_at": "2026-10-10",
+ "tool": "sustitución de texto en el módulo, pytest -x sobre las pruebas del mutante y restauración",
+ "mutants": [
+  {
+   "name": "M1 sin agregados postentrenados",
+   "module": "src/mars_titan/training/rolling_retention.py",
+   "original": "            for base_arm in stage[\"configs\"]\n            if window in stage_comparison.compared_windows(stage, scope, base_arm)",
+   "mutant": "            for base_arm in stage[\"configs\"]\n            if False",
+   "tests": [
+    "tests/posttraining/test_publication_from_aggregates.py"
+   ],
+   "verdict": "muere"
+  },
+  {
+   "name": "M2 adaptadores sin publicación",
+   "module": "src/mars_titan/training/rolling_retention.py",
+   "original": "            (adapters is None and stage is None)\n            or (",
+   "mutant": "            True\n            or (",
+   "tests": [
+    "tests/posttraining/test_publication_from_aggregates.py"
+   ],
+   "verdict": "muere"
+  },
+  {
+   "name": "M3 todas las ventanas",
+   "module": "src/mars_titan/training/rolling_retention.py",
+   "original": "            if window in stage_comparison.compared_windows(stage, scope, base_arm)",
+   "mutant": "            if True",
+   "tests": [
+    "tests/posttraining/test_publication_from_aggregates.py"
+   ],
+   "verdict": "muere"
+  },
+  {
+   "name": "M4 vistas sin subconjunto",
+   "module": "src/mars_titan/posttraining/stage_comparison.py",
+   "original": "        used = {window: used[window]} if window in used else None",
+   "mutant": "        pass",
+   "tests": [
+    "tests/posttraining/test_stage_comparison.py",
+    "tests/posttraining/test_publication_from_aggregates.py"
+   ],
+   "verdict": "muere"
+  },
+  {
+   "name": "M5 trabajos de otras ventanas",
+   "module": "src/mars_titan/posttraining/stage_comparison.py",
+   "original": "        if job[\"window\"] not in views:\n            continue",
+   "mutant": "        if False:\n            continue",
+   "tests": [
+    "tests/posttraining/test_stage_comparison.py"
+   ],
+   "verdict": "muere"
+  },
+  {
+   "name": "M6 evaluar sin agregados",
+   "module": "src/mars_titan/posttraining/stage_comparison.py",
+   "original": "        aggregates=None if aggregates is None else aggregates_folder(aggregates, base_arm),",
+   "mutant": "        aggregates=None,",
+   "tests": [
+    "tests/posttraining/test_stage_comparison.py",
+    "tests/posttraining/test_publication_from_aggregates.py"
+   ],
+   "verdict": "muere"
+  },
+  {
+   "name": "M7 matriz de otra campaña",
+   "module": "src/mars_titan/training/campaign_publication.py",
+   "original": "(matrix_path.parent / matrix[\"comparison\"]).resolve() == Path(campaign[\"comparison_path\"])\n        and matrix[\"comparison_config\"][\"sha256\"] == campaign[\"comparison_config\"][\"sha256\"]",
+   "mutant": "True",
+   "tests": [
+    "tests/training/test_campaign_publication.py"
+   ],
+   "verdict": "muere"
+  },
+  {
+   "name": "M8 etapa de otra campaña",
+   "module": "src/mars_titan/training/campaign_publication.py",
+   "original": "            stage_campaign[\"path\"] == campaign[\"path\"]\n            and stage_campaign[\"sha256\"] == campaign[\"sha256\"],",
+   "mutant": "            True,",
+   "tests": [
+    "tests/training/test_campaign_publication.py"
+   ],
+   "verdict": "muere"
+  },
+  {
+   "name": "M9 publicación postentrenada desde filas",
+   "module": "src/mars_titan/training/campaign_publication.py",
+   "original": "                    aggregates=aggregates,\n                    loaded=posttraining,",
+   "mutant": "                    loaded=posttraining,",
+   "tests": [
+    "tests/posttraining/test_publication_from_aggregates.py"
+   ],
+   "verdict": "muere"
+  },
+  {
+   "name": "M10 provisional ajena borrada",
+   "module": "src/mars_titan/training/campaign_publication.py",
+   "original": "            (partial / PARTIAL_MARK).is_file() and not partial.is_symlink(),",
+   "mutant": "            True,",
+   "tests": [
+    "tests/posttraining/test_publication_from_aggregates.py"
+   ],
+   "verdict": "muere"
+  },
+  {
+   "name": "M11 marca conservada",
+   "module": "src/mars_titan/training/campaign_publication.py",
+   "original": "    (destination / PARTIAL_MARK).unlink()",
+   "mutant": "    pass",
+   "tests": [
+    "tests/posttraining/test_publication_from_aggregates.py"
+   ],
+   "verdict": "muere"
+  },
+  {
+   "name": "M12 manifiesto sin validar",
+   "module": "src/mars_titan/evaluation/session_table_contrasts.py",
+   "original": "        load_sources(candidate, views, config, scope)",
+   "mutant": "        pass",
+   "tests": [
+    "tests/evaluation/test_comparison_matrix.py"
+   ],
+   "verdict": "muere"
+  },
+  {
+   "name": "M13 candidato abandonado",
+   "module": "src/mars_titan/evaluation/session_table_contrasts.py",
+   "original": "        candidate.unlink(missing_ok=True)",
+   "mutant": "        pass",
+   "tests": [
+    "tests/evaluation/test_comparison_matrix.py"
+   ],
+   "verdict": "muere"
+  },
+  {
+   "name": "M14 sin reentreno ni cadena",
+   "module": "src/mars_titan/training/rolling_storage.py",
+   "original": " + 2 * len(compared)",
+   "mutant": "",
+   "tests": [
+    "tests/training/test_rolling_storage.py"
+   ],
+   "verdict": "muere"
+  },
+  {
+   "name": "M15 padres solo congelados",
+   "module": "src/mars_titan/training/rolling_storage.py",
+   "original": "if job.get(\"kind\") == \"fit\"}",
+   "mutant": "}",
+   "tests": [
+    "tests/training/test_rolling_storage.py"
+   ],
+   "verdict": "muere"
+  }
+ ],
+ "killed": 15,
+ "total": 15
+}

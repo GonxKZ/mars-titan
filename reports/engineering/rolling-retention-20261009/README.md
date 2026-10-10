@@ -109,6 +109,6 @@ A las 20:55 del 9 de octubre `/` tenía 47,98 GB libres. Con el margen de 8 GiB 
 
 - La comprobación de regeneración en `cuda:0` no se ha ejecutado. Si una familia no repite sus bits en la GPU, sus tablas quedan compactadas y la estimación se acerca a la columna «nada regenerado».
 - El recorrido necesita el filtro `window` de la base y de las etapas de `feat/campaign-a-joint-design`. Sin él `rolling` se niega a empezar.
-- La comparación de las etapas de adaptadores lee filas. Necesita su registro de agregados por ventana, y los adaptadores su propia regeneración, antes de que se libere nada que lea. Hasta entonces sus tablas solo se compactan.
+- La comparación de las etapas de adaptadores lee filas. Necesita su registro de agregados por ventana, y los adaptadores su propia regeneración, antes de que se libere nada que lea. Hasta entonces sus tablas solo se compactan. Actualización del 10 de octubre: la fase de agregados ya guarda los de esa comparación antes de liberar la base, con sus bytes medidos ([informe](../campaign-publication-20261010/README.md)). La regeneración propia de los adaptadores sigue pendiente.
 - La estimación cuenta las tablas comunes de filas hasta el final aunque se borren antes, y la medida declarada de la guardia es una cota superior de las tablas compactadas.
 - Las cintas y estados de los ejecutores de PPO y KLPO no se pueden estimar todavía.

@@ -18,7 +18,8 @@
   "job_report_bytes": 307200,
   "row_bytes_current": 99.0218862071606,
   "row_bytes_large_groups": 65.01849551449378,
-  "row_bytes_shared_rows": 39.175983436853
+  "row_bytes_shared_rows": 39.175983436853,
+  "comparison_aggregate_bytes_per_series": 1180647
  },
  "measured": {
   "US/fold-018/evaluation": {
@@ -106,5 +107,6 @@
    }
   }
  },
- "pyarrow": "25.0.1"
+ "pyarrow": "25.0.1",
+ "comparison_aggregates_source": "reports/engineering/campaign-publication-20261010/stage-aggregates-fold-018-strata.json"
 }

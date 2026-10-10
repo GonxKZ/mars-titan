@@ -1,0 +1,181 @@
+{
+  "schema_version": 1,
+  "kind": "stage_comparison_window_aggregates_measure",
+  "declaration": "configs/posttraining/historical-masked-adapter-comparison-a-v2.json",
+  "declaration_sha256": "fd5c6c1c08d3febee4dcf044ec179aed450c8ed088cfa0d7318b7fb6029df63a",
+  "counts": "reports/data/campaign-a-v2-window-counts-20261009.json",
+  "scope": "US+CN",
+  "window": "fold-018",
+  "strata": "every_stratum_in_every_session",
+  "rows": {
+    "US": {
+      "train": 12363376,
+      "validation": 510913,
+      "calibration": 254563,
+      "evaluation": 1027173
+    },
+    "CN": {
+      "train": 2275981,
+      "validation": 98177,
+      "calibration": 47414,
+      "evaluation": 194649
+    }
+  },
+  "assets_per_session_max": {
+    "calibration": {
+      "US": 4106,
+      "CN": 804
+    },
+    "evaluation": {
+      "US": 4126,
+      "CN": 808
+    }
+  },
+  "parents": {
+    "rnn": {
+      "series": 36,
+      "aggregate_bytes": 42471678,
+      "sources_bytes": 25067,
+      "seconds": 186.45
+    },
+    "lstm": {
+      "series": 36,
+      "aggregate_bytes": 42471683,
+      "sources_bytes": 25079,
+      "seconds": 208.04
+    },
+    "gru": {
+      "series": 36,
+      "aggregate_bytes": 42471680,
+      "sources_bytes": 25067,
+      "seconds": 227.01
+    },
+    "dlinear": {
+      "series": 36,
+      "aggregate_bytes": 42471685,
+      "sources_bytes": 25115,
+      "seconds": 213.93
+    },
+    "transformer_compact": {
+      "series": 54,
+      "aggregate_bytes": 63717178,
+      "sources_bytes": 37724,
+      "seconds": 292.42
+    },
+    "gru_episodic": {
+      "series": 15,
+      "aggregate_bytes": 17696048,
+      "sources_bytes": 10688,
+      "seconds": 94.24
+    },
+    "titans_transformer_direct": {
+      "series": 24,
+      "aggregate_bytes": 28313173,
+      "sources_bytes": 16999,
+      "seconds": 156.61
+    },
+    "titans_mac_disabled": {
+      "series": 24,
+      "aggregate_bytes": 28313161,
+      "sources_bytes": 16951,
+      "seconds": 151.0
+    },
+    "titans_mac_frozen": {
+      "series": 36,
+      "aggregate_bytes": 42471645,
+      "sources_bytes": 25239,
+      "seconds": 236.59
+    },
+    "titans_mac_online": {
+      "series": 45,
+      "aggregate_bytes": 53094413,
+      "sources_bytes": 31465,
+      "seconds": 254.59
+    },
+    "mars_titan_m0": {
+      "series": 15,
+      "aggregate_bytes": 17696037,
+      "sources_bytes": 10693,
+      "seconds": 91.57
+    },
+    "mars_titan_m1": {
+      "series": 21,
+      "aggregate_bytes": 24774136,
+      "sources_bytes": 14848,
+      "seconds": 137.03
+    },
+    "mars_titan_m2": {
+      "series": 21,
+      "aggregate_bytes": 24774135,
+      "sources_bytes": 14848,
+      "seconds": 156.96
+    },
+    "mars_titan_m3": {
+      "series": 21,
+      "aggregate_bytes": 24774134,
+      "sources_bytes": 14848,
+      "seconds": 131.71
+    },
+    "mars_titan_m1_k2": {
+      "series": 21,
+      "aggregate_bytes": 24774136,
+      "sources_bytes": 14869,
+      "seconds": 123.71
+    },
+    "mars_titan_m1_k4": {
+      "series": 21,
+      "aggregate_bytes": 24774138,
+      "sources_bytes": 14869,
+      "seconds": 129.02
+    },
+    "cm_v1_b": {
+      "series": 21,
+      "aggregate_bytes": 24774135,
+      "sources_bytes": 14806,
+      "seconds": 122.59
+    },
+    "cm_v1_bc": {
+      "series": 21,
+      "aggregate_bytes": 24774135,
+      "sources_bytes": 14813,
+      "seconds": 118.8
+    },
+    "cm_v1_bm": {
+      "series": 21,
+      "aggregate_bytes": 24774141,
+      "sources_bytes": 14813,
+      "seconds": 131.95
+    },
+    "cm_v1_bcm": {
+      "series": 21,
+      "aggregate_bytes": 24774139,
+      "sources_bytes": 14820,
+      "seconds": 120.87
+    }
+  },
+  "series": 546,
+  "aggregate_bytes": 644155610,
+  "sources_bytes": 383621,
+  "bytes_per_series_max": 1180646.3333333333,
+  "bytes_per_series_min": 1180421.3333333333,
+  "seconds": 3288.2,
+  "peak_rss_bytes": 2097688576,
+  "host": {
+    "platform": "Linux-7.0.0-38-generic-x86_64-desconocido-with-glibc2.43",
+    "python": "3.12.14",
+    "numpy": "2.5.3",
+    "pyarrow": "25.0.1",
+    "threads": {
+      "OMP_NUM_THREADS": "2",
+      "MKL_NUM_THREADS": "2"
+    },
+    "load_average": [
+      19.14697265625,
+      20.90185546875,
+      21.23388671875
+    ]
+  },
+  "measured_at_utc": "2026-10-10T17:41:59.715409+00:00",
+  "training_executed": false,
+  "final_test_opened": false
+}
