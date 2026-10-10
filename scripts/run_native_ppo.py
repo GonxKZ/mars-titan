@@ -38,20 +38,22 @@ DEFAULT_BINARY = (
     Path(__file__).resolve().parents[1] / "build/native/native-ppo-release/mars-titan-ppo"
 )
 KLPO_KIND = "native_klpo_terminal"
+# Configuraciones de mars-titan-klpo: KLPO terminal y objetivos de grupo con las mismas oleadas.
+WAVE_KINDS = (KLPO_KIND, "native_group_relative")
 RECONSTRUCTED_SCHEMA = 4
 
 
 def catalog_config(document):
     """Configuración con catálogo de fuentes y auditoría separada."""
     return document.get("schema_version") in (2, 3, RECONSTRUCTED_SCHEMA) or (
-        document.get("kind") == KLPO_KIND
+        document.get("kind") in WAVE_KINDS
     )
 
 
 def reconstructed_config(document):
     """Configuración que ajusta o evalúa sobre cintas reconstruidas del histórico."""
     return (
-        document.get("schema_version") == RECONSTRUCTED_SCHEMA or document.get("kind") == KLPO_KIND
+        document.get("schema_version") == RECONSTRUCTED_SCHEMA or document.get("kind") in WAVE_KINDS
     )
 
 
@@ -497,8 +499,11 @@ def main(argv=None):
         ):
             parser.error("El estado de vigilancia debe quedar fuera de las fuentes y de la salida")
     if args.audit_run is None:
-        algorithm = "KLPO" if document.get("kind") == KLPO_KIND else "PPO"
-        require_learning_allowed(f"el entrenamiento {algorithm} nativo")
+        activity = {
+            KLPO_KIND: "el entrenamiento KLPO nativo",
+            "native_group_relative": "el entrenamiento nativo con objetivo de grupo",
+        }.get(document.get("kind"), "el entrenamiento PPO nativo")
+        require_learning_allowed(activity)
     elif reconstructed_config(document):
         require_learning_allowed("la evaluación nativa sobre cintas reconstruidas")
     try:

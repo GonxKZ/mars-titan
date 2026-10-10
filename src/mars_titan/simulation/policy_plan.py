@@ -81,6 +81,20 @@ DATA_POLICY = "real_edition_only"
 BASE_SELECTED = "base_campaign_selected_v1"
 CHAIN = "posttraining_chain_v1"
 PREDICTOR_SOURCES = (BASE_SELECTED, CHAIN)
+# Variantes de valor de mars-titan-ppo. Las dos cuantílicas fijan en el binario 32 cuantiles y
+# actúan con la media (qr_dqn) o con el CVaR inferior al 25 % (qr_dqn_cvar).
+VALUE_VARIANTS = ("double_dqn", "qr_dqn", "qr_dqn_cvar")
+# Objetivos relativos al grupo de mars-titan-klpo. Recogen las mismas oleadas que KLPO y cada
+# identidad fija en el binario las constantes de su artículo.
+GROUP_CONTROLLER = "group_relative_fresh_waves_v1"
+# Motores que consumen oleadas completas de episodios dentro del mismo presupuesto.
+WAVE_ENGINES = ("native_klpo", "native_group_relative")
+GROUP_OBJECTIVES = (
+    "grpo_outcome_v1",
+    "dr_grpo_outcome_v1",
+    "dapo_outcome_static_v1",
+    "gspo_outcome_v1",
+)
 
 
 _STAGE = {
@@ -176,15 +190,24 @@ def _policy(name, entry):
             f"{name} no declara el objetivo y el controlador KLPO terminal",
         )
         return engine
+    if engine == "native_group_relative":
+        _require(
+            set(entry) == {"engine", "objective", "controller", "confirmed_updates_per_reference"}
+            and entry["objective"] in GROUP_OBJECTIVES
+            and entry["controller"] == GROUP_CONTROLLER
+            and _integer(entry["confirmed_updates_per_reference"], 1, 64),
+            f"{name} no declara un objetivo de grupo y su controlador de oleadas",
+        )
+        return engine
     objective = entry.get("policy_objective")
     _require(
         engine == "native_ppo"
         and set(entry) == {"engine", "variant", "policy_objective"}
-        and entry["variant"] in ("ppo", "double_dqn"),
+        and entry["variant"] in ("ppo", *VALUE_VARIANTS),
         f"{name} necesita un motor y una variante declarados",
     )
-    if entry["variant"] == "double_dqn":
-        _require(objective is None, "Double DQN conserva su identidad sin objetivo PPO")
+    if entry["variant"] in VALUE_VARIANTS:
+        _require(objective is None, f"{entry['variant']} conserva su identidad sin objetivo PPO")
         return engine
     _require(
         isinstance(objective, dict)

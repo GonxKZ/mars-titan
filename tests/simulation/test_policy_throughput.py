@@ -276,6 +276,63 @@ def test_native_hours_add_collection_updates_and_evaluations_per_job():
     assert estimate["arms"]["double_dqn"] > 10 * estimate["arms"]["ppo_clip_full_kl"]
 
 
+@pytest.mark.parametrize("variant", ["qr_dqn", "qr_dqn_cvar"])
+def test_quantile_variants_count_like_double_dqn_with_their_own_times(variant):
+    stage = policy_plan.load_stage(STAGES["A"])
+    plan = policy_plan.plan_stage(stage)
+    job = next(j for j in plan if j["arm"] == "double_dqn" and j["kind"] == "fit")
+    scalar = policy_throughput.native_fit_work(stage, job)
+    # El brazo conserva su nombre y solo cambia la cabeza, así que el plan no se altera.
+    stage["policies"]["policies"]["double_dqn"]["variant"] = variant
+    quantile = policy_throughput.native_fit_work(stage, job)
+    assert quantile == dict(scalar, engine=variant)
+    with pytest.raises(ValueError, match="qr_dqn_minibatch_seconds"):
+        policy_throughput.native_policy_hours(stage, dict(US=NATIVE, CN=NATIVE))
+    times = dict(
+        NATIVE, qr_dqn_tick_seconds=1e-3, qr_dqn_minibatch_seconds=4e-3, qr_dqn_forward_seconds=5e-4
+    )
+    estimate = policy_throughput.native_policy_hours(stage, dict(US=times, CN=times))
+    fits = [j for j in plan if j["arm"] == "double_dqn" and j["kind"] == "fit"]
+    costs = len(stage["policies"]["evaluation_costs_bps"])
+    days = math.fsum(
+        (
+            17 * sessions(stage, j["scope"], j["validation"])
+            + costs * sessions(stage, j["scope"], j["window"])
+        )
+        * 1e-4
+        for j in fits
+    )
+    total = len(fits) * (16_384 * 1e-3 + (262_144 - 256) * (4e-3 + 2 * 5e-4)) + days
+    assert estimate["arms"]["double_dqn"] * 3600 == pytest.approx(total)
+
+
+def test_group_arms_collect_the_klpo_waves_with_their_own_objective_time(monkeypatch):
+    stage = policy_plan.load_stage(STAGES["A"])
+    plan = policy_plan.plan_stage(stage)
+    jobs = [j for j in plan if j["arm"] == "klpo_terminal" and j["kind"] == "fit"]
+    klpo = policy_throughput.native_fit_work(stage, jobs[0])
+    group = policy_throughput.native_fit_work(stage, dict(jobs[0], engine="native_group_relative"))
+    assert group == dict(klpo, engine="group")
+    # El brazo KLPO pasa a objetivo de grupo con las mismas oleadas. Sin el tiempo de su
+    # objetivo la estimación falla en lugar de reutilizar el de KLPO.
+    grouped = [
+        dict(j, engine="native_group_relative") if j["arm"] == "klpo_terminal" else j for j in plan
+    ]
+    monkeypatch.setattr(policy_throughput, "plan_stage", lambda _: grouped)
+    with pytest.raises(ValueError, match="group_objective_transition_seconds"):
+        policy_throughput.native_policy_hours(stage, dict(US=NATIVE, CN=NATIVE))
+    times = dict(NATIVE, group_objective_transition_seconds=2e-5)
+    estimate = policy_throughput.native_policy_hours(stage, dict(US=times, CN=times))
+    costs = len(stage["policies"]["evaluation_costs_bps"])
+    total = 0.0
+    for job in jobs:
+        work = policy_throughput.native_fit_work(stage, job)
+        days = work["validations"] * sessions(stage, job["scope"], job["validation"])
+        days += costs * sessions(stage, job["scope"], job["window"])
+        total += work["collected"] * (5e-5 + 2e-5) + days * 1e-4
+    assert estimate["arms"]["klpo_terminal"] * 3600 == pytest.approx(total)
+
+
 @pytest.mark.parametrize("value", [None, -1.0, float("nan"), "1"])
 def test_native_hours_reject_missing_or_invalid_times(value):
     stage = policy_plan.load_stage(STAGES["A"])

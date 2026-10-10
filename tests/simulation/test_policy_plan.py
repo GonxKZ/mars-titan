@@ -341,6 +341,28 @@ def _policy(name, **values):
     return lambda v: v["policies"][name].update(values)
 
 
+def _group_arm(identity, **values):
+    """Sustituir Double DQN por un brazo de objetivo de grupo con su nombre en todo el contrato."""
+
+    def change(value):
+        entry = dict(
+            engine="native_group_relative",
+            objective=identity,
+            controller=policy_plan.GROUP_CONTROLLER,
+            confirmed_updates_per_reference=2,
+        )
+        entry.update(values)
+        name = identity.removesuffix("_v1")
+        value["policies"] = {
+            (name if key == "double_dqn" else key): (entry if key == "double_dqn" else item)
+            for key, item in value["policies"].items()
+        }
+        for arms in (value["levels"]["algorithms"]["arms"], value["contrasts"]["controls"]):
+            arms[arms.index("double_dqn")] = name
+
+    return change
+
+
 def _klpo_second(value):
     # Double DQN pasa delante de KLPO y los controles siguen ese orden declarado.
     items = list(value["policies"].items())
@@ -362,6 +384,15 @@ INVALID_POLICIES = {
     "dqn_with_ppo_objective": _policy(
         "double_dqn", policy_objective={"schema_version": 1, "id": "ppo_clip_full_kl_v1"}
     ),
+    "qr_dqn_with_ppo_objective": _policy(
+        "double_dqn",
+        variant="qr_dqn_cvar",
+        policy_objective={"schema_version": 1, "id": "ppo_clip_full_kl_v1"},
+    ),
+    "unknown_value_variant": _policy("double_dqn", variant="iqn"),
+    "group_unknown_objective": _group_arm("grpo_outcome_v1", objective="grpo_plus_plus"),
+    "group_other_controller": _group_arm("gspo_outcome_v1", controller="klpo_full_fresh_waves_v1"),
+    "group_extra_field": _group_arm("dapo_outcome_static_v1", group_size=8),
     "unknown_ppo_objective": _policy(
         "ppo_clip_full_kl", policy_objective={"schema_version": 1, "id": "ppo"}
     ),
@@ -470,6 +501,11 @@ REASONS = {
     "missing_reference": "cinco referencias",
     "unknown_reference": "cinco referencias",
     "dqn_with_ppo_objective": "sin objetivo PPO",
+    "qr_dqn_with_ppo_objective": "sin objetivo PPO",
+    "unknown_value_variant": "motor y una variante",
+    "group_unknown_objective": "objetivo de grupo",
+    "group_other_controller": "objetivo de grupo",
+    "group_extra_field": "objetivo de grupo",
     "unknown_ppo_objective": "objetivo PPO identificado",
     "missing_target_kl": "objetivo PPO identificado",
     "beta_outside_limits": "beta inicial",
@@ -544,6 +580,40 @@ REASONS = {
 def test_the_unchanged_declaration_is_accepted(tmp_path):
     path = mutated(tmp_path)
     assert campaign_stage.check_stage(path)["counts"]["training_jobs"] == 1368
+
+
+@pytest.mark.parametrize("variant", ["qr_dqn", "qr_dqn_cvar"])
+def test_quantile_value_variants_are_declared_like_double_dqn(tmp_path, variant):
+    path = mutated(tmp_path, change_policies=_policy("double_dqn", variant=variant))
+    assert campaign_stage.check_stage(path)["counts"]["training_jobs"] == 1368
+    stage = campaign_stage.load_stage(path)
+    job = next(j for j in policy_plan.plan_stage(stage) if j["arm"] == "double_dqn")
+    config = native_policy_runs.ppo_config(stage, job)
+    assert config["agent"]["variant"] == variant and "policy_objective" not in config
+
+
+@pytest.mark.parametrize("objective", policy_plan.GROUP_OBJECTIVES)
+def test_group_arms_share_the_klpo_waves_and_binary(tmp_path, objective):
+    path = mutated(tmp_path, change_policies=_group_arm(objective))
+    assert campaign_stage.check_stage(path)["counts"]["training_jobs"] == 1368
+    stage = campaign_stage.load_stage(path)
+    name = objective.removesuffix("_v1")
+    plan = policy_plan.plan_stage(stage)
+    job = next(j for j in plan if j["arm"] == name)
+    klpo = next(j for j in plan if j["arm"] == "klpo_terminal" and j["seed"] == job["seed"])
+    assert job["engine"] == "native_group_relative"
+    config = native_policy_runs.klpo_config(stage, job)
+    reference = native_policy_runs.klpo_config(stage, klpo)
+    assert config["kind"] == "native_group_relative" and config["objective"] == objective
+    assert config["controller"] == policy_plan.GROUP_CONTROLLER
+    # Solo cambian el tipo y el objetivo. Presupuesto, carriles, Adam y selección coinciden.
+    changed = {key for key in config if config[key] != reference[key]}
+    assert changed == {"kind", "objective", "controller"}
+    assert campaign_stage.requirements(job, campaign_stage.EXECUTORS)[-1] == (
+        "native_group_relative_runner"
+    )
+    executor = campaign_stage.EXECUTORS["native_group_relative"]["run"]
+    assert native_policy_runs.binary_path(executor.engine).name == "mars-titan-klpo"
 
 
 @pytest.mark.parametrize("name", sorted(INVALID_POLICIES))

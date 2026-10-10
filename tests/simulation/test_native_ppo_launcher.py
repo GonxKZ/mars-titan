@@ -735,6 +735,7 @@ def test_relative_command_paths_do_not_reuse_watch_from_another_working_director
         (dict(schema_version=2), False),
         (dict(schema_version=4), True),
         (dict(schema_version=1, kind="native_klpo_terminal"), True),
+        (dict(schema_version=1, kind="native_group_relative"), True),
     ],
 )
 def test_audits_on_reconstructed_tapes_stop_on_the_hold_before_launching(setup, document, blocked):
@@ -771,4 +772,17 @@ def test_klpo_training_names_its_algorithm_in_the_hold(setup):
     env[HOLD_ENV] = str(hold)
     result = execute(setup, "--diagnostic")
     assert result.returncode != 0 and "el entrenamiento KLPO nativo" in result.stderr
+    assert not Path(env["NATIVE_RECORD"]).exists()
+
+
+def test_group_objective_training_names_its_algorithm_in_the_hold(setup):
+    args, env, directory = setup
+    config = Path(args[args.index("--config") + 1])
+    config.write_text(json.dumps(dict(schema_version=1, kind="native_group_relative")))
+    hold = directory / "blocking-hold.json"
+    hold.write_text(json.dumps({"training_allowed": False}))
+    env[HOLD_ENV] = str(hold)
+    result = execute(setup, "--diagnostic")
+    assert result.returncode != 0
+    assert "el entrenamiento nativo con objetivo de grupo" in result.stderr
     assert not Path(env["NATIVE_RECORD"]).exists()

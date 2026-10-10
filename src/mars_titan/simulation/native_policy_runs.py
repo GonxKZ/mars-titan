@@ -24,7 +24,7 @@ from pathlib import Path, PurePosixPath
 from mars_titan.data.cohort_files import read_manifest
 from mars_titan.data.storage import atomic_json, sha256
 
-from .policy_plan import CARRY, FIT, _require
+from .policy_plan import CARRY, FIT, WAVE_ENGINES, _require
 
 ROOT = Path(__file__).resolve().parents[3]
 LAUNCHER = ROOT / "scripts" / "run_native_ppo.py"
@@ -32,7 +32,10 @@ BUILD = ROOT / "build" / "native" / "native-ppo-release"
 BINARIES = {
     "native_ppo": ("MARS_TITAN_PPO_EXECUTABLE", "mars-titan-ppo"),
     "native_klpo": ("MARS_TITAN_KLPO_EXECUTABLE", "mars-titan-klpo"),
+    # Los objetivos de grupo comparten binario, oleadas y selección con KLPO.
+    "native_group_relative": ("MARS_TITAN_KLPO_EXECUTABLE", "mars-titan-klpo"),
 }
+GROUP_KIND = "native_group_relative"
 # Capacidad de los binarios que publican el patrimonio por sesión y aceptan los costes de
 # evaluación declarados por la etapa con --evaluation-cost.
 EQUITY_AND_COSTS = "native_policy_equity_and_costs"
@@ -115,13 +118,20 @@ def ppo_config(stage, job):
 
 
 def klpo_config(stage, job):
-    """Configuración KLPO terminal con el presupuesto, el entorno y la selección comunes."""
+    """Configuración de oleadas con el presupuesto, el entorno y la selección comunes.
+
+    KLPO terminal y los objetivos de grupo usan el mismo esquema. Solo cambian el tipo y el
+    objetivo, de modo que recogida, carriles, Adam y selección son idénticos. Los objetivos de
+    grupo no usan beta, y gamma igual a uno hace que el retorno sea el crecimiento logarítmico
+    neto de todo el episodio, que es su resultado.
+    """
     policies = stage["policies"]
     entry, budget = policies["policies"][job["arm"]], policies["budget"]
     hyper, selection = policies["hyperparameters"], policies["selection"]
+    group = entry["engine"] == "native_group_relative"
     return dict(
         schema_version=1,
-        kind="native_klpo_terminal",
+        kind=GROUP_KIND if group else "native_klpo_terminal",
         objective=entry["objective"],
         controller=entry["controller"],
         training=dict(total_transitions=budget["transitions"], seed=job["seed"], workers=1),
@@ -280,7 +290,7 @@ class NativePolicyExecutor:
         return dict(report, status="completed", evaluation=records)
 
     def fit_report(self, job, run, policies):
-        if self.engine == "native_klpo":
+        if self.engine in WAVE_ENGINES:
             best = run["best"]
             sha, extra = best["actor_sha256"], dict(waves=run["consumed_waves"])
         else:
