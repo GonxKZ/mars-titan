@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "kind": "mars_titan_hardware_profile",
+  "name": "dgx-gb10",
+  "notes": "DGX Spark con GB10: Grace de 20 núcleos Arm y GPU Blackwell de capacidad 12.1 sobre 128 GB de LPDDR5X unificados. En esa máquina corre una aplicación de producción, así que MARS-TITAN se limita a 64 GiB entre anfitrión y GPU y a 8 hilos, y debe ejecutarse dentro de un cgroup con ese memory.max. No reutiliza ninguna receta medida en la RTX 4070. El nombre de la GPU y la memoria que informa nvidia-smi están pendientes de comprobar en la máquina real con python -m mars_titan.hardware.profile_check.",
+  "machine": "aarch64",
+  "gpu": {
+    "name": "NVIDIA GB10",
+    "compute_capability": [12, 1]
+  },
+  "memory": {
+    "model": "unified",
+    "total_mib": 65536
+  },
+  "cpu_threads": 8
+}

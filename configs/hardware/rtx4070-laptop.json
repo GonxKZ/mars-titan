@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "kind": "mars_titan_hardware_profile",
+  "name": "rtx4070-laptop",
+  "notes": "Portátil de desarrollo: AMD Ryzen 9 8945HS de 16 hilos, 30 GiB de RAM útiles y GeForce RTX 4070 Laptop de 8 GiB (capacidad 8.9). La declaración de ejecución de la campaña y sus recetas se midieron aquí. Los límites dejan 6 GiB de RAM al sistema y 508 MiB de VRAM al escritorio. nvidia-smi da 8.188 MiB a esta GPU.",
+  "machine": "x86_64",
+  "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "compute_capability": [8, 9]
+  },
+  "memory": {
+    "model": "dedicated",
+    "host_mib": 24576,
+    "device_mib": 7680
+  },
+  "cpu_threads": 16
+}
