@@ -319,6 +319,8 @@ def _comparison_accepts(base, tmp_path):
             "titans_mac_online_scalar": dict(family="titans_mac", output="point", seeds=[42]),
         },
     )
+    # Los pares de retención nombran brazos que esta comparación reducida no conserva.
+    config.pop("retention_interference")
     config["comparison"] = dict(
         config["comparison"],
         replicates=50,

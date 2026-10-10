@@ -551,5 +551,89 @@
       "method": "R"
     },
     "block_length_diagnostic": "politis_white_2004_patton_2009_diagnostic_only"
+  },
+  "retention_interference": {
+    "status": "secondary_descriptive",
+    "declared_at": "2026-10-10",
+    "use": "description_only_not_for_model_selection_or_primary_conclusion",
+    "hypothesis": "Con la misma información y capacidad, una memoria que escribe en inferencia mejora más a su control en las primeras sesiones de un régimen que ya guardó en el recorrido que en las de un régimen nuevo (retención), y esa ventaja no cae cuando la ausencia del régimen es larga (interferencia). Cada efecto debe separarse del mismo cálculo con regímenes retrasados.",
+    "regimes": "observable_volatility_trend_v1_market_calendar",
+    "history": "calendar_sessions_of_the_window_since_the_memory_of_the_pair_starts_writing",
+    "warmup_months": 12,
+    "metric": "session_mae_control_minus_memory_after_averaging_seeds",
+    "entry_sessions": 10,
+    "long_absence_sessions": 63,
+    "absence_bins": [
+      21,
+      63,
+      126,
+      252
+    ],
+    "placebo_lag_sessions": 126,
+    "min_sessions": 30,
+    "pairs": {
+      "fast_weight_writes": {
+        "memory": "titans_mac_online",
+        "control": "titans_mac_frozen",
+        "history": "since_warmup_start",
+        "separates": "inference_writes_of_the_fast_weights_at_equal_capacity"
+      },
+      "learned_read_path": {
+        "memory": "titans_mac_frozen",
+        "control": "titans_mac_disabled",
+        "history": "since_warmup_start",
+        "separates": "learned_memory_read_and_persistent_memory_without_inference_writes"
+      },
+      "episodic_bank_m1": {
+        "memory": "mars_titan_m1",
+        "control": "mars_titan_m0",
+        "history": "since_measured_start",
+        "separates": "bank_content_with_the_original_retention_at_equal_reader_parameters"
+      },
+      "episodic_bank_m2": {
+        "memory": "mars_titan_m2",
+        "control": "mars_titan_m0",
+        "history": "since_measured_start",
+        "separates": "bank_content_with_mature_error_writes_at_equal_reader_parameters"
+      },
+      "episodic_bank_m3": {
+        "memory": "mars_titan_m3",
+        "control": "mars_titan_m0",
+        "history": "since_measured_start",
+        "separates": "bank_content_with_composite_score_writes_at_equal_reader_parameters"
+      },
+      "write_policy_m2": {
+        "memory": "mars_titan_m2",
+        "control": "mars_titan_m1",
+        "history": "since_measured_start",
+        "separates": "what_is_stored_at_equal_bank_capacity_mature_error"
+      },
+      "write_policy_m3": {
+        "memory": "mars_titan_m3",
+        "control": "mars_titan_m1",
+        "history": "since_measured_start",
+        "separates": "what_is_stored_at_equal_bank_capacity_composite_score"
+      },
+      "online_weights": {
+        "memory": "transformer_compact_online",
+        "control": "transformer_compact",
+        "history": "since_measured_start",
+        "separates": "online_weight_updates_with_the_bank_labels_without_memory"
+      }
+    },
+    "statistics": {
+      "predictive_effect": "mean_of_all_classified_sessions",
+      "retention": "revisit_entry_minus_novel_entry",
+      "interference": "long_absence_revisit_entry_minus_short_absence_revisit_entry",
+      "plasticity": "novel_entry_minus_continuing"
+    },
+    "placebo": "route_of_the_calendar_session_lagged_by_the_declared_sessions",
+    "multiplicity": "max_t_over_pairs_and_decision_statistics_within_each_market",
+    "decision": "retention_supported_if_it_and_its_placebo_difference_are_above_zero_interference_detected_if_it_and_its_placebo_difference_are_below_zero",
+    "does_not_measure": [
+      "contents_of_the_episodic_bank_or_of_the_fast_weights",
+      "economic_causes_of_the_regimes",
+      "retention_across_windows_of_states_refit_from_scratch"
+    ]
   }
 }
