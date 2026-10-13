@@ -192,6 +192,25 @@ def test_variant_b_carries_the_anchor_policy_on_the_anchor_universe(
     assert not (tmp_path / "stage/universes/US/US/fold-003.json").exists()
 
 
+def test_a_carried_window_keeps_a_series_that_ends_inside_it(
+    tmp_path_factory, tmp_path, learning_doubles
+):
+    """El universo de una ventana trasladada se elige como una evaluación.
+
+    A0000 deja de cotizar en octubre de 2023, dentro de fold-003, que en B evalúa la política
+    de fold-002 sin ajustarla. Cotizaba al empezar la ventana y tenía predicciones en la
+    validación del ancla, así que sigue en su universo aunque su baja no tenga precio de
+    salida. Elegirlo como un tramo de ajuste la sacaría por un hecho posterior a la decisión.
+    """
+    base = fixture.base_campaign(tmp_path_factory.mktemp("ending-b"), "B", ending=200)
+    fixture.run(base, tmp_path / "stage", fixture.ScriptedLearner())
+    record = json.loads((tmp_path / "stage/universes/US/US/fold-002-fold-003.json").read_text())
+    assert "US/A0000" in record["universe"]
+    found = receipts(tmp_path / "stage")
+    held = outcomes(found, "gru", "equal_weight_monthly")
+    assert held[("fold-003", "reference")] == {"unpriced_exit"}
+
+
 @pytest.fixture
 def lstm_without(monkeypatch):
     """La LSTM no emitió filas del mercado en las ventanas indicadas de la campaña base."""
@@ -800,6 +819,31 @@ def test_a_census_of_another_edition_on_disk_stops_the_stage(base_a, tmp_path, l
         universe.unlink()
     learner = fixture.ScriptedLearner()
     with pytest.raises(ValueError, match="El censo de fold-000.json ha cambiado"):
+        fixture.run(base_a, tmp_path / "stage", learner)
+    assert learner.calls == []
+
+
+@pytest.mark.parametrize("module", ["reconstructed_tape", "window_tapes"])
+def test_saved_censuses_and_universes_are_not_reused_with_other_code(
+    base_a, tmp_path, learning_doubles, monkeypatch, module
+):
+    """Los censos y universos guardados no llevan huella propia, pero la salida sí.
+
+    `stage.json` guarda la huella de `reconstructed_tape.py` (censo) y de `window_tapes.py`
+    (selección del universo). Con otro código, la reanudación se detiene antes de leer
+    ningún censo o universo, aunque el nombre de la regla no cambie.
+    """
+    fixture.run(base_a, tmp_path / "stage", fixture.ScriptedLearner())
+    marker = json.loads((tmp_path / "stage/stage.json").read_text())
+    name = f"simulation/{module}.py"
+    assert marker["code"][name] == sha256(Path(campaign_stage.__file__).parent / f"{module}.py")
+    code = campaign_stage._code
+    monkeypatch.setattr(campaign_stage, "_code", lambda: dict(code(), **{name: "0" * 64}))
+    monkeypatch.setattr(
+        campaign_stage, "census", lambda *args, **kwargs: pytest.fail("se leyó un censo")
+    )
+    learner = fixture.ScriptedLearner()
+    with pytest.raises(ValueError, match="otra etapa, campaña, edición, vista o código"):
         fixture.run(base_a, tmp_path / "stage", learner)
     assert learner.calls == []
 

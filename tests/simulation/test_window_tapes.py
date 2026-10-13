@@ -391,6 +391,33 @@ def test_the_census_only_reads_rows_before_its_segment(tmp_path):
         census(one, bounds, market="US", ranking_sessions=19, listing_status=status)
 
 
+def test_unverified_rows_count_as_sessions_without_traded_value(tmp_path):
+    """Una fila sin verificar de la clasificación cuenta como sesión sin efectivo negociado.
+
+    CCC declara un volumen enorme en once de las veinte sesiones previas al tramo, todas sin
+    verificar. Contadas, su mediana superaría con mucho a la de AAA y CCC ocuparía la única
+    plaza del universo. Como sesiones sin dato, su mediana es cero.
+    """
+    from mars_titan.simulation.reconstructed_tape import census
+
+    days = editions.tape_days("US")
+    start = days.index("2023-07-03")
+    hidden = tuple(range(start - 20, start - 9))
+    assets = [
+        Asset("AAA", base=50),
+        Asset("CCC", base=40, unverified=hidden, overrides={i: dict(volume=1e9) for i in hidden}),
+    ]
+    folder = edition(tmp_path / "edition", assets)
+    evaluation = receipts.window("US", index=list(FOLDS).index("fold-018")).segment("evaluation")
+    bounds = (receipts.microseconds("2023-07-03"), evaluation[1])
+    status = editions.listing_status(folder)
+    rows = census(folder, bounds, market="US", ranking_sessions=20, listing_status=status)
+    assert rows["US/CCC"]["listed"] and rows["US/CCC"]["reason"] is None
+    assert rows["US/CCC"]["value"] == 0.0 < rows["US/AAA"]["value"]
+    covered = {"US/AAA", "US/CCC"}
+    assert window_tapes.select_universe(rows, covered, 1, evaluation=True) == ["US/AAA"]
+
+
 def test_only_the_evaluation_tape_may_lose_a_universe_asset(tmp_path, monkeypatch):
     assets = LIQUID[1:3]
     build = window_tapes.build_segment_tape
