@@ -1802,7 +1802,7 @@ Json run_reconstructed_evaluation(const PpoExperimentOptions& options,
     preflight_memory(options, config);
     FrozenEvaluationRequest request{options.output, options.resume, nullptr, {},
                                     config.learning, config.training.workers,
-                                    frozen_costs(options.evaluation_costs)};
+                                    frozen_costs(options.evaluation_costs), options.decisions};
     Json tapes = Json::array();
     for (const auto& path : options.audit_tapes) {
         auto tape = load_policy_tape(path, PolicyTapeRole::evaluation, config.environment);
@@ -1829,6 +1829,7 @@ Json run_reconstructed_evaluation(const PpoExperimentOptions& options,
                             {"seed", config.training.seed},
                             {"device", options.device},
                             {"diagnostic", options.diagnostic},
+                            {"decisions", options.decisions},
                             {"native_source_sha256", MARS_TITAN_NATIVE_SOURCE_SHA256},
                             {"native_build_sha256", MARS_TITAN_NATIVE_BUILD_SHA256},
                             {"final_test_opened", false}};
@@ -2075,6 +2076,8 @@ Json run_ppo_experiment(const PpoExperimentOptions& options,
             return run_reconstructed_evaluation(options, config, stop_requested);
         }
     } else if (options.audit_run) {
+        // La auditoría sintética ya publica su traza de decisiones con las probabilidades.
+        require(!options.decisions, "--decisions solo se admite sobre cintas reconstruidas");
         return run_audit(options, config, stop_requested, started);
     }
     // La auditoría congelada no ajusta parámetros. El entrenamiento se detiene antes de leer
