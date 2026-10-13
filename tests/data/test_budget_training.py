@@ -175,8 +175,6 @@ def test_invalid_loss_options_fail_before_touching_a_model(loss, delta):
         training_module().run_epoch(None, None, [], None, loss=loss, huber_delta=delta)
 
 
-# La forma se rechaza antes del paso, que el gancho global seguiría impidiendo.
-@pytest.mark.usefixtures("learning_doubles")
 def test_target_broadcasting_is_rejected_before_updating_weights():
     torch = pytest.importorskip("torch")
     if not torch.cuda.is_available():
@@ -190,10 +188,28 @@ def test_target_broadcasting_is_rejected_before_updating_weights():
         def forward(self, inputs):
             return self.linear(inputs["prices"])
 
+    class RefusedStep:
+        # No hereda de torch.optim.Optimizer, así que el gancho del bloqueo no lo intercepta
+        # y un paso alcanzado hace fallar la prueba en vez de omitirla.
+        def __init__(self, parameters):
+            self.parameters = list(parameters)
+
+        def zero_grad(self, set_to_none=True):
+            for value in self.parameters:
+                value.grad = None
+
+        def step(self):
+            raise AssertionError("La forma errónea llegó al paso del optimizador")
+
     model = ColumnModel().to("cuda:0")
-    optimizer = torch.optim.SGD(model.parameters(), lr=0.1)
+    optimizer = RefusedStep(model.parameters())
     before = {name: value.clone() for name, value in model.state_dict().items()}
     batch = ({"prices": torch.tensor([[1.0], [3.0]])}, torch.zeros(2))
+    # `train_step` solo añade la protección. El paso compartido rechaza la forma tras el
+    # forward y antes de backward, así que la prueba no necesita rebajar la protección.
     with pytest.raises(ValueError, match="forma"):
-        training_module().train_step(model, optimizer, batch, torch.device("cuda:0"))
+        training_module()._supervised_step(
+            model, optimizer, batch, torch.device("cuda:0"), "mse", 0.01
+        )
+    assert all(value.grad is None for value in model.parameters())
     assert all(torch.equal(value, before[name]) for name, value in model.state_dict().items())
