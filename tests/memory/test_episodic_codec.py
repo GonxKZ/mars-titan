@@ -551,6 +551,19 @@ def campaign_view(size):
     return spec, validated_cpu_batch(raw, spec)
 
 
+@pytest.mark.parametrize("size", [1, 64])
+def test_native_projection_keeps_the_bits_with_campaign_widths(native, size):
+    # El codec pasa a einsum columnas de una proyección más ancha, con otro paso entre filas
+    # que la comprobación del orden. Con las anchuras reales los bits deben seguir iguales.
+    spec, view = campaign_view(size)
+    codec = FrozenEpisodeCodec(spec)
+    expected = codec.encode(view)
+    actual = codec.encode(view, native=native)
+    for left, right in zip(encoded_arrays(actual), encoded_arrays(expected), strict=True):
+        assert_same_bits(left, right)
+    assert actual._digest == expected._digest
+
+
 @pytest.mark.parametrize("campaign,size", [(False, 256), (True, 1), (True, 64)])
 def test_native_encode_traced_allocations_stay_below_estimate(native, campaign, size):
     import tracemalloc
