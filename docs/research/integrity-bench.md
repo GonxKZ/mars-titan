@@ -201,6 +201,8 @@ Con el walk-forward por etapas, o con una etapa de adaptadores por etapas public
 - una puntuación de búsqueda que no es la de su validación, una última etiqueta que alcanza la evaluación, un recibo de ventana que no nombra el estado elegido y tramos fuera de orden;
 - un fallo del verificador de disjunción.
 
+Las pruebas que recorren la campaña reducida con su etapa de adaptadores necesitan rebajar la protección de aprendizaje y se omiten mientras rige el bloqueo (inventario de [#546](https://github.com/GonxKZ/mars-titan/issues/546)). `tests/integrity/test_declared_runs.py`, `tests/integrity/test_window_selection.py` y `tests/integrity/test_publication_gate.py` repiten las mismas comprobaciones y la conexión del informe con la publicación, el recorrido y la etapa sobre recibos escritos en la prueba, sin ejecutar ninguna campaña.
+
 ## Comprobaciones pendientes
 
 Siguen en #442, en este orden:

@@ -9,10 +9,10 @@ Este informe acompaña a [#442](https://github.com/GonxKZ/mars-titan/issues/442)
 | Exclusión declarada del diseño conjunto (mercados aún no elegibles y mercados ajenos a los modelos prestados) en la identidad de filas y en el recálculo | `integrity/row_identity.py`, `integrity/score_recheck.py` | `tests/integrity/test_row_identity.py`, `tests/integrity/test_score_recheck.py` |
 | Recálculo del control cero desde los objetivos del panel de referencia | `integrity/score_recheck.py` | `tests/integrity/test_score_recheck.py` |
 | Registro de integridad de cada ventana antes de liberar sus filas, y comprobación de una comparación publicada desde filas o desde agregados | `integrity/comparison_integrity.py` | `tests/integrity/test_comparison_integrity.py` |
-| Todos los trabajos declarados, con sus intentos, sin recibos de más, y las semillas y ventanas de cada comparación publicada | `integrity/declared_runs.py` | `tests/posttraining/test_publication_from_aggregates.py` |
+| Todos los trabajos declarados, con sus intentos, sin recibos de más, y las semillas y ventanas de cada comparación publicada | `integrity/declared_runs.py` | `tests/integrity/test_declared_runs.py`, `tests/posttraining/test_publication_from_aggregates.py` |
 | Elección con la validación anterior a cada ventana, recibos de ventana, orden de los tramos y disjunción de la cadena por etapas | `integrity/window_selection.py` | `tests/integrity/test_window_selection.py`, `tests/posttraining/test_publication_from_aggregates.py` |
-| Informe que bloquea la publicación | `integrity/publication_gate.py`, `training/campaign_publication.py` | `tests/posttraining/test_publication_from_aggregates.py`, `tests/training/test_campaign_a_joint.py` |
-| Registro de integridad en la fase de agregados del recorrido, de la base y de cada padre | `training/rolling_retention.py`, `posttraining/stage_comparison.py` | `tests/training/test_rolling_retention.py`, `tests/posttraining/test_publication_from_aggregates.py` |
+| Informe que bloquea la publicación | `integrity/publication_gate.py`, `training/campaign_publication.py` | `tests/integrity/test_publication_gate.py`, `tests/posttraining/test_publication_from_aggregates.py`, `tests/training/test_campaign_a_joint.py` |
+| Registro de integridad en la fase de agregados del recorrido, de la base y de cada padre | `training/rolling_retention.py`, `posttraining/stage_comparison.py` | `tests/integrity/test_publication_gate.py`, `tests/training/test_rolling_retention.py`, `tests/posttraining/test_publication_from_aggregates.py` |
 
 La descripción de cada comprobación está en el [banco de integridad](../../../docs/research/integrity-bench.md#informe-de-integridad-de-la-publicación).
 
@@ -25,6 +25,14 @@ Cada mutante sustituye una línea de un módulo del banco o de su conexión con 
 - Segunda ronda: con las pruebas añadidas en 964cdf0e mueren los 6.
 
 Resultado: 36 de 36 mutantes detectados. Una puntuación de mutación no garantiza que no haya otros fallos. Indica que cada decisión mutada tiene al menos una prueba que la exige.
+
+### Con la protección de aprendizaje vigente
+
+Las pruebas de extremo a extremo (`tests/posttraining/test_publication_from_aggregates.py`, la publicación con cartera de `tests/training/test_rolling_retention.py` y las dos de integridad de `tests/training/test_campaign_a_joint.py`) recorren la campaña reducida, y la etapa de adaptadores y la regeneración solo se recorren rebajando la protección. Mientras rija el bloqueo se omiten y figuran en el inventario de [#546](https://github.com/GonxKZ/mars-titan/issues/546) (`tests/learning_hold_lowering.py`). En las dos primeras rondas, 16 mutantes de ejecuciones declaradas, selección y conexión con la publicación solo morían con ellas.
+
+Para que el informe siga comprobado durante el bloqueo, `tests/integrity/test_declared_runs.py`, las pruebas nuevas de `tests/integrity/test_window_selection.py` y `tests/integrity/test_publication_gate.py` repiten esas comprobaciones sin ejecutar ninguna campaña. Usan recibos e informes escritos en la prueba, recibos de ventana del protocolo US v2 versionado y la etapa de `Stage`, con predicciones de valores conocidos. En la publicación, el recorrido y la etapa sustituyen solo las piezas costosas por resultados conocidos y mantienen real el orden entre agregados, registro de integridad y destino.
+
+- Tercera ronda: los 36 mutantes con la protección real y solo con pruebas que no la rebajan. Mueren los 36. Sin mutantes, las 102 pruebas de `tests/integrity` pasan (`with_hold` en `mutation.json`).
 
 ## Coste medido en la forma de A v2
 
