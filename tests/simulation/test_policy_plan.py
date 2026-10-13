@@ -155,7 +155,11 @@ def test_every_first_level_fit_shares_the_budget_and_the_portfolio_criterion():
     environments = stage["policies"]["budget"]["environments"]
     waves, wave = native_policy_runs.klpo_waves(tapes.train, environments, budget)
     assert 0 < waves * wave <= budget
-    selection = dict(metric="ruin_count_then_mean_liquidated_log_growth", partition="validation")
+    selection = dict(
+        metric="ruin_count_then_mean_liquidated_log_growth",
+        partition="validation",
+        best=dict(ruin_count=0, mean_liquidated_log_growth=0.01),
+    )
     equity = dict(basis="close_valuation", close_times=[1, 2], nav=[1.0, 1.0])
     records = [
         dict(cost_bps=cost, status="completed", reason=None, steps=1, net_return=0.0)
@@ -172,6 +176,7 @@ def test_every_first_level_fit_shares_the_budget_and_the_portfolio_criterion():
             dict(waves=waves - 1),
             dict(transitions=budget + 1),
             dict(selection=dict(selection, metric="mae")),
+            dict(selection=dict(selection, best=None)),
         ):
             with pytest.raises(ValueError, match="presupuesto, el criterio de cartera"):
                 campaign_stage.check_report(stage, job, dict(report, **change), tapes)

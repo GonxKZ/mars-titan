@@ -69,6 +69,10 @@ SELECTION_METRICS = (
     "ruin_count_then_mean_liquidated_log_growth",
     "ruin_count_then_mean_log_growth",
 )
+# Crecimiento de validación con el que cada criterio elige el mejor estado de un ajuste.
+SELECTION_GROWTH = dict(
+    zip(SELECTION_METRICS, ("mean_liquidated_log_growth", "mean_log_growth"), strict=True)
+)
 PPO_OBJECTIVES = {
     "ppo_clip_full_kl_v1": {"schema_version", "id"},
     "ppo_clip_kl_epoch_stop_v1": {"schema_version", "id", "target_kl"},
