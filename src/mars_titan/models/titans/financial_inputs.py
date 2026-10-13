@@ -107,6 +107,22 @@ def _timestamps(values, size, name):
     return tuple(int(value) for value in values.astype(np.int64))
 
 
+def _frozen(value):
+    """Copiar un arreglo a un objeto bytes y devolver su vista de solo lectura.
+
+    El objeto bytes no se puede modificar y NumPy no deja volver a escribir en una vista suya,
+    así que lo que se valida después es exactamente lo que se conserva.
+    """
+    return np.frombuffer(value.tobytes(), dtype=value.dtype).reshape(value.shape)
+
+
+def _buffer(value):
+    """Objeto bytes del que es vista un arreglo congelado, o None si no lo es."""
+    while isinstance(value, np.ndarray):
+        value = value.base
+    return value if isinstance(value, bytes) else None
+
+
 def _cpu_inputs(inputs, specification):
     if not isinstance(inputs, dict) or set(inputs) != set(MODALITIES):
         raise ValueError("Faltan modalidades en el lote")
@@ -124,7 +140,7 @@ def _cpu_inputs(inputs, specification):
         total += value.nbytes
         if total > MAX_INPUT_BYTES:
             raise ValueError("Las entradas superan 64 MiB")
-        copied[name] = value.copy()
+        copied[name] = _frozen(value)
         if not np.isfinite(copied[name]).all():
             raise ValueError("Las entradas no son finitas")
         if name == "prices":
@@ -136,15 +152,16 @@ def _cpu_presence(inputs, presence, size, specification):
     if masked_inputs(specification.input_policy):
         if not isinstance(presence, np.ndarray) or presence.shape != (size, 5):
             raise ValueError("La presencia no corresponde al lote")
+        frozen = _frozen(presence)
         validate_historical_vectors(
             {name: inputs[name] for name in MODALITIES[1:]},
-            presence,
+            frozen,
             specification.representation,
         )
-        return presence
+        return frozen
     if presence is not None:
         raise ValueError("La ruta estricta no admite una política de máscaras implícita")
-    return np.ones((size, 5), dtype=np.bool_)
+    return _frozen(np.ones((size, 5), dtype=np.bool_))
 
 
 def _decision_identity(batch, size, specification):
@@ -188,6 +205,10 @@ class CPUDecisionBatch:
     input_contract_id: str
     input_digest: str
     _array_contract: tuple
+    _sealed: tuple
+
+    def _arrays(self):
+        return (*(self.inputs[name] for name in MODALITIES), self.presence)
 
     def _signature(self):
         return tuple(
@@ -204,18 +225,35 @@ class CPUDecisionBatch:
             input_contract_id=self.input_contract_id,
         )
         digest = hashlib.sha256(canonical(identity).encode())
-        for name in MODALITIES:
-            digest.update(self.inputs[name].tobytes())
-        digest.update(self.presence.tobytes())
+        for value in self._arrays():
+            # Una vista contigua de todo su objeto bytes tiene los mismos bytes que tobytes().
+            digest.update(_buffer(value))
         return digest.hexdigest()
 
+    def _seal(self):
+        """Arreglos de la vista y huella calculada al crearla."""
+        return self._arrays(), self.input_digest
+
     def verify(self):
-        """Comprobar la vista antes de compartirla con un consumidor CPU."""
+        """Comprobar la vista antes de compartirla con un consumidor CPU.
+
+        La huella SHA-256 se calcula una sola vez, al crear la vista. Cada arreglo es una vista
+        de solo lectura de un objeto bytes, que no se puede modificar ni volver a hacer
+        escribible. Exigir los mismos objetos con la misma forma, el mismo tipo y los mismos
+        pasos basta para saber que los datos no han cambiado. Sustituir un arreglo, aunque
+        tenga los mismos valores, cambiar su forma o su tipo o volver a escribir en él se
+        rechaza.
+        """
+        arrays = self._arrays()
         if self._signature() != self._array_contract or any(
-            value.flags.writeable for value in (*self.inputs.values(), self.presence)
+            value.flags.writeable for value in arrays
         ):
             raise ValueError("El contrato de la vista CPU ha cambiado")
-        if self._digest() != self.input_digest:
+        sealed, digest = self._sealed
+        if digest != self.input_digest or any(
+            value is not kept or _buffer(value) is None
+            for value, kept in zip(arrays, sealed, strict=True)
+        ):
             raise ValueError("La huella de la vista CPU no coincide con sus datos")
 
 
@@ -224,7 +262,7 @@ def validated_cpu_batch(batch, specification):
     if not isinstance(batch, dict) or not isinstance(specification, FinancialInputSpec):
         raise ValueError("Falta la especificación de entradas")
     inputs, size = _cpu_inputs(batch.get("inputs"), specification)
-    presence = _cpu_presence(inputs, batch.get("presence"), size, specification).copy()
+    presence = _cpu_presence(inputs, batch.get("presence"), size, specification)
     flows, ids, moments, available = _decision_identity(batch, size, specification)
     identity = dict(
         flow_ids=flows,
@@ -233,10 +271,6 @@ def validated_cpu_batch(batch, specification):
         input_available_at=available,
         input_contract_id=specification.fingerprint(),
     )
-    for name in MODALITIES:
-        value = inputs[name]
-        inputs[name] = np.frombuffer(value.tobytes(), dtype=value.dtype).reshape(value.shape)
-    presence = np.frombuffer(presence.tobytes(), dtype=presence.dtype).reshape(presence.shape)
     result = object.__new__(CPUDecisionBatch)
     for name, value in dict(
         inputs=MappingProxyType(inputs),
@@ -246,6 +280,7 @@ def validated_cpu_batch(batch, specification):
         object.__setattr__(result, name, value)
     object.__setattr__(result, "_array_contract", result._signature())
     object.__setattr__(result, "input_digest", result._digest())
+    object.__setattr__(result, "_sealed", result._seal())
     return result
 
 

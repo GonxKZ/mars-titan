@@ -1,7 +1,9 @@
 """Integración matemática con lotes técnicos, sin objetivos ni optimizadores."""
 
+import hashlib
 import importlib
 import io
+import types
 import warnings
 from dataclasses import replace
 
@@ -450,6 +452,70 @@ def test_cpu_snapshot_cannot_reenable_writes_and_change_absent_inputs():
     for values in (*verified.inputs.values(), verified.presence):
         with pytest.raises(ValueError):
             values.setflags(write=True)
+
+
+def test_cpu_digest_is_the_sha256_of_the_identity_and_every_input_byte():
+    module = importlib.import_module("mars_titan.models.titans.financial_inputs")
+    raw, spec = raw_batch(), specification()
+    verified = module.validated_cpu_batch(raw, spec)
+    # Referencia independiente: la misma receta que antes de sellar la vista.
+    identity = dict(
+        flow_ids=verified.flow_ids,
+        sample_ids=verified.sample_ids,
+        prediction_at=verified.prediction_at,
+        input_available_at=verified.input_available_at,
+        input_contract_id=spec.fingerprint(),
+    )
+    expected = hashlib.sha256(module.canonical(identity).encode())
+    for name in ("prices", "news", "charts", "fundamentals", "macro"):
+        expected.update(raw["inputs"][name].tobytes())
+    expected.update(raw["presence"].tobytes())
+    assert verified.input_digest == expected.hexdigest()
+
+
+@pytest.mark.parametrize("field", ["prices", "news", "presence"])
+def test_cpu_view_with_a_replaced_array_is_rejected_even_with_the_same_values(field):
+    module = importlib.import_module("mars_titan.models.titans.financial_inputs")
+    verified = module.validated_cpu_batch(raw_batch(), specification())
+    verified.verify()
+    original = verified.presence if field == "presence" else verified.inputs[field]
+    same = np.frombuffer(original.tobytes(), dtype=original.dtype).reshape(original.shape)
+    if field == "presence":
+        object.__setattr__(verified, "presence", same)
+    else:
+        object.__setattr__(
+            verified, "inputs", types.MappingProxyType({**verified.inputs, field: same})
+        )
+    with pytest.raises(ValueError, match="huella"):
+        verified.verify()
+    with pytest.raises(ValueError, match="huella"):
+        api().DecisionBatch.from_validated(verified)
+
+
+def test_cpu_view_rejects_a_writable_copy_and_a_changed_digest():
+    module = importlib.import_module("mars_titan.models.titans.financial_inputs")
+    verified = module.validated_cpu_batch(raw_batch(), specification())
+    writable = verified.inputs["macro"].copy()
+    changed = types.MappingProxyType({**verified.inputs, "macro": writable})
+    object.__setattr__(verified, "inputs", changed)
+    with pytest.raises(ValueError, match="contrato"):
+        verified.verify()
+    verified = module.validated_cpu_batch(raw_batch(), specification())
+    object.__setattr__(verified, "input_digest", "f" * 64)
+    with pytest.raises(ValueError, match="huella"):
+        verified.verify()
+
+
+def test_cpu_view_validates_the_bytes_it_keeps():
+    module = importlib.import_module("mars_titan.models.titans.financial_inputs")
+    raw = raw_batch()
+    verified = module.validated_cpu_batch(raw, specification())
+    for value in (*verified.inputs.values(), verified.presence):
+        assert isinstance(module._buffer(value), bytes)
+        assert not value.flags.writeable
+    # Las comprobaciones de la frontera leen la copia sellada, no el lote del llamante.
+    raw["inputs"]["news"][0, 0] = np.nan
+    np.testing.assert_array_equal(np.isfinite(verified.inputs["news"]), True)
 
 
 def test_tensor_conversion_rejects_changed_interpretation_of_verified_cpu_bytes():
