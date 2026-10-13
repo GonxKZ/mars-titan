@@ -43,13 +43,13 @@ Estas propiedades proceden del protocolo, del objetivo residual y de la literatu
 
 **Control emparejado.** Titans-MAC de la receta con las mismas semillas, filas, ventanas y presupuesto. **Alternativa trivial.** Reducir `theta_max` y fijar `gate_bias` con $\eta$ bajo, sin caja ni recorte. Si esa alternativa iguala a PT1 en error y diagnósticos, la caja no aporta nada que no dé un paso menor.
 
-**Métrica y regla de decisión.** No inferioridad. Métrica primaria: diferencia relativa de MAE residual por sesión, PT1 menos control, emparejada, con bootstrap circular por bloques de 16 sesiones sobre las ventanas de validación. Se conserva PT1 si el límite superior del intervalo del 95 % es menor o igual que +0,2 % y además, en los eventos de D2, el percentil 95 del MAE por sesión no empeora más de un 1 %. Criterios secundarios, que no deciden por sí solos: exponente de Lyapunov máximo estimado en D5 y norma máxima del estado.
+**Métrica y regla de decisión.** No inferioridad. Métrica primaria: diferencia relativa de MAE residual por sesión, PT1 menos control, emparejada, con bootstrap circular por bloques de 16 sesiones sobre las ventanas de validación. Se conserva PT1 si el límite superior del intervalo del 95 % es menor o igual que +0,2 % y además, en los eventos de D2, el percentil 95 del MAE por sesión no empeora más de un 1 %. Criterios secundarios, que no deciden por sí solos: exponente de Lyapunov máximo estimado en D5 y norma máxima del estado. Con el [control de varianza](#pt7-ensemble-de-semillas-como-control-de-varianza-protocolo), PT1 solo se conserva si además la diferencia mínima interpretable entre semillas del control es menor que +0,2 %, y el abandono por el límite de +0,5 % exige una banda por debajo de ese límite. La alternativa trivial iguala a PT1 en error si el intervalo de su diferencia relativa queda dentro de la banda.
 
 **Coste.** Una configuración más de Titans por semilla. El sobrecoste por paso debe medirse antes de lanzarla. Con la hipótesis de 85 h por semilla y 19 ventanas, una semilla completa ocuparía el 13 % de las cuatro semanas. Por eso PT1 se pilota primero.
 
 **Riesgos.** $\eta_{hi}=0{,}3$ reduce la persistencia del momentum. $\alpha_{lo}=1/500$ limita la semivida a unas 346 sesiones. Si la señal útil de la memoria dependía de amplificaciones transitorias, PT1 la eliminaría, y eso también sería un resultado.
 
-**Piloto con datos reales.** Hasta 64 activos de EE. UU. con todas las modalidades disponibles, ventanas de validación 2018, 2019 y 2020 (la última incluye la caída de marzo de 2020), entrenamiento expansivo desde 2000, una semilla para PT1 y otra para el control con el mismo número de actualizaciones. Presupuesto máximo declarado: 6 h de GPU entre ambos brazos. Métricas: las de la regla más D1, D2 y D5. Éxito: no inferioridad en las tres ventanas y ningún empeoramiento del exponente de Lyapunov. Abandono: límite superior por encima de +0,5 % en el piloto, o D2 muestra que la variante online se comporta igual que la congelada.
+**Piloto con datos reales.** Hasta 64 activos de EE. UU. con todas las modalidades disponibles, ventanas de validación 2018, 2019 y 2020 (la última incluye la caída de marzo de 2020), entrenamiento expansivo desde 2000, una semilla para PT1, otra para su alternativa trivial y tres para el control con el mismo número de actualizaciones (la 42 se empareja con PT1, y la 43 y la 44 forman la banda de PT7). Presupuesto máximo declarado: 41 h de GPU para PT1, su alternativa trivial y la semilla 42 del control, más las 27 h de la reserva de PT7 para las otras dos, según la [medida del control](#pt7-ensemble-de-semillas-como-control-de-varianza-protocolo). Métricas: las de la regla más D1, D2 y D5. Éxito: no inferioridad en las tres ventanas y ningún empeoramiento del exponente de Lyapunov. Abandono: límite superior por encima de +0,5 % en el piloto, o D2 muestra que la variante online se comporta igual que la congelada.
 
 **Predicción escrita de antemano.** El MAE no cambiará de forma detectable (diferencia relativa entre −0,2 % y +0,2 %). La norma máxima del estado bajará al menos a la mitad en el evento de 2020. El exponente de Lyapunov estimado del control será negativo en la mayor parte de las sesiones, de modo que la garantía de PT1 tendrá más valor como seguro que como mejora media.
 
@@ -73,7 +73,7 @@ La mediana no cambia, así que el MAE tampoco.
 
 **Fuente y derivación.** ACI (Gibbs y Candès, 2021), seguimiento de cuantiles y control PID conformal (Angelopoulos et al., 2023), regla con errores maduros de Wang y Hyndman (2024) y CQR (Romano et al., 2019). Es una adaptación. La parte propia es la actualización por cohortes de mercado con la corrección emitida guardada en cada predicción y su cota, una variante menor.
 
-**Inserción.** Nuevo módulo `src/mars_titan/calibration/online_conformal.py` junto a `conformal_quantiles.py`, con estado por mercado exportable y cursor de cohorte. La comparación (`evaluation/walk_forward_comparison.py`) declararía un brazo de calibración en línea frente a la CQR estática existente. Sin el brazo, las salidas no cambian.
+**Inserción.** Nuevo módulo `src/mars_titan/calibration/online_conformal.py` junto a `conformal_quantiles.py`, con estado por mercado exportable y cursor de cohorte. La comparación (`evaluation/walk_forward_comparison.py`) declararía un modelo de calibración en línea frente a la CQR estática existente. Sin el modelo, las salidas no cambian.
 
 **Control emparejado.** CQR estática actual con las mismas predicciones. **Alternativa trivial.** Recalibrar la CQR estática una vez al año con la ventana de calibración más reciente. Si iguala a PT2, la adaptación dentro del año no aporta.
 
@@ -116,7 +116,7 @@ con $K^\top\Sigma^{-1}K=\frac{1}{\sigma^2(1-\varrho)}\big(K^\top K-g\,(K^\top\ma
 
 **Fuente y derivación.** Filtro de Kalman (Kalman, 1960), modelos lineales dinámicos (West y Harrison, 1997) y efectos temporales aleatorios de datos de panel (Baltagi, 2021). Fentazi et al. (2026) muestran con un arnés sin fuga que un banco de RLS cerrado supera a tres de cuatro métodos publicados de adaptación con etiquetas retrasadas, a una fracción del coste. Es una adaptación. Son propios la combinación concreta para cohortes maduras de B6, la forma cerrada de la actualización ponderada y su contrato de madurez. La aproximación de aplicar la medida al estado actual y no al de la decisión se declara como desviación, con error acotado por el ruido de proceso acumulado durante el retraso.
 
-**Inserción.** `src/mars_titan/memory/associative_memory.py` (regla `kalman` con identidad propia, exportación de $P$), `MatureCorrection` sin cambios de contrato y un brazo nuevo en `configs/titans/mars-titan-extensions.json`. Las reglas delta y proximal conservan su identidad y su salida.
+**Inserción.** `src/mars_titan/memory/associative_memory.py` (regla `kalman` con identidad propia, exportación de $P$), `MatureCorrection` sin cambios de contrato y un modelo nuevo en `configs/titans/mars-titan-extensions.json`. Las reglas delta y proximal conservan su identidad y su salida.
 
 **Control emparejado.** B6 proximal con las mismas claves, cohortes y predicciones base, y el núcleo sin corrección. **Alternativa trivial.** La misma regla con $\varrho=0$, que separa lo que aporta la correlación de cohorte de lo que aporta RLS.
 
@@ -146,11 +146,13 @@ con $K^\top\Sigma^{-1}K=\frac{1}{\sigma^2(1-\varrho)}\big(K^\top K-g\,(K^\top\ma
 
 **Por qué no entra en la campaña.** Exige que todos los activos de una sesión estén en el mismo lote o acumular el gradiente entre lotes antes de escribir, y cambia la selección de estado por flujo. Es la propuesta más arquitectónica y la más costosa de implementar bien.
 
-**Piloto.** 64 activos de EE. UU. en un solo lote, ventanas 2018 a 2020, control Titans-MAC con los mismos pesos lentos iniciales y memoria de mercado desactivada. Éxito: mejora de MAE con límite superior por debajo de cero. Abandono: no inferioridad sin mejora, o fuga detectada por la prueba de causalidad intrasesión. Presupuesto: 8 h de GPU.
+**Piloto.** 64 activos de EE. UU. en un solo lote, ventanas 2018 a 2020, control Titans-MAC con los mismos pesos lentos iniciales y memoria de mercado desactivada. Éxito: mejora de MAE con límite superior por debajo de −MID, la banda entre semillas del control de PT7, que comparte el control y las filas. Abandono: una mejora que no supera la banda, o fuga detectada por la prueba de causalidad intrasesión. Presupuesto: 8 h de GPU.
 
 **Predicción.** Mejora pequeña concentrada en días de eventos sectoriales, nula en promedio.
 
 **Revisión adversarial.** Un factor sectorial explícito como entrada consigue lo mismo sin memoria. Ese control es obligatorio antes de atribuir nada a la memoria compartida.
+
+**Implementación.** Implementada y comprobada sin entrenar como `session_context` (`market_memory_v1` y el control `sector_mean_v1` con las fichas de sectores de FinMultiTime), con lectura solo de sesiones confirmadas, escritura una vez por sesión independiente de la partición en bloques, arranque idéntico al control y la comparación declarada sin ejecutar. No admite todavía la acumulación por bloques de la receta base ([#456](https://github.com/GonxKZ/mars-titan/issues/456), [especificación](../engineering/market-memory.md)).
 
 ## PT5. Memoria multiescala (línea posterior)
 
@@ -160,9 +162,11 @@ con $K^\top\Sigma^{-1}K=\frac{1}{\sigma^2(1-\varrho)}\big(K^\top K-g\,(K^\top\ma
 
 **Alternativa trivial obligatoria.** Banco de integradores exponenciales independientes con las mismas escalas y el mismo número de estados. Si iguala a la cascada, el acoplamiento no aporta.
 
-**Piloto.** 64 activos, ventanas 2018 a 2020, tres brazos (control, cascada de tres niveles, banco EMA de tres escalas), 9 h de GPU. Éxito: la cascada mejora al banco EMA con límite superior negativo. Abandono en otro caso.
+**Piloto.** 64 activos, ventanas 2018 a 2020, tres modelos (control, cascada de tres niveles, banco EMA de tres escalas), 9 h de GPU. Éxito: la cascada mejora al banco EMA con límite superior por debajo de −MID, la banda entre semillas del control de PT7. Abandono en otro caso.
 
 **Predicción.** El banco EMA igualará a la cascada. Multiplica por tres el estado por flujo.
+
+**Implementación.** Implementada y comprobada sin entrenar como `memory_multiscale` (`cascade` y la alternativa `ema_bank`), con g = 1/16, contracción uniforme demostrada dentro de la caja de PT1 y la comparación declarada sin ejecutar ([#457](https://github.com/GonxKZ/mars-titan/issues/457), [especificación](../engineering/multiscale-memory.md)).
 
 ## PT6. Fusión condicionada por la presencia de modalidades (línea posterior)
 
@@ -172,13 +176,29 @@ con $K^\top\Sigma^{-1}K=\frac{1}{\sigma^2(1-\varrho)}\big(K^\top K-g\,(K^\top\ma
 
 **Alternativa trivial.** Una capa de fusión más ancha con el mismo número de parámetros.
 
-**Piloto.** Requiere reentrenar. 64 activos, ventanas 2018 a 2020, 6 h de GPU. Métrica: MAE en las filas con alguna modalidad ausente. Abandono si la alternativa trivial la iguala.
+**Piloto.** Requiere reentrenar. 64 activos, ventanas 2018 a 2020, 6 h de GPU. Métrica: MAE en las filas con alguna modalidad ausente. Éxito: la modulación mejora a la fusión más ancha con límite superior por debajo de −MID, con la banda de PT7 calculada en esas mismas filas. Abandono si la alternativa trivial la iguala, es decir, si la mejora no supera la banda. La banda solo vale si el piloto usa el control de PT7. Con otro control necesita sus propias tres semillas.
 
 **Predicción.** Sin diferencia detectable, porque el Transformer que sigue a la fusión ya puede modelar esas interacciones.
 
+**Implementación.** Implementada y comprobada sin entrenar como `presence_modulation` (`film_v1` y la alternativa `wide_fusion_v1`), con identidad exacta en las filas completas, arranque idéntico al control y la comparación declarada sin ejecutar ([#458](https://github.com/GonxKZ/mars-titan/issues/458), [especificación](../engineering/presence-modulation.md)).
+
 ## PT7. Ensemble de semillas como control de varianza (protocolo)
 
-No es arquitectura, pero condiciona la interpretación de todo lo anterior. Con señal tan débil, la varianza entre semillas puede ser del mismo orden que cualquier diferencia entre arquitecturas. Rahimikia et al. (2025) y Gu et al. (2020) promedian semillas. La recomendación es medir la dispersión entre al menos tres semillas del control en el piloto antes de interpretar diferencias de PT1, PT4, PT5 o PT6. Coste: dos semillas adicionales del control en el piloto, unas 4 h de GPU.
+No es arquitectura, pero condiciona la interpretación de todo lo anterior. Está declarado e implementado desde el 10 de octubre de 2026 ([#459](https://github.com/GonxKZ/mars-titan/issues/459)) y no se ha ejecutado.
+
+**Datos.** Con señal tan débil, la varianza entre semillas puede ser del mismo orden que cualquier diferencia entre arquitecturas. Bouthillier et al. (2021) muestran que la inicialización basta para cambiar la conclusión de una comparación, y Rahimikia et al. (2025) y Gu et al. (2020) promedian semillas por ese motivo.
+
+**Regla.** El control de los pilotos (`titans_mac_online` con la receta de 2000) se ajusta con las semillas 42, 43 y 44 sobre las mismas filas, ventanas y presupuesto, y cada semilla repite los dos casos de búsqueda y la selección con validación. La campaña A ajusta las semillas 43 y 44 solo con el caso elegido por la 42. Aquí eso daría a la 42 la ventaja de elegir el mejor de dos casos con su propia validación, y la banda mezclaría esa ventaja con la dispersión entre semillas. La propuesta conserva su semilla 42 y se compara con el control de esa misma semilla. En cada réplica del bootstrap circular de la regla, con los mismos días, se toma la mayor diferencia relativa del MAE por sesión entre dos semillas del control, con la de menor MAE como base. Su percentil 95 es la diferencia mínima interpretable (MID). Una mejora exige el límite superior del intervalo del 95 % por debajo de −MID. Una igualdad con la alternativa trivial exige el intervalo entero dentro de [−MID, MID]. En la no inferioridad de PT1, la regla solo conserva si la MID queda por debajo de +0,2 % y solo abandona por el límite de +0,5 % si la MID queda por debajo de ese límite. Si no, informa de que el piloto no permite interpretar el margen y nunca lo ensancha. La [declaración](../../configs/evaluation/memory-pilot-seed-control.json) fija semillas, remuestreo, cuantil y reglas de PT1, de su alternativa trivial, de PT4, PT5 y PT6, y `evaluation/seed_variance_control.py` las aplica.
+
+**Fuente y derivación.** Agarwal et al. (2021) muestran que con tres ejecuciones los intervalos bootstrap sobre ejecuciones se quedan cortos. Por eso las semillas no se remuestrean: la banda usa la mayor diferencia entre ellas dentro de cada réplica sobre los días. Lakens (2017) fija los límites de equivalencia con el menor efecto de interés antes de ver datos. Aquí ese límite es la banda entre semillas, una adaptación propia. Exigir el intervalo del 95 % dentro de la banda es más estricto que el TOST de Lakens, que usa el del 90 %.
+
+**Control que la descarta.** Cada regla informa también de la decisión que tomaría sin banda. Si en todas las reglas evaluadas coinciden, las dos semillas añadidas no han cambiado ninguna conclusión y PT7 se retira de los pilotos siguientes. Lo calcula `discard_verdict` con los informes de las reglas.
+
+**Coste.** Medido el 13 de octubre de 2026 en `cuda:0` ([recibo](../../reports/engineering/memory-pilot-seed-control-cost-20261013.json)) con el ajuste cronológico de `titans_mac_online` y la receta de 2000, sin pasos de optimizador, sobre una vista de la edición v3.1 con los 64 activos de EE. UU. con más filas de ajuste (ventana `fold-012`, como mucho 64 flujos por instante). Tres pasadas dieron entre 1.221 y 1.526 filas por segundo en el ajuste y entre 1.849 y 2.666 en la inferencia, con otras pruebas de CPU en marcha en el equipo. Una semilla del control en el piloto ajusta 55 millones de filas (64 activos en todas las sesiones desde 2000 hasta cada validación, 30 épocas y dos casos de búsqueda) y predice 6,2 millones. Con la pasada más lenta son 13,5 h de GPU por semilla y con la mediana, 11,0 h. La reserva de PT7 para las semillas 43 y 44 es de 27 h, el doble de la cota más lenta redondeado hacia arriba. La estimación anterior de unas 4 h no se basaba en ninguna medida y quedaba muy corta. Por el mismo motivo, el presupuesto de PT1 pasa de 6 a 41 h para PT1, su alternativa trivial y la semilla 42 del control, que cuestan por paso lo mismo que el control dentro de la dispersión medida en #453. Es una cota de cómputo: no incluye lecturas de disco, índices, normalizadores ni reanudaciones. Los presupuestos de PT4, PT5 y PT6 (8, 9 y 6 h) se escribieron antes de esta medida y tampoco cubren tres modelos con este coste por semilla, así que se recalcularán con su propia medida antes de lanzarlos.
+
+**Predicción.** La MID superará el margen de +0,2 % de PT1, de modo que el piloto no podrá conservar PT1 por no inferioridad y la regla lo informará como no interpretable.
+
+**Revisión adversarial.** Con tres semillas la banda solo acota por debajo la cola de la dispersión, así que es una condición mínima y no una garantía. Supone además que la propuesta y su alternativa dispersan entre semillas como el control. Una propuesta que reduzca o aumente esa dispersión no queda bien medida. La banda también recoge el ruido de las sesiones, de modo que con pocas sesiones tiende a ser ancha y a dejar reglas sin interpretar. Esa es la respuesta correcta cuando el piloto no tiene potencia, pero hace que el piloto decida poco. La alternativa más sencilla sería promediar tres semillas en cada modelo, como Gu et al. (2020). Triplicaría el coste de cada propuesta, mientras que PT7 solo paga las semillas del control una vez para todos los pilotos que comparten control, filas y ventanas. Las reglas que comparten la banda no son independientes entre sí, y ninguna corrige por multiplicidad.
 
 ## PT8. Descartadas y motivo
 
@@ -199,7 +219,7 @@ No es arquitectura, pero condiciona la interpretación de todo lo anterior. Con 
 Son recomendaciones condicionadas a los diagnósticos. Ninguna se aplica en esta revisión.
 
 1. **Banco episódico compartido de 1.024 episodios.** Con 4.000 a 5.000 etiquetas maduras por sesión, una sola sesión supera su capacidad y el muestreo por depósito conserva sobre todo episodios antiguos. Antes de ampliar el factorial con variantes del banco, D8 debe mostrar que recupera episodios recientes y útiles. Si no, la opción más sencilla es un banco por mercado con capacidad de varias sesiones o retirar el banco de la comparación principal.
-2. **Refinamientos K = 4.** K = 1 ya es el principal. La literatura de cómputo en inferencia (Bansal et al., 2022, y Gema et al., 2025) indica que más pasos pueden empeorar fuera del régimen de entrenamiento. Si el presupuesto aprieta, K = 4 es el primer brazo prescindible.
+2. **Refinamientos K = 4.** K = 1 ya es el principal. La literatura de cómputo en inferencia (Bansal et al., 2022, y Gema et al., 2025) indica que más pasos pueden empeorar fuera del régimen de entrenamiento. Si el presupuesto aprieta, K = 4 es el primer modelo prescindible.
 3. **Interpretación de C en CM-v1.** C penaliza el radio numérico de $R^\top JR$ de cada paso. La Proposición 3 muestra que una cota por paso no controla los productos. C puede conservarse como experimento declarado, pero no debe presentarse como garantía de estabilidad. Si se busca esa garantía, PT1 la da por construcción en la memoria lineal.
 4. **Regla delta de B6.** Su coste es unas diez veces el de la proximal en cohortes grandes y RLS la generaliza. Si PT3 no es peor que proximal, la regla delta puede salir de la campaña.
 5. **Truncación 8.** No se recomienda ampliarla sin D7, porque su coste crece linealmente con el horizonte.
@@ -208,12 +228,14 @@ Son recomendaciones condicionadas a los diagnósticos. Ninguna se aplica en esta
 
 Las entradas completas están en [`post-titans.bib`](../references/post-titans.bib) y en los catálogos existentes.
 
+- Agarwal, R., Schwarzer, M., Castro, P. S., Courville, A. y Bellemare, M. G. (2021). Deep reinforcement learning at the edge of the statistical precipice. *Advances in Neural Information Processing Systems, 34*. https://arxiv.org/abs/2108.13264
 - Angelopoulos, A. N., Candès, E. J. y Tibshirani, R. J. (2023). Conformal PID control for time series prediction. *Advances in Neural Information Processing Systems, 36*, 23047–23074. https://doi.org/10.52202/075280-1000
 - Baltagi, B. H. (2021). *Econometric analysis of panel data* (6.ª ed.). Springer. https://doi.org/10.1007/978-3-030-53953-5
 - Bansal, A., Schwarzschild, A., Borgnia, E., Emam, Z., Huang, F., Goldblum, M. y Goldstein, T. (2022). End-to-end algorithm synthesis with recurrent networks: Extrapolation without overthinking. *Advances in Neural Information Processing Systems, 35*, 20232–20242.
 - Behrouz, A., Razaviyayn, M., Zhong, P. y Mirrokni, V. (2026). It's all connected: A journey through test-time memorization, attentional bias, retention, and online optimization. *International Conference on Learning Representations*.
 - Behrouz, A., Zhong, P. y Mirrokni, V. (2025). Titans: Learning to memorize at test time. *Advances in Neural Information Processing Systems, 38*.
 - Benna, M. K. y Fusi, S. (2016). Computational principles of synaptic memory consolidation. *Nature Neuroscience, 19*(12), 1697–1706. https://doi.org/10.1038/nn.4401
+- Bouthillier, X., Delaunay, P., Bronzi, M., Trofimov, A., Nichyporuk, B., Szeto, J., Mohammadi Sepahvand, N., Raff, E., Madan, K., Voleti, V., Ebrahimi Kahou, S., Michalski, V., Arbel, T., Pal, C., Varoquaux, G. y Vincent, P. (2021). Accounting for variance in machine learning benchmarks. *Proceedings of Machine Learning and Systems, 3*. https://arxiv.org/abs/2103.03098
 - Boyd, S., El Ghaoui, L., Feron, E. y Balakrishnan, V. (1994). *Linear matrix inequalities in system and control theory*. SIAM. https://doi.org/10.1137/1.9781611970777
 - Fentazi, M. R., Ameur, M. y Ksentini, A. (2026). *Training on the future: A delay-aware audit of test-time adaptation for time-series forecasting* (arXiv:2610.12232v1). https://arxiv.org/abs/2610.12232v1
 - Gema, A. P. et al. (2025). Inverse scaling in test-time compute. *Transactions on Machine Learning Research*.
@@ -223,6 +245,7 @@ Las entradas completas están en [`post-titans.bib`](../references/post-titans.b
 - Ioannou, P. A. y Kokotovic, P. V. (1984). Instability analysis and improvement of robustness of adaptive control. *Automatica, 20*(5), 583–594. https://doi.org/10.1016/0005-1098(84)90009-8
 - Kalman, R. E. (1960). A new approach to linear filtering and prediction problems. *Journal of Basic Engineering, 82*(1), 35–45. https://doi.org/10.1115/1.3662552
 - Kaplanis, C., Shanahan, M. y Clopath, C. (2018). Continual reinforcement learning with complex synapses. *Proceedings of the 35th International Conference on Machine Learning*, PMLR 80, 2497–2506.
+- Lakens, D. (2017). Equivalence tests: A practical primer for t tests, correlations, and meta-analyses. *Social Psychological and Personality Science, 8*(4), 355–362. https://doi.org/10.1177/1948550617697177
 - Manokhin, V. (2026). *Report the floor: A training-free conformal interval is a mandatory baseline for probabilistic time-series forecasting* (arXiv:2606.09473v1). https://arxiv.org/abs/2606.09473v1
 - Muennighoff, N. et al. (2025). s1: Simple test-time scaling. *Proceedings of EMNLP 2025*, 20275–20321. https://doi.org/10.18653/v1/2025.emnlp-main.1025
 - Perez, E., Strub, F., de Vries, H., Dumoulin, V. y Courville, A. (2018). FiLM: Visual reasoning with a general conditioning layer. *Proceedings of the AAAI Conference on Artificial Intelligence, 32*(1). https://doi.org/10.1609/aaai.v32i1.11671

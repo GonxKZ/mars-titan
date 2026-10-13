@@ -38,6 +38,9 @@ struct DecisionRecord {
     std::string mode = "sampled";
     bool learning_allowed = true;
     std::array<float, trace_action_count> probabilities{};
+    // Salidas de la red antes de elegir la acción: logits en PPO y KLPO, valores Q en Double
+    // DQN. Solo la evaluación congelada las rellena, para comparar dispositivos y empates.
+    std::array<float, trace_action_count> logits{};
     double critic = 0;
     uint8_t retrieved_count = 0;
     std::array<uint64_t, trace_memory_count> ids{};

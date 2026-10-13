@@ -1,11 +1,13 @@
-"""Pruebas nuevas que solo pueden recorrer la campaña reducida rebajando la protección.
+"""Pruebas nuevas que solo pueden comprobar su recorrido rebajando la protección.
 
 Mientras rige el bloqueo de aprendizaje ninguna prueba nueva puede rebajarlo (#546). Algunas
-comprobaciones de la publicación necesitan completar la etapa de adaptadores con el
-optimizador que solo registra gradientes, o regenerar predicciones en el recorrido de la
-retención v2, y esos puntos de entrada se detienen con la protección. Hasta que exista una
-puerta de solo evaluación separada de la de ajuste, esas pruebas se marcan con
-`lowers_learning_hold` y se omiten mientras la protección real bloquee.
+comprobaciones necesitan que un punto de entrada protegido admita al menos un trabajo, aunque
+los ejecutores estén sustituidos y no ajusten nada. Otras, de la publicación, necesitan
+completar la etapa de adaptadores con el optimizador que solo registra gradientes, o
+regenerar predicciones en el recorrido de la retención v2, y esos puntos de entrada se
+detienen con la protección. Hasta que exista una puerta de solo evaluación separada de la de
+ajuste, esas pruebas se marcan con `lowers_learning_hold` y se omiten mientras la protección
+real bloquee.
 
 `INVENTORY` es su entrada en el inventario de #546: cada prueba o módulo con el motivo por el
 que rebaja la protección. La marca solo admite claves del inventario.
@@ -34,6 +36,11 @@ INVENTORY = {
     "test_integrity_catches_a_comparison_that_drops_other_rows": (
         "publica la comparación conjunta desde la campaña A v2 reducida del fixture "
         "`joint_campaign`, que ejecuta los dobles de ajuste con la protección rebajada"
+    ),
+    "tests/training/test_quantile_head_control.py::"
+    "test_hold_reinstated_after_a_job_stops_before_the_next_one": (
+        "el primer trabajo del control de la cabeza tiene que pasar la protección para "
+        "comprobar que vuelve a leerse antes del segundo, aunque el ejecutor sustituido no ajusta"
     ),
 }
 

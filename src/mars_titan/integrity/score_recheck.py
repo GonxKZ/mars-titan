@@ -1,7 +1,7 @@
 """Recalcular una comparación walk-forward publicada y cotejarla con su informe.
 
 La comparación escribe `comparison.json` y `sessions.parquet`. Esta comprobación vuelve a
-leer las predicciones crudas de cada brazo, semilla y ventana desde el manifiesto de
+leer las predicciones crudas de cada modelo, semilla y ventana desde el manifiesto de
 fuentes, con sus huellas, y recalcula las métricas por sesión con
 `integrity.independent_scores`, después de quitar las filas que el diseño conjunto excluye
 de la ventana con la misma regla declarada que `integrity.row_identity`. Después exige:
@@ -15,7 +15,7 @@ de la ventana con la misma regla declarada que `integrity.row_identity`. Despué
 Solo se cotejan los cuantiles en bruto. Los calibrados dependen del calibrador común,
 que no tiene todavía una segunda implementación, y el informe lo dice. El control cero no
 tiene archivo de predicciones: se recalcula con predicción nula sobre los objetivos de la
-ventana, que `row_identity` exige comunes a todos los brazos.
+ventana, que `row_identity` exige comunes a todos los modelos.
 
 Un archivo compactado por la retención v2 se lee con los mismos bits. Uno liberado detiene
 el recálculo hasta regenerarlo (`run_masked_campaign.py regenerate`).
@@ -155,7 +155,7 @@ def _check_point(recomputed, point, rtol, atol):
 
 
 def independent_window(config, sources, arm, seed, window_id):
-    """Sesiones de la evaluación de un brazo y semilla recalculadas desde sus filas.
+    """Sesiones de la evaluación de un modelo y semilla recalculadas desde sus filas.
 
     Aplica antes la exclusión declarada del diseño conjunto (`row_identity.kept_rows`) y
     devuelve también el recuento por mercado de las filas quitadas.
@@ -190,7 +190,7 @@ def independent_zero(config, sources, window_id):
     """Sesiones del control cero de una ventana: predicción nula sobre los objetivos comunes.
 
     Los objetivos salen del primer archivo de evaluación de la ventana, tras la exclusión
-    declarada. `row_identity` exige que todos los brazos compartan esas filas y objetivos.
+    declarada. `row_identity` exige que todos los modelos compartan esas filas y objetivos.
     """
     arm, seed, _ = min(key for key in sources["files"] if key[2] == window_id)
     record = sources["files"][arm, seed, window_id]["evaluation"]

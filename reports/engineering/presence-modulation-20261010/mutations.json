@@ -1,0 +1,195 @@
+{
+ "schema_version": 1,
+ "kind": "targeted_mutation_receipt",
+ "issue": 458,
+ "executed_on": "2026-10-13",
+ "base_commit": "f7ba79c7b05bcc3b5d2a0e0b73114365521961b0",
+ "sources_sha256": {
+  "src/mars_titan/models/baselines/multimodal.py": "bf3f688a7f347b4b00c18fc71d66a601e3057260646a0152995da8593b564dde",
+  "src/mars_titan/models/titans/financial.py": "5eca1cb9bcc12c2ee1a99dbc57e84aff56a3077db1044335e21eb7c92983659f",
+  "src/mars_titan/models/titans/presence_modulation.py": "fa5b42e32008c743dc573464982010e6399baed23218dd100527c5434a994f1a",
+  "tests/models/titans/test_presence_modulation.py": "5e0b78def5a8a9439fb0a9bb63a0ac31004f306fa0f2562e15aa4065a5d16baf"
+ },
+ "method": "Copia aislada de src, tests, configs y benchmarks. Cada mutante sustituye un único fragmento, ejecuta las pruebas declaradas con -x y restaura el archivo. PYTHONPATH apunta a la copia, así que las pruebas importan el código mutado",
+ "tests": [
+  "tests/models/titans/test_presence_modulation.py"
+ ],
+ "environment": "CPU con CUDA_VISIBLE_DEVICES=-1 y OMP_NUM_THREADS=2, sin pasos de optimizador",
+ "baseline": {
+  "returncode": 0,
+  "seconds": 3.6,
+  "tail": [
+   "19 passed in 1.34s"
+  ]
+ },
+ "killed": 15,
+ "survived": 0,
+ "not_applied": 0,
+ "mutants": [
+  {
+   "name": "complete_rows_modulated",
+   "file": "src/mars_titan/models/titans/presence_modulation.py",
+   "status": "killed",
+   "seconds": 3.3,
+   "tail": [
+    "1 failed, 5 passed in 1.13s"
+   ],
+   "original": "return torch.where(complete[:, None, None], blocks, modulated)",
+   "mutated": "return modulated"
+  },
+  {
+   "name": "presence_instead_of_absence",
+   "file": "src/mars_titan/models/titans/presence_modulation.py",
+   "status": "killed",
+   "seconds": 3.4,
+   "tail": [
+    "1 failed, 6 passed in 1.32s"
+   ],
+   "original": "absence = (~presence).to(dtype=blocks.dtype)",
+   "mutated": "absence = presence.to(dtype=blocks.dtype)"
+  },
+  {
+   "name": "absent_block_not_zeroed",
+   "file": "src/mars_titan/models/titans/presence_modulation.py",
+   "status": "killed",
+   "seconds": 3.6,
+   "tail": [
+    "1 failed, 6 passed in 1.32s"
+   ],
+   "original": "modulated = presence.unsqueeze(-1).to(dtype=blocks.dtype) * (",
+   "mutated": "modulated = ("
+  },
+  {
+   "name": "scale_without_identity",
+   "file": "src/mars_titan/models/titans/presence_modulation.py",
+   "status": "killed",
+   "seconds": 3.3,
+   "tail": [
+    "1 failed, 2 passed in 1.10s"
+   ],
+   "original": "blocks + scale * blocks + shift",
+   "mutated": "scale * blocks + shift"
+  },
+  {
+   "name": "shift_dropped",
+   "file": "src/mars_titan/models/titans/presence_modulation.py",
+   "status": "killed",
+   "seconds": 3.3,
+   "tail": [
+    "1 failed, 6 passed in 1.10s"
+   ],
+   "original": "blocks + scale * blocks + shift",
+   "mutated": "blocks + scale * blocks"
+  },
+  {
+   "name": "scale_axes_swapped",
+   "file": "src/mars_titan/models/titans/presence_modulation.py",
+   "status": "killed",
+   "seconds": 3.9,
+   "tail": [
+    "1 failed, 6 passed in 1.40s"
+   ],
+   "original": "scale = torch.einsum(\"mhk,bk->bmh\", self.scale, absence)",
+   "mutated": "scale = torch.einsum(\"khm,bk->bmh\", self.scale, absence)"
+  },
+  {
+   "name": "shift_starts_nonzero",
+   "file": "src/mars_titan/models/titans/presence_modulation.py",
+   "status": "killed",
+   "seconds": 3.9,
+   "tail": [
+    "1 failed, 2 passed in 1.37s"
+   ],
+   "original": "self.shift = nn.Parameter(torch.zeros(shape))",
+   "mutated": "self.shift = nn.Parameter(torch.full(shape, 0.01))"
+  },
+  {
+   "name": "branch_output_starts_nonzero",
+   "file": "src/mars_titan/models/titans/presence_modulation.py",
+   "status": "killed",
+   "seconds": 3.8,
+   "tail": [
+    "1 failed, 1 passed in 1.22s"
+   ],
+   "original": "self.project = nn.Parameter(torch.zeros(hidden_size, units))",
+   "mutated": "self.project = nn.Parameter(torch.full((hidden_size, units), 0.01))"
+  },
+  {
+   "name": "branch_uses_the_global_generator",
+   "file": "src/mars_titan/models/titans/presence_modulation.py",
+   "status": "killed",
+   "seconds": 4.3,
+   "tail": [
+    "1 failed, 9 passed in 1.56s"
+   ],
+   "original": "nn.init.kaiming_uniform_(self.expand, a=math.sqrt(5), generator=generator)",
+   "mutated": "nn.init.kaiming_uniform_(self.expand, a=math.sqrt(5))"
+  },
+  {
+   "name": "one_unit_too_many",
+   "file": "src/mars_titan/models/titans/presence_modulation.py",
+   "status": "killed",
+   "seconds": 4.3,
+   "tail": [
+    "1 failed, 10 passed in 1.51s"
+   ],
+   "original": "return max(1, round(film_parameters(hidden_size) / wide_parameters_per_unit(hidden_size)))",
+   "mutated": "return max(1, round(film_parameters(hidden_size) / wide_parameters_per_unit(hidden_size)) + 1)"
+  },
+  {
+   "name": "branch_without_silu",
+   "file": "src/mars_titan/models/titans/presence_modulation.py",
+   "status": "killed",
+   "seconds": 3.9,
+   "tail": [
+    "1 failed, 9 passed in 1.48s"
+   ],
+   "original": "return nn.functional.silu(fusion_input @ self.expand.T) @ self.project.T",
+   "mutated": "return (fusion_input @ self.expand.T) @ self.project.T"
+  },
+  {
+   "name": "branch_not_added",
+   "file": "src/mars_titan/models/baselines/multimodal.py",
+   "status": "killed",
+   "seconds": 4.5,
+   "tail": [
+    "1 failed, 8 passed in 1.64s"
+   ],
+   "original": "return fused if branch is None else fused + branch(fusion_input)",
+   "mutated": "return fused"
+  },
+  {
+   "name": "modulation_not_applied",
+   "file": "src/mars_titan/models/baselines/multimodal.py",
+   "status": "killed",
+   "seconds": 4.5,
+   "tail": [
+    "1 failed, 4 passed in 1.53s"
+   ],
+   "original": "        representations = [modulation(torch.stack(representations, dim=1), presence).flatten(1)]\n",
+   "mutated": "        pass\n"
+  },
+  {
+   "name": "strict_policy_accepted",
+   "file": "src/mars_titan/models/titans/financial.py",
+   "status": "killed",
+   "seconds": 4.6,
+   "tail": [
+    "1 failed, 14 passed in 1.73s"
+   ],
+   "original": "            or not masked_inputs(self.inputs.input_policy)\n        ):\n            raise ValueError(\n                \"presence_modulation",
+   "mutated": "        ):\n            raise ValueError(\n                \"presence_modulation"
+  },
+  {
+   "name": "identity_without_parameters",
+   "file": "src/mars_titan/models/titans/financial.py",
+   "status": "killed",
+   "seconds": 4.1,
+   "tail": [
+    "1 failed, 13 passed in 1.44s"
+   ],
+   "original": "name=FILM, parameters=film_parameters(self.hidden_size), initial=\"zero\"",
+   "mutated": "name=FILM, initial=\"zero\""
+  }
+ ]
+}

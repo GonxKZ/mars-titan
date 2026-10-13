@@ -109,7 +109,7 @@ todo el ajuste para comprobar su recuperación.
 La edición posterior contiene 205 muestras de entrenamiento y 200 de validación,
 procedentes de 55 activos con muestras materializadas. Es otra población y sus
 resultados deben mantenerse separados. La cobertura global, las fuentes chinas
-y el brazo conjunto siguen pendientes. Ninguna de estas ediciones pequeñas se
+y el modelo conjunto siguen pendientes. Ninguna de estas ediciones pequeñas se
 presenta como el entrenamiento sobre todo FinMultiTime.
 
 ## Evidencia y reproducción
