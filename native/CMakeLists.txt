@@ -26,6 +26,7 @@ option(MARS_TITAN_BUILD_COHORT_EXECUTION "Compilar el ejecutor de cohortes recup
 option(MARS_TITAN_BUILD_EPISODIC_PYTHON "Enlazar el banco y el ejecutor con Python" OFF)
 option(MARS_TITAN_BUILD_FINANCIAL_CONTROLS "Compilar referencias para auditorías financieras congeladas" OFF)
 option(MARS_TITAN_BUILD_FUZZER "Compilar el ejecutable de libFuzzer" OFF)
+option(MARS_TITAN_TEST_POLICY_CUDA "Registrar la prueba CUDA del modo de solo evaluación para una ventana GPU exclusiva" OFF)
 set(MARS_TITAN_SANITIZER "none" CACHE STRING "Instrumentación independiente de memoria o hilos")
 set_property(CACHE MARS_TITAN_SANITIZER PROPERTY STRINGS none address address-undefined thread memory)
 set(MARS_TITAN_MSAN_STDLIB_ROOT "" CACHE PATH "Raíz de libc++ y libc++abi instrumentadas con MSan")
@@ -219,7 +220,7 @@ if(MARS_TITAN_BUILD_SIMULATION)
             src/episodic_memory.cpp src/policy_context.cpp src/learning_replay.cpp)
         target_include_directories(mars_titan_ppo PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
         target_link_libraries(mars_titan_ppo PUBLIC mars_titan_financial mars_titan::torch
-            mars_titan_rl_objectives mars_titan_simulation_files)
+            mars_titan_rl_objectives mars_titan_simulation_files mars_titan_learning_hold)
         mars_titan_configure_target(mars_titan_ppo)
         add_executable(mars-titan-memory-benchmark benchmarks/episodic_query.cpp)
         target_link_libraries(mars-titan-memory-benchmark PRIVATE mars_titan_ppo)
@@ -383,6 +384,28 @@ if(MARS_TITAN_BUILD_SIMULATION)
                 set_property(TEST ppo_${component} APPEND PROPERTY ENVIRONMENT
                     "CUDA_VISIBLE_DEVICES=-1" "OMP_NUM_THREADS=1" "MKL_NUM_THREADS=1")
             endforeach()
+            # Modo de solo evaluación: políticas iniciales sin entrenador y cerrojo de pasos.
+            add_executable(policy_evaluation_only_tests tests/policy_evaluation_only_tests.cpp)
+            target_link_libraries(policy_evaluation_only_tests PRIVATE mars_titan_policy_stage)
+            mars_titan_configure_target(policy_evaluation_only_tests)
+            add_test(NAME policy_evaluation_only COMMAND policy_evaluation_only_tests cpu)
+            set_tests_properties(policy_evaluation_only PROPERTIES TIMEOUT 120
+                LABELS "unit;integration;ppo")
+            mars_titan_sanitizer_test_environment(policy_evaluation_only)
+            set_property(TEST policy_evaluation_only APPEND PROPERTY ENVIRONMENT
+                "CUDA_VISIBLE_DEVICES=-1" "OMP_NUM_THREADS=1" "MKL_NUM_THREADS=1")
+            # La misma prueba en cuda:0 se registra solo para una ventana GPU exclusiva.
+            if(MARS_TITAN_TEST_POLICY_CUDA)
+                if(NOT MARS_TITAN_TORCH_HAS_CUDA)
+                    message(FATAL_ERROR "La prueba CUDA de las políticas requiere LibTorch CUDA")
+                endif()
+                add_test(NAME policy_evaluation_only_cuda COMMAND policy_evaluation_only_tests cuda:0)
+                set_tests_properties(policy_evaluation_only_cuda PROPERTIES TIMEOUT 120
+                    LABELS "integration;ppo;cuda" RUN_SERIAL TRUE)
+                mars_titan_sanitizer_test_environment(policy_evaluation_only_cuda)
+                set_property(TEST policy_evaluation_only_cuda APPEND PROPERTY ENVIRONMENT
+                    "OMP_NUM_THREADS=1" "MKL_NUM_THREADS=1")
+            endif()
             foreach(component episodic_memory policy_context decision_trace learning_replay)
                 add_executable(${component}_tests tests/${component}_tests.cpp)
                 if(component STREQUAL "decision_trace")
