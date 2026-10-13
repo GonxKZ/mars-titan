@@ -650,7 +650,14 @@ def test_the_b6_correction_has_no_adapter_arm():
 
 
 V2_STAGE = CONFIGS / "historical-masked-adapter-stage-a-v2.json"
-B6_ARMS = ("mars_titan_b6", "mars_titan_b6_bias")
+B6_ARMS = (
+    "mars_titan_b6",
+    "mars_titan_b6_bias",
+    "mars_titan_b6_regime",
+    "mars_titan_b6_calendar",
+    "mars_titan_b6_regime_banks",
+    "mars_titan_b6_calendar_banks",
+)
 
 
 def test_b6_chains_only_the_frozen_parent_of_the_previous_window_in_v2():

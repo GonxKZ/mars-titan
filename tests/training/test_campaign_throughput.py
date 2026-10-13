@@ -407,7 +407,7 @@ def test_variant_b_costs_less_than_a_with_the_same_rates():
 
 
 @pytest.mark.parametrize(
-    ("variant", "mars", "cm"), [("A", (1620, 0), (1080, 0)), ("B", (612, 756), (408, 336))]
+    ("variant", "mars", "cm"), [("A", (2340, 0), (1080, 0)), ("B", (884, 1092), (408, 336))]
 )
 def test_readout_and_core_hours_follow_the_exact_plan_and_their_parents(variant, mars, cm):
     campaign = extended(variant)
@@ -1399,9 +1399,9 @@ def test_campaign_report_measures_the_prepared_families_and_their_policy_stage(
         sha256=campaign_extensions.load_extensions(EXTENSIONS)["sha256"],
         status="prepared_not_declared",
     )
-    # Con las tres familias, la etapa de políticas resuelve 25 predictores en vez de 11.
-    jobs = dict(A=dict(fit=2376, reference=2775), B=dict(fit=792, carry=1584, reference=2775))
-    expected = dict(A=((1620, 0), (1080, 0)), B=((612, 756), (408, 336)))
+    # Con las tres familias, la etapa de políticas resuelve 29 predictores en vez de 11.
+    jobs = dict(A=dict(fit=2664, reference=3219), B=dict(fit=888, carry=1776, reference=3219))
+    expected = dict(A=((2340, 0), (1080, 0)), B=((884, 1092), (408, 336)))
     for estimate in report["estimates"]:
         families = estimate["families"]
         assert set(families) == {NEURAL, TITANS, EPISODIC, MARS, CM, throughput.POSTTRAINING}

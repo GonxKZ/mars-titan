@@ -119,7 +119,14 @@ MARS_BANKS = ("m0_no_bank", "m1", "m2", "m3")
 MARS_CORRECTION_RECIPE = "mars_titan_mature_correction_v1"
 MARS_CORRECTION_SEARCHED = ("rate", "forgetting")
 MARS_CORRECTION_RULES = ("delta", "proximal")
-MARS_CORRECTION_KEYS = ("codec", "constant")
+MARS_CORRECTION_KEYS = (
+    "codec",
+    "constant",
+    "regime",
+    "calendar",
+    "codec_by_regime",
+    "codec_by_calendar",
+)
 # Factorial CM-v1. Repite los nombres de training.cm_v1_factorial sin importar PyTorch.
 CM = "cm_v1"
 CM_NAME = "mars_titan_cm_v1_factorial"
