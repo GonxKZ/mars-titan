@@ -427,7 +427,7 @@ def test_technical_views_drive_the_online_updates_with_their_own_labels(technica
     sources = walk.load_sources(sources_path, loaded, "US")
     loaded = walk.scope_config(loaded, "US")
     for window_id in sources["windows"]:
-        results, _ = walk._score_window(sources, loaded, window_id)
+        results = walk._score_window(sources, loaded, window_id)[0]
         records = results["gru", 42][online.FIELD]["records"]
         sessions = len({moment for *_, moment, _ in _view_keys(technical, window_id)})
         assert records[online.online_name(0.02)]["emissions"] == sessions
