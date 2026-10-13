@@ -67,11 +67,19 @@ def test_the_curve_counts_rows_and_hits_and_survives_tables_and_windows():
     assert np.array_equal(
         np.vstack(table.column("selective_hits").to_pylist()), first.selective_hits
     )
-    # Al unir ventanas, cada sesión conserva sus aciertos.
+    # Al unir ventanas, cada sesión conserva sus aciertos en el orden canónico (mercado,
+    # instante) de la unión.
     later = dataclasses.replace(second, session_time=second.session_time + 10**12)
     joined = forecast_scores.SessionScores.concatenate([first, later])
+    order = np.lexsort(
+        (
+            np.concatenate([first.session_time, later.session_time]),
+            np.concatenate([first.session_market, later.session_market]),
+        )
+    )
+    assert len(set(first.session_market)) == 2
     assert np.array_equal(
-        joined.selective_hits, np.vstack([first.selective_hits, second.selective_hits])
+        joined.selective_hits, np.vstack([first.selective_hits, second.selective_hits])[order]
     )
 
 
