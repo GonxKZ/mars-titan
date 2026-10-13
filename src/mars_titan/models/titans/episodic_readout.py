@@ -11,7 +11,7 @@ from ..quantile_head import LEVELS, QuantileHead, median
 from .config import MAX_BLOCK_ROWS, MAX_STATE_BYTES, bounded_integer, require_identity
 from .episodic_snapshot import EpisodeSnapshot, _device, _digest_id
 from .financial import PreparedDecisions
-from .state import check_differentiable, check_finite
+from .state import check_differentiable, check_finite, deferred_checks, require_true
 
 # `per_step` vuelve a seleccionar episodios en cada refinamiento. `first_read` fija en los
 # pasos siguientes los episodios de la primera lectura y solo recalcula sus pesos.
@@ -275,8 +275,11 @@ class EpisodicReadout(nn.Module):
             or read.presence.device != state.device
         ):
             raise ValueError("La presencia de memoria no corresponde al lote")
-        if (read.values[~read.presence.squeeze(-1)] != 0).any():
-            raise ValueError("Una lectura ausente necesita relleno cero")
+        # Sin indexar con la máscara, que obligaría a esperar a la GPU para contar las filas.
+        require_true(
+            ~((read.values != 0) & ~read.presence).any(),
+            "Una lectura ausente necesita relleno cero",
+        )
         joined = torch.cat((state, base, read.values, read.presence.to(dtype=state.dtype)), dim=-1)
         update = self.refinement(joined)
         check_finite(update, "La actualización de trabajo")
@@ -285,6 +288,15 @@ class EpisodicReadout(nn.Module):
         return result
 
     def forward(self, z_base, snapshot=None, *, context_id=None, cutoff=None, differentiable=False):
+        """Refinar el estado de trabajo con K lecturas del banco.
+
+        Las comprobaciones de datos en CUDA de todos los refinamientos se resuelven juntas al
+        final, con el mismo error y mensaje que en su línea, como en `prepare`.
+        """
+        with deferred_checks():
+            return self._forward(z_base, snapshot, context_id, cutoff, differentiable)
+
+    def _forward(self, z_base, snapshot, context_id, cutoff, differentiable):
         check_differentiable(differentiable)
         if differentiable and torch.is_inference_mode_enabled():
             raise ValueError("inference_mode no permite la diferenciación solicitada")
@@ -321,8 +333,18 @@ def apply_episodic_readout(
     """Aplicar la cabeza del núcleo al estado refinado por la lectura episódica.
 
     Una cabeza escalar debe devolver un valor por flujo. `QuantileHead` devuelve
-    [flujos, 5] cuantiles ordenados y la predicción puntual es su mediana.
+    [flujos, 5] cuantiles ordenados y la predicción puntual es su mediana. Las
+    comprobaciones de la lectura y de la cabeza se resuelven juntas antes de devolver.
     """
+    with deferred_checks():
+        return _apply_episodic_readout(
+            prepared, head, extension, snapshot, context_id, cutoff, differentiable
+        )
+
+
+def _apply_episodic_readout(
+    prepared, head, extension, snapshot, context_id, cutoff, differentiable
+):
     check_differentiable(differentiable)
     if not isinstance(prepared, PreparedDecisions):
         raise ValueError("Falta la preparación previa del núcleo")
