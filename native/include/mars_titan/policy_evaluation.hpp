@@ -32,13 +32,17 @@ struct FrozenEvaluationRequest {
     PpoLearningOptions learning;
     std::size_t workers = 1;
     std::vector<double> costs{frozen_evaluation_costs.begin(), frozen_evaluation_costs.end()};
+    // Guardar en decisions.json la acción y los logits de cada decisión, por coste y cinta,
+    // con la huella de los parámetros. Sirve para comparar dispositivos y no cambia métricas.
+    bool decisions = false;
 };
 
 // Evalúa con argmax la política congelada en cada cinta y coste, sin aprendizaje ni
 // muestreo, y publica un episodio por cinta y coste, también si falla o se arruina.
 // Cada episodio conserva su patrimonio en cada cierre, reconstruido con las recompensas
 // logarítmicas de la sesión (NaN tras un cierre ausente y cero tras la ruina).
-// Una pausa no confirma episodios. Al reanudar se repite la evaluación completa.
+// Una pausa no confirma episodios. Al reanudar se repite la evaluación completa. Con
+// `decisions`, el registro de decisiones se escribe antes de confirmar la evaluación.
 [[nodiscard]] nlohmann::json run_frozen_evaluation(const PpoPolicy& policy,
                                                    const FrozenEvaluationRequest& request,
                                                    const std::function<bool()>& stop = {});

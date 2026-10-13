@@ -556,7 +556,7 @@ aceptación de las fases históricas completas siguen pendientes. La corrección
 asociativa B6 suma a la predicción de Titans-MAC una memoria lineal escrita
 solo con resultados maduros y se emite ya en las ventanas walk-forward con las
 mismas emisiones que la sesión. Su control es un corrector de sesgo con las
-mismas etiquetas. Otra variante repite $K=4$ con los episodios de la primera
+mismas etiquetas. Otro modelo repite $K=4$ con los episodios de la primera
 lectura, de modo que el cálculo adicional no examina más episodios. La
 representación de régimen de la campaña reparte la memoria de B6 en cinco
 compartimentos según una regla observable de volatilidad y tendencia, sin
@@ -690,13 +690,13 @@ La evaluación se acompaña de un banco de integridad que recalcula las métrica
 con una segunda implementación, exige la misma huella de filas en todos los
 modelos de cada ventana, comprueba que ninguna fila llega a 2024, registra los
 análisis en una cadena de huellas antes de ver resultados, busca entradas que
-contengan el objetivo y acota el rendimiento de las políticas con una cota con
-información futura de un paso, que queda fuera de toda comparación. La matriz
-de comparaciones fija 47 familias y 356 contrastes antes de los resultados y
-separa la aportación de cada componente de MARS-TITAN con escalera acumulada,
-dejar uno fuera, interacciones y valores de Shapley, declarando como
-limitación los efectos que ningún modelo del plan permite identificar. Ambos
-se han comprobado con datos escritos en las pruebas, sin predicciones reales.
+contengan el objetivo y acota el rendimiento de las políticas con una política de
+un paso que conoce el futuro y queda fuera de toda comparación. La matriz de comparaciones fija
+47 familias y 356 contrastes antes de los resultados y separa la aportación de
+cada componente de MARS-TITAN con escalera acumulada, dejar uno fuera,
+interacciones y valores de Shapley, declarando como limitación los efectos que
+ningún modelo del plan permite identificar. Ambos se han comprobado con datos
+escritos en las pruebas, sin predicciones reales.
 
 \chapter{Resultados y discusión}
 Los ensayos de GRU y DLinear están documentados en el informe de variantes del

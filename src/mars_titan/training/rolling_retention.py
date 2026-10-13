@@ -3,7 +3,7 @@
 La campaña completa no cabe en el disco si conserva todas las tablas por fila. La retención
 v2, declarada antes de cualquier resultado, recorre cada ventana de campaña en este orden:
 
-1. `base`: ajustes de todos los brazos, selección, semillas extra del elegido y traslados.
+1. `base`: ajustes de todos los modelos, selección, semillas extra del elegido y traslados.
 2. `adapters`, `ablation` y `rl`: etapas posteriores de esa ventana. Con el walk-forward
    por etapas, los adaptadores y las políticas reciben un informe de disjunción calculado
    justo antes, y las políticas leen la cadena de la salida de los adaptadores.
@@ -427,7 +427,7 @@ class Rolling:
                 self.campaign_path, self.views, self.output, scope, window=window
             )
             sources = comparison.load_sources(path, restricted, scope)
-            # Los agregados se puntúan con los brazos y familias del ámbito, como la
+            # Los agregados se puntúan con los modelos y familias del ámbito, como la
             # comparación final que los leerá (en US y CN, los del diseño conjunto).
             restricted = comparison.scope_config(restricted, scope)
             masked = None
