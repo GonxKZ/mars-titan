@@ -2,7 +2,6 @@
 
 import copy
 import importlib
-import os
 
 import numpy as np
 import pytest
@@ -11,9 +10,7 @@ import torch
 from mars_titan.data.input_policy import HISTORICAL_MASKED, STRICT_INPUTS, policy_identity
 from mars_titan.models.titans.financial_inputs import FinancialInputSpec, validated_cpu_batch
 
-pytestmark = pytest.mark.skipif(
-    not os.environ.get("MARS_TITAN_EPISODIC_NATIVE"), reason="Falta el enlace nativo compilado"
-)
+pytestmark = pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 
 
 def api():
