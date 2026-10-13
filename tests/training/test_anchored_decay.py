@@ -1,9 +1,12 @@
 """Decaimiento de AdamW anclado al padre (#444).
 
-Las pruebas que dan pasos completos se omiten mientras la protección del aprendizaje esté
-vigente (`tests/conftest.py`). Las demás calculan el gradiente y la actualización sobre
-copias, con la misma función `adam` que llama el paso de AdamW, y no modifican ningún peso
-ni el estado del optimizador.
+Ninguna prueba ejecuta la actualización de Adam ni calcula gradientes con datos sintéticos.
+El decaimiento se comprueba sobre copias, con `decayed_parameters`, frente a su fórmula
+cerrada en FP64 y frente al factor que AdamW aplica antes de Adam, `1 - lr * weight_decay`.
+Basta para el paso completo porque AdamW recibe λ = 0 y los mismos hiperparámetros: el
+resto del paso es la actualización de Adam sin decaimiento, que no cambia. Las pruebas que
+dan pasos completos se omiten mientras la protección del aprendizaje esté vigente, porque el
+gancho global de `tests/conftest.py` intercepta `optimizer.step()`.
 """
 
 import io
@@ -12,15 +15,20 @@ import math
 import pytest
 import torch
 from torch import nn
-from torch.optim.adam import adam
 
 from mars_titan.training import anchored_decay
 from mars_titan.training.anchored_decay import INITIAL, AnchoredAdamW
+from mars_titan.training.learning_hold import learning_blocked
 
 # Presupuesto de la matriz v3 y una tasa grande para que el decaimiento se note en un paso.
 BUDGET = (1e-4, 0.01)
 LARGE = (0.1, 0.5)
 RATES = pytest.mark.parametrize("lr, decay", [BUDGET, LARGE], ids=["budget", "large"])
+# Las pruebas de pasos completos se omiten antes de calcular ningún gradiente mientras rija
+# el bloqueo. El gancho global también las detendría, pero después del backward.
+STEPS = pytest.mark.skipif(
+    learning_blocked(), reason="Da pasos de optimizador: se omite mientras rija el bloqueo"
+)
 
 
 def _model(seed=0, dtype=torch.float32):
@@ -29,7 +37,10 @@ def _model(seed=0, dtype=torch.float32):
 
 
 def _gradients(model, seed=1):
-    """Gradiente de una pérdida L1 sobre datos fijos, sin tocar los pesos."""
+    """Gradiente de una pérdida L1 sobre datos fijos, sin tocar los pesos.
+
+    Solo lo usan las pruebas de pasos completos, que se omiten bajo la protección.
+    """
     generator = torch.Generator().manual_seed(seed)
     dtype = next(model.parameters()).dtype
     inputs = torch.randn(32, 6, generator=generator).to(dtype)
@@ -39,46 +50,24 @@ def _gradients(model, seed=1):
     return model
 
 
-def _planned(optimizer):
-    """Valor de cada parámetro tras el primer paso, calculado sobre copias.
+def _marked(model):
+    """Marcar todos los parámetros con un gradiente nulo, sin pérdida ni datos.
 
-    Reproduce el paso de AdamW con su función `adam` desde un estado vacío. En el anclado
-    parte de las copias que devuelve `decayed_parameters`, igual que el gancho previo al
-    paso. Nada de lo que recibe cambia.
+    El decaimiento solo actúa sobre los parámetros con gradiente, como en AdamW, y no
+    depende de su valor.
     """
-    decayed = {}
-    if isinstance(optimizer, AnchoredAdamW):
-        decayed = {id(value): copy for value, copy in optimizer.decayed_parameters()}
-    result = {}
-    for group in optimizer.param_groups:
-        params = [value for value in group["params"] if value.grad is not None]
-        values = [decayed.get(id(value), value.detach().clone()) for value in params]
-        beta1, beta2 = group["betas"]
-        adam(
-            values,
-            [value.grad.detach().clone() for value in params],
-            [torch.zeros_like(value) for value in values],
-            [torch.zeros_like(value) for value in values],
-            [],
-            [torch.tensor(0.0) for _ in values],
-            foreach=group["foreach"],
-            capturable=False,
-            differentiable=False,
-            fused=None,
-            grad_scale=None,
-            found_inf=None,
-            has_complex=False,
-            decoupled_weight_decay=group["decoupled_weight_decay"],
-            amsgrad=group["amsgrad"],
-            beta1=beta1,
-            beta2=beta2,
-            lr=group["lr"],
-            weight_decay=group["weight_decay"],
-            eps=group["eps"],
-            maximize=group["maximize"],
-        )
-        result.update({id(value): planned for value, planned in zip(params, values, strict=True)})
-    return result
+    for value in model.parameters():
+        value.grad = torch.zeros_like(value)
+    return model
+
+
+def _moved(model, seed=3, scale=0.1):
+    """Separar los pesos de sus anclas con desplazamientos fijos, sin optimizador."""
+    generator = torch.Generator().manual_seed(seed)
+    with torch.no_grad():
+        for value in model.parameters():
+            value.add_(scale * torch.randn(value.shape, generator=generator, dtype=value.dtype))
+    return model
 
 
 def _snapshot(model):
@@ -96,12 +85,13 @@ def _zero_anchors(optimizer):
         group["anchors"] = [torch.zeros_like(value) for value in group["params"]]
 
 
-def test_lambda_zero_plans_the_same_update_as_adamw_without_decay():
-    model = _gradients(_model())
+def test_lambda_zero_leaves_the_update_of_adamw_without_decay():
+    model = _marked(_model())
     before = _snapshot(model)
     plain = torch.optim.AdamW(model.parameters(), lr=BUDGET[0], weight_decay=0.0)
     anchored = AnchoredAdamW(model.parameters(), lr=BUDGET[0], weight_decay=0.0)
-    assert anchored.decayed_parameters() == []
+    # Sin λ el gancho no decae nada.
+    assert anchored.decayed_parameters() == [] and list(anchored._decaying()) == []
     # Los hiperparámetros que recibe AdamW son los mismos: solo se añaden el ancla y su λ.
     for ours, theirs in zip(anchored.param_groups, plain.param_groups, strict=True):
         extra = {"params", "anchors", "anchored_weight_decay"}
@@ -109,45 +99,91 @@ def test_lambda_zero_plans_the_same_update_as_adamw_without_decay():
             k: v for k, v in theirs.items() if k != "params"
         }
         assert ours["anchored_weight_decay"] == 0.0
-    planned, reference = _planned(anchored), _planned(plain)
-    assert planned.keys() == reference.keys()
-    assert all(torch.equal(planned[key], reference[key]) for key in reference)
     assert _same(_snapshot(model), before) and not anchored.state and not plain.state
 
 
 @RATES
 def test_zero_anchors_reproduce_the_adamw_decay_bit_for_bit(lr, decay):
-    model = _gradients(_model())
+    model = _moved(_marked(_model()))
     anchored = AnchoredAdamW(model.parameters(), lr=lr, weight_decay=decay)
     _zero_anchors(anchored)
     rate = lr * decay
-    # La copia decaída es la de AdamW, `param.mul_(1 - lr * weight_decay)`.
-    for value, copy in anchored.decayed_parameters():
+    # AdamW multiplica cada peso por (1 − ηλ) antes de Adam, `param.mul_(1 - lr * weight_decay)`.
+    # Con anclas nulas la copia decaída es exactamente ese producto.
+    decayed = anchored.decayed_parameters()
+    assert len(decayed) == len(list(model.parameters()))
+    for value, copy in decayed:
         assert torch.equal(copy, value.detach().clone().mul_(1 - rate))
-    planned = _planned(anchored)
-    reference = _planned(torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=decay))
-    undecayed = _planned(torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=0.0))
-    assert all(torch.equal(planned[key], reference[key]) for key in reference)
-    # La prueba distingue: sin decaimiento el paso sería otro.
-    assert any(not torch.equal(reference[key], undecayed[key]) for key in reference)
+    # AdamW recibe λ = 0 con el decaimiento desacoplado activo, así que no decae dos veces.
+    reference = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=decay)
+    for ours, theirs in zip(anchored.param_groups, reference.param_groups, strict=True):
+        assert ours["weight_decay"] == 0.0 and ours["anchored_weight_decay"] == decay
+        assert ours["decoupled_weight_decay"] is theirs["decoupled_weight_decay"] is True
+        assert theirs["weight_decay"] == decay and ours["lr"] == theirs["lr"] == lr
+
+
+@RATES
+def test_the_decay_matches_its_closed_form_in_float64(lr, decay):
+    """θ₀ + (θ − θ₀)(1 − ηλ) en FP32 frente a la misma fórmula en FP64."""
+    model = _marked(_model())
+    anchored = AnchoredAdamW(model.parameters(), lr=lr, weight_decay=decay)
+    # Al construir el optimizador θ = θ₀: el padre es un punto fijo exacto.
+    decayed = anchored.decayed_parameters()
+    assert len(decayed) == len(list(model.parameters()))
+    assert all(torch.equal(copy, value) for value, copy in decayed)
+    parent = _snapshot(model)
+    moved = _snapshot(_moved(model))
+    # Las anclas son el padre y no se mueven con los pesos.
+    assert _same(anchored.param_groups[0]["anchors"], parent)
+    for (value, copy), anchor in zip(anchored.decayed_parameters(), parent, strict=True):
+        start, current = anchor.double(), value.detach().double()
+        exact = start + (current - start) * (1 - lr * decay)
+        # Tres operaciones FP32 sobre pesos de orden uno: unos pocos ulp de diferencia.
+        torch.testing.assert_close(copy.double(), exact, rtol=1e-6, atol=1e-7)
+        # El decaimiento anclado acerca el peso al padre, salvo el redondeo de un ulp.
+        assert ((copy.double() - start).abs() <= (current - start).abs() + 1e-7).all()
+    # Las copias no tocan los pesos.
+    assert _same(_snapshot(model), moved)
 
 
 @RATES
 def test_the_parent_is_a_fixed_point_while_adamw_contracts_it(lr, decay):
-    model = _gradients(_model())
+    model = _marked(_model())
     anchored = AnchoredAdamW(model.parameters(), lr=lr, weight_decay=decay)
-    decayed = anchored.decayed_parameters()
-    assert len(decayed) == len(list(model.parameters()))
-    assert all(torch.equal(copy, value) for value, copy in decayed)
-    # En el padre el paso anclado es exactamente el de AdamW sin decaimiento.
-    planned = _planned(anchored)
-    undecayed = _planned(torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=0.0))
-    assert all(torch.equal(planned[key], undecayed[key]) for key in undecayed)
-    # AdamW, en cambio, resta ηλθ a cada peso del padre además de su actualización.
-    contracted = _planned(torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=decay))
-    for value in model.parameters():
-        shift = contracted[id(value)] - undecayed[id(value)]
-        torch.testing.assert_close(shift, -lr * decay * value.detach(), rtol=1e-3, atol=1e-7)
+    for value, copy in anchored.decayed_parameters():
+        assert torch.equal(copy, value)
+        # AdamW, en cambio, resta ηλθ a cada peso del padre antes de su actualización.
+        contracted = value.detach().clone().mul_(1 - lr * decay)
+        torch.testing.assert_close(
+            contracted.double() - value.detach().double(),
+            -lr * decay * value.detach().double(),
+            rtol=1e-3,
+            atol=1e-7,
+        )
+        assert not torch.equal(contracted, value) or lr * decay * value.abs().max() < 1e-7
+
+
+@pytest.mark.parametrize("lr, decay", [LARGE], ids=["large"])
+def test_the_anchored_decay_is_the_decay_of_a_full_rank_residual_adapter(lr, decay):
+    """θ con ancla θ₀ frente a la corrección δ de un adaptador con θ = θ₀ + δ, en float64.
+
+    AdamW decae la corrección a δ(1 − ηλ), así que el peso efectivo del adaptador queda en
+    θ₀ + δ(1 − ηλ), lo mismo que el decaimiento anclado. El resto del paso es la
+    actualización de Adam con ∂L/∂δ = ∂L/∂θ, porque la derivada de θ₀ + δ respecto a δ es
+    la identidad. Se comprueba la parte del decaimiento sin dar el paso.
+    """
+    model = _marked(_model(dtype=torch.float64))
+    parent = _snapshot(model)
+    anchored = AnchoredAdamW(model.parameters(), lr=lr, weight_decay=decay)
+    _moved(model)
+    offsets = [
+        value.detach() - start for value, start in zip(model.parameters(), parent, strict=True)
+    ]
+    corrections = [offset.clone().mul_(1 - lr * decay) for offset in offsets]
+    for (_, copy), start, correction in zip(
+        anchored.decayed_parameters(), parent, corrections, strict=True
+    ):
+        torch.testing.assert_close(copy, start + correction, rtol=0.0, atol=1e-15)
 
 
 def test_repeated_decay_contracts_only_the_deviation_from_the_parent():
@@ -168,31 +204,8 @@ def test_repeated_decay_contracts_only_the_deviation_from_the_parent():
     assert [round(100 * (1 - (1 - rate) ** t), 2) for t in (3300, 6000)] == [0.33, 0.6]
 
 
-@pytest.mark.parametrize("lr, decay", [LARGE], ids=["large"])
-def test_anchored_step_matches_a_full_rank_residual_adapter(lr, decay):
-    """θ con ancla θ₀ frente a AdamW sobre δ con θ = θ₀ + δ, en float64."""
-    model = _model(dtype=torch.float64)
-    parent = _snapshot(model)
-    generator = torch.Generator().manual_seed(5)
-    offsets = [0.1 * torch.randn(v.shape, generator=generator, dtype=v.dtype) for v in parent]
-    anchored = AnchoredAdamW(model.parameters(), lr=lr, weight_decay=decay)
-    with torch.no_grad():
-        for value, offset in zip(model.parameters(), offsets, strict=True):
-            value.add_(offset)
-    _gradients(model)
-    corrections = [nn.Parameter(offset.clone()) for offset in offsets]
-    for correction, value in zip(corrections, model.parameters(), strict=True):
-        correction.grad = value.grad.detach().clone()
-    adapter = _planned(torch.optim.AdamW(corrections, lr=lr, weight_decay=decay))
-    planned = _planned(anchored)
-    for value, start, correction in zip(model.parameters(), parent, corrections, strict=True):
-        torch.testing.assert_close(
-            planned[id(value)], start + adapter[id(correction)], rtol=0.0, atol=1e-15
-        )
-
-
 def test_parameters_without_gradient_do_not_decay():
-    model = _gradients(_model())
+    model = _marked(_model())
     frozen = model[2].bias
     frozen.grad = None
     anchored = AnchoredAdamW(model.parameters(), lr=LARGE[0], weight_decay=LARGE[1])
@@ -202,7 +215,7 @@ def test_parameters_without_gradient_do_not_decay():
 
 
 def test_anchors_survive_a_restricted_checkpoint_and_belong_to_the_parent():
-    model = _gradients(_model())
+    model = _marked(_model())
     parent = _snapshot(model)
     anchored = AnchoredAdamW(model.parameters(), lr=LARGE[0], weight_decay=LARGE[1])
     stream = io.BytesIO()
@@ -255,7 +268,7 @@ def test_invalid_declarations_and_closures_are_rejected():
     with pytest.raises(ValueError, match="solo se ancla"):
         anchored_decay.adamw(params, learning_rate=1e-3, weight_decay=0.1, anchor="parent")
     # El gancho rechaza la clausura antes de tocar ningún peso.
-    model = _gradients(_model())
+    model = _marked(_model())
     before = _snapshot(model)
     optimizer = AnchoredAdamW(model.parameters(), lr=LARGE[0], weight_decay=LARGE[1])
     _zero_anchors(optimizer)
@@ -294,6 +307,7 @@ def _run(optimizer_factory, model, steps, *, seed=1):
     return optimizer
 
 
+@STEPS
 @pytest.mark.parametrize("foreach", [False, True])
 def test_full_steps_with_lambda_zero_equal_adamw_without_decay(foreach):
     left, right = _model(), _model()
@@ -310,6 +324,7 @@ def test_full_steps_with_lambda_zero_equal_adamw_without_decay(foreach):
     assert _same(_snapshot(left), _snapshot(right))
 
 
+@STEPS
 @pytest.mark.parametrize("foreach", [False, True])
 def test_full_steps_with_zero_anchors_equal_adamw(foreach):
     def anchored(model):
@@ -327,6 +342,7 @@ def test_full_steps_with_zero_anchors_equal_adamw(foreach):
     assert _same(_snapshot(left), _snapshot(right))
 
 
+@STEPS
 def test_resumed_steps_equal_the_uninterrupted_run():
     def factory(model):
         return AnchoredAdamW(model.parameters(), lr=0.05, weight_decay=0.5)
