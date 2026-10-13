@@ -192,8 +192,8 @@ def test_the_walk_checks_each_window_before_recording_its_aggregates(tmp_path, m
     """Fase de agregados del recorrido con fuentes y comprobación sustituidas."""
     checked = []
 
-    def write_checked(folder, config, sources, window, ablation=None):
-        checked.append(window)
+    def write_checked(folder, config, sources, window, ablation=None, *, liquidity):
+        checked.append((window, liquidity))
         raise ValueError(f"La integridad de US {window} falla: revisa el registro")
 
     def unchecked(*args, **kwargs):
@@ -213,17 +213,19 @@ def test_the_walk_checks_each_window_before_recording_its_aggregates(tmp_path, m
         output=tmp_path / "out",
         ablation=None,
         edition=None,
+        _liquidity=None,
         _record=lambda record: record,
         posttraining_aggregates=lambda *a: {},
     )
     row = dict(id="fold-000", scopes={"US": "fold-000"})
     with pytest.raises(ValueError, match="La integridad de US fold-000 falla"):
         rolling.Rolling.aggregates(walker, row)
-    assert checked == ["fold-000"]
+    # Sin estratos de liquidez declarados, el registro se guarda sin asignador.
+    assert checked == [("fold-000", None)]
     monkeypatch.setattr(
         rolling.comparison_integrity,
         "write_checked",
-        lambda *a: (dict(path="a.npz", sha256="a"), dict(path="a.integrity.json", sha256="b")),
+        lambda *a, **k: (dict(path="a.npz", sha256="a"), dict(path="a.integrity.json", sha256="b")),
     )
     written = rolling.Rolling.aggregates(walker, row)
     assert written["US"]["integrity"] == dict(path="a.integrity.json", sha256="b")

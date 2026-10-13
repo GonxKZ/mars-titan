@@ -132,7 +132,7 @@ def formula_windows(counts, coefficients):
 
 
 def selected_jobs(jobs):
-    """Un ajuste elegido por ámbito, ventana, brazo y semilla, sin conocer resultados.
+    """Un ajuste elegido por ámbito, ventana, modelo y semilla, sin conocer resultados.
 
     Un finalista o un traslado es el único trabajo de su semilla. Entre las búsquedas,
     cualquiera puede ganar y todas tienen las mismas filas, así que se toma la primera.

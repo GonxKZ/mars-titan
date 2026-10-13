@@ -353,7 +353,7 @@ def test_third_version_only_adds_the_chronological_designs_and_the_variety():
     }
     assert third["architectures"]["executable"] == second["architectures"]["executable"]
     assert third["architectures"]["pending"] == {}
-    # Sin los brazos de la variedad (#444), los casos de las referencias son los de la v2.
+    # Sin los adaptadores de la variedad (#444), los casos de las referencias son los de la v2.
     variety = {arm["id"] for arm in third["variety"]["arms"]}
     for family in adapter_matrix.FAMILIES:
         assert [
@@ -361,7 +361,7 @@ def test_third_version_only_adds_the_chronological_designs_and_the_variety():
             for item in adapter_matrix.cases(third, digest, family, head="quantile_head_v1")
             if item["id"].split("/", 1)[1] not in variety
         ] == adapter_matrix.cases(second, digest, family, head="quantile_head_v1")
-    # Casos por semilla: los de #446 más los tres brazos de la variedad que se proponen en
+    # Casos por semilla: los de #446 más los tres adaptadores de la variedad que se proponen en
     # `mac_online`. Las demás variantes y los lectores los tienen solo como reserva.
     per_seed = {
         ("titans_mac", "transformer_direct", True): 5,

@@ -348,8 +348,11 @@ if(MARS_TITAN_BUILD_SIMULATION)
                 "CUDA_VISIBLE_DEVICES=-1" "OMP_NUM_THREADS=1" "MKL_NUM_THREADS=1")
             foreach(component training checkpoint inputs gru_packing evaluation collection)
                 add_executable(ppo_${component}_tests tests/ppo_${component}_tests.cpp)
-                if(component STREQUAL "training" OR component STREQUAL "gru_packing" OR
-                   component STREQUAL "evaluation" OR component STREQUAL "collection")
+                if(component STREQUAL "evaluation")
+                    # La evaluación congelada vive con los ejecutores de la etapa de políticas.
+                    target_link_libraries(ppo_${component}_tests PRIVATE mars_titan_policy_stage)
+                elseif(component STREQUAL "training" OR component STREQUAL "gru_packing" OR
+                       component STREQUAL "collection")
                     target_link_libraries(ppo_${component}_tests PRIVATE mars_titan_ppo)
                 else()
                     target_link_libraries(ppo_${component}_tests PRIVATE mars_titan_ppo_files)

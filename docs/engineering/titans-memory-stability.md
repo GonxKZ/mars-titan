@@ -126,7 +126,7 @@ Puede no ayudar por tres motivos. Las puertas aprendidas quizá nunca visiten la
 
 ## Control con el que se descarta
 
-La [declaración del brazo](../../configs/evaluation/titans-memory-stability-comparison.json) fija, antes de ejecutar nada, tres brazos sobre la receta de 2000 con `mac_online`: el control de la receta, PT1 y una alternativa trivial con las mismas tasas iniciales que PT1 pero sin caja ni recorte. La regla conserva PT1 si el límite superior del intervalo del 95 % de la diferencia relativa de MAE por sesión no supera +0,2 % y el percentil 95 del MAE en los eventos declarados no empeora más de un 1 %. Si la alternativa trivial iguala a PT1, la caja y el recorte no aportan nada sobre el cambio de inicialización. Nada se ha ejecutado.
+La [declaración del modelo](../../configs/evaluation/titans-memory-stability-comparison.json) fija, antes de ejecutar nada, tres modelos sobre la receta de 2000 con `mac_online`: el control de la receta, PT1 y una alternativa trivial con las mismas tasas iniciales que PT1 pero sin caja ni recorte. La regla conserva PT1 si el límite superior del intervalo del 95 % de la diferencia relativa de MAE por sesión no supera +0,2 % y el percentil 95 del MAE en los eventos declarados no empeora más de un 1 %. Si la alternativa trivial iguala a PT1, la caja y el recorte no aportan nada sobre el cambio de inicialización. El [control de varianza entre semillas](../research/protocol.md#dispersión-entre-semillas-en-los-pilotos-de-memoria) añade dos semillas del control al piloto y fija qué diferencia es interpretable: PT1 solo se conserva si esa banda queda por debajo de +0,2 %, y la alternativa trivial iguala a PT1 en error si el intervalo de su diferencia queda dentro de la banda. Nada se ha ejecutado.
 
 ## Comprobaciones
 
@@ -142,7 +142,7 @@ La [declaración del brazo](../../configs/evaluation/titans-memory-stability-com
 | Gradientes frente a diferencias finitas en FP64 | `test_gradients_match_finite_differences_in_fp64` con `gradcheck`, filas recortadas y sin recortar lejos del punto no derivable |
 | Recuperación desde checkpoint | `test_recovery_from_an_exported_state_continues_bit_for_bit` y rechazo de estados y pesos de otra configuración |
 | Receta, emparejamiento y backward con la cabeza de cuantiles | `test_recipe_declaration_pairing_and_quantile_backward_with_the_component` |
-| Brazo declarado sin ejecutar | `test_comparison_arm_is_declared_with_its_control_and_rule_but_not_executed` |
+| Modelo declarado sin ejecutar | `test_comparison_arm_is_declared_with_its_control_and_rule_but_not_executed` |
 
 Las pruebas están en `tests/models/titans/test_memory_stability.py` y las trazas compartidas con la comprobación CUDA en `memory_stability_traces.py`. La comprobación CUDA `tests/models/titans/cuda_memory_stability_check.py` se ejecuta a mano dentro de una plaza `memslot gpu`.
 
@@ -150,22 +150,22 @@ La mutación dirigida aplicó 21 defectos de uno en uno en una copia aislada, tr
 
 ## Coste medido sin entrenar
 
-Medido el 10 de octubre de 2026 en dos fases, como exige el uso compartido de la GPU ([recibo](../../reports/engineering/titans-memory-stability-cost-20261010.json)). En la primera, `benchmarks/titans_memory_stability_cost.py prepare` leyó en CPU, dentro de `memslot heavy`, las entradas reales de los ocho primeros eventos del tramo de ajuste de la vista US de `fold-012` para 128 flujos presentes en todos ellos, sin guardar etiquetas. En la segunda, `measure` reservó `memslot gpu` y ejecutó para cada brazo declarado un forward con grafo por los ocho eventos y un backward con objetivo nulo, solo para dar forma a la pérdida. No hubo optimizador ni pasos, y la prueba comprueba que los parámetros no cambian. Fue una pasada de calentamiento y cinco repeticiones en una RTX 4070 Laptop de 8 GB, con PyTorch 2.14.0+cu130, FP32 sin TF32 y dos hilos de CPU, con otras sesiones usando la máquina.
+Medido el 10 de octubre de 2026 en dos fases, como exige el uso compartido de la GPU ([recibo](../../reports/engineering/titans-memory-stability-cost-20261010.json)). En la primera, `benchmarks/titans_memory_stability_cost.py prepare` leyó en CPU, dentro de `memslot heavy`, las entradas reales de los ocho primeros eventos del tramo de ajuste de la vista US de `fold-012` para 128 flujos presentes en todos ellos, sin guardar etiquetas. En la segunda, `measure` reservó `memslot gpu` y ejecutó para cada modelo declarado un forward con grafo por los ocho eventos y un backward con objetivo nulo, solo para dar forma a la pérdida. No hubo optimizador ni pasos, y la prueba comprueba que los parámetros no cambian. Fue una pasada de calentamiento y cinco repeticiones en una RTX 4070 Laptop de 8 GB, con PyTorch 2.14.0+cu130, FP32 sin TF32 y dos hilos de CPU, con otras sesiones usando la máquina.
 
-| Brazo | Forward p50 (s) | Backward p50 (s) | Memoria máxima reservada | Filas recortadas al inicio |
+| Modelo | Forward p50 (s) | Backward p50 (s) | Memoria máxima reservada | Filas recortadas al inicio |
 | --- | ---: | ---: | ---: | ---: |
 | Control `titans_mac_online` | 0,104 | 0,064 | 454,1 MB | sin recorte |
 | PT1 | 0,103 | 0,062 | 485,0 MB | 1,05 % |
 | Alternativa trivial (mismas tasas iniciales) | 0,107 | 0,067 | 454,1 MB | sin recorte |
 
-La diferencia de tiempo entre brazos queda dentro de la dispersión de las repeticiones del control, que van de 0,086 a 0,106 s en el forward, así que no se puede atribuir a PT1 ni un coste ni un ahorro. La memoria sube 30,9 MB, un 6,8 %, por los tensores del recorte que el grafo conserva para el backward. Con G = 4 y los pesos iniciales, PT1 recorta el 1,05 % de las filas del gradiente asociativo, una cifra que cambiará durante el ajuste y que no se ha medido con pesos entrenados.
+La diferencia de tiempo entre modelos queda dentro de la dispersión de las repeticiones del control, que van de 0,086 a 0,106 s en el forward, así que no se puede atribuir a PT1 ni un coste ni un ahorro. La memoria sube 30,9 MB, un 6,8 %, por los tensores del recorte que el grafo conserva para el backward. Con G = 4 y los pesos iniciales, PT1 recorta el 1,05 % de las filas del gradiente asociativo, una cifra que cambiará durante el ajuste y que no se ha medido con pesos entrenados.
 
 La comprobación CUDA ([recibo](../../reports/engineering/titans-memory-stability-cuda-20261010.json)) dio la paridad bit a bit sin PT1 con las huellas de `cuda:0` capturadas antes del cambio, tanto con las proyecciones lineales como con las de la sección 4.4 frente al núcleo de #474. Con PT1 activa, dos ejecuciones CUDA dieron los mismos bits y las diferencias máximas entre CPU y CUDA fueron de 2,3e-6 en la lectura de la memoria, 1,3e-4 en sus gradientes y 1,2e-7 en los cuantiles del predictor. Con PT1 y las proyecciones de la sección 4.4 a la vez fueron de 1,2e-6, 1,4e-4 y 2,4e-7. Todas quedan dentro de la tolerancia FP32 declarada. La caja y la cota de la Proposición 5 se cumplen también en la GPU.
 
 ## Desviaciones y límites
 
 - La propuesta no fijaba G. Se declara G = 4 antes de ver datos. Con LayerNorm la salida de la memoria tiene escala unitaria por coordenada y, en la memoria lineal con clave unitaria, G = 4 equivale a Huber con δ = 2. La memoria de dos capas no tiene esa equivalencia exacta.
-- La caja exige η inicial menor que 0,3, así que el brazo PT1 usa η_0 = 0,15 en lugar del 0,5 de la receta. Por eso la alternativa trivial comparte esa inicialización.
+- La caja exige η inicial menor que 0,3, así que el modelo PT1 usa η_0 = 0,15 en lugar del 0,5 de la receta. Por eso la alternativa trivial comparte esa inicialización.
 - La propuesta describía la alternativa trivial como reducir `theta_max`. `FinancialConfig` no lo expone y reducir solo θ_0 cambiaría dos cosas a la vez, así que la alternativa declarada aísla la caja y el recorte del cambio de inicialización.
 - El recorte actúa sobre cada fila de cada matriz de la memoria. Con dos capas no equivale a Huber sobre la salida.
 

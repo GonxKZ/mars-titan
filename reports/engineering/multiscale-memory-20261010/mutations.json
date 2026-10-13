@@ -1,0 +1,223 @@
+{
+ "schema_version": 1,
+ "kind": "targeted_mutation_receipt",
+ "issue": 457,
+ "executed_on": "2026-10-13",
+ "base_commit": "be418f1fc2b2746cd98c7daa1d81fdde9e79507c",
+ "sources_sha256": {
+  "src/mars_titan/models/titans/config.py": "1ee7edba58ab18c7001b5654e680a4e5b8f590c7d88a90ebf150f4383d5c44b7",
+  "src/mars_titan/models/titans/financial.py": "aabdd56858e678e0b598b78a4b1b1deafc3ee48e450f62851f90cff5e63a86be",
+  "src/mars_titan/models/titans/financial_blocks.py": "f3066386b1c1a22044e25531d28c66fefe75c61253d337aa784bff7ad811cab8",
+  "src/mars_titan/models/titans/neural_memory.py": "12c21180f02a1882aa6138b4c35c20fb3192a8ecc614109bb00d29923aff6f41",
+  "tests/models/titans/test_multiscale_memory.py": "59dacaa47fe2fc395cddf2bb466aaf2b376d8801fc98971a1d37d2d51c6e1242"
+ },
+ "method": "Copia aislada de src, tests, configs y benchmarks. Cada mutante sustituye un único fragmento, ejecuta las pruebas declaradas con -x y restaura el archivo. PYTHONPATH apunta a la copia, así que las pruebas importan el código mutado",
+ "tests": [
+  "tests/models/titans/test_multiscale_memory.py"
+ ],
+ "environment": "CPU con CUDA_VISIBLE_DEVICES=-1 y OMP_NUM_THREADS=2, sin pasos de optimizador",
+ "baseline": {
+  "returncode": 0,
+  "seconds": 5.3,
+  "tail": [
+   "32 passed in 2.78s"
+  ]
+ },
+ "killed": 17,
+ "survived": 0,
+ "not_applied": 1,
+ "mutants": [
+  {
+   "name": "cascade_without_titans_forgetting",
+   "file": "src/mars_titan/models/titans/neural_memory.py",
+   "status": "killed",
+   "seconds": 3.6,
+   "tail": [
+    "1 failed, 3 passed in 1.21s"
+   ],
+   "original": "new_weights.append((1 - alpha) * first + surprise + g12 * (second - first))",
+   "mutated": "new_weights.append(first + surprise + g12 * (second - first))"
+  },
+  {
+   "name": "cascade_coupling_sign",
+   "file": "src/mars_titan/models/titans/neural_memory.py",
+   "status": "killed",
+   "seconds": 3.7,
+   "tail": [
+    "1 failed, 5 passed in 1.31s"
+   ],
+   "original": "new_weights.append((1 - alpha) * first + surprise + g12 * (second - first))",
+   "mutated": "new_weights.append((1 - alpha) * first + surprise + g12 * (first - second))"
+  },
+  {
+   "name": "second_capacity_one",
+   "file": "src/mars_titan/models/titans/neural_memory.py",
+   "status": "killed",
+   "seconds": 3.6,
+   "tail": [
+    "1 failed, 5 passed in 1.15s"
+   ],
+   "original": "new_levels.append(second + (g12 * (first - second) + g23 * (third - second)) / 2)",
+   "mutated": "new_levels.append(second + (g12 * (first - second) + g23 * (third - second)))"
+  },
+  {
+   "name": "third_level_without_leak",
+   "file": "src/mars_titan/models/titans/neural_memory.py",
+   "status": "killed",
+   "seconds": 3.4,
+   "tail": [
+    "1 failed, 5 passed in 1.14s"
+   ],
+   "original": "new_levels.append(third + (g23 * (second - third) - g34 * third) / 4)",
+   "mutated": "new_levels.append(third + g23 * (second - third) / 4)"
+  },
+  {
+   "name": "second_level_reads_new_first",
+   "file": "src/mars_titan/models/titans/neural_memory.py",
+   "status": "killed",
+   "seconds": 3.2,
+   "tail": [
+    "1 failed, 5 passed in 1.10s"
+   ],
+   "original": "new_levels.append(second + (g12 * (first - second) + g23 * (third - second)) / 2)",
+   "mutated": "new_levels.append(second + (g12 * (new_weights[-1] - second) + g23 * (third - second)) / 2)"
+  },
+  {
+   "name": "bank_levels_share_one_decay",
+   "file": "src/mars_titan/models/titans/neural_memory.py",
+   "status": "killed",
+   "seconds": 3.1,
+   "tail": [
+    "1 failed, 6 passed in 1.03s"
+   ],
+   "original": "new_levels.append((1 - decay_third) * third + surprise)",
+   "mutated": "new_levels.append((1 - decay_second) * third + surprise)"
+  },
+  {
+   "name": "bank_hidden_without_write",
+   "file": "src/mars_titan/models/titans/neural_memory.py",
+   "status": "killed",
+   "seconds": 3.1,
+   "tail": [
+    "1 failed, 6 passed in 1.02s"
+   ],
+   "original": "new_levels.append((1 - decay_second) * second + surprise)",
+   "mutated": "new_levels.append((1 - decay_second) * second)"
+  },
+  {
+   "name": "bank_reads_the_first_level",
+   "file": "src/mars_titan/models/titans/neural_memory.py",
+   "status": "killed",
+   "seconds": 3.3,
+   "tail": [
+    "1 failed, 6 passed in 1.07s"
+   ],
+   "original": "        if multiscale is None or multiscale.form == \"cascade\":\n            return state.weights\n",
+   "mutated": "        return state.weights\n"
+  },
+  {
+   "name": "cascade_reads_the_mean",
+   "file": "src/mars_titan/models/titans/neural_memory.py",
+   "status": "killed",
+   "seconds": 3.3,
+   "tail": [
+    "1 failed, 4 passed in 1.11s"
+   ],
+   "original": "        if multiscale is None or multiscale.form == \"cascade\":\n            return state.weights\n",
+   "mutated": "        if multiscale is None:\n            return state.weights\n"
+  },
+  {
+   "name": "conductances_not_halved",
+   "file": "src/mars_titan/models/titans/config.py",
+   "status": "killed",
+   "seconds": 3.3,
+   "tail": [
+    "1 failed, 7 passed in 1.11s"
+   ],
+   "original": "        return g, g / 2, g / 4\n",
+   "mutated": "        return g, g, g\n"
+  },
+  {
+   "name": "bank_decay_from_the_first_scale",
+   "file": "src/mars_titan/models/titans/config.py",
+   "status": "killed",
+   "seconds": 3.3,
+   "tail": [
+    "1 failed, 7 passed in 1.10s"
+   ],
+   "original": "        return 1 / self.timescales[1], 1 / self.timescales[2]\n",
+   "mutated": "        return 1 / self.timescales[0], 1 / self.timescales[2]\n"
+  },
+  {
+   "name": "coupling_above_a_quarter",
+   "file": "src/mars_titan/models/titans/config.py",
+   "status": "killed",
+   "seconds": 4.5,
+   "tail": [
+    "1 failed, 27 passed in 2.27s"
+   ],
+   "original": "        if not 0 < coupling <= 0.25:",
+   "mutated": "        if not 0 < coupling <= 0.5:"
+  },
+  {
+   "name": "contraction_skips_the_kink",
+   "file": "src/mars_titan/models/titans/config.py",
+   "status": "not_applied"
+  },
+  {
+   "name": "weight_d1_without_floor",
+   "file": "src/mars_titan/models/titans/config.py",
+   "status": "killed",
+   "seconds": 3.5,
+   "tail": [
+    "1 failed, 10 passed in 1.25s"
+   ],
+   "original": "weights = (1 + floor * MULTISCALE_CAPACITIES[0] / (2 * g12), 1.0, 1 + g34 / (2 * g23))",
+   "mutated": "weights = (1.0, 1.0, 1 + g34 / (2 * g23))"
+  },
+  {
+   "name": "budget_ignores_levels",
+   "file": "src/mars_titan/models/titans/neural_memory.py",
+   "status": "killed",
+   "seconds": 4.4,
+   "tail": [
+    "1 failed, 24 passed in 2.25s"
+   ],
+   "original": "        matrices = (2 + self.config.hidden_levels) * self.config.depth",
+   "mutated": "        matrices = 2 * self.config.depth"
+  },
+  {
+   "name": "levels_not_exported",
+   "file": "src/mars_titan/models/titans/neural_memory.py",
+   "status": "killed",
+   "seconds": 4.4,
+   "tail": [
+    "1 failed, 22 passed in 2.23s"
+   ],
+   "original": "            payload[\"levels\"] = copied.levels\n",
+   "mutated": "            pass\n"
+  },
+  {
+   "name": "blocks_drop_the_levels",
+   "file": "src/mars_titan/models/titans/financial_blocks.py",
+   "status": "killed",
+   "seconds": 4.5,
+   "tail": [
+    "1 failed, 29 passed in 2.29s"
+   ],
+   "original": "            payload[\"mac\"][\"memory\"][\"levels\"] = copied.mac.memory.levels\n",
+   "mutated": "            pass\n"
+  },
+  {
+   "name": "flow_bytes_ignore_levels",
+   "file": "src/mars_titan/models/titans/financial.py",
+   "status": "killed",
+   "seconds": 4.3,
+   "tail": [
+    "1 failed, 29 passed in 2.24s"
+   ],
+   "original": "                * self.mac.config.memory.hidden_levels\n",
+   "mutated": "                * 0\n"
+  }
+ ]
+}
