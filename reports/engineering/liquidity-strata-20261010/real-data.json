@@ -1,0 +1,526 @@
+{
+  "schema_version": 1,
+  "kind": "liquidity_strata_real_data_check",
+  "issue": 532,
+  "measured_at": "2026-10-10T19:30:37+00:00",
+  "commit": "2cd8a3525c641a9f5aa5f01015466cb74bedf44d",
+  "code_sha256": {
+    "evaluation/liquidity_strata.py": "5076a0ebe49ba6b750cace5b007b4fa1ec6347ba5abcbb547822aa7b5c96ff81",
+    "evaluation/walk_forward_comparison.py": "5b665338c89adbcafe7c3551a09b32003c24c793b35e6b7ebc15604bee3222ed"
+  },
+  "configuration": {
+    "path": "configs/evaluation/historical-masked-2000-comparison.json",
+    "sha256": "60b8d0bce3fcac859dc51c51583f75b90dabfcf5ba858445a86b402c753e18ba"
+  },
+  "declaration": {
+    "status": "secondary_descriptive",
+    "declared_at": "2026-10-10",
+    "use": "description_only_not_for_model_selection_or_primary_conclusion",
+    "source": "unadjusted_reconstructed_verified_rows_up_to_the_last_published_session_v1",
+    "price_below": 1.0,
+    "volume_below": 1000,
+    "volume_sessions": 20,
+    "strata": {
+      "liquid": {
+        "low_price": false,
+        "thin_volume": false
+      },
+      "low_price": {
+        "low_price": true,
+        "thin_volume": false
+      },
+      "thin_volume": {
+        "low_price": false,
+        "thin_volume": true
+      },
+      "low_price_and_thin_volume": {
+        "low_price": true,
+        "thin_volume": true
+      },
+      "unclassified": null
+    },
+    "metrics": [
+      "mae",
+      "mse"
+    ],
+    "extremes": [
+      1,
+      10,
+      100
+    ],
+    "listed_rows": 10,
+    "recalibrate": false,
+    "min_rows": 1000,
+    "min_sessions": 50,
+    "multiplicity": "bonferroni_over_strata_and_views_with_max_t_within_family"
+  },
+  "edition": {
+    "path": "/home/gonzalo/.local/state/mars-titan/unadjusted-prices-20261009/edition-v1",
+    "edition_id": "1ac3727836462ce31c39b5438918bd6f3e0d359690c7bc79bfa87cd808c8e68c",
+    "price_basis": "unadjusted_reconstructed",
+    "source": "unadjusted_reconstructed_verified_rows_up_to_the_last_published_session_v1"
+  },
+  "reads": {
+    "targets": false,
+    "predictions": false,
+    "final_test": false,
+    "gpu": false
+  },
+  "population": {
+    "strata_by_year": {
+      "CN": {
+        "2006": {
+          "liquid": 77430,
+          "thin_volume": 8129,
+          "unclassified": 21910
+        },
+        "2007": {
+          "liquid": 96787,
+          "thin_volume": 4969,
+          "unclassified": 15459
+        },
+        "2008": {
+          "liquid": 105464,
+          "thin_volume": 5093,
+          "unclassified": 16153
+        },
+        "2009": {
+          "liquid": 109892,
+          "thin_volume": 2281,
+          "unclassified": 15865
+        },
+        "2010": {
+          "liquid": 118964,
+          "thin_volume": 2597,
+          "unclassified": 16698
+        },
+        "2011": {
+          "liquid": 131080,
+          "thin_volume": 3443,
+          "unclassified": 15911
+        },
+        "2012": {
+          "liquid": 140440,
+          "thin_volume": 2337,
+          "unclassified": 14288
+        },
+        "2013": {
+          "liquid": 139304,
+          "thin_volume": 3525,
+          "unclassified": 11977
+        },
+        "2014": {
+          "liquid": 143471,
+          "thin_volume": 6809,
+          "unclassified": 11213
+        },
+        "2015": {
+          "liquid": 141143,
+          "thin_volume": 13518,
+          "unclassified": 10944
+        },
+        "2016": {
+          "liquid": 150233,
+          "thin_volume": 8618,
+          "unclassified": 10021
+        },
+        "2017": {
+          "liquid": 158147,
+          "thin_volume": 8287,
+          "unclassified": 9174
+        },
+        "2018": {
+          "liquid": 165667,
+          "thin_volume": 5525,
+          "unclassified": 8249
+        },
+        "2019": {
+          "liquid": 176461,
+          "thin_volume": 342,
+          "unclassified": 7413
+        },
+        "2020": {
+          "liquid": 183452,
+          "thin_volume": 443,
+          "unclassified": 6884
+        },
+        "2021": {
+          "liquid": 188758,
+          "low_price": 5,
+          "thin_volume": 178,
+          "unclassified": 5368
+        },
+        "2022": {
+          "liquid": 191565,
+          "thin_volume": 27,
+          "unclassified": 4004
+        },
+        "2023": {
+          "liquid": 193674,
+          "low_price": 9,
+          "unclassified": 2326
+        }
+      },
+      "US": {
+        "2000": {
+          "liquid": 259965,
+          "low_price": 3521,
+          "low_price_and_thin_volume": 1032,
+          "thin_volume": 21073,
+          "unclassified": 41668
+        },
+        "2001": {
+          "liquid": 285113,
+          "low_price": 7240,
+          "low_price_and_thin_volume": 2212,
+          "thin_volume": 25609,
+          "unclassified": 17098
+        },
+        "2002": {
+          "liquid": 306148,
+          "low_price": 9400,
+          "low_price_and_thin_volume": 2912,
+          "thin_volume": 25106,
+          "unclassified": 13780
+        },
+        "2003": {
+          "liquid": 329092,
+          "low_price": 7190,
+          "low_price_and_thin_volume": 2846,
+          "thin_volume": 22205,
+          "unclassified": 14820
+        },
+        "2004": {
+          "liquid": 359855,
+          "low_price": 3672,
+          "low_price_and_thin_volume": 2290,
+          "thin_volume": 20542,
+          "unclassified": 15524
+        },
+        "2005": {
+          "liquid": 382139,
+          "low_price": 5293,
+          "low_price_and_thin_volume": 1889,
+          "thin_volume": 21102,
+          "unclassified": 15915
+        },
+        "2006": {
+          "liquid": 407303,
+          "low_price": 5793,
+          "low_price_and_thin_volume": 1416,
+          "thin_volume": 21616,
+          "unclassified": 16353
+        },
+        "2007": {
+          "liquid": 452336,
+          "low_price": 6223,
+          "low_price_and_thin_volume": 1508,
+          "thin_volume": 21248,
+          "unclassified": 18604
+        },
+        "2008": {
+          "liquid": 479825,
+          "low_price": 14047,
+          "low_price_and_thin_volume": 2157,
+          "thin_volume": 24032,
+          "unclassified": 18014
+        },
+        "2009": {
+          "liquid": 492200,
+          "low_price": 20448,
+          "low_price_and_thin_volume": 3712,
+          "thin_volume": 21370,
+          "unclassified": 19264
+        },
+        "2010": {
+          "liquid": 530433,
+          "low_price": 11726,
+          "low_price_and_thin_volume": 3496,
+          "thin_volume": 19032,
+          "unclassified": 22590
+        },
+        "2011": {
+          "liquid": 557663,
+          "low_price": 11896,
+          "low_price_and_thin_volume": 3998,
+          "thin_volume": 22979,
+          "unclassified": 23229
+        },
+        "2012": {
+          "liquid": 572462,
+          "low_price": 14263,
+          "low_price_and_thin_volume": 3844,
+          "thin_volume": 31136,
+          "unclassified": 24610
+        },
+        "2013": {
+          "liquid": 616929,
+          "low_price": 12219,
+          "low_price_and_thin_volume": 1958,
+          "thin_volume": 25566,
+          "unclassified": 28257
+        },
+        "2014": {
+          "liquid": 659649,
+          "low_price": 8899,
+          "low_price_and_thin_volume": 1075,
+          "thin_volume": 23592,
+          "unclassified": 37731
+        },
+        "2015": {
+          "liquid": 681393,
+          "low_price": 13336,
+          "low_price_and_thin_volume": 1063,
+          "thin_volume": 24699,
+          "unclassified": 59417
+        },
+        "2016": {
+          "liquid": 700447,
+          "low_price": 14600,
+          "low_price_and_thin_volume": 1151,
+          "thin_volume": 24328,
+          "unclassified": 78786
+        },
+        "2017": {
+          "liquid": 723140,
+          "low_price": 13465,
+          "low_price_and_thin_volume": 399,
+          "thin_volume": 22450,
+          "unclassified": 99004
+        },
+        "2018": {
+          "liquid": 761295,
+          "low_price": 11863,
+          "low_price_and_thin_volume": 612,
+          "thin_volume": 20004,
+          "unclassified": 124000
+        },
+        "2019": {
+          "liquid": 799776,
+          "low_price": 16886,
+          "low_price_and_thin_volume": 699,
+          "thin_volume": 20936,
+          "unclassified": 144873
+        },
+        "2020": {
+          "liquid": 839669,
+          "low_price": 18608,
+          "low_price_and_thin_volume": 173,
+          "thin_volume": 14564,
+          "unclassified": 169141
+        },
+        "2021": {
+          "liquid": 871014,
+          "low_price": 4401,
+          "low_price_and_thin_volume": 117,
+          "thin_volume": 11490,
+          "unclassified": 162424
+        },
+        "2022": {
+          "liquid": 859729,
+          "low_price": 21014,
+          "low_price_and_thin_volume": 426,
+          "thin_volume": 11614,
+          "unclassified": 156580
+        },
+        "2023": {
+          "liquid": 860404,
+          "low_price": 26268,
+          "low_price_and_thin_volume": 713,
+          "thin_volume": 13342,
+          "unclassified": 147257
+        }
+      }
+    },
+    "reasons": {
+      "CN/classified": 2688067,
+      "CN/incomplete_volume_window": 14866,
+      "CN/no_verified_traded_close": 188991,
+      "US/classified": 14621583,
+      "US/incomplete_volume_window": 68225,
+      "US/no_verified_traded_close": 1400714
+    },
+    "participation": 0.01,
+    "capacity_local_currency": {
+      "US": {
+        "liquid": {
+          "rows": 13787979,
+          "p01": 46.0,
+          "median": 46020.72,
+          "p99": 9641505.434
+        },
+        "low_price": {
+          "rows": 282271,
+          "p01": 0.0,
+          "median": 445.3,
+          "p99": 65333.14199999983
+        },
+        "thin_volume": {
+          "rows": 509635,
+          "p01": 0.0,
+          "median": 32.0,
+          "p99": 5524.423199999974
+        },
+        "low_price_and_thin_volume": {
+          "rows": 41698,
+          "p01": 0.0,
+          "median": 0.0,
+          "p99": 922.7274059405856
+        }
+      },
+      "CN": {
+        "liquid": {
+          "rows": 2611932,
+          "p01": 0.0,
+          "median": 1280376.4526538462,
+          "p99": 32345716.27825988
+        },
+        "low_price": {
+          "rows": 14,
+          "p01": 152513.31204,
+          "median": 2802590.87545,
+          "p99": 8447473.397898
+        },
+        "thin_volume": {
+          "rows": 76121,
+          "p01": 0.0,
+          "median": 0.0,
+          "p99": 15809512.810260026
+        },
+        "low_price_and_thin_volume": null
+      }
+    },
+    "truncations": {
+      "assets": 400,
+      "rows": 778631,
+      "mismatches": 0
+    },
+    "kgji": {
+      "rows_2022": 251,
+      "strata_2022": {
+        "low_price_and_thin_volume": 251
+      },
+      "close_2022": {
+        "min": 0.0001,
+        "max": 0.01
+      },
+      "volume_2022": {
+        "min": 0.0,
+        "median": 0.0
+      }
+    }
+  },
+  "cost": {
+    "population_seconds": 44.798282100993674,
+    "assignment": {
+      "US": {
+        "months": [
+          "2022-03",
+          "2022-04",
+          "2022-05",
+          "2022-06"
+        ],
+        "rows_per_month": [
+          84040,
+          79838,
+          84040,
+          79838
+        ],
+        "assets": 4202,
+        "fresh": {
+          "seconds": [
+            18.929754050041083,
+            20.105182016035542,
+            16.829323634970933,
+            20.572943944949657
+          ],
+          "total_seconds": 76.43720364599722
+        },
+        "shared": {
+          "seconds": [
+            18.338915692991577,
+            0.18495460698613897,
+            0.2275687790242955,
+            0.22772769897710532
+          ],
+          "total_seconds": 18.979166777979117
+        },
+        "fresh_microseconds_per_row": 233.21374329073217,
+        "identical": true,
+        "cache_bytes": 96543132,
+        "strata_last_month": {
+          "liquid": 64952,
+          "low_price": 1772,
+          "unclassified": 12205,
+          "low_price_and_thin_volume": 38,
+          "thin_volume": 871
+        }
+      },
+      "CN": {
+        "months": [
+          "2022-03",
+          "2022-04",
+          "2022-05",
+          "2022-06"
+        ],
+        "rows_per_month": [
+          16200,
+          14580,
+          13770,
+          15390
+        ],
+        "assets": 810,
+        "fresh": {
+          "seconds": [
+            6.498800550005399,
+            3.3574014950427227,
+            3.6596012280206196,
+            3.5976175580290146
+          ],
+          "total_seconds": 17.113420831097756
+        },
+        "shared": {
+          "seconds": [
+            2.885833804961294,
+            0.01611134101403877,
+            0.015980714990291744,
+            0.01864440704230219
+          ],
+          "total_seconds": 2.9365702680079266
+        },
+        "fresh_microseconds_per_row": 285.50918970800393,
+        "identical": true,
+        "cache_bytes": 17351544,
+        "strata_last_month": {
+          "liquid": 14984,
+          "thin_volume": 7,
+          "unclassified": 399
+        }
+      }
+    },
+    "extremes": {
+      "rows": 100000,
+      "sessions": 42,
+      "count": 100,
+      "best_seconds": 0.01902258803602308
+    },
+    "strata": {
+      "rows": 625000,
+      "whole_best_seconds": 0.25018991297110915,
+      "strata_best_seconds": 0.4472737269825302
+    }
+  },
+  "machine": {
+    "platform": "Linux-7.0.0-38-generic-x86_64-desconocido-with-glibc2.43",
+    "processor": "desconocido",
+    "cpus": 16,
+    "load_average_at_start": [
+      25.52685546875,
+      45.474609375,
+      78.6259765625
+    ],
+    "threads": "2"
+  },
+  "peak_rss_mib": 1072.74609375,
+  "elapsed_seconds": 164.89790336799342
+}

@@ -1,11 +1,11 @@
 """Campaña base reducida y edición sintética para recorrer la etapa de políticas sin aprender.
 
 El protocolo US se recorta a cuatro ventanas, que evalúan de 2020 a 2023, y la comparación
-a un brazo GRU con la semilla 42, como en `tests.posttraining.campaign_fixture`. Sus
+a un modelo GRU con la semilla 42, como en `tests.posttraining.campaign_fixture`. Sus
 ejecutores sustitutos escriben predicciones reales de un padre con pesos iniciales y la
 campaña no aplica ningún paso de optimizador. La edición sintética, identificada como
 fixture, cubre desde septiembre de 2019. Los ejecutores aprendidos se sustituyen por
-`ScriptedLearner`, que no ajusta ninguna red y evalúa una política guionizada.
+`ScriptedLearner`, que no ajusta ninguna red y evalúa una política de reglas fijas.
 """
 
 import hashlib
@@ -54,7 +54,7 @@ def policies(**changes):
     expansión, que en la configuración real es la sensibilidad, y la sensibilidad de la
     prueba es la regla fija de una evaluación.
 
-    La campaña reducida produce los brazos GRU y LSTM. Los dos entran en el nivel completo
+    La campaña reducida produce los modelos GRU y LSTM. Los dos entran en el nivel completo
     y solo la GRU en el de algoritmos, que también fija el universo.
     """
     value = json.loads((CONFIGS / "simulation/historical-masked-rl-policies.json").read_text())
@@ -87,7 +87,7 @@ def policies(**changes):
 
 
 def write_configs(folder, variant):
-    """Campaña base de cuatro ventanas y dos brazos, políticas reducidas y etapa."""
+    """Campaña base de cuatro ventanas y dos modelos, políticas reducidas y etapa."""
     campaign, _ = campaign_fixture.write_configs(folder, variant)
     protocol = json.loads((folder / "us-protocol.json").read_text())
     protocol["first_validation_start"] = "2019-04-01"
@@ -262,9 +262,9 @@ def scripted_action(observation, step):
 
 
 class ScriptedLearner:
-    """Ejecutor sustituto de un brazo aprendido, sin redes ni pasos de optimizador.
+    """Ejecutor sustituto de una política aprendida, sin redes ni pasos de optimizador.
 
-    Un ajuste guarda una política guionizada como estado elegido y la evalúa con el
+    Un ajuste guarda una política de reglas fijas como estado elegido y la evalúa con el
     criterio y el presupuesto declarados. Un traslado evalúa la política del ancla.
     `pause` pide una pausa en la primera llamada de esos trabajos y `mutate` altera el
     informe para comprobar que la etapa lo rechaza.
@@ -313,7 +313,7 @@ class ScriptedLearner:
 
 
 def executors(learner, backend="python"):
-    """Referencias con la contabilidad indicada y brazos aprendidos sustituidos."""
+    """Referencias con la contabilidad indicada y políticas aprendidas sustituidas."""
     reference = campaign_stage.reference_executor(backend)
     return {
         "reference": dict(run=reference, requires=(), native=False),

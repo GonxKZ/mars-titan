@@ -251,3 +251,31 @@ def test_a_published_summary_must_follow_from_its_sessions(tmp_path, from_aggreg
     result = integrity.published(study.config_path, study.sources_path, "US", output, **options)
     assert result["scores"]["passed"] and not result["summaries"]["passed"]
     assert not result["passed"] and result["summaries"]["failures"] == 1
+
+
+def test_window_records_with_liquidity_strata_need_their_edition(tmp_path):
+    """Los agregados guardan los estratos de liquidez con la identidad de su edición, así que
+    el registro de cada ventana y la comprobación de la publicación la necesitan."""
+    from tests.evaluation.liquidity_fixture import section, study_edition
+
+    study = Study(tmp_path / "study", scope="US+CN")
+    study.config[walk.LIQUIDITY_FIELD] = section(min_rows=1, min_sessions=1)
+    study.publish()
+    edition = study_edition(tmp_path / "edition")
+    folder = tmp_path / "aggregates"
+    for window in study.sources["windows"]:
+        config, sources = window_sources(study, window)
+        liquidity = walk.liquidity_source(config, edition)
+        _, checked = integrity.write_checked(folder, config, sources, window, liquidity=liquidity)
+        assert checked["passed"]
+    output = publish(study, tmp_path / "result", aggregates=folder, edition=edition)
+    report = json.loads((output / "comparison.json").read_text())
+    assert report[walk.LIQUIDITY_FIELD]["status"] == "computed"
+    options = dict(aggregates=folder)
+    result = integrity.published(
+        study.config_path, study.sources_path, "US+CN", output, edition=edition, **options
+    )
+    assert result["passed"], json.dumps(result, indent=1)[:3000]
+    # Sin la edición, la identidad de los agregados ya no es la de sus registros.
+    with pytest.raises(ValueError, match="liquidity"):
+        integrity.published(study.config_path, study.sources_path, "US+CN", output, **options)

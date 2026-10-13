@@ -21,6 +21,8 @@ from mars_titan.evaluation import walk_forward_comparison as walk
 from mars_titan.integrity import abstention_marks as marks
 from mars_titan.integrity import comparison_integrity as integrity
 from mars_titan.integrity import publication_gate as gate
+from tests.evaluation.liquidity_fixture import section as liquidity_section
+from tests.evaluation.liquidity_fixture import study_edition
 from tests.evaluation.test_comparison_matrix import sources, toy_matrix
 from tests.evaluation.test_walk_forward_comparison import Study
 
@@ -53,14 +55,19 @@ def published(tmp_path_factory):
     study = Study(root / "study")
     study.changes.append(abstain)
     study.config["comparison"]["metrics"] = METRICS
+    # La matriz contrasta el MSE, que solo se publica junto a sus estratos de liquidez.
+    study.config[walk.LIQUIDITY_FIELD] = liquidity_section(min_rows=1, min_sessions=1)
     study.publish()
     output = root / "walk"
-    report = walk.write_walk_forward(study.config_path, study.sources_path, "US+CN", output)
+    edition = study_edition(root / "edition")
+    report = walk.write_walk_forward(
+        study.config_path, study.sources_path, "US+CN", output, edition=edition
+    )
     matrix = toy_matrix(root, study.config_path)
     manifest = sources(root, [("walk_forward_comparison_report", output / "comparison.json")])
     matrix_path = root / "matrix-out"
     matrix_module.write(matrix, manifest, "US+CN", matrix_path)
-    return study, report, output, matrix_path / "matrix.json"
+    return study, report, output, matrix_path / "matrix.json", edition
 
 
 def _call_rows(contrasts):
@@ -72,7 +79,7 @@ def _call_rows(contrasts):
 
 
 def test_the_abstaining_model_has_perfect_precision_but_no_eligible_contrast(published):
-    _, report, _, _ = published
+    _, report, _, _, _ = published
     declared = report["abstention"]
     assert {key: declared[key] for key in abstention.declaration()} == abstention.declaration()
     for view in VIEWS:
@@ -97,7 +104,7 @@ def _summary(report, arm, seed):
 
 
 def test_abstaining_does_not_win_direction_at_any_coverage(published):
-    _, report, _, _ = published
+    _, report, _, _, _ = published
     fixed = abstention.declaration()["coverages"].index(abstention.FIXED_COVERAGE)
     ridge = _summary(report, "ridge", "42")
     for seed in ("42", "43"):
@@ -114,7 +121,7 @@ def test_abstaining_does_not_win_direction_at_any_coverage(published):
 
 
 def test_the_matrix_carries_the_same_marks(published):
-    _, report, _, matrix_path = published
+    _, report, _, matrix_path, _ = published
     matrix = json.loads(matrix_path.read_text())
     assert matrix["abstention"] == abstention.declaration()
     every = matrix["views"]["forecast"]["US+CN"]["up_precision"]["every"]["contrasts"]
@@ -167,14 +174,18 @@ def _first_ineligible(report):
     ids=["eligible", "unmarked", "row-coverage", "coverage", "rules", "curve-hits", "curve-rows"],
 )
 def test_the_integrity_report_catches_a_changed_mark(published, tmp_path, change, message):
-    study, _, output, _ = published
+    study, _, output, _, edition = published
     folder = tmp_path / "walk"
     folder.mkdir()
     for name in ("comparison.json", "sessions.parquet"):
         (folder / name).write_bytes((output / name).read_bytes())
-    assert integrity.published(study.config_path, study.sources_path, "US+CN", folder)["passed"]
+    assert integrity.published(
+        study.config_path, study.sources_path, "US+CN", folder, edition=edition
+    )["passed"]
     _rewrite(folder / "comparison.json", change)
-    result = integrity.published(study.config_path, study.sources_path, "US+CN", folder)
+    result = integrity.published(
+        study.config_path, study.sources_path, "US+CN", folder, edition=edition
+    )
     assert not result["passed"] and not result["abstention"]["passed"]
     assert any(message in failure for failure in result["abstention"]["failures"]), result[
         "abstention"
@@ -183,8 +194,10 @@ def test_the_integrity_report_catches_a_changed_mark(published, tmp_path, change
 
 def test_the_recheck_recomputes_the_selective_hits_of_every_file(published):
     # Las sesiones publicadas y el recálculo independiente dan los mismos aciertos.
-    study, _, output, _ = published
-    result = integrity.published(study.config_path, study.sources_path, "US+CN", output)
+    study, _, output, _, edition = published
+    result = integrity.published(
+        study.config_path, study.sources_path, "US+CN", output, edition=edition
+    )
     files = result["scores"]["files"]
     assert files and {check["arm"] for check in files} >= {"ridge", "gru", "zero"}
     for check in files:
@@ -192,7 +205,7 @@ def test_the_recheck_recomputes_the_selective_hits_of_every_file(published):
 
 
 def test_the_gate_checks_the_matrix_of_each_walk_forward_comparison(published, tmp_path):
-    study, _, output, matrix_path = published
+    study, _, output, matrix_path, edition = published
     entry = dict(
         label="walk-forward/US+CN",
         config=study.config_path,
@@ -200,6 +213,7 @@ def test_the_gate_checks_the_matrix_of_each_walk_forward_comparison(published, t
         scope="US+CN",
         folder=output,
         matrix=matrix_path,
+        edition=edition,
     )
     checked = gate._comparison(entry)
     assert checked["passed"] and checked["matrix"]["contrasts"] > 0

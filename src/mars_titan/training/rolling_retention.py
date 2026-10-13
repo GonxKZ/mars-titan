@@ -3,7 +3,7 @@
 La campaña completa no cabe en el disco si conserva todas las tablas por fila. La retención
 v2, declarada antes de cualquier resultado, recorre cada ventana de campaña en este orden:
 
-1. `base`: ajustes de todos los brazos, selección, semillas extra del elegido y traslados.
+1. `base`: ajustes de todos los modelos, selección, semillas extra del elegido y traslados.
 2. `adapters`, `ablation` y `rl`: etapas posteriores de esa ventana. Con el walk-forward
    por etapas, los adaptadores y las políticas reciben un informe de disjunción calculado
    justo antes, y las políticas leen la cadena de la salida de los adaptadores.
@@ -187,10 +187,10 @@ class Rolling:
         """`disk` activa la guardia por ventana: `storage` (declaración), `extras` (medidas
         de agregados, adaptadores y cintas), `adapter_blocks` (lectura sin copia ordenada) y,
         en las pruebas, `usage` en lugar de `shutil.disk_usage`. `edition` es la edición de
-        precios sin ajustar que necesita la cartera larga y corta si la comparación la declara.
-        `publication` es la declaración del paso final. Con la etapa de adaptadores es
-        obligatoria y su comparación postentrenada debe ser la de esa etapa, porque sus
-        agregados por ventana se guardan antes de liberar.
+        precios sin ajustar que necesitan la cartera larga y corta y los estratos de liquidez si
+        la comparación los declara. `publication` es la declaración del paso final. Con la
+        etapa de adaptadores es obligatoria y su comparación postentrenada debe ser la de esa
+        etapa, porque sus agregados por ventana se guardan antes de liberar.
         """
         from . import masked_campaign as engine
         from .campaign_publication import load_publication
@@ -203,6 +203,9 @@ class Rolling:
         self.ablation_executors = ablation_executors
         self.disk = disk
         self.edition = None if edition is None else Path(edition)
+        # Asignador de liquidez compartido por todas las ventanas y ámbitos del recorrido: lee
+        # cada activo de la edición una vez por proceso y no una por ventana.
+        self._liquidity = None
         self.folder = self.output / "retention"
         # Con las políticas declaradas como consumidoras, sin su etapa no se sabría qué
         # evaluaciones leen y se podrían liberar antes de montar sus cintas.
@@ -231,10 +234,16 @@ class Rolling:
             "La etapa de adaptadores del recorrido y la comparación postentrenada de la "
             "publicación van juntas y deben ser la misma etapa",
         )
-        # Sin la edición no hay agregados de la cartera y sus filas no se podrían liberar.
+        # Sin la edición no hay agregados de la cartera ni estratos de liquidez, y sus filas
+        # no se podrían liberar.
+        declared = self.comparison_config()
         _require(
-            comparison.LONG_SHORT_FIELD not in self.comparison_config() or self.edition is not None,
+            comparison.LONG_SHORT_FIELD not in declared or self.edition is not None,
             "La comparación declara la cartera larga y corta: falta la edición de precios",
+        )
+        _require(
+            comparison.LIQUIDITY_FIELD not in declared or self.edition is not None,
+            "La comparación declara estratos de liquidez: falta la edición de precios",
         )
         self.positions = {
             (scope, window): index
@@ -458,7 +467,7 @@ class Rolling:
                 self.campaign_path, self.views, self.output, scope, window=window
             )
             sources = comparison.load_sources(path, restricted, scope)
-            # Los agregados se puntúan con los brazos y familias del ámbito, como la
+            # Los agregados se puntúan con los modelos y familias del ámbito, como la
             # comparación final que los leerá (en US y CN, los del diseño conjunto).
             restricted = comparison.scope_config(restricted, scope)
             masked = None
@@ -472,9 +481,11 @@ class Rolling:
                     window=window,
                 )
                 masked = comparison._ablation_sources(masked_path, restricted, sources)
+            if self._liquidity is None:
+                self._liquidity = comparison.liquidity_source(config, self.edition)
             # La integridad de la ventana se comprueba antes de liberar ninguna de sus filas.
             walked, checked = comparison_integrity.write_checked(
-                folder, restricted, sources, window, masked
+                folder, restricted, sources, window, masked, liquidity=self._liquidity
             )
             records = dict(walk_forward=walked, integrity=checked)
             if comparison.LONG_SHORT_FIELD in config:
@@ -500,6 +511,8 @@ class Rolling:
 
         `base_sources` es el manifiesto de la campaña limitado a la ventana. Se escriben antes
         de la liberación, que borra la calibración y la evaluación del modelo base que leen.
+        Cada padre hereda los estratos de liquidez de la comparación de la campaña, así que
+        usa el mismo asignador que sus agregados.
         """
         from mars_titan.posttraining import stage_comparison
 
@@ -519,6 +532,7 @@ class Rolling:
                 stage_output=self.adapters["output"],
                 root=folder,
                 loaded=stage,
+                liquidity=self._liquidity,
             )
             written[base_arm] = dict(
                 self._record(record), integrity=self._record(record["integrity"])

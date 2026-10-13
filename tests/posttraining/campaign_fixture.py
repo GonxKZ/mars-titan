@@ -1,7 +1,7 @@
 """Campaña base reducida con padres de cuantiles reales y pesos iniciales, sin ajustes.
 
 El protocolo US se recorta a dos ventanas (evaluación de 2022 y 2023) y la comparación a
-un único brazo GRU con la semilla 42. El ejecutor neuronal sustituto construye la
+un único modelo GRU con la semilla 42. El ejecutor neuronal sustituto construye la
 referencia de la campaña con la cabeza `quantile_head_v1` y pesos iniciales, guarda su
 estado elegido y escribe validación, calibración y evaluación con sus predicciones
 reales en CPU. Así la etapa de postentrenamiento carga padres verdaderos sin que la
@@ -105,7 +105,7 @@ def write_configs(folder, variant, *, tabular=False, start="2021-04-01", compari
     )
     campaign["neural"].update(arms={"gru": "gru"}, batch_size=BATCH)
     campaign["tabular"].update(config="tabular.json", arms={"ridge": "ridge"} if tabular else {})
-    # La comparación reducida no declara los brazos de Titans-MAC.
+    # La comparación reducida no declara las variantes de Titans-MAC.
     campaign.pop("titans_mac")
     atomic_json(folder / "campaign.json", campaign)
     matrix = json.loads((CONFIGS / "posttraining/adapter-matrix-v2.json").read_text())

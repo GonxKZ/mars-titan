@@ -12,9 +12,9 @@ Este informe acompaña al cuarto bloque de [#442](https://github.com/GonxKZ/mars
 | MARS-TITAN con M3 | Ajuste de cada ventana | Escalas de escritura del banco | Índice, edición y decisiones de entrenamiento, con etiquetas maduras antes de validación |
 | Padres de la etapa de adaptadores | Etapa de adaptadores | Normalización de las entradas | Tramo y filas de entrenamiento, con etiquetas maduras antes de validación |
 | Referencias neuronales, Titans-MAC, GRU episódica y CM-v1 | Ajuste de cada ventana | Ninguna estadística | Inventario con el motivo, y una familia nueva falla |
-| Secciones de la comparación (calibración, estratos de modalidad, cuartiles, retención) | Comparación walk-forward | Calibración en su tramo, el resto sin umbrales ajustados | Inventario de reglas causales |
+| Secciones de la comparación (calibración, estratos de modalidad, cuartiles, retención, estratos de liquidez) | Comparación walk-forward | Calibración en su tramo, el resto sin umbrales ajustados | Inventario de reglas causales |
 
-A y A v2 no tienen estratos de liquidez. Si una comparación los declara, la sección no está en el inventario y el informe falla hasta que se declare su regla.
+Las comparaciones de A y A v2 declaran también estratos de liquidez. Su regla aplica umbrales fijos de precio y volumen a la edición sin ajustar hasta la última sesión publicada al emitir, y `tests/evaluation/test_liquidity_strata.py` comprueba que las filas posteriores no cambian el estrato. Una sección que no esté en el inventario hace fallar el informe hasta que se declare su regla.
 
 ## Auditoría del código
 
@@ -45,13 +45,13 @@ El [diagnóstico de los residuos](../../targets/diagnostics.md) ya volvió a cal
 - rutas de régimen con la ventana desplazada cinco sesiones hacia delante y con el umbral de turbulencia en la mediana de toda la serie;
 - unas estadísticas tabulares que recorren también validación, escalas M3 de otro índice, de otra edición, de otras decisiones o con etiquetas que maduran en validación, y una normalización de un padre con otro tramo, otras filas o etiquetas tardías;
 - una edición que no es la de sus vistas o con otro código, un calendario de otro código y código sin declarar con la política real;
-- una sección sin inventariar, como unos estratos de liquidez, y una regla no causal.
+- una sección sin inventariar y reglas no causales en los estratos de liquidez, la presencia de modalidades, la calibración, los regímenes y la cartera.
 
 `tests/integrity/test_publication_gate.py` comprueba que la sección bloquea la publicación y que el calendario de regímenes llega al informe.
 
 ## Mutación dirigida
 
-Se aplicaron 34 mutantes dirigidos, uno a uno, y cada uno ejecuta las pruebas que deberían detectarlo con `pytest -x` ([registro](mutation.json)). Mueren los 34:
+Se aplicaron 34 mutantes dirigidos, uno a uno, y cada uno ejecuta las pruebas que deberían detectarlo con `pytest -x` ([registro](mutation.json)). Mueren los 34. Al añadir los estratos de liquidez al inventario se repitieron los dos mutantes de reglas con las pruebas ampliadas, y el registro guarda esa segunda ejecución:
 
 | Parte | Mutantes | Qué rompen |
 | --- | --- | --- |

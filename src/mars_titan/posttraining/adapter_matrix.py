@@ -1,16 +1,16 @@
 """Matriz finita de adaptadores sobre padres congelados, declarada antes de ajustar.
 
-Cada brazo combina uno, dos o tres puntos de inserción con la misma población, las
+Cada modelo combina uno, dos o tres puntos de inserción con la misma población, las
 mismas semillas, el mismo número de actualizaciones y la misma validación temporal.
 El padre congelado, la corrección lineal residual y la continuación completa son
-controles de todos los brazos. La matriz no añade combinaciones después de leerse.
+controles de todos los modelos. La matriz no añade combinaciones después de leerse.
 
 La versión 1 solo declara objetivos para padres de salida escalar. La versión 2 los
 declara por cabeza del padre: los escalares conservan los de la versión 1 y los de
 `quantile_head_v1` optimizan la pinball de sus cinco niveles. Un control que no tiene
 objetivo para una cabeza se excluye con su motivo, no se reinterpreta. La versión 3
 conserva todo lo anterior y añade los destinos de las familias con entrenador cronológico
-(`chronological_matrix`) y, de forma opcional, la sección `variety` de #444 con brazos de
+(`chronological_matrix`) y, de forma opcional, la sección `variety` de #444 con modelos de
 un solo punto (`adapter_variety`).
 """
 
@@ -28,7 +28,7 @@ from .inputs import fingerprint
 from .selection import selection_policy
 
 POINTS = ("head", "readout", "fusion")
-# Formas de los puntos y brazos de las versiones 1 a 3. La variedad declara las suyas.
+# Formas de los puntos y modelos de las versiones 1 a 3. La variedad declara las suyas.
 BASE_FORMS = ("residual", "low_rank")
 CONTROLS = ("frozen_parent", "linear_residual", "full_continuation")
 # Familias de MultimodalReference que el postentrenamiento puede cargar como padre.
@@ -99,7 +99,7 @@ def _arm_id(points):
 
 
 def validate_matrix(matrix):
-    """Rechazar matrices incompletas, abiertas o con presupuestos distintos por brazo."""
+    """Rechazar matrices incompletas, abiertas o con presupuestos distintos por modelo."""
     keys = {
         "schema_version",
         "kind",
@@ -175,12 +175,12 @@ def validate_matrix(matrix):
             and len(set(arm["points"])) == len(arm["points"])
             and arm["id"] not in seen
             and arm["id"] not in CONTROLS,
-            "Cada brazo combina de uno a tres puntos distintos en orden canónico",
+            "Cada modelo combina de uno a tres puntos distintos en orden canónico",
         )
         seen.add(arm["id"])
         overrides = arm.get("overrides")
         if overrides is None:
-            _require(arm["id"] == _arm_id(arm["points"]), "El brazo se nombra por sus puntos")
+            _require(arm["id"] == _arm_id(arm["points"]), "El modelo se nombra por sus puntos")
             combinations.add(tuple(arm["points"]))
         else:
             _require(
@@ -304,9 +304,9 @@ def _family(family):
 
 
 def arms(matrix, family, *, reserve=False):
-    """Brazos aplicables a la familia, con la forma resuelta de cada punto.
+    """Modelos aplicables a la familia, con la forma resuelta de cada punto.
 
-    Los de la variedad siguen a los de la matriz. `reserve` añade los brazos de la variedad
+    Los de la variedad siguen a los de la matriz. `reserve` añade los adaptadores de la variedad
     implementados que la matriz no propone para la campaña.
     """
     _family(family)
@@ -337,7 +337,7 @@ def cases(matrix, digest, family, *, head=SCALAR, reserve=False):
     """Casos del ajuste, en orden fijo. El padre congelado se evalúa sin actualizaciones.
 
     Los objetivos dependen de la cabeza del padre. Un control excluido para esa cabeza
-    no genera caso. `reserve` incluye los brazos de reserva de la variedad.
+    no genera caso. `reserve` incluye los modelos de reserva de la variedad.
     """
     _family(family)
     declared = objectives(matrix, head)
@@ -390,8 +390,8 @@ def validate_adapter(adapter):
         "El adaptador del caso no pertenece a una matriz declarada",
     )
     variety = [adapter_variety.is_variety(*item) for item in adapter["points"].items()]
-    # Un brazo de la variedad tiene un solo punto y no se combina con los de la matriz.
-    _require(not any(variety) or len(variety) == 1, "La variedad declara brazos de un punto")
+    # Un adaptador de la variedad tiene un solo punto y no se combina con los de la matriz.
+    _require(not any(variety) or len(variety) == 1, "La variedad declara modelos de un punto")
     for name, spec in adapter["points"].items():
         if adapter_variety.is_variety(name, spec):
             adapter_variety.check_spec(name, spec)
@@ -401,7 +401,7 @@ def validate_adapter(adapter):
 
 
 def targets(adapter, model):
-    """Traducir los puntos del brazo a tensores del padre, sin tocar sus pesos."""
+    """Traducir los puntos del modelo a tensores del padre, sin tocar sus pesos."""
     validate_adapter(adapter)
     family = _family(getattr(model, "kind", None))
     hidden = model.architecture["hidden_size"]
@@ -462,7 +462,7 @@ def _states(points):
 
 
 def plan(matrix, digest, family, model, *, updates_per_epoch, linear_features):
-    """Registrar antes del primer ajuste brazos, controles, parámetros y actualizaciones.
+    """Registrar antes del primer ajuste modelos, controles, parámetros y actualizaciones.
 
     Los bytes de estado cuentan parámetros entrenables y los dos momentos de AdamW en
     la precisión de los pesos. No incluyen activaciones, que se miden al ejecutar.
@@ -512,5 +512,5 @@ def plan(matrix, digest, family, model, *, updates_per_epoch, linear_features):
                 case=case,
             )
         )
-    _require(len({row["updates"] for row in rows[1:]}) == 1, "Los brazos no comparten presupuesto")
+    _require(len({row["updates"] for row in rows[1:]}) == 1, "Los modelos no comparten presupuesto")
     return rows

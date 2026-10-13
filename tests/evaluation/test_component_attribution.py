@@ -1,6 +1,6 @@
 """Álgebra de la atribución por componentes con linajes de juguete.
 
-Los valores de cada brazo son funciones conocidas de sus componentes, así que cada efecto
+Los valores de cada modelo son funciones conocidas de sus componentes, así que cada efecto
 esperado se calcula a mano. No hay predicciones, modelos ni datos.
 """
 

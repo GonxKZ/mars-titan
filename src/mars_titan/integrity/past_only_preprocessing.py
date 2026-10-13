@@ -33,8 +33,8 @@ que solo recorre las filas reales de entrenamiento y cuyas etiquetas maduran ant
 validación.
 
 **Reglas declaradas.** `check_rules` exige que cada sección de la comparación esté en el
-inventario `SECTIONS` con su regla causal, o sin regla ajustada con datos. Una sección nueva,
-por ejemplo unos estratos de liquidez, hace fallar la comprobación hasta que se declare.
+inventario `SECTIONS` con su regla causal, o sin regla ajustada con datos. Una sección nueva
+hace fallar la comprobación hasta que se declare.
 
 Solo lee declaraciones, recibos, informes y manifiestos. No ajusta nada ni abre la reserva
 de 2024.
@@ -97,6 +97,12 @@ SECTIONS = {
     "long_short": ("kind", {"quartile_long_short_v1"}),
     # Calendario con ventanas de precios que terminan en cada decisión.
     "retention_interference": ("regimes", {"observable_volatility_trend_v1_market_calendar"}),
+    # Umbrales fijos de precio y volumen sobre la edición sin ajustar hasta la última sesión
+    # publicada al emitir (``tests/evaluation/test_liquidity_strata.py`` altera las posteriores).
+    "liquidity_strata": (
+        "source",
+        {"unadjusted_reconstructed_verified_rows_up_to_the_last_published_session_v1"},
+    ),
 }
 # Cortes y alteración de los precios posteriores de la auditoría del código.
 AUDIT_CUTS = (0.45, 0.7, 0.9)

@@ -360,7 +360,7 @@
   ],
   "occurrences": 1,
   "exit": 1,
-  "summary": "1 failed, 33 passed in 7.43s",
+  "summary": "1 failed, 33 passed in 6.10s",
   "verdict": "muere"
  },
  {
@@ -373,7 +373,7 @@
   ],
   "occurrences": 1,
   "exit": 1,
-  "summary": "1 failed, 34 passed in 7.39s",
+  "summary": "1 failed, 34 passed in 4.21s",
   "verdict": "muere"
  },
  {

@@ -463,7 +463,11 @@ def test_every_section_of_both_comparisons_has_a_causal_rule(path):
 @pytest.mark.parametrize(
     ("change", "message"),
     [
-        (lambda c: c.update(liquidity_strata=dict(kind="volume_terciles_whole_sample")), "no está"),
+        (lambda c: c.update(turnover_strata=dict(kind="volume_terciles_whole_sample")), "no está"),
+        (
+            lambda c: c["liquidity_strata"].update(source="volume_terciles_whole_sample"),
+            "liquidity_strata",
+        ),
         (
             lambda c: c["modality_strata"].update(presence_source="any_future_row"),
             "modality_strata",
@@ -472,7 +476,7 @@ def test_every_section_of_both_comparisons_has_a_causal_rule(path):
         (lambda c: c["retention_interference"].update(regimes="centered_windows"), "retention"),
         (lambda c: c["long_short"].update(kind="whole_sample_quantiles"), "long_short"),
     ],
-    ids=["liquidity-strata", "presence", "calibration", "regimes", "long-short"],
+    ids=["new-section", "liquidity-strata", "presence", "calibration", "regimes", "long-short"],
 )
 def test_a_section_without_a_causal_rule_fails(tmp_path, change, message):
     config = json.loads(COMPARISONS[1].read_text())

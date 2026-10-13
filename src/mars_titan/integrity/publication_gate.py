@@ -60,6 +60,7 @@ def _comparison(entry):
         folder,
         aggregates=entry.get("aggregates"),
         ablation_sources=entry.get("ablation"),
+        edition=entry.get("edition"),
     )
     report = json.loads((folder / "comparison.json").read_text(encoding="utf-8"))
     config = walk.resolve_config(entry["config"])
@@ -112,9 +113,10 @@ def build(loaded, views, output, comparisons, *, adapter_output=None, regimes=No
 
     `loaded` es la declaración validada de la publicación, `views` y `output` los de la
     campaña confirmada y `comparisons` la lista de comparaciones publicadas, cada una con
-    `label`, `config`, `sources`, `scope`, `folder` y, si se calcularon desde la retención v2,
-    `aggregates` y `ablation`. `regimes` es el calendario de regímenes que recibió la
-    publicación, si la comparación lo declara.
+    `label`, `config`, `sources`, `scope`, `folder`, `edition` (la de los estratos de
+    liquidez, si se declaran) y, si se calcularon desde la retención v2, `aggregates` y
+    `ablation`. `regimes` es el calendario de regímenes que recibió la publicación, si la
+    comparación lo declara.
     """
     campaign, posttraining = loaded["campaign_config"], loaded["posttraining"]
     checked = {entry["label"]: _comparison(entry) for entry in comparisons}

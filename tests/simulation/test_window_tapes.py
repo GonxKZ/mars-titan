@@ -248,7 +248,7 @@ def test_tapes_share_one_universe_and_record_an_excluded_asset_as_failed_episode
     assert opened.failure == dict(
         reason="universe_assets_excluded", excluded={"US/CCC": "unverified_rows_in_tape"}
     )
-    # Todos los brazos y referencias de la ventana reciben las mismas cintas.
+    # Todos los modelos y referencias de la ventana reciben las mismas cintas.
     assert store.open(dict(JOB)).identity == opened.identity
     records = campaign_stage.evaluate_policy(opened, None, STAGE, "US", backend="python")
     assert [r["status"] for r in records] == ["failed"] * 3
