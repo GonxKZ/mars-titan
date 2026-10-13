@@ -176,6 +176,8 @@ con $K^\top\Sigma^{-1}K=\frac{1}{\sigma^2(1-\varrho)}\big(K^\top K-g\,(K^\top\ma
 
 **Predicción.** Sin diferencia detectable, porque el Transformer que sigue a la fusión ya puede modelar esas interacciones.
 
+**Implementación.** Implementada y comprobada sin entrenar como `presence_modulation` (`film_v1` y la alternativa `wide_fusion_v1`), con identidad exacta en las filas completas, arranque idéntico al control y la comparación declarada sin ejecutar ([#458](https://github.com/GonxKZ/mars-titan/issues/458), [especificación](../engineering/presence-modulation.md)).
+
 ## PT7. Ensemble de semillas como control de varianza (protocolo)
 
 No es arquitectura, pero condiciona la interpretación de todo lo anterior. Con señal tan débil, la varianza entre semillas puede ser del mismo orden que cualquier diferencia entre arquitecturas. Rahimikia et al. (2025) y Gu et al. (2020) promedian semillas. La recomendación es medir la dispersión entre al menos tres semillas del control en el piloto antes de interpretar diferencias de PT1, PT4, PT5 o PT6. Coste: dos semillas adicionales del control en el piloto, unas 4 h de GPU.
