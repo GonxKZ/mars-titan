@@ -1,0 +1,260 @@
+{
+ "issue": 549,
+ "commit": "6a013588",
+ "mode": "cpu",
+ "script": "9db9dff42c5c4bb6f81626c129dcdee992c9d4cb1ddf6966429dd392393dbb09",
+ "mutations": [
+  {
+   "name": "verify_without_identity",
+   "file": "src/mars_titan/models/titans/financial_inputs.py",
+   "tests": [
+    "tests/models/titans/test_financial_adapter.py"
+   ],
+   "status": "detectada",
+   "failed": [
+    "FAILED tests/models/titans/test_financial_adapter.py::test_cpu_view_with_a_replaced_array_is_rejected_even_with_the_same_values[prices]"
+   ],
+   "summary": [
+    "1 failed, 45 passed in 3.57s"
+   ]
+  },
+  {
+   "name": "verify_without_digest",
+   "file": "src/mars_titan/models/titans/financial_inputs.py",
+   "tests": [
+    "tests/models/titans/test_financial_adapter.py"
+   ],
+   "status": "detectada",
+   "failed": [
+    "FAILED tests/models/titans/test_financial_adapter.py::test_cpu_view_rejects_a_writable_copy_and_a_changed_digest"
+   ],
+   "summary": [
+    "1 failed, 48 passed in 3.13s"
+   ]
+  },
+  {
+   "name": "digest_without_presence",
+   "file": "src/mars_titan/models/titans/financial_inputs.py",
+   "tests": [
+    "tests/models/titans/test_financial_adapter.py"
+   ],
+   "status": "detectada",
+   "failed": [
+    "FAILED tests/models/titans/test_financial_adapter.py::test_cpu_observation_digest_distinguishes_missing_from_observed_zero"
+   ],
+   "summary": [
+    "1 failed, 42 passed in 3.26s"
+   ]
+  },
+  {
+   "name": "inputs_not_frozen",
+   "file": "src/mars_titan/models/titans/financial_inputs.py",
+   "tests": [
+    "tests/models/titans/test_financial_adapter.py"
+   ],
+   "status": "detectada",
+   "failed": [
+    "FAILED tests/models/titans/test_financial_adapter.py::test_each_control_advances_one_decision_without_mutating_received_state[transformer_direct]"
+   ],
+   "summary": [
+    "1 failed in 1.66s"
+   ]
+  },
+  {
+   "name": "identity_without_suffix",
+   "file": "src/mars_titan/models/titans/financial_inputs.py",
+   "tests": [
+    "tests/models/titans/test_financial_adapter.py"
+   ],
+   "status": "detectada",
+   "failed": [
+    "FAILED tests/models/titans/test_financial_adapter.py::test_cpu_boundary_names_each_identity_fault[other_cut-^La muestra no identifica flujo y corte$]"
+   ],
+   "summary": [
+    "1 failed, 56 passed, 4 skipped in 3.44s"
+   ]
+  },
+  {
+   "name": "identity_availability_lower",
+   "file": "src/mars_titan/models/titans/financial_inputs.py",
+   "tests": [
+    "tests/models/titans/test_financial_adapter.py"
+   ],
+   "status": "detectada",
+   "failed": [
+    "FAILED tests/models/titans/test_financial_adapter.py::test_cpu_boundary_names_each_identity_fault[negative_availability-^La entrada procede del futuro]"
+   ],
+   "summary": [
+    "1 failed, 63 passed, 4 skipped in 3.46s"
+   ]
+  },
+  {
+   "name": "identity_cut_range",
+   "file": "src/mars_titan/models/titans/financial_inputs.py",
+   "tests": [
+    "tests/models/titans/test_financial_adapter.py"
+   ],
+   "status": "detectada",
+   "failed": [
+    "FAILED tests/models/titans/test_financial_adapter.py::test_historical_batch_rejects_incompatible_inputs_before_tensor_conversion[reserved]"
+   ],
+   "summary": [
+    "1 failed, 17 passed in 2.92s"
+   ]
+  },
+  {
+   "name": "indicator_l2_norm",
+   "file": "src/mars_titan/models/titans/state.py",
+   "tests": [
+    "tests/models/titans/test_deferred_checks.py"
+   ],
+   "status": "detectada",
+   "failed": [
+    "FAILED tests/models/titans/test_deferred_checks.py::test_finite_indicator_agrees_with_isfinite[dtype0-cpu]"
+   ],
+   "summary": [
+    "1 failed, 2 passed, 6 skipped in 1.28s"
+   ]
+  },
+  {
+   "name": "indicator_complex_norm",
+   "file": "src/mars_titan/models/titans/state.py",
+   "tests": [
+    "tests/models/titans/test_deferred_checks.py"
+   ],
+   "status": "detectada",
+   "failed": [
+    "FAILED tests/models/titans/test_deferred_checks.py::test_finite_indicator_keeps_the_general_check_for_other_types[cpu]"
+   ],
+   "summary": [
+    "1 failed, 5 passed, 9 skipped in 2.90s"
+   ]
+  },
+  {
+   "name": "indicator_keeps_graph",
+   "file": "src/mars_titan/models/titans/state.py",
+   "tests": [
+    "tests/models/titans/test_deferred_checks.py"
+   ],
+   "status": "detectada",
+   "failed": [
+    "FAILED tests/models/titans/test_deferred_checks.py::test_finite_indicator_adds_no_autograd_graph"
+   ],
+   "summary": [
+    "1 failed, 6 passed, 10 skipped in 2.51s"
+   ]
+  },
+  {
+   "name": "observe_without_event_scope",
+   "file": "src/mars_titan/training/financial_run.py",
+   "tests": [
+    "tests/training/test_financial_run.py::test_each_event_resolves_the_checks_of_all_its_blocks_together"
+   ],
+   "status": "detectada",
+   "failed": [
+    "FAILED tests/training/test_financial_run.py::test_each_event_resolves_the_checks_of_all_its_blocks_together"
+   ],
+   "summary": [
+    "1 failed in 4.24s"
+   ]
+  },
+  {
+   "name": "replay_without_group_scope",
+   "file": "src/mars_titan/training/financial_run.py",
+   "tests": [
+    "tests/training/test_financial_run.py::test_replay_resolves_the_checks_of_each_flow_group_together"
+   ],
+   "status": "detectada",
+   "failed": [
+    "FAILED tests/training/test_financial_run.py::test_replay_resolves_the_checks_of_each_flow_group_together"
+   ],
+   "summary": [
+    "1 failed in 4.24s"
+   ]
+  },
+  {
+   "name": "reader_without_event_scope",
+   "file": "src/mars_titan/training/mars_titan_run.py",
+   "tests": [
+    "tests/training/test_mars_titan_run.py::test_each_event_resolves_core_and_reader_checks_together"
+   ],
+   "status": "detectada",
+   "failed": [
+    "FAILED tests/training/test_mars_titan_run.py::test_each_event_resolves_core_and_reader_checks_together"
+   ],
+   "summary": [
+    "1 failed in 3.86s"
+   ]
+  },
+  {
+   "name": "zero_fill_on_present_rows",
+   "file": "src/mars_titan/models/titans/episodic_readout.py",
+   "tests": [
+    "tests/models/titans/test_episodic_readout.py"
+   ],
+   "status": "detectada",
+   "failed": [
+    "FAILED tests/models/titans/test_episodic_readout.py::test_read_matches_a_two_neighbor_softmax_and_residual_equation"
+   ],
+   "summary": [
+    "1 failed in 1.68s"
+   ]
+  },
+  {
+   "name": "encoder_message_swapped",
+   "file": "src/mars_titan/models/titans/financial.py",
+   "tests": [
+    "tests/models/titans/test_financial_adapter.py"
+   ],
+   "status": "detectada",
+   "failed": [
+    "FAILED tests/models/titans/test_financial_adapter.py::test_price_encoder_checks_keep_their_message_inside_prepare[prices-^Los precios contienen valores no finitos$-cpu]"
+   ],
+   "summary": [
+    "1 failed, 52 passed in 3.57s"
+   ]
+  },
+  {
+   "name": "config_id_ignores_mode",
+   "file": "src/mars_titan/models/titans/financial.py",
+   "tests": [
+    "tests/models/titans/test_financial_adapter.py"
+   ],
+   "status": "detectada",
+   "failed": [
+    "FAILED tests/models/titans/test_financial_adapter.py::test_predictor_identity_follows_mode_dtype_and_loads"
+   ],
+   "summary": [
+    "1 failed, 55 passed, 4 skipped in 4.52s"
+   ]
+  },
+  {
+   "name": "seal_keeps_config_ids",
+   "file": "src/mars_titan/models/titans/financial.py",
+   "tests": [
+    "tests/models/titans/test_financial_adapter.py"
+   ],
+   "status": "detectada",
+   "failed": [
+    "FAILED tests/models/titans/test_financial_adapter.py::test_predictor_identity_follows_mode_dtype_and_loads"
+   ],
+   "summary": [
+    "1 failed, 55 passed, 4 skipped in 4.71s"
+   ]
+  },
+  {
+   "name": "fingerprint_serialized",
+   "file": "src/mars_titan/models/titans/config.py",
+   "tests": [
+    "tests/models/titans/test_financial_adapter.py"
+   ],
+   "status": "detectada",
+   "failed": [
+    "FAILED tests/models/titans/test_financial_adapter.py::test_configuration_fingerprints_are_computed_once_and_not_serialized"
+   ],
+   "summary": [
+    "1 failed, 54 passed, 4 skipped in 5.03s"
+   ]
+  }
+ ]
+}
