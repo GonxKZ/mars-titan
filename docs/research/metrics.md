@@ -221,9 +221,9 @@ los aciertos y la media por sesión, y su valor a la cobertura fija $c=0{,}5$
 (`direction_accuracy@0.5`). La tabla de sesiones conserva los aciertos de cada
 cobertura (`selective_hits`).
 
-Cobertura de llamadas. Para cada brazo y vista, $|C|/|E|$ sumando llamadas y filas
+Cobertura de llamadas. Para cada modelo y vista, $|C|/|E|$ sumando llamadas y filas
 juzgables de todas sus sesiones y semillas. En `up_precision` y `down_precision`, un
-contraste con algún brazo de cobertura inferior a 0,5 se publica con su cobertura y
+contraste con algún modelo de cobertura inferior a 0,5 se publica con su cobertura y
 `eligible: false`, en la comparación y en la matriz, y no puede presentarse como
 ganado. El control cero tiene cobertura cero. El MAE y el MSE puntúan todas las filas,
 así que abstenerse en todas equivale al control cero, que ya se compara de forma

@@ -55,9 +55,9 @@ calculado solo con precios hasta cada decisión (``regime_calendar``), que llega
 calendario la sección queda pendiente y el resto del informe no cambia.
 
 Todas las versiones publican la abstención con su cobertura (``abstention_coverage``): la
-curva riesgo-cobertura de dirección de cada semilla, la cobertura de llamadas de cada brazo
+curva riesgo-cobertura de dirección de cada semilla, la cobertura de llamadas de cada modelo
 en cada vista y, en las precisiones de subida y de bajada, qué contrastes no son elegibles
-porque algún brazo llama en menos filas que la cobertura mínima declarada.
+porque algún modelo llama en menos filas que la cobertura mínima declarada.
 """
 
 import argparse
@@ -1120,7 +1120,7 @@ def _seed_series(overall, arm, view, metric):
 
 
 def _call_coverage(overall, view):
-    """Cobertura de llamadas de cada brazo en una vista, sumada sobre sus semillas."""
+    """Cobertura de llamadas de cada modelo en una vista, sumada sobre sus semillas."""
     return {
         arm: abstention_coverage.call_coverage(
             sum(int(np.sum(scores[view].direction_calls)) for scores in seeds),

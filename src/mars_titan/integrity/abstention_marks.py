@@ -3,7 +3,7 @@
 Las reglas están en `evaluation.abstention_coverage`. Esta comprobación las repite desde la
 tabla de sesiones publicada, sin el código de la comparación:
 
-1. el informe publica las reglas declaradas y la cobertura de llamadas de cada brazo en
+1. el informe publica las reglas declaradas y la cobertura de llamadas de cada modelo en
    cada vista (todas las sesiones y cada mercado), que se recalcula sumando llamadas y filas
    con objetivo no nulo de todas sus semillas;
 2. cada contraste de una métrica condicionada a las llamadas lleva la marca de elegibilidad
@@ -33,7 +33,7 @@ def _selected(raw, view, markets):
 
 
 def coverage(raw, markets):
-    """Cobertura de llamadas de cada brazo en cada vista, desde las sesiones en bruto."""
+    """Cobertura de llamadas de cada modelo en cada vista, desde las sesiones en bruto."""
     found = {}
     for view in _views(markets):
         part = _selected(raw, view, markets)

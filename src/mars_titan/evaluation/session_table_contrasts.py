@@ -8,7 +8,7 @@ las mismas series por sesión que usa ``compare_series``, sin volver a puntuar p
 y estima familias de contrastes lineales con el remuestreo por bloques de la comparación.
 
 En las precisiones de subida y de bajada, cada contraste lleva la cobertura de llamadas de
-sus brazos y queda marcado no elegible si alguno no llega a la mínima declarada
+sus modelos y queda marcado no elegible si alguno no llega a la mínima declarada
 (``abstention_coverage``), igual que en la comparación walk-forward.
 
 Cada brazo se lee una vez. Si aparece en dos informes, sus sesiones y valores deben
@@ -509,7 +509,7 @@ def _series(seeds, metric, loss, view_label, code, markets, values_of):
 
 
 def _call_coverage(seeds, code):
-    """Cobertura de llamadas de un brazo en una vista, sumada sobre sus semillas."""
+    """Cobertura de llamadas de un modelo en una vista, sumada sobre sus semillas."""
     calls = eligible = 0
     for seed in seeds:
         mask = _selection(seed, code)
