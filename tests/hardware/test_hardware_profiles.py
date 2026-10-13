@@ -173,6 +173,68 @@ def test_unrecorded_runs_need_a_declared_profile_that_the_others_match(rtx, work
     )
 
 
+def recorded(**changes):
+    """Registro `platform` de unas fuentes de la base, como lo escribe `same_platform`."""
+    record = dict(
+        platform_sha256=laptop()["platform_sha256"],
+        recorded=3,
+        unrecorded=0,
+        unrecorded_profile=None,
+    )
+    return record | changes
+
+
+def test_a_stage_inherits_the_platform_recorded_by_its_base(rtx):
+    stage = dict(a=laptop(), b=laptop(kernel="7.1.0"))
+    assert profiles.inherited_platform(stage, recorded()) == profiles.same_platform(stage)
+    with pytest.raises(ValueError, match="otra plataforma que la base"):
+        profiles.inherited_platform(dict(a=desktop()), recorded())
+    # El manifiesto de la base solo guarda la huella: sin la de la etapa no hay comparación.
+    with pytest.raises(ValueError, match="los recibos de la etapa no"):
+        profiles.inherited_platform(dict(a=None), recorded(), unrecorded=rtx)
+    # Una etapa que mezcla plataformas se rechaza antes de mirar la base.
+    with pytest.raises(ValueError, match="mezcla plataformas"):
+        profiles.inherited_platform(dict(a=laptop(), b=desktop()), recorded())
+
+
+def test_a_base_without_platform_needs_the_declared_profile(rtx, workstation):
+    stage = dict(a=laptop())
+    unrecorded_base = recorded(
+        platform_sha256=None, recorded=0, unrecorded_profile="rtx4070-laptop"
+    )
+    for base in (None, unrecorded_base):
+        with pytest.raises(ValueError, match="no registran su plataforma"):
+            profiles.inherited_platform(stage, base)
+        assert profiles.inherited_platform(stage, base, unrecorded=rtx)["recorded"] == 1
+        # La etapa registrada debe corresponder al perfil al que se atribuye la base.
+        with pytest.raises(ValueError, match="atribuido a las fuentes de la base"):
+            profiles.inherited_platform(stage, base, unrecorded=workstation)
+    # La base ya atribuyó sus recibos a un perfil: la etapa no puede atribuirlos a otro.
+    with pytest.raises(ValueError, match="perfiles distintos"):
+        profiles.inherited_platform(
+            dict(a=None), dict(unrecorded_base, unrecorded_profile="otro"), unrecorded=rtx
+        )
+    with pytest.raises(ValueError, match="perfiles distintos"):
+        profiles.inherited_platform(
+            dict(a=laptop(), b=None),
+            recorded(unrecorded=1, unrecorded_profile="otro"),
+            unrecorded=rtx,
+        )
+    mixed = profiles.inherited_platform(
+        dict(a=laptop(), b=None),
+        recorded(unrecorded=1, unrecorded_profile="rtx4070-laptop"),
+        unrecorded=rtx,
+    )
+    assert mixed["unrecorded_profile"] == "rtx4070-laptop"
+
+
+def test_only_a_declared_name_attributes_unrecorded_runs_to_a_profile():
+    assert profiles.attributed_profile(None) is None
+    assert profiles.attributed_profile("rtx4070-laptop")["name"] == "rtx4070-laptop"
+    with pytest.raises(ValueError):
+        profiles.attributed_profile("otra-maquina")
+
+
 def test_commands_without_an_execution_declaration_name_their_profile():
     with pytest.raises(ValueError, match="MARS_TITAN_HARDWARE_PROFILE"):
         profiles.declared_profile({})

@@ -24,6 +24,7 @@ from mars_titan.simulation import campaign_stage, native_policy_runs, policy_pla
 from mars_titan.simulation.market import MarketTape
 from mars_titan.simulation.storage import read_tape, write_tape
 from mars_titan.training.learning_hold import LearningHoldError
+from tests.hardware.platform_doubles import desktop, laptop
 from tests.learning_hold_lowering import lowers_learning_hold
 from tests.simulation import rl_stage_fixture as fixture
 from tests.suite_support import missing_native
@@ -1135,3 +1136,21 @@ def test_a_staged_campaign_reads_only_selections_checked_by_the_report(
     )
     assert summary["status"] == "paused" and learner.calls == []
     assert summary["disjunction_sha256"] == sha256(tmp_path / "report.json")
+
+
+def test_the_stage_runs_on_the_platform_of_the_base_receipts_it_reads():
+    receipts = {
+        "US/fold-000/gru": dict(platform=laptop()),
+        "US/fold-001/gru": dict(platform=laptop()),
+    }
+    found = campaign_stage.base_platform(receipts, laptop())
+    assert found["platform_sha256"] == laptop()["platform_sha256"] and found["recorded"] == 3
+    with pytest.raises(ValueError, match="mezcla plataformas"):
+        campaign_stage.base_platform(receipts, desktop())
+    # Recibos de la base anteriores al registro: solo con el perfil al que se atribuyen.
+    legacy = {"US/fold-000/gru": {}}
+    with pytest.raises(ValueError, match="no registran su plataforma"):
+        campaign_stage.base_platform(legacy, laptop())
+    assert campaign_stage.base_platform(legacy, laptop(), "rtx4070-laptop")["unrecorded"] == 1
+    with pytest.raises(ValueError, match="no corresponde al perfil"):
+        campaign_stage.base_platform(legacy, desktop(), "rtx4070-laptop")

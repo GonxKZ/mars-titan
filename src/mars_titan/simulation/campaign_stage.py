@@ -50,6 +50,8 @@ from pathlib import Path
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.environments.walk_forward_receipt import read_window_receipt
+from mars_titan.hardware import hardware_profiles
+from mars_titan.hardware.platform_identity import platform_identity
 from mars_titan.training import campaign_chain, campaign_schedule, masked_campaign
 from mars_titan.training.campaign_plan import _arm_specs, plan_campaign
 from mars_titan.training.learning_hold import LearningHoldError, require_learning_allowed
@@ -620,6 +622,22 @@ def _base_receipts(base, campaign, stage, pairs=None):
         base.receipts[job["id"]] = receipt
 
 
+def base_platform(receipts, platform, unrecorded_platform=None):
+    """Exigir que la etapa corra en la plataforma de los recibos de la base que lee.
+
+    El informe de la etapa no abre la campaña base, así que la coincidencia se comprueba al
+    ejecutar. Los recibos de la base anteriores al registro solo se admiten si
+    `unrecorded_platform` nombra el perfil al que se atribuyen.
+    """
+    return hardware_profiles.same_platform(
+        {
+            **{f"campaña base {key}": item.get("platform") for key, item in receipts.items()},
+            "esta etapa": platform,
+        },
+        unrecorded=hardware_profiles.attributed_profile(unrecorded_platform),
+    )
+
+
 def campaign_source(base, campaign_output, seed):
     """Recibo de ventana y predicciones emitidas del predictor elegido en la campaña base.
 
@@ -1080,6 +1098,7 @@ class _Stage:
         self.identity_sha256 = _digest(identity)
         self.executors, self.stop = executors, stop
         self.receipts = {}
+        self.platform = None
 
     def folder(self, job):
         return self.output / "jobs" / job["id"]
@@ -1129,6 +1148,9 @@ class _Stage:
             final_test_opened=False,
             confirmed_at_utc=datetime.now(UTC).isoformat(),
         )
+        if self.platform is not None:
+            # Fuera de la identidad, como en la campaña base.
+            receipt["platform"] = self.platform
         path = self.folder(job) / "receipt.json"
         atomic_json(path, receipt)
         return dict(receipt, sha256=sha256(path))
@@ -1278,6 +1300,8 @@ def run_stage(
     chain_output=None,
     sensitivity=False,
     disjunction=None,
+    platform=None,
+    unrecorded_platform=None,
 ):
     """Ejecutar o reanudar la etapa sobre una campaña base confirmada.
 
@@ -1290,6 +1314,12 @@ def run_stage(
     es la tabla del estado de cotización, cuya huella declaran las políticas. Si la campaña
     declara `walk_forward_stages`, `disjunction` es el informe de `chain_disjunction` sin
     fallos que comprobó las vistas y todas las selecciones de la cadena que se leerán.
+
+    El informe de la etapa no abre la campaña base, así que la plataforma se contrasta aquí,
+    antes de crear la salida: debe ser la de los recibos de la base que se leen. Los anteriores
+    a su registro solo se admiten si `unrecorded_platform` nombra el perfil al que se
+    atribuyen. Cada recibo nuevo guarda la plataforma. `platform` sustituye la detectada, solo
+    en las pruebas.
     """
     from mars_titan.training.checkpoints import StopRequest
 
@@ -1360,6 +1390,8 @@ def run_stage(
     )
     _, base = masked_campaign._confirmed_state(campaign["path"], views, campaign_output)
     _base_receipts(base, campaign, stage, pairs)
+    platform = platform_identity() if platform is None else platform
+    base_platform(base.receipts, platform, unrecorded_platform)
     # La fuente de las predicciones se resuelve antes de crear la salida.
     source = predictor_source(stage["policies"], base, campaign_output, chain_output)
     selections = None
@@ -1404,6 +1436,7 @@ def run_stage(
             table,
         )
         state = _Stage(stage, tapes, output, identity, executors, None)
+        state.platform = platform
         signals = StopRequest() if stop is None else nullcontext(stop)
         _summary(output, identity, jobs, state, "running", **checked)
         try:
@@ -1442,6 +1475,10 @@ def main(argv=None):
     execute.add_argument(
         "--disjunction", type=Path, help="Informe de disjunción con las selecciones (por etapas)"
     )
+    execute.add_argument(
+        "--unrecorded-platform",
+        help="Perfil de hardware al que se atribuyen los recibos de la base sin plataforma",
+    )
     args = parser.parse_args(argv)
     if args.command == "check":
         result = check_stage(args.stage)
@@ -1457,6 +1494,7 @@ def main(argv=None):
             chain_output=args.chain_output,
             sensitivity=args.sensitivity,
             disjunction=args.disjunction,
+            unrecorded_platform=args.unrecorded_platform,
         )
         result.pop("jobs")
     print(json.dumps(result, ensure_ascii=False, indent=2))

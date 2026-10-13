@@ -65,6 +65,7 @@ from mars_titan.environments.walk_forward_receipt import (
 )
 from mars_titan.environments.walk_forward_receipt import read_window_receipt
 from mars_titan.evaluation import walk_forward_comparison as comparison
+from mars_titan.hardware.platform_identity import platform_identity
 from mars_titan.models.quantile_head import MEDIAN_INDEX, QUANTILE_COLUMNS, QUANTILE_HEAD
 from mars_titan.training import (
     campaign_chain,
@@ -777,6 +778,7 @@ class _Stage:
         self.proofs, self.populations, self.selections = {}, {}, {}
         self.window_key = self.parent_key = self.dataset_key = None
         self.window = self.parent = self.dataset = None
+        self.platform = None
 
     # Contextos: una ventana, un padre y una vista abiertos como máximo.
     def close_parent(self):
@@ -1328,6 +1330,10 @@ class _Stage:
             final_test_opened=False,
             confirmed_at_utc=datetime.now(UTC).isoformat(),
         )
+        if self.platform is not None:
+            # Fuera de la identidad, como en la campaña base: los recibos anteriores siguen
+            # siendo válidos y la publicación de fuentes exige una sola plataforma.
+            receipt["platform"] = self.platform
         path = self.folder(job) / "receipt.json"
         atomic_json(path, receipt)
         return dict(receipt, sha256=sha256(path))
@@ -1660,6 +1666,7 @@ def run_stage(
     device="cuda:0",
     window=None,
     disjunction=None,
+    platform=None,
 ):
     """Ejecutar o reanudar el walk-forward por etapas sobre una campaña base confirmada.
 
@@ -1671,6 +1678,9 @@ def run_stage(
     diagnósticos de hasta 5000 filas de `run_case`. La protección del aprendizaje se
     comprueba antes de abrir fuentes y antes de cada trabajo pendiente. La variante B se
     rechaza antes de leer nada.
+
+    Cada recibo nuevo guarda la identidad de la plataforma. `platform` sustituye la detectada,
+    solo en las pruebas.
     """
     from mars_titan.training.checkpoints import StopRequest
 
@@ -1733,6 +1743,7 @@ def run_stage(
         state = _Stage(
             stage, base, campaign_output, output, identity, device=device, lease=None, stop=None
         )
+        state.platform = platform_identity() if platform is None else platform
         _summary(output, identity, jobs, chains, state, "running", **checked)
         try:
             with signals as state.stop, reservation as state.lease:

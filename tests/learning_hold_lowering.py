@@ -120,6 +120,24 @@ INVENTORY = {
         "confirma, y pasa la protección con la rebajada de joint_campaign, aunque los ejecutores "
         "sustituidos no ajustan"
     ),
+    "tests/training/test_modality_ablation_stage.py::"
+    "test_masked_sources_keep_the_platform_of_the_base_they_compare_with": (
+        "publica las fuentes de la ablación desde la salida que el fixture staged ejecuta con la "
+        "protección rebajada y ejecutores que no ajustan, para comprobar la plataforma que "
+        "guarda cada recibo y su coincidencia con la base (#543)"
+    ),
+    "tests/simulation/test_stage_report.py::"
+    "test_the_report_records_the_platform_that_each_receipt_keeps": (
+        "lee la salida de la etapa de políticas que el fixture stage_output ejecuta con "
+        "learning_doubles y políticas de reglas fijas, para comprobar la plataforma de sus "
+        "recibos y del informe (#543)"
+    ),
+    "tests/training/test_rolling_retention.py::"
+    "test_aggregates_of_receipts_without_platform_need_the_declared_profile": (
+        "recorre la campaña del fixture base, confirmada con la protección rebajada y pesos "
+        "iniciales, con sus recibos sin plataforma para comprobar que los agregados solo se "
+        "publican con el perfil declarado (#543)"
+    ),
     "tests/test_suite_support.py::test_unguarded_fits_run_when_the_hold_allows_learning": (
         "la sesión de pytest hija lee una protección temporal que permite aprender para "
         "comprobar que la marca unguarded_fit deja de omitir, aunque la prueba sondeada no ajusta"
@@ -324,7 +342,7 @@ REDIRECTIONS = {
     "tests/training/test_modality_ablation_native.py": (3, _REUSES),
     "tests/training/test_modality_ablation_stage.py": (8, _REUSES),
     "tests/training/test_prediction_regeneration.py": (4, _REUSES),
-    "tests/training/test_rolling_retention.py": (8, _REUSES),
+    "tests/training/test_rolling_retention.py": (9, _REUSES),
     "tests/training/test_titans_campaign.py": (1, _RECORDER),
     "tests/training/test_titans_walk_forward.py": (1, _RECORDER),
 }

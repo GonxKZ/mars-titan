@@ -1,6 +1,6 @@
 # Plataforma de hardware: portátil con RTX 4070
 
-Autor: Gonzalo García Lama. Estado del 13 de octubre de 2026 ([#561](https://github.com/GonxKZ/mars-titan/issues/561)).
+Autor: Gonzalo García Lama. Estado del 13 de octubre de 2026 ([#561](https://github.com/GonxKZ/mars-titan/issues/561) y [#543](https://github.com/GonxKZ/mars-titan/issues/543)).
 
 MARS-TITAN se ejecuta en una sola máquina: el portátil de desarrollo, x86-64 con un AMD Ryzen 9 8945HS de 16 hilos, 30 GiB de RAM útiles y una GeForce RTX 4070 Laptop de 8 GiB (capacidad 8.9). Todas las recetas, presupuestos y medidas del proyecto se tomaron en ella. Este documento recoge cómo se declara esa máquina, cómo se registra en cada ejecución y cómo se comprueba antes de una campaña.
 
@@ -21,6 +21,20 @@ El control de cancelación de `markov_filter` usa la cota 2^-63, que es el épsi
 La huella `platform_sha256` cubre lo que puede cambiar la aritmética: arquitectura, modelos de CPU y su capacidad en PyTorch, versiones de PyTorch, CUDA y cuDNN, y modelo y capacidad de cada GPU. El controlador NVIDIA, el núcleo, la memoria total y el identificador físico de la GPU se registran fuera de la huella. Aunque todo corra en el portátil, una actualización de PyTorch o de CUDA cambia la huella.
 
 La campaña con máscaras guarda la identidad en su resumen y en cada recibo nuevo, fuera de la identidad del trabajo, para que los recibos ya confirmados sigan siendo válidos. Al publicar las fuentes de una comparación exige una única huella entre los recibos. Los recibos anteriores a este registro solo se admiten con `--unrecorded-platform <perfil>`, que los atribuye a un perfil, y entonces los recibos con plataforma deben corresponder a ese mismo perfil. El manifiesto de fuentes (versión 2) y el informe de la comparación conservan la huella y esa atribución.
+
+### Etapas posteriores
+
+Las etapas de adaptadores, ablación de modalidades y políticas guardan también la identidad en cada recibo nuevo, fuera de la identidad del trabajo ([#543](https://github.com/GonxKZ/mars-titan/issues/543)). Cada una exige una sola plataforma entre sus recibos y la misma que la de la base cuyas predicciones compara o lee. La comprobación se hace donde la base está disponible:
+
+| Etapa | Dónde se comprueba | Con qué se compara |
+| --- | --- | --- |
+| Adaptadores | `stage_comparison.write_sources`, al publicar las fuentes de un padre | Registro `platform` de las fuentes de la base (`hardware_profiles.inherited_platform`). Como ese registro solo guarda la huella, si la base la registra la etapa también debe registrarla |
+| Ablación | `modality_ablation_stage.write_sources` y, al comparar, `walk_forward_comparison._ablation_sources` | Recibos de la base del ancla y de la ventana de cada predicción enmascarada, y la huella de las fuentes principales |
+| Políticas | `simulation.campaign_stage.run_stage`, antes de crear la salida, y `stage_report.build_report` | Recibos de la base que leen sus predictores. El informe no abre la campaña base, así que solo exige una plataforma entre los recibos de todas sus salidas |
+
+Las fuentes de los adaptadores y de la ablación pasan a la versión 2, con el mismo registro `platform` que las de la base, y el informe de políticas lo incluye. Los recibos anteriores al registro, de la etapa o de la base, solo se admiten con `--unrecorded-platform <perfil>` en `stage_comparison sources`, `modality_ablation_stage sources`, `simulation.campaign_stage run` y `stage_report`. Si la base atribuyó los suyos a un perfil, la etapa debe atribuir los suyos al mismo. `rolling_retention --unrecorded-platform` lleva ese perfil a los agregados de cada ventana y a la etapa de políticas.
+
+La mutación dirigida aplicó 15 defectos de uno en uno: aceptar otra huella, una etapa sin plataforma o perfiles distintos frente a la base, no contrastar la etapa con el perfil, no cargarlo, publicar las fuentes de un padre sin la base o sin los recibos, no guardar la plataforma en los recibos de adaptadores, aceptar en la ablación otra plataforma o un registro inválido, no contrastar las políticas con la base o el informe consigo mismo, omitir los recibos de la base en la ablación, no llamar a la comprobación desde la etapa de políticas y no llevar el perfil a los agregados. Las pruebas detectan 12 ([recibo](../../reports/engineering/stage-platform-mutations-20261013.json)). Los tres últimos solo los recorren las pruebas del inventario de #546, que leen salidas ejecutadas con la protección rebajada y se omiten mientras rige el bloqueo.
 
 ## Perfil de hardware
 
