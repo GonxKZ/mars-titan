@@ -366,7 +366,13 @@ class EpisodicSession:
             )
             if total_bytes > 64 * 1024**2:
                 raise ValueError("Las modalidades de la cohorte superan 64 MiB")
-            encoded = self.codec.encode(batch, native=self.native)
+            # FinancialSession hereda este paso también con el codec de la GRU candidata, que
+            # proyecta con su propio enlace. Solo el codec episódico usa el núcleo de la sesión.
+            encoded = (
+                self.codec.encode(batch, native=self.native)
+                if isinstance(self.codec, FrozenEpisodeCodec)
+                else self.codec.encode(batch)
+            )
             for index, flow in enumerate(batch.flow_ids):
                 metadata = dict(
                     flow_id=flow,
