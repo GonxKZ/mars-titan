@@ -264,7 +264,7 @@ def test_masked_sources_do_not_change_the_primary_report_nor_refit_any_calibrato
         key: value for key, value in primary(pending).items() if key != "modality_ablation"
     }
     assert joint.sessions.equals(joint.pending[1])
-    # Dos brazos de cuantiles con dos semillas en dos ventanas: ocho ajustes en cada informe.
+    # Dos modelos de cuantiles con dos semillas en dos ventanas: ocho ajustes en cada informe.
     assert joint.fits == [8, 8, 8]
     section = report["modality_ablation"]
     assert section["status"] == "computed" and section["recalibrated"] is False
@@ -317,7 +317,7 @@ def test_difference_is_the_masked_minus_original_session_mae_on_affected_rows(
             assert summary["difference"] == 0.0
         if arm == "ridge":
             assert summary["calibrated_intervals"] is None
-            assert summary["calibrated_reason"] == "El brazo no emite cuantiles"
+            assert summary["calibrated_reason"] == "El modelo no emite cuantiles"
         else:
             intervals = summary["calibrated_intervals"]
             assert [row["nominal"] for row in intervals["original"]] == [0.8, 0.95]
@@ -354,7 +354,7 @@ def test_rows_without_the_modality_that_change_are_counted(joint, tmp_path, monk
     first = study.folds[0]["id"]
 
     def change(variant, arm, seed, window, values):
-        # Un brazo con memoria cambia una fila sin la modalidad: el activo G no tiene ninguna.
+        # Un modelo con memoria cambia una fila sin la modalidad: el activo G no tiene ninguna.
         if (arm, seed, window) == ("titans", 43, first):
             row = values["asset_id"].index("US/G")
             values["prediction"][row] += 1.0
@@ -405,7 +405,7 @@ def _other_view(manifest):
         (lambda m: m.update(input_policy="strict_four_modalities_v1"), "otra política"),
         (_other_view, "otra política, comparación o vista"),
         (_drop_variant, "exactamente las variantes"),
-        (_drop_arm, "exactamente los brazos"),
+        (_drop_arm, "exactamente los modelos"),
         (_drop_seed, "exactamente las semillas"),
         (_drop_window, "exactamente las ventanas"),
         (_add_calibration, "solo declara su evaluación"),

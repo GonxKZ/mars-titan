@@ -1,0 +1,97 @@
+{
+ "schema_version": 1,
+ "kind": "targeted_mutation_receipt",
+ "issue": 17,
+ "executed_on": "2026-10-13",
+ "base_commit": "0191b5328fbc7ad8a207f98dea0f220911b21160",
+ "sources_sha256": {
+  "src/mars_titan/models/baselines/multimodal.py": "e96f8c3c066121b4127a8b3f25246619015b2b164921f38aa0e2eec06be9c962",
+  "src/mars_titan/models/titans/financial.py": "7dfc89ad3d40ca2d645ae2b3e5fed6251d7eeba8c79c25f9821b2a6e9feb1f22",
+  "tests/models/titans/test_common_fusion.py": "14b7b13f8cfc0e3d24e0d329edd21b9ff140c02c1eeeb93693a29aa00d9ff5f9",
+  "tests/models/test_masked_reference_fusion.py": "43be9adbddd569c9d7f21a1bf42ef5f4c68b9835e2b8b79b91467b97572317e9"
+ },
+ "method": "Copia aislada de src, tests, configs y benchmarks. Cada mutante sustituye un único fragmento, ejecuta las pruebas declaradas con -x y restaura el archivo. PYTHONPATH apunta a la copia, así que las pruebas importan el código mutado",
+ "tests": [
+  "tests/models/titans/test_common_fusion.py",
+  "tests/models/test_masked_reference_fusion.py"
+ ],
+ "environment": "CPU con CUDA_VISIBLE_DEVICES=-1 y OMP_NUM_THREADS=2, sin pasos de optimizador",
+ "baseline": {
+  "returncode": 0,
+  "seconds": 3.6,
+  "tail": [
+   "33 passed in 1.29s"
+  ]
+ },
+ "killed": 5,
+ "survived": 1,
+ "not_applied": 0,
+ "mutants": [
+  {
+   "name": "absent_projection_kept",
+   "file": "src/mars_titan/models/baselines/multimodal.py",
+   "status": "killed",
+   "seconds": 2.1,
+   "tail": [
+    "1 error in 0.20s"
+   ],
+   "original": "            projected = projected * presence[:, index : index + 1]\n",
+   "mutated": ""
+  },
+  {
+   "name": "presence_column_shifted",
+   "file": "src/mars_titan/models/baselines/multimodal.py",
+   "status": "killed",
+   "seconds": 3.5,
+   "tail": [
+    "1 failed, 2 passed in 1.32s"
+   ],
+   "original": "presence[:, index : index + 1]",
+   "mutated": "presence[:, index - 1 : index]"
+  },
+  {
+   "name": "presence_bits_dropped",
+   "file": "src/mars_titan/models/baselines/multimodal.py",
+   "status": "killed",
+   "seconds": 2.7,
+   "tail": [
+    "1 failed in 0.73s"
+   ],
+   "original": "        representations.append(presence.to(dtype=fusion[0].weight.dtype))\n",
+   "mutated": "        pass\n"
+  },
+  {
+   "name": "price_masked_by_its_bit",
+   "file": "src/mars_titan/models/baselines/multimodal.py",
+   "status": "survived",
+   "seconds": 3.4,
+   "tail": [
+    "33 passed in 1.24s"
+   ],
+   "original": "    representations = [price]\n",
+   "mutated": "    representations = [price if presence is None else price * presence[:, :1]]\n"
+  },
+  {
+   "name": "titans_ignores_presence",
+   "file": "src/mars_titan/models/titans/financial.py",
+   "status": "killed",
+   "seconds": 2.8,
+   "tail": [
+    "1 failed in 0.78s"
+   ],
+   "original": "batch.presence if self.masked else None",
+   "mutated": "None"
+  },
+  {
+   "name": "titans_identity_always_strict",
+   "file": "src/mars_titan/models/titans/financial.py",
+   "status": "killed",
+   "seconds": 3.2,
+   "tail": [
+    "1 failed, 3 passed in 1.12s"
+   ],
+   "original": "            mask_fusion=PRESENCE_FUSION\n            if masked_inputs(self.inputs.input_policy)\n            else STRICT_FUSION,",
+   "mutated": "            mask_fusion=STRICT_FUSION,"
+  }
+ ]
+}
