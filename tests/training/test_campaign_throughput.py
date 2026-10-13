@@ -630,6 +630,7 @@ def test_matrix_measurement_covers_every_case_without_changing_the_parent(
     )
     budget = dict(stage["matrix"]["budget"], batch_size=1)
     stage.update(families={"gru": "gru"}, matrix=dict(stage["matrix"], budget=budget))
+    from mars_titan.posttraining import replay_continuation as replay
     from mars_titan.posttraining import run as posttraining_run
 
     built, build = [], posttraining_run.build_model
@@ -643,13 +644,15 @@ def test_matrix_measurement_covers_every_case_without_changing_the_parent(
         stage, views / "fold-018/manifest.json", batches=1, warmup=0
     )
     # Los puntos medidos son los casos de una semilla que la matriz da a la GRU, también los
-    # de la variedad de adaptadores.
+    # de la variedad de adaptadores. La etapa A no nombra el repaso (#55), así que sus tres
+    # controles no se ejecutan ni se miden.
+    assert replay.SECTION_NAME not in stage["additional_controls"]
     declared = [
         item["id"].split("/", 1)[1]
         for item in adapter_matrix.cases(
             stage["matrix"], stage["matrix_sha256"], "gru", head=QUANTILE_HEAD
         )
-        if item["case"]["seed"] == 42
+        if item["case"]["seed"] == 42 and item["control"] not in replay.CONTROLS
     ]
     assert built == [42] * len(declared)
     assert len(optim_module._global_optimizer_pre_hooks) == hooks
