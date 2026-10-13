@@ -21,6 +21,7 @@ import pyarrow as pa
 from mars_titan.data.storage import atomic_json, sha256
 from mars_titan.episodes.storage import EpisodeSource, write_world
 from mars_titan.episodes.worlds import WorldConfig, generate_world
+from mars_titan.hardware.platform_identity import cpu_name
 from mars_titan.simulation.environment import FinancialEnv
 from mars_titan.simulation.evaluation import evaluate, fixed_policy
 from mars_titan.simulation.market import MarketTape
@@ -217,12 +218,7 @@ def main():
         text=True,
         timeout=10,
     )
-    cpu_info = (
-        subprocess.check_output(["rg", "-m", "1", "^model name", "/proc/cpuinfo"], text=True)
-        .strip()
-        .split(":", 1)[1]
-        .strip()
-    )
+    cpu_info = cpu_name()
     report = dict(
         schema_version=1,
         measured_at=datetime.now(UTC).isoformat(),

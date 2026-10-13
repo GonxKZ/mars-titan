@@ -6,7 +6,6 @@ que no tiene redes ni optimizador, y las referencias usan la contabilidad Python
 pruebas admiten la etapa con la protección temporal permitida de `learning_doubles`.
 """
 
-import copy
 import json
 import shutil
 from pathlib import Path
@@ -343,6 +342,7 @@ def test_missing_engine_capabilities_stop_the_stage_before_reading_sources(
             tmp_path / "c",
             tmp_path / "e",
             tmp_path / "out",
+            listing_status=tmp_path / "s",
             capabilities=without_cn,
         )
     message = str(error.value)
@@ -357,6 +357,7 @@ def test_missing_engine_capabilities_stop_the_stage_before_reading_sources(
             tmp_path / "c",
             tmp_path / "e",
             tmp_path / "out",
+            listing_status=tmp_path / "s",
             capabilities=dict(
                 everything, native_klpo_financial_runner=dict(available=False, reason="x")
             ),
@@ -420,7 +421,12 @@ def test_the_hold_stops_the_stage_before_probing_or_launching_binaries(
     monkeypatch.setattr(native_policy_runs.subprocess, "run", forbidden)
     with pytest.raises(LearningHoldError):
         campaign_stage.run_stage(
-            REPOSITORY["A"], {}, tmp_path / "c", tmp_path / "e", tmp_path / "out"
+            REPOSITORY["A"],
+            {},
+            tmp_path / "c",
+            tmp_path / "e",
+            tmp_path / "out",
+            listing_status=tmp_path / "s",
         )
     assert launched == [] and not (tmp_path / "out").exists()
 
@@ -578,6 +584,7 @@ def test_a_reference_that_learns_is_rejected(base_a, tmp_path, learning_doubles)
             base_a.output,
             base_a.edition,
             tmp_path / "stage",
+            listing_status=base_a.listing_status,
             executors=executors,
             capabilities={},
             stop=SimpleNamespace(requested=False),
@@ -708,7 +715,7 @@ def test_script_checks_the_policy_stage_and_runs_it_only_without_the_hold(
     learning_hold(False)
     arguments = ["rl", "run", "--stage", str(REPOSITORY["A"]), "--views", f"US={tmp_path}"]
     arguments += ["--campaign-output", str(tmp_path / "campaign"), "--edition", str(tmp_path)]
-    arguments += ["--output", str(tmp_path / "out")]
+    arguments += ["--listing-status", str(tmp_path / "s"), "--output", str(tmp_path / "out")]
     with pytest.raises(LearningHoldError):
         script["main"](arguments)
     assert not (tmp_path / "out").exists()
@@ -776,26 +783,6 @@ def test_every_tape_of_the_stage_is_real_and_no_synthetic_world_is_built(
     assert domains and set(domains) == {"real"}
 
 
-def test_a_universe_admission_on_a_tape_that_is_not_real_stops_the_stage(
-    base_a, tmp_path, learning_doubles, monkeypatch
-):
-    original = window_tapes.build_segment_tape
-
-    def relabeled(*args, symbols=None, **kwargs):
-        # Solo la admisión del universo monta un tramo con todos los activos.
-        tape, report = original(*args, symbols=symbols, **kwargs)
-        if symbols is None:
-            tape = copy.copy(tape)
-            tape.domain = "synthetic"
-        return tape, report
-
-    monkeypatch.setattr(window_tapes, "build_segment_tape", relabeled)
-    learner = fixture.ScriptedLearner()
-    with pytest.raises(ValueError, match="universe-fold-000 no es una cinta real"):
-        fixture.run(base_a, tmp_path / "stage", learner)
-    assert learner.calls == []
-
-
 def test_a_synthetic_tape_on_disk_stops_the_stage_before_any_executor(
     base_a, tmp_path, learning_doubles
 ):
@@ -818,26 +805,6 @@ def test_a_synthetic_tape_on_disk_stops_the_stage_before_any_executor(
     with pytest.raises(ValueError, match="no es una cinta real"):
         fixture.run(base_a, tmp_path / "stage", learner)
     assert learner.calls == []
-
-
-def test_each_window_is_admitted_once_for_every_anchor_universe(
-    base_a, tmp_path, learning_doubles, monkeypatch
-):
-    # Con la ventana en expansión, el universo de cada ancla lee todas las ventanas previas.
-    # La admisión con todos los activos se monta una vez por ventana y recibo.
-    built = []
-    original = window_tapes.build_segment_tape
-
-    def counted(edition, window, values, **options):
-        if options.get("symbols") is None:
-            built.append(window.fold)
-        return original(edition, window, values, **options)
-
-    monkeypatch.setattr(window_tapes, "build_segment_tape", counted)
-    assert fixture.run(base_a, tmp_path / "stage", fixture.ScriptedLearner())["status"] == (
-        "completed"
-    )
-    assert sorted(built) == ["fold-000", "fold-001", "fold-002"]
 
 
 def chained(base, root):

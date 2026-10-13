@@ -1,7 +1,8 @@
 """Declaración del paso final: cada campaña publica la matriz y la etapa de su comparación.
 
-Solo se cargan declaraciones y configuraciones. No se lee ninguna predicción ni se ajusta
-nada. El recorrido completo, desde los agregados por ventana, está en
+Solo se cargan declaraciones y configuraciones, salvo en la retención e interferencia, que
+publica la comparación de un estudio sintético con predicciones escritas en la prueba. No se
+ajusta nada. El recorrido completo, desde los agregados por ventana, está en
 `tests/posttraining/test_publication_from_aggregates.py`.
 """
 
@@ -12,8 +13,9 @@ from pathlib import Path
 
 import pytest
 
-from mars_titan.data.storage import atomic_json
+from mars_titan.data.storage import atomic_json, sha256
 from mars_titan.evaluation import comparison_matrix
+from mars_titan.evaluation import walk_forward_comparison as walk
 from mars_titan.training import campaign_plan as plan
 from mars_titan.training import campaign_publication as publication
 
@@ -161,3 +163,123 @@ def test_the_campaign_plan_registers_the_publication_as_its_last_stage():
     assert getattr(importlib.import_module(module), function) is publication.run_publication
     # Es la última entrada: se ejecuta cuando todas las etapas están confirmadas.
     assert list(plan.LATER_STAGES)[-1] == "campaign_publication"
+
+
+# Retención e interferencia en las revisitas de régimen (#528)
+
+
+def test_both_campaigns_need_the_regime_calendar_their_comparison_declares(tmp_path, monkeypatch):
+    destination = tmp_path / "published"
+    for variant in sorted(DECLARATIONS):
+        config = publication.load_publication(DECLARATIONS[variant])["campaign_config"]
+        assert walk.RETENTION_FIELD in config["comparison_config"]
+    with pytest.raises(ValueError, match="falta el calendario de regímenes"):
+        publication.run_publication(
+            DECLARATIONS["A_V2"],
+            {},
+            tmp_path / "campaign",
+            destination,
+            adapter_output=tmp_path / "adapters",
+            edition=tmp_path / "edition",
+        )
+    # Se detiene antes de crear la carpeta provisional.
+    assert list(tmp_path.iterdir()) == []
+    # Una comparación sin la sección no admite un calendario.
+    loaded = publication.load_publication(DECLARATIONS["A_V2"])
+    campaign = loaded["campaign_config"]
+    plain = {k: v for k, v in campaign["comparison_config"].items() if k != walk.RETENTION_FIELD}
+    changed = dict(loaded, campaign_config=dict(campaign, comparison_config=plain))
+    monkeypatch.setattr(publication, "load_publication", lambda path: changed)
+    with pytest.raises(ValueError, match="sobra el calendario"):
+        publication.run_publication(
+            DECLARATIONS["A_V2"],
+            {},
+            tmp_path / "campaign",
+            destination,
+            adapter_output=tmp_path / "adapters",
+            edition=tmp_path / "edition",
+            regimes=tmp_path / "calendar.json",
+        )
+
+
+@pytest.fixture(scope="module")
+def retention_study(tmp_path_factory):
+    """Estudio sintético con la sección de retención, su calendario y sus agregados."""
+    from mars_titan.evaluation import window_aggregates
+    from tests.evaluation import test_walk_forward_comparison as base
+    from tests.evaluation.test_walk_forward_predictive_ability import long_decisions
+    from tests.evaluation.test_walk_forward_retention import section, write_calendar
+
+    root = tmp_path_factory.mktemp("retention")
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setattr(base, "decisions", long_decisions)
+        study = base.Study(root / "study")
+        study.config[walk.RETENTION_FIELD] = section()
+        study.publish()
+    calendar = write_calendar(root / "regimes" / "calendar.json")
+    config = walk.load_config(study.config_path)
+    sources = walk.load_sources(study.sources_path, config, study.scope)
+    aggregates = root / "aggregates"
+    for window in sources["windows"]:
+        window_aggregates.write(aggregates, config, sources, window)
+    rows, _ = walk.evaluate_walk_forward(
+        study.config_path, study.sources_path, study.scope, regimes=calendar
+    )
+    return study, calendar, aggregates, rows
+
+
+def test_the_publication_from_aggregates_carries_the_complete_retention_section(
+    retention_study, tmp_path, monkeypatch
+):
+    """`run_publication` de A v2 con la comparación del estudio sintético.
+
+    La campaña reducida solo se recorre rebajando la protección de aprendizaje. Aquí la
+    publicación conserva su orden y sus argumentos, y cada comparación walk-forward se
+    calcula de verdad, desde los agregados y con el calendario que recibe, sobre el estudio.
+    Las demás piezas (fuentes, cartera, matriz y etapa) se sustituyen por archivos vacíos, y
+    el informe de integridad por uno superado (sus pruebas están en `tests/integrity`).
+    """
+    from mars_titan.evaluation import long_short_comparison
+    from mars_titan.evaluation import session_table_contrasts as tables
+    from mars_titan.integrity import publication_gate
+    from mars_titan.posttraining import stage_comparison
+    from mars_titan.training import masked_campaign as engine
+
+    study, calendar, aggregates, rows = retention_study
+    calls = []
+    real = walk.write_walk_forward
+
+    def walk_forward(config_path, sources_path, scope, output, **options):
+        calls.append(options)
+        return real(study.config_path, study.sources_path, study.scope, output, **options)
+
+    monkeypatch.setattr(walk, "write_walk_forward", walk_forward)
+    monkeypatch.setattr(engine, "write_sources", lambda *a, **k: study.sources_path)
+    monkeypatch.setattr(long_short_comparison, "write_long_short", lambda *a, **k: None)
+    monkeypatch.setattr(tables, "write_sources", lambda path, *a, **k: path)
+    monkeypatch.setattr(comparison_matrix, "write", lambda *a, **k: dict(families={}))
+    monkeypatch.setattr(stage_comparison, "write_sources", lambda *a, **k: study.sources_path)
+    monkeypatch.setattr(stage_comparison, "write", lambda *a, **k: dict(windows=[]))
+    monkeypatch.setattr(publication_gate, "build", lambda *a, **k: dict(passed=True, failing=[]))
+    destination = tmp_path / "published"
+    receipt = publication.run_publication(
+        DECLARATIONS["A_V2"],
+        {},
+        tmp_path / "campaign",
+        destination,
+        adapter_output=tmp_path / "adapters",
+        aggregates=aggregates,
+        edition=tmp_path / "edition",
+        regimes=calendar,
+    )
+    scopes = publication.load_publication(DECLARATIONS["A_V2"])["campaign_config"]["scopes"]
+    assert len(calls) == len(scopes) and all(
+        options["aggregates"] == aggregates and options["regimes"] == calendar for options in calls
+    )
+    expected = rows[walk.RETENTION_FIELD]
+    assert expected["status"] == "computed"
+    for scope in scopes:
+        report = json.loads((destination / "walk-forward" / scope / "comparison.json").read_text())
+        assert report[walk.RETENTION_FIELD] == expected
+    assert receipt["from_aggregates"] is True
+    assert receipt["regimes"] == dict(sha256=sha256(calendar))
