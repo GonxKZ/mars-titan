@@ -565,7 +565,7 @@ def measure_view(manifest_path, directory, *, seed=0, writers=None):
 # Valores que no se miden aquí, con su procedencia. El corpus ordenado de los adaptadores
 # repite la medida de `docs/engineering/corpus-temporary-storage.md` (1.392.366.107 y
 # 2.060.963.783 bytes para 321.610 filas de entrenamiento). La caché de cada padre es el
-# presupuesto de `episodes.parents`. Los estados de adaptadores son la cota del inventario
+# presupuesto de `posttraining.parent_cache`. Los estados de adaptadores son la cota del inventario
 # de `posttraining.run` (padre completo más adaptador, hasta 1,8 MB).
 ADAPTER_DECLARED = dict(
     ordered_row_bytes=4330,

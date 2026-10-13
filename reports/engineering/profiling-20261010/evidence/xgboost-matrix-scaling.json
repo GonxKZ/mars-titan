@@ -1,0 +1,103 @@
+{
+ "runs_used": [
+  "trace-small-64-r1",
+  "trace-large-64-r1",
+  "trace-xlarge-64-r1",
+  "trace-small-64-r2",
+  "trace-large-64-r2",
+  "trace-xlarge-64-r2",
+  "anon-small-64-r1",
+  "anon-large-64-r1",
+  "anon-xlarge-64-r1",
+  "anon-small-64-r2",
+  "anon-large-64-r2",
+  "anon-xlarge-64-r2"
+ ],
+ "rows_measured": [
+  110095,
+  364104,
+  739214
+ ],
+ "fit": {
+  "intercept_gib": 1.5686473746897707,
+  "slope_bytes_per_row": 50.459072931790146,
+  "slope_standard_error": 23.924887526977976,
+  "t_quantile": 2.228138851986274,
+  "degrees_of_freedom": 10
+ },
+ "components": {
+  "reader_cache_limit_bytes": 1073741824,
+  "row_key_bytes_per_row": 17.0,
+  "validation_bytes_per_row": 6900.0,
+  "validation_transient_bytes": [
+   17221364,
+   -19732748
+  ],
+  "process_start_gib": 0.9074929555257162
+ },
+ "full_window": {
+  "train_rows": 14639357,
+  "validation_rows": 609090
+ },
+ "estimates": {
+  "low": {
+   "slope_bytes_per_row": -2.8488984964712856,
+   "matrix_peak_gib": 2.7615829782240087,
+   "joint_peak_gib": 6.691710565393418,
+   "joint_increment_over_start_gib": 5.784217609867702
+  },
+  "central": {
+   "slope_bytes_per_row": 50.459072931790146,
+   "matrix_peak_gib": 3.4883819230363877,
+   "joint_peak_gib": 7.418509510205796,
+   "joint_increment_over_start_gib": 6.51101655468008
+  },
+  "high": {
+   "slope_bytes_per_row": 103.76704436005159,
+   "matrix_peak_gib": 4.215180867848766,
+   "joint_peak_gib": 8.145308455018174,
+   "joint_increment_over_start_gib": 7.237815499492458
+  }
+ },
+ "declared": {
+  "host_mib": 8192,
+  "vram_mib": 7000
+ },
+ "device_and_disk_by_bins": {
+  "256": {
+   "build_device_mib_by_rows": {
+    "110095": 786,
+    "364104": 818
+   },
+   "disk_bytes_per_row": [
+    1719.01
+   ],
+   "plan_error_bytes": [
+    695,
+    2208
+   ],
+   "full_disk_gb": 25.16520107657
+  },
+  "64": {
+   "build_device_mib_by_rows": {
+    "364104": 658,
+    "110095": 658,
+    "739214": 658
+   },
+   "disk_bytes_per_row": [
+    1289.26
+   ],
+   "plan_error_bytes": [
+    757,
+    4822
+   ],
+   "full_disk_gb": 18.87393740582
+  }
+ },
+ "build_seconds_per_million_rows": [
+  83.50357545176244,
+  83.73964513523539,
+  87.66789324065493,
+  88.20251954508794
+ ]
+}

@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "recorded_at_utc": "2026-10-10T12:05:00+00:00",
+  "base_commit": "b92e07a0",
+  "tested_tree": "develop b92e07a0 con las comprobaciones de esta rama, sin cambios en src/",
+  "issues": [
+    364,
+    383
+  ],
+  "hardware": {
+    "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU, 8188 MiB, capacidad 8.9",
+    "driver": "595.91.07",
+    "cpu": "AMD Ryzen 9 8945HS, 16 hilos",
+    "power_profile": "power-saver (platform_profile low-power), sin cambios",
+    "device_memory_before_mib": 532
+  },
+  "software": {
+    "python": "3.12.14",
+    "torch": "2.14.0+cu130",
+    "cuda_runtime": "13.0",
+    "cudnn": 92400,
+    "numpy": "2.5.3",
+    "pyarrow": "25.0.1",
+    "environment": "convergence-runtime-20261001/.venv sin sincronizar",
+    "episodic_native": "native-candidate-cuda compilado desde develop f1aca19e, sin cambios en native/ hasta b92e07a0",
+    "episodic_native_sha256": "3fdbb5a305f46b3beece8a67f6012db71b00c21fcad13e4dbb937d8d8311b1ac"
+  },
+  "policy": {
+    "learning_hold": "vigente, sin cambios en training-hold-2000.json",
+    "optimizer_steps": 0,
+    "optimizer": "registradores de gradientes que no heredan de torch.optim.Optimizer ni cambian pesos",
+    "tf32": false,
+    "gpu_slot": "memslot gpu, sin otra carga de cómputo CUDA al empezar",
+    "threads": {
+      "OMP_NUM_THREADS": 2,
+      "MKL_NUM_THREADS": 2
+    },
+    "cublas_workspace": ":4096:8"
+  },
+  "checks": [
+    {
+      "file": "tests/models/titans/cuda_episodic_readout_check.py",
+      "receipt": "episodic-readout-cuda.json",
+      "result": "1 pasa",
+      "seconds": 11.6,
+      "started": "2026-10-10T13:43:28+02:00"
+    },
+    {
+      "file": "tests/training/cuda_candidate_run_check.py",
+      "receipt": "candidate-trainer-cuda.json",
+      "result": "6 pasan",
+      "seconds": 51.6,
+      "issue": 383
+    },
+    {
+      "file": "tests/posttraining/cuda_candidate_adapters_check.py",
+      "receipt": "candidate-adapters-cuda.json",
+      "result": "2 pasan",
+      "seconds": 32.9,
+      "issue": 364
+    },
+    {
+      "file": "tests/posttraining/cuda_readout_adapters_check.py",
+      "receipt": "readout-adapters-cuda.json",
+      "result": "2 pasan",
+      "seconds": 124.3,
+      "issue": 364,
+      "note": "Repetida a las 14:02 con la tolerancia de float64, la precisión del padre de la fixture. La primera ejecución, con la de FP32, también pasó con las mismas diferencias"
+    }
+  ],
+  "nvidia_smi_peak_mib": 904,
+  "nvidia_smi_peak_note": "Muestras cada 200 ms durante las cuatro primeras ejecuciones. Incluye unos 532 MiB del escritorio",
+  "final_test_opened": false
+}

@@ -8,10 +8,10 @@ import pytest
 
 from mars_titan.data.input_policy import HISTORICAL_MASKED, policy_identity
 from mars_titan.environments.actions import ActionGrid
-from mars_titan.episodes.parents import ParentCache
 from mars_titan.posttraining import run
 from mars_titan.posttraining.augmented_inputs import AugmentedInputs
 from mars_titan.posttraining.inputs import PairedInputs, fit_normalization
+from mars_titan.posttraining.parent_cache import ParentCache
 from tests.posttraining.masked_fixture import change_after_training, masked_ordered, sources
 
 MODALITIES = ("prices", "news", "charts", "fundamentals", "macro")

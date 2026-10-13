@@ -19,13 +19,15 @@ La captura de [fuentes públicas](../data/public-source-updates.md) utiliza `cur
 
 Python se gestiona con uv. El entorno local es `.venv/`, con Python 3.12 como versión de trabajo. `pyproject.toml` declara las dependencias y `uv.lock` conserva la resolución. El paquete se construye con Hatchling y se instala en modo editable durante el desarrollo. La orden `mars-data` expone las operaciones de preparación.
 
+La resolución solo admite versiones publicadas hasta el 26 de septiembre de 2026 (`exclude-newer` en `[tool.uv]`), dos semanas antes de la [revisión de bibliotecas](../research/library-review.md). Con esa fecha, `arch` 8.0.0 resuelve con `wrapt` 2.4.1 en lugar de la 2.5.0, publicada un día después. Mover la fecha es una decisión explícita que obliga a volver a resolver y a revisar el diff de `uv.lock`, porque `uv` vuelve a resolver todo el lock cuando cambia.
+
 Para preparar las herramientas de documentación y calidad:
 
 ```bash
 uv sync --locked
 ```
 
-El grupo `dev` contiene las utilidades de comprobación. Los extras `data`, `research` y `notebooks` añaden herramientas opcionales. `cuda` y `encoders` se han usado en la preparación multimodal y las mediciones locales. No hace falta PyTorch para revisar documentación o validar formatos. Las pruebas que lo necesitan se omiten de forma explícita si no está instalado.
+El grupo `dev` contiene las utilidades de comprobación. El grupo `reference` contiene las bibliotecas externas que solo se usan como referencia en las pruebas de paridad, con versiones exactas, y se instala con `uv sync --locked --group reference`. Los extras `data`, `research` y `notebooks` añaden herramientas opcionales. `cuda` y `encoders` se han usado en la preparación multimodal y las mediciones locales. No hace falta PyTorch para revisar documentación o validar formatos. Las pruebas que lo necesitan se omiten de forma explícita si no está instalado.
 
 Para reproducir la preparación y sus comprobaciones con GPU:
 
@@ -35,7 +37,7 @@ uv sync --locked \
   --extra encoders
 ```
 
-El extra `cuda` obtiene PyTorch desde el índice CUDA 13.0 declarado en `pyproject.toml`, para Linux x86-64. Se han comprobado importación, operación en `cuda:0`, extracción de representaciones y entrenamiento supervisado. La resolución del lockfile no sustituye estas comprobaciones al cambiar de equipo.
+El extra `cuda` obtiene PyTorch desde el índice CUDA 13.0 declarado en `pyproject.toml`, para Linux x86-64 y Linux aarch64. La segunda arquitectura corresponde a la DGX GB10 y su estado se describe en [plataformas de hardware](hardware-platforms.md). Se han comprobado importación, operación en `cuda:0`, extracción de representaciones y entrenamiento supervisado. La resolución del lockfile no sustituye estas comprobaciones al cambiar de equipo.
 
 Las herramientas actuales se ejecutan desde la raíz:
 
@@ -112,7 +114,7 @@ Las órdenes del README nativo separan Release de los perfiles de avisos, análi
 
 ## Registro de futuros experimentos
 
-Cada ejecución científica conservará la revisión del código, el lockfile, la configuración efectiva, las semillas y el entorno utilizado. También registrará el dispositivo, la precisión, los límites de memoria y los ajustes que puedan afectar al determinismo.
+Cada ejecución científica conservará la revisión del código, el lockfile, la configuración efectiva, las semillas y el entorno utilizado. La campaña con máscaras registra además la [identidad de la plataforma](hardware-platforms.md#identidad-de-la-plataforma) en cada recibo y no compara recibos de máquinas distintas. También registrará el dispositivo, la precisión, los límites de memoria y los ajustes que puedan afectar al determinismo.
 
 Los datos tendrán identificadores de versión, hashes y reglas de disponibilidad temporal. Los cortes de entrenamiento, validación, calibración y test se guardarán junto con los estados iniciales y las reglas de actualización de memoria. Una predicción deberá poder asociarse con la información disponible cuando se produjo.
 

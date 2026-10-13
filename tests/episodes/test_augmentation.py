@@ -6,8 +6,8 @@ import numpy as np
 import pytest
 
 from mars_titan.episodes.augmentation import augmentation_windows, paired_world, training_visits
-from mars_titan.episodes.parents import ParentCache
 from mars_titan.episodes.worlds import WorldConfig, generate_world
+from mars_titan.posttraining.parent_cache import ParentCache
 
 
 def test_each_epoch_preserves_all_base_rows_and_matches_additional_updates():

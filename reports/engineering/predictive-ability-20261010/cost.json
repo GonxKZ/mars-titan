@@ -1,0 +1,72 @@
+{
+ "schema_version": 1,
+ "kind": "predictive_ability_cost",
+ "issue": 493,
+ "measured_at": "2026-10-10T12:06:14.879921+00:00",
+ "commit": "903e4fc99ebc608cfdd04b092688dd3c51fe32e4",
+ "sources_sha256": {
+  "src/mars_titan/evaluation/predictive_ability.py": "1b9bf1de60468fbf43c10042d382f684357f420954beee1493fde646f6ebeb05",
+  "benchmarks/predictive_ability_cost.py": "4599728026c9a4e6f00db0a2e6fa1e2dabe3266614e0f7cd026f9eacef44a5b5",
+  "configs/evaluation/historical-masked-2000-joint-comparison.json": "7c5ea9087c8ed50ce4f029931a9cab7cf7c962a769373d1f63c5066df7ffd8dc"
+ },
+ "data": "pérdidas sintéticas con semilla fija sobre calendarios reales, solo fijan formas",
+ "environment": {
+  "cpu": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+  "cpu_count": 16,
+  "threads": {
+   "omp": "2",
+   "mkl": "2",
+   "openblas": "2"
+  },
+  "python": "3.12.14",
+  "numpy": "2.5.3",
+  "arch": "8.0.0",
+  "statsmodels": "0.15.0",
+  "load_average_at_start": [
+   8.41943359375,
+   10.8115234375,
+   11.83740234375
+  ],
+  "concurrent_load": "otras sesiones comparten la máquina, ver load_average_at_start"
+ },
+ "not_measured": [
+  "GPU, porque los contrastes solo usan NumPy en CPU",
+  "energía, sin instrumento adecuado",
+  "lectura y puntuación de predicciones, que mide benchmark_evaluation_scale"
+ ],
+ "families": 13,
+ "arms": 24,
+ "days": {
+  "US+CN": 4887,
+  "US": 4781,
+  "CN": 3159
+ },
+ "sessions": 7940,
+ "block_length": 16,
+ "replicates": 2000,
+ "runs": [
+  {
+   "elapsed_s": 29.191421547002392,
+   "by_analysis_s": {
+    "diebold_mariano": 0.05387291716760956,
+    "block_length_diagnostic": 0.0771326560061425,
+    "superior_predictive_ability": 12.688910595024936,
+    "model_confidence_set": 12.31685432480299
+   },
+   "report_sha256": "203785bcc23b3dc63e77903022b725230cba3f9d086efcbda9291738b02c25d7"
+  },
+  {
+   "elapsed_s": 33.09559694901691,
+   "by_analysis_s": {
+    "diebold_mariano": 0.0592266030726023,
+    "block_length_diagnostic": 0.09476549387909472,
+    "superior_predictive_ability": 14.067830874962965,
+    "model_confidence_set": 14.43814910913352
+   },
+   "report_sha256": "203785bcc23b3dc63e77903022b725230cba3f9d086efcbda9291738b02c25d7"
+  }
+ ],
+ "median_elapsed_s": 31.14350924800965,
+ "numpy_peak_bytes": 112662367,
+ "identical_reports": true
+}

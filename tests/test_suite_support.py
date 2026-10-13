@@ -1,8 +1,9 @@
-"""Apoyo de la suite: comprobación estricta y ejecutables falsos con rutas con espacios."""
+"""Apoyo de la suite: modos estrictos, grupo `reference` y ejecutables falsos con espacios."""
 
 import os
 import subprocess
 import sys
+from importlib import metadata
 from pathlib import Path
 
 import pytest
@@ -12,7 +13,11 @@ from tests.suite_support import (
     episodic_load_problem,
     native_required,
     python_shebang,
+    reference_module,
+    reference_pins,
+    reference_problems,
     strict_problems,
+    strict_skip,
 )
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -174,3 +179,86 @@ def test_link_directory_with_spaces_is_rejected(tmp_path):
     directory.mkdir()
     with pytest.raises(ValueError, match="espacios"):
         python_shebang(directory)
+
+
+def test_strict_skip_names_the_switch_of_each_marker():
+    native = {"MARS_TITAN_REQUIRE_NATIVE": "1"}
+    reference = {"MARS_TITAN_REQUIRE_REFERENCE": "1"}
+    assert strict_skip({"native_binding"}, native) == (
+        "MARS_TITAN_REQUIRE_NATIVE=1 y la prueba del enlace nativo se omitió"
+    )
+    assert strict_skip({"external_reference"}, reference) == (
+        "MARS_TITAN_REQUIRE_REFERENCE=1 y la prueba de referencia externa se omitió"
+    )
+    # Cada marca solo depende de su propia variable.
+    assert strict_skip({"external_reference"}, native) is None
+    assert strict_skip({"native_binding"}, reference) is None
+    assert strict_skip({"parametrize"}, native | reference) is None
+    assert strict_skip({"external_reference"}, {"MARS_TITAN_REQUIRE_REFERENCE": "0"}) is None
+    # Una prueba con las dos marcas solo falla al omitirse si se exigen las dos cosas.
+    both = {"native_binding", "external_reference"}
+    assert strict_skip(both, reference) is None
+    assert strict_skip(both, native) is None
+    assert strict_skip(both, native | reference) == (
+        "MARS_TITAN_REQUIRE_NATIVE=1, MARS_TITAN_REQUIRE_REFERENCE=1 y la prueba del enlace "
+        "nativo y de referencia externa se omitió"
+    )
+
+
+def test_reference_pins_are_the_exact_versions_of_the_group():
+    pins = reference_pins()
+    assert pins == {
+        "peft": "0.21.0",
+        "accelerate": "1.15.0",
+        "scoringrules": "0.11.0",
+        "mapie": "1.5.0",
+        "sb3-contrib": "2.9.0",
+        "stable-baselines3": "2.9.0",
+    }
+
+
+@pytest.mark.parametrize(
+    "requirement", ["peft>=0.21", "peft", "peft== 0.21.0", "peft==0.21.0 ; os_name == 'nt'"]
+)
+def test_reference_pins_reject_inexact_requirements(tmp_path, requirement):
+    pyproject = tmp_path / "pyproject.toml"
+    pyproject.write_text(f'[dependency-groups]\nreference = ["{requirement}"]\n')
+    with pytest.raises(ValueError, match="versiones exactas"):
+        reference_pins(pyproject)
+
+
+def test_reference_problems_name_missing_and_different_versions():
+    def installed(name):
+        if name == "absent":
+            raise metadata.PackageNotFoundError(name)
+        return {"exact": "1.0.0", "other": "2.1.0"}[name]
+
+    pins = {"exact": "1.0.0", "other": "2.0.0", "absent": "3.0.0"}
+    assert reference_problems(pins, installed) == [
+        "other 2.1.0 instalado, el grupo reference fija 2.0.0",
+        "falta absent==3.0.0 del grupo reference",
+    ]
+
+
+def test_strict_reference_check_runs_only_with_its_switch():
+    def problems():
+        return ["falta peft==0.21.0 del grupo reference"]
+
+    assert strict_problems({}, cuda=never, reference=problems) == []
+    assert strict_problems({"MARS_TITAN_REQUIRE_REFERENCE": "0"}, reference=problems) == []
+    assert strict_problems({"MARS_TITAN_REQUIRE_REFERENCE": "1"}, reference=problems) == problems()
+    assert strict_problems({"MARS_TITAN_REQUIRE_REFERENCE": "yes"}, reference=problems) == [
+        "MARS_TITAN_REQUIRE_REFERENCE debe valer 0 o 1"
+    ]
+
+
+def test_reference_module_skips_only_when_the_package_itself_is_missing(tmp_path, monkeypatch):
+    with pytest.raises(pytest.skip.Exception, match="grupo de dependencias reference"):
+        reference_module("mars_titan_reference_absent")
+    # Un paquete presente cuya dependencia falta es una instalación rota y no se omite.
+    package = tmp_path / "mars_titan_reference_broken"
+    package.mkdir()
+    (package / "__init__.py").write_text("import mars_titan_reference_dependency_absent\n")
+    monkeypatch.syspath_prepend(str(tmp_path))
+    with pytest.raises(ModuleNotFoundError, match="mars_titan_reference_dependency_absent"):
+        reference_module("mars_titan_reference_broken")

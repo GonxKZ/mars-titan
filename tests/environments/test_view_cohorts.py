@@ -21,8 +21,8 @@ from mars_titan.environments.view_cohorts import (
     _SessionRows,
     prepare_cohort_index,
 )
-from mars_titan.episodes.parents import ParentCache
 from mars_titan.posttraining.inputs import PairedInputs, fit_normalization
+from mars_titan.posttraining.parent_cache import ParentCache
 from mars_titan.training import masked_campaign as engine
 from mars_titan.training.corpus_inputs import CorpusDataset
 from tests.training.historical_temporal_fixture import historical_temporal_fixture

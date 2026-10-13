@@ -1,0 +1,236 @@
+{
+ "schema_version": 1,
+ "kind": "targeted_mutation_testing",
+ "issue": 493,
+ "commit": "557254be8c1ad41612f086ef37d317e6068a5789",
+ "tests": [
+  "tests/evaluation/test_predictive_ability.py",
+  "tests/evaluation/test_arch_bootstrap_parity.py",
+  "tests/evaluation/test_walk_forward_predictive_ability.py"
+ ],
+ "method": "copia aislada del árbol versionado, un defecto cada vez, sin GPU ni optimizador",
+ "killed": 26,
+ "total": 27,
+ "equivalent": [
+  "spa_studentize_true"
+ ],
+ "mutations": [
+  {
+   "id": "M01",
+   "name": "dm_sign",
+   "description": "Diferencial de Diebold-Mariano con base y variante intercambiadas",
+   "file": "src/mars_titan/evaluation/predictive_ability.py",
+   "killed": true,
+   "first_failure": "FAILED tests/evaluation/test_predictive_ability.py::test_diebold_mariano_matches_newey_west_with_harvey_by_hand"
+  },
+  {
+   "id": "M02",
+   "name": "dm_without_harvey",
+   "description": "Diebold-Mariano sin la corrección de Harvey",
+   "file": "src/mars_titan/evaluation/predictive_ability.py",
+   "killed": true,
+   "first_failure": "FAILED tests/evaluation/test_predictive_ability.py::test_diebold_mariano_matches_newey_west_with_harvey_by_hand"
+  },
+  {
+   "id": "M03",
+   "name": "hac_floor",
+   "description": "Retardos HAC con la parte entera inferior de la raíz cúbica",
+   "file": "src/mars_titan/evaluation/predictive_ability.py",
+   "killed": true,
+   "first_failure": "FAILED tests/evaluation/test_predictive_ability.py::test_hac_lags_use_the_integer_ceiling_of_the_cube_root"
+  },
+  {
+   "id": "M04",
+   "name": "hac_ignores_horizon",
+   "description": "Retardos HAC sin el mínimo h − 1",
+   "file": "src/mars_titan/evaluation/predictive_ability.py",
+   "killed": true,
+   "first_failure": "FAILED tests/evaluation/test_predictive_ability.py::test_hac_lags_use_the_integer_ceiling_of_the_cube_root"
+  },
+  {
+   "id": "M05",
+   "name": "holm_to_bonferroni",
+   "description": "Bonferroni en lugar de Holm dentro de la familia",
+   "file": "src/mars_titan/evaluation/predictive_ability.py",
+   "killed": true,
+   "first_failure": "FAILED tests/evaluation/test_predictive_ability.py::test_holm_adjusts_only_the_tested_rows_within_the_family"
+  },
+  {
+   "id": "M06",
+   "name": "spa_stationary",
+   "description": "SPA con bootstrap estacionario en lugar de circular",
+   "file": "src/mars_titan/evaluation/predictive_ability.py",
+   "killed": true,
+   "first_failure": "FAILED tests/evaluation/test_predictive_ability.py::test_spa_and_reality_check_are_the_arch_pvalues_without_studentizing"
+  },
+  {
+   "id": "M07",
+   "name": "spa_studentize_true",
+   "description": "SPA estudentizado, equivalente porque arch 8.0.0 ignora studentize",
+   "file": "src/mars_titan/evaluation/predictive_ability.py",
+   "killed": false,
+   "first_failure": null
+  },
+  {
+   "id": "M08",
+   "name": "stepm_arch_8_stop",
+   "description": "StepM con la condición de parada de arch 8.0.0",
+   "file": "src/mars_titan/evaluation/predictive_ability.py",
+   "killed": true,
+   "first_failure": "FAILED tests/evaluation/test_predictive_ability.py::test_stepm_selects_every_model_when_arch_8_fails_across_steps"
+  },
+  {
+   "id": "M09",
+   "name": "stepm_no_restore",
+   "description": "StepM sin restaurar el selector del SPA",
+   "file": "src/mars_titan/evaluation/predictive_ability.py",
+   "killed": true,
+   "first_failure": "FAILED tests/evaluation/test_predictive_ability.py::test_stepm_restores_every_model_after_the_steps"
+  },
+  {
+   "id": "M10",
+   "name": "rc_is_consistent",
+   "description": "Reality Check con el p-valor consistente en lugar del superior",
+   "file": "src/mars_titan/evaluation/predictive_ability.py",
+   "killed": true,
+   "first_failure": "FAILED tests/evaluation/test_predictive_ability.py::test_spa_and_reality_check_are_the_arch_pvalues_without_studentizing"
+  },
+  {
+   "id": "M11",
+   "name": "mcs_always_r",
+   "description": "MCS siempre con el método R",
+   "file": "src/mars_titan/evaluation/predictive_ability.py",
+   "killed": true,
+   "first_failure": "FAILED tests/evaluation/test_predictive_ability.py::test_the_model_confidence_set_is_the_arch_one[max]"
+  },
+  {
+   "id": "M12",
+   "name": "mcs_no_degenerate_guard",
+   "description": "MCS sin el motivo de los brazos con diferencial constante",
+   "file": "src/mars_titan/evaluation/predictive_ability.py",
+   "killed": true,
+   "first_failure": "FAILED tests/evaluation/test_predictive_ability.py::test_the_model_confidence_set_refuses_two_identical_arms"
+  },
+  {
+   "id": "M13",
+   "name": "market_weight_as_session",
+   "description": "Ponderación por mercado tratada como por sesión",
+   "file": "src/mars_titan/evaluation/predictive_ability.py",
+   "killed": true,
+   "first_failure": "FAILED tests/evaluation/test_predictive_ability.py::test_market_weighting_averages_markets_present_in_each_day"
+  },
+  {
+   "id": "M14",
+   "name": "day_union",
+   "description": "Unión de días definidos en lugar de intersección",
+   "file": "src/mars_titan/evaluation/predictive_ability.py",
+   "killed": true,
+   "first_failure": "FAILED tests/evaluation/test_predictive_ability.py::test_a_day_without_defined_sessions_in_one_arm_leaves_the_comparison"
+  },
+  {
+   "id": "M15",
+   "name": "pw_swapped",
+   "description": "Diagnóstico de Politis y White con la longitud estacionaria como circular",
+   "file": "src/mars_titan/evaluation/predictive_ability.py",
+   "killed": true,
+   "first_failure": "FAILED tests/evaluation/test_predictive_ability.py::test_the_block_length_diagnostic_is_the_arch_estimate_and_changes_nothing"
+  },
+  {
+   "id": "M16",
+   "name": "structure_ignores_sign",
+   "description": "Base de la familia tomada del signo contrario",
+   "file": "src/mars_titan/evaluation/predictive_ability.py",
+   "killed": true,
+   "first_failure": "FAILED tests/evaluation/test_predictive_ability.py::test_family_structure_follows_the_declared_kinds"
+  },
+  {
+   "id": "M17",
+   "name": "min_days_strict",
+   "description": "Mínimo de días con desigualdad estricta",
+   "file": "src/mars_titan/evaluation/predictive_ability.py",
+   "killed": true,
+   "first_failure": "FAILED tests/evaluation/test_predictive_ability.py::test_a_family_with_exactly_the_minimum_of_days_is_analysed"
+  },
+  {
+   "id": "M18",
+   "name": "min_days_floor_2",
+   "description": "Mínimo absoluto de dos días en lugar de tres",
+   "file": "src/mars_titan/evaluation/predictive_ability.py",
+   "killed": true,
+   "first_failure": "FAILED tests/evaluation/test_predictive_ability.py::test_the_minimum_needs_three_days_even_with_one_day_blocks"
+  },
+  {
+   "id": "M19",
+   "name": "declaration_skips_loss_check",
+   "description": "La declaración acepta métricas que no son pérdidas",
+   "file": "src/mars_titan/evaluation/predictive_ability.py",
+   "killed": true,
+   "first_failure": "FAILED tests/evaluation/test_predictive_ability.py::test_the_declaration_rejects_any_other_rule[<lambda>-p\\xe9rdidas0]"
+  },
+  {
+   "id": "M20",
+   "name": "wf_first_seed_only",
+   "description": "Pérdida diaria con la primera semilla en lugar de la media",
+   "file": "src/mars_titan/evaluation/walk_forward_comparison.py",
+   "killed": true,
+   "first_failure": "FAILED tests/evaluation/test_walk_forward_predictive_ability.py::test_daily_losses_and_diebold_mariano_match_a_computation_by_hand"
+  },
+  {
+   "id": "M21",
+   "name": "wf_no_validation",
+   "description": "La comparación no valida la sección al cargar la configuración",
+   "file": "src/mars_titan/evaluation/walk_forward_comparison.py",
+   "killed": true,
+   "first_failure": "FAILED tests/evaluation/test_walk_forward_predictive_ability.py::test_a_wrong_section_is_rejected_before_reading_predictions"
+  },
+  {
+   "id": "M22",
+   "name": "bootstrap_start_shift",
+   "description": "Inicios de bloque desplazados una posición",
+   "file": "src/mars_titan/evaluation/paired_comparisons.py",
+   "killed": true,
+   "first_failure": "FAILED tests/evaluation/test_arch_bootstrap_parity.py::test_circular_block_indices_match_arch_exactly[250-5-64]"
+  },
+  {
+   "id": "M23",
+   "name": "bootstrap_no_wrap",
+   "description": "Bloques sin recorrido circular",
+   "file": "src/mars_titan/evaluation/paired_comparisons.py",
+   "killed": true,
+   "first_failure": "FAILED tests/evaluation/test_arch_bootstrap_parity.py::test_circular_block_indices_match_arch_exactly[250-5-64]"
+  },
+  {
+   "id": "M24",
+   "name": "eager_arch_import",
+   "description": "Importación de arch al cargar el módulo",
+   "file": "src/mars_titan/evaluation/predictive_ability.py",
+   "killed": true,
+   "first_failure": "FAILED tests/evaluation/test_walk_forward_predictive_ability.py::test_campaigns_load_and_rl_check_runs_without_arch_or_statsmodels"
+  },
+  {
+   "id": "M25",
+   "name": "eager_statsmodels_import",
+   "description": "Importación de statsmodels al cargar el módulo",
+   "file": "src/mars_titan/evaluation/predictive_ability.py",
+   "killed": true,
+   "first_failure": "FAILED tests/evaluation/test_walk_forward_predictive_ability.py::test_campaigns_load_and_rl_check_runs_without_arch_or_statsmodels"
+  },
+  {
+   "id": "M26",
+   "name": "wf_no_library_check",
+   "description": "La evaluación no comprueba arch y statsmodels al empezar",
+   "file": "src/mars_titan/evaluation/walk_forward_comparison.py",
+   "killed": true,
+   "first_failure": "FAILED tests/evaluation/test_walk_forward_predictive_ability.py::test_the_section_is_optional_and_changes_no_other_output"
+  },
+  {
+   "id": "M27",
+   "name": "wf_library_check_after_sources",
+   "description": "Comprobación de las bibliotecas después de leer las fuentes",
+   "file": "src/mars_titan/evaluation/walk_forward_comparison.py",
+   "killed": true,
+   "first_failure": "FAILED tests/evaluation/test_walk_forward_predictive_ability.py::test_campaigns_load_and_rl_check_runs_without_arch_or_statsmodels"
+  }
+ ],
+ "tree": "f0074424f9938ff0f4467dc9be04b65c1ec220b1"
+}

@@ -1,0 +1,170 @@
+[
+  {
+    "device": "cuda:0",
+    "dtype": "torch.float32",
+    "refinements": 1,
+    "updates": 11,
+    "seconds": {
+      "cpu": 3.022646603989415,
+      "device": 3.602665023994632
+    },
+    "peak_allocated_bytes": 96599040,
+    "torch": "2.14.0+cu130"
+  },
+  {
+    "device": "cuda:0",
+    "dtype": "torch.float64",
+    "refinements": 1,
+    "updates": 11,
+    "seconds": {
+      "cpu": 2.8847708189859986,
+      "device": 2.4692775089934003
+    },
+    "peak_allocated_bytes": 115828224,
+    "torch": "2.14.0+cu130"
+  },
+  {
+    "device": "cuda:0",
+    "dtype": "torch.float32",
+    "refinements": 4,
+    "updates": 11,
+    "seconds": {
+      "cpu": 2.5334525799844414,
+      "device": 2.6891923639923334
+    },
+    "peak_allocated_bytes": 96745472,
+    "torch": "2.14.0+cu130"
+  },
+  {
+    "device": "cuda:0",
+    "dtype": "torch.float64",
+    "refinements": 4,
+    "updates": 11,
+    "seconds": {
+      "cpu": 2.3343890059913974,
+      "device": 2.7997309660131577
+    },
+    "peak_allocated_bytes": 116089344,
+    "torch": "2.14.0+cu130"
+  },
+  {
+    "check": "walk_forward",
+    "device": "cuda:0",
+    "dtype": "float32",
+    "warmup_months": 12,
+    "phases": {
+      "fit": {
+        "train": {
+          "partition": "train",
+          "warmup_start": 946684800000000,
+          "decision_start": 946684800000000,
+          "decision_end": 1080777600000000,
+          "close_at": 1080777600000000
+        },
+        "validation": {
+          "partition": "validation",
+          "warmup_start": 1049155200000000,
+          "decision_start": 1080777600000000,
+          "decision_end": 1096588800000000,
+          "close_at": 1096588800000000
+        },
+        "calibration": {
+          "partition": "calibration",
+          "warmup_start": 1064966400000000,
+          "decision_start": 1096588800000000,
+          "decision_end": 1104537600000000,
+          "close_at": 1104537600000000
+        },
+        "evaluation": {
+          "partition": "evaluation",
+          "warmup_start": 1072915200000000,
+          "decision_start": 1104537600000000,
+          "decision_end": 1136073600000000,
+          "close_at": 1136073600000000
+        }
+      },
+      "carry": {
+        "calibration": {
+          "partition": "calibration",
+          "warmup_start": 1096588800000000,
+          "decision_start": 1128124800000000,
+          "decision_end": 1136073600000000,
+          "close_at": 1136073600000000
+        },
+        "evaluation": {
+          "partition": "evaluation",
+          "warmup_start": 1104537600000000,
+          "decision_start": 1136073600000000,
+          "decision_end": 1167609600000000,
+          "close_at": 1167609600000000
+        }
+      }
+    },
+    "seconds": {
+      "cpu": 2.477730268990854,
+      "device": 2.356632848997833
+    },
+    "peak_allocated_bytes": 105259520,
+    "torch": "2.14.0+cu130"
+  },
+  {
+    "check": "walk_forward",
+    "device": "cuda:0",
+    "dtype": "float64",
+    "warmup_months": 12,
+    "phases": {
+      "fit": {
+        "train": {
+          "partition": "train",
+          "warmup_start": 946684800000000,
+          "decision_start": 946684800000000,
+          "decision_end": 1080777600000000,
+          "close_at": 1080777600000000
+        },
+        "validation": {
+          "partition": "validation",
+          "warmup_start": 1049155200000000,
+          "decision_start": 1080777600000000,
+          "decision_end": 1096588800000000,
+          "close_at": 1096588800000000
+        },
+        "calibration": {
+          "partition": "calibration",
+          "warmup_start": 1064966400000000,
+          "decision_start": 1096588800000000,
+          "decision_end": 1104537600000000,
+          "close_at": 1104537600000000
+        },
+        "evaluation": {
+          "partition": "evaluation",
+          "warmup_start": 1072915200000000,
+          "decision_start": 1104537600000000,
+          "decision_end": 1136073600000000,
+          "close_at": 1136073600000000
+        }
+      },
+      "carry": {
+        "calibration": {
+          "partition": "calibration",
+          "warmup_start": 1096588800000000,
+          "decision_start": 1128124800000000,
+          "decision_end": 1136073600000000,
+          "close_at": 1136073600000000
+        },
+        "evaluation": {
+          "partition": "evaluation",
+          "warmup_start": 1104537600000000,
+          "decision_start": 1136073600000000,
+          "decision_end": 1167609600000000,
+          "close_at": 1167609600000000
+        }
+      }
+    },
+    "seconds": {
+      "cpu": 2.2776066020014696,
+      "device": 3.562494341022102
+    },
+    "peak_allocated_bytes": 134073856,
+    "torch": "2.14.0+cu130"
+  }
+]

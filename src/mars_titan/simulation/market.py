@@ -31,6 +31,9 @@ RECONSTRUCTED_CONTRACT = dict(
 CURRENCIES = {"US": "USD", "CN": "CNY"}
 _HEX = re.compile(r"[a-f0-9]{64}")
 _SEGMENT = {"receipt_sha256", "fold", "partition", "start", "end", "labels_used_until"}
+# Único tramo cuyas predicciones salen de un ajuste que terminó antes de su primera decisión.
+# Es el `SEGMENT` con el que `window_tapes` monta las cintas de la etapa de políticas.
+WALK_FORWARD_SEGMENT = "evaluation"
 
 
 def _times(values):
@@ -84,6 +87,16 @@ def _walk_forward_fits(segments, times):
         or any(a["end"] > b["start"] for a, b in zip(segments, segments[1:], strict=False))
     ):
         raise ValueError("Los tramos walk-forward de la cinta no son válidos")
+    # El contrato del recibo de ventana: el predictor dejó de ver etiquetas antes del tramo.
+    # Validación y calibración son filas con las que eligió o calibró, así que no valen.
+    if any(
+        segment["partition"] != WALK_FORWARD_SEGMENT
+        or segment["labels_used_until"] >= segment["start"]
+        for segment in segments
+    ):
+        raise ValueError(
+            "Una cinta real solo lleva predicciones de evaluación de un ajuste previo a su tramo"
+        )
     starts = np.array([segment["start"] for segment in segments], dtype=np.int64)
     ends = np.array([segment["end"] for segment in segments], dtype=np.int64)
     owner = np.searchsorted(starts, times, side="right") - 1

@@ -1,0 +1,233 @@
+{
+ "schema_version": 1,
+ "kind": "targeted_mutation_testing",
+ "issues": [
+  494,
+  495,
+  496,
+  497
+ ],
+ "commit": "2edbca4ac16bf8fb6e214a61d87cdbeef474560c",
+ "tests": [
+  "tests/models/test_adapter_peft_parity.py",
+  "tests/evaluation/test_scores_scoringrules_parity.py",
+  "tests/calibration/test_conformal_mapie_parity.py",
+  "tests/simulation/test_quantile_huber_sb3_parity.py"
+ ],
+ "fixture_test": "tests/simulation/test_rl_variety_reference.py",
+ "method": "copia aislada del árbol versionado, un defecto cada vez, sin GPU ni optimizador",
+ "native_binary": "sin enlace nativo en la copia: la prueba del núcleo C++ se omite y no cuenta",
+ "killed_by_parity": 23,
+ "total": 25,
+ "equivalent_with_kappa_one": [
+  "oracle_huber_without_kappa",
+  "oracle_derivative_without_kappa"
+ ],
+ "mutations": [
+  {
+   "id": "M01",
+   "name": "lora_alpha_without_rank",
+   "description": "LoRA escala con α en lugar de α / r",
+   "file": "src/mars_titan/models/predictive_adaptation.py",
+   "killed_by_parity": true,
+   "first_failure": "FAILED tests/models/test_adapter_peft_parity.py::test_fp64_outputs_and_gradients_match_peft[lora]"
+  },
+  {
+   "id": "M02",
+   "name": "add_rows_subtracts",
+   "description": "La corrección de bajo rango se resta del bloque de filas",
+   "file": "src/mars_titan/models/predictive_adaptation.py",
+   "killed_by_parity": true,
+   "first_failure": "FAILED tests/models/test_adapter_peft_parity.py::test_fp64_outputs_and_gradients_match_peft[lora]"
+  },
+  {
+   "id": "M03",
+   "name": "replace_rows_zeroes_outside",
+   "description": "Las filas fuera del bloque se anulan en lugar de copiarse",
+   "file": "src/mars_titan/models/predictive_adaptation.py",
+   "killed_by_parity": true,
+   "first_failure": "FAILED tests/models/test_adapter_peft_parity.py::test_fp64_outputs_and_gradients_match_peft[lora_row_block]"
+  },
+  {
+   "id": "M04",
+   "name": "dora_norm_detached",
+   "description": "DoRA separa del grafo la norma de la dirección, como PEFT",
+   "file": "src/mars_titan/models/predictive_adaptation.py",
+   "killed_by_parity": true,
+   "first_failure": "FAILED tests/models/test_adapter_peft_parity.py::test_fp64_outputs_and_gradients_match_peft[dora]"
+  },
+  {
+   "id": "M05",
+   "name": "dora_multiplicative_magnitude",
+   "description": "DoRA usa una magnitud multiplicativa sobre la norma del padre",
+   "file": "src/mars_titan/models/predictive_adaptation.py",
+   "killed_by_parity": true,
+   "first_failure": "FAILED tests/models/test_adapter_peft_parity.py::test_fp64_outputs_and_gradients_match_peft[dora]"
+  },
+  {
+   "id": "M06",
+   "name": "dora_alpha_without_rank",
+   "description": "DoRA escala con α en lugar de α / r",
+   "file": "src/mars_titan/models/predictive_adaptation.py",
+   "killed_by_parity": true,
+   "first_failure": "FAILED tests/models/test_adapter_peft_parity.py::test_fp64_outputs_and_gradients_match_peft[dora]"
+  },
+  {
+   "id": "M07",
+   "name": "row_gain_exponential",
+   "description": "La ganancia por filas usa exp(g) en lugar de 1 + g",
+   "file": "src/mars_titan/models/predictive_adaptation.py",
+   "killed_by_parity": true,
+   "first_failure": "FAILED tests/models/test_adapter_peft_parity.py::test_fp64_outputs_and_gradients_match_peft[ia3_rows]"
+  },
+  {
+   "id": "M08",
+   "name": "shared_gain_ignored",
+   "description": "El sesgo no recibe la ganancia compartida",
+   "file": "src/mars_titan/models/predictive_adaptation.py",
+   "killed_by_parity": true,
+   "first_failure": "FAILED tests/models/test_adapter_peft_parity.py::test_fp64_outputs_and_gradients_match_peft[ia3_rows]"
+  },
+  {
+   "id": "M09",
+   "name": "column_gain_sign",
+   "description": "La ganancia por columnas usa 1 − g",
+   "file": "src/mars_titan/models/predictive_adaptation.py",
+   "killed_by_parity": true,
+   "first_failure": "FAILED tests/models/test_adapter_peft_parity.py::test_fp64_outputs_and_gradients_match_peft[ia3_columns]"
+  },
+  {
+   "id": "M10",
+   "name": "training_pinball_sign",
+   "description": "Pinball de entrenamiento con el residuo invertido",
+   "file": "src/mars_titan/models/quantile_head.py",
+   "killed_by_parity": true,
+   "first_failure": "FAILED tests/evaluation/test_scores_scoringrules_parity.py::test_training_pinball_matches_the_mean_quantile_score"
+  },
+  {
+   "id": "M11",
+   "name": "session_pinball_sign",
+   "description": "Pinball por sesión con el residuo invertido",
+   "file": "src/mars_titan/evaluation/forecast_scores.py",
+   "killed_by_parity": true,
+   "first_failure": "FAILED tests/evaluation/test_scores_scoringrules_parity.py::test_walk_forward_scores_match_per_level_and_per_interval[1]"
+  },
+  {
+   "id": "M12",
+   "name": "session_penalty_one_over_alpha",
+   "description": "Puntuación de intervalo por sesión con penalización 1/α",
+   "file": "src/mars_titan/evaluation/forecast_scores.py",
+   "killed_by_parity": true,
+   "first_failure": "FAILED tests/evaluation/test_scores_scoringrules_parity.py::test_walk_forward_scores_match_per_level_and_per_interval[1]"
+  },
+  {
+   "id": "M13",
+   "name": "session_alpha_is_tau",
+   "description": "Puntuación de intervalo por sesión con α = τ en lugar de 2τ",
+   "file": "src/mars_titan/evaluation/forecast_scores.py",
+   "killed_by_parity": true,
+   "first_failure": "FAILED tests/evaluation/test_scores_scoringrules_parity.py::test_walk_forward_scores_match_per_level_and_per_interval[1]"
+  },
+  {
+   "id": "M14",
+   "name": "independent_pinball_sign",
+   "description": "Pinball independiente con el residuo invertido",
+   "file": "src/mars_titan/integrity/independent_scores.py",
+   "killed_by_parity": true,
+   "first_failure": "FAILED tests/evaluation/test_scores_scoringrules_parity.py::test_independent_scores_match_per_level_and_per_interval"
+  },
+  {
+   "id": "M15",
+   "name": "independent_alpha_is_tau",
+   "description": "Puntuación de intervalo independiente con α = τ",
+   "file": "src/mars_titan/integrity/independent_scores.py",
+   "killed_by_parity": true,
+   "first_failure": "FAILED tests/evaluation/test_scores_scoringrules_parity.py::test_independent_scores_match_per_level_and_per_interval"
+  },
+  {
+   "id": "M16",
+   "name": "independent_penalty_one_over_alpha",
+   "description": "Puntuación de intervalo independiente con penalización 1/α",
+   "file": "src/mars_titan/integrity/independent_scores.py",
+   "killed_by_parity": true,
+   "first_failure": "FAILED tests/evaluation/test_scores_scoringrules_parity.py::test_independent_scores_match_per_level_and_per_interval"
+  },
+  {
+   "id": "M17",
+   "name": "cqr_order_n",
+   "description": "CQR con el orden ⌈n(1 − α)⌉ en lugar de ⌈(n + 1)(1 − α)⌉",
+   "file": "src/mars_titan/calibration/conformal_quantiles.py",
+   "killed_by_parity": true,
+   "first_failure": "FAILED tests/calibration/test_conformal_mapie_parity.py::test_per_group_corrections_and_intervals_match_exactly"
+  },
+  {
+   "id": "M18",
+   "name": "cqr_next_order",
+   "description": "CQR con el estadístico de orden siguiente",
+   "file": "src/mars_titan/calibration/conformal_quantiles.py",
+   "killed_by_parity": true,
+   "first_failure": "FAILED tests/calibration/test_conformal_mapie_parity.py::test_per_group_corrections_and_intervals_match_exactly"
+  },
+  {
+   "id": "M19",
+   "name": "cqr_score_upper_sign",
+   "description": "Puntuación CQR con el extremo superior invertido",
+   "file": "src/mars_titan/calibration/conformal_quantiles.py",
+   "killed_by_parity": true,
+   "first_failure": "FAILED tests/calibration/test_conformal_mapie_parity.py::test_per_group_corrections_and_intervals_match_exactly"
+  },
+  {
+   "id": "M20",
+   "name": "cqr_apply_lower_sign",
+   "description": "Corrección CQR sumada al extremo inferior",
+   "file": "src/mars_titan/calibration/conformal_quantiles.py",
+   "killed_by_parity": true,
+   "first_failure": "FAILED tests/calibration/test_conformal_mapie_parity.py::test_per_group_corrections_and_intervals_match_exactly"
+  },
+  {
+   "id": "M21",
+   "name": "oracle_indicator_sign",
+   "description": "Oráculo QR-DQN con la indicadora 1{u > 0}",
+   "file": "native/tests/rl_variety_reference.py",
+   "killed_by_parity": true,
+   "first_failure": "FAILED tests/simulation/test_quantile_huber_sb3_parity.py::test_sb3_matches_the_oracle_on_the_campaign_geometry",
+   "killed_by_fixture_regeneration": true
+  },
+  {
+   "id": "M22",
+   "name": "oracle_mean_over_quantiles",
+   "description": "Oráculo QR-DQN con media en lugar de suma sobre i",
+   "file": "native/tests/rl_variety_reference.py",
+   "killed_by_parity": true,
+   "first_failure": "FAILED tests/simulation/test_quantile_huber_sb3_parity.py::test_sb3_matches_the_oracle_on_the_campaign_geometry",
+   "killed_by_fixture_regeneration": true
+  },
+  {
+   "id": "M23",
+   "name": "oracle_error_sign",
+   "description": "Oráculo QR-DQN con u = θ − T",
+   "file": "native/tests/rl_variety_reference.py",
+   "killed_by_parity": true,
+   "first_failure": "FAILED tests/simulation/test_quantile_huber_sb3_parity.py::test_sb3_matches_the_oracle_on_the_campaign_geometry",
+   "killed_by_fixture_regeneration": true
+  },
+  {
+   "id": "M24",
+   "name": "oracle_huber_without_kappa",
+   "description": "Oráculo QR-DQN con la rama lineal de Huber sin κ",
+   "file": "native/tests/rl_variety_reference.py",
+   "killed_by_parity": false,
+   "first_failure": null,
+   "killed_by_fixture_regeneration": true
+  },
+  {
+   "id": "M25",
+   "name": "oracle_derivative_without_kappa",
+   "description": "Oráculo QR-DQN con la derivada lineal sin κ",
+   "file": "native/tests/rl_variety_reference.py",
+   "killed_by_parity": false,
+   "first_failure": null,
+   "killed_by_fixture_regeneration": true
+  }
+ ]
+}

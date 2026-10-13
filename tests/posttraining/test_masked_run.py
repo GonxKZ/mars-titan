@@ -15,10 +15,10 @@ import torch
 
 from mars_titan.data.input_policy import HISTORICAL_MASKED
 from mars_titan.environments.actions import ActionGrid
-from mars_titan.episodes.parents import ParentCache
 from mars_titan.posttraining import adapter_matrix
 from mars_titan.posttraining.heldout import _adjustment, evaluate_partition
 from mars_titan.posttraining.inputs import PairedInputs, fit_normalization
+from mars_titan.posttraining.parent_cache import ParentCache
 from mars_titan.posttraining.parents import load_parent
 from mars_titan.posttraining.run import run_case
 from mars_titan.training.checkpoints import StopRequest

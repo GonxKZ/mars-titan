@@ -8,6 +8,11 @@ cambiarla no cambia qué datos ve un trabajo ni sus salidas, solo cuántos se ej
 vez. Un trabajo cuya estimación supera el presupuesto se rechaza antes de empezar la
 campaña.
 
+La versión 2 nombra además el perfil de hardware en el que se midieron sus estimaciones
+(`configs/hardware`). Sus presupuestos deben caber en los límites del perfil y la campaña
+comprueba el perfil contra la plataforma detectada antes de empezar, de modo que unas
+recetas medidas en una máquina no se reutilizan en otra.
+
 Sin declaración, la campaña conserva su ejecución anterior: los trabajos CUDA de uno en
 uno en el mismo proceso y los CPU con los `cpu_workers` de la sección tabular.
 """
@@ -19,6 +24,7 @@ from pathlib import Path
 
 from mars_titan.data.cohort_files import read_manifest
 from mars_titan.data.storage import atomic_json
+from mars_titan.hardware import hardware_profiles
 
 from .input_pipeline import PipelineOptions
 
@@ -33,7 +39,16 @@ CONTEXT_MIB = 512
 # Reintentos de un trabajo que agota su VRAM, cada uno con una reserva mayor.
 MAX_OOM_RETRIES = 2
 OBSERVED_KIND = "historical_masked_campaign_observed_resources"
-_FIELDS = {"schema_version", "kind", "gpu", "host", "pipeline", "models", "notes"}
+_FIELDS = {
+    "schema_version",
+    "kind",
+    "hardware_profile",
+    "gpu",
+    "host",
+    "pipeline",
+    "models",
+    "notes",
+}
 _GPU = {"slots", "vram_budget_mib", "mps", "mps_pipe_directory"}
 _HOST = {"cpu_workers", "threads_per_job", "ram_budget_mib", "reserve_mib"}
 _MODEL = {"device", "vram_mib", "host_mib", "scopes", "arms", "campaign_process"}
@@ -84,6 +99,7 @@ class Execution:
     mps_pipe_directory: str | None = None
     pipeline: PipelineOptions | None = None
     models: dict = field(default_factory=dict)
+    hardware_profile: dict | None = None
     path: str | None = None
     sha256: str | None = None
 
@@ -112,6 +128,9 @@ class Execution:
             host_reserve_bytes=self.host_reserve_bytes,
             mps=self.mps,
             pipeline=None if self.pipeline is None else self.pipeline.environment(),
+            hardware_profile=None
+            if self.hardware_profile is None
+            else {key: self.hardware_profile[key] for key in ("name", "sha256")},
         )
 
 
@@ -202,10 +221,12 @@ def load_execution(path, *, scopes=("US", "CN", "US+CN")):
     _require(
         isinstance(document, dict)
         and _FIELDS - {"notes"} <= set(document) <= _FIELDS
-        and document["schema_version"] == 1
+        and document["schema_version"] == 2
         and document["kind"] == EXECUTION_KIND,
-        "La declaración de ejecución no cumple su contrato",
+        "La declaración de ejecución no cumple su contrato de la versión 2, que nombra su "
+        "perfil de hardware",
     )
+    profile = hardware_profiles.load_profile(document["hardware_profile"])
     gpu, host, pipeline = document["gpu"], document["host"], document["pipeline"]
     _require(
         isinstance(gpu, dict)
@@ -240,17 +261,26 @@ def load_execution(path, *, scopes=("US", "CN", "US+CN")):
     )
     models = document["models"]
     _require(isinstance(models, dict) and models, "La declaración necesita recursos por modelo")
+    vram_budget = _mib(gpu["vram_budget_mib"], "El presupuesto de VRAM", lower=256)
+    host_budget = _mib(host["ram_budget_mib"], "El presupuesto de RAM", lower=1024)
+    hardware_profiles.check_budgets(
+        profile,
+        vram_bytes=vram_budget,
+        host_bytes=host_budget,
+        threads=(gpu["slots"] + host["cpu_workers"]) * host["threads_per_job"],
+    )
     return Execution(
         gpu_slots=gpu["slots"],
         cpu_workers=host["cpu_workers"],
         threads_per_job=host["threads_per_job"],
-        vram_budget_bytes=_mib(gpu["vram_budget_mib"], "El presupuesto de VRAM", lower=256),
-        host_budget_bytes=_mib(host["ram_budget_mib"], "El presupuesto de RAM", lower=1024),
+        vram_budget_bytes=vram_budget,
+        host_budget_bytes=host_budget,
         host_reserve_bytes=_mib(host["reserve_mib"], "La reserva de RAM"),
         mps=gpu["mps"],
         mps_pipe_directory=mps_directory,
         pipeline=PipelineOptions(**pipeline),
         models={name: _model(name, value, scopes) for name, value in models.items()},
+        hardware_profile=profile,
         path=str(path.resolve()),
         sha256=digest,
     )

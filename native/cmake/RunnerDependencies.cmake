@@ -40,25 +40,29 @@ function(mars_titan_find_arrow)
     find_program(MARS_TITAN_UV NAMES uv REQUIRED)
     get_filename_component(project_root "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/../.." ABSOLUTE)
     execute_process(COMMAND "${MARS_TITAN_UV}" run --no-sync --project "${project_root}" python -c
-        "import json,pathlib,pyarrow; print(json.dumps(dict(include=pyarrow.get_include(),root=str(pathlib.Path(pyarrow.__file__).parent),so=pyarrow.cpp_build_info.so_version,version=pyarrow.__version__)))"
+        "import json,pathlib,platform,pyarrow; print(json.dumps(dict(include=pyarrow.get_include(),root=str(pathlib.Path(pyarrow.__file__).parent),so=pyarrow.cpp_build_info.so_version,version=pyarrow.__version__,machine=platform.machine())))"
         RESULT_VARIABLE probe_result OUTPUT_VARIABLE sdk ERROR_VARIABLE probe_error
         OUTPUT_STRIP_TRAILING_WHITESPACE)
     if(NOT probe_result EQUAL 0)
         message(FATAL_ERROR "No hay SDK Arrow/Parquet ni bibliotecas C++ de PyArrow disponibles: ${probe_error}")
     endif()
-    foreach(key include root so version)
+    foreach(key include root so version machine)
         string(JSON sdk_${key} ERROR_VARIABLE json_error GET "${sdk}" ${key})
         if(json_error)
             message(FATAL_ERROR "No se pudo interpretar el SDK C++ de PyArrow: ${json_error}")
         endif()
     endforeach()
+    if(NOT sdk_machine STREQUAL CMAKE_SYSTEM_PROCESSOR)
+        message(FATAL_ERROR "El SDK C++ de PyArrow es para ${sdk_machine}, pero el destino es ${CMAKE_SYSTEM_PROCESSOR}")
+    endif()
     if(NOT EXISTS "${sdk_include}/arrow/api.h" OR NOT EXISTS "${sdk_include}/parquet/arrow/reader.h")
         message(FATAL_ERROR "PyArrow no incluye las cabeceras C++ requeridas")
     endif()
+    # La consulta da una ruta explícita del destino, que no se reubica bajo CMAKE_FIND_ROOT_PATH.
     find_file(arrow_library NAMES "libarrow.so.${sdk_so}" libarrow.so
-        PATHS "${sdk_root}" NO_DEFAULT_PATH REQUIRED NO_CACHE)
+        PATHS "${sdk_root}" NO_DEFAULT_PATH NO_CMAKE_FIND_ROOT_PATH REQUIRED NO_CACHE)
     find_file(parquet_library NAMES "libparquet.so.${sdk_so}" libparquet.so
-        PATHS "${sdk_root}" NO_DEFAULT_PATH REQUIRED NO_CACHE)
+        PATHS "${sdk_root}" NO_DEFAULT_PATH NO_CMAKE_FIND_ROOT_PATH REQUIRED NO_CACHE)
     add_library(mars_titan_arrow SHARED IMPORTED)
     set_target_properties(mars_titan_arrow PROPERTIES
         IMPORTED_LOCATION "${arrow_library}"

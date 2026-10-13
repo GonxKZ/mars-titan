@@ -205,7 +205,7 @@ flowchart TD
 
 | Pieza | Código | Prueba |
 | --- | --- | --- |
-| Niveles, puntuación de riesgo, objetivos y pérdida | [`quantile_dqn.cpp`](../../native/src/quantile_dqn.cpp) | `rl_variety` contra la referencia FP64, con un cuantil cruzado y la rama lineal de Huber |
+| Niveles, puntuación de riesgo, objetivos y pérdida | [`quantile_dqn.cpp`](../../native/src/quantile_dqn.cpp) | `rl_variety` contra la referencia FP64, con un cuantil cruzado y la rama lineal de Huber. Con κ = 1, [paridad con sb3-contrib 2.9.0](../../tests/simulation/test_quantile_huber_sb3_parity.py) del oráculo, de su archivo y del núcleo C++ |
 | Cabeza, puntuación en `forward`, pérdida sin paso y checkpoint | `PpoPolicy::double_dqn_loss` y `action_quantiles` en [`ppo_policy.cpp`](../../native/src/ppo_policy.cpp) | [`qr_dqn_policy_tests.cpp`](../../native/tests/qr_dqn_policy_tests.cpp), con valores calculados a mano (1,75 con la media y 0,7421875 con alfa 0,5) |
 | Variantes del esquema 4 | `value_variant` en [`policy_context.cpp`](../../native/src/policy_context.cpp) y `architecture_for` | `test_quantile_value_variants_are_declared_like_double_dqn` |
 
@@ -214,6 +214,21 @@ de coste que queda fijada en la identidad. El artículo elige la acción siguien
 la red objetivo y aquí se usa la selección doble de la línea Double DQN del proyecto. La
 evaluación y la selección siguen usando el argmax de la puntuación con la que actúa cada
 variante, de modo que `qr_dqn_cvar` se evalúa con su propia preferencia por el riesgo.
+
+`quantile_huber_loss` de sb3-contrib 2.9.0 (grupo `reference`) sirve de referencia externa para
+κ = 1, el valor que fija esa biblioteca. Con los puntos medios FP64 pasados en `cum_prob` y
+lotes de una fila coincide con el archivo del oráculo en los casos `qr_mean` y `qr_cvar` y con
+su función `quantile_huber` en un lote de 64 transiciones con 32 cuantiles y errores a los dos
+lados de κ, con tolerancia 10⁻¹² en pérdidas y gradientes. En FP32 cumple la tolerancia de la
+ruta FP32 de `rl_variety`, 10⁻⁹ + 10⁻⁵ veces la suma de los valores absolutos de los términos.
+Las diferencias máximas fueron 3,5·10⁻¹⁸ frente al archivo y 1,2·10⁻¹⁴ en el lote de 64
+transiciones, y en FP32 el peor elemento usó el 1,2 % de la tolerancia. Cuando
+`rl_variety_tests` está compilado junto a `mars-titan-ppo`, la prueba escribe los valores de
+sb3-contrib en una copia del archivo y el núcleo C++ los reproduce con su tolerancia de 10⁻¹²
+relativa. Un control con una pérdida alterada en 10⁻⁹ relativo hace fallar al ejecutable. κ ≠ 1,
+como el caso `qr_linear`, solo lo cubre el oráculo propio. Sin `cum_prob`, sb3-contrib calcula
+los niveles en FP32, que son exactos con 32 cuantiles pero no con los 200 de Atari. La prueba no
+usa los algoritmos ni los entornos de Stable-Baselines3.
 
 ## Trazas de aprendizaje
 

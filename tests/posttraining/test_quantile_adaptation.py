@@ -15,7 +15,6 @@ import torch
 from mars_titan.data.input_policy import HISTORICAL_MASKED
 from mars_titan.data.storage import atomic_json
 from mars_titan.environments.actions import ActionGrid
-from mars_titan.episodes.parents import ParentCache
 from mars_titan.models.baselines.multimodal import PRESENCE_FUSION, MultimodalReference
 from mars_titan.models.predictive_adaptation import adapted_copy, parent_copy
 from mars_titan.models.quantile_head import (
@@ -27,6 +26,7 @@ from mars_titan.models.quantile_head import (
 from mars_titan.posttraining import adapter_matrix
 from mars_titan.posttraining.heldout import _adjustment, evaluate_partition
 from mars_titan.posttraining.inputs import PairedInputs, fit_normalization
+from mars_titan.posttraining.parent_cache import ParentCache
 from mars_titan.posttraining.parents import load_parent
 from mars_titan.posttraining.run import PINBALL_MODE, _loss, run_case
 from mars_titan.training.checkpoints import StopRequest

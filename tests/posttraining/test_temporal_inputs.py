@@ -10,8 +10,8 @@ import pytest
 
 from mars_titan.data.storage import sha256
 from mars_titan.environments.corpus_source import ParquetCohortSource, prepare_causal_corpus
-from mars_titan.episodes.parents import ParentCache
 from mars_titan.posttraining.inputs import PairedInputs
+from mars_titan.posttraining.parent_cache import ParentCache
 from mars_titan.training.checkpoints import StopRequest
 from mars_titan.training.corpus_inputs import CorpusDataset
 from tests.training.test_temporal_corpus import inputs as inputs

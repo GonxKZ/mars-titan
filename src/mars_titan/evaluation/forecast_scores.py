@@ -79,6 +79,15 @@ _PER_SESSION = (
 )
 
 
+def is_loss_series(metric):
+    """Indica si la serie por sesión de ``metric`` es una pérdida, no negativa y mejor si baja."""
+    if not isinstance(metric, str):
+        return False
+    if metric.startswith(INTERVAL_SCORE):
+        return True
+    return _SERIES.get(metric, False)
+
+
 def _require(condition, message):
     if not condition:
         raise ValueError(message)

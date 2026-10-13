@@ -38,7 +38,7 @@ El cargador comprobará esquema, hash, revisión del código, configuración, fo
 
 Se seleccionará `cuda:0` de nuevo y se comprobará su disponibilidad. Una GPU ausente produce un error que permite conservar el checkpoint. No cambia automáticamente a CPU ni inicia otra ejecución como si fuera la original.
 
-Una actualización de software o controlador puede impedir igualdad bit a bit. Se distinguirá recuperación exacta dentro del entorno fijado de recuperación con tolerancia numérica documentada. Cambiar la versión de un codificador sin reconstruir sus memorias es incompatible aunque las dimensiones coincidan.
+Una actualización de software o controlador puede impedir igualdad bit a bit. Se distinguirá recuperación exacta dentro del entorno fijado de recuperación con tolerancia numérica documentada. Cambiar la versión de un codificador sin reconstruir sus memorias es incompatible aunque las dimensiones coincidan. La [validación de compatibilidad](../../reports/memory/bundle-validation.md) lo comprueba en la sesión financiera: reanudar con otra representación, edición, receta o regla de admisión se rechaza sin escribir, y la reconstrucción recorre de nuevo la fase en otra carpeta.
 
 ## Pruebas de aceptación
 

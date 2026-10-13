@@ -232,6 +232,30 @@ def risk_scores(quantiles, alpha):
     return quantiles[..., :atoms].mean(axis=-1)
 
 
+def quantile_huber(predicted, targets, kappa):
+    """Pérdida cuantílica de Huber por transición [B] y su gradiente respecto a theta [B, N].
+
+    sum_i mean_j |tau_i - 1{u_ij < 0}| L_kappa(u_ij), con u_ij = T_j - theta_i, sin dividir
+    por kappa, como el algoritmo 1 y la ecuación 10 de QR-DQN.
+    """
+    batch, quantiles = predicted.shape
+    tau = midpoints(quantiles)
+    loss = np.zeros(batch)
+    gradient = np.zeros_like(predicted)
+    for b in range(batch):
+        for i in range(quantiles):
+            for j in range(quantiles):
+                u = targets[b, j] - predicted[b, i]
+                assert abs(abs(u) - kappa) > 1e-9, "El fixture cae en el cambio de rama de Huber"
+                huber = 0.5 * u * u if abs(u) <= kappa else kappa * (abs(u) - 0.5 * kappa)
+                derivative = u if abs(u) <= kappa else kappa * math.copysign(1.0, u)
+                weight = abs(tau[i] - (1.0 if u < 0 else 0.0))
+                loss[b] += weight * huber / quantiles
+                # du/dtheta_i = -1.
+                gradient[b, i] -= weight * derivative / quantiles
+    return loss, gradient
+
+
 def quantile_case(name, seed, quantiles, alpha, kappa, gamma):
     rng = np.random.default_rng(seed)
     batch = 4
@@ -253,19 +277,7 @@ def quantile_case(name, seed, quantiles, alpha, kappa, gamma):
         targets[b] = rewards[b] + gamma * alive * target[b, chosen[b]]
     predicted = np.stack([current[b, actions[b]] for b in range(batch)])
     tau = midpoints(quantiles)
-    loss = np.zeros(batch)
-    gradient = np.zeros_like(predicted)
-    for b in range(batch):
-        for i in range(quantiles):
-            for j in range(quantiles):
-                u = targets[b, j] - predicted[b, i]
-                assert abs(abs(u) - kappa) > 1e-9, "El fixture cae en el cambio de rama de Huber"
-                huber = 0.5 * u * u if abs(u) <= kappa else kappa * (abs(u) - 0.5 * kappa)
-                derivative = u if abs(u) <= kappa else kappa * math.copysign(1.0, u)
-                weight = abs(tau[i] - (1.0 if u < 0 else 0.0))
-                loss[b] += weight * huber / quantiles
-                # du/dtheta_i = -1.
-                gradient[b, i] -= weight * derivative / quantiles
+    loss, gradient = quantile_huber(predicted, targets, kappa)
     return dict(
         name=name,
         quantiles=quantiles,

@@ -8,8 +8,8 @@ import torch
 
 from mars_titan.data.input_policy import HISTORICAL_MASKED, policy_identity
 from mars_titan.data.storage import atomic_json
-from mars_titan.episodes.parents import ParentCache
 from mars_titan.models.baselines.multimodal import STRICT_FUSION
+from mars_titan.posttraining.parent_cache import ParentCache
 from mars_titan.posttraining.parents import FrozenParent, load_parent
 from mars_titan.training.predictive_parents import prepare_parent_cache
 from tests.posttraining.masked_fixture import masked_ordered, masked_parent, sources

@@ -119,7 +119,14 @@ MARS_BANKS = ("m0_no_bank", "m1", "m2", "m3")
 MARS_CORRECTION_RECIPE = "mars_titan_mature_correction_v1"
 MARS_CORRECTION_SEARCHED = ("rate", "forgetting")
 MARS_CORRECTION_RULES = ("delta", "proximal")
-MARS_CORRECTION_KEYS = ("codec", "constant")
+MARS_CORRECTION_KEYS = (
+    "codec",
+    "constant",
+    "regime",
+    "calendar",
+    "codec_by_regime",
+    "codec_by_calendar",
+)
 # Factorial CM-v1. Repite los nombres de training.cm_v1_factorial sin importar PyTorch.
 CM = "cm_v1"
 CM_NAME = "mars_titan_cm_v1_factorial"
@@ -1029,7 +1036,7 @@ def launch_blockers(campaign):
         for relative, reason in RETIRED.items()
         if Path(campaign["path"]) == (repository / relative).resolve()
     ]
-    return blockers + campaign_online_controls.blockers(campaign)
+    return blockers
 
 
 def _early_stop(section, rule, arms):
@@ -1520,7 +1527,7 @@ def pending_families(campaign):
     """Brazos de la comparación que esperan un entrenador conectado, con su motivo."""
     result = {}
     connected = {spec["arm"] for spec in _arm_specs(campaign)}
-    # El control en línea no tiene caso de búsqueda: lo conecta su sección declarada.
+    # El control en línea no es un brazo con entrenador: lo conecta su sección declarada.
     connected |= set((campaign.get("online_controls") or {}).get("arms", ()))
     for name, arm in campaign["comparison_config"]["arms"].items():
         family = arm["family"]

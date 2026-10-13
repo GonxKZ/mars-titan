@@ -12,6 +12,7 @@ import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
 
+from mars_titan import nvtx_ranges
 from mars_titan.data.batches import atomic_parquet_batches
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.storage import atomic_json, outside_source, sha256
@@ -356,7 +357,7 @@ class _BlockReader:
 
     def _decode(self, asset, path, group):
         """Decodificar un grupo. No usa estado del lector, así que puede ir en un hilo."""
-        with pq.ParquetFile(path) as file:
+        with nvtx_ranges.phase("reader.decode"), pq.ParquetFile(path) as file:
             _, *arrays = self.source.dataset._sample_group(asset, file, group)
         stamps, ends, vectors, *rest = arrays
         size = sum(v.nbytes for v in (stamps, ends, *vectors.values(), *rest) if v is not None)
@@ -690,9 +691,13 @@ class FinancialObservationSource:
                 reader.schedule(rows)
                 window.append((at, rows))
                 if len(window) > ahead:
-                    yield self._event(*window.popleft(), reader)
+                    with nvtx_ranges.phase("reader.event"):
+                        event = self._event(*window.popleft(), reader)
+                    yield event
             while window:
-                yield self._event(*window.popleft(), reader)
+                with nvtx_ranges.phase("reader.event"):
+                    event = self._event(*window.popleft(), reader)
+                yield event
             if failure is not None:
                 raise failure
         finally:

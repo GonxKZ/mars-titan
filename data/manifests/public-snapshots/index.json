@@ -1,0 +1,450 @@
+{
+  "schema_version": 1,
+  "project": "MARS-TITAN",
+  "kind": "public_snapshot_index",
+  "initial_manifest": "data/manifests/public-snapshots.json",
+  "output_root": "data/external",
+  "captures": [
+    {
+      "run_id": "initial",
+      "manifest": "data/manifests/public-snapshots.json",
+      "manifest_sha256": "9455a61254926edfe52c8f6b24def6af9b7bf2bee796587f593f195203e9c054",
+      "started_at_utc": "2026-09-18T18:52:19Z",
+      "finished_at_utc": "2026-09-18T19:06:30Z",
+      "records": [
+        {
+          "source_id": "fred_md",
+          "status": "downloaded_validated",
+          "http_status": 200,
+          "sha256": "412b5451f32321b597c86b95603f5815ae0bd6e44eb7388e4c415156434ac0a4",
+          "bytes": 668731,
+          "local_path": "data/external/2026-09-18/fred-md-2026-08.csv",
+          "requested_url": "https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/monthly/2026-rev-08-md.csv",
+          "etag": null,
+          "last_modified": null,
+          "content_reused": false
+        },
+        {
+          "source_id": "fred_qd",
+          "status": "downloaded_validated",
+          "http_status": 200,
+          "sha256": "7471dd58bac00c59eac28e3f10daab05b2617bcaa18a7e89c02423cef731b303",
+          "bytes": 529303,
+          "local_path": "data/external/2026-09-18/fred-qd-2026-08.csv",
+          "requested_url": "https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/quarterly/2026-rev-08-qd.csv",
+          "etag": null,
+          "last_modified": null,
+          "content_reused": false
+        },
+        {
+          "source_id": "french_factors_daily",
+          "status": "downloaded_validated",
+          "http_status": 200,
+          "sha256": "1916d331c2c51d2aee3d00215897d2b8e5995cb387f1f4569ba46bff5fb049a8",
+          "bytes": 178044,
+          "local_path": "data/external/2026-09-18/french-factors-daily.zip",
+          "requested_url": "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/F-F_Research_Data_Factors_daily_CSV.zip",
+          "etag": null,
+          "last_modified": null,
+          "content_reused": false
+        },
+        {
+          "source_id": "ecb_usd_eur",
+          "status": "downloaded_validated",
+          "http_status": 200,
+          "sha256": "4f21d619e6991ec59524429ce0ab0c857e618be5c3a3567e738121162ed8493e",
+          "bytes": 7603,
+          "local_path": "data/external/2026-09-18/ecb-usd-eur-2026-08-09.csv",
+          "requested_url": "https://data-api.ecb.europa.eu/service/data/EXR/D.USD.EUR.SP00.A?startPeriod=2026-08-01&endPeriod=2026-09-18&format=csvdata",
+          "etag": null,
+          "last_modified": null,
+          "content_reused": false
+        },
+        {
+          "source_id": "nyfed_gscpi",
+          "status": "failed",
+          "http_status": 200,
+          "sha256": null,
+          "bytes": 0,
+          "local_path": null,
+          "requested_url": "https://www.newyorkfed.org/medialibrary/research/interactives/gscpi/downloads/gscpi_data.xlsx",
+          "etag": null,
+          "last_modified": null,
+          "content_reused": false
+        },
+        {
+          "source_id": "cboe_vix",
+          "status": "downloaded_validated",
+          "http_status": 200,
+          "sha256": "7779c99be9796b0f13bf520c42d6e3bf075bb886352233d896897f70629adb14",
+          "bytes": 472768,
+          "local_path": "data/external/2026-09-18/cboe-vix-history.csv",
+          "requested_url": "https://cdn.cboe.com/api/global/us_indices/daily_prices/VIX_History.csv",
+          "etag": null,
+          "last_modified": null,
+          "content_reused": false
+        },
+        {
+          "source_id": "treasury_yields",
+          "status": "downloaded_validated",
+          "http_status": 200,
+          "sha256": "f70e6c098ac2e48aa4a9f7e3f02929989523fb6f390d88a10a9e9ef72adb83d7",
+          "bytes": 19213,
+          "local_path": "data/external/2026-09-18/treasury-yields-2026-09.xml",
+          "requested_url": "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/pages/xml?data=daily_treasury_yield_curve&field_tdr_date_value_month=202609",
+          "etag": null,
+          "last_modified": null,
+          "content_reused": false
+        },
+        {
+          "source_id": "sec_aapl_submissions",
+          "status": "failed",
+          "http_status": 403,
+          "sha256": null,
+          "bytes": 0,
+          "local_path": null,
+          "requested_url": "https://data.sec.gov/submissions/CIK0000320193.json",
+          "etag": null,
+          "last_modified": null,
+          "content_reused": false
+        },
+        {
+          "source_id": "sec_aapl_companyfacts",
+          "status": "failed",
+          "http_status": 403,
+          "sha256": null,
+          "bytes": 0,
+          "local_path": null,
+          "requested_url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0000320193.json",
+          "etag": null,
+          "last_modified": null,
+          "content_reused": false
+        },
+        {
+          "source_id": "gdelt_article_metadata",
+          "status": "failed",
+          "http_status": 200,
+          "sha256": null,
+          "bytes": 0,
+          "local_path": null,
+          "requested_url": "https://api.gdeltproject.org/api/v2/doc/doc?query=(%22Federal%20Reserve%22%20OR%20inflation)%20sourcelang%3Aenglish&mode=artlist&format=json&maxrecords=25&sort=DateDesc&startdatetime=20260917000000&enddatetime=20260918000000",
+          "etag": null,
+          "last_modified": null,
+          "content_reused": false
+        },
+        {
+          "source_id": "nyfed_gscpi_vintages",
+          "status": "failed",
+          "http_status": 200,
+          "sha256": null,
+          "bytes": 0,
+          "local_path": null,
+          "requested_url": "https://www.newyorkfed.org/medialibrary/research/interactives/data/gscpi/gscpi_interactive_data.csv",
+          "etag": null,
+          "last_modified": null,
+          "content_reused": false
+        },
+        {
+          "source_id": "fed_monetary_rss",
+          "status": "downloaded_validated",
+          "http_status": 200,
+          "sha256": "6ef9f8ee2019c031b583ee3a64eec38170840e2ff4229ec92e43f49702857855",
+          "bytes": 9645,
+          "local_path": "data/external/2026-09-18/fed-monetary-press-rss.xml",
+          "requested_url": "https://www.federalreserve.gov/feeds/press_monetary.xml",
+          "etag": null,
+          "last_modified": null,
+          "content_reused": false
+        },
+        {
+          "source_id": "nyfed_gscpi_vintages",
+          "status": "downloaded_validated",
+          "http_status": 200,
+          "sha256": "723e8dc81728176dea10e7d685478bfe888516ec68d1d2cc1b77d6fea8177c55",
+          "bytes": 115873,
+          "local_path": "data/external/2026-09-18/nyfed-gscpi-vintages.csv",
+          "requested_url": "https://www.newyorkfed.org/medialibrary/research/interactives/data/gscpi/gscpi_interactive_data.csv",
+          "etag": null,
+          "last_modified": null,
+          "content_reused": false
+        },
+        {
+          "source_id": "apple_fy2026_q3_financials",
+          "status": "downloaded_validated",
+          "http_status": 200,
+          "sha256": "dc0cf747ad18bb340f48a3a79038aaf6f005f3aacab3aa0ba3960ab5370e5aa5",
+          "bytes": 3148703,
+          "local_path": "data/external/2026-09-18/apple-fy2026-q3-financial-statements.pdf",
+          "requested_url": "https://www.apple.com/newsroom/pdfs/fy2026q3/FY26_Q3_Consolidated_Financial_Statements.pdf",
+          "etag": null,
+          "last_modified": null,
+          "content_reused": false
+        },
+        {
+          "source_id": "stooq_aapl_eod",
+          "status": "blocked_at_source_discovery",
+          "http_status": 200,
+          "sha256": null,
+          "bytes": 0,
+          "local_path": null,
+          "requested_url": "https://stooq.com/",
+          "etag": null,
+          "last_modified": null,
+          "content_reused": false
+        }
+      ],
+      "diagnostics": [
+        {
+          "source_id": "nyfed_gscpi",
+          "http_status": 200
+        },
+        {
+          "source_id": "gdelt_article_metadata",
+          "http_status": 429
+        }
+      ]
+    },
+    {
+      "run_id": "20260918T193326.801397Z",
+      "manifest": "data/external/20260918T193326.801397Z/manifest.json",
+      "manifest_sha256": "6c32f1f0a63ed628f001577706a887c84807ee7f5cc22b6aa264fa2d9bdf60a5",
+      "started_at_utc": "2026-09-18T19:33:26.801397+00:00",
+      "finished_at_utc": "2026-09-18T19:33:26Z",
+      "records": [
+        {
+          "source_id": "fed_monetary_rss",
+          "status": "downloaded_validated",
+          "http_status": 200,
+          "sha256": "6ef9f8ee2019c031b583ee3a64eec38170840e2ff4229ec92e43f49702857855",
+          "bytes": 9645,
+          "local_path": "data/external/20260918T193326.801397Z/fed_monetary_rss.xml",
+          "requested_url": "https://www.federalreserve.gov/feeds/press_monetary.xml",
+          "etag": null,
+          "last_modified": null,
+          "content_reused": false
+        }
+      ],
+      "diagnostics": []
+    },
+    {
+      "run_id": "20260918T194800.921923Z",
+      "manifest": "data/external/20260918T194800.921923Z/manifest.json",
+      "manifest_sha256": "e58d52748b452f4d95fdd37331fedce3a6d41b0af7fc242f091a72f76bacef59",
+      "started_at_utc": "2026-09-18T19:48:00.921923Z",
+      "finished_at_utc": "2026-09-18T19:48:01.244192Z",
+      "records": [
+        {
+          "source_id": "fed_monetary_rss",
+          "status": "downloaded_validated",
+          "http_status": 200,
+          "sha256": "6ef9f8ee2019c031b583ee3a64eec38170840e2ff4229ec92e43f49702857855",
+          "bytes": 9645,
+          "local_path": "data/external/20260918T194800.921923Z/fed_monetary_rss.xml",
+          "requested_url": "https://www.federalreserve.gov/feeds/press_monetary.xml",
+          "etag": null,
+          "last_modified": null,
+          "content_reused": false
+        }
+      ],
+      "diagnostics": []
+    },
+    {
+      "run_id": "20260919T010945.005748Z",
+      "manifest": "data/external/20260919T010945.005748Z/manifest.json",
+      "manifest_sha256": "99adac1419d670690824f5580089b41f3e1065eebdde3d82e7b91b65a1f85999",
+      "started_at_utc": "2026-09-19T01:09:45.005748Z",
+      "finished_at_utc": "2026-09-19T01:10:15.893709Z",
+      "records": [
+        {
+          "source_id": "fred_md",
+          "status": "downloaded_validated",
+          "http_status": 200,
+          "sha256": "412b5451f32321b597c86b95603f5815ae0bd6e44eb7388e4c415156434ac0a4",
+          "bytes": 668731,
+          "local_path": "data/external/20260919T010945.005748Z/fred_md.csv",
+          "requested_url": "https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/monthly/2026-rev-08-md.csv",
+          "etag": null,
+          "last_modified": null,
+          "content_reused": false
+        },
+        {
+          "source_id": "fred_qd",
+          "status": "downloaded_validated",
+          "http_status": 200,
+          "sha256": "7471dd58bac00c59eac28e3f10daab05b2617bcaa18a7e89c02423cef731b303",
+          "bytes": 529303,
+          "local_path": "data/external/20260919T010945.005748Z/fred_qd.csv",
+          "requested_url": "https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/quarterly/2026-rev-08-qd.csv",
+          "etag": null,
+          "last_modified": null,
+          "content_reused": false
+        },
+        {
+          "source_id": "french_factors_daily",
+          "status": "downloaded_validated",
+          "http_status": 200,
+          "sha256": "1916d331c2c51d2aee3d00215897d2b8e5995cb387f1f4569ba46bff5fb049a8",
+          "bytes": 178044,
+          "local_path": "data/external/20260919T010945.005748Z/french_factors_daily.zip",
+          "requested_url": "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/F-F_Research_Data_Factors_daily_CSV.zip",
+          "etag": null,
+          "last_modified": null,
+          "content_reused": false
+        },
+        {
+          "source_id": "ecb_usd_eur",
+          "status": "downloaded_validated",
+          "http_status": 200,
+          "sha256": "1cc8c97dc618faba6742d1afe7cbdf6166e8d8f9a0cfb07de3e0164f1868d998",
+          "bytes": 13840,
+          "local_path": "data/external/20260919T010945.005748Z/ecb_usd_eur.csv",
+          "requested_url": "https://data-api.ecb.europa.eu/service/data/EXR/D.USD.EUR.SP00.A?format=csvdata&startPeriod=2026-06-22&endPeriod=2026-09-19",
+          "etag": null,
+          "last_modified": null,
+          "content_reused": false
+        },
+        {
+          "source_id": "cboe_vix",
+          "status": "downloaded_validated",
+          "http_status": 200,
+          "sha256": "d385cf23df800eb39bba2f68a0f5ee7a1d6cbcb87234b7b3aab48a1b0b8455ad",
+          "bytes": 472819,
+          "local_path": "data/external/20260919T010945.005748Z/cboe_vix.csv",
+          "requested_url": "https://cdn.cboe.com/api/global/us_indices/daily_prices/VIX_History.csv",
+          "etag": null,
+          "last_modified": null,
+          "content_reused": false
+        },
+        {
+          "source_id": "treasury_yields",
+          "status": "downloaded_validated",
+          "http_status": 200,
+          "sha256": "b3e4ec31fa006754c3dbe76e05f218ebf7ff0e25ccf146ec314714c69959b4e0",
+          "bytes": 20758,
+          "local_path": "data/external/20260919T010945.005748Z/treasury_yields.xml",
+          "requested_url": "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/pages/xml?data=daily_treasury_yield_curve&field_tdr_date_value_month=202609",
+          "etag": null,
+          "last_modified": null,
+          "content_reused": false
+        },
+        {
+          "source_id": "nyfed_gscpi_vintages",
+          "status": "downloaded_validated",
+          "http_status": 200,
+          "sha256": "723e8dc81728176dea10e7d685478bfe888516ec68d1d2cc1b77d6fea8177c55",
+          "bytes": 115873,
+          "local_path": "data/external/20260919T010945.005748Z/nyfed_gscpi_vintages.csv",
+          "requested_url": "https://www.newyorkfed.org/medialibrary/research/interactives/data/gscpi/gscpi_interactive_data.csv",
+          "etag": null,
+          "last_modified": null,
+          "content_reused": false
+        },
+        {
+          "source_id": "fed_monetary_rss",
+          "status": "downloaded_validated",
+          "http_status": 200,
+          "sha256": "6ef9f8ee2019c031b583ee3a64eec38170840e2ff4229ec92e43f49702857855",
+          "bytes": 9645,
+          "local_path": "data/external/20260919T010945.005748Z/fed_monetary_rss.xml",
+          "requested_url": "https://www.federalreserve.gov/feeds/press_monetary.xml",
+          "etag": null,
+          "last_modified": null,
+          "content_reused": false
+        }
+      ],
+      "diagnostics": []
+    }
+  ],
+  "contents": {
+    "1916d331c2c51d2aee3d00215897d2b8e5995cb387f1f4569ba46bff5fb049a8": {
+      "local_path": "data/external/2026-09-18/french-factors-daily.zip",
+      "run_id": "initial",
+      "bytes": 178044,
+      "first_run_id": "initial",
+      "available": true
+    },
+    "1cc8c97dc618faba6742d1afe7cbdf6166e8d8f9a0cfb07de3e0164f1868d998": {
+      "local_path": "data/external/20260919T010945.005748Z/ecb_usd_eur.csv",
+      "run_id": "20260919T010945.005748Z",
+      "bytes": 13840,
+      "first_run_id": "20260919T010945.005748Z",
+      "available": true
+    },
+    "412b5451f32321b597c86b95603f5815ae0bd6e44eb7388e4c415156434ac0a4": {
+      "local_path": "data/external/2026-09-18/fred-md-2026-08.csv",
+      "run_id": "initial",
+      "bytes": 668731,
+      "first_run_id": "initial",
+      "available": true
+    },
+    "4f21d619e6991ec59524429ce0ab0c857e618be5c3a3567e738121162ed8493e": {
+      "local_path": "data/external/2026-09-18/ecb-usd-eur-2026-08-09.csv",
+      "run_id": "initial",
+      "bytes": 7603,
+      "first_run_id": "initial",
+      "available": true
+    },
+    "6ef9f8ee2019c031b583ee3a64eec38170840e2ff4229ec92e43f49702857855": {
+      "local_path": "data/external/2026-09-18/fed-monetary-press-rss.xml",
+      "run_id": "initial",
+      "bytes": 9645,
+      "first_run_id": "initial",
+      "available": true
+    },
+    "723e8dc81728176dea10e7d685478bfe888516ec68d1d2cc1b77d6fea8177c55": {
+      "local_path": "data/external/2026-09-18/nyfed-gscpi-vintages.csv",
+      "run_id": "initial",
+      "bytes": 115873,
+      "first_run_id": "initial",
+      "available": true
+    },
+    "7471dd58bac00c59eac28e3f10daab05b2617bcaa18a7e89c02423cef731b303": {
+      "local_path": "data/external/2026-09-18/fred-qd-2026-08.csv",
+      "run_id": "initial",
+      "bytes": 529303,
+      "first_run_id": "initial",
+      "available": true
+    },
+    "7779c99be9796b0f13bf520c42d6e3bf075bb886352233d896897f70629adb14": {
+      "local_path": "data/external/2026-09-18/cboe-vix-history.csv",
+      "run_id": "initial",
+      "bytes": 472768,
+      "first_run_id": "initial",
+      "available": true
+    },
+    "b3e4ec31fa006754c3dbe76e05f218ebf7ff0e25ccf146ec314714c69959b4e0": {
+      "local_path": "data/external/20260919T010945.005748Z/treasury_yields.xml",
+      "run_id": "20260919T010945.005748Z",
+      "bytes": 20758,
+      "first_run_id": "20260919T010945.005748Z",
+      "available": true
+    },
+    "d385cf23df800eb39bba2f68a0f5ee7a1d6cbcb87234b7b3aab48a1b0b8455ad": {
+      "local_path": "data/external/20260919T010945.005748Z/cboe_vix.csv",
+      "run_id": "20260919T010945.005748Z",
+      "bytes": 472819,
+      "first_run_id": "20260919T010945.005748Z",
+      "available": true
+    },
+    "dc0cf747ad18bb340f48a3a79038aaf6f005f3aacab3aa0ba3960ab5370e5aa5": {
+      "local_path": "data/external/2026-09-18/apple-fy2026-q3-financial-statements.pdf",
+      "run_id": "initial",
+      "bytes": 3148703,
+      "first_run_id": "initial",
+      "available": true
+    },
+    "f70e6c098ac2e48aa4a9f7e3f02929989523fb6f390d88a10a9e9ef72adb83d7": {
+      "local_path": "data/external/2026-09-18/treasury-yields-2026-09.xml",
+      "run_id": "initial",
+      "bytes": 19213,
+      "first_run_id": "initial",
+      "available": true
+    }
+  },
+  "interrupted_runs": [],
+  "referenced_bytes": 7178186,
+  "distinct_bytes": 5657300,
+  "stored_bytes": 7178186,
+  "interrupted_bytes": 0,
+  "benchmark_eligible": false
+}

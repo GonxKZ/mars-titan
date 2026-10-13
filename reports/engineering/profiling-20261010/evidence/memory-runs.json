@@ -1,0 +1,342 @@
+[
+ {
+  "command": "index",
+  "result": {
+   "train": {
+    "seconds": 165.2711815549992,
+    "events": 9356
+   },
+   "validation": {
+    "seconds": 131.4764808289765,
+    "events": 747
+   }
+  },
+  "seconds": 305.01434047098155,
+  "peak_rss_bytes": 3515944960,
+  "cgroup_memory_peak_bytes": 5341831168,
+  "arrow_memory_pool": "mimalloc",
+  "label": "index-plain",
+  "load_average": [
+   9.65869140625,
+   11.40234375,
+   17.09423828125
+  ],
+  "pipeline": {
+   "MARS_TITAN_DECODE_WORKERS": "2",
+   "MARS_TITAN_PREFETCH_BATCHES": "2",
+   "MARS_TITAN_GROUP_CACHE_MIB": "4096"
+  },
+  "sampled_peak_rss_bytes": 3516841984,
+  "sampled_peak_seconds": 163.68,
+  "sampled_peak_phase": "index_train",
+  "sampled_peak_by_phase": {
+   "start": 753618944,
+   "index_train": 3516841984,
+   "index_validation": 3149692928
+  }
+ },
+ {
+  "command": "index",
+  "result": {
+   "train": {
+    "seconds": 559.0303597250022,
+    "events": 9356
+   },
+   "validation": {
+    "seconds": 230.8533769089845,
+    "events": 747
+   }
+  },
+  "seconds": 807.3046054410224,
+  "peak_rss_bytes": 4629610496,
+  "cgroup_memory_peak_bytes": 6710980608,
+  "arrow_memory_pool": "system",
+  "label": "index-memray",
+  "load_average": [
+   7.88134765625,
+   7.94189453125,
+   11.7734375
+  ],
+  "pipeline": {
+   "MARS_TITAN_DECODE_WORKERS": "2",
+   "MARS_TITAN_PREFETCH_BATCHES": "2",
+   "MARS_TITAN_GROUP_CACHE_MIB": "4096"
+  },
+  "sampled_peak_rss_bytes": 4630593536,
+  "sampled_peak_seconds": 545.45,
+  "sampled_peak_phase": "index_train",
+  "sampled_peak_by_phase": {
+   "start": 869482496,
+   "index_train": 4630593536,
+   "index_validation": 3881082880
+  }
+ },
+ {
+  "command": "read",
+  "result": {
+   "total_events": 9356,
+   "start": 9256,
+   "warm_events": 10,
+   "warm_s": 133.52498396800365,
+   "cache_mib": 4096,
+   "policy": "default",
+   "events": 90,
+   "rows": 185497,
+   "rows_s": 11773.23532178466,
+   "cpu_us_row": 114.78779796977851,
+   "redecoded_groups": 0,
+   "peak_cached_bytes": 2921774322,
+   "peak_rss_bytes": 5812441088
+  },
+  "seconds": 156.82508804099052,
+  "peak_rss_bytes": 5812441088,
+  "cgroup_memory_peak_bytes": 9040089088,
+  "arrow_memory_pool": "mimalloc",
+  "label": "read-plain",
+  "load_average": [
+   8.31201171875,
+   7.88232421875,
+   11.146484375
+  ],
+  "pipeline": {
+   "MARS_TITAN_DECODE_WORKERS": "2",
+   "MARS_TITAN_PREFETCH_BATCHES": "2",
+   "MARS_TITAN_GROUP_CACHE_MIB": "4096"
+  },
+  "sampled_peak_rss_bytes": 5814136832,
+  "sampled_peak_seconds": 156.14,
+  "sampled_peak_phase": "read",
+  "sampled_peak_by_phase": {
+   "read": 5814136832
+  }
+ },
+ {
+  "command": "read",
+  "result": {
+   "total_events": 9356,
+   "start": 9256,
+   "warm_events": 10,
+   "warm_s": 651.6037550159963,
+   "cache_mib": 4096,
+   "policy": "default",
+   "events": 90,
+   "rows": 185497,
+   "rows_s": 2708.124737324287,
+   "cpu_us_row": 681.5239522310337,
+   "redecoded_groups": 0,
+   "peak_cached_bytes": 2921774322,
+   "peak_rss_bytes": 6037925888
+  },
+  "seconds": 732.8399753730046,
+  "peak_rss_bytes": 6037925888,
+  "cgroup_memory_peak_bytes": 8362672128,
+  "arrow_memory_pool": "system",
+  "label": "read-memray",
+  "load_average": [
+   7.06591796875,
+   6.43701171875,
+   8.35205078125
+  ],
+  "pipeline": {
+   "MARS_TITAN_DECODE_WORKERS": "2",
+   "MARS_TITAN_PREFETCH_BATCHES": "2",
+   "MARS_TITAN_GROUP_CACHE_MIB": "4096"
+  },
+  "sampled_peak_rss_bytes": 6038777856,
+  "sampled_peak_seconds": 732.37,
+  "sampled_peak_phase": "read",
+  "sampled_peak_by_phase": {
+   "read": 6038777856
+  }
+ },
+ {
+  "command": "read",
+  "result": {
+   "total_events": 9356,
+   "start": 9256,
+   "warm_events": 10,
+   "warm_s": 107.37931851501344,
+   "cache_mib": 4096,
+   "policy": "default",
+   "events": 90,
+   "rows": 185497,
+   "rows_s": 15551.737138529052,
+   "cpu_us_row": 115.50932654436463,
+   "redecoded_groups": 0,
+   "peak_cached_bytes": 2921774322,
+   "peak_rss_bytes": 5885153280
+  },
+  "seconds": 125.06560147600248,
+  "peak_rss_bytes": 5885153280,
+  "cgroup_memory_peak_bytes": 7979765760,
+  "arrow_memory_pool": "system",
+  "label": "read-system",
+  "load_average": [
+   6.2119140625,
+   6.3642578125,
+   8.08349609375
+  ],
+  "pipeline": {
+   "MARS_TITAN_DECODE_WORKERS": "2",
+   "MARS_TITAN_PREFETCH_BATCHES": "2",
+   "MARS_TITAN_GROUP_CACHE_MIB": "4096"
+  },
+  "sampled_peak_rss_bytes": 5886517248,
+  "sampled_peak_seconds": 124.39,
+  "sampled_peak_phase": "read",
+  "sampled_peak_by_phase": {
+   "read": 5886517248
+  }
+ },
+ {
+  "command": "validation",
+  "result": {
+   "rows": 502015,
+   "features": 1719,
+   "batch_size": 1024,
+   "blocks": 0,
+   "resident_bytes": 3463903500,
+   "resident_parts_bytes": {
+    "values": 3451855140,
+    "target": 4016120,
+    "market": 4016120,
+    "prediction_at": 4016120
+   },
+   "resident_dtypes": {
+    "values": "float32",
+    "target": "float64",
+    "market": "<U2",
+    "prediction_at": "datetime64[us]"
+   },
+   "declared_bytes": 3465914636,
+   "device_bytes": 2140471296,
+   "read_seconds": 109.99281329801306,
+   "place_seconds": 0.31820208599674515
+  },
+  "seconds": 116.89107352599967,
+  "peak_rss_bytes": 5612052480,
+  "cgroup_memory_peak_bytes": 8589934592,
+  "arrow_memory_pool": "mimalloc",
+  "label": "validation-plain",
+  "load_average": [
+   12.0791015625,
+   9.81787109375,
+   8.85693359375
+  ],
+  "pipeline": {
+   "MARS_TITAN_DECODE_WORKERS": "2",
+   "MARS_TITAN_PREFETCH_BATCHES": "2",
+   "MARS_TITAN_GROUP_CACHE_MIB": "4096"
+  },
+  "sampled_peak_rss_bytes": 5613441024,
+  "sampled_peak_seconds": 116.5,
+  "sampled_peak_phase": "validation_place",
+  "sampled_peak_by_phase": {
+   "start": 966647808,
+   "validation_read": 5512630272,
+   "validation_place": 5613441024,
+   "validation_release": 2130927616
+  },
+  "discarded": "El recuento de bloques se tomó después de liberarlos. Se repite como validation-plain-r2"
+ },
+ {
+  "command": "validation",
+  "result": {
+   "rows": 502015,
+   "features": 1719,
+   "batch_size": 1024,
+   "blocks": 0,
+   "resident_bytes": 3463903500,
+   "resident_parts_bytes": {
+    "values": 3451855140,
+    "target": 4016120,
+    "market": 4016120,
+    "prediction_at": 4016120
+   },
+   "resident_dtypes": {
+    "values": "float32",
+    "target": "float64",
+    "market": "<U2",
+    "prediction_at": "datetime64[us]"
+   },
+   "declared_bytes": 3465914636,
+   "device_bytes": 2140471296,
+   "read_seconds": 659.4693582369946,
+   "place_seconds": 2.128609965002397
+  },
+  "seconds": 685.2228422519984,
+  "peak_rss_bytes": 5840674816,
+  "cgroup_memory_peak_bytes": 8122843136,
+  "arrow_memory_pool": "system",
+  "label": "validation-memray",
+  "load_average": [
+   21.95166015625,
+   14.5283203125,
+   10.8857421875
+  ],
+  "pipeline": {
+   "MARS_TITAN_DECODE_WORKERS": "2",
+   "MARS_TITAN_PREFETCH_BATCHES": "2",
+   "MARS_TITAN_GROUP_CACHE_MIB": "4096"
+  },
+  "sampled_peak_rss_bytes": 5842169856,
+  "sampled_peak_seconds": 684.83,
+  "sampled_peak_phase": "validation_place",
+  "sampled_peak_by_phase": {
+   "start": 1133559808,
+   "validation_read": 5743923200,
+   "validation_place": 5842169856,
+   "validation_release": 5815885824
+  }
+ },
+ {
+  "command": "validation",
+  "result": {
+   "rows": 502015,
+   "features": 1719,
+   "batch_size": 1024,
+   "blocks": 491,
+   "resident_bytes": 3463903500,
+   "resident_parts_bytes": {
+    "values": 3451855140,
+    "target": 4016120,
+    "market": 4016120,
+    "prediction_at": 4016120
+   },
+   "resident_dtypes": {
+    "values": "float32",
+    "target": "float64",
+    "market": "<U2",
+    "prediction_at": "datetime64[us]"
+   },
+   "declared_bytes": 3465914636,
+   "device_bytes": 2140471296,
+   "read_seconds": 182.66106162100914,
+   "place_seconds": 0.6889404859975912
+  },
+  "seconds": 205.7412332459935,
+  "peak_rss_bytes": 5439561728,
+  "cgroup_memory_peak_bytes": 6278410240,
+  "arrow_memory_pool": "mimalloc",
+  "label": "validation-plain-r2",
+  "load_average": [
+   20.099609375,
+   18.275390625,
+   13.6484375
+  ],
+  "pipeline": {
+   "MARS_TITAN_DECODE_WORKERS": "2",
+   "MARS_TITAN_PREFETCH_BATCHES": "2",
+   "MARS_TITAN_GROUP_CACHE_MIB": "4096"
+  },
+  "sampled_peak_rss_bytes": 5440454656,
+  "sampled_peak_seconds": 205.14,
+  "sampled_peak_phase": "validation_place",
+  "sampled_peak_by_phase": {
+   "start": 930611200,
+   "validation_read": 5337636864,
+   "validation_place": 5440454656,
+   "validation_release": 1995390976
+  }
+ }
+]

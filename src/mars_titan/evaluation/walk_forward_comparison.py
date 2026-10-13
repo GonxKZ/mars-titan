@@ -41,11 +41,19 @@ solo mercado compara los controles separados con el mismo brazo conjunto restrin
 las filas de su mercado (``<brazo><sufijo>``), en la ventana con los mismos tramos, con una
 familia de diferencias conjunto menos separado. Sin esta sección cada ámbito compara todos
 los brazos con todas sus filas, como antes.
+
+Cualquier versión admite además la sección opcional de contrastes secundarios de capacidad
+predictiva (``predictive_ability``): Diebold-Mariano con la corrección de Harvey, SPA,
+Reality Check, StepM, MCS y el diagnóstico de longitud de bloque de Politis y White,
+calculados con ``arch`` y ``statsmodels`` sobre las pérdidas diarias de cada familia. Su
+presencia no cambia ninguna otra salida del informe. Esas dos bibliotecas son del extra
+``research`` y solo se cargan al evaluar una configuración que declara la sección.
 """
 
 import argparse
 import dataclasses
 import json
+import re
 import resource
 import time
 from datetime import UTC, datetime
@@ -62,7 +70,12 @@ from mars_titan.data import prediction_files
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.input_policy import masked_inputs, policy_identity
 from mars_titan.data.storage import atomic_json, outside_source, sha256
-from mars_titan.evaluation import long_short, modality_ablation, modality_strata
+from mars_titan.evaluation import (
+    long_short,
+    modality_ablation,
+    modality_strata,
+    predictive_ability,
+)
 from mars_titan.evaluation.forecast_panel import WEIGHTINGS, ForecastPanel, SessionSeries
 from mars_titan.evaluation.forecast_scores import (
     COVERAGE_ERROR,
@@ -135,7 +148,8 @@ STRATA_FIELD = "modality_strata"
 ABLATION_FIELD = "modality_ablation"
 LONG_SHORT_FIELD = "long_short"
 JOINT_FIELD = "joint_design"
-# Secciones secundarias que añade cada versión de la configuración.
+PREDICTIVE_FIELD = "predictive_ability"
+# Secciones secundarias que exige cada versión de la configuración.
 SECTIONS = {
     1: set(),
     2: {STRATA_FIELD},
@@ -143,6 +157,8 @@ SECTIONS = {
     4: {STRATA_FIELD, ABLATION_FIELD, LONG_SHORT_FIELD},
     5: {STRATA_FIELD, ABLATION_FIELD, LONG_SHORT_FIELD, JOINT_FIELD},
 }
+# Secciones secundarias que cualquier versión admite sin exigirlas.
+OPTIONAL_SECTIONS = {PREDICTIVE_FIELD}
 _JOINT_FIELDS = {
     "declared_at",
     "joint_scope",
@@ -426,14 +442,17 @@ def validate_config(config, digest, folder):
     """Validar una configuración ya leída. ``folder`` resuelve las rutas de los protocolos.
 
     Cada versión añade las secciones secundarias de ``SECTIONS``. La 4 añade la cartera
-    larga y corta por cuartiles y la 5 el diseño conjunto con controles separados.
+    larga y corta por cuartiles y la 5 el diseño conjunto con controles separados. Los
+    contrastes de capacidad predictiva son opcionales en todas.
     """
     version = config.get("schema_version") if isinstance(config, dict) else None
+    sections = set(config) - _CONFIG_FIELDS if isinstance(config, dict) else set()
     _require(
         isinstance(config, dict)
         and type(version) is int
         and version in SECTIONS
-        and set(config) == _CONFIG_FIELDS | SECTIONS[version]
+        and _CONFIG_FIELDS <= set(config)
+        and SECTIONS[version] <= sections <= SECTIONS[version] | OPTIONAL_SECTIONS
         and config["kind"] == CONFIG_KIND
         and config["status"] == DECLARED
         and config["partition"] == "evaluation"
@@ -514,6 +533,8 @@ def validate_config(config, digest, folder):
         modality_ablation.declaration(config[ABLATION_FIELD])
     if version >= 4:
         long_short.declaration(config[LONG_SHORT_FIELD])
+    if PREDICTIVE_FIELD in config:
+        predictive_ability.declaration(config[PREDICTIVE_FIELD], comparison)
     resolved = {scope: _protocols(folder, scope, declared) for scope, declared in scopes.items()}
     if JOINT_FIELD in config:
         _joint_design(config[JOINT_FIELD], resolved, arms, families, folder)
@@ -575,19 +596,47 @@ def _view(folder, record, window, scope, policy):
     return digest, edition
 
 
+def _platform_record(value):
+    """Plataforma común de unas fuentes: su huella, o ninguna si todos los recibos son anteriores
+    a su registro, y cuántos se atribuyeron a qué perfil."""
+    if not isinstance(value, dict):
+        return False
+    digest, profile = value.get("platform_sha256"), value.get("unrecorded_profile")
+    recorded, unrecorded = value.get("recorded"), value.get("unrecorded")
+    return (
+        set(value) == {"platform_sha256", "recorded", "unrecorded", "unrecorded_profile"}
+        and type(recorded) is int
+        and type(unrecorded) is int
+        and recorded >= 0
+        and unrecorded >= 0
+        and recorded + unrecorded > 0
+        and (digest is None) == (recorded == 0)
+        and (digest is None or re.fullmatch("[0-9a-f]{64}", digest) is not None)
+        and (profile is None) == (unrecorded == 0)
+        and (profile is None or isinstance(profile, str))
+    )
+
+
 def load_sources(path, config, scope_name):
     """Validar el manifiesto de fuentes de un ámbito antes de leer predicciones."""
     path = Path(path)
     sources, digest = read_manifest(path, 16 * 1024**2)
     scope = config["resolved_scopes"].get(scope_name)
     _require(scope is not None, "El ámbito no está declarado en la configuración")
+    # La versión 2 añade la plataforma común de los recibos. La 1 no la registraba.
+    version = sources.get("schema_version") if isinstance(sources, dict) else None
+    fields = {"schema_version", "kind", "scope", "input_policy", "windows", "arms"}
     _require(
         isinstance(sources, dict)
-        and set(sources) == {"schema_version", "kind", "scope", "input_policy", "windows", "arms"}
-        and sources["schema_version"] == 1
+        and version in (1, 2)
+        and set(sources) == fields | ({"platform"} if version == 2 else set())
         and sources["kind"] == SOURCES_KIND
         and sources["scope"] == scope_name,
         "Las fuentes no cumplen su contrato",
+    )
+    platform = sources.get("platform")
+    _require(
+        version == 1 or _platform_record(platform), "La plataforma de las fuentes no es válida"
     )
     policy = config["input_policy"]
     _require(
@@ -672,6 +721,7 @@ def load_sources(path, config, scope_name):
         edition=edition,
         files=files,
         joint_views=joint_views,
+        platform=platform,
         **scope,
     )
 
@@ -1079,6 +1129,24 @@ def _contrasts(config, overall, views):
     return result
 
 
+def _predictive_ability(config, overall, views):
+    """Contrastes secundarios de capacidad predictiva con las mismas series que ``_contrasts``."""
+
+    def series(arm, view, metric):
+        if not _metric_available(overall[arm][0][view], metric):
+            return None
+        return _seed_series(overall, arm, view, metric)
+
+    return predictive_ability.report(
+        config[PREDICTIVE_FIELD],
+        config["comparison"],
+        config["metrics"]["market_weighting"],
+        config["resolved_families"],
+        views,
+        series,
+    )
+
+
 def _status(row):
     joint = row["simultaneous_interval"]
     if joint is None:
@@ -1438,6 +1506,8 @@ def evaluate_walk_forward(
     """
     started = time.perf_counter()
     config = resolve_config(config_path)
+    # Sin el extra research, la sección secundaria falla aquí y no tras puntuar las ventanas.
+    libraries = predictive_ability.library_versions() if PREDICTIVE_FIELD in config else {}
     sources = load_sources(sources_path, config, scope)
     # Desde aquí, los brazos y las familias son los del ámbito evaluado.
     config = scope_config(config, scope)
@@ -1489,6 +1559,7 @@ def evaluate_walk_forward(
         markets=markets,
         configuration=dict(name=config["name"], sha256=config["sha256"]),
         sources_sha256=sources["sha256"],
+        **({"platform": sources["platform"]} if sources["platform"] else {}),
         **(policy_identity(config["input_policy"]) or dict(input_policy=config["input_policy"])),
         edition=sources["edition"],
         protocol_sha256=sources["protocol_sha256"],
@@ -1540,6 +1611,12 @@ def evaluate_walk_forward(
             borrowed=sources["borrowed"],
             joint_windows=sources["joint_windows"],
             joint_views=sources["joint_views"],
+        )
+    if PREDICTIVE_FIELD in config:
+        report[PREDICTIVE_FIELD] = _predictive_ability(config, overall, names)
+        report["versions"].update(libraries)
+        report["analysis_source_sha256"]["evaluation/predictive_ability.py"] = sha256(
+            Path(__file__).parents[1] / "evaluation/predictive_ability.py"
         )
     if strata is not None:
         report[STRATA_FIELD] = strata

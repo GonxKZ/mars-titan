@@ -27,22 +27,22 @@ ADDED = (plan.EPISODIC, plan.MARS, plan.CM)
 COUNTS = dict(
     A=dict(
         declared=(2385, 0),
-        families={plan.EPISODIC: (180, 0), plan.MARS: (1620, 0), plan.CM: (1080, 0)},
-        extended=(5265, 0),
+        families={plan.EPISODIC: (180, 0), plan.MARS: (2340, 0), plan.CM: (1080, 0)},
+        extended=(5985, 0),
         adapters=(10332, 1302),
         rl=dict(
             declared=dict(training_jobs=1368, carried_jobs=0, reference_jobs=1221),
-            extended=dict(training_jobs=2376, carried_jobs=0, reference_jobs=2775),
+            extended=dict(training_jobs=2664, carried_jobs=0, reference_jobs=3219),
         ),
     ),
     B=dict(
         declared=(901, 868),
-        families={plan.EPISODIC: (68, 84), plan.MARS: (612, 756), plan.CM: (408, 336)},
-        extended=(1989, 2044),
+        families={plan.EPISODIC: (68, 84), plan.MARS: (884, 1092), plan.CM: (408, 336)},
+        extended=(2261, 2380),
         adapters=(1479, 2436),
         rl=dict(
             declared=dict(training_jobs=456, carried_jobs=912, reference_jobs=1221),
-            extended=dict(training_jobs=792, carried_jobs=1584, reference_jobs=2775),
+            extended=dict(training_jobs=888, carried_jobs=1776, reference_jobs=3219),
         ),
     ),
 )
@@ -68,7 +68,7 @@ def test_prepared_limits_are_the_exact_counts_of_the_campaign_and_both_stages(va
     assert set(campaign["pending_families"]) == {plan.ONLINE_CONTROL}
     assert pair(report["adapter_stage"]["counts"]) == expected["adapters"]
     rl = report["rl_stage"]
-    assert rl["predictors"] == dict(declared=11, extended=25)
+    assert rl["predictors"] == dict(declared=11, extended=29)
     for name in ("declared", "extended"):
         counts = expected["rl"][name]
         assert {key: rl[name][key] for key in counts} == counts
@@ -148,10 +148,10 @@ def test_the_declared_configurations_stay_untouched():
 @pytest.mark.parametrize(
     ("where", "value", "message"),
     [
-        (("limits", "max_training_jobs"), 5264, "prevé 5265 trabajos.*max_training_jobs=5264"),
+        (("limits", "max_training_jobs"), 5984, "prevé 5985 trabajos.*max_training_jobs=5984"),
         (("limits", "max_prediction_jobs"), 1, "prevé 0 trabajos.*max_prediction_jobs=1"),
-        (("rl_stage", "limits", "max_training_jobs"), 2377, "políticas ampliada prevé 2376"),
-        (("rl_stage", "limits", "max_evaluation_jobs"), 2774, "prevé 2775 trabajos"),
+        (("rl_stage", "limits", "max_training_jobs"), 2665, "políticas ampliada prevé 2664"),
+        (("rl_stage", "limits", "max_evaluation_jobs"), 3218, "prevé 3219 trabajos"),
     ],
 )
 def test_prepared_limits_must_match_the_counts_exactly(where, value, message):
@@ -186,7 +186,7 @@ def test_extended_policy_stage_resolves_every_producer_of_the_campaign():
     stage = policy_plan.load_stage(RL_STAGES["B"])
     resolved = extensions.extended_policies(prepared, stage, extended)
     producers = [spec["arm"] for spec in plan._arm_specs(extended) if not spec["helper"]]
-    assert resolved["predictors"] == producers and len(producers) == 25
+    assert resolved["predictors"] == producers and len(producers) == 29
     assert "mars_titan_m3" in producers
     assert not set(plan.CM_CORES) & set(resolved["predictors"])
     assert resolved["universe_predictor"] == stage["universe_predictor"]

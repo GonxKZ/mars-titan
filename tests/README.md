@@ -32,6 +32,15 @@ MARS_TITAN_REQUIRE_NATIVE=1 \
 
 La orden necesita los cinco binarios declarados como en la [suite completa](#binarios-nativos). Si falta alguno, si una ruta no existe o si el enlace episódico no carga, el modo estricto termina con un error de uso. Con `MARS_TITAN_REQUIRE_NATIVE=0` o sin la variable, el comportamiento es el de la suite CPU.
 
+Las paridades con bibliotecas externas (PEFT, scoringrules, MAPIE y sb3-contrib) llevan la marca `external_reference` y necesitan el grupo de dependencias `reference`, que no forma parte del entorno de ejecución. Sin el grupo se omiten con su motivo. `MARS_TITAN_REQUIRE_REFERENCE=1` exige el grupo con las versiones exactas de `pyproject.toml` antes de recoger pruebas y convierte en fallo cualquier omisión de una prueba marcada:
+
+```bash
+uv sync --locked --group reference
+MARS_TITAN_REQUIRE_REFERENCE=1 uv run --locked pytest -q -rs -m external_reference
+```
+
+Una prueba con las dos marcas, como la que compara el núcleo QR-DQN con sb3-contrib, solo falla por omitirse si se exigen las dos cosas. Esa prueba también necesita `rl_variety_tests` junto a `mars-titan-ppo`, que la comprobación del inicio no exige, así que con `MARS_TITAN_REQUIRE_NATIVE=1` la ausencia de ese ejecutable la hace fallar aunque no se exija el grupo.
+
 Cada prueba protege una propiedad concreta. La cobertura y las pruebas de mutación ayudan a localizar lógica poco comprobada, pero no sustituyen los casos de comportamiento ni acreditan por sí solas la reproducibilidad de un entrenamiento.
 
 ## Protección del aprendizaje
@@ -86,8 +95,10 @@ La preparación de objetivos (`prepare_corpus_targets`), la codificación (`enco
 - `tests/posttraining/test_learning_hold_entrypoints.py` comprueba lo mismo en los cinco puntos de entrada del postentrenamiento y que la etapa de evaluación congelada no se bloquea.
 - `tests/simulation/test_native_ppo_runner.py` se omite mientras rige la protección porque entrena con el binario real.
 - En CTest, `learning_hold` comprueba la lectura nativa y `adapter_control_cli_hold` el rechazo del control de adaptadores con una protección temporal. `adapter_control_cli` se omite mediante el mensaje del bloqueo.
+- Las pruebas de CTest que aplican pasos de optimizador sobre datos sintéticos llevan la etiqueta `optimizer-steps`: `ppo_policy`, `ppo_training`, `ppo_collection`, `ppo_gru_packing`, `ppo_variant_state`, `adapter_control` y, cuando se registran, `adapter_control_cli`, `adapter_control_cuda` y `adapter_control_cli_cuda`. El perfil base `native-test` de `native/CMakePresets.json` excluye esa etiqueta y todos los perfiles de prueba la heredan, sea cual sea la arquitectura. Una llamada sin perfil, como `ctest --test-dir`, necesita `-LE '^optimizer-steps$'` mientras rija el bloqueo. Al levantarlo, esas pruebas se ejecutan con `ctest --test-dir <build> -L '^optimizer-steps$'`.
+- `tests/native/test_optimizer_steps_hold.py` lee CMake, las fuentes C++ y los perfiles sin configurar ni compilar. Localiza los ejecutables de cada prueba y exige que la lleven justo las que llaman a una función que aplica o propaga un paso (`PpoPolicy::update` y sus variantes, `PpoTrainer::advance`, `KlpoLearningController::update_ready`, `AdapterControl::train` y los experimentos PPO y KLPO). También exige que cada perfil visible excluya la etiqueta y ninguna otra, y que todo archivo de `native/src` que use `torch::optim` o llame a esas funciones esté declarado. `adapter_control_cli_hold` y `adapter_control_cli_invalid` ejecutan el programa del adaptador, pero se detienen antes del primer paso por la protección bloqueada o por el argumento `cuda:1`.
 
-Siguen requiriendo una selección explícita las pruebas que ajustan sin pasar por un punto de entrada protegido: `tests/models/test_boosting_selection.py` y `tests/training/test_external_convergence.py` (llaman a `xgb.train`), `tests/models/test_ridge_normal_equations.py` (resuelve el sistema normal de la ridge) y las pruebas de CTest que usan directamente las bibliotecas de PPO, KLPO y adaptadores, por ejemplo `ppo_training`, `ppo_policy` y `adapter_control`.
+Siguen requiriendo una selección explícita las pruebas que ajustan sin pasar por un punto de entrada protegido: `tests/models/test_boosting_selection.py` y `tests/training/test_external_convergence.py` (llaman a `xgb.train`) y `tests/models/test_ridge_normal_equations.py` (resuelve el sistema normal de la ridge).
 
 ## Suite completa en condiciones reales
 
@@ -98,7 +109,7 @@ La suite general omite con su motivo las pruebas que necesitan un binario nativo
 Se prepara un entorno propio con todos los extras, sin tocar otros entornos del equipo:
 
 ```bash
-uv sync --locked --all-extras
+uv sync --locked --all-extras --group reference
 uv run --locked python -c "import torch; print(torch.__version__, torch.cuda.is_available())"
 ```
 
@@ -139,12 +150,12 @@ export MARS_TITAN_KLPO_EXECUTABLE=$B/native-ppo-release/mars-titan-klpo
 
 ### Modo estricto
 
-`MARS_TITAN_REQUIRE_NATIVE=1` detiene la sesión antes de recoger pruebas si falta declarar alguno de los cinco binarios, si su ruta no existe o si el enlace episódico no carga, por ejemplo porque se compiló con otro PyTorch. Durante la sesión, una prueba marcada con `native_binding` que se omite cuenta como fallo. `MARS_TITAN_REQUIRE_CUDA=1` detiene la sesión si CUDA no está visible. Así un binario sin compilar o una GPU no disponible no se confunden con omisiones esperadas. Fuera de este modo las pruebas que dependen de CUDA usan `requires_cuda` de `tests/suite_support.py` y se omiten con su motivo, sin pasar nunca a CPU.
+`MARS_TITAN_REQUIRE_NATIVE=1` detiene la sesión antes de recoger pruebas si falta declarar alguno de los cinco binarios, si su ruta no existe o si el enlace episódico no carga, por ejemplo porque se compiló con otro PyTorch. Durante la sesión, una prueba marcada con `native_binding` que se omite cuenta como fallo. `MARS_TITAN_REQUIRE_REFERENCE=1` hace lo mismo con el grupo `reference` y la marca `external_reference`. `MARS_TITAN_REQUIRE_CUDA=1` detiene la sesión si CUDA no está visible. Así un binario sin compilar o una GPU no disponible no se confunden con omisiones esperadas. Fuera de este modo las pruebas que dependen de CUDA usan `requires_cuda` de `tests/suite_support.py` y se omiten con su motivo, sin pasar nunca a CPU.
 
 ### Parte CPU
 
 ```bash
-export OMP_NUM_THREADS=2 MKL_NUM_THREADS=2 CUDA_VISIBLE_DEVICES=-1 MARS_TITAN_REQUIRE_NATIVE=1
+export OMP_NUM_THREADS=2 MKL_NUM_THREADS=2 CUDA_VISIBLE_DEVICES=-1 MARS_TITAN_REQUIRE_NATIVE=1 MARS_TITAN_REQUIRE_REFERENCE=1
 for part in data models training simulation memory posttraining evaluation environments episodes calibration cm native tooling; do
   uv run --locked pytest -q -rs tests/$part \
     --ignore=tests/models/test_boosting_selection.py \

@@ -1,0 +1,41 @@
+[
+  {
+    "check": "null_adapters",
+    "device": "cuda:0",
+    "dtype": "float64",
+    "warmup_months": 12,
+    "arms": {
+      "full_continuation": {
+        "updates": 1,
+        "rows_equal_to_frozen_parent": true
+      },
+      "head": {
+        "updates": 1,
+        "rows_equal_to_frozen_parent": true
+      }
+    },
+    "frozen_parent_max_abs_difference_cpu_device": {
+      "validation": 2.0816681711721685e-17,
+      "calibration": 6.938893903907228e-18,
+      "evaluation": 2.0816681711721685e-17
+    },
+    "tolerance": {
+      "rtol": 1e-08,
+      "atol": 1e-10
+    },
+    "seconds": 10.242725465999683,
+    "peak_allocated_bytes": 90644480,
+    "torch": "2.14.0+cu130"
+  },
+  {
+    "check": "head_gradients",
+    "device": "cuda:0",
+    "updates": 42,
+    "max_abs_gradient_difference_cpu_device": 5.204170427930421e-18,
+    "tolerance": {
+      "rtol": 1e-08,
+      "atol": 1e-10
+    },
+    "torch": "2.14.0+cu130"
+  }
+]

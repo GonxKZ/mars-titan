@@ -1,0 +1,345 @@
+{
+ "capture": "read-memray.bin",
+ "peak_memory_bytes": 4854187035,
+ "live_at_peak_bytes": 4854187035,
+ "total_allocations": 107303,
+ "native_traces": true,
+ "python_allocator": "pymalloc",
+ "file_format": "aggregated_allocations",
+ "by_project_frame": [
+  {
+   "frame": "mars_titan/training/corpus_inputs.py:280 _vectors",
+   "bytes": 2933090592,
+   "share": 0.6042393032760428,
+   "allocations": 24651
+  },
+  {
+   "frame": "mars_titan/training/corpus_inputs.py:752 _prices",
+   "bytes": 614679736,
+   "share": 0.12662877049606722,
+   "allocations": 12115
+  },
+  {
+   "frame": "mars_titan/training/corpus_inputs.py:652 _partition_labels",
+   "bytes": 381012088,
+   "share": 0.07849143126393769,
+   "allocations": 16047
+  },
+  {
+   "frame": "mars_titan/training/corpus_inputs.py:724 _labels",
+   "bytes": 206301788,
+   "share": 0.042499760827613024,
+   "allocations": 1342
+  },
+  {
+   "frame": "mars_titan/training/corpus_inputs.py:155 _times",
+   "bytes": 125786687,
+   "share": 0.025913028503649325,
+   "allocations": 38468
+  },
+  {
+   "frame": "fuera del proyecto",
+   "bytes": 118239866,
+   "share": 0.024358325121685388,
+   "allocations": 2355
+  },
+  {
+   "frame": "mars_titan/training/checkpoints.py:18 <module>",
+   "bytes": 73630512,
+   "share": 0.015168453845948686,
+   "allocations": 137604
+  },
+  {
+   "frame": "mars_titan/training/corpus_inputs.py:704 _labels",
+   "bytes": 73242736,
+   "share": 0.015088568996600273,
+   "allocations": 23958
+  },
+  {
+   "frame": "mars_titan/training/corpus_inputs.py:705 _labels",
+   "bytes": 70832736,
+   "share": 0.014592090393154783,
+   "allocations": 2662
+  },
+  {
+   "frame": "mars_titan/memory/financial_observations.py:713 _logical_events",
+   "bytes": 54618178,
+   "share": 0.011251766280571429,
+   "allocations": 155245
+  },
+  {
+   "frame": "mars_titan/training/corpus_inputs.py:1282 _new_batch",
+   "bytes": 39500512,
+   "share": 0.008137410387195763,
+   "allocations": 36
+  },
+  {
+   "frame": "mars_titan/data/temporal.py:6 <module>",
+   "bytes": 30972246,
+   "share": 0.006380521759190929,
+   "allocations": 20341
+  },
+  {
+   "frame": "mars_titan/training/corpus_inputs.py:824 _sample_group",
+   "bytes": 16606721,
+   "share": 0.003421112717796215,
+   "allocations": 39985
+  },
+  {
+   "frame": "mars_titan/training/corpus_inputs.py:548 _verify_files",
+   "bytes": 10485760,
+   "share": 0.002160147502433433,
+   "allocations": 10
+  },
+  {
+   "frame": "mars_titan/data/cohort_files.py:23 read_manifest",
+   "bytes": 9595328,
+   "share": 0.0019767116369466386,
+   "allocations": 15
+  },
+  {
+   "frame": "mars_titan/training/corpus_inputs.py:1285 _new_batch",
+   "bytes": 9067544,
+   "share": 0.0018679840588383921,
+   "allocations": 9
+  },
+  {
+   "frame": "mars_titan/training/corpus_inputs.py:77 _read_digests",
+   "bytes": 8388608,
+   "share": 0.0017281180019467462,
+   "allocations": 8
+  },
+  {
+   "frame": "mars_titan/memory/episodic_session.py:16 <module>",
+   "bytes": 4923327,
+   "share": 0.001014243366500195,
+   "allocations": 29
+  },
+  {
+   "frame": "mars_titan/training/corpus_inputs.py:243 _availability",
+   "bytes": 4210008,
+   "share": 0.0008672941461968204,
+   "allocations": 2250
+  },
+  {
+   "frame": "mars_titan/training/corpus_inputs.py:589 _file",
+   "bytes": 4206592,
+   "share": 0.0008665904238277873,
+   "allocations": 5
+  },
+  {
+   "frame": "mars_titan/data/cohort_files.py:12 _unique",
+   "bytes": 4197376,
+   "share": 0.0008646918566869767,
+   "allocations": 8
+  },
+  {
+   "frame": "mars_titan/training/corpus_inputs.py:293 _vectors",
+   "bytes": 4173712,
+   "share": 0.0008598168900181243,
+   "allocations": 31116
+  },
+  {
+   "frame": "mars_titan/training/corpus_inputs.py:260 _presence",
+   "bytes": 3312808,
+   "share": 0.0006824640204659934,
+   "allocations": 10216
+  },
+  {
+   "frame": "mars_titan/training/corpus_inputs.py:261 _presence",
+   "bytes": 3268358,
+   "share": 0.0006733069773443536,
+   "allocations": 1924
+  },
+  {
+   "frame": "mars_titan/training/corpus_inputs.py:92 _read_digests",
+   "bytes": 3145728,
+   "share": 0.0006480442507300298,
+   "allocations": 3
+  }
+ ],
+ "by_python_frame": [
+  {
+   "frame": "mars_titan/training/corpus_inputs.py:280 _vectors",
+   "bytes": 2933090592,
+   "share": 0.6042393032760428,
+   "allocations": 24651
+  },
+  {
+   "frame": "numpy/lib/_shape_base_impl.py:648 column_stack",
+   "bytes": 614496280,
+   "share": 0.12659097714392045,
+   "allocations": 6382
+  },
+  {
+   "frame": "mars_titan/training/corpus_inputs.py:652 _partition_labels",
+   "bytes": 381012088,
+   "share": 0.07849143126393769,
+   "allocations": 16047
+  },
+  {
+   "frame": "mars_titan/training/corpus_inputs.py:724 _labels",
+   "bytes": 206301788,
+   "share": 0.042499760827613024,
+   "allocations": 1342
+  },
+  {
+   "frame": "mars_titan/training/corpus_inputs.py:155 _times",
+   "bytes": 123554176,
+   "share": 0.0254531140042897,
+   "allocations": 16312
+  },
+  {
+   "frame": "sin pila de Python",
+   "bytes": 111251760,
+   "share": 0.022918721342594497,
+   "allocations": 67
+  },
+  {
+   "frame": "pyarrow/compute.py:508 take",
+   "bytes": 73245512,
+   "share": 0.015089140874028972,
+   "allocations": 23989
+  },
+  {
+   "frame": "mars_titan/training/corpus_inputs.py:705 _labels",
+   "bytes": 70832736,
+   "share": 0.014592090393154783,
+   "allocations": 2662
+  },
+  {
+   "frame": "pyarrow/parquet/core.py:331 __init__",
+   "bytes": 56115847,
+   "share": 0.011560297655485786,
+   "allocations": 160061
+  },
+  {
+   "frame": "<frozen importlib._bootstrap_external>:757 _compile_bytecode",
+   "bytes": 46911504,
+   "share": 0.009664131946658706,
+   "allocations": 12117
+  },
+  {
+   "frame": "mars_titan/training/corpus_inputs.py:1282 _new_batch",
+   "bytes": 39500512,
+   "share": 0.008137410387195763,
+   "allocations": 36
+  },
+  {
+   "frame": "python/decoder.py:354 raw_decode",
+   "bytes": 17984482,
+   "share": 0.003704942119108107,
+   "allocations": 24
+  },
+  {
+   "frame": "pyarrow/parquet/core.py:483 read_row_group",
+   "bytes": 16607353,
+   "share": 0.003421242914674795,
+   "allocations": 39998
+  },
+  {
+   "frame": "<frozen importlib._bootstrap>:488 _call_with_frames_removed",
+   "bytes": 14118113,
+   "share": 0.0029084402595541932,
+   "allocations": 43370
+  },
+  {
+   "frame": "mars_titan/training/corpus_inputs.py:1285 _new_batch",
+   "bytes": 9067544,
+   "share": 0.0018679840588383921,
+   "allocations": 9
+  },
+  {
+   "frame": "python/dataclasses.py:473 _create_fn",
+   "bytes": 5400513,
+   "share": 0.0011125473660287175,
+   "allocations": 229
+  },
+  {
+   "frame": "mars_titan/training/corpus_inputs.py:243 _availability",
+   "bytes": 4210008,
+   "share": 0.0008672941461968204,
+   "allocations": 2250
+  },
+  {
+   "frame": "mars_titan/data/cohort_files.py:12 _unique",
+   "bytes": 4197376,
+   "share": 0.0008646918566869767,
+   "allocations": 8
+  },
+  {
+   "frame": "python/pathlib.py:404 _parse_path",
+   "bytes": 4194304,
+   "share": 0.0008640590009733731,
+   "allocations": 4
+  },
+  {
+   "frame": "pyarrow/compute.py:271 wrapper",
+   "bytes": 3811296,
+   "share": 0.0007851563964304478,
+   "allocations": 24651
+  },
+  {
+   "frame": "mars_titan/training/corpus_inputs.py:260 _presence",
+   "bytes": 3312808,
+   "share": 0.0006824640204659934,
+   "allocations": 10216
+  },
+  {
+   "frame": "mars_titan/training/corpus_inputs.py:261 _presence",
+   "bytes": 3268358,
+   "share": 0.0006733069773443536,
+   "allocations": 1924
+  },
+  {
+   "frame": "mars_titan/training/corpus_inputs.py:92 _read_digests",
+   "bytes": 3145728,
+   "share": 0.0006480442507300298,
+   "allocations": 3
+  },
+  {
+   "frame": "python/pathlib.py:555 drive",
+   "bytes": 3145728,
+   "share": 0.0006480442507300298,
+   "allocations": 3
+  },
+  {
+   "frame": "duckdb/_dbapi_type_object.py:127 <module>",
+   "bytes": 2522837,
+   "share": 0.0005197238964649825,
+   "allocations": 13659
+  }
+ ],
+ "by_allocator": [
+  {
+   "frame": "posix_memalign",
+   "bytes": 3222237824,
+   "share": 0.6638058650741709,
+   "allocations": 28418
+  },
+  {
+   "frame": "malloc",
+   "bytes": 1253641541,
+   "share": 0.2582598346460295,
+   "allocations": 587090
+  },
+  {
+   "frame": "calloc",
+   "bytes": 194830669,
+   "share": 0.04013662176492546,
+   "allocations": 1404
+  },
+  {
+   "frame": "mmap",
+   "bytes": 181469184,
+   "share": 0.03738405271398859,
+   "allocations": 162
+  },
+  {
+   "frame": "realloc",
+   "bytes": 2007817,
+   "share": 0.0004136258008855236,
+   "allocations": 537
+  }
+ ]
+}
