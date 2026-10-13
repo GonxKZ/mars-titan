@@ -22,6 +22,7 @@ from mars_titan.evaluation.splits import build_folds, eligible_folds
 from mars_titan.training import campaign_budget as budget
 from mars_titan.training import campaign_data_policy as data_policy
 from mars_titan.training import campaign_numerics as numerics
+from mars_titan.training import campaign_online_controls
 from mars_titan.training import campaign_plan as plan
 from mars_titan.training import campaign_schedule as order
 from mars_titan.training import masked_campaign as engine
@@ -247,9 +248,16 @@ def test_v2_neural_cases_carry_strict_precision_and_the_graph_step_into_their_id
         for job in plan.plan_campaign(loaded)
         if job["family"] == plan.NEURAL and job["stage"] == "search"
     ]
-    assert searches
-    for job in searches:
+    candidates = [job for job in searches if job["kind"] != plan.ONLINE]
+    assert candidates
+    for job in candidates:
         assert job["case"] in [case for _, case in neural["candidates"][job["arm"]]]
+    # El control en línea no ajusta un caso de la sección neuronal. Su caso es solo la regla de
+    # online_controls, y su FP32 estricto lo fija la ranura y lo vuelve a exigir su ejecutor.
+    online = [job for job in searches if job["kind"] == plan.ONLINE]
+    assert {job["arm"] for job in online} == {campaign_online_controls.ARM}
+    rules = [case for _, case in campaign_online_controls.search_cases(loaded["online_controls"])]
+    assert all(job["case"] in rules and set(job["case"]) == {"rule"} for job in online)
 
 
 @pytest.mark.parametrize(
