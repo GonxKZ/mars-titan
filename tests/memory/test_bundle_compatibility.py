@@ -126,6 +126,7 @@ def test_the_editions_differ_only_in_identity(editions):
     assert first.fingerprint() != second.fingerprint()
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_one_consistent_bundle_runs_the_phase_and_resumes(native, editions, tmp_path):
     parts = bundle(editions[0])
     with session(native, tmp_path / "run", parts) as run:
@@ -136,6 +137,7 @@ def test_one_consistent_bundle_runs_the_phase_and_resumes(native, editions, tmp_
         assert restored.snapshot() == final
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 @pytest.mark.parametrize("mixed", ["codec", "prefixes"])
 def test_a_codec_or_prefix_from_another_edition_is_rejected_before_any_output(
     native, editions, tmp_path, mixed
@@ -146,6 +148,7 @@ def test_a_codec_or_prefix_from_another_edition_is_rejected_before_any_output(
     assert not (tmp_path / "run").exists()
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_a_readout_trained_for_another_codec_is_rejected(native, editions, tmp_path):
     other = bundle(editions[1])["codec"]
     parts = bundle(editions[0], readout_codec=other)
@@ -160,6 +163,7 @@ def test_a_materialized_edition_from_another_cohort_is_rejected(editions):
         PrefixTargetVerifier(first["dataset"], source_manifest=second["root"] / "materialized.json")
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_observations_of_another_edition_never_reach_the_session(native, editions, tmp_path):
     first, second = editions
     with session(native, tmp_path / "run", bundle(first)) as run:
@@ -188,6 +192,7 @@ def confirmed(native, editions, tmp_path):
     return final, files(tmp_path / "run"), contract
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_resuming_with_another_edition_is_rejected_without_writing(
     native, editions, confirmed, tmp_path
 ):
@@ -197,6 +202,7 @@ def test_resuming_with_another_edition_is_rejected_without_writing(
     assert files(tmp_path / "run") == before
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 @pytest.mark.parametrize(
     "recipe", [dict(hidden_size=64), dict(memory_projections=PAPER_PROJECTIONS)]
 )
@@ -210,6 +216,7 @@ def test_resuming_with_another_recipe_is_rejected_without_writing(
     assert files(tmp_path / "run") == before
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_resuming_with_another_admission_is_rejected_without_writing(
     native, editions, confirmed, tmp_path
 ):
@@ -249,6 +256,7 @@ def test_a_representation_change_keeps_the_shapes_but_not_the_identity(editions,
         FrozenEpisodeCodec(changed).encode(validated_cpu_batch(event.inputs[0], original))
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_a_representation_change_requires_rebuilding_from_history(
     native, confirmed, revised, tmp_path
 ):

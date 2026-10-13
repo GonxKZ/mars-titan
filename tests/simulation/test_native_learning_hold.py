@@ -12,6 +12,8 @@ import pytest
 
 from mars_titan.training.learning_hold import HOLD_ENV
 
+pytestmark = pytest.mark.native("MARS_TITAN_PPO_EXECUTABLE")
+
 ROOT = Path(__file__).resolve().parents[2]
 
 
@@ -19,7 +21,11 @@ ROOT = Path(__file__).resolve().parents[2]
 def binary():
     value = os.environ.get("MARS_TITAN_PPO_EXECUTABLE")
     if not value:
-        pytest.skip("Define MARS_TITAN_PPO_EXECUTABLE con un mars-titan-ppo compilado")
+        pytest.skip(
+            "Falta declarar MARS_TITAN_PPO_EXECUTABLE con un mars-titan-ppo compilado por "
+            "`make native-build` (preset native-ppo-release). Esta prueba no usa la ruta "
+            "por defecto"
+        )
     return Path(value).resolve(strict=True)
 
 

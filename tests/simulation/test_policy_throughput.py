@@ -15,7 +15,6 @@ import torch
 from torch.optim import optimizer as optim_module
 
 from mars_titan.simulation import policy_plan, policy_throughput, window_tapes
-from mars_titan.simulation.native_runtime import library_path
 
 STAGES = {v: Path(f"configs/simulation/historical-masked-rl-stage-{v.lower()}.json") for v in "AB"}
 RATES = dict(
@@ -158,7 +157,7 @@ def test_measurement_steps_the_environment_and_the_network_without_changing_weig
     assert not {"loss", "reward", "return"} & set(network)
 
 
-@pytest.mark.skipif(library_path() is None, reason="Falta la biblioteca nativa de simulación")
+@pytest.mark.native("MARS_TITAN_NATIVE_LIBRARY")
 def test_native_accounting_is_measured_where_the_engine_admits_the_market(cpu):
     rates = policy_throughput.measure_policies(reduced(), steps=8, warmup=2)
     assert rates["stepping"]["US"]["native"]["steps_per_second"] > 0

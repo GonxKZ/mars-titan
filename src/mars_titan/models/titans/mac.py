@@ -68,7 +68,13 @@ class TitansMAC(nn.Module):
         memory = state.memory
         storage_ids = {
             (value.device, value.untyped_storage().data_ptr())
-            for value in (*memory.weights, *memory.momentum, memory.steps, *memory.convolution)
+            for value in (
+                *memory.weights,
+                *memory.momentum,
+                memory.steps,
+                *memory.convolution,
+                *memory.levels,
+            )
         }
         self.memory.validate_windows(
             state.convolution,

@@ -66,6 +66,7 @@ def test_invalid_configurations_are_rejected(options):
         api().MatureErrorConfig(**options)
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_all_candidates_reach_three_indices_and_the_union_is_deduplicated(native):
     original = bank(native)
     before = original.snapshot()
@@ -82,6 +83,7 @@ def test_all_candidates_reach_three_indices_and_the_union_is_deduplicated(native
     assert following.receipt["index_offers"] == 12
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_selective_index_keeps_exact_absolute_errors_and_canonical_ties(native):
     value = bank(native)
     value = value.propose(
@@ -96,6 +98,7 @@ def test_selective_index_keeps_exact_absolute_errors_and_canonical_ties(native):
     assert following.snapshot()["scores"] == {1: 5.0}
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_reservoir_matches_the_existing_native_algorithm(native):
     value = bank(native)
     scope = native.MemoryScope()
@@ -115,6 +118,7 @@ def test_reservoir_matches_the_existing_native_algorithm(native):
         assert value.seen == oracle.seen
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 @pytest.mark.parametrize("seed", [73, 2**64 - 1])
 def test_snapshot_recovery_and_continuation_are_exact(native, seed):
     value = bank(native, seed=seed).propose(
@@ -132,6 +136,7 @@ def test_snapshot_recovery_and_continuation_are_exact(native, seed):
     )
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_receipt_cannot_invent_episodes_before_the_first_offer(native):
     value = bank(native).propose([record(native, 1)], errors={1: 0.5}, confirmed_at=3)
     snapshot = value.snapshot()
@@ -141,6 +146,7 @@ def test_receipt_cannot_invent_episodes_before_the_first_offer(native):
         bank(native).restore(snapshot)
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_recent_index_must_match_the_mature_ids_preserved_in_the_receipt(native):
     incoming = [record(native, i) for i in range(1, 9)]
     value = bank(native, capacity=8).propose(
@@ -162,6 +168,7 @@ def test_recent_index_must_match_the_mature_ids_preserved_in_the_receipt(native)
         value.restore(snapshot)
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_tiny_errors_are_ranked_in_float64(native):
     incoming = [record(native, 1), record(native, 2)]
     for row in incoming:
@@ -171,6 +178,7 @@ def test_tiny_errors_are_ranked_in_float64(native):
     assert value.snapshot()["scores"] == {2: 1e-50}
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_duplicate_copies_must_match_float_bits(native):
     original = record(native, 1)
     original.value = [0.0] + [1.0] * 63
@@ -185,6 +193,7 @@ def test_duplicate_copies_must_match_float_bits(native):
         bank(native).restore(snapshot)
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_non_idempotent_keys_are_normalized_once_across_indices_and_recovery(native):
     raw = [11.0, 19.0, 1.0] + [0.0] * 61
 
@@ -211,6 +220,7 @@ def test_non_idempotent_keys_are_normalized_once_across_indices_and_recovery(nat
         assert value.snapshot() == snapshot
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_selective_scores_are_returned_without_mutable_aliases(native):
     value = bank(native).propose([record(native, 1)], errors={1: -0.5}, confirmed_at=3)
     scores = value.selective_scores
@@ -218,6 +228,7 @@ def test_selective_scores_are_returned_without_mutable_aliases(native):
     assert value.selective_scores == {1: 0.5}
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_proposal_budget_and_future_labels_preserve_the_original(native):
     value = bank(native, max_working_bytes=17 * 1024**2)
     before = value.snapshot()
@@ -229,6 +240,7 @@ def test_proposal_budget_and_future_labels_preserve_the_original(native):
     assert value.snapshot() == before
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_restore_checks_receipt_types_before_copying_unknown_objects(native):
     class CopyBomb:
         def __deepcopy__(self, memo):
@@ -241,6 +253,7 @@ def test_restore_checks_receipt_types_before_copying_unknown_objects(native):
         bank(native).restore(snapshot)
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 @pytest.mark.parametrize("errors", [{}, {1: True}, {1: float("nan")}, {1: float("inf")}, {2: 1.0}])
 def test_invalid_error_evidence_preserves_the_original_bank(native, errors):
     value = bank(native)
@@ -250,6 +263,7 @@ def test_invalid_error_evidence_preserves_the_original_bank(native, errors):
     assert value.snapshot() == before
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 @pytest.mark.parametrize("change", ["extra", "identity", "roles", "score_type", "missing_score"])
 def test_corrupt_snapshots_do_not_recover(native, change):
     value = bank(native).propose([record(native, 1)], errors={1: 0.5}, confirmed_at=3)

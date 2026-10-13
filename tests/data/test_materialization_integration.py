@@ -13,6 +13,7 @@ from mars_titan.data.embeddings import EmbeddingCache
 from mars_titan.data.preparation import prepare_asset
 from mars_titan.data.samples import materialize_samples
 from mars_titan.data.temporal import MarketClock
+from tests.suite_support import missing_extra
 
 
 class FixtureEncoders:
@@ -27,7 +28,7 @@ class FixtureEncoders:
 
 @pytest.fixture
 def encoder_runtime(monkeypatch):
-    torch = pytest.importorskip("torch")
+    torch = pytest.importorskip("torch", reason=missing_extra("torch"))
     monkeypatch.setattr(torch.cuda, "reset_peak_memory_stats", lambda: None)
     monkeypatch.setattr(torch.cuda, "max_memory_allocated", lambda: 0)
     monkeypatch.setattr(torch.cuda, "max_memory_reserved", lambda: 0)

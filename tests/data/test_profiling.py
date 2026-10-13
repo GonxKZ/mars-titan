@@ -2,6 +2,8 @@ import importlib
 
 import pytest
 
+from tests.suite_support import missing_extra, skip_without_cuda
+
 
 def module():
     try:
@@ -10,11 +12,11 @@ def module():
         pytest.fail("Las referencias de coste multimodal todavía no existen")
 
 
+@pytest.mark.cuda
 @pytest.mark.parametrize("kind", ["mlp", "gru", "dlinear", "rnn", "lstm"])
 def test_cost_probes_use_every_modality_and_macro(kind):
-    torch = pytest.importorskip("torch")
-    if not torch.cuda.is_available():
-        pytest.skip("La prueba de aceleración requiere CUDA, no se sustituye por CPU")
+    torch = pytest.importorskip("torch", reason=missing_extra("torch"))
+    skip_without_cuda()
     torch.manual_seed(42)
     dimensions = {"prices": 5, "news": 4, "charts": 3, "fundamentals": 2, "macro": 2}
     context = 64 if kind == "dlinear" else 4
@@ -34,7 +36,7 @@ def test_cost_probes_use_every_modality_and_macro(kind):
 
 
 def test_cost_projection_does_not_claim_unknown_architecture_speed():
-    pytest.importorskip("torch")
+    pytest.importorskip("torch", reason=missing_extra("torch"))
     result = module().project_cost(
         samples=10000, seconds_per_sample=0.01, epochs=20, folds=5, seeds=3, models=2
     )

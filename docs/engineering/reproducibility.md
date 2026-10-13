@@ -27,7 +27,7 @@ Para preparar las herramientas de documentación y calidad:
 uv sync --locked
 ```
 
-El grupo `dev` contiene las utilidades de comprobación. El grupo `reference` contiene las bibliotecas externas que solo se usan como referencia en las pruebas de paridad, con versiones exactas, y se instala con `uv sync --locked --group reference`. Los extras `data`, `research` y `notebooks` añaden herramientas opcionales. `cuda` y `encoders` se han usado en la preparación multimodal y las mediciones locales. No hace falta PyTorch para revisar documentación o validar formatos. Las pruebas que lo necesitan se omiten de forma explícita si no está instalado.
+El grupo `dev` contiene las utilidades de comprobación. El grupo `reference` contiene las bibliotecas externas que solo se usan como referencia en las pruebas de paridad, con versiones exactas, y se instala con `uv sync --locked --all-extras --group reference`, que conserva los extras del entorno. Los extras `data`, `research` y `notebooks` añaden herramientas opcionales. `cuda` y `encoders` se han usado en la preparación multimodal y las mediciones locales. No hace falta PyTorch para revisar documentación o validar formatos. Las pruebas que lo necesitan se omiten de forma explícita si no está instalado.
 
 Para reproducir la preparación y sus comprobaciones con GPU:
 
@@ -37,7 +37,7 @@ uv sync --locked \
   --extra encoders
 ```
 
-El extra `cuda` obtiene PyTorch desde el índice CUDA 13.0 declarado en `pyproject.toml`, para Linux x86-64 y Linux aarch64. La segunda arquitectura corresponde a la DGX GB10 y su estado se describe en [plataformas de hardware](hardware-platforms.md). Se han comprobado importación, operación en `cuda:0`, extracción de representaciones y entrenamiento supervisado. La resolución del lockfile no sustituye estas comprobaciones al cambiar de equipo.
+El extra `cuda` obtiene PyTorch desde el índice CUDA 13.0 declarado en `pyproject.toml`, para Linux x86-64, la única plataforma del proyecto ([plataforma de hardware](hardware-platforms.md)). Se han comprobado importación, operación en `cuda:0`, extracción de representaciones y entrenamiento supervisado. La resolución del lockfile no sustituye estas comprobaciones al cambiar de equipo.
 
 Las herramientas actuales se ejecutan desde la raíz:
 

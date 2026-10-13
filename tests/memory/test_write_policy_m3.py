@@ -37,6 +37,7 @@ def offer(value, native, identifiers, errors, features=None, at=None):
     return value.propose(incoming, confirmed_at=confirmed, **options)
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_m3_shares_capacity_quotas_offers_and_reservoir_with_m2(native):
     """Las mismas ofertas a los mismos índices: solo puede cambiar el selectivo."""
     m2, m3 = bank(native, "m2", capacity=8), bank(native, capacity=8)
@@ -59,6 +60,7 @@ def test_m3_shares_capacity_quotas_offers_and_reservoir_with_m2(native):
     assert "write_score" not in m2.identity() and m2.write_features == {}
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_error_only_weights_select_exactly_what_m2_selects(native):
     """x/(x+m) es estrictamente creciente: con w=(1,0,0) el selectivo coincide con M2."""
     m2 = bank(native, "m2", capacity=12)
@@ -81,6 +83,7 @@ def test_error_only_weights_select_exactly_what_m2_selects(native):
         assert only.index_ids() == m2.index_ids()
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_selective_index_keeps_the_highest_composite_scores_with_canonical_ties(native):
     value = bank(native, capacity=4)
     # Mismo error: decide la anomalía. Empate exacto entre 3 y 4: gana el ID menor.
@@ -113,6 +116,7 @@ def test_selective_index_keeps_the_highest_composite_scores_with_canonical_ties(
     assert value.write_features[5] == [0.02, 9.0, 0.0, True]
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_missing_relevance_is_neutral_and_not_zero_in_the_score(native):
     value = offer(
         bank(native, capacity=4),
@@ -127,6 +131,7 @@ def test_missing_relevance_is_neutral_and_not_zero_in_the_score(native):
     assert value.index_ids()["selective"] == (2,)
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_snapshot_recovery_and_continuation_are_exact(native):
     value = offer(
         bank(native, capacity=8),
@@ -145,6 +150,7 @@ def test_snapshot_recovery_and_continuation_are_exact(native):
     assert left.snapshot() == right.snapshot()
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 @pytest.mark.parametrize(
     "change",
     [
@@ -204,6 +210,7 @@ def test_corrupt_m3_snapshots_do_not_recover(native, change):
         target.restore(snapshot)
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 @pytest.mark.parametrize("policy", ["m2", "m3"])
 def test_features_are_required_by_m3_and_refused_by_m2(native, policy):
     value = bank(native, policy)

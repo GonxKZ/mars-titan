@@ -45,6 +45,22 @@ INVENTORY = {
         "campaign_run ejecuta con la protección rebajada de permitted. carry_correction no ajusta, "
         "pero comprueba la protección porque predice ventanas de la campaña"
     ),
+    "tests/training/test_campaign_a_joint.py::"
+    "test_v2_joint_stop_pairs_each_case_and_the_selected_case_of_every_scope": (
+        "ejecuta con run_campaign la ventana fold-006 de la v2 reducida con parada conjunta, que "
+        "pasa la protección de la campaña y de cada trabajo con la protección rebajada de "
+        "joint_campaign, aunque los ejecutores sustituidos no ajustan"
+    ),
+    "tests/training/test_campaign_a_joint.py::"
+    "test_a_plateau_that_reports_another_precision_is_not_confirmed": (
+        "ejecuta con run_campaign una meseta que informa de TF32 para comprobar que no se "
+        "confirma, y pasa la protección con la rebajada de joint_campaign, aunque los ejecutores "
+        "sustituidos no ajustan"
+    ),
+    "tests/test_suite_support.py::test_unguarded_fits_run_when_the_hold_allows_learning": (
+        "la sesión de pytest hija lee una protección temporal que permite aprender para "
+        "comprobar que la marca unguarded_fit deja de omitir, aunque la prueba sondeada no ajusta"
+    ),
 }
 
 
