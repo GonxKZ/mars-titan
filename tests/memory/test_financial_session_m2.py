@@ -27,6 +27,8 @@ from mars_titan.memory.retention_bank import RetentionConfig
 from mars_titan.memory.write_policy import MatureErrorConfig
 from mars_titan.models.titans.frozen_financial import FrozenFinancialConsumer
 
+pytestmark = pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
+
 
 def open_session(
     native, source, consumer, output, *, admission="m2", block_rows=4, resume=False, retention=None

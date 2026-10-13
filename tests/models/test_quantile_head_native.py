@@ -6,23 +6,20 @@ anchura 128. Requiere el enlace `_episodic_native` compilado con el candidato.
 No ajusta ni modifica parámetros del candidato.
 """
 
-import os
-
 import pytest
 import torch
 
 from mars_titan.memory.native_backend import load_native
 from mars_titan.models.quantile_head import QuantileHead, pinball_loss
+from tests.suite_support import CANDIDATE_BINDING_REASON
 
-pytestmark = pytest.mark.skipif(
-    not os.environ.get("MARS_TITAN_EPISODIC_NATIVE"), reason="Falta el enlace nativo compilado"
-)
+pytestmark = pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 
 
 def native_candidate(dtype, seed):
     native = load_native()
     if getattr(native, "candidate_abi_version", None) != 1:
-        pytest.skip("El enlace se compiló sin el candidato GRU")
+        pytest.skip(CANDIDATE_BINDING_REASON)
     config = native.CandidateConfig()
     config.normalization_id = "quantile-head-parity-v1"
     config.parameter_seed = seed

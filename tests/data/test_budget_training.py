@@ -5,6 +5,8 @@ import random
 import numpy as np
 import pytest
 
+from tests.suite_support import missing_extra, skip_without_cuda
+
 os.environ.setdefault("CUBLAS_WORKSPACE_CONFIG", ":4096:8")
 
 
@@ -15,11 +17,11 @@ def training_module():
         pytest.fail("Falta el entrenamiento supervisado de medición")
 
 
+@pytest.mark.cuda
 @pytest.mark.parametrize("kind", ["mlp", "gru"])
 def test_real_labels_update_all_modalities_and_resume_exactly(tmp_path, kind):
-    torch = pytest.importorskip("torch")
-    if not torch.cuda.is_available():
-        pytest.skip("CUDA no está disponible, no se sustituye por CPU")
+    torch = pytest.importorskip("torch", reason=missing_extra("torch"))
+    skip_without_cuda()
     from mars_titan.profiling import CostProbe
 
     module = training_module()
@@ -80,10 +82,10 @@ def test_partition_requires_target_maturity_before_training_cutoff():
     )
 
 
+@pytest.mark.cuda
 def test_validation_counts_partial_batches_without_updating_weights():
-    torch = pytest.importorskip("torch")
-    if not torch.cuda.is_available():
-        pytest.skip("CUDA no está disponible, no se sustituye por CPU")
+    torch = pytest.importorskip("torch", reason=missing_extra("torch"))
+    skip_without_cuda()
     from mars_titan.profiling import CostProbe
 
     module = training_module()
@@ -138,6 +140,7 @@ def test_budget_run_rejects_invalid_workload_before_touching_data(tmp_path, opti
     assert not (tmp_path / "out").exists()
 
 
+@pytest.mark.cuda
 @pytest.mark.parametrize(
     "loss,expected_objective,expected_weight",
     [("mse", 5.0, 0.0), ("mae", 2.0, 0.8), ("huber", 0.875, 0.9)],
@@ -145,9 +148,8 @@ def test_budget_run_rejects_invalid_workload_before_touching_data(tmp_path, opti
 def test_objectives_keep_common_metrics_and_apply_the_expected_gradient(
     loss, expected_objective, expected_weight
 ):
-    torch = pytest.importorskip("torch")
-    if not torch.cuda.is_available():
-        pytest.skip("CUDA no está disponible, no se sustituye por CPU")
+    torch = pytest.importorskip("torch", reason=missing_extra("torch"))
+    skip_without_cuda()
 
     class ScalarModel(torch.nn.Module):
         def __init__(self):
@@ -175,10 +177,10 @@ def test_invalid_loss_options_fail_before_touching_a_model(loss, delta):
         training_module().run_epoch(None, None, [], None, loss=loss, huber_delta=delta)
 
 
+@pytest.mark.cuda
 def test_target_broadcasting_is_rejected_before_updating_weights():
-    torch = pytest.importorskip("torch")
-    if not torch.cuda.is_available():
-        pytest.skip("CUDA no está disponible, no se sustituye por CPU")
+    torch = pytest.importorskip("torch", reason=missing_extra("torch"))
+    skip_without_cuda()
 
     class ColumnModel(torch.nn.Module):
         def __init__(self):

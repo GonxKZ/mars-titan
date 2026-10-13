@@ -130,6 +130,7 @@ def models(source, refinements, episodes):
     return predictor.eval().requires_grad_(False), readout.eval().requires_grad_(False)
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 @pytest.mark.parametrize(
     ("admission", "refinements", "episodes", "policy"),
     [

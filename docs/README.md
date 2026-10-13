@@ -10,7 +10,7 @@ La [referencia GRU](../native/candidate.md), el [adaptador financiero de MAC](en
 
 | Para qué | Documento |
 | --- | --- |
-| Preparar datos y conocer su cobertura | [Preparación ejecutada](data/preparation.md), [cobertura histórica de 2000 a 2023](data/historical-coverage.md), [huecos de precios](data/historical-price-gaps.md), [edición v3.1](data/edition-v3-1.md), [esquema](data/schema.md) y [permisos](data/permissions.md). |
+| Preparar datos y conocer su cobertura | [Preparación ejecutada](data/preparation.md), [cobertura histórica de 2000 a 2023](data/historical-coverage.md), [huecos de precios](data/historical-price-gaps.md), [edición v3.1](data/edition-v3-1.md), [catálogo y subconjuntos declarados](data/edition-catalog.md), [esquema](data/schema.md) y [permisos](data/permissions.md). |
 | Consultar la edición desde 2000 verificada y sus objetivos | [Edición v3 completa y objetivos residuales](data/historical-materialization.md#edición-v3-completa-y-objetivos-residuales), con cobertura por modalidad, exclusiones y [recibo](../reports/data/historical-edition-v3-targets-20261009.json). [Vistas walk-forward de la campaña A](research/walk-forward-2000.md#vistas-de-la-campaña-a), preparadas y verificadas, con su [recibo](../reports/data/campaign-a-views-20261009.json). |
 | Consultar el recorrido completo de noticias | [Índice de ambos mercados](../reports/data/corpus-index-20260922.md) y [contrato del catálogo](data/corpus-catalog.md), con fuentes pendientes separadas de muestras entrenables. |
 | Revisar la admisión de noticias | [Fechas, procedencia y problemas de contenido](data/news-policy.md), con auditorías separadas del piloto y del panel técnico. |
@@ -39,6 +39,7 @@ La [referencia GRU](../native/candidate.md), el [adaptador financiero de MAC](en
 | Trabajar con los datos | [Ficha de FinMultiTime](data/finmultitime-card.md) y [contrato temporal](data/data-contract.md). |
 | Estudiar variables macroeconómicas | [Catálogo de 140 candidatos](data/macro-catalog.md) y [mecanismos financieros](references/macro-review.md). |
 | Consultar y actualizar datos complementarios | [Fuentes públicas y nueve archivos verificados](data/free-data-sources.md) y [capturas manuales con manifiesto](data/public-source-updates.md). |
+| Preparar el entorno y contribuir | [Guía de contribución](../CONTRIBUTING.md), con las órdenes de `make`, las marcas de las pruebas y el flujo de publicación, y [variables de entorno](engineering/environment-variables.md). |
 | Diseñar y mantener la implementación futura | [Arquitectura](engineering/architecture.md), [estructura del repositorio](engineering/repository-structure.md), [entorno reproducible](engineering/reproducibility.md), [decisiones](engineering/decisions.md), [trazas de aprendizaje](research/learning-traces.md). |
 | Ejecutar las tareas con herramientas concretas | [Guía de implementación y límites](engineering/implementation-guide.md) y [catálogo del tablero](research/task-board.md). |
 | Consultar el avance de los entrenamientos | [Observatorio](https://gonxkz.github.io/mars-titan/), [contrato de publicación](engineering/observatory.md) y [frontend](../site/README.md). |

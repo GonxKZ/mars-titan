@@ -16,19 +16,19 @@ import pytest
 from mars_titan.models.baselines import external_boosting as external
 from mars_titan.models.baselines.boosting_selection import ResidentValidation, session_validation
 from tests.models.hand_forest import hand_forest
+from tests.suite_support import missing_extra, skip_without_cuda
 
 pytestmark = pytest.mark.skipif(
     any(importlib.util.find_spec(name) is None for name in ("cupy", "xgboost")),
-    reason="La comprobación CUDA requiere el extra boosting",
+    reason=missing_extra("cupy", "xgboost"),
 )
 
 ROWS, FEATURES, MAX_BIN, BATCH = 6000, 24, 32, 1024
 
 
 def cuda():
-    torch = pytest.importorskip("torch")
-    if not torch.cuda.is_available():
-        pytest.skip("CUDA no disponible, sin alternativa CPU para la ruta externa")
+    pytest.importorskip("torch", reason=missing_extra("torch"))
+    skip_without_cuda()
 
 
 def values(seed=20261009):
@@ -78,6 +78,7 @@ def pages_digest(matrix):
     return digest.hexdigest()
 
 
+@pytest.mark.cuda
 def test_two_constructions_produce_the_same_cuts_pages_and_audit(tmp_path):
     cuda()
     first, second = build(tmp_path, "first"), build(tmp_path, "second")
@@ -94,6 +95,7 @@ def test_two_constructions_produce_the_same_cuts_pages_and_audit(tmp_path):
     assert not first.directory.exists() and not second.directory.exists()
 
 
+@pytest.mark.cuda
 def test_batch_bytes_change_the_cuts_so_they_belong_to_the_construction(tmp_path):
     """El reparto en lotes altera el bosquejo: no es un parámetro solo de rendimiento."""
     cuda()
@@ -112,6 +114,7 @@ def test_batch_bytes_change_the_cuts_so_they_belong_to_the_construction(tmp_path
         smaller.close()
 
 
+@pytest.mark.cuda
 def test_quantized_training_rows_predict_like_their_float32_values(tmp_path):
     cuda()
     import cupy as cp
@@ -143,6 +146,7 @@ def test_quantized_training_rows_predict_like_their_float32_values(tmp_path):
         matrix.close()
 
 
+@pytest.mark.cuda
 def test_resident_validation_matches_the_block_metric_at_any_placement(tmp_path):
     cuda()
     x, y = values(seed=5)
@@ -191,6 +195,7 @@ def test_resident_validation_rejects_its_budget_and_nonfinite_values():
         ResidentValidation(blocks, expected_rows=BATCH + 1, max_bytes=1024**3)
 
 
+@pytest.mark.cuda
 def test_train_metrics_from_the_matrix_equal_those_of_the_reader_batches(tmp_path):
     """Mismos errores, sesiones y sumas que `_predict` sobre los float32 del lector."""
     cuda()
@@ -246,6 +251,7 @@ def validation_blocks(seed=5):
     return blocks
 
 
+@pytest.mark.cuda
 @pytest.mark.parametrize("placement", [0, 2 * BATCH * FEATURES * 4, 1024**3])
 def test_incremental_rounds_match_the_full_prediction_at_every_round(tmp_path, placement):
     cuda()
@@ -270,6 +276,7 @@ def test_incremental_rounds_match_the_full_prediction_at_every_round(tmp_path, p
     assert resident.sums["booster"] is other.booster and resident.sums["count"] == 30
 
 
+@pytest.mark.cuda
 def test_incremental_state_falls_back_or_fails_when_it_cannot_reproduce(tmp_path, monkeypatch):
     cuda()
     from mars_titan.models.baselines import boosting_selection

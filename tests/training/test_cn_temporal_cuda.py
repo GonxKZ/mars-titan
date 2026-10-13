@@ -1,7 +1,6 @@
 """Entrenamiento técnico CN y recuperación con CUDA, fuera de las campañas científicas."""
 
 import json
-import os
 from pathlib import Path
 
 import pytest
@@ -11,13 +10,13 @@ from mars_titan.data.storage import sha256
 from mars_titan.posttraining.completion import _inputs as completion_inputs
 from mars_titan.training import temporal_search
 from mars_titan.training.checkpoints import StopRequest
+from tests.suite_support import requires_cuda_integration
 from tests.training.temporal_fixture import temporal_fixture
 
+pytestmark = pytest.mark.cuda
 
-@pytest.mark.skipif(
-    os.environ.get("MARS_TITAN_CUDA_INTEGRATION") != "1",
-    reason="Requiere una ventana CUDA exclusiva y activación explícita",
-)
+
+@requires_cuda_integration
 def test_cn_cuda_search_recovers_confirmed_runs_and_admits_the_following_stages(
     tmp_path, monkeypatch
 ):

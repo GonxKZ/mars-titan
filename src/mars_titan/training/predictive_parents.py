@@ -137,6 +137,9 @@ def _parent(ordered, parent):
         contract["prediction_retention"] = identity["prediction_retention"]
     if "output_head" in identity:
         contract["output_head"] = identity["output_head"]
+    # Solo un ajuste con precisión declarada registra su política, y el padre la conserva.
+    if "kernel_policy" in identity:
+        contract["kernel_policy"] = identity["kernel_policy"]
     return source, report, contract, (checkpoint, signature)
 
 

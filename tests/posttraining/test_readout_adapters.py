@@ -120,6 +120,7 @@ def arms(shared, tmp_path_factory, native):
     return result
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_arms_share_events_updates_and_issued_predictions(arms):
     baseline, report, _, _ = arms["full_continuation"]
     expected = without_predictions(baseline.audit)
@@ -137,6 +138,7 @@ def test_arms_share_events_updates_and_issued_predictions(arms):
         }, arm
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 @pytest.mark.parametrize("arm", ARMS[1:])
 def test_gradients_reach_only_the_declared_corrections(arms, arm):
     engine, _, core, readout = arms[arm]
@@ -167,6 +169,7 @@ def test_gradients_reach_only_the_declared_corrections(arms, arm):
     assert identity["control_penalty_on_adapted_operator"] is False
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_episodic_gradients_follow_the_chain_rule_of_the_readout_continuation(
     shared, tmp_path, native
 ):
@@ -199,6 +202,7 @@ def test_episodic_gradients_follow_the_chain_rule_of_the_readout_continuation(
     assert nonzero > 0
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_full_continuation_fits_the_whole_readout_with_the_frozen_core(arms):
     engine, _, _, _ = arms["full_continuation"]
     assert set(engine.roles) == set(mt.parameter_roles(engine.readout, "m1")[0])
@@ -207,6 +211,7 @@ def test_full_continuation_fits_the_whole_readout_with_the_frozen_core(arms):
     assert engine.identity["posttraining"]["core_base_parameters_sha256"] is None
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_core_gradient_does_not_depend_on_the_flow_block_size(shared, tmp_path, native):
     _, streams = shared
     whole = build(streams, tmp_path / "whole", native, "core")
@@ -233,6 +238,7 @@ def test_core_without_bank_trains_only_the_core(shared, tmp_path):
     assert any(records[0][name].abs().sum() > 0 for name in records[0])
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_c_penalty_acts_on_the_adapted_operator_and_leaves_the_head_alone(shared, tmp_path, native):
     """g(2w) − g(w) = g(w) − g_B sobre los adaptadores del núcleo, sin recorte."""
     _, streams = shared
@@ -263,6 +269,7 @@ def test_c_penalty_acts_on_the_adapted_operator_and_leaves_the_head_alone(shared
     assert "control_groups_in_objective" not in runs["b"][1]["history"][-1]["train"]
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_resume_reproduces_the_continuous_run_with_both_components(shared, tmp_path, native):
     _, streams = shared
     plan = recipe(epochs=2, checkpoint_updates=2)
@@ -288,6 +295,7 @@ def test_resume_reproduces_the_continuous_run_with_both_components(shared, tmp_p
     assert resumed["history"] == expected["history"]
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_checkpoint_rejects_core_adapters_that_do_not_match(shared, tmp_path, native):
     _, streams = shared
     engine = build(streams, tmp_path / "run", native, "core")
@@ -304,6 +312,7 @@ def test_checkpoint_rejects_core_adapters_that_do_not_match(shared, tmp_path, na
         engine._restore_extra(missing)
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_constructor_rejects_cores_and_readers_outside_the_arm(shared, tmp_path, native):
     _, streams = shared
     readout, codec = reader(streams, "m1")

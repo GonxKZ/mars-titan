@@ -15,12 +15,13 @@ import pytest
 from mars_titan.data.input_policy import HISTORICAL_MASKED
 from mars_titan.training import external_corpus
 from mars_titan.training.corpus_inputs import CorpusDataset
+from tests.suite_support import missing_extra, skip_without_cuda
 from tests.training.historical_temporal_fixture import historical_temporal_fixture
 
 pytestmark = [
     pytest.mark.skipif(
         any(importlib.util.find_spec(name) is None for name in ("cupy", "xgboost")),
-        reason="La comprobación CUDA requiere el extra boosting",
+        reason=missing_extra("cupy", "xgboost"),
     ),
     # XGBoost avisa si sus páginas desaparecen antes de liberar la matriz.
     pytest.mark.filterwarnings("error::UserWarning"),
@@ -34,9 +35,8 @@ class TrainingReached(Exception):
 
 @pytest.fixture
 def window(tmp_path, monkeypatch, learning_doubles):
-    torch = pytest.importorskip("torch")
-    if not torch.cuda.is_available():
-        pytest.skip("CUDA no disponible, sin alternativa CPU para la ruta externa")
+    pytest.importorskip("torch", reason=missing_extra("torch"))
+    skip_without_cuda()
     import xgboost as xgb
 
     manifest = historical_temporal_fixture(tmp_path / "fixture").parent
@@ -79,6 +79,7 @@ def run(manifest, output, shared, **changes):
     return json.loads((output / "run.json").read_text())["attempts"][-1]
 
 
+@pytest.mark.cuda
 def test_trees_with_the_same_bins_reuse_the_matrix_and_another_bin_rebuilds(window):
     manifest, root, received, reads = window
     shared = root / "jobs" / ".shared-matrix"
@@ -101,6 +102,7 @@ def test_trees_with_the_same_bins_reuse_the_matrix_and_another_bin_rebuilds(wind
     assert not shared.exists()
 
 
+@pytest.mark.cuda
 def test_without_sharing_every_run_builds_and_removes_its_own_pages(window):
     manifest, root, received, _ = window
     first = run(manifest, root / "a", None)
@@ -110,6 +112,7 @@ def test_without_sharing_every_run_builds_and_removes_its_own_pages(window):
     assert not list((root / "a").glob("external-*")) and not list((root / "b").glob("external-*"))
 
 
+@pytest.mark.cuda
 def test_recorded_row_keys_follow_the_reader_order(window):
     manifest, root, _, _ = window
     run(manifest, root / "a", root / "shared")
@@ -126,6 +129,7 @@ def test_recorded_row_keys_follow_the_reader_order(window):
     assert rows.expected == len(markets) == dataset.manifest["counts"]["train"]
 
 
+@pytest.mark.cuda
 def test_an_interrupted_attempt_leaves_no_pages_for_the_next_one(window):
     manifest, root, _, _ = window
     output = root / "a"
@@ -138,6 +142,7 @@ def test_an_interrupted_attempt_leaves_no_pages_for_the_next_one(window):
     assert not (output / "external-stale").exists()
 
 
+@pytest.mark.cuda
 def test_after_the_hold_a_shared_matrix_fits_the_same_model_as_its_own(tmp_path):
     """Solo sin bloqueo: ajusta el fixture con matriz propia y compartida y compara bits.
 
@@ -146,9 +151,8 @@ def test_after_the_hold_a_shared_matrix_fits_the_same_model_as_its_own(tmp_path)
     primera y debe dar el mismo modelo y las mismas predicciones que un ajuste con su
     propia matriz, repetido dos veces para comprobar también el determinismo.
     """
-    torch = pytest.importorskip("torch")
-    if not torch.cuda.is_available():
-        pytest.skip("CUDA no disponible, sin alternativa CPU para la ruta externa")
+    pytest.importorskip("torch", reason=missing_extra("torch"))
+    skip_without_cuda()
     manifest = historical_temporal_fixture(tmp_path / "fixture").parent
     shared = tmp_path / "jobs" / ".shared-matrix"
     options = dict(

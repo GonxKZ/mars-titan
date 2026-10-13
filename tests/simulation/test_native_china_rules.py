@@ -441,6 +441,7 @@ def run_simulator(source, output, *arguments):
     )
 
 
+@pytest.mark.native("MARS_TITAN_SIM_EXECUTABLE")
 @pytest.mark.parametrize("policy", ["cash", "hold_initial", "rebalance_50"])
 @pytest.mark.parametrize("seed", [11, 14, 17])
 def test_cpp_session_applies_the_same_rules_as_python(tmp_path, policy, seed):
@@ -470,6 +471,7 @@ def test_cpp_session_applies_the_same_rules_as_python(tmp_path, policy, seed):
         assert plain["financial_validation"] != expected["financial_validation"]
 
 
+@pytest.mark.native("MARS_TITAN_SIM_EXECUTABLE")
 def test_cpp_reader_rejects_rules_without_their_manifest_version(tmp_path):
     tape, instruments = dated_tape(11, partition="validation")
     write_tape(tape, tmp_path / "input", instruments=instruments)

@@ -1,0 +1,107 @@
+{
+  "shape": {
+    "retained": 1024,
+    "incoming": 4040,
+    "fixed": 1016,
+    "candidates": 16,
+    "dimensions": 64
+  },
+  "repetitions": 5,
+  "warmup_calls_per_variant": 1,
+  "measurements": [
+    {
+      "geometry": "isotropic",
+      "clients": 4048,
+      "fixed": 1016,
+      "candidates": 16,
+      "same_fields_and_objective_bits": true,
+      "applied": {
+        "reused_distances": true,
+        "bounded_background": true
+      },
+      "swaps": 0,
+      "distance_pairs": 4922368,
+      "estimated_peak_bytes": {
+        "reference": 9983632,
+        "bounded_and_reused": 18499088
+      },
+      "seconds": {
+        "reference": [
+          4.123828754003625,
+          4.355989408999449,
+          4.079330106003908,
+          4.067029049998382,
+          3.9324763170152437
+        ],
+        "bounded_and_reused": [
+          0.21514113500597887,
+          0.21493678897968493,
+          0.20987362900632434,
+          0.2187277909833938,
+          0.17863408499397337
+        ]
+      },
+      "median_seconds": {
+        "reference": 4.079330106003908,
+        "bounded_and_reused": 0.21493678897968493
+      },
+      "speedup": 18.979208377349828
+    },
+    {
+      "geometry": "clustered",
+      "clients": 4048,
+      "fixed": 1016,
+      "candidates": 16,
+      "same_fields_and_objective_bits": true,
+      "applied": {
+        "reused_distances": true,
+        "bounded_background": true
+      },
+      "swaps": 0,
+      "distance_pairs": 4922368,
+      "estimated_peak_bytes": {
+        "reference": 9983632,
+        "bounded_and_reused": 18499088
+      },
+      "seconds": {
+        "reference": [
+          3.3372840950032696,
+          3.5417632260068785,
+          2.9290192740154453,
+          3.617721287009772,
+          4.273959116981132
+        ],
+        "bounded_and_reused": [
+          0.2166728279844392,
+          0.22433722199639305,
+          0.161641133017838,
+          0.17786094700568356,
+          0.2530015209922567
+        ]
+      },
+      "median_seconds": {
+        "reference": 3.5417632260068785,
+        "bounded_and_reused": 0.2166728279844392
+      },
+      "speedup": 16.346134672046823
+    }
+  ],
+  "versions": {
+    "python": "3.12.14",
+    "numpy": "2.5.3"
+  },
+  "threads": {
+    "OMP_NUM_THREADS": "2",
+    "MKL_NUM_THREADS": "2"
+  },
+  "load_average": [
+    18.138671875,
+    14.37890625,
+    12.41259765625
+  ],
+  "limits": [
+    "Geometrías sintéticas. La poda de la cota depende de la geometría de las claves.",
+    "No incluye banco nativo, codec, snapshots ni modelo.",
+    "Otras aplicaciones siguieron activas y no se mide energía."
+  ]
+}

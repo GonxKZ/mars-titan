@@ -262,7 +262,7 @@ La edición con todos los datos utilizables desde 2000, con [ausencias explícit
 
 ## Innovaciones posteriores a Titans
 
-La [revisión de la memoria posterior a Titans](post-titans-memory-review.md) dejó tres [propuestas](post-titans-proposals.md) para el núcleo de la campaña. Cada una es un componente desactivable, desactivado por defecto y con identidad propia. El diagrama sitúa su punto de inserción sobre el núcleo Titans-MAC y las ampliaciones de MARS-TITAN. Las líneas continuas son el recorrido de una decisión y las discontinuas el estado que pasa a la decisión siguiente o los resultados que maduran después de emitir.
+La [revisión de la memoria posterior a Titans](post-titans-memory-review.md) dejó tres [propuestas](post-titans-proposals.md) para el núcleo de la campaña y otras para una línea posterior, de las que aquí figuran las ya implementadas. Cada una es un componente desactivable, desactivado por defecto y con identidad propia. El diagrama sitúa su punto de inserción sobre el núcleo Titans-MAC y las ampliaciones de MARS-TITAN. Las líneas continuas son el recorrido de una decisión y las discontinuas el estado que pasa a la decisión siguiente o los resultados que maduran después de emitir.
 
 ```mermaid
 flowchart TD
@@ -278,6 +278,9 @@ flowchart TD
     end
 
     PT1["PT1 · caja de puertas y escritura recortada<br/>implementada sin entrenar, #453"]:::comprobado
+    PT6["PT6 · fusión condicionada por la presencia<br/>implementada sin entrenar, #458"]:::comprobado
+    PT5["PT5 · niveles ocultos de los pesos rápidos<br/>cascada o banco EMA, implementada sin entrenar, #457"]:::comprobado
+    PT4["PT4 · memoria de mercado por sesión<br/>o control sectorial, implementada sin entrenar, #456"]:::comprobado
 
     subgraph EXT["Ampliaciones de MARS-TITAN, desactivables"]
         BANK["Banco episódico M0 a M3<br/>y refinamientos K"]
@@ -310,6 +313,10 @@ flowchart TD
     PT1 -. puertas y gradiente interno .-> WR
     PT3 -. regla alternativa .-> B6
     PT2 -. corrección en línea .-> CAL
+    PT6 -. modulación por ausencias .-> ENC
+    PT5 -. olvido multiescala .-> WR
+    ENC -. tokens de la sesión, tras emitirla .-> PT4
+    PT4 -. contexto de sesiones confirmadas sumado a x_t .-> ATT
 
     subgraph LEY["Leyenda"]
         L1["Innovación implementada y comprobada sin entrenar"]:::comprobado
@@ -326,3 +333,9 @@ El banco y B6 no se combinan en la misma variante, como fija la declaración de 
 **PT2. Calibración conformal en línea con etiquetas maduras** ([#454](https://github.com/GonxKZ/mars-titan/issues/454)). Implementada y comprobada sin entrenar como `OnlineConformal`, con κ = 0 idéntica a la CQR estática y sin integrar todavía en la comparación por ventanas. Ecuaciones, pruebas y coste en [su documento](../engineering/online-conformal-calibration.md). Resultado experimental pendiente.
 
 **PT3. Regla de Kalman con ruido de cohorte correlacionado en B6** ([#455](https://github.com/GonxKZ/mars-titan/issues/455)). Implementada y comprobada sin entrenar como `rule="kalman"` de B6, con las reglas delta y proximal idénticas a las anteriores y declarada como ablación A12. Ecuaciones, pruebas y coste en [su documento](../engineering/kalman-associative-memory.md). Resultado experimental pendiente.
+
+**PT4. Memoria de mercado compartida** ([#456](https://github.com/GonxKZ/mars-titan/issues/456)). Línea posterior, fuera de la campaña A. Implementada y comprobada sin entrenar como `session_context`, con una segunda memoria de Titans por mercado que todos los flujos leen y que se escribe una vez por sesión, después de emitirla, y una media sectorial como control obligatorio. Ecuaciones, pruebas y coste en [su documento](../engineering/market-memory.md). Resultado experimental pendiente.
+
+**PT5. Memoria multiescala** ([#457](https://github.com/GonxKZ/mars-titan/issues/457)). Línea posterior, fuera de la campaña A. Implementada y comprobada sin entrenar como `memory_multiscale`, con la cascada de Benna y Fusi sobre los pesos rápidos y un banco EMA con las mismas escalas como alternativa trivial. Con el suelo de olvido de PT1 la transición contrae de forma uniforme en una norma ponderada. Ecuaciones, pruebas y coste en [su documento](../engineering/multiscale-memory.md). Resultado experimental pendiente.
+
+**PT6. Fusión condicionada por la presencia de modalidades** ([#458](https://github.com/GonxKZ/mars-titan/issues/458)). Línea posterior, fuera de la campaña A. Implementada y comprobada sin entrenar como `presence_modulation`, con FiLM sobre el vector de ausencias y una rama ancha como alternativa trivial. Las filas con las cinco modalidades no cambian y ambas opciones arrancan en el control. Ecuaciones, pruebas y coste en [su documento](../engineering/presence-modulation.md). Resultado experimental pendiente.

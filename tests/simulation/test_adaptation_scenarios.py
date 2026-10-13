@@ -17,6 +17,7 @@ from mars_titan.simulation.adaptation_scenarios import (
 )
 from mars_titan.simulation.portfolio import Instrument, Portfolio
 from mars_titan.simulation.storage import read_tape
+from tests.suite_support import HMMLEARN_REASON
 
 
 def settings():
@@ -275,7 +276,7 @@ def test_hmm_rejects_reserved_sources_before_importing_optional_dependency(split
 
 
 def test_hmm_exports_finite_native_parameters_with_training_provenance():
-    pytest.importorskip("hmmlearn")
+    pytest.importorskip("hmmlearn", reason=HMMLEARN_REASON)
     rng = np.random.default_rng(91)
     first = rng.normal([0, 0.002, 0.001], [0.001, 0.0001, 0.0001], (32, 3))
     second = rng.normal([0, 0.009, 0.004], [0.003, 0.0003, 0.0003], (32, 3))

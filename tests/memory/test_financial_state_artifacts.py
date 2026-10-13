@@ -12,6 +12,8 @@ from test_frozen_financial import frozen_backend as frozen_backend
 from mars_titan.memory.session_artifacts import SessionArtifacts
 from mars_titan.models.titans.frozen_financial import FrozenFinancialConsumer
 
+pytestmark = pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
+
 native = backend_fixtures.native
 
 

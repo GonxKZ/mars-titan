@@ -25,6 +25,7 @@ from mars_titan.training import mars_titan_walk_forward as mw
 from mars_titan.training import masked_campaign as engine
 from mars_titan.training import titans_walk_forward as wf
 from mars_titan.training.carried_predictions import CARRIED_PARTITIONS, REGENERATED_PARTITIONS
+from tests.learning_hold_lowering import lowers_learning_hold
 from tests.suite_support import skip_without_episodic_native
 from tests.training.test_campaign_plan import CAMPAIGNS, write_variant
 from tests.training.test_masked_campaign import Recorder, doubles
@@ -407,6 +408,7 @@ def receipt(run, job_id):
     return json.loads((run.output / "jobs" / job_id / "receipt.json").read_text())
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 @pytest.mark.parametrize("arm", RUN_ARMS)
 def test_mars_jobs_start_from_the_selected_titans_window_and_share_its_rows(campaign_run, arm):
     assert campaign_run.summary["status"] == "paused"
@@ -451,6 +453,7 @@ def test_mars_jobs_start_from_the_selected_titans_window_and_share_its_rows(camp
             assert mine["rows_sha256"] == theirs["rows_sha256"]
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_m3_fits_its_scalers_on_each_window_and_carries_those_of_its_anchor(campaign_run):
     output = campaign_run.output
     fitted = {}
@@ -476,6 +479,7 @@ def test_m3_fits_its_scalers_on_each_window_and_carries_those_of_its_anchor(camp
     assert fitted
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_window_receipts_publish_the_mars_arm_with_its_selected_state(campaign_run):
     output = campaign_run.output
     for job in campaign_run.jobs:
@@ -488,6 +492,7 @@ def test_window_receipts_publish_the_mars_arm_with_its_selected_state(campaign_r
             assert record["parent"] == receipt(campaign_run, job["id"])["parent"]
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_carry_repeats_bit_for_bit_and_needs_a_new_destination(campaign_run, tmp_path):
     job = next(j for j in campaign_run.jobs if j["arm"] == ARM and j["kind"] == "carry")
     own = receipt(campaign_run, job["id"])
@@ -505,6 +510,7 @@ def test_carry_repeats_bit_for_bit_and_needs_a_new_destination(campaign_run, tmp
         mw.carry_mars_titan(anchor, view, view, tmp_path / "other", device="cpu")
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_correction_carry_repeats_bit_for_bit_and_never_fits(campaign_run, tmp_path):
     job = next(j for j in campaign_run.jobs if j["arm"] == B6_ARM and j["kind"] == "carry")
     own = receipt(campaign_run, job["id"])
@@ -524,6 +530,54 @@ def test_correction_carry_repeats_bit_for_bit_and_never_fits(campaign_run, tmp_p
         mc.carry_correction(anchor, view, view, tmp_path / "other", device="cpu")
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
+@lowers_learning_hold(
+    "tests/training/test_mars_titan_campaign.py::"
+    "test_correction_frozen_parent_reproduces_the_carry_and_predicts_the_next_validation"
+)
+def test_correction_frozen_parent_reproduces_the_carry_and_predicts_the_next_validation(
+    campaign_run, tmp_path
+):
+    """Padre congelado de la cadena trivial de B6: el traslado de la variante B más val_k.
+
+    Cada tramo empieza con A en cero, así que la calibración y la evaluación deben ser las
+    del traslado de la campaña desde la misma ancla. La validación de la ventana posterior
+    es la que puntúa la cadena y tiene las filas de su vista.
+    """
+    job = next(j for j in campaign_run.jobs if j["arm"] == B6_ARM and j["kind"] == "carry")
+    own = receipt(campaign_run, job["id"])
+    source = own["identity"]["sources"]["source"]
+    anchor = campaign_run.output / receipt(campaign_run, source)["attempt"]
+    windows = campaign_run.prepared["US"]["windows"]
+    anchor_view, view = windows[job["anchor"]]["path"], windows[job["window"]]["path"]
+    frozen = mc.carry_correction(
+        anchor, anchor_view, view, tmp_path / "frozen", device="cpu", frozen_parent=True
+    )
+    assert frozen["frozen_parent"] is True and frozen["kind"] == mc.CARRY_KIND
+    assert "regenerated" not in frozen and "modality_ablation" not in frozen
+    assert set(frozen["predictions"]) == {"validation", *CARRIED_PARTITIONS}
+    carried = json.loads((campaign_run.output / own["report"]["path"]).read_text())
+    for name in CARRIED_PARTITIONS:
+        assert frozen["predictions"][name]["sha256"] == carried["predictions"][name]["sha256"]
+    counts = json.loads(Path(view).read_text())["counts"]
+    assert frozen["predictions"]["validation"]["rows"] == counts["validation"] > 0
+    assert frozen["fold"]["validation"][0] >= frozen["anchor"]["fold"]["validation"][1]
+    # El padre congelado predice otra ventana: ni regenera el ancla ni ablaciona modalidades.
+    for options in (dict(regenerate=True), dict(modality_ablation="mask_news")):
+        with pytest.raises(ValueError, match="sin ablación ni regeneración"):
+            mc.carry_correction(
+                anchor,
+                anchor_view,
+                view,
+                tmp_path / "other",
+                device="cpu",
+                frozen_parent=True,
+                **options,
+            )
+    assert not (tmp_path / "other").exists()
+
+
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_correction_fit_regenerates_its_three_partitions_bit_for_bit(campaign_run, tmp_path):
     """La retención v2 repite el ajuste B6 por inferencia antes de liberar sus filas.
 

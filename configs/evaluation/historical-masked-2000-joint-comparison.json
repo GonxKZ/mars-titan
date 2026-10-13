@@ -199,6 +199,69 @@
         44
       ]
     },
+    "mars_titan_m1_k4_first_read": {
+      "family": "mars_titan",
+      "output": "quantile_head_v1",
+      "seeds": [
+        42,
+        43,
+        44
+      ]
+    },
+    "mars_titan_b6": {
+      "family": "mars_titan",
+      "output": "quantile_head_v1",
+      "seeds": [
+        42,
+        43,
+        44
+      ]
+    },
+    "mars_titan_b6_bias": {
+      "family": "mars_titan",
+      "output": "quantile_head_v1",
+      "seeds": [
+        42,
+        43,
+        44
+      ]
+    },
+    "mars_titan_b6_regime": {
+      "family": "mars_titan",
+      "output": "quantile_head_v1",
+      "seeds": [
+        42,
+        43,
+        44
+      ]
+    },
+    "mars_titan_b6_calendar": {
+      "family": "mars_titan",
+      "output": "quantile_head_v1",
+      "seeds": [
+        42,
+        43,
+        44
+      ]
+    },
+    "mars_titan_b6_regime_banks": {
+      "family": "mars_titan",
+      "output": "quantile_head_v1",
+      "seeds": [
+        42,
+        43,
+        44
+      ]
+    },
+    "mars_titan_b6_calendar_banks": {
+      "family": "mars_titan",
+      "output": "quantile_head_v1",
+      "seeds": [
+        42,
+        43,
+        44
+      ]
+    },
     "cm_v1_b": {
       "family": "cm_v1",
       "output": "quantile_head_v1",
@@ -315,6 +378,58 @@
           "mars_titan_m1_k4"
         ]
       },
+      "refinement_episodes": {
+        "kind": "delta",
+        "base": "mars_titan_m1_k4",
+        "variants": [
+          "mars_titan_m1_k4_first_read"
+        ]
+      },
+      "mature_correction": {
+        "kind": "delta",
+        "base": "titans_mac_online",
+        "variants": [
+          "mars_titan_b6_bias",
+          "mars_titan_b6"
+        ]
+      },
+      "correction_key": {
+        "kind": "delta",
+        "base": "mars_titan_b6_bias",
+        "variants": [
+          "mars_titan_b6"
+        ]
+      },
+      "regime_bias": {
+        "kind": "delta",
+        "base": "mars_titan_b6_bias",
+        "variants": [
+          "mars_titan_b6_regime",
+          "mars_titan_b6_calendar"
+        ]
+      },
+      "regime_information": {
+        "kind": "delta",
+        "base": "mars_titan_b6_calendar",
+        "variants": [
+          "mars_titan_b6_regime"
+        ]
+      },
+      "regime_banks": {
+        "kind": "delta",
+        "base": "mars_titan_b6",
+        "variants": [
+          "mars_titan_b6_regime_banks",
+          "mars_titan_b6_calendar_banks"
+        ]
+      },
+      "regime_bank_information": {
+        "kind": "delta",
+        "base": "mars_titan_b6_calendar_banks",
+        "variants": [
+          "mars_titan_b6_regime_banks"
+        ]
+      },
       "cm_v1_factorial": {
         "kind": "factorial",
         "base": "cm_v1_b",
@@ -393,6 +508,13 @@
           "mars_titan_m3",
           "mars_titan_m1_k2",
           "mars_titan_m1_k4",
+          "mars_titan_m1_k4_first_read",
+          "mars_titan_b6",
+          "mars_titan_b6_bias",
+          "mars_titan_b6_regime",
+          "mars_titan_b6_calendar",
+          "mars_titan_b6_regime_banks",
+          "mars_titan_b6_calendar_banks",
           "cm_v1_b",
           "cm_v1_bc",
           "cm_v1_bm",
@@ -433,6 +555,48 @@
     "metrics": [
       "mae"
     ],
+    "recalibrate": false,
+    "min_rows": 1000,
+    "min_sessions": 50,
+    "multiplicity": "bonferroni_over_strata_and_views_with_max_t_within_family"
+  },
+  "liquidity_strata": {
+    "status": "secondary_descriptive",
+    "declared_at": "2026-10-10",
+    "use": "description_only_not_for_model_selection_or_primary_conclusion",
+    "source": "unadjusted_reconstructed_verified_rows_up_to_the_last_published_session_v1",
+    "price_below": 1.0,
+    "volume_below": 1000,
+    "volume_sessions": 20,
+    "strata": {
+      "liquid": {
+        "low_price": false,
+        "thin_volume": false
+      },
+      "low_price": {
+        "low_price": true,
+        "thin_volume": false
+      },
+      "thin_volume": {
+        "low_price": false,
+        "thin_volume": true
+      },
+      "low_price_and_thin_volume": {
+        "low_price": true,
+        "thin_volume": true
+      },
+      "unclassified": null
+    },
+    "metrics": [
+      "mae",
+      "mse"
+    ],
+    "extremes": [
+      1,
+      10,
+      100
+    ],
+    "listed_rows": 10,
     "recalibrate": false,
     "min_rows": 1000,
     "min_sessions": 50,

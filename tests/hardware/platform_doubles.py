@@ -1,7 +1,8 @@
 """Identidades de plataforma fijas para las pruebas, sin detectar la máquina que las ejecuta.
 
-`laptop` reproduce lo que detecta el portátil de desarrollo y `gb10` lo que se espera de la
-DGX GB10 según su perfil. La segunda no se ha observado en la máquina real.
+`laptop` reproduce lo que detecta el portátil de desarrollo. `desktop` es otra máquina x86-64
+inventada para las pruebas, con otra CPU, otra GPU y más memoria, que sirve para comprobar que
+una plataforma distinta se rechaza.
 """
 
 from mars_titan.hardware.platform_identity import KIND, SCHEMA_VERSION, platform_sha256
@@ -49,19 +50,18 @@ def laptop(**changes):
     return identity(**changes)
 
 
-def gb10(**changes):
+def desktop(**changes):
     return identity(
         **dict(
             dict(
-                machine="aarch64",
                 cpu=dict(
-                    architecture="aarch64",
-                    models=["Cortex-X925", "Cortex-A725"],
-                    logical=20,
-                    capability="SVE256",
+                    architecture="x86_64",
+                    models=["AMD Ryzen 9 7950X 16-Core Processor"],
+                    logical=32,
+                    capability="AVX512",
                 ),
-                memory_total_bytes=119 * GIB,
-                gpus=[_gpu("NVIDIA GB10", [12, 1], None, "GPU-gb10")],
+                memory_total_bytes=62 * GIB,
+                gpus=[_gpu("NVIDIA GeForce RTX 4090", [8, 9], 24564, "GPU-desktop")],
             ),
             **changes,
         )

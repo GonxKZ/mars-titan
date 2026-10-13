@@ -338,9 +338,10 @@ def _titans():
 
 
 def _mars_titan():
-    from .mars_titan_walk_forward import carry_mars_titan
+    # Los lectores y la corrección B6 comparten familia, pero no el traslado.
+    from .mars_titan_walk_forward import carry_mars_titan_arm
 
-    return carry_mars_titan
+    return carry_mars_titan_arm
 
 
 def _cm_v1():

@@ -19,9 +19,13 @@ def model_digest(model):
     return digest.hexdigest()
 
 
+@pytest.mark.cuda
 @pytest.mark.skipif(
     os.environ.get("MARS_ENCODER_INTEGRATION") != "1",
-    reason="La extracción real requiere activación explícita y CUDA, no usa alternativa CPU",
+    reason=(
+        "Extrae con los codificadores reales en cuda:0. Se activa con "
+        "MARS_ENCODER_INTEGRATION=1 y necesita el extra encoders, sin alternativa CPU"
+    ),
 )
 def test_real_encoders_preserve_state_and_repeat_representations():
     import torch

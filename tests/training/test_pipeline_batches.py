@@ -76,7 +76,10 @@ def reference_reader():
             stderr=subprocess.DEVNULL,
         )
     except (OSError, subprocess.CalledProcessError):
-        pytest.skip("La revisión de referencia no está disponible en este clon")
+        pytest.skip(
+            f"La revisión de referencia {REFERENCE} no está en este clon. Hace falta un clon con "
+            "el historial completo de develop (git fetch --unshallow)"
+        )
     module = types.ModuleType("mars_titan.training._reader_before_pipeline")
     module.__package__ = "mars_titan.training"
     module.__file__ = f"{REFERENCE}:corpus_inputs.py"

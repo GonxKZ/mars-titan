@@ -54,6 +54,8 @@ La huella de fuentes incluye `accurate_sum.hpp` y los módulos de CMake que prep
 
 La sesión pura incluye `FinancialBatch`, observaciones contiguas y contexto externo fechado, y `MarkovFilter`, un filtro causal con parámetros congelados. Las pruebas `financial_batch` y `markov_filter` utilizan los mismos perfiles de diagnóstico. `mars-titan-batch-benchmark` compara hasta 4096 entornos con la ejecución secuencial, sin Python ni GPU. La [guía de entornos por lotes](../docs/engineering/batched-rl-environments.md) describe reinicio, recuperación, límites y el alcance técnico de sus medidas.
 
+`mars_titan_episodic_projection` contiene la proyección del codec episódico, sin LibTorch, y se compila con el núcleo de simulación. El enlace `_episodic_native` la expone como `project_codec_block`. La prueba `episodic_projection` la compara bit a bit con una referencia escalar escrita con el orden de sumas de `numpy.einsum`, con anchuras, filas y salidas que recorren cada mosaico y cada resto. En x86-64, GCC y Clang compilan además versiones AVX2 y AVX-512 del mismo cálculo, y `project_block` elige en la primera llamada la más ancha que admite el procesador. No se usan clones con `ifunc` porque su resolutor se ejecuta antes que ThreadSanitizer y lo hace fallar. La prueba recorre todas las versiones disponibles y `mars-titan-projection-benchmark` mide cada una con las formas del codec. Un procesador sin AVX2 usa la versión portable. El [codec episódico](../docs/engineering/episodic-codec.md) explica cuándo la usa.
+
 CMake comprueba el soporte de los avisos antes de activarlos. Incluye conversiones, cambios de signo, ocultación de nombres, formatos, desreferencias nulas y otros diagnósticos de C++. En Clang intenta primero Lifetime Safety y después la combinación experimental `-Xclang -fexperimental-lifetime-safety -Wexperimental-lifetime-safety`. GCC utiliza los avisos de referencias y punteros colgantes que admita.
 
 libstdc++ utiliza `_GLIBCXX_ASSERTIONS`. Cuando se detecta libc++ con modos de endurecimiento, Release utiliza el modo rápido y los perfiles de verificación el extensivo. Las opciones se aplican a los objetivos propios mediante `mars_titan_configure_target`.
@@ -120,10 +122,6 @@ cmake --build --preset native-ppo-dev
 ```
 
 La medición del núcleo debe incluir la preparación de entradas y el enlace con Python, además del tiempo interno. Deben registrarse las versiones, la configuración, las formas de los datos, las repeticiones, la memoria y el error frente a la referencia. Los tiempos de los perfiles instrumentados describen esas comprobaciones, no el rendimiento de Release.
-
-## Compilación cruzada a aarch64
-
-`native-aarch64-release` compila PPO, KLPO, el ejecutable financiero y el enlace episódico para Linux aarch64 con Clang y lld, y ejecuta CTest con qemu-user sin las pruebas de la etiqueta `optimizer-steps`. Necesita un entorno uv aarch64 en `MARS_TITAN_AARCH64_ENVIRONMENT` y una raíz con OpenSSL, zlib y zstd aarch64 en `MARS_TITAN_AARCH64_SYSROOT`. Con `MARS_TITAN_ENABLE_CUDA` las arquitecturas declaradas son `89-real;121-real`. Las órdenes y lo comprobado están en [plataformas de hardware](../docs/engineering/hardware-platforms.md#compilación-nativa-cruzada).
 
 ## Cobertura de líneas y ramas
 

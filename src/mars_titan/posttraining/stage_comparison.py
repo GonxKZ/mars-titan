@@ -48,10 +48,10 @@ from mars_titan.training import campaign_chain
 
 from .campaign_stage import FROZEN as FROZEN_JOB
 from .campaign_stage import (
+    FROZEN_ONLY,
     RECEIPT_KIND,
     RUN_KIND,
     STAGED,
-    TABULAR,
     _digest,
     load_stage,
     plan_stage,
@@ -116,11 +116,11 @@ def _groups(stage):
     """Modelos de cada padre por papel, en el orden del plan, y sus trabajos por ámbito.
 
     Un trabajo ``frozen`` del plan por etapas fija el modelo del padre congelado. Sin él,
-    el padre congelado es el propio modelo base. Ridge y XGBoost quedan fuera: su cadena solo
-    tiene el padre congelado y no hay continuación ni adaptadores que contrastar. El
+    el padre congelado es el propio modelo base. Ridge, XGBoost y B6 quedan fuera: su cadena
+    solo tiene el padre congelado y no hay continuación ni adaptadores que contrastar. El
     predictor de la cadena solo existe en el plan por etapas.
     """
-    trivial = {arm for arm, spec in stage_arms(stage)[0].items() if spec["design"] == TABULAR}
+    trivial = {arm for arm, spec in stage_arms(stage)[0].items() if spec["design"] == FROZEN_ONLY}
     staged = stage["design"] == STAGED
     groups = {}
     for job in plan_stage(stage):
@@ -448,11 +448,11 @@ def write_sources(declaration_path, scope, base_arm, *, base_sources, stage_outp
 
 
 def evaluate(declaration_path, sources_path, scope, base_arm, *, edition=None):
-    """Informe walk-forward del padre y, con ``edition``, su cartera larga y corta."""
+    """Informe walk-forward del padre y, con ``edition``, su cartera y sus estratos de liquidez."""
     loaded = load_declaration(declaration_path)
     _require(base_arm in loaded["configs"], "El modelo no es un padre de la etapa")
     config = loaded["configs"][base_arm]
-    report, sessions = walk.evaluate_walk_forward(config, sources_path, scope)
+    report, sessions = walk.evaluate_walk_forward(config, sources_path, scope, edition=edition)
     report["posttraining"] = dict(
         declaration=dict(name=loaded["name"], sha256=loaded["sha256"]),
         stage_sha256=loaded["stage"]["sha256"],

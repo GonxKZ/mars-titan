@@ -290,8 +290,9 @@ class ScriptedLearner:
             )
             budget = stage["policies"]["budget"]
             transitions = budget["transitions"]
-            if job["engine"] == "native_klpo":
-                # KLPO declara las oleadas completas que caben en el presupuesto.
+            if job["engine"] in native_policy_runs.WAVE_ENGINES:
+                # KLPO y los objetivos de grupo declaran las oleadas completas que caben en el
+                # presupuesto.
                 waves, wave = native_policy_runs.klpo_waves(
                     tapes.train, budget["environments"], transitions
                 )
@@ -319,6 +320,7 @@ def executors(learner, backend="python"):
         "reference": dict(run=reference, requires=(), native=False),
         "native_klpo": dict(run=learner, requires=(), native=False),
         "native_ppo": dict(run=learner, requires=(), native=False),
+        "native_group_relative": dict(run=learner, requires=(), native=False),
     }
 
 

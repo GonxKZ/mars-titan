@@ -18,6 +18,9 @@ class NeuralMemoryState:
     # Ventanas causales de claves y valores proyectados, [lote, K − 1, dim]. Vacío sin
     # convolución, que es el estado anterior a la sección 4.4.
     convolution: tuple[Tensor, ...] = ()
+    # Niveles ocultos de PT5, dos por capa en orden (capa, nivel), [lote, dim, dim]. Vacío
+    # sin memoria multiescala.
+    levels: tuple[Tensor, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -130,6 +133,7 @@ def copy_state(state: NeuralMemoryState, *, differentiable: bool) -> NeuralMemor
         state.steps.clone(),
         state.config_id,
         tuple(copy(c) for c in state.convolution),
+        tuple(copy(level) for level in state.levels),
     )
 
 
@@ -143,6 +147,7 @@ def map_memory_rows(
         momentum=tuple(transform(value) for value in state.momentum),
         steps=transform(state.steps),
         convolution=tuple(transform(value) for value in state.convolution),
+        levels=tuple(transform(value) for value in state.levels),
     )
 
 
@@ -155,7 +160,8 @@ def map_mac_rows(state: MACState, transform: Callable[[Tensor], Tensor]) -> MACS
 
 
 def mac_tensors(state: MACState) -> tuple[Tensor, ...]:
-    """Tensores por flujo en orden fijo: pesos, momentum, pasos y ventanas de k, v y q."""
+    """Tensores por flujo en orden fijo: pesos, momentum, pasos, ventanas de k, v y q y,
+    con PT5, los niveles ocultos al final."""
     memory = state.memory
     return (
         *memory.weights,
@@ -163,6 +169,7 @@ def mac_tensors(state: MACState) -> tuple[Tensor, ...]:
         memory.steps,
         *memory.convolution,
         *state.convolution,
+        *memory.levels,
     )
 
 
@@ -190,6 +197,7 @@ def join_mac_rows(states: Sequence[MACState]) -> MACState:
             tuple(
                 join(lambda s, i=i: s.memory.convolution[i]) for i in range(len(memory.convolution))
             ),
+            tuple(join(lambda s, i=i: s.memory.levels[i]) for i in range(len(memory.levels))),
         ),
         first.config_id,
         tuple(join(lambda s, i=i: s.convolution[i]) for i in range(len(first.convolution))),
