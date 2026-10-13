@@ -132,7 +132,7 @@ def stubbed_publication(monkeypatch):
     Solo queda real el orden de `run_publication`: carpeta provisional, informe de
     integridad y nombre del destino. `report` es el informe que devolverá el gate.
     """
-    state = SimpleNamespace(report=None, built=0)
+    state = SimpleNamespace(report=None, built=0, comparisons=None)
 
     def walk_forward(config, sources, scope, folder, **options):
         Path(folder).mkdir(parents=True)
@@ -140,6 +140,7 @@ def stubbed_publication(monkeypatch):
 
     def build(loaded, views, output, comparisons, *, adapter_output=None):
         state.built += 1
+        state.comparisons = comparisons
         assert {entry["label"] for entry in comparisons} >= {"walk-forward/US+CN"}
         return state.report
 
@@ -179,6 +180,11 @@ def test_the_publication_stops_on_a_failed_report_and_carries_a_passed_one(
     partial = destination.with_name(f".{destination.name}.partial")
     assert not destination.exists() and (partial / publication.PARTIAL_MARK).is_file()
     assert json.loads((partial / gate.REPORT).read_text())["passed"] is False
+    # Cada comparación walk-forward llega al informe con la matriz que la lee.
+    walked = [e for e in stubbed_publication.comparisons if e["label"].startswith("walk-forward/")]
+    assert len(walked) == 3 and all(
+        entry["matrix"] == partial / "matrix" / entry["scope"] / "matrix.json" for entry in walked
+    )
     stubbed_publication.report = dict(passed=True, failing=[])
     receipt = _publish(tmp_path, destination)
     assert stubbed_publication.built == 2
