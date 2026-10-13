@@ -127,6 +127,9 @@ def stubbed_publication(monkeypatch):
 
 
 def _publish(tmp_path, destination):
+    # A v2 declara la retención e interferencia, que pide el calendario de regímenes.
+    calendar = tmp_path / "regimes.json"
+    calendar.write_text("{}")
     return publication.run_publication(
         DECLARATION,
         {},
@@ -134,6 +137,7 @@ def _publish(tmp_path, destination):
         destination,
         adapter_output=tmp_path / "adapters",
         edition=tmp_path / "edition",
+        regimes=calendar,
     )
 
 
