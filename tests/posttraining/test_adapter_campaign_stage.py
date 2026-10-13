@@ -51,13 +51,13 @@ def micros(day):
 
 
 def matrix_cases(stage):
-    """Casos de la matriz por ventana y semilla, sumados sobre los brazos base de la etapa.
+    """Casos de la matriz por ventana y semilla, sumados sobre los modelos base de la etapa.
 
     Se leen de la matriz y no de una lista fija. Con la v3 y su variedad son 82: nueve en
-    cada red recurrente y DLinear (cuatro brazos de la v2, cuatro de la variedad y la
+    cada red recurrente y DLinear (cuatro variantes de la v2, cuatro de la variedad y la
     continuación), quince en el Transformer compacto (ocho, seis y la continuación) y los de
     Titans-MAC (cinco en el codificador directo y en MAC sin memoria, nueve con memoria fija
-    y doce en línea, con sus tres brazos de la variedad).
+    y doce en línea, con sus tres adaptadores de la variedad).
     """
     active, _ = campaign_stage.stage_arms(stage)
     matrix, digest = stage["matrix"], stage["matrix_sha256"]
@@ -146,7 +146,7 @@ def test_jobs_depend_on_the_parent_selected_in_the_previous_window():
     for job in jobs:
         order = windows[job["scope"]]
         assert order.index(job["parent_window"]) == order.index(job["window"]) - 1
-        # Búsquedas de la semilla 42 o finalistas de 43 y 44 del brazo base en k-1.
+        # Búsquedas de la semilla 42 o finalistas de 43 y 44 del modelo base en k-1.
         expected = campaign_chain.parent_jobs(
             base, job["scope"], job["parent_window"], job["base_arm"], job["seed"]
         )
@@ -436,7 +436,7 @@ def test_a_strictly_better_candidate_replaces_the_frozen_parent(
 
     def lower_head(table):
         calls.append(None)
-        # Tercer trabajo de la ventana: el brazo head, tras el padre y la continuación.
+        # Tercer trabajo de la ventana: el modelo head, tras el padre y la continuación.
         return original(table) - (1e-9 if len(calls) == 3 else 0.0)
 
     monkeypatch.setattr(staged_chain, "validation_score", lower_head)
@@ -625,10 +625,10 @@ def test_an_unconfirmed_base_job_stops_the_stage_before_any_fit(base_a, tmp_path
 
 
 def test_the_b6_correction_has_no_adapter_arm():
-    """La corrección B6 no tiene lector que adaptar, así que no figura como brazo cronológico.
+    """La corrección B6 no tiene lector que adaptar, así que no figura como modelo cronológico.
 
     Los lectores conservan su banco. Sin esta exclusión la etapa no podría contar sus trabajos
-    con la declaración ampliada, que incluye los dos brazos B6.
+    con la declaración ampliada, que incluye los dos modelos B6.
     """
     from mars_titan.training import campaign_plan as plan
 

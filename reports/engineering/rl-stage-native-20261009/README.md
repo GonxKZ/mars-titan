@@ -120,11 +120,11 @@ Los binarios con LibTorch pesan más. El medidor llega a 483 MiB de `VmHWM` en C
 
 ## Proyección de la etapa A
 
-`native_policy_hours` (en `src/mars_titan/simulation/policy_throughput.py`) aplica los tiempos medidos al plan de la etapa A: 2.160 trabajos, con 1.368 ajustes (792 de KLPO, 432 de los tres brazos PPO y 144 de Double DQN) y 792 referencias. Cada ajuste recorre 262.144 transiciones con 16 entornos, recorridos de 1.024, cuatro épocas, minilotes de 64 y validación cada 16.384 transiciones. La función cuenta la recogida, la GAE y los minilotes de PPO, un minilote y dos forwards sin gradiente por transición elegible de Double DQN tras su calentamiento de 256, las oleadas completas de KLPO con su objetivo, todas las validaciones y la evaluación con tres costes. La estimación anterior de `policy_hours` contaba en Double DQN los minilotes de PPO, 16 veces menos de los que hace.
+`native_policy_hours` (en `src/mars_titan/simulation/policy_throughput.py`) aplica los tiempos medidos al plan de la etapa A: 2.160 trabajos, con 1.368 ajustes (792 de KLPO, 432 de las tres variantes PPO y 144 de Double DQN) y 792 referencias. Cada ajuste recorre 262.144 transiciones con 16 entornos, recorridos de 1.024, cuatro épocas, minilotes de 64 y validación cada 16.384 transiciones. La función cuenta la recogida, la GAE y los minilotes de PPO, un minilote y dos forwards sin gradiente por transición elegible de Double DQN tras su calentamiento de 256, las oleadas completas de KLPO con su objetivo, todas las validaciones y la evaluación con tres costes. La estimación anterior de `policy_hours` contaba en Double DQN los minilotes de PPO, 16 veces menos de los que hace.
 
 El paso de Adam no se ha medido, así que todas las horas son una cota inferior. En CPU, el paso de PPO es el primer paso de un entrenador nuevo, sin reutilizar el bootstrap. El paso de Double DQN se estima en los dos dispositivos como ese primer paso con la acción de Double DQN en lugar de la de PPO, lo que en `cuda:0` lo sobrestima en menos de 0,3 h en total. Las referencias usan el paso de evaluación con red, que también es una cota superior de su coste. Las horas con varios procesos dividen las de un proceso por la aceleración medida en la recogida KLPO en CPU y por la menor de PPO y KLPO con MPS, y suponen que las actualizaciones escalan igual, algo que no se ha medido.
 
-| Escenario | Horas | Sin gradientes de actualización | Double DQN | KLPO | Cada brazo PPO |
+| Escenario | Horas | Sin gradientes de actualización | Double DQN | KLPO | Cada variante PPO |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | `cuda:0`, un trabajo cada vez (protocolo actual) | 31,9 | 5,5 | 23,0 | 3,9 | 1,7 |
 | `cuda:0`, 4 procesos sin MPS | 17,8 | | | | |
@@ -133,7 +133,7 @@ El paso de Adam no se ha medido, así que todas las horas son una cota inferior.
 | CPU, 4 procesos | 4,9 | | | | |
 | CPU, 8 procesos | 3,6 | | | | |
 
-Double DQN concentra más del 70 % de las horas por sus 261.888 minilotes por ajuste. La etapa A suma 44.839.458 pasos de Adam: 37.711.872 de Double DQN, 2.359.296 por cada brazo PPO y 49.698 de KLPO. Cada 100 µs por paso de Adam añaden 1,25 h en serie.
+Double DQN concentra más del 70 % de las horas por sus 261.888 minilotes por ajuste. La etapa A suma 44.839.458 pasos de Adam: 37.711.872 de Double DQN, 2.359.296 por cada variante PPO y 49.698 de KLPO. Cada 100 µs por paso de Adam añaden 1,25 h en serie.
 
 Nota del 10 de octubre de 2026 (PR #430). La etapa declara ahora cinco referencias (se añaden 1/N mensual e índice de mercado) y cuatro costes de evaluación (0, 5, 10 y 20 pb), así que la etapa A tiene 1.221 referencias en lugar de 792. Con los mismos tiempos medidos de este informe, `native_policy_hours` da 31,97 h en `cuda:0` y 18,28 h en CPU con un trabajo cada vez, frente a las 31,9 y 18,3 h de la tabla, y los pasos de Adam no cambian. Las cifras de la tabla se conservan tal como se midieron.
 
@@ -160,7 +160,7 @@ Queda fuera de esta rama todo lo que aplica pasos de optimizador, porque el bloq
    ctest --test-dir build/native/native-ppo-release -R '^(ppo_policy|ppo_training|ppo_gru_packing)$' --output-on-failure
    ```
 
-2. El coste de la actualización con Adam en cada motor. Con la salida de `benchmarks/rl_stage_tapes.py` en `$T`, se escriben las configuraciones de un ajuste real de cada brazo y se lanza un ajuste corto con pausa. PPO llega a 1.024 pasos de Adam con 16.384 transiciones, Double DQN a 16.128 y KLPO a unas 16 oleadas con 65.536:
+2. El coste de la actualización con Adam en cada motor. Con la salida de `benchmarks/rl_stage_tapes.py` en `$T`, se escriben las configuraciones de un ajuste real de cada modelo y se lanza un ajuste corto con pausa. PPO llega a 1.024 pasos de Adam con 16.384 transiciones, Double DQN a 16.128 y KLPO a unas 16 oleadas con 65.536:
 
    ```bash
    D=$HOME/.cache/mars-titan-tmp/rl-update-cost

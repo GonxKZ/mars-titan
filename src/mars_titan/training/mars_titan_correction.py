@@ -4,7 +4,7 @@ B6 suma a la predicción del Titans-MAC `mac_online` elegido en la ventana la le
 una memoria asociativa lineal escrita solo con resultados maduros
 (`memory.associative_memory.MatureCorrection`). No tiene parámetros que ajustar. Los casos de
 búsqueda de su receta fijan η, la receta fija λ y la campaña elige el caso con el MAE por
-sesión de validación, igual que en los demás brazos.
+sesión de validación, igual que en los demás modelos.
 
 Cada ventana recibe la vista, la carpeta de la ventana Titans-MAC `mac_online` completada en
 la misma vista y semilla (el padre), la receta de la corrección, la regla y la clave de
@@ -89,8 +89,8 @@ RECIPE = "mars_titan_mature_correction_v1"
 # La corrección solo depende de η y λ. Cada valor se declara una sola vez, en la receta o en
 # los casos de búsqueda, para que elegir un caso nunca contradiga a la receta.
 SEARCHED = ("rate", "forgetting")
-# Un brazo solo declara la regla y la clave. η y λ se añaden con el caso elegido, porque la
-# campaña los busca y no forman parte de la definición del brazo.
+# Un modelo solo declara la regla y la clave. η y λ se añaden con el caso elegido, porque la
+# campaña los busca y no forman parte de la definición del modelo.
 ARM_FIELDS = ("rule", "key")
 # Reglas que admite la ventana. La regla kalman (PT3) no usa η ni λ sino sus varianzas, que
 # esta receta no declara ni busca, así que todavía no tiene ventana.
@@ -163,9 +163,9 @@ def case_values(document, search_case):
 
 
 def arm_components(components, values):
-    """Completar la combinación de un brazo B6 con el η y el λ del caso.
+    """Completar la combinación de un modelo B6 con el η y el λ del caso.
 
-    El brazo solo puede declarar la memoria asociativa. Con un banco añadido la ventana
+    El modelo solo puede declarar la memoria asociativa. Con un banco añadido la ventana
     mezclaría dos vías de memoria y A5 dejaría de aislar el efecto de la corrección.
     """
     memory = components.get("associative_memory") if isinstance(components, dict) else None
@@ -174,7 +174,7 @@ def arm_components(components, values):
         and set(components) == {"associative_memory"}
         and isinstance(memory, dict)
         and set(memory) == set(ARM_FIELDS),
-        "Un brazo B6 declara solo associative_memory con su regla y su clave",
+        "Un modelo B6 declara solo associative_memory con su regla y su clave",
     )
     _require(
         memory["rule"] in RULES,
@@ -405,7 +405,7 @@ def _parent_recipe(parent_report):
     """Recuperar la receta cronológica con la que predijo el padre.
 
     Bloques y truncamiento deben ser los mismos, porque con otros el núcleo de B6 dejaría de
-    coincidir con el del brazo Titans-MAC.
+    coincidir con el del modelo Titans-MAC.
     """
     identity, request = parent_report["identity"], parent_report["request"]
     return identity["recipe"], case_recipe(identity["recipe"], request.get("search_case"))
@@ -488,7 +488,7 @@ def run_correction_window(
     document = load_correction_recipe(recipe)
     combination = arm_components(components, case_values(document, search_case))
     # La combinación se valida contra la declaración antes de abrir ninguna fuente, para que
-    # un brazo mal declarado falle sin crear la carpeta de salida.
+    # un modelo mal declarado falle sin crear la carpeta de salida.
     checked, correction = check_components(load_declaration(), combination)
     _require(
         correction is not None and set(checked) == {"associative_memory"},

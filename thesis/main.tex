@@ -134,7 +134,7 @@ aceptación de las fases históricas completas siguen pendientes. La corrección
 asociativa B6 suma a la predicción de Titans-MAC una memoria lineal escrita
 solo con resultados maduros y se emite ya en las ventanas walk-forward con las
 mismas emisiones que la sesión. Su control es un corrector de sesgo con las
-mismas etiquetas. Otro brazo repite $K=4$ con los episodios de la primera
+mismas etiquetas. Otro modelo repite $K=4$ con los episodios de la primera
 lectura, de modo que el cálculo adicional no examina más episodios. La
 representación de régimen de la campaña reparte la memoria de B6 en cinco
 compartimentos según una regla observable de volatilidad y tendencia, sin
@@ -172,7 +172,7 @@ retornos de activos y un registro de operaciones con costes de apertura y cierre
 El protocolo fijará las comparaciones principales antes de abrir el conjunto final.
 
 \section{Estado técnico de la campaña desde 2000}
-La campaña reentrenará desde cero todos los brazos con las mismas filas de la
+La campaña reentrenará desde cero todos los modelos con las mismas filas de la
 edición histórica con máscaras. La edición recorre 5.676 candidatos y codifica
 5.023 activos, 4.213 de Estados Unidos y 810 de China, con 17.076.024 muestras
 de 64 sesiones, el mismo número que el censo de ventanas. Cada muestra conserva
@@ -234,7 +234,7 @@ entrenar \\
 Adaptadores & Matriz v2 por ventana con pinball para padres de cuantiles,
 con 3.915 ajustes en A. Pruebas CUDA de adaptadores y cuantiles superadas &
 Recorrido de la etapa en \texttt{cuda:0} y comparación declarada de los
-brazos postentrenados \\
+modelos postentrenados \\
 Políticas & Dos niveles sobre cintas de precios reconstruidos. KLPO terminal
 y cinco referencias sobre los 29 predictores de la declaración ampliada, y PPO,
 Double DQN, GRPO, Dr. GRPO y GSPO sobre el Transformer compacto y
@@ -284,14 +284,14 @@ entrenamiento ni de una evaluación.
 
 La evaluación se acompaña de un banco de integridad que recalcula las métricas
 con una segunda implementación, exige la misma huella de filas en todos los
-brazos de cada ventana, comprueba que ninguna fila llega a 2024, registra los
+modelos de cada ventana, comprueba que ninguna fila llega a 2024, registra los
 análisis en una cadena de huellas antes de ver resultados, busca entradas que
-contengan el objetivo y acota el rendimiento de las políticas con un oráculo de
-un paso que queda fuera de toda comparación. La matriz de comparaciones fija
+contengan el objetivo y acota el rendimiento de las políticas con una política de
+un paso que conoce el futuro y queda fuera de toda comparación. La matriz de comparaciones fija
 47 familias y 356 contrastes antes de los resultados y separa la aportación de
 cada componente de MARS-TITAN con escalera acumulada, dejar uno fuera,
 interacciones y valores de Shapley, declarando como limitación los efectos que
-ningún brazo del plan permite identificar. Ambos se han comprobado con datos
+ningún modelo del plan permite identificar. Ambos se han comprobado con datos
 escritos en las pruebas, sin predicciones reales.
 
 \chapter{Resultados y discusión}

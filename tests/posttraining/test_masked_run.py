@@ -1,4 +1,4 @@
-"""Brazos de la matriz y controles con máscaras, hasta el paso del optimizador.
+"""Modelos de la matriz y controles con máscaras, hasta el paso del optimizador.
 
 El optimizador inyectado no hereda de torch.optim.Optimizer y nunca cambia pesos.
 Registra los parámetros recibidos y sus gradientes en cada llamada. Así se recorre

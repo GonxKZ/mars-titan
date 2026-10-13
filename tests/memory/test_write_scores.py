@@ -1,4 +1,4 @@
-"""Componentes y escalas de M3 con oráculos independientes, sin modelos ni ajustes."""
+"""Componentes y escalas de M3 con referencias independientes, sin modelos ni ajustes."""
 
 import math
 import statistics

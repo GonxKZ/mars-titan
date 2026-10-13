@@ -49,11 +49,11 @@ etapas y A v2 25.831, con las 1.904 mesetas de su parada conjunta y los objetivo
 de las políticas, muy por encima del presupuesto por defecto de 4.096 registros, y la web
 descarga todas las páginas del historial al abrirse.
 `observatory/window_campaigns.py` convierte cada resumen en una matriz de ámbito,
-ventana, brazo y nombre con el estado de cada trabajo, la fecha de su recibo y las
+ventana, modelo y nombre con el estado de cada trabajo, la fecha de su recibo y las
 curvas por época de hasta ocho intentos abiertos. El mismo módulo alimenta el servidor
 en directo. La etapa de políticas usa identificadores de seis partes
-(`ámbito/mercado/ventana/predictor/brazo/nombre`), así que su ámbito lleva el mercado
-y su brazo el predictor. Las selecciones de la cadena de la etapa de adaptadores no
+(`ámbito/mercado/ventana/predictor/modelo/nombre`), así que su ámbito lleva el mercado
+y su modelo el predictor. Las selecciones de la cadena de la etapa de adaptadores no
 tienen recibo en `jobs/` y se confirman con su `selection.json`. Un trabajo sin
 confirmar con una carpeta `attempt-*` o `run` cuenta como intento sin confirmar. La
 continuación de un ajuste con parada conjunta no tiene carpeta propia hasta su recibo,
@@ -63,11 +63,11 @@ copian.
 
 Cada matriz se publica en `windows/<sha256>.json` y el índice lleva solo su etapa, su
 declaración, su estado y los recuentos de trabajos, confirmados e intentos. La web
-descarga únicamente la matriz de la campaña elegida. Cada brazo lleva el modelo del
-catálogo: los adaptadores, el padre congelado y la cadena heredan el de su brazo base,
+descarga únicamente la matriz de la campaña elegida. Cada configuración lleva el modelo del
+catálogo: los adaptadores, el padre congelado y la cadena heredan el de su modelo base,
 `titans_*` es Titans-MAC, `mars_titan_*` es MARS-TITAN, `cm_v1_*` es CM-v1 y en las
 políticas cuenta el algoritmo o la referencia. Una prueba recorre los planes reales de
-las ocho etapas y exige que ningún brazo quede como modelo no identificado.
+las ocho etapas y exige que ninguna configuración quede con un modelo no identificado.
 
 Recorrer los 13.029 trabajos de los adaptadores de A con la mitad confirmados cuesta
 0,11 s, frente a 0,16 s con rutas de `pathlib` (mediana de cinco lecturas en esta

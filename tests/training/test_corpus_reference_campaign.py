@@ -73,7 +73,7 @@ def test_partial_corpus_cannot_be_declared_full_campaign(tmp_path):
 
 def test_missing_market_is_not_replaced_with_another_arm(tmp_path):
     config, manifest = setup(tmp_path, arms=("US", "CN", "US+CN"))
-    with pytest.raises(ValueError, match="mercado|brazo|población"):
+    with pytest.raises(ValueError, match="mercado|modelo|población"):
         module().run_reference_campaign(config, manifest, tmp_path / "campaign")
     assert not (tmp_path / "campaign").exists()
 

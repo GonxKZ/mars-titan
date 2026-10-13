@@ -1,11 +1,11 @@
 """Medir tiempo y memoria de la comparación walk-forward y de la cartera a escala real.
 
 Los datos son sintéticos con las formas de la campaña A: las filas por ventana de
-calibración y evaluación del informe de vistas, los brazos y semillas de la comparación
+calibración y evaluación del informe de vistas, los modelos y semillas de la comparación
 declarada y el protocolo real del ámbito. Las predicciones no salen de ningún modelo. Cada
-ventana escribe ``--variants`` tablas distintas que los brazos y semillas comparten en
-ciclo, para no multiplicar el disco por el número de brazos. La lectura y la puntuación
-se repiten igualmente para cada brazo y semilla.
+ventana escribe ``--variants`` tablas distintas que los modelos y semillas comparten en
+ciclo, para no multiplicar el disco por el número de modelos. La lectura y la puntuación
+se repiten igualmente para cada modelo y semilla.
 
 ``prepare`` escribe configuración, vistas, predicciones, fuentes y, con ``--edition``,
 una edición sin ajustar sintética con los activos usados. ``measure`` ejecuta la
