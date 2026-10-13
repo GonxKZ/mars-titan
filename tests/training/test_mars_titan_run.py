@@ -566,8 +566,13 @@ def test_resume_after_a_pause_reproduces_the_continuous_run(
 
 
 def test_readout_fit_is_refused_while_the_learning_hold_blocks(
-    shared, tmp_path, native, learning_hold
+    shared, tmp_path, native, learning_hold, monkeypatch
 ):
+    def past_the_guard():
+        # Sin la protección, el recorrido llegaría al paso y el gancho global lo omitiría.
+        raise AssertionError("El ajuste pasó de la protección del aprendizaje")
+
+    monkeypatch.setattr(mt, "StopRequest", past_the_guard)
     _, streams = shared
     engine = build(streams, tmp_path / "run", native, factory=None)
     assert type(engine.optimizer) is torch.optim.AdamW

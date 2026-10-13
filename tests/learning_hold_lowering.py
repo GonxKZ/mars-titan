@@ -66,6 +66,11 @@ INVENTORY = {
     "test_the_hold_is_read_again_before_each_pending_job": (
         "comprueba que la etapa de adaptadores vuelve a leer la protección entre trabajos"
     ),
+    "tests/training/test_quantile_head_control.py::"
+    "test_hold_reinstated_after_a_job_stops_before_the_next_one": (
+        "el primer trabajo del control de la cabeza tiene que pasar la protección para "
+        "comprobar que vuelve a leerse antes del segundo, aunque el ejecutor sustituido no ajusta"
+    ),
 }
 
 

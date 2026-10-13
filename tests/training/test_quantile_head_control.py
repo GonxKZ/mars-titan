@@ -29,6 +29,7 @@ from mars_titan.training import reference_design
 from mars_titan.training.corpus_inputs import CorpusDataset
 from mars_titan.training.learning_hold import LearningHoldError
 from mars_titan.training.reference_design import head_control_cases
+from tests.learning_hold_lowering import lowers_learning_hold
 from tests.training.test_walk_forward_v2_views import fixture
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -374,6 +375,25 @@ def test_run_is_blocked_before_creating_any_output(learning_hold, tmp_path):
     with pytest.raises(LearningHoldError):
         control.run_control(PLAN, tmp_path / "views", tmp_path / "out", executor=fit)
     assert not (tmp_path / "out").exists() and fit.calls == []
+
+
+@lowers_learning_hold(
+    "tests/training/test_quantile_head_control.py::"
+    "test_hold_reinstated_after_a_job_stops_before_the_next_one"
+)
+def test_hold_reinstated_after_a_job_stops_before_the_next_one(prepared, learning_hold, tmp_path):
+    # Los ejecutores sustituidos no ajustan nada. La protección vuelve a bloquear tras el
+    # primer trabajo confirmado y el segundo no debe empezar.
+    learning_hold(True)
+    fit = FakeFit(report=lambda report: learning_hold(False))
+    with pytest.raises(LearningHoldError, match="Bloqueo de aprendizaje vigente"):
+        run_control(prepared, tmp_path / "out", fit, windows=["fold-000"])
+    assert len(fit.calls) == 1
+    summary = json.loads((tmp_path / "out/summary.json").read_text())
+    assert summary["status"] == "failed" and summary["completed"] == 1
+    jobs = tmp_path / "out/jobs"
+    started = [str(path.parent.relative_to(jobs)) for path in jobs.rglob("run")]
+    assert started == [job for job, done in summary["jobs"].items() if done]
 
 
 @pytest.mark.usefixtures("learning_doubles")
