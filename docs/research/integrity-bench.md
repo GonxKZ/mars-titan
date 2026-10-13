@@ -178,6 +178,6 @@ Siguen en #442, en este orden:
    - aplicar el escáner de fugas a la matriz tabular real de cada ventana, sobre validación;
    - ninguna fila de 2024 en las predicciones de validación y en los demás artefactos de selección;
    - invariantes de caja, posiciones, costes y acciones imposibles en las cintas reales con políticas fijas;
-   - cota con información futura sobre las cintas reales de ajuste y validación de cada ventana. La de evaluación ya la aplica la etapa de políticas.
+   - cota con información futura sobre las cintas reales de cada ventana. La etapa de políticas ya la aplica a la evaluación y al estado elegido en validación. Falta ejecutarla sobre las cintas reales, que la etapa calcula al confirmar cada trabajo.
 2. Falsaciones que ajustan modelos, solo declaradas mientras dure el bloqueo de aprendizaje: placebo con etiquetas permutadas dentro de cada sesión, desplazamiento temporal de las entradas, predicción constante y aleatoria y estabilidad entre semillas. Cada una con su coste y su criterio de éxito o fracaso escritos de antemano.
 3. Informe de integridad generado por la orden única de la campaña, que bloquea la publicación si alguna comprobación falla. Invocará también el verificador de disjunción del diseño por etapas ([#437](https://github.com/GonxKZ/mars-titan/issues/437)) en lugar de duplicarlo.
