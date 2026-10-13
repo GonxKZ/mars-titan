@@ -103,6 +103,11 @@ def compare_sessions(independent, published, *, rtol=RTOL, atol=ATOL):
             mismatched = int(np.count_nonzero(left[name].to_numpy() != right[name].to_numpy()))
         elif name == "rank_ic_status":
             mismatched = int(np.count_nonzero(left[name].to_numpy() != right[name].to_numpy()))
+        elif name == "selective_hits":
+            a = np.vstack(left[name].to_numpy()).astype(np.int64)
+            b = np.vstack([np.asarray(item, dtype=np.int64) for item in right[name]])
+            _require(a.shape == b.shape, "Coberturas de dirección distintas")
+            mismatched = int(np.count_nonzero((a != b).any(axis=1)))
         elif name.startswith("sign_bin_"):
             a = np.vstack(left[name].to_numpy()).astype(np.float64)
             b = np.vstack([np.asarray(item, dtype=np.float64) for item in right[name]])
@@ -162,7 +167,7 @@ def independent_window(config, sources, arm, seed, window_id):
     """
     quantile = sources["arms"][arm]["output"] == QUANTILE_HEAD
     record = sources["files"][arm, seed, window_id]["evaluation"]
-    columns = ["market", "prediction_at", "target", "prediction"]
+    columns = ["asset_id", "market", "prediction_at", "target", "prediction"]
     # Comprueba la huella y lee igual un archivo presente o compactado por la retención v2.
     table = prediction_files.read(
         record["path"], record["sha256"], columns + (list(QUANTILE_COLUMNS) if quantile else [])
@@ -194,7 +199,7 @@ def independent_zero(config, sources, window_id):
     """
     arm, seed, _ = min(key for key in sources["files"] if key[2] == window_id)
     record = sources["files"][arm, seed, window_id]["evaluation"]
-    columns = ["market", "prediction_at", "target"]
+    columns = ["asset_id", "market", "prediction_at", "target"]
     table = prediction_files.read(record["path"], record["sha256"], columns)
     table, _ = row_identity.kept_rows(table, row_identity.dropped_markets(sources, window_id, arm))
     frame = table.to_pandas()

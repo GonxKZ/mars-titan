@@ -10,6 +10,9 @@ desapercibido.
 Una sesión es el par (mercado, instante de decisión). Las convenciones son las declaradas:
 
 - Dirección: los objetivos nulos no se juzgan y una predicción nula cuenta como fallo.
+- Dirección a cada cobertura c: aciertos entre las ceil(c · n) filas con objetivo no nulo
+  y mayor |predicción| de la sesión, con empates por la identidad de fila
+  `mercado/activo/instante` en orden de bytes. Solo se calcula si el panel trae `asset_id`.
 - Rank IC: correlación de Pearson de los rangos medios. Sin valor por
   `insufficient_assets`, `constant_target` o `constant_prediction`, en ese orden.
 - Cuantiles: pinball por nivel, frecuencia de `y <= q`, intervalos centrales con extremos
@@ -22,12 +25,15 @@ poder cotejarlas columna a columna.
 """
 
 import math
+from fractions import Fraction
 
 import numpy as np
 import pandas as pd
 
 RANK_IC_STATUS = ("defined", "insufficient_assets", "constant_target", "constant_prediction")
 SIGN_BINS = 10
+# Coberturas de la curva de dirección, en decimal como en docs/research/metrics.md.
+COVERAGES = ("0.1", "0.2", "0.3", "0.4", "0.5", "0.6", "0.7", "0.8", "0.9", "1")
 COUNT_COLUMNS = (
     "samples",
     "direction_eligible",
@@ -100,12 +106,30 @@ def _rank_ic(group, min_assets):
     return float(np.dot(target, prediction)) / denominator, "defined"
 
 
+def _selective_hits(data):
+    """Aciertos de cada fila retenida a cada cobertura, ordenando sesión a sesión."""
+    judged = data[data["direction_eligible"] == 1]
+    ordered = judged.assign(strength=-judged["prediction"].abs()).sort_values(
+        ["market", "prediction_at", "strength", "row_id"], kind="mergesort"
+    )
+    sessions = ordered.groupby(["market", "prediction_at"], sort=False)
+    rank = sessions.cumcount().to_numpy()
+    judged_rows = sessions["direction_hits"].transform("size").to_numpy()
+    hits = ordered["direction_hits"].to_numpy()
+    kept = {}
+    for text in COVERAGES:
+        c = Fraction(text)
+        retained = -(-(c.numerator * judged_rows) // c.denominator)
+        kept[text] = pd.Series(np.where(rank < retained, hits, 0), index=ordered.index)
+    return kept
+
+
 def session_scores(frame, *, levels=None, quantile_columns=None, rank_ic_min_assets=3):
     """Métricas por sesión de un panel con columnas `market`, `prediction_at`, `target` y
     `prediction`, y los cuantiles si se indican `levels` y `quantile_columns`.
 
     `prediction_at` son microsegundos UTC enteros. Devuelve un DataFrame ordenado por
-    mercado e instante con una fila por sesión.
+    mercado e instante con una fila por sesión. Con `asset_id` añade `selective_hits`.
     """
     required = {"market", "prediction_at", "target", "prediction"}
     _require(required <= set(frame.columns), f"Faltan columnas: {sorted(required - set(frame))}")
@@ -138,6 +162,17 @@ def session_scores(frame, *, levels=None, quantile_columns=None, rank_ic_min_ass
     data["down_calls"] = (eligible & (prediction < 0)).astype(np.int64)
     data["up_hits"] = (eligible & (prediction > 0) & (target > 0)).astype(np.int64)
     data["down_hits"] = (eligible & (prediction < 0) & (target < 0)).astype(np.int64)
+    selective = "asset_id" in frame.columns
+    if selective:
+        data["row_id"] = (
+            data["market"]
+            + "/"
+            + frame["asset_id"].astype(str).to_numpy()
+            + "/"
+            + data["prediction_at"].astype(str)
+        )
+        for text, values in _selective_hits(data).items():
+            data[f"selective_{text}"] = values.reindex(data.index, fill_value=0)
     if levels is not None:
         levels = tuple(float(level) for level in levels)
         _require(len(levels) == len(quantile_columns), "Un nombre de columna por nivel")
@@ -181,6 +216,12 @@ def session_scores(frame, *, levels=None, quantile_columns=None, rank_ic_min_ass
     )
     result["rank_ic"] = ranks["ic"].astype(np.float64)
     result["rank_ic_status"] = ranks["status"]
+    if selective:
+        result["selective_hits"] = list(
+            np.column_stack(
+                [grouped[f"selective_{text}"].sum().to_numpy() for text in COVERAGES]
+            ).astype(np.int64)
+        )
     if levels is not None:
         quantile_names = [
             name

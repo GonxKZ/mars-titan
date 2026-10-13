@@ -48,6 +48,11 @@ Reality Check, StepM, MCS y el diagnóstico de longitud de bloque de Politis y W
 calculados con ``arch`` y ``statsmodels`` sobre las pérdidas diarias de cada familia. Su
 presencia no cambia ninguna otra salida del informe. Esas dos bibliotecas son del extra
 ``research`` y solo se cargan al evaluar una configuración que declara la sección.
+
+Todas las versiones publican la abstención con su cobertura (``abstention_coverage``): la
+curva riesgo-cobertura de dirección de cada semilla, la cobertura de llamadas de cada brazo
+en cada vista y, en las precisiones de subida y de bajada, qué contrastes no son elegibles
+porque algún brazo llama en menos filas que la cobertura mínima declarada.
 """
 
 import argparse
@@ -70,6 +75,7 @@ from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.input_policy import masked_inputs, policy_identity
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.evaluation import (
+    abstention_coverage,
     long_short,
     modality_ablation,
     modality_strata,
@@ -1073,6 +1079,17 @@ def _seed_series(overall, arm, view, metric):
     return SessionSeries.average([scores[view].series(metric) for scores in overall[arm]])
 
 
+def _call_coverage(overall, view):
+    """Cobertura de llamadas de cada brazo en una vista, sumada sobre sus semillas."""
+    return {
+        arm: abstention_coverage.call_coverage(
+            sum(int(np.sum(scores[view].direction_calls)) for scores in seeds),
+            sum(int(np.sum(scores[view].direction_eligible)) for scores in seeds),
+        )
+        for arm, seeds in overall.items()
+    }
+
+
 def _contrasts(config, overall, views):
     comparison = config["comparison"]
     options = dict(
@@ -1086,6 +1103,7 @@ def _contrasts(config, overall, views):
     result = {}
     for view in views:
         result[view] = {}
+        coverage = _call_coverage(overall, view)
         for family, contrasts in config["resolved_families"].items():
             arms = sorted({arm for c in contrasts.values() for arm in c})
             rows = {}
@@ -1094,7 +1112,8 @@ def _contrasts(config, overall, views):
                     rows[metric] = dict(reason="Algún brazo de la familia no emite cuantiles")
                     continue
                 series = {arm: _seed_series(overall, arm, view, metric) for arm in arms}
-                rows[metric] = compare_series(series, contrasts, **options)
+                entry = compare_series(series, contrasts, **options)
+                rows[metric] = abstention_coverage.mark(entry, metric, coverage)
             result[view][family] = rows
     return result
 
@@ -1542,7 +1561,11 @@ def evaluate_walk_forward(
         },
         metrics=config["metrics"],
         calibration=config["calibration"],
-        abstention=ABSTENTION,
+        abstention=dict(
+            ABSTENTION,
+            **abstention_coverage.declaration(),
+            call_coverage={view: _call_coverage(overall, view) for view in names},
+        ),
         aggregation=dict(
             session="mean_over_assets_of_one_market_and_decision_instant",
             across_windows="pooled_sessions_of_all_declared_windows",
@@ -1558,6 +1581,7 @@ def evaluate_walk_forward(
             name: sha256(Path(__file__).parents[1] / name)
             for name in (
                 "evaluation/walk_forward_comparison.py",
+                "evaluation/abstention_coverage.py",
                 "evaluation/forecast_panel.py",
                 "evaluation/forecast_scores.py",
                 "evaluation/paired_comparisons.py",
