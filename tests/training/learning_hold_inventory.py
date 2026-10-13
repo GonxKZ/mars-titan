@@ -20,8 +20,13 @@ _POSTTRAINING_ENTRIES = node(
     "test_entry_points_refuse_before_opening_sources_or_outputs",
 )
 _ADAPTER_STAGE = node(
+    "posttraining/test_adapter_campaign_stage.py", "test_the_hold_blocks_before_reading"
+)
+# Comprobar la relectura entre trabajos exige empezar con la protección abierta, así que esta
+# prueba figura en el inventario de #546 y se omite mientras rija el bloqueo.
+_ADAPTER_JOBS = node(
     "posttraining/test_adapter_campaign_stage.py",
-    "test_the_hold_blocks_before_reading_and_before_each_pending_job",
+    "test_the_hold_is_read_again_before_each_pending_job",
 )
 _CANDIDATE_WINDOWS = node(
     "training/test_candidate_walk_forward.py", "test_window_entries_need_the_learning_permission"
@@ -141,7 +146,7 @@ GUARDS = {
     "mars_titan.posttraining.completion:_stage": (_POSTTRAINING_ENTRIES,),
     "mars_titan.posttraining.completion:run_completion": (_POSTTRAINING_ENTRIES,),
     "mars_titan.posttraining.campaign_stage:run_stage": (_ADAPTER_STAGE,),
-    "mars_titan.posttraining.campaign_stage:_Stage.execute": (_ADAPTER_STAGE,),
+    "mars_titan.posttraining.campaign_stage:_Stage.execute": (_ADAPTER_JOBS,),
     "mars_titan.posttraining.candidate_adapters:run_candidate_posttraining": (
         "candidate_posttraining",
     ),
@@ -171,8 +176,7 @@ GUARDS = {
     ),
     "mars_titan.simulation.campaign_stage:_Stage.execute": (
         node(
-            "simulation/test_campaign_stage.py",
-            "test_the_learning_hold_stops_the_stage_before_outputs_and_between_jobs",
+            "simulation/test_campaign_stage.py", "test_the_learning_hold_is_read_again_between_jobs"
         ),
     ),
     # Lanzadores. La auditoría congelada solo se bloquea sobre cintas reconstruidas.
