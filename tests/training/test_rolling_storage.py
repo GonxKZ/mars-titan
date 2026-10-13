@@ -215,6 +215,17 @@ def test_the_storage_command_adds_the_rolling_walk_of_campaign_a(tmp_path, capsy
     )
     printed = json.loads(capsys.readouterr().out.split("\n}\n", 1)[1])
     assert printed["all_regenerated"]["peak_at"] == result["all_regenerated"]["peak_at"]
+    # El recorrido por ventanas también rechaza cintas medidas sin el diseño de la etapa.
+    from mars_titan.training.rolling_retention import load_schedule
+
+    windows = load_schedule(tmp_path / "schedule.json", campaign)
+    policies = "configs/simulation/historical-masked-rl-stage-a.json"
+    walked = rolling.rolling_inputs([], windows, extras, rl=policies)
+    assert sum(walked["tapes"].values()) == 17 * 1320
+    with pytest.raises(ValueError, match="no cubre"):
+        rolling.rolling_inputs(
+            [], windows, dict(extras, tape_shape=dict(shape, layout=128)), rl=policies
+        )
 
 
 def test_an_input_read_last_in_its_own_window_is_released_with_it(declared):
