@@ -56,7 +56,17 @@ La [declaración](../../configs/evaluation/market-memory-comparison.json) fija t
 
 ## Coste medido sin entrenar
 
-COSTE_PT4
+[`cost.json`](../../reports/engineering/market-memory-20261010/cost.json) mide en CPU, en FP32 y con dos hilos, los tres modelos de la declaración con el mismo script y las mismas entradas reales sin objetivos que PT5 y PT6: 128 flujos de EE. UU. y 8 instantes, un bloque por instante. Cada repetición recorre los instantes con grafo, lee el contexto, confirma cada sesión tras emitirla, calcula una pinball frente a ceros y ejecuta el backward, sin optimizador, y después repite el recorrido sin grafo. Las 15 repeticiones se alternan entre modelos con orden rotatorio. El control sectorial usa las fichas reales del conjunto (44 grupos y 5.071 flujos asignados).
+
+| Modelo | Parámetros añadidos | Contexto compartido | Forward con grafo | Backward | Inferencia |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Control | 0 | 0 | 0,252 s | 0,110 s | 0,241 s |
+| Memoria de mercado | 28.866 | 131.072 B | 0,292 s (1,16) | 0,138 s (1,25) | 0,276 s (1,14) |
+| Control sectorial | 4.096 | 11.264 B | 0,265 s (1,05) | 0,132 s (1,20) | 0,265 s (1,10) |
+
+Son medianas, con el cociente frente al control entre paréntesis, y con otras cargas en la máquina (carga media cercana a 12). Una medida anterior con el mismo orden alternado dio 1,11, 1,19 y 1,16 para la memoria de mercado y 0,99, 1,05 y 1,06 para el control sectorial. El estado por flujo no cambia (65.552 B). El contexto compartido son las dos memorias de mercado de lote 1 o la matriz de 44 medias, y no crece con el número de activos.
+
+La primera medida del control sectorial costaba un 49 % más que el control en inferencia. Revisando el código, la identidad del predictor se recalcula en cada decisión e incluía la del reparto, que serializaba los 5.071 flujos cada vez. `SectorMap` calcula ahora su identidad una vez al construirse y `SessionContext` guarda su huella. La identidad resultante es la misma y, con el cambio, el sobrecoste medido bajó a los valores de la tabla. No se ha perfilado con una herramienta. No se ha medido en `cuda:0`.
 
 ## Desviaciones y límites
 
