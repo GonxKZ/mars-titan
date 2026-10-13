@@ -196,7 +196,7 @@ class _Study:
                 raise ValueError("El diseño de búsqueda ha cambiado")
         view = self.output / "views" / f"{task['arm']}.json"
         if read_json(view) != self.views[task["arm"]]:
-            raise ValueError("La población de un brazo ha cambiado")
+            raise ValueError("La población de un modelo ha cambiado")
         item = self.by_id.get(task["id"])
         if item is not None and any(item.get(key) != value for key, value in task.items()):
             raise ValueError("Un caso confirmado cambió de configuración u origen")
@@ -450,7 +450,7 @@ def run_search(config: Path, manifest: Path, output: Path, *, resume=False, prog
             safe_destination(path)
             if path.exists():
                 if read_json(path) != view:
-                    raise ValueError("El brazo corresponde a otra población")
+                    raise ValueError("El modelo corresponde a otra población")
             else:
                 atomic_json(path, view)
         with StopRequest() as stop:

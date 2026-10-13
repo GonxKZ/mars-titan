@@ -487,7 +487,7 @@ def test_later_stages_of_v2_read_the_joint_model_in_each_market():
 def test_the_policy_predictors_follow_the_declaration_of_the_campaign(tmp_path):
     """Los 29 predictores de las políticas son los productores de la campaña, en su orden.
 
-    Un brazo que la campaña deja pendiente sale de la lista sin tocar la etapa de políticas.
+    Un modelo que la campaña deja pendiente sale de la lista sin tocar la etapa de políticas.
     """
     from mars_titan.simulation import policy_plan
 
@@ -658,6 +658,8 @@ def reduced(folder, *, controls=("gru",), arms=("gru", "ridge")):
         market_eligibility={"CN": str(CN_V2.resolve())}, separate_controls=list(controls)
     )
     declared["arms"] = {k: v for k, v in declared["arms"].items() if k in {"zero", *arms}}
+    # Los pares de retención nombran modelos que esta comparación reducida no conserva.
+    declared.pop(comparison.RETENTION_FIELD)
     declared["comparison"].update(
         replicates=20,
         families=dict(references_vs_zero=dict(kind="delta", base="zero", variants=list(arms))),
@@ -908,7 +910,7 @@ def test_comparison_excludes_ineligible_china_rows_and_pairs_joint_with_separate
         mae = scoped["contrasts"][scope]["joint_vs_separate"]["mae"]
         assert [row["name"] for row in mae["contrasts"]] == ["gru_joint-gru"]
         assert set(rows["market"].to_pylist()) == {scope}
-        # El brazo conjunto restringido descarta las filas del otro mercado de la ventana.
+        # El modelo conjunto restringido descarta las filas del otro mercado de la ventana.
         dropped = scoped["arms"]["gru_joint"]["seeds"]["42"]["windows"]["fold-012"]
         other = "CN" if scope == "US" else "US"
         assert dropped["excluded_rows"]["evaluation"][other] > 0
@@ -940,7 +942,7 @@ def test_window_aggregates_score_each_scope_with_its_joint_design(joint_campaign
         scoped = comparison.scope_config(declared, scope)
         stored = window_aggregates.read(walker.folder / "aggregates", scoped, sources, window)
         assert window_aggregates.same(stored, comparison._score_window(sources, scoped, window))
-        # En un mercado, los agregados incluyen el brazo conjunto prestado.
+        # En un mercado, los agregados incluyen el modelo conjunto prestado.
         if scope != "US+CN":
             assert {arm for arm, _ in stored[0]} == {"zero", "gru", "gru_joint"}
 
@@ -963,7 +965,7 @@ def test_sources_reject_a_borrowed_arm_from_another_window(joint_campaign):
     config = comparison.load_config(joint_campaign.comparison)
     with pytest.raises(ValueError, match="usa otra vista"):
         comparison.load_sources(tampered, config, "CN")
-    # Sin la vista conjunta emparejada, las fuentes de un ámbito con brazos prestados no valen.
+    # Sin la vista conjunta emparejada, las fuentes de un ámbito con modelos prestados no valen.
     manifest = json.loads(path.read_text())
     manifest["windows"]["fold-000"].pop("joint_view")
     atomic_json(tampered, manifest)

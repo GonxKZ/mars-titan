@@ -176,6 +176,8 @@ def write_comparison(folder, **changes):
             for market, name in scope["protocols"].items()
         }
     declared["arms"] = {k: v for k, v in declared["arms"].items() if k in {"zero", "gru", "ridge"}}
+    # Los pares de retención nombran modelos que esta comparación reducida no conserva.
+    declared.pop("retention_interference")
     declared["comparison"].update(
         block_length=2,
         sensitivity_block_lengths=[],
@@ -219,7 +221,7 @@ def prepared(tmp_path_factory):
 
 
 def error(job_case, moment, *, worse=0.0):
-    """Devuelve un error determinista por fila, distinto para cada semilla, índice y brazo."""
+    """Devuelve un error determinista por fila, distinto para cada semilla, índice y modelo."""
     key = f"{job_case['seed']}/{job_case['architecture']['hidden_size']}/{moment}"
     value = int(hashlib.sha256(key.encode()).hexdigest()[:8], 16) / 2**32
     sign = 1.0 if value < 0.5 else -1.0
@@ -554,7 +556,7 @@ def test_decision_needs_every_confirmed_job(prepared, tmp_path):
 
 
 def synthetic_scores(shifts, *, days=120, assets=12, seed=0):
-    """Construye puntuaciones de validación con errores fijados por brazo, índice y semilla."""
+    """Construye puntuaciones de validación con errores fijados por modelo, índice y semilla."""
     rng = np.random.default_rng(seed)
     moments = np.repeat(
         np.datetime64("2010-01-04T21:00", "us") + np.arange(days) * np.timedelta64(1, "D"), assets

@@ -45,3 +45,37 @@ def test_existing_local_links_and_external_urls_are_accepted(public_repository):
         "[Cita](CITATION.cff) y [fuente](https://example.org/research).\n"
     )
     assert checker.main() == 0
+
+
+@pytest.mark.parametrize(
+    ("name", "text", "term"),
+    [
+        ("docs/campaign.md", "Cada brazo ve las mismas filas.\n", "brazo"),
+        ("docs/campaign.md", "Los Brazos comparten cortes.\n", "Brazos"),
+        ("src/bound.py", '"""El oráculo conoce el futuro."""\n', "oráculo"),
+        ("src/bound.py", "# Oraculos sin tilde\n", "Oraculos"),
+        ("tests/test_rl.py", '"""Políticas guionizadas."""\n', "guionizadas"),
+        ("site/view.mjs", "// canarios en el panel\n", "canarios"),
+    ],
+)
+def test_calques_in_prose_and_code_fail_validation(public_repository, capsys, name, text, term):
+    checker, root = public_repository
+    path = root / name
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text)
+    assert checker.main() == 1
+    assert f"Término «{term}» en {name}:1" in capsys.readouterr().out
+
+
+def test_declared_exceptions_and_english_identifiers_are_accepted(public_repository):
+    checker, root = public_repository
+    for name, text in {
+        "reports/engineering/receipt.json": '{"nota": "brazo conservado como evidencia"}\n',
+        "thesis/revisions/main-20261009.tex": "Versión entregada con un oráculo.\n",
+        "configs/titans/chronological-training.json": '{"nota": "todos los brazos"}\n',
+        "src/plan.py": "arms = {arm: oracle for arm, oracle in pairs}\n",
+    }.items():
+        path = root / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text)
+    assert checker.main() == 0

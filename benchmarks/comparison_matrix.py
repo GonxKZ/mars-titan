@@ -1,9 +1,9 @@
 """Medir tiempo y memoria de la matriz de comparaciones con tablas por sesión sintéticas.
 
 La tabla tiene las sesiones reales del ámbito (ventanas del protocolo v2 y calendario de
-cada mercado) y los brazos y semillas de la comparación declarada, con las variantes en
+cada mercado) y los modelos y semillas de la comparación declarada, con las variantes en
 bruto y calibrada. Cada sesión tiene siete activos, porque el coste de la matriz depende
-de las sesiones, los brazos y las familias, no de las filas. Los valores son sintéticos y
+de las sesiones, los modelos y las familias, no de las filas. Los valores son sintéticos y
 no representan resultados de mercado. ``prepare`` escribe el informe y su tabla y
 ``measure`` evalúa la matriz declarada en un proceso aparte con ``/usr/bin/time``.
 """
@@ -48,9 +48,9 @@ def _sessions(markets, segment):
 
 
 def _scores(sessions, window, arm, seed, output):
-    """Puntúa las sesiones sintéticas de un brazo y semilla.
+    """Puntúa las sesiones sintéticas de un modelo y semilla.
 
-    Todos los brazos comparten los objetivos de la ventana, como en la comparación real, para
+    Todos los modelos comparten los objetivos de la ventana, como en la comparación real, para
     que los contrastes emparejados tengan la misma estructura que con datos de mercado.
     """
     market = np.repeat([m for m, _ in sessions], ASSETS)

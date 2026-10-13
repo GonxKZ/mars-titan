@@ -27,7 +27,7 @@ REFERENCES = ("cash", "hold_initial", "rebalance_50", "equal_weight_monthly", "m
 # El índice de mercado solo se planifica donde la edición tiene su instrumento (SPY).
 INDEXED = {"US": True, "CN": False}
 COSTS = 4
-# Brazos con productor en las campañas A y B, en el orden de su configuración.
+# Modelos con productor en las campañas A y B, en el orden de su configuración.
 PRODUCERS = ["rnn", "lstm", "gru", "dlinear", "transformer_compact", "ridge", "xgboost"]
 PRODUCERS += ["titans_transformer_direct", "titans_mac_disabled", "titans_mac_frozen"]
 PRODUCERS += ["titans_mac_online"]
@@ -342,7 +342,7 @@ def _policy(name, **values):
 
 
 def _group_arm(identity, **values):
-    """Sustituir Double DQN por un brazo de objetivo de grupo con su nombre en todo el contrato."""
+    """Sustituir Double DQN por un modelo de objetivo de grupo con su nombre en todo el contrato."""
 
     def change(value):
         entry = dict(
@@ -505,7 +505,7 @@ REASONS = {
     "predictor_mae": "criterio de cartera",
     "selection_on_evaluation": "criterio de cartera",
     "early_stopping": "presupuesto fijo",
-    "primary_not_klpo": "KLPO es el brazo principal",
+    "primary_not_klpo": "KLPO es el algoritmo principal",
     "klpo_not_first": "va primero",
     "klpo_second_with_matching_controls": "va primero",
     "missing_control": "con todos los demás",
