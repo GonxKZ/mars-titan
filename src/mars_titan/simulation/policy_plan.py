@@ -57,7 +57,10 @@ MARKET_INDEX = "market_index"
 POLICIES_SCHEMA = 2
 # Límite de costes de evaluación que acepta el motor nativo (`frozen_costs`).
 MAX_EVALUATION_COSTS = 16
-SURVIVAL_RULE = "universe_assets_whose_series_ends_in_evaluation"
+# Episodios de evaluación terminados por una baja sin precio de salida con posición abierta.
+# Su ventana queda fuera de la comparación principal y la sensibilidad la repite con los
+# retornos de salida declarados.
+SURVIVAL_RULE = "evaluations_truncated_by_unpriced_exit"
 # La ventana de ajuste alternativa es una sensibilidad secundaria. Queda declarada con su
 # identidad y su coste, pero solo se lanza si sobra presupuesto y alguien la activa.
 WINDOW_SENSITIVITY_LAUNCH = "only_if_budget_remains"
@@ -338,12 +341,10 @@ def _read_policies(path):
         isinstance(predictor, dict)
         and set(predictor) == {"seed", "source"}
         and predictor["source"] in PREDICTOR_SOURCES
-        and isinstance(universe, dict)
-        and universe.get("rule") == window_tapes.UNIVERSE_RULE
-        and set(universe) == {"rule", "max_assets"}
-        and _integer(universe["max_assets"], 1, 4096),
+        and isinstance(universe, dict),
         "El predictor, el universo y las ventanas de ajuste deben estar declarados",
     )
+    window_tapes.universe_rule(universe)
     # KLPO asigna a cada entorno una cinta de ajuste fija en todas sus oleadas, de modo que
     # ninguna política puede ajustarse con más ventanas que entornos.
     _require(
@@ -377,12 +378,15 @@ def _read_policies(path):
     data = config["data"]
     _require(
         isinstance(data, dict)
-        and set(data) == {"policy", "edition", "edition_id"}
+        and set(data) == {"policy", "edition", "edition_id", "listing_status_sha256"}
         and data["policy"] == DATA_POLICY
         and data["edition"] == EDITION_KIND
-        and isinstance(data["edition_id"], str)
-        and re.fullmatch(r"[a-f0-9]{64}", data["edition_id"]) is not None,
-        "Las políticas aprenden solo con la edición real de precios reconstruidos declarada",
+        and all(
+            isinstance(data[key], str) and re.fullmatch(r"[a-f0-9]{64}", data[key]) is not None
+            for key in ("edition_id", "listing_status_sha256")
+        ),
+        "Las políticas aprenden solo con la edición real de precios reconstruidos y la tabla "
+        "del estado de cotización declaradas",
     )
     _read_report(config)
     return dict(config, sha256=digest, path=str(Path(path).resolve()), engines=engines)

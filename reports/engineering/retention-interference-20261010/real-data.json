@@ -1,0 +1,777 @@
+{
+  "schema_version": 1,
+  "kind": "retention_interference_real_data_check",
+  "issue": 54,
+  "measured_at": "2026-10-10T17:20:07+00:00",
+  "commit": "373739e28fa014a50456283d0f7d4f3863e83c3b",
+  "sources_sha256": {
+    "src/mars_titan/evaluation/regime_calendar.py": "a7af272899368afaa5518d0489e0ed25fe5346efffe9238f8cc9e6a400ccc732",
+    "src/mars_titan/evaluation/retention_interference.py": "acea2ac7bb6bb6ed723416020333a4e2f6d0b76650a2f941200543c7a8c6224e",
+    "src/mars_titan/memory/regimes.py": "7f9a2563f8bf56f723464b2842aa0127c3728aa3a737ecfc398e9f2bdf525b59",
+    "configs/evaluation/historical-masked-2000-comparison.json": "727de583b5d246b732ef75747771f200ce6e0e039f83ad2f14c2c6a57b3f06df",
+    "benchmarks/retention_interference_real.py": "b8ab4ebacc29c8aced8f7daab737ad3c30ec405079e968c89af975a90252a69d"
+  },
+  "data": {
+    "prepared": "/home/gonzalo/.local/state/mars-titan/history-2000-20261007/materialization/prepared-v3.1",
+    "prepared_manifest_sha256": "0e8f6735828cd4943f920a4992e2c7bb6cc2f95b780f100fec7c316485a9aedb",
+    "market_absent_sessions_sha256": "27224a353d46caed08902fba17c6dd7c1b2105d08818db8a115d0be60f67afd3",
+    "calendar_sha256": "24b1c688b3b3037d7540a5edf088336e314eaa00942e0478859d2417f700d345",
+    "note": "precios reales preparados hasta 2023. Ning\u00fan modelo, predicci\u00f3n ni objetivo"
+  },
+  "calendar": {
+    "build_seconds": 125.00668998598121,
+    "process_peak_rss_mib_after_build": 1782.765625,
+    "summary": {
+      "US": {
+        "sessions": 6037,
+        "first": "2000-01-03",
+        "last": "2023-12-29",
+        "routes_by_year": {
+          "2000": [
+            63,
+            71,
+            24,
+            33,
+            61
+          ],
+          "2001": [
+            0,
+            109,
+            48,
+            42,
+            49
+          ],
+          "2002": [
+            0,
+            59,
+            51,
+            74,
+            68
+          ],
+          "2003": [
+            0,
+            141,
+            23,
+            65,
+            23
+          ],
+          "2004": [
+            0,
+            85,
+            41,
+            94,
+            32
+          ],
+          "2005": [
+            0,
+            80,
+            27,
+            89,
+            56
+          ],
+          "2006": [
+            0,
+            122,
+            14,
+            68,
+            47
+          ],
+          "2007": [
+            0,
+            90,
+            20,
+            68,
+            73
+          ],
+          "2008": [
+            0,
+            43,
+            61,
+            4,
+            145
+          ],
+          "2009": [
+            0,
+            153,
+            42,
+            31,
+            26
+          ],
+          "2010": [
+            0,
+            131,
+            41,
+            57,
+            23
+          ],
+          "2011": [
+            0,
+            88,
+            47,
+            62,
+            55
+          ],
+          "2012": [
+            0,
+            126,
+            27,
+            53,
+            44
+          ],
+          "2013": [
+            0,
+            135,
+            7,
+            104,
+            6
+          ],
+          "2014": [
+            0,
+            130,
+            17,
+            81,
+            24
+          ],
+          "2015": [
+            0,
+            96,
+            52,
+            48,
+            56
+          ],
+          "2016": [
+            0,
+            138,
+            32,
+            43,
+            39
+          ],
+          "2017": [
+            0,
+            150,
+            0,
+            101,
+            0
+          ],
+          "2018": [
+            0,
+            92,
+            24,
+            64,
+            71
+          ],
+          "2019": [
+            0,
+            154,
+            18,
+            46,
+            34
+          ],
+          "2020": [
+            0,
+            111,
+            34,
+            68,
+            40
+          ],
+          "2021": [
+            0,
+            117,
+            8,
+            92,
+            35
+          ],
+          "2022": [
+            0,
+            39,
+            74,
+            9,
+            129
+          ],
+          "2023": [
+            0,
+            116,
+            43,
+            34,
+            57
+          ]
+        }
+      },
+      "CN": {
+        "sessions": 4372,
+        "first": "2006-01-04",
+        "last": "2023-12-29",
+        "routes_by_year": {
+          "2006": [
+            63,
+            61,
+            29,
+            87,
+            1
+          ],
+          "2007": [
+            0,
+            95,
+            21,
+            110,
+            16
+          ],
+          "2008": [
+            0,
+            25,
+            82,
+            21,
+            118
+          ],
+          "2009": [
+            0,
+            135,
+            27,
+            76,
+            6
+          ],
+          "2010": [
+            0,
+            112,
+            65,
+            25,
+            40
+          ],
+          "2011": [
+            0,
+            33,
+            90,
+            8,
+            113
+          ],
+          "2012": [
+            0,
+            36,
+            91,
+            17,
+            99
+          ],
+          "2013": [
+            0,
+            72,
+            61,
+            59,
+            46
+          ],
+          "2014": [
+            0,
+            52,
+            71,
+            86,
+            36
+          ],
+          "2015": [
+            0,
+            71,
+            67,
+            78,
+            28
+          ],
+          "2016": [
+            0,
+            119,
+            66,
+            20,
+            39
+          ],
+          "2017": [
+            0,
+            54,
+            63,
+            43,
+            84
+          ],
+          "2018": [
+            0,
+            4,
+            162,
+            0,
+            77
+          ],
+          "2019": [
+            0,
+            62,
+            121,
+            49,
+            10
+          ],
+          "2020": [
+            0,
+            58,
+            106,
+            59,
+            20
+          ],
+          "2021": [
+            0,
+            64,
+            64,
+            32,
+            83
+          ],
+          "2022": [
+            0,
+            41,
+            66,
+            30,
+            105
+          ],
+          "2023": [
+            0,
+            60,
+            79,
+            28,
+            75
+          ]
+        }
+      }
+    }
+  },
+  "prefix_checks": {
+    "US/2008-09-15": {
+      "sessions": 2188,
+      "identical": true,
+      "seconds": 11.16537205898203
+    },
+    "US/2020-03-16": {
+      "sessions": 5082,
+      "identical": true,
+      "seconds": 39.360912500007544
+    },
+    "CN/2008-09-16": {
+      "sessions": 658,
+      "identical": true,
+      "seconds": 0.7418388669902924
+    },
+    "CN/2015-06-12": {
+      "sessions": 2293,
+      "identical": true,
+      "seconds": 3.1284348550252616
+    }
+  },
+  "sample_checks": {
+    "US": {
+      "sampled": 40,
+      "matched": 40,
+      "first": "2000-07-07"
+    },
+    "CN": {
+      "sampled": 40,
+      "matched": 40,
+      "first": "2006-04-21"
+    }
+  },
+  "class_counts": {
+    "US/since_warmup_start/real": {
+      "novel_entry": 12,
+      "revisit_entry": 2371,
+      "continuing": 2398,
+      "unclassified": 0,
+      "revisit_long": 372,
+      "revisit_short": 1999
+    },
+    "US/since_warmup_start/placebo": {
+      "novel_entry": 4,
+      "revisit_entry": 2381,
+      "continuing": 2396,
+      "unclassified": 0,
+      "revisit_long": 385,
+      "revisit_short": 1996
+    },
+    "US/since_measured_start/real": {
+      "novel_entry": 431,
+      "revisit_entry": 2069,
+      "continuing": 2281,
+      "unclassified": 0,
+      "revisit_long": 200,
+      "revisit_short": 1869
+    },
+    "US/since_measured_start/placebo": {
+      "novel_entry": 423,
+      "revisit_entry": 2066,
+      "continuing": 2292,
+      "unclassified": 0,
+      "revisit_long": 191,
+      "revisit_short": 1875
+    },
+    "CN/since_warmup_start/real": {
+      "novel_entry": 10,
+      "revisit_entry": 1860,
+      "continuing": 1287,
+      "unclassified": 0,
+      "revisit_long": 263,
+      "revisit_short": 1597
+    },
+    "CN/since_warmup_start/placebo": {
+      "novel_entry": 10,
+      "revisit_entry": 1823,
+      "continuing": 1324,
+      "unclassified": 0,
+      "revisit_long": 263,
+      "revisit_short": 1560
+    },
+    "CN/since_measured_start/real": {
+      "novel_entry": 272,
+      "revisit_entry": 1622,
+      "continuing": 1263,
+      "unclassified": 0,
+      "revisit_long": 125,
+      "revisit_short": 1497
+    },
+    "CN/since_measured_start/placebo": {
+      "novel_entry": 297,
+      "revisit_entry": 1576,
+      "continuing": 1284,
+      "unclassified": 0,
+      "revisit_long": 144,
+      "revisit_short": 1432
+    }
+  },
+  "injected": {
+    "values": {
+      "novel": 0.1,
+      "short": 0.3,
+      "long": 0.2,
+      "continuing": 0.0
+    },
+    "options": {
+      "block_length": 16,
+      "replicates": 2000,
+      "seed": 20261009,
+      "confidence": 0.95
+    },
+    "markets": {
+      "US": {
+        "windows": 19,
+        "sessions": 4781,
+        "days": 4781,
+        "pairs": {
+          "fast_weight_writes": {
+            "history": "since_warmup_start",
+            "sessions": {
+              "classified": 4781,
+              "novel_entry": 12,
+              "revisit_entry": 2371,
+              "continuing": 2398,
+              "revisit_long": 372,
+              "revisit_short": 1999
+            },
+            "retention_recovered": true,
+            "interference_recovered": true,
+            "decisions": {
+              "retention": "undetermined",
+              "interference": "detected"
+            }
+          },
+          "learned_read_path": {
+            "history": "since_warmup_start",
+            "sessions": {
+              "classified": 4781,
+              "novel_entry": 12,
+              "revisit_entry": 2371,
+              "continuing": 2398,
+              "revisit_long": 372,
+              "revisit_short": 1999
+            },
+            "retention_recovered": true,
+            "interference_recovered": true,
+            "decisions": {
+              "retention": "undetermined",
+              "interference": "detected"
+            }
+          },
+          "episodic_bank_m1": {
+            "history": "since_measured_start",
+            "sessions": {
+              "classified": 4781,
+              "novel_entry": 431,
+              "revisit_entry": 2069,
+              "continuing": 2281,
+              "revisit_long": 200,
+              "revisit_short": 1869
+            },
+            "retention_recovered": true,
+            "interference_recovered": true,
+            "decisions": {
+              "retention": "supported",
+              "interference": "detected"
+            }
+          },
+          "episodic_bank_m2": {
+            "history": "since_measured_start",
+            "sessions": {
+              "classified": 4781,
+              "novel_entry": 431,
+              "revisit_entry": 2069,
+              "continuing": 2281,
+              "revisit_long": 200,
+              "revisit_short": 1869
+            },
+            "retention_recovered": true,
+            "interference_recovered": true,
+            "decisions": {
+              "retention": "supported",
+              "interference": "detected"
+            }
+          },
+          "episodic_bank_m3": {
+            "history": "since_measured_start",
+            "sessions": {
+              "classified": 4781,
+              "novel_entry": 431,
+              "revisit_entry": 2069,
+              "continuing": 2281,
+              "revisit_long": 200,
+              "revisit_short": 1869
+            },
+            "retention_recovered": true,
+            "interference_recovered": true,
+            "decisions": {
+              "retention": "supported",
+              "interference": "detected"
+            }
+          },
+          "write_policy_m2": {
+            "history": "since_measured_start",
+            "sessions": {
+              "classified": 4781,
+              "novel_entry": 431,
+              "revisit_entry": 2069,
+              "continuing": 2281,
+              "revisit_long": 200,
+              "revisit_short": 1869
+            },
+            "retention_recovered": true,
+            "interference_recovered": true,
+            "decisions": {
+              "retention": "supported",
+              "interference": "detected"
+            }
+          },
+          "write_policy_m3": {
+            "history": "since_measured_start",
+            "sessions": {
+              "classified": 4781,
+              "novel_entry": 431,
+              "revisit_entry": 2069,
+              "continuing": 2281,
+              "revisit_long": 200,
+              "revisit_short": 1869
+            },
+            "retention_recovered": true,
+            "interference_recovered": true,
+            "decisions": {
+              "retention": "supported",
+              "interference": "detected"
+            }
+          },
+          "online_weights": {
+            "history": "since_measured_start",
+            "sessions": {
+              "classified": 4781,
+              "novel_entry": 431,
+              "revisit_entry": 2069,
+              "continuing": 2281,
+              "revisit_long": 200,
+              "revisit_short": 1869
+            },
+            "retention_recovered": true,
+            "interference_recovered": true,
+            "decisions": {
+              "retention": "supported",
+              "interference": "detected"
+            }
+          }
+        },
+        "identity_estimates": {
+          "predictive_effect": 0.0,
+          "retention": 0.0,
+          "interference": 0.0,
+          "plasticity": 0.0
+        },
+        "report_seconds": {
+          "p50": 0.2491621049994137,
+          "min": 0.23329283800558187,
+          "repeats": 3
+        }
+      },
+      "CN": {
+        "windows": 13,
+        "sessions": 3157,
+        "days": 3157,
+        "pairs": {
+          "fast_weight_writes": {
+            "history": "since_warmup_start",
+            "sessions": {
+              "classified": 3157,
+              "novel_entry": 10,
+              "revisit_entry": 1860,
+              "continuing": 1287,
+              "revisit_long": 263,
+              "revisit_short": 1597
+            },
+            "retention_recovered": true,
+            "interference_recovered": true,
+            "decisions": {
+              "retention": "undetermined",
+              "interference": "detected"
+            }
+          },
+          "learned_read_path": {
+            "history": "since_warmup_start",
+            "sessions": {
+              "classified": 3157,
+              "novel_entry": 10,
+              "revisit_entry": 1860,
+              "continuing": 1287,
+              "revisit_long": 263,
+              "revisit_short": 1597
+            },
+            "retention_recovered": true,
+            "interference_recovered": true,
+            "decisions": {
+              "retention": "undetermined",
+              "interference": "detected"
+            }
+          },
+          "episodic_bank_m1": {
+            "history": "since_measured_start",
+            "sessions": {
+              "classified": 3157,
+              "novel_entry": 272,
+              "revisit_entry": 1622,
+              "continuing": 1263,
+              "revisit_long": 125,
+              "revisit_short": 1497
+            },
+            "retention_recovered": true,
+            "interference_recovered": true,
+            "decisions": {
+              "retention": "supported",
+              "interference": "detected"
+            }
+          },
+          "episodic_bank_m2": {
+            "history": "since_measured_start",
+            "sessions": {
+              "classified": 3157,
+              "novel_entry": 272,
+              "revisit_entry": 1622,
+              "continuing": 1263,
+              "revisit_long": 125,
+              "revisit_short": 1497
+            },
+            "retention_recovered": true,
+            "interference_recovered": true,
+            "decisions": {
+              "retention": "supported",
+              "interference": "detected"
+            }
+          },
+          "episodic_bank_m3": {
+            "history": "since_measured_start",
+            "sessions": {
+              "classified": 3157,
+              "novel_entry": 272,
+              "revisit_entry": 1622,
+              "continuing": 1263,
+              "revisit_long": 125,
+              "revisit_short": 1497
+            },
+            "retention_recovered": true,
+            "interference_recovered": true,
+            "decisions": {
+              "retention": "supported",
+              "interference": "detected"
+            }
+          },
+          "write_policy_m2": {
+            "history": "since_measured_start",
+            "sessions": {
+              "classified": 3157,
+              "novel_entry": 272,
+              "revisit_entry": 1622,
+              "continuing": 1263,
+              "revisit_long": 125,
+              "revisit_short": 1497
+            },
+            "retention_recovered": true,
+            "interference_recovered": true,
+            "decisions": {
+              "retention": "supported",
+              "interference": "detected"
+            }
+          },
+          "write_policy_m3": {
+            "history": "since_measured_start",
+            "sessions": {
+              "classified": 3157,
+              "novel_entry": 272,
+              "revisit_entry": 1622,
+              "continuing": 1263,
+              "revisit_long": 125,
+              "revisit_short": 1497
+            },
+            "retention_recovered": true,
+            "interference_recovered": true,
+            "decisions": {
+              "retention": "supported",
+              "interference": "detected"
+            }
+          },
+          "online_weights": {
+            "history": "since_measured_start",
+            "sessions": {
+              "classified": 3157,
+              "novel_entry": 272,
+              "revisit_entry": 1622,
+              "continuing": 1263,
+              "revisit_long": 125,
+              "revisit_short": 1497
+            },
+            "retention_recovered": true,
+            "interference_recovered": true,
+            "decisions": {
+              "retention": "supported",
+              "interference": "detected"
+            }
+          }
+        },
+        "identity_estimates": {
+          "predictive_effect": 0.0,
+          "retention": 0.0,
+          "interference": 0.0,
+          "plasticity": 0.0
+        },
+        "report_seconds": {
+          "p50": 0.16329125899937935,
+          "min": 0.15384963498217985,
+          "repeats": 3
+        }
+      }
+    }
+  },
+  "environment": {
+    "cpu": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+    "numpy": "2.5.3",
+    "python": "3.12.14",
+    "omp_threads": "2",
+    "load_average_at_start": [
+      17.79443359375,
+      18.14892578125,
+      17.76025390625
+    ],
+    "process_peak_rss_mib": 1782.765625
+  },
+  "not_measured": [
+    "GPU, porque el calendario y el an\u00e1lisis trabajan en CPU con NumPy",
+    "energ\u00eda, sin instrumento",
+    "el informe completo de la comparaci\u00f3n, que necesita predicciones de la campa\u00f1a"
+  ],
+  "unclassified_rule": 0
+}
