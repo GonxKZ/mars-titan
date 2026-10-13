@@ -215,6 +215,10 @@ def compare_runs(reference, other, *, tolerance=TOLERANCE):
                 raise ValueError(f"Con las mismas acciones el patrimonio de {key} cambia")
             summary["identical_equity_episodes"] += 1
             continue
+        # La acción de la sesión c se ejecuta en la apertura siguiente, así que hasta el cierre
+        # c los dos patrimonios deben coincidir. Una diferencia anterior no es del empate.
+        if nav[: diverged["cursor"] + 1] != other_nav[: diverged["cursor"] + 1]:
+            raise ValueError(f"El patrimonio de {key} cambia antes de la primera acción distinta")
         # Efecto en el capital de una divergencia por empate: el patrimonio final y la mayor
         # diferencia relativa por sesión desde la primera acción distinta.
         sessions = range(diverged["cursor"] + 1, min(len(nav), len(other_nav)))

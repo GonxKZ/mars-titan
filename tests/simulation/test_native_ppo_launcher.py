@@ -54,6 +54,18 @@ def gpu_xml(free=7400, total=8188, *, compute=False):
 @pytest.fixture
 def setup(tmp_path, learning_doubles, python_shebang):
     # El hijo es un arnés sin aprendizaje, así que el lanzador puede superar la protección.
+    return launcher(tmp_path, python_shebang)
+
+
+@pytest.fixture
+def closed_setup(tmp_path, learning_hold, python_shebang):
+    """El mismo arnés con la protección de aprendizaje cerrada."""
+    learning_hold(False)
+    return launcher(tmp_path, python_shebang)
+
+
+def launcher(tmp_path, python_shebang):
+    """Argumentos y entorno del lanzador con un binario nativo y un `nvidia-smi` falsos."""
     bin_dir, runtime = tmp_path / "bin", tmp_path / "runtime"
     bin_dir.mkdir()
     runtime.mkdir(mode=0o700)
@@ -692,27 +704,38 @@ def test_audit_passes_the_declared_evaluation_costs_and_training_rejects_them(se
 
 
 @pytest.mark.parametrize("document", CATALOGS)
-def test_audit_forwards_the_decision_record_and_training_rejects_it(setup, document):
-    args = setup[0]
+def test_audit_forwards_the_decision_record_and_training_rejects_it(closed_setup, document):
+    """`--decisions` solo acompaña a `--audit-run`, también con la protección cerrada.
+
+    El ajuste la rechaza al leer los argumentos, antes de la protección. Una auditoría
+    sintética no necesita la protección y el lanzador reenvía la opción una sola vez, aunque
+    después el binario la rechace fuera de las cintas reconstruidas. Una auditoría sobre
+    cintas reconstruidas se detiene en la protección antes de lanzar nada.
+    """
+    args, env, directory = closed_setup
     config = Path(args[args.index("--config") + 1])
     config.write_text(json.dumps(document))
     native = args[args.index("--binary") + 1]
     training = list(args)
-    setup[0][:] = [
+    closed_setup[0][:] = [
         *args[:4],
         "--binary",
         native,
         "--audit-run",
-        str(setup[2] / "frozen-run"),
+        str(directory / "frozen-run"),
         "--audit-tape",
-        str(setup[2] / "audit-a"),
+        str(directory / "audit-a"),
         "--decisions",
     ]
-    result = execute(setup, "--diagnostic")
-    assert result.returncode == 0, result.stderr
-    assert record(setup)["args"].count("--decisions") == 1
-    setup[0][:] = [*training, "--decisions"]
-    rejected = execute(setup, "--diagnostic")
+    result = execute(closed_setup, "--diagnostic")
+    if document.get("schema_version") in (2, 3):
+        assert result.returncode == 0, result.stderr
+        assert record(closed_setup)["args"].count("--decisions") == 1
+    else:
+        assert "la evaluación nativa sobre cintas reconstruidas" in result.stderr
+        assert not Path(env["NATIVE_RECORD"]).exists()
+    closed_setup[0][:] = [*training, "--decisions"]
+    rejected = execute(closed_setup, "--diagnostic")
     assert rejected.returncode == 2 and "--decisions solo acompaña a --audit-run" in rejected.stderr
 
 

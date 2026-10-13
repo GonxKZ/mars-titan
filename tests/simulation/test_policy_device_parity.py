@@ -134,6 +134,24 @@ def test_a_margin_up_to_twice_the_tolerance_counts_as_a_near_tie():
     assert summary["near_ties"] == 0
 
 
+def test_the_thresholds_include_twice_the_tolerance_and_exclude_each_margin_limit():
+    # Un margen igual al doble de la tolerancia todavía puede invertir la acción. La mayor
+    # salida en valor absoluto es -0.3, así que la tolerancia no depende de las dos primeras.
+    allowed = 1e-5 + 1e-4 * 0.3
+    edge = [[2 * allowed, 0.0, -0.3, -0.1, -0.2, -0.25] for _ in range(STEPS)]
+    assert device_parity.bound(edge[0], device_parity.TOLERANCE) == allowed
+    assert device_parity.margin(edge[0]) == 2 * allowed
+    summary = device_parity.compare_runs(fake_run("cuda:0", edge, NAV), fake_run("cpu", edge, NAV))
+    assert summary["near_ties"] == STEPS
+    # Cada umbral cuenta los márgenes estrictamente por debajo de él.
+    limit = [[0.001, 0.0, -0.1, -0.2, -0.3, -0.4] for _ in range(STEPS)]
+    assert device_parity.margin(limit[0]) == 1e-3
+    summary = device_parity.compare_runs(
+        fake_run("cuda:0", limit, NAV), fake_run("cpu", limit, NAV)
+    )
+    assert summary["margins_below"]["0.001"] == 0
+
+
 def test_the_tolerance_grows_with_the_scale_of_the_logits():
     large = [[100 * value for value in row] for row in LOGITS]
     shifted = copy.deepcopy(large)
@@ -161,6 +179,26 @@ def test_an_unvalued_equity_after_a_divergence_has_an_infinite_difference():
         fake_run("cuda:0", tie, unvalued), fake_run("cpu", flipped, unvalued)
     )["divergences"]
     assert divergence["final_relative_difference"] == 0.0
+
+
+def test_equity_before_the_first_different_action_must_match():
+    tie = copy.deepcopy(LOGITS)
+    tie[2][1], tie[2][5] = 0.3, 0.3 - 2e-6
+    flipped = copy.deepcopy(tie)
+    flipped[2][1], flipped[2][5] = 0.3 - 2e-6, 0.3 + 1e-6
+    # La acción de la sesión 2 actúa desde la apertura de la 3: el cierre 2 ya debe coincidir.
+    earlier = [*NAV[:2], 0.998e6, 1.0015e6, 0.9995e6]
+    with pytest.raises(ValueError, match="antes de la primera acción distinta"):
+        device_parity.compare_runs(fake_run("cuda:0", tie, NAV), fake_run("cpu", flipped, earlier))
+
+
+def test_runs_with_the_same_identity_must_cover_the_same_episodes():
+    reference = fake_run("cuda:0", LOGITS, NAV)
+    other = fake_run("cpu", LOGITS, NAV)
+    other[0]["metrics"][0]["manifest_sha256"] = "n" * 64
+    other[1]["costs"][0]["tapes"][0]["manifest_sha256"] = "n" * 64
+    with pytest.raises(ValueError, match="mismos episodios"):
+        device_parity.compare_runs(reference, other)
 
 
 def test_an_episode_without_decisions_publishes_no_margin():
@@ -258,6 +296,22 @@ def test_a_record_is_read_only_with_the_seal_of_its_exact_bytes(tmp_path):
         device_parity.read_run(tmp_path)
     write_sealed(tmp_path / "decisions.json", dict(record, kind=device_parity.EVALUATION_KIND))
     with pytest.raises(ValueError, match="native_policy_decisions"):
+        device_parity.read_run(tmp_path)
+    write_sealed(tmp_path / "decisions.json", dict(record, schema_version=2))
+    with pytest.raises(ValueError, match="versión 1"):
+        device_parity.read_run(tmp_path)
+    # Una evaluación que no declara el registro no se lee con él.
+    write_sealed(tmp_path / "decisions.json", record)
+    undeclared = dict(evaluation, identity=dict(evaluation["identity"], decisions=False))
+    write_sealed(tmp_path / "evaluation.json", undeclared)
+    with pytest.raises(ValueError, match="evaluación completa"):
+        device_parity.read_run(tmp_path)
+    # Un campo añadido al sobre queda fuera del sello aunque la huella cubra su texto.
+    write_sealed(tmp_path / "evaluation.json", evaluation)
+    text = json.dumps(record, sort_keys=True, separators=(",", ":")).encode() + b',"extra":1'
+    digest = hashlib.sha256(text).hexdigest().encode()
+    path.write_bytes(b'{"payload":' + text + b',"sha256":"' + digest + b'"}')
+    with pytest.raises(ValueError, match="sello"):
         device_parity.read_run(tmp_path)
 
 
