@@ -29,6 +29,7 @@ from mars_titan.training import reference_design
 from mars_titan.training.corpus_inputs import CorpusDataset
 from mars_titan.training.learning_hold import LearningHoldError
 from mars_titan.training.reference_design import head_control_cases
+from tests.learning_hold_lowering import lowers_learning_hold
 from tests.training.test_walk_forward_v2_views import fixture
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -374,6 +375,10 @@ def test_run_is_blocked_before_creating_any_output(learning_hold, tmp_path):
     assert not (tmp_path / "out").exists() and fit.calls == []
 
 
+@lowers_learning_hold(
+    "tests/training/test_quantile_head_control.py::"
+    "test_hold_reinstated_after_a_job_stops_before_the_next_one"
+)
 def test_hold_reinstated_after_a_job_stops_before_the_next_one(prepared, learning_hold, tmp_path):
     # Los ejecutores sustituidos no ajustan nada. La protección vuelve a bloquear tras el
     # primer trabajo confirmado y el segundo no debe empezar.
