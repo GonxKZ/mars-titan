@@ -136,16 +136,24 @@ def test_klpo_traces_record_the_initial_validation_once(binaries, tapes, tmp_pat
 
 
 @pytest.mark.native("MARS_TITAN_PPO_EXECUTABLE", "MARS_TITAN_KLPO_EXECUTABLE")
-def test_the_frozen_evaluation_rejects_traces(binaries, tapes, tmp_path, learning_hold):
-    hold = learning_hold(True)
+@pytest.mark.parametrize("mode", ["--audit-run", "--initial-evaluation", "--check-sources"])
+def test_modes_without_a_fit_reject_traces(binaries, tapes, tmp_path, learning_hold, mode):
+    # Los argumentos se rechazan antes de leer la protección, que queda cerrada.
+    hold = learning_hold(False)
     config = write_config(
         tmp_path / "ppo.json",
         native_policy_runs.ppo_config(diagnostic_stage(), job("ppo_clip_full_kl", "native_ppo")),
     )
-    audit = ["--audit-run", tmp_path / "fit", "--audit-tape", tapes["US"]["evaluation"][0][0]]
-    arguments = ["--config", config, "--output", tmp_path / "evaluation", *audit, *TRACED]
-    result = run(binaries["native_ppo"], hold, *arguments)
-    assert result.returncode == 1 and "trazas" in result.stderr
+    audit = ["--audit-tape", tapes["US"]["evaluation"][0][0]]
+    modes = {
+        "--audit-run": [mode, tmp_path / "fit", *audit],
+        "--initial-evaluation": [mode, *audit],
+        "--check-sources": [mode, *sources(tapes["US"])],
+    }
+    arguments = ["--config", config, "--output", tmp_path / "evaluation", *modes[mode], *TRACED]
+    for binary in ("native_ppo", "native_klpo"):
+        result = run(binaries[binary], hold, *arguments)
+        assert result.returncode == 1 and "solo se admiten durante un ajuste" in result.stderr
     assert not (tmp_path / "evaluation").exists()
 
 
