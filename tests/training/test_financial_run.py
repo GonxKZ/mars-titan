@@ -656,3 +656,77 @@ def test_cuda_pass_matches_cpu_without_optimizer_steps(shared, tmp_path):
                 assert b[key] is None
             else:
                 torch.testing.assert_close(value, b[key].cpu(), rtol=1e-7, atol=1e-10)
+
+
+def test_each_event_resolves_the_checks_of_all_its_blocks_together(shared, tmp_path, monkeypatch):
+    """Las comprobaciones de todos los bloques de un evento comparten un solo tramo diferido.
+
+    En CUDA se resuelven al final del evento con una espera en lugar de una por bloque. Solo
+    se emite sin gradiente, sin pasos ni etiquetas.
+    """
+    from mars_titan.models.titans import state as checks
+
+    _, streams = shared
+    engine = trainer(streams, tmp_path / "run")
+    scopes, prepare = [], engine.predictor.prepare
+
+    def recorded(*args, **kwargs):
+        scopes[-1].append(checks._PENDING.get())
+        return prepare(*args, **kwargs)
+
+    monkeypatch.setattr(engine.predictor, "prepare", recorded)
+    source, run = streams["train"], financial_run._Pass()
+    # Un flujo por bloque, para que cada evento con varios activos tenga varios bloques.
+    for event in source.batched_events(block_rows=1):
+        if event.inputs:
+            scopes.append([])
+            engine._observe(run, source, event, differentiable=False)
+            assert checks._PENDING.get() is None
+        if len(scopes) == 6:
+            break
+    assert max(len(scope) for scope in scopes) > 1
+    for scope in scopes:
+        assert scope[0] is not None
+        assert all(pending is scope[0] for pending in scope)
+    assert len({id(scope[0]) for scope in scopes}) == len(scopes)
+
+
+def test_replay_resolves_the_checks_of_each_flow_group_together(shared, tmp_path, monkeypatch):
+    """La repetición con acumulación espera una vez por grupo de flujos, antes del backward.
+
+    El gradiente se calcula y se queda en los parámetros, sin pasos de optimizador.
+    """
+    from mars_titan.models.titans import state as checks
+
+    _, streams = shared
+    engine = trainer(streams, tmp_path / "run", accumulation_rows=2)
+    source, run = streams["train"], financial_run._Pass()
+    observed = 0
+    for event in source.batched_events(block_rows=2):
+        if event.inputs and event.at >= source.phase.decision_start:
+            engine._observe(run, source, event, differentiable=True)
+            observed += 1
+        if observed == 3:
+            break
+    # Objetivos nulos para todas las decisiones emitidas, sin pasar por las etiquetas.
+    for flow, at in run.pending:
+        run.used.append((flow, at, at))
+        run.targets.append(0.0)
+    calls, prepare = [], engine.predictor.prepare
+
+    def recorded(*args, **kwargs):
+        calls.append(checks._PENDING.get())
+        return prepare(*args, **kwargs)
+
+    monkeypatch.setattr(engine.predictor, "prepare", recorded)
+    engine._replay(run)
+    assert checks._PENDING.get() is None
+    flows = len({flow for flow, _, _ in run.used})
+    groups = [
+        pending
+        for index, pending in enumerate(calls)
+        if index == 0 or pending is not calls[index - 1]
+    ]
+    assert all(pending is not None for pending in calls)
+    assert len(groups) == len({id(pending) for pending in calls}) == -(-flows // 2)
+    assert len(calls) > len(groups)

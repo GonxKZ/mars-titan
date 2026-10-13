@@ -19,8 +19,11 @@ def read_bounded_table(path: Path, *, max_rows: int = 100_000, max_bytes: int = 
             meta.row_group(i).total_byte_size > max_bytes for i in range(meta.num_row_groups)
         ):
             raise ValueError("La partición supera el presupuesto de lectura")
+        # Un lote por grupo de filas: cada grupo ya cabe en el presupuesto según los metadatos,
+        # y leer en lotes pequeños multiplicaba el coste de los archivos de cada activo.
+        rows = max((meta.row_group(i).num_rows for i in range(meta.num_row_groups)), default=1)
         batches, size = [], 0
-        for batch in file.iter_batches(batch_size=64, use_threads=False):
+        for batch in file.iter_batches(batch_size=max(rows, 1), use_threads=False):
             size += batch.nbytes
             if size > max_bytes:
                 raise ValueError("La tabla decodificada supera el presupuesto de lectura")
