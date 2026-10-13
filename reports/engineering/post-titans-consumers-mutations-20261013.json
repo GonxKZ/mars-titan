@@ -1,0 +1,217 @@
+{
+ "schema_version": 1,
+ "kind": "targeted_mutation_testing",
+ "scope": "Consumidores de PT1 (#453) y PT2 (#454) en la campaña A v2 y en la comparación por ventanas",
+ "measured_at": "2026-10-13",
+ "worktree_imports": "src/mars_titan/__init__.py de la propia copia de trabajo, comprobado antes de mutar",
+ "tests": [
+  "tests/calibration/test_periodic_conformal.py",
+  "tests/evaluation/test_online_calibration.py",
+  "tests/training/test_campaign_a_joint.py::test_v2_fits_pt1_as_extensions_of_the_online_core_with_its_declared_changes",
+  "tests/training/test_titans_campaign.py::test_core_extensions_reject_declarations_that_change_more_than_the_extension",
+  "tests/training/test_titans_campaign.py::test_core_extensions_repeat_the_base_model_and_add_only_their_predictor_changes",
+  "tests/training/test_titans_campaign.py::test_predictor_changes_outside_the_extensions_are_rejected",
+  "tests/training/test_titans_campaign.py::test_a_core_with_predictor_changes_cannot_be_the_mars_titan_parent",
+  "tests/training/test_campaign_throughput.py::test_titans_measurement_builds_each_core_extension_with_its_predictor_changes"
+ ],
+ "baseline": {
+  "code": 0,
+  "tail": "61 passed in 14.57s"
+ },
+ "mutations": [
+  {
+   "id": "C01",
+   "description": "El reajuste periódico usa filas que maduran hasta un día después del instante",
+   "file": "src/mars_titan/calibration/periodic_conformal.py",
+   "tests": [
+    "tests/calibration/test_periodic_conformal.py"
+   ],
+   "killed": true,
+   "pytest_tail": "1 failed in 0.25s",
+   "seconds": 2.76
+  },
+  {
+   "id": "C02",
+   "description": "El reajuste periódico usa todo el pasado y no solo los últimos 91 días",
+   "file": "src/mars_titan/calibration/periodic_conformal.py",
+   "tests": [
+    "tests/calibration/test_periodic_conformal.py"
+   ],
+   "killed": true,
+   "pytest_tail": "1 failed in 0.24s",
+   "seconds": 2.57
+  },
+  {
+   "id": "C03",
+   "description": "Las primeras sesiones se reajustan en lugar de usar la CQR estática",
+   "file": "src/mars_titan/calibration/periodic_conformal.py",
+   "tests": [
+    "tests/calibration/test_periodic_conformal.py"
+   ],
+   "killed": true,
+   "pytest_tail": "1 failed in 0.25s",
+   "seconds": 2.7
+  },
+  {
+   "id": "C04",
+   "description": "Un reajuste sin filas suficientes se marca como usado",
+   "file": "src/mars_titan/calibration/periodic_conformal.py",
+   "tests": [
+    "tests/calibration/test_periodic_conformal.py"
+   ],
+   "killed": true,
+   "pytest_tail": "1 failed, 3 passed in 0.27s",
+   "seconds": 2.81
+  },
+  {
+   "id": "C05",
+   "description": "El reajuste de un mercado usa las filas de los dos mercados",
+   "file": "src/mars_titan/calibration/periodic_conformal.py",
+   "tests": [
+    "tests/calibration/test_periodic_conformal.py"
+   ],
+   "killed": true,
+   "pytest_tail": "1 failed, 4 passed in 0.30s",
+   "seconds": 2.69
+  },
+  {
+   "id": "C06",
+   "description": "La selección en línea elige la tasa con mayor error de validación",
+   "file": "src/mars_titan/evaluation/online_calibration.py",
+   "tests": [
+    "tests/evaluation/test_online_calibration.py"
+   ],
+   "killed": true,
+   "pytest_tail": "1 failed, 23 passed in 1.18s",
+   "seconds": 3.71
+  },
+  {
+   "id": "C07",
+   "description": "La selección usa los años evaluados en lugar de los de selección",
+   "file": "src/mars_titan/evaluation/online_calibration.py",
+   "tests": [
+    "tests/evaluation/test_online_calibration.py"
+   ],
+   "killed": true,
+   "pytest_tail": "1 failed, 34 passed in 7.24s",
+   "seconds": 10.08
+  },
+  {
+   "id": "C08",
+   "description": "La regla de decisión acepta con una sola de sus dos condiciones",
+   "file": "src/mars_titan/evaluation/online_calibration.py",
+   "tests": [
+    "tests/evaluation/test_online_calibration.py"
+   ],
+   "killed": true,
+   "pytest_tail": "1 failed, 27 passed in 1.34s",
+   "seconds": 3.8
+  },
+  {
+   "id": "C09",
+   "description": "La madurez de cada fila no se reordena con sus predicciones",
+   "file": "src/mars_titan/evaluation/walk_forward_comparison.py",
+   "tests": [
+    "tests/evaluation/test_online_calibration.py"
+   ],
+   "killed": true,
+   "pytest_tail": "16 passed, 1 error in 0.95s",
+   "seconds": 3.28
+  },
+  {
+   "id": "C10",
+   "description": "Una extensión del núcleo entra en la matriz de adaptadores en lugar de solo congelada",
+   "file": "src/mars_titan/posttraining/campaign_stage.py",
+   "tests": [
+    "tests/training/test_campaign_a_joint.py::test_v2_fits_pt1_as_extensions_of_the_online_core_with_its_declared_changes"
+   ],
+   "killed": true,
+   "pytest_tail": "1 failed in 2.30s",
+   "seconds": 4.87
+  },
+  {
+   "id": "C11",
+   "description": "Una extensión puede declarar semillas distintas de su núcleo",
+   "file": "src/mars_titan/training/campaign_plan.py",
+   "tests": [
+    "tests/training/test_titans_campaign.py::test_core_extensions_reject_declarations_that_change_more_than_the_extension"
+   ],
+   "killed": true,
+   "pytest_tail": "1 failed, 1 passed in 2.35s",
+   "seconds": 5.1
+  },
+  {
+   "id": "C12",
+   "description": "Los casos de una extensión pierden sus cambios del predictor",
+   "file": "src/mars_titan/training/campaign_plan.py",
+   "tests": [
+    "tests/training/test_titans_campaign.py::test_core_extensions_repeat_the_base_model_and_add_only_their_predictor_changes",
+    "tests/training/test_campaign_a_joint.py::test_v2_fits_pt1_as_extensions_of_the_online_core_with_its_declared_changes"
+   ],
+   "killed": true,
+   "pytest_tail": "1 failed in 2.16s",
+   "seconds": 4.96
+  },
+  {
+   "id": "C13",
+   "description": "Se admiten cambios del predictor fuera de los declarados",
+   "file": "src/mars_titan/training/search_cases.py",
+   "tests": [
+    "tests/training/test_titans_campaign.py::test_predictor_changes_outside_the_extensions_are_rejected"
+   ],
+   "killed": true,
+   "pytest_tail": "1 failed, 1 passed in 1.21s",
+   "seconds": 4.03
+  },
+  {
+   "id": "C14",
+   "description": "Un núcleo con cambios del predictor puede ser el padre de MARS-TITAN",
+   "file": "src/mars_titan/training/mars_titan_walk_forward.py",
+   "tests": [
+    "tests/training/test_titans_campaign.py::test_a_core_with_predictor_changes_cannot_be_the_mars_titan_parent"
+   ],
+   "killed": true,
+   "pytest_tail": "1 failed in 1.06s",
+   "seconds": 3.45
+  },
+  {
+   "id": "C15",
+   "description": "Las opciones del predictor ignoran los cambios de la petición",
+   "file": "src/mars_titan/training/titans_walk_forward.py",
+   "tests": [
+    "tests/training/test_campaign_throughput.py::test_titans_measurement_builds_each_core_extension_with_its_predictor_changes"
+   ],
+   "killed": true,
+   "pytest_tail": "1 failed in 7.75s",
+   "seconds": 10.82
+  },
+  {
+   "id": "C16",
+   "description": "La medida de caudal construye la extensión sin sus cambios",
+   "file": "src/mars_titan/training/campaign_throughput.py",
+   "tests": [
+    "tests/training/test_campaign_throughput.py::test_titans_measurement_builds_each_core_extension_with_its_predictor_changes"
+   ],
+   "killed": true,
+   "pytest_tail": "1 failed in 7.52s",
+   "seconds": 10.5
+  },
+  {
+   "id": "C17",
+   "description": "El plan no genera los trabajos de las extensiones del núcleo",
+   "file": "src/mars_titan/training/campaign_plan.py",
+   "tests": [
+    "tests/training/test_campaign_a_joint.py::test_v2_fits_pt1_as_extensions_of_the_online_core_with_its_declared_changes"
+   ],
+   "killed": true,
+   "pytest_tail": "1 failed in 2.09s",
+   "seconds": 4.53
+  }
+ ],
+ "notes": [
+  "Cada mutante se aplicó de uno en uno sobre la copia de trabajo, se ejecutaron sus pruebas con -x y se restauró el archivo.",
+  "C15 (las opciones del predictor ignoran los cambios de la petición) sobrevivió en una primera pasada, porque la prueba de caudal solo registraba los cambios pedidos. La prueba comprueba ahora la caja y el recorte del predictor construido y lo detecta.",
+  "C09 se detecta por la comprobación de madurez de la recalibración periódica, que rechaza filas cuya madurez no sigue a su predicción.",
+  "Las pruebas que rebajan la protección del aprendizaje se omiten mientras el bloqueo esté vigente y no forman parte de esta selección."
+ ]
+}

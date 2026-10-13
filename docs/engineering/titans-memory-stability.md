@@ -144,6 +144,8 @@ Los cambios viajan en el caso del plan y en la petición de la ventana, y `titan
 
 En US+CN suman 152 ajustes y 152 mesetas, 108 padres congelados, 114 selecciones de la cadena, 342 predicciones de ablación y 144 ajustes y 222 referencias de políticas. Con 10 épocas efectivas y 33.300 filas/s la proyección de la campaña añade unas 91 h de base y 1,5 h de ablación ([proyección de horas](../research/training-campaign-2000.md#proyección-de-horas)).
 
+La mutación dirigida de estos consumidores aplicó ocho defectos de uno en uno en la copia de trabajo, tras comprobar que las pruebas la importaban: llevar una extensión a la matriz de adaptadores, admitir semillas distintas de las de su modelo base, perder los cambios de sus casos, admitir cambios fuera de la declaración, aceptar como padre de MARS-TITAN un núcleo con cambios, construir el predictor o medir su caudal sin los cambios y no planificar las extensiones. Las pruebas detectan los ocho ([recibo](../../reports/engineering/post-titans-consumers-mutations-20261013.json)). El defecto que construye el predictor sin los cambios sobrevivió en una primera pasada, porque la prueba de caudal solo registraba los cambios pedidos. Ahora comprueba la caja y el recorte del predictor construido. Las pruebas de la ventana y de la campaña reducida rebajan la protección del aprendizaje, así que se omiten mientras siga el bloqueo y no entran en esta selección.
+
 ## Comprobaciones
 
 | Propiedad | Prueba |

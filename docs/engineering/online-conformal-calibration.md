@@ -132,6 +132,8 @@ La [comparación conjunta de A v2](../../configs/evaluation/historical-masked-20
 - **Informe.** `online_calibration` añade por modelo la selección de κ con la métrica primaria de 2005 a 2013 en todos los mercados del ámbito, con la tasa menor en caso de empate. De 2014 a 2023 compara la variante elegida y la periódica con la CQR estática: la desviación de cobertura con su cambio relativo y un intervalo de un bootstrap circular por bloques de días, y el interval score por sesión de cada nominal con la comparación emparejada común. Las semillas se promedian sesión a sesión. La regla da `keep`, `abandon`, `inconclusive` o `not_estimable`, y `periodic_matches_online` dice si la alternativa iguala a la elegida. En US+CN se informa del conjunto y de cada mercado.
 - La mediana no cambia, así que el MAE y el resto de contrastes de la comparación tampoco.
 
+La mutación dirigida de la conexión aplicó nueve defectos de uno en uno en la copia de trabajo: reajustar con filas que maduran después del instante, sin la ventana de 91 días o desde la primera sesión, marcar como usado un reajuste sin filas suficientes, mezclar mercados, elegir la tasa con mayor error, seleccionar con los años evaluados, aceptar con una sola de las dos condiciones de la regla y no reordenar la madurez con el panel. Las pruebas detectan los nueve ([recibo](../../reports/engineering/post-titans-consumers-mutations-20261013.json)). Es una selección dirigida, no una campaña completa de mutación.
+
 ## Comprobaciones
 
 | Propiedad | Prueba |
