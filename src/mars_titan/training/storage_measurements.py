@@ -519,28 +519,47 @@ def measure_extras(assets, partition, directory, *, seed=0):
     return result
 
 
-def tape_bytes(sessions, assets, directory, *, seed=0):
-    """Bytes de una cinta de política con el esquema y los grupos de `simulation.storage`."""
+def tape_bytes(sessions, assets, directory, *, layout=None, seed=0):
+    """Bytes de una cinta de política con el esquema y los grupos de `simulation.storage`.
+
+    Una cinta real tiene una columna por activo del diseño de su política, que une los
+    universos de todos sus tramos. En cada tramo solo los `assets` activos de su universo
+    tienen precios y predicciones, y los demás quedan vacíos (NaN en precios, volumen y
+    puntuación), como los de fuera del universo de `reconstructed_tape`. `layout` es el
+    número de columnas del diseño, por defecto igual a `assets`. Las columnas con precios
+    se reparten al azar por el diseño, porque el universo no sigue el orden de los símbolos.
+    """
+    layout = assets if layout is None else layout
+    _require(1 <= assets <= layout, "La cinta necesita entre 1 activo y su diseño completo")
     rng = np.random.default_rng(seed)
-    rows = sessions * assets
+    rows = sessions * layout
     base = int(np.datetime64("2010-01-04T20:00", "us").astype(np.int64))
     close = base + np.arange(sessions, dtype=np.int64) * _DAY
-    prices = np.exp(np.cumsum(rng.standard_normal((sessions, assets)) * 0.02, axis=0)) * 50
+    # Sin columnas vacías no se sortea nada, y la medida repite la de 128 columnas anterior.
+    priced = np.ones(layout, dtype=bool)
+    if layout > assets:
+        priced[:] = False
+        priced[rng.choice(layout, size=assets, replace=False)] = True
+    walk = np.exp(np.cumsum(rng.standard_normal((sessions, layout)) * 0.02, axis=0)) * 50
+    prices = np.where(priced, walk, np.nan).reshape(-1)
     columns = {
-        name: prices.reshape(-1) * (1 + rng.standard_normal(rows) * 0.001)
+        name: prices * (1 + rng.standard_normal(rows) * 0.001)
         for name in ("open", "high", "low", "close")
     }
+    empty = ~np.tile(priced, sessions)
     columns.update(
-        volume=np.round(rng.lognormal(12, 1, rows)),
-        score=(rng.standard_normal(rows) * 0.003).astype(np.float32).astype(float),
-        close_time=np.repeat(close, assets),
-        open_time=np.repeat(close - 23_400_000_000, assets),
-        prediction_time=np.repeat(close - _DAY, assets),
-        asset=np.tile(np.asarray([f"A{i:04d}" for i in range(assets)]), sessions),
+        volume=np.where(empty, np.nan, np.round(rng.lognormal(12, 1, rows))),
+        score=np.where(
+            empty, np.nan, (rng.standard_normal(rows) * 0.003).astype(np.float32).astype(float)
+        ),
+        close_time=np.repeat(close, layout),
+        open_time=np.repeat(close - 23_400_000_000, layout),
+        prediction_time=np.repeat(close - _DAY, layout),
+        asset=np.tile(np.asarray([f"A{i:04d}" for i in range(layout)]), sessions),
     )
     table = pa.table(columns)
     path = Path(directory) / "tape.parquet"
-    pq.write_table(table, path, compression="zstd", row_group_size=assets * 16)
+    pq.write_table(table, path, compression="zstd", row_group_size=layout * 16)
     size = _size_and_check(path, table)
     path.unlink()
     return size
@@ -580,8 +599,13 @@ ADAPTER_DECLARED = dict(
 ADAPTER_LAYOUTS = ("current", "large_groups", "shared_rows")
 
 
-def measure_extras_report(views, directory, *, tape_sessions=252, tape_assets=128):
-    """Medidas fuera del ajuste base sobre la ventana más poblada de cada ámbito."""
+def measure_extras_report(views, directory, *, tape_layout, tape_sessions=252, tape_assets=128):
+    """Medidas fuera del ajuste base sobre la ventana más poblada de cada ámbito.
+
+    La cinta se mide con `tape_assets` activos con precios en un diseño de `tape_layout`
+    columnas. Las estimaciones de disco exigen que ese diseño cubra la cota de la etapa de
+    políticas (`window_tapes.layout_bound`).
+    """
     adapter, aggregate, index, raw = [], [], [], []
     measured = {}
     for scope, folder in views.items():
@@ -596,7 +620,7 @@ def measure_extras_report(views, directory, *, tape_sessions=252, tape_assets=12
             aggregate.append(result["aggregates_quantile"] / rows)
             index.append(result["index"]["bytes"] / result["index"]["rows"])
             raw.append(result["index"]["raw_bytes"] / result["index"]["rows"])
-    tape = tape_bytes(tape_sessions, tape_assets, directory)
+    tape = tape_bytes(tape_sessions, tape_assets, directory, layout=tape_layout)
     return dict(
         schema_version=1,
         kind="historical_masked_campaign_storage_extras",
@@ -604,7 +628,7 @@ def measure_extras_report(views, directory, *, tape_sessions=252, tape_assets=12
         index_bytes_per_row=max(index),
         index_build_bytes_per_row=max(raw),
         tape_bytes=tape,
-        tape_shape=dict(sessions=tape_sessions, assets=tape_assets),
+        tape_shape=dict(sessions=tape_sessions, assets=tape_assets, layout=tape_layout),
         adapter=dict(
             ADAPTER_DECLARED,
             **{
@@ -614,6 +638,33 @@ def measure_extras_report(views, directory, *, tape_sessions=252, tape_assets=12
         ),
         measured=measured,
         pyarrow=pa.__version__,
+    )
+
+
+def remeasure_tape(extras, directory, *, layout):
+    """Informe de extras con la cinta medida de nuevo en un diseño de `layout` columnas.
+
+    La cinta no interviene en las demás medidas, que se conservan. Antes de medir la forma
+    nueva se repite la anterior, que debe dar los mismos bytes con la misma versión de
+    PyArrow. Así la sustitución solo cambia la forma y no el entorno de medida.
+    """
+    shape = extras["tape_shape"]
+    _require(
+        set(shape) == {"sessions", "assets"} and layout >= shape["assets"],
+        "Solo se vuelve a medir una cinta sin diseño en otro con al menos sus activos",
+    )
+    _require(extras["pyarrow"] == pa.__version__, "La medida anterior usó otra versión de PyArrow")
+    repeated = tape_bytes(shape["sessions"], shape["assets"], directory)
+    _require(
+        repeated == extras["tape_bytes"],
+        f"La cinta anterior ocupa ahora {repeated} bytes y no {extras['tape_bytes']}",
+    )
+    measured = tape_bytes(shape["sessions"], shape["assets"], directory, layout=layout)
+    return dict(
+        extras,
+        tape_bytes=measured,
+        tape_shape=dict(shape, layout=layout),
+        tape_without_layout_bytes=repeated,
     )
 
 
@@ -629,14 +680,30 @@ def main(argv=None):
     extras = commands.add_parser("extras", help="Adaptadores, agregados, índices y cintas")
     extras.add_argument("--views", action="append", required=True)
     extras.add_argument("--output", type=Path, required=True)
-    for command in (view, extras):
+    extras.add_argument(
+        "--tape-layout",
+        type=int,
+        required=True,
+        help="Columnas del diseño de la cinta, al menos la cota de la etapa de políticas",
+    )
+    tape = commands.add_parser("tape", help="Volver a medir la cinta de un informe de extras")
+    tape.add_argument("--extras", type=Path, required=True)
+    tape.add_argument("--layout", type=int, required=True)
+    tape.add_argument("--output", type=Path, required=True)
+    for command in (view, extras, tape):
         command.add_argument("--scratch", type=Path, required=True)
     args = parser.parse_args(argv)
     if args.command == "view":
         print(json.dumps(measure_view(args.manifest, args.scratch), indent=2))
         return 0
+    if args.command == "tape":
+        previous = json.loads(args.extras.read_text())
+        result = remeasure_tape(previous, args.scratch, layout=args.layout)
+        atomic_json(args.output, result)
+        print(json.dumps({k: v for k, v in result.items() if k.startswith("tape")}, indent=2))
+        return 0
     views = dict(value.partition("=")[::2] for value in args.views)
-    result = measure_extras_report(views, args.scratch)
+    result = measure_extras_report(views, args.scratch, tape_layout=args.tape_layout)
     atomic_json(args.output, result)
     print(json.dumps({k: v for k, v in result.items() if k != "measured"}, indent=2))
     return 0
