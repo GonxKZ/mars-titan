@@ -225,6 +225,7 @@ REDIRECTIONS = {
     "tests/simulation/test_native_policy_tapes.py": (4, _BINARY),
     "tests/simulation/test_native_ppo_launcher.py": (3, _CLOSES),
     "tests/simulation/test_policy_device_parity.py": (1, _CLOSES),
+    "tests/test_learning_hold_lowering.py": (1, _CLOSES),
     "tests/training/test_campaign_a_joint.py": (1, _CAMPAIGN),
     "tests/training/test_candidate_walk_forward.py": (1, _RECORDER),
     "tests/training/test_financial_run.py": (1, _CLOSES),
