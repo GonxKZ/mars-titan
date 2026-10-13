@@ -1,4 +1,4 @@
-"""Puntuación de validación y brazo del padre congelado de la cadena por etapas.
+"""Puntuación de validación y modelo del padre congelado de la cadena por etapas.
 
 La regla, los identificadores y las rutas de la cadena se prueban con
 `training.campaign_chain` en `tests/training/test_campaign_chain.py`.

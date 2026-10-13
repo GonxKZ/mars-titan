@@ -1,4 +1,4 @@
-"""Modo matriz de la cola: brazos y controles por padre y semilla, hasta el paso.
+"""Modo matriz de la cola: modelos y controles por padre y semilla, hasta el paso.
 
 El optimizador del fixture `recorder` no hereda de `torch.optim.Optimizer` y exige pesos
 sin cambios. La GPU, la selección de padres y el contrato de codificadores se sustituyen
@@ -106,7 +106,7 @@ def test_matrix_mode_runs_every_case_per_parent_and_seed_and_resumes(
     stop.requested, recorder.on_step = False, None
     summary = queue.run_queue(*args, stop=stop)
     assert summary["status"] == "completed"
-    # GRU de cuantiles: cuatro brazos y la continuación. DLinear escalar: añade la lineal.
+    # GRU de cuantiles: cuatro variantes y la continuación. DLinear escalar: añade la lineal.
     expected = {
         f"{family}/{item['id']}"
         for family, head in (("gru", QUANTILE_HEAD), ("dlinear", "scalar"))
@@ -114,7 +114,7 @@ def test_matrix_mode_runs_every_case_per_parent_and_seed_and_resumes(
     }
     assert set(summary["runs"]) == expected
     assert summary["planned_runs"] == summary["completed_runs"] == len(expected) == 2 * (5 + 6)
-    # Mismas actualizaciones en todos los brazos y controles, iguales al plan registrado.
+    # Mismas actualizaciones en todos los modelos y controles, iguales al plan registrado.
     updates = {run["updates"] for run in summary["runs"].values()}
     assert len(updates) == 1
     for name, budget in summary["budgets"].items():

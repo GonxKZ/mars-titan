@@ -18,6 +18,7 @@ import numpy as np
 from evaluation_io import DiagnosticRows
 
 from mars_titan.data.storage import atomic_json, sha256
+from mars_titan.hardware.platform_identity import cpu_name
 
 
 def worker(args):
@@ -148,7 +149,7 @@ def main():
                 run["total_process_seconds"] = time.perf_counter() - started
                 runs.append(run)
                 print(layout, batch_size, persist, run["median_seconds"], flush=True)
-    cpu = subprocess.check_output(["rg", "-m", "1", "^model name", "/proc/cpuinfo"], text=True)
+    cpu = cpu_name()
     atomic_json(
         args.output,
         dict(
@@ -156,7 +157,7 @@ def main():
             domain="technical",
             device="cpu",
             final_test_opened=False,
-            hardware=dict(cpu=cpu.strip(), os=platform.platform()),
+            hardware=dict(cpu=cpu, os=platform.platform()),
             software=dict(python=platform.python_version(), numpy=np.__version__),
             numerical_threads=1,
             warmup_runs=1,
