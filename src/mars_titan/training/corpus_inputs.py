@@ -246,6 +246,13 @@ def _availability(table, *, macro_override=None, presence=None):
 
 def _presence(table, vectors, representation):
     """Contrastar bloques y conceptos antes de seleccionar filas de un grupo."""
+    presence = presence_bits(table)
+    validate_historical_vectors(vectors, presence, representation)
+    return presence
+
+
+def presence_bits(table):
+    """Bits de presencia de un grupo, comprobados con su forma y sus noticias, sin vectores."""
     if "presence" not in table.column_names:
         raise ValueError("Faltan las máscaras de presencia de la edición histórica")
     column = table["presence"].combine_chunks()
@@ -266,7 +273,6 @@ def _presence(table, vectors, representation):
     events = counts.to_numpy()
     if (events < 0).any() or not np.array_equal(events > 0, presence[:, 1]):
         raise ValueError("La presencia de noticias no coincide con sus eventos admitidos")
-    validate_historical_vectors(vectors, presence, representation)
     return presence
 
 
@@ -478,6 +484,20 @@ class CorpusDataset:
             if self.temporal
             else ("train", "validation")
         )
+        # Una vista elegida sobre un subconjunto declarado solo observa sus filas.
+        self.subset = None
+        if "data_subset" in meta:
+            from .edition_subsets import SubsetRows, read_subset, subset_identity
+
+            declared = meta["data_subset"]
+            if not (self.masked and self.temporals) or not isinstance(declared, dict):
+                raise ValueError("Solo una vista con máscaras puede declarar un subconjunto")
+            document, digest, ids = read_subset(Path(declared.get("manifest", "")))
+            if declared != dict(
+                manifest=declared["manifest"], manifest_sha256=digest, **subset_identity(document)
+            ):
+                raise ValueError("El subconjunto de la vista no es el declarado")
+            self.subset = SubsetRows(ids)
         if (
             meta.get("schema_version") not in ({3} if self.masked else {1, 2})
             or meta.get("kind") != "corpus_supervision"
@@ -1160,7 +1180,10 @@ class CorpusDataset:
                     if dimensions is not None and dimensions != shape:
                         raise ValueError("Las dimensiones cambian entre activos")
                     dimensions = shape
-                    selected = np.flatnonzero((moments >= start) & (moments < end))
+                    inside = (moments >= start) & (moments < end)
+                    if self.subset is not None:
+                        inside &= self.subset.member(asset["market"], asset["symbol"], moments)
+                    selected = np.flatnonzero(inside)
                     for offset in range(0, len(selected), batch_size):
                         positions = selected[offset : offset + batch_size]
                         block = dict(
