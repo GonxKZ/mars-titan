@@ -51,6 +51,19 @@ INVENTORY = {
         "el primer trabajo del control de la cabeza tiene que pasar la protección para "
         "comprobar que vuelve a leerse antes del segundo, aunque el ejecutor sustituido no ajusta"
     ),
+    "tests/training/test_modality_ablation_carry.py::"
+    "test_b6_ablation_equals_the_correction_with_a_real_absence": (
+        "prepara dos ventanas B6 con run_correction_window y traslada una con carry_correction "
+        "sobre ventanas técnicas de Titans-MAC. B6 no ajusta parámetros, pero las dos entradas "
+        "comprueban la protección porque eligen η con la validación y predicen ventanas de la "
+        "campaña"
+    ),
+    "tests/training/test_mars_titan_campaign.py::"
+    "test_correction_frozen_parent_reproduces_the_carry_and_predicts_the_next_validation": (
+        "traslada como padre congelado una ventana B6 de la campaña B reducida, que el fixture "
+        "campaign_run ejecuta con la protección rebajada de permitted. carry_correction no ajusta, "
+        "pero comprueba la protección porque predice ventanas de la campaña"
+    ),
     "tests/test_suite_support.py::test_unguarded_fits_run_when_the_hold_allows_learning": (
         "la sesión de pytest hija lee una protección temporal que permite aprender para "
         "comprobar que la marca unguarded_fit deja de omitir, aunque la prueba sondeada no ajusta"

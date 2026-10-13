@@ -25,6 +25,13 @@
     "mars_titan_m3",
     "mars_titan_m1_k2",
     "mars_titan_m1_k4",
+    "mars_titan_m1_k4_first_read",
+    "mars_titan_b6",
+    "mars_titan_b6_bias",
+    "mars_titan_b6_regime",
+    "mars_titan_b6_calendar",
+    "mars_titan_b6_regime_banks",
+    "mars_titan_b6_calendar_banks",
     "cm_v1_b",
     "cm_v1_bc",
     "cm_v1_bm",
@@ -34,8 +41,8 @@
   "chain_rule": "chain_validation_score_v1",
   "data_policy": "real_edition_only",
   "limits": {
-    "max_training_jobs": 6588,
-    "max_prediction_jobs": 1116
+    "max_training_jobs": 6804,
+    "max_prediction_jobs": 1494
   },
   "final_test_opened": false
 }
