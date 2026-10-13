@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "kind": "temporal_distillation_declaration",
+  "status": "declared_not_executed",
+  "declared_at": "2026-10-13",
+  "final_test_opened": false,
+  "executions": 0,
+  "issue": 57,
+  "specification": "docs/engineering/temporal-distillation.md",
+  "decision_report": "reports/models/distillation.md",
+  "teacher": {
+    "arm": "mars_titan_m1",
+    "role": "Lector episódico M1 con K = 1 sobre su padre titans_mac_online, la variante MARS-TITAN principal de la campaña",
+    "fit": "Su propio ajuste de la campaña en la misma ventana, con su selección sobre la validación de esa ventana",
+    "outputs": "Una pasada cronológica del estado elegido sobre el tramo de ajuste, con banco vacío y memoria rápida inicial al empezar"
+  },
+  "student": {
+    "arm": "titans_mac_online",
+    "direct_control": "titans_mac_online",
+    "recipe": "configs/titans/chronological-training-historical-masked.json",
+    "distillation_weights": [0.25, 0.5],
+    "selection": "El peso se elige por ventana con la validación de la ventana y la métrica de la receta, igual que los casos de búsqueda",
+    "calibration": "Cada alumno se calibra con su propio tramo de calibración, como el alumno directo"
+  },
+  "targets": {
+    "use": "student_distillation_loss_only",
+    "memory": "single_chronological_pass_of_the_train_phase_from_initial_state_v1",
+    "distance": "mean_absolute_difference_per_output_v1",
+    "in_sample": true
+  },
+  "equal": [
+    "rows",
+    "windows",
+    "seeds",
+    "search_cases",
+    "optimizer_updates",
+    "stopping_rule",
+    "truncation",
+    "accumulation_rows",
+    "calibration_method"
+  ],
+  "comparison": {
+    "models": ["titans_mac_online", "titans_mac_online_distilled", "mars_titan_m1"],
+    "primary": "relative_difference_of_session_mae_distilled_minus_direct",
+    "secondary": "fraction_of_the_teacher_gain_kept_by_the_distilled_student",
+    "pairing": "same_sessions_assets_seeds_and_windows",
+    "uncertainty": "circular_block_bootstrap",
+    "block_length": 16,
+    "replicates": 2000,
+    "confidence": 0.95,
+    "partition": "evaluation_of_the_walk_forward_windows"
+  },
+  "activation": {
+    "requires": [
+      "El profesor mejora al alumno directo en la validación de las ventanas de la campaña A: límite superior del intervalo del 95 % de la diferencia relativa de MAE por sesión por debajo de cero",
+      "La inferencia del profesor cuesta al menos 1,5 veces la del alumno, medida con el código vigente en la misma vista"
+    ],
+    "otherwise": "La extensión no se activa y queda descartada con esa evidencia"
+  },
+  "decision_rule": {
+    "keep_if": [
+      "upper_bound_of_relative_mae_difference_distilled_minus_direct < 0",
+      "teacher_inference_cost_over_student_inference_cost >= 1.5"
+    ],
+    "discard_if": [
+      "upper_bound_of_relative_mae_difference_distilled_minus_direct >= 0",
+      "total_cost_of_teacher_targets_and_student_fits_not_recovered_by_cheaper_inference"
+    ],
+    "report_all": "Se informan los dos pesos, el alumno directo y el profesor, también si el alumno directo gana en error o en latencia"
+  },
+  "cost_condition": {
+    "receipt": "reports/engineering/temporal-distillation-cost-20261013.json",
+    "statistic": "lowest_round_of_teacher_over_student_inference_cost",
+    "threshold": 1.5,
+    "met_in_measured_view": true,
+    "measured_view": "fold-012 de las vistas walk-forward de 64 activos de EE. UU. de la edición v3.1",
+    "before_activation": "Repetir la medida con el código vigente sobre la vista conjunta más poblada de la campaña A, porque el cociente baja con cohortes grandes"
+  },
+  "budget": {
+    "fixed_before_generating_targets": true,
+    "counts": [
+      "Ajuste y selección del profesor, compartidos con la campaña A",
+      "Una pasada de inferencia del profesor sobre el tramo de ajuste por ventana y semilla",
+      "Un ajuste del alumno por peso, ventana y semilla, con la búsqueda y la parada del alumno directo",
+      "Calibración e inferencia de validación y evaluación de cada alumno"
+    ],
+    "estimator": "Caudales medidos con el código vigente y recuentos verificados de las vistas de la campaña A"
+  },
+  "pending": [
+    "Nada se ha ejecutado. El bloqueo de aprendizaje impide ajustar el profesor y los alumnos.",
+    "Falta el resultado del profesor frente al alumno directo en la campaña A, que decide la activación."
+  ]
+}
