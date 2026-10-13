@@ -596,4 +596,8 @@ def test_comparison_arm_is_declared_with_its_control_and_rule_but_not_executed()
     assert innovation["memory_gate_bias"] == trivial["memory_gate_bias"]
     rule = declaration["decision_rule"]
     assert rule["keep_if"][0].endswith("<= 0.002") and rule["abandon_if"][0].endswith("> 0.005")
-    assert declaration["pilot"]["gpu_hours_max"] <= 6
+    # El presupuesto sale de la medida versionada del control (PT7, #459). PT1 y su
+    # alternativa trivial cuestan por paso lo mismo que el control dentro de su dispersión.
+    receipt = json.loads((root / declaration["pilot"]["gpu_hours_basis"]).read_text())
+    per_seed = receipt["estimate"]["slowest"]["hours_per_seed"]
+    assert declaration["pilot"]["gpu_hours_max"] == math.ceil(3 * per_seed)

@@ -28,15 +28,23 @@ MAX_DENSE_ORDER = 256
 
 
 def fast_state_dimension(config: MACConfig) -> int:
-    """Orden de z: matrices y momentum y, con convolución, las tres ventanas de un flujo."""
+    """Orden de z: matrices y momentum, con convolución las tres ventanas de un flujo y, con
+    PT5, los niveles ocultos de cada capa."""
     memory = config.memory
-    return 2 * memory.depth * memory.dim**2 + 3 * memory.window * memory.dim
+    matrices = (2 + memory.hidden_levels) * memory.depth
+    return matrices * memory.dim**2 + 3 * memory.window * memory.dim
 
 
 def fast_state_point(state):
-    """Vector z de un estado MAC: pesos rápidos, momentum y ventanas k, v y q, por filas."""
+    """Vector z de un estado MAC: pesos rápidos, momentum, ventanas k, v y q y niveles."""
     memory = state.memory
-    values = (*memory.weights, *memory.momentum, *memory.convolution, *state.convolution)
+    values = (
+        *memory.weights,
+        *memory.momentum,
+        *memory.convolution,
+        *state.convolution,
+        *memory.levels,
+    )
     return torch.cat([value.flatten() for value in values])
 
 
@@ -45,17 +53,25 @@ def fast_state_transition(mac, token, state):
     memory = state.memory
     dim, depth = mac.config.memory.dim, mac.config.memory.depth
     window, count = mac.config.memory.window, len(memory.convolution)
-    sizes = [dim**2] * (2 * depth) + [window * dim] * (count + len(state.convolution))
+    windows_total = count + len(state.convolution)
+    sizes = [dim**2] * (2 * depth) + [window * dim] * windows_total + [dim**2] * len(memory.levels)
 
     def transition(value):
         pieces = value.split(sizes)
         matrices = tuple(piece.reshape(1, dim, dim).clone() for piece in pieces[: 2 * depth])
-        windows = tuple(piece.reshape(1, window, dim).clone() for piece in pieces[2 * depth :])
+        windows = tuple(
+            piece.reshape(1, window, dim).clone()
+            for piece in pieces[2 * depth : 2 * depth + windows_total]
+        )
+        levels = tuple(
+            piece.reshape(1, dim, dim).clone() for piece in pieces[2 * depth + windows_total :]
+        )
         local = replace(
             memory,
             weights=matrices[:depth],
             momentum=matrices[depth:],
             convolution=windows[:count],
+            levels=levels,
         )
         _, following = mac(
             token, replace(state, memory=local, convolution=windows[count:]), differentiable=True

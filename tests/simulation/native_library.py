@@ -5,18 +5,14 @@ from pathlib import Path
 
 import pytest
 
-from mars_titan.simulation.native_runtime import library_path
+from tests.suite_support import missing_native
 
 ROOT = Path(__file__).resolve().parents[2]
 SIMULATOR = ROOT / "build" / "native" / "native-release" / "mars-titan-sim"
 
 # Sin ruta declarada ni compilación native-release la prueba se omite con su motivo. Una ruta
 # declarada inexistente o una biblioteca defectuosa no se omiten y siguen fallando al cargar.
-requires_native_library = pytest.mark.skipif(
-    library_path() is None,
-    reason="Falta la biblioteca nativa de simulación (preset native-release o "
-    "MARS_TITAN_NATIVE_LIBRARY)",
-)
+requires_native_library = pytest.mark.native("MARS_TITAN_NATIVE_LIBRARY")
 NATIVE_BACKEND = pytest.param("native", marks=requires_native_library)
 
 
@@ -30,7 +26,5 @@ def simulator_path():
     if declared:
         return Path(declared).resolve(strict=True)
     if not SIMULATOR.is_file():
-        pytest.skip(
-            "Falta el ejecutable mars-titan-sim (preset native-release o MARS_TITAN_SIM_EXECUTABLE)"
-        )
+        pytest.skip(missing_native("MARS_TITAN_SIM_EXECUTABLE"))
     return SIMULATOR

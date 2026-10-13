@@ -1,0 +1,109 @@
+{
+  "schema_version": 1,
+  "kind": "innovation_arm_declaration",
+  "innovation": "pt4_shared_market_memory",
+  "status": "declared_not_executed",
+  "declared_at": "2026-10-10",
+  "final_test_opened": false,
+  "executions": 0,
+  "issue": 456,
+  "proposal": "docs/research/post-titans-proposals.md",
+  "specification": "docs/engineering/market-memory.md",
+  "base_recipe": "configs/titans/chronological-training-historical-masked.json",
+  "variant": "mac_online",
+  "common_recipe_changes": {
+    "accumulation_rows": null
+  },
+  "arms": {
+    "titans_mac_online": {
+      "role": "control",
+      "predictor_changes": {}
+    },
+    "titans_mac_online_pt4_market_memory": {
+      "role": "innovation",
+      "predictor_changes": {
+        "session_context": "market_memory_v1"
+      }
+    },
+    "titans_mac_online_pt4_sector_mean": {
+      "role": "trivial_alternative",
+      "predictor_changes": {
+        "session_context": "sector_mean_v1",
+        "sector_map": {
+          "source": "dataset"
+        }
+      }
+    }
+  },
+  "equal": [
+    "rows",
+    "windows",
+    "purge",
+    "seeds",
+    "initial_shared_parameters",
+    "search_cases",
+    "optimizer_updates",
+    "stopping_rule",
+    "truncation",
+    "block_rows",
+    "accumulation_rows"
+  ],
+  "metric": {
+    "primary": "relative_difference_of_session_mae_innovation_minus_trivial_alternative",
+    "secondary": "relative_difference_of_session_mae_innovation_minus_control",
+    "pairing": "same_sessions_assets_seeds_and_windows",
+    "uncertainty": "circular_block_bootstrap",
+    "block_length": 16,
+    "replicates": 2000,
+    "confidence": 0.95,
+    "partition": "validation"
+  },
+  "decision_rule": {
+    "keep_if": [
+      "upper_bound_of_relative_mae_difference_against_trivial_alternative < 0",
+      "upper_bound_of_relative_mae_difference_against_control < 0"
+    ],
+    "abandon_if": [
+      "upper_bound_of_relative_mae_difference_against_trivial_alternative >= 0",
+      "upper_bound_of_relative_mae_difference_against_control >= 0",
+      "a_prediction_depends_on_another_row_of_its_own_session"
+    ],
+    "trivial_alternative": "El control sectorial da a cada flujo la media de los tokens de su sector en la sesión anterior, con la misma ganancia de salida en cero y la misma posición en el token. No tiene memoria ni olvido aprendido. Si iguala a la memoria de mercado, lo que aporta es el factor sectorial y no la memoria compartida.",
+    "control": "El control sin contexto mide si alguna de las dos formas mejora a Titans-MAC. Para conservar PT4 debe mejorar a los dos."
+  },
+  "pilot": {
+    "assets": "hasta 64 de EE. UU. con todas las modalidades disponibles, todos en el mismo bloque de cada instante",
+    "validation_windows": [
+      2018,
+      2019,
+      2020
+    ],
+    "training": "expansivo desde 2000",
+    "seeds": {
+      "titans_mac_online": 1,
+      "titans_mac_online_pt4_market_memory": 1,
+      "titans_mac_online_pt4_sector_mean": 1
+    },
+    "gpu_hours_max": 8
+  },
+  "budget": {
+    "declared": {
+      "gpu_hours_max": 8,
+      "models": 3,
+      "seeds_per_model": 1,
+      "search_cases_per_model": "los de la receta base, iguales para los tres"
+    },
+    "consumed": {
+      "gpu_hours": 0,
+      "executions": 0,
+      "optimizer_updates": 0
+    }
+  },
+  "prediction": "Mejora pequeña concentrada en sesiones con movimientos sectoriales y nula en promedio. El control sectorial igualará a la memoria de mercado.",
+  "pending": [
+    "Nada se ha ejecutado. El bloqueo de aprendizaje impide el piloto y la comparación.",
+    "Los tres modelos se ajustan sin acumulación por bloques porque su repetición no reconstruye el contexto entre bloques. Con 64 activos el instante completo cabe en un bloque. La receta base solo la necesita para US y CN completos, así que la comparación a esa escala exige antes implementar la repetición del contexto.",
+    "El reparto sectorial sale de las fichas actuales de FinMultiTime, no de una serie histórica. Una empresa reclasificada después aparece con su sector posterior en todos los años. Los activos sin sector van al grupo desconocido de su mercado.",
+    "Con 64 activos cada sector tiene pocos miembros y la media sectorial es ruidosa. Si el piloto se amplía a 128 activos, los tres modelos se repiten con el mismo universo."
+  ]
+}

@@ -12,11 +12,12 @@ import numpy as np
 import pytest
 
 from mars_titan.models.baselines import external_boosting as external
+from tests.suite_support import missing_extra, skip_without_cuda
 
 pytestmark = [
     pytest.mark.skipif(
         any(importlib.util.find_spec(name) is None for name in ("cupy", "xgboost")),
-        reason="La comprobación CUDA requiere el extra boosting",
+        reason=missing_extra("cupy", "xgboost"),
     ),
     pytest.mark.usefixtures("learning_doubles"),
 ]
@@ -29,9 +30,8 @@ class TrainingBlocked(Exception):
 
 
 def cuda():
-    torch = pytest.importorskip("torch")
-    if not torch.cuda.is_available():
-        pytest.skip("CUDA no disponible, sin alternativa CPU para la ruta externa")
+    pytest.importorskip("torch", reason=missing_extra("torch"))
+    skip_without_cuda()
 
 
 def factory():
@@ -42,7 +42,7 @@ def factory():
 
 
 def blocked_training(monkeypatch, cache, observed):
-    xgb = pytest.importorskip("xgboost")
+    xgb = pytest.importorskip("xgboost", reason=missing_extra("xgboost"))
 
     def train(params, data, *args, **kwargs):
         observed.update(bytes=external.directory_bytes(cache), rows=data.num_row())
@@ -51,6 +51,7 @@ def blocked_training(monkeypatch, cache, observed):
     monkeypatch.setattr(xgb, "train", train)
 
 
+@pytest.mark.cuda
 def test_disk_pages_fit_the_declared_budget_and_the_dense_estimate(tmp_path, monkeypatch):
     cuda()
     cache, observed = tmp_path / "cache", {}
@@ -81,6 +82,7 @@ def test_disk_pages_fit_the_declared_budget_and_the_dense_estimate(tmp_path, mon
     assert observed["bytes"] <= plan["disk_cache_bytes_estimate"] + 16 * 1024**2
 
 
+@pytest.mark.cuda
 def test_disk_guard_stops_the_construction_before_any_round(tmp_path, monkeypatch):
     cuda()
     cache, observed = tmp_path / "cache", {}
