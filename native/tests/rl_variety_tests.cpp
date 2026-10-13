@@ -233,7 +233,7 @@ void on_policy_grpo_equals_gspo() {
 }
 
 // A2C es PPO con una época y un minilote: en cociente uno el recorte no actúa y el gradiente
-// recortado es el de política -A * grad log pi. Sostiene el descarte de A2C como brazo propio.
+// recortado es el de política -A * grad log pi. Sostiene el descarte de A2C como variante propia.
 void ppo_at_unit_ratio_is_policy_gradient() {
     const auto logits =
         (at::arange(18, at::kDouble).reshape({3, 6}).sin() / 2).requires_grad_(true);

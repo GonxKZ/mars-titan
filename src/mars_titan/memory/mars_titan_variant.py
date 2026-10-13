@@ -2,7 +2,7 @@
 
 `configs/titans/mars-titan-extensions.json` fija los componentes, sus valores, su control y
 si están conectados. Este módulo construye solo las combinaciones de componentes conectados y
-rechaza el resto con el motivo declarado. Con todos apagados la variante es el brazo
+rechaza el resto con el motivo declarado. Con todos apagados la variante es el modelo
 Titans-MAC `mac_online` seleccionado, sin lector, con admisión M0 y sin control local, y su
 identidad es la del núcleo. Cada combinación activa tiene una identidad propia.
 """
@@ -69,7 +69,7 @@ def load_declaration(path=DECLARATION):
 
 
 def core_identity(predictor, recipe):
-    """Identidad del brazo Titans-MAC de partida: configuración, parámetros y receta."""
+    """Identidad del modelo Titans-MAC de partida: configuración, parámetros y receta."""
     if type(predictor) is not FinancialPredictor:
         raise ValueError("El núcleo de MARS-TITAN es un FinancialPredictor de Titans-MAC")
     return dict(
@@ -112,7 +112,7 @@ def _associative(value, allowed):
 
 
 def _normalized(correction):
-    # La identidad usa los valores normalizados, así 1 y 1.0 no crean dos brazos.
+    # La identidad usa los valores normalizados, así 1 y 1.0 no crean dos modelos.
     memory = correction.memory
     if memory.rule == "kalman":
         return dict(rule=memory.rule, key=correction.key, **asdict(memory.kalman))

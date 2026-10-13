@@ -22,8 +22,10 @@ La [verificación conjunta del 5 de octubre](../../reports/engineering/experimen
 ```bash
 cmake -S native --preset native-controls-release
 cmake --build build/native/native-controls-release --parallel 1
-ctest --test-dir build/native/native-controls-release --output-on-failure
+ctest --test-dir build/native/native-controls-release --output-on-failure -LE '^optimizer-steps$'
 ```
+
+Mientras rija el bloqueo de aprendizaje, `-LE '^optimizer-steps$'` deja fuera las pruebas que aplican pasos de optimizador. `ctest --preset native-controls-release` ya las excluye.
 
 `native-controls-asan-ubsan` prepara instrumentación separada. `native-controls-static-analysis` incluye clang-tidy durante la compilación y el objetivo `static-analysis` para análisis de rutas. `native-controls-coverage` permite obtener el objetivo `coverage-report` después de ejecutar las pruebas. La cobertura conjunta incluye los ejecutables y pruebas de las piezas nuevas, además del núcleo anterior.
 

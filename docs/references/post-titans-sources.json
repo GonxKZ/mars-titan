@@ -48,7 +48,7 @@
     "url": "https://arxiv.org/abs/1903.11257",
     "access": "Preprint sin sede revisada encontrada. Leídas las ecuaciones de solapamiento y el resultado en Google Speech Commands. Igualdad de parámetros no declarada.",
     "redistribution": "unknown",
-    "relevance": "Capacidad por neurona o por parámetro. Solo justificaría un brazo con el control de más parámetros y el mismo presupuesto.",
+    "relevance": "Capacidad por neurona o por parámetro. Solo justificaría un modelo con el control de más parámetros y el mismo presupuesto.",
     "phase": [
       3,
       4,
@@ -253,7 +253,7 @@
     "url": "https://doi.org/10.1016/j.neuron.2021.07.002",
     "access": "Leído el resumen.",
     "redistribution": "unknown",
-    "relevance": "Capacidad por neurona o por parámetro. Solo justificaría un brazo con el control de más parámetros y el mismo presupuesto.",
+    "relevance": "Capacidad por neurona o por parámetro. Solo justificaría un modelo con el control de más parámetros y el mismo presupuesto.",
     "phase": [
       3,
       4,
@@ -888,7 +888,7 @@
     "url": "https://openreview.net/forum?id=wTLc79YNbh",
     "access": "ICLR 2025, póster. Leídas las tablas 3 y 5. Igualdad de parámetros no declarada en la ablación.",
     "redistribution": "unknown",
-    "relevance": "Capacidad por neurona o por parámetro. Solo justificaría un brazo con el control de más parámetros y el mismo presupuesto.",
+    "relevance": "Capacidad por neurona o por parámetro. Solo justificaría un modelo con el control de más parámetros y el mismo presupuesto.",
     "phase": [
       3,
       4,
@@ -975,7 +975,7 @@
     "url": "https://doi.org/10.3389/fnbot.2022.846219",
     "access": "Acceso abierto. Leídos el modelo y los resultados de MT10 y permutedMNIST. Código numenta/htmpapers con licencia AGPL-3.0 según GitHub.",
     "redistribution": "unknown",
-    "relevance": "Capacidad por neurona o por parámetro. Solo justificaría un brazo con el control de más parámetros y el mismo presupuesto.",
+    "relevance": "Capacidad por neurona o por parámetro. Solo justificaría un modelo con el control de más parámetros y el mismo presupuesto.",
     "phase": [
       3,
       4,
@@ -1043,7 +1043,7 @@
     "url": "https://openreview.net/forum?id=rylnK6VtDH",
     "access": "Leída una copia espejo no oficial porque el PDF de OpenReview pedía verificación de navegador.",
     "redistribution": "unknown",
-    "relevance": "Capacidad por neurona o por parámetro. Solo justificaría un brazo con el control de más parámetros y el mismo presupuesto.",
+    "relevance": "Capacidad por neurona o por parámetro. Solo justificaría un modelo con el control de más parámetros y el mismo presupuesto.",
     "phase": [
       3,
       4,
@@ -1351,7 +1351,7 @@
     "url": "https://proceedings.neurips.cc/paper_files/paper/2016/hash/eaae339c4d89fc102edd9dbdb6a28915-Abstract.html",
     "access": "Leídos el modelo, la capacidad y la Fig. 1. Las páginas solo constan en la referencia de arXiv.",
     "redistribution": "unknown",
-    "relevance": "Capacidad por neurona o por parámetro. Solo justificaría un brazo con el control de más parámetros y el mismo presupuesto.",
+    "relevance": "Capacidad por neurona o por parámetro. Solo justificaría un modelo con el control de más parámetros y el mismo presupuesto.",
     "phase": [
       3,
       4,
@@ -1632,7 +1632,7 @@
     "url": "https://openreview.net/forum?id=Ozo7qJ5vZi",
     "access": "ICLR 2025, presentación oral. Leídos el modelo y las afirmaciones de escalado. Código pykan con licencia MIT.",
     "redistribution": "unknown",
-    "relevance": "Capacidad por neurona o por parámetro. Solo justificaría un brazo con el control de más parámetros y el mismo presupuesto.",
+    "relevance": "Capacidad por neurona o por parámetro. Solo justificaría un modelo con el control de más parámetros y el mismo presupuesto.",
     "phase": [
       3,
       4,
@@ -1746,7 +1746,7 @@
     "url": "https://proceedings.mlr.press/v235/ludziejewski24a.html",
     "access": "ICML 2024. En arXiv el primer autor es Krajewski. Leída la ley de escalado ajustada. Código con licencia Apache-2.0.",
     "redistribution": "unknown",
-    "relevance": "Capacidad por neurona o por parámetro. Solo justificaría un brazo con el control de más parámetros y el mismo presupuesto.",
+    "relevance": "Capacidad por neurona o por parámetro. Solo justificaría un modelo con el control de más parámetros y el mismo presupuesto.",
     "phase": [
       3,
       4,
@@ -2097,7 +2097,7 @@
     "url": "https://doi.org/10.1038/381607a0",
     "access": "Leído el resumen. La función de coste exacta no se verificó.",
     "redistribution": "unknown",
-    "relevance": "Capacidad por neurona o por parámetro. Solo justificaría un brazo con el control de más parámetros y el mismo presupuesto.",
+    "relevance": "Capacidad por neurona o por parámetro. Solo justificaría un modelo con el control de más parámetros y el mismo presupuesto.",
     "phase": [
       3,
       4,
@@ -2272,7 +2272,7 @@
     "url": "https://doi.org/10.1609/aaai.v32i1.11671",
     "access": "Metadatos verificados en Crossref",
     "redistribution": "unknown",
-    "relevance": "Capacidad por neurona o por parámetro. Solo justificaría un brazo con el control de más parámetros y el mismo presupuesto.",
+    "relevance": "Capacidad por neurona o por parámetro. Solo justificaría un modelo con el control de más parámetros y el mismo presupuesto.",
     "phase": [
       3,
       4,
@@ -2313,7 +2313,7 @@
     "url": "https://doi.org/10.1016/S0896-6273(03)00149-1",
     "access": "Leído el resumen.",
     "redistribution": "unknown",
-    "relevance": "Capacidad por neurona o por parámetro. Solo justificaría un brazo con el control de más parámetros y el mismo presupuesto.",
+    "relevance": "Capacidad por neurona o por parámetro. Solo justificaría un modelo con el control de más parámetros y el mismo presupuesto.",
     "phase": [
       3,
       4,
@@ -2393,7 +2393,7 @@
     "url": "https://openreview.net/forum?id=tL89RnzIiCd",
     "access": "Versión de ICLR 2021 con 13 autores. arXiv v3 añade tres autores. Leídos el modelo y el Teorema 3.",
     "redistribution": "unknown",
-    "relevance": "Capacidad por neurona o por parámetro. Solo justificaría un brazo con el control de más parámetros y el mismo presupuesto.",
+    "relevance": "Capacidad por neurona o por parámetro. Solo justificaría un modelo con el control de más parámetros y el mismo presupuesto.",
     "phase": [
       3,
       4,
@@ -2504,7 +2504,7 @@
     "url": "https://arxiv.org/abs/2002.05202",
     "access": "Preprint sin sede revisada encontrada. Leída la Tabla 1.",
     "redistribution": "unknown",
-    "relevance": "Capacidad por neurona o por parámetro. Solo justificaría un brazo con el control de más parámetros y el mismo presupuesto.",
+    "relevance": "Capacidad por neurona o por parámetro. Solo justificaría un modelo con el control de más parámetros y el mismo presupuesto.",
     "phase": [
       3,
       4,
@@ -2579,7 +2579,7 @@
     "url": "https://openreview.net/forum?id=e1wDDFmlVu",
     "access": "ICLR 2025, spotlight. Leídos el modelo, los tamaños y la comparación con modelos densos de igual número de parámetros activos.",
     "redistribution": "unknown",
-    "relevance": "Capacidad por neurona o por parámetro. Solo justificaría un brazo con el control de más parámetros y el mismo presupuesto.",
+    "relevance": "Capacidad por neurona o por parámetro. Solo justificaría un modelo con el control de más parámetros y el mismo presupuesto.",
     "phase": [
       3,
       4,
@@ -3200,7 +3200,7 @@
     "url": "https://arxiv.org/abs/2407.16674",
     "access": "Informe técnico sin sede revisada encontrada. Leída la Fig. 1. Código sin licencia.",
     "redistribution": "unknown",
-    "relevance": "Capacidad por neurona o por parámetro. Solo justificaría un brazo con el control de más parámetros y el mismo presupuesto.",
+    "relevance": "Capacidad por neurona o por parámetro. Solo justificaría un modelo con el control de más parámetros y el mismo presupuesto.",
     "phase": [
       3,
       4,

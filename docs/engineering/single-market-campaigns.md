@@ -1,6 +1,6 @@
 # Campañas temporales por mercado
 
-El coordinador temporal admite un brazo `US` o `CN`. Antes de adquirir CUDA
+El coordinador temporal admite un mercado `US` o `CN`. Antes de adquirir CUDA
 contrasta el mercado de la configuración con el protocolo, los activos y los
 mercados declarados en cada ventana. También verifica el alcance, los hashes,
 las cuatro particiones y el presupuesto. Una edición parcial no puede
@@ -8,7 +8,7 @@ ejecutarse con una configuración que exija `full_corpus`.
 
 La [configuración CN](../../configs/baselines/convergence-temporal-search-cn.json)
 conserva los parámetros de la configuración estadounidense y cambia únicamente
-el brazo. Se mantienen candidatos, semillas 42, 43 y 44, contexto de 64 sesiones,
+el modelo. Se mantienen candidatos, semillas 42, 43 y 44, contexto de 64 sesiones,
 criterio de validación, mínimos, paciencia y continuaciones emparejadas.
 La ponderación es `natural` para todas las familias. La configuración programa,
 en diez ventanas, 400 casos neuronales, 170 tabulares, 1.320 ajustes y
@@ -19,20 +19,20 @@ Estos recuentos son el diseño previsto, no ejecuciones CN completadas.
 
 Las etapas posteriores leen el mercado de la configuración conservada en la
 referencia neuronal. No lo deducen del nombre del directorio. Todas las ventanas
-deben declarar el mismo mercado, y cada ejecución debe pertenecer a ese brazo
+deben declarar el mismo mercado, y cada ejecución debe pertenecer a ese modelo
 con ponderación natural. Se rechaza, por ejemplo, una fila `US` dentro de una
 referencia declarada `CN`, aunque existan otras filas chinas válidas.
 
-El trabajador transmite el brazo a la cola tabular, los ajustes y la evaluación.
+El trabajador transmite el modelo a la cola tabular, los ajustes y la evaluación.
 La interfaz independiente de `mars_titan.posttraining.heldout` acepta
 `--arm US` y `--arm CN`, con `US` como valor predeterminado. El recibo de
-evaluación fija el brazo en su identidad. La continuación también identifica
+evaluación fija el modelo en su identidad. La continuación también identifica
 el mercado y el código que lo verifica. Los padres siguen emparejados por
 semilla y los resultados confirmados se comprueban al reanudar.
 
 Los cortes de cada mercado conservan su calendario y el siguiente cierre
 admisible. Entrenamiento, validación, calibración y evaluación permanecen
-separados. La reserva final no interviene en la selección. El brazo `US+CN`
+separados. La reserva final no interviene en la selección. El modelo `US+CN`
 sigue rechazado por este coordinador porque necesita un contrato para dos
 calendarios y una representación contable común.
 

@@ -79,7 +79,7 @@ def test_needed_partitions_follow_the_comparison_outputs():
     assert needed["US/fold-000/gru/search-b"] == ()
     assert needed["US/fold-000/ridge/search-r1"] == ("evaluation",)
     assert needed["US/fold-000/ridge/search-r2"] == ()
-    # El núcleo auxiliar de CM-v1 no es un brazo comparado.
+    # El núcleo auxiliar de CM-v1 no es un modelo comparado.
     assert needed["US/fold-000/cm_v1_core_b/search-a"] == ()
 
 

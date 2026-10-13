@@ -1,0 +1,11 @@
+{
+  "report": "reports/targets/residual-diagnostics-v3.1-20261013.json",
+  "report_sha256": "a913a90bea848cffd201183042367b8e46736022adbef62c74abc93274cd73f0",
+  "matplotlib": "3.11.2",
+  "figures": {
+    "coverage-by-year.svg": "fb8548cc463a814030d16fdf94068ea944ceaeea0f9c9b523b66866f1a4c3108",
+    "beta-by-month.svg": "24b9126240113cb9ec02d361807a63e730556f8567d7f4515ba2b08ee2217235",
+    "dispersion-by-year.svg": "c3ffa76ac752bd68faddacbff8587b087dfdb6b94d1ad1a7b992ce3072ebafaf",
+    "exposure-by-year.svg": "272e1de1129aa94ad2e318eb23df2fb7df66799a9901390852e7a204eb8f4956"
+  }
+}
