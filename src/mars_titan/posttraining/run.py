@@ -32,6 +32,7 @@ from mars_titan.training.checkpoints import (
     restore_rng,
     save_training_state,
 )
+from mars_titan.training.kernel_policy import declared_policy, require_policy
 from mars_titan.training.learning_hold import require_learning_allowed
 from mars_titan.training.run_receipts import initialize_receipt
 
@@ -412,6 +413,10 @@ def run_case(
         checkpoint_seconds=checkpoint_seconds,
         max_updates=max_updates,
     )
+    # El ajuste hereda la precisión del padre y la fija antes de registrar los indicadores
+    # numéricos de su identidad (#446). La política ya forma parte de la identidad del padre.
+    precision = None if parent is None else parent.precision
+    kernel_policy = declared_policy(precision)
     identity = _identity(
         dataset, parent, case, grid, normalization, budget, batch_size, device, diagnostic
     )
@@ -522,6 +527,7 @@ def run_case(
             nonlocal last_saved
             if case_code(case, dataset) != identity["code"]:
                 raise ValueError("El código ha cambiado durante el postentrenamiento")
+            require_policy(precision, kernel_policy)
             if any(not torch.isfinite(p).all() for p in model.parameters()):
                 raise ValueError("El optimizador ha producido pesos no finitos")
             state.update(
@@ -657,6 +663,7 @@ def run_case(
             )
             if case_code(case, dataset) != identity["code"]:
                 raise ValueError("El código ha cambiado durante la evaluación final")
+            require_policy(precision, kernel_policy)
             report.update(
                 status="completed",
                 checkpoint=dict(path=f"checkpoints/{record['name']}", sha256=record["sha256"]),

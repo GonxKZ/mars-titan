@@ -28,6 +28,7 @@ from mars_titan.training.checkpoints import load_training_state
 from mars_titan.training.financial_run import ChronologicalInference, ChronologicalRecipe
 from mars_titan.training.learning_hold import LearningHoldError
 from mars_titan.training.selection import FIXED_BUDGET
+from tests.learning_hold_lowering import allowed_hold
 from tests.suite_support import missing_native
 from tests.training.chronological_fixture import decision
 from tests.training.test_financial_run import RecordingOptimizer, StopAtStep, corpus, entries
@@ -314,11 +315,20 @@ def runs(shared, tmp_path_factory, native):
 
     _, streams = shared
     root = tmp_path_factory.mktemp("mars-titan-runs")
-    hold = root / "hold.json"
-    hold.write_text(json.dumps({"training_allowed": True}))
+    hold = allowed_hold(root / "hold.json")
     result = {}
+    # Enlaces que reciben las codificaciones del banco, para comprobar que el lector entrega
+    # el suyo y el codec puede proyectar con el núcleo nativo.
+    received = result["codec_natives"] = []
+    encode = FrozenEpisodeCodec.encode
+
+    def recorded(self, batch, *, native=None):
+        received.append(native)
+        return encode(self, batch, native=native)
+
     with pytest.MonkeyPatch.context() as patch:
         patch.setenv(HOLD_ENV, str(hold))
+        patch.setattr(FrozenEpisodeCodec, "encode", recorded)
         previous = torch.backends.mha.get_fastpath_enabled()
         torch.backends.mha.set_fastpath_enabled(False)
         try:
@@ -371,6 +381,11 @@ def test_loop_reaches_the_step_without_changing_any_weight(runs, admission):
             assert 0 <= metrics["relevance_unknown"] <= metrics["admitted"]
     else:
         assert "selective_admitted" not in train
+
+
+def test_reader_encodes_bank_episodes_with_its_native_binding(runs, native):
+    received = runs["codec_natives"]
+    assert received and all(value is native for value in received)
 
 
 def train_passes(audit):
