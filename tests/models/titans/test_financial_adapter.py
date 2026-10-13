@@ -647,3 +647,50 @@ def test_predictor_identity_follows_mode_dtype_and_loads():
     assert model._config_id() == expected(model) != training
     model.float().train()
     assert model._config_id() == training
+
+
+@pytest.mark.parametrize(
+    ("fault", "message"),
+    [
+        ("other_cut", "^La muestra no identifica flujo y corte$"),
+        ("cut_prefix", "^La muestra no identifica flujo y corte$"),
+        ("extra_slash", "^La muestra no identifica flujo y corte$"),
+        ("lowercase", "^La muestra no identifica flujo y corte$"),
+        ("only_cut", "^La muestra no identifica flujo y corte$"),
+        ("too_long", "^El ID de muestra no está admitido$"),
+        ("not_text", "^El ID de muestra no está admitido$"),
+        ("negative_availability", "^La entrada procede del futuro"),
+        ("availability_after_cut", "^La entrada procede del futuro"),
+        ("two_cuts", "^El lote necesita un único corte"),
+        ("reserved_year", "^El lote necesita un único corte"),
+    ],
+)
+def test_cpu_boundary_names_each_identity_fault(fault, message):
+    raw, at = raw_batch(), 1_609_459_200_000_000
+    ids = raw["sample_ids"]
+    if fault == "other_cut":
+        ids[1] = f"US/BBB/{at + 1}"
+    elif fault == "cut_prefix":
+        ids[1] = f"US/BBB/{at}0"
+    elif fault == "extra_slash":
+        ids[1] = f"US/BB/B/{at}"
+    elif fault == "lowercase":
+        ids[1] = f"US/bbb/{at}"
+    elif fault == "only_cut":
+        ids[1] = f"/{at}"
+    elif fault == "too_long":
+        ids[1] = f"US/{'B' * 120}/{at}"
+    elif fault == "not_text":
+        ids[1] = 7
+    elif fault == "negative_availability":
+        raw["input_available_at"][1] = np.datetime64(-1, "us")
+    elif fault == "availability_after_cut":
+        raw["input_available_at"][1] = np.datetime64(at + 1, "us")
+    elif fault == "two_cuts":
+        raw["prediction_at"][1] = np.datetime64(at + 1, "us")
+    else:
+        late = 1_704_067_200_000_000
+        raw["prediction_at"][:] = np.datetime64(late, "us")
+        raw["sample_ids"] = [f"US/AAA/{late}", f"US/BBB/{late}"]
+    with pytest.raises(ValueError, match=message):
+        api().DecisionBatch.from_corpus(raw, specification())

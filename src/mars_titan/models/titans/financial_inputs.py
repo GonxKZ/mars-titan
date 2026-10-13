@@ -103,7 +103,8 @@ def _timestamps(values, size, name):
         or np.isnat(values).any()
     ):
         raise ValueError(f"{name} necesita fechas conocidas en microsegundos UTC")
-    return tuple(int(value) for value in values.astype(np.int64))
+    # `tolist` da los mismos enteros de Python que `int` sobre cada elemento.
+    return tuple(values.astype(np.int64).tolist())
 
 
 def _frozen(value):
@@ -167,21 +168,26 @@ def _decision_identity(batch, size, specification):
     moments = _timestamps(batch.get("prediction_at"), size, "prediction_at")
     available = _timestamps(batch.get("input_available_at"), size, "input_available_at")
     lower = HISTORICAL_START_US if masked_inputs(specification.input_policy) else 0
-    if len(set(moments)) != 1 or any(not lower <= at < FINAL_TEST_US for at in moments):
+    # Con un único corte, cada fila se compara con el mismo instante y el mismo sufijo.
+    at = moments[0]
+    if len(set(moments)) != 1 or not lower <= at < FINAL_TEST_US:
         raise ValueError("El lote necesita un único corte admitido anterior a 2024")
-    if any(not 0 <= known <= at for known, at in zip(available, moments, strict=True)):
+    if min(available) < 0 or max(available) > at:
         raise ValueError("La entrada procede del futuro o no tiene disponibilidad válida")
     ids = batch.get("sample_ids")
     if not isinstance(ids, (tuple, list)) or len(ids) != size:
         raise ValueError("Faltan IDs de muestra")
+    # Como el corte no contiene «/», terminar en «/corte» equivale a que `rsplit("/", 1)`
+    # dé dos partes con el corte en la segunda, y el flujo es la primera.
+    suffix = f"/{at}"
     flows = []
-    for identifier, at in zip(ids, moments, strict=True):
+    for identifier in ids:
         if not isinstance(identifier, str) or len(identifier) > 128:
             raise ValueError("El ID de muestra no está admitido")
-        split = identifier.rsplit("/", 1)
-        if len(split) != 2 or split[1] != str(at) or FLOW_ID.fullmatch(split[0]) is None:
+        flow = identifier[: -len(suffix)]
+        if not identifier.endswith(suffix) or FLOW_ID.fullmatch(flow) is None:
             raise ValueError("La muestra no identifica flujo y corte")
-        flows.append(split[0])
+        flows.append(flow)
     if len(set(flows)) != size:
         raise ValueError("El lote repite un flujo")
     return tuple(flows), tuple(ids), moments, available
