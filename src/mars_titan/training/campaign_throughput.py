@@ -312,8 +312,11 @@ def _posttraining_hours(stage, counts, rates, fresh=None):
     cadena trivial de Ridge y XGBoost quedan en `without_estimate`, sin sumar sus horas. Un
     control de repaso ajusta en cada época además sus filas de repaso, estimadas con
     `replay_continuation.estimated_epoch_rows`. La lectura de las sesiones anteriores no
-    se cuenta, como el resto de lecturas de disco.
+    se cuenta, como el resto de lecturas de disco. Los objetivos lineales de #128 no tienen
+    medida propia: su corrección no recorre la red en cada época, así que se acotan por
+    arriba con el caudal de la continuación completa del mismo padre.
     """
+    from mars_titan.posttraining import predictive_objectives as predictive
     from mars_titan.posttraining import replay_continuation as replay
     from mars_titan.posttraining.campaign_stage import FROZEN, plan_stage
 
@@ -349,7 +352,8 @@ def _posttraining_hours(stage, counts, rates, fresh=None):
         cache = _slowest(neural[job["base_arm"]].values())["inference"]
         if job["kind"] == FROZEN:
             return (rows["validation"] + rows["calibration"] + rows["evaluation"]) / cache
-        rate = _slowest([points[job["point"]] for points in measured[job["base_arm"]].values()])
+        point = "full_continuation" if job["control"] in predictive.CONTROLS else job["point"]
+        rate = _slowest([points[point] for points in measured[job["base_arm"]].values()])
         if replay.KEY in job["case"]:
             rows = dict(
                 rows,
@@ -762,10 +766,12 @@ def measure_posttraining(stage, view, *, batches=50, warmup=5):
     El padre es la referencia del modelo base con los pesos iniciales de su caso, porque
     los padres elegidos todavía no existen. Cada modelo de la matriz y la continuación
     completa se construyen como en `posttraining.run.build_model`. Los casos de una
-    semilla bastan: las demás solo cambian la inicialización.
+    semilla bastan: las demás solo cambian la inicialización. Los objetivos lineales de #128
+    necesitan el normalizador del padre y no se miden aquí.
     """
     from mars_titan.data.embeddings import require_cuda
     from mars_titan.models.quantile_head import CONTRACT
+    from mars_titan.posttraining import predictive_objectives as predictive
     from mars_titan.posttraining.campaign_stage import _cases
     from mars_titan.posttraining.parents import FrozenParent
     from mars_titan.posttraining.run import build_model
@@ -788,7 +794,8 @@ def measure_posttraining(stage, view, *, batches=50, warmup=5):
                 parent = FrozenParent(model, dict(identity, model=family), shapes, device)
                 points = rates[arm][name] = {}
                 for item in _cases(stage, dict(design=None, family=family)):
-                    if item["case"]["seed"] != seed:
+                    # La corrección lineal de #128 se acota con la continuación completa.
+                    if item["case"]["seed"] != seed or item["control"] in predictive.CONTROLS:
                         continue
                     adapted = build_model(parent, item["case"], None, None).to(device)
                     record = _batch_rates(

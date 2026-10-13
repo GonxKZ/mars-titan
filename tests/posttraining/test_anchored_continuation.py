@@ -22,6 +22,7 @@ from mars_titan.posttraining import (
     stage_comparison,
 )
 from mars_titan.posttraining import chronological_matrix as cm
+from mars_titan.posttraining import predictive_objectives as predictive
 from mars_titan.posttraining import replay_continuation as replay
 from mars_titan.posttraining.run import case_code, run_case, validate_case
 from mars_titan.training.anchored_decay import INITIAL
@@ -59,10 +60,12 @@ def _mutated(document, change):
 def test_the_references_add_the_anchored_continuation_after_the_full_one(matrix, head):
     document, digest = matrix
     assert document[ANCHORED] == dict(anchor=INITIAL, campaign=["references"])
-    # Los tres controles de repaso de #55 siguen a la continuación anclada.
-    expected = ["full_continuation", ANCHORED, *replay.CONTROLS]
+    # Los tres controles de repaso de #55 siguen a la continuación anclada, y después los
+    # objetivos de #128. Un padre escalar ya ajusta el MAE con su corrección lineal.
+    expected = ["full_continuation", ANCHORED, *replay.CONTROLS, *predictive.CONTROLS]
     if head == adapter_matrix.SCALAR:
         expected = ["linear_residual", *expected]
+        expected.remove("objective_mae")
     for family in adapter_matrix.FAMILIES:
         items = adapter_matrix.cases(document, digest, family, head=head)
         for seed in document["budget"]["seeds"]:

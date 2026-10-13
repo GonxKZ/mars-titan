@@ -15,9 +15,11 @@ Por cada modelo base y semilla, un trabajo de predicción aplica sin ajustar el 
 congelado a la ventana k, y una selección elige el predictor de la cadena con
 `chain_validation_score_v1` (`staged_chain`) entre el padre congelado, los casos de
 adaptadores y la continuación completa. La selección escribe los recibos walk-forward de
-la cadena y `selection.json` al final. En la ventana 0 no hay postentrenamiento y el
-predictor de la cadena es el estado elegido de la base. El reentreno completo de la ventana
-k (la campaña base) es el contraste, no un candidato.
+la cadena y `selection.json` al final. Los objetivos de la corrección lineal de #128
+(`predictive_objectives`) solo emiten la mediana: se ajustan y se comparan, pero no compiten
+en la cadena. En la ventana 0 no hay postentrenamiento y el predictor de la cadena es el
+estado elegido de la base. El reentreno completo de la ventana k (la campaña base) es el
+contraste, no un candidato.
 
 La variante B (reentreno cada 36 meses con traslados) conserva su plan para los recuentos,
 pero no se ejecuta por decisión del 9 de octubre de 2026.
@@ -87,6 +89,7 @@ from mars_titan.training.learning_hold import LearningHoldError, require_learnin
 
 from . import adapter_matrix, anchored_continuation, staged_chain, staged_rows
 from . import chronological_matrix as cm
+from . import predictive_objectives as predictive
 from . import replay_continuation as replay
 from .heldout import evaluate_partition
 from .matrix_runs import MatrixParent, MatrixWindow, index_manifest, predict_heldout
@@ -116,7 +119,7 @@ _FIELDS = {
 # Campos que solo declara la variante A, la única con walk-forward por etapas.
 _STAGED_FIELDS = {"chain_rule", "data_policy"}
 # Secciones de la matriz cuyos controles una etapa ejecuta solo si las nombra: la
-# continuación anclada de #444 y los tres controles de repaso de #55.
+# continuación anclada de #444, los tres controles de repaso de #55 y los objetivos de #128.
 ADDITIONAL = "additional_controls"
 OPTIONAL_CONTROLS = {
     anchored_continuation.CONTROL: (
@@ -124,6 +127,7 @@ OPTIONAL_CONTROLS = {
         (anchored_continuation.CONTROL,),
     ),
     replay.SECTION_NAME: (replay.declared, replay.CONTROLS),
+    predictive.SECTION_NAME: (predictive.declared, predictive.CONTROLS),
 }
 _LIMITS = {"max_training_jobs", "max_prediction_jobs"}
 # Diseños de la etapa: por etapas en A y el plan anclado de B, que no se ejecuta.
@@ -407,8 +411,8 @@ def _stage_controls(value, matrix):
 def _cases(stage, spec):
     """Casos de la matriz de un modelo base: los neuronales o los cronológicos.
 
-    La continuación anclada y los controles de repaso solo entran si la etapa nombra su
-    sección en `additional_controls`.
+    La continuación anclada, los controles de repaso y los objetivos de #128 solo entran si
+    la etapa nombra su sección en `additional_controls`.
     """
     matrix, digest = stage["matrix"], stage["matrix_sha256"]
     if spec["design"] == FROZEN_ONLY:
@@ -528,17 +532,26 @@ def _anchored_plan(stage):
     return jobs
 
 
+def chain_candidate(job):
+    """Si el trabajo compite en la cadena. Los objetivos de #128 solo emiten la mediana y
+    se comparan aparte, porque la cadena da a las políticas los cinco niveles."""
+    return job["control"] not in predictive.CONTROLS
+
+
 def plan_chain(stage, jobs):
     """Selecciones de la cadena de cada ámbito, ventana, modelo base y semilla.
 
     En la ventana 0 dependen de los trabajos base que eligen el estado. En las demás, del
-    padre congelado y de todos los casos de su ventana, modelo base y semilla.
+    padre congelado y de todos los casos de su ventana, modelo base y semilla que compiten en
+    la cadena.
     """
     _require(stage["design"] == STAGED, "Solo el walk-forward por etapas tiene cadena")
     campaign = stage["campaign"]
     base_jobs = plan_campaign(campaign)
     grouped = {}
     for job in jobs:
+        if not chain_candidate(job):
+            continue
         key = (job["scope"], job["window"], job["base_arm"], job["seed"])
         grouped.setdefault(key, []).append(job["id"])
     families = {(job["scope"], job["base_arm"]): job["family"] for job in jobs}
@@ -709,6 +722,7 @@ def _code():
         "posttraining/replay_continuation.py",
         "posttraining/replay_inputs.py",
         "memory/regimes.py",
+        "posttraining/predictive_objectives.py",
         "posttraining/run.py",
         "posttraining/heldout.py",
         "posttraining/evaluation.py",
@@ -1308,8 +1322,8 @@ class _Stage:
         window = resolved["windows"][job["window"]]
         view = self.view(job["scope"], job["window"])
         proof = self.proof(job["scope"], job["window"], job["parent_window"])
-        # Ridge y XGBoost emiten solo la predicción puntual, sin la cabeza de cuantiles.
-        quantiles = not self.tabular(job)
+        # Ridge, XGBoost y los objetivos de #128 emiten solo la predicción puntual.
+        quantiles = not self.tabular(job) and job["control"] not in predictive.CONTROLS
         columns = comparison.COLUMNS + (QUANTILE_COLUMNS if quantiles else ())
         if self.campaign.get("numerics"):
             campaign_numerics.require_job(self.campaign["numerics"], job["id"], result)

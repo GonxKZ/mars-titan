@@ -390,6 +390,39 @@ def test_the_replay_controls_add_their_epoch_rows_to_the_estimate():
     assert found["hours"] - base["hours"] == pytest.approx(expected)
 
 
+def test_the_objectives_are_bounded_by_the_rate_of_the_full_continuation():
+    """Los seis objetivos lineales de #128 no tienen medida propia.
+
+    A no los nombra en su etapa. Con ellos, cada ventana, referencia y semilla añade seis
+    ajustes que recorren las 6.000 filas nuevas con el caudal de la continuación completa
+    de su padre, aunque los puntos de los objetivos declaren otro.
+    """
+    from mars_titan.posttraining import predictive_objectives as predictive
+
+    stage = campaign_stage.load_stage(STAGES["A"])
+    campaign = load_campaign(CAMPAIGNS["A"])
+    counts, rates = growing(campaign, 12_000)
+    rates[throughput.POSTTRAINING] = matrix_points(stage, slower=2.0)
+    for candidates in rates[NEURAL].values():
+        list(candidates.values())[-1]["inference"] = 200.0
+    family = throughput.POSTTRAINING
+    base = throughput.estimate_hours(campaign, counts, rates, stage=stage)["families"][family]
+    named = dict(
+        stage, additional_controls=[*stage["additional_controls"], predictive.SECTION_NAME]
+    )
+    for parents in rates[throughput.POSTTRAINING].values():
+        for points in parents.values():
+            for control in predictive.CONTROLS:
+                points[control] = dict(train=1e9, inference=1e9)
+    found = throughput.estimate_hours(campaign, counts, rates, stage=named)["families"][family]
+    jobs = 6 * 630
+    assert found["training_jobs"] == base["training_jobs"] + jobs
+    assert found["parent_caches"] == base["parent_caches"]
+    validation = (7 * 4_000 + 10_000) / 200
+    expected = jobs * (5 * 6_000 / 50 + validation) / 3600
+    assert found["hours"] - base["hours"] == pytest.approx(expected)
+
+
 def test_the_measured_stage_contains_the_cases_of_both_matrix_versions():
     # A declara la matriz v3 y B la v2. Los casos de las redes de B están en A salvo por la
     # huella, y A añade los adaptadores de la variedad, así que se mide A en cualquier orden.
@@ -629,9 +662,18 @@ def test_matrix_measurement_covers_every_case_without_changing_the_parent(
     )
     budget = dict(stage["matrix"]["budget"], batch_size=1)
     stage.update(families={"gru": "gru"}, matrix=dict(stage["matrix"], budget=budget))
+    from mars_titan.posttraining import predictive_objectives as predictive
     from mars_titan.posttraining import replay_continuation as replay
     from mars_titan.posttraining import run as posttraining_run
 
+    # La etapa nombra aquí los objetivos de #128 para comprobar que se planifican pero no se
+    # miden: su corrección lineal necesita el normalizador del padre y `budget` la acota con
+    # la continuación completa.
+    stage["additional_controls"] = [*stage["additional_controls"], predictive.SECTION_NAME]
+    planned = {
+        item["control"] for item in campaign_stage._cases(stage, dict(design=None, family="gru"))
+    }
+    assert set(predictive.CONTROLS) <= planned
     built, build = [], posttraining_run.build_model
     monkeypatch.setattr(
         posttraining_run,
@@ -651,7 +693,8 @@ def test_matrix_measurement_covers_every_case_without_changing_the_parent(
         for item in adapter_matrix.cases(
             stage["matrix"], stage["matrix_sha256"], "gru", head=QUANTILE_HEAD
         )
-        if item["case"]["seed"] == 42 and item["control"] not in replay.CONTROLS
+        if item["case"]["seed"] == 42
+        and item["control"] not in (*replay.CONTROLS, *predictive.CONTROLS)
     ]
     assert built == [42] * len(declared)
     assert len(optim_module._global_optimizer_pre_hooks) == hooks

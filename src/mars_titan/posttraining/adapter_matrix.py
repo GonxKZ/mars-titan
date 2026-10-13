@@ -15,6 +15,8 @@ de un solo punto (`adapter_variety`), y `anchored_continuation`, con el control 
 continuación completa cuyo decaimiento se ancla al padre (`anchored_continuation`). La
 sección opcional `replay_continuation` de #55 añade los tres controles de repaso
 (`replay_continuation`), que comparten entre ellos un presupuesto mayor que el de los demás.
+La sección opcional `predictive_objectives` de #128 añade un control por objetivo de la
+corrección lineal residual (`predictive_objectives`), con el presupuesto de la continuación.
 """
 
 import itertools
@@ -27,6 +29,7 @@ from mars_titan.models.predictive_adaptation import AdapterTarget, target_shape
 from mars_titan.models.quantile_head import QUANTILE_HEAD
 
 from . import adapter_variety, anchored_continuation
+from . import predictive_objectives as predictive
 from . import replay_continuation as replay
 from .anchored_continuation import ANCHOR
 from .inputs import fingerprint
@@ -121,10 +124,12 @@ def validate_matrix(matrix):
         "selection",
         "architectures",
     }
-    # Solo la versión 3 admite las secciones opcionales de #444 y #55.
+    # Solo la versión 3 admite las secciones opcionales de #444, #55 y #128.
     version_three = isinstance(matrix, dict) and matrix.get("schema_version") == 3
     optional = (
-        {"variety", anchored_continuation.CONTROL, replay.SECTION_NAME} if version_three else set()
+        {"variety", anchored_continuation.CONTROL, replay.SECTION_NAME, predictive.SECTION_NAME}
+        if version_three
+        else set()
     )
     _require(
         isinstance(matrix, dict)
@@ -216,6 +221,8 @@ def validate_matrix(matrix):
         anchored_continuation.validate(matrix[anchored_continuation.CONTROL], matrix)
     if replay.SECTION_NAME in matrix:
         replay.validate(matrix[replay.SECTION_NAME], matrix)
+    if predictive.SECTION_NAME in matrix:
+        predictive.validate(matrix[predictive.SECTION_NAME])
     from .run import validate_case
 
     # Los casos derivados deben pertenecer al diseño emparejado del ajuste.
@@ -356,9 +363,9 @@ def cases(matrix, digest, family, *, head=SCALAR, reserve=False):
     """Casos del ajuste, en orden fijo. El padre congelado se evalúa sin actualizaciones.
 
     Los objetivos dependen de la cabeza del padre. Un control excluido para esa cabeza
-    no genera caso. La continuación anclada y después los tres controles de repaso siguen a
-    la completa si la matriz los propone para las referencias. `reserve` incluye los modelos
-    y los controles de reserva de #444 y #55.
+    no genera caso. La continuación anclada, los tres controles de repaso y los objetivos de
+    #128 siguen a la completa si la matriz los propone para las referencias. `reserve`
+    incluye los modelos y los controles de reserva de #444, #55 y #128.
     """
     _family(family)
     declared = objectives(matrix, head)
@@ -406,6 +413,16 @@ def cases(matrix, digest, family, *, head=SCALAR, reserve=False):
                     ),
                 )
                 for control in replay.CONTROLS
+            ]
+        if predictive.proposed(matrix, adapter_variety.REFERENCES, reserve=reserve):
+            linear = declared["linear_residual"]
+            result += [
+                dict(
+                    id=f"seed-{seed}/{predictive.control(mode)}",
+                    control=predictive.control(mode),
+                    case=_case(matrix, seed, mode),
+                )
+                for mode in predictive.modes(matrix, None if isinstance(linear, dict) else linear)
             ]
         for arm in arms(matrix, family, reserve=reserve):
             adapter = dict(
@@ -544,7 +561,7 @@ def plan(matrix, digest, family, model, *, updates_per_epoch, linear_features):
     ]
     for item in cases(matrix, digest, family, head=head):
         case = item["case"]
-        if item["control"] == "linear_residual":
+        if item["control"] == "linear_residual" or item["control"] in predictive.CONTROLS:
             # Una capa lineal float32 sobre modalidades, bits y predicción del padre.
             count, size, invalidates = linear_features + 1, 4, []
         elif item["control"] in CONTINUATIONS:

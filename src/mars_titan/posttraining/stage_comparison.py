@@ -7,7 +7,9 @@ congelado, la continuación completa (control ``full_continuation`` de la matriz
 modelos adaptados de la matriz para la familia del padre. Si la etapa ejecuta la
 continuación con el decaimiento anclado al padre (``anchored_continuation``, #444), entra
 con su propio papel, y lo mismo ocurre con cada control de repaso de #55
-(``replay_uniform``, ``replay_regime_balanced`` y ``repeat_new_rows``). Una familia cuya
+(``replay_uniform``, ``replay_regime_balanced`` y ``repeat_new_rows``) y con cada objetivo
+de la corrección lineal de #128 (``objective_reinforce`` y los demás). Los objetivos solo
+emiten la mediana, así que entran con salida puntual y sin calibración. Una familia cuya
 base no existe para un padre no se deriva para él y un papel ausente no aporta variantes.
 
 En el walk-forward por etapas de la variante A, el padre congelado es el trabajo
@@ -50,6 +52,7 @@ from mars_titan.evaluation import long_short_comparison
 from mars_titan.evaluation import walk_forward_comparison as walk
 from mars_titan.training import campaign_chain
 
+from . import predictive_objectives as predictive
 from . import replay_continuation as replay
 from .campaign_stage import FROZEN as FROZEN_JOB
 from .campaign_stage import (
@@ -70,7 +73,7 @@ FROZEN, CONTINUATION, ADAPTED = "frozen_parent", "full_continuation", "adapted"
 ANCHORED = "anchored_continuation"
 CHAIN, BASE = "chain", "base_retrain"
 # Papeles que puede tener un control de la matriz. El padre congelado sale del plan.
-CONTROLS = (CONTINUATION, ANCHORED, *replay.CONTROLS)
+CONTROLS = (CONTINUATION, ANCHORED, *replay.CONTROLS, *predictive.CONTROLS)
 ROLES = (FROZEN, *CONTROLS, ADAPTED, CHAIN, BASE)
 # Papeles que pueden hacer de base de una familia: el padre congelado, los controles y el
 # reentreno.
@@ -82,6 +85,7 @@ ARM_FAMILIES = {
     CONTINUATION: "posttraining_control",
     ANCHORED: "posttraining_control",
     **{control: "posttraining_control" for control in replay.CONTROLS},
+    **{control: "posttraining_objective" for control in predictive.CONTROLS},
     ADAPTED: "posttraining_adapter",
     CHAIN: "posttraining_chain",
 }
@@ -229,9 +233,9 @@ def derive_config(declaration, stage, base_arm, groups):
         for arm in roles[role]:
             if arm == base_arm:
                 continue
-            arms[arm] = dict(
-                family=ARM_FAMILIES[role], output=parent["output"], seeds=parent["seeds"]
-            )
+            # Los objetivos de #128 corrigen la mediana y no emiten cuantiles.
+            output = walk.POINT if role in predictive.CONTROLS else parent["output"]
+            arms[arm] = dict(family=ARM_FAMILIES[role], output=output, seeds=parent["seeds"])
     # Las familias de la continuación anclada solo existen en los padres que la tienen.
     families = {
         name: dict(
@@ -301,6 +305,9 @@ def check_declaration(path):
                 anchored_continuation=loaded["groups"][base_arm][ANCHORED],
                 replay={
                     control: loaded["groups"][base_arm][control] for control in replay.CONTROLS
+                },
+                objectives={
+                    control: loaded["groups"][base_arm][control] for control in predictive.CONTROLS
                 },
                 adapted=loaded["groups"][base_arm][ADAPTED],
                 chain=loaded["groups"][base_arm][CHAIN]
@@ -426,7 +433,9 @@ def write_sources(declaration_path, scope, base_arm, *, base_sources, stage_outp
         view_sha256 = base["views"][job["window"]]
         receipt = _stage_receipt(stage_output, job, identity, view_sha256)
         entry = dict(input_policy=policy, view_sha256=view_sha256)
-        for part in COMPARED:
+        # Una salida puntual no tiene calibración que comparar.
+        point = job["control"] in predictive.CONTROLS
+        for part in ("evaluation",) if point else COMPARED:
             record = receipt["predictions"][part]
             entry[part] = dict(
                 path=relative(stage_output / record["path"]), sha256=record["sha256"]
@@ -479,6 +488,11 @@ def evaluate(declaration_path, sources_path, scope, base_arm, *, edition=None):
             FROZEN: loaded["groups"][base_arm][FROZEN],
             CONTINUATION: loaded["groups"][base_arm][CONTINUATION],
             ANCHORED: loaded["groups"][base_arm][ANCHORED],
+            **{
+                control: loaded["groups"][base_arm][control]
+                for control in predictive.CONTROLS
+                if loaded["groups"][base_arm][control] is not None
+            },
             ADAPTED: loaded["groups"][base_arm][ADAPTED],
             **(
                 {CHAIN: loaded["groups"][base_arm][CHAIN]}
