@@ -39,8 +39,8 @@ EXPECTED = dict(
         posttraining="posttraining/historical-masked-adapter-comparison-a-v2.json",
     ),
 )
-# Modelos de integración que la matriz declara y la comparación conjunta todavía no tiene.
-PENDING_IN_V2 = {
+# Modelos de integración que la comparación conjunta de A v2 declara desde #525.
+INTEGRATION_ARMS = {
     "mars_titan_b6",
     "mars_titan_b6_bias",
     "mars_titan_m1_k4_first_read",
@@ -75,14 +75,14 @@ def test_each_campaign_publishes_the_matrix_and_the_stage_of_its_own_comparison(
     assert loaded["final_test_opened"] is False
 
 
-def test_the_v2_matrix_leaves_pending_the_arms_its_joint_comparison_lacks():
+def test_the_v2_matrix_reads_the_integration_arms_from_its_joint_comparison():
     loaded = publication.load_publication(DECLARATIONS["A_V2"])
     arms = set(loaded["campaign_config"]["comparison_config"]["arms"])
-    conditional = loaded["matrix"]["conditional_arms"]
-    assert PENDING_IN_V2 <= set(conditional) and not PENDING_IN_V2 & arms
-    for arm in PENDING_IN_V2:
-        assert conditional[arm]["issue"] == 437
-        assert "comparación conjunta de A v2 todavía no declara" in conditional[arm]["condition"]
+    matrix = loaded["matrix"]
+    # Ya no quedan condicionados: sus contrastes se estiman con la campaña.
+    assert INTEGRATION_ARMS <= arms and not INTEGRATION_ARMS & set(matrix["conditional_arms"])
+    assert set(matrix["conditional_arms"]) == {"titans_reference_mac"}
+    assert {matrix["arms"].kind(arm) for arm in INTEGRATION_ARMS} == {"declared"}
     # El resto de la matriz es la de A: mismas preguntas, linajes y vistas.
     matrix_a = json.loads((CONFIGS / EXPECTED["A"]["matrix"]).read_text())
     matrix_v2 = json.loads((CONFIGS / EXPECTED["A_V2"]["matrix"]).read_text())
@@ -150,7 +150,11 @@ def test_the_campaign_script_checks_the_declaration_without_reading_predictions(
     assert result["campaign"] == dict(name=campaign["name"], sha256=campaign["sha256"])
     assert result["matrix"]["families"] == 47
     assert result["posttraining"]["scopes"] == ["US+CN"]
-    assert len(result["posttraining"]["parents"]) == 20
+    # Desde #525 entra mars_titan_m1_k4_first_read. Los seis B6 solo trasladan el padre
+    # congelado, sin adaptadores, así que no tienen comparación postentrenada.
+    parents = result["posttraining"]["parents"]
+    assert len(parents) == 21 and "mars_titan_m1_k4_first_read" in parents
+    assert not {arm for arm in parents if arm.startswith("mars_titan_b6")}
 
 
 def test_the_campaign_plan_registers_the_publication_as_its_last_stage():
