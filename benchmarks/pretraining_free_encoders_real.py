@@ -37,6 +37,7 @@ import pyarrow.parquet as pq
 from mars_titan.data import pretraining_free_encoders as pf
 from mars_titan.data.charts import chart_png
 from mars_titan.data.storage import atomic_json
+from mars_titan.hardware.platform_identity import cpu_name
 
 ROOT = Path(__file__).resolve().parents[1]
 TEXT_MODEL = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
@@ -321,14 +322,7 @@ def main(argv=None):
         sensitivity=sensitivity,
         weights_history=history,
         environment=dict(
-            cpu=next(
-                (
-                    line.split(":", 1)[1].strip()
-                    for line in Path("/proc/cpuinfo").read_text().splitlines()
-                    if line.startswith("model name")
-                ),
-                platform.processor(),
-            ),
+            cpu=cpu_name(),
             python=platform.python_version(),
             omp_threads=os.environ.get("OMP_NUM_THREADS"),
             load_average_at_start=load,
