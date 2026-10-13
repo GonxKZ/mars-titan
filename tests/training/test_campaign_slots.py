@@ -34,7 +34,7 @@ from mars_titan.training.campaign_slots import (
     wait,
 )
 from mars_titan.training.input_pipeline import PipelineOptions
-from tests.hardware.platform_doubles import laptop
+from tests.hardware.platform_doubles import desktop
 from tests.training import slot_doubles
 from tests.training.test_masked_campaign import prepared, write_campaign  # noqa: F401
 
@@ -299,12 +299,10 @@ def test_a_declaration_for_another_machine_stops_the_campaign_before_writing(
     prepared,  # noqa: F811
     tmp_path,
 ):
-    # Los presupuestos de la RTX 4070 caben en la GB10, pero la plataforma no es la suya.
-    execution = load_execution(
-        write_execution(tmp_path / "execution.json", hardware_profile="dgx-gb10")
-    )
+    # La declaración es la del portátil, pero la campaña corre en otra máquina.
+    execution = load_execution(write_execution(tmp_path / "execution.json"))
     output = tmp_path / "out"
-    with pytest.raises(ValueError, match="no corresponde al perfil dgx-gb10"):
+    with pytest.raises(ValueError, match="no corresponde al perfil rtx4070-laptop"):
         engine.run_campaign(
             campaign_file(tmp_path),
             {"US": prepared.views["US"]},
@@ -313,7 +311,7 @@ def test_a_declaration_for_another_machine_stops_the_campaign_before_writing(
             lease=nullcontext,
             stop=SimpleNamespace(requested=False),
             execution=execution,
-            platform=laptop(),
+            platform=desktop(),
         )
     assert not output.exists()
 

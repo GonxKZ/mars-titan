@@ -29,6 +29,8 @@ Con `--gil` solo se guardan las muestras en las que el hilo tiene el GIL. PyTorc
 
 `--native` añade los marcos de C++ pero no sirve en estos recorridos. py-spy detiene el proceso en cada muestra y desenrollar las pilas de libtorch de todos los hilos tarda más que el intervalo de muestreo. En mac_online el recorrido pasó de 37 s a más de cinco minutos, con la GPU trabajando mientras el proceso estaba detenido, así que el reparto resultante no representa el recorrido real.
 
+`benchmarks/collapsed_profile_summary.py` resume una sola captura `--format raw`, con o sin `--threads`, cuando no hace falta el reparto del GIL o la raíz no es `_train_pass`. Cuenta las muestras que pasan por una raíz elegida y da la parte inclusiva de las funciones pedidas y las hojas con más muestras propias. `nombre@archivo` separa funciones con el mismo nombre, como el `encode` del codec episódico y el del codificador JSON. El [informe del cableado de opciones](../../reports/engineering/campaign-kernels-wiring-20261010/README.md) lo usa con la raíz `_train_pass` de los lectores y con la del benchmark de emisión de Titans-MAC.
+
 ## memray
 
 ```bash
@@ -72,3 +74,5 @@ nsys stats --report nvtx_pushpop_sum,nvtx_gpu_proj_sum <salida>.nsys-rep
 | `reader.event`, `reader.decode` | Montaje de un instante y decodificación de un grupo Parquet en el lector |
 
 Los rangos son marcas del anfitrión. No sincronizan la GPU, no crean tensores ni tocan el generador aleatorio. Un rango se abre y se cierra en el mismo hilo, así que los del lector con prefetch aparecen en el hilo productor. `tests/tooling/test_nvtx_ranges.py` comprueba el cierre ante excepciones, el reparto por hilos y que apagados no llaman a NVTX. `tests/training/test_nvtx_parity.py` repite los recorridos de Titans-MAC y del lector con los rangos apagados y encendidos y exige las mismas predicciones, los mismos gradientes y el mismo historial bit a bit.
+
+`nsys stats` reparte el tiempo de GPU por rango, pero no cuenta las ejecuciones de un CUDA Graph ni los lanzamientos de cada rango. `benchmarks/nsys_range_summary.py` lee la exportación SQLite (`nsys export --type sqlite`) y asigna cada núcleo, grafo y copia al rango de la llamada que lo lanzó por su `correlationId`. Con la traza de grafos por defecto (`--cuda-graph-trace=graph`) nsys registra cada `cudaGraphLaunch` como una ejecución completa, sin sus núcleos. El resumen da por rango las llamadas a la API, los núcleos y grafos con su tiempo, las copias y la fracción del rango con la GPU ocupada, y con `--repeats N` divide los totales entre las repeticiones.

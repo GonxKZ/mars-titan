@@ -22,10 +22,6 @@ list(GET episode_paths 0 episode_python)
 list(GET episode_paths 1 episode_include)
 list(GET episode_paths 2 episode_soabi)
 set(Python3_EXECUTABLE "${episode_python}")
-if(CMAKE_CROSSCOMPILING)
-    # La raíz de destino reubicaría las cabeceras del intérprete aarch64, que se dan explícitas.
-    set(Python3_INCLUDE_DIR "${episode_include}")
-endif()
 find_package(Python3 REQUIRED COMPONENTS Interpreter Development.Module)
 if(NOT EXISTS "${MARS_TITAN_TORCH_ROOT}/include/pybind11/pybind11.h")
     message(FATAL_ERROR "El SDK LibTorch no contiene las cabeceras pybind11 del enlace")
@@ -36,15 +32,11 @@ target_include_directories(mars_titan_episode_storage PUBLIC "${CMAKE_CURRENT_SO
 target_link_libraries(mars_titan_episode_storage PUBLIC mars_titan::torch)
 mars_titan_configure_target(mars_titan_episode_storage)
 Python3_add_library(_episodic_native MODULE WITH_SOABI src/episodic_python.cpp)
-target_link_libraries(_episodic_native PRIVATE mars_titan_episode_storage mars_titan_cohort_execution)
+target_link_libraries(_episodic_native PRIVATE mars_titan_episode_storage mars_titan_cohort_execution
+    mars_titan_episodic_projection)
 target_compile_definitions(_episodic_native PRIVATE
     "MARS_TITAN_EPISODIC_TORCH_VERSION=\"${MARS_TITAN_TORCH_VERSION}\"")
 set_target_properties(_episodic_native PROPERTIES CXX_VISIBILITY_PRESET hidden)
-if(CMAKE_CROSSCOMPILING)
-    # Al compilar en cruzado FindPython deja vacío el sufijo de extensión, que da el intérprete.
-    set_target_properties(_episodic_native PROPERTIES
-        SUFFIX ".${episode_soabi}${CMAKE_SHARED_MODULE_SUFFIX}")
-endif()
 mars_titan_configure_target(_episodic_native)
 list(APPEND mars_analysis_sources "${CMAKE_CURRENT_SOURCE_DIR}/src/episodic_memory.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/episodic_python.cpp")

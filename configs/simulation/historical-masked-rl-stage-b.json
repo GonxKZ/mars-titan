@@ -7,8 +7,8 @@
   "policies": "historical-masked-rl-policies.json",
   "scopes": ["US", "CN"],
   "limits": {
-    "max_training_jobs": 456,
-    "max_evaluation_jobs": 2133
+    "max_training_jobs": 600,
+    "max_evaluation_jobs": 2421
   },
   "final_test_opened": false
 }
