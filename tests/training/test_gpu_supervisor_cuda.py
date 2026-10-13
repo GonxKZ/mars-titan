@@ -1,18 +1,17 @@
 """Admisión y recuperación CUDA real de un trabajador en otra sesión."""
 
 import json
-import os
 import sys
 
 import pytest
 
 from mars_titan.training import gpu_supervisor as engine
+from tests.suite_support import requires_cuda_integration
+
+pytestmark = pytest.mark.cuda
 
 
-@pytest.mark.skipif(
-    os.environ.get("MARS_TITAN_CUDA_INTEGRATION") != "1",
-    reason="La integración CUDA requiere una ventana exclusiva declarada",
-)
+@requires_cuda_integration
 def test_nested_cuda_process_confirms_pause_and_resumes(tmp_path):
     import torch
 

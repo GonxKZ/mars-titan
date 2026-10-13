@@ -5,6 +5,8 @@ import test_native_episode_backend as backend_fixtures
 
 from mars_titan.memory.retention_bank import RetentionBank, RetentionConfig
 
+pytestmark = pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
+
 native = backend_fixtures.native
 
 

@@ -8,11 +8,12 @@ import pytest
 
 from mars_titan.training.checkpoints import StopRequest
 from mars_titan.training.learning_hold import LearningHoldError
+from tests.suite_support import missing_extra
 from tests.training.test_reference_run import training_corpus
 
 pytestmark = pytest.mark.skipif(
     any(importlib.util.find_spec(name) is None for name in ("cupy", "xgboost")),
-    reason="Requiere el extra boosting y CUDA",
+    reason=missing_extra("cupy", "xgboost"),
 )
 
 

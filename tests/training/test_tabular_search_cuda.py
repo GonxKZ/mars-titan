@@ -5,11 +5,12 @@ import json
 
 import pytest
 
+from tests.suite_support import missing_extra
 from tests.training.test_reference_run import training_corpus
 
 pytestmark = pytest.mark.skipif(
     any(importlib.util.find_spec(name) is None for name in ("cupy", "xgboost")),
-    reason="Requiere los paquetes de boosting y CUDA",
+    reason=missing_extra("cupy", "xgboost"),
 )
 
 

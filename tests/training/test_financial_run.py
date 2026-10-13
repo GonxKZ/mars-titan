@@ -636,7 +636,7 @@ def test_declared_recipe_builds_the_four_paired_controls(shared):
         FinancialConfig(specification, variant=variant, **options)
 
 
-@pytest.mark.skipif(not torch.cuda.is_available(), reason="Requiere cuda:0 explícito")
+@pytest.mark.cuda
 def test_cuda_pass_matches_cpu_without_optimizer_steps(shared, tmp_path):
     _, streams = shared
     engines = {}

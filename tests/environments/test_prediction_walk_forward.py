@@ -10,10 +10,11 @@ from mars_titan.environments.actions import ActionGrid
 from mars_titan.environments.cohorts import FINAL_TEST_START_US
 from mars_titan.evaluation.splits import PARTITIONS
 from tests.environments.walk_forward_fixture import microseconds, window
+from tests.suite_support import missing_extra
 
 pytestmark = pytest.mark.skipif(
     importlib.util.find_spec("gymnasium") is None,
-    reason="Requiere el extra reinforcement",
+    reason=missing_extra("gymnasium"),
 )
 
 SHAPES = dict(prices=(2, 5), news=(3,), charts=(2,), fundamentals=(4,), macro=(2,))

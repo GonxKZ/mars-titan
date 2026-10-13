@@ -8,13 +8,16 @@ import numpy as np
 import pytest
 
 from mars_titan.memory.native_backend import load_native
+from tests.suite_support import missing_native
+
+pytestmark = pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 
 
 @pytest.fixture
 def native():
     path = os.environ.get("MARS_TITAN_EPISODIC_NATIVE")
     if not path:
-        pytest.skip("Falta el enlace nativo CPU compilado para esta comprobación")
+        pytest.skip(missing_native("MARS_TITAN_EPISODIC_NATIVE"))
     return load_native(path)
 
 

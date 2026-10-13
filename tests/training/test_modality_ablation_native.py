@@ -8,7 +8,6 @@ enmascarado del primer corpus debe dar las mismas predicciones que el del segund
 la ablación no cambia nada.
 """
 
-import os
 from types import SimpleNamespace
 
 import numpy as np
@@ -31,9 +30,7 @@ from tests.training.test_modality_ablation_inputs import pattern, without
 from tests.training.test_titans_walk_forward import unfused_attention
 from tests.training.test_walk_forward_v2_views import PROTOCOLS, prepare, sessions
 
-pytestmark = pytest.mark.skipif(
-    not os.environ.get("MARS_TITAN_EPISODIC_NATIVE"), reason="Falta el enlace nativo compilado"
-)
+pytestmark = pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 BOTH = "mask_news_and_fundamentals"
 
 
