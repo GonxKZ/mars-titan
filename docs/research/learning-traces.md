@@ -91,7 +91,7 @@ Cada familia tiene una prueba que recorre el mismo ajuste con trazas en cada pas
 | PPO, Double DQN y KLPO | `tests/learning_traces/test_native_policy_traces.py` y `native/tests/learning_traces_tests.cpp` |
 | Medida del coste | `tests/learning_traces/test_overhead.py` |
 
-En `cuda:0`, `tests/learning_traces/test_traces_cuda.py` repite la paridad bit a bit de las cinco referencias neuronales, de la memoria neuronal con su observador y del bloque MAC completo en varios segmentos, con TF32 desactivado. Ridge y XGBoost no se ajustan en las pruebas: se comprueban sus eventos con un modelo y un estado fijados. Los binarios RL solo pueden recorrer validaciones sin pasos de optimizador, así que las filas de actualización se comprueban en la prueba nativa del escritor y el resto quedará a la vista en la primera ejecución real.
+En `cuda:0`, `tests/learning_traces/test_traces_cuda.py` repite la paridad bit a bit de las cinco referencias neuronales, de la memoria neuronal con su observador y del bloque MAC completo en varios segmentos, con TF32 desactivado. Ridge y XGBoost no se ajustan en las pruebas: se comprueban sus eventos con un modelo y un estado fijados. Los binarios RL solo pueden recorrer validaciones sin pasos de optimizador, así que las filas de actualización se comprueban en la prueba nativa del escritor y el resto quedará a la vista en la primera ejecución real. Las tres pruebas que lanzan un ajuste nativo necesitan la protección abierta, así que figuran en el inventario de #546 y se omiten mientras rige el bloqueo.
 
 ## Coste
 

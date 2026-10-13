@@ -14,6 +14,7 @@ import pytest
 from mars_titan.learning_traces.hooks import unit_config
 from mars_titan.learning_traces.recorder import read_traces
 from mars_titan.simulation import campaign_stage, native_policy_runs
+from tests.learning_hold_lowering import lowers_learning_hold
 from tests.learning_traces.parity import trace_rows
 from tests.simulation.test_native_policy_tapes import (
     diagnostic_stage,
@@ -26,6 +27,8 @@ from tests.simulation.test_native_policy_tapes import (
 )
 
 TRACED = ["--learning-trace-every", 1, "--learning-trace-max-bytes", 16 * 1024**2]
+# Prefijo de las pruebas de este archivo en el inventario de la protección (#546).
+KEY = "tests/learning_traces/test_native_policy_traces.py::"
 # Campos deterministas del informe. La huella del archivo de la política cambia en cada
 # ejecución aunque los pesos sean los mismos, porque PyTorch guarda un identificador de
 # serialización aleatorio, así que la paridad se comprueba con la selección y sus métricas.
@@ -42,6 +45,7 @@ VALIDATION = {
 }
 
 
+@lowers_learning_hold(KEY + "test_double_dqn_traces_keep_the_run_and_record_each_validation")
 @pytest.mark.native("MARS_TITAN_PPO_EXECUTABLE", "MARS_TITAN_KLPO_EXECUTABLE")
 def test_double_dqn_traces_keep_the_run_and_record_each_validation(
     binaries, tapes, tmp_path, learning_hold
@@ -75,6 +79,7 @@ def test_double_dqn_traces_keep_the_run_and_record_each_validation(
     assert [part["commit"] for part in native] == [[0, 1], [16, 2], [32, 3]]
 
 
+@lowers_learning_hold(KEY + "test_ppo_traces_are_not_duplicated_by_a_pause_and_resume")
 @pytest.mark.native("MARS_TITAN_PPO_EXECUTABLE", "MARS_TITAN_KLPO_EXECUTABLE")
 def test_ppo_traces_are_not_duplicated_by_a_pause_and_resume(
     binaries, tapes, tmp_path, learning_hold
@@ -101,6 +106,7 @@ def test_ppo_traces_are_not_duplicated_by_a_pause_and_resume(
     assert not (output / "traces/parts/part-00000002.parquet").exists()
 
 
+@lowers_learning_hold(KEY + "test_klpo_traces_record_the_initial_validation_once")
 @pytest.mark.native("MARS_TITAN_PPO_EXECUTABLE", "MARS_TITAN_KLPO_EXECUTABLE")
 def test_klpo_traces_record_the_initial_validation_once(binaries, tapes, tmp_path, learning_hold):
     hold = learning_hold(True)
