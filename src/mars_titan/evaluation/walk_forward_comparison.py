@@ -74,6 +74,7 @@ from mars_titan.evaluation import (
     long_short,
     modality_ablation,
     modality_strata,
+    online_calibration,
     predictive_ability,
 )
 from mars_titan.evaluation.forecast_panel import WEIGHTINGS, ForecastPanel, SessionSeries
@@ -149,6 +150,7 @@ ABLATION_FIELD = "modality_ablation"
 LONG_SHORT_FIELD = "long_short"
 JOINT_FIELD = "joint_design"
 PREDICTIVE_FIELD = "predictive_ability"
+ONLINE_FIELD = online_calibration.FIELD
 # Secciones secundarias que exige cada versión de la configuración.
 SECTIONS = {
     1: set(),
@@ -158,7 +160,7 @@ SECTIONS = {
     5: {STRATA_FIELD, ABLATION_FIELD, LONG_SHORT_FIELD, JOINT_FIELD},
 }
 # Secciones secundarias que cualquier versión admite sin exigirlas.
-OPTIONAL_SECTIONS = {PREDICTIVE_FIELD}
+OPTIONAL_SECTIONS = {PREDICTIVE_FIELD, ONLINE_FIELD}
 _JOINT_FIELDS = {
     "declared_at",
     "joint_scope",
@@ -535,6 +537,13 @@ def validate_config(config, digest, folder):
         long_short.declaration(config[LONG_SHORT_FIELD])
     if PREDICTIVE_FIELD in config:
         predictive_ability.declaration(config[PREDICTIVE_FIELD], comparison)
+    if ONLINE_FIELD in config:
+        # La madurez de cada fila se lee de las etiquetas de una vista con máscaras.
+        _require(
+            masked_inputs(config["input_policy"]),
+            "La calibración en línea necesita la política de entradas con máscaras",
+        )
+        online_calibration.declaration(config[ONLINE_FIELD])
     resolved = {scope: _protocols(folder, scope, declared) for scope, declared in scopes.items()}
     if JOINT_FIELD in config:
         _joint_design(config[JOINT_FIELD], resolved, arms, families, folder)
@@ -902,6 +911,37 @@ def _presence_bits(sources, config, window_id, reference):
     return bits[order], record
 
 
+def _maturity(sources, config, window_id, references):
+    """Madurez de cada fila de calibración y evaluación, en el orden canónico de su panel.
+
+    Se lee de las etiquetas de la vista de la ventana y debe cubrir las mismas filas con los
+    mismos objetivos que los brazos, con la misma comprobación que entre brazos.
+    """
+    tables = online_calibration.view_maturity(
+        sources["view_paths"][window_id], config["input_policy"], sources["views"][window_id]
+    )
+    result = {}
+    for partition, reference in references.items():
+        table = tables[partition]
+        excluded = _excluded(table, sources, window_id)[0]
+        if excluded is not None:
+            table = table.filter(pa.array(~excluded))
+        label = f"La madurez de {partition} de la vista de {window_id}"
+        panel = _panel(
+            table,
+            sources["windows"][window_id],
+            partition,
+            sources,
+            label,
+            output=POINT,
+            prediction=np.zeros(table.num_rows),
+        )
+        _same_rows(reference, panel, label)
+        order = pc.index_in(reference[1].row_id, value_set=_row_id(table)).to_numpy()
+        result[partition] = table["matures_at"].to_numpy()[order]
+    return result
+
+
 def _ablation_sources(path, config, sources):
     """Validar el manifiesto de predicciones enmascaradas frente a las fuentes principales.
 
@@ -1003,7 +1043,7 @@ def _score_window(sources, config, window_id, ablation=None):
     minimum = config["metrics"]["rank_ic_min_assets"]
     calibration = config["calibration"]
     results, reference, calibration_reference = {}, None, None
-    row_codes, presence, bits = None, None, None
+    row_codes, presence, bits, maturity = None, None, None, None
     for name, arm in config["arms"].items():
         quantile = arm["output"] == QUANTILE_HEAD
         columns = COLUMNS + (QUANTILE_COLUMNS if quantile else ())
@@ -1048,6 +1088,25 @@ def _score_window(sources, config, window_id, ablation=None):
                 entry.update(calibrated_reason=reason, order_adjusted_rows=adjusted)
                 if calibrated is not None:
                     entry["calibrated"] = score_sessions(calibrated, rank_ic_min_assets=minimum)
+                if ONLINE_FIELD in config:
+                    entry[ONLINE_FIELD] = None
+                    if calibrated is not None:
+                        # La madurez se lee una vez por ventana: las filas son comunes.
+                        if maturity is None:
+                            maturity = _maturity(
+                                sources,
+                                config,
+                                window_id,
+                                dict(calibration=calibration_reference, evaluation=reference),
+                            )
+                        entry[ONLINE_FIELD] = online_calibration.calibrate_window(
+                            config[ONLINE_FIELD],
+                            entry["calibrator"]["record"],
+                            fitted,
+                            panel,
+                            maturity,
+                            rank_ic_min_assets=minimum,
+                        )
             if row_codes is not None:
                 # Los cuantiles calibrados son los del calibrador común, sin reajuste.
                 entry["strata"] = modality_strata.score_strata(
@@ -1618,6 +1677,14 @@ def evaluate_walk_forward(
         report["analysis_source_sha256"]["evaluation/predictive_ability.py"] = sha256(
             Path(__file__).parents[1] / "evaluation/predictive_ability.py"
         )
+    if ONLINE_FIELD in config:
+        report[ONLINE_FIELD] = online_calibration.report(config, per_window)
+        for name in (
+            "evaluation/online_calibration.py",
+            "calibration/online_conformal.py",
+            "calibration/periodic_conformal.py",
+        ):
+            report["analysis_source_sha256"][name] = sha256(Path(__file__).parents[1] / name)
     if strata is not None:
         report[STRATA_FIELD] = strata
         for name in ("evaluation/modality_strata.py", "training/corpus_inputs.py"):

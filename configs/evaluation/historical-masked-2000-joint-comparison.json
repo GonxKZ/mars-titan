@@ -334,6 +334,33 @@
     "min_rows": 1000,
     "order_rule": "widen_to_median_and_inner_interval"
   },
+  "online_calibration": {
+    "status": "declared_not_executed",
+    "method": "cqr_score_quantile_tracking_matured_cohorts_v1",
+    "maturity_source": "view_labels_target_available_at_v1",
+    "rate_fractions": [
+      0.005,
+      0.02
+    ],
+    "max_pending": 64,
+    "periodic_refit": {
+      "method": "cqr_periodic_refit_matured_rows_v1",
+      "every_sessions": 21,
+      "lookback_days": 91
+    },
+    "selection_years": [
+      2005,
+      2013
+    ],
+    "assessment_years": [
+      2014,
+      2023
+    ],
+    "decision": {
+      "min_relative_reduction": 0.25,
+      "max_relative_interval_score_worsening": 0.01
+    }
+  },
   "comparison": {
     "metrics": [
       "mae",
