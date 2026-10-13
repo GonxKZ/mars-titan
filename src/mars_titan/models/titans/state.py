@@ -55,27 +55,37 @@ class _PendingChecks:
         self.flags.append(flag)
         self.messages.append(message)
 
-    def resolve(self) -> None:
+    def first_failure(self) -> str | None:
+        """Mensaje de la primera comprobación fallida en orden de programa, o None.
+
+        Los indicadores se apilan por tipo y pasan al anfitrión con una sola copia. No se
+        descartan, así que un CUDA Graph que los captura puede volver a leerlos tras cada
+        repetición.
+        """
         if not self.flags:
-            return
-        flags, messages = self.flags, self.messages
-        self.flags, self.messages = [], []
-        # Los indicadores se apilan por tipo y pasan al anfitrión con una sola copia.
+            return None
         groups: dict[torch.dtype, list[int]] = {}
-        for index, flag in enumerate(flags):
+        for index, flag in enumerate(self.flags):
             groups.setdefault(flag.dtype, []).append(index)
         parts, order = [], []
         for dtype, indices in groups.items():
-            stacked = torch.stack([flags[index] for index in indices])
+            stacked = torch.stack([self.flags[index] for index in indices])
             parts.append(stacked if dtype == torch.bool else torch.isfinite(stacked))
             order.extend(indices)
         values = (parts[0] if len(parts) == 1 else torch.cat(parts)).tolist()
-        passed = [True] * len(flags)
+        passed = [True] * len(self.flags)
         for index, ok in zip(order, values, strict=True):
             passed[index] = ok
-        for ok, message in zip(passed, messages, strict=True):
+        for ok, message in zip(passed, self.messages, strict=True):
             if not ok:
-                raise ValueError(message)
+                return message
+        return None
+
+    def resolve(self) -> None:
+        message = self.first_failure()
+        self.flags, self.messages = [], []
+        if message is not None:
+            raise ValueError(message)
 
 
 _PENDING: ContextVar[_PendingChecks | None] = ContextVar("titans_pending_checks", default=None)

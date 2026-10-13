@@ -212,3 +212,23 @@ def test_nested_block_forgets_its_tensors_but_keeps_their_checks():
             assert pending.seen is outer
             assert [value is kept for value in outer.values()] == [True]
             assert len(pending.flags) == 2
+
+
+@cuda
+def test_first_failure_reads_without_discarding_and_resolve_discards():
+    pending = checks._PendingChecks()
+    token = checks._PENDING.set(pending)
+    try:
+        checks.check_finite(finite("cuda:0"), "Correcta")
+        checks.require_true(torch.tensor(False, device="cuda:0"), "Primera")
+        checks.check_finite(broken("cuda:0"), "Segunda")
+    finally:
+        checks._PENDING.reset(token)
+    assert pending.first_failure() == "Primera"
+    assert pending.first_failure() == "Primera"
+    assert len(pending.flags) == len(pending.messages) == 3
+    with pytest.raises(ValueError, match="^Primera$"):
+        pending.resolve()
+    assert pending.flags == pending.messages == []
+    assert pending.first_failure() is None
+    pending.resolve()
