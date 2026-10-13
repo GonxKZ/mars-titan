@@ -104,6 +104,16 @@ En los adaptadores el pico lo marca el corpus ordenado de US+CN fold-012: 66,0 G
 
 Los ejecutores de ajuste de PPO y KLPO no existen todavía, así que sus estados y salidas no se pueden estimar.
 
+### Forma de las cintas de las políticas (13 de octubre)
+
+`extras.json` medía cintas de 128 columnas, todas con precios. Desde la regla `point_in_time_median_traded_value_v2` una cinta tiene una columna por activo del diseño de su política, que une los universos de sus cinco tramos, y solo los 128 activos del universo del tramo tienen precios y predicciones. Las demás columnas se escriben vacías. `storage_measurements tape` repite primero la medida anterior, que da los mismos 1.531.535 bytes con PyArrow 25.0.1, y mide después 128 columnas con precios en 640, el máximo de `window_tapes.layout_bound` para la etapa (128 activos por cinco tramos). El resultado, 1.697.830 bytes, está en [`extras-layout-640.json`](extras-layout-640.json), que conserva las demás medidas de `extras.json`.
+
+| Columnas del diseño | 128 | 172 | 189 | 251 | 294 | 640 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Bytes por cinta | 1.531.535 | 1.626.044 | 1.644.165 | 1.661.452 | 1.698.928 | 1.697.830 |
+
+Los diseños medidos en la edición real tienen entre 172 y 189 columnas en EE. UU. y entre 251 y 294 en China. Las columnas vacías se comprimen casi por completo, así que por encima de unas 250 columnas el tamaño apenas cambia, y la medida de 640 queda 1.098 bytes por debajo de la de 294 por el ruido de los valores sintéticos. Es una diferencia del 0,06 %, despreciable frente a lo que sobrestiman los valores aleatorios: una cinta real de 128 activos ocupó 0,95 MB en EE. UU. y 0,67 MB en China. `rolling_storage` y `storage_budget.rl_estimate` rechazan ahora una medida que no declare al menos 128 activos con precios en 640 columnas, de modo que las órdenes de abajo necesitan `extras-layout-640.json`.
+
 ## Total y margen
 
 | Opción | Base | Ablación | Adaptadores | Políticas | Total (GB) |
@@ -140,7 +150,7 @@ uv run --no-sync python scripts/run_masked_campaign.py storage \
   --storage configs/baselines/historical-masked-campaign-storage.json \
   --counts <recuentos.json> \
   --row-bytes reports/engineering/campaign-storage-20261009/row-bytes.json \
-  --extras reports/engineering/campaign-storage-20261009/extras.json \
+  --extras reports/engineering/campaign-storage-20261009/extras-layout-640.json \
   --ablation-stage <ablación> --adapter-stage <adaptadores> --rl-stage <políticas> \
   --output <estimación.json>
 ```
