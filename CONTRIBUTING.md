@@ -13,7 +13,7 @@ make setup
 make check
 ```
 
-`make setup` crea `.venv` con `uv sync --locked --all-extras`. `make check` ejecuta Ruff, el formato, `scripts/check_repository.py` y las pruebas rápidas. PENDIENTE_MEDIDA
+`make setup` crea `.venv` con `uv sync --locked --all-extras`. `make check` ejecuta Ruff, el formato, `scripts/check_repository.py` y las pruebas rápidas. En un clon limpio del 13 de octubre de 2026, con la caché de uv ya llena y el equipo cargado (carga media de 13 a 17 en 16 hilos), `make setup` tardó 1,2 s y `make check` unos cinco minutos. `test-fast` superó 6.510 pruebas, omitió 343 con su motivo y dejó fuera 3.241, con un pico de memoria de 1,7 GB. Sin caché, `make setup` tiene que descargar las ruedas de un entorno que ocupa unos 6,5 GB, sobre todo por PyTorch con CUDA.
 
 Los datos de FinMultiTime, las ediciones derivadas, los pesos y los resultados voluminosos no están en el repositorio. Las pruebas usan datos sintéticos o fixtures pequeños, y las que necesitan un artefacto local lo dicen al omitirse.
 
