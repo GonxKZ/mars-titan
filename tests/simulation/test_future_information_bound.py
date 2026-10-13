@@ -66,6 +66,10 @@ def test_the_bound_is_the_full_exposure_rule_on_the_future_scored_tape_without_c
         tape, env_options=dict(OPTIONS, cost_bps=0, backend="python", allocation=ALLOCATIONS[0])
     )
     assert episode["net_return"] == expected["policies"]["oracle_full_exposure"]["net_return"]
+    assert found["exact_rule"] == oracle_bound.EXACT_RULE
+    assert found["exact_log_growth"] == oracle_bound.exact_log_growth(tape)
+    assert found["exact_tolerance"] == oracle_bound.EXACT_TOLERANCE
+    assert math.log1p(episode["net_return"]) < found["exact_log_growth"]
 
 
 @pytest.mark.parametrize("seed", range(5))
@@ -132,7 +136,10 @@ def record(cost, net_return, status="completed", reason=None):
     return dict(cost_bps=cost, status=status, reason=reason, net_return=net_return)
 
 
-def bound_document(net_return=3.0, status="completed", reason=None, **changes):
+def bound_document(net_return=3.0, status="completed", reason=None, exact=None, **changes):
+    """Cota escrita a mano. Salvo otro valor, la exacta coincide con la de la regla."""
+    if exact is None:
+        exact = math.log1p(net_return) if net_return is not None else math.log(10.0)
     return dict(
         dict(
             schema_version=1,
@@ -140,6 +147,9 @@ def bound_document(net_return=3.0, status="completed", reason=None, **changes):
             rule=oracle_bound.RULE,
             action=oracle_bound.FULL_EXPOSURE,
             suspicious_fraction=oracle_bound.SUSPICIOUS_FRACTION,
+            exact_rule=oracle_bound.EXACT_RULE,
+            exact_log_growth=exact,
+            exact_tolerance=oracle_bound.EXACT_TOLERANCE,
             tape_sha256=TAPE_SHA,
             oracle_tape_sha256="b" * 64,
             episode=record(0, net_return, status, reason),
@@ -195,7 +205,7 @@ def test_episodes_far_below_the_bound_are_checked_without_flags(tmp_path):
     found = checked(output_with(tmp_path, [receipt(0.1)], bound_document(1.0)))
     assert found["status"] == "no_flagged_episodes" and found["cost_bps"] == 0
     assert found["checked"] == 1 and found["flagged"] == [] and found["unchecked"] == []
-    assert found["rule"] == oracle_bound.RULE
+    assert found["rule"] == oracle_bound.RULE and found["exact_rule"] == oracle_bound.EXACT_RULE
 
 
 def test_only_the_episode_without_costs_is_compared(tmp_path):
@@ -226,6 +236,7 @@ def test_reaching_half_the_bound_growth_or_exceeding_it_is_flagged(tmp_path):
     assert flagged[45]["reason"] == "exceeds_bound"
     assert flagged[45]["log_growth"] == math.log1p(3.5)
     assert flagged[45]["bound_log_growth"] == math.log1p(3.0)
+    assert flagged[45]["exact_log_growth"] == math.log1p(3.0)
     item = flagged[43]
     assert (item["scope"], item["market"], item["window"]) == ("us_large", "US", "fold-002")
     assert (item["predictor"], item["arm"]) == ("gru", "klpo_terminal")
@@ -270,9 +281,10 @@ def test_unfinished_episodes_and_unfinished_bounds_are_not_compared(tmp_path):
     ruined = receipt(record(0, -1.0, "ruined", "ruined"), of=job(seed=44))
     found = checked(output_with(tmp_path / "a", [failed, ruined], bound_document(1.0)))
     assert found["checked"] == 0 and found["flagged"] == [] and found["unchecked"] == []
+    # Sin el episodio de la regla, la fracción queda sin comprobar y la cota exacta sí se aplica.
     unfinished = bound_document(None, status="failed", reason="unpriced_exit")
     found = checked(output_with(tmp_path / "b", [receipt(9.0)], unfinished))
-    assert found["checked"] == 0 and found["flagged"] == []
+    assert found["checked"] == 1 and found["flagged"] == []
     assert found["unchecked"] == [
         dict(
             scope="us_large",
@@ -285,6 +297,33 @@ def test_unfinished_episodes_and_unfinished_bounds_are_not_compared(tmp_path):
             reason="unpriced_exit",
         )
     ]
+
+
+def test_exceeding_is_measured_against_the_exact_bound_and_not_against_the_rule(tmp_path):
+    # La regla con información futura crece ln(4) y la cota exacta ln(9). Concentrar puede
+    # superar la regla sin ninguna fuga: solo se señala la fracción.
+    returns = {43: 3.5, 44: 8.0, 45: 9.0}
+    receipts = [receipt(value, of=job(seed=seed)) for seed, value in returns.items()]
+    found = checked(output_with(tmp_path, receipts, bound_document(3.0, exact=math.log(9.0))))
+    reasons = {item["seed"]: item["reason"] for item in found["flagged"]}
+    assert reasons == {43: "suspicious_fraction", 44: "suspicious_fraction", 45: "exceeds_bound"}
+    assert {item["exact_log_growth"] for item in found["flagged"]} == {math.log(9.0)}
+
+
+def test_the_exact_bound_admits_only_rounding(tmp_path):
+    exact = math.log1p(0.5)
+    rounding = receipt(math.expm1(exact + oracle_bound.EXACT_TOLERANCE / 2), of=job(seed=43))
+    above = receipt(math.expm1(exact + 4 * oracle_bound.EXACT_TOLERANCE), of=job(seed=44))
+    found = checked(output_with(tmp_path, [rounding, above], bound_document(10.0, exact=exact)))
+    assert [(item["seed"], item["reason"]) for item in found["flagged"]] == [(44, "exceeds_bound")]
+
+
+def test_exceeding_the_exact_bound_is_flagged_even_if_the_rule_did_not_finish(tmp_path):
+    unfinished = bound_document(None, "failed", "unpriced_exit", exact=math.log1p(5.0))
+    found = checked(output_with(tmp_path, [receipt(9.0)], unfinished))
+    (flag,) = found["flagged"]
+    assert flag["reason"] == "exceeds_bound" and flag["bound_log_growth"] is None
+    assert flag["fraction_of_bound"] is None and found["unchecked"] == []
 
 
 def test_a_receipt_without_evaluation_tape_has_no_bound(tmp_path):
@@ -304,6 +343,11 @@ def test_a_receipt_without_evaluation_tape_has_no_bound(tmp_path):
         dict(final_test_opened=True),
         dict(episode=record(10, 3.0)),
         dict(episode=None),
+        dict(exact_rule="otra"),
+        dict(exact_tolerance=1e-3),
+        dict(exact_log_growth=None),
+        dict(exact_log_growth=1),
+        dict(exact_log_growth=-0.1),
     ],
 )
 def test_a_bound_that_is_not_the_one_of_its_tape_is_rejected(tmp_path, change):
@@ -465,11 +509,21 @@ def test_ruined_states_are_not_compared_and_unfinished_bounds_are_unchecked(tmp_
     found = chosen_states(validated(tmp_path / "a", [chosen(5.0, ruins=1)]))
     assert found["checked"] == 0 and found["flagged"] == [] and found["unchecked"] == []
     unfinished = validated(
-        tmp_path / "b", [chosen(5.0)], None, episode=record(0, None, "failed", "unpriced_exit")
+        tmp_path / "b", [chosen(1.0)], None, episode=record(0, None, "failed", "unpriced_exit")
     )
     found = chosen_states(unfinished)
-    assert found["checked"] == 0 and found["flagged"] == []
+    assert found["checked"] == 1 and found["flagged"] == []
     assert found["unchecked"][0]["reason"] == "unpriced_exit"
+    # La cota exacta de la validación se aplica aunque la regla no terminase.
+    above = validated(
+        tmp_path / "c",
+        [chosen(5.0)],
+        None,
+        episode=record(0, None, "failed", "unpriced_exit"),
+        exact_log_growth=2.0,
+    )
+    (flag,) = chosen_states(above)["flagged"]
+    assert flag["reason"] == "exceeds_bound" and flag["exact_log_growth"] == 2.0
 
 
 def test_only_fits_that_chose_a_state_link_the_validation_bound(tmp_path):
