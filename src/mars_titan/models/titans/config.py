@@ -239,9 +239,10 @@ class MemoryMultiscale:
     def contraction(self, alpha_floor: float) -> tuple[float, tuple[float, float, float]]:
         """Factor ρ y pesos d de una norma ∞ ponderada en la que la transición contrae.
 
-        Para cualquier α ∈ [α_lo, 1], ‖D A(α) D⁻¹‖_∞ ≤ ρ con D = diag(d). Las filas son
-        lineales a trozos en α, así que basta evaluar α_lo, el punto donde la primera
-        diagonal cambia de signo y 1. La derivación está en el documento de PT5.
+        Para cualquier α ∈ [α_lo, 1], ‖D A(α) D⁻¹‖_∞ ≤ ρ con D = diag(d). Solo la primera
+        fila depende de α, como |1 − α − g_{1,2}| más una constante, que es convexa en α. Su
+        máximo está en un extremo, así que basta evaluar α_lo y 1. La derivación está en el
+        documento de PT5.
         """
         floor = _finite_number(alpha_floor, "alpha_floor")
         if not 0 < floor < 1:
@@ -251,9 +252,8 @@ class MemoryMultiscale:
         else:
             g12, g23, g34 = self.conductances
             weights = (1 + floor * MULTISCALE_CAPACITIES[0] / (2 * g12), 1.0, 1 + g34 / (2 * g23))
-        corners = sorted({floor, min(max(1 - self.conductances[0], floor), 1.0), 1.0})
         rho = 0.0
-        for alpha in corners:
+        for alpha in (floor, 1.0):
             matrix = self.transition(alpha)
             for i, row in enumerate(matrix):
                 total = sum(weights[i] * abs(value) / weights[j] for j, value in enumerate(row))

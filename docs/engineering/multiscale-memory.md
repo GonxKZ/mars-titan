@@ -36,7 +36,7 @@ Los niveles ocultos empiezan como copias de los pesos iniciales, así que la pri
 | Pieza | Fuente o derivación | Módulo | Pruebas |
 | --- | --- | --- | --- |
 | Cadena con C_k = 2^{k−1}, g_{k,k+1} ∝ 2^{−k−2}, fuga final y Euler de paso 1 | Ecuaciones 2 y 3 de Kaplanis et al. (2018), que resumen a Benna y Fusi (2016) | `_advance_levels`, `MemoryMultiscale.conductances` | `test_cascade_follows_the_euler_equations_with_titans_forgetting` |
-| Olvido α de Titans en el primer nivel y escritura S_t como Δw | Adaptación propia | `_advance_levels` | `test_cascade_first_write_equals_the_control_because_levels_start_equal` |
+| Olvido α de Titans en el primer nivel y escritura S_t como Δw | Adaptación propia | `_advance_levels`, `readable_weights` | `test_cascade_first_write_equals_the_control_because_levels_start_equal`, `test_the_cascade_reads_only_its_first_level` |
 | Banco con las mismas escalas, gradiente en la media | Alternativa trivial declarada | `readable_weights`, `bank_decays` | `test_bank_reads_the_mean_takes_the_gradient_there_and_forgets_each_level_alone`, `test_scales_of_the_bank_are_the_hidden_scales_of_the_cascade` |
 | Arranque en el núcleo y apagado sin niveles | Por construcción | `initial_state`, `MemoryConfig.identity` | `test_both_forms_start_reading_the_control_weights_with_the_same_draws`, `test_disabled_memory_keeps_no_levels_and_the_previous_identity` |
 | Condición de estabilidad con las puertas de PT1 | Derivación propia (abajo) | `MemoryMultiscale.contraction` | `test_transition_contracts_uniformly_inside_the_pt1_box`, `test_without_a_forgetting_floor_the_cascade_has_no_uniform_contraction`, `test_state_stays_inside_the_bound_with_pt1_gates_and_clip` |
@@ -59,7 +59,7 @@ Sea D = diag(d_1, 1, d_3) con d_1 = 1 + α_lo/(2 g_{1,2}) y d_3 = 1 + g_{3,4}/(2
 - Fila 2. Vale 1 − (g_{1,2} + g_{2,3})/2 + g_{1,2}/(2 d_1) + g_{2,3}/(2 d_3), menor que 1 porque d_1 y d_3 son mayores que 1.
 - Fila 3. Vale 1 − (g_{2,3} + g_{3,4})/4 + d_3 g_{2,3}/4, menor que 1 porque d_3 < 1 + g_{3,4}/g_{2,3}.
 
-Como D no depende de α, la norma inducida acota cualquier producto de transiciones: ‖A(α_T) ⋯ A(α_1)‖_D ≤ ρ^T para cualquier secuencia de puertas dentro de la caja, con ρ el máximo de las filas. Las filas son lineales a trozos en α, así que `contraction` las evalúa en α_lo, en 1 − g_{1,2} y en 1. Con α_lo = 1/500 y g = 1/16, ρ = 1 − α_lo/2 = 0,999. En el banco la transición es diagonal y ρ = max(1 − α_lo, 1 − λ_3).
+Como D no depende de α, la norma inducida acota cualquier producto de transiciones: ‖A(α_T) ⋯ A(α_1)‖_D ≤ ρ^T para cualquier secuencia de puertas dentro de la caja, con ρ el máximo de las filas. Solo la primera fila depende de α, como |1 − α − g_{1,2}| más una constante, que es convexa, así que `contraction` la evalúa en los extremos α_lo y 1. Con α_lo = 1/500 y g = 1/16, ρ = 1 − α_lo/2 = 0,999. En el banco la transición es diagonal y ρ = max(1 − α_lo, 1 − λ_3).
 
 Con el recorte de PT1, cada fila del gradiente tiene norma a lo sumo G, de modo que |S_t| ≤ s̄ = θ_max G/(1 − η_hi) elemento a elemento. Entonces ‖x_t‖_D ≤ ρ‖x_{t−1}‖_D + d_1 s̄, y el estado queda acotado por max(‖x_0‖_D, d_1 s̄/(1 − ρ)) con cualquier profundidad. La prueba lo comprueba con 320 escrituras de tokens grandes, en profundidad 1 y 2 y en las dos formas.
 
