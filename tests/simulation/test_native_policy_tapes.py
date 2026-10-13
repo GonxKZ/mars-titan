@@ -27,7 +27,6 @@ from pathlib import Path
 
 import numpy as np
 import pytest
-import torch
 
 from mars_titan.data.storage import sha256
 from mars_titan.simulation import campaign_stage, device_parity, native_policy_runs, window_tapes
@@ -1135,7 +1134,7 @@ def test_the_launcher_admits_the_modes_without_learning_with_the_hold_closed(
 
 
 @pytest.mark.native("MARS_TITAN_PPO_EXECUTABLE", "MARS_TITAN_KLPO_EXECUTABLE")
-@pytest.mark.skipif(not torch.cuda.is_available(), reason="Necesita cuda:0 visible")
+@pytest.mark.cuda
 @pytest.mark.parametrize("engine", ["native_ppo", "native_klpo"])
 def test_the_initial_evaluation_on_cuda_stays_within_the_tolerance_of_the_cpu(
     binaries, tapes, tmp_path, engine
