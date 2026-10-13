@@ -43,14 +43,84 @@ def test_cases_add_up_in_a_report_and_reports_keep_the_largest_time(tmp_path):
     )
     seconds = slow.totals([first, second])
     assert seconds == {"tests/data/test_a.py::test_x": 2.0, "tests/data/test_a.py::test_y": 0.75}
-    lines = slow.render(seconds, 2.0).splitlines()
+    selected = slow.slow_functions(seconds, 2.0, 10.0, tmp_path)
+    lines = slow.render(selected, 2.0, 10.0).splitlines()
     assert [line for line in lines if not line.startswith("#")] == ["tests/data/test_a.py::test_x"]
-    assert "2 s" in lines[0]
+    assert "2 s" in lines[0] and "10 s" in lines[1]
+
+
+SHARED_MODULE = """
+import pytest
+
+
+@pytest.fixture(scope="module")
+def campaign():
+    return 1
+
+
+@pytest.fixture(scope="module")
+def other():
+    return 2
+
+
+@pytest.fixture
+def window(campaign):
+    return campaign
+
+
+def test_first(campaign):
+    pass
+
+
+def test_through_window(window):
+    pass
+
+
+def test_other(other):
+    pass
+
+
+def test_plain():
+    pass
+
+
+@pytest.fixture
+def local():
+    return 3
+
+
+def test_local_a(local):
+    pass
+
+
+def test_local_b(local):
+    pass
+"""
+
+
+def test_functions_sharing_a_module_fixture_with_a_very_slow_one_are_slow(tmp_path):
+    module = tmp_path / "tests" / "data" / "test_shared.py"
+    module.parent.mkdir(parents=True)
+    module.write_text(SHARED_MODULE, encoding="utf-8")
+    first = "tests/data/test_shared.py::test_first"
+    assert slow.fixture_partners(tmp_path, first) == {
+        first,
+        "tests/data/test_shared.py::test_through_window",
+    }
+    # Por debajo de --shared solo cuenta la propia función.
+    assert slow.slow_functions({first: 5.0}, 1.0, 10.0, tmp_path) == {first}
+    assert len(slow.slow_functions({first: 10.0}, 1.0, 10.0, tmp_path)) == 2
+    assert slow.fixture_partners(tmp_path, "tests/data/test_shared.py::test_plain") == set()
+    # Un fixture de función no se comparte entre pruebas, así que no arrastra a nadie.
+    local = "tests/data/test_shared.py::test_local_a"
+    assert slow.slow_functions({local: 12.0}, 1.0, 10.0, tmp_path) == {local}
 
 
 def test_threshold_must_be_positive(tmp_path, capsys):
     report = junit(tmp_path / "a.xml", [("tests.data.test_a", "test_x", "3")])
     with pytest.raises(SystemExit):
         slow.main(["--threshold", "0", str(report)])
-    assert slow.main(["--threshold", "2.5", str(report)]) == 0
+    with pytest.raises(SystemExit):
+        slow.main(["--threshold", "2", "--shared", "1", str(report)])
+    assert slow.main(["--threshold", "2.5", "--root", str(tmp_path), str(report)]) == 0
     assert capsys.readouterr().out.endswith("tests/data/test_a.py::test_x\n")

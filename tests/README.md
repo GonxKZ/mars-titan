@@ -31,11 +31,11 @@ uv run --locked pytest -q -m "not slow and not native and not cuda"
 uv run --locked pytest -q -rs -m "native and not cuda" tests/memory
 ```
 
-La lista de pruebas lentas procede de informes JUnit. La actual junta dos medidas del 10 de octubre de 2026: la suite CPU completa con cobertura y los binarios nativos, que alarga los tiempos, y `make test-fast` en un clon limpio con el equipo cargado. Una función entra si sus casos suman un segundo o más en alguna de las dos. Para regenerarla se ejecuta la suite con `--junitxml` y se revisa el diff. Con varios informes de ejecuciones distintas, cada función conserva el mayor de sus tiempos:
+La lista de pruebas lentas procede de informes JUnit. La actual junta la suite CPU completa con cobertura y los binarios nativos del 10 de octubre de 2026, que alarga los tiempos, y dos ejecuciones de `make test-fast` en un clon limpio con el equipo cargado, del 10 y del 13 de octubre. Una función entra si sus casos suman un segundo o más en alguna de ellas. JUnit atribuye la preparación de un fixture de módulo a la primera prueba que lo usa, así que una función de diez segundos o más arrastra también a las que comparten con ella un fixture de módulo o de sesión. Si no, la siguiente pagaría ese coste en el subconjunto rápido. Para regenerarla se ejecuta la suite con `--junitxml` y se revisa el diff. Con varios informes de ejecuciones distintas, cada función conserva el mayor de sus tiempos:
 
 ```bash
 uv run --locked pytest -q --junitxml=suite.xml
-uv run --locked python scripts/list_slow_tests.py --threshold 1 suite.xml > tests/slow_tests.txt
+uv run --locked python scripts/list_slow_tests.py --threshold 1 --shared 10 suite.xml > tests/slow_tests.txt
 ```
 
 `tests/test_suite_support.py` comprueba que cada función de la lista sigue existiendo.
