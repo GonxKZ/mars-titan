@@ -39,6 +39,10 @@ INVENTORY = {
         "campaign_run ejecuta con la protección rebajada de permitted. carry_correction no ajusta, "
         "pero comprueba la protección porque predice ventanas de la campaña"
     ),
+    "tests/test_suite_support.py::test_unguarded_fits_run_when_the_hold_allows_learning": (
+        "la sesión de pytest hija lee una protección temporal que permite aprender para "
+        "comprobar que la marca unguarded_fit deja de omitir, aunque la prueba sondeada no ajusta"
+    ),
 }
 
 

@@ -39,6 +39,7 @@ La [referencia GRU](../native/candidate.md), el [adaptador financiero de MAC](en
 | Trabajar con los datos | [Ficha de FinMultiTime](data/finmultitime-card.md) y [contrato temporal](data/data-contract.md). |
 | Estudiar variables macroeconómicas | [Catálogo de 140 candidatos](data/macro-catalog.md) y [mecanismos financieros](references/macro-review.md). |
 | Consultar y actualizar datos complementarios | [Fuentes públicas y nueve archivos verificados](data/free-data-sources.md) y [capturas manuales con manifiesto](data/public-source-updates.md). |
+| Preparar el entorno y contribuir | [Guía de contribución](../CONTRIBUTING.md), con las órdenes de `make`, las marcas de las pruebas y el flujo de publicación, y [variables de entorno](engineering/environment-variables.md). |
 | Diseñar y mantener la implementación futura | [Arquitectura](engineering/architecture.md), [estructura del repositorio](engineering/repository-structure.md), [entorno reproducible](engineering/reproducibility.md), [decisiones](engineering/decisions.md), [trazas de aprendizaje](research/learning-traces.md). |
 | Ejecutar las tareas con herramientas concretas | [Guía de implementación y límites](engineering/implementation-guide.md) y [catálogo del tablero](research/task-board.md). |
 | Consultar el avance de los entrenamientos | [Observatorio](https://gonxkz.github.io/mars-titan/), [contrato de publicación](engineering/observatory.md) y [frontend](../site/README.md). |

@@ -4,7 +4,6 @@ El gancho se llama tras cada validación completa. Estas pruebas recorren un mod
 gancho desactivado y activado y exigen los mismos gradientes, predicciones, recibos y RNG.
 """
 
-import os
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -235,9 +234,7 @@ def _same_records(left, right):
             assert (a is None and b is None) or torch.equal(a, b)
 
 
-@pytest.mark.skipif(
-    not os.environ.get("MARS_TITAN_EPISODIC_NATIVE"), reason="Falta el enlace nativo compilado"
-)
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_the_reader_trace_hook_does_not_change_a_run(tmp_path, native):
     from tests.posttraining.test_readout_adapters import build
 
@@ -256,9 +253,7 @@ def test_the_reader_trace_hook_does_not_change_a_run(tmp_path, native):
     assert [event["epoch"] for event, _ in events] == list(range(len(events)))
 
 
-@pytest.mark.skipif(
-    not os.environ.get("MARS_TITAN_EPISODIC_NATIVE"), reason="Falta el enlace nativo compilado"
-)
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_the_candidate_trace_hook_does_not_change_a_window(views, allowed, monkeypatch):
     from mars_titan.training.candidate_run import CandidateChronologicalTrainer
     from tests.training.test_candidate_walk_forward import fit
