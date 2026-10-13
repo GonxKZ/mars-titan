@@ -75,7 +75,15 @@ La [declaración](../../configs/evaluation/multiscale-memory-comparison.json) fi
 
 ## Coste medido sin entrenar
 
-COSTE_PT5
+[`cost.json`](../../reports/engineering/multiscale-memory-20261010/cost.json) mide en CPU, en FP32 y con dos hilos, los tres modelos de la declaración con el mismo script y las mismas entradas reales sin objetivos que PT6: 128 flujos de EE. UU. y 8 instantes. Cada repetición recorre los instantes con grafo, calcula una pinball frente a ceros y ejecuta el backward, sin optimizador, y después repite el recorrido sin grafo. Las 15 repeticiones se alternan entre modelos con orden rotatorio.
+
+| Modelo | Estado por flujo | Forward con grafo | Backward | Inferencia |
+| --- | ---: | ---: | ---: | ---: |
+| Control | 65.552 B | 0,288 s | 0,141 s | 0,292 s |
+| Cascada | 131.088 B | 0,508 s (1,77) | 0,161 s (1,14) | 0,490 s (1,68) |
+| Banco EMA | 131.088 B | 0,547 s (1,90) | 0,176 s (1,25) | 0,464 s (1,59) |
+
+Son medianas, con el cociente frente al control entre paréntesis, y con otras cargas en la máquina (carga media entre 12 y 14). Una medida anterior con el mismo script dio cocientes parecidos (1,89 y 1,92 en el forward y 1,67 y 1,70 en la inferencia). Las dos formas casi duplican el forward y la inferencia porque cada escritura avanza tres copias de cada matriz, y el banco además calcula su media en cada lectura. No añaden parámetros. No se ha optimizado ni medido en `cuda:0` porque PT5 no entra en la campaña. Si se lanza el piloto, el primer paso es perfilar `_advance_levels` y las comprobaciones de finitud del estado en `cuda:0`.
 
 ## Desviaciones y límites
 
