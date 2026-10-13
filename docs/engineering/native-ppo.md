@@ -70,7 +70,7 @@ ctest --preset native-ppo-release -j 1
 cd ..
 ```
 
-Mientras rija el bloqueo de aprendizaje, los perfiles de prueba excluyen la etiqueta `optimizer-steps`, que llevan `ppo_policy`, `ppo_training`, `ppo_collection`, `ppo_gru_packing` y `ppo_variant_state` porque aplican pasos de Adam sobre datos sintéticos. El binario queda en `build/native/native-ppo-release/mars-titan-ppo`. Los presets PPO compilan con un trabajo. El backend CUDA reutiliza las bibliotecas del wheel y no activa `nvcc` ni compila kernels propios. `MARS_TITAN_LIBTORCH_ENABLE_CUDA=OFF` permite construir una variante para los diagnósticos CPU. Los perfiles `native-ppo-debug`, `native-ppo-asan-ubsan`, `native-ppo-static-analysis` y `native-ppo-coverage` separan los diagnósticos de Release. MSan y TSan sobre el ejecutable completo requieren un runtime LibTorch instrumentado.
+Mientras rija el bloqueo de aprendizaje, los perfiles de prueba excluyen la etiqueta `optimizer-steps`, que llevan `ppo_policy`, `ppo_training`, `ppo_collection`, `ppo_gru_packing` y `ppo_variant_state` porque aplican pasos de Adam sobre datos sintéticos. Además se lanzan a través de `mars-titan-learning-gate`, que lee la protección y las marca como saltadas en una llamada sin perfil (barreras descritas en [native/README.md](../../native/README.md)). El binario queda en `build/native/native-ppo-release/mars-titan-ppo`. Los presets PPO compilan con un trabajo. El backend CUDA reutiliza las bibliotecas del wheel y no activa `nvcc` ni compila kernels propios. `MARS_TITAN_LIBTORCH_ENABLE_CUDA=OFF` permite construir una variante para los diagnósticos CPU. Los perfiles `native-ppo-debug`, `native-ppo-asan-ubsan`, `native-ppo-static-analysis` y `native-ppo-coverage` separan los diagnósticos de Release. MSan y TSan sobre el ejecutable completo requieren un runtime LibTorch instrumentado.
 
 El preparador analítico crea escenarios con semillas distintas para entrenamiento y validación. Usa el mecanismo ficticio conocido, sin cargar un predictor entrenado:
 
@@ -97,6 +97,16 @@ uv run --no-sync python scripts/run_native_ppo.py \
 ```
 
 El lanzador rechaza el inicio si otra carga científica ocupa la GPU. Conserva un margen de 1 GiB y limita el presupuesto del proceso al menor valor entre 6 GiB, la memoria libre tras ese margen y el 75 % de la capacidad visible. El binario comprueba el bloqueo heredado y configura el allocator antes de crear tensores CUDA. Ese límite del allocator no incluye toda la memoria del contexto o de otras bibliotecas. No hay cambio automático de CUDA a CPU.
+
+Sobre cintas reconstruidas, `mars-titan-ppo` y `mars-titan-klpo` admiten dos modos sin aprendizaje (#546). `--initial-evaluation` evalúa en las cintas de `--audit-tape` la política inicial de la semilla declarada, con la misma evaluación congelada que la auditoría y, si se pide, con `--decisions`. `--check-sources` lee las cintas de ajuste y validación con los lectores del ajuste y escribe en `sources.json` la identidad que tendría el experimento, solo en CPU. Los dos activan antes de leer nada un cerrojo de solo evaluación que impide crear entrenadores, controladores u optimizadores y dar cualquier paso de Adam, así que no consultan la protección de aprendizaje y la dejan intacta. El lanzador los admite con la protección cerrada si el binario anuncia la capacidad `native_policy_evaluation_only`:
+
+```bash
+uv run --no-sync python scripts/run_native_ppo.py \
+  --config artifacts/native/policy-config.json \
+  --audit-tape artifacts/native/tapes/evaluation \
+  --output artifacts/native/initial-evaluation \
+  --initial-evaluation --decisions --diagnostic
+```
 
 La salida debe ser nueva y quedar separada de sus fuentes. `--resume` recupera la misma configuración y salida. `--stop-after` solicita una pausa al alcanzar una barrera del lote. SIGINT y SIGTERM también solicitan una pausa recuperable. Cambiar datos, dispositivo, configuración, versión de LibTorch o identidad de compilación exige otra ejecución.
 

@@ -26,6 +26,7 @@ from mars_titan.training import campaign_chain
 from mars_titan.training import masked_campaign as engine
 from mars_titan.training.label_maturity import FIT_PARTITIONS, label_maturity
 from mars_titan.training.learning_hold import HOLD_ENV
+from tests.learning_hold_lowering import allowed_hold
 from tests.posttraining import campaign_fixture
 from tests.simulation import unadjusted_edition_fixture as edition_fixture
 from tests.training.test_walk_forward_v2_views import fixture
@@ -136,8 +137,7 @@ def base_campaign(root, variant, *, ending=None):
     """
     campaign, stage = write_configs(root / "config", variant)
     data = fixture(root / "data", ("US",))
-    hold = root / "hold.json"
-    hold.write_text(json.dumps({"training_allowed": True}), encoding="utf-8")
+    hold = allowed_hold(root / "hold.json")
     with pytest.MonkeyPatch.context() as patch:
         # La campaña base solo ejecuta dobles: ningún modelo se ajusta.
         patch.setenv(HOLD_ENV, str(hold))
@@ -294,8 +294,9 @@ class ScriptedLearner:
             )
             budget = stage["policies"]["budget"]
             transitions = budget["transitions"]
-            if job["engine"] == "native_klpo":
-                # KLPO declara las oleadas completas que caben en el presupuesto.
+            if job["engine"] in native_policy_runs.WAVE_ENGINES:
+                # KLPO y los objetivos de grupo declaran las oleadas completas que caben en el
+                # presupuesto.
                 waves, wave = native_policy_runs.klpo_waves(
                     tapes.train, budget["environments"], transitions
                 )
@@ -345,6 +346,7 @@ def executors(learner, backend="python"):
         "reference": dict(run=reference, requires=(), native=False),
         "native_klpo": dict(run=learner, requires=(), native=False),
         "native_ppo": dict(run=learner, requires=(), native=False),
+        "native_group_relative": dict(run=learner, requires=(), native=False),
     }
 
 
