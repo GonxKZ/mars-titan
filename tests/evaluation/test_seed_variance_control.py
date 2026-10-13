@@ -8,6 +8,7 @@ Nada se ajusta ni se lee de la edición.
 
 import copy
 import json
+import math
 from pathlib import Path
 
 import numpy as np
@@ -99,12 +100,48 @@ def test_pt1_declares_the_same_margins_seeds_and_resampling_as_the_seed_control(
         declaration="configs/evaluation/memory-pilot-seed-control.json",
         rules=["pt1", "pt1_trivial_alternative"],
     )
-    assert pt1["pilot"]["seeds"] == {PT1_MODEL: len(rule["seeds"]), CONTROL: 3}
+    trivial = control["rules"]["pt1_trivial_alternative"]
+    assert pt1["pilot"]["seeds"] == {
+        PT1_MODEL: len(rule["seeds"]),
+        TRIVIAL: len(trivial["seeds"]),
+        CONTROL: 3,
+    }
     assert pt1["pilot"]["seed_control_gpu_hours"] == control["pilot"]["gpu_hours_reserved"]
     assert pt1["pilot"]["validation_windows"] == control["pilot"]["validation_windows"]
     for key in ("block_length", "replicates", "confidence", "partition"):
         assert pt1["metric"][key] == control["metric"][key]
     assert set(pt1["equal"]) >= set(control["equal"])
+
+
+def test_the_reserved_hours_come_from_the_slowest_measured_pass():
+    """Las horas de las semillas añadidas salen de la medida versionada, no de una hipótesis."""
+    control, _ = svc.load_declaration(DECLARATION)
+    pt1 = json.loads(PT1.read_text())
+    receipt = json.loads((ROOT / control["pilot"]["gpu_hours_basis"]).read_text())
+    assert pt1["pilot"]["gpu_hours_basis"] == control["pilot"]["gpu_hours_basis"]
+    assert receipt["kind"] == "memory_pilot_seed_control_cost"
+    assert receipt["optimizer_steps"] == 0 and receipt["final_test_opened"] is False
+    assert receipt["model"] == CONTROL and receipt["device"] == "cuda:0"
+    assert len(receipt["inputs"]["assets"]) == 64 and receipt["inputs"]["max_event_rows"] <= 64
+    slowest = receipt["estimate"]["slowest"]
+    assumptions = slowest["assumptions"]
+    assert assumptions["validation_windows"] == control["pilot"]["validation_windows"]
+    assert assumptions["search_cases"] == len(receipt["search_cases"]) == 2
+    rates = receipt["rates"]
+    assert len(rates["train"]) == len(rates["inference"]) == receipt["repeats"] >= 3
+    # La estimación usa la pasada más lenta de las medidas, que da la cota superior.
+    expected = assumptions["validation_passes_per_case"] * assumptions["search_cases"]
+    assert slowest["inference_rows_per_seed"] == slowest["validation_rows_per_pass"] * expected
+    hours = (
+        slowest["fit_rows_per_seed"] / min(rates["train"])
+        + slowest["inference_rows_per_seed"] / min(rates["inference"])
+    ) / 3600
+    assert slowest["hours_per_seed"] == pytest.approx(hours, rel=1e-12)
+    assert slowest["hours_per_seed"] >= receipt["estimate"]["median"]["hours_per_seed"]
+    # Dos semillas añadidas del control en la reserva. PT1, su alternativa trivial y la
+    # semilla 42 del control en el presupuesto de PT1, con el coste por semilla del control.
+    assert control["pilot"]["gpu_hours_reserved"] == math.ceil(2 * slowest["hours_per_seed"])
+    assert pt1["pilot"]["gpu_hours_max"] == math.ceil(3 * slowest["hours_per_seed"])
 
 
 def _invalid():

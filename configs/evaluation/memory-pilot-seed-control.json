@@ -90,7 +90,8 @@
     "shared_by": ["pt1", "pt1_trivial_alternative", "pt4", "pt5", "pt6"],
     "extra_control_seeds": [43, 44],
     "extra_seed_procedure": "same_search_cases_validation_selection_and_budget_as_paired_seed",
-    "gpu_hours_reserved": 4
+    "gpu_hours_reserved": 27,
+    "gpu_hours_basis": "reports/engineering/memory-pilot-seed-control-cost-20261013.json"
   },
   "pending": [
     "Nada se ha ejecutado. El bloqueo de aprendizaje impide ajustar las semillas del control y los pilotos."
