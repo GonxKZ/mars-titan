@@ -115,6 +115,15 @@ def test_cascade_first_write_equals_the_control_because_levels_start_equal():
         torch.testing.assert_close(left, right, rtol=0, atol=0)
 
 
+def test_the_cascade_reads_only_its_first_level():
+    model, control = memory(multiscale=multiscale()), memory()
+    state = scrambled(model, model.initial_state(2))
+    assert model.readable_weights(state) is state.weights
+    query = tokens(1)
+    expected = control.read(query, replace(control.initial_state(2), weights=state.weights))
+    torch.testing.assert_close(model.read(query, state), expected, rtol=0, atol=0)
+
+
 def test_cascade_follows_the_euler_equations_with_titans_forgetting(monkeypatch):
     model = memory(multiscale=multiscale())
     state = scrambled(model, model.initial_state(2))
@@ -330,6 +339,9 @@ def test_budget_counts_the_hidden_levels():
     single.initial_state(2)
     with pytest.raises(ValueError, match="presupuesto"):
         memory(multiscale=multiscale(), max_state_bytes=2 * (2 * 2 * 16 * 8 + 8)).initial_state(2)
+    # La cuenta previa ya incluye los niveles, antes de reservar ningún tensor.
+    with pytest.raises(ValueError, match="presupuesto"):
+        memory(multiscale=multiscale(), max_state_bytes=2 * (2 * 2 * 16 * 8 + 8))._check_size(2)
 
 
 @pytest.mark.parametrize(
