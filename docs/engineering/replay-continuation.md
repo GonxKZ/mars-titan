@@ -82,7 +82,7 @@ Medido el 13 de octubre de 2026 en CPU con `benchmarks/replay_continuation_cost.
 - El plan de cada caso tarda unos 0,04 s con repaso y menos de 1 ms con repetición.
 - Una época de la continuación completa tarda 0,35 s. Con repaso, la primera época tarda 5,7 s (uniforme) y 7,3 s (por régimen), porque abre la fuente de las sesiones planificadas y las lee. Las siguientes tardan 0,50 y 0,61 s, con las sesiones ya residentes (7,5 MB). La repetición tarda 0,64 y 0,65 s.
 
-El coste que importa son las actualizaciones adicionales, un 50 % más de pasos por época en cada control. `training/campaign_throughput.py` suma las filas de repaso a la estimación de horas. Con los recuentos verificados de A v2, 10 épocas efectivas y 16.000 muestras-época por segundo, nombrar la sección en la etapa A v2 subiría los adaptadores de 118 a 156 horas de GPU, y el factor de caudal necesario para 580 h útiles con 250 h fijas pasaría de 7,55 a 7,66. Para la etapa A no hay informe de recuentos y no se ha estimado.
+El coste que importa son las actualizaciones adicionales, un 50 % más de pasos por época en cada control. `training/campaign_throughput.py` suma las filas de repaso a la estimación de horas. Con los recuentos verificados de A v2, 10 épocas efectivas y 16.000 muestras-época por segundo, nombrar la sección en la etapa A v2 añadiría 810 ajustes (de 7.074 a 7.884) y subiría los adaptadores de 118 a 156 horas de GPU, y el factor de caudal necesario para 580 h útiles con 250 h fijas pasaría de 7,90 a 8,01. Para la etapa A no hay informe de recuentos y no se ha estimado.
 
 ## Revisión adversarial
 
