@@ -1,0 +1,74 @@
+{
+ "every-100": {
+  "every": 100,
+  "considered": 51,
+  "assets": 37,
+  "skipped": {
+   "samples_missing": 14
+  },
+  "markets": {
+   "US": 29,
+   "CN": 8
+  },
+  "counts": {
+   "train": 110095,
+   "validation": 4609,
+   "calibration": 2270,
+   "evaluation": 9149
+  },
+  "source_counts": {
+   "train": 14639357,
+   "validation": 609090,
+   "calibration": 301977,
+   "evaluation": 1221822
+  }
+ },
+ "every-33": {
+  "every": 33,
+  "considered": 152,
+  "assets": 123,
+  "skipped": {
+   "samples_missing": 29
+  },
+  "markets": {
+   "US": 105,
+   "CN": 18
+  },
+  "counts": {
+   "train": 364104,
+   "validation": 15109,
+   "calibration": 7531,
+   "evaluation": 30323
+  },
+  "source_counts": {
+   "train": 14639357,
+   "validation": 609090,
+   "calibration": 301977,
+   "evaluation": 1221822
+  }
+ },
+ "every-16": {
+  "every": 16,
+  "considered": 313,
+  "assets": 244,
+  "skipped": {
+   "samples_missing": 69
+  },
+  "markets": {
+   "US": 203,
+   "CN": 41
+  },
+  "counts": {
+   "train": 739214,
+   "validation": 29906,
+   "calibration": 14809,
+   "evaluation": 59915
+  },
+  "source_counts": {
+   "train": 14639357,
+   "validation": 609090,
+   "calibration": 301977,
+   "evaluation": 1221822
+  }
+ }
+}

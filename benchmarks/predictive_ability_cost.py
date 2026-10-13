@@ -28,6 +28,7 @@ from mars_titan.data.temporal import MarketClock
 from mars_titan.evaluation import predictive_ability as pa
 from mars_titan.evaluation import walk_forward_comparison as walk
 from mars_titan.evaluation.forecast_panel import SessionSeries
+from mars_titan.hardware.platform_identity import cpu_name
 
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG = ROOT / "configs/evaluation/historical-masked-2000-joint-comparison.json"
@@ -163,14 +164,6 @@ def measure(repeats):
         numpy_peak_bytes=peak,
         identical_reports=len({run["report_sha256"] for run in runs}) == 1,
     )
-
-
-def cpu_name():
-    """Modelo de la CPU de /proc/cpuinfo y, si no aparece, la arquitectura."""
-    info = Path("/proc/cpuinfo")
-    lines = info.read_text().splitlines() if info.is_file() else []
-    names = (line.split(":", 1)[1].strip() for line in lines if line.startswith("model name"))
-    return next(names, platform.processor() or platform.machine())
 
 
 def main():

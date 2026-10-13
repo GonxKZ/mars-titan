@@ -1,0 +1,116 @@
+{
+  "schema_version": 1,
+  "kind": "innovation_arm_declaration",
+  "innovation": "observable_regime_routing_of_b6",
+  "status": "declared_not_executed",
+  "declared_at": "2026-10-10",
+  "final_test_opened": false,
+  "executions": 0,
+  "issue": 20,
+  "proposal": "docs/research/markov-regimes.md",
+  "specification": "docs/engineering/mars-titan-extensions.md",
+  "extensions": "configs/titans/mars-titan-extensions.json",
+  "campaign": "configs/baselines/historical-masked-campaign-extensions.json",
+  "comparison": "configs/evaluation/historical-masked-2000-comparison.json",
+  "ablations": ["A13", "A14"],
+  "base": "Titans-MAC mac_online seleccionado en la ventana, sin banco episódico, con las mismas predicciones del núcleo, las mismas claves del codec, la misma receta de B6 (λ = 0,01 y los casos η = 0,05 y η = 0,25) y las mismas filas, ventanas y semillas",
+  "rules": {
+    "regime": {
+      "name": "observable_volatility_trend_v1",
+      "min_assets": 20,
+      "recent_returns": 21,
+      "min_returns": 42
+    },
+    "calendar": {
+      "name": "calendar_month_v1",
+      "min_assets": 20,
+      "recent_returns": 21,
+      "min_returns": 42
+    }
+  },
+  "arms": {
+    "mars_titan_b6_bias": {"role": "control", "key": "constant", "key_size": 1},
+    "mars_titan_b6_calendar": {"role": "discard_control", "key": "calendar", "key_size": 5},
+    "mars_titan_b6_regime": {"role": "innovation", "key": "regime", "key_size": 5},
+    "mars_titan_b6": {"role": "control", "key": "codec", "key_size": 64},
+    "mars_titan_b6_calendar_banks": {
+      "role": "discard_control",
+      "key": "codec_by_calendar",
+      "key_size": 320
+    },
+    "mars_titan_b6_regime_banks": {
+      "role": "innovation",
+      "key": "codec_by_regime",
+      "key_size": 320
+    }
+  },
+  "hypotheses": {
+    "H1": {
+      "statement": "Un corrector de sesgo con un compartimento por régimen observable reduce el MAE por sesión frente al mismo corrector con los compartimentos asignados por mes",
+      "variant": "mars_titan_b6_regime",
+      "control": "mars_titan_b6_calendar",
+      "family": "regime_information"
+    },
+    "H2": {
+      "statement": "Una matriz del codec por régimen observable reduce el MAE por sesión frente a la misma matriz con los compartimentos asignados por mes",
+      "variant": "mars_titan_b6_regime_banks",
+      "control": "mars_titan_b6_calendar_banks",
+      "family": "regime_bank_information"
+    }
+  },
+  "equal": [
+    "core_predictions",
+    "codec_keys",
+    "rows",
+    "windows",
+    "seeds",
+    "cohorts",
+    "maturity",
+    "read_order",
+    "rate_cases",
+    "forgetting",
+    "unclassified_cohorts",
+    "key_size_within_each_hypothesis"
+  ],
+  "capacity": "Cada hipótesis compara dos modelos con la misma clave y el mismo tamaño, 5 o 320 coordenadas. Frente a los modelos sin enrutar la capacidad cambia (5 frente a 1 y 320 frente a 64). Esa diferencia se declara y es la que mide routing_slots en la matriz de comparaciones",
+  "metric": {
+    "primary": "relative_difference_of_session_mae_regime_minus_calendar",
+    "secondary_not_deciding": [
+      "relative_difference_of_session_mae_routed_minus_unrouted",
+      "reads_and_writes_by_route",
+      "transitions_by_market",
+      "share_of_unclassified_events"
+    ],
+    "pairing": "same_sessions_assets_and_windows",
+    "uncertainty": "circular_block_bootstrap",
+    "block_length": 16,
+    "replicates": 2000,
+    "confidence": 0.95,
+    "multiplicity": "holm_over_H1_and_H2",
+    "partition": "evaluation",
+    "scopes": ["US", "CN", "US+CN"]
+  },
+  "decision_rule": {
+    "keep_if": [
+      "upper_bound_of_holm_adjusted_relative_mae_difference_regime_minus_calendar < 0 in H1 or H2",
+      "and that routed arm does not worsen its unrouted control by more than 0.001 relative MAE"
+    ],
+    "abandon_if": [
+      "upper_bound_of_holm_adjusted_relative_mae_difference_regime_minus_calendar >= 0 in H1 and H2"
+    ],
+    "trivial_alternative": "Si el calendario iguala o mejora al régimen, lo que aporte enrutar procede de la capacidad o del reparto en compartimentos y no del estado del mercado. Si los modelos sin enrutar igualan a los enrutados, enrutar no aporta. Ninguno de los dos casos demuestra equivalencia",
+    "retained_representation": "Aunque se abandone, el régimen sigue declarado como componente apagable de MARS-TITAN con su resultado negativo registrado, sin retirarlo en silencio"
+  },
+  "pilot": {
+    "data": "ninguno, porque el bloqueo de aprendizaje impide emitir predicciones",
+    "compute": "CPU, con el coste por evento de reports/engineering/regime-routing-20261010/cost.json",
+    "gpu_hours_max": 0
+  },
+  "prediction": "Expectativa previa, no resultado. La diferencia entre régimen y calendario será pequeña, del orden de ±0,1 % del MAE, porque B6 con clave constante corrige sesgos lentos y λ = 0,01 reduce a la mitad un compartimento sin visitas en unas 69 escrituras, así que un régimen que vuelve tras meses encuentra su compartimento casi vacío",
+  "pending": [
+    "Nada se ha ejecutado. El bloqueo de aprendizaje impide emitir las predicciones del padre y de los modelos.",
+    "La regla no ajusta umbrales: compara la volatilidad reciente con la anterior dentro de la misma ventana y usa el signo de la tendencia. La issue preveía umbrales estimados con entrenamiento, que serían otro ajuste por ventana bloqueado y un grado de libertad más.",
+    "El filtro HMM de native/src/markov_filter.cpp sigue sin conexión. Como contexto de la fusión exigiría un padre Titans-MAC propio por ventana.",
+    "La partición del banco episódico por régimen solo se contrastaría después de A2 (M1 frente a M0), como fija la matriz de ablaciones."
+  ]
+}

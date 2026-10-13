@@ -32,6 +32,7 @@ from mars_titan.training import masked_campaign as engine
 from mars_titan.training.campaign_plan import load_campaign, plan_campaign
 from mars_titan.training.corpus_inputs import CorpusDataset
 from mars_titan.training.learning_hold import LearningHoldError
+from tests.hardware.platform_doubles import gb10, laptop
 from tests.training.test_walk_forward_v2_views import fixture
 
 pytestmark = pytest.mark.usefixtures("learning_doubles")
@@ -434,6 +435,56 @@ def test_sources_feed_the_walk_forward_comparison_with_the_same_rows(prepared, t
     assert sessions.num_rows > 0
     years = pa.compute.year(sessions["prediction_at"]).to_numpy()
     assert years.max() <= 2023
+
+
+def test_receipts_record_the_platform_and_sources_keep_one_machine(prepared, tmp_path):
+    campaign = write_campaign(tmp_path / "config")
+    views = {"US": prepared.views["US"]}
+    output = tmp_path / "out"
+    summary = engine.run_campaign(
+        campaign,
+        views,
+        output,
+        executors=doubles(Recorder()),
+        lease=nullcontext,
+        stop=SimpleNamespace(requested=False),
+        platform=laptop(),
+    )
+    assert summary["status"] == "completed" and summary["platform"] == laptop()
+    jobs = [job for job in plan_campaign(load_campaign(campaign)) if job["scope"] == "US"]
+    receipts = [output / "jobs" / job["id"] / "receipt.json" for job in jobs]
+    assert all(json.loads(path.read_text())["platform"] == laptop() for path in receipts)
+    path = engine.write_sources(campaign, views, output, "US")
+    manifest = json.loads(path.read_text())
+    assert manifest["schema_version"] == 2
+    assert manifest["platform"] == dict(
+        platform_sha256=laptop()["platform_sha256"],
+        recorded=len(jobs),
+        unrecorded=0,
+        unrecorded_profile=None,
+    )
+    config = comparison.load_config(tmp_path / "config/comparison.json")
+    assert comparison.load_sources(path, config, "US")["platform"] == manifest["platform"]
+    # Un traslado no es padre de ningún otro trabajo, así que se puede reescribir su recibo.
+    carry = next(job for job in jobs if job["kind"] == engine.CARRY)
+    receipt_path = output / "jobs" / carry["id"] / "receipt.json"
+    receipt = json.loads(receipt_path.read_text())
+    atomic_json(receipt_path, dict(receipt, platform=gb10()))
+    with pytest.raises(ValueError, match="mezcla plataformas"):
+        engine.write_sources(campaign, views, output, "US")
+    # Un recibo anterior al registro solo entra con el perfil al que se atribuye.
+    atomic_json(receipt_path, {k: v for k, v in receipt.items() if k != "platform"})
+    with pytest.raises(ValueError, match="no registran su plataforma"):
+        engine.write_sources(campaign, views, output, "US")
+    with pytest.raises(ValueError, match="atribuido"):
+        engine.write_sources(campaign, views, output, "US", unrecorded_platform="dgx-gb10")
+    path = engine.write_sources(campaign, views, output, "US", unrecorded_platform="rtx4070-laptop")
+    assert json.loads(path.read_text())["platform"] == dict(
+        platform_sha256=laptop()["platform_sha256"],
+        recorded=len(jobs) - 1,
+        unrecorded=1,
+        unrecorded_profile="rtx4070-laptop",
+    )
 
 
 def selected_fit(jobs, scope, window, arm, seed):

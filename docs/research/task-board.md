@@ -42,7 +42,7 @@ Una prioridad P1 no significa opcional. La etiqueta `opcional` señala extension
 | [MT-007 · Normalizar noticias y su disponibilidad](https://github.com/GonxKZ/mars-titan/issues/7) | Núcleo | P0 | Pendiente | MT-005 |
 | [MT-008 · Reconstruir fundamentales por publicación](https://github.com/GonxKZ/mars-titan/issues/8) | Núcleo | P0 | Pendiente | MT-005 |
 | [MT-009 · Generar gráficos con historia disponible](https://github.com/GonxKZ/mars-titan/issues/9) | Núcleo | P1 | Pendiente | MT-006 |
-| [MT-010 · Auditar y versionar codificadores congelados](https://github.com/GonxKZ/mars-titan/issues/10) | Núcleo | P1 | Pendiente | MT-007, MT-009, MT-004 |
+| [MT-010 · Auditar y versionar codificadores congelados](https://github.com/GonxKZ/mars-titan/issues/10) | Núcleo | P1 | En revisión, control sin preentrenamiento y sensibilidad declarada, ejecución pendiente de la campaña | MT-007, MT-009, MT-004 |
 | [MT-011 · Construir el contrato temporal de datos](https://github.com/GonxKZ/mars-titan/issues/11) | Núcleo | P0 | Pendiente | MT-006, MT-007, MT-008 |
 | [MT-012 · Definir la selección y publicar el piloto](https://github.com/GonxKZ/mars-titan/issues/12) | Núcleo | P0 | Pendiente | MT-005, MT-006, MT-007, MT-008, MT-011 |
 | [MT-048 · Preparar datos por bloques y ventanas bajo demanda](https://github.com/GonxKZ/mars-titan/issues/50) | Apoyo | P1 | Pendiente | MT-004, MT-005, MT-011, MT-012 |

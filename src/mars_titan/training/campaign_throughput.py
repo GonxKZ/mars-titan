@@ -278,16 +278,17 @@ def _option_hours(campaign, family, jobs, counts, measured, epochs):
 def _online_hours(campaign, jobs, counts, neural):
     """Acota por arriba las horas del control en línea mientras no se mida su ejecutor.
 
-    Cada trabajo predice calibración y evaluación con la inferencia más lenta de su padre y,
-    como cada etiqueta madura entra a lo sumo en un paso, ajusta como mucho esas mismas filas
-    una vez con el caudal de ajuste más lento del padre.
+    Cada trabajo, de búsqueda o finalista, predice validación, calibración y evaluación con
+    la inferencia más lenta de su padre y, como cada etiqueta madura entra a lo sumo en un
+    paso, ajusta como mucho esas mismas filas una vez con el caudal de ajuste más lento del
+    padre.
     """
-    parent = campaign["online_controls"]["arms"][jobs[0]["arm"]]["parent_arm"]
-    rate = _slowest(neural[parent].values())
+    arm = campaign["online_controls"]["arms"][jobs[0]["arm"]]
+    rate = _slowest(neural[arm["parent_arm"]].values())
 
     def seconds(job):
         rows = counts[job["scope"]][job["window"]]
-        held = rows["calibration"] + rows["evaluation"]
+        held = sum(rows[name] for name in arm["partitions"])
         return held / rate["inference"] + held / rate["train"]
 
     return dict(_hours(jobs, seconds), bound="each_matured_label_in_at_most_one_step")

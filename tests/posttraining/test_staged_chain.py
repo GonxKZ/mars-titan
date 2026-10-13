@@ -1,4 +1,8 @@
-"""Regla, puntuación e identificadores de la cadena del walk-forward por etapas."""
+"""Puntuación de validación y brazo del padre congelado de la cadena por etapas.
+
+La regla, los identificadores y las rutas de la cadena se prueban con
+`training.campaign_chain` en `tests/training/test_campaign_chain.py`.
+"""
 
 import math
 
@@ -79,87 +83,5 @@ def test_the_score_rejects_missing_or_non_finite_errors():
         staged_chain.validation_score(table(ROWS).drop(["target"]))
 
 
-def candidate(kind, job, score):
-    return dict(kind=kind, arm=job, job=job, receipt_sha256="0" * 64, score=score)
-
-
-def test_the_frozen_parent_is_only_replaced_by_a_strict_improvement():
-    frozen = candidate("frozen_parent", "w/gru__frozen_parent/frozen-s42", 0.5)
-    tie = candidate("adapter", "w/gru__head/fit-s42", 0.5)
-    better = candidate("continuation", "w/gru__full/fit-s42", 0.5 - 1e-12)
-    assert staged_chain.choose([frozen, tie]) is frozen
-    assert staged_chain.choose([tie, frozen, better]) is better
-    assert staged_chain.choose([frozen]) is frozen
-    # Entre candidatos con la misma mejora, el identificador decide.
-    first = candidate("adapter", "w/gru__a/fit-s42", 0.25)
-    second = candidate("adapter", "w/gru__b/fit-s42", 0.25)
-    assert staged_chain.choose([frozen, second, first]) is first
-    assert staged_chain.choose([second, frozen, first]) is first
-
-
-@pytest.mark.parametrize(
-    "candidates",
-    [
-        [],
-        [candidate("adapter", "a", 0.1)],
-        [candidate("frozen_parent", "a", 0.1), candidate("frozen_parent", "b", 0.2)],
-        [candidate("frozen_parent", "a", 0.1), candidate("adapter", "a", 0.2)],
-        [candidate("frozen_parent", "a", 0.1), candidate("base", "b", 0.2)],
-        [candidate("frozen_parent", "a", float("nan")), candidate("adapter", "b", 0.2)],
-        [candidate("frozen_parent", "a", 0.1), candidate("adapter", "b", "0.2")],
-    ],
-)
-def test_the_rule_needs_one_frozen_parent_and_distinct_finite_candidates(candidates):
-    with pytest.raises(ValueError, match="padre congelado"):
-        staged_chain.choose(candidates)
-
-
-def test_identifiers_and_folders_follow_the_campaign_plan(tmp_path):
-    assert staged_chain.chain_arm("gru") == "gru__chain"
+def test_the_frozen_parent_arm_follows_the_campaign_plan():
     assert staged_chain.frozen_arm("gru") == "gru__frozen_parent"
-    assert staged_chain.chain_job_id("US+CN", "fold-003", "gru", 7) == (
-        "US+CN/fold-003/gru__chain/select-s7"
-    )
-    assert staged_chain.chain_folder(tmp_path, "US", "fold-001", "dlinear", 42) == (
-        tmp_path / "windows/US/fold-001/dlinear__chain/seed-42"
-    )
-    assert staged_chain.read_selection(tmp_path, "US", "fold-001", "dlinear", 42) is None
-
-
-def test_scope_windows_are_in_temporal_order():
-    windows = {
-        "fold-000": dict(evaluation=["2022-01-01", "2022-04-01"]),
-        "fold-001": dict(evaluation=["2022-04-01", "2022-07-01"]),
-    }
-    campaign = dict(comparison_config=dict(resolved_scopes=dict(US=dict(windows=windows))))
-    assert [name for name, _ in staged_chain.scope_windows(campaign, "US")] == [
-        "fold-000",
-        "fold-001",
-    ]
-    windows = dict(reversed(windows.items()))
-    campaign["comparison_config"]["resolved_scopes"]["US"]["windows"] = windows
-    with pytest.raises(ValueError, match="orden temporal"):
-        staged_chain.scope_windows(campaign, "US")
-
-
-def test_parent_jobs_prefer_the_carry_or_finalist_of_the_seed():
-    def job(name, stage, seed):
-        return dict(id=f"US/fold-000/gru/{name}", stage=stage, seed=seed)
-
-    searches = [job(f"search-gru-{i}", "search", 42) for i in (3, 1, 2)]
-    other = [job("search-gru-9", "search", 7), dict(id="US/fold-000/gru2/carry-s42")]
-    assert staged_chain.parent_jobs(searches + other, "US", "fold-000", "gru", 42) == [
-        "US/fold-000/gru/search-gru-1",
-        "US/fold-000/gru/search-gru-2",
-        "US/fold-000/gru/search-gru-3",
-    ]
-    finalist = job("finalist-s7", "finalist", 7)
-    assert staged_chain.parent_jobs(searches + other + [finalist], "US", "fold-000", "gru", 7) == [
-        "US/fold-000/gru/finalist-s7"
-    ]
-    carry = job("carry-s42", "carry", 42)
-    assert staged_chain.parent_jobs([*searches, carry], "US", "fold-000", "gru", 42) == [
-        "US/fold-000/gru/carry-s42"
-    ]
-    with pytest.raises(ValueError, match="no elige el estado"):
-        staged_chain.parent_jobs(searches, "US", "fold-000", "gru", 5)

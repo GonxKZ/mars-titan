@@ -34,8 +34,7 @@ from pathlib import Path
 
 from mars_titan.data.cohort_files import read_manifest
 from mars_titan.evaluation import walk_forward_comparison as comparison
-from mars_titan.posttraining.staged_chain import chain_job_id
-from mars_titan.training.campaign_chain import policy_rule
+from mars_titan.training.campaign_chain import chain_job_id, policy_rule
 from mars_titan.training.campaign_plan import DECLARED, _arm_specs, load_campaign, scope_arms
 
 from . import window_tapes
