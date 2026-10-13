@@ -103,6 +103,8 @@ Recorrido por ventanas con liberación verificada:
 
 Lo conservado con todo regenerado son los estados elegidos (5,0 GB), informes y resúmenes (0,9 GB), agregados (1,8 GB), registros de retención, las cintas de las políticas (4,0 GB) y las 418 evaluaciones que leen las políticas mientras tienen lector. El pico está siempre en `fold-018`, la ventana con más filas: lo conservado de las 18 anteriores (15,0 GB) más el ajuste XGBoost de US+CN con sus páginas (25,2 GB densas, 31,9 GB con la caché de `develop`). La regeneración de un trabajo al liberar añade sus tablas, su compactación y, si indexa, su índice, por debajo de ese pico.
 
+Las cintas se midieron con 128 columnas. El 13 de octubre se [midieron de nuevo](../campaign-storage-20261009/README.md#forma-de-las-cintas-de-las-políticas-13-de-octubre) con el diseño fijo de cada política, 128 columnas con precios en 640: 1.697.830 bytes por cinta en lugar de 1.531.535. Las 2.640 cintas de A v2 pasan de 4,04 a 4,48 GB. Lo conservado de cada combinación con políticas sube 0,44 GB y el pico de `fold-018` como mucho lo mismo. `estimate-a-v2.json` no se ha recalculado.
+
 A las 20:55 del 9 de octubre `/` tenía 47,98 GB libres. Con el margen de 8 GiB (8,59 GB) quedan 39,4 GB, menos que los 42,2 GB del pico de la base con políticas y ablación. Para lanzar esa combinación harían falta unos 50,8 GB libres en `fold-018`. La guardia de cada ventana lo comprueba con la declaración antes de empezarla, y la de cada trabajo antes de cada ajuste.
 
 ## Límites y trabajo pendiente

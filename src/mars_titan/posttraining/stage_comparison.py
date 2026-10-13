@@ -235,6 +235,9 @@ def derive_config(declaration, stage, base_arm, groups):
         for key, value in inherited.items()
         if key not in {"sha256", "resolved_scopes", "resolved_families", *DERIVED}
     }
+    # Los pares de retención e interferencia nombran memorias y controles de la comparación
+    # principal. La etapa no los tiene y su pregunta no es la del postentrenamiento.
+    raw.pop(walk.RETENTION_FIELD, None)
     if walk.JOINT_FIELD in raw:
         # La etapa del modelo conjunto solo evalúa su ámbito. Se conserva la elegibilidad por
         # mercado (China en las métricas desde su primera ventana elegible) y se retiran los
