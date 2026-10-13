@@ -164,6 +164,8 @@ con $K^\top\Sigma^{-1}K=\frac{1}{\sigma^2(1-\varrho)}\big(K^\top K-g\,(K^\top\ma
 
 **Predicción.** El banco EMA igualará a la cascada. Multiplica por tres el estado por flujo.
 
+**Implementación.** Implementada y comprobada sin entrenar como `memory_multiscale` (`cascade` y la alternativa `ema_bank`), con g = 1/16, contracción uniforme demostrada dentro de la caja de PT1 y la comparación declarada sin ejecutar ([#457](https://github.com/GonxKZ/mars-titan/issues/457), [especificación](../engineering/multiscale-memory.md)).
+
 ## PT6. Fusión condicionada por la presencia de modalidades (línea posterior)
 
 **Datos.** Modalidades ausentes con máscara. La fusión actual concatena las codificaciones multiplicadas por presencia y los bits de presencia, y aplica una capa lineal. Puede desplazar la salida según el patrón, pero no reescalar la contribución de una modalidad según la ausencia de otra.
