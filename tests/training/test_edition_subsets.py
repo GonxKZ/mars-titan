@@ -15,6 +15,8 @@ from mars_titan.data.storage import atomic_json, sha256
 from mars_titan.training.edition_catalog import build_catalog, read_catalog_manifest
 from mars_titan.training.edition_subsets import (
     SubsetRows,
+    _first_by_group,
+    _present,
     materialize,
     read_subset,
     row_order,
@@ -139,9 +141,35 @@ def test_the_order_key_is_splitmix64_of_seed_asset_and_instant():
 
     seed, asset = 42, 0x0123456789ABCDEF
     moments = np.array([946_944_300_000_000, 1_703_883_900_000_000, -1], dtype=np.int64)
-    actual = row_order(seed, np.full(3, asset, dtype=np.uint64), moments)
+    assets = np.full(3, asset, dtype=np.uint64)
+    actual = row_order(seed, assets, moments)
     expected = [mix(mix((int(m) & mask) ^ mix(seed)) ^ asset) for m in moments]
     assert actual.tolist() == expected
+    # La mezcla opera en el sitio sobre sus propias copias, nunca sobre las entradas.
+    assert assets.tolist() == [asset] * 3 and moments[-1] == -1
+
+
+@pytest.mark.parametrize("groups", [3, 300, 70_000])
+def test_first_rows_of_each_group_match_a_direct_ordering(groups):
+    # Más de 255 y de 65.535 grupos comprueban el tipo compacto con el que se ordenan.
+    rng = np.random.default_rng(groups)
+    labels = rng.integers(0, groups, 100_000)
+    order = rng.integers(0, 40, len(labels)).astype(np.uint64)
+    chosen = _first_by_group(labels, order, lambda n: (n + 1) // 2)
+    sizes, seen, expected = Counter(labels.tolist()), Counter(), []
+    pairs = zip(labels.tolist(), order.tolist(), range(len(labels)), strict=True)
+    for label, _, position in sorted(pairs):
+        if seen[label] < (sizes[label] + 1) // 2:
+            expected.append(position)
+        seen[label] += 1
+    assert chosen.tolist() == sorted(expected)
+
+
+def test_present_values_and_positions_equal_numpy_unique():
+    key = np.random.default_rng(5).integers(0, 1_000, 20_000) * 3
+    values, positions = _present(key, 3_000)
+    expected, inverse = np.unique(key, return_inverse=True)
+    assert np.array_equal(values, expected) and np.array_equal(positions, inverse)
 
 
 def test_materialized_subset_is_reproduced_and_its_ids_are_protected(built, tmp_path):
