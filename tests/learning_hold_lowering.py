@@ -45,6 +45,12 @@ INVENTORY = {
         "learning_doubles y políticas de reglas fijas, para comprobar la plataforma de sus "
         "recibos y del informe (#543)"
     ),
+    "tests/training/test_rolling_retention.py::"
+    "test_aggregates_of_receipts_without_platform_need_the_declared_profile": (
+        "recorre la campaña del fixture base, confirmada con la protección rebajada y pesos "
+        "iniciales, con sus recibos sin plataforma para comprobar que los agregados solo se "
+        "publican con el perfil declarado (#543)"
+    ),
     "tests/test_suite_support.py::test_unguarded_fits_run_when_the_hold_allows_learning": (
         "la sesión de pytest hija lee una protección temporal que permite aprender para "
         "comprobar que la marca unguarded_fit deja de omitir, aunque la prueba sondeada no ajusta"

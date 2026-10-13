@@ -26,6 +26,7 @@ from mars_titan.training import modality_ablation_stage as ablation
 from mars_titan.training import rolling_retention as rolling
 from mars_titan.training import rolling_storage
 from mars_titan.training.learning_hold import HOLD_ENV
+from tests.learning_hold_lowering import lowers_learning_hold
 from tests.posttraining.campaign_fixture import CpuLease
 from tests.simulation import rl_stage_fixture
 from tests.simulation.unadjusted_edition_fixture import Asset
@@ -362,6 +363,46 @@ def test_a_policy_input_is_compacted_and_released_only_after_its_last_reader(
     ledger = state.ledger()["windows"]
     assert ledger[first]["phases"]["release"]["kept_for_policies"] == 1
     assert ledger[windows[-1]["id"]]["phases"]["release"]["kept_for_policies"] == 0
+
+
+@lowers_learning_hold(
+    "tests/training/test_rolling_retention.py::"
+    "test_aggregates_of_receipts_without_platform_need_the_declared_profile"
+)
+def test_aggregates_of_receipts_without_platform_need_the_declared_profile(
+    base,  # noqa: F811
+    edition,
+    tmp_path,
+    monkeypatch,
+    unconsumed,
+):
+    on_cpu(monkeypatch)
+    monkeypatch.setenv(HOLD_ENV, str(base.hold))
+    output = tmp_path / "campaign"
+    shutil.copytree(base.output, output, symlinks=True)
+    # Recibos como los de una campaña anterior al registro de la plataforma.
+    for path in (output / "jobs").rglob("receipt.json"):
+        receipt = json.loads(path.read_text())
+        receipt.pop("platform", None)
+        atomic_json(path, receipt)
+    path, campaign = schedule(base, tmp_path)
+    windows = rolling.load_schedule(path, campaign)
+
+    def walk(**options):
+        state = rolling.Rolling(
+            rolling.load_retention(unconsumed),
+            base.campaign,
+            base.views,
+            output,
+            windows,
+            edition=edition,
+            **options,
+        )
+        return rolling.run_rolling(state, Calls().runners())
+
+    with pytest.raises(ValueError, match="no registran su plataforma"):
+        walk()
+    assert walk(unrecorded_platform="rtx4070-laptop")["status"] == "completed"
 
 
 @pytest.mark.parametrize(
