@@ -13,6 +13,7 @@ import torch
 from mars_titan.data.storage import atomic_json
 from mars_titan.training import kernel_policy as policy
 from mars_titan.training import reference_run
+from tests.learning_hold_lowering import lowers_learning_hold
 
 CASE = dict(
     kind="gru",
@@ -47,11 +48,14 @@ def restore_numerics(monkeypatch):
     torch.backends.cudnn.benchmark = flags[4]
 
 
-def first_report(tmp_path, monkeypatch, case, *, batch_size=16, write=False, resume=False):
+def first_report(
+    tmp_path, monkeypatch, case, *, batch_size=16, write=False, resume=False, real_hold=False
+):
     """Recorrer `run_reference_case` en CPU hasta su primer informe y devolverlo.
 
     Con `write`, el informe se escribe antes de detenerse. Con `resume`, el recorrido se
-    detiene justo después de aceptar el informe escrito, si su identidad coincide.
+    detiene justo después de aceptar el informe escrito, si su identidad coincide. Con
+    `real_hold`, el recorrido pasa por la protección real de la sesión sin sustituirla.
     """
     batch = dict(
         inputs={
@@ -82,7 +86,8 @@ def first_report(tmp_path, monkeypatch, case, *, batch_size=16, write=False, res
 
     if resume:
         monkeypatch.setattr(reference_run, "bind_joint_epoch", resumed)
-    monkeypatch.setattr(reference_run, "require_learning_allowed", lambda _: None)
+    if not real_hold:
+        monkeypatch.setattr(reference_run, "require_learning_allowed", lambda _: None)
     monkeypatch.setattr(reference_run, "require_cuda", lambda: torch.device("cpu"))
     monkeypatch.setattr(reference_run, "configured_corpus", lambda *_, **__: dataset)
     monkeypatch.setattr(reference_run, "atomic_json", stop)
@@ -176,6 +181,10 @@ def test_a_numeric_change_after_starting_is_caught_before_saving(tmp_path, monke
         )
 
 
+@lowers_learning_hold(
+    "tests/training/test_reference_run_precision.py::"
+    "test_resume_keeps_the_batch_precision_and_graph_step_it_started_with"
+)
 @pytest.mark.parametrize(
     ("case", "batch_size"),
     [
@@ -189,10 +198,12 @@ def test_resume_keeps_the_batch_precision_and_graph_step_it_started_with(
     tmp_path, monkeypatch, case, batch_size
 ):
     declared = dict(CASE, precision=policy.FP32_STRICT)
-    first_report(tmp_path, monkeypatch, declared, write=True)
+    first_report(tmp_path, monkeypatch, declared, write=True, real_hold=True)
     assert (tmp_path / "run/run.json").is_file()
     # Con las mismas opciones, la reanudación acepta el informe y sigue.
-    assert first_report(tmp_path, monkeypatch, declared, resume=True) == "reanudada"
+    assert first_report(tmp_path, monkeypatch, declared, resume=True, real_hold=True) == "reanudada"
     # Cualquier opción distinta cambia la identidad y la reanudación se rechaza.
     with pytest.raises(ValueError, match="identidad o configuración"):
-        first_report(tmp_path, monkeypatch, case, batch_size=batch_size, resume=True)
+        first_report(
+            tmp_path, monkeypatch, case, batch_size=batch_size, resume=True, real_hold=True
+        )

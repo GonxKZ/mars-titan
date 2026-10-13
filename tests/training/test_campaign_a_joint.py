@@ -27,6 +27,7 @@ from mars_titan.training import campaign_plan as plan
 from mars_titan.training import campaign_schedule as order
 from mars_titan.training import masked_campaign as engine
 from mars_titan.training.joint_temporal_corpus import prepare_joint_temporal_corpus
+from tests.learning_hold_lowering import lowers_learning_hold
 from tests.training.test_masked_campaign import Recorder, doubles, run
 from tests.training.test_walk_forward_v2_views import expected, fixture, observed
 
@@ -1021,6 +1022,10 @@ def test_recorded_precision_follows_every_alias_in_nested_reports():
     assert numerics.recorded(dict(a=[dict(b=1)]), numerics.STRICT_FP32) == []
 
 
+@lowers_learning_hold(
+    "tests/training/test_campaign_a_joint.py::"
+    "test_neural_receipts_record_the_declared_kernels_in_their_identity"
+)
 def test_neural_receipts_record_the_declared_kernels_in_their_identity(joint_campaign):
     receipts = [
         json.loads(path.read_text())

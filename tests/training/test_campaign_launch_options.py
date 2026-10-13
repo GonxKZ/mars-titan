@@ -7,10 +7,17 @@ reales hasta la entrada de su entrenador (`launch_doubles`), primero en ranuras 
 proceso por trabajo. Se comprueba qué recibe cada entrenador, que una opción no declarada se
 rechaza antes de abrir datos, que cada opción cambia la identidad y que una campaña cortada
 se reanuda con las mismas opciones. Ningún entrenador da un paso de ajuste y la GPU no se usa.
+
+El motor exige la protección de aprendizaje antes de leer la campaña, así que las pruebas que
+pasan por él figuran en el inventario de `tests/learning_hold_lowering.py` y se omiten mientras
+rige el bloqueo, sin sustituir la protección. Sin la guarda se comprueban también el rechazo
+de los valores no declarados con `check_campaign`, la identidad de cada opción con el plan y
+el lote que cada trabajo preparado entrega a su ajuste.
 """
 
 import json
 import os
+import re
 from contextlib import nullcontext
 from pathlib import Path
 from types import SimpleNamespace
@@ -25,6 +32,7 @@ from mars_titan.training import masked_campaign as engine
 from mars_titan.training.campaign_resources import Execution
 from mars_titan.training.input_pipeline import PipelineOptions
 from mars_titan.training.kernel_policy import FP32_STRICT, RETIRED_NATIVE_OVERRIDES
+from tests.learning_hold_lowering import lowers_learning_hold
 from tests.training import launch_doubles
 from tests.training.test_campaign_a_joint import CAMPAIGN, reduced
 from tests.training.test_walk_forward_v2_views import fixture
@@ -199,17 +207,6 @@ def receipts(output):
     return result
 
 
-@pytest.fixture(scope="module")
-def permitted(tmp_path_factory):
-    from mars_titan.training.learning_hold import HOLD_ENV
-
-    path = tmp_path_factory.mktemp("hold") / "training-hold.json"
-    path.write_text(json.dumps({"training_allowed": True}), encoding="utf-8")
-    with pytest.MonkeyPatch.context() as patch:
-        patch.setenv(HOLD_ENV, str(path))
-        yield path
-
-
 @pytest.fixture(autouse=True)
 def _restore_numerics():
     """La campaña fija la precisión del proceso. Las demás pruebas conservan la suya."""
@@ -219,7 +216,7 @@ def _restore_numerics():
 
 
 @pytest.fixture(scope="module")
-def launched(tmp_path_factory, permitted):
+def launched(tmp_path_factory):
     """La ventana lanzada en dos ranuras, con un proceso por trabajo."""
     root = tmp_path_factory.mktemp("launch-options")
     data = fixture(root / "data", ("US", "CN"))
@@ -258,6 +255,10 @@ def reached_jobs(jobs):
     return [job for job in jobs if (job["model"], job["kind"]) in launch_doubles.REACHED]
 
 
+@lowers_learning_hold(
+    "tests/training/test_campaign_launch_options.py::"
+    "test_every_trainer_of_the_window_receives_the_declared_options_in_its_slot"
+)
 def test_every_trainer_of_the_window_receives_the_declared_options_in_its_slot(launched):
     assert launched.summary["status"] == "completed"
     jobs = reached_jobs(window_jobs(launched.loaded))
@@ -297,46 +298,63 @@ def test_every_trainer_of_the_window_receives_the_declared_options_in_its_slot(l
             assert entry["recipe"]["precision"] == FP32_STRICT
 
 
-@pytest.mark.parametrize(
-    ("change", "message"),
-    [
-        (lambda v: v["neural"].update(precision="tf32"), "precisión neuronal"),
-        (lambda v: v["neural"].update(cuda_graphs="true"), "booleano"),
-        (lambda v: v["neural"].update(batch_size=4097), "Lote"),
-        (lambda v: v["neural"].update(compile=True), "sección neuronal no cumple"),
-        (
-            lambda v: v["memory_options"][plan.TITANS].update(accumulation_rows=512),
-            "coincidir con su receta",
-        ),
-        (
-            lambda v: v["memory_options"][plan.TITANS].update(accumulation_rows=1024.0),
-            "coincidir con su receta",
-        ),
-        (
-            lambda v: v["memory_options"][plan.EPISODIC].update(recompute=0),
-            "coincidir con su receta",
-        ),
-        (lambda v: v["memory_options"].pop("receipt"), "recibo de su medida"),
-        (
-            lambda v: v["memory_options"][plan.CM].update(accumulation_rows="pending"),
-            "no se puede lanzar",
-        ),
-    ],
-    ids=[
-        "tf32",
-        "graphs_text",
-        "batch_over_limit",
-        "undeclared_option",
-        "rows_other_than_recipe",
-        "rows_as_float",
-        "recompute_as_integer",
-        "without_receipt",
-        "pending_rows",
-    ],
-)
-def test_an_undeclared_value_is_rejected_before_opening_views_or_output(
-    tmp_path, permitted, change, message
+# Valores no declarados y el mensaje con que se rechazan. Una opción pendiente no invalida el
+# plan, pero impide lanzarlo.
+UNDECLARED = [
+    pytest.param(lambda v: v["neural"].update(precision="tf32"), "precisión neuronal", id="tf32"),
+    pytest.param(lambda v: v["neural"].update(cuda_graphs="true"), "booleano", id="graphs_text"),
+    pytest.param(lambda v: v["neural"].update(batch_size=4097), "Lote", id="batch_over_limit"),
+    pytest.param(
+        lambda v: v["neural"].update(compile=True),
+        "sección neuronal no cumple",
+        id="undeclared_option",
+    ),
+    pytest.param(
+        lambda v: v["memory_options"][plan.TITANS].update(accumulation_rows=512),
+        "coincidir con su receta",
+        id="rows_other_than_recipe",
+    ),
+    pytest.param(
+        lambda v: v["memory_options"][plan.TITANS].update(accumulation_rows=1024.0),
+        "coincidir con su receta",
+        id="rows_as_float",
+    ),
+    pytest.param(
+        lambda v: v["memory_options"][plan.EPISODIC].update(recompute=0),
+        "coincidir con su receta",
+        id="recompute_as_integer",
+    ),
+    pytest.param(
+        lambda v: v["memory_options"].pop("receipt"), "recibo de su medida", id="without_receipt"
+    ),
+    pytest.param(
+        lambda v: v["memory_options"][plan.CM].update(accumulation_rows="pending"),
+        "sigue pendiente de la medida",
+        id="pending_rows",
+    ),
+]
+
+
+@pytest.mark.parametrize(("change", "message"), UNDECLARED)
+def test_the_campaign_check_rejects_each_undeclared_value_without_the_guard(
+    tmp_path, change, message
 ):
+    # `check_campaign` lee la campaña con el mismo `load_campaign` que el motor antes de abrir
+    # vistas, sin pasar por la protección, y devuelve lo que impide lanzarla.
+    campaign = declared_config(tmp_path / "config", lambda value, _: change(value))
+    try:
+        found = "; ".join(plan.check_campaign(campaign)["launch_blockers"])
+    except ValueError as error:
+        found = str(error)
+    assert re.search(message, found)
+
+
+@lowers_learning_hold(
+    "tests/training/test_campaign_launch_options.py::"
+    "test_an_undeclared_value_is_rejected_before_opening_views_or_output"
+)
+@pytest.mark.parametrize(("change", "message"), UNDECLARED)
+def test_an_undeclared_value_is_rejected_before_opening_views_or_output(tmp_path, change, message):
     campaign = declared_config(tmp_path / "config", lambda value, _: change(value))
     views = {scope: tmp_path / "missing" / scope for scope in ("US+CN", "US", "CN")}
     with pytest.raises(ValueError, match=message):
@@ -360,6 +378,55 @@ def test_each_option_changes_the_identity_of_the_campaign_and_only_the_cases_it_
     assert moved == set(families)
 
 
+def test_each_prepared_job_carries_the_batch_of_its_section_to_the_fit(tmp_path, monkeypatch):
+    """El lote del plan llega al ajuste sin pasar por el motor ni por su guarda.
+
+    El estado de la campaña prepara los trabajos de la ventana sin dependencias igual que el
+    motor antes de lanzarlos, y el ejecutor neuronal real entrega su lote al ajuste. El ajuste
+    está sustituido por un registro que se detiene antes de leer datos, así que nada aprende.
+    """
+    from mars_titan.training import reference_run
+
+    campaign = declared_config(
+        tmp_path / "config", lambda value, _: value["neural"].update(batch_size=512)
+    )
+    loaded = plan.load_campaign(campaign)
+    neural, tabular = loaded["neural"]["batch_size"], loaded["tabular"]["batch_size"]
+    assert neural == 512 != tabular
+    data = fixture(tmp_path / "data", ("US", "CN"))
+    prepared = engine.prepare_views(campaign, data.parent, tmp_path / "views")
+    views = {
+        scope: engine.scope_views(tmp_path / "views" / scope, scope, loaded) for scope in prepared
+    }
+    jobs = [job for job in window_jobs(loaded) if not job["depends"]]
+    assert {job["family"] for job in jobs} >= {plan.NEURAL, plan.TABULAR}
+    state = engine._Campaign(loaded, views, tmp_path / "out", {}, engine.EXECUTORS, None, jobs)
+    runs = {job["id"]: state.prepare(job)[0][0] for job in jobs}
+    for job in jobs:
+        expected = neural if job["family"] == plan.NEURAL else tabular
+        assert runs[job["id"]].batch_size == expected, job["id"]
+
+    class Reached(Exception):
+        """El ejecutor llegó al ajuste."""
+
+    received = []
+
+    def fit(*_, **options):
+        received.append(options["batch_size"])
+        raise Reached
+
+    monkeypatch.setattr(reference_run, "run_reference_case", fit)
+    run = next(runs[job["id"]] for job in jobs if job["family"] == plan.NEURAL)
+    with pytest.raises(Reached):
+        engine.EXECUTORS["neural", plan.FIT]["run"](run)
+    assert received == [neural]
+    assert not (tmp_path / "out").exists()
+
+
+@lowers_learning_hold(
+    "tests/training/test_campaign_launch_options.py::"
+    "test_a_cut_campaign_resumes_every_job_with_the_same_options"
+)
 def test_a_cut_campaign_resumes_every_job_with_the_same_options(launched, tmp_path, monkeypatch):
     log = tmp_path / "launch.jsonl"
     monkeypatch.setenv("LAUNCH_LOG", str(log))
@@ -388,6 +455,10 @@ def test_a_cut_campaign_resumes_every_job_with_the_same_options(launched, tmp_pa
     assert differing(receipts(output), receipts(launched.output)) == []
 
 
+@lowers_learning_hold(
+    "tests/training/test_campaign_launch_options.py::"
+    "test_changed_options_reach_the_trainers_that_use_them"
+)
 def test_changed_options_reach_the_trainers_that_use_them(launched, tmp_path, monkeypatch):
     def everything(value, folder):
         for name in ("batch_512", "graphs_off", "titans_rows", "episodic_options", "cm_rows"):

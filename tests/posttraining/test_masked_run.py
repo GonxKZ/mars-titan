@@ -25,6 +25,7 @@ from mars_titan.posttraining.run import run_case
 from mars_titan.training.checkpoints import StopRequest
 from mars_titan.training.corpus_inputs import CorpusDataset
 from mars_titan.training.kernel_policy import FP32_STRICT
+from tests.learning_hold_lowering import lowers_learning_hold
 from tests.posttraining.masked_fixture import masked_ordered, masked_parent, sources
 
 
@@ -169,9 +170,9 @@ def restored_flags():
     torch.set_float32_matmul_precision(precision)
 
 
-@pytest.mark.parametrize(("kind", "arm"), [("gru", "head+fusion"), ("transformer", "readout")])
-def test_parent_and_adapter_run_with_the_strict_precision_of_the_parent_case(
-    tmp_path, recorder, edition, restored_flags, kind, arm
+@pytest.mark.parametrize("kind", ["gru", "transformer"])
+def test_loading_a_parent_applies_its_strict_precision_and_its_predictions_require_it(
+    tmp_path, edition, restored_flags, kind
 ):
     path, _ = masked_parent(edition.ordered, tmp_path / "parent", kind, precision=FP32_STRICT)
     allow_tf32()
@@ -180,6 +181,27 @@ def test_parent_and_adapter_run_with_the_strict_precision_of_the_parent_case(
     assert tf32_flags() == STRICT
     assert parent.precision == FP32_STRICT
     assert parent.identity["kernel_policy"]["cudnn_allow_tf32"] is False
+    # Una predicción del padre con TF32 permitido se rechaza en lugar de cambiar sus bits.
+    allow_tf32()
+    train, validation = sources(edition.ordered)
+    raw = train(0)
+    with pytest.raises(ValueError, match="política de precisión"):
+        parent.predict(raw["inputs"], raw["presence"])
+    for handle in (train, validation):
+        handle.close()
+
+
+@lowers_learning_hold(
+    "tests/posttraining/test_masked_run.py::"
+    "test_parent_and_adapter_run_with_the_strict_precision_of_the_parent_case"
+)
+@pytest.mark.parametrize(("kind", "arm"), [("gru", "head+fusion"), ("transformer", "readout")])
+def test_parent_and_adapter_run_with_the_strict_precision_of_the_parent_case(
+    tmp_path, recorder, edition, restored_flags, kind, arm
+):
+    path, _ = masked_parent(edition.ordered, tmp_path / "parent", kind, precision=FP32_STRICT)
+    allow_tf32()
+    parent = load_parent(edition.ordered, path, device="cpu", diagnostic=True)
     seen = []
     # La variante copia el padre con este gancho, así que registra también su forward.
     parent.model.register_forward_pre_hook(lambda module, args: seen.append(tf32_flags()))
@@ -214,15 +236,14 @@ def test_parent_and_adapter_run_with_the_strict_precision_of_the_parent_case(
         numerics["matmul_precision"],
     ) == STRICT
     assert report["identity"]["parent"]["kernel_policy"] == parent.kernel_policy
-    # Una predicción del padre con TF32 permitido se rechaza en lugar de cambiar sus bits.
-    allow_tf32()
-    raw = train(0)
-    with pytest.raises(ValueError, match="política de precisión"):
-        parent.predict(raw["inputs"], raw["presence"])
     for handle in (train, validation, cache):
         handle.close()
 
 
+@lowers_learning_hold(
+    "tests/posttraining/test_masked_run.py::"
+    "test_an_adapter_whose_process_allows_tf32_mid_run_fails_at_the_next_save"
+)
 def test_an_adapter_whose_process_allows_tf32_mid_run_fails_at_the_next_save(
     tmp_path, recorder, edition, restored_flags
 ):
@@ -255,6 +276,9 @@ def test_an_adapter_whose_process_allows_tf32_mid_run_fails_at_the_next_save(
         handle.close()
 
 
+@lowers_learning_hold(
+    "tests/posttraining/test_masked_run.py::test_a_final_evaluation_under_tf32_is_not_confirmed"
+)
 def test_a_final_evaluation_under_tf32_is_not_confirmed(
     tmp_path, recorder, edition, restored_flags, monkeypatch
 ):
