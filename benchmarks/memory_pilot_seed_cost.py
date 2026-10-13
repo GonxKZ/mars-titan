@@ -6,9 +6,11 @@ El coste fijo de cada actualización se reparte entre esas filas, y el caudal de
 completa no sirve para estimarlo.
 
 La medida tiene dos fases para no ocupar la GPU mientras se leen datos. `prepare` se ejecuta
-sin GPU: copia el manifiesto de una vista US con solo los 64 activos con más filas de ajuste
-cuyos archivos siguen presentes y construye sus índices cronológicos. Las filas, los archivos
-y sus huellas son los de la vista. `measure` reutiliza esos índices y recorre en `cuda:0` el
+sin GPU: copia el manifiesto del corpus de la edición con solo los 64 activos de EE. UU. con
+más filas de ajuste, publica sus vistas walk-forward con el protocolo US de la campaña
+(`prepare_temporal_corpus`, como `run_masked_campaign.py prepare`) y construye los índices
+cronológicos de la ventana medida. Las filas, los archivos y sus huellas son los de la
+edición. `measure` reutiliza esos índices y recorre en `cuda:0` el
 ajuste cronológico de `titans_mac_online` con la receta de 2000 y `_NoStepOptimizer`, con el
 gancho que prohíbe pasos, y la inferencia congelada. Ningún peso cambia y no se registran
 pérdidas ni errores, así que la medida no es una evaluación. Repite el recorrido completo
@@ -49,9 +51,9 @@ def _sha256(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
-def _subset(view, output):
-    """Manifiesto de la vista con los 64 activos de EE. UU. con más filas de ajuste."""
-    meta = json.loads(Path(view).read_text())
+def _subset(corpus, output):
+    """Manifiesto del corpus con los 64 activos de EE. UU. con más filas de ajuste."""
+    meta = json.loads(Path(corpus).read_text())
     roots = meta["roots"]
 
     def present(asset):
@@ -67,7 +69,7 @@ def _subset(view, output):
 
     us = [asset for asset in meta["assets"] if asset["market"] == "US" and present(asset)]
     if len(us) < ASSETS:
-        raise ValueError("La vista no tiene 64 activos de EE. UU. con sus archivos")
+        raise ValueError("El corpus no tiene 64 activos de EE. UU. con sus archivos")
     chosen = sorted(us, key=lambda asset: (-asset["counts"]["train"], asset["symbol"]))[:ASSETS]
     keys = {(asset["market"], asset["symbol"]) for asset in chosen}
     meta["assets"] = [a for a in meta["assets"] if (a["market"], a["symbol"]) in keys]
@@ -86,30 +88,56 @@ def _subset(view, output):
     output.write_text(json.dumps(meta))
 
 
-def _open(work):
-    """Receta, caso de búsqueda medido y fuentes de la vista reducida."""
+def _view(work, window):
+    return Path(work) / "views" / window / "manifest.json"
+
+
+def _open(work, window):
+    """Receta, caso de búsqueda medido y fuentes de la vista reducida de la ventana."""
     from mars_titan.training.campaign_plan import load_campaign
     from mars_titan.training.campaign_throughput import _chronological_sources
     from mars_titan.training.financial_run import load_recipe
 
     campaign = load_campaign(CAMPAIGN)
     _, document = load_recipe(campaign["titans_mac"]["path"])
-    subset = Path(work) / "view-64" / "manifest.json"
-    fold, sources, inputs = _chronological_sources(subset, document, work)
+    fold, sources, inputs = _chronological_sources(_view(work, window), document, work)
     if max(inputs) > ASSETS:
         raise ValueError("Un evento de la vista reducida tiene más de 64 flujos")
     cases = campaign["titans_mac"]["candidates"]["titans_mac_online"]
     return campaign, document, cases, fold, sources, inputs
 
 
-def prepare(view, work):
+def prepare(corpus, work, window):
     import torch
+
+    from mars_titan.data.input_policy import HISTORICAL_MASKED
+    from mars_titan.training.campaign_plan import load_campaign
+    from mars_titan.training.temporal_corpus import prepare_temporal_corpus
 
     if torch.cuda.is_available():
         raise RuntimeError("La fase de lectura se ejecuta sin GPU, con CUDA_VISIBLE_DEVICES=-1")
     started = time.perf_counter()
-    _subset(view, Path(work) / "view-64" / "manifest.json")
-    _, _, _, fold, _, inputs = _open(work)
+    campaign = load_campaign(CAMPAIGN)
+    declared = campaign["comparison_config"]
+    protocol = (
+        Path(campaign["comparison_path"]).parent / declared["scopes"]["US"]["protocols"]["US"]
+    )
+    reduced = Path(work) / "corpus-64" / "manifest.json"
+    views = Path(work) / "views"
+    if not views.exists():
+        _subset(corpus, reduced)
+        source = dict(path=str(Path(corpus).resolve()), sha256=_sha256(corpus))
+        (reduced.parent / "source.json").write_text(json.dumps(source))
+        prepare_temporal_corpus(
+            reduced,
+            protocol.resolve(),
+            None,
+            None,
+            views,
+            recover_annual_boundaries=True,
+            input_policy=HISTORICAL_MASKED,
+        )
+    _, _, _, fold, _, inputs = _open(work, window)
     print(
         json.dumps(
             dict(
@@ -179,7 +207,7 @@ def _gpu():
     return out.strip()
 
 
-def measure(work, output, repeats):
+def measure(work, window, output, repeats):
     import torch
 
     from mars_titan.training import campaign_throughput as ct
@@ -197,7 +225,7 @@ def measure(work, output, repeats):
     if type(repeats) is not int or not 1 <= repeats <= 9:
         raise ValueError("Las repeticiones van de una a nueve")
     started = time.perf_counter()
-    campaign, document, cases, fold, sources, inputs = _open(work)
+    campaign, document, cases, fold, sources, inputs = _open(work, window)
     opened = time.perf_counter() - started
     name, search = cases[0]
     recipe = titans.case_recipe(document, search["search_case"])
@@ -237,8 +265,8 @@ def measure(work, output, repeats):
         slowest=seed_hours(min(train), min(inference), **options),
         median=seed_hours(statistics.median(train), statistics.median(inference), **options),
     )
-    subset = Path(work) / "view-64" / "manifest.json"
-    meta = json.loads(subset.read_text())
+    meta = json.loads(_view(work, window).read_text())
+    corpus = json.loads((Path(work) / "corpus-64" / "source.json").read_text())
     receipt = dict(
         schema_version=1,
         kind="memory_pilot_seed_control_cost",
@@ -275,9 +303,11 @@ def measure(work, output, repeats):
         recipe_block_rows=recipe.block_rows,
         recipe_accumulation_rows=recipe.accumulation_rows,
         inputs=dict(
+            corpus=corpus,
+            view_identity=_sha256(_view(work, window)),
             window=fold["id"],
             assets=[asset["symbol"] for asset in meta["assets"]],
-            selection="64 activos de EE. UU. con más filas de ajuste y sus archivos presentes",
+            selection="64 activos de EE. UU. con más filas de ajuste en el corpus de la edición",
             events=len(inputs),
             rows=sum(inputs),
             max_event_rows=max(inputs),
@@ -306,17 +336,19 @@ def main():
     parser = argparse.ArgumentParser()
     commands = parser.add_subparsers(dest="command", required=True)
     read = commands.add_parser("prepare")
-    read.add_argument("--view", type=Path, required=True)
+    read.add_argument("--corpus", type=Path, required=True)
     read.add_argument("--work", type=Path, required=True)
+    read.add_argument("--window", default="fold-012")
     run = commands.add_parser("measure")
     run.add_argument("--work", type=Path, required=True)
+    run.add_argument("--window", default="fold-012")
     run.add_argument("--output", type=Path, required=True)
     run.add_argument("--repeats", type=int, default=3)
     args = parser.parse_args()
     if args.command == "prepare":
-        prepare(args.view, args.work)
+        prepare(args.corpus, args.work, args.window)
     else:
-        measure(args.work, args.output, args.repeats)
+        measure(args.work, args.window, args.output, args.repeats)
 
 
 if __name__ == "__main__":
