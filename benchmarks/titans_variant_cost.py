@@ -5,7 +5,8 @@ ajuste de una vista de la campaña, con sus bits de presencia reales y sin objet
 cada modelo de la declaración (por ejemplo PT5 o PT6) recorre los T instantes con grafo,
 calcula la pinball frente a ceros y ejecuta un backward. Los gradientes se descartan en cada
 repetición y al final se comprueba que ningún parámetro ha cambiado. Mide también la
-inferencia sin grafo y cuenta las filas con alguna modalidad ausente.
+inferencia sin grafo y cuenta las filas con alguna modalidad ausente. Las repeticiones se
+alternan entre modelos, así que todos sufren la misma deriva de la máquina.
 """
 
 import argparse
@@ -99,18 +100,29 @@ def measure(data, declaration_path, output, *, repetitions, warmup, threads):
     flows = batches[0].flow_ids
     presence = np.concatenate([np.asarray(raw["presence"], dtype=bool) for raw in raws])
     incomplete = ~presence.all(axis=1)
-    models = {}
+    built = {}
     for name, arm in declaration["arms"].items():
         config = FinancialConfig(
             spec, variant=declaration["variant"], seed=42, **(base | arm["predictor_changes"])
         )
         model = FinancialPredictor(config, dtype=torch.float32).train()
-        before = _digest(model)
-        for _ in range(warmup):
+        built[name] = (arm, model, _digest(model))
+    for _ in range(warmup):
+        for _, model, _ in built.values():
             _graph_pass(model, batches, flows)
             _inference(model, batches, flows)
-        graph = [_graph_pass(model, batches, flows) for _ in range(repetitions)]
-        inference = [_inference(model, batches, flows) for _ in range(repetitions)]
+    # Las repeticiones se alternan entre modelos y rotan su orden, para que la deriva de la
+    # máquina (frecuencia, caché, otras cargas) no favorezca al que se mide primero.
+    graph, inference = {name: [] for name in built}, {name: [] for name in built}
+    names = list(built)
+    for repetition in range(repetitions):
+        shift = repetition % len(names)
+        for name in names[shift:] + names[:shift]:
+            model = built[name][1]
+            graph[name].append(_graph_pass(model, batches, flows))
+            inference[name].append(_inference(model, batches, flows))
+    models = {}
+    for name, (arm, model, before) in built.items():
         if _digest(model) != before:
             raise RuntimeError("La medida ha modificado parámetros")
         flows_state = model.initial_state(flows)
@@ -119,9 +131,9 @@ def measure(data, declaration_path, output, *, repetitions, warmup, threads):
             predictor_changes=arm["predictor_changes"],
             total_parameters=sum(value.numel() for value in model.parameters()),
             state_tensor_bytes_per_flow=model.state_usage(flows_state)["tensor_bytes_per_flow"],
-            forward_with_graph_seconds=_summary([value[0] for value in graph]),
-            backward_seconds=_summary([value[1] for value in graph]),
-            inference_seconds=_summary(inference),
+            forward_with_graph_seconds=_summary([value[0] for value in graph[name]]),
+            backward_seconds=_summary([value[1] for value in graph[name]]),
+            inference_seconds=_summary(inference[name]),
             parameters_unchanged=True,
         )
         print(name, round(models[name]["forward_with_graph_seconds"]["median"], 4), flush=True)
@@ -166,6 +178,7 @@ def measure(data, declaration_path, output, *, repetitions, warmup, threads):
         ),
         repetitions=repetitions,
         warmup=warmup,
+        order="repeticiones alternadas entre modelos con orden rotatorio",
         models=models,
         optimizer_steps=0,
         training_runs=0,
