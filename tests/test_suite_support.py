@@ -15,7 +15,9 @@ from tests.suite_support import (
     CUDA_REASON,
     NATIVE_ARTIFACTS,
     NATIVE_VARIABLES,
+    REFERENCE_CPU_THREADS,
     SLOW_TESTS,
+    cpu_threads,
     episodic_load_problem,
     function_id,
     inner_environment,
@@ -521,3 +523,14 @@ def test_markers_skip_with_their_reason_and_select_with_m(tmp_path):
 def test_unguarded_fits_run_when_the_hold_allows_learning(tmp_path):
     result = selection_probe(tmp_path, True, "-m", "unguarded_fit")
     assert "1 passed, 4 deselected" in result.stdout, result.stdout
+
+
+def test_cpu_threads_fix_the_count_and_restore_it_after_an_error():
+    import torch
+
+    previous = torch.get_num_threads()
+    with pytest.raises(RuntimeError, match="corte"):
+        with cpu_threads():
+            assert torch.get_num_threads() == REFERENCE_CPU_THREADS
+            raise RuntimeError("corte")
+    assert torch.get_num_threads() == previous
