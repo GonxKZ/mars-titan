@@ -1,0 +1,387 @@
+{
+ "kind": "native_build_comparison",
+ "first": "ppo-base",
+ "second": "ppo-mold-clean",
+ "identity_sha256": [
+  "b9eb2bf92800792a4ad8dbed3ab4a90edfd0e2879923640d3606e7f8907d4ec0",
+  "2d4a74e6b1f443aeb4b0fe9b1384d5c7f5e8dde9d40ca7937b1747108267df86"
+ ],
+ "objects_sha256": {
+  "total": 68,
+  "equal": 62,
+  "identity_only": 6,
+  "identity_and_link_metadata": 0,
+  "content": 0,
+  "differences": {
+   "CMakeFiles/mars-titan-batch-benchmark.dir/benchmarks/batch_rollout.cpp.o": {
+    "class": "identity_only",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": []
+   },
+   "CMakeFiles/mars_titan_klpo_collection.dir/src/klpo_collection.cpp.o": {
+    "class": "identity_only",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": []
+   },
+   "CMakeFiles/mars_titan_policy_stage.dir/src/klpo_experiment.cpp.o": {
+    "class": "identity_only",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": []
+   },
+   "CMakeFiles/mars_titan_policy_stage.dir/src/policy_command.cpp.o": {
+    "class": "identity_only",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": []
+   },
+   "CMakeFiles/mars_titan_policy_stage.dir/src/ppo_experiment.cpp.o": {
+    "class": "identity_only",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": []
+   },
+   "CMakeFiles/mars_titan_simulation_files.dir/src/simulation_files.cpp.o": {
+    "class": "identity_only",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": []
+   }
+  }
+ },
+ "linked_sha256": {
+  "total": 39,
+  "equal": 0,
+  "identity_only": 0,
+  "identity_and_link_metadata": 0,
+  "content": 39,
+  "differences": {
+   "c_abi_test": {
+    "class": "content",
+    "identity_occurrences": [
+     0,
+     0
+    ],
+    "differing_sections": null
+   },
+   "decision_trace_tests": {
+    "class": "content",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": null
+   },
+   "episodic_memory_tests": {
+    "class": "content",
+    "identity_occurrences": [
+     0,
+     0
+    ],
+    "differing_sections": null
+   },
+   "financial_batch_tests": {
+    "class": "content",
+    "identity_occurrences": [
+     0,
+     0
+    ],
+    "differing_sections": null
+   },
+   "financial_session_tests": {
+    "class": "content",
+    "identity_occurrences": [
+     0,
+     0
+    ],
+    "differing_sections": null
+   },
+   "group_waves_tests": {
+    "class": "content",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": null
+   },
+   "klpo_actor_tests": {
+    "class": "content",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": null
+   },
+   "klpo_collection_tests": {
+    "class": "content",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": null
+   },
+   "klpo_episodes_tests": {
+    "class": "content",
+    "identity_occurrences": [
+     0,
+     0
+    ],
+    "differing_sections": null
+   },
+   "klpo_learning_tests": {
+    "class": "content",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": null
+   },
+   "klpo_policy_tests": {
+    "class": "content",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": null
+   },
+   "klpo_reference_tests": {
+    "class": "content",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": null
+   },
+   "klpo_terminal_tests": {
+    "class": "content",
+    "identity_occurrences": [
+     0,
+     0
+    ],
+    "differing_sections": null
+   },
+   "learning_hold_tests": {
+    "class": "content",
+    "identity_occurrences": [
+     0,
+     0
+    ],
+    "differing_sections": null
+   },
+   "learning_replay_tests": {
+    "class": "content",
+    "identity_occurrences": [
+     0,
+     1
+    ],
+    "differing_sections": null
+   },
+   "libmars_titan_simulation.so": {
+    "class": "content",
+    "identity_occurrences": [
+     0,
+     0
+    ],
+    "differing_sections": null
+   },
+   "markov_filter_tests": {
+    "class": "content",
+    "identity_occurrences": [
+     0,
+     0
+    ],
+    "differing_sections": null
+   },
+   "mars-titan-batch-benchmark": {
+    "class": "content",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": null
+   },
+   "mars-titan-klpo": {
+    "class": "content",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": null
+   },
+   "mars-titan-memory-benchmark": {
+    "class": "content",
+    "identity_occurrences": [
+     0,
+     1
+    ],
+    "differing_sections": null
+   },
+   "mars-titan-policy-benchmark": {
+    "class": "content",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": null
+   },
+   "mars-titan-ppo": {
+    "class": "content",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": null
+   },
+   "mars-titan-sim": {
+    "class": "content",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": null
+   },
+   "policy_context_tests": {
+    "class": "content",
+    "identity_occurrences": [
+     0,
+     0
+    ],
+    "differing_sections": null
+   },
+   "ppo_checkpoint_tests": {
+    "class": "content",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": null
+   },
+   "ppo_collection_tests": {
+    "class": "content",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": null
+   },
+   "ppo_controller_tests": {
+    "class": "content",
+    "identity_occurrences": [
+     0,
+     0
+    ],
+    "differing_sections": null
+   },
+   "ppo_evaluation_tests": {
+    "class": "content",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": null
+   },
+   "ppo_gru_packing_tests": {
+    "class": "content",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": null
+   },
+   "ppo_inputs_tests": {
+    "class": "content",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": null
+   },
+   "ppo_objective_tests": {
+    "class": "content",
+    "identity_occurrences": [
+     0,
+     0
+    ],
+    "differing_sections": null
+   },
+   "ppo_policy_tests": {
+    "class": "content",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": null
+   },
+   "ppo_training_tests": {
+    "class": "content",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": null
+   },
+   "ppo_variant_objective_tests": {
+    "class": "content",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": null
+   },
+   "ppo_variant_state_tests": {
+    "class": "content",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": null
+   },
+   "qr_dqn_policy_tests": {
+    "class": "content",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": null
+   },
+   "rl_variety_tests": {
+    "class": "content",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": null
+   },
+   "simulation_tests": {
+    "class": "content",
+    "identity_occurrences": [
+     0,
+     0
+    ],
+    "differing_sections": null
+   },
+   "threaded_simulation": {
+    "class": "content",
+    "identity_occurrences": [
+     0,
+     0
+    ],
+    "differing_sections": null
+   }
+  }
+ }
+}

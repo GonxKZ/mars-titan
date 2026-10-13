@@ -33,12 +33,12 @@ research = [
     "scikit-learn>=1.6,<2", "matplotlib>=3.9,<4", "scipy>=1.14,<2",
     "arch==8.0.0", "statsmodels==0.15.0",
 ]
-cuda = ["torch>=2.8,<3; sys_platform == 'linux' and platform_machine == 'x86_64'"]
+cuda = ["torch>=2.8,<3; sys_platform == 'linux' and (platform_machine == 'x86_64' or platform_machine == 'aarch64')"]
 encoders = ["torchvision>=0.23,<1", "transformers>=4.57,<6", "huggingface-hub>=0.34,<2", "safetensors>=0.5,<1"]
 notebooks = ["jupyterlab>=4.6.4,<5", "ipykernel>=6,<8"]
 boosting = [
-    "cupy-cuda13x==14.2.0 ; platform_machine == 'x86_64' and sys_platform == 'linux'",
-    "xgboost==3.3.0 ; platform_machine == 'x86_64' and sys_platform == 'linux'",
+    "cupy-cuda13x==14.2.0 ; sys_platform == 'linux' and (platform_machine == 'x86_64' or platform_machine == 'aarch64')",
+    "xgboost==3.3.0 ; sys_platform == 'linux' and (platform_machine == 'x86_64' or platform_machine == 'aarch64')",
 ]
 reinforcement = [
     "gymnasium==1.3.0",
@@ -67,6 +67,14 @@ reference = [
 package = true
 # Solo versiones publicadas al menos dos semanas antes de la revisión de bibliotecas (#490).
 exclude-newer = "2026-09-26T23:59:59Z"
+environments = [
+    "sys_platform == 'linux' and platform_machine == 'x86_64'",
+    "sys_platform == 'linux' and platform_machine == 'aarch64'",
+]
+required-environments = [
+    "sys_platform == 'linux' and platform_machine == 'x86_64'",
+    "sys_platform == 'linux' and platform_machine == 'aarch64'",
+]
 
 [[tool.uv.index]]
 name = "pytorch-cu130"
@@ -74,8 +82,8 @@ url = "https://download.pytorch.org/whl/cu130"
 explicit = true
 
 [tool.uv.sources]
-torch = [{index = "pytorch-cu130", marker = "sys_platform == 'linux' and platform_machine == 'x86_64'"}]
-torchvision = [{index = "pytorch-cu130", marker = "sys_platform == 'linux' and platform_machine == 'x86_64'"}]
+torch = [{index = "pytorch-cu130", marker = "sys_platform == 'linux' and (platform_machine == 'x86_64' or platform_machine == 'aarch64')"}]
+torchvision = [{index = "pytorch-cu130", marker = "sys_platform == 'linux' and (platform_machine == 'x86_64' or platform_machine == 'aarch64')"}]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

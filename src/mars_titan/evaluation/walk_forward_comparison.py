@@ -53,6 +53,7 @@ presencia no cambia ninguna otra salida del informe. Esas dos bibliotecas son de
 import argparse
 import dataclasses
 import json
+import re
 import resource
 import time
 from datetime import UTC, datetime
@@ -595,19 +596,47 @@ def _view(folder, record, window, scope, policy):
     return digest, edition
 
 
+def _platform_record(value):
+    """Plataforma común de unas fuentes: su huella, o ninguna si todos los recibos son anteriores
+    a su registro, y cuántos se atribuyeron a qué perfil."""
+    if not isinstance(value, dict):
+        return False
+    digest, profile = value.get("platform_sha256"), value.get("unrecorded_profile")
+    recorded, unrecorded = value.get("recorded"), value.get("unrecorded")
+    return (
+        set(value) == {"platform_sha256", "recorded", "unrecorded", "unrecorded_profile"}
+        and type(recorded) is int
+        and type(unrecorded) is int
+        and recorded >= 0
+        and unrecorded >= 0
+        and recorded + unrecorded > 0
+        and (digest is None) == (recorded == 0)
+        and (digest is None or re.fullmatch("[0-9a-f]{64}", digest) is not None)
+        and (profile is None) == (unrecorded == 0)
+        and (profile is None or isinstance(profile, str))
+    )
+
+
 def load_sources(path, config, scope_name):
     """Validar el manifiesto de fuentes de un ámbito antes de leer predicciones."""
     path = Path(path)
     sources, digest = read_manifest(path, 16 * 1024**2)
     scope = config["resolved_scopes"].get(scope_name)
     _require(scope is not None, "El ámbito no está declarado en la configuración")
+    # La versión 2 añade la plataforma común de los recibos. La 1 no la registraba.
+    version = sources.get("schema_version") if isinstance(sources, dict) else None
+    fields = {"schema_version", "kind", "scope", "input_policy", "windows", "arms"}
     _require(
         isinstance(sources, dict)
-        and set(sources) == {"schema_version", "kind", "scope", "input_policy", "windows", "arms"}
-        and sources["schema_version"] == 1
+        and version in (1, 2)
+        and set(sources) == fields | ({"platform"} if version == 2 else set())
         and sources["kind"] == SOURCES_KIND
         and sources["scope"] == scope_name,
         "Las fuentes no cumplen su contrato",
+    )
+    platform = sources.get("platform")
+    _require(
+        version == 1 or _platform_record(platform), "La plataforma de las fuentes no es válida"
     )
     policy = config["input_policy"]
     _require(
@@ -692,6 +721,7 @@ def load_sources(path, config, scope_name):
         edition=edition,
         files=files,
         joint_views=joint_views,
+        platform=platform,
         **scope,
     )
 
@@ -1529,6 +1559,7 @@ def evaluate_walk_forward(
         markets=markets,
         configuration=dict(name=config["name"], sha256=config["sha256"]),
         sources_sha256=sources["sha256"],
+        **({"platform": sources["platform"]} if sources["platform"] else {}),
         **(policy_identity(config["input_policy"]) or dict(input_policy=config["input_policy"])),
         edition=sources["edition"],
         protocol_sha256=sources["protocol_sha256"],
