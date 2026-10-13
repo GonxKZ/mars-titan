@@ -1,0 +1,134 @@
+{
+ "issue": 547,
+ "date": "2026-10-13",
+ "commits": {
+  "develop": "7012da85",
+  "branch": "3cc97794"
+ },
+ "environment": {
+  "numpy": "2.5.3",
+  "python": "3.12",
+  "threads": {
+   "OMP_NUM_THREADS": 2,
+   "MKL_NUM_THREADS": 2
+  },
+  "native": "_episodic_native compilado desde 7012da85"
+ },
+ "stream": {
+  "capacity": 1024,
+  "proposals": 12,
+  "incoming_per_proposal": 128,
+  "measured_proposals": "9 a 12, con el banco lleno",
+  "frontier": 8,
+  "new_candidates": 8,
+  "seed": 547
+ },
+ "code_hash_note": "Las dos ejecuciones fijan _CODE al mismo valor, porque la identidad incluye el SHA-256 del código y con legacy_v1 siembra el reservorio nativo",
+ "compared": "recibo, instantánea (identidad, memoria, generador y recibo) y registros retenidos (ID, clave, valor, etiqueta y fechas) de cada propuesta",
+ "script": "286d7d82f65f46071adf888004ea065f0370d9b298626b30b0e0621f7570dc8e",
+ "script_note": "La copia ejecutada solo difería en los saltos de línea que aplica ruff format, con el mismo árbol sintáctico",
+ "all_same": true,
+ "configurations": {
+  "legacy_v1/reservoir": {
+   "develop": {
+    "retained_key_reads": 4096,
+    "json_dumps_calls": 32,
+    "json_dumps_chars": 118416,
+    "json_loads_calls": 20,
+    "sha256_calls": 8,
+    "sha256_bytes": 1184056,
+    "select_anchored_medoids": 4,
+    "check_receipt_selection": 4
+   },
+   "branch": {
+    "retained_key_reads": 0,
+    "json_dumps_calls": 4,
+    "json_dumps_chars": 4408,
+    "json_loads_calls": 0,
+    "sha256_calls": 8,
+    "sha256_bytes": 1184056,
+    "select_anchored_medoids": 4,
+    "check_receipt_selection": 0
+   },
+   "proposals_compared": 12,
+   "same_states": true,
+   "last_status": "fixed_only"
+  },
+  "legacy_v1/anchored": {
+   "develop": {
+    "retained_key_reads": 4096,
+    "json_dumps_calls": 32,
+    "json_dumps_chars": 115826,
+    "json_loads_calls": 20,
+    "sha256_calls": 520,
+    "sha256_bytes": 1190196,
+    "select_anchored_medoids": 4,
+    "check_receipt_selection": 4
+   },
+   "branch": {
+    "retained_key_reads": 0,
+    "json_dumps_calls": 4,
+    "json_dumps_chars": 4404,
+    "json_loads_calls": 0,
+    "sha256_calls": 520,
+    "sha256_bytes": 1190196,
+    "select_anchored_medoids": 4,
+    "check_receipt_selection": 0
+   },
+   "proposals_compared": 12,
+   "same_states": true,
+   "last_status": "one_swap_local_restricted"
+  },
+  "causal_v2/reservoir": {
+   "develop": {
+    "retained_key_reads": 4096,
+    "json_dumps_calls": 32,
+    "json_dumps_chars": 119448,
+    "json_loads_calls": 20,
+    "sha256_calls": 8,
+    "sha256_bytes": 1184496,
+    "select_anchored_medoids": 4,
+    "check_receipt_selection": 4
+   },
+   "branch": {
+    "retained_key_reads": 0,
+    "json_dumps_calls": 4,
+    "json_dumps_chars": 4848,
+    "json_loads_calls": 0,
+    "sha256_calls": 8,
+    "sha256_bytes": 1184496,
+    "select_anchored_medoids": 4,
+    "check_receipt_selection": 0
+   },
+   "proposals_compared": 12,
+   "same_states": true,
+   "last_status": "fixed_only"
+  },
+  "causal_v2/anchored": {
+   "develop": {
+    "retained_key_reads": 4096,
+    "json_dumps_calls": 32,
+    "json_dumps_chars": 116706,
+    "json_loads_calls": 20,
+    "sha256_calls": 520,
+    "sha256_bytes": 1190636,
+    "select_anchored_medoids": 4,
+    "check_receipt_selection": 4
+   },
+   "branch": {
+    "retained_key_reads": 0,
+    "json_dumps_calls": 4,
+    "json_dumps_chars": 4844,
+    "json_loads_calls": 0,
+    "sha256_calls": 520,
+    "sha256_bytes": 1190636,
+    "select_anchored_medoids": 4,
+    "check_receipt_selection": 0
+   },
+   "proposals_compared": 12,
+   "same_states": true,
+   "last_status": "one_swap_local_restricted"
+  }
+ },
+ "profile_note": "Llamadas contadas con cProfile. Solo se citan las que aparecen en sus estadísticas, como _check_receipt_selection, que solo llama _check_receipt"
+}
