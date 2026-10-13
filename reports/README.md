@@ -9,5 +9,6 @@ La [edición de 470 muestras](baselines/post-scan-reference-study.md) reúne 96 
 - [Matriz de conclusiones](conclusion-matrix.md): objetivo, evidencia y alcance de la respuesta.
 - [Preparación de etiquetas residuales](resources/residual-preparation.md): comparación de motores con tiempos, memoria y paridad exacta.
 - [Construcción directa de lotes](resources/corpus-batches.md): recorrido CPU, propiedad de buffers, recuperación y comparación con la referencia.
+- [Catálogo de la edición v3.1](data/edition-catalog-20261013/README.md): huellas y recuentos del catálogo, subconjuntos declarados con su universo de liquidez, coste antes y después y mutación dirigida.
 
 Las figuras de resultados deberán generarse desde artefactos identificados, con ejes, unidades, periodo, tamaño de muestra e intervalos cuando corresponda. No se versionan tablas con cifras de ejemplo que puedan confundirse con resultados.

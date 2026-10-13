@@ -14,6 +14,17 @@ import pytest
 
 from mars_titan.training.learning_hold import learning_blocked
 
+# Motivos compartidos por varias pruebas de las opciones de la campaña A v2 (#363).
+_LAUNCH = (
+    "la ventana reducida se lanza con el motor y los ejecutores reales hasta la entrada de "
+    "cada entrenador, donde los dobles la detienen sin ajustar, y el motor exige la protección "
+    "antes de leer la campaña"
+)
+_ADAPTER = (
+    "`run_case` exige la protección antes de leer el caso, y el optimizador sustituido de "
+    "`recorder` registra los gradientes sin cambiar pesos"
+)
+
 INVENTORY = {
     "tests/training/test_quantile_head_control.py::"
     "test_hold_reinstated_after_a_job_stops_before_the_next_one": (
@@ -32,6 +43,12 @@ INVENTORY = {
         "recorre la retención v2 sobre la campaña reducida del fixture `base` para comprobar que "
         "la meseta no se regenera y su continuación sí, y la regeneración de predicciones se "
         "detiene con la protección"
+    ),
+    "tests/simulation/test_stage_report.py::"
+    "test_component_contrasts_pair_each_variant_with_its_control_on_the_same_sessions": (
+        "recorre la etapa de políticas reducida con GRPO, Dr. GRPO y GSPO y un aprendiz "
+        "sustituido que no ajusta, porque el informe solo lee salidas confirmadas de la etapa y "
+        "su ejecución se detiene con la protección"
     ),
     "tests/training/test_mars_titan_campaign.py::"
     "test_correction_frozen_parent_reproduces_the_carry_and_predicts_the_next_validation": (
@@ -73,6 +90,34 @@ INVENTORY = {
         "la sesión de pytest hija lee una protección temporal que permite aprender para "
         "comprobar que la marca unguarded_fit deja de omitir, aunque la prueba sondeada no ajusta"
     ),
+    "tests/training/test_campaign_launch_options.py::"
+    "test_every_trainer_of_the_window_receives_the_declared_options_in_its_slot": _LAUNCH,
+    "tests/training/test_campaign_launch_options.py::"
+    "test_a_cut_campaign_resumes_every_job_with_the_same_options": _LAUNCH,
+    "tests/training/test_campaign_launch_options.py::"
+    "test_changed_options_reach_the_trainers_that_use_them": _LAUNCH,
+    "tests/training/test_campaign_launch_options.py::"
+    "test_an_undeclared_value_is_rejected_before_opening_views_or_output": (
+        "comprueba que el motor rechaza el valor antes de abrir vistas o crear la salida, y el "
+        "motor exige la protección antes de leer la campaña. Los mismos rechazos se comprueban "
+        "sin la guarda con `check_campaign`"
+    ),
+    "tests/training/test_campaign_a_joint.py::"
+    "test_neural_receipts_record_the_declared_kernels_in_their_identity": (
+        "los recibos salen de la campaña reducida que el motor ejecuta con ejecutores "
+        "sustituidos que no ajustan"
+    ),
+    "tests/training/test_reference_run_precision.py::"
+    "test_resume_keeps_the_batch_precision_and_graph_step_it_started_with": (
+        "la reanudación compara la identidad dentro de `run_reference_case`, después de su "
+        "guarda, y el recorrido se detiene antes de leer lotes de ajuste"
+    ),
+    "tests/posttraining/test_masked_run.py::"
+    "test_parent_and_adapter_run_with_the_strict_precision_of_the_parent_case": _ADAPTER,
+    "tests/posttraining/test_masked_run.py::"
+    "test_an_adapter_whose_process_allows_tf32_mid_run_fails_at_the_next_save": _ADAPTER,
+    "tests/posttraining/test_masked_run.py::"
+    "test_a_final_evaluation_under_tf32_is_not_confirmed": _ADAPTER,
 }
 
 

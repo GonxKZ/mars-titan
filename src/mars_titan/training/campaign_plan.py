@@ -17,9 +17,11 @@ sus dos núcleos son trabajos auxiliares sin traslado y cada modelo parte de uno
 las mismas reglas, para medir y contar sin cambiar su archivo.
 
 La versión 2 de la configuración declara además la política de semillas, el modo de parada,
-las opciones de memoria pendientes, el orden de ejecución, la precisión numérica, que solo
-admite FP32 estricto (`campaign_numerics`), y la política de datos, que solo admite la edición
-real verificada (`campaign_data_policy`). Con `by_window` el plan recorre
+las opciones de memoria (pendientes, o fijadas con el recibo de su medida), el orden de
+ejecución, la precisión numérica, que solo admite FP32 estricto (`campaign_numerics`), y la
+política de datos, que solo admite la edición real verificada (`campaign_data_policy`). Su
+sección neuronal admite también `precision`, `cuda_graphs` y lotes de hasta
+`MAX_BATCH_SIZE`, que entran en el caso de cada referencia. Con `by_window` el plan recorre
 cada ventana de campaña completa antes de la siguiente (`campaign_schedule`). Los modelos de
 cada ámbito salen de la comparación: con su diseño conjunto, el ámbito conjunto ajusta todos
 los modelos y cada ámbito de un mercado solo los controles separados, con los auxiliares que
@@ -66,7 +68,15 @@ from . import (
     campaign_online_controls,
     campaign_schedule,
 )
-from .reference_design import PINBALL, QUANTILE_HEAD, candidate_indices, design_cases
+from .kernel_policy import PRECISIONS
+from .reference_design import (
+    MAX_BATCH_SIZE,
+    PINBALL,
+    QUANTILE_HEAD,
+    candidate_indices,
+    design_cases,
+)
+from .reference_step_graph import GRAPH_KINDS
 from .search_cases import SEARCHED
 from .selection import JOINT_PLATEAU, VALIDATION_PLATEAU, campaign_rule
 
@@ -263,6 +273,9 @@ _NEURAL = {
     "checkpoint_seconds",
     "prediction_retention",
 }
+# Opciones de núcleo de la sección neuronal. Cada una entra en el caso y, con él, en la
+# identidad de cada ajuste. Sin ellas los casos y sus identidades no cambian.
+_NEURAL_KERNELS = {"precision", "cuda_graphs"}
 # Campos que añade la versión 2 de la configuración.
 _FIELDS_V2 = {
     "seed_policy",
@@ -273,7 +286,7 @@ _FIELDS_V2 = {
     "data_policy",
 }
 # Secciones opcionales de la versión 2: el walk-forward por etapas y el control en línea.
-_OPTIONAL_V2 = {"walk_forward_stages", "online_controls"}
+_OPTIONAL_V2 = {"walk_forward_stages", "online_controls", "data_subset"}
 _SEED_POLICY = {"search_seed", "selected_case_seeds", "deterministic_arms"}
 # Modos de parada de la versión 2: la regla del protocolo o la sección early_stop, que
 # declara la meseta individual o la parada conjunta de los grupos emparejados.
@@ -285,6 +298,12 @@ MEMORY_OPTIONS = {
     EPISODIC: ("accumulation_rows", "recompute"),
     CM: ("accumulation_rows",),
 }
+# Clave opcional de `memory_options` con el recibo de la medida que fija sus valores.
+MEMORY_RECEIPT = "receipt"
+# Modelo con el que el recibo registra la medida de cada familia, y valor de una opción que
+# la medida no nombra porque usó el de la receta por defecto.
+RECEIPT_MODELS = {TITANS: "titans_mac", EPISODIC: "episodic_gru", CM: "cm_v1_core"}
+RECEIPT_DEFAULTS = {"recompute": False}
 _TABULAR = {"config", "arms", "cpu_workers"}
 _EPISODIC = {"recipe", "arms", "search_seed"}
 _TITANS = {"recipe", "arms", "search_seed"}
@@ -314,7 +333,10 @@ def _seeds(value, label):
 
 def _neural(section, arms, rules, policy):
     """Devuelve los casos de las referencias neuronales con la regla de parada de cada modelo."""
-    _require(isinstance(section, dict) and set(section) == _NEURAL, "La sección neuronal no cumple")
+    _require(
+        isinstance(section, dict) and _NEURAL <= set(section) <= _NEURAL | _NEURAL_KERNELS,
+        "La sección neuronal no cumple",
+    )
     declared = {name for name, arm in arms.items() if arm["family"] == NEURAL}
     mapping = section["arms"]
     _require(
@@ -336,7 +358,7 @@ def _neural(section, arms, rules, policy):
     )
     _require(
         type(section["batch_size"]) is int
-        and 1 <= section["batch_size"] <= 256
+        and 1 <= section["batch_size"] <= MAX_BATCH_SIZE
         and section["context_sessions"] == 64
         and type(section["checkpoint_seconds"]) in (int, float)
         and math.isfinite(section["checkpoint_seconds"])
@@ -345,6 +367,7 @@ def _neural(section, arms, rules, policy):
         and masked_inputs(policy),
         "Lote, contexto, checkpoints o retención neuronales no válidos",
     )
+    kernels = _neural_kernels(section, mapping.values())
     indices = candidate_indices(
         dict(schema_version=4, case_indices=section["case_indices"], models=list(mapping.values()))
     )
@@ -364,13 +387,40 @@ def _neural(section, arms, rules, policy):
         candidates[name] = []
         for index in indices:
             # La familia de pérdidas del diseño se sustituye por la pinball de la cabeza común.
-            case = design[index]["case"] | dict(head=QUANTILE_HEAD, loss=PINBALL)
+            case = design[index]["case"] | dict(head=QUANTILE_HEAD, loss=PINBALL) | kernels
             _require(
                 case["selection"] == protocol_selection and case["epochs"] == rule["max_epochs"],
                 "El caso neuronal no aplica la regla de parada del protocolo",
             )
             candidates[name].append((f"{kind}-{index:02d}", case))
     return dict(section, arms=mapping, seed=seed, candidates=candidates)
+
+
+def _neural_kernels(section, kinds):
+    """Campos de núcleo que la sección añade a cada caso, comprobados antes de crearlos.
+
+    `precision` fija la política de `kernel_policy` y `cuda_graphs` el paso con grafo de
+    `reference_step_graph`. reference_run vuelve a validar los dos y los registra en la
+    identidad. Un `cuda_graphs` falso equivale a no declararlo y no añade el campo.
+    """
+    kernels = {}
+    if "precision" in section:
+        precision = section["precision"]
+        _require(
+            type(precision) is str and precision in PRECISIONS,
+            f"La precisión neuronal debe ser una de {', '.join(PRECISIONS)}",
+        )
+        kernels["precision"] = precision
+    if "cuda_graphs" in section:
+        graphs = section["cuda_graphs"]
+        _require(type(graphs) is bool, "cuda_graphs de la sección neuronal debe ser booleano")
+        _require(
+            not graphs or all(kind in GRAPH_KINDS for kind in kinds),
+            "CUDA Graphs solo se declara para familias con paridad comprobada",
+        )
+        if graphs:
+            kernels["cuda_graphs"] = True
+    return kernels
 
 
 def _tabular(section, arms, policy, base):
@@ -852,6 +902,23 @@ def _cm_v1(section, arms, rule, policy, base, count, rules=None):
     )
 
 
+def _data_subset(declared, base):
+    """Identidad del subconjunto declarado de la edición que deben usar todas las vistas."""
+    from .edition_subsets import read_subset, subset_identity
+
+    _require(
+        isinstance(declared, dict)
+        and set(declared) == {"manifest", "sha256"}
+        and isinstance(declared["manifest"], str)
+        and isinstance(declared["sha256"], str),
+        "El subconjunto se declara con su manifiesto y su huella",
+    )
+    path = (base / declared["manifest"]).resolve()
+    document, digest, _ = read_subset(path, rows=False)
+    _require(digest == declared["sha256"], "El subconjunto declarado cambió")
+    return dict(manifest=str(path), manifest_sha256=digest, **subset_identity(document))
+
+
 def load_campaign(path):
     """Validar la campaña y resolver comparación, protocolos, regla y candidatos."""
     path = Path(path)
@@ -954,11 +1021,13 @@ def load_campaign(path):
         tabular=_tabular(config["tabular"], arms, policy, base),
         **_optional_sections(config, arms, rule, policy, base, count, rules),
     )
+    if "data_subset" in config:
+        campaign["data_subset"] = _data_subset(config["data_subset"], base)
     for scope in scopes:
         _arm_specs(campaign, scope)
     if version == 2:
         _seed_policy(config["seed_policy"], campaign)
-        campaign["memory_options"] = _memory_options(config["memory_options"], campaign)
+        campaign["memory_options"] = _memory_options(config["memory_options"], campaign, base)
         if "online_controls" in config:
             campaign_online_controls.declared(config["online_controls"], campaign)
     return campaign
@@ -992,12 +1061,18 @@ def _seed_policy(policy, campaign):
         )
 
 
-def _memory_options(declared, campaign):
-    """Opciones de memoria de cada receta: pendientes o iguales al valor de la receta."""
+def _memory_options(declared, campaign, base):
+    """Opciones de memoria de cada receta: pendientes o iguales al valor de la receta.
+
+    Un valor fijado necesita el recibo de la medida en cuda:0 que lo justifica, un archivo
+    que `receipt` nombra respecto a la configuración. Sin valores fijados no se declara.
+    """
     families = {family: options for family, options in MEMORY_OPTIONS.items() if campaign[family]}
+    _require(isinstance(declared, dict), "La campaña declara sus opciones de memoria")
+    declared = dict(declared)
+    receipt = declared.pop(MEMORY_RECEIPT, None)
     _require(
-        isinstance(declared, dict)
-        and set(declared) == set(families)
+        set(declared) == set(families)
         and all(
             isinstance(declared[family], dict) and set(declared[family]) == set(options)
             for family, options in families.items()
@@ -1010,12 +1085,59 @@ def _memory_options(declared, campaign):
         path = section["recipes"]["core_recipe"] if family == CM else section["path"]
         recipe = read_manifest(Path(path), 64 * 1024)[0]["recipe"]
         for option, value in declared[family].items():
+            # El tipo también cuenta: 1024.0 o 0 no son el 1024 o el false de la receta.
             _require(
-                value == PENDING or (option in recipe and recipe[option] == value),
+                value == PENDING
+                or (
+                    option in recipe
+                    and type(value) is type(recipe[option])
+                    and value == recipe[option]
+                ),
                 f"{family}.{option} debe estar pendiente o coincidir con su receta",
             )
         resolved[family] = dict(declared[family])
+    fixed = any(value != PENDING for options in resolved.values() for value in options.values())
+    _require(
+        (receipt is not None) == fixed,
+        "Las opciones de memoria fijadas, y solo ellas, citan el recibo de su medida",
+    )
+    if receipt is not None:
+        _require(
+            isinstance(receipt, str) and (base / receipt).is_file(),
+            "El recibo de las opciones de memoria no existe",
+        )
+        _measured(read_manifest(base / receipt, 1024**2)[0], resolved)
     return resolved
+
+
+def _measured(receipt, resolved):
+    """Exigir que el recibo contenga una medida de cada familia con sus valores fijados."""
+    entries = receipt.get("entries") if isinstance(receipt, dict) else None
+    _require(isinstance(entries, list), "El recibo de memoria no tiene medidas")
+    for family, options in resolved.items():
+        fixed = {option: value for option, value in options.items() if value != PENDING}
+        _require(
+            not fixed or any(_measures(entry, RECEIPT_MODELS[family], fixed) for entry in entries),
+            f"El recibo no contiene una medida de {family} con {fixed}",
+        )
+
+
+def _measures(entry, model, fixed):
+    """Una medida del modelo con esas opciones. El tipo cuenta, como frente a la receta."""
+    if not isinstance(entry, dict) or not isinstance(entry.get("recipe_options"), dict):
+        return False
+    measured = {
+        option: entry["recipe_options"].get(option, RECEIPT_DEFAULTS.get(option))
+        for option in fixed
+    }
+    return (
+        entry.get("model") == model
+        and entry.get("measured") is True
+        and all(
+            type(measured[option]) is type(value) and measured[option] == value
+            for option, value in fixed.items()
+        )
+    )
 
 
 def launch_blockers(campaign):
