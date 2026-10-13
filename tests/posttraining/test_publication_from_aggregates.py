@@ -7,7 +7,9 @@ declarada: guarda los agregados de cada ventana y libera las filas que regenera 
 Se comprueba que la publicación final desde los agregados coincide exactamente con los
 informes que leían las filas antes de liberarlas, que un corte entre los agregados y la
 liberación se reanuda sin perder ni duplicar nada y que una publicación fallida no deja
-destino. No se ejecuta ningún paso de optimizador ni se abre 2024.
+destino. No se ejecuta ningún paso de optimizador ni se abre 2024. Como la etapa y la
+regeneración solo se recorren con la protección rebajada, el módulo se omite mientras rige el
+bloqueo de aprendizaje (#546).
 """
 
 import json
@@ -32,12 +34,15 @@ from mars_titan.training import masked_campaign as engine
 from mars_titan.training import rolling_retention as rolling
 from mars_titan.training.campaign_plan import plan_campaign
 from mars_titan.training.learning_hold import HOLD_ENV
+from tests.learning_hold_lowering import lowers_learning_hold
 from tests.posttraining import recording_optimizer
 from tests.posttraining.campaign_fixture import CpuLease, base_campaign, quantile_reference
 from tests.posttraining.real_only import real_data_only
 from tests.training import publication_fixture
 from tests.training.test_rolling_retention import schedule, unconsumed  # noqa: F401
 
+# La etapa de adaptadores y la regeneración del recorrido se detienen con la protección.
+pytestmark = lowers_learning_hold("tests/posttraining/test_publication_from_aggregates.py")
 ROOT = Path(__file__).resolve().parents[2]
 VOLATILE = {"created_at_utc", "resources", "artifacts"}
 # La regeneración repite el ejecutor de la campaña reducida, que predice con los pesos
