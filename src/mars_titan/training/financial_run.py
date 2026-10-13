@@ -362,6 +362,8 @@ class _Pass:
     # Con la penalización C, un elemento por grupo lógico medido del tramo: su término con
     # grafo o, con acumulación, la tupla de sus flujos medidos, que la repetición recalcula.
     penalties: list = field(default_factory=list)
+    # Con PT4, el contexto de mercado del recorrido. Entre eventos no guarda nada pendiente.
+    context: object = None
 
 
 class ChronologicalInference:
@@ -380,6 +382,10 @@ class ChronologicalInference:
             raise ValueError("El diagnóstico C pertenece a la sesión congelada, no al ajuste")
         # Solo la penalización necesita un plan de C por evento. disabled conserva SDPA Math.
         self.penalized = control is not None and control.config.mode == "penalty"
+        # La repetición por bloques de la acumulación no reconstruye el contexto de PT4.
+        self.uses_context = predictor.session_context is not None
+        if self.uses_context and recipe.accumulation_rows is not None:
+            raise ValueError("PT4 no se combina con la acumulación por bloques")
         self.quantiles = predictor.config.head == QUANTILE_HEAD
         if self.quantiles != (recipe.loss == PINBALL):
             raise ValueError("La cabeza de cuantiles se ajusta solo y siempre con pinball")
@@ -412,6 +418,9 @@ class ChronologicalInference:
         with nvtx_ranges.phase("titans.control_plan"):
             plan = self._control_plan(run, source, event, validated) if self.penalized else {}
         measured, emitted = [], []
+        if self.uses_context and run.context is None:
+            run.context = predictor.initial_context(differentiable=grad)
+        context = dict(context=run.context) if self.uses_context else {}
         for cpu in validated:
             batch = DecisionBatch.from_validated(
                 cpu, device=self.device, dtype=predictor.head.weight.dtype
@@ -427,7 +436,10 @@ class ChronologicalInference:
                 run.segment.append((batch, plan))
             state = run.flows.gather(batch.flow_ids)
             with nvtx_ranges.phase("titans.prepare"), torch.set_grad_enabled(grad):
-                prepared = predictor.prepare(batch, state, differentiable=grad, **plan)
+                prepared = predictor.prepare(batch, state, differentiable=grad, **plan, **context)
+            if self.uses_context:
+                # Los bloques siguientes del evento leen el mismo contexto confirmado.
+                context = dict(context=prepared.next_context)
             result = prepared.local_control
             if result is not None:
                 # Con acumulación el término emitido solo cuenta: su grafo retendría el lote.
@@ -447,6 +459,10 @@ class ChronologicalInference:
                     run.graphs[key] = _REPLAY if accumulate else graphs[row]
             emitted.append((batch, prepared))
             run.counters["predictions"] += size
+        if self.uses_context:
+            # La sesión se escribe una vez, después de emitir todas sus predicciones.
+            with nvtx_ranges.phase("titans.context"), torch.set_grad_enabled(grad):
+                run.context = predictor.commit_context(context["context"], differentiable=grad)
         with nvtx_ranges.phase("titans.emit"):
             self._emit(run, source, emitted)
         if measured:
@@ -574,6 +590,7 @@ class ChronologicalInference:
     def _close(self, run):
         run.counters["unresolved"] = len(run.pending)
         run.flows.clear()
+        run.context = None
         run.pending.clear()
         run.graphs.clear()
         run.levels.clear()
@@ -917,6 +934,8 @@ class ChronologicalTrainer(ChronologicalInference):
         parameter_id = self.predictor._parameter_id
         with nvtx_ranges.phase("titans.truncate"):
             run.flows.detach(parameter_id)
+            if run.context is not None:
+                run.context = self.predictor.detach_context(run.context, parameter_id)
         run.penalties.clear()
         run.graphs.clear()
         run.predictions.clear()
@@ -993,9 +1012,16 @@ class ChronologicalTrainer(ChronologicalInference):
             ),
             errors=[[m, t, *values] for (m, t), values in sorted(run.errors.sessions.items())],
             counters=dict(run.counters),
+            **(
+                dict(context=None if run.context is None else predictor.export_context(run.context))
+                if self.uses_context
+                else {}
+            ),
         )
 
     def _restore(self, payload):
+        if self.uses_context != ("context" in payload):
+            raise ValueError("El recorrido guardado no corresponde al contexto del predictor")
         run = _Pass()
         for item in payload["fast"]:
             run.flows.put(self.predictor.restore_state(item, device=self.device))
@@ -1011,6 +1037,8 @@ class ChronologicalTrainer(ChronologicalInference):
         }
         run.errors.sessions = {(m, t): [c, a, s] for m, t, c, a, s in payload["errors"]}
         run.counters = dict(payload["counters"])
+        if self.uses_context and payload["context"] is not None:
+            run.context = self.predictor.restore_context(payload["context"])
         return run
 
     def _load_best(self, report):
