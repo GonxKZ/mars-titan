@@ -2,7 +2,7 @@
 
 La comparación de la campaña mide el resultado final de cada modelo. Estas trazas sirven para entender qué ha aprendido y por qué una pieza ayuda o no: si las puertas de la memoria de Titans se saturan, si el olvido borra todo en pocas sesiones, si los gradientes de un grupo de parámetros se apagan o si un adaptador apenas se mueve del padre. Se siguen en [#448](https://github.com/GonxKZ/mars-titan/issues/448).
 
-Este documento describe el núcleo ya implementado en `src/mars_titan/learning_traces/`. Los ganchos en cada entrenador, el posentrenamiento y la RL se añadirán cuando se integren las ramas abiertas que tocan esos archivos.
+Este documento describe el núcleo ya implementado en `src/mars_titan/learning_traces/`. Ya hay un gancho por validación completa en el ajuste de adaptadores y en los entrenadores de Titans-MAC, de la GRU candidata y del lector de MARS-TITAN. Los ganchos por paso y los de la RL están [pendientes](#pendiente).
 
 ## Contrato
 
