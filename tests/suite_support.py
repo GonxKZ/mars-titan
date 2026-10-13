@@ -8,6 +8,7 @@ import importlib
 import os
 import sys
 import tomllib
+from contextlib import contextmanager
 from importlib import metadata
 from pathlib import Path
 
@@ -37,6 +38,25 @@ STRICT_MARKERS = {
     NATIVE_MARKER: (REQUIRE_NATIVE, "del enlace nativo"),
     REFERENCE_MARKER: (REQUIRE_REFERENCE, "de referencia externa"),
 }
+
+
+# Hilos de PyTorch en CPU con los que se capturaron las huellas FP32 bit a bit. El reparto
+# de las reducciones y los productos de matrices entre hilos cambia el orden de las sumas,
+# así que con otro número de hilos cambian los bits (#572).
+REFERENCE_CPU_THREADS = 2
+
+
+@contextmanager
+def cpu_threads(count=REFERENCE_CPU_THREADS):
+    """Fija los hilos de PyTorch en CPU durante el bloque y restaura los que había."""
+    import torch
+
+    previous = torch.get_num_threads()
+    torch.set_num_threads(count)
+    try:
+        yield
+    finally:
+        torch.set_num_threads(previous)
 
 
 def cuda_available():
