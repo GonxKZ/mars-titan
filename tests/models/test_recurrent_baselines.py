@@ -4,12 +4,15 @@ import math
 
 import pytest
 
+from tests.suite_support import missing_extra, skip_without_cuda
+
+pytestmark = pytest.mark.cuda
+
 
 @pytest.fixture
 def torch_cuda():
-    torch = pytest.importorskip("torch")
-    if not torch.cuda.is_available():
-        pytest.skip("La comprobación requiere CUDA y no se sustituye por CPU")
+    torch = pytest.importorskip("torch", reason=missing_extra("torch"))
+    skip_without_cuda()
     return torch
 
 

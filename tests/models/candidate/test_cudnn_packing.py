@@ -14,10 +14,9 @@ import pytest
 import torch
 
 from mars_titan.memory.native_backend import load_native
+from tests.suite_support import CUDA_BINDING_REASON, skip_without_cuda
 
-pytestmark = pytest.mark.skipif(
-    not os.environ.get("MARS_TITAN_EPISODIC_NATIVE"), reason="Falta el enlace nativo compilado"
-)
+pytestmark = pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 GRU = ("price_weight_ih", "price_weight_hh", "price_bias_ih", "price_bias_hh")
 WARNING = "contiguous chunk of memory"
 
@@ -54,13 +53,12 @@ def inputs(native, dtype, device, rows=4):
 
 
 def cuda_candidate(dtype):
-    if not torch.cuda.is_available():
-        pytest.skip("Comprobación cuda:0 sin dispositivo visible")
+    skip_without_cuda()
     try:
         return candidate(dtype, "cuda:0")
     except ValueError as error:
         if "sin backend CUDA" in str(error):
-            pytest.skip("El enlace se compiló sin backend CUDA")
+            pytest.skip(CUDA_BINDING_REASON)
         raise
 
 
@@ -103,6 +101,7 @@ def packed(parameters):
     return storage.nbytes() == offset * values[0].element_size()
 
 
+@pytest.mark.cuda
 @pytest.mark.parametrize("dtype", ["float32", "float64"])
 def test_cuda_weights_are_one_cudnn_block_and_survive_in_place_copies(dtype):
     native, model = cuda_candidate(dtype)
@@ -128,6 +127,7 @@ def test_cuda_weights_are_one_cudnn_block_and_survive_in_place_copies(dtype):
     assert all(current[name].grad is not None for name in GRU)
 
 
+@pytest.mark.cuda
 @pytest.mark.parametrize("dtype", ["float32", "float64"])
 @pytest.mark.parametrize("training", [True, False])
 def test_packed_gru_matches_the_compacting_path_bit_for_bit(dtype, training):
@@ -153,6 +153,7 @@ def test_packed_gru_matches_the_compacting_path_bit_for_bit(dtype, training):
             assert torch.equal(value.grad, reference.grad)
 
 
+@pytest.mark.cuda
 def test_restored_cuda_candidate_is_packed_and_reproduces_its_outputs():
     native, model = cuda_candidate("float32")
     data = inputs(native, "float32", "cuda:0")

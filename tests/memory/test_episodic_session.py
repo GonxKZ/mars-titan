@@ -13,13 +13,16 @@ from mars_titan.memory.episodic_session import EpisodicSession, SessionPreparati
 from mars_titan.memory.native_backend import load_native
 from mars_titan.memory.retention_bank import RetentionConfig
 from mars_titan.models.titans.financial_inputs import validated_cpu_batch
+from tests.suite_support import missing_native
+
+pytestmark = pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 
 
 @pytest.fixture
 def native():
     path = os.environ.get("MARS_TITAN_EPISODIC_NATIVE")
     if not path:
-        pytest.skip("Falta el enlace nativo CPU compilado")
+        pytest.skip(missing_native("MARS_TITAN_EPISODIC_NATIVE"))
     return load_native(path)
 
 
