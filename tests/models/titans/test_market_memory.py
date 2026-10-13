@@ -7,6 +7,7 @@ ganancia de salida, sin ningún paso de ajuste.
 
 import hashlib
 import json
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -318,6 +319,32 @@ def test_a_later_read_differentiates_through_the_committed_write():
     assert not any(weight.requires_grad for weight in cut.memory[0].weights)
 
 
+@pytest.mark.parametrize("kind", KINDS)
+def test_a_commit_without_gradient_keeps_no_graph_of_the_session_tokens(kind):
+    module = context(kind, gain=7)
+    rows = tokens(3).requires_grad_(True)
+    _, state = session(
+        module, module.initial_state("p"), rows, ("US/AAA", "US/BBB", "US/CCC"), START
+    )
+    kept = (
+        [state.means]
+        if kind == SECTOR_MEAN
+        else [*state.memory[0].weights, *state.memory[0].momentum]
+    )
+    assert not any(value.requires_grad for value in kept)
+
+
+def test_the_market_read_uses_the_own_query_normalized_and_the_output_gain():
+    module = context(gain=7)
+    flows = ("US/AAA", "US/BBB", "US/CCC")
+    _, state = session(module, module.initial_state("p"), tokens(3), flows, START)
+    rows = tokens(3, seed=4)
+    read, _ = module.read(rows, flows, (START + DAY,) * 3, state)
+    query = F.normalize(rows @ module.query.T, dim=-1, eps=1e-12)
+    expected = module.memory.read_shared(query, state.memory[0]) @ module.output.T
+    torch.testing.assert_close(read, expected, rtol=0, atol=0)
+
+
 def pt4(kind=None, *, seed=42, **options):
     config = FinancialConfig(
         specification(),
@@ -542,20 +569,41 @@ def test_the_validation_pass_commits_each_session_once_after_emitting_it(
 
 @pytest.mark.usefixtures("explicit_fastpath")
 @pytest.mark.parametrize("kind", KINDS)
-def test_the_pass_does_not_depend_on_the_block_size_and_differs_from_its_control(streams, kind):
-    emitted = []
+def test_the_pass_does_not_depend_on_the_block_size(streams, kind, monkeypatch):
+    emitted, written = [], []
     for rows in (1, 3):
-        engine = inference(corpus_predictor(streams, kind, gain=5), block_rows=rows)
+        model = corpus_predictor(streams, kind, gain=5)
+        states, original = [], model.session_context.commit
+
+        def commit(state, *, original=original, states=states, **options):
+            states.append(original(state, **options))
+            return states[-1]
+
+        monkeypatch.setattr(model.session_context, "commit", commit)
+        engine = inference(model, block_rows=rows)
         engine.evaluate(streams["validation"])
         emitted.append(predictions(engine))
+        written.append(states)
     one, three = emitted
     assert [entry[:4] for entry in one] == [entry[:4] for entry in three]
     torch.testing.assert_close(
         torch.tensor([entry[4] for entry in one]), torch.tensor([entry[4] for entry in three])
     )
-    control = inference(corpus_predictor(streams))
-    control.evaluate(streams["validation"])
-    assert [entry[4] for entry in one] != [entry[4] for entry in predictions(control)]
+    # El contexto confirmado tras cada sesión coincide salvo el redondeo de los tokens, que se
+    # calculan por bloques de otro tamaño, y cambia de verdad a lo largo del recorrido.
+    assert len(written[0]) == len(written[1])
+    for left, right in zip(*written, strict=True):
+        assert left.committed_at == right.committed_at
+        for a, b in zip(context_tensors(left), context_tensors(right), strict=True):
+            torch.testing.assert_close(a, b, rtol=1e-10, atol=1e-12)
+    first, last = context_tensors(written[0][0]), context_tensors(written[0][-1])
+    assert any(not torch.equal(a, b) for a, b in zip(first, last, strict=True))
+
+
+def context_tensors(state):
+    if state.means is not None:
+        return [state.means]
+    return [value for memory in state.memory for value in (*memory.weights, *memory.momentum)]
 
 
 @pytest.mark.usefixtures("explicit_fastpath")
@@ -596,7 +644,9 @@ def test_the_checkpoint_keeps_the_context_and_the_truncation_detaches_it(streams
             engine._labels(run, event, train=False)
             if event.inputs:
                 engine._observe(run, source, event, differentiable=False)
-        # Sin etiquetas en la pérdida, la barrera solo corta el grafo, sin ningún paso.
+        # Un paso cambiaría la identidad de los parámetros. Se simula con una identidad
+        # anterior: sin etiquetas en la pérdida, la barrera solo corta y confirma la actual.
+        run.context = replace(run.context, parameter_id="previous")
         engine._update(run, events[middle].at)
     assert engine.global_step == 0 and run.context.parameter_id == engine.predictor._parameter_id
     payload = engine._export(run)
@@ -610,5 +660,10 @@ def test_the_checkpoint_keeps_the_context_and_the_truncation_detaches_it(streams
                 if event.inputs:
                     current._observe(state, source, event, differentiable=False)
     assert run.errors.sessions == restored.errors.sessions
+    for left, right in zip(
+        context_tensors(run.context), context_tensors(restored.context), strict=True
+    ):
+        torch.testing.assert_close(left, right, rtol=0, atol=0)
+    assert run.context.committed_at == restored.context.committed_at
     with pytest.raises(ValueError, match="contexto"):
         trainer(corpus_predictor(streams).eval(), tmp_path / "c")._restore(payload)
