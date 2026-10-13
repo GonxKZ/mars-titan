@@ -4,7 +4,7 @@ El plan se comprueba sobre la comparación declarada. La ejecución registra
 `titans_mac_online`, `mars_titan_m1`, `mars_titan_m3` y la corrección `mars_titan_b6` en una
 campaña B reducida sobre US con los ejecutores reales y el optimizador que solo registra
 gradientes, y se detiene tras las tres primeras ventanas: una reentrenada y dos trasladadas.
-Los demás brazos son dobles.
+Los demás modelos son dobles.
 """
 
 import json
@@ -53,9 +53,17 @@ ARMS = {
     },
     "mars_titan_b6": {"associative_memory": {"rule": "proximal", "key": "codec"}},
     "mars_titan_b6_bias": {"associative_memory": {"rule": "proximal", "key": "constant"}},
+    "mars_titan_b6_regime": {"associative_memory": {"rule": "proximal", "key": "regime"}},
+    "mars_titan_b6_calendar": {"associative_memory": {"rule": "proximal", "key": "calendar"}},
+    "mars_titan_b6_regime_banks": {
+        "associative_memory": {"rule": "proximal", "key": "codec_by_regime"}
+    },
+    "mars_titan_b6_calendar_banks": {
+        "associative_memory": {"rule": "proximal", "key": "codec_by_calendar"}
+    },
 }
-CORRECTIONS = {"mars_titan_b6", "mars_titan_b6_bias"}
-# Brazos de MARS-TITAN que recorre la campaña B reducida con los ejecutores reales.
+CORRECTIONS = {name for name in ARMS if name.startswith("mars_titan_b6")}
+# Modelos de MARS-TITAN que recorre la campaña B reducida con los ejecutores reales.
 RUN_ARMS = (ARM, M3_ARM, B6_ARM)
 
 
@@ -101,7 +109,7 @@ def test_mars_arms_search_two_cases_per_window_after_their_titans_parent(tmp_pat
     jobs = plan.plan_campaign(campaign)
     base = plan.plan_campaign(plan.load_campaign(CAMPAIGNS[variant]))
     order = {job["id"]: index for index, job in enumerate(jobs)}
-    # Los trabajos de los demás brazos no cambian al declarar MARS-TITAN.
+    # Los trabajos de los demás modelos no cambian al declarar MARS-TITAN.
     assert [job for job in jobs if job["family"] != plan.MARS] == base
     mars = [job for job in jobs if job["family"] == plan.MARS]
     assert {job["arm"] for job in mars} == set(ARMS)
@@ -148,9 +156,9 @@ def test_m3_has_a_producer_and_no_mars_arm_stays_pending(tmp_path):
     counts = report["counts"]["scopes"]["US"]["arms"]
     assert counts[M3_ARM] == counts["mars_titan_m2"] == counts[TITANS_ARM]
     plain = plan.check_campaign(CAMPAIGNS["B"])["pending_families"]
-    assert len(plain["mars_titan"]["arms"]) == 9 and "motives" not in plain["mars_titan"]
-    # Un brazo sin productor puede seguir declarándose pendiente con su motivo.
-    motive = "Brazo retirado para una comprobación"
+    assert len(plain["mars_titan"]["arms"]) == 13 and "motives" not in plain["mars_titan"]
+    # Un modelo sin productor puede seguir declarándose pendiente con su motivo.
+    motive = "Modelo retirado para una comprobación"
     partial_arms = {k: v for k, v in ARMS.items() if k != M3_ARM}
     report = plan.check_campaign(
         declared(tmp_path, "B", arms=partial_arms, pending_arms={M3_ARM: motive})
@@ -159,7 +167,7 @@ def test_m3_has_a_producer_and_no_mars_arm_stays_pending(tmp_path):
 
 
 def test_with_every_section_declared_no_compared_arm_lacks_a_producer(tmp_path):
-    """Los 27 brazos de la comparación tienen productor con las cuatro secciones, salvo el
+    """Los 31 modelos de la comparación tienen productor con las cuatro secciones, salvo el
     control en línea, cuyos trabajos declara la campaña A por etapas."""
     from tests.training.test_candidate_walk_forward import section as gru_section
 
@@ -178,11 +186,11 @@ def test_with_every_section_declared_no_compared_arm_lacks_a_producer(tmp_path):
     campaign = plan.load_campaign(path)
     compared = campaign["comparison_config"]["arms"]
     planned = {job["arm"] for job in plan.plan_campaign(campaign)}
-    assert len(compared) == 27
+    assert len(compared) == 31
     controls = {name for name, arm in compared.items() if arm["family"] == "control"}
     online = {name for name, arm in compared.items() if arm["family"] == plan.ONLINE_CONTROL}
     assert online == {"transformer_compact_online"}
-    # Los núcleos de CM-v1 se ajustan como trabajos propios y no son brazos comparados.
+    # Los núcleos de CM-v1 se ajustan como trabajos propios y no son modelos comparados.
     assert planned - set(compared) == set(plan.CM_CORES)
     assert planned & set(compared) == set(compared) - controls - online and M3_ARM in planned
 
@@ -198,7 +206,7 @@ def recipe_with(tmp_path, change):
 @pytest.mark.parametrize(
     ("changes", "message"),
     [
-        (dict(parent_arm="titans_mac_frozen"), "padre el brazo mac_online"),
+        (dict(parent_arm="titans_mac_frozen"), "padre el modelo mac_online"),
         (
             dict(arms={k: v for k, v in ARMS.items() if k != "mars_titan_m3"}, pending_arms={}),
             "motivo pendiente",
@@ -263,7 +271,7 @@ def test_section_requires_the_fair_search_and_the_protocol_rule(tmp_path, change
 
 def test_correction_recipe_is_declared_only_with_correction_arms(tmp_path):
     readers = {k: v for k, v in ARMS.items() if k not in CORRECTIONS}
-    pending = {name: "Brazo B6 retirado para una comprobación" for name in CORRECTIONS}
+    pending = {name: "Modelo B6 retirado para una comprobación" for name in CORRECTIONS}
     with pytest.raises(ValueError, match="receta de la corrección"):
         plan.load_campaign(declared(tmp_path, arms=readers, pending_arms=pending))
     changes = dict(arms=readers, pending_arms=pending, correction_recipe=None)
@@ -301,7 +309,7 @@ def test_section_needs_the_titans_section_of_its_parent(tmp_path):
         mars_titan=section(),
         limits=dict(max_training_jobs=100_000, max_prediction_jobs=0),
     )
-    with pytest.raises(ValueError, match="padre el brazo mac_online"):
+    with pytest.raises(ValueError, match="padre el modelo mac_online"):
         plan.load_campaign(path)
 
 

@@ -9,12 +9,15 @@ import torch
 from torch import nn
 from torch.nn.attention import SDPBackend, sdpa_kernel
 
-from mars_titan.data.input_policy import MODALITIES, masked_inputs
+from mars_titan.data.input_policy import masked_inputs
 from mars_titan.data.price_windows import gate_price_window
 from mars_titan.models.baselines.multimodal import (
     HEADS,
+    PRESENCE_FUSION,
     SCALAR_HEAD,
+    STRICT_FUSION,
     MultimodalReference,
+    fuse_modalities,
     validate_architecture,
 )
 from mars_titan.models.quantile_head import CONTRACT, QUANTILE_HEAD, QuantileHead, median
@@ -141,9 +144,9 @@ class FinancialConfig:
             feedforward_multiplier=2,
             output="scalar_corpus_target",
             token_policy="one_fused_token_per_new_decision",
-            mask_fusion="zero_after_projection_then_concat_presence"
+            mask_fusion=PRESENCE_FUSION
             if masked_inputs(self.inputs.input_policy)
-            else "strict_original",
+            else STRICT_FUSION,
         )
         # La identidad escalar no cambia. La cabeza de cuantiles sustituye la salida.
         if self.head == QUANTILE_HEAD:
@@ -603,15 +606,13 @@ class FinancialPredictor(nn.Module):
         local_result = None
         with torch.set_grad_enabled(differentiable), backend:
             # El relleno de una sesión ausente en todo el mercado no llega al codificador.
-            representations = [self.price_encoder(gate_price_window(batch.inputs["prices"]))]
-            for index, name in enumerate(MODALITIES[1:], 1):
-                projected = self.encoders[name](batch.inputs[name])
-                if self.masked:
-                    projected = projected * batch.presence[:, index : index + 1]
-                representations.append(projected)
-            if self.masked:
-                representations.append(batch.presence.to(dtype=self.head.weight.dtype))
-            token = self.fusion(torch.cat(representations, dim=-1))
+            token = fuse_modalities(
+                self.price_encoder(gate_price_window(batch.inputs["prices"])),
+                batch.inputs,
+                self.encoders,
+                self.fusion,
+                batch.presence if self.masked else None,
+            )
             check_finite(token, "El token fusionado")
             if self.mac:
                 encoded, next_mac = self.mac(

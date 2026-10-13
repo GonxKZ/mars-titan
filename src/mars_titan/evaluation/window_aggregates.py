@@ -2,7 +2,7 @@
 
 La comparación walk-forward puntúa cada ventana por separado (``_score_window``) y solo
 después une las sesiones de todas para resumir, contrastar y calibrar intervalos. Lo que
-sale de una ventana (puntuaciones por sesión de cada brazo y semilla, calibrador, estratos,
+sale de una ventana (puntuaciones por sesión de cada modelo y semilla, calibrador, estratos,
 variantes de la ablación y presencia) basta para calcular el informe completo sin volver a
 leer predicciones por fila. Este módulo guarda esa salida en cuanto la ventana termina y la
 devuelve idéntica, con los mismos tipos, formas y bits, para que la retención v2 pueda
@@ -18,7 +18,7 @@ Los agregados se calculan en float64 y se guardan sin redondear ni comprimir con
 una matriz o un escalar decimal de otra precisión se rechaza.
 
 La cartera larga y corta (``long_short_comparison``) también trabaja ventana a ventana: cada
-una produce los libros por sesión de todos los brazos, las órdenes sin ejecutar y la
+una produce los libros por sesión de todos los modelos, las órdenes sin ejecutar y la
 identidad de los precios. Se guardan aparte, con el código de la cartera y la identidad de
 la edición de precios en su identidad, para que el informe de la cartera tampoco necesite
 las filas.

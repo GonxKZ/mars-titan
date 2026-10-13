@@ -196,7 +196,7 @@ Desde la versión 4 de la comparación, `up_precision` y `down_precision` tambi�
 son series contrastables. Responden a la pregunta de cuántas veces acierta un
 modelo cuando dice que el residuo sube (o baja). Una sesión sin ninguna llamada
 de ese signo no tiene precisión, y el contraste emparejado solo usa las sesiones
-definidas en todos los brazos que intervienen, con el número de sesiones excluidas
+definidas en todos los modelos que intervienen, con el número de sesiones excluidas
 en el informe. La exhaustividad no se contrasta porque un modelo puede subirla
 llamando siempre el mismo signo.
 
@@ -398,8 +398,8 @@ el MAE de las filas conservadas y se agrega por sesión. Todas las sesiones
 conservan al menos una fila, así que sus pesos no cambian.
 
 La selección dentro de la sesión usa solo información disponible en la decisión.
-El oráculo ordena por el error real y es una cota inferior descriptiva, no un
-método. Una curva útil baja al reducir la cobertura y se acerca al oráculo. Si
+La ordenación ideal usa el error real y es una cota inferior descriptiva, no un
+método. Una curva útil baja al reducir la cobertura y se acerca a la ordenación ideal. Si
 queda por encima del MAE completo, la anchura no ayuda a abstenerse. Las
 comparaciones entre modelos deben hacerse a coberturas iguales, con
 `SelectiveRisk.series(c)`. Esta curva no es una regla de negociación, porque un
@@ -512,7 +512,7 @@ leer ninguna fuente. No sustituyen a las
 comparaciones emparejadas, que siguen siendo el contraste principal, y no se usan para
 seleccionar modelos, configuraciones ni épocas. Responden a dos preguntas que el contraste
 principal no cubre: si alguna variante de una familia supera a su base teniendo en cuenta
-que se han probado varias a la vez, y qué brazos no se distinguen del mejor.
+que se han probado varias a la vez, y qué modelos no se distinguen del mejor.
 
 La sección es opcional en todas las versiones de la configuración y su presencia no cambia
 ninguna otra salida. Se comprobó en procesos separados frente al código de `develop` con
@@ -523,7 +523,7 @@ serializada con claves ordenadas y sin espacios, es
 
 ### Pérdida diaria
 
-La unidad es el día UTC, la misma que remuestrea el bootstrap principal. Para cada brazo,
+La unidad es el día UTC, la misma que remuestrea el bootstrap principal. Para cada modelo,
 las semillas se promedian sesión a sesión con `SessionSeries.average` y la pérdida del día
 $t$ es la media de sus sesiones con la ponderación entre mercados declarada:
 
@@ -533,7 +533,7 @@ L_{a,t}=\frac{1}{|S_t|}\sum_{s\in S_t}\ell_{a,s}\quad(\texttt{session}),
 L_{a,t}=\frac{1}{|M_t|}\sum_{m\in M_t}\frac{1}{|S_{t,m}|}\sum_{s\in S_{t,m}}\ell_{a,s}\quad(\texttt{market}).
 $$
 
-Un día solo entra si todos los brazos de la familia tienen alguna sesión definida en él, y
+Un día solo entra si todos los modelos de la familia tienen alguna sesión definida en él, y
 el informe cuenta los excluidos. Con el MAE no hay exclusiones. La media de $L_{a,t}$ pesa
 igual cada día, así que en la vista US+CN puede diferir un poco de la media por sesiones
 del contraste principal cuando un día tiene sesiones de los dos mercados. Cada familia
@@ -550,7 +550,7 @@ también lo necesita.
 | SPA | [Hansen, 2005](https://doi.org/10.1198/073500105000000063) | `arch.bootstrap.SPA` | P-valores inferior, consistente y superior con la base como referencia |
 | Reality Check | [White, 2000](https://doi.org/10.1111/1468-0262.00152) | P-valor superior del mismo SPA | P-valor |
 | StepM | [Romano y Wolf, 2005](https://doi.org/10.1111/j.1468-0262.2005.00615.x) | Descenso propio sobre la API pública de `arch.bootstrap.SPA` | Variantes que superan a la base con un error de familia del 5 % |
-| MCS | [Hansen, Lunde y Nason, 2011](https://doi.org/10.3982/ECTA5771) | `arch.bootstrap.MCS`, estadístico $T_R$ | Brazos incluidos con tamaño 0,10, p-valor de cada brazo y orden de eliminación |
+| MCS | [Hansen, Lunde y Nason, 2011](https://doi.org/10.3982/ECTA5771) | `arch.bootstrap.MCS`, estadístico $T_R$ | Modelos incluidos con tamaño 0,10, p-valor de cada modelo y orden de eliminación |
 | Longitud de bloque | [Politis y White, 2004](https://doi.org/10.1081/ETC-120028836), [corrección de 2009](https://doi.org/10.1080/07474930802459016) | `arch.bootstrap.optimal_block_length` | Longitudes circular y estacionaria, solo como diagnóstico |
 
 El diferencial de Diebold-Mariano es $d_t=L_{\mathrm{variante},t}-L_{\mathrm{base},t}$, de
@@ -578,7 +578,7 @@ Qué análisis recibe cada familia depende de sus contrastes:
 | --- | --- | --- | --- |
 | Delta, con una base y varias variantes | Cada variante frente a la base | Base como referencia | Base y variantes |
 | Factorial | Cada celda frente a B, sin la interacción | B como referencia | Las cuatro celdas |
-| Niveles | No | No | Todos sus brazos |
+| Niveles | No | No | Todos sus modelos |
 | Pares con bases distintas, como `joint_vs_separate` | Cada par | No hay referencia común | No |
 
 Los p-valores no se corrigen entre familias, igual que en el contraste principal. Cada
@@ -609,7 +609,7 @@ obliga a revisar la declaración.
   una mejora grande y muy variable y otra pequeña y estable, y comprueba que el descenso
   propio selecciona las dos.
 
-El MCS divide por la varianza de la diferencia de cada par. Dos brazos con las mismas
+El MCS divide por la varianza de la diferencia de cada par. Dos modelos con las mismas
 pérdidas diarias la anulan, así que esa familia queda sin MCS y el informe da el motivo.
 Lo mismo ocurre con un diferencial constante en Diebold-Mariano o en el SPA.
 
@@ -617,7 +617,7 @@ Lo mismo ocurre con un diferencial constante en Diebold-Mariano o en el SPA.
 
 [`benchmarks/predictive_ability_cost.py`](../../benchmarks/predictive_ability_cost.py) mide
 la sección completa del ámbito conjunto con los calendarios reales de US (2005 a 2023) y
-de CN (2011 a 2023), los 24 brazos y las 13 familias de la comparación conjunta, 2.000
+de CN (2011 a 2023), los 24 modelos y las 13 familias de la comparación conjunta, 2.000
 réplicas y bloques de 16 días, sobre pérdidas sintéticas. El
 [recibo](../../reports/engineering/predictive-ability-20261010/cost.json) da 31 s de
 mediana para las tres vistas (29 y 33 s en las dos repeticiones, con una carga media de 8
@@ -634,8 +634,8 @@ en `arch`, y no se ha optimizado ni pasado a C++.
   en cada ventana, su validez con parámetros estimados ([West, 1996](https://doi.org/10.2307/2171956))
   no está garantizada. El contraste de [Giacomini y White (2006)](https://doi.org/10.1111/j.1468-0262.2006.00718.x)
   trata ese caso y no está implementado.
-- El MCS identifica un conjunto de brazos que no se distinguen del mejor con la confianza
-  declarada. No ordena los brazos incluidos ni dice que sean equivalentes.
+- El MCS identifica un conjunto de modelos que no se distinguen del mejor con la confianza
+  declarada. No ordena los modelos incluidos ni dice que sean equivalentes.
 - StepM controla el error de familia entre las variantes de una familia, no entre familias,
   vistas ni métricas. La búsqueda previa de configuraciones queda fuera, como en el
   contraste principal.
@@ -707,21 +707,21 @@ proyecto no cambia.
 predicciones de la campaña desde 2000 sin abrir la reserva de 2024. Recibe dos
 documentos. La [configuración declarada](../../configs/evaluation/historical-masked-2000-comparison.json)
 fija antes de evaluar la política de entradas, los protocolos de cada ámbito
-(US, CN y US+CN), las ventanas, los brazos con su salida y semillas, las
+(US, CN y US+CN), las ventanas, los modelos con su salida y semillas, las
 métricas, la calibración y las familias de contrastes. Un manifiesto de fuentes,
-que se generará cuando existan las predicciones, enlaza cada brazo, semilla y
+que se generará cuando existan las predicciones, enlaza cada modelo, semilla y
 ventana con sus archivos del tramo de evaluación y, si emite cuantiles, del
 tramo de calibración.
 
 La política de entradas siempre se declara. Cada vista de ventana se valida con
 `temporal_contracts` bajo esa política, de modo que una vista estricta no pasa
 como vista con máscaras ni al revés. Además se rechaza cualquier mezcla entre
-brazos: otra política declarada en una fuente, otra vista, otro protocolo u otra
+modelos: otra política declarada en una fuente, otra vista, otro protocolo u otra
 ventana, otra edición (la huella del corpus padre de las vistas), semillas o
 ventanas ausentes o sobrantes y filas distintas. La identidad de una fila es
-(mercado, activo, instante) dentro de su ventana. Si dos brazos no evalúan las
+(mercado, activo, instante) dentro de su ventana. Si dos modelos no evalúan las
 mismas filas con los mismos objetivos, el error indica cuántas filas solo están
-en cada brazo y cuántas tienen otro objetivo.
+en cada modelo y cuántas tienen otro objetivo.
 
 Cada archivo de evaluación debe contener solo filas del tramo de evaluación que
 el protocolo asigna a su ventana, y el de calibración solo filas de su tramo.
@@ -731,7 +731,7 @@ propio, y ninguna ventana declarada termina después de esa fecha.
 
 La agregación sigue la definición de este documento:
 
-- Por ventana, cada brazo y semilla se puntúa con `score_sessions` sobre su
+- Por ventana, cada modelo y semilla se puntúa con `score_sessions` sobre su
   tramo de evaluación.
 - Sobre todas las ventanas, las sesiones se unen con `SessionScores.concatenate`
   y cada sesión pesa lo mismo. El resultado coincide con el de un panel único con
@@ -739,15 +739,15 @@ La agregación sigue la definición de este documento:
   años consecutivos y no repiten sesiones.
 - Por mercado, el ámbito conjunto informa US+CN con la ponderación declarada y
   cada mercado por separado con `select_sessions`.
-- Por sesión, `sessions.parquet` conserva los estadísticos de cada sesión, brazo,
+- Por sesión, `sessions.parquet` conserva los estadísticos de cada sesión, modelo,
   semilla, ventana y variante (cuantiles brutos o calibrados).
 
 Los resúmenes se dan por semilla. Los contrastes promedian primero las semillas
 sesión a sesión con `SessionSeries.average` y aplican `compare_series` a cada
 familia y métrica declaradas, con la longitud de bloque, réplicas y semilla de
-la configuración. Una familia con algún brazo sin cuantiles no recibe pinball y
+la configuración. Una familia con algún modelo sin cuantiles no recibe pinball y
 lo indica. El control cero se construye con las mismas filas y objetivo y
-predicción nula. Para cada brazo con cuantiles se informa el error de cobertura
+predicción nula. Para cada modelo con cuantiles se informa el error de cobertura
 de los intervalos del 80 % y del 95 % con y sin calibración, con su intervalo
 por bloques y la diferencia entre ambos.
 
@@ -767,8 +767,8 @@ $P^{1/3}$ con unos 4.800 días de evaluación en US y unos 3.300 en los otros
 ámbitos. Las familias son las referencias frente al control cero, los controles
 de Titans-MAC frente a `transformer_direct`, las políticas de escritura M1 a M3
 frente a M0, los refinamientos K = 2 y 4 sobre M1, el factorial CM-v1 y el nivel
-de cada brazo. Tomar M1 como base de K es una propuesta pendiente de revisión.
-M3 todavía no está definida en el código y su brazo exige esa definición antes
+de cada modelo. Tomar M1 como base de K es una propuesta pendiente de revisión.
+M3 todavía no está definida en el código y su modelo exige esa definición antes
 de evaluar. La versión 2 de la configuración añade los
 [estratos por presencia de modalidades](#estratos-por-presencia-de-modalidades),
 un análisis secundario que no cambia nada de lo anterior. La versión 3 añade la
@@ -801,22 +801,22 @@ añade el [control en línea del Transformer](../engineering/transformer-online-
 control con el Transformer compacto congelado y `memory_vs_online_learning` contrasta
 MARS-TITAN M1 con el control. El control recibe las mismas etiquetas maduras que el
 banco de M1 en los mismos instantes, así que la segunda familia comprueba si la mejora
-de MARS-TITAN se explica solo por seguir aprendiendo. El brazo entra también en la
+de MARS-TITAN se explica solo por seguir aprendiendo. El modelo entra también en la
 familia de niveles, lo que añade un nivel a su corrección por máximo estudentizado.
 
 La versión 5 añade a la versión 4 el [diseño conjunto](walk-forward-2000.md#comparación-con-los-controles-separados)
 de la campaña A v2 (`joint_design`). Un mercado solo cuenta en las ventanas en las que es
-elegible y los controles separados de US y CN se comparan con el brazo conjunto
+elegible y los controles separados de US y CN se comparan con el modelo conjunto
 restringido a las filas de su mercado. Las métricas, la fiabilidad del signo y la cartera
 aplican las mismas exclusiones. El control en línea y sus dos familias se evalúan en el ámbito
 conjunto, porque los ámbitos de un mercado solo comparan los tres controles separados con
-su brazo conjunto.
+su modelo conjunto.
 
 Las semillas se agregan así. La comparación solo lee el caso elegido de cada
-brazo, que la campaña A repite con las semillas 42, 43 y 44. Cada semilla tiene
+modelo, que la campaña A repite con las semillas 42, 43 y 44. Cada semilla tiene
 su resumen y los contrastes, la fiabilidad del signo y la cartera usan la media
 de las semillas sesión a sesión. La incertidumbre sale solo del remuestreo de
-días y una semilla nunca cuenta como una sesión más. Un brazo determinista con
+días y una semilla nunca cuenta como una sesión más. Un modelo determinista con
 una semilla, como Ridge, entra con su serie tal cual. Los casos de búsqueda, que
 solo usan la semilla 42, no entran en la comparación y quedan en los recibos de
 selección y el registro de ensayos.
@@ -826,37 +826,37 @@ separado en cada mercado y la exclusión de las métricas chinas anteriores a 20
 se declaran en la comparación conjunta de `feat/campaign-a-joint-design` (#363),
 que se construye sobre esta versión. No forman parte de este archivo.
 
-### Brazos postentrenados
+### Modelos postentrenados
 
 La [declaración de la comparación postentrenada](../../configs/posttraining/historical-masked-adapter-comparison-a.json)
-no enumera brazos. `posttraining/stage_comparison.py` los deriva del plan de la
+no enumera modelos. `posttraining/stage_comparison.py` los deriva del plan de la
 etapa de adaptadores y forma una comparación por padre y ámbito con el padre
-congelado, la continuación completa y los brazos adaptados de la matriz para su
+congelado, la continuación completa y los modelos adaptados de la matriz para su
 familia. Así una familia nueva de la matriz entra sin reescribir nada. En el
 [walk-forward por etapas](../engineering/masked-posttraining.md#etapa-por-ventana-de-la-campaña)
 de A, el padre congelado es el trabajo `frozen` de la etapa, que aplica a la
-ventana k el estado elegido por la base en k-1, y el brazo base reentrenado en k
+ventana k el estado elegido por la base en k-1, y el modelo base reentrenado en k
 queda como nivel fuera de las familias. Como la primera ventana de cada ámbito
 no tiene postentrenamiento, la comparación empieza en la segunda. Las familias
 declaradas son `versus_frozen_parent` (adaptados y continuación menos el padre
 congelado) y `versus_full_continuation` (adaptados menos la continuación), más el
-nivel de cada brazo. Todo lo demás se hereda de la comparación de la campaña:
+nivel de cada modelo. Todo lo demás se hereda de la comparación de la campaña:
 protocolos, métricas, calibración común, remuestreo y secciones secundarias. Hoy
-salen nueve padres: las tres redes recurrentes y DLinear con once brazos, el
+salen nueve padres: las tres redes recurrentes y DLinear con once modelos, el
 Transformer con diecisiete porque la matriz le da puntos de lectura, y los cuatro
-brazos de Titans-MAC con entre siete y catorce. La validación de los recibos por
+modelos de Titans-MAC con entre siete y catorce. La validación de los recibos por
 etapas elige el predictor de la cadena y no entra en esta comparación.
 
 La [declaración de A v2](../../configs/posttraining/historical-masked-adapter-comparison-a-v2.json),
 fijada el 10 de octubre antes de cualquier resultado, añade dos papeles. `chain` es
-el predictor de la cadena (`<brazo>__chain`), cuyas predicciones de cada ventana y
+el predictor de la cadena (`<modelo>__chain`), cuyas predicciones de cada ventana y
 semilla son las del trabajo que eligió su `selection.json`, y `base_retrain` es el
-brazo base reentrenado en la ventana. Las familias `versus_frozen_parent` y
+modelo base reentrenado en la ventana. Las familias `versus_frozen_parent` y
 `versus_full_continuation` incluyen la cadena como variante, y `versus_base_retrain`
 contrasta la cadena con el reentreno, la comparación que el diseño por etapas
 informa aparte. Si la campaña declara `walk_forward_stages`, la declaración debe
 contrastar esos dos papeles. Salen veinte padres en el ámbito conjunto, los 22
-brazos de la etapa salvo Ridge y XGBoost. Cada comparación conserva la
+modelos de la etapa salvo Ridge y XGBoost. Cada comparación conserva la
 elegibilidad por mercado del modelo conjunto, así que China solo entra en
 calibración y métricas desde `fold-006`, y deja fuera los controles separados,
 que solo actúan en los ámbitos de un mercado.
@@ -865,9 +865,9 @@ El manifiesto de fuentes de un padre une las predicciones del padre, leídas del
 manifiesto ya validado de la campaña, con los recibos confirmados de la etapa. Se
 rechaza una etapa con otra declaración, otras vistas o un recibo de otra ejecución,
 vista o identidad, y la comparación exige las mismas filas y objetivos en todos los
-brazos. Cada padre es un análisis secundario propio, sin corrección entre padres,
+modelos. Cada padre es un análisis secundario propio, sin corrección entre padres,
 y no sirve para elegir la arquitectura base. Sin ablación de modalidades
-conectada para estos brazos, su sección queda pendiente en el informe.
+conectada para estos modelos, su sección queda pendiente en el informe.
 
 Falta conectar los productores de predicciones. Las referencias neuronales con
 retención `heldout_full_train_sessions_v1` ya escriben archivos por tramo con
@@ -883,7 +883,7 @@ Es un análisis secundario y descriptivo, declarado el 9 de octubre de 2026 ante
 de cualquier resultado. No se usa para seleccionar modelos, configuraciones ni
 épocas, y no cambia la conclusión que se extraiga de la métrica principal, que
 sigue siendo el MAE residual por sesión de toda la población evaluada. Responde a
-otra pregunta: cómo rinde cada brazo según las modalidades que tenía cada muestra,
+otra pregunta: cómo rinde cada modelo según las modalidades que tenía cada muestra,
 sobre todo en la subpoblación con las cuatro modalidades (precios y gráficos,
 noticias, fundamentales y macro).
 
@@ -931,8 +931,8 @@ etiqueta sea el de la muestra. No vuelve a leer los vectores, cuya coherencia co
 las máscaras ya se verificó al preparar la edición y que las huellas protegen.
 
 La tabla resultante (activo, mercado, instante y objetivo) pasa por la misma
-comprobación que dos brazos, `_same_rows`: debe tener exactamente las filas y los
-objetivos del primer brazo, y el error cuenta cuántas filas sobran, faltan o
+comprobación que dos modelos, `_same_rows`: debe tener exactamente las filas y los
+objetivos del primer modelo, y el error cuenta cuántas filas sobran, faltan o
 cambian de objetivo. Solo entonces se alinea cada fila con el orden canónico del
 panel. Si alguna fila evaluada no tiene precios, gráficos y macro, la declaración
 deja de describir la población. La sección entera queda `not_estimable` con el
@@ -993,14 +993,14 @@ El informe añade la sección `modality_strata` con `declaration`, `status`,
 `presence` (filas y filas incompletas por ventana), `recalibrated=false`,
 `multiplicity`, `population` (patrón, filas, sesiones, fracción de filas y
 estimabilidad por ámbito y por ventana y mercado), `arms` (MAE por ámbito con los
-intervalos calibrados y MAE por ventana y mercado, para cada brazo, semilla y
+intervalos calibrados y MAE por ventana y mercado, para cada modelo, semilla y
 estrato), `contrasts` e `interval_calibration`. `sessions.parquet` no cambia y
 `analysis_source_sha256` añade este módulo y `training/corpus_inputs.py`.
 
 ### Coste
 
 Con una ventana sintética de 625.000 filas de evaluación (2.500 activos y 250
-sesiones) y 155.000 de calibración, el control cero, un brazo puntual y uno con
+sesiones) y 155.000 de calibración, el control cero, un modelo puntual y uno con
 cuantiles, dos hilos y una carga media cercana a 3, cuatro repeticiones tardaron
 1,93 s sin la sección y entre 3,8 y 4,2 s con ella. El pico de memoria pasó de
 1,06 a 1,09 GiB. La mayor parte del aumento es volver a ordenar y puntuar los
@@ -1016,8 +1016,8 @@ de añadir una modalidad. Tener noticias o fundamentales se asocia al tamaño de
 activo, al mercado y al periodo, así que un MAE menor en
 `news_and_fundamentals` no demuestra que esas modalidades lo reduzcan. Para eso
 harían falta controles con la misma fila y la modalidad enmascarada. Los
-contrastes entre brazos dentro de un estrato sí son emparejados, porque todos los
-brazos evalúan las mismas filas.
+contrastes entre modelos dentro de un estrato sí son emparejados, porque todos los
+modelos evalúan las mismas filas.
 
 ## Estratos de liquidez y métricas cuadráticas
 
@@ -1178,10 +1178,10 @@ activos sin reconstrucción verificada.
 
 Es un análisis secundario y descriptivo, declarado el 9 de octubre de 2026 antes
 de cualquier resultado. Los estratos comparan subpoblaciones distintas. La
-ablación compara cada fila consigo misma: el estado elegido de cada brazo,
+ablación compara cada fila consigo misma: el estado elegido de cada modelo,
 semilla y ventana vuelve a predecir la evaluación con noticias, fundamentales o
 ambos leídos como ausentes, sin reentrenar ni recalibrar. Mide cuánto depende
-cada brazo de esas modalidades en las filas que las tenían. No se usa para
+cada modelo de esas modalidades en las filas que las tenían. No se usa para
 seleccionar modelos, configuraciones ni épocas, y no cambia la conclusión que se
 extraiga del MAE residual por sesión de toda la población.
 
@@ -1259,12 +1259,12 @@ cuya entrada cambia. La métrica es la diferencia emparejada del MAE por sesión
 esas filas,
 $\Delta=\operatorname{MAE}^{\text{enmascarado}}-\operatorname{MAE}^{\text{original}}$,
 con la ponderación declarada, uniendo ventanas, para el ámbito y para cada
-mercado. Un valor positivo indica que el error del brazo crece sin la modalidad.
+mercado. Un valor positivo indica que el error del modelo crece sin la modalidad.
 Se informan también la cobertura y la anchura de los intervalos del 80 % y del
 95 % de ambas predicciones con el mismo calibrador, y los recuentos de filas
 afectadas y no afectadas por ventana y mercado.
 
-Para cada variante y vista, los contrastes forman una familia sobre los brazos
+Para cada variante y vista, los contrastes forman una familia sobre los modelos
 con `compare_series` y el contraste enmascarado menos original. Las semillas se
 promedian sesión a sesión y el bloque, las réplicas, la semilla y la sensibilidad
 son los de la comparación principal. Entre variantes y vistas se aplica
@@ -1287,8 +1287,8 @@ Sin ese manifiesto, la sección queda `not_computed` y el resto del informe no
 cambia.
 
 Las etapas declaradas para A y B prevén 4.185 predicciones cada una, 1.395 por
-variante: 31 pares de brazo y semilla (cinco referencias neuronales y cuatro
-brazos de Titans-MAC con tres semillas, XGBoost con tres y Ridge con una) en 19
+variante: 31 pares de modelo y semilla (cinco referencias neuronales y cuatro
+modelos de Titans-MAC con tres semillas, XGBoost con tres y Ridge con una) en 19
 ventanas de US, 13 de CN y 13 de US+CN. B cuesta lo mismo que A porque cada
 ventana predice con el estado que la campaña usa en ella. El comando `throughput`
 acepta `--ablation-stage` y estima sus horas con los caudales de inferencia ya
@@ -1300,7 +1300,7 @@ edición real.
 
 - No mide un efecto causal económico. Enmascarar cambia la entrada del modelo, no
   la información disponible en el mercado.
-- Dependencia no es utilidad. Un brazo puede cambiar mucho su predicción sin la
+- Dependencia no es utilidad. Un modelo puede cambiar mucho su predicción sin la
   modalidad y no ganar precisión con ella, o al revés.
 - No equivale a entrenar sin la modalidad. El estado se ajustó con ella y no se
   ha adaptado a su ausencia, mientras que un modelo entrenado sin ella podría
@@ -1310,6 +1310,194 @@ edición real.
 - Las filas con noticias o fundamentales no son una muestra al azar. Las
   diferencias entre variantes describen poblaciones distintas, igual que los
   estratos.
+
+## Retención e interferencia en las revisitas de régimen
+
+Es un análisis secundario y descriptivo, declarado el 10 de octubre de 2026 antes de
+cualquier resultado en la sección `retention_interference` de las dos comparaciones de la
+campaña ([#54](https://github.com/GonxKZ/mars-titan/issues/54)). Pregunta si una memoria
+que escribe durante la inferencia conserva algo útil de un régimen de mercado que ya vio
+en el mismo recorrido (retención) y si lo escrito entre medias lo desplaza (interferencia).
+No elige modelos, no interviene en la parada y no cambia la conclusión que se extraiga del
+MAE residual por sesión. `evaluation/retention_interference.py` lo calcula con las mismas
+series de MAE por sesión que los contrastes, sin leer filas ni volver a predecir. No se ha
+ejecutado, porque necesita las predicciones de la campaña.
+
+### Por qué dentro de cada recorrido
+
+El plan inicial era volver a predecir las sesiones de ventanas anteriores con el estado de
+una ventana posterior y compararlo con el estado de entonces. Se descartó por tres motivos:
+
+1. En el walk-forward v2 cada ventana se ajusta desde 2000 hasta su corte, así que las
+   sesiones evaluadas en ventanas anteriores forman parte del entrenamiento de las
+   posteriores. Ese error mediría ajuste dentro de muestra, no retención.
+2. Los pesos rápidos de Titans, el banco episódico y el Transformer en línea empiezan cada
+   recorrido en su estado inicial. Entre ventanas no se arrastra ningún contenido de
+   memoria que pueda retenerse.
+3. Solo en US, con 19 ventanas, harían falta 171 pares de ventana anterior y posterior por
+   modelo y semilla: 4.617 predicciones de ventana con los nueve modelos de los pares y tres
+   semillas, o 486 mirando solo la ventana anterior.
+
+Dentro de un recorrido, en cambio, el contenido de la memoria es el que realmente se
+escribió y todas las predicciones están fuera de muestra. El análisis no añade trabajo de
+GPU.
+
+### Calendario de regímenes
+
+`evaluation/regime_calendar.py` etiqueta cada sesión de cada mercado con la regla
+`observable_volatility_trend_v1` de `memory/regimes.py`, la misma que enruta B6. Para la
+sesión t forma las ventanas de 64 sesiones del calendario que terminan en t, con la
+presencia del contrato v3.1, sobre todos los activos preparados del mercado con una
+ventana válida. La cohorte es el mercado completo y no las filas de un modelo, así que la
+etiqueta es la misma para todos los modelos. Solo usa precios hasta la decisión: recortar
+la historia en cualquier fecha no cambia las rutas anteriores. Las sesiones sin ventanas
+válidas, o con menos de 20 activos o 42 rendimientos, quedan en la ruta 0 sin clasificar.
+Ningún modelo recibe estas etiquetas. Una sesión de 2024 en los precios preparados detiene
+la construcción antes de escribir nada, y el calendario guarda la huella de la edición,
+de la lista de sesiones ausentes y del código que lo calcula.
+
+```bash
+uv run python -m mars_titan.evaluation.regime_calendar \
+  --prepared <edición preparada v3.1> --output <calendario nuevo>.json
+```
+
+### Clases de sesión e historia de cada par
+
+Un tramo es una racha de sesiones clasificadas con la misma ruta. Las sesiones sin
+clasificar no cuentan, no cortan rachas y quedan fuera. Con h la posición de la sesión en
+su tramo y H = 10 sesiones de entrada:
+
+| Clase | Definición |
+| --- | --- |
+| `novel_entry` | h ≤ H y el régimen no había aparecido antes en la historia del par |
+| `revisit_entry` | h ≤ H y el régimen ya apareció antes, con otro entre medias. La ausencia es el número de sesiones clasificadas desde su última aparición |
+| `continuing` | h > H |
+
+La historia depende de cuándo empieza a escribir la memoria del par. Los pesos rápidos de
+Titans escriben con las entradas desde el comienzo del calentamiento, 12 meses antes de la
+evaluación, con la misma regla de meses que el recorrido. El banco episódico y el
+Transformer en línea solo reciben etiquetas maduras dentro del tramo medido, así que su
+historia empieza con la evaluación. Un régimen que solo apareció en el calentamiento no
+está en el banco y cuenta como nuevo.
+
+### Estadísticos y control de descarte
+
+El beneficio de una sesión es el MAE del control menos el de la memoria, después de
+promediar las semillas sesión a sesión. Positivo favorece a la memoria. Cada estadístico
+es una diferencia de medias por clase:
+
+| Estadístico | Cálculo | Lectura |
+| --- | --- | --- |
+| `predictive_effect` | Media de las sesiones clasificadas | Efecto predictivo del par |
+| `retention` | Revisitas menos regímenes nuevos | Positivo si la memoria recupera antes un régimen que ya guardó |
+| `interference` | Revisitas tras una ausencia de 63 sesiones o más menos revisitas tras una más corta | Negativo si lo escrito entre medias desplaza lo útil |
+| `plasticity` | Regímenes nuevos menos tramos asentados | Descriptivo, sin decisión |
+
+Las entradas en un régimen nuevo caen sobre todo al principio de cada recorrido y las
+revisitas después, cuando la memoria ya tiene contenido. Una ventaja que solo crezca con
+el tiempo dentro de la ventana daría una retención positiva sin retener nada. El control
+de descarte repite el cálculo con un placebo: la ruta de la sesión que está 126 sesiones
+antes en el calendario. Conserva rachas, ausencias y su posición en el año, pero deja de
+coincidir con el estado del mercado. Las decisiones declaradas, para cada par y mercado,
+son estas:
+
+- Retención: se mantiene si `retention` y su diferencia con el placebo quedan por encima
+  de cero. En otro caso se descarta.
+- Interferencia: se detecta si `interference` y su diferencia con el placebo quedan por
+  debajo de cero. En otro caso no se detecta.
+
+Una decisión queda sin tomar si alguna clase necesaria, real o del placebo, tiene menos
+de 30 sesiones, o si alguna réplica se queda sin sesiones de una clase. Los intervalos
+usan el bootstrap circular por bloques de días UTC de la comparación, con su longitud,
+réplicas, confianza y semilla. Todos los pares, clases y el placebo de un mercado se
+remuestrean con los mismos bloques, y las decisiones de un mercado forman una familia con
+intervalos simultáneos max-t sobre cada estadístico y su diferencia con el placebo. El
+informe añade curvas descriptivas sin intervalos: el beneficio medio por posición en el
+tramo para regímenes nuevos y revisitas, que separa la caída de error del tiempo que tarda
+en llegar, y el beneficio de las revisitas por tramos de ausencia (1, 21, 63, 126 y 252
+sesiones).
+
+### Pares declarados
+
+| Par | Memoria | Control | Historia | Qué separa |
+| --- | --- | --- | --- | --- |
+| `fast_weight_writes` | `titans_mac_online` | `titans_mac_frozen` | Calentamiento | Escribir los pesos rápidos en inferencia con la misma capacidad |
+| `learned_read_path` | `titans_mac_frozen` | `titans_mac_disabled` | Calentamiento | Lectura aprendida y memoria persistente sin escrituras |
+| `episodic_bank_m1` a `m3` | `mars_titan_m1` a `m3` | `mars_titan_m0` | Tramo medido | Contenido del banco con los mismos parámetros del lector |
+| `write_policy_m2` y `m3` | `mars_titan_m2` y `m3` | `mars_titan_m1` | Tramo medido | Qué se guarda con la misma capacidad del banco |
+| `online_weights` | `transformer_compact_online` | `transformer_compact` | Tramo medido | Aprender en línea con las etiquetas del banco, sin memoria |
+
+El contenido del banco y de los pesos rápidos no se inspecciona. Almacenamiento,
+recuperación y efecto predictivo se separan por el diseño de los pares y de las clases: el
+par congelado frente a desactivado aísla la lectura sin escrituras, el par en línea frente
+a congelado aísla la escritura, y la clase de la sesión distingue un régimen que pudo
+guardarse de uno que no.
+
+La sección es opcional en todas las versiones de la configuración. Sin calendario queda
+`not_computed` y el resto del informe no cambia. Su huella SHA-256, serializada con claves
+ordenadas, sin espacios y en UTF-8, es
+`0fa3c875fc091aadcb29a0db99118dc7c707cfe1d0516e9c0411eaafc8462525` en las dos
+comparaciones. El cargador rechaza pares con modelos que no estén en la comparación, con el
+control cero o repetidos, umbrales fuera de rango y cualquier otro valor de los campos
+fijos.
+
+```bash
+uv run python -m mars_titan.evaluation.walk_forward_comparison --config <comparación> \
+  --sources <fuentes> --scope US --output <informe nuevo> --regimes <calendario>.json
+```
+
+### Recuentos con el calendario real
+
+El calendario se calculó con los precios reales de la edición preparada v3.1 hasta 2023.
+Con los protocolos v2 y la declaración, las sesiones de evaluación se reparten así:
+
+| Mercado | Historia | Ventanas | Sesiones | Nuevos | Revisitas (largas y cortas) | Asentadas | Nuevos y revisitas del placebo |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| US | Calentamiento | 19 | 4.781 | 12 | 2.371 (372 y 1.999) | 2.398 | 4 y 2.381 |
+| US | Tramo medido | 19 | 4.781 | 431 | 2.069 (200 y 1.869) | 2.281 | 423 y 2.066 |
+| CN | Calentamiento | 13 | 3.157 | 10 | 1.860 (263 y 1.597) | 1.287 | 10 y 1.823 |
+| CN | Tramo medido | 13 | 3.157 | 272 | 1.622 (125 y 1.497) | 1.263 | 297 y 1.576 |
+
+Ninguna sesión de evaluación queda sin clasificar. Solo las 63 primeras sesiones de cada
+mercado, en 2000 para US y en 2006 para CN, no tienen todavía una ventana de 64 sesiones.
+
+Con 12 meses de calentamiento casi todos los regímenes aparecen antes de la evaluación.
+Los pares de pesos rápidos tienen entre 10 y 12 entradas en regímenes nuevos en toda la
+serie, por debajo de las 30 declaradas, así que su retención quedará sin decidir y su
+pregunta contrastable es la interferencia. Los pares del banco y del Transformer en línea
+tienen cientos de entradas nuevas y revisitas y pueden contrastar las dos.
+
+### Comprobación sin modelos y coste
+
+El [recibo con datos reales](../../reports/engineering/retention-interference-20261010/README.md)
+comprueba, sin modelos ni predicciones, que recortar la historia en cuatro fechas no cambia
+ninguna ruta anterior, que 40 sesiones al azar por mercado coinciden con las ventanas de la
+codificación y que el informe recupera con error menor que 10⁻¹² unos beneficios conocidos
+inyectados por clase sobre la rejilla real de sesiones. Construir el calendario de los dos
+mercados tardó 125 s en CPU, con dos hilos y 1,74 GiB de pico de RSS, una vez por edición. El
+informe de un mercado con los ocho pares y las 2.000 réplicas de la comparación tardó 0,25 s
+en US y 0,16 s en CN. No usa GPU ni vuelve a predecir. Las 64 pruebas del análisis, el
+calendario y su conexión con la comparación detectan las 39 mutaciones dirigidas del mismo
+recibo.
+
+### Qué no mide
+
+- No inspecciona el contenido del banco ni de los pesos rápidos, ni su ocupación.
+  Agotar la capacidad solo se vería en el beneficio.
+- Las rutas describen la ventana de precios y no identifican crisis ni causas
+  económicas.
+- No mide la retención entre ventanas, porque cada ventana reajusta el estado y reinicia
+  la memoria.
+- Regímenes nuevos y revisitas no son muestras al azar. Las revisitas se concentran en los
+  regímenes frecuentes y en la parte final de cada recorrido. El placebo controla la
+  posición y la frecuencia del calendario, no cualquier diferencia entre regímenes.
+- Las secuencias sintéticas A, B, A del plan inicial necesitan estados entrenados y, en
+  Titans, adaptar los pesos rápidos a una señal sintética. Quedan para después del
+  desbloqueo, junto al [catálogo identificado](../engineering/named-benchmarks.md). Las
+  pruebas usan series de beneficio escritas a mano y la comprobación real inyecta
+  beneficios conocidos, sin ningún modelo.
+- Ninguna prueba finita respalda olvido cero ni retención ilimitada. Una retención
+  descartada o una interferencia detectada se publican igual que el resultado contrario.
 
 ## Matriz de comparaciones y atribución por componentes
 
@@ -1323,17 +1511,17 @@ como control de «seguir aprendiendo». Añade la atribución por componentes de
 linajes, Titans y CM-v1. La [tabla del protocolo](protocol.md#qué-pregunta-responde-cada-comparación)
 resume en lenguaje llano qué pregunta responde cada bloque.
 `evaluation/comparison_matrix.py` valida la declaración y compila 47 familias con 356
-contrastes. `check` los cuenta sin leer datos y `missing` calcula los brazos que faltan.
+contrastes. `check` los cuenta sin leer datos y `missing` calcula los modelos que faltan.
 
 ### Declaración
 
 Cada pregunta tiene un tipo. `pairwise` compara todos los pares de un grupo, `against`
 compara cada miembro de un grupo con cada referencia de otro y `pairs` declara pares
 [base, variante], con la plantilla `{arm}` repetida para cada miembro de un grupo. Cada
-contraste es variante menos base, como `delta`. Un brazo debe ser de la comparación de la
-campaña, condicionado (`transformer_compact_online`, `titans_reference_mac` y los brazos
-de integración que aún no están en `develop`), derivado (`<brazo>__chain`,
-`<brazo>__frozen_parent` y `<brazo>__full_continuation`) o candidato de atribución. Un
+contraste es variante menos base, como `delta`. Un modelo debe ser de la comparación de la
+campaña, condicionado (`transformer_compact_online`, `titans_reference_mac` y los modelos
+de integración que aún no están en `develop`), derivado (`<modelo>__chain`,
+`<modelo>__frozen_parent` y `<modelo>__full_continuation`) o candidato de atribución. Un
 nombre desconocido se rechaza al cargar. Los condicionados y derivados tienen su propio
 plan y su condición. Los candidatos no forman parte de ningún plan.
 
@@ -1345,19 +1533,19 @@ padre. Ninguna familia supera los 64 contrastes de `compare_series`.
 ### Atribución por componentes
 
 Un linaje declara componentes binarios, sus dependencias estructurales y el conjunto de
-componentes de cada brazo con nombre (`evaluation/component_attribution.py`). El linaje
+componentes de cada modelo con nombre (`evaluation/component_attribution.py`). El linaje
 Titans va del Transformer compacto a M3: recorrido directo de Titans, atención MAC,
 memoria persistente con lectura y puerta, actualización en inferencia, lector sin
 contenido (M0), contenido del banco (M1), escritura por error maduro (M2) y anomalía con
 relevancia (M3). K = 2 y 4, los episodios de la primera lectura y las dos variantes de B6
 son componentes fuera de la escalera. El linaje CM-v1 tiene C y M sobre su B. Con $v(S)$
-la métrica media del brazo que activa el conjunto $S$:
+la métrica media del modelo que activa el conjunto $S$:
 
 - **Escalera acumulada**: $v(S_{i+1})-v(S_i)$ en el orden declarado y el total
   $v(S_n)-v(S_0)$, que es exactamente la suma de los pasos. Cada paso depende del orden.
 - **Dejar uno fuera**: $v(C)-v(C\setminus D(c))$, con $C$ el conjunto completo y $D(c)$
   el componente y todo lo que depende de él. El informe dice qué retira cada contraste.
-- **Efectos condicionados**: $v(S\cup\{c\})-v(S)$ para cada par de brazos con nombre que
+- **Efectos condicionados**: $v(S\cup\{c\})-v(S)$ para cada par de modelos con nombre que
   solo difiere en $c$. Es la respuesta directa a cuánto aporta una parte según lo demás.
 - **Interacción** en un contexto declarado:
   $v(S+a+b)-v(S+a)-v(S+b)+v(S)$, la de CM-v1 con $S=B$.
@@ -1375,9 +1563,9 @@ $$
   ejemplo, actualizar una memoria que no se lee). Ese valor no existe y el informe lo
   declara como limitación en lugar de aproximarlo.
 
-Todas estas cantidades son combinaciones lineales de brazos, así que se estiman con
+Todas estas cantidades son combinaciones lineales de modelos, así que se estiman con
 `compare_series` sobre las mismas sesiones y los mismos días remuestreados. Un conjunto
-sin brazo deja su contraste pendiente con lo que falta.
+sin modelo deja su contraste pendiente con lo que falta.
 
 ### Vistas de métrica
 
@@ -1385,7 +1573,7 @@ La evaluación no vuelve a puntuar predicciones. `evaluation/session_table_contr
 lee las tablas por sesión que publican la comparación walk-forward y la cartera, con su
 huella, y reconstruye las mismas series. Las pruebas comprueban que un contraste de la
 matriz coincide bit a bit con el mismo contraste del informe que publicó la tabla, en
-todas las métricas, en el conjunto y en cada mercado. Un brazo que aparezca en dos
+todas las métricas, en el conjunto y en cada mercado. Un modelo que aparezca en dos
 informes debe tener las mismas sesiones y valores, y todos los informes deben compartir
 mercados, edición y vistas.
 
@@ -1398,9 +1586,9 @@ mercados, edición y vistas.
 | `architecture_diagnostics` | Tabla por sesión de los diagnósticos | Pendiente de declarar: retención, regímenes, maduración y Jacobiano |
 
 El ECE no es una media por sesión. Su contraste calcula en cada réplica el ECE de cada
-semilla con los días remuestreados, promedia las semillas y combina los brazos con los
+semilla con los días remuestreados, promedia las semillas y combina los modelos con los
 coeficientes del contraste. Usa los mismos días y réplicas que la fiabilidad del informe
-walk-forward, de modo que el nivel de un brazo reproduce su intervalo. La cartera
+walk-forward, de modo que el nivel de un modelo reproduce su intervalo. La cartera
 remuestrea sesiones de cada mercado en orden, como su informe, y reutiliza sus contrastes.
 
 Las vistas de políticas y diagnósticos son el punto de conexión de otras etapas. Leen una
@@ -1412,8 +1600,8 @@ de una política, necesita la vía de la cartera.
 
 ### Coste por hora GPU
 
-Si las fuentes incluyen un documento de horas por brazo, cada efecto lleva su versión por
-hora. Las horas de un brazo se acumulan con las de sus padres, cada antecesor una vez,
+Si las fuentes incluyen un documento de horas por modelo, cada efecto lleva su versión por
+hora. Las horas de un modelo se acumulan con las de sus padres, cada antecesor una vez,
 porque un lector no existe sin su padre Titans-MAC. Con los mismos coeficientes del
 contraste, $\Delta h=\sum_a w_a H_a$ y
 
@@ -1428,14 +1616,14 @@ El documento declara si las horas son medidas o proyectadas, y el informe lo rep
 solo existe la proyección de la campaña A v2. Las horas medidas saldrán de los recibos de
 la campaña, una conversión que todavía no está escrita.
 
-### Brazos que faltan
+### Modelos que faltan
 
-`missing` cruza cada contraste con la clase de sus brazos. Con la declaración actual, 219
-contrastes solo usan brazos de la campaña, 112 esperan brazos condicionados o derivados y
+`missing` cruza cada contraste con la clase de sus modelos. Con la declaración actual, 219
+contrastes solo usan modelos de la campaña, 112 esperan modelos condicionados o derivados y
 25 necesitan alguno de los ocho candidatos. Eran 183 y 148 antes de que la comparación
-declarada incluyera el control en línea y los tres brazos de integración de MARS-TITAN.
+declarada incluyera el control en línea y los tres modelos de integración de MARS-TITAN.
 Ningún contraste queda sin nombre. El
-[informe de brazos que faltan](../../reports/engineering/component-attribution-20261010/README.md)
+[informe de modelos que faltan](../../reports/engineering/component-attribution-20261010/README.md)
 da el coste estimado de cada candidato con las horas proyectadas, lo que desbloquea por
 sí solo, los lotes que solo sirven juntos y una prioridad calculada. Ningún candidato se
 declara en el plan de la campaña desde aquí.
@@ -1446,8 +1634,8 @@ Un paso de la escalera mide el componente después de los anteriores, no su efec
 general. Dejar uno fuera retira también lo que depende del componente. Un efecto
 condicionado vale para su contexto. Shapley reparte una diferencia según una regla de
 simetría, no identifica un mecanismo. Ninguna de estas cantidades es un efecto causal
-económico. Todas son diferencias de error entre brazos ajustados con las mismas filas.
-Con brazos pendientes, una familia se evalúa con los contrastes disponibles y su tamaño
+económico. Todas son diferencias de error entre modelos ajustados con las mismas filas.
+Con modelos pendientes, una familia se evalúa con los contrastes disponibles y su tamaño
 cambia cuando llegan los demás. El informe lo deja escrito para que no se elija la
 familia después de ver resultados.
 
@@ -1475,18 +1663,18 @@ claves) no mejoraron.
 
 La evaluación walk-forward se midió con una ventana anual sintética de 625.000
 filas de evaluación (2.500 activos y 250 sesiones) y 155.000 de calibración, un
-brazo puntual, uno con cuantiles calibrados y el control cero. Con dos hilos y
+modelo puntual, uno con cuantiles calibrados y el control cero. Con dos hilos y
 la CPU compartida (carga media cercana a 14), tres repeticiones tardaron 4,7,
 2,8 y 2,8 s, incluidas lectura, huellas, validación, calibración, puntuación,
 contrastes con 2.000 réplicas y el informe. El pico de memoria del proceso,
-que también generó los datos, fue de 1,07 GiB. Con unos 1.250 pares de brazo,
+que también generó los datos, fue de 1,07 GiB. Con unos 1.250 pares de modelo,
 semilla y ventana en el ámbito US, la extrapolación lineal ronda la media hora
 en un proceso. Es una estimación, no una medida de la campaña real, y no
 justifica por ahora otra implementación.
 
 La versión 4 se midió después a la escala del ámbito US de la campaña A, con datos
 sintéticos de las mismas formas: 19 ventanas, 12.826.460 filas de evaluación,
-3.087.269 de calibración, 23 brazos y 64 series de brazo y semilla. La comparación
+3.087.269 de calibración, 23 modelos y 64 series de modelo y semilla. La comparación
 sin estratos tardó 1.678 s con un pico de 1,90 GiB y la cartera larga y corta 860 s
 con 1,96 GiB, en un proceso con dos hilos y la CPU compartida (carga media de 14 a
 18). El tiempo crece casi linealmente con las filas leídas, unos 2 µs por fila y
@@ -1494,7 +1682,7 @@ serie. El [informe de escala](../../reports/engineering/evaluation-scale-2026100
 recoge las cuatro medidas, sus condiciones y la extrapolación al diseño conjunto.
 
 La matriz de comparaciones se midió con `benchmarks/comparison_matrix.py` sobre una tabla
-por sesión sintética del ámbito US con las mismas sesiones, brazos y semillas que la
+por sesión sintética del ámbito US con las mismas sesiones, modelos y semillas que la
 campaña A (19 ventanas, 597.625 filas de sesión y 65 series). Evaluar los 183 contrastes
 estimables que tenía entonces, en 20 familias, con las vistas en bruto y calibrada y el
 ECE del signo, tardó 152 s con un pico de 1,44 GiB, dos hilos y la CPU compartida (carga
@@ -1502,7 +1690,7 @@ media cercana a 23).
 Alrededor del 60 % del tiempo se va en generar los índices del remuestreo por bloques, que
 cada familia repite con la misma semilla. Reutilizarlos ahorraría uno o dos minutos por
 evaluación, poco frente al resto de la evaluación, y no se ha hecho. El
-[informe de brazos que faltan](../../reports/engineering/component-attribution-20261010/README.md)
+[informe de modelos que faltan](../../reports/engineering/component-attribution-20261010/README.md)
 recoge la medida y el perfil.
 
 ## Qué no demuestran estas métricas

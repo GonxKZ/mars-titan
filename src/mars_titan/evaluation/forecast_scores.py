@@ -828,7 +828,7 @@ def selective_risk(panel, *, nominal=0.8, coverages=DEFAULT_COVERAGES):
 
     En cada sesión se conservan las ceil(c · n) filas de menor anchura. La selección
     usa información disponible en la decisión y conserva el peso de cada sesión.
-    El oráculo ordena por el error real y solo sirve como cota inferior descriptiva.
+    La ordenación ideal usa el error real y solo sirve como cota inferior descriptiva.
     """
     _require(isinstance(panel, ForecastPanel), "Se necesita un ForecastPanel validado")
     _require(panel.levels is not None, "El modelo no emite cuantiles para abstenerse")

@@ -4,7 +4,7 @@ El plan `configs/baselines/quantile-head-control-us.json` declara doce casos del
 Transformer compacto (`reference_design.head_control_cases`): índices de diseño 0 y 10,
 semillas 42, 43 y 44, y en cada par una salida escalar L1 y `quantile_head_v1` con la
 misma arquitectura, tasa, semilla, presupuesto fijo y selección. Cada trabajo es una
-ventana, una semilla, un índice y un brazo. Se ajusta con `run_reference_case`, que
+ventana, una semilla, un índice y un modelo. Se ajusta con `run_reference_case`, que
 reanuda desde su carpeta, y confirma un recibo con huellas, filas de validación y MAE por
 sesión. Un trabajo confirmado con la misma identidad no se repite. Todos los trabajos de
 una ventana deben evaluar las mismas filas y objetivos de validación.
@@ -474,7 +474,7 @@ def _model(arm, index):
 def contrast_scores(scores, plan, bootstrap):
     """Contrasta el delta de cada índice con las semillas promediadas sobre puntuaciones unidas.
 
-    `scores` asigna a cada (brazo, índice, semilla) su `SessionScores` de validación con
+    `scores` asigna a cada (modelo, índice, semilla) su `SessionScores` de validación con
     todas las ventanas del control. El resultado es el de `compare_series`.
     """
     series = {

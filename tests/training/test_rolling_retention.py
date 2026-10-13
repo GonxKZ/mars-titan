@@ -8,6 +8,7 @@ bit y que el recorrido se reanuda sin repetir nada.
 """
 
 import copy
+import inspect
 import json
 import shutil
 from types import SimpleNamespace
@@ -545,22 +546,31 @@ def test_staged_runners_give_each_stage_a_fresh_report_and_the_chain(
     )
     calls = {}
 
-    def adapters(path, views, campaign_output, output, *, stop=None, window=None, **options):
-        calls["adapters"] = dict(options, window=window)
-        return dict(status="completed")
+    def double(name, real):
+        # El doble enlaza los argumentos con la firma real, así que un argumento obligatorio
+        # que el recorrido no pase falla aquí igual que fallaría la etapa.
+        signature = inspect.signature(real)
 
-    def policies(path, views, campaign, edition, output, *, stop=None, window=None, **options):
-        calls["rl"] = dict(options, window=window)
-        return dict(status="completed")
+        def run(*args, **options):
+            calls[name] = signature.bind(*args, **options).arguments
+            return dict(status="completed")
 
-    monkeypatch.setattr(adapter_stage, "run_stage", adapters)
-    monkeypatch.setattr(rl_stage, "run_stage", policies)
+        run.__signature__ = signature
+        return run
+
+    monkeypatch.setattr(adapter_stage, "run_stage", double("adapters", adapter_stage.run_stage))
+    monkeypatch.setattr(rl_stage, "run_stage", double("rl", rl_stage.run_stage))
     # Copia propia de la campaña: el informe se guarda en su carpeta de retención.
     output = tmp_path / "campaign"
     shutil.copytree(base.output, output, symlinks=True)
     stages = dict(
         adapters=dict(stage="adapters.json", output=tmp_path / "adapters"),
-        rl=dict(stage="rl.json", output=tmp_path / "rl", edition=tmp_path / "edition"),
+        rl=dict(
+            stage="rl.json",
+            output=tmp_path / "rl",
+            edition=tmp_path / "edition",
+            listing_status=tmp_path / "listing-status.json",
+        ),
     )
     runners = rolling.default_runners(base.campaign, base.views, output, stages=stages)
     runners["adapters"]("fold-000")
@@ -570,6 +580,9 @@ def test_staged_runners_give_each_stage_a_fresh_report_and_the_chain(
     assert report["kind"] == chain_disjunction.KIND and report["failures"] == []
     assert report["campaign_sha256"] == plan.load_campaign(base.campaign)["sha256"]
     runners["rl"]("fold-001")
+    assert calls["rl"]["window"] == "fold-001"
+    assert calls["rl"]["listing_status"] == tmp_path / "listing-status.json"
+    assert calls["rl"]["edition"] == tmp_path / "edition"
     assert calls["rl"]["chain_output"] == tmp_path / "adapters"
     assert calls["rl"]["disjunction"] == output / "retention/disjunction/fold-001-rl.json"
     # Un informe con fallos se guarda para revisarlo y detiene el recorrido antes de la etapa.
@@ -696,6 +709,12 @@ def test_the_campaign_script_accepts_the_window_and_still_refuses_an_incomplete_
     with pytest.raises(ValueError, match="acompañar a la retención"):
         script["main"](arguments)
     assert not (tmp_path / "campaign").exists()
+    # Las políticas exigen la tabla del estado de cotización antes de preparar nada.
+    policies = ["--rl-stage", "configs/simulation/historical-masked-rl-stage-a.json"]
+    policies += ["--rl-output", str(tmp_path / "rl"), "--edition", str(tmp_path / "edition")]
+    with pytest.raises(ValueError, match="--listing-status"):
+        script["main"]([*arguments, *policies])
+    assert not (tmp_path / "campaign").exists() and not (tmp_path / "rl").exists()
 
 
 def test_a_regeneration_error_keeps_the_rows_and_is_retried_while_a_comparison_is_final(

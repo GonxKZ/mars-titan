@@ -3,34 +3,34 @@
   "kind": "comparison_matrix_missing_arms",
   "matrix": {
     "name": "campaign-a-comparison-matrix",
-    "sha256": "431f67e50824fd2cf3ba9ccd9144d88e00dce547bb9b60bab6b7509fefc5d16c"
+    "sha256": "d1edb5edaab2cbeabdf4e9394dd4e411a4023b5484b66f3d497dd6c89df82999"
   },
   "hours": {
     "basis": "projected",
     "source": "Proyecci\u00f3n de la campa\u00f1a A v2 (#431, commit 2656031f) con 16.000 muestras-\u00e9poca por segundo, inferencia a 3 veces ese caudal y 10 \u00e9pocas efectivas, sobre los recuentos de reports/data/campaign-a-v2-window-counts-20261009.json. B6 solo predice validaci\u00f3n, calibraci\u00f3n y evaluaci\u00f3n con tres semillas y no incluye el calentamiento. Ning\u00fan caudal est\u00e1 medido en esta edici\u00f3n",
-    "sha256": "48588c7e855d49d56d0c4e567effc8e8f3089c054d2687098843fc149784f5d3"
+    "sha256": "8c5e897ff0d575e80fab27c0269f6b41be2ab597a16c03edba810cc3e56db97b"
   },
   "rule": {
-    "planned_elsewhere": "Los brazos condicionados y derivados se suponen disponibles",
-    "unlocked_alone": "El candidato es el \u00fanico brazo que le falta al contraste",
+    "planned_elsewhere": "Los modelos condicionados y derivados se suponen disponibles",
+    "unlocked_alone": "El candidato es el \u00fanico modelo que le falta al contraste",
     "tiers": {
       "1": "C\u00f3digo existente y desbloquea contrastes por s\u00ed solo",
       "2": "Requiere un cambio de c\u00f3digo y desbloquea contrastes por s\u00ed solo",
       "3": "Solo desbloquea contrastes junto con otros candidatos"
     },
     "order": "Nivel y despu\u00e9s contrastes desbloqueados por cada 100 horas GPU",
-    "gpu_hours": "Horas propias del brazo de referencia (cost_like). Sus padres ya existen"
+    "gpu_hours": "Horas propias del modelo de referencia (cost_like). Sus padres ya existen"
   },
   "totals": {
-    "contrasts": 356,
-    "declared": 219,
+    "contrasts": 362,
+    "declared": 225,
     "planned_elsewhere": 112,
     "candidates": 25,
     "unidentified": 0
   },
   "conditional_arms": {
     "titans_reference_mac": {
-      "condition": "Brazo ajustado con una implementaci\u00f3n p\u00fablica de Titans-MAC. La revisi\u00f3n de #434 recomend\u00f3 conservar el n\u00facleo, que coincide en FP64 con la memoria de lucidrains/titans-pytorch, y no incorporar su c\u00f3digo, as\u00ed que no hay brazo previsto. Solo existir\u00eda con una aprobaci\u00f3n expresa",
+      "condition": "Modelo ajustado con una implementaci\u00f3n p\u00fablica de Titans-MAC. La revisi\u00f3n de #434 recomend\u00f3 conservar el n\u00facleo, que coincide en FP64 con la memoria de lucidrains/titans-pytorch, y no incorporar su c\u00f3digo, as\u00ed que no hay modelo previsto. Solo existir\u00eda con una aprobaci\u00f3n expresa",
       "issue": 434,
       "contrasts": 2
     }
@@ -58,7 +58,7 @@
       "lineage": "titans",
       "producer": "reader_fit",
       "code": "existing",
-      "change": "Solo un brazo m\u00e1s en la secci\u00f3n mars_titan: episodic_bank m2 con refinements 4",
+      "change": "Solo un modelo m\u00e1s en la secci\u00f3n mars_titan: episodic_bank m2 con refinements 4",
       "cost_like": "mars_titan_m1_k4",
       "purpose": "Interacci\u00f3n entre los refinamientos y la selecci\u00f3n por error",
       "components": [

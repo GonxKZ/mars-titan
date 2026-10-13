@@ -1,7 +1,7 @@
 # Regímenes de Markov como contexto de memoria
 
-Diseño del 21 de septiembre de 2026, actualizado el 28. Esta nota propone un contraste para O3.
-Existe un [filtro HMM causal C++20](../engineering/batched-rl-environments.md) comprobado con distribuciones controladas. No hay un detector ajustado ni resultados propios con HMM sobre FinMultiTime.
+Diseño del 21 de septiembre de 2026, actualizado el 28 y el 10 de octubre. Esta nota propone un contraste para O3.
+Existe un [filtro HMM causal C++20](../engineering/batched-rl-environments.md) comprobado con distribuciones controladas. No hay un detector ajustado ni resultados propios con HMM sobre FinMultiTime. La representación de régimen que entra en la campaña A es una regla observable sin ajuste que enruta la corrección B6, descrita en la [última sección](#régimen-observable-en-la-corrección-b6).
 
 ## Qué aporta el PDF
 
@@ -162,3 +162,16 @@ Su soporte puede crecer si no se limita, por lo que tampoco se asume coste const
 La aportación investigable es comprobar si contexto filtrado y memoria interactúan
 de forma útil con un presupuesto fijo. Es una hipótesis de adaptación, no una
 afirmación de novedad, recuerdo perfecto ni anticipación garantizada del mercado.
+
+## Régimen observable en la corrección B6
+
+El 10 de octubre la campaña A seguía sin ninguna representación de régimen, aunque O3 la incluye. El diseño de las secciones anteriores no puede entrar tal cual. El HMM necesita ajustar emisiones y transiciones en cada ventana, que es aprendizaje bloqueado, y como contexto de la fusión cambiaría las entradas del núcleo, así que exigiría un padre Titans-MAC propio por ventana (180 ajustes más en A). La partición del banco episódico solo se contrastaría después de A2. Queda una alternativa que no ajusta nada y usa las mismas filas: repartir la matriz A de la [corrección B6](../engineering/mars-titan-extensions.md#enrutamiento-de-b6-por-régimen) entre compartimentos según un régimen observable.
+
+La regla `observable_volatility_trend_v1` es la versión más sencilla del control C1 de la tabla anterior. Resume el mercado con la mediana transversal de los log-rendimientos de cierre de la cohorte del evento, y lo clasifica con dos comparaciones dentro de la misma ventana de 64 sesiones: si la volatilidad de las 21 últimas supera la de las anteriores y si la mediana del rendimiento de cada activo en la ventana es positiva. No hay umbrales que estimar, normalizadores ni estado entre eventos, así que no hay nada que congelar por tramo y el prefijo no cambia al cambiar el sufijo futuro. Las cohortes pequeñas o con poca historia van a una ruta sin clasificar, explícita y registrada. La propuesta original fijaba los umbrales con entrenamiento. Se descartó porque sería otro ajuste por ventana y un grado de libertad que el control no tendría.
+
+El control de descarte es `calendar_month_v1`, con los mismos compartimentos, la misma capacidad y las mismas cohortes sin clasificar, pero asignados por el mes de la decisión. Separa la información del mercado de lo que aportarían la capacidad y el reparto por sí solos. Los modelos sin enrutar (`mars_titan_b6_bias` y `mars_titan_b6`) son la memoria global y miden el efecto conjunto de enrutar, con la capacidad declarada como diferencia. El contraste de condicionamiento (corrector de sesgo por compartimento) y el de dividir la matriz del codec se declaran por separado, como pedía la tarea. Las dos hipótesis, la métrica y la regla de decisión están en [regime-routing-comparison.json](../../configs/evaluation/regime-routing-comparison.json).
+
+[TRA (Lin et al., 2021, secciones 5.1 y 5.3)](https://arxiv.org/html/2106.12950v2) es el antecedente financiero más cercano de enrutamiento, pero elige predictores con sus errores pasados y no con un estado de mercado observable. Aquí no se usan errores para enrutar. Si se hiciera, tendrían que ser los de las predicciones realmente emitidas y ya maduras, con una ablación frente a este régimen observable. TRA tampoco es una memoria de pesos rápidos y no se toma como evidencia sobre el retorno residual diario.
+
+Lo que esta comparación no responde queda igual que antes: si las probabilidades filtradas de un HMM aportan algo frente a la regla observable (R0, R1 y C1 con el núcleo), y si partir el banco episódico por régimen mejora a M1 con la misma capacidad. Nada se ha ejecutado con datos.
+

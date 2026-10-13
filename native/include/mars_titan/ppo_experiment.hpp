@@ -21,6 +21,9 @@ struct PpoExperimentOptions {
     // Costes de la evaluación congelada sobre cintas reconstruidas. Si la lista está vacía,
     // la evaluación usa los costes por omisión.
     std::vector<double> evaluation_costs;
+    // Registrar acción y logits de cada decisión de la evaluación congelada (decisions.json).
+    // Solo con --audit-run sobre cintas reconstruidas. Sirve para comparar CPU y CUDA.
+    bool decisions = false;
     std::string device = "cuda:0";
     bool diagnostic = false;
     bool resume = false;

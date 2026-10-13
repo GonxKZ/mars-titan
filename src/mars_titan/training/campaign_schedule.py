@@ -6,15 +6,15 @@ nombre es el de la ventana de un ámbito presente en todas, el conjunto cuando e
 
 Con `execution.order = "by_window"` la campaña recorre cada ventana en estas fases:
 
-1. `base_search`: casos de búsqueda de todos los brazos con la semilla de búsqueda.
-2. `selection`: elección del caso de cada brazo con la validación de esa ventana.
+1. `base_search`: casos de búsqueda de todos los modelos con la semilla de búsqueda.
+2. `selection`: elección del caso de cada modelo con la validación de esa ventana.
 3. `selected_case_seeds`: el caso elegido con las demás semillas (y los traslados).
 4. `online`: el control en línea, que parte del estado elegido de su padre en la ventana.
    Tiene su propia búsqueda de la tasa con la semilla de búsqueda, la elección con la
    validación y el caso elegido con las demás semillas, en ese orden.
 5. `adapters`: el posentrenamiento, que parte del estado elegido de la base en la ventana
    anterior y ajusta solo con las filas nuevas (`campaign_chain`).
-6. `chain`: la selección del predictor de la cadena de cada brazo base y semilla.
+6. `chain`: la selección del predictor de la cadena de cada modelo base y semilla.
 7. `ablation` y `rl`: la ablación y la política, que lee la cadena de esta ventana y de
    todas las anteriores que necesita.
 8. `comparison`: agregados por sesión de la comparación de esa ventana.
@@ -137,7 +137,7 @@ def order_by_window(campaign, jobs):
     """Trabajos de la campaña base ventana a ventana, con la búsqueda antes que las semillas.
 
     El orden es estable, así que dentro de cada ventana y fase se conserva el del plan
-    (ámbitos en el orden declarado y padres antes que sus brazos).
+    (ámbitos en el orden declarado y padres antes que sus modelos).
     """
     position = _position(campaign)
     ordered = sorted(

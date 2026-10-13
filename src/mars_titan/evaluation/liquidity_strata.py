@@ -26,10 +26,10 @@ Ninguna fila posterior a la sesión publicada interviene. La edición sí usó a
 corporativas y una constante terminal posteriores para deshacer el ajuste del proveedor, y su
 verificación por tramos decide qué filas se pueden clasificar. El valor recuperado es el precio
 negociado que ya era público al emitir, pero la pertenencia a ``unclassified`` depende de esa
-reconstrucción. Todos los brazos se evalúan sobre las mismas filas, así que esa selección no
+reconstrucción. Todos los modelos se evalúan sobre las mismas filas, así que esa selección no
 favorece a ninguno.
 
-Las filas extremas se miden sin quitarlas. Para cada brazo, semilla y vista se informa qué
+Las filas extremas se miden sin quitarlas. Para cada modelo, semilla y vista se informa qué
 parte de la suma de cuadrados (MSE por fila) y del MSE por sesión con la ponderación declarada
 aportan las ``k`` filas de mayor contribución. En el MSE por sesión una fila pesa su error al
 cuadrado dividido por las filas de su sesión y por las sesiones de la vista. Cada ventana
@@ -450,7 +450,7 @@ def _criterion(parts, scores, view_markets, criterion, weighting, declared):
 
 
 def extremes_report(parts, views, markets, weighting, declared):
-    """Peso de las filas extremas de un brazo y semilla en cada vista.
+    """Peso de las filas extremas de un modelo y semilla en cada vista.
 
     ``parts`` son los ``window_extremes`` de cada ventana y ``views`` las puntuaciones por
     sesión unidas de todas las ventanas, por vista (ámbito y mercados).
