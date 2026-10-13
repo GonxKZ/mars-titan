@@ -1,6 +1,6 @@
 {
   "native": {
-    "tool": "clang++ 21.1.8 -O2 -ffp-contract=off sobre una copia mutada de native/src/episodic_projection.cpp, con la prueba episodic_projection_tests. Las marcadas arm se compilan con aarch64-linux-gnu-g++ 15.2.0 y se ejecutan con qemu-aarch64 10.2.1",
+    "tool": "clang++ 21.1.8 -O2 -ffp-contract=off sobre una copia mutada de native/src/episodic_projection.cpp, con la prueba episodic_projection_tests",
     "results": {
       "ascending_pairs": "detectada",
       "one_accumulator": "detectada",
@@ -11,8 +11,7 @@
       "partial_load": "detectada",
       "rows_collapsed": "detectada",
       "short_output_accepted": "detectada",
-      "default_not_widest": "detectada",
-      "arm:unsupported_accepted": "detectada"
+      "default_not_widest": "detectada"
     }
   },
   "python": {

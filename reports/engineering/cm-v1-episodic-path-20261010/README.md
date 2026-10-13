@@ -11,7 +11,7 @@ Ninguna medida ni prueba aplica pasos de optimizador. Los lectores recorren el b
 | CPU | AMD Ryzen 9 8945HS (AVX2 y AVX-512F), dos hilos por proceso |
 | GPU | NVIDIA GeForce RTX 4070 Laptop GPU, 8.188 MiB, perfil `power-saver` sin cambios |
 | Software | Python 3.12.14, NumPy 2.5.3 (línea base `X86_V2`), PyTorch 2.14.0+cu130, glibc 2.43 |
-| Compiladores | Clang 21.1.8 en Release con `-O3` y `-ffp-contract=off`, sin `-march`. GCC 15.2.0 y `aarch64-linux-gnu-g++` 15.2.0 para las comprobaciones, con qemu-aarch64 10.2.1 |
+| Compiladores | Clang 21.1.8 en Release con `-O3` y `-ffp-contract=off`, sin `-march`. GCC 15.2.0 para las comprobaciones |
 | Datos | Eventos guardados de la vista US+CN `fold-012` de la edición v3, los mismos de #363 (254 eventos desde el 127, 8 tramos medidos y 151.797 filas) |
 
 La máquina estuvo compartida con suites y perfiles de otras ramas durante todas las medidas, con una carga media de entre 11 y 33 en 16 hilos. Cada archivo de datos registra su carga.
@@ -22,7 +22,7 @@ La máquina estuvo compartida con suites y perfiles de otras ramas durante todas
 
 `native/src/episodic_projection.cpp` repite exactamente esas operaciones para cada salida y vectoriza sobre las salidas, ocho por vector. Cada carril hace las operaciones de una salida, así que el ancho de la instrucción no cambia el resultado. Los mosaicos de cuatro, dos y una fila mantienen ocho cadenas de sumas independientes. La compilación usa `-ffp-contract=off`, que impide fusionar multiplicación y suma, y el código objeto no contiene instrucciones FMA. En x86-64 hay versiones portable, AVX2 y AVX-512 de la misma función. `project_block` usa la más ancha que admite el procesador y el enlace la publica en `codec_projection_isa`. No se usan clones con `ifunc`, porque su resolutor se ejecuta antes de iniciar ThreadSanitizer y lo hace fallar con GCC y con Clang.
 
-`FrozenEpisodeCodec.encode(batch, native=...)` solo usa el núcleo si el enlace lo incluye y si el einsum instalado da los mismos bits que `_declared_order`, la misma suma escrita con operaciones de NumPy, sobre unos datos fijos que se comprueban una vez por proceso. Con otro NumPy, por ejemplo con FMA en aarch64, sigue con einsum. Como el resultado no cambia, la identidad del codec tampoco. El lector de MARS-TITAN (`training/mars_titan_run.py`) y la sesión episódica (`memory/episodic_session.py`) entregan su enlace al codec.
+`FrozenEpisodeCodec.encode(batch, native=...)` solo usa el núcleo si el enlace lo incluye y si el einsum instalado da los mismos bits que `_declared_order`, la misma suma escrita con operaciones de NumPy, sobre unos datos fijos que se comprueban una vez por proceso. Con otro NumPy, por ejemplo uno que fusione multiplicación y suma, sigue con einsum. Como el resultado no cambia, la identidad del codec tampoco. El lector de MARS-TITAN (`training/mars_titan_run.py`) y la sesión episódica (`memory/episodic_session.py`) entregan su enlace al codec.
 
 El codec guarda además la proyección transpuesta, que el núcleo recorre por filas. La estimación de memoria de cada llamada cuenta las dos matrices. La huella SHA-256 de la proyección se calcula una vez al construir el codec y queda en su identidad. En cada llamada se exige la misma memoria de solo lectura de las dos matrices, que son vistas de objetos `bytes`.
 
@@ -33,10 +33,9 @@ El codec guarda además la proyección transpuesta, que el núcleo recorre por f
 | `episodic_projection_tests` contra una referencia escalar que también hace las dos sumas de cero que omite el núcleo | Mismos bits en las tres versiones con 10 números de filas, 13 anchuras y 11 números de salidas, con valores normales y con ceros con signo, subnormales y magnitudes entre 2^-300 y 2^300. Cada fila da lo mismo sola que dentro de un mosaico |
 | `tests/memory/test_episodic_codec.py` | El einsum instalado sigue el orden declarado, el núcleo coincide con `_declared_order` y `encode` da los mismos bits, huella y memoria declarada con el núcleo y con einsum, también con una fila, 17 filas y valores de 10^30 |
 | GCC 15.2.0 y Clang 21.1.8 con avisos como errores, y clang-tidy 21.1.6 | Sin avisos |
-| aarch64 con qemu | La versión portable pasa la prueba. Compilada con `-ffp-contract=fast`, falla, que es lo que se espera de una suma fusionada |
 | ASan, UBSan, TSan (Clang y GCC) y MSan | Sin errores |
 
-Todas las mutaciones dirigidas hacen fallar alguna prueba ([datos](mutations.json)). En el núcleo son 11: pares en orden creciente, un solo acumulador, bloques de cuatro, resto sin el carril impar, suma fusionada, suma final sin el carril impar, carga parcial incompleta, filas superpuestas en la salida, salida corta aceptada, versión por defecto que no es la más ancha y, en aarch64, una versión no disponible aceptada. En Python son 9: las tres partes del orden de `_declared_order`, elegir el núcleo sin comprobar einsum, no vigilar la transpuesta, no contarla en la memoria, ignorar el enlace en `encode` y no entregarlo desde la sesión o desde el lector.
+Todas las mutaciones dirigidas hacen fallar alguna prueba ([datos](mutations.json)). En el núcleo son 10: pares en orden creciente, un solo acumulador, bloques de cuatro, resto sin el carril impar, suma fusionada, suma final sin el carril impar, carga parcial incompleta, filas superpuestas en la salida, salida corta aceptada y versión por defecto que no es la más ancha. El procesador de las medidas admite las tres versiones, así que el rechazo de una versión no disponible no se ejercita en esta máquina. En Python son 9: las tres partes del orden de `_declared_order`, elegir el núcleo sin comprobar einsum, no vigilar la transpuesta, no contarla en la memoria, ignorar el enlace en `encode` y no entregarlo desde la sesión o desde el lector.
 
 ### Medidas aisladas
 
@@ -123,5 +122,4 @@ Los rangos NVTX separan las fases del lector. Son segundos de reloj de todo el p
 
 - La máquina estuvo compartida y el caudal de reloj de los tramos medidos varía mucho entre rondas. El tiempo de CPU de `encode` es la medida más estable de la mejora.
 - La versión por defecto se eligió con medidas de un solo procesador. En otro, `mars-titan-projection-benchmark` indica si la más ancha sigue siendo la más rápida.
-- La comprobación en aarch64 usa qemu, no un procesador real, y solo comprueba que los bits coinciden.
 - No se mide energía ni se usan contadores de hardware. Ninguna cifra de este informe dice nada de la calidad predictiva.
