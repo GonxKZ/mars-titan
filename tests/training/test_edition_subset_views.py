@@ -199,3 +199,23 @@ def test_the_budget_compares_the_subset_with_the_full_design(chosen, capsys):
     with pytest.raises(SystemExit):
         budget.main(arguments[:2] + ["--subset", str(chosen.subset), "--rate", "1000"])
 
+
+def test_a_campaign_with_a_subset_is_never_sized_with_the_full_rows(chosen, tmp_path, capsys):
+    """Ni los objetivos completos ni unos recuentos de otro diseño dimensionan el subconjunto."""
+    speed = ["--rate", "1000", "--epochs", "2"]
+    full, restricted = (str(chosen.campaigns[name]) for name in ("full", "subset"))
+    labels = str(chosen.metadata["roots"]["labels"])
+    with pytest.raises(ValueError, match="se dimensiona con el catálogo"):
+        budget.main(["--campaign", restricted, "--targets", labels, *speed])
+    written = {}
+    for name, campaign in (("full", full), ("subset", restricted)):
+        written[name] = tmp_path / f"{name}.json"
+        arguments = ["--campaign", campaign, "--catalog", str(chosen.catalog), *speed]
+        assert budget.main([*arguments, "--write-counts", str(written[name])]) == 0
+    capsys.readouterr()
+    for campaign, counts in ((restricted, written["full"]), (full, written["subset"])):
+        with pytest.raises(ValueError, match="no usan el subconjunto"):
+            budget.main(["--campaign", campaign, "--counts", str(counts), *speed])
+    assert budget.main(["--campaign", restricted, "--counts", str(written["subset"]), *speed]) == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["subset"]["ids_sha256"] == read_subset(chosen.subset)[0]["ids"]["sha256"]

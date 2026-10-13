@@ -396,7 +396,7 @@ def main(argv=None):
     from mars_titan.posttraining.campaign_stage import load_stage
 
     from . import modality_ablation_stage
-    from .masked_campaign import _views_argument, scope_views
+    from .masked_campaign import _subset_key, _views_argument, scope_views
 
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--campaign", type=Path, required=True)
@@ -422,6 +422,11 @@ def main(argv=None):
     campaign = load_campaign(args.campaign)
     staged = campaign.get("walk_forward_stages") is not None
     fresh, full, sources = None, None, {}
+    # Los objetivos completos no saben qué filas deja el subconjunto de la campaña.
+    _require(
+        campaign.get("data_subset") is None or args.targets is None,
+        "Una campaña con subconjunto se dimensiona con el catálogo, sus vistas o sus recuentos",
+    )
     if args.catalog is not None:
         from .edition_catalog import read_catalog_manifest
 
@@ -455,6 +460,13 @@ def main(argv=None):
         fresh = fresh if staged else None
     elif args.counts is not None:
         counts, _ = read_counts(args.counts, campaign)
+        written = read_manifest(args.counts, 16 * 1024**2)[0].get("subset")
+        _require(
+            _subset_key(written) == _subset_key(campaign.get("data_subset")),
+            "Los recuentos no usan el subconjunto que declara la campaña",
+        )
+        if written is not None:
+            sources["subset"] = written
         if staged:
             fresh = read_posttraining_rows(args.counts, campaign)
     elif args.targets is not None:
@@ -470,6 +482,9 @@ def main(argv=None):
             }
             for scope in campaign["scopes"]
         }
+        # `scope_views` ya exige que las vistas usen el subconjunto de la campaña.
+        if campaign.get("data_subset") is not None:
+            sources["subset"] = campaign["data_subset"]
     if args.write_counts is not None:
         from mars_titan.data.storage import atomic_json
 
