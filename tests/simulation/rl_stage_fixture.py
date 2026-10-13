@@ -24,6 +24,7 @@ from mars_titan.training import campaign_chain
 from mars_titan.training import masked_campaign as engine
 from mars_titan.training.label_maturity import FIT_PARTITIONS, label_maturity
 from mars_titan.training.learning_hold import HOLD_ENV
+from tests.learning_hold_lowering import allowed_hold
 from tests.posttraining import campaign_fixture
 from tests.simulation import unadjusted_edition_fixture as edition_fixture
 from tests.training.test_walk_forward_v2_views import fixture
@@ -134,8 +135,7 @@ def base_campaign(root, variant, *, ending=None):
     """
     campaign, stage = write_configs(root / "config", variant)
     data = fixture(root / "data", ("US",))
-    hold = root / "hold.json"
-    hold.write_text(json.dumps({"training_allowed": True}), encoding="utf-8")
+    hold = allowed_hold(root / "hold.json")
     with pytest.MonkeyPatch.context() as patch:
         # La campaña base solo ejecuta dobles: ningún modelo se ajusta.
         patch.setenv(HOLD_ENV, str(hold))

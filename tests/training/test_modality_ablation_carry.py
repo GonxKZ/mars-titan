@@ -22,6 +22,7 @@ from mars_titan.models.quantile_head import QUANTILE_COLUMNS
 from mars_titan.training import carried_predictions as carry
 from mars_titan.training import titans_walk_forward as wf
 from mars_titan.training.learning_hold import HOLD_ENV
+from tests.learning_hold_lowering import allowed_hold
 from tests.training.historical_temporal_fixture import historical_temporal_fixture
 from tests.training.test_carried_predictions import (
     PresenceCount,
@@ -169,8 +170,7 @@ def titans(tmp_path_factory):
     los parámetros iniciales de la semilla.
     """
     root = tmp_path_factory.mktemp("titans-ablation")
-    hold = root / "training-hold.json"
-    hold.write_text(json.dumps({"training_allowed": True}), encoding="utf-8")
+    hold = allowed_hold(root / "training-hold.json")
     runs = {}
     with pytest.MonkeyPatch.context() as patch, unfused_attention():
         patch.setenv(HOLD_ENV, str(hold))

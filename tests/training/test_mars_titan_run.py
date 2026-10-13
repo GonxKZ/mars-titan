@@ -28,6 +28,7 @@ from mars_titan.training.checkpoints import load_training_state
 from mars_titan.training.financial_run import ChronologicalInference, ChronologicalRecipe
 from mars_titan.training.learning_hold import LearningHoldError
 from mars_titan.training.selection import FIXED_BUDGET
+from tests.learning_hold_lowering import allowed_hold
 from tests.training.chronological_fixture import decision
 from tests.training.test_financial_run import RecordingOptimizer, StopAtStep, corpus, entries
 from tests.training.test_financial_run import shared as shared
@@ -310,8 +311,7 @@ def runs(shared, tmp_path_factory, native):
 
     _, streams = shared
     root = tmp_path_factory.mktemp("mars-titan-runs")
-    hold = root / "hold.json"
-    hold.write_text(json.dumps({"training_allowed": True}))
+    hold = allowed_hold(root / "hold.json")
     result = {}
     with pytest.MonkeyPatch.context() as patch:
         patch.setenv(HOLD_ENV, str(hold))
