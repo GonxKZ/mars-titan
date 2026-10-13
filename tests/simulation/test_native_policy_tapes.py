@@ -654,7 +654,7 @@ def test_klpo_rejects_a_budget_below_one_complete_wave(binaries, tapes, tmp_path
 
 
 def group_config(path, stage, objective="grpo_outcome_v1"):
-    """Configuración de un brazo de grupo con el mismo esquema que KLPO."""
+    """Configuración de una variante de grupo con el mismo esquema que KLPO."""
     stage = copy.deepcopy(stage)
     stage["policies"]["policies"]["grpo"] = dict(
         engine="native_group_relative",

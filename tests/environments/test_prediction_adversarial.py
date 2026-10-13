@@ -1,4 +1,4 @@
-"""Agentes guionizados que intentan obtener etiquetas o créditos sin señal legítima."""
+"""Agentes de reglas fijas que intentan obtener etiquetas o créditos sin señal legítima."""
 
 import copy
 import importlib

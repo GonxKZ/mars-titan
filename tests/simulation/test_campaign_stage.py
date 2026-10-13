@@ -1,7 +1,7 @@
 """Etapa de políticas por ventana sobre una campaña base reducida, sin aprender.
 
 La campaña base de `rl_stage_fixture` escribe recibos de ventana y predicciones reales de
-un padre con pesos iniciales. Los brazos aprendidos se sustituyen por `ScriptedLearner`,
+un padre con pesos iniciales. Las políticas aprendidas se sustituyen por `ScriptedLearner`,
 que no tiene redes ni optimizador, y las referencias usan la contabilidad Python. Las
 pruebas admiten la etapa con la protección temporal permitida de `learning_doubles`.
 """
@@ -352,7 +352,7 @@ def test_missing_engine_capabilities_stop_the_stage_before_reading_sources(
             capabilities=without_cn,
         )
     message = str(error.value)
-    # China depende de las reglas nativas en todos sus brazos y EE. UU. no las necesita.
+    # China depende de las reglas nativas en todos sus modelos y EE. UU. no las necesita.
     assert all(f"{engine}/CN" in message for engine in ("reference", "native_ppo", "native_klpo"))
     assert "/US" not in message and not (tmp_path / "out").exists()
     # Con los ejecutores actuales faltan además las piezas nativas de las políticas.

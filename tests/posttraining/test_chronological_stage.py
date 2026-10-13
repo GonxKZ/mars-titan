@@ -68,7 +68,7 @@ class StageRecorder(Recorder):
 
 
 def staged_campaign(folder):
-    """Campaña A con dos ventanas US, la GRU sustituta y un brazo Titans-MAC reducido."""
+    """Campaña A con dos ventanas US, la GRU sustituta y un modelo Titans-MAC reducido."""
     path = write_campaign(folder, variant="A", arms=("gru",))
     protocol = json.loads(
         (CONFIGS / "evaluation/historical-masked-us-walk-forward-v2.json").read_text()
@@ -113,7 +113,7 @@ def campaign_run(tmp_path_factory, unfused, permitted):  # noqa: F811
 
 
 def write_stage(campaign_run, folder):  # noqa: F811
-    """Etapa A con el brazo Titans-MAC, la continuación y el adaptador de la cabeza."""
+    """Etapa A con el modelo Titans-MAC, la continuación y el adaptador de la cabeza."""
     folder.mkdir(parents=True, exist_ok=True)
     campaign = json.loads(Path(campaign_run.campaign).read_text())
     matrix = json.loads((CONFIGS / "posttraining/adapter-matrix-v3.json").read_text())
@@ -251,7 +251,7 @@ def test_fits_read_only_the_rows_after_the_parent_calibration(stage_run, campaig
         assert train["decision_start"] == since
         # El calentamiento lee entradas anteriores sin sus etiquetas.
         assert train["warmup_start"] < since
-    # Los brazos cronológicos no abren la ventana de cohortes de los brazos neuronales.
+    # Los modelos cronológicos no abren la ventana de cohortes de los modelos neuronales.
     assert sorted(p.name for p in (output / "windows-data/US" / NEXT).iterdir()) == [
         "fit-rows.json"
     ]
