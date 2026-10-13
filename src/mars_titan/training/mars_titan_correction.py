@@ -4,7 +4,7 @@ B6 suma a la predicción del Titans-MAC `mac_online` elegido en la ventana la le
 una memoria asociativa lineal escrita solo con resultados maduros
 (`memory.associative_memory.MatureCorrection`). No tiene parámetros que ajustar. Con las reglas
 delta y proximal, los casos de búsqueda de su receta fijan η, la receta fija λ y la campaña
-elige el caso con el MAE por sesión de validación, igual que en los demás brazos.
+elige el caso con el MAE por sesión de validación, igual que en los demás modelos.
 
 La regla kalman (PT3, #455) tiene su propia receta. Sus casos fijan κ = q/σ² y la receta p0/σ²,
 el tope de ϱ y los meses del tramo de estimación. σ² y ϱ se estiman en cada ventana con los
@@ -105,8 +105,8 @@ SEARCHED = ("rate", "forgetting")
 KALMAN_SEARCHED = ("process_ratio",)
 KALMAN_FIXED = ("prior_ratio", "correlation_cap", "estimation_months")
 _RECIPES = {RECIPE: (SEARCHED, ()), KALMAN_RECIPE: (KALMAN_SEARCHED, KALMAN_FIXED)}
-# Un brazo solo declara la regla y la clave. η y λ se añaden con el caso elegido, porque la
-# campaña los busca y no forman parte de la definición del brazo. Un modelo kalman declara
+# Un modelo solo declara la regla y la clave. η y λ se añaden con el caso elegido, porque la
+# campaña los busca y no forman parte de la definición del modelo. Un modelo kalman declara
 # además si usa la ϱ estimada o la anula, que es la alternativa con la que se descarta.
 ARM_FIELDS = ("rule", "key")
 KALMAN_ARM_FIELDS = (*ARM_FIELDS, "cohort_correlation")
@@ -210,9 +210,9 @@ def case_values(document, search_case):
 
 
 def arm_components(components, values, noise=None):
-    """Completar la combinación de un brazo B6 con los valores del caso.
+    """Completar la combinación de un modelo B6 con los valores del caso.
 
-    El brazo solo puede declarar la memoria asociativa. Con un banco añadido la ventana
+    El modelo solo puede declarar la memoria asociativa. Con un banco añadido la ventana
     mezclaría dos vías de memoria y A5 dejaría de aislar el efecto de la corrección. Las reglas
     delta y proximal reciben η y λ. La regla kalman recibe además `noise`, con la σ² y la ϱ
     estimadas en la ventana: q = κσ², p0 = (p0/σ²)σ² y ϱ estimada o nula según el modelo.
@@ -225,7 +225,7 @@ def arm_components(components, values, noise=None):
         and set(components) == {"associative_memory"}
         and isinstance(memory, dict)
         and set(memory) == set(fields),
-        "Un brazo B6 declara solo associative_memory con su regla y su clave, y con la regla "
+        "Un modelo B6 declara solo associative_memory con su regla y su clave, y con la regla "
         "kalman también su correlación de cohorte",
     )
     _require(rule in RULES, "La ventana B6 solo admite las reglas delta y proximal, o kalman")
@@ -574,7 +574,7 @@ def _parent_recipe(parent_report):
     """Recuperar la receta cronológica con la que predijo el padre.
 
     Bloques y truncamiento deben ser los mismos, porque con otros el núcleo de B6 dejaría de
-    coincidir con el del brazo Titans-MAC.
+    coincidir con el del modelo Titans-MAC.
     """
     identity, request = parent_report["identity"], parent_report["request"]
     return identity["recipe"], case_recipe(identity["recipe"], request.get("search_case"))
@@ -662,7 +662,7 @@ def run_correction_window(
     # estimadas solo cambian sus varianzas.
     combination = arm_components(components, values, UNIT_NOISE if kalman else None)
     # La combinación se valida contra la declaración antes de abrir ninguna fuente, para que
-    # un brazo mal declarado falle sin crear la carpeta de salida.
+    # un modelo mal declarado falle sin crear la carpeta de salida.
     checked, correction = check_components(load_declaration(), combination)
     _require(
         correction is not None and set(checked) == {"associative_memory"},

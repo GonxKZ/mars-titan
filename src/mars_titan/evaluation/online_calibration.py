@@ -16,7 +16,7 @@ Se lee de las etiquetas de la vista de la ventana, que ``CorpusDataset`` comprue
 huellas, y se alinea con las filas del panel exigiendo las mismas filas y objetivos. Ninguna
 ventana traslada su estado a la siguiente: cada una parte de su CQR estática.
 
-El informe sigue la regla declarada antes de evaluar. κ se elige por brazo con la métrica
+El informe sigue la regla declarada antes de evaluar. κ se elige por modelo con la métrica
 primaria en los años de selección, en todos los mercados del ámbito. La métrica primaria es
 la desviación absoluta media de la cobertura respecto al nominal por año y mercado,
 promediada sobre los intervalos declarados. En los años de evaluación se compara con la CQR
@@ -200,7 +200,7 @@ def _columns(panel, matures_at):
 def calibrate_window(section, record, fitted, panel, maturity, *, rank_ic_min_assets):
     """Puntuar por sesión las variantes de una ventana con su CQR estática ya fijada.
 
-    `fitted` y `panel` son los paneles de calibración y evaluación del brazo y `maturity`
+    `fitted` y `panel` son los paneles de calibración y evaluación del modelo y `maturity`
     la madurez de cada fila en su orden canónico. Devuelve las puntuaciones de cada
     variante y un registro de sus emisiones, actualizaciones y reajustes.
     """
@@ -423,7 +423,7 @@ def _matches(primary, interval_scores, chosen):
 
 
 def _arm_report(section, comparison, weighting, nominals, per_seed):
-    """Selección de κ, métrica primaria, interval score y regla de un brazo."""
+    """Selección de κ, métrica primaria, interval score y regla de un modelo."""
     names = [STATIC, *variants(section)]
     joined = [
         {name: type(items[0][name]).concatenate([item[name] for item in items]) for name in names}
@@ -507,7 +507,7 @@ def _arm_report(section, comparison, weighting, nominals, per_seed):
 
 
 def report(config, per_window):
-    """Informe de PT2 de cada brazo con cuantiles a partir de las puntuaciones por ventana."""
+    """Informe de PT2 de cada modelo con cuantiles a partir de las puntuaciones por ventana."""
     section, comparison = config[FIELD], config["comparison"]
     nominals = config["calibration"]["nominals"]
     weighting = config["metrics"]["market_weighting"]

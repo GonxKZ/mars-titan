@@ -11,13 +11,15 @@ int main(int argc, char** argv) {
         "--vram-budget-bytes N --vram-total-bytes N\n"
         "  Evaluación separada: --audit-run RUN --audit-tape DIR [--evaluation-cost PB ...] "
         "(sin --train-tape ni --validation-tape). Publica el patrimonio por sesión.\n"
+        "  Con --decisions guarda la acción y los logits de cada decisión.\n"
         "  Vigilancia Linux: --parent-pid PID detiene el hijo si muere su padre.\n"
         "  Capacidades: --capabilities, sin leer datos.\n"
         "KLPO terminal sobre cintas reconstruidas por ventana, con selección en validación y "
         "sin abrir el test. Con el tipo native_group_relative recoge las mismas oleadas y "
         "optimiza GRPO, Dr. GRPO, DAPO o GSPO en lugar de KLPO.\n",
         {"native_policy_reconstructed_tapes", "native_klpo_financial_runner",
-         "native_policy_equity_and_costs", "native_group_relative_runner"},
+         "native_policy_equity_and_costs", "native_group_relative_runner",
+         "native_policy_decision_logits"},
         [](const auto& options, const auto& stop) {
             return mars_titan::learning::run_klpo_experiment(options, stop);
         }};

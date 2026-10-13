@@ -1,7 +1,7 @@
 """Declarar y planificar la campaña con máscaras de la edición desde 2000.
 
 La configuración de campaña declara la variante de presupuesto y los entrenadores
-conectados. Brazos, semillas, ámbitos, protocolos y ventanas salen de la comparación
+conectados. Modelos, semillas, ámbitos, protocolos y ventanas salen de la comparación
 walk-forward declarada, de modo que productores y evaluación comparten la misma
 definición. El plan enumera cada ajuste y cada predicción trasladada antes de leer
 datos y respeta los límites declarados. Este módulo no lee vistas, no reserva la GPU
@@ -9,10 +9,10 @@ y no ejecuta ningún ajuste.
 
 Las secciones opcionales ``episodic_gru``, ``titans_mac`` y ``mars_titan`` conectan la GRU
 candidata, los controles de Titans-MAC y el lector episódico de MARS-TITAN con sus recetas
-cronológicas. Sin ellas, sus brazos siguen declarados como punto de extensión pendiente.
+cronológicas. Sin ellas, sus modelos siguen declarados como punto de extensión pendiente.
 Cada ajuste de MARS-TITAN parte del Titans-MAC ``mac_online`` elegido en la misma ventana y
 semilla, así que depende de esos trabajos. La sección ``cm_v1`` conecta el factorial CM-v1:
-sus dos núcleos son trabajos auxiliares sin traslado y cada brazo parte de uno de ellos.
+sus dos núcleos son trabajos auxiliares sin traslado y cada modelo parte de uno de ellos.
 `extend_campaign` añade a una campaña cargada las secciones de una declaración preparada con
 las mismas reglas, para medir y contar sin cambiar su archivo.
 
@@ -20,26 +20,26 @@ La versión 2 de la configuración declara además la política de semillas, el 
 las opciones de memoria pendientes, el orden de ejecución, la precisión numérica, que solo
 admite FP32 estricto (`campaign_numerics`), y la política de datos, que solo admite la edición
 real verificada (`campaign_data_policy`). Con `by_window` el plan recorre
-cada ventana de campaña completa antes de la siguiente (`campaign_schedule`). Los brazos de
+cada ventana de campaña completa antes de la siguiente (`campaign_schedule`). Los modelos de
 cada ámbito salen de la comparación: con su diseño conjunto, el ámbito conjunto ajusta todos
-los brazos y cada ámbito de un mercado solo los controles separados, con los auxiliares que
+los modelos y cada ámbito de un mercado solo los controles separados, con los auxiliares que
 necesiten.
 
 Semillas: cada caso de búsqueda se ajusta con la semilla de búsqueda. El caso con menor MAE
 por sesión de validación (desempate por identificador) se repite con las demás semillas del
-brazo. Esos finalistas dependen de todas las búsquedas de su brazo y ventana y, si el brazo
-parte de otro, del finalista del padre con su semilla. Un brazo determinista tiene una sola
+modelo. Esos finalistas dependen de todas las búsquedas de su modelo y ventana y, si el modelo
+parte de otro, del finalista del padre con su semilla. Un modelo determinista tiene una sola
 semilla y su caso elegido no se repite.
 
 La sección opcional ``early_stop`` declara la parada temprana de la campaña, con la misma
 métrica que el protocolo. Sin ella se conserva la regla del protocolo (presupuesto fijo) y
 la identidad de cada trabajo. Con ``validation_plateau`` cada ajuste para en su primera
-meseta. Con ``joint_plateau`` los brazos de cada grupo emparejado declarado paran en la
+meseta. Con ``joint_plateau`` los modelos de cada grupo emparejado declarado paran en la
 misma época, que es la mayor de sus primeras mesetas en el mismo ámbito, ventana, semilla y caso
 de búsqueda (o caso elegido, en las semillas finalistas). Cada ajuste agrupado tiene dos
 trabajos: el de meseta, que se detiene en su primera meseta en un estado recuperable, y el
 final, que depende de las mesetas de todo su grupo y continúa hasta la época común. Los
-brazos sin grupo paran en su propia meseta.
+modelos sin grupo paran en su propia meseta.
 
 En la variante A, cada ventana anual se reentrena desde cero. En la variante B, se reentrena
 desde cero en la primera ventana y cada ``retrain_every_months`` meses. Las ventanas
@@ -78,14 +78,14 @@ HELDOUT_RETENTION = "heldout_full_train_sessions_v1"
 NEURAL_KINDS = ("rnn", "lstm", "gru", "dlinear", "transformer")
 TABULAR_KINDS = ("ridge", "xgboost")
 NEURAL, TABULAR = "neural_reference", "tabular_reference"
-# Controles de Titans-MAC: brazo de la comparación y variante del entrenador cronológico.
+# Controles de Titans-MAC: modelo de la comparación y variante del entrenador cronológico.
 TITANS = "titans_mac"
 TITANS_VARIANTS = ("transformer_direct", "mac_disabled", "mac_frozen", "mac_online")
 TITANS_RECIPE = "titans_financial_chronological_v1"
 # Un caso de búsqueda de las recetas cronológicas solo puede variar estos hiperparámetros.
 TITANS_SEARCHED = SEARCHED
 FIT, CARRY = "fit", "carry"
-# El control en línea parte del estado elegido de otro brazo en su misma ventana. Su brazo
+# El control en línea parte del estado elegido de otro modelo en su misma ventana. Su modelo
 # en la comparación pertenece a la familia ONLINE_CONTROL.
 ONLINE = "online"
 ONLINE_CONTROL = "online_control"
@@ -136,7 +136,7 @@ CM = "cm_v1"
 CM_NAME = "mars_titan_cm_v1_factorial"
 CM_CORE_MODEL = "cm_v1_core"
 CM_CORES = ("cm_v1_core_b", "cm_v1_core_c")
-# Brazo y núcleo del que parte: C cambia el núcleo y M solo la retención del lector.
+# Modelo y núcleo del que parte: C cambia el núcleo y M solo la retención del lector.
 CM_ARMS = {
     "cm_v1_b": "cm_v1_core_b",
     "cm_v1_bc": "cm_v1_core_c",
@@ -178,7 +178,7 @@ EXTENSION_POINTS = {
     CM: dict(
         issue=293,
         pending=(
-            "Los núcleos y los brazos B, B+C, B+M y B+C+M se conectan con la sección cm_v1 "
+            "Los núcleos y los modelos B, B+C, B+M y B+C+M se conectan con la sección cm_v1 "
             "y su declaración. Falta declararla en las campañas A y B después de medir la "
             "penalización C y el lector en cuda:0. La declaración preparada está en "
             "historical-masked-campaign-extensions.json"
@@ -228,7 +228,7 @@ LATER_STAGES = {
         pending=[],
     ),
     # Ablación de modalidades en inferencia (`run_masked_campaign.py ablation`). Vuelve a
-    # predecir la evaluación con el estado elegido de cada brazo, sin ajustar nada.
+    # predecir la evaluación con el estado elegido de cada modelo, sin ajustar nada.
     "modality_ablation": dict(
         config="configs/evaluation/historical-masked-2000-comparison.json",
         stages=dict(
@@ -296,8 +296,8 @@ _TITANS = {"recipe", "arms", "search_seed"}
 # la variante de un modelo de la sección. La sección solo los admite si los declara.
 TITANS_EXTENSIONS = "core_extensions"
 _MARS = {"recipe", "arms", "pending_arms", "parent_arm", "search_seed"}
-# La receta de la corrección B6 solo se exige cuando algún brazo usa la memoria asociativa.
-# Sin ese brazo sobraría, y el plan la rechaza.
+# La receta de la corrección B6 solo se exige cuando algún modelo usa la memoria asociativa.
+# Sin ese modelo sobraría, y el plan la rechaza.
 _MARS_CORRECTION = "correction_recipe"
 _MARS_KALMAN = "kalman_correction_recipe"
 _CM = {"declaration", "search_seed"}
@@ -321,7 +321,7 @@ def _seeds(value, label):
 
 
 def _neural(section, arms, rules, policy):
-    """Devuelve los casos de las referencias neuronales con la regla de parada de cada brazo."""
+    """Devuelve los casos de las referencias neuronales con la regla de parada de cada modelo."""
     _require(isinstance(section, dict) and set(section) == _NEURAL, "La sección neuronal no cumple")
     declared = {name for name, arm in arms.items() if arm["family"] == NEURAL}
     mapping = section["arms"]
@@ -330,17 +330,17 @@ def _neural(section, arms, rules, policy):
         and set(mapping) == declared
         and all(kind in NEURAL_KINDS for kind in mapping.values())
         and len(set(mapping.values())) == len(mapping),
-        "Cada brazo neuronal de la comparación necesita una familia de referencia distinta",
+        "Cada modelo neuronal de la comparación necesita una familia de referencia distinta",
     )
     _require(
         section["head"] == QUANTILE_HEAD
         and all(arms[name]["output"] == QUANTILE_HEAD for name in mapping),
-        "Los brazos neuronales emiten quantile_head_v1 y se ajustan con su pinball",
+        "Los modelos neuronales emiten quantile_head_v1 y se ajustan con su pinball",
     )
     seed = section["search_seed"]
     _require(
         all(seed in _seeds(arms[name]["seeds"], name) for name in mapping),
-        "La semilla de búsqueda neuronal debe estar en todos los brazos",
+        "La semilla de búsqueda neuronal debe estar en todos los modelos",
     )
     _require(
         type(section["batch_size"]) is int
@@ -399,7 +399,7 @@ def _tabular(section, arms, policy, base):
         and set(mapping.values()) <= set(TABULAR_KINDS)
         and len(set(mapping.values())) == len(mapping)
         and all(arms[name]["output"] == "point" for name in mapping),
-        "Cada brazo tabular de la comparación necesita Ridge o XGBoost con salida puntual",
+        "Cada modelo tabular de la comparación necesita Ridge o XGBoost con salida puntual",
     )
     seed = config["search_seed"]
     for name, kind in mapping.items():
@@ -430,13 +430,13 @@ def _tabular(section, arms, policy, base):
 
 
 def _stopping(case, rules, arm):
-    """Añadir al caso la parada temprana del brazo, si la campaña la declara."""
+    """Añadir al caso la parada temprana del modelo, si la campaña la declara."""
     rule = None if rules is None else rules(arm)
     return case if rule is None else dict(case, stopping_rule=rule)
 
 
 def _episodic(section, arms, rule, policy, base, count, rules=None):
-    """Declara los brazos de la GRU candidata con su receta, variante y casos sin importar PyTorch.
+    """Declara los modelos de la GRU candidata con su receta, variante y casos sin importar PyTorch.
 
     Para que la búsqueda sea equitativa, la receta declara tantos casos como índices del
     diseño ajusta cada referencia neuronal (`count`), como Titans-MAC y el lector.
@@ -469,7 +469,7 @@ def _episodic(section, arms, rule, policy, base, count, rules=None):
             and seed in arms[name]["seeds"]
             for name, variant in mapping.items()
         ),
-        "Cada brazo de la GRU candidata necesita su receta, una variante y las semillas, "
+        "Cada modelo de la GRU candidata necesita su receta, una variante y las semillas, "
         "política y cabeza de la comparación",
     )
     selection = {key: value for key, value in rule.items() if key != "max_epochs"}
@@ -603,11 +603,11 @@ def _titans_cases(recipe, rule, count):
 
 
 def _mars_titan(section, arms, rule, policy, base, count, titans, rules=None):
-    """Brazos de MARS-TITAN: combinación de componentes, receta del lector y padre.
+    """Modelos de MARS-TITAN: combinación de componentes, receta del lector y padre.
 
-    El padre es un brazo `mac_online` de la sección de Titans-MAC con las mismas semillas.
-    Un brazo declarado sin productor queda en `pending_arms` con su motivo. M3 ya tiene
-    productor: estima sus escalas con el tramo de entrenamiento de cada ventana. Un brazo con
+    El padre es un modelo `mac_online` de la sección de Titans-MAC con las mismas semillas.
+    Un modelo declarado sin productor queda en `pending_arms` con su motivo. M3 ya tiene
+    productor: estima sus escalas con el tramo de entrenamiento de cada ventana. Un modelo con
     `associative_memory` es la corrección B6 sin lector: declara regla y clave, y sus casos
     de búsqueda (η y λ) salen de `correction_recipe`. Un modelo kalman declara además su
     correlación de cohorte y sus casos (κ) salen de `kalman_correction_recipe`.
@@ -625,7 +625,7 @@ def _mars_titan(section, arms, rule, policy, base, count, titans, rules=None):
     parent = section["parent_arm"]
     _require(
         titans is not None and titans["arms"].get(parent) == "mac_online",
-        "MARS-TITAN necesita como padre el brazo mac_online de la sección de Titans-MAC",
+        "MARS-TITAN necesita como padre el modelo mac_online de la sección de Titans-MAC",
     )
     path = (base / section["recipe"]).resolve()
     recipe, digest = read_manifest(path, 64 * 1024)
@@ -644,7 +644,7 @@ def _mars_titan(section, arms, rule, policy, base, count, titans, rules=None):
             for name, components in mapping.items()
         )
         and len({json.dumps(c, sort_keys=True) for c in mapping.values()}) == len(mapping),
-        "Cada brazo de MARS-TITAN necesita una combinación distinta con banco episódico o "
+        "Cada modelo de MARS-TITAN necesita una combinación distinta con banco episódico o "
         "corrección B6 y cuantiles, o un motivo pendiente",
     )
     corrections = {name for name, components in mapping.items() if _correction_arm(components)}
@@ -700,7 +700,7 @@ def _mars_titan(section, arms, rule, policy, base, count, titans, rules=None):
 
 
 def _reader_arm(components):
-    """Decidir si el brazo ajusta un lector episódico sobre el padre.
+    """Decidir si el modelo ajusta un lector episódico sobre el padre.
 
     Basta con que declare una escritura del banco y no use la corrección B6. B6 no admite
     banco, así que una combinación con los dos no se trata como lector y la rechaza su propia
@@ -710,7 +710,7 @@ def _reader_arm(components):
 
 
 def _correction_arm(components):
-    """Decidir si el brazo es una corrección B6.
+    """Decidir si el modelo es una corrección B6.
 
     Solo lo es si declara únicamente `associative_memory` con una regla y una clave
     conocidas, y con la regla kalman también su correlación de cohorte. Cualquier otro campo
@@ -737,7 +737,7 @@ def _correction_cases(recipe, count, name, searched):
     """Leer los casos de búsqueda de la corrección B6: η y λ, o κ con la regla kalman.
 
     Deben ser tantos como los índices que ajusta cada referencia neuronal, para que B6 no
-    disponga de más búsqueda que los brazos con los que se compara.
+    disponga de más búsqueda que los modelos con los que se compara.
     """
     cases = (
         (recipe.get("walk_forward") or {}).get("search_cases") if isinstance(recipe, dict) else None
@@ -785,10 +785,10 @@ def _readout_cases(recipe, rule, count):
 
 
 def _cm_v1(section, arms, rule, policy, base, count, rules=None):
-    """Núcleos y brazos del factorial CM-v1 desde su declaración, sin importar PyTorch.
+    """Núcleos y modelos del factorial CM-v1 desde su declaración, sin importar PyTorch.
 
     Los núcleos `cm_v1_core_b` y `cm_v1_core_c` son trabajos auxiliares sin traslado ni
-    recibo de ventana: cada brazo parte del núcleo elegido en su ventana y semilla.
+    recibo de ventana: cada modelo parte del núcleo elegido en su ventana y semilla.
     `training.cm_v1_factorial` vuelve a validar declaración, control y retención.
     """
     if section is None:
@@ -811,13 +811,13 @@ def _cm_v1(section, arms, rule, policy, base, count, rules=None):
         )
         and document.get("cores") == {core: core == CM_CORES[1] for core in CM_CORES}
         and all(arms[name]["output"] == QUANTILE_HEAD for name in CM_ARMS),
-        "La declaración de CM-v1 no corresponde a sus cuatro brazos con cuantiles y sus núcleos",
+        "La declaración de CM-v1 no corresponde a sus cuatro variantes con cuantiles y sus núcleos",
     )
     seed = section["search_seed"]
     seeds = sorted({s for name in CM_ARMS for s in _seeds(arms[name]["seeds"], name)})
     _require(
         all(seed in arms[name]["seeds"] for name in CM_ARMS),
-        "La semilla de búsqueda de CM-v1 debe estar en todos sus brazos",
+        "La semilla de búsqueda de CM-v1 debe estar en todos sus modelos",
     )
     recipes = {}
     for name in ("core_recipe", "readout_recipe"):
@@ -869,7 +869,7 @@ def _cm_v1(section, arms, rule, policy, base, count, rules=None):
             )
             for case in _readout_cases(readout, rule, count)
         ]
-    # Los núcleos van primero: el plan respeta así las dependencias de cada brazo.
+    # Los núcleos van primero: el plan respeta así las dependencias de cada modelo.
     models = {**{name: CM_CORE_MODEL for name in CM_CORES}, **dict.fromkeys(CM_ARMS, CM)}
     return dict(
         section,
@@ -999,7 +999,7 @@ def load_campaign(path):
 
 
 def _seed_policy(policy, campaign):
-    """Exigir que cada brazo siga la política de semillas declarada."""
+    """Exigir que cada modelo siga la política de semillas declarada."""
     _require(
         isinstance(policy, dict)
         and set(policy) == _SEED_POLICY
@@ -1015,7 +1015,7 @@ def _seed_policy(policy, campaign):
     deterministic = set(policy["deterministic_arms"])
     _require(
         deterministic <= {spec["arm"] for spec in specs},
-        "Los brazos deterministas deben tener productor en la campaña",
+        "Los modelos deterministas deben tener productor en la campaña",
     )
     for spec in specs:
         expected = [search] if spec["arm"] in deterministic else [search, *repeats]
@@ -1077,8 +1077,8 @@ def _early_stop(section, rule, arms):
     """Lee la parada temprana que declara la campaña, con la métrica del protocolo.
 
     Devuelve None sin sección. `validation_plateau` detiene cada ajuste en su primera
-    meseta. `joint_plateau` necesita grupos de brazos con entrenador, disjuntos y de al
-    menos dos brazos, y la época común `maximum_of_first_plateaus`. Los brazos sin grupo
+    meseta. `joint_plateau` necesita grupos de modelos con entrenador, disjuntos y de al
+    menos dos modelos, y la época común `maximum_of_first_plateaus`. Los modelos sin grupo
     usan la meseta individual con los mismos valores.
     """
     if section is None:
@@ -1122,7 +1122,7 @@ def _early_stop(section, rule, arms):
             and all(isinstance(arm, str) for arm in members)
             for members in groups.values()
         ),
-        f"La parada conjunta declara grupos de al menos dos brazos y la época común {GROUP_EPOCH}",
+        f"La parada conjunta declara grupos de al menos dos modelos y la época común {GROUP_EPOCH}",
     )
     members = [arm for names in groups.values() for arm in names]
     trainable = {
@@ -1132,7 +1132,7 @@ def _early_stop(section, rule, arms):
     } | set(CM_CORES)
     _require(
         len(set(members)) == len(members) and set(members) <= trainable,
-        "Cada brazo agrupado debe tener entrenador neuronal y pertenecer a un solo grupo",
+        "Cada modelo agrupado debe tener entrenador neuronal y pertenecer a un solo grupo",
     )
     resolved[JOINT_PLATEAU] = dict(individual, stopping=JOINT_PLATEAU)
     resolved["membership"] = {arm: group for group, names in groups.items() for arm in names}
@@ -1140,7 +1140,7 @@ def _early_stop(section, rule, arms):
 
 
 def _arm_rules(rule, early):
-    """Devuelve la regla de parada de cada brazo, o None si la campaña conserva la del protocolo."""
+    """Regla de parada de cada modelo, o None si la campaña conserva la del protocolo."""
     if early is None:
         return lambda arm: None
     return lambda arm: early[JOINT_PLATEAU if arm in early["membership"] else VALIDATION_PLATEAU]
@@ -1160,7 +1160,7 @@ def _optional_sections(config, arms, rule, policy, base, count, rules, titans=No
     """Resolver las secciones opcionales. `titans` es la ya resuelta si `config` no la trae.
 
     `rule` es la regla del protocolo, que declaran las recetas, y `rules(arm)` la parada
-    temprana de cada brazo si la campaña la declara.
+    temprana de cada modelo si la campaña la declara.
     """
     titans = _titans(config.get(TITANS), arms, rule, policy, base, count, rules) or titans
     return {
@@ -1224,7 +1224,7 @@ def schedule(folds, period):
 
 def _job(scope, window, arm, family, model, stage, seed, **fields):
     name = {"search": f"search-{fields.get('candidate')}"}.get(stage, f"{stage}-s{seed}")
-    # Solo los brazos que parten de otro predictor elegido declaran su padre.
+    # Solo los modelos que parten de otro predictor elegido declaran su padre.
     parent = {"parent": fields["parent"]} if fields.get("parent") else {}
     return dict(
         **parent,
@@ -1245,7 +1245,7 @@ def _job(scope, window, arm, family, model, stage, seed, **fields):
 
 
 def scope_arms(campaign, scope):
-    """Brazos que la comparación evalúa en un ámbito con predicciones propias del ámbito."""
+    """Modelos que la comparación evalúa en un ámbito con predicciones propias del ámbito."""
     resolved = campaign["comparison_config"]["resolved_scopes"][scope]
     return [
         name
@@ -1255,10 +1255,10 @@ def scope_arms(campaign, scope):
 
 
 def _arm_specs(campaign, scope=None):
-    """Brazos con entrenador: familia, modelo, semilla de búsqueda y candidatos.
+    """Configuraciones con entrenador: familia, modelo, semilla de búsqueda y candidatos.
 
-    Con `scope`, solo los brazos que se ajustan en ese ámbito, con los auxiliares de los que
-    parten. Un padre que es un brazo comparado debe ajustarse también en el ámbito, porque
+    Con `scope`, solo los modelos que se ajustan en ese ámbito, con los auxiliares de los que
+    parten. Un padre que es un modelo comparado debe ajustarse también en el ámbito, porque
     solo los auxiliares se incorporan sin declararlos.
     """
     specs = _all_arm_specs(campaign)
@@ -1290,7 +1290,7 @@ def _all_arm_specs(campaign):
             model = {NEURAL: "neural", EPISODIC: EPISODIC, TITANS: TITANS, MARS: MARS}.get(
                 family, kind
             )
-            # Los trabajos auxiliares, como los núcleos de CM-v1, no son brazos comparados.
+            # Los trabajos auxiliares, como los núcleos de CM-v1, no son modelos comparados.
             seeds = section.get("seeds", {}).get(name) or arms[name]["seeds"]
             specs.append(
                 dict(
@@ -1308,7 +1308,7 @@ def _all_arm_specs(campaign):
 
 
 def arm_output(campaign, arm):
-    """Salida de un brazo comparado o de un trabajo auxiliar, que emite la de sus brazos."""
+    """Salida de un modelo comparado o de un trabajo auxiliar, que emite la de sus modelos."""
     declared = campaign["comparison_config"]["arms"]
     if arm in declared:
         return declared[arm]["output"]
@@ -1316,7 +1316,7 @@ def arm_output(campaign, arm):
         outputs = (campaign.get(family) or {}).get("outputs", {})
         if arm in outputs:
             return outputs[arm]
-    raise ValueError(f"{arm} no es un brazo ni un trabajo auxiliar de la campaña")
+    raise ValueError(f"{arm} no es un modelo ni un trabajo auxiliar de la campaña")
 
 
 def plan_campaign(campaign):
@@ -1365,7 +1365,7 @@ def plan_campaign(campaign):
                             )
                     continue
                 if spec["helper"]:
-                    # Un auxiliar solo existe para que su brazo parta de él al ajustar.
+                    # Un auxiliar solo existe para que su modelo parta de él al ajustar.
                     continue
                 for seed in spec["seeds"]:
                     depends = searches if seed == spec["seed"] else [f"{prefix}/finalist-s{seed}"]
@@ -1379,7 +1379,7 @@ def plan_campaign(campaign):
 
 
 def _ancestors(arm, specs):
-    """Devuelve los brazos de los que parte un brazo siguiendo la cadena de padres."""
+    """Devuelve los modelos de los que parte un modelo siguiendo la cadena de padres."""
     found = []
     while (arm := specs[arm]["parent"]) is not None:
         found.append(arm)
@@ -1387,11 +1387,11 @@ def _ancestors(arm, specs):
 
 
 def _checked_groups(campaign, specs):
-    """Comprueba que cada grupo conjunto tiene brazos conectados que se emparejan caso a caso.
+    """Comprueba que cada grupo conjunto tiene modelos conectados que se emparejan caso a caso.
 
-    Los brazos de un grupo comparten semilla de búsqueda y número de casos, que se emparejan
+    Los modelos de un grupo comparten semilla de búsqueda y número de casos, que se emparejan
     por posición, y ninguno parte de otro del mismo grupo, porque su parada dependería de sí
-    misma. Cada contraste emparejado de la comparación (delta o factorial) entre brazos
+    misma. Cada contraste emparejado de la comparación (delta o factorial) entre modelos
     conectados sin relación de padre debe quedar dentro de un mismo grupo. La corrección B6
     no tiene épocas, así que sus contrastes no dependen de ninguna parada y no se agrupa.
     """
@@ -1439,9 +1439,9 @@ def _checked_groups(campaign, specs):
 def _joint_phases(campaign, jobs, specs):
     """Dividir cada ajuste agrupado en su meseta y su continuación hasta la época común.
 
-    El grupo de un ajuste es el de su brazo en el mismo ámbito, ventana y semilla, con el
+    El grupo de un ajuste es el de su modelo en el mismo ámbito, ventana y semilla, con el
     caso de búsqueda en la misma posición o, en las semillas finalistas, con el caso elegido
-    de cada brazo. El ajuste final depende de las mesetas de todo su grupo y continúa en la
+    de cada modelo. El ajuste final depende de las mesetas de todo su grupo y continúa en la
     carpeta de su meseta. Los trabajos quedan en un orden compatible con sus dependencias.
     """
     early = campaign.get("early_stop")
@@ -1506,7 +1506,7 @@ def execution_order(campaign):
 
 
 def count_jobs(campaign, jobs=None):
-    """Contar ajustes y traslados por ámbito, brazo y semilla, y comprobar los límites."""
+    """Contar ajustes y traslados por ámbito, modelo y semilla, y comprobar los límites."""
     jobs = plan_campaign(campaign) if jobs is None else jobs
     scopes = {}
     for scope in campaign["scopes"]:
@@ -1559,10 +1559,10 @@ def _fit(job):
 
 
 def pending_families(campaign):
-    """Brazos de la comparación que esperan un entrenador conectado, con su motivo."""
+    """Modelos de la comparación que esperan un entrenador conectado, con su motivo."""
     result = {}
     connected = {spec["arm"] for spec in _arm_specs(campaign)}
-    # El control en línea no es un brazo con entrenador: lo conecta su sección declarada.
+    # El control en línea no es un modelo con entrenador: lo conecta su sección declarada.
     connected |= set((campaign.get("online_controls") or {}).get("arms", ()))
     for name, arm in campaign["comparison_config"]["arms"].items():
         family = arm["family"]

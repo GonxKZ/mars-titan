@@ -27,7 +27,7 @@ REFERENCES = ("cash", "hold_initial", "rebalance_50", "equal_weight_monthly", "m
 # El índice de mercado solo se planifica donde la edición tiene su instrumento (SPY).
 INDEXED = {"US": True, "CN": False}
 COSTS = 4
-# Brazos con productor en las campañas A y B, en el orden de su configuración.
+# Modelos con productor en las campañas A y B, en el orden de su configuración.
 PRODUCERS = ["rnn", "lstm", "gru", "dlinear", "transformer_compact", "ridge", "xgboost"]
 PRODUCERS += ["titans_transformer_direct", "titans_mac_disabled", "titans_mac_frozen"]
 PRODUCERS += ["titans_mac_online"]
@@ -527,7 +527,7 @@ REASONS = {
     "predictor_mae": "criterio de cartera",
     "selection_on_evaluation": "criterio de cartera",
     "early_stopping": "presupuesto fijo",
-    "primary_not_klpo": "KLPO es el brazo principal",
+    "primary_not_klpo": "KLPO es el algoritmo principal",
     "klpo_not_first": "va primero",
     "klpo_second_with_matching_controls": "va primero",
     "missing_control": "con todos los demás",
@@ -549,7 +549,7 @@ REASONS = {
     "component_against_a_variant": "contraste de componente",
     "empty_components": "contraste de componente",
     "components_as_list": "contraste de componente",
-    "unknown_contrast_family": "KLPO es el brazo principal",
+    "unknown_contrast_family": "KLPO es el algoritmo principal",
     "unknown_ppo_objective": "objetivo PPO identificado",
     "missing_target_kl": "objetivo PPO identificado",
     "beta_outside_limits": "beta inicial",

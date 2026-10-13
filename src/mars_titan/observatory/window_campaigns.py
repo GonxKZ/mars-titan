@@ -2,7 +2,7 @@
 
 La campaña base, la etapa de adaptadores, la ablación de modalidades y la etapa de
 políticas escriben un `summary.json` con el mapa de trabajos confirmados. Aquí se convierte
-en celdas de ámbito, ventana, brazo y nombre, igual para el servidor en directo y para el
+en celdas de ámbito, ventana, modelo y nombre, igual para el servidor en directo y para el
 recolector que publica Pages. Solo salen estados, fechas de confirmación y las curvas por
 época de los intentos abiertos. Las métricas que lleve el resumen, como las financieras de
 la etapa de políticas, no se copian.
@@ -25,14 +25,14 @@ COUNT_KEY = re.compile(r"[a-z][a-z_]{0,39}")
 SELECT = re.compile(r"select-s(\d+)")
 # Tipo de resumen de cada etapa, con su nombre en el observatorio y las partes de sus
 # identificadores. Las políticas añaden el mercado y el predictor:
-# `ámbito/mercado/ventana/predictor/brazo/nombre`.
+# `ámbito/mercado/ventana/predictor/modelo/nombre`.
 STAGES = {
     "historical_masked_campaign_run": ("base", 4),
     "historical_masked_posttraining_stage_run": ("adapters", 4),
     "historical_masked_modality_ablation_stage_run": ("ablation", 4),
     "historical_masked_rl_stage_run": ("policies", 6),
 }
-# Brazos con el mismo nombre que su modelo del catálogo.
+# Configuraciones con el mismo nombre que su modelo del catálogo.
 EXACT_MODELS = frozenset(
     {
         "rnn",
@@ -49,7 +49,7 @@ EXACT_MODELS = frozenset(
         "market_index",
     }
 )
-# Familias que agrupan varios brazos: el nombre exacto o seguido de `_`. Así
+# Familias que agrupan varios modelos: el nombre exacto o seguido de `_`. Así
 # `titans_mac_online` y `titans_transformer_direct` son Titans-MAC, `mars_titan_m1_k4` es
 # MARS-TITAN y `transformer_compact_online` es el control en línea del Transformer compacto.
 FAMILY_MODELS = (
@@ -69,11 +69,11 @@ FAMILY_MODELS = (
 
 
 def arm_model(arm):
-    """Modelo del catálogo de un brazo, o `unknown` si no se reconoce.
+    """Modelo del catálogo de una configuración, o `unknown` si no se reconoce.
 
     Los adaptadores (`base__punto`), el padre congelado y la cadena (`base__chain`) son el
-    modelo de su brazo base. En la etapa de políticas el brazo es `predictor/política` y
-    cuenta la política.
+    modelo de su configuración base. En la etapa de políticas la configuración es
+    `predictor/política` y cuenta la política.
     """
     base = arm.rsplit("/", 1)[-1].split("__", 1)[0]
     if base in EXACT_MODELS:
@@ -85,7 +85,7 @@ def arm_model(arm):
 
 
 def _cell(parts):
-    """Ámbito, ventana, brazo y nombre de un identificador de cuatro o seis partes."""
+    """Ámbito, ventana, modelo y nombre de un identificador de cuatro o seis partes."""
     if len(parts) == 4:
         return parts
     scope, market, window, predictor, arm, name = parts

@@ -1,6 +1,6 @@
 # Diagnóstico de la etiqueta residual
 
-Tarea [#16](https://github.com/GonxKZ/mars-titan/issues/16) (MT-016, objetivo O2), 10 de octubre de 2026. Este informe revisa la cobertura, las colas, la estabilidad de alfa y beta y la exposición restante al mercado de la etiqueta residual `targets-v3`, construida sobre la edición histórica v3 desde 2000. Abarca entrenamiento (hasta 2022) y validación (2023). Es un diagnóstico de datos. No ajusta ningún modelo, no ejecuta pasos de optimizador y no abre la reserva de 2024. Los precios se filtran al 31 de diciembre de 2023 antes de calcular nada. Las etiquetas de la v3 no tienen filas de 2024, y si una edición las tuviera el diagnóstico exige que no lleven objetivo y solo las cuenta por su motivo.
+Tarea [#16](https://github.com/GonxKZ/mars-titan/issues/16) (MT-016, objetivo O2), 10 de octubre de 2026. Este informe revisa la cobertura, las colas, la estabilidad de alfa y beta y la exposición restante al mercado de la etiqueta residual `targets-v3`, construida sobre la edición histórica v3 desde 2000. Abarca entrenamiento (hasta 2022) y validación (2023). Es un diagnóstico de datos. No ajusta ningún modelo, no ejecuta pasos de optimizador y no abre la reserva de 2024. Los precios se filtran al 31 de diciembre de 2023 antes de calcular nada. La [repetición sobre la v3.1](#repetición-sobre-la-v31), del 13 de octubre, aplica el mismo código y la misma declaración a `targets-v3.1` y añade el desglose por patrón de máscaras. Las etiquetas de la v3 no tienen filas de 2024, y si una edición las tuviera el diagnóstico exige que no lleven objetivo y solo las cuenta por su motivo.
 
 La definición de la etiqueta está en el [protocolo](../../docs/research/protocol.md#reloj-de-decisión-y-objetivo) y en el [ejemplo del objetivo](../../docs/research/target-definition.md). Es el retorno apertura-cierre de la sesión siguiente menos alfa y beta por el retorno del factor en esa misma sesión. Alfa y beta salen de una regresión por mínimos cuadrados sobre las 252 sesiones anteriores, con al menos 126 pares cuyo cierre se conoce en la decisión. El factor es SPY en EE. UU. y el CSI 300 en China.
 
@@ -65,7 +65,7 @@ Los factores explican muy pocas exclusiones. Las 2.075 filas sin retorno del fac
 
 La figura muestra la caída de China en 2019. No hay ninguna muestra CN entre mayo y julio de ese año y de enero a abril faltan casi todos los valores de Shanghái. El hueco está ya en la edición, no en la etiqueta, y su causa se documenta en la [revisión de huecos de precios](../../docs/data/historical-price-gaps.md). La v3.1 recupera parte de esas ventanas.
 
-El desglose por patrón de máscaras no está disponible para la v3. Cuando se ejecutó, la sustitución de la v3.1 ya había reemplazado las muestras de 1.245 activos, así que el diagnóstico no lee la presencia de modalidades y lo declara en el informe (`mask_patterns.available` falso). Se hará sobre la v3.1 con el mismo código.
+El desglose por patrón de máscaras no está disponible para la v3. Cuando se ejecutó, la sustitución de la v3.1 ya había reemplazado las muestras de 1.245 activos, así que el diagnóstico no lee la presencia de modalidades y lo declara en el informe (`mask_patterns.available` falso). Se hizo sobre la v3.1 con el mismo código (ver [patrón de máscaras](#patrón-de-máscaras)).
 
 ## Retorno bruto y residual sobre las mismas filas
 
@@ -235,7 +235,7 @@ De los 20 mayores residuales de EE. UU., 19 son de valores que abren por debajo 
 2. **No se recortan ni se acotan extremos.** Ningún umbral estimado con estos datos se aplica a la etiqueta. Los extremos quedan en el informe con la referencia a su precio. Si se quiere excluir filas negociadas casi sin volumen, la regla debe usar solo información disponible en la decisión, declararse antes de entrenar y compararse como variante del universo, no como cambio de la etiqueta. Una pérdida cuadrática sería sensible a estas filas, y por eso cualquier tratamiento robusto debe quedar fijado en la receta antes del ajuste.
 3. **El residual no se trata como neutral al mercado.** Las comparaciones deben informar el retorno bruto junto al residual, como ya prevé el protocolo, y la exposición de las carteras se medirá en la simulación.
 4. **El sector sigue sin admitirse** mientras no exista pertenencia sectorial histórica verificable.
-5. **El diagnóstico se repite sobre `targets-v3.1`** con el desglose por patrón de máscaras cuando la v3.1 termine su codificación y la construcción de objetivos.
+5. **El diagnóstico se repite sobre `targets-v3.1`** con el desglose por patrón de máscaras. Se hizo el 13 de octubre y confirma estas decisiones (ver [la repetición](#repetición-sobre-la-v31)).
 
 ## Limitaciones
 
@@ -244,22 +244,121 @@ De los 20 mayores residuales de EE. UU., 19 son de valores que abren por debajo 
 - La población está condicionada a la supervivencia de los activos, como se declara en el [protocolo](../../docs/research/protocol.md#universo-y-selección-del-subconjunto).
 - Las medianas y percentiles transversales pesan igual cada activo. No describen una cartera ponderada por capitalización.
 - Una menor varianza del residual no implica que sea más fácil de predecir. Este diagnóstico no mide predictibilidad.
-- Falta el desglose por patrón de máscaras, pendiente de la v3.1.
+- El desglose por patrón de máscaras solo existe para la v3.1.
 
 ## Repetición sobre la v3.1
 
-La ejecución de la v3.1 no se toca. Cuando `targets-v3.1` esté verificado, el diagnóstico se repite con el mismo código y la misma declaración. Las rutas de la v3.1 son las previstas y deben comprobarse antes de ejecutar.
+El 13 de octubre de 2026 el diagnóstico se repitió sobre `targets-v3.1` con el mismo código (`residual_diagnostics.py` `beadbb12…`, la misma huella que en la v3) y la misma [declaración](../../configs/targets/residual-diagnostics-v1.json), sin cambiar ningún umbral. La [edición v3.1](../../docs/data/edition-v3-1.md) corrige la conversión del texto numérico de los precios, recupera las filas que se rechazaban por redondeo y conserva con máscara las ventanas que contienen sesiones ausentes en todo el mercado. El retorno de SPY recupera así el 20 de julio y el 29 de diciembre de 2000. Esta vez las muestras de todos los activos están en disco, así que el informe incluye el desglose por patrón de máscaras.
 
-```bash
-M=/home/gonzalo/.local/state/mars-titan/history-2000-20261007/materialization
-uv run python scripts/diagnose_residual_targets.py run \
-    --targets $M/targets-v3.1/manifest.json \
-    --edition $M/encoded-history-v3.1/manifest.json \
-    --declaration configs/targets/residual-diagnostics-v1.json \
-    --output reports/targets/residual-diagnostics-v3.1-<fecha>.json --workers 4
-uv run python scripts/diagnose_residual_targets.py figures \
-    --report reports/targets/residual-diagnostics-v3.1-<fecha>.json \
-    --output reports/targets/figures/v3.1
-```
+| Elemento | Valor |
+| --- | --- |
+| Informe | [`residual-diagnostics-v3.1-20261013.json`](residual-diagnostics-v3.1-20261013.json), SHA-256 `a913a90bea848cffd201183042367b8e46736022adbef62c74abc93274cd73f0` |
+| Objetivos | `targets-v3.1/manifest.json`, SHA-256 `fe86a923dd49a24247a1925e195b0bfd07cacf02c7bd43f0bcde0d292251893a` |
+| Edición | `encoded-history-v3.1/manifest.json`, SHA-256 `a459dbb8a39b9308b4ab20ea5a1e58453455fa3d3db9e93984ca5a3c5ba0bc3d` |
+| Factor US | SPY revisado de la v3.1, SHA-256 `3540094000b0e478c17bcf6d8133930240c2a6e82cfa067932f540742abc6679`, sin versiones contemporáneas verificadas |
+| Factor CN | El mismo CSI 300 que en la v3 (`b96cd972…`) |
+| Muestras con patrón | 5.008 de 5.008 activos con sus muestras comprobadas por huella |
+| Coste | 1.301 s de reloj con 4 procesos y 3,22 GB de memoria residente máxima en el proceso principal |
+| Figuras | [`figures/v3.1/figures.json`](figures/v3.1/figures.json) |
 
-Si alguna muestra de la edición falta o no coincide con su huella, el informe lo declara y omite el desglose por patrón sin detenerse. El resto de comprobaciones sí detiene la ejecución ante cualquier diferencia con las etiquetas guardadas.
+### Etiquetas y cobertura
+
+Las 18.377.972 etiquetas aceptadas de la v3.1 coinciden bit a bit con su recálculo, en objetivo y momento de maduración. Son 1.595.953 más que en la v3.
+
+| Categoría | CN | US | Total | Total v3 |
+| --- | ---: | ---: | ---: | ---: |
+| `train` | 2.577.040 | 14.565.147 | 17.142.187 | 15.560.197 |
+| `validation` | 195.144 | 1.040.641 | 1.235.785 | 1.221.822 |
+| `insufficient_stock_history` | 49.829 | 260.009 | 309.838 | 265.813 |
+| `missing_factor_history` | 0 | 0 | 0 | 67 |
+| `next_stock_session_absent` | 1.056 | 126 | 1.182 | 16.162 |
+| `next_stock_price_invalid` | 0 | 0 | 0 | 0 |
+| `next_factor_return_missing` | 0 | 0 | 0 | 2.075 |
+| `zero_market_variance` | 0 | 0 | 0 | 0 |
+| `target_after_cutoff` | 810 | 4.185 | 4.995 | 4.962 |
+| `target_crosses_partition_boundary` | 808 | 4.181 | 4.989 | 4.926 |
+| `outside_label_calendar` | 0 | 0 | 0 | 0 |
+| Total | 2.824.687 | 15.874.289 | 18.698.976 | 17.076.024 |
+
+Las dos causas que dependían del factor desaparecen. Con las dos sesiones de SPY de 2000 recuperadas ya no hay filas sin retorno del factor al día siguiente ni filas con historia propia suficiente y menos de 126 pares con el factor. Las sesiones siguientes ausentes bajan de 16.162 a 1.182. La v3.1 recupera filas de precios que la v3 rechazaba por redondeo, y con ellas la sesión siguiente de esas decisiones tiene precio. De las 1.056 que quedan en China, 750 son decisiones del 26 de abril de 2019, cuya sesión siguiente (el 29) falta en todo el mercado, y 238 son del 4 de enero de 2019, dentro del hueco de Shanghái de ese año. Ninguna de ellas recibe un precio inventado. La historia insuficiente crece de 265.813 a 309.838 filas porque la edición tiene más muestras al principio de cada activo. Sigue siendo estructural y repartida: 5.006 de los 5.008 activos tienen alguna fila sin historia suficiente, el 1 % de activos con más exclusiones reúne el 1,08 % de ellas y ningún activo pierde más de 127 filas (MUI, 123 por historia sobre 3.803 muestras). Tres activos se quedan sin ninguna etiqueta aceptada, los tres por historia insuficiente.
+
+![Muestras por año y categoría en la v3.1](figures/v3.1/coverage-by-year.svg)
+
+### Patrón de máscaras
+
+El patrón tiene un bit por modalidad en el orden del contrato de máscaras (precios, noticias, gráficos, fundamentales y macro) y sale de la presencia guardada en cada muestra.
+
+| Mercado | Patrón | Modalidades presentes | Muestras | Aceptadas | % aceptadas | Historia corta | Sesión siguiente ausente | Corte y purga |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| CN | `10101` | precios, gráficos y macro | 2.444.789 | 2.394.756 | 97,95 | 48.237 | 1.032 | 764 |
+| CN | `10111` | precios, gráficos, fundamentales y macro | 10.083 | 10.028 | 99,45 | 0 | 0 | 55 |
+| CN | `11101` | precios, noticias, gráficos y macro | 359.311 | 356.939 | 99,34 | 1.592 | 24 | 756 |
+| CN | `11111` | las cinco | 10.504 | 10.461 | 99,59 | 0 | 0 | 43 |
+| US | `10101` | precios, gráficos y macro | 8.896.721 | 8.680.398 | 97,57 | 212.693 | 115 | 3.515 |
+| US | `10111` | precios, gráficos, fundamentales y macro | 4.196.405 | 4.157.578 | 99,07 | 35.129 | 3 | 3.695 |
+| US | `11101` | precios, noticias, gráficos y macro | 929.682 | 922.996 | 99,28 | 6.338 | 7 | 341 |
+| US | `11111` | las cinco | 1.851.481 | 1.844.816 | 99,64 | 5.849 | 1 | 815 |
+
+Precios, gráficos y macro están presentes en todas las muestras. Solo varían noticias y fundamentales, así que hay cuatro patrones por mercado. Las noticias aparecen en el 13,1 % de las muestras chinas y en el 17,5 % de las estadounidenses, y los fundamentales en el 0,7 % y el 38,1 %. Las cinco modalidades juntas solo están en el 0,4 % de las muestras chinas y en el 11,7 % de las de EE. UU. El patrón sin noticias ni fundamentales concentra la historia insuficiente (el 96,8 % de la china y el 81,8 % de la estadounidense) porque las primeras sesiones de cada activo suelen no tener todavía esas fuentes. Por eso ese patrón acepta algo menos (el 97,6 % en EE. UU. y el 98,0 % en China, frente a más del 99 % en los demás). Fuera de la historia insuficiente, las demás causas de exclusión son casi nulas en todos los patrones. La etiqueta no usa las máscaras. El desglose sirve para saber con qué modalidades cuenta cada modelo en las filas que se evalúan.
+
+### Bruto, residual, estabilidad y exposición
+
+| Grupo | Filas | Desv. bruto | Desv. residual | Razón de varianzas | Corr. bruto-residual | p01 residual | p99 residual | Máx. abs. residual | Residual >50 % | Bruto nulo |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| CN:train | 2.577.040 | 0,0266 | 0,0222 | 0,699 | 0,832 | −0,0567 | 0,0728 | 0,51 | 1 | 181.697 |
+| CN:validation | 195.144 | 0,0192 | 0,0180 | 0,876 | 0,918 | −0,0446 | 0,0590 | 0,24 | 0 | 9.137 |
+| US:train | 14.565.147 | 0,0353 | 0,0340 | 0,930 | 0,955 | −0,0745 | 0,0802 | 49,00 | 2.296 | 982.511 |
+| US:validation | 1.040.641 | 0,0283 | 0,0277 | 0,958 | 0,952 | −0,0720 | 0,0755 | 6,35 | 122 | 48.778 |
+
+| Grupo | Pares contiguos | Media de \|Δbeta\| | p99 de \|Δbeta\| | Máx. \|Δbeta\| | \|Δbeta\| > 0,1 | Beta fuera de ±5 | Ventanas parciales | Beta nula |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| CN:train | 2.575.186 | 0,0067 | 0,0500 | 0,44 | 2.898 | 0 | 302.795 | 9.947 |
+| CN:validation | 194.334 | 0,0081 | 0,0557 | 0,31 | 235 | 0 | 389 | 0 |
+| US:train | 14.560.883 | 0,0099 | 0,0953 | 18,92 | 132.284 | 5.412 | 540.733 | 7.862 |
+| US:validation | 1.036.422 | 0,0077 | 0,0654 | 49,78 | 3.725 | 249 | 3.446 | 244 |
+
+| Grupo | Filas | Sesiones | Corr. residual | Pendiente residual | Corr. bruto | Corr. de la media diaria residual | Pendiente de la media diaria residual |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| CN:train | 2.577.040 | 4.003 | 0,016 | 0,024 | 0,539 | 0,052 | 0,021 |
+| CN:validation | 195.144 | 241 | −0,023 | −0,051 | 0,347 | −0,117 | −0,051 |
+| US:train | 14.565.147 | 5.661 | 0,006 | 0,021 | 0,215 | 0,064 | 0,026 |
+| US:validation | 1.040.641 | 249 | 0,013 | 0,049 | 0,209 | 0,086 | 0,049 |
+
+Las distribuciones, la estabilidad de beta y la exposición restante apenas cambian respecto a la v3. El residual reduce la varianza un 30 % en el entrenamiento chino y entre un 4 y un 12 % en el resto, y su correlación agrupada con el factor queda entre −0,023 y 0,016. Los retornos brutos exactamente nulos son entre el 4,7 y el 7,1 % de las filas aceptadas, una proporción algo mayor que en la v3 en el entrenamiento US (6,7 % frente a 6,3 %). El cambio visible está en las ventanas parciales. Pasan del 17 al 3,7 % del entrenamiento US, porque las ventanas de 2001 ya no contienen el hueco de SPY, y del 18 al 11,7 % del chino, porque las ventanas con el hueco de 2019 se conservan con máscara. Las betas fuera de ±5 (5.412 y 249) y los saltos máximos (18,9 y 49,8) son los mismos que en la v3.
+
+![Desviación típica diaria por año en la v3.1](figures/v3.1/dispersion-by-year.svg)
+
+![Beta transversal por mes en la v3.1](figures/v3.1/beta-by-month.svg)
+
+![Correlación con el factor por año en la v3.1](figures/v3.1/exposure-by-year.svg)
+
+### Sensibilidades y extremos
+
+Las cuatro variantes se comparan sobre las 17.748.445 filas con objetivo aceptado en todas ellas (SHA-256 de la población `74820b441d4f498dd8b4fb5cc730075eee8461afa2c36029f0e918d09f71c7e4`).
+
+| Grupo | Variante | Aceptadas | Cambio de cobertura | Corr. con el factor | Corr. con la principal | Dif. abs. media | Media de \|Δbeta\| | \|Δbeta\| > 0,1 |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| CN:train | `main` | 2.577.040 | 0 | 0,017 | 1,000 | 0,00000 | 0,0067 | 0,11 % |
+| CN:train | `window_126` | 2.626.793 | 49.753 | 0,014 | 0,992 | 0,00184 | 0,0133 | 0,93 % |
+| CN:train | `window_504` | 2.475.637 | −101.403 | 0,012 | 0,995 | 0,00152 | 0,0033 | 0,01 % |
+| CN:train | `market_adjusted` | 2.626.801 | 49.761 | −0,014 | 0,978 | 0,00300 | 0,0000 | 0,00 % |
+| CN:validation | `main` | 195.144 | 0 | −0,023 | 1,000 | 0,00000 | 0,0081 | 0,12 % |
+| CN:validation | `window_126` | 195.210 | 66 | −0,004 | 0,993 | 0,00146 | 0,0153 | 1,12 % |
+| CN:validation | `window_504` | 194.755 | −389 | −0,014 | 0,995 | 0,00128 | 0,0039 | 0,00 % |
+| CN:validation | `market_adjusted` | 195.210 | 66 | −0,081 | 0,986 | 0,00212 | 0,0000 | 0,00 % |
+| US:train | `main` | 14.565.147 | 0 | 0,006 | 1,000 | 0,00000 | 0,0099 | 0,91 % |
+| US:train | `window_126` | 14.824.480 | 259.333 | 0,005 | 0,995 | 0,00166 | 0,0203 | 3,36 % |
+| US:train | `window_504` | 14.038.766 | −526.381 | 0,009 | 0,996 | 0,00137 | 0,0048 | 0,21 % |
+| US:train | `market_adjusted` | 14.824.480 | 259.333 | −0,054 | 0,975 | 0,00390 | 0,0000 | 0,00 % |
+| US:validation | `main` | 1.040.641 | 0 | 0,013 | 1,000 | 0,00000 | 0,0077 | 0,36 % |
+| US:validation | `window_126` | 1.041.313 | 672 | 0,012 | 0,982 | 0,00158 | 0,0183 | 2,60 % |
+| US:validation | `window_504` | 1.039.317 | −1.324 | 0,007 | 0,995 | 0,00107 | 0,0023 | 0,01 % |
+| US:validation | `market_adjusted` | 1.041.313 | 672 | −0,043 | 0,970 | 0,00325 | 0,0000 | 0,00 % |
+
+El balance es el mismo que en la v3. La ventana de 126 sesiones gana cobertura y duplica el cambio medio de beta entre sesiones. La de 504 lo reduce a la mitad y pierde 526.381 filas de entrenamiento US y 101.403 chinas. El ajuste al mercado deja una correlación negativa con el factor.
+
+Los 20 mayores residuales de EE. UU. son las mismas filas que en la v3, encabezadas por KGJI, SPCB y HROW. En China cambian dos de los 20. Entran dos filas que no tenían etiqueta aceptada en la v3, 600548.SS con objetivo el 3 de julio de 2015 y 000408.SZ con objetivo el 24 de junio de 2019, cuya ventana contiene el hueco de abril de ese año. Salen 002174.SZ (10 de septiembre de 2009) y 300315.SZ (28 de abril de 2023), que quedan justo por debajo. Los 12 primeros de China y los 20 de EE. UU. no cambian.
+
+### Decisión con la v3.1
+
+La repetición confirma las decisiones tomadas con la v3. Se conserva la etiqueta con 252 sesiones y 126 pares, no se recortan extremos, el residual no se trata como neutral al mercado y el sector sigue sin admitirse. La v3.1 elimina las exclusiones atribuibles al factor y casi todas las de sesiones siguientes ausentes, reduce las ventanas parciales y no cambia la forma de la etiqueta. El desglose por patrón muestra que las exclusiones se concentran en el patrón sin noticias ni fundamentales, el de las primeras sesiones de cada activo, que son las que no tienen historia suficiente.

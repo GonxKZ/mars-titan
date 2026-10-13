@@ -7,16 +7,16 @@ KLPO con sus controles. No ajusta ni evalúa nada: solo agrega episodios ya conf
 
 Reglas declaradas antes de ver resultados:
 
-- La serie de un brazo en una ventana es su patrimonio a cada cierre. El último valor es la
+- La serie de un modelo en una ventana es su patrimonio a cada cierre. El último valor es la
   liquidación hipotética al último cierre, de modo que cada ventana paga su salida.
-- Un brazo aprendido con varias semillas reparte el capital a partes iguales entre ellas.
+- Una política aprendida con varias semillas reparte el capital a partes iguales entre ellas.
   Su patrimonio es la media de los patrimonios por semilla y una semilla arruinada vale
   cero desde su ruina. Las métricas de cada semilla se publican aparte.
 - Las ventanas se encadenan en orden. La serie completa reúne los retornos por sesión de
   las ventanas usadas, como si el patrimonio liquidado de una ventana pasara a la siguiente.
   Si la serie encadenada se arruina, sus métricas terminan en la ruina.
 - Una familia compara, en un ámbito, un mercado, un predictor y un coste, KLPO con todos
-  sus controles disponibles. Solo usa las ventanas en que todos sus brazos tienen un
+  sus controles disponibles. Solo usa las ventanas en que todos sus modelos tienen un
   episodio terminado (completo o arruinado) con los mismos cierres. Las ventanas excluidas
   se publican con su motivo.
 - Incertidumbre con el bootstrap circular por bloques de sesiones de
@@ -31,8 +31,12 @@ Reglas declaradas antes de ver resultados:
   `contrasts.csv` distingue las dos en la columna `family`.
 - El índice chino se calcula con niveles del CSI 300 (`simulation.index_benchmark`) si se
   suministran con su huella, y se marca con su base.
-- Una ventana sin evaluación porque una serie del universo termina dentro del tramo se
-  publica en `survival`. La sensibilidad con retornos de salida declarada es secundaria.
+- Una baja sin precio de salida con posición abierta termina el episodio con la recompensa
+  enmascarada (`unpriced_exit`). Su ventana queda fuera de la familia como cualquier
+  episodio fallido y se publica en `survival`. La sensibilidad con retornos de salida
+  declarada es secundaria. Mientras alguna ventana la necesite, el informe queda como
+  `pending_survival_sensitivity` y no se da por cerrado, porque excluir la ventana depende
+  de lo que hizo la política evaluada.
 """
 
 import argparse
@@ -76,7 +80,8 @@ DIFFERENCE = "primary_minus_control"
 # Familias de multiplicidad de `contrasts.csv`: KLPO con todos sus controles y cada control
 # de componente con sus variantes.
 PRIMARY_FAMILY, COMPONENT_FAMILY = "primary", "components"
-SERIES_ENDS = "series_ends_in_tape"
+# Motivo de un episodio terminado por una baja sin precio de salida con posición abierta.
+UNPRICED_EXIT = "unpriced_exit"
 STATUSES = ("completed", "paused")
 _RECEIPT_BYTES = 64 * 1024**2
 
@@ -145,7 +150,7 @@ def _window_nav(record, close_times, capital):
     times = equity["close_times"]
     _require(
         times == close_times[: len(times)] and nav[0] == capital,
-        "Los brazos de una ventana deben empezar con el capital y compartir sus cierres",
+        "Los modelos de una ventana deben empezar con el capital y compartir sus cierres",
     )
     if record["status"] == "ruined":
         # Sin patrimonio desde la ruina hasta el final de la ventana.
@@ -156,7 +161,7 @@ def _window_nav(record, close_times, capital):
 
 
 def _arm_window(records, close_times, capital):
-    """Patrimonio de un brazo en una ventana: media de sus semillas, cada una con su capital."""
+    """Patrimonio de un modelo en una ventana: media de sus semillas, cada una con su capital."""
     navs = [_window_nav(record, close_times, capital) for record in records]
     return dict(
         nav=np.mean(navs, axis=0),
@@ -325,27 +330,43 @@ def _family(found, windows, arms, *, planned, benchmark, market, capital, cost):
 
 
 def survival(policies, output):
-    """Ventanas sin evaluación porque una serie del universo termina dentro del tramo.
+    """Ventanas con evaluaciones terminadas por una baja sin precio de salida.
 
-    La regla principal excluye esas ventanas para todos los brazos. La sensibilidad
-    declarada, con retornos de salida, es secundaria y queda pendiente si hay alguna.
+    La regla principal excluye esas ventanas para todos los modelos de su familia. La
+    sensibilidad declarada, con retornos de salida supuestos, es secundaria y queda pendiente
+    si hay alguna. Se publican el modelo, la semilla y los costes de cada episodio afectado.
     """
     affected = {}
     for receipt in output["receipts"].values():
-        failure = receipt["identity"]["tapes"]["failure"]
-        if not failure or failure.get("reason") != "universe_assets_excluded":
-            continue
-        ended = {a for a, reason in failure["excluded"].items() if reason == SERIES_ENDS}
-        if ended:
+        costs = sorted(
+            record["cost_bps"]
+            for record in receipt["evaluation"]
+            if record["status"] == "failed" and record["reason"] == UNPRICED_EXIT
+        )
+        if costs:
             job = receipt["job"]
             key = (job["scope"], job["market"], job["window"])
-            affected[key] = affected.get(key, set()) | ended
+            affected.setdefault(key, []).append(
+                dict(predictor=job["predictor"], arm=job["arm"], seed=job["seed"], costs=costs)
+            )
     return dict(
         policies["survival_sensitivity"],
         status="secondary_evaluation_pending" if affected else "no_affected_windows",
         affected=[
-            dict(scope=scope, market=market, window=window, assets=sorted(assets))
-            for (scope, market, window), assets in sorted(affected.items())
+            dict(
+                scope=scope,
+                market=market,
+                window=window,
+                episodes=sorted(
+                    episodes,
+                    key=lambda e: (
+                        e["predictor"],
+                        e["arm"],
+                        -1 if e["seed"] is None else e["seed"],
+                    ),
+                ),
+            )
+            for (scope, market, window), episodes in sorted(affected.items())
         ],
     )
 
@@ -511,9 +532,11 @@ def build_report(stage_path, outputs, destination, *, benchmarks=None, sensitivi
         output.pop("receipts")
         sections.append(dict(output=output, families=found, survival=exits))
     metrics, contrasts, equity = _tables(sections)
+    pending = any(section["survival"]["affected"] for section in sections)
     result = dict(
         schema_version=1,
         kind=REPORT_KIND,
+        status="pending_survival_sensitivity" if pending else "complete",
         stage_sha256=stage["sha256"],
         policies_sha256=policies["sha256"],
         sensitivity=stage.get("sensitivity"),
@@ -578,6 +601,7 @@ def main(argv=None):
         json.dumps(
             dict(
                 report=str(args.report / "report.json"),
+                status=result["status"],
                 families=len(families),
                 with_bootstrap=sum("differences" in (f["bootstrap"] or {}) for f in families),
                 component_bootstraps=sum(len(f["components"]) for f in families),

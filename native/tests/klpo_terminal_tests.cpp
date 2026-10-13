@@ -14,7 +14,7 @@
 #include <utility>
 #include <vector>
 
-// Distribuciones y resultados literales del oráculo independiente, sin ajuste.
+// Distribuciones y resultados literales de la referencia independiente, sin ajuste.
 // NOLINTBEGIN(cppcoreguidelines-avoid-magic-numbers)
 namespace {
 using mars_titan::learning::klpo_terminal_full_loss;
@@ -158,7 +158,7 @@ void independent_population_and_microbatches() {
         const auto gradient =
             torch::autograd::grad({(full * weights).sum()}, {theta}, {}, true).front();
         require(at::allclose(gradient, at::tensor({row[2], row[3]}, at::kDouble), 1e-12, 1e-12),
-                "El gradiente no coincide con el oráculo Decimal independiente");
+                "El gradiente no coincide con la referencia Decimal independiente");
         const auto first = klpo_terminal_full_loss(
             logp.narrow(0, 0, 37), logq.narrow(0, 0, 37), actions.narrow(0, 0, 37),
             returns.narrow(0, 0, 37), mask.narrow(0, 0, 37), 0.3);
@@ -283,7 +283,7 @@ int main() {
         precision_strides_and_capacity();
         require(at::equal(rng, at::detail::getDefaultCPUGenerator().get_state()), "Cambió el RNG");
         std::cout
-            << "KLPO terminal: valores, gradientes, oráculo, máscaras y presupuestos correctos\n";
+            << "KLPO terminal: valores, gradientes, referencia, máscaras y presupuestos correctos\n";
     } catch (const std::exception& error) {
         std::cerr << error.what() << '\n';
         return 1;

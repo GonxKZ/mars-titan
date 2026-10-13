@@ -46,7 +46,7 @@ El formato actual escribe un grupo de filas por lote del escritor (256 filas en 
 
 ## Campaña base
 
-4.680 ajustes en 45 ventanas (19 en US, 13 en CN y 13 en US+CN), 104 por ventana. Las filas reservadas suman 46,9 millones por brazo y semilla y 4.878 millones entre todos los ajustes. El pico recorre los trabajos en el orden del plan, uno a uno como ejecuta hoy la campaña.
+4.680 ajustes en 45 ventanas (19 en US, 13 en CN y 13 en US+CN), 104 por ventana. Las filas reservadas suman 46,9 millones por modelo y semilla y 4.878 millones entre todos los ajustes. El pico recorre los trabajos en el orden del plan, uno a uno como ejecuta hoy la campaña.
 
 | Escenario | Conservado (GB) | Pico (GB) |
 | --- | ---: | ---: |
@@ -68,7 +68,7 @@ Por familia, en GB:
 | Titans-MAC | 720 | 89,5 | 42,8 | 15,3 | 9,4 |
 | GRU episódica | 135 | 16,5 | 7,6 | 3,4 | 2,7 |
 | MARS-TITAN | 1.080 | 127,9 | 62,0 | 20,9 | 11,9 |
-| CM-v1 (brazos) | 720 | 85,3 | 41,4 | 13,9 | 7,9 |
+| CM-v1 (variantes) | 720 | 85,3 | 41,4 | 13,9 | 7,9 |
 | CM-v1 (núcleos auxiliares) | 360 | 45,0 | 21,5 | 7,8 | 1,2 |
 
 Por ámbito, el formato actual con liberación ocupa 123,0 GB en US, 25,3 GB en CN y 116,3 GB en US+CN.
@@ -104,6 +104,16 @@ En los adaptadores el pico lo marca el corpus ordenado de US+CN fold-012: 66,0 G
 
 Los ejecutores de ajuste de PPO y KLPO no existen todavía, así que sus estados y salidas no se pueden estimar.
 
+### Forma de las cintas de las políticas (13 de octubre)
+
+`extras.json` medía cintas de 128 columnas, todas con precios. Desde la regla `point_in_time_median_traded_value_v2` una cinta tiene una columna por activo del diseño de su política, que une los universos de sus cinco tramos, y solo los 128 activos del universo del tramo tienen precios y predicciones. Las demás columnas se escriben vacías. `storage_measurements tape` repite primero la medida anterior, que da los mismos 1.531.535 bytes con PyArrow 25.0.1, y mide después 128 columnas con precios en 640, el máximo de `window_tapes.layout_bound` para la etapa (128 activos por cinco tramos). El resultado, 1.697.830 bytes, está en [`extras-layout-640.json`](extras-layout-640.json), que conserva las demás medidas de `extras.json`.
+
+| Columnas del diseño | 128 | 172 | 189 | 251 | 294 | 640 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Bytes por cinta | 1.531.535 | 1.626.044 | 1.644.165 | 1.661.452 | 1.698.928 | 1.697.830 |
+
+Los diseños medidos en la edición real tienen entre 172 y 189 columnas en EE. UU. y entre 251 y 294 en China. Las columnas vacías se comprimen casi por completo, así que por encima de unas 250 columnas el tamaño apenas cambia, y la medida de 640 queda 1.098 bytes por debajo de la de 294 por el ruido de los valores sintéticos. Es una diferencia del 0,06 %, despreciable frente a lo que sobrestiman los valores aleatorios: una cinta real de 128 activos ocupó 0,95 MB en EE. UU. y 0,67 MB en China. `rolling_storage` y `storage_budget.rl_estimate` rechazan ahora una medida que no declare al menos 128 activos con precios en 640 columnas, de modo que las órdenes de abajo necesitan `extras-layout-640.json`.
+
 ## Total y margen
 
 | Opción | Base | Ablación | Adaptadores | Políticas | Total (GB) |
@@ -118,7 +128,7 @@ Frente a 47,1 GB utilizables, ni la campaña base sola cabe. Con el diseño conj
 Para cada ventana *w* con filas reservadas *n*ᵥ, *n*꜀ y *n*ₑ (validación, calibración y evaluación), filas de entrenamiento *t* y *f* activos, y para cada ajuste *j* de esa ventana con escritor *k* y modelo *m*:
 
 - Conservado con el formato actual y liberación: Σⱼ [ Σₚ *b*ₖ,ₚ·*n*ₚ + *S*ₘ·*K*ₘ + 0,26 MB + 0,52 MB si es neuronal ], con *b* de la columna «Actual», *S*ₘ el estado de la declaración y *K*ₘ = 1 salvo XGBoost (3).
-- Conservado con la tabla común y solo las filas necesarias: Σ_tramos leídos *s*ₚ·*n*ₚ + Σⱼ [ Σ_{p ∈ P(j)} *c*ₖ,ₚ·*n*ₚ + 0,59·Σ_{p ∉ P(j)} *n*ₚ + *S*ₘ·*K*ₘ + 0,26 MB ], con *c* de la columna «Tabla común», *s* la tabla común y P(j) = {calibración, evaluación} para el elegido de un brazo de cuantiles, {evaluación} para el elegido de un brazo puntual y ∅ para los casos no elegidos y los núcleos auxiliares.
+- Conservado con la tabla común y solo las filas necesarias: Σ_tramos leídos *s*ₚ·*n*ₚ + Σⱼ [ Σ_{p ∈ P(j)} *c*ₖ,ₚ·*n*ₚ + 0,59·Σ_{p ∉ P(j)} *n*ₚ + *S*ₘ·*K*ₘ + 0,26 MB ], con *c* de la columna «Tabla común», *s* la tabla común y P(j) = {calibración, evaluación} para el elegido de un modelo de cuantiles, {evaluación} para el elegido de un modelo puntual y ∅ para los casos no elegidos y los núcleos auxiliares.
 - Pico: lo conservado hasta el trabajo más su término transitorio. XGBoost: ⌈*t*·1.686·⌈log₂(max_bin+1)⌉/8⌉ + mín(6.744·*n*ᵥ, 16 GiB). Familia Titans: 2·67.174·*f* bytes de estado a mitad de época y 2·12,17·*t* bytes del índice mientras se construye. Al compactar después de escribir, la tabla original del ajuste.
 
 Como referencia, un ajuste en una ventana del tamaño de US+CN fold-012 (2,13 millones de filas reservadas) escribe:
@@ -140,7 +150,7 @@ uv run --no-sync python scripts/run_masked_campaign.py storage \
   --storage configs/baselines/historical-masked-campaign-storage.json \
   --counts <recuentos.json> \
   --row-bytes reports/engineering/campaign-storage-20261009/row-bytes.json \
-  --extras reports/engineering/campaign-storage-20261009/extras.json \
+  --extras reports/engineering/campaign-storage-20261009/extras-layout-640.json \
   --ablation-stage <ablación> --adapter-stage <adaptadores> --rl-stage <políticas> \
   --output <estimación.json>
 ```
@@ -151,7 +161,7 @@ Con vistas ya preparadas, `--views ÁMBITO=<vistas>` sustituye a `--counts` y mi
 
 | Consumidor | Qué lee | De qué trabajos |
 | --- | --- | --- |
-| Comparación walk-forward | Claves, objetivo, predicción y cuantiles de evaluación, y de calibración en los brazos de cuantiles para el calibrador CQR. Estratos de modalidades y bootstrap por bloques de sesiones sobre esas filas | El elegido de cada brazo, semilla y ventana |
+| Comparación walk-forward | Claves, objetivo, predicción y cuantiles de evaluación, y de calibración en los modelos de cuantiles para el calibrador CQR. Estratos de modalidades y bootstrap por bloques de sesiones sobre esas filas | El elegido de cada modelo, semilla y ventana |
 | Ablación de modalidades (#423) | El estado elegido. Escribe su evaluación y la compara fila a fila con la evaluación base, corregida con el calibrador original | El elegido |
 | Selección por validación | `session_mae` del informe del ajuste, no las filas | Todos los casos de búsqueda |
 | Adaptadores | El estado elegido del padre. Cada adaptador lee sus propias tablas al confirmar | El elegido como padre |
@@ -165,18 +175,18 @@ Para no tocar varios lectores si se compacta, se ha propuesto en [#363](https://
 
 Citas literales que fijan qué filas lee la comparación:
 
-- [Plan de la campaña](../../../docs/research/training-campaign-2000.md#ejecución-y-recuperación): «`sources` publica el manifiesto de un ámbito para `evaluation.walk_forward_comparison`. Elige para cada brazo, semilla y ventana el ganador de la búsqueda, el finalista o la predicción trasladada».
-- [Comparación declarada](../../../configs/evaluation/historical-masked-2000-comparison.json): `"partition": "evaluation"` y, en la calibración, `"method": "cqr_symmetric_score_v1"` con `"partition": "calibration"`. Las semillas son `[42, 43, 44]` en todos los brazos salvo Ridge (`[42]`).
+- [Plan de la campaña](../../../docs/research/training-campaign-2000.md#ejecución-y-recuperación): «`sources` publica el manifiesto de un ámbito para `evaluation.walk_forward_comparison`. Elige para cada modelo, semilla y ventana el ganador de la búsqueda, el finalista o la predicción trasladada».
+- [Comparación declarada](../../../configs/evaluation/historical-masked-2000-comparison.json): `"partition": "evaluation"` y, en la calibración, `"method": "cqr_symmetric_score_v1"` con `"partition": "calibration"`. Las semillas son `[42, 43, 44]` en todos los modelos salvo Ridge (`[42]`).
 - [Protocolo](../../../docs/research/protocol.md#particiones-ajuste-y-calibración): «La validación se usa para hiperparámetros, selección de modelo y umbral de escritura. La calibración se reserva para intervalos y abstención.»
 - `training/masked_campaign.py` registra en cada recibo solo `COMPARED = ("calibration", "evaluation")`.
-- Coordinación de `feat/evaluation-completeness` en #363: «La comparación solo lee el caso elegido de cada brazo con 42, 43 y 44. [...] Los casos de búsqueda con solo la 42 no entran en la comparación. Quedan en los recibos de selección y en el registro de ensayos.»
+- Coordinación de `feat/evaluation-completeness` en #363: «La comparación solo lee el caso elegido de cada modelo con 42, 43 y 44. [...] Los casos de búsqueda con solo la 42 no entran en la comparación. Quedan en los recibos de selección y en el registro de ensayos.»
 
 Dos citas apuntan en sentido contrario y el usuario debe valorarlas:
 
 - [Protocolo](../../../docs/research/protocol.md#particiones-ajuste-y-calibración): «Se registra cada intento, incluidos errores y descartes.» Los agregados conservan el registro de cada intento (informe, recibo, métricas por sesión y estrato), pero no sus filas.
 - [Protocolo](../../../docs/research/protocol.md#memoria-y-orden-de-actualización): «Emitir y conservar las predicciones de **todos** los activos de esa sesión con ese estado.» Describe el orden de predicción y escritura en línea. Una lectura estricta pediría conservar las filas de cada ajuste, también de los no elegidos.
 
-Con esas reglas, necesitan filas la evaluación del elegido de cada brazo, semilla y ventana y la calibración de los elegidos de brazos de cuantiles. No las necesitan los casos de búsqueda no elegidos, la validación de ningún ajuste ni los núcleos auxiliares de CM-v1. En la campaña base declarada hoy necesitan filas 2.880 ajustes y no las necesitan 1.800: 1.530 casos de búsqueda que no serán los elegidos (todos menos uno por búsqueda) y los 270 ajustes elegidos de los núcleos auxiliares de CM-v1. Como el ganador de una búsqueda no se conoce hasta confirmar todos sus casos, la estimación conserva sus filas hasta el último caso.
+Con esas reglas, necesitan filas la evaluación del elegido de cada modelo, semilla y ventana y la calibración de los elegidos de modelos de cuantiles. No las necesitan los casos de búsqueda no elegidos, la validación de ningún ajuste ni los núcleos auxiliares de CM-v1. En la campaña base declarada hoy necesitan filas 2.880 ajustes y no las necesitan 1.800: 1.530 casos de búsqueda que no serán los elegidos (todos menos uno por búsqueda) y los 270 ajustes elegidos de los núcleos auxiliares de CM-v1. Como el ganador de una búsqueda no se conoce hasta confirmar todos sus casos, la estimación conserva sus filas hasta el último caso.
 
 ## Opciones para decidir
 

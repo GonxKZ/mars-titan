@@ -1,8 +1,8 @@
-"""Brazos adaptados de MARS-TITAN y CM-v1 comprobados hasta el paso, sin cambiar pesos.
+"""Modelos adaptados de MARS-TITAN y CM-v1 comprobados hasta el paso, sin cambiar pesos.
 
-Cada brazo parte del mismo núcleo `mac_online` y del mismo lector. El optimizador registra
-gradientes sin modificar parámetros, así que todos los pasos de un brazo se evalúan en el
-mismo punto y se pueden comparar entre brazos y entre tamaños de bloque.
+Cada modelo parte del mismo núcleo `mac_online` y del mismo lector. El optimizador registra
+gradientes sin modificar parámetros, así que todos los pasos de un modelo se evalúan en el
+mismo punto y se pueden comparar entre modelos y entre tamaños de bloque.
 """
 
 import copy
@@ -40,7 +40,7 @@ def explicit_fastpath():
 
 
 def spec(arm):
-    """Puntos del núcleo y forma de la lectura del brazo en la matriz, incluida la reserva."""
+    """Puntos del núcleo y forma de la lectura del modelo en la matriz, incluida la reserva."""
     found = {item["id"]: item for item in cm.arms(MATRIX, "mars_titan", reserve=True)}
     return found[arm]
 
@@ -99,7 +99,7 @@ def without_predictions(audit):
 
 @pytest.fixture(scope="module")
 def arms(shared, tmp_path_factory, native):
-    """Los cuatro brazos de M1 sobre el mismo padre y lector, con el registrador."""
+    """Las cuatro variantes de M1 sobre el mismo padre y lector, con el registrador."""
     _, streams = shared
     root = tmp_path_factory.mktemp("readout-adapters")
     hold = root / "hold.json"
@@ -385,7 +385,7 @@ def test_constructor_rejects_cores_and_readers_outside_the_arm(shared, tmp_path,
 
 
 def test_staged_m3_scalers_are_the_parent_ones_frozen_before_the_new_rows():
-    """Por etapas, M3 conserva las escalas del brazo padre, anteriores a las filas nuevas."""
+    """Por etapas, M3 conserva las escalas del modelo padre, anteriores a las filas nuevas."""
     from dataclasses import asdict
     from types import SimpleNamespace
 
@@ -414,12 +414,12 @@ def test_staged_m3_scalers_are_the_parent_ones_frozen_before_the_new_rows():
     assert ReadoutAdapterTrainer._check_scalers(staged, scalers, later) is None
     # Escalas que no son las del padre o que miran dentro de las filas nuevas.
     other = SimpleNamespace(_parent_scalers=dict(asdict(scalers), error_median=0.25))
-    with pytest.raises(ValueError, match="brazo padre"):
+    with pytest.raises(ValueError, match="modelo padre"):
         ReadoutAdapterTrainer._check_scalers(other, scalers, later)
     early = SimpleNamespace(
         identity=later.identity, dataset=later.dataset, phase=SimpleNamespace(decision_start=99)
     )
-    with pytest.raises(ValueError, match="brazo padre"):
+    with pytest.raises(ValueError, match="modelo padre"):
         ReadoutAdapterTrainer._check_scalers(staged, scalers, early)
     # Sin colocación por etapas rige la regla del ajuste base: el propio tramo de ajuste.
     base = SimpleNamespace(_parent_scalers=None)

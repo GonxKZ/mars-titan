@@ -49,7 +49,7 @@ Estas propiedades proceden del protocolo, del objetivo residual y de la literatu
 
 **Riesgos.** $\eta_{hi}=0{,}3$ reduce la persistencia del momentum. $\alpha_{lo}=1/500$ limita la semivida a unas 346 sesiones. Si la señal útil de la memoria dependía de amplificaciones transitorias, PT1 la eliminaría, y eso también sería un resultado.
 
-**Piloto con datos reales.** Hasta 64 activos de EE. UU. con todas las modalidades disponibles, ventanas de validación 2018, 2019 y 2020 (la última incluye la caída de marzo de 2020), entrenamiento expansivo desde 2000, una semilla para PT1 y otra para el control con el mismo número de actualizaciones. Presupuesto máximo declarado: 6 h de GPU entre ambos brazos. Métricas: las de la regla más D1, D2 y D5. Éxito: no inferioridad en las tres ventanas y ningún empeoramiento del exponente de Lyapunov. Abandono: límite superior por encima de +0,5 % en el piloto, o D2 muestra que la variante online se comporta igual que la congelada.
+**Piloto con datos reales.** Hasta 64 activos de EE. UU. con todas las modalidades disponibles, ventanas de validación 2018, 2019 y 2020 (la última incluye la caída de marzo de 2020), entrenamiento expansivo desde 2000, una semilla para PT1 y otra para el control con el mismo número de actualizaciones. Presupuesto máximo declarado: 6 h de GPU entre ambos modelos. Métricas: las de la regla más D1, D2 y D5. Éxito: no inferioridad en las tres ventanas y ningún empeoramiento del exponente de Lyapunov. Abandono: límite superior por encima de +0,5 % en el piloto, o D2 muestra que la variante online se comporta igual que la congelada.
 
 **Predicción escrita de antemano.** El MAE no cambiará de forma detectable (diferencia relativa entre −0,2 % y +0,2 %). La norma máxima del estado bajará al menos a la mitad en el evento de 2020. El exponente de Lyapunov estimado del control será negativo en la mayor parte de las sesiones, de modo que la garantía de PT1 tendrá más valor como seguro que como mejora media.
 
@@ -73,7 +73,7 @@ La mediana no cambia, así que el MAE tampoco.
 
 **Fuente y derivación.** ACI (Gibbs y Candès, 2021), seguimiento de cuantiles y control PID conformal (Angelopoulos et al., 2023), regla con errores maduros de Wang y Hyndman (2024) y CQR (Romano et al., 2019). Es una adaptación. La parte propia es la actualización por cohortes de mercado con la corrección emitida guardada en cada predicción y su cota, una variante menor.
 
-**Inserción.** Nuevo módulo `src/mars_titan/calibration/online_conformal.py` junto a `conformal_quantiles.py`, con estado por mercado exportable y cursor de cohorte. La comparación (`evaluation/walk_forward_comparison.py`) declararía un brazo de calibración en línea frente a la CQR estática existente. Sin el brazo, las salidas no cambian.
+**Inserción.** Nuevo módulo `src/mars_titan/calibration/online_conformal.py` junto a `conformal_quantiles.py`, con estado por mercado exportable y cursor de cohorte. La comparación (`evaluation/walk_forward_comparison.py`) declararía un modelo de calibración en línea frente a la CQR estática existente. Sin el modelo, las salidas no cambian.
 
 **Control emparejado.** CQR estática actual con las mismas predicciones. **Alternativa trivial.** Recalibrar la CQR estática una vez al año con la ventana de calibración más reciente. Si iguala a PT2, la adaptación dentro del año no aporta.
 
@@ -116,7 +116,7 @@ con $K^\top\Sigma^{-1}K=\frac{1}{\sigma^2(1-\varrho)}\big(K^\top K-g\,(K^\top\ma
 
 **Fuente y derivación.** Filtro de Kalman (Kalman, 1960), modelos lineales dinámicos (West y Harrison, 1997) y efectos temporales aleatorios de datos de panel (Baltagi, 2021). Fentazi et al. (2026) muestran con un arnés sin fuga que un banco de RLS cerrado supera a tres de cuatro métodos publicados de adaptación con etiquetas retrasadas, a una fracción del coste. Es una adaptación. Son propios la combinación concreta para cohortes maduras de B6, la forma cerrada de la actualización ponderada y su contrato de madurez. La aproximación de aplicar la medida al estado actual y no al de la decisión se declara como desviación, con error acotado por el ruido de proceso acumulado durante el retraso.
 
-**Inserción.** `src/mars_titan/memory/associative_memory.py` (regla `kalman` con identidad propia, exportación de $P$), `MatureCorrection` sin cambios de contrato y un brazo nuevo en `configs/titans/mars-titan-extensions.json`. Las reglas delta y proximal conservan su identidad y su salida.
+**Inserción.** `src/mars_titan/memory/associative_memory.py` (regla `kalman` con identidad propia, exportación de $P$), `MatureCorrection` sin cambios de contrato y un modelo nuevo en `configs/titans/mars-titan-extensions.json`. Las reglas delta y proximal conservan su identidad y su salida.
 
 **Control emparejado.** B6 proximal con las mismas claves, cohortes y predicciones base, y el núcleo sin corrección. **Alternativa trivial.** La misma regla con $\varrho=0$, que separa lo que aporta la correlación de cohorte de lo que aporta RLS.
 
@@ -160,7 +160,7 @@ con $K^\top\Sigma^{-1}K=\frac{1}{\sigma^2(1-\varrho)}\big(K^\top K-g\,(K^\top\ma
 
 **Alternativa trivial obligatoria.** Banco de integradores exponenciales independientes con las mismas escalas y el mismo número de estados. Si iguala a la cascada, el acoplamiento no aporta.
 
-**Piloto.** 64 activos, ventanas 2018 a 2020, tres brazos (control, cascada de tres niveles, banco EMA de tres escalas), 9 h de GPU. Éxito: la cascada mejora al banco EMA con límite superior negativo. Abandono en otro caso.
+**Piloto.** 64 activos, ventanas 2018 a 2020, tres modelos (control, cascada de tres niveles, banco EMA de tres escalas), 9 h de GPU. Éxito: la cascada mejora al banco EMA con límite superior negativo. Abandono en otro caso.
 
 **Predicción.** El banco EMA igualará a la cascada. Multiplica por tres el estado por flujo.
 
@@ -175,6 +175,8 @@ con $K^\top\Sigma^{-1}K=\frac{1}{\sigma^2(1-\varrho)}\big(K^\top K-g\,(K^\top\ma
 **Piloto.** Requiere reentrenar. 64 activos, ventanas 2018 a 2020, 6 h de GPU. Métrica: MAE en las filas con alguna modalidad ausente. Abandono si la alternativa trivial la iguala.
 
 **Predicción.** Sin diferencia detectable, porque el Transformer que sigue a la fusión ya puede modelar esas interacciones.
+
+**Implementación.** Implementada y comprobada sin entrenar como `presence_modulation` (`film_v1` y la alternativa `wide_fusion_v1`), con identidad exacta en las filas completas, arranque idéntico al control y la comparación declarada sin ejecutar ([#458](https://github.com/GonxKZ/mars-titan/issues/458), [especificación](../engineering/presence-modulation.md)).
 
 ## PT7. Ensemble de semillas como control de varianza (protocolo)
 
@@ -199,7 +201,7 @@ No es arquitectura, pero condiciona la interpretación de todo lo anterior. Con 
 Son recomendaciones condicionadas a los diagnósticos. Ninguna se aplica en esta revisión.
 
 1. **Banco episódico compartido de 1.024 episodios.** Con 4.000 a 5.000 etiquetas maduras por sesión, una sola sesión supera su capacidad y el muestreo por depósito conserva sobre todo episodios antiguos. Antes de ampliar el factorial con variantes del banco, D8 debe mostrar que recupera episodios recientes y útiles. Si no, la opción más sencilla es un banco por mercado con capacidad de varias sesiones o retirar el banco de la comparación principal.
-2. **Refinamientos K = 4.** K = 1 ya es el principal. La literatura de cómputo en inferencia (Bansal et al., 2022, y Gema et al., 2025) indica que más pasos pueden empeorar fuera del régimen de entrenamiento. Si el presupuesto aprieta, K = 4 es el primer brazo prescindible.
+2. **Refinamientos K = 4.** K = 1 ya es el principal. La literatura de cómputo en inferencia (Bansal et al., 2022, y Gema et al., 2025) indica que más pasos pueden empeorar fuera del régimen de entrenamiento. Si el presupuesto aprieta, K = 4 es el primer modelo prescindible.
 3. **Interpretación de C en CM-v1.** C penaliza el radio numérico de $R^\top JR$ de cada paso. La Proposición 3 muestra que una cota por paso no controla los productos. C puede conservarse como experimento declarado, pero no debe presentarse como garantía de estabilidad. Si se busca esa garantía, PT1 la da por construcción en la memoria lineal.
 4. **Regla delta de B6.** Su coste es unas diez veces el de la proximal en cohortes grandes y RLS la generaliza. Si PT3 no es peor que proximal, la regla delta puede salir de la campaña.
 5. **Truncación 8.** No se recomienda ampliarla sin D7, porque su coste crece linealmente con el horizonte.

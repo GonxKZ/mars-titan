@@ -7,7 +7,7 @@ congelado. C solo cambia el ajuste del núcleo, con la penalización de `RᵀJR`
 la retención del banco del lector, que pasa a centros fijos con episodios reales. Por eso B
 y B+M comparten el núcleo `cm_v1_core_b`, y B+C y B+C+M el núcleo `cm_v1_core_c`.
 
-Los brazos usan las mismas semillas de parámetros, los mismos casos de búsqueda y el mismo
+Los modelos usan las mismas semillas de parámetros, los mismos casos de búsqueda y el mismo
 presupuesto de épocas. C no añade pasos: sin etiquetas maduras su término se descarta. La
 base de C tiene su propio generador y la retención con centros fijos no usa el RNG del
 reservorio, así que ningún factor consume el RNG de otro.
@@ -47,7 +47,7 @@ NAME = "mars_titan_cm_v1_factorial"
 KIND = "cm_v1_walk_forward_window"
 CARRY_KIND = "cm_v1_carried_predictions"
 WORLD = "cm_v1_walk_forward"
-# Brazo: (C activo, M activo). Núcleo: C activo.
+# Modelo: (C activo, M activo). Núcleo: C activo.
 ARMS = {
     "cm_v1_b": (False, False),
     "cm_v1_bc": (True, False),
@@ -69,7 +69,7 @@ _CONTROL = {"rank", "frequency", "seed", "grid_size", "threshold", "weight", "ma
 _CONTROL |= {"max_estimated_bytes"}
 _CONSOLIDATION = {"policy", "frontier", "new_candidates", "max_swaps", "max_distance_pairs"}
 _CONSOLIDATION |= {"max_working_bytes"}
-# Campos del caso que la campaña declara para núcleos y brazos.
+# Campos del caso que la campaña declara para núcleos y modelos.
 CORE_FIELDS = {"declaration", "declaration_sha256", "recipe", "recipe_sha256", "core"}
 CORE_FIELDS |= {"seed", "search_case"}
 ARM_FIELDS = {"declaration", "declaration_sha256", "recipe", "recipe_sha256", "arm"}
@@ -94,7 +94,7 @@ def load_declaration(path=DECLARATION):
         and document["cores"] == CORES
         and isinstance(document["pending"], list)
         and all(isinstance(note, str) and note for note in document["pending"]),
-        "La declaración de CM-v1 no conserva su esquema, su B y sus cuatro brazos",
+        "La declaración de CM-v1 no conserva su esquema, su B y sus cuatro variantes",
     )
     control, consolidation = document["control"], document["consolidation"]
     _require(
@@ -134,7 +134,7 @@ def bank_retention(declaration, recipe, consolidation):
 
 
 class FactorialArm:
-    """Brazo del factorial con la interfaz de variante que usa la ventana del lector."""
+    """Modelo del factorial con la interfaz de variante que usa la ventana del lector."""
 
     admission = "m1"
     readout_mode = "bank"
@@ -142,7 +142,7 @@ class FactorialArm:
     episode_selection = "per_step"
 
     def __init__(self, declaration, name, base):
-        _require(name in ARMS, "El brazo no pertenece al factorial CM-v1")
+        _require(name in ARMS, "El modelo no pertenece al factorial CM-v1")
         self.name, self.base = name, base
         self.control, self.consolidation = ARMS[name]
         self.declaration_sha256 = declaration["sha256"]
@@ -169,14 +169,14 @@ class FactorialArm:
     def readout_config(self, codec_id, **options):
         _require(
             not {"mode", "refinements", "episode_selection", "codec_id"} & set(options),
-            "Modo, K y episodios pertenecen al brazo del factorial",
+            "Modo, K y episodios pertenecen al modelo del factorial",
         )
         return EpisodicReadoutConfig(codec_id, mode="bank", refinements=1, **options)
 
 
 def readout_family(declaration, arm):
-    """Familia de lector del brazo: control C esperado en el padre y retención de su banco."""
-    _require(arm in ARMS, "El brazo no pertenece al factorial CM-v1")
+    """Familia de lector del modelo: control C esperado en el padre y retención de su banco."""
+    _require(arm in ARMS, "El modelo no pertenece al factorial CM-v1")
     control, consolidation = ARMS[arm]
 
     def variant(predictor, report):
@@ -263,7 +263,7 @@ def run_cm_v1_window(
     stopping=None,
     joint_epoch=None,
 ):
-    """Ajustar el lector M1 con K = 1 del brazo sobre su núcleo elegido en la ventana."""
+    """Ajustar el lector M1 con K = 1 del modelo sobre su núcleo elegido en la ventana."""
     require_learning_allowed("run_cm_v1_window de CM-v1")
     document = load_declaration(declaration)
     return run_readout_window(
@@ -305,7 +305,7 @@ def carry_cm_v1(
         request = report["request"]
         _require(
             isinstance(request.get("declaration"), str) and request.get("arm") in ARMS,
-            "El ancla no es una ventana de un brazo de CM-v1",
+            "El ancla no es una ventana de una variante de CM-v1",
         )
         document = load_declaration(request["declaration"])
         _require(
@@ -380,11 +380,11 @@ def cm_v1_core_fit(run, *, device="cuda:0", optimizer_factory=None):
 
 
 def cm_v1_fit(run, *, device="cuda:0", optimizer_factory=None):
-    """Ejecutor de ajuste del lector del brazo, con el núcleo que resuelve la campaña."""
+    """Ejecutor de ajuste del lector del modelo, con el núcleo que resuelve la campaña."""
     from .masked_campaign import Paused as CampaignPaused
 
     case = _case(run, ARM_FIELDS)
-    _require(isinstance(run.parent, dict), "El brazo de CM-v1 necesita su núcleo")
+    _require(isinstance(run.parent, dict), "El modelo de CM-v1 necesita su núcleo")
     _require(
         load_declaration(case["declaration"])["recipes"]["readout_recipe"] == case["recipe"],
         "La receta del lector no es la de la declaración",
@@ -416,7 +416,7 @@ def cm_v1_fit(run, *, device="cuda:0", optimizer_factory=None):
 
 
 def cm_v1_carry(run, *, device="cuda:0", regenerate=False):
-    """Ejecutor de predicción trasladada del brazo (variante B de la campaña).
+    """Ejecutor de predicción trasladada del modelo (variante B de la campaña).
 
     Con `regenerate`, `run.anchor` es el intento del propio ajuste.
     """
