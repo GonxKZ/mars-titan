@@ -254,7 +254,8 @@ void record_memory(Json& report) {
 }
 
 Json metrics_json(const FinancialMetrics& metrics) {
-    const std::unordered_set<std::string> reasons{"", "incomplete", "missing_close", "ruined"};
+    const std::unordered_set<std::string> reasons{"",       "incomplete", "missing_close",
+                                                  "unpriced_exit", "ruined"};
     if (!reasons.contains(metrics.invalid_reason)) {
         throw std::runtime_error("La sesión devuelve un motivo financiero desconocido");
     }

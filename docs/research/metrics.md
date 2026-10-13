@@ -1151,6 +1151,194 @@ edición real.
   diferencias entre variantes describen poblaciones distintas, igual que los
   estratos.
 
+## Retención e interferencia en las revisitas de régimen
+
+Es un análisis secundario y descriptivo, declarado el 10 de octubre de 2026 antes de
+cualquier resultado en la sección `retention_interference` de las dos comparaciones de la
+campaña ([#54](https://github.com/GonxKZ/mars-titan/issues/54)). Pregunta si una memoria
+que escribe durante la inferencia conserva algo útil de un régimen de mercado que ya vio
+en el mismo recorrido (retención) y si lo escrito entre medias lo desplaza (interferencia).
+No elige modelos, no interviene en la parada y no cambia la conclusión que se extraiga del
+MAE residual por sesión. `evaluation/retention_interference.py` lo calcula con las mismas
+series de MAE por sesión que los contrastes, sin leer filas ni volver a predecir. No se ha
+ejecutado, porque necesita las predicciones de la campaña.
+
+### Por qué dentro de cada recorrido
+
+El plan inicial era volver a predecir las sesiones de ventanas anteriores con el estado de
+una ventana posterior y compararlo con el estado de entonces. Se descartó por tres motivos:
+
+1. En el walk-forward v2 cada ventana se ajusta desde 2000 hasta su corte, así que las
+   sesiones evaluadas en ventanas anteriores forman parte del entrenamiento de las
+   posteriores. Ese error mediría ajuste dentro de muestra, no retención.
+2. Los pesos rápidos de Titans, el banco episódico y el Transformer en línea empiezan cada
+   recorrido en su estado inicial. Entre ventanas no se arrastra ningún contenido de
+   memoria que pueda retenerse.
+3. Solo en US, con 19 ventanas, harían falta 171 pares de ventana anterior y posterior por
+   modelo y semilla: 4.617 predicciones de ventana con los nueve modelos de los pares y tres
+   semillas, o 486 mirando solo la ventana anterior.
+
+Dentro de un recorrido, en cambio, el contenido de la memoria es el que realmente se
+escribió y todas las predicciones están fuera de muestra. El análisis no añade trabajo de
+GPU.
+
+### Calendario de regímenes
+
+`evaluation/regime_calendar.py` etiqueta cada sesión de cada mercado con la regla
+`observable_volatility_trend_v1` de `memory/regimes.py`, la misma que enruta B6. Para la
+sesión t forma las ventanas de 64 sesiones del calendario que terminan en t, con la
+presencia del contrato v3.1, sobre todos los activos preparados del mercado con una
+ventana válida. La cohorte es el mercado completo y no las filas de un modelo, así que la
+etiqueta es la misma para todos los modelos. Solo usa precios hasta la decisión: recortar
+la historia en cualquier fecha no cambia las rutas anteriores. Las sesiones sin ventanas
+válidas, o con menos de 20 activos o 42 rendimientos, quedan en la ruta 0 sin clasificar.
+Ningún modelo recibe estas etiquetas. Una sesión de 2024 en los precios preparados detiene
+la construcción antes de escribir nada, y el calendario guarda la huella de la edición,
+de la lista de sesiones ausentes y del código que lo calcula.
+
+```bash
+uv run python -m mars_titan.evaluation.regime_calendar \
+  --prepared <edición preparada v3.1> --output <calendario nuevo>.json
+```
+
+### Clases de sesión e historia de cada par
+
+Un tramo es una racha de sesiones clasificadas con la misma ruta. Las sesiones sin
+clasificar no cuentan, no cortan rachas y quedan fuera. Con h la posición de la sesión en
+su tramo y H = 10 sesiones de entrada:
+
+| Clase | Definición |
+| --- | --- |
+| `novel_entry` | h ≤ H y el régimen no había aparecido antes en la historia del par |
+| `revisit_entry` | h ≤ H y el régimen ya apareció antes, con otro entre medias. La ausencia es el número de sesiones clasificadas desde su última aparición |
+| `continuing` | h > H |
+
+La historia depende de cuándo empieza a escribir la memoria del par. Los pesos rápidos de
+Titans escriben con las entradas desde el comienzo del calentamiento, 12 meses antes de la
+evaluación, con la misma regla de meses que el recorrido. El banco episódico y el
+Transformer en línea solo reciben etiquetas maduras dentro del tramo medido, así que su
+historia empieza con la evaluación. Un régimen que solo apareció en el calentamiento no
+está en el banco y cuenta como nuevo.
+
+### Estadísticos y control de descarte
+
+El beneficio de una sesión es el MAE del control menos el de la memoria, después de
+promediar las semillas sesión a sesión. Positivo favorece a la memoria. Cada estadístico
+es una diferencia de medias por clase:
+
+| Estadístico | Cálculo | Lectura |
+| --- | --- | --- |
+| `predictive_effect` | Media de las sesiones clasificadas | Efecto predictivo del par |
+| `retention` | Revisitas menos regímenes nuevos | Positivo si la memoria recupera antes un régimen que ya guardó |
+| `interference` | Revisitas tras una ausencia de 63 sesiones o más menos revisitas tras una más corta | Negativo si lo escrito entre medias desplaza lo útil |
+| `plasticity` | Regímenes nuevos menos tramos asentados | Descriptivo, sin decisión |
+
+Las entradas en un régimen nuevo caen sobre todo al principio de cada recorrido y las
+revisitas después, cuando la memoria ya tiene contenido. Una ventaja que solo crezca con
+el tiempo dentro de la ventana daría una retención positiva sin retener nada. El control
+de descarte repite el cálculo con un placebo: la ruta de la sesión que está 126 sesiones
+antes en el calendario. Conserva rachas, ausencias y su posición en el año, pero deja de
+coincidir con el estado del mercado. Las decisiones declaradas, para cada par y mercado,
+son estas:
+
+- Retención: se mantiene si `retention` y su diferencia con el placebo quedan por encima
+  de cero. En otro caso se descarta.
+- Interferencia: se detecta si `interference` y su diferencia con el placebo quedan por
+  debajo de cero. En otro caso no se detecta.
+
+Una decisión queda sin tomar si alguna clase necesaria, real o del placebo, tiene menos
+de 30 sesiones, o si alguna réplica se queda sin sesiones de una clase. Los intervalos
+usan el bootstrap circular por bloques de días UTC de la comparación, con su longitud,
+réplicas, confianza y semilla. Todos los pares, clases y el placebo de un mercado se
+remuestrean con los mismos bloques, y las decisiones de un mercado forman una familia con
+intervalos simultáneos max-t sobre cada estadístico y su diferencia con el placebo. El
+informe añade curvas descriptivas sin intervalos: el beneficio medio por posición en el
+tramo para regímenes nuevos y revisitas, que separa la caída de error del tiempo que tarda
+en llegar, y el beneficio de las revisitas por tramos de ausencia (1, 21, 63, 126 y 252
+sesiones).
+
+### Pares declarados
+
+| Par | Memoria | Control | Historia | Qué separa |
+| --- | --- | --- | --- | --- |
+| `fast_weight_writes` | `titans_mac_online` | `titans_mac_frozen` | Calentamiento | Escribir los pesos rápidos en inferencia con la misma capacidad |
+| `learned_read_path` | `titans_mac_frozen` | `titans_mac_disabled` | Calentamiento | Lectura aprendida y memoria persistente sin escrituras |
+| `episodic_bank_m1` a `m3` | `mars_titan_m1` a `m3` | `mars_titan_m0` | Tramo medido | Contenido del banco con los mismos parámetros del lector |
+| `write_policy_m2` y `m3` | `mars_titan_m2` y `m3` | `mars_titan_m1` | Tramo medido | Qué se guarda con la misma capacidad del banco |
+| `online_weights` | `transformer_compact_online` | `transformer_compact` | Tramo medido | Aprender en línea con las etiquetas del banco, sin memoria |
+
+El contenido del banco y de los pesos rápidos no se inspecciona. Almacenamiento,
+recuperación y efecto predictivo se separan por el diseño de los pares y de las clases: el
+par congelado frente a desactivado aísla la lectura sin escrituras, el par en línea frente
+a congelado aísla la escritura, y la clase de la sesión distingue un régimen que pudo
+guardarse de uno que no.
+
+La sección es opcional en todas las versiones de la configuración. Sin calendario queda
+`not_computed` y el resto del informe no cambia. Su huella SHA-256, serializada con claves
+ordenadas, sin espacios y en UTF-8, es
+`0fa3c875fc091aadcb29a0db99118dc7c707cfe1d0516e9c0411eaafc8462525` en las dos
+comparaciones. El cargador rechaza pares con modelos que no estén en la comparación, con el
+control cero o repetidos, umbrales fuera de rango y cualquier otro valor de los campos
+fijos.
+
+```bash
+uv run python -m mars_titan.evaluation.walk_forward_comparison --config <comparación> \
+  --sources <fuentes> --scope US --output <informe nuevo> --regimes <calendario>.json
+```
+
+### Recuentos con el calendario real
+
+El calendario se calculó con los precios reales de la edición preparada v3.1 hasta 2023.
+Con los protocolos v2 y la declaración, las sesiones de evaluación se reparten así:
+
+| Mercado | Historia | Ventanas | Sesiones | Nuevos | Revisitas (largas y cortas) | Asentadas | Nuevos y revisitas del placebo |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| US | Calentamiento | 19 | 4.781 | 12 | 2.371 (372 y 1.999) | 2.398 | 4 y 2.381 |
+| US | Tramo medido | 19 | 4.781 | 431 | 2.069 (200 y 1.869) | 2.281 | 423 y 2.066 |
+| CN | Calentamiento | 13 | 3.157 | 10 | 1.860 (263 y 1.597) | 1.287 | 10 y 1.823 |
+| CN | Tramo medido | 13 | 3.157 | 272 | 1.622 (125 y 1.497) | 1.263 | 297 y 1.576 |
+
+Ninguna sesión de evaluación queda sin clasificar. Solo las 63 primeras sesiones de cada
+mercado, en 2000 para US y en 2006 para CN, no tienen todavía una ventana de 64 sesiones.
+
+Con 12 meses de calentamiento casi todos los regímenes aparecen antes de la evaluación.
+Los pares de pesos rápidos tienen entre 10 y 12 entradas en regímenes nuevos en toda la
+serie, por debajo de las 30 declaradas, así que su retención quedará sin decidir y su
+pregunta contrastable es la interferencia. Los pares del banco y del Transformer en línea
+tienen cientos de entradas nuevas y revisitas y pueden contrastar las dos.
+
+### Comprobación sin modelos y coste
+
+El [recibo con datos reales](../../reports/engineering/retention-interference-20261010/README.md)
+comprueba, sin modelos ni predicciones, que recortar la historia en cuatro fechas no cambia
+ninguna ruta anterior, que 40 sesiones al azar por mercado coinciden con las ventanas de la
+codificación y que el informe recupera con error menor que 10⁻¹² unos beneficios conocidos
+inyectados por clase sobre la rejilla real de sesiones. Construir el calendario de los dos
+mercados tardó 125 s en CPU, con dos hilos y 1,74 GiB de pico de RSS, una vez por edición. El
+informe de un mercado con los ocho pares y las 2.000 réplicas de la comparación tardó 0,25 s
+en US y 0,16 s en CN. No usa GPU ni vuelve a predecir. Las 64 pruebas del análisis, el
+calendario y su conexión con la comparación detectan las 39 mutaciones dirigidas del mismo
+recibo.
+
+### Qué no mide
+
+- No inspecciona el contenido del banco ni de los pesos rápidos, ni su ocupación.
+  Agotar la capacidad solo se vería en el beneficio.
+- Las rutas describen la ventana de precios y no identifican crisis ni causas
+  económicas.
+- No mide la retención entre ventanas, porque cada ventana reajusta el estado y reinicia
+  la memoria.
+- Regímenes nuevos y revisitas no son muestras al azar. Las revisitas se concentran en los
+  regímenes frecuentes y en la parte final de cada recorrido. El placebo controla la
+  posición y la frecuencia del calendario, no cualquier diferencia entre regímenes.
+- Las secuencias sintéticas A, B, A del plan inicial necesitan estados entrenados y, en
+  Titans, adaptar los pesos rápidos a una señal sintética. Quedan para después del
+  desbloqueo, junto al [catálogo identificado](../engineering/named-benchmarks.md). Las
+  pruebas usan series de beneficio escritas a mano y la comprobación real inyecta
+  beneficios conocidos, sin ningún modelo.
+- Ninguna prueba finita respalda olvido cero ni retención ilimitada. Una retención
+  descartada o una interferencia detectada se publican igual que el resultado contrario.
+
 ## Matriz de comparaciones y atribución por componentes
 
 La [matriz de la campaña A](../../configs/evaluation/comparison-matrix-a.json) se
