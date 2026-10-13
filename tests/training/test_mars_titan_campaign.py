@@ -25,6 +25,7 @@ from mars_titan.training import mars_titan_walk_forward as mw
 from mars_titan.training import masked_campaign as engine
 from mars_titan.training import titans_walk_forward as wf
 from mars_titan.training.carried_predictions import CARRIED_PARTITIONS, REGENERATED_PARTITIONS
+from tests.learning_hold_lowering import lowers_learning_hold
 from tests.suite_support import skip_without_episodic_native
 from tests.training.test_campaign_plan import CAMPAIGNS, write_variant
 from tests.training.test_masked_campaign import Recorder, doubles
@@ -524,6 +525,10 @@ def test_correction_carry_repeats_bit_for_bit_and_never_fits(campaign_run, tmp_p
         mc.carry_correction(anchor, view, view, tmp_path / "other", device="cpu")
 
 
+@lowers_learning_hold(
+    "tests/training/test_mars_titan_campaign.py::"
+    "test_correction_frozen_parent_reproduces_the_carry_and_predicts_the_next_validation"
+)
 def test_correction_frozen_parent_reproduces_the_carry_and_predicts_the_next_validation(
     campaign_run, tmp_path
 ):
