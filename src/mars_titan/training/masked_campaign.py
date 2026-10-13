@@ -45,6 +45,7 @@ from mars_titan.environments.walk_forward_receipt import (
     RECEIPT_KIND as WINDOW_RECEIPT_KIND,
 )
 from mars_titan.environments.walk_forward_receipt import prediction_fingerprint, read_window_receipt
+from mars_titan.evaluation import selection_effect
 from mars_titan.evaluation import walk_forward_comparison as comparison
 from mars_titan.evaluation.splits import PARTITIONS
 from mars_titan.hardware import hardware_profiles
@@ -568,6 +569,11 @@ def _identity(campaign, views):
     )
 
 
+def best_search(searches):
+    """Búsqueda elegida entre pares (id, recibo): menor MAE de validación y, si empata, el id."""
+    return min(searches, key=lambda item: (item[1]["score"], item[0]))
+
+
 def validation_score(job, report):
     """MAE por sesión de la validación con el que se elige entre búsquedas.
 
@@ -635,7 +641,7 @@ class _Campaign:
             return f"{prefix}finalist-s{seed}", finalist
         searches = [(k, v) for k, v in found.items() if k.startswith(prefix + "search-")]
         _require(searches, f"Falta el ajuste seleccionado de {prefix}")
-        key, receipt = min(searches, key=lambda item: (item[1]["score"], item[0]))
+        key, receipt = best_search(searches)
         _require(receipt["identity"]["seed"] == seed, f"{prefix} no tiene la semilla {seed}")
         return key, receipt
 
@@ -676,7 +682,7 @@ class _Campaign:
         own = f"{job['scope']}/{job['window']}/{job['arm']}/search-"
         searches = [(dep, self.receipts[dep]) for dep in job["depends"] if dep.startswith(own)]
         _require(searches, f"{job['id']} no depende de las búsquedas de su modelo")
-        return min(searches, key=lambda item: (item[1]["score"], item[0]))
+        return best_search(searches)
 
     def resolve_online(self, job):
         """Caso, ancla y fuentes de un trabajo del control en línea.
@@ -1554,6 +1560,51 @@ def with_dependencies(jobs, wanted):
     return [job for job in jobs if job["id"] in wanted]
 
 
+def search_records(path, views, output, scope, *, window=None):
+    """Casos de búsqueda confirmados de un ámbito, con su validación y su evaluación.
+
+    Devuelve la comparación resuelta de la campaña y, para cada ventana y modelo con
+    búsqueda, el trabajo elegido con la regla de la campaña y de cada caso su MAE por sesión
+    de validación y sus predicciones de evaluación. No ejecuta nada y exige que todos los
+    trabajos del ámbito estén confirmados, porque un caso ausente cambiaría el rango del
+    elegido. Con `window` se limita a esa ventana y a los trabajos de los que depende, como
+    hace la retención v2 antes de liberar sus predicciones.
+    """
+    campaign, state = _confirmed_state(path, views, output)
+    _require(scope in campaign["scopes"], "El ámbito no pertenece a la campaña")
+    jobs = [job for job in plan_campaign(campaign) if job["scope"] == scope]
+    if window is not None:
+        wanted = [job["id"] for job in jobs if job["window"] == window]
+        _require(wanted, f"El ámbito {scope} no tiene la ventana {window}")
+        jobs = with_dependencies(plan_campaign(campaign), wanted)
+    searches = {}
+    for job in jobs:
+        case, _, sources = state.resolve(job)
+        receipt = state.confirmed(job, state.job_identity(job, case, sources))
+        _require(receipt is not None, f"Falta confirmar {job['id']} antes de medir la selección")
+        state.receipts[job["id"]] = receipt
+        # La meseta de un ajuste conjunto no tiene predicciones ni puntuación propia.
+        mine = job["scope"] == scope and window in (None, job["window"])
+        if mine and job["stage"] == "search" and job.get("phase") != PLATEAU:
+            searches.setdefault((job["window"], job["arm"]), []).append((job["id"], receipt))
+    windows = {}
+    for (window, arm), found in searches.items():
+        windows.setdefault(window, {})[arm] = dict(
+            selected=best_search(found)[0],
+            cases={
+                key: dict(
+                    score=receipt["score"],
+                    evaluation=dict(
+                        path=Path(output) / receipt["predictions"]["evaluation"]["path"],
+                        sha256=receipt["predictions"]["evaluation"]["sha256"],
+                    ),
+                )
+                for key, receipt in found
+            },
+        )
+    return campaign["comparison_config"], windows
+
+
 def write_sources(
     path, views, output, scope, *, comparison_path=None, window=None, unrecorded_platform=None
 ):
@@ -1718,14 +1769,17 @@ def main(argv=None):
     execute = commands.add_parser("run", help="Ejecutar o reanudar la campaña")
     sources = commands.add_parser("sources", help="Publicar el manifiesto de fuentes")
     views = commands.add_parser("views", help="Validar vistas ya preparadas sin ajustar nada")
-    for command in (check, prepare, execute, sources, views):
+    selection = commands.add_parser(
+        "selection", help="Medir el efecto de elegir entre los casos de búsqueda"
+    )
+    for command in (check, prepare, execute, sources, views, selection):
         command.add_argument("--campaign", type=Path, required=True)
     prepare.add_argument("--parent", type=Path, required=True)
     prepare.add_argument("--output", type=Path, required=True)
     prepare.add_argument("--scope", action="append", choices=tuple(comparison.SCOPES))
-    for command in (execute, sources, views):
+    for command in (execute, sources, views, selection):
         command.add_argument("--views", action="append", required=True)
-    for command in (execute, sources):
+    for command in (execute, sources, selection):
         command.add_argument("--output", type=Path, required=True)
     execute.add_argument(
         "--storage",
@@ -1741,6 +1795,14 @@ def main(argv=None):
     execute.add_argument("--window", help="Ventana de campaña que se ejecuta, con sus fases base")
     sources.add_argument("--scope", choices=tuple(comparison.SCOPES), required=True)
     sources.add_argument("--comparison", type=Path)
+    selection.add_argument("--scope", choices=tuple(comparison.SCOPES), required=True)
+    selection.add_argument("--declaration", type=Path, required=True)
+    selection.add_argument("--report", type=Path, required=True)
+    selection.add_argument(
+        "--aggregates",
+        type=Path,
+        help="Efectos por ventana que guardó la retención v2, en lugar de los recibos",
+    )
     sources.add_argument(
         "--unrecorded-platform",
         help="Perfil de hardware al que se atribuyen los recibos sin plataforma registrada",
@@ -1775,6 +1837,30 @@ def main(argv=None):
             window=args.window,
         )
         result.pop("jobs")
+    elif args.command == "selection":
+        declaration, digest = selection_effect.load_declaration(args.declaration)
+        if args.aggregates is None:
+            config, records = search_records(
+                args.campaign, _views_argument(args.views), args.output, args.scope
+            )
+            windows = {
+                window: selection_effect.window_effects(config, args.scope, window, models)
+                for window, models in records.items()
+            }
+        else:
+            config = load_campaign(args.campaign)["comparison_config"]
+            windows = {
+                window: selection_effect.read_window(args.aggregates, config, args.scope, window)
+                for window in config["resolved_scopes"][args.scope]["windows"]
+            }
+        report = selection_effect.selection_report(args.scope, windows, declaration, digest)
+        safe_destination(args.report)
+        atomic_json(args.report, report)
+        result = dict(
+            report=str(args.report),
+            sha256=sha256(args.report),
+            arms={arm: item["summary"] for arm, item in report["arms"].items()},
+        )
     else:
         destination = write_sources(
             args.campaign,
