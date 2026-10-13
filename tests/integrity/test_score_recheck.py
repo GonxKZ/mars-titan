@@ -13,7 +13,7 @@ import pytest
 from mars_titan.data import prediction_files
 from mars_titan.evaluation import forecast_scores
 from mars_titan.evaluation import walk_forward_comparison as walk
-from mars_titan.integrity import score_recheck
+from mars_titan.integrity import metric_registry, score_recheck
 from tests.evaluation.test_walk_forward_comparison import Study
 from tests.integrity.test_row_identity import compact_all
 
@@ -37,6 +37,10 @@ def test_a_faithful_comparison_passes_the_recheck(tmp_path, scope):
     assert {entry["arm"] for entry in result["aggregates"]} == {"zero", "ridge", "gru", "titans"}
     views = {entry["view"] for entry in result["aggregates"]}
     assert views == ({"US"} if scope == "US" else {"US+CN", "US", "CN"})
+    # Cada resumen se reconstruye con el registro de métricas, cuya huella queda en el informe.
+    registry = metric_registry.load_registry()
+    assert result["metric_registry"] == dict(path=registry["path"], sha256=registry["sha256"])
+    assert all(entry["checked"] > 90 for entry in result["aggregates"])
 
 
 def test_a_bug_in_the_primary_mae_is_detected(tmp_path, monkeypatch):

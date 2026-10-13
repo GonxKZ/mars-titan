@@ -10,7 +10,8 @@ de la ventana con la misma regla declarada que `integrity.row_identity`. Despué
 - recuentos y estados idénticos;
 - valores reales dentro de la tolerancia declarada, con los indefinidos en las mismas
   sesiones;
-- el MAE, el MSE y la dirección agregados de cada vista con la ponderación declarada.
+- cada cifra del resumen de cada vista reconstruida desde las sesiones en bruto con las reglas
+  del registro de métricas (`integrity.metric_registry`), sin cifras publicadas fuera de él.
 
 Solo se cotejan los cuantiles en bruto. Los calibrados dependen del calibrador común,
 que no tiene todavía una segunda implementación, y el informe lo dice. El control cero no
@@ -32,11 +33,10 @@ import pyarrow.parquet as pq
 
 from mars_titan.data import prediction_files
 from mars_titan.evaluation import walk_forward_comparison as comparison
-from mars_titan.integrity import row_identity
+from mars_titan.integrity import metric_registry, row_identity
 from mars_titan.integrity.independent_scores import (
     COUNT_COLUMNS,
     SIGN_BINS,
-    session_mean,
     session_scores,
 )
 from mars_titan.models.quantile_head import LEVELS, QUANTILE_COLUMNS, QUANTILE_HEAD
@@ -131,34 +131,6 @@ def compare_sessions(independent, published, *, rtol=RTOL, atol=ATOL):
     return findings
 
 
-def _aggregates(scores, weighting):
-    """MAE, MSE y dirección agregados con la ponderación declarada."""
-    markets = scores["market"].to_numpy()
-    everywhere = np.ones(len(scores), dtype=bool)
-    eligible = scores["direction_eligible"].to_numpy()
-    accuracy = scores["direction_hits"].to_numpy() / np.maximum(eligible, 1)
-    return dict(
-        mae=session_mean(scores["mae"], everywhere, markets, weighting),
-        mse=session_mean(scores["mse"], everywhere, markets, weighting),
-        direction_accuracy=session_mean(accuracy, eligible > 0, markets, weighting),
-    )
-
-
-def _check_point(recomputed, point, rtol, atol):
-    result = {}
-    for name, value in recomputed.items():
-        reported = point.get(name)
-        if value is None or reported is None:
-            result[name] = dict(passed=value is None and reported is None)
-        else:
-            result[name] = dict(
-                passed=bool(_close(value, reported, rtol, atol)),
-                recomputed=value,
-                published=reported,
-            )
-    return result
-
-
 def independent_window(config, sources, arm, seed, window_id):
     """Sesiones de la evaluación de un modelo y semilla recalculadas desde sus filas.
 
@@ -242,8 +214,12 @@ def check_files(config, sources, raw, *, rtol=RTOL, atol=ATOL):
     return checks, failures
 
 
-def check_summaries(config, sources, raw, report, *, rtol=RTOL, atol=ATOL):
-    """Volver a agregar MAE, MSE y dirección de cada vista y cotejarlos con el informe."""
+def check_summaries(config, sources, raw, report, registry, *, rtol=RTOL, atol=ATOL):
+    """Reconstruir el resumen de cada vista con el registro de métricas y cotejarlo.
+
+    El resumen en bruto se reconstruye entero desde sus sesiones. Del calibrado, que no tiene
+    segunda implementación, solo se exige que cada cifra esté registrada.
+    """
     weighting = config["metrics"]["market_weighting"]
     aggregates, failures, everything = [], 0, "+".join(sources["markets"])
     pairs = sorted({(arm, seed) for arm, seed, _ in sources["files"]})
@@ -255,12 +231,24 @@ def check_summaries(config, sources, raw, report, *, rtol=RTOL, atol=ATOL):
         else:
             pooled = raw[(raw["arm"] == arm) & (raw["seed"] == seed)]
             overall = report["arms"][arm]["seeds"][str(seed)]["overall"]
+        quantiles = sources["arms"][arm]["output"] == QUANTILE_HEAD
         for view, entry in overall.items():
             selected = pooled if view == everything else pooled[pooled["market"] == view]
-            point = entry["summary"]["point"]
-            result = _check_point(_aggregates(selected, weighting), point, rtol, atol)
-            failures += sum(not item["passed"] for item in result.values())
-            aggregates.append(dict(arm=arm, seed=seed, view=view, metrics=result))
+            result = metric_registry.check_summary(
+                registry,
+                entry["summary"],
+                selected,
+                weighting=weighting,
+                quantiles=quantiles,
+                rtol=rtol,
+                atol=atol,
+            )
+            calibrated = entry.get("calibrated")
+            unknown = [] if calibrated is None else metric_registry.registered(registry, calibrated)
+            wrong = result["failures"] + len(unknown)
+            result.update(calibrated_unregistered=unknown, failures=wrong, passed=wrong == 0)
+            failures += wrong
+            aggregates.append(dict(arm=arm, seed=seed, view=view, **result))
     return aggregates, failures
 
 
@@ -284,8 +272,11 @@ def recheck(config_path, sources_path, scope, comparison_dir, *, rtol=RTOL, atol
     sources = comparison.load_sources(sources_path, config, scope)
     _require(report["sources_sha256"] == sources["sha256"], "Otro manifiesto de fuentes")
     raw = published_raw(folder, report)
+    registry = metric_registry.load_registry()
     checks, failures = check_files(config, sources, raw, rtol=rtol, atol=atol)
-    aggregates, wrong = check_summaries(config, sources, raw, report, rtol=rtol, atol=atol)
+    aggregates, wrong = check_summaries(
+        config, sources, raw, report, registry, rtol=rtol, atol=atol
+    )
     failures += wrong
     return dict(
         schema_version=1,
@@ -294,6 +285,7 @@ def recheck(config_path, sources_path, scope, comparison_dir, *, rtol=RTOL, atol
         comparison_sha256=_sha256(folder / "comparison.json"),
         tolerance=dict(rtol=rtol, atol=atol),
         scope=scope,
+        metric_registry=dict(path=registry["path"], sha256=registry["sha256"]),
         coverage=dict(
             raw_sessions=True,
             calibrated_quantiles=False,

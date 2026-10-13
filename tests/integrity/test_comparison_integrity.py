@@ -19,6 +19,7 @@ from mars_titan.data.storage import atomic_json, sha256
 from mars_titan.evaluation import forecast_scores, window_aggregates
 from mars_titan.evaluation import walk_forward_comparison as walk
 from mars_titan.integrity import comparison_integrity as integrity
+from mars_titan.integrity import metric_registry
 from tests.evaluation.test_comparison_sources import save
 from tests.evaluation.test_walk_forward_comparison import Study
 
@@ -73,6 +74,8 @@ def test_a_faithful_comparison_passes_from_its_rows(tmp_path, scope):
     result = integrity.published(study.config_path, study.sources_path, scope, output)
     assert result["passed"], json.dumps(result, indent=1)[:3000]
     assert result["rows"]["passed"] and result["summaries"]["passed"]
+    registry = metric_registry.load_registry()
+    assert result["summaries"]["registry"]["sha256"] == registry["sha256"]
     # Ridge (1 semilla), gru y titans (2 semillas) y el control cero, en 2 ventanas.
     files = result["scores"]["files"]
     assert len(files) == 2 * (1 + 2 + 2) + 2

@@ -24,7 +24,7 @@ Cubre:
 `integrity/score_recheck.py` aplica esa implementación a una comparación ya publicada:
 1. Comprueba las huellas de `comparison.json`, `sessions.parquet`, la configuración y el manifiesto de fuentes.
 2. Vuelve a leer las predicciones crudas de cada modelo, semilla y ventana, también con sus huellas. Antes de puntuar quita las filas que el diseño conjunto excluye de la ventana, con la regla declarada que aplica también la identidad de filas.
-3. Coteja la tabla de sesiones columna a columna y vuelve a agregar MAE, MSE y dirección en cada vista con la ponderación declarada.
+3. Coteja la tabla de sesiones columna a columna y reconstruye el resumen de cada vista con las reglas del [registro de métricas](#registro-de-métricas).
 
 El resultado cuenta las sesiones que faltan o sobran y las discrepancias por columna, y sale con código distinto de cero si alguna comprobación falla.
 
@@ -47,6 +47,30 @@ El control cero no tiene archivo de predicciones. Se recalcula con predicción n
 - seis corrupciones de valores publicados que deben detectarse.
 
 También hay dos mutaciones del código principal, una en la media por sesión y otra en la puntuación de intervalo. El recálculo las señala columna a columna sobre un estudio de juguete completo.
+
+## Registro de métricas
+
+`configs/evaluation/metric-registry.json` fija, antes de evaluar, cada cifra que publica el resumen de una vista: definición, unidad, sentido, regla de agregación entre sesiones y sección de [las métricas](metrics.md) donde se explica. Son 85 entradas, desde el MAE hasta cada punto de la curva de fiabilidad. Las unidades distinguen el retorno residual simple del objetivo (0,01 es un 1 %), su cuadrado, fracciones, porcentajes, correlaciones y recuentos.
+
+Los huecos siguen reglas comunes declaradas en el mismo archivo:
+- una sesión sin denominador o sin estado definido queda fuera de la media y se cuenta, nunca vale cero;
+- una vista sin sesiones definidas publica la cifra nula;
+- una fila que falta en un modelo hace fallar la identidad de filas y bloquea la publicación;
+- las filas que excluye el diseño conjunto se predicen y quedan fuera de la calibración y de las métricas.
+
+`integrity/metric_registry.py` lo comprueba de dos formas:
+1. **Contra el código.** `load_registry` exige que las ponderaciones, la agregación de semillas, las filas excluidas, los estados de la correlación de rangos, las coberturas de la abstención, los intervalos de probabilidad y las convenciones de dirección, abstención y probabilidad de subida sean las de la comparación. Cada serie que usan los contrastes debe apuntar a una cifra registrada con el mismo sentido, y cada sección citada debe existir en la documentación.
+2. **Contra cada informe.** `check_summary` reconstruye el resumen en bruto de cada modelo, semilla y vista desde la tabla de sesiones publicada, solo con las reglas del registro y la media de `independent_scores`. Falla con una cifra publicada sin registrar, una registrada que no se publica o un valor distinto. Del resumen calibrado solo se exige que cada cifra esté registrada, porque el calibrador común no tiene segunda implementación.
+
+En una vista de un mercado se reconstruyen 187 cifras con cuantiles y 97 sin ellos, y cada mercado más de la vista conjunta añade las 14 cifras puntuales de ese mercado. Quedan sin recalcular, con su motivo en el registro, los compromisos de signo de los intervalos (la tabla de sesiones no los guarda), el número de periodos, las filas con predicción nula y objetivo nulo, la igualdad entre predicción puntual y mediana y las identidades. Reconstruir una vista cuesta 0,12 s con 6.000 sesiones y 0,24 s con 12.000, medido con la máquina compartida. Convertir una sola vez por vista las columnas de listas de la abstención y de la fiabilidad lo bajó desde 1,21 s, porque esas conversiones eran el 92 % del tiempo. El recálculo y el informe de integridad de cada comparación guardan la huella del registro. La declaración se añade al [registro previo](#registro-previo-y-desviaciones) junto a la configuración de la campaña.
+
+**Pruebas.** `tests/integrity/test_metric_registry.py`, con las dos ponderaciones:
+- todas las vistas del estudio de juguete se reconstruyen sin diferencias;
+- en un panel con sesiones de 1 a 8 filas, ceros, empates y dos mercados, el resumen del código coincide con el registro, y ahí la media por fila y la cobertura de llamadas agrupada sí difieren de sus versiones por sesión (en el estudio todas las sesiones tienen las mismas filas y no las distinguen);
+- veinte cifras cambiadas una a una (RMSE, porcentajes, exhaustividad, una cifra de un mercado, medias por fila, cobertura de llamadas, recuentos, la curva de abstención, pinball, frecuencias, intervalos, Brier, ECE y fiabilidad) y cuatro convenciones o listas cambiadas se detectan, cada una con su nombre y sin arrastrar otras;
+- una cifra nueva sin registrar, un nivel de cuantil de más, una cifra que desaparece y una cifra calibrada sin registrar hacen fallar la comprobación;
+- el control cero publica nula la exactitud condicionada, y un cero en su lugar se detecta;
+- 23 registros alterados se rechazan al cargarlos, desde una convención o una cobertura distintas hasta una serie con el sentido cambiado o una sección inexistente.
 
 ## Mismas filas en todos los modelos
 
@@ -231,10 +255,9 @@ Las pruebas que recorren la campaña reducida con su etapa de adaptadores necesi
 ## Comprobaciones pendientes
 
 Siguen en #442, en este orden:
-1. Sondas sin ajuste:
+1. Comprobaciones sin ajuste:
    - aplicar el escáner de fugas a la matriz tabular real de cada ventana, sobre validación;
    - ninguna fila de 2024 en las predicciones de validación y en los demás artefactos de selección;
    - invariantes de caja, posiciones, costes y acciones imposibles en las cintas reales con políticas fijas;
    - cota con información futura sobre las cintas reales de ajuste y validación de cada ventana.
 2. Falsaciones que ajustan modelos, solo declaradas mientras dure el bloqueo de aprendizaje: placebo con etiquetas permutadas dentro de cada sesión, desplazamiento temporal de las entradas, predicción constante y aleatoria y estabilidad entre semillas. Cada una con su coste y su criterio de éxito o fracaso escritos de antemano.
-3. Comprobación contra atajos que entra en el mismo informe: el registro previo de definición, agregación, huecos y unidades de cada métrica.

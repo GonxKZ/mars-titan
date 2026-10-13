@@ -29,7 +29,7 @@ from mars_titan.data.storage import atomic_json, sha256
 from mars_titan.evaluation import walk_forward_comparison as walk
 from mars_titan.evaluation import window_aggregates
 
-from . import abstention_marks, row_identity, score_recheck
+from . import abstention_marks, metric_registry, row_identity, score_recheck
 
 KIND = "comparison_integrity"
 WINDOW_KIND = "comparison_window_integrity"
@@ -265,11 +265,17 @@ def published(
         )
         passed = not missing and failures == 0
     excluded = _exclusions(counted, _report_exclusions(report, sources))
-    aggregates_check, wrong = score_recheck.check_summaries(scoped, sources, raw, report)
+    registry = metric_registry.load_registry()
+    aggregates_check, wrong = score_recheck.check_summaries(scoped, sources, raw, report, registry)
     abstention = abstention_marks.check_report(report, raw)
     result.update(
         excluded_rows=excluded,
-        summaries=dict(views=aggregates_check, failures=wrong, passed=wrong == 0),
+        summaries=dict(
+            registry=dict(path=registry["path"], sha256=registry["sha256"]),
+            views=aggregates_check,
+            failures=wrong,
+            passed=wrong == 0,
+        ),
         abstention=abstention,
         passed=passed and excluded["passed"] and wrong == 0 and abstention["passed"],
         training_executed=False,

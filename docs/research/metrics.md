@@ -69,6 +69,12 @@ La [verificación de esta agregación](../../reports/resources/session-evaluatio
 registra ejemplos conocidos, cobertura y mutaciones dirigidas. No presenta esos
 ejemplos como precisión obtenida sobre datos de mercado.
 
+Cada cifra que publica el resumen de una vista de la comparación tiene su
+definición, unidad, sentido y regla de agregación en el
+[registro de métricas](../../configs/evaluation/metric-registry.json), fijado
+antes de evaluar. Al publicar, el resumen se reconstruye desde la tabla de
+sesiones con esas reglas ([banco de integridad](integrity-bench.md#registro-de-métricas)).
+
 ## Contrato de comparación por sesión
 
 `evaluation/forecast_panel.py` define `ForecastPanel`, la entrada común de todas
