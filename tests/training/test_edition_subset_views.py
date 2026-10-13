@@ -101,20 +101,36 @@ def test_subset_views_keep_only_their_rows_and_the_counts_follow(chosen):
             assert members.member("US", "A0000", micros)[0]
 
 
-def test_a_subset_view_only_observes_the_rows_of_the_subset(chosen):
-    record = chosen.views["subset"]["US"]["windows"]["fold-010"]
-    dataset = CorpusDataset(Path(record["path"]), input_policy=HISTORICAL_MASKED)
+def test_a_subset_view_still_observes_every_decision_of_the_window(chosen):
+    """El subconjunto filtra etiquetas, no observaciones, como el índice de las familias."""
+
+    def observed(name):
+        record = chosen.views[name]["US"]["windows"]["fold-010"]
+        dataset = CorpusDataset(Path(record["path"]), input_policy=HISTORICAL_MASKED)
+        batches = dataset.observation_batches(
+            start=946_684_800_000_000, end=1_704_067_200_000_000, batch_size=16
+        )
+        return [key for batch in batches for key in batch["sample_ids"]]
+
+    full, restricted = observed("full"), observed("subset")
     _, _, ids = read_subset(chosen.subset)
     members = SubsetRows(ids)
-    seen = 0
-    for batch in dataset.observation_batches(
-        start=946_684_800_000_000, end=1_704_067_200_000_000, batch_size=16
-    ):
-        for key in batch["sample_ids"]:
-            market, asset, micros = key.split("/")
-            assert members.member(market, asset, np.array([int(micros)]))[0]
-            seen += 1
-    assert seen == sum(len(v) for k, v in members.rows.items() if k.startswith("US/"))
+    outside = [
+        key
+        for key in restricted
+        if not members.member(*key.split("/")[:2], np.array([int(key.split("/")[2])]))[0]
+    ]
+    assert outside and restricted == full
+
+
+def test_a_view_whose_subset_changed_cannot_be_read(chosen, tmp_path):
+    record = chosen.views["subset"]["US"]["windows"]["fold-010"]
+    view = json.loads(Path(record["path"]).read_text())
+    view["data_subset"]["rows"] += 1
+    path = tmp_path / "manifest.json"
+    atomic_json(path, view)
+    with pytest.raises(ValueError, match="no es el declarado"):
+        CorpusDataset(path, input_policy=HISTORICAL_MASKED)
 
 
 def test_views_and_campaign_must_declare_the_same_subset(chosen):
@@ -182,3 +198,4 @@ def test_the_budget_compares_the_subset_with_the_full_design(chosen, capsys):
     assert 0 < report["subset_over_full_neural_hours"] < 1
     with pytest.raises(SystemExit):
         budget.main(arguments[:2] + ["--subset", str(chosen.subset), "--rate", "1000"])
+

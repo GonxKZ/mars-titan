@@ -59,6 +59,8 @@ Las dos versiones escriben los mismos identificadores y los mismos recuentos. La
 
 La primera ejecución dejó viva la fila de precios que cierra la ventana. Se añadió una prueba que adelanta un segundo los bloques y exige que `inputs_available_at` sea la disponibilidad de esa fila.
 
+En la revisión de la PR se retiró el filtro de observaciones por subconjunto, porque las familias cronológicas no lo usaban y con `labels: usable` habría dependido de la sesión siguiente. La mutación «observación sin restringir» describe por tanto el código anterior a esa revisión. La prueba que la detectaba ahora exige lo contrario, que una vista con subconjunto observe las mismas decisiones que sin él.
+
 ## Pruebas
 
 Una sola sesión de pytest en serie, en CPU y con dos hilos, sobre las pruebas del catálogo, los subconjuntos, la liquidez, las vistas con subconjunto, `temporal_corpus`, las vistas por ventana, las entradas históricas, la unión conjunta, `corpus_inputs`, `campaign_plan`, `masked_campaign`, la campaña A conjunta, la cadena, la parada conjunta, el corpus con máscaras, las entradas temporales, el corpus conjunto, la campaña de referencia y `tests/test_suite_support.py`, sobre la rama integrada con develop: 582 pasan y 119 se omiten porque llegan a un punto de entrada de ajuste protegido por el bloqueo de aprendizaje. Ninguna ejecuta un paso de optimizador.

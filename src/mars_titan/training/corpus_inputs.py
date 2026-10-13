@@ -484,20 +484,21 @@ class CorpusDataset:
             if self.temporal
             else ("train", "validation")
         )
-        # Una vista elegida sobre un subconjunto declarado solo observa sus filas.
-        self.subset = None
+        # Una vista elegida sobre un subconjunto declarado debe seguir apuntando a ese mismo
+        # subconjunto, cuyas etiquetas ya están filtradas en los tramos. Las observaciones no
+        # se filtran, igual que en el índice de `financial_observations`. Con `usable`
+        # dependerían de que exista la sesión siguiente, algo que no se sabe al decidir.
         if "data_subset" in meta:
-            from .edition_subsets import SubsetRows, read_subset, subset_identity
+            from .edition_subsets import read_subset, subset_identity
 
             declared = meta["data_subset"]
             if not (self.masked and self.temporals) or not isinstance(declared, dict):
                 raise ValueError("Solo una vista con máscaras puede declarar un subconjunto")
-            document, digest, ids = read_subset(Path(declared.get("manifest", "")))
+            document, digest, _ = read_subset(Path(declared.get("manifest", "")), rows=False)
             if declared != dict(
                 manifest=declared["manifest"], manifest_sha256=digest, **subset_identity(document)
             ):
                 raise ValueError("El subconjunto de la vista no es el declarado")
-            self.subset = SubsetRows(ids)
         if (
             meta.get("schema_version") not in ({3} if self.masked else {1, 2})
             or meta.get("kind") != "corpus_supervision"
@@ -1142,7 +1143,8 @@ class CorpusDataset:
         """Leer todas las filas históricas del intervalo, por activo y sin labels.
 
         La ordenación temporal entre activos corresponde al índice de cohortes.
-        La ausencia de objetivo no elimina una observación del recorrido.
+        La ausencia de objetivo no elimina una observación del recorrido, y un subconjunto
+        declarado tampoco: solo decide qué etiquetas entran en los tramos de la vista.
         """
         if (
             not self.masked
@@ -1180,10 +1182,7 @@ class CorpusDataset:
                     if dimensions is not None and dimensions != shape:
                         raise ValueError("Las dimensiones cambian entre activos")
                     dimensions = shape
-                    inside = (moments >= start) & (moments < end)
-                    if self.subset is not None:
-                        inside &= self.subset.member(asset["market"], asset["symbol"], moments)
-                    selected = np.flatnonzero(inside)
+                    selected = np.flatnonzero((moments >= start) & (moments < end))
                     for offset in range(0, len(selected), batch_size):
                         positions = selected[offset : offset + batch_size]
                         block = dict(
