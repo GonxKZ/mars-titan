@@ -1,10 +1,9 @@
 """Paridad CPU y CUDA de la evaluación congelada de las políticas, sin pasos de optimizador.
 
-Las políticas tienen sus pesos iniciales: Double DQN termina sus 32 transiciones antes de
-la primera actualización y KLPO se detiene antes de `update_ready`, con una selección
-cerrada fabricada en la prueba con el actor inicial. La protección temporal se permite solo
-para lanzar los binarios y cada prueba comprueba que no hubo actualizaciones. La prueba
-CUDA necesita la GPU libre, `MARS_TITAN_CUDA_INTEGRATION=1` y `memslot gpu`.
+Las comparaciones usan registros fabricados con el formato que escriben los binarios, así
+que no se lanza ninguna política. Las pruebas que lanzan binarios mantienen cerrada la
+protección de aprendizaje y solo comprueban rechazos previos a leer cintas. La medida sobre
+cintas reales espera a un modo de solo evaluación que la protección admita (#546).
 """
 
 import copy
@@ -12,9 +11,7 @@ import hashlib
 import json
 import math
 import os
-import shutil
 import subprocess
-import sys
 from pathlib import Path
 
 import pytest
@@ -25,8 +22,6 @@ from tests.simulation.test_native_policy_tapes import (
     binaries,  # noqa: F401
     diagnostic_stage,
     job,
-    read,
-    sealed,
     sources,
     tapes,  # noqa: F401
     write_config,
@@ -273,7 +268,7 @@ def test_ties_follow_the_first_maximum_like_the_binary():
 
 
 def direct(binary, hold, *arguments):
-    """Lanzar un binario sin el lanzador, en el diagnóstico CPU, para sus propios rechazos."""
+    """Lanzar un binario en el diagnóstico CPU con la protección cerrada, para sus rechazos."""
     environment = dict(os.environ, **{HOLD_ENV: str(hold)}, CUDA_VISIBLE_DEVICES="-1")
     return subprocess.run(
         [str(binary), *map(str, arguments), "--device", "cpu", "--diagnostic"],
@@ -285,119 +280,37 @@ def direct(binary, hold, *arguments):
     )
 
 
-def launch(binary, hold, *arguments, cuda=False):
-    """Lanzar un binario con el lanzador de la etapa, en el diagnóstico CPU o en cuda:0.
-
-    En cuda:0 el lanzador toma el bloqueo GPU exclusivo, mide la VRAM libre y pasa el
-    descriptor y el presupuesto al binario, igual que en la etapa de políticas.
-    """
-    environment = dict(os.environ, **{HOLD_ENV: str(hold)})
-    environment["CUDA_VISIBLE_DEVICES"] = "0" if cuda else "-1"
-    command = [sys.executable, str(native_policy_runs.LAUNCHER), "--binary", str(binary)]
-    command += [*map(str, arguments)] + ([] if cuda else ["--diagnostic"])
-    return subprocess.run(
-        command, env=environment, capture_output=True, text=True, timeout=600, check=False
-    )
-
-
-def evaluate_dqn(binary, hold, root, market_tapes, *, cuda=False):
-    """Double DQN con sus pesos iniciales: 32 transiciones sin actualizar y evaluación."""
-    stage = diagnostic_stage(rollout_transitions=16)
-    config = write_config(
-        root / "dqn.json", native_policy_runs.ppo_config(stage, job("double_dqn", "native_ppo"))
-    )
-    fit, output = root / "fit", root / "evaluation"
-    arguments = ["--config", config, "--output", fit, *sources(market_tapes)]
-    result = launch(binary, hold, *arguments, cuda=cuda)
-    assert result.returncode == 0, result.stderr
-    report = read(fit / "run.json")
-    assert (report["status"], report["transitions"], report["optimizer_steps"]) == (
-        "completed",
-        32,
-        0,
-    )
-    audit = ["--config", config, "--audit-run", fit, "--output", output, "--decisions"]
-    audit += ["--audit-tape", market_tapes["evaluation"][0][0]]
-    result = launch(binary, hold, *audit, cuda=cuda)
-    assert result.returncode == 0, result.stderr
-    return device_parity.read_run(output)
-
-
-def evaluate_klpo(binary, hold, root, market_tapes, *, cuda=False):
-    """KLPO con su actor inicial: una oleada sin `update_ready` y una selección fabricada."""
-    config = write_config(
-        root / "klpo.json",
-        native_policy_runs.klpo_config(
-            diagnostic_stage(environments=1), job("klpo_terminal", "native_klpo")
-        ),
-    )
-    fit, closed, output = root / "fit", root / "closed", root / "evaluation"
-    wave = len(market_tapes["train"][1][1]) - 1
-    arguments = ["--config", config, "--output", fit, *sources(market_tapes, train=(1,))]
-    result = launch(binary, hold, *arguments, "--stop-after", wave, cuda=cuda)
-    assert result.returncode == 2, result.stderr
-    report = read(fit / "run.json")
-    assert (report["optimizer_steps"], report["consumed_waves"]) == (0, 0)
-    shutil.copytree(fit, closed)
-    path = closed / "selection.json"
-    # La selección cerrada declara evaluadas todas las oleadas previstas del ajuste.
-    planned = sealed(closed / "experiment.json")["planned_waves"]
-    payload = dict(sealed(path), status="completed", evaluated_waves=planned)
-    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
-    path.write_text(
-        json.dumps(dict(payload=payload, sha256=hashlib.sha256(encoded.encode()).hexdigest()))
-    )
-    audit = ["--config", config, "--audit-run", closed, "--output", output, "--decisions"]
-    audit += ["--audit-tape", market_tapes["evaluation"][0][0]]
-    result = launch(binary, hold, *audit, cuda=cuda)
-    assert result.returncode == 0, result.stderr
-    return device_parity.read_run(output)
-
-
-ENGINES = {"double_dqn": ("native_ppo", evaluate_dqn), "klpo": ("native_klpo", evaluate_klpo)}
-
-
-@pytest.mark.parametrize("engine", sorted(ENGINES))
-def test_decisions_record_every_greedy_choice_without_changing_the_evaluation(
+@pytest.mark.parametrize("engine", ["native_ppo", "native_klpo"])
+def test_binaries_announce_the_record_and_refuse_it_outside_the_audit(
     binaries,  # noqa: F811
     tapes,  # noqa: F811
     tmp_path,
     learning_hold,
     engine,
 ):
-    hold = learning_hold(True)
-    us = tapes["US"]
-    binary, evaluate = binaries[ENGINES[engine][0]], ENGINES[engine][1]
-    native_policy_runs.probe_binary(ENGINES[engine][0], device_parity.DECISION_LOGITS)
-    evaluation, record = evaluate(binary, hold, tmp_path, us)
-    assert evaluation["identity"]["optimizer_steps"] == 0
-    assert record["device"] == "cpu" and len(record["parameter_fingerprint"]) == 64
-    assert record["outputs"] == ("q_values" if engine == "double_dqn" else "logits")
-    steps = len(us["evaluation"][0][1]) - 1
-    assert [cost["cost_bps"] for cost in record["costs"]] == [0.0, 10.0, 25.0]
-    for cost, row in zip(record["costs"], evaluation["metrics"], strict=True):
-        (tape,) = cost["tapes"]
-        assert len(tape["decisions"]) == row["steps"] == steps
-        assert [item["cursor"] for item in tape["decisions"]] == list(range(steps))
-        for item in tape["decisions"]:
-            assert item["mode"] == "greedy"
-            assert item["action"] == device_parity.first_argmax(item["logits"])
-    # Sin --decisions la evaluación es la misma y no deja registro. Su identidad lo declara,
-    # así que no puede reanudar una salida que lo pidió.
-    config = tmp_path / ("dqn.json" if engine == "double_dqn" else "klpo.json")
-    fit = tmp_path / ("fit" if engine == "double_dqn" else "closed")
-    plain = tmp_path / "plain"
-    audit = ["--config", config, "--audit-run", fit, "--audit-tape", us["evaluation"][0][0]]
-    assert launch(binary, hold, *audit, "--output", plain).returncode == 0
-    assert not (plain / "decisions.json").exists()
-    assert sealed(plain / "evaluation.json")["metrics"] == evaluation["metrics"]
-    resumed = launch(binary, hold, *audit, "--output", tmp_path / "evaluation", "--resume")
-    assert resumed.returncode == 1 and "otra evaluación" in resumed.stderr
-    rejected = direct(
-        binary, hold, "--config", config, "--output", tmp_path / "x", *sources(us), "--decisions"
+    """Los dos binarios anuncian el registro y lo rechazan al leer los argumentos de un ajuste.
+
+    La protección queda cerrada: el rechazo ocurre antes de comprobarla y no se lee ninguna
+    cinta. El registro en sí se comprueba en CTest sobre `run_frozen_evaluation`.
+    """
+    native_policy_runs.probe_binary(engine, device_parity.DECISION_LOGITS)
+    stage = diagnostic_stage(environments=1)
+    arm = (
+        job("double_dqn", "native_ppo") if engine == "native_ppo" else job("klpo_terminal", engine)
     )
+    document = (
+        native_policy_runs.ppo_config(stage, arm)
+        if engine == "native_ppo"
+        else native_policy_runs.klpo_config(stage, arm)
+    )
+    config = write_config(tmp_path / "config.json", document)
+    output = tmp_path / "out"
+    us = tapes["US"]
+    arguments = ["--config", config, "--output", output, *sources(us, train=(1,)), "--decisions"]
+    rejected = direct(binaries[engine], learning_hold(False), *arguments)
     assert rejected.returncode == 1
     assert "--decisions solo se admite con --audit-run" in rejected.stderr
+    assert not output.exists()
 
 
 def test_a_synthetic_audit_rejects_decisions_before_reading_anything(
@@ -429,33 +342,3 @@ def test_a_synthetic_audit_rejects_decisions_before_reading_anything(
     assert result.returncode == 1
     assert "--decisions solo se admite sobre cintas reconstruidas" in result.stderr
     assert not output.exists()
-
-
-@pytest.mark.skipif(
-    os.environ.get("MARS_TITAN_CUDA_INTEGRATION") != "1",
-    reason="Requiere la GPU libre, MARS_TITAN_CUDA_INTEGRATION=1 y memslot gpu",
-)
-@pytest.mark.parametrize("market", ["US", "CN"])
-@pytest.mark.parametrize("engine", sorted(ENGINES))
-def test_cpu_and_cuda_choose_the_same_actions_outside_near_ties(
-    binaries,  # noqa: F811
-    tapes,  # noqa: F811
-    tmp_path,
-    learning_hold,
-    market,
-    engine,
-):
-    import torch
-
-    assert torch.cuda.is_available(), "CUDA no está disponible y la prueba no cambia a CPU"
-    hold = learning_hold(True)
-    binary, evaluate = binaries[ENGINES[engine][0]], ENGINES[engine][1]
-    cpu = evaluate(binary, hold, tmp_path / "cpu", tapes[market])
-    cuda = evaluate(binary, hold, tmp_path / "cuda", tapes[market], cuda=True)
-    # La referencia es cuda:0, el dispositivo que selecciona y audita en la etapa.
-    summary = device_parity.compare_runs(cuda, cpu)
-    assert summary["reference_device"] == "cuda:0" and summary["other_device"] == "cpu"
-    assert summary["decisions"] > 0 and summary["compared_decisions"] > 0
-    # Las divergencias que queden solo pueden ser empates casi exactos y se publican con su
-    # efecto en el capital. El resto de episodios conserva el patrimonio exacto.
-    assert summary["identical_equity_episodes"] + len(summary["divergences"]) == 3

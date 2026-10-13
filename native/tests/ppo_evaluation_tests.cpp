@@ -1,17 +1,26 @@
+#include "mars_titan/policy_evaluation.hpp"
 #include "mars_titan/ppo_training.hpp"
 
 #include <ATen/ATen.h>
 #include <ATen/core/grad_mode.h>
+#include <nlohmann/json.hpp>
 #include <torch/serialize/archive.h>
 
+#include <algorithm>
 #include <cmath>
+#include <filesystem>
+#include <fstream>
 #include <iostream>
+#include <iterator>
 #include <limits>
 #include <memory>
 #include <sstream>
 #include <stdexcept>
 #include <string>
 #include <utility>
+#include <vector>
+
+#include <unistd.h>
 
 // Evaluación greedy de una política fija. Estas pruebas no crean entrenadores ni optimizadores.
 namespace {
@@ -139,6 +148,99 @@ void cash_has_no_exit_cost() {
     require(liquidated_nav(session.snapshot(), *market) == capital,
             "El efectivo no paga coste de salida");
 }
+nlohmann::json sealed_payload(const std::filesystem::path& path) {
+    std::ifstream stream(path);
+    const auto envelope = nlohmann::json::parse(stream);
+    require(envelope.size() == 2 && envelope.contains("sha256"), "El registro no está sellado");
+    return envelope.at("payload");
+}
+
+FrozenEvaluationRequest frozen_request(const std::filesystem::path& output, bool decisions,
+                                       const PolicyTape& evaluated, bool resume = false) {
+    FrozenEvaluationRequest request;
+    request.output = output;
+    request.resume = resume;
+    request.costs = {0.0, cost_bps};
+    request.decisions = decisions;
+    request.identity = nlohmann::json{{"final_test_opened", false},
+                                      {"cost_bps", request.costs},
+                                      {"decisions", decisions}};
+    request.tapes = {evaluated};
+    return request;
+}
+
+// El registro de decisiones de la evaluación congelada (--decisions de --audit-run) guarda, por
+// coste y cinta, la acción, el modo y las salidas de cada decisión. La política conserva sus
+// pesos iniciales y no pasa por ningún optimizador. Cada acción debe ser el primer máximo de sus
+// salidas, como en std::max_element, y pedir el registro no puede cambiar las métricas.
+void decisions_record_the_first_maximum_without_changing_metrics() {
+    const auto root = std::filesystem::temp_directory_path() /
+                      ("mars-titan-decisions-" + std::to_string(::getpid()));
+    std::filesystem::remove_all(root);
+    constexpr std::size_t sessions = 7;
+    auto market = tape(sessions);
+    // Puntuaciones distintas en cada sesión para que las salidas cambien entre decisiones.
+    for (std::size_t at = 0; at < sessions; ++at) {
+        market->scores[at] = prediction * (static_cast<double>(at % 3) - 1);
+    }
+    const PolicyTape evaluated{{market, parameters(), {}},
+                               nlohmann::json{{"manifest_sha256", market->source_sha256}}};
+    const PpoPolicy policy(observation_width, {}, ppo_default_training_seed);
+    const auto plain = run_frozen_evaluation(policy, frozen_request(root / "plain", false, evaluated));
+    const auto recorded =
+        run_frozen_evaluation(policy, frozen_request(root / "recorded", true, evaluated));
+    require(plain.at("status") == "completed" && recorded.at("status") == "completed" &&
+                plain.at("metrics") == recorded.at("metrics"),
+            "El registro de decisiones cambió las métricas de la evaluación");
+    require(!std::filesystem::exists(root / "plain" / "decisions.json"),
+            "Sin --decisions no debe escribirse el registro");
+    const auto record = sealed_payload(root / "recorded" / "decisions.json");
+    require(record.at("kind") == "native_policy_decisions" && record.at("outputs") == "logits" &&
+                record.at("device") == "cpu" &&
+                record.at("parameter_fingerprint") == policy.parameter_fingerprint() &&
+                record.at("costs").size() == 2,
+            "El registro no identifica la política, el dispositivo o los costes");
+    for (std::size_t index = 0; index < 2; ++index) {
+        const auto& cost = record.at("costs").at(index);
+        require(cost.at("cost_bps") == recorded.at("metrics").at(index).at("cost_bps") &&
+                    cost.at("tapes").size() == 1 &&
+                    cost.at("tapes").at(0).at("manifest_sha256") == market->source_sha256,
+                "El registro no sigue los costes y las cintas de la evaluación");
+        const auto& decisions = cost.at("tapes").at(0).at("decisions");
+        require(decisions.size() == sessions - 1, "Falta alguna decisión del episodio");
+        for (std::size_t step = 0; step < decisions.size(); ++step) {
+            const auto& decision = decisions.at(step);
+            const auto logits = decision.at("logits").get<std::vector<double>>();
+            const auto first = std::distance(logits.begin(), std::ranges::max_element(logits));
+            require(decision.at("cursor") == step && decision.at("mode") == "greedy" &&
+                        logits.size() == full_exposure + 1 &&
+                        decision.at("action").get<std::ptrdiff_t>() == first,
+                    "Una decisión no es el primer máximo de sus salidas");
+        }
+    }
+    // La identidad declara el registro: una evaluación con él no se reanuda sin él.
+    bool refused = false;
+    try {
+        static_cast<void>(
+            run_frozen_evaluation(policy, frozen_request(root / "recorded", false, evaluated, true)));
+    } catch (const std::invalid_argument&) {
+        refused = true;
+    }
+    require(refused, "Una reanudación sin el registro aceptó una evaluación que lo declaraba");
+    // Una petición cuya identidad no declara el registro que pide se rechaza antes de escribir.
+    auto mismatched = frozen_request(root / "mismatched", true, evaluated);
+    mismatched.identity["decisions"] = false;
+    refused = false;
+    try {
+        static_cast<void>(run_frozen_evaluation(policy, mismatched));
+    } catch (const std::invalid_argument&) {
+        refused = true;
+    }
+    require(refused && !std::filesystem::exists(root / "mismatched"),
+            "Una identidad sin el registro pedido no debe admitirse");
+    require(policy.optimizer_steps() == 0, "La evaluación congelada no puede actualizar la política");
+    std::filesystem::remove_all(root);
+}
 } // namespace
 
 int main() {
@@ -146,6 +248,7 @@ int main() {
         incomplete_evaluation_has_no_score();
         liquidated_growth_pays_the_final_exit();
         cash_has_no_exit_cost();
+        decisions_record_the_first_maximum_without_changing_metrics();
         std::cout << "Evaluación incompleta y liquidación final comprobadas sin optimizador\n";
     } catch (const std::exception& error) {
         std::cerr << error.what() << '\n';
