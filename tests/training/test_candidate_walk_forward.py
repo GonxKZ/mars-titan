@@ -34,6 +34,7 @@ from mars_titan.training import masked_campaign as engine
 from mars_titan.training.corpus_inputs import CorpusDataset
 from mars_titan.training.learning_hold import HOLD_ENV, LearningHoldError
 from mars_titan.training.walk_forward_phases import window_phases
+from tests.learning_hold_lowering import allowed_hold
 from tests.training.test_financial_run import RecordingOptimizer
 from tests.training.test_masked_campaign import Recorder, doubles, write_campaign
 from tests.training.test_walk_forward_v2_views import fixture
@@ -71,8 +72,7 @@ class ShiftedStart(RecordingOptimizer):
 @pytest.fixture(scope="module")
 def allowed(tmp_path_factory):
     """Protección temporal permitida para los ajustes compartidos del módulo."""
-    path = tmp_path_factory.mktemp("module-hold") / "training-hold.json"
-    path.write_text(json.dumps({"training_allowed": True}), encoding="utf-8")
+    path = allowed_hold(tmp_path_factory.mktemp("module-hold") / "training-hold.json")
     with pytest.MonkeyPatch.context() as patch:
         patch.setenv(HOLD_ENV, str(path))
         yield path
