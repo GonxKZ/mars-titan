@@ -62,7 +62,7 @@ def table(path):
 
 @pytest.fixture(scope="module")
 def chosen(campaign_run):  # noqa: F811
-    """Brazo M1 elegido en la ventana reentrenada, sus vistas y los casos de la matriz."""
+    """Modelo M1 elegido en la ventana reentrenada, sus vistas y los casos de la matriz."""
     matrix, digest = read_matrix(MATRIX)
     matrix["budget"].update(epochs=1)
     fitted, carried = campaign_run.windows[0], campaign_run.windows[1]

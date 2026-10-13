@@ -1,7 +1,7 @@
 """Medir el coste en CPU de los contrastes de capacidad predictiva a escala de la campaña.
 
 Las pérdidas son sintéticas con semilla fija y solo fijan las formas: los días de decisión
-reales de US (2005 a 2023) y de CN (2011 a 2023), los brazos y familias de la comparación
+reales de US (2005 a 2023) y de CN (2011 a 2023), los modelos y familias de la comparación
 conjunta declarada y la longitud de bloque, réplicas y semilla de esa comparación. No se
 ajusta, selecciona ni evalúa ningún modelo con estos valores. Se mide la sección completa
 de las tres vistas del ámbito conjunto, el tiempo de cada análisis y la memoria reservada
@@ -55,7 +55,7 @@ def sessions():
 
 
 def arm_series(arms, market, period, seed):
-    """Una SessionSeries de MAE por brazo con un desplazamiento propio y ruido común."""
+    """Una SessionSeries de MAE por modelo con un desplazamiento propio y ruido común."""
     rng = np.random.default_rng(seed)
     common = rng.gamma(2.0, 0.004, len(market))
     result = {}

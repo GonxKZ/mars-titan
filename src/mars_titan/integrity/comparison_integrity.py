@@ -8,7 +8,7 @@ predicciones por fila hay dos caminos:
   predicciones con su huella.
 - Con la retención v2, las filas de una ventana se liberan después de guardar sus agregados.
   Por eso `write_window` comprueba la ventana justo después de guardarlos y antes de liberar
-  nada: identidad de filas entre brazos, filas quitadas por el diseño y sesiones recalculadas
+  nada: identidad de filas entre modelos, filas quitadas por el diseño y sesiones recalculadas
   desde las filas frente a las sesiones en bruto de los agregados. El registro, junto a los
   agregados, guarda su huella y su identidad. Al publicar, `published` exige el registro
   superado de cada ventana con esa misma huella e identidad, que las sesiones publicadas
@@ -52,7 +52,7 @@ def _seed_key(seed):
 
 
 def _aggregate_raw(results, window_id):
-    """Sesiones en bruto de los agregados de una ventana, con brazo, semilla y ventana."""
+    """Sesiones en bruto de los agregados de una ventana, con modelo, semilla y ventana."""
     frames = []
     for (arm, seed), entry in results.items():
         frame = entry["raw"].to_table().to_pandas()
@@ -72,7 +72,7 @@ def _declared_exclusions(results, window_id):
 
 
 def _report_exclusions(report, sources):
-    """Lo mismo desde el resumen por ventana de cada brazo y semilla del informe publicado."""
+    """Lo mismo desde el resumen por ventana de cada modelo y semilla del informe publicado."""
     found = {}
     for arm, seed, window_id in sources["files"]:
         windows = report["arms"][arm]["seeds"][_seed_key(seed)]["windows"]
@@ -106,16 +106,19 @@ def _scores(checks, failures):
     return dict(files=checks, failures=failures, passed=failures == 0)
 
 
-def write_window(folder, config, sources, window_id, ablation=None):
+def write_window(folder, config, sources, window_id, ablation=None, *, liquidity=None):
     """Comprobar la ventana recién agregada antes de liberar sus filas y guardar el registro.
 
-    `folder`, `config`, `sources` y `ablation` son los de `window_aggregates.write`, con las
-    fuentes limitadas a la ventana. El registro se guarda también cuando falla, para revisarlo,
-    y en ese caso la llamada termina con un error y la ventana no llega a liberarse.
+    `folder`, `config`, `sources`, `ablation` y `liquidity` son los de
+    `window_aggregates.write`, con las fuentes limitadas a la ventana. El registro se guarda
+    también cuando falla, para revisarlo, y en ese caso la llamada termina con un error y la
+    ventana no llega a liberarse.
     """
     _require(set(sources["windows"]) == {window_id}, "Las fuentes deben limitarse a la ventana")
     path = window_aggregates.path_for(folder, sources["scope"], window_id)
-    results, _ = window_aggregates.read(folder, config, sources, window_id, ablation)
+    results = window_aggregates.read(
+        folder, config, sources, window_id, ablation, liquidity=liquidity
+    )[0]
     rows = row_identity.check_loaded(config, sources)
     raw = _aggregate_raw(results, window_id)
     checks, failures = score_recheck.check_files(config, sources, raw)
@@ -127,7 +130,9 @@ def write_window(folder, config, sources, window_id, ablation=None):
         scope=sources["scope"],
         window=window_id,
         aggregates=dict(path=path.name, sha256=sha256(path)),
-        identity=window_aggregates.identity(config, sources, window_id, ablation),
+        identity=window_aggregates.identity(
+            config, sources, window_id, ablation, liquidity=liquidity
+        ),
         tolerance=dict(rtol=score_recheck.RTOL, atol=score_recheck.ATOL),
         rows=rows,
         scores=_scores(checks, failures),
@@ -142,17 +147,19 @@ def write_window(folder, config, sources, window_id, ablation=None):
     return dict(path=destination, sha256=sha256(destination), passed=passed)
 
 
-def write_checked(folder, config, sources, window_id, ablation=None):
+def write_checked(folder, config, sources, window_id, ablation=None, *, liquidity=None):
     """Guardar los agregados de una ventana y su registro de integridad, en ese orden.
 
     Devuelve los dos registros. Si la comprobación falla, el error llega antes de que nadie
     libere las filas de la ventana.
     """
-    stored = window_aggregates.write(folder, config, sources, window_id, ablation)
-    return stored, write_window(folder, config, sources, window_id, ablation)
+    stored = window_aggregates.write(
+        folder, config, sources, window_id, ablation, liquidity=liquidity
+    )
+    return stored, write_window(folder, config, sources, window_id, ablation, liquidity=liquidity)
 
 
-def _window_records(folder, config, sources, ablation):
+def _window_records(folder, config, sources, ablation, liquidity):
     """Registros de cada ventana, exigiendo que sigan describiendo los agregados actuales.
 
     Devuelve la huella de cada registro, las filas quitadas que contó y los fallos.
@@ -165,7 +172,9 @@ def _window_records(folder, config, sources, ablation):
             failures.append(f"{window_id}: falta el registro de integridad")
             continue
         record = json.loads(destination.read_text(encoding="utf-8"))
-        expected = window_aggregates.identity(config, sources, window_id, ablation)
+        expected = window_aggregates.identity(
+            config, sources, window_id, ablation, liquidity=liquidity
+        )
         checks = (
             (record.get("kind") == WINDOW_KIND, "no es un registro de integridad"),
             (record.get("passed") is True, "registra fallos"),
@@ -183,7 +192,7 @@ def _window_records(folder, config, sources, ablation):
     return found, counted, failures
 
 
-def _same_as_aggregates(folder, config, sources, ablation, raw):
+def _same_as_aggregates(folder, config, sources, ablation, liquidity, raw):
     """Sesiones publicadas idénticas, sin tolerancia, a las de los agregados de cada ventana.
 
     Cada modelo se coteja con las columnas de su propia tabla, de modo que las de cuantiles
@@ -191,7 +200,9 @@ def _same_as_aggregates(folder, config, sources, ablation, raw):
     """
     checks, failures = [], 0
     for window_id in sources["windows"]:
-        results, _ = window_aggregates.read(folder, config, sources, window_id, ablation)
+        results = window_aggregates.read(
+            folder, config, sources, window_id, ablation, liquidity=liquidity
+        )[0]
         for (arm, seed), entry in results.items():
             stored = entry["raw"].to_table().to_pandas()
             # El lado propio del cotejo usa microsegundos enteros, como el recálculo.
@@ -208,12 +219,15 @@ def _same_as_aggregates(folder, config, sources, ablation, raw):
     return checks, failures
 
 
-def published(config, sources_path, scope, folder, *, aggregates=None, ablation_sources=None):
+def published(
+    config, sources_path, scope, folder, *, aggregates=None, ablation_sources=None, edition=None
+):
     """Comprobar filas, filas quitadas y métricas de la comparación publicada en `folder`.
 
     `config` es la ruta o la configuración validada. `aggregates` es la carpeta de agregados
     de la retención v2 de la que se calculó la comparación y `ablation_sources`, el manifiesto
-    de la ablación con el que se guardaron, si lo hubo.
+    de la ablación con el que se guardaron, si lo hubo. `edition` es la edición que asignó
+    los estratos de liquidez guardados con esos agregados, si la comparación los declara.
     """
     folder = Path(folder)
     report = json.loads((folder / "comparison.json").read_text(encoding="utf-8"))
@@ -242,8 +256,9 @@ def published(config, sources_path, scope, folder, *, aggregates=None, ablation_
         ablation = None
         if ablation_sources is not None:
             ablation = walk._ablation_sources(ablation_sources, scoped, sources)
-        records, counted, missing = _window_records(folder, scoped, sources, ablation)
-        checks, failures = _same_as_aggregates(folder, scoped, sources, ablation, raw)
+        liquidity = walk.liquidity_source(scoped, edition)
+        records, counted, missing = _window_records(folder, scoped, sources, ablation, liquidity)
+        checks, failures = _same_as_aggregates(folder, scoped, sources, ablation, liquidity, raw)
         result.update(
             windows=dict(records=records, failures=missing, passed=not missing),
             scores=_scores(checks, failures),

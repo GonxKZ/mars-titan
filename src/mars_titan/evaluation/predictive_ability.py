@@ -1,7 +1,7 @@
 """Contrastes secundarios de capacidad predictiva sobre pérdidas diarias.
 
 La sección ``predictive_ability`` de la comparación walk-forward declara, antes de ver
-ningún resultado, cinco análisis secundarios sobre la pérdida de cada brazo. Ninguno
+ningún resultado, cinco análisis secundarios sobre la pérdida de cada modelo. Ninguno
 sustituye a las comparaciones emparejadas de ``paired_comparisons``, que siguen siendo el
 contraste principal y el único que decide una conclusión.
 
@@ -10,13 +10,13 @@ contraste principal y el único que decide una conclusión.
 2. SPA de Hansen (2005) con la base de la familia como referencia y sus tres recentrados.
 3. Reality Check de White (2000), que es el p-valor superior del mismo SPA.
 4. StepM de Romano y Wolf (2005), que dice qué variantes superan a la base.
-5. MCS de Hansen, Lunde y Nason (2011) sobre todos los brazos de la familia.
+5. MCS de Hansen, Lunde y Nason (2011) sobre todos los modelos de la familia.
 
 Además se calcula la longitud de bloque de Politis y White (2004), con la corrección de
 Patton, Politis y White (2009), solo como diagnóstico. Nunca cambia la longitud declarada.
 
 La unidad es el día UTC, la misma que remuestrea el bootstrap principal. La pérdida de un
-brazo en un día es la media de sus sesiones de ese día con la ponderación entre mercados
+modelo en un día es la media de sus sesiones de ese día con la ponderación entre mercados
 declarada, después de promediar las semillas sesión a sesión. La media de esas pérdidas
 diarias pesa igual cada día, así que puede diferir un poco de la media por sesiones del
 contraste principal cuando un día tiene sesiones de los dos mercados. Los remuestreos usan
@@ -36,7 +36,7 @@ Detalles de ``arch`` 8.0.0 que cambian lo que se puede afirmar:
 - Su ``StepM`` falla si los modelos quedan todos seleccionados en pasos distintos
   (bashtage/arch#862). El descenso por pasos se hace aquí con la API pública de ``SPA`` y
   la condición de parada corregida en el repositorio de ``arch`` (#863).
-- Su MCS divide por la varianza de cada par. Dos brazos con las mismas pérdidas diarias la
+- Su MCS divide por la varianza de cada par. Dos modelos con las mismas pérdidas diarias la
   anulan, así que esa familia queda sin MCS y el informe da el motivo.
 
 Los p-valores no se corrigen entre familias, igual que en el contraste principal. Cada
@@ -193,9 +193,9 @@ def _day_means(series, periods, weighting):
 
 
 def daily_losses(series, weighting):
-    """Matriz [días, brazos] de pérdidas diarias en el orden de ``series``.
+    """Matriz [días, modelos] de pérdidas diarias en el orden de ``series``.
 
-    Un día solo entra si todos los brazos tienen alguna sesión definida en él. Devuelve
+    Un día solo entra si todos los modelos tienen alguna sesión definida en él. Devuelve
     la matriz y el número de días excluidos por ese motivo.
     """
     _require(weighting in WEIGHTINGS, "Ponderación entre mercados no declarada")
@@ -389,7 +389,7 @@ def model_confidence_set(losses, *, size, method, block_length, replicates, seed
     for first in range(columns):
         for second in range(first + 1, columns):
             if not _varies(losses[:, first] - losses[:, second]):
-                return dict(reason="Dos brazos tienen un diferencial diario constante")
+                return dict(reason="Dos modelos tienen un diferencial diario constante")
     from arch.bootstrap import MCS
 
     with np.errstate(**_NUMERIC):
@@ -447,7 +447,7 @@ def block_length_diagnostic(differential, declared):
 def family_structure(contrasts):
     """Clasificar una familia de ``compare_series`` para elegir sus análisis.
 
-    Devuelve los brazos en orden de aparición, los pares variante y base de los
+    Devuelve los modelos en orden de aparición, los pares variante y base de los
     contrastes con coeficientes +1 y −1, y la base común si todos esos pares la comparten.
     Las interacciones no forman pares. Una familia de niveles no tiene pares ni base.
     """
@@ -468,7 +468,7 @@ def family_structure(contrasts):
 
 
 def _family(structure, losses, section, options):
-    """Análisis de una familia sobre la matriz [días, brazos] en el orden de sus brazos."""
+    """Análisis de una familia sobre la matriz [días, modelos] en el orden de sus modelos."""
     arms = structure["arms"]
     column = {arm: losses[:, index] for index, arm in enumerate(arms)}
     block_length = options["block_length"]
@@ -535,8 +535,8 @@ def report(section, comparison, weighting, families, views, series):
     """Calcular la sección declarada para cada vista, métrica y familia.
 
     ``families`` son las familias de ``compare_series`` del ámbito evaluado. ``series``
-    es una función ``(brazo, vista, métrica)`` que devuelve la SessionSeries con las
-    semillas ya promediadas, o None si el brazo no emite esa métrica.
+    es una función ``(modelo, vista, métrica)`` que devuelve la SessionSeries con las
+    semillas ya promediadas, o None si el modelo no emite esa métrica.
     """
     options = {key: comparison[key] for key in ("block_length", "replicates", "seed")}
     result = dict(declaration=section, resampling=dict(method="circular", **options), views={})
@@ -548,10 +548,10 @@ def report(section, comparison, weighting, families, views, series):
                 structure = family_structure(contrasts)
                 collected = {arm: series(arm, view, metric) for arm in structure["arms"]}
                 if len(collected) < 2:
-                    rows[name] = dict(reason="La familia tiene un solo brazo")
+                    rows[name] = dict(reason="La familia tiene un solo modelo")
                     continue
                 if any(item is None for item in collected.values()):
-                    rows[name] = dict(reason="Algún brazo de la familia no emite esta métrica")
+                    rows[name] = dict(reason="Algún modelo de la familia no emite esta métrica")
                     continue
                 losses, excluded = daily_losses(collected, weighting)
                 counts = dict(arms=structure["arms"], days=len(losses), excluded_days=excluded)

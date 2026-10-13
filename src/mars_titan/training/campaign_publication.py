@@ -17,7 +17,8 @@ recorrido ventana a ventana si lo hubo:
    cartera larga y corta, desde los agregados por ventana de la retención v2 cuando se
    indican. Si la comparación declara la retención e interferencia en las revisitas de
    régimen, exige el calendario de regímenes de la edición (``regime_calendar``) para que
-   la sección salga calculada y no pendiente;
+   la sección salga calculada y no pendiente. Lo mismo hace con la edición de precios si
+   declara la cartera o los estratos de liquidez;
 3. publica el manifiesto de fuentes de la matriz con esos informes y evalúa la matriz;
 4. publica las fuentes de cada padre de la etapa de adaptadores y su comparación, también
    desde los agregados por ventana que guardó el recorrido;
@@ -195,9 +196,10 @@ def run_publication(
     ``views`` y ``output`` son los de la campaña confirmada. ``adapter_output`` es la salida
     de la etapa de adaptadores y se exige si la declaración tiene comparación postentrenada.
     ``aggregates`` es la carpeta de agregados del recorrido ventana a ventana. ``edition`` es
-    la edición de precios sin ajustar que pide la cartera. ``ablation`` (``stage`` y
-    ``output``) añade la ablación de modalidades al informe walk-forward y debe acompañar a
-    unos agregados que la incluyan. ``hours`` es el documento de horas por modelo de la matriz.
+    la edición de precios sin ajustar que piden la cartera y los estratos de liquidez.
+    ``ablation`` (``stage`` y ``output``) añade la ablación de modalidades al informe
+    walk-forward y debe acompañar a unos agregados que la incluyan. ``hours`` es el documento
+    de horas por modelo de la matriz.
     ``regimes`` es el calendario de regímenes que pide la retención e interferencia.
     """
     loaded = load_publication(path)
@@ -213,6 +215,10 @@ def run_publication(
     _require(
         walk.LONG_SHORT_FIELD not in config or edition is not None,
         "La comparación declara la cartera larga y corta: falta la edición de precios",
+    )
+    _require(
+        walk.LIQUIDITY_FIELD not in config or edition is not None,
+        "La comparación declara estratos de liquidez: falta la edición de precios",
     )
     retention = walk.RETENTION_FIELD in config
     _require(
@@ -246,6 +252,7 @@ def run_publication(
             folder,
             ablation_sources=masked,
             aggregates=aggregates,
+            edition=edition,
             regimes=regimes,
         )
         entry = dict(
@@ -256,6 +263,7 @@ def run_publication(
             folder=folder,
             aggregates=aggregates,
             ablation=masked,
+            edition=edition,
         )
         checked.append(entry)
         reports = [dict(kind=tables.WALK_SOURCE, path=folder / "comparison.json")]
@@ -300,6 +308,7 @@ def run_publication(
                     scope,
                     base_arm,
                     folder,
+                    edition=edition,
                     aggregates=aggregates,
                     loaded=posttraining,
                 )
@@ -314,6 +323,7 @@ def run_publication(
                         aggregates=None
                         if aggregates is None
                         else stage_comparison.aggregates_folder(aggregates, base_arm),
+                        edition=edition,
                     )
                 )
     integrity = publication_gate.write(

@@ -1,18 +1,18 @@
-"""Mismas filas y objetivos en todos los brazos, y ninguna fila de 2024, por otro camino.
+"""Mismas filas y objetivos en todos los modelos, y ninguna fila de 2024, por otro camino.
 
-La comparación walk-forward ya exige que todos los brazos evalúen las mismas filas mediante
+La comparación walk-forward ya exige que todos los modelos evalúen las mismas filas mediante
 `ForecastPanel.cohort_sha256`. Esta comprobación lo repite sin ese código:
 1. Ordena las filas de cada archivo de predicciones por (mercado, activo, instante).
 2. Calcula una huella SHA-256 propia con los bytes de esas tres columnas y los bits exactos
    del objetivo en float64.
-3. Exige la misma huella para todos los brazos y semillas en cada ventana y tramo.
+3. Exige la misma huella para todos los modelos y semillas en cada ventana y tramo.
 4. Exige que cada fila caiga en el tramo declarado, sea de un mercado del ámbito, no esté
    duplicada, tenga un objetivo finito y no pertenezca a la reserva de 2024.
 
 Un cambio de un solo bit en un objetivo, una fila de más o una de menos cambian la huella.
 
 Con el diseño conjunto, la comparación quita de cada ventana las filas de los mercados aún
-no elegibles y, en un brazo prestado del ámbito conjunto, las de los mercados ajenos al
+no elegibles y, en un modelo prestado del ámbito conjunto, las de los mercados ajenos al
 ámbito. La comprobación vuelve a aplicar esa regla declarada antes de calcular la huella y
 cuenta por mercado las filas quitadas, para cotejarlas con las que publica la comparación.
 Las filas de cualquier otro mercado siguen contando como defecto.
@@ -85,7 +85,7 @@ def _duplicates(ordered):
 def dropped_markets(sources, window_id, arm):
     """Mercados cuyas filas no cuenta la comparación en esa ventana, según el diseño declarado.
 
-    Son los mercados del ámbito que aún no son elegibles en la ventana y, en un brazo prestado
+    Son los mercados del ámbito que aún no son elegibles en la ventana y, en un modelo prestado
     del ámbito conjunto, los mercados de ese ámbito que no son de este.
     """
     markets = sources["markets"]
@@ -108,7 +108,7 @@ def kept_rows(table, dropped):
 def inspect_table(table, segment, markets, dropped=()):
     """Huella y defectos de una tabla de predicciones frente a su tramo declarado.
 
-    `dropped` son los mercados que el diseño quita de esta ventana y este brazo. Sus filas
+    `dropped` son los mercados que el diseño quita de esta ventana y este modelo. Sus filas
     no entran en la huella y se cuentan aparte.
     """
     nulls = sum(table.column(name).null_count for name in COLUMNS)
