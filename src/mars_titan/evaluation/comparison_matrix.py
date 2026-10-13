@@ -9,9 +9,9 @@ contrastes lineales. La corrección por máximo estudentizado se aplica dentro d
 familia, igual que en la comparación walk-forward, y no entre familias.
 
 La evaluación lee las tablas por sesión que ya publican otras comparaciones mediante
-``session_table_contrasts``, sin volver a puntuar predicciones. Los contrastes cuyos brazos
-todavía no existen quedan pendientes con lo que les falta, y el informe de brazos que faltan
-estima su coste con un documento de horas por brazo, medido o proyectado, que se declara
+``session_table_contrasts``, sin volver a puntuar predicciones. Los contrastes cuyos modelos
+todavía no existen quedan pendientes con lo que les falta, y el informe de modelos que faltan
+estima su coste con un documento de horas por modelo, medido o proyectado, que se declara
 como tal.
 
 Nada de este módulo ajusta modelos, lee la edición ni abre la reserva de 2024.
@@ -93,9 +93,9 @@ def _conditions(value, label):
 
 
 class Arms:
-    """Clasifica cada brazo que nombra la matriz según quién lo produce.
+    """Clasifica cada modelo que nombra la matriz según quién lo produce.
 
-    Un brazo puede ser de la campaña declarada, condicionado a otra tarea, derivado de uno
+    Un modelo puede ser de la campaña declarada, condicionado a otra tarea, derivado de uno
     declarado con un sufijo conocido o candidato. La clase decide si un contraste se puede
     estimar con la campaña o qué le falta, sin consultar ningún dato.
     """
@@ -105,9 +105,9 @@ class Arms:
         self.suffixes, self.candidates = suffixes, candidates
 
     def kind(self, arm):
-        """Devuelve la clase del brazo, o None si la matriz no lo conoce.
+        """Devuelve la clase del modelo, o None si la matriz no lo conoce.
 
-        Un derivado solo se reconoce si su base es un brazo declarado, para que un sufijo
+        Un derivado solo se reconoce si su base es un modelo declarado, para que un sufijo
         no convierta en válido un nombre inventado.
         """
         if arm in self.declared:
@@ -122,10 +122,10 @@ class Arms:
         return None
 
     def require(self, arm, label):
-        """Rechaza un brazo sin clase, porque daría un contraste que nunca podría estimarse."""
+        """Rechaza un modelo sin clase, porque daría un contraste que nunca podría estimarse."""
         _require(
             tables.is_arm_name(arm) and self.kind(arm) is not None,
-            f"{label} usa el brazo {arm} sin declarar",
+            f"{label} usa el modelo {arm} sin declarar",
         )
         return arm
 
@@ -136,14 +136,14 @@ def _group(groups, name, label):
 
 
 def _groups(value, arms):
-    _require(isinstance(value, dict) and value, "Faltan los grupos de brazos")
+    _require(isinstance(value, dict) and value, "Faltan los grupos de modelos")
     for name, members in value.items():
         _require(
             walk._name(name)
             and isinstance(members, list)
             and members
             and len(set(members)) == len(members),
-            f"El grupo {name} necesita brazos distintos",
+            f"El grupo {name} necesita modelos distintos",
         )
         for arm in members:
             arms.require(arm, f"El grupo {name}")
@@ -173,7 +173,7 @@ def _question(name, question, groups, arms):
     """Compila las familias de una pregunta declarada.
 
     Si la pregunta tiene ``each``, cada miembro forma su propia familia. Así la corrección
-    múltiple se aplica a las comparaciones de un mismo brazo y no mezcla variantes que
+    múltiple se aplica a las comparaciones de un mismo modelo y no mezcla variantes que
     responden a preguntas distintas.
     """
     kind = question.get("kind") if isinstance(question, dict) else None
@@ -243,11 +243,11 @@ def _candidates(value, lineages, arms):
         )
         _require(
             arms.kind(name) == "candidate",
-            f"El candidato {name} ya está declarado como brazo de la campaña o condicionado",
+            f"El candidato {name} ya está declarado como modelo de la campaña o condicionado",
         )
         _require(
             arms.kind(entry["cost_like"]) in ("declared", "conditional"),
-            f"El candidato {name} debe estimar su coste con un brazo declarado",
+            f"El candidato {name} debe estimar su coste con un modelo declarado",
         )
     return value
 
@@ -352,8 +352,8 @@ def load_matrix(path):
     except (TypeError, ValueError) as error:
         raise ValueError("La matriz necesita su fecha de declaración") from error
     comparison = walk.load_config(path.parent / declaration["comparison"])
-    conditional = _conditions(declaration["conditional_arms"], "Los brazos condicionados")
-    suffixes = _conditions(declaration["derived_arms"], "Los brazos derivados")
+    conditional = _conditions(declaration["conditional_arms"], "Los modelos condicionados")
+    suffixes = _conditions(declaration["derived_arms"], "Los modelos derivados")
     lineages = {
         name: attribution.load_lineage(name, entry)
         for name, entry in _items(declaration["lineages"], "Los linajes")
@@ -389,9 +389,9 @@ def _items(value, label):
 
 
 def split(family, available):
-    """Separa los contrastes estimables con los brazos disponibles de los pendientes.
+    """Separa los contrastes estimables con los modelos disponibles de los pendientes.
 
-    Un contraste al que le falta algún brazo no se estima con los términos que sí existen,
+    Un contraste al que le falta algún modelo no se estima con los términos que sí existen,
     porque cambiaría su significado. Queda pendiente con la lista de lo que falta.
     """
     ready, pending = {}, []
@@ -494,6 +494,7 @@ def evaluate(matrix_path, sources_path, scope):
         else dict(basis=hours["basis"], source=hours["source"], sha256=hours["sha256"]),
         families=families,
         limitations=matrix["limitations"],
+        quadratic_metrics=sources["quadratic"],
         views=views,
         versions={name: version(name) for name in ("numpy", "pyarrow")},
         analysis_source_sha256={
@@ -535,17 +536,17 @@ def write(matrix_path, sources_path, scope, output):
     return report
 
 
-# Brazos que faltan
+# Modelos que faltan
 
 
 def missing_arms(matrix, hours=None):
-    """Calcula qué brazos faltan para cada contraste que la campaña declarada no produce.
+    """Calcula qué modelos faltan para cada contraste que la campaña declarada no produce.
 
-    Los brazos condicionados y derivados tienen su propio plan en otra tarea y se suponen
+    Los modelos condicionados y derivados tienen su propio plan en otra tarea y se suponen
     disponibles al calcular lo que desbloquea cada candidato. Un candidato desbloquea solo
-    un contraste si es el único brazo que le falta. Los demás contrastes necesitan varios
+    un contraste si es el único modelo que le falta. Los demás contrastes necesitan varios
     candidatos y aparecen como lotes con su coste conjunto. El informe sirve para decidir
-    qué brazos añadir y no declara ninguno en la campaña.
+    qué modelos añadir y no declara ninguno en la campaña.
     """
     arms = matrix["arms"]
     conditional = {
@@ -581,7 +582,7 @@ def missing_arms(matrix, hours=None):
                 totals["planned_elsewhere"] += 1
 
     def own(arm):
-        # Las horas de un candidato son las propias del brazo declarado al que se parece,
+        # Las horas de un candidato son las propias del modelo declarado al que se parece,
         # porque sus padres ya existen en la campaña y no se vuelven a contar.
         if hours is None:
             return None
@@ -637,15 +638,15 @@ def missing_arms(matrix, hours=None):
         if hours is None
         else dict(basis=hours["basis"], source=hours["source"], sha256=hours["sha256"]),
         rule=dict(
-            planned_elsewhere="Los brazos condicionados y derivados se suponen disponibles",
-            unlocked_alone="El candidato es el único brazo que le falta al contraste",
+            planned_elsewhere="Los modelos condicionados y derivados se suponen disponibles",
+            unlocked_alone="El candidato es el único modelo que le falta al contraste",
             tiers={
                 "1": "Código existente y desbloquea contrastes por sí solo",
                 "2": "Requiere un cambio de código y desbloquea contrastes por sí solo",
                 "3": "Solo desbloquea contrastes junto con otros candidatos",
             },
             order="Nivel y después contrastes desbloqueados por cada 100 horas GPU",
-            gpu_hours="Horas propias del brazo de referencia (cost_like). Sus padres ya existen",
+            gpu_hours="Horas propias del modelo de referencia (cost_like). Sus padres ya existen",
         ),
         totals=totals,
         conditional_arms=conditional,
@@ -688,7 +689,7 @@ def main(argv=None):
     commands = parser.add_subparsers(dest="command", required=True)
     check = commands.add_parser("check", help="Validar la matriz y contar sus contrastes")
     check.add_argument("--matrix", type=Path, required=True)
-    missing = commands.add_parser("missing", help="Brazos que faltan, con coste y prioridad")
+    missing = commands.add_parser("missing", help="Modelos que faltan, con coste y prioridad")
     missing.add_argument("--matrix", type=Path, required=True)
     missing.add_argument("--hours", type=Path)
     missing.add_argument("--scope", default="US+CN")

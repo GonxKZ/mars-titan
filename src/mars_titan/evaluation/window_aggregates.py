@@ -2,7 +2,7 @@
 
 La comparación walk-forward puntúa cada ventana por separado (``_score_window``) y solo
 después une las sesiones de todas para resumir, contrastar y calibrar intervalos. Lo que
-sale de una ventana (puntuaciones por sesión de cada brazo y semilla, calibrador, estratos,
+sale de una ventana (puntuaciones por sesión de cada modelo y semilla, calibrador, estratos,
 variantes de la ablación y presencia) basta para calcular el informe completo sin volver a
 leer predicciones por fila. Este módulo guarda esa salida en cuanto la ventana termina y la
 devuelve idéntica, con los mismos tipos, formas y bits, para que la retención v2 pueda
@@ -18,7 +18,7 @@ Los agregados se calculan en float64 y se guardan sin redondear ni comprimir con
 una matriz o un escalar decimal de otra precisión se rechaza.
 
 La cartera larga y corta (``long_short_comparison``) también trabaja ventana a ventana: cada
-una produce los libros por sesión de todos los brazos, las órdenes sin ejecutar y la
+una produce los libros por sesión de todos los modelos, las órdenes sin ejecutar y la
 identidad de los precios. Se guardan aparte, con el código de la cartera y la identidad de
 la edición de precios en su identidad, para que el informe de la cartera tampoco necesite
 las filas.
@@ -51,6 +51,7 @@ SCORING_SOURCES = (
     "evaluation/forecast_scores.py",
     "evaluation/modality_strata.py",
     "evaluation/modality_ablation.py",
+    "evaluation/liquidity_strata.py",
     "calibration/conformal_quantiles.py",
 )
 # Código de la cartera larga y corta, que lee los precios de la edición sin ajustar.
@@ -174,8 +175,12 @@ def same(left, right):
     return left == right
 
 
-def identity(config, sources, window_id, ablation=None, *, code=SCORING_SOURCES):
-    """Lo que determina los agregados de una ventana, sin leer predicciones."""
+def identity(config, sources, window_id, ablation=None, *, code=SCORING_SOURCES, liquidity=None):
+    """Lo que determina los agregados de una ventana, sin leer predicciones.
+
+    Con ``liquidity`` (``liquidity_strata.EditionLiquidity``) se añade la edición sin
+    ajustar que asigna los estratos, que forman parte de lo guardado.
+    """
     files = {
         f"{name}/{seed}/{part}": record["sha256"]
         for (name, seed, window), parts in sorted(sources["files"].items(), key=str)
@@ -198,6 +203,7 @@ def identity(config, sources, window_id, ablation=None, *, code=SCORING_SOURCES)
         view_sha256=sources["views"][window_id],
         predictions=files,
         ablation=masked,
+        liquidity=None if liquidity is None else liquidity.identity(),
         code={name: sha256(root / name) for name in code},
     )
     # La misma forma que tendrá al releerla del JSON, con listas en lugar de tuplas.
@@ -257,20 +263,21 @@ def _load(path, kind, expected, label):
     return decode(document["scores"], arrays)
 
 
-def write(folder, config, sources, window_id, ablation=None):
+def write(folder, config, sources, window_id, ablation=None, *, liquidity=None):
     """Puntuar una ventana y guardar sus agregados. Devuelve su ruta y su huella."""
-    scored = walk._score_window(sources, config, window_id, ablation)
+    scored = walk._score_window(sources, config, window_id, ablation, liquidity)
     path = path_for(folder, sources["scope"], window_id)
-    record = _save(path, KIND, identity(config, sources, window_id, ablation), scored)
-    restored = read(folder, config, sources, window_id, ablation)
+    expected = identity(config, sources, window_id, ablation, liquidity=liquidity)
+    record = _save(path, KIND, expected, scored)
+    restored = read(folder, config, sources, window_id, ablation, liquidity=liquidity)
     _require(same(restored, scored), f"Los agregados de {window_id} no se releen igual")
     return record
 
 
-def read(folder, config, sources, window_id, ablation=None):
+def read(folder, config, sources, window_id, ablation=None, *, liquidity=None):
     """Agregados de una ventana, comprobando que proceden de estas mismas fuentes y código."""
     path = path_for(folder, sources["scope"], window_id)
-    expected = identity(config, sources, window_id, ablation)
+    expected = identity(config, sources, window_id, ablation, liquidity=liquidity)
     return _load(path, KIND, expected, f"{sources['scope']} {window_id}")
 
 

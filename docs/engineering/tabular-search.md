@@ -58,7 +58,7 @@ distintos al mismo nombre.
 
 `mars_titan.training.baseline_queue` comprueba que la búsqueda neuronal esté
 terminada, con todos sus informes, checkpoints y predicciones íntegros. Después
-recupera la vista exacta del brazo con ponderación natural. Esa comprobación
+recupera la vista exacta del modelo con ponderación natural. Esa comprobación
 se conserva en un recibo separado y su hash se exige al iniciar el estudio
 tabular. Una campaña neuronal pausada o fallida no activa los ajustes siguientes.
 

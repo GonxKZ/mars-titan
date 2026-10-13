@@ -8,7 +8,7 @@ declarada antes de ejecutar. Sirve para descartar que la mejora de MARS-TITAN ve
 de seguir aprendiendo. Se compara emparejado con `transformer_compact` congelado y con
 MARS-TITAN, con las mismas filas.
 
-La sección `online_controls` de la campaña declara el brazo, su padre, el brazo que fija
+La sección `online_controls` de la campaña declara el modelo, su padre, el modelo que fija
 el tope, la regla, la rejilla de tasas y el límite de trabajos. La regla iguala al banco en
 información y cadencia (decisión del 10 de octubre):
 
@@ -21,7 +21,7 @@ La tasa se elige como en las demás familias: un caso de búsqueda por tasa con 
 búsqueda del padre, la elección por el MAE por sesión de la validación y el caso elegido
 repetido con las demás semillas. La rejilla incluye la tasa cero, que reproduce el
 Transformer congelado, para que el control nunca quede por debajo de él en validación.
-Solo hay trabajos en los ámbitos cuya comparación evalúa el brazo, que en A v2 es el
+Solo hay trabajos en los ámbitos cuya comparación evalúa el modelo, que en A v2 es el
 conjunto. El ejecutor lo registra el motor como trabajo `online`. Este módulo solo declara
 y planifica los trabajos.
 """
@@ -64,10 +64,10 @@ def _cases(cases):
 
 
 def declared(section, campaign):
-    """Valida la sección `online_controls` frente a los brazos ya resueltos de cada ámbito.
+    """Valida la sección `online_controls` frente a los modelos ya resueltos de cada ámbito.
 
-    La comparación debe evaluar el brazo en algún ámbito, y en cada uno de ellos deben
-    ajustarse el padre y el brazo del tope, porque sin ellos el control no tendría estado de
+    La comparación debe evaluar el modelo en algún ámbito, y en cada uno de ellos deben
+    ajustarse el padre y el modelo del tope, porque sin ellos el control no tendría estado de
     partida ni tope.
     """
     from .campaign_plan import scope_arms
@@ -142,7 +142,7 @@ def plan_online(campaign, base_jobs):
     `transformer_compact` y de `mars_titan_m1` en su ventana y semilla, porque parte del
     primero y su tope son las escrituras del banco del segundo. Un finalista depende además
     de todas las búsquedas de su ventana, de las que sale la tasa elegida. Los ámbitos que
-    no evalúan el brazo no tienen trabajos, porque sus predicciones no entrarían en ninguna
+    no evalúan el modelo no tienen trabajos, porque sus predicciones no entrarían en ninguna
     comparación.
     """
     from .campaign_chain import parent_jobs

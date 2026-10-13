@@ -17,6 +17,7 @@ from .cohort_samples import _digest, materialize_cohort_asset
 from .corpus_preparation import STARTS
 from .embeddings import EmbeddingCache, FrozenEncoders, encoder_spec, strict_fp32
 from .input_policy import INPUT_POLICIES, STRICT_INPUTS, masked_inputs, policy_identity
+from .pretraining_free_encoders import PretrainingFreeEncoders
 from .price_windows import calendar_digest, check_price_window_contract
 from .samples import FUNDAMENTAL_CONCEPTS
 from .storage import atomic_json, outside_source, sha256
@@ -592,7 +593,16 @@ def main():
         help="Edición cuyos textos se reutilizan tras contrastar una muestra de cada activo",
     )
     parser.add_argument("--shard", type=int, nargs=2, metavar=("K", "N"))
+    parser.add_argument(
+        "--encoders",
+        choices=("frozen", "pretraining_free"),
+        default="frozen",
+        help="MiniLM y ResNet18 congelados en CUDA o el control sin preentrenamiento en CPU",
+    )
     args = parser.parse_args()
+    control = args.encoders == "pretraining_free"
+    if control and (args.reuse_only or args.collect or args.encode_pending or args.text_carry):
+        parser.error("El control sin preentrenamiento calcula sus vectores en una sola pasada")
     if args.reuse_only and args.collect:
         parser.error("--reuse-only y --collect son pasadas distintas")
     if args.prepared is None and not (args.encode_pending or args.release_vectors):
@@ -655,8 +665,8 @@ def main():
         macros={m: p for m, p in (("US", args.macro_us), ("CN", args.macro_cn)) if p},
         market_factors=_read(args.market_factors)[0] if args.market_factors else None,
         cache_path=args.cache,
-        encoders=reuse,
-        encoder_options=None if reuse else options,
+        encoders=PretrainingFreeEncoders() if control else reuse,
+        encoder_options=None if reuse or control else options,
         cache_charts=args.cache_charts,
         max_new_assets=args.max_new_assets,
         min_free_disk_bytes=args.min_free_disk_bytes,

@@ -36,7 +36,7 @@ EARLY = dict(
     group_epoch=GROUP_EPOCH,
     groups=dict(references=["gru", "lstm"]),
 )
-# Esta es la parada individual de cada meseta por brazo y posición del caso, o por finalista.
+# Esta es la parada individual de cada meseta por modelo y posición del caso, o por finalista.
 STOPS = {
     ("gru", 0): 7,
     ("gru", 1): 9,

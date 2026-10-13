@@ -12,7 +12,7 @@ reales y después las adicionales. El presupuesto inicial es el 25 % de sus fila
 redondeado hacia la siguiente cohorte completa. El exceso queda por debajo de una
 cohorte y se debe informar como proporción observada. `paired_world` conserva los
 tamaños de esas cohortes, también cuando cambia el número de empresas, de modo que
-los brazos remuestreado y sintético tienen el mismo número de filas adicionales.
+los modelos remuestreado y sintético tienen el mismo número de filas adicionales.
 El entrenamiento que consume estos recorridos se registra por separado.
 
 ## Mecanismo generador

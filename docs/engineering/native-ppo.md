@@ -70,7 +70,7 @@ ctest --preset native-ppo-release -j 1
 cd ..
 ```
 
-El binario queda en `build/native/native-ppo-release/mars-titan-ppo`. Los presets PPO compilan con un trabajo. El backend CUDA reutiliza las bibliotecas del wheel y no activa `nvcc` ni compila kernels propios. `MARS_TITAN_LIBTORCH_ENABLE_CUDA=OFF` permite construir una variante para los diagnósticos CPU. Los perfiles `native-ppo-debug`, `native-ppo-asan-ubsan`, `native-ppo-static-analysis` y `native-ppo-coverage` separan los diagnósticos de Release. MSan y TSan sobre el ejecutable completo requieren un runtime LibTorch instrumentado.
+Mientras rija el bloqueo de aprendizaje, los perfiles de prueba excluyen la etiqueta `optimizer-steps`, que llevan `ppo_policy`, `ppo_training`, `ppo_collection`, `ppo_gru_packing` y `ppo_variant_state` porque aplican pasos de Adam sobre datos sintéticos. El binario queda en `build/native/native-ppo-release/mars-titan-ppo`. Los presets PPO compilan con un trabajo. El backend CUDA reutiliza las bibliotecas del wheel y no activa `nvcc` ni compila kernels propios. `MARS_TITAN_LIBTORCH_ENABLE_CUDA=OFF` permite construir una variante para los diagnósticos CPU. Los perfiles `native-ppo-debug`, `native-ppo-asan-ubsan`, `native-ppo-static-analysis` y `native-ppo-coverage` separan los diagnósticos de Release. MSan y TSan sobre el ejecutable completo requieren un runtime LibTorch instrumentado.
 
 El preparador analítico crea escenarios con semillas distintas para entrenamiento y validación. Usa el mecanismo ficticio conocido, sin cargar un predictor entrenado:
 

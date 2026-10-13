@@ -112,7 +112,8 @@ Json run_frozen_evaluation(const PpoPolicy& policy, const FrozenEvaluationReques
     require(!request.tapes.empty() && request.identity.is_object() &&
                 request.identity.at("final_test_opened") == false &&
                 frozen_costs(request.costs) == request.costs &&
-                request.identity.at("cost_bps") == Json(request.costs),
+                request.identity.at("cost_bps") == Json(request.costs) &&
+                request.identity.at("decisions") == request.decisions,
             "La evaluación necesita su identidad sellada, sus costes y al menos una cinta");
     // Cada cinta de una política es única, así que su huella identifica su carril.
     std::unordered_map<std::string, std::size_t> lanes;
@@ -149,9 +150,12 @@ Json run_frozen_evaluation(const PpoPolicy& policy, const FrozenEvaluationReques
                 {"confirmed_episodes", 0},
                 {"metrics", Json::array()},
                 {"final_test_opened", false}};
+    // Acción y logits de cada decisión por coste y cinta, solo si se piden.
+    Json decisions = Json::array();
     for (const auto cost : request.costs) {
         std::vector<simulation::BatchInput> inputs;
         std::vector<Equity> equities(request.tapes.size());
+        std::vector<Json> chosen(request.tapes.size(), Json::array());
         inputs.reserve(request.tapes.size());
         for (std::size_t index = 0; index < request.tapes.size(); ++index) {
             inputs.push_back(request.tapes[index].input);
@@ -162,7 +166,21 @@ Json run_frozen_evaluation(const PpoPolicy& policy, const FrozenEvaluationReques
         // siguiente sale de la recompensa logarítmica, la ruina y la valoración ausente.
         const PpoDecisionObserver observer = [&](std::span<const DecisionRecord> records) {
             for (const auto& record : records) {
-                auto& nav = equities.at(lanes.at(record.world_sha256)).nav;
+                const auto lane = lanes.at(record.world_sha256);
+                if (request.decisions) {
+                    // Un float se convierte a double sin pérdida y el JSON lo conserva exacto.
+                    Json logits = Json::array();
+                    for (const auto value : record.logits) {
+                        logits.push_back(static_cast<double>(value));
+                    }
+                    // El modo distingue la elección argmax de la acción fija del calentamiento
+                    // de la memoria, que no sale de los logits.
+                    chosen.at(lane).push_back(Json{{"cursor", record.cursor},
+                                                   {"action", record.action},
+                                                   {"mode", record.mode},
+                                                   {"logits", std::move(logits)}});
+                }
+                auto& nav = equities.at(lane).nav;
                 require(nav.size() == record.cursor + 1 && std::isfinite(nav.back()),
                         "El patrimonio por sesión recibe una transición fuera de orden");
                 if (!record.reward_valid) {
@@ -185,10 +203,27 @@ Json run_frozen_evaluation(const PpoPolicy& policy, const FrozenEvaluationReques
         }
         require(evaluation.metrics.size() == request.tapes.size(),
                 "La evaluación no conserva un episodio por cinta");
+        Json tapes = Json::array();
         for (std::size_t index = 0; index < request.tapes.size(); ++index) {
             report["metrics"].push_back(episode(request.tapes[index], cost,
                                                 evaluation.metrics[index], equities[index]));
+            tapes.push_back(Json{{"manifest_sha256", request.tapes[index].input.tape->source_sha256},
+                                 {"decisions", std::move(chosen[index])}});
         }
+        decisions.push_back(Json{{"cost_bps", cost}, {"tapes", std::move(tapes)}});
+    }
+    if (request.decisions) {
+        // Se escribe antes de confirmar la evaluación: una evaluación completa siempre tiene
+        // su registro y una interrumpida lo repite entero al reanudar.
+        simulation::atomic_json_file(
+            request.output / "decisions.json",
+            seal(Json{{"schema_version", 1},
+                      {"kind", "native_policy_decisions"},
+                      {"identity_sha256", identity_sha256},
+                      {"device", policy.device()},
+                      {"parameter_fingerprint", policy.parameter_fingerprint()},
+                      {"outputs", policy.architecture().double_dqn ? "q_values" : "logits"},
+                      {"costs", std::move(decisions)}}));
     }
     report["status"] = "completed";
     report["confirmed_episodes"] = report["metrics"].size();

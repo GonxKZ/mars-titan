@@ -19,7 +19,7 @@ sesiones, dos hilos para BLAS y OpenMP y `CUDA_VISIBLE_DEVICES=-1`.
 [`cost.json`](cost.json) sale de
 [`benchmarks/predictive_ability_cost.py`](../../../benchmarks/predictive_ability_cost.py) con
 `--repeats 2`. Usa los calendarios reales de US (2005 a 2023, 4.781 días) y de CN (2011 a 2023,
-3.159 días), que dan 4.887 días UTC en la vista conjunta, los 24 brazos y las 13 familias del
+3.159 días), que dan 4.887 días UTC en la vista conjunta, los 24 modelos y las 13 familias del
 ámbito US+CN de la comparación conjunta declarada, 2.000 réplicas y bloques de 16 días. Las
 pérdidas son sintéticas con semilla fija y solo fijan las formas.
 
