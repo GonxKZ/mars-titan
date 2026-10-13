@@ -19,7 +19,12 @@ ctest --preset native-release
 ../build/native/native-release/mars-titan-sim --help
 ```
 
-Los presets de pruebas heredan de `native-test`, que excluye la etiqueta `optimizer-steps`. La llevan las pruebas de `MARS_TITAN_OPTIMIZER_STEP_TESTS`, que aplican pasos de optimizador sobre datos sintéticos (PPO y los controles de adaptadores) y no se ejecutan mientras dure el bloqueo de aprendizaje.
+Las pruebas de CTest que aplican pasos de optimizador sobre datos sintéticos (PPO y los controles de adaptadores) llevan la etiqueta `optimizer-steps` y no se ejecutan mientras dure el bloqueo de aprendizaje. Hay dos barreras independientes:
+
+1. Se registran con `mars_titan_add_optimizer_step_test` (`cmake/OptimizerStepTests.cmake`), que las lanza a través de `mars-titan-learning-gate`. El lanzador lee la misma protección que los binarios con `mars_titan_learning_hold` y, si bloquea, termina con el código 77 antes de ejecutar la prueba. CTest lo recibe como `SKIP_RETURN_CODE` y la marca como saltada, también en una llamada sin perfil como `ctest --test-dir <build>`. Una protección ilegible la detiene como fallo, sin lanzarla. Al final de `CMakeLists.txt`, `mars_titan_require_gated_optimizer_step_tests()` detiene la configuración si una prueba con la etiqueta no pasa por el lanzador o si una que pasa por él pierde la etiqueta o el código de salto.
+2. Los presets de pruebas heredan de `native-test`, que excluye la etiqueta. Así esas pruebas ni siquiera aparecen en `ctest --preset`.
+
+La prueba `learning_gate` comprueba el lanzador sin lanzar ninguna prueba real. Con la protección bloqueada de la configuración y con una ilegible, el lanzador no ejecuta una orden propia que solo deja una marca. El camino que permite aprender se comprueba llamando a la función del lanzador con la decisión ya tomada, sin escribir una protección permitida.
 
 Los perfiles habituales de Clang y GCC activan `MARS_TITAN_BUILD_RUNNER` para construir la sesión y el ejecutable. `MARS_TITAN_BUILD_RUNNER=OFF` con `MARS_TITAN_BUILD_FINANCIAL=ON` permite compilar solo la sesión y sus pruebas. El ejecutable requiere UNIX por sus bloqueos y escrituras confirmadas. Las bibliotecas pueden configurarse por separado en MSVC. Una fuente requerida que falta produce un error de configuración.
 

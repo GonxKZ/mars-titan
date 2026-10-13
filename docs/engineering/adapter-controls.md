@@ -50,7 +50,7 @@ ctest --test-dir build/learning-release --output-on-failure -LE '^optimizer-step
 build/learning-release/mars-titan-adapter-control cpu 128 64 32 4 16 7 71
 ```
 
-`adapter_control` y los programas del control aplican pasos SGD, así que llevan la etiqueta `optimizer-steps` y quedan fuera de CTest mientras rija el bloqueo de aprendizaje. El programa también comprueba la protección antes de entrenar.
+`adapter_control` y los programas del control aplican pasos SGD, así que llevan la etiqueta `optimizer-steps` y quedan fuera de CTest mientras rija el bloqueo de aprendizaje. Se lanzan a través de `mars-titan-learning-gate`, que lee la protección y las marca como saltadas si se llama a CTest sin ese filtro. El programa también comprueba la protección antes de entrenar.
 
 Los argumentos son dispositivo, filas, entradas, salidas, rango, pasos, repeticiones y semilla. Cada ensayo solicita la identidad después de cada paso, reconstruye un checkpoint a mitad de la ejecución y verifica las identidades actual y seleccionada al recuperarlo. Después compara el resultado numérico con una ejecución CPU ininterrumpida. La salida JSON separa preparación, entrenamiento, recuperación y tiempo completo del ensayo. El entrenamiento medido incluye validación, comprobaciones de finitud y cálculo de la huella después de cada cambio. En CUDA también incluye las copias a CPU necesarias para esa huella. Las consultas posteriores del mismo estado utilizan la huella guardada. Hay un calentamiento por variante. Las ejecuciones de referencia también consumen recursos y quedan incluidas en el tiempo externo del proceso.
 
