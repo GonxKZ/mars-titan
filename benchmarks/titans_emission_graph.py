@@ -4,9 +4,10 @@ Toma el primer evento guardado por `chronological_events.py` con al menos FILAS 
 construye el predictor de la receta de la campaña con la semilla 42 y mide un bloque
 completo con `differentiable=True`, como emite el ajuste con acumulación:
 
-- `prepare`, la emisión del ajuste, con sus validaciones y su comprobación inmediata en el
-  codificador de precios,
-- el mismo cálculo con todas las comprobaciones diferidas y una sola sincronización,
+- `prepare`, la emisión del ajuste, con sus validaciones y todas sus comprobaciones
+  diferidas hasta el final,
+- el mismo cálculo sin las validaciones de `prepare`, con las mismas comprobaciones
+  diferidas y una sola sincronización,
 - ese cálculo capturado en un CUDA Graph, con copia de entradas, repetición, copia de
   salidas y lectura de las comprobaciones.
 
@@ -33,7 +34,6 @@ import numpy as np
 import torch
 
 from mars_titan.models.baselines.inputs import MODALITIES
-from mars_titan.models.baselines.transformer import nonfinite_flags
 from mars_titan.models.quantile_head import median
 from mars_titan.models.titans import state as titans_state
 from mars_titan.models.titans.financial import gate_price_window
@@ -114,11 +114,10 @@ def main(events, view, output, count=1024, repeats=REPEATS):
     state = predictor.initial_state(tuple(cpu.flow_ids), differentiable=True)
 
     def compute(inputs, presence, mac_state):
-        # El cálculo de `prepare` con las comprobaciones del codificador de precios diferidas.
+        # El cálculo de `prepare`, con las comprobaciones del codificador diferidas como allí.
         price, checks = predictor.price_encoder.encode_last(gate_price_window(inputs["prices"]))
-        flags = nonfinite_flags(checks)
-        for index, (_, message) in enumerate(checks):
-            titans_state.require_true(flags[index], message)
+        for value, message in checks:
+            titans_state.require_finite(value, message)
         representations = [price]
         for index, name in enumerate(MODALITIES[1:], 1):
             projected = predictor.encoders[name](inputs[name])
@@ -177,9 +176,9 @@ def main(events, view, output, count=1024, repeats=REPEATS):
         presence.copy_(batch.presence)
         graph.replay()
         outputs = [value.clone() for value in captured]
-        flags = torch.stack(pending.flags).tolist()
-        if not all(flags):
-            raise ValueError(pending.messages[flags.index(False)])
+        message = pending.first_failure()
+        if message is not None:
+            raise ValueError(message)
         return outputs
 
     same_graph = all(

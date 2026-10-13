@@ -59,15 +59,23 @@
       "rows": "all"
     },
     "pt4": {
-      "declaration": null,
+      "declaration": "configs/evaluation/market-memory-comparison.json",
       "kind": "superiority",
       "variant": "innovation",
       "base": "control",
       "seeds": [42],
       "rows": "all"
     },
+    "pt4_trivial_alternative": {
+      "declaration": "configs/evaluation/market-memory-comparison.json",
+      "kind": "superiority",
+      "variant": "innovation",
+      "base": "trivial_alternative",
+      "seeds": [42],
+      "rows": "all"
+    },
     "pt5": {
-      "declaration": null,
+      "declaration": "configs/evaluation/multiscale-memory-comparison.json",
       "kind": "superiority",
       "variant": "innovation",
       "base": "trivial_alternative",
@@ -75,19 +83,35 @@
       "rows": "all"
     },
     "pt6": {
-      "declaration": null,
+      "declaration": "configs/evaluation/presence-modulation-comparison.json",
       "kind": "superiority",
       "variant": "innovation",
       "base": "trivial_alternative",
       "seeds": [42],
       "rows": "missing_modality"
+    },
+    "pt6_control": {
+      "declaration": "configs/evaluation/presence-modulation-comparison.json",
+      "kind": "non_inferiority",
+      "variant": "innovation",
+      "base": "control",
+      "seeds": [42],
+      "rows": "all",
+      "keep_margin": 0.002,
+      "abandon_margin": 0.005
     }
   },
   "pilot": {
     "assets": "hasta 64 de EE. UU. con todas las modalidades disponibles",
     "validation_windows": [2018, 2019, 2020],
     "training": "expansivo desde 2000",
-    "shared_by": ["pt1", "pt1_trivial_alternative", "pt4", "pt5", "pt6"],
+    "shared_by": [
+      "pt1",
+      "pt1_trivial_alternative",
+      "pt5",
+      "pt6",
+      "pt6_control"
+    ],
     "extra_control_seeds": [43, 44],
     "extra_seed_procedure": "same_search_cases_validation_selection_and_budget_as_paired_seed",
     "gpu_hours_reserved": 27,

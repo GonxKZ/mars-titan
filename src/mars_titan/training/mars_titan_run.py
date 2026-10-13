@@ -53,6 +53,7 @@ from mars_titan.models.titans.financial_inputs import (
     validated_cpu_batch,
 )
 from mars_titan.models.titans.frozen_financial import _implementation, _numerics
+from mars_titan.models.titans.state import deferred_checks
 
 from .checkpoints import (
     StopRequest,
@@ -495,76 +496,86 @@ class MarsTitanInference:
             validated = [validated_cpu_batch(raw, specification) for raw in event.inputs]
         with nvtx_ranges.phase("readout.event_plan"):
             plan = self._event_plan(run, phase, event, validated, train=train and not warmup)
-        for cpu in validated:
-            batch = DecisionBatch.from_validated(cpu, device=self.device, dtype=self.dtype)
-            new = tuple(flow for flow in batch.flow_ids if flow not in run.flows)
-            if new:
-                run.flows.put(predictor.initial_state(new))
-            with nvtx_ranges.phase("readout.prepare"):
-                prepared = self._prepare_block(run, batch, plan, train=train and not warmup)
-            size = len(batch.flow_ids)
-            run.counters["observations"] += size
-            run.counters["mac_updates"] += size
-            if warmup:
-                run.counters["warmup_observations"] += size
-                continue
-            # Solo se conserva lo que la repetición del lector necesita, sin el estado MAC.
-            slim = replace(prepared, next_state=None, detached_tokens=None)
-            if train and (
-                self.readout.estimated_bytes(
-                    size, 0 if snapshot is None else snapshot.count, differentiable=True
-                )
-                > self.readout.config.max_working_bytes
-            ):
-                raise ValueError("La repetición diferenciable supera el presupuesto del lector")
-            with nvtx_ranges.phase("readout.apply"), torch.no_grad():
-                result = apply_episodic_readout(
-                    slim,
-                    predictor.head,
-                    self.readout,
-                    snapshot,
-                    context_id=context,
-                    cutoff=event.at,
-                )
-            issued = result.point_predictions.detach()
-            with nvtx_ranges.phase("readout.emit"):
-                values = issued.cpu().tolist()
-                levels = (
-                    result.quantiles.detach().cpu().tolist()
-                    if self.quantiles and not train
-                    else [None] * size
-                )
-            with nvtx_ranges.phase("readout.encode"):
-                encoded = None if run.bank is None else self.codec.encode(cpu, native=self.native)
-            # Rasgos M3 con las entradas de la decisión, conocidos en su corte.
-            features = write_scores.batch_features(cpu) if self.admission == "m3" else None
-            block = None
-            if train:
-                block, run.next_block = run.next_block, run.next_block + 1
-                run.blocks[block] = dict(
-                    prepared=slim,
-                    snapshot=snapshot,
-                    context=context,
-                    cutoff=event.at,
-                    issued=issued,
-                    keys=tuple(zip(batch.flow_ids, batch.prediction_at, strict=True)),
-                    **self._block_extra(batch, plan),
-                )
-            for row, (flow, at) in enumerate(zip(batch.flow_ids, batch.prediction_at, strict=True)):
-                if (flow, at) in run.pending:
-                    raise ValueError("La decisión ya tiene una predicción pendiente")
-                entry = _Entry(values[row], levels[row], block=block)
-                if encoded is not None:
-                    entry.available = batch.input_available_at[row]
-                    entry.key = encoded.key_inputs[row].copy()
-                    entry.value = encoded.values[row].copy()
-                if features is not None:
-                    entry.features = features[row]
-                run.pending[flow, at] = entry
-                if self.audit is not None:
-                    self.audit.append(("prediction", phase.partition, flow, at, values[row], seen))
-            run.counters["predictions"] += size
-            run.counters["refinements"] += size * self.readout.config.refinements
+        # Las comprobaciones de finitud del núcleo y del lector en todos los bloques del
+        # evento se resuelven juntas al final, antes de volver al recorrido, que es el único
+        # que admite episodios, aplica pasos o guarda checkpoints.
+        with deferred_checks():
+            for cpu in validated:
+                batch = DecisionBatch.from_validated(cpu, device=self.device, dtype=self.dtype)
+                new = tuple(flow for flow in batch.flow_ids if flow not in run.flows)
+                if new:
+                    run.flows.put(predictor.initial_state(new))
+                with nvtx_ranges.phase("readout.prepare"):
+                    prepared = self._prepare_block(run, batch, plan, train=train and not warmup)
+                size = len(batch.flow_ids)
+                run.counters["observations"] += size
+                run.counters["mac_updates"] += size
+                if warmup:
+                    run.counters["warmup_observations"] += size
+                    continue
+                # Solo se conserva lo que la repetición del lector necesita, sin el estado MAC.
+                slim = replace(prepared, next_state=None, detached_tokens=None)
+                if train and (
+                    self.readout.estimated_bytes(
+                        size, 0 if snapshot is None else snapshot.count, differentiable=True
+                    )
+                    > self.readout.config.max_working_bytes
+                ):
+                    raise ValueError("La repetición diferenciable supera el presupuesto del lector")
+                with nvtx_ranges.phase("readout.apply"), torch.no_grad():
+                    result = apply_episodic_readout(
+                        slim,
+                        predictor.head,
+                        self.readout,
+                        snapshot,
+                        context_id=context,
+                        cutoff=event.at,
+                    )
+                issued = result.point_predictions.detach()
+                with nvtx_ranges.phase("readout.emit"):
+                    values = issued.cpu().tolist()
+                    levels = (
+                        result.quantiles.detach().cpu().tolist()
+                        if self.quantiles and not train
+                        else [None] * size
+                    )
+                with nvtx_ranges.phase("readout.encode"):
+                    encoded = (
+                        None if run.bank is None else self.codec.encode(cpu, native=self.native)
+                    )
+                # Rasgos M3 con las entradas de la decisión, conocidos en su corte.
+                features = write_scores.batch_features(cpu) if self.admission == "m3" else None
+                block = None
+                if train:
+                    block, run.next_block = run.next_block, run.next_block + 1
+                    run.blocks[block] = dict(
+                        prepared=slim,
+                        snapshot=snapshot,
+                        context=context,
+                        cutoff=event.at,
+                        issued=issued,
+                        keys=tuple(zip(batch.flow_ids, batch.prediction_at, strict=True)),
+                        **self._block_extra(batch, plan),
+                    )
+                for row, (flow, at) in enumerate(
+                    zip(batch.flow_ids, batch.prediction_at, strict=True)
+                ):
+                    if (flow, at) in run.pending:
+                        raise ValueError("La decisión ya tiene una predicción pendiente")
+                    entry = _Entry(values[row], levels[row], block=block)
+                    if encoded is not None:
+                        entry.available = batch.input_available_at[row]
+                        entry.key = encoded.key_inputs[row].copy()
+                        entry.value = encoded.values[row].copy()
+                    if features is not None:
+                        entry.features = features[row]
+                    run.pending[flow, at] = entry
+                    if self.audit is not None:
+                        self.audit.append(
+                            ("prediction", phase.partition, flow, at, values[row], seen)
+                        )
+                run.counters["predictions"] += size
+                run.counters["refinements"] += size * self.readout.config.refinements
         if event.inputs and not warmup:
             run.instants += 1
 
@@ -857,7 +868,9 @@ class ReadoutTrainer(MarsTitanInference):
             # con una sola sincronización. El error es el de la primera comprobación fallida
             # en el orden de antes y se lanza antes del paso.
             checks, messages, losses = [], [], []
-            with nvtx_ranges.phase("readout.replay"):
+            # Las comprobaciones internas de cada repetición se resuelven juntas al cerrar el
+            # tramo, antes de leer las de reproducción y pérdida, en el mismo orden de antes.
+            with nvtx_ranges.phase("readout.replay"), deferred_checks():
                 for block in sorted(matured):
                     record = run.blocks[block]
                     result = apply_episodic_readout(

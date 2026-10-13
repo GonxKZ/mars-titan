@@ -192,7 +192,7 @@ El lector anterior decodificaba un grupo Parquet completo por cada observación.
 
 En los archivos reales se mide la decodificación de grupos de 128 filas y se reparte entre sus filas. No es un recorrido completo, porque esa edición todavía no tiene objetivos. Ambos lectores producen la misma huella de recorrido. El benchmark está en [`benchmarks/financial_observations.py`](../../benchmarks/financial_observations.py).
 
-Un perfil de una pasada de ajuste en CPU, 16 activos, anchura 64 y `truncation=8`, sin pasos de optimizador, tarda unos 1,7 ms por observación en `mac_online`. La preparación del predictor ocupa un 50 % y el backward un 28 %. Dentro de la preparación, las comprobaciones de finitud del núcleo suman cerca de 0,6 s de 3,4 s. En CUDA cada una sincroniza el dispositivo, así que su coste debe medirse antes de entrenar. El lector queda en un 13 %. En `transformer_direct` la pasada tarda 1,0 ms por observación y el lector pesa un 24 %.
+Un perfil de una pasada de ajuste en CPU, 16 activos, anchura 64 y `truncation=8`, sin pasos de optimizador, tarda unos 1,7 ms por observación en `mac_online`. La preparación del predictor ocupa un 50 % y el backward un 28 %. Dentro de la preparación, las comprobaciones de finitud del núcleo suman cerca de 0,6 s de 3,4 s. En CUDA se resuelven juntas al final de cada evento, con una sola espera al dispositivo ([#549](https://github.com/GonxKZ/mars-titan/issues/549)). El lector queda en un 13 %. En `transformer_direct` la pasada tarda 1,0 ms por observación y el lector pesa un 24 %.
 
 ## Correspondencia con `CorpusDataset`
 
