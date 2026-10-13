@@ -217,3 +217,21 @@ def test_quantile_parent_needs_a_consistent_output_contract(tmp_path, change):
     atomic_json(path, report)
     with pytest.raises(ValueError, match="inferencia" if change == "code" else "cabeza"):
         load_parent(ordered, path, device="cpu", diagnostic=True)
+
+
+@pytest.mark.parametrize("change", ["policy", "precision", "flags"])
+def test_parent_with_declared_precision_needs_the_policy_its_fit_recorded(tmp_path, change):
+    from mars_titan.training.kernel_policy import FP32_STRICT
+
+    _, ordered, _ = masked_ordered(tmp_path)
+    path, _ = masked_parent(ordered, tmp_path / "parent", precision=FP32_STRICT)
+    report = json.loads(path.read_text())
+    if change == "policy":
+        report["identity"].pop("kernel_policy")
+    elif change == "precision":
+        report["identity"]["case"].pop("precision")
+    else:
+        report["identity"]["kernel_policy"]["cudnn_allow_tf32"] = True
+    atomic_json(path, report)
+    with pytest.raises(ValueError, match="política de precisión"):
+        load_parent(ordered, path, device="cpu", diagnostic=True)

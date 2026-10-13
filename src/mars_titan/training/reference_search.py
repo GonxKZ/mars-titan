@@ -17,7 +17,7 @@ from mars_titan.data.storage import atomic_json, outside_source, sha256
 from .checkpoints import StopRequest
 from .learning_hold import require_learning_allowed
 from .reference_campaign import _check_finished, campaign_views
-from .reference_design import candidate_indices, design_cases
+from .reference_design import MAX_BATCH_SIZE, candidate_indices, design_cases
 from .reference_run import (
     FULL_TRAIN_VALIDATION,
     PREDICTION_RETENTIONS,
@@ -91,7 +91,7 @@ def _configuration(path):
         or len(set(plan["arms"])) != len(plan["arms"])
         or not set(plan["arms"]) <= {"US", "CN", "US+CN"}
         or type(plan["batch_size"]) is not int
-        or not 1 <= plan["batch_size"] <= 4096
+        or not 1 <= plan["batch_size"] <= MAX_BATCH_SIZE
         or type(plan["context_sessions"]) is not int
         or plan["context_sessions"] not in {32, 64, 128}
         or type(plan["checkpoint_seconds"]) not in (int, float)

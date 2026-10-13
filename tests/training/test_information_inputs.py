@@ -223,7 +223,9 @@ def test_corpus_factory_does_not_guess_an_unidentified_representation(tmp_path):
         build(source, macro_catalog="data/catalogs/macro-indicators.csv")
 
 
-def test_executable_view_example_keeps_population_and_zeroes_every_excluded_route(tmp_path):
+def test_executable_view_example_keeps_population_and_zeroes_every_excluded_route(
+    tmp_path, source_environment
+):
     output = tmp_path / "example"
     result = subprocess.run(
         [
@@ -240,6 +242,7 @@ def test_executable_view_example_keeps_population_and_zeroes_every_excluded_rout
         ],
         capture_output=True,
         text=True,
+        env=source_environment,
     )
     assert result.returncode == 0, result.stderr
     report = json.loads(result.stdout)

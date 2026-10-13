@@ -1,0 +1,117 @@
+{
+  "problem": "clustered",
+  "tracker": "memray.Tracker, native_traces=True, trace_python_allocators=True",
+  "memray": "1.20.0",
+  "numpy": "2.5.3",
+  "blas": [
+    {
+      "internal_api": "openblas",
+      "version": "0.3.34.106.0",
+      "num_threads": 2,
+      "architecture": "SkylakeX"
+    }
+  ],
+  "threads": {
+    "OMP_NUM_THREADS": "2",
+    "OPENBLAS_NUM_THREADS": null
+  },
+  "blas_workspace": {
+    "tile_shape": [
+      256,
+      256
+    ],
+    "dimensions": 64,
+    "memray_peak_bytes": 34222920,
+    "memray_blas_bytes": 34222088,
+    "vm_size_delta_bytes": 33828864,
+    "rss_anon_delta_bytes": 929792
+  },
+  "variants": {
+    "reference": {
+      "estimated_peak_bytes": 9983632,
+      "memray_peak_bytes": 6989501,
+      "blas_bytes_at_peak": 0,
+      "own_bytes_at_peak": 6989501,
+      "within_estimate": true,
+      "largest_own_at_peak": [
+        {
+          "location": "_ordered:124",
+          "bytes": 2592920
+        },
+        {
+          "location": "select_anchored_medoids:384",
+          "bytes": 2072672
+        },
+        {
+          "location": "__init__:202",
+          "bytes": 524488
+        },
+        {
+          "location": "__init__:201",
+          "bytes": 524416
+        },
+        {
+          "location": "select_anchored_medoids:385",
+          "bytes": 520376
+        },
+        {
+          "location": "_compute:252",
+          "bytes": 197520
+        }
+      ],
+      "background_tile_shape": [
+        256,
+        256
+      ],
+      "applied": {
+        "reused_distances": false,
+        "bounded_background": false
+      }
+    },
+    "bounded_and_reused": {
+      "estimated_peak_bytes": 18499088,
+      "memray_peak_bytes": 14504262,
+      "blas_bytes_at_peak": 524288,
+      "own_bytes_at_peak": 13979974,
+      "within_estimate": true,
+      "largest_own_at_peak": [
+        {
+          "location": "_bounded_minimum:175",
+          "bytes": 2593056
+        },
+        {
+          "location": "_bounded_minimum:174",
+          "bytes": 2592992
+        },
+        {
+          "location": "_ordered:124",
+          "bytes": 2592920
+        },
+        {
+          "location": "select_anchored_medoids:384",
+          "bytes": 2072672
+        },
+        {
+          "location": "<genexpr>:183",
+          "bytes": 1573216
+        },
+        {
+          "location": "__init__:201",
+          "bytes": 524384
+        }
+      ],
+      "background_tile_shape": [
+        256,
+        256
+      ],
+      "applied": {
+        "reused_distances": true,
+        "bounded_background": true
+      }
+    }
+  },
+  "limits": [
+    "El área de trabajo de OpenBLAS se reserva una vez por proceso y no se libera.",
+    "La memoria residente depende de las páginas que toque cada producto."
+  ]
+}

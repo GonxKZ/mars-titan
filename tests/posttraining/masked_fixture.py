@@ -14,6 +14,7 @@ from mars_titan.environments.corpus_source import ParquetCohortSource, prepare_c
 from mars_titan.models.baselines.multimodal import PRESENCE_FUSION, MultimodalReference
 from mars_titan.models.quantile_head import CONTRACT
 from mars_titan.training.checkpoints import save_training_state
+from mars_titan.training.kernel_policy import apply_kernel_policy
 from mars_titan.training.reference_run import HELDOUT_FULL_TRAIN_SESSIONS
 from tests.training.historical_temporal_fixture import historical_temporal_fixture
 from tests.training.test_historical_temporal import prepare
@@ -64,15 +65,29 @@ def architecture(kind):
 
 
 def masked_parent(
-    ordered, folder, kind="gru", *, seed=3, policy=True, fusion=PRESENCE_FUSION, head=None
+    ordered,
+    folder,
+    kind="gru",
+    *,
+    seed=3,
+    policy=True,
+    fusion=PRESENCE_FUSION,
+    head=None,
+    precision=None,
 ):
-    """Escribir un recibo completo de referencia con fusión de presencia y pesos aleatorios."""
+    """Escribir un recibo completo de referencia con fusión de presencia y pesos aleatorios.
+
+    Con `precision` el caso la declara y la identidad registra su política, como hace
+    `reference_run` al ajustar. Registrarla fija la política en el proceso.
+    """
     source = json.loads(Path(ordered).read_text())
     shapes = source["shapes"]
     dimensions = {name: shape[-1] for name, shape in shapes.items()}
     case = dict(kind=kind, architecture=architecture(kind), epochs=1)
     if head is not None:
         case["head"] = head
+    if precision is not None:
+        case["precision"] = precision
     names = [
         "training/corpus_inputs.py",
         "training/temporal_corpus.py",
@@ -99,6 +114,8 @@ def masked_parent(
         identity.update(policy_identity(HISTORICAL_MASKED), mask_fusion=fusion)
     if head is not None:
         identity["output_head"] = dict(CONTRACT)
+    if precision is not None:
+        identity["kernel_policy"] = apply_kernel_policy(precision)
     torch.manual_seed(seed)
     model = MultimodalReference(
         kind,

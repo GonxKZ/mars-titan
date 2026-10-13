@@ -196,16 +196,24 @@ print(executor.submit(int, 7).result(timeout=30), flush=True)
 """
 
 
-def test_a_map_closed_inside_its_own_task_does_not_wait_for_itself():
+def test_a_map_closed_inside_its_own_task_does_not_wait_for_itself(source_environment):
     result = subprocess.run(
-        [sys.executable, "-c", SELF_CLOSED], capture_output=True, text=True, timeout=60
+        [sys.executable, "-c", SELF_CLOSED],
+        capture_output=True,
+        text=True,
+        timeout=60,
+        env=source_environment,
     )
     assert result.returncode == 0 and result.stdout.split() == ["7"]
 
 
-def test_an_abandoned_producer_closes_its_source_before_the_interpreter_exits():
+def test_an_abandoned_producer_closes_its_source_before_the_interpreter_exits(source_environment):
     result = subprocess.run(
-        [sys.executable, "-c", ABANDONED], capture_output=True, text=True, timeout=60
+        [sys.executable, "-c", ABANDONED],
+        capture_output=True,
+        text=True,
+        timeout=60,
+        env=source_environment,
     )
     assert result.returncode == 0 and result.stdout.split() == ["cerrado"]
 

@@ -1,0 +1,169 @@
+{
+  "prepare": {
+    "repeats": 100,
+    "wall_ms_per_repeat": 14.7894,
+    "kernels_per_repeat": 398.0,
+    "kernel_ms_per_repeat": 7.3028,
+    "graphs_per_repeat": 0.0,
+    "graph_ms_per_repeat": 0.0,
+    "gpu_busy_fraction": 0.4938,
+    "api_calls_per_repeat": {
+      "cuKernelGetName": {
+        "count": 397.0,
+        "ms": 0.1124
+      },
+      "cudaLaunchKernel": {
+        "count": 397.0,
+        "ms": 2.435
+      },
+      "cudaMemsetAsync": {
+        "count": 17.0,
+        "ms": 0.1327
+      },
+      "cudaMemcpyAsync": {
+        "count": 9.0,
+        "ms": 1.1782
+      },
+      "cudaStreamIsCapturing": {
+        "count": 6.0,
+        "ms": 0.0087
+      },
+      "cudaStreamSynchronize": {
+        "count": 2.0,
+        "ms": 0.0158
+      },
+      "cudaEventQuery": {
+        "count": 1.0,
+        "ms": 0.0077
+      },
+      "cudaEventRecordWithFlags": {
+        "count": 1.0,
+        "ms": 0.0055
+      },
+      "cudaLaunchKernelExC": {
+        "count": 1.0,
+        "ms": 0.008
+      },
+      "cudaDeviceSynchronize": {
+        "count": 1.0,
+        "ms": 0.0203
+      }
+    },
+    "copies_per_repeat": {
+      "Host-to-Device": {
+        "count": 1.0,
+        "bytes": 8192
+      },
+      "Device-to-Host": {
+        "count": 2.0,
+        "bytes": 40
+      },
+      "Device-to-Device": {
+        "count": 6.0,
+        "bytes": 34340865
+      }
+    }
+  },
+  "deferred": {
+    "repeats": 100,
+    "wall_ms_per_repeat": 10.4073,
+    "kernels_per_repeat": 351.0,
+    "kernel_ms_per_repeat": 6.9102,
+    "graphs_per_repeat": 0.0,
+    "graph_ms_per_repeat": 0.0,
+    "gpu_busy_fraction": 0.664,
+    "api_calls_per_repeat": {
+      "cuKernelGetName": {
+        "count": 350.0,
+        "ms": 0.0878
+      },
+      "cudaLaunchKernel": {
+        "count": 350.0,
+        "ms": 1.9431
+      },
+      "cudaMemsetAsync": {
+        "count": 13.0,
+        "ms": 0.0901
+      },
+      "cudaMemcpyAsync": {
+        "count": 7.0,
+        "ms": 1.1488
+      },
+      "cudaStreamIsCapturing": {
+        "count": 3.0,
+        "ms": 0.0049
+      },
+      "cudaLaunchKernelExC": {
+        "count": 1.0,
+        "ms": 0.0076
+      },
+      "cudaStreamSynchronize": {
+        "count": 1.0,
+        "ms": 0.0079
+      },
+      "cudaDeviceSynchronize": {
+        "count": 1.0,
+        "ms": 0.0198
+      }
+    },
+    "copies_per_repeat": {
+      "Device-to-Device": {
+        "count": 6.0,
+        "bytes": 34340865
+      },
+      "Device-to-Host": {
+        "count": 1.0,
+        "bytes": 32
+      }
+    }
+  },
+  "graph": {
+    "repeats": 100,
+    "wall_ms_per_repeat": 8.079,
+    "kernels_per_repeat": 11.0,
+    "kernel_ms_per_repeat": 0.1425,
+    "graphs_per_repeat": 1.0,
+    "graph_ms_per_repeat": 7.1222,
+    "gpu_busy_fraction": 0.8992,
+    "api_calls_per_repeat": {
+      "cudaMemcpyAsync": {
+        "count": 15.0,
+        "ms": 7.3323
+      },
+      "cuKernelGetName": {
+        "count": 11.0,
+        "ms": 0.0042
+      },
+      "cudaLaunchKernel": {
+        "count": 11.0,
+        "ms": 0.0686
+      },
+      "cudaGraphLaunch": {
+        "count": 1.0,
+        "ms": 0.2148
+      },
+      "cudaStreamIsCapturing": {
+        "count": 1.0,
+        "ms": 0.0015
+      },
+      "cudaStreamSynchronize": {
+        "count": 1.0,
+        "ms": 0.0121
+      },
+      "cudaDeviceSynchronize": {
+        "count": 1.0,
+        "ms": 0.0189
+      }
+    },
+    "copies_per_repeat": {
+      "Device-to-Device": {
+        "count": 14.0,
+        "bytes": 74687488
+      },
+      "Device-to-Host": {
+        "count": 1.0,
+        "bytes": 32
+      }
+    }
+  }
+}

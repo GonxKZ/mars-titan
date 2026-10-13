@@ -368,6 +368,10 @@ class RetentionBank:
             max_working_bytes=remaining,
             max_distance_pairs=self.config.max_distance_pairs,
             max_swaps=self.config.max_swaps,
+            # Las dos dan los mismos bits que la referencia. Si no caben en el presupuesto,
+            # la selección sigue la ruta de referencia.
+            reuse_distances=True,
+            bounded_background=True,
         )
         if selection.status == "swap_limit":
             raise MedoidBudgetExceeded("La retención no completó los intercambios permitidos")

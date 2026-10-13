@@ -164,11 +164,33 @@ def _integer_geometry(clients: np.ndarray, candidates: np.ndarray, metric: str) 
     return True
 
 
+def _reuse_bytes(clients, candidates, rows):
+    """Memoria de la tabla de distancias reutilizadas y de sus marcas por bloque."""
+    return 8 * clients * candidates + math.ceil(clients / rows) * candidates
+
+
 class _Costs:
-    """Estado lineal en clientes y dos buffers de distancia, sin tabla global."""
+    """Estado lineal en clientes y dos buffers de distancia.
+
+    Sin `reuse` no hay tabla global y cada evaluación vuelve a calcular sus distancias. Con
+    `reuse`, la distancia de cada bloque de clientes a un candidato se calcula la primera vez
+    que se pide, con la misma operación, y se copia en las siguientes. Los pares se siguen
+    contando como en la referencia, una vez por evaluación, así que el presupuesto se agota
+    en el mismo punto.
+    """
 
     def __init__(
-        self, clients, candidates, metric, integer, rows, columns, max_pairs, *, background=None
+        self,
+        clients,
+        candidates,
+        metric,
+        integer,
+        rows,
+        columns,
+        max_pairs,
+        *,
+        background=None,
+        reuse=False,
     ):
         self.clients, self.candidates = clients, candidates
         self.metric, self.integer = metric, integer
@@ -183,6 +205,11 @@ class _Costs:
         self.owner = np.empty(len(clients), dtype=np.int64)
         self.base = np.empty(rows, dtype=dtype)
         self.mask = np.empty(rows, dtype=bool)
+        self.cache = self.known = None
+        if reuse:
+            self.cache = np.empty((len(clients), len(candidates)), dtype=dtype)
+            blocks = math.ceil(len(clients) / rows)
+            self.known = np.zeros((blocks, len(candidates)), dtype=bool)
 
     def _sum(self, values):
         if self.integer:
@@ -200,8 +227,23 @@ class _Costs:
         if self.pairs + count > self.max_pairs:
             raise MedoidBudgetExceeded("Se ha agotado el presupuesto de pares de distancia")
         self.pairs += count
-        target = self.candidates[list(indices)]
         distance = self.distances[: end - start, : len(indices)]
+        if self.cache is None:
+            return self._compute(start, end, indices, distance)
+        block = start // self.rows
+        missing = [index for index in indices if not self.known[block, index]]
+        if missing:
+            # Las columnas nuevas se calculan en el mismo buffer y pasan a la tabla antes
+            # de que `take` lo reescriba con las columnas pedidas.
+            fresh = self.distances[: end - start, : len(missing)]
+            self.cache[start:end, missing] = self._compute(start, end, missing, fresh)
+            self.known[block, missing] = True
+        np.take(self.cache[start:end], indices, axis=1, out=distance, mode="clip")
+        return distance
+
+    def _compute(self, start, end, indices, distance):
+        """Distancias del bloque a `indices`: resta y `hypot` o valor absoluto por dimensión."""
+        target = self.candidates[list(indices)]
         scratch = self.scratch[: end - start, : len(indices)]
         distance.fill(0)
         try:

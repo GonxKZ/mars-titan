@@ -1,0 +1,146 @@
+{
+  "benchmark": "benchmarks/titans_emission_graph.py",
+  "runs": [
+    {
+      "rows": 1024,
+      "recipe": "configs/titans/chronological-training-historical-masked.json",
+      "variant": "mac_online",
+      "differentiable": true,
+      "same_bits": {
+        "deferred_vs_prepare": true,
+        "graph_vs_prepare": true
+      },
+      "median_ms": {
+        "prepare": 12.47,
+        "deferred": 9.227,
+        "graph": 7.921
+      },
+      "graph_vs_deferred": 1.165,
+      "deferred_vs_prepare": 1.352,
+      "deferred_checks": 32,
+      "reserved_mib": 870,
+      "load_average": [
+        29.67,
+        31.85,
+        27.11
+      ],
+      "warmup": 3,
+      "repeats": 20,
+      "torch": "2.14.0+cu130",
+      "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU"
+    },
+    {
+      "rows": 1024,
+      "recipe": "configs/titans/chronological-training-historical-masked.json",
+      "variant": "mac_online",
+      "differentiable": true,
+      "same_bits": {
+        "deferred_vs_prepare": true,
+        "graph_vs_prepare": true
+      },
+      "median_ms": {
+        "prepare": 13.262,
+        "deferred": 8.645,
+        "graph": 7.914
+      },
+      "graph_vs_deferred": 1.092,
+      "deferred_vs_prepare": 1.534,
+      "deferred_checks": 32,
+      "reserved_mib": 902,
+      "load_average": [
+        29.11,
+        31.65,
+        27.1
+      ],
+      "warmup": 3,
+      "repeats": 20,
+      "torch": "2.14.0+cu130",
+      "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU"
+    },
+    {
+      "rows": 1024,
+      "recipe": "configs/titans/chronological-training-historical-masked.json",
+      "variant": "mac_online",
+      "differentiable": true,
+      "same_bits": {
+        "deferred_vs_prepare": true,
+        "graph_vs_prepare": true
+      },
+      "median_ms": {
+        "prepare": 13.531,
+        "deferred": 8.506,
+        "graph": 7.853
+      },
+      "graph_vs_deferred": 1.083,
+      "deferred_vs_prepare": 1.591,
+      "deferred_checks": 32,
+      "reserved_mib": 870,
+      "load_average": [
+        29.02,
+        31.59,
+        27.1
+      ],
+      "warmup": 3,
+      "repeats": 20,
+      "torch": "2.14.0+cu130",
+      "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU"
+    }
+  ],
+  "earlier_runs": [
+    {
+      "rows": 1024,
+      "recipe": "configs/titans/chronological-training-historical-masked.json",
+      "variant": "mac_online",
+      "differentiable": true,
+      "same_bits": {
+        "deferred_vs_prepare": true,
+        "graph_vs_prepare": true
+      },
+      "median_ms": {
+        "prepare": 11.197,
+        "deferred": 7.688,
+        "graph": 7.837
+      },
+      "graph_vs_deferred": 0.981,
+      "deferred_vs_prepare": 1.456,
+      "deferred_checks": 32,
+      "reserved_mib": 870,
+      "warmup": 3,
+      "repeats": 20,
+      "torch": "2.14.0+cu130",
+      "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+      "note": "Versión anterior del benchmark, sin rangos NVTX ni carga registrada."
+    },
+    {
+      "rows": 1024,
+      "recipe": "configs/titans/chronological-training-historical-masked.json",
+      "variant": "mac_online",
+      "differentiable": true,
+      "same_bits": {
+        "deferred_vs_prepare": true,
+        "graph_vs_prepare": true
+      },
+      "median_ms": {
+        "prepare": 11.443,
+        "deferred": 9.576,
+        "graph": 7.877
+      },
+      "graph_vs_deferred": 1.216,
+      "deferred_vs_prepare": 1.195,
+      "deferred_checks": 32,
+      "reserved_mib": 870,
+      "warmup": 3,
+      "repeats": 20,
+      "torch": "2.14.0+cu130",
+      "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+      "note": "Misma versión que runs salvo la carga, que aún no se registraba. Se midió justo antes de los perfiles."
+    },
+    {
+      "median_ms": {
+        "deferred": 8.46,
+        "graph": 7.87
+      },
+      "note": "Primera medida del cálculo diferido y del grafo, sin JSON guardado. Citada en el informe."
+    }
+  ]
+}
