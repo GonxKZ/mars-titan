@@ -37,7 +37,7 @@ uv sync --locked \
   --extra encoders
 ```
 
-El extra `cuda` obtiene PyTorch desde el índice CUDA 13.0 declarado en `pyproject.toml`, para Linux x86-64. Se han comprobado importación, operación en `cuda:0`, extracción de representaciones y entrenamiento supervisado. La resolución del lockfile no sustituye estas comprobaciones al cambiar de equipo.
+El extra `cuda` obtiene PyTorch desde el índice CUDA 13.0 declarado en `pyproject.toml`, para Linux x86-64 y Linux aarch64. La segunda arquitectura corresponde a la DGX GB10 y su estado se describe en [plataformas de hardware](hardware-platforms.md). Se han comprobado importación, operación en `cuda:0`, extracción de representaciones y entrenamiento supervisado. La resolución del lockfile no sustituye estas comprobaciones al cambiar de equipo.
 
 Las herramientas actuales se ejecutan desde la raíz:
 
@@ -114,7 +114,7 @@ Las órdenes del README nativo separan Release de los perfiles de avisos, análi
 
 ## Registro de futuros experimentos
 
-Cada ejecución científica conservará la revisión del código, el lockfile, la configuración efectiva, las semillas y el entorno utilizado. También registrará el dispositivo, la precisión, los límites de memoria y los ajustes que puedan afectar al determinismo.
+Cada ejecución científica conservará la revisión del código, el lockfile, la configuración efectiva, las semillas y el entorno utilizado. La campaña con máscaras registra además la [identidad de la plataforma](hardware-platforms.md#identidad-de-la-plataforma) en cada recibo y no compara recibos de máquinas distintas. También registrará el dispositivo, la precisión, los límites de memoria y los ajustes que puedan afectar al determinismo.
 
 Los datos tendrán identificadores de versión, hashes y reglas de disponibilidad temporal. Los cortes de entrenamiento, validación, calibración y test se guardarán junto con los estados iniciales y las reglas de actualización de memoria. Una predicción deberá poder asociarse con la información disponible cuando se produjo.
 

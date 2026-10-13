@@ -91,8 +91,13 @@ def options(native, source, consumer, **extra):
 
 
 def associative_state(run):
+    """Matriz A y núcleo pendiente confirmados. Solo una clave enrutada guarda rutas pendientes."""
+    if not run.associative:
+        return None, None
     bundle = run._bundle(run.snapshot()["state"])
-    return run._associative_state(bundle["associative"]) if run.associative else (None, None)
+    memory, core, routes = run._associative_state(bundle["associative"])
+    assert (routes is None) == (run.associative.routing is None)
+    return memory, core
 
 
 def trajectory(native, source, consumer, output, *, correction=None, shift=None, recover=False):
@@ -353,9 +358,9 @@ def test_correction_requires_titans_without_bank_and_its_declaration(
 
 
 def test_correction_keys_and_feedback_validate_their_contract():
-    with pytest.raises(ValueError, match="clave codec o constant"):
+    with pytest.raises(ValueError, match="una clave de codec, constant, regime"):
         MatureCorrection(DELTA.memory, key="label")
-    with pytest.raises(ValueError, match="64 o 1"):
+    with pytest.raises(ValueError, match="clave codec usa 64 coordenadas"):
         MatureCorrection(AssociativeMemoryConfig("delta", key_size=8))
     with pytest.raises(ValueError, match="FP32"):
         DELTA.keys(torch.ones((2, 64), dtype=torch.float64))

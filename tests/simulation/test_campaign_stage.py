@@ -13,6 +13,8 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import numpy as np
+import pyarrow as pa
+import pyarrow.parquet as pq
 import pytest
 
 from mars_titan.data import prediction_files
@@ -878,6 +880,61 @@ def test_every_tape_carries_the_predictions_of_the_confirmed_chain_state(
         # El universo se fija con las cintas de la cadena, nunca con las de la base.
         assert segments == {window: expected[window] for window in segments}
         assert all(published(base, w).sha256 != digest for w, digest in segments.items())
+
+
+def fit_maturity(view):
+    """Mayor maduración de ajuste, validación y calibración de una vista, leída sin la etapa."""
+    manifest = json.loads((view / "manifest.json").read_text())
+    latest = None
+    for path in sorted(Path(manifest["roots"]["labels"]).glob("*/*/labels.parquet")):
+        table = pq.read_table(path, columns=["partition", "target_available_at"])
+        partition = np.asarray(table["partition"].to_pylist(), dtype=object)
+        fit = np.isin(partition, ["train", "validation", "calibration"])
+        if fit.any():
+            value = int(table["target_available_at"].cast(pa.int64()).to_numpy()[fit].max())
+            latest = value if latest is None else max(latest, value)
+    return latest
+
+
+def test_every_chain_tape_session_comes_after_the_last_label_of_its_predictor(
+    base_a, tmp_path, learning_doubles
+):
+    """Fin de ajuste de cada sesión de las cintas de la cadena, recalculado desde las vistas.
+
+    El predictor de la cadena de la ventana k parte del padre de k-1 y se elige y calibra con
+    la vista k, así que su última etiqueta es la mayor de las dos vistas. Se lee de las
+    etiquetas sin `label_maturity` ni la etapa, y cada sesión de cada cinta debe declararla y
+    ser posterior a ella, con tramos solo de evaluación.
+    """
+    base = chained(base_a, tmp_path)
+    chain = fixture.publish_chain(base, tmp_path / "chain")
+    learner = fixture.ScriptedLearner()
+    summary = fixture.run(base, tmp_path / "stage", learner, chain_output=chain)
+    assert summary["status"] == "completed" and learner.calls
+    views = base.views["US"]
+    windows = sorted(p.name for p in views.iterdir() if (p / "manifest.json").is_file())
+    expected = {
+        window: max(fit_maturity(views / name) for name in windows[max(0, i - 1) : i + 1])
+        for i, window in enumerate(windows)
+    }
+    paths = sorted(p.parent for p in (tmp_path / "stage/tapes").rglob("manifest.json"))
+    checked = set()
+    for path in paths:
+        tape = read_tape(path)
+        audit = tape.identity["audit"]
+        segments = audit["walk_forward"]
+        starts = np.array([segment["start"] for segment in segments])
+        owner = np.searchsorted(starts, tape.close_times, side="right") - 1
+        for segment in segments:
+            assert segment["partition"] == "evaluation"
+            assert segment["labels_used_until"] == expected[segment["fold"]]
+            assert segment["labels_used_until"] < segment["start"]
+            checked.add(segment["fold"])
+        fits = np.array(audit["prediction_fit_ends"])
+        assert np.array_equal(fits, [segments[i]["labels_used_until"] for i in owner])
+        assert (fits < tape.prediction_times).all()
+    # Hay cintas de ajuste, validación y evaluación de las ventanas con política.
+    assert len(paths) > 4 and checked >= {"fold-000", "fold-001", "fold-002", "fold-003"}
 
 
 def _chain_change(field, value):

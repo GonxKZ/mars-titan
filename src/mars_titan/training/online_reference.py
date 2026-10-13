@@ -1,16 +1,20 @@
 """Control en línea de la referencia Transformer con las etiquetas maduras del banco.
 
 `transformer_compact_online` parte del estado elegido de `transformer_compact` en la misma
-ventana y semilla. Recorre calibración y evaluación en orden temporal con el índice de
-observaciones de MARS-TITAN: en cada instante emite primero sus predicciones y después
-aprende con las etiquetas que maduran en ese instante, las mismas que admite el banco
-episódico y en el mismo momento. Cada tramo empieza desde el estado elegido, igual que el
-banco empieza vacío en cada tramo. El control sirve para descartar que una mejora de
-MARS-TITAN venga solo de seguir aprendiendo.
+ventana y semilla. Recorre validación, calibración y evaluación en orden temporal con el
+índice de observaciones de MARS-TITAN: en cada instante emite primero sus predicciones y
+después aprende con las etiquetas que maduran en ese instante, las mismas que admite el
+banco episódico y en el mismo momento. Cada tramo empieza desde el estado elegido, igual
+que el banco empieza vacío en cada tramo. La validación solo sirve para elegir la tasa de
+aprendizaje. El control sirve para descartar que una mejora de MARS-TITAN venga solo de
+seguir aprendiendo.
 
-La regla se declara antes de ejecutar: optimizador, tasa de aprendizaje, etiquetas por
-paso, instantes de maduración entre actualizaciones, recorte de gradiente y tope. El tope
-cuenta etiquetas. En cada tramo no se usan más etiquetas que escrituras hizo el banco de
+La regla se declara antes de ejecutar: optimizador, tasa de aprendizaje, filas por bloque de
+acumulación, instantes de maduración entre actualizaciones, recorte de gradiente y tope.
+Cada actualización es un solo paso con todas las etiquetas que maduraron desde la anterior,
+como una escritura del banco con las del instante. Los bloques de acumulación solo acotan la
+memoria y no cambian el gradiente, salvo por el orden de las sumas. El tope cuenta
+etiquetas. En cada tramo no se usan más etiquetas que escrituras hizo el banco de
 `mars_titan_m1` en el mismo ámbito, ventana y semilla. Las actualizaciones se hacen con el
 modelo en modo de evaluación, sin dropout, para que el recorrido sea determinista.
 """
@@ -39,13 +43,14 @@ from .reference_run import _forward, _point, row_loss
 from .titans_walk_forward import PredictionRows, _sources, checked_tables
 
 KIND = "reference_online_predictions"
-PARTITIONS = ("calibration", "evaluation")
+# La validación elige la tasa de aprendizaje. Calibración y evaluación son las comparadas.
+PARTITIONS = ("validation", "calibration", "evaluation")
 CAP_RULE = "episodic_bank_writes"
 OPTIMIZERS = ("sgd",)
 RULE_FIELDS = (
     "optimizer",
     "learning_rate",
-    "block_rows",
+    "accumulation_rows",
     "update_every",
     "max_grad_norm",
     "update_cap",
@@ -75,17 +80,17 @@ def checked_rule(rule):
         and set(rule) == set(RULE_FIELDS)
         and rule["optimizer"] in OPTIMIZERS
         and type(rule["learning_rate"]) is float
-        and 0 < rule["learning_rate"] <= 1
-        and type(rule["block_rows"]) is int
-        and 1 <= rule["block_rows"] <= 4096
+        and 0 <= rule["learning_rate"] <= 1
+        and type(rule["accumulation_rows"]) is int
+        and 1 <= rule["accumulation_rows"] <= 4096
         and type(rule["update_every"]) is int
         and 1 <= rule["update_every"] <= 10_000
         and type(rule["max_grad_norm"]) in (int, float)
         and math.isfinite(rule["max_grad_norm"])
         and rule["max_grad_norm"] > 0
         and rule["update_cap"] == CAP_RULE,
-        "La regla en línea declara optimizador sgd, tasa, etiquetas por paso, instantes entre "
-        f"actualizaciones, recorte y el tope {CAP_RULE}, sin valores pendientes",
+        "La regla en línea declara optimizador sgd, tasa, filas por bloque de acumulación, "
+        f"instantes entre actualizaciones, recorte y el tope {CAP_RULE}, sin valores pendientes",
     )
     return dict(rule)
 
@@ -198,13 +203,23 @@ def online_pass(
         resolved.clear()
 
     def step(refs):
-        target = torch.tensor([ref[2] for ref in refs], dtype=torch.float32, device=device)
+        """Un paso con la media de la pérdida de todas las etiquetas, acumulada por bloques.
+
+        Cada bloque aporta la suma de sus pérdidas dividida por el total, así que el gradiente
+        es el de la media sobre todas las filas, sin depender del tamaño del bloque. Solo
+        cambia el orden de las sumas. La finitud se comprueba una vez por paso.
+        """
         optimizer.zero_grad(set_to_none=True)
-        emitted = _forward(model, _gather(blocks, refs), device)
-        prediction = _point(emitted, target, quantiles)
-        loss = row_loss(case, emitted, prediction, target, quantiles).mean()
-        _require(torch.isfinite(loss).item(), "La pérdida en línea no es finita")
-        loss.backward()
+        total = None
+        for first in range(0, len(refs), rule["accumulation_rows"]):
+            chunk = refs[first : first + rule["accumulation_rows"]]
+            target = torch.tensor([ref[2] for ref in chunk], dtype=torch.float32, device=device)
+            emitted = _forward(model, _gather(blocks, chunk), device)
+            prediction = _point(emitted, target, quantiles)
+            loss = row_loss(case, emitted, prediction, target, quantiles).sum() / len(refs)
+            loss.backward()
+            total = loss.detach() if total is None else total + loss.detach()
+        _require(torch.isfinite(total).item(), "La pérdida en línea no es finita")
         torch.nn.utils.clip_grad_norm_(
             model.parameters(), rule["max_grad_norm"], error_if_nonfinite=True
         )
@@ -269,11 +284,10 @@ def online_pass(
                 counters["update_instants"] += 1
                 allowed = max(cap - counters["labels_used"], 0)
                 used, beyond = ready[:allowed], ready[allowed:]
-                for first in range(0, len(used), rule["block_rows"]):
-                    refs = used[first : first + rule["block_rows"]]
+                if used:
                     if audit is not None:
-                        audit.append(("step", event.at, tuple(ref[3:] for ref in refs)))
-                    step(refs)
+                        audit.append(("step", event.at, tuple(ref[3:] for ref in used)))
+                    step(used)
                 counters["labels_used"] += len(used)
                 counters["labels_beyond_cap"] += len(beyond)
                 release(ready)
@@ -330,7 +344,8 @@ def run_online_reference(
 
     `anchor` es la carpeta del estado elegido de `transformer_compact` y `bank` la de
     `mars_titan_m1`, ambas en la misma vista y semilla. La protección del aprendizaje y la
-    precisión se comprueban antes de leer ninguna fuente. `optimizer_factory` solo existe
+    precisión se comprueban antes de leer ninguna fuente. El MAE por sesión de la validación
+    es la puntuación con la que la campaña elige la tasa. `optimizer_factory` solo existe
     para comprobar el recorrido con un optimizador que no modifica pesos.
     """
     from mars_titan.data.embeddings import require_cuda
@@ -397,7 +412,8 @@ def run_online_reference(
         _require(written == rows.count, f"El Parquet de {name} no conserva sus filas")
         predictions[name] = dict(path=path.name, sha256=sha256(path), rows=written, metrics=metrics)
     report = dict(
-        schema_version=1,
+        # La versión 2 añade la validación y da un solo paso por actualización.
+        schema_version=2,
         kind=KIND,
         status="completed",
         final_test_opened=False,

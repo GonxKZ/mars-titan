@@ -399,9 +399,9 @@ Los límites se recontaron con `count_stage` y coinciden exactamente con el plan
 | --- | ---: | ---: | ---: | ---: |
 | A | 1.368 | 1.800 | 1.221 | 1.221 |
 | B | 456 | 600 | 2.133 | 2.421 |
-| A v2 | 2.376 | 2.808 | 2.775 | 2.775 |
-| A ampliada | 2.376 | 2.808 | 2.775 | 2.775 |
-| B ampliada | 792 | 936 | 4.359 | 4.647 |
+| A v2 | 2.664 | 3.096 | 3.219 | 3.219 |
+| A ampliada | 2.664 | 3.096 | 3.219 | 3.219 |
+| B ampliada | 888 | 1.032 | 4.995 | 5.283 |
 
 Cada política nueva añade 144 ajustes en A y en A v2 (dos predictores, 24 ventanas de mercado y
 tres semillas). En B añade 48 ajustes y 96 traslados, que son evaluaciones. Las referencias no

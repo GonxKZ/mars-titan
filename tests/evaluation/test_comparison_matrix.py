@@ -51,7 +51,7 @@ def coefficients(declared, family, name):
 
 def test_the_declared_matrix_compiles_every_question_and_lineage(declared):
     summary = matrix_module.summary(declared)
-    assert summary["families"] == 47 and summary["contrasts"] == 356
+    assert summary["families"] == 47 and summary["contrasts"] == 362
     families = declared["families"]
     assert len(families["between_families"]["contrasts"]) == 11 * 10 // 2
     assert len(families["mars_titan_vs_families__mars_titan_m1"]["contrasts"]) == 10
@@ -117,6 +117,19 @@ def test_the_titans_ladder_goes_from_the_compact_transformer_to_m3(declared):
         "mars_titan_b6": 1.0,
         "mars_titan_b6_bias": -1.0,
     }
+    # El régimen se contrasta con el calendario de la misma capacidad, con y sin el codec.
+    assert effects["regime_information@mars_titan_b6_calendar"]["coefficients"] == {
+        "mars_titan_b6_regime": 1.0,
+        "mars_titan_b6_calendar": -1.0,
+    }
+    assert effects["regime_information@mars_titan_b6_calendar_banks"]["coefficients"] == {
+        "mars_titan_b6_regime_banks": 1.0,
+        "mars_titan_b6_calendar_banks": -1.0,
+    }
+    assert effects["routing_slots@mars_titan_b6"]["coefficients"] == {
+        "mars_titan_b6_calendar_banks": 1.0,
+        "mars_titan_b6": -1.0,
+    }
 
 
 def test_cm_v1_has_every_coalition_and_the_full_titans_game_is_a_limitation(declared):
@@ -139,13 +152,13 @@ def test_the_missing_arms_report_is_reproducible_and_ranks_the_candidates(declar
     report = matrix_module.missing_arms(declared, hours)
     assert report == json.loads((REPORTS / "missing-arms.json").read_text())
     totals = report["totals"]
-    assert totals["contrasts"] == 356
+    assert totals["contrasts"] == 362
     assert (
         totals["declared"]
         + totals["planned_elsewhere"]
         + totals["candidates"]
         + totals["unidentified"]
-        == 356
+        == 362
     )
     first = report["candidates"][0]
     assert first["arm"] == "mars_titan_m2_k4" and first["tier"] == 1
@@ -172,7 +185,7 @@ def test_the_missing_arms_report_is_reproducible_and_ranks_the_candidates(declar
     # Los tres brazos de integración de MARS-TITAN también están declarados ya. Solo queda
     # condicionada la referencia pública de Titans-MAC.
     assert set(report["conditional_arms"]) == {"titans_reference_mac"}
-    assert (totals["declared"], totals["planned_elsewhere"]) == (219, 112)
+    assert (totals["declared"], totals["planned_elsewhere"]) == (225, 112)
     assert report["derived_arms"]["chain"]["contrasts"] == 3 * 22
     assert report["scientific_training_started"] is False
 
