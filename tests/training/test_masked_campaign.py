@@ -27,12 +27,13 @@ from mars_titan.data.input_policy import HISTORICAL_MASKED
 from mars_titan.data.storage import atomic_json, sha256
 from mars_titan.environments.walk_forward_receipt import prediction_fingerprint, read_window_receipt
 from mars_titan.evaluation import walk_forward_comparison as comparison
+from mars_titan.hardware import hardware_profiles
 from mars_titan.models.quantile_head import QUANTILE_COLUMNS
 from mars_titan.training import masked_campaign as engine
 from mars_titan.training.campaign_plan import load_campaign, plan_campaign
 from mars_titan.training.corpus_inputs import CorpusDataset
 from mars_titan.training.learning_hold import LearningHoldError
-from tests.hardware.platform_doubles import gb10, laptop
+from tests.hardware.platform_doubles import desktop, laptop
 from tests.training.test_walk_forward_v2_views import fixture
 
 pytestmark = pytest.mark.usefixtures("learning_doubles")
@@ -440,7 +441,7 @@ def test_sources_feed_the_walk_forward_comparison_with_the_same_rows(prepared, t
     assert years.max() <= 2023
 
 
-def test_receipts_record_the_platform_and_sources_keep_one_machine(prepared, tmp_path):
+def test_receipts_record_the_platform_and_sources_keep_one_machine(prepared, tmp_path, monkeypatch):
     campaign = write_campaign(tmp_path / "config")
     views = {"US": prepared.views["US"]}
     output = tmp_path / "out"
@@ -472,15 +473,30 @@ def test_receipts_record_the_platform_and_sources_keep_one_machine(prepared, tmp
     carry = next(job for job in jobs if job["kind"] == engine.CARRY)
     receipt_path = output / "jobs" / carry["id"] / "receipt.json"
     receipt = json.loads(receipt_path.read_text())
-    atomic_json(receipt_path, dict(receipt, platform=gb10()))
+    atomic_json(receipt_path, dict(receipt, platform=desktop()))
     with pytest.raises(ValueError, match="mezcla plataformas"):
         engine.write_sources(campaign, views, output, "US")
     # Un recibo anterior al registro solo entra con el perfil al que se atribuye.
     atomic_json(receipt_path, {k: v for k, v in receipt.items() if k != "platform"})
     with pytest.raises(ValueError, match="no registran su plataforma"):
         engine.write_sources(campaign, views, output, "US")
+    # Un perfil de otra máquina, escrito solo para la prueba, no admite los recibos del portátil.
+    profiles = tmp_path / "profiles"
+    profiles.mkdir()
+    laptop_profile = json.loads((hardware_profiles.PROFILES / "rtx4070-laptop.json").read_text())
+    (profiles / "rtx4070-laptop.json").write_text(json.dumps(laptop_profile))
+    other = dict(
+        laptop_profile,
+        name="rtx4090-desktop",
+        gpu=dict(name="NVIDIA GeForce RTX 4090", compute_capability=[8, 9]),
+    )
+    (profiles / "rtx4090-desktop.json").write_text(json.dumps(other))
+    load_profile = hardware_profiles.load_profile
+    monkeypatch.setattr(
+        hardware_profiles, "load_profile", lambda name: load_profile(name, folder=profiles)
+    )
     with pytest.raises(ValueError, match="atribuido"):
-        engine.write_sources(campaign, views, output, "US", unrecorded_platform="dgx-gb10")
+        engine.write_sources(campaign, views, output, "US", unrecorded_platform="rtx4090-desktop")
     path = engine.write_sources(campaign, views, output, "US", unrecorded_platform="rtx4070-laptop")
     assert json.loads(path.read_text())["platform"] == dict(
         platform_sha256=laptop()["platform_sha256"],

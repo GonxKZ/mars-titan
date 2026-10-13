@@ -16,20 +16,21 @@ from mars_titan.hardware.platform_identity import (
     platform_sha256,
     read_identity,
 )
-from tests.hardware.platform_doubles import gb10, laptop
+from tests.hardware.platform_doubles import desktop, laptop
 
-# Salida de lscpu --json en la GB10: dos tipos de núcleo Arm anidados bajo su fabricante.
-LSCPU_GB10 = {
+# Salida de lscpu --json con el modelo anidado bajo su fabricante, como en el portátil. El
+# segundo modelo no existe: comprueba que se conservan el orden y un solo ejemplar de cada uno.
+LSCPU = {
     "lscpu": [
-        {"field": "Architecture:", "data": "aarch64"},
-        {"field": "CPU(s):", "data": "20"},
+        {"field": "Architecture:", "data": "x86_64"},
+        {"field": "CPU(s):", "data": "16"},
         {
             "field": "Vendor ID:",
-            "data": "ARM",
+            "data": "AuthenticAMD",
             "children": [
-                {"field": "Model name:", "data": "Cortex-X925"},
-                {"field": "Model name:", "data": "Cortex-A725"},
-                {"field": "Model name:", "data": "Cortex-X925"},
+                {"field": "Model name:", "data": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics"},
+                {"field": "Model name:", "data": "Núcleo de prueba"},
+                {"field": "Model name:", "data": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics"},
             ],
         },
     ]
@@ -45,15 +46,15 @@ def test_lscpu_nested_models_are_kept_once_and_in_order():
 
     def run(command, **options):
         calls.append((command, options))
-        return completed(json.dumps(LSCPU_GB10))
+        return completed(json.dumps(LSCPU))
 
     torch = SimpleNamespace(
-        backends=SimpleNamespace(cpu=SimpleNamespace(get_cpu_capability=lambda: "SVE256"))
+        backends=SimpleNamespace(cpu=SimpleNamespace(get_cpu_capability=lambda: "AVX512"))
     )
     record = cpu_record(run=run, torch=torch)
-    assert record["architecture"] == "aarch64"
-    assert record["models"] == ["Cortex-X925", "Cortex-A725"]
-    assert record["capability"] == "SVE256"
+    assert record["architecture"] == "x86_64"
+    assert record["models"] == ["AMD Ryzen 9 8945HS w/ Radeon 780M Graphics", "Núcleo de prueba"]
+    assert record["capability"] == "AVX512"
     # Los nombres de campo dependen del idioma, así que lscpu se llama en la configuración C.
     assert calls[0][0] == ["lscpu", "--json"] and calls[0][1]["env"]["LC_ALL"] == "C"
 
@@ -64,15 +65,15 @@ def test_lscpu_without_architecture_or_model_is_rejected():
         cpu_record(run=lambda *a, **k: completed(json.dumps(output)))
 
 
-def test_nvidia_smi_rows_keep_unified_memory_as_absent():
+def test_nvidia_smi_rows_keep_unreported_fields_as_absent():
     rows = (
         "NVIDIA GeForce RTX 4070 Laptop GPU, 8.9, 8188, 595.91.07, GPU-a, 00000000:01:00.0\n"
-        "NVIDIA GB10, 12.1, [N/A], 580.95.05, GPU-b, 0000000F:01:00.0\n"
+        "NVIDIA GeForce RTX 4090, 8.9, [N/A], [N/A], GPU-b, 00000000:02:00.0\n"
     )
     gpus = gpu_records(run=lambda *a, **k: completed(rows), which=lambda name: "/usr/bin/" + name)
     assert gpus[0]["compute_capability"] == [8, 9] and gpus[0]["memory_total_mib"] == 8188
-    assert gpus[1]["compute_capability"] == [12, 1] and gpus[1]["memory_total_mib"] is None
-    assert gpus[1]["driver"] == "580.95.05"
+    assert gpus[0]["driver"] == "595.91.07"
+    assert gpus[1]["memory_total_mib"] is None and gpus[1]["driver"] is None
 
 
 def test_no_driver_means_no_gpu_and_a_malformed_row_is_rejected():
@@ -91,12 +92,12 @@ def test_memory_total_comes_from_meminfo(tmp_path):
 
 
 def test_an_emulated_interpreter_is_marked(monkeypatch):
-    # Bajo qemu-user Python dice aarch64, pero lscpu es del anfitrión y dice x86_64.
-    monkeypatch.setattr(identity_module.platform, "machine", lambda: "aarch64")
+    # Un intérprete emulado informa de otra arquitectura que la del procesador de lscpu.
+    monkeypatch.setattr(identity_module.platform, "machine", lambda: "riscv64")
     cpu = dict(architecture="x86_64", models=["AMD Ryzen 9"], logical=16, capability=None)
     record = platform_identity(cpu=cpu, gpus=[], torch=None, memory=1)
     assert record["emulated"] is True and record["torch"] is None
-    native = platform_identity(cpu=dict(cpu, architecture="aarch64"), gpus=[], torch=None, memory=1)
+    native = platform_identity(cpu=dict(cpu, architecture="riscv64"), gpus=[], torch=None, memory=1)
     assert native["emulated"] is False
     assert native["platform_sha256"] != record["platform_sha256"]
     assert read_identity(record) == record
@@ -123,7 +124,7 @@ def test_facts_that_do_not_change_numerics_keep_the_digest(changes):
 @pytest.mark.parametrize(
     "changes",
     [
-        dict(machine="aarch64"),
+        dict(machine="riscv64"),
         dict(system="Darwin"),
         dict(emulated=True),
         dict(cpu=dict(laptop()["cpu"], models=["Intel Core i9"])),
@@ -143,9 +144,9 @@ def test_facts_that_can_change_numerics_change_the_digest(changes):
 
 
 def test_a_tampered_or_foreign_identity_is_rejected():
-    record = gb10()
+    record = desktop()
     with pytest.raises(ValueError, match="no corresponde a su contenido"):
-        read_identity(dict(record, machine="x86_64"))
+        read_identity(dict(record, machine="riscv64"))
     with pytest.raises(ValueError, match="contrato"):
         read_identity(dict(record, kind="otra"))
     with pytest.raises(ValueError, match="incompleta"):
@@ -163,8 +164,8 @@ def test_this_machine_reports_a_consistent_identity():
 
 
 def test_only_the_platform_identity_reads_the_processor_from_proc():
-    # En aarch64 el cpuinfo de /proc no tiene `model name`, así que una lectura propia registraría
-    # un nombre vacío o la arquitectura. El resto del código usa cpu_name() o cpu_record().
+    # Solo platform_identity describe el procesador, para que todos los informes registren el
+    # mismo nombre. El resto del código usa cpu_name() o cpu_record().
     root = Path(__file__).resolve().parents[2]
     needle = "/proc/" + "cpuinfo"
     allowed = root / "src/mars_titan/hardware/platform_identity.py"
