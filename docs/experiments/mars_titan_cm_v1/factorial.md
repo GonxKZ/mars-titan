@@ -44,7 +44,7 @@ Al predecir con el núcleo congelado, C no interviene. Un núcleo ajustado con l
 
 ### Acumulación por bloques con C
 
-La receta del núcleo es la de Titans-MAC, que prevé `accumulation_rows=128` si el tramo completo de `mac_online` no cabe en los 8 GB de la GPU. Con acumulación, el entrenador emite cada bloque con el mismo cálculo, corta su grafo y, al actualizar, repite el tramo por bloques de flujos desde su estado inicial. La primera versión de C rechazaba esa combinación en el entrenador, y el plan de la campaña rechazaba la sección `cm_v1` si la receta fijaba la opción. Para admitirla había que comprobar que el gradiente del objetivo completo se puede repartir entre bloques sin cambiar su valor.
+La receta del núcleo es la de Titans-MAC, que fija `accumulation_rows=1024` desde [#482](https://github.com/GonxKZ/mars-titan/pull/482) porque el tramo completo de `mac_online` no cabe en los 8 GB de la GPU. Con acumulación, el entrenador emite cada bloque con el mismo cálculo, corta su grafo y, al actualizar, repite el tramo por bloques de flujos desde su estado inicial. La primera versión de C rechazaba esa combinación en el entrenador, y el plan de la campaña rechazaba la sección `cm_v1` si la receta fijaba la opción. Para admitirla había que comprobar que el gradiente del objetivo completo se puede repartir entre bloques sin cambiar su valor.
 
 Sea un tramo con N etiquetas maduras de pérdida ℓ_i y G grupos medidos. Cada grupo g es un evento y su selección S_g se fija sobre todos sus flujos:
 
@@ -142,6 +142,6 @@ La memoria y el caudal de los dos núcleos con `accumulation_rows` en `null` y e
 ## Pendiente
 
 - Ajustar y comparar los cuatro brazos en la campaña A. La edición histórica desde 2000 y sus objetivos ya están verificados, pero el bloqueo de aprendizaje sigue activo.
-- Copiar la sección a la configuración de A con la opción de memoria que se fije para la receta de Titans-MAC. El caudal de la penalización C y del lector en `cuda:0` sigue sin medir. La orden de medición recorre ya los dos núcleos con `accumulation_rows` en `null` y en 128 y el lector de cada brazo.
+- Copiar la sección a la configuración de A con la opción de memoria de la receta de Titans-MAC, `accumulation_rows=1024`. El caudal de la penalización C y del lector en `cuda:0` sigue sin medir. La orden de medición recorre ya los dos núcleos con `accumulation_rows` en `null` y en 128 y el lector de cada brazo.
 - Una condición de contracción común a todos los Jacobianos admisibles, si se quiere una garantía para productos variables. Ninguna lectura actual la aporta.
 - La comparación con MAE residual por sesión, diferencias emparejadas, incertidumbre por bloques y la interacción `MAE_CM − MAE_C − MAE_M + MAE_B`, descritas en el [protocolo](protocol.md).

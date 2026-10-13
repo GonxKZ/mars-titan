@@ -138,8 +138,10 @@ def test_the_rl_command_imports_only_its_stage(tmp_path):
     loaded = report["loaded"]
     assert "mars_titan.simulation.campaign_stage" in loaded
     assert [m for m in loaded if m.startswith(SYNTHETIC)] == []
-    # La orden no carga las demás etapas, que sí alcanzan código de mundos sintéticos.
-    assert "mars_titan.posttraining.campaign_stage" not in loaded
+    # La orden no carga las demás etapas, que sí alcanzan código de mundos sintéticos. El
+    # contrato de la cadena está en `training.campaign_chain`, así que no hace falta ningún
+    # módulo de posentrenamiento.
+    assert [m for m in loaded if m.startswith("mars_titan.posttraining")] == []
 
 
 @requires_native_library

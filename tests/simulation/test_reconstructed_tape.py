@@ -13,13 +13,18 @@ import pytest
 
 from mars_titan.environments.cohorts import FINAL_TEST_START_US
 from mars_titan.simulation.environment import FinancialEnv
-from mars_titan.simulation.market import RECONSTRUCTED_CONTRACT, MarketTape
+from mars_titan.simulation.market import (
+    RECONSTRUCTED_CONTRACT,
+    WALK_FORWARD_SEGMENT,
+    MarketTape,
+)
 from mars_titan.simulation.market_rules import china_a_share_instrument
 from mars_titan.simulation.reconstructed_tape import (
     NoAdmittedAssets,
     build_reconstructed_tape,
     read_edition,
 )
+from mars_titan.simulation.window_tapes import SEGMENT
 from tests.environments.walk_forward_fixture import microseconds
 from tests.simulation.native_library import requires_native_library
 from tests.simulation.policy_tape_fixture import monthly_window
@@ -315,12 +320,17 @@ def test_predictions_must_match_the_receipt_and_their_decisions(edition):
         build(edition, values=foreign)
 
 
+def test_the_reader_segment_is_the_one_the_policy_stage_builds():
+    assert WALK_FORWARD_SEGMENT == SEGMENT == "evaluation"
+
+
 def test_in_sample_segments_cannot_feed_a_tape(edition):
     symbols = [a.symbol for a in US]
     # La calibración usa etiquetas que el predictor ya consultó: sus predicciones no valen.
+    # El lector rechaza el tramo antes de comparar cada fin de ajuste con su decisión.
     calibration = predictions("US", symbols, start="2022-10-01", end="2022-12-31")
     window = evaluation_window("US", calibration, partition="calibration")
-    with pytest.raises(ValueError, match="ajuste anterior"):
+    with pytest.raises(ValueError, match="solo lleva predicciones de evaluación"):
         build(edition, windows=[window], predictions=[calibration], segment="calibration")
     with pytest.raises(ValueError, match="etiqueta usada"):
         evaluation_window("US", calibration, until=microseconds("2023-01-01"))
@@ -371,6 +381,21 @@ def test_tape_contract_rejects_a_softened_reconstructed_declaration(edition):
     audit["prediction_fit_ends"] = [audit["prediction_fit_ends"][0] - 1] * len(tape)
     with pytest.raises(ValueError, match="ajuste anterior"):
         rebuild(audit)
+    # Un límite igual al inicio del tramo cumple fin de ajuste <= decisión en cada sesión,
+    # pero no el contrato del recibo, que exige dejar de ver etiquetas antes del tramo.
+    audit = copy.deepcopy(tape.identity["audit"])
+    start = audit["walk_forward"][0]["start"]
+    assert start <= int(tape.prediction_times[0])
+    audit["walk_forward"][0]["labels_used_until"] = start
+    audit["prediction_fit_ends"] = [start] * len(tape)
+    with pytest.raises(ValueError, match="solo lleva predicciones de evaluación"):
+        rebuild(audit)
+    # Validación y calibración son filas con las que el predictor eligió o calibró.
+    for partition in ("train", "validation", "calibration"):
+        audit = copy.deepcopy(tape.identity["audit"])
+        audit["walk_forward"][0]["partition"] = partition
+        with pytest.raises(ValueError, match="solo lleva predicciones de evaluación"):
+            rebuild(audit)
     audit = copy.deepcopy(tape.identity["audit"])
     audit["walk_forward"][0]["start"] = int(tape.close_times[1])
     with pytest.raises(ValueError, match="fuera de sus tramos"):

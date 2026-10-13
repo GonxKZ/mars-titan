@@ -9,7 +9,7 @@ Sin `parent_view`, el padre se ajustó en la misma vista y el caso usa su tramo 
 Con `parent_view` (walk-forward por etapas), el padre es el estado elegido en la ventana
 anterior: se carga con el estado portable de los traslados, validación, calibración y
 evaluación son las de esta ventana y el ajuste solo decide con las filas que el padre no
-usó (`staged_rows.posttraining_rows`), tras el calentamiento sin etiquetas declarado.
+usó (`campaign_chain.posttraining_rows`), tras el calentamiento sin etiquetas declarado.
 
 Calentamiento, truncamiento, bloques, acumulación y política de memoria son los del ajuste
 del padre, leídos de su identidad. Solo cambian el optimizador, el presupuesto y la
@@ -43,6 +43,7 @@ from mars_titan.models.predictive_adaptation import (
 )
 from mars_titan.models.titans.config import canonical
 from mars_titan.models.titans.financial import FinancialConfig, FinancialPredictor
+from mars_titan.training.campaign_chain import posttraining_rows
 from mars_titan.training.carried_predictions import carried_window
 from mars_titan.training.checkpoints import StopRequest, load_training_state
 from mars_titan.training.corpus_inputs import CorpusDataset
@@ -90,7 +91,6 @@ from mars_titan.training.walk_forward_phases import micros, months_before
 
 from . import chronological_matrix as cm
 from .readout_adapters import ReadoutAdapterTrainer
-from .staged_rows import posttraining_rows
 
 TITANS_WINDOW = "titans_mac_posttraining_window"
 READOUT_WINDOW = "readout_posttraining_window"
@@ -101,7 +101,7 @@ _CODE = (
     "mars_titan.posttraining.chronological_windows",
     "mars_titan.posttraining.chronological_matrix",
     "mars_titan.posttraining.readout_adapters",
-    "mars_titan.posttraining.staged_rows",
+    "mars_titan.training.campaign_chain",
     "mars_titan.models.predictive_adaptation",
     "mars_titan.training.financial_run",
     "mars_titan.training.mars_titan_run",

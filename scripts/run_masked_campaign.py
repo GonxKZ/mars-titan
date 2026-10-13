@@ -29,7 +29,7 @@ import sys
 COMMANDS = {
     "throughput": "mars_titan.training.campaign_throughput",
     "budget": "mars_titan.training.campaign_budget",
-    "schedule": "mars_titan.training.campaign_schedule",
+    "schedule": "mars_titan.training.campaign_schedule_command",
     "extensions": "mars_titan.training.campaign_extensions",
     "posttraining": "mars_titan.posttraining.campaign_stage",
     "rl": "mars_titan.simulation.campaign_stage",

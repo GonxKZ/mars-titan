@@ -28,6 +28,7 @@ from mars_titan.training import mars_titan_walk_forward as mw
 from mars_titan.training import modality_ablation_stage as ablation_stage
 from mars_titan.training import titans_walk_forward as wf
 from mars_titan.training.learning_hold import HOLD_ENV
+from tests.learning_hold_lowering import lowers_learning_hold
 from tests.training.historical_temporal_fixture import historical_temporal_fixture
 from tests.training.test_carried_predictions import (
     PresenceCount,
@@ -310,6 +311,10 @@ def corrections(titans):
     return SimpleNamespace(**runs)
 
 
+@lowers_learning_hold(
+    "tests/training/test_modality_ablation_carry.py::"
+    "test_b6_ablation_equals_the_correction_with_a_real_absence"
+)
 def test_b6_ablation_equals_the_correction_with_a_real_absence(corrections, tmp_path, permitted):
     """El núcleo, el calentamiento y las claves del codec ven la ausencia, y A se escribe con
     los errores de ese recorrido. La ablación llega por el traslado común de la familia."""

@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from mars_titan.memory.associative_memory import RULES
+from mars_titan.memory.associative_memory import CORRECTION_KEYS, RULES
 from mars_titan.models.titans.episodic_readout import EpisodicReadoutConfig
 from mars_titan.models.titans.financial import VARIANTS
 from mars_titan.training.campaign_plan import MARS_BANKS
@@ -83,8 +83,11 @@ def test_episodic_banks_match_the_campaign_plan(declaration):
     assert bank["m3"]["recipe"] == "episodic_m3_three_index_v1"
 
 
-def test_associative_rules_match_the_implemented_component(declaration):
-    assert declaration["components"]["associative_memory"]["allowed"] == list(RULES)
+def test_associative_rules_and_keys_match_the_implemented_component(declaration):
+    associative = declaration["components"]["associative_memory"]
+    assert associative["allowed"] == list(RULES)
+    for field in ("value", "kalman_value"):
+        assert associative[field]["key"] == list(CORRECTION_KEYS)
 
 
 def test_each_ablation_changes_one_declared_component(declaration):
@@ -94,7 +97,12 @@ def test_each_ablation_changes_one_declared_component(declaration):
         assert ablation["reference"] in known, ablation["id"]
         (name, change), *rest = ablation["change"].items()
         assert not rest and name in components, ablation["id"]
-        assert set(_values(change)) <= set(components[name]["allowed"]), ablation["id"]
+        if isinstance(change, dict):
+            # Un cambio de clave de B6 conserva la regla y solo usa claves declaradas.
+            assert set(change) == {"key"}, ablation["id"]
+            assert set(change["key"]) <= set(components[name]["value"]["key"]), ablation["id"]
+        else:
+            assert set(_values(change)) <= set(components[name]["allowed"]), ablation["id"]
         known.add(ablation["id"])
 
 

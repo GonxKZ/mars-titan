@@ -38,6 +38,7 @@ from .episodic_session import (
     _row_key,
 )
 from .financial_consumers import ADMISSION_ERROR, SOURCE_ERROR, THREE_INDEX, bind_consumer
+from .regimes import SLOTS
 from .session_artifacts import SessionArtifacts
 
 # Admisiones que escriben en el banco cada etiqueta madura aplicada.
@@ -347,12 +348,20 @@ class FinancialSession(EpisodicSession):
         return bank, episodes
 
     def _associative_state(self, reference):
-        """Matriz A confirmada y predicción del núcleo de cada pendiente, en su orden."""
+        """Matriz A confirmada, predicción del núcleo y ruta de cada pendiente, en su orden.
+
+        La ruta solo existe con una clave enrutada por régimen. Sin ella el artefacto conserva
+        su forma anterior y la ruta es None.
+        """
+        routed = self.associative.routing is not None
         if reference is None:
-            return AssociativeMemory(self.associative.memory), torch.empty(0, dtype=torch.float64)
+            empty = torch.empty(0, dtype=torch.float64)
+            routes = torch.empty(0, dtype=torch.int64) if routed else None
+            return AssociativeMemory(self.associative.memory), empty, routes
         value = self._read(reference, "associative")
-        if not isinstance(value, dict) or set(value) != {"memory", "core"}:
-            raise ValueError("La corrección asociativa no conserva su matriz y su núcleo")
+        fields = {"memory", "core", "routes"} if routed else {"memory", "core"}
+        if not isinstance(value, dict) or set(value) != fields:
+            raise ValueError("La corrección asociativa no conserva matriz, núcleo y rutas")
         memory = AssociativeMemory.restore(self.associative.memory, value["memory"])
         core = value["core"]
         if (
@@ -362,10 +371,22 @@ class FinancialSession(EpisodicSession):
             or not torch.isfinite(core).all()
         ):
             raise ValueError("Las predicciones del núcleo pendientes no son un vector FP64 finito")
-        return memory, core
+        routes = value.get("routes")
+        if routed and (
+            not isinstance(routes, torch.Tensor)
+            or routes.dtype != torch.int64
+            or routes.shape != core.shape
+            or (routes < 0).any()
+            or (routes >= SLOTS).any()
+        ):
+            raise ValueError("Las rutas pendientes no son enteros válidos alineados con el núcleo")
+        return memory, core, routes
 
-    def _stage_associative(self, memory, core):
-        return self._stage(dict(memory=memory.export(), core=core), "associative")
+    def _stage_associative(self, memory, core, routes):
+        value = dict(memory=memory.export(), core=core)
+        if routes is not None:
+            value["routes"] = routes
+        return self._stage(value, "associative")
 
     def diagnostics(self):
         if self._binding.kind == "candidate_gru":
@@ -558,15 +579,36 @@ class FinancialSession(EpisodicSession):
         pending = self._read(bundle["pending"], "pending") if bundle else self._empty_queue()
         self._check_queue(pending)
         if self.associative is not None:
-            memory, core = self._associative_state(bundle["associative"] if bundle else None)
-            known = dict(zip(map(_row_key, pending["rows"]), core.tolist(), strict=True))
+            memory, core, routes = self._associative_state(
+                bundle["associative"] if bundle else None
+            )
+            pending_keys = list(map(_row_key, pending["rows"]))
+            known = dict(zip(pending_keys, core.tolist(), strict=True))
+            known_routes = (
+                dict(zip(pending_keys, routes.tolist(), strict=True))
+                if routes is not None
+                else None
+            )
             if not warmup:
-                # A de la generación anterior para todo el evento. Se emite núcleo + corrección.
-                keys = self.associative.keys(np.stack([r.key_inputs for r in rows]))
+                # El régimen se calcula una vez con todas las filas del evento, como en la
+                # ventana. A de la generación anterior para todo el evento. Se emite núcleo más
+                # corrección.
+                routed = self.associative.routing is not None
+                event_routes, _ = self.associative.routes(
+                    np.stack([r.inputs["prices"] for r in rows]) if routed else None,
+                    [r.flow_id for r in rows],
+                    cutoff,
+                )
+                keys = self.associative.keys(np.stack([r.key_inputs for r in rows]), event_routes)
                 corrections = memory.read(keys)[:, 0].tolist()
                 known.update(
                     (_row_key(r.metadata()), value) for r, value in zip(rows, values, strict=True)
                 )
+                if known_routes is not None:
+                    known_routes.update(
+                        (_row_key(r.metadata()), route)
+                        for r, route in zip(rows, event_routes.tolist(), strict=True)
+                    )
                 values = [v + c for v, c in zip(values, corrections, strict=True)]
         if not warmup:
             pending = self._append_pending(pending, rows)
@@ -583,8 +625,15 @@ class FinancialSession(EpisodicSession):
         )
         if self.associative is not None:
             aligned = [known[_row_key(row)] for row in pending["rows"]]
+            aligned_routes = (
+                torch.tensor(
+                    [known_routes[_row_key(row)] for row in pending["rows"]], dtype=torch.int64
+                )
+                if known_routes is not None
+                else None
+            )
             proposal["associative"] = self._stage_associative(
-                memory, torch.tensor(aligned, dtype=torch.float64)
+                memory, torch.tensor(aligned, dtype=torch.float64), aligned_routes
             )
         self._proposal = proposal
         return values, _canonical(proposal)
@@ -711,7 +760,7 @@ class FinancialSession(EpisodicSession):
                 **extra,
             )
         if self.associative is not None:
-            memory, core = self._associative_state(proposed["associative"])
+            memory, core, routes = self._associative_state(proposed["associative"])
             # Todas las etiquetas aplicadas escriben A, con independencia de la admisión.
             indices = [
                 positions[item.prediction.asset, item.prediction.decision_at] for item in outcomes
@@ -724,7 +773,10 @@ class FinancialSession(EpisodicSession):
                     ids=[memory.writes + offset for offset in range(1, len(outcomes) + 1)],
                     decision_at=[item.prediction.decision_at for item in outcomes],
                     available_at=[item.label.available_at for item in outcomes],
-                    keys=self.associative.keys(pending["key_inputs"].index_select(0, selected)),
+                    keys=self.associative.keys(
+                        pending["key_inputs"].index_select(0, selected),
+                        routes.index_select(0, selected) if routes is not None else None,
+                    ),
                     values=[
                         item.label.value - core[index].item()
                         for item, index in zip(outcomes, indices, strict=True)
@@ -751,7 +803,11 @@ class FinancialSession(EpisodicSession):
             proposed, bank=bank_ref, pending=self._stage(pending, "pending"), inputs=sources
         )
         if self.associative is not None:
-            bundle["associative"] = self._stage_associative(memory, core.index_select(0, indexes))
+            bundle["associative"] = self._stage_associative(
+                memory,
+                core.index_select(0, indexes),
+                routes.index_select(0, indexes) if routes is not None else None,
+            )
         self._verify_bundle(bundle)
         self.consumer.verify()
         self._proposal = bundle
@@ -814,7 +870,7 @@ class FinancialSession(EpisodicSession):
         if self._check_sources(bundle["inputs"], pending) != bundle["inputs"]:
             raise ValueError("La generación conserva inputs pendientes huérfanos")
         if self.associative is not None:
-            _, core = self._associative_state(bundle["associative"])
+            _, core, _ = self._associative_state(bundle["associative"])
             if len(core) != len(pending["rows"]):
                 raise ValueError("El núcleo pendiente no corresponde a la cola confirmada")
         if not isinstance(bundle["current_inputs"], list) or len(bundle["current_inputs"]) > 32:
@@ -895,7 +951,7 @@ class FinancialSession(EpisodicSession):
         if bank.seen != (snapshot["applied"] if self.admission in WRITING else 0):
             raise ValueError("El banco no concilia con los labels maduros y la regla de admisión")
         if self.associative is not None:
-            memory, _ = self._associative_state(bundle["associative"])
+            memory, _, _ = self._associative_state(bundle["associative"])
             if memory.writes != snapshot["applied"]:
                 raise ValueError("La matriz A no concilia con los labels maduros aplicados")
         pending = self._read(bundle["pending"], "pending")
