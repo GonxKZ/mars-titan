@@ -25,6 +25,7 @@ from mars_titan.training import modality_ablation_stage as ablation
 from mars_titan.training import rolling_retention as rolling
 from mars_titan.training import rolling_storage
 from mars_titan.training.learning_hold import HOLD_ENV
+from tests.learning_hold_lowering import lowers_learning_hold
 from tests.posttraining.campaign_fixture import CpuLease
 from tests.simulation import rl_stage_fixture
 from tests.simulation.unadjusted_edition_fixture import Asset
@@ -798,6 +799,10 @@ def test_jobs_declared_not_regenerable_are_compacted_without_regenerating(
     assert release["declared_not_regenerable"] == 1
 
 
+@lowers_learning_hold(
+    "tests/training/test_rolling_retention.py::"
+    "test_a_plateau_of_a_joint_fit_has_no_tables_to_release"
+)
 def test_a_plateau_of_a_joint_fit_has_no_tables_to_release(
     base,  # noqa: F811
     edition,

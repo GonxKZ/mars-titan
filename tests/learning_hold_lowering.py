@@ -22,6 +22,12 @@ INVENTORY = {
         "comprueban la protección porque eligen η con la validación y predicen ventanas de la "
         "campaña"
     ),
+    "tests/training/test_rolling_retention.py::"
+    "test_a_plateau_of_a_joint_fit_has_no_tables_to_release": (
+        "recorre la retención v2 sobre la campaña reducida del fixture `base` para comprobar que "
+        "la meseta no se regenera y su continuación sí, y la regeneración de predicciones se "
+        "detiene con la protección"
+    ),
 }
 
 
