@@ -60,6 +60,10 @@ struct KlpoCollectionOptions {
     PpoLearningOptions context;
 };
 
+// Actor inicial de una recogida KLPO con esa anchura, el mismo que crea el recolector sin
+// referencia. La evaluación de solo lectura lo construye sin controlador ni Adam terminal.
+[[nodiscard]] PpoPolicy initial_klpo_actor(std::size_t width, const KlpoCollectionOptions& options);
+
 // Una oleada fija, sin reemplazar episodios ni actualizar al actor.
 class KlpoTerminalCollector {
   public:

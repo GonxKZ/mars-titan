@@ -82,6 +82,10 @@ Arguments parse(int argc, char** argv) {
             result.experiment.diagnostic = true;
         } else if (name == "--decisions") {
             result.experiment.decisions = true;
+        } else if (name == "--initial-evaluation") {
+            result.experiment.initial_evaluation = true;
+        } else if (name == "--check-sources") {
+            result.experiment.source_check = true;
         } else {
             if (++index >= arguments.size()) {
                 throw std::invalid_argument("Falta el valor de un argumento PPO");
@@ -127,11 +131,29 @@ Arguments parse(int argc, char** argv) {
         (result.experiment.config.empty() || result.experiment.output.empty())) {
         throw std::invalid_argument("Se requieren --config y --output para PPO");
     }
-    if (!result.experiment.evaluation_costs.empty() && !result.experiment.audit_run) {
-        throw std::invalid_argument("--evaluation-cost solo se admite con --audit-run");
+    if (!result.experiment.evaluation_costs.empty() && !result.experiment.audit_run &&
+        !result.experiment.initial_evaluation) {
+        throw std::invalid_argument(
+            "--evaluation-cost solo se admite con --audit-run o --initial-evaluation");
     }
-    if (result.experiment.decisions && !result.experiment.audit_run) {
-        throw std::invalid_argument("--decisions solo se admite con --audit-run");
+    const auto& experiment = result.experiment;
+    if (experiment.initial_evaluation &&
+        (experiment.source_check || experiment.audit_run || !experiment.train_tapes.empty() ||
+         !experiment.validation_tapes.empty() || experiment.audit_tapes.empty() ||
+         experiment.stop_after)) {
+        throw std::invalid_argument("--initial-evaluation solo admite cintas de evaluación con "
+                                    "--audit-tape, sin --audit-run, ajuste ni --stop-after");
+    }
+    if (experiment.source_check &&
+        (experiment.audit_run || !experiment.audit_tapes.empty() || experiment.train_tapes.empty() ||
+         experiment.validation_tapes.empty() || experiment.resume || experiment.stop_after ||
+         experiment.decisions || !experiment.evaluation_costs.empty())) {
+        throw std::invalid_argument("--check-sources solo admite las cintas de ajuste y validación, "
+                                    "sin auditoría, reanudación, parada ni costes");
+    }
+    if (experiment.decisions && !experiment.audit_run && !experiment.initial_evaluation) {
+        throw std::invalid_argument(
+            "--decisions solo se admite con --audit-run o --initial-evaluation");
     }
     return result;
 }

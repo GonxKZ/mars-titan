@@ -296,6 +296,11 @@ void check_source_budget(const std::vector<simulation::BatchInput>& inputs,
 }
 } // namespace
 
+PpoPolicy initial_klpo_actor(std::size_t width, const KlpoCollectionOptions& options) {
+    return PpoPolicy(width, PpoHyperparameters{}, options.seed, options.device,
+                     default_ppo_memory_bytes, options.architecture);
+}
+
 struct KlpoTerminalCollector::Impl {
     Impl(std::vector<simulation::BatchInput> sources, KlpoCollectionOptions configuration,
          std::unique_ptr<PpoPolicy> reference = {})
@@ -319,9 +324,7 @@ struct KlpoTerminalCollector::Impl {
             actor = std::move(reference);
             initial_rng = random_json(actor->random_state());
         } else {
-            actor = std::make_unique<PpoPolicy>(width, PpoHyperparameters{}, options.seed,
-                                                options.device, default_ppo_memory_bytes,
-                                                options.architecture);
+            actor = std::make_unique<PpoPolicy>(initial_klpo_actor(width, options));
         }
         hidden = actor->initial_state(inputs.size());
         recorded.fold = options.fold;

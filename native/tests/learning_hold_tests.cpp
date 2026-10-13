@@ -12,9 +12,12 @@
 #include <unistd.h>
 
 namespace {
+using mars_titan::learning::enter_evaluation_only;
+using mars_titan::learning::evaluation_only;
 using mars_titan::learning::learning_blocked;
 using mars_titan::learning::learning_hold_path;
 using mars_titan::learning::require_learning_allowed;
+using mars_titan::learning::require_optimizer_steps_allowed;
 namespace fs = std::filesystem;
 
 void require(bool condition, const char* message) {
@@ -98,6 +101,24 @@ void variable_and_home_select_the_same_hold(const fs::path& root) {
     require(throws([] { require_learning_allowed("la prueba nativa"); }),
             "La protección por defecto debe bloquear");
 }
+
+// Va al final: el cerrojo de solo evaluación no se desactiva en el proceso.
+void the_evaluation_latch_refuses_steps_and_leaves_the_hold_alone() {
+    require(!evaluation_only(), "El cerrojo no debe estar activo al empezar");
+    // Sin cerrojo, el paso solo depende de la protección que comprueba cada punto de entrada.
+    require_optimizer_steps_allowed("un paso previo");
+    const auto path = learning_hold_path();
+    const bool blocked = learning_blocked(path);
+    enter_evaluation_only();
+    enter_evaluation_only();
+    require(evaluation_only(), "El cerrojo no se activó");
+    require(failure([] { require_optimizer_steps_allowed("la prueba nativa"); })
+                    .find("Modo de solo evaluación: la prueba nativa") == 0,
+            "El cerrojo no detuvo el paso con su motivo");
+    // El cerrojo no lee, escribe ni rebaja la protección.
+    require(learning_hold_path() == path && learning_blocked(path) == blocked,
+            "El cerrojo cambió la protección");
+}
 } // namespace
 
 int main() {
@@ -109,6 +130,7 @@ int main() {
         absent_allowed_and_blocked(root);
         ambiguous_holds_fail_fast(root);
         variable_and_home_select_the_same_hold(root);
+        the_evaluation_latch_refuses_steps_and_leaves_the_hold_alone();
         fs::remove_all(root);
         std::cout << "Protección nativa del aprendizaje verificada\n";
         return 0;

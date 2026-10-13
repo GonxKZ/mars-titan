@@ -15,5 +15,15 @@ namespace mars_titan::learning {
 
 // Se llama antes de leer fuentes, crear salidas o ejecutar pasos de optimizador.
 void require_learning_allowed(std::string_view action);
+
+// Cerrojo de solo evaluación. Las órdenes que no aprenden lo activan antes de leer fuentes y,
+// desde entonces, el proceso no puede crear un entrenador ni ejecutar un paso de optimizador.
+// La protección no se rebaja ni se consulta: lo que admite el modo lo garantiza el cerrojo.
+// No se desactiva, porque la orden termina con el proceso.
+void enter_evaluation_only() noexcept;
+[[nodiscard]] bool evaluation_only() noexcept;
+
+// Se llama al crear un entrenador o un optimizador con estado y al empezar cada paso.
+void require_optimizer_steps_allowed(std::string_view action);
 } // namespace mars_titan::learning
 #endif
