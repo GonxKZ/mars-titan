@@ -25,7 +25,7 @@ from mars_titan.data.storage import sha256
 from mars_titan.simulation import campaign_stage, native_policy_runs, window_tapes
 from mars_titan.simulation.market import MarketTape
 from mars_titan.simulation.storage import read_tape, write_tape
-from mars_titan.training.learning_hold import HOLD_ENV
+from mars_titan.training.learning_hold import HOLD_ENV, hold_path, learning_blocked
 from tests.simulation.policy_tape_fixture import (
     EDITION,
     ROLES,
@@ -333,11 +333,8 @@ def ending(tmp_path_factory):
     return result
 
 
-def test_fit_sources_accept_masked_columns_and_reject_an_unpriced_exit(
-    binaries, ending, tmp_path, learning_hold
-):
-    hold = learning_hold(True)
-    train = [ending["train-0"][0], ending["train-1"][0]]
+def test_stage_tapes_mask_columns_outside_the_universe_and_carry_unpriced_exits(ending):
+    """Las cintas de la fixture tienen la forma que la etapa entrega a los binarios."""
     tapes_ = {name: tape for name, (_, tape) in ending.items()}
     assert tapes_["train-0"].identity["audit"]["outside_universe"] == ["US/END", "US/GON", "US/OUT"]
     assert np.isnan(tapes_["train-0"].prices[:, 3:, 3]).all()
@@ -345,6 +342,17 @@ def test_fit_sources_accept_masked_columns_and_reject_an_unpriced_exit(
     for name in ("gone-train", "gone-validation", "evaluation"):
         kinds = [a.kind for a in tapes_[name].actions if a.kind.endswith("delisting")]
         assert kinds == ["unpriced_delisting"], name
+
+
+# Los binarios solo leen cintas reconstruidas con la protección de aprendizaje abierta, y esta
+# prueba lanza además un ajuste. Mientras rija el bloqueo se omite en lugar de rebajarlo con
+# una protección temporal. Después usa la protección real. Figura en el inventario de #546.
+@pytest.mark.skipif(
+    learning_blocked(), reason="Lanza ajustes nativos y espera a que se levante el bloqueo"
+)
+def test_fit_sources_accept_masked_columns_and_reject_an_unpriced_exit(binaries, ending, tmp_path):
+    hold = hold_path()
+    train = [ending["train-0"][0], ending["train-1"][0]]
     stage = diagnostic_stage(rollout_transitions=16)
     ppo = write_config(
         tmp_path / "dqn.json", native_policy_runs.ppo_config(stage, job("double_dqn", "native_ppo"))
