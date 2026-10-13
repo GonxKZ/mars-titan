@@ -17,6 +17,7 @@ import pyarrow.parquet as pq
 import pytest
 
 from mars_titan.data import prediction_files
+from mars_titan.data.storage import sha256
 from mars_titan.environments.walk_forward_receipt import WalkForwardWindow
 from mars_titan.evaluation.splits import build_folds
 from mars_titan.simulation import campaign_stage, window_tapes
@@ -753,6 +754,89 @@ def test_universe_is_saved_with_its_identity(tmp_path):
     assert saved["identity"]["bounds"] == identity["bounds"]["fold-018"]
     assert set(saved["assets"]) == {"US/AAA", "US/BBB"}
     assert all(row["listed"] and row["value"] > 0 for row in saved["assets"].values())
+
+
+def test_a_carried_window_keeps_a_series_that_ends_inside_it(tmp_path):
+    """El universo de una ventana trasladada se elige como una evaluación.
+
+    En la variante B, la política del ancla fold-017 evalúa fold-018 sin ajustarse. HHH deja
+    de cotizar a mitad de 2023 sin precio de salida. Cotizaba al empezar la ventana y tenía
+    predicciones en la validación del ancla, así que sigue en su universo y la cinta lleva su
+    baja. Elegirla como un tramo de ajuste la sacaría por un hecho posterior a la decisión.
+    """
+    assets = [*LIQUID[1:3], Asset("HHH", base=70, end=150)]
+    carried = dict(JOB, anchor="fold-017", validation="fold-016")
+    layout = ("US/AAA", "US/BBB", "US/HHH")
+    store = tapes(tmp_path, assets)
+    universe = store.carried(carried, layout)
+    assert universe == layout
+    assert (tmp_path / "stage/universes/US/US/fold-017-fold-018.json").is_file()
+    _, tape, failure, _ = store.tape(carried, "evaluation", "fold-018", layout, universe)
+    assert failure is None and tape.delisted_at == {"US/HHH": 151}
+    # La elección no sale del diseño del ancla aunque otro activo sea admisible.
+    narrow = tapes(tmp_path, assets, output="narrow").carried(carried, layout[:2])
+    assert narrow == layout[:2]
+
+
+def test_a_saved_census_is_only_reused_with_its_edition_and_listing_status(tmp_path):
+    """El universo se elige con censos confirmados en disco y ligados a su identidad.
+
+    Un censo guardado con otra edición o con otra tabla del estado de cotización no se
+    reutiliza al reanudar, aunque el universo deba volver a calcularse.
+    """
+    store = tapes(tmp_path, LIQUID[1:3])
+    store.universe(JOB)
+    path = tmp_path / "stage/universes/census/US/fold-016.json"
+    record = campaign_stage.read_manifest(path, 1024**2)[0]
+    assert record["identity"]["edition_id"] == store.edition_id
+    assert record["identity"]["listing_status_sha256"] == store.listing_status[1]
+    bounds = record["identity"]["bounds"]
+    for key in ("edition_id", "listing_status_sha256"):
+        changed = dict(record, identity=dict(record["identity"], **{key: "0" * 64}))
+        campaign_stage.atomic_json(path, changed)
+        with pytest.raises(ValueError, match="El censo de fold-016.json ha cambiado"):
+            tapes(tmp_path, LIQUID[1:3]).census("US", "fold-016", bounds)
+
+
+def test_each_window_is_censused_once_for_every_anchor_universe(tmp_path, monkeypatch):
+    """Leer el estado de todos los activos de un tramo es caro, así que se censa una vez.
+
+    Con la ventana en expansión, el universo de cada ancla repite los tramos anteriores. Otro
+    universo con los mismos tramos, la ventana trasladada y una reanudación leen el censo
+    confirmado en disco.
+    """
+    built = []
+    original = campaign_stage.census
+
+    def counted(edition, bounds, **options):
+        built.append(tuple(bounds))
+        return original(edition, bounds, **options)
+
+    monkeypatch.setattr(campaign_stage, "census", counted)
+    store = tapes(tmp_path, LIQUID[1:3])
+    layout, _ = store.universe(JOB)
+    store.universe(dict(JOB, scope="other"))
+    store.carried(dict(JOB, anchor="fold-017", validation="fold-016"), layout)
+    tapes(tmp_path, LIQUID[1:3]).universe(dict(JOB, scope="resumed"))
+    saved = sorted((tmp_path / "stage/universes/census/US").glob("*.json"))
+    assert len(built) == len(set(built)) == len(saved) == 3
+
+
+@pytest.mark.parametrize("module", ["reconstructed_tape", "window_tapes"])
+def test_saved_censuses_and_universes_belong_to_the_code_of_the_stage(module):
+    """Los censos y universos guardados no llevan huella propia, pero la salida sí.
+
+    `stage.json` guarda la huella de `reconstructed_tape.py` (censo) y de `window_tapes.py`
+    (selección del universo). Con otro código la identidad cambia y la reanudación se detiene
+    antes de leer ningún censo o universo, aunque el nombre de la regla no cambie.
+    """
+    name = f"simulation/{module}.py"
+    code = campaign_stage._code()
+    assert code[name] == sha256(Path(campaign_stage.__file__).parent / f"{module}.py")
+    stage = dict(
+        sha256="a" * 64, policies=dict(sha256="b" * 64), campaign=dict(sha256="c" * 64, variant="A")
+    )
+    assert campaign_stage._identity(stage, {}, "d" * 64)["code"] == code
 
 
 def test_policy_tapes_must_be_real_tapes_of_the_declared_edition(tmp_path):

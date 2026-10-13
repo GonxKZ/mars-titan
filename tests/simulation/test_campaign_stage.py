@@ -18,7 +18,7 @@ import pytest
 
 from mars_titan.data import prediction_files
 from mars_titan.data.cohort_files import read_manifest
-from mars_titan.data.storage import atomic_json, sha256
+from mars_titan.data.storage import atomic_json
 from mars_titan.environments.walk_forward_receipt import read_window_receipt
 from mars_titan.simulation import campaign_stage, native_policy_runs, policy_plan, window_tapes
 from mars_titan.simulation.market import MarketTape
@@ -190,25 +190,6 @@ def test_variant_b_carries_the_anchor_policy_on_the_anchor_universe(
     # La evaluación trasladada se monta en el universo del ancla.
     assert (tmp_path / "stage/tapes/US/US/gru/fold-002/evaluation-fold-003").is_dir()
     assert not (tmp_path / "stage/universes/US/US/fold-003.json").exists()
-
-
-def test_a_carried_window_keeps_a_series_that_ends_inside_it(
-    tmp_path_factory, tmp_path, learning_doubles
-):
-    """El universo de una ventana trasladada se elige como una evaluación.
-
-    A0000 deja de cotizar en octubre de 2023, dentro de fold-003, que en B evalúa la política
-    de fold-002 sin ajustarla. Cotizaba al empezar la ventana y tenía predicciones en la
-    validación del ancla, así que sigue en su universo aunque su baja no tenga precio de
-    salida. Elegirlo como un tramo de ajuste la sacaría por un hecho posterior a la decisión.
-    """
-    base = fixture.base_campaign(tmp_path_factory.mktemp("ending-b"), "B", ending=200)
-    fixture.run(base, tmp_path / "stage", fixture.ScriptedLearner())
-    record = json.loads((tmp_path / "stage/universes/US/US/fold-002-fold-003.json").read_text())
-    assert "US/A0000" in record["universe"]
-    found = receipts(tmp_path / "stage")
-    held = outcomes(found, "gru", "equal_weight_monthly")
-    assert held[("fold-003", "reference")] == {"unpriced_exit"}
 
 
 @pytest.fixture
@@ -802,52 +783,6 @@ def test_every_tape_of_the_stage_is_real_and_no_synthetic_world_is_built(
     assert domains and set(domains) == {"real"}
 
 
-def test_a_census_of_another_edition_on_disk_stops_the_stage(base_a, tmp_path, learning_doubles):
-    """El universo se elige con censos confirmados en disco, ligados a la edición declarada.
-
-    Un censo guardado con otra identidad, por ejemplo de otra edición, no puede reutilizarse
-    al reanudar aunque el universo deba volver a calcularse.
-    """
-    fixture.run(base_a, tmp_path / "stage", fixture.ScriptedLearner())
-    path = tmp_path / "stage/universes/census/US/fold-000.json"
-    record = json.loads(path.read_text())
-    # El censo depende también de la tabla del estado, que acredita las salidas con precio.
-    assert record["identity"]["listing_status_sha256"] == sha256(base_a.listing_status)
-    record["identity"]["edition_id"] = "0" * 64
-    atomic_json(path, record)
-    for universe in (tmp_path / "stage/universes/US/US").glob("*.json"):
-        universe.unlink()
-    learner = fixture.ScriptedLearner()
-    with pytest.raises(ValueError, match="El censo de fold-000.json ha cambiado"):
-        fixture.run(base_a, tmp_path / "stage", learner)
-    assert learner.calls == []
-
-
-@pytest.mark.parametrize("module", ["reconstructed_tape", "window_tapes"])
-def test_saved_censuses_and_universes_are_not_reused_with_other_code(
-    base_a, tmp_path, learning_doubles, monkeypatch, module
-):
-    """Los censos y universos guardados no llevan huella propia, pero la salida sí.
-
-    `stage.json` guarda la huella de `reconstructed_tape.py` (censo) y de `window_tapes.py`
-    (selección del universo). Con otro código, la reanudación se detiene antes de leer
-    ningún censo o universo, aunque el nombre de la regla no cambie.
-    """
-    fixture.run(base_a, tmp_path / "stage", fixture.ScriptedLearner())
-    marker = json.loads((tmp_path / "stage/stage.json").read_text())
-    name = f"simulation/{module}.py"
-    assert marker["code"][name] == sha256(Path(campaign_stage.__file__).parent / f"{module}.py")
-    code = campaign_stage._code
-    monkeypatch.setattr(campaign_stage, "_code", lambda: dict(code(), **{name: "0" * 64}))
-    monkeypatch.setattr(
-        campaign_stage, "census", lambda *args, **kwargs: pytest.fail("se leyó un censo")
-    )
-    learner = fixture.ScriptedLearner()
-    with pytest.raises(ValueError, match="otra etapa, campaña, edición, vista o código"):
-        fixture.run(base_a, tmp_path / "stage", learner)
-    assert learner.calls == []
-
-
 def test_a_synthetic_tape_on_disk_stops_the_stage_before_any_executor(
     base_a, tmp_path, learning_doubles
 ):
@@ -870,27 +805,6 @@ def test_a_synthetic_tape_on_disk_stops_the_stage_before_any_executor(
     with pytest.raises(ValueError, match="no es una cinta real"):
         fixture.run(base_a, tmp_path / "stage", learner)
     assert learner.calls == []
-
-
-def test_each_window_is_censused_once_for_every_anchor_universe(
-    base_a, tmp_path, learning_doubles, monkeypatch
-):
-    # Con la ventana en expansión, el universo de cada ancla repite los tramos anteriores.
-    # Leer el estado de todos los activos de un tramo es caro, así que cada tramo se censa una
-    # sola vez y los demás universos leen el censo confirmado en disco.
-    built = []
-    original = campaign_stage.census
-
-    def counted(edition, bounds, **options):
-        built.append(tuple(bounds))
-        return original(edition, bounds, **options)
-
-    monkeypatch.setattr(campaign_stage, "census", counted)
-    assert fixture.run(base_a, tmp_path / "stage", fixture.ScriptedLearner())["status"] == (
-        "completed"
-    )
-    saved = sorted((tmp_path / "stage/universes/census/US").glob("*.json"))
-    assert len(built) == len(set(built)) == len(saved) > 1
 
 
 def chained(base, root):
