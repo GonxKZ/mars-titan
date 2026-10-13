@@ -12,10 +12,12 @@ import pytest
 
 from tests.suite_support import (
     CUDA_REASON,
+    NATIVE_ARTIFACTS,
     NATIVE_VARIABLES,
     SLOW_TESTS,
     episodic_load_problem,
     function_id,
+    inner_environment,
     missing_extra,
     missing_native,
     native_available,
@@ -327,6 +329,15 @@ def test_missing_extra_names_module_extra_and_command():
     )
 
 
+def test_inner_sessions_do_not_inherit_the_options_of_the_outer_one(monkeypatch):
+    monkeypatch.setenv("PYTEST_ADDOPTS", "--junitxml=outer.xml")
+    monkeypatch.setenv("PYTEST_PLUGINS", "outer_plugin")
+    monkeypatch.setenv("MARS_TITAN_REQUIRE_NATIVE", "1")
+    environment = inner_environment(["MARS_TITAN_REQUIRE_NATIVE"])
+    assert not {"PYTEST_ADDOPTS", "PYTEST_PLUGINS", "MARS_TITAN_REQUIRE_NATIVE"} & set(environment)
+    assert environment["PATH"] == os.environ["PATH"]
+
+
 def test_function_id_drops_only_the_parameters():
     assert function_id("tests/a.py::test_x[cpu-1]") == "tests/a.py::test_x"
     assert function_id("tests/a.py::Case::test_x") == "tests/a.py::Case::test_x"
@@ -341,6 +352,57 @@ def defined(path, owners):
             return False
         scope = classes[0].body
     return any(isinstance(n, ast.FunctionDef) and n.name == owners[-1] for n in scope)
+
+
+def availability_skips(path, root=ROOT):
+    """`skipif` de un módulo de prueba que deciden por CUDA o por un artefacto nativo."""
+    tree = ast.parse(path.read_text(encoding="utf-8"))
+    constants = {
+        target.id: node.value.value
+        for node in tree.body
+        if isinstance(node, ast.Assign) and isinstance(node.value, ast.Constant)
+        for target in node.targets
+        if isinstance(target, ast.Name)
+    }
+    found = []
+    for node in ast.walk(tree):
+        if not (isinstance(node, ast.Call) and ast.unparse(node.func).endswith("mark.skipif")):
+            continue
+        condition = node.args[0] if node.args else None
+        names = {
+            constants.get(item.id) if isinstance(item, ast.Name) else item.value
+            for item in ast.walk(condition)
+            if isinstance(item, (ast.Name, ast.Constant))
+        }
+        if "cuda.is_available" in ast.unparse(condition) or names & set(NATIVE_ARTIFACTS):
+            found.append(f"{path.relative_to(root)}:{node.lineno}")
+    return found
+
+
+def test_collected_modules_declare_cuda_and_native_needs_with_markers():
+    # Con un skipif propio, `-m "not cuda"` o `-m "not native"` no dejaría fuera la prueba y
+    # el motivo de la omisión no diría cómo conseguir lo que falta.
+    found = [
+        place
+        for path in sorted((ROOT / "tests").rglob("test_*.py"))
+        for place in availability_skips(path)
+    ]
+    assert found == [], "Usar pytest.mark.cuda o pytest.mark.native(...) (tests/README.md)"
+
+
+def test_availability_skips_are_found_through_module_constants(tmp_path):
+    probe = tmp_path / "test_probe.py"
+    probe.write_text(
+        'NATIVE = "MARS_TITAN_PPO_EXECUTABLE"\n'
+        "@pytest.mark.skipif(not os.environ.get(NATIVE), reason='x')\n"
+        "def test_a(): pass\n"
+        "@pytest.mark.skipif(not torch.cuda.is_available(), reason='x')\n"
+        "def test_b(): pass\n"
+        "@pytest.mark.skipif(sys.platform == 'win32', reason='x')\n"
+        "def test_c(): pass\n",
+        encoding="utf-8",
+    )
+    assert availability_skips(probe, tmp_path) == ["test_probe.py:2", "test_probe.py:4"]
 
 
 def test_slow_registry_lists_existing_test_functions_once():
@@ -384,6 +446,7 @@ def collect(target, *options):
         + list(options)
         + [target],
         cwd=ROOT,
+        env=inner_environment(),
         capture_output=True,
         text=True,
         timeout=300,
@@ -424,9 +487,7 @@ def selection_probe(tmp_path, allowed, *options):
     (tmp_path / "test_probe.py").write_text(SELECTION_PROBE, encoding="utf-8")
     hold = tmp_path / "hold.json"
     hold.write_text(f'{{"training_allowed": {str(allowed).lower()}}}', encoding="utf-8")
-    environment = {
-        key: value for key, value in os.environ.items() if not key.startswith("MARS_TITAN_")
-    }
+    environment = inner_environment([key for key in os.environ if key.startswith("MARS_TITAN_")])
     environment.update(
         CUDA_VISIBLE_DEVICES="-1",
         MARS_TITAN_TRAINING_HOLD=str(hold),

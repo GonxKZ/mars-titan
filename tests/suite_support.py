@@ -151,6 +151,17 @@ def selection_skip(markers, environment, cuda=cuda_available, root=ROOT):
     return None
 
 
+# Variables con las que la sesión exterior pasa opciones o complementos, como `--junitxml`, a
+# pytest. Una sesión lanzada desde una prueba no debe heredarlas.
+OUTER_SESSION = ("PYTEST_ADDOPTS", "PYTEST_PLUGINS")
+
+
+def inner_environment(removed=()):
+    """Entorno para una sesión de pytest lanzada desde una prueba, sin las opciones exteriores."""
+    skipped = {*OUTER_SESSION, *removed}
+    return {key: value for key, value in os.environ.items() if key not in skipped}
+
+
 def read_slow_tests(path=SLOW_TESTS):
     """Identificadores de las funciones lentas, sin parámetros ni comentarios."""
     lines = Path(path).read_text(encoding="utf-8").splitlines()
