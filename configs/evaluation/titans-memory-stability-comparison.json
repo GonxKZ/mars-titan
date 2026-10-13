@@ -58,13 +58,19 @@
   "decision_rule": {
     "keep_if": [
       "upper_bound_of_relative_mae_difference <= 0.002",
-      "p95_session_mae_in_declared_events_not_worse_than_control_by_more_than 0.01"
+      "p95_session_mae_in_declared_events_not_worse_than_control_by_more_than 0.01",
+      "minimum_interpretable_difference_between_control_seeds < 0.002"
     ],
     "abandon_if": [
       "pilot_upper_bound_of_relative_mae_difference > 0.005",
       "declared_events_show_online_equal_to_frozen"
     ],
-    "trivial_alternative": "Si titans_mac_online_pt1_init iguala a PT1 en error y diagnósticos, la caja y el recorte no aportan nada sobre el cambio de inicialización que exigen.",
+    "abandon_by_margin_requires": "minimum_interpretable_difference_between_control_seeds < 0.005",
+    "seed_variance_control": {
+      "declaration": "configs/evaluation/memory-pilot-seed-control.json",
+      "rules": ["pt1", "pt1_trivial_alternative"]
+    },
+    "trivial_alternative": "Si titans_mac_online_pt1_init iguala a PT1 en error y diagnósticos, la caja y el recorte no aportan nada sobre el cambio de inicialización que exigen. Iguala en error si el intervalo de la diferencia relativa queda dentro de la banda entre semillas del control.",
     "secondary_not_deciding": ["maximum_lyapunov_exponent_D5", "maximum_fast_state_norm", "fraction_of_clipped_rows"],
     "declared_events": ["2008-09-15", "2020-02-24/2020-03-23", "2022-03-16"]
   },
@@ -72,8 +78,10 @@
     "assets": "hasta 64 de EE. UU. con todas las modalidades disponibles",
     "validation_windows": [2018, 2019, 2020],
     "training": "expansivo desde 2000",
-    "seeds": {"titans_mac_online_pt1": 1, "titans_mac_online": 1},
-    "gpu_hours_max": 6,
+    "seeds": {"titans_mac_online_pt1": 1, "titans_mac_online_pt1_init": 1, "titans_mac_online": 3},
+    "gpu_hours_max": 41,
+    "seed_control_gpu_hours": 27,
+    "gpu_hours_basis": "reports/engineering/memory-pilot-seed-control-cost-20261013.json",
     "diagnostics": ["D1", "D2", "D5"]
   },
   "prediction": "El MAE no cambiará de forma detectable, con una diferencia relativa entre −0,2 % y +0,2 %. La norma máxima del estado bajará al menos a la mitad en el evento de 2020. El exponente de Lyapunov estimado del control será negativo en la mayor parte de las sesiones.",

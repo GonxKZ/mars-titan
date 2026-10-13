@@ -46,7 +46,7 @@ se mantiene fija durante el episodio y no se filtran trayectorias por resultado.
 La igualdad del primer gradiente no implica igualdad de Hessianas de los grafos
 con stop-gradient.
 
-El [oráculo independiente](../../reports/engineering/terminal-klpo-oracle-20261008.json)
+El [referencia independiente](../../reports/engineering/terminal-klpo-oracle-20261008.json)
 enumera 100 trayectorias finitas con seis acciones, longitudes distintas y ruido
 intermedio y terminal. Confirma el gradiente poblacional y la sustitución del
 retorno descontado por `gamma^u * G_u`. Usar recompensa inmediata, omitir ese

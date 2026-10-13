@@ -6,11 +6,12 @@ import json
 import pytest
 
 from mars_titan.training.checkpoints import StopRequest
+from tests.suite_support import missing_extra
 from tests.training.test_predictive_parents import setup
 
 pytestmark = pytest.mark.skipif(
     any(importlib.util.find_spec(name) is None for name in ("duckdb", "gymnasium")),
-    reason="Requiere los extras data y reinforcement",
+    reason=missing_extra("duckdb", "gymnasium"),
 )
 
 

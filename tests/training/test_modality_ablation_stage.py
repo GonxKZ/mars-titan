@@ -1,6 +1,6 @@
 """Etapa de ablación de modalidades sobre una campaña base reducida, en CPU y sin ajustes.
 
-La campaña base recorta el protocolo US a dos ventanas con un brazo GRU de una semilla.
+La campaña base recorta el protocolo US a dos ventanas con un modelo GRU de una semilla.
 Su ejecutor sustituto guarda como estado elegido los pesos iniciales de la semilla, con la
 identidad que exige el traslado de referencias, y escribe sus predicciones con la misma
 evaluación que el traslado. La etapa usa después los ejecutores reales de la ablación en
@@ -612,7 +612,7 @@ def test_throughput_estimates_each_masked_prediction_with_the_measured_inference
     estimate = throughput.estimate_hours(campaign, counts, rates, ablation_stage=stage)
     masked = estimate[throughput.ABLATION_STAGE]
     neural = [job for job in jobs if job["family"] == plan.NEURAL]
-    # Solo la evaluación, a 400 filas/s con la inferencia más lenta del brazo.
+    # Solo la evaluación, a 400 filas/s con la inferencia más lenta del modelo.
     assert (masked["training_jobs"], masked["prediction_jobs"]) == (0, len(neural))
     assert masked["hours"] == pytest.approx(len(neural) * ROWS["evaluation"] / 400 / 3600)
     assert masked["without_estimate"] == sorted(

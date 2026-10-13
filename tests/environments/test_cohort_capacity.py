@@ -7,10 +7,11 @@ import pytest
 
 from mars_titan.environments.actions import ActionGrid
 from mars_titan.environments.cohorts import MAX_COHORT_ASSETS, read_cohort, shapes_contract
+from tests.suite_support import missing_extra
 
 pytestmark = pytest.mark.skipif(
     importlib.util.find_spec("gymnasium") is None,
-    reason="Requiere el extra reinforcement",
+    reason=missing_extra("gymnasium"),
 )
 
 # Máximo medido en la población preparada desde 2000: 4.200 activos US el 6-11-2023.

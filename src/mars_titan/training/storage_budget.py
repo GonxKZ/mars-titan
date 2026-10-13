@@ -132,7 +132,7 @@ def formula_windows(counts, coefficients):
 
 
 def selected_jobs(jobs):
-    """Un ajuste elegido por ámbito, ventana, brazo y semilla, sin conocer resultados.
+    """Un ajuste elegido por ámbito, ventana, modelo y semilla, sin conocer resultados.
 
     Un finalista o un traslado es el único trabajo de su semilla. Entre las búsquedas,
     cualquiera puede ganar y todas tienen las mismas filas, así que se toma la primera.
@@ -360,6 +360,8 @@ def rl_estimate(path, campaign, extras, extensions_path=None):
     """
     from mars_titan.simulation import policy_plan
 
+    from .rolling_storage import policy_tape_bytes
+
     stage = policy_plan.load_stage(path)
     if extensions_path is not None:
         from .campaign_extensions import extended_policies, load_extensions
@@ -372,12 +374,14 @@ def rl_estimate(path, campaign, extras, extensions_path=None):
         anchors[key] = len(job["train"]) + 2
     tapes = sum(anchors.values())
     counts = policy_plan.count_stage(stage, jobs)
+    tape = policy_tape_bytes(stage, extras)
     return dict(
         path=stage["path"],
         jobs={k: v for k, v in counts.items() if k.endswith("_jobs")},
         tapes=tapes,
-        tape_bytes=extras["tape_bytes"],
-        retained_bytes=tapes * extras["tape_bytes"],
+        tape_bytes=tape,
+        tape_shape=extras["tape_shape"],
+        retained_bytes=tapes * tape,
         pending="Los ejecutores de ajuste de PPO y KLPO no existen, sin artefactos estimables",
     )
 

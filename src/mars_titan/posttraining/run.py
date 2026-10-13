@@ -355,7 +355,7 @@ def _identity(dataset, parent, case, grid, normalization, budget, batch_size, de
         ),
     )
     if adapter is not None:
-        # Destinos, formas, rangos y parámetros entrenables forman la identidad del brazo.
+        # Destinos, formas, rangos y parámetros entrenables forman la identidad del modelo.
         identity["adapter"] = adapter
     if case["mode"] == PINBALL_MODE:
         # Solo los casos de cuantiles añaden el campo. Los demás conservan su identidad.
@@ -399,7 +399,7 @@ def _trace_event(epoch, state, metrics):
 
 
 def build_model(parent, case, grid, normalization, identity=None):
-    """Construir la corrección, la continuación completa o el brazo de la matriz."""
+    """Construir la corrección, la continuación completa o el modelo de la matriz."""
     if "adapter" in case:
         model = parent.adapted(
             adapter_matrix.targets(case["adapter"], parent.model),
@@ -407,7 +407,7 @@ def build_model(parent, case, grid, normalization, identity=None):
         )
         expected = (identity or {}).get("adapter", {}).get("trainable_parameters")
         if expected is not None and trainable_parameters(model) != expected:
-            raise ValueError("El brazo no conserva los parámetros entrenables de su identidad")
+            raise ValueError("El modelo no conserva los parámetros entrenables de su identidad")
         return model
     if case["mode"].startswith("neural_"):
         return parent.continuation()

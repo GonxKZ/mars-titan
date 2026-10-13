@@ -197,7 +197,7 @@ class PairedInputs:
     def _episode(self, source, episode, condition):
         raise ValueError("Las cohortes reales no tienen episodios adicionales")
 
-    # Brazos de visita que se leen como cohortes reales de una fuente. El repaso de
+    # Valores de `Visit.arm` que se leen como cohortes reales de una fuente. El repaso de
     # `replay_inputs` añade los suyos, que leen otra fuente o las mismas filas nuevas.
     read_arms = ("real",)
 

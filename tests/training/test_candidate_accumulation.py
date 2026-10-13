@@ -5,7 +5,6 @@ la recomputación de cada bloque con el backward único del tramo de #389, que s
 modo por defecto.
 """
 
-import os
 import weakref
 
 import pytest
@@ -20,9 +19,7 @@ from tests.training.test_candidate_run import adapter, entries, named_records, t
 from tests.training.test_financial_run import StopAtStep, corpus
 
 pytestmark = [
-    pytest.mark.skipif(
-        not os.environ.get("MARS_TITAN_EPISODIC_NATIVE"), reason="Falta el enlace nativo compilado"
-    ),
+    pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE"),
     pytest.mark.usefixtures("learning_doubles"),
 ]
 

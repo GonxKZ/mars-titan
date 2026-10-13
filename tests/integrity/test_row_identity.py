@@ -1,7 +1,7 @@
-"""Identidad de filas entre brazos y reserva de 2024 sobre predicciones de juguete.
+"""Identidad de filas entre modelos y reserva de 2024 sobre predicciones de juguete.
 
 Reutiliza el estudio de `tests/evaluation/test_walk_forward_comparison.py`. Cada prueba
-altera las predicciones escritas de un brazo concreto, sin modelos ni pasos de optimizador.
+altera las predicciones escritas de una configuración concreta, sin modelos ni pasos de optimizador.
 """
 
 import json
@@ -71,7 +71,7 @@ def test_a_faithful_study_shares_rows_in_every_segment(tmp_path, scope):
     study = Study(tmp_path / "study", scope=scope)
     result = row_identity.check_sources(study.config_path, study.sources_path, scope)
     assert result["passed"], json.dumps(result, indent=1)[:2000]
-    # Dos ventanas con evaluación para los cinco pares brazo-semilla y calibración para los
+    # Dos ventanas con evaluación para los cinco pares modelo-semilla y calibración para los
     # cuatro de cuantiles.
     assert set(result["shared_rows"]) == {
         f"fold-00{w}/{p}" for w in (0, 1) for p in ("calibration", "evaluation")
@@ -122,7 +122,7 @@ def test_a_row_moved_into_2024_is_reported_in_every_arm(tmp_path):
     moved = [e for e in result["files"] if e["window"] == "fold-001" and not e["passed"]]
     assert len(moved) == 5
     assert all(e["rows_in_2024"] == 1 and e["rows_outside_segment"] == 1 for e in moved)
-    # Todos los brazos tienen el mismo defecto, de modo que la huella común sigue igual.
+    # Todos los modelos tienen el mismo defecto, de modo que la huella común sigue igual.
     assert failing_segments(result) == set()
 
 

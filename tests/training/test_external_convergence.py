@@ -15,8 +15,12 @@ from mars_titan.training import external_corpus as engine
 from mars_titan.training import tabular_search
 from mars_titan.training.checkpoints import StopRequest
 from mars_titan.training.corpus_inputs import CorpusDataset
+from tests.suite_support import missing_extra
 from tests.training.test_reference_run import training_corpus
 from tests.training.test_tabular_search import setup
+
+# Ajusta sin pasar por un punto de entrada protegido. Ver tests/README.md.
+pytestmark = pytest.mark.unguarded_fit
 
 
 def policy():
@@ -24,7 +28,7 @@ def policy():
 
 
 def model(count, score, state):
-    xgb = pytest.importorskip("xgboost")
+    xgb = pytest.importorskip("xgboost", reason=missing_extra("xgboost"))
     x = np.arange(8, dtype=np.float32).reshape(4, 2)
     booster = xgb.train(
         dict(device="cpu", nthread=1, tree_method="hist", max_depth=1),
@@ -220,7 +224,7 @@ def test_model_write_failure_leaves_previous_receipt_recoverable(tmp_path, monke
 def test_orchestration_recovers_selected_predictions_with_explicit_cpu_fixture(
     tmp_path, monkeypatch
 ):
-    xgb = pytest.importorskip("xgboost")
+    xgb = pytest.importorskip("xgboost", reason=missing_extra("xgboost"))
 
     class CPUReference(ExternalBoostingModel):
         def predict(self, values):
