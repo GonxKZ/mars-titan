@@ -183,31 +183,16 @@ class EpisodicReadout(nn.Module):
     def read(self, state, snapshot=None, *, context_id=None, cutoff=None):
         return self._read(state, snapshot, context_id, cutoff)[0]
 
-    def _read(self, state, snapshot, context_id, cutoff, positions=None):
+    def _read(self, state, snapshot, context_id, cutoff, positions=None, *, repeated=False):
         """Leer y devolver también las posiciones elegidas en la instantánea.
 
         Con `positions` se atienden esos episodios con la consulta actual, sin seleccionar.
+        Con `repeated`, el primer paso de la misma llamada ya validó la instantánea y el
+        presupuesto, que no cambian entre pasos, y el estado sale del refinamiento anterior,
+        que conserva su forma, precisión y dispositivo y ya se comprobó finito.
         """
-        self._state(state)
-        episodes = snapshot.count if isinstance(snapshot, EpisodeSnapshot) else 0
-        if (
-            self.estimated_bytes(len(state), episodes, differentiable=torch.is_grad_enabled())
-            > self.config.max_working_bytes
-        ):
-            raise ValueError("La lectura supera el presupuesto de trabajo estimado")
-        if self.config.mode == "no_bank":
-            if snapshot is not None:
-                raise ValueError("El control sin banco no acepta episodios implícitos")
-        elif not isinstance(snapshot, EpisodeSnapshot):
-            raise ValueError("La lectura requiere una instantánea explícita")
-        if snapshot is not None:
-            snapshot.check(
-                codec_id=self.config.codec_id,
-                context_id=context_id,
-                cutoff=cutoff,
-                dtype=state.dtype,
-                device=state.device,
-            )
+        if not repeated:
+            self._validate_read(state, snapshot, context_id, cutoff)
         count = 0 if snapshot is None else min(snapshot.count, self.config.neighbors)
         if count == 0:
             return EpisodeRead(
@@ -258,6 +243,28 @@ class EpisodicReadout(nn.Module):
             torch.ones((len(state), 1), dtype=torch.bool, device=state.device),
         ), indices
 
+    def _validate_read(self, state, snapshot, context_id, cutoff):
+        self._state(state)
+        episodes = snapshot.count if isinstance(snapshot, EpisodeSnapshot) else 0
+        if (
+            self.estimated_bytes(len(state), episodes, differentiable=torch.is_grad_enabled())
+            > self.config.max_working_bytes
+        ):
+            raise ValueError("La lectura supera el presupuesto de trabajo estimado")
+        if self.config.mode == "no_bank":
+            if snapshot is not None:
+                raise ValueError("El control sin banco no acepta episodios implícitos")
+        elif not isinstance(snapshot, EpisodeSnapshot):
+            raise ValueError("La lectura requiere una instantánea explícita")
+        if snapshot is not None:
+            snapshot.check(
+                codec_id=self.config.codec_id,
+                context_id=context_id,
+                cutoff=cutoff,
+                dtype=state.dtype,
+                device=state.device,
+            )
+
     def refine(self, state, base, read):
         check_finite(self.step_logit, "La puerta de refinamiento")
         self._state(state)
@@ -280,6 +287,10 @@ class EpisodicReadout(nn.Module):
             ~((read.values != 0) & ~read.presence).any(),
             "Una lectura ausente necesita relleno cero",
         )
+        return self._step(state, base, read)
+
+    def _step(self, state, base, read):
+        """Refinar con una lectura ya validada, sin repetir sus comprobaciones."""
         joined = torch.cat((state, base, read.values, read.presence.to(dtype=state.dtype)), dim=-1)
         update = self.refinement(joined)
         check_finite(update, "La actualización de trabajo")
@@ -311,11 +322,20 @@ class EpisodicReadout(nn.Module):
         with torch.set_grad_enabled(differentiable):
             base = z_base if differentiable else z_base.detach()
             state, reads, positions = base, [], None
-            for _ in range(self.config.refinements):
-                read, chosen = self._read(state, snapshot, context_id, cutoff, positions)
+            for step in range(self.config.refinements):
+                read, chosen = self._read(
+                    state, snapshot, context_id, cutoff, positions, repeated=step > 0
+                )
                 if fixed:
                     positions = chosen
-                state = self.refine(state, base, read)
+                if step == 0:
+                    # Los parámetros no cambian dentro de la llamada. Se comprueban una vez, en
+                    # el mismo orden que `refine`, después de la primera lectura.
+                    check_finite(self.step_logit, "La puerta de refinamiento")
+                # `_read` construye cada lectura con la forma, el tipo y el dispositivo del
+                # estado, la deja comprobada finita y rellena con ceros las filas ausentes, así
+                # que el refinamiento no vuelve a validarla.
+                state = self._step(state, base, read)
                 reads.append(read)
         return ReadoutResult(state, tuple(reads))
 
