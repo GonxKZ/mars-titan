@@ -51,6 +51,17 @@ La mutación debe demostrar que las pruebas detectan cambios relevantes, como pe
 
 Cobertura y CRAP localizan funciones complejas poco comprobadas. El informe indicará herramienta, revisión y convención de cobertura. No se fija un umbral arbitrario ni se cambia código correcto solo para optimizar una cifra. La calidad también depende de invariantes, revisión, datos y comportamiento observado.
 
+En Python, CRAP se calcula siempre con `scripts/summarize_python_quality.py`, que une el JSON de coverage.py con la complejidad de cada función. Usa las regiones de función de coverage.py y `ComplexityVisitor` de Radon 6.0.1, la herramienta de los recibos anteriores. La comprobación y la razón para no usar el McCabe de ruff están en el [informe de calidad Python](../../reports/engineering/python-quality-20261010/README.md). Una medida típica, con las herramientas del grupo de desarrollo:
+
+```bash
+uv run python -m coverage run --branch --source=src/mars_titan -m pytest tests/simulation
+uv run python -m coverage json -o tmp/coverage.json
+uv run python scripts/summarize_python_quality.py --coverage tmp/coverage.json \
+  --output tmp/python-quality.json --require-branches --top 40
+```
+
+El resumen falla si una fuente cambió después de la medida, si coverage.py no registra una función o si la medida no trae ramas cuando se piden. La parte nativa conserva su propio resumen, `scripts/summarize_native_quality.py`, con Lizard y la cobertura de LLVM.
+
 ## Trabajo con GitHub
 
 Antes de una modificación se consulta o crea la issue correspondiente, se añade al Project si falta y se mueve a En curso. Se trabaja en una rama breve asociada, como `docs/mt-069-execution-guides` o `feat/mt-068-observatory`. Las ramas paralelas se aíslan cuando lo necesitan y no comparten modificaciones sin coordinación.
