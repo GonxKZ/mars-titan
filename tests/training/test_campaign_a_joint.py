@@ -26,6 +26,7 @@ from mars_titan.training import campaign_plan as plan
 from mars_titan.training import campaign_schedule as order
 from mars_titan.training import masked_campaign as engine
 from mars_titan.training.joint_temporal_corpus import prepare_joint_temporal_corpus
+from tests.learning_hold_lowering import lowers_learning_hold
 from tests.training.test_masked_campaign import Recorder, doubles, run
 from tests.training.test_walk_forward_v2_views import expected, fixture, observed
 
@@ -920,6 +921,9 @@ def _published_scopes(joint_campaign, folder):
     return found
 
 
+@lowers_learning_hold(
+    "tests/training/test_campaign_a_joint.py::test_integrity_recounts_the_rows_the_joint_design_drops"
+)
 def test_integrity_recounts_the_rows_the_joint_design_drops(joint_campaign, tmp_path):
     from mars_titan.integrity import comparison_integrity as integrity
 
@@ -930,6 +934,9 @@ def test_integrity_recounts_the_rows_the_joint_design_drops(joint_campaign, tmp_
         assert result["excluded_rows"]["files"] > 0
 
 
+@lowers_learning_hold(
+    "tests/training/test_campaign_a_joint.py::test_integrity_catches_a_comparison_that_drops_other_rows"
+)
 @pytest.mark.parametrize("defect", ["miscounted", "eligible_dropped"])
 def test_integrity_catches_a_comparison_that_drops_other_rows(
     joint_campaign, tmp_path, monkeypatch, defect

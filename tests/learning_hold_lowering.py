@@ -25,6 +25,16 @@ INVENTORY = {
         "parte del recorrido de la retención v2 del fixture `walked`, que regenera predicciones "
         "y ejecuta la etapa de ablación con la protección rebajada"
     ),
+    "tests/training/test_campaign_a_joint.py::"
+    "test_integrity_recounts_the_rows_the_joint_design_drops": (
+        "publica la comparación conjunta desde la campaña A v2 reducida del fixture "
+        "`joint_campaign`, que ejecuta los dobles de ajuste con la protección rebajada"
+    ),
+    "tests/training/test_campaign_a_joint.py::"
+    "test_integrity_catches_a_comparison_that_drops_other_rows": (
+        "publica la comparación conjunta desde la campaña A v2 reducida del fixture "
+        "`joint_campaign`, que ejecuta los dobles de ajuste con la protección rebajada"
+    ),
 }
 
 
