@@ -77,9 +77,9 @@ function(mars_titan_configure_target target)
 endfunction()
 
 if(MARS_TITAN_ENABLE_CUDA)
-    # Arquitecturas declaradas: sm_89 para la RTX 4070 Laptop y sm_121 para la GB10. Solo SASS,
-    # sin PTX, de modo que otra GPU falla al cargar en lugar de compilar en ejecución sin aviso.
-    set(CMAKE_CUDA_ARCHITECTURES "89-real;121-real" CACHE STRING "Arquitecturas CUDA declaradas")
+    # Arquitectura declarada: sm_89 para la RTX 4070 Laptop. Solo SASS, sin PTX, de modo que
+    # otra GPU falla al cargar en lugar de compilar en ejecución sin aviso.
+    set(CMAKE_CUDA_ARCHITECTURES "89-real" CACHE STRING "Arquitecturas CUDA declaradas")
     if(CMAKE_CUDA_ARCHITECTURES MATCHES "^(native|all|all-major)$")
         message(FATAL_ERROR "Las arquitecturas CUDA se declaran una a una para no depender de la máquina")
     endif()
@@ -556,18 +556,3 @@ foreach(test IN LISTS MARS_TITAN_OPTIMIZER_STEP_TESTS)
     endif()
 endforeach()
 
-# Bajo un emulador cada prueba conserva su límite relativo multiplicado por un factor declarado.
-set(MARS_TITAN_TEST_TIMEOUT_SCALE 1 CACHE STRING "Factor entero de los límites de CTest")
-if(NOT MARS_TITAN_TEST_TIMEOUT_SCALE MATCHES "^[1-9][0-9]*$")
-    message(FATAL_ERROR "MARS_TITAN_TEST_TIMEOUT_SCALE debe ser un entero positivo")
-endif()
-if(BUILD_TESTING AND MARS_TITAN_TEST_TIMEOUT_SCALE GREATER 1)
-    get_directory_property(registered_tests TESTS)
-    foreach(test IN LISTS registered_tests)
-        get_test_property(${test} TIMEOUT limit)
-        if(limit)
-            math(EXPR limit "${limit} * ${MARS_TITAN_TEST_TIMEOUT_SCALE}")
-            set_tests_properties(${test} PROPERTIES TIMEOUT ${limit})
-        endif()
-    endforeach()
-endif()
