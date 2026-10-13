@@ -22,7 +22,7 @@ Este informe acompaña a la retención v2 declarada en `configs/baselines/histor
 | Boosters de recuperación de XGBoost e índices de la ablación tras el recibo | `training/campaign_storage.py`, `modality_ablation_stage.py` | `tests/training/test_campaign_storage.py` |
 | Estimación del recorrido | `training/rolling_storage.py`, `run_masked_campaign.py storage --schedule` | `tests/training/test_rolling_storage.py` |
 
-Los agregados guardan, para cada brazo y semilla de una ventana, los resultados por sesión que calcula la comparación (errores, aciertos y fallos direccionales por signo, Rank IC, pérdida de cuantiles, cobertura y anchura de intervalos, estratos de presencia, calibrador y ablación). Se escriben en un `npz` comprimido sin pérdida, con todos los decimales en FP64 y sin redondear, y la lectura comprueba su identidad con la configuración y las fuentes. La cartera larga y corta guarda aparte los libros por sesión de cada ventana (`<ventana>.long_short.npz`), con la identidad de la edición de precios. Su informe desde esos libros es idéntico al que lee las filas.
+Los agregados guardan, para cada modelo y semilla de una ventana, los resultados por sesión que calcula la comparación (errores, aciertos y fallos direccionales por signo, Rank IC, pérdida de cuantiles, cobertura y anchura de intervalos, estratos de presencia, calibrador y ablación). Se escriben en un `npz` comprimido sin pérdida, con todos los decimales en FP64 y sin redondear, y la lectura comprueba su identidad con la configuración y las fuentes. La cartera larga y corta guarda aparte los libros por sesión de cada ventana (`<ventana>.long_short.npz`), con la identidad de la edición de precios. Su informe desde esos libros es idéntico al que lee las filas.
 
 ## Regeneración exacta
 

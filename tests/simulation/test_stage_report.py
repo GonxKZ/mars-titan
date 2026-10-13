@@ -1,7 +1,7 @@
 """Informe financiero de la etapa de políticas sobre salidas confirmadas, sin aprender.
 
-Las salidas proceden de la etapa reducida de `rl_stage_fixture`, con brazos aprendidos
-sustituidos por políticas guionizadas. El informe solo lee recibos confirmados.
+Las salidas proceden de la etapa reducida de `rl_stage_fixture`, con políticas aprendidas
+sustituidos por políticas de reglas fijas. El informe solo lee recibos confirmados.
 """
 
 import csv

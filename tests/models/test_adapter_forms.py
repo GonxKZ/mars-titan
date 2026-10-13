@@ -1,6 +1,6 @@
 """Formas de adaptador de #444 sobre padres congelados, sin pasos de optimizador.
 
-Cada forma empieza en la identidad: con sus correcciones nulas el brazo debe emitir los
+Cada forma empieza en la identidad: con sus correcciones nulas el modelo debe emitir los
 mismos bits que el padre, en inferencia y en entrenamiento. Además se contrasta cada forma
 con su ecuación escrita a mano y sus gradientes con diferencias finitas en float64.
 """
@@ -173,7 +173,7 @@ def test_the_transformer_keeps_its_fast_path_with_every_form():
     """Ninguna forma registra ganchos dentro de las capas del codificador Transformer.
 
     Un gancho dentro de `TransformerEncoderLayer` desactiva su ruta rápida en inferencia y
-    cambiaría los bits del brazo frente al padre. Las formas de la lectura son
+    cambiaría los bits del modelo frente al padre. Las formas de la lectura son
     reparametrizaciones y los adaptadores por módulo solo se enganchan en la fusión.
     """
     original = parent("transformer")

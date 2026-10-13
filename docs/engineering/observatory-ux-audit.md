@@ -13,7 +13,7 @@ La revisión usó Chrome 153 sin interfaz controlado por Playwright 1.63, a 1440
 | Pregunta | Respuesta actual | Problema |
 | --- | --- | --- |
 | ¿Hay algo en marcha? | La primera ejecución del índice, ordenado con las activas primero. | Si no hay ninguna activa, abre una comprobación técnica de septiembre sin relación con lo actual. |
-| ¿Cómo va una campaña? | Una línea de texto por campaña dentro de un desplegable cerrado. | No muestra ventanas, brazos ni semillas. Solo cuenta las completadas, no las pausadas, bloqueadas o pendientes. |
+| ¿Cómo va una campaña? | Una línea de texto por campaña dentro de un desplegable cerrado. | No muestra ventanas, modelos ni semillas. Solo cuenta las completadas, no las pausadas, bloqueadas o pendientes. |
 | ¿Cómo aprende una ejecución? | Una curva SVG de la ejecución elegida, limitada a sus últimos 240 puntos. | No se pueden comparar curvas de varias ejecuciones. El recorte solo se declara en la descripción accesible. |
 | ¿Qué modelo va mejor? | Tabla de ejecuciones completadas del mismo grupo y fase. | Solo usa la página visible de 64 registros. Un grupo repartido entre páginas aparece incompleto. |
 | ¿Dónde está una ejecución concreta? | Selector de 64 identificadores y búsqueda dentro de la página. | No hay búsqueda global ni enlace directo a una ejecución. |
@@ -68,7 +68,7 @@ El coste en reposo es bajo y debe conservarse. Lo que no escala es el dibujo. La
 
 ## Decisiones que se derivan
 
-1. **Empezar por la campaña.** La vista inicial debe responder qué se está ejecutando y cuánto falta, con una matriz de ventanas, brazos y semillas en lugar de una ejecución arbitraria.
+1. **Empezar por la campaña.** La vista inicial debe responder qué se está ejecutando y cuánto falta, con una matriz de ventanas, modelos y semillas en lugar de una ejecución arbitraria.
 2. **Cargar todo el historial de forma progresiva** con páginas inmutables descargadas una sola vez, para que comparación, búsqueda y CSV usen todos los registros.
 3. **Consultar el índice de forma condicional** y no volver a validar ni dibujar si la respuesta es 304.
 4. **Dibujar en canvas** con una biblioteca pensada para series largas, con tabla equivalente y reducción declarada cuando se aplique.

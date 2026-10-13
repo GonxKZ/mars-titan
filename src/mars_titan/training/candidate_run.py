@@ -189,7 +189,7 @@ def load_recipe(path, *, variant, search_case=None):
     """Leer la receta, su variante, su caso de búsqueda y la regla del protocolo.
 
     La sección `walk_forward` declara el calentamiento de entradas, el mismo que los demás
-    brazos con memoria, y los casos de búsqueda del optimizador con la regla común de
+    modelos con memoria, y los casos de búsqueda del optimizador con la regla común de
     `search_cases`. Si la receta los declara, el caso es obligatorio.
     """
     path = Path(path)
@@ -222,7 +222,7 @@ def load_recipe(path, *, variant, search_case=None):
         <= set(document["walk_forward"])
         <= {"warmup_months", "search_cases"}
     ):
-        raise ValueError("La receta no conserva su esquema, variantes y brazo principal")
+        raise ValueError("La receta no conserva su esquema, variantes y modelo principal")
     checked_warmup(document["walk_forward"]["warmup_months"])
     cases = document["walk_forward"].get("search_cases")
     if cases is not None:
@@ -246,7 +246,7 @@ def load_recipe(path, *, variant, search_case=None):
     }:
         raise ValueError("La selección o el presupuesto no coinciden con el protocolo")
     if document["model"].get("seeds") != protocol["seeds"]:
-        raise ValueError("Las semillas del brazo no son las del protocolo")
+        raise ValueError("Las semillas del modelo no son las del protocolo")
     return recipe, dict(document, protocol_sha256=sha256(protocol_path))
 
 

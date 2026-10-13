@@ -17,6 +17,39 @@ from reference_library import read_catalogs
 
 ROOT = Path(__file__).resolve().parents[1]
 
+# Calcos del inglés que no se usan en la prosa española del proyecto, con su sustituto.
+VOCABULARY = (
+    (re.compile(r"\bbrazos?\b", re.IGNORECASE), "modelo, variante o configuración"),
+    (
+        re.compile(r"\bor[aá]culos?\b", re.IGNORECASE),
+        "referencia, óptimo exacto o cota con información futura",
+    ),
+    (re.compile(r"\bguionizad[oa]s?\b", re.IGNORECASE), "de reglas fijas"),
+    (re.compile(r"\bcanarios?\b", re.IGNORECASE), "información futura inyectada a propósito"),
+)
+# Evidencia generada, copias entregadas, recetas cuya huella fijan las pruebas y este control.
+VOCABULARY_EXCEPTIONS = (
+    re.compile(r"^reports/.*\.json$"),
+    re.compile(r"^thesis/revisions/"),
+    re.compile(r"^configs/titans/chronological-training(-quantile)?\.json$"),
+    re.compile(r"^scripts/check_repository\.py$"),
+    re.compile(r"^tests/tooling/test_repository_check\.py$"),
+)
+TEXT_SUFFIXES = set(
+    ".md .tex .py .mjs .js .html .css .json .toml .yml .yaml .cff .txt .sh".split()
+    + ".cpp .hpp .h .cu .cuh .cmake".split()
+)
+
+
+def vocabulary_errors(name: str, text: str) -> list[str]:
+    """Señala cada calco con su línea y el término que lo sustituye."""
+    errors = []
+    for number, line in enumerate(text.splitlines(), start=1):
+        for pattern, replacement in VOCABULARY:
+            for match in pattern.finditer(line):
+                errors.append(f"Término «{match.group(0)}» en {name}:{number}. Usar {replacement}")
+    return errors
+
 
 def main() -> int:
     paths = subprocess.check_output(
@@ -35,6 +68,10 @@ def main() -> int:
             yaml.safe_load(path.read_text(encoding="utf-8"))
         elif path.suffix == ".toml" or path.name == "uv.lock":
             tomllib.loads(path.read_text(encoding="utf-8"))
+        if path.suffix in TEXT_SUFFIXES and not any(
+            pattern.search(name) for pattern in VOCABULARY_EXCEPTIONS
+        ):
+            errors.extend(vocabulary_errors(name, path.read_text(encoding="utf-8")))
 
     for name in paths:
         if not name.endswith(".md"):
