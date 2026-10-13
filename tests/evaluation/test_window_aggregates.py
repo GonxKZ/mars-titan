@@ -126,7 +126,7 @@ def test_window_aggregates_are_small_files_with_their_digest(released):
     study = released["study"]
     config, sources, ablation = loaded(study, released["ablation"])
     for window, record in released["written"].items():
-        results, _ = aggregates.read(released["folder"], config, sources, window, ablation)
+        results, _, _ = aggregates.read(released["folder"], config, sources, window, ablation)
         scores = results["gru", 42]["raw"]
         # Las puntuaciones por sesión son float64 y no se redondean al guardarlas.
         assert scores.mae.dtype == scores.pinball.dtype == np.float64
