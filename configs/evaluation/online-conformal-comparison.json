@@ -10,7 +10,7 @@
   "proposal": "docs/research/post-titans-proposals.md",
   "specification": "docs/engineering/online-conformal-calibration.md",
   "base_comparison": "configs/evaluation/historical-masked-2000-comparison.json",
-  "predictions": "Cuantiles ya emitidos por los brazos con quantile_head_v1 en las particiones de calibración y evaluación de cada ventana anterior a 2024. No se reentrena ningún predictor.",
+  "predictions": "Cuantiles ya emitidos por los modelos con quantile_head_v1 en las particiones de calibración y evaluación de cada ventana anterior a 2024. No se reentrena ningún predictor.",
   "arms": {
     "cqr_static": {
       "role": "control",
@@ -85,7 +85,7 @@
   },
   "prediction": "La CQR estática quedará infracubierta en 2008 y 2020 y sobrecubierta en años tranquilos. cqr_online reducirá la desviación media de cobertura entre un 30 % y un 60 %. El interval score mejorará menos de un 2 % porque la anchura la fija sobre todo el cuantil base.",
   "pending": [
-    "Nada se ha ejecutado. El bloqueo de aprendizaje impide emitir las predicciones que el brazo necesita.",
+    "Nada se ha ejecutado. El bloqueo de aprendizaje impide emitir las predicciones que el modelo necesita.",
     "La propuesta escribía γ ∈ {0,005, 0,02} sin unidad. La implementación fija γ = κ · B̂ con B̂ la mayor puntuación absoluta de calibración, de modo que esos valores son fracciones de la escala de cada mercado e intervalo.",
     "La propuesta usaba como alternativa trivial una recalibración anual, pero la CQR estática de la comparación ya se ajusta en cada ventana anual. La alternativa pasa a ser una recalibración mensual con filas maduras.",
     "El panel de predicciones no lleva target_available_at. La integración en walk_forward_comparison debe leerlo de la vista de cada ventana."

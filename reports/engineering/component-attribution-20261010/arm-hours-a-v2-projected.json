@@ -298,6 +298,30 @@
       "parents": [
         "titans_mac_online"
       ]
+    },
+    "mars_titan_b6_regime": {
+      "gpu_hours": 0.459165,
+      "parents": [
+        "titans_mac_online"
+      ]
+    },
+    "mars_titan_b6_calendar": {
+      "gpu_hours": 0.459165,
+      "parents": [
+        "titans_mac_online"
+      ]
+    },
+    "mars_titan_b6_regime_banks": {
+      "gpu_hours": 0.459165,
+      "parents": [
+        "titans_mac_online"
+      ]
+    },
+    "mars_titan_b6_calendar_banks": {
+      "gpu_hours": 0.459165,
+      "parents": [
+        "titans_mac_online"
+      ]
     }
   }
 }

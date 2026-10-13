@@ -1,6 +1,6 @@
-"""Una ventana del postentrenamiento de Titans-MAC y de los brazos con lector episódico.
+"""Una ventana del postentrenamiento de Titans-MAC y de los modelos con lector episódico.
 
-Cada ventana parte del estado elegido de un brazo de la campaña con máscaras y una semilla,
+Cada ventana parte del estado elegido de un modelo de la campaña con máscaras y una semilla,
 ajusta un caso de la matriz de versión 3 (`chronological_matrix`) y selecciona con la
 validación, con el padre elegible en la época cero. Escribe validación, calibración y
 evaluación con el esquema común y los cinco cuantiles.
@@ -13,7 +13,7 @@ usó (`campaign_chain.posttraining_rows`), tras el calentamiento sin etiquetas d
 
 Calentamiento, truncamiento, bloques, acumulación y política de memoria son los del ajuste
 del padre, leídos de su identidad. Solo cambian el optimizador, el presupuesto y la
-selección, que declara la matriz. Así un cambio de la regla de un brazo base (por ejemplo su
+selección, que declara la matriz. Así un cambio de la regla de un modelo base (por ejemplo su
 calentamiento) llega igual a sus adaptadores.
 
 `frozen_titans` y `frozen_readout` predicen validación, calibración y evaluación de una
@@ -471,7 +471,7 @@ def run_titans_posttraining(
 
 
 def readout_family_of(report):
-    """Familia del lector de un brazo de MARS-TITAN o CM-v1 desde su informe."""
+    """Familia del lector de un modelo de MARS-TITAN o CM-v1 desde su informe."""
     from mars_titan.training.cm_v1_factorial import ARMS, load_declaration, readout_family
 
     request = report.get("request") if isinstance(report, dict) else None
@@ -480,28 +480,28 @@ def readout_family_of(report):
         return _mars_family(request["components"])
     _require(
         isinstance(request.get("declaration"), str) and request.get("arm") in ARMS,
-        "El informe no es una ventana de MARS-TITAN ni de un brazo de CM-v1",
+        "El informe no es una ventana de MARS-TITAN ni de una variante de CM-v1",
     )
     document = load_declaration(request["declaration"])
     _require(
         request.get("declaration_sha256") == document["sha256"],
-        "La declaración de CM-v1 cambió después de ajustar el brazo",
+        "La declaración de CM-v1 cambió después de ajustar el modelo",
     )
     return readout_family(document, request["arm"])
 
 
 def _arm_parts(arm, view):
-    """Informe del brazo, su familia, su padre Titans-MAC y el lector elegido."""
+    """Informe del modelo, su familia, su padre Titans-MAC y el lector elegido."""
     report, digest = _completed(
         arm, ("mars_titan_walk_forward_window", "cm_v1_walk_forward_window")
     )
     family = readout_family_of(report)
-    _require(report["kind"] == family.kind, "El brazo no corresponde a su familia de lector")
+    _require(report["kind"] == family.kind, "El modelo no corresponde a su familia de lector")
     request = report["request"]
     _require(
         request["view_sha256"] == sha256(view)
         and sha256(arm / "selected.json") == report["checkpoint"]["sha256"],
-        "El brazo no se ajustó en esta vista o su estado elegido cambió",
+        "El modelo no se ajustó en esta vista o su estado elegido cambió",
     )
     parent = Path(request["parent"]["path"])
     parent_report, parent_sha = read_manifest(parent / "run.json", 16 * 1024**2)
@@ -509,13 +509,13 @@ def _arm_parts(arm, view):
         parent_sha == request["parent"]["run_sha256"]
         and parent_report["checkpoint"]["sha256"] == request["parent"]["checkpoint_sha256"]
         and parent_report["request"].get("local_control") == family.control,
-        "El padre del brazo ha cambiado",
+        "El padre del modelo ha cambiado",
     )
     return report, digest, family, parent, parent_report
 
 
 def _readout_models(family, report, parent, parent_report, specification, device, *, carried):
-    """Padre congelado, variante, codec y lector elegido del brazo."""
+    """Padre congelado, variante, codec y lector elegido del modelo."""
     request = report["request"]
     titans = parent_report["identity"]["recipe"]
     seed = request["seed"]
@@ -526,7 +526,7 @@ def _readout_models(family, report, parent, parent_report, specification, device
     if not carried:
         _require(
             variant.fingerprint() == report["identity"]["variant_sha256"],
-            "La variante reconstruida no es la del brazo",
+            "La variante reconstruida no es la del modelo",
         )
     base_recipe = readout_case_recipe(report["identity"]["recipe"], request["search_case"])
     codec = FrozenEpisodeCodec(specification)
@@ -548,20 +548,20 @@ def run_readout_posttraining(
     optimizer_factory=None,
     parent_view=None,
 ):
-    """Postentrenar el núcleo, la lectura episódica o ambos de un brazo con lector.
+    """Postentrenar el núcleo, la lectura episódica o ambos de un modelo con lector.
 
     El núcleo adaptado parte del mismo padre con su control C declarado. Sin adaptadores
-    en el núcleo, el padre se carga congelado como en el ajuste del brazo. Con
-    `parent_view`, el brazo se ajustó en esa vista anterior (walk-forward por etapas) y,
+    en el núcleo, el padre se carga congelado como en el ajuste del modelo. Con
+    `parent_view`, el modelo se ajustó en esa vista anterior (walk-forward por etapas) y,
     con M3, conserva las escalas congeladas de su propio ajuste.
     """
-    require_learning_allowed("el postentrenamiento de un brazo con lector episódico")
+    require_learning_allowed("el postentrenamiento de un modelo con lector episódico")
     _cuda(device)
     arm, view, output = Path(arm), Path(view), Path(output)
     origin = view if parent_view is None else Path(parent_view)
     report, digest_arm, family, parent, parent_report = _arm_parts(arm, origin)
     request = _case_request(case, digest, matrix, arm, digest_arm, view, device, parent_view)
-    _require(report["request"]["seed"] == case["seed"], "El brazo no tiene la semilla del caso")
+    _require(report["request"]["seed"] == case["seed"], "El modelo no tiene la semilla del caso")
     resumed = _resumed(output, request)
     if resumed is not None:
         return resumed
@@ -584,12 +584,12 @@ def run_readout_posttraining(
         readout.load_state_dict(state["model"])
     _require(
         _parameters_digest(readout) == state["readout_sha256"],
-        "El lector elegido del brazo no conserva su huella",
+        "El lector elegido del modelo no conserva su huella",
     )
     adapter, description = case["adapter"], {}
     predictor, core_rows = frozen, None
     if adapter is not None:
-        _require(adapter["design"] == cm.READOUT, "El caso no adapta un brazo con lector")
+        _require(adapter["design"] == cm.READOUT, "El caso no adapta un modelo con lector")
         _require(
             adapter["episodic_readout"] is None or variant.admission != "m0",
             "Sin banco la lectura episódica no recibe gradiente",
@@ -781,9 +781,9 @@ def frozen_titans(parent, parent_view, view, output, *, device="cuda:0", stop=No
 
 
 def frozen_readout(arm, arm_view, view, output, *, device="cuda:0", stop=None):
-    """Padre congelado de un brazo con lector: núcleo y lector elegidos, aplicados a otra
-    ventana. El núcleo predice con C en modo disabled, como en el ajuste del brazo."""
-    require_learning_allowed("la predicción del padre congelado de un brazo con lector")
+    """Padre congelado de un modelo con lector: núcleo y lector elegidos, aplicados a otra
+    ventana. El núcleo predice con C en modo disabled, como en el ajuste del modelo."""
+    require_learning_allowed("la predicción del padre congelado de un modelo con lector")
     _cuda(device)
     arm, arm_view, view, output = (Path(v) for v in (arm, arm_view, view, output))
     report, digest, family, parent, parent_report = _arm_parts(arm, arm_view)

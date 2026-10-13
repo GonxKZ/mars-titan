@@ -10,13 +10,13 @@ import time
 import tracemalloc
 from dataclasses import asdict
 from functools import partial
-from pathlib import Path
 
 import numpy as np
 import torch
 
 from mars_titan.cm.medoids import select_medoids
 from mars_titan.cm.numerical_radius import numerical_radius_estimates, radius_penalty
+from mars_titan.hardware.platform_identity import cpu_name
 
 
 def _latencies(call, repetitions):
@@ -100,11 +100,7 @@ def benchmark():
                 "independent_objective": reference,
             }
         )
-    cpu = next(
-        line.split(":", 1)[1].strip()
-        for line in Path("/proc/cpuinfo").read_text().splitlines()
-        if line.startswith("model name")
-    )
+    cpu = cpu_name()
     usage = resource.getrusage(resource.RUSAGE_SELF)
     return {
         "versions": {

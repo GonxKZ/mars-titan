@@ -1,6 +1,6 @@
 # Calibración conformal en línea con etiquetas maduras (PT2)
 
-Estado a 10 de octubre de 2026: **implementado y comprobado sin entrenar**. El resultado experimental está pendiente, porque el brazo necesita predicciones que el bloqueo de aprendizaje todavía no permite emitir. Tarea [#454](https://github.com/GonxKZ/mars-titan/issues/454). La motivación, el control y la regla de decisión están en las [propuestas posteriores a Titans](../research/post-titans-proposals.md#pt2-calibración-conformal-en-línea-con-etiquetas-maduras).
+Estado a 10 de octubre de 2026: **implementado y comprobado sin entrenar**. El resultado experimental está pendiente, porque el modelo necesita predicciones que el bloqueo de aprendizaje todavía no permite emitir. Tarea [#454](https://github.com/GonxKZ/mars-titan/issues/454). La motivación, el control y la regla de decisión están en las [propuestas posteriores a Titans](../research/post-titans-proposals.md#pt2-calibración-conformal-en-línea-con-etiquetas-maduras).
 
 ## Qué hace
 
@@ -15,7 +15,7 @@ flowchart TD
     CALROWS["Partición de calibración de la ventana<br/>cuantiles base y etiquetas maduras"]
     STATIC["CQR estática por mercado<br/>Q_0 = estadístico de orden de E"]
     SCALE["Escala de la tasa<br/>B̂ = max |E| de calibración, γ = κ B̂"]
-    SW{"brazo cqr_online"}
+    SW{"modelo cqr_online"}
     FROZEN["CQR estática congelada<br/>apply_conformal_quantiles"]
     ST[("Estado del mercado g<br/>Q_g por intervalo, cola pendiente, reloj")]:::pt2
     COH["Cohorte (g, t)<br/>cuantiles base, sin etiquetas"]
@@ -54,7 +54,7 @@ flowchart TD
 
 **Estado que cambia.** Por mercado e intervalo, la corrección vigente Q_g y la suma de errores medios, que solo sirve de diagnóstico. Por mercado, la cola de cohortes pendientes con sus cuantiles base, la corrección emitida y su madurez, el reloj del mercado y el número de cohortes maduras. El estado de un mercado nunca lee el de otro. `export` devuelve todo con una huella SHA-256 y `restore` lo valida antes de reconstruir.
 
-**Qué apaga el interruptor.** Sin el brazo `cqr_online`, la comparación sigue llamando a `apply_conformal_quantiles` con el registro estático, cuyo código no cambia. Con κ = 0 el componente queda encendido pero inmóvil y cada emisión coincide bit a bit con la CQR estática. Las dos cosas están comprobadas.
+**Qué apaga el interruptor.** Sin el modelo `cqr_online`, la comparación sigue llamando a `apply_conformal_quantiles` con el registro estático, cuyo código no cambia. Con κ = 0 el componente queda encendido pero inmóvil y cada emisión coincide bit a bit con la CQR estática. Las dos cosas están comprobadas.
 
 ## Ecuaciones, fuentes, módulos y pruebas
 
@@ -120,7 +120,7 @@ Puede no ayudar por varios motivos. Llega siempre tarde a un salto, porque la et
 
 ## Control con el que se descarta
 
-La [declaración del brazo](../../configs/evaluation/online-conformal-comparison.json) fija, antes de ejecutar nada, tres brazos sobre las mismas predicciones y filas: el control `cqr_static`, la innovación `cqr_online` y una alternativa trivial `cqr_monthly_refit` que recalcula la CQR estática cada 21 sesiones con las filas maduras de los últimos tres meses. κ se elige entre 0,005 y 0,02 en las ventanas con evaluación entre 2005 y 2013 y se mantiene fijo de 2014 a 2023. La regla conserva PT2 si reduce al menos un 25 % la desviación media absoluta de la cobertura respecto al nominal por año y mercado, con un intervalo del 95 % que excluye cero, y el interval score emparejado por sesión no empeora más de un 1 %. Se abandona si el interval score empeora más de un 1 % o si la desviación no baja. Si la recalibración mensual iguala a PT2, el seguimiento por cohortes no aporta sobre una alternativa más simple. Nada se ha ejecutado.
+La [declaración del modelo](../../configs/evaluation/online-conformal-comparison.json) fija, antes de ejecutar nada, tres modelos sobre las mismas predicciones y filas: el control `cqr_static`, la innovación `cqr_online` y una alternativa trivial `cqr_monthly_refit` que recalcula la CQR estática cada 21 sesiones con las filas maduras de los últimos tres meses. κ se elige entre 0,005 y 0,02 en las ventanas con evaluación entre 2005 y 2013 y se mantiene fijo de 2014 a 2023. La regla conserva PT2 si reduce al menos un 25 % la desviación media absoluta de la cobertura respecto al nominal por año y mercado, con un intervalo del 95 % que excluye cero, y el interval score emparejado por sesión no empeora más de un 1 %. Se abandona si el interval score empeora más de un 1 % o si la desviación no baja. Si la recalibración mensual iguala a PT2, el seguimiento por cohortes no aporta sobre una alternativa más simple. Nada se ha ejecutado.
 
 ## Comprobaciones
 
@@ -140,7 +140,7 @@ La [declaración del brazo](../../configs/evaluation/online-conformal-comparison
 | Estado exportado como copia y rechazo de estados alterados | `test_exported_state_is_a_copy_and_tampering_is_rejected` |
 | Rechazos sin cambiar el estado: inmadura, fuera de orden, repetida, forma, NaN, mercado, cola llena, reloj y test de 2024 | `test_invalid_operations_are_rejected_without_changing_the_state` y `test_operations_follow_the_market_clock` |
 | Declaraciones imposibles | `test_invalid_declarations_are_rejected` y `test_undefined_static_corrections_cannot_start_the_tracking` |
-| Brazo declarado sin ejecutar, con el control igual a la calibración de la comparación | `test_comparison_arm_is_declared_with_its_control_and_rule_but_not_executed` |
+| Modelo declarado sin ejecutar, con el control igual a la calibración de la comparación | `test_comparison_arm_is_declared_with_its_control_and_rule_but_not_executed` |
 
 Las pruebas están en `tests/calibration/test_online_conformal.py`. Las secuencias son explícitas y con semilla fija y no ajustan ningún modelo. PT2 no tiene parámetros entrenables ni gradientes, así que la comparación con diferencias finitas no se aplica. Tampoco tiene tensores en GPU.
 

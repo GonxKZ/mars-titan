@@ -11,17 +11,34 @@ Las pruebas se agrupan por la responsabilidad que comprueban:
 
 Las pruebas de herramientas no acceden a la red. Comprueban identificadores, metadatos, integridad, formatos, límites de descarga y conservación de archivos anteriores. Las pruebas científicas usan datos sintéticos o artefactos locales controlados y distinguen las medidas de coste de los resultados predictivos.
 
-Desde la raíz del repositorio se puede ejecutar el conjunto completo:
+Desde la raíz del repositorio, `make test-fast` ejecuta en pocos minutos las pruebas de CPU sin las marcas `slow`, `native` ni `cuda`, y `make test` recorre la suite CPU completa por carpetas. Las [órdenes habituales](../CONTRIBUTING.md#órdenes-habituales) explican qué necesita cada objetivo.
+
+Las pruebas que requieren CUDA, un binario nativo o Node.js comprueban su disponibilidad y, si falta, se omiten con un motivo que dice qué falta y cómo conseguirlo. Nunca cambian a CPU de forma silenciosa. La [suite completa en condiciones reales](#suite-completa-en-condiciones-reales) describe cómo ejecutarlas todas.
+
+## Marcas de selección
+
+| Marca | Significado | Cómo se aplica |
+| --- | --- | --- |
+| `slow` | La suma de los casos de la función alcanza un segundo | `tests/conftest.py` la añade a las funciones de [slow_tests.txt](slow_tests.txt) |
+| `cuda` | Necesita `cuda:0` | `@pytest.mark.cuda` o `requires_cuda`. Sin CUDA la sesión la omite con un motivo común |
+| `native` | Necesita un artefacto nativo | `@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")` omite la prueba si falta el artefacto. Sin argumentos solo selecciona. `native_binding` la implica |
+| `unguarded_fit` | Ajusta sin pasar por un punto de entrada protegido | Se omite mientras rige la protección del aprendizaje |
+
+`tests/suite_support.py` reúne los motivos de omisión comunes (`missing_native`, `missing_extra`, `CUDA_REASON` y los de las capacidades del enlace) para que todos digan qué preset, extra u orden resuelve la ausencia. Las marcas se combinan con `-m`:
 
 ```bash
-uv run --locked pytest
+uv run --locked pytest -q -m "not slow and not native and not cuda"
+uv run --locked pytest -q -rs -m "native and not cuda" tests/memory
 ```
 
-Las pruebas que requieren CUDA, un binario nativo o Node.js comprueban su disponibilidad y, si falta, se omiten con su motivo. Nunca cambian a CPU de forma silenciosa. La [suite completa en condiciones reales](#suite-completa-en-condiciones-reales) describe cómo ejecutarlas todas. Para ejecutar solo las comprobaciones compatibles con CPU se deben seleccionar los módulos correspondientes, por ejemplo:
+La lista de pruebas lentas procede de informes JUnit. La actual junta la suite CPU completa con cobertura y los binarios nativos del 10 de octubre de 2026, que alarga los tiempos, y dos ejecuciones de `make test-fast` en un clon limpio con el equipo cargado, del 10 y del 13 de octubre. Una función entra si sus casos suman un segundo o más en alguna de ellas. JUnit atribuye la preparación de un fixture de módulo a la primera prueba que lo usa, así que una función de diez segundos o más arrastra también a las que comparten con ella un fixture de módulo o de sesión. Si no, la siguiente pagaría ese coste en el subconjunto rápido. Para regenerarla se ejecuta la suite con `--junitxml` y se revisa el diff. Con varios informes de ejecuciones distintas, cada función conserva el mayor de sus tiempos:
 
 ```bash
-uv run --locked pytest tests/tooling tests/native
+uv run --locked pytest -q --junitxml=suite.xml
+uv run --locked python scripts/list_slow_tests.py --threshold 1 --shared 10 suite.xml > tests/slow_tests.txt
 ```
+
+`tests/test_suite_support.py` comprueba que cada función de la lista sigue existiendo.
 
 Las pruebas que necesitan el enlace episódico nativo leen su ruta en `MARS_TITAN_EPISODIC_NATIVE` y, sin ella, se omiten con su motivo para que la suite CPU siga funcionando. Las paridades de MARS-TITAN llevan además la marca `native_binding`. La comprobación local debe exigirlas con el [modo estricto](#modo-estricto), que comprueba los binarios y carga el enlace antes de recoger ninguna prueba. Con ese modo, cualquier omisión de una prueba marcada cuenta como fallo:
 
@@ -35,7 +52,7 @@ La orden necesita los cinco binarios declarados como en la [suite completa](#bin
 Las paridades con bibliotecas externas (PEFT, scoringrules, MAPIE y sb3-contrib) llevan la marca `external_reference` y necesitan el grupo de dependencias `reference`, que no forma parte del entorno de ejecución. Sin el grupo se omiten con su motivo. `MARS_TITAN_REQUIRE_REFERENCE=1` exige el grupo con las versiones exactas de `pyproject.toml` antes de recoger pruebas y convierte en fallo cualquier omisión de una prueba marcada:
 
 ```bash
-uv sync --locked --group reference
+uv sync --locked --all-extras --group reference
 MARS_TITAN_REQUIRE_REFERENCE=1 uv run --locked pytest -q -rs -m external_reference
 ```
 
@@ -54,36 +71,53 @@ La protección local `~/.local/state/mars-titan/training-hold-2000.json`, o la r
 | Ámbito | Puntos de entrada |
 | --- | --- |
 | Referencias neuronales | `run_reference_case`, `run_search`, `run_temporal_search`, `run_reference_campaign` y `training/real_campaign.run_campaign` |
-| Referencias tabulares | `run_tabular_reference`, `run_external_reference`, `run_tabular_search` y `baseline_queue.run_queue` |
-| Campaña con máscaras | `masked_campaign.run_campaign`, al empezar y antes de cada trabajo, y `candidate_walk_forward.fit_window` y `carry_window` |
+| Referencias tabulares | `run_tabular_reference`, `run_external_reference` y su ejecutor `_execute`, `run_tabular_search` y `baseline_queue.run_queue` |
+| Campaña con máscaras | `masked_campaign.run_campaign`, al empezar y antes de cada trabajo, `candidate_walk_forward.fit_window` y `carry_window`, `online_reference.run_online_reference`, `prediction_regeneration.regenerate_job` y `regenerate_ablation`, y `quantile_head_control.run_control`, al empezar y antes de cada trabajo |
 | Adaptador predictivo | `run_predictive_case`, `run_predictive_study` y `klpo_queue.run_queue` |
-| Postentrenamiento | `posttraining/run.run_case`, `posttraining/queue.run_queue`, `run_completion` y las etapas tabular y de postentrenamiento de la compleción |
-| Sondas y mediciones | `train_budget_grid`, `run_temporal_probe`, `profile_case`, `run_reference_probe` y `models/baselines/campaign.run_campaign` |
-| Primitivas de ajuste | `fit_ridge_blocks`, `fit_boosting_batches`, `fit_external_boosting` y `fit_hmm` |
-| Simulación y refuerzo | `FinancialTrainer.run`, `simulation/campaign.run_campaign`, `run_adaptive_campaign` y `prepare_adaptation_scenarios` con `fit_markov=True` |
+| Postentrenamiento | `posttraining/run.run_case`, `posttraining/queue.run_queue` y `run_matrix_queue`, `run_completion` y las etapas tabular y de postentrenamiento de la compleción, `posttraining/campaign_stage.run_stage`, al empezar y antes de cada trabajo, `candidate_adapters.run_candidate_posttraining` y `frozen_candidate`, y `chronological_windows.run_titans_posttraining`, `run_readout_posttraining`, `frozen_titans` y `frozen_readout` |
+| Sondas y mediciones | `train_budget_grid` y su paso público `train_step`, `run_temporal_probe`, `profile_case`, `run_reference_probe` y `models/baselines/campaign.run_campaign` |
+| Primitivas de ajuste | `fit_ridge_blocks`, `solve_ridge`, `fit_boosting_batches`, `fit_external_boosting` y `fit_hmm` |
+| Simulación y refuerzo | `FinancialTrainer.run`, `simulation/campaign.run_campaign`, `run_adaptive_campaign`, `prepare_adaptation_scenarios` con `fit_markov=True` y `simulation/campaign_stage.run_stage`, al empezar y antes de cada trabajo |
 | Titans-MAC | `titans_walk_forward.run_titans_window`, `carry_titans` y `ChronologicalTrainer.run` cuando recibe un optimizador de `torch.optim` |
-| MARS-TITAN | `mars_titan_walk_forward.run_mars_titan_window`, `carry_mars_titan` y `ReadoutTrainer.run` con cualquier optimizador |
+| MARS-TITAN | `mars_titan_walk_forward.run_mars_titan_window`, `carry_mars_titan`, el recorrido común `run_readout_window` y `carry_readout`, `ReadoutTrainer.run` con cualquier optimizador y la corrección B6 `mars_titan_correction.run_correction_window` y `carry_correction` |
 | CM-v1 | `cm_v1_factorial.run_cm_v1_core_window`, `run_cm_v1_window` y `carry_cm_v1`, antes de leer la declaración o las fuentes |
-| Scripts | `run_native_ppo.py` en modo de entrenamiento, `benchmark_native_ppo.py`, `benchmark_adaptive_rl.py`, `run_financial_comparators.py` y `run_titans_walk_forward.py` |
-| Ejecutables nativos | `mars-titan-ppo` en modo de entrenamiento, después de validar argumentos y antes de leer fuentes, y `mars-titan-adapter-control` |
+| Scripts | `run_native_ppo.py` en modo de entrenamiento y en la auditoría sobre cintas reconstruidas, `benchmark_native_ppo.py`, `benchmark_adaptive_rl.py`, `run_financial_comparators.py` y `run_titans_walk_forward.py` |
+| Ejecutables nativos | `mars-titan-ppo` y `mars-titan-klpo` en modo de entrenamiento y en la auditoría sobre cintas reconstruidas, después de validar argumentos y antes de leer fuentes, y `mars-titan-adapter-control` |
 
 `ChronologicalTrainer.run` en `src/mars_titan/training/financial_run.py` solo aplica la protección con un optimizador de `torch.optim`. Así sus pruebas recorren el bucle con un optimizador propio que registra llamadas sin modificar pesos. `CandidateChronologicalTrainer.run` en `src/mars_titan/training/candidate_run.py` llama a `require_learning_allowed()` con cualquier optimizador, y sus pruebas usan `learning_doubles` porque el suyo solo registra gradientes. `ReadoutTrainer.run` en `src/mars_titan/training/mars_titan_run.py` también la aplica con cualquier optimizador y sus pruebas usan `learning_doubles`. `carry_window`, `carry_titans`, `carry_mars_titan` y `carry_cm_v1` también comprueban la protección aunque no ajustan, porque producen las predicciones de una ventana de la campaña.
 
+### Inventario y grafo de llamadas
+
+`tests/training/learning_hold_inventory.py` enumera cada función que llama a `require_learning_allowed()` con una prueba de rechazo por llamada, en el orden del código. Una referencia corta es un caso de `ENTRY_POINTS` en `test_learning_hold_guards.py`, que además comprueba con la traza de la excepción que lo detiene justo esa guarda. Las demás nombran una prueba de otro módulo.
+
+`tests/training/test_learning_hold_inventory.py` construye con `ast` un grafo de llamadas de `src/mars_titan` y `scripts` (`tests/training/learning_hold_graph.py`) y exige cuatro cosas:
+
+- Todo sitio que ajusta se alcanza solo a través de una función protegida. Cuentan como sitios `x.step()` sin argumentos, la construcción de un optimizador de `torch.optim`, `xgboost.train`, `fit` y `partial_fit` sobre estimadores ajenos al proyecto y las soluciones cerradas de `linalg`. Las raíces son las funciones sin llamadores y el código de nivel de módulo, incluidos los scripts.
+- Ninguna función protegida llama antes de su primera guarda a algo que pueda ajustar.
+- Las guardas del código coinciden con el inventario, también en número por función, y cada referencia existe y usa la protección.
+- Los ganchos sin pasos y las exenciones declaradas siguen siendo necesarios. Los ganchos de `campaign_throughput._forbid_steps` y `modality_ablation_stage.forbid_optimizer_steps` solo cubren los pasos de PyTorch. La única exención es la escritura de Kalman de la memoria asociativa de B6, que actualiza su estado con resultados maduros durante la inferencia.
+
+El grafo resuelve importaciones, `self`, herencia, constructores y atributos tipados. Con un receptor desconocido enlaza todos los métodos con ese nombre de los módulos importados, así que puede añadir cadenas que no existen pero no pierde las reales. Las normalizaciones con `StandardScaler.partial_fit` (`fit_standardizer` y `fit_normalization`) también cuentan como sitios. No llaman a la guarda, pero hoy solo se alcanzan desde puntos protegidos, y un uso nuevo fuera de ellos tendría que declararse como exención con su motivo. Un punto de entrada nuevo necesita su guarda, su prueba de rechazo y su línea en el inventario. Los ejecutables nativos comprueban la protección en C++ y quedan fuera de este recorrido.
+
 ### Lo que no se bloquea
 
-La preparación de objetivos (`prepare_corpus_targets`), la codificación (`encode_corpus`), la generación de escenarios sin HMM, `temporal_search --check` y las órdenes `check`, `prepare`, `views`, `sources`, `posttraining check`, `throughput`, `storage`, `budget` y `schedule` de `run_masked_campaign.py` siguen permitidas. `budget` solo lee recuentos declarados, manifiestos de vistas o la decisión, la maduración y la presencia de los objetivos para contar filas, y `schedule` no lee datos. `storage` solo lee manifiestos de vistas y escribe tablas sintéticas en un directorio temporal. `throughput` recorre forward y backward sin crear optimizadores de PyTorch: Titans-MAC, la GRU candidata, los lectores de MARS-TITAN y los núcleos y lectores de CM-v1 llegan hasta el paso con un optimizador de la medición que no modifica pesos, se exige que los pesos no cambien, también los del padre congelado de cada lector, y su gancho rechaza cualquier paso. `posttraining run` se detiene con la protección como `run_stage`. `regenerate` se detiene antes de abrir fuentes, porque predice ventanas reales de la campaña aunque no ajuste nada, y `rolling` se detiene en la fase base con la campaña. `ablation run` no ajusta nada, pero la etapa de ablación de modalidades se detiene con la protección antes de crear salidas y antes de cada trabajo pendiente, porque es una evaluación científica, y su gancho rechaza cualquier paso de optimizador. `ablation check` y `ablation sources` siguen permitidas. También la inferencia congelada, como la auditoría de `run_native_ppo.py --audit-run` y su ruta en `mars-titan-ppo` sobre fuentes sintéticas o la etapa de evaluación de la compleción. La evaluación de una política sobre cintas reconstruidas (esquema 4 de `mars-titan-ppo` y `mars-titan-klpo`) sí se detiene con la protección antes de leer cintas o crear salidas, porque usa el histórico real. Las estadísticas que describen datos o residuos sin ajustar un modelo (`fit_standardizer`, `fit_normalization`, `ActionGrid.fit`, `fit_volatility` y el estadístico de orden de `fit_conformal_quantiles`) tampoco se bloquean. Esta protección actúa sobre el ajuste de parámetros y no impide por sí sola la evaluación científica ni el análisis de campañas (`scripts/finish_real_campaign.py` y `src/mars_titan/evaluation/`).
+La preparación de objetivos (`prepare_corpus_targets`), la codificación (`encode_corpus`), la generación de escenarios sin HMM, `temporal_search --check` y las órdenes `check`, `prepare`, `views`, `sources`, `posttraining check`, `throughput`, `storage`, `budget` y `schedule` de `run_masked_campaign.py` siguen permitidas. `budget` solo lee recuentos declarados, manifiestos de vistas o la decisión, la maduración y la presencia de los objetivos para contar filas, y `schedule` no lee datos. `storage` solo lee manifiestos de vistas y escribe tablas sintéticas en un directorio temporal. `throughput` recorre forward y backward sin crear optimizadores de PyTorch: Titans-MAC, la GRU candidata, los lectores de MARS-TITAN y los núcleos y lectores de CM-v1 llegan hasta el paso con un optimizador de la medición que no modifica pesos, se exige que los pesos no cambien, también los del padre congelado de cada lector, y su gancho rechaza cualquier paso. `posttraining run` se detiene con la protección como `run_stage`. `regenerate` se detiene antes de abrir fuentes, porque predice ventanas reales de la campaña aunque no ajuste nada, y `rolling` se detiene en la fase base con la campaña. `ablation run` no ajusta nada, pero la etapa de ablación de modalidades se detiene con la protección antes de crear salidas y antes de cada trabajo pendiente, porque es una evaluación científica, y su gancho rechaza cualquier paso de optimizador. `ablation check` y `ablation sources` siguen permitidas. También la inferencia congelada, como la auditoría de `run_native_ppo.py --audit-run` y su ruta en `mars-titan-ppo` sobre fuentes sintéticas o la etapa de evaluación de la compleción. La evaluación de una política sobre cintas reconstruidas (esquema 4 de `mars-titan-ppo` y `mars-titan-klpo`) sí se detiene con la protección antes de leer cintas o crear salidas, porque usa el histórico real. Los dos binarios tienen además dos modos sin aprendizaje que la protección admite sin rebajarse (#546). `--check-sources` lee y valida las cintas de ajuste y validación con los lectores del ajuste y escribe su identidad en `sources.json`, siempre en CPU. `--initial-evaluation` evalúa con argmax, sobre cintas de evaluación, la política inicial que genera la semilla de la configuración, y admite `--decisions` y `--evaluation-cost`. Ambos activan antes de leer nada un cerrojo de proceso irreversible: desde entonces el binario no puede crear un entrenador PPO, un controlador KLPO ni un Adam terminal, ni cargar una política con su optimizador, la política no construye optimizadores y cada paso de Adam pasa por `apply_adam_step`, que lo rechaza. Una política aprendida no se evalúa por esta vía, así que sus métricas no miden ningún modelo. `run_native_ppo.py` separa la puerta de estos modos de la de ajuste: no consulta la protección y solo lanza un binario que anuncie la capacidad `native_policy_evaluation_only`. Las estadísticas que describen datos o residuos sin ajustar un modelo (`fit_standardizer`, `fit_normalization`, `ActionGrid.fit`, `fit_volatility` y el estadístico de orden de `fit_conformal_quantiles`) tampoco se bloquean. Esta protección actúa sobre el ajuste de parámetros y no impide por sí sola la evaluación científica ni el análisis de campañas (`scripts/finish_real_campaign.py` y `src/mars_titan/evaluation/`).
 
 ### Comportamiento en las pruebas
 
 - `tests/conftest.py` registra un gancho global previo a cada paso de `torch.optim`. La prueba que intente ese paso se omite antes de modificar pesos o estados del optimizador. Sin protección, o con `training_allowed: true`, el gancho no se instala.
 - El mismo archivo convierte `LearningHoldError` en una omisión con su motivo, tanto en la preparación como en la llamada. Mientras rige la protección, las pruebas que alcanzan un punto de entrada protegido se omiten antes de ajustar.
-- El fixture `learning_doubles` apunta `MARS_TITAN_TRAINING_HOLD` a una protección temporal permitida. Lo usan pruebas cuyo aprendizaje está sustituido por binarios o ejecutores simulados, como el lanzador PPO nativo, la campaña adaptativa, la campaña con máscaras y la retención tabular con un estimador fijo. `tests/posttraining/conftest.py` también lo aplica mientras rige la protección, porque el postentrenamiento solo ajusta mediante `torch.optim`. El gancho de PyTorch sigue activo en todas ellas.
+- El fixture `learning_doubles` apunta `MARS_TITAN_TRAINING_HOLD` a una protección temporal permitida escrita por `allowed_hold` (`tests/learning_hold_lowering.py`), el único punto de las pruebas que la escribe. Lo usan pruebas cuyo aprendizaje está sustituido por binarios o ejecutores simulados, como el lanzador PPO nativo, la campaña adaptativa, la campaña con máscaras y la retención tabular con un estimador fijo. Los fixtures de módulo que recorren campañas con dobles llaman al mismo ayudante. `tests/posttraining/conftest.py` también lo aplica mientras rige la protección, porque el postentrenamiento solo ajusta mediante `torch.optim`. El gancho de PyTorch sigue activo en todas ellas.
+- Las pruebas que necesitan la protección abierta de verdad figuran en `INVENTORY`, con su motivo, y llevan la marca `lowers_learning_hold`, que las omite mientras la protección real bloquee: los ajustes nativos de `test_native_policy_tapes.py`, el entrenamiento de `test_native_learning_hold.py` que pasa una protección permitida y las cinco pruebas que comprueban que una etapa o el control de la cabeza de `test_quantile_head_control.py` vuelven a leer la protección entre trabajos. También las que pasan por un punto de entrada protegido con ejecutores sustituidos que no ajustan: la ablación B6 de `test_modality_ablation_carry.py`, el padre congelado de B6 de `test_mars_titan_campaign.py`, la meseta de la parada conjunta en `test_rolling_retention.py`, las ejecuciones de la ventana reducida y los recibos neuronales de `test_campaign_a_joint.py`, los contrastes de componente de `test_stage_report.py`, la comprobación de `unguarded_fit` en `test_suite_support.py`, el lanzamiento y el rechazo a través del motor de `test_campaign_launch_options.py`, la reanudación de `run_reference_case` en `test_reference_run_precision.py` y la precisión del adaptador en `run_case` de `test_masked_run.py`. Las demás comprobaciones de los binarios sobre cintas reconstruidas usan `--check-sources` e `--initial-evaluation` con una protección que bloquea.
+- `tests/test_learning_hold_guard.py` es una guarda estática. Recorre con `ast` las pruebas, las medidas, los scripts y los informes, y en C++ y CMake el texto de las protecciones. Falla ante un `learning_hold(True)` o `learning_hold(None)` fuera de `INVENTORY`, un `learning_hold` con un valor que solo se conoce al ejecutar fuera de `READERS`, una protección permitida escrita a mano fuera de `allowed_hold`, una protección con un valor desconocido fuera de las pruebas del lector (`READERS`) y cualquier cambio en el número de usos de los dobles (`DOUBLES`) o de referencias a la variable o la ruta de la protección (`REDIRECTIONS`) de cada archivo. Cada entrada declara su motivo.
 - `tests/training/test_learning_hold_guards.py` recorre cada punto de entrada con protecciones temporales. Bloqueado, falla antes del doble que sustituye el ajuste y sin crear salidas. Permitido o sin protección, llega a ese doble. También comprueba que la preparación de objetivos, la codificación, `temporal_search --check` y la auditoría congelada no se bloquean. Las pruebas del binario real necesitan `MARS_TITAN_PPO_EXECUTABLE`.
 - `tests/posttraining/test_learning_hold_entrypoints.py` comprueba lo mismo en los cinco puntos de entrada del postentrenamiento y que la etapa de evaluación congelada no se bloquea.
 - `tests/simulation/test_native_ppo_runner.py` se omite mientras rige la protección porque entrena con el binario real.
-- En CTest, `learning_hold` comprueba la lectura nativa y `adapter_control_cli_hold` el rechazo del control de adaptadores con una protección temporal. `adapter_control_cli` se omite mediante el mensaje del bloqueo.
+- En CTest, `learning_hold` comprueba la lectura nativa y el cerrojo de solo evaluación, `learning_gate` el lanzador de las pruebas con pasos de optimizador sin lanzar ninguna, y `adapter_control_cli_hold` el rechazo del control de adaptadores con una protección temporal. `adapter_control_cli` se omite mediante el lanzador y conserva como respaldo el mensaje del bloqueo en `SKIP_REGULAR_EXPRESSION`. `policy_evaluation_only` comprueba que la política inicial sin entrenador es la del primer paso de un ajuste PPO o de la recogida KLPO, y que con el cerrojo activo se rechazan el entrenador, el controlador, el Adam terminal, cada entrada que da un paso y la carga de una política con su optimizador mientras la evaluación congelada sigue disponible. `policy_evaluation_only_cuda` repite la prueba en `cuda:0` y solo se registra con `-DMARS_TITAN_TEST_POLICY_CUDA=ON` para una ventana GPU exclusiva. Ninguna de ellas da pasos de optimizador.
+- Las pruebas de CTest que aplican pasos de optimizador sobre datos sintéticos llevan la etiqueta `optimizer-steps`: `ppo_policy`, `ppo_training`, `ppo_collection`, `ppo_gru_packing`, `ppo_variant_state`, `adapter_control` y, cuando se registran, `adapter_control_cli`, `adapter_control_cuda` y `adapter_control_cli_cuda`. Dos barreras impiden que se ejecuten mientras rija el bloqueo (#567). La primera está en la propia prueba: se registra con `mars_titan_add_optimizer_step_test`, que la lanza a través de `mars-titan-learning-gate`. Ese lanzador lee la protección y, si bloquea, termina con el código 77, que CTest recibe como `SKIP_RETURN_CODE`, antes de ejecutar nada. Así una llamada sin perfil, como `ctest --test-dir <build>`, informa de esas pruebas como saltadas. La configuración de CMake falla si una prueba con la etiqueta no pasa por el lanzador. La segunda es el perfil base `native-test` de `native/CMakePresets.json`, que excluye la etiqueta y del que heredan todos los perfiles de prueba. Mientras rija el bloqueo, una llamada sin perfil se sigue haciendo con `-LE '^optimizer-steps$'`. Al levantarlo, esas pruebas se ejecutan con `ctest --test-dir <build> -L '^optimizer-steps$'`.
+- `tests/native/test_optimizer_steps_hold.py` lee CMake, las fuentes C++ y los perfiles sin configurar ni compilar el proyecto. Localiza los ejecutables de cada prueba y exige que la etiqueta la lleven justo las que llaman a una función que aplica o propaga un paso, y que todas ellas se registren con el lanzador y su código de salto, con la comprobación de CMake llamada después de registrar todas las pruebas. Además configura un proyecto mínimo con `OptimizerStepTests.cmake`, sin compilar ni ejecutar nada, y comprueba que la configuración falla con una prueba etiquetada fuera del lanzador o con la etiqueta o el código de salto sustituidos después. Las funciones que aplican o propagan un paso son `PpoPolicy::update` y sus variantes, `PpoTrainer::advance`, `KlpoLearningController::update_ready`, `AdapterControl::train` y los experimentos PPO y KLPO. También exige que cada perfil visible excluya la etiqueta y ninguna otra, y que todo archivo de `native/src` que use `torch::optim` o llame a esas funciones esté declarado. `adapter_control_cli_hold` y `adapter_control_cli_invalid` ejecutan el programa del adaptador, pero se detienen antes del primer paso por la protección bloqueada o por el argumento `cuda:1`. `policy_evaluation_only` y `policy_evaluation_only_cuda` solo llaman a las entradas que dan pasos dentro de `refused`, que exige el error del cerrojo. La misma prueba exige que cada paso de Adam pase por `apply_adam_step` y que esa función, cada entrada de la política, el entrenador PPO y el controlador KLPO empiecen por el cerrojo.
 
-Siguen requiriendo una selección explícita las pruebas que ajustan sin pasar por un punto de entrada protegido: `tests/models/test_boosting_selection.py` y `tests/training/test_external_convergence.py` (llaman a `xgb.train`), `tests/models/test_ridge_normal_equations.py` (resuelve el sistema normal de la ridge) y las pruebas de CTest que usan directamente las bibliotecas de PPO, KLPO y adaptadores, por ejemplo `ppo_training`, `ppo_policy` y `adapter_control`.
+Las pruebas que ajustan sin pasar por un punto de entrada protegido llevan la marca `unguarded_fit` y se omiten mientras rige la protección: `tests/models/test_boosting_selection.py` y `tests/training/test_external_convergence.py` (llaman a `xgb.train`) y `tests/models/test_ridge_normal_equations.py` (resuelve el sistema normal de la ridge). `make test-native` excluye en CTest las etiquetas `optimizer-steps` y `cuda`.
 
 ## Suite completa en condiciones reales
 
@@ -100,9 +134,11 @@ uv run --locked python -c "import torch; print(torch.__version__, torch.cuda.is_
 
 La versión de PyTorch debe terminar en `+cu130`. `uv run --locked` no retira los extras ya instalados. Sin el extra `data` falta `lxml` y las pruebas macro fallan al construir el árbol HTML. Node.js es opcional y solo lo usa el validador de la web del observatorio.
 
+Las huellas FP32 bit a bit en CPU dependen del número de hilos de PyTorch, porque el reparto de las reducciones y de los productos de matrices entre hilos cambia el orden de las sumas. Las del núcleo de Titans y del predictor financiero se capturaron con dos hilos. Sus trazas los fijan con `cpu_threads` de `tests/suite_support.py` y restauran después los que había, así que pasan con cualquier `OMP_NUM_THREADS` y con cualquier prueba anterior en la misma sesión ([#572](https://github.com/GonxKZ/mars-titan/issues/572)). Una huella nueva en CPU debe calcularse dentro de `cpu_threads`.
+
 ### Binarios nativos
 
-Se compilan desde `native/` y desde el mismo commit que se prueba, con dos trabajos:
+Se compilan desde el mismo commit que se prueba con `make native-build`, que configura y compila con dos trabajos estos presets desde `native/`:
 
 ```bash
 cmake --preset native-release -DMARS_TITAN_BUILD_EPISODIC_PYTHON=ON
@@ -113,14 +149,7 @@ cmake --preset native-candidate-cuda -DMARS_TITAN_BUILD_EPISODIC_PYTHON=ON -DMAR
 cmake --build --preset native-candidate-cuda -j 2
 ```
 
-| Variable | Artefacto | Sin ella |
-| --- | --- | --- |
-| `MARS_TITAN_EPISODIC_NATIVE` | `build/native/native-candidate-cuda/_episodic_native.cpython-312-x86_64-linux-gnu.so` | Se omiten el banco episódico, la GRU candidata, MARS-TITAN, CM-v1 y sus sesiones |
-| `MARS_TITAN_NATIVE_LIBRARY` | `build/native/native-release/libmars_titan_simulation.so` | Se usa la de `native-release` si existe, si no se omiten las variantes nativas |
-| `MARS_TITAN_SIM_EXECUTABLE` | `build/native/native-release/mars-titan-sim` | Igual que la biblioteca |
-| `MARS_TITAN_PPO_EXECUTABLE` | `build/native/native-ppo-release/mars-titan-ppo` | Se omiten las pruebas del binario PPO real |
-| `MARS_TITAN_KLPO_EXECUTABLE` | `build/native/native-ppo-release/mars-titan-klpo` | Se usa el de `native-ppo-release` si existe |
-| `MARS_TITAN_UNADJUSTED_EDITION` | Edición de precios sin ajustar, solo lectura | Se omiten las pruebas de humo con la edición real |
+La [tabla de variables de entorno](../docs/engineering/environment-variables.md#binarios-nativos) indica qué variable declara cada artefacto y qué ocurre sin ella. Los objetivos `test`, `test-native` y `test-cuda` del Makefile declaran los que existen en `build/native/`.
 
 El enlace episódico debe ser el de `native-candidate-cuda`. El de `native-release` no incluye el candidato GRU y deja sin ejecutar las pruebas de la GRU en sesiones financieras. Una ruta declarada que no existe nunca se trata como ausente y hace fallar la prueba. Desde la raíz del repositorio:
 
@@ -140,25 +169,18 @@ export MARS_TITAN_KLPO_EXECUTABLE=$B/native-ppo-release/mars-titan-klpo
 ### Parte CPU
 
 ```bash
-export OMP_NUM_THREADS=2 MKL_NUM_THREADS=2 CUDA_VISIBLE_DEVICES=-1 MARS_TITAN_REQUIRE_NATIVE=1 MARS_TITAN_REQUIRE_REFERENCE=1
-for part in data models training simulation memory posttraining evaluation environments episodes calibration cm native tooling; do
-  uv run --locked pytest -q -rs tests/$part \
-    --ignore=tests/models/test_boosting_selection.py \
-    --ignore=tests/training/test_external_convergence.py \
-    --ignore=tests/models/test_ridge_normal_equations.py
-done
-uv run --locked pytest -q -rs tests/test_suite_support.py
+MARS_TITAN_REQUIRE_NATIVE=1 MARS_TITAN_REQUIRE_REFERENCE=1 make test
 ```
 
-Las tres exclusiones son las pruebas que ajustan sin pasar por un punto de entrada protegido, descritas al final de la sección anterior. Cada carpeta en su propio proceso acota la memoria al pico de la más pesada. En la verificación del 9 de octubre de 2026, `tests/training` llegó a unos 5,7 GiB de memoria residente y el resto de carpetas se quedó por debajo de 1,1 GiB. Si otras sesiones de pytest comparten el directorio temporal, cada parte necesita su propio `--basetemp`, porque pytest borra los `pytest-N` antiguos de las demás sesiones y las pruebas en curso pierden sus archivos.
+`make test` fija dos hilos, oculta la GPU y declara los binarios que existan en `build/native/`. Las pruebas `unguarded_fit` se omiten mientras rige la protección. Cada carpeta corre en su propio proceso, lo que acota la memoria al pico de la más pesada. En la verificación del 9 de octubre de 2026, `tests/training` llegó a unos 5,7 GiB de memoria residente y el resto de carpetas se quedó por debajo de 1,1 GiB. Si otras sesiones de pytest comparten el directorio temporal, cada parte necesita su propio `--basetemp`, porque pytest borra los `pytest-N` antiguos de las demás sesiones y las pruebas en curso pierden sus archivos.
 
 ### Parte CUDA
 
-Las pruebas CUDA son las que la parte CPU omite por falta de CUDA, que se reconocen por su motivo en la salida de `-rs`. Se repiten con la GPU visible, por tandas cortas de pocos archivos y con la GPU reservada en exclusiva durante cada tanda si otras cargas la comparten:
+Las pruebas CUDA llevan la marca `cuda`, que la parte CPU omite. `make test-cuda` las ejecuta todas con la GPU visible. Si otras cargas comparten la GPU, conviene repetirlas por tandas cortas de pocos archivos, con la GPU reservada en exclusiva durante cada tanda:
 
 ```bash
 export CUDA_VISIBLE_DEVICES=0 CUBLAS_WORKSPACE_CONFIG=:4096:8 MARS_TITAN_REQUIRE_CUDA=1 MARS_TITAN_REQUIRE_NATIVE=1
-uv run --locked pytest -q -rs <archivos o identificadores de la tanda>
+uv run --locked pytest -q -rs -m cuda <archivos o identificadores de la tanda>
 ```
 
 Las pruebas que aplican pasos de optimizador en CUDA se omiten igualmente por la protección. Las que exigen `MARS_TITAN_CUDA_INTEGRATION=1` aplican esos pasos y quedan fuera mientras rija el bloqueo de aprendizaje. `MARS_ENCODER_INTEGRATION=1` activa la extracción con los codificadores reales y es una comprobación aparte. Las ocho pruebas de escenarios con HMM necesitan `hmmlearn==0.3.3`, que no forma parte de `uv.lock` y se añade con `uv run --with hmmlearn==0.3.3`. Como ajustan el HMM, también esperan al levantamiento del bloqueo.

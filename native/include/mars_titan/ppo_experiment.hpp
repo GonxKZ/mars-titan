@@ -21,6 +21,16 @@ struct PpoExperimentOptions {
     // Costes de la evaluación congelada sobre cintas reconstruidas. Si la lista está vacía,
     // la evaluación usa los costes por omisión.
     std::vector<double> evaluation_costs;
+    // Registrar acción y logits de cada decisión de la evaluación congelada (decisions.json).
+    // Solo con --audit-run sobre cintas reconstruidas. Sirve para comparar CPU y CUDA.
+    bool decisions = false;
+    // Modos sin aprendizaje que la protección admite sin rebajarse. Ambos activan el cerrojo de
+    // solo evaluación antes de leer nada y no crean entrenador, controlador ni Adam terminal.
+    // La evaluación inicial evalúa con argmax la política inicial de la configuración sobre
+    // cintas de evaluación. La comprobación de fuentes lee y valida las cintas de ajuste y
+    // validación como el ajuste y publica su identidad.
+    bool initial_evaluation = false;
+    bool source_check = false;
     std::string device = "cuda:0";
     bool diagnostic = false;
     bool resume = false;

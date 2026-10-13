@@ -2,7 +2,7 @@
 
 `configs/titans/mars-titan-extensions.json` fija los componentes, sus valores, su control y
 si están conectados. Este módulo construye solo las combinaciones de componentes conectados y
-rechaza el resto con el motivo declarado. Con todos apagados la variante es el brazo
+rechaza el resto con el motivo declarado. Con todos apagados la variante es el modelo
 Titans-MAC `mac_online` seleccionado, sin lector, con admisión M0 y sin control local, y su
 identidad es la del núcleo. Cada combinación activa tiene una identidad propia.
 """
@@ -20,6 +20,7 @@ from mars_titan.models.titans.frozen_financial import FrozenFinancialConsumer
 from . import write_scores
 from .associative_memory import (
     CORRECTION_KEYS,
+    KEY_SIZES,
     AssociativeMemoryConfig,
     KalmanNoise,
     MatureCorrection,
@@ -58,11 +59,17 @@ def load_declaration(path=DECLARATION):
         raise ValueError("La conexión declarada no coincide con la del constructor")
     if components["episodic_bank"].get("m3") != write_scores.declaration():
         raise ValueError("La definición declarada de M3 no coincide con la del código")
+    associative = components["associative_memory"]
+    if any(
+        (associative.get(field) or {}).get("key") != list(CORRECTION_KEYS)
+        for field in ("value", "kalman_value")
+    ):
+        raise ValueError("Las claves declaradas de B6 no coinciden con las del código")
     return document
 
 
 def core_identity(predictor, recipe):
-    """Identidad del brazo Titans-MAC de partida: configuración, parámetros y receta."""
+    """Identidad del modelo Titans-MAC de partida: configuración, parámetros y receta."""
     if type(predictor) is not FinancialPredictor:
         raise ValueError("El núcleo de MARS-TITAN es un FinancialPredictor de Titans-MAC")
     return dict(
@@ -94,20 +101,18 @@ def _associative(value, allowed):
         if not isinstance(value, dict) or set(value) != fields or value["rule"] not in allowed:
             raise ValueError("associative_memory declara rule, key, rate y forgetting permitidos")
     if value["key"] not in CORRECTION_KEYS:
-        raise ValueError("La clave de B6 debe ser codec o constant")
+        raise ValueError("La clave de B6 debe ser una de " + ", ".join(CORRECTION_KEYS))
     options = (
         dict(kalman=KalmanNoise(**{name: value[name] for name in _KALMAN_FIELDS}))
         if kalman
         else dict(rate=value["rate"], forgetting=value["forgetting"])
     )
-    memory = AssociativeMemoryConfig(
-        value["rule"], key_size=64 if value["key"] == "codec" else 1, **options
-    )
+    memory = AssociativeMemoryConfig(value["rule"], key_size=KEY_SIZES[value["key"]], **options)
     return MatureCorrection(memory, key=value["key"])
 
 
 def _normalized(correction):
-    # La identidad usa los valores normalizados, así 1 y 1.0 no crean dos brazos.
+    # La identidad usa los valores normalizados, así 1 y 1.0 no crean dos modelos.
     memory = correction.memory
     if memory.rule == "kalman":
         return dict(rule=memory.rule, key=correction.key, **asdict(memory.kalman))

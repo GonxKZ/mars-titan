@@ -13,13 +13,16 @@ from mars_titan.memory.episodic_session import EpisodicSession, SessionPreparati
 from mars_titan.memory.native_backend import load_native
 from mars_titan.memory.retention_bank import RetentionConfig
 from mars_titan.models.titans.financial_inputs import validated_cpu_batch
+from tests.suite_support import missing_native
+
+pytestmark = pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 
 
 @pytest.fixture
 def native():
     path = os.environ.get("MARS_TITAN_EPISODIC_NATIVE")
     if not path:
-        pytest.skip("Falta el enlace nativo CPU compilado")
+        pytest.skip(missing_native("MARS_TITAN_EPISODIC_NATIVE"))
     return load_native(path)
 
 
@@ -87,6 +90,20 @@ def test_all_predictions_see_one_snapshot_and_errors_use_the_emitted_prediction(
         run.step(inputs(2), [], batch_rows=1)
         assert trace[-1][1] == [2, 2]
         assert all(p.value != first.predictions[i].value for i, p in enumerate(second.predictions))
+
+
+def test_session_encodes_episodes_with_its_native_binding(native, tmp_path, monkeypatch):
+    received = []
+    encode = FrozenEpisodeCodec.encode
+
+    def recorded(self, batch, *, native=None):
+        received.append(native)
+        return encode(self, batch, native=native)
+
+    monkeypatch.setattr(FrozenEpisodeCodec, "encode", recorded)
+    with session(native, tmp_path / "run", []) as run:
+        run.step(inputs(0), [], batch_rows=1)
+    assert received and all(value is native for value in received)
 
 
 def test_physical_input_batches_keep_identical_state_and_context(native, tmp_path):

@@ -52,6 +52,7 @@ from .checkpoints import (
 from .corpus_inputs import CorpusDataset
 from .kernel_policy import PRECISIONS, declared_policy, require_policy
 from .learning_hold import require_learning_allowed
+from .reference_design import MAX_BATCH_SIZE
 from .reference_step_graph import GRAPH_KINDS, ReferenceStepGraph
 from .selection import (
     AWAIT,
@@ -193,7 +194,7 @@ def _options(
         or type(case["seed"]) is not int
         or not 0 <= case["seed"] < 2**32
         or type(batch_size) is not int
-        or not 1 <= batch_size <= 4096
+        or not 1 <= batch_size <= MAX_BATCH_SIZE
         or type(checkpoint_steps) is not int
         or checkpoint_steps < 0
         or not math.isfinite(checkpoint_seconds)
@@ -554,7 +555,7 @@ def run_reference_case(
     device = require_cuda()
     dataset = configured_corpus(manifest, input_policy=input_policy)
     if min(dataset.manifest["counts"].values()) < 1:
-        raise ValueError("Se necesitan datos de ajuste y validación en este brazo")
+        raise ValueError("Se necesitan datos de ajuste y validación en este modelo")
     if case["kind"] == "transformer":
         architecture = case["architecture"]
         validate_attention_budget(

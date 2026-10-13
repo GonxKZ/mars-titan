@@ -34,6 +34,7 @@ from mars_titan.training.campaign_slots import (
     wait,
 )
 from mars_titan.training.input_pipeline import PipelineOptions
+from tests.hardware.platform_doubles import desktop
 from tests.training import slot_doubles
 from tests.training.test_masked_campaign import prepared, write_campaign  # noqa: F401
 
@@ -268,6 +269,53 @@ def test_invalid_execution_is_rejected(tmp_path, changes):
         load_execution(write_execution(tmp_path / "execution.json", **changes))
 
 
+def test_the_declaration_names_the_profile_it_was_measured_on():
+    execution = load_execution("configs/baselines/historical-masked-campaign-execution.json")
+    assert execution.hardware_profile["name"] == "rtx4070-laptop"
+    assert execution.record()["hardware_profile"] == dict(
+        name="rtx4070-laptop", sha256=execution.hardware_profile["sha256"]
+    )
+
+
+@pytest.mark.parametrize(
+    ("changes", "message"),
+    [
+        (dict(schema_version=1), "versión 2"),
+        (dict(hardware_profile=None), "nombre del perfil"),
+        (dict(hardware_profile="missing"), "No existe"),
+        # 7.681 MiB de VRAM superan los 7.680 del perfil de la RTX 4070.
+        (dict(gpu=dict(vram_budget_mib=7681)), "rtx4070-laptop"),
+        (dict(host=dict(ram_budget_mib=24577)), "rtx4070-laptop"),
+        # Tres ranuras y un trabajador CPU con 5 hilos son 20 hilos de los 16 del perfil.
+        (dict(host=dict(threads_per_job=5)), "20 hilos"),
+    ],
+)
+def test_budgets_must_fit_the_declared_profile(tmp_path, changes, message):
+    with pytest.raises(ValueError, match=message):
+        load_execution(write_execution(tmp_path / "execution.json", **changes))
+
+
+def test_a_declaration_for_another_machine_stops_the_campaign_before_writing(
+    prepared,  # noqa: F811
+    tmp_path,
+):
+    # La declaración es la del portátil, pero la campaña corre en otra máquina.
+    execution = load_execution(write_execution(tmp_path / "execution.json"))
+    output = tmp_path / "out"
+    with pytest.raises(ValueError, match="no corresponde al perfil rtx4070-laptop"):
+        engine.run_campaign(
+            campaign_file(tmp_path),
+            {"US": prepared.views["US"]},
+            output,
+            executors=executors(),
+            lease=nullcontext,
+            stop=SimpleNamespace(requested=False),
+            execution=execution,
+            platform=desktop(),
+        )
+    assert not output.exists()
+
+
 def test_job_that_cannot_fit_alone_is_rejected_before_running(tmp_path):
     path = write_execution(tmp_path / "execution.json", gpu=dict(vram_budget_mib=512))
     campaign = load_campaign("configs/baselines/historical-masked-campaign-a.json")
@@ -464,7 +512,7 @@ def test_each_arm_corrects_only_its_own_estimate(tmp_path):
     estimates = PeakEstimates(execution, tmp_path / "observed.json")
     estimates.observe(online, dict(peak_vram_reserved_bytes=5000 * MIB))
     assert estimates.resources(online, "cuda").vram_bytes == (5000 + CONTEXT_MIB) * MIB
-    # El pico de un brazo grande no impide empaquetar los pequeños del mismo modelo.
+    # El pico de una configuración grande no impide empaquetar las pequeñas del mismo modelo.
     assert estimates.resources(frozen, "cuda") == declared
 
 
@@ -486,15 +534,16 @@ def test_arms_override_their_model_in_every_scope(tmp_path):
         job = dict(id="x", model="titans_mac", arm=arm, scope=scope)
         return execution.resources(job, "cuda")
 
-    # La VRAM del brazo sustituye a la del modelo en todos los ámbitos y su RAM solo en CN.
+    # La VRAM de la configuración sustituye a la del modelo en todos los ámbitos, y su RAM
+    # solo en CN.
     assert resources("titans_mac_online", "US+CN") == JobResources("cuda", 6000 * MIB, 9 * GIB)
     assert resources("titans_mac_online", "CN") == JobResources("cuda", 6000 * MIB, 4 * GIB)
-    # Los demás brazos conservan lo del modelo en cada ámbito.
+    # Las demás configuraciones conservan lo del modelo en cada ámbito.
     assert resources("titans_mac_frozen", "CN") == JobResources("cuda", 1280 * MIB, 5 * GIB)
     campaign = load_campaign("configs/baselines/historical-masked-campaign-a.json")
     check_plan(execution, plan_campaign(campaign), engine.EXECUTORS)
     for arms, message in (
-        (dict(titans_mac_paper=dict(vram_mib=1024)), "brazos que no tiene"),
+        (dict(titans_mac_paper=dict(vram_mib=1024)), "modelos que no tiene"),
         (dict(titans_mac_online=dict(vram_mib=8000)), "supera el presupuesto"),
     ):
         titans["arms"] = arms

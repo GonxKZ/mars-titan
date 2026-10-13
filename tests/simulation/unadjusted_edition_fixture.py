@@ -16,6 +16,7 @@ import pyarrow.parquet as pq
 from mars_titan.data.temporal import MarketClock
 from mars_titan.data.unadjusted_edition import EVENT_SCHEMA, PRICE_SCHEMA
 from mars_titan.data.unadjusted_prices import price_grid
+from mars_titan.simulation.listing_status import CUTOFF, TABLE_KIND, read_listing_status
 from tests.environments.walk_forward_fixture import window
 
 RESIDUAL = 4e-7
@@ -27,7 +28,8 @@ class Asset:
     symbol: str
     base: float = 20.0
     start: int | None = None
-    end: int | None = None
+    # Última fila: una posición de 2023 o, para una serie que termina antes, su fecha ISO.
+    end: int | str | None = None
     # None verifica todas las filas. Un entero verifica desde esa posición de 2023.
     verified_from: int | None = None
     unverified: tuple = ()
@@ -56,7 +58,9 @@ def _rows(market, spec):
     year = tape_days(market)
     position = {day: index for index, day in enumerate(year)}
     first = year[spec.start] if spec.start is not None else days[0]
-    last = year[spec.end] if spec.end is not None else days[-1]
+    last = (
+        days[-1] if spec.end is None else spec.end if isinstance(spec.end, str) else year[spec.end]
+    )
     missing = {year[i] for i in spec.missing}
     selected = [d for d in days if first <= d <= last and d not in missing]
     splits = [(year[i], ratio) for i, _, ratio in spec.events if ratio]
@@ -178,3 +182,35 @@ def predictions(market, symbols, *, score=None, start="2023-01-01", end="2023-12
 
 def evaluation_window(market, values, **options):
     return window(market, values=values, **options)
+
+
+def listing_status(root, *, china=None, exits=None, name="listing-status.json"):
+    """Tabla del estado de cotización de la edición sintética, identificada como fixture.
+
+    Cada acción A de la edición recibe una admisión anterior a sus filas, sin exención inicial,
+    sin tramos ST o S y sin días sin límite, salvo lo que fijen las entradas de `china`.
+    `exits` añade salidas con precio, cuya fuente es la propia fixture. Devuelve la tabla y la
+    huella de sus bytes, como `read_listing_status`.
+    """
+    manifest = json.loads((root / "manifest.json").read_text())
+    empty = dict(
+        listed_on="2000-01-04",
+        limit_free_until=None,
+        special_treatment=[],
+        share_reform_pending=[],
+        limit_free_days=[],
+    )
+    entries = {key: dict(empty) for key in manifest["receipts"] if key.startswith("CN/")}
+    entries.update({key: {**empty, **value} for key, value in (china or {}).items()})
+    digest = hashlib.sha256(b"listing-status-fixture").hexdigest()
+    table = dict(
+        kind=TABLE_KIND,
+        schema_version=1,
+        cutoff=CUTOFF,
+        sources={"fixture": dict(sha256=digest, fixture=True)},
+        china=dict(sorted(entries.items())),
+        exits={key: dict(value, source="fixture") for key, value in (exits or {}).items()},
+    )
+    path = root.parent / name
+    path.write_text(json.dumps(table, indent=1, sort_keys=True))
+    return read_listing_status(path)

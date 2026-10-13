@@ -7,16 +7,16 @@ KLPO con sus controles. No ajusta ni evalúa nada: solo agrega episodios ya conf
 
 Reglas declaradas antes de ver resultados:
 
-- La serie de un brazo en una ventana es su patrimonio a cada cierre. El último valor es la
+- La serie de un modelo en una ventana es su patrimonio a cada cierre. El último valor es la
   liquidación hipotética al último cierre, de modo que cada ventana paga su salida.
-- Un brazo aprendido con varias semillas reparte el capital a partes iguales entre ellas.
+- Una política aprendida con varias semillas reparte el capital a partes iguales entre ellas.
   Su patrimonio es la media de los patrimonios por semilla y una semilla arruinada vale
   cero desde su ruina. Las métricas de cada semilla se publican aparte.
 - Las ventanas se encadenan en orden. La serie completa reúne los retornos por sesión de
   las ventanas usadas, como si el patrimonio liquidado de una ventana pasara a la siguiente.
   Si la serie encadenada se arruina, sus métricas terminan en la ruina.
 - Una familia compara, en un ámbito, un mercado, un predictor y un coste, KLPO con todos
-  sus controles disponibles. Solo usa las ventanas en que todos sus brazos tienen un
+  sus controles disponibles. Solo usa las ventanas en que todos sus modelos tienen un
   episodio terminado (completo o arruinado) con los mismos cierres. Las ventanas excluidas
   se publican con su motivo.
 - Incertidumbre con el bootstrap circular por bloques de sesiones de
@@ -25,10 +25,18 @@ Reglas declaradas antes de ver resultados:
   control, con intervalos simultáneos por máximo estudentizado dentro de cada familia y
   métrica. No hay corrección entre predictores, costes ni métricas. Cada familia responde
   una pregunta separada y el coste principal declarado es el que se interpreta primero.
+- Los contrastes de componente declarados en `contrasts.components`, como Dr. GRPO y GSPO
+  frente a GRPO, usan las mismas sesiones y réplicas de la familia. Cada control forma con
+  sus variantes otra familia de multiplicidad, con diferencias variante menos control, y
+  `contrasts.csv` distingue las dos en la columna `family`.
 - El índice chino se calcula con niveles del CSI 300 (`simulation.index_benchmark`) si se
   suministran con su huella, y se marca con su base.
-- Una ventana sin evaluación porque una serie del universo termina dentro del tramo se
-  publica en `survival`. La sensibilidad con retornos de salida declarada es secundaria.
+- Una baja sin precio de salida con posición abierta termina el episodio con la recompensa
+  enmascarada (`unpriced_exit`). Su ventana queda fuera de la familia como cualquier
+  episodio fallido y se publica en `survival`. La sensibilidad con retornos de salida
+  declarada es secundaria. Mientras alguna ventana la necesite, el informe queda como
+  `pending_survival_sensitivity` y no se da por cerrado, porque excluir la ventana depende
+  de lo que hizo la política evaluada.
 """
 
 import argparse
@@ -69,7 +77,11 @@ REPORT_KIND = "historical_masked_rl_financial_report"
 SEED_RULE = "equal_capital_per_seed_mean_nav"
 WINDOW_RULE = "liquidated_last_close_then_chained_windows"
 DIFFERENCE = "primary_minus_control"
-SERIES_ENDS = "series_ends_in_tape"
+# Familias de multiplicidad de `contrasts.csv`: KLPO con todos sus controles y cada control
+# de componente con sus variantes.
+PRIMARY_FAMILY, COMPONENT_FAMILY = "primary", "components"
+# Motivo de un episodio terminado por una baja sin precio de salida con posición abierta.
+UNPRICED_EXIT = "unpriced_exit"
 STATUSES = ("completed", "paused")
 _RECEIPT_BYTES = 64 * 1024**2
 
@@ -138,7 +150,7 @@ def _window_nav(record, close_times, capital):
     times = equity["close_times"]
     _require(
         times == close_times[: len(times)] and nav[0] == capital,
-        "Los brazos de una ventana deben empezar con el capital y compartir sus cierres",
+        "Los modelos de una ventana deben empezar con el capital y compartir sus cierres",
     )
     if record["status"] == "ruined":
         # Sin patrimonio desde la ruina hasta el final de la ventana.
@@ -149,7 +161,7 @@ def _window_nav(record, close_times, capital):
 
 
 def _arm_window(records, close_times, capital):
-    """Patrimonio de un brazo en una ventana: media de sus semillas, cada una con su capital."""
+    """Patrimonio de un modelo en una ventana: media de sus semillas, cada una con su capital."""
     navs = [_window_nav(record, close_times, capital) for record in records]
     return dict(
         nav=np.mean(navs, axis=0),
@@ -318,33 +330,63 @@ def _family(found, windows, arms, *, planned, benchmark, market, capital, cost):
 
 
 def survival(policies, output):
-    """Ventanas sin evaluación porque una serie del universo termina dentro del tramo.
+    """Ventanas con evaluaciones terminadas por una baja sin precio de salida.
 
-    La regla principal excluye esas ventanas para todos los brazos. La sensibilidad
-    declarada, con retornos de salida, es secundaria y queda pendiente si hay alguna.
+    La regla principal excluye esas ventanas para todos los modelos de su familia. La
+    sensibilidad declarada, con retornos de salida supuestos, es secundaria y queda pendiente
+    si hay alguna. Se publican el modelo, la semilla y los costes de cada episodio afectado.
     """
     affected = {}
     for receipt in output["receipts"].values():
-        failure = receipt["identity"]["tapes"]["failure"]
-        if not failure or failure.get("reason") != "universe_assets_excluded":
-            continue
-        ended = {a for a, reason in failure["excluded"].items() if reason == SERIES_ENDS}
-        if ended:
+        costs = sorted(
+            record["cost_bps"]
+            for record in receipt["evaluation"]
+            if record["status"] == "failed" and record["reason"] == UNPRICED_EXIT
+        )
+        if costs:
             job = receipt["job"]
             key = (job["scope"], job["market"], job["window"])
-            affected[key] = affected.get(key, set()) | ended
+            affected.setdefault(key, []).append(
+                dict(predictor=job["predictor"], arm=job["arm"], seed=job["seed"], costs=costs)
+            )
     return dict(
         policies["survival_sensitivity"],
         status="secondary_evaluation_pending" if affected else "no_affected_windows",
         affected=[
-            dict(scope=scope, market=market, window=window, assets=sorted(assets))
-            for (scope, market, window), assets in sorted(affected.items())
+            dict(
+                scope=scope,
+                market=market,
+                window=window,
+                episodes=sorted(
+                    episodes,
+                    key=lambda e: (
+                        e["predictor"],
+                        e["arm"],
+                        -1 if e["seed"] is None else e["seed"],
+                    ),
+                ),
+            )
+            for (scope, market, window), episodes in sorted(affected.items())
         ],
     )
 
 
-def _bootstrap(family, report, primary):
+def _resample(returns, report, market, base):
+    return block_bootstrap(
+        returns,
+        market=market,
+        base=base,
+        block_length=report["block_length"],
+        replicates=report["replicates"],
+        seed=report["seed"],
+        confidence=report["confidence"],
+        sensitivity=tuple(report["block_length_sensitivity"]),
+    )
+
+
+def _bootstrap(family, report, contrasts):
     returns = family.pop("returns", None)
+    family["components"] = {}
     if returns is None or len(returns) < 2:
         family["bootstrap"] = dict(reason="Una familia necesita KLPO y algún control con datos")
         return family
@@ -352,18 +394,18 @@ def _bootstrap(family, report, primary):
     if sessions <= report["block_length"]:
         family["bootstrap"] = dict(reason="Se necesitan más sesiones que la longitud del bloque")
         return family
-    family["bootstrap"] = _flip(
-        block_bootstrap(
-            returns,
-            market=family["market"],
-            base=primary,
-            block_length=report["block_length"],
-            replicates=report["replicates"],
-            seed=report["seed"],
-            confidence=report["confidence"],
-            sensitivity=tuple(report["block_length_sensitivity"]),
-        )
-    )
+    market = family["market"]
+    family["bootstrap"] = _flip(_resample(returns, report, market, contrasts["primary"]))
+    # Cada control de componente forma con sus variantes otra familia sobre las mismas
+    # sesiones y réplicas. La diferencia del bootstrap ya es variante menos control.
+    components = contrasts.get("components", {})
+    for control in dict.fromkeys(components.values()):
+        variants = [arm for arm, base in components.items() if base == control and arm in returns]
+        if control in returns and variants:
+            arms = {arm: returns[arm] for arm in (control, *variants)}
+            family["components"][control] = dict(
+                _resample(arms, report, market, control), difference=DIFFERENCE
+            )
     return family
 
 
@@ -431,21 +473,29 @@ def _tables(sections):
             for metric in RESAMPLED:
                 for arm, row in bootstrap["differences"][metric].items():
                     contrasts.append(
-                        dict(key, metric=metric, primary=bootstrap["base"], control=arm)
-                        | dict(
-                            estimate=row["estimate"],
-                            lower=None if row["interval"] is None else row["interval"][0],
-                            upper=None if row["interval"] is None else row["interval"][1],
-                            simultaneous_lower=None
-                            if row["simultaneous_interval"] is None
-                            else row["simultaneous_interval"][0],
-                            simultaneous_upper=None
-                            if row["simultaneous_interval"] is None
-                            else row["simultaneous_interval"][1],
-                            simultaneous_excludes_zero=row["simultaneous_excludes_zero"],
-                        )
+                        dict(key, family=PRIMARY_FAMILY, metric=metric)
+                        | dict(primary=bootstrap["base"], control=arm, **_interval(row))
                     )
+            for control, component in family["components"].items():
+                for metric in RESAMPLED:
+                    for arm, row in component["differences"][metric].items():
+                        contrasts.append(
+                            dict(key, family=COMPONENT_FAMILY, metric=metric)
+                            | dict(primary=arm, control=control, **_interval(row))
+                        )
     return metrics, contrasts, equity
+
+
+def _interval(row):
+    marginal, joint = row["interval"] or (None, None), row["simultaneous_interval"] or (None, None)
+    return dict(
+        estimate=row["estimate"],
+        lower=marginal[0],
+        upper=marginal[1],
+        simultaneous_lower=joint[0],
+        simultaneous_upper=joint[1],
+        simultaneous_excludes_zero=row["simultaneous_excludes_zero"],
+    )
 
 
 def build_report(stage_path, outputs, destination, *, benchmarks=None, sensitivity=False):
@@ -475,16 +525,18 @@ def build_report(stage_path, outputs, destination, *, benchmarks=None, sensitivi
     for path in outputs:
         output = read_output(stage, path)
         found = [
-            _bootstrap(family, report, policies["contrasts"]["primary"])
+            _bootstrap(family, report, policies["contrasts"])
             for family in families(stage, output, levels)
         ]
         exits = survival(policies, output)
         output.pop("receipts")
         sections.append(dict(output=output, families=found, survival=exits))
     metrics, contrasts, equity = _tables(sections)
+    pending = any(section["survival"]["affected"] for section in sections)
     result = dict(
         schema_version=1,
         kind=REPORT_KIND,
+        status="pending_survival_sensitivity" if pending else "complete",
         stage_sha256=stage["sha256"],
         policies_sha256=policies["sha256"],
         sensitivity=stage.get("sensitivity"),
@@ -549,8 +601,10 @@ def main(argv=None):
         json.dumps(
             dict(
                 report=str(args.report / "report.json"),
+                status=result["status"],
                 families=len(families),
                 with_bootstrap=sum("differences" in (f["bootstrap"] or {}) for f in families),
+                component_bootstraps=sum(len(f["components"]) for f in families),
                 missing_benchmarks=result["missing_benchmarks"],
             ),
             ensure_ascii=False,

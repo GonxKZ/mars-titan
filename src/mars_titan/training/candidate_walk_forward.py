@@ -22,7 +22,7 @@ Las fases del calentamiento salen de `walk_forward_phases.window_phases` con los
 calibración y evaluación observan antes las entradas de esos meses, sin etiquetas ni
 predicciones emitidas. La GRU no conserva estado entre instantes y el banco solo admite
 etiquetas maduras de predicciones emitidas, así que el calentamiento no cambia el estado
-de la candidata. Iguala la ventana de información observada por todos los brazos con
+de la candidata. Iguala la ventana de información observada por todos los modelos con
 memoria y queda registrado en la identidad de cada fase.
 """
 
@@ -146,7 +146,7 @@ def _bounds(dataset):
 
 
 def _phases(dataset, warmup_months):
-    """Construye las fases de la ventana con el calentamiento común de los brazos con memoria.
+    """Construye las fases de la ventana con el calentamiento común de los modelos con memoria.
 
     Exige que los tramos de decisión coincidan con los límites de la vista, de modo que
     el calentamiento solo añade entradas anteriores y nunca posteriores al tramo.
@@ -547,7 +547,7 @@ def carry_window(
         return dict(status="paused", final_test_opened=False)
     checkpoint = window["checkpoint"]
     parent = dict(id=parent_id, sha256=checkpoint["sha256"])
-    # Una predicción ablacionada o regenerada no es una predicción walk-forward del brazo.
+    # Una predicción ablacionada o regenerada no es una predicción walk-forward del modelo.
     published = not (modality_ablation or regenerate)
     receipts = {}
     if published:

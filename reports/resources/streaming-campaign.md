@@ -53,7 +53,7 @@ específicas incluyen parada, continuación, cambio de entorno, corrupción del
 padre, unión de mercados y protección del test final. Tres mutaciones dirigidas
 fueron detectadas. Cobertura y CRAP se conservan como diagnóstico.
 
-El motor dispone de brazos estadounidense, chino y conjunto, pero no convierte
+El motor admite el mercado estadounidense, el chino y el conjunto, pero no convierte
 datos pendientes en muestras admitidas. La campaña completa, las variantes de
 ponderación por sesión y activo, las referencias tabulares adaptadas al corpus
 y la evaluación estadística final siguen siendo trabajos separados.

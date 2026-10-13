@@ -375,6 +375,57 @@ def compare_series(
     return result
 
 
+def relative_difference_draws(
+    series, contrasts, *, block_length, replicates, seed, market_weighting="session"
+):
+    """Diferencia relativa (variante − base) / base de contrastes por pares y sus réplicas.
+
+    Remuestrea con los mismos días, la misma semilla y las mismas sesiones definidas que
+    ``compare_series``, así que los percentiles de cada columna son el intervalo de su
+    mejora relativa con el signo cambiado y dividido entre 100. Sirve a las reglas que
+    combinan varios contrastes en cada réplica, como la banda entre semillas del control.
+    Devuelve las estimaciones, de forma [contrastes], y las réplicas, de forma
+    [réplicas, contrastes].
+    """
+    reference = _validate(series, contrasts)
+    _require(reference.loss, "La diferencia relativa solo se define para pérdidas")
+    _require(market_weighting in WEIGHTINGS, "Ponderación entre mercados no declarada")
+    for name, value, lower, upper in (
+        ("bloque", block_length, 1, 100_000),
+        ("réplicas", replicates, 10, MAX_REPLICATES),
+        ("semilla", seed, 0, 2**63 - 1),
+    ):
+        _require(type(value) is int and lower <= value <= upper, f"Parámetro {name} inválido")
+    for name, coefficients in contrasts.items():
+        _require(
+            _pairwise_base({m: float(c) for m, c in coefficients.items()}) is not None,
+            f"El contraste {name} no es una diferencia entre dos modelos",
+        )
+    values, defined, bases = _columns(series, contrasts, True)
+    _require(int(reference.session_period.max()) + 1 > block_length, _INSUFFICIENT)
+    markets = len(reference.markets)
+    estimates = []
+    for j in range(values.shape[1]):
+        value = weighted_session_mean(
+            values[:, j], defined[:, j], reference.session_market, markets, market_weighting
+        )
+        _require(value is not None, "Algún contraste no tiene sesiones definidas")
+        estimates.append(value)
+    estimates = np.asarray(estimates)
+    draws = _bootstrap(reference, values, defined, market_weighting, block_length, replicates, seed)
+    _require(
+        not np.isnan(draws).any(),
+        "Alguna réplica no contiene sesiones definidas de un mercado necesario",
+    )
+    size = len(contrasts)
+    base = np.array([bases[name] for name in contrasts])
+    _require(
+        np.all(estimates[base] > 0) and np.all(draws[:, base] > 0),
+        "La pérdida de alguna base es cero en la estimación o en una réplica",
+    )
+    return estimates[:size] / estimates[base], draws[:, :size] / draws[:, base]
+
+
 def _relative(difference, base, family, column, base_column, confidence):
     """Mejora relativa = 100 · (base − variante) / base, no definida si la base es cero."""
     result = dict(

@@ -26,7 +26,7 @@ La flecha de escritura solo afecta a decisiones posteriores. El gráfico no auto
 
 ## Estado de implementación a 9 de octubre
 
-La referencia GRU con banco episódico es el brazo `gru_episodic` de la [campaña desde 2000](training-campaign-2000.md). Las piezas siguientes están integradas en `develop` y se han comprobado sin pasos de optimizador. No se ha entrenado ningún estado con ellas.
+La referencia GRU con banco episódico es el modelo `gru_episodic` de la [campaña desde 2000](training-campaign-2000.md). Las piezas siguientes están integradas en `develop` y se han comprobado sin pasos de optimizador. No se ha entrenado ningún estado con ellas.
 
 | Parte de la especificación | Implementación | Comprobación y límite |
 | --- | --- | --- |

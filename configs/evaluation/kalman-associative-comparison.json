@@ -99,7 +99,7 @@
     "Nada se ha ejecutado. El bloqueo de aprendizaje impide emitir las predicciones y estimar las varianzas.",
     "La propuesta daba q ∈ {10⁻⁶, 10⁻⁵} sin unidad. Como la escala del residuo solo se conoce al estimar σ², se declaran como fracciones de σ²: q = κ σ².",
     "La propuesta no fijaba p0. Se declara p0 = 0,1 σ² antes de ver datos, de modo que la corrección a priori explica como mucho un 10 % de la varianza del residuo con claves unitarias.",
-    "El recorte de Huber está implementado y comprobado, pero el brazo principal no lo usa para no añadir otro grado de libertad.",
+    "El recorte de Huber está implementado y comprobado, pero el modelo principal no lo usa para no añadir otro grado de libertad.",
     "El recorrido cronológico por ventanas todavía no emite B6, igual que con las reglas delta y proximal."
   ]
 }

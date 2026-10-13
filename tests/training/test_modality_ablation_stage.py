@@ -1,6 +1,6 @@
 """Etapa de ablación de modalidades sobre una campaña base reducida, en CPU y sin ajustes.
 
-La campaña base recorta el protocolo US a dos ventanas con un brazo GRU de una semilla.
+La campaña base recorta el protocolo US a dos ventanas con un modelo GRU de una semilla.
 Su ejecutor sustituto guarda como estado elegido los pesos iniciales de la semilla, con la
 identidad que exige el traslado de referencias, y escribe sus predicciones con la misma
 evaluación que el traslado. La etapa usa después los ejecutores reales de la ablación en
@@ -33,6 +33,7 @@ from mars_titan.training.checkpoints import capture_rng, save_training_state
 from mars_titan.training.corpus_inputs import CorpusDataset
 from mars_titan.training.learning_hold import HOLD_ENV, LearningHoldError
 from mars_titan.training.reference_run import _evaluate, scientific_identity
+from tests.learning_hold_lowering import allowed_hold, lowers_learning_hold
 from tests.posttraining.campaign_fixture import SCORES, CpuLease, write_configs
 from tests.training.historical_temporal_fixture import historical_temporal_fixture
 from tests.training.test_masked_campaign import Recorder
@@ -168,8 +169,7 @@ def write_stage(folder, **changes):
 def base(tmp_path_factory):
     """Campaña A confirmada con dos ventanas y la etapa de ablación sin ejecutar."""
     root = tmp_path_factory.mktemp("ablation-stage")
-    hold = root / "hold.json"
-    hold.write_text(json.dumps({"training_allowed": True}), encoding="utf-8")
+    hold = allowed_hold(root / "hold.json")
     with pytest.MonkeyPatch.context() as patch:
         on_cpu(patch)
         # La campaña base solo ejecuta dobles con pesos iniciales: ningún modelo se ajusta.
@@ -493,6 +493,10 @@ def test_a_job_that_tries_an_optimizer_step_fails_the_stage(base, tmp_path, only
     assert optimizer.calls == 0 and torch.equal(weight.detach(), torch.ones(2))
 
 
+@lowers_learning_hold(
+    "tests/training/test_modality_ablation_stage.py::"
+    "test_the_hold_is_checked_again_before_each_pending_job"
+)
 def test_the_hold_is_checked_again_before_each_pending_job(base, tmp_path, learning_hold):
     hold = learning_hold(True)
 
@@ -612,7 +616,7 @@ def test_throughput_estimates_each_masked_prediction_with_the_measured_inference
     estimate = throughput.estimate_hours(campaign, counts, rates, ablation_stage=stage)
     masked = estimate[throughput.ABLATION_STAGE]
     neural = [job for job in jobs if job["family"] == plan.NEURAL]
-    # Solo la evaluación, a 400 filas/s con la inferencia más lenta del brazo.
+    # Solo la evaluación, a 400 filas/s con la inferencia más lenta del modelo.
     assert (masked["training_jobs"], masked["prediction_jobs"]) == (0, len(neural))
     assert masked["hours"] == pytest.approx(len(neural) * ROWS["evaluation"] / 400 / 3600)
     assert masked["without_estimate"] == sorted(

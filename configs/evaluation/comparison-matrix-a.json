@@ -8,7 +8,7 @@
   "comparison": "historical-masked-2000-comparison.json",
   "conditional_arms": {
     "titans_reference_mac": {
-      "condition": "Brazo ajustado con una implementación pública de Titans-MAC. La revisión de #434 recomendó conservar el núcleo, que coincide en FP64 con la memoria de lucidrains/titans-pytorch, y no incorporar su código, así que no hay brazo previsto. Solo existiría con una aprobación expresa",
+      "condition": "Modelo ajustado con una implementación pública de Titans-MAC. La revisión de #434 recomendó conservar el núcleo, que coincide en FP64 con la memoria de lucidrains/titans-pytorch, y no incorporar su código, así que no hay modelo previsto. Solo existiría con una aprobación expresa",
       "issue": 434
     },
     "mars_titan_m1_k4_first_read": {
@@ -21,6 +21,22 @@
     },
     "mars_titan_b6_bias": {
       "condition": "Declarado en la ampliación de la campaña A con los componentes de integración (A5, clave constante)",
+      "issue": 20
+    },
+    "mars_titan_b6_regime": {
+      "condition": "Declarado en la ampliación de la campaña A con los componentes de integración (A13, corrector de sesgo por régimen observable)",
+      "issue": 20
+    },
+    "mars_titan_b6_calendar": {
+      "condition": "Declarado en la ampliación de la campaña A con los componentes de integración (A13, control de calendario con la misma capacidad)",
+      "issue": 20
+    },
+    "mars_titan_b6_regime_banks": {
+      "condition": "Declarado en la ampliación de la campaña A con los componentes de integración (A14, matriz del codec por régimen observable)",
+      "issue": 20
+    },
+    "mars_titan_b6_calendar_banks": {
+      "condition": "Declarado en la ampliación de la campaña A con los componentes de integración (A14, control de calendario con la misma capacidad)",
       "issue": 20
     }
   },
@@ -104,7 +120,7 @@
     "between_families": {
       "kind": "pairwise",
       "arms": "family_representatives",
-      "question": "¿Qué familia predice mejor que cada una de las demás con las mismas filas? Cada familia entra con su brazo representativo declarado"
+      "question": "¿Qué familia predice mejor que cada una de las demás con las mismas filas? Cada familia entra con su modelo representativo declarado"
     },
     "mars_titan_vs_families": {
       "kind": "against",
@@ -116,7 +132,7 @@
       "kind": "against",
       "each": "cm_v1_variants",
       "references": "references",
-      "question": "¿Cuánto mejora o empeora cada brazo de CM-v1 frente a cada familia de referencia?"
+      "question": "¿Cuánto mejora o empeora cada variante de CM-v1 frente a cada familia de referencia?"
     },
     "titans_reference_core": {
       "kind": "pairs",
@@ -203,6 +219,14 @@
         "codec_key": {
           "label": "Clave del codec en la corrección asociativa de B6",
           "requires": ["associative_correction"]
+        },
+        "routing_slots": {
+          "label": "Cinco compartimentos de A asignados por el mes de la decisión, con las mismas cohortes sin clasificar que el régimen",
+          "requires": ["associative_correction"]
+        },
+        "regime_information": {
+          "label": "Compartimentos asignados por el régimen observable de volatilidad y tendencia en lugar del mes",
+          "requires": ["routing_slots"]
         }
       },
       "arms": {
@@ -287,6 +311,42 @@
           "test_time_update",
           "associative_correction",
           "codec_key"
+        ],
+        "mars_titan_b6_calendar": [
+          "titans_encoder",
+          "mac_attention",
+          "memory_read",
+          "test_time_update",
+          "associative_correction",
+          "routing_slots"
+        ],
+        "mars_titan_b6_regime": [
+          "titans_encoder",
+          "mac_attention",
+          "memory_read",
+          "test_time_update",
+          "associative_correction",
+          "routing_slots",
+          "regime_information"
+        ],
+        "mars_titan_b6_calendar_banks": [
+          "titans_encoder",
+          "mac_attention",
+          "memory_read",
+          "test_time_update",
+          "associative_correction",
+          "codec_key",
+          "routing_slots"
+        ],
+        "mars_titan_b6_regime_banks": [
+          "titans_encoder",
+          "mac_attention",
+          "memory_read",
+          "test_time_update",
+          "associative_correction",
+          "codec_key",
+          "routing_slots",
+          "regime_information"
         ],
         "mars_titan_m3_frozen_core": [
           "titans_encoder",
@@ -484,7 +544,7 @@
       "lineage": "titans",
       "producer": "reader_fit",
       "code": "existing",
-      "change": "Solo un brazo más en la sección mars_titan: episodic_bank m2 con refinements 4",
+      "change": "Solo un modelo más en la sección mars_titan: episodic_bank m2 con refinements 4",
       "cost_like": "mars_titan_m1_k4",
       "purpose": "Interacción entre los refinamientos y la selección por error"
     },

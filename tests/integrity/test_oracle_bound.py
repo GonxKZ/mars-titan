@@ -1,4 +1,4 @@
-"""Cota con oráculo de un paso sobre cintas escritas en la prueba, sin políticas aprendidas."""
+"""Cota con información futura de un paso sobre cintas escritas en la prueba, sin aprender."""
 
 import numpy as np
 import pytest

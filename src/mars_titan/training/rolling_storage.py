@@ -24,6 +24,7 @@ absolutas para poder evaluar el mismo cálculo sobre el plan de otra rama.
 import math
 from collections import defaultdict
 
+from mars_titan.training.campaign_plan import PLATEAU
 from mars_titan.training.campaign_storage import (
     HELD_OUT,
     INDEXED,
@@ -36,6 +37,28 @@ SCENARIOS = ("all_regenerated", "none_regenerated")
 PHASES = ("base", "adapters", "ablation", "rl", "release")
 # Registro de retención y huellas que deja cada tabla liberada o compactada.
 RECORD_BYTES = 4096
+
+
+def policy_tape_bytes(stage, extras):
+    """Bytes medidos de una cinta de la etapa de políticas, si la medida cubre su forma.
+
+    La medida de `storage_measurements.tape_bytes` declara los activos con precios y las
+    columnas de su diseño. Una cinta de la etapa tiene hasta `max_assets` activos con
+    precios y hasta `window_tapes.layout_bound` columnas, las demás vacías. Una medida más
+    estrecha subestimaría el disco de todas las cintas, así que se rechaza.
+    """
+    from mars_titan.simulation.window_tapes import layout_bound, universe_rule
+
+    policies = stage["policies"]
+    assets, _ = universe_rule(policies["universe"])
+    bound = layout_bound(policies["universe"], policies["train_windows"])
+    shape = extras.get("tape_shape") or {}
+    if not (shape.get("assets", 0) >= assets and shape.get("layout", 0) >= bound):
+        raise ValueError(
+            f"La medida de cintas {shape} no cubre {assets} activos con precios en "
+            f"{bound} columnas, la forma máxima de la etapa de políticas"
+        )
+    return extras["tape_bytes"]
 
 
 def policy_readers(stage, jobs):
@@ -83,7 +106,8 @@ def rolling_inputs(jobs, windows, extras, *, ablation=None, adapters=None, rl=No
 
     Una política lee la evaluación del predictor con la semilla declarada. Entre los casos
     de una búsqueda cualquiera puede ganar y todos tienen las mismas filas, así que se toma
-    el primero del plan, como en `selected_jobs`.
+    el primero del plan, como en `selected_jobs`. La meseta de un ajuste conjunto no emite
+    evaluación, así que la lectura recae en su continuación.
     """
     positions = {
         (scope, window): index
@@ -106,7 +130,8 @@ def rolling_inputs(jobs, windows, extras, *, ablation=None, adapters=None, rl=No
         planned = policy_plan.plan_stage(stage)
         first = {}
         for job in jobs:
-            first.setdefault((job["scope"], job["window"], job["arm"], job["seed"]), job["id"])
+            if job.get("phase") != PLATEAU:
+                first.setdefault((job["scope"], job["window"], job["arm"], job["seed"]), job["id"])
         reads = {}
         for key, last in policy_needs(stage, planned, positions).items():
             if key in first:
@@ -117,8 +142,9 @@ def rolling_inputs(jobs, windows, extras, *, ablation=None, adapters=None, rl=No
                 len(job["train"]) + 2
             )
         tapes = defaultdict(int)
+        tape = policy_tape_bytes(stage, extras)
         for (scope, _, anchor, _), count in anchors.items():
-            tapes[windows[positions[scope, anchor]]["id"]] += count * extras["tape_bytes"]
+            tapes[windows[positions[scope, anchor]]["id"]] += count * tape
         inputs.update(policy_reads=reads, tapes=dict(tapes))
     return inputs
 
@@ -128,6 +154,9 @@ def _in(row, job):
 
 
 def _partitions(job):
+    """Tramos con tabla del trabajo. La meseta de un ajuste conjunto no escribe ninguno."""
+    if job.get("phase") == PLATEAU:
+        return ()
     return HELD_OUT[1:] if job.get("kind") == "carry" else HELD_OUT
 
 
@@ -214,9 +243,10 @@ class _Walk:
             kept += int(aggregate * sum(window[p] for p in partitions)) + RECORD_BYTES * len(
                 partitions
             )
-            regeneration = max(
-                regeneration, regeneration_bytes(job, window, measured, storage, partitions)
-            )
+            if partitions:
+                regeneration = max(
+                    regeneration, regeneration_bytes(job, window, measured, storage, partitions)
+                )
             reader = self.inputs["policy_reads"].get(job["id"], -1)
             if self.scenario == "none_regenerated" or reader > index:
                 compacted = _tables(measured, job, "shared_rows", partitions)

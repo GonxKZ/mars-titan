@@ -1,12 +1,11 @@
 """Etapa de políticas por ventana sobre una campaña base reducida, sin aprender.
 
 La campaña base de `rl_stage_fixture` escribe recibos de ventana y predicciones reales de
-un padre con pesos iniciales. Los brazos aprendidos se sustituyen por `ScriptedLearner`,
+un padre con pesos iniciales. Las políticas aprendidas se sustituyen por `ScriptedLearner`,
 que no tiene redes ni optimizador, y las referencias usan la contabilidad Python. Las
 pruebas admiten la etapa con la protección temporal permitida de `learning_doubles`.
 """
 
-import copy
 import json
 import shutil
 from pathlib import Path
@@ -23,11 +22,13 @@ from mars_titan.data.storage import atomic_json
 from mars_titan.environments.walk_forward_receipt import read_window_receipt
 from mars_titan.simulation import campaign_stage, native_policy_runs, policy_plan, window_tapes
 from mars_titan.simulation.market import MarketTape
-from mars_titan.simulation.native_runtime import library_path
 from mars_titan.simulation.storage import read_tape, write_tape
 from mars_titan.training.learning_hold import LearningHoldError
+from tests.learning_hold_lowering import lowers_learning_hold
 from tests.simulation import rl_stage_fixture as fixture
+from tests.suite_support import missing_native
 
+THIS = "tests/simulation/test_campaign_stage.py"
 REPOSITORY = {
     v: Path(f"configs/simulation/historical-masked-rl-stage-{v.lower()}.json") for v in "AB"
 }
@@ -307,13 +308,17 @@ def test_a_stop_request_pauses_between_jobs(base_a, tmp_path, learning_doubles):
     assert len(rest.calls) == 16 and not any(call["resume"] for call in rest.calls)
 
 
-def test_the_learning_hold_stops_the_stage_before_outputs_and_between_jobs(
-    base_a, tmp_path, learning_hold
-):
-    blocked = learning_hold(False)
+def test_the_learning_hold_stops_the_stage_before_outputs(base_a, tmp_path, learning_hold):
+    learning_hold(False)
     with pytest.raises(LearningHoldError, match="etapa de políticas"):
         fixture.run(base_a, tmp_path / "stage", fixture.ScriptedLearner())
     assert not (tmp_path / "stage").exists()
+
+
+@lowers_learning_hold(f"{THIS}::test_the_learning_hold_is_read_again_between_jobs")
+def test_the_learning_hold_is_read_again_between_jobs(base_a, tmp_path, learning_hold):
+    blocked = tmp_path / "blocked.json"
+    blocked.write_text(json.dumps({"training_allowed": False}), encoding="utf-8")
     allowed = learning_hold(True)
 
     class Reinstating(fixture.ScriptedLearner):
@@ -343,10 +348,11 @@ def test_missing_engine_capabilities_stop_the_stage_before_reading_sources(
             tmp_path / "c",
             tmp_path / "e",
             tmp_path / "out",
+            listing_status=tmp_path / "s",
             capabilities=without_cn,
         )
     message = str(error.value)
-    # China depende de las reglas nativas en todos sus brazos y EE. UU. no las necesita.
+    # China depende de las reglas nativas en todos sus modelos y EE. UU. no las necesita.
     assert all(f"{engine}/CN" in message for engine in ("reference", "native_ppo", "native_klpo"))
     assert "/US" not in message and not (tmp_path / "out").exists()
     # Con los ejecutores actuales faltan además las piezas nativas de las políticas.
@@ -357,6 +363,7 @@ def test_missing_engine_capabilities_stop_the_stage_before_reading_sources(
             tmp_path / "c",
             tmp_path / "e",
             tmp_path / "out",
+            listing_status=tmp_path / "s",
             capabilities=dict(
                 everything, native_klpo_financial_runner=dict(available=False, reason="x")
             ),
@@ -420,15 +427,21 @@ def test_the_hold_stops_the_stage_before_probing_or_launching_binaries(
     monkeypatch.setattr(native_policy_runs.subprocess, "run", forbidden)
     with pytest.raises(LearningHoldError):
         campaign_stage.run_stage(
-            REPOSITORY["A"], {}, tmp_path / "c", tmp_path / "e", tmp_path / "out"
+            REPOSITORY["A"],
+            {},
+            tmp_path / "c",
+            tmp_path / "e",
+            tmp_path / "out",
+            listing_status=tmp_path / "s",
         )
     assert launched == [] and not (tmp_path / "out").exists()
 
 
+@pytest.mark.native("MARS_TITAN_PPO_EXECUTABLE", "MARS_TITAN_KLPO_EXECUTABLE")
 def test_policy_binaries_declare_their_capabilities_and_identity():
     for engine in native_policy_runs.BINARIES:
         if not native_policy_runs.binary_path(engine).is_file():
-            pytest.skip("Faltan mars-titan-ppo o mars-titan-klpo compilados")
+            pytest.skip(missing_native(native_policy_runs.BINARIES[engine][0]))
     probed = campaign_stage.probe_capabilities()
     for name, binary in (
         ("native_policy_reconstructed_tapes", "mars-titan-ppo"),
@@ -578,6 +591,7 @@ def test_a_reference_that_learns_is_rejected(base_a, tmp_path, learning_doubles)
             base_a.output,
             base_a.edition,
             tmp_path / "stage",
+            listing_status=base_a.listing_status,
             executors=executors,
             capabilities={},
             stop=SimpleNamespace(requested=False),
@@ -703,18 +717,18 @@ def test_script_checks_the_policy_stage_and_runs_it_only_without_the_hold(
     assert script["main"](["rl", "check", "--stage", str(REPOSITORY["B"])]) == 0
     report = json.loads(capsys.readouterr().out)
     assert report["status"] == "checked" and report["variant"] == "B"
-    assert (report["counts"]["training_jobs"], report["counts"]["carried_jobs"]) == (456, 912)
+    assert (report["counts"]["training_jobs"], report["counts"]["carried_jobs"]) == (600, 1200)
     assert set(report["missing_capabilities"]) >= {"native_klpo/US", "native_ppo/CN"}
     learning_hold(False)
     arguments = ["rl", "run", "--stage", str(REPOSITORY["A"]), "--views", f"US={tmp_path}"]
     arguments += ["--campaign-output", str(tmp_path / "campaign"), "--edition", str(tmp_path)]
-    arguments += ["--output", str(tmp_path / "out")]
+    arguments += ["--listing-status", str(tmp_path / "s"), "--output", str(tmp_path / "out")]
     with pytest.raises(LearningHoldError):
         script["main"](arguments)
     assert not (tmp_path / "out").exists()
 
 
-@pytest.mark.skipif(library_path() is None, reason="Falta la biblioteca nativa de simulación")
+@pytest.mark.native("MARS_TITAN_NATIVE_LIBRARY")
 def test_references_with_native_accounting_match_the_python_accounting(
     base_a, tmp_path, learning_doubles
 ):
@@ -776,26 +790,6 @@ def test_every_tape_of_the_stage_is_real_and_no_synthetic_world_is_built(
     assert domains and set(domains) == {"real"}
 
 
-def test_a_universe_admission_on_a_tape_that_is_not_real_stops_the_stage(
-    base_a, tmp_path, learning_doubles, monkeypatch
-):
-    original = window_tapes.build_segment_tape
-
-    def relabeled(*args, symbols=None, **kwargs):
-        # Solo la admisión del universo monta un tramo con todos los activos.
-        tape, report = original(*args, symbols=symbols, **kwargs)
-        if symbols is None:
-            tape = copy.copy(tape)
-            tape.domain = "synthetic"
-        return tape, report
-
-    monkeypatch.setattr(window_tapes, "build_segment_tape", relabeled)
-    learner = fixture.ScriptedLearner()
-    with pytest.raises(ValueError, match="universe-fold-000 no es una cinta real"):
-        fixture.run(base_a, tmp_path / "stage", learner)
-    assert learner.calls == []
-
-
 def test_a_synthetic_tape_on_disk_stops_the_stage_before_any_executor(
     base_a, tmp_path, learning_doubles
 ):
@@ -818,26 +812,6 @@ def test_a_synthetic_tape_on_disk_stops_the_stage_before_any_executor(
     with pytest.raises(ValueError, match="no es una cinta real"):
         fixture.run(base_a, tmp_path / "stage", learner)
     assert learner.calls == []
-
-
-def test_each_window_is_admitted_once_for_every_anchor_universe(
-    base_a, tmp_path, learning_doubles, monkeypatch
-):
-    # Con la ventana en expansión, el universo de cada ancla lee todas las ventanas previas.
-    # La admisión con todos los activos se monta una vez por ventana y recibo.
-    built = []
-    original = window_tapes.build_segment_tape
-
-    def counted(edition, window, values, **options):
-        if options.get("symbols") is None:
-            built.append(window.fold)
-        return original(edition, window, values, **options)
-
-    monkeypatch.setattr(window_tapes, "build_segment_tape", counted)
-    assert fixture.run(base_a, tmp_path / "stage", fixture.ScriptedLearner())["status"] == (
-        "completed"
-    )
-    assert sorted(built) == ["fold-000", "fold-001", "fold-002"]
 
 
 def chained(base, root):
@@ -1054,13 +1028,14 @@ def test_the_declared_stage_feeds_real_tapes_with_the_chain_predictor(monkeypatc
     assert checked["edition_id"] == (
         "1ac3727836462ce31c39b5438918bd6f3e0d359690c7bc79bfa87cd808c8e68c"
     )
-    # La regla fija es la principal y la expansión queda declarada, desactivada y contada.
+    # La regla fija es la principal y la expansión queda declarada, desactivada y contada, con
+    # 8 cintas como máximo para que los objetivos de grupo tengan dos entornos por cinta.
     assert checked["tapes_per_predictor"]["US"]["total"] == 75
     assert checked["tapes_per_predictor"]["CN"]["total"] == 45
     sensitivity = checked["window_sensitivity"]
     assert sensitivity["id"] == "expanding_train_windows_v1" and sensitivity["enabled"] is False
-    assert sensitivity["tapes_per_predictor"]["US"]["total"] == 179
-    assert sensitivity["tapes_per_predictor"]["CN"]["total"] == 81
+    assert sensitivity["tapes_per_predictor"]["US"]["total"] == 135
+    assert sensitivity["tapes_per_predictor"]["CN"]["total"] == 75
 
 
 def test_the_window_sensitivity_runs_only_when_enabled_and_never_mixes_outputs(

@@ -10,27 +10,46 @@ import numpy as np
 from mars_titan.environments.cohorts import FINAL_TEST_START_US, VALIDATION_START_US
 from mars_titan.evaluation.splits import PARTITIONS
 
-from .portfolio import MAX_INSTRUMENTS, CorporateAction, Quote
+from .listing_status import require_tape_status
+from .portfolio import (
+    DELISTING,
+    DELISTINGS,
+    MAX_INSTRUMENTS,
+    UNPRICED_DELISTING,
+    CorporateAction,
+    Quote,
+)
 
 # 4.200 activos durante un año de 251 sesiones superan el millón de celdas anterior.
 # Con 48 bytes por celda (OHLCV y predicción en float64) el máximo ocupa 96 MiB por copia.
 MAX_TAPE_CELLS = 2_097_152
 RECONSTRUCTED = "unadjusted_reconstructed"
 # Tratamiento fijo de la edición reconstruida (#379). Una cinta no puede declarar otro.
+# Una serie que termina dentro de la cinta es una baja en la apertura siguiente a su última
+# fila. Con precio de salida acreditado la posición se cobra. Sin él queda sin valorar, de
+# modo que el patrimonio pasa a ser desconocido y el episodio termina con la recompensa
+# enmascarada. Los activos del diseño de la política que no forman parte del universo de la
+# cinta no tienen precios ni predicciones.
 RECONSTRUCTED_CONTRACT = dict(
     corporate_actions="provider_events_in_verified_rows",
     corporate_actions_complete=False,
-    exit_returns="unavailable",
+    exit_returns="source_exit_price_or_masked_position",
     population="listed_through_2025_03",
     rows="verified_only",
     non_trading="zero_volume_or_missing_row_without_execution",
     valuation="last_traded_close",
     same_day_split_dividend="lower_cash_without_execution",
     off_grid_open="without_execution",
+    series_end="delisting_at_next_open",
+    outside_universe_assets="masked_without_prices_or_predictions",
 )
+# Campos de datos de la auditoría, además del contrato y de los cortes walk-forward.
+AUDIT_DATA = ("outside_universe", "delistings", "listing_status")
 CURRENCIES = {"US": "USD", "CN": "CNY"}
 _HEX = re.compile(r"[a-f0-9]{64}")
 _SEGMENT = {"receipt_sha256", "fold", "partition", "start", "end", "labels_used_until"}
+_DELISTING = {"last_session", "exit"}
+_EXIT = {"price", "pay_at", "source_sha256"}
 # Único tramo cuyas predicciones salen de un ajuste que terminó antes de su primera decisión.
 # Es el `SEGMENT` con el que `window_tapes` monta las cintas de la etapa de políticas.
 WALK_FORWARD_SEGMENT = "evaluation"
@@ -52,8 +71,9 @@ def _times(values):
 def _reconstructed_contract(audit, currency):
     """Comprobar que la cinta declara las limitaciones de la edición sin suavizarlas."""
     keys = {"price_basis", "market", "edition_id", "evidence_sha256", "walk_forward"}
-    keys |= {"prediction_fit_ends", "assumptions", *RECONSTRUCTED_CONTRACT}
+    keys |= {"prediction_fit_ends", "assumptions", *RECONSTRUCTED_CONTRACT, *AUDIT_DATA}
     assumptions = audit.get("assumptions")
+    status = audit.get("listing_status")
     if (
         set(audit) != keys
         or any(audit[key] != value for key, value in RECONSTRUCTED_CONTRACT.items())
@@ -65,6 +85,13 @@ def _reconstructed_contract(audit, currency):
         or set(assumptions) != {"dividend_payment_lag_sessions"}
         or type(assumptions["dividend_payment_lag_sessions"]) is not int
         or not 0 <= assumptions["dividend_payment_lag_sessions"] <= 252
+        or not isinstance(audit["outside_universe"], list)
+        or audit["outside_universe"] != sorted(set(audit["outside_universe"]))
+        or not isinstance(audit["delistings"], dict)
+        or not isinstance(status, dict)
+        or set(status) != {"source_sha256", "assets"}
+        or not _HEX.fullmatch(str(status["source_sha256"]))
+        or not isinstance(status["assets"], dict)
     ):
         raise ValueError("La cinta reconstruida no declara su tratamiento y sus limitaciones")
 
@@ -105,6 +132,103 @@ def _walk_forward_fits(segments, times):
     if len(set(owner.tolist())) != len(segments):
         raise ValueError("Un tramo walk-forward declarado no tiene sesiones")
     return [segments[i]["labels_used_until"] for i in owner]
+
+
+def _delistings(actions, opens):
+    """Sesión de baja de cada activo. Ninguna otra acción del activo puede coincidir o seguirla."""
+    moments = {}
+    for action in actions:
+        if action.kind in DELISTINGS:
+            if action.asset in moments:
+                raise ValueError("El activo ya se había dado de baja de la cinta")
+            moments[action.asset] = action.effective_at
+    if any(
+        action.kind not in DELISTINGS
+        and action.asset in moments
+        and action.effective_at >= moments[action.asset]
+        for action in actions
+    ):
+        raise ValueError("Un activo dado de baja conserva acciones corporativas posteriores")
+    return {asset: int(np.searchsorted(opens, at)) for asset, at in moments.items()}
+
+
+def _require_after_delisting(prices, scores, assets, delisted_at):
+    """Tras la baja no queda cotización, volumen ni predicción con la que operar o valorar."""
+    for asset, session in delisted_at.items():
+        index = assets.index(asset)
+        if (
+            not np.isnan(prices[session:, index]).all()
+            or not np.isnan(scores[session:, index]).all()
+        ):
+            raise ValueError("Un activo dado de baja conserva precios o predicciones posteriores")
+
+
+def _reconstructed_columns(tape, audit):
+    """Cierres valorados en cada sesión cotizada, columnas fuera del universo y bajas declaradas.
+
+    Un activo fuera del universo de la cinta no tiene precios ni predicciones en ninguna sesión.
+    El resto necesita un cierre en cada sesión anterior a su baja, y cada baja corresponde a una
+    entrada de `delistings` con la última sesión de su serie y su salida, con precio o sin él.
+    """
+    outside = audit["outside_universe"]
+    if (
+        not set(outside) <= set(tape.assets)
+        or len(outside) == len(tape.assets)
+        or any(action.asset in outside for action in tape.actions)
+    ):
+        raise ValueError("La cinta reconstruida necesita activos dentro de su universo")
+    for index, asset in enumerate(tape.assets):
+        closes = tape.prices[:, index, 3]
+        if asset in outside:
+            if (
+                not np.isnan(tape.prices[:, index]).all()
+                or not np.isnan(tape.scores[:, index]).all()
+            ):
+                raise ValueError("Un activo fuera del universo conserva precios o predicciones")
+            continue
+        end = tape.delisted_at.get(asset, len(tape))
+        if not np.isfinite(closes[:end]).all():
+            # Sin baja, ningún activo del universo puede quedar sin valorar.
+            raise ValueError("La cinta reconstruida necesita un cierre valorado por sesión")
+    require_tape_status(
+        audit["market"], tape.assets, audit["listing_status"]["assets"], int(tape.close_times[0])
+    )
+    if set(audit["delistings"]) != set(tape.delisted_at):
+        raise ValueError("Cada baja de la cinta necesita su registro de salida")
+    by_asset = {a.asset: a for a in tape.actions if a.kind in DELISTINGS}
+    for asset, record in audit["delistings"].items():
+        action, exit_ = by_asset[asset], record.get("exit") if isinstance(record, dict) else None
+        if (
+            not isinstance(record, dict)
+            or set(record) != _DELISTING
+            or not isinstance(record["last_session"], str)
+            or (exit_ is None) != (action.kind != DELISTING)
+            or (
+                exit_ is not None
+                and (
+                    not isinstance(exit_, dict)
+                    or set(exit_) != _EXIT
+                    or exit_["price"] != action.value
+                    or exit_["pay_at"] != action.pay_at
+                    or not _HEX.fullmatch(str(exit_["source_sha256"]))
+                )
+            )
+        ):
+            raise ValueError("El registro de la baja no corresponde a su acción ni a su fuente")
+
+
+def censors_fit(tape):
+    """Si una fuente de ajuste puede dejar una posición sin valorar y ocultar su pérdida.
+
+    En una cinta reconstruida la validación ya exige cierre en cada sesión anterior a la baja
+    de cada activo de su universo, y los activos del diseño fuera de él no tienen precio ni
+    pueden comprarse. Solo censura una baja sin precio de salida, que deja la posición abierta
+    sin valor. En las demás cintas censura cualquier cierre ausente, como antes.
+    """
+    audit = tape.identity["audit"] or {}
+    if tape.domain == "real" and audit.get("price_basis") == RECONSTRUCTED:
+        return any(action.kind == UNPRICED_DELISTING for action in tape.actions)
+    return bool(np.isnan(tape.prices[:, :, 3]).any())
 
 
 class MarketTape:
@@ -183,9 +307,8 @@ class MarketTape:
                     "Las predicciones históricas necesitan un ajuste anterior a cada decisión"
                 )
             prefixes = {asset.split("/", 1)[0] for asset in assets}
-            if prefixes != {audit["market"]} or not np.isfinite(prices[:, :, 3]).all():
-                # Sin retornos de salida, ningún activo puede quedar sin valorar.
-                raise ValueError("La cinta reconstruida necesita un cierre valorado por sesión")
+            if prefixes != {audit["market"]}:
+                raise ValueError("La cinta reconstruida necesita activos de su mercado")
         elif domain == "real" and not (times[0] >= low and times[-1] < high):
             raise ValueError("La simulación histórica cruza su partición o el test sellado")
         order = np.argsort(assets)
@@ -236,6 +359,10 @@ class MarketTape:
                 # El episodio empieza en el primer cierre y no ejecuta esa apertura.
                 raise ValueError("La acción corporativa es anterior a la primera decisión")
             ids.add(action.id)
+        self.delisted_at = _delistings(self.actions, self.open_times)
+        _require_after_delisting(self.prices, self.scores, self.assets, self.delisted_at)
+        if reconstructed:
+            _reconstructed_columns(self, audit)
         self.identity = dict(
             domain=domain,
             currency=currency,

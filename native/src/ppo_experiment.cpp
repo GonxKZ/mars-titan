@@ -363,9 +363,23 @@ void require_device(const PpoExperimentOptions& options, std::size_t total_trans
     }
 }
 
+// Los modos sin aprendizaje no consumen transiciones: la CPU solo exige el diagnóstico explícito.
+bool without_learning(const PpoExperimentOptions& options) {
+    return options.initial_evaluation || options.source_check;
+}
+
 void validate_options(const PpoExperimentOptions& options, const ExperimentConfig& config) {
     const auto source_limit = config.learning.enabled ? maximum_adaptive_sources : maximum_sources;
-    if (options.audit_run) {
+    require(!without_learning(options) || reconstructed(config),
+            "Los modos sin aprendizaje solo admiten cintas reconstruidas con el esquema 4");
+    require(!options.source_check || options.device == "cpu",
+            "La comprobación de fuentes no usa la GPU y se ejecuta en CPU con --diagnostic");
+    if (options.initial_evaluation) {
+        require(!options.output.empty() && options.train_tapes.empty() &&
+                    options.validation_tapes.empty() && !options.audit_tapes.empty() &&
+                    options.audit_tapes.size() <= source_limit && !options.stop_after,
+                "La evaluación inicial solo admite cintas de evaluación acotadas y una salida");
+    } else if (options.audit_run) {
         require(
             config.learning.enabled && !options.audit_run->empty() && !options.output.empty() &&
                 options.train_tapes.empty() && options.validation_tapes.empty() &&
@@ -386,7 +400,7 @@ void validate_options(const PpoExperimentOptions& options, const ExperimentConfi
                          : config.environments % options.train_tapes.size() == 0),
                 "Se necesitan fuentes acotadas y réplicas equilibradas entre todos los escenarios");
     }
-    require_device(options, config.training.total_transitions);
+    require_device(options, without_learning(options) ? 0 : config.training.total_transitions);
     require(!contains(options.output, options.config),
             "La configuración debe quedar fuera de la salida PPO");
     if (config.markov_path) {
@@ -600,7 +614,7 @@ void preflight_memory(const PpoExperimentOptions& options, const ExperimentConfi
         }
     }
     constexpr std::size_t scalar_bytes = sizeof(int64_t) + 4 * sizeof(double) + 3 * sizeof(bool);
-    if (!options.audit_run) {
+    if (!options.audit_run && !without_learning(options)) {
         account_memory(config.training.rollout_transitions,
                        3 * (observation_width * sizeof(float) + scalar_bytes), total);
     }
@@ -1802,7 +1816,7 @@ Json run_reconstructed_evaluation(const PpoExperimentOptions& options,
     preflight_memory(options, config);
     FrozenEvaluationRequest request{options.output, options.resume, nullptr, {},
                                     config.learning, config.training.workers,
-                                    frozen_costs(options.evaluation_costs)};
+                                    frozen_costs(options.evaluation_costs), options.decisions};
     Json tapes = Json::array();
     for (const auto& path : options.audit_tapes) {
         auto tape = load_policy_tape(path, PolicyTapeRole::evaluation, config.environment);
@@ -1829,10 +1843,92 @@ Json run_reconstructed_evaluation(const PpoExperimentOptions& options,
                             {"seed", config.training.seed},
                             {"device", options.device},
                             {"diagnostic", options.diagnostic},
+                            {"decisions", options.decisions},
                             {"native_source_sha256", MARS_TITAN_NATIVE_SOURCE_SHA256},
                             {"native_build_sha256", MARS_TITAN_NATIVE_BUILD_SHA256},
                             {"final_test_opened", false}};
     return run_frozen_evaluation(policy, request, stop);
+}
+
+// Evaluación congelada de la política inicial de la configuración, sin entrenador ni optimizador.
+// Esa política no ha aprendido nada, así que evaluarla no mide ningún modelo. Sirve para
+// comprobaciones técnicas como la paridad entre dispositivos. Los pesos salen del generador de
+// CPU con la semilla de la configuración, igual que en el primer paso de un ajuste.
+Json run_initial_evaluation(const PpoExperimentOptions& options, const ExperimentConfig& config,
+                            const std::function<bool()>& stop) {
+    preflight_memory(options, config);
+    FrozenEvaluationRequest request{options.output, options.resume, nullptr, {},
+                                    config.learning, config.training.workers,
+                                    frozen_costs(options.evaluation_costs), options.decisions};
+    Json tapes = Json::array();
+    std::vector<simulation::BatchInput> inputs;
+    for (const auto& path : options.audit_tapes) {
+        auto tape = load_policy_tape(path, PolicyTapeRole::evaluation, config.environment);
+        tapes.push_back(tape.identity);
+        inputs.push_back(tape.input);
+        request.tapes.push_back(std::move(tape));
+    }
+    require_policy_sequence(request.tapes);
+    require_ram_budget();
+    configure_runtime(options);
+    const auto width = policy_observation_width(inputs, config.learning, config.training.seed,
+                                                config.training.workers);
+    const auto policy = initial_ppo_policy(width, config.hyperparameters, config.training.seed,
+                                           options.device, config.learning, config.objective);
+    request.identity = Json{{"schema_version", 1},
+                            {"kind", "native_ppo_initial_evaluation"},
+                            {"weights", "initial_from_configuration_seed"},
+                            {"evaluation_only", evaluation_only()},
+                            {"configuration_sha256", content_sha256(config.document.dump())},
+                            {"parameter_fingerprint", policy.parameter_fingerprint()},
+                            {"optimizer_steps", policy.optimizer_steps()},
+                            {"transitions", 0},
+                            {"tapes", tapes},
+                            {"cost_bps", request.costs},
+                            {"seed", config.training.seed},
+                            {"device", options.device},
+                            {"diagnostic", options.diagnostic},
+                            {"decisions", options.decisions},
+                            {"native_source_sha256", MARS_TITAN_NATIVE_SOURCE_SHA256},
+                            {"native_build_sha256", MARS_TITAN_NATIVE_BUILD_SHA256},
+                            {"final_test_opened", false}};
+    return run_frozen_evaluation(policy, request, stop);
+}
+
+// Lee y valida las cintas de ajuste y validación con los mismos lectores que el ajuste y publica
+// en sources.json la identidad que tendría el experimento, sin entrenador ni checkpoints.
+Json run_source_check(const PpoExperimentOptions& options, const ExperimentConfig& config) {
+    preflight_memory(options, config);
+    const auto inputs = load_inputs(options, config);
+    require_ram_budget();
+    configure_runtime(options);
+    // Los entornos de ajuste y de validación se montan como en el ajuste, que los rechaza si no
+    // comparten activos, moneda o reglas.
+    const simulation::FinancialBatch training(inputs.training, config.training.workers);
+    const simulation::FinancialBatch validation(inputs.validation, config.training.workers);
+    const auto width = policy_observation_width(inputs.training, config.learning,
+                                                config.training.seed, config.training.workers);
+    require(width == policy_observation_width(inputs.validation, config.learning,
+                                              config.training.seed, config.training.workers),
+            "La validación utiliza otro esquema de observación que el ajuste");
+    const auto identity = experiment_identity(options, config, inputs);
+    const Json report{{"schema_version", 1},
+                      {"kind", "native_policy_source_check"},
+                      {"status", "completed"},
+                      {"evaluation_only", evaluation_only()},
+                      {"identity", identity},
+                      {"identity_sha256", content_sha256(identity.dump())},
+                      {"observation_width", width},
+                      {"initial_parameter_fingerprint",
+                       initial_ppo_policy(width, config.hyperparameters, config.training.seed,
+                                          options.device, config.learning, config.objective)
+                           .parameter_fingerprint()},
+                      {"transitions", 0},
+                      {"optimizer_steps", 0},
+                      {"final_test_opened", false}};
+    const simulation::OutputLock lock(options.output, false);
+    atomic_json_file(options.output / "sources.json", audit_seal(report));
+    return report;
 }
 
 Json run_audit(const PpoExperimentOptions& options, const ExperimentConfig& config,
@@ -2058,12 +2154,23 @@ void configure_policy_runtime(const PpoExperimentOptions& options) { configure_r
 
 Json run_ppo_experiment(const PpoExperimentOptions& options,
                         const std::function<bool()>& stop_requested) {
+    if (without_learning(options)) {
+        // Nada aprende: el cerrojo se activa antes de leer la configuración y la protección no
+        // se consulta, ni para rebajarla ni para pedirla.
+        enter_evaluation_only();
+    }
     const auto started = std::chrono::steady_clock::now();
     const auto config = configuration(options.config);
     validate_options(options, config);
     // La admisión se comprueba antes de cualquier tensor CUDA o creación de la salida.
     if (options.device == "cuda:0") {
         static_cast<void>(validate_gpu_lease(options));
+    }
+    if (options.initial_evaluation) {
+        return run_initial_evaluation(options, config, stop_requested);
+    }
+    if (options.source_check) {
+        return run_source_check(options, config);
     }
     if (reconstructed(config)) {
         // Ajustar o evaluar sobre el histórico reconstruido son usos científicos de datos
@@ -2075,6 +2182,8 @@ Json run_ppo_experiment(const PpoExperimentOptions& options,
             return run_reconstructed_evaluation(options, config, stop_requested);
         }
     } else if (options.audit_run) {
+        // La auditoría sintética ya publica su traza de decisiones con las probabilidades.
+        require(!options.decisions, "--decisions solo se admite sobre cintas reconstruidas");
         return run_audit(options, config, stop_requested, started);
     }
     // La auditoría congelada no ajusta parámetros. El entrenamiento se detiene antes de leer

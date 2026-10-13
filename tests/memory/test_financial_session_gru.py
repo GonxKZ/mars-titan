@@ -20,6 +20,9 @@ from mars_titan.models.candidate.episode_codec import FrozenCandidateCodec
 from mars_titan.models.candidate.frozen_consumer import FrozenCandidateConsumer
 from mars_titan.models.candidate.input_adapter import CandidateInputAdapter
 from mars_titan.models.titans.financial_inputs import DecisionBatch, validated_cpu_batch
+from tests.suite_support import CANDIDATE_BINDING_REASON
+
+pytestmark = pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 
 EVENTS = (125, 126, 127, 128)
 
@@ -28,7 +31,7 @@ EVENTS = (125, 126, 127, 128)
 def gru_native(native):
     """Enlace con el candidato GRU y el reservorio compartido, o una omisión explícita."""
     if not hasattr(native, "causal_reservoir_draws") or not hasattr(native, "Candidate"):
-        pytest.skip("El enlace no incluye el candidato GRU ni el reservorio compartido")
+        pytest.skip(CANDIDATE_BINDING_REASON)
     return native
 
 

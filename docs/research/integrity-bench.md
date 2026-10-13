@@ -23,7 +23,7 @@ Cubre:
 
 `integrity/score_recheck.py` aplica esa implementación a una comparación ya publicada:
 1. Comprueba las huellas de `comparison.json`, `sessions.parquet`, la configuración y el manifiesto de fuentes.
-2. Vuelve a leer las predicciones crudas de cada brazo, semilla y ventana, también con sus huellas.
+2. Vuelve a leer las predicciones crudas de cada modelo, semilla y ventana, también con sus huellas.
 3. Coteja la tabla de sesiones columna a columna y vuelve a agregar MAE, MSE y dirección en cada vista con la ponderación declarada.
 
 El resultado cuenta las sesiones que faltan o sobran y las discrepancias por columna, y sale con código distinto de cero si alguna comprobación falla.
@@ -50,14 +50,14 @@ El informe de cada recálculo indica las dos exclusiones.
 
 También hay dos mutaciones del código principal, una en la media por sesión y otra en la puntuación de intervalo. El recálculo las señala columna a columna sobre un estudio de juguete completo.
 
-## Mismas filas en todos los brazos
+## Mismas filas en todos los modelos
 
-La comparación ya exige que todos los brazos evalúen las mismas filas, con `ForecastPanel.cohort_sha256`. `integrity/row_identity.py` lo comprueba por otro camino:
+La comparación ya exige que todos los modelos evalúen las mismas filas, con `ForecastPanel.cohort_sha256`. `integrity/row_identity.py` lo comprueba por otro camino:
 1. Ordena las filas de cada archivo de predicciones por mercado, activo e instante con Arrow.
 2. Calcula una huella SHA-256 propia con los bytes de esas tres claves y los bits exactos del objetivo en float64.
-3. Agrupa las huellas por ventana y tramo (calibración y evaluación) y exige que todos los pares brazo-semilla compartan una sola.
+3. Agrupa las huellas por ventana y tramo (calibración y evaluación) y exige que todos los pares modelo-semilla compartan una sola.
 
-Un bit distinto en un objetivo, una fila de más o una de menos separan al brazo afectado en su propio grupo, y el informe lo nombra.
+Un bit distinto en un objetivo, una fila de más o una de menos separan al modelo afectado en su propio grupo, y el informe lo nombra.
 
 Además, cuenta en cada archivo:
 - las filas de la reserva de 2024;
@@ -79,7 +79,7 @@ uv run python -m mars_titan.integrity.row_identity \
 
 **Pruebas.** Sobre el estudio de juguete de la comparación:
 - un estudio fiel pasa en US y en US+CN;
-- se detectan un solo bit cambiado en un objetivo, una fila que falta en un brazo y una fila movida a 2024;
+- se detectan un solo bit cambiado en un objetivo, una fila que falta en un modelo y una fila movida a 2024;
 - se cuentan las claves duplicadas y los objetivos no finitos;
 - se rechaza un archivo cambiado tras publicar el manifiesto;
 - la huella no depende del orden de las filas ni de su partición en bloques.
@@ -103,7 +103,7 @@ uv run python -m mars_titan.integrity.leakage_scan INPUTS.parquet --lag 1 --outp
 - Que no marque nada no demuestra que no haya fugas sutiles. Una fuga débil y repartida entre muchas columnas puede quedar por debajo de los umbrales.
 - Se aplica sobre la matriz tabular de la campaña, que comparte con las familias neuronales la construcción de entradas de cada ventana, y solo sobre filas de validación.
 
-**Pruebas.** Con paneles escritos en la prueba y canarios inyectados:
+**Pruebas.** Con paneles escritos en la prueba y fugas inyectadas a propósito:
 - se marcan el objetivo con ruido, una transformación monótona, el rango invertido y una fuga en una sola sesión;
 - no se marcan una señal débil realista, el ruido ni el rendimiento pasado;
 - con ausencias, la media coincide con la correlación de Spearman directa de pandas sobre las filas presentes;
@@ -111,35 +111,35 @@ uv run python -m mars_titan.integrity.leakage_scan INPUTS.parquet --lag 1 --outp
 
 Tres mutaciones dirigidas hacen fallar las pruebas: ordenar el objetivo también en las filas ausentes, quitar el mínimo de activos y quitar el umbral por sesión.
 
-## Cota con oráculo en el entorno financiero
+## Cota con información futura en el entorno financiero
 
-`integrity/oracle_bound.py` pone en escala los resultados de las políticas y detecta trampas por el resultado. El entorno decide al cierre de t, ejecuta en la apertura de t+1 y valora al cierre de t+1. El oráculo usa como puntuación el rendimiento de esa sesión, `close[t+1] / open[t+1] - 1`, con la misma regla de asignación, costes y liquidez del entorno, y exposición completa.
+`integrity/oracle_bound.py` pone en escala los resultados de las políticas y detecta trampas por el resultado. El entorno decide al cierre de t, ejecuta en la apertura de t+1 y valora al cierre de t+1. La política con información futura usa como puntuación el rendimiento de esa sesión, `close[t+1] / open[t+1] - 1`, con la misma regla de asignación, costes y liquidez del entorno, y exposición completa.
 
 `bound` evalúa con el evaluador de políticas fijas que ya usa la simulación:
 - la política de la cinta con exposición completa;
 - la caja;
-- el oráculo.
+- la política con información futura.
 
-Después informa de la fracción del crecimiento logarítmico del oráculo que alcanza la cinta. Una fracción de 0,5 o más se marca como sospechosa, porque casi con seguridad indica información futura en las puntuaciones.
+Después informa de la fracción del crecimiento logarítmico de la política con información futura que alcanza la cinta. Una fracción de 0,5 o más se marca como sospechosa, porque casi con seguridad indica información futura en las puntuaciones.
 
 **Por qué hace falta.** La cinta comprueba las marcas de tiempo de las predicciones, no su contenido. Una cinta con puntuaciones del futuro y marcas correctas pasa su contrato. La cota ataca ese hueco por el resultado.
 
 **Límites declarados.**
-- Es un oráculo miope de un paso: ignora el hueco nocturno hasta la siguiente apertura y no optimiza la rotación. No es el máximo global.
+- Es una política miope de un paso con información futura: ignora el hueco nocturno hasta la siguiente apertura y no optimiza la rotación. No es el máximo global.
 - Es un diagnóstico. Su cinta lleva un padre propio (`oracle_one_step_future_returns_diagnostic`) y el informe declara `excluded_from_comparisons`.
 - Sobre cintas reales solo se ejecuta en tramos de ajuste y validación, como el resto de la etapa, y nunca sobre el test de 2024.
 
 **Pruebas.** Con cintas escritas en la prueba:
 - la puntuación es el rendimiento de la sesión siguiente y solo depende de ella;
-- la cinta del oráculo tiene identidad propia y marcada;
-- en un mercado plano el oráculo no gana nada y una política de compra constante pierde los costes;
-- con 60 sesiones y 8 activos en paseo aleatorio, el oráculo crece 0,865 en logaritmo, mientras que puntuaciones de ruido alcanzan 0,039, un 4,6 % de la cota, sin marcarse;
+- la cinta de la política con información futura tiene identidad propia y marcada;
+- en un mercado plano la política con información futura no gana nada y una política de compra constante pierde los costes;
+- con 60 sesiones y 8 activos en paseo aleatorio, la política con información futura crece 0,865 en logaritmo, mientras que puntuaciones de ruido alcanzan 0,039, un 4,6 % de la cota, sin marcarse;
 - unas puntuaciones con la información futura alcanzan el 100 % y se marcan.
 
 ## Registro previo y desviaciones
 
 `integrity/preregistration.py` fija qué se va a comparar antes de producir resultados. El registro es un archivo JSON Lines que solo crece, con dos tipos de entrada:
-- **Declaración.** Ruta y huella SHA-256 de un documento, por ejemplo la configuración de la comparación walk-forward, con sus brazos, métricas, familias de contrastes y parámetros del bootstrap. Va acompañada de una nota.
+- **Declaración.** Ruta y huella SHA-256 de un documento, por ejemplo la configuración de la comparación walk-forward, con sus modelos, métricas, familias de contrastes y parámetros del bootstrap. Va acompañada de una nota.
 - **Desviación.** Cambio posterior sobre una declaración, con el motivo y la huella del documento que la sustituye. La declaración original no se borra.
 
 Cada entrada guarda la huella canónica de la anterior. Si se edita, se borra o se reordena una línea, la cadena se rompe, aunque se recalcule la huella de la línea editada, porque la entrada siguiente apunta a la huella antigua. Las entradas inválidas se rechazan antes de escribir: desviaciones sin declaración, un documento declarado dos veces o fechas que retroceden.
@@ -176,6 +176,6 @@ Siguen en #442, en este orden:
    - aplicar el escáner de fugas a la matriz tabular real de cada ventana, sobre validación;
    - ninguna fila de 2024 en las predicciones de validación y en los demás artefactos de selección;
    - invariantes de caja, posiciones, costes y acciones imposibles en las cintas reales con políticas fijas;
-   - cota con oráculo sobre las cintas reales de ajuste y validación de cada ventana.
+   - cota con información futura sobre las cintas reales de ajuste y validación de cada ventana.
 2. Falsaciones que ajustan modelos, solo declaradas mientras dure el bloqueo de aprendizaje: placebo con etiquetas permutadas dentro de cada sesión, desplazamiento temporal de las entradas, predicción constante y aleatoria y estabilidad entre semillas. Cada una con su coste y su criterio de éxito o fracaso escritos de antemano.
 3. Informe de integridad generado por la orden única de la campaña, que bloquea la publicación si alguna comprobación falla. Invocará también el verificador de disjunción del diseño por etapas ([#437](https://github.com/GonxKZ/mars-titan/issues/437)) en lugar de duplicarlo.

@@ -25,6 +25,8 @@ from tests.training.test_titans_walk_forward import (
     learning_doubles_module as learning_doubles_module,
 )
 
+pytestmark = pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
+
 DECLARED = Path("configs/titans/episodic-readout-historical-masked.json")
 M1 = {"episodic_bank": "m1"}
 M0 = {"episodic_bank": "m0_no_bank"}

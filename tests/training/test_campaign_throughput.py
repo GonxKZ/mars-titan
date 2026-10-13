@@ -10,7 +10,6 @@ su gancho. No se usa la GPU ni se registran pérdidas.
 
 import copy
 import json
-import os
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -41,7 +40,7 @@ CAMPAIGNS = {
 STAGES = {
     v: Path(f"configs/posttraining/historical-masked-adapter-stage-{v.lower()}.json") for v in "AB"
 }
-# Brazos de la sección `variety` de la matriz v3 (#444), que solo declara la etapa A.
+# Modelos de la sección `variety` de la matriz v3 (#444), que solo declara la etapa A.
 VARIETY = {
     arm["id"]
     for arm in json.loads(Path("configs/posttraining/adapter-matrix-v3.json").read_text())[
@@ -67,7 +66,7 @@ RECIPE_TITANS = "accumulation_rows=1024"
 
 
 def uniform(campaign, rows):
-    """Mismas filas por tramo en todas las ventanas y caudales iguales en todos los brazos."""
+    """Mismas filas por tramo en todas las ventanas y caudales iguales en todos los modelos."""
     counts = {
         scope: {window: dict(rows) for window in resolved["windows"]}
         for scope, resolved in campaign["comparison_config"]["resolved_scopes"].items()
@@ -134,7 +133,7 @@ def all_rates(campaign):
 
 
 def window_hours(campaign, scope, months, *, carried=True):
-    """Horas de un brazo con caudales uniformes: 4 ajustes por ventana reentrenada y 3 traslados."""
+    """Horas de un modelo con caudales uniformes: 4 ajustes por ventana y 3 traslados."""
     resolved = campaign["comparison_config"]["resolved_scopes"][scope]["windows"]
     rate, total = dict(train=100.0, inference=400.0), 0.0
     for row in plan.schedule(list(resolved.values()), campaign["period"]):
@@ -147,9 +146,9 @@ def window_hours(campaign, scope, months, *, carried=True):
 
 
 def matrix_points(stage, slower=1.0):
-    """Caudales de cada brazo de la matriz por padre candidato y brazo base.
+    """Caudales de cada modelo de la matriz por padre candidato y modelo base.
 
-    El último padre candidato de cada brazo es `slower` veces más lento.
+    El último padre candidato de cada modelo es `slower` veces más lento.
     """
     rates = {}
     for arm, family in stage["families"].items():
@@ -318,7 +317,7 @@ def test_posttraining_hours_cover_every_stage_job_and_each_parent_cache(
     # Cada ventana añade 12.000 filas de ajuste. En A las nuevas de una ventana son esas
     # menos la validación y la calibración de la anterior: 6.000.
     counts, rates = growing(campaign, 12_000)
-    # El segundo padre candidato de cada brazo es la mitad de rápido, también al predecir
+    # El segundo padre candidato de cada modelo es la mitad de rápido, también al predecir
     # la caché. Sin padre elegido, la estimación usa el más lento.
     rates[throughput.POSTTRAINING] = matrix_points(stage, slower=2.0)
     for candidates in rates[NEURAL].values():
@@ -326,7 +325,7 @@ def test_posttraining_hours_cover_every_stage_job_and_each_parent_cache(
     estimate = throughput.estimate_hours(campaign, counts, rates, stage=stage)
     assert throughput.POSTTRAINING in plan.LATER_STAGES
     matrix = estimate["families"][throughput.POSTTRAINING]
-    # Solo se estiman los brazos de las redes, los únicos que mide la matriz.
+    # Solo se estiman los modelos de las redes, los únicos que mide la matriz.
     assert (matrix["training_jobs"], matrix["prediction_jobs"]) == (fits, predictions)
     assert matrix["parent_caches"] == parents
     unmeasured = sorted(set(stage["arms"]) - set(stage["families"]))
@@ -364,7 +363,7 @@ def test_posttraining_hours_cover_every_stage_job_and_each_parent_cache(
 
 def test_the_measured_stage_contains_the_cases_of_both_matrix_versions():
     # A declara la matriz v3 y B la v2. Los casos de las redes de B están en A salvo por la
-    # huella, y A añade los brazos de la variedad, así que se mide A en cualquier orden.
+    # huella, y A añade los adaptadores de la variedad, así que se mide A en cualquier orden.
     a, b = (campaign_stage.load_stage(STAGES[variant]) for variant in "AB")
     assert a["matrix_sha256"] != b["matrix_sha256"]
     measured_a, measured_b = (throughput._measured_cases(stage) for stage in (a, b))
@@ -395,7 +394,7 @@ def test_variant_b_costs_less_than_a_with_the_same_rates():
         estimates.append(throughput.estimate_hours(campaign, counts, rates, stage=stage))
         assert json.loads(json.dumps(estimates[-1])) == estimates[-1]
     comparison = throughput._comparison(estimates)
-    # La matriz medida solo cubre las redes. Los brazos de Titans-MAC y la cadena trivial de
+    # La matriz medida solo cubre las redes. Las variantes de Titans-MAC y la cadena trivial de
     # Ridge y XGBoost de A quedan sin estimar, y el total lo dice.
     assert comparison["A"]["without_estimate"] == [throughput.POSTTRAINING]
     assert comparison["B"]["without_estimate"] == []
@@ -407,7 +406,7 @@ def test_variant_b_costs_less_than_a_with_the_same_rates():
 
 
 @pytest.mark.parametrize(
-    ("variant", "mars", "cm"), [("A", (1620, 0), (1080, 0)), ("B", (612, 756), (408, 336))]
+    ("variant", "mars", "cm"), [("A", (2340, 0), (1080, 0)), ("B", (884, 1092), (408, 336))]
 )
 def test_readout_and_core_hours_follow_the_exact_plan_and_their_parents(variant, mars, cm):
     campaign = extended(variant)
@@ -849,9 +848,7 @@ def test_titans_measurement_walks_the_chronological_trainer_without_changing_wei
     assert not (tmp_path / "work/titans-unused").exists()
 
 
-@pytest.mark.skipif(
-    not os.environ.get("MARS_TITAN_EPISODIC_NATIVE"), reason="Falta el enlace nativo compilado"
-)
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_candidate_measurement_compares_accumulation_and_recomputation(
     views, cpu, tmp_path, guarded_steps
 ):
@@ -883,9 +880,7 @@ def test_candidate_measurement_compares_accumulation_and_recomputation(
 
 # Lectores de MARS-TITAN y núcleos de CM-v1 en CPU
 
-NATIVE = pytest.mark.skipif(
-    not os.environ.get("MARS_TITAN_EPISODIC_NATIVE"), reason="Falta el enlace nativo compilado"
-)
+NATIVE = pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 MARS_ARMS = {
     "mars_titan_m0": {"episodic_bank": "m0_no_bank"},
     "mars_titan_m1": {"episodic_bank": "m1"},
@@ -912,7 +907,7 @@ def reduced_readout(folder):
 
 
 def mars_campaign(folder, arms):
-    """Campaña A con el control mac_online reducido y los brazos de MARS-TITAN pedidos."""
+    """Campaña A con el control mac_online reducido y los modelos de MARS-TITAN pedidos."""
     campaign = titans_campaign(folder)
     declared = campaign["comparison_config"]["arms"]
     compared = {name: declared[name] for name in ("titans_mac_online", *arms)}
@@ -1338,7 +1333,7 @@ def test_campaign_report_adds_the_policy_stage_apart_from_gpu_hours(doubled, pol
     for *_, kwargs in doubled:
         assert not any(key.startswith("policy_") for key in kwargs)
     assert report["rates"][throughput.POLICY_STAGE] == POLICY_RATES
-    jobs = dict(A=dict(fit=1368, reference=1221), B=dict(fit=456, carry=912, reference=1221))
+    jobs = dict(A=dict(fit=1800, reference=1221), B=dict(fit=600, carry=1200, reference=1221))
     for estimate, previous in zip(report["estimates"], without["estimates"], strict=True):
         stage = estimate[throughput.POLICY_STAGE]
         assert stage["status"] == "approximate" and stage["jobs"] == jobs[estimate["variant"]]
@@ -1399,9 +1394,9 @@ def test_campaign_report_measures_the_prepared_families_and_their_policy_stage(
         sha256=campaign_extensions.load_extensions(EXTENSIONS)["sha256"],
         status="prepared_not_declared",
     )
-    # Con las tres familias, la etapa de políticas resuelve 25 predictores en vez de 11.
-    jobs = dict(A=dict(fit=2376, reference=2775), B=dict(fit=792, carry=1584, reference=2775))
-    expected = dict(A=((1620, 0), (1080, 0)), B=((612, 756), (408, 336)))
+    # Con las tres familias, la etapa de políticas resuelve 29 predictores en vez de 11.
+    jobs = dict(A=dict(fit=3096, reference=3219), B=dict(fit=1032, carry=2064, reference=3219))
+    expected = dict(A=((2340, 0), (1080, 0)), B=((884, 1092), (408, 336)))
     for estimate in report["estimates"]:
         families = estimate["families"]
         assert set(families) == {NEURAL, TITANS, EPISODIC, MARS, CM, throughput.POSTTRAINING}
@@ -1496,4 +1491,4 @@ def test_script_measures_the_policy_stage(doubled, policies, tmp_path, capsys):
     printed = json.loads(capsys.readouterr().out)
     assert policies == [("B", dict(steps=2048, warmup=8))]
     (estimate,) = printed["estimates"]
-    assert estimate[throughput.POLICY_STAGE]["jobs"]["carry"] == 912
+    assert estimate[throughput.POLICY_STAGE]["jobs"]["carry"] == 1200

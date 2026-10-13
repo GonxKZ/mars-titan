@@ -20,6 +20,8 @@ from test_financial_session_controls import no_target_estimation as no_target_es
 from test_native_episode_backend import native as native
 from test_native_episode_backend import record
 
+from mars_titan.hardware import hardware_profiles
+from mars_titan.hardware.platform_identity import platform_identity
 from mars_titan.models.titans.episodic_readout import (
     EpisodicReadout,
     EpisodicReadoutConfig,
@@ -172,7 +174,8 @@ def cuda_preflight():
     assert torch.cuda.is_available(), "CUDA es obligatoria, no se admite fallback"
     device = torch.device("cuda:0")
     properties = torch.cuda.get_device_properties(device)
-    assert "RTX 4070" in properties.name
+    # La GPU debe ser la del perfil declarado, no una cualquiera con CUDA.
+    hardware_profiles.check_profile(hardware_profiles.declared_profile(), platform_identity())
     torch.cuda.set_per_process_memory_fraction(CAP / properties.total_memory, device)
     free, _ = torch.cuda.mem_get_info(device)
     assert free >= CAP, "La memoria CUDA libre no cubre el límite del asignador"

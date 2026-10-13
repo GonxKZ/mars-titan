@@ -1,7 +1,7 @@
 """Medir el coste en CPU de los contrastes de capacidad predictiva a escala de la campaña.
 
 Las pérdidas son sintéticas con semilla fija y solo fijan las formas: los días de decisión
-reales de US (2005 a 2023) y de CN (2011 a 2023), los brazos y familias de la comparación
+reales de US (2005 a 2023) y de CN (2011 a 2023), los modelos y familias de la comparación
 conjunta declarada y la longitud de bloque, réplicas y semilla de esa comparación. No se
 ajusta, selecciona ni evalúa ningún modelo con estos valores. Se mide la sección completa
 de las tres vistas del ámbito conjunto, el tiempo de cada análisis y la memoria reservada
@@ -28,6 +28,7 @@ from mars_titan.data.temporal import MarketClock
 from mars_titan.evaluation import predictive_ability as pa
 from mars_titan.evaluation import walk_forward_comparison as walk
 from mars_titan.evaluation.forecast_panel import SessionSeries
+from mars_titan.hardware.platform_identity import cpu_name
 
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG = ROOT / "configs/evaluation/historical-masked-2000-joint-comparison.json"
@@ -54,7 +55,7 @@ def sessions():
 
 
 def arm_series(arms, market, period, seed):
-    """Una SessionSeries de MAE por brazo con un desplazamiento propio y ruido común."""
+    """Una SessionSeries de MAE por modelo con un desplazamiento propio y ruido común."""
     rng = np.random.default_rng(seed)
     common = rng.gamma(2.0, 0.004, len(market))
     result = {}
@@ -163,14 +164,6 @@ def measure(repeats):
         numpy_peak_bytes=peak,
         identical_reports=len({run["report_sha256"] for run in runs}) == 1,
     )
-
-
-def cpu_name():
-    """Modelo de la CPU de /proc/cpuinfo y, si no aparece, la arquitectura."""
-    info = Path("/proc/cpuinfo")
-    lines = info.read_text().splitlines() if info.is_file() else []
-    names = (line.split(":", 1)[1].strip() for line in lines if line.startswith("model name"))
-    return next(names, platform.processor() or platform.machine())
 
 
 def main():

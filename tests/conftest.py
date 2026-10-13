@@ -3,12 +3,61 @@
 import json
 import os
 from contextlib import contextmanager
+from pathlib import Path
 
 import pytest
 
-from mars_titan.training.learning_hold import HOLD_ENV, LearningHoldError, install_optimizer_guard
+from mars_titan.training.learning_hold import (
+    HOLD_ENV,
+    LearningHoldError,
+    install_optimizer_guard,
+    learning_blocked,
+)
+from tests.learning_hold_lowering import allowed_hold
+from tests.suite_support import (
+    NATIVE_MARKER,
+    NATIVE_SELECTION,
+    SLOW_MARKER,
+    UNGUARDED_FIT_MARKER,
+    function_id,
+    read_slow_tests,
+    selection_skip,
+    strict_problems,
+    strict_skip,
+)
 from tests.suite_support import python_shebang as _python_shebang
-from tests.suite_support import strict_problems, strict_skip
+
+UNGUARDED_FIT_REASON = (
+    f"Ajusta parámetros sin pasar por un punto de entrada protegido y rige el bloqueo de "
+    f"aprendizaje ({HOLD_ENV}). Solo se ejecuta cuando la protección lo permite"
+)
+
+
+@pytest.hookimpl(tryfirst=True)
+def pytest_collection_modifyitems(config, items):
+    """Completar las marcas de selección y omitir lo que no se puede ejecutar aquí.
+
+    Va antes que la selección de `-m`, así que `-m "not slow"` ve también las marcas que se
+    añaden aquí. `native_binding` implica `native`. Las pruebas lentas salen de
+    `tests/slow_tests.txt`, medido por función con sus parámetros juntos.
+    """
+    slow = read_slow_tests()
+    blocked = None
+    for item in items:
+        if function_id(item.nodeid) in slow:
+            item.add_marker(SLOW_MARKER)
+        if item.get_closest_marker(NATIVE_MARKER) and not item.get_closest_marker(NATIVE_SELECTION):
+            item.add_marker(NATIVE_SELECTION)
+        markers = {}
+        for mark in item.iter_markers():
+            markers.setdefault(mark.name, []).append(mark.args)
+        reason = selection_skip(markers, os.environ)
+        if reason is None and UNGUARDED_FIT_MARKER in markers:
+            if blocked is None:
+                blocked = learning_blocked()
+            reason = UNGUARDED_FIT_REASON if blocked else None
+        if reason is not None:
+            item.add_marker(pytest.mark.skip(reason=reason))
 
 
 @pytest.hookimpl(wrapper=True)
@@ -90,16 +139,30 @@ def learning_hold(tmp_path_factory, monkeypatch):
 
 
 @pytest.fixture
-def learning_doubles(learning_hold):
+def learning_doubles(tmp_path_factory, monkeypatch):
     """Permitir un lanzador cuyo aprendizaje está sustituido por binarios o ejecutores simulados.
 
     Solo procede cuando la prueba no puede ejecutar ningún ajuste real. El gancho de PyTorch
-    instalado al inicio de la sesión sigue omitiendo cualquier paso de optimizador.
+    instalado al inicio de la sesión sigue omitiendo cualquier paso de optimizador. Cada
+    archivo que lo pide figura en el inventario de `tests/learning_hold_lowering.py`.
     """
-    return learning_hold(True)
+    path = allowed_hold(tmp_path_factory.mktemp("learning-hold") / "training-hold.json")
+    monkeypatch.setenv(HOLD_ENV, str(path))
+    return path
 
 
 @pytest.fixture(scope="session")
 def python_shebang(tmp_path_factory):
     """Primera línea de los ejecutables falsos escritos en Python, válida con rutas con espacios."""
     return _python_shebang(tmp_path_factory.mktemp("interpreter"))
+
+
+@pytest.fixture
+def source_environment():
+    """Entorno de un subproceso que importa el paquete de este árbol y no otro instalado.
+
+    Las rutas de `pythonpath` de pytest solo valen para su propio intérprete.
+    """
+    source = str(Path(__file__).resolve().parents[1] / "src")
+    current = os.environ.get("PYTHONPATH")
+    return dict(os.environ, PYTHONPATH=source + os.pathsep + current if current else source)

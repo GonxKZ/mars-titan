@@ -162,11 +162,33 @@ void apply_actions(SessionSnapshot& state, const MarketTape& tape,
             }
             break;
         case CorporateKind::writeoff:
+        case CorporateKind::delisting:
             if (state.retired[action.asset] != 0) {
                 throw std::invalid_argument("El activo ya se había dado de baja");
             }
+            if (action.kind == CorporateKind::delisting && position.quantity != 0) {
+                if (!action.pay_at.has_value()) {
+                    throw std::invalid_argument("La baja con precio no declara una fecha de cobro");
+                }
+                const double amount = position.quantity * action.value;
+                check_amount(amount);
+                state.receivables.push_back({index, action.pay_at.value(), amount});
+            }
             position = {0, unknown, unknown, 0};
             state.retired[action.asset] = 1;
+            break;
+        case CorporateKind::unpriced_delisting:
+            if (state.retired[action.asset] != 0) {
+                throw std::invalid_argument("El activo ya se había dado de baja");
+            }
+            // Sin precio de salida no hay cobro. La posición abierta se conserva sin cotización,
+            // de modo que el patrimonio queda desconocido, como en Portfolio._actions.
+            position.target = unknown;
+            position.capacity = unknown;
+            position.decision_at = 0;
+            if (position.quantity == 0) {
+                state.retired[action.asset] = 1;
+            }
             break;
         }
         state.applied_actions[index] = 1;
@@ -250,12 +272,21 @@ void validate_snapshot(const SessionSnapshot& state, const MarketTape& tape,
         if (state.applied_actions[index] != static_cast<uint8_t>(occurred)) {
             throw std::invalid_argument("Las acciones aplicadas no corresponden al cursor");
         }
-        if (occurred && action.kind == CorporateKind::writeoff) {
+        const bool retires = action.kind == CorporateKind::writeoff ||
+                             action.kind == CorporateKind::delisting ||
+                             action.kind == CorporateKind::unpriced_delisting;
+        if (occurred && retires) {
             if (expected_retired[action.asset] != 0) {
                 throw std::invalid_argument(
                     "El checkpoint aplica una segunda baja del mismo activo");
             }
-            expected_retired[action.asset] = 1;
+            // Tras una baja sin precio no se puede operar el activo, así que la posición que
+            // conserva es la que tenía al aplicarla. Solo sin posición queda retirado.
+            expected_retired[action.asset] =
+                action.kind != CorporateKind::unpriced_delisting ||
+                        state.positions[action.asset].quantity == 0
+                    ? 1
+                    : 0;
         }
     }
     if (state.retired != expected_retired) {
@@ -293,9 +324,10 @@ void validate_snapshot(const SessionSnapshot& state, const MarketTape& tape,
             throw std::invalid_argument("El derecho de cobro no pertenece al estado confirmado");
         }
         const auto& action = tape.actions[entry.action];
-        if (action.kind != CorporateKind::dividend || state.applied_actions[entry.action] == 0 ||
-            action.pay_at != entry.pay_at) {
-            throw std::invalid_argument("El derecho de cobro no corresponde a su dividendo");
+        if ((action.kind != CorporateKind::dividend && action.kind != CorporateKind::delisting) ||
+            state.applied_actions[entry.action] == 0 || action.pay_at != entry.pay_at) {
+            throw std::invalid_argument(
+                "El derecho de cobro no corresponde a su dividendo o a su baja");
         }
         pending[entry.action] = 1;
     }
@@ -431,10 +463,6 @@ void MarketTape::validate() const {
             throw std::invalid_argument(
                 "Los precios y volúmenes deben ser válidos o estar ausentes");
         }
-        // Sin retornos de salida, una cinta real valora cada activo en todas sus sesiones.
-        if (domain == "real" && index % price_width == close_column && std::isnan(value)) {
-            throw std::invalid_argument("La cinta real necesita un cierre valorado por sesión");
-        }
     }
     if (std::any_of(scores.begin(), scores.end(), [](double value) { return std::isinf(value); })) {
         throw std::invalid_argument("Las predicciones no pueden contener infinitos");
@@ -469,6 +497,18 @@ void MarketTape::validate() const {
                 throw std::invalid_argument("La baja sin recuperación debe tener valor cero");
             }
             break;
+        case CorporateKind::delisting:
+            if (!action.pay_at.has_value() || action.pay_at.value() < action.effective_at) {
+                throw std::invalid_argument(
+                    "La baja con precio debe declarar un cobro posterior a su fecha");
+            }
+            break;
+        case CorporateKind::unpriced_delisting:
+            if (action.value != 0 || action.pay_at.has_value()) {
+                throw std::invalid_argument(
+                    "La baja sin precio de salida no tiene importe ni fecha de cobro");
+            }
+            break;
         default:
             throw std::invalid_argument("La clase de acción corporativa no está admitida");
         }
@@ -476,6 +516,75 @@ void MarketTape::validate() const {
         if (++per_session[session] > maximum_assets) {
             throw std::invalid_argument("La sesión excede el presupuesto de acciones corporativas");
         }
+    }
+    validate_delistings();
+}
+
+void MarketTape::validate_delistings() const {
+    const auto count = assets.size();
+    const auto sessions = close_times.size();
+    const auto session_of = [this](const CorporateAction& action) {
+        return static_cast<std::size_t>(
+            std::lower_bound(open_times.begin(), open_times.end(), action.effective_at) -
+            open_times.begin());
+    };
+    const auto delisting = [](const CorporateAction& action) {
+        return action.kind == CorporateKind::delisting ||
+               action.kind == CorporateKind::unpriced_delisting;
+    };
+    // Sesión de baja de cada activo, como `_delistings` en Python. Ninguna otra acción del
+    // activo puede coincidir con ella o seguirla, y desde ella no quedan precios ni predicciones.
+    std::vector<std::size_t> delisted(count, sessions);
+    std::vector<uint8_t> acted(count, 0);
+    for (const auto& action : actions) {
+        acted[action.asset] = 1;
+        if (delisting(action)) {
+            if (delisted[action.asset] != sessions) {
+                throw std::invalid_argument("El activo ya se había dado de baja de la cinta");
+            }
+            delisted[action.asset] = session_of(action);
+        }
+    }
+    for (const auto& action : actions) {
+        if (!delisting(action) && session_of(action) >= delisted[action.asset]) {
+            throw std::invalid_argument(
+                "Un activo dado de baja conserva acciones corporativas posteriores");
+        }
+    }
+    std::size_t outside = 0;
+    for (std::size_t asset = 0; asset < count; ++asset) {
+        bool empty = true;
+        for (std::size_t session = 0; session < sessions; ++session) {
+            const auto row = (session * count + asset) * price_width;
+            const bool absent =
+                std::all_of(prices.begin() + static_cast<std::ptrdiff_t>(row),
+                            prices.begin() + static_cast<std::ptrdiff_t>(row + price_width),
+                            [](double value) { return std::isnan(value); }) &&
+                std::isnan(scores[session * count + asset]);
+            empty = empty && absent;
+            if (session >= delisted[asset] && !absent) {
+                throw std::invalid_argument(
+                    "Un activo dado de baja conserva precios o predicciones posteriores");
+            }
+        }
+        if (domain != "real") {
+            continue;
+        }
+        // En una cinta real, un activo del diseño fuera del universo del tramo no tiene precios,
+        // predicciones ni acciones. Los demás tienen cierre en cada sesión anterior a su baja.
+        if (empty && acted[asset] == 0) {
+            ++outside;
+            continue;
+        }
+        for (std::size_t session = 0; session < delisted[asset]; ++session) {
+            if (std::isnan(prices[(session * count + asset) * price_width + close_column])) {
+                throw std::invalid_argument(
+                    "La cinta real necesita un cierre valorado por sesión hasta cada baja");
+            }
+        }
+    }
+    if (domain == "real" && outside == count) {
+        throw std::invalid_argument("La cinta real necesita activos dentro de su universo");
     }
 }
 
@@ -720,6 +829,21 @@ void FinancialSession::restore(const SessionSnapshot& snapshot) {
     std::swap(state_, staged_);
 }
 
+bool unpriced_exit(const SessionSnapshot& state, const MarketTape& tape) {
+    // Igual que `unvalued_reason` en Python: alguna posición sin cierre tiene aplicada una
+    // baja sin precio de salida. Si no, el patrimonio desconocido se debe a un cierre ausente.
+    const auto prices = tape.frame(state.cursor);
+    for (std::size_t index = 0; index < tape.actions.size(); ++index) {
+        const auto& action = tape.actions[index];
+        if (action.kind == CorporateKind::unpriced_delisting &&
+            state.applied_actions[index] != 0 && state.positions[action.asset].quantity > 0 &&
+            std::isnan(prices[action.asset * price_width + close_column])) {
+            return true;
+        }
+    }
+    return false;
+}
+
 double liquidated_nav(const SessionSnapshot& state, const MarketTape& tape) {
     const auto prices = tape.frame(state.cursor);
     if (state.positions.size() * price_width != prices.size() || std::isnan(state.account.nav)) {
@@ -763,7 +887,7 @@ FinancialMetrics FinancialSession::metrics() const {
     if (!state_.done) {
         result.invalid_reason = "incomplete";
     } else if (!result.completed) {
-        result.invalid_reason = "missing_close";
+        result.invalid_reason = unpriced_exit(state_, *tape_) ? "unpriced_exit" : "missing_close";
     } else {
         result.net_return = state_.account.nav / parameters_.capital - 1;
         result.liquidated_net_return = liquidated_nav(state_, *tape_) / parameters_.capital - 1;

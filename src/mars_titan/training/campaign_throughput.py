@@ -21,12 +21,12 @@ y B todavía no declaran se miden y se estiman como si lo estuvieran.
 
 Con las etapas de políticas, `simulation.policy_throughput` mide además el entorno
 financiero y la red de las políticas por lotes, sin pasos de optimizador, y añade a cada
-variante una estimación orientativa de esa etapa por nivel, ámbito, brazo y predictor,
+variante una estimación orientativa de esa etapa por nivel, ámbito, modelo y predictor,
 separada de las horas de GPU.
 
 Con las etapas de ablación de modalidades no se mide nada más. Cada predicción
 enmascarada recorre la evaluación de su ventana, con el calentamiento en las familias
-cronológicas, al caudal de inferencia ya medido de su brazo. Es otra estimación separada.
+cronológicas, al caudal de inferencia ya medido de su modelo. Es otra estimación separada.
 
 Ridge y XGBoost no se miden: medir una ronda o una solución ya sería ajustarlos. Su
 coste queda como no medido en el informe.
@@ -56,6 +56,7 @@ from .campaign_plan import (
     NEURAL,
     ONLINE,
     ONLINE_CONTROL,
+    PLATEAU,
     TITANS,
     _arm_specs,
     extend_campaign,
@@ -245,15 +246,15 @@ def _chronological_rows(campaign, family, counts):
 def _option_hours(campaign, family, jobs, counts, measured, epochs):
     """Horas de una familia cronológica con cada opción de memoria medida.
 
-    Un brazo medido solo con su receta, como un lector de CM-v1, usa esa medida en cada
-    opción de los brazos de su familia que comparan opciones, como sus núcleos.
+    Un modelo medido solo con su receta, como un lector de CM-v1, usa esa medida en cada
+    opción de los modelos de su familia que comparan opciones, como sus núcleos.
     """
     rows = _chronological_rows(campaign, family, counts)
     compared = {
         arm: record for arm, record in measured.items() if list(record["options"]) != ["recipe"]
     } or measured
     declared = {record["declared_option"] for record in compared.values()}
-    _require(len(declared) == 1, "Los brazos de una familia deben declarar la misma opción")
+    _require(len(declared) == 1, "Los modelos de una familia deben declarar la misma opción")
     result = dict(declared=declared.pop(), options={})
     for name in next(iter(compared.values()))["options"]:
         records = {
@@ -304,10 +305,10 @@ def _posttraining_hours(stage, counts, rates, fresh=None):
     mayor porque las filas que la purga quitó en las fronteras de la ventana anterior sí
     están en el ajuste de la nueva. Cada padre predice una vez esas filas y la validación
     para su caché, y el padre congelado predice validación, calibración y evaluación, ambos
-    con la inferencia neuronal más lenta del brazo base. En el plan anclado de B el ajuste
+    con la inferencia neuronal más lenta del modelo base. En el plan anclado de B el ajuste
     recorre todo su tramo.
 
-    La medida de la matriz solo cubre las redes de referencia. Los brazos de Titans-MAC y la
+    La medida de la matriz solo cubre las redes de referencia. Las variantes de Titans-MAC y la
     cadena trivial de Ridge y XGBoost quedan en `without_estimate`, sin sumar sus horas.
     """
     from mars_titan.posttraining.campaign_stage import FROZEN, plan_stage
@@ -363,7 +364,7 @@ def _ablation_hours(campaign, stage, counts, rates):
 
     Cada trabajo predice una vez la evaluación de su ventana con el estado elegido. Las
     familias cronológicas recorren además el calentamiento de esa evaluación. Se usa la
-    inferencia más lenta medida del brazo. Tabulares y familias sin medir quedan sin estimar.
+    inferencia más lenta medida del modelo. Tabulares y familias sin medir quedan sin estimar.
     """
     from .modality_ablation_stage import plan_stage
 
@@ -397,7 +398,7 @@ def _ablation_hours(campaign, stage, counts, rates):
 def _totals(families):
     """Horas de GPU con las opciones declaradas y con las más rápidas que caben en memoria.
 
-    Una familia con brazos sin estimar suma las horas de los demás y también queda en
+    Una familia con modelos sin estimar suma las horas de los demás y también queda en
     `without_estimate`, para que el total no parezca completo.
     """
     declared, fastest, missing = 0.0, 0.0, []
@@ -431,7 +432,7 @@ def estimate_hours(
     epochs=None,
     fresh=None,
 ):
-    """Horas previstas por familia, opción, ámbito y brazo de una variante.
+    """Horas previstas por familia, opción, ámbito y modelo de una variante.
 
     `counts` asigna a cada ámbito y ventana sus filas por tramo y `rates` a cada familia
     medida sus caudales. Las familias declaradas sin medir y los tabulares quedan como no
@@ -440,9 +441,14 @@ def estimate_hours(
     `ablation_stage`, la de la ablación de modalidades. `epochs` sustituye las épocas de la
     regla de parada, por ejemplo con las épocas efectivas previstas de una parada temprana.
     `fresh` son las filas nuevas contadas de cada ventana con padre de la etapa por etapas.
+
+    Con la parada conjunta, la meseta y su continuación son un mismo ajuste que se reanuda en
+    la misma carpeta y recorre a lo sumo `epochs` épocas en total. Sus horas se cuentan una
+    sola vez, en la continuación, que es la que predice los tramos finales.
     """
     epochs = campaign["rule"]["max_epochs"] if epochs is None else epochs
-    jobs = plan_campaign(campaign)
+    planned = plan_campaign(campaign)
+    jobs = [job for job in planned if job.get("phase") != PLATEAU]
     families = {}
     for family in (NEURAL, *CHRONOLOGICAL):
         selected = [job for job in jobs if job["family"] == family and job["kind"] != ONLINE]
@@ -508,6 +514,10 @@ def estimate_hours(
         )
     if ablation_stage is not None:
         extra[ABLATION_STAGE] = _ablation_hours(campaign, ablation_stage, counts, rates)
+    plateaus = len(planned) - len(jobs)
+    if plateaus:
+        # Mesetas incluidas en las horas de su continuación.
+        extra["plateau_jobs"] = plateaus
     return dict(
         variant=campaign["variant"],
         retrain_every_months=campaign["retrain_every_months"],
@@ -528,6 +538,8 @@ def estimate_hours(
             "La corrección B6 no ajusta: cada trabajo predice una vez validación, calibración "
             "y evaluación con el caudal medido sobre eventos de ajuste, que siempre corrigen",
             "Con presupuesto fijo, cada ajuste recorre todas sus épocas",
+            "Con parada conjunta, la meseta y su continuación forman un solo ajuste acotado "
+            "por el máximo de épocas de la regla",
             "No incluye esperas de disco, índices, normalizadores, reanudaciones ni otras "
             "cargas en la GPU",
         ],
@@ -702,7 +714,7 @@ def _batch_rates(model, dataset, *, size, seed, warmup, batches, device):
 
 
 def measure_rates(campaign, view, *, batches=50, warmup=5):
-    """Medir filas por segundo de cada brazo y candidato neuronal, sin aprender."""
+    """Medir filas por segundo de cada modelo y candidato neuronal, sin aprender."""
     from mars_titan.data.embeddings import require_cuda
 
     from .reference_run import configured_corpus
@@ -734,8 +746,8 @@ def measure_rates(campaign, view, *, batches=50, warmup=5):
 def measure_posttraining(stage, view, *, batches=50, warmup=5):
     """Medir cada caso de la matriz sobre cada padre candidato con pesos iniciales.
 
-    El padre es la referencia del brazo base con los pesos iniciales de su caso, porque
-    los padres elegidos todavía no existen. Cada brazo de la matriz y la continuación
+    El padre es la referencia del modelo base con los pesos iniciales de su caso, porque
+    los padres elegidos todavía no existen. Cada modelo de la matriz y la continuación
     completa se construyen como en `posttraining.run.build_model`. Los casos de una
     semilla bastan: las demás solo cambian la inicialización.
     """
@@ -787,7 +799,7 @@ def measure_posttraining(stage, view, *, batches=50, warmup=5):
 
 
 def _measured_cases(stage):
-    """Lo que mide `measure_posttraining`: brazos de las redes, sus casos y el presupuesto.
+    """Lo que mide `measure_posttraining`: modelos de las redes, sus casos y el presupuesto.
 
     Los casos se comparan sin la huella de la matriz que los declara, porque un mismo caso
     cuesta lo mismo en la v2 y en la v3.
@@ -821,7 +833,7 @@ def _covers(measured, other):
 def covering_stage(stages):
     """Etapa de adaptadores que se mide, porque contiene los casos de todas las demás.
 
-    A declara la matriz v3, con los casos de Titans-MAC y los brazos de la variedad de
+    A declara la matriz v3, con los casos de Titans-MAC y los adaptadores de la variedad de
     adaptadores, y B la v2. Los casos de las redes de B están todos en A con el mismo
     presupuesto, así que una sola medida de A estima las dos etapas.
     """
@@ -993,7 +1005,7 @@ def _core_builder(document, recipe, sources, work, *, variant, seed, device, loc
 
 
 def _shared(candidates, inputs):
-    """Caso medido de un brazo y los casos que comparten su medida."""
+    """Caso medido de un modelo y los casos que comparten su medida."""
     return dict(
         measured_case=candidates[0][0],
         shared_by_cases=[name for name, _ in candidates],
@@ -1217,12 +1229,12 @@ def _correction_record(parent, case, window, device, settings):
 def measure_mars_titan(
     campaign, view, work, *, segments=8, segment_warmup=2, events=64, event_warmup=8
 ):
-    """Medir el lector de cada brazo de MARS-TITAN sobre su padre `titans_mac_online`.
+    """Medir el lector de cada modelo de MARS-TITAN sobre su padre `titans_mac_online`.
 
-    Cada brazo se mide por separado porque la escritura (M0, M1, M2 o M3) y K cambian el
+    Cada modelo se mide por separado porque la escritura (M0, M1, M2 o M3) y K cambian el
     cálculo. Los casos de búsqueda solo cambian la tasa de aprendizaje y comparten la
     medida. Las fases son las del padre, con su calentamiento. `work` guarda los índices.
-    M3 registra además los cambios de su índice selectivo en la ventana medida. Un brazo de
+    M3 registra además los cambios de su índice selectivo en la ventana medida. Un modelo de
     corrección B6 no tiene lector y solo mide su inferencia (`_correction_record`).
     """
     from mars_titan.data.embeddings import require_cuda
@@ -1302,14 +1314,14 @@ def _check_cm_v1(campaign, segments):
 
 
 def measure_cm_v1(campaign, view, work, *, segments=8, segment_warmup=2, events=64, event_warmup=8):
-    """Medir los dos núcleos de CM-v1 y el lector de cada brazo, sin pasos ni cambios de pesos.
+    """Medir los dos núcleos de CM-v1 y el lector de cada modelo, sin pasos ni cambios de pesos.
 
     Los núcleos recorren `ChronologicalTrainer._train_pass` con la receta del núcleo:
     `cm_v1_core_b` con C en `disabled` (SDPA Math) y `cm_v1_core_c` con la penalización,
     que en cada evento elige los flujos medidos y calcula su término de RᵀJR con su JVP. Se
     registran los grupos y flujos de C de la ventana medida. Los núcleos comparten la receta
     de Titans-MAC y comparan sus mismas opciones de `accumulation_rows`, que C admite. Cada
-    brazo mide su lector M1 con K = 1 sobre el gemelo `disabled` de su núcleo, con la
+    modelo mide su lector M1 con K = 1 sobre el gemelo `disabled` de su núcleo, con la
     retención reservoir en B y B+C y con centros fijos en B+M y B+C+M.
     """
     from mars_titan.data.embeddings import require_cuda

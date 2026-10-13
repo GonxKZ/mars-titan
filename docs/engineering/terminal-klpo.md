@@ -133,7 +133,7 @@ uv run --no-sync --offline python native/tests/klpo_terminal_oracle.py \
 
 Los perfiles `native-asan-ubsan`, `native-static-analysis` y `native-coverage`
 usan las mismas opciones con salidas separadas. Las pruebas solo evalúan
-constantes y gradientes. El [oráculo portátil](../../reports/engineering/terminal-klpo-oracle-20261008.json)
+constantes y gradientes. El [referencia portátil](../../reports/engineering/terminal-klpo-oracle-20261008.json)
 conserva cuatro puntos de dos parámetros y contraejemplos de recompensa,
 longitud, descuento y selección de resultados. No se ejecuta `optimizer.step`
 ni ajuste de parámetros.
@@ -201,8 +201,10 @@ cmake --build build/native/terminal-collector --target klpo_episodes_tests \
   ppo_variant_state_tests ppo_variant_objective_tests ppo_checkpoint_tests -j 1
 CUDA_VISIBLE_DEVICES=-1 ctest --test-dir build/native/terminal-collector \
   -R '^(klpo_episodes|klpo_collection|klpo_policy|klpo_terminal|ppo_variant_state|ppo_variant_objective|ppo_checkpoint)$' \
-  --output-on-failure
+  -LE '^optimizer-steps$' --output-on-failure
 ```
+
+La selección original incluía `ppo_variant_state`, que aplica un paso de Adam con `update_from_cpu`. Desde el 10 de octubre de 2026 lleva la etiqueta `optimizer-steps` y `-LE` la deja fuera mientras rija el bloqueo.
 
 La revisión independiente del colector no encontró hallazgos materiales abiertos.
 Ocho sondas CPU contrastan horizontes mixtos, q e historia alteradas, RNG

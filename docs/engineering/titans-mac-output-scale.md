@@ -47,7 +47,7 @@ La combinación de residual y LayerNorm sin `gate_bias` no es aceptable. La lect
 
 ## Decisión y límites
 
-La propuesta de adoptar `memory_residual_layer_norm: true` junto a `gate_bias` en la campaña desde 2000 quedó decidida en [#27](https://github.com/GonxKZ/mars-titan/issues/27). Como cambia la arquitectura de la memoria, se declaró en una receta nueva, [`chronological-training-historical-masked.json`](../../configs/titans/chronological-training-historical-masked.json), con la memoria residual en los cuatro brazos. Las recetas v1 (`chronological-training.json` y `chronological-training-quantile.json`) conservan la memoria v1 con `gate_bias`, su contenido y sus identidades.
+La propuesta de adoptar `memory_residual_layer_norm: true` junto a `gate_bias` en la campaña desde 2000 quedó decidida en [#27](https://github.com/GonxKZ/mars-titan/issues/27). Como cambia la arquitectura de la memoria, se declaró en una receta nueva, [`chronological-training-historical-masked.json`](../../configs/titans/chronological-training-historical-masked.json), con la memoria residual en las cuatro variantes. Las recetas v1 (`chronological-training.json` y `chronological-training-quantile.json`) conservan la memoria v1 con `gate_bias`, su contenido y sus identidades.
 
 Con residual y LayerNorm, el gradiente de la cabeza al inicio es unas trescientas veces mayor que con v1. La tasa de aprendizaje se declaró con v1, así que la receta de campaña la busca entre dos casos, 10⁻⁴ y 10⁻³, con el mismo número de casos, presupuesto y selección por validación que las referencias neuronales y sin usar el test. El recorte se mantiene en 1,0. La justificación de la rejilla está en el [entrenador cronológico](titans-chronological-trainer.md#receta-de-la-campaña-y-casos-de-búsqueda).
 

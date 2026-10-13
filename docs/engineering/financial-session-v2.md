@@ -63,7 +63,7 @@ en M2 y M3.
 
 La sesión utiliza `memory_contract="causal_v2"`. El reservorio inicializa
 `mt19937_64` mediante `seed_seq` con las dos palabras de 32 bits de la semilla
-explícita. Las identidades de corpus, codec, brazo, partición y fold se guardan
+explícita. Las identidades de corpus, codec, modelo, partición y fold se guardan
 para comprobar la recuperación, pero no intervienen en el RNG. Con la misma
 semilla, política, capacidad y secuencia de episodios, los controles emparejados
 realizan los mismos sorteos. La retención uniforme conserva su `PCG64` propio y
@@ -181,6 +181,6 @@ La [cota de registro](../../reports/engineering/financial-session-storage-bound-
 utiliza los IDs y recuentos del censo de ventanas de precios. Para 17.076.024
 emisiones y como máximo una resolución por emisión, reserva 15.128.713.996 bytes,
 incluidas cabeceras de hasta 100.000 eventos. Es una cota de serialización por
-recorrido y brazo. El pool de artefactos, dos checkpoints protegidos, propuestas
+recorrido y modelo. El pool de artefactos, dos checkpoints protegidos, propuestas
 transitorias y el índice se presupuestan aparte. No demuestra que la cola de una
 fase real quepa en 32.768 pendientes.

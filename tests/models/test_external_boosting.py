@@ -10,11 +10,11 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from tests.suite_support import requires_cuda
+from tests.suite_support import missing_extra, requires_cuda
 
 pytestmark = pytest.mark.skipif(
     any(importlib.util.find_spec(name) is None for name in ("cupy", "xgboost")),
-    reason="La comprobación CUDA requiere el extra boosting",
+    reason=missing_extra("cupy", "xgboost"),
 )
 
 

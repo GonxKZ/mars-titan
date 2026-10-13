@@ -9,7 +9,7 @@ trabajos CPU con la concurrencia declarada. Una declaración de ejecución
 entonces en su propio proceso con su VRAM acotada (``training.campaign_slots``), y la
 admisión respeta las dependencias del plan, las ranuras y la VRAM y la RAM declaradas.
 Los recibos y el resumen se escriben solo desde este proceso, de uno en uno.
-Cuando una semilla de un brazo tiene su predictor elegido en una ventana, se escribe el
+Cuando una semilla de un modelo tiene su predictor elegido en una ventana, se escribe el
 recibo walk-forward de cada mercado con el contrato de ``environments.walk_forward_receipt``.
 Al final se escribe el manifiesto de fuentes de cada ámbito que consume
 ``evaluation.walk_forward_comparison``. El plan y sus variantes están en
@@ -47,6 +47,8 @@ from mars_titan.environments.walk_forward_receipt import (
 from mars_titan.environments.walk_forward_receipt import prediction_fingerprint, read_window_receipt
 from mars_titan.evaluation import walk_forward_comparison as comparison
 from mars_titan.evaluation.splits import PARTITIONS
+from mars_titan.hardware import hardware_profiles
+from mars_titan.hardware.platform_identity import platform_identity
 
 from . import campaign_numerics, campaign_schedule
 from .campaign_plan import (
@@ -130,6 +132,11 @@ def _views_report(directory, scope, policy):
     return report, digest
 
 
+def _subset_key(record):
+    """Identidad de un subconjunto sin la ruta de su manifiesto."""
+    return None if record is None else {k: v for k, v in record.items() if k != "manifest"}
+
+
 def scope_views(directory, scope, campaign):
     """Validar las vistas de un ámbito frente a la comparación y devolver sus huellas."""
     directory = Path(directory)
@@ -139,6 +146,10 @@ def scope_views(directory, scope, campaign):
     _require(
         [row.get("id") for row in report["folds"]] == list(resolved["windows"]),
         f"Las vistas de {scope} no contienen exactamente las ventanas del protocolo",
+    )
+    _require(
+        _subset_key(report.get("data_subset")) == _subset_key(campaign.get("data_subset")),
+        f"Las vistas de {scope} no usan el subconjunto que declara la campaña",
     )
     windows, edition = {}, None
     for row in report["folds"]:
@@ -180,7 +191,8 @@ def prepare_views(path, parent, output, *, scopes=None):
     """Preparar las vistas de cada ámbito desde la supervisión histórica, sin ajustar nada.
 
     `scopes` limita la preparación a algunos ámbitos de la campaña. Un ámbito con
-    elegibilidad por mercado en la comparación la aplica al preparar la unión.
+    elegibilidad por mercado en la comparación la aplica al preparar la unión. Si la campaña
+    declara un subconjunto de la edición, todas sus vistas se eligen con él.
     """
     from .joint_temporal_corpus import prepare_joint_temporal_corpus
     from .reference_campaign import campaign_views
@@ -196,6 +208,7 @@ def prepare_views(path, parent, output, *, scopes=None):
         scopes and len(set(scopes)) == len(scopes) and set(scopes) <= set(campaign["scopes"]),
         "Los ámbitos que se preparan deben ser de la campaña",
     )
+    subset = (campaign.get("data_subset") or {}).get("manifest")
     prepared = {}
     for scope in scopes:
         destination = output / scope
@@ -212,6 +225,7 @@ def prepare_views(path, parent, output, *, scopes=None):
                     input_policy=policy,
                     recover_annual_boundaries=True,
                     eligibility=_eligibility(campaign, scope),
+                    subset=subset,
                 )
             else:
                 market = next(iter(protocols))
@@ -232,6 +246,7 @@ def prepare_views(path, parent, output, *, scopes=None):
                     destination,
                     input_policy=policy,
                     recover_annual_boundaries=True,
+                    subset=subset,
                 )
         prepared[scope] = scope_views(destination, scope, campaign)
     return prepared
@@ -269,7 +284,7 @@ def _fingerprints(table, markets):
 
 
 def _group(job):
-    """Brazo, semilla y ventana: la unidad que recibe un predictor elegido."""
+    """Modelo, semilla y ventana: la unidad que recibe un predictor elegido."""
     return job["scope"], job["window"], job["arm"], job["seed"]
 
 
@@ -278,10 +293,10 @@ class JobRun:
     """Reúne el trabajo, el caso resuelto, la vista, el destino y el ancla de un ejecutor.
 
     `parent` solo existe en los ajustes que parten de otro predictor elegido en la misma
-    ventana y semilla, como el lector de MARS-TITAN sobre Titans-MAC o un brazo de CM-v1
+    ventana y semilla, como el lector de MARS-TITAN sobre Titans-MAC o una variante de CM-v1
     sobre su núcleo. `joint_epoch` solo existe en la continuación de un ajuste con parada
     conjunta y es la época común de su grupo. `bank` solo existe en un control en línea y es
-    el intento elegido del brazo cuyo banco fija las etiquetas y el tope.
+    el intento elegido del modelo cuyo banco fija las etiquetas y el tope.
     """
 
     job: dict
@@ -596,9 +611,12 @@ class _Campaign:
             json.dumps(identity, sort_keys=True).encode()
         ).hexdigest()
         self.receipts = {}
+        # Plataforma en la que confirma este proceso. Queda en cada recibo nuevo, fuera de la
+        # identidad, para que los recibos anteriores a este registro sigan siendo válidos.
+        self.platform = None
         # Picos de memoria de los trabajos que corrieron en su propio proceso.
         self.usage = {}
-        # Huella de filas y objetivos por ámbito, ventana y tramo, común a todos los brazos.
+        # Huella de filas y objetivos por ámbito, ventana y tramo, común a todos los modelos.
         self.rows = {}
         self.groups = {}
         for job in jobs:
@@ -666,17 +684,17 @@ class _Campaign:
     def winner(self, job):
         """Búsqueda ganadora de un finalista: el menor MAE de validación y, si empata, el id.
 
-        El ganador sale de las búsquedas propias del brazo, nunca de las del padre.
+        El ganador sale de las búsquedas propias del modelo, nunca de las del padre.
         """
         own = f"{job['scope']}/{job['window']}/{job['arm']}/search-"
         searches = [(dep, self.receipts[dep]) for dep in job["depends"] if dep.startswith(own)]
-        _require(searches, f"{job['id']} no depende de las búsquedas de su brazo")
+        _require(searches, f"{job['id']} no depende de las búsquedas de su modelo")
         return min(searches, key=lambda item: (item[1]["score"], item[0]))
 
     def resolve_online(self, job):
         """Caso, ancla y fuentes de un trabajo del control en línea.
 
-        El ancla es el estado elegido del brazo de partida y el banco fija etiquetas y tope.
+        El ancla es el estado elegido del modelo de partida y el banco fija etiquetas y tope.
         Los dos están en la misma ventana y semilla del control y entre sus dependencias. Una
         búsqueda trae su tasa y un finalista toma la de la búsqueda ganadora de su ventana.
         """
@@ -732,7 +750,7 @@ class _Campaign:
         )
 
     def bank_of(self, job):
-        """Devuelve el intento elegido del brazo cuyo banco fija las etiquetas del control."""
+        """Devuelve el intento elegido del modelo cuyo banco fija las etiquetas del control."""
         if job["kind"] != ONLINE:
             return None
         arm = self.campaign["online_controls"]["arms"][job["arm"]]["cap_arm"]
@@ -830,7 +848,9 @@ class _Campaign:
         """Escribe el recibo de la meseta con su parada y una copia del informe, sin predicciones.
 
         El ajuste final continúa en la misma carpeta y reescribe su informe, así que el
-        recibo guarda una copia propia del informe en la meseta.
+        recibo guarda una copia propia del informe en la meseta. Con precisión declarada, la
+        meseta la exige y la registra igual que un ajuste completo, porque sus épocas son
+        parte del estado que hereda la continuación.
         """
         stop = report.get("individual_stop_epoch")
         _require(
@@ -840,6 +860,9 @@ class _Campaign:
             and 1 <= stop <= self.campaign["rule"]["max_epochs"],
             f"{job['id']} no espera la época conjunta tras su meseta o su máximo de épocas",
         )
+        numerics = self.campaign.get("numerics")
+        if numerics:
+            campaign_numerics.require_job(numerics, job["id"], report)
         copy = self.folder(job) / "plateau-report.json"
         atomic_json(copy, report)
         receipt = dict(
@@ -855,6 +878,10 @@ class _Campaign:
             final_test_opened=False,
             confirmed_at_utc=datetime.now(UTC).isoformat(),
         )
+        if numerics:
+            receipt["numerics"] = campaign_numerics.current()
+        if self.platform is not None:
+            receipt["platform"] = self.platform
         path = self.folder(job) / "receipt.json"
         atomic_json(path, receipt)
         return dict(receipt, sha256=sha256(path))
@@ -913,6 +940,8 @@ class _Campaign:
         )
         if numerics:
             receipt["numerics"] = campaign_numerics.current()
+        if self.platform is not None:
+            receipt["platform"] = self.platform
         self.same_rows(job, receipt)
         path = self.folder(job) / "receipt.json"
         atomic_json(path, receipt)
@@ -1073,6 +1102,7 @@ def run_campaign(
     storage=None,
     execution=None,
     window=None,
+    platform=None,
 ):
     """Ejecutar o reanudar la campaña. Los ejecutores y la reserva se pueden sustituir.
 
@@ -1083,6 +1113,9 @@ def run_campaign(
     así que una campaña puede reanudarse con otra concurrencia.
     `window` limita la ejecución a una ventana de campaña (`campaign_schedule`) y a las
     dependencias que tenga en ventanas anteriores. El resumen describe entonces esa ventana.
+    `platform` sustituye la identidad de la plataforma detectada, solo en las pruebas. Esa
+    identidad queda en el resumen y en cada recibo nuevo, y se comprueba contra el perfil de
+    hardware de la declaración de ejecución.
     """
     from .checkpoints import StopRequest
 
@@ -1100,6 +1133,11 @@ def run_campaign(
         execution = legacy_execution(campaign)
     elif not isinstance(execution, Execution):
         execution = load_execution(execution, scopes=tuple(campaign["scopes"]))
+    # Plataforma de este proceso, detectada salvo que una prueba la sustituya. Una declaración
+    # medida en otra máquina detiene la campaña antes de escribir nada.
+    platform = platform_identity() if platform is None else platform
+    if execution.hardware_profile is not None:
+        hardware_profiles.check_profile(execution.hardware_profile, platform)
     _require(
         isinstance(views, dict) and set(views) == set(campaign["scopes"]),
         "Se necesitan las vistas de exactamente los ámbitos de la campaña",
@@ -1145,12 +1183,13 @@ def run_campaign(
             )
             atomic_json(marker, identity)
         state = _Campaign(campaign, checked, output, identity, executors, None, jobs, disk)
+        state.platform = platform
         uses_gpu = any(executors[j["model"], j["kind"]]["device"] == "cuda" for j in jobs)
         default_lease = _slot_lease(execution) if execution.isolated else _gpu_lease
         reservation = (lease or default_lease)() if uses_gpu else nullcontext()
         signals = StopRequest() if stop is None else nullcontext(stop)
         pause = None
-        record = dict(execution=execution.record())
+        record = dict(execution=execution.record(), platform=platform)
 
         def disk_report():
             if disk is None:
@@ -1328,6 +1367,7 @@ def _execute(state, jobs, pool, execution):
             state.receipts,
             "running",
             execution=execution.record(),
+            platform=state.platform,
         )
 
     def collect(block):
@@ -1527,16 +1567,22 @@ def with_dependencies(jobs, wanted):
     return [job for job in jobs if job["id"] in wanted]
 
 
-def write_sources(path, views, output, scope, *, comparison_path=None, window=None):
+def write_sources(
+    path, views, output, scope, *, comparison_path=None, window=None, unrecorded_platform=None
+):
     """Escribir el manifiesto de fuentes de un ámbito y validarlo con la comparación.
 
     Sin `comparison_path` se valida con la comparación de la campaña, que incluye los
-    brazos de las familias sin entrenador conectado. Una comparación declarada con un
-    subconjunto de brazos permite evaluar los brazos ya producidos. Un brazo prestado del
-    ámbito conjunto apunta a las predicciones del brazo conjunto en la ventana emparejada,
+    modelos de las familias sin entrenador conectado. Una comparación declarada con un
+    subconjunto de modelos permite evaluar los modelos ya producidos. Un modelo prestado del
+    ámbito conjunto apunta a las predicciones del modelo conjunto en la ventana emparejada,
     que la comparación restringe a las filas del mercado del ámbito. Con `window` se
     publica solo esa ventana en `sources/windows/<ventana>/`, validada con la comparación
     limitada a ella, para guardar sus agregados en cuanto termina.
+
+    Todos los recibos que entran en las fuentes deben venir de la misma plataforma. Los
+    recibos anteriores a su registro solo se admiten si `unrecorded_platform` nombra el
+    perfil de hardware al que se atribuyen. El manifiesto conserva esa decisión.
     """
     campaign, state = _confirmed_state(path, views, output)
     _require(scope in campaign["scopes"], "El ámbito no pertenece a la campaña")
@@ -1556,7 +1602,7 @@ def write_sources(path, views, output, scope, *, comparison_path=None, window=No
     _require(
         not missing,
         f"Faltan productores para {', '.join(missing)}. Declara una comparación con los "
-        "brazos disponibles o conecta su entrenador",
+        "modelos disponibles o conecta su entrenador",
     )
     jobs = [job for job in plan_campaign(campaign) if job["scope"] == scope]
     origins = {}
@@ -1565,9 +1611,9 @@ def write_sources(path, views, output, scope, *, comparison_path=None, window=No
         origins = {spec["arm"]: spec for spec in _arm_specs(campaign, joint)}
         _require(
             set(borrowed.values()) <= set(origins),
-            f"Los brazos prestados no se ajustan en {joint}",
+            f"Los modelos prestados no se ajustan en {joint}",
         )
-        # Los trabajos conjuntos de los brazos prestados y de los padres de los que parten.
+        # Los trabajos conjuntos de los modelos prestados y de los padres de los que parten.
         closure, pending = set(), list(borrowed.values())
         while pending:
             arm = pending.pop()
@@ -1580,7 +1626,7 @@ def write_sources(path, views, output, scope, *, comparison_path=None, window=No
             if job["scope"] == joint and job["arm"] in closure
         ] + jobs
     if window is not None:
-        # La ventana del ámbito y, con brazos prestados, su ventana conjunta emparejada.
+        # La ventana del ámbito y, con modelos prestados, su ventana conjunta emparejada.
         pairs = {(scope, window)}
         if borrowed:
             pairs.add((joint, resolved["joint_windows"][window]))
@@ -1593,6 +1639,12 @@ def write_sources(path, views, output, scope, *, comparison_path=None, window=No
         receipt = state.confirmed(job, state.job_identity(job, case, sources))
         _require(receipt is not None, f"Falta confirmar {job['id']} antes de publicar fuentes")
         state.receipts[job["id"]] = receipt
+    platform = hardware_profiles.same_platform(
+        {job["id"]: state.receipts[job["id"]].get("platform") for job in jobs},
+        unrecorded=None
+        if unrecorded_platform is None
+        else hardware_profiles.load_profile(unrecorded_platform),
+    )
     windows = state.views[scope]["windows"]
     folder = Path(output) / "sources"
     if window is not None:
@@ -1618,7 +1670,7 @@ def write_sources(path, views, output, scope, *, comparison_path=None, window=No
                     view_sha256 = windows[window]["sha256"]
                 entry = dict(input_policy=campaign["input_policy"], view_sha256=view_sha256)
                 for partition, record in receipt["predictions"].items():
-                    # Las filas de un brazo prestado incluyen el otro mercado del conjunto.
+                    # Las filas de un modelo prestado incluyen el otro mercado del conjunto.
                     if not origin:
                         rows.setdefault((window, partition), {})[key] = record["rows_sha256"]
                     # Una salida puntual no tiene cuantiles que calibrar.
@@ -1642,12 +1694,13 @@ def write_sources(path, views, output, scope, *, comparison_path=None, window=No
         return entry
 
     manifest = dict(
-        schema_version=1,
+        schema_version=2,
         kind=comparison.SOURCES_KIND,
         scope=scope,
         input_policy=campaign["input_policy"],
         windows={w: window_entry(w, v) for w, v in windows.items()},
         arms=arms,
+        platform=platform,
     )
     destination = folder / f"{scope}.json"
     candidate = folder / f".{scope}.candidate.json"
@@ -1703,6 +1756,10 @@ def main(argv=None):
     execute.add_argument("--window", help="Ventana de campaña que se ejecuta, con sus fases base")
     sources.add_argument("--scope", choices=tuple(comparison.SCOPES), required=True)
     sources.add_argument("--comparison", type=Path)
+    sources.add_argument(
+        "--unrecorded-platform",
+        help="Perfil de hardware al que se atribuyen los recibos sin plataforma registrada",
+    )
     args = parser.parse_args(argv)
     if args.command == "check":
         result = check_campaign(args.campaign)
@@ -1740,6 +1797,7 @@ def main(argv=None):
             args.output,
             args.scope,
             comparison_path=args.comparison,
+            unrecorded_platform=args.unrecorded_platform,
         )
         result = dict(sources=str(destination), sha256=sha256(destination))
     print(json.dumps(result, ensure_ascii=False, indent=2))

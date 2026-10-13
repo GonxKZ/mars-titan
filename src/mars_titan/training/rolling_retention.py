@@ -3,7 +3,7 @@
 La campaña completa no cabe en el disco si conserva todas las tablas por fila. La retención
 v2, declarada antes de cualquier resultado, recorre cada ventana de campaña en este orden:
 
-1. `base`: ajustes de todos los brazos, selección, semillas extra del elegido y traslados.
+1. `base`: ajustes de todos los modelos, selección, semillas extra del elegido y traslados.
 2. `adapters`, `ablation` y `rl`: etapas posteriores de esa ventana. Con el walk-forward
    por etapas, los adaptadores y las políticas reciben un informe de disjunción calculado
    justo antes, y las políticas leen la cadena de la salida de los adaptadores.
@@ -38,7 +38,7 @@ from mars_titan.evaluation import walk_forward_comparison as comparison
 from mars_titan.evaluation import window_aggregates
 
 from . import prediction_regeneration as regeneration
-from .campaign_plan import ONLINE
+from .campaign_plan import ONLINE, PLATEAU
 
 DECLARATION_KIND = "historical_masked_prediction_retention"
 LEDGER_KIND = "historical_masked_retention_ledger"
@@ -179,7 +179,8 @@ class Rolling:
         """`disk` activa la guardia por ventana: `storage` (declaración), `extras` (medidas
         de agregados, adaptadores y cintas), `adapter_blocks` (lectura sin copia ordenada) y,
         en las pruebas, `usage` en lugar de `shutil.disk_usage`. `edition` es la edición de
-        precios sin ajustar que necesita la cartera larga y corta si la comparación la declara.
+        precios sin ajustar que necesitan la cartera larga y corta y los estratos de liquidez si
+        la comparación los declara.
         """
         from . import masked_campaign as engine
 
@@ -191,6 +192,9 @@ class Rolling:
         self.ablation_executors = ablation_executors
         self.disk = disk
         self.edition = None if edition is None else Path(edition)
+        # Asignador de liquidez compartido por todas las ventanas y ámbitos del recorrido: lee
+        # cada activo de la edición una vez por proceso y no una por ventana.
+        self._liquidity = None
         self.folder = self.output / "retention"
         # Con las políticas declaradas como consumidoras, sin su etapa no se sabría qué
         # evaluaciones leen y se podrían liberar antes de montar sus cintas.
@@ -200,10 +204,16 @@ class Rolling:
             "y solo a esa",
         )
         self.campaign, _ = engine._confirmed_state(campaign_path, views, output)
-        # Sin la edición no hay agregados de la cartera y sus filas no se podrían liberar.
+        # Sin la edición no hay agregados de la cartera ni estratos de liquidez, y sus filas
+        # no se podrían liberar.
+        declared = self.comparison_config()
         _require(
-            comparison.LONG_SHORT_FIELD not in self.comparison_config() or self.edition is not None,
+            comparison.LONG_SHORT_FIELD not in declared or self.edition is not None,
             "La comparación declara la cartera larga y corta: falta la edición de precios",
+        )
+        _require(
+            comparison.LIQUIDITY_FIELD not in declared or self.edition is not None,
+            "La comparación declara estratos de liquidez: falta la edición de precios",
         )
         self.positions = {
             (scope, window): index
@@ -427,7 +437,7 @@ class Rolling:
                 self.campaign_path, self.views, self.output, scope, window=window
             )
             sources = comparison.load_sources(path, restricted, scope)
-            # Los agregados se puntúan con los brazos y familias del ámbito, como la
+            # Los agregados se puntúan con los modelos y familias del ámbito, como la
             # comparación final que los leerá (en US y CN, los del diseño conjunto).
             restricted = comparison.scope_config(restricted, scope)
             masked = None
@@ -441,8 +451,12 @@ class Rolling:
                     window=window,
                 )
                 masked = comparison._ablation_sources(masked_path, restricted, sources)
+            if self._liquidity is None:
+                self._liquidity = comparison.liquidity_source(config, self.edition)
             records = dict(
-                walk_forward=window_aggregates.write(folder, restricted, sources, window, masked)
+                walk_forward=window_aggregates.write(
+                    folder, restricted, sources, window, masked, liquidity=self._liquidity
+                )
             )
             if comparison.LONG_SHORT_FIELD in config:
                 records["long_short"] = window_aggregates.write_long_short(
@@ -479,6 +493,10 @@ class Rolling:
         )
         freed = 0
         for job in jobs:
+            if job.get("phase") == PLATEAU:
+                # La meseta de un ajuste conjunto no escribe tablas. Las del ajuste son las de
+                # su continuación, que se regenera desde el estado elegido.
+                continue
             receipt = base.receipts[job["id"]]
             report_path = self.output / receipt["report"]["path"]
             report, _ = read_manifest(report_path, 16 * 1024**2)
@@ -713,6 +731,7 @@ def default_runners(campaign_path, views, output, *, storage=None, stages=None, 
             output,
             entry["edition"],
             entry["output"],
+            listing_status=entry["listing_status"],
             stop=stop,
             window=window,
             chain_output=chain_output,
@@ -769,6 +788,11 @@ def main(argv=None):
     parser.add_argument(
         "--edition", type=Path, help="Edición de precios sin ajustar (políticas y cartera)"
     )
+    parser.add_argument(
+        "--listing-status",
+        type=Path,
+        help="Tabla del estado de cotización que declaran las políticas",
+    )
     args = parser.parse_args(argv)
     views = engine._views_argument(args.views)
     retention = load_retention(args.retention)
@@ -781,7 +805,8 @@ def main(argv=None):
             stages[key] = dict(stage=stage, output=output)
     if "rl" in stages:
         _require(args.edition is not None, "Las políticas necesitan --edition")
-        stages["rl"]["edition"] = args.edition
+        _require(args.listing_status is not None, "Las políticas necesitan --listing-status")
+        stages["rl"].update(edition=args.edition, listing_status=args.listing_status)
     runners = default_runners(
         args.campaign, views, args.output, storage=args.storage, stages=stages
     )

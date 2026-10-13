@@ -1,6 +1,6 @@
 """Paridad de la pérdida cuantílica de Huber de QR-DQN con sb3-contrib 2.9.0.
 
-Se compara `sb3_contrib.common.utils.quantile_huber_loss` con el oráculo FP64 de
+Se compara `sb3_contrib.common.utils.quantile_huber_loss` con la referencia FP64 de
 `native/tests/rl_variety_reference.py`, su archivo versionado y, cuando está compilado, el
 núcleo C++ de `native/src/quantile_dqn.cpp`. Solo se usa esa función. Los algoritmos, los
 entornos y `set_random_seed` de Stable-Baselines3 quedan fuera, porque tocan los
@@ -15,7 +15,7 @@ Tolerancias declaradas antes de ejecutar:
 
 - FP64: |a − b| ≤ 1e-12 elemento a elemento en pérdidas y gradientes.
 - FP32: la de la ruta FP32 de la etapa nativa en `rl_variety`, |a − b| ≤ 1e-9 + 1e-5 · S,
-  con b el oráculo FP64 evaluado sobre las mismas entradas redondeadas a FP32. La etapa
+  con b la referencia FP64 evaluado sobre las mismas entradas redondeadas a FP32. La etapa
   nativa la declara para la pérdida, una suma de términos no negativos, donde S = |b|. En
   el gradiente los términos cambian de signo y se cancelan, así que S es la suma de sus
   valores absolutos, (1/N) Σ_j |τ_i − 1{u_ij < 0}| |L₁'(u_ij)|, la escala habitual de la
@@ -103,7 +103,7 @@ def close(actual, expected, label, rtol=0.0, atol=ATOL64, scale=None):
 def kappa_one_cases():
     cases = json.loads(FIXTURE.read_text(encoding="utf-8"))["quantile"]
     selected = [case for case in cases if case["kappa"] == 1.0]
-    # qr_linear usa κ = 0,01 y solo lo cubre el oráculo propio.
+    # qr_linear usa κ = 0,01 y solo lo cubre la referencia propia.
     assert [case["name"] for case in selected] == ["qr_mean", "qr_cvar"]
     return selected
 

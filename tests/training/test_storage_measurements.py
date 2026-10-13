@@ -236,3 +236,55 @@ def test_adapter_outputs_keep_what_the_shared_table_cannot_rebuild(tmp_path):
     signed = table.set_column(table.column_names.index("zero"), "zero", pa.array(zero))
     with pytest.raises(ValueError, match="cero positivo"):
         layouts.adapter_outputs(signed)
+
+
+def test_tape_layouts_keep_empty_columns_outside_the_universe(tmp_path, monkeypatch):
+    """Las columnas del diseño sin universo se escriben vacías y la medida las incluye."""
+    checked = layouts._size_and_check
+    written = {}
+
+    def keep(path, expected):
+        written["table"] = pq.read_table(path)
+        return checked(path, expected)
+
+    monkeypatch.setattr(layouts, "_size_and_check", keep)
+    sizes = {}
+    for layout in (None, 8, 20):
+        sizes[layout] = layouts.tape_bytes(30, 8, tmp_path, layout=layout)
+        table, columns = written["table"], 8 if layout is None else layout
+        assert table.num_rows == 30 * columns
+        assets = np.asarray(table["asset"]).reshape(30, columns)
+        assert (assets == assets[0]).all() and len(set(assets[0])) == columns
+        for name in ("open", "high", "low", "close", "volume", "score"):
+            filled = np.isfinite(np.asarray(table[name]).reshape(30, columns))
+            # Cada activo tiene valores en todas las sesiones o en ninguna, y solo los ocho
+            # del universo los tienen, como en una cinta de un tramo.
+            assert (filled == filled[0]).all() and filled[0].sum() == 8
+    # Sin columnas vacías la medida es la de antes. Las vacías ocupan menos que las llenas.
+    assert sizes[None] == sizes[8] < sizes[20] < layouts.tape_bytes(30, 20, tmp_path)
+    with pytest.raises(ValueError, match="diseño completo"):
+        layouts.tape_bytes(30, 9, tmp_path, layout=8)
+
+
+def test_a_tape_is_measured_again_only_where_the_previous_measure_repeats(tmp_path):
+    """La forma nueva solo sustituye a la anterior si la anterior se repite byte a byte."""
+    old = layouts.tape_bytes(30, 8, tmp_path)
+    extras = dict(
+        tape_bytes=old,
+        tape_shape=dict(sessions=30, assets=8),
+        pyarrow=pa.__version__,
+        aggregate_bytes_per_row=0.5,
+    )
+    result = layouts.remeasure_tape(extras, tmp_path, layout=20)
+    assert result["tape_shape"] == dict(sessions=30, assets=8, layout=20)
+    assert result["tape_bytes"] == layouts.tape_bytes(30, 8, tmp_path, layout=20) > old
+    assert result["tape_without_layout_bytes"] == old and result["aggregate_bytes_per_row"] == 0.5
+    for changed, message in (
+        (dict(tape_bytes=old + 1), "ocupa ahora"),
+        (dict(pyarrow="0.0.0"), "otra versión de PyArrow"),
+        (dict(tape_shape=result["tape_shape"]), "sin diseño"),
+    ):
+        with pytest.raises(ValueError, match=message):
+            layouts.remeasure_tape(dict(extras, **changed), tmp_path, layout=20)
+    with pytest.raises(ValueError, match="sin diseño"):
+        layouts.remeasure_tape(extras, tmp_path, layout=7)

@@ -1,8 +1,8 @@
-"""Atribuir una mejora a los componentes de una arquitectura con los brazos que existen.
+"""Atribuir una mejora a los componentes de una arquitectura con los modelos que existen.
 
 Un linaje declara componentes binarios, las dependencias estructurales de cada uno
-(``requires``) y el conjunto de componentes que activa cada brazo con nombre. Con esa tabla,
-cada pregunta de atribución se convierte en una combinación lineal de brazos que
+(``requires``) y el conjunto de componentes que activa cada modelo con nombre. Con esa tabla,
+cada pregunta de atribución se convierte en una combinación lineal de modelos que
 ``compare_series`` estima con el mismo remuestreo por bloques que el resto de la
 comparación. Así la atribución no necesita un estimador propio y comparte la corrección
 por familia de las demás preguntas.
@@ -10,8 +10,8 @@ por familia de las demás preguntas.
 Se compilan cinco tipos de contraste. La escalera acumulada mide v(S_{i+1}) − v(S_i) en el
 orden declarado, y su total es exactamente la suma de los pasos. Dejar uno fuera compara el
 conjunto completo con el completo sin el componente ni lo que depende de él, porque quitar
-una pieza y conservar a sus dependientes daría un brazo que no puede existir. Los efectos
-condicionados v(S ∪ {c}) − v(S) aparecen para cada par de brazos con nombre que solo
+una pieza y conservar a sus dependientes daría un modelo que no puede existir. Los efectos
+condicionados v(S ∪ {c}) − v(S) aparecen para cada par de modelos con nombre que solo
 difiere en c y muestran cuánto aporta c según lo que ya hay. La interacción 2×2 en un
 contexto declarado es v(S+a+b) − v(S+a) − v(S+b) + v(S). El valor de Shapley de un juego
 declarado (jugadores y contexto) es
@@ -20,7 +20,7 @@ declarado (jugadores y contexto) es
 Shapley solo está identificado si todas las coaliciones respetan las dependencias. Si
 alguna activa una pieza sin aquella de la que depende, su valor no existe por construcción
 y el juego se declara como limitación en lugar de completarlo con supuestos. Un conjunto
-sin brazo con nombre deja su contraste pendiente con lo que falta. Este módulo no lee
+sin modelo con nombre deja su contraste pendiente con lo que falta. Este módulo no lee
 datos ni predicciones.
 """
 
@@ -47,7 +47,7 @@ def _identifier(value):
 
 @dataclass(frozen=True)
 class Lineage:
-    """Linaje ya validado, con sus componentes, dependencias y brazos con nombre.
+    """Linaje ya validado, con sus componentes, dependencias y modelos con nombre.
 
     Es inmutable para que las familias compiladas a partir de él no cambien después de la
     validación.
@@ -67,7 +67,7 @@ class Lineage:
     def closure(self, components):
         """Devuelve los componentes junto con todas sus dependencias transitivas.
 
-        Es la base para decidir si un conjunto describe un brazo que se puede construir.
+        Es la base para decidir si un conjunto describe un modelo que se puede construir.
         """
         result, pending = set(), list(components)
         while pending:
@@ -90,9 +90,9 @@ class Lineage:
         return frozenset(c for c in within if component in self.closure([c]))
 
     def arm(self, components):
-        """Devuelve el brazo que activa exactamente ese conjunto, o None si no hay ninguno.
+        """Devuelve el modelo que activa exactamente ese conjunto, o None si no hay ninguno.
 
-        Un conjunto sin brazo deja pendiente cualquier contraste que lo use.
+        Un conjunto sin modelo deja pendiente cualquier contraste que lo use.
         """
         return self._names.get(frozenset(components))
 
@@ -111,7 +111,7 @@ class Lineage:
 def load_lineage(name, declared):
     """Valida un linaje declarado antes de compilar ningún contraste.
 
-    Exige dependencias sin ciclos, brazos y pasos de la escalera que incluyan sus
+    Exige dependencias sin ciclos, modelos y pasos de la escalera que incluyan sus
     dependencias, y contextos de interacción y de juego que no contengan ya las piezas
     estudiadas. Un error de declaración se detecta aquí y no aparece después como un
     contraste sin sentido.
@@ -147,12 +147,12 @@ def load_lineage(name, declared):
         labels[component] = entry["label"]
     _acyclic(name, requires)
     arms = {}
-    for arm, members in _mapping(declared["arms"], f"Los brazos de {name}").items():
+    for arm, members in _mapping(declared["arms"], f"Los modelos de {name}").items():
         _require(
             isinstance(members, list)
             and len(set(members)) == len(members)
             and all(member in components for member in members),
-            f"El brazo {arm} de {name} usa componentes no declarados",
+            f"El modelo {arm} de {name} usa componentes no declarados",
         )
         arms[arm] = frozenset(members)
     lineage = Lineage(
@@ -168,10 +168,10 @@ def load_lineage(name, declared):
         games=(),
     )
     for arm, members in arms.items():
-        _require(lineage.closed(members), f"El brazo {arm} de {name} no incluye sus dependencias")
+        _require(lineage.closed(members), f"El modelo {arm} de {name} no incluye sus dependencias")
     _require(
         len(set(arms.values())) == len(arms),
-        f"Dos brazos de {name} activan los mismos componentes",
+        f"Dos modelos de {name} activan los mismos componentes",
     )
     ladder = _components(lineage, declared["ladder"], f"La escalera de {name}")
     for size in range(len(ladder) + 1):
@@ -297,7 +297,7 @@ def ladder(lineage):
 def leave_one_out(lineage):
     """Compara el conjunto completo con el completo sin cada componente.
 
-    También se retira lo que depende del componente, porque el brazo sin él y con sus
+    También se retira lo que depende del componente, porque el modelo sin él y con sus
     dependientes no existe. El efecto resultante incluye, por tanto, a esos dependientes.
     """
     result = {}
@@ -317,9 +317,9 @@ def removed_with(lineage, component):
 
 
 def conditional_effects(lineage):
-    """Compila el efecto de cada componente sobre cada brazo con nombre que lo admite.
+    """Compila el efecto de cada componente sobre cada modelo con nombre que lo admite.
 
-    Solo aparecen los pares en los que también existe el brazo con el componente añadido.
+    Solo aparecen los pares en los que también existe el modelo con el componente añadido.
     Cuando un componente tiene efecto en varios contextos, la diferencia entre ellos indica
     si su aportación depende de lo que ya hay.
     """
@@ -370,7 +370,7 @@ def shapley(lineage):
 
     Un juego solo se resuelve si todas sus coaliciones respetan las dependencias. Los demás
     se devuelven aparte, con el número de coaliciones imposibles, porque completarlos
-    exigiría inventar el valor de brazos que no pueden existir. Los valores de un juego
+    exigiría inventar el valor de modelos que no pueden existir. Los valores de un juego
     resuelto suman exactamente v(contexto ∪ P) − v(contexto). Esa diferencia se añade como
     ``total@contexto`` para poder comprobar la eficiencia del reparto con los datos.
     """
@@ -411,7 +411,7 @@ def families(lineage):
     """Reúne las familias de contrastes del linaje y sus limitaciones.
 
     Los contrastes siguen expresados por conjuntos de componentes, sin resolver todavía los
-    brazos. Se omiten las familias vacías, que no tendrían nada que estimar.
+    modelos. Se omiten las familias vacías, que no tendrían nada que estimar.
     """
     values, limitations = shapley(lineage)
     compiled = dict(
@@ -425,9 +425,9 @@ def families(lineage):
 
 
 def resolve(lineage, terms):
-    """Traduce un contraste por conjuntos a coeficientes por brazo.
+    """Traduce un contraste por conjuntos a coeficientes por modelo.
 
-    Los conjuntos sin brazo con nombre se devuelven aparte. El contraste queda pendiente con
+    Los conjuntos sin modelo con nombre se devuelven aparte. El contraste queda pendiente con
     lo que falta en lugar de estimarse con solo una parte de sus términos.
     """
     coefficients, unnamed = {}, []

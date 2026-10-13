@@ -84,7 +84,7 @@ def _environment(policies):
 
 
 def ppo_config(stage, job):
-    """Configuración de esquema 4 de un brazo PPO o Double DQN con el presupuesto común."""
+    """Configuración de esquema 4 de una variante PPO o Double DQN con el presupuesto común."""
     policies = stage["policies"]
     entry, budget = policies["policies"][job["arm"]], policies["budget"]
     selection = policies["selection"]
@@ -187,7 +187,7 @@ def _record(row, cost, manifest):
 
 
 class NativePolicyExecutor:
-    """Ejecutor de un brazo aprendido con su binario nativo y el lanzador común.
+    """Ejecutor de una política aprendida con su binario nativo y el lanzador común.
 
     ``diagnostic`` lanza el diagnóstico explícito en CPU de los binarios, limitado a 32
     transiciones, y solo sirve para pruebas técnicas. ``stop_after`` pide una pausa al

@@ -97,6 +97,43 @@ def test_released_rows_leave_states_reports_and_aggregates(declared):
     )
 
 
+@pytest.mark.parametrize("model", ["neural", "titans_mac"])
+def test_a_plateau_keeps_its_states_without_tables_aggregates_or_regeneration(declared, model):
+    # Titans-MAC además indexa observaciones, así que su regeneración tendría índice.
+    fits = [job(row["id"], model=model) for row in WINDOWS]
+    plateaus = [dict(item, id=item["id"] + "-plateau", phase="plateau") for item in fits]
+    counts = {"US": {row["id"]: COUNTS for row in WINDOWS}}
+    joint = [value for pair in zip(plateaus, fits, strict=True) for value in pair]
+    plain = rolling.rolling_estimate(fits, WINDOWS, counts, measured(), declared, EXTRAS)
+    grouped = rolling.rolling_estimate(joint, WINDOWS, counts, measured(), declared, EXTRAS)
+    footprint = storage.job_footprint(plateaus[0], COUNTS, declared, release=True)
+    assert footprint["retained"]["predictions"] == 0
+    for name in rolling.SCENARIOS:
+        pairs = zip(plain[name]["windows"], grouped[name]["windows"], strict=True)
+        for index, (before, after) in enumerate(pairs):
+            # Lo conservado crece en cada ventana con los estados de una meseta más.
+            extra = (index + 1) * footprint["retained_bytes"]
+            assert after["retained_bytes"] == before["retained_bytes"] + extra
+            # La regeneración de la liberación es la de la continuación, no la de la meseta.
+            assert after["release"] - after["rl"] == before["release"] - before["rl"]
+
+
+def test_a_policy_reads_the_continuation_of_a_joint_fit_and_never_its_plateau():
+    from mars_titan.training import campaign_plan as plan
+    from mars_titan.training import campaign_schedule as order
+
+    campaign = plan.load_campaign(Path("configs/baselines/historical-masked-campaign-a-v2.json"))
+    jobs = plan.plan_campaign(campaign)
+    windows = order.campaign_windows(campaign)
+    stage = plan.LATER_STAGES["rl_policy_comparison"]["joint_stage"]
+    # La medida de cintas cubre la forma máxima de la etapa: 128 activos en 640 columnas.
+    tapes = dict(tape_bytes=1, tape_shape=dict(sessions=252, assets=128, layout=640))
+    reads = rolling.rolling_inputs(jobs, windows, tapes, rl=stage)["policy_reads"]
+    phases = {job["id"]: job.get("phase") for job in jobs}
+    assert reads and all(phases[key] != plan.PLATEAU for key in reads)
+    assert {phases[key] for key in reads} == {plan.JOINT, None}
+
+
 def test_without_exact_regeneration_everything_stays_compacted(declared):
     result = estimate(declared)
     gap = result["none_regenerated"]["retained_bytes"] - result["all_regenerated"]["retained_bytes"]
@@ -183,7 +220,9 @@ def test_the_storage_command_adds_the_rolling_walk_of_campaign_a(tmp_path, capsy
             for w in names
         ],
     )
-    files = dict(counts=counts, schedule=schedule, extras=dict(EXTRAS, tape_bytes=17))
+    shape = dict(sessions=252, assets=128, layout=640)
+    extras = dict(EXTRAS, tape_bytes=17, tape_shape=shape)
+    files = dict(counts=counts, schedule=schedule, extras=extras)
     files["row-bytes"] = budget.row_bytes(measured())
     for name, value in files.items():
         (tmp_path / f"{name}.json").write_text(json.dumps(value))
@@ -213,8 +252,55 @@ def test_the_storage_command_adds_the_rolling_walk_of_campaign_a(tmp_path, capsy
     )
     printed = json.loads(capsys.readouterr().out.split("\n}\n", 1)[1])
     assert printed["all_regenerated"]["peak_at"] == result["all_regenerated"]["peak_at"]
+    # El recorrido por ventanas también rechaza cintas medidas sin el diseño de la etapa.
+    from mars_titan.training.rolling_retention import load_schedule
+
+    windows = load_schedule(tmp_path / "schedule.json", campaign)
+    policies = "configs/simulation/historical-masked-rl-stage-a.json"
+    walked = rolling.rolling_inputs([], windows, extras, rl=policies)
+    assert sum(walked["tapes"].values()) == 17 * 1320
+    with pytest.raises(ValueError, match="no cubre"):
+        rolling.rolling_inputs(
+            [], windows, dict(extras, tape_shape=dict(shape, layout=128)), rl=policies
+        )
 
 
 def test_an_input_read_last_in_its_own_window_is_released_with_it(declared):
     result = estimate(declared, policy_reads={JOBS[1]["id"]: 1})["all_regenerated"]
     assert result["retained_bytes"] == 2 * kept_per_fit(declared)
+
+
+def test_tapes_are_only_estimated_with_a_measure_that_covers_the_stage_layout():
+    """La medida de una cinta debe cubrir los activos con precios y el diseño de la etapa."""
+    from mars_titan.simulation import policy_plan
+    from mars_titan.training import storage_budget as budget
+    from mars_titan.training.campaign_plan import load_campaign
+
+    path = "configs/simulation/historical-masked-rl-stage-a.json"
+    stage = policy_plan.load_stage(path)
+    campaign = load_campaign("configs/baselines/historical-masked-campaign-a.json")
+    # La etapa admite 128 activos por tramo y cinco tramos disjuntos: 640 columnas.
+    covering = dict(EXTRAS, tape_bytes=17, tape_shape=dict(sessions=252, assets=128, layout=640))
+    assert rolling.policy_tape_bytes(stage, covering) == 17
+    estimate = budget.rl_estimate(path, campaign, covering)
+    assert estimate["retained_bytes"] == estimate["tapes"] * 17
+    assert estimate["tape_shape"]["layout"] == 640
+    for shape in (
+        None,
+        dict(sessions=252, assets=128),
+        dict(sessions=252, assets=128, layout=639),
+        dict(sessions=252, assets=127, layout=640),
+    ):
+        narrow = dict(EXTRAS, tape_bytes=17, tape_shape=shape)
+        with pytest.raises(ValueError, match="no cubre 128 activos con precios en 640"):
+            rolling.policy_tape_bytes(stage, narrow)
+        with pytest.raises(ValueError, match="no cubre"):
+            budget.rl_estimate(path, campaign, narrow)
+    # La medida publicada cubre la forma de la etapa y la anterior, de 128 columnas, no.
+    import json
+
+    folder = Path("reports/engineering/campaign-storage-20261009")
+    published = json.loads((folder / "extras-layout-640.json").read_text())
+    assert rolling.policy_tape_bytes(stage, published) == 1_697_830
+    with pytest.raises(ValueError, match="no cubre"):
+        rolling.policy_tape_bytes(stage, json.loads((folder / "extras.json").read_text()))

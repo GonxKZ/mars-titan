@@ -1,6 +1,6 @@
 """Contrato de la cadena del walk-forward por etapas que publica la etapa de adaptadores.
 
-En la ventana k ≥ 1 de un ámbito, para cada brazo base y semilla, el predictor de la
+En la ventana k ≥ 1 de un ámbito, para cada modelo base y semilla, el predictor de la
 cadena es el candidato con menor puntuación de validación de esa ventana entre el padre
 congelado (el estado elegido de la campaña base en k-1), cada caso de adaptadores de la
 matriz y la continuación completa del padre con las filas nuevas. Solo sustituye al padre
@@ -15,7 +15,7 @@ salen del mismo recorrido, así que dos candidatos con las mismas predicciones e
 
 Los identificadores, rutas, regla, elección y lectura de la cadena están en
 `training.campaign_chain`, que declara el diseño en el plan de la campaña, y se importan
-desde allí. Este módulo solo añade lo propio de la etapa: el brazo del padre congelado y la
+desde allí. Este módulo solo añade lo propio de la etapa: el modelo del padre congelado y la
 puntuación de validación.
 """
 
@@ -37,7 +37,7 @@ def _require(condition, message):
 
 
 def frozen_arm(base_arm):
-    """Brazo de las predicciones del padre congelado de un brazo base."""
+    """Modelo de las predicciones del padre congelado de un modelo base."""
     return f"{base_arm}{FROZEN_SUFFIX}"
 
 

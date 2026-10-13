@@ -1,0 +1,171 @@
+{
+ "kind": "native_build_comparison",
+ "first": "cand-base",
+ "second": "cand-ccache-warm",
+ "identity_sha256": [
+  "53b0657b4ff615ee90fd4ab55ce602da9cd215e933cd44dedf82fadb9847ff43",
+  "f604dfe5465c2d33ae73e3b69cccfb794116bdeba8b39abab7a737bf03002b9b"
+ ],
+ "objects_sha256": {
+  "total": 36,
+  "equal": 33,
+  "identity_only": 3,
+  "identity_and_link_metadata": 0,
+  "content": 0,
+  "differences": {
+   "CMakeFiles/mars-titan-batch-benchmark.dir/benchmarks/batch_rollout.cpp.o": {
+    "class": "identity_only",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": []
+   },
+   "CMakeFiles/mars-titan-cohorts.dir/src/cohort_main.cpp.o": {
+    "class": "identity_only",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": []
+   },
+   "CMakeFiles/mars_titan_simulation_files.dir/src/simulation_files.cpp.o": {
+    "class": "identity_only",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": []
+   }
+  }
+ },
+ "linked_sha256": {
+  "total": 19,
+  "equal": 9,
+  "identity_only": 0,
+  "identity_and_link_metadata": 10,
+  "content": 0,
+  "differences": {
+   "_episodic_native.cpython-312-x86_64-linux-gnu.so": {
+    "class": "identity_and_link_metadata",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": [
+     ".dynamic",
+     ".dynstr",
+     ".note.gnu.build-id"
+    ]
+   },
+   "c_abi_test": {
+    "class": "identity_and_link_metadata",
+    "identity_occurrences": [
+     0,
+     0
+    ],
+    "differing_sections": [
+     ".dynamic",
+     ".dynstr",
+     ".note.gnu.build-id"
+    ]
+   },
+   "cohort_execution_tests": {
+    "class": "identity_and_link_metadata",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": [
+     ".dynamic",
+     ".dynstr",
+     ".note.gnu.build-id"
+    ]
+   },
+   "financial_batch_tests": {
+    "class": "identity_and_link_metadata",
+    "identity_occurrences": [
+     0,
+     0
+    ],
+    "differing_sections": [
+     ".dynamic",
+     ".dynstr",
+     ".note.gnu.build-id"
+    ]
+   },
+   "financial_session_tests": {
+    "class": "identity_and_link_metadata",
+    "identity_occurrences": [
+     0,
+     0
+    ],
+    "differing_sections": [
+     ".dynamic",
+     ".dynstr",
+     ".note.gnu.build-id"
+    ]
+   },
+   "markov_filter_tests": {
+    "class": "identity_and_link_metadata",
+    "identity_occurrences": [
+     0,
+     0
+    ],
+    "differing_sections": [
+     ".dynamic",
+     ".dynstr",
+     ".note.gnu.build-id"
+    ]
+   },
+   "mars-titan-batch-benchmark": {
+    "class": "identity_and_link_metadata",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": [
+     ".dynamic",
+     ".dynstr",
+     ".note.gnu.build-id"
+    ]
+   },
+   "mars-titan-cohorts": {
+    "class": "identity_and_link_metadata",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": [
+     ".dynamic",
+     ".dynstr",
+     ".note.gnu.build-id"
+    ]
+   },
+   "simulation_tests": {
+    "class": "identity_and_link_metadata",
+    "identity_occurrences": [
+     0,
+     0
+    ],
+    "differing_sections": [
+     ".dynamic",
+     ".dynstr",
+     ".note.gnu.build-id"
+    ]
+   },
+   "threaded_simulation": {
+    "class": "identity_and_link_metadata",
+    "identity_occurrences": [
+     0,
+     0
+    ],
+    "differing_sections": [
+     ".dynamic",
+     ".dynstr",
+     ".note.gnu.build-id"
+    ]
+   }
+  }
+ }
+}

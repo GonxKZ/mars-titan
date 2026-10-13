@@ -8,6 +8,7 @@ bit y que el recorrido se reanuda sin repetir nada.
 """
 
 import copy
+import inspect
 import json
 import shutil
 from types import SimpleNamespace
@@ -25,6 +26,7 @@ from mars_titan.training import modality_ablation_stage as ablation
 from mars_titan.training import rolling_retention as rolling
 from mars_titan.training import rolling_storage
 from mars_titan.training.learning_hold import HOLD_ENV
+from tests.learning_hold_lowering import lowers_learning_hold
 from tests.posttraining.campaign_fixture import CpuLease
 from tests.simulation import rl_stage_fixture
 from tests.simulation.unadjusted_edition_fixture import Asset
@@ -62,7 +64,7 @@ def unconsumed(tmp_path_factory):
 
 @pytest.fixture(scope="module")
 def edition(tmp_path_factory):
-    """Edición de precios sintética para la cartera larga y corta de la comparación."""
+    """Edición de precios sintética para la cartera y los estratos de liquidez."""
     root = tmp_path_factory.mktemp("edition")
     rl_stage_fixture.write_edition(
         root, {"US": [Asset("A0000", base=20.0), Asset("B0001", base=30.0)]}
@@ -100,7 +102,7 @@ def walked(base, edition, unconsumed, tmp_path_factory):  # noqa: F811
         masked = ablation.write_sources(base.stage, base.views, output, staged, "US")
         primary = engine.write_sources(base.campaign, base.views, output, "US")
         expected = comparison.evaluate_walk_forward(
-            base.comparison, primary, "US", ablation_sources=masked
+            base.comparison, primary, "US", ablation_sources=masked, edition=edition
         )
         expected_portfolio = portfolio.evaluate_long_short(base.comparison, primary, "US", edition)
         path, campaign = schedule(base, root)
@@ -125,7 +127,14 @@ def walked(base, edition, unconsumed, tmp_path_factory):  # noqa: F811
             edition=edition,
         )
         calls = Calls()
+        built, source = [], comparison.liquidity_source
+        patch.setattr(
+            comparison,
+            "liquidity_source",
+            lambda config, edition: built.append(edition) or source(config, edition),
+        )
         result = rolling.run_rolling(state, calls.runners())
+        patch.setattr(comparison, "liquidity_source", source)
         again = Calls()
         resumed = rolling.run_rolling(state, again.runners())
         with pytest.raises(prediction_files.PredictionsReleased):
@@ -138,6 +147,7 @@ def walked(base, edition, unconsumed, tmp_path_factory):  # noqa: F811
             "US",
             ablation_sources=masked,
             aggregates=state.folder / "aggregates",
+            edition=edition,
         )
         with pytest.raises(prediction_files.PredictionsReleased):
             portfolio.evaluate_long_short(base.comparison, primary, "US", edition)
@@ -158,6 +168,7 @@ def walked(base, edition, unconsumed, tmp_path_factory):  # noqa: F811
             resumed=resumed,
             calls=calls.calls,
             again=again.calls,
+            liquidity_built=len(built),
         )
 
 
@@ -486,6 +497,25 @@ def test_the_walk_needs_the_price_edition_when_the_comparison_declares_the_portf
         )
 
 
+def test_the_walk_needs_the_price_edition_for_the_liquidity_strata(
+    base,  # noqa: F811
+    tmp_path,
+    unconsumed,
+    monkeypatch,
+):
+    path, campaign = schedule(base, tmp_path)
+    windows = rolling.load_schedule(path, campaign)
+    declared = comparison.load_config(base.comparison)
+    assert comparison.LIQUIDITY_FIELD in declared
+    # Sin la cartera, solo los estratos de liquidez piden la edición.
+    plain = {k: v for k, v in declared.items() if k != comparison.LONG_SHORT_FIELD}
+    monkeypatch.setattr(rolling.Rolling, "comparison_config", lambda self: plain)
+    with pytest.raises(ValueError, match="estratos de liquidez: falta la edición"):
+        rolling.Rolling(
+            rolling.load_retention(unconsumed), base.campaign, base.views, base.output, windows
+        )
+
+
 def test_default_runners_require_the_window_filter_of_the_stages(base, monkeypatch):  # noqa: F811
     def without_window(path, views, output, *, storage=None, stop=None):
         return {}
@@ -517,22 +547,31 @@ def test_staged_runners_give_each_stage_a_fresh_report_and_the_chain(
     )
     calls = {}
 
-    def adapters(path, views, campaign_output, output, *, stop=None, window=None, **options):
-        calls["adapters"] = dict(options, window=window)
-        return dict(status="completed")
+    def double(name, real):
+        # El doble enlaza los argumentos con la firma real, así que un argumento obligatorio
+        # que el recorrido no pase falla aquí igual que fallaría la etapa.
+        signature = inspect.signature(real)
 
-    def policies(path, views, campaign, edition, output, *, stop=None, window=None, **options):
-        calls["rl"] = dict(options, window=window)
-        return dict(status="completed")
+        def run(*args, **options):
+            calls[name] = signature.bind(*args, **options).arguments
+            return dict(status="completed")
 
-    monkeypatch.setattr(adapter_stage, "run_stage", adapters)
-    monkeypatch.setattr(rl_stage, "run_stage", policies)
+        run.__signature__ = signature
+        return run
+
+    monkeypatch.setattr(adapter_stage, "run_stage", double("adapters", adapter_stage.run_stage))
+    monkeypatch.setattr(rl_stage, "run_stage", double("rl", rl_stage.run_stage))
     # Copia propia de la campaña: el informe se guarda en su carpeta de retención.
     output = tmp_path / "campaign"
     shutil.copytree(base.output, output, symlinks=True)
     stages = dict(
         adapters=dict(stage="adapters.json", output=tmp_path / "adapters"),
-        rl=dict(stage="rl.json", output=tmp_path / "rl", edition=tmp_path / "edition"),
+        rl=dict(
+            stage="rl.json",
+            output=tmp_path / "rl",
+            edition=tmp_path / "edition",
+            listing_status=tmp_path / "listing-status.json",
+        ),
     )
     runners = rolling.default_runners(base.campaign, base.views, output, stages=stages)
     runners["adapters"]("fold-000")
@@ -542,6 +581,9 @@ def test_staged_runners_give_each_stage_a_fresh_report_and_the_chain(
     assert report["kind"] == chain_disjunction.KIND and report["failures"] == []
     assert report["campaign_sha256"] == plan.load_campaign(base.campaign)["sha256"]
     runners["rl"]("fold-001")
+    assert calls["rl"]["window"] == "fold-001"
+    assert calls["rl"]["listing_status"] == tmp_path / "listing-status.json"
+    assert calls["rl"]["edition"] == tmp_path / "edition"
     assert calls["rl"]["chain_output"] == tmp_path / "adapters"
     assert calls["rl"]["disjunction"] == output / "retention/disjunction/fold-001-rl.json"
     # Un informe con fallos se guarda para revisarlo y detiene el recorrido antes de la etapa.
@@ -668,6 +710,12 @@ def test_the_campaign_script_accepts_the_window_and_still_refuses_an_incomplete_
     with pytest.raises(ValueError, match="acompañar a la retención"):
         script["main"](arguments)
     assert not (tmp_path / "campaign").exists()
+    # Las políticas exigen la tabla del estado de cotización antes de preparar nada.
+    policies = ["--rl-stage", "configs/simulation/historical-masked-rl-stage-a.json"]
+    policies += ["--rl-output", str(tmp_path / "rl"), "--edition", str(tmp_path / "edition")]
+    with pytest.raises(ValueError, match="--listing-status"):
+        script["main"]([*arguments, *policies])
+    assert not (tmp_path / "campaign").exists() and not (tmp_path / "rl").exists()
 
 
 def test_a_regeneration_error_keeps_the_rows_and_is_retried_while_a_comparison_is_final(
@@ -796,3 +844,65 @@ def test_jobs_declared_not_regenerable_are_compacted_without_regenerating(
     assert not report.exists()
     release = state.ledger()["windows"][windows[0]["id"]]["phases"]["release"]
     assert release["declared_not_regenerable"] == 1
+
+
+@lowers_learning_hold(
+    "tests/training/test_rolling_retention.py::"
+    "test_a_plateau_of_a_joint_fit_has_no_tables_to_release"
+)
+def test_a_plateau_of_a_joint_fit_has_no_tables_to_release(
+    base,  # noqa: F811
+    edition,
+    tmp_path,
+    monkeypatch,
+    unconsumed,
+):
+    """La meseta de un ajuste conjunto no escribe tablas: la liberación no la regenera."""
+    on_cpu(monkeypatch)
+    monkeypatch.setenv(HOLD_ENV, str(base.hold))
+    output = tmp_path / "campaign"
+    shutil.copytree(base.output, output, symlinks=True)
+    path, campaign = schedule(base, tmp_path)
+    windows = rolling.load_schedule(path, campaign)
+    state = rolling.Rolling(
+        rolling.load_retention(unconsumed),
+        base.campaign,
+        base.views,
+        output,
+        windows,
+        edition=edition,
+    )
+    original = rolling.Rolling.base_state
+    added = []
+
+    def with_plateau(self, index):
+        # La meseta va antes que su continuación y su recibo solo copia el informe en espera.
+        found, jobs = original(self, index)
+        target = jobs[0]
+        head, _, name = target["id"].rpartition("/")
+        plateau = dict(target, id=f"{head}/plateau-{name}", phase=plan.PLATEAU)
+        copy = output / "jobs" / plateau["id"] / "plateau-report.json"
+        copy.parent.mkdir(parents=True, exist_ok=True)
+        copy.write_text(json.dumps(dict(status="awaiting_joint_stop", individual_stop_epoch=1)))
+        found.receipts[plateau["id"]] = dict(
+            status=engine.PLATEAU_STATUS,
+            report=dict(path=str(copy.relative_to(output))),
+            predictions={},
+        )
+        added.append(plateau["id"])
+        return found, [plateau, *jobs]
+
+    monkeypatch.setattr(rolling.Rolling, "base_state", with_plateau)
+    rolling.run_rolling(state, Calls().runners())
+    assert added
+    reports = state.folder / "regeneration-reports"
+    assert not any((reports / f"{rolling._name(f'base:{key}')}.json").exists() for key in added)
+    # La continuación sí se regenera y se libera como cualquier ajuste.
+    release = state.ledger()["windows"][windows[0]["id"]]["phases"]["release"]
+    assert release["released"] > 0
+
+
+def test_the_walk_reads_the_liquidity_edition_once_for_every_window(walked):
+    # Un solo asignador para todas las ventanas y ámbitos: cada activo se lee una vez.
+    assert len(walked["windows"]) > 1 and walked["liquidity_built"] == 1
+    assert set(walked["state"]._liquidity._assets) <= {"US/A0000", "US/B0001"}

@@ -296,10 +296,16 @@ std::optional<simulation::ContextTape> load_ppo_context(const std::filesystem::p
 simulation::BatchInput load_ppo_input(const std::filesystem::path& directory) {
     auto tape = simulation::load_market_tape(directory);
     // Un cierre ausente invalidaría la transición y ocultaría al ajuste la pérdida de la posición.
-    for (std::size_t index = close_column; index < tape->prices.size(); index += price_width) {
-        if (std::isnan(tape->prices[index])) {
-            throw std::invalid_argument(
-                "Las fuentes PPO no admiten cierres ausentes que censuren transiciones");
+    // Una cinta real ya se ha validado al leerla: cada activo de su universo tiene cierre en
+    // todas las sesiones anteriores a su baja, y los activos del diseño fuera del universo no
+    // tienen ningún precio, así que nunca pueden comprarse ni valorarse. Lo que queda, una baja
+    // sin precio de salida, depende del papel de la cinta y lo decide `load_policy_tape`.
+    if (tape->domain != "real") {
+        for (std::size_t index = close_column; index < tape->prices.size(); index += price_width) {
+            if (std::isnan(tape->prices[index])) {
+                throw std::invalid_argument(
+                    "Las fuentes PPO no admiten cierres ausentes que censuren transiciones");
+            }
         }
     }
     auto context = load_ppo_context(directory, *tape);

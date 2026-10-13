@@ -32,7 +32,9 @@ inline constexpr double default_participation = 0.01;
 inline constexpr double default_score_scale = 0.01;
 inline constexpr double default_ruin_penalty = -20;
 
-enum class CorporateKind : uint8_t { split, dividend, writeoff };
+// Una baja con precio cambia la posición por su cobro y retira el activo. Una baja sin precio
+// de salida deja sin valorar la posición abierta y solo retira el activo si no había posición.
+enum class CorporateKind : uint8_t { split, dividend, writeoff, delisting, unpriced_delisting };
 
 struct CorporateAction {
     std::string id;
@@ -94,6 +96,7 @@ struct MarketTape {
     bool historical_audit_verified = false;
 
     void validate() const;
+    void validate_delistings() const;
     [[nodiscard]] bool has_market_rules() const noexcept;
     [[nodiscard]] std::span<const double>
     frame(std::size_t session) const & MARS_TITAN_LIFETIME_BOUND;
@@ -164,6 +167,10 @@ struct FinancialMetrics {
  * y el impuesto de venta de cada activo vigente en ese cierre. Devuelve NaN si falta un cierre
  * de una posición. No modifica la cartera. */
 [[nodiscard]] double liquidated_nav(const SessionSnapshot& state, const MarketTape& tape);
+
+/* Indica si el patrimonio desconocido procede de una posición abierta en una baja sin precio de
+ * salida, el motivo `unpriced_exit`, y no de un cierre ausente. */
+[[nodiscard]] bool unpriced_exit(const SessionSnapshot& state, const MarketTape& tape);
 
 /* Cada sesión posee su estado. Las sesiones distintas comparten únicamente la cinta inmutable. */
 class FinancialSession {

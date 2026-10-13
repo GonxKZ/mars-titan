@@ -42,7 +42,7 @@ Una prioridad P1 no significa opcional. La etiqueta `opcional` señala extension
 | [MT-007 · Normalizar noticias y su disponibilidad](https://github.com/GonxKZ/mars-titan/issues/7) | Núcleo | P0 | Pendiente | MT-005 |
 | [MT-008 · Reconstruir fundamentales por publicación](https://github.com/GonxKZ/mars-titan/issues/8) | Núcleo | P0 | Pendiente | MT-005 |
 | [MT-009 · Generar gráficos con historia disponible](https://github.com/GonxKZ/mars-titan/issues/9) | Núcleo | P1 | Pendiente | MT-006 |
-| [MT-010 · Auditar y versionar codificadores congelados](https://github.com/GonxKZ/mars-titan/issues/10) | Núcleo | P1 | Pendiente | MT-007, MT-009, MT-004 |
+| [MT-010 · Auditar y versionar codificadores congelados](https://github.com/GonxKZ/mars-titan/issues/10) | Núcleo | P1 | En revisión, control sin preentrenamiento y sensibilidad declarada, ejecución pendiente de la campaña | MT-007, MT-009, MT-004 |
 | [MT-011 · Construir el contrato temporal de datos](https://github.com/GonxKZ/mars-titan/issues/11) | Núcleo | P0 | Pendiente | MT-006, MT-007, MT-008 |
 | [MT-012 · Definir la selección y publicar el piloto](https://github.com/GonxKZ/mars-titan/issues/12) | Núcleo | P0 | Pendiente | MT-005, MT-006, MT-007, MT-008, MT-011 |
 | [MT-048 · Preparar datos por bloques y ventanas bajo demanda](https://github.com/GonxKZ/mars-titan/issues/50) | Apoyo | P1 | Pendiente | MT-004, MT-005, MT-011, MT-012 |
@@ -72,7 +72,7 @@ Una prioridad P1 no significa opcional. La etiqueta `opcional` señala extension
 | [MT-021 · Verificar orden temporal y aislamiento](https://github.com/GonxKZ/mars-titan/issues/21) | Núcleo | P0 | Pendiente | MT-015, MT-018 |
 | [MT-022 · Implementar cuantiles y calibración](https://github.com/GonxKZ/mars-titan/issues/22) | Núcleo | P1 | Pendiente | MT-013, MT-017, MT-021, MT-030 |
 | [MT-023 · Integrar Titans-MAC y sus controles multimodales](https://github.com/GonxKZ/mars-titan/issues/23) | Núcleo | P1 | Pendiente | MT-004, MT-017, MT-018, MT-019, MT-020, MT-021, MT-022 |
-| [MT-052 · Medir retención e interferencia](https://github.com/GonxKZ/mars-titan/issues/54) | Núcleo | P1 | En curso, preparación de benchmarks | MT-024, MT-030, MT-019 |
+| [MT-052 · Medir retención e interferencia](https://github.com/GonxKZ/mars-titan/issues/54) | Núcleo | P1 | En revisión, análisis declarado y verificado sin modelos, ejecución pendiente de la campaña | MT-024, MT-030, MT-019 |
 | [MT-053 · Evaluar consolidación y replay](https://github.com/GonxKZ/mars-titan/issues/55) | Extensión | P2 | Pendiente | MT-019, MT-052, MT-059 |
 | [MT-059 · Comprobar compatibilidad de las versiones](https://github.com/GonxKZ/mars-titan/issues/61) | Apoyo | P0 | Pendiente | MT-010, MT-021, MT-022 |
 | [MT-063 · Medir concurrencia y antigüedad del estado](https://github.com/GonxKZ/mars-titan/issues/65) | Extensión | P2 | Pendiente | MT-053, MT-059, MT-060 |

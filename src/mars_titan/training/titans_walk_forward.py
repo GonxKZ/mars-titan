@@ -540,7 +540,7 @@ def run_titans_window(
 
 CARRY_KIND = "titans_carried_predictions"
 CARRIED = ("calibration", "evaluation")
-# Campos del caso que la campaña declara para cada brazo de Titans-MAC.
+# Campos del caso que la campaña declara para cada variante de Titans-MAC.
 CASE_FIELDS = {"recipe", "recipe_sha256", "variant", "seed", "search_case"}
 # La regla de parada solo aparece si la campaña declara una parada temprana.
 STOPPING_FIELD = "stopping_rule"
@@ -739,7 +739,7 @@ def unfused_attention():
     """Declarar fastpath=False durante un trabajo de Titans-MAC y restaurar el estado previo.
 
     El recorrido cronológico lo exige. La orden de una ventana lo fija para todo el
-    proceso. En la campaña, los demás brazos conservan la configuración del proceso.
+    proceso. En la campaña, los demás modelos conservan la configuración del proceso.
     """
     previous = torch.backends.mha.get_fastpath_enabled()
     torch.backends.mha.set_fastpath_enabled(False)

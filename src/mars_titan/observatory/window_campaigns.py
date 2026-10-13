@@ -2,7 +2,7 @@
 
 La campaña base, la etapa de adaptadores, la ablación de modalidades y la etapa de
 políticas escriben un `summary.json` con el mapa de trabajos confirmados. Aquí se convierte
-en celdas de ámbito, ventana, brazo y nombre, igual para el servidor en directo y para el
+en celdas de ámbito, ventana, modelo y nombre, igual para el servidor en directo y para el
 recolector que publica Pages. Solo salen estados, fechas de confirmación y las curvas por
 época de los intentos abiertos. Las métricas que lleve el resumen, como las financieras de
 la etapa de políticas, no se copian.
@@ -25,14 +25,14 @@ COUNT_KEY = re.compile(r"[a-z][a-z_]{0,39}")
 SELECT = re.compile(r"select-s(\d+)")
 # Tipo de resumen de cada etapa, con su nombre en el observatorio y las partes de sus
 # identificadores. Las políticas añaden el mercado y el predictor:
-# `ámbito/mercado/ventana/predictor/brazo/nombre`.
+# `ámbito/mercado/ventana/predictor/modelo/nombre`.
 STAGES = {
     "historical_masked_campaign_run": ("base", 4),
     "historical_masked_posttraining_stage_run": ("adapters", 4),
     "historical_masked_modality_ablation_stage_run": ("ablation", 4),
     "historical_masked_rl_stage_run": ("policies", 6),
 }
-# Brazos con el mismo nombre que su modelo del catálogo.
+# Configuraciones con el mismo nombre que su modelo del catálogo.
 EXACT_MODELS = frozenset(
     {
         "rnn",
@@ -49,7 +49,7 @@ EXACT_MODELS = frozenset(
         "market_index",
     }
 )
-# Familias que agrupan varios brazos: el nombre exacto o seguido de `_`. Así
+# Familias que agrupan varios modelos: el nombre exacto o seguido de `_`. Así
 # `titans_mac_online` y `titans_transformer_direct` son Titans-MAC, `mars_titan_m1_k4` es
 # MARS-TITAN y `transformer_compact_online` es el control en línea del Transformer compacto.
 FAMILY_MODELS = (
@@ -60,15 +60,20 @@ FAMILY_MODELS = (
     ("cm_v1", "cm_v1"),
     ("klpo", "klpo"),
     ("ppo", "ppo"),
+    # Objetivos de grupo de la etapa de políticas: `grpo_outcome`, `dr_grpo_outcome` y
+    # `gspo_outcome`.
+    ("grpo", "grpo"),
+    ("dr_grpo", "dr_grpo"),
+    ("gspo", "gspo"),
 )
 
 
 def arm_model(arm):
-    """Modelo del catálogo de un brazo, o `unknown` si no se reconoce.
+    """Modelo del catálogo de una configuración, o `unknown` si no se reconoce.
 
     Los adaptadores (`base__punto`), el padre congelado y la cadena (`base__chain`) son el
-    modelo de su brazo base. En la etapa de políticas el brazo es `predictor/política` y
-    cuenta la política.
+    modelo de su configuración base. En la etapa de políticas la configuración es
+    `predictor/política` y cuenta la política.
     """
     base = arm.rsplit("/", 1)[-1].split("__", 1)[0]
     if base in EXACT_MODELS:
@@ -80,7 +85,7 @@ def arm_model(arm):
 
 
 def _cell(parts):
-    """Ámbito, ventana, brazo y nombre de un identificador de cuatro o seis partes."""
+    """Ámbito, ventana, modelo y nombre de un identificador de cuatro o seis partes."""
     if len(parts) == 4:
         return parts
     scope, market, window, predictor, arm, name = parts
@@ -105,14 +110,27 @@ def _directory(path):
     return path.is_dir() and not path.is_symlink()
 
 
-def _open_attempt(jobs, job_id):
-    """Carpeta del intento abierto: el último `attempt-*` o `run`, que usan las etapas."""
+def _is_folder(path):
     try:
-        if not stat.S_ISDIR(os.lstat(f"{jobs}/{job_id}").st_mode):
-            return None
+        return stat.S_ISDIR(os.lstat(path).st_mode)
     except OSError:
-        return None
-    job_folder = Path(jobs) / job_id
+        return False
+
+
+def _open_attempt(jobs, job_id, confirmed):
+    """Carpeta del intento abierto: el último `attempt-*` o `run`, que usan las etapas.
+
+    La continuación de un ajuste con parada conjunta no crea carpeta hasta su recibo:
+    reanuda en la de su meseta (`plateau-<nombre>`), cuyo intento pasa a ser el suyo en
+    cuanto `confirmed` da la meseta por confirmada.
+    """
+    found = job_id
+    if not _is_folder(f"{jobs}/{job_id}"):
+        head, _, name = job_id.rpartition("/")
+        found = f"{head}/plateau-{name}"
+        if confirmed.get(found) is not True or not _is_folder(f"{jobs}/{found}"):
+            return None
+    job_folder = Path(jobs) / found
     attempts = sorted(p for p in job_folder.glob("attempt-*") if _directory(p))
     if attempts:
         return attempts[-1]
@@ -222,7 +240,7 @@ def campaign_state(label, folder, *, max_bytes=8 * 1024**2, max_jobs=20_000, max
             )
             confirmed = utc_text(receipt[2] / 1e9) if receipt else None
         else:
-            attempt = _open_attempt(jobs_folder, job_id)
+            attempt = _open_attempt(jobs_folder, job_id, jobs)
             if attempt is not None:
                 state = "attempt"
                 open_attempts.append((job_id, attempt))

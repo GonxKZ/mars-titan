@@ -4,6 +4,8 @@ import importlib
 
 import pytest
 
+from tests.suite_support import missing_extra
+
 
 def module():
     try:
@@ -13,7 +15,7 @@ def module():
 
 
 def checkpoint(tmp_path):
-    torch = pytest.importorskip("torch")
+    torch = pytest.importorskip("torch", reason=missing_extra("torch"))
     model = torch.nn.Linear(2, 1)
     config = {
         "kind": "gru",
@@ -47,7 +49,7 @@ def checkpoint(tmp_path):
 
 
 def test_posttraining_loads_only_compatible_weights_and_preserves_source(tmp_path):
-    torch = pytest.importorskip("torch")
+    torch = pytest.importorskip("torch", reason=missing_extra("torch"))
     model, path, config, hashes = checkpoint(tmp_path)
     before = path.read_bytes()
     result = module().initialize_weights(
@@ -62,7 +64,7 @@ def test_posttraining_loads_only_compatible_weights_and_preserves_source(tmp_pat
 
 @pytest.mark.parametrize("change", ["architecture", "labels", "code", "data"])
 def test_incompatible_initialization_does_not_change_parameters(tmp_path, change):
-    torch = pytest.importorskip("torch")
+    torch = pytest.importorskip("torch", reason=missing_extra("torch"))
     model, path, config, hashes = checkpoint(tmp_path)
     before = {name: value.clone() for name, value in model.state_dict().items()}
     if change == "architecture":
@@ -102,7 +104,7 @@ def test_compressed_checkpoint_is_rejected_before_expanding_storage(tmp_path):
 
 @pytest.mark.parametrize("fault", ["keys", "shape", "dtype", "nan", "epoch"])
 def test_corrupt_checkpoint_never_partially_updates_model(tmp_path, fault):
-    torch = pytest.importorskip("torch")
+    torch = pytest.importorskip("torch", reason=missing_extra("torch"))
     model, path, config, hashes = checkpoint(tmp_path)
     before = {name: value.clone() for name, value in model.state_dict().items()}
     state = torch.load(path, weights_only=True)

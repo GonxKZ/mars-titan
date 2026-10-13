@@ -1,0 +1,461 @@
+{
+ "schema_version": 1,
+ "kind": "targeted_mutation_receipt",
+ "issue": 10,
+ "executed_on": "2026-10-10",
+ "base_commit": "37523a0ec7d144b5d98f81b0965503f087b4dc83",
+ "sources_sha256": {
+  "src/mars_titan/data/corpus_encoding.py": "b49c76cc50650968610bf6c918bc929e17564ef5320c3ac877a00ca3be706dac",
+  "src/mars_titan/data/pretraining_free_encoders.py": "c17fd0d7979a837cfbd20972cf08b9b4f47b49d3496376072636b592b8ac3f3e",
+  "src/mars_titan/evaluation/encoder_sensitivity.py": "ecef5c40fb24591241a31a47a2d162f0b26bfc7afbe7d17eaa477651da056ddd",
+  "tests/data/test_pretraining_free_encoders.py": "f6ac43ad32e321024c329e457eeb447e311cb6bfd27b7f9c75e0dad3e60815cd",
+  "tests/evaluation/test_encoder_sensitivity.py": "e1c2e73ca29a36d64eb0f0dfc843f2a83ffc14eb791d96051554d9ad39f36700"
+ },
+ "method": "Copia aislada de src, tests y configs. Cada mutante sustituye un único fragmento, ejecuta las dos pruebas con -x y restaura el archivo. PYTHONPATH apunta a la copia, así que las pruebas importan el código mutado",
+ "tests": [
+  "tests/data/test_pretraining_free_encoders.py",
+  "tests/evaluation/test_encoder_sensitivity.py"
+ ],
+ "environment": "CPU con CUDA_VISIBLE_DEVICES=-1 y OMP_NUM_THREADS=2",
+ "baseline": {
+  "returncode": 0,
+  "seconds": 9.1,
+  "tail": [
+   "57 passed in 6.13s"
+  ]
+ },
+ "killed": 39,
+ "survived": 0,
+ "not_applied": 0,
+ "mutants": [
+  {
+   "name": "ngrams_from_one",
+   "file": "src/mars_titan/data/pretraining_free_encoders.py",
+   "status": "killed",
+   "seconds": 5.0,
+   "tail": [
+    "1 failed in 1.99s"
+   ],
+   "original": "ngram_range=(2, 4),",
+   "mutated": "ngram_range=(1, 4),"
+  },
+  {
+   "name": "unsigned_hashing",
+   "file": "src/mars_titan/data/pretraining_free_encoders.py",
+   "status": "killed",
+   "seconds": 5.3,
+   "tail": [
+    "1 failed in 2.24s"
+   ],
+   "original": "alternate_sign=True,",
+   "mutated": "alternate_sign=False,"
+  },
+  {
+   "name": "l1_norm",
+   "file": "src/mars_titan/data/pretraining_free_encoders.py",
+   "status": "killed",
+   "seconds": 5.1,
+   "tail": [
+    "1 failed in 2.06s"
+   ],
+   "original": "norm=\"l2\",",
+   "mutated": "norm=\"l1\","
+  },
+  {
+   "name": "no_nfkc",
+   "file": "src/mars_titan/data/pretraining_free_encoders.py",
+   "status": "killed",
+   "seconds": 4.9,
+   "tail": [
+    "1 failed, 1 passed in 1.99s"
+   ],
+   "original": "vectorizer.transform([unicodedata.normalize(\"NFKC\", text)])",
+   "mutated": "vectorizer.transform([text])"
+  },
+  {
+   "name": "case_sensitive",
+   "file": "src/mars_titan/data/pretraining_free_encoders.py",
+   "status": "killed",
+   "seconds": 5.5,
+   "tail": [
+    "1 failed in 2.12s"
+   ],
+   "original": "lowercase=True,",
+   "mutated": "lowercase=False,"
+  },
+  {
+   "name": "blank_text_admitted",
+   "file": "src/mars_titan/data/pretraining_free_encoders.py",
+   "status": "killed",
+   "seconds": 5.6,
+   "tail": [
+    "1 failed, 5 passed in 2.33s"
+   ],
+   "original": "if not isinstance(text, str) or not text.strip():",
+   "mutated": "if not isinstance(text, str):"
+  },
+  {
+   "name": "value_instead_of_ink",
+   "file": "src/mars_titan/data/pretraining_free_encoders.py",
+   "status": "killed",
+   "seconds": 5.0,
+   "tail": [
+    "1 failed, 10 passed in 2.03s"
+   ],
+   "original": "ink = 1.0 - pixels[:, :, :2] / 255.0",
+   "mutated": "ink = pixels[:, :, :2] / 255.0"
+  },
+  {
+   "name": "green_and_blue",
+   "file": "src/mars_titan/data/pretraining_free_encoders.py",
+   "status": "killed",
+   "seconds": 5.1,
+   "tail": [
+    "1 failed, 10 passed in 2.17s"
+   ],
+   "original": "ink = 1.0 - pixels[:, :, :2] / 255.0",
+   "mutated": "ink = 1.0 - pixels[:, :, 1:] / 255.0"
+  },
+  {
+   "name": "blocks_by_column",
+   "file": "src/mars_titan/data/pretraining_free_encoders.py",
+   "status": "killed",
+   "seconds": 5.0,
+   "tail": [
+    "1 failed, 10 passed in 2.01s"
+   ],
+   "original": "blocks.transpose(2, 0, 1)",
+   "mutated": "blocks.transpose(2, 1, 0)"
+  },
+  {
+   "name": "size_not_checked",
+   "file": "src/mars_titan/data/pretraining_free_encoders.py",
+   "status": "killed",
+   "seconds": 5.0,
+   "tail": [
+    "1 failed, 13 passed in 2.06s"
+   ],
+   "original": "            if image.size != (SIDE, SIDE):\n                raise ValueError(\"Las dimensiones del gráfico no son las esperadas\")\n",
+   "mutated": ""
+  },
+  {
+   "name": "unbounded_batch",
+   "file": "src/mars_titan/data/pretraining_free_encoders.py",
+   "status": "killed",
+   "seconds": 5.3,
+   "tail": [
+    "1 failed, 13 passed in 2.29s"
+   ],
+   "original": "not 1 <= len(pngs) <= MAX_IMAGES",
+   "mutated": "not 1 <= len(pngs)"
+  },
+  {
+   "name": "probe_without_chart",
+   "file": "src/mars_titan/data/pretraining_free_encoders.py",
+   "status": "killed",
+   "seconds": 5.3,
+   "tail": [
+    "1 failed, 15 passed in 2.21s"
+   ],
+   "original": "values = np.concatenate([*texts, chart_vectors([_probe_chart()])[0]])",
+   "mutated": "values = np.concatenate(texts)"
+  },
+  {
+   "name": "not_historical",
+   "file": "src/mars_titan/data/pretraining_free_encoders.py",
+   "status": "killed",
+   "seconds": 4.9,
+   "tail": [
+    "1 failed, 14 passed in 2.03s"
+   ],
+   "original": "\"historical_simulation\": True,",
+   "mutated": "\"historical_simulation\": False,"
+  },
+  {
+   "name": "tf32_unknown",
+   "file": "src/mars_titan/data/pretraining_free_encoders.py",
+   "status": "killed",
+   "seconds": 4.8,
+   "tail": [
+    "1 failed, 14 passed in 2.14s"
+   ],
+   "original": "            matmul_tf32=False,\n",
+   "mutated": "            matmul_tf32=None,\n"
+  },
+  {
+   "name": "cli_ignores_control",
+   "file": "src/mars_titan/data/corpus_encoding.py",
+   "status": "killed",
+   "seconds": 5.9,
+   "tail": [
+    "1 failed, 17 passed in 2.83s"
+   ],
+   "original": "encoders=PretrainingFreeEncoders() if control else reuse,",
+   "mutated": "encoders=reuse,"
+  },
+  {
+   "name": "cli_admits_gpu_passes",
+   "file": "src/mars_titan/data/corpus_encoding.py",
+   "status": "killed",
+   "seconds": 18.4,
+   "tail": [
+    "1 failed, 18 passed in 14.63s"
+   ],
+   "original": "if control and (args.reuse_only",
+   "mutated": "if False and (args.reuse_only"
+  },
+  {
+   "name": "cli_passes_cuda_options",
+   "file": "src/mars_titan/data/corpus_encoding.py",
+   "status": "killed",
+   "seconds": 6.6,
+   "tail": [
+    "1 failed, 17 passed in 3.28s"
+   ],
+   "original": "encoder_options=None if reuse or control else options,",
+   "mutated": "encoder_options=None if reuse else options,"
+  },
+  {
+   "name": "after_block_twice_as_long",
+   "file": "src/mars_titan/evaluation/encoder_sensitivity.py",
+   "status": "killed",
+   "seconds": 5.8,
+   "tail": [
+    "1 failed, 21 passed in 2.84s"
+   ],
+   "original": "for k in (-2, -1, 0, 1)]",
+   "mutated": "for k in (-2, -1, 0, 2)]"
+  },
+  {
+   "name": "break_sign",
+   "file": "src/mars_titan/evaluation/encoder_sensitivity.py",
+   "status": "killed",
+   "seconds": 6.3,
+   "tail": [
+    "1 failed, 36 passed in 3.41s"
+   ],
+   "original": "return np.stack([whole, before - after, placebo - before], axis=-1)",
+   "mutated": "return np.stack([whole, after - before, placebo - before], axis=-1)"
+  },
+  {
+   "name": "placebo_sign",
+   "file": "src/mars_titan/evaluation/encoder_sensitivity.py",
+   "status": "killed",
+   "seconds": 7.0,
+   "tail": [
+    "1 failed, 37 passed in 3.74s"
+   ],
+   "original": "return np.stack([whole, before - after, placebo - before], axis=-1)",
+   "mutated": "return np.stack([whole, before - after, before - placebo], axis=-1)"
+  },
+  {
+   "name": "delta_sign",
+   "file": "src/mars_titan/evaluation/encoder_sensitivity.py",
+   "status": "killed",
+   "seconds": 6.0,
+   "tail": [
+    "1 failed, 36 passed in 3.19s"
+   ],
+   "original": "delta = means[1] - means[0]",
+   "mutated": "delta = means[0] - means[1]"
+  },
+  {
+   "name": "seed_mean_off_by_one",
+   "file": "src/mars_titan/evaluation/encoder_sensitivity.py",
+   "status": "killed",
+   "seconds": 6.4,
+   "tail": [
+    "1 failed, 36 passed in 3.40s"
+   ],
+   "original": "means = [np.bincount(inverse, weights=values) / count for values in mae]",
+   "mutated": "means = [np.bincount(inverse, weights=values) / (count + 1) for values in mae]"
+  },
+  {
+   "name": "calibrated_rows_kept",
+   "file": "src/mars_titan/evaluation/encoder_sensitivity.py",
+   "status": "killed",
+   "seconds": 5.9,
+   "tail": [
+    "1 failed, 36 passed in 2.90s"
+   ],
+   "original": "    table = table.filter(pc.equal(table[\"quantiles\"], \"raw\"))\n",
+   "mutated": ""
+  },
+  {
+   "name": "missing_seed_admitted",
+   "file": "src/mars_titan/evaluation/encoder_sensitivity.py",
+   "status": "killed",
+   "seconds": 9.6,
+   "tail": [
+    "1 failed, 55 passed in 6.47s"
+   ],
+   "original": "np.all(np.bincount(inverse) == count)",
+   "mutated": "True"
+  },
+  {
+   "name": "counts_not_compared",
+   "file": "src/mars_titan/evaluation/encoder_sensitivity.py",
+   "status": "killed",
+   "seconds": 8.8,
+   "tail": [
+    "1 failed, 52 passed in 5.62s"
+   ],
+   "original": "for k in keys + same",
+   "mutated": "for k in keys"
+  },
+  {
+   "name": "same_edition_admitted",
+   "file": "src/mars_titan/evaluation/encoder_sensitivity.py",
+   "status": "killed",
+   "seconds": 8.7,
+   "tail": [
+    "1 failed, 50 passed in 5.38s"
+   ],
+   "original": "frozen[\"edition\"] != control[\"edition\"]",
+   "mutated": "True"
+  },
+  {
+   "name": "sessions_digest_ignored",
+   "file": "src/mars_titan/evaluation/encoder_sensitivity.py",
+   "status": "killed",
+   "seconds": 8.9,
+   "tail": [
+    "1 failed, 51 passed in 6.05s"
+   ],
+   "original": "sha256(path) == report.get(\"artifacts\", {}).get(\"sessions.parquet\")",
+   "mutated": "True"
+  },
+  {
+   "name": "final_test_ignored",
+   "file": "src/mars_titan/evaluation/encoder_sensitivity.py",
+   "status": "killed",
+   "seconds": 8.4,
+   "tail": [
+    "1 failed, 45 passed in 5.44s"
+   ],
+   "original": "        and report.get(\"final_test_opened\") is False,\n",
+   "mutated": ",\n"
+  },
+  {
+   "name": "arms_sessions_ignored",
+   "file": "src/mars_titan/evaluation/encoder_sensitivity.py",
+   "status": "killed",
+   "seconds": 7.9,
+   "tail": [
+    "1 failed, 41 passed in 4.73s"
+   ],
+   "original": "_require(len(sessions) == 1,",
+   "mutated": "_require(True,"
+  },
+  {
+   "name": "placebo_block_minimum_ignored",
+   "file": "src/mars_titan/evaluation/encoder_sensitivity.py",
+   "status": "killed",
+   "seconds": 8.4,
+   "tail": [
+    "1 failed, 43 passed in 5.02s"
+   ],
+   "original": "min(totals[1:]) < section[\"min_sessions\"]",
+   "mutated": "min(totals[2:]) < section[\"min_sessions\"]"
+  },
+  {
+   "name": "zero_counts_as_above",
+   "file": "src/mars_titan/evaluation/encoder_sensitivity.py",
+   "status": "killed",
+   "seconds": 7.7,
+   "tail": [
+    "1 failed, 42 passed in 4.62s"
+   ],
+   "original": "above = [low > 0 for low, _ in bounds.values()]",
+   "mutated": "above = [low >= 0 for low, _ in bounds.values()]"
+  },
+  {
+   "name": "one_interval_suffices",
+   "file": "src/mars_titan/evaluation/encoder_sensitivity.py",
+   "status": "killed",
+   "seconds": 7.3,
+   "tail": [
+    "1 failed, 37 passed in 4.09s"
+   ],
+   "original": "\"anticipation_suspected\" if all(above)",
+   "mutated": "\"anticipation_suspected\" if any(above)"
+  },
+  {
+   "name": "marginal_family",
+   "file": "src/mars_titan/evaluation/encoder_sensitivity.py",
+   "status": "killed",
+   "seconds": 7.2,
+   "tail": [
+    "1 failed, 38 passed in 3.95s"
+   ],
+   "original": "joint = family_intervals(estimate, replicas, options[\"confidence\"])",
+   "mutated": "joint = family_intervals(estimate, replicas, 0.5)"
+  },
+  {
+   "name": "bootstrap_seed",
+   "file": "src/mars_titan/evaluation/encoder_sensitivity.py",
+   "status": "killed",
+   "seconds": 7.3,
+   "tail": [
+    "1 failed, 38 passed in 4.22s"
+   ],
+   "original": "rng = np.random.default_rng(options[\"seed\"])",
+   "mutated": "rng = np.random.default_rng(options[\"seed\"] + 1)"
+  },
+  {
+   "name": "block_equal_to_series",
+   "file": "src/mars_titan/evaluation/encoder_sensitivity.py",
+   "status": "killed",
+   "seconds": 9.6,
+   "tail": [
+    "1 failed, 40 passed in 5.40s"
+   ],
+   "original": "if options[\"block_length\"] < periods:",
+   "mutated": "if options[\"block_length\"] <= periods:"
+  },
+  {
+   "name": "cutoff_before_publication",
+   "file": "src/mars_titan/evaluation/encoder_sensitivity.py",
+   "status": "killed",
+   "seconds": 8.2,
+   "tail": [
+    "1 failed, 30 passed in 4.04s"
+   ],
+   "original": "        and bound[\"text_weights_published\"] < cutoff,\n",
+   "mutated": ",\n"
+  },
+  {
+   "name": "cutoff_any_day",
+   "file": "src/mars_titan/evaluation/encoder_sensitivity.py",
+   "status": "killed",
+   "seconds": 7.4,
+   "tail": [
+    "1 failed, 27 passed in 3.39s"
+   ],
+   "original": "        and cutoff.endswith(\"-01\")\n",
+   "mutated": ""
+  },
+  {
+   "name": "few_replicates",
+   "file": "src/mars_titan/evaluation/encoder_sensitivity.py",
+   "status": "killed",
+   "seconds": 6.9,
+   "tail": [
+    "1 failed, 34 passed in 3.32s"
+   ],
+   "original": "options[\"replicates\"] >= 100",
+   "mutated": "options[\"replicates\"] >= 1"
+  },
+  {
+   "name": "output_overwritten",
+   "file": "src/mars_titan/evaluation/encoder_sensitivity.py",
+   "status": "killed",
+   "seconds": 13.5,
+   "tail": [
+    "1 failed, 56 passed in 9.64s"
+   ],
+   "original": "_require(not args.output.exists(), \"El informe necesita un archivo nuevo\")",
+   "mutated": "_require(True, \"El informe necesita un archivo nuevo\")"
+  }
+ ]
+}

@@ -8,6 +8,11 @@ cambiarla no cambia qué datos ve un trabajo ni sus salidas, solo cuántos se ej
 vez. Un trabajo cuya estimación supera el presupuesto se rechaza antes de empezar la
 campaña.
 
+La versión 2 nombra además el perfil de hardware en el que se midieron sus estimaciones
+(`configs/hardware`). Sus presupuestos deben caber en los límites del perfil y la campaña
+comprueba el perfil contra la plataforma detectada antes de empezar, de modo que unas
+recetas medidas en una máquina no se reutilizan en otra.
+
 Sin declaración, la campaña conserva su ejecución anterior: los trabajos CUDA de uno en
 uno en el mismo proceso y los CPU con los `cpu_workers` de la sección tabular.
 """
@@ -19,6 +24,7 @@ from pathlib import Path
 
 from mars_titan.data.cohort_files import read_manifest
 from mars_titan.data.storage import atomic_json
+from mars_titan.hardware import hardware_profiles
 
 from .input_pipeline import PipelineOptions
 
@@ -33,7 +39,16 @@ CONTEXT_MIB = 512
 # Reintentos de un trabajo que agota su VRAM, cada uno con una reserva mayor.
 MAX_OOM_RETRIES = 2
 OBSERVED_KIND = "historical_masked_campaign_observed_resources"
-_FIELDS = {"schema_version", "kind", "gpu", "host", "pipeline", "models", "notes"}
+_FIELDS = {
+    "schema_version",
+    "kind",
+    "hardware_profile",
+    "gpu",
+    "host",
+    "pipeline",
+    "models",
+    "notes",
+}
 _GPU = {"slots", "vram_budget_mib", "mps", "mps_pipe_directory"}
 _HOST = {"cpu_workers", "threads_per_job", "ram_budget_mib", "reserve_mib"}
 _MODEL = {"device", "vram_mib", "host_mib", "scopes", "arms", "campaign_process"}
@@ -84,6 +99,7 @@ class Execution:
     mps_pipe_directory: str | None = None
     pipeline: PipelineOptions | None = None
     models: dict = field(default_factory=dict)
+    hardware_profile: dict | None = None
     path: str | None = None
     sha256: str | None = None
 
@@ -93,7 +109,7 @@ class Execution:
         return self.gpu_slots > 1
 
     def resources(self, job, default_device):
-        """Recursos del trabajo: los de su brazo, modelo y ámbito, o su dispositivo sin más."""
+        """Recursos del trabajo según su configuración, modelo y ámbito, o solo su dispositivo."""
         declared = self.models.get(job["model"])
         if declared is None:
             return JobResources(device=default_device)
@@ -112,6 +128,9 @@ class Execution:
             host_reserve_bytes=self.host_reserve_bytes,
             mps=self.mps,
             pipeline=None if self.pipeline is None else self.pipeline.environment(),
+            hardware_profile=None
+            if self.hardware_profile is None
+            else {key: self.hardware_profile[key] for key in ("name", "sha256")},
         )
 
 
@@ -129,7 +148,8 @@ def _model(name, value, scopes):
     )
 
     def resources(label, *entries):
-        # Cada entrada sustituye a las anteriores: modelo, ámbito, brazo y brazo en el ámbito.
+        # Cada entrada sustituye a las anteriores: modelo, ámbito, configuración y
+        # configuración en el ámbito.
         sizes = {}
         for entry in entries:
             sizes.update(entry)
@@ -165,7 +185,7 @@ def _model(name, value, scopes):
             isinstance(entry, dict) and entry and set(entry) <= _SIZES | {"scopes"}
             for entry in arms.values()
         ),
-        f"Los brazos de {name} deben declarar VRAM, RAM o ámbitos",
+        f"Los modelos de {name} deben declarar VRAM, RAM o ámbitos",
     )
     declared = dict(
         default=resources(name, base),
@@ -175,7 +195,7 @@ def _model(name, value, scopes):
         },
         arms={},
     )
-    # Un brazo hereda lo del modelo en cada ámbito y lo sustituye con lo suyo. Sus recursos
+    # Una configuración hereda lo del modelo en cada ámbito y lo sustituye con lo suyo. Sus recursos
     # se resuelven aquí para todos los ámbitos y un error aparece al cargar la declaración.
     for arm, entry in arms.items():
         own, arm_scopes = {key: entry[key] for key in _SIZES & set(entry)}, scoped(entry, arm)
@@ -202,10 +222,12 @@ def load_execution(path, *, scopes=("US", "CN", "US+CN")):
     _require(
         isinstance(document, dict)
         and _FIELDS - {"notes"} <= set(document) <= _FIELDS
-        and document["schema_version"] == 1
+        and document["schema_version"] == 2
         and document["kind"] == EXECUTION_KIND,
-        "La declaración de ejecución no cumple su contrato",
+        "La declaración de ejecución no cumple su contrato de la versión 2, que nombra su "
+        "perfil de hardware",
     )
+    profile = hardware_profiles.load_profile(document["hardware_profile"])
     gpu, host, pipeline = document["gpu"], document["host"], document["pipeline"]
     _require(
         isinstance(gpu, dict)
@@ -240,17 +262,26 @@ def load_execution(path, *, scopes=("US", "CN", "US+CN")):
     )
     models = document["models"]
     _require(isinstance(models, dict) and models, "La declaración necesita recursos por modelo")
+    vram_budget = _mib(gpu["vram_budget_mib"], "El presupuesto de VRAM", lower=256)
+    host_budget = _mib(host["ram_budget_mib"], "El presupuesto de RAM", lower=1024)
+    hardware_profiles.check_budgets(
+        profile,
+        vram_bytes=vram_budget,
+        host_bytes=host_budget,
+        threads=(gpu["slots"] + host["cpu_workers"]) * host["threads_per_job"],
+    )
     return Execution(
         gpu_slots=gpu["slots"],
         cpu_workers=host["cpu_workers"],
         threads_per_job=host["threads_per_job"],
-        vram_budget_bytes=_mib(gpu["vram_budget_mib"], "El presupuesto de VRAM", lower=256),
-        host_budget_bytes=_mib(host["ram_budget_mib"], "El presupuesto de RAM", lower=1024),
+        vram_budget_bytes=vram_budget,
+        host_budget_bytes=host_budget,
         host_reserve_bytes=_mib(host["reserve_mib"], "La reserva de RAM"),
         mps=gpu["mps"],
         mps_pipe_directory=mps_directory,
         pipeline=PipelineOptions(**pipeline),
         models={name: _model(name, value, scopes) for name, value in models.items()},
+        hardware_profile=profile,
         path=str(path.resolve()),
         sha256=digest,
     )
@@ -294,7 +325,7 @@ def check_plan(execution, jobs, executors):
             )
     for name, declared in execution.models.items():
         unknown = sorted(set(declared["arms"]) - arms.get(name, set()))
-        _require(not unknown, f"{name} declara brazos que no tiene en el plan: {unknown}")
+        _require(not unknown, f"{name} declara modelos que no tiene en el plan: {unknown}")
 
 
 def available_host_bytes():
@@ -391,7 +422,7 @@ def environment(execution):
 class PeakEstimates:
     """VRAM de cada tipo de trabajo: la declarada o la observada, la mayor de las dos.
 
-    El tipo es el modelo, el brazo y el ámbito. Cuando un trabajo termina en su proceso, su
+    El tipo es el modelo, la configuración y el ámbito. Cuando un trabajo termina en su proceso, su
     pico reservado por el asignador más `CONTEXT_MIB` sustituye a la estimación si es mayor,
     de modo que los siguientes trabajos del mismo tipo se admiten con lo observado. Nunca baja
     de lo declarado, que se mide en la ventana más poblada. Si un trabajo agota su VRAM, la
@@ -419,8 +450,8 @@ class PeakEstimates:
 
     @staticmethod
     def key(job):
-        # Los brazos de un mismo modelo pueden diferir mucho en VRAM, así que cada uno corrige
-        # solo su propia estimación.
+        # Las configuraciones de un mismo modelo pueden diferir mucho en VRAM, así que
+        # cada una corrige solo su propia estimación.
         return f"{job['model']}/{job.get('arm')}/{job['scope']}"
 
     def resources(self, job, default_device):

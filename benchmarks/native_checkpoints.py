@@ -13,6 +13,7 @@ from pathlib import Path
 
 from mars_titan.data.storage import atomic_json, sha256
 from mars_titan.episodes.worlds import WorldConfig, generate_world
+from mars_titan.hardware.platform_identity import cpu_name
 from mars_titan.simulation.market import MarketTape
 from mars_titan.simulation.storage import write_tape
 
@@ -146,9 +147,7 @@ def benchmark(reference, candidate, work, repetitions):
         schema_version=1,
         domain="technical",
         measured_at=datetime.now(UTC).isoformat(),
-        cpu=subprocess.check_output(["rg", "-m", "1", "^model name", "/proc/cpuinfo"], text=True)
-        .split(":", 1)[1]
-        .strip(),
+        cpu=cpu_name(),
         platform=platform.platform(),
         executable_sha256={k: sha256(v) for k, v in binaries.items()},
         source_identities=identities,

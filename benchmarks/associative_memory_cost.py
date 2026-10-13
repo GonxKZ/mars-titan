@@ -19,6 +19,7 @@ from pathlib import Path
 
 import torch
 
+from mars_titan.hardware.platform_identity import cpu_name
 from mars_titan.memory.associative_memory import (
     AssociativeMemory,
     AssociativeMemoryConfig,
@@ -137,14 +138,7 @@ def main(argv=None):
         shapes=dict(key_size=64, value_size=1, cohorts=list(SIZES)),
         noise=NOISE,
         environment=dict(
-            cpu=next(
-                (
-                    line.split(":", 1)[1].strip()
-                    for line in Path("/proc/cpuinfo").read_text().splitlines()
-                    if line.startswith("model name")
-                ),
-                platform.processor(),
-            ),
+            cpu=cpu_name(),
             torch=torch.__version__,
             torch_threads=torch.get_num_threads(),
             python=platform.python_version(),

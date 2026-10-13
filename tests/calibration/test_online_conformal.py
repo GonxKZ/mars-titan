@@ -24,7 +24,7 @@ from mars_titan.models.quantile_head import LEVELS
 NOMINALS = (0.8, 0.95)
 BASE = [-2.0, -1.0, 0.0, 1.0, 2.0]
 # Huella de la CQR estática sobre el ejemplo de calibración, capturada en 42e7dbca antes de
-# añadir PT2. Si cambia, la ruta sin el brazo ya no es la misma.
+# añadir PT2. Si cambia, la ruta sin el modelo ya no es la misma.
 STATIC_FIXTURE_SHA256 = "913d30aca54efeea9af1f6640707f2474a2b6b0fefe6360d2b708f94e424d4aa"
 
 

@@ -27,11 +27,14 @@ from mars_titan.data.input_policy import HISTORICAL_MASKED
 from mars_titan.data.storage import atomic_json, sha256
 from mars_titan.environments.walk_forward_receipt import prediction_fingerprint, read_window_receipt
 from mars_titan.evaluation import walk_forward_comparison as comparison
+from mars_titan.hardware import hardware_profiles
 from mars_titan.models.quantile_head import QUANTILE_COLUMNS
 from mars_titan.training import masked_campaign as engine
 from mars_titan.training.campaign_plan import load_campaign, plan_campaign
 from mars_titan.training.corpus_inputs import CorpusDataset
 from mars_titan.training.learning_hold import LearningHoldError
+from tests.hardware.platform_doubles import desktop, laptop
+from tests.learning_hold_lowering import lowers_learning_hold
 from tests.training.test_walk_forward_v2_views import fixture
 
 pytestmark = pytest.mark.usefixtures("learning_doubles")
@@ -41,7 +44,7 @@ ARMS = ("gru", "ridge", "xgboost")
 
 
 def write_campaign(folder, *, variant="B", scopes=("US",), arms=ARMS, **changes):
-    """Campaña reducida: tres brazos, un candidato tabular y protocolos versionados."""
+    """Campaña reducida: tres modelos, un candidato tabular y protocolos versionados."""
     folder.mkdir(parents=True, exist_ok=True)
     declared = json.loads(
         (CONFIGS / "evaluation/historical-masked-2000-comparison.json").read_text()
@@ -52,6 +55,8 @@ def write_campaign(folder, *, variant="B", scopes=("US",), arms=ARMS, **changes)
             for market, name in scope["protocols"].items()
         }
     declared["arms"] = {k: v for k, v in declared["arms"].items() if k in {"zero", *arms}}
+    # Los pares de retención nombran modelos que esta comparación reducida no conserva.
+    declared.pop(comparison.RETENTION_FIELD)
     declared["comparison"].update(
         replicates=20,
         families=dict(references_vs_zero=dict(kind="delta", base="zero", variants=list(arms))),
@@ -64,7 +69,8 @@ def write_campaign(folder, *, variant="B", scopes=("US",), arms=ARMS, **changes)
         (CONFIGS / f"baselines/historical-masked-campaign-{variant.lower()}.json").read_text()
     )
     value.update(comparison="comparison.json", scopes=list(scopes))
-    # La comparación reducida no declara los brazos de Titans-MAC. test_titans_campaign los añade.
+    # La comparación reducida no declara las variantes de Titans-MAC.
+    # test_titans_campaign las añade.
     value.pop("titans_mac")
     value["neural"]["arms"] = {arm: arm for arm in arms if arm not in {"ridge", "xgboost"}}
     value["tabular"].update(
@@ -308,6 +314,10 @@ def test_active_hold_rejects_the_campaign_before_creating_outputs(
     assert not (tmp_path / "out").exists() and recorder.calls == []
 
 
+@lowers_learning_hold(
+    "tests/training/test_masked_campaign.py::"
+    "test_hold_reinstated_during_the_campaign_stops_before_the_next_job"
+)
 def test_hold_reinstated_during_the_campaign_stops_before_the_next_job(
     prepared, tmp_path, learning_hold
 ):
@@ -436,6 +446,71 @@ def test_sources_feed_the_walk_forward_comparison_with_the_same_rows(prepared, t
     assert years.max() <= 2023
 
 
+def test_receipts_record_the_platform_and_sources_keep_one_machine(prepared, tmp_path, monkeypatch):
+    campaign = write_campaign(tmp_path / "config")
+    views = {"US": prepared.views["US"]}
+    output = tmp_path / "out"
+    summary = engine.run_campaign(
+        campaign,
+        views,
+        output,
+        executors=doubles(Recorder()),
+        lease=nullcontext,
+        stop=SimpleNamespace(requested=False),
+        platform=laptop(),
+    )
+    assert summary["status"] == "completed" and summary["platform"] == laptop()
+    jobs = [job for job in plan_campaign(load_campaign(campaign)) if job["scope"] == "US"]
+    receipts = [output / "jobs" / job["id"] / "receipt.json" for job in jobs]
+    assert all(json.loads(path.read_text())["platform"] == laptop() for path in receipts)
+    path = engine.write_sources(campaign, views, output, "US")
+    manifest = json.loads(path.read_text())
+    assert manifest["schema_version"] == 2
+    assert manifest["platform"] == dict(
+        platform_sha256=laptop()["platform_sha256"],
+        recorded=len(jobs),
+        unrecorded=0,
+        unrecorded_profile=None,
+    )
+    config = comparison.load_config(tmp_path / "config/comparison.json")
+    assert comparison.load_sources(path, config, "US")["platform"] == manifest["platform"]
+    # Un traslado no es padre de ningún otro trabajo, así que se puede reescribir su recibo.
+    carry = next(job for job in jobs if job["kind"] == engine.CARRY)
+    receipt_path = output / "jobs" / carry["id"] / "receipt.json"
+    receipt = json.loads(receipt_path.read_text())
+    atomic_json(receipt_path, dict(receipt, platform=desktop()))
+    with pytest.raises(ValueError, match="mezcla plataformas"):
+        engine.write_sources(campaign, views, output, "US")
+    # Un recibo anterior al registro solo entra con el perfil al que se atribuye.
+    atomic_json(receipt_path, {k: v for k, v in receipt.items() if k != "platform"})
+    with pytest.raises(ValueError, match="no registran su plataforma"):
+        engine.write_sources(campaign, views, output, "US")
+    # Un perfil de otra máquina, escrito solo para la prueba, no admite los recibos del portátil.
+    profiles = tmp_path / "profiles"
+    profiles.mkdir()
+    laptop_profile = json.loads((hardware_profiles.PROFILES / "rtx4070-laptop.json").read_text())
+    (profiles / "rtx4070-laptop.json").write_text(json.dumps(laptop_profile))
+    other = dict(
+        laptop_profile,
+        name="rtx4090-desktop",
+        gpu=dict(name="NVIDIA GeForce RTX 4090", compute_capability=[8, 9]),
+    )
+    (profiles / "rtx4090-desktop.json").write_text(json.dumps(other))
+    load_profile = hardware_profiles.load_profile
+    monkeypatch.setattr(
+        hardware_profiles, "load_profile", lambda name: load_profile(name, folder=profiles)
+    )
+    with pytest.raises(ValueError, match="atribuido"):
+        engine.write_sources(campaign, views, output, "US", unrecorded_platform="rtx4090-desktop")
+    path = engine.write_sources(campaign, views, output, "US", unrecorded_platform="rtx4070-laptop")
+    assert json.loads(path.read_text())["platform"] == dict(
+        platform_sha256=laptop()["platform_sha256"],
+        recorded=len(jobs) - 1,
+        unrecorded=1,
+        unrecorded_profile="rtx4070-laptop",
+    )
+
+
 def selected_fit(jobs, scope, window, arm, seed):
     """Ajuste elegido según las puntuaciones fijadas: gru-10 o el menor identificador."""
     if seed != 42:
@@ -472,7 +547,7 @@ def test_window_receipts_follow_the_selected_predictor_of_each_seed(prepared, tm
     for job in jobs:
         groups.setdefault((job["scope"], job["window"], job["arm"], job["seed"]), []).append(job)
     written = sorted((output / "windows").rglob("*.json"))
-    # 19 ventanas US y 13 conjuntas con dos mercados, por brazo y semilla (3 + 1 + 3).
+    # 19 ventanas US y 13 conjuntas con dos mercados, por modelo y semilla (3 + 1 + 3).
     assert len(groups) == (19 + 13) * 7
     assert len(written) == (19 + 2 * 13) * 7
     for (scope, window, arm, seed), members in groups.items():

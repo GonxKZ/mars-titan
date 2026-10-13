@@ -1,6 +1,6 @@
 """Adaptadores de Titans-MAC en el entrenador cronológico, comprobados hasta el paso.
 
-El optimizador registra gradientes sin modificar pesos, así que cada brazo recorre los mismos
+El optimizador registra gradientes sin modificar pesos, así que cada modelo recorre los mismos
 tramos que su padre y sus predicciones deben coincidir exactamente con las del padre.
 """
 
@@ -62,7 +62,7 @@ def shared(tmp_path_factory):
 
 
 def predictor(streams, variant, seed=42, **options):
-    """Padre de cuantiles en float64, como los brazos de la campaña con máscaras."""
+    """Padre de cuantiles en float64, como los modelos de la campaña con máscaras."""
     specification = streams["train"].specification()
     config = FinancialConfig(
         specification, variant=variant, hidden_size=32, seed=seed, head=QUANTILE_HEAD, **options
@@ -78,7 +78,7 @@ def clone(model):
 
 
 def adapted(model, matrix, points, seed=5):
-    """Copia del padre con los adaptadores del brazo, sellada de nuevo."""
+    """Copia del padre con los adaptadores del modelo, sellada de nuevo."""
     result = copy.deepcopy(model)
     # Los subconjuntos de la variedad (sesgos y normalizaciones) se enumeran sobre el modelo.
     attach_adapters(result, cm.titans_targets(matrix, points, result), seed=seed)
@@ -112,7 +112,7 @@ def posttrainer(streams, output, model, *, declared=None, **options):
 
 
 def test_matrix_v3_declares_the_titans_arms_of_each_variant(matrix):
-    # Por su coste, la variedad (#444) solo propone tres brazos en `mac_online`.
+    # Por su coste, la variedad (#444) solo propone tres modelos en `mac_online`.
     expected = {
         "transformer_direct": ["head", "fusion", "head+fusion", "fusion_full_rank"],
         "mac_disabled": ["head", "fusion", "head+fusion", "fusion_full_rank"],
@@ -129,7 +129,7 @@ def test_matrix_v3_declares_the_titans_arms_of_each_variant(matrix):
 
 @pytest.mark.parametrize("variant", VARIANTS)
 def test_null_adapters_reproduce_the_parent_predictions_exactly(shared, matrix, variant):
-    """Con U y las correcciones nulas, el brazo emite los mismos bits que el padre congelado.
+    """Con U y las correcciones nulas, el modelo emite los mismos bits que el padre congelado.
 
     Congelar el padre ya cambia los últimos bits de transformer_direct en CPU: PyTorch
     descompone algunos productos de otra forma según `requires_grad`, también con SDPA Math.
@@ -159,7 +159,7 @@ def test_the_paper_projections_keep_every_titans_arm_and_its_frozen_memory(share
     """Con `titans_mac_paper_projections_v2` la matriz v3 se aplica igual que hoy.
 
     La receta de la campaña sigue con las proyecciones lineales hasta que el autor decida.
-    Esta prueba comprueba que adoptarlas no exige cambiar los brazos: la convolución y las
+    Esta prueba comprueba que adoptarlas no exige cambiar los modelos: la convolución y las
     proyecciones nuevas quedan dentro de la memoria congelada y los adaptadores nulos
     reproducen las predicciones del padre. Solo cambian las variantes que leen la memoria.
     """
@@ -233,7 +233,7 @@ def test_gradients_reach_only_the_adapters_and_leave_memory_frozen(shared, matri
 
 @pytest.mark.parametrize("variant", ["transformer_direct", "mac_online"])
 def test_paired_arms_share_updates_labels_and_predictions(shared, matrix, tmp_path, variant):
-    """Todos los brazos de un padre recorren los mismos tramos con las mismas etiquetas.
+    """Todos los modelos de un padre recorren los mismos tramos con las mismas etiquetas.
 
     La continuación completa no congela el padre, así que en transformer_direct sus
     predicciones solo coinciden con la tolerancia de la prueba de paridad.

@@ -72,7 +72,7 @@ def update_statistics(model, *, top=SINGULAR_VALUES):
 
 @torch.no_grad()
 def prediction_change(adapted, parent):
-    """Cambio de los cuantiles [filas, 5] del brazo frente a los del padre en las mismas filas.
+    """Cambio de los cuantiles [filas, 5] del modelo frente a los del padre en las mismas filas.
 
     `quantile_distance` es la media entre filas de la media de |q_k − q_k^padre| sobre los
     cinco niveles: una aproximación con pesos iguales de la distancia de Wasserstein-1
@@ -86,7 +86,7 @@ def prediction_change(adapted, parent):
         or adapted.shape[1] != len(LEVELS)
         or not len(adapted)
     ):
-        raise ValueError("La traza compara cinco cuantiles por fila del brazo y del padre")
+        raise ValueError("La traza compara cinco cuantiles por fila del modelo y del padre")
     change = (adapted.double() - parent.double()).abs()
     median = adapted[:, MEDIAN_INDEX], parent[:, MEDIAN_INDEX]
     flips = torch.sign(median[0]) != torch.sign(median[1])

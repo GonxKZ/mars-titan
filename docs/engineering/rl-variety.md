@@ -11,13 +11,13 @@ optimizador. Las cifras de coste describen cálculo y nunca calidad de una polí
 
 ## Contrato común del entorno
 
-Todos los brazos comparten el entorno de la etapa RL descrito en
+Todos los modelos comparten el entorno de la etapa RL descrito en
 [políticas nativas sobre cintas reconstruidas](native-policy-real-tapes.md). Hay seis acciones
 discretas de exposición, la recompensa de cada sesión es el logaritmo del valor neto con costes
 y las cintas son las reconstruidas por ventana walk-forward a partir de la edición histórica,
 con 16 entornos, 262.144 transiciones por ajuste, semillas 42, 43 y 44, selección
 `ruin_count_then_mean_liquidated_log_growth` en validación y evaluación con costes de 0, 5, 10
-y 20 puntos básicos. Ningún brazo nuevo crea trayectorias, precios ni recompensas. Las pruebas
+y 20 puntos básicos. Ningún modelo nuevo crea trayectorias, precios ni recompensas. Las pruebas
 unitarias usan tensores y cintas escritas en la prueba solo para contrastar ecuaciones y nunca
 para ajustar una política.
 
@@ -83,9 +83,9 @@ misma primera sesión y de la misma caja inicial, así que forman un grupo
 (`episodes_from_the_same_train_tape_v1`). Con 16 entornos y tres cintas de ajuste los grupos
 tienen 6, 5 y 5 episodios. `mars-titan-klpo` rechaza una configuración con menos de dos
 carriles por cinta, y la declaración de la etapa lo comprueba antes, también para la
-sensibilidad de ventanas en expansión, que comparte los brazos. Con 16 entornos caben como
-máximo 8 cintas de ajuste, así que esa sensibilidad, declarada hoy con un máximo de 16, debe
-bajar a 8 si los objetivos de grupo entran en la etapa. `group_wave` comprueba además, bit a
+sensibilidad de ventanas en expansión, que comparte los modelos. Con 16 entornos caben como
+máximo 8 cintas de ajuste, así que esa sensibilidad, declarada antes con un máximo de 16,
+bajó a 8 cuando los objetivos de grupo entraron en la etapa. `group_wave` comprueba además, bit a
 bit, que todos los episodios de un grupo tienen la misma primera observación y rechaza grupos de
 un solo episodio.
 
@@ -205,7 +205,7 @@ flowchart TD
 
 | Pieza | Código | Prueba |
 | --- | --- | --- |
-| Niveles, puntuación de riesgo, objetivos y pérdida | [`quantile_dqn.cpp`](../../native/src/quantile_dqn.cpp) | `rl_variety` contra la referencia FP64, con un cuantil cruzado y la rama lineal de Huber. Con κ = 1, [paridad con sb3-contrib 2.9.0](../../tests/simulation/test_quantile_huber_sb3_parity.py) del oráculo, de su archivo y del núcleo C++ |
+| Niveles, puntuación de riesgo, objetivos y pérdida | [`quantile_dqn.cpp`](../../native/src/quantile_dqn.cpp) | `rl_variety` contra la referencia FP64, con un cuantil cruzado y la rama lineal de Huber. Con κ = 1, [paridad con sb3-contrib 2.9.0](../../tests/simulation/test_quantile_huber_sb3_parity.py) de la referencia, de su archivo y del núcleo C++ |
 | Cabeza, puntuación en `forward`, pérdida sin paso y checkpoint | `PpoPolicy::double_dqn_loss` y `action_quantiles` en [`ppo_policy.cpp`](../../native/src/ppo_policy.cpp) | [`qr_dqn_policy_tests.cpp`](../../native/tests/qr_dqn_policy_tests.cpp), con valores calculados a mano (1,75 con la media y 0,7421875 con alfa 0,5) |
 | Variantes del esquema 4 | `value_variant` en [`policy_context.cpp`](../../native/src/policy_context.cpp) y `architecture_for` | `test_quantile_value_variants_are_declared_like_double_dqn` |
 
@@ -217,7 +217,7 @@ variante, de modo que `qr_dqn_cvar` se evalúa con su propia preferencia por el 
 
 `quantile_huber_loss` de sb3-contrib 2.9.0 (grupo `reference`) sirve de referencia externa para
 κ = 1, el valor que fija esa biblioteca. Con los puntos medios FP64 pasados en `cum_prob` y
-lotes de una fila coincide con el archivo del oráculo en los casos `qr_mean` y `qr_cvar` y con
+lotes de una fila coincide con el archivo de la referencia en los casos `qr_mean` y `qr_cvar` y con
 su función `quantile_huber` en un lote de 64 transiciones con 32 cuantiles y errores a los dos
 lados de κ, con tolerancia 10⁻¹² en pérdidas y gradientes. En FP32 cumple la tolerancia de la
 ruta FP32 de `rl_variety`, 10⁻⁹ + 10⁻⁵ veces la suma de los valores absolutos de los términos.
@@ -226,7 +226,7 @@ transiciones, y en FP32 el peor elemento usó el 1,2 % de la tolerancia. Cuando
 `rl_variety_tests` está compilado junto a `mars-titan-ppo`, la prueba escribe los valores de
 sb3-contrib en una copia del archivo y el núcleo C++ los reproduce con su tolerancia de 10⁻¹²
 relativa. Un control con una pérdida alterada en 10⁻⁹ relativo hace fallar al ejecutable. κ ≠ 1,
-como el caso `qr_linear`, solo lo cubre el oráculo propio. Sin `cum_prob`, sb3-contrib calcula
+como el caso `qr_linear`, solo lo cubre la referencia propia. Sin `cum_prob`, sb3-contrib calcula
 los niveles en FP32, que son exactos con 32 cuantiles pero no con los 200 de Atari. La prueba no
 usa los algoritmos ni los entornos de Stable-Baselines3.
 
@@ -320,40 +320,40 @@ compite más por la caché compartida.
 `native_policy_hours` aplica los tiempos medidos al plan de la etapa A, con los tiempos comunes
 del informe de la etapa nativa y los campos nuevos (`qr_dqn_*` y
 `group_objective_transition_seconds`) escalados con las razones emparejadas de esta medida. Para
-las dos variantes cuantílicas se usa la razón mayor de las dos. Cada brazo nuevo entra en el
+las dos variantes cuantílicas se usa la razón mayor de las dos. Cada modelo nuevo entra en el
 nivel de algoritmos con 144 ajustes. El paso de Adam sigue sin medirse, así que todas las horas
-son una cota inferior. Cada 100 µs por paso de Adam añaden 1,05 h a cada brazo de valor, que
-hace 37.711.872 pasos, y 0,0003 h a cada brazo de grupo, que hace 9.036.
+son una cota inferior. Cada 100 µs por paso de Adam añaden 1,05 h a cada modelo de valor, que
+hace 37.711.872 pasos, y 0,0003 h a cada variante de grupo, que hace 9.036.
 
-| Brazo | CPU, un proceso (h) | `cuda:0`, un proceso (h) | CPU, 8 procesos (h, estimadas) |
+| Modelo | CPU, un proceso (h) | `cuda:0`, un proceso (h) | CPU, 8 procesos (h, estimadas) |
 | --- | ---: | ---: | ---: |
 | KLPO terminal (792 ajustes) | 2,67 | 3,92 | |
-| Cada brazo PPO | 0,85 | 1,67 | |
+| Cada variante PPO | 0,85 | 1,67 | |
 | Double DQN | 13,05 | 22,98 | |
 | GRPO, Dr. GRPO o DAPO estático | 0,49 | 0,71 a 0,72 | 0,11 |
 | GSPO | 0,52 | 0,71 | 0,11 |
 | QR-DQN o QR-DQN-CVaR | 29,89 | 34,71 | 7,1 |
 
-| Conjunto de brazos | CPU, un proceso (h) | `cuda:0`, un proceso (h) | CPU, 8 procesos (h, estimadas) |
+| Conjunto de modelos | CPU, un proceso (h) | `cuda:0`, un proceso (h) | CPU, 8 procesos (h, estimadas) |
 | --- | ---: | ---: | ---: |
-| Etapa A actual, con las cinco referencias | 18,3 | 32,0 | 3,6 |
-| Con GRPO, Dr. GRPO y GSPO | 19,8 | 34,1 | 3,9 |
+| Etapa A sin los objetivos de grupo, con las cinco referencias | 18,3 | 32,0 | 3,6 |
+| Con GRPO, Dr. GRPO y GSPO, la etapa A declarada desde #441 | 19,8 | 34,1 | 3,9 |
 | Con esos tres y el par QR-DQN | 79,6 | 103,5 | 18,1 |
-| Con los seis brazos nuevos | 80,1 | 104,3 | 18,3 |
+| Con los seis modelos nuevos | 80,1 | 104,3 | 18,3 |
 
-Las horas con ocho procesos dividen la parte de cada brazo por la aceleración medida de su pieza
+Las horas con ocho procesos dividen la parte de cada modelo por la aceleración medida de su pieza
 dominante (la oleada para la etapa actual, como en el informe de la etapa nativa, los objetivos
 de grupo y la pérdida cuantílica) y suponen que el resto escala igual. No se midió QR-DQN con
 varios procesos bajo MPS en `cuda:0`.
 
-## Propuesta de brazos para la campaña
+## Propuesta de modelos para la campaña
 
-KLPO terminal sigue como brazo principal en el nivel completo, con todos los predictores, y las
-cinco referencias no cambian. La propuesta solo afecta al nivel de algoritmos, que hoy tiene los
-tres controles PPO y Double DQN con dos predictores. No modifica la configuración de la etapa,
-que otras tareas están rediseñando, y queda como decisión del protocolo.
+KLPO terminal sigue como algoritmo principal en el nivel completo, con todos los predictores, y las
+cinco referencias no cambian. La propuesta solo afecta al nivel de algoritmos, que tenía los
+tres controles PPO y Double DQN con dos predictores. Los tres objetivos de grupo que entran ya
+están declarados en la etapa (véase la sección siguiente).
 
-| Brazo | Qué contrasta | Control que permite descartarlo | Coste añadido | Propuesta |
+| Modelo | Qué contrasta | Control que permite descartarlo | Coste añadido | Propuesta |
 | --- | --- | --- | --- | --- |
 | `grpo_outcome` | Línea base del grupo, normalización por desviación, recorte y KL k3 frente a KLPO sobre oleadas idénticas | KLPO terminal con las mismas oleadas, semillas y selección | 0,5 h en CPU y 0,7 h en `cuda:0` | Entra |
 | `dr_grpo_outcome` | Quitar la normalización por desviación y por longitud | GRPO | 0,5 h y 0,7 h | Entra |
@@ -372,14 +372,51 @@ semanas (672 h) que también debe cubrir los predictores. Con ocho procesos en C
 completa quedaría en unas 18 h, pero ese cambio de dispositivo cambia las identidades de las
 ejecuciones y sigue pendiente de decisión en el protocolo. La propuesta es incluir el par solo
 si la etapa pasa a varios procesos o si el presupuesto lo permite tras los predictores, y en
-ese caso los dos brazos juntos. Un `qr_dqn_cvar` solo frente a Double DQN mezclaría el efecto de
+ese caso los dos modelos juntos. Un `qr_dqn_cvar` solo frente a Double DQN mezclaría el efecto de
 la pérdida distribucional con el de la preferencia por el riesgo y no permitiría atribuir una
 diferencia a ninguno de los dos.
 
-Cada brazo se juzga con el mismo informe de la etapa que KLPO, con contrastes emparejados por
-sesión e intervalos por bloques. Un brazo cuyo contraste con su control incluya el cero no
+Cada modelo se juzga con el mismo informe de la etapa que KLPO, con contrastes emparejados por
+sesión e intervalos por bloques. Un modelo cuyo contraste con su control incluya el cero no
 aporta evidencia a favor de su componente, y así debe registrarse, sin repetir el ajuste con
 otra configuración.
+
+## Declaración en la etapa
+
+El 10 de octubre, antes de cualquier ajuste, `grpo_outcome`, `dr_grpo_outcome` y
+`gspo_outcome` entraron en las [políticas comunes](../../configs/simulation/historical-masked-rl-policies.json)
+([#441](https://github.com/GonxKZ/mars-titan/issues/441)). Las etapas A, B y A v2 las leen sin
+cambiar su configuración, porque comparten ese archivo. Cada política usa el motor
+`native_group_relative`, el controlador `group_relative_fresh_waves_v1` y dos actualizaciones
+confirmadas por referencia, igual que KLPO, y entra en el nivel de algoritmos con el
+Transformer compacto y `titans_mac_online`. La sensibilidad de ventanas en expansión bajó de
+16 a 8 cintas, el máximo con dos entornos por cinta, y `policy_plan` rechaza la declaración si
+la regla principal o la sensibilidad lo superan.
+
+Los límites se recontaron con `count_stage` y coinciden exactamente con el plan:
+
+| Etapa | Ajustes antes | Ajustes ahora | Evaluaciones antes | Evaluaciones ahora |
+| --- | ---: | ---: | ---: | ---: |
+| A | 1.368 | 1.800 | 1.221 | 1.221 |
+| B | 456 | 600 | 2.133 | 2.421 |
+| A v2 | 2.664 | 3.096 | 3.219 | 3.219 |
+| A ampliada | 2.664 | 3.096 | 3.219 | 3.219 |
+| B ampliada | 888 | 1.032 | 4.995 | 5.283 |
+
+Cada política nueva añade 144 ajustes en A y en A v2 (dos predictores, 24 ventanas de mercado y
+tres semillas). En B añade 48 ajustes y 96 traslados, que son evaluaciones. Las referencias no
+cambian.
+
+La pregunta de cada política está declarada en `contrasts`. GRPO entra en la familia de KLPO, como
+los demás controles, porque su control es KLPO con las mismas oleadas. Dr. GRPO y GSPO se
+declaran además en `contrasts.components`, frente a GRPO, que es el control que permite
+descartarlos según la tabla anterior. El [informe de la etapa](rl-environment-integrity.md#patrimonio-por-sesión-e-informe-financiero)
+forma con esos dos pares otra familia de multiplicidad sobre las mismas sesiones y réplicas,
+con la diferencia variante menos control, y la publica en `contrasts.csv` con
+`family=components`. Así un efecto de la normalización o del cociente de secuencia no se lee
+a través de KLPO. Declarar estos pares no cambia la familia de KLPO, pero esa familia crece de 9
+a 12 controles con las tres políticas nuevas, así que sus intervalos simultáneos son algo más
+anchos que antes. Es un coste de multiplicidad aceptado antes de ver resultados.
 
 ## Mutación dirigida
 
@@ -424,13 +461,13 @@ Ninguna prueba ejecuta pasos de optimizador. Las CTest `ppo_policy`, `ppo_traini
 ## Pendiente
 
 1. Todo lo que aplica pasos de Adam sigue bloqueado: las tres CTest con Adam, el coste del paso
-   de Adam en cada motor y cualquier ajuste de los brazos nuevos. QR-DQN añade 37.711.872 pasos
-   de Adam por brazo, los mismos que Double DQN, y su coste es la incógnita principal de la
+   de Adam en cada motor y cualquier ajuste de los modelos nuevos. QR-DQN añade 37.711.872 pasos
+   de Adam por modelo, los mismos que Double DQN, y su coste es la incógnita principal de la
    proyección.
 2. Los ganchos de traza (`GroupObjectiveTrace` y `GroupWaveTrace`) están probados con paridad
    bit a bit, pero el ejecutor nativo todavía no los escribe. Conectarlos al registrador de
    trazas de aprendizaje queda dentro de #448, junto con las etiquetas de los modelos nuevos en
    el observatorio.
-3. La entrada de los brazos en la configuración de la etapa, con el máximo de la sensibilidad
-   de ventanas en 8, y la decisión de dispositivo corresponden al protocolo de la campaña.
+3. La decisión de dispositivo de la etapa y la entrada del par QR-DQN corresponden al protocolo
+   de la campaña. Los objetivos de grupo ya están declarados.
 4. QR-DQN no se ha medido con varios procesos bajo MPS en `cuda:0`.

@@ -15,12 +15,7 @@ import torch
 from mars_titan.models.baselines import ridge
 
 DEVICE = "cuda:0"
-
-
-@pytest.fixture(autouse=True)
-def cuda():
-    if not torch.cuda.is_available():
-        pytest.skip("CUDA no disponible, sin alternativa CPU para la ruta acelerada")
+pytestmark = pytest.mark.cuda
 
 
 def blocks(seed=11, sizes=(64, 64, 64, 17, 96, 64, 5)):

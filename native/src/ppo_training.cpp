@@ -1,4 +1,5 @@
 #include "mars_titan/ppo_training.hpp"
+#include "mars_titan/learning_hold.hpp"
 #include "mars_titan/ppo_objectives.hpp"
 #include "mars_titan/quantile_dqn.hpp"
 #include "accurate_sum.hpp"
@@ -326,11 +327,33 @@ AdaptiveState read_adaptive(std::string_view bytes) {
 }
 }
 
+std::size_t policy_observation_width(const std::vector<simulation::BatchInput>& inputs,
+                                     const PpoLearningOptions& learning, uint64_t seed,
+                                     std::size_t workers) {
+    require(!inputs.empty(), "La anchura de observación necesita al menos una fuente");
+    // Basta una fuente: todas comparten activos y campos, y la anchura no depende de los carriles.
+    const std::vector<simulation::BatchInput> first{inputs.front()};
+    simulation::FinancialBatch batch(first, workers);
+    if (!learning.enabled) {
+        return batch.observation_width();
+    }
+    return PolicyContext(first, learning, seed, batch.observations()).observation_width();
+}
+
+PpoPolicy initial_ppo_policy(std::size_t width, const PpoHyperparameters& hyperparameters,
+                             uint64_t seed, const std::string& device,
+                             const PpoLearningOptions& learning, const PpoObjectiveConfig& objective) {
+    return PpoPolicy(width, hyperparameters, seed, device, default_ppo_memory_bytes,
+                     architecture_for(learning, width), objective);
+}
+
 PpoTrainer::PpoTrainer(std::vector<simulation::BatchInput> inputs, PpoTrainingConfig config,
                        PpoHyperparameters hyperparameters, std::string device, bool diagnostic,
                        PpoLearningOptions learning, PpoObjectiveConfig objective)
     : inputs_(std::move(inputs)), config_(config), hyperparameters_(hyperparameters),
       device_(std::move(device)), diagnostic_(diagnostic), learning_(std::move(learning)), objective_(objective) {
+    // Un entrenador existe para dar pasos: el modo de solo evaluación lo rechaza antes de nada.
+    require_optimizer_steps_allowed("el entrenador PPO");
     objective_.validate();
     validate_sources(inputs_, "train");
     hyperparameters_.validate();
@@ -375,8 +398,8 @@ PpoTrainer::PpoTrainer(std::vector<simulation::BatchInput> inputs, PpoTrainingCo
     buffers_ = allocate_rollout(shape);
     actions_.resize(batch_->size());
     reset_lanes_.reserve(batch_->size());
-    policy_ = std::make_unique<PpoPolicy>(width, hyperparameters_, config_.seed, device_,
-                                         default_ppo_memory_bytes, architecture_for(learning_, width), objective_);
+    policy_ = std::make_unique<PpoPolicy>(
+        initial_ppo_policy(width, hyperparameters_, config_.seed, device_, learning_, objective_));
     hidden_ = policy_->initial_state(lanes);
     history_ = at::empty({0}, at::kFloat);
     history_lengths_ = at::empty({0}, at::kLong);
@@ -1027,6 +1050,8 @@ PpoEvaluation evaluate_policy(const PpoPolicy& policy, std::vector<simulation::B
                     record.mode = eligible[lane] != 0 ? "greedy" : "warmup";
                     record.learning_allowed = false;
                     record.critic = static_cast<double>(values[lane * width + trace_action_count]);
+                    const auto scores = values.subspan(lane * width, trace_action_count);
+                    std::copy(scores.begin(), scores.end(), record.logits.begin());
                     const auto likelihood = std::span(probabilities.const_data_ptr<float>(), inputs.size() * trace_action_count)
                         .subspan(lane * trace_action_count, trace_action_count);
                     std::copy(likelihood.begin(), likelihood.end(), record.probabilities.begin());

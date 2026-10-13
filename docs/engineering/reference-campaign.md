@@ -11,13 +11,13 @@ del control MSE con tasa 0,001 de la misma semilla y población. Crean un AdamW
 nuevo y no eligen retrospectivamente el mejor padre de validación.
 
 `full-corpus.json` exige una edición declarada completa. Programa 96 casos por
-brazo para Estados Unidos, China y su unión. Añade otros 96 para contrastar la
+modelo para Estados Unidos, China y su unión. Añade otros 96 para contrastar la
 unión con igual peso por mercado. La ponderación natural conserva peso uno por
 fila. La equilibrada utiliza $w_m=N/(M N_m)$, donde $N_m$ es el número de muestras
 de ajuste del mercado, $N$ es el total y $M$ el número de mercados. No retira filas
 del mercado mayor ni calcula pesos con validación.
 
-El brazo conjunto conserva exactamente las claves de ambos mercados. No significa
+El modelo conjunto conserva exactamente las claves de ambos mercados. No significa
 que se haya identificado una influencia causal entre bolsas. El contexto cruzado
 es una ampliación separada que requiere disponibilidad temporal comprobada.
 

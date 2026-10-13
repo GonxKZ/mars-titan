@@ -1,0 +1,289 @@
+{
+ "kind": "native_build_comparison",
+ "first": "cand-mold-clean",
+ "second": "cand-dev",
+ "identity_sha256": [
+  "2bd0ac7783d74d534ed46f7623b06bb762e5723f2b27551cd1549cf3f62421cc",
+  "018daa0cf38064327f42e0c76ba47ffca1cc375cd3f08966a720963a6419bb3a"
+ ],
+ "objects_sha256": {
+  "total": 36,
+  "equal": 33,
+  "identity_only": 3,
+  "identity_and_link_metadata": 0,
+  "content": 0,
+  "differences": {
+   "CMakeFiles/mars-titan-batch-benchmark.dir/benchmarks/batch_rollout.cpp.o": {
+    "class": "identity_only",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": []
+   },
+   "CMakeFiles/mars-titan-cohorts.dir/src/cohort_main.cpp.o": {
+    "class": "identity_only",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": []
+   },
+   "CMakeFiles/mars_titan_simulation_files.dir/src/simulation_files.cpp.o": {
+    "class": "identity_only",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": []
+   }
+  }
+ },
+ "linked_sha256": {
+  "total": 19,
+  "equal": 9,
+  "identity_only": 0,
+  "identity_and_link_metadata": 0,
+  "content": 10,
+  "differences": {
+   "_episodic_native.cpython-312-x86_64-linux-gnu.so": {
+    "class": "content",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": [
+     ".data",
+     ".data.rel.ro",
+     ".dynamic",
+     ".dynstr",
+     ".dynsym",
+     ".fini_array",
+     ".gnu.version_r",
+     ".got",
+     ".got.plt",
+     ".init_array",
+     ".note.gnu.build-id",
+     ".rela.dyn",
+     ".rela.plt",
+     ".rodata",
+     ".rodata.str1.1",
+     ".symtab",
+     ".text"
+    ]
+   },
+   "c_abi_test": {
+    "class": "content",
+    "identity_occurrences": [
+     0,
+     0
+    ],
+    "differing_sections": [
+     ".data",
+     ".dynamic",
+     ".dynstr",
+     ".dynsym",
+     ".fini_array",
+     ".gnu.version_r",
+     ".got",
+     ".got.plt",
+     ".init_array",
+     ".note.gnu.build-id",
+     ".rela.dyn",
+     ".rela.plt",
+     ".symtab"
+    ]
+   },
+   "cohort_execution_tests": {
+    "class": "content",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": [
+     ".data",
+     ".data.rel.ro",
+     ".dynamic",
+     ".dynstr",
+     ".dynsym",
+     ".fini_array",
+     ".gnu.version_r",
+     ".got",
+     ".got.plt",
+     ".init_array",
+     ".note.gnu.build-id",
+     ".rela.dyn",
+     ".rela.plt",
+     ".rodata",
+     ".rodata.str1.1",
+     ".symtab",
+     ".text"
+    ]
+   },
+   "financial_batch_tests": {
+    "class": "content",
+    "identity_occurrences": [
+     0,
+     0
+    ],
+    "differing_sections": [
+     ".data",
+     ".data.rel.ro",
+     ".dynamic",
+     ".dynstr",
+     ".dynsym",
+     ".fini_array",
+     ".gnu.version_r",
+     ".got",
+     ".got.plt",
+     ".init_array",
+     ".note.gnu.build-id",
+     ".rela.dyn",
+     ".rela.plt",
+     ".symtab"
+    ]
+   },
+   "financial_session_tests": {
+    "class": "content",
+    "identity_occurrences": [
+     0,
+     0
+    ],
+    "differing_sections": [
+     ".data",
+     ".data.rel.ro",
+     ".dynamic",
+     ".dynstr",
+     ".dynsym",
+     ".fini_array",
+     ".gnu.version_r",
+     ".got",
+     ".got.plt",
+     ".init_array",
+     ".note.gnu.build-id",
+     ".rela.dyn",
+     ".rela.plt",
+     ".symtab"
+    ]
+   },
+   "markov_filter_tests": {
+    "class": "content",
+    "identity_occurrences": [
+     0,
+     0
+    ],
+    "differing_sections": [
+     ".data",
+     ".dynamic",
+     ".dynstr",
+     ".dynsym",
+     ".fini_array",
+     ".gnu.version_r",
+     ".got",
+     ".got.plt",
+     ".init_array",
+     ".note.gnu.build-id",
+     ".rela.dyn",
+     ".rela.plt",
+     ".symtab"
+    ]
+   },
+   "mars-titan-batch-benchmark": {
+    "class": "content",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": [
+     ".data",
+     ".data.rel.ro",
+     ".dynamic",
+     ".dynstr",
+     ".dynsym",
+     ".fini_array",
+     ".gnu.version_r",
+     ".got",
+     ".got.plt",
+     ".init_array",
+     ".note.gnu.build-id",
+     ".rela.dyn",
+     ".rela.plt",
+     ".rodata.str1.1",
+     ".symtab",
+     ".text"
+    ]
+   },
+   "mars-titan-cohorts": {
+    "class": "content",
+    "identity_occurrences": [
+     1,
+     1
+    ],
+    "differing_sections": [
+     ".data",
+     ".data.rel.ro",
+     ".dynamic",
+     ".dynstr",
+     ".dynsym",
+     ".fini_array",
+     ".gnu.version_r",
+     ".got",
+     ".got.plt",
+     ".init_array",
+     ".note.gnu.build-id",
+     ".rela.dyn",
+     ".rela.plt",
+     ".rodata",
+     ".rodata.str1.1",
+     ".symtab",
+     ".text"
+    ]
+   },
+   "simulation_tests": {
+    "class": "content",
+    "identity_occurrences": [
+     0,
+     0
+    ],
+    "differing_sections": [
+     ".data",
+     ".dynamic",
+     ".dynstr",
+     ".dynsym",
+     ".fini_array",
+     ".gnu.version_r",
+     ".got",
+     ".got.plt",
+     ".init_array",
+     ".note.gnu.build-id",
+     ".rela.dyn",
+     ".rela.plt",
+     ".symtab"
+    ]
+   },
+   "threaded_simulation": {
+    "class": "content",
+    "identity_occurrences": [
+     0,
+     0
+    ],
+    "differing_sections": [
+     ".data",
+     ".data.rel.ro",
+     ".dynamic",
+     ".dynstr",
+     ".dynsym",
+     ".fini_array",
+     ".gnu.version_r",
+     ".got",
+     ".got.plt",
+     ".init_array",
+     ".note.gnu.build-id",
+     ".rela.dyn",
+     ".rela.plt",
+     ".symtab"
+    ]
+   }
+  }
+ }
+}

@@ -1,7 +1,7 @@
 """Recorrido cronológico de MARS-TITAN: Titans-MAC congelado, banco episódico y lector ajustado.
 
 El padre `mac_online` seleccionado no cambia. Sus parámetros están congelados y su memoria
-rápida avanza con la regla asociativa de Titans en cada observación, igual que en el brazo
+rápida avanza con la regla asociativa de Titans en cada observación, igual que en el modelo
 Titans-MAC. El optimizador ajusta solo `EpisodicReadout`, que refina el estado de trabajo de
 MAC con episodios maduros y aplica la cabeza del padre. El estado de trabajo se descarta tras
 cada predicción, así que no hay BPTT entre instantes.
@@ -102,7 +102,7 @@ def _default_selection():
 
 @dataclass(frozen=True)
 class ReadoutRecipe:
-    """Hiperparámetros declarados antes de ejecutar, comunes a los brazos emparejados.
+    """Hiperparámetros declarados antes de ejecutar, comunes a los modelos emparejados.
 
     La combinación de componentes (escritura, K y modo de episodios) pertenece a la variante.
     `update_instants` cuenta instantes de decisión por tramo y no es BPTT.
@@ -535,7 +535,7 @@ class MarsTitanInference:
                     else [None] * size
                 )
             with nvtx_ranges.phase("readout.encode"):
-                encoded = None if run.bank is None else self.codec.encode(cpu)
+                encoded = None if run.bank is None else self.codec.encode(cpu, native=self.native)
             # Rasgos M3 con las entradas de la decisión, conocidos en su corte.
             features = write_scores.batch_features(cpu) if self.admission == "m3" else None
             block = None

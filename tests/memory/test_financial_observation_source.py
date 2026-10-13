@@ -83,6 +83,7 @@ def test_inputs_loaded_by_position_equal_the_unfiltered_reader(tmp_path):
                     np.testing.assert_array_equal(value[row], expected[identity]["inputs"][name][0])
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_index_drives_real_frozen_consumer_and_recovery(native, tmp_path):
     from mars_titan.memory.episodic_codec import FrozenEpisodeCodec
     from mars_titan.memory.financial_session import FinancialSession

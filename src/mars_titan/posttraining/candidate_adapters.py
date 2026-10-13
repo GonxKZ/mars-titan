@@ -89,7 +89,7 @@ class CandidateHead(nn.Module):
 
 
 def adapted_head(model, points, seed):
-    """Cabeza con la corrección completa e inicialmente nula del brazo `head`."""
+    """Cabeza con la corrección completa e inicialmente nula del modelo `head`."""
     return attach_adapters(CandidateHead(model), cm.candidate_targets(points), seed=seed)
 
 

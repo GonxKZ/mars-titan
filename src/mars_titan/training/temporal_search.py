@@ -90,7 +90,7 @@ def _inputs(config, views):
         or plan["arms"][0] not in {"US", "CN", "US+CN"}
         or plan["pooled_weightings"] != ["natural"]
     ):
-        raise ValueError("La campaña temporal requiere un único brazo y peso natural")
+        raise ValueError("La campaña temporal requiere un único modelo y peso natural")
     markets = {"US", "CN"} if plan["arms"] == ["US+CN"] else set(plan["arms"])
     # La versión 4 del plan declara la lectura. Las anteriores conservan la política estricta.
     policy = plan.get("input_policy", STRICT_INPUTS)

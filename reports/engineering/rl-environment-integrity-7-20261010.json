@@ -1,0 +1,451 @@
+{
+  "schema_version": 1,
+  "kind": "rl_environment_integrity_seventh_phase",
+  "recorded_at_utc": "2026-10-10T16:29:38Z",
+  "base_revision": "a381424d",
+  "code_revision": "865bbbb2",
+  "issues": [
+    "https://github.com/GonxKZ/mars-titan/issues/365",
+    "https://github.com/GonxKZ/mars-titan/issues/60"
+  ],
+  "scope": "Bajas reales con salida acreditada o posición enmascarada, universo elegido con datos anteriores a cada tramo y estado de cotización de las acciones A con paridad Python y C++. Sin entrenamiento, evaluación científica ni pasos de optimizador.",
+  "hardware": {
+    "cpu": "AMD Ryzen 9 8945HS",
+    "gpu_used": false,
+    "cuda_visible_devices": -1,
+    "threads": 2
+  },
+  "toolchain": {
+    "python": "3.12.14",
+    "numpy": "2.5.3",
+    "pyarrow": "25.0.1",
+    "exchange_calendars": "4.13.2",
+    "gymnasium": "1.3.0",
+    "torch": "2.14.0+cu130, solo CPU",
+    "clang": "21.1.8",
+    "cmake": "4.2.3",
+    "ninja": "1.13.2",
+    "pdftotext": "26.01.0",
+    "native_preset": "native-ppo-release, Release -O3, ninja -j2"
+  },
+  "measurements": {
+    "edition": {
+      "path": "~/.local/state/mars-titan/unadjusted-prices-20261009/edition-v1",
+      "edition_id": "1ac3727836462ce31c39b5438918bd6f3e0d359690c7bc79bfa87cd808c8e68c",
+      "access": "solo lectura"
+    },
+    "labels": {
+      "path": "~/.local/state/mars-titan/history-2000-20261007/materialization/targets-v3/labels",
+      "use": "población de los predictores: activos con etiqueta aceptada en cada evaluación",
+      "access": "solo lectura"
+    },
+    "listing_status": {
+      "path": "~/.local/state/mars-titan/china-listing-status-20261010/table/listing-status.json",
+      "sha256": "645d78434ded6f139f0decd6bc85e19202eebe994e27d80e062641d0ec809ac8",
+      "coverage_from": "2010-01-01",
+      "cutoff": "2023-12-31",
+      "assets": 810,
+      "special_treatment_spans": {
+        ".SS": 64,
+        ".SZ": 63
+      },
+      "share_reform_pending_assets": 6,
+      "limit_free_day_assets": 17,
+      "ipo_exemptions": 27,
+      "sources": 877,
+      "announcements": 419,
+      "szse_extractor_agreement": {
+        "both": 24753,
+        "official_only": 0,
+        "announced_only": 0,
+        "differing_codes": []
+      },
+      "price_band_check": {
+        "method": "cierres de sesiones consecutivas del calendario, ambas con volumen",
+        "sessions_by_band": {
+          "0.1": 2090717,
+          "0.05": 42320,
+          "0.2": 62067,
+          "None": 97
+        },
+        "outside_by_band": {
+          "0.1": 178,
+          "0.05": 4,
+          "0.2": 1
+        }
+      },
+      "build": {
+        "seconds": 22.8,
+        "max_rss_mib": 337
+      }
+    },
+    "point_in_time_universes": {
+      "rule": "point_in_time_median_traded_value_v2",
+      "max_assets": 128,
+      "ranking_sessions": 252,
+      "train_windows": 3,
+      "method": "Censo de cada tramo y elección de los universos de ajuste, validación y evaluación de cada ancla, sin ajustar ni evaluar. Una serie termina dentro de su tramo si su última fila es anterior a la última sesión del calendario del tramo.",
+      "markets": {
+        "CN": {
+          "anchors": 9,
+          "evaluation_years": [
+            "2015",
+            "2023"
+          ],
+          "universe_size_every_segment": [
+            128
+          ],
+          "layout_min": 251,
+          "layout_max": 294,
+          "layouts": {
+            "fold-004": 251,
+            "fold-005": 256,
+            "fold-006": 267,
+            "fold-007": 273,
+            "fold-008": 294,
+            "fold-009": 287,
+            "fold-010": 282,
+            "fold-011": 274,
+            "fold-012": 265
+          },
+          "evaluation_assets_outside_predictor_population": 0,
+          "evaluation_assets_failing_tape_conditions": 0,
+          "series_ending_inside_fit_universes": 0,
+          "series_ending_inside_evaluation_universes": 0,
+          "census_seconds_per_segment": [
+            10.1,
+            6.7,
+            7.1,
+            6.8,
+            7.7,
+            7.8,
+            8.0,
+            7.4,
+            7.1,
+            7.9,
+            7.6,
+            7.3,
+            7.8
+          ],
+          "max_rss_mib": 617.6,
+          "reduced_band_sessions": {
+            "2015": [
+              0,
+              31232
+            ],
+            "2016": [
+              345,
+              31232
+            ],
+            "2017": [
+              166,
+              31232
+            ],
+            "2018": [
+              170,
+              31104
+            ],
+            "2019": [
+              154,
+              31232
+            ],
+            "2020": [
+              0,
+              31104
+            ],
+            "2021": [
+              0,
+              31104
+            ],
+            "2022": [
+              0,
+              30976
+            ],
+            "2023": [
+              0,
+              30976
+            ]
+          },
+          "limit_free_days_in_evaluation_universes": 0,
+          "ipo_windows_in_evaluation_universes": 0
+        },
+        "US": {
+          "anchors": 15,
+          "evaluation_years": [
+            "2009",
+            "2023"
+          ],
+          "universe_size_every_segment": [
+            128
+          ],
+          "layout_min": 172,
+          "layout_max": 189,
+          "layouts": {
+            "fold-004": 189,
+            "fold-005": 186,
+            "fold-006": 179,
+            "fold-007": 177,
+            "fold-008": 172,
+            "fold-009": 179,
+            "fold-010": 177,
+            "fold-011": 180,
+            "fold-012": 185,
+            "fold-013": 184,
+            "fold-014": 180,
+            "fold-015": 174,
+            "fold-016": 175,
+            "fold-017": 181,
+            "fold-018": 183
+          },
+          "evaluation_assets_outside_predictor_population": 0,
+          "evaluation_assets_failing_tape_conditions": 0,
+          "series_ending_inside_fit_universes": 0,
+          "series_ending_inside_evaluation_universes": 0,
+          "census_seconds_per_segment": [
+            62.0,
+            37.4,
+            40.1,
+            37.9,
+            40.8,
+            40.8,
+            38.8,
+            39.0,
+            40.0,
+            41.2,
+            42.5,
+            42.7,
+            44.0,
+            42.2,
+            43.6,
+            43.7,
+            44.9,
+            43.8,
+            44.3
+          ],
+          "max_rss_mib": 661.6
+        }
+      }
+    }
+  },
+  "items": [
+    {
+      "id": 1,
+      "title": "Bajas dentro de la cinta",
+      "status": "implemented",
+      "change": "series_end=delisting_at_next_open, delisting con cobro acreditado o unpriced_delisting con posición sin valorar y episodio enmascarado (unpriced_exit), en la cartera Python, la cartera nativa y la sesión C++",
+      "attempts": [
+        "precio o predicción tras la baja",
+        "evento posterior a la última fila",
+        "salida acreditada para otra última sesión",
+        "baja sin precio con posición y sin ella"
+      ],
+      "result": "rechazados o enmascarados con motivo, paridad paso a paso Python y C++"
+    },
+    {
+      "id": 2,
+      "title": "Universo por fecha",
+      "status": "implemented",
+      "change": "census y select_universe con datos anteriores a cada tramo, diseño como unión de universos y columnas fuera del universo sin precios ni predicciones",
+      "attempts": [
+        "censo que lee filas del tramo",
+        "universo condicionado a sobrevivir",
+        "censo o universo de otra edición o tabla en disco"
+      ],
+      "result": "rechazados, la evaluación conserva las empresas que después terminan"
+    },
+    {
+      "id": 3,
+      "title": "Ajuste sin bajas sin precio",
+      "status": "implemented",
+      "change": "el universo de ajuste y validación excluye las series que terminan en su tramo sin salida acreditada, la etapa, load_policy_tape y censors_fit lo comprueban y load_ppo_input deja de rechazar las columnas ausentes de una cinta real",
+      "attempts": [
+        "baja sin precio en una cinta de ajuste o de validación",
+        "columna fuera del universo en una fuente de ajuste"
+      ],
+      "result": "la primera se rechaza en Python y en los binarios PPO, Double DQN y KLPO, la segunda se admite sin pasos de optimizador"
+    },
+    {
+      "id": 4,
+      "title": "Estado de las acciones A",
+      "status": "implemented",
+      "change": "tabla desde capturas oficiales, banda del 5 % en tramos ST y S del mercado principal, días sin límite y ventana inicial, con espejo C++",
+      "attempts": [
+        "tramo anterior a la cobertura",
+        "banda reducida fuera del mercado principal",
+        "días sin límite desordenados o ignorados",
+        "reglas declaradas distintas"
+      ],
+      "result": "rechazados, paridad Python y C++"
+    }
+  ],
+  "tests": {
+    "python_new_functions": 47,
+    "python_files": [
+      "tests/simulation/test_window_tapes.py",
+      "tests/simulation/test_reconstructed_tape.py",
+      "tests/simulation/test_campaign_stage.py",
+      "tests/simulation/test_stage_report.py",
+      "tests/simulation/test_listing_status.py",
+      "tests/simulation/test_native_real_tapes.py",
+      "tests/simulation/test_native_policy_tapes.py",
+      "tests/simulation/test_training.py",
+      "tests/data/test_china_listing_status.py"
+    ],
+    "simulation_and_listing_status": {
+      "passed": 1059,
+      "skipped": 112,
+      "failed": 0,
+      "seconds": 929.8,
+      "skips": "bloqueo de aprendizaje, hmmlearn ausente y pruebas que piden binarios o la edición real por variables"
+    },
+    "binaries_declared": {
+      "files": [
+        "tests/simulation/test_native_learning_hold.py",
+        "tests/simulation/test_ppo_objective_config.py"
+      ],
+      "passed": 16
+    },
+    "real_edition_smoke": {
+      "variables": [
+        "MARS_TITAN_UNADJUSTED_EDITION",
+        "MARS_TITAN_LISTING_STATUS"
+      ],
+      "passed": 12
+    },
+    "tooling_data_and_campaign_training": {
+      "passed": 2441,
+      "skipped": 32,
+      "failed": 0,
+      "files": "tests/tooling, tests/data, tests/training/test_campaign_chain.py y tests/training/test_campaign_a_joint.py"
+    },
+    "ctest_without_adam": {
+      "tests": [
+        "simulation",
+        "c_abi",
+        "financial_session",
+        "financial_batch",
+        "learning_hold",
+        "ppo_inputs",
+        "ppo_evaluation"
+      ],
+      "passed": 7
+    },
+    "optimizer_steps": 0
+  },
+  "mutations": {
+    "python": {
+      "mutants": 54,
+      "first_round_survivors": [
+        "b_free_outside_window",
+        "d_census_ignores_end",
+        "d_events_after_end",
+        "d_market_after_delisting",
+        "d_market_status_unchecked",
+        "d_stage_outside_unchecked",
+        "d_stage_status_unchecked",
+        "d_unpriced_not_retired"
+      ],
+      "final": {
+        "b_already_ignored": "killed",
+        "b_band_gaps": "killed",
+        "b_band_zero_volume": "killed",
+        "b_continue_any": "killed",
+        "b_contradictions_ignored": "killed",
+        "b_end_without_start": "killed",
+        "b_free_after_first": "killed",
+        "b_free_outside_window": "killed",
+        "b_leaving_ignored": "killed",
+        "b_name_disagrees": "killed",
+        "b_opened_any_evidence": "killed",
+        "b_pending_ignored": "killed",
+        "b_relisting_other": "killed",
+        "b_s_name_broad": "killed",
+        "b_ten_ignored": "killed",
+        "censors_real_any_nan": "killed",
+        "censors_real_never": "killed",
+        "census_identity_without_status": "killed",
+        "census_ignores_credited_exit": "killed",
+        "census_never_unpriced": "killed",
+        "credited_exit_any_session": "killed",
+        "d_census_ignores_end": "killed",
+        "d_census_ranks_with_tramo": "killed",
+        "d_events_after_end": "killed",
+        "d_exit_other_session": "killed",
+        "d_late_delisting": "killed",
+        "d_market_after_delisting": "killed",
+        "d_market_status_unchecked": "killed",
+        "d_prices_after_end": "killed",
+        "d_reason_missing_close": "killed",
+        "d_scores_after_end": "killed",
+        "d_stage_outside_unchecked": "killed",
+        "d_stage_status_unchecked": "killed",
+        "d_survival_any_failure": "killed",
+        "d_universe_survivors": "killed",
+        "d_universe_without_value": "killed",
+        "d_unpriced_not_retired": "killed",
+        "fit_drops_reason": "killed",
+        "fit_keeps_unpriced": "killed",
+        "ls_before_coverage": "killed",
+        "ls_exit_paid_before": "killed",
+        "ls_free_day_not_session": "killed",
+        "ls_free_days_unsorted": "killed",
+        "ls_overlap": "killed",
+        "ls_reform_spans_unchecked": "killed",
+        "ls_tape_before_coverage": "killed",
+        "mr_all_boards": "killed",
+        "mr_free_days_ignored": "killed",
+        "mr_free_two_days": "killed",
+        "mr_ipo_ignored": "killed",
+        "mr_reform_ignored": "killed",
+        "stage_guard_removed": "killed",
+        "stage_guard_validation_allowed": "killed",
+        "trainer_ignores_censoring": "killed"
+      }
+    },
+    "cpp": {
+      "mutants": 11,
+      "first_round_survivors": [
+        "cpp_all_boards_reduced",
+        "cpp_span_before_coverage"
+      ],
+      "final": {
+        "cpp_all_boards_reduced": "killed",
+        "cpp_free_days_empty": "killed_by_compiler",
+        "cpp_free_days_ignored": "killed_by_compiler",
+        "cpp_free_days_unordered": "killed",
+        "cpp_free_days_zero_length": "killed",
+        "cpp_free_two_days": "killed",
+        "cpp_real_nan_closes_rejected": "killed",
+        "cpp_reform_ignored": "killed",
+        "cpp_span_before_coverage": "killed",
+        "cpp_unpriced_any_role": "killed",
+        "cpp_unpriced_validation_allowed": "killed"
+      }
+    }
+  },
+  "source_sha256": {
+    "src/mars_titan/data/china_listing_status.py": "4fc0458977d995387127083b22a6f14ee706340f2e3aaabf35639781ba388a17",
+    "src/mars_titan/simulation/listing_status.py": "dd70ab233cefab8d8756b4a20060f4550fe5754988a8ae97a754fe5fe7e5dfb9",
+    "src/mars_titan/simulation/market_rules.py": "967d30f832e2fb00eaef5e10114ee074d1bb7675b893affbd54e33ff3c9dc98e",
+    "src/mars_titan/simulation/reconstructed_tape.py": "0b7a90db06824561164578665216138b2e8679f87afd79453632f2a0d7daf253",
+    "src/mars_titan/simulation/market.py": "aeda6658392f7833c553c1159ad8b8e917625e534c762934a46cae7115ed6f58",
+    "src/mars_titan/simulation/portfolio.py": "c6e6d1b7a4f8c0e447159ba44abe18e728665642363f474ac44f97b5551c9adb",
+    "src/mars_titan/simulation/window_tapes.py": "20e96d9328d3a5eb672a320b61e6c733290071f378c23beacb10dcb061bc9443",
+    "src/mars_titan/simulation/campaign_stage.py": "9f87f6090b46547879d94c40a4b4134c6a47b3bf0c82933e3ddaa119a1fb35ed",
+    "src/mars_titan/simulation/stage_report.py": "62d2e57b26eb309723cf816b45319400f3057d9994df53f664ba831afa70ae68",
+    "src/mars_titan/simulation/policy_plan.py": "13ea85f0af749ad3c22632fb5ec19be2672e898c91737dbc76488bed6b819ead",
+    "src/mars_titan/simulation/training.py": "27df449ed9562e54f99b10cdd8a406fed92bd7ebd7fdaac81a9d729286ff7490",
+    "native/src/reconstructed_tape.cpp": "b7cb09d03bb09578aa8af53cfdf431886242ea0504ec7552521e528dcd0f53e4",
+    "native/src/financial_session.cpp": "57777c109465743e257dff2ad5d9f72f30bdbbfee2aef9b3f9b088115bb59afc",
+    "native/src/policy_tapes.cpp": "039176d9461f7a655cfa4ad125f4630d68a8c695791420e774e08dc755ebcd68",
+    "native/src/ppo_inputs.cpp": "5273b6ed7acb2a051207bf3009bcc9aaa2e23fe2084c01dd5f6cd5a367f9c90e",
+    "configs/simulation/historical-masked-rl-policies.json": "64d60fc8f023cc2b9ccf648e1fef0188ff26fe28b577700a72181425cf1fee95"
+  },
+  "not_executed": [
+    "Entrenamiento, postentrenamiento, RL, pilotos, evaluación científica y pasos de optimizador",
+    "Retornos de salida de bajas reales, porque ninguna fuente capturada los acredita",
+    "Sensibilidad secundaria de supervivencia con retornos de salida supuestos",
+    "Paridad CPU frente a CUDA de la evaluación congelada, que corresponde a #439",
+    "Predicciones dentro de muestra de las cintas, que corresponden a otra tarea"
+  ]
+}

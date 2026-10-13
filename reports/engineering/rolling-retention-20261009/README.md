@@ -22,7 +22,7 @@ Este informe acompaña a la retención v2 declarada en `configs/baselines/histor
 | Boosters de recuperación de XGBoost e índices de la ablación tras el recibo | `training/campaign_storage.py`, `modality_ablation_stage.py` | `tests/training/test_campaign_storage.py` |
 | Estimación del recorrido | `training/rolling_storage.py`, `run_masked_campaign.py storage --schedule` | `tests/training/test_rolling_storage.py` |
 
-Los agregados guardan, para cada brazo y semilla de una ventana, los resultados por sesión que calcula la comparación (errores, aciertos y fallos direccionales por signo, Rank IC, pérdida de cuantiles, cobertura y anchura de intervalos, estratos de presencia, calibrador y ablación). Se escriben en un `npz` comprimido sin pérdida, con todos los decimales en FP64 y sin redondear, y la lectura comprueba su identidad con la configuración y las fuentes. La cartera larga y corta guarda aparte los libros por sesión de cada ventana (`<ventana>.long_short.npz`), con la identidad de la edición de precios. Su informe desde esos libros es idéntico al que lee las filas.
+Los agregados guardan, para cada modelo y semilla de una ventana, los resultados por sesión que calcula la comparación (errores, aciertos y fallos direccionales por signo, Rank IC, pérdida de cuantiles, cobertura y anchura de intervalos, estratos de presencia, calibrador y ablación). Se escriben en un `npz` comprimido sin pérdida, con todos los decimales en FP64 y sin redondear, y la lectura comprueba su identidad con la configuración y las fuentes. La cartera larga y corta guarda aparte los libros por sesión de cada ventana (`<ventana>.long_short.npz`), con la identidad de la edición de precios. Su informe desde esos libros es idéntico al que lee las filas.
 
 ## Regeneración exacta
 
@@ -102,6 +102,8 @@ Recorrido por ventanas con liberación verificada:
 | Todo, adaptadores con copia ordenada | cualquiera | 131,7 | 317,4 | 231,4 | 406,2 |
 
 Lo conservado con todo regenerado son los estados elegidos (5,0 GB), informes y resúmenes (0,9 GB), agregados (1,8 GB), registros de retención, las cintas de las políticas (4,0 GB) y las 418 evaluaciones que leen las políticas mientras tienen lector. El pico está siempre en `fold-018`, la ventana con más filas: lo conservado de las 18 anteriores (15,0 GB) más el ajuste XGBoost de US+CN con sus páginas (25,2 GB densas, 31,9 GB con la caché de `develop`). La regeneración de un trabajo al liberar añade sus tablas, su compactación y, si indexa, su índice, por debajo de ese pico.
+
+Las cintas se midieron con 128 columnas. El 13 de octubre se [midieron de nuevo](../campaign-storage-20261009/README.md#forma-de-las-cintas-de-las-políticas-13-de-octubre) con el diseño fijo de cada política, 128 columnas con precios en 640: 1.697.830 bytes por cinta en lugar de 1.531.535. Las 2.640 cintas de A v2 pasan de 4,04 a 4,48 GB. Lo conservado de cada combinación con políticas sube 0,44 GB y el pico de `fold-018` como mucho lo mismo. `estimate-a-v2.json` no se ha recalculado.
 
 A las 20:55 del 9 de octubre `/` tenía 47,98 GB libres. Con el margen de 8 GiB (8,59 GB) quedan 39,4 GB, menos que los 42,2 GB del pico de la base con políticas y ablación. Para lanzar esa combinación harían falta unos 50,8 GB libres en `fold-018`. La guardia de cada ventana lo comprueba con la declaración antes de empezarla, y la de cada trabajo antes de cada ajuste.
 

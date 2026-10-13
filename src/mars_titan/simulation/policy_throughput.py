@@ -1,12 +1,13 @@
 """Medir sin aprender el coste del entorno y de la red de las políticas y estimar horas.
 
-La medición recorre una cinta sintética con el universo máximo declarado y un año de
-sesiones, con la contabilidad Python y con la nativa cuando el motor la admite para el
-mercado. Las acciones siguen un ciclo fijo de las seis acciones, así que no hay política
-ni aprendizaje. La red es `FinancialNetwork`, la referencia Python de dos capas de 64
-unidades. En `cuda:0` se mide su inferencia por lotes, con la copia de observaciones y
-acciones, y el forward y backward de un minilote del objetivo PPO con recorte de
-gradientes, sin optimizador. Al terminar se exige que los pesos no hayan cambiado.
+La medición recorre una cinta sintética con el diseño máximo de activos que admite la
+regla del universo y un año de sesiones, con la contabilidad Python y con la nativa cuando
+el motor la admite para el mercado. Las acciones siguen un ciclo fijo de las seis
+acciones, así que no hay política ni aprendizaje. La red es `FinancialNetwork`, la
+referencia Python de dos capas de 64 unidades. En `cuda:0` se mide su inferencia por
+lotes, con la copia de observaciones y acciones, y el forward y backward de un minilote
+del objetivo PPO con recorte de gradientes, sin optimizador. Al terminar se exige que los
+pesos no hayan cambiado.
 
 La estimación aplica esos caudales al presupuesto de transiciones, a las validaciones de
 la selección y a la evaluación por coste de cada trabajo. Es orientativa: el motor nativo
@@ -25,6 +26,7 @@ from collections import Counter
 
 import numpy as np
 
+from . import window_tapes
 from .policy_plan import FIT, REFERENCE, VALUE_VARIANTS, WAVE_ENGINES, plan_stage
 
 SESSIONS = 253
@@ -34,7 +36,8 @@ ASSUMPTIONS = [
     "Cada ajuste recorre todo el presupuesto de transiciones y valida al inicio y cada "
     "`evaluation_transitions`, con un episodio completo sobre la cinta de validación",
     "Las sesiones de cada tramo se aproximan con días hábiles, sin festivos",
-    "La cinta sintética tiene el universo máximo declarado. Un universo menor cuesta menos",
+    "La cinta sintética tiene el diseño máximo: universos disjuntos en cada tramo de la "
+    "política. La unión medida en la edición es menor y cuesta menos",
     "El entorno nativo se usa si el motor lo admite para el mercado. Si no, la "
     "contabilidad Python hace de aproximación",
     "La red medida es la referencia Python. El motor nativo usa libtorch y la misma forma",
@@ -89,6 +92,11 @@ def _step_rate(env, *, steps, warmup):
     )
 
 
+def _layout(stage):
+    policies = stage["policies"]
+    return window_tapes.layout_bound(policies["universe"], policies["train_windows"])
+
+
 def measure_stepping(stage, *, steps, warmup, library=None):
     """Transiciones por segundo del entorno de cada mercado con cada contabilidad."""
     from .campaign_stage import market_rules
@@ -99,7 +107,7 @@ def measure_stepping(stage, *, steps, warmup, library=None):
         for key, value in stage["policies"]["environment"].items()
         if key != "dividend_payment_lag_sessions"
     }
-    assets = stage["policies"]["universe"]["max_assets"]
+    assets = _layout(stage)
     result = {}
     for market in _markets(stage):
         tape = synthetic_tape(market, assets)
@@ -212,7 +220,7 @@ def measure_policies(stage, *, steps=2048, warmup=64, library=None):
     return dict(
         tape=dict(
             domain="synthetic",
-            assets=stage["policies"]["universe"]["max_assets"],
+            assets=_layout(stage),
             sessions=SESSIONS,
             actions="cycle_of_six",
         ),
@@ -224,9 +232,11 @@ def measure_policies(stage, *, steps=2048, warmup=64, library=None):
 
 # Lo que la estimación con el motor nativo no puede medir mientras rige el bloqueo.
 NATIVE_NOT_MEASURED = [
-    "Paso de Adam: se cuentan los pasos de cada brazo, sin tiempo",
+    "Paso de Adam: se cuentan los pasos de cada modelo, sin tiempo",
     "Muestreo del replay de Double DQN y sincronización de su red objetivo",
     "Puntos de control, lectura de cintas, recibos y arranque de cada proceso",
+    "Diseños de activos mayores que el universo: los tiempos se miden con las cintas del "
+    "benchmark y el diseño por fechas une los universos de todos los tramos de la política",
 ]
 NATIVE_FIELDS = (
     "ppo_tick_seconds",
@@ -242,7 +252,7 @@ NATIVE_FIELDS = (
 # Tiempos de la cabeza cuantílica, exigidos solo cuando la etapa declara qr_dqn o qr_dqn_cvar.
 # Ambas comparten red y coste, porque el CVaR solo cambia qué niveles se promedian.
 QUANTILE_FIELDS = ("qr_dqn_tick_seconds", "qr_dqn_minibatch_seconds", "qr_dqn_forward_seconds")
-# Objetivo de grupo por transición recogida, exigido solo si la etapa declara esos brazos. La
+# Objetivo de grupo por transición recogida, exigido solo si la etapa declara esos modelos. La
 # recogida es la de KLPO y usa su tiempo.
 GROUP_FIELDS = ("group_objective_transition_seconds",)
 DQN_WARMUP = 256
@@ -309,7 +319,7 @@ def native_policy_hours(stage, measured):
     un recorrido y un paso de un carril con y sin red. Un minilote de Double DQN cuenta un
     forward y backward y dos forwards sin gradiente. QR-DQN sigue la misma cuenta con los
     tiempos de `QUANTILE_FIELDS`, que solo se exigen si la etapa declara esas variantes. Sin el
-    paso de Adam, las horas son una cota inferior: el resultado cuenta esos pasos por brazo
+    paso de Adam, las horas son una cota inferior: el resultado cuenta esos pasos por modelo
     para completarla después.
     """
     for market, values in measured.items():

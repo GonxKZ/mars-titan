@@ -79,7 +79,7 @@ def test_needed_partitions_follow_the_comparison_outputs():
     assert needed["US/fold-000/gru/search-b"] == ()
     assert needed["US/fold-000/ridge/search-r1"] == ("evaluation",)
     assert needed["US/fold-000/ridge/search-r2"] == ()
-    # El núcleo auxiliar de CM-v1 no es un brazo comparado.
+    # El núcleo auxiliar de CM-v1 no es un modelo comparado.
     assert needed["US/fold-000/cm_v1_core_b/search-a"] == ()
 
 
@@ -133,6 +133,74 @@ def test_groups_count_jobs_and_rows_per_family_and_stage(estimate):
     assert groups[("neural_reference", "finalist")]["jobs"] == 1
     assert groups[("cm_v1_core", "search")]["held_out_rows"] == 350
     assert result["selected_jobs"] == 4 and result["jobs"] == 6
+
+
+def with_plateaus(jobs, arm="gru"):
+    """Cada ajuste del modelo precedido de su meseta, como en el plan con parada conjunta."""
+    result = []
+    for item in jobs:
+        if item["arm"] == arm:
+            head, _, name = item["id"].rpartition("/")
+            result.append(dict(item, id=f"{head}/plateau-{name}", phase="plateau"))
+        result.append(item)
+    return result
+
+
+def test_a_plateau_only_adds_its_states_and_is_never_the_selected_job():
+    joint = with_plateaus(JOBS)
+    assert budget.selected_jobs(joint) == budget.selected_jobs(JOBS)
+    value = storage.load_storage(DECLARATION)
+    reports = {"US": {"fold-000": dict(counts=COUNTS)}}
+    extras = dict(aggregate_bytes_per_row=AGGREGATE)
+    plain = budget.base_estimate(CAMPAIGN, JOBS, reports, measured(), value, extras)
+    grouped = budget.base_estimate(CAMPAIGN, joint, reports, measured(), value, extras)
+    plateaus = [item for item in joint if item.get("phase")]
+    assert len(plateaus) == 3 and grouped["selected_jobs"] == plain["selected_jobs"]
+    for name, scenario in budget.SCENARIOS.items():
+        # Sin tablas ni agregados: la meseta conserva sus estados, índices e informe.
+        extra = sum(
+            storage.job_footprint(item, COUNTS, value, release=scenario["release"])[
+                "retained_bytes"
+            ]
+            for item in plateaus
+        )
+        assert grouped["totals"][name]["retained_bytes"] == (
+            plain["totals"][name]["retained_bytes"] + extra
+        ), name
+        assert (
+            grouped["totals"][name]["retained_parts"]["predictions"]
+            == plain["totals"][name]["retained_parts"]["predictions"]
+        )
+    rows = {(g["family"], g["stage"]): g["held_out_rows"] for g in grouped["groups"]}
+    assert rows == {(g["family"], g["stage"]): g["held_out_rows"] for g in plain["groups"]}
+
+
+def test_a_plateau_without_footprint_leaves_the_estimate_without_plateaus(monkeypatch):
+    """Sin sus estados, la meseta no cambia nada: ni tablas, ni elegidos, ni filas abiertas."""
+    real = budget.job_footprint
+
+    def free(item, *args, **options):
+        result = real(item, *args, **options)
+        if item.get("phase") != "plateau":
+            return result
+        return dict(
+            retained=dict.fromkeys(result["retained"], 0),
+            transient=dict.fromkeys(result["transient"], 0),
+            retained_bytes=0,
+            transient_bytes=0,
+        )
+
+    monkeypatch.setattr(budget, "job_footprint", free)
+    value = storage.load_storage(DECLARATION)
+    reports = {"US": {"fold-000": dict(counts=COUNTS)}}
+    extras = dict(aggregate_bytes_per_row=AGGREGATE)
+    # Con solo las dos búsquedas de la GRU, el pico cae con la búsqueda aún abierta.
+    for jobs in (JOBS, JOBS[:2]):
+        joint = with_plateaus(jobs)
+        plain = budget.base_estimate(CAMPAIGN, jobs, reports, measured(), value, extras)
+        grouped = budget.base_estimate(CAMPAIGN, joint, reports, measured(), value, extras)
+        assert grouped["totals"] == plain["totals"]
+        assert grouped["jobs"] == plain["jobs"] + len(joint) - len(jobs)
 
 
 def test_ablation_adds_evaluation_tables_and_indices_of_chronological_carries():

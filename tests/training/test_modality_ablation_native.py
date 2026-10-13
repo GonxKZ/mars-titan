@@ -8,7 +8,6 @@ enmascarado del primer corpus debe dar las mismas predicciones que el del segund
 la ablación no cambia nada.
 """
 
-import os
 from types import SimpleNamespace
 
 import numpy as np
@@ -20,6 +19,7 @@ from mars_titan.models.quantile_head import QUANTILE_COLUMNS
 from mars_titan.training import candidate_walk_forward as candidate
 from mars_titan.training import mars_titan_walk_forward as mw
 from mars_titan.training.learning_hold import HOLD_ENV
+from tests.learning_hold_lowering import allowed_hold
 from tests.training.historical_temporal_fixture import historical_temporal_fixture
 from tests.training.test_financial_run import RecordingOptimizer
 from tests.training.test_modality_ablation_carry import (
@@ -31,9 +31,7 @@ from tests.training.test_modality_ablation_inputs import pattern, without
 from tests.training.test_titans_walk_forward import unfused_attention
 from tests.training.test_walk_forward_v2_views import PROTOCOLS, prepare, sessions
 
-pytestmark = pytest.mark.skipif(
-    not os.environ.get("MARS_TITAN_EPISODIC_NATIVE"), reason="Falta el enlace nativo compilado"
-)
+pytestmark = pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 BOTH = "mask_news_and_fundamentals"
 
 
@@ -97,8 +95,7 @@ def episodic(tmp_path_factory):
     from tests.training.test_candidate_walk_forward import MODEL, SMALL
 
     root = tmp_path_factory.mktemp("candidate-ablation")
-    hold = root / "training-hold.json"
-    hold.write_text('{"training_allowed": true}', encoding="utf-8")
+    hold = allowed_hold(root / "training-hold.json")
     runs = {}
     with pytest.MonkeyPatch.context() as patch:
         patch.setenv(HOLD_ENV, str(hold))

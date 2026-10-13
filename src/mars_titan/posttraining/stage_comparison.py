@@ -1,27 +1,27 @@
-"""Comparar los brazos postentrenados de cada padre con su padre congelado y su continuación.
+"""Comparar los modelos postentrenados de cada padre con su padre congelado y su continuación.
 
 La declaración (``posttraining_stage_comparison``) se fija antes de evaluar y enlaza la
 etapa de postentrenamiento. La comparación se deriva del plan de la etapa, sin listar
-brazos a mano. Por cada brazo base y ámbito hay una comparación walk-forward con el padre
+modelos a mano. Por cada modelo base y ámbito hay una comparación walk-forward con el padre
 congelado, la continuación completa (control ``full_continuation`` de la matriz) y los
-brazos adaptados de la matriz para la familia del padre.
+modelos adaptados de la matriz para la familia del padre.
 
 En el walk-forward por etapas de la variante A, el padre congelado es el trabajo
 ``frozen`` de la etapa, que aplica a la ventana k el estado elegido por la base en k-1. El
-brazo base, reentrenado por la campaña en k, sigue en la comparación como contraste de
+modelo base, reentrenado por la campaña en k, sigue en la comparación como contraste de
 nivel y solo entra en una familia si la declaración usa su papel ``base_retrain``. Con el
-papel ``chain``, la comparación añade el predictor de la cadena (``<brazo>__chain``), cuyas
+papel ``chain``, la comparación añade el predictor de la cadena (``<modelo>__chain``), cuyas
 predicciones son las del trabajo que eligió `chain_validation_score_v1` en cada ventana y
 semilla, leído de su ``selection.json``. Es el contraste que el diseño por etapas informa
 aparte: el reentreno completo de k frente a la cadena, con las mismas filas de test. Como
 la primera ventana de cada ámbito no tiene postentrenamiento, la comparación solo cubre las
 ventanas con trabajos de la etapa.
 En un plan sin padre congelado, como el anclado de B, el padre congelado es el propio
-brazo base con las predicciones de la campaña.
+modelo base con las predicciones de la campaña.
 
 Así una familia nueva de la matriz entra sin reescribir la declaración. Cada comparación
 hereda de la comparación de la campaña la política, los protocolos, las métricas, la
-calibración común, el remuestreo y las secciones secundarias. Solo cambian los brazos y
+calibración común, el remuestreo y las secciones secundarias. Solo cambian los modelos y
 las familias de contrastes, que salen de los papeles declarados. La corrección por
 máximo estudentizado se aplica dentro de cada familia, como en la comparación principal.
 No hay corrección entre padres: cada padre es un análisis secundario propio.
@@ -30,7 +30,7 @@ El manifiesto de fuentes de un padre y un ámbito une las predicciones del padre
 leídas del manifiesto de fuentes ya validado de la campaña, con los recibos confirmados de
 la etapa. Antes de escribirlo se comprueba que la etapa corresponde a esta declaración y
 usó las mismas vistas. La comparación exige después las mismas filas y objetivos en todos
-los brazos. Nada de este módulo ajusta, carga modelos ni abre la reserva de 2024.
+los modelos. Nada de este módulo ajusta, carga modelos ni abre la reserva de 2024.
 """
 
 import argparse
@@ -48,10 +48,10 @@ from mars_titan.training import campaign_chain
 
 from .campaign_stage import FROZEN as FROZEN_JOB
 from .campaign_stage import (
+    FROZEN_ONLY,
     RECEIPT_KIND,
     RUN_KIND,
     STAGED,
-    TABULAR,
     _digest,
     load_stage,
     plan_stage,
@@ -67,7 +67,7 @@ ROLES = (FROZEN, CONTINUATION, ADAPTED, CHAIN, BASE)
 # Papeles que pueden hacer de base de una familia: los dos controles y el reentreno.
 BASE_ROLES = (FROZEN, CONTINUATION, BASE)
 _FIELDS = {"schema_version", "kind", "status", "name", "stage", "use", "families"}
-# Familia de cada brazo derivado en la configuración de la comparación.
+# Familia de cada modelo derivado en la configuración de la comparación.
 ARM_FAMILIES = {
     FROZEN: "posttraining_frozen_parent",
     CONTINUATION: "posttraining_control",
@@ -113,14 +113,14 @@ def _used(families):
 
 
 def _groups(stage):
-    """Brazos de cada padre por papel, en el orden del plan, y sus trabajos por ámbito.
+    """Modelos de cada padre por papel, en el orden del plan, y sus trabajos por ámbito.
 
-    Un trabajo ``frozen`` del plan por etapas fija el brazo del padre congelado. Sin él,
-    el padre congelado es el propio brazo base. Ridge y XGBoost quedan fuera: su cadena solo
-    tiene el padre congelado y no hay continuación ni adaptadores que contrastar. El
+    Un trabajo ``frozen`` del plan por etapas fija el modelo del padre congelado. Sin él,
+    el padre congelado es el propio modelo base. Ridge, XGBoost y B6 quedan fuera: su cadena
+    solo tiene el padre congelado y no hay continuación ni adaptadores que contrastar. El
     predictor de la cadena solo existe en el plan por etapas.
     """
-    trivial = {arm for arm, spec in stage_arms(stage)[0].items() if spec["design"] == TABULAR}
+    trivial = {arm for arm, spec in stage_arms(stage)[0].items() if spec["design"] == FROZEN_ONLY}
     staged = stage["design"] == STAGED
     groups = {}
     for job in plan_stage(stage):
@@ -159,7 +159,7 @@ def _groups(stage):
         group["jobs"].setdefault(job["scope"], []).append(job)
     for base_arm, group in groups.items():
         _require(group[CONTINUATION] is not None, f"{base_arm} no tiene continuación completa")
-        _require(group[ADAPTED], f"{base_arm} no tiene brazos adaptados")
+        _require(group[ADAPTED], f"{base_arm} no tiene modelos adaptados")
     return groups
 
 
@@ -235,6 +235,9 @@ def derive_config(declaration, stage, base_arm, groups):
         for key, value in inherited.items()
         if key not in {"sha256", "resolved_scopes", "resolved_families", *DERIVED}
     }
+    # Los pares de retención e interferencia nombran memorias y controles de la comparación
+    # principal. La etapa no los tiene y su pregunta no es la del postentrenamiento.
+    raw.pop(walk.RETENTION_FIELD, None)
     if walk.JOINT_FIELD in raw:
         # La etapa del modelo conjunto solo evalúa su ámbito. Se conserva la elegibilidad por
         # mercado (China en las métricas desde su primera ventana elegible) y se retiran los
@@ -269,7 +272,7 @@ def _stage_windows(inherited, scope, group):
 
 
 def check_declaration(path):
-    """Resumen de los padres, brazos y familias derivados, sin leer predicciones."""
+    """Resumen de los padres, modelos y familias derivados, sin leer predicciones."""
     loaded = load_declaration(path)
     return dict(
         status="checked",
@@ -297,7 +300,7 @@ def check_declaration(path):
 
 
 def _base_sources(path, inherited, scope, base_arm):
-    """Fuentes ya publicadas de la campaña, validadas con los brazos que contienen."""
+    """Fuentes ya publicadas de la campaña, validadas con los modelos que contienen."""
     manifest, _ = read_manifest(path, 16 * 1024**2)
     present = set(manifest.get("arms", {})) if isinstance(manifest, dict) else set()
     _require(base_arm in present, f"Las fuentes de la campaña no contienen {base_arm}")
@@ -375,7 +378,7 @@ def write_sources(declaration_path, scope, base_arm, *, base_sources, stage_outp
     loaded = load_declaration(declaration_path)
     stage = loaded["stage"]
     _require(scope in stage["scopes"], "El ámbito no pertenece a la etapa")
-    _require(base_arm in loaded["groups"], "El brazo no es un padre de la etapa")
+    _require(base_arm in loaded["groups"], "El modelo no es un padre de la etapa")
     inherited = stage["campaign"]["comparison_config"]
     config = loaded["configs"][base_arm]
     base = _base_sources(Path(base_sources), inherited, scope, base_arm)
@@ -445,11 +448,11 @@ def write_sources(declaration_path, scope, base_arm, *, base_sources, stage_outp
 
 
 def evaluate(declaration_path, sources_path, scope, base_arm, *, edition=None):
-    """Informe walk-forward del padre y, con ``edition``, su cartera larga y corta."""
+    """Informe walk-forward del padre y, con ``edition``, su cartera y sus estratos de liquidez."""
     loaded = load_declaration(declaration_path)
-    _require(base_arm in loaded["configs"], "El brazo no es un padre de la etapa")
+    _require(base_arm in loaded["configs"], "El modelo no es un padre de la etapa")
     config = loaded["configs"][base_arm]
-    report, sessions = walk.evaluate_walk_forward(config, sources_path, scope)
+    report, sessions = walk.evaluate_walk_forward(config, sources_path, scope, edition=edition)
     report["posttraining"] = dict(
         declaration=dict(name=loaded["name"], sha256=loaded["sha256"]),
         stage_sha256=loaded["stage"]["sha256"],
@@ -512,9 +515,9 @@ def write(declaration_path, sources_path, scope, base_arm, output, *, edition=No
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     commands = parser.add_subparsers(dest="command", required=True)
-    check = commands.add_parser("check", help="Derivar padres, brazos y familias sin datos")
+    check = commands.add_parser("check", help="Derivar padres, modelos y familias sin datos")
     sources = commands.add_parser("sources", help="Publicar las fuentes de un padre")
-    run = commands.add_parser("evaluate", help="Comparar un padre con sus brazos postentrenados")
+    run = commands.add_parser("evaluate", help="Comparar un padre con sus modelos postentrenados")
     for command in (check, sources, run):
         command.add_argument("--declaration", type=Path, required=True)
     for command in (sources, run):

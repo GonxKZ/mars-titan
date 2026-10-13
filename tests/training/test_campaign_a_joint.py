@@ -22,11 +22,15 @@ from mars_titan.evaluation.splits import build_folds, eligible_folds
 from mars_titan.training import campaign_budget as budget
 from mars_titan.training import campaign_data_policy as data_policy
 from mars_titan.training import campaign_numerics as numerics
+from mars_titan.training import campaign_online_controls
 from mars_titan.training import campaign_plan as plan
 from mars_titan.training import campaign_schedule as order
 from mars_titan.training import masked_campaign as engine
 from mars_titan.training.joint_temporal_corpus import prepare_joint_temporal_corpus
+from mars_titan.training.selection import JOINT_PLATEAU
+from tests.learning_hold_lowering import allowed_hold, lowers_learning_hold
 from tests.training.test_masked_campaign import Recorder, doubles, run
+from tests.training.test_masked_campaign_joint import COMMON, STOPS, JointRecorder, receipt, slot
 from tests.training.test_walk_forward_v2_views import expected, fixture, observed
 
 CONFIGS = Path("configs")
@@ -70,9 +74,13 @@ def edited(tmp_path, change, *, comparison_change=None):
         ("titans_mac", "recipe"),
         ("episodic_gru", "recipe"),
         ("mars_titan", "recipe"),
+        ("mars_titan", "correction_recipe"),
         ("cm_v1", "declaration"),
     ):
         value[section][key] = str((CAMPAIGN.parent / value[section][key]).resolve())
+    receipt = value["memory_options"].get("receipt")
+    if receipt is not None:
+        value["memory_options"]["receipt"] = str((CAMPAIGN.parent / receipt).resolve())
     change(value)
     atomic_json(folder / "baselines/campaign.json", value)
     return folder / "baselines/campaign.json"
@@ -84,10 +92,10 @@ def edited(tmp_path, change, *, comparison_change=None):
 def test_v2_plans_the_joint_model_for_every_arm_and_three_separate_controls():
     loaded = campaign()
     counts = plan.count_jobs(loaded)
-    assert (counts["training_jobs"], counts["prediction_jobs"]) == (2341, 0)
+    assert (counts["training_jobs"], counts["prediction_jobs"]) == (2873, 0)
     joint, us, cn = (counts["scopes"][scope] for scope in ("US+CN", "US", "CN"))
     assert (joint["windows"], us["windows"], cn["windows"]) == (19, 19, 13)
-    assert (joint["training_jobs"], us["training_jobs"], cn["training_jobs"]) == (1957, 228, 156)
+    assert (joint["training_jobs"], us["training_jobs"], cn["training_jobs"]) == (2489, 228, 156)
     # El control en línea solo se evalúa, y por tanto solo se ajusta, en el ámbito conjunto.
     assert set(us["arms"]) == set(cn["arms"]) == set(CONTROLS)
     assert plan.scope_arms(loaded, "US") == plan.scope_arms(loaded, "CN") == list(CONTROLS)
@@ -97,15 +105,27 @@ def test_v2_plans_the_joint_model_for_every_arm_and_three_separate_controls():
         "43": dict(fit=0, carry=0, online=19),
         "44": dict(fit=0, carry=0, online=19),
     }
+    # Cada ajuste de un modelo con grupo de parada empieza por su meseta, que no es otro ajuste.
+    # B6 no tiene épocas y queda fuera de los grupos.
+    membership = loaded["early_stop"]["membership"]
     for record, windows in ((joint, 19), (us, 19), (cn, 13)):
         for arm in record["arms"]:
             if arm in {"ridge", "xgboost", "transformer_compact_online"}:
                 continue
+            fits = {"42": 2 * windows, "43": windows, "44": windows}
             assert record["arms"][arm] == {
-                "42": dict(fit=2 * windows, carry=0),
-                "43": dict(fit=windows, carry=0),
-                "44": dict(fit=windows, carry=0),
+                seed: dict(fit=fit, carry=0, **({"plateau": fit} if arm in membership else {}))
+                for seed, fit in fits.items()
             }, arm
+    grouped = [arm for arm in joint["arms"] if arm in membership]
+    corrections = {arm for arm in loaded["mars_titan"]["arms"] if "_b6" in arm}
+    assert len(grouped) == 20 and len(corrections) == 6 and not corrections & set(membership)
+    assert (joint["plateau_jobs"], us["plateau_jobs"], cn["plateau_jobs"]) == (
+        20 * 4 * 19,
+        3 * 4 * 19,
+        3 * 4 * 13,
+    )
+    assert counts["plateau_jobs"] == 1904
     # Los tabulares son deterministas: sus casos solo se ajustan con la semilla de búsqueda.
     assert joint["arms"]["ridge"] == {"42": dict(fit=3 * 19, carry=0)}
     assert joint["arms"]["xgboost"] == {"42": dict(fit=12 * 19, carry=0)}
@@ -117,13 +137,21 @@ def test_extra_seeds_repeat_only_the_selected_case_after_every_search_of_the_sco
     loaded = campaign()
     jobs = plan.plan_campaign(loaded)
     position = {job["id"]: index for index, job in enumerate(jobs)}
+    by_id = {job["id"]: job for job in jobs}
     groups = {}
     for job in jobs:
-        groups.setdefault((job["scope"], job["window"], job["arm"]), []).append(job)
         # Orden topológico: ninguna dependencia aparece después del trabajo.
         assert all(position[dep] < position[job["id"]] for dep in job["depends"]), job["id"]
         # Ninguna dependencia cruza de ámbito.
         assert all(dep.split("/")[0] == job["scope"] for dep in job["depends"]), job["id"]
+        if job.get("phase") == plan.PLATEAU:
+            continue
+        groups.setdefault((job["scope"], job["window"], job["arm"]), []).append(job)
+        if job.get("phase") == plan.JOINT:
+            # La continuación añade a las dependencias de su meseta las del grupo, y nada más.
+            plateau = by_id[job["plateau"]]
+            assert job["depends"] == [*plateau["depends"], *job["joint_group"]]
+            assert plateau["case"] == job["case"] and job["plateau"] in job["joint_group"]
     for (scope, window, arm), members in groups.items():
         searches = sorted(job["id"] for job in members if job["stage"] == "search")
         finalists = [job for job in members if job["stage"] == "finalist"]
@@ -149,11 +177,19 @@ def test_extra_seeds_repeat_only_the_selected_case_after_every_search_of_the_sco
         (lambda v: v["seed_policy"].update(deterministic_arms=["ridge", "zero"]), "productor"),
         (lambda v: v["seed_policy"].update(search_seed=41), "política de semillas"),
         (lambda v: v.update(stopping={"mode": "joint"}), "modo de parada"),
-        (lambda v: v.update(stopping={"mode": "early_stop"}), "modo de parada"),
-        (lambda v: v.update(early_stop=json.loads(JOINT_STOP.read_text())["early_stop"]), "modo"),
+        (lambda v: v.pop("early_stop"), "modo de parada"),
+        (lambda v: v.update(stopping={"mode": "protocol"}), "modo"),
         (lambda v: v["memory_options"]["titans_mac"].update(accumulation_rows=128), "receta"),
+        (lambda v: v["memory_options"]["episodic_gru"].update(recompute=True), "receta"),
         (lambda v: v["memory_options"].pop("cm_v1"), "opciones de memoria"),
         (lambda v: v["memory_options"]["episodic_gru"].pop("recompute"), "opciones de memoria"),
+        (lambda v: v["memory_options"].pop("receipt"), "recibo de su medida"),
+        (
+            lambda v: v["memory_options"].update(receipt=str(Path("missing.json").resolve())),
+            "no existe",
+        ),
+        (lambda v: pending(v, receipt=True), "recibo de su medida"),
+        (lambda v: v.update(memory_options=["pending"]), "opciones de memoria"),
         (lambda v: v.pop("seed_policy"), "contrato"),
         (lambda v: v.update(execution={"order": "random"}), "orden de ejecución"),
         (lambda v: v.pop("execution"), "contrato"),
@@ -174,8 +210,13 @@ def test_extra_seeds_repeat_only_the_selected_case_after_every_search_of_the_sco
         "early_stop_mode_without_section",
         "early_stop_section_with_protocol_mode",
         "memory_value_differs_from_recipe",
+        "recompute_differs_from_recipe",
         "missing_family_options",
         "missing_option",
+        "fixed_options_without_receipt",
+        "missing_receipt_file",
+        "pending_options_with_receipt",
+        "memory_options_not_a_mapping",
         "v2_without_seed_policy",
         "unknown_execution_order",
         "v2_without_execution_order",
@@ -194,23 +235,151 @@ def test_v2_rejects_declarations_that_break_the_seed_stopping_or_memory_rules(
         plan.load_campaign(edited(tmp_path, change))
 
 
-def test_the_joint_stop_groups_keep_every_paired_contrast_inside_one_scope_and_group(tmp_path):
-    def joint_stop(value):
-        value.update(
-            stopping={"mode": plan.EARLY_STOP},
-            early_stop=json.loads(JOINT_STOP.read_text())["early_stop"],
-        )
+def without_kernels(value):
+    for key in ("precision", "cuda_graphs"):
+        value["neural"].pop(key)
 
-    loaded = plan.load_campaign(edited(tmp_path, joint_stop))
+
+def test_v2_neural_cases_carry_strict_precision_and_the_graph_step_into_their_identity(
+    tmp_path, monkeypatch
+):
+    from mars_titan.training.reference_run import HELDOUT_FULL_TRAIN_SESSIONS, _options
+
+    # _options exige el espacio de trabajo determinista de cuBLAS, como la ranura de la campaña.
+    # Sin fijarlo aquí, la prueba dependería de otro módulo que lo deja en el entorno.
+    monkeypatch.setenv("CUBLAS_WORKSPACE_CONFIG", ":4096:8")
+    loaded = campaign()
+    neural = loaded["neural"]
+    plain = plan.load_campaign(edited(tmp_path, without_kernels))["neural"]
+    assert (neural["precision"], neural["cuda_graphs"], neural["batch_size"]) == (
+        "fp32_strict",
+        True,
+        256,
+    )
+    for arm, candidates in neural["candidates"].items():
+        # Solo cambian los dos campos de núcleo frente a los casos sin declararlos.
+        assert [(name, case) for name, case in candidates] == [
+            (name, case | dict(precision="fp32_strict", cuda_graphs=True))
+            for name, case in plain["candidates"][arm]
+        ]
+        for _, case in candidates:
+            _options(
+                case,
+                neural["batch_size"],
+                neural["checkpoint_seconds"],
+                0,
+                input_policy=loaded["input_policy"],
+                prediction_retention=HELDOUT_FULL_TRAIN_SESSIONS,
+            )
+    # Cada búsqueda lleva su caso completo, que la campaña entrega al ejecutor y a la identidad.
+    searches = [
+        job
+        for job in plan.plan_campaign(loaded)
+        if job["family"] == plan.NEURAL and job["stage"] == "search"
+    ]
+    candidates = [job for job in searches if job["kind"] != plan.ONLINE]
+    assert candidates
+    for job in candidates:
+        assert job["case"] in [case for _, case in neural["candidates"][job["arm"]]]
+    # El control en línea no ajusta un caso de la sección neuronal. Su caso es solo la regla de
+    # online_controls, y su FP32 estricto lo fija la ranura y lo vuelve a exigir su ejecutor.
+    online = [job for job in searches if job["kind"] == plan.ONLINE]
+    assert {job["arm"] for job in online} == {campaign_online_controls.ARM}
+    rules = [case for _, case in campaign_online_controls.search_cases(loaded["online_controls"])]
+    assert all(job["case"] in rules and set(job["case"]) == {"rule"} for job in online)
+
+
+@pytest.mark.parametrize(
+    ("change", "message"),
+    [
+        (lambda n: n.update(precision="tf32"), "precisión neuronal"),
+        (lambda n: n.update(precision=None), "precisión neuronal"),
+        (lambda n: n.update(cuda_graphs="true"), "booleano"),
+        (lambda n: n.update(cuda_graphs=1), "booleano"),
+        (lambda n: n.update(compile=True), "sección neuronal no cumple"),
+        (lambda n: n.update(batch_size=4097), "Lote"),
+        (lambda n: n.update(batch_size=0), "Lote"),
+        (lambda n: n.update(batch_size=512.0), "Lote"),
+    ],
+    ids=[
+        "tf32",
+        "null_precision",
+        "graphs_text",
+        "graphs_integer",
+        "undeclared_option",
+        "batch_over_limit",
+        "empty_batch",
+        "float_batch",
+    ],
+)
+def test_v2_neural_section_rejects_undeclared_kernels_and_batches(tmp_path, change, message):
+    with pytest.raises(ValueError, match=message):
+        plan.load_campaign(edited(tmp_path, lambda value: change(value["neural"])))
+
+
+def test_neural_graphs_require_families_with_checked_parity(tmp_path, monkeypatch):
+    monkeypatch.setattr(plan, "GRAPH_KINDS", ("rnn", "lstm", "gru", "dlinear"))
+    with pytest.raises(ValueError, match="paridad comprobada"):
+        plan.load_campaign(edited(tmp_path, lambda value: None))
+
+
+@pytest.mark.parametrize("batch", [1024, 4096])
+def test_v2_neural_section_keeps_the_declared_batch_above_256(tmp_path, batch):
+    loaded = plan.load_campaign(
+        edited(tmp_path, lambda value: value["neural"].update(batch_size=batch))
+    )
+    assert loaded["neural"]["batch_size"] == batch
+    assert loaded["neural"]["candidates"] == campaign()["neural"]["candidates"]
+
+
+def test_v2_neural_graphs_false_and_absent_options_leave_the_cases_untouched(tmp_path):
+    plain = plan.load_campaign(edited(tmp_path / "plain", without_kernels))["neural"]
+    graphs_off = plan.load_campaign(
+        edited(tmp_path / "off", lambda value: value["neural"].update(cuda_graphs=False))
+    )["neural"]
+    for arm, candidates in plain["candidates"].items():
+        assert all("precision" not in case and "cuda_graphs" not in case for _, case in candidates)
+        assert graphs_off["candidates"][arm] == [
+            (name, case | dict(precision="fp32_strict")) for name, case in candidates
+        ]
+
+
+def test_v2_declares_the_joint_stop_of_its_groups_before_any_result():
+    """La v2 declara la misma parada que el archivo de grupos, sin copia que pueda divergir."""
+    declared = json.loads(CAMPAIGN.read_text())
+    assert declared["stopping"] == {"mode": plan.EARLY_STOP}
+    assert declared["early_stop"] == json.loads(JOINT_STOP.read_text())["early_stop"]
+    report = plan.check_campaign(CAMPAIGN)
+    assert report["protocol_stopping_rule"]["stopping"] == "fixed_budget"
+    assert report["stopping_rule"]["stopping"] == "joint_plateau"
+    assert report["early_stop"]["group_epoch"] == "maximum_of_first_plateaus"
+    groups = report["early_stop"]["groups"]
+    assert list(groups) == ["encoders_and_cores", "episodic_readers", "cm_v1_cores"]
+    # A10 contrasta el primer lector con K = 4, así que los dos paran juntos.
+    readers = groups["episodic_readers"]
+    assert readers.index("mars_titan_m1_k4") < readers.index("mars_titan_m1_k4_first_read")
+
+
+def test_v2_rejects_a_first_read_reader_outside_the_readers_group(tmp_path):
+    def apart(value):
+        value["early_stop"]["groups"]["episodic_readers"].remove("mars_titan_m1_k4_first_read")
+
+    with pytest.raises(ValueError, match="mars_titan_m1_k4_first_read.*necesita un mismo grupo"):
+        plan.plan_campaign(plan.load_campaign(edited(tmp_path, apart)))
+
+
+def test_the_joint_stop_groups_keep_every_paired_contrast_inside_one_scope_and_group():
+    loaded = campaign()
     # Los contrastes del diseño conjunto, también los del control en línea, siguen dentro
     # de los grupos de la parada conjunta (la carga los comprueba al planificar).
     jobs = plan.plan_campaign(loaded)
     by_id = {job["id"]: job for job in jobs}
     membership = loaded["early_stop"]["membership"]
     finals = [job for job in jobs if job.get("phase") == plan.JOINT]
-    assert finals and plan.count_jobs(loaded, jobs)["training_jobs"] == len(
-        [job for job in plan.plan_campaign(campaign()) if job["kind"] == plan.FIT]
-    )
+    # Cada meseta precede a su continuación, que conserva el identificador del ajuste.
+    plateaus = [job for job in jobs if job.get("phase") == plan.PLATEAU]
+    assert len(finals) == len(plateaus) == plan.count_jobs(loaded, jobs)["plateau_jobs"]
+    assert {final["plateau"] for final in finals} == {job["id"] for job in plateaus}
     for final in finals:
         members = [by_id[plateau] for plateau in final["joint_group"]]
         assert {(job["scope"], job["window"], job["seed"]) for job in members} == {
@@ -226,32 +395,59 @@ def test_the_joint_stop_groups_keep_every_paired_contrast_inside_one_scope_and_g
     assert us == {("titans_mac_online", "transformer_compact"), ("mars_titan_m1",)}
 
 
+def pending(value, *, receipt=False):
+    """Devolver las opciones de memoria al estado previo a la medida."""
+    value["memory_options"] = {
+        family: dict.fromkeys(options, "pending")
+        for family, options in value["memory_options"].items()
+        if family != "receipt"
+    } | ({"receipt": value["memory_options"]["receipt"]} if receipt else {})
+
+
 def test_memory_options_block_the_launch_until_they_match_the_recipe(tmp_path):
-    blockers = plan.launch_blockers(campaign())
+    # La campaña declarada fija los valores medidos en cuda:0, iguales a los de sus recetas.
+    titans = json.loads(
+        (CONFIGS / "titans/chronological-training-historical-masked.json").read_text()
+    )["recipe"]
+    candidate = json.loads((CONFIGS / "candidate/chronological-training.json").read_text())[
+        "recipe"
+    ]
+    declared = campaign()
+    assert declared["memory_options"] == dict(
+        titans_mac=dict(accumulation_rows=titans["accumulation_rows"]),
+        episodic_gru=dict(
+            accumulation_rows=candidate["accumulation_rows"], recompute=candidate["recompute"]
+        ),
+        cm_v1=dict(accumulation_rows=titans["accumulation_rows"]),
+    )
+    assert (titans["accumulation_rows"], candidate["accumulation_rows"]) == (1024, 128)
+    assert candidate["recompute"] is False
+    # La regla del control en línea ya tiene sus valores, así que nada bloquea el lanzamiento.
+    assert plan.launch_blockers(declared) == []
+
+    loaded = plan.load_campaign(edited(tmp_path / "pending", pending))
+    blockers = plan.launch_blockers(loaded)
     memory = [reason for reason in blockers if "medida de memoria" in reason]
     assert len(memory) == 4 and all("pendiente" in reason for reason in blockers)
 
-    # Titans-MAC y los núcleos de CM-v1 comparten la receta cronológica, que ya declara la
-    # acumulación medida en cuda:0. Un valor igual al de la receta deja de bloquear.
-    recipe = json.loads(
-        (CONFIGS / "titans/chronological-training-historical-masked.json").read_text()
-    )
-    rows = recipe["recipe"]["accumulation_rows"]
-
+    # Un valor igual al de la receta deja de bloquear aunque los demás sigan pendientes.
     def fixed(value):
-        value["memory_options"]["titans_mac"]["accumulation_rows"] = rows
-        value["memory_options"]["cm_v1"]["accumulation_rows"] = rows
+        receipt = value["memory_options"]["receipt"]
+        pending(value)
+        value["memory_options"]["titans_mac"]["accumulation_rows"] = titans["accumulation_rows"]
+        value["memory_options"]["cm_v1"]["accumulation_rows"] = titans["accumulation_rows"]
+        value["memory_options"]["receipt"] = receipt
 
-    loaded = plan.load_campaign(edited(tmp_path, fixed))
-    # La regla del control en línea ya tiene sus valores y no bloquea.
+    loaded = plan.load_campaign(edited(tmp_path / "fixed", fixed))
     assert [reason.split(".")[0] for reason in plan.launch_blockers(loaded)] == [
         "episodic_gru",
         "episodic_gru",
     ]
     report = plan.check_campaign(CAMPAIGN)
-    assert report["launch_blockers"] == blockers
+    assert report["launch_blockers"] == plan.launch_blockers(declared)
+    assert report["memory_options"] == declared["memory_options"]
     assert report["scope_arms"]["US"] == list(CONTROLS)
-    assert report["stopping"] == {"mode": "protocol"}
+    assert report["stopping"] == {"mode": plan.EARLY_STOP}
     assert (
         plan.check_campaign(CONFIGS / "baselines/historical-masked-campaign-a.json")[
             "launch_blockers"
@@ -260,9 +456,43 @@ def test_memory_options_block_the_launch_until_they_match_the_recipe(tmp_path):
     )
 
 
+RECEIPT = Path("reports/engineering/campaign-kernels-20261009/vram-throughput.json")
+
+
+@pytest.mark.parametrize(
+    ("model", "change"),
+    [
+        ("titans_mac", lambda entry: entry["recipe_options"].update(accumulation_rows=512)),
+        ("titans_mac", lambda entry: entry["recipe_options"].update(accumulation_rows=1024.0)),
+        ("episodic_gru", lambda entry: entry["recipe_options"].update(recompute=True)),
+        ("cm_v1_core", lambda entry: entry.update(measured=False)),
+        ("cm_v1_core", lambda entry: entry.update(model="cm_v1")),
+    ],
+    ids=["other_rows", "rows_as_float", "with_recompute", "not_measured", "other_model"],
+)
+def test_fixed_memory_options_need_a_measure_with_their_values_in_the_receipt(
+    tmp_path, model, change
+):
+    receipt = json.loads(RECEIPT.read_text())
+    for entry in receipt["entries"]:
+        if entry["model"] == model:
+            change(entry)
+    path = tmp_path / "receipt.json"
+    atomic_json(path, receipt)
+    with pytest.raises(ValueError, match="no contiene una medida"):
+        plan.load_campaign(
+            edited(tmp_path, lambda v: v["memory_options"].update(receipt=str(path)))
+        )
+    atomic_json(path, dict(receipt, entries={}))
+    with pytest.raises(ValueError, match="no tiene medidas"):
+        plan.load_campaign(
+            edited(tmp_path / "again", lambda v: v["memory_options"].update(receipt=str(path)))
+        )
+
+
 def test_run_refuses_a_campaign_with_pending_memory_options_before_reading_views(tmp_path):
     with pytest.raises(ValueError, match="no se puede lanzar"):
-        engine.run_campaign(CAMPAIGN, {}, tmp_path / "out")
+        engine.run_campaign(edited(tmp_path, pending), {}, tmp_path / "out")
     assert not (tmp_path / "out").exists()
 
 
@@ -347,11 +577,16 @@ def test_window_schedule_orders_every_stage_of_the_window_and_counts_all_jobs():
     totals = Counter()
     for row in schedule:
         totals.update({entry["phase"]: len(entry["jobs"]) for entry in row["phases"]})
-    assert totals["base_search"] + totals["selected_case_seeds"] == 2341
-    # Adaptadores: 6.588 ajustes y 1.116 padres congelados, y 1.178 selecciones de la cadena
+    # Los 2.873 ajustes y las 1.904 mesetas que los preceden en la parada conjunta.
+    assert totals["base_search"] + totals["selected_case_seeds"] == 2873 + 1904
+    # Las etapas dependen del estado elegido, que fija la continuación y no su meseta.
+    plateaus = {job["id"] for job in jobs if job.get("phase") == plan.PLATEAU}
+    read = {d for stage_jobs in stages.values() for j in stage_jobs for d in j.get("depends", ())}
+    assert read and not plateaus & read
+    # Adaptadores: 6.804 ajustes y 1.494 padres congelados, y 1.577 selecciones de la cadena
     # en su propia fase.
-    assert (totals["adapters"], totals["chain"]) == (6588 + 1116, 1178)
-    assert (totals["online"], totals["ablation"], totals["rl"]) == (133, 3534, 2160 + 2442)
+    assert (totals["adapters"], totals["chain"]) == (6804 + 1494, 1577)
+    assert (totals["online"], totals["ablation"], totals["rl"]) == (133, 4731, 3096 + 3219)
     window = schedule[6]
     selection = window["phases"][order.PHASES.index("selection")]
     assert "CN/fold-000/mars_titan_m1" in selection["decisions"]
@@ -392,6 +627,12 @@ def test_later_stages_confirm_only_the_base_of_the_window_they_run(module):
     pairs = order.window_pairs(value, "fold-006")
     confirm._base_receipts(base, value, stage, pairs)
     assert seen and all((job["scope"], job["window"]) == ("US+CN", "fold-006") for job in seen)
+    # Con la parada conjunta, la GRU necesita también las mesetas de su grupo, aunque sean de
+    # modelos que la etapa no lee, y cada trabajo llega después de sus dependencias.
+    confirmed = [job["id"] for job in seen]
+    ordered = all(set(job["depends"]) <= set(confirmed[:i]) for i, job in enumerate(seen))
+    assert ordered, module
+    assert "US+CN/fold-006/titans_mac_online/plateau-search-lr1e-4" in confirmed
 
 
 def test_a_staged_window_runs_its_jobs_and_confirms_the_base_of_the_parent_window():
@@ -446,12 +687,13 @@ def test_later_stages_of_v2_read_the_joint_model_in_each_market():
     adapter = adapters.load_stage(plan.LATER_STAGES["posttraining_adapter_matrix"]["joint_stage"])
     assert adapter["scopes"] == ["US+CN"]
     counts = adapters.count_stage(adapter)
-    # 20 brazos neuronales con tres semillas y los dos tabulares con una: 62 cadenas por
-    # ventana. Cada ventana con padre congela esos 62 padres y todas eligen su cadena.
+    # 21 modelos neuronales y los seis B6 con tres semillas y los dos tabulares con una: 83
+    # cadenas por ventana. Cada ventana con padre congela esos 83 padres y todas eligen su
+    # cadena. Los tabulares y B6 solo tienen el padre congelado.
     assert (counts["training_jobs"], counts["prediction_jobs"], counts["selection_jobs"]) == (
-        6588,
-        62 * 18,
-        62 * 19,
+        6804,
+        83 * 18,
+        83 * 19,
     )
     assert set(adapter["arms"]) == set(
         policy_plan.load_stage(plan.LATER_STAGES["rl_policy_comparison"]["joint_stage"])[
@@ -459,10 +701,10 @@ def test_later_stages_of_v2_read_the_joint_model_in_each_market():
         ]
     )
     masked = ablation.load_stage(plan.LATER_STAGES["modality_ablation"]["joint_stage"])
-    # 20 brazos neuronales con tres semillas y dos tabulares con una, por tres variantes.
-    assert ablation.count_stage(masked)["prediction_jobs"] == (20 * 3 + 2) * 3 * 19
+    # 27 modelos con tres semillas y dos tabulares con una, por tres variantes.
+    assert ablation.count_stage(masked)["prediction_jobs"] == (27 * 3 + 2) * 3 * 19
     stage = policy_plan.load_stage(plan.LATER_STAGES["rl_policy_comparison"]["joint_stage"])
-    assert len(stage["predictors"]) == 22 and stage["scopes"] == ["US+CN"]
+    assert len(stage["predictors"]) == 29 and stage["scopes"] == ["US+CN"]
     us = policy_plan.scope_windows(stage, "US+CN", "US")
     cn = policy_plan.scope_windows(stage, "US+CN", "CN")
     assert [row["window"] for row in us] == [f"fold-{i:03d}" for i in range(4, 19)]
@@ -471,13 +713,49 @@ def test_later_stages_of_v2_read_the_joint_model_in_each_market():
     assert cn[0]["train"] == ["fold-006", "fold-007", "fold-008"]
     counts = policy_plan.count_stage(stage)
     # Referencias: cuatro por ventana y predictor, y el índice de mercado solo en US.
-    assert (counts["training_jobs"], counts["evaluation_jobs"]) == (2160, 22 * (15 * 5 + 9 * 4))
+    assert (counts["training_jobs"], counts["evaluation_jobs"]) == (3096, 29 * (15 * 5 + 9 * 4))
     assert counts["scopes"]["US+CN"]["markets"]["CN"][0] == "fold-010"
     jobs = policy_plan.plan_stage(stage)
+    # Por ventana y semilla, KLPO con los 29 predictores y las siete políticas del nivel de
+    # algoritmos con sus dos predictores: 43 ajustes.
     assert Counter(job["market"] for job in jobs if job["kind"] == "fit") == {
-        "US": 15 * 30 * 3,
-        "CN": 9 * 30 * 3,
+        "US": 15 * 43 * 3,
+        "CN": 9 * 43 * 3,
     }
+
+
+def test_the_policy_predictors_follow_the_declaration_of_the_campaign(tmp_path):
+    """Los 29 predictores de las políticas son los productores de la campaña, en su orden.
+
+    Un modelo que la campaña deja pendiente sale de la lista sin tocar la etapa de políticas.
+    """
+    from mars_titan.simulation import policy_plan
+
+    stage = policy_plan.load_stage(plan.LATER_STAGES["rl_policy_comparison"]["joint_stage"])
+    integration = [
+        "mars_titan_m1_k4_first_read",
+        "mars_titan_b6",
+        "mars_titan_b6_bias",
+        "mars_titan_b6_regime",
+        "mars_titan_b6_calendar",
+        "mars_titan_b6_regime_banks",
+        "mars_titan_b6_calendar_banks",
+    ]
+    assert set(integration) <= set(stage["predictors"])
+    assert stage["predictors"] == [
+        spec["arm"] for spec in plan._arm_specs(stage["campaign"]) if not spec["helper"]
+    ]
+
+    def pending(value):
+        section = value["mars_titan"]
+        section["arms"].pop("mars_titan_b6_bias")
+        section["pending_arms"]["mars_titan_b6_bias"] = "Retirado para comprobar la lista"
+
+    loaded = plan.load_campaign(edited(tmp_path, pending))
+    levels = policy_plan.resolve_levels(loaded, stage["policies"], stage["scopes"])
+    assert levels[policy_plan.ALL_PREDICTORS]["predictors"] == [
+        arm for arm in stage["predictors"] if arm != "mars_titan_b6_bias"
+    ]
 
 
 # Comparación sin datos
@@ -607,8 +885,12 @@ def test_joint_views_leave_china_empty_only_where_it_does_not_count(tmp_path):
     assert markets["empty_folds_allowed"] == [f"fold-{i:03d}" for i in range(6)]
 
 
-def reduced(folder, *, controls=("gru",), arms=("gru", "ridge")):
-    """Comparación v4 y campaña v2 reducidas con protocolos y recetas versionados."""
+def reduced(folder, *, controls=("gru",), arms=("gru", "ridge"), groups=None):
+    """Comparación v4 y campaña v2 reducidas con protocolos y recetas versionados.
+
+    Sin `groups` rige la regla del protocolo, porque los grupos de la v2 nombran modelos que
+    la reducción no tiene. Con `groups` se declara la parada conjunta de la v2 sobre ellos.
+    """
     folder.mkdir(parents=True, exist_ok=True)
     declared = json.loads(COMPARISON.read_text())
     for scope in declared["scopes"].values():
@@ -620,6 +902,8 @@ def reduced(folder, *, controls=("gru",), arms=("gru", "ridge")):
         market_eligibility={"CN": str(CN_V2.resolve())}, separate_controls=list(controls)
     )
     declared["arms"] = {k: v for k, v in declared["arms"].items() if k in {"zero", *arms}}
+    # Los pares de retención nombran modelos que esta comparación reducida no conserva.
+    declared.pop(comparison.RETENTION_FIELD)
     declared["comparison"].update(
         replicates=20,
         families=dict(references_vs_zero=dict(kind="delta", base="zero", variants=list(arms))),
@@ -639,6 +923,11 @@ def reduced(folder, *, controls=("gru",), arms=("gru", "ridge")):
     )
     value["neural"]["arms"] = {arm: arm for arm in arms if arm != "ridge"}
     value["tabular"].update(config="tabular.json", arms={"ridge": "ridge"})
+    if groups is None:
+        value.pop("early_stop")
+        value["stopping"] = {"mode": "protocol"}
+    else:
+        value["early_stop"]["groups"] = groups
     atomic_json(folder / "campaign.json", value)
     return folder / "campaign.json", folder / "comparison.json"
 
@@ -668,8 +957,7 @@ def joint_campaign(tmp_path_factory, learning_doubles_module):
 def learning_doubles_module(tmp_path_factory):
     from mars_titan.training.learning_hold import HOLD_ENV
 
-    path = tmp_path_factory.mktemp("hold") / "training-hold.json"
-    path.write_text(json.dumps({"training_allowed": True}), encoding="utf-8")
+    path = allowed_hold(tmp_path_factory.mktemp("hold") / "training-hold.json")
     patch = pytest.MonkeyPatch()
     patch.setenv(HOLD_ENV, str(path))
     yield path
@@ -825,6 +1113,108 @@ def test_a_job_that_runs_or_reports_another_precision_is_not_confirmed(
     assert not list((tmp_path / "out/jobs").rglob("receipt.json"))
 
 
+# Parada conjunta de la v2 sobre la campaña reducida: la GRU y la LSTM paran juntas en el
+# ámbito conjunto y la GRU, sola, en los controles separados.
+GROUPED = ("gru", "lstm")
+
+
+class JointPrecision(JointRecorder):
+    """Meseta y continuación de los dobles conjuntos, con una meseta que puede usar TF32."""
+
+    def __init__(self, *, plateau_recorded=None):
+        super().__init__()
+        self.plateau_recorded = plateau_recorded
+
+    def __call__(self, run):
+        report = super().__call__(run)
+        if run.job.get("phase") == plan.PLATEAU and self.plateau_recorded:
+            report["runtime"] = dict(numerics=dict(self.plateau_recorded))
+        return report
+
+
+@pytest.fixture(scope="module")
+def joint_stop(joint_campaign):
+    path, _ = reduced(
+        joint_campaign.root / "joint-stop",
+        arms=(*GROUPED, "ridge"),
+        groups=dict(references=list(GROUPED)),
+    )
+    return path
+
+
+def _joint_window(path, views, output, recorder):
+    return engine.run_campaign(
+        path,
+        views,
+        output,
+        executors=doubles(recorder),
+        lease=nullcontext,
+        stop=SimpleNamespace(requested=False),
+        window="fold-006",
+    )
+
+
+@lowers_learning_hold(
+    "tests/training/test_campaign_a_joint.py::"
+    "test_v2_joint_stop_pairs_each_case_and_the_selected_case_of_every_scope"
+)
+def test_v2_joint_stop_pairs_each_case_and_the_selected_case_of_every_scope(
+    joint_campaign, joint_stop, tmp_path
+):
+    output = tmp_path / "out"
+    recorder = JointRecorder()
+    summary = _joint_window(joint_stop, joint_campaign.views, output, recorder)
+    assert summary["status"] == "completed"
+    jobs = {job["id"]: job for job in plan.plan_campaign(plan.load_campaign(joint_stop))}
+    called = [jobs[call["id"]] for call in recorder.calls]
+    finals = [job for job in called if job.get("phase") == plan.JOINT]
+    # fold-006 de US+CN con la GRU y la LSTM, y fold-006 de US y fold-000 de CN con la GRU
+    # separada, cada una con dos casos y dos finalistas.
+    assert len(finals) == len([job for job in called if job.get("phase") == plan.PLATEAU])
+    assert sorted(Counter(job["scope"] for job in finals).items()) == [
+        ("CN", 4),
+        ("US", 4),
+        ("US+CN", 8),
+    ]
+    for job in finals:
+        epoch, folder = recorder.joint[job["id"]]
+        # En el ámbito conjunto, la mayor primera meseta del grupo. En un control separado
+        # la GRU forma grupo sola y sigue su propia meseta.
+        alone = STOPS["gru", slot(job)]
+        assert epoch == (COMMON[slot(job)] if job["scope"] == "US+CN" else alone)
+        plateau, final = receipt(output, job["plateau"]), receipt(output, job["id"])
+        assert plateau["numerics"] == final["numerics"] == numerics.STRICT_FP32
+        assert folder == output / plateau["attempt"] and final["attempt"] == plateau["attempt"]
+        # La meseta de una semilla extra ajusta ya el caso elegido de las búsquedas, el mismo
+        # que su continuación, con la regla conjunta.
+        assert plateau["identity"]["case"] == final["identity"]["case"]
+        assert final["identity"]["case"]["selection"]["stopping"] == JOINT_PLATEAU
+        if job["stage"] == "finalist":
+            source = final["identity"]["sources"]["source"]
+            assert source.split("/")[-1].startswith("search-")
+            assert plateau["identity"]["sources"]["source"] == source
+    # El recibo de ventana publica el estado de la continuación, nunca el de la meseta.
+    window = output / "windows/US+CN/fold-006/lstm/seed-43/US.json"
+    assert json.loads(window.read_text())["parent"]["id"] == "US+CN/fold-006/lstm/finalist-s43"
+    # Al reanudar, los recibos de meseta se aceptan con su precisión y nada se repite.
+    again = JointRecorder()
+    summary = _joint_window(joint_stop, joint_campaign.views, output, again)
+    assert summary["status"] == "completed" and again.calls == []
+
+
+@lowers_learning_hold(
+    "tests/training/test_campaign_a_joint.py::"
+    "test_a_plateau_that_reports_another_precision_is_not_confirmed"
+)
+def test_a_plateau_that_reports_another_precision_is_not_confirmed(
+    joint_campaign, joint_stop, tmp_path
+):
+    recorder = JointPrecision(plateau_recorded={"cudnn_allow_tf32": True})
+    with pytest.raises(ValueError, match="plateau-.*registra otra precisión"):
+        _joint_window(joint_stop, joint_campaign.views, tmp_path / "out", recorder)
+    assert not list((tmp_path / "out/jobs").rglob("plateau-*/receipt.json"))
+
+
 def test_recorded_precision_follows_every_alias_in_nested_reports():
     report = dict(
         identity=dict(numerics=dict(cudnn_allow_tf32=False, matmul_tf32=True)),
@@ -835,6 +1225,23 @@ def test_recorded_precision_follows_every_alias_in_nested_reports():
         "informe.cases[1].cudnn_tf32=True",
     ]
     assert numerics.recorded(dict(a=[dict(b=1)]), numerics.STRICT_FP32) == []
+
+
+@lowers_learning_hold(
+    "tests/training/test_campaign_a_joint.py::"
+    "test_neural_receipts_record_the_declared_kernels_in_their_identity"
+)
+def test_neural_receipts_record_the_declared_kernels_in_their_identity(joint_campaign):
+    receipts = [
+        json.loads(path.read_text())
+        for path in (joint_campaign.output / "jobs").rglob("receipt.json")
+    ]
+    neural = [item for item in receipts if item["identity"]["family"] == plan.NEURAL]
+    # Búsquedas y finalistas: el finalista hereda el caso del ganador con su semilla.
+    assert {item["identity"]["stage"] for item in neural} == {"search", "finalist"}
+    for item in neural:
+        case = item["identity"]["case"]
+        assert (case["precision"], case["cuda_graphs"]) == ("fp32_strict", True)
 
 
 def test_comparison_excludes_ineligible_china_rows_and_pairs_joint_with_separate(joint_campaign):
@@ -870,7 +1277,7 @@ def test_comparison_excludes_ineligible_china_rows_and_pairs_joint_with_separate
         mae = scoped["contrasts"][scope]["joint_vs_separate"]["mae"]
         assert [row["name"] for row in mae["contrasts"]] == ["gru_joint-gru"]
         assert set(rows["market"].to_pylist()) == {scope}
-        # El brazo conjunto restringido descarta las filas del otro mercado de la ventana.
+        # El modelo conjunto restringido descarta las filas del otro mercado de la ventana.
         dropped = scoped["arms"]["gru_joint"]["seeds"]["42"]["windows"]["fold-012"]
         other = "CN" if scope == "US" else "US"
         assert dropped["excluded_rows"]["evaluation"][other] > 0
@@ -881,8 +1288,13 @@ def test_window_aggregates_score_each_scope_with_its_joint_design(joint_campaign
     from mars_titan.training import rolling_retention as rolling
 
     declared = comparison.load_config(joint_campaign.comparison)
-    # Sin la cartera, que necesitaría la edición de precios, solo queda el walk-forward.
-    plain = {key: value for key, value in declared.items() if key != comparison.LONG_SHORT_FIELD}
+    # Sin la cartera ni los estratos de liquidez, que necesitarían la edición de precios,
+    # solo queda el walk-forward.
+    plain = {
+        key: value
+        for key, value in declared.items()
+        if key not in (comparison.LONG_SHORT_FIELD, comparison.LIQUIDITY_FIELD)
+    }
     monkeypatch.setattr(rolling.Rolling, "comparison_config", lambda self: plain)
     retention = rolling.load_retention(CONFIGS / "baselines/historical-masked-retention-v2.json")
     # Solo se prueban los agregados, así que el recorrido no lleva la etapa de políticas.
@@ -902,7 +1314,7 @@ def test_window_aggregates_score_each_scope_with_its_joint_design(joint_campaign
         scoped = comparison.scope_config(declared, scope)
         stored = window_aggregates.read(walker.folder / "aggregates", scoped, sources, window)
         assert window_aggregates.same(stored, comparison._score_window(sources, scoped, window))
-        # En un mercado, los agregados incluyen el brazo conjunto prestado.
+        # En un mercado, los agregados incluyen el modelo conjunto prestado.
         if scope != "US+CN":
             assert {arm for arm, _ in stored[0]} == {"zero", "gru", "gru_joint"}
 
@@ -925,7 +1337,7 @@ def test_sources_reject_a_borrowed_arm_from_another_window(joint_campaign):
     config = comparison.load_config(joint_campaign.comparison)
     with pytest.raises(ValueError, match="usa otra vista"):
         comparison.load_sources(tampered, config, "CN")
-    # Sin la vista conjunta emparejada, las fuentes de un ámbito con brazos prestados no valen.
+    # Sin la vista conjunta emparejada, las fuentes de un ámbito con modelos prestados no valen.
     manifest = json.loads(path.read_text())
     manifest["windows"]["fold-000"].pop("joint_view")
     atomic_json(tampered, manifest)
@@ -972,6 +1384,60 @@ def test_budget_projection_applies_the_documented_formula(joint_campaign):
         budget.project(loaded, counts, rates, fixed_hours=5.0, target_hours=5.0)
     with pytest.raises(ValueError, match="positivos"):
         budget.uniform_rates(loaded, 0)
+
+
+def test_the_joint_stop_counts_each_grouped_fit_once_in_the_hours(tmp_path):
+    """La meseta y su continuación son un solo ajuste, así que la cota de horas no cambia."""
+
+    def protocol(value):
+        value.pop("early_stop")
+        value["stopping"] = {"mode": "protocol"}
+
+    joint, alone = campaign(), plan.load_campaign(edited(tmp_path, protocol))
+    counts, _ = budget.read_counts(
+        Path("reports/data/campaign-a-v2-window-counts-20261009.json"), joint
+    )
+    rates = budget.uniform_rates(joint, 1000.0)
+    grouped, plain = (budget.project(c, counts, rates, epochs=30) for c in (joint, alone))
+    assert joint["rule"]["max_epochs"] == 30
+    assert grouped["stages"]["base"] == pytest.approx(plain["stages"]["base"], rel=1e-12)
+
+    def fits(estimate):
+        return {
+            (name, option): value["training_jobs"]
+            for name, family in estimate["families"].items()
+            for option, value in (family.get("options") or {"": family}).items()
+            if "training_jobs" in value
+        }
+
+    assert fits(grouped["estimate"]) == fits(plain["estimate"]) and fits(plain["estimate"])
+    assert grouped["estimate"]["plateau_jobs"] == 1904
+    assert "plateau_jobs" not in plain["estimate"]
+
+
+def test_uniform_rates_project_the_b6_correction_as_prediction_only():
+    loaded = campaign()
+    counts, _ = budget.read_counts(
+        Path("reports/data/campaign-a-v2-window-counts-20261009.json"), loaded
+    )
+    rates = budget.uniform_rates(loaded, 16000.0)
+    corrections = {
+        arm
+        for arm, record in rates[plan.MARS].items()
+        if record["options"]["recipe"]["train"] is None
+    }
+    assert corrections == {arm for arm in loaded["mars_titan"]["arms"] if "_b6" in arm}
+    assert len(corrections) == 6
+
+    def arms(epochs):
+        families = budget.project(loaded, counts, rates, epochs=epochs)["estimate"]["families"]
+        return families[plan.MARS]["options"]["recipe"]["scopes"]["US+CN"]["arms"]
+
+    ten, thirty = arms(10), arms(30)
+    # B6 predice una vez cada tramo y no depende de las épocas. Un lector sí.
+    assert all(ten[arm] == thirty[arm] for arm in corrections)
+    assert thirty["mars_titan_m1"] > 2 * ten["mars_titan_m1"]
+    assert max(thirty[arm] for arm in corrections) < thirty["mars_titan_m1"] / 30
 
 
 def test_declared_counts_cover_the_v2_campaign_and_reproduce_the_views_receipt():
@@ -1046,7 +1512,7 @@ def test_the_plan_checks_every_declared_document_of_the_campaign_and_its_stages(
         "historical-masked-rl-policies.json",
         "historical-masked-ablation-stage-a-v2.json",
     ]
-    assert len(plan.plan_campaign(value)) == 2341 + 133
+    assert len(plan.plan_campaign(value)) == 2873 + 133 + 1904
     # Las fuentes de predictor de las políticas son estados ajustados con la edición real.
     from mars_titan.simulation import policy_plan
 

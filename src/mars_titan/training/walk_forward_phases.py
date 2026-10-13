@@ -1,4 +1,4 @@
-"""Fases de una ventana walk-forward con el calentamiento común de los brazos con memoria.
+"""Fases de una ventana walk-forward con el calentamiento común de los modelos con memoria.
 
 Titans-MAC, MARS-TITAN, CM-v1 y la GRU episódica construyen sus fases con esta función,
 así que todos observan la misma ventana de calentamiento. El ajuste empieza en el origen
