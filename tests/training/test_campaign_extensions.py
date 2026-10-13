@@ -31,8 +31,8 @@ COUNTS = dict(
         extended=(5985, 0),
         adapters=(10962, 1302),
         rl=dict(
-            declared=dict(training_jobs=1368, carried_jobs=0, reference_jobs=1221),
-            extended=dict(training_jobs=2664, carried_jobs=0, reference_jobs=3219),
+            declared=dict(training_jobs=1800, carried_jobs=0, reference_jobs=1221),
+            extended=dict(training_jobs=3096, carried_jobs=0, reference_jobs=3219),
         ),
     ),
     B=dict(
@@ -41,8 +41,8 @@ COUNTS = dict(
         extended=(2261, 2380),
         adapters=(1479, 2436),
         rl=dict(
-            declared=dict(training_jobs=456, carried_jobs=912, reference_jobs=1221),
-            extended=dict(training_jobs=888, carried_jobs=1776, reference_jobs=3219),
+            declared=dict(training_jobs=600, carried_jobs=1200, reference_jobs=1221),
+            extended=dict(training_jobs=1032, carried_jobs=2064, reference_jobs=3219),
         ),
     ),
 )
@@ -150,7 +150,7 @@ def test_the_declared_configurations_stay_untouched():
     [
         (("limits", "max_training_jobs"), 5984, "prevé 5985 trabajos.*max_training_jobs=5984"),
         (("limits", "max_prediction_jobs"), 1, "prevé 0 trabajos.*max_prediction_jobs=1"),
-        (("rl_stage", "limits", "max_training_jobs"), 2665, "políticas ampliada prevé 2664"),
+        (("rl_stage", "limits", "max_training_jobs"), 3097, "políticas ampliada prevé 3096"),
         (("rl_stage", "limits", "max_evaluation_jobs"), 3218, "prevé 3219 trabajos"),
     ],
 )
