@@ -13,7 +13,7 @@ Hasta ahora cada informe calculaba la complejidad y CRAP de sus fuentes Python c
 | Cobertura | Sentencias ejecutadas entre sentencias de la región. Las ramas se publican aparte y no entran en CRAP. |
 | CRAP | C² × (1 − cobertura)³ + C. Una función sin sentencias medibles conserva C. |
 
-El resumen se detiene si la fuente cambió después de la medida (la línea de la región no coincide), si coverage.py no registra una región, si el JSON no es del formato 3 o si se piden ramas y la medida no las trae. Si dos funciones comparten nombre cualificado en un archivo, como un `setter` de propiedad, coverage.py solo mide la última y las anteriores aparecen en `shadowed_regions` sin CRAP.
+El resumen se detiene si la fuente cambió después de la medida (la línea de una región o las líneas de sentencia no coinciden con las medidas), si coverage.py no registra una región, si el JSON no es del formato 3 o si se piden ramas y la medida no las trae. Si dos funciones comparten nombre cualificado en un archivo, como un `setter` de propiedad, coverage.py solo mide la última y las anteriores aparecen en `shadowed_regions` sin CRAP.
 
 Se eligieron las reglas de Radon y no las de ruff (`C901`) para que los recibos anteriores sigan siendo comparables. ruff aplica el McCabe de `mccabe`: no cuenta operandos booleanos, expresiones condicionales, comprensiones, el `else` de los bucles ni `assert`, y suma las funciones y clases anidadas en la función que las contiene.
 
@@ -54,6 +54,7 @@ Se repitió la medida de `named-benchmarks-verification-20261009.json` con cover
 - CRAP combina complejidad y recorridos observados. No demuestra ausencia de errores y no se fija ningún umbral.
 - La cobertura de sentencias no distingue qué operandos de una condición se evaluaron, aunque la complejidad sí los cuenta.
 - Como en Radon 6.0.1, los manejadores de `except*` y la condición de un `assert` no suman, y el cuerpo de una clase definida dentro de una función no suma en ella aunque coverage.py cuente allí sus sentencias.
+- La fuente se contrasta con la medida por sus regiones y sus líneas de sentencia, porque el JSON de coverage.py no guarda la huella de lo que midió. Un cambio que las conserva, como otra condición en la misma línea, no se detecta, así que el resumen se ejecuta sobre el mismo árbol que se midió.
 - Los recibos anteriores no se reescriben. Conservan la convención y la herramienta que declararon.
 
 ## Reproducción

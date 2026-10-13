@@ -60,7 +60,7 @@ uv run python scripts/summarize_python_quality.py --coverage tmp/coverage.json \
   --output tmp/python-quality.json --require-branches --top 40
 ```
 
-El resumen falla si una fuente cambió después de la medida, si coverage.py no registra una función o si la medida no trae ramas cuando se piden. La parte nativa conserva su propio resumen, `scripts/summarize_native_quality.py`, con Lizard y la cobertura de LLVM.
+El resumen falla si las regiones o las líneas de sentencia de una fuente ya no son las medidas, si coverage.py no registra una función o si la medida no trae ramas cuando se piden. Un cambio que conserva esas líneas no se detecta, así que se resume el mismo árbol que se midió. La parte nativa conserva su propio resumen, `scripts/summarize_native_quality.py`, con Lizard y la cobertura de LLVM.
 
 ## Trabajo con GitHub
 

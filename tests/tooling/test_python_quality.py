@@ -315,6 +315,23 @@ def test_changed_source_after_the_measurement_is_rejected(tmp_path):
         quality.summarize(data, tmp_path)
 
 
+def test_statement_added_without_moving_a_definition_is_rejected(tmp_path):
+    data = measure(tmp_path)
+    # Ninguna línea def cambia, pero branchy tiene una sentencia que no se midió.
+    changed = MODULE.replace(
+        "    return chosen() and flag\n", "    flag = not flag\n    return chosen() and flag\n"
+    )
+    (tmp_path / "measured_module.py").write_text(changed, encoding="utf-8")
+    with pytest.raises(ValueError, match="sentencias medidas"):
+        quality.summarize(data, tmp_path)
+
+
+def test_lines_excluded_in_the_measurement_are_not_a_change(tmp_path):
+    source = MODULE.replace("def empty():", "def empty():  # pragma: no cover")
+    report = quality.summarize(measure(tmp_path, source=source), tmp_path)
+    assert "empty" in {row["function"] for row in report["functions"]}
+
+
 def test_function_added_after_the_measurement_is_rejected(tmp_path):
     data = measure(tmp_path)
     # Las regiones medidas conservan su línea, pero la nueva función no tiene medida.

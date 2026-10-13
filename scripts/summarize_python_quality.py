@@ -41,6 +41,7 @@ import sys
 from importlib import metadata
 from pathlib import Path
 
+from coverage.python import PythonParser
 from coverage.regions import code_regions
 from radon.visitors import ComplexityVisitor
 
@@ -63,6 +64,9 @@ LIMITS = [
     "Una función sin sentencias medibles (solo documentación o puntos suspensivos) conserva C.",
     "Si dos funciones comparten nombre cualificado en un archivo, coverage.py solo mide la "
     "última. Las anteriores aparecen en shadowed_regions sin CRAP.",
+    "La fuente se contrasta con la medida por sus regiones y sus líneas de sentencia. Un "
+    "cambio que las conserva, como otra condición en la misma línea, no se detecta, así que "
+    "el resumen se ejecuta sobre el mismo árbol que se midió.",
 ]
 _FUNCTIONS = (ast.FunctionDef, ast.AsyncFunctionDef)
 
@@ -95,6 +99,13 @@ def regions(source):
     return found
 
 
+def statement_lines(source, excluded):
+    """Líneas de sentencia de la fuente actual según coverage.py, sin las excluidas al medir."""
+    parser = PythonParser(text=source)
+    parser.parse_source()
+    return set(parser.statements) - set(excluded)
+
+
 def crap(complexity_, fraction):
     return complexity_**2 * (1 - fraction) ** 3 + complexity_
 
@@ -124,7 +135,8 @@ def summarize(coverage, root, *, include=(), require_branches=False):
         source_path = Path(path) if Path(path).is_absolute() else root / path
         source = source_path.read_bytes()
         measured = {name: item for name, item in data["functions"].items() if name}
-        found = regions(source.decode("utf-8"))
+        text = source.decode("utf-8")
+        found = regions(text)
         # coverage.py guarda una región por nombre y se queda con la última definición, como
         # un setter de propiedad o una función redefinida. Las anteriores se declaran aparte.
         current = {item["function"]: item for item in found}
@@ -172,6 +184,13 @@ def summarize(coverage, root, *, include=(), require_branches=False):
                     "covered_branches": counts.get("covered_branches", 0),
                     "crap": crap(region["complexity"], 1.0 if fraction is None else fraction),
                 }
+            )
+        # Las regiones pueden conservar su línea aunque cambie el cuerpo de una función.
+        lines = set(data["executed_lines"]) | set(data["missing_lines"])
+        if statement_lines(text, data["excluded_lines"]) != lines:
+            raise ValueError(
+                f"{path}: las sentencias medidas no son las de la fuente actual. "
+                "La fuente cambió desde la medida"
             )
     if not files:
         raise ValueError("Ninguna fuente medida coincide con la selección")
