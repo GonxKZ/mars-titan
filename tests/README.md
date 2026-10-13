@@ -133,6 +133,8 @@ uv run --locked python -c "import torch; print(torch.__version__, torch.cuda.is_
 
 La versión de PyTorch debe terminar en `+cu130`. `uv run --locked` no retira los extras ya instalados. Sin el extra `data` falta `lxml` y las pruebas macro fallan al construir el árbol HTML. Node.js es opcional y solo lo usa el validador de la web del observatorio.
 
+Las huellas FP32 bit a bit en CPU dependen del número de hilos de PyTorch, porque el reparto de las reducciones y de los productos de matrices entre hilos cambia el orden de las sumas. Las del núcleo de Titans y del predictor financiero se capturaron con dos hilos. Sus trazas los fijan con `cpu_threads` de `tests/suite_support.py` y restauran después los que había, así que pasan con cualquier `OMP_NUM_THREADS` y con cualquier prueba anterior en la misma sesión ([#572](https://github.com/GonxKZ/mars-titan/issues/572)). Una huella nueva en CPU debe calcularse dentro de `cpu_threads`.
+
 ### Binarios nativos
 
 Se compilan desde el mismo commit que se prueba con `make native-build`, que configura y compila con dos trabajos estos presets desde `native/`:
