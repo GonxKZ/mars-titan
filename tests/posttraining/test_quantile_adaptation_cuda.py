@@ -11,7 +11,7 @@ from tests.posttraining.test_quantile_adaptation import (
     quantile_parent,
 )
 
-pytestmark = pytest.mark.skipif(not torch.cuda.is_available(), reason="Requiere cuda:0")
+pytestmark = pytest.mark.cuda
 CASES = [
     ("gru", "head+fusion"),
     ("transformer", "head+readout+fusion"),

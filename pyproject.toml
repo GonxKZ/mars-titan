@@ -53,7 +53,8 @@ dev = [
     "memray==1.20.0 ; sys_platform == 'linux'",
 ]
 # Bibliotecas externas que solo sirven de referencia en las pruebas de paridad (#494 a #497).
-# No forman parte del entorno de ejecución y se instalan con `uv sync --group reference`.
+# No forman parte del entorno de ejecución y se instalan con
+# `uv sync --locked --all-extras --group reference`, que conserva los extras.
 reference = [
     "peft==0.21.0",
     "accelerate==1.15.0",
@@ -90,6 +91,10 @@ testpaths = ["tests"]
 pythonpath = [".", "src", "tests/models/titans"]
 addopts = "-ra"
 markers = [
+    "cuda: necesita cuda:0. Sin CUDA visible se omite con su motivo y nunca pasa a CPU",
+    "native: necesita un artefacto nativo. Con nombres de variables, se omite si falta alguno de sus artefactos",
+    "slow: la suma de sus casos alcanza un segundo según las medidas de tests/slow_tests.txt",
+    "unguarded_fit: ajusta sin pasar por un punto de entrada protegido. Se omite mientras rige el bloqueo de aprendizaje",
     "native_binding: necesita el enlace nativo. Con MARS_TITAN_REQUIRE_NATIVE=1, omitirla falla",
     "external_reference: compara con el grupo reference. Con MARS_TITAN_REQUIRE_REFERENCE=1, omitirla falla",
 ]

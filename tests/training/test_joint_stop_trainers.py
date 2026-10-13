@@ -18,9 +18,7 @@ from mars_titan.training.selection import AWAIT, JOINT_PLATEAU
 from tests.training.test_financial_run import shared as shared
 from tests.training.test_financial_run import trainer as titans_trainer
 
-NATIVE = pytest.mark.skipif(
-    not os.environ.get("MARS_TITAN_EPISODIC_NATIVE"), reason="Falta el enlace nativo compilado"
-)
+NATIVE = pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 JOINT = dict(metric="session_mae", patience=2, min_delta=0.0, stopping=JOINT_PLATEAU)
 EPOCHS = 6
 # La época 0 es el estado inicial y hay seis épocas. La meseta llega en la 3 y mejora en la 4.
