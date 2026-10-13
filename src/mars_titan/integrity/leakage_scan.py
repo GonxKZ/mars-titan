@@ -24,7 +24,6 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import numpy as np
-import pandas as pd
 import pyarrow.parquet as pq
 
 KIND = "input_leakage_scan"
@@ -45,34 +44,85 @@ def placebo_past_target(frame, lag):
     return shifted.reindex(frame.index)
 
 
-def _session_ic(sessions, values, target, min_assets):
+class _Sessions:
+    """Filas ordenadas por sesión, para ordenar y sumar cada sesión con numpy.
+
+    Las sesiones son los grupos ordenados de (mercado, instante). Todo el cálculo por columna
+    trabaja en este orden, así que cada sesión es un tramo contiguo de filas.
+    """
+
+    def __init__(self, codes):
+        self.order = np.argsort(codes, kind="stable")
+        codes = np.asarray(codes)
+        small = np.uint16 if codes.max(initial=0) < 2**16 else np.int64
+        self.codes = codes.astype(small)[self.order]
+        self.starts = np.flatnonzero(np.r_[True, self.codes[1:] != self.codes[:-1]])
+        self.lengths = np.diff(np.r_[self.starts, len(self.codes)])
+        self.first = np.repeat(self.starts, self.lengths)
+
+    def ranks(self, values, mask):
+        """Rangos medios dentro de cada sesión de las filas de `mask`, como `rank("average")`.
+
+        Las filas fuera de `mask` se ordenan al final de su sesión y quedan sin rango, así
+        que cada fila presente se ordena solo entre las presentes de su sesión.
+        """
+        key = np.where(mask, values, np.inf)
+        # Igual que lexsort por (sesión, valor): primero por valor y después por sesión con un
+        # orden estable, que para enteros pequeños es un radix y cuesta mucho menos.
+        by_value = np.argsort(key)
+        order = by_value[np.argsort(self.codes[by_value], kind="stable")]
+        ordered, codes = key[order], self.codes[order]
+        rows = len(key)
+        new = np.ones(rows, dtype=bool)
+        new[1:] = (ordered[1:] != ordered[:-1]) | (codes[1:] != codes[:-1])
+        index = np.arange(rows)
+        start = np.maximum.accumulate(np.where(new, index, 0))
+        closes = np.ones(rows, dtype=bool)
+        closes[:-1] = new[1:]
+        end = np.minimum.accumulate(np.where(closes, index, rows)[::-1])[::-1]
+        ranks = np.empty(rows)
+        ranks[order] = (start + end) / 2 - self.first + 1
+        return np.where(mask, ranks, np.nan)
+
+    def sums(self, values):
+        return np.add.reduceat(values, self.starts)
+
+    def centered(self, ranks, mask, count):
+        with np.errstate(invalid="ignore", divide="ignore"):
+            mean = self.sums(np.where(mask, ranks, 0.0)) / count
+        return np.where(mask, ranks - np.repeat(mean, self.lengths), 0.0)
+
+
+def _session_ic(sessions, values, target, min_assets, cache):
     """Spearman por sesión entre cada columna de `values` y `target`, con ausencias por columna.
 
-    Devuelve dos matrices (sesiones × columnas): la correlación y el número de filas presentes.
+    `values` y `target` siguen el orden de `sessions`. Devuelve dos matrices (sesiones ×
+    columnas): la correlación y el número de filas presentes. Los rangos del objetivo se
+    reutilizan entre columnas con las mismas filas presentes (`cache`), que en una modalidad
+    son casi siempre las mismas.
     """
-    mask = values.notna().to_numpy() & target.notna().to_numpy()[:, None]
-    present = pd.DataFrame(mask, index=values.index, columns=values.columns)
-    masked_target = pd.DataFrame(
-        np.where(mask, target.to_numpy()[:, None], np.nan),
-        index=values.index,
-        columns=values.columns,
-    )
-    masked_values = values.where(present)
-    ranks_x = masked_values.groupby(sessions, sort=True).rank(method="average")
-    ranks_y = masked_target.groupby(sessions, sort=True).rank(method="average")
-    count = present.groupby(sessions, sort=True).sum()
-    # Sumas centradas por sesión: una columna constante da varianza exactamente cero, sin el
-    # residuo de redondeo de la fórmula de suma de cuadrados.
-    centered_x = ranks_x - ranks_x.groupby(sessions, sort=True).transform("mean")
-    centered_y = ranks_y - ranks_y.groupby(sessions, sort=True).transform("mean")
-    covariance = (centered_x * centered_y).groupby(sessions, sort=True).sum().to_numpy()
-    variance_x = (centered_x * centered_x).groupby(sessions, sort=True).sum().to_numpy()
-    variance_y = (centered_y * centered_y).groupby(sessions, sort=True).sum().to_numpy()
-    n = count.to_numpy(dtype=np.float64)
-    defined = (n >= min_assets) & (variance_x > 0) & (variance_y > 0)
-    with np.errstate(invalid="ignore", divide="ignore"):
-        ic = covariance / np.sqrt(variance_x * variance_y)
-    return np.where(defined, ic, np.nan), n
+    observed = np.isfinite(target)
+    correlations, counts = [], []
+    for column in values.T:
+        mask = np.isfinite(column) & observed
+        count = sessions.sums(mask.astype(np.float64))
+        key = np.packbits(mask).tobytes()
+        if key not in cache:
+            cache.clear()
+            cache[key] = sessions.centered(sessions.ranks(target, mask), mask, count)
+        centered_y = cache[key]
+        centered_x = sessions.centered(sessions.ranks(column, mask), mask, count)
+        # Sumas centradas por sesión: una columna constante da varianza exactamente cero, sin
+        # el residuo de redondeo de la fórmula de suma de cuadrados.
+        covariance = sessions.sums(centered_x * centered_y)
+        variance_x = sessions.sums(centered_x * centered_x)
+        variance_y = sessions.sums(centered_y * centered_y)
+        defined = (count >= min_assets) & (variance_x > 0) & (variance_y > 0)
+        with np.errstate(invalid="ignore", divide="ignore"):
+            ic = covariance / np.sqrt(variance_x * variance_y)
+        correlations.append(np.where(defined, ic, np.nan))
+        counts.append(count)
+    return np.column_stack(correlations), np.column_stack(counts)
 
 
 def scan(frame, feature_columns, *, lag, **options):
@@ -108,9 +158,10 @@ def scan_blocks(keys, blocks, *, lag, **options):
     _require(required <= set(keys.columns), f"Faltan columnas: {sorted(required - set(keys))}")
     keys = keys.reset_index(drop=True)
     _require(np.isfinite(keys["target"]).all(), "El objetivo debe ser finito en todas las filas")
-    sessions = keys.groupby(list(KEYS), sort=True).ngroup()
-    past = placebo_past_target(keys, lag)
-    findings, seen = [], set()
+    sessions = _Sessions(keys.groupby(list(KEYS), sort=True).ngroup().to_numpy())
+    target = keys["target"].to_numpy(dtype=np.float64)[sessions.order]
+    past = placebo_past_target(keys, lag).to_numpy(dtype=np.float64)[sessions.order]
+    findings, seen, caches = [], set(), ({}, {})
     for names, block in blocks:
         names = list(names)
         _require(
@@ -119,11 +170,15 @@ def scan_blocks(keys, blocks, *, lag, **options):
         )
         _require(not set(names) & required, "Una columna de entrada coincide con una clave")
         seen.update(names)
-        values = pd.DataFrame(np.asarray(block, dtype=np.float64), columns=names)
-        _require(len(values) == len(keys), "Un bloque no tiene las filas de las claves")
-        values = values.where(np.isfinite(values))
-        future_ic, future_n = _session_ic(sessions, values, keys["target"], settings["min_assets"])
-        past_ic, _ = _session_ic(sessions, values, past, settings["min_assets"])
+        values = np.asarray(block, dtype=np.float64)
+        _require(
+            values.shape == (len(keys), len(names)), "Un bloque no tiene las filas de las claves"
+        )
+        values = values[sessions.order]
+        future_ic, future_n = _session_ic(
+            sessions, values, target, settings["min_assets"], caches[0]
+        )
+        past_ic, _ = _session_ic(sessions, values, past, settings["min_assets"], caches[1])
         for j, name in enumerate(names):
             findings.append(
                 _finding(name, future_ic[:, j], future_n[:, j], past_ic[:, j], settings)
@@ -135,7 +190,7 @@ def scan_blocks(keys, blocks, *, lag, **options):
         kind=KIND,
         created_at_utc=datetime.now(UTC).isoformat(),
         rows=len(keys),
-        sessions=int(sessions.nunique()),
+        sessions=len(sessions.starts),
         placebo_lag=lag,
         thresholds={k: v for k, v in settings.items() if k != "chunk"},
         columns=findings,

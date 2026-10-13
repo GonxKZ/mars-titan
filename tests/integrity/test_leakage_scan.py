@@ -154,3 +154,51 @@ def test_blocks_must_match_the_rows_and_never_repeat_a_column():
         leakage_scan.scan_blocks(keys, [(["noise"], values), (["noise"], values)], lag=1)
     with pytest.raises(ValueError, match="No hay columnas"):
         leakage_scan.scan_blocks(keys, [], lag=1)
+
+
+def pandas_session_ic(frame, column, target, min_assets):
+    """Referencia con pandas: rangos medios por sesión y sumas centradas, columna a columna."""
+    sessions = frame.groupby(["market", "prediction_at"], sort=True).ngroup()
+    values = frame[column].where(np.isfinite(frame[column]))
+    mask = values.notna() & target.notna()
+    x = values.where(mask).groupby(sessions).rank(method="average")
+    y = target.where(mask).groupby(sessions).rank(method="average")
+    dx = x - x.groupby(sessions).transform("mean")
+    dy = y - y.groupby(sessions).transform("mean")
+    count = mask.groupby(sessions).sum().to_numpy(dtype=np.float64)
+    covariance = (dx * dy).groupby(sessions).sum().to_numpy()
+    variance_x = (dx * dx).groupby(sessions).sum().to_numpy()
+    variance_y = (dy * dy).groupby(sessions).sum().to_numpy()
+    defined = (count >= min_assets) & (variance_x > 0) & (variance_y > 0)
+    with np.errstate(invalid="ignore", divide="ignore"):
+        return np.where(defined, covariance / np.sqrt(variance_x * variance_y), np.nan), count
+
+
+def test_the_numpy_session_ranks_match_an_independent_pandas_reference():
+    frame, rng = panel()
+    rows = len(frame)
+    # Empates, ausencias, infinitos, una columna constante por sesión y una fuga con huecos.
+    frame["ties"] = np.round(rng.normal(0, 1, rows), 1)
+    frame["gaps"] = np.where(
+        rng.random(rows) < 0.3, np.nan, frame["target"] + rng.normal(0, 0.01, rows)
+    )
+    frame["infinite"] = np.where(rng.random(rows) < 0.05, np.inf, rng.normal(0, 1, rows))
+    frame["per_session"] = frame.groupby(["market", "prediction_at"]).ngroup().astype(float)
+    frame["binary"] = (rng.random(rows) < 0.5).astype(float)
+    columns = ["ties", "gaps", "infinite", "per_session", "binary", "noise", "past_return"]
+    result = {e["column"]: e for e in leakage_scan.scan(frame, columns, lag=1, chunk=3)["columns"]}
+    past = leakage_scan.placebo_past_target(frame, 1)
+    for column in columns:
+        ic, count = pandas_session_ic(frame, column, frame["target"], 20)
+        placebo, _ = pandas_session_ic(frame, column, past, 20)
+        entry, defined = result[column], np.isfinite(ic)
+        assert entry["sessions"] == int(defined.sum()) and entry["rows"] == int(count.sum())
+        if not defined.any():
+            assert entry["mean_ic"] is None
+            continue
+        assert entry["mean_ic"] == pytest.approx(float(np.mean(ic[defined])), rel=1e-12, abs=1e-15)
+        assert entry["max_abs_ic"] == pytest.approx(float(np.max(np.abs(ic[defined]))), rel=1e-12)
+        valid = np.isfinite(placebo)
+        assert entry["past_mean_abs_ic"] == pytest.approx(
+            float(np.mean(np.abs(placebo[valid]))), rel=1e-12
+        )
