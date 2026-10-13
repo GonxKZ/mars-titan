@@ -16,6 +16,8 @@ from test_financial_session_m2 import m2_trajectory
 from test_frozen_financial import frozen_backend as frozen_backend
 from test_native_episode_backend import native as native
 
+pytestmark = pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
+
 # Ambos campos derivan de la identidad del consumidor, que incluye la configuración de C.
 MODEL_IDENTITY = ("model_id", "prediction_id")
 PATHS = (

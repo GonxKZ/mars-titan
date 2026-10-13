@@ -17,6 +17,9 @@ import pytest
 from mars_titan.simulation.market import MarketTape
 from mars_titan.simulation.storage import read_tape, write_tape
 from mars_titan.training.learning_hold import learning_blocked
+from tests.suite_support import HMMLEARN_REASON
+
+pytestmark = pytest.mark.native("MARS_TITAN_PPO_EXECUTABLE")
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -24,7 +27,10 @@ ROOT = Path(__file__).resolve().parents[2]
 def binary():
     # Estas integraciones ejecutan pasos de optimizador en LibTorch con el binario real.
     if learning_blocked():
-        pytest.skip("Bloqueo de aprendizaje vigente: PPO nativo no se ejecuta en estas pruebas")
+        pytest.skip(
+            "Bloqueo de aprendizaje vigente (MARS_TITAN_TRAINING_HOLD): estas pruebas entrenan con "
+            "mars-titan-ppo y esperan a que la protección lo permita"
+        )
     result = Path(
         os.environ.get(
             "MARS_TITAN_PPO_EXECUTABLE", "build/native/native-ppo-release/mars-titan-ppo"
@@ -635,7 +641,7 @@ def test_adaptive_validation_interval_does_not_evaluate_every_update(adaptive_in
 
 
 def adaptive_hmm(inputs):
-    pytest.importorskip("hmmlearn")
+    pytest.importorskip("hmmlearn", reason=HMMLEARN_REASON)
     from mars_titan.simulation.adaptation_scenarios import fit_hmm
 
     config, paths = inputs
