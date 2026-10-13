@@ -77,61 +77,92 @@ def _session_ic(sessions, values, target, min_assets):
 
 def scan(frame, feature_columns, *, lag, **options):
     """Resumen por columna de la correlación de rangos con el objetivo y con el placebo."""
+    settings = _settings(options)
+    columns = list(feature_columns)
+    _require(set(columns) <= set(frame.columns), "Faltan columnas de entrada en la tabla")
+    frame = frame.reset_index(drop=True)
+    chunks = [
+        columns[start : start + settings["chunk"]]
+        for start in range(0, len(columns), settings["chunk"])
+    ]
+    return scan_blocks(frame, ((names, frame[names]) for names in chunks), lag=lag, **options)
+
+
+def _settings(options):
     settings = {**DEFAULTS, **options}
     _require(
         set(settings) == set(DEFAULTS), f"Opciones desconocidas: {set(options) - set(DEFAULTS)}"
     )
+    return settings
+
+
+def scan_blocks(keys, blocks, *, lag, **options):
+    """Escanear columnas que llegan por bloques, alineadas con las filas de `keys`.
+
+    `keys` lleva las claves, `asset_id` y `target`. Cada bloque es un par (nombres, valores)
+    con una columna de valores por nombre. Así una matriz mayor que la memoria se recorre por
+    columnas desde disco con el mismo cálculo que una tabla en memoria.
+    """
+    settings = _settings(options)
     required = {*KEYS, "asset_id", "target"}
-    _require(required <= set(frame.columns), f"Faltan columnas: {sorted(required - set(frame))}")
-    columns = list(feature_columns)
-    _require(columns and len(set(columns)) == len(columns), "Columnas de entrada repetidas")
-    _require(not set(columns) & required, "Una columna de entrada coincide con una clave")
-    frame = frame.reset_index(drop=True)
-    _require(np.isfinite(frame["target"]).all(), "El objetivo debe ser finito en todas las filas")
-    sessions = frame.groupby(list(KEYS), sort=True).ngroup()
-    past = placebo_past_target(frame, lag)
-    findings = []
-    for start in range(0, len(columns), settings["chunk"]):
-        names = columns[start : start + settings["chunk"]]
-        values = frame[names].astype(np.float64)
+    _require(required <= set(keys.columns), f"Faltan columnas: {sorted(required - set(keys))}")
+    keys = keys.reset_index(drop=True)
+    _require(np.isfinite(keys["target"]).all(), "El objetivo debe ser finito en todas las filas")
+    sessions = keys.groupby(list(KEYS), sort=True).ngroup()
+    past = placebo_past_target(keys, lag)
+    findings, seen = [], set()
+    for names, block in blocks:
+        names = list(names)
+        _require(
+            names and len(set(names)) == len(names) and not set(names) & seen,
+            "Columnas de entrada repetidas",
+        )
+        _require(not set(names) & required, "Una columna de entrada coincide con una clave")
+        seen.update(names)
+        values = pd.DataFrame(np.asarray(block, dtype=np.float64), columns=names)
+        _require(len(values) == len(keys), "Un bloque no tiene las filas de las claves")
         values = values.where(np.isfinite(values))
-        future_ic, future_n = _session_ic(sessions, values, frame["target"], settings["min_assets"])
+        future_ic, future_n = _session_ic(sessions, values, keys["target"], settings["min_assets"])
         past_ic, _ = _session_ic(sessions, values, past, settings["min_assets"])
         for j, name in enumerate(names):
-            ic, placebo = future_ic[:, j], past_ic[:, j]
-            defined = np.isfinite(ic)
-            mean_abs = float(np.mean(np.abs(ic[defined]))) if defined.any() else None
-            worst = float(np.max(np.abs(ic[defined]))) if defined.any() else None
-            flagged = mean_abs is not None and (
-                mean_abs >= settings["mean_threshold"] or worst >= settings["session_threshold"]
-            )
-            placebo_defined = np.isfinite(placebo)
             findings.append(
-                dict(
-                    column=name,
-                    sessions=int(defined.sum()),
-                    rows=int(future_n[:, j].sum()),
-                    mean_ic=float(np.mean(ic[defined])) if defined.any() else None,
-                    mean_abs_ic=mean_abs,
-                    max_abs_ic=worst,
-                    past_mean_abs_ic=float(np.mean(np.abs(placebo[placebo_defined])))
-                    if placebo_defined.any()
-                    else None,
-                    flagged=bool(flagged),
-                )
+                _finding(name, future_ic[:, j], future_n[:, j], past_ic[:, j], settings)
             )
+    _require(findings, "No hay columnas de entrada")
     flagged = [entry["column"] for entry in findings if entry["flagged"]]
     return dict(
         schema_version=1,
         kind=KIND,
         created_at_utc=datetime.now(UTC).isoformat(),
-        rows=len(frame),
+        rows=len(keys),
         sessions=int(sessions.nunique()),
         placebo_lag=lag,
         thresholds={k: v for k, v in settings.items() if k != "chunk"},
         columns=findings,
         flagged=flagged,
         passed=not flagged,
+    )
+
+
+def _finding(name, ic, present, placebo, settings):
+    defined = np.isfinite(ic)
+    mean_abs = float(np.mean(np.abs(ic[defined]))) if defined.any() else None
+    worst = float(np.max(np.abs(ic[defined]))) if defined.any() else None
+    flagged = mean_abs is not None and (
+        mean_abs >= settings["mean_threshold"] or worst >= settings["session_threshold"]
+    )
+    placebo_defined = np.isfinite(placebo)
+    return dict(
+        column=name,
+        sessions=int(defined.sum()),
+        rows=int(present.sum()),
+        mean_ic=float(np.mean(ic[defined])) if defined.any() else None,
+        mean_abs_ic=mean_abs,
+        max_abs_ic=worst,
+        past_mean_abs_ic=float(np.mean(np.abs(placebo[placebo_defined])))
+        if placebo_defined.any()
+        else None,
+        flagged=bool(flagged),
     )
 
 

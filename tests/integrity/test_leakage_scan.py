@@ -124,3 +124,33 @@ def test_the_cli_reads_parquet_and_signals_a_leak(tmp_path):
     assert leakage_scan.main([str(path), "--lag", "1", "--output", str(output)]) == 1
     written = json.loads(output.read_text())
     assert written["flagged"] == ["canary"] and written["placebo_lag"] == 1
+
+
+def test_blocks_of_any_width_give_the_same_findings_as_the_whole_table():
+    frame, rng = panel()
+    frame["canary"] = frame["target"] + rng.normal(0, 0.02, len(frame))
+    frame.loc[rng.random(len(frame)) < 0.2, "weak_signal"] = np.nan
+    columns = ["weak_signal", "noise", "past_return", "canary"]
+    whole = leakage_scan.scan(frame, columns, lag=1)
+    keys = frame[["market", "asset_id", "prediction_at", "target"]]
+    for width in (1, 3):
+        blocks = (
+            (columns[i : i + width], frame[columns[i : i + width]].to_numpy(np.float32))
+            for i in range(0, len(columns), width)
+        )
+        result = leakage_scan.scan_blocks(keys, blocks, lag=1)
+        # float32 conserva el orden de estos valores, así que los rangos y las sumas coinciden.
+        assert result["columns"] == whole["columns"]
+        assert result["flagged"] == whole["flagged"] == ["canary"]
+
+
+def test_blocks_must_match_the_rows_and_never_repeat_a_column():
+    frame, _ = panel()
+    keys = frame[["market", "asset_id", "prediction_at", "target"]]
+    values = frame[["noise"]].to_numpy()
+    with pytest.raises(ValueError, match="filas"):
+        leakage_scan.scan_blocks(keys, [(["noise"], values[:-1])], lag=1)
+    with pytest.raises(ValueError, match="repetidas"):
+        leakage_scan.scan_blocks(keys, [(["noise"], values), (["noise"], values)], lag=1)
+    with pytest.raises(ValueError, match="No hay columnas"):
+        leakage_scan.scan_blocks(keys, [], lag=1)
