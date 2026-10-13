@@ -17,6 +17,10 @@ from .state import (
     require_true,
 )
 
+# Filas que puede escribir o leer de una vez la memoria compartida de PT4: todas las
+# decisiones de una sesión de un mercado.
+MAX_SHARED_ROWS = 16384
+
 
 def clip_rows(gradient: Tensor, limit: float) -> Tensor:
     """Reescala cada fila del gradiente para que su norma euclídea no supere `limit` (PT1).
@@ -328,6 +332,108 @@ class NeuralMemory(nn.Module):
                 new_levels.append((1 - decay_third) * third + surprise)
         return tuple(new_weights), tuple(new_levels)
 
+    def _write(self, weights, momentum, levels, gradients, gates, differentiable):
+        """Momentum, olvido y escritura de un paso con el gradiente asociativo ya calculado."""
+        alpha, eta, theta = gates
+        stability = self.config.stability
+        if stability is not None and stability.gradient_clip is not None:
+            # PT1 recorta antes del momentum para que cada escritura quede acotada.
+            gradients = tuple(
+                clip_rows(gradient, stability.gradient_clip) for gradient in gradients
+            )
+        momentum = tuple(
+            eta * previous - theta * gradient
+            for previous, gradient in zip(momentum, gradients, strict=True)
+        )
+        if self.config.multiscale is None:
+            weights = tuple(
+                (1 - alpha) * weight + surprise
+                for weight, surprise in zip(weights, momentum, strict=True)
+            )
+        else:
+            weights, levels = self._advance_levels(weights, levels, momentum, alpha)
+        for value in (*weights, *momentum, *levels):
+            check_finite(value, "La actualización de memoria")
+        if not differentiable:
+            weights = tuple(w.detach() for w in weights)
+            momentum = tuple(m.detach() for m in momentum)
+            levels = tuple(level.detach() for level in levels)
+        return weights, momentum, levels
+
+    def read_shared(self, query: Tensor, state: NeuralMemoryState) -> Tensor:
+        """Leer n consultas [n, dim] con un único estado compartido de lote 1 (PT4)."""
+        self._check_shared(query, state)
+        result = self._apply_memory(query.unsqueeze(0), self.readable_weights(state)).squeeze(0)
+        check_finite(result, "La lectura de memoria")
+        return result
+
+    def update_shared(
+        self, observed: Tensor, state: NeuralMemoryState, *, differentiable: bool = False
+    ) -> NeuralMemoryState:
+        """Una sola escritura con la media de los gradientes de n observaciones (PT4).
+
+        Todas las filas [n, dim] se escriben a la vez en el estado compartido de lote 1. La
+        pérdida asociativa es la media de las n pérdidas en los mismos pesos, así que su
+        gradiente es la media de los gradientes internos. Las puertas salen de la media de
+        los logits, que coincide con los logits de la observación media porque las
+        proyecciones son lineales. El orden de las filas solo cambia el redondeo.
+        """
+        check_differentiable(differentiable)
+        if torch.is_inference_mode_enabled():
+            raise ValueError("inference_mode impide el gradiente interno, utilice no_grad")
+        self._check_shared(observed, state)
+        require_true(
+            (state.steps < torch.iinfo(torch.int64).max).all(),
+            "El contador de pasos desbordaría int64",
+        )
+        with torch.enable_grad():
+            token = observed if differentiable else observed.detach()
+            keys = self.key_projection(token)
+            values = self.value_projection(token)
+            logits = tuple(
+                projection(token).mean(dim=0, keepdim=True)
+                for projection in (
+                    self.alpha_projection,
+                    self.eta_projection,
+                    self.theta_projection,
+                )
+            )
+            for projected in (keys, values, *logits):
+                check_finite(projected, "Las proyecciones asociativas")
+            if self.config.normalize_qk:
+                keys = F.normalize(keys, dim=-1, eps=1e-12)
+            gates = self._gates(*logits)
+            local = tuple(
+                (w.clone() if differentiable else w.detach().clone()).requires_grad_(True)
+                for w in self.readable_weights(state)
+            )
+            residual = self._apply_memory(keys.unsqueeze(0), local).squeeze(0) - values
+            loss = residual.square().sum() / observed.shape[0]
+            check_finite(loss, "La pérdida asociativa")
+            gradients = torch.autograd.grad(loss, local, create_graph=differentiable)
+            weights, momentum, levels = self._write(
+                state.weights, state.momentum, state.levels, gradients, gates, differentiable
+            )
+        return NeuralMemoryState(weights, momentum, state.steps + 1, state.config_id, (), levels)
+
+    def _check_shared(self, values: Tensor, state: NeuralMemoryState) -> None:
+        self.validate_state(state)
+        reference = self._reference()
+        if self.config.window or self.config.qkv_silu:
+            raise ValueError("La memoria compartida no admite ventanas causales ni SiLU por flujo")
+        if (
+            state.steps.shape != (1,)
+            or not isinstance(values, Tensor)
+            or values.layout != torch.strided
+            or values.ndim != 2
+            or not 1 <= values.shape[0] <= MAX_SHARED_ROWS
+            or values.shape[1] != self.config.dim
+            or values.dtype != reference.dtype
+            or values.device != reference.device
+        ):
+            raise ValueError("La memoria compartida necesita [n, dim] y un estado de lote 1")
+        check_finite(values, "La entrada")
+
     def read(self, query: Tensor, state: NeuralMemoryState) -> Tensor:
         """Lee sin escribir. La proyección y normalización de queries corresponden a MAC."""
         self.validate_input(query, state)
@@ -349,8 +455,6 @@ class NeuralMemory(nn.Module):
         )
         weights, momentum, levels = state.weights, state.momentum, state.levels
         key_window, value_window = state.convolution or (None, None)
-        stability = self.config.stability
-        clip = None if stability is None else stability.gradient_clip
         with torch.enable_grad():
             for token in observed.unbind(1):
                 if not differentiable:
@@ -386,26 +490,9 @@ class NeuralMemory(nn.Module):
                 loss = residual.square().sum()
                 check_finite(loss, "La pérdida asociativa")
                 gradients = torch.autograd.grad(loss, local, create_graph=differentiable)
-                if clip is not None:
-                    # PT1 recorta antes del momentum para que cada escritura quede acotada.
-                    gradients = tuple(clip_rows(gradient, clip) for gradient in gradients)
-                momentum = tuple(
-                    eta * previous - theta * gradient
-                    for previous, gradient in zip(momentum, gradients, strict=True)
+                weights, momentum, levels = self._write(
+                    weights, momentum, levels, gradients, (alpha, eta, theta), differentiable
                 )
-                if self.config.multiscale is None:
-                    weights = tuple(
-                        (1 - alpha) * weight + surprise
-                        for weight, surprise in zip(weights, momentum, strict=True)
-                    )
-                else:
-                    weights, levels = self._advance_levels(weights, levels, momentum, alpha)
-                for value in (*weights, *momentum, *levels):
-                    check_finite(value, "La actualización de memoria")
-                if not differentiable:
-                    weights = tuple(w.detach() for w in weights)
-                    momentum = tuple(m.detach() for m in momentum)
-                    levels = tuple(level.detach() for level in levels)
         windows = () if key_window is None else (key_window, value_window)
         if not differentiable:
             windows = tuple(w.detach() for w in windows)

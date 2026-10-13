@@ -2,11 +2,13 @@
 
 Reutiliza el archivo que `titans_paper_projections_cost.py materialize` lee del tramo de
 ajuste de una vista de la campaña, con sus bits de presencia reales y sin objetivos. Para
-cada modelo de la declaración (por ejemplo PT5 o PT6) recorre los T instantes con grafo,
-calcula la pinball frente a ceros y ejecuta un backward. Los gradientes se descartan en cada
-repetición y al final se comprueba que ningún parámetro ha cambiado. Mide también la
+cada modelo de la declaración (por ejemplo PT4, PT5 o PT6) recorre los T instantes con
+grafo, calcula la pinball frente a ceros y ejecuta un backward. Los gradientes se descartan
+en cada repetición y al final se comprueba que ningún parámetro ha cambiado. Mide también la
 inferencia sin grafo y cuenta las filas con alguna modalidad ausente. Las repeticiones se
-alternan entre modelos, así que todos sufren la misma deriva de la máquina.
+alternan entre modelos, así que todos sufren la misma deriva de la máquina. Con el contexto
+de PT4, cada instante se lee en un bloque y se confirma después de emitirlo, como en el
+recorrido.
 """
 
 import argparse
@@ -54,12 +56,47 @@ def _summary(values):
     )
 
 
+def _step(model, batch, state, context, *, differentiable):
+    """Una decisión por instante. Con PT4, la sesión se confirma tras emitirla."""
+    options = {} if context is None else dict(context=context)
+    prepared = model.prepare(batch, state, differentiable=differentiable, **options)
+    if context is not None:
+        context = model.commit_context(prepared.next_context, differentiable=differentiable)
+    return prepared, context
+
+
+def _initial_context(model, *, differentiable):
+    if model.session_context is None:
+        return None
+    return model.initial_context(differentiable=differentiable)
+
+
+def _context_bytes(model, flows, batches):
+    """Bytes de tensores del contexto compartido tras recorrer los instantes, o cero."""
+    context = _initial_context(model, differentiable=False)
+    if context is None:
+        return 0
+    state = model.initial_state(flows)
+    with torch.no_grad():
+        for batch in batches:
+            prepared, context = _step(model, batch, state, context, differentiable=False)
+            state = prepared.next_state
+    payload = model.export_context(context)
+    tensors = [payload["means"]] if payload["means"] is not None else []
+    for memory in payload["memory"] or []:
+        tensors.extend(
+            value for key in ("weights", "momentum", "levels") for value in memory.get(key, ())
+        )
+    return sum(value.numel() * value.element_size() for value in tensors)
+
+
 def _graph_pass(model, batches, flows):
     started = time.perf_counter()
     state = model.initial_state(flows, differentiable=True)
+    context = _initial_context(model, differentiable=True)
     outputs = []
     for batch in batches:
-        prepared = model.prepare(batch, state, differentiable=True)
+        prepared, context = _step(model, batch, state, context, differentiable=True)
         state = prepared.next_state
         outputs.append(prepared.quantiles)
     quantiles = torch.cat(outputs)
@@ -77,12 +114,14 @@ def _inference(model, batches, flows):
     started = time.perf_counter()
     with torch.no_grad():
         state = model.initial_state(flows)
+        context = _initial_context(model, differentiable=False)
         for batch in batches:
-            state = model.prepare(batch, state).next_state
+            prepared, context = _step(model, batch, state, context, differentiable=False)
+            state = prepared.next_state
     return time.perf_counter() - started
 
 
-def measure(data, declaration_path, output, *, repetitions, warmup, threads):
+def measure(data, declaration_path, output, *, repetitions, warmup, threads, sector_source=None):
     torch.set_num_threads(threads)
     torch.set_float32_matmul_precision("highest")
     metadata, spec, raws = _raw_batches(data)
@@ -102,9 +141,13 @@ def measure(data, declaration_path, output, *, repetitions, warmup, threads):
     incomplete = ~presence.all(axis=1)
     built = {}
     for name, arm in declaration["arms"].items():
-        config = FinancialConfig(
-            spec, variant=declaration["variant"], seed=42, **(base | arm["predictor_changes"])
-        )
+        changes = dict(arm["predictor_changes"])
+        if "sector_map" in changes:
+            # La ficha de sectores se lee de la copia local del conjunto, que no se versiona.
+            if sector_source is None:
+                raise ValueError("El control sectorial necesita --sector-source")
+            changes["sector_map"] = dict(source=str(sector_source))
+        config = FinancialConfig(spec, variant=declaration["variant"], seed=42, **(base | changes))
         model = FinancialPredictor(config, dtype=torch.float32).train()
         built[name] = (arm, model, _digest(model))
     for _ in range(warmup):
@@ -131,6 +174,8 @@ def measure(data, declaration_path, output, *, repetitions, warmup, threads):
             predictor_changes=arm["predictor_changes"],
             total_parameters=sum(value.numel() for value in model.parameters()),
             state_tensor_bytes_per_flow=model.state_usage(flows_state)["tensor_bytes_per_flow"],
+            shared_context_tensor_bytes=_context_bytes(model, flows, batches),
+            session_context=model.config.identity().get("session_context"),
             forward_with_graph_seconds=_summary([value[0] for value in graph[name]]),
             backward_seconds=_summary([value[1] for value in graph[name]]),
             inference_seconds=_summary(inference[name]),
@@ -195,6 +240,7 @@ def main():
     parser.add_argument("--repetitions", type=int, default=5)
     parser.add_argument("--warmup", type=int, default=1)
     parser.add_argument("--threads", type=int, default=2)
+    parser.add_argument("--sector-source", type=Path)
     args = parser.parse_args()
     if torch.cuda.is_available():
         raise RuntimeError("La medida se hace en CPU, con CUDA_VISIBLE_DEVICES=-1")
@@ -205,6 +251,7 @@ def main():
         repetitions=args.repetitions,
         warmup=args.warmup,
         threads=args.threads,
+        sector_source=args.sector_source,
     )
 
 

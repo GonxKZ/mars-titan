@@ -152,6 +152,8 @@ con $K^\top\Sigma^{-1}K=\frac{1}{\sigma^2(1-\varrho)}\big(K^\top K-g\,(K^\top\ma
 
 **Revisión adversarial.** Un factor sectorial explícito como entrada consigue lo mismo sin memoria. Ese control es obligatorio antes de atribuir nada a la memoria compartida.
 
+**Implementación.** Implementada y comprobada sin entrenar como `session_context` (`market_memory_v1` y el control `sector_mean_v1` con las fichas de sectores de FinMultiTime), con lectura solo de sesiones confirmadas, escritura una vez por sesión independiente de la partición en bloques, arranque idéntico al control y la comparación declarada sin ejecutar. No admite todavía la acumulación por bloques de la receta base ([#456](https://github.com/GonxKZ/mars-titan/issues/456), [especificación](../engineering/market-memory.md)).
+
 ## PT5. Memoria multiescala (línea posterior)
 
 **Datos.** No estacionariedad con varias escalas: eventos de días, ciclos de meses y regímenes de años. Una sola tasa de olvido por fila elige una escala.
