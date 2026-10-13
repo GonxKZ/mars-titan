@@ -16,6 +16,7 @@ import pytest
 from mars_titan.data.storage import atomic_json, sha256
 from mars_titan.simulation import campaign_stage, index_benchmark, stage_report
 from mars_titan.simulation.stage_report import DIFFERENCE
+from tests.learning_hold_lowering import lowers_learning_hold
 from tests.simulation import rl_stage_fixture as fixture
 
 ARMS = ["klpo_terminal", "double_dqn", *fixture.REFERENCES]
@@ -186,6 +187,10 @@ def with_group_arms(base):
     atomic_json(path, value)
 
 
+@lowers_learning_hold(
+    "tests/simulation/test_stage_report.py::"
+    "test_component_contrasts_pair_each_variant_with_its_control_on_the_same_sessions"
+)
 def test_component_contrasts_pair_each_variant_with_its_control_on_the_same_sessions(
     tmp_path_factory, tmp_path, learning_doubles
 ):

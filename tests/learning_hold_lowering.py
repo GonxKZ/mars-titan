@@ -28,6 +28,12 @@ INVENTORY = {
         "la meseta no se regenera y su continuación sí, y la regeneración de predicciones se "
         "detiene con la protección"
     ),
+    "tests/simulation/test_stage_report.py::"
+    "test_component_contrasts_pair_each_variant_with_its_control_on_the_same_sessions": (
+        "recorre la etapa de políticas reducida con GRPO, Dr. GRPO y GSPO y un aprendiz "
+        "sustituido que no ajusta, porque el informe solo lee salidas confirmadas de la etapa y "
+        "su ejecución se detiene con la protección"
+    ),
 }
 
 
