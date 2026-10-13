@@ -1,5 +1,6 @@
 """Codec fijo de observaciones preparadas, sin objetivos ni pesos del predictor."""
 
+import functools
 import hashlib
 import json
 import math
@@ -37,6 +38,62 @@ def _immutable(values):
 
 def _norm(values):
     return np.sqrt(np.einsum("bi,bi->b", values, values, optimize=False))
+
+
+def _declared_order(block, transposed):
+    """Proyección con el orden de sumas que reproduce `project_codec_block`, en NumPy.
+
+    Dos acumuladores por salida, para las entradas pares e impares. Cada bloque de ocho
+    entradas se recorre del par 6-7 al 0-1, el resto por pares en orden creciente, y al final
+    se suman los dos acumuladores. Es el orden de `einsum("bi,oi->bo", optimize=False)` en la
+    línea base x86-64 de NumPy 2.5. Multiplicar y sumar por separado con NumPy no fusiona las
+    operaciones, así que esta función sirve de referencia en cualquier plataforma.
+    """
+    rows, width = block.shape
+    even = np.zeros((rows, transposed.shape[1]))
+    odd = np.zeros_like(even)
+    index = 0
+    while width - index >= 8:
+        for offset in (6, 4, 2, 0):
+            even = block[:, index + offset, None] * transposed[index + offset] + even
+            odd = block[:, index + offset + 1, None] * transposed[index + offset + 1] + odd
+        index += 8
+    while index < width:
+        even = block[:, index, None] * transposed[index] + even
+        if index + 1 < width:
+            odd = block[:, index + 1, None] * transposed[index + 1] + odd
+        index += 2
+    return even + odd
+
+
+@functools.cache
+def _einsum_follows_declared_order():
+    """Comprobar una vez por proceso que el einsum instalado suma en el orden del núcleo.
+
+    Si NumPy cambiara su núcleo (otra línea base, FMA o más carriles), el enlace nativo y
+    einsum darían bits distintos. En ese caso el codec sigue usando einsum.
+    """
+    generator = np.random.Generator(np.random.PCG64(20261010))
+    for width in (1, 2, 3, 7, 8, 9, 15, 16, 17, 33):
+        scale = np.ldexp(1.0, generator.integers(-40, 40, size=(5, width)))
+        block = generator.standard_normal((5, width)) * scale
+        weights = generator.standard_normal((11, width))
+        expected = _declared_order(block, np.ascontiguousarray(weights.T))
+        actual = np.einsum("bi,oi->bo", block, weights, optimize=False)
+        if not np.array_equal(actual.view(np.uint64), expected.view(np.uint64)):
+            return False
+    return True
+
+
+def projection_backend(native):
+    """Implementación de la proyección que usará `encode` con este enlace nativo.
+
+    El núcleo nativo solo sustituye a einsum si el enlace lo incluye y el einsum de esta
+    instalación sigue el orden declarado, es decir, cuando los dos dan los mismos bits.
+    """
+    if native is None or not hasattr(native, "project_codec_block"):
+        return "numpy_einsum"
+    return "native" if _einsum_follows_declared_order() else "numpy_einsum"
 
 
 @dataclass(frozen=True)
@@ -108,8 +165,10 @@ class FrozenEpisodeCodec:
 
     _identity_json: str
     _projection: np.ndarray
+    _projection_buffer: np.ndarray
+    _transposed: np.ndarray
+    _transposed_buffer: np.ndarray
     _input_widths: tuple[int, ...]
-    _projection_sha256: str
     _modality_weights: tuple[float, ...]
     _presence_weight: float
     _key_constant: float
@@ -164,6 +223,10 @@ class FrozenEpisodeCodec:
         projection[WIDTH - 1 :] /= math.sqrt(WIDTH)
         projection = _immutable(projection)
         checksum = hashlib.sha256(projection).hexdigest()
+        # El núcleo nativo lee cada entrada como una fila contigua de salidas. Liberar los
+        # signos antes de copiarla deja el pico en tres matrices, como prevé el presupuesto.
+        del signs
+        transposed = _immutable(np.ascontiguousarray(projection.T))
         identity = dict(
             schema_version=1,
             recipe="frozen_modal_projection_v1",
@@ -190,8 +253,10 @@ class FrozenEpisodeCodec:
         for name, value in dict(
             _identity_json=_canonical(identity),
             _projection=projection,
+            _projection_buffer=projection.base,
+            _transposed=transposed,
+            _transposed_buffer=transposed.base,
             _input_widths=widths,
-            _projection_sha256=checksum,
             _modality_weights=weights,
             _presence_weight=presence_weight,
             _key_constant=key_constant,
@@ -227,18 +292,33 @@ class FrozenEpisodeCodec:
         return result
 
     def _verify_projection(self):
-        shape = (2 * WIDTH - 1, sum(self._input_widths) + len(MODALITIES))
-        if (
-            self._projection.shape != shape
-            or self._projection.dtype != np.float64
-            or not self._projection.flags.c_contiguous
-            or self._projection.flags.writeable
-            or hashlib.sha256(self._projection).hexdigest() != self._projection_sha256
-        ):
-            raise ValueError("La proyección congelada ha cambiado")
+        """Exigir la misma memoria de solo lectura cuya huella se calculó al construir el codec.
 
-    def encode(self, batch):
-        """Consumir la vista CPU verificada antes de cualquier traslado al predictor."""
+        La proyección es una vista de un objeto bytes, que no se puede modificar, y NumPy no
+        permite volver a marcarla como escribible. Sustituir el atributo cambia su base. Por eso
+        basta con comprobar esa base en cada llamada, sin repetir el SHA-256 de la matriz.
+        """
+        shape = (2 * WIDTH - 1, sum(self._input_widths) + len(MODALITIES))
+        for values, buffer, expected in (
+            (self._projection, self._projection_buffer, shape),
+            (self._transposed, self._transposed_buffer, shape[::-1]),
+        ):
+            if (
+                values.base is not buffer
+                or not isinstance(buffer.base, bytes)
+                or values.shape != expected
+                or values.dtype != np.float64
+                or not values.flags.c_contiguous
+                or values.flags.writeable
+            ):
+                raise ValueError("La proyección congelada ha cambiado")
+
+    def encode(self, batch, *, native=None):
+        """Consumir la vista CPU verificada antes de cualquier traslado al predictor.
+
+        Con el enlace episódico nativo, la proyección de cada bloque usa su núcleo con el orden
+        de einsum cuando `projection_backend` lo permite. El resultado es el mismo bit a bit.
+        """
         if (
             not isinstance(batch, CPUDecisionBatch)
             or batch.input_contract_id != self.input_contract_id
@@ -246,10 +326,12 @@ class FrozenEpisodeCodec:
             raise ValueError("La vista CPU pertenece a otro contrato")
         batch.verify()
         self._verify_projection()
+        native_projection = projection_backend(native) == "native"
         size = len(batch.flow_ids)
         temporary = 3 * size * max(self._input_widths) * 8
         peak = (
             self._projection.nbytes
+            + self._transposed.nbytes
             + 2 * sys.getsizeof(self._identity_json)
             + temporary
             + size * (4 * WIDTH * 8 + 512)
@@ -274,9 +356,12 @@ class FrozenEpisodeCodec:
                 block *= self._modality_weights[index]
                 normalized_l2[:, index] = _norm(block)
             end = start + block.shape[1]
-            contribution = np.einsum(
-                "bi,oi->bo", block, self._projection[:, start:end], optimize=False
-            )
+            if native_projection:
+                contribution = native.project_codec_block(block, self._transposed[start:end])
+            else:
+                contribution = np.einsum(
+                    "bi,oi->bo", block, self._projection[:, start:end], optimize=False
+                )
             summed += contribution
             key_contributions[:, index] = _norm(contribution[:, : WIDTH - 1])
             value_contributions[:, index] = _norm(contribution[:, WIDTH - 1 :])

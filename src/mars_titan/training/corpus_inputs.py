@@ -246,6 +246,13 @@ def _availability(table, *, macro_override=None, presence=None):
 
 def _presence(table, vectors, representation):
     """Contrastar bloques y conceptos antes de seleccionar filas de un grupo."""
+    presence = presence_bits(table)
+    validate_historical_vectors(vectors, presence, representation)
+    return presence
+
+
+def presence_bits(table):
+    """Bits de presencia de un grupo, comprobados con su forma y sus noticias, sin vectores."""
     if "presence" not in table.column_names:
         raise ValueError("Faltan las máscaras de presencia de la edición histórica")
     column = table["presence"].combine_chunks()
@@ -266,7 +273,6 @@ def _presence(table, vectors, representation):
     events = counts.to_numpy()
     if (events < 0).any() or not np.array_equal(events > 0, presence[:, 1]):
         raise ValueError("La presencia de noticias no coincide con sus eventos admitidos")
-    validate_historical_vectors(vectors, presence, representation)
     return presence
 
 
@@ -478,6 +484,21 @@ class CorpusDataset:
             if self.temporal
             else ("train", "validation")
         )
+        # Una vista elegida sobre un subconjunto declarado debe seguir apuntando a ese mismo
+        # subconjunto, cuyas etiquetas ya están filtradas en los tramos. Las observaciones no
+        # se filtran, igual que en el índice de `financial_observations`. Con `usable`
+        # dependerían de que exista la sesión siguiente, algo que no se sabe al decidir.
+        if "data_subset" in meta:
+            from .edition_subsets import read_subset, subset_identity
+
+            declared = meta["data_subset"]
+            if not (self.masked and self.temporals) or not isinstance(declared, dict):
+                raise ValueError("Solo una vista con máscaras puede declarar un subconjunto")
+            document, digest, _ = read_subset(Path(declared.get("manifest", "")), rows=False)
+            if declared != dict(
+                manifest=declared["manifest"], manifest_sha256=digest, **subset_identity(document)
+            ):
+                raise ValueError("El subconjunto de la vista no es el declarado")
         if (
             meta.get("schema_version") not in ({3} if self.masked else {1, 2})
             or meta.get("kind") != "corpus_supervision"
@@ -1122,7 +1143,8 @@ class CorpusDataset:
         """Leer todas las filas históricas del intervalo, por activo y sin labels.
 
         La ordenación temporal entre activos corresponde al índice de cohortes.
-        La ausencia de objetivo no elimina una observación del recorrido.
+        La ausencia de objetivo no elimina una observación del recorrido, y un subconjunto
+        declarado tampoco: solo decide qué etiquetas entran en los tramos de la vista.
         """
         if (
             not self.masked

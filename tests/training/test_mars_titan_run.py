@@ -317,8 +317,18 @@ def runs(shared, tmp_path_factory, native):
     hold = root / "hold.json"
     hold.write_text(json.dumps({"training_allowed": True}))
     result = {}
+    # Enlaces que reciben las codificaciones del banco, para comprobar que el lector entrega
+    # el suyo y el codec puede proyectar con el núcleo nativo.
+    received = result["codec_natives"] = []
+    encode = FrozenEpisodeCodec.encode
+
+    def recorded(self, batch, *, native=None):
+        received.append(native)
+        return encode(self, batch, native=native)
+
     with pytest.MonkeyPatch.context() as patch:
         patch.setenv(HOLD_ENV, str(hold))
+        patch.setattr(FrozenEpisodeCodec, "encode", recorded)
         previous = torch.backends.mha.get_fastpath_enabled()
         torch.backends.mha.set_fastpath_enabled(False)
         try:
@@ -371,6 +381,11 @@ def test_loop_reaches_the_step_without_changing_any_weight(runs, admission):
             assert 0 <= metrics["relevance_unknown"] <= metrics["admitted"]
     else:
         assert "selective_admitted" not in train
+
+
+def test_reader_encodes_bank_episodes_with_its_native_binding(runs, native):
+    received = runs["codec_natives"]
+    assert received and all(value is native for value in received)
 
 
 def train_passes(audit):
