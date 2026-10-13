@@ -14,6 +14,9 @@ import torch
 
 from mars_titan.models.baselines.ridge import centered_normal_equations
 
+# Ajusta sin pasar por un punto de entrada protegido. Ver tests/README.md.
+pytestmark = pytest.mark.unguarded_fit
+
 # 64 sesiones por 5 precios, noticias, gráficos, 26 conceptos y 140 indicadores por
 # triplete, más los cinco bits de presencia de la edición con máscaras.
 HISTORICAL_FEATURES = 64 * 5 + 384 + 512 + 3 * 26 + 3 * 140 + 5

@@ -11,10 +11,11 @@ import pytest
 from mars_titan.data.storage import sha256
 from mars_titan.training.tabular_corpus import run_tabular_reference
 from tests.environments.test_corpus_source import fixture
+from tests.suite_support import missing_extra
 
 pytestmark = pytest.mark.skipif(
     any(importlib.util.find_spec(name) is None for name in ("duckdb", "gymnasium")),
-    reason="Requiere los extras data y reinforcement",
+    reason=missing_extra("duckdb", "gymnasium"),
 )
 
 

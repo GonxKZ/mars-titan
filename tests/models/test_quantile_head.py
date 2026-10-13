@@ -280,7 +280,7 @@ def test_nonfinite_free_values_propagate_instead_of_being_hidden():
     assert torch.isnan(ordered_quantiles(raw)).all()
 
 
-@pytest.mark.skipif(not torch.cuda.is_available(), reason="Requiere cuda:0 explícito")
+@pytest.mark.cuda
 @pytest.mark.parametrize("dtype", DTYPES)
 def test_cuda_head_and_loss_match_cpu(dtype):
     head = QuantileHead(32, dtype=dtype)

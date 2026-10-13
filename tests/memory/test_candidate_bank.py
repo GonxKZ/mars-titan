@@ -13,6 +13,9 @@ from mars_titan.memory.candidate_bank import (
     CandidateEpisodes,
 )
 from mars_titan.memory.session_artifacts import SessionArtifacts
+from tests.suite_support import CANDIDATE_BINDING_REASON
+
+pytestmark = pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 
 CODEC = "c" * 64
 REPRESENTATION = "candidate-fixed-v1:manual"
@@ -184,7 +187,7 @@ def test_fp32_reading_rejects_a_label_outside_its_range(native):
 
 def test_full_capacity_view_feeds_eight_neighbors_and_exact_zero_keys(native):
     if not hasattr(native, "CandidateConfig"):
-        pytest.skip("El enlace no incluye el candidato GRU")
+        pytest.skip(CANDIDATE_BINDING_REASON)
     config = native.CandidateConfig()
     config.dimensions = [5, 3, 4, 3, 3]
     config.normalization_id = "manual-bank"

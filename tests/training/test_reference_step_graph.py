@@ -28,7 +28,7 @@ from mars_titan.training.reference_step_graph import (
 
 DIMENSIONS = dict(prices=5, news=8, charts=8, fundamentals=6, macro=7)
 CONTEXT, BATCH = 16, 8
-cuda = pytest.mark.skipif(not torch.cuda.is_available(), reason="sin dispositivo CUDA")
+cuda = pytest.mark.cuda
 
 
 @pytest.fixture

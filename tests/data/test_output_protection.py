@@ -4,10 +4,12 @@ import sqlite3
 
 import pytest
 
+from tests.suite_support import missing_extra
+
 
 @pytest.mark.parametrize("target", ["report", "run"])
 def test_training_rejects_writes_inside_originals(tmp_path, monkeypatch, target):
-    pytest.importorskip("torch")
+    pytest.importorskip("torch", reason=missing_extra("torch"))
     from mars_titan import budget_training
 
     monkeypatch.chdir(tmp_path)
@@ -30,7 +32,7 @@ def test_training_rejects_writes_inside_originals(tmp_path, monkeypatch, target)
 
 @pytest.mark.parametrize("target", ["report", "run"])
 def test_training_rejects_writes_inside_prepared_inputs(tmp_path, monkeypatch, target):
-    pytest.importorskip("torch")
+    pytest.importorskip("torch", reason=missing_extra("torch"))
     from mars_titan import budget_training
 
     prepared = tmp_path / "prepared"

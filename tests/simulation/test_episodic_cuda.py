@@ -1,13 +1,15 @@
 """Recuperación de los comparadores episódicos con CUDA y memoria reconstruida."""
 
 import json
-import os
 
 import pytest
 from test_native_ppo_runner import adaptive_hmm, execute, latest, read, trace_rows
 from test_native_ppo_runner import adaptive_inputs as adaptive_inputs
 
 from mars_titan.training.experiment_resources import GpuLease
+from tests.suite_support import requires_cuda_integration
+
+pytestmark = pytest.mark.cuda
 
 
 def adam_states(policy):
@@ -23,10 +25,7 @@ def adam_states(policy):
     return result
 
 
-@pytest.mark.skipif(
-    os.environ.get("MARS_TITAN_CUDA_INTEGRATION") != "1",
-    reason="Requiere una ventana CUDA exclusiva y activación explícita",
-)
+@requires_cuda_integration
 @pytest.mark.parametrize("variant", ["ppo_episodic", "ppo_episodic_hmm"])
 @pytest.mark.parametrize("seed", [42, 43, 44])
 def test_episodic_cuda_resume_preserves_policy_trace_and_selection(
