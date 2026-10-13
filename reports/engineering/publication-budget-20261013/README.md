@@ -26,9 +26,9 @@ Los entrenadores cronológicos (Titans-MAC, MARS-TITAN, CM-v1 y la GRU episódic
 
 ## Mutación dirigida
 
-Cada mutante sustituye una línea de `fit_budget.py`, de la carga de la declaración o del informe, ejecuta con `pytest -x` las pruebas que lo persiguen y restaura el archivo. Todas corren con la protección de aprendizaje vigente: el consumido se prueba con el plan real de A v2 y recibos e historiales escritos en la prueba. Las dos pruebas que leen informes reales de Titans-MAC y de la referencia neuronal ejecutan los entrenadores con la protección rebajada, así que se omiten mientras rige el bloqueo y no cuentan aquí (inventario de [#546](https://github.com/GonxKZ/mars-titan/issues/546)).
+Cada mutante sustituye una línea de `fit_budget.py`, de la carga de la declaración o del informe, ejecuta con `pytest -x` las pruebas que lo persiguen y restaura el archivo. Todas corren con la protección de aprendizaje vigente: el consumido se prueba con el plan real de A v2 y recibos e historiales escritos en la prueba. Las dos pruebas que leen informes reales de Titans-MAC y de la referencia neuronal ejecutan los entrenadores con la protección rebajada, así que se omiten mientras rige el bloqueo, todavía no se han ejecutado y no cuentan aquí (inventario de [#546](https://github.com/GonxKZ/mars-titan/issues/546)).
 
-Resultado: 32 de 32 mutantes detectados ([registro](mutation.json)). B4, que deja de comparar la iteración, muere al cargar la declaración de A v2 porque sus diferencias declaradas dejan de existir. Una puntuación de mutación no garantiza que no haya otros fallos. Indica que cada decisión mutada tiene al menos una prueba que la exige.
+Resultado: 32 de 32 mutantes detectados ([registro](mutation.json)), también al repetirlos tras integrar la cabeza 0eda4174 de #550. B4, que deja de comparar la iteración, muere al cargar la declaración de A v2 porque sus diferencias declaradas dejan de existir. Una puntuación de mutación no garantiza que no haya otros fallos. Indica que cada decisión mutada tiene al menos una prueba que la exige.
 
 ## Límites
 
