@@ -41,6 +41,7 @@ target_compile_features(mars_titan_native_options INTERFACE cxx_std_20)
 include(cmake/Instrumentation.cmake)
 include(cmake/Diagnostics.cmake)
 include(cmake/Coverage.cmake)
+include(cmake/OptimizerStepTests.cmake)
 
 if(MARS_TITAN_BUILD_EPISODIC_PYTHON)
     set(MARS_TITAN_BUILD_COHORT_EXECUTION ON)
@@ -348,8 +349,9 @@ if(MARS_TITAN_BUILD_SIMULATION)
             add_executable(ppo_variant_state_tests tests/ppo_variant_state_tests.cpp)
             target_link_libraries(ppo_variant_state_tests PRIVATE mars_titan_ppo)
             mars_titan_configure_target(ppo_variant_state_tests)
-            add_test(NAME ppo_variant_state COMMAND ppo_variant_state_tests)
-            set_tests_properties(ppo_variant_state PROPERTIES TIMEOUT 120 LABELS "unit;rl-objectives")
+            mars_titan_add_optimizer_step_test(ppo_variant_state COMMAND ppo_variant_state_tests)
+            set_tests_properties(ppo_variant_state PROPERTIES TIMEOUT 120)
+            set_property(TEST ppo_variant_state APPEND PROPERTY LABELS unit rl-objectives)
             mars_titan_sanitizer_test_environment(ppo_variant_state)
             set_property(TEST ppo_variant_state APPEND PROPERTY ENVIRONMENT
                 "CUDA_VISIBLE_DEVICES=-1" "OMP_NUM_THREADS=1" "MKL_NUM_THREADS=1")
@@ -361,8 +363,9 @@ if(MARS_TITAN_BUILD_SIMULATION)
             mars_titan_sanitizer_test_environment(ppo_variant_objective)
             set_property(TEST ppo_variant_objective APPEND PROPERTY ENVIRONMENT
                 "CUDA_VISIBLE_DEVICES=-1" "OMP_NUM_THREADS=1" "MKL_NUM_THREADS=1")
-            add_test(NAME ppo_policy COMMAND ppo_policy_tests)
-            set_tests_properties(ppo_policy PROPERTIES TIMEOUT 120 LABELS "unit;integration;ppo")
+            mars_titan_add_optimizer_step_test(ppo_policy COMMAND ppo_policy_tests)
+            set_tests_properties(ppo_policy PROPERTIES TIMEOUT 120)
+            set_property(TEST ppo_policy APPEND PROPERTY LABELS unit integration ppo)
             mars_titan_sanitizer_test_environment(ppo_policy)
             set_property(TEST ppo_policy APPEND PROPERTY ENVIRONMENT
                 "CUDA_VISIBLE_DEVICES=-1" "OMP_NUM_THREADS=1" "MKL_NUM_THREADS=1")
@@ -378,8 +381,17 @@ if(MARS_TITAN_BUILD_SIMULATION)
                     target_link_libraries(ppo_${component}_tests PRIVATE mars_titan_ppo_files)
                 endif()
                 mars_titan_configure_target(ppo_${component}_tests)
+            endforeach()
+            foreach(component checkpoint inputs evaluation)
                 add_test(NAME ppo_${component} COMMAND ppo_${component}_tests)
-                set_tests_properties(ppo_${component} PROPERTIES TIMEOUT 120 LABELS "unit;integration;ppo")
+            endforeach()
+            # El entrenamiento, el empaquetado GRU y la recogida dan pasos de optimizador.
+            foreach(component training gru_packing collection)
+                mars_titan_add_optimizer_step_test(ppo_${component} COMMAND ppo_${component}_tests)
+            endforeach()
+            foreach(component training checkpoint inputs gru_packing evaluation collection)
+                set_tests_properties(ppo_${component} PROPERTIES TIMEOUT 120)
+                set_property(TEST ppo_${component} APPEND PROPERTY LABELS unit integration ppo)
                 mars_titan_sanitizer_test_environment(ppo_${component})
                 set_property(TEST ppo_${component} APPEND PROPERTY ENVIRONMENT
                     "CUDA_VISIBLE_DEVICES=-1" "OMP_NUM_THREADS=1" "MKL_NUM_THREADS=1")
@@ -587,15 +599,7 @@ if(MARS_TITAN_ENABLE_STATIC_ANALYZER)
 endif()
 mars_titan_coverage_report()
 
-# Pruebas que aplican pasos de optimizador sobre datos sintéticos, incluidos los programas que
-# entrenan si no encuentran la protección. Mientras rija el bloqueo de aprendizaje, todos los
-# perfiles de prueba de CMakePresets.json excluyen esta etiqueta. La prueba Python
-# test_optimizer_steps_hold.py exige que la lleve cualquier prueba que llegue a un paso.
-set(MARS_TITAN_OPTIMIZER_STEP_TESTS ppo_policy ppo_training ppo_collection ppo_gru_packing
-    ppo_variant_state adapter_control adapter_control_cli adapter_control_cuda adapter_control_cli_cuda)
-foreach(test IN LISTS MARS_TITAN_OPTIMIZER_STEP_TESTS)
-    if(TEST ${test})
-        set_property(TEST ${test} APPEND PROPERTY LABELS optimizer-steps)
-    endif()
-endforeach()
-
+# Todas las pruebas están registradas. Las que llevan la etiqueta optimizer-steps tienen que pasar
+# por el lanzador que lee la protección (OptimizerStepTests.cmake). La prueba Python
+# test_optimizer_steps_hold.py exige además que la lleve cualquier prueba que llegue a un paso.
+mars_titan_require_gated_optimizer_step_tests()
