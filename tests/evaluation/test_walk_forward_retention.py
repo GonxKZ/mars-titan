@@ -17,6 +17,7 @@ from mars_titan.data.storage import sha256
 from mars_titan.evaluation import regime_calendar as rc
 from mars_titan.evaluation import retention_interference as ri
 from mars_titan.evaluation import walk_forward_comparison as walk
+from mars_titan.evaluation import window_aggregates
 from mars_titan.memory.regimes import REGIME_RULE, RegimeRule
 from tests.evaluation import test_walk_forward_comparison as base
 from tests.evaluation.test_walk_forward_predictive_ability import long_decisions
@@ -153,6 +154,21 @@ def test_the_rest_of_the_report_does_not_change(runs):
         "evaluation/retention_interference.py",
         "evaluation/regime_calendar.py",
     }
+
+
+def test_window_aggregates_give_the_same_section_as_reading_the_rows(runs, tmp_path):
+    # La comparación final de A v2 lee los agregados por ventana de la retención v2, no filas.
+    study, report, _, _, calendar, _ = runs
+    config = walk.load_config(study.config_path)
+    sources = walk.load_sources(study.sources_path, config, study.scope)
+    folder = tmp_path / "aggregates"
+    for window in sources["windows"]:
+        window_aggregates.write(folder, config, sources, window)
+    from_aggregates, _ = walk.evaluate_walk_forward(
+        study.config_path, study.sources_path, study.scope, aggregates=folder, regimes=calendar
+    )
+    assert from_aggregates[walk.RETENTION_FIELD]["status"] == "computed"
+    assert from_aggregates[walk.RETENTION_FIELD] == report[walk.RETENTION_FIELD]
 
 
 def test_without_a_calendar_the_section_stays_pending(runs):
