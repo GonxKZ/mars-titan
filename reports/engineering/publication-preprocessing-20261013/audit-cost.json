@@ -1,0 +1,98 @@
+{
+  "schema_version": 1,
+  "kind": "past_only_preprocessing_audit_cost",
+  "history": {
+    "residual_sessions": 753,
+    "regime_sessions": 200,
+    "regime_assets": 30,
+    "cuts": [
+      0.45,
+      0.7,
+      0.9
+    ]
+  },
+  "compared": {
+    "residual_reference": {
+      "compared": 8514,
+      "changed": 0
+    },
+    "residual_arrays": {
+      "compared": 8514,
+      "changed": 0
+    },
+    "regimes": {
+      "compared": 1239,
+      "changed": 0
+    }
+  },
+  "repetitions": 5,
+  "timings": {
+    "residual_reference": {
+      "seconds": [
+        0.9489,
+        0.8884,
+        1.0713,
+        0.9401,
+        1.0512
+      ],
+      "median": 0.9489,
+      "minimum": 0.8884,
+      "maximum": 1.0713
+    },
+    "residual_arrays": {
+      "seconds": [
+        0.2044,
+        0.1809,
+        0.1982,
+        0.2107,
+        0.1918
+      ],
+      "median": 0.1982,
+      "minimum": 0.1809,
+      "maximum": 0.2107
+    },
+    "regimes": {
+      "seconds": [
+        0.0877,
+        0.1115,
+        0.1111,
+        0.1076,
+        0.1098
+      ],
+      "median": 0.1098,
+      "minimum": 0.0877,
+      "maximum": 0.1115
+    },
+    "audit_code": {
+      "seconds": [
+        1.1401,
+        1.1981,
+        1.4171,
+        1.2211,
+        1.1902
+      ],
+      "median": 1.1981,
+      "minimum": 1.1401,
+      "maximum": 1.4171
+    }
+  },
+  "peak_rss_bytes": 606851072,
+  "host": {
+    "platform": "Linux-7.0.0-38-generic-x86_64-desconocido-with-glibc2.43",
+    "python": "3.12.14",
+    "numpy": "2.5.3",
+    "pandas": "3.0.6",
+    "threads": {
+      "OMP_NUM_THREADS": "2",
+      "MKL_NUM_THREADS": "2"
+    },
+    "load_average": [
+      24.03173828125,
+      20.21240234375,
+      17.7412109375
+    ]
+  },
+  "measured_at_utc": "2026-10-13T04:47:32.897833+00:00",
+  "training_executed": false,
+  "final_test_opened": false
+}
