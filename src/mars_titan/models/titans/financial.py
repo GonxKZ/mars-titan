@@ -11,6 +11,7 @@ from torch.nn.attention import SDPBackend, sdpa_kernel
 
 from mars_titan.data.input_policy import masked_inputs
 from mars_titan.data.price_windows import gate_price_window
+from mars_titan.data.sector_map import SectorMap
 from mars_titan.models.baselines.multimodal import (
     HEADS,
     PRESENCE_FUSION,
@@ -49,6 +50,7 @@ from .presence_modulation import (
     wide_parameters_per_unit,
     wide_units,
 )
+from .session_context import SECTOR_MEAN, SESSION_CONTEXTS, SessionContext
 from .state import (
     MACState,
     check_differentiable,
@@ -96,6 +98,10 @@ class FinancialConfig:
     presence_modulation: str | None = None
     # PT5, cascada o banco EMA sobre los pesos rápidos. Sin declararla nada cambia.
     memory_multiscale: MemoryMultiscale | None = None
+    # PT4, memoria de mercado compartida o su control sectorial. Solo con mac_online. El
+    # control necesita el reparto de sectores, como SectorMap o {"source": carpeta}.
+    session_context: str | None = None
+    sector_map: SectorMap | None = None
 
     def __post_init__(self):
         if not isinstance(self.inputs, FinancialInputSpec) or self.variant not in VARIANTS:
@@ -134,6 +140,24 @@ class FinancialConfig:
             self.memory_multiscale, MemoryMultiscale
         ):
             raise ValueError("memory_multiscale debe ser MemoryMultiscale, sus valores o None")
+        if isinstance(self.sector_map, dict):
+            if set(self.sector_map) != {"source"}:
+                raise ValueError("sector_map declara solo la carpeta de las fichas en source")
+            object.__setattr__(
+                self, "sector_map", SectorMap.from_finmultitime(self.sector_map["source"])
+            )
+        if self.session_context is not None and (
+            not isinstance(self.session_context, str)
+            or self.session_context not in SESSION_CONTEXTS
+            or self.variant != "mac_online"
+        ):
+            raise ValueError(
+                "session_context admite market_memory_v1 o sector_mean_v1 con mac_online"
+            )
+        if (self.session_context == SECTOR_MEAN) != isinstance(self.sector_map, SectorMap) or (
+            self.sector_map is not None and not isinstance(self.sector_map, SectorMap)
+        ):
+            raise ValueError("sector_map acompaña solo y siempre al control sectorial")
         if self.presence_modulation is not None and (
             not isinstance(self.presence_modulation, str)
             or self.presence_modulation not in PRESENCE_MODULATIONS
@@ -202,6 +226,14 @@ class FinancialConfig:
         # PT5 sigue la regla de PT1: solo aparece si se declara y figura en las cuatro variantes.
         if self.memory_multiscale is not None:
             result.update(memory_multiscale=asdict(self.memory_multiscale))
+        # PT4 solo aparece si se declara. El control sectorial guarda la huella del reparto.
+        if self.session_context is not None:
+            result.update(
+                session_context=dict(
+                    kind=self.session_context,
+                    sectors=None if self.sector_map is None else self.sector_map.identity(),
+                )
+            )
         # PT6 registra el número real de parámetros añadidos. La rama ancha redondea sus
         # unidades, así que su cuenta se compara con la de FiLM en la propia identidad.
         if self.presence_modulation == FILM:
@@ -246,6 +278,8 @@ class PreparedDecisions:
     local_control: ProjectedMACResult | None = None
     # Solo con `quantile_head_v1`: [flujos, 5]. La predicción puntual es su mediana.
     quantiles: torch.Tensor | None = None
+    # Solo con PT4: el contexto con los tokens de este bloque pendientes de su sesión.
+    next_context: object = None
 
 
 def _tensor_digest(value):
@@ -308,6 +342,23 @@ class FinancialPredictor(nn.Module):
             if config.presence_modulation == WIDE_FUSION
             else None
         )
+        # PT4 tampoco usa el generador global: su memoria y su consulta tienen semilla propia.
+        self.session_context = (
+            SessionContext(
+                config.session_context,
+                config.hidden_size,
+                seed=config.seed,
+                memory_options=dict(
+                    gate_bias=config.gate_bias,
+                    residual_layer_norm=config.memory_residual_layer_norm,
+                ),
+                sector_map=config.sector_map,
+            )
+            if config.session_context is not None
+            else None
+        )
+        if self.session_context is not None and local_control is not None:
+            raise ValueError("PT4 no se combina con el control local C")
         self.mac = None
         if config.variant != "transformer_direct":
             self.mac = TitansMAC(
@@ -626,8 +677,45 @@ class FinancialPredictor(nn.Module):
             mac=mac,
         )
 
+    def initial_context(self, *, differentiable=False):
+        """Contexto de PT4 vacío al empezar un recorrido."""
+        self._require_context()
+        return self.session_context.initial_state(self._parameter_id, differentiable=differentiable)
+
+    def commit_context(self, context, *, differentiable=False):
+        """Confirmar las sesiones pendientes después de emitir todas sus predicciones."""
+        self._require_context()
+        self.session_context.validate(context, self._parameter_id)
+        return self.session_context.commit(context, differentiable=differentiable)
+
+    def detach_context(self, context, parameter_id=None):
+        self._require_context()
+        return self.session_context.detach(context, parameter_id or self._parameter_id)
+
+    def export_context(self, context):
+        self._require_context()
+        self.session_context.validate(context, self._parameter_id)
+        return self.session_context.export_state(context)
+
+    def restore_context(self, payload):
+        self._require_context()
+        return self.session_context.restore_state(
+            payload, self._parameter_id, device=self.head.weight.device
+        )
+
+    def _require_context(self):
+        if self.session_context is None:
+            raise ValueError("El predictor no declara contexto de sesión")
+
     def prepare(
-        self, batch, state, *, differentiable=False, control_selection=None, control_context_id=None
+        self,
+        batch,
+        state,
+        *,
+        differentiable=False,
+        control_selection=None,
+        control_context_id=None,
+        context=None,
     ):
         """Predecir un bloque desde el estado de sus flujos y proponer el estado siguiente.
 
@@ -641,9 +729,12 @@ class FinancialPredictor(nn.Module):
                 differentiable=differentiable,
                 control_selection=control_selection,
                 control_context_id=control_context_id,
+                context=context,
             )
 
-    def _prepare(self, batch, state, *, differentiable, control_selection, control_context_id):
+    def _prepare(
+        self, batch, state, *, differentiable, control_selection, control_context_id, context
+    ):
         check_differentiable(differentiable)
         if torch.is_inference_mode_enabled():
             raise ValueError("inference_mode impide la actualización asociativa, utilice no_grad")
@@ -676,6 +767,10 @@ class FinancialPredictor(nn.Module):
             self.local_control._resolve_selection(
                 control_selection, control_context_id, batch.flow_ids, state.observed_steps
             )
+        if (self.session_context is None) != (context is None):
+            raise ValueError("PT4 recibe su contexto de sesión y el núcleo no admite ninguno")
+        if context is not None:
+            self.session_context.validate(context, self._parameter_id)
         backend = sdpa_kernel(SDPBackend.MATH) if self.local_control is not None else nullcontext()
         local_result = None
         with torch.set_grad_enabled(differentiable), backend:
@@ -690,9 +785,17 @@ class FinancialPredictor(nn.Module):
                 branch=self.fusion_branch,
             )
             check_finite(token, "El token fusionado")
+            observed, next_context = token, None
+            if context is not None:
+                # La lectura solo usa sesiones ya confirmadas y deja este bloque pendiente.
+                extra, next_context = self.session_context.read(
+                    token, batch.flow_ids, batch.prediction_at, context
+                )
+                observed = token + extra
+                check_finite(observed, "El token con su contexto de sesión")
             if self.mac:
                 encoded, next_mac = self.mac(
-                    token.unsqueeze(1), state.mac, differentiable=differentiable
+                    observed.unsqueeze(1), state.mac, differentiable=differentiable
                 )
             else:
                 encoded, next_mac = token, None
@@ -732,6 +835,7 @@ class FinancialPredictor(nn.Module):
             working,
             local_result,
             quantiles,
+            next_context,
         )
 
     def export_state(self, state):
