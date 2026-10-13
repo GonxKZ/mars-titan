@@ -890,8 +890,9 @@ modelo base reentrenado en la ventana. Las familias `versus_frozen_parent` y
 `versus_full_continuation` incluyen la cadena como variante, y `versus_base_retrain`
 contrasta la cadena con el reentreno, la comparación que el diseño por etapas
 informa aparte. Si la campaña declara `walk_forward_stages`, la declaración debe
-contrastar esos dos papeles. Salen veinte padres en el ámbito conjunto, los 22
-modelos de la etapa salvo Ridge y XGBoost. Cada comparación conserva la
+contrastar esos dos papeles. Salen 21 padres en el ámbito conjunto, los 29
+modelos de la etapa salvo Ridge, XGBoost y los seis B6, que solo trasladan el padre
+congelado. Cada comparación conserva la
 elegibilidad por mercado del modelo conjunto, así que China solo entra en
 calibración y métricas desde `fold-006`, y deja fuera los controles separados,
 que solo actúan en los ámbitos de un mercado.
@@ -1654,12 +1655,13 @@ partir de los informes ya escritos, con rutas relativas a su carpeta y la huella
 archivo. Lo escribe primero como candidato y solo lo deja visible si `load_sources` lo
 acepta, así que un informe alterado, incompleto o de otro ámbito no deja manifiesto. La
 [matriz de A v2](../../configs/evaluation/comparison-matrix-a-v2.json) es la de A sobre la
-comparación conjunta de A v2. Los siete modelos de integración que esa comparación todavía
-no declara (`mars_titan_b6`, `mars_titan_b6_bias`, `mars_titan_m1_k4_first_read` y los
-cuatro del régimen observable y su calendario, `mars_titan_b6_regime`,
-`mars_titan_b6_calendar`, `mars_titan_b6_regime_banks` y `mars_titan_b6_calendar_banks`)
-quedan condicionados a [#437](https://github.com/GonxKZ/mars-titan/issues/437) y sus
-contrastes, pendientes. Las dos matrices compilan las mismas 47 familias y 362 contrastes.
+comparación conjunta de A v2. Esa comparación declara desde
+[#525](https://github.com/GonxKZ/mars-titan/pull/525) los siete modelos de integración
+(`mars_titan_b6`, `mars_titan_b6_bias`, `mars_titan_m1_k4_first_read` y los cuatro del
+régimen observable y su calendario, `mars_titan_b6_regime`, `mars_titan_b6_calendar`,
+`mars_titan_b6_regime_banks` y `mars_titan_b6_calendar_banks`), así que la matriz de A v2
+ya no los condiciona y solo deja condicionada la referencia pública de Titans-MAC. Las dos
+matrices compilan las mismas 47 familias y 362 contrastes.
 
 Cada campaña declara su paso final antes de ver resultados
 ([A](../../configs/evaluation/historical-masked-publication-a.json) y
