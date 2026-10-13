@@ -1,0 +1,109 @@
+{
+ "issue": 548,
+ "commit": "b630de4b",
+ "script": "eef0d5281d9be454ff878f95303d411c427e546e87abf69ef149a752fa5b0f4b",
+ "mutations": [
+  {
+   "name": "first_step_without_validation",
+   "file": "src/mars_titan/models/titans/episodic_readout.py",
+   "tests": [
+    "tests/models/titans/test_episodic_readout_refinements.py",
+    "tests/models/titans/test_episodic_readout.py::test_reader_rejects_context_and_input_mismatches"
+   ],
+   "status": "detectada",
+   "failed": [
+    "FAILED tests/models/titans/test_episodic_readout_refinements.py::test_refinements_validate_once_and_skip_the_checks_their_reads_satisfy"
+   ],
+   "summary": [
+    "1 failed, 24 passed in 1.24s"
+   ]
+  },
+  {
+   "name": "every_step_validates",
+   "file": "src/mars_titan/models/titans/episodic_readout.py",
+   "tests": [
+    "tests/models/titans/test_episodic_readout_refinements.py"
+   ],
+   "status": "detectada",
+   "failed": [
+    "FAILED tests/models/titans/test_episodic_readout_refinements.py::test_refinements_validate_once_and_skip_the_checks_their_reads_satisfy"
+   ],
+   "summary": [
+    "1 failed, 24 passed in 1.72s"
+   ]
+  },
+  {
+   "name": "public_read_without_validation",
+   "file": "src/mars_titan/models/titans/episodic_readout.py",
+   "tests": [
+    "tests/models/titans/test_episodic_readout.py::test_public_read_cannot_bypass_the_working_budget",
+    "tests/models/titans/test_episodic_readout_refinements.py"
+   ],
+   "status": "detectada",
+   "failed": [
+    "FAILED tests/models/titans/test_episodic_readout.py::test_public_read_cannot_bypass_the_working_budget"
+   ],
+   "summary": [
+    "1 failed in 1.56s"
+   ]
+  },
+  {
+   "name": "forward_without_gate_check",
+   "file": "src/mars_titan/models/titans/episodic_readout.py",
+   "tests": [
+    "tests/models/titans/test_episodic_readout.py::test_nonfinite_gate_is_rejected_even_if_sigmoid_saturates",
+    "tests/models/titans/test_episodic_readout_refinements.py"
+   ],
+   "status": "detectada",
+   "failed": [
+    "FAILED tests/models/titans/test_episodic_readout.py::test_nonfinite_gate_is_rejected_even_if_sigmoid_saturates"
+   ],
+   "summary": [
+    "1 failed in 1.79s"
+   ]
+  },
+  {
+   "name": "gate_checked_every_step",
+   "file": "src/mars_titan/models/titans/episodic_readout.py",
+   "tests": [
+    "tests/models/titans/test_episodic_readout_refinements.py"
+   ],
+   "status": "detectada",
+   "failed": [
+    "FAILED tests/models/titans/test_episodic_readout_refinements.py::test_refinements_validate_once_and_skip_the_checks_their_reads_satisfy"
+   ],
+   "summary": [
+    "1 failed, 24 passed in 1.96s"
+   ]
+  },
+  {
+   "name": "forward_through_public_refine",
+   "file": "src/mars_titan/models/titans/episodic_readout.py",
+   "tests": [
+    "tests/models/titans/test_episodic_readout_refinements.py"
+   ],
+   "status": "detectada",
+   "failed": [
+    "FAILED tests/models/titans/test_episodic_readout_refinements.py::test_refinements_validate_once_and_skip_the_checks_their_reads_satisfy"
+   ],
+   "summary": [
+    "1 failed, 24 passed in 2.19s"
+   ]
+  },
+  {
+   "name": "public_refine_without_zero_fill",
+   "file": "src/mars_titan/models/titans/episodic_readout.py",
+   "tests": [
+    "tests/models/titans/test_episodic_readout.py::test_refinement_rejects_nonzero_absent_read_values",
+    "tests/models/titans/test_episodic_readout_refinements.py"
+   ],
+   "status": "detectada",
+   "failed": [
+    "FAILED tests/models/titans/test_episodic_readout.py::test_refinement_rejects_nonzero_absent_read_values"
+   ],
+   "summary": [
+    "1 failed in 1.92s"
+   ]
+  }
+ ]
+}

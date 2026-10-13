@@ -70,21 +70,94 @@ def models(variant=PT1_MODEL, base=CONTROL):
     return dict(variant=variant, base=base, control=CONTROL)
 
 
-def test_the_repository_declaration_reads_pt1_and_leaves_the_later_pilots_pending():
+# Modelos de la innovación y de la base de cada regla de PT4 a PT6, según sus declaraciones.
+LINKED = {
+    "pt4": ("titans_mac_online_pt4_market_memory", CONTROL),
+    "pt4_trivial_alternative": (
+        "titans_mac_online_pt4_market_memory",
+        "titans_mac_online_pt4_sector_mean",
+    ),
+    "pt5": ("titans_mac_online_pt5_cascade", "titans_mac_online_pt5_ema_bank"),
+    "pt6": ("titans_mac_online_pt6_film", "titans_mac_online_pt6_wide"),
+    "pt6_control": ("titans_mac_online_pt6_film", CONTROL),
+}
+
+
+def test_the_repository_declaration_links_every_memory_pilot():
     summary = svc.check_declaration(DECLARATION)
     assert summary["control"]["seeds"] == [42, 43, 44]
     assert summary["extra_control_seeds"] == [43, 44]
     assert summary["rules"]["pt1"]["models"] == models()
     assert summary["rules"]["pt1_trivial_alternative"]["models"] == models(base=TRIVIAL)
     assert summary["rules"]["pt1"]["kind"] == svc.NON_INFERIORITY
-    # PT4 a PT6 aún no tienen sus modelos declarados: la regla queda fijada sin ellos.
-    for name in ("pt4", "pt5", "pt6"):
+    assert set(summary["rules"]) == {"pt1", "pt1_trivial_alternative", *LINKED}
+    for name, (variant, base) in LINKED.items():
         rule = summary["rules"][name]
-        assert rule["kind"] == svc.SUPERIORITY and rule["seeds"] == [42]
-        assert rule["models"] is None
+        assert rule["models"] == models(variant, base) and rule["seeds"] == [42]
+    for name in ("pt4", "pt4_trivial_alternative", "pt5", "pt6"):
+        assert summary["rules"][name]["kind"] == svc.SUPERIORITY
+    # FiLM debe mejorar a la rama ancha donde falta alguna modalidad y no empeorar al
+    # control en todas las filas.
     assert summary["rules"]["pt6"]["rows"] == "missing_modality"
-    with pytest.raises(ValueError, match="aún no está declarada"):
-        svc.proposal_models(svc.load_declaration(DECLARATION)[0], "pt4")
+    assert summary["rules"]["pt6_control"]["kind"] == svc.NON_INFERIORITY
+    assert summary["rules"]["pt6_control"]["rows"] == "all"
+
+
+def test_each_linked_proposal_declares_its_rules_margins_and_control_seeds():
+    """Cada propuesta enlaza las mismas reglas que la declaración y cuenta sus semillas."""
+    control, _ = svc.load_declaration(DECLARATION)
+    declarations = {}
+    for name, rule in control["rules"].items():
+        declarations.setdefault(rule["declaration"], []).append(name)
+    assert len(declarations) == 4
+    for path, names in declarations.items():
+        proposal = json.loads((ROOT / path).read_text())
+        decision = proposal["decision_rule"]
+        assert decision["seed_variance_control"] == dict(
+            declaration="configs/evaluation/memory-pilot-seed-control.json", rules=names
+        )
+        roles = {arm["role"]: model for model, arm in proposal["arms"].items()}
+        seeds = proposal["pilot"]["seeds"]
+        assert seeds[CONTROL] == len(control["control"]["seeds"])
+        # La innovación y la alternativa trivial ajustan las semillas emparejadas de la regla.
+        for name in names:
+            paired = len(control["rules"][name]["seeds"])
+            assert seeds[roles["innovation"]] == paired
+            if control["rules"][name]["base"] == "trivial_alternative":
+                assert seeds[roles["trivial_alternative"]] == paired
+        assert proposal["pilot"]["seed_control_gpu_hours"] == control["pilot"]["gpu_hours_reserved"]
+        assert proposal["pilot"]["validation_windows"] == control["pilot"]["validation_windows"]
+        for key in ("block_length", "replicates", "confidence", "partition"):
+            assert proposal["metric"][key] == control["metric"][key]
+        # Las reglas de superioridad exigen quedar por debajo de −MID y no de cero.
+        for term in decision["keep_if"] + decision["abandon_if"]:
+            assert not term.endswith(("< 0", ">= 0"))
+
+
+def test_pt6_declares_the_margins_of_its_non_inferiority_against_the_control():
+    control, _ = svc.load_declaration(DECLARATION)
+    rule = control["rules"]["pt6_control"]
+    pt6 = json.loads((ROOT / rule["declaration"]).read_text())["decision_rule"]
+    assert f"against_control_on_all_rows <= {rule['keep_margin']}" in pt6["keep_if"][1]
+    assert f"against_control_on_all_rows > {rule['abandon_margin']}" in pt6["abandon_if"][1]
+    assert pt6["keep_if"][-1].endswith(f"on_all_rows < {rule['keep_margin']}")
+    assert pt6["abandon_by_margin_requires"].endswith(f"on_all_rows < {rule['abandon_margin']}")
+
+
+def test_pt4_keeps_its_own_control_seeds_because_it_changes_the_recipe():
+    """PT4 se ajusta sin acumulación y no reutiliza las semillas del control común."""
+    control, _ = svc.load_declaration(DECLARATION)
+    pt4 = json.loads((ROOT / control["rules"]["pt4"]["declaration"]).read_text())
+    assert pt4["common_recipe_changes"] == {"accumulation_rows": None}
+    assert not {"pt4", "pt4_trivial_alternative"} & set(control["pilot"]["shared_by"])
+    shared = copy.deepcopy(control)
+    shared["pilot"]["shared_by"].append("pt4")
+    with pytest.raises(ValueError, match="cambia la receta"):
+        svc.proposal_models(shared, "pt4")
+    # Las reglas que comparten el piloto no cambian la receta común.
+    for name in control["pilot"]["shared_by"]:
+        proposal = json.loads((ROOT / control["rules"][name]["declaration"]).read_text())
+        assert not proposal.get("common_recipe_changes")
 
 
 def test_pt1_declares_the_same_margins_seeds_and_resampling_as_the_seed_control():
@@ -192,14 +265,42 @@ def test_invalid_declarations_are_rejected(name):
         svc.validate_declaration(value)
 
 
-def test_a_proposal_with_another_control_cannot_use_the_band(tmp_path):
+def _write_pt1(tmp_path, change):
     value, _ = svc.load_declaration(DECLARATION)
     pt1 = json.loads(PT1.read_text())
-    pt1["variant"] = "mac_frozen"
+    change(pt1)
     (tmp_path / "configs/evaluation").mkdir(parents=True)
     (tmp_path / value["rules"]["pt1"]["declaration"]).write_text(json.dumps(pt1))
+    return value
+
+
+def _rename_control(pt1):
+    pt1["arms"]["titans_mac_online_other"] = pt1["arms"].pop(CONTROL)
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        lambda pt1: pt1.update(variant="mac_frozen"),
+        lambda pt1: pt1.update(base_recipe="configs/titans/chronological-training.json"),
+        _rename_control,
+    ],
+    ids=["variant", "recipe", "model"],
+)
+def test_a_proposal_with_another_control_cannot_use_the_band(tmp_path, change):
+    value = _write_pt1(tmp_path, change)
     with pytest.raises(ValueError, match="no es el del control de varianza"):
         svc.proposal_models(value, "pt1", root=tmp_path)
+
+
+def test_a_proposal_that_does_not_link_the_rule_cannot_use_the_band(tmp_path):
+    def unlink(pt1):
+        pt1["decision_rule"]["seed_variance_control"]["rules"] = ["pt1"]
+
+    value = _write_pt1(tmp_path, unlink)
+    assert svc.proposal_models(value, "pt1", root=tmp_path) == models()
+    with pytest.raises(ValueError, match="no enlaza la regla"):
+        svc.proposal_models(value, "pt1_trivial_alternative", root=tmp_path)
 
 
 @pytest.mark.parametrize(
