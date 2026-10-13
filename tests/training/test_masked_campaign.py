@@ -42,7 +42,7 @@ ARMS = ("gru", "ridge", "xgboost")
 
 
 def write_campaign(folder, *, variant="B", scopes=("US",), arms=ARMS, **changes):
-    """Campaña reducida: tres brazos, un candidato tabular y protocolos versionados."""
+    """Campaña reducida: tres modelos, un candidato tabular y protocolos versionados."""
     folder.mkdir(parents=True, exist_ok=True)
     declared = json.loads(
         (CONFIGS / "evaluation/historical-masked-2000-comparison.json").read_text()
@@ -67,7 +67,8 @@ def write_campaign(folder, *, variant="B", scopes=("US",), arms=ARMS, **changes)
         (CONFIGS / f"baselines/historical-masked-campaign-{variant.lower()}.json").read_text()
     )
     value.update(comparison="comparison.json", scopes=list(scopes))
-    # La comparación reducida no declara los brazos de Titans-MAC. test_titans_campaign los añade.
+    # La comparación reducida no declara las variantes de Titans-MAC.
+    # test_titans_campaign las añade.
     value.pop("titans_mac")
     value["neural"]["arms"] = {arm: arm for arm in arms if arm not in {"ridge", "xgboost"}}
     value["tabular"].update(
@@ -525,7 +526,7 @@ def test_window_receipts_follow_the_selected_predictor_of_each_seed(prepared, tm
     for job in jobs:
         groups.setdefault((job["scope"], job["window"], job["arm"], job["seed"]), []).append(job)
     written = sorted((output / "windows").rglob("*.json"))
-    # 19 ventanas US y 13 conjuntas con dos mercados, por brazo y semilla (3 + 1 + 3).
+    # 19 ventanas US y 13 conjuntas con dos mercados, por modelo y semilla (3 + 1 + 3).
     assert len(groups) == (19 + 13) * 7
     assert len(written) == (19 + 2 * 13) * 7
     for (scope, window, arm, seed), members in groups.items():

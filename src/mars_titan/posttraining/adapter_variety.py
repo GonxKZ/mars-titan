@@ -1,6 +1,6 @@
 """Variedad de adaptadores de la matriz de versión 3 (#444), declarada antes de ajustar.
 
-La sección opcional `variety` de la matriz añade brazos de un solo punto sobre la misma
+La sección opcional `variety` de la matriz añade modelos de un solo punto sobre la misma
 estructura de #364, con el mismo presupuesto, los mismos objetivos y la misma selección:
 
 - formas nuevas en la lectura y en la fusión: DoRA, (IA)³ y adaptadores en cuello de
@@ -8,13 +8,13 @@ estructura de #364, con el mismo presupuesto, los mismos objetivos y la misma se
 - subconjuntos de parámetros del padre: todos los sesgos (BitFit), las normalizaciones y
   la memoria persistente de Titans-MAC, que es su prefijo aprendido.
 
-Cada brazo se aplica a las familias donde existe su punto. Un punto que falta en alguna
+Cada modelo se aplica a las familias donde existe su punto. Un punto que falta en alguna
 familia necesita un motivo escrito en la matriz. `campaign` enumera los ámbitos donde el
-brazo se propone para la campaña: las referencias neuronales, cada variante de Titans-MAC
+modelo se propone para la campaña: las referencias neuronales, cada variante de Titans-MAC
 o los núcleos de los lectores. En la vista conjunta, un caso de Titans-MAC cuesta entre 13 y
-104 veces uno de una referencia, así que un brazo barato en las referencias puede quedar de
+104 veces uno de una referencia, así que un modelo barato en las referencias puede quedar de
 reserva en Titans-MAC.
-Fuera de sus ámbitos el brazo sigue implementado y comprobado como reserva. La selección
+Fuera de sus ámbitos el modelo sigue implementado y comprobado como reserva. La selección
 forma parte de la matriz, de su huella y de la identidad de cada ajuste.
 `docs/engineering/adapter-variety.md` relaciona cada forma con su ecuación y su fuente.
 """
@@ -107,12 +107,12 @@ def check_spec(name, spec):
 
 
 def validate(section, matrix):
-    """Comprobar la sección `variety` frente a los brazos y controles de la matriz."""
+    """Comprobar la sección `variety` frente a los modelos y controles de la matriz."""
     from .adapter_matrix import CONTROLS
 
     _require(
         isinstance(section, dict) and set(section) == SECTION,
-        "La variedad declara puntos, brazos, lectores y motivos de exclusión",
+        "La variedad declara puntos, modelos, lectores y motivos de exclusión",
     )
     points = section["points"]
     _require(
@@ -136,7 +136,7 @@ def validate(section, matrix):
             and len(arm["points"]) == 1
             and arm["points"][0] in (*INSERTION_FORMS, *SELECTIVE_POINTS)
             and arm["id"] not in seen | base | set(CONTROLS),
-            "Cada brazo de la variedad tiene un punto, una identidad nueva y su propuesta",
+            "Cada adaptador de la variedad tiene un punto, una identidad nueva y su propuesta",
         )
         seen.add(arm["id"])
         (point,) = arm["points"]
@@ -151,7 +151,7 @@ def validate(section, matrix):
                 isinstance(overrides, dict)
                 and set(overrides) == {point}
                 and arm["id"] == f"{point}_{overrides[point].get('form')}",
-                "Un brazo de la variedad declara la forma de su punto y se nombra por ella",
+                "Un adaptador de la variedad declara la forma de su punto y se nombra por ella",
             )
             check_spec(point, overrides[point])
     declared = {arm["points"][0] for arm in arms}
@@ -169,19 +169,19 @@ def validate(section, matrix):
     readers = section["readers"]
     _require(
         isinstance(readers, list) and len(set(readers)) == len(readers) and set(readers) <= titans,
-        "Los brazos del núcleo de los lectores deben existir en mac_online",
+        "Los modelos del núcleo de los lectores deben existir en mac_online",
     )
     for arm in arms:
         for scope in arm["campaign"]:
             _require(
                 _applies(matrix, arm, scope, readers),
-                "Cada ámbito de la propuesta debe existir y contener el punto del brazo",
+                "Cada ámbito de la propuesta debe existir y contener el punto del modelo",
             )
     return section
 
 
 def _applies(matrix, arm, scope, readers):
-    """El ámbito existe y el punto del brazo existe en él."""
+    """El ámbito existe y el punto del modelo existe en él."""
     (point,) = arm["points"]
     if scope == REFERENCES:
         return point != "persistent"
@@ -215,14 +215,14 @@ def _resolved(section, arm):
 
 
 def _selected(section, reserve, scope):
-    """Brazos propuestos en el ámbito o, con `reserve`, todos los implementados."""
+    """Modelos propuestos en el ámbito o, con `reserve`, todos los implementados."""
     if section is None:
         return []
     return [arm for arm in section["arms"] if reserve or scope in arm["campaign"]]
 
 
 def neural_arms(matrix, family, *, reserve=False):
-    """Brazos de la variedad aplicables a una referencia neuronal, en el orden de la matriz."""
+    """Adaptadores de la variedad aplicables a una referencia neuronal, en el orden de la matriz."""
     from .adapter_matrix import READOUT_FAMILIES
 
     section = _section(matrix)
@@ -240,7 +240,7 @@ def neural_arms(matrix, family, *, reserve=False):
 
 
 def titans_arms(matrix, variant, *, reserve=False, section=None):
-    """Brazos de la variedad aplicables a una variante de Titans-MAC."""
+    """Adaptadores de la variedad aplicables a una variante de Titans-MAC."""
     section = section if section is not None else _section(matrix)
     allowed = matrix["architectures"]["chronological"]["titans_mac"]["variants"][variant]
     return [
@@ -251,7 +251,7 @@ def titans_arms(matrix, variant, *, reserve=False, section=None):
 
 
 def reader_arms(matrix, *, reserve=False):
-    """Brazos del núcleo `mac_online` de MARS-TITAN y CM-v1 que declara la variedad."""
+    """Modelos del núcleo `mac_online` de MARS-TITAN y CM-v1 que declara la variedad."""
     section = _section(matrix)
     if section is None:
         return []
@@ -357,7 +357,7 @@ def titans_targets(matrix, name, spec, model):
     """Tensores de Titans-MAC para un punto de la variedad.
 
     La memoria neuronal (pesos rápidos y sus proyecciones) nunca se adapta. La memoria
-    persistente solo en su propio brazo, donde es el único destino.
+    persistente solo en su propio modelo, donde es el único destino.
     """
     check_spec(name, spec)
     if name == "persistent":

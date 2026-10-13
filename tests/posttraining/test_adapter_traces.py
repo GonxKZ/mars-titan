@@ -1,6 +1,6 @@
 """Ganchos de trazas de los adaptadores (#448), comprobados sin pasos de optimizador.
 
-El gancho se llama tras cada validación completa. Estas pruebas recorren un brazo con el
+El gancho se llama tras cada validación completa. Estas pruebas recorren un modelo con el
 gancho desactivado y activado y exigen los mismos gradientes, predicciones, recibos y RNG.
 """
 

@@ -2,7 +2,7 @@
 
 La sesión emite la predicción del núcleo más la lectura de A de la generación anterior y
 escribe A solo con etiquetas maduras, con el valor etiqueta menos predicción del núcleo. El
-oráculo reproduce esa recurrencia por separado a partir de la sesión sin corrección.
+referencia reproduce esa recurrencia por separado a partir de la sesión sin corrección.
 """
 
 import os

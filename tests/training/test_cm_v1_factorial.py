@@ -142,13 +142,13 @@ def test_declared_factorial_fixes_b_its_recipes_and_its_four_arms():
 @pytest.mark.parametrize(
     ("change", "message"),
     [
-        (lambda d: d["base"].update(refinements=2), "B y sus cuatro brazos"),
-        (lambda d: d["base"].update(retention="anchored"), "B y sus cuatro brazos"),
-        (lambda d: d["base"].update(admission="m2"), "B y sus cuatro brazos"),
-        (lambda d: d["arms"].pop("cm_v1_bcm"), "B y sus cuatro brazos"),
-        (lambda d: d["arms"]["cm_v1_bm"].update(control=True), "B y sus cuatro brazos"),
-        (lambda d: d["cores"].update(cm_v1_core_b=True), "B y sus cuatro brazos"),
-        (lambda d: d.update(status="executed"), "B y sus cuatro brazos"),
+        (lambda d: d["base"].update(refinements=2), "B y sus cuatro variantes"),
+        (lambda d: d["base"].update(retention="anchored"), "B y sus cuatro variantes"),
+        (lambda d: d["base"].update(admission="m2"), "B y sus cuatro variantes"),
+        (lambda d: d["arms"].pop("cm_v1_bcm"), "B y sus cuatro variantes"),
+        (lambda d: d["arms"]["cm_v1_bm"].update(control=True), "B y sus cuatro variantes"),
+        (lambda d: d["cores"].update(cm_v1_core_b=True), "B y sus cuatro variantes"),
+        (lambda d: d.update(status="executed"), "B y sus cuatro variantes"),
         (lambda d: d["control"].update(mode="penalty"), "campos de su control"),
         (lambda d: d["consolidation"].update(policy="uniform"), "centros fijos"),
         (lambda d: d["control"].update(weight=0.0), "peso positivo"),
@@ -213,7 +213,7 @@ def test_each_factor_acts_only_where_it_is_declared(factorial):
     assert policies == dict(
         cm_v1_b="reservoir", cm_v1_bc="reservoir", cm_v1_bm="anchored", cm_v1_bcm="anchored"
     )
-    # Mismo lector inicial en los cuatro brazos y mismo núcleo inicial en los dos núcleos.
+    # Mismo lector inicial en las cuatro variantes y mismo núcleo inicial en los dos núcleos.
     assert len({identity["initial_readout_sha256"] for identity in identities.values()}) == 1
     for arm, report in reports.items():
         parent = report["request"]["parent"]

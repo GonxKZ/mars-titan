@@ -212,7 +212,7 @@ def test_fit_window_writes_the_view_rows_receipts_and_selected_state(views, anch
 
 
 def reference_table(view, partition):
-    """Filas que escriben los demás brazos: las del lector por lotes de la vista."""
+    """Filas que escriben los demás modelos: las del lector por lotes de la vista."""
     rows = Recorder().rows(view, partition)
     return pa.table(
         dict(

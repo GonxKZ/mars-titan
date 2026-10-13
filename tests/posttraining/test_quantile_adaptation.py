@@ -233,7 +233,7 @@ def test_quantile_case_runs_until_each_step_and_selects_with_the_median(
     np.testing.assert_array_equal(table["prediction"], table["parent"])
     after = parent.model.state_dict()
     assert all(torch.equal(value, after[key]) for key, value in before.items())
-    # La evaluación reservada reconstruye el brazo y escribe el esquema común.
+    # La evaluación reservada reconstruye el modelo y escribe el esquema común.
     model, action_grid, neural = _adjustment(output / "run.json", report, parent, "cpu")
     dataset = CorpusDataset(edition.view, input_policy=HISTORICAL_MASKED)
     path = tmp_path / "evaluation.parquet"

@@ -46,7 +46,7 @@ def campaign_views(manifest: Path, arms: list[str], *, input_policy=STRICT_INPUT
             for market in markets
             for p in source.partitions
         ):
-            raise ValueError(f"Falta población de ajuste o validación para el brazo {arm}")
+            raise ValueError(f"Falta población de ajuste o validación para el modelo {arm}")
         views[arm] = {
             **source.manifest,
             "assets": assets,
@@ -223,7 +223,7 @@ def run_reference_campaign(
                     raise ValueError("La identidad científica ha cambiado durante la campaña")
                 view = output / "views" / f"{item['arm']}.json"
                 if read_json(view) != views[item["arm"]]:
-                    raise ValueError("La población del brazo ha cambiado")
+                    raise ValueError("La población del modelo ha cambiado")
                 if item["status"] == "completed":
                     _check_finished(output, item, view)
                     continue

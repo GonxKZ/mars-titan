@@ -285,7 +285,7 @@ def test_quantile_variants_count_like_double_dqn_with_their_own_times(variant):
     plan = policy_plan.plan_stage(stage)
     job = next(j for j in plan if j["arm"] == "double_dqn" and j["kind"] == "fit")
     scalar = policy_throughput.native_fit_work(stage, job)
-    # El brazo conserva su nombre y solo cambia la cabeza, así que el plan no se altera.
+    # El modelo conserva su nombre y solo cambia la cabeza, así que el plan no se altera.
     stage["policies"]["policies"]["double_dqn"]["variant"] = variant
     quantile = policy_throughput.native_fit_work(stage, job)
     assert quantile == dict(scalar, engine=variant)
@@ -316,7 +316,7 @@ def test_group_arms_collect_the_klpo_waves_with_their_own_objective_time(monkeyp
     klpo = policy_throughput.native_fit_work(stage, jobs[0])
     group = policy_throughput.native_fit_work(stage, dict(jobs[0], engine="native_group_relative"))
     assert group == dict(klpo, engine="group")
-    # El brazo KLPO pasa a objetivo de grupo con las mismas oleadas. Sin el tiempo de su
+    # La variante KLPO pasa a objetivo de grupo con las mismas oleadas. Sin el tiempo de su
     # objetivo la estimación falla en lugar de reutilizar el de KLPO.
     grouped = [
         dict(j, engine="native_group_relative") if j["arm"] == "klpo_terminal" else j for j in plan
