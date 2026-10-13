@@ -1,9 +1,9 @@
 """Etapa de refuerzo de la campaña con máscaras: políticas financieras por ventana walk-forward.
 
 La etapa parte de una campaña base confirmada (`training.masked_campaign`). En cada ventana
-de política, todos los brazos de un predictor observan las mismas cintas, montadas con sus
+de política, todos los modelos de un predictor observan las mismas cintas, montadas con sus
 predicciones congeladas y sus recibos de ventana (`simulation.window_tapes`), y todos los
-predictores comparten el universo del ancla. KLPO terminal, brazo principal del contraste, y
+predictores comparten el universo del ancla. KLPO terminal, modelo principal del contraste, y
 cinco referencias sin aprendizaje se aplican a todos los predictores con productor en la
 campaña. Tres usan la predicción (efectivo, comprar y mantener y la regla fija del 50 %) y
 dos no la usan: la cartera 1/N reequilibrada cada 21 sesiones, con los mismos costes y
@@ -22,7 +22,7 @@ Variante B: cada política se ajusta en la primera ventana de política y cada `
 ventanas, como en la campaña base. Las intermedias evalúan sin ajuste la política
 seleccionada en su ancla, sobre el universo del ancla.
 
-Cada familia de brazos tiene un ejecutor y declara las capacidades del motor que necesita.
+Cada familia de modelos tiene un ejecutor y declara las capacidades del motor que necesita.
 `run` se detiene con el bloqueo de aprendizaje antes de abrir fuentes, crear salidas o
 lanzar binarios, y después exige todas las capacidades del plan antes de crear la salida.
 PPO y Double DQN se ejecutan con `mars-titan-ppo` y KLPO con `mars-titan-klpo`, ambos sobre
@@ -529,7 +529,7 @@ def check_report(stage, job, report, tapes, anchor=None):
 
 
 def summarize(stage, receipts):
-    """Métricas por predictor, brazo y coste con todos los episodios, también fallidos.
+    """Métricas por predictor, modelo y coste con todos los episodios, también fallidos.
 
     La media del crecimiento logarítmico liquidado se calcula sobre los episodios completos
     y se publica con su denominador. Fallos y ruinas se cuentan aparte y nunca se omiten.
@@ -594,7 +594,7 @@ def _base_receipts(base, campaign, stage, pairs=None):
     """Confirmar los trabajos base de los ámbitos y predictores de la etapa.
 
     También los de los auxiliares de los que parten, como los núcleos de CM-v1, porque el
-    caso y la identidad de un brazo dependen de sus recibos. `pairs` limita la confirmación
+    caso y la identidad de un modelo dependen de sus recibos. `pairs` limita la confirmación
     a esos pares (ámbito, ventana) al ejecutar una ventana.
     """
     predictors = set(stage["predictors"])
@@ -998,7 +998,7 @@ class _Tapes:
         return folder, tape, None, bounds
 
     def open(self, job):
-        """Cintas comunes del trabajo. Se reutilizan entre brazos, semillas y referencias."""
+        """Cintas comunes del trabajo. Se reutilizan entre modelos, semillas y referencias."""
         key = (job["scope"], job["market"], job["predictor"], job["anchor"])
         if self.key != key:
             self.key, self.evaluations = None, {}
@@ -1114,7 +1114,7 @@ class _Stage:
             identity=identity,
             run=str((self.folder(job) / "run").relative_to(self.output)),
             transitions=report["transitions"],
-            # Oleadas KLPO consumidas. Los demás brazos no las tienen.
+            # Oleadas KLPO consumidas. Los demás modelos no las tienen.
             waves=report.get("waves"),
             updates=report["updates"],
             selection=report["selection"],
@@ -1311,7 +1311,7 @@ def run_stage(
     _require(
         {job["engine"] for job in jobs} <= set(executors)
         and all(set(entry) == {"run", "requires", "native"} for entry in executors.values()),
-        "Falta un ejecutor para alguna familia de brazos",
+        "Falta un ejecutor para alguna familia de modelos",
     )
     available = probe_capabilities() if capabilities is None else capabilities
     missing = missing_capabilities(jobs, executors, available)

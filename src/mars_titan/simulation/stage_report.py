@@ -7,16 +7,16 @@ KLPO con sus controles. No ajusta ni evalúa nada: solo agrega episodios ya conf
 
 Reglas declaradas antes de ver resultados:
 
-- La serie de un brazo en una ventana es su patrimonio a cada cierre. El último valor es la
+- La serie de un modelo en una ventana es su patrimonio a cada cierre. El último valor es la
   liquidación hipotética al último cierre, de modo que cada ventana paga su salida.
-- Un brazo aprendido con varias semillas reparte el capital a partes iguales entre ellas.
+- Una política aprendida con varias semillas reparte el capital a partes iguales entre ellas.
   Su patrimonio es la media de los patrimonios por semilla y una semilla arruinada vale
   cero desde su ruina. Las métricas de cada semilla se publican aparte.
 - Las ventanas se encadenan en orden. La serie completa reúne los retornos por sesión de
   las ventanas usadas, como si el patrimonio liquidado de una ventana pasara a la siguiente.
   Si la serie encadenada se arruina, sus métricas terminan en la ruina.
 - Una familia compara, en un ámbito, un mercado, un predictor y un coste, KLPO con todos
-  sus controles disponibles. Solo usa las ventanas en que todos sus brazos tienen un
+  sus controles disponibles. Solo usa las ventanas en que todos sus modelos tienen un
   episodio terminado (completo o arruinado) con los mismos cierres. Las ventanas excluidas
   se publican con su motivo.
 - Incertidumbre con el bootstrap circular por bloques de sesiones de
@@ -143,7 +143,7 @@ def _window_nav(record, close_times, capital):
     times = equity["close_times"]
     _require(
         times == close_times[: len(times)] and nav[0] == capital,
-        "Los brazos de una ventana deben empezar con el capital y compartir sus cierres",
+        "Los modelos de una ventana deben empezar con el capital y compartir sus cierres",
     )
     if record["status"] == "ruined":
         # Sin patrimonio desde la ruina hasta el final de la ventana.
@@ -154,7 +154,7 @@ def _window_nav(record, close_times, capital):
 
 
 def _arm_window(records, close_times, capital):
-    """Patrimonio de un brazo en una ventana: media de sus semillas, cada una con su capital."""
+    """Patrimonio de un modelo en una ventana: media de sus semillas, cada una con su capital."""
     navs = [_window_nav(record, close_times, capital) for record in records]
     return dict(
         nav=np.mean(navs, axis=0),

@@ -2,7 +2,7 @@
 
 M3 es la selección completa de [#19](https://github.com/GonxKZ/mars-titan/issues/19): el índice selectivo del banco episódico ordena los episodios maduros por una combinación de error maduro, anomalía de entradas y relevancia de información publicada. Comparte con [M2](mature-error-write-policy.md) la capacidad, los cupos 50/25/25, la semilla del reservorio y las ofertas a los tres índices. Solo cambia la puntuación del índice selectivo.
 
-Está implementada como `episodic_m3_three_index_v1` en `memory/write_scores.py` y `memory/write_policy.py`, conectada en `FinancialSession`, en el recorrido cronológico del lector, en la ventana walk-forward, en el traslado de la variante B y en el plan de la campaña con el brazo `mars_titan_m3`. Se ha comprobado en CPU con pruebas técnicas, sin pasos de optimizador que modifiquen pesos. No se ha ejecutado con datos, no se ha usado la GPU y no hay ningún resultado sobre su utilidad. La puntuación es una hipótesis que la comparación A11 frente a M2 puede descartar.
+Está implementada como `episodic_m3_three_index_v1` en `memory/write_scores.py` y `memory/write_policy.py`, conectada en `FinancialSession`, en el recorrido cronológico del lector, en la ventana walk-forward, en el traslado de la variante B y en el plan de la campaña con el modelo `mars_titan_m3`. Se ha comprobado en CPU con pruebas técnicas, sin pasos de optimizador que modifiquen pesos. No se ha ejecutado con datos, no se ha usado la GPU y no hay ningún resultado sobre su utilidad. La puntuación es una hipótesis que la comparación A11 frente a M2 puede descartar.
 
 ## Componentes
 
@@ -65,7 +65,7 @@ s = w_e·e_norm + w_a·a_norm + w_r·r_norm,   w = (1/3, 1/3, 1/3)
 
 El índice selectivo conserva las mayores puntuaciones con desempate por menor ID, como M2. Con `w = (1, 0, 0)` selecciona exactamente los mismos episodios que M2, y las pruebas lo comprueban.
 
-Los pesos están fijados antes de ejecutar. Cada brazo de MARS-TITAN busca dos casos, las tasas 1e-4 y 1e-3, y M3 conserva esos dos casos. Elegir pesos en validación habría exigido más casos para M3 que para M2 o renunciar a la búsqueda de la tasa. Los tres componentes comparten escala y orientación, y no hay evidencia de desarrollo que favorezca a uno. En ese caso los pesos unitarios suelen ser robustos frente a pesos estimados (Dawes, 1979), aunque esa evidencia procede de otros dominios. Aquí es una decisión de diseño, no un resultado. Los pesos forman parte de la configuración, así que las ablaciones de un solo componente se pueden declarar con la misma implementación como identidades nuevas.
+Los pesos están fijados antes de ejecutar. Cada modelo de MARS-TITAN busca dos casos, las tasas 1e-4 y 1e-3, y M3 conserva esos dos casos. Elegir pesos en validación habría exigido más casos para M3 que para M2 o renunciar a la búsqueda de la tasa. Los tres componentes comparten escala y orientación, y no hay evidencia de desarrollo que favorezca a uno. En ese caso los pesos unitarios suelen ser robustos frente a pesos estimados (Dawes, 1979), aunque esa evidencia procede de otros dominios. Aquí es una decisión de diseño, no un resultado. Los pesos forman parte de la configuración, así que las ablaciones de un solo componente se pueden declarar con la misma implementación como identidades nuevas.
 
 M3 no tiene umbrales. El cupo selectivo, un cuarto de B_mem, limita las escrituras igual que en M2. Un umbral de admisión cambiaría el número de escrituras respecto a M1 y M2. La diversidad respecto a los episodios existentes queda fuera de M3. Sería un cuarto criterio con otra identidad y con el coste de comparar cada candidato con el índice selectivo.
 
@@ -98,13 +98,13 @@ Por candidato, M3 añade la mediana de 62 rendimientos dos veces, el mínimo de 
 
 | Archivo | Qué comprueba |
 | --- | --- |
-| `tests/memory/test_write_scores.py` | Anomalía frente a un oráculo con `statistics`, independencia del lote, edad contable, ausencias, normalización, escalas solo de entrenamiento, reservorio uniforme y medianas frente a un recorrido directo |
+| `tests/memory/test_write_scores.py` | Anomalía frente a una referencia con `statistics`, independencia del lote, edad contable, ausencias, normalización, escalas solo de entrenamiento, reservorio uniforme y medianas frente a un recorrido directo |
 | `tests/memory/test_write_policy_m3.py` | Mismos cupos, ofertas, reservorio y recientes que M2, equivalencia con M2 cuando solo pesa el error, desempates, valor neutro, recuperación exacta y snapshots alterados |
 | `tests/memory/test_mars_titan_session_parity.py` | La sesión y el recorrido del lector emiten las mismas 20 predicciones bit a bit con M3, K = 1 y K = 2 con episodios fijos, con los tres componentes variando entre flujos |
 | `tests/memory/test_financial_session_m3.py` | Etiquetas inmaduras y entradas posteriores, igualdad de candidatos y capacidad frente a M1 y M2, corte antes de publicar y contraste del error con la emisión |
 | `tests/training/test_mars_titan_run.py` | Escalas del propio tramo, bucle hasta el paso con el registrador, contadores y reanudación con escalas, rasgos y contadores |
 | `tests/training/test_mars_titan_walk_forward.py` | Ventana M3 completa, escalas guardadas, reutilización al reanudar y escalas del ancla |
-| `tests/training/test_mars_titan_campaign.py` | `mars_titan_m3` sin pendientes, la comparación de 27 brazos con productor, salvo el control en línea, cuando se declaran las cuatro secciones y una campaña B reducida con M3 ajustado y trasladado |
+| `tests/training/test_mars_titan_campaign.py` | `mars_titan_m3` sin pendientes, la comparación de 27 modelos con productor, salvo el control en línea, cuando se declaran las cuatro secciones y una campaña B reducida con M3 ajustado y trasladado |
 | `tests/training/test_campaign_throughput.py` | Medida del lector M3 hasta el paso sin cambiar pesos, con sus contadores del selectivo y escalas iguales a las de la regla de la campaña |
 | `tests/training/test_campaign_extensions.py` | Declaración preparada con M3 entre sus modelos: 5.985 ajustes en A, 2.261 ajustes y 2.380 traslados en B y 29 predictores en la etapa de políticas |
 

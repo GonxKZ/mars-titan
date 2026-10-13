@@ -1,4 +1,4 @@
-"""Comparación de los brazos postentrenados con su padre congelado y su continuación.
+"""Comparación de los modelos postentrenados con su padre congelado y su continuación.
 
 La etapa se toma reducida de ``campaign_fixture`` (GRU, semilla 42, dos ventanas US),
 pero no se ejecuta: sus recibos, las fuentes de la campaña y las predicciones se escriben
@@ -267,7 +267,7 @@ def by_hand_session_mae(stage, arm, windows):
 
 
 def matrix_arms(stage, base_arm, family):
-    """Brazos adaptados de una red según la matriz que declara la etapa, en su orden.
+    """Modelos adaptados de una red según la matriz que declara la etapa, en su orden.
 
     Son los casos de una semilla sin papel de control, con el nombre que les da la etapa.
     """
@@ -297,7 +297,7 @@ def test_repository_declaration_derives_every_parent_from_the_stage_plan():
     ]
     transformer = loaded["groups"]["transformer_compact"]
     assert transformer["full_continuation"] == "transformer_compact__full_continuation"
-    # Los brazos adaptados salen de la matriz, con la variedad de #444 incluida. Solo
+    # Los modelos adaptados salen de la matriz, con la variedad de #444 incluida. Solo
     # transformer_compact tiene los puntos de lectura.
     for base_arm, family in loaded["stage"]["campaign"]["neural"]["arms"].items():
         assert loaded["groups"][base_arm]["adapted"] == matrix_arms(
@@ -448,7 +448,7 @@ def test_a_control_without_a_declared_role_stops_the_derivation(monkeypatch):
         )
     ]
     monkeypatch.setattr(compare, "plan_stage", lambda stage: jobs)
-    # Sin brazos de la cadena trivial: todos los trabajos entran en los contrastes.
+    # Sin modelos de la cadena trivial: todos los trabajos entran en los contrastes.
     monkeypatch.setattr(compare, "stage_arms", lambda stage: ({}, {}))
     staged = dict(design=campaign_stage.STAGED)
     with pytest.raises(ValueError, match="linear_residual de gru__linear_residual"):
@@ -486,7 +486,7 @@ def test_v2_declaration_adds_the_chain_and_the_base_retrain_on_the_joint_scope()
     loaded = compare.load_declaration(DECLARATION_V2)
     stage = loaded["stage"]
     assert stage["scopes"] == ["US+CN"]
-    # Los 22 brazos de la etapa menos la cadena trivial de Ridge y XGBoost.
+    # Los 22 modelos de la etapa menos la cadena trivial de Ridge y XGBoost.
     assert len(loaded["groups"]) == 20
     assert not {"ridge", "xgboost"} & set(loaded["groups"])
     joint = stage["campaign"]["comparison_config"]["joint_design"]
@@ -610,7 +610,7 @@ def test_cli_checks_the_declaration_without_reading_predictions(capsys):
     assert compare.main(["check", "--declaration", str(DECLARATION)]) == 0
     result = json.loads(capsys.readouterr().out)
     assert result["final_test_opened"] is False
-    # La base, su padre congelado, la continuación completa y los brazos de la matriz.
+    # La base, su padre congelado, la continuación completa y los modelos de la matriz.
     stage = campaign_stage.load_stage(
         DECLARATION.parent / json.loads(DECLARATION.read_text())["stage"]
     )
