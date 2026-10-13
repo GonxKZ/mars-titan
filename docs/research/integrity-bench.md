@@ -191,11 +191,12 @@ Con la retención v2 las filas de una ventana se liberan en cuanto se guardan su
 Con el walk-forward por etapas, o con una etapa de adaptadores por etapas publicada, añade el verificador de disjunción de [#437](https://github.com/GonxKZ/mars-titan/issues/437) sobre vistas, recibos base y selecciones de la cadena, sin duplicarlo.
 
 **Pruebas.** Cada mutación dirigida rompe el código principal o un artefacto y debe hacer fallar el informe:
-- un objetivo cambiado en un solo modelo con la exigencia de filas comunes desactivada en la comparación;
+- una fila de 2024 en las predicciones con la comprobación de tramos desactivada en la comparación;
 - una media por sesión sesgada en el código principal, al publicar desde filas y al guardar los agregados de una ventana, que entonces no se libera;
 - el registro de una ventana ausente, fallido, de otros agregados o de otro código;
 - un ulp de diferencia entre las sesiones publicadas y las de los agregados, también al publicar por la orden de la campaña;
-- filas quitadas mal contadas y un mercado elegible quitado a todos los modelos en el diseño conjunto;
+- una métrica publicada que ya no sale de sus sesiones, al publicar desde filas y desde agregados;
+- filas quitadas mal contadas, un recuento publicado que no coincide con el recontado y un mercado elegible quitado a todos los modelos en el diseño conjunto;
 - un trabajo sin recibo, un recibo sin declarar y una comparación sin una semilla, sin una ventana o con un modelo de más;
 - una puntuación de búsqueda que no es la de su validación, una última etiqueta que alcanza la evaluación, un recibo de ventana que no nombra el estado elegido y tramos fuera de orden;
 - un fallo del verificador de disjunción.
