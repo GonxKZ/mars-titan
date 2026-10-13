@@ -4,7 +4,9 @@ Las pruebas calculan salidas y gradientes con lotes técnicos. Para comprobar la
 con pesos distintos de cero se asignan valores fijos a mano, sin ningún paso de ajuste.
 """
 
+import hashlib
 import json
+import math
 from pathlib import Path
 
 import pytest
@@ -101,6 +103,21 @@ def test_film_is_the_identity_on_complete_rows_whatever_its_weights():
     assert not torch.equal(actual.detached_tokens[1], expected.detached_tokens[1])
 
 
+def test_film_keeps_complete_rows_bit_for_bit_including_signed_zeros():
+    film = PresenceFiLM(4).double()
+    generator = torch.Generator().manual_seed(3)
+    with torch.no_grad():
+        film.scale.copy_(torch.randn(film.scale.shape, generator=generator))
+        film.shift.copy_(torch.randn(film.shift.shape, generator=generator))
+    blocks = torch.randn(2, 5, 4, generator=generator, dtype=torch.float64)
+    blocks[:, :, 0] = -0.0
+    presence = torch.ones(2, 5, dtype=torch.bool)
+    result = film(blocks, presence)
+    # Pasar por la fórmula con escala y desplazamiento nulos convertiría -0 en +0.
+    assert torch.equal(result, blocks)
+    assert torch.equal(torch.signbit(result), torch.signbit(blocks))
+
+
 def test_film_rescales_present_blocks_by_the_absence_of_others_and_keeps_absent_ones_zero():
     film = build(FILM)
     fill(film, "presence_modulation")
@@ -155,6 +172,21 @@ def test_wide_branch_learns_through_its_output_and_starts_without_effect():
     assert not torch.equal(
         prepare(wide, batch).detached_tokens, prepare(control, batch).detached_tokens
     )
+
+
+def test_wide_branch_draws_its_expansion_from_its_own_seed_and_applies_silu():
+    wide = build(WIDE_FUSION, seed=42)
+    branch = wide.fusion_branch
+    digest = hashlib.sha256(f"{WIDE_FUSION}/42".encode()).digest()
+    generator = torch.Generator().manual_seed(int.from_bytes(digest[:7], "little"))
+    expected = torch.empty(branch.expand.shape)
+    torch.nn.init.kaiming_uniform_(expected, a=math.sqrt(5), generator=generator)
+    # E solo depende de la semilla declarada, no de lo que el tronco haya sorteado antes.
+    torch.testing.assert_close(branch.expand, expected.to(branch.expand.dtype), rtol=0, atol=0)
+    fill(wide, "fusion_branch")
+    inputs = torch.randn(3, branch.expand.shape[1], dtype=branch.expand.dtype)
+    formula = torch.nn.functional.silu(inputs @ branch.expand.T) @ branch.project.T
+    torch.testing.assert_close(branch(inputs), formula, rtol=0, atol=0)
 
 
 @pytest.mark.parametrize("hidden", [32, 64, 128])

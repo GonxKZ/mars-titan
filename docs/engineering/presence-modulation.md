@@ -34,9 +34,9 @@ D empieza en cero, de modo que también arranca en el control. E se sortea con e
 | Pieza | Fuente o derivación | Módulo | Pruebas |
 | --- | --- | --- | --- |
 | Escala y desplazamiento lineales en las condiciones | FiLM (Perez et al., 2018), aplicado aquí al vector de ausencias | `PresenceFiLM` | `test_film_rescales_present_blocks_by_the_absence_of_others_and_keeps_absent_ones_zero` |
-| Identidad con todas las modalidades y arranque en el control | Derivación propia, por construcción | `PresenceFiLM.forward`, inicialización a cero | `test_film_is_the_identity_on_complete_rows_whatever_its_weights`, `test_both_options_start_exactly_at_the_control_with_the_same_seed` |
+| Identidad con todas las modalidades y arranque en el control | Derivación propia, por construcción | `PresenceFiLM.forward`, inicialización a cero | `test_film_is_the_identity_on_complete_rows_whatever_its_weights`, `test_film_keeps_complete_rows_bit_for_bit_including_signed_zeros`, `test_both_options_start_exactly_at_the_control_with_the_same_seed` |
 | Gradiente solo desde filas con ausencias y solo en las columnas de modalidades que faltan | Consecuencia de la fórmula | `PresenceFiLM` | `test_film_gradient_comes_only_from_rows_with_some_absence` |
-| Rama ancha con salida inicial nula y cuenta de parámetros | Alternativa trivial declarada | `WideFusionBranch`, `wide_units` | `test_wide_branch_learns_through_its_output_and_starts_without_effect`, `test_parameter_counts_are_recorded_and_the_wide_branch_matches_film_within_five_percent` |
+| Rama ancha con salida inicial nula y cuenta de parámetros | Alternativa trivial declarada | `WideFusionBranch`, `wide_units` | `test_wide_branch_learns_through_its_output_and_starts_without_effect`, `test_wide_branch_draws_its_expansion_from_its_own_seed_and_applies_silu`, `test_parameter_counts_are_recorded_and_the_wide_branch_matches_film_within_five_percent` |
 | Identidad, estado guardado y política | Contrato del predictor | `FinancialConfig.identity` | `test_identity_records_the_option_and_its_parameters_only_when_declared`, `test_unknown_options_and_the_strict_policy_are_rejected` |
 | Comparación declarada sin ejecutar | Regla escrita de antemano | `configs/evaluation/presence-modulation-comparison.json` | `test_comparison_is_declared_with_its_control_rule_and_budget_but_not_executed` |
 
