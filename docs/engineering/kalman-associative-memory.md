@@ -221,7 +221,6 @@ La escritura kalman cuesta lo mismo que la proximal en orden de magnitud y basta
 - El efecto predictivo, la cobertura de la varianza predictiva y la regla de decisión, bloqueados porque no hay predicciones de la campaña.
 - La cobertura del intervalo de ±1,645 desviaciones predictivas y la ganancia con una sesión más de retraso (D3), que la regla de decisión también usa. La ventana todavía no emite la varianza predictiva por fila ni un recorrido con retraso adicional, así que la comparación de la campaña solo calcula la diferencia de MAE por sesión.
 - La ventana completa con un padre ajustado, cuya prueba se omite mientras rige el bloqueo.
-- La prueba en la sesión financiera con el enlace nativo, que debe ejecutarse donde esté compilado.
 
 ## Referencias
 
