@@ -20,24 +20,25 @@
 
 \title{MARS-TITAN\\\large Memoria causal adaptativa para predicción bursátil multimodal}
 \author{Gonzalo García Lama}
-\date{Revisión técnica, 9 de octubre de 2026}
+\date{Revisión técnica, 13 de octubre de 2026}
 
 \begin{document}
 \maketitle
 \begin{abstract}
-MARS-TITAN plantea una comparación experimental de modelos para predecir
-retornos residuales de activos financieros a partir de información multimodal.
-La pregunta es si la memoria neuronal y la selección de episodios aportan una
-mejora frente a referencias comparables cuando se controla la disponibilidad
-temporal y el presupuesto. La edición histórica adicional conserva todos los
-datos utilizables de FinMultiTime desde 2000, con ausencias explícitas. Se separa
-del control estricto y utiliza validación temporal, ablaciones e incertidumbre.
-Este documento es una base de redacción. La preparación de datos y los ensayos
-de referencia ya tienen informes separados. La edición desde 2000, sus
-objetivos residuales y las vistas walk-forward de la campaña están
-verificados. Las etapas de la campaña están implementadas y comprobadas sin
-aprendizaje, pero ningún modelo se ha entrenado sobre la edición y la
-comparación confirmatoria sigue pendiente.
+MARS-TITAN plantea una comparación experimental de modelos para predecir el
+retorno residual diario de acciones de Estados Unidos y China a partir de
+precios, noticias, gráficos, fundamentales y contexto macroeconómico. La
+pregunta es si una memoria adaptativa aporta información útil frente a
+referencias comparables cuando se respeta el orden en que la información está
+disponible y se iguala el presupuesto de búsqueda. La comparación reúne
+referencias sencillas, un Transformer compacto, una adaptación identificable
+de Titans-MAC y MARS-TITAN, que añade sobre ese núcleo un banco episódico y
+otras ampliaciones desactivables. La edición histórica v3.1 reúne 18.698.976
+muestras de 5.008 activos desde 2000 con ausencias explícitas, y la edición y
+sus objetivos residuales se verificaron el 11 de octubre de 2026. Las etapas de
+la campaña están implementadas y comprobadas sin aprendizaje. Ningún modelo se
+ha entrenado todavía sobre esta edición, así que el documento no contiene
+resultados predictivos de la comparación.
 \end{abstract}
 \tableofcontents
 
@@ -67,31 +68,143 @@ relacione los métodos con la pregunta concreta, sin confundir resultados public
 con resultados reproducidos.
 
 \chapter{Datos y metodología}
-Cada muestra relacionará un activo con un instante de decisión, las modalidades
-disponibles y una etiqueta que solo podrá utilizarse después de madurar. La
-predicción se construirá con historia conocida y se evaluará mediante ventanas
-cronológicas. Ajuste, selección, calibración y evaluación tendrán tramos separados.
+\label{cap:datos}
 
-Para la convención principal de apertura a cierre de la siguiente sesión,
-el retorno residual se define como
+\section{Reloj de decisión y objetivo residual}
+Cada muestra relaciona un activo con un instante de decisión, las modalidades
+disponibles en ese instante y una etiqueta que solo puede usarse cuando
+madura. La predicción se construye después del cierre de la sesión $t$, y la
+simulación entra en la apertura de la sesión siguiente y sale en su cierre.
+Para esa convención, el retorno residual se define como
 \begin{equation}
 y_{i,t} = r^{OC}_{i,t+1} - \hat\alpha_{i,t}
           - \hat\beta_{i,t} r^{OC}_{m,t+1}.
 \end{equation}
-Los coeficientes se estimarán con retornos ya conocidos en el instante de decisión.
-El retorno futuro del mercado pertenece a la etiqueta, nunca a las entradas.
-La residualización no identifica por sí misma un efecto causal económico.
+Los coeficientes se estiman por mínimos cuadrados con las 252 sesiones
+anteriores y un mínimo de 126 pares cuyo cierre se conoce en la decisión. El
+factor es SPY en Estados Unidos y el CSI 300 en China. El retorno futuro del
+mercado pertenece a la etiqueta y nunca a las entradas.
 
+\section{Edición histórica v3.1}
+La edición histórica desde 2000 conserva todos los datos utilizables de la
+copia con sus ausencias explícitas y usa las mismas filas para todos los
+modelos. La versión vigente es la v3.1, que parte de la v3 y corrige tres
+aspectos de la lectura de precios. Convierte el texto numérico de los CSV con
+redondeo correcto, porque el lector anterior devolvía en un 8 a 9~\% de los
+valores un número vecino del escrito. Admite las filas cuyo único defecto es
+un desorden OHLC por redondeo de la fuente. Y conserva con máscara las
+ventanas que contienen sesiones sin ninguna fila en todo el mercado, como el
+29 y el 30 de abril de 2019 en China. Además, todos los vectores se calculan
+en FP32 estricto, sin TF32. Las noticias, los fundamentales, el contexto macro
+y la política de máscaras no cambian.
+
+La codificación recorrió 5.676 candidatos entre el 10 y el 11 de octubre de
+2026. De ellos, 653 no tienen los precios requeridos y 5.023 se codificaron
+(4.213 de Estados Unidos y 810 de China). Quince activos estadounidenses
+codificados no tienen ninguna muestra. La edición reúne 18.698.976 muestras de
+64 sesiones (15.874.289 en Estados Unidos y 2.824.687 en China), 1.622.952 más
+que la v3, sin perder ninguna sesión. Cada muestra conserva posiciones para
+precios, noticias, gráficos, fundamentales y 140 indicadores macroeconómicos
+con nivel, presencia y antigüedad, además de cinco bits de presencia por
+modalidad. Precios, gráficos y macro están en todas las muestras. Las noticias
+aparecen en el 16,9~\% (17,5~\% en Estados Unidos y 13,1~\% en China) y los
+fundamentales en el 32,5~\% (38,1~\% y 0,7~\%). Las cinco modalidades juntas
+solo coinciden en el 10,0~\% de las muestras. Los textos se codifican con
+MiniLM multilingüe y los gráficos con ResNet18, ambos congelados.
+
+La verificación del 11 de octubre comprobó la edición completa sin fallos. Los
+5.023 activos se compararon con la v3 antes de sustituirla. Las 17.076.024
+muestras de la v3 conservan su sesión. Por la conversión exacta, 125.460
+ventanas cambian como mucho $7{,}5 \times 10^{-9}$ y 70.255 gráficos cambian
+algún píxel. En las 17.005.769 sesiones comunes con el mismo gráfico, ningún
+vector coincide bit a bit con el de la v3, con una diferencia relativa por
+norma de como mucho $1{,}82 \times 10^{-3}$, que es el efecto de haber
+calculado la v3 con TF32. Los textos de la v3 se heredaron tras un contraste por activo, con
+74.748 textos comparados y ninguna diferencia. Una muestra aleatoria de 512
+gráficos y 256 textos, recalculados en la GPU de uno en uno, coincidió bit a
+bit con los vectores guardados.
+
+\section{Objetivos residuales v3.1}
+Los objetivos de la v3.1 se generaron el 11 de octubre y se verificaron ese
+mismo día. La tabla~\ref{tab:objetivos-v31} resume su cobertura. Una
+verificación independiente recalculó 223.459 etiquetas de 60 activos con una
+referencia en pandas, distinta del motor que las generó, y la diferencia
+máxima fue cero. El diagnóstico de la etiqueta, repetido el 13 de octubre con
+el mismo código y la misma declaración que en la v3, vuelve a calcular las
+18.377.972 etiquetas aceptadas y todas coinciden bit a bit.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Cobertura de los objetivos residuales v3.1. Entrenamiento hasta 2022 y
+validación en 2023. Ninguna fila de 2024.}
+\label{tab:objetivos-v31}
+\begin{tabular}{lrrr}
+\toprule
+Categoría & China & EE.~UU. & Total \\
+\midrule
+Entrenamiento & 2.577.040 & 14.565.147 & 17.142.187 \\
+Validación & 195.144 & 1.040.641 & 1.235.785 \\
+Historia insuficiente & 49.829 & 260.009 & 309.838 \\
+Sesión siguiente ausente & 1.056 & 126 & 1.182 \\
+Objetivo posterior al corte & 810 & 4.185 & 4.995 \\
+Purgada por cruzar la partición & 808 & 4.181 & 4.989 \\
+\midrule
+Muestras de la edición & 2.824.687 & 15.874.289 & 18.698.976 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+La exclusión principal es estructural. Cada activo pierde sus primeras
+muestras hasta reunir 126 retornos conocidos, y ningún activo pierde más de
+127 filas. Con las dos sesiones de SPY de 2000 recuperadas desaparecen las
+exclusiones que dependían del factor. De las 1.056 sesiones siguientes
+ausentes en China, 750 son decisiones del 26 de abril de 2019, cuya sesión
+siguiente falta en todo el mercado, y no reciben un precio inventado. El
+residual reduce la varianza un 30~\% en el entrenamiento chino y entre un 4 y
+un 12~\% en los demás grupos, y conserva la mayor parte de la variación del
+activo, con correlaciones entre bruto y residual de 0,832 a 0,955. Las colas
+apenas cambian. Los mayores residuales de Estados Unidos son casi todos de
+valores que abren por debajo de 1~USD o negocian menos de 1.000 acciones en la
+sesión, y unas pocas filas dominan la suma de cuadrados de algunos años. Por eso la métrica principal es el MAE por
+sesión y no el RMSE.
+
+\section{Población y supervivencia}
 La población desde 2000 está condicionada a la supervivencia. Casi todos los
 activos preparados siguen cotizando en marzo de 2025 y no hay una fuente libre
-y verificable de retornos de salida para las bajas estadounidenses. Mientras no
-se incorporen, los resultados predictivos y financieros se declararán
+y verificable de retornos de salida para las bajas estadounidenses. Mientras
+no se incorporen, los resultados predictivos y financieros se declararán
 condicionados a esa supervivencia y se acompañarán de un análisis de
 sensibilidad. Los precios negociados se reconstruyen invirtiendo el ajuste del
 proveedor y se contrastan con fuentes independientes. Sus acciones
 corporativas siguen incompletas.
 
+\section{Protocolo temporal}
+El protocolo walk-forward evalúa cada año con un modelo ajustado con todo el
+pasado desde 2000 hasta abril del año anterior, seleccionado con los seis
+meses siguientes y calibrado con los tres últimos meses de ese año. La purga se
+deriva del intervalo real de cada etiqueta. La regla común de parada usa un
+presupuesto fijo de 30 épocas y conserva el mejor estado según el MAE residual
+de validación, con una mejora mínima declarada de 0,00001.
+
+La campaña elegida, A v2, entrena un único modelo conjunto de Estados Unidos y
+China con un protocolo que empieza como el estadounidense, con la primera
+validación en abril de 2004 y 19 ventanas hasta 2023. China entra en el ajuste
+en cuanto tiene filas, pero sus métricas solo cuentan desde 2011, cuando
+reúne su historia mínima. El Transformer compacto, Titans-MAC con memoria
+activa y MARS-TITAN con M1 se entrenan además por separado en cada mercado
+como controles del efecto de agrupar. Cada ventana se reentrena desde cero.
+
+El walk-forward es por etapas. En la ventana $k$, el postentrenamiento parte
+del estado elegido de la base en $k-1$ y solo ajusta con filas que ese padre
+no usó. El predictor de la cadena se elige con la validación de $k$ entre el
+padre congelado, los adaptadores y la continuación, y solo sustituye al padre
+con una mejora estricta. Las políticas financieras ajustan con las cintas de
+las tres evaluaciones anteriores a su validación. Ninguna etapa ve el año
+evaluado antes de su test.
+
 \chapter{Diseño de la comparativa}
+\label{cap:diseno}
 La comparación conserva el candidato GRU con banco episódico y añade una
 referencia Transformer compacta, una adaptación de Titans-MAC y MARS-TITAN con
 ampliaciones desactivables sobre ese núcleo. Las referencias ingenuas, lineales
@@ -134,7 +247,7 @@ aceptación de las fases históricas completas siguen pendientes. La corrección
 asociativa B6 suma a la predicción de Titans-MAC una memoria lineal escrita
 solo con resultados maduros y se emite ya en las ventanas walk-forward con las
 mismas emisiones que la sesión. Su control es un corrector de sesgo con las
-mismas etiquetas. Otro brazo repite $K=4$ con los episodios de la primera
+mismas etiquetas. Otra variante repite $K=4$ con los episodios de la primera
 lectura, de modo que el cálculo adicional no examina más episodios. La
 representación de régimen de la campaña reparte la memoria de B6 en cinco
 compartimentos según una regla observable de volatilidad y tendencia, sin
@@ -172,76 +285,54 @@ retornos de activos y un registro de operaciones con costes de apertura y cierre
 El protocolo fijará las comparaciones principales antes de abrir el conjunto final.
 
 \section{Estado técnico de la campaña desde 2000}
-La campaña reentrenará desde cero todos los brazos con las mismas filas de la
-edición histórica con máscaras. La edición recorre 5.676 candidatos y codifica
-5.023 activos, 4.213 de Estados Unidos y 810 de China, con 17.076.024 muestras
-de 64 sesiones, el mismo número que el censo de ventanas. Cada muestra conserva
-cuatro modalidades, 140 indicadores macroeconómicos con nivel, presencia y
-antigüedad y un bit de presencia por modalidad. Precios, gráficos y macro
-están en todas las filas. Los fundamentales aparecen en el 34,4~\% (40,6~\% en
-Estados Unidos y 0,8~\% en China) y las noticias en el 17,9~\% (18,6~\% y
-13,7~\%). La verificación independiente de la edición terminó el 9 de octubre
-con el corpus completo.
+La campaña reentrenará desde cero todos los modelos con las mismas filas de la
+edición v3.1. La edición, sus objetivos residuales y sus verificaciones se
+describen en el capítulo~\ref{cap:datos}. Las vistas de la campaña A original
+se prepararon y verificaron el 9 de octubre sobre la edición v3, con 19
+ventanas en Estados Unidos y 13 en China y en la unión de ambos mercados. La
+v3.1 las sustituye, y las vistas de la campaña A v2 se prepararán sobre
+\texttt{targets-v3.1} con los tres ámbitos (la unión desde 2004 y los
+controles de cada mercado). Hasta entonces no se puede lanzar ningún trabajo.
 
-Los objetivos residuales dejan 15.560.197 filas de entrenamiento hasta 2022 y
-1.221.822 de validación en 2023. Se excluyen 294.005 filas con su motivo:
-265.880 por historia insuficiente, 18.237 por falta de la sesión siguiente,
-4.962 porque el objetivo madura después del corte y 4.926 purgadas por cruzar
-la frontera entre particiones. Una verificación independiente recalculó
-190.830 etiquetas de 60 activos con otra implementación y no encontró
-diferencias.
-
-El protocolo walk-forward v2 evalúa cada año con un modelo ajustado con todo el
-pasado desde 2000 hasta abril del año anterior, seleccionado con los seis meses
-siguientes y calibrado con los tres últimos meses de ese año. Estados Unidos
-tiene 19 ventanas, de 2005 a 2023, y China y la unión de ambos mercados
-tienen 13, de 2011 a 2023. La purga se deriva del intervalo de cada etiqueta.
-La regla común de parada usa un presupuesto fijo de 30 épocas y conserva el
-mejor estado según el MAE residual de validación. El año 2024 permanece
-sellado.
-
-Las vistas de la campaña A se prepararon y verificaron el 9 de octubre. Sumadas
-sobre sus ventanas, dan 108.111.890 filas de entrenamiento y 12.826.460 de
-evaluación en Estados Unidos, 16.903.888 y 2.105.339 en China y 113.180.071 y
-12.357.256 en la unión de ambos mercados, y ocupan 12,9~GB. Una verificación
-independiente, que no reutiliza el código de preparación, recalculó las
-fronteras desde los protocolos y comprobó la purga por intervalo de etiqueta,
-que ningún objetivo queda fuera de su ventana ni llega a 2024, que los
-objetivos coinciden bit a bit con los generados, que no se pierde ninguna fila
-elegible y que la unión de mercados reproduce las vistas por mercado. No se
-entrenará ningún modelo hasta terminar el código y las implementaciones
-pendientes y revisar un resumen de su estado.
+La campaña A v2 se declaró el 9 de octubre, antes de cualquier resultado. Los
+casos de búsqueda se ajustan con la semilla 42 y el caso elegido en validación
+se repite con 43 y 44. Ridge y XGBoost son deterministas y tienen una sola
+semilla. Toda la campaña exige FP32 estricto y solo datos reales de la
+edición, sin condiciones sintéticas, remuestreadas ni aumentadas. Las
+referencias y los modelos propios reciben el mismo presupuesto de búsqueda y
+selección: dos casos por modelo neuronal en cada ventana y la misma regla de
+parada. La GRU candidata recibió su segundo caso el 10 de octubre para igualar
+esa búsqueda.
 
 \begin{table}[htbp]
 \centering
 \small
-\caption{Estado de las etapas de la campaña a 10 de octubre de 2026. Ninguna se
-ha ejecutado con aprendizaje y la campaña no se ha lanzado.}
-\begin{tabular}{p{3cm}p{5.4cm}p{4.4cm}}
+\caption{Estado de las etapas de la campaña A v2 a 13 de octubre de 2026.
+Ninguna etapa se ha ejecutado con aprendizaje y la campaña no se ha lanzado.
+Los recuentos son límites declarados en las configuraciones y fijados por
+pruebas.}
+\label{tab:estado}
+\begin{tabular}{p{2.6cm}p{5.6cm}p{4.8cm}}
 \toprule
 Etapa & Implementado y comprobado sin aprendizaje & Pendiente \\
 \midrule
-Edición y objetivos & Edición v3 codificada y verificada, objetivos
-residuales generados y recalculados de forma independiente & Ninguno antes
-del lanzamiento \\
-Protocolo & Ventanas v2, purga por intervalo y regla de parada común. Vistas
-de la campaña A preparadas y verificadas & Ninguno antes del lanzamiento \\
-Campaña base & Variante A elegida, con 2.385 ajustes en su configuración y
-5.985 con la declaración ampliada de todas las familias. Recibos por trabajo y
-reanudación & Fijar las opciones de memoria, copiar a la configuración la GRU
-episódica, MARS-TITAN y CM-v1 y revisar un resumen del código antes de
-entrenar \\
-Adaptadores & Matriz v2 por ventana con pinball para padres de cuantiles,
-con 3.915 ajustes en A. Pruebas CUDA de adaptadores y cuantiles superadas &
-Recorrido de la etapa en \texttt{cuda:0} y comparación declarada de los
-brazos postentrenados \\
-Políticas & Dos niveles sobre cintas de precios reconstruidos. KLPO terminal
-y cinco referencias sobre los 29 predictores de la declaración ampliada, y PPO
-y Double DQN sobre el Transformer compacto y \texttt{mac\_online}. En A,
-2.664 ajustes y 3.219 referencias. Ejecutores nativos de PPO, Double DQN y
-KLPO sobre esas cintas, comprobados sin aprendizaje, compilados con LibTorch
-CUDA y perfilados sin pasos de Adam & Medir el coste de la actualización.
-Ningún ajuste ejecutado \\
+Edición y objetivos & Edición v3.1 y \texttt{targets-v3.1} generadas y
+verificadas el 11 de octubre. Diagnóstico de la etiqueta repetido el 13 de
+octubre & Ninguno antes de preparar las vistas \\
+Protocolo & Ventanas v2, protocolo conjunto desde 2004, purga por intervalo,
+regla de parada común y walk-forward por etapas & Preparar y verificar las
+vistas de A v2 sobre la v3.1 \\
+Campaña base & 2.341 ajustes de referencias, Titans-MAC, GRU candidata,
+MARS-TITAN y CM-v1, y 133 trabajos del control en línea. Recibos por trabajo y
+reanudación & Fijar las opciones de memoria y lanzar \\
+Adaptadores & 6.588 ajustes en las 18 ventanas con padre, 1.116 predicciones
+del padre congelado y 1.178 selecciones de la cadena. Pruebas CUDA de
+adaptadores y cuantiles superadas & Recorrido de la etapa en \texttt{cuda:0} y
+ejecución \\
+Políticas & 2.160 ajustes y 2.442 ejecuciones de referencia sobre cintas de
+precios reconstruidos. Ejecutores nativos de PPO, Double DQN y KLPO compilados
+con LibTorch CUDA y perfilados sin pasos de Adam & Medir el coste de la
+actualización. Ningún ajuste ejecutado \\
 Evaluación & Métricas por sesión, contrastes por bloques, calibración CQR
 común por mercado, estratos por presencia de noticias y fundamentales, cartera
 larga y corta, matriz de 356 contrastes con atribución por componentes y banco
@@ -250,25 +341,29 @@ de integridad & Aplicarla a predicciones reales \\
 \end{tabular}
 \end{table}
 
+La declaración original de A, con modelos separados por mercado, sumaba 5.985
+ajustes en la campaña base, 10.332 en la etapa de adaptadores y 2.664 en la de
+políticas. Se conserva con sus pruebas, pero la campaña elegida es A v2.
+
 Las referencias neuronales (RNN, LSTM, GRU, DLinear y Transformer compacto),
 Ridge, XGBoost y los cuatro controles de Titans-MAC
 (\texttt{transformer\_direct}, \texttt{mac\_disabled}, \texttt{mac\_frozen} y
-\texttt{mac\_online}) tienen entrenador por ventana y están declarados en las
-campañas. La receta de Titans-MAC activa puertas con bias declarados y la
-memoria con residual y LayerNorm, con dos casos de búsqueda de la tasa de
-aprendizaje para igualar la búsqueda de las referencias. La GRU episódica tiene
-entrenador cronológico, memoria acotada y ventana walk-forward. MARS-TITAN con
-ampliaciones ajusta el lector episódico sobre el padre \texttt{mac\_online}
-congelado y, con todas las ampliaciones apagadas, reproduce bit a bit la sesión
-de ese padre. El factorial de CM-v1 ajusta dos núcleos \texttt{mac\_online}
-auxiliares, uno con C desactivado y otro con C como penalización, y aplica M
-como retención con centros fijos del banco del lector, de modo que B, B+C, B+M
-y B+C+M tienen identidades propias. La GRU episódica, MARS-TITAN y CM-v1
-tienen sección opcional en la orquestación. La variante A elegida las incluye
-en su declaración ampliada, todavía sin copiar a su configuración, y con ellas
-el primer nivel de la etapa de políticas cubre 29 predictores. La penalización
-C acumula por bloques de flujos con el mismo gradiente que el tramo completo,
-así que los núcleos de CM-v1 conservan la receta de Titans-MAC.
+\texttt{mac\_online}) tienen entrenador por ventana. La receta de Titans-MAC
+activa puertas con bias declarados y la memoria con residual y LayerNorm, con
+dos casos de búsqueda de la tasa de aprendizaje como las referencias. La GRU
+episódica tiene entrenador cronológico, memoria acotada y ventana
+walk-forward. MARS-TITAN ajusta el lector episódico sobre el padre
+\texttt{mac\_online} congelado y, con todas las ampliaciones apagadas,
+reproduce bit a bit la sesión de ese padre. El factorial de CM-v1 ajusta dos
+núcleos \texttt{mac\_online} auxiliares, uno con C desactivado y otro con C
+como penalización, y aplica M como retención con centros fijos del banco del
+lector, de modo que B, B+C, B+M y B+C+M tienen identidades propias. La
+campaña A v2 declara las referencias, Titans-MAC, la GRU candidata,
+MARS-TITAN con M0 a M3 y con $K=2$ y $K=4$, y CM-v1. El control
+\texttt{transformer\_compact\_online} parte del Transformer compacto elegido y
+actualiza sus pesos con las mismas etiquetas maduras que escribe el banco de
+MARS-TITAN, para descartar que una mejora de la memoria se deba solo a seguir
+aprendiendo.
 
 Estas comprobaciones recorren el ajuste hasta el paso del optimizador sin
 aplicarlo, casi siempre en CPU. El 9 de octubre se repitieron en
@@ -284,15 +379,15 @@ entrenamiento ni de una evaluación.
 
 La evaluación se acompaña de un banco de integridad que recalcula las métricas
 con una segunda implementación, exige la misma huella de filas en todos los
-brazos de cada ventana, comprueba que ninguna fila llega a 2024, registra los
+modelos de cada ventana, comprueba que ninguna fila llega a 2024, registra los
 análisis en una cadena de huellas antes de ver resultados, busca entradas que
-contengan el objetivo y acota el rendimiento de las políticas con un oráculo de
-un paso que queda fuera de toda comparación. La matriz de comparaciones fija
-47 familias y 356 contrastes antes de los resultados y separa la aportación de
-cada componente de MARS-TITAN con escalera acumulada, dejar uno fuera,
-interacciones y valores de Shapley, declarando como limitación los efectos que
-ningún brazo del plan permite identificar. Ambos se han comprobado con datos
-escritos en las pruebas, sin predicciones reales.
+contengan el objetivo y acota el rendimiento de las políticas con una cota con
+información futura de un paso, que queda fuera de toda comparación. La matriz
+de comparaciones fija 47 familias y 356 contrastes antes de los resultados y
+separa la aportación de cada componente de MARS-TITAN con escalera acumulada,
+dejar uno fuera, interacciones y valores de Shapley, declarando como
+limitación los efectos que ningún modelo del plan permite identificar. Ambos
+se han comprobado con datos escritos en las pruebas, sin predicciones reales.
 
 \chapter{Resultados y discusión}
 Los ensayos de GRU y DLinear están documentados en el informe de variantes del
