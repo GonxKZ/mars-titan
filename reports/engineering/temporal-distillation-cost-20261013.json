@@ -1,0 +1,413 @@
+{
+  "schema_version": 1,
+  "kind": "temporal_distillation_cost",
+  "recorded_at_utc": "2026-10-13T03:42:12.451034+00:00",
+  "commit": "f77ebf50e7a4a08ec967f53ad205def890749c1d",
+  "scope": "Recorrido de ajuste hasta el paso con _NoStepOptimizer y el gancho que proh\u00edbe pasos, e inferencia congelada. Padre y lectores con pesos iniciales. Sin p\u00e9rdidas ni errores registrados.",
+  "device": "cuda:0",
+  "gpu_before": "NVIDIA GeForce RTX 4070 Laptop GPU, 8188 MiB, 1380 MiB, 595.91.07, 210 MHz, 54",
+  "versions": {
+    "python": "3.12.14",
+    "torch": "2.14.0+cu130",
+    "cuda": "13.0",
+    "cudnn": 92400
+  },
+  "precision": {
+    "dtype": "float32",
+    "tf32_matmul": false,
+    "tf32_cudnn": false,
+    "matmul_precision": "highest",
+    "cublas_workspace": ":4096:8"
+  },
+  "threads": 4,
+  "campaign": {
+    "path": "configs/baselines/historical-masked-campaign-a.json",
+    "sha256": "691581aeded25d54e0cb376cbe0c01b47aaad83ddf9c6e8c15c9d6c74cbce021"
+  },
+  "extensions": {
+    "path": "configs/baselines/historical-masked-campaign-extensions.json",
+    "sha256": "0edda02ae6b908b49d978ae960732b2b0021770f4b33b94cf2d64ae4a94e3842"
+  },
+  "declaration": {
+    "path": "configs/evaluation/temporal-distillation.json",
+    "sha256": "b2577af0e357aedbc0ae31a44f35ca2664560b0eab5756a6c1d954213371e26b"
+  },
+  "view": {
+    "path": "/home/gonzalo/.cache/mars-titan-tmp/seed-control-rate-20261013/views/fold-012/manifest.json",
+    "sha256": "1641bd70d84a3ecdf07ab1c555d7f68f94f9e2801b6597a771ea9f60078e01b2"
+  },
+  "models": {
+    "student": "titans_mac_online",
+    "teacher": "mars_titan_m1",
+    "alternative": "mars_titan_m1_k4"
+  },
+  "settings": {
+    "segments": 160,
+    "segment_warmup": 10,
+    "events": 512,
+    "event_warmup": 32
+  },
+  "repeats": 3,
+  "rounds": [
+    {
+      "seconds": 752.256927466,
+      "gpu_after": "NVIDIA GeForce RTX 4070 Laptop GPU, 8188 MiB, 1664 MiB, 595.91.07, 1605 MHz, 59",
+      "student": {
+        "declared_option": "accumulation_rows=1024",
+        "options": {
+          "accumulation_rows=1024": {
+            "train": 1312.516900590725,
+            "measured_train_rows": 81920,
+            "accumulation_rows": 1024,
+            "step_calls_without_update": 164,
+            "peak_vram_allocated_bytes": 214825472
+          },
+          "accumulation_rows=null": {
+            "train": 2069.7764323473057,
+            "measured_train_rows": 81920,
+            "accumulation_rows": null,
+            "step_calls_without_update": 164,
+            "peak_vram_allocated_bytes": 203419136
+          },
+          "accumulation_rows=128": {
+            "train": 1391.3187555131049,
+            "measured_train_rows": 81920,
+            "accumulation_rows": 128,
+            "step_calls_without_update": 164,
+            "peak_vram_allocated_bytes": 214825472
+          }
+        },
+        "inference": 2474.433860214127,
+        "measured_inference_rows": 32768,
+        "inference_peak_vram_allocated_bytes": 83954176,
+        "variant": "mac_online",
+        "measured_case": "lr1e-4",
+        "shared_by_cases": [
+          "lr1e-4",
+          "lr1e-3"
+        ],
+        "max_event_inputs": 64
+      },
+      "teacher": {
+        "declared_option": "recipe",
+        "options": {
+          "recipe": {
+            "train": 483.8524207910871,
+            "measured_train_rows": 81920,
+            "window_counters": {
+              "start": {
+                "admitted": 1600
+              },
+              "end": {
+                "admitted": 83520
+              }
+            },
+            "step_calls_without_update": 164,
+            "peak_vram_allocated_bytes": 90681344
+          }
+        },
+        "inference": 511.13715734322193,
+        "measured_inference_rows": 32768,
+        "inference_peak_vram_allocated_bytes": 84925440,
+        "bank_capacity": 1024,
+        "components": {
+          "episodic_bank": "m1"
+        },
+        "parent_arm": "titans_mac_online",
+        "measured_case": "lr1e-4",
+        "shared_by_cases": [
+          "lr1e-4",
+          "lr1e-3"
+        ],
+        "max_event_inputs": 64
+      },
+      "alternative": {
+        "declared_option": "recipe",
+        "options": {
+          "recipe": {
+            "train": 366.465255590557,
+            "measured_train_rows": 81920,
+            "window_counters": {
+              "start": {
+                "admitted": 1600
+              },
+              "end": {
+                "admitted": 83520
+              }
+            },
+            "step_calls_without_update": 164,
+            "peak_vram_allocated_bytes": 90681344
+          }
+        },
+        "inference": 417.41666889005234,
+        "measured_inference_rows": 32768,
+        "inference_peak_vram_allocated_bytes": 84925440,
+        "bank_capacity": 1024,
+        "components": {
+          "episodic_bank": "m1",
+          "refinements": 4
+        },
+        "parent_arm": "titans_mac_online",
+        "measured_case": "lr1e-4",
+        "shared_by_cases": [
+          "lr1e-4",
+          "lr1e-3"
+        ],
+        "max_event_inputs": 64
+      }
+    },
+    {
+      "seconds": 856.5422267570011,
+      "gpu_after": "NVIDIA GeForce RTX 4070 Laptop GPU, 8188 MiB, 1684 MiB, 595.91.07, 1605 MHz, 56",
+      "student": {
+        "declared_option": "accumulation_rows=1024",
+        "options": {
+          "accumulation_rows=1024": {
+            "train": 1190.183805640839,
+            "measured_train_rows": 81920,
+            "accumulation_rows": 1024,
+            "step_calls_without_update": 164,
+            "peak_vram_allocated_bytes": 214825472
+          },
+          "accumulation_rows=null": {
+            "train": 1600.3638066719777,
+            "measured_train_rows": 81920,
+            "accumulation_rows": null,
+            "step_calls_without_update": 164,
+            "peak_vram_allocated_bytes": 203419136
+          },
+          "accumulation_rows=128": {
+            "train": 1242.6619007915451,
+            "measured_train_rows": 81920,
+            "accumulation_rows": 128,
+            "step_calls_without_update": 164,
+            "peak_vram_allocated_bytes": 214825472
+          }
+        },
+        "inference": 2013.931238060191,
+        "measured_inference_rows": 32768,
+        "inference_peak_vram_allocated_bytes": 83954176,
+        "variant": "mac_online",
+        "measured_case": "lr1e-4",
+        "shared_by_cases": [
+          "lr1e-4",
+          "lr1e-3"
+        ],
+        "max_event_inputs": 64
+      },
+      "teacher": {
+        "declared_option": "recipe",
+        "options": {
+          "recipe": {
+            "train": 389.6288821169665,
+            "measured_train_rows": 81920,
+            "window_counters": {
+              "start": {
+                "admitted": 1600
+              },
+              "end": {
+                "admitted": 83520
+              }
+            },
+            "step_calls_without_update": 164,
+            "peak_vram_allocated_bytes": 90681344
+          }
+        },
+        "inference": 298.17590031703344,
+        "measured_inference_rows": 32768,
+        "inference_peak_vram_allocated_bytes": 84925440,
+        "bank_capacity": 1024,
+        "components": {
+          "episodic_bank": "m1"
+        },
+        "parent_arm": "titans_mac_online",
+        "measured_case": "lr1e-4",
+        "shared_by_cases": [
+          "lr1e-4",
+          "lr1e-3"
+        ],
+        "max_event_inputs": 64
+      },
+      "alternative": {
+        "declared_option": "recipe",
+        "options": {
+          "recipe": {
+            "train": 389.815231199194,
+            "measured_train_rows": 81920,
+            "window_counters": {
+              "start": {
+                "admitted": 1600
+              },
+              "end": {
+                "admitted": 83520
+              }
+            },
+            "step_calls_without_update": 164,
+            "peak_vram_allocated_bytes": 90681344
+          }
+        },
+        "inference": 421.42785275716676,
+        "measured_inference_rows": 32768,
+        "inference_peak_vram_allocated_bytes": 84925440,
+        "bank_capacity": 1024,
+        "components": {
+          "episodic_bank": "m1",
+          "refinements": 4
+        },
+        "parent_arm": "titans_mac_online",
+        "measured_case": "lr1e-4",
+        "shared_by_cases": [
+          "lr1e-4",
+          "lr1e-3"
+        ],
+        "max_event_inputs": 64
+      }
+    },
+    {
+      "seconds": 1050.585505404999,
+      "gpu_after": "NVIDIA GeForce RTX 4070 Laptop GPU, 8188 MiB, 1687 MiB, 595.91.07, 1605 MHz, 54",
+      "student": {
+        "declared_option": "accumulation_rows=1024",
+        "options": {
+          "accumulation_rows=1024": {
+            "train": 1166.8997032797351,
+            "measured_train_rows": 81920,
+            "accumulation_rows": 1024,
+            "step_calls_without_update": 164,
+            "peak_vram_allocated_bytes": 214825472
+          },
+          "accumulation_rows=null": {
+            "train": 1477.9885283607755,
+            "measured_train_rows": 81920,
+            "accumulation_rows": null,
+            "step_calls_without_update": 164,
+            "peak_vram_allocated_bytes": 203419136
+          },
+          "accumulation_rows=128": {
+            "train": 1145.0492497095145,
+            "measured_train_rows": 81920,
+            "accumulation_rows": 128,
+            "step_calls_without_update": 164,
+            "peak_vram_allocated_bytes": 214825472
+          }
+        },
+        "inference": 1677.8510292029014,
+        "measured_inference_rows": 32768,
+        "inference_peak_vram_allocated_bytes": 83954176,
+        "variant": "mac_online",
+        "measured_case": "lr1e-4",
+        "shared_by_cases": [
+          "lr1e-4",
+          "lr1e-3"
+        ],
+        "max_event_inputs": 64
+      },
+      "teacher": {
+        "declared_option": "recipe",
+        "options": {
+          "recipe": {
+            "train": 311.2165138148208,
+            "measured_train_rows": 81920,
+            "window_counters": {
+              "start": {
+                "admitted": 1600
+              },
+              "end": {
+                "admitted": 83520
+              }
+            },
+            "step_calls_without_update": 164,
+            "peak_vram_allocated_bytes": 90681344
+          }
+        },
+        "inference": 363.9087553327223,
+        "measured_inference_rows": 32768,
+        "inference_peak_vram_allocated_bytes": 84925440,
+        "bank_capacity": 1024,
+        "components": {
+          "episodic_bank": "m1"
+        },
+        "parent_arm": "titans_mac_online",
+        "measured_case": "lr1e-4",
+        "shared_by_cases": [
+          "lr1e-4",
+          "lr1e-3"
+        ],
+        "max_event_inputs": 64
+      },
+      "alternative": {
+        "declared_option": "recipe",
+        "options": {
+          "recipe": {
+            "train": 261.5239574821552,
+            "measured_train_rows": 81920,
+            "window_counters": {
+              "start": {
+                "admitted": 1600
+              },
+              "end": {
+                "admitted": 83520
+              }
+            },
+            "step_calls_without_update": 164,
+            "peak_vram_allocated_bytes": 90681344
+          }
+        },
+        "inference": 278.3470010877376,
+        "measured_inference_rows": 32768,
+        "inference_peak_vram_allocated_bytes": 85285376,
+        "bank_capacity": 1024,
+        "components": {
+          "episodic_bank": "m1",
+          "refinements": 4
+        },
+        "parent_arm": "titans_mac_online",
+        "measured_case": "lr1e-4",
+        "shared_by_cases": [
+          "lr1e-4",
+          "lr1e-3"
+        ],
+        "max_event_inputs": 64
+      }
+    }
+  ],
+  "inference_rows_per_second": {
+    "student": [
+      2474.433860214127,
+      2013.931238060191,
+      1677.8510292029014
+    ],
+    "teacher": [
+      511.13715734322193,
+      298.17590031703344,
+      363.9087553327223
+    ],
+    "alternative": [
+      417.41666889005234,
+      421.42785275716676,
+      278.3470010877376
+    ]
+  },
+  "teacher_over_student_inference_cost": {
+    "per_round": [
+      4.841036940213245,
+      6.754171735270666,
+      4.610636607709094
+    ],
+    "median": 4.841036940213245,
+    "lowest": 4.610636607709094
+  },
+  "k4_over_student_inference_cost": {
+    "per_round": [
+      5.927970885287989,
+      4.778828036362962,
+      6.02791128571932
+    ],
+    "median": 5.927970885287989,
+    "lowest": 4.778828036362962
+  },
+  "optimizer_steps": 0,
+  "training_runs": 0,
+  "evaluation": false,
+  "final_test_opened": false
+}
