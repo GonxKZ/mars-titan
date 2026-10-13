@@ -380,6 +380,35 @@ def test_a_core_with_predictor_changes_cannot_be_the_mars_titan_parent(tmp_path)
         mw._parent(tmp_path / "pt1", view, 42)
 
 
+def test_the_frozen_parent_of_the_chain_rebuilds_the_predictor_changes_of_its_request():
+    """El padre congelado de la cadena trivial de PT1 se construye con la caja y el recorte.
+
+    PT1 no añade parámetros, así que solo el estado extra del predictor, que guarda su
+    configuración, distingue sus pesos de los del núcleo. La etapa de adaptadores reconstruye
+    el padre desde la petición de su ventana, y aquí se hace igual con el estado de un
+    predictor recién creado, sin ajustar nada.
+    """
+    from mars_titan.models.titans.financial import FinancialConfig, FinancialPredictor
+    from mars_titan.posttraining.chronological_windows import _predictor
+    from tests.models.titans.test_financial_adapter import specification
+
+    document = json.loads(Path(RECIPE).read_text())
+    document["predictor"].update(hidden_size=32)
+    spec = specification()
+    request = dict(variant="mac_online", seed=42, predictor_changes=PT1)
+    config = FinancialConfig(
+        spec, variant="mac_online", seed=42, **wf.predictor_options(document, request)
+    )
+    state = FinancialPredictor(config, device="cpu", dtype=torch.float32).state_dict()
+    rebuilt = _predictor(document, spec, request, torch.device("cpu"), state)
+    assert rebuilt.config.identity() == config.identity()
+    assert rebuilt.config.identity()["memory_stability"] == PT1["memory_stability"]
+    # Sin los cambios de la petición, el predictor sería el núcleo sin PT1 y rechaza el estado.
+    plain = dict(variant="mac_online", seed=42)
+    with pytest.raises(ValueError, match="no coincide con el contrato"):
+        _predictor(document, spec, plain, torch.device("cpu"), state)
+
+
 def test_campaign_rejects_a_titans_recipe_without_the_protocol_rule(tmp_path):
     folder = tmp_path / "config"
     path = titans_campaign(folder)
