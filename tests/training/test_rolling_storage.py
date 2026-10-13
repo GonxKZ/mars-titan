@@ -126,7 +126,9 @@ def test_a_policy_reads_the_continuation_of_a_joint_fit_and_never_its_plateau():
     jobs = plan.plan_campaign(campaign)
     windows = order.campaign_windows(campaign)
     stage = plan.LATER_STAGES["rl_policy_comparison"]["joint_stage"]
-    reads = rolling.rolling_inputs(jobs, windows, dict(tape_bytes=1), rl=stage)["policy_reads"]
+    # La medida de cintas cubre la forma máxima de la etapa: 128 activos en 640 columnas.
+    tapes = dict(tape_bytes=1, tape_shape=dict(sessions=252, assets=128, layout=640))
+    reads = rolling.rolling_inputs(jobs, windows, tapes, rl=stage)["policy_reads"]
     phases = {job["id"]: job.get("phase") for job in jobs}
     assert reads and all(phases[key] != plan.PLATEAU for key in reads)
     assert {phases[key] for key in reads} == {plan.JOINT, None}
