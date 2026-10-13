@@ -68,6 +68,18 @@ Fuera de estos estados se aplica la banda del tablero. La tabla empieza el 1 de 
 
 La comprobación principal aplica el mismo extractor a los anuncios de Shenzhen y compara el resultado, día a día, con el informe oficial. Entre 2010 y 2023 coinciden los 24.753 días con advertencia y no hay ningún día que aparezca solo en una de las dos fuentes. Los días sin límite tras la reforma que salen de los anuncios de 000750 y 000776 coinciden con el fin oficial de su prefijo S. La segunda comprobación contrasta la tabla con los precios sin ajustar. En pares de sesiones consecutivas del calendario, ambas verificadas, con negociación y sin acción corporativa, solo 4 de los 42.320 cierres con banda del 5 % la superan. Tres lo hacen por entre 2 y 4 céntimos y el cuarto, 600733 el 31 de julio de 2015, cae un 5,65 % sin explicación en las fuentes capturadas. Con la banda del 10 % la superan 178 de 2.090.717 cierres, que no dependen de la tabla.
 
+La tabla se reconstruye sin red con la orden siguiente. Necesita `pdftotext` de poppler en `/usr/bin` (la tabla actual usó la versión 26.01.0), porque el informe registra su versión y los PDF sin texto en la caché pasan por él. Las capturas, con su recibo y su huella cada una, y la caché de textos están en `~/.local/state/mars-titan/china-listing-status-20261010/`, fuera de Git, porque son documentos de terceros. La tabla vigente es `table/listing-status.json` de esa carpeta (huella `645d7843…`, edición sin ajustar `1ac37278…`).
+
+```bash
+uv run --no-sync python -m mars_titan.data.china_listing_status \
+  --captures ~/.local/state/mars-titan/china-listing-status-20261010/captures \
+  --edition ~/.local/state/mars-titan/unadjusted-prices-20261009/edition-v1 \
+  --texts ~/.local/state/mars-titan/china-listing-status-20261010/texts \
+  --output <carpeta de la tabla>
+```
+
+Repetida el 13 de octubre en una carpeta nueva, con una copia de la caché de textos, la orden reproduce la misma tabla byte a byte (huella `645d7843…`).
+
 La tabla resultante tiene 810 activos con su fecha de admisión, 127 tramos ST en 107 activos (64 de Shanghái y 63 de Shenzhen, 9 todavía abiertos en el corte), seis acciones con tramo S (000750, 000776, 600688, 600705, 600733 y 600871), 17 activos con un día sin límite tras su reforma o reanudación y 27 con exención tras la salida a bolsa. Procede de 877 fuentes y 419 anuncios leídos. Las salidas con precio quedan vacías, porque ninguna fuente capturada fija un importe de salida para los activos de la edición ([integridad del entorno](rl-environment-integrity.md#bajas-y-universo-por-fecha)).
 
 El efecto sobre la etapa es pequeño. Con los 128 primeros activos por efectivo negociado mediano de cada año entre 2011 y 2023, sin exigir predicciones (una cota superior del universo real), hay 835 sesiones con banda reducida, todas entre 2016 y 2019 y en cinco activos (000410, 000831, 600150, 600518 y 601918). Ningún día sin límite ni ninguna exención inicial cae dentro de esos universos. Una salida a bolsa o una reanudación tras una suspensión larga no pueden entrar, porque la clasificación exige negociación verificada en más de la mitad de las 252 sesiones anteriores, y las seis acciones sin reforma no llegan a ellos.
