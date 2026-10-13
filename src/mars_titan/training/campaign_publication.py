@@ -220,17 +220,16 @@ def run_publication(
             ablation_sources=masked,
             aggregates=aggregates,
         )
-        checked.append(
-            dict(
-                label=f"walk-forward/{scope}",
-                config=campaign["comparison_path"],
-                sources=sources,
-                scope=scope,
-                folder=folder,
-                aggregates=aggregates,
-                ablation=masked,
-            )
+        entry = dict(
+            label=f"walk-forward/{scope}",
+            config=campaign["comparison_path"],
+            sources=sources,
+            scope=scope,
+            folder=folder,
+            aggregates=aggregates,
+            ablation=masked,
         )
+        checked.append(entry)
         reports = [dict(kind=tables.WALK_SOURCE, path=folder / "comparison.json")]
         if walk.LONG_SHORT_FIELD in config:
             folder = partial / "long-short" / scope
@@ -249,6 +248,7 @@ def run_publication(
         report = comparison_matrix.write(
             loaded["matrix_path"], manifest, scope, partial / "matrix" / scope
         )
+        entry["matrix"] = partial / "matrix" / scope / "matrix.json"
         published[scope] = dict(
             families=len(report["families"]),
             estimable=sum(len(f["estimable"]) for f in report["families"].values()),
