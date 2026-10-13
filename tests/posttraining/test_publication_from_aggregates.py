@@ -31,6 +31,7 @@ from mars_titan.evaluation import comparison_matrix, forecast_scores
 from mars_titan.evaluation import session_table_contrasts as tables
 from mars_titan.evaluation import walk_forward_comparison as walk
 from mars_titan.integrity import declared_runs as runs
+from mars_titan.integrity import fit_budget
 from mars_titan.integrity import publication_gate as gate
 from mars_titan.integrity import window_selection as selection
 from mars_titan.posttraining import campaign_stage
@@ -415,6 +416,11 @@ def test_the_publication_carries_a_passed_integrity_report(prepared, walked):
     # La etapa cuenta sus ajustes, sus padres congelados y la selección de cada ventana.
     assert runs["posttraining"]["planned"] == runs["posttraining"]["confirmed"] > 0
     assert set(report["selection"]) == {"base", "partitions", "chain"}
+    # Sin modelos propios no hay presupuesto de referencia, pero cada ajuste se comprueba.
+    spent = report["budget"]["campaign"]
+    assert spent["passed"] and spent["declared"]["reference"] is None
+    fits = [job for job in jobs if job["kind"] == "fit"]
+    assert spent["consumed"]["fits"] == len(fits) and spent["consumed"]["unequal_updates"] == []
     assert report["selection"]["base"]["searched_groups"] == 2
     assert report["selection"]["base"]["window_receipts"] == 2
     # Cada ventana del recorrido guardó su registro de integridad antes de liberar.
@@ -631,3 +637,37 @@ def test_partitions_out_of_order_or_another_evaluated_partition_fail(campaign_co
     assert result["failures"] == ["US/fold-001: tramos fuera de orden"]
     config["partition"] = "calibration"
     assert len(selection.check_partitions(config, ["US"])["failures"]) == 2
+
+
+@pytest.mark.parametrize("defect", ["truncated", "other-epoch", "steps"])
+def test_a_fit_that_does_not_spend_its_declared_budget_blocks_the_report(campaign_copy, defect):
+    copy = campaign_copy
+    assert fit_budget.check_consumed(copy.campaign, copy.jobs, copy.output)["passed"]
+    job = next(job for job in copy.jobs if job["kind"] == "fit")
+    path = copy.output / "jobs" / job["id"] / "receipt.json"
+    receipt = json.loads(path.read_text())
+    report = copy.output / receipt["report"]["path"]
+    if defect == "truncated":
+        _edit(report, lambda document: document["epochs"].pop())
+    elif defect == "other-epoch":
+        _edit(report, lambda document: document["selection"].update(best_epoch=2))
+    else:
+        _edit(report, lambda document: document.update(global_step=0))
+    # El recibo se pone al día para que solo falle el presupuesto.
+    _edit(path, lambda document: document["report"].update(sha256=sha256(report)))
+    result = fit_budget.check_consumed(copy.campaign, copy.jobs, copy.output)
+    assert not result["passed"] and result["failing"] == [job["id"]]
+
+
+def test_fits_of_the_same_trainer_with_unequal_updates_block_the_report(campaign_copy):
+    copy = campaign_copy
+    fits = [job for job in copy.jobs if job["kind"] == "fit" and job["window"] == "fold-000"]
+    path = copy.output / "jobs" / fits[0]["id"] / "receipt.json"
+    receipt = json.loads(path.read_text())
+    report = copy.output / receipt["report"]["path"]
+    _edit(report, lambda document: document.update(global_step=document["global_step"] + 1))
+    _edit(path, lambda document: document["report"].update(sha256=sha256(report)))
+    result = fit_budget.check_consumed(copy.campaign, copy.jobs, copy.output)
+    assert not result["passed"] and result["failing"] == []
+    assert len(result["unequal_updates"]) == 1
+    assert result["unequal_updates"][0].startswith("neural/US/fold-000")

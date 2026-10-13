@@ -76,13 +76,14 @@ def declare(folder, campaign, *, stage=None, portfolio=False):
     atomic_json(
         path,
         dict(
-            schema_version=1,
+            schema_version=2,
             kind=publication.KIND,
             status=publication.DECLARED,
             name="fixture-publication",
             campaign=str(campaign),
             comparison_matrix=str(matrix),
             posttraining_comparison=None if posttraining is None else str(posttraining),
+            budget_differences={},
             final_test_opened=False,
         ),
     )
