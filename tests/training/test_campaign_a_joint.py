@@ -87,10 +87,10 @@ def edited(tmp_path, change, *, comparison_change=None):
 def test_v2_plans_the_joint_model_for_every_arm_and_three_separate_controls():
     loaded = campaign()
     counts = plan.count_jobs(loaded)
-    assert (counts["training_jobs"], counts["prediction_jobs"]) == (2873, 0)
+    assert (counts["training_jobs"], counts["prediction_jobs"]) == (3025, 0)
     joint, us, cn = (counts["scopes"][scope] for scope in ("US+CN", "US", "CN"))
     assert (joint["windows"], us["windows"], cn["windows"]) == (19, 19, 13)
-    assert (joint["training_jobs"], us["training_jobs"], cn["training_jobs"]) == (2489, 228, 156)
+    assert (joint["training_jobs"], us["training_jobs"], cn["training_jobs"]) == (2641, 228, 156)
     # El control en línea solo se evalúa, y por tanto solo se ajusta, en el ámbito conjunto.
     assert set(us["arms"]) == set(cn["arms"]) == set(CONTROLS)
     assert plan.scope_arms(loaded, "US") == plan.scope_arms(loaded, "CN") == list(CONTROLS)
@@ -114,13 +114,13 @@ def test_v2_plans_the_joint_model_for_every_arm_and_three_separate_controls():
             }, arm
     grouped = [arm for arm in joint["arms"] if arm in membership]
     corrections = {arm for arm in loaded["mars_titan"]["arms"] if "_b6" in arm}
-    assert len(grouped) == 20 and len(corrections) == 6 and not corrections & set(membership)
+    assert len(grouped) == 22 and len(corrections) == 6 and not corrections & set(membership)
     assert (joint["plateau_jobs"], us["plateau_jobs"], cn["plateau_jobs"]) == (
-        20 * 4 * 19,
+        22 * 4 * 19,
         3 * 4 * 19,
         3 * 4 * 13,
     )
-    assert counts["plateau_jobs"] == 1904
+    assert counts["plateau_jobs"] == 2056
     # Los tabulares son deterministas: sus casos solo se ajustan con la semilla de búsqueda.
     assert joint["arms"]["ridge"] == {"42": dict(fit=3 * 19, carry=0)}
     assert joint["arms"]["xgboost"] == {"42": dict(fit=12 * 19, carry=0)}
@@ -218,10 +218,20 @@ def test_v2_rejects_declarations_that_break_the_seed_stopping_or_memory_rules(
 
 
 def test_v2_declares_the_joint_stop_of_its_groups_before_any_result():
-    """La v2 declara la misma parada que el archivo de grupos, sin copia que pueda divergir."""
+    """La v2 declara la misma parada que el archivo de grupos, sin copia que pueda divergir.
+
+    Solo añade al grupo de los núcleos las dos extensiones PT1 de Titans-MAC, que la campaña
+    A no declara y que deben parar con su modelo base para que el contraste sea emparejado.
+    """
     declared = json.loads(CAMPAIGN.read_text())
     assert declared["stopping"] == {"mode": plan.EARLY_STOP}
-    assert declared["early_stop"] == json.loads(JOINT_STOP.read_text())["early_stop"]
+    prepared = json.loads(JOINT_STOP.read_text())["early_stop"]
+    extensions = ["titans_mac_online_pt1_init", "titans_mac_online_pt1"]
+    assert set(declared["titans_mac"]["core_extensions"]) == set(extensions)
+    cores = prepared["groups"]["encoders_and_cores"] + extensions
+    assert declared["early_stop"] == dict(
+        prepared, groups=dict(prepared["groups"], encoders_and_cores=cores)
+    )
     report = plan.check_campaign(CAMPAIGN)
     assert report["protocol_stopping_rule"]["stopping"] == "fixed_budget"
     assert report["stopping_rule"]["stopping"] == "joint_plateau"
@@ -239,6 +249,40 @@ def test_v2_rejects_a_first_read_reader_outside_the_readers_group(tmp_path):
 
     with pytest.raises(ValueError, match="mars_titan_m1_k4_first_read.*necesita un mismo grupo"):
         plan.plan_campaign(plan.load_campaign(edited(tmp_path, apart)))
+
+
+def test_v2_fits_pt1_as_extensions_of_the_online_core_with_its_declared_changes():
+    """PT1 y su alternativa trivial (#453) repiten casos, semillas y parada del núcleo en línea
+    y solo añaden los cambios del predictor de su declaración. Se ajustan solo en el ámbito
+    conjunto y sus adaptadores son la cadena trivial del padre congelado."""
+    from mars_titan.posttraining import campaign_stage as adapters
+
+    loaded = campaign()
+    declared = json.loads(
+        (CONFIGS / "evaluation/titans-memory-stability-comparison.json").read_text()
+    )
+    names = ["titans_mac_online_pt1_init", "titans_mac_online_pt1"]
+    candidates = loaded["titans_mac"]["candidates"]
+    counts = plan.count_jobs(loaded)["scopes"]
+    for name in names:
+        changes = declared["arms"][name]["predictor_changes"]
+        assert [value for _, value in candidates[name]] == [
+            dict(value, predictor_changes=changes) for _, value in candidates["titans_mac_online"]
+        ]
+        assert counts["US+CN"]["arms"][name] == counts["US+CN"]["arms"]["titans_mac_online"]
+        assert name not in counts["US"]["arms"] and name not in counts["CN"]["arms"]
+    families = loaded["comparison_config"]["comparison"]["families"]
+    assert families["memory_stability"] == dict(
+        kind="delta", base="titans_mac_online", variants=names
+    )
+    assert families["memory_stability_box"] == dict(
+        kind="delta", base="titans_mac_online_pt1_init", variants=["titans_mac_online_pt1"]
+    )
+    stage = adapters.load_stage(plan.LATER_STAGES["posttraining_adapter_matrix"]["joint_stage"])
+    active, _ = adapters.stage_arms(stage)
+    assert adapters.extension_arms(loaded) == set(names)
+    for name in names:
+        assert active[name] == dict(family="titans_mac", design=adapters.FROZEN_ONLY)
 
 
 def test_the_joint_stop_groups_keep_every_paired_contrast_inside_one_scope_and_group():
@@ -389,16 +433,16 @@ def test_window_schedule_orders_every_stage_of_the_window_and_counts_all_jobs():
     totals = Counter()
     for row in schedule:
         totals.update({entry["phase"]: len(entry["jobs"]) for entry in row["phases"]})
-    # Los 2.873 ajustes y las 1.904 mesetas que los preceden en la parada conjunta.
-    assert totals["base_search"] + totals["selected_case_seeds"] == 2873 + 1904
+    # Los 3.025 ajustes y las 2.056 mesetas que los preceden en la parada conjunta.
+    assert totals["base_search"] + totals["selected_case_seeds"] == 3025 + 2056
     # Las etapas dependen del estado elegido, que fija la continuación y no su meseta.
     plateaus = {job["id"] for job in jobs if job.get("phase") == plan.PLATEAU}
     read = {d for stage_jobs in stages.values() for j in stage_jobs for d in j.get("depends", ())}
     assert read and not plateaus & read
-    # Adaptadores: 6.804 ajustes y 1.494 padres congelados, y 1.577 selecciones de la cadena
+    # Adaptadores: 6.804 ajustes y 1.602 padres congelados, y 1.691 selecciones de la cadena
     # en su propia fase.
-    assert (totals["adapters"], totals["chain"]) == (6804 + 1494, 1577)
-    assert (totals["online"], totals["ablation"], totals["rl"]) == (133, 4731, 3096 + 3219)
+    assert (totals["adapters"], totals["chain"]) == (6804 + 1602, 1691)
+    assert (totals["online"], totals["ablation"], totals["rl"]) == (133, 5073, 3240 + 3441)
     window = schedule[6]
     selection = window["phases"][order.PHASES.index("selection")]
     assert "CN/fold-000/mars_titan_m1" in selection["decisions"]
@@ -499,13 +543,13 @@ def test_later_stages_of_v2_read_the_joint_model_in_each_market():
     adapter = adapters.load_stage(plan.LATER_STAGES["posttraining_adapter_matrix"]["joint_stage"])
     assert adapter["scopes"] == ["US+CN"]
     counts = adapters.count_stage(adapter)
-    # 21 modelos neuronales y los seis B6 con tres semillas y los dos tabulares con una: 83
-    # cadenas por ventana. Cada ventana con padre congela esos 83 padres y todas eligen su
-    # cadena. Los tabulares y B6 solo tienen el padre congelado.
+    # 23 modelos neuronales y los seis B6 con tres semillas y los dos tabulares con una: 89
+    # cadenas por ventana. Cada ventana con padre congela esos 89 padres y todas eligen su
+    # cadena. Los tabulares, B6 y las dos extensiones PT1 solo tienen el padre congelado.
     assert (counts["training_jobs"], counts["prediction_jobs"], counts["selection_jobs"]) == (
         6804,
-        83 * 18,
-        83 * 19,
+        89 * 18,
+        89 * 19,
     )
     assert set(adapter["arms"]) == set(
         policy_plan.load_stage(plan.LATER_STAGES["rl_policy_comparison"]["joint_stage"])[
@@ -513,10 +557,10 @@ def test_later_stages_of_v2_read_the_joint_model_in_each_market():
         ]
     )
     masked = ablation.load_stage(plan.LATER_STAGES["modality_ablation"]["joint_stage"])
-    # 27 modelos con tres semillas y dos tabulares con una, por tres variantes.
-    assert ablation.count_stage(masked)["prediction_jobs"] == (27 * 3 + 2) * 3 * 19
+    # 29 modelos con tres semillas y dos tabulares con una, por tres variantes.
+    assert ablation.count_stage(masked)["prediction_jobs"] == (29 * 3 + 2) * 3 * 19
     stage = policy_plan.load_stage(plan.LATER_STAGES["rl_policy_comparison"]["joint_stage"])
-    assert len(stage["predictors"]) == 29 and stage["scopes"] == ["US+CN"]
+    assert len(stage["predictors"]) == 31 and stage["scopes"] == ["US+CN"]
     us = policy_plan.scope_windows(stage, "US+CN", "US")
     cn = policy_plan.scope_windows(stage, "US+CN", "CN")
     assert [row["window"] for row in us] == [f"fold-{i:03d}" for i in range(4, 19)]
@@ -525,19 +569,19 @@ def test_later_stages_of_v2_read_the_joint_model_in_each_market():
     assert cn[0]["train"] == ["fold-006", "fold-007", "fold-008"]
     counts = policy_plan.count_stage(stage)
     # Referencias: cuatro por ventana y predictor, y el índice de mercado solo en US.
-    assert (counts["training_jobs"], counts["evaluation_jobs"]) == (3096, 29 * (15 * 5 + 9 * 4))
+    assert (counts["training_jobs"], counts["evaluation_jobs"]) == (3240, 31 * (15 * 5 + 9 * 4))
     assert counts["scopes"]["US+CN"]["markets"]["CN"][0] == "fold-010"
     jobs = policy_plan.plan_stage(stage)
-    # Por ventana y semilla, KLPO con los 29 predictores y las siete políticas del nivel de
-    # algoritmos con sus dos predictores: 43 ajustes.
+    # Por ventana y semilla, KLPO con los 31 predictores y las siete políticas del nivel de
+    # algoritmos con sus dos predictores: 45 ajustes.
     assert Counter(job["market"] for job in jobs if job["kind"] == "fit") == {
-        "US": 15 * 43 * 3,
-        "CN": 9 * 43 * 3,
+        "US": 15 * 45 * 3,
+        "CN": 9 * 45 * 3,
     }
 
 
 def test_the_policy_predictors_follow_the_declaration_of_the_campaign(tmp_path):
-    """Los 29 predictores de las políticas son los productores de la campaña, en su orden.
+    """Los 31 predictores de las políticas son los productores de la campaña, en su orden.
 
     Un brazo que la campaña deja pendiente sale de la lista sin tocar la etapa de políticas.
     """
@@ -552,6 +596,8 @@ def test_the_policy_predictors_follow_the_declaration_of_the_campaign(tmp_path):
         "mars_titan_b6_calendar",
         "mars_titan_b6_regime_banks",
         "mars_titan_b6_calendar_banks",
+        "titans_mac_online_pt1_init",
+        "titans_mac_online_pt1",
     ]
     assert set(integration) <= set(stage["predictors"])
     assert stage["predictors"] == [
@@ -1192,7 +1238,7 @@ def test_the_joint_stop_counts_each_grouped_fit_once_in_the_hours(tmp_path):
         }
 
     assert fits(grouped["estimate"]) == fits(plain["estimate"]) and fits(plain["estimate"])
-    assert grouped["estimate"]["plateau_jobs"] == 1904
+    assert grouped["estimate"]["plateau_jobs"] == 2056
     assert "plateau_jobs" not in plain["estimate"]
 
 
@@ -1293,7 +1339,7 @@ def test_the_plan_checks_every_declared_document_of_the_campaign_and_its_stages(
         "historical-masked-rl-policies.json",
         "historical-masked-ablation-stage-a-v2.json",
     ]
-    assert len(plan.plan_campaign(value)) == 2873 + 133 + 1904
+    assert len(plan.plan_campaign(value)) == 3025 + 133 + 2056
     # Las fuentes de predictor de las políticas son estados ajustados con la edición real.
     from mars_titan.simulation import policy_plan
 

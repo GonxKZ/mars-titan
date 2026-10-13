@@ -67,7 +67,7 @@ from . import (
     campaign_schedule,
 )
 from .reference_design import PINBALL, QUANTILE_HEAD, candidate_indices, design_cases
-from .search_cases import SEARCHED
+from .search_cases import SEARCHED, checked_predictor_changes
 from .selection import JOINT_PLATEAU, VALIDATION_PLATEAU, campaign_rule
 
 CAMPAIGN_KIND = "historical_masked_campaign"
@@ -288,6 +288,9 @@ MEMORY_OPTIONS = {
 _TABULAR = {"config", "arms", "cpu_workers"}
 _EPISODIC = {"recipe", "arms", "search_seed"}
 _TITANS = {"recipe", "arms", "search_seed"}
+# Modelos de Titans-MAC que añaden extensiones desactivables del núcleo, como PT1 (#453), sobre
+# la variante de un modelo de la sección. La sección solo los admite si los declara.
+TITANS_EXTENSIONS = "core_extensions"
 _MARS = {"recipe", "arms", "pending_arms", "parent_arm", "search_seed"}
 # La receta de la corrección B6 solo se exige cuando algún brazo usa la memoria asociativa.
 # Sin ese brazo sobraría, y el plan la rechaza.
@@ -504,58 +507,67 @@ def _episodic(section, arms, rule, policy, base, count, rules=None):
 
 
 def _titans(section, arms, rule, policy, base, count, rules=None):
-    """Brazos de Titans-MAC con su receta común y su control, sin importar PyTorch.
+    """Modelos de Titans-MAC con su receta común y su control, sin importar PyTorch.
 
     Para que la búsqueda sea equitativa, la receta declara tantos casos como índices del
     diseño ajusta cada referencia neuronal (`count`), con el mismo presupuesto y la misma
     selección por validación. `training.titans_walk_forward` vuelve a validar la receta
-    completa en cada ajuste.
+    completa en cada ajuste. Un modelo de `core_extensions` repite la variante, los casos y
+    las semillas del modelo base que declara y añade a su caso los cambios del predictor,
+    que `FinancialConfig` valida al construirlo. Así su contraste con el modelo base solo
+    cambia la extensión.
     """
     if section is None:
         return None
     _require(
-        isinstance(section, dict) and set(section) == _TITANS and policy == HISTORICAL_MASKED,
+        isinstance(section, dict)
+        and _TITANS <= set(section) <= _TITANS | {TITANS_EXTENSIONS}
+        and policy == HISTORICAL_MASKED,
         "La sección Titans no cumple o la campaña no usa la política con máscaras",
     )
     path = (base / section["recipe"]).resolve()
     recipe, digest = read_manifest(path, 64 * 1024)
     declared = {name for name, arm in arms.items() if arm["family"] == TITANS}
-    mapping = section["arms"]
+    mapping, extensions = section["arms"], section.get(TITANS_EXTENSIONS, {})
     _require(
         isinstance(mapping, dict)
-        and set(mapping) == declared
+        and isinstance(extensions, dict)
+        and (TITANS_EXTENSIONS not in section or extensions)
+        and not set(mapping) & set(extensions)
+        and set(mapping) | set(extensions) == declared
         and set(mapping.values()) <= set(TITANS_VARIANTS)
         and len(set(mapping.values())) == len(mapping)
-        and all(arms[name]["output"] == QUANTILE_HEAD for name in mapping),
-        "Cada brazo Titans de la comparación necesita una variante distinta con cuantiles",
+        and all(arms[name]["output"] == QUANTILE_HEAD for name in declared),
+        "Cada modelo Titans de la comparación necesita una variante distinta con cuantiles, "
+        "o una extensión declarada",
     )
+    for name, extension in extensions.items():
+        _require(
+            isinstance(extension, dict)
+            and set(extension) == {"base_arm", "predictor_changes"}
+            and extension["base_arm"] in mapping
+            and arms[name]["seeds"] == arms[extension["base_arm"]]["seeds"],
+            f"{name} debe extender un modelo de la sección con sus mismas semillas",
+        )
+        checked_predictor_changes(extension["predictor_changes"])
     seed = section["search_seed"]
     _require(
-        all(seed in _seeds(arms[name]["seeds"], name) for name in mapping),
-        "La semilla de búsqueda de Titans debe estar en todos sus brazos",
+        all(seed in _seeds(arms[name]["seeds"], name) for name in declared),
+        "La semilla de búsqueda de Titans debe estar en todos sus modelos",
     )
     cases = _titans_cases(recipe, rule, count)
-    candidates = {
-        name: [
-            (
-                case,
-                _stopping(
-                    dict(
-                        recipe=str(path),
-                        recipe_sha256=digest,
-                        variant=variant,
-                        seed=seed,
-                        search_case=case,
-                    ),
-                    rules,
-                    name,
-                ),
-            )
-            for case in cases
-        ]
-        for name, variant in mapping.items()
-    }
-    return dict(section, path=str(path), sha256=digest, seed=seed, candidates=candidates)
+
+    def candidates(name, variant, changes=None):
+        common = dict(recipe=str(path), recipe_sha256=digest, variant=variant, seed=seed)
+        if changes is not None:
+            common["predictor_changes"] = changes
+        return [(case, _stopping(dict(common, search_case=case), rules, name)) for case in cases]
+
+    resolved = {name: candidates(name, variant) for name, variant in mapping.items()}
+    for name, extension in extensions.items():
+        variant = mapping[extension["base_arm"]]
+        resolved[name] = candidates(name, variant, extension["predictor_changes"])
+    return dict(section, path=str(path), sha256=digest, seed=seed, candidates=resolved)
 
 
 def _titans_cases(recipe, rule, count):
@@ -1250,7 +1262,8 @@ def _all_arm_specs(campaign):
     sections = [(NEURAL, campaign["neural"]), (TABULAR, campaign["tabular"])]
     sections += [(family, campaign[family]) for family in OPTIONAL if campaign.get(family)]
     for family, section in sections:
-        for name, kind in section["arms"].items():
+        # Las extensiones del núcleo de Titans-MAC son modelos de su sección.
+        for name, kind in (section["arms"] | section.get(TITANS_EXTENSIONS, {})).items():
             # En las secciones opcionales, la familia también nombra el modelo del ejecutor.
             model = {NEURAL: "neural", EPISODIC: EPISODIC, TITANS: TITANS, MARS: MARS}.get(
                 family, kind

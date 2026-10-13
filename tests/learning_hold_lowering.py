@@ -34,6 +34,17 @@ INVENTORY = {
         "sustituido que no ajusta, porque el informe solo lee salidas confirmadas de la etapa y "
         "su ejecución se detiene con la protección"
     ),
+    "tests/training/test_titans_walk_forward.py::"
+    "test_window_builds_the_declared_predictor_changes_and_its_regeneration_repeats_them": (
+        "ajusta una ventana Titans-MAC con PT1 y el optimizador que no modifica pesos para "
+        "comprobar que los cambios del predictor entran en su identidad y que la regeneración los "
+        "repite, y el ajuste se detiene con la protección"
+    ),
+    "tests/training/test_titans_campaign.py::"
+    "test_an_extension_fit_builds_its_changes_and_its_carry_rebuilds_them": (
+        "ejecuta el ajuste y el traslado de la campaña reducida con PT1 sobre la protección "
+        "rebajada de su fixture, porque los dos ejecutores se detienen con ella"
+    ),
 }
 
 

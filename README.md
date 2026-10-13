@@ -44,7 +44,7 @@ flowchart TD
     Q["Opciones de memoria,<br/>rendimiento y presupuesto de disco<br/>en preparación"]:::parcial
     A["Campaña A elegida<br/>reentrenamiento anual desde cero<br/>5.985 ajustes con todas las familias<br/>sin lanzar"]:::parcial
     P["Etapa de adaptadores<br/>3.915 ajustes en A"]:::comprobado
-    R1["RL nivel 1<br/>KLPO y cinco referencias<br/>sobre 29 predictores"]:::parcial
+    R1["RL nivel 1<br/>KLPO y cinco referencias<br/>sobre 31 predictores"]:::parcial
     R2["RL nivel 2<br/>PPO y Double DQN sobre<br/>transformer_compact y titans_mac_online"]:::parcial
     C["Comparación walk-forward<br/>MAE por sesión · CQR común<br/>estratos de presencia descriptivos"]:::comprobado
     T(["Test de 2024 sellado"]):::pendiente
@@ -278,7 +278,7 @@ flowchart LR
 
 La [revisión de la memoria posterior a Titans](docs/research/post-titans-memory-review.md) deja tres innovaciones para el núcleo de la campaña, cada una desactivable y desactivada por defecto. Su punto de inserción sobre Titans-MAC y las ampliaciones de MARS-TITAN está en el [diagrama del sistema](docs/research/titans-mac-architecture.md#innovaciones-posteriores-a-titans). Ninguna se ha entrenado ni evaluado, así que no hay resultados experimentales.
 
-- **PT1, memoria de Titans acotada y contractiva** ([#453](https://github.com/GonxKZ/mars-titan/issues/453)): implementada y comprobada sin entrenar ([documento](docs/engineering/titans-memory-stability.md)). Resultado experimental pendiente.
+- **PT1, memoria de Titans acotada y contractiva** ([#453](https://github.com/GonxKZ/mars-titan/issues/453)): implementada y comprobada sin entrenar ([documento](docs/engineering/titans-memory-stability.md)). La campaña A v2 la declara con su alternativa trivial como extensiones del núcleo de `titans_mac_online`, con sus mismos casos, semillas y parada. Resultado experimental pendiente.
 
 - **PT2, calibración conformal en línea con etiquetas maduras** ([#454](https://github.com/GonxKZ/mars-titan/issues/454)): implementada y comprobada sin entrenar ([documento](docs/engineering/online-conformal-calibration.md)), pendiente de integrar en la comparación. Resultado experimental pendiente.
 

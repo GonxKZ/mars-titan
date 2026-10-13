@@ -145,6 +145,24 @@
         44
       ]
     },
+    "titans_mac_online_pt1_init": {
+      "family": "titans_mac",
+      "output": "quantile_head_v1",
+      "seeds": [
+        42,
+        43,
+        44
+      ]
+    },
+    "titans_mac_online_pt1": {
+      "family": "titans_mac",
+      "output": "quantile_head_v1",
+      "seeds": [
+        42,
+        43,
+        44
+      ]
+    },
     "mars_titan_m0": {
       "family": "mars_titan",
       "output": "quantile_head_v1",
@@ -385,6 +403,21 @@
           "mars_titan_m1_k4_first_read"
         ]
       },
+      "memory_stability": {
+        "kind": "delta",
+        "base": "titans_mac_online",
+        "variants": [
+          "titans_mac_online_pt1_init",
+          "titans_mac_online_pt1"
+        ]
+      },
+      "memory_stability_box": {
+        "kind": "delta",
+        "base": "titans_mac_online_pt1_init",
+        "variants": [
+          "titans_mac_online_pt1"
+        ]
+      },
       "mature_correction": {
         "kind": "delta",
         "base": "titans_mac_online",
@@ -502,6 +535,8 @@
           "titans_mac_disabled",
           "titans_mac_frozen",
           "titans_mac_online",
+          "titans_mac_online_pt1_init",
+          "titans_mac_online_pt1",
           "mars_titan_m0",
           "mars_titan_m1",
           "mars_titan_m2",

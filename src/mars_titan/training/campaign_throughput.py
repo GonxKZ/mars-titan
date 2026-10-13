@@ -973,11 +973,14 @@ def _chronological_sources(view, document, work):
     return fold, sources, _event_inputs(sources["train"])
 
 
-def _core_builder(document, recipe, sources, work, *, variant, seed, device, local_control=None):
+def _core_builder(
+    document, recipe, sources, work, *, variant, seed, device, local_control=None, changes=None
+):
     """Constructor del ajuste cronológico de Titans-MAC con el optimizador de la medición.
 
     `local_control` es el contrato del control C de un núcleo de CM-v1, como en
-    `run_titans_window`. Con `penalty`, cada tramo suma los flujos medidos de C.
+    `run_titans_window`. Con `penalty`, cada tramo suma los flujos medidos de C. `changes`
+    son los cambios del predictor de un modelo, como PT1.
     """
     from mars_titan.budget_training import seed_run
 
@@ -989,7 +992,7 @@ def _core_builder(document, recipe, sources, work, *, variant, seed, device, loc
     def build(option):
         seed_run(seed)
         predictor, pairing = titans._predictor(
-            document, specification, variant, seed, device, local_control
+            document, specification, variant, seed, device, local_control, changes
         )
         return ChronologicalTrainer(
             predictor,
@@ -1051,6 +1054,7 @@ def measure_titans(
                     variant=case["variant"],
                     seed=case["seed"],
                     device=device,
+                    changes=case.get(titans.CHANGES),
                 )
                 record = _chronological(
                     build,

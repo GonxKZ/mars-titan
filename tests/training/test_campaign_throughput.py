@@ -11,6 +11,7 @@ su gancho. No se usa la GPU ni se registran pérdidas.
 import copy
 import json
 import os
+from dataclasses import asdict
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -779,16 +780,25 @@ def test_the_step_guard_rejects_any_optimizer_step_and_is_removed():
     assert dict(optim_module._global_optimizer_pre_hooks) == hooks
 
 
-def titans_campaign(folder):
-    """Campaña A con un único control de Titans y la receta de campaña reducida."""
+def titans_campaign(folder, extensions=None):
+    """Campaña A con un único control de Titans y la receta de campaña reducida.
+
+    `extensions` añade modelos de `core_extensions` sobre ese control, como PT1.
+    """
     campaign = load_campaign(CAMPAIGNS["A"])
     recipe = json.loads(TITANS_RECIPE.read_text())
     recipe["predictor"].update(hidden_size=32)
     recipe["recipe"].update(truncation=3, block_rows=2)
     folder.mkdir(parents=True, exist_ok=True)
     atomic_json(folder / "titans.json", recipe)
-    arms = {"titans_mac_online": campaign["comparison_config"]["arms"]["titans_mac_online"]}
+    online = campaign["comparison_config"]["arms"]["titans_mac_online"]
+    arms = {"titans_mac_online": online} | {name: online for name in extensions or {}}
     section = dict(recipe="titans.json", arms={"titans_mac_online": "mac_online"}, search_seed=42)
+    if extensions:
+        section["core_extensions"] = {
+            name: dict(base_arm="titans_mac_online", predictor_changes=changes)
+            for name, changes in extensions.items()
+        }
     campaign[TITANS] = plan._titans(
         section, arms, campaign["rule"], campaign["input_policy"], folder, 2
     )
@@ -847,6 +857,44 @@ def test_titans_measurement_walks_the_chronological_trainer_without_changing_wei
     assert guarded_steps and set(guarded_steps) == {1}
     assert (tmp_path / "work/titans-indices").is_dir()
     assert not (tmp_path / "work/titans-unused").exists()
+
+
+def test_titans_measurement_builds_each_core_extension_with_its_predictor_changes(
+    views, cpu, tmp_path, monkeypatch
+):
+    """PT1 se mide con su propio predictor: la caja y el recorte cambian el coste."""
+    from mars_titan.training import titans_walk_forward as wf
+    from tests.training.test_titans_walk_forward import PT1
+
+    campaign = titans_campaign(tmp_path / "config", {"titans_mac_online_pt1": PT1})
+    built, predictor = [], wf._predictor
+
+    def recorded(document, specification, variant, seed, device, control=None, changes=None):
+        pair = predictor(document, specification, variant, seed, device, control, changes)
+        # Se guarda lo que llega al predictor construido, no solo lo que se le pide.
+        config = pair[0].config
+        options = (config.gate_bias, config.memory_stability)
+        built.append((changes, *(None if value is None else asdict(value) for value in options)))
+        return pair
+
+    monkeypatch.setattr(wf, "_predictor", recorded)
+    rates = throughput.measure_titans(
+        campaign,
+        views / "fold-000/manifest.json",
+        tmp_path / "work",
+        segments=1,
+        segment_warmup=0,
+        events=1,
+        event_warmup=0,
+    )
+    assert set(rates) == {"titans_mac_online", "titans_mac_online_pt1"}
+    assert rates["titans_mac_online_pt1"]["variant"] == "mac_online"
+    # Cada opción de memoria construye su predictor: tres con las opciones de la receta y tres
+    # con las de PT1, que sustituyen las de la receta.
+    recipe = built[0][1:]
+    pt1 = (PT1["gate_bias"], PT1["memory_stability"])
+    assert recipe != pt1
+    assert built == [(None, *recipe)] * 3 + [(PT1, *pt1)] * 3
 
 
 @pytest.mark.skipif(
