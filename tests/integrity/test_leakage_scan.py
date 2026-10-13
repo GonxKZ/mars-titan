@@ -1,4 +1,4 @@
-"""Escáner de fugas con canarios inyectados en paneles escritos en la prueba.
+"""Escáner de fugas con información futura inyectada a propósito en paneles de prueba.
 
 Los paneles no proceden de ningún modelo ni se ajusta nada. Solo se comprueba que el
 escáner marca las entradas que contienen el objetivo y no marca las legítimas.

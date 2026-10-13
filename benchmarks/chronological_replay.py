@@ -1,7 +1,7 @@
-"""Caudal, VRAM y gradientes de un brazo cronológico sin pasos de optimizador.
+"""Caudal, VRAM y gradientes de un modelo cronológico sin pasos de optimizador.
 
 Reutiliza los constructores de `campaign_throughput`, que son los mismos antes y después de
-un cambio: intercepta `_chronological` para obtener el constructor del brazo pedido y
+un cambio: intercepta `_chronological` para obtener el constructor del modelo pedido y
 recorre `_train_pass` desde un evento intermedio del tramo de ajuste. Las etiquetas cuyo
 pronóstico no se emitió en este recorrido se descartan, como en un inicio a mitad de fase.
 El optimizador es el sustituto de `campaign_throughput`, que solo cuenta llamadas, y al
@@ -150,7 +150,7 @@ try:
 except Captured:
     pass
 else:
-    raise SystemExit("No se interceptó el constructor del brazo")
+    raise SystemExit("No se interceptó el constructor del modelo")
 setup_seconds = time.perf_counter() - started
 
 

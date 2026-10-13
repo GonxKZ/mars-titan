@@ -4,7 +4,7 @@ La medida tiene dos fases para no ocupar la GPU mientras se leen datos. `prepare
 sin GPU, abre una vista walk-forward, prepara o reutiliza el índice de observaciones del
 tramo de ajuste y guarda las entradas de unos pocos eventos consecutivos para un conjunto
 fijo de flujos. No guarda etiquetas ni objetivos. `measure` carga ese archivo y, para cada
-brazo de la declaración de PT1, recorre los eventos con el grafo completo, calcula la
+modelo de la declaración de PT1, recorre los eventos con el grafo completo, calcula la
 pérdida pinball contra un objetivo nulo y ejecuta un backward. Los gradientes se descartan
 y se comprueba al final que ningún parámetro ha cambiado. El objetivo nulo solo da forma a
 la pérdida, porque el coste del backward no depende de su valor.

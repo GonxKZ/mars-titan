@@ -555,7 +555,7 @@ def run_reference_case(
     device = require_cuda()
     dataset = configured_corpus(manifest, input_policy=input_policy)
     if min(dataset.manifest["counts"].values()) < 1:
-        raise ValueError("Se necesitan datos de ajuste y validación en este brazo")
+        raise ValueError("Se necesitan datos de ajuste y validación en este modelo")
     if case["kind"] == "transformer":
         architecture = case["architecture"]
         validate_attention_budget(

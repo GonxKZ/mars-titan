@@ -1,7 +1,7 @@
 """Selección determinista de representantes reales con distancias por bloques.
 
 La heurística greedy con intercambios no tiene un factor de aproximación
-atribuido. La enumeración solo es un oráculo pequeño. La admisión temporal,
+atribuido. La enumeración exacta solo sirve de referencia en tamaños pequeños. La admisión temporal,
 las etiquetas y la versión de la representación pertenecen al consumidor.
 """
 

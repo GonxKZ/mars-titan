@@ -66,7 +66,7 @@ def test_the_declared_matrix_compiles_every_question_and_lineage(declared):
     for entry in families.values():
         assert 1 <= len(entry["contrasts"]) <= 64
         for contrast in entry["contrasts"].values():
-            # Toda la matriz compara brazos entre sí, así que los coeficientes de cada
+            # Toda la matriz compara modelos entre sí, así que los coeficientes de cada
             # contraste suman cero.
             assert sum(contrast["coefficients"].values()) == pytest.approx(0.0, abs=1e-12)
             assert contrast["unnamed"] == []
@@ -180,9 +180,9 @@ def test_the_missing_arms_report_is_reproducible_and_ranks_the_candidates(declar
         in (pair["contrasts"])
     )
     # El control en línea ya está declarado en la comparación, así que sus contrastes solo
-    # esperan a otro brazo cuando también usan uno condicionado o derivado.
+    # esperan a otro modelo cuando también usan uno condicionado o derivado.
     assert "transformer_compact_online" not in report["conditional_arms"]
-    # Los tres brazos de integración de MARS-TITAN también están declarados ya. Solo queda
+    # Los tres modelos de integración de MARS-TITAN también están declarados ya. Solo queda
     # condicionada la referencia pública de Titans-MAC.
     assert set(report["conditional_arms"]) == {"titans_reference_mac"}
     assert (totals["declared"], totals["planned_elsewhere"]) == (225, 112)
@@ -459,7 +459,7 @@ def test_missing_arms_leave_their_contrasts_pending(evaluated):
     chain = report["families"]["chain__titans"]["pending"][0]
     assert chain["missing"] == ["titans__chain"]
     assert report["families"]["core__ladder"]["estimable"] == ["+memory", "total"]
-    # Un conjunto sin brazo con nombre deja el contraste pendiente aunque haya coeficientes.
+    # Un conjunto sin modelo con nombre deja el contraste pendiente aunque haya coeficientes.
     assert report["families"]["core__interactions"] == dict(
         question="¿Cuánto aporta la memoria?",
         origin="lineage:core/interactions",
@@ -739,7 +739,7 @@ def test_cost_adjustment_needs_an_effect_more_hours_and_a_direction():
     same = tables.cost_adjusted(row, -1.0, dict(hours, cumulative=dict(a=2.0, b=2.0)))
     assert same["gpu_hours_difference"] == 0.0 and same["improvement_per_gpu_hour"] is None
     level = tables.cost_adjusted(dict(row, coefficients=dict(a=1.0)), -1.0, hours)
-    assert level["reason"] == "Es un nivel, no un efecto entre brazos"
+    assert level["reason"] == "Es un nivel, no un efecto entre modelos"
     assert tables.cost_adjusted(row, None, hours)["reason"].startswith("La métrica no tiene")
 
 

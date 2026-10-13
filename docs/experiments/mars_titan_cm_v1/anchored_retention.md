@@ -30,9 +30,9 @@ select_anchored_medoids(
 
 `capacity` es la capacidad total e incluye los centros fijos. Debe ser un entero positivo y no puede ser menor que el número fijo. La capacidad variable puede ser cero. En ese caso se calcula el objetivo del conjunto fijo. E vacío produce selección vacía. Con clientes y sin ningún centro autorizado se produce un error. Si sobran plazas se conservan todos los candidatos.
 
-La salida conserva los IDs fijos, variables y retenidos, así como sus índices en la entrada original. Registra objetivo, algoritmo, métrica, estado de búsqueda, tipos, versiones, bloques, bytes estimados y pares de distancia. `enumerated_restricted` identifica el oráculo limitado a A y F. `one_swap_local_restricted` identifica ausencia de mejora unitaria en la búsqueda completada. `swap_limit` identifica un resultado parcial. La enumeración flotante compara costes calculados en coma flotante.
+La salida conserva los IDs fijos, variables y retenidos, así como sus índices en la entrada original. Registra objetivo, algoritmo, métrica, estado de búsqueda, tipos, versiones, bloques, bytes estimados y pares de distancia. `enumerated_restricted` identifica la enumeración exacta limitada a A y F. `one_swap_local_restricted` identifica ausencia de mejora unitaria en la búsqueda completada. `swap_limit` identifica un resultado parcial. La enumeración flotante compara costes calculados en coma flotante.
 
-El fondo `numpy` usa la referencia general estable. La selección variable reutiliza el greedy con intercambios y el oráculo existentes. Sin fondo, el selector anterior conserva su recorrido. La capacidad, la elección de A y F, frecuencia y representación deben formar parte de la identidad del consumidor.
+El fondo `numpy` usa la referencia general estable. La selección variable reutiliza el greedy con intercambios y la enumeración exacta existentes. Sin fondo, el selector anterior conserva su recorrido. La capacidad, la elección de A y F, frecuencia y representación deben formar parte de la identidad del consumidor.
 
 ## Precisión y recursos
 

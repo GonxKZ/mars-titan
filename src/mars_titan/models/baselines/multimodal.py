@@ -48,6 +48,26 @@ def transformer_batch_options(kind, batch_size):
     return {}
 
 
+def fuse_modalities(price, inputs, encoders, fusion, presence=None):
+    """Fusión común de la representación de precios y las cuatro modalidades restantes.
+
+    La comparten las referencias y el adaptador financiero de Titans, así que la semántica
+    de las ausencias solo se define aquí. Sin presencia es la fusión estricta. Con ella, la
+    proyección de cada modalidad ausente se anula después del sesgo y los cinco bits se
+    concatenan al final. La representación de precios no se multiplica, porque el lector
+    garantiza los precios y sus huecos ya llegan anulados por `gate_price_window`.
+    """
+    representations = [price]
+    for index, name in enumerate(MODALITIES[1:], 1):
+        projected = encoders[name](inputs[name])
+        if presence is not None:
+            projected = projected * presence[:, index : index + 1]
+        representations.append(projected)
+    if presence is not None:
+        representations.append(presence.to(dtype=fusion[0].weight.dtype))
+    return fusion(torch.cat(representations, dim=-1))
+
+
 class MultimodalReference(nn.Module):
     """Fusión común con un codificador de precios y estado reiniciado por ventana.
 
@@ -230,16 +250,7 @@ class MultimodalReference(nn.Module):
             checks.extend(encoder_checks)
         else:
             price = self.price_encoder(prices)
-        representations = [price]
-        for name in self.encoders:
-            projected = self.encoders[name](inputs[name])
-            if presence is not None:
-                index = MODALITIES.index(name)
-                projected = projected * presence[:, index : index + 1]
-            representations.append(projected)
-        if presence is not None:
-            representations.append(presence.to(dtype=self.head.weight.dtype))
-        fused = self.fusion(torch.cat(representations, dim=-1))
+        fused = fuse_modalities(price, inputs, self.encoders, self.fusion, presence)
         if self.kind == "transformer":
             checks.append((fused, "La fusión Transformer contiene valores no finitos"))
         return fused, checks
