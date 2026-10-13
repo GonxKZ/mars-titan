@@ -12,7 +12,9 @@ recorrido ventana a ventana si lo hubo:
 1. publica las fuentes de cada ámbito de la campaña con ``masked_campaign.write_sources``;
 2. calcula la comparación walk-forward de cada ámbito y, si la comparación la declara, la
    cartera larga y corta, desde los agregados por ventana de la retención v2 cuando se
-   indican;
+   indican. Si la comparación declara la retención e interferencia en las revisitas de
+   régimen, exige el calendario de regímenes de la edición (``regime_calendar``) para que
+   la sección salga calculada y no pendiente;
 3. publica el manifiesto de fuentes de la matriz con esos informes y evalúa la matriz;
 4. publica las fuentes de cada padre de la etapa de adaptadores y su comparación, también
    desde los agregados por ventana que guardó el recorrido.
@@ -165,6 +167,7 @@ def run_publication(
     edition=None,
     ablation=None,
     hours=None,
+    regimes=None,
 ):
     """Publicar comparación, cartera, matriz y comparación postentrenada de la campaña.
 
@@ -174,6 +177,7 @@ def run_publication(
     la edición de precios sin ajustar que pide la cartera. ``ablation`` (``stage`` y
     ``output``) añade la ablación de modalidades al informe walk-forward y debe acompañar a
     unos agregados que la incluyan. ``hours`` es el documento de horas por modelo de la matriz.
+    ``regimes`` es el calendario de regímenes que pide la retención e interferencia.
     """
     loaded = load_publication(path)
     campaign, posttraining = loaded["campaign_config"], loaded["posttraining"]
@@ -188,6 +192,13 @@ def run_publication(
     _require(
         walk.LONG_SHORT_FIELD not in config or edition is not None,
         "La comparación declara la cartera larga y corta: falta la edición de precios",
+    )
+    retention = walk.RETENTION_FIELD in config
+    _require(
+        retention == (regimes is not None),
+        "La comparación declara la retención e interferencia: falta el calendario de regímenes"
+        if retention
+        else "La comparación no declara la retención e interferencia: sobra el calendario",
     )
     from . import masked_campaign as engine
     from . import modality_ablation_stage
@@ -212,6 +223,7 @@ def run_publication(
             folder,
             ablation_sources=masked,
             aggregates=aggregates,
+            regimes=regimes,
         )
         reports = [dict(kind=tables.WALK_SOURCE, path=folder / "comparison.json")]
         if walk.LONG_SHORT_FIELD in config:
@@ -269,6 +281,7 @@ def run_publication(
         if posttraining is None
         else dict(name=posttraining["name"], sha256=posttraining["sha256"], parents=parents),
         from_aggregates=aggregates is not None,
+        regimes=None if regimes is None else dict(sha256=sha256(regimes)),
         scopes=published,
         artifacts={
             str(file.relative_to(partial)): sha256(file)
@@ -303,6 +316,7 @@ def main(argv=None):
     run.add_argument("--ablation-stage", type=Path)
     run.add_argument("--ablation-output", type=Path)
     run.add_argument("--hours", type=Path, help="Horas GPU por modelo para la matriz")
+    run.add_argument("--regimes", type=Path, help="Calendario de regímenes de la edición")
     args = parser.parse_args(argv)
     if args.command == "check":
         result = check_publication(args.declaration)
@@ -324,6 +338,7 @@ def main(argv=None):
             edition=args.edition,
             ablation=ablation,
             hours=args.hours,
+            regimes=args.regimes,
         )
         result = dict(
             status=receipt["status"],
