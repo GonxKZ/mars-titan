@@ -5,7 +5,8 @@
  "tool": "sustitución de texto en el módulo, pytest -x sobre las pruebas del mutante y restauración",
  "rounds": [
   "primera ronda: los 36 mutantes con las pruebas de 3f3c7c0e a f750f3e9",
-  "segunda ronda: los 6 supervivientes con las pruebas añadidas en 964cdf0e"
+  "segunda ronda: los 6 supervivientes con las pruebas añadidas en 964cdf0e",
+  "tercera ronda: los 36 mutantes con la protección de aprendizaje vigente, solo con pruebas que no la rebajan (las de extremo a extremo de la publicación se omiten, #546)"
  ],
  "mutants": [
   {
@@ -17,7 +18,13 @@
     "tests/integrity/test_row_identity.py"
    ],
    "first_round": "muere",
-   "verdict": "muere"
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_row_identity.py"
+    ],
+    "verdict": "muere"
+   }
   },
   {
    "name": "R2 sin modelos prestados",
@@ -28,7 +35,13 @@
     "tests/integrity/test_row_identity.py"
    ],
    "first_round": "muere",
-   "verdict": "muere"
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_row_identity.py"
+    ],
+    "verdict": "muere"
+   }
   },
   {
    "name": "R3 recuento vacío",
@@ -39,7 +52,13 @@
     "tests/integrity/test_row_identity.py"
    ],
    "first_round": "muere",
-   "verdict": "muere"
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_row_identity.py"
+    ],
+    "verdict": "muere"
+   }
   },
   {
    "name": "R4 huella sin exclusión",
@@ -52,7 +71,14 @@
    ],
    "first_round": "SOBREVIVE",
    "second_round": "muere",
-   "verdict": "muere"
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_comparison_integrity.py",
+     "tests/integrity/test_row_identity.py"
+    ],
+    "verdict": "muere"
+   }
   },
   {
    "name": "S1 recálculo sin exclusión",
@@ -65,7 +91,14 @@
    ],
    "first_round": "SOBREVIVE",
    "second_round": "muere",
-   "verdict": "muere"
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_comparison_integrity.py",
+     "tests/integrity/test_score_recheck.py"
+    ],
+    "verdict": "muere"
+   }
   },
   {
    "name": "S2 sin control cero",
@@ -77,7 +110,14 @@
     "tests/integrity/test_score_recheck.py"
    ],
    "first_round": "muere",
-   "verdict": "muere"
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_comparison_integrity.py",
+     "tests/integrity/test_score_recheck.py"
+    ],
+    "verdict": "muere"
+   }
   },
   {
    "name": "S3 agregados sin control cero",
@@ -89,7 +129,13 @@
    ],
    "first_round": "SOBREVIVE",
    "second_round": "muere",
-   "verdict": "muere"
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_score_recheck.py"
+    ],
+    "verdict": "muere"
+   }
   },
   {
    "name": "S4 control cero con predicción del modelo",
@@ -101,7 +147,14 @@
     "tests/integrity/test_score_recheck.py"
    ],
    "first_round": "muere",
-   "verdict": "muere"
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_comparison_integrity.py",
+     "tests/integrity/test_score_recheck.py"
+    ],
+    "verdict": "muere"
+   }
   },
   {
    "name": "C1 filas quitadas sin cotejo",
@@ -113,7 +166,13 @@
    ],
    "first_round": "SOBREVIVE",
    "second_round": "muere",
-   "verdict": "muere"
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_comparison_integrity.py"
+    ],
+    "verdict": "muere"
+   }
   },
   {
    "name": "C2 ventana sin recálculo",
@@ -125,7 +184,13 @@
     "tests/posttraining/test_publication_from_aggregates.py"
    ],
    "first_round": "muere",
-   "verdict": "muere"
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_comparison_integrity.py"
+    ],
+    "verdict": "muere"
+   }
   },
   {
    "name": "C3 ventana sin detenerse",
@@ -137,7 +202,13 @@
     "tests/posttraining/test_publication_from_aggregates.py"
    ],
    "first_round": "muere",
-   "verdict": "muere"
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_comparison_integrity.py"
+    ],
+    "verdict": "muere"
+   }
   },
   {
    "name": "C4 registro sin huella",
@@ -148,7 +219,13 @@
     "tests/integrity/test_comparison_integrity.py"
    ],
    "first_round": "muere",
-   "verdict": "muere"
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_comparison_integrity.py"
+    ],
+    "verdict": "muere"
+   }
   },
   {
    "name": "C5 registro sin identidad",
@@ -159,7 +236,13 @@
     "tests/integrity/test_comparison_integrity.py"
    ],
    "first_round": "muere",
-   "verdict": "muere"
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_comparison_integrity.py"
+    ],
+    "verdict": "muere"
+   }
   },
   {
    "name": "C6 registro fallido admitido",
@@ -170,7 +253,13 @@
     "tests/integrity/test_comparison_integrity.py"
    ],
    "first_round": "muere",
-   "verdict": "muere"
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_comparison_integrity.py"
+    ],
+    "verdict": "muere"
+   }
   },
   {
    "name": "C7 sesiones con tolerancia",
@@ -182,7 +271,13 @@
     "tests/posttraining/test_publication_from_aggregates.py"
    ],
    "first_round": "muere",
-   "verdict": "muere"
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_comparison_integrity.py"
+    ],
+    "verdict": "muere"
+   }
   },
   {
    "name": "C8 registros ausentes admitidos",
@@ -193,7 +288,13 @@
     "tests/integrity/test_comparison_integrity.py"
    ],
    "first_round": "muere",
-   "verdict": "muere"
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_comparison_integrity.py"
+    ],
+    "verdict": "muere"
+   }
   },
   {
    "name": "C9 publicación sin filas",
@@ -204,7 +305,13 @@
     "tests/integrity/test_comparison_integrity.py"
    ],
    "first_round": "muere",
-   "verdict": "muere"
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_comparison_integrity.py"
+    ],
+    "verdict": "muere"
+   }
   },
   {
    "name": "C10 sin agregados recalculados",
@@ -217,7 +324,13 @@
    ],
    "first_round": "SOBREVIVE",
    "second_round": "muere",
-   "verdict": "muere"
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_comparison_integrity.py"
+    ],
+    "verdict": "muere"
+   }
   },
   {
    "name": "D1 recibos sin declarar admitidos",
@@ -228,7 +341,13 @@
     "tests/posttraining/test_publication_from_aggregates.py"
    ],
    "first_round": "muere",
-   "verdict": "muere"
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_declared_runs.py"
+    ],
+    "verdict": "muere"
+   }
   },
   {
    "name": "D2 trabajos sin recibo admitidos",
@@ -239,7 +358,13 @@
     "tests/posttraining/test_publication_from_aggregates.py"
    ],
    "first_round": "muere",
-   "verdict": "muere"
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_declared_runs.py"
+    ],
+    "verdict": "muere"
+   }
   },
   {
    "name": "D3 intentos sin descontar el confirmado",
@@ -250,7 +375,13 @@
     "tests/posttraining/test_publication_from_aggregates.py"
    ],
    "first_round": "muere",
-   "verdict": "muere"
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_declared_runs.py"
+    ],
+    "verdict": "muere"
+   }
   },
   {
    "name": "D4 ventanas sin cotejo",
@@ -261,7 +392,13 @@
     "tests/posttraining/test_publication_from_aggregates.py"
    ],
    "first_round": "muere",
-   "verdict": "muere"
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_declared_runs.py"
+    ],
+    "verdict": "muere"
+   }
   },
   {
    "name": "D5 modelos de más admitidos",
@@ -272,7 +409,13 @@
     "tests/posttraining/test_publication_from_aggregates.py"
    ],
    "first_round": "muere",
-   "verdict": "muere"
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_declared_runs.py"
+    ],
+    "verdict": "muere"
+   }
   },
   {
    "name": "D6 selecciones de la cadena sin contar",
@@ -284,7 +427,13 @@
    ],
    "first_round": "SOBREVIVE",
    "second_round": "muere",
-   "verdict": "muere"
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_declared_runs.py"
+    ],
+    "verdict": "muere"
+   }
   },
   {
    "name": "W1 puntuación sin cotejo",
@@ -295,7 +444,13 @@
     "tests/posttraining/test_publication_from_aggregates.py"
    ],
    "first_round": "muere",
-   "verdict": "muere"
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_window_selection.py"
+    ],
+    "verdict": "muere"
+   }
   },
   {
    "name": "W2 ganador por máximo",
@@ -307,7 +462,13 @@
     "tests/posttraining/test_publication_from_aggregates.py"
    ],
    "first_round": "muere",
-   "verdict": "muere"
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_window_selection.py"
+    ],
+    "verdict": "muere"
+   }
   },
   {
    "name": "W3 finalista sin cotejo",
@@ -318,7 +479,13 @@
     "tests/integrity/test_window_selection.py"
    ],
    "first_round": "muere",
-   "verdict": "muere"
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_window_selection.py"
+    ],
+    "verdict": "muere"
+   }
   },
   {
    "name": "W4 recibo de ventana sin validar",
@@ -329,7 +496,13 @@
     "tests/posttraining/test_publication_from_aggregates.py"
    ],
    "first_round": "muere",
-   "verdict": "muere"
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_window_selection.py"
+    ],
+    "verdict": "muere"
+   }
   },
   {
    "name": "W5 recibo con otro estado",
@@ -340,7 +513,13 @@
     "tests/posttraining/test_publication_from_aggregates.py"
    ],
    "first_round": "muere",
-   "verdict": "muere"
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_window_selection.py"
+    ],
+    "verdict": "muere"
+   }
   },
   {
    "name": "W6 tramos sin orden",
@@ -351,7 +530,13 @@
     "tests/posttraining/test_publication_from_aggregates.py"
    ],
    "first_round": "muere",
-   "verdict": "muere"
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_window_selection.py"
+    ],
+    "verdict": "muere"
+   }
   },
   {
    "name": "W7 tramo evaluado sin comprobar",
@@ -362,7 +547,13 @@
     "tests/posttraining/test_publication_from_aggregates.py"
    ],
    "first_round": "muere",
-   "verdict": "muere"
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_window_selection.py"
+    ],
+    "verdict": "muere"
+   }
   },
   {
    "name": "G1 sin disjunción por etapas",
@@ -373,7 +564,13 @@
     "tests/posttraining/test_publication_from_aggregates.py"
    ],
    "first_round": "muere",
-   "verdict": "muere"
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_publication_gate.py"
+    ],
+    "verdict": "muere"
+   }
   },
   {
    "name": "G2 informe sin detener",
@@ -384,7 +581,13 @@
     "tests/posttraining/test_publication_from_aggregates.py"
    ],
    "first_round": "muere",
-   "verdict": "muere"
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_publication_gate.py"
+    ],
+    "verdict": "muere"
+   }
   },
   {
    "name": "G3 publicación sin informe",
@@ -395,7 +598,13 @@
     "tests/posttraining/test_publication_from_aggregates.py"
    ],
    "first_round": "muere",
-   "verdict": "muere"
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_publication_gate.py"
+    ],
+    "verdict": "muere"
+   }
   },
   {
    "name": "G4 recorrido sin integridad",
@@ -407,7 +616,13 @@
     "tests/training/test_rolling_retention.py"
    ],
    "first_round": "muere",
-   "verdict": "muere"
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_publication_gate.py"
+    ],
+    "verdict": "muere"
+   }
   },
   {
    "name": "G5 etapa sin integridad",
@@ -418,11 +633,21 @@
     "tests/posttraining/test_publication_from_aggregates.py"
    ],
    "first_round": "muere",
-   "verdict": "muere"
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_publication_gate.py"
+    ],
+    "verdict": "muere"
+   }
   }
  ],
  "killed": 36,
  "survived": 0,
  "training_executed": false,
- "final_test_opened": false
+ "final_test_opened": false,
+ "with_hold": {
+  "killed": 36,
+  "survived": 0
+ }
 }

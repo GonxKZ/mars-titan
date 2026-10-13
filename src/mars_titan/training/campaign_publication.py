@@ -1,10 +1,13 @@
 """Paso final de la campaña: comparación, cartera, matriz y comparación postentrenada.
 
 La declaración (``campaign_publication``) fija antes de ver resultados qué campaña se publica,
-con qué matriz de comparaciones y con qué comparación de su etapa de adaptadores.
+con qué matriz de comparaciones y con qué comparación de su etapa de adaptadores, y en qué
+difiere el presupuesto de cada modelo del de los modelos propios (``budget_differences``).
 ``load_publication`` exige que la matriz lea la misma comparación que la campaña, con la
-misma huella, y que la comparación postentrenada derive de una etapa de esa campaña. Así una
-matriz declarada para otra campaña no llega a evaluarse.
+misma huella, que la comparación postentrenada derive de una etapa de esa campaña y que las
+diferencias de presupuesto declaradas sean exactamente las de la campaña
+(`integrity.fit_budget`). Así una matriz declarada para otra campaña no llega a evaluarse y
+ninguna diferencia de presupuesto queda sin declarar.
 
 ``run_publication`` se ejecuta cuando la campaña y sus etapas están confirmadas, después del
 recorrido ventana a ventana si lo hubo:
@@ -12,7 +15,9 @@ recorrido ventana a ventana si lo hubo:
 1. publica las fuentes de cada ámbito de la campaña con ``masked_campaign.write_sources``;
 2. calcula la comparación walk-forward de cada ámbito y, si la comparación la declara, la
    cartera larga y corta, desde los agregados por ventana de la retención v2 cuando se
-   indican;
+   indican. Si la comparación declara la retención e interferencia en las revisitas de
+   régimen, exige el calendario de regímenes de la edición (``regime_calendar``) para que
+   la sección salga calculada y no pendiente;
 3. publica el manifiesto de fuentes de la matriz con esos informes y evalúa la matriz;
 4. publica las fuentes de cada padre de la etapa de adaptadores y su comparación, también
    desde los agregados por ventana que guardó el recorrido;
@@ -39,7 +44,7 @@ from mars_titan.data.storage import atomic_json, sha256
 from mars_titan.evaluation import comparison_matrix, long_short_comparison
 from mars_titan.evaluation import session_table_contrasts as tables
 from mars_titan.evaluation import walk_forward_comparison as walk
-from mars_titan.integrity import publication_gate
+from mars_titan.integrity import fit_budget, publication_gate
 from mars_titan.posttraining import stage_comparison
 
 from .campaign_plan import load_campaign
@@ -55,6 +60,7 @@ _FIELDS = {
     "campaign",
     "comparison_matrix",
     "posttraining_comparison",
+    "budget_differences",
     "final_test_opened",
 }
 # Marca de la carpeta provisional. Solo una carpeta con ella se descarta al repetir.
@@ -73,7 +79,7 @@ def load_publication(path):
     _require(
         isinstance(document, dict)
         and set(document) == _FIELDS
-        and document["schema_version"] == 1
+        and document["schema_version"] == 2
         and document["kind"] == KIND
         and document["status"] == DECLARED
         and document["final_test_opened"] is False
@@ -89,6 +95,13 @@ def load_publication(path):
     )
     folder = path.parent
     campaign = load_campaign(folder / document["campaign"])
+    budget = fit_budget.check_declared(campaign, document["budget_differences"])
+    _require(
+        budget["passed"],
+        "Las diferencias de presupuesto declaradas no son las de la campaña: sin declarar "
+        f"{budget['undeclared'] or 'ninguna'}, "
+        f"declaradas sin existir {budget['stale'] or 'ninguna'}",
+    )
     matrix_path = (folder / document["comparison_matrix"]).resolve()
     matrix = comparison_matrix.load_matrix(matrix_path)
     _require(
@@ -116,6 +129,7 @@ def load_publication(path):
         matrix=matrix,
         posttraining_path=None if posttraining_path is None else str(posttraining_path),
         posttraining=posttraining,
+        budget=budget,
     )
 
 
@@ -133,6 +147,10 @@ def check_publication(path):
         scopes=campaign["scopes"],
         long_short=walk.LONG_SHORT_FIELD in config,
         matrix=comparison_matrix.summary(loaded["matrix"]),
+        budget=dict(
+            reference=loaded["budget"]["reference"],
+            differences=loaded["budget"]["differences"],
+        ),
         posttraining=None
         if posttraining is None
         else dict(
@@ -170,6 +188,7 @@ def run_publication(
     edition=None,
     ablation=None,
     hours=None,
+    regimes=None,
 ):
     """Publicar comparación, cartera, matriz y comparación postentrenada de la campaña.
 
@@ -179,6 +198,7 @@ def run_publication(
     la edición de precios sin ajustar que pide la cartera. ``ablation`` (``stage`` y
     ``output``) añade la ablación de modalidades al informe walk-forward y debe acompañar a
     unos agregados que la incluyan. ``hours`` es el documento de horas por modelo de la matriz.
+    ``regimes`` es el calendario de regímenes que pide la retención e interferencia.
     """
     loaded = load_publication(path)
     campaign, posttraining = loaded["campaign_config"], loaded["posttraining"]
@@ -193,6 +213,13 @@ def run_publication(
     _require(
         walk.LONG_SHORT_FIELD not in config or edition is not None,
         "La comparación declara la cartera larga y corta: falta la edición de precios",
+    )
+    retention = walk.RETENTION_FIELD in config
+    _require(
+        retention == (regimes is not None),
+        "La comparación declara la retención e interferencia: falta el calendario de regímenes"
+        if retention
+        else "La comparación no declara la retención e interferencia: sobra el calendario",
     )
     from . import masked_campaign as engine
     from . import modality_ablation_stage
@@ -219,6 +246,7 @@ def run_publication(
             folder,
             ablation_sources=masked,
             aggregates=aggregates,
+            regimes=regimes,
         )
         entry = dict(
             label=f"walk-forward/{scope}",
@@ -304,6 +332,7 @@ def run_publication(
         if posttraining is None
         else dict(name=posttraining["name"], sha256=posttraining["sha256"], parents=parents),
         from_aggregates=aggregates is not None,
+        regimes=None if regimes is None else dict(sha256=sha256(regimes)),
         integrity=dict(path=publication_gate.REPORT, sha256=integrity["sha256"], passed=True),
         scopes=published,
         artifacts={
@@ -339,6 +368,7 @@ def main(argv=None):
     run.add_argument("--ablation-stage", type=Path)
     run.add_argument("--ablation-output", type=Path)
     run.add_argument("--hours", type=Path, help="Horas GPU por modelo para la matriz")
+    run.add_argument("--regimes", type=Path, help="Calendario de regímenes de la edición")
     args = parser.parse_args(argv)
     if args.command == "check":
         result = check_publication(args.declaration)
@@ -360,6 +390,7 @@ def main(argv=None):
             edition=args.edition,
             ablation=ablation,
             hours=args.hours,
+            regimes=args.regimes,
         )
         result = dict(
             status=receipt["status"],
