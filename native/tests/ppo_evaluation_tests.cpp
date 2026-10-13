@@ -1,3 +1,4 @@
+#include "mars_titan/policy_context.hpp"
 #include "mars_titan/policy_evaluation.hpp"
 #include "mars_titan/ppo_training.hpp"
 
@@ -241,6 +242,51 @@ void decisions_record_the_first_maximum_without_changing_metrics() {
     require(policy.optimizer_steps() == 0, "La evaluación congelada no puede actualizar la política");
     std::filesystem::remove_all(root);
 }
+// Una sesión sin negociación toma la acción fija del calentamiento, que no sale de las salidas
+// de la red. El registro la marca con su modo para que la paridad no la compare como argmax.
+void decisions_mark_the_fixed_action_of_a_session_without_trading() {
+    const auto root = std::filesystem::temp_directory_path() /
+                      ("mars-titan-decisions-mask-" + std::to_string(::getpid()));
+    std::filesystem::remove_all(root);
+    constexpr std::size_t sessions = 5;
+    constexpr std::size_t closed = 2;
+    const auto market = tape(sessions);
+    ContextTape context;
+    context.source_sha256.assign(digest_size, 'c');
+    context.fields = {{"trade", "1"}};
+    for (std::size_t at = 0; at < sessions; ++at) {
+        context.values.push_back({at < closed ? 0.0F : 1.0F, true, market->prediction_times[at]});
+    }
+    PpoLearningOptions learning;
+    learning.enabled = true;
+    learning.variant = "ppo";
+    learning.environments = 1;
+    learning.trading_field = 0;
+    const BatchInput input{market, parameters(), context};
+    const std::vector<BatchInput> inputs{input};
+    FinancialBatch batch(inputs, 1);
+    const PolicyContext shape(inputs, learning, ppo_default_training_seed, batch.observations());
+    const PpoPolicy policy(shape.observation_width(), {}, ppo_default_training_seed);
+    auto request = frozen_request(root, true,
+                                  PolicyTape{input, nlohmann::json{{"manifest_sha256",
+                                                                    market->source_sha256}}});
+    request.learning = learning;
+    require(run_frozen_evaluation(policy, request).at("status") == "completed",
+            "La evaluación con sesiones sin negociación no terminó");
+    const auto record = sealed_payload(root / "decisions.json");
+    const auto& decisions = record.at("costs").at(0).at("tapes").at(0).at("decisions");
+    require(decisions.size() == sessions - 1, "Falta alguna decisión del episodio");
+    for (std::size_t step = 0; step < decisions.size(); ++step) {
+        const auto& decision = decisions.at(step);
+        const auto logits = decision.at("logits").get<std::vector<double>>();
+        const auto first = std::distance(logits.begin(), std::ranges::max_element(logits));
+        const bool fixed = step < closed;
+        require(decision.at("mode") == (fixed ? "warmup" : "greedy") &&
+                    decision.at("action").get<std::ptrdiff_t>() == (fixed ? 1 : first),
+                "El registro no distingue la acción fija de una sesión sin negociación");
+    }
+    std::filesystem::remove_all(root);
+}
 } // namespace
 
 int main() {
@@ -249,6 +295,7 @@ int main() {
         liquidated_growth_pays_the_final_exit();
         cash_has_no_exit_cost();
         decisions_record_the_first_maximum_without_changing_metrics();
+        decisions_mark_the_fixed_action_of_a_session_without_trading();
         std::cout << "Evaluación incompleta y liquidación final comprobadas sin optimizador\n";
     } catch (const std::exception& error) {
         std::cerr << error.what() << '\n';
