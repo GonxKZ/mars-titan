@@ -109,7 +109,7 @@ class Execution:
         return self.gpu_slots > 1
 
     def resources(self, job, default_device):
-        """Recursos del trabajo: los de su brazo, modelo y ámbito, o su dispositivo sin más."""
+        """Recursos del trabajo según su configuración, modelo y ámbito, o solo su dispositivo."""
         declared = self.models.get(job["model"])
         if declared is None:
             return JobResources(device=default_device)
@@ -148,7 +148,8 @@ def _model(name, value, scopes):
     )
 
     def resources(label, *entries):
-        # Cada entrada sustituye a las anteriores: modelo, ámbito, brazo y brazo en el ámbito.
+        # Cada entrada sustituye a las anteriores: modelo, ámbito, configuración y
+        # configuración en el ámbito.
         sizes = {}
         for entry in entries:
             sizes.update(entry)
@@ -184,7 +185,7 @@ def _model(name, value, scopes):
             isinstance(entry, dict) and entry and set(entry) <= _SIZES | {"scopes"}
             for entry in arms.values()
         ),
-        f"Los brazos de {name} deben declarar VRAM, RAM o ámbitos",
+        f"Los modelos de {name} deben declarar VRAM, RAM o ámbitos",
     )
     declared = dict(
         default=resources(name, base),
@@ -194,7 +195,7 @@ def _model(name, value, scopes):
         },
         arms={},
     )
-    # Un brazo hereda lo del modelo en cada ámbito y lo sustituye con lo suyo. Sus recursos
+    # Una configuración hereda lo del modelo en cada ámbito y lo sustituye con lo suyo. Sus recursos
     # se resuelven aquí para todos los ámbitos y un error aparece al cargar la declaración.
     for arm, entry in arms.items():
         own, arm_scopes = {key: entry[key] for key in _SIZES & set(entry)}, scoped(entry, arm)
@@ -324,7 +325,7 @@ def check_plan(execution, jobs, executors):
             )
     for name, declared in execution.models.items():
         unknown = sorted(set(declared["arms"]) - arms.get(name, set()))
-        _require(not unknown, f"{name} declara brazos que no tiene en el plan: {unknown}")
+        _require(not unknown, f"{name} declara modelos que no tiene en el plan: {unknown}")
 
 
 def available_host_bytes():
@@ -421,7 +422,7 @@ def environment(execution):
 class PeakEstimates:
     """VRAM de cada tipo de trabajo: la declarada o la observada, la mayor de las dos.
 
-    El tipo es el modelo, el brazo y el ámbito. Cuando un trabajo termina en su proceso, su
+    El tipo es el modelo, la configuración y el ámbito. Cuando un trabajo termina en su proceso, su
     pico reservado por el asignador más `CONTEXT_MIB` sustituye a la estimación si es mayor,
     de modo que los siguientes trabajos del mismo tipo se admiten con lo observado. Nunca baja
     de lo declarado, que se mide en la ventana más poblada. Si un trabajo agota su VRAM, la
@@ -449,8 +450,8 @@ class PeakEstimates:
 
     @staticmethod
     def key(job):
-        # Los brazos de un mismo modelo pueden diferir mucho en VRAM, así que cada uno corrige
-        # solo su propia estimación.
+        # Las configuraciones de un mismo modelo pueden diferir mucho en VRAM, así que
+        # cada una corrige solo su propia estimación.
         return f"{job['model']}/{job.get('arm')}/{job['scope']}"
 
     def resources(self, job, default_device):

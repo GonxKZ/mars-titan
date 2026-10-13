@@ -446,7 +446,7 @@ def test_later_stages_of_v2_read_the_joint_model_in_each_market():
     adapter = adapters.load_stage(plan.LATER_STAGES["posttraining_adapter_matrix"]["joint_stage"])
     assert adapter["scopes"] == ["US+CN"]
     counts = adapters.count_stage(adapter)
-    # 20 brazos neuronales con tres semillas y los dos tabulares con una: 62 cadenas por
+    # 20 modelos neuronales con tres semillas y los dos tabulares con una: 62 cadenas por
     # ventana. Cada ventana con padre congela esos 62 padres y todas eligen su cadena.
     assert (counts["training_jobs"], counts["prediction_jobs"], counts["selection_jobs"]) == (
         6588,
@@ -459,7 +459,7 @@ def test_later_stages_of_v2_read_the_joint_model_in_each_market():
         ]
     )
     masked = ablation.load_stage(plan.LATER_STAGES["modality_ablation"]["joint_stage"])
-    # 20 brazos neuronales con tres semillas y dos tabulares con una, por tres variantes.
+    # 20 modelos neuronales con tres semillas y dos tabulares con una, por tres variantes.
     assert ablation.count_stage(masked)["prediction_jobs"] == (20 * 3 + 2) * 3 * 19
     stage = policy_plan.load_stage(plan.LATER_STAGES["rl_policy_comparison"]["joint_stage"])
     assert len(stage["predictors"]) == 22 and stage["scopes"] == ["US+CN"]
@@ -872,7 +872,7 @@ def test_comparison_excludes_ineligible_china_rows_and_pairs_joint_with_separate
         mae = scoped["contrasts"][scope]["joint_vs_separate"]["mae"]
         assert [row["name"] for row in mae["contrasts"]] == ["gru_joint-gru"]
         assert set(rows["market"].to_pylist()) == {scope}
-        # El brazo conjunto restringido descarta las filas del otro mercado de la ventana.
+        # El modelo conjunto restringido descarta las filas del otro mercado de la ventana.
         dropped = scoped["arms"]["gru_joint"]["seeds"]["42"]["windows"]["fold-012"]
         other = "CN" if scope == "US" else "US"
         assert dropped["excluded_rows"]["evaluation"][other] > 0
@@ -883,8 +883,13 @@ def test_window_aggregates_score_each_scope_with_its_joint_design(joint_campaign
     from mars_titan.training import rolling_retention as rolling
 
     declared = comparison.load_config(joint_campaign.comparison)
-    # Sin la cartera, que necesitaría la edición de precios, solo queda el walk-forward.
-    plain = {key: value for key, value in declared.items() if key != comparison.LONG_SHORT_FIELD}
+    # Sin la cartera ni los estratos de liquidez, que necesitarían la edición de precios,
+    # solo queda el walk-forward.
+    plain = {
+        key: value
+        for key, value in declared.items()
+        if key not in (comparison.LONG_SHORT_FIELD, comparison.LIQUIDITY_FIELD)
+    }
     monkeypatch.setattr(rolling.Rolling, "comparison_config", lambda self: plain)
     retention = rolling.load_retention(CONFIGS / "baselines/historical-masked-retention-v2.json")
     # Solo se prueban los agregados, así que el recorrido no lleva la etapa de políticas.
@@ -904,7 +909,7 @@ def test_window_aggregates_score_each_scope_with_its_joint_design(joint_campaign
         scoped = comparison.scope_config(declared, scope)
         stored = window_aggregates.read(walker.folder / "aggregates", scoped, sources, window)
         assert window_aggregates.same(stored, comparison._score_window(sources, scoped, window))
-        # En un mercado, los agregados incluyen el brazo conjunto prestado.
+        # En un mercado, los agregados incluyen el modelo conjunto prestado.
         if scope != "US+CN":
             assert {arm for arm, _ in stored[0]} == {"zero", "gru", "gru_joint"}
 
@@ -927,7 +932,7 @@ def test_sources_reject_a_borrowed_arm_from_another_window(joint_campaign):
     config = comparison.load_config(joint_campaign.comparison)
     with pytest.raises(ValueError, match="usa otra vista"):
         comparison.load_sources(tampered, config, "CN")
-    # Sin la vista conjunta emparejada, las fuentes de un ámbito con brazos prestados no valen.
+    # Sin la vista conjunta emparejada, las fuentes de un ámbito con modelos prestados no valen.
     manifest = json.loads(path.read_text())
     manifest["windows"]["fold-000"].pop("joint_view")
     atomic_json(tampered, manifest)

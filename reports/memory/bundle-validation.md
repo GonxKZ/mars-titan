@@ -33,7 +33,7 @@ Una cohorte usa así una sola versión: la de su especificación de entrada, que
 
 Un cambio de representación, como otra revisión de los codificadores, deja las dimensiones iguales pero cambia la especificación, la huella del codec y el contrato. No hay una migración de estado: los episodios, los pesos rápidos y los estados por flujo de la representación anterior no se pueden reanudar ni copiar en la nueva. La sesión se reconstruye desde el inicio de su fase con la historia permitida, en otra carpeta, y la anterior se conserva intacta. La única herencia validada entre ediciones está en los datos: un vector se hereda solo con la misma identidad de codificador en FP32 estricto, y los textos de la v3 pasan un contraste bit a bit por activo ([edición v3.1](../../docs/data/edition-v3-1.md)).
 
-Tampoco se hereda un calibrador. En la comparación por ventanas, la calibración conformal de cuantiles se ajusta para cada brazo, semilla y ventana con sus propias predicciones de calibración, y queda congelada con su huella antes de evaluar.
+Tampoco se hereda un calibrador. En la comparación por ventanas, la calibración conformal de cuantiles se ajusta para cada modelo, semilla y ventana con sus propias predicciones de calibración, y queda congelada con su huella antes de evaluar.
 
 ## Mutación dirigida
 

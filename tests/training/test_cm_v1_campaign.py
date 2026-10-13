@@ -1,9 +1,9 @@
 """Factorial CM-v1 dentro de la campaña con máscaras, en CPU y sin modificar pesos.
 
 El plan se comprueba sobre la comparación declarada. La ejecución registra los dos núcleos y
-los cuatro brazos en una campaña B reducida sobre US con los ejecutores reales y el
+las cuatro variantes en una campaña B reducida sobre US con los ejecutores reales y el
 optimizador que solo registra gradientes, y se detiene tras las tres primeras ventanas: una
-reentrenada y dos trasladadas. Los demás brazos son dobles.
+reentrenada y dos trasladadas. Los demás modelos son dobles.
 """
 
 import json
@@ -98,7 +98,7 @@ def test_cores_fit_once_per_case_and_each_arm_starts_from_its_core(tmp_path, var
         assert counts[arm] == counts[TITANS_ARM]
     for core in plan.CM_CORES:
         assert all(entry["carry"] == 0 for entry in counts[core].values())
-    # Los núcleos emiten la cabeza de cuantiles de sus brazos y se validan con sus columnas.
+    # Los núcleos emiten la cabeza de cuantiles de sus modelos y se validan con sus columnas.
     for name in (*plan.CM_CORES, *plan.CM_ARMS):
         assert plan.arm_output(campaign, name) == plan.QUANTILE_HEAD
     with pytest.raises(ValueError, match="trabajo auxiliar"):
@@ -112,11 +112,11 @@ def test_cores_fit_once_per_case_and_each_arm_starts_from_its_core(tmp_path, var
     ("algorithms", "accepted"), [(["cm_v1_b"], True), (["cm_v1_core_b"], False)]
 )
 def test_policy_stage_reads_the_arms_and_never_the_helper_cores(tmp_path, algorithms, accepted):
-    """La etapa de políticas solo admite como predictor un brazo con recibos de ventana."""
+    """La etapa de políticas solo admite como predictor un modelo con recibos de ventana."""
     stage = json.loads(Path("configs/simulation/historical-masked-rl-stage-a.json").read_text())
     policies = json.loads(Path("configs/simulation/historical-masked-rl-policies.json").read_text())
     policies["levels"]["algorithms"]["predictors"] = algorithms
-    # Los límites declarados cubren los 11 predictores actuales, sin los brazos de CM-v1.
+    # Los límites declarados cubren los 11 predictores actuales, sin los modelos de CM-v1.
     stage["limits"] = dict.fromkeys(stage["limits"], 100_000)
     atomic_json(tmp_path / "policies.json", policies)
     stage.update(campaign=str(declared(tmp_path, "A")), policies=str(tmp_path / "policies.json"))
@@ -155,12 +155,12 @@ def test_section_rejects_undeclared_fields_and_seeds(tmp_path, change, message):
 @pytest.mark.parametrize(
     ("name", "change", "message"),
     [
-        ("cm-v1-factorial.json", lambda d: d.update(name="other"), "cuatro brazos"),
-        ("cm-v1-factorial.json", lambda d: d["arms"].pop("cm_v1_bm"), "cuatro brazos"),
+        ("cm-v1-factorial.json", lambda d: d.update(name="other"), "cuatro variantes"),
+        ("cm-v1-factorial.json", lambda d: d["arms"].pop("cm_v1_bm"), "cuatro variantes"),
         (
             "cm-v1-factorial.json",
             lambda d: d["arms"]["cm_v1_bm"].update(control=True),
-            "cuatro brazos",
+            "cuatro variantes",
         ),
         (
             "chronological-training-historical-masked.json",
@@ -191,7 +191,7 @@ def test_section_validates_the_declaration_and_both_recipes(tmp_path, name, chan
 
 
 def cm_campaign(folder):
-    """Campaña B reducida con los cuatro brazos de CM-v1 y una semilla, sobre recetas técnicas."""
+    """Campaña B reducida con las cuatro variantes de CM-v1 y una semilla, con recetas técnicas."""
     path = write_campaign(folder, arms=("gru", "ridge"))
     comparison = json.loads((folder / "comparison.json").read_text())
     for arm in plan.CM_ARMS:

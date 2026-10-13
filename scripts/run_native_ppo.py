@@ -436,6 +436,11 @@ def main(argv=None):
         default=[],
         help="Coste en pb de la evaluación separada. Repetible y solo con --audit-run",
     )
+    parser.add_argument(
+        "--decisions",
+        action="store_true",
+        help="Guardar la acción y las salidas de la red de cada decisión. Solo con --audit-run",
+    )
     parser.add_argument("--binary", type=Path, default=DEFAULT_BINARY)
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--stop-after", type=int)
@@ -476,6 +481,8 @@ def main(argv=None):
             "Los costes de evaluación solo acompañan a --audit-run y deben ser crecientes, "
             "finitos y estar entre 0 y 1000 pb"
         )
+    if args.decisions and args.audit_run is None:
+        parser.error("--decisions solo acompaña a --audit-run")
     if args.stop_after is not None and not 0 <= args.stop_after <= 2**63 - 1:
         parser.error("La parada debe ser un número entero no negativo de 64 bits")
     if not math.isfinite(args.poll_seconds) or not 0.01 <= args.poll_seconds <= 60:
@@ -522,6 +529,8 @@ def main(argv=None):
             command.extend(("--audit-run", str(args.audit_run)))
         for cost in args.evaluation_cost:
             command.extend(("--evaluation-cost", repr(cost)))
+        if args.decisions:
+            command.append("--decisions")
         if args.resume:
             command.append("--resume")
         if args.stop_after is not None:

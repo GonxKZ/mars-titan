@@ -45,6 +45,6 @@
     "B es Titans-MAC mac_online con la receta del núcleo de la campaña, C en modo disabled (SDPA Math y la misma base que B+C) y el lector M1 con K = 1 y retención reservoir. B y B+M comparten el núcleo cm_v1_core_b, y B+C y B+C+M el núcleo cm_v1_core_c.",
     "C usa la penalización de la medida angular corregida sobre RᵀJR con umbral 1 y peso 0,1. Son valores declarados antes de ejecutar, sin ajuste con datos. Con dimensión 64 en FP32, dos flujos medidos por evento caben en el presupuesto de 128 MiB según la estimación del control.",
     "M es la retención con centros fijos del banco M1 con la misma capacidad y semilla que B. Solo actúa cuando el banco supera su capacidad.",
-    "Memoria y caudal de la penalización C en cuda:0 sin medir. Un cambio de cualquier valor exige otra identidad de los cuatro brazos."
+    "Memoria y caudal de la penalización C en cuda:0 sin medir. Un cambio de cualquier valor exige otra identidad de las cuatro variantes."
   ]
 }

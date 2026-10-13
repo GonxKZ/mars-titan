@@ -194,7 +194,7 @@ export function curveSummary(lines, length, minimum = 3) {
 }
 
 // Diferencia relativa de cada valor con la mediana de su grupo, por ejemplo el MAE de un
-// brazo frente a la mediana de su etapa y ventana. Así se comparan brazos dentro de la
+// modelo frente a la mediana de su etapa y ventana. Así se comparan modelos dentro de la
 // misma ventana sin que la dificultad de cada ventana domine el color. El tramo es
 // simétrico hasta el percentil 98 de las diferencias absolutas.
 export function relativeToGroup(entries) {
@@ -281,7 +281,7 @@ export function statusTotals(runs, now, staleAfter) {
 
 // Campaña por ventanas, leída por el servidor local o publicada en Pages. Las celdas usan
 // vocabularios para que el documento ocupe poco y aquí se convierten en filas de ámbito y
-// brazo. En la etapa de políticas el ámbito lleva el mercado y el brazo el predictor.
+// modelo. En la etapa de políticas el ámbito lleva el mercado y el modelo el predictor.
 export function windowCampaignMatrix(state) {
   const { scopes, windows, arms, names } = state.vocabulary;
   const rows = new Map();

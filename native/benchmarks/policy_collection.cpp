@@ -411,7 +411,7 @@ Json measure_trainer(const std::vector<BatchInput>& all_inputs, const Options& o
     const auto warmup = diagnostic ? 0 : options.warmup;
     const auto ticks = diagnostic ? last_tick - 1 : options.ticks;
     require(warmup + ticks < last_tick, "La medida alcanzaría la primera actualización PPO");
-    // Los brazos PPO de la etapa declaran objetivos explícitos y guardan los seis pesos.
+    // Las variantes PPO de la etapa declaran objetivos explícitos y guardan los seis pesos.
     mars_titan::learning::PpoObjectiveConfig objective;
     objective.kind = mars_titan::learning::PpoObjectiveKind::clip_full_kl;
     PpoTrainer trainer(inputs, config, PpoHyperparameters{}, options.device, diagnostic, {}, objective);

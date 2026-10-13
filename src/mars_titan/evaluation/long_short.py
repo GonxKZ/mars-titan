@@ -249,7 +249,7 @@ def _named(values, turnover):
 
 
 def statistics(returns, traded, sessions_per_year):
-    """Estadísticos de series diarias en el penúltimo eje (``[..., sesiones, brazos]``).
+    """Estadísticos de series diarias en el penúltimo eje (``[..., sesiones, modelos]``).
 
     Los define ``financial_conventions.statistics``. Una sesión con rendimiento de −100 %
     o peor arruina la serie (acumulado −1 y drawdown 1) y el Sharpe no está definido (NaN)
@@ -268,10 +268,10 @@ def _pair(lower, upper):
 def bootstrap(returns, traded, *, sessions_per_year, block_length, replicates, seed):
     """Estadísticos y réplicas por bloques circulares de sesiones del mismo mercado.
 
-    ``returns`` tiene forma [costes, sesiones, brazos] y ``traded`` [sesiones, brazos].
+    ``returns`` tiene forma [costes, sesiones, modelos] y ``traded`` [sesiones, modelos].
     Todas las series se remuestrean con los mismos índices de ``financial_conventions``,
     también el drawdown en el orden de cada réplica. Devuelve los estadísticos, las réplicas
-    ([réplicas, costes, brazos] por estadístico) o el motivo de no tenerlas.
+    ([réplicas, costes, modelos] por estadístico) o el motivo de no tenerlas.
     """
     returns = np.asarray(returns, dtype=np.float64)
     traded = np.asarray(traded, dtype=np.float64)
@@ -295,8 +295,8 @@ def bootstrap(returns, traded, *, sessions_per_year, block_length, replicates, s
 def contrasts(estimate, draws, arms, family, confidence):
     """Contrastes lineales de una familia sobre un estadístico, con intervalos simultáneos.
 
-    ``estimate`` es un vector por brazo y ``draws`` [réplicas, brazos]. Un contraste con
-    algún brazo sin valor en la estimación o en alguna réplica queda sin estimar con su
+    ``estimate`` es un vector por modelo y ``draws`` [réplicas, modelos]. Un contraste con
+    algún modelo sin valor en la estimación o en alguna réplica queda sin estimar con su
     motivo y fuera de la familia. La corrección es la de ``compare_series``.
     """
     names = list(family)
@@ -332,7 +332,7 @@ def contrasts(estimate, draws, arms, family, confidence):
         )
         if not defined[row]:
             entry["reason"] = (
-                "Algún brazo no define el estadístico en la estimación o en una réplica"
+                "Algún modelo no define el estadístico en la estimación o en una réplica"
             )
         elif bounds is None:
             entry["reason"] = "No hay remuestreo disponible"
@@ -355,7 +355,7 @@ def contrasts(estimate, draws, arms, family, confidence):
 
 
 def level_intervals(estimate, draws, confidence):
-    """Intervalo percentil marginal de cada brazo, sin corrección de familia."""
+    """Intervalo percentil marginal de cada modelo, sin corrección de familia."""
     tail = (1 - confidence) / 2
     result = []
     for column, value in enumerate(estimate):

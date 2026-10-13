@@ -120,9 +120,9 @@ def block_bootstrap(
 ):
     """Intervalos por bloques de cada serie y diferencias emparejadas frente a `base`.
 
-    `returns` asigna a cada brazo sus retornos simples sobre las mismas sesiones del
+    `returns` asigna a cada modelo sus retornos simples sobre las mismas sesiones del
     mercado, en el mismo orden. Todas las series se remuestrean con las mismas réplicas. Para cada
-    métrica, las diferencias `brazo − base` forman una familia con intervalos marginales
+    métrica, las diferencias `modelo − base` forman una familia con intervalos marginales
     percentiles e intervalos simultáneos por máximo estudentizado. Un intervalo simultáneo
     que excluye el cero es la regla para afirmar una diferencia dentro de la familia.
     """

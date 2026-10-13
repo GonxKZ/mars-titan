@@ -168,7 +168,9 @@ def test_the_campaign_plan_registers_the_publication_as_its_last_stage():
 # Retención e interferencia en las revisitas de régimen (#528)
 
 
-def test_both_campaigns_need_the_regime_calendar_their_comparison_declares(tmp_path, monkeypatch):
+def test_both_campaigns_need_the_calendar_and_edition_their_comparison_declares(
+    tmp_path, monkeypatch
+):
     destination = tmp_path / "published"
     for variant in sorted(DECLARATIONS):
         config = publication.load_publication(DECLARATIONS[variant])["campaign_config"]
@@ -200,6 +202,23 @@ def test_both_campaigns_need_the_regime_calendar_their_comparison_declares(tmp_p
             edition=tmp_path / "edition",
             regimes=tmp_path / "calendar.json",
         )
+    # Una comparación con estratos de liquidez y sin cartera también pide la edición.
+    stratified = {
+        k: v for k, v in campaign["comparison_config"].items() if k != walk.LONG_SHORT_FIELD
+    }
+    assert walk.LIQUIDITY_FIELD in stratified
+    changed = dict(loaded, campaign_config=dict(campaign, comparison_config=stratified))
+    monkeypatch.setattr(publication, "load_publication", lambda path: changed)
+    with pytest.raises(ValueError, match="estratos de liquidez: falta la edición"):
+        publication.run_publication(
+            DECLARATIONS["A_V2"],
+            {},
+            tmp_path / "campaign",
+            destination,
+            adapter_output=tmp_path / "adapters",
+            regimes=tmp_path / "calendar.json",
+        )
+    assert not destination.exists()
 
 
 @pytest.fixture(scope="module")
@@ -257,7 +276,13 @@ def test_the_publication_from_aggregates_carries_the_complete_retention_section(
     monkeypatch.setattr(tables, "write_sources", lambda path, *a, **k: path)
     monkeypatch.setattr(comparison_matrix, "write", lambda *a, **k: dict(families={}))
     monkeypatch.setattr(stage_comparison, "write_sources", lambda *a, **k: study.sources_path)
-    monkeypatch.setattr(stage_comparison, "write", lambda *a, **k: dict(windows=[]))
+    parents = []
+
+    def parent(*args, **options):
+        parents.append(options)
+        return dict(windows=[])
+
+    monkeypatch.setattr(stage_comparison, "write", parent)
     destination = tmp_path / "published"
     receipt = publication.run_publication(
         DECLARATIONS["A_V2"],
@@ -270,8 +295,16 @@ def test_the_publication_from_aggregates_carries_the_complete_retention_section(
         regimes=calendar,
     )
     scopes = publication.load_publication(DECLARATIONS["A_V2"])["campaign_config"]["scopes"]
+    edition = tmp_path / "edition"
     assert len(calls) == len(scopes) and all(
-        options["aggregates"] == aggregates and options["regimes"] == calendar for options in calls
+        options["aggregates"] == aggregates
+        and options["regimes"] == calendar
+        and options["edition"] == edition
+        for options in calls
+    )
+    # Cada padre recibe la edición para sus estratos de liquidez heredados.
+    assert parents and all(
+        options["aggregates"] == aggregates and options["edition"] == edition for options in parents
     )
     expected = rows[walk.RETENTION_FIELD]
     assert expected["status"] == "computed"
