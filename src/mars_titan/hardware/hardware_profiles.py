@@ -5,14 +5,9 @@ por su nombre, en la declaración de ejecución de la campaña o en la orden de 
 nunca se deduce de lo detectado. Antes de empezar se compara con la identidad de la
 plataforma y cualquier diferencia detiene la ejecución.
 
-El perfil fija también los límites de MARS-TITAN en esa máquina. Con memoria dedicada hay un
-límite para la RAM del anfitrión y otro para la VRAM. Con memoria unificada, como en la GB10,
-un único límite cubre las dos, porque la GPU reserva de la misma memoria que el anfitrión y
-allí corre además una aplicación de producción. En ese caso el proceso debe correr dentro de
-un cgroup cuyo `memory.max` no supere el límite, para que sea el sistema quien lo haga
-cumplir. Que las reservas del controlador de la GPU cuenten en ese cgroup está pendiente de
-comprobar en la máquina real, así que el presupuesto de VRAM de la declaración de ejecución
-también se suma dentro del mismo límite.
+El perfil fija también los límites de MARS-TITAN en esa máquina: uno para la RAM del
+anfitrión y otro para la VRAM de la GPU. El proyecto se ejecuta solo en el portátil x86-64
+con la RTX 4070, cuyo perfil es `rtx4070-laptop`.
 """
 
 import os
@@ -30,10 +25,8 @@ PROFILES = Path(__file__).resolve().parents[3] / "configs" / "hardware"
 MIB = 1024**2
 _FIELDS = {"schema_version", "kind", "name", "machine", "gpu", "memory", "cpu_threads", "notes"}
 _GPU = {"name", "compute_capability"}
-_MEMORY = {
-    "dedicated": {"model", "host_mib", "device_mib"},
-    "unified": {"model", "total_mib"},
-}
+# La GPU tiene memoria propia, separada de la del anfitrión.
+_MEMORY = {"model", "host_mib", "device_mib"}
 _NAME = re.compile(r"[a-z0-9]+(-[a-z0-9]+)*")
 
 
@@ -59,7 +52,7 @@ def load_profile(name, *, folder=PROFILES):
         and profile["schema_version"] == 1
         and profile["kind"] == KIND
         and profile["name"] == name
-        and profile["machine"] in ("x86_64", "aarch64")
+        and profile["machine"] == "x86_64"
         and isinstance(gpu, dict)
         and set(gpu) == _GPU
         and isinstance(gpu["name"], str)
@@ -67,7 +60,8 @@ def load_profile(name, *, folder=PROFILES):
         and len(gpu["compute_capability"]) == 2
         and all(type(v) is int and v >= 0 for v in gpu["compute_capability"])
         and isinstance(memory, dict)
-        and set(memory) == _MEMORY.get(memory.get("model"), set())
+        and set(memory) == _MEMORY
+        and memory["model"] == "dedicated"
         and all(_positive(memory[key]) for key in memory if key != "model")
         and _positive(profile["cpu_threads"]),
         f"El perfil de hardware {name} no cumple su contrato",
@@ -102,45 +96,18 @@ def hardware_mismatches(profile, identity):
                 f"capacidad {gpu['compute_capability']} en lugar de "
                 f"{expected['compute_capability']}"
             )
-        if memory["model"] == "dedicated" and (
-            gpu["memory_total_mib"] is None or gpu["memory_total_mib"] < memory["device_mib"]
-        ):
+        if gpu["memory_total_mib"] is None or gpu["memory_total_mib"] < memory["device_mib"]:
             found.append(f"la GPU no tiene los {memory['device_mib']} MiB propios del perfil")
-    host_mib = memory["host_mib"] if memory["model"] == "dedicated" else memory["total_mib"]
-    if identity["memory_total_bytes"] < host_mib * MIB:
-        found.append(f"la máquina tiene menos de {host_mib} MiB de memoria")
+    if identity["memory_total_bytes"] < memory["host_mib"] * MIB:
+        found.append(f"la máquina tiene menos de {memory['host_mib']} MiB de memoria")
     if identity["cpu"]["logical"] < profile["cpu_threads"]:
         found.append(f"la máquina tiene menos de {profile['cpu_threads']} hilos de CPU")
     return found
 
 
-def cgroup_memory_limit(cgroup=Path("/proc/self/cgroup"), root=Path("/sys/fs/cgroup")):
-    """Límite de memoria más estricto del cgroup v2 del proceso y sus padres, o None."""
-    lines = [line for line in cgroup.read_text().splitlines() if line.startswith("0::")]
-    if len(lines) != 1:
-        return None
-    limits = []
-    folder = root / lines[0][3:].lstrip("/")
-    for current in (folder, *folder.parents):
-        limit = current / "memory.max"
-        if limit.is_file() and (value := limit.read_text().strip()) != "max":
-            limits.append(int(value))
-        if current == root:
-            break
-    return min(limits, default=None)
-
-
-def check_profile(profile, identity, *, memory_limit=None):
-    """Detener la ejecución si la plataforma no es la del perfil o no respeta su límite."""
+def check_profile(profile, identity):
+    """Detener la ejecución si la plataforma no es la del perfil."""
     found = hardware_mismatches(profile, identity)
-    memory = profile["memory"]
-    if memory["model"] == "unified":
-        limit = (memory_limit or cgroup_memory_limit)()
-        if limit is None or limit > memory["total_mib"] * MIB:
-            found.append(
-                f"la memoria unificada exige un cgroup con memory.max de {memory['total_mib']} "
-                "MiB como mucho"
-            )
     _require(
         not found, f"La plataforma no corresponde al perfil {profile['name']}: {', '.join(found)}"
     )
@@ -151,18 +118,11 @@ def check_budgets(profile, *, vram_bytes, host_bytes, threads):
     memory = profile["memory"]
     vram_bytes = vram_bytes or 0
     host_bytes = host_bytes or 0
-    if memory["model"] == "dedicated":
-        _require(
-            vram_bytes <= memory["device_mib"] * MIB and host_bytes <= memory["host_mib"] * MIB,
-            f"Los presupuestos superan los {memory['device_mib']} MiB de VRAM o los "
-            f"{memory['host_mib']} MiB de RAM del perfil {profile['name']}",
-        )
-    else:
-        _require(
-            vram_bytes + host_bytes <= memory["total_mib"] * MIB,
-            f"VRAM y RAM superan juntas los {memory['total_mib']} MiB de memoria unificada "
-            f"del perfil {profile['name']}",
-        )
+    _require(
+        vram_bytes <= memory["device_mib"] * MIB and host_bytes <= memory["host_mib"] * MIB,
+        f"Los presupuestos superan los {memory['device_mib']} MiB de VRAM o los "
+        f"{memory['host_mib']} MiB de RAM del perfil {profile['name']}",
+    )
     _require(
         threads <= profile["cpu_threads"],
         f"La ejecución usa {threads} hilos y el perfil {profile['name']} admite "

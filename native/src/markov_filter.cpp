@@ -14,10 +14,8 @@ constexpr long double probability_tolerance = 1e-12L;
 constexpr long double emission_tolerance = 1e-12L;
 constexpr long double negative_infinity = -std::numeric_limits<long double>::infinity();
 // Precisión declarada del control de cancelación: el épsilon del formato extendido de x86-64,
-// con 64 bits de mantisa. En aarch64 long double es binary128 y su épsilon, mucho menor, aceptaría
-// cancelaciones que x86-64 rechaza. Con la misma cota las dos arquitecturas aplican la misma regla
-// y aarch64 calcula con más precisión de la exigida. Un long double menos preciso, como el double
-// de MSVC, conserva su propio épsilon.
+// con 64 bits de mantisa. Un long double menos preciso, como el double de MSVC, conserva su
+// propio épsilon. Uno más preciso aplica la misma cota que x86-64.
 constexpr long double declared_epsilon =
     std::max(0x1p-63L, std::numeric_limits<long double>::epsilon());
 using LogWeights = std::array<long double, maximum_markov_states>;

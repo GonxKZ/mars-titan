@@ -10,25 +10,25 @@ import pytest
 
 from mars_titan.hardware import profile_check
 from mars_titan.hardware.profile_check import binaries_cover, check_machine
-from tests.hardware.platform_doubles import gb10, laptop
+from tests.hardware.platform_doubles import desktop, laptop
 
 
 @pytest.mark.parametrize(
     ("arch_list", "capability", "covered"),
     [
-        # Rueda cu130 de PyTorch para aarch64: el cubin sm_120 cubre la GB10 (12.1).
-        (["sm_80", "sm_90", "sm_100", "sm_110", "sm_120", "compute_120"], [12, 1], True),
-        (["sm_80", "sm_90", "sm_100", "sm_120"], [12, 1], True),
-        (["sm_80", "sm_86", "sm_90"], [8, 9], True),
+        # Rueda cu130 de PyTorch para x86-64: el cubin sm_86 cubre la RTX 4070 (8.9).
+        (["sm_80", "sm_86", "sm_90", "sm_100", "sm_120", "compute_120"], [8, 9], True),
+        (["sm_89"], [8, 9], True),
+        (["sm_80", "sm_90"], [8, 9], True),
         # Un cubin de menor superior o de otra versión mayor no sirve.
-        (["sm_122"], [12, 1], False),
-        (["sm_90", "sm_100"], [12, 1], False),
+        (["sm_89"], [8, 6], False),
+        (["sm_75", "sm_90", "sm_100"], [8, 9], False),
         # Las variantes específicas de arquitectura no se trasladan.
-        (["sm_90a", "sm_120a", "sm_120f"], [12, 1], False),
+        (["sm_86a", "sm_89a", "sm_90f"], [8, 9], False),
         # El PTX se compila al cargar en una capacidad igual o superior.
-        (["compute_90"], [12, 1], True),
-        (["compute_121"], [12, 1], True),
-        (["compute_122"], [12, 1], False),
+        (["compute_80"], [8, 9], True),
+        (["compute_89"], [8, 9], True),
+        (["compute_90"], [8, 9], False),
         ([], [8, 9], False),
     ],
 )
@@ -53,10 +53,10 @@ class FakeTorch:
 
 def test_a_platform_outside_the_profile_stops_after_the_first_check():
     torch = FakeTorch(True)
-    receipt = check_machine("dgx-gb10", identity=laptop(), torch=torch)
+    receipt = check_machine("rtx4070-laptop", identity=desktop(), torch=torch)
     assert receipt["status"] == "failed"
     assert [c["name"] for c in receipt["checks"]] == ["profile"]
-    assert "dgx-gb10" in receipt["checks"][0]["detail"]["error"]
+    assert "rtx4070-laptop" in receipt["checks"][0]["detail"]["error"]
     assert torch.threads is None
 
 
@@ -103,15 +103,12 @@ def test_native_tests_exclude_optimizer_steps(tmp_path):
 
 
 def test_the_receipt_is_written_and_the_exit_code_follows_it(tmp_path, monkeypatch):
-    monkeypatch.setattr(profile_check, "platform_identity", lambda: gb10())
+    # La identidad sustituta es otra máquina, así que el perfil del portátil la rechaza y el
+    # código de salida es 1.
+    monkeypatch.setattr(profile_check, "platform_identity", lambda: desktop())
     output = tmp_path / "check.json"
-    # En esta máquina la identidad sustituta es la de la GB10, pero no corre en un cgroup
-    # acotado a 64 GiB, así que el perfil se rechaza y el código de salida es 1.
-    monkeypatch.setattr(
-        profile_check.hardware_profiles, "cgroup_memory_limit", lambda: None, raising=True
-    )
-    assert profile_check.main(["--profile", "dgx-gb10", "--output", str(output)]) == 1
+    assert profile_check.main(["--profile", "rtx4070-laptop", "--output", str(output)]) == 1
     receipt = json.loads(output.read_text())
     assert receipt["kind"] == "mars_titan_hardware_check" and receipt["status"] == "failed"
-    assert receipt["platform"]["platform_sha256"] == gb10()["platform_sha256"]
-    assert "cgroup" in receipt["checks"][0]["detail"]["error"]
+    assert receipt["platform"]["platform_sha256"] == desktop()["platform_sha256"]
+    assert "RTX 4090" in receipt["checks"][0]["detail"]["error"]

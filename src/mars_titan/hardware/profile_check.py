@@ -1,11 +1,10 @@
 """Comprobación técnica de una máquina frente a su perfil de hardware, con recibo JSON.
 
-Pensada para la primera ejecución en una máquina nueva, como la DGX GB10. No ajusta nada:
+Pensada para comprobar el portátil antes de una campaña o tras cambiar el entorno. No ajusta nada:
 no hay pasos de optimizador, ni ajustes de señales, ni lectura de datos de la campaña. Las
 comprobaciones son estas, en orden:
 
-1. `profile`: la plataforma detectada corresponde al perfil y, con memoria unificada, el
-   proceso corre en un cgroup con el límite del perfil. Si falla, no se sigue.
+1. `profile`: la plataforma detectada corresponde al perfil. Si falla, no se sigue.
 2. `cuda_binaries`: PyTorch trae código para la capacidad de la GPU, un cubin de la misma
    versión mayor y menor igual o inferior, o PTX de una capacidad no superior.
 3. `strict_fp32`: con FP32 estricto, un producto de matrices fijo en la GPU coincide con su
@@ -14,11 +13,11 @@ comprobaciones son estas, en orden:
 5. `native` (opcional): CTest de una compilación nativa, sin las pruebas con la etiqueta
    `optimizer-steps`, que aplican pasos de optimizador.
 
-Ejemplo en la GB10, con los límites del perfil aplicados por systemd:
+Ejemplo en el portátil:
 
-    systemd-run --user --scope -p MemoryMax=64G -p CPUQuota=800% \\
-        uv run --no-sync python -m mars_titan.hardware.profile_check \\
-        --profile dgx-gb10 --output gb10-check.json --native-build build/native/native-ppo-release
+    uv run --no-sync python -m mars_titan.hardware.profile_check \\
+        --profile rtx4070-laptop --output laptop-check.json \\
+        --native-build build/native/native-ppo-release
 """
 
 import argparse
