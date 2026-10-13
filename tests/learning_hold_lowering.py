@@ -266,6 +266,11 @@ _REUSES = (
 # guarda exige que coincidan, así que un uso nuevo necesita declararse aquí con su motivo.
 DOUBLES = {
     "tests/conftest.py": (2, _DEFINES),
+    "tests/learning_traces/test_native_policy_traces.py": (
+        1,
+        "la etapa de políticas se detiene al faltar la capacidad de trazas o las vistas, sin "
+        "binarios ni fuentes abiertas",
+    ),
     "tests/models/test_external_cache_cuda.py": (1, _ESTIMATOR),
     "tests/models/test_ridge_statistics_cuda.py": (1, _ESTIMATOR),
     "tests/posttraining/campaign_fixture.py": (1, _CAMPAIGN),
