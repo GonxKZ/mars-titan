@@ -57,6 +57,7 @@ from mars_titan.evaluation.financial_metrics import (
     block_bootstrap,
     equity_metrics,
 )
+from mars_titan.hardware import hardware_profiles
 
 from . import index_benchmark
 from .campaign_stage import RUN_KIND, _digest, _record, summarize
@@ -469,12 +470,37 @@ def _tables(sections):
     return metrics, contrasts, equity
 
 
-def build_report(stage_path, outputs, destination, *, benchmarks=None, sensitivity=False):
+def receipts_platform(records, unrecorded_platform=None):
+    """Plataforma común de los recibos de las salidas, o None si ninguna confirmó trabajos.
+
+    Los recibos anteriores a su registro solo se admiten si `unrecorded_platform` nombra el
+    perfil al que se atribuyen.
+    """
+    if not records:
+        return None
+    return hardware_profiles.same_platform(
+        records, unrecorded=hardware_profiles.attributed_profile(unrecorded_platform)
+    )
+
+
+def build_report(
+    stage_path,
+    outputs,
+    destination,
+    *,
+    benchmarks=None,
+    sensitivity=False,
+    unrecorded_platform=None,
+):
     """Leer las salidas, calcular familias y escribir el informe, sus tablas y el patrimonio.
 
     `benchmarks` asigna a un mercado la ruta y la huella de los niveles de su índice. Con
     `sensitivity` el informe lee salidas de la sensibilidad de ventanas, y nunca mezcla
     salidas de esa sensibilidad con las de la etapa principal.
+
+    Todos los recibos de las salidas deben venir de una sola plataforma, que el informe
+    registra. Los anteriores a ese registro solo se admiten si `unrecorded_platform` nombra el
+    perfil al que se atribuyen. La coincidencia con la base se comprobó al ejecutar la etapa.
     """
     stage = load_stage(stage_path)
     if sensitivity:
@@ -492,9 +518,15 @@ def build_report(stage_path, outputs, destination, *, benchmarks=None, sensitivi
         for market, (path, digest) in benchmarks.items()
     }
     destination = Path(destination)
-    sections = []
+    sections, platforms = [], {}
     for path in outputs:
         output = read_output(stage, path)
+        platforms.update(
+            {
+                f"{output['path']}/{key}": receipt.get("platform")
+                for key, receipt in output["receipts"].items()
+            }
+        )
         found = [
             _bootstrap(family, report, policies["contrasts"]["primary"])
             for family in families(stage, output, levels)
@@ -502,6 +534,7 @@ def build_report(stage_path, outputs, destination, *, benchmarks=None, sensitivi
         exits = survival(policies, output)
         output.pop("receipts")
         sections.append(dict(output=output, families=found, survival=exits))
+    platform = receipts_platform(platforms, unrecorded_platform)
     metrics, contrasts, equity = _tables(sections)
     pending = any(section["survival"]["affected"] for section in sections)
     result = dict(
@@ -523,6 +556,7 @@ def build_report(stage_path, outputs, destination, *, benchmarks=None, sensitivi
         },
         missing_benchmarks=sorted(set(declared) - set(levels)),
         sections=sections,
+        platform=platform,
         final_test_opened=False,
     )
     atomic_json(destination / "report.json", result)
@@ -559,6 +593,10 @@ def main(argv=None):
     parser.add_argument(
         "--sensitivity", action="store_true", help="Informe de la sensibilidad de ventanas"
     )
+    parser.add_argument(
+        "--unrecorded-platform",
+        help="Perfil de hardware al que se atribuyen los recibos sin plataforma",
+    )
     args = parser.parse_args(argv)
     result = build_report(
         args.stage,
@@ -566,6 +604,7 @@ def main(argv=None):
         args.report,
         benchmarks=_benchmark_argument(args.benchmark),
         sensitivity=args.sensitivity,
+        unrecorded_platform=args.unrecorded_platform,
     )
     families = [family for section in result["sections"] for family in section["families"]]
     print(

@@ -15,6 +15,8 @@ import pytest
 
 from mars_titan.data.storage import atomic_json, sha256
 from mars_titan.simulation import campaign_stage, index_benchmark, stage_report
+from tests.hardware.platform_doubles import desktop, laptop
+from tests.learning_hold_lowering import lowers_learning_hold
 from tests.simulation import rl_stage_fixture as fixture
 
 ARMS = ["klpo_terminal", "double_dqn", *fixture.REFERENCES]
@@ -187,6 +189,36 @@ def test_a_tampered_equity_series_is_rejected(base, stage_output, tmp_path):
     atomic_json(path, receipt)
     with pytest.raises(ValueError, match="no concilia"):
         stage_report.build_report(base.stage, [stage_output], tmp_path / "report")
+
+
+def test_receipts_of_every_output_share_one_platform():
+    records = {"a/US/fold-002/gru": laptop(), "b/US/fold-003/gru": laptop(kernel="7.1.0")}
+    assert stage_report.receipts_platform(records)["recorded"] == 2
+    # Una salida sin trabajos confirmados no aporta plataforma.
+    assert stage_report.receipts_platform({}) is None
+    with pytest.raises(ValueError, match="mezcla plataformas"):
+        stage_report.receipts_platform(dict(records, c=desktop()))
+    with pytest.raises(ValueError, match="no registran su plataforma"):
+        stage_report.receipts_platform(dict(records, c=None))
+    legacy = stage_report.receipts_platform(dict(records, c=None), "rtx4070-laptop")
+    assert legacy["unrecorded_profile"] == "rtx4070-laptop"
+
+
+@lowers_learning_hold(
+    "tests/simulation/test_stage_report.py::"
+    "test_the_report_records_the_platform_that_each_receipt_keeps"
+)
+def test_the_report_records_the_platform_that_each_receipt_keeps(base, stage_output, tmp_path):
+    found = receipts(stage_output)
+    assert found and all("platform" not in r["identity"] for r in found.values())
+    assert len({json.dumps(r["platform"], sort_keys=True) for r in found.values()}) == 1
+    result, _ = report_of(base, [stage_output], tmp_path / "report")
+    assert result["platform"]["recorded"] == len(found)
+    path = next((stage_output / "jobs").rglob("receipt.json"))
+    receipt = json.loads(path.read_text())
+    atomic_json(path, dict(receipt, platform=desktop()))
+    with pytest.raises(ValueError, match="mezcla plataformas"):
+        stage_report.build_report(base.stage, [stage_output], tmp_path / "other")
 
 
 def test_only_declared_benchmarks_are_accepted(base, stage_output, tmp_path):
