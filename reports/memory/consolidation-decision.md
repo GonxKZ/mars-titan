@@ -10,7 +10,7 @@ No se activa todavía por tres motivos:
 
 1. La issue condiciona el repaso a que la memoria mínima aporte evidencia y a que haya una pregunta con margen. MT-052 (#54), que mide retención e interferencia, sigue abierta. Sin una medida de olvido en la continuación, el repaso responde a un riesgo que nadie ha observado en estos datos.
 2. El bloqueo de aprendizaje impide cualquier ajuste. No hay resultado predictivo que valorar, solo coste.
-3. El coste no es pequeño: los tres controles suman unas 37 horas de GPU más en los adaptadores de A v2 (de 118 a 156) con 16.000 muestras-época por segundo y 10 épocas efectivas, cuando el plan de A v2 ya necesita un caudal 7,9 veces mayor que el supuesto para caber en 580 h útiles.
+3. El coste no es pequeño: los tres controles suman unas 37 horas de GPU más en los adaptadores de A v2 (de 118 a 156, o de 180 a 218 con la cota de los objetivos de #128) con 16.000 muestras-época por segundo y 10 épocas efectivas, cuando el plan de A v2 ya necesita un caudal 7,9 veces mayor que el supuesto para caber en 580 h útiles (8,1 con esos objetivos).
 
 ## Corte y filas
 
