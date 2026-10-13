@@ -35,7 +35,12 @@ from mars_titan.models.titans.config import MAX_BLOCK_ROWS, canonical
 from mars_titan.models.titans.financial import VARIANTS, FinancialPredictor, FinancialState
 from mars_titan.models.titans.financial_inputs import DecisionBatch, validated_cpu_batch
 from mars_titan.models.titans.frozen_financial import _implementation, _numerics
-from mars_titan.models.titans.state import join_mac_rows, map_mac_rows
+from mars_titan.models.titans.state import (
+    deferred_checks,
+    join_mac_rows,
+    map_mac_rows,
+    require_true,
+)
 
 from .checkpoints import (
     StopRequest,
@@ -422,53 +427,63 @@ class ChronologicalInference:
         if self.uses_context and run.context is None:
             run.context = predictor.initial_context(differentiable=grad)
         context = dict(context=run.context) if self.uses_context else {}
-        for cpu in validated:
-            batch = DecisionBatch.from_validated(
-                cpu, device=self.device, dtype=predictor.head.weight.dtype
-            )
-            new = tuple(flow for flow in batch.flow_ids if flow not in run.flows)
-            if new:
-                run.flows.put(predictor.initial_state(new, differentiable=grad))
-            if accumulate:
-                for flow in batch.flow_ids:
-                    if flow not in run.starts:
-                        # La repetición parte del estado sin grafo de cada flujo al empezar.
-                        run.starts[flow] = None if flow in new else run.flows.handle(flow)
-                run.segment.append((batch, plan))
-            state = run.flows.gather(batch.flow_ids)
-            with nvtx_ranges.phase("titans.prepare"), torch.set_grad_enabled(grad):
-                prepared = predictor.prepare(batch, state, differentiable=grad, **plan, **context)
+        # Las comprobaciones de finitud de todos los bloques del evento se resuelven juntas
+        # al final, antes de volver al recorrido, que es el único que aplica pasos, guarda
+        # checkpoints o cierra recibos. Así no se espera a la GPU tras cada bloque.
+        with deferred_checks():
+            for cpu in validated:
+                batch = DecisionBatch.from_validated(
+                    cpu, device=self.device, dtype=predictor.head.weight.dtype
+                )
+                new = tuple(flow for flow in batch.flow_ids if flow not in run.flows)
+                if new:
+                    run.flows.put(predictor.initial_state(new, differentiable=grad))
+                if accumulate:
+                    for flow in batch.flow_ids:
+                        if flow not in run.starts:
+                            # La repetición parte del estado sin grafo de cada flujo al empezar.
+                            run.starts[flow] = None if flow in new else run.flows.handle(flow)
+                    run.segment.append((batch, plan))
+                state = run.flows.gather(batch.flow_ids)
+                with nvtx_ranges.phase("titans.prepare"), torch.set_grad_enabled(grad):
+                    prepared = predictor.prepare(
+                        batch, state, differentiable=grad, **plan, **context
+                    )
+                if self.uses_context:
+                    # Los bloques siguientes del evento leen el mismo contexto confirmado.
+                    context = dict(context=prepared.next_context)
+                result = prepared.local_control
+                if result is not None:
+                    # Con acumulación el término emitido solo cuenta: su grafo retendría el lote.
+                    term = result.penalty.detach() if accumulate else result.penalty
+                    measured.append((term, result.flow_ids))
+                run.flows.put(prepared.next_state, detach=accumulate)
+                size = len(batch.flow_ids)
+                run.counters["observations"] += size
+                if warmup:
+                    run.counters["warmup_observations"] += size
+                    continue
+                # El error y la selección usan la mediana emitida. La pérdida usa los cinco niveles.
+                # `unbind` deja un solo nodo de autograd para las filas del bloque.
+                graphs = (
+                    prepared.quantiles if self.quantiles else prepared.point_predictions
+                ).unbind()
+                if grad:
+                    for row, key in enumerate(
+                        zip(batch.flow_ids, batch.prediction_at, strict=True)
+                    ):
+                        run.graphs[key] = _REPLAY if accumulate else graphs[row]
+                emitted.append((batch, prepared))
+                run.counters["predictions"] += size
             if self.uses_context:
-                # Los bloques siguientes del evento leen el mismo contexto confirmado.
-                context = dict(context=prepared.next_context)
-            result = prepared.local_control
-            if result is not None:
-                # Con acumulación el término emitido solo cuenta: su grafo retendría el lote.
-                term = result.penalty.detach() if accumulate else result.penalty
-                measured.append((term, result.flow_ids))
-            run.flows.put(prepared.next_state, detach=accumulate)
-            size = len(batch.flow_ids)
-            run.counters["observations"] += size
-            if warmup:
-                run.counters["warmup_observations"] += size
-                continue
-            # El error y la selección usan la mediana emitida. La pérdida usa los cinco niveles.
-            # `unbind` deja un solo nodo de autograd para las filas del bloque.
-            graphs = (prepared.quantiles if self.quantiles else prepared.point_predictions).unbind()
-            if grad:
-                for row, key in enumerate(zip(batch.flow_ids, batch.prediction_at, strict=True)):
-                    run.graphs[key] = _REPLAY if accumulate else graphs[row]
-            emitted.append((batch, prepared))
-            run.counters["predictions"] += size
-        if self.uses_context:
-            # La sesión se escribe una vez, después de emitir todas sus predicciones.
-            with nvtx_ranges.phase("titans.context"), torch.set_grad_enabled(grad):
-                run.context = predictor.commit_context(context["context"], differentiable=grad)
-        with nvtx_ranges.phase("titans.emit"):
-            self._emit(run, source, emitted)
-        if measured:
-            with nvtx_ranges.phase("titans.penalty"):
-                self._penalty(run, measured, keep=grad, replay=accumulate)
+                # La sesión se escribe una vez, después de emitir todas sus predicciones.
+                with nvtx_ranges.phase("titans.context"), torch.set_grad_enabled(grad):
+                    run.context = predictor.commit_context(context["context"], differentiable=grad)
+            with nvtx_ranges.phase("titans.emit"):
+                self._emit(run, source, emitted)
+            if measured:
+                with nvtx_ranges.phase("titans.penalty"):
+                    self._penalty(run, measured, keep=grad, replay=accumulate)
         if event.inputs and not warmup:
             run.instants += 1
 
@@ -864,45 +879,51 @@ class ChronologicalTrainer(ChronologicalInference):
             states.detach()
             if predictor.config.variant == "mac_frozen":
                 self._anchor_frozen(states)
-            members, graphs, penalties = set(group), {}, []
-            for batch, plan in run.segment:
-                rows = [i for i, flow in enumerate(batch.flow_ids) if flow in members]
-                if not rows:
-                    continue
-                batch = batch.select(rows)
-                new = tuple(flow for flow in batch.flow_ids if flow not in states)
-                if new:
-                    states.put(predictor.initial_state(new, differentiable=True))
-                state = states.gather(batch.flow_ids)
-                with torch.enable_grad():
-                    prepared = predictor.prepare(batch, state, differentiable=True, **plan)
-                states.put(prepared.next_state)
-                if prepared.local_control is not None:
-                    penalties.append(prepared.local_control.penalty)
-                    replayed += len(prepared.local_control.flow_ids)
-                outputs = (
-                    prepared.quantiles if self.quantiles else prepared.point_predictions
-                ).unbind()
-                for row, key in enumerate(zip(batch.flow_ids, batch.prediction_at, strict=True)):
-                    if key in targets:
-                        graphs[key] = outputs[row]
-            keys = [(flow, at) for flow, at, _ in run.used if flow in members]
-            if any(key not in graphs for key in keys):
-                raise ValueError("La repetición del tramo no reproduce sus predicciones")
-            terms = []
-            if keys:
-                prediction = torch.stack([graphs[key] for key in keys])
-                target = torch.tensor(
-                    [targets[key] for key in keys], dtype=prediction.dtype, device=prediction.device
-                )
-                loss = self._loss(prediction, target) * (len(keys) / len(run.used))
-                total += float(loss.detach())
-                terms.append(loss)
-            if penalties:
-                terms.append(sum(penalties) / len(run.penalties))
-            objective = sum(terms[1:], terms[0])
-            if not torch.isfinite(objective).item():
-                raise ValueError("La pérdida del tramo no es finita")
+            # Las comprobaciones de todos los lotes del grupo y la de su pérdida se resuelven
+            # juntas antes de su backward, en lugar de esperar a la GPU tras cada lote.
+            with deferred_checks():
+                members, graphs, penalties = set(group), {}, []
+                for batch, plan in run.segment:
+                    rows = [i for i, flow in enumerate(batch.flow_ids) if flow in members]
+                    if not rows:
+                        continue
+                    batch = batch.select(rows)
+                    new = tuple(flow for flow in batch.flow_ids if flow not in states)
+                    if new:
+                        states.put(predictor.initial_state(new, differentiable=True))
+                    state = states.gather(batch.flow_ids)
+                    with torch.enable_grad():
+                        prepared = predictor.prepare(batch, state, differentiable=True, **plan)
+                    states.put(prepared.next_state)
+                    if prepared.local_control is not None:
+                        penalties.append(prepared.local_control.penalty)
+                        replayed += len(prepared.local_control.flow_ids)
+                    outputs = (
+                        prepared.quantiles if self.quantiles else prepared.point_predictions
+                    ).unbind()
+                    for row, key in enumerate(
+                        zip(batch.flow_ids, batch.prediction_at, strict=True)
+                    ):
+                        if key in targets:
+                            graphs[key] = outputs[row]
+                keys = [(flow, at) for flow, at, _ in run.used if flow in members]
+                if any(key not in graphs for key in keys):
+                    raise ValueError("La repetición del tramo no reproduce sus predicciones")
+                terms = []
+                if keys:
+                    prediction = torch.stack([graphs[key] for key in keys])
+                    target = torch.tensor(
+                        [targets[key] for key in keys],
+                        dtype=prediction.dtype,
+                        device=prediction.device,
+                    )
+                    loss = self._loss(prediction, target) * (len(keys) / len(run.used))
+                    total += float(loss.detach())
+                    terms.append(loss)
+                if penalties:
+                    terms.append(sum(penalties) / len(run.penalties))
+                objective = sum(terms[1:], terms[0])
+                require_true(torch.isfinite(objective), "La pérdida del tramo no es finita")
             objective.backward()
         if replayed != len(controlled):
             raise ValueError("La repetición del tramo no reproduce los flujos medidos de C")

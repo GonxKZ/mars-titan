@@ -26,6 +26,7 @@ option(MARS_TITAN_BUILD_COHORT_EXECUTION "Compilar el ejecutor de cohortes recup
 option(MARS_TITAN_BUILD_EPISODIC_PYTHON "Enlazar el banco y el ejecutor con Python" OFF)
 option(MARS_TITAN_BUILD_FINANCIAL_CONTROLS "Compilar referencias para auditorías financieras congeladas" OFF)
 option(MARS_TITAN_BUILD_FUZZER "Compilar el ejecutable de libFuzzer" OFF)
+option(MARS_TITAN_TEST_POLICY_CUDA "Registrar la prueba CUDA del modo de solo evaluación para una ventana GPU exclusiva" OFF)
 set(MARS_TITAN_SANITIZER "none" CACHE STRING "Instrumentación independiente de memoria o hilos")
 set_property(CACHE MARS_TITAN_SANITIZER PROPERTY STRINGS none address address-undefined thread memory)
 set(MARS_TITAN_MSAN_STDLIB_ROOT "" CACHE PATH "Raíz de libc++ y libc++abi instrumentadas con MSan")
@@ -40,6 +41,7 @@ target_compile_features(mars_titan_native_options INTERFACE cxx_std_20)
 include(cmake/Instrumentation.cmake)
 include(cmake/Diagnostics.cmake)
 include(cmake/Coverage.cmake)
+include(cmake/OptimizerStepTests.cmake)
 
 if(MARS_TITAN_BUILD_EPISODIC_PYTHON)
     set(MARS_TITAN_BUILD_COHORT_EXECUTION ON)
@@ -77,9 +79,9 @@ function(mars_titan_configure_target target)
 endfunction()
 
 if(MARS_TITAN_ENABLE_CUDA)
-    # Arquitecturas declaradas: sm_89 para la RTX 4070 Laptop y sm_121 para la GB10. Solo SASS,
-    # sin PTX, de modo que otra GPU falla al cargar en lugar de compilar en ejecución sin aviso.
-    set(CMAKE_CUDA_ARCHITECTURES "89-real;121-real" CACHE STRING "Arquitecturas CUDA declaradas")
+    # Arquitectura declarada: sm_89 para la RTX 4070 Laptop. Solo SASS, sin PTX, de modo que
+    # otra GPU falla al cargar en lugar de compilar en ejecución sin aviso.
+    set(CMAKE_CUDA_ARCHITECTURES "89-real" CACHE STRING "Arquitecturas CUDA declaradas")
     if(CMAKE_CUDA_ARCHITECTURES MATCHES "^(native|all|all-major)$")
         message(FATAL_ERROR "Las arquitecturas CUDA se declaran una a una para no depender de la máquina")
     endif()
@@ -122,6 +124,25 @@ if(MARS_TITAN_BUILD_SIMULATION)
         set_tests_properties(concurrency PROPERTIES LABELS "concurrency")
         set_tests_properties(c_abi PROPERTIES LABELS "integration;c17")
         mars_titan_sanitizer_test_environment(simulation concurrency c_abi)
+    endif()
+
+    # Proyección del codec episódico, sin LibTorch, para el enlace de Python y sus pruebas.
+    add_library(mars_titan_episodic_projection STATIC src/episodic_projection.cpp)
+    target_include_directories(mars_titan_episodic_projection PUBLIC
+        "${CMAKE_CURRENT_SOURCE_DIR}/include")
+    set_target_properties(mars_titan_episodic_projection PROPERTIES POSITION_INDEPENDENT_CODE ON)
+    mars_titan_configure_target(mars_titan_episodic_projection)
+    list(APPEND mars_analysis_sources "${CMAKE_CURRENT_SOURCE_DIR}/src/episodic_projection.cpp")
+    add_executable(mars-titan-projection-benchmark benchmarks/episodic_projection.cpp)
+    target_link_libraries(mars-titan-projection-benchmark PRIVATE mars_titan_episodic_projection)
+    mars_titan_configure_target(mars-titan-projection-benchmark)
+    if(BUILD_TESTING)
+        add_executable(episodic_projection_tests tests/episodic_projection_tests.cpp)
+        target_link_libraries(episodic_projection_tests PRIVATE mars_titan_episodic_projection)
+        mars_titan_configure_target(episodic_projection_tests)
+        add_test(NAME episodic_projection COMMAND episodic_projection_tests)
+        set_tests_properties(episodic_projection PROPERTIES TIMEOUT 120 LABELS "unit;memory")
+        mars_titan_sanitizer_test_environment(episodic_projection)
     endif()
 
     if(MARS_TITAN_BUILD_FINANCIAL)
@@ -200,7 +221,7 @@ if(MARS_TITAN_BUILD_SIMULATION)
             src/episodic_memory.cpp src/policy_context.cpp src/learning_replay.cpp)
         target_include_directories(mars_titan_ppo PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
         target_link_libraries(mars_titan_ppo PUBLIC mars_titan_financial mars_titan::torch
-            mars_titan_rl_objectives mars_titan_simulation_files)
+            mars_titan_rl_objectives mars_titan_simulation_files mars_titan_learning_hold)
         mars_titan_configure_target(mars_titan_ppo)
         add_executable(mars-titan-memory-benchmark benchmarks/episodic_query.cpp)
         target_link_libraries(mars-titan-memory-benchmark PRIVATE mars_titan_ppo)
@@ -330,8 +351,9 @@ if(MARS_TITAN_BUILD_SIMULATION)
             add_executable(ppo_variant_state_tests tests/ppo_variant_state_tests.cpp)
             target_link_libraries(ppo_variant_state_tests PRIVATE mars_titan_ppo)
             mars_titan_configure_target(ppo_variant_state_tests)
-            add_test(NAME ppo_variant_state COMMAND ppo_variant_state_tests)
-            set_tests_properties(ppo_variant_state PROPERTIES TIMEOUT 120 LABELS "unit;rl-objectives")
+            mars_titan_add_optimizer_step_test(ppo_variant_state COMMAND ppo_variant_state_tests)
+            set_tests_properties(ppo_variant_state PROPERTIES TIMEOUT 120)
+            set_property(TEST ppo_variant_state APPEND PROPERTY LABELS unit rl-objectives)
             mars_titan_sanitizer_test_environment(ppo_variant_state)
             set_property(TEST ppo_variant_state APPEND PROPERTY ENVIRONMENT
                 "CUDA_VISIBLE_DEVICES=-1" "OMP_NUM_THREADS=1" "MKL_NUM_THREADS=1")
@@ -343,8 +365,9 @@ if(MARS_TITAN_BUILD_SIMULATION)
             mars_titan_sanitizer_test_environment(ppo_variant_objective)
             set_property(TEST ppo_variant_objective APPEND PROPERTY ENVIRONMENT
                 "CUDA_VISIBLE_DEVICES=-1" "OMP_NUM_THREADS=1" "MKL_NUM_THREADS=1")
-            add_test(NAME ppo_policy COMMAND ppo_policy_tests)
-            set_tests_properties(ppo_policy PROPERTIES TIMEOUT 120 LABELS "unit;integration;ppo")
+            mars_titan_add_optimizer_step_test(ppo_policy COMMAND ppo_policy_tests)
+            set_tests_properties(ppo_policy PROPERTIES TIMEOUT 120)
+            set_property(TEST ppo_policy APPEND PROPERTY LABELS unit integration ppo)
             mars_titan_sanitizer_test_environment(ppo_policy)
             set_property(TEST ppo_policy APPEND PROPERTY ENVIRONMENT
                 "CUDA_VISIBLE_DEVICES=-1" "OMP_NUM_THREADS=1" "MKL_NUM_THREADS=1")
@@ -360,12 +383,43 @@ if(MARS_TITAN_BUILD_SIMULATION)
                     target_link_libraries(ppo_${component}_tests PRIVATE mars_titan_ppo_files)
                 endif()
                 mars_titan_configure_target(ppo_${component}_tests)
+            endforeach()
+            foreach(component checkpoint inputs evaluation)
                 add_test(NAME ppo_${component} COMMAND ppo_${component}_tests)
-                set_tests_properties(ppo_${component} PROPERTIES TIMEOUT 120 LABELS "unit;integration;ppo")
+            endforeach()
+            # El entrenamiento, el empaquetado GRU y la recogida dan pasos de optimizador.
+            foreach(component training gru_packing collection)
+                mars_titan_add_optimizer_step_test(ppo_${component} COMMAND ppo_${component}_tests)
+            endforeach()
+            foreach(component training checkpoint inputs gru_packing evaluation collection)
+                set_tests_properties(ppo_${component} PROPERTIES TIMEOUT 120)
+                set_property(TEST ppo_${component} APPEND PROPERTY LABELS unit integration ppo)
                 mars_titan_sanitizer_test_environment(ppo_${component})
                 set_property(TEST ppo_${component} APPEND PROPERTY ENVIRONMENT
                     "CUDA_VISIBLE_DEVICES=-1" "OMP_NUM_THREADS=1" "MKL_NUM_THREADS=1")
             endforeach()
+            # Modo de solo evaluación: políticas iniciales sin entrenador y cerrojo de pasos.
+            add_executable(policy_evaluation_only_tests tests/policy_evaluation_only_tests.cpp)
+            target_link_libraries(policy_evaluation_only_tests PRIVATE mars_titan_policy_stage)
+            mars_titan_configure_target(policy_evaluation_only_tests)
+            add_test(NAME policy_evaluation_only COMMAND policy_evaluation_only_tests cpu)
+            set_tests_properties(policy_evaluation_only PROPERTIES TIMEOUT 120
+                LABELS "unit;integration;ppo")
+            mars_titan_sanitizer_test_environment(policy_evaluation_only)
+            set_property(TEST policy_evaluation_only APPEND PROPERTY ENVIRONMENT
+                "CUDA_VISIBLE_DEVICES=-1" "OMP_NUM_THREADS=1" "MKL_NUM_THREADS=1")
+            # La misma prueba en cuda:0 se registra solo para una ventana GPU exclusiva.
+            if(MARS_TITAN_TEST_POLICY_CUDA)
+                if(NOT MARS_TITAN_TORCH_HAS_CUDA)
+                    message(FATAL_ERROR "La prueba CUDA de las políticas requiere LibTorch CUDA")
+                endif()
+                add_test(NAME policy_evaluation_only_cuda COMMAND policy_evaluation_only_tests cuda:0)
+                set_tests_properties(policy_evaluation_only_cuda PROPERTIES TIMEOUT 120
+                    LABELS "integration;ppo;cuda" RUN_SERIAL TRUE)
+                mars_titan_sanitizer_test_environment(policy_evaluation_only_cuda)
+                set_property(TEST policy_evaluation_only_cuda APPEND PROPERTY ENVIRONMENT
+                    "OMP_NUM_THREADS=1" "MKL_NUM_THREADS=1")
+            endif()
             foreach(component episodic_memory policy_context decision_trace learning_replay
                     learning_traces)
                 add_executable(${component}_tests tests/${component}_tests.cpp)
@@ -389,6 +443,7 @@ if(MARS_TITAN_BUILD_SIMULATION)
     if(MARS_TITAN_BUILD_FINANCIAL)
         set(identity_files ${mars_analysis_sources}
             "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/simulation.h"
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/episodic_projection.hpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/financial_session.hpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/financial_batch.hpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/markov_filter.hpp"
@@ -548,30 +603,7 @@ if(MARS_TITAN_ENABLE_STATIC_ANALYZER)
 endif()
 mars_titan_coverage_report()
 
-# Pruebas que aplican pasos de optimizador sobre datos sintéticos, incluidos los programas que
-# entrenan si no encuentran la protección. Mientras rija el bloqueo de aprendizaje, todos los
-# perfiles de prueba de CMakePresets.json excluyen esta etiqueta. La prueba Python
-# test_optimizer_steps_hold.py exige que la lleve cualquier prueba que llegue a un paso.
-set(MARS_TITAN_OPTIMIZER_STEP_TESTS ppo_policy ppo_training ppo_collection ppo_gru_packing
-    ppo_variant_state adapter_control adapter_control_cli adapter_control_cuda adapter_control_cli_cuda)
-foreach(test IN LISTS MARS_TITAN_OPTIMIZER_STEP_TESTS)
-    if(TEST ${test})
-        set_property(TEST ${test} APPEND PROPERTY LABELS optimizer-steps)
-    endif()
-endforeach()
-
-# Bajo un emulador cada prueba conserva su límite relativo multiplicado por un factor declarado.
-set(MARS_TITAN_TEST_TIMEOUT_SCALE 1 CACHE STRING "Factor entero de los límites de CTest")
-if(NOT MARS_TITAN_TEST_TIMEOUT_SCALE MATCHES "^[1-9][0-9]*$")
-    message(FATAL_ERROR "MARS_TITAN_TEST_TIMEOUT_SCALE debe ser un entero positivo")
-endif()
-if(BUILD_TESTING AND MARS_TITAN_TEST_TIMEOUT_SCALE GREATER 1)
-    get_directory_property(registered_tests TESTS)
-    foreach(test IN LISTS registered_tests)
-        get_test_property(${test} TIMEOUT limit)
-        if(limit)
-            math(EXPR limit "${limit} * ${MARS_TITAN_TEST_TIMEOUT_SCALE}")
-            set_tests_properties(${test} PROPERTIES TIMEOUT ${limit})
-        endif()
-    endforeach()
-endif()
+# Todas las pruebas están registradas. Las que llevan la etiqueta optimizer-steps tienen que pasar
+# por el lanzador que lee la protección (OptimizerStepTests.cmake). La prueba Python
+# test_optimizer_steps_hold.py exige además que la lleve cualquier prueba que llegue a un paso.
+mars_titan_require_gated_optimizer_step_tests()

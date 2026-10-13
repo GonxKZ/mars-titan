@@ -1,4 +1,5 @@
 #include "mars_titan/klpo_learning.hpp"
+#include "mars_titan/learning_hold.hpp"
 #include "mars_titan/simulation_files.hpp"
 
 #include <ATen/ATen.h>
@@ -147,6 +148,8 @@ KlpoLearningCounters klpo_before_collection(KlpoLearningCounters value, std::siz
 struct KlpoLearningController::Impl {
     Impl(std::vector<simulation::BatchInput> sources, KlpoLearningConfig settings)
         : inputs(std::move(sources)), config(std::move(settings)) {
+        // El controlador existe para dar pasos con Adam: el modo de solo evaluación lo rechaza.
+        require_optimizer_steps_allowed("el controlador KLPO");
         config.validate();
         collector = std::make_unique<KlpoTerminalCollector>(inputs, config.collection);
         actor = std::make_unique<PpoPolicy>(collector->policy().observation_width(),

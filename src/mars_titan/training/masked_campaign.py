@@ -132,6 +132,11 @@ def _views_report(directory, scope, policy):
     return report, digest
 
 
+def _subset_key(record):
+    """Identidad de un subconjunto sin la ruta de su manifiesto."""
+    return None if record is None else {k: v for k, v in record.items() if k != "manifest"}
+
+
 def scope_views(directory, scope, campaign):
     """Validar las vistas de un ámbito frente a la comparación y devolver sus huellas."""
     directory = Path(directory)
@@ -141,6 +146,10 @@ def scope_views(directory, scope, campaign):
     _require(
         [row.get("id") for row in report["folds"]] == list(resolved["windows"]),
         f"Las vistas de {scope} no contienen exactamente las ventanas del protocolo",
+    )
+    _require(
+        _subset_key(report.get("data_subset")) == _subset_key(campaign.get("data_subset")),
+        f"Las vistas de {scope} no usan el subconjunto que declara la campaña",
     )
     windows, edition = {}, None
     for row in report["folds"]:
@@ -182,7 +191,8 @@ def prepare_views(path, parent, output, *, scopes=None):
     """Preparar las vistas de cada ámbito desde la supervisión histórica, sin ajustar nada.
 
     `scopes` limita la preparación a algunos ámbitos de la campaña. Un ámbito con
-    elegibilidad por mercado en la comparación la aplica al preparar la unión.
+    elegibilidad por mercado en la comparación la aplica al preparar la unión. Si la campaña
+    declara un subconjunto de la edición, todas sus vistas se eligen con él.
     """
     from .joint_temporal_corpus import prepare_joint_temporal_corpus
     from .reference_campaign import campaign_views
@@ -198,6 +208,7 @@ def prepare_views(path, parent, output, *, scopes=None):
         scopes and len(set(scopes)) == len(scopes) and set(scopes) <= set(campaign["scopes"]),
         "Los ámbitos que se preparan deben ser de la campaña",
     )
+    subset = (campaign.get("data_subset") or {}).get("manifest")
     prepared = {}
     for scope in scopes:
         destination = output / scope
@@ -214,6 +225,7 @@ def prepare_views(path, parent, output, *, scopes=None):
                     input_policy=policy,
                     recover_annual_boundaries=True,
                     eligibility=_eligibility(campaign, scope),
+                    subset=subset,
                 )
             else:
                 market = next(iter(protocols))
@@ -234,6 +246,7 @@ def prepare_views(path, parent, output, *, scopes=None):
                     destination,
                     input_policy=policy,
                     recover_annual_boundaries=True,
+                    subset=subset,
                 )
         prepared[scope] = scope_views(destination, scope, campaign)
     return prepared
@@ -849,7 +862,9 @@ class _Campaign:
         """Escribe el recibo de la meseta con su parada y una copia del informe, sin predicciones.
 
         El ajuste final continúa en la misma carpeta y reescribe su informe, así que el
-        recibo guarda una copia propia del informe en la meseta.
+        recibo guarda una copia propia del informe en la meseta. Con precisión declarada, la
+        meseta la exige y la registra igual que un ajuste completo, porque sus épocas son
+        parte del estado que hereda la continuación.
         """
         stop = report.get("individual_stop_epoch")
         _require(
@@ -859,6 +874,9 @@ class _Campaign:
             and 1 <= stop <= self.campaign["rule"]["max_epochs"],
             f"{job['id']} no espera la época conjunta tras su meseta o su máximo de épocas",
         )
+        numerics = self.campaign.get("numerics")
+        if numerics:
+            campaign_numerics.require_job(numerics, job["id"], report)
         copy = self.folder(job) / "plateau-report.json"
         atomic_json(copy, report)
         receipt = dict(
@@ -874,6 +892,8 @@ class _Campaign:
             final_test_opened=False,
             confirmed_at_utc=datetime.now(UTC).isoformat(),
         )
+        if numerics:
+            receipt["numerics"] = campaign_numerics.current()
         if self.platform is not None:
             receipt["platform"] = self.platform
         path = self.folder(job) / "receipt.json"

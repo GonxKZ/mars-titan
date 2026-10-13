@@ -19,7 +19,12 @@ ctest --preset native-release
 ../build/native/native-release/mars-titan-sim --help
 ```
 
-Los presets de pruebas heredan de `native-test`, que excluye la etiqueta `optimizer-steps`. La llevan las pruebas de `MARS_TITAN_OPTIMIZER_STEP_TESTS`, que aplican pasos de optimizador sobre datos sintéticos (PPO y los controles de adaptadores) y no se ejecutan mientras dure el bloqueo de aprendizaje.
+Las pruebas de CTest que aplican pasos de optimizador sobre datos sintéticos (PPO y los controles de adaptadores) llevan la etiqueta `optimizer-steps` y no se ejecutan mientras dure el bloqueo de aprendizaje. Hay dos barreras independientes:
+
+1. Se registran con `mars_titan_add_optimizer_step_test` (`cmake/OptimizerStepTests.cmake`), que las lanza a través de `mars-titan-learning-gate`. El lanzador lee la misma protección que los binarios con `mars_titan_learning_hold` y, si bloquea, termina con el código 77 antes de ejecutar la prueba. CTest lo recibe como `SKIP_RETURN_CODE` y la marca como saltada, también en una llamada sin perfil como `ctest --test-dir <build>`. Una protección ilegible la detiene como fallo, sin lanzarla. Al final de `CMakeLists.txt`, `mars_titan_require_gated_optimizer_step_tests()` detiene la configuración si una prueba con la etiqueta no pasa por el lanzador o si una que pasa por él pierde la etiqueta o el código de salto.
+2. Los presets de pruebas heredan de `native-test`, que excluye la etiqueta. Así esas pruebas ni siquiera aparecen en `ctest --preset`.
+
+La prueba `learning_gate` comprueba el lanzador sin lanzar ninguna prueba real. Con la protección bloqueada de la configuración y con una ilegible, el lanzador no ejecuta una orden propia que solo deja una marca. El camino que permite aprender se comprueba llamando a la función del lanzador con la decisión ya tomada, sin escribir una protección permitida.
 
 Los perfiles habituales de Clang y GCC activan `MARS_TITAN_BUILD_RUNNER` para construir la sesión y el ejecutable. `MARS_TITAN_BUILD_RUNNER=OFF` con `MARS_TITAN_BUILD_FINANCIAL=ON` permite compilar solo la sesión y sus pruebas. El ejecutable requiere UNIX por sus bloqueos y escrituras confirmadas. Las bibliotecas pueden configurarse por separado en MSVC. Una fuente requerida que falta produce un error de configuración.
 
@@ -48,6 +53,8 @@ La huella de fuentes incluye `accurate_sum.hpp` y los módulos de CMake que prep
 `native-asan` conserva el nombre del perfil anterior y equivale a `native-asan-ubsan`. Los perfiles `native-msvc-debug`, `native-msvc-release`, `native-msvc-asan` y `native-msvc-analysis` están disponibles en Windows, desde un entorno de desarrollo de MSVC con Ninja. Incluyen las opciones compatibles `/W4`, `/permissive-`, `/sdl`, `/fp:strict` y `/analyze` cuando se solicita. Estos perfiles de Windows no se han probado en este equipo.
 
 La sesión pura incluye `FinancialBatch`, observaciones contiguas y contexto externo fechado, y `MarkovFilter`, un filtro causal con parámetros congelados. Las pruebas `financial_batch` y `markov_filter` utilizan los mismos perfiles de diagnóstico. `mars-titan-batch-benchmark` compara hasta 4096 entornos con la ejecución secuencial, sin Python ni GPU. La [guía de entornos por lotes](../docs/engineering/batched-rl-environments.md) describe reinicio, recuperación, límites y el alcance técnico de sus medidas.
+
+`mars_titan_episodic_projection` contiene la proyección del codec episódico, sin LibTorch, y se compila con el núcleo de simulación. El enlace `_episodic_native` la expone como `project_codec_block`. La prueba `episodic_projection` la compara bit a bit con una referencia escalar escrita con el orden de sumas de `numpy.einsum`, con anchuras, filas y salidas que recorren cada mosaico y cada resto. En x86-64, GCC y Clang compilan además versiones AVX2 y AVX-512 del mismo cálculo, y `project_block` elige en la primera llamada la más ancha que admite el procesador. No se usan clones con `ifunc` porque su resolutor se ejecuta antes que ThreadSanitizer y lo hace fallar. La prueba recorre todas las versiones disponibles y `mars-titan-projection-benchmark` mide cada una con las formas del codec. Un procesador sin AVX2 usa la versión portable. El [codec episódico](../docs/engineering/episodic-codec.md) explica cuándo la usa.
 
 CMake comprueba el soporte de los avisos antes de activarlos. Incluye conversiones, cambios de signo, ocultación de nombres, formatos, desreferencias nulas y otros diagnósticos de C++. En Clang intenta primero Lifetime Safety y después la combinación experimental `-Xclang -fexperimental-lifetime-safety -Wexperimental-lifetime-safety`. GCC utiliza los avisos de referencias y punteros colgantes que admita.
 
@@ -115,10 +122,6 @@ cmake --build --preset native-ppo-dev
 ```
 
 La medición del núcleo debe incluir la preparación de entradas y el enlace con Python, además del tiempo interno. Deben registrarse las versiones, la configuración, las formas de los datos, las repeticiones, la memoria y el error frente a la referencia. Los tiempos de los perfiles instrumentados describen esas comprobaciones, no el rendimiento de Release.
-
-## Compilación cruzada a aarch64
-
-`native-aarch64-release` compila PPO, KLPO, el ejecutable financiero y el enlace episódico para Linux aarch64 con Clang y lld, y ejecuta CTest con qemu-user sin las pruebas de la etiqueta `optimizer-steps`. Necesita un entorno uv aarch64 en `MARS_TITAN_AARCH64_ENVIRONMENT` y una raíz con OpenSSL, zlib y zstd aarch64 en `MARS_TITAN_AARCH64_SYSROOT`. Con `MARS_TITAN_ENABLE_CUDA` las arquitecturas declaradas son `89-real;121-real`. Las órdenes y lo comprobado están en [plataformas de hardware](../docs/engineering/hardware-platforms.md#compilación-nativa-cruzada).
 
 ## Cobertura de líneas y ramas
 

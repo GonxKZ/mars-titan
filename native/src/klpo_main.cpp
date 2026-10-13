@@ -12,6 +12,9 @@ int main(int argc, char** argv) {
         "  Evaluación separada: --audit-run RUN --audit-tape DIR [--evaluation-cost PB ...] "
         "(sin --train-tape ni --validation-tape). Publica el patrimonio por sesión.\n"
         "  Con --decisions guarda la acción y los logits de cada decisión.\n"
+        "  Sin aprendizaje, admitido por la protección: --initial-evaluation --audit-tape DIR "
+        "evalúa la política inicial de la configuración y --check-sources con las cintas de "
+        "ajuste y validación las comprueba como el ajuste. Ninguno crea entrenador ni Adam.\n"
         "  Vigilancia Linux: --parent-pid PID detiene el hijo si muere su padre.\n"
         "  Trazas de aprendizaje: --learning-trace-every N --learning-trace-max-bytes B.\n"
         "  Capacidades: --capabilities, sin leer datos.\n"
@@ -20,7 +23,8 @@ int main(int argc, char** argv) {
         "optimiza GRPO, Dr. GRPO, DAPO o GSPO en lugar de KLPO.\n",
         {"native_policy_reconstructed_tapes", "native_klpo_financial_runner",
          "native_policy_equity_and_costs", "native_policy_learning_traces",
-         "native_group_relative_runner", "native_policy_decision_logits"},
+         "native_group_relative_runner", "native_policy_decision_logits",
+         "native_policy_evaluation_only"},
         [](const auto& options, const auto& stop) {
             return mars_titan::learning::run_klpo_experiment(options, stop);
         }};

@@ -40,6 +40,7 @@ Los guiones son puntos de entrada de línea de comandos y la lógica reutilizabl
 | [`benchmark_native_ppo.py`](benchmark_native_ppo.py) | Procesos PPO de diagnóstico con fuentes sintéticas y sin CUDA | [PPO nativo](../docs/engineering/native-ppo.md) |
 | [`benchmark_observatory.py`](benchmark_observatory.py) | Exportación sintética del observatorio en CPU | [Observatorio](../docs/engineering/observatory.md) |
 | [`summarize_native_quality.py`](summarize_native_quality.py) | Cobertura LCOV y complejidad de las funciones nativas propias | [Verificación nativa](../reports/resources/native-financial-verification.md) |
+| [`summarize_python_quality.py`](summarize_python_quality.py) | Cobertura de coverage.py, complejidad de Radon y CRAP de las funciones Python propias | [Calidad Python](../reports/engineering/python-quality-20261010/README.md) |
 | **Ejemplos sintéticos** | | |
 | [`example_document_index.py`](example_document_index.py) | Preparación documental de control, sin evidencia histórica | [Índice documental](../docs/engineering/document-index.md) |
 | [`example_information_views.py`](example_information_views.py) | Vistas y consumidores sobre `CorpusDataset`, sin entrenar | [Vistas de información](../docs/engineering/information-views.md) |

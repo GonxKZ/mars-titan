@@ -1,0 +1,121 @@
+{
+ "issue": 548,
+ "date": "2026-10-13",
+ "commits": {
+  "base": "d020ff07 (rama de #549)",
+  "branch": "b630de4b"
+ },
+ "environment": {
+  "torch": "2.14.0+cu130",
+  "cuda": "13.0",
+  "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+  "driver": "595.91.07",
+  "threads": {
+   "OMP_NUM_THREADS": 2,
+   "MKL_NUM_THREADS": 2
+  },
+  "cublas_workspace": ":4096:8",
+  "tf32": false,
+  "matmul_precision": "highest"
+ },
+ "device": "cuda:0",
+ "dtype": "float32",
+ "optimizer_steps": 0,
+ "script": "05613cf63058d3ef1ce003e8ca7a831df4468ff55b9319f91f58ec2cd2b1fbbe",
+ "script_note": "La copia ejecutada solo difería en los saltos de línea que aplica ruff format, con el mismo árbol sintáctico",
+ "fixture": {
+  "corpus": "tests/training/chronological_fixture.py",
+  "admission": "m1",
+  "hidden_size": 32,
+  "block_rows": 2,
+  "update_instants": 3
+ },
+ "runs": {
+  "k1": {
+   "base": {
+    "predictions": 88,
+    "optimizer_calls": 11,
+    "host_syncs": 346,
+    "cuda_launch_kernel": 24888,
+    "cuda_memcpy_async": 1976,
+    "cuda_stream_synchronize": 345,
+    "mars_titan_calls": 75195
+   },
+   "branch": {
+    "predictions": 88,
+    "optimizer_calls": 11,
+    "host_syncs": 346,
+    "cuda_launch_kernel": 24310,
+    "cuda_memcpy_async": 1976,
+    "cuda_stream_synchronize": 345,
+    "mars_titan_calls": 73753
+   }
+  },
+  "k2": {
+   "base": {
+    "predictions": 88,
+    "optimizer_calls": 11,
+    "host_syncs": 344,
+    "cuda_launch_kernel": 33960,
+    "cuda_memcpy_async": 2228,
+    "cuda_stream_synchronize": 344,
+    "mars_titan_calls": 82036
+   },
+   "branch": {
+    "predictions": 88,
+    "optimizer_calls": 11,
+    "host_syncs": 344,
+    "cuda_launch_kernel": 32826,
+    "cuda_memcpy_async": 2228,
+    "cuda_stream_synchronize": 344,
+    "mars_titan_calls": 76732
+   }
+  },
+  "k4": {
+   "base": {
+    "predictions": 88,
+    "optimizer_calls": 11,
+    "host_syncs": 344,
+    "cuda_launch_kernel": 52113,
+    "cuda_memcpy_async": 2734,
+    "cuda_stream_synchronize": 344,
+    "mars_titan_calls": 95716
+   },
+   "branch": {
+    "predictions": 88,
+    "optimizer_calls": 11,
+    "host_syncs": 344,
+    "cuda_launch_kernel": 49867,
+    "cuda_memcpy_async": 2734,
+    "cuda_stream_synchronize": 344,
+    "mars_titan_calls": 82688
+   }
+  }
+ },
+ "k4_function_call_changes": {
+  "models/titans/config.py:9:bounded_integer": -2310,
+  "models/titans/episodic_readout.py:153:_state": -1650,
+  "models/titans/episodic_readout.py:168:estimated_bytes": -330,
+  "models/titans/episodic_readout.py:246:_validate_read": 110,
+  "models/titans/episodic_readout.py:261:refine": -440,
+  "models/titans/episodic_readout.py:290:forward": -110,
+  "models/titans/episodic_readout.py:292:_step": 440,
+  "models/titans/episodic_readout.py:299:_forward": -110,
+  "models/titans/episodic_readout.py:301:forward": 110,
+  "models/titans/episodic_readout.py:310:_forward": 110,
+  "models/titans/episodic_readout.py:323:apply_episodic_readout": -110,
+  "models/titans/episodic_readout.py:343:apply_episodic_readout": 110,
+  "models/titans/episodic_readout.py:345:_apply_episodic_readout": -110,
+  "models/titans/episodic_readout.py:365:_apply_episodic_readout": 110,
+  "models/titans/episodic_snapshot.py:206:count": -330,
+  "models/titans/episodic_snapshot.py:210:check": -330,
+  "models/titans/episodic_snapshot.py:27:_signature": -330,
+  "models/titans/episodic_snapshot.py:28:<genexpr>": -2640,
+  "models/titans/state.py:129:require_true": -440,
+  "models/titans/state.py:141:finite_indicator": -24,
+  "models/titans/state.py:164:check_finite": -1980,
+  "models/titans/state.py:168:require_finite": -1980,
+  "models/titans/state.py:35:check_differentiable": -330,
+  "models/titans/state.py:54:add": -464
+ }
+}

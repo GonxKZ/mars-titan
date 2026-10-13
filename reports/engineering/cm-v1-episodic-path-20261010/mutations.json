@@ -1,0 +1,148 @@
+{
+  "native": {
+    "tool": "clang++ 21.1.8 -O2 -ffp-contract=off sobre una copia mutada de native/src/episodic_projection.cpp, con la prueba episodic_projection_tests",
+    "results": {
+      "ascending_pairs": "detectada",
+      "one_accumulator": "detectada",
+      "chunk_of_four": "detectada",
+      "tail_skips_odd": "detectada",
+      "fused": "detectada",
+      "final_sum_drops_odd": "detectada",
+      "partial_load": "detectada",
+      "rows_collapsed": "detectada",
+      "short_output_accepted": "detectada",
+      "default_not_widest": "detectada"
+    }
+  },
+  "python": {
+    "tool": "pytest sobre una copia mutada de cada archivo, restaurada tras cada mutación",
+    "results": [
+      {
+        "name": "ref_ascending_pairs",
+        "file": "src/mars_titan/memory/episodic_codec.py",
+        "tests": [
+          "tests/memory/test_episodic_codec.py"
+        ],
+        "status": "detectada",
+        "failed": [
+          "FAILED tests/memory/test_episodic_codec.py::test_einsum_of_this_installation_follows_the_declared_order"
+        ],
+        "summary": [
+          "1 failed, 39 passed in 1.58s"
+        ]
+      },
+      {
+        "name": "ref_final_sum_drops_odd",
+        "file": "src/mars_titan/memory/episodic_codec.py",
+        "tests": [
+          "tests/memory/test_episodic_codec.py"
+        ],
+        "status": "detectada",
+        "failed": [
+          "FAILED tests/memory/test_episodic_codec.py::test_einsum_of_this_installation_follows_the_declared_order"
+        ],
+        "summary": [
+          "1 failed, 39 passed in 0.88s"
+        ]
+      },
+      {
+        "name": "ref_tail_single_accumulator",
+        "file": "src/mars_titan/memory/episodic_codec.py",
+        "tests": [
+          "tests/memory/test_episodic_codec.py"
+        ],
+        "status": "detectada",
+        "failed": [
+          "FAILED tests/memory/test_episodic_codec.py::test_einsum_of_this_installation_follows_the_declared_order"
+        ],
+        "summary": [
+          "1 failed, 39 passed in 0.92s"
+        ]
+      },
+      {
+        "name": "backend_without_order_check",
+        "file": "src/mars_titan/memory/episodic_codec.py",
+        "tests": [
+          "tests/memory/test_episodic_codec.py"
+        ],
+        "status": "detectada",
+        "failed": [
+          "FAILED tests/memory/test_episodic_codec.py::test_projection_falls_back_to_einsum_only_with_the_same_bits"
+        ],
+        "summary": [
+          "1 failed, 44 passed in 1.46s"
+        ]
+      },
+      {
+        "name": "verify_skips_transposed",
+        "file": "src/mars_titan/memory/episodic_codec.py",
+        "tests": [
+          "tests/memory/test_episodic_codec.py"
+        ],
+        "status": "detectada",
+        "failed": [
+          "FAILED tests/memory/test_episodic_codec.py::test_replaced_transposed_projection_is_rejected"
+        ],
+        "summary": [
+          "1 failed, 46 passed in 1.02s"
+        ]
+      },
+      {
+        "name": "peak_without_transposed",
+        "file": "src/mars_titan/memory/episodic_codec.py",
+        "tests": [
+          "tests/memory/test_episodic_codec.py"
+        ],
+        "status": "detectada",
+        "failed": [
+          "FAILED tests/memory/test_episodic_codec.py::test_native_encode_traced_allocations_stay_below_estimate[True-1]"
+        ],
+        "summary": [
+          "1 failed, 48 passed in 1.16s"
+        ]
+      },
+      {
+        "name": "encode_ignores_native",
+        "file": "src/mars_titan/memory/episodic_codec.py",
+        "tests": [
+          "tests/memory/test_episodic_codec.py"
+        ],
+        "status": "detectada",
+        "failed": [
+          "FAILED tests/memory/test_episodic_codec.py::test_native_projection_keeps_every_encoded_bit[1-True-1.0]"
+        ],
+        "summary": [
+          "1 failed, 41 passed in 1.00s"
+        ]
+      },
+      {
+        "name": "session_without_native",
+        "file": "src/mars_titan/memory/episodic_session.py",
+        "tests": [
+          "tests/memory/test_episodic_session.py"
+        ],
+        "status": "detectada",
+        "failed": [
+          "FAILED tests/memory/test_episodic_session.py::test_session_encodes_episodes_with_its_native_binding"
+        ],
+        "summary": [
+          "1 failed, 1 passed in 1.80s"
+        ]
+      },
+      {
+        "name": "reader_without_native",
+        "file": "src/mars_titan/training/mars_titan_run.py",
+        "tests": [
+          "tests/training/test_mars_titan_run.py::test_reader_encodes_bank_episodes_with_its_native_binding"
+        ],
+        "status": "detectada",
+        "failed": [
+          "FAILED tests/training/test_mars_titan_run.py::test_reader_encodes_bank_episodes_with_its_native_binding"
+        ],
+        "summary": [
+          "1 failed in 31.32s"
+        ]
+      }
+    ]
+  }
+}
