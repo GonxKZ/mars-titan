@@ -36,6 +36,7 @@ from mars_titan.data.storage import atomic_json
 from mars_titan.evaluation import regime_calendar as rc
 from mars_titan.evaluation import retention_interference as ri
 from mars_titan.evaluation.splits import build_folds
+from mars_titan.hardware.platform_identity import cpu_name
 from mars_titan.memory.regimes import REGIME_RULE, UNCLASSIFIED, RegimeRule
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -315,14 +316,7 @@ def main(argv=None):
         class_counts=counts,
         injected=dict(values=INJECTED, options=options, markets=reports),
         environment=dict(
-            cpu=next(
-                (
-                    line.split(":", 1)[1].strip()
-                    for line in Path("/proc/cpuinfo").read_text().splitlines()
-                    if line.startswith("model name")
-                ),
-                platform.processor(),
-            ),
+            cpu=cpu_name(),
             numpy=np.__version__,
             python=platform.python_version(),
             omp_threads=os.environ.get("OMP_NUM_THREADS"),

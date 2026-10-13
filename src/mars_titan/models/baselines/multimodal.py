@@ -48,7 +48,9 @@ def transformer_batch_options(kind, batch_size):
     return {}
 
 
-def fuse_modalities(price, inputs, encoders, fusion, presence=None):
+def fuse_modalities(
+    price, inputs, encoders, fusion, presence=None, *, modulation=None, branch=None
+):
     """Fusión común de la representación de precios y las cuatro modalidades restantes.
 
     La comparten las referencias y el adaptador financiero de Titans, así que la semántica
@@ -56,6 +58,9 @@ def fuse_modalities(price, inputs, encoders, fusion, presence=None):
     proyección de cada modalidad ausente se anula después del sesgo y los cinco bits se
     concatenan al final. La representación de precios no se multiplica, porque el lector
     garantiza los precios y sus huecos ya llegan anulados por `gate_price_window`.
+    `modulation` y `branch` son las dos opciones de PT6 del adaptador de Titans: la primera
+    recibe los cinco bloques [lote, 5, H] y la presencia, y la segunda suma su salida a la
+    de la fusión. Sin ellas el cálculo es el anterior.
     """
     representations = [price]
     for index, name in enumerate(MODALITIES[1:], 1):
@@ -63,9 +68,13 @@ def fuse_modalities(price, inputs, encoders, fusion, presence=None):
         if presence is not None:
             projected = projected * presence[:, index : index + 1]
         representations.append(projected)
+    if modulation is not None:
+        representations = [modulation(torch.stack(representations, dim=1), presence).flatten(1)]
     if presence is not None:
         representations.append(presence.to(dtype=fusion[0].weight.dtype))
-    return fusion(torch.cat(representations, dim=-1))
+    fusion_input = torch.cat(representations, dim=-1)
+    fused = fusion(fusion_input)
+    return fused if branch is None else fused + branch(fusion_input)
 
 
 class MultimodalReference(nn.Module):

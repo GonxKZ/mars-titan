@@ -10,7 +10,7 @@ import torch
 
 from mars_titan.models.titans import state as checks
 
-cuda = pytest.mark.skipif(not torch.cuda.is_available(), reason="requiere cuda:0")
+cuda = pytest.mark.cuda
 
 
 def finite(device="cpu"):

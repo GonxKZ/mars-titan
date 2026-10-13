@@ -5,7 +5,6 @@ Necesitan el enlace `_episodic_native` compilado con el candidato.
 """
 
 import json
-import os
 from pathlib import Path
 
 import numpy as np
@@ -32,9 +31,7 @@ from tests.training.test_financial_run import RecordingOptimizer, StopAtStep, co
 # El optimizador de las pruebas solo registra gradientes, así que basta una protección
 # temporal permitida. El gancho global sigue omitiendo cualquier paso de torch.optim.
 pytestmark = [
-    pytest.mark.skipif(
-        not os.environ.get("MARS_TITAN_EPISODIC_NATIVE"), reason="Falta el enlace nativo compilado"
-    ),
+    pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE"),
     pytest.mark.usefixtures("learning_doubles"),
 ]
 

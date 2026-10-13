@@ -10,7 +10,6 @@ su gancho. No se usa la GPU ni se registran pérdidas.
 
 import copy
 import json
-import os
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -849,9 +848,7 @@ def test_titans_measurement_walks_the_chronological_trainer_without_changing_wei
     assert not (tmp_path / "work/titans-unused").exists()
 
 
-@pytest.mark.skipif(
-    not os.environ.get("MARS_TITAN_EPISODIC_NATIVE"), reason="Falta el enlace nativo compilado"
-)
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_candidate_measurement_compares_accumulation_and_recomputation(
     views, cpu, tmp_path, guarded_steps
 ):
@@ -883,9 +880,7 @@ def test_candidate_measurement_compares_accumulation_and_recomputation(
 
 # Lectores de MARS-TITAN y núcleos de CM-v1 en CPU
 
-NATIVE = pytest.mark.skipif(
-    not os.environ.get("MARS_TITAN_EPISODIC_NATIVE"), reason="Falta el enlace nativo compilado"
-)
+NATIVE = pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 MARS_ARMS = {
     "mars_titan_m0": {"episodic_bank": "m0_no_bank"},
     "mars_titan_m1": {"episodic_bank": "m1"},
@@ -1338,7 +1333,7 @@ def test_campaign_report_adds_the_policy_stage_apart_from_gpu_hours(doubled, pol
     for *_, kwargs in doubled:
         assert not any(key.startswith("policy_") for key in kwargs)
     assert report["rates"][throughput.POLICY_STAGE] == POLICY_RATES
-    jobs = dict(A=dict(fit=1368, reference=1221), B=dict(fit=456, carry=912, reference=1221))
+    jobs = dict(A=dict(fit=1800, reference=1221), B=dict(fit=600, carry=1200, reference=1221))
     for estimate, previous in zip(report["estimates"], without["estimates"], strict=True):
         stage = estimate[throughput.POLICY_STAGE]
         assert stage["status"] == "approximate" and stage["jobs"] == jobs[estimate["variant"]]
@@ -1400,7 +1395,7 @@ def test_campaign_report_measures_the_prepared_families_and_their_policy_stage(
         status="prepared_not_declared",
     )
     # Con las tres familias, la etapa de políticas resuelve 29 predictores en vez de 11.
-    jobs = dict(A=dict(fit=2664, reference=3219), B=dict(fit=888, carry=1776, reference=3219))
+    jobs = dict(A=dict(fit=3096, reference=3219), B=dict(fit=1032, carry=2064, reference=3219))
     expected = dict(A=((2340, 0), (1080, 0)), B=((884, 1092), (408, 336)))
     for estimate in report["estimates"]:
         families = estimate["families"]
@@ -1496,4 +1491,4 @@ def test_script_measures_the_policy_stage(doubled, policies, tmp_path, capsys):
     printed = json.loads(capsys.readouterr().out)
     assert policies == [("B", dict(steps=2048, warmup=8))]
     (estimate,) = printed["estimates"]
-    assert estimate[throughput.POLICY_STAGE]["jobs"]["carry"] == 912
+    assert estimate[throughput.POLICY_STAGE]["jobs"]["carry"] == 1200

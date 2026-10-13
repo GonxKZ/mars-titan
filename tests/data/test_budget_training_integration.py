@@ -14,11 +14,14 @@ from mars_titan.data.preparation import prepare_asset
 from mars_titan.data.samples import sample_table
 from mars_titan.data.storage import sha256
 from mars_titan.data.temporal import MarketClock
+from tests.suite_support import missing_extra, skip_without_cuda
+
+pytestmark = pytest.mark.cuda
 
 
 @pytest.fixture
 def cuda_runtime(monkeypatch):
-    torch = pytest.importorskip("torch")
+    torch = pytest.importorskip("torch", reason=missing_extra("torch"))
     monkeypatch.setenv("CUBLAS_WORKSPACE_CONFIG", ":4096:8")
     try:
         result = subprocess.run(
@@ -31,8 +34,7 @@ def cuda_runtime(monkeypatch):
         pytest.skip("nvidia-smi no está disponible, no se sustituye CUDA por CPU")
     if result.returncode:
         pytest.skip(f"nvidia-smi ha fallado, no se sustituye CUDA por CPU: {result.stderr.strip()}")
-    if not torch.cuda.is_available():
-        pytest.skip("CUDA no está disponible, no se sustituye por CPU")
+    skip_without_cuda()
     torch.cuda.set_device("cuda:0")
     yield torch
     torch.cuda.empty_cache()

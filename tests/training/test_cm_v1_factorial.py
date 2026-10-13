@@ -164,6 +164,7 @@ def test_declaration_rejects_changes_to_b_the_arms_or_the_factors(tmp_path, chan
         cm.load_declaration(path)
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_both_cores_start_equal_keep_equal_updates_and_emit_the_same_rows(factorial):
     (b, b_factory), (c, c_factory) = (factorial["cores"][name] for name in cm.CORES)
     root = factorial["root"] / "runs"
@@ -201,6 +202,7 @@ def test_both_cores_start_equal_keep_equal_updates_and_emit_the_same_rows(factor
     )
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_each_factor_acts_only_where_it_is_declared(factorial):
     root = factorial["root"] / "runs"
     reports = {arm: report for arm, (report, _) in factorial["arms"].items()}
@@ -228,6 +230,7 @@ def test_each_factor_acts_only_where_it_is_declared(factorial):
         assert rows["cm_v1_b"]["sample_id"] == rows["cm_v1_bm"]["sample_id"]
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_arm_and_parent_control_must_agree(factorial, tmp_path):
     root = factorial["root"] / "runs"
     options = dict(
@@ -268,6 +271,7 @@ def test_arm_and_parent_control_must_agree(factorial, tmp_path):
     assert not any((tmp_path / name).exists() for name in ("x", "y", "z"))
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_completed_arm_is_returned_and_a_changed_declaration_is_refused(factorial, tmp_path):
     root = factorial["root"] / "runs"
     report, _ = factorial["arms"]["cm_v1_bm"]
@@ -335,6 +339,7 @@ def consolidating(streams, output, native, *, capacity, policy, **retention):
     )
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_consolidation_keeps_real_admitted_episodes_within_its_capacity(
     shared, tmp_path, native, learning_doubles, monkeypatch
 ):
@@ -380,6 +385,7 @@ def test_consolidation_keeps_real_admitted_episodes_within_its_capacity(
     assert restricted > 0
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_consolidation_only_acts_when_the_bank_overflows(
     shared, tmp_path, native, learning_doubles
 ):
@@ -407,6 +413,7 @@ def test_consolidation_only_acts_when_the_bank_overflows(
     )
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_readout_accepts_the_b_core_and_refuses_a_penalized_core(shared, native):
     _, streams = shared
     plan = recipe()
@@ -431,6 +438,7 @@ def test_readout_accepts_the_b_core_and_refuses_a_penalized_core(shared, native)
         inference("penalty", 0.5)
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_each_arm_regenerates_the_rows_of_its_own_window(factorial, tmp_path):
     """La retención v2 solo libera filas que el traslado sobre la propia ventana repite."""
     from mars_titan.training import prediction_regeneration as regeneration

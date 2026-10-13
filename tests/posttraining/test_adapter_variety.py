@@ -497,6 +497,7 @@ def test_a_titans_case_must_be_an_arm_of_its_variant(matrix):
         cm.variant_arm(document, "mac_disabled", changed)
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_the_reader_core_learns_its_persistent_prompt_with_the_same_events(
     shared, tmp_path, native
 ):

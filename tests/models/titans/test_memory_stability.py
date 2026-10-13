@@ -20,9 +20,24 @@ from mars_titan.models.quantile_head import pinball_loss
 from mars_titan.models.titans import neural_memory as memory_module
 from mars_titan.models.titans.config import CERTIFIED_GATE_BOXES, PAPER_PROJECTIONS
 from mars_titan.models.titans.state import mac_tensors
+from tests.suite_support import cpu_threads
+
+
+@pytest.fixture(autouse=True)
+def _two_threads():
+    """Las huellas FP32 de CPU dependen del reparto de las sumas entre hilos de PyTorch.
+
+    Se capturaron con dos hilos, que se fijan aquí para que no dependan de la máquina.
+    """
+    before = torch.get_num_threads()
+    torch.set_num_threads(2)
+    yield
+    torch.set_num_threads(before)
+
 
 # Huellas capturadas en 42e7dbca, antes de introducir PT1, con memory_stability_traces.py en
-# CPU, FP32, OMP_NUM_THREADS=2 y MKL_NUM_THREADS=2. La comprobación CUDA fija las de cuda:0.
+# CPU, FP32, OMP_NUM_THREADS=2 y MKL_NUM_THREADS=2. Las trazas fijan esos dos hilos (#572). La
+# comprobación CUDA fija las de cuda:0.
 # Las huellas financieras se recapturaron cuando el codificador de precios pasó a calcular la
 # última capa solo para el último token (perf/campaign-kernels). Ese cambio altera el redondeo
 # FP32 de los cuantiles, el estado y los gradientes del predictor, no el de la memoria sola.
@@ -172,6 +187,14 @@ def test_disabled_component_keeps_fp32_outputs_gradients_and_state_bit_for_bit()
     assert "stability" not in api().MemoryConfig(dim=4).identity()
     config = financial().FinancialConfig(specification(), variant="mac_online")
     assert "memory_stability" not in config.identity()
+
+
+@pytest.mark.parametrize("ambient", [1, 3])
+def test_core_digests_do_not_depend_on_the_threads_of_the_session(ambient):
+    # Mismas huellas con cualquier número de hilos al empezar (#572).
+    with cpu_threads(ambient):
+        assert financial_trace() == CORE_FP32_CPU["financial"]
+        assert torch.get_num_threads() == ambient
 
 
 def test_declared_component_is_a_new_identity_with_the_same_parameter_draws():
@@ -583,4 +606,8 @@ def test_comparison_arm_is_declared_with_its_control_and_rule_but_not_executed()
     assert innovation["memory_gate_bias"] == trivial["memory_gate_bias"]
     rule = declaration["decision_rule"]
     assert rule["keep_if"][0].endswith("<= 0.002") and rule["abandon_if"][0].endswith("> 0.005")
-    assert declaration["pilot"]["gpu_hours_max"] <= 6
+    # El presupuesto sale de la medida versionada del control (PT7, #459). PT1 y su
+    # alternativa trivial cuestan por paso lo mismo que el control dentro de su dispersión.
+    receipt = json.loads((root / declaration["pilot"]["gpu_hours_basis"]).read_text())
+    per_seed = receipt["estimate"]["slowest"]["hours_per_seed"]
+    assert declaration["pilot"]["gpu_hours_max"] == math.ceil(3 * per_seed)

@@ -19,6 +19,7 @@ from mars_titan.data.batches import read_bounded_table
 from mars_titan.data.cohort_contexts import MacroVectors
 from mars_titan.data.cohort_files import read_manifest
 from mars_titan.data.input_policy import (
+    HISTORICAL_MASKED,
     INPUT_POLICIES,
     STRICT_INPUTS,
     masked_inputs,
@@ -40,6 +41,7 @@ from .cohort_contract import cohort_identity, representation_identity, validate_
 from .temporal_contract import validate_temporal_view
 
 VIEW_REASONS = {
+    "outside_subset",
     "outside_window",
     "incomplete_inputs",
     "future_inputs",
@@ -301,6 +303,59 @@ def _annual_candidates(labels, prediction, maturity, reasons, boundary):
     return candidates
 
 
+def annual_boundary(market):
+    """Última decisión de 2022 y primera de 2023 del mercado, el corte anual recuperable."""
+    clock = MarketClock(market, "2022-12-01", "2023-01-31")
+    last = max(moment for moment in clock.decisions if moment.year == 2022)
+    following = min(moment for moment in clock.decisions if moment.year == 2023)
+    return tuple(int(moment.timestamp() * 1_000_000) for moment in (last, following))
+
+
+def historical_contract(protocol, fold, parent_path, parent_sha256):
+    """Contrato temporal de una vista con máscaras, con el orden de campos publicado."""
+    return dict(
+        schema_version=2,
+        **policy_identity(HISTORICAL_MASKED),
+        protocol=protocol,
+        fold=fold,
+        selection_partition="validation",
+        recover_annual_boundaries=True,
+        parent_manifest=str(Path(parent_path).resolve()),
+        parent_sha256=parent_sha256,
+    )
+
+
+def fold_partitioners(temporal, folds):
+    """Cortes de cada ventana, preparados una vez y reutilizados en todos los activos.
+
+    `FoldPartitioner` convierte el calendario completo de decisiones al construirse y no
+    cambia después, así que rehacerlo por activo solo repetía ese trabajo.
+    """
+    return {fold["id"]: FoldPartitioner(fold, temporal.clock, temporal.protocol) for fold in folds}
+
+
+def fold_rows(
+    temporal, fold, partitioner, prediction, available, valid, maturity, accepted, source_reasons
+):
+    """Tramo y motivo de cada etiqueta de un activo en una ventana.
+
+    `partitioner` son los cortes de la ventana (`fold_partitioners`). Las filas son
+    independientes: el tramo de una etiqueta solo depende de su decisión, de la
+    disponibilidad de sus entradas y de su madurez. Quitar filas de la entrada no cambia el
+    resultado de las demás, y por eso un subconjunto puede excluirse aquí mismo.
+    """
+    temporal.fold = fold
+    temporal.partitioner = partitioner
+    assigned = temporal.assign(prediction, available, maturity, accepted)
+    assigned["partition"][~valid & accepted] = "excluded"
+    future = accepted & (available > prediction)
+    assigned["reason"][~valid & accepted] = "incomplete_inputs"
+    assigned["reason"][future] = "future_inputs"
+    assigned["partition"][future] = "excluded"
+    assigned["reason"][~accepted] = source_reasons[~accepted]
+    return assigned
+
+
 def prepare_temporal_corpus(
     parent_path,
     protocol_path,
@@ -311,12 +366,18 @@ def prepare_temporal_corpus(
     recover_annual_boundaries=False,
     input_policy=STRICT_INPUTS,
     empty_folds=(),
+    subset=None,
 ):
     """Publicar etiquetas por ventana y referencias a las modalidades originales.
 
     `empty_folds` nombra las ventanas en las que este mercado puede quedar con algún tramo
     sin filas. Solo lo usa la unión conjunta para las ventanas en las que el mercado no
     cuenta en las métricas. Las demás ventanas de la versión 2 siguen sin admitirlo.
+
+    `subset` es el manifiesto de un subconjunto declarado del catálogo de la edición
+    (`edition_subsets`). Sus etiquetas aceptadas fuera del subconjunto quedan excluidas con
+    el motivo `outside_subset`, y la vista y su informe guardan su identidad. Solo existe
+    con la edición con máscaras.
     """
     from .corpus_inputs import CorpusDataset, _times
 
@@ -329,6 +390,19 @@ def prepare_temporal_corpus(
         raise ValueError("La vista histórica conserva el macro del padre, sin otra admisión")
     began = time.perf_counter()
     parent_path, protocol_path, output = map(Path, (parent_path, protocol_path, output))
+    data_subset, members = None, None
+    if subset is not None:
+        from .edition_subsets import SubsetRows, read_subset, subset_identity
+
+        if not masked:
+            raise ValueError("Un subconjunto declarado necesita la edición con máscaras")
+        document, subset_sha256, ids = read_subset(Path(subset))
+        data_subset = dict(
+            manifest=str(Path(subset).resolve()),
+            manifest_sha256=subset_sha256,
+            **subset_identity(document),
+        )
+        members = SubsetRows(ids)
     if not masked:
         if macro_path is None or admission_path is None:
             raise ValueError("La política estricta requiere panel macro y admisión")
@@ -353,29 +427,37 @@ def prepare_temporal_corpus(
     }:
         raise ValueError("Las ventanas que admiten tramos vacíos deben ser del protocolo")
     interval_purge = protocol.get("purge") == LABEL_INTERVAL_PURGE
-    annual_boundary = None
-    if recover_annual_boundaries:
-        clock = MarketClock(protocol["market"], "2022-12-01", "2023-01-31")
-        last = max(moment for moment in clock.decisions if moment.year == 2022)
-        following = min(moment for moment in clock.decisions if moment.year == 2023)
-        annual_boundary = tuple(int(moment.timestamp() * 1_000_000) for moment in (last, following))
-    contract = dict(
-        schema_version=2 if masked else 1,
-        **policy_identity(input_policy),
-        protocol=protocol,
-        fold=folds[0],
-    )
+    boundary = annual_boundary(protocol["market"]) if recover_annual_boundaries else None
     if masked:
-        contract.update(selection_partition="validation", recover_annual_boundaries=True)
+        contract = historical_contract(protocol, folds[0], parent_path, parent.identity)
     else:
-        contract.update(
+        contract = dict(
+            schema_version=1,
+            protocol=protocol,
+            fold=folds[0],
             macro_path=str(macro_path.resolve()),
             macro_sha256=sha256(macro_path),
             admission_path=str(admission_path.resolve()),
             admission_sha256=sha256(admission_path),
+            parent_manifest=str(parent_path.resolve()),
+            parent_sha256=parent.identity,
         )
-    contract.update(parent_manifest=str(parent_path.resolve()), parent_sha256=parent.identity)
+    if data_subset is not None:
+        # La unión conjunta pasa proyecciones por mercado del padre, así que se comparan los
+        # archivos de cada activo y no la huella del manifiesto.
+        catalog, catalog_sha256 = read_manifest(Path(document["catalog"]["manifest"]))
+        described = {
+            (item["market"], item["asset_id"]): (item["samples_sha256"], item["labels_sha256"])
+            for item in catalog["assets"]
+        }
+        if catalog_sha256 != document["catalog"]["manifest_sha256"] or any(
+            described.get((asset["market"], asset["symbol"]))
+            != (asset["samples_sha256"], asset["labels_sha256"])
+            for asset in parent.assets
+        ):
+            raise ValueError("El subconjunto no se eligió sobre los objetivos de esta vista")
     temporal = TemporalInputs(contract, input_policy=input_policy)
+    partitioners = fold_partitioners(temporal, folds)
     views = {fold["id"]: copy.deepcopy(parent.manifest) for fold in folds}
     for fold in folds:
         view = views[fold["id"]]
@@ -395,6 +477,8 @@ def prepare_temporal_corpus(
                 target_horizon="next_market_session",
             )
             view["recovered_annual_labels"] = 0
+        if data_subset is not None:
+            view["data_subset"] = data_subset
     annual_candidates = 0
     output.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix=f".{output.name}.", dir=output.parent) as temporary:
@@ -426,20 +510,31 @@ def prepare_temporal_corpus(
             recovered = np.zeros(len(labels), dtype=bool)
             if recover_annual_boundaries:
                 recovered = _annual_candidates(
-                    labels, label_prediction, maturity, source_reasons, annual_boundary
+                    labels, label_prediction, maturity, source_reasons, boundary
                 )
                 accepted |= recovered
                 annual_candidates += int(recovered.sum())
+            view_reasons = source_reasons
+            if members is not None:
+                # Una etiqueta usable fuera del subconjunto no entra en ninguna ventana.
+                outside = accepted & ~members.member(
+                    asset["market"], asset["symbol"], label_prediction
+                )
+                accepted &= ~outside
+                view_reasons = source_reasons.copy()
+                view_reasons[outside] = "outside_subset"
             for fold in folds:
-                temporal.fold = fold
-                temporal.partitioner = FoldPartitioner(fold, temporal.clock, protocol)
-                assigned = temporal.assign(label_prediction, available[indices], maturity, accepted)
-                assigned["partition"][~valid[indices] & accepted] = "excluded"
-                future = accepted & (available[indices] > label_prediction)
-                assigned["reason"][~valid[indices] & accepted] = "incomplete_inputs"
-                assigned["reason"][future] = "future_inputs"
-                assigned["partition"][future] = "excluded"
-                assigned["reason"][~accepted] = source_reasons[~accepted]
+                assigned = fold_rows(
+                    temporal,
+                    fold,
+                    partitioners[fold["id"]],
+                    label_prediction,
+                    available[indices],
+                    valid[indices],
+                    maturity,
+                    accepted,
+                    view_reasons,
+                )
                 reasons = assigned["reason"]
                 used = reasons == "accepted"
                 partition = pa.array(
@@ -544,6 +639,8 @@ def prepare_temporal_corpus(
             report["recovered_annual_candidates"] = annual_candidates
         if empty_folds:
             report["empty_folds_allowed"] = list(empty_folds)
+        if data_subset is not None:
+            report["data_subset"] = data_subset
         atomic_json(stage / "report.json", report)
         _publish_directory(stage, output)
         descriptor = os.open(output.parent, os.O_RDONLY | os.O_DIRECTORY)
@@ -562,6 +659,7 @@ def main(argv=None):
         parser.add_argument("--" + name, type=Path)
     parser.add_argument("--input-policy", choices=INPUT_POLICIES, default=STRICT_INPUTS)
     parser.add_argument("--recover-annual-boundaries", action="store_true")
+    parser.add_argument("--subset", type=Path, help="Manifiesto de un subconjunto declarado")
     args = parser.parse_args(argv)
     if args.input_policy == STRICT_INPUTS and (args.macro is None or args.admission is None):
         parser.error("La política estricta necesita --macro y --admission")
@@ -573,6 +671,7 @@ def main(argv=None):
         args.output,
         recover_annual_boundaries=args.recover_annual_boundaries,
         input_policy=args.input_policy,
+        subset=args.subset,
     )
     print(json.dumps(report, ensure_ascii=False))
     return 0

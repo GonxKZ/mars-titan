@@ -275,6 +275,7 @@ def predictions(run, job, partition):
     }
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_arms_start_from_the_selected_core_of_their_window(campaign_run):
     assert campaign_run.summary["status"] == "paused"
     output = campaign_run.output
@@ -309,6 +310,7 @@ def test_arms_start_from_the_selected_core_of_their_window(campaign_run):
     )
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_only_the_compared_arms_publish_window_receipts(campaign_run):
     output = campaign_run.output
     for window in campaign_run.windows:
@@ -321,6 +323,7 @@ def test_only_the_compared_arms_publish_window_receipts(campaign_run):
             assert read_window_receipt(record).fold == window
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_b_and_b_plus_c_emit_the_same_rows_while_c_has_not_changed_the_core(campaign_run):
     by_arm = {}
     for job in campaign_run.jobs:
@@ -333,6 +336,7 @@ def test_b_and_b_plus_c_emit_the_same_rows_while_c_has_not_changed_the_core(camp
                 )
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_carry_repeats_bit_for_bit_and_needs_a_new_destination(campaign_run, tmp_path):
     job = next(j for j in campaign_run.jobs if j["arm"] == "cm_v1_bcm" and j["kind"] == "carry")
     own = receipt(campaign_run, job["id"])

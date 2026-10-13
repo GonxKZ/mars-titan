@@ -15,9 +15,10 @@ identificador físico de cada GPU se registran pero no entran en la huella. Camb
 actualización o con otro ejemplar del mismo modelo sin cambiar las bibliotecas numéricas del
 lock ni los núcleos que se ejecutan.
 
-Bajo qemu-user el intérprete informa de la arquitectura emulada, mientras que `lscpu` es un
-programa del anfitrión y describe el procesador real. Si no coinciden, la plataforma queda
-marcada como emulada y ningún perfil de hardware la admite.
+Si la arquitectura que informa el intérprete no coincide con la del procesador que describe
+`lscpu`, el intérprete se ejecuta emulado. La plataforma queda marcada como emulada y ningún
+perfil de hardware la admite. El campo forma parte de la huella desde la primera versión del
+esquema, así que se conserva aunque en el portátil sea siempre falso.
 """
 
 import hashlib
@@ -41,8 +42,7 @@ def _require(condition, message):
 
 
 def _lscpu_fields(entries):
-    # lscpu --json anida los núcleos de cada fabricante en `children`, como los dos tipos
-    # de núcleo Arm de la GB10.
+    # lscpu --json puede anidar los núcleos de cada fabricante en `children`.
     for entry in entries:
         yield entry["field"].rstrip(":"), entry.get("data")
         yield from _lscpu_fields(entry.get("children", ()))
@@ -73,7 +73,8 @@ def cpu_record(*, run=subprocess.run, torch=None):
 def cpu_name(*, run=subprocess.run):
     """Modelos del procesador en una línea, como los registran los informes de medida.
 
-    Sustituye a leer `model name` de /proc/cpuinfo, que no existe en aarch64.
+    Sustituye a leer `model name` de /proc/cpuinfo, para que solo este módulo describa el
+    procesador.
     """
     return " + ".join(cpu_record(run=run)["models"])
 
@@ -86,8 +87,7 @@ def memory_total_bytes(meminfo=Path("/proc/meminfo")):
 
 
 def _optional(value):
-    # nvidia-smi escribe [N/A] en los campos que una GPU no tiene, como la memoria propia
-    # de una GPU con memoria unificada.
+    # nvidia-smi escribe [N/A] en los campos que una GPU no informa.
     return None if value.startswith("[") else value
 
 

@@ -8,7 +8,7 @@ from mars_titan.models.baselines.multimodal import PRESENCE_FUSION
 from mars_titan.models.predictive_adaptation import adapted_copy
 from tests.models.test_predictive_adapters import FAMILIES, batch, parent, targets
 
-pytestmark = pytest.mark.skipif(not torch.cuda.is_available(), reason="Requiere cuda:0")
+pytestmark = pytest.mark.cuda
 
 
 @pytest.mark.parametrize("kind", FAMILIES)

@@ -47,6 +47,7 @@ from tests.simulation.unadjusted_edition_fixture import (
     tape_days,
     write_edition,
 )
+from tests.suite_support import missing_native
 
 ROOT = Path(__file__).resolve().parents[2]
 POLICIES = ROOT / "configs/simulation/historical-masked-rl-policies.json"
@@ -59,7 +60,8 @@ def binaries():
         engine: native_policy_runs.binary_path(engine) for engine in ("native_ppo", "native_klpo")
     }
     if not all(path.is_file() for path in paths.values()):
-        pytest.skip("Faltan mars-titan-ppo o mars-titan-klpo compilados")
+        missing = next(engine for engine, path in paths.items() if not path.is_file())
+        pytest.skip(missing_native(native_policy_runs.BINARIES[missing][0]))
     return paths
 
 
@@ -135,6 +137,7 @@ def latest_metadata(output):
     return read(output / bundle / "metadata.json")
 
 
+@pytest.mark.native("MARS_TITAN_PPO_EXECUTABLE", "MARS_TITAN_KLPO_EXECUTABLE")
 @pytest.mark.parametrize("market", ["US", "CN"])
 def test_ppo_checks_real_sources_with_the_hold_closed(binaries, tapes, tmp_path, market):
     hold = blocking(tmp_path)
@@ -193,6 +196,7 @@ def test_ppo_checks_real_sources_with_the_hold_closed(binaries, tapes, tmp_path,
         assert not output.exists()
 
 
+@pytest.mark.native("MARS_TITAN_PPO_EXECUTABLE", "MARS_TITAN_KLPO_EXECUTABLE")
 @lowers_learning_hold(f"{THIS}::test_ppo_pauses_on_real_tapes_before_its_first_update")
 @pytest.mark.parametrize("market", ["US", "CN"])
 def test_ppo_pauses_on_real_tapes_before_its_first_update(
@@ -257,6 +261,7 @@ def initial_evaluation(binary, hold, config, output, tape, *extra):
     )
 
 
+@pytest.mark.native("MARS_TITAN_PPO_EXECUTABLE", "MARS_TITAN_KLPO_EXECUTABLE")
 @pytest.mark.parametrize("market", ["US", "CN"])
 def test_initial_evaluation_pays_the_declared_costs_and_the_final_exit(
     binaries, tapes, tmp_path, market
@@ -315,6 +320,7 @@ def test_initial_evaluation_pays_the_declared_costs_and_the_final_exit(
     assert not (tmp_path / "train").exists() and not (tmp_path / "mixed").exists()
 
 
+@pytest.mark.native("MARS_TITAN_PPO_EXECUTABLE", "MARS_TITAN_KLPO_EXECUTABLE")
 @lowers_learning_hold(
     f"{THIS}::test_double_dqn_selects_and_evaluates_the_chosen_state_without_updates"
 )
@@ -369,6 +375,7 @@ def klpo_config(path, stage=None):
     )
 
 
+@pytest.mark.native("MARS_TITAN_PPO_EXECUTABLE", "MARS_TITAN_KLPO_EXECUTABLE")
 def test_klpo_checks_sources_and_plans_complete_waves_with_the_hold_closed(
     binaries, tapes, tmp_path
 ):
@@ -408,6 +415,7 @@ def test_klpo_checks_sources_and_plans_complete_waves_with_the_hold_closed(
     assert not (tmp_path / "gpu").exists()
 
 
+@pytest.mark.native("MARS_TITAN_PPO_EXECUTABLE", "MARS_TITAN_KLPO_EXECUTABLE")
 def test_klpo_initial_evaluation_runs_without_a_controller(binaries, tapes, tmp_path):
     hold = blocking(tmp_path)
     config = klpo_config(tmp_path / "klpo.json")
@@ -439,6 +447,7 @@ def test_klpo_initial_evaluation_runs_without_a_controller(binaries, tapes, tmp_
     assert identity["parameter_fingerprint"] == fingerprint
 
 
+@pytest.mark.native("MARS_TITAN_PPO_EXECUTABLE", "MARS_TITAN_KLPO_EXECUTABLE")
 @lowers_learning_hold(f"{THIS}::test_klpo_collects_a_full_wave_and_pauses_before_update_ready")
 def test_klpo_collects_a_full_wave_and_pauses_before_update_ready(
     binaries, tapes, tmp_path, learning_hold
@@ -561,6 +570,7 @@ def test_stage_tapes_mask_columns_outside_the_universe_and_carry_unpriced_exits(
         assert kinds == ["unpriced_delisting"], name
 
 
+@pytest.mark.native("MARS_TITAN_PPO_EXECUTABLE", "MARS_TITAN_KLPO_EXECUTABLE")
 def test_source_checks_accept_masked_columns_and_reject_an_unpriced_exit(
     binaries, ending, tmp_path
 ):
@@ -593,6 +603,7 @@ def test_source_checks_accept_masked_columns_and_reject_an_unpriced_exit(
     assert sealed(output / "sources.json")["status"] == "completed"
 
 
+@pytest.mark.native("MARS_TITAN_PPO_EXECUTABLE", "MARS_TITAN_KLPO_EXECUTABLE")
 def test_the_initial_evaluation_ends_an_episode_at_an_unpriced_exit(binaries, ending, tmp_path):
     """La evaluación congelada admite la baja sin precio y publica el episodio como fallido."""
     hold = blocking(tmp_path)
@@ -621,6 +632,7 @@ def test_the_initial_evaluation_ends_an_episode_at_an_unpriced_exit(binaries, en
 # El ajuste de Double DQN sobre las columnas ausentes del diseño necesita la protección abierta.
 # Mientras rija el bloqueo se omite y, después, usa la protección real sin rebajarla. Las
 # fuentes y la evaluación de la baja sin precio se comprueban arriba con la protección cerrada.
+@pytest.mark.native("MARS_TITAN_PPO_EXECUTABLE", "MARS_TITAN_KLPO_EXECUTABLE")
 @pytest.mark.skipif(
     learning_blocked(), reason="Lanza un ajuste nativo y espera a que se levante el bloqueo"
 )
@@ -639,6 +651,7 @@ def test_double_dqn_fits_over_masked_columns_without_updates(binaries, ending, t
     )
 
 
+@pytest.mark.native("MARS_TITAN_PPO_EXECUTABLE", "MARS_TITAN_KLPO_EXECUTABLE")
 def test_klpo_rejects_a_budget_below_one_complete_wave(binaries, tapes, tmp_path):
     hold = blocking(tmp_path)
     us = tapes["US"]
@@ -667,6 +680,7 @@ def group_config(path, stage, objective="grpo_outcome_v1"):
     )
 
 
+@pytest.mark.native("MARS_TITAN_PPO_EXECUTABLE", "MARS_TITAN_KLPO_EXECUTABLE")
 def test_group_objectives_reject_lonely_lanes_and_unknown_identities(binaries, tapes, tmp_path):
     hold = blocking(tmp_path)
     us = tapes["US"]
@@ -689,6 +703,7 @@ def blocking(tmp_path):
     return path
 
 
+@pytest.mark.native("MARS_TITAN_PPO_EXECUTABLE", "MARS_TITAN_KLPO_EXECUTABLE")
 def test_the_learning_hold_stops_every_real_tape_command_before_outputs(binaries, tapes, tmp_path):
     hold = blocking(tmp_path)
     stage = diagnostic_stage(rollout_transitions=16)
@@ -755,6 +770,7 @@ def without_rules(source, folder):
     return folder
 
 
+@pytest.mark.native("MARS_TITAN_PPO_EXECUTABLE", "MARS_TITAN_KLPO_EXECUTABLE")
 def test_reconstructed_sources_keep_role_order_basis_and_rules(binaries, tapes, tmp_path):
     hold = blocking(tmp_path)
     stage = diagnostic_stage(rollout_transitions=16)
@@ -792,6 +808,7 @@ def test_reconstructed_sources_keep_role_order_basis_and_rules(binaries, tapes, 
         assert not output.exists(), name
 
 
+@pytest.mark.native("MARS_TITAN_PPO_EXECUTABLE", "MARS_TITAN_KLPO_EXECUTABLE")
 def test_schema_four_rejects_masks_hmm_and_other_variants(binaries, tapes, tmp_path):
     hold = blocking(tmp_path)
     base = native_policy_runs.ppo_config(
@@ -841,6 +858,7 @@ def policy_tapes(market_tapes, *, evaluation=True):
     )
 
 
+@pytest.mark.native("MARS_TITAN_PPO_EXECUTABLE", "MARS_TITAN_KLPO_EXECUTABLE")
 @lowers_learning_hold(f"{THIS}::test_stage_executors_fit_carry_and_pause_through_the_launcher")
 def test_stage_executors_fit_carry_and_pause_through_the_launcher(
     binaries, tapes, tmp_path, learning_hold
@@ -943,6 +961,7 @@ def test_stage_writes_chinese_tapes_with_their_a_share_rules(tapes, tmp_path):
     assert manifest["instruments"] == read(folder / "manifest.json")["instruments"]
 
 
+@pytest.mark.native("MARS_TITAN_PPO_EXECUTABLE", "MARS_TITAN_KLPO_EXECUTABLE")
 def test_declared_costs_and_session_equity_reach_the_frozen_evaluation(binaries, tapes, tmp_path):
     """Costes y patrimonio por sesión de la evaluación inicial, con la protección cerrada.
 
@@ -1016,6 +1035,7 @@ def test_declared_costs_and_session_equity_reach_the_frozen_evaluation(binaries,
     assert not (tmp_path / "training").exists()
 
 
+@pytest.mark.native("MARS_TITAN_PPO_EXECUTABLE", "MARS_TITAN_KLPO_EXECUTABLE")
 @lowers_learning_hold(f"{THIS}::test_the_stage_confirms_the_declared_costs_of_a_fit")
 def test_the_stage_confirms_the_declared_costs_of_a_fit(binaries, tapes, tmp_path, learning_hold):
     learning_hold(True)
@@ -1060,6 +1080,7 @@ def launch(binary, hold, *arguments, gpu=False):
     )
 
 
+@pytest.mark.native("MARS_TITAN_PPO_EXECUTABLE", "MARS_TITAN_KLPO_EXECUTABLE")
 @pytest.mark.parametrize("engine", ["native_ppo", "native_klpo"])
 def test_the_launcher_admits_the_modes_without_learning_with_the_hold_closed(
     binaries, tapes, tmp_path, engine
@@ -1113,6 +1134,7 @@ def test_the_launcher_admits_the_modes_without_learning_with_the_hold_closed(
     assert not (tmp_path / "x").exists() and not (tmp_path / "y").exists()
 
 
+@pytest.mark.native("MARS_TITAN_PPO_EXECUTABLE", "MARS_TITAN_KLPO_EXECUTABLE")
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="Necesita cuda:0 visible")
 @pytest.mark.parametrize("engine", ["native_ppo", "native_klpo"])
 def test_the_initial_evaluation_on_cuda_stays_within_the_tolerance_of_the_cpu(

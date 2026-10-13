@@ -78,9 +78,9 @@ function(mars_titan_configure_target target)
 endfunction()
 
 if(MARS_TITAN_ENABLE_CUDA)
-    # Arquitecturas declaradas: sm_89 para la RTX 4070 Laptop y sm_121 para la GB10. Solo SASS,
-    # sin PTX, de modo que otra GPU falla al cargar en lugar de compilar en ejecución sin aviso.
-    set(CMAKE_CUDA_ARCHITECTURES "89-real;121-real" CACHE STRING "Arquitecturas CUDA declaradas")
+    # Arquitectura declarada: sm_89 para la RTX 4070 Laptop. Solo SASS, sin PTX, de modo que
+    # otra GPU falla al cargar en lugar de compilar en ejecución sin aviso.
+    set(CMAKE_CUDA_ARCHITECTURES "89-real" CACHE STRING "Arquitecturas CUDA declaradas")
     if(CMAKE_CUDA_ARCHITECTURES MATCHES "^(native|all|all-major)$")
         message(FATAL_ERROR "Las arquitecturas CUDA se declaran una a una para no depender de la máquina")
     endif()
@@ -123,6 +123,25 @@ if(MARS_TITAN_BUILD_SIMULATION)
         set_tests_properties(concurrency PROPERTIES LABELS "concurrency")
         set_tests_properties(c_abi PROPERTIES LABELS "integration;c17")
         mars_titan_sanitizer_test_environment(simulation concurrency c_abi)
+    endif()
+
+    # Proyección del codec episódico, sin LibTorch, para el enlace de Python y sus pruebas.
+    add_library(mars_titan_episodic_projection STATIC src/episodic_projection.cpp)
+    target_include_directories(mars_titan_episodic_projection PUBLIC
+        "${CMAKE_CURRENT_SOURCE_DIR}/include")
+    set_target_properties(mars_titan_episodic_projection PROPERTIES POSITION_INDEPENDENT_CODE ON)
+    mars_titan_configure_target(mars_titan_episodic_projection)
+    list(APPEND mars_analysis_sources "${CMAKE_CURRENT_SOURCE_DIR}/src/episodic_projection.cpp")
+    add_executable(mars-titan-projection-benchmark benchmarks/episodic_projection.cpp)
+    target_link_libraries(mars-titan-projection-benchmark PRIVATE mars_titan_episodic_projection)
+    mars_titan_configure_target(mars-titan-projection-benchmark)
+    if(BUILD_TESTING)
+        add_executable(episodic_projection_tests tests/episodic_projection_tests.cpp)
+        target_link_libraries(episodic_projection_tests PRIVATE mars_titan_episodic_projection)
+        mars_titan_configure_target(episodic_projection_tests)
+        add_test(NAME episodic_projection COMMAND episodic_projection_tests)
+        set_tests_properties(episodic_projection PROPERTIES TIMEOUT 120 LABELS "unit;memory")
+        mars_titan_sanitizer_test_environment(episodic_projection)
     endif()
 
     if(MARS_TITAN_BUILD_FINANCIAL)
@@ -409,6 +428,7 @@ if(MARS_TITAN_BUILD_SIMULATION)
     if(MARS_TITAN_BUILD_FINANCIAL)
         set(identity_files ${mars_analysis_sources}
             "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/simulation.h"
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/episodic_projection.hpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/financial_session.hpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/financial_batch.hpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/markov_filter.hpp"
@@ -579,18 +599,3 @@ foreach(test IN LISTS MARS_TITAN_OPTIMIZER_STEP_TESTS)
     endif()
 endforeach()
 
-# Bajo un emulador cada prueba conserva su límite relativo multiplicado por un factor declarado.
-set(MARS_TITAN_TEST_TIMEOUT_SCALE 1 CACHE STRING "Factor entero de los límites de CTest")
-if(NOT MARS_TITAN_TEST_TIMEOUT_SCALE MATCHES "^[1-9][0-9]*$")
-    message(FATAL_ERROR "MARS_TITAN_TEST_TIMEOUT_SCALE debe ser un entero positivo")
-endif()
-if(BUILD_TESTING AND MARS_TITAN_TEST_TIMEOUT_SCALE GREATER 1)
-    get_directory_property(registered_tests TESTS)
-    foreach(test IN LISTS registered_tests)
-        get_test_property(${test} TIMEOUT limit)
-        if(limit)
-            math(EXPR limit "${limit} * ${MARS_TITAN_TEST_TIMEOUT_SCALE}")
-            set_tests_properties(${test} PROPERTIES TIMEOUT ${limit})
-        endif()
-    endforeach()
-endif()
