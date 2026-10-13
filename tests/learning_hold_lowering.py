@@ -342,7 +342,7 @@ REDIRECTIONS = {
     "tests/training/test_modality_ablation_native.py": (3, _REUSES),
     "tests/training/test_modality_ablation_stage.py": (8, _REUSES),
     "tests/training/test_prediction_regeneration.py": (4, _REUSES),
-    "tests/training/test_rolling_retention.py": (8, _REUSES),
+    "tests/training/test_rolling_retention.py": (9, _REUSES),
     "tests/training/test_titans_campaign.py": (1, _RECORDER),
     "tests/training/test_titans_walk_forward.py": (1, _RECORDER),
 }
