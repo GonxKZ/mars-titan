@@ -241,6 +241,31 @@ def test_window_noise_uses_label_minus_core_residuals_of_each_market_session(tai
     assert all(phase.decision_start <= moment < phase.decision_end for moment in sessions.tolist())
 
 
+def test_residual_rows_keep_the_market_of_each_flow():
+    # La vista de las pruebas solo tiene EE. UU. Con dos mercados en la misma sesión, cada fila
+    # debe conservar el suyo para que el estimador no mezcle sus cohortes.
+    rows = mc._Residuals()
+    for flow, decision, issued, value in (
+        ("US/AAA", 1, 0.5, 1.0),
+        ("US/BBB", 1, 0.0, 0.25),
+        ("CN/600000", 1, 0.25, -0.5),
+        ("CN/000001", 1, 0.0, -0.25),
+        ("US/AAA", 2, 0.0, 0.75),
+        ("US/BBB", 2, 0.5, 0.5),
+        ("CN/600000", 2, 1.0, 1.5),
+        ("CN/000001", 2, 0.0, 0.25),
+    ):
+        rows.append((flow, decision, issued, value, None))
+    assert rows.values == [0.5, 0.25, -0.75, -0.25, 0.75, 0.0, 0.5, 0.25]
+    assert rows.markets == ["US", "US", "CN", "CN", "US", "US", "CN", "CN"]
+    assert rows.sessions == [1, 1, 1, 1, 2, 2, 2, 2]
+    estimate = estimate_cohort_noise(
+        rows.values, rows.markets, np.asarray(rows.sessions, dtype=np.int64), correlation_cap=CAP
+    )
+    # Cuatro sesiones, una por mercado e instante. Sin el mercado serían dos.
+    assert estimate["markets"] == ["CN", "US"] and estimate["sessions"] == 4
+
+
 def test_window_records_its_estimation_tramo_and_a_resumed_window_reuses_it(tail, monkeypatch):
     calls, original = [], mc.window_cohort_noise
 
