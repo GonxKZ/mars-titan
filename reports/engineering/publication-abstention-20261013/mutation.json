@@ -1,0 +1,446 @@
+[
+ {
+  "name": "A1 orden por predicción con signo",
+  "module": "src/mars_titan/evaluation/forecast_scores.py",
+  "original": "key = np.where(eligible, -np.abs(panel.prediction), np.inf)",
+  "mutant": "key = np.where(eligible, -panel.prediction, np.inf)",
+  "tests": [
+   "tests/evaluation/test_abstention_coverage.py",
+   "tests/integrity/test_abstention_marks.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 3 passed in 1.44s",
+  "verdict": "muere"
+ },
+ {
+  "name": "A2 filas sin juzgar retenidas",
+  "module": "src/mars_titan/evaluation/forecast_scores.py",
+  "original": "key = np.where(eligible, -np.abs(panel.prediction), np.inf)",
+  "mutant": "key = -np.abs(panel.prediction)",
+  "tests": [
+   "tests/evaluation/test_abstention_coverage.py",
+   "tests/integrity/test_abstention_marks.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed in 1.21s",
+  "verdict": "muere"
+ },
+ {
+  "name": "A3 sesión sin filas juzgables con una retenida",
+  "module": "src/mars_titan/evaluation/forecast_scores.py",
+  "original": "return np.where(eligible > 0, _retained(eligible, coverage), 0)",
+  "mutant": "return _retained(eligible, coverage)",
+  "tests": [
+   "tests/evaluation/test_abstention_coverage.py",
+   "tests/integrity/test_abstention_marks.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 1 passed in 1.26s",
+  "verdict": "muere"
+ },
+ {
+  "name": "A4 aciertos sin recortar a la cobertura",
+  "module": "src/mars_titan/evaluation/forecast_scores.py",
+  "original": "found[:, index] = _count(panel, keep & ranked)",
+  "mutant": "found[:, index] = _count(panel, ranked)",
+  "tests": [
+   "tests/evaluation/test_abstention_coverage.py",
+   "tests/integrity/test_abstention_marks.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed in 1.14s",
+  "verdict": "muere"
+ },
+ {
+  "name": "A5 filas retenidas de la curva sin recortar",
+  "module": "src/mars_titan/evaluation/forecast_scores.py",
+  "original": "retained_rows=int(np.sum(retained[:, index])),",
+  "mutant": "retained_rows=int(np.sum(self.direction_eligible)),",
+  "tests": [
+   "tests/evaluation/test_abstention_coverage.py",
+   "tests/integrity/test_abstention_marks.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 2 passed in 1.18s",
+  "verdict": "muere"
+ },
+ {
+  "name": "A6 tabla sin aciertos selectivos",
+  "module": "src/mars_titan/evaluation/forecast_scores.py",
+  "original": "        if self.selective_hits is not None:\n            columns[\"selective_hits\"]",
+  "mutant": "        if False:\n            columns[\"selective_hits\"]",
+  "tests": [
+   "tests/evaluation/test_abstention_coverage.py",
+   "tests/integrity/test_abstention_marks.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 2 passed in 1.17s",
+  "verdict": "muere"
+ },
+ {
+  "name": "A7 cobertura mínima estricta",
+  "module": "src/mars_titan/evaluation/abstention_coverage.py",
+  "original": "return coverage is not None and Fraction(coverage) >= Fraction(MIN_CALL_COVERAGE)",
+  "mutant": "return coverage is not None and Fraction(coverage) > Fraction(MIN_CALL_COVERAGE)",
+  "tests": [
+   "tests/evaluation/test_abstention_coverage.py",
+   "tests/integrity/test_abstention_marks.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 4 passed in 1.20s",
+  "verdict": "muere"
+ },
+ {
+  "name": "A8 contraste siempre elegible",
+  "module": "src/mars_titan/evaluation/abstention_coverage.py",
+  "original": "row[\"eligible\"] = not low",
+  "mutant": "row[\"eligible\"] = True",
+  "tests": [
+   "tests/evaluation/test_abstention_coverage.py",
+   "tests/integrity/test_abstention_marks.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 4 passed in 1.22s",
+  "verdict": "muere"
+ },
+ {
+  "name": "A9 marca en todas las métricas",
+  "module": "src/mars_titan/evaluation/abstention_coverage.py",
+  "original": "    if metric not in CALL_CONDITIONED:\n        return entry",
+  "mutant": "    if False:\n        return entry",
+  "tests": [
+   "tests/evaluation/test_abstention_coverage.py",
+   "tests/integrity/test_abstention_marks.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 4 passed in 1.15s",
+  "verdict": "muere"
+ },
+ {
+  "name": "A10 llamadas por encima de las filas admitidas",
+  "module": "src/mars_titan/evaluation/abstention_coverage.py",
+  "original": "_require(0 <= calls <= eligible,",
+  "mutant": "_require(0 <= calls,",
+  "tests": [
+   "tests/evaluation/test_abstention_coverage.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 4 passed in 1.06s",
+  "verdict": "muere"
+ },
+ {
+  "name": "A11 cobertura de una sola semilla",
+  "module": "src/mars_titan/evaluation/walk_forward_comparison.py",
+  "original": "sum(int(np.sum(scores[view].direction_calls)) for scores in seeds),",
+  "mutant": "sum(int(np.sum(scores[view].direction_calls)) for scores in seeds[:1]),",
+  "tests": [
+   "tests/integrity/test_abstention_marks.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 2 passed in 1.53s",
+  "verdict": "muere"
+ },
+ {
+  "name": "A12 comparación sin marcas",
+  "module": "src/mars_titan/evaluation/walk_forward_comparison.py",
+  "original": "rows[metric] = abstention_coverage.mark(entry, metric, coverage)",
+  "mutant": "rows[metric] = entry",
+  "tests": [
+   "tests/integrity/test_abstention_marks.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed in 1.51s",
+  "verdict": "muere"
+ },
+ {
+  "name": "A13 informe sin cobertura de llamadas",
+  "module": "src/mars_titan/evaluation/walk_forward_comparison.py",
+  "original": "call_coverage={view: _call_coverage(overall, view) for view in names},",
+  "mutant": "call_coverage={},",
+  "tests": [
+   "tests/integrity/test_abstention_marks.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed in 1.52s",
+  "verdict": "muere"
+ },
+ {
+  "name": "A14 matriz sin marcas",
+  "module": "src/mars_titan/evaluation/session_table_contrasts.py",
+  "original": "abstention_coverage.mark(entry, metric, coverage)",
+  "mutant": "entry",
+  "tests": [
+   "tests/integrity/test_abstention_marks.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 2 passed in 1.58s",
+  "verdict": "muere"
+ },
+ {
+  "name": "A15 matriz sin reglas",
+  "module": "src/mars_titan/evaluation/comparison_matrix.py",
+  "original": "abstention=abstention_coverage.declaration(),",
+  "mutant": "abstention=None,",
+  "tests": [
+   "tests/integrity/test_abstention_marks.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 2 passed in 1.52s",
+  "verdict": "muere"
+ },
+ {
+  "name": "A16 marca sin cotejar",
+  "module": "src/mars_titan/integrity/abstention_marks.py",
+  "original": "if row.get(\"eligible\") is not expected:",
+  "mutant": "if False:",
+  "tests": [
+   "tests/integrity/test_abstention_marks.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 3 passed in 2.33s",
+  "verdict": "muere"
+ },
+ {
+  "name": "A17 cobertura del contraste sin cotejar",
+  "module": "src/mars_titan/integrity/abstention_marks.py",
+  "original": "elif row.get(\"call_coverage\") != {arm: coverage[arm] for arm in arms}:",
+  "mutant": "elif False:",
+  "tests": [
+   "tests/integrity/test_abstention_marks.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 5 passed in 5.11s",
+  "verdict": "muere"
+ },
+ {
+  "name": "A18 cobertura publicada sin cotejar",
+  "module": "src/mars_titan/integrity/abstention_marks.py",
+  "original": "if published.get(\"call_coverage\") != found:",
+  "mutant": "if False:",
+  "tests": [
+   "tests/integrity/test_abstention_marks.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 6 passed in 5.72s",
+  "verdict": "muere"
+ },
+ {
+  "name": "A19 reglas sin cotejar",
+  "module": "src/mars_titan/integrity/abstention_marks.py",
+  "original": "if any(published.get(key) != value for key, value in rules.items()):",
+  "mutant": "if False:",
+  "tests": [
+   "tests/integrity/test_abstention_marks.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 7 passed in 6.97s",
+  "verdict": "muere"
+ },
+ {
+  "name": "A20 filas de la curva sin cotejar",
+  "module": "src/mars_titan/integrity/abstention_marks.py",
+  "original": "if point[\"retained_rows\"] != retained or point[\"hits\"] != int(",
+  "mutant": "if False or point[\"hits\"] != int(",
+  "tests": [
+   "tests/integrity/test_abstention_marks.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 9 passed in 10.38s",
+  "verdict": "muere"
+ },
+ {
+  "name": "A21 aciertos de la curva sin cotejar",
+  "module": "src/mars_titan/integrity/abstention_marks.py",
+  "original": "hits[:, index].sum()",
+  "mutant": "point[\"hits\"]",
+  "tests": [
+   "tests/integrity/test_abstention_marks.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 8 passed in 8.13s",
+  "verdict": "muere"
+ },
+ {
+  "name": "A22 cobertura recalculada fija",
+  "module": "src/mars_titan/integrity/abstention_marks.py",
+  "original": "else int(row.direction_calls) / int(row.direction_eligible)",
+  "mutant": "else 1.0",
+  "tests": [
+   "tests/integrity/test_abstention_marks.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 3 passed in 2.67s",
+  "verdict": "muere"
+ },
+ {
+  "name": "A23 integridad sin la abstención",
+  "module": "src/mars_titan/integrity/comparison_integrity.py",
+  "original": "and wrong == 0 and abstention[\"passed\"],",
+  "mutant": "and wrong == 0,",
+  "tests": [
+   "tests/integrity/test_abstention_marks.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 3 passed in 3.39s",
+  "verdict": "muere"
+ },
+ {
+  "name": "A24 puerta sin la matriz",
+  "module": "src/mars_titan/integrity/publication_gate.py",
+  "original": "passed = passed and marks[\"passed\"]",
+  "mutant": "passed = passed",
+  "tests": [
+   "tests/integrity/test_abstention_marks.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 11 passed in 11.40s",
+  "verdict": "muere"
+ },
+ {
+  "name": "A25 publicación sin la matriz",
+  "module": "src/mars_titan/training/campaign_publication.py",
+  "original": "entry[\"matrix\"] = partial / \"matrix\" / scope / \"matrix.json\"",
+  "mutant": "entry[\"matrix\"] = None",
+  "tests": [
+   "tests/integrity/test_publication_gate.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 6 passed in 2.45s",
+  "verdict": "muere"
+ },
+ {
+  "name": "A26 empates por orden de lectura",
+  "module": "src/mars_titan/integrity/independent_scores.py",
+  "original": "    if mixed.any():\n",
+  "mutant": "    if False:\n",
+  "tests": [
+   "tests/evaluation/test_abstention_coverage.py",
+   "tests/integrity/test_independent_scores.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 3 passed in 1.44s",
+  "verdict": "muere"
+ },
+ {
+  "name": "A27 filas retenidas por defecto",
+  "module": "src/mars_titan/integrity/independent_scores.py",
+  "original": "        retained = -(-(c.numerator * counts) // c.denominator)\n",
+  "mutant": "        retained = (c.numerator * counts) // c.denominator\n",
+  "tests": [
+   "tests/evaluation/test_abstention_coverage.py",
+   "tests/integrity/test_independent_scores.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 3 passed in 1.12s",
+  "verdict": "muere"
+ },
+ {
+  "name": "A28 filas sin juzgar en la curva independiente",
+  "module": "src/mars_titan/integrity/independent_scores.py",
+  "original": "    judged = np.flatnonzero(data[\"direction_eligible\"].to_numpy() == 1)\n",
+  "mutant": "    judged = np.arange(len(data))\n",
+  "tests": [
+   "tests/evaluation/test_abstention_coverage.py",
+   "tests/integrity/test_independent_scores.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 3 passed in 1.15s",
+  "verdict": "muere"
+ },
+ {
+  "name": "A29 cotejo de aciertos selectivos ciego",
+  "module": "src/mars_titan/integrity/score_recheck.py",
+  "original": "mismatched = int(np.count_nonzero((a != b).any(axis=1)))",
+  "mutant": "mismatched = 0",
+  "tests": [
+   "tests/evaluation/test_abstention_coverage.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 3 passed in 1.10s",
+  "verdict": "muere"
+ },
+ {
+  "name": "A30 recálculo sin identidad de fila",
+  "module": "src/mars_titan/integrity/score_recheck.py",
+  "original": "columns = [\"asset_id\", \"market\", \"prediction_at\", \"target\", \"prediction\"]",
+  "mutant": "columns = [\"market\", \"prediction_at\", \"target\", \"prediction\"]",
+  "tests": [
+   "tests/integrity/test_abstention_marks.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 10 passed in 10.21s",
+  "verdict": "muere"
+ },
+ {
+  "name": "A31 empates sin la |predicción|",
+  "module": "src/mars_titan/integrity/independent_scores.py",
+  "original": "~(same_session & (strength[1:] == strength[:-1]))",
+  "mutant": "~same_session",
+  "tests": [
+   "tests/evaluation/test_abstention_coverage.py",
+   "tests/integrity/test_independent_scores.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 3 passed in 1.19s",
+  "verdict": "muere"
+ },
+ {
+  "name": "A32 aciertos sin seguir a su fila al desempatar",
+  "module": "src/mars_titan/integrity/independent_scores.py",
+  "original": "        hits[mixed] = hits[mixed][inside]\n",
+  "mutant": "",
+  "tests": [
+   "tests/evaluation/test_abstention_coverage.py",
+   "tests/integrity/test_independent_scores.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 3 passed in 1.07s",
+  "verdict": "muere"
+ },
+ {
+  "name": "A33 sesión sin filas juzgables con aciertos",
+  "module": "src/mars_titan/integrity/independent_scores.py",
+  "original": "selective_hits.reindex(result.index, fill_value=0)",
+  "mutant": "selective_hits.reindex(result.index, fill_value=1)",
+  "tests": [
+   "tests/evaluation/test_abstention_coverage.py",
+   "tests/integrity/test_independent_scores.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 23 passed in 1.95s",
+  "verdict": "muere"
+ }
+]
