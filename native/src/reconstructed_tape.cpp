@@ -6,7 +6,7 @@
 #include <chrono>
 #include <cmath>
 #include <cstddef>
-#include <cstdio>
+#include <format>
 #include <map>
 #include <stdexcept>
 #include <string>
@@ -237,14 +237,13 @@ int64_t beijing_at(std::string_view value) {
 }
 
 // Fecha de calendario de la sesión: el cierre de EE. UU. y de China cae en el mismo día UTC.
+// check_sessions ya limita los cierres a sus tramos walk-forward, así que el año tiene cuatro
+// cifras. std::format no usa un búfer fijo que GCC tema truncar.
 std::string session_day(const MarketTape& tape, std::size_t session) {
     const std::chrono::year_month_day date{std::chrono::floor<std::chrono::days>(
         std::chrono::sys_time<std::chrono::microseconds>{
             std::chrono::microseconds{tape.close_times.at(session)}})};
-    std::array<char, iso_day_length + 1> text{};
-    std::snprintf(text.data(), text.size(), "%04d-%02u-%02u", static_cast<int>(date.year()),
-                  static_cast<unsigned>(date.month()), static_cast<unsigned>(date.day()));
-    return {text.data(), iso_day_length};
+    return std::format("{:%F}", date);
 }
 
 // Tramos [inicio, fin) ordenados, sin solapes y dentro de la cobertura comprobada. Solo el

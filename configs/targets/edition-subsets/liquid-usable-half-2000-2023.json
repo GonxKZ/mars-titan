@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "kind": "edition_subset_definition",
+  "markets": [
+    "CN",
+    "US"
+  ],
+  "years": {
+    "first": 2000,
+    "last": 2023
+  },
+  "labels": "usable",
+  "name": "liquid-usable-half-2000-2023",
+  "liquidity": {
+    "declared_at": "2026-10-13",
+    "source": "unadjusted_reconstructed_verified_rows_up_to_the_last_published_session_v1",
+    "edition_id": "1ac3727836462ce31c39b5438918bd6f3e0d359690c7bc79bfa87cd808c8e68c",
+    "cut": "calendar_year_start_utc_v1",
+    "price_below": 1.0,
+    "volume_below": 1000,
+    "volume_sessions": 20,
+    "keep": [
+      "liquid"
+    ]
+  },
+  "sample": {
+    "fraction": 0.5,
+    "strata": [
+      "market",
+      "year"
+    ],
+    "seed": 20261013
+  },
+  "notes": "La mitad de las filas del universo líquido en cada mercado y año, con semilla, para medir cuánto se pierde con la mitad de los datos."
+}
