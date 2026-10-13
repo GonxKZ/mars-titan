@@ -1,6 +1,6 @@
-"""Postentrenamiento de un brazo con lector episódico: núcleo, lectura o ambos.
+"""Postentrenamiento de un modelo con lector episódico: núcleo, lectura o ambos.
 
-El brazo de MARS-TITAN o CM-v1 es un núcleo Titans-MAC `mac_online` congelado y un lector
+El modelo de MARS-TITAN o CM-v1 es un núcleo Titans-MAC `mac_online` congelado y un lector
 episódico ajustado sobre él. `ReadoutAdapterTrainer` recorre los mismos instantes, bancos y
 etiquetas maduras que `ReadoutTrainer` y solo cambia lo que se ajusta:
 
@@ -66,7 +66,7 @@ class ReadoutAdapterTrainer(ReadoutTrainer):
             )
         self.core = bool(adapter_names(predictor))
         self.core_rows, self._source, self._measured = core_rows, None, None
-        # Por etapas, las escalas M3 son las congeladas del brazo padre en su ventana.
+        # Por etapas, las escalas M3 son las congeladas del modelo padre en su ventana.
         self._parent_scalers = (posttraining.get("placement") or {}).get("scalers")
         control = predictor.local_control
         self.penalized = self.core and control is not None and control.config.mode == "penalty"
@@ -95,7 +95,7 @@ class ReadoutAdapterTrainer(ReadoutTrainer):
             asdict(scalers) != self._parent_scalers
             or scalers.decision_end > train.phase.decision_start
         ):
-            raise ValueError("Las escalas M3 no son las del brazo padre anteriores al ajuste")
+            raise ValueError("Las escalas M3 no son las del modelo padre anteriores al ajuste")
         return None
 
     # Con el núcleo adaptado, el padre debe ser mac_online sin diagnóstico C y solo pueden

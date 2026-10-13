@@ -3,7 +3,7 @@
 La campaña completa no cabe en el disco si conserva todas las tablas por fila. La retención
 v2, declarada antes de cualquier resultado, recorre cada ventana de campaña en este orden:
 
-1. `base`: ajustes de todos los brazos, selección, semillas extra del elegido y traslados.
+1. `base`: ajustes de todos los modelos, selección, semillas extra del elegido y traslados.
 2. `adapters`, `ablation` y `rl`: etapas posteriores de esa ventana. Con el walk-forward
    por etapas, los adaptadores y las políticas reciben un informe de disjunción calculado
    justo antes, y las políticas leen la cadena de la salida de los adaptadores.
@@ -427,7 +427,7 @@ class Rolling:
                 self.campaign_path, self.views, self.output, scope, window=window
             )
             sources = comparison.load_sources(path, restricted, scope)
-            # Los agregados se puntúan con los brazos y familias del ámbito, como la
+            # Los agregados se puntúan con los modelos y familias del ámbito, como la
             # comparación final que los leerá (en US y CN, los del diseño conjunto).
             restricted = comparison.scope_config(restricted, scope)
             masked = None
@@ -717,6 +717,7 @@ def default_runners(campaign_path, views, output, *, storage=None, stages=None, 
             output,
             entry["edition"],
             entry["output"],
+            listing_status=entry["listing_status"],
             stop=stop,
             window=window,
             chain_output=chain_output,
@@ -773,6 +774,11 @@ def main(argv=None):
     parser.add_argument(
         "--edition", type=Path, help="Edición de precios sin ajustar (políticas y cartera)"
     )
+    parser.add_argument(
+        "--listing-status",
+        type=Path,
+        help="Tabla del estado de cotización que declaran las políticas",
+    )
     args = parser.parse_args(argv)
     views = engine._views_argument(args.views)
     retention = load_retention(args.retention)
@@ -785,7 +791,8 @@ def main(argv=None):
             stages[key] = dict(stage=stage, output=output)
     if "rl" in stages:
         _require(args.edition is not None, "Las políticas necesitan --edition")
-        stages["rl"]["edition"] = args.edition
+        _require(args.listing_status is not None, "Las políticas necesitan --listing-status")
+        stages["rl"].update(edition=args.edition, listing_status=args.listing_status)
     runners = default_runners(
         args.campaign, views, args.output, storage=args.storage, stages=stages
     )

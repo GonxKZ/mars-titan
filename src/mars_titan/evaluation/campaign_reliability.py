@@ -267,7 +267,7 @@ def evaluate_campaign_reliability(reference, completion, output, *, input_policy
 
     Los cocientes por fila conservan sus conteos. Las medias por sesión dan el
     mismo peso a cada par de mercado e instante con denominador definido y
-    declaran cuántas sesiones entran en cada media. En el brazo conjunto se
+    declaran cuántas sesiones entran en cada media. En el modelo conjunto se
     calibran y evalúan los mercados por separado. No se mezclan folds. La
     política de entradas se declara y se transmite a la admisión de las vistas.
     """

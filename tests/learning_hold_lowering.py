@@ -15,6 +15,11 @@ import pytest
 from mars_titan.training.learning_hold import learning_blocked
 
 INVENTORY = {
+    "tests/training/test_quantile_head_control.py::"
+    "test_hold_reinstated_after_a_job_stops_before_the_next_one": (
+        "el primer trabajo del control de la cabeza tiene que pasar la protección para "
+        "comprobar que vuelve a leerse antes del segundo, aunque el ejecutor sustituido no ajusta"
+    ),
     "tests/training/test_modality_ablation_carry.py::"
     "test_b6_ablation_equals_the_correction_with_a_real_absence": (
         "prepara dos ventanas B6 con run_correction_window y traslada una con carry_correction "

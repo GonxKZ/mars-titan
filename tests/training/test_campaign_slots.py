@@ -514,7 +514,7 @@ def test_each_arm_corrects_only_its_own_estimate(tmp_path):
     estimates = PeakEstimates(execution, tmp_path / "observed.json")
     estimates.observe(online, dict(peak_vram_reserved_bytes=5000 * MIB))
     assert estimates.resources(online, "cuda").vram_bytes == (5000 + CONTEXT_MIB) * MIB
-    # El pico de un brazo grande no impide empaquetar los pequeños del mismo modelo.
+    # El pico de una configuración grande no impide empaquetar las pequeñas del mismo modelo.
     assert estimates.resources(frozen, "cuda") == declared
 
 
@@ -536,15 +536,16 @@ def test_arms_override_their_model_in_every_scope(tmp_path):
         job = dict(id="x", model="titans_mac", arm=arm, scope=scope)
         return execution.resources(job, "cuda")
 
-    # La VRAM del brazo sustituye a la del modelo en todos los ámbitos y su RAM solo en CN.
+    # La VRAM de la configuración sustituye a la del modelo en todos los ámbitos, y su RAM
+    # solo en CN.
     assert resources("titans_mac_online", "US+CN") == JobResources("cuda", 6000 * MIB, 9 * GIB)
     assert resources("titans_mac_online", "CN") == JobResources("cuda", 6000 * MIB, 4 * GIB)
-    # Los demás brazos conservan lo del modelo en cada ámbito.
+    # Las demás configuraciones conservan lo del modelo en cada ámbito.
     assert resources("titans_mac_frozen", "CN") == JobResources("cuda", 1280 * MIB, 5 * GIB)
     campaign = load_campaign("configs/baselines/historical-masked-campaign-a.json")
     check_plan(execution, plan_campaign(campaign), engine.EXECUTORS)
     for arms, message in (
-        (dict(titans_mac_paper=dict(vram_mib=1024)), "brazos que no tiene"),
+        (dict(titans_mac_paper=dict(vram_mib=1024)), "modelos que no tiene"),
         (dict(titans_mac_online=dict(vram_mib=8000)), "supera el presupuesto"),
     ):
         titans["arms"] = arms

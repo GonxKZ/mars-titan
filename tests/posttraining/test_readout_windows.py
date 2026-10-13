@@ -5,7 +5,7 @@ La campaña base es la de `test_mars_titan_campaign`: B sobre US con `titans_mac
 3 parte del lector elegido en la ventana reentrenada y se ajusta en ella y, como en el
 walk-forward por etapas, con las filas nuevas de la siguiente. El padre congelado predice
 esa siguiente ventana sin ajustar. El optimizador registra gradientes sin modificar pesos,
-así que todas las predicciones deben ser las del brazo base o las de su padre congelado.
+así que todas las predicciones deben ser las del modelo base o las de su padre congelado.
 Necesita el enlace nativo del banco episódico.
 """
 
@@ -145,7 +145,7 @@ def test_staged_cases_fit_only_the_new_rows_of_the_next_window(windows):
         identity = report["identity"]
         placement = identity["posttraining"]["placement"]
         assert placement["design"] == cw.STAGED and placement["parent_window"] == "fold-000"
-        # M1 no fija escalas. Con M3 serían las del ajuste del brazo padre.
+        # M1 no fija escalas. Con M3 serían las del ajuste del modelo padre.
         assert placement["scalers"] is None
         start = placement["fit_start"]
         since = int(np.datetime64(start, "us").astype(np.int64))
