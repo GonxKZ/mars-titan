@@ -19,7 +19,7 @@ Las pruebas que requieren CUDA, un binario nativo o Node.js comprueban su dispon
 
 | Marca | Significado | Cómo se aplica |
 | --- | --- | --- |
-| `slow` | La suma de los casos de la función alcanza dos segundos | `tests/conftest.py` la añade a las funciones de [slow_tests.txt](slow_tests.txt) |
+| `slow` | La suma de los casos de la función alcanza un segundo | `tests/conftest.py` la añade a las funciones de [slow_tests.txt](slow_tests.txt) |
 | `cuda` | Necesita `cuda:0` | `@pytest.mark.cuda` o `requires_cuda`. Sin CUDA la sesión la omite con un motivo común |
 | `native` | Necesita un artefacto nativo | `@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")` omite la prueba si falta el artefacto. Sin argumentos solo selecciona. `native_binding` la implica |
 | `unguarded_fit` | Ajusta sin pasar por un punto de entrada protegido | Se omite mientras rige la protección del aprendizaje |
@@ -31,11 +31,11 @@ uv run --locked pytest -q -m "not slow and not native and not cuda"
 uv run --locked pytest -q -rs -m "native and not cuda" tests/memory
 ```
 
-La lista de pruebas lentas procede de una ejecución completa con sus informes JUnit. La del 10 de octubre de 2026 se midió con cobertura, que alarga los tiempos, sobre la suite CPU con los binarios nativos. Para regenerarla se ejecuta la suite con `--junitxml` y se revisa el diff:
+La lista de pruebas lentas procede de informes JUnit. La actual junta dos medidas del 10 de octubre de 2026: la suite CPU completa con cobertura y los binarios nativos, que alarga los tiempos, y `make test-fast` en un clon limpio con el equipo cargado. Una función entra si sus casos suman un segundo o más en alguna de las dos. Para regenerarla se ejecuta la suite con `--junitxml` y se revisa el diff. Con varios informes de ejecuciones distintas, cada función conserva el mayor de sus tiempos:
 
 ```bash
 uv run --locked pytest -q --junitxml=suite.xml
-uv run --locked python scripts/list_slow_tests.py --threshold 2 suite.xml > tests/slow_tests.txt
+uv run --locked python scripts/list_slow_tests.py --threshold 1 suite.xml > tests/slow_tests.txt
 ```
 
 `tests/test_suite_support.py` comprueba que cada función de la lista sigue existiendo.

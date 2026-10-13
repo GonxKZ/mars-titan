@@ -39,7 +39,7 @@ Las variables `THREADS` (por defecto 2), `NATIVE_JOBS` (2) y `RUN` (`uv run --lo
 
 | Marca | Significado |
 | --- | --- |
-| `slow` | La función tarda dos segundos o más en la medida de [tests/slow_tests.txt](tests/slow_tests.txt) |
+| `slow` | La suma de los casos de la función alcanza un segundo en las medidas de [tests/slow_tests.txt](tests/slow_tests.txt) |
 | `native` | Necesita un binario o enlace nativo. Sin él se omite y el motivo dice qué preset lo compila y qué variable lo declara |
 | `cuda` | Necesita `cuda:0`. Sin CUDA se omite y nunca pasa a CPU |
 | `unguarded_fit` | Ajusta sin pasar por un punto de entrada protegido. Se omite mientras rige el bloqueo de aprendizaje |

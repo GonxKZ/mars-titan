@@ -27,14 +27,22 @@ def test_junit_names_map_to_the_pytest_function_id():
         slow.function_id("tests.memory.helpers", "test_x")
 
 
-def test_parametrized_cases_add_up_across_reports(tmp_path):
+def test_cases_add_up_in_a_report_and_reports_keep_the_largest_time(tmp_path):
     first = junit(
         tmp_path / "a.xml",
-        [("tests.data.test_a", "test_x[1]", "1.25"), ("tests.data.test_a", "test_y", "0.5")],
+        [
+            ("tests.data.test_a", "test_x[1]", "1.25"),
+            ("tests.data.test_a", "test_x[2]", "0.75"),
+            ("tests.data.test_a", "test_y", "0.5"),
+        ],
     )
-    second = junit(tmp_path / "b.xml", [("tests.data.test_a", "test_x[2]", "0.75")])
+    # Otra ejecución de las mismas funciones no se suma a la primera.
+    second = junit(
+        tmp_path / "b.xml",
+        [("tests.data.test_a", "test_x[1]", "1.5"), ("tests.data.test_a", "test_y", "0.75")],
+    )
     seconds = slow.totals([first, second])
-    assert seconds == {"tests/data/test_a.py::test_x": 2.0, "tests/data/test_a.py::test_y": 0.5}
+    assert seconds == {"tests/data/test_a.py::test_x": 2.0, "tests/data/test_a.py::test_y": 0.75}
     lines = slow.render(seconds, 2.0).splitlines()
     assert [line for line in lines if not line.startswith("#")] == ["tests/data/test_a.py::test_x"]
     assert "2 s" in lines[0]
