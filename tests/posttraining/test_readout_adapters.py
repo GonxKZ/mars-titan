@@ -6,7 +6,6 @@ mismo punto y se pueden comparar entre modelos y entre tamaños de bloque.
 """
 
 import copy
-import json
 from pathlib import Path
 
 import pytest
@@ -19,6 +18,7 @@ from mars_titan.posttraining.readout_adapters import ReadoutAdapterTrainer
 from mars_titan.training import mars_titan_run as mt
 from mars_titan.training.checkpoints import load_training_state
 from mars_titan.training.learning_hold import HOLD_ENV
+from tests.learning_hold_lowering import allowed_hold
 from tests.training.test_financial_run import RecordingOptimizer, StopAtStep, entries
 from tests.training.test_financial_run import shared as shared
 from tests.training.test_financial_run_control import control
@@ -102,8 +102,7 @@ def arms(shared, tmp_path_factory, native):
     """Las cuatro variantes de M1 sobre el mismo padre y lector, con el registrador."""
     _, streams = shared
     root = tmp_path_factory.mktemp("readout-adapters")
-    hold = root / "hold.json"
-    hold.write_text(json.dumps({"training_allowed": True}))
+    hold = allowed_hold(root / "hold.json")
     result = {}
     with pytest.MonkeyPatch.context() as patch:
         # Dobles del aprendizaje: el registrador nunca modifica pesos.

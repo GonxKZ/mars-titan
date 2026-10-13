@@ -28,6 +28,7 @@ from mars_titan.training import campaign_chain, chain_disjunction
 from mars_titan.training.campaign_plan import load_campaign, plan_campaign
 from mars_titan.training.label_maturity import FIT_PARTITIONS, label_maturity
 from mars_titan.training.learning_hold import LearningHoldError
+from tests.learning_hold_lowering import lowers_learning_hold
 from tests.posttraining.campaign_fixture import CpuLease, base_campaign
 from tests.posttraining.real_only import real_data_only
 
@@ -530,13 +531,18 @@ def test_a_paused_case_resumes_its_cursor_without_repeating_updates(base_a, tmp_
     assert len(recorder.optimizers) == 6
 
 
-def test_the_hold_blocks_before_reading_and_before_each_pending_job(
-    base_a, tmp_path, recorder, learning_hold
-):
+def test_the_hold_blocks_before_reading(base_a, tmp_path, learning_hold):
     learning_hold(False)
     with pytest.raises(LearningHoldError):
         run(base_a, tmp_path / "never")
     assert not (tmp_path / "never").exists()
+
+
+@lowers_learning_hold(
+    "tests/posttraining/test_adapter_campaign_stage.py::"
+    "test_the_hold_is_read_again_before_each_pending_job"
+)
+def test_the_hold_is_read_again_before_each_pending_job(base_a, tmp_path, recorder, learning_hold):
     allowed = learning_hold(True)
 
     def block(optimizer):

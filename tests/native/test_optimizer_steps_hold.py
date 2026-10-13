@@ -42,8 +42,15 @@ NOT_STEPPING = {
 }
 # Pruebas que ejecutan un programa que entrena, pero que se detiene antes del primer paso.
 # La primera solo pasa si aparece el mensaje de una protección bloqueada. La segunda debe
-# fallar, porque el programa rechaza cuda:1 al leer los argumentos.
-REFUSED = {"adapter_control_cli_hold": "hold", "adapter_control_cli_invalid": "arguments"}
+# fallar, porque el programa rechaza cuda:1 al leer los argumentos. Las dos últimas, en CPU y
+# en cuda:0, llaman a las entradas que dan pasos solo dentro de `refused`, que exige el error
+# del cerrojo de solo evaluación (#546).
+REFUSED = {
+    "adapter_control_cli_hold": "hold",
+    "adapter_control_cli_invalid": "arguments",
+    "policy_evaluation_only": "latch",
+    "policy_evaluation_only_cuda": "latch",
+}
 
 NAMES = sorted({name for names in STEPPING.values() for name in names})
 # Llamadas como método o con nombre cualificado. Las declaraciones de las cabeceras no cuentan.
@@ -260,7 +267,16 @@ def test_refused_runs_stop_before_the_first_step():
     found = registry()
     for test, reason in REFUSED.items():
         properties = found.properties[test]
-        if reason == "hold":
+        if reason == "latch":
+            sources = [
+                NATIVE / source
+                for target in found.executed(test)
+                for source in found.sources[target]
+            ]
+            lines = [line for source in sources for line in source.read_text().splitlines()]
+            calls = [line for line in lines if CALL.search(line) or STEP.search(line)]
+            assert calls and all("refused([" in line for line in calls), test
+        elif reason == "hold":
             environment = properties["ENVIRONMENT"]
             expected = properties["PASS_REGULAR_EXPRESSION"]
             assert "MARS_TITAN_TRAINING_HOLD=${MARS_TITAN_BLOCKED_HOLD}" in environment
@@ -324,4 +340,64 @@ def test_a_new_library_path_to_an_optimizer_must_be_declared(native_copy):
     assert undeclared == [
         "campaign_fit.cpp llama a ['update_ready']",
         "custom_optimizer.cpp usa torch::optim",
+    ]
+
+
+# Entradas que crean un aprendiz con optimizador, fuera de la política, por el archivo que las
+# define. Con el cerrojo de solo evaluación (#546) deben detenerse antes de construir nada.
+LEARNERS = {
+    "ppo_training.cpp": r"PpoTrainer::PpoTrainer\([^{]*\{",
+    "klpo_learning.cpp": r"struct KlpoLearningController::Impl \{\s*Impl\([^{]*\{",
+}
+LATCH = "require_optimizer_steps_allowed("
+ADAM_STEP = re.compile(r"\b\w*optimizer\w*\s*(?:\.|->)\s*step\s*\(\s*\)")
+
+
+def _first_statement(text, signature):
+    """Primera línea de código después de la llave que abre `signature`, sin comentarios."""
+    found = re.search(signature, text, re.S)
+    assert found, signature
+    lines = (line.strip() for line in text[found.end() :].splitlines())
+    return next(line for line in lines if line and not line.startswith("//"))
+
+
+def latch_findings(native=NATIVE):
+    """Pasos de Adam y entradas de ajuste que no consultan antes el cerrojo."""
+    findings = []
+    policy = (native / "src" / "ppo_policy.cpp").read_text()
+    helper = re.search(r"void apply_adam_step\([^)]*\) \{\n(.*?)\n\}", policy, re.S)
+    if not helper or not helper.group(1).strip().startswith(LATCH):
+        findings.append("apply_adam_step no consulta el cerrojo antes del paso")
+    steps = [match.group(0) for match in ADAM_STEP.finditer(policy)]
+    if steps != ["optimizer.step()"] or (helper and "optimizer.step()" not in helper.group(1)):
+        findings.append(f"pasos de Adam fuera de apply_adam_step: {steps}")
+    for name in (*STEPPING["ppo_policy.cpp"], "enable_terminal_adam", "load_mode"):
+        if not _first_statement(policy, rf"\bPpoPolicy::{name}\([^)]*\)[^{{;]*\{{").startswith(
+            LATCH
+        ):
+            findings.append(f"PpoPolicy::{name} no empieza por el cerrojo")
+    for file, signature in LEARNERS.items():
+        if not _first_statement((native / "src" / file).read_text(), signature).startswith(LATCH):
+            findings.append(f"{file} crea su aprendiz sin consultar el cerrojo")
+    return findings
+
+
+def test_every_adam_step_and_learner_passes_through_the_evaluation_latch():
+    assert latch_findings() == []
+
+
+def test_a_step_or_a_learner_outside_the_latch_is_reported(native_copy):
+    policy = native_copy / "src" / "ppo_policy.cpp"
+    _edit(policy, '    require_optimizer_steps_allowed("la actualización Double DQN");\n', "")
+    _edit(
+        policy,
+        "    optimizer.step();\n}",
+        "    optimizer.step();\n}\nvoid extra(A& a) { a.optimizer->step(); }",
+    )
+    training = native_copy / "src" / "ppo_training.cpp"
+    _edit(training, '    require_optimizer_steps_allowed("el entrenador PPO");\n', "")
+    assert latch_findings(native_copy) == [
+        "pasos de Adam fuera de apply_adam_step: ['optimizer.step()', 'optimizer->step()']",
+        "PpoPolicy::update_double_dqn no empieza por el cerrojo",
+        "ppo_training.cpp crea su aprendiz sin consultar el cerrojo",
     ]

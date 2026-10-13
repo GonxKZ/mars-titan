@@ -13,6 +13,7 @@ from mars_titan.training.learning_hold import (
     install_optimizer_guard,
     learning_blocked,
 )
+from tests.learning_hold_lowering import allowed_hold
 from tests.suite_support import (
     NATIVE_MARKER,
     NATIVE_SELECTION,
@@ -138,13 +139,16 @@ def learning_hold(tmp_path_factory, monkeypatch):
 
 
 @pytest.fixture
-def learning_doubles(learning_hold):
+def learning_doubles(tmp_path_factory, monkeypatch):
     """Permitir un lanzador cuyo aprendizaje está sustituido por binarios o ejecutores simulados.
 
     Solo procede cuando la prueba no puede ejecutar ningún ajuste real. El gancho de PyTorch
-    instalado al inicio de la sesión sigue omitiendo cualquier paso de optimizador.
+    instalado al inicio de la sesión sigue omitiendo cualquier paso de optimizador. Cada
+    archivo que lo pide figura en el inventario de `tests/learning_hold_lowering.py`.
     """
-    return learning_hold(True)
+    path = allowed_hold(tmp_path_factory.mktemp("learning-hold") / "training-hold.json")
+    monkeypatch.setenv(HOLD_ENV, str(path))
+    return path
 
 
 @pytest.fixture(scope="session")
