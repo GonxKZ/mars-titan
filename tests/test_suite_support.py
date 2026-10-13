@@ -10,6 +10,7 @@ from pathlib import Path
 
 import pytest
 
+from tests.learning_hold_lowering import lowers_learning_hold
 from tests.suite_support import (
     CUDA_REASON,
     NATIVE_ARTIFACTS,
@@ -514,6 +515,9 @@ def test_markers_skip_with_their_reason_and_select_with_m(tmp_path):
     assert "1 passed, 1 skipped, 3 deselected" in fast.stdout, fast.stdout
 
 
+@lowers_learning_hold(
+    "tests/test_suite_support.py::test_unguarded_fits_run_when_the_hold_allows_learning"
+)
 def test_unguarded_fits_run_when_the_hold_allows_learning(tmp_path):
     result = selection_probe(tmp_path, True, "-m", "unguarded_fit")
     assert "1 passed, 4 deselected" in result.stdout, result.stdout
