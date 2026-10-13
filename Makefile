@@ -9,9 +9,9 @@ NATIVE_JOBS ?= 2
 BUILD := $(CURDIR)/build/native
 DOCS_OUT ?= $(CURDIR)/build/docs
 
-# Pruebas de CTest que aplican pasos de optimizador con las bibliotecas nativas. Solo se
-# ejecutan con una selección explícita, fuera del bloqueo de aprendizaje (tests/README.md).
-NATIVE_EXPLICIT := ^(ppo_policy|ppo_training|ppo_gru_packing|adapter_control)$$
+# Etiquetas de CTest que test-native no ejecuta: las pruebas que aplican pasos de optimizador
+# (solo fuera del bloqueo de aprendizaje, tests/README.md) y las que necesitan CUDA.
+CTEST_EXCLUDED := ^(optimizer-steps|cuda)$$
 
 # Artefactos nativos que leen las pruebas, con las rutas que deja `make native-build`. Solo
 # se declaran los que existen: una ruta declarada que no existe hace fallar la prueba.
@@ -54,7 +54,7 @@ test-native: ## Pruebas que usan los binarios de native-build y su CTest, sin CU
 	$(CPU_ENV) $(NATIVE_ENV) $(RUN) pytest -q -rs -m "native and not cuda"
 	@set -e; for preset in native-release native-ppo-release native-candidate-cuda; do \
 		$(CPU_ENV) ctest --test-dir $(BUILD)/$$preset --output-on-failure -j 1 \
-			-LE cuda -E '$(NATIVE_EXPLICIT)'; \
+			-LE '$(CTEST_EXCLUDED)'; \
 	done
 
 test-cuda: ## Pruebas marcadas cuda en cuda:0. Reserva la GPU para esta única carga
