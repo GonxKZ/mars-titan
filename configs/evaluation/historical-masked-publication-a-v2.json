@@ -35,6 +35,24 @@
     },
     "transformer_compact": {
       "iterations": "Las mismas épocas y la misma regla del protocolo, pero con lotes de filas en lugar del recorrido cronológico de los modelos con memoria"
+    },
+    "mars_titan_b6": {
+      "iterations": "No ajusta parámetros: cada trabajo predice los tramos medidos con el η de su caso de la receta B6 sobre el padre congelado, sin épocas ni regla de parada, y por eso queda fuera de los grupos de la parada conjunta (#437, #523 y #525)"
+    },
+    "mars_titan_b6_bias": {
+      "iterations": "No ajusta parámetros: cada trabajo predice los tramos medidos con el η de su caso de la receta B6 sobre el padre congelado, sin épocas ni regla de parada, y por eso queda fuera de los grupos de la parada conjunta (#437, #523 y #525)"
+    },
+    "mars_titan_b6_regime": {
+      "iterations": "No ajusta parámetros: cada trabajo predice los tramos medidos con el η de su caso de la receta B6 sobre el padre congelado, sin épocas ni regla de parada, y por eso queda fuera de los grupos de la parada conjunta (#437, #523 y #525)"
+    },
+    "mars_titan_b6_calendar": {
+      "iterations": "No ajusta parámetros: cada trabajo predice los tramos medidos con el η de su caso de la receta B6 sobre el padre congelado, sin épocas ni regla de parada, y por eso queda fuera de los grupos de la parada conjunta (#437, #523 y #525)"
+    },
+    "mars_titan_b6_regime_banks": {
+      "iterations": "No ajusta parámetros: cada trabajo predice los tramos medidos con el η de su caso de la receta B6 sobre el padre congelado, sin épocas ni regla de parada, y por eso queda fuera de los grupos de la parada conjunta (#437, #523 y #525)"
+    },
+    "mars_titan_b6_calendar_banks": {
+      "iterations": "No ajusta parámetros: cada trabajo predice los tramos medidos con el η de su caso de la receta B6 sobre el padre congelado, sin épocas ni regla de parada, y por eso queda fuera de los grupos de la parada conjunta (#437, #523 y #525)"
     }
   },
   "final_test_opened": false
