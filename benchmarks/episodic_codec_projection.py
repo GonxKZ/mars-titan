@@ -22,6 +22,7 @@ import numpy as np
 from numpy._core import _multiarray_umath
 
 from mars_titan.data.input_policy import STRICT_INPUTS
+from mars_titan.hardware.platform_identity import cpu_name
 from mars_titan.memory import episodic_codec
 from mars_titan.memory.episodic_codec import FrozenEpisodeCodec, projection_backend
 from mars_titan.memory.native_backend import load_native
@@ -146,17 +147,6 @@ def measure(codec, spec, native, rows):
     )
 
 
-def cpu_model():
-    try:
-        with open("/proc/cpuinfo", encoding="utf-8") as handle:
-            for line in handle:
-                if line.startswith("model name"):
-                    return line.split(":", 1)[1].strip()
-    except OSError:
-        return None
-    return None
-
-
 def main(output):
     native = load_native()
     if projection_backend(native) != "native":
@@ -172,7 +162,7 @@ def main(output):
         native_sha256=native.binary_sha256,
         native_isa=native.codec_projection_isa,
         cpu=dict(
-            model=cpu_model(),
+            model=cpu_name(),
             machine=platform.machine(),
             avx2=features.get("AVX2"),
             avx512f=features.get("AVX512F"),
