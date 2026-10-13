@@ -299,9 +299,10 @@ class ViewCohortSource:
     cuesta una lectura del tramo, así que los consumidores piden la secuencia entera.
 
     `since` (microsegundos) deja solo las sesiones con decisión en ese instante o después.
-    El índice y su población no cambian. Si todas las sesiones de la fuente caben en el
-    presupuesto, la primera lectura las conserva y las épocas siguientes no vuelven a leer
-    el tramo.
+    `sessions` deja solo las decisiones enumeradas, todas del índice, como el repaso de
+    sesiones anteriores de `posttraining.replay_inputs`. El índice y su población no
+    cambian. Si todas las sesiones de la fuente caben en el presupuesto, la primera lectura
+    las conserva y las épocas siguientes no vuelven a leer el tramo.
     """
 
     def __init__(
@@ -314,6 +315,7 @@ class ViewCohortSource:
         input_policy,
         stop=None,
         since=None,
+        sessions=None,
     ):
         self.manifest_path = Path(manifest)
         meta, self.manifest_sha256 = read_manifest(self.manifest_path)
@@ -355,13 +357,29 @@ class ViewCohortSource:
         self.market_bounds, self.bounds, self.index = checked_index(
             meta, record, partition, input_policy, self.max_assets
         )
+        if since is not None and sessions is not None:
+            raise ValueError("Una fuente se limita desde un instante o a sesiones enumeradas")
         if since is not None:
             if type(since) is not int or since <= 0:
                 raise ValueError("El inicio de las sesiones debe ser un instante en microsegundos")
             self.index = [row for row in self.index if row[0] >= since]
             if not self.index:
                 raise ValueError("No hay sesiones del tramo desde el inicio declarado")
-        self.since = since
+        if sessions is not None:
+            wanted = list(sessions)
+            if (
+                not wanted
+                or any(type(at) is not int for at in wanted)
+                or len(set(wanted)) != len(wanted)
+                or not set(wanted) <= {row[0] for row in self.index}
+            ):
+                raise ValueError(
+                    "Las sesiones enumeradas deben ser decisiones distintas del índice"
+                )
+            chosen = set(wanted)
+            self.index = [row for row in self.index if row[0] in chosen]
+            sessions = tuple(row[0] for row in self.index)
+        self.since, self.sessions = since, sessions
         self.offsets = np.cumsum([0] + [row[1] for row in self.index])
         self.max_block_bytes = max_block_bytes
         # El plan del primer bloque supone filas completas. Los siguientes usan lo medido.
