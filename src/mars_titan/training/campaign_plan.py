@@ -286,7 +286,7 @@ _FIELDS_V2 = {
     "data_policy",
 }
 # Secciones opcionales de la versión 2: el walk-forward por etapas y el control en línea.
-_OPTIONAL_V2 = {"walk_forward_stages", "online_controls"}
+_OPTIONAL_V2 = {"walk_forward_stages", "online_controls", "data_subset"}
 _SEED_POLICY = {"search_seed", "selected_case_seeds", "deterministic_arms"}
 # Modos de parada de la versión 2: la regla del protocolo o la sección early_stop, que
 # declara la meseta individual o la parada conjunta de los grupos emparejados.
@@ -902,6 +902,23 @@ def _cm_v1(section, arms, rule, policy, base, count, rules=None):
     )
 
 
+def _data_subset(declared, base):
+    """Identidad del subconjunto declarado de la edición que deben usar todas las vistas."""
+    from .edition_subsets import read_subset, subset_identity
+
+    _require(
+        isinstance(declared, dict)
+        and set(declared) == {"manifest", "sha256"}
+        and isinstance(declared["manifest"], str)
+        and isinstance(declared["sha256"], str),
+        "El subconjunto se declara con su manifiesto y su huella",
+    )
+    path = (base / declared["manifest"]).resolve()
+    document, digest, _ = read_subset(path, rows=False)
+    _require(digest == declared["sha256"], "El subconjunto declarado cambió")
+    return dict(manifest=str(path), manifest_sha256=digest, **subset_identity(document))
+
+
 def load_campaign(path):
     """Validar la campaña y resolver comparación, protocolos, regla y candidatos."""
     path = Path(path)
@@ -1004,6 +1021,8 @@ def load_campaign(path):
         tabular=_tabular(config["tabular"], arms, policy, base),
         **_optional_sections(config, arms, rule, policy, base, count, rules),
     )
+    if "data_subset" in config:
+        campaign["data_subset"] = _data_subset(config["data_subset"], base)
     for scope in scopes:
         _arm_specs(campaign, scope)
     if version == 2:
