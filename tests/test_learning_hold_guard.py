@@ -30,7 +30,14 @@ from pathlib import Path
 
 import pytest
 
-from tests.learning_hold_lowering import DOUBLES, INVENTORY, READERS, REDIRECTIONS
+from mars_titan.training.learning_hold import HOLD_ENV
+from tests.learning_hold_lowering import (
+    DOUBLES,
+    INVENTORY,
+    READERS,
+    REDIRECTIONS,
+    lowers_learning_hold,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 FOLDERS = ("tests", "benchmarks", "scripts", "reports")
@@ -173,12 +180,9 @@ def problems(root=ROOT):
     found = [
         f"{key} rebaja la protección fuera del inventario" for key in opened if key not in INVENTORY
     ]
-    # En Python solo `allowed_hold` escribe una protección permitida. En C++, el lector nativo.
-    found += [
-        f"{site} escribe una protección permitida"
-        for site in written
-        if ".py:" in site or site not in READERS
-    ]
+    # En Python solo `allowed_hold` escribe una protección permitida: cada sitio lleva su línea
+    # y nunca coincide con un archivo declarado. En C++ se admite el lector nativo de READERS.
+    found += [f"{site} escribe una protección permitida" for site in written if site not in READERS]
     found += [
         f"{site} escribe una protección con un valor desconocido"
         for site in dynamic
@@ -217,6 +221,16 @@ def test_every_inventoried_test_exists_and_skips_while_the_hold_blocks():
             marks = [ast.unparse(item) for item in functions[name].decorator_list]
         assert any("lowers_learning_hold" in mark for mark in marks), key
         assert reason
+
+
+def test_the_mark_skips_with_a_blocking_hold_and_refuses_an_unknown_key(monkeypatch, tmp_path):
+    blocking = tmp_path / "hold.json"
+    blocking.write_text('{"training_allowed": false}', encoding="utf-8")
+    monkeypatch.setenv(HOLD_ENV, str(blocking))
+    mark = lowers_learning_hold(next(iter(INVENTORY))).mark
+    assert mark.args == (True,) and "inventario de #546" in mark.kwargs["reason"]
+    with pytest.raises(KeyError, match="no figura en el inventario"):
+        lowers_learning_hold("tests/otra.py::test_x")
 
 
 def test_every_declaration_has_its_reason():

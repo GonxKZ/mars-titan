@@ -181,6 +181,16 @@ def test_ppo_checks_real_sources_with_the_hold_closed(binaries, tapes, tmp_path,
     )
     assert result.returncode == 1 and "se ejecuta en CPU" in result.stderr
     assert not (tmp_path / "gpu").exists()
+    # Los dos modos solo leen cintas reconstruidas: una configuración sintética se rechaza.
+    synthetic = ROOT / "configs/simulation/native-ppo-diagnostic.json"
+    for mode in (sources(tapes[market]), ["--audit-tape", tapes[market]["evaluation"][0][0]]):
+        flag = "--check-sources" if "--train-tape" in mode else "--initial-evaluation"
+        output = tmp_path / flag.strip("-")
+        result = run(
+            binaries["native_ppo"], hold, "--config", synthetic, "--output", output, *mode, flag
+        )
+        assert result.returncode == 1 and "solo admiten cintas reconstruidas" in result.stderr
+        assert not output.exists()
 
 
 @lowers_learning_hold(f"{THIS}::test_ppo_pauses_on_real_tapes_before_its_first_update")
@@ -384,6 +394,18 @@ def test_klpo_checks_sources_and_plans_complete_waves_with_the_hold_closed(
     assert identity["sources"]["validation"][0]["role"] == "validation"
     # Las oleadas que publica son las del presupuesto de la etapa.
     assert native_policy_runs.klpo_waves((us["train"][1][1],), 1, 32) == (32 // wave, wave)
+    # La comprobación tampoco usa la GPU en KLPO.
+    gpu = ["--config", config, "--output", tmp_path / "gpu", *sources(us, train=(1,))]
+    result = subprocess.run(
+        [str(binaries["native_klpo"]), *map(str, gpu), "--check-sources", "--device", "cuda:0"],
+        env=dict(os.environ, CUDA_VISIBLE_DEVICES="-1", **{HOLD_ENV: str(hold)}),
+        capture_output=True,
+        text=True,
+        timeout=300,
+        check=False,
+    )
+    assert result.returncode == 1 and "se ejecuta en CPU" in result.stderr
+    assert not (tmp_path / "gpu").exists()
 
 
 def test_klpo_initial_evaluation_runs_without_a_controller(binaries, tapes, tmp_path):

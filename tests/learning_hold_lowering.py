@@ -148,6 +148,9 @@ _WARMUP = (
 _RETIRED = "comprueba que la campaña B retirada se rechaza antes de llegar a ningún ejecutor"
 _COUNTED = "las pasadas de ajuste solo cuentan actualizaciones y la validación es fija"
 _CLOSES = "solo apunta la variable a una protección que bloquea"
+_BINARY = (
+    "pasa al binario la protección de cada prueba, que bloquea salvo en las pruebas de INVENTORY"
+)
 _READER = "prueba el lector de la protección con protecciones temporales y ausentes"
 _OPENING = READERS["tests/evaluation/test_final_test_opening.py"]
 _REUSES = (
@@ -213,8 +216,8 @@ REDIRECTIONS = {
     "tests/posttraining/test_learning_hold_entrypoints.py": (2, _READER),
     "tests/posttraining/test_readout_adapters.py": (1, _RECORDER),
     "tests/simulation/rl_stage_fixture.py": (1, _CAMPAIGN),
-    "tests/simulation/test_native_learning_hold.py": (1, _CLOSES),
-    "tests/simulation/test_native_policy_tapes.py": (3, _CLOSES),
+    "tests/simulation/test_native_learning_hold.py": (1, _BINARY),
+    "tests/simulation/test_native_policy_tapes.py": (4, _BINARY),
     "tests/simulation/test_native_ppo_launcher.py": (3, _CLOSES),
     "tests/simulation/test_policy_device_parity.py": (1, _CLOSES),
     "tests/training/test_campaign_a_joint.py": (1, _CAMPAIGN),
