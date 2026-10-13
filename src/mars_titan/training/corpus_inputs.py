@@ -16,13 +16,13 @@ import pyarrow.parquet as pq
 
 from mars_titan.data.batches import read_bounded_table
 from mars_titan.data.cohort_files import read_manifest
+from mars_titan.data.input_perturbations import read_variant, variant_modalities
 from mars_titan.data.input_policy import (
     MODALITIES,
     STRICT_INPUTS,
     masked_inputs,
     validate_historical_vectors,
 )
-from mars_titan.data.modality_ablation import ablate_samples, ablated_modalities
 from mars_titan.data.price_windows import (
     PRICE_FEATURES,
     PRICE_WINDOW_CHANNELS,
@@ -405,9 +405,10 @@ def _calendar_price_contexts(prices, rows):
 class CorpusDataset:
     """Validar una edición y reutilizar sus huellas mientras no cambien los archivos.
 
-    `modality_ablation` nombra una variante de `data.modality_ablation`. Solo existe con la
-    edición con máscaras: las modalidades de la variante se leen como una ausencia real en
-    todas las filas. Sin ella, la lectura no cambia.
+    `modality_ablation` nombra una variante de lectura: una ablación de `data.modality_ablation`,
+    cuyas modalidades se leen como una ausencia real en todas las filas, o una perturbación
+    declarada de `data.input_perturbations`. Solo existe con la edición con máscaras. Sin
+    ella, la lectura no cambia.
 
     `pipeline` declara los hilos de decodificación y los lotes adelantados. Sin ella se
     leen de `PipelineOptions.from_environment`, que por defecto es la ruta secuencial. La
@@ -448,7 +449,7 @@ class CorpusDataset:
         if modality_ablation is not None:
             if not self.masked:
                 raise ValueError("La ablación de modalidades necesita la edición con máscaras")
-            ablated_modalities(modality_ablation)
+            variant_modalities(modality_ablation)
         self.modality_ablation = modality_ablation
         self.cohort = cohort_identity(meta, input_policy=input_policy)
         from .temporal_contract import temporal_contracts
@@ -829,7 +830,7 @@ class CorpusDataset:
         if self.cache_sample_tables and cache_miss:
             self._remember(cache_key, signature, table)
         if self.modality_ablation is not None:
-            table, decoded = self._ablated(table, decoded)
+            table, decoded = self._ablated(table, decoded, asset)
         return table, *decoded
 
     def _converted(self, table, asset):
@@ -849,11 +850,12 @@ class CorpusDataset:
         )
         return timestamps, ends, vectors, presence, availability, availability_valid
 
-    def _ablated(self, table, decoded):
-        # La lectura original ya pasó sus comprobaciones. La tabla ablacionada vuelve a
-        # pasarlas igual que una muestra con la modalidad ausente.
+    def _ablated(self, table, decoded, asset):
+        # La lectura original ya pasó sus comprobaciones. La tabla de la variante vuelve a
+        # pasarlas igual que una muestra con la modalidad ausente o con esos valores.
         timestamps, ends = decoded[:2]
-        table = ablate_samples(table, self.modality_ablation)
+        key = f"{asset['market']}/{asset['symbol']}"
+        table = read_variant(table, self.modality_ablation, key)
         vectors = _vectors(table, historical=True)
         presence = _presence(table, vectors, self.manifest["representation"])
         availability, availability_valid = _availability(table, presence=presence)
@@ -889,7 +891,7 @@ class CorpusDataset:
             validate_cohort_rows(table, self.cohort)
             decoded = self._converted(table, first["asset"])
             if self.modality_ablation is not None:
-                _, decoded = self._ablated(table, decoded)
+                _, decoded = self._ablated(table, decoded, first["asset"])
         except Exception:  # La lectura por grupo reproduce el mismo error.
             return None
         starts = dict(zip(groups, np.cumsum([0, *sizes[:-1]]).tolist(), strict=True))
