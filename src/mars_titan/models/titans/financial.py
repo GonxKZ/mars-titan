@@ -38,6 +38,16 @@ from .config import (
 from .financial_inputs import FINAL_TEST_US, HISTORICAL_START_US, DecisionBatch, FinancialInputSpec
 from .local_control import MACProjectionConfig, MACProjectionControl, ProjectedMACResult
 from .mac import TitansMAC
+from .presence_modulation import (
+    FILM,
+    PRESENCE_MODULATIONS,
+    WIDE_FUSION,
+    PresenceFiLM,
+    WideFusionBranch,
+    film_parameters,
+    wide_parameters_per_unit,
+    wide_units,
+)
 from .state import (
     MACState,
     check_differentiable,
@@ -80,6 +90,9 @@ class FinancialConfig:
     memory_projections: str = "linear_v1"
     # PT1, desactivada por defecto. Sin declararla, la identidad y el cálculo no cambian.
     memory_stability: MemoryStability | None = None
+    # PT6, film_v1 o su alternativa trivial wide_fusion_v1. Solo existe con la política con
+    # máscaras, que es la única con bits de presencia. Sin declararla nada cambia.
+    presence_modulation: str | None = None
 
     def __post_init__(self):
         if not isinstance(self.inputs, FinancialInputSpec) or self.variant not in VARIANTS:
@@ -107,6 +120,14 @@ class FinancialConfig:
             if not isinstance(self.gate_bias, GateBias):
                 raise ValueError("gate_bias debe ser GateBias, sus tres valores o None")
             self.gate_bias.logits(MemoryConfig.theta_max, self.memory_stability)
+        if self.presence_modulation is not None and (
+            not isinstance(self.presence_modulation, str)
+            or self.presence_modulation not in PRESENCE_MODULATIONS
+            or not masked_inputs(self.inputs.input_policy)
+        ):
+            raise ValueError(
+                "presence_modulation admite film_v1 o wide_fusion_v1 con la política con máscaras"
+            )
         if type(self.memory_residual_layer_norm) is not bool:
             raise ValueError("memory_residual_layer_norm debe ser booleano")
         if not isinstance(self.memory_projections, str) or (
@@ -164,6 +185,25 @@ class FinancialConfig:
         # porque el emparejamiento desde mac_online compara configuraciones completas.
         if self.memory_stability is not None:
             result.update(memory_stability=asdict(self.memory_stability))
+        # PT6 registra el número real de parámetros añadidos. La rama ancha redondea sus
+        # unidades, así que su cuenta se compara con la de FiLM en la propia identidad.
+        if self.presence_modulation == FILM:
+            result.update(
+                presence_modulation=dict(
+                    name=FILM, parameters=film_parameters(self.hidden_size), initial="zero"
+                )
+            )
+        elif self.presence_modulation == WIDE_FUSION:
+            units = wide_units(self.hidden_size)
+            result.update(
+                presence_modulation=dict(
+                    name=WIDE_FUSION,
+                    units=units,
+                    parameters=units * wide_parameters_per_unit(self.hidden_size),
+                    film_parameters=film_parameters(self.hidden_size),
+                    initial="zero_output",
+                )
+            )
         return result
 
 
@@ -241,6 +281,16 @@ class FinancialPredictor(nn.Module):
             # iniciales que la variante escalar con la misma semilla.
             if config.head == QUANTILE_HEAD:
                 self.head = QuantileHead(config.hidden_size)
+        # PT6 se construye después del tronco y sin el generador global, así que el resto de
+        # pesos coincide con el control de la misma semilla.
+        self.presence_modulation = (
+            PresenceFiLM(config.hidden_size) if config.presence_modulation == FILM else None
+        )
+        self.fusion_branch = (
+            WideFusionBranch(config.hidden_size, seed=config.seed)
+            if config.presence_modulation == WIDE_FUSION
+            else None
+        )
         self.mac = None
         if config.variant != "transformer_direct":
             self.mac = TitansMAC(
@@ -612,6 +662,8 @@ class FinancialPredictor(nn.Module):
                 self.encoders,
                 self.fusion,
                 batch.presence if self.masked else None,
+                modulation=self.presence_modulation,
+                branch=self.fusion_branch,
             )
             check_finite(token, "El token fusionado")
             if self.mac:
