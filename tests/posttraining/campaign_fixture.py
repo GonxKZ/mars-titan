@@ -75,6 +75,8 @@ def write_configs(folder, variant, *, tabular=False):
     declared["scopes"]["US"]["protocols"]["US"] = str((folder / "us-protocol.json").resolve())
     names = ("zero", "gru", "ridge") if tabular else ("zero", "gru")
     declared["arms"] = {key: declared["arms"][key] for key in names}
+    # Los pares de retención nombran modelos que esta comparación reducida no conserva.
+    declared.pop("retention_interference")
     declared["arms"]["gru"]["seeds"] = [42]
     declared["comparison"].update(
         replicates=20,
