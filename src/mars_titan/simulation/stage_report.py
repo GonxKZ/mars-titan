@@ -30,7 +30,9 @@ Reglas declaradas antes de ver resultados:
 - Una baja sin precio de salida con posición abierta termina el episodio con la recompensa
   enmascarada (`unpriced_exit`). Su ventana queda fuera de la familia como cualquier
   episodio fallido y se publica en `survival`. La sensibilidad con retornos de salida
-  declarada es secundaria.
+  declarada es secundaria. Mientras alguna ventana la necesite, el informe queda como
+  `pending_survival_sensitivity` y no se da por cerrado, porque excluir la ventana depende
+  de lo que hizo la política evaluada.
 """
 
 import argparse
@@ -501,9 +503,11 @@ def build_report(stage_path, outputs, destination, *, benchmarks=None, sensitivi
         output.pop("receipts")
         sections.append(dict(output=output, families=found, survival=exits))
     metrics, contrasts, equity = _tables(sections)
+    pending = any(section["survival"]["affected"] for section in sections)
     result = dict(
         schema_version=1,
         kind=REPORT_KIND,
+        status="pending_survival_sensitivity" if pending else "complete",
         stage_sha256=stage["sha256"],
         policies_sha256=policies["sha256"],
         sensitivity=stage.get("sensitivity"),
@@ -568,6 +572,7 @@ def main(argv=None):
         json.dumps(
             dict(
                 report=str(args.report / "report.json"),
+                status=result["status"],
                 families=len(families),
                 with_bootstrap=sum("differences" in (f["bootstrap"] or {}) for f in families),
                 missing_benchmarks=result["missing_benchmarks"],

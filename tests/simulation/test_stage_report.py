@@ -283,7 +283,7 @@ def test_the_campaign_command_writes_the_report(base, stage_output, tmp_path, ca
     assert script["main"]([*arguments, "--report", str(tmp_path / "report")]) == 0
     printed = json.loads(capsys.readouterr().out)
     assert printed["families"] == 8 and printed["with_bootstrap"] == 8
-    assert printed["missing_benchmarks"] == ["CN"]
+    assert printed["missing_benchmarks"] == ["CN"] and printed["status"] == "complete"
 
 
 def test_a_universe_series_ending_in_evaluation_is_listed_for_the_survival_sensitivity(
@@ -297,6 +297,8 @@ def test_a_universe_series_ending_in_evaluation_is_listed_for_the_survival_sensi
     result, found = report_of(base, [tmp_path / "stage"], tmp_path / "report")
     survival = result["sections"][0]["survival"]
     assert survival["status"] == "secondary_evaluation_pending"
+    # La exclusión depende de lo que hizo la política, así que el informe no queda cerrado.
+    assert result["status"] == "pending_survival_sensitivity"
     assert survival["exit_returns"] == [0.0, -0.3, -1.0] and survival["role"] == "secondary"
     assert survival["applies_to"] == "evaluations_truncated_by_unpriced_exit"
     held = dict(arm="equal_weight_monthly", seed=None, costs=[0, 5, 10, 20])
@@ -316,6 +318,7 @@ def test_without_ending_series_the_survival_sensitivity_has_no_window(base, stag
     result, _ = report_of(base, [stage_output], tmp_path / "report")
     survival = result["sections"][0]["survival"]
     assert survival["status"] == "no_affected_windows" and survival["affected"] == []
+    assert result["status"] == "complete"
 
 
 def test_survival_lists_only_episodes_truncated_by_an_unpriced_exit():
