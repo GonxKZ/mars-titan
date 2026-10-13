@@ -201,8 +201,10 @@ cmake --build build/native/terminal-collector --target klpo_episodes_tests \
   ppo_variant_state_tests ppo_variant_objective_tests ppo_checkpoint_tests -j 1
 CUDA_VISIBLE_DEVICES=-1 ctest --test-dir build/native/terminal-collector \
   -R '^(klpo_episodes|klpo_collection|klpo_policy|klpo_terminal|ppo_variant_state|ppo_variant_objective|ppo_checkpoint)$' \
-  --output-on-failure
+  -LE '^optimizer-steps$' --output-on-failure
 ```
+
+La selección original incluía `ppo_variant_state`, que aplica un paso de Adam con `update_from_cpu`. Desde el 10 de octubre de 2026 lleva la etiqueta `optimizer-steps` y `-LE` la deja fuera mientras rija el bloqueo.
 
 La revisión independiente del colector no encontró hallazgos materiales abiertos.
 Ocho sondas CPU contrastan horizontes mixtos, q e historia alteradas, RNG

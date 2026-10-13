@@ -106,7 +106,7 @@ Por candidato, M3 añade la mediana de 62 rendimientos dos veces, el mínimo de 
 | `tests/training/test_mars_titan_walk_forward.py` | Ventana M3 completa, escalas guardadas, reutilización al reanudar y escalas del ancla |
 | `tests/training/test_mars_titan_campaign.py` | `mars_titan_m3` sin pendientes, la comparación de 27 brazos con productor, salvo el control en línea, cuando se declaran las cuatro secciones y una campaña B reducida con M3 ajustado y trasladado |
 | `tests/training/test_campaign_throughput.py` | Medida del lector M3 hasta el paso sin cambiar pesos, con sus contadores del selectivo y escalas iguales a las de la regla de la campaña |
-| `tests/training/test_campaign_extensions.py` | Declaración preparada con M3 entre sus brazos: 5.265 ajustes en A, 1.989 ajustes y 2.044 traslados en B y 25 predictores en la etapa de políticas |
+| `tests/training/test_campaign_extensions.py` | Declaración preparada con M3 entre sus modelos: 5.985 ajustes en A, 2.261 ajustes y 2.380 traslados en B y 29 predictores en la etapa de políticas |
 
 Las pruebas que recorren el ajuste usan el registrador de gradientes, que no modifica pesos, con la protección de aprendizaje activa. Las etiquetas son manuales o proceden del corpus técnico sintético de las pruebas, y no se genera ningún objetivo real.
 
@@ -125,11 +125,12 @@ Dos comprobaciones tienen casos M3. Las dos se ejecutaron en `cuda:0` el 9 de oc
 - `tests/memory/cuda_mature_error_check.py::test_cuda_m3_scores_parity_and_recovery` recorre la sesión M3 con B_mem = 4 y K = 1 en CPU y en el dispositivo, en FP32 y FP64. Exige los mismos IDs, ofertas y rasgos de entrada, el error, la puntuación y las predicciones dentro de las tolerancias del caso M2, la recuperación exacta en cada dispositivo y un margen mínimo de 1e-4 entre la puntuación elegida y la mejor descartada. En `cuda:0` pasó con un margen de 6,8e-3 y un error máximo de predicción de 1,9e-9 en FP32 y 2,6e-18 en FP64 ([recibo](../../reports/engineering/cuda-checks-20261009/m3-mature-error-cuda.json)). `MARS_TITAN_M3_CHECK_DEVICE=cpu` permite ensayarla sin GPU.
 - `tests/training/cuda_mars_titan_run_check.py` compara el ajuste sin pasos y su validación con M3 y K = 1, y con M3, K = 4 y episodios fijos, además de los casos M1. Para M3 exige IDs, índices, anomalía, relevancia y máscara iguales, error y puntuación dentro de la tolerancia y un margen mínimo de 1e-4. En `cuda:0` pasaron sus diez casos, con un margen mínimo de 6,8e-4 en los casos M3 ([recibo](../../reports/engineering/cuda-checks-20261009/mars-titan-readout-cuda.json)). `MARS_TITAN_MARS_RUN_CHECK_DEVICE=cpu` permite ensayarla sin GPU.
 
-En la repetición del 9 de octubre el caso M2 de la primera comprobación exigía el enlace nativo con huella `e7559ed4…`, así que la orden de M3 lo excluyó. [#418](https://github.com/GonxKZ/mars-titan/pull/418) retiró esa huella fija y, con el enlace de `develop`, la misma orden sin `-k` da M2 y M3 superadas en `cuda:0`, como recoge la [guía de M2](mature-error-write-policy.md). Los casos M3 registran la huella del enlace usado. Las órdenes, desde la raíz del repositorio:
+En la repetición del 9 de octubre el caso M2 de la primera comprobación exigía el enlace nativo con huella `e7559ed4…`, así que la orden de M3 lo excluyó. [#418](https://github.com/GonxKZ/mars-titan/pull/418) retiró esa huella fija y, con el enlace de `develop`, la misma orden sin `-k` da M2 y M3 superadas en `cuda:0`, como recoge la [guía de M2](mature-error-write-policy.md). Los casos M3 registran la huella del enlace usado. La comprobación de M2 y M3 exige además el perfil de hardware declarado en `MARS_TITAN_HARDWARE_PROFILE` y lo contrasta con la GPU detectada ([plataformas](hardware-platforms.md)). Las órdenes, desde la raíz del repositorio:
 
 ```bash
 CUDA_VISIBLE_DEVICES=0 OMP_NUM_THREADS=2 CUBLAS_WORKSPACE_CONFIG=:4096:8 \
   MARS_TITAN_EPISODIC_NATIVE=<enlace episódico nativo compilado> \
+  MARS_TITAN_HARDWARE_PROFILE=rtx4070-laptop \
   UV_PROJECT_ENVIRONMENT=<entorno uv con PyTorch CUDA> \
   uv run --no-sync python -m pytest -q tests/memory/cuda_mature_error_check.py -k m3
 CUDA_VISIBLE_DEVICES=0 OMP_NUM_THREADS=2 CUBLAS_WORKSPACE_CONFIG=:4096:8 \
