@@ -27,6 +27,7 @@ from mars_titan.training import campaign_schedule as order
 from mars_titan.training import masked_campaign as engine
 from mars_titan.training.joint_temporal_corpus import prepare_joint_temporal_corpus
 from mars_titan.training.selection import JOINT_PLATEAU
+from tests.learning_hold_lowering import lowers_learning_hold
 from tests.training.test_masked_campaign import Recorder, doubles, run
 from tests.training.test_masked_campaign_joint import COMMON, STOPS, JointRecorder, receipt, slot
 from tests.training.test_walk_forward_v2_views import expected, fixture, observed
@@ -1104,6 +1105,10 @@ def _joint_window(path, views, output, recorder):
     )
 
 
+@lowers_learning_hold(
+    "tests/training/test_campaign_a_joint.py::"
+    "test_v2_joint_stop_pairs_each_case_and_the_selected_case_of_every_scope"
+)
 def test_v2_joint_stop_pairs_each_case_and_the_selected_case_of_every_scope(
     joint_campaign, joint_stop, tmp_path
 ):
@@ -1148,6 +1153,10 @@ def test_v2_joint_stop_pairs_each_case_and_the_selected_case_of_every_scope(
     assert summary["status"] == "completed" and again.calls == []
 
 
+@lowers_learning_hold(
+    "tests/training/test_campaign_a_joint.py::"
+    "test_a_plateau_that_reports_another_precision_is_not_confirmed"
+)
 def test_a_plateau_that_reports_another_precision_is_not_confirmed(
     joint_campaign, joint_stop, tmp_path
 ):

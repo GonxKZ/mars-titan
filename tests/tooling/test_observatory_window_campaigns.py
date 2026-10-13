@@ -500,7 +500,8 @@ def test_the_publisher_sends_window_documents_and_prunes_what_the_index_dropped(
 
 
 @pytest.mark.skipif(
-    shutil.which("node") is None, reason="Falta Node.js para el validador de la web"
+    shutil.which("node") is None,
+    reason="Falta node en PATH. El validador de la web del observatorio necesita Node.js",
 )
 def test_collector_output_passes_the_site_validators(tmp_path):
     root, output = tmp_path / "root", tmp_path / "public"

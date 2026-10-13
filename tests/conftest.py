@@ -6,9 +6,56 @@ from contextlib import contextmanager
 
 import pytest
 
-from mars_titan.training.learning_hold import HOLD_ENV, LearningHoldError, install_optimizer_guard
+from mars_titan.training.learning_hold import (
+    HOLD_ENV,
+    LearningHoldError,
+    install_optimizer_guard,
+    learning_blocked,
+)
+from tests.suite_support import (
+    NATIVE_MARKER,
+    NATIVE_SELECTION,
+    SLOW_MARKER,
+    UNGUARDED_FIT_MARKER,
+    function_id,
+    read_slow_tests,
+    selection_skip,
+    strict_problems,
+    strict_skip,
+)
 from tests.suite_support import python_shebang as _python_shebang
-from tests.suite_support import strict_problems, strict_skip
+
+UNGUARDED_FIT_REASON = (
+    f"Ajusta parámetros sin pasar por un punto de entrada protegido y rige el bloqueo de "
+    f"aprendizaje ({HOLD_ENV}). Solo se ejecuta cuando la protección lo permite"
+)
+
+
+@pytest.hookimpl(tryfirst=True)
+def pytest_collection_modifyitems(config, items):
+    """Completar las marcas de selección y omitir lo que no se puede ejecutar aquí.
+
+    Va antes que la selección de `-m`, así que `-m "not slow"` ve también las marcas que se
+    añaden aquí. `native_binding` implica `native`. Las pruebas lentas salen de
+    `tests/slow_tests.txt`, medido por función con sus parámetros juntos.
+    """
+    slow = read_slow_tests()
+    blocked = None
+    for item in items:
+        if function_id(item.nodeid) in slow:
+            item.add_marker(SLOW_MARKER)
+        if item.get_closest_marker(NATIVE_MARKER) and not item.get_closest_marker(NATIVE_SELECTION):
+            item.add_marker(NATIVE_SELECTION)
+        markers = {}
+        for mark in item.iter_markers():
+            markers.setdefault(mark.name, []).append(mark.args)
+        reason = selection_skip(markers, os.environ)
+        if reason is None and UNGUARDED_FIT_MARKER in markers:
+            if blocked is None:
+                blocked = learning_blocked()
+            reason = UNGUARDED_FIT_REASON if blocked else None
+        if reason is not None:
+            item.add_marker(pytest.mark.skip(reason=reason))
 
 
 @pytest.hookimpl(wrapper=True)

@@ -408,6 +408,7 @@ def receipt(run, job_id):
     return json.loads((run.output / "jobs" / job_id / "receipt.json").read_text())
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 @pytest.mark.parametrize("arm", RUN_ARMS)
 def test_mars_jobs_start_from_the_selected_titans_window_and_share_its_rows(campaign_run, arm):
     assert campaign_run.summary["status"] == "paused"
@@ -452,6 +453,7 @@ def test_mars_jobs_start_from_the_selected_titans_window_and_share_its_rows(camp
             assert mine["rows_sha256"] == theirs["rows_sha256"]
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_m3_fits_its_scalers_on_each_window_and_carries_those_of_its_anchor(campaign_run):
     output = campaign_run.output
     fitted = {}
@@ -477,6 +479,7 @@ def test_m3_fits_its_scalers_on_each_window_and_carries_those_of_its_anchor(camp
     assert fitted
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_window_receipts_publish_the_mars_arm_with_its_selected_state(campaign_run):
     output = campaign_run.output
     for job in campaign_run.jobs:
@@ -489,6 +492,7 @@ def test_window_receipts_publish_the_mars_arm_with_its_selected_state(campaign_r
             assert record["parent"] == receipt(campaign_run, job["id"])["parent"]
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_carry_repeats_bit_for_bit_and_needs_a_new_destination(campaign_run, tmp_path):
     job = next(j for j in campaign_run.jobs if j["arm"] == ARM and j["kind"] == "carry")
     own = receipt(campaign_run, job["id"])
@@ -506,6 +510,7 @@ def test_carry_repeats_bit_for_bit_and_needs_a_new_destination(campaign_run, tmp
         mw.carry_mars_titan(anchor, view, view, tmp_path / "other", device="cpu")
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_correction_carry_repeats_bit_for_bit_and_never_fits(campaign_run, tmp_path):
     job = next(j for j in campaign_run.jobs if j["arm"] == B6_ARM and j["kind"] == "carry")
     own = receipt(campaign_run, job["id"])
@@ -525,6 +530,7 @@ def test_correction_carry_repeats_bit_for_bit_and_never_fits(campaign_run, tmp_p
         mc.carry_correction(anchor, view, view, tmp_path / "other", device="cpu")
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 @lowers_learning_hold(
     "tests/training/test_mars_titan_campaign.py::"
     "test_correction_frozen_parent_reproduces_the_carry_and_predicts_the_next_validation"
@@ -571,6 +577,7 @@ def test_correction_frozen_parent_reproduces_the_carry_and_predicts_the_next_val
     assert not (tmp_path / "other").exists()
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_correction_fit_regenerates_its_three_partitions_bit_for_bit(campaign_run, tmp_path):
     """La retención v2 repite el ajuste B6 por inferencia antes de liberar sus filas.
 

@@ -2,7 +2,6 @@
 
 import importlib
 import math
-import os
 
 import numpy as np
 import pytest
@@ -13,9 +12,7 @@ from mars_titan.data.input_policy import MODALITIES
 from mars_titan.models.candidate.input_adapter import CandidateInputAdapter
 from mars_titan.models.titans.financial_inputs import DecisionBatch, validated_cpu_batch
 
-pytestmark = pytest.mark.skipif(
-    not os.environ.get("MARS_TITAN_EPISODIC_NATIVE"), reason="Falta el enlace nativo compilado"
-)
+pytestmark = pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 
 
 def codec_class():

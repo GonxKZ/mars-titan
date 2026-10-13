@@ -33,12 +33,12 @@ research = [
     "scikit-learn>=1.6,<2", "matplotlib>=3.9,<4", "scipy>=1.14,<2",
     "arch==8.0.0", "statsmodels==0.15.0",
 ]
-cuda = ["torch>=2.8,<3; sys_platform == 'linux' and (platform_machine == 'x86_64' or platform_machine == 'aarch64')"]
+cuda = ["torch>=2.8,<3; sys_platform == 'linux' and platform_machine == 'x86_64'"]
 encoders = ["torchvision>=0.23,<1", "transformers>=4.57,<6", "huggingface-hub>=0.34,<2", "safetensors>=0.5,<1"]
 notebooks = ["jupyterlab>=4.6.4,<5", "ipykernel>=6,<8"]
 boosting = [
-    "cupy-cuda13x==14.2.0 ; sys_platform == 'linux' and (platform_machine == 'x86_64' or platform_machine == 'aarch64')",
-    "xgboost==3.3.0 ; sys_platform == 'linux' and (platform_machine == 'x86_64' or platform_machine == 'aarch64')",
+    "cupy-cuda13x==14.2.0 ; sys_platform == 'linux' and platform_machine == 'x86_64'",
+    "xgboost==3.3.0 ; sys_platform == 'linux' and platform_machine == 'x86_64'",
 ]
 reinforcement = [
     "gymnasium==1.3.0",
@@ -53,7 +53,8 @@ dev = [
     "memray==1.20.0 ; sys_platform == 'linux'",
 ]
 # Bibliotecas externas que solo sirven de referencia en las pruebas de paridad (#494 a #497).
-# No forman parte del entorno de ejecución y se instalan con `uv sync --group reference`.
+# No forman parte del entorno de ejecución y se instalan con
+# `uv sync --locked --all-extras --group reference`, que conserva los extras.
 reference = [
     "peft==0.21.0",
     "accelerate==1.15.0",
@@ -67,14 +68,8 @@ reference = [
 package = true
 # Solo versiones publicadas al menos dos semanas antes de la revisión de bibliotecas (#490).
 exclude-newer = "2026-09-26T23:59:59Z"
-environments = [
-    "sys_platform == 'linux' and platform_machine == 'x86_64'",
-    "sys_platform == 'linux' and platform_machine == 'aarch64'",
-]
-required-environments = [
-    "sys_platform == 'linux' and platform_machine == 'x86_64'",
-    "sys_platform == 'linux' and platform_machine == 'aarch64'",
-]
+environments = ["sys_platform == 'linux' and platform_machine == 'x86_64'"]
+required-environments = ["sys_platform == 'linux' and platform_machine == 'x86_64'"]
 
 [[tool.uv.index]]
 name = "pytorch-cu130"
@@ -82,14 +77,18 @@ url = "https://download.pytorch.org/whl/cu130"
 explicit = true
 
 [tool.uv.sources]
-torch = [{index = "pytorch-cu130", marker = "sys_platform == 'linux' and (platform_machine == 'x86_64' or platform_machine == 'aarch64')"}]
-torchvision = [{index = "pytorch-cu130", marker = "sys_platform == 'linux' and (platform_machine == 'x86_64' or platform_machine == 'aarch64')"}]
+torch = [{index = "pytorch-cu130", marker = "sys_platform == 'linux' and platform_machine == 'x86_64'"}]
+torchvision = [{index = "pytorch-cu130", marker = "sys_platform == 'linux' and platform_machine == 'x86_64'"}]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = [".", "src", "tests/models/titans"]
 addopts = "-ra"
 markers = [
+    "cuda: necesita cuda:0. Sin CUDA visible se omite con su motivo y nunca pasa a CPU",
+    "native: necesita un artefacto nativo. Con nombres de variables, se omite si falta alguno de sus artefactos",
+    "slow: la suma de sus casos alcanza un segundo según las medidas de tests/slow_tests.txt",
+    "unguarded_fit: ajusta sin pasar por un punto de entrada protegido. Se omite mientras rige el bloqueo de aprendizaje",
     "native_binding: necesita el enlace nativo. Con MARS_TITAN_REQUIRE_NATIVE=1, omitirla falla",
     "external_reference: compara con el grupo reference. Con MARS_TITAN_REQUIRE_REFERENCE=1, omitirla falla",
 ]

@@ -301,7 +301,7 @@ def test_multimodal_transformer_keeps_the_message_of_the_first_nonfinite_check(
         model(values)
 
 
-@pytest.mark.skipif(not torch.cuda.is_available(), reason="sin dispositivo CUDA")
+@pytest.mark.cuda
 def test_transformer_reference_forward_waits_for_the_gpu_once():
     model = MultimodalReference("transformer", DIMENSIONS, context=8, layers=2).cuda()
     values = {
@@ -321,7 +321,7 @@ def test_transformer_reference_forward_waits_for_the_gpu_once():
     assert sum("synchroniz" in str(item.message) for item in caught) == 1
 
 
-@pytest.mark.skipif(not torch.cuda.is_available(), reason="sin dispositivo CUDA")
+@pytest.mark.cuda
 @pytest.mark.parametrize("layers", [1, 2])
 def test_cuda_last_token_matches_float64_like_the_full_sequence(layers):
     model = encoder(layers=layers, hidden=64, context=64).cuda().train()
@@ -334,7 +334,7 @@ def test_cuda_last_token_matches_float64_like_the_full_sequence(layers):
     assert last <= FP32_FACTOR * full + FP32_FLOOR
 
 
-@pytest.mark.skipif(not torch.cuda.is_available(), reason="sin dispositivo CUDA")
+@pytest.mark.cuda
 @pytest.mark.parametrize("layers", [1, 2])
 def test_cuda_inference_without_gradient_matches_training_mode(layers):
     # La ruta nativa de PyTorch usaría GELU con tanh en evaluación: difiere en torno a 1e-4.

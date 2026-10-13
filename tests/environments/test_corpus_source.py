@@ -12,13 +12,14 @@ import pytest
 from mars_titan.data.storage import sha256
 from mars_titan.training.checkpoints import StopRequest
 from mars_titan.training.corpus_inputs import CorpusDataset
+from tests.suite_support import missing_extra
 from tests.training.test_corpus_inputs import corpus
 from tests.training.test_corpus_targets import audited_edition
 from tests.training.test_reference_run import training_corpus
 
 pytestmark = pytest.mark.skipif(
     any(importlib.util.find_spec(name) is None for name in ("duckdb", "gymnasium")),
-    reason="Requiere los extras data y reinforcement",
+    reason=missing_extra("duckdb", "gymnasium"),
 )
 
 

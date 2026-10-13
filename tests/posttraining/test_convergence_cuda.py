@@ -1,7 +1,5 @@
 """Selección v3 y recuperación CUDA con validación real sobre una vista pequeña."""
 
-import os
-
 import numpy as np
 import pytest
 import torch
@@ -19,13 +17,13 @@ from mars_titan.posttraining.parents import FrozenParent
 from mars_titan.posttraining.run import run_case
 from mars_titan.training.checkpoints import StopRequest, load_training_state
 from mars_titan.training.experiment_resources import GpuLease
+from tests.suite_support import requires_cuda_integration
 from tests.training.test_temporal_corpus import inputs as inputs
 
+pytestmark = pytest.mark.cuda
 
-@pytest.mark.skipif(
-    os.environ.get("MARS_TITAN_CUDA_INTEGRATION") != "1",
-    reason="Requiere una ventana CUDA exclusiva y activación explícita",
-)
+
+@requires_cuda_integration
 @pytest.mark.parametrize("mode", ["klpo_mc", "neural_mae"])
 def test_version_three_recovers_cuda_state_and_selects_real_validation(
     inputs, tmp_path, monkeypatch, mode

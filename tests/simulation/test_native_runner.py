@@ -12,6 +12,8 @@ import pytest
 
 from tests.simulation.native_library import simulator_path as binary
 
+pytestmark = pytest.mark.native("MARS_TITAN_SIM_EXECUTABLE")
+
 
 def source(tmp_path):
     path = tmp_path / "input"

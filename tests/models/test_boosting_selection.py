@@ -5,6 +5,11 @@ import importlib
 import numpy as np
 import pytest
 
+from tests.suite_support import missing_extra
+
+# Ajusta sin pasar por un punto de entrada protegido. Ver tests/README.md.
+pytestmark = pytest.mark.unguarded_fit
+
 
 def module():
     return importlib.import_module("mars_titan.models.baselines.boosting_selection")
@@ -101,7 +106,7 @@ def test_session_metric_keeps_markets_separate_and_requires_complete_population(
 
 
 def test_cpu_callback_stops_and_continues_from_confirmed_booster():
-    xgb = pytest.importorskip("xgboost")
+    xgb = pytest.importorskip("xgboost", reason=missing_extra("xgboost"))
     x = np.arange(16, dtype=np.float32).reshape(8, 2)
     data = xgb.DMatrix(x, label=x[:, 0], nthread=1)
     parameters = dict(device="cpu", nthread=1, tree_method="hist", max_depth=1)
@@ -133,7 +138,7 @@ def test_cpu_callback_stops_and_continues_from_confirmed_booster():
 
 
 def test_partial_validation_cannot_advance_a_round_or_publish_a_model():
-    xgb = pytest.importorskip("xgboost")
+    xgb = pytest.importorskip("xgboost", reason=missing_extra("xgboost"))
     selection = module().BoostingSelection(policy(), 8)
     before = dict(selection.state)
 
@@ -155,7 +160,7 @@ def test_partial_validation_cannot_advance_a_round_or_publish_a_model():
 
 
 def test_callback_can_pause_after_confirmation_without_raising_inside_xgboost():
-    xgb = pytest.importorskip("xgboost")
+    xgb = pytest.importorskip("xgboost", reason=missing_extra("xgboost"))
     control = module().BoostingSelection(policy(), 8)
     data = xgb.DMatrix(np.arange(8, dtype=np.float32).reshape(8, 1), label=np.arange(8), nthread=1)
     callback = module().selection_callback(
@@ -171,7 +176,7 @@ def test_callback_can_pause_after_confirmation_without_raising_inside_xgboost():
 
 @pytest.mark.parametrize("mode", ["continue", "pause", "mismatch"])
 def test_replay_verifies_prefix_without_repeating_selection_or_confirmation(mode):
-    xgb = pytest.importorskip("xgboost")
+    xgb = pytest.importorskip("xgboost", reason=missing_extra("xgboost"))
     data = xgb.DMatrix(np.arange(8, dtype=np.float32).reshape(8, 1), label=np.arange(8), nthread=1)
     params = dict(device="cpu", nthread=1, max_depth=1)
     parent = xgb.train(params, data, 3)

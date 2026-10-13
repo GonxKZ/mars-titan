@@ -8,7 +8,6 @@ se puede repetir se detecta en lugar de aceptarse.
 """
 
 import json
-import os
 
 import numpy as np
 import pyarrow.parquet as pq
@@ -353,9 +352,7 @@ def test_strict_fits_and_tabular_reports_pass_the_numerics_check():
     assert regeneration.recorded_numerics(dict(identity=dict(kind="ridge"))) == []
 
 
-native = pytest.mark.skipif(
-    not os.environ.get("MARS_TITAN_EPISODIC_NATIVE"), reason="Falta el enlace nativo compilado"
-)
+native = pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 
 
 @native

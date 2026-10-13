@@ -36,6 +36,9 @@ from tests.simulation.unadjusted_edition_fixture import (
     tape_days,
     write_edition,
 )
+from tests.suite_support import UNADJUSTED_EDITION_REASON
+
+pytestmark = pytest.mark.native("MARS_TITAN_SIM_EXECUTABLE")
 
 CAPITAL = 1_000_000
 POLICIES = {
@@ -584,7 +587,7 @@ REAL_ASSETS = {
 
 @pytest.mark.skipif(
     REAL_EDITION is None or REAL_STATUS is None,
-    reason="Declara MARS_TITAN_UNADJUSTED_EDITION y MARS_TITAN_LISTING_STATUS",
+    reason=UNADJUSTED_EDITION_REASON,
 )
 @pytest.mark.parametrize("market", ["US", "CN"])
 @pytest.mark.parametrize("policy", ["hold_initial", "rebalance_50", "rebalance_100"])

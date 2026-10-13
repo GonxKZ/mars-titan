@@ -1,15 +1,11 @@
 """Enlace tensorial del candidato nativo, sin ajuste ni etiquetas calculadas."""
 
-import os
-
 import pytest
 import torch
 
 from mars_titan.memory.native_backend import load_native
 
-pytestmark = pytest.mark.skipif(
-    not os.environ.get("MARS_TITAN_EPISODIC_NATIVE"), reason="Falta el enlace nativo compilado"
-)
+pytestmark = pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 
 
 def test_native_candidate_symbols_are_explicit():

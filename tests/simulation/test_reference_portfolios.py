@@ -17,7 +17,6 @@ from mars_titan.simulation.evaluation import (
     fixed_policy,
 )
 from mars_titan.simulation.market import MarketTape
-from mars_titan.simulation.native_runtime import library_path
 from mars_titan.simulation.portfolio import CorporateAction
 
 SESSIONS = 50
@@ -125,7 +124,7 @@ def test_a_rebalance_skips_an_asset_without_a_valued_close_and_a_retired_asset()
     assert {asset for asset, value in targets.items() if value > 0} == {"A", "B", "C"}
 
 
-@pytest.mark.skipif(library_path() is None, reason="Falta la biblioteca nativa de simulación")
+@pytest.mark.native("MARS_TITAN_NATIVE_LIBRARY")
 @pytest.mark.parametrize("reference", ["equal_weight_monthly", "market_index"])
 def test_native_accounting_reproduces_the_references_without_predictions(reference):
     allocation = REFERENCE_ALLOCATIONS[reference]

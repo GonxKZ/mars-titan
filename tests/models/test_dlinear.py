@@ -4,6 +4,8 @@ import importlib
 
 import pytest
 
+from tests.suite_support import missing_extra
+
 
 def module():
     try:
@@ -13,7 +15,7 @@ def module():
 
 
 def test_decomposition_replicates_endpoints_and_reconstructs_observed_window():
-    torch = pytest.importorskip("torch")
+    torch = pytest.importorskip("torch", reason=missing_extra("torch"))
     model = module().DLinear(context=5, kernel_size=3)
     values = torch.arange(1.0, 6.0).reshape(1, 5, 1)
     seasonal, trend = model.decompose(values)
@@ -28,7 +30,7 @@ def test_decomposition_replicates_endpoints_and_reconstructs_observed_window():
 
 
 def test_channels_and_batches_do_not_mix_during_decomposition():
-    torch = pytest.importorskip("torch")
+    torch = pytest.importorskip("torch", reason=missing_extra("torch"))
     model = module().DLinear(context=5, kernel_size=3)
     value = torch.arange(10.0).reshape(1, 5, 2)
     batch = torch.cat([value, value + 100])
@@ -41,7 +43,7 @@ def test_channels_and_batches_do_not_mix_during_decomposition():
 
 
 def test_seasonal_and_trend_use_their_own_weights_and_biases():
-    torch = pytest.importorskip("torch")
+    torch = pytest.importorskip("torch", reason=missing_extra("torch"))
     model = module().DLinear(context=5, kernel_size=3)
     with torch.no_grad():
         model.seasonal.weight.copy_(torch.tensor([[1.0, 2, 3, 4, 5]]))
@@ -60,7 +62,7 @@ def test_invalid_context_or_moving_average_fails_early(context, kernel_size):
 
 
 def test_wrong_window_shape_is_rejected():
-    torch = pytest.importorskip("torch")
+    torch = pytest.importorskip("torch", reason=missing_extra("torch"))
     model = module().DLinear(context=5, kernel_size=3)
     for values in (torch.ones(5), torch.ones(1, 4, 2), torch.ones(1, 5, 0)):
         with pytest.raises(ValueError, match="ventana"):

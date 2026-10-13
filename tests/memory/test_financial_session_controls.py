@@ -453,6 +453,7 @@ def assert_equivalent(left, right, *, exact):
         torch.testing.assert_close(value, right["fast"][name], **tolerance)
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 @pytest.mark.parametrize("policy", ["reservoir", "anchored"])
 def test_frozen_control_and_retention_paths_overflow_recover_and_preserve_pairing(
     native, four_flow_source, tmp_path, policy

@@ -1,0 +1,384 @@
+{
+ "schema_version": 1,
+ "kind": "targeted_mutation_receipt",
+ "issue": 456,
+ "executed_on": "2026-10-13",
+ "base_commit": "8fdb788dc6c929cf93ec0a01a515d9c5e4e67538",
+ "sources_sha256": {
+  "src/mars_titan/data/sector_map.py": "6b2125fd470d2fd1bc40f17bfbe6c244cc0e243ccb7e89af77ea25f24c21e522",
+  "src/mars_titan/models/titans/financial.py": "d574db8bca91ce428053a75388e47992bc7fb12d7baede382ee69dc7cfbe6d95",
+  "src/mars_titan/models/titans/neural_memory.py": "ff154b1378e90367d3b47bf5f4b922708036a93daad28f4c21178cf0d74ce98d",
+  "src/mars_titan/models/titans/session_context.py": "2db712e25b3eaf789bc1f9bed8ad6e3fe5ba47008f23829547484fd63a9f111a",
+  "src/mars_titan/training/financial_run.py": "4996a3d910fe8c2f086e08b96d28984e2bd0d3278b6758cd7edcea92423af9fb",
+  "tests/models/titans/test_market_memory.py": "08f9faf7a8684113ef89e69a0bcc8059bd541b02107349599523661a24c06d5d"
+ },
+ "method": "Copia aislada de src, tests, configs y benchmarks. Cada mutante sustituye un único fragmento, ejecuta las pruebas declaradas con -x y restaura el archivo. PYTHONPATH apunta a la copia, así que las pruebas importan el código mutado",
+ "tests": [
+  "tests/models/titans/test_market_memory.py"
+ ],
+ "environment": "CPU con CUDA_VISIBLE_DEVICES=-1 y OMP_NUM_THREADS=2, sin pasos de optimizador",
+ "baseline": {
+  "returncode": 0,
+  "seconds": 11.0,
+  "tail": [
+   "34 passed in 8.78s"
+  ]
+ },
+ "killed": 32,
+ "survived": 0,
+ "not_applied": 0,
+ "mutants": [
+  {
+   "name": "same_session_rereads_committed",
+   "file": "src/mars_titan/models/titans/session_context.py",
+   "status": "killed",
+   "seconds": 3.1,
+   "tail": [
+    "1 failed, 14 passed in 1.06s"
+   ],
+   "original": "            if moment <= committed[market]:",
+   "mutated": "            if moment < committed[market]:"
+  },
+  {
+   "name": "new_session_while_pending",
+   "file": "src/mars_titan/models/titans/session_context.py",
+   "status": "killed",
+   "seconds": 3.3,
+   "tail": [
+    "1 failed, 14 passed in 1.12s"
+   ],
+   "original": "            if pending_at[market] not in (-1, moment):",
+   "mutated": "            if False:"
+  },
+  {
+   "name": "repeated_flow_admitted",
+   "file": "src/mars_titan/models/titans/session_context.py",
+   "status": "killed",
+   "seconds": 3.1,
+   "tail": [
+    "1 failed, 14 passed in 1.05s"
+   ],
+   "original": "            if len(set(names) | set(flows[market])) != len(names) + len(flows[market]):",
+   "mutated": "            if False:"
+  },
+  {
+   "name": "mixed_sessions_in_a_block",
+   "file": "src/mars_titan/models/titans/session_context.py",
+   "status": "killed",
+   "seconds": 3.2,
+   "tail": [
+    "1 failed, 14 passed in 1.16s"
+   ],
+   "original": "            if len(moments) != 1:",
+   "mutated": "            if False:"
+  },
+  {
+   "name": "read_writes_its_own_rows_first",
+   "file": "src/mars_titan/models/titans/session_context.py",
+   "status": "killed",
+   "seconds": 3.2,
+   "tail": [
+    "1 failed, 10 passed in 1.14s"
+   ],
+   "original": "            return self.memory.read_shared(query, state.memory[market])",
+   "mutated": "            return self.memory.read_shared(query, self.memory.update_shared(tokens, state.memory[market]))"
+  },
+  {
+   "name": "output_gain_ignored",
+   "file": "src/mars_titan/models/titans/session_context.py",
+   "status": "killed",
+   "seconds": 3.2,
+   "tail": [
+    "1 failed, 15 passed in 1.09s"
+   ],
+   "original": "        return context @ self.output.T, next_state",
+   "mutated": "        return context, next_state"
+  },
+  {
+   "name": "query_not_normalized",
+   "file": "src/mars_titan/models/titans/session_context.py",
+   "status": "killed",
+   "seconds": 3.2,
+   "tail": [
+    "1 failed, 21 passed in 1.12s"
+   ],
+   "original": "            query = F.normalize(tokens @ self.query.T, dim=-1, eps=1e-12)",
+   "mutated": "            query = tokens @ self.query.T"
+  },
+  {
+   "name": "output_starts_nonzero",
+   "file": "src/mars_titan/models/titans/session_context.py",
+   "status": "killed",
+   "seconds": 3.3,
+   "tail": [
+    "1 failed, 22 passed in 1.18s"
+   ],
+   "original": "        self.output = nn.Parameter(torch.zeros(hidden_size, hidden_size))",
+   "mutated": "        self.output = nn.Parameter(torch.full((hidden_size, hidden_size), 0.01))"
+  },
+  {
+   "name": "query_from_the_global_generator",
+   "file": "src/mars_titan/models/titans/session_context.py",
+   "status": "killed",
+   "seconds": 9.1,
+   "tail": [
+    "1 failed, 32 passed in 6.90s"
+   ],
+   "original": "            nn.init.kaiming_uniform_(self.query, a=5**0.5, generator=generator)",
+   "mutated": "            nn.init.kaiming_uniform_(self.query, a=5**0.5)"
+  },
+  {
+   "name": "commit_in_arrival_order",
+   "file": "src/mars_titan/models/titans/session_context.py",
+   "status": "killed",
+   "seconds": 3.3,
+   "tail": [
+    "1 failed, 12 passed in 1.13s"
+   ],
+   "original": "            order = sorted(range(len(flows)), key=flows.__getitem__)",
+   "mutated": "            order = list(range(len(flows)))"
+  },
+  {
+   "name": "commit_keeps_the_session_pending",
+   "file": "src/mars_titan/models/titans/session_context.py",
+   "status": "killed",
+   "seconds": 3.2,
+   "tail": [
+    "1 failed, 10 passed in 1.10s"
+   ],
+   "original": "            committed[market] = state.pending_at[market]",
+   "mutated": "            pass"
+  },
+  {
+   "name": "commit_keeps_the_graph_without_request",
+   "file": "src/mars_titan/models/titans/session_context.py",
+   "status": "killed",
+   "seconds": 3.4,
+   "tail": [
+    "1 failed, 20 passed in 1.21s"
+   ],
+   "original": "            if not differentiable:\n                ordered = ordered.detach()\n",
+   "mutated": ""
+  },
+  {
+   "name": "sector_sum_not_divided",
+   "file": "src/mars_titan/models/titans/session_context.py",
+   "status": "killed",
+   "seconds": 3.4,
+   "tail": [
+    "1 failed, 15 passed in 1.21s"
+   ],
+   "original": "        updated = sums.index_select(0, present) / counts.index_select(0, present).unsqueeze(-1)",
+   "mutated": "        updated = sums.index_select(0, present)"
+  },
+  {
+   "name": "absent_sectors_reset",
+   "file": "src/mars_titan/models/titans/session_context.py",
+   "status": "killed",
+   "seconds": 3.5,
+   "tail": [
+    "1 failed, 11 passed in 1.26s"
+   ],
+   "original": "        return means.index_copy(0, present, updated)",
+   "mutated": "        return torch.zeros_like(means).index_copy(0, present, updated)"
+  },
+  {
+   "name": "detach_with_pending",
+   "file": "src/mars_titan/models/titans/session_context.py",
+   "status": "killed",
+   "seconds": 3.4,
+   "tail": [
+    "1 failed, 14 passed in 1.24s"
+   ],
+   "original": "        if any(tokens is not None for tokens in state.pending_tokens):",
+   "mutated": "        if False:"
+  },
+  {
+   "name": "detach_keeps_the_old_parameters",
+   "file": "src/mars_titan/models/titans/session_context.py",
+   "status": "killed",
+   "seconds": 3.4,
+   "tail": [
+    "1 failed, 18 passed in 1.15s"
+   ],
+   "original": "        return replace(state, parameter_id=parameter_id, memory=memory, means=means)",
+   "mutated": "        return replace(state, memory=memory, means=means)"
+  },
+  {
+   "name": "shared_loss_summed",
+   "file": "src/mars_titan/models/titans/neural_memory.py",
+   "status": "killed",
+   "seconds": 3.4,
+   "tail": [
+    "1 failed, 3 passed in 1.11s"
+   ],
+   "original": "            loss = residual.square().sum() / observed.shape[0]",
+   "mutated": "            loss = residual.square().sum()"
+  },
+  {
+   "name": "shared_gates_from_the_first_row",
+   "file": "src/mars_titan/models/titans/neural_memory.py",
+   "status": "killed",
+   "seconds": 3.3,
+   "tail": [
+    "1 failed, 3 passed in 1.13s"
+   ],
+   "original": "                projection(token).mean(dim=0, keepdim=True)",
+   "mutated": "                projection(token)[:1]"
+  },
+  {
+   "name": "shared_keys_not_normalized",
+   "file": "src/mars_titan/models/titans/neural_memory.py",
+   "status": "killed",
+   "seconds": 3.4,
+   "tail": [
+    "1 failed, 2 passed in 1.19s"
+   ],
+   "original": "            if self.config.normalize_qk:\n                keys = F.normalize(keys, dim=-1, eps=1e-12)\n            gates = self._gates(*logits)",
+   "mutated": "            gates = self._gates(*logits)"
+  },
+  {
+   "name": "shared_steps_not_counted",
+   "file": "src/mars_titan/models/titans/neural_memory.py",
+   "status": "killed",
+   "seconds": 3.3,
+   "tail": [
+    "1 failed, 2 passed in 1.08s"
+   ],
+   "original": "        return NeuralMemoryState(weights, momentum, state.steps + 1, state.config_id, (), levels)",
+   "mutated": "        return NeuralMemoryState(weights, momentum, state.steps, state.config_id, (), levels)"
+  },
+  {
+   "name": "shared_accepts_batches",
+   "file": "src/mars_titan/models/titans/neural_memory.py",
+   "status": "killed",
+   "seconds": 3.2,
+   "tail": [
+    "1 failed, 6 passed in 1.08s"
+   ],
+   "original": "            state.steps.shape != (1,)\n            or not isinstance(values, Tensor)",
+   "mutated": "            not isinstance(values, Tensor)"
+  },
+  {
+   "name": "missing_sector_kept",
+   "file": "src/mars_titan/data/sector_map.py",
+   "status": "killed",
+   "seconds": 2.6,
+   "tail": [
+    "1 failed in 0.69s"
+   ],
+   "original": "                group = f\"{market}/{UNKNOWN if sector in _MISSING else sector}\"",
+   "mutated": "                group = f\"{market}/{sector or UNKNOWN}\""
+  },
+  {
+   "name": "shanghai_suffix_kept",
+   "file": "src/mars_titan/data/sector_map.py",
+   "status": "killed",
+   "seconds": 2.9,
+   "tail": [
+    "1 failed in 0.71s"
+   ],
+   "original": "    return f\"{market}/{symbol.replace('.SH', '.SS')}\" if market == \"CN\" else f\"US/{symbol}\"",
+   "mutated": "    return f\"{market}/{symbol}\""
+  },
+  {
+   "name": "conflicting_rows_admitted",
+   "file": "src/mars_titan/data/sector_map.py",
+   "status": "killed",
+   "seconds": 2.8,
+   "tail": [
+    "1 failed, 1 passed in 0.77s"
+   ],
+   "original": "                if sectors.get(flow, group) != group:",
+   "mutated": "                if False:"
+  },
+  {
+   "name": "unknown_flow_rejected",
+   "file": "src/mars_titan/data/sector_map.py",
+   "status": "killed",
+   "seconds": 3.5,
+   "tail": [
+    "1 failed in 0.96s"
+   ],
+   "original": "        if flow in self._table:\n            return self._table[flow]\n",
+   "mutated": "        return self._table[flow]\n"
+  },
+  {
+   "name": "context_after_the_memory",
+   "file": "src/mars_titan/models/titans/financial.py",
+   "status": "killed",
+   "seconds": 4.6,
+   "tail": [
+    "1 failed, 24 passed in 1.64s"
+   ],
+   "original": "                observed = token + extra\n",
+   "mutated": "                observed = token\n"
+  },
+  {
+   "name": "context_kept_in_the_detached_token",
+   "file": "src/mars_titan/models/titans/financial.py",
+   "status": "killed",
+   "seconds": 4.1,
+   "tail": [
+    "1 failed, 24 passed in 1.54s"
+   ],
+   "original": "            token.detach().clone(),\n            next_state,",
+   "mutated": "            observed.detach().clone(),\n            next_state,"
+  },
+  {
+   "name": "other_variants_accepted",
+   "file": "src/mars_titan/models/titans/financial.py",
+   "status": "killed",
+   "seconds": 3.7,
+   "tail": [
+    "1 failed, 25 passed in 1.38s"
+   ],
+   "original": "            or self.variant != \"mac_online\"\n",
+   "mutated": ""
+  },
+  {
+   "name": "run_commits_each_block",
+   "file": "src/mars_titan/training/financial_run.py",
+   "status": "killed",
+   "seconds": 4.5,
+   "tail": [
+    "1 failed, 27 passed in 2.31s"
+   ],
+   "original": "                context = dict(context=prepared.next_context)",
+   "mutated": "                context = dict(context=predictor.commit_context(prepared.next_context, differentiable=grad))"
+  },
+  {
+   "name": "run_accepts_accumulation",
+   "file": "src/mars_titan/training/financial_run.py",
+   "status": "killed",
+   "seconds": 10.9,
+   "tail": [
+    "1 failed, 31 passed in 8.39s"
+   ],
+   "original": "        if self.uses_context and recipe.accumulation_rows is not None:",
+   "mutated": "        if False:"
+  },
+  {
+   "name": "truncation_keeps_the_context_graph",
+   "file": "src/mars_titan/training/financial_run.py",
+   "status": "killed",
+   "seconds": 9.1,
+   "tail": [
+    "1 failed, 32 passed in 6.86s"
+   ],
+   "original": "            if run.context is not None:\n                run.context = self.predictor.detach_context(run.context, parameter_id)\n",
+   "mutated": ""
+  },
+  {
+   "name": "checkpoint_drops_the_context",
+   "file": "src/mars_titan/training/financial_run.py",
+   "status": "killed",
+   "seconds": 10.5,
+   "tail": [
+    "1 failed, 32 passed in 8.15s"
+   ],
+   "original": "        if self.uses_context and payload[\"context\"] is not None:\n            run.context = self.predictor.restore_context(payload[\"context\"])\n",
+   "mutated": ""
+  }
+ ]
+}

@@ -10,7 +10,6 @@ su gancho. No se usa la GPU ni se registran pérdidas.
 
 import copy
 import json
-import os
 from dataclasses import asdict
 from pathlib import Path
 from types import SimpleNamespace
@@ -897,9 +896,7 @@ def test_titans_measurement_builds_each_core_extension_with_its_predictor_change
     assert built == [(None, *recipe)] * 3 + [(PT1, *pt1)] * 3
 
 
-@pytest.mark.skipif(
-    not os.environ.get("MARS_TITAN_EPISODIC_NATIVE"), reason="Falta el enlace nativo compilado"
-)
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_candidate_measurement_compares_accumulation_and_recomputation(
     views, cpu, tmp_path, guarded_steps
 ):
@@ -931,9 +928,7 @@ def test_candidate_measurement_compares_accumulation_and_recomputation(
 
 # Lectores de MARS-TITAN y núcleos de CM-v1 en CPU
 
-NATIVE = pytest.mark.skipif(
-    not os.environ.get("MARS_TITAN_EPISODIC_NATIVE"), reason="Falta el enlace nativo compilado"
-)
+NATIVE = pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 MARS_ARMS = {
     "mars_titan_m0": {"episodic_bank": "m0_no_bank"},
     "mars_titan_m1": {"episodic_bank": "m1"},

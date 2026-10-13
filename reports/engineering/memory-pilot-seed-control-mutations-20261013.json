@@ -1,0 +1,231 @@
+{
+ "schema_version": 1,
+ "kind": "targeted_mutation_testing",
+ "issue": 459,
+ "recorded_at_utc": "2026-10-13T02:57:37.668571+00:00",
+ "files": [
+  "src/mars_titan/evaluation/paired_comparisons.py",
+  "src/mars_titan/evaluation/seed_variance_control.py"
+ ],
+ "tests": [
+  "tests/evaluation/test_seed_variance_control.py"
+ ],
+ "command": "pytest -q -x tests/evaluation/test_seed_variance_control.py sobre una copia de src, tests/evaluation, configs y el recibo de coste",
+ "baseline": {
+  "code": 0,
+  "tail": "53 passed in 0.37s"
+ },
+ "import_checked": "copia aislada (ruta local omitida)",
+ "killed": 26,
+ "survived": 0,
+ "mutations": [
+  {
+   "id": "M01",
+   "description": "Banda con la diferencia con signo",
+   "file": "src/mars_titan/evaluation/seed_variance_control.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 40 passed in 0.30s",
+   "seconds": 2.65
+  },
+  {
+   "id": "M02",
+   "description": "Banda con la media de los pares en lugar del máximo",
+   "file": "src/mars_titan/evaluation/seed_variance_control.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 40 passed in 0.28s",
+   "seconds": 2.29
+  },
+  {
+   "id": "M03",
+   "description": "Banda con la mediana y no con el cuantil declarado",
+   "file": "src/mars_titan/evaluation/seed_variance_control.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 48 passed in 0.31s",
+   "seconds": 2.35
+  },
+  {
+   "id": "M04",
+   "description": "Banda con la dispersión observada sin remuestreo",
+   "file": "src/mars_titan/evaluation/seed_variance_control.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 40 passed in 0.39s",
+   "seconds": 3.01
+  },
+  {
+   "id": "M05",
+   "description": "Intervalo con la cola sin dividir entre dos",
+   "file": "src/mars_titan/evaluation/seed_variance_control.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 47 passed in 0.43s",
+   "seconds": 3.12
+  },
+  {
+   "id": "M06",
+   "description": "Contraste con el signo invertido",
+   "file": "src/mars_titan/evaluation/seed_variance_control.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 40 passed in 0.31s",
+   "seconds": 2.87
+  },
+  {
+   "id": "M07",
+   "description": "Base promediada sobre todas las semillas del control",
+   "file": "src/mars_titan/evaluation/seed_variance_control.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 40 passed in 0.30s",
+   "seconds": 2.59
+  },
+  {
+   "id": "M08",
+   "description": "Superioridad sin exigir la banda",
+   "file": "src/mars_titan/evaluation/seed_variance_control.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 31 passed in 0.32s",
+   "seconds": 2.84
+  },
+  {
+   "id": "M09",
+   "description": "Superioridad con desigualdad no estricta",
+   "file": "src/mars_titan/evaluation/seed_variance_control.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 31 passed in 0.32s",
+   "seconds": 2.96
+  },
+  {
+   "id": "M10",
+   "description": "Equivalencia sin el límite inferior",
+   "file": "src/mars_titan/evaluation/seed_variance_control.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 35 passed in 0.37s",
+   "seconds": 3.06
+  },
+  {
+   "id": "M11",
+   "description": "No inferioridad sin comprobar la banda al conservar",
+   "file": "src/mars_titan/evaluation/seed_variance_control.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 25 passed in 0.32s",
+   "seconds": 2.88
+  },
+  {
+   "id": "M12",
+   "description": "No inferioridad con banda igual al margen interpretable",
+   "file": "src/mars_titan/evaluation/seed_variance_control.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 25 passed in 0.32s",
+   "seconds": 2.54
+  },
+  {
+   "id": "M13",
+   "description": "Abandono sin comprobar la banda",
+   "file": "src/mars_titan/evaluation/seed_variance_control.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 28 passed in 0.24s",
+   "seconds": 2.41
+  },
+  {
+   "id": "M14",
+   "description": "Margen ensanchado con la banda",
+   "file": "src/mars_titan/evaluation/seed_variance_control.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 26 passed in 0.25s",
+   "seconds": 2.15
+  },
+  {
+   "id": "M15",
+   "description": "Decisión sin banda calculada con la banda",
+   "file": "src/mars_titan/evaluation/seed_variance_control.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 40 passed in 0.30s",
+   "seconds": 2.17
+  },
+  {
+   "id": "M16",
+   "description": "Sin comprobar que todas las series cubren las mismas sesiones",
+   "file": "src/mars_titan/evaluation/seed_variance_control.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 50 passed in 0.30s",
+   "seconds": 2.18
+  },
+  {
+   "id": "M17",
+   "description": "Criterio de descarte invertido",
+   "file": "src/mars_titan/evaluation/seed_variance_control.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 51 passed in 0.31s",
+   "seconds": 2.4
+  },
+  {
+   "id": "M18",
+   "description": "Semillas de la regla pueden ser todas las del control",
+   "file": "src/mars_titan/evaluation/seed_variance_control.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 4 passed in 0.22s",
+   "seconds": 2.08
+  },
+  {
+   "id": "M19",
+   "description": "Semillas añadidas sin comprobar",
+   "file": "src/mars_titan/evaluation/seed_variance_control.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 12 passed in 0.26s",
+   "seconds": 2.2
+  },
+  {
+   "id": "M20",
+   "description": "Partición de la métrica sin comprobar",
+   "file": "src/mars_titan/evaluation/seed_variance_control.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 17 passed in 0.25s",
+   "seconds": 2.55
+  },
+  {
+   "id": "M21",
+   "description": "Procedimiento de las semillas añadidas sin comprobar",
+   "file": "src/mars_titan/evaluation/seed_variance_control.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 6 passed in 0.30s",
+   "seconds": 2.78
+  },
+  {
+   "id": "M22",
+   "description": "Propuesta con otro control admitida",
+   "file": "src/mars_titan/evaluation/seed_variance_control.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 22 passed in 0.27s",
+   "seconds": 2.67
+  },
+  {
+   "id": "M23",
+   "description": "Réplicas relativas divididas por la estimación de la base",
+   "file": "src/mars_titan/evaluation/paired_comparisons.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 38 passed in 0.27s",
+   "seconds": 2.34
+  },
+  {
+   "id": "M24",
+   "description": "Pérdida de la base cero admitida",
+   "file": "src/mars_titan/evaluation/paired_comparisons.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 39 passed, 1 warning in 0.30s",
+   "seconds": 2.46
+  },
+  {
+   "id": "M25",
+   "description": "Banda con la semilla anterior como base (no simétrica)",
+   "file": "src/mars_titan/evaluation/seed_variance_control.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 40 passed in 0.26s",
+   "seconds": 2.38
+  },
+  {
+   "id": "M26",
+   "description": "Dispersión observada sin la diferencia simétrica",
+   "file": "src/mars_titan/evaluation/seed_variance_control.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 40 passed in 0.25s",
+   "seconds": 2.04
+  }
+ ]
+}

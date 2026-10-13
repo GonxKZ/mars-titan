@@ -341,18 +341,16 @@ reports/             Auditorías, mediciones y fichas de experimentos
 
 ## Empezar
 
-Requisitos: Git, [uv](https://docs.astral.sh/uv/) y ripgrep. La comprobación nativa necesita CMake y compiladores C/C++. El entorno de desarrollo usa Python 3.12, gestionado por uv. La [guía de entorno](docs/engineering/reproducibility.md) recoge las dependencias del sistema.
+Requisitos: Linux, Git, [uv](https://docs.astral.sh/uv/), GNU Make y ripgrep. La comprobación nativa necesita CMake, Ninja y Clang. El entorno de desarrollo usa Python 3.12, gestionado por uv. La [guía de entorno](docs/engineering/reproducibility.md) recoge las dependencias del sistema.
 
 ```bash
 git clone https://github.com/GonxKZ/mars-titan.git
 cd mars-titan
-uv sync --locked
-uv run ruff check .
-uv run ruff format --check .
-uv run python scripts/check_repository.py
+make setup
+make check
 ```
 
-La suite completa de `uv run pytest` requiere las dependencias científicas y los binarios nativos. Su preparación se describe en las guías de [reproducibilidad](docs/engineering/reproducibility.md), [simulación C++20](docs/engineering/native-financial-simulation.md) y [PPO nativo](docs/engineering/native-ppo.md). Las comprobaciones CUDA requieren una GPU libre.
+`make check` ejecuta Ruff, el formato, la comprobación del repositorio y las pruebas rápidas. La [guía de contribución](CONTRIBUTING.md) explica los demás objetivos, como `make test`, `make native-build` y `make test-cuda`, las marcas de las pruebas, el mapa del código y el flujo de ramas y publicación. La suite completa requiere además los binarios nativos, cuya preparación se describe en las guías de [simulación C++20](docs/engineering/native-financial-simulation.md) y [PPO nativo](docs/engineering/native-ppo.md). Las comprobaciones CUDA requieren una GPU libre.
 
 Las comprobaciones se ejecutan localmente antes de publicar cambios. La única excepción autorizada de GitHub Actions es publicar la página de GitHub Pages, sin pruebas ni entrenamientos en GitHub.
 
