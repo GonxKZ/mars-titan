@@ -326,6 +326,19 @@ def test_statement_added_without_moving_a_definition_is_rejected(tmp_path):
         quality.summarize(data, tmp_path)
 
 
+def test_functions_that_swap_names_are_rejected(tmp_path):
+    data = measure(tmp_path)
+    # Las líneas de sentencia no cambian, pero cada nombre apunta ya a otra región.
+    swapped = (
+        MODULE.replace("def covered(", "def swapped(")
+        .replace("def partial(", "def covered(")
+        .replace("def swapped(", "def partial(")
+    )
+    (tmp_path / "measured_module.py").write_text(swapped, encoding="utf-8")
+    with pytest.raises(ValueError, match="no coincide con la fuente actual"):
+        quality.summarize(data, tmp_path)
+
+
 def test_lines_excluded_in_the_measurement_are_not_a_change(tmp_path):
     source = MODULE.replace("def empty():", "def empty():  # pragma: no cover")
     report = quality.summarize(measure(tmp_path, source=source), tmp_path)
