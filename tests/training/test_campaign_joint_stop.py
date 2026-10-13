@@ -23,7 +23,7 @@ TITANS_GROUP = [
 ]
 # La comparación contrasta el Transformer compacto con Titans-MAC `transformer_direct` y la
 # GRU con la GRU episódica, que a su vez se contrasta con `mac_online`. Sin las ampliaciones,
-# la GRU episódica no tiene entrenador y el grupo conectado tiene seis brazos.
+# la GRU episódica no tiene entrenador y el grupo conectado tiene seis modelos.
 ENCODER_GROUP = ["gru", "transformer_compact", *TITANS_GROUP]
 EARLY = dict(
     stopping=JOINT_PLATEAU,
@@ -37,26 +37,25 @@ EARLY = dict(
 RULE = dict(metric="session_mae", patience=5, min_delta=1e-05, minimum_epochs=5, max_epochs=30)
 
 
-# El archivo de grupos lo comparte la campaña A v2 conjunta, que todavía no declara este
-# brazo, así que no puede nombrarlo. Quien lo declare con la parada conjunta debe añadirlo al
-# grupo de los lectores, porque A10 lo contrasta con mars_titan_m1_k4.
+# El archivo de grupos lo comparte la campaña A v2 conjunta, que declara este modelo, y lo
+# pone en el grupo de los lectores porque A10 lo contrasta con mars_titan_m1_k4.
 FIRST_READ = "mars_titan_m1_k4_first_read"
 
 
 def extended(campaign, *, group_first_read=True):
-    if group_first_read:
+    if not group_first_read:
         early = campaign["early_stop"]
-        early["groups"]["episodic_readers"].append(FIRST_READ)
-        early["membership"][FIRST_READ] = "episodic_readers"
+        early["groups"]["episodic_readers"].remove(FIRST_READ)
+        del early["membership"][FIRST_READ]
     sections = json.loads(EXTENSIONS.read_text())["sections"]
     return plan.extend_campaign(
-        campaign, sections, limits=dict(max_training_jobs=5265, max_prediction_jobs=0)
+        campaign, sections, limits=dict(max_training_jobs=5985, max_prediction_jobs=0)
     )
 
 
 def test_joint_campaign_a_keeps_the_design_and_declares_its_rule_before_results():
     joint, declared = (json.loads(path.read_text()) for path in (JOINT_CONFIG, CAMPAIGNS["A"]))
-    # Solo cambian el nombre y la parada. Ventanas, brazos, semillas y límites son los mismos.
+    # Solo cambian el nombre y la parada. Ventanas, modelos, semillas y límites son los mismos.
     assert {key for key in joint if joint.get(key) != declared.get(key)} == {"name", "early_stop"}
     assert joint["status"] == plan.DECLARED and joint["final_test_opened"] is False
     report = plan.check_campaign(JOINT_CONFIG)
@@ -68,17 +67,17 @@ def test_joint_campaign_a_keeps_the_design_and_declares_its_rule_before_results(
     # Son los mismos 2385 ajustes completos que en A. Los 1080 del grupo se dividen en meseta
     # y continuación, y la meseta no cuenta como ajuste adicional.
     assert (counts["training_jobs"], counts["prediction_jobs"]) == (2385, 0)
-    # Son seis brazos por 45 ventanas reentrenadas (19 + 13 + 13) por 4 ajustes.
+    # Son seis modelos por 45 ventanas reentrenadas (19 + 13 + 13) por 4 ajustes.
     assert counts["plateau_jobs"] == 6 * (19 + 13 + 13) * 4 == 1080
 
 
 def test_extended_joint_campaign_groups_mars_titan_and_cm_v1():
     campaign = extended(plan.load_campaign(JOINT_CONFIG))
     counts = plan.count_jobs(campaign)
-    assert (counts["training_jobs"], counts["prediction_jobs"]) == (5265, 0)
-    # El grupo de codificadores y núcleos suma siete brazos con la GRU episódica, el de los
-    # lectores episódicos once y el de los núcleos de CM-v1 dos. Son 20 brazos con 4 ajustes en
-    # 45 ventanas. Los dos brazos B6 no tienen épocas y quedan fuera de los grupos.
+    assert (counts["training_jobs"], counts["prediction_jobs"]) == (5985, 0)
+    # El grupo de codificadores y núcleos suma siete modelos con la GRU episódica, el de los
+    # lectores episódicos once y el de los núcleos de CM-v1 dos. Son 20 modelos con 4 ajustes en
+    # 45 ventanas. Los seis modelos B6 no tienen épocas y quedan fuera de los grupos.
     assert counts["plateau_jobs"] == 20 * 4 * 45 == 3600
     jobs = plan.plan_campaign(campaign)
     grouped = {job["arm"] for job in jobs if job.get("phase") == plan.PLATEAU}
@@ -90,7 +89,7 @@ def test_extended_joint_campaign_groups_mars_titan_and_cm_v1():
         if job["arm"] == "gru_episodic" and job["stage"] == "search":
             assert job["case"]["stopping_rule"] == dict(RULE, stopping=JOINT_PLATEAU)
             assert job["phase"] in (plan.PLATEAU, plan.JOINT)
-    corrections = [job for job in jobs if job["arm"] in ("mars_titan_b6", "mars_titan_b6_bias")]
+    corrections = [job for job in jobs if job["arm"].startswith("mars_titan_b6")]
     assert corrections and all(
         "phase" not in job and "stopping_rule" not in (job.get("case") or {}) for job in corrections
     )

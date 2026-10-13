@@ -14,8 +14,7 @@ import pytest
 import torch
 from torch.optim import optimizer as optim_module
 
-from mars_titan.simulation import policy_plan, policy_throughput
-from mars_titan.simulation.native_runtime import library_path
+from mars_titan.simulation import policy_plan, policy_throughput, window_tapes
 
 STAGES = {v: Path(f"configs/simulation/historical-masked-rl-stage-{v.lower()}.json") for v in "AB"}
 RATES = dict(
@@ -141,20 +140,24 @@ def test_measurement_steps_the_environment_and_the_network_without_changing_weig
         reduced(), steps=8, warmup=2, library="/nonexistent/library.so"
     )
     assert dict(optim_module._global_optimizer_pre_hooks) == hooks and created == []
-    assert rates["optimizer_steps"] == 0 and rates["tape"]["assets"] == 8
+    # La cinta medida tiene el diseño máximo: universos disjuntos de 8 activos en los tres
+    # tramos de ajuste, la validación y la evaluación.
+    policies = reduced()["policies"]
+    layout = window_tapes.layout_bound(policies["universe"], policies["train_windows"])
+    assert rates["optimizer_steps"] == 0 and rates["tape"]["assets"] == layout == 40
     for market in ("CN", "US"):
         measured = rates["stepping"][market]
         assert measured["python"]["steps_per_second"] > 0
         assert measured["python"]["measured_steps"] == 8
         assert measured["native"]["status"] == "unavailable" and measured["native"]["reason"]
     network = rates["network"]
-    assert network["observation_size"] == 6 * 8 + 2 and network["minibatch_size"] == 16
+    assert network["observation_size"] == 6 * layout + 2 and network["minibatch_size"] == 16
     assert set(network["inference_transitions_per_second"]) == {"1", "4"}
     assert network["gradient_minibatches_per_second"] > 0
     assert not {"loss", "reward", "return"} & set(network)
 
 
-@pytest.mark.skipif(library_path() is None, reason="Falta la biblioteca nativa de simulación")
+@pytest.mark.native("MARS_TITAN_NATIVE_LIBRARY")
 def test_native_accounting_is_measured_where_the_engine_admits_the_market(cpu):
     rates = policy_throughput.measure_policies(reduced(), steps=8, warmup=2)
     assert rates["stepping"]["US"]["native"]["steps_per_second"] > 0
@@ -282,7 +285,7 @@ def test_quantile_variants_count_like_double_dqn_with_their_own_times(variant):
     plan = policy_plan.plan_stage(stage)
     job = next(j for j in plan if j["arm"] == "double_dqn" and j["kind"] == "fit")
     scalar = policy_throughput.native_fit_work(stage, job)
-    # El brazo conserva su nombre y solo cambia la cabeza, así que el plan no se altera.
+    # El modelo conserva su nombre y solo cambia la cabeza, así que el plan no se altera.
     stage["policies"]["policies"]["double_dqn"]["variant"] = variant
     quantile = policy_throughput.native_fit_work(stage, job)
     assert quantile == dict(scalar, engine=variant)
@@ -313,7 +316,7 @@ def test_group_arms_collect_the_klpo_waves_with_their_own_objective_time(monkeyp
     klpo = policy_throughput.native_fit_work(stage, jobs[0])
     group = policy_throughput.native_fit_work(stage, dict(jobs[0], engine="native_group_relative"))
     assert group == dict(klpo, engine="group")
-    # El brazo KLPO pasa a objetivo de grupo con las mismas oleadas. Sin el tiempo de su
+    # La variante KLPO pasa a objetivo de grupo con las mismas oleadas. Sin el tiempo de su
     # objetivo la estimación falla en lugar de reutilizar el de KLPO.
     grouped = [
         dict(j, engine="native_group_relative") if j["arm"] == "klpo_terminal" else j for j in plan

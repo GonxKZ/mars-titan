@@ -1,7 +1,6 @@
 """Recorrido CUDA técnico conjunto. Requiere una ventana exclusiva autorizada."""
 
 import json
-import os
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -20,13 +19,13 @@ from mars_titan.training.corpus_inputs import CorpusDataset
 from mars_titan.training.experiment_resources import GpuLease
 from mars_titan.training.joint_temporal_corpus import prepare_joint_temporal_corpus
 from mars_titan.training.temporal_search import run_temporal_search
+from tests.suite_support import requires_cuda_integration
 from tests.training.test_joint_temporal import joint_fixture, market_sources, rows
 
+pytestmark = pytest.mark.cuda
 
-@pytest.mark.skipif(
-    os.environ.get("MARS_TITAN_CUDA_INTEGRATION") != "1",
-    reason="Requiere una ventana CUDA exclusiva y activación explícita",
-)
+
+@requires_cuda_integration
 def test_joint_cuda_search_confirms_and_resumes_thirty_cases_without_losing_markets(
     tmp_path, monkeypatch
 ):

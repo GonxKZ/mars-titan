@@ -77,6 +77,12 @@ function(mars_titan_configure_target target)
 endfunction()
 
 if(MARS_TITAN_ENABLE_CUDA)
+    # Arquitecturas declaradas: sm_89 para la RTX 4070 Laptop y sm_121 para la GB10. Solo SASS,
+    # sin PTX, de modo que otra GPU falla al cargar en lugar de compilar en ejecución sin aviso.
+    set(CMAKE_CUDA_ARCHITECTURES "89-real;121-real" CACHE STRING "Arquitecturas CUDA declaradas")
+    if(CMAKE_CUDA_ARCHITECTURES MATCHES "^(native|all|all-major)$")
+        message(FATAL_ERROR "Las arquitecturas CUDA se declaran una a una para no depender de la máquina")
+    endif()
     set(CMAKE_CUDA_STANDARD 20)
     set(CMAKE_CUDA_STANDARD_REQUIRED ON)
     set(CMAKE_CUDA_EXTENSIONS OFF)
@@ -361,8 +367,11 @@ if(MARS_TITAN_BUILD_SIMULATION)
                 "CUDA_VISIBLE_DEVICES=-1" "OMP_NUM_THREADS=1" "MKL_NUM_THREADS=1")
             foreach(component training checkpoint inputs gru_packing evaluation collection)
                 add_executable(ppo_${component}_tests tests/ppo_${component}_tests.cpp)
-                if(component STREQUAL "training" OR component STREQUAL "gru_packing" OR
-                   component STREQUAL "evaluation" OR component STREQUAL "collection")
+                if(component STREQUAL "evaluation")
+                    # La evaluación congelada vive con los ejecutores de la etapa de políticas.
+                    target_link_libraries(ppo_${component}_tests PRIVATE mars_titan_policy_stage)
+                elseif(component STREQUAL "training" OR component STREQUAL "gru_packing" OR
+                       component STREQUAL "collection")
                     target_link_libraries(ppo_${component}_tests PRIVATE mars_titan_ppo)
                 else()
                     target_link_libraries(ppo_${component}_tests PRIVATE mars_titan_ppo_files)
@@ -554,3 +563,31 @@ if(MARS_TITAN_ENABLE_STATIC_ANALYZER)
     endforeach()
 endif()
 mars_titan_coverage_report()
+
+# Pruebas que aplican pasos de optimizador sobre datos sintéticos, incluidos los programas que
+# entrenan si no encuentran la protección. Mientras rija el bloqueo de aprendizaje, todos los
+# perfiles de prueba de CMakePresets.json excluyen esta etiqueta. La prueba Python
+# test_optimizer_steps_hold.py exige que la lleve cualquier prueba que llegue a un paso.
+set(MARS_TITAN_OPTIMIZER_STEP_TESTS ppo_policy ppo_training ppo_collection ppo_gru_packing
+    ppo_variant_state adapter_control adapter_control_cli adapter_control_cuda adapter_control_cli_cuda)
+foreach(test IN LISTS MARS_TITAN_OPTIMIZER_STEP_TESTS)
+    if(TEST ${test})
+        set_property(TEST ${test} APPEND PROPERTY LABELS optimizer-steps)
+    endif()
+endforeach()
+
+# Bajo un emulador cada prueba conserva su límite relativo multiplicado por un factor declarado.
+set(MARS_TITAN_TEST_TIMEOUT_SCALE 1 CACHE STRING "Factor entero de los límites de CTest")
+if(NOT MARS_TITAN_TEST_TIMEOUT_SCALE MATCHES "^[1-9][0-9]*$")
+    message(FATAL_ERROR "MARS_TITAN_TEST_TIMEOUT_SCALE debe ser un entero positivo")
+endif()
+if(BUILD_TESTING AND MARS_TITAN_TEST_TIMEOUT_SCALE GREATER 1)
+    get_directory_property(registered_tests TESTS)
+    foreach(test IN LISTS registered_tests)
+        get_test_property(${test} TIMEOUT limit)
+        if(limit)
+            math(EXPR limit "${limit} * ${MARS_TITAN_TEST_TIMEOUT_SCALE}")
+            set_tests_properties(${test} PROPERTIES TIMEOUT ${limit})
+        endif()
+    endforeach()
+endif()

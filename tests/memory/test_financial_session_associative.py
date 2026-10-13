@@ -2,7 +2,7 @@
 
 La sesión emite la predicción del núcleo más la lectura de A de la generación anterior y
 escribe A solo con etiquetas maduras, con el valor etiqueta menos predicción del núcleo. El
-oráculo reproduce esa recurrencia por separado a partir de la sesión sin corrección.
+referencia reproduce esa recurrencia por separado a partir de la sesión sin corrección.
 """
 
 import os
@@ -26,6 +26,7 @@ from mars_titan.memory.native_backend import load_native
 from mars_titan.memory.retention_bank import RetentionConfig
 from mars_titan.models.titans.financial import FinancialConfig, FinancialPredictor
 from mars_titan.models.titans.frozen_financial import FrozenFinancialConsumer
+from tests.suite_support import missing_native
 
 EVENTS = (125, 126, 127, 128, 129, 130)
 DELTA = MatureCorrection(AssociativeMemoryConfig("delta", rate=0.5, forgetting=0.25))
@@ -59,7 +60,7 @@ def module_backend():
 def shared_native():
     path = os.environ.get("MARS_TITAN_EPISODIC_NATIVE")
     if not path:
-        pytest.skip("Falta el enlace nativo CPU compilado para esta comprobación")
+        pytest.skip(missing_native("MARS_TITAN_EPISODIC_NATIVE"))
     return load_native(path)
 
 
@@ -91,8 +92,13 @@ def options(native, source, consumer, **extra):
 
 
 def associative_state(run):
+    """Matriz A y núcleo pendiente confirmados. Solo una clave enrutada guarda rutas pendientes."""
+    if not run.associative:
+        return None, None
     bundle = run._bundle(run.snapshot()["state"])
-    return run._associative_state(bundle["associative"]) if run.associative else (None, None)
+    memory, core, routes = run._associative_state(bundle["associative"])
+    assert (routes is None) == (run.associative.routing is None)
+    return memory, core
 
 
 def trajectory(native, source, consumer, output, *, correction=None, shift=None, recover=False):
@@ -211,6 +217,7 @@ def emissions(result):
     }
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_corrected_emissions_follow_the_previous_matrix_and_mature_writes(
     four_flow_source, baseline, corrected
 ):
@@ -232,6 +239,7 @@ def test_corrected_emissions_follow_the_previous_matrix_and_mature_writes(
     assert min(map(abs, later)) > 1e-6
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_core_queue_and_fast_state_do_not_depend_on_the_correction(baseline, corrected):
     for left, right in zip(baseline["events"], corrected["events"], strict=True):
         assert left["fast"] == right["fast"]
@@ -242,6 +250,7 @@ def test_core_queue_and_fast_state_do_not_depend_on_the_correction(baseline, cor
         assert right["core"].dtype == torch.float64
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_labels_of_an_event_only_change_later_emissions(
     native, four_flow_source, frozen_consumer, baseline, corrected, tmp_path
 ):
@@ -260,6 +269,7 @@ def test_labels_of_an_event_only_change_later_emissions(
         assert after[key] == pytest.approx(value, rel=0, abs=1e-15)
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_constant_key_control_applies_one_bias_per_event(
     native, four_flow_source, frozen_consumer, baseline, tmp_path
 ):
@@ -277,6 +287,7 @@ def test_constant_key_control_applies_one_bias_per_event(
             assert value == pytest.approx(expected[asset, at], rel=0, abs=1e-15)
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_kalman_rule_follows_the_same_session_contract_and_recovers_its_covariance(
     native, four_flow_source, frozen_consumer, baseline, tmp_path
 ):
@@ -300,6 +311,7 @@ def test_kalman_rule_follows_the_same_session_contract_and_recovers_its_covarian
         assert torch.equal(state.matrix, matrix) and state.writes == event["applied_total"]
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_cut_before_commit_resumes_with_the_same_matrix(
     native, four_flow_source, frozen_consumer, corrected, tmp_path
 ):
@@ -312,6 +324,7 @@ def test_cut_before_commit_resumes_with_the_same_matrix(
         assert left["memory"]["matrix_sha256"] == right["memory"]["matrix_sha256"]
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_contract_changes_only_when_the_correction_is_declared(
     native, four_flow_source, frozen_consumer, tmp_path
 ):
@@ -335,6 +348,7 @@ def test_contract_changes_only_when_the_correction_is_declared(
             run.close()
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 @pytest.mark.parametrize(
     "change",
     [
@@ -353,9 +367,9 @@ def test_correction_requires_titans_without_bank_and_its_declaration(
 
 
 def test_correction_keys_and_feedback_validate_their_contract():
-    with pytest.raises(ValueError, match="clave codec o constant"):
+    with pytest.raises(ValueError, match="una clave de codec, constant, regime"):
         MatureCorrection(DELTA.memory, key="label")
-    with pytest.raises(ValueError, match="64 o 1"):
+    with pytest.raises(ValueError, match="clave codec usa 64 coordenadas"):
         MatureCorrection(AssociativeMemoryConfig("delta", key_size=8))
     with pytest.raises(ValueError, match="FP32"):
         DELTA.keys(torch.ones((2, 64), dtype=torch.float64))

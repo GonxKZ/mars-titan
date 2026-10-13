@@ -3,6 +3,10 @@ include(CMakePushCheckState)
 
 option(MARS_TITAN_LIBTORCH_ENABLE_CUDA "Enlazar el backend CUDA del SDK LibTorch existente" ON)
 set(MARS_TITAN_TORCH_ENVIRONMENT "" CACHE PATH "Entorno uv existente del SDK LibTorch, vacío para usar .venv")
+set(MARS_TITAN_PROBE_TIMEOUT 30 CACHE STRING "Segundos para consultar Python del entorno uv, más bajo un emulador")
+if(NOT MARS_TITAN_PROBE_TIMEOUT MATCHES "^[1-9][0-9]*$")
+    message(FATAL_ERROR "MARS_TITAN_PROBE_TIMEOUT debe ser un número positivo de segundos")
+endif()
 
 function(mars_titan_find_torch)
     if(TARGET mars_titan::torch)
@@ -22,19 +26,28 @@ function(mars_titan_find_torch)
     endif()
     execute_process(COMMAND "${CMAKE_COMMAND}" -E env "UV_PROJECT_ENVIRONMENT=${sdk_environment}"
         "${MARS_TITAN_UV}" run --no-sync --project "${project_root}" python -c
-        "import json,pathlib,torch; root=pathlib.Path(torch.__file__).parent; cuda=torch.version.cuda or ''; candidates=[root.parent/'nvidia'/('cu'+cuda.split('.')[0])/'include',root.parent/'nvidia'/'cuda_runtime'/'include']; runtime=next((str(p) for p in candidates if (p/'cuda_runtime_api.h').is_file()),''); print(json.dumps(dict(root=str(root),version=torch.__version__,cuda_version=cuda,cxx11_abi=int(torch.compiled_with_cxx11_abi()),cpu_capability=torch.backends.cpu.get_cpu_capability(),config=torch.__config__.show(),cuda_include=runtime)))"
+        "import json,pathlib,platform,torch; root=pathlib.Path(torch.__file__).parent; cuda=torch.version.cuda or ''; candidates=[root.parent/'nvidia'/('cu'+cuda.split('.')[0])/'include',root.parent/'nvidia'/'cuda_runtime'/'include']; runtime=next((str(p) for p in candidates if (p/'cuda_runtime_api.h').is_file()),''); print(json.dumps(dict(root=str(root),version=torch.__version__,cuda_version=cuda,cxx11_abi=int(torch.compiled_with_cxx11_abi()),cpu_capability=torch.backends.cpu.get_cpu_capability(),config=torch.__config__.show(),cuda_include=runtime,machine=platform.machine())))"
         WORKING_DIRECTORY "${project_root}"
         RESULT_VARIABLE probe_result OUTPUT_VARIABLE sdk ERROR_VARIABLE probe_error
-        OUTPUT_STRIP_TRAILING_WHITESPACE TIMEOUT 30)
+        OUTPUT_STRIP_TRAILING_WHITESPACE TIMEOUT ${MARS_TITAN_PROBE_TIMEOUT})
     if(NOT probe_result EQUAL 0)
         message(FATAL_ERROR "No se pudo consultar el SDK LibTorch del entorno uv existente: ${probe_error}")
     endif()
-    foreach(key root version cuda_version cxx11_abi cpu_capability config cuda_include)
+    foreach(key root version cuda_version cxx11_abi cpu_capability config cuda_include machine)
         string(JSON sdk_${key} ERROR_VARIABLE json_error GET "${sdk}" ${key})
         if(json_error)
             message(FATAL_ERROR "No se pudo interpretar el SDK LibTorch: ${json_error}")
         endif()
     endforeach()
+    # El SDK debe corresponder al procesador de destino. Un entorno x86-64 en una compilación
+    # cruzada a aarch64 fallaría tarde y con un error de enlace poco claro.
+    if(NOT sdk_machine STREQUAL CMAKE_SYSTEM_PROCESSOR)
+        message(FATAL_ERROR "El SDK LibTorch es para ${sdk_machine}, pero el destino es ${CMAKE_SYSTEM_PROCESSOR}")
+    endif()
+    # Bajo un emulador PyTorch informa de la capacidad del procesador emulado, no del destino real.
+    if(CMAKE_CROSSCOMPILING)
+        set(sdk_cpu_capability "emulated:${sdk_cpu_capability}")
+    endif()
     string(REGEX MATCH "^[0-9]+\\.[0-9]+\\.[0-9]+" sdk_release "${sdk_version}")
     if(NOT sdk_release OR sdk_release VERSION_LESS "2.14.0" OR NOT sdk_release VERSION_LESS "3.0.0")
         message(FATAL_ERROR "El aprendizaje nativo necesita PyTorch >=2.14,<3. Versión instalada: ${sdk_version}")
@@ -81,6 +94,11 @@ function(mars_titan_find_torch)
     target_compile_features(mars_titan_torch INTERFACE cxx_std_20)
     target_include_directories(mars_titan_torch SYSTEM INTERFACE ${sdk_includes})
     target_link_libraries(mars_titan_torch INTERFACE mars_titan_torch_torch_cpu mars_titan_torch_c10)
+    if(CMAKE_CROSSCOMPILING)
+        # El enlazador cruzado no sigue el RUNPATH de LibTorch para resolver OpenBLAS, OpenMP y
+        # Arm Compute Library, que viajan en el mismo directorio del paquete.
+        target_link_options(mars_titan_torch INTERFACE "LINKER:-rpath-link,${sdk_root}/lib")
+    endif()
     if(sdk_has_cuda)
         # La biblioteca registra sus kernels al cargarse, aunque no se llame a un símbolo CUDA.
         target_link_libraries(mars_titan_torch INTERFACE

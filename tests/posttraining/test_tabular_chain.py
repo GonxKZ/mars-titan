@@ -2,7 +2,7 @@
 
 Ridge y XGBoost no tienen puntos de adaptación. En cada ventana k ≥ 1 su cadena solo tiene
 el padre congelado de k-1, que se predice con el traslado tabular de la campaña base y se
-confirma con el mismo recibo y la misma selección que los demás brazos. Así las políticas
+confirma con el mismo recibo y la misma selección que los demás modelos. Así las políticas
 leen de todas las familias el mismo tipo de predicción fuera de muestra. El recorrido usa
 la campaña reducida de `campaign_fixture` con un Ridge sustituto sin parámetros ajustados.
 """
@@ -17,8 +17,8 @@ import pytest
 
 from mars_titan.data.storage import atomic_json
 from mars_titan.models.quantile_head import QUANTILE_COLUMNS
-from mars_titan.posttraining import campaign_stage, staged_chain
-from mars_titan.training import carried_predictions
+from mars_titan.posttraining import campaign_stage
+from mars_titan.training import campaign_chain, carried_predictions
 from tests.posttraining.campaign_fixture import CpuLease, base_campaign
 from tests.posttraining.real_only import real_data_only
 from tests.training.test_carried_predictions import PresenceCount
@@ -125,9 +125,9 @@ def test_the_tabular_chain_is_the_frozen_parent_carried_from_the_previous_window
         mine, theirs = by_sample(mine), by_sample(theirs)
         for column in ("sample_id", "target", "prediction"):
             np.testing.assert_array_equal(mine[column], theirs[column])
-    first = staged_chain.read_selection(output, "US", "fold-000", "ridge", 42)
+    first = campaign_chain.read_selection(output, "US", "fold-000", "ridge", 42)
     assert first["selected"]["kind"] == "base" and first["candidates"] == []
-    later = staged_chain.read_selection(output, "US", "fold-001", "ridge", 42)
+    later = campaign_chain.read_selection(output, "US", "fold-001", "ridge", 42)
     assert later["selected"]["kind"] == "frozen_parent" and later["fit_rows"] is None
     assert [c["kind"] for c in later["candidates"]] == ["frozen_parent"]
     assert later["selected"]["job"] == FROZEN

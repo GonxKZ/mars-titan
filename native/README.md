@@ -19,6 +19,8 @@ ctest --preset native-release
 ../build/native/native-release/mars-titan-sim --help
 ```
 
+Los presets de pruebas heredan de `native-test`, que excluye la etiqueta `optimizer-steps`. La llevan las pruebas de `MARS_TITAN_OPTIMIZER_STEP_TESTS`, que aplican pasos de optimizador sobre datos sintéticos (PPO y los controles de adaptadores) y no se ejecutan mientras dure el bloqueo de aprendizaje.
+
 Los perfiles habituales de Clang y GCC activan `MARS_TITAN_BUILD_RUNNER` para construir la sesión y el ejecutable. `MARS_TITAN_BUILD_RUNNER=OFF` con `MARS_TITAN_BUILD_FINANCIAL=ON` permite compilar solo la sesión y sus pruebas. El ejecutable requiere UNIX por sus bloqueos y escrituras confirmadas. Las bibliotecas pueden configurarse por separado en MSVC. Una fuente requerida que falta produce un error de configuración.
 
 El programa utiliza Arrow y Parquet C++, OpenSSL Crypto y [nlohmann_json 3.12.0](https://github.com/nlohmann/json/releases/tag/v3.12.0). La descarga de JSON se verifica con el SHA-256 publicado. CMake busca primero los paquetes del SDK Arrow/Parquet. En Linux puede localizar las cabeceras y bibliotecas C++ de PyArrow mediante `uv` durante la configuración. El ejecutable enlaza `libarrow` y `libparquet`, sin `arrow_python` ni `libpython`. JSON y las dependencias de archivos quedan fuera de la sesión pura.
@@ -105,7 +107,20 @@ Release utiliza `-fno-fast-math` y `-ffp-contract=off` en GCC y Clang. MSVC util
 
 `MARS_TITAN_ENABLE_IPO=ON` solicita LTO para Release y comprueba su disponibilidad. `MARS_TITAN_PGO=generate` y `MARS_TITAN_PGO=use` son opciones explícitas. GCC utiliza un directorio de perfiles. Clang genera archivos `.profraw` y consume un archivo `.profdata` combinado con `llvm-profdata`. La ruta se indica mediante `MARS_TITAN_PGO_DATA`. Estos modos necesitan una carga representativa y una comparación de paridad y tiempo total antes de adoptar sus resultados.
 
+LTO y PGO se midieron el 10 de octubre de 2026 en la etapa RL nativa con un perfil de `mars-titan-policy-benchmark` sobre cintas reales. Dieron las mismas huellas de contenido que Release, pero ninguna variante ganó de forma reproducible en los cuatro escenarios de las dos tandas, así que Release los mantiene desactivados ([informe](../reports/engineering/native-build-variants-20261010/README.md)).
+
+`native-ppo-dev` y `native-candidate-cuda-dev` son los presets de Release de PPO y de la referencia GRU en CUDA con ccache y mold, solo para desarrollo. ccache no cambia los objetos y mold reduce el enlazado a un tercio, pero cambia la disposición de los ejecutables. No deben usarse en la campaña. La identidad compilada registra el lanzador y el enlazador, pero todavía nada rechaza una identidad compilada con ccache o mold en `rl check`, `rl run` ni en los lanzadores. Necesitan `ccache`, `mold` y CMake 3.29 o posterior para `CMAKE_LINKER_TYPE`.
+
+```bash
+cmake --preset native-ppo-dev
+cmake --build --preset native-ppo-dev
+```
+
 La medición del núcleo debe incluir la preparación de entradas y el enlace con Python, además del tiempo interno. Deben registrarse las versiones, la configuración, las formas de los datos, las repeticiones, la memoria y el error frente a la referencia. Los tiempos de los perfiles instrumentados describen esas comprobaciones, no el rendimiento de Release.
+
+## Compilación cruzada a aarch64
+
+`native-aarch64-release` compila PPO, KLPO, el ejecutable financiero y el enlace episódico para Linux aarch64 con Clang y lld, y ejecuta CTest con qemu-user sin las pruebas de la etiqueta `optimizer-steps`. Necesita un entorno uv aarch64 en `MARS_TITAN_AARCH64_ENVIRONMENT` y una raíz con OpenSSL, zlib y zstd aarch64 en `MARS_TITAN_AARCH64_SYSROOT`. Con `MARS_TITAN_ENABLE_CUDA` las arquitecturas declaradas son `89-real;121-real`. Las órdenes y lo comprobado están en [plataformas de hardware](../docs/engineering/hardware-platforms.md#compilación-nativa-cruzada).
 
 ## Cobertura de líneas y ramas
 

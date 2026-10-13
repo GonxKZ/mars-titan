@@ -20,10 +20,12 @@ import torch
 
 from mars_titan.data.storage import atomic_json
 from mars_titan.models.quantile_head import QUANTILE_COLUMNS
-from mars_titan.posttraining import campaign_stage, staged_chain
+from mars_titan.posttraining import campaign_stage
 from mars_titan.posttraining import chronological_matrix as cm
+from mars_titan.training import campaign_chain
 from mars_titan.training import masked_campaign as engine
 from mars_titan.training.campaign_plan import TITANS
+from mars_titan.training.label_maturity import FIT_PARTITIONS, label_maturity
 from tests.posttraining.campaign_fixture import CpuLease
 from tests.posttraining.real_only import real_data_only
 from tests.training.test_masked_campaign import write_campaign
@@ -66,7 +68,7 @@ class StageRecorder(Recorder):
 
 
 def staged_campaign(folder):
-    """Campaña A con dos ventanas US, la GRU sustituta y un brazo Titans-MAC reducido."""
+    """Campaña A con dos ventanas US, la GRU sustituta y un modelo Titans-MAC reducido."""
     path = write_campaign(folder, variant="A", arms=("gru",))
     protocol = json.loads(
         (CONFIGS / "evaluation/historical-masked-us-walk-forward-v2.json").read_text()
@@ -111,7 +113,7 @@ def campaign_run(tmp_path_factory, unfused, permitted):  # noqa: F811
 
 
 def write_stage(campaign_run, folder):  # noqa: F811
-    """Etapa A con el brazo Titans-MAC, la continuación y el adaptador de la cabeza."""
+    """Etapa A con el modelo Titans-MAC, la continuación y el adaptador de la cabeza."""
     folder.mkdir(parents=True, exist_ok=True)
     campaign = json.loads(Path(campaign_run.campaign).read_text())
     matrix = json.loads((CONFIGS / "posttraining/adapter-matrix-v3.json").read_text())
@@ -196,7 +198,7 @@ def test_stage_plans_the_frozen_parent_and_the_cases_of_the_second_window(stage_
     assert (counts["training_jobs"], counts["prediction_jobs"]) == (2, 1)
     chains = campaign_stage.plan_chain(stage, jobs)
     assert [job["id"] for job in chains] == [
-        staged_chain.chain_job_id("US", window, ARM, 42) for window in (FIRST, NEXT)
+        campaign_chain.chain_job_id("US", window, ARM, 42) for window in (FIRST, NEXT)
     ]
 
 
@@ -236,7 +238,10 @@ def test_fits_read_only_the_rows_after_the_parent_calibration(stage_run, campaig
     for job_id in FITS.values():
         receipt = receipts(output)[job_id]
         assert receipt["fit_rows"]["sha256"] == proof["sha256"]
-        assert receipt["labels_used_until"] == proof["labels_used_until"]
+        assert receipt["labels_used_until"] == max(
+            label_maturity(campaign_run.prepared["US"]["windows"][name]["path"], FIT_PARTITIONS)[0]
+            for name in (FIRST, NEXT)
+        )
         report = json.loads((output / receipt["run"]["path"]).read_text())
         placement = report["identity"]["posttraining"]["placement"]
         assert placement["design"] == "staged_previous_window_v1"
@@ -246,7 +251,7 @@ def test_fits_read_only_the_rows_after_the_parent_calibration(stage_run, campaig
         assert train["decision_start"] == since
         # El calentamiento lee entradas anteriores sin sus etiquetas.
         assert train["warmup_start"] < since
-    # Los brazos cronológicos no abren la ventana de cohortes de los brazos neuronales.
+    # Los modelos cronológicos no abren la ventana de cohortes de los modelos neuronales.
     assert sorted(p.name for p in (output / "windows-data/US" / NEXT).iterdir()) == [
         "fit-rows.json"
     ]
@@ -265,9 +270,9 @@ def test_adapter_fits_train_only_the_head_corrections(stage_run):
 
 def test_the_chain_keeps_the_frozen_parent_when_no_case_improves_it(stage_run):
     output = stage_run["output"]
-    first = staged_chain.read_selection(output, "US", FIRST, ARM, 42)
+    first = campaign_chain.read_selection(output, "US", FIRST, ARM, 42)
     assert first["selected"]["kind"] == "base" and first["parent_window"] is None
-    chosen = staged_chain.read_selection(output, "US", NEXT, ARM, 42)
+    chosen = campaign_chain.read_selection(output, "US", NEXT, ARM, 42)
     assert chosen["parent_window"] == FIRST
     assert {item["kind"] for item in chosen["candidates"]} == {
         "frozen_parent",
@@ -277,7 +282,7 @@ def test_the_chain_keeps_the_frozen_parent_when_no_case_improves_it(stage_run):
     # Todos empatan: el padre congelado solo cede ante una mejora estricta.
     assert chosen["selected"]["kind"] == "frozen_parent"
     assert chosen["selected"]["job"] == FROZEN_JOB and chosen["fit_rows"] is None
-    assert stage_run["summary"]["chain"][staged_chain.chain_job_id("US", NEXT, ARM, 42)] == dict(
+    assert stage_run["summary"]["chain"][campaign_chain.chain_job_id("US", NEXT, ARM, 42)] == dict(
         kind="frozen_parent", job=FROZEN_JOB
     )
     market = chosen["receipts"]["US"]

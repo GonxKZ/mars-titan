@@ -558,7 +558,7 @@
       "§4.1, aproximaciones 0–3"
     ],
     "publication_status": "ICML 2022, actas verificadas.",
-    "relevance": "Priorizar pérdida aproximadamente reducible. El modelo auxiliar no es un oráculo de ruido y un holdout futuro violaría el contrato temporal.",
+    "relevance": "Priorizar pérdida aproximadamente reducible. El modelo auxiliar no identifica el ruido con certeza y un holdout futuro violaría el contrato temporal.",
     "redistribution": "unknown",
     "phase": [
       3,

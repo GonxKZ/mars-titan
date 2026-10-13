@@ -68,7 +68,8 @@ def _decode(predictor, payload, *, device):
         for name in ("weights", "momentum"):
             if type(memory[name]) is not tuple or len(memory[name]) != 2:
                 raise ValueError("El estado no conserva las dos capas de memoria")
-        # Las ventanas solo existen con convolución y su forma la comprueba _validate_state.
+        # Las ventanas solo existen con convolución y los niveles con PT5. Su forma la
+        # comprueba _validate_state.
         state = replace(
             state,
             mac=MACState(
@@ -78,6 +79,7 @@ def _decode(predictor, payload, *, device):
                     memory["steps"],
                     predictor.mac.memory.config.fingerprint(),
                     memory.get("convolution", ()),
+                    memory.get("levels", ()),
                 ),
                 predictor.mac.config.fingerprint(),
                 mac.get("convolution", ()),
@@ -136,6 +138,8 @@ def _cpu_payload(predictor, copied):
         if predictor.mac.config.memory.window:
             payload["mac"]["memory"]["convolution"] = copied.mac.memory.convolution
             payload["mac"]["convolution"] = copied.mac.convolution
+        if predictor.mac.config.memory.hidden_levels:
+            payload["mac"]["memory"]["levels"] = copied.mac.memory.levels
     return payload
 
 

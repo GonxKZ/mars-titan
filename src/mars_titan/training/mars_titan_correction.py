@@ -4,7 +4,7 @@ B6 suma a la predicción del Titans-MAC `mac_online` elegido en la ventana la le
 una memoria asociativa lineal escrita solo con resultados maduros
 (`memory.associative_memory.MatureCorrection`). No tiene parámetros que ajustar. Los casos de
 búsqueda de su receta fijan η, la receta fija λ y la campaña elige el caso con el MAE por
-sesión de validación, igual que en los demás brazos.
+sesión de validación, igual que en los demás modelos.
 
 Cada ventana recibe la vista, la carpeta de la ventana Titans-MAC `mac_online` completada en
 la misma vista y semilla (el padre), la receta de la corrección, la regla y la clave de
@@ -50,6 +50,7 @@ from mars_titan.memory.mars_titan_variant import (
     load_declaration,
     select_variant,
 )
+from mars_titan.memory.regimes import SLOTS
 from mars_titan.models.titans.config import canonical
 from mars_titan.models.titans.financial import FinancialPredictor
 from mars_titan.models.titans.financial_inputs import (
@@ -88,8 +89,8 @@ RECIPE = "mars_titan_mature_correction_v1"
 # La corrección solo depende de η y λ. Cada valor se declara una sola vez, en la receta o en
 # los casos de búsqueda, para que elegir un caso nunca contradiga a la receta.
 SEARCHED = ("rate", "forgetting")
-# Un brazo solo declara la regla y la clave. η y λ se añaden con el caso elegido, porque la
-# campaña los busca y no forman parte de la definición del brazo.
+# Un modelo solo declara la regla y la clave. η y λ se añaden con el caso elegido, porque la
+# campaña los busca y no forman parte de la definición del modelo.
 ARM_FIELDS = ("rule", "key")
 # Reglas que admite la ventana. La regla kalman (PT3) no usa η ni λ sino sus varianzas, que
 # esta receta no declara ni busca, así que todavía no tiene ventana.
@@ -162,9 +163,9 @@ def case_values(document, search_case):
 
 
 def arm_components(components, values):
-    """Completar la combinación de un brazo B6 con el η y el λ del caso.
+    """Completar la combinación de un modelo B6 con el η y el λ del caso.
 
-    El brazo solo puede declarar la memoria asociativa. Con un banco añadido la ventana
+    El modelo solo puede declarar la memoria asociativa. Con un banco añadido la ventana
     mezclaría dos vías de memoria y A5 dejaría de aislar el efecto de la corrección.
     """
     memory = components.get("associative_memory") if isinstance(components, dict) else None
@@ -173,7 +174,7 @@ def arm_components(components, values):
         and set(components) == {"associative_memory"}
         and isinstance(memory, dict)
         and set(memory) == set(ARM_FIELDS),
-        "Un brazo B6 declara solo associative_memory con su regla y su clave",
+        "Un modelo B6 declara solo associative_memory con su regla y su clave",
     )
     _require(
         memory["rule"] in RULES,
@@ -210,10 +211,12 @@ class CorrectionInference(ChronologicalInference):
         super().__init__(predictor, recipe, audit=audit)
         self.correction, self.codec = correction, codec
         self.memory = AssociativeMemory(correction.memory)
-        # Para cada decisión pendiente se guardan la predicción del núcleo y la clave del codec.
-        # Así A se escribe con el error del núcleo y no con el de la emisión corregida.
+        # Para cada decisión pendiente se guardan la predicción del núcleo, la clave del codec y
+        # la ruta del régimen. Así A se escribe con el error del núcleo y no con el de la
+        # emisión corregida, y en el compartimento del instante de la decisión.
         self._core = {}
         self._staged = []
+        self._routing = _RoutingLog()
 
     def _observe(self, run, source, event, *, differentiable):
         _require(not differentiable, "B6 no tiene parámetros que ajustar")
@@ -221,20 +224,32 @@ class CorrectionInference(ChronologicalInference):
         if event.at < source.phase.decision_start:
             return
         specification = self.predictor.config.inputs
-        decisions, keys = [], []
+        decisions, keys, prices = [], [], []
         for raw in event.inputs:
             cpu = validated_cpu_batch(raw, specification)
             decisions.extend(zip(cpu.flow_ids, cpu.prediction_at, strict=True))
             keys.append(self.codec.encode(cpu).key_inputs)
+            prices.append(cpu.inputs["prices"])
         inputs = np.concatenate(keys)
+        # El régimen se calcula una vez con todas las filas del evento, antes de leer A, así que
+        # no depende de cómo se reparta el evento en bloques.
+        routes, states = self.correction.routes(
+            np.concatenate(prices) if self.correction.routing is not None else None,
+            [flow for flow, _ in decisions],
+            decisions[0][1],
+        )
+        self._routing.event(decisions[0][1], states, routes, self.correction.routing)
         # Todas las lecturas del evento usan la A confirmada antes de él, como FinancialSession.
         # Lo que se escriba en este evento solo puede afectar a los siguientes.
-        corrections = self.memory.read(self.correction.keys(inputs))[:, 0].tolist()
-        for decision, key, correction in zip(decisions, inputs, corrections, strict=True):
+        corrections = self.memory.read(self.correction.keys(inputs, routes))[:, 0].tolist()
+        rows = routes.tolist() if routes is not None else [None] * len(decisions)
+        for decision, key, route, correction in zip(
+            decisions, inputs, rows, corrections, strict=True
+        ):
             if decision in self._core:
                 raise ValueError("La decisión ya tiene una predicción pendiente")
             core = run.pending[decision]
-            self._core[decision] = (core, key)
+            self._core[decision] = (core, key, route)
             run.pending[decision] = core + correction
             if decision in run.levels:
                 run.levels[decision] = [level + correction for level in run.levels[decision]]
@@ -247,8 +262,8 @@ class CorrectionInference(ChronologicalInference):
         _require(not train, "B6 no tiene parámetros que ajustar")
         super()._labels(run, event, train=False)
         for flow, decision_at, value in event.labels:
-            core, key = self._core.pop((flow, decision_at))
-            self._staged.append((decision_at, flow, value - core, key))
+            core, key, route = self._core.pop((flow, decision_at))
+            self._staged.append((decision_at, flow, value - core, key, route))
 
     def _write(self, at):
         """Escribir en A las etiquetas del evento cuando sus predicciones ya se han emitido.
@@ -260,12 +275,16 @@ class CorrectionInference(ChronologicalInference):
             return
         staged, self._staged = sorted(self._staged, key=lambda item: item[:2]), []
         first = self.memory.writes + 1
+        routes = None
+        if self.correction.routing is not None:
+            routes = np.array([route for *_, route in staged], dtype=np.int64)
+            self._routing.writes(routes)
         feedback = self.correction.feedback(
             ids=[first + offset for offset in range(len(staged))],
             decision_at=[decision_at for decision_at, *_ in staged],
             available_at=[at] * len(staged),
-            keys=self.correction.keys(np.stack([key for *_, key in staged])),
-            values=[value for _, _, value, _ in staged],
+            keys=self.correction.keys(np.stack([key for _, _, _, key, _ in staged]), routes),
+            values=[value for _, _, value, _, _ in staged],
         )
         self.memory = self.memory.write(feedback, cutoff=at)
 
@@ -297,6 +316,7 @@ class CorrectionInference(ChronologicalInference):
         run = _Pass(rows=rows)
         self.memory = AssociativeMemory(self.correction.memory)
         self._core, self._staged = {}, []
+        self._routing = _RoutingLog()
         self.predictor.eval()
         with torch.no_grad():
             for event in events:
@@ -311,16 +331,59 @@ class CorrectionInference(ChronologicalInference):
         if run.counters["labels"] == 0:
             raise ValueError("El tramo no contiene etiquetas maduras")
         exported = self.memory.export()
-        return dict(
+        metrics = dict(
             self._metrics(run),
             associative_writes=exported["writes"],
             associative_matrix_sha256=exported["matrix_sha256"],
         )
+        # Sin enrutamiento las métricas conservan su forma anterior.
+        if self.correction.routing is not None:
+            metrics["routing"] = self._routing.summary(self.correction.routing)
+        return metrics
 
     def predict(self, source, rows, *, stop=None):
         if not hasattr(rows, "append"):
             raise ValueError("La inferencia necesita un destino de filas")
         return self.evaluate(source, stop=stop, rows=rows)
+
+
+class _RoutingLog:
+    """Ocupación, cambios y asignaciones del régimen en un recorrido.
+
+    Cada evento emitido deja el estado de cada mercado con su corte, así que el informe
+    registra cuándo y con qué datos se asignó cada ruta. Las lecturas cuentan predicciones
+    emitidas por compartimento y las escrituras, etiquetas maduras por compartimento.
+    """
+
+    def __init__(self):
+        self.assignments, self.reads, self.written = [], [0] * SLOTS, [0] * SLOTS
+        self._last, self.transitions = {}, dict.fromkeys(("US", "CN"), 0)
+
+    def event(self, at, states, routes, rule):
+        if rule is None:
+            return
+        for state in states:
+            previous = self._last.get(state.market)
+            if previous is not None and previous != state.route:
+                self.transitions[state.market] += 1
+            self._last[state.market] = state.route
+            self.assignments.append(state.record(at, rule.labels))
+        for route in routes.tolist():
+            self.reads[route] += 1
+
+    def writes(self, routes):
+        for route in routes.tolist():
+            self.written[route] += 1
+
+    def summary(self, rule):
+        return dict(
+            rule=rule.name,
+            labels=list(rule.labels),
+            reads_by_route=list(self.reads),
+            writes_by_route=list(self.written),
+            transitions_by_market={m: n for m, n in self.transitions.items() if m in self._last},
+            assignments=self.assignments,
+        )
 
 
 def correction_memory_policy(warmup_months):
@@ -342,7 +405,7 @@ def _parent_recipe(parent_report):
     """Recuperar la receta cronológica con la que predijo el padre.
 
     Bloques y truncamiento deben ser los mismos, porque con otros el núcleo de B6 dejaría de
-    coincidir con el del brazo Titans-MAC.
+    coincidir con el del modelo Titans-MAC.
     """
     identity, request = parent_report["identity"], parent_report["request"]
     return identity["recipe"], case_recipe(identity["recipe"], request.get("search_case"))
@@ -425,7 +488,7 @@ def run_correction_window(
     document = load_correction_recipe(recipe)
     combination = arm_components(components, case_values(document, search_case))
     # La combinación se valida contra la declaración antes de abrir ninguna fuente, para que
-    # un brazo mal declarado falle sin crear la carpeta de salida.
+    # un modelo mal declarado falle sin crear la carpeta de salida.
     checked, correction = check_components(load_declaration(), combination)
     _require(
         correction is not None and set(checked) == {"associative_memory"},
@@ -570,7 +633,16 @@ def run_correction_window(
 
 
 def carry_correction(
-    anchor, anchor_view, view, output, *, device="cuda:0", stop=None, regenerate=False
+    anchor,
+    anchor_view,
+    view,
+    output,
+    *,
+    device="cuda:0",
+    stop=None,
+    modality_ablation=None,
+    regenerate=False,
+    frozen_parent=False,
 ):
     """Predecir una ventana posterior con el padre y el η y λ elegidos en el ancla.
 
@@ -580,9 +652,18 @@ def carry_correction(
     propio ajuste y se repiten su validación, su calibración y su evaluación en la misma
     vista. Como cada tramo empieza con A en cero, la repetición debe coincidir bit a bit con
     las tablas del ajuste antes de que la retención las libere.
+
+    Con `modality_ablation` se vuelve a predecir la evaluación de la propia ventana con la
+    variante aplicada en la lectura. El calentamiento, el núcleo y las claves del codec leen
+    las mismas entradas ablacionadas, y A se escribe con los errores de ese recorrido.
+    `frozen_parent` es el padre congelado de la cadena trivial de B6 en el walk-forward por
+    etapas: el ancla es el estado elegido en k-1 y además se predice la validación de k, con
+    la que la cadena puntúa.
     """
     from .carried_predictions import (
+        ablation_record,
         carried_window,
+        frozen_parent_record,
         predicted_partitions,
         regeneration_record,
         same_view,
@@ -631,17 +712,23 @@ def carry_correction(
         request["components"], case_values(identity["recipe"], request["search_case"])
     )
     anchor_manifest, _ = read_manifest(anchor_view, 64 * 1024**2)
-    partitions = predicted_partitions(None, regenerate)
-    dataset = CorpusDataset(view, input_policy=HISTORICAL_MASKED)
+    partitions = predicted_partitions(modality_ablation, regenerate, frozen_parent)
+    dataset = CorpusDataset(
+        view, input_policy=HISTORICAL_MASKED, modality_ablation=modality_ablation
+    )
     same_view(anchor_manifest, dataset.manifest, regenerate)
     anchor_fold, fold, age = carried_window(
-        anchor_manifest, dataset.manifest, input_policy=HISTORICAL_MASKED, same_window=regenerate
+        anchor_manifest,
+        dataset.manifest,
+        input_policy=HISTORICAL_MASKED,
+        same_window=modality_ablation is not None or regenerate,
     )
     _check_view(dataset, view_protocol(view), fold)
     _new_destination(output, (*dataset.roots.values(), view.parent, anchor, parent))
     phases = window_phases(fold, options["warmup_months"])
     sources = _sources(dataset, {name: phases[name] for name in partitions}, output / "indices")
-    specification = sources["calibration"].specification()
+    # La ablación solo predice la evaluación, así que la entrada se toma del primer tramo.
+    specification = sources[partitions[0]].specification()
     seed = request["seed"]
     predictor = _frozen_parent(
         titans, specification, seed, device, parent, parent_report, carried=True
@@ -689,7 +776,9 @@ def carry_correction(
         scientific_training_started=False,
         seconds=time.perf_counter() - started,
         finished_at_utc=datetime.now(UTC).isoformat(),
+        **ablation_record(modality_ablation),
         **regeneration_record(regenerate),
+        **frozen_parent_record(frozen_parent),
     )
     atomic_json(output / "carry.json", receipt)
     return receipt

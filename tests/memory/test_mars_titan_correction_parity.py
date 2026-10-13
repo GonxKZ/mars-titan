@@ -51,6 +51,7 @@ def corrected_pass(source, correction, sequence=None):
     return inference, metrics
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 @pytest.mark.parametrize("correction", [DELTA, PROXIMAL, CONSTANT], ids=["delta", "prox", "bias"])
 def test_window_pass_emits_exactly_what_the_session_emits(
     shared_native, four_flow_source, tmp_path, correction
@@ -72,6 +73,7 @@ def test_window_pass_emits_exactly_what_the_session_emits(
     assert inference.memory.writes == session["snapshot"]["applied"] == 16
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_final_matrix_matches_the_session_generation(shared_native, four_flow_source, tmp_path):
     from mars_titan.memory.financial_session import FinancialSession
 
@@ -84,7 +86,7 @@ def test_final_matrix_matches_the_session_generation(shared_native, four_flow_so
     session_run(shared_native, four_flow_source, settings, tmp_path / "session")
     with FinancialSession(tmp_path / "session", **settings, resume=True) as restored:
         bundle = restored._bundle(restored.snapshot()["state"])
-        memory, _ = restored._associative_state(bundle["associative"])
+        memory, _, _ = restored._associative_state(bundle["associative"])
     inference, metrics = corrected_pass(four_flow_source, PROXIMAL)
     assert torch.equal(inference.memory.matrix, memory.matrix)
     assert inference.memory.cursor == memory.cursor

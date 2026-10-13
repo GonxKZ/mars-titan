@@ -3,8 +3,8 @@
 La etapa se declara en dos archivos. Las políticas comunes fijan antes de evaluar la
 semilla del predictor, los dos niveles de la comparación, las ventanas de ajuste, el
 universo, el entorno, los costes, las semillas, el presupuesto de transiciones, el criterio
-de selección de cartera, los brazos aprendidos con su motor, las referencias sin
-aprendizaje, el contraste con KLPO como brazo principal, el informe financiero y la
+de selección de cartera, las políticas aprendidas con su motor, las referencias sin
+aprendizaje, el contraste con KLPO como algoritmo principal, el informe financiero y la
 sensibilidad secundaria a la supervivencia. Cada variante nombra su campaña base, sus
 ámbitos y sus límites. El plan enumera cada ajuste, traslado y referencia sin leer datos.
 Este módulo no lee cintas ni ejecuta ningún ajuste.
@@ -15,10 +15,10 @@ motor con el instrumento que declara cada mercado (SPY en EE. UU.). Un mercado s
 instrumento en la edición no planifica ese trabajo y el informe lo sustituye por el
 benchmark de niveles declarado (el CSI 300 en China, `simulation.index_benchmark`).
 
-El nivel `all_predictors` aplica KLPO y las referencias a todos los brazos con
+El nivel `all_predictors` aplica KLPO y las referencias a todos los modelos con
 productor en la campaña base, resueltos desde su configuración. Una familia que la campaña
 registre más adelante entra así sin cambiar la etapa. El nivel `algorithms` compara las
-demás políticas aprendidas solo sobre los predictores que declara, porque cada brazo
+demás políticas aprendidas solo sobre los predictores que declara, porque cada modelo
 aprendido multiplica los ajustes y el contraste principal es KLPO.
 
 Un ámbito con varios mercados, como el conjunto US+CN, monta una cinta por mercado con las
@@ -34,8 +34,7 @@ from pathlib import Path
 
 from mars_titan.data.cohort_files import read_manifest
 from mars_titan.evaluation import walk_forward_comparison as comparison
-from mars_titan.posttraining.staged_chain import chain_job_id
-from mars_titan.training.campaign_chain import policy_rule
+from mars_titan.training.campaign_chain import chain_job_id, policy_rule
 from mars_titan.training.campaign_plan import DECLARED, _arm_specs, load_campaign, scope_arms
 
 from . import window_tapes
@@ -49,7 +48,7 @@ STAGE_KIND = "historical_masked_rl_stage"
 POLICIES_KIND = "historical_masked_rl_policies"
 FIT, CARRY, REFERENCE = "fit", "carry", "reference"
 ALL_PREDICTORS, ALGORITHMS = "all_predictors", "algorithms"
-# El nivel completo se resuelve con todos los brazos con productor de la campaña base.
+# El nivel completo se resuelve con todos los modelos con productor de la campaña base.
 CAMPAIGN_PRODUCERS = "campaign_producers"
 SEEDS = [42, 43, 44]
 # Referencias sin aprendizaje de `simulation.evaluation.fixed_policy`.
@@ -58,7 +57,10 @@ MARKET_INDEX = "market_index"
 POLICIES_SCHEMA = 2
 # Límite de costes de evaluación que acepta el motor nativo (`frozen_costs`).
 MAX_EVALUATION_COSTS = 16
-SURVIVAL_RULE = "universe_assets_whose_series_ends_in_evaluation"
+# Episodios de evaluación terminados por una baja sin precio de salida con posición abierta.
+# Su ventana queda fuera de la comparación principal y la sensibilidad la repite con los
+# retornos de salida declarados.
+SURVIVAL_RULE = "evaluations_truncated_by_unpriced_exit"
 # La ventana de ajuste alternativa es una sensibilidad secundaria. Queda declarada con su
 # identidad y su coste, pero solo se lanza si sobra presupuesto y alguien la activa.
 WINDOW_SENSITIVITY_LAUNCH = "only_if_budget_remains"
@@ -185,8 +187,8 @@ def _integer(value, low, high):
 
 
 def _policy(name, entry):
-    """Validar un brazo aprendido y devolver su motor."""
-    _require(comparison._name(name) and isinstance(entry, dict), f"El brazo {name} no es válido")
+    """Validar una política aprendida y devolver su motor."""
+    _require(comparison._name(name) and isinstance(entry, dict), f"El modelo {name} no es válido")
     engine = entry.get("engine")
     if engine == "native_klpo":
         _require(
@@ -235,7 +237,7 @@ def _policy(name, entry):
 
 
 def _read_policies(path):
-    """Validar brazos, referencias, presupuesto, entorno, selección y contraste."""
+    """Validar modelos, referencias, presupuesto, entorno, selección y contraste."""
     config, digest = read_manifest(path, 1024**2)
     _require(
         isinstance(config, dict)
@@ -308,7 +310,7 @@ def _read_policies(path):
         and sorted(references) == sorted(REFERENCES)
         and len(set(references)) == len(references)
         and not set(policies) & set(REFERENCES),
-        "Los brazos aprendidos y las cinco referencias deben ser distintos",
+        "Las políticas aprendidas y las cinco referencias deben ser distintas",
     )
     engines = {name: _policy(name, entry) for name, entry in policies.items()}
     contrasts = config["contrasts"]
@@ -318,7 +320,7 @@ def _read_policies(path):
         and set(contrasts) == {"primary", "controls"}
         and primary == [contrasts["primary"]] == list(policies)[:1]
         and contrasts["controls"] == [*list(policies)[1:], *references],
-        "KLPO es el brazo principal, va primero y se contrasta con todos los demás",
+        "KLPO es el algoritmo principal, va primero y se contrasta con todos los demás",
     )
     levels = config["levels"]
     _require(
@@ -339,12 +341,10 @@ def _read_policies(path):
         isinstance(predictor, dict)
         and set(predictor) == {"seed", "source"}
         and predictor["source"] in PREDICTOR_SOURCES
-        and isinstance(universe, dict)
-        and universe.get("rule") == window_tapes.UNIVERSE_RULE
-        and set(universe) == {"rule", "max_assets"}
-        and _integer(universe["max_assets"], 1, 4096),
+        and isinstance(universe, dict),
         "El predictor, el universo y las ventanas de ajuste deben estar declarados",
     )
+    window_tapes.universe_rule(universe)
     # KLPO asigna a cada entorno una cinta de ajuste fija en todas sus oleadas, de modo que
     # ninguna política puede ajustarse con más ventanas que entornos.
     _require(
@@ -367,7 +367,7 @@ def _read_policies(path):
         "ajuste con tantas cintas como entornos como máximo y se lanza solo si se activa",
     )
     # Los objetivos de grupo comparan los episodios que parten de la misma cinta de ajuste, así
-    # que cada cinta necesita al menos dos carriles. La sensibilidad comparte los brazos de la
+    # que cada cinta necesita al menos dos carriles. La sensibilidad comparte los modelos de la
     # etapa principal y por eso también debe cumplirlo, aunque esté desactivada.
     if "native_group_relative" in engines.values():
         _require(
@@ -378,12 +378,15 @@ def _read_policies(path):
     data = config["data"]
     _require(
         isinstance(data, dict)
-        and set(data) == {"policy", "edition", "edition_id"}
+        and set(data) == {"policy", "edition", "edition_id", "listing_status_sha256"}
         and data["policy"] == DATA_POLICY
         and data["edition"] == EDITION_KIND
-        and isinstance(data["edition_id"], str)
-        and re.fullmatch(r"[a-f0-9]{64}", data["edition_id"]) is not None,
-        "Las políticas aprenden solo con la edición real de precios reconstruidos declarada",
+        and all(
+            isinstance(data[key], str) and re.fullmatch(r"[a-f0-9]{64}", data[key]) is not None
+            for key in ("edition_id", "listing_status_sha256")
+        ),
+        "Las políticas aprenden solo con la edición real de precios reconstruidos y la tabla "
+        "del estado de cotización declaradas",
     )
     _read_report(config)
     return dict(config, sha256=digest, path=str(Path(path).resolve()), engines=engines)
@@ -493,16 +496,16 @@ def load_stage(path):
         policies=policies,
         levels=levels,
         predictors=levels[ALL_PREDICTORS]["predictors"],
-        # Todos los brazos de la campaña predicen las mismas filas de cada ventana. El universo
+        # Todos los modelos de la campaña predicen las mismas filas de cada ventana. El universo
         # de un ancla es común a todos los predictores y lo fija el primero de algoritmos.
         universe_predictor=levels[ALGORITHMS]["predictors"][0],
     )
 
 
 def resolve_levels(campaign, policies, scopes=None):
-    """Predictores y brazos de cada nivel, con los productores de la campaña en su orden.
+    """Predictores y modelos de cada nivel, con los productores de la campaña en su orden.
 
-    Con `scopes`, solo cuentan los brazos que la campaña ajusta en todos esos ámbitos.
+    Con `scopes`, solo cuentan los modelos que la campaña ajusta en todos esos ámbitos.
     """
     seed = policies["predictor"]["seed"]
     # Los auxiliares, como los núcleos de CM-v1, no publican recibo de ventana ni predicen.
@@ -515,7 +518,7 @@ def resolve_levels(campaign, policies, scopes=None):
     produced = [spec["arm"] for spec in specs]
     _require(
         produced and all(seed in spec["seeds"] for spec in specs),
-        "Cada brazo predictor de la campaña debe tener productor y la semilla declarada",
+        "Cada modelo predictor de la campaña debe tener productor y la semilla declarada",
     )
     declared = policies["levels"]
     algorithms = declared[ALGORITHMS]["predictors"]
@@ -549,7 +552,7 @@ def count_tapes(stage):
     """Cintas que monta cada predictor por ámbito, sin contar las del índice de mercado.
 
     Cada ancla monta sus cintas de ajuste y su validación, y cada ventana de política su
-    evaluación. Todas se reutilizan entre brazos, semillas y referencias del predictor.
+    evaluación. Todas se reutilizan entre modelos, semillas y referencias del predictor.
     """
     result = {}
     for scope in stage["scopes"]:
@@ -587,7 +590,7 @@ def scope_windows(stage, scope, market=None):
 
 
 def _arms(stage, predictor):
-    """Brazos aprendidos de un predictor con su nivel: KLPO primero y después algoritmos."""
+    """Políticas aprendidas de un predictor con su nivel: KLPO primero y después algoritmos."""
     levels = stage["levels"]
     arms = [(ALL_PREDICTORS, levels[ALL_PREDICTORS]["arms"][0])]
     if predictor in levels[ALGORITHMS]["predictors"]:
@@ -681,7 +684,7 @@ def plan_stage(stage):
 
 
 def count_stage(stage, jobs=None):
-    """Contar trabajos por ámbito, brazo y semilla y aplicar los límites declarados."""
+    """Contar trabajos por ámbito, modelo y semilla y aplicar los límites declarados."""
     jobs = plan_stage(stage) if jobs is None else jobs
     scopes = {}
     for scope in stage["scopes"]:

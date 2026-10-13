@@ -23,10 +23,14 @@ from mars_titan.observatory.live_server import LABEL, Limits
 from mars_titan.observatory.publication import GitPublisher
 from mars_titan.observatory.window_campaigns import arm_model, campaign_state
 from mars_titan.posttraining import campaign_stage as adapter_stage
-from mars_titan.posttraining import staged_chain
 from mars_titan.simulation import campaign_stage as policy_stage
 from mars_titan.simulation import policy_plan
-from mars_titan.training import campaign_plan, masked_campaign, modality_ablation_stage
+from mars_titan.training import (
+    campaign_chain,
+    campaign_plan,
+    masked_campaign,
+    modality_ablation_stage,
+)
 from scripts.serve_observatory import declared_campaigns
 from tests.simulation import rl_stage_fixture
 
@@ -174,7 +178,7 @@ def test_the_policy_stage_summary_is_read_with_markets_predictors_and_open_runs(
     assert set(state) == STATE_KEYS and state["active"] == []
     assert {cell[4] for cell in state["cells"]} == {"done"}
     assert all(cell[5].endswith("Z") for cell in state["cells"])
-    # Ámbito con mercado y brazo con predictor, como `ámbito/mercado/ventana/predictor/brazo`.
+    # Ámbito con mercado y modelo con predictor, como `ámbito/mercado/ventana/predictor/modelo`.
     assert state["vocabulary"]["scopes"] == ["US/US"]
     arms = state["vocabulary"]["arms"]
     assert {"gru/klpo_terminal", "gru/double_dqn", "lstm/market_index"} <= set(arms)
@@ -200,10 +204,10 @@ def adapter_output(root):
     frozen = next(job for job in jobs if job["kind"] != "fit" and job["family"] == "titans_mac")
     chain = chains[0]
     dump(root / "jobs" / fit["id"] / "receipt.json", dict(status="completed"))
-    selection = staged_chain.chain_folder(
+    selection = campaign_chain.chain_folder(
         root, chain["scope"], chain["window"], chain["base_arm"], chain["seed"]
     )
-    dump(selection / staged_chain.SELECTION, dict(kind=staged_chain.SELECTION_KIND))
+    dump(selection / campaign_chain.SELECTION, dict(kind=campaign_chain.SELECTION_KIND))
     report = dict(
         global_step=12,
         epochs=[
@@ -467,7 +471,8 @@ def test_the_publisher_sends_window_documents_and_prunes_what_the_index_dropped(
 
 
 @pytest.mark.skipif(
-    shutil.which("node") is None, reason="Falta Node.js para el validador de la web"
+    shutil.which("node") is None,
+    reason="Falta node en PATH. El validador de la web del observatorio necesita Node.js",
 )
 def test_collector_output_passes_the_site_validators(tmp_path):
     root, output = tmp_path / "root", tmp_path / "public"

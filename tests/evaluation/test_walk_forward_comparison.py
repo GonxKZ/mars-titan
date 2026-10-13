@@ -148,7 +148,7 @@ class Study:
         return manifest
 
     def table(self, arm, seed, fold, partition):
-        """Predicciones de un brazo: mitad del objetivo más ruido, cuantiles estrechos."""
+        """Predicciones de un modelo: mitad del objetivo más ruido, cuantiles estrechos."""
         month = int(fold[partition][0][5:7])
         keys, target = rows(self.markets, month, fold["id"])
         rng = np.random.default_rng(zlib.crc32(f"{arm}/{seed}/{fold['id']}/{partition}".encode()))
@@ -256,7 +256,7 @@ def test_reports_windows_markets_and_the_pooled_session_mae_by_hand(joint):
         ]
         == 0.0
     )
-    # Por sesión: 12 sesiones por brazo y semilla, en bruto y calibradas para los cuantiles.
+    # Por sesión: 12 sesiones por modelo y semilla, en bruto y calibradas para los cuantiles.
     assert sessions.num_rows == 12 * (1 + 1 + 2 * 2 + 2 * 2)
     assert set(sessions["quantiles"].to_pylist()) == {"raw", "calibrated"}
 
@@ -417,7 +417,7 @@ def test_declared_windows_never_reach_the_sealed_year():
     [
         (
             lambda a, s, f, p, v: v.update(target=v["target"] + (a == "titans")),
-            "0 filas solo en este brazo, 0 filas solo en la referencia y 21 filas con otro",
+            "0 filas solo en este modelo, 0 filas solo en la referencia y 21 filas con otro",
         ),
         (
             lambda a, s, f, p, v: (
@@ -425,7 +425,7 @@ def test_declared_windows_never_reach_the_sealed_year():
                 if a == "gru" and s == 43 and p == "evaluation" and f == "fold-001"
                 else None
             ),
-            "0 filas solo en este brazo, 2 filas solo en la referencia y 0 filas",
+            "0 filas solo en este modelo, 2 filas solo en la referencia y 0 filas",
         ),
         (
             lambda a, s, f, p, v: (
@@ -467,7 +467,7 @@ def rewrite_sources(study, edit):
         ),
         (lambda s: s["arms"]["titans"]["42"].pop("fold-001"), r"faltan \['fold-001'\]"),
         (lambda s: s["arms"]["titans"].pop("43"), "semillas declaradas"),
-        (lambda s: s["arms"].pop("ridge"), "brazos declarados"),
+        (lambda s: s["arms"].pop("ridge"), "modelos declarados"),
         (
             lambda s: s["arms"]["ridge"]["42"]["fold-000"].update(
                 calibration=s["arms"]["ridge"]["42"]["fold-000"]["evaluation"]
@@ -480,6 +480,48 @@ def test_sources_that_mix_policies_views_windows_or_arms_are_rejected(tmp_path, 
     study = Study(tmp_path, scope="US")
     rewrite_sources(study, edit)
     with pytest.raises(ValueError, match=message):
+        study.run()
+
+
+PLATFORM = dict(platform_sha256="a" * 64, recorded=3, unrecorded=0, unrecorded_profile=None)
+
+
+def test_version_two_sources_carry_their_platform_into_the_report(tmp_path):
+    study = Study(tmp_path, scope="US")
+    rewrite_sources(study, lambda s: s.update(schema_version=2, platform=PLATFORM))
+    report, _ = study.run()
+    assert report["platform"] == PLATFORM
+    legacy = Study(tmp_path / "legacy", scope="US")
+    assert "platform" not in legacy.run()[0]
+
+
+@pytest.mark.parametrize(
+    "edit",
+    [
+        lambda s: s.update(schema_version=2),
+        lambda s: s.update(platform=PLATFORM),
+        lambda s: s.update(schema_version=2, platform=None),
+        lambda s: s.update(schema_version=2, platform=dict(PLATFORM, recorded=0)),
+        # Una huella sin recibos que la registren, o recibos registrados sin huella.
+        lambda s: s.update(schema_version=2, platform=dict(PLATFORM, platform_sha256=None)),
+        lambda s: s.update(
+            schema_version=2,
+            platform=dict(PLATFORM, recorded=0, unrecorded=1, unrecorded_profile="rtx4070-laptop"),
+        ),
+        lambda s: s.update(schema_version=2, platform=dict(PLATFORM, platform_sha256="A" * 64)),
+        lambda s: s.update(schema_version=2, platform=dict(PLATFORM, unrecorded=1)),
+        lambda s: s.update(
+            schema_version=2, platform=dict(PLATFORM, unrecorded_profile="rtx4070-laptop")
+        ),
+        lambda s: s.update(schema_version=2, platform=dict(PLATFORM, recorded=True)),
+        lambda s: s.update(schema_version=2, platform=dict(PLATFORM, extra=1)),
+        lambda s: s.update(schema_version=3, platform=PLATFORM),
+    ],
+)
+def test_sources_with_an_inconsistent_platform_are_rejected(tmp_path, edit):
+    study = Study(tmp_path, scope="US")
+    rewrite_sources(study, edit)
+    with pytest.raises(ValueError, match="contrato|plataforma de las fuentes"):
         study.run()
 
 
@@ -619,7 +661,7 @@ def test_version_four_declares_every_architectural_pair_and_the_new_metrics():
 def test_the_online_control_is_paired_with_the_frozen_transformer_and_mars_titan():
     """El control en línea se contrasta con su padre congelado y con MARS-TITAN M1.
 
-    Las dos familias usan las mismas filas y semillas que sus brazos de referencia. Si el
+    Las dos familias usan las mismas filas y semillas que sus modelos de referencia. Si el
     control en línea alcanza a MARS-TITAN, la mejora frente al Transformer congelado no
     puede atribuirse solo a la memoria.
     """

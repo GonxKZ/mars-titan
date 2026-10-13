@@ -7,13 +7,16 @@ import torch
 
 from mars_titan.memory.native_backend import load_native
 from mars_titan.memory.session_artifacts import SessionArtifacts
+from tests.suite_support import missing_native
+
+pytestmark = pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 
 
 @pytest.fixture
 def store(tmp_path):
     path = os.environ.get("MARS_TITAN_EPISODIC_NATIVE")
     if not path:
-        pytest.skip("Falta el enlace nativo CPU compilado")
+        pytest.skip(missing_native("MARS_TITAN_EPISODIC_NATIVE"))
     return SessionArtifacts(load_native(path), tmp_path / "artifacts", max_bytes=512 * 1024)
 
 

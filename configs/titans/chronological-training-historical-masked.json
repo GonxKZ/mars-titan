@@ -54,6 +54,6 @@
     "Los dos casos de búsqueda solo cambian la tasa de aprendizaje: 1e-4, la de los casos 0 y 10 del diseño que ajusta cada referencia neuronal, y 1e-3, la de la receta v1. Se elige con session_mae de validación y el mismo presupuesto fijo de 30 épocas por caso.",
     "Bloques de 1.024 flujos con acumulación por bloques de 1.024 filas, max_batch 1.024 y 128 MiB de estado, medidos en cuda:0 sobre US+CN fold-012 (reports/engineering/campaign-kernels-20261009). Sin acumulación mac_online no cabe en la fracción de 6 GiB con los activos por instante de US+CN. El bloque y la acumulación solo cambian el orden de las sumas: el lote efectivo de cada actualización sigue siendo el instante completo y el error frente a FP64 queda al nivel de la receta anterior.",
     "precision fp32_strict desactiva TF32 en cuBLAS y cuDNN y fija float32_matmul_precision en highest. Entra en la identidad de cada trabajo y se comprueba en cada checkpoint.",
-    "El caudal en cuda:0 de cada brazo está en reports/engineering/campaign-kernels-20261009/vram-throughput.json."
+    "El caudal en cuda:0 de cada modelo está en reports/engineering/campaign-kernels-20261009/vram-throughput.json."
   ]
 }

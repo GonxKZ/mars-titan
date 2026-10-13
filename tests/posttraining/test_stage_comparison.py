@@ -1,4 +1,4 @@
-"""Comparación de los brazos postentrenados con su padre congelado y su continuación.
+"""Comparación de los modelos postentrenados con su padre congelado y su continuación.
 
 La etapa se toma reducida de ``campaign_fixture`` (GRU, semilla 42, dos ventanas US),
 pero no se ejecuta: sus recibos, las fuentes de la campaña y las predicciones se escriben
@@ -20,8 +20,9 @@ from mars_titan.data.input_policy import HISTORICAL_MASKED, policy_identity
 from mars_titan.data.storage import atomic_json, sha256
 from mars_titan.environments.walk_forward_receipt import RECEIPT_KIND as WINDOW_RECEIPT_KIND
 from mars_titan.models.quantile_head import QUANTILE_COLUMNS, QUANTILE_HEAD
-from mars_titan.posttraining import adapter_matrix, campaign_stage, staged_chain
+from mars_titan.posttraining import adapter_matrix, campaign_stage
 from mars_titan.posttraining import stage_comparison as compare
+from mars_titan.training import campaign_chain
 from tests.evaluation.test_comparison_sources import masked_view, save
 from tests.posttraining.campaign_fixture import write_configs
 
@@ -198,7 +199,7 @@ class Stage:
         resolved = self.loaded["stage"]["campaign"]["comparison_config"]["resolved_scopes"]["US"]
         fold = resolved["windows"][window]
         until = int(np.datetime64(fold["evaluation"][0], "us").astype(np.int64)) - 1
-        folder = staged_chain.chain_folder(self.output, "US", window, "gru", seed)
+        folder = campaign_chain.chain_folder(self.output, "US", window, "gru", seed)
         atomic_json(
             folder / "US.json",
             dict(
@@ -213,9 +214,9 @@ class Stage:
         )
         frozen = selected["kind"] == "frozen_parent"
         atomic_json(
-            folder / staged_chain.SELECTION,
+            folder / campaign_chain.SELECTION,
             dict(
-                kind=staged_chain.SELECTION_KIND,
+                kind=campaign_chain.SELECTION_KIND,
                 schema_version=1,
                 campaign_sha256=self.loaded["stage"]["campaign"]["sha256"],
                 stage_sha256=self.loaded["stage"]["sha256"],
@@ -223,7 +224,7 @@ class Stage:
                 window=window,
                 base_arm="gru",
                 seed=seed,
-                rule=staged_chain.RULE,
+                rule=campaign_chain.RULE,
                 parent_window="fold-000",
                 parent=dict(id="US/fold-000/gru", sha256="8" * 64),
                 candidates=candidates,
@@ -266,7 +267,7 @@ def by_hand_session_mae(stage, arm, windows):
 
 
 def matrix_arms(stage, base_arm, family):
-    """Brazos adaptados de una red según la matriz que declara la etapa, en su orden.
+    """Modelos adaptados de una red según la matriz que declara la etapa, en su orden.
 
     Son los casos de una semilla sin papel de control, con el nombre que les da la etapa.
     """
@@ -296,7 +297,7 @@ def test_repository_declaration_derives_every_parent_from_the_stage_plan():
     ]
     transformer = loaded["groups"]["transformer_compact"]
     assert transformer["full_continuation"] == "transformer_compact__full_continuation"
-    # Los brazos adaptados salen de la matriz, con la variedad de #444 incluida. Solo
+    # Los modelos adaptados salen de la matriz, con la variedad de #444 incluida. Solo
     # transformer_compact tiene los puntos de lectura.
     for base_arm, family in loaded["stage"]["campaign"]["neural"]["arms"].items():
         assert loaded["groups"][base_arm]["adapted"] == matrix_arms(
@@ -319,6 +320,9 @@ def test_repository_declaration_derives_every_parent_from_the_stage_plan():
             *group["adapted"],
         }
         assert all(arm["seeds"] == [42, 43, 44] for arm in config["arms"].values())
+        # La retención se declara en la comparación principal y no pasa a la etapa.
+        assert "retention_interference" in inherited
+        assert "retention_interference" not in config
         families = config["resolved_families"]
         assert set(families["versus_frozen_parent"]) == {
             f"{arm}-{frozen}" for arm in [*group["adapted"], group["full_continuation"]]
@@ -444,7 +448,7 @@ def test_a_control_without_a_declared_role_stops_the_derivation(monkeypatch):
         )
     ]
     monkeypatch.setattr(compare, "plan_stage", lambda stage: jobs)
-    # Sin brazos de la cadena trivial: todos los trabajos entran en los contrastes.
+    # Sin modelos de la cadena trivial: todos los trabajos entran en los contrastes.
     monkeypatch.setattr(compare, "stage_arms", lambda stage: ({}, {}))
     staged = dict(design=campaign_stage.STAGED)
     with pytest.raises(ValueError, match="linear_residual de gru__linear_residual"):
@@ -482,13 +486,15 @@ def test_v2_declaration_adds_the_chain_and_the_base_retrain_on_the_joint_scope()
     loaded = compare.load_declaration(DECLARATION_V2)
     stage = loaded["stage"]
     assert stage["scopes"] == ["US+CN"]
-    # Los 22 brazos de la etapa menos la cadena trivial de Ridge y XGBoost.
-    assert len(loaded["groups"]) == 20
-    assert not {"ridge", "xgboost"} & set(loaded["groups"])
+    # Los 29 modelos de la etapa menos la cadena trivial de Ridge, XGBoost y los seis B6.
+    assert len(loaded["groups"]) == 21
+    trivial = {"ridge", "xgboost", *campaign_stage.correction_arms(stage["campaign"])}
+    assert len(trivial) == 8 and not trivial & set(loaded["groups"])
+    assert "mars_titan_m1_k4_first_read" in loaded["groups"]
     joint = stage["campaign"]["comparison_config"]["joint_design"]
     for base_arm, config in loaded["configs"].items():
         group = loaded["groups"][base_arm]
-        chain = staged_chain.chain_arm(base_arm)
+        chain = campaign_chain.chain_arm(base_arm)
         assert group["chain"] == chain and group["base_retrain"] == base_arm
         assert config["arms"][chain]["family"] == "posttraining_chain"
         families = config["resolved_families"]
@@ -543,9 +549,9 @@ def test_the_chain_needs_a_confirmed_selection_of_this_stage(tmp_path):
     with pytest.raises(ValueError, match="Falta la selección de la cadena US/fold-001"):
         stage.sources()
     selected = stage.publish_selection("gru__head")
-    path = staged_chain.chain_folder(stage.output, "US", "fold-001", "gru", 42)
-    document = json.loads((path / staged_chain.SELECTION).read_text())
-    save(path / staged_chain.SELECTION, dict(document, stage_sha256="0" * 64))
+    path = campaign_chain.chain_folder(stage.output, "US", "fold-001", "gru", 42)
+    document = json.loads((path / campaign_chain.SELECTION).read_text())
+    save(path / campaign_chain.SELECTION, dict(document, stage_sha256="0" * 64))
     with pytest.raises(ValueError, match="Falta la selección de la cadena"):
         stage.sources()
     # Un recibo reescrito después de la selección ya no es el que se eligió.
@@ -606,7 +612,7 @@ def test_cli_checks_the_declaration_without_reading_predictions(capsys):
     assert compare.main(["check", "--declaration", str(DECLARATION)]) == 0
     result = json.loads(capsys.readouterr().out)
     assert result["final_test_opened"] is False
-    # La base, su padre congelado, la continuación completa y los brazos de la matriz.
+    # La base, su padre congelado, la continuación completa y los modelos de la matriz.
     stage = campaign_stage.load_stage(
         DECLARATION.parent / json.loads(DECLARATION.read_text())["stage"]
     )

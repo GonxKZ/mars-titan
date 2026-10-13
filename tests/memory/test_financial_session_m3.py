@@ -22,6 +22,8 @@ from mars_titan.memory.write_policy import CompositeScoreConfig, MatureErrorConf
 from mars_titan.models.titans.frozen_financial import FrozenFinancialConsumer
 from mars_titan.training import mars_titan_run as mt
 
+pytestmark = pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
+
 M3 = CompositeScoreConfig(SCALERS, capacity=4)
 RETENTION = dict(
     m1=RetentionConfig(policy="reservoir", capacity=4, seed=73, frontier=1),

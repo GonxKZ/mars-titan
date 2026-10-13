@@ -169,4 +169,4 @@ publicadas por SSE. Su contraste residual obtiene 168 etiquetas admisibles y
 una exclusión por el corte anual. La codificación CUDA y la unión supervisada de
 esas muestras están comprobadas. La edición posterior dispone de particiones
 temporales para los dos activos revisados. Falta ampliar la cobertura antes de
-entrenar la comparación china completa y el brazo conjunto US+CN.
+entrenar la comparación china completa y el modelo conjunto US+CN.

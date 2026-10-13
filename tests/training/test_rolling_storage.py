@@ -183,7 +183,9 @@ def test_the_storage_command_adds_the_rolling_walk_of_campaign_a(tmp_path, capsy
             for w in names
         ],
     )
-    files = dict(counts=counts, schedule=schedule, extras=dict(EXTRAS, tape_bytes=17))
+    shape = dict(sessions=252, assets=128, layout=640)
+    extras = dict(EXTRAS, tape_bytes=17, tape_shape=shape)
+    files = dict(counts=counts, schedule=schedule, extras=extras)
     files["row-bytes"] = budget.row_bytes(measured())
     for name, value in files.items():
         (tmp_path / f"{name}.json").write_text(json.dumps(value))
@@ -213,8 +215,55 @@ def test_the_storage_command_adds_the_rolling_walk_of_campaign_a(tmp_path, capsy
     )
     printed = json.loads(capsys.readouterr().out.split("\n}\n", 1)[1])
     assert printed["all_regenerated"]["peak_at"] == result["all_regenerated"]["peak_at"]
+    # El recorrido por ventanas también rechaza cintas medidas sin el diseño de la etapa.
+    from mars_titan.training.rolling_retention import load_schedule
+
+    windows = load_schedule(tmp_path / "schedule.json", campaign)
+    policies = "configs/simulation/historical-masked-rl-stage-a.json"
+    walked = rolling.rolling_inputs([], windows, extras, rl=policies)
+    assert sum(walked["tapes"].values()) == 17 * 1320
+    with pytest.raises(ValueError, match="no cubre"):
+        rolling.rolling_inputs(
+            [], windows, dict(extras, tape_shape=dict(shape, layout=128)), rl=policies
+        )
 
 
 def test_an_input_read_last_in_its_own_window_is_released_with_it(declared):
     result = estimate(declared, policy_reads={JOBS[1]["id"]: 1})["all_regenerated"]
     assert result["retained_bytes"] == 2 * kept_per_fit(declared)
+
+
+def test_tapes_are_only_estimated_with_a_measure_that_covers_the_stage_layout():
+    """La medida de una cinta debe cubrir los activos con precios y el diseño de la etapa."""
+    from mars_titan.simulation import policy_plan
+    from mars_titan.training import storage_budget as budget
+    from mars_titan.training.campaign_plan import load_campaign
+
+    path = "configs/simulation/historical-masked-rl-stage-a.json"
+    stage = policy_plan.load_stage(path)
+    campaign = load_campaign("configs/baselines/historical-masked-campaign-a.json")
+    # La etapa admite 128 activos por tramo y cinco tramos disjuntos: 640 columnas.
+    covering = dict(EXTRAS, tape_bytes=17, tape_shape=dict(sessions=252, assets=128, layout=640))
+    assert rolling.policy_tape_bytes(stage, covering) == 17
+    estimate = budget.rl_estimate(path, campaign, covering)
+    assert estimate["retained_bytes"] == estimate["tapes"] * 17
+    assert estimate["tape_shape"]["layout"] == 640
+    for shape in (
+        None,
+        dict(sessions=252, assets=128),
+        dict(sessions=252, assets=128, layout=639),
+        dict(sessions=252, assets=127, layout=640),
+    ):
+        narrow = dict(EXTRAS, tape_bytes=17, tape_shape=shape)
+        with pytest.raises(ValueError, match="no cubre 128 activos con precios en 640"):
+            rolling.policy_tape_bytes(stage, narrow)
+        with pytest.raises(ValueError, match="no cubre"):
+            budget.rl_estimate(path, campaign, narrow)
+    # La medida publicada cubre la forma de la etapa y la anterior, de 128 columnas, no.
+    import json
+
+    folder = Path("reports/engineering/campaign-storage-20261009")
+    published = json.loads((folder / "extras-layout-640.json").read_text())
+    assert rolling.policy_tape_bytes(stage, published) == 1_697_830
+    with pytest.raises(ValueError, match="no cubre"):
+        rolling.policy_tape_bytes(stage, json.loads((folder / "extras.json").read_text()))

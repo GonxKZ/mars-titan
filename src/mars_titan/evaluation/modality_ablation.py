@@ -2,8 +2,8 @@
 
 Es un análisis secundario y descriptivo, declarado el 9 de octubre de 2026 antes de
 cualquier resultado. No sirve para elegir modelos ni cambia la conclusión principal.
-Mide cuánto depende cada brazo de noticias y fundamentales en las mismas filas: el estado
-elegido de cada brazo, semilla y ventana vuelve a predecir la evaluación con la modalidad
+Mide cuánto depende cada modelo de noticias y fundamentales en las mismas filas: el estado
+elegido de cada modelo, semilla y ventana vuelve a predecir la evaluación con la modalidad
 leída como una ausencia real (`data.modality_ablation`), sin reentrenar ni recalibrar.
 
 La métrica es la diferencia del MAE residual por sesión entre la predicción enmascarada y
@@ -196,7 +196,7 @@ def _summary(views, quantile, cell, weighting):
     result.update(original_session_mae=original, masked_session_mae=masked)
     result["difference"] = masked - original
     if not quantile:
-        result["calibrated_reason"] = "El brazo no emite cuantiles"
+        result["calibrated_reason"] = "El modelo no emite cuantiles"
     elif views["calibrated_original"] is None:
         result["calibrated_reason"] = "Alguna ventana no tiene calibrador"
     else:
@@ -215,9 +215,9 @@ def _summary(views, quantile, cell, weighting):
 def report(config, per_window, markets, names, *, sources_sha256):
     """Sección `modality_ablation` del informe con la declaración, recuentos y contrastes.
 
-    `per_window` asigna a cada ventana y (brazo, semilla) las puntuaciones de cada variante
+    `per_window` asigna a cada ventana y (modelo, semilla) las puntuaciones de cada variante
     de `score_pair`. Una celda por debajo de los umbrales aparece con su motivo y sin
-    métricas. Los contrastes de cada variante y vista forman una familia sobre los brazos
+    métricas. Los contrastes de cada variante y vista forman una familia sobre los modelos
     con máximo estudentizado, y la confianza corrige por Bonferroni el número de variantes
     por vistas.
     """

@@ -1,14 +1,14 @@
 """Contrastes declarados sobre las tablas por sesión que ya publican otras comparaciones.
 
-La comparación walk-forward publica por brazo, semilla, ventana y variante de cuantiles los
+La comparación walk-forward publica por modelo, semilla, ventana y variante de cuantiles los
 estadísticos de cada sesión (``sessions.parquet``). La cartera larga y corta publica el
 rendimiento neto por sesión y coste. Otras etapas (políticas y diagnósticos) pueden publicar
 una tabla larga con una métrica por fila. Este módulo reconstruye a partir de esas tablas
 las mismas series por sesión que usa ``compare_series``, sin volver a puntuar predicciones,
 y estima familias de contrastes lineales con el remuestreo por bloques de la comparación.
 
-Cada brazo se lee una vez. Si aparece en dos informes, sus sesiones y valores deben
-coincidir. Las horas GPU por brazo, medidas o proyectadas, permiten expresar cada efecto
+Cada modelo se lee una vez. Si aparece en dos informes, sus sesiones y valores deben
+coincidir. Las horas GPU por modelo, medidas o proyectadas, permiten expresar cada efecto
 como mejora por hora. Nada de este módulo ajusta modelos ni lee la edición.
 """
 
@@ -24,7 +24,7 @@ import pyarrow.parquet as pq
 from mars_titan.data.cohort_files import read_manifest
 from mars_titan.data.storage import sha256
 
-from . import long_short
+from . import liquidity_strata, long_short
 from . import walk_forward_comparison as walk
 from .forecast_panel import DAY_MICROSECONDS, SessionSeries
 from .forecast_scores import INTERVAL_SCORE, SIGN_BINS, expected_calibration_error
@@ -37,13 +37,13 @@ WALK_SOURCE = walk.REPORT_KIND
 TABLE_SOURCE = "session_metric_table"
 SIGN_ECE = "sign_ece"
 WALK_METRICS = (*walk.SERIES_METRICS, SIGN_ECE)
-# Métricas que solo existen si el brazo emite cuantiles y que la calibración cambia.
+# Métricas que solo existen si el modelo emite cuantiles y que la calibración cambia.
 QUANTILE_METRICS = ("pinball", "sign_brier", SIGN_ECE)
 LOWER_IS_BETTER = ("mae", "mse", "pinball", "sign_brier", SIGN_ECE)
 ORIENTATIONS = ("loss", "gain")
 TABLE_COLUMNS = ("arm", "seed", "market", "prediction_at", "metric", "value")
-# Brazos por grupo del bootstrap de la cartera: acota la memoria sin cambiar las réplicas,
-# porque cada brazo se remuestrea con los mismos índices sea cual sea su grupo.
+# Modelos por grupo del bootstrap de la cartera: acota la memoria sin cambiar las réplicas,
+# porque cada modelo se remuestrea con los mismos índices sea cual sea su grupo.
 PORTFOLIO_GROUP = 16
 # Réplicas por tanda del ECE. Es el mismo tamaño que usa el informe walk-forward, para que el
 # generador produzca exactamente los mismos días remuestreados.
@@ -62,7 +62,7 @@ def is_text(value):
 
 
 def is_arm_name(value):
-    """Indica si el valor sirve como nombre de brazo en tablas, documentos de horas y matriz."""
+    """Indica si el valor sirve como nombre de modelo en tablas, documentos de horas y matriz."""
     return isinstance(value, str) and 0 < len(value) <= 96 and value.replace("_", "").isalnum()
 
 
@@ -72,7 +72,7 @@ def quantile_metric(metric):
 
 
 def load_hours(path, scope):
-    """Lee las horas GPU por brazo y las acumula con las de todos sus antepasados.
+    """Lee las horas GPU por modelo y las acumula con las de todos sus antepasados.
 
     El documento declara si las horas están medidas o proyectadas, y esa base acompaña a
     cada efecto por hora. Cada antepasado se cuenta una sola vez aunque llegue por dos
@@ -152,7 +152,7 @@ def cost_adjusted(row, sign, hours):
         result["reason"] = "La métrica no tiene un sentido de mejora declarado"
         return result
     if not math.isclose(math.fsum(coefficients.values()), 0.0, abs_tol=1e-12):
-        result["reason"] = "Es un nivel, no un efecto entre brazos"
+        result["reason"] = "Es un nivel, no un efecto entre modelos"
         return result
     unknown = sorted(arm for arm in coefficients if arm not in hours["cumulative"])
     if unknown:
@@ -270,6 +270,7 @@ def load_sources(path, views, config, scope):
                 report["metrics"]["market_weighting"] == weighting,
                 f"{item['path']} pondera los mercados de otra forma",
             )
+    quadratic = quadratic_context(views, published)
     portfolios = [
         item["report"]["declaration"] for item in published if item["kind"] == PORTFOLIO_SOURCE
     ]
@@ -289,7 +290,43 @@ def load_sources(path, views, config, scope):
         windows=reference["windows"],
         reports=reports,
         hours=hours,
+        quadratic=quadratic,
     )
+
+
+def quadratic_context(views, published):
+    """Exigir los estratos de liquidez a los informes de los que se contrasta una métrica
+    cuadrática.
+
+    El MSE queda decidido por unas pocas filas ilíquidas, así que solo se informa junto a
+    su versión por estratos y al peso de las filas extremas. Devuelve las métricas y las
+    huellas de los informes que las acompañan, o None si ninguna vista las declara.
+    """
+    metrics = sorted(
+        {
+            metric
+            for view in views.values()
+            if isinstance(view, dict) and view.get("source") == WALK_SOURCE
+            for metric in view.get("metrics") or ()
+            if metric in liquidity_strata.QUADRATIC
+        }
+    )
+    if not metrics:
+        return None
+    reports = []
+    for item in published:
+        if item["kind"] != WALK_SOURCE:
+            continue
+        section = item["report"].get(walk.LIQUIDITY_FIELD)
+        _require(
+            isinstance(section, dict)
+            and section.get("status") == "computed"
+            and set(metrics) <= set(section["declaration"]["metrics"]),
+            f"{item['path']} no publica los estratos de liquidez que acompañan a "
+            f"{', '.join(metrics)}",
+        )
+        reports.append(item["sha256"])
+    return dict(metrics=metrics, section=walk.LIQUIDITY_FIELD, reports=reports)
 
 
 # Series por sesión
@@ -298,7 +335,7 @@ def load_sources(path, views, config, scope):
 def _groups_of(table, keys):
     """Agrupa las filas por combinación de claves, en el orden de su primera aparición.
 
-    Los nulos se tratan como un valor más para que un brazo sin semilla forme su propio
+    Los nulos se tratan como un valor más para que un modelo sin semilla forme su propio
     grupo en lugar de perderse.
     """
     codes = []
@@ -319,7 +356,7 @@ def _groups_of(table, keys):
 
 
 def _sorted_part(table, rows, markets, label):
-    """Ordena las filas de un brazo y semilla por mercado e instante.
+    """Ordena las filas de un modelo y semilla por mercado e instante.
 
     Una sesión repetida se rechaza, porque contaría dos veces en la media y en el remuestreo.
     """
@@ -348,10 +385,10 @@ def _ratio(hits, calls):
 
 
 def _emits_quantiles(part):
-    """Indica si el brazo emite cuantiles en todas sus sesiones.
+    """Indica si el modelo emite cuantiles en todas sus sesiones.
 
-    La tabla publicada une brazos con y sin cuantiles, así que una columna nula significa
-    que el brazo no los emite y no que su valor sea cero.
+    La tabla publicada une modelos con y sin cuantiles, así que una columna nula significa
+    que el modelo no los emite y no que su valor sea cero.
     """
     columns = [name for name in part.column_names if name.startswith("pinball_")]
     return bool(columns) and all(part.column(name).null_count == 0 for name in columns)
@@ -361,7 +398,7 @@ def forecast_values(part, metric):
     """Reconstruye los valores y la máscara por sesión de una métrica publicada.
 
     Sigue la misma definición que ``SessionScores.series``, de modo que la matriz estima lo
-    mismo que la comparación walk-forward sin volver a puntuar. Devuelve None si el brazo
+    mismo que la comparación walk-forward sin volver a puntuar. Devuelve None si el modelo
     no emite lo necesario, por ejemplo cuantiles.
     """
     if quantile_metric(metric) and not _emits_quantiles(part):
@@ -421,10 +458,10 @@ def _periods(moment):
 
 
 def _series(seeds, metric, loss, view_label, code, markets, values_of):
-    """Construye la serie de un brazo en una vista de mercado.
+    """Construye la serie de un modelo en una vista de mercado.
 
     Las semillas se promedian sesión a sesión, como en la comparación walk-forward. Si
-    alguna semilla no tiene la métrica o la vista no tiene sesiones, el brazo no entra en
+    alguna semilla no tiene la métrica o la vista no tiene sesiones, el modelo no entra en
     esa vista.
     """
     items = []
@@ -451,9 +488,9 @@ def _series(seeds, metric, loss, view_label, code, markets, values_of):
 
 
 def _keep(store, arm, seeds, label):
-    """Guarda las semillas de un brazo o exige que coincidan con las ya leídas.
+    """Guarda las semillas de un modelo o exige que coincidan con las ya leídas.
 
-    Un brazo publicado en dos informes con valores distintos indicaría que no son la misma
+    Un modelo publicado en dos informes con valores distintos indicaría que no son la misma
     ejecución, y cualquier contraste con él dependería del informe elegido.
     """
     if arm not in store:
@@ -468,14 +505,14 @@ def _keep(store, arm, seeds, label):
             and a["table"].equals(b["table"])
             for a, b in zip(previous, seeds, strict=True)
         ),
-        f"{label}: el brazo {arm} difiere entre informes",
+        f"{label}: el modelo {arm} difiere entre informes",
     )
 
 
 def forecast_arms(sources):
-    """Reúne las semillas por brazo y variante de cuantiles de los informes walk-forward.
+    """Reúne las semillas por modelo y variante de cuantiles de los informes walk-forward.
 
-    La variante calibrada falta en las ventanas sin calibrador. En ese caso el brazo
+    La variante calibrada falta en las ventanas sin calibrador. En ese caso el modelo
     calibrado se omite en lugar de compararse con menos ventanas que los demás, igual que
     hace el informe walk-forward.
     """
@@ -507,7 +544,7 @@ def forecast_arms(sources):
 
 
 def table_arms(sources, view, metrics):
-    """Reúne las semillas por brazo y métrica de las tablas por sesión de otra etapa.
+    """Reúne las semillas por modelo y métrica de las tablas por sesión de otra etapa.
 
     Solo se aceptan métricas declaradas en la vista y valores finitos. Un nulo significa que
     la métrica no está definida en esa sesión y nunca se rellena.
@@ -569,10 +606,10 @@ def _with_cost(result, sign, hours):
 
 
 def ece_contrasts(cells, contrasts, comparison):
-    """Estima contrastes del ECE del signo con las mismas réplicas para todos los brazos.
+    """Estima contrastes del ECE del signo con las mismas réplicas para todos los modelos.
 
     El ECE no es una media por sesión, así que no cabe en ``compare_series``. ``cells`` da
-    por brazo una lista por semilla de (filas, probabilidad, subidas) por día e intervalo.
+    por modelo una lista por semilla de (filas, probabilidad, subidas) por día e intervalo.
     Cada réplica calcula el ECE de cada semilla con los días remuestreados y promedia las
     semillas, como la fiabilidad del informe walk-forward. La corrección de la familia usa
     el mismo máximo estudentizado que el resto. El ECE tiene sesgo positivo con pocas filas
@@ -600,7 +637,7 @@ def ece_contrasts(cells, contrasts, comparison):
     if block >= periods:
         reason = "Se necesitan más días que la longitud del bloque"
     elif np.isnan(point).all():
-        reason = "Ningún contraste tiene filas con objetivo no nulo en todos sus brazos"
+        reason = "Ningún contraste tiene filas con objetivo no nulo en todos sus modelos"
     else:
         rng = np.random.default_rng(comparison["seed"])
         sampled = {arm: [] for arm in arms}
@@ -670,7 +707,7 @@ def ece_contrasts(cells, contrasts, comparison):
 def _ece_cells(seeds, code, label, markets):
     """Suma por día e intervalo de probabilidad las celdas de fiabilidad de cada semilla.
 
-    También devuelve la huella de sus sesiones, porque todos los brazos de una familia deben
+    También devuelve la huella de sus sesiones, porque todos los modelos de una familia deben
     remuestrear los mismos días.
     """
     cells, cohort = [], None
@@ -696,8 +733,8 @@ def _ece_cells(seeds, code, label, markets):
 def forecast_view(config, families, seeds_by_arm, metrics, markets, hours):
     """Estima las familias en cada métrica de predicción y cada vista de mercado.
 
-    Cada familia se reduce a los contrastes cuyos brazos tienen la métrica, y los demás se
-    listan como no aplicables. Un brazo puntual no tiene pinball, por ejemplo, y eso no
+    Cada familia se reduce a los contrastes cuyos modelos tienen la métrica, y los demás se
+    listan como no aplicables. Un modelo puntual no tiene pinball, por ejemplo, y eso no
     debe impedir estimar sus contrastes de MAE.
     """
     comparison = config["comparison"]
@@ -720,7 +757,7 @@ def forecast_view(config, families, seeds_by_arm, metrics, markets, hours):
                     if cells is not None:
                         values[arm] = cells
                         cohorts.add(cohort)
-                _require(len(cohorts) <= 1, f"Los brazos no comparten sesiones en {label}")
+                _require(len(cohorts) <= 1, f"Los modelos no comparten sesiones en {label}")
             else:
                 for arm in used:
                     found = _series(
@@ -739,7 +776,7 @@ def forecast_view(config, families, seeds_by_arm, metrics, markets, hours):
                 contrasts, skipped = _applicable(ready, values)
                 if not contrasts:
                     rows[family] = dict(
-                        reason="Ningún contraste tiene la métrica en todos sus brazos",
+                        reason="Ningún contraste tiene la métrica en todos sus modelos",
                         not_applicable=skipped,
                     )
                     continue
@@ -781,7 +818,7 @@ def table_view(config, families, arms, metrics, markets, hours):
             for family, ready in families.items():
                 contrasts, skipped = _applicable(ready, series)
                 if not contrasts:
-                    rows[family] = dict(reason="Ningún contraste tiene la métrica en sus brazos")
+                    rows[family] = dict(reason="Ningún contraste tiene la métrica en sus modelos")
                     continue
                 used = {arm: series[arm] for arm in {a for c in contrasts.values() for a in c}}
                 entry = compare_series(used, contrasts, market_weighting=weighting, **options)
@@ -792,7 +829,7 @@ def table_view(config, families, arms, metrics, markets, hours):
 
 
 def portfolio_arms(sources, costs):
-    """Reúne por brazo y mercado los rendimientos netos por coste y la negociación.
+    """Reúne por modelo y mercado los rendimientos netos por coste y la negociación.
 
     Las semillas se promedian sesión a sesión, y deben compartir sesiones para que la media
     no mezcle días distintos.
@@ -838,7 +875,7 @@ def portfolio_view(config, families, by_market, declaration, statistics, hours):
     """Estima las familias sobre los estadísticos de la cartera por mercado y coste.
 
     Reutiliza el remuestreo por sesiones de la cartera larga y corta, con su misma semilla,
-    para que cada brazo tenga las réplicas del informe publicado. Los brazos se procesan en
+    para que cada modelo tenga las réplicas del informe publicado. Los modelos se procesan en
     grupos para acotar la memoria sin cambiar esas réplicas.
     """
     comparison = config["comparison"]
@@ -854,7 +891,7 @@ def portfolio_view(config, families, by_market, declaration, statistics, hours):
         times = arms[used[0]]["time"]
         _require(
             all(np.array_equal(arms[arm]["time"], times) for arm in used),
-            f"Los brazos no comparten sesiones en {market}",
+            f"Los modelos no comparten sesiones en {market}",
         )
         estimate, draws, reason = {}, {}, None
         for start in range(0, len(used), PORTFOLIO_GROUP):

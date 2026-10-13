@@ -182,7 +182,7 @@ def test_components_map_to_their_consumer_settings(declaration, base):
         (dict(episodic_bank="m1", refinement_episodes="first_read"), "necesita refinements"),
         (dict(episodic_bank="m1", refinements=2, refinement_episodes="per_step"), "omitiendo"),
         (dict(episodic_bank="m1", associative_memory=DELTA), "sin banco"),
-        (dict(associative_memory=dict(DELTA, key="label")), "codec o constant"),
+        (dict(associative_memory=dict(DELTA, key="label")), "una de codec, constant"),
         (dict(associative_memory=dict(DELTA, rule="ridge")), "permitidos"),
         (dict(associative_memory=dict(DELTA, rate=2.0)), "η ≤ 2 − λ"),
         (dict(cm_v1="bcm"), "no está declarado"),
@@ -324,6 +324,7 @@ def assert_identical(left, right):
             assert torch.equal(value, right[name][key]), (name, key)
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 @pytest.mark.native_binding
 def test_all_disabled_session_is_exactly_the_mac_online_session(
     declaration, base, shared_native, four_flow_source, frozen_consumer, tmp_path
@@ -345,6 +346,7 @@ def test_all_disabled_session_is_exactly_the_mac_online_session(
     assert left["bank"] == ([], {}) and len(left["emitted"][-1]) == 4
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 @pytest.mark.native_binding
 def test_episodic_combination_matches_the_hand_built_consumer(
     declaration, base, shared_native, four_flow_source, frozen_consumer, tmp_path

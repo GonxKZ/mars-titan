@@ -38,6 +38,28 @@ PHASES = ("base", "adapters", "ablation", "rl", "release")
 RECORD_BYTES = 4096
 
 
+def policy_tape_bytes(stage, extras):
+    """Bytes medidos de una cinta de la etapa de políticas, si la medida cubre su forma.
+
+    La medida de `storage_measurements.tape_bytes` declara los activos con precios y las
+    columnas de su diseño. Una cinta de la etapa tiene hasta `max_assets` activos con
+    precios y hasta `window_tapes.layout_bound` columnas, las demás vacías. Una medida más
+    estrecha subestimaría el disco de todas las cintas, así que se rechaza.
+    """
+    from mars_titan.simulation.window_tapes import layout_bound, universe_rule
+
+    policies = stage["policies"]
+    assets, _ = universe_rule(policies["universe"])
+    bound = layout_bound(policies["universe"], policies["train_windows"])
+    shape = extras.get("tape_shape") or {}
+    if not (shape.get("assets", 0) >= assets and shape.get("layout", 0) >= bound):
+        raise ValueError(
+            f"La medida de cintas {shape} no cubre {assets} activos con precios en "
+            f"{bound} columnas, la forma máxima de la etapa de políticas"
+        )
+    return extras["tape_bytes"]
+
+
 def policy_readers(stage, jobs):
     """Trabajos de las políticas que leen la evaluación de cada predictor elegido de la base.
 
@@ -47,8 +69,9 @@ def policy_readers(stage, jobs):
     primera ventana de cada ámbito. En las demás la cadena lee las tablas de los adaptadores,
     que la retención compacta y nunca libera.
     """
-    from mars_titan.posttraining.staged_chain import scope_windows
     from mars_titan.simulation.policy_plan import CHAIN, predictor_reads
+
+    from .campaign_chain import scope_windows
 
     policies = stage["policies"]
     seed = policies["predictor"]["seed"]
@@ -116,8 +139,9 @@ def rolling_inputs(jobs, windows, extras, *, ablation=None, adapters=None, rl=No
                 len(job["train"]) + 2
             )
         tapes = defaultdict(int)
+        tape = policy_tape_bytes(stage, extras)
         for (scope, _, anchor, _), count in anchors.items():
-            tapes[windows[positions[scope, anchor]]["id"]] += count * extras["tape_bytes"]
+            tapes[windows[positions[scope, anchor]]["id"]] += count * tape
         inputs.update(policy_reads=reads, tapes=dict(tapes))
     return inputs
 

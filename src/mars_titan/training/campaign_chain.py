@@ -7,7 +7,7 @@ ventana k de un ámbito, con evaluación en el año Y:
 1. `base`: la campaña base ajusta con `train_k` = [2000, abr Y-1), elige con `val_k`
    (abr a sep Y-1), calibra con `cal_k` (oct a dic Y-1) y predice `eval_k` (año Y).
 2. `posttraining` (k ≥ 1): parte del estado elegido de la base en la ventana k-1 para el
-   mismo brazo y semilla, que ajustó hasta marzo de Y-2 y usó abr a dic de Y-2 para elegir
+   mismo modelo y semilla, que ajustó hasta marzo de Y-2 y usó abr a dic de Y-2 para elegir
    y calibrar. Solo ajusta con las filas de `train_k` cuya decisión cae entre el final de
    `cal_{k-1}` y el final de `train_k` (ene a mar de Y-1), elige con `val_k` y calibra con
    `cal_k`. Candidatos: el padre congelado, los casos de adaptadores y la continuación
@@ -129,16 +129,16 @@ def declared(value):
 
 
 def chain_arm(base_arm):
-    """Devuelve el nombre con el que se publica el predictor de la cadena de un brazo base.
+    """Devuelve el nombre con el que se publica el predictor de la cadena de un modelo base.
 
-    El sufijo lo separa en la comparación del brazo base, que sigue siendo el reentreno
+    El sufijo lo separa en la comparación del modelo base, que sigue siendo el reentreno
     completo de cada ventana.
     """
     return f"{base_arm}{CHAIN_SUFFIX}"
 
 
 def chain_job_id(scope, window, base_arm, seed):
-    """Devuelve el identificador del trabajo que elige la cadena de un brazo base y semilla.
+    """Devuelve el identificador del trabajo que elige la cadena de un modelo base y semilla.
 
     Las etapas posteriores dependen de este identificador y no de los trabajos de
     posentrenamiento, que cambian con la matriz de adaptadores.
@@ -200,6 +200,31 @@ def posttraining_rows(parent_fold, fold):
     return start, end
 
 
+def chain_labels_used_until(campaign, scope, views, window, maturity=None):
+    """Última etiqueta que pudo fijar el predictor de la cadena de una ventana.
+
+    En la ventana k ≥ 1 el candidato elegido parte del padre de k-1, que se ajustó, eligió y
+    calibró con los tramos de ajuste de su vista, y se adapta, elige y calibra con los de la
+    vista k. La elección usa la validación de k incluso si gana el padre congelado, así que
+    el límite es la última maduración de esas dos vistas para cualquier candidato. En la
+    ventana 0 el predictor es el estado elegido de la base, con su propia vista.
+
+    `views` son las vistas del ámbito por ventana, con la ruta de su manifiesto
+    (`masked_campaign.scope_views`). `maturity(path)` es la maduración de los tramos de
+    ajuste de una vista, por omisión `label_maturity` con `FIT_PARTITIONS`. Cada etapa puede
+    pasar una versión con caché para no releer una vista.
+    """
+    if maturity is None:
+        from .label_maturity import FIT_PARTITIONS, label_maturity
+
+        def maturity(path):
+            return label_maturity(path, FIT_PARTITIONS)[0]
+
+    parent = parent_window(campaign, scope, window)
+    read = [window] if parent is None else [parent, window]
+    return max(maturity(views[name]["path"]) for name in read)
+
+
 def policy_rule(design):
     """Regla de ventanas de ajuste que el diseño fija a la etapa de políticas.
 
@@ -211,7 +236,7 @@ def policy_rule(design):
 
 
 def parent_jobs(base_jobs, scope, window, arm, seed):
-    """Devuelve los trabajos base que fijan el estado elegido de un brazo y semilla.
+    """Devuelve los trabajos base que fijan el estado elegido de un modelo y semilla.
 
     Si la ventana tiene un traslado o un finalista con esa semilla, es ese trabajo. Si no,
     son todas las búsquedas de la semilla, porque el estado elegido sale de compararlas.
@@ -237,8 +262,8 @@ def check_staged(campaign, base_jobs, stages):
     que sus dependencias estén antes. Un trabajo de RL ajusta con al menos tres ventanas
     anteriores a su validación, valida antes de su evaluación y depende de la selección de
     la cadena de cada ventana que lee (ajuste, validación y evaluación) con la semilla del
-    predictor que declara en `predictor_seed`. Su `predictor` puede nombrar el brazo base o
-    el brazo de la cadena. El número exacto de ventanas de ajuste lo exige
+    predictor que declara en `predictor_seed`. Su `predictor` puede nombrar el modelo base o
+    el modelo de la cadena. El número exacto de ventanas de ajuste lo exige
     `policy_plan.load_stage` con `policy_rule`. Aquí solo se pide el mínimo, porque la
     sensibilidad en expansión ajusta con más ventanas y tiene su propia identidad.
 
