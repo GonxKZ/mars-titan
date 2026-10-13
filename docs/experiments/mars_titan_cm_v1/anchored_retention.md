@@ -23,6 +23,8 @@ select_anchored_medoids(
     algorithm="greedy_swap",
     metric="euclidean",
     background_backend="numpy",
+    reuse_distances=False,
+    bounded_background=False,
 )
 ```
 
@@ -43,6 +45,18 @@ Existe un contraejemplo de IDs distintos con el mismo objetivo observado. Para E
 El fondo se recorre por bloques en ambos ejes. Los tamaños solicitados son 256 clientes y 256 centros fijos, con 16 candidatos variables. El presupuesto predeterminado de 64 MiB estima copias normalizadas, IDs, índices, partición de E, vectores de fondo/vecinos y temporales simultáneos. No certifica el RSS o los espacios internos de biblioteca.
 
 El límite predeterminado de 50 millones de pares es compartido por fondo y selección. La enumeración admite como máximo 10.000 combinaciones. Agotar un presupuesto produce `MedoidBudgetExceeded`, sin devolver un supuesto óptimo ni activar otra retención. El máximo de intercambios es independiente y su agotamiento se declara mediante `swap_limit`.
+
+## Opciones que conservan los bits
+
+Las dos opciones, desactivadas por defecto, reducen el trabajo de la ruta `numpy` sin cambiar ninguna distancia. La salida registra cuáles se aplicaron (`reused_distances` y `bounded_background`). Su memoria se suma a `estimated_peak_bytes` solo si cabe en `max_working_bytes` sin cambiar los bloques, primero la de la cota y después la de la tabla. La que no cabe se descarta y la selección sigue la referencia. Los pares se cuentan como antes, así que los presupuestos se agotan en el mismo punto.
+
+`reuse_distances` guarda la distancia de cada bloque de clientes a un candidato variable la primera vez que se calcula, con la misma resta y la misma cadena de `hypot` o valor absoluto por dimensión, y la copia en las evaluaciones siguientes del greedy y de los intercambios. Ocupa 8 bytes por par cliente-candidato.
+
+`bounded_background` solo se aplica con distancia euclídea, coordenadas FP32 y fondo `numpy`. Calcula el fondo b(e) como el mínimo exacto de las distancias de referencia, pero descarta los pares que una cota inferior excluye. La cota sale de un producto de matrices sobre coordenadas centradas en la media de los fijos. Con u = 2⁻⁵³ y D dimensiones, centrar en FP64 mueve cada coordenada como mucho u|x'|, el cuadrado s = q + p − 2x'·y' tiene un error de como mucho (D + 2)u(‖x'‖ + ‖y'‖)² con cualquier orden de suma, y la cadena de referencia, una resta por coordenada y D llamadas a `hypot` (una ulp como mucho en glibc, cuatro en la cuenta), no baja de la distancia exacta por más de un factor (1 − (8D + 1)u). La cota resta 4(D + 4)u(√q + √p)² al cuadrado, 4u(√q + √p) a la raíz y la multiplica por (1 − (8D + 2048)u), que deja 2047u para su propio redondeo con cualquier D. Un factor fijo como el (1 − 2048u) de la primera versión solo cubría hasta 255 dimensiones. Un par se descarta si su cota supera una distancia de referencia ya calculada del mismo cliente, así que el mínimo no cambia. Si un bloque conserva más de un octavo de sus pares, se calcula entero como en la referencia. La deducción supone el error de `hypot` documentado por glibc. Las pruebas la contrastan en casos adversos, pero no la sustituyen por una demostración formal.
+
+La memoria de la cota cuenta las copias centradas y traspuestas, las normas, tres bloques FP64 y una máscara reservados una vez, los índices y buffers de los pares supervivientes (como mucho un octavo de un bloque), los vectores por fila y los temporales de NumPy (el iterador de una ufunc con operandos difundidos reserva hasta `np.getbufsize()` elementos por operando, y `argmin` copia un bloque parcial). No cuenta las reservas internas de OpenBLAS, que no dependen de la selección: un área de trabajo por proceso desde el primer producto de matrices y, cuando reparte un producto entre hilos, una tabla de tareas durante la llamada. En la forma de los lectores, con OpenBLAS 0.3.34 y dos hilos, el área ocupa 32,3 MiB de memoria virtual y unos 0,9 MB residentes, y la tabla 512 KiB ([medida](../../../reports/engineering/campaign-kernels-wiring-20261010/anchored-medoid-memory.json)). El producto usa los hilos de la BLAS que fije el proceso. La campaña fija `OMP_NUM_THREADS=2`, que OpenBLAS también respeta.
+
+`tests/cm/test_anchored_medoids.py` compara todos los campos de la salida con la referencia en problemas con intercambios, empates, coordenadas enteras L1 y siete geometrías adversas (normal, duplicados, nube lejana y estrecha, escalas mezcladas, rejilla, constante y valores cercanos al máximo de FP32), con cada opción y con las dos. También comprueba que la tabla calcula cada par variable una sola vez, que la cota calcula menos de un 2 % de los pares del fondo en las geometrías favorables y el bloque entero cuando no poda, los presupuestos, la memoria escasa, la paridad con 300 dimensiones y que el pico rastreado no supera la estimación en un problema grande, uno mínimo, uno con un solo centro fijo, uno sin poda y uno de 300 dimensiones. `tests/memory/test_retention_bank.py` repite la comparación con el banco nativo en cuatro propuestas. Las medidas del recorrido real están en el [informe del 10 de octubre](../../../reports/engineering/campaign-kernels-wiring-20261010/README.md#medoids).
 
 ## Comprobaciones
 
