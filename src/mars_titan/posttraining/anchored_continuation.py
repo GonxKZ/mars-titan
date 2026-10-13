@@ -87,15 +87,3 @@ def chronological_scope(kind, variant):
         return adapter_variety.TITANS_SCOPE + variant
     # La variante de un lector o de la GRU la rechaza después `chronological_matrix.arms`.
     return {READOUT: adapter_variety.READERS, CANDIDATE_DESIGN: CANDIDATE}[kind]
-
-
-def stage_controls(value, matrix):
-    """Controles adicionales que ejecuta una etapa. Deben existir en su matriz."""
-    _require(
-        isinstance(value, list)
-        and value
-        and len(set(value)) == len(value)
-        and all(control == CONTROL and declared(matrix) is not None for control in value),
-        "La etapa solo añade controles que su matriz declara",
-    )
-    return value

@@ -225,5 +225,9 @@
   "anchored_continuation": {
     "anchor": "initial_parameters",
     "campaign": ["references"]
+  },
+  "replay_continuation": {
+    "ratio": 0.5,
+    "campaign": ["references"]
   }
 }

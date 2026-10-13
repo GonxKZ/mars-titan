@@ -18,6 +18,10 @@
       "base": "anchored_continuation",
       "variants": ["adapted", "full_continuation"]
     },
+    "versus_repeat_new_rows": {
+      "base": "repeat_new_rows",
+      "variants": ["replay_uniform", "replay_regime_balanced"]
+    },
     "versus_base_retrain": {
       "base": "base_retrain",
       "variants": ["chain"]
