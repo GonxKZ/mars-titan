@@ -44,7 +44,7 @@ flowchart TD
     Q["Opciones de memoria,<br/>rendimiento y presupuesto de disco<br/>en preparación"]:::parcial
     A["Campaña A elegida<br/>reentrenamiento anual desde cero<br/>5.985 ajustes con todas las familias<br/>sin lanzar"]:::parcial
     P["Etapa de adaptadores<br/>3.915 ajustes en A"]:::comprobado
-    R1["RL nivel 1<br/>KLPO y cinco referencias<br/>sobre 31 predictores"]:::parcial
+    R1["RL nivel 1<br/>KLPO y cinco referencias<br/>sobre 33 predictores"]:::parcial
     R2["RL nivel 2<br/>PPO y Double DQN sobre<br/>transformer_compact y titans_mac_online"]:::parcial
     C["Comparación walk-forward<br/>MAE por sesión · CQR común<br/>estratos de presencia descriptivos"]:::comprobado
     T(["Test de 2024 sellado"]):::pendiente
@@ -282,7 +282,7 @@ La [revisión de la memoria posterior a Titans](docs/research/post-titans-memory
 
 - **PT2, calibración conformal en línea con etiquetas maduras** ([#454](https://github.com/GonxKZ/mars-titan/issues/454)): implementada, conectada a la comparación por ventanas de A v2 con su alternativa de recalibración periódica y comprobada sin entrenar ([documento](docs/engineering/online-conformal-calibration.md)). Resultado experimental pendiente.
 
-- **PT3, regla de Kalman con ruido de cohorte correlacionado en B6** ([#455](https://github.com/GonxKZ/mars-titan/issues/455)): implementada y comprobada sin entrenar ([documento](docs/engineering/kalman-associative-memory.md)). Resultado experimental pendiente.
+- **PT3, regla de Kalman con ruido de cohorte correlacionado en B6** ([#455](https://github.com/GonxKZ/mars-titan/issues/455)): implementada y comprobada sin entrenar ([documento](docs/engineering/kalman-associative-memory.md)). La ventana B6 estima σ² y ϱ con los últimos meses del ajuste y la campaña A v2 la declara con su alternativa ϱ = 0, frente a B6 proximal. Resultado experimental pendiente.
 
 Una predicción solo puede usar datos disponibles en su instante de decisión. La actualización asociativa de Titans utiliza entradas observadas bajo una política explícita. El error financiero de escritura episódica solo se calcula cuando madura la etiqueta de la predicción realmente emitida. Las tablas contables necesitan fechas de publicación y los gráficos se construyen exclusivamente con ventanas pasadas.
 

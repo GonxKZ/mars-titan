@@ -407,7 +407,8 @@ Cada política nueva añade 144 ajustes en A y en A v2 (dos predictores, 24 vent
 tres semillas). En B añade 48 ajustes y 96 traslados, que son evaluaciones. Las referencias no
 cambian. Después, las dos extensiones PT1 de A v2 ([#453](https://github.com/GonxKZ/mars-titan/issues/453))
 añadieron dos predictores a KLPO y a las referencias, así que A v2 pasa a 3.240 ajustes y 3.441
-evaluaciones.
+evaluaciones. Los dos B6 kalman de PT3 ([#455](https://github.com/GonxKZ/mars-titan/issues/455))
+añaden otros dos, hasta 3.384 ajustes y 3.663 evaluaciones.
 
 La pregunta de cada política está declarada en `contrasts`. GRPO entra en la familia de KLPO, como
 los demás controles, porque su control es KLPO con las mismas oleadas. Dr. GRPO y GSPO se

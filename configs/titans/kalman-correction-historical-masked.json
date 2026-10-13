@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "recipe_name": "mars_titan_kalman_correction_v1",
+  "status": "declared_not_executed",
+  "recipe": {
+    "prior_ratio": 0.1,
+    "correlation_cap": 0.95,
+    "estimation_months": 3
+  },
+  "walk_forward": {
+    "search_cases": {
+      "kappa1e-6": {"process_ratio": 1e-06},
+      "kappa1e-5": {"process_ratio": 1e-05}
+    }
+  },
+  "pending": [
+    "Receta de la regla kalman de B6 (PT3, #455) sobre el Titans-MAC mac_online elegido en la misma ventana y semilla. Declarada sin ejecutar. No tiene parámetros entrenables, épocas ni optimizador.",
+    "σ² y ϱ se estiman en cada ventana con los residuos etiqueta menos núcleo de los tres últimos meses del tramo de ajuste del padre, con su calentamiento y sin etiquetas posteriores a su final, por ANOVA de un factor con la sesión como efecto aleatorio y el mercado como estrato. ϱ se trunca a [0; 0,95]. Validación, calibración y evaluación usan esa misma estimación.",
+    "p0 = 0,1 σ² y q = κ σ². Como p0 y q escalan con σ² y la receta no usa Huber, la media de la corrección no depende de σ², que solo fija la varianza predictiva. Dos casos de κ, como Titans-MAC y las referencias neuronales, y la campaña elige el caso con session_mae de validación, igual que η en las reglas delta y proximal.",
+    "El modelo con correlación estimada se compara con B6 proximal con la clave del codec y con la alternativa ϱ = 0, que comparte σ², p0 y κ.",
+    "A y P empiezan en su previa en cada tramo medido y solo se escriben con etiquetas maduras de ese tramo. La predicción trasladada usa la estimación del ancla y no vuelve a estimar."
+  ]
+}

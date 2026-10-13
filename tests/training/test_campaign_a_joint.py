@@ -73,6 +73,7 @@ def edited(tmp_path, change, *, comparison_change=None):
         ("episodic_gru", "recipe"),
         ("mars_titan", "recipe"),
         ("mars_titan", "correction_recipe"),
+        ("mars_titan", "kalman_correction_recipe"),
         ("cm_v1", "declaration"),
     ):
         value[section][key] = str((CAMPAIGN.parent / value[section][key]).resolve())
@@ -87,10 +88,10 @@ def edited(tmp_path, change, *, comparison_change=None):
 def test_v2_plans_the_joint_model_for_every_arm_and_three_separate_controls():
     loaded = campaign()
     counts = plan.count_jobs(loaded)
-    assert (counts["training_jobs"], counts["prediction_jobs"]) == (3025, 0)
+    assert (counts["training_jobs"], counts["prediction_jobs"]) == (3177, 0)
     joint, us, cn = (counts["scopes"][scope] for scope in ("US+CN", "US", "CN"))
     assert (joint["windows"], us["windows"], cn["windows"]) == (19, 19, 13)
-    assert (joint["training_jobs"], us["training_jobs"], cn["training_jobs"]) == (2641, 228, 156)
+    assert (joint["training_jobs"], us["training_jobs"], cn["training_jobs"]) == (2793, 228, 156)
     # El control en línea solo se evalúa, y por tanto solo se ajusta, en el ámbito conjunto.
     assert set(us["arms"]) == set(cn["arms"]) == set(CONTROLS)
     assert plan.scope_arms(loaded, "US") == plan.scope_arms(loaded, "CN") == list(CONTROLS)
@@ -114,7 +115,7 @@ def test_v2_plans_the_joint_model_for_every_arm_and_three_separate_controls():
             }, arm
     grouped = [arm for arm in joint["arms"] if arm in membership]
     corrections = {arm for arm in loaded["mars_titan"]["arms"] if "_b6" in arm}
-    assert len(grouped) == 22 and len(corrections) == 6 and not corrections & set(membership)
+    assert len(grouped) == 22 and len(corrections) == 8 and not corrections & set(membership)
     assert (joint["plateau_jobs"], us["plateau_jobs"], cn["plateau_jobs"]) == (
         22 * 4 * 19,
         3 * 4 * 19,
@@ -285,6 +286,94 @@ def test_v2_fits_pt1_as_extensions_of_the_online_core_with_its_declared_changes(
         assert active[name] == dict(family="titans_mac", design=adapters.FROZEN_ONLY)
 
 
+KALMAN_ARMS = {"mars_titan_b6_kalman": "estimated", "mars_titan_b6_kalman_rho0": "zero"}
+
+
+def test_v2_declares_the_kalman_correction_with_its_own_recipe_and_contrasts():
+    """PT3 (#455): dos B6 kalman con su receta de κ, sin parada ni grupo, frente a la regla
+    proximal con la misma clave y entre sí."""
+    loaded = campaign()
+    section = loaded["mars_titan"]
+    counts = plan.count_jobs(loaded)["scopes"]["US+CN"]["arms"]
+    for arm, correlation in KALMAN_ARMS.items():
+        cases = section["candidates"][arm]
+        assert [name for name, _ in cases] == ["kappa1e-6", "kappa1e-5"]
+        for _, case in cases:
+            assert Path(case["recipe"]).name == "kalman-correction-historical-masked.json"
+            assert case["components"] == {
+                "associative_memory": dict(
+                    rule="kalman", key="codec", cohort_correlation=correlation
+                )
+            }
+            assert "stopping_rule" not in case
+        assert counts[arm] == counts["mars_titan_b6"]
+        assert arm not in loaded["early_stop"]["membership"]
+    proximal = section["candidates"]["mars_titan_b6"][0][1]
+    assert Path(proximal["recipe"]).name == "mature-correction-historical-masked.json"
+    families = loaded["comparison_config"]["comparison"]["families"]
+    assert families["kalman_correction"] == dict(
+        kind="delta", base="mars_titan_b6", variants=list(KALMAN_ARMS)
+    )
+    assert families["kalman_cohort_correlation"] == dict(
+        kind="delta", base="mars_titan_b6_kalman_rho0", variants=["mars_titan_b6_kalman"]
+    )
+
+
+def kalman_arm(value, name="mars_titan_b6_kalman"):
+    return value["mars_titan"]["arms"][name]["associative_memory"]
+
+
+def without_kalman_arms(value):
+    for arm in KALMAN_ARMS:
+        value["mars_titan"]["arms"].pop(arm)
+        value["mars_titan"]["pending_arms"][arm] = "Retirado para comprobar la receta"
+
+
+@pytest.mark.parametrize(
+    ("change", "message"),
+    [
+        (lambda v: v["mars_titan"].pop("kalman_correction_recipe"), "regla kalman se declaran"),
+        (without_kalman_arms, "regla kalman se declaran"),
+        (lambda v: kalman_arm(v).pop("cohort_correlation"), "corrección B6"),
+        (lambda v: kalman_arm(v).update(cohort_correlation="half"), "corrección B6"),
+        (lambda v: kalman_arm(v, "mars_titan_b6").update(cohort_correlation="zero"), "B6"),
+        (
+            lambda v: v["mars_titan"].update(
+                kalman_correction_recipe=v["mars_titan"]["correction_recipe"]
+            ),
+            "o de κ con la regla kalman",
+        ),
+        (
+            lambda v: v["mars_titan"].update(
+                correction_recipe=v["mars_titan"]["kalman_correction_recipe"]
+            ),
+            "casos de η y λ",
+        ),
+    ],
+)
+def test_v2_rejects_kalman_models_without_their_recipe_or_correlation(tmp_path, change, message):
+    with pytest.raises(ValueError, match=message):
+        plan.load_campaign(edited(tmp_path, change))
+
+
+def test_the_projection_measures_the_kalman_estimation_with_the_calibration(tmp_path):
+    """El tramo de estimación se proyecta con las filas de calibración solo si dura lo mismo."""
+
+    def shorter(value):
+        path = Path(value["mars_titan"]["kalman_correction_recipe"])
+        document = json.loads(path.read_text())
+        document["recipe"]["estimation_months"] = 2
+        atomic_json(tmp_path / "kalman.json", document)
+        value["mars_titan"]["kalman_correction_recipe"] = str(tmp_path / "kalman.json")
+
+    loaded = plan.load_campaign(edited(tmp_path, shorter))
+    counts, _ = budget.read_counts(
+        Path("reports/data/campaign-a-v2-window-counts-20261009.json"), loaded
+    )
+    with pytest.raises(ValueError, match="mismos meses naturales"):
+        budget.project(loaded, counts, budget.uniform_rates(loaded, 16000.0), epochs=10)
+
+
 def test_the_joint_stop_groups_keep_every_paired_contrast_inside_one_scope_and_group():
     loaded = campaign()
     # Los contrastes del diseño conjunto, también los del control en línea, siguen dentro
@@ -433,16 +522,16 @@ def test_window_schedule_orders_every_stage_of_the_window_and_counts_all_jobs():
     totals = Counter()
     for row in schedule:
         totals.update({entry["phase"]: len(entry["jobs"]) for entry in row["phases"]})
-    # Los 3.025 ajustes y las 2.056 mesetas que los preceden en la parada conjunta.
-    assert totals["base_search"] + totals["selected_case_seeds"] == 3025 + 2056
+    # Los 3.177 ajustes y las 2.056 mesetas que los preceden en la parada conjunta.
+    assert totals["base_search"] + totals["selected_case_seeds"] == 3177 + 2056
     # Las etapas dependen del estado elegido, que fija la continuación y no su meseta.
     plateaus = {job["id"] for job in jobs if job.get("phase") == plan.PLATEAU}
     read = {d for stage_jobs in stages.values() for j in stage_jobs for d in j.get("depends", ())}
     assert read and not plateaus & read
-    # Adaptadores: 6.804 ajustes y 1.602 padres congelados, y 1.691 selecciones de la cadena
+    # Adaptadores: 6.804 ajustes y 1.710 padres congelados, y 1.805 selecciones de la cadena
     # en su propia fase.
-    assert (totals["adapters"], totals["chain"]) == (6804 + 1602, 1691)
-    assert (totals["online"], totals["ablation"], totals["rl"]) == (133, 5073, 3240 + 3441)
+    assert (totals["adapters"], totals["chain"]) == (6804 + 1710, 1805)
+    assert (totals["online"], totals["ablation"], totals["rl"]) == (133, 5415, 3384 + 3663)
     window = schedule[6]
     selection = window["phases"][order.PHASES.index("selection")]
     assert "CN/fold-000/mars_titan_m1" in selection["decisions"]
@@ -543,13 +632,13 @@ def test_later_stages_of_v2_read_the_joint_model_in_each_market():
     adapter = adapters.load_stage(plan.LATER_STAGES["posttraining_adapter_matrix"]["joint_stage"])
     assert adapter["scopes"] == ["US+CN"]
     counts = adapters.count_stage(adapter)
-    # 23 modelos neuronales y los seis B6 con tres semillas y los dos tabulares con una: 89
-    # cadenas por ventana. Cada ventana con padre congela esos 89 padres y todas eligen su
+    # 23 modelos neuronales y los ocho B6 con tres semillas y los dos tabulares con una: 95
+    # cadenas por ventana. Cada ventana con padre congela esos 95 padres y todas eligen su
     # cadena. Los tabulares, B6 y las dos extensiones PT1 solo tienen el padre congelado.
     assert (counts["training_jobs"], counts["prediction_jobs"], counts["selection_jobs"]) == (
         6804,
-        89 * 18,
-        89 * 19,
+        95 * 18,
+        95 * 19,
     )
     assert set(adapter["arms"]) == set(
         policy_plan.load_stage(plan.LATER_STAGES["rl_policy_comparison"]["joint_stage"])[
@@ -557,10 +646,10 @@ def test_later_stages_of_v2_read_the_joint_model_in_each_market():
         ]
     )
     masked = ablation.load_stage(plan.LATER_STAGES["modality_ablation"]["joint_stage"])
-    # 29 modelos con tres semillas y dos tabulares con una, por tres variantes.
-    assert ablation.count_stage(masked)["prediction_jobs"] == (29 * 3 + 2) * 3 * 19
+    # 31 modelos con tres semillas y dos tabulares con una, por tres variantes.
+    assert ablation.count_stage(masked)["prediction_jobs"] == (31 * 3 + 2) * 3 * 19
     stage = policy_plan.load_stage(plan.LATER_STAGES["rl_policy_comparison"]["joint_stage"])
-    assert len(stage["predictors"]) == 31 and stage["scopes"] == ["US+CN"]
+    assert len(stage["predictors"]) == 33 and stage["scopes"] == ["US+CN"]
     us = policy_plan.scope_windows(stage, "US+CN", "US")
     cn = policy_plan.scope_windows(stage, "US+CN", "CN")
     assert [row["window"] for row in us] == [f"fold-{i:03d}" for i in range(4, 19)]
@@ -569,19 +658,19 @@ def test_later_stages_of_v2_read_the_joint_model_in_each_market():
     assert cn[0]["train"] == ["fold-006", "fold-007", "fold-008"]
     counts = policy_plan.count_stage(stage)
     # Referencias: cuatro por ventana y predictor, y el índice de mercado solo en US.
-    assert (counts["training_jobs"], counts["evaluation_jobs"]) == (3240, 31 * (15 * 5 + 9 * 4))
+    assert (counts["training_jobs"], counts["evaluation_jobs"]) == (3384, 33 * (15 * 5 + 9 * 4))
     assert counts["scopes"]["US+CN"]["markets"]["CN"][0] == "fold-010"
     jobs = policy_plan.plan_stage(stage)
-    # Por ventana y semilla, KLPO con los 31 predictores y las siete políticas del nivel de
-    # algoritmos con sus dos predictores: 45 ajustes.
+    # Por ventana y semilla, KLPO con los 33 predictores y las siete políticas del nivel de
+    # algoritmos con sus dos predictores: 47 ajustes.
     assert Counter(job["market"] for job in jobs if job["kind"] == "fit") == {
-        "US": 15 * 45 * 3,
-        "CN": 9 * 45 * 3,
+        "US": 15 * 47 * 3,
+        "CN": 9 * 47 * 3,
     }
 
 
 def test_the_policy_predictors_follow_the_declaration_of_the_campaign(tmp_path):
-    """Los 31 predictores de las políticas son los productores de la campaña, en su orden.
+    """Los 33 predictores de las políticas son los productores de la campaña, en su orden.
 
     Un brazo que la campaña deja pendiente sale de la lista sin tocar la etapa de políticas.
     """
@@ -596,6 +685,8 @@ def test_the_policy_predictors_follow_the_declaration_of_the_campaign(tmp_path):
         "mars_titan_b6_calendar",
         "mars_titan_b6_regime_banks",
         "mars_titan_b6_calendar_banks",
+        "mars_titan_b6_kalman",
+        "mars_titan_b6_kalman_rho0",
         "titans_mac_online_pt1_init",
         "titans_mac_online_pt1",
     ]
@@ -1254,7 +1345,7 @@ def test_uniform_rates_project_the_b6_correction_as_prediction_only():
         if record["options"]["recipe"]["train"] is None
     }
     assert corrections == {arm for arm in loaded["mars_titan"]["arms"] if "_b6" in arm}
-    assert len(corrections) == 6
+    assert len(corrections) == 8
 
     def arms(epochs):
         families = budget.project(loaded, counts, rates, epochs=epochs)["estimate"]["families"]
@@ -1263,6 +1354,10 @@ def test_uniform_rates_project_the_b6_correction_as_prediction_only():
     ten, thirty = arms(10), arms(30)
     # B6 predice una vez cada tramo y no depende de las épocas. Un lector sí.
     assert all(ten[arm] == thirty[arm] for arm in corrections)
+    # La regla kalman recorre además su tramo de estimación, que se mide con la calibración.
+    for arm in KALMAN_ARMS:
+        assert ten[arm] > ten["mars_titan_b6"]
+    assert ten["mars_titan_b6_kalman"] == ten["mars_titan_b6_kalman_rho0"]
     assert thirty["mars_titan_m1"] > 2 * ten["mars_titan_m1"]
     assert max(thirty[arm] for arm in corrections) < thirty["mars_titan_m1"] / 30
 
@@ -1339,7 +1434,7 @@ def test_the_plan_checks_every_declared_document_of_the_campaign_and_its_stages(
         "historical-masked-rl-policies.json",
         "historical-masked-ablation-stage-a-v2.json",
     ]
-    assert len(plan.plan_campaign(value)) == 3025 + 133 + 2056
+    assert len(plan.plan_campaign(value)) == 3177 + 133 + 2056
     # Las fuentes de predictor de las políticas son estados ajustados con la edición real.
     from mars_titan.simulation import policy_plan
 

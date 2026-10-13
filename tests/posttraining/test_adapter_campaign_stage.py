@@ -657,6 +657,8 @@ B6_ARMS = (
     "mars_titan_b6_calendar",
     "mars_titan_b6_regime_banks",
     "mars_titan_b6_calendar_banks",
+    "mars_titan_b6_kalman",
+    "mars_titan_b6_kalman_rho0",
 )
 
 

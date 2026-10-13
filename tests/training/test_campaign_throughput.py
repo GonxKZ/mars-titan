@@ -946,9 +946,13 @@ MARS_ARMS = {
         "refinement_episodes": "first_read",
     },
     "mars_titan_b6": {"associative_memory": {"rule": "proximal", "key": "codec"}},
+    "mars_titan_b6_kalman": {
+        "associative_memory": {"rule": "kalman", "key": "codec", "cohort_correlation": "estimated"}
+    },
 }
 MEASURED = dict(segments=1, segment_warmup=0, events=1, event_warmup=0)
 CORRECTION_RECIPE = Path("configs/titans/mature-correction-historical-masked.json")
+KALMAN_RECIPE = Path("configs/titans/kalman-correction-historical-masked.json")
 
 
 def reduced_readout(folder):
@@ -963,7 +967,12 @@ def mars_campaign(folder, arms):
     """Campaña A con el control mac_online reducido y los brazos de MARS-TITAN pedidos."""
     campaign = titans_campaign(folder)
     declared = campaign["comparison_config"]["arms"]
-    compared = {name: declared[name] for name in ("titans_mac_online", *arms)}
+    # Las B6 kalman solo están en la comparación conjunta de A v2 y comparten la declaración
+    # de mars_titan_b6.
+    compared = {
+        name: declared[name] if name in declared else declared["mars_titan_b6"]
+        for name in ("titans_mac_online", *arms)
+    }
     section = dict(
         recipe=str(reduced_readout(folder)),
         arms={name: MARS_ARMS[name] for name in arms},
@@ -971,32 +980,47 @@ def mars_campaign(folder, arms):
         parent_arm="titans_mac_online",
         search_seed=42,
     )
-    if any("associative_memory" in MARS_ARMS[name] for name in arms):
+    rules = {
+        MARS_ARMS[name]["associative_memory"]["rule"]
+        for name in arms
+        if "associative_memory" in MARS_ARMS[name]
+    }
+    if rules - {"kalman"}:
         section["correction_recipe"] = str(CORRECTION_RECIPE.resolve())
+    if "kalman" in rules:
+        section["kalman_correction_recipe"] = str(KALMAN_RECIPE.resolve())
     campaign[MARS] = plan._mars_titan(
         section, compared, campaign["rule"], campaign["input_policy"], folder, 2, campaign[TITANS]
     )
     return campaign
 
 
+@pytest.mark.parametrize(
+    ("arm", "cases"),
+    [
+        ("mars_titan_b6", ["eta5e-2", "eta25e-2"]),
+        ("mars_titan_b6_kalman", ["kappa1e-6", "kappa1e-5"]),
+    ],
+)
 def test_mars_measurement_walks_the_correction_without_a_reader_or_steps(
-    views, cpu, tmp_path, guarded_steps, frozen_checks
+    views, cpu, tmp_path, guarded_steps, frozen_checks, arm, cases
 ):
-    campaign = mars_campaign(tmp_path / "config", ["mars_titan_b6"])
+    """La regla kalman se mide con σ² y ϱ de referencia, porque no cambian su coste."""
+    campaign = mars_campaign(tmp_path / "config", [arm])
     measured = dict(MEASURED, events=4)
     rates = throughput.measure_mars_titan(
         campaign, views / "fold-000/manifest.json", tmp_path / "work", **measured
     )
-    record = rates["mars_titan_b6"]
+    record = rates[arm]
     assert record["declared_option"] == "recipe"
     assert record["options"] == {"recipe": dict(train=None, peak_vram_allocated_bytes=0)}
     assert record["inference"] > 0 and record["measured_inference_rows"] > 0
     # Los eventos del tramo de ajuste no tienen calentamiento, así que A recibe etiquetas
     # maduras durante toda la medida.
     assert record["associative_writes"] > 0
-    assert record["measured_case"] == "eta5e-2"
-    assert record["shared_by_cases"] == ["eta5e-2", "eta25e-2"]
-    assert record["components"] == MARS_ARMS["mars_titan_b6"]
+    assert record["measured_case"] == cases[0]
+    assert record["shared_by_cases"] == cases
+    assert record["components"] == MARS_ARMS[arm]
     assert not {"loss", "mean_loss", "session_mae"} & set(record)
     # Sin lector no hay optimizador, ni siquiera el de la medición.
     assert guarded_steps == [] and frozen_checks == []
@@ -1008,6 +1032,12 @@ def test_correction_hours_predict_each_measured_tramo_once():
     fit, carry = dict(kind=plan.FIT), dict(kind=plan.CARRY)
     assert throughput.validated_job_seconds(fit, rows, rate, 30) == pytest.approx(2400 / 400)
     assert throughput.validated_job_seconds(carry, rows, rate, 30) == pytest.approx(2000 / 400)
+    # La regla kalman estima antes σ² y ϱ en un tramo medido como la calibración. El traslado
+    # usa la estimación del ancla.
+    estimated = throughput.validated_job_seconds(fit, rows, rate, 30, estimation=True)
+    assert estimated == pytest.approx(3200 / 400)
+    carried = throughput.validated_job_seconds(carry, rows, rate, 30, estimation=True)
+    assert carried == pytest.approx(2000 / 400)
     fitted = throughput.validated_job_seconds(fit, rows, dict(rate, train=100.0), 30)
     assert fitted == pytest.approx(30 * 8000 / 100 + (32 * 400 + 2000) / 400)
 

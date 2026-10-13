@@ -39,7 +39,7 @@ import os
 import resource
 import time
 from dataclasses import asdict, replace
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 
 from mars_titan.data.cohort_files import read_manifest
@@ -59,6 +59,7 @@ from .campaign_plan import (
     PLATEAU,
     TITANS,
     _arm_specs,
+    _kalman_arm,
     extend_campaign,
     load_campaign,
     plan_campaign,
@@ -162,13 +163,17 @@ def neural_job_seconds(job, counts, rates, epochs):
     return max(seconds)
 
 
-def validated_job_seconds(job, rows, rate, epochs):
+def validated_job_seconds(job, rows, rate, epochs, *, estimation=False):
     """Segundos de un trabajo que valida antes de la primera época y tras cada una.
 
     Es la forma de Titans-MAC, de la GRU candidata y de los casos de la matriz. Un ajuste
     recorre `epochs` veces el tramo de ajuste, valida `epochs + 1` veces, vuelve a
     predecir la validación con el estado elegido y predice calibración y evaluación. Un
     traslado predice calibración y evaluación. `rows` incluye el calentamiento si existe.
+    Con `estimation`, el ajuste de la regla kalman de B6 recorre antes su tramo de estimación
+    de σ² y ϱ: los tres últimos meses del ajuste con su calentamiento. Los recuentos no los
+    separan, así que se acotan con los de calibración, que también cubre tres meses con el
+    mismo calentamiento. Un traslado usa la estimación del ancla y no los recorre.
     """
     inference = rate["inference"]
     if job["kind"] != FIT:
@@ -176,7 +181,8 @@ def validated_job_seconds(job, rows, rate, epochs):
     if rate["train"] is None:
         # Un trabajo sin ajuste, como la corrección B6, predice una sola vez cada tramo medido,
         # sin épocas ni validaciones repetidas.
-        return (rows["validation"] + rows["calibration"] + rows["evaluation"]) / inference
+        predicted = rows["validation"] + rows["calibration"] + rows["evaluation"]
+        return (predicted + (rows["calibration"] if estimation else 0)) / inference
     predicted = (epochs + 2) * rows["validation"] + rows["calibration"] + rows["evaluation"]
     return epochs * rows["train"] / rate["train"] + predicted / inference
 
@@ -250,6 +256,14 @@ def _option_hours(campaign, family, jobs, counts, measured, epochs):
     opción de los brazos de su familia que comparan opciones, como sus núcleos.
     """
     rows = _chronological_rows(campaign, family, counts)
+    kalman = set()
+    if family == MARS:
+        candidates = campaign[MARS]["candidates"]
+        kalman = {
+            arm for arm, cases in candidates.items() if _kalman_arm(cases[0][1]["components"])
+        }
+        if kalman:
+            _check_estimation_proxy(campaign, kalman)
     compared = {
         arm: record for arm, record in measured.items() if list(record["options"]) != ["recipe"]
     } or measured
@@ -270,10 +284,41 @@ def _option_hours(campaign, family, jobs, counts, measured, epochs):
             rate = dict(
                 train=records[job["arm"]]["train"], inference=measured[job["arm"]]["inference"]
             )
-            return validated_job_seconds(job, rows[job["scope"]][job["window"]], rate, epochs)
+            return validated_job_seconds(
+                job,
+                rows[job["scope"]][job["window"]],
+                rate,
+                epochs,
+                estimation=job["arm"] in kalman,
+            )
 
         result["options"][name] = dict(_hours(jobs, seconds), peak_vram_allocated_bytes=peak)
     return result
+
+
+def _check_estimation_proxy(campaign, arms):
+    """Comprobar que la calibración sirve de medida del tramo de estimación de kalman.
+
+    Los recuentos no separan los últimos meses del ajuste, así que la proyección cuenta como
+    tramo de estimación las filas de calibración, que tienen el mismo calentamiento. Solo
+    vale si en cada ventana la calibración dura los mismos meses naturales que la estimación.
+    """
+    from .mars_titan_correction import load_correction_recipe
+
+    months = {
+        load_correction_recipe(case["recipe"])["recipe"]["estimation_months"]
+        for arm in arms
+        for _, case in campaign[MARS]["candidates"][arm]
+    }
+    for scope in campaign["comparison_config"]["resolved_scopes"].values():
+        for fold in scope["windows"].values():
+            first, last = (date.fromisoformat(day) for day in fold["calibration"])
+            span = (last.year - first.year) * 12 + last.month - first.month
+            _require(
+                first.day == last.day == 1 and months == {span},
+                "La proyección mide el tramo de estimación de kalman con la calibración, que "
+                "debe durar los mismos meses naturales",
+            )
 
 
 def _online_hours(campaign, jobs, counts, neural):
@@ -1189,8 +1234,11 @@ def _correction_record(parent, case, window, device, settings):
     fold, sources, inputs = window
     document = correction.load_correction_recipe(case["recipe"])
     values = correction.case_values(document, case["search_case"])
+    # Las varianzas de kalman no cambian el coste de una escritura, así que se mide con las de
+    # referencia y sin el tramo de estimación, que la proyección suma aparte.
+    noise = correction.UNIT_NOISE if correction.kalman_arm(case["components"]) else None
     _, mature = check_components(
-        load_declaration(), correction.arm_components(case["components"], values)
+        load_declaration(), correction.arm_components(case["components"], values, noise)
     )
     specification = sources["train"].specification()
     seed_run(case["seed"])
