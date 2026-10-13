@@ -3,14 +3,14 @@
  "kind": "edition_catalog_real_data_receipt",
  "issue": 537,
  "measured_on": "2026-10-13",
- "commit": "9f3fba74e0d18d3c07073a4d9c9e1ed1d4c1ce25",
+ "commit": "05fd0f78be2c144e8c57d78e8d53e7abfa0c3aa3",
  "code_sha256": {
   "src/mars_titan/training/edition_catalog.py": "89e31584090ed49fa97d88265a908fd7ecc0e07fd1c6d08f8c8de90957673ed8",
   "src/mars_titan/training/edition_subsets.py": "394781eff7283d6cd96f998cbaccfd834385fe99055acbd63c759d64c181ca95",
   "src/mars_titan/training/campaign_budget.py": "7d2eb7d8783bace19fa5f104e85dd9d36f2033673221ee21e9c61e0854cea3d5",
   "src/mars_titan/training/temporal_corpus.py": "16df02fc04606aae7ee837ec4ca8cb2b230c37bf8dece2f539a0dbe0fbe347fe",
   "src/mars_titan/training/campaign_plan.py": "c875917676ec4aed5f1ca50e4fb173523de706f1a70fc8d87dcd51f41dde6a0f",
-  "configs/baselines/historical-masked-campaign-a-v2.json": "670f969629e3e2ba6ceb99bc994a850c03da0242a33dfb052490e3a3b1516ec4",
+  "configs/baselines/historical-masked-campaign-a-v2.json": "f8d47db6d6582add1d88885f01e3989b62d1b9161325ed059d44f4726be9a7c6",
   "src/mars_titan/evaluation/liquidity_strata.py": "0084c0b016f57a8e0059c79612619c95435effc2362987ad94de45978184af7e"
  },
  "machine": {
@@ -22,6 +22,10 @@
   "load_average_at_start_and_end": [
    "25,74, 26,29, 22,25",
    "18,77, 26,56, 29,30"
+  ],
+  "budget_load_average_at_start_and_end": [
+   "19,79, 21,68, 22,81",
+   "20,70, 22,52, 22,06"
   ],
   "note": "Equipo compartido con otras sesiones. Los tiempos solo ordenan el coste. Los de first_version son de la primera versión del código sobre los mismos datos, con identificadores, universos y recuentos idénticos byte a byte a los actuales"
  },
@@ -982,13 +986,13 @@
     "calibration": 7956247,
     "evaluation": 32868677
    },
-   "subset_over_full_neural_hours": 0.8537395356326708,
+   "subset_over_full_neural_hours": 0.853739535632671,
    "rate_samples_epoch_per_second": 1000.0,
    "campaign": {
     "name": "historical-masked-2000-a-v2",
-    "sha256": "670f969629e3e2ba6ceb99bc994a850c03da0242a33dfb052490e3a3b1516ec4"
+    "sha256": "f8d47db6d6582add1d88885f01e3989b62d1b9161325ed059d44f4726be9a7c6"
    },
-   "elapsed": "1814.25 s 1658536 KiB",
+   "elapsed": "604.76 s 1652692 KiB",
    "first_version_elapsed": "517.34 s 1654728 KiB"
   },
   "liquid-usable-half-2000-2023": {
@@ -1004,13 +1008,13 @@
     "calibration": 7956247,
     "evaluation": 32868677
    },
-   "subset_over_full_neural_hours": 0.42686622631856547,
+   "subset_over_full_neural_hours": 0.4268662263185656,
    "rate_samples_epoch_per_second": 1000.0,
    "campaign": {
     "name": "historical-masked-2000-a-v2",
-    "sha256": "670f969629e3e2ba6ceb99bc994a850c03da0242a33dfb052490e3a3b1516ec4"
+    "sha256": "f8d47db6d6582add1d88885f01e3989b62d1b9161325ed059d44f4726be9a7c6"
    },
-   "elapsed": "1682.84 s 1195036 KiB",
+   "elapsed": "1257.52 s 1197364 KiB",
    "first_version_elapsed": "502.41 s 1200492 KiB"
   }
  },

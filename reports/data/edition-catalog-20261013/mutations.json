@@ -2,9 +2,9 @@
  "schema_version": 1,
  "kind": "targeted_mutation_receipt",
  "issue": 537,
- "executed_on": "2026-10-13T09:28:14+00:00",
- "base_commit": "9f3fba74e0d18d3c07073a4d9c9e1ed1d4c1ce25",
- "sources_sha256": "3857e98c9739ac1e99abe32191f2580a498ecef2e20703cfc50556d2ba6ca9de",
+ "executed_on": "2026-10-13T13:17:29+00:00",
+ "base_commit": "05fd0f78be2c144e8c57d78e8d53e7abfa0c3aa3",
+ "sources_sha256": "170ede3dc9b2caa9cb84c5d9aa543793fc2342b84261efdeccda990df4b51a98",
  "method": "Copia aislada de src, tests y configs. Cada mutante sustituye un único fragmento, ejecuta las pruebas del catálogo, de los subconjuntos, de la liquidez, de las vistas con subconjunto y de las vistas por ventana con -x y restaura el archivo. PYTHONPATH apunta a la copia",
  "tests": [
   "tests/training/test_edition_catalog.py",
@@ -16,10 +16,10 @@
  "environment": "CPU con CUDA_VISIBLE_DEVICES=-1 y OMP_NUM_THREADS=2, dentro de memslot",
  "baseline": {
   "returncode": 0,
-  "seconds": 38.0,
+  "seconds": 327.5,
   "tail": [
    "SKIPPED [1] tests/conftest.py:110: Bloqueo de aprendizaje vigente: la búsqueda temporal de referencias no se ejecuta mientras /home/gonzalo/.local/state/mars-titan/training-hold-2000.json no declare training_allowed verdadero",
-   "79 passed, 1 skipped in 35.86s"
+   "79 passed, 1 skipped in 315.64s (0:05:15)"
   ]
  },
  "killed": 38,
@@ -33,10 +33,10 @@
    "replacement": "f\"{year + 1:04d}-01-01\"",
    "status": "killed",
    "returncode": 1,
-   "seconds": 17.8,
+   "seconds": 166.7,
    "tail": [
     "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
-    "1 failed, 37 passed in 15.82s"
+    "1 failed, 37 passed in 152.91s (0:02:32)"
    ]
   },
   {
@@ -46,10 +46,10 @@
    "replacement": "f\"{year - 1:04d}-01-01\"",
    "status": "killed",
    "returncode": 1,
-   "seconds": 16.4,
+   "seconds": 160.0,
    "tail": [
     "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
-    "1 failed, 37 passed in 14.48s"
+    "1 failed, 37 passed in 145.25s (0:02:25)"
    ]
   },
   {
@@ -59,10 +59,10 @@
    "replacement": "kept = ~np.isin(codes,",
    "status": "killed",
    "returncode": 1,
-   "seconds": 21.1,
+   "seconds": 152.4,
    "tail": [
     "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
-    "1 failed, 37 passed in 19.20s"
+    "1 failed, 37 passed in 138.38s (0:02:18)"
    ]
   },
   {
@@ -72,10 +72,10 @@
    "replacement": "        keep = keep\n",
    "status": "killed",
    "returncode": 1,
-   "seconds": 17.4,
+   "seconds": 159.9,
    "tail": [
     "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
-    "1 failed, 37 passed in 15.35s"
+    "1 failed, 37 passed in 147.08s (0:02:27)"
    ]
   },
   {
@@ -85,10 +85,10 @@
    "replacement": "keep = _first_by_group(rows[\"asset\"], order, lambda _size: limit)",
    "status": "killed",
    "returncode": 1,
-   "seconds": 20.6,
+   "seconds": 162.6,
    "tail": [
     "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
-    "1 failed, 41 passed in 18.59s"
+    "1 failed, 41 passed in 149.03s (0:02:29)"
    ]
   },
   {
@@ -98,10 +98,10 @@
    "replacement": "        counts[ls.NAMES[code]] += 2\n",
    "status": "killed",
    "returncode": 1,
-   "seconds": 20.7,
+   "seconds": 154.9,
    "tail": [
     "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
-    "1 failed, 37 passed in 18.19s"
+    "1 failed, 37 passed in 142.55s (0:02:22)"
    ]
   },
   {
@@ -111,10 +111,10 @@
    "replacement": "True,",
    "status": "killed",
    "returncode": 1,
-   "seconds": 24.1,
+   "seconds": 189.0,
    "tail": [
     "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
-    "1 failed, 42 passed in 21.76s"
+    "1 failed, 42 passed in 174.21s (0:02:54)"
    ]
   },
   {
@@ -124,10 +124,10 @@
    "replacement": "and True,",
    "status": "killed",
    "returncode": 1,
-   "seconds": 21.5,
+   "seconds": 179.2,
    "tail": [
     "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
-    "1 failed, 42 passed in 19.49s"
+    "1 failed, 42 passed in 165.91s (0:02:45)"
    ]
   },
   {
@@ -137,10 +137,10 @@
    "replacement": "True,",
    "status": "killed",
    "returncode": 1,
-   "seconds": 20.7,
+   "seconds": 170.0,
    "tail": [
     "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
-    "1 failed, 43 passed in 18.20s"
+    "1 failed, 43 passed in 153.72s (0:02:33)"
    ]
   },
   {
@@ -150,10 +150,10 @@
    "replacement": "and True",
    "status": "killed",
    "returncode": 1,
-   "seconds": 22.0,
+   "seconds": 162.1,
    "tail": [
     "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
-    "1 failed, 44 passed in 19.35s"
+    "1 failed, 44 passed in 148.78s (0:02:28)"
    ]
   },
   {
@@ -163,10 +163,10 @@
    "replacement": "prediction.astype(np.int64, copy=False).view(np.uint64)",
    "status": "killed",
    "returncode": 1,
-   "seconds": 14.2,
+   "seconds": 93.4,
    "tail": [
     "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
-    "1 failed, 16 passed in 11.89s"
+    "1 failed, 16 passed in 80.59s (0:01:20)"
    ]
   },
   {
@@ -176,10 +176,10 @@
    "replacement": "",
    "status": "killed",
    "returncode": 1,
-   "seconds": 18.2,
+   "seconds": 111.0,
    "tail": [
     "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
-    "1 failed, 18 passed in 15.65s"
+    "1 failed, 18 passed in 97.81s (0:01:37)"
    ]
   },
   {
@@ -189,10 +189,10 @@
    "replacement": "chosen[ranked[rank <= limits]] = True",
    "status": "killed",
    "returncode": 1,
-   "seconds": 15.3,
+   "seconds": 104.8,
    "tail": [
     "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
-    "1 failed, 15 passed in 12.75s"
+    "1 failed, 15 passed in 91.26s (0:01:31)"
    ]
   },
   {
@@ -202,10 +202,10 @@
    "replacement": "np.uint8",
    "status": "killed",
    "returncode": 1,
-   "seconds": 18.6,
+   "seconds": 113.7,
    "tail": [
     "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
-    "1 failed, 20 passed in 15.82s"
+    "1 failed, 20 passed in 100.18s (0:01:40)"
    ]
   },
   {
@@ -215,10 +215,10 @@
    "replacement": "",
    "status": "killed",
    "returncode": 1,
-   "seconds": 15.8,
+   "seconds": 106.8,
    "tail": [
     "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
-    "1 failed, 16 passed in 13.17s"
+    "1 failed, 16 passed in 93.42s (0:01:33)"
    ]
   },
   {
@@ -228,10 +228,10 @@
    "replacement": "for code in (pairs % span).tolist()]",
    "status": "killed",
    "returncode": 1,
-   "seconds": 22.4,
+   "seconds": 174.4,
    "tail": [
     "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
-    "1 failed, 37 passed in 19.91s"
+    "1 failed, 37 passed in 158.80s (0:02:38)"
    ]
   },
   {
@@ -241,10 +241,10 @@
    "replacement": "position = np.cumsum(present, dtype=np.int64) % size",
    "status": "killed",
    "returncode": 1,
-   "seconds": 17.9,
+   "seconds": 131.6,
    "tail": [
     "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
-    "1 failed, 22 passed in 15.50s"
+    "1 failed, 22 passed in 116.06s (0:01:56)"
    ]
   },
   {
@@ -254,10 +254,10 @@
    "replacement": "math.floor(fraction * n)",
    "status": "killed",
    "returncode": 1,
-   "seconds": 15.1,
+   "seconds": 124.4,
    "tail": [
     "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
-    "1 failed, 16 passed in 12.74s"
+    "1 failed, 16 passed in 109.05s (0:01:49)"
    ]
   },
   {
@@ -267,10 +267,10 @@
    "replacement": "pc.equal(table[\"label_reason\"], \"accepted\"), pc.equal(table[\"label_reason\"], \"x\")",
    "status": "killed",
    "returncode": 1,
-   "seconds": 74.4,
+   "seconds": 119.2,
    "tail": [
     "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
-    "1 failed, 14 passed in 72.07s (0:01:12)"
+    "1 failed, 14 passed in 104.13s (0:01:44)"
    ]
   },
   {
@@ -280,10 +280,10 @@
    "replacement": "pc.less(year, years[\"last\"])",
    "status": "killed",
    "returncode": 1,
-   "seconds": 12.7,
+   "seconds": 118.4,
    "tail": [
     "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
-    "1 failed, 14 passed in 10.64s"
+    "1 failed, 14 passed in 102.42s (0:01:42)"
    ]
   },
   {
@@ -293,10 +293,10 @@
    "replacement": "keep = pc.or_(keep, table[f\"has_{name}\"])",
    "status": "killed",
    "returncode": 1,
-   "seconds": 12.6,
+   "seconds": 119.2,
    "tail": [
     "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
-    "1 failed, 14 passed in 10.53s"
+    "1 failed, 14 passed in 103.68s (0:01:43)"
    ]
   },
   {
@@ -306,10 +306,10 @@
    "replacement": "pc.is_valid(table[\"market\"])",
    "status": "killed",
    "returncode": 1,
-   "seconds": 14.2,
+   "seconds": 122.7,
    "tail": [
     "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
-    "1 failed, 14 passed in 11.99s"
+    "1 failed, 14 passed in 107.53s (0:01:47)"
    ]
   },
   {
@@ -319,10 +319,10 @@
    "replacement": "return ~np.isin(prediction, selected, assume_unique=False)",
    "status": "killed",
    "returncode": 1,
-   "seconds": 15.6,
+   "seconds": 132.4,
    "tail": [
     "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
-    "1 failed, 23 passed in 13.30s"
+    "1 failed, 23 passed in 118.53s (0:01:58)"
    ]
   },
   {
@@ -332,10 +332,10 @@
    "replacement": "limit = _micros(\"2025-01-01\")\n    for group",
    "status": "killed",
    "returncode": 1,
-   "seconds": 239.5,
+   "seconds": 64.7,
    "tail": [
     "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
-    "1 failed, 9 passed in 237.21s (0:03:57)"
+    "1 failed, 9 passed in 52.06s"
    ]
   },
   {
@@ -345,10 +345,10 @@
    "replacement": "available = available",
    "status": "killed",
    "returncode": 1,
-   "seconds": 10.0,
+   "seconds": 65.3,
    "tail": [
     "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
-    "1 failed, 10 passed in 7.59s"
+    "1 failed, 10 passed in 52.18s"
    ]
   },
   {
@@ -358,10 +358,10 @@
    "replacement": "index[rows] = (np.arange(len(rows)) + 1) % len(rows)",
    "status": "killed",
    "returncode": 1,
-   "seconds": 5.7,
+   "seconds": 39.4,
    "tail": [
     "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
-    "1 failed in 3.49s"
+    "1 failed in 25.96s"
    ]
   },
   {
@@ -371,10 +371,10 @@
    "replacement": "annual_boundary_label=pa.array(~recovered).take(take)",
    "status": "killed",
    "returncode": 1,
-   "seconds": 307.6,
+   "seconds": 36.5,
    "tail": [
     "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
-    "1 failed in 304.47s (0:05:04)"
+    "1 failed in 24.15s"
    ]
   },
   {
@@ -384,10 +384,10 @@
    "replacement": "    return days[positions] + 1\n",
    "status": "killed",
    "returncode": 1,
-   "seconds": 7.1,
+   "seconds": 33.2,
    "tail": [
     "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
-    "1 failed in 4.11s"
+    "1 failed in 22.50s"
    ]
   },
   {
@@ -397,10 +397,10 @@
    "replacement": "presence[:, index], presence[:, index]",
    "status": "killed",
    "returncode": 1,
-   "seconds": 8.9,
+   "seconds": 55.6,
    "tail": [
     "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
-    "1 failed, 4 passed in 6.39s"
+    "1 failed, 4 passed in 41.48s"
    ]
   },
   {
@@ -410,10 +410,10 @@
    "replacement": "True,",
    "status": "killed",
    "returncode": 1,
-   "seconds": 399.6,
+   "seconds": 53.5,
    "tail": [
     "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
-    "1 failed, 7 passed in 397.14s (0:06:37)"
+    "1 failed, 7 passed in 41.16s"
    ]
   },
   {
@@ -423,10 +423,10 @@
    "replacement": "                accepted &= True\n",
    "status": "killed",
    "returncode": 1,
-   "seconds": 36.5,
+   "seconds": 183.6,
    "tail": [
     "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
-    "1 failed, 58 passed in 34.03s"
+    "1 failed, 58 passed in 170.71s (0:02:50)"
    ]
   },
   {
@@ -436,10 +436,10 @@
    "replacement": "partitioners[folds[0][\"id\"]],\n                    label_prediction",
    "status": "killed",
    "returncode": 1,
-   "seconds": 27.6,
+   "seconds": 196.9,
    "tail": [
     "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
-    "57 passed, 1 error in 24.75s"
+    "57 passed, 1 error in 189.24s (0:03:09)"
    ]
   },
   {
@@ -449,10 +449,10 @@
    "replacement": "partitioners[folds[0][\"id\"]],\n                    rows[\"prediction\"]",
    "status": "killed",
    "returncode": 1,
-   "seconds": 41.4,
+   "seconds": 112.7,
    "tail": [
     "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
-    "1 failed, 57 passed in 38.35s"
+    "1 failed, 57 passed in 101.83s (0:01:41)"
    ]
   },
   {
@@ -462,10 +462,10 @@
    "replacement": "view_reasons[outside] = \"outside_window\"",
    "status": "killed",
    "returncode": 1,
-   "seconds": 166.1,
+   "seconds": 131.8,
    "tail": [
     "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
-    "1 failed, 58 passed in 162.87s (0:02:42)"
+    "1 failed, 58 passed in 126.69s (0:02:06)"
    ]
   },
   {
@@ -475,10 +475,10 @@
    "replacement": "inside &= True",
    "status": "killed",
    "returncode": 1,
-   "seconds": 40.8,
+   "seconds": 118.6,
    "tail": [
     "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
-    "1 failed, 59 passed in 37.72s"
+    "1 failed, 59 passed in 113.15s (0:01:53)"
    ]
   },
   {
@@ -488,10 +488,10 @@
    "replacement": "pass",
    "status": "killed",
    "returncode": 1,
-   "seconds": 130.0,
+   "seconds": 178.7,
    "tail": [
     "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
-    "1 failed, 61 passed in 127.23s (0:02:07)"
+    "1 failed, 61 passed in 169.35s (0:02:49)"
    ]
   },
   {
@@ -501,10 +501,10 @@
    "replacement": "True,",
    "status": "killed",
    "returncode": 1,
-   "seconds": 35.2,
+   "seconds": 234.6,
    "tail": [
     "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
-    "1 failed, 60 passed in 32.55s"
+    "1 failed, 60 passed in 218.10s (0:03:38)"
    ]
   },
   {
@@ -514,10 +514,10 @@
    "replacement": "accepted = accepted",
    "status": "killed",
    "returncode": 1,
-   "seconds": 245.2,
+   "seconds": 229.0,
    "tail": [
     "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
-    "1 failed, 58 passed in 240.00s (0:04:00)"
+    "1 failed, 58 passed in 214.26s (0:03:34)"
    ]
   }
  ]
