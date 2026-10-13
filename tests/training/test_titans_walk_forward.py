@@ -29,6 +29,7 @@ from mars_titan.training.corpus_inputs import CorpusDataset
 from mars_titan.training.financial_run import ChronologicalTrainer
 from mars_titan.training.learning_hold import LearningHoldError
 from mars_titan.training.temporal_corpus import prepare_temporal_corpus
+from tests.learning_hold_lowering import allowed_hold
 from tests.training.chronological_fixture import chronological_corpus, decision
 
 CONFIGS = Path("configs")
@@ -205,8 +206,7 @@ def unfused_attention():
 def learning_doubles_module(tmp_path_factory):
     from mars_titan.training.learning_hold import HOLD_ENV
 
-    path = tmp_path_factory.mktemp("learning-hold") / "training-hold.json"
-    path.write_text(json.dumps({"training_allowed": True}), encoding="utf-8")
+    path = allowed_hold(tmp_path_factory.mktemp("learning-hold") / "training-hold.json")
     with pytest.MonkeyPatch.context() as patch:
         patch.setenv(HOLD_ENV, str(path))
         yield path
