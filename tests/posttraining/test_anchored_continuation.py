@@ -234,7 +234,9 @@ def test_only_the_stages_that_name_the_control_plan_it(name, expected):
     # A y A v2 comparten la matriz v3 y las dos añaden el control. A tiene tres ámbitos y
     # 42 ventanas con padre y A v2 el ámbito conjunto con 18: 5 × 42 × 3 y 5 × 18 × 3.
     assert stage["matrix_sha256"] == _stage("a")["matrix_sha256"]
-    assert stage["additional_controls"] == [ANCHORED]
+    # A v2 nombra además los objetivos de #128, que no cambian la continuación anclada.
+    named = {"a": [ANCHORED], "a-v2": [ANCHORED, predictive.SECTION_NAME]}
+    assert stage["additional_controls"] == named[name]
     jobs = campaign_stage.plan_stage(stage)
     # Las cinco referencias neuronales de la etapa.
     references = set(stage["families"])
@@ -257,8 +259,10 @@ def test_only_the_stages_that_name_the_control_plan_it(name, expected):
         assert job["case"]["weight_decay_anchor"] == INITIAL
         assert job["depends"] == next(j["depends"] for j in full if key(j) == key(job))
         assert campaign_stage.candidate_kind(job) == "continuation"
-    # Sin nombrarlo, la misma etapa no lo planifica y conserva el resto del plan.
-    without = {key: value for key, value in stage.items() if key != "additional_controls"}
+    # Sin nombrarlo, la misma etapa no lo planifica y conserva el resto del plan, también los
+    # objetivos de #128 en A v2.
+    others = [name for name in stage["additional_controls"] if name != ANCHORED]
+    without = dict(stage, additional_controls=others)
     remaining = campaign_stage.plan_stage(without)
     assert not any(job["control"] == ANCHORED for job in remaining)
     assert len(remaining) == len(jobs) - expected
