@@ -713,6 +713,7 @@ def default_runners(campaign_path, views, output, *, storage=None, stages=None, 
             output,
             entry["edition"],
             entry["output"],
+            listing_status=entry["listing_status"],
             stop=stop,
             window=window,
             chain_output=chain_output,
@@ -769,6 +770,11 @@ def main(argv=None):
     parser.add_argument(
         "--edition", type=Path, help="Edición de precios sin ajustar (políticas y cartera)"
     )
+    parser.add_argument(
+        "--listing-status",
+        type=Path,
+        help="Tabla del estado de cotización que declaran las políticas",
+    )
     args = parser.parse_args(argv)
     views = engine._views_argument(args.views)
     retention = load_retention(args.retention)
@@ -781,7 +787,8 @@ def main(argv=None):
             stages[key] = dict(stage=stage, output=output)
     if "rl" in stages:
         _require(args.edition is not None, "Las políticas necesitan --edition")
-        stages["rl"]["edition"] = args.edition
+        _require(args.listing_status is not None, "Las políticas necesitan --listing-status")
+        stages["rl"].update(edition=args.edition, listing_status=args.listing_status)
     runners = default_runners(
         args.campaign, views, args.output, storage=args.storage, stages=stages
     )
