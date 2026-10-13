@@ -105,14 +105,27 @@ def _directory(path):
     return path.is_dir() and not path.is_symlink()
 
 
-def _open_attempt(jobs, job_id):
-    """Carpeta del intento abierto: el último `attempt-*` o `run`, que usan las etapas."""
+def _is_folder(path):
     try:
-        if not stat.S_ISDIR(os.lstat(f"{jobs}/{job_id}").st_mode):
-            return None
+        return stat.S_ISDIR(os.lstat(path).st_mode)
     except OSError:
-        return None
-    job_folder = Path(jobs) / job_id
+        return False
+
+
+def _open_attempt(jobs, job_id, confirmed):
+    """Carpeta del intento abierto: el último `attempt-*` o `run`, que usan las etapas.
+
+    La continuación de un ajuste con parada conjunta no crea carpeta hasta su recibo:
+    reanuda en la de su meseta (`plateau-<nombre>`), cuyo intento pasa a ser el suyo en
+    cuanto `confirmed` da la meseta por confirmada.
+    """
+    found = job_id
+    if not _is_folder(f"{jobs}/{job_id}"):
+        head, _, name = job_id.rpartition("/")
+        found = f"{head}/plateau-{name}"
+        if confirmed.get(found) is not True or not _is_folder(f"{jobs}/{found}"):
+            return None
+    job_folder = Path(jobs) / found
     attempts = sorted(p for p in job_folder.glob("attempt-*") if _directory(p))
     if attempts:
         return attempts[-1]
@@ -222,7 +235,7 @@ def campaign_state(label, folder, *, max_bytes=8 * 1024**2, max_jobs=20_000, max
             )
             confirmed = utc_text(receipt[2] / 1e9) if receipt else None
         else:
-            attempt = _open_attempt(jobs_folder, job_id)
+            attempt = _open_attempt(jobs_folder, job_id, jobs)
             if attempt is not None:
                 state = "attempt"
                 open_attempts.append((job_id, attempt))
