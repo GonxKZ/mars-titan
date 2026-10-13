@@ -24,7 +24,7 @@ import pyarrow.parquet as pq
 from mars_titan.data.cohort_files import read_manifest
 from mars_titan.data.storage import sha256
 
-from . import long_short
+from . import liquidity_strata, long_short
 from . import walk_forward_comparison as walk
 from .forecast_panel import DAY_MICROSECONDS, SessionSeries
 from .forecast_scores import INTERVAL_SCORE, SIGN_BINS, expected_calibration_error
@@ -270,6 +270,7 @@ def load_sources(path, views, config, scope):
                 report["metrics"]["market_weighting"] == weighting,
                 f"{item['path']} pondera los mercados de otra forma",
             )
+    quadratic = quadratic_context(views, published)
     portfolios = [
         item["report"]["declaration"] for item in published if item["kind"] == PORTFOLIO_SOURCE
     ]
@@ -289,7 +290,43 @@ def load_sources(path, views, config, scope):
         windows=reference["windows"],
         reports=reports,
         hours=hours,
+        quadratic=quadratic,
     )
+
+
+def quadratic_context(views, published):
+    """Exigir los estratos de liquidez a los informes de los que se contrasta una métrica
+    cuadrática.
+
+    El MSE queda decidido por unas pocas filas ilíquidas, así que solo se informa junto a
+    su versión por estratos y al peso de las filas extremas. Devuelve las métricas y las
+    huellas de los informes que las acompañan, o None si ninguna vista las declara.
+    """
+    metrics = sorted(
+        {
+            metric
+            for view in views.values()
+            if isinstance(view, dict) and view.get("source") == WALK_SOURCE
+            for metric in view.get("metrics") or ()
+            if metric in liquidity_strata.QUADRATIC
+        }
+    )
+    if not metrics:
+        return None
+    reports = []
+    for item in published:
+        if item["kind"] != WALK_SOURCE:
+            continue
+        section = item["report"].get(walk.LIQUIDITY_FIELD)
+        _require(
+            isinstance(section, dict)
+            and section.get("status") == "computed"
+            and set(metrics) <= set(section["declaration"]["metrics"]),
+            f"{item['path']} no publica los estratos de liquidez que acompañan a "
+            f"{', '.join(metrics)}",
+        )
+        reports.append(item["sha256"])
+    return dict(metrics=metrics, section=walk.LIQUIDITY_FIELD, reports=reports)
 
 
 # Series por sesión
