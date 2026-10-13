@@ -1,8 +1,9 @@
 """Trazas FP32 del núcleo para comprobar que PT1 desactivada no cambia ningún bit.
 
 Las mismas funciones se ejecutaron sobre el código anterior a PT1 para capturar las huellas
-fijadas en las pruebas y en la comprobación CUDA. Solo calculan salidas y gradientes, sin
-optimizador ni datos del corpus.
+fijadas en las pruebas y en la comprobación CUDA. Las huellas en CPU se capturaron con dos
+hilos de PyTorch, y `memory_trace` y `financial_trace` los fijan (#572). Solo calculan salidas
+y gradientes, sin optimizador ni datos del corpus.
 """
 
 import hashlib
@@ -10,6 +11,8 @@ import importlib
 
 import numpy as np
 import torch
+
+from tests.suite_support import cpu_threads
 
 RECIPE_GATE_BIAS = dict(alpha_half_life=256.0, eta=0.5, theta=0.05)
 
@@ -54,6 +57,7 @@ def memory_run(device="cpu", gate_bias=RECIPE_GATE_BIAS, **options):
     )
 
 
+@cpu_threads()
 def memory_trace(device="cpu", **options):
     """Huellas SHA-256 de la salida, el estado y los gradientes de `memory_run`."""
     run = memory_run(device, **options)
@@ -124,6 +128,7 @@ def financial_run(device="cpu", gate_bias=RECIPE_GATE_BIAS, **options):
     )
 
 
+@cpu_threads()
 def financial_trace(device="cpu", **options):
     """Huellas SHA-256 de los cuantiles, el estado y los gradientes de `financial_run`."""
     run = financial_run(device, **options)
