@@ -93,6 +93,8 @@ class SessionContext(nn.Module):
             nn.init.kaiming_uniform_(self.query, a=5**0.5, generator=generator)
         # La lectura entra en el token con una ganancia que empieza en cero.
         self.output = nn.Parameter(torch.zeros(hidden_size, hidden_size))
+        # La identidad no cambia después de construir y se valida en cada bloque.
+        self._fingerprint = hashlib.sha256(canonical(self.identity()).encode()).hexdigest()
 
     def identity(self):
         result = dict(kind=self.kind, read="previous_sessions_only", output_initial="zero")
@@ -111,7 +113,7 @@ class SessionContext(nn.Module):
         return result
 
     def fingerprint(self):
-        return hashlib.sha256(canonical(self.identity()).encode()).hexdigest()
+        return self._fingerprint
 
     def initial_state(self, parameter_id, *, differentiable=False):
         reference = self.output

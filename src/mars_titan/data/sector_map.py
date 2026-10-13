@@ -51,6 +51,24 @@ class SectorMap:
         ):
             raise ValueError("El reparto sectorial no es coherente")
         object.__setattr__(self, "_table", dict(self.assignments))
+        # La identidad entra en la del predictor, que se calcula en cada decisión. Con miles
+        # de activos serializar el reparto cada vez dominaba el coste del control sectorial.
+        text = json.dumps(
+            [self.groups, self.assignments], ensure_ascii=False, separators=(",", ":")
+        )
+        object.__setattr__(
+            self,
+            "_identity",
+            dict(
+                schema_version=1,
+                source="finmultitime_current_descriptions_v1",
+                sources_sha256=dict(self.sources_sha256),
+                groups=len(self.groups),
+                assigned_flows=len(self.assignments),
+                assignment_sha256=hashlib.sha256(text.encode()).hexdigest(),
+                point_in_time=False,
+            ),
+        )
 
     @classmethod
     def from_finmultitime(cls, root):
@@ -94,16 +112,6 @@ class SectorMap:
         return self.groups.index(f"{market}/{UNKNOWN}")
 
     def identity(self):
-        text = json.dumps(
-            [self.groups, self.assignments], ensure_ascii=False, separators=(",", ":")
-        )
-        digest = hashlib.sha256(text.encode()).hexdigest()
-        return dict(
-            schema_version=1,
-            source="finmultitime_current_descriptions_v1",
-            sources_sha256=dict(self.sources_sha256),
-            groups=len(self.groups),
-            assigned_flows=len(self.assignments),
-            assignment_sha256=digest,
-            point_in_time=False,
-        )
+        identity = dict(self._identity)
+        identity["sources_sha256"] = dict(identity["sources_sha256"])
+        return identity
