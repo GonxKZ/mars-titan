@@ -92,7 +92,6 @@ addopts = "-ra"
 markers = [
     "native_binding: necesita el enlace nativo. Con MARS_TITAN_REQUIRE_NATIVE=1, omitirla falla",
     "external_reference: compara con el grupo reference. Con MARS_TITAN_REQUIRE_REFERENCE=1, omitirla falla",
-    "lowers_learning_hold: rebaja la protección de aprendizaje. Se omite mientras bloquee, con su motivo en tests/learning_hold_lowering.py",
 ]
 
 [tool.ruff]
