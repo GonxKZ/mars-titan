@@ -8,7 +8,8 @@ v2, declarada antes de cualquier resultado, recorre cada ventana de campaña en 
    por etapas, los adaptadores y las políticas reciben un informe de disjunción calculado
    justo antes, y las políticas leen la cadena de la salida de los adaptadores.
 3. `aggregates`: agregados por sesión de la comparación de cada ámbito de la ventana
-   (`evaluation.window_aggregates`), con sus fuentes limitadas a esa ventana.
+   (`evaluation.window_aggregates`), con sus fuentes limitadas a esa ventana, y el efecto
+   de elegir entre los casos de búsqueda (`evaluation.selection_effect`).
 4. `release`: cada tabla por fila de la base y de la ablación que ya no lee ninguna fase
    posterior se regenera por inferencia desde el estado elegido y, solo si sale idéntica
    bit a bit, se libera conservando sus huellas. Si no sale idéntica, se compacta sin
@@ -34,8 +35,8 @@ from pathlib import Path
 from mars_titan.data import prediction_files
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.storage import atomic_json, sha256
+from mars_titan.evaluation import selection_effect, window_aggregates
 from mars_titan.evaluation import walk_forward_comparison as comparison
-from mars_titan.evaluation import window_aggregates
 
 from . import prediction_regeneration as regeneration
 from .campaign_plan import ONLINE, PLATEAU
@@ -44,7 +45,7 @@ DECLARATION_KIND = "historical_masked_prediction_retention"
 LEDGER_KIND = "historical_masked_retention_ledger"
 PHASES = ("base", "adapters", "ablation", "rl", "aggregates", "release")
 STAGE_PHASES = ("base", "adapters", "ablation", "rl")
-AGGREGATES = ("walk_forward", "long_short")
+AGGREGATES = ("walk_forward", "long_short", "selection_effect")
 _FIELDS = {
     "schema_version",
     "kind",
@@ -90,7 +91,8 @@ def load_retention(path):
     )
     _require(
         tuple(document["aggregates"]) == AGGREGATES,
-        "La retención solo libera filas con agregados de la comparación y de la cartera",
+        "La retención solo libera filas con agregados de la comparación, de la cartera y del "
+        "efecto de la selección",
     )
     release = document["release"]
     _require(
@@ -471,6 +473,14 @@ class Rolling:
                 records["long_short"] = window_aggregates.write_long_short(
                     folder, restricted, sources, window, self.edition
                 )
+            # Medir la elección entre búsquedas exige la evaluación de todos los casos, también
+            # la de los no elegidos, y la liberación la borra después.
+            _, searches = engine.search_records(
+                self.campaign_path, self.views, self.output, scope, window=window
+            )
+            records["selection_effect"] = selection_effect.write_window(
+                folder, config, scope, window, searches.get(window, {})
+            )
             written[scope] = {
                 name: dict(
                     path=str(Path(record["path"]).relative_to(self.folder)),
