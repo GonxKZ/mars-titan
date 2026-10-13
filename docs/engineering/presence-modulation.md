@@ -52,7 +52,15 @@ La [declaración](../../configs/evaluation/presence-modulation-comparison.json) 
 
 ## Coste medido sin entrenar
 
-COSTE_PT6
+[`cost.json`](../../reports/engineering/presence-modulation-20261010/cost.json) mide en CPU, en FP32 y con dos hilos, los tres modelos de la declaración sobre entradas reales de la vista de la campaña sin objetivos: 128 flujos de EE. UU. y 8 instantes, 1.024 filas de las que 950 tienen alguna modalidad ausente (928 sin noticias y 600 sin fundamentales). Cada repetición recorre los 8 instantes con grafo, calcula una pinball frente a ceros y ejecuta el backward, sin optimizador, y después repite el recorrido sin grafo. Las 15 repeticiones se alternan entre modelos con orden rotatorio.
+
+| Modelo | Parámetros añadidos | Forward con grafo | Backward | Inferencia |
+| --- | ---: | ---: | ---: | ---: |
+| Control | 0 | 0,246 s | 0,111 s | 0,214 s |
+| FiLM | 3.200 | 0,227 s (0,92) | 0,113 s (1,02) | 0,238 s (1,11) |
+| Rama ancha | 3.112 | 0,250 s (1,01) | 0,120 s (1,08) | 0,232 s (1,08) |
+
+Son medianas, con el cociente frente al control entre paréntesis. La máquina tenía otras cargas (carga media entre 10 y 15) y los intervalos entre mínimo y máximo de los tres modelos se solapan, así que a esta escala PT6 no tiene un coste distinguible del control. Ninguna de las dos opciones cambia el estado por flujo (65.552 bytes). No se ha medido en `cuda:0`.
 
 ## Desviaciones y límites
 
