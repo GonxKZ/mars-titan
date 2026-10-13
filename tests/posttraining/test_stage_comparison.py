@@ -320,6 +320,9 @@ def test_repository_declaration_derives_every_parent_from_the_stage_plan():
             *group["adapted"],
         }
         assert all(arm["seeds"] == [42, 43, 44] for arm in config["arms"].values())
+        # La retención se declara en la comparación principal y no pasa a la etapa.
+        assert "retention_interference" in inherited
+        assert "retention_interference" not in config
         families = config["resolved_families"]
         assert set(families["versus_frozen_parent"]) == {
             f"{arm}-{frozen}" for arm in [*group["adapted"], group["full_continuation"]]
