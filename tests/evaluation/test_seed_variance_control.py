@@ -372,6 +372,36 @@ def test_the_rule_interval_is_the_relative_interval_of_compare_series(declaratio
     )
 
 
+def test_the_band_is_the_declared_quantile_of_the_widest_pair_in_each_replicate(declaration):
+    # Con ruido por sesión la banda varía entre réplicas: es el cuantil declarado del
+    # máximo por réplica, recalculado aquí con las mismas réplicas.
+    rng = np.random.default_rng(13)
+    base = base_values()
+    noisy = {s: session_mae(base * (1 + rng.normal(0, 0.03, SESSIONS))) for s in (42, 43, 44)}
+    series = {CONTROL: noisy, PT1_MODEL: {42: session_mae(base)}}
+    report = svc.evaluate_rule(declaration, "pt1", series, models())
+    metric = declaration["metric"]
+    named = {f"c{seed}": value for seed, value in noisy.items()}
+    pairs = {"a": delta("c42", "c43"), "b": delta("c42", "c44"), "c": delta("c43", "c44")}
+    _, draws = relative_difference_draws(
+        {"variant": series[PT1_MODEL][42], "base": noisy[42], **named},
+        {"proposal": delta("base", "variant"), **pairs},
+        block_length=metric["block_length"],
+        replicates=metric["replicates"],
+        seed=metric["bootstrap_seed"],
+    )
+    ratio = 1 + draws[:, 1:]
+    widest = (np.maximum(ratio, 1 / ratio) - 1).max(axis=1)
+    assert np.ptp(widest) > 0
+    expected = np.quantile(widest, declaration["band"]["quantile"], method="linear")
+    assert report["minimum_interpretable_difference"] == pytest.approx(expected, rel=1e-12)
+    lower = copy.deepcopy(declaration)
+    lower["band"]["quantile"] = 0.5
+    median = svc.evaluate_rule(lower, "pt1", series, models())["minimum_interpretable_difference"]
+    assert median == pytest.approx(np.quantile(widest, 0.5, method="linear"), rel=1e-12)
+    assert median < report["minimum_interpretable_difference"]
+
+
 def test_missing_seeds_a_variant_used_as_base_or_another_metric_are_rejected(declaration):
     series = {CONTROL: scaled({42: 1.0, 43: 1.001}), PT1_MODEL: scaled({42: 1.0})}
     with pytest.raises(ValueError, match="Faltan semillas de titans_mac_online"):
