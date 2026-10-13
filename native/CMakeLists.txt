@@ -124,6 +124,25 @@ if(MARS_TITAN_BUILD_SIMULATION)
         mars_titan_sanitizer_test_environment(simulation concurrency c_abi)
     endif()
 
+    # Proyección del codec episódico, sin LibTorch, para el enlace de Python y sus pruebas.
+    add_library(mars_titan_episodic_projection STATIC src/episodic_projection.cpp)
+    target_include_directories(mars_titan_episodic_projection PUBLIC
+        "${CMAKE_CURRENT_SOURCE_DIR}/include")
+    set_target_properties(mars_titan_episodic_projection PROPERTIES POSITION_INDEPENDENT_CODE ON)
+    mars_titan_configure_target(mars_titan_episodic_projection)
+    list(APPEND mars_analysis_sources "${CMAKE_CURRENT_SOURCE_DIR}/src/episodic_projection.cpp")
+    add_executable(mars-titan-projection-benchmark benchmarks/episodic_projection.cpp)
+    target_link_libraries(mars-titan-projection-benchmark PRIVATE mars_titan_episodic_projection)
+    mars_titan_configure_target(mars-titan-projection-benchmark)
+    if(BUILD_TESTING)
+        add_executable(episodic_projection_tests tests/episodic_projection_tests.cpp)
+        target_link_libraries(episodic_projection_tests PRIVATE mars_titan_episodic_projection)
+        mars_titan_configure_target(episodic_projection_tests)
+        add_test(NAME episodic_projection COMMAND episodic_projection_tests)
+        set_tests_properties(episodic_projection PROPERTIES TIMEOUT 120 LABELS "unit;memory")
+        mars_titan_sanitizer_test_environment(episodic_projection)
+    endif()
+
     if(MARS_TITAN_BUILD_FINANCIAL)
         find_package(Threads REQUIRED)
         add_library(mars_titan_financial STATIC src/financial_session.cpp src/financial_batch.cpp
@@ -386,6 +405,7 @@ if(MARS_TITAN_BUILD_SIMULATION)
     if(MARS_TITAN_BUILD_FINANCIAL)
         set(identity_files ${mars_analysis_sources}
             "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/simulation.h"
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/episodic_projection.hpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/financial_session.hpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/financial_batch.hpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/markov_filter.hpp"
