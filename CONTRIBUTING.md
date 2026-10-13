@@ -4,7 +4,7 @@ MARS-TITAN es un proyecto individual de investigación de un trabajo de máster.
 
 ## Preparar un clon limpio
 
-Requisitos: Linux, Git, [uv](https://docs.astral.sh/uv/), GNU Make y ripgrep. uv instala Python 3.12 y las dependencias de `uv.lock`, incluido PyTorch con su índice CUDA. La compilación nativa necesita además CMake 3.24 o posterior, Ninja y Clang. `make docs` necesita Node.js y una distribución LaTeX con `latexmk`.
+Requisitos: Linux x86-64, Git, [uv](https://docs.astral.sh/uv/), GNU Make y ripgrep. uv instala Python 3.12 y las dependencias de `uv.lock`, incluido PyTorch con su índice CUDA 13.0. La compilación nativa necesita además CMake 3.24 o posterior, Ninja y Clang. `make docs` necesita Node.js y una distribución LaTeX con `latexmk`.
 
 ```bash
 git clone https://github.com/GonxKZ/mars-titan.git
@@ -29,7 +29,7 @@ El [Makefile](Makefile) es el punto de entrada. `make` sin objetivo lista los di
 | `make check` | `lint` y `test-fast`. Es la comprobación mínima antes de abrir una PR | El entorno |
 | `make test` | Suite CPU completa por carpetas, con los binarios nativos si están compilados | Unas horas y hasta 6 GiB de memoria en `tests/training` |
 | `make native-build` | Compila `native-release`, `native-ppo-release` y `native-candidate-cuda` en `build/native/` | CMake, Ninja, Clang y el PyTorch del entorno |
-| `make test-native` | Pruebas `native` en CPU y CTest de los tres presets, sin las que aplican pasos de optimizador | `make native-build` |
+| `make test-native` | Pruebas `native` en CPU y CTest de los tres presets, sin las etiquetas `optimizer-steps` ni `cuda` | `make native-build` |
 | `make test-cuda` | Pruebas `cuda` en `cuda:0` con `MARS_TITAN_REQUIRE_CUDA=1` | Una GPU NVIDIA libre para esta única carga |
 | `make docs` | Enlaces y órdenes documentadas, pruebas de la web del observatorio y PDF de la memoria en `build/docs/` | Node.js y LaTeX |
 

@@ -15,6 +15,7 @@ Una variable vacía equivale a no declararla. Una ruta declarada que no existe n
 | `MARS_TITAN_GROUP_CACHE_MIB` | `training/input_pipeline.py` | Límite en MiB de la caché de grupos decodificados, hasta 8192 | 4096 |
 | `MARS_TITAN_DIGEST_CACHE` | `training/corpus_inputs.py` | Ruta absoluta de un archivo de huellas compartido entre procesos de una campaña | Cada proceso calcula sus huellas |
 | `MARS_TITAN_NVTX` | `nvtx_ranges.py` | `1` abre rangos NVTX por fase para Nsight Systems. No cambia las salidas | `0`, sin rangos |
+| `MARS_TITAN_HARDWARE_PROFILE` | `hardware/hardware_profiles.py` | Perfil de [configs/hardware](../../configs/hardware) que nombra la máquina, como `rtx4070-laptop`. Lo lee `declared_profile()` | `declared_profile()` se detiene y pide declararlo |
 | `MARS_TITAN_SLOT_VRAM_MIB` | `training/campaign_slots.py` la escribe para cada proceso hijo | VRAM en MiB asignada a la plaza de la campaña | No se lee fuera de la campaña |
 
 ## Binarios nativos
