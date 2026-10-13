@@ -26,6 +26,7 @@ from mars_titan.training import modality_ablation_stage as ablation
 from mars_titan.training import rolling_retention as rolling
 from mars_titan.training import rolling_storage
 from mars_titan.training.learning_hold import HOLD_ENV
+from tests.learning_hold_lowering import lowers_learning_hold
 from tests.posttraining.campaign_fixture import CpuLease
 from tests.simulation import rl_stage_fixture
 from tests.simulation.unadjusted_edition_fixture import Asset
@@ -210,6 +211,10 @@ def test_the_final_comparison_from_aggregates_equals_the_one_that_read_the_rows(
         assert record["passed"] and record["identity"]["ablation"]
 
 
+@lowers_learning_hold(
+    "tests/training/test_rolling_retention.py::"
+    "test_the_campaign_publication_reads_the_aggregates_with_portfolio_and_ablation"
+)
 def test_the_campaign_publication_reads_the_aggregates_with_portfolio_and_ablation(
     walked, edition, tmp_path
 ):
