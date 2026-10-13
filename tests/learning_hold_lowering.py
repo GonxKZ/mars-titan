@@ -33,6 +33,12 @@ INVENTORY = {
         "campaign_run ejecuta con la protección rebajada de permitted. carry_correction no ajusta, "
         "pero comprueba la protección porque predice ventanas de la campaña"
     ),
+    "tests/training/test_modality_ablation_stage.py::"
+    "test_masked_sources_keep_the_platform_of_the_base_they_compare_with": (
+        "publica las fuentes de la ablación desde la salida que el fixture staged ejecuta con la "
+        "protección rebajada y ejecutores que no ajustan, para comprobar la plataforma que "
+        "guarda cada recibo y su coincidencia con la base (#543)"
+    ),
     "tests/test_suite_support.py::test_unguarded_fits_run_when_the_hold_allows_learning": (
         "la sesión de pytest hija lee una protección temporal que permite aprender para "
         "comprobar que la marca unguarded_fit deja de omitir, aunque la prueba sondeada no ajusta"
