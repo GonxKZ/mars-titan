@@ -1,0 +1,524 @@
+{
+ "schema_version": 1,
+ "kind": "targeted_mutation_receipt",
+ "issue": 537,
+ "executed_on": "2026-10-13T09:28:14+00:00",
+ "base_commit": "9f3fba74e0d18d3c07073a4d9c9e1ed1d4c1ce25",
+ "sources_sha256": "3857e98c9739ac1e99abe32191f2580a498ecef2e20703cfc50556d2ba6ca9de",
+ "method": "Copia aislada de src, tests y configs. Cada mutante sustituye un único fragmento, ejecuta las pruebas del catálogo, de los subconjuntos, de la liquidez, de las vistas con subconjunto y de las vistas por ventana con -x y restaura el archivo. PYTHONPATH apunta a la copia",
+ "tests": [
+  "tests/training/test_edition_catalog.py",
+  "tests/training/test_edition_subsets.py",
+  "tests/training/test_edition_subset_liquidity.py",
+  "tests/training/test_edition_subset_views.py",
+  "tests/training/test_walk_forward_v2_views.py"
+ ],
+ "environment": "CPU con CUDA_VISIBLE_DEVICES=-1 y OMP_NUM_THREADS=2, dentro de memslot",
+ "baseline": {
+  "returncode": 0,
+  "seconds": 38.0,
+  "tail": [
+   "SKIPPED [1] tests/conftest.py:110: Bloqueo de aprendizaje vigente: la búsqueda temporal de referencias no se ejecuta mientras /home/gonzalo/.local/state/mars-titan/training-hold-2000.json no declare training_allowed verdadero",
+   "79 passed, 1 skipped in 35.86s"
+  ]
+ },
+ "killed": 38,
+ "survived": 0,
+ "not_applied": 0,
+ "mutants": [
+  {
+   "name": "cut_next_year",
+   "file": "src/mars_titan/training/edition_subsets.py",
+   "original": "f\"{year:04d}-01-01\"",
+   "replacement": "f\"{year + 1:04d}-01-01\"",
+   "status": "killed",
+   "returncode": 1,
+   "seconds": 17.8,
+   "tail": [
+    "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
+    "1 failed, 37 passed in 15.82s"
+   ]
+  },
+  {
+   "name": "cut_previous_year",
+   "file": "src/mars_titan/training/edition_subsets.py",
+   "original": "f\"{year:04d}-01-01\"",
+   "replacement": "f\"{year - 1:04d}-01-01\"",
+   "status": "killed",
+   "returncode": 1,
+   "seconds": 16.4,
+   "tail": [
+    "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
+    "1 failed, 37 passed in 14.48s"
+   ]
+  },
+  {
+   "name": "keep_inverted",
+   "file": "src/mars_titan/training/edition_subsets.py",
+   "original": "kept = np.isin(codes,",
+   "replacement": "kept = ~np.isin(codes,",
+   "status": "killed",
+   "returncode": 1,
+   "seconds": 21.1,
+   "tail": [
+    "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
+    "1 failed, 37 passed in 19.20s"
+   ]
+  },
+  {
+   "name": "universe_ignored",
+   "file": "src/mars_titan/training/edition_subsets.py",
+   "original": "        keep = keep[kept]\n",
+   "replacement": "        keep = keep\n",
+   "status": "killed",
+   "returncode": 1,
+   "seconds": 17.4,
+   "tail": [
+    "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
+    "1 failed, 37 passed in 15.35s"
+   ]
+  },
+  {
+   "name": "maximum_before_universe",
+   "file": "src/mars_titan/training/edition_subsets.py",
+   "original": "keep = keep[_first_by_group(rows[\"asset\"][keep], order[keep], lambda _size: limit)]",
+   "replacement": "keep = _first_by_group(rows[\"asset\"], order, lambda _size: limit)",
+   "status": "killed",
+   "returncode": 1,
+   "seconds": 20.6,
+   "tail": [
+    "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
+    "1 failed, 41 passed in 18.59s"
+   ]
+  },
+  {
+   "name": "universe_counts_by_row",
+   "file": "src/mars_titan/training/edition_subsets.py",
+   "original": "        counts[ls.NAMES[code]] += 1\n",
+   "replacement": "        counts[ls.NAMES[code]] += 2\n",
+   "status": "killed",
+   "returncode": 1,
+   "seconds": 20.7,
+   "tail": [
+    "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
+    "1 failed, 37 passed in 18.19s"
+   ]
+  },
+  {
+   "name": "edition_identity_unchecked",
+   "file": "src/mars_titan/training/edition_subsets.py",
+   "original": "assigner.manifest[\"edition_id\"] == section[\"edition_id\"],",
+   "replacement": "True,",
+   "status": "killed",
+   "returncode": 1,
+   "seconds": 24.1,
+   "tail": [
+    "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
+    "1 failed, 42 passed in 21.76s"
+   ]
+  },
+  {
+   "name": "assigner_section_unchecked",
+   "file": "src/mars_titan/training/edition_subsets.py",
+   "original": "and liquidity.section == definition[\"liquidity\"],",
+   "replacement": "and True,",
+   "status": "killed",
+   "returncode": 1,
+   "seconds": 21.5,
+   "tail": [
+    "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
+    "1 failed, 42 passed in 19.49s"
+   ]
+  },
+  {
+   "name": "published_universe_unchecked",
+   "file": "src/mars_titan/training/edition_subsets.py",
+   "original": "assigner is None or universe == document[\"liquidity\"][\"universe\"],",
+   "replacement": "True,",
+   "status": "killed",
+   "returncode": 1,
+   "seconds": 20.7,
+   "tail": [
+    "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
+    "1 failed, 43 passed in 18.20s"
+   ]
+  },
+  {
+   "name": "keep_order_unchecked",
+   "file": "src/mars_titan/training/edition_subsets.py",
+   "original": "and keep == [name for name in ls.NAMES if name in keep]",
+   "replacement": "and True",
+   "status": "killed",
+   "returncode": 1,
+   "seconds": 22.0,
+   "tail": [
+    "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
+    "1 failed, 44 passed in 19.35s"
+   ]
+  },
+  {
+   "name": "seed_ignored",
+   "file": "src/mars_titan/training/edition_subsets.py",
+   "original": "prediction.astype(np.int64, copy=False).view(np.uint64) ^ seeded",
+   "replacement": "prediction.astype(np.int64, copy=False).view(np.uint64)",
+   "status": "killed",
+   "returncode": 1,
+   "seconds": 14.2,
+   "tail": [
+    "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
+    "1 failed, 16 passed in 11.89s"
+   ]
+  },
+  {
+   "name": "asset_ignored",
+   "file": "src/mars_titan/training/edition_subsets.py",
+   "original": "    moments ^= assets\n",
+   "replacement": "",
+   "status": "killed",
+   "returncode": 1,
+   "seconds": 18.2,
+   "tail": [
+    "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
+    "1 failed, 18 passed in 15.65s"
+   ]
+  },
+  {
+   "name": "rank_inclusive",
+   "file": "src/mars_titan/training/edition_subsets.py",
+   "original": "chosen[ranked[rank < limits]] = True",
+   "replacement": "chosen[ranked[rank <= limits]] = True",
+   "status": "killed",
+   "returncode": 1,
+   "seconds": 15.3,
+   "tail": [
+    "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
+    "1 failed, 15 passed in 12.75s"
+   ]
+  },
+  {
+   "name": "groups_narrowed",
+   "file": "src/mars_titan/training/edition_subsets.py",
+   "original": "np.min_scalar_type(int(groups.max()))",
+   "replacement": "np.uint8",
+   "status": "killed",
+   "returncode": 1,
+   "seconds": 18.6,
+   "tail": [
+    "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
+    "1 failed, 20 passed in 15.82s"
+   ]
+  },
+  {
+   "name": "strata_radix_dropped",
+   "file": "src/mars_titan/training/edition_subsets.py",
+   "original": "        stratum *= radix\n",
+   "replacement": "",
+   "status": "killed",
+   "returncode": 1,
+   "seconds": 15.8,
+   "tail": [
+    "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
+    "1 failed, 16 passed in 13.17s"
+   ]
+  },
+  {
+   "name": "universe_pairs_by_year",
+   "file": "src/mars_titan/training/edition_subsets.py",
+   "original": "for code in (pairs // span).tolist()]",
+   "replacement": "for code in (pairs % span).tolist()]",
+   "status": "killed",
+   "returncode": 1,
+   "seconds": 22.4,
+   "tail": [
+    "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
+    "1 failed, 37 passed in 19.91s"
+   ]
+  },
+  {
+   "name": "present_positions_shifted",
+   "file": "src/mars_titan/training/edition_subsets.py",
+   "original": "position = np.cumsum(present, dtype=np.int64) - 1",
+   "replacement": "position = np.cumsum(present, dtype=np.int64) % size",
+   "status": "killed",
+   "returncode": 1,
+   "seconds": 17.9,
+   "tail": [
+    "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
+    "1 failed, 22 passed in 15.50s"
+   ]
+  },
+  {
+   "name": "rounding_down",
+   "file": "src/mars_titan/training/edition_subsets.py",
+   "original": "math.floor(fraction * n + 0.5)",
+   "replacement": "math.floor(fraction * n)",
+   "status": "killed",
+   "returncode": 1,
+   "seconds": 15.1,
+   "tail": [
+    "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
+    "1 failed, 16 passed in 12.74s"
+   ]
+  },
+  {
+   "name": "annual_labels_dropped",
+   "file": "src/mars_titan/training/edition_subsets.py",
+   "original": "pc.equal(table[\"label_reason\"], \"accepted\"), table[\"annual_boundary_label\"]",
+   "replacement": "pc.equal(table[\"label_reason\"], \"accepted\"), pc.equal(table[\"label_reason\"], \"x\")",
+   "status": "killed",
+   "returncode": 1,
+   "seconds": 74.4,
+   "tail": [
+    "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
+    "1 failed, 14 passed in 72.07s (0:01:12)"
+   ]
+  },
+  {
+   "name": "last_year_excluded",
+   "file": "src/mars_titan/training/edition_subsets.py",
+   "original": "pc.less_equal(year, years[\"last\"])",
+   "replacement": "pc.less(year, years[\"last\"])",
+   "status": "killed",
+   "returncode": 1,
+   "seconds": 12.7,
+   "tail": [
+    "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
+    "1 failed, 14 passed in 10.64s"
+   ]
+  },
+  {
+   "name": "modalities_any",
+   "file": "src/mars_titan/training/edition_subsets.py",
+   "original": "keep = pc.and_(keep, table[f\"has_{name}\"])",
+   "replacement": "keep = pc.or_(keep, table[f\"has_{name}\"])",
+   "status": "killed",
+   "returncode": 1,
+   "seconds": 12.6,
+   "tail": [
+    "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
+    "1 failed, 14 passed in 10.53s"
+   ]
+  },
+  {
+   "name": "markets_ignored",
+   "file": "src/mars_titan/training/edition_subsets.py",
+   "original": "pc.is_in(table[\"market\"], pa.array(definition[\"markets\"]))",
+   "replacement": "pc.is_valid(table[\"market\"])",
+   "status": "killed",
+   "returncode": 1,
+   "seconds": 14.2,
+   "tail": [
+    "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
+    "1 failed, 14 passed in 11.99s"
+   ]
+  },
+  {
+   "name": "member_inverted",
+   "file": "src/mars_titan/training/edition_subsets.py",
+   "original": "return np.isin(prediction, selected, assume_unique=False)",
+   "replacement": "return ~np.isin(prediction, selected, assume_unique=False)",
+   "status": "killed",
+   "returncode": 1,
+   "seconds": 15.6,
+   "tail": [
+    "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
+    "1 failed, 23 passed in 13.30s"
+   ]
+  },
+  {
+   "name": "test_limit_moved",
+   "file": "src/mars_titan/training/edition_catalog.py",
+   "original": "limit = _micros(FINAL_TEST_START)\n    for group",
+   "replacement": "limit = _micros(\"2025-01-01\")\n    for group",
+   "status": "killed",
+   "returncode": 1,
+   "seconds": 239.5,
+   "tail": [
+    "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
+    "1 failed, 9 passed in 237.21s (0:03:57)"
+   ]
+  },
+  {
+   "name": "window_prices_ignored",
+   "file": "src/mars_titan/training/edition_catalog.py",
+   "original": "available = np.maximum(available, price_available[ends])",
+   "replacement": "available = available",
+   "status": "killed",
+   "returncode": 1,
+   "seconds": 10.0,
+   "tail": [
+    "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
+    "1 failed, 10 passed in 7.59s"
+   ]
+  },
+  {
+   "name": "label_positions_shifted",
+   "file": "src/mars_titan/training/edition_catalog.py",
+   "original": "index[rows] = np.arange(len(rows))",
+   "replacement": "index[rows] = (np.arange(len(rows)) + 1) % len(rows)",
+   "status": "killed",
+   "returncode": 1,
+   "seconds": 5.7,
+   "tail": [
+    "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
+    "1 failed in 3.49s"
+   ]
+  },
+  {
+   "name": "annual_flag_inverted",
+   "file": "src/mars_titan/training/edition_catalog.py",
+   "original": "annual_boundary_label=pa.array(recovered).take(take)",
+   "replacement": "annual_boundary_label=pa.array(~recovered).take(take)",
+   "status": "killed",
+   "returncode": 1,
+   "seconds": 307.6,
+   "tail": [
+    "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
+    "1 failed in 304.47s (0:05:04)"
+   ]
+  },
+  {
+   "name": "session_shifted",
+   "file": "src/mars_titan/training/edition_catalog.py",
+   "original": "    return days[positions]\n",
+   "replacement": "    return days[positions] + 1\n",
+   "status": "killed",
+   "returncode": 1,
+   "seconds": 7.1,
+   "tail": [
+    "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
+    "1 failed in 4.11s"
+   ]
+  },
+  {
+   "name": "verify_presence_skipped",
+   "file": "src/mars_titan/training/edition_catalog.py",
+   "original": "table[f\"has_{modality}\"].to_numpy(zero_copy_only=False), presence[:, index]",
+   "replacement": "presence[:, index], presence[:, index]",
+   "status": "killed",
+   "returncode": 1,
+   "seconds": 8.9,
+   "tail": [
+    "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
+    "1 failed, 4 passed in 6.39s"
+   ]
+  },
+  {
+   "name": "verify_links_skipped",
+   "file": "src/mars_titan/training/edition_catalog.py",
+   "original": "np.array_equal(np.flatnonzero(labelled), order[take])\n                and np.array_equal(table[\"label_row\"].drop_null().to_numpy(), take),",
+   "replacement": "True,",
+   "status": "killed",
+   "returncode": 1,
+   "seconds": 399.6,
+   "tail": [
+    "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
+    "1 failed, 7 passed in 397.14s (0:06:37)"
+   ]
+  },
+  {
+   "name": "views_keep_outside",
+   "file": "src/mars_titan/training/temporal_corpus.py",
+   "original": "                accepted &= ~outside\n",
+   "replacement": "                accepted &= True\n",
+   "status": "killed",
+   "returncode": 1,
+   "seconds": 36.5,
+   "tail": [
+    "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
+    "1 failed, 58 passed in 34.03s"
+   ]
+  },
+  {
+   "name": "views_cuts_of_first_window",
+   "file": "src/mars_titan/training/temporal_corpus.py",
+   "original": "partitioners[fold[\"id\"]],\n                    label_prediction",
+   "replacement": "partitioners[folds[0][\"id\"]],\n                    label_prediction",
+   "status": "killed",
+   "returncode": 1,
+   "seconds": 27.6,
+   "tail": [
+    "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
+    "57 passed, 1 error in 24.75s"
+   ]
+  },
+  {
+   "name": "budget_cuts_of_first_window",
+   "file": "src/mars_titan/training/campaign_budget.py",
+   "original": "partitioners[fold[\"id\"]],\n                    rows[\"prediction\"]",
+   "replacement": "partitioners[folds[0][\"id\"]],\n                    rows[\"prediction\"]",
+   "status": "killed",
+   "returncode": 1,
+   "seconds": 41.4,
+   "tail": [
+    "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
+    "1 failed, 57 passed in 38.35s"
+   ]
+  },
+  {
+   "name": "views_reason_lost",
+   "file": "src/mars_titan/training/temporal_corpus.py",
+   "original": "view_reasons[outside] = \"outside_subset\"",
+   "replacement": "view_reasons[outside] = \"outside_window\"",
+   "status": "killed",
+   "returncode": 1,
+   "seconds": 166.1,
+   "tail": [
+    "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
+    "1 failed, 58 passed in 162.87s (0:02:42)"
+   ]
+  },
+  {
+   "name": "observation_unrestricted",
+   "file": "src/mars_titan/training/corpus_inputs.py",
+   "original": "inside &= self.subset.member(asset[\"market\"], asset[\"symbol\"], moments)",
+   "replacement": "inside &= True",
+   "status": "killed",
+   "returncode": 1,
+   "seconds": 40.8,
+   "tail": [
+    "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
+    "1 failed, 59 passed in 37.72s"
+   ]
+  },
+  {
+   "name": "campaign_digest_unchecked",
+   "file": "src/mars_titan/training/campaign_plan.py",
+   "original": "_require(digest == declared[\"sha256\"], \"El subconjunto declarado cambió\")",
+   "replacement": "pass",
+   "status": "killed",
+   "returncode": 1,
+   "seconds": 130.0,
+   "tail": [
+    "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
+    "1 failed, 61 passed in 127.23s (0:02:07)"
+   ]
+  },
+  {
+   "name": "scope_subset_unchecked",
+   "file": "src/mars_titan/training/masked_campaign.py",
+   "original": "_subset_key(report.get(\"data_subset\")) == _subset_key(campaign.get(\"data_subset\")),",
+   "replacement": "True,",
+   "status": "killed",
+   "returncode": 1,
+   "seconds": 35.2,
+   "tail": [
+    "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
+    "1 failed, 60 passed in 32.55s"
+   ]
+  },
+  {
+   "name": "budget_subset_ignored",
+   "file": "src/mars_titan/training/campaign_budget.py",
+   "original": "accepted = accepted & inside",
+   "replacement": "accepted = accepted",
+   "status": "killed",
+   "returncode": 1,
+   "seconds": 245.2,
+   "tail": [
+    "!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!",
+    "1 failed, 58 passed in 240.00s (0:04:00)"
+   ]
+  }
+ ]
+}

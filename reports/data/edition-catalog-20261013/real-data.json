@@ -1,0 +1,1123 @@
+{
+ "schema_version": 1,
+ "kind": "edition_catalog_real_data_receipt",
+ "issue": 537,
+ "measured_on": "2026-10-13",
+ "commit": "9f3fba74e0d18d3c07073a4d9c9e1ed1d4c1ce25",
+ "code_sha256": {
+  "src/mars_titan/training/edition_catalog.py": "89e31584090ed49fa97d88265a908fd7ecc0e07fd1c6d08f8c8de90957673ed8",
+  "src/mars_titan/training/edition_subsets.py": "394781eff7283d6cd96f998cbaccfd834385fe99055acbd63c759d64c181ca95",
+  "src/mars_titan/training/campaign_budget.py": "7d2eb7d8783bace19fa5f104e85dd9d36f2033673221ee21e9c61e0854cea3d5",
+  "src/mars_titan/training/temporal_corpus.py": "16df02fc04606aae7ee837ec4ca8cb2b230c37bf8dece2f539a0dbe0fbe347fe",
+  "src/mars_titan/training/campaign_plan.py": "c875917676ec4aed5f1ca50e4fb173523de706f1a70fc8d87dcd51f41dde6a0f",
+  "configs/baselines/historical-masked-campaign-a-v2.json": "670f969629e3e2ba6ceb99bc994a850c03da0242a33dfb052490e3a3b1516ec4",
+  "src/mars_titan/evaluation/liquidity_strata.py": "0084c0b016f57a8e0059c79612619c95435effc2362987ad94de45978184af7e"
+ },
+ "machine": {
+  "cpu": "AMD Ryzen 9 8945HS",
+  "python": "3.12.14",
+  "numpy": "2.5.3",
+  "pyarrow": "25.0.1",
+  "threads": "OMP_NUM_THREADS=2, un solo proceso dentro de memslot",
+  "load_average_at_start_and_end": [
+   "25,74, 26,29, 22,25",
+   "18,77, 26,56, 29,30"
+  ],
+  "note": "Equipo compartido con otras sesiones. Los tiempos solo ordenan el coste. Los de first_version son de la primera versión del código sobre los mismos datos, con identificadores, universos y recuentos idénticos byte a byte a los actuales"
+ },
+ "sources": {
+  "edition": {
+   "path": "/home/gonzalo/.local/state/mars-titan/history-2000-20261007/materialization/encoded-history-v3.1/manifest.json",
+   "sha256": "a459dbb8a39b9308b4ab20ea5a1e58453455fa3d3db9e93984ca5a3c5ba0bc3d"
+  },
+  "targets": {
+   "path": "/home/gonzalo/.local/state/mars-titan/history-2000-20261007/materialization/targets-v3.1/manifest.json",
+   "sha256": "fe86a923dd49a24247a1925e195b0bfd07cacf02c7bd43f0bcde0d292251893a"
+  },
+  "representation_sha256": "e31e42b723124ae81801b1f26728e5a926301dce7a089b3f99af60ad6bece618",
+  "unadjusted_edition": "1ac3727836462ce31c39b5438918bd6f3e0d359690c7bc79bfa87cd808c8e68c"
+ },
+ "catalog": {
+  "manifest_sha256": "bcd5f0209be87434b29e8c3a3f438dc5680bd44bba6037d7bdcd02c5edb5ae2c",
+  "file": "catalog.parquet",
+  "sha256": "6edfddf9841c3754df0936dcda0765cc171f1c234232ab42ba1f44aa715be23b",
+  "bytes": 257158119,
+  "rows": 18698976,
+  "row_groups": 18,
+  "row_group_rows": 1048576,
+  "counts": {
+   "rows": 18698976,
+   "markets": {
+    "CN": 2824687,
+    "US": 15874289
+   },
+   "years": {
+    "CN": {
+     "2006": 79040,
+     "2007": 114816,
+     "2008": 125577,
+     "2009": 127270,
+     "2010": 134694,
+     "2011": 148030,
+     "2012": 155950,
+     "2013": 154940,
+     "2014": 160993,
+     "2015": 164117,
+     "2016": 168049,
+     "2017": 174286,
+     "2018": 178334,
+     "2019": 167640,
+     "2020": 186510,
+     "2021": 193180,
+     "2022": 195241,
+     "2023": 196020
+    },
+    "US": {
+     "2000": 246458,
+     "2001": 337670,
+     "2002": 357004,
+     "2003": 373672,
+     "2004": 398539,
+     "2005": 422218,
+     "2006": 446700,
+     "2007": 490214,
+     "2008": 534577,
+     "2009": 554175,
+     "2010": 580284,
+     "2011": 614751,
+     "2012": 640420,
+     "2013": 676998,
+     "2014": 721264,
+     "2015": 769651,
+     "2016": 812757,
+     "2017": 848225,
+     "2018": 904008,
+     "2019": 969439,
+     "2020": 1033648,
+     "2021": 1047303,
+     "2022": 1048779,
+     "2023": 1045535
+    }
+   },
+   "label_reasons": {
+    "accepted": 18377972,
+    "insufficient_history": 309838,
+    "missing_next_session": 1182,
+    "target_after_cutoff": 4995,
+    "target_crosses_partition_boundary": 4989
+   },
+   "target_partitions": {
+    "train": 17142187,
+    "validation": 1235785
+   },
+   "annual_boundary_labels": 4989,
+   "presence": {
+    "prices": 18698976,
+    "news": 3150978,
+    "charts": 18698976,
+    "fundamentals": 6068473,
+    "macro": 18698976
+   }
+  },
+  "final_test": {
+   "start": "2024-01-01",
+   "opened": false,
+   "rows": 0
+  },
+  "target_value_included": false,
+  "build": {
+   "elapsed_seconds": 198.03723822499887,
+   "peak_rss_mib": 1768.81640625,
+   "peak_buffer_bytes": 169746358,
+   "pyarrow": "25.0.1",
+   "numpy": "2.5.3",
+   "built_at": "2026-10-13T07:44:14+00:00",
+   "wall_clock": "3:18.62",
+   "max_rss_mib": 1768.8
+  }
+ },
+ "verification": {
+  "status": "verified",
+  "catalog_manifest_sha256": "bcd5f0209be87434b29e8c3a3f438dc5680bd44bba6037d7bdcd02c5edb5ae2c",
+  "catalog_sha256": "6edfddf9841c3754df0936dcda0765cc171f1c234232ab42ba1f44aa715be23b",
+  "rows": 18698976,
+  "assets": 5008,
+  "target_partitions": {
+   "train": 17142187,
+   "validation": 1235785
+  },
+  "elapsed_seconds": 2195.3230895319975,
+  "peak_rss_mib": 637.57421875,
+  "wall_clock": "36:36.59",
+  "max_rss_mib": 637.6
+ },
+ "subsets": {
+  "usable-2000-2023": {
+   "definition": "configs/targets/edition-subsets/usable-2000-2023.json",
+   "manifest_sha256": "17942d359727298177a4c87e3c88ee3443de75602ff02ba944f172427393b489",
+   "definition_sha256": "018b33ae18aab05d36fd02852cc50c8fd7f4b4c50beb348cec6a336133234650",
+   "ids_sha256": "fbab28652f3da5c9cc2822e7eaab986246e6739a486b6e2d23f10e2466d35541",
+   "ids_bytes": 27443242,
+   "counts": {
+    "rows": 18382961,
+    "assets": 5005,
+    "markets": {
+     "CN": 2772992,
+     "US": 15609969
+    },
+    "prediction_years": {
+     "CN": {
+      "2006": 51288,
+      "2007": 112306,
+      "2008": 123643,
+      "2009": 127017,
+      "2010": 131328,
+      "2011": 145606,
+      "2012": 154182,
+      "2013": 154840,
+      "2014": 160441,
+      "2015": 162621,
+      "2016": 167395,
+      "2017": 172532,
+      "2018": 177207,
+      "2019": 165204,
+      "2020": 185087,
+      "2021": 192376,
+      "2022": 194775,
+      "2023": 195144
+     },
+     "US": {
+      "2000": 164228,
+      "2001": 334202,
+      "2002": 353306,
+      "2003": 369244,
+      "2004": 392209,
+      "2005": 416046,
+      "2006": 439463,
+      "2007": 477645,
+      "2008": 527490,
+      "2009": 549087,
+      "2010": 572653,
+      "2011": 606714,
+      "2012": 632509,
+      "2013": 669041,
+      "2014": 709242,
+      "2015": 757136,
+      "2016": 804062,
+      "2017": 837397,
+      "2018": 888958,
+      "2019": 954155,
+      "2020": 1019961,
+      "2021": 1046573,
+      "2022": 1048007,
+      "2023": 1040641
+     }
+    }
+   },
+   "materialize": "72.86 s 1872148 KiB",
+   "verify": "69.11 s 2280900 KiB",
+   "first_version": {
+    "materialize": "27.11 s 2409220 KiB",
+    "verify": "12.82 s 2894908 KiB"
+   }
+  },
+  "liquid-usable-2000-2023": {
+   "definition": "configs/targets/edition-subsets/liquid-usable-2000-2023.json",
+   "manifest_sha256": "8b6945b90829d0248f0045befabe88dbf46a00eef3ac716ae03c0c50e01ff707",
+   "definition_sha256": "fde7b75a00d154fa8ff93627db9c944a9bad1add501a4fb10d8c535b35c96882",
+   "ids_sha256": "42e65a1d5f242a29ac3a1cc938c05c4814c81bb384f2907b0e6ff50c450ad222",
+   "ids_bytes": 19820240,
+   "counts": {
+    "rows": 15724204,
+    "assets": 4366,
+    "markets": {
+     "CN": 2470354,
+     "US": 13253850
+    },
+    "prediction_years": {
+     "CN": {
+      "2007": 91207,
+      "2008": 100648,
+      "2009": 108473,
+      "2010": 112238,
+      "2011": 125569,
+      "2012": 136569,
+      "2013": 139370,
+      "2014": 144983,
+      "2015": 141671,
+      "2016": 148654,
+      "2017": 155894,
+      "2018": 162526,
+      "2019": 157289,
+      "2020": 177463,
+      "2021": 185738,
+      "2022": 189810,
+      "2023": 192252
+     },
+     "US": {
+      "2001": 284044,
+      "2002": 303146,
+      "2003": 312910,
+      "2004": 351071,
+      "2005": 372614,
+      "2006": 393756,
+      "2007": 428061,
+      "2008": 475478,
+      "2009": 474258,
+      "2010": 515321,
+      "2011": 548331,
+      "2012": 560941,
+      "2013": 594330,
+      "2014": 643729,
+      "2015": 671763,
+      "2016": 692379,
+      "2017": 716170,
+      "2018": 740641,
+      "2019": 777002,
+      "2020": 822871,
+      "2021": 860427,
+      "2022": 863365,
+      "2023": 851242
+     }
+    }
+   },
+   "materialize": "273.79 s 1776280 KiB",
+   "verify": "220.01 s 2178376 KiB",
+   "first_version": {
+    "materialize": "47.53 s 3069340 KiB",
+    "verify": "40.08 s 3520828 KiB"
+   },
+   "liquidity": {
+    "edition": "/home/gonzalo/.local/state/mars-titan/unadjusted-prices-20261009/edition-v1",
+    "edition_id": "1ac3727836462ce31c39b5438918bd6f3e0d359690c7bc79bfa87cd808c8e68c",
+    "price_basis": "unadjusted_reconstructed",
+    "source": "unadjusted_reconstructed_verified_rows_up_to_the_last_published_session_v1",
+    "universe": {
+     "US": {
+      "2000": {
+       "liquid": 0,
+       "low_price": 0,
+       "thin_volume": 0,
+       "low_price_and_thin_volume": 0,
+       "unclassified": 1311
+      },
+      "2001": {
+       "liquid": 1151,
+       "low_price": 44,
+       "thin_volume": 82,
+       "low_price_and_thin_volume": 3,
+       "unclassified": 91
+      },
+      "2002": {
+       "liquid": 1208,
+       "low_price": 38,
+       "thin_volume": 98,
+       "low_price_and_thin_volume": 5,
+       "unclassified": 83
+      },
+      "2003": {
+       "liquid": 1247,
+       "low_price": 50,
+       "thin_volume": 103,
+       "low_price_and_thin_volume": 10,
+       "unclassified": 88
+      },
+      "2004": {
+       "liquid": 1400,
+       "low_price": 16,
+       "thin_volume": 70,
+       "low_price_and_thin_volume": 6,
+       "unclassified": 112
+      },
+      "2005": {
+       "liquid": 1485,
+       "low_price": 17,
+       "thin_volume": 75,
+       "low_price_and_thin_volume": 6,
+       "unclassified": 123
+      },
+      "2006": {
+       "liquid": 1579,
+       "low_price": 30,
+       "thin_volume": 82,
+       "low_price_and_thin_volume": 4,
+       "unclassified": 124
+      },
+      "2007": {
+       "liquid": 1720,
+       "low_price": 22,
+       "thin_volume": 77,
+       "low_price_and_thin_volume": 6,
+       "unclassified": 197
+      },
+      "2008": {
+       "liquid": 1892,
+       "low_price": 34,
+       "thin_volume": 82,
+       "low_price_and_thin_volume": 7,
+       "unclassified": 125
+      },
+      "2009": {
+       "liquid": 1892,
+       "low_price": 118,
+       "thin_volume": 90,
+       "low_price_and_thin_volume": 12,
+       "unclassified": 108
+      },
+      "2010": {
+       "liquid": 2054,
+       "low_price": 53,
+       "thin_volume": 72,
+       "low_price_and_thin_volume": 8,
+       "unclassified": 154
+      },
+      "2011": {
+       "liquid": 2188,
+       "low_price": 46,
+       "thin_volume": 74,
+       "low_price_and_thin_volume": 11,
+       "unclassified": 157
+      },
+      "2012": {
+       "liquid": 2251,
+       "low_price": 70,
+       "thin_volume": 93,
+       "low_price_and_thin_volume": 17,
+       "unclassified": 169
+      },
+      "2013": {
+       "liquid": 2366,
+       "low_price": 64,
+       "thin_volume": 112,
+       "low_price_and_thin_volume": 10,
+       "unclassified": 173
+      },
+      "2014": {
+       "liquid": 2573,
+       "low_price": 37,
+       "thin_volume": 90,
+       "low_price_and_thin_volume": 3,
+       "unclassified": 214
+      },
+      "2015": {
+       "liquid": 2677,
+       "low_price": 49,
+       "thin_volume": 91,
+       "low_price_and_thin_volume": 4,
+       "unclassified": 287
+      },
+      "2016": {
+       "liquid": 2753,
+       "low_price": 59,
+       "thin_volume": 102,
+       "low_price_and_thin_volume": 3,
+       "unclassified": 342
+      },
+      "2017": {
+       "liquid": 2859,
+       "low_price": 49,
+       "thin_volume": 75,
+       "low_price_and_thin_volume": 1,
+       "unclassified": 445
+      },
+      "2018": {
+       "liquid": 2962,
+       "low_price": 47,
+       "thin_volume": 82,
+       "low_price_and_thin_volume": 2,
+       "unclassified": 567
+      },
+      "2019": {
+       "liquid": 3100,
+       "low_price": 93,
+       "thin_volume": 80,
+       "low_price_and_thin_volume": 2,
+       "unclassified": 637
+      },
+      "2020": {
+       "liquid": 3261,
+       "low_price": 69,
+       "thin_volume": 63,
+       "low_price_and_thin_volume": 2,
+       "unclassified": 764
+      },
+      "2021": {
+       "liquid": 3416,
+       "low_price": 33,
+       "thin_volume": 43,
+       "low_price_and_thin_volume": 0,
+       "unclassified": 676
+      },
+      "2022": {
+       "liquid": 3441,
+       "low_price": 50,
+       "thin_volume": 45,
+       "low_price_and_thin_volume": 2,
+       "unclassified": 643
+      },
+      "2023": {
+       "liquid": 3422,
+       "low_price": 108,
+       "thin_volume": 44,
+       "low_price_and_thin_volume": 1,
+       "unclassified": 617
+      }
+     },
+     "CN": {
+      "2006": {
+       "liquid": 0,
+       "low_price": 0,
+       "thin_volume": 0,
+       "low_price_and_thin_volume": 0,
+       "unclassified": 444
+      },
+      "2007": {
+       "liquid": 381,
+       "low_price": 0,
+       "thin_volume": 22,
+       "low_price_and_thin_volume": 0,
+       "unclassified": 80
+      },
+      "2008": {
+       "liquid": 413,
+       "low_price": 0,
+       "thin_volume": 25,
+       "low_price_and_thin_volume": 0,
+       "unclassified": 80
+      },
+      "2009": {
+       "liquid": 445,
+       "low_price": 0,
+       "thin_volume": 12,
+       "low_price_and_thin_volume": 0,
+       "unclassified": 64
+      },
+      "2010": {
+       "liquid": 469,
+       "low_price": 0,
+       "thin_volume": 7,
+       "low_price_and_thin_volume": 0,
+       "unclassified": 95
+      },
+      "2011": {
+       "liquid": 519,
+       "low_price": 0,
+       "thin_volume": 10,
+       "low_price_and_thin_volume": 0,
+       "unclassified": 86
+      },
+      "2012": {
+       "liquid": 565,
+       "low_price": 0,
+       "thin_volume": 10,
+       "low_price_and_thin_volume": 0,
+       "unclassified": 74
+      },
+      "2013": {
+       "liquid": 586,
+       "low_price": 0,
+       "thin_volume": 10,
+       "low_price_and_thin_volume": 0,
+       "unclassified": 55
+      },
+      "2014": {
+       "liquid": 592,
+       "low_price": 0,
+       "thin_volume": 14,
+       "low_price_and_thin_volume": 0,
+       "unclassified": 53
+      },
+      "2015": {
+       "liquid": 583,
+       "low_price": 0,
+       "thin_volume": 37,
+       "low_price_and_thin_volume": 0,
+       "unclassified": 64
+      },
+      "2016": {
+       "liquid": 610,
+       "low_price": 0,
+       "thin_volume": 34,
+       "low_price_and_thin_volume": 0,
+       "unclassified": 47
+      },
+      "2017": {
+       "liquid": 642,
+       "low_price": 0,
+       "thin_volume": 25,
+       "low_price_and_thin_volume": 0,
+       "unclassified": 54
+      },
+      "2018": {
+       "liquid": 670,
+       "low_price": 0,
+       "thin_volume": 23,
+       "low_price_and_thin_volume": 0,
+       "unclassified": 48
+      },
+      "2019": {
+       "liquid": 715,
+       "low_price": 0,
+       "thin_volume": 2,
+       "low_price_and_thin_volume": 0,
+       "unclassified": 45
+      },
+      "2020": {
+       "liquid": 743,
+       "low_price": 0,
+       "thin_volume": 2,
+       "low_price_and_thin_volume": 0,
+       "unclassified": 40
+      },
+      "2021": {
+       "liquid": 768,
+       "low_price": 0,
+       "thin_volume": 1,
+       "low_price_and_thin_volume": 0,
+       "unclassified": 31
+      },
+      "2022": {
+       "liquid": 785,
+       "low_price": 0,
+       "thin_volume": 0,
+       "low_price_and_thin_volume": 0,
+       "unclassified": 23
+      },
+      "2023": {
+       "liquid": 798,
+       "low_price": 0,
+       "thin_volume": 0,
+       "low_price_and_thin_volume": 0,
+       "unclassified": 12
+      }
+     }
+    }
+   }
+  },
+  "liquid-usable-half-2000-2023": {
+   "definition": "configs/targets/edition-subsets/liquid-usable-half-2000-2023.json",
+   "manifest_sha256": "971650a6415db21fd275e0a558c50b6acf7ea02870ed73ce395508fccd4cba8d",
+   "definition_sha256": "87b5200b5104e535c157acf2a7248793170024747a543eba8455be27d1a6ea88",
+   "ids_sha256": "b88e98cb7d05d3af26b972da75e230ff205a37610791422038e5febc14899a2c",
+   "ids_bytes": 13315373,
+   "counts": {
+    "rows": 7862112,
+    "assets": 4366,
+    "markets": {
+     "CN": 1235181,
+     "US": 6626931
+    },
+    "prediction_years": {
+     "CN": {
+      "2007": 45604,
+      "2008": 50324,
+      "2009": 54237,
+      "2010": 56119,
+      "2011": 62785,
+      "2012": 68285,
+      "2013": 69685,
+      "2014": 72492,
+      "2015": 70836,
+      "2016": 74327,
+      "2017": 77947,
+      "2018": 81263,
+      "2019": 78645,
+      "2020": 88732,
+      "2021": 92869,
+      "2022": 94905,
+      "2023": 96126
+     },
+     "US": {
+      "2001": 142022,
+      "2002": 151573,
+      "2003": 156455,
+      "2004": 175536,
+      "2005": 186307,
+      "2006": 196878,
+      "2007": 214031,
+      "2008": 237739,
+      "2009": 237129,
+      "2010": 257661,
+      "2011": 274166,
+      "2012": 280471,
+      "2013": 297165,
+      "2014": 321865,
+      "2015": 335882,
+      "2016": 346190,
+      "2017": 358085,
+      "2018": 370321,
+      "2019": 388501,
+      "2020": 411436,
+      "2021": 430214,
+      "2022": 431683,
+      "2023": 425621
+     }
+    }
+   },
+   "materialize": "199.80 s 1639740 KiB",
+   "verify": "181.37 s 1832276 KiB",
+   "first_version": {
+    "materialize": "56.61 s 3801364 KiB",
+    "verify": "54.12 s 4002008 KiB"
+   },
+   "liquidity": {
+    "edition": "/home/gonzalo/.local/state/mars-titan/unadjusted-prices-20261009/edition-v1",
+    "edition_id": "1ac3727836462ce31c39b5438918bd6f3e0d359690c7bc79bfa87cd808c8e68c",
+    "price_basis": "unadjusted_reconstructed",
+    "source": "unadjusted_reconstructed_verified_rows_up_to_the_last_published_session_v1",
+    "universe": {
+     "US": {
+      "2000": {
+       "liquid": 0,
+       "low_price": 0,
+       "thin_volume": 0,
+       "low_price_and_thin_volume": 0,
+       "unclassified": 1311
+      },
+      "2001": {
+       "liquid": 1151,
+       "low_price": 44,
+       "thin_volume": 82,
+       "low_price_and_thin_volume": 3,
+       "unclassified": 91
+      },
+      "2002": {
+       "liquid": 1208,
+       "low_price": 38,
+       "thin_volume": 98,
+       "low_price_and_thin_volume": 5,
+       "unclassified": 83
+      },
+      "2003": {
+       "liquid": 1247,
+       "low_price": 50,
+       "thin_volume": 103,
+       "low_price_and_thin_volume": 10,
+       "unclassified": 88
+      },
+      "2004": {
+       "liquid": 1400,
+       "low_price": 16,
+       "thin_volume": 70,
+       "low_price_and_thin_volume": 6,
+       "unclassified": 112
+      },
+      "2005": {
+       "liquid": 1485,
+       "low_price": 17,
+       "thin_volume": 75,
+       "low_price_and_thin_volume": 6,
+       "unclassified": 123
+      },
+      "2006": {
+       "liquid": 1579,
+       "low_price": 30,
+       "thin_volume": 82,
+       "low_price_and_thin_volume": 4,
+       "unclassified": 124
+      },
+      "2007": {
+       "liquid": 1720,
+       "low_price": 22,
+       "thin_volume": 77,
+       "low_price_and_thin_volume": 6,
+       "unclassified": 197
+      },
+      "2008": {
+       "liquid": 1892,
+       "low_price": 34,
+       "thin_volume": 82,
+       "low_price_and_thin_volume": 7,
+       "unclassified": 125
+      },
+      "2009": {
+       "liquid": 1892,
+       "low_price": 118,
+       "thin_volume": 90,
+       "low_price_and_thin_volume": 12,
+       "unclassified": 108
+      },
+      "2010": {
+       "liquid": 2054,
+       "low_price": 53,
+       "thin_volume": 72,
+       "low_price_and_thin_volume": 8,
+       "unclassified": 154
+      },
+      "2011": {
+       "liquid": 2188,
+       "low_price": 46,
+       "thin_volume": 74,
+       "low_price_and_thin_volume": 11,
+       "unclassified": 157
+      },
+      "2012": {
+       "liquid": 2251,
+       "low_price": 70,
+       "thin_volume": 93,
+       "low_price_and_thin_volume": 17,
+       "unclassified": 169
+      },
+      "2013": {
+       "liquid": 2366,
+       "low_price": 64,
+       "thin_volume": 112,
+       "low_price_and_thin_volume": 10,
+       "unclassified": 173
+      },
+      "2014": {
+       "liquid": 2573,
+       "low_price": 37,
+       "thin_volume": 90,
+       "low_price_and_thin_volume": 3,
+       "unclassified": 214
+      },
+      "2015": {
+       "liquid": 2677,
+       "low_price": 49,
+       "thin_volume": 91,
+       "low_price_and_thin_volume": 4,
+       "unclassified": 287
+      },
+      "2016": {
+       "liquid": 2753,
+       "low_price": 59,
+       "thin_volume": 102,
+       "low_price_and_thin_volume": 3,
+       "unclassified": 342
+      },
+      "2017": {
+       "liquid": 2859,
+       "low_price": 49,
+       "thin_volume": 75,
+       "low_price_and_thin_volume": 1,
+       "unclassified": 445
+      },
+      "2018": {
+       "liquid": 2962,
+       "low_price": 47,
+       "thin_volume": 82,
+       "low_price_and_thin_volume": 2,
+       "unclassified": 567
+      },
+      "2019": {
+       "liquid": 3100,
+       "low_price": 93,
+       "thin_volume": 80,
+       "low_price_and_thin_volume": 2,
+       "unclassified": 637
+      },
+      "2020": {
+       "liquid": 3261,
+       "low_price": 69,
+       "thin_volume": 63,
+       "low_price_and_thin_volume": 2,
+       "unclassified": 764
+      },
+      "2021": {
+       "liquid": 3416,
+       "low_price": 33,
+       "thin_volume": 43,
+       "low_price_and_thin_volume": 0,
+       "unclassified": 676
+      },
+      "2022": {
+       "liquid": 3441,
+       "low_price": 50,
+       "thin_volume": 45,
+       "low_price_and_thin_volume": 2,
+       "unclassified": 643
+      },
+      "2023": {
+       "liquid": 3422,
+       "low_price": 108,
+       "thin_volume": 44,
+       "low_price_and_thin_volume": 1,
+       "unclassified": 617
+      }
+     },
+     "CN": {
+      "2006": {
+       "liquid": 0,
+       "low_price": 0,
+       "thin_volume": 0,
+       "low_price_and_thin_volume": 0,
+       "unclassified": 444
+      },
+      "2007": {
+       "liquid": 381,
+       "low_price": 0,
+       "thin_volume": 22,
+       "low_price_and_thin_volume": 0,
+       "unclassified": 80
+      },
+      "2008": {
+       "liquid": 413,
+       "low_price": 0,
+       "thin_volume": 25,
+       "low_price_and_thin_volume": 0,
+       "unclassified": 80
+      },
+      "2009": {
+       "liquid": 445,
+       "low_price": 0,
+       "thin_volume": 12,
+       "low_price_and_thin_volume": 0,
+       "unclassified": 64
+      },
+      "2010": {
+       "liquid": 469,
+       "low_price": 0,
+       "thin_volume": 7,
+       "low_price_and_thin_volume": 0,
+       "unclassified": 95
+      },
+      "2011": {
+       "liquid": 519,
+       "low_price": 0,
+       "thin_volume": 10,
+       "low_price_and_thin_volume": 0,
+       "unclassified": 86
+      },
+      "2012": {
+       "liquid": 565,
+       "low_price": 0,
+       "thin_volume": 10,
+       "low_price_and_thin_volume": 0,
+       "unclassified": 74
+      },
+      "2013": {
+       "liquid": 586,
+       "low_price": 0,
+       "thin_volume": 10,
+       "low_price_and_thin_volume": 0,
+       "unclassified": 55
+      },
+      "2014": {
+       "liquid": 592,
+       "low_price": 0,
+       "thin_volume": 14,
+       "low_price_and_thin_volume": 0,
+       "unclassified": 53
+      },
+      "2015": {
+       "liquid": 583,
+       "low_price": 0,
+       "thin_volume": 37,
+       "low_price_and_thin_volume": 0,
+       "unclassified": 64
+      },
+      "2016": {
+       "liquid": 610,
+       "low_price": 0,
+       "thin_volume": 34,
+       "low_price_and_thin_volume": 0,
+       "unclassified": 47
+      },
+      "2017": {
+       "liquid": 642,
+       "low_price": 0,
+       "thin_volume": 25,
+       "low_price_and_thin_volume": 0,
+       "unclassified": 54
+      },
+      "2018": {
+       "liquid": 670,
+       "low_price": 0,
+       "thin_volume": 23,
+       "low_price_and_thin_volume": 0,
+       "unclassified": 48
+      },
+      "2019": {
+       "liquid": 715,
+       "low_price": 0,
+       "thin_volume": 2,
+       "low_price_and_thin_volume": 0,
+       "unclassified": 45
+      },
+      "2020": {
+       "liquid": 743,
+       "low_price": 0,
+       "thin_volume": 2,
+       "low_price_and_thin_volume": 0,
+       "unclassified": 40
+      },
+      "2021": {
+       "liquid": 768,
+       "low_price": 0,
+       "thin_volume": 1,
+       "low_price_and_thin_volume": 0,
+       "unclassified": 31
+      },
+      "2022": {
+       "liquid": 785,
+       "low_price": 0,
+       "thin_volume": 0,
+       "low_price_and_thin_volume": 0,
+       "unclassified": 23
+      },
+      "2023": {
+       "liquid": 798,
+       "low_price": 0,
+       "thin_volume": 0,
+       "low_price_and_thin_volume": 0,
+       "unclassified": 12
+      }
+     }
+    }
+   }
+  }
+ },
+ "budget": {
+  "liquid-usable-2000-2023": {
+   "rows": {
+    "train": 243916412,
+    "validation": 13705275,
+    "calibration": 6790428,
+    "evaluation": 28427336
+   },
+   "full_design_rows": {
+    "train": 285816010,
+    "validation": 15761369,
+    "calibration": 7956247,
+    "evaluation": 32868677
+   },
+   "subset_over_full_neural_hours": 0.8537395356326708,
+   "rate_samples_epoch_per_second": 1000.0,
+   "campaign": {
+    "name": "historical-masked-2000-a-v2",
+    "sha256": "670f969629e3e2ba6ceb99bc994a850c03da0242a33dfb052490e3a3b1516ec4"
+   },
+   "elapsed": "1814.25 s 1658536 KiB",
+   "first_version_elapsed": "517.34 s 1654728 KiB"
+  },
+  "liquid-usable-half-2000-2023": {
+   "rows": {
+    "train": 121958476,
+    "validation": 6851177,
+    "calibration": 3396398,
+    "evaluation": 14213753
+   },
+   "full_design_rows": {
+    "train": 285816010,
+    "validation": 15761369,
+    "calibration": 7956247,
+    "evaluation": 32868677
+   },
+   "subset_over_full_neural_hours": 0.42686622631856547,
+   "rate_samples_epoch_per_second": 1000.0,
+   "campaign": {
+    "name": "historical-masked-2000-a-v2",
+    "sha256": "670f969629e3e2ba6ceb99bc994a850c03da0242a33dfb052490e3a3b1516ec4"
+   },
+   "elapsed": "1682.84 s 1195036 KiB",
+   "first_version_elapsed": "502.41 s 1200492 KiB"
+  }
+ },
+ "before_and_after": {
+  "method": "Ejecuciones intercaladas anterior, actual, anterior, actual en procesos separados y en las mismas condiciones. select() del subconjunto con la selección anterior (códigos de 64 bits, np.unique sobre filas y estratos como texto) o la actual, y el recuento de CN del dimensionado con los cortes rehechos por activo y ventana o preparados una vez por ventana. El resumen es el de las salidas escritas igual",
+  "load_average": [
+   "15,48, 17,96, 24,12",
+   "27,60, 23,28, 23,11",
+   "28,11, 25,22, 23,77"
+  ],
+  "runs": [
+   {
+    "version": "anterior",
+    "target": "usable-2000-2023",
+    "inner_seconds": 27.3,
+    "process_seconds": 31.88,
+    "max_rss_mib": 2354.4,
+    "output_digest": "fbab28652f3da5c9"
+   },
+   {
+    "version": "actual",
+    "target": "usable-2000-2023",
+    "inner_seconds": 17.88,
+    "process_seconds": 22.93,
+    "max_rss_mib": 1826.0,
+    "output_digest": "fbab28652f3da5c9"
+   },
+   {
+    "version": "anterior",
+    "target": "usable-2000-2023",
+    "inner_seconds": 21.52,
+    "process_seconds": 25.78,
+    "max_rss_mib": 2353.0,
+    "output_digest": "fbab28652f3da5c9"
+   },
+   {
+    "version": "actual",
+    "target": "usable-2000-2023",
+    "inner_seconds": 20.33,
+    "process_seconds": 24.68,
+    "max_rss_mib": 1826.6,
+    "output_digest": "fbab28652f3da5c9"
+   },
+   {
+    "version": "anterior",
+    "target": "liquid-usable-half-2000-2023",
+    "inner_seconds": 228.34,
+    "process_seconds": 231.76,
+    "max_rss_mib": 3706.3,
+    "output_digest": "b88e98cb7d05d3af"
+   },
+   {
+    "version": "actual",
+    "target": "liquid-usable-half-2000-2023",
+    "inner_seconds": 97.18,
+    "process_seconds": 101.73,
+    "max_rss_mib": 1598.0,
+    "output_digest": "b88e98cb7d05d3af"
+   },
+   {
+    "version": "anterior",
+    "target": "liquid-usable-half-2000-2023",
+    "inner_seconds": 214.91,
+    "process_seconds": 218.58,
+    "max_rss_mib": 3710.0,
+    "output_digest": "b88e98cb7d05d3af"
+   },
+   {
+    "version": "actual",
+    "target": "liquid-usable-half-2000-2023",
+    "inner_seconds": 118.24,
+    "process_seconds": 122.12,
+    "max_rss_mib": 1596.5,
+    "output_digest": "b88e98cb7d05d3af"
+   },
+   {
+    "version": "anterior",
+    "target": "CN",
+    "inner_seconds": 151.06,
+    "process_seconds": 163.45,
+    "max_rss_mib": 1130.4,
+    "output_digest": "8c9b889bbf1cb333"
+   },
+   {
+    "version": "actual",
+    "target": "CN",
+    "inner_seconds": 52.24,
+    "process_seconds": 63.64,
+    "max_rss_mib": 1130.6,
+    "output_digest": "8c9b889bbf1cb333"
+   },
+   {
+    "version": "anterior",
+    "target": "CN",
+    "inner_seconds": 183.09,
+    "process_seconds": 194.69,
+    "max_rss_mib": 1133.1,
+    "output_digest": "8c9b889bbf1cb333"
+   },
+   {
+    "version": "actual",
+    "target": "CN",
+    "inner_seconds": 100.21,
+    "process_seconds": 115.21,
+    "max_rss_mib": 1129.1,
+    "output_digest": "8c9b889bbf1cb333"
+   }
+  ]
+ }
+}
