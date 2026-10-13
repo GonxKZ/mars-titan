@@ -1,5 +1,8 @@
-"""Apoyo de la suite: modos estrictos, grupo `reference` y ejecutables falsos con espacios."""
+"""Apoyo de la suite: modos estrictos, grupo `reference`, ejecutables falsos con espacios y
+pruebas que rebajan la protección de aprendizaje."""
 
+import ast
+import json
 import os
 import subprocess
 import sys
@@ -8,9 +11,12 @@ from pathlib import Path
 
 import pytest
 
+from tests.learning_hold_lowering import LOWERING
 from tests.suite_support import (
+    LOWERING_MARKER,
     NATIVE_VARIABLES,
     episodic_load_problem,
+    lowering_skip,
     native_required,
     python_shebang,
     reference_module,
@@ -262,3 +268,57 @@ def test_reference_module_skips_only_when_the_package_itself_is_missing(tmp_path
     monkeypatch.syspath_prepend(str(tmp_path))
     with pytest.raises(ModuleNotFoundError, match="mars_titan_reference_dependency_absent"):
         reference_module("mars_titan_reference_broken")
+
+
+def test_a_marked_test_needs_its_reason_and_is_skipped_only_while_the_hold_blocks():
+    inventory = {"tests/x.py::test_a": "lee cintas"}
+    assert lowering_skip("tests/x.py::test_b", False, inventory, True) is None
+    reason = lowering_skip("tests/x.py::test_a[cpu-1]", True, inventory, True)
+    assert reason == "Rebaja la protección de aprendizaje (#546): lee cintas"
+    assert lowering_skip("tests/x.py::test_a", True, inventory, False) is None
+    for blocked in (True, False):
+        with pytest.raises(pytest.UsageError, match="sin entrada en tests/learning_hold_lowering"):
+            lowering_skip("tests/x.py::test_b", True, inventory, blocked)
+
+
+def marked_tests():
+    """Pruebas con la marca, leídas del código. Solo se admite como decorador de función."""
+    found = set()
+    for path in sorted((ROOT / "tests").rglob("test_*.py")):
+        text = path.read_text(encoding="utf-8")
+        uses = text.count(f"mark.{LOWERING_MARKER}")
+        decorated = [
+            node.name
+            for node in ast.walk(ast.parse(text))
+            if isinstance(node, ast.FunctionDef)
+            and any(
+                ast.unparse(item) == f"pytest.mark.{LOWERING_MARKER}"
+                for item in node.decorator_list
+            )
+        ]
+        assert uses == len(decorated), f"{path} usa la marca fuera de un decorador de función"
+        found |= {f"{path.relative_to(ROOT)}::{name}" for name in decorated}
+    return found
+
+
+def test_the_inventory_lists_exactly_the_marked_tests_with_a_reason():
+    assert marked_tests() == set(LOWERING)
+    assert all(isinstance(reason, str) and len(reason) > 40 for reason in LOWERING.values())
+
+
+def test_a_marked_test_is_skipped_before_its_fixtures_while_the_hold_blocks(tmp_path):
+    hold = tmp_path / "training-hold.json"
+    hold.write_text(json.dumps({"training_allowed": False}), encoding="utf-8")
+    target = next(iter(sorted(LOWERING)))
+    result = subprocess.run(
+        [sys.executable, "-m", "pytest", "-q", "-rs", "-p", "no:cacheprovider", target],
+        cwd=ROOT,
+        env=dict(os.environ, MARS_TITAN_TRAINING_HOLD=str(hold)),
+        capture_output=True,
+        text=True,
+        timeout=300,
+    )
+    output = result.stdout + result.stderr
+    assert result.returncode == pytest.ExitCode.OK, output
+    assert "1 skipped" in output and "Rebaja la protección de aprendizaje (#546)" in output
+    assert "passed" not in output

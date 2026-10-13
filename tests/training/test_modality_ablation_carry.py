@@ -310,6 +310,7 @@ def corrections(titans):
     return SimpleNamespace(**runs)
 
 
+@pytest.mark.lowers_learning_hold
 def test_b6_ablation_equals_the_correction_with_a_real_absence(corrections, tmp_path, permitted):
     """El núcleo, el calentamiento y las claves del codec ven la ausencia, y A se escribe con
     los errores de ese recorrido. La ablación llega por el traslado común de la familia."""

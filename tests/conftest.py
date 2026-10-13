@@ -6,9 +6,15 @@ from contextlib import contextmanager
 
 import pytest
 
-from mars_titan.training.learning_hold import HOLD_ENV, LearningHoldError, install_optimizer_guard
+from mars_titan.training.learning_hold import (
+    HOLD_ENV,
+    LearningHoldError,
+    install_optimizer_guard,
+    learning_blocked,
+)
+from tests.learning_hold_lowering import LOWERING
+from tests.suite_support import LOWERING_MARKER, lowering_skip, strict_problems, strict_skip
 from tests.suite_support import python_shebang as _python_shebang
-from tests.suite_support import strict_problems, strict_skip
 
 
 @pytest.hookimpl(wrapper=True)
@@ -51,6 +57,17 @@ def pytest_sessionstart(session):
             "Comprobación estricta incumplida: " + "; ".join(problems),
             returncode=pytest.ExitCode.USAGE_ERROR,
         )
+
+
+def pytest_collection_modifyitems(config, items):
+    # Una prueba que rebaja la protección se omite mientras esta bloquee, antes de preparar
+    # sus fixtures, con el motivo de su entrada en el inventario.
+    blocked = learning_blocked()
+    for item in items:
+        marked = item.get_closest_marker(LOWERING_MARKER) is not None
+        reason = lowering_skip(item.nodeid, marked, LOWERING, blocked)
+        if reason is not None:
+            item.add_marker(pytest.mark.skip(reason=reason))
 
 
 @contextmanager

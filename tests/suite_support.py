@@ -39,6 +39,31 @@ STRICT_MARKERS = {
 }
 
 
+# Marca de las pruebas que rebajan la protección de aprendizaje con un archivo permisivo o con
+# `learning_hold(True)`. Mientras la protección bloquee se omiten antes de preparar sus
+# fixtures, y su motivo está en el inventario de tests/learning_hold_lowering.py (#546).
+LOWERING_MARKER = "lowers_learning_hold"
+
+
+def lowering_skip(nodeid, marked, inventory, blocked):
+    """Motivo de omisión de una prueba que rebaja la protección, o None si se ejecuta.
+
+    Toda prueba marcada necesita su entrada en el inventario, también cuando la protección no
+    bloquea, para que la marca no pueda quedar sin motivo.
+    """
+    if not marked:
+        return None
+    name = nodeid.split("[", 1)[0]
+    if name not in inventory:
+        raise pytest.UsageError(
+            f"{name} rebaja la protección de aprendizaje sin entrada en "
+            "tests/learning_hold_lowering.py"
+        )
+    if not blocked:
+        return None
+    return f"Rebaja la protección de aprendizaje (#546): {inventory[name]}"
+
+
 def cuda_available():
     try:
         import torch
