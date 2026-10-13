@@ -24,9 +24,11 @@ from mars_titan.simulation import campaign_stage, native_policy_runs, policy_pla
 from mars_titan.simulation.market import MarketTape
 from mars_titan.simulation.storage import read_tape, write_tape
 from mars_titan.training.learning_hold import LearningHoldError
+from tests.learning_hold_lowering import lowers_learning_hold
 from tests.simulation import rl_stage_fixture as fixture
 from tests.suite_support import missing_native
 
+THIS = "tests/simulation/test_campaign_stage.py"
 REPOSITORY = {
     v: Path(f"configs/simulation/historical-masked-rl-stage-{v.lower()}.json") for v in "AB"
 }
@@ -306,13 +308,17 @@ def test_a_stop_request_pauses_between_jobs(base_a, tmp_path, learning_doubles):
     assert len(rest.calls) == 16 and not any(call["resume"] for call in rest.calls)
 
 
-def test_the_learning_hold_stops_the_stage_before_outputs_and_between_jobs(
-    base_a, tmp_path, learning_hold
-):
-    blocked = learning_hold(False)
+def test_the_learning_hold_stops_the_stage_before_outputs(base_a, tmp_path, learning_hold):
+    learning_hold(False)
     with pytest.raises(LearningHoldError, match="etapa de políticas"):
         fixture.run(base_a, tmp_path / "stage", fixture.ScriptedLearner())
     assert not (tmp_path / "stage").exists()
+
+
+@lowers_learning_hold(f"{THIS}::test_the_learning_hold_is_read_again_between_jobs")
+def test_the_learning_hold_is_read_again_between_jobs(base_a, tmp_path, learning_hold):
+    blocked = tmp_path / "blocked.json"
+    blocked.write_text(json.dumps({"training_allowed": False}), encoding="utf-8")
     allowed = learning_hold(True)
 
     class Reinstating(fixture.ScriptedLearner):
