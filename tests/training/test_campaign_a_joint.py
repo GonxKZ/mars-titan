@@ -218,9 +218,14 @@ def without_kernels(value):
         value["neural"].pop(key)
 
 
-def test_v2_neural_cases_carry_strict_precision_and_the_graph_step_into_their_identity(tmp_path):
+def test_v2_neural_cases_carry_strict_precision_and_the_graph_step_into_their_identity(
+    tmp_path, monkeypatch
+):
     from mars_titan.training.reference_run import HELDOUT_FULL_TRAIN_SESSIONS, _options
 
+    # _options exige el espacio de trabajo determinista de cuBLAS, como la ranura de la campaña.
+    # Sin fijarlo aquí, la prueba dependería de otro módulo que lo deja en el entorno.
+    monkeypatch.setenv("CUBLAS_WORKSPACE_CONFIG", ":4096:8")
     loaded = campaign()
     neural = loaded["neural"]
     plain = plan.load_campaign(edited(tmp_path, without_kernels))["neural"]
