@@ -11,6 +11,12 @@ Las filas de cada ámbito y ventana salen de las vistas preparadas o, antes de p
 de los objetivos residuales con la misma regla que las vistas: una fila cuenta en un tramo
 si tiene objetivo, su decisión cae en el tramo y su etiqueta madura antes de su final.
 
+Con el catálogo de la edición (`edition_catalog`) el recuento recorre la misma asignación
+por ventana que publica las vistas (`temporal_corpus.fold_rows`), con la disponibilidad de
+las entradas y la recuperación del corte anual, y coincide con los recuentos de sus
+manifiestos. Con un subconjunto declarado (`edition_subsets`) se cuentan las filas que
+tendrían las vistas elegidas con él, y la proyección se compara con la del diseño completo.
+
 Con el walk-forward por etapas (`campaign_chain`), cada ventana con padre ajusta los
 adaptadores solo con sus filas nuevas, que se cuentan con la misma regla, y el padre
 congelado de la ventana anterior predice validación, calibración y evaluación. Sin ese
@@ -32,6 +38,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 
 from mars_titan.data.cohort_files import read_manifest
+from mars_titan.data.input_policy import HISTORICAL_MASKED
 from mars_titan.evaluation.splits import PARTITIONS, build_folds
 
 from . import campaign_chain
@@ -143,6 +150,107 @@ def campaign_window_counts(campaign, labels_root):
             for window in resolved[scope]["windows"]
         }
     return counts
+
+
+_CATALOG_COLUMNS = [
+    "prediction_at",
+    "inputs_available_at",
+    "label_reason",
+    "annual_boundary_label",
+    "target_available_at",
+    "label_row",
+]
+
+
+def _catalog_labels(table):
+    """Etiquetas de un activo del catálogo en el orden de su archivo, como las lee la vista."""
+    rows = table.filter(table["label_row"].is_valid())
+    rows = rows.take(pa.array(np.argsort(rows["label_row"].to_numpy())))
+    reasons = np.asarray(rows["label_reason"].to_pylist(), dtype="U40")
+    recovered = rows["annual_boundary_label"].to_numpy(zero_copy_only=False)
+    return dict(
+        prediction=rows["prediction_at"].cast(pa.int64()).to_numpy(),
+        available=rows["inputs_available_at"].cast(pa.int64()).to_numpy(),
+        maturity=rows["target_available_at"].cast(pa.int64()).fill_null(0).to_numpy(),
+        accepted=(reasons == "accepted") | recovered,
+        reasons=reasons,
+    )
+
+
+def catalog_market_counts(catalog, protocol, members=None):
+    """Filas de cada tramo de cada ventana de un mercado y filas nuevas de cada ventana con padre.
+
+    `catalog` es el manifiesto y el archivo leídos con `edition_catalog.read_catalog_manifest`
+    y `members`, la pertenencia a un subconjunto (`edition_subsets.SubsetRows`). Las filas
+    nuevas son las del tramo `train` de la vista con decisión en
+    `campaign_chain.posttraining_rows`, como las ajusta el walk-forward por etapas.
+    """
+    from .edition_catalog import asset_slices
+    from .temporal_corpus import TemporalInputs, fold_rows, historical_contract
+
+    manifest, path = catalog
+    market, folds = protocol["market"], build_folds(protocol)
+    targets = manifest["targets"]
+    temporal = TemporalInputs(
+        historical_contract(protocol, folds[0], targets["path"], targets["sha256"]),
+        input_policy=HISTORICAL_MASKED,
+    )
+    starts = {
+        fold["id"]: _micros(campaign_chain.posttraining_rows(parent, fold)[0])
+        for parent, fold in zip(folds, folds[1:], strict=False)
+    }
+    counts = {fold["id"]: dict.fromkeys(PARTITIONS, 0) for fold in folds}
+    fresh = dict.fromkeys(starts, 0)
+    sizes = [asset["rows"] for asset in manifest["assets"]]
+    with pq.ParquetFile(path) as file:
+        slices = asset_slices(file, sizes, ["market", "asset_id", *_CATALOG_COLUMNS])
+        for asset, table in zip(manifest["assets"], slices, strict=True):
+            if asset["market"] != market:
+                continue
+            rows = _catalog_labels(table)
+            accepted, reasons = rows["accepted"], rows["reasons"]
+            if members is not None:
+                inside = members.member(market, asset["asset_id"], rows["prediction"])
+                reasons = np.where(accepted & ~inside, "outside_subset", reasons)
+                accepted = accepted & inside
+            valid = np.ones(len(accepted), dtype=bool)
+            for fold in folds:
+                assigned = fold_rows(
+                    temporal,
+                    fold,
+                    rows["prediction"],
+                    rows["available"],
+                    valid,
+                    rows["maturity"],
+                    accepted,
+                    reasons,
+                )["partition"]
+                for name in PARTITIONS:
+                    counts[fold["id"]][name] += int(np.count_nonzero(assigned == name))
+                if fold["id"] in fresh:
+                    later = rows["prediction"] >= starts[fold["id"]]
+                    fresh[fold["id"]] += int(np.count_nonzero((assigned == "train") & later))
+    temporal.verify()
+    return counts, fresh
+
+
+def catalog_window_counts(campaign, catalog, members=None):
+    """Recuentos por ámbito y ventana y filas nuevas desde el catálogo, con o sin subconjunto."""
+    resolved = campaign["comparison_config"]["resolved_scopes"]
+    cache, counts, fresh = {}, {}, {}
+    for scope in campaign["scopes"]:
+        parts = []
+        for protocol in resolved[scope]["protocols"].values():
+            key = json.dumps(protocol, sort_keys=True)
+            if key not in cache:
+                cache[key] = catalog_market_counts(catalog, protocol, members)
+            parts.append(cache[key])
+        counts[scope] = {
+            window: {name: sum(part[0][window][name] for part in parts) for name in PARTITIONS}
+            for window in resolved[scope]["windows"]
+        }
+        fresh[scope] = {window: sum(part[1][window] for part in parts) for window in parts[0][1]}
+    return counts, fresh
 
 
 def read_counts(path, campaign):
@@ -294,6 +402,8 @@ def main(argv=None):
     rows.add_argument("--counts", type=Path, help="Informe de recuentos por ámbito y ventana")
     rows.add_argument("--targets", type=Path, help="Carpeta labels de los objetivos residuales")
     rows.add_argument("--views", action="append", help="Vistas preparadas ÁMBITO=DIRECTORIO")
+    rows.add_argument("--catalog", type=Path, help="Manifiesto del catálogo de la edición")
+    parser.add_argument("--subset", type=Path, help="Subconjunto declarado del catálogo")
     speed = parser.add_mutually_exclusive_group(required=True)
     speed.add_argument("--rate", type=float, help="Muestras-época de ajuste por segundo")
     speed.add_argument("--throughput", type=Path, help="Informe medido de `throughput`")
@@ -305,10 +415,43 @@ def main(argv=None):
     parser.add_argument("--target-hours", type=float)
     parser.add_argument("--write-counts", type=Path)
     args = parser.parse_args(argv)
+    if args.subset is not None and args.catalog is None:
+        parser.error("--subset necesita --catalog")
     campaign = load_campaign(args.campaign)
     staged = campaign.get("walk_forward_stages") is not None
-    fresh = None
-    if args.counts is not None:
+    fresh, full, sources = None, None, {}
+    if args.catalog is not None:
+        from .edition_catalog import read_catalog_manifest
+
+        manifest, digest, path = read_catalog_manifest(args.catalog)
+        catalog = (manifest, path)
+        sources["catalog"] = dict(manifest=str(args.catalog.resolve()), manifest_sha256=digest)
+        counts, fresh = catalog_window_counts(campaign, catalog)
+        declared = campaign.get("data_subset")
+        subset = args.subset or (None if declared is None else Path(declared["manifest"]))
+        if subset is not None:
+            from .edition_subsets import SubsetRows, read_subset, subset_identity
+
+            document, subset_sha256, ids = read_subset(subset)
+            _require(
+                document["catalog"]["manifest_sha256"] == digest,
+                "El subconjunto no se eligió sobre este catálogo",
+            )
+            sources["subset"] = dict(
+                manifest=str(subset.resolve()),
+                manifest_sha256=subset_sha256,
+                **subset_identity(document),
+            )
+            _require(
+                declared is None
+                or {k: v for k, v in sources["subset"].items() if k != "manifest"}
+                == {k: v for k, v in declared.items() if k != "manifest"},
+                "La campaña declara otro subconjunto",
+            )
+            full = counts, fresh
+            counts, fresh = catalog_window_counts(campaign, catalog, SubsetRows(ids))
+        fresh = fresh if staged else None
+    elif args.counts is not None:
         counts, _ = read_counts(args.counts, campaign)
         if staged:
             fresh = read_posttraining_rows(args.counts, campaign)
@@ -328,7 +471,7 @@ def main(argv=None):
     if args.write_counts is not None:
         from mars_titan.data.storage import atomic_json
 
-        document = dict(schema_version=1, kind=COUNTS_KIND, counts=counts)
+        document = dict(schema_version=1, kind=COUNTS_KIND, counts=counts, **sources)
         if fresh is not None:
             document["posttraining_rows"] = fresh
         atomic_json(args.write_counts, document)
@@ -342,20 +485,38 @@ def main(argv=None):
         )
     else:
         rates = read_manifest(args.throughput, 64 * 1024**2)[0]["rates"]
-    report = project(
-        campaign,
-        counts,
-        rates,
+    options = dict(
         epochs=args.epochs,
         stage=stage,
         ablation_stage=ablation,
         fixed_hours=args.fixed_hours,
         target_hours=args.target_hours,
-        fresh=fresh,
     )
+    report = project(campaign, counts, rates, fresh=fresh, **options)
     report.pop("estimate")
+    report.update(sources)
+    if full is not None:
+        # El subconjunto se compara con el diseño completo con los mismos caudales y épocas.
+        complete = project(campaign, full[0], rates, fresh=full[1] if staged else None, **options)
+        report["full_design"] = dict(
+            stages=complete["stages"],
+            neural_hours=complete["neural_hours"],
+            rows=_rows(full[0]),
+        )
+        report["rows"] = _rows(counts)
+        report["subset_over_full_neural_hours"] = (
+            report["neural_hours"] / complete["neural_hours"] if complete["neural_hours"] else None
+        )
     print(json.dumps(report, ensure_ascii=False, indent=2))
     return 0
+
+
+def _rows(counts):
+    """Filas de cada tramo sumadas en todos los ámbitos y ventanas."""
+    return {
+        name: sum(row[name] for windows in counts.values() for row in windows.values())
+        for name in PARTITIONS
+    }
 
 
 if __name__ == "__main__":
