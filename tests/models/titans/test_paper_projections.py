@@ -19,8 +19,10 @@ from mars_titan.models.titans.transition_jacobian import (
     fast_state_point,
     fast_state_transition,
 )
+from tests.suite_support import cpu_threads
 
-# Huellas FP32 capturadas en develop 030e7b31, antes de introducir SiLU y convolución.
+# Huellas FP32 capturadas en develop 030e7b31, antes de introducir SiLU y convolución, en CPU
+# con dos hilos de PyTorch. `core_trace` y `financial_trace` fijan esos hilos (#572).
 # Las financieras se recapturaron cuando el codificador de precios pasó a calcular la
 # última capa solo para el último token. Ese cambio altera el redondeo FP32 de las
 # predicciones y los gradientes, pero no la identidad de la configuración. Su error
@@ -147,6 +149,7 @@ def strict_fp32():
     torch.backends.cudnn.allow_tf32 = False
 
 
+@cpu_threads()
 def core_trace(mode="online", **options):
     """Cuatro segmentos FP32 con lectura, escritura y gradientes de medida sin optimizador."""
     strict_fp32()
@@ -181,6 +184,7 @@ def core_trace(mode="online", **options):
     )
 
 
+@cpu_threads()
 def financial_trace(variant, **options):
     """Tres decisiones FP32 por flujo, estado exportado y gradiente de las predicciones."""
     from test_financial_adapter import raw_batch, specification
@@ -256,6 +260,16 @@ def test_disabled_projections_keep_the_develop_core_bit_for_bit(name):
 def test_disabled_projections_keep_the_develop_financial_predictor_bit_for_bit(name):
     variant, options = FINANCIAL_CASES[name]
     assert financial_trace(variant, **options) == BASELINE[f"financial/{name}"]
+
+
+@pytest.mark.parametrize("ambient", [1, 3])
+def test_reference_digests_do_not_depend_on_the_threads_of_the_session(ambient):
+    # Las huellas no pueden depender de los hilos con que arranque la sesión (#572). Con uno
+    # o tres hilos, el núcleo sin memoria y el predictor congelado cambiaban de bits.
+    with cpu_threads(ambient):
+        assert core_case("disabled") == BASELINE["core/disabled"]
+        assert financial_trace("mac_frozen") == BASELINE["financial/mac_frozen"]
+        assert torch.get_num_threads() == ambient
 
 
 # Núcleo nuevo: SiLU, convolución causal de núcleo 4 y L2 de q y k.

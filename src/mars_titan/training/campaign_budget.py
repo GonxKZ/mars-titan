@@ -35,7 +35,7 @@ from mars_titan.data.cohort_files import read_manifest
 from mars_titan.evaluation.splits import PARTITIONS, build_folds
 
 from . import campaign_chain
-from .campaign_plan import NEURAL, _arm_specs, _require, load_campaign
+from .campaign_plan import MARS, NEURAL, _arm_specs, _correction_arm, _require, load_campaign
 from .campaign_throughput import ABLATION_STAGE, CHRONOLOGICAL, POSTTRAINING, estimate_hours
 
 COUNTS_KIND = "masked_campaign_window_counts"
@@ -171,7 +171,9 @@ def uniform_rates(campaign, rate, *, inference_ratio=3.0, stage=None):
     """Caudales iguales para todos los casos, en la forma de un informe de `throughput`.
 
     `rate` son muestras-época de ajuste por segundo y la inferencia corre a
-    `inference_ratio` veces ese caudal. Con `stage`, cubre también sus puntos de adaptación.
+    `inference_ratio` veces ese caudal. La corrección B6 no ajusta, así que, como en su
+    medida, solo tiene caudal de inferencia. Con `stage`, cubre también sus puntos de
+    adaptación.
     """
     _require(
         all(
@@ -188,8 +190,13 @@ def uniform_rates(campaign, rate, *, inference_ratio=3.0, stage=None):
                 name: dict(flat) for name, _ in spec["candidates"]
             }
         elif spec["family"] in CHRONOLOGICAL:
+            fits = spec["family"] != MARS or not _correction_arm(
+                spec["candidates"][0][1]["components"]
+            )
             rates.setdefault(spec["family"], {})[spec["arm"]] = dict(
-                options=dict(recipe=dict(train=flat["train"], peak_vram_allocated_bytes=0)),
+                options=dict(
+                    recipe=dict(train=flat["train"] if fits else None, peak_vram_allocated_bytes=0)
+                ),
                 declared_option="recipe",
                 inference=flat["inference"],
             )

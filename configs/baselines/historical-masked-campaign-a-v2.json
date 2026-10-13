@@ -58,9 +58,25 @@
       "mars_titan_m2": {"episodic_bank": "m2"},
       "mars_titan_m3": {"episodic_bank": "m3"},
       "mars_titan_m1_k2": {"episodic_bank": "m1", "refinements": 2},
-      "mars_titan_m1_k4": {"episodic_bank": "m1", "refinements": 4}
+      "mars_titan_m1_k4": {"episodic_bank": "m1", "refinements": 4},
+      "mars_titan_m1_k4_first_read": {
+        "episodic_bank": "m1",
+        "refinements": 4,
+        "refinement_episodes": "first_read"
+      },
+      "mars_titan_b6": {"associative_memory": {"rule": "proximal", "key": "codec"}},
+      "mars_titan_b6_bias": {"associative_memory": {"rule": "proximal", "key": "constant"}},
+      "mars_titan_b6_regime": {"associative_memory": {"rule": "proximal", "key": "regime"}},
+      "mars_titan_b6_calendar": {"associative_memory": {"rule": "proximal", "key": "calendar"}},
+      "mars_titan_b6_regime_banks": {
+        "associative_memory": {"rule": "proximal", "key": "codec_by_regime"}
+      },
+      "mars_titan_b6_calendar_banks": {
+        "associative_memory": {"rule": "proximal", "key": "codec_by_calendar"}
+      }
     },
     "pending_arms": {},
+    "correction_recipe": "../titans/mature-correction-historical-masked.json",
     "parent_arm": "titans_mac_online",
     "search_seed": 42
   },
@@ -73,7 +89,20 @@
     "selected_case_seeds": [43, 44],
     "deterministic_arms": ["ridge", "xgboost"]
   },
-  "stopping": {"mode": "protocol"},
+  "stopping": {"mode": "early_stop"},
+  "early_stop": {
+    "stopping": "joint_plateau",
+    "patience": 5,
+    "min_delta": 1e-05,
+    "minimum_epochs": 5,
+    "max_epochs": 30,
+    "group_epoch": "maximum_of_first_plateaus",
+    "groups": {
+      "encoders_and_cores": ["gru", "transformer_compact", "gru_episodic", "titans_transformer_direct", "titans_mac_disabled", "titans_mac_frozen", "titans_mac_online"],
+      "episodic_readers": ["mars_titan_m0", "mars_titan_m1", "mars_titan_m2", "mars_titan_m3", "mars_titan_m1_k2", "mars_titan_m1_k4", "mars_titan_m1_k4_first_read", "cm_v1_b", "cm_v1_bc", "cm_v1_bm", "cm_v1_bcm"],
+      "cm_v1_cores": ["cm_v1_core_b", "cm_v1_core_c"]
+    }
+  },
   "execution": {"order": "by_window"},
   "data_policy": "real_edition_only",
   "numerics": {
@@ -132,7 +161,7 @@
     "cm_v1": {"accumulation_rows": 1024}
   },
   "limits": {
-    "max_training_jobs": 2341,
+    "max_training_jobs": 2873,
     "max_prediction_jobs": 0
   },
   "final_test_opened": false

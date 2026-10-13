@@ -56,7 +56,7 @@
       "rl_stage": {
         "path": "../simulation/historical-masked-rl-stage-a.json",
         "limits": {
-          "max_training_jobs": 2664,
+          "max_training_jobs": 3096,
           "max_evaluation_jobs": 3219
         }
       }
@@ -71,8 +71,8 @@
       "rl_stage": {
         "path": "../simulation/historical-masked-rl-stage-b.json",
         "limits": {
-          "max_training_jobs": 888,
-          "max_evaluation_jobs": 4995
+          "max_training_jobs": 1032,
+          "max_evaluation_jobs": 5283
         }
       }
     }

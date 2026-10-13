@@ -631,15 +631,16 @@ octubre & Ninguno antes de preparar las vistas \\
 Protocolo & Ventanas v2, protocolo conjunto desde 2004, purga por intervalo,
 regla de parada común y walk-forward por etapas & Preparar y verificar las
 vistas de A v2 sobre la v3.1 \\
-Campaña base & 2.341 ajustes de referencias, Titans-MAC, GRU candidata,
-MARS-TITAN y CM-v1, y 133 trabajos del control en línea. Recibos por trabajo y
-reanudación & Fijar las opciones de memoria y lanzar \\
-Adaptadores & 6.588 ajustes en las 18 ventanas con padre, 1.116 predicciones
-del padre congelado y 1.178 selecciones de la cadena. Pruebas CUDA de
+Campaña base & 2.873 ajustes de referencias, Titans-MAC, GRU candidata,
+MARS-TITAN y CM-v1, 1.904 mesetas de la parada conjunta y 133 trabajos del
+control en línea. Recibos por trabajo y reanudación & Fijar las opciones de memoria y lanzar \\
+Adaptadores & 6.804 ajustes en las 18 ventanas con padre, 1.494 predicciones
+del padre congelado y 1.577 selecciones de la cadena. Pruebas CUDA de
 adaptadores y cuantiles superadas & Recorrido de la etapa en \texttt{cuda:0} y
 ejecución \\
-Políticas & 2.160 ajustes y 2.442 ejecuciones de referencia sobre cintas de
-precios reconstruidos. Ejecutores nativos de PPO, Double DQN y KLPO compilados
+Políticas & 3.096 ajustes y 3.219 ejecuciones de referencia sobre cintas de
+precios reconstruidos, con GRPO, Dr. GRPO y GSPO en el nivel de algoritmos.
+Ejecutores nativos de PPO, Double DQN, KLPO y los objetivos de grupo compilados
 con LibTorch CUDA y perfilados sin pasos de Adam & Medir el coste de la
 actualización. Ningún ajuste ejecutado \\
 Evaluación & Métricas por sesión, contrastes por bloques, calibración CQR
@@ -668,7 +669,8 @@ núcleos \texttt{mac\_online} auxiliares, uno con C desactivado y otro con C
 como penalización, y aplica M como retención con centros fijos del banco del
 lector, de modo que B, B+C, B+M y B+C+M tienen identidades propias. La
 campaña A v2 declara las referencias, Titans-MAC, la GRU candidata,
-MARS-TITAN con M0 a M3 y con $K=2$ y $K=4$, y CM-v1. El control
+MARS-TITAN con M0 a M3, con $K=2$ y $K=4$, con la primera lectura y con las
+seis correcciones B6, y CM-v1. El control
 \texttt{transformer\_compact\_online} parte del Transformer compacto elegido y
 actualiza sus pesos con las mismas etiquetas maduras que escribe el banco de
 MARS-TITAN, para descartar que una mejora de la memoria se deba solo a seguir
