@@ -325,15 +325,27 @@ def historical_contract(protocol, fold, parent_path, parent_sha256):
     )
 
 
-def fold_rows(temporal, fold, prediction, available, valid, maturity, accepted, source_reasons):
+def fold_partitioners(temporal, folds):
+    """Cortes de cada ventana, preparados una vez y reutilizados en todos los activos.
+
+    `FoldPartitioner` convierte el calendario completo de decisiones al construirse y no
+    cambia después, así que rehacerlo por activo solo repetía ese trabajo.
+    """
+    return {fold["id"]: FoldPartitioner(fold, temporal.clock, temporal.protocol) for fold in folds}
+
+
+def fold_rows(
+    temporal, fold, partitioner, prediction, available, valid, maturity, accepted, source_reasons
+):
     """Tramo y motivo de cada etiqueta de un activo en una ventana.
 
-    Las filas son independientes: el tramo de una etiqueta solo depende de su decisión, de
-    la disponibilidad de sus entradas y de su madurez. Quitar filas de la entrada no cambia
-    el resultado de las demás, y por eso un subconjunto puede excluirse aquí mismo.
+    `partitioner` son los cortes de la ventana (`fold_partitioners`). Las filas son
+    independientes: el tramo de una etiqueta solo depende de su decisión, de la
+    disponibilidad de sus entradas y de su madurez. Quitar filas de la entrada no cambia el
+    resultado de las demás, y por eso un subconjunto puede excluirse aquí mismo.
     """
     temporal.fold = fold
-    temporal.partitioner = FoldPartitioner(fold, temporal.clock, temporal.protocol)
+    temporal.partitioner = partitioner
     assigned = temporal.assign(prediction, available, maturity, accepted)
     assigned["partition"][~valid & accepted] = "excluded"
     future = accepted & (available > prediction)
@@ -445,6 +457,7 @@ def prepare_temporal_corpus(
         ):
             raise ValueError("El subconjunto no se eligió sobre los objetivos de esta vista")
     temporal = TemporalInputs(contract, input_policy=input_policy)
+    partitioners = fold_partitioners(temporal, folds)
     views = {fold["id"]: copy.deepcopy(parent.manifest) for fold in folds}
     for fold in folds:
         view = views[fold["id"]]
@@ -514,6 +527,7 @@ def prepare_temporal_corpus(
                 assigned = fold_rows(
                     temporal,
                     fold,
+                    partitioners[fold["id"]],
                     label_prediction,
                     available[indices],
                     valid[indices],

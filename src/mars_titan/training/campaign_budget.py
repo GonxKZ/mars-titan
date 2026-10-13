@@ -186,7 +186,7 @@ def catalog_market_counts(catalog, protocol, members=None):
     `campaign_chain.posttraining_rows`, como las ajusta el walk-forward por etapas.
     """
     from .edition_catalog import asset_slices
-    from .temporal_corpus import TemporalInputs, fold_rows, historical_contract
+    from .temporal_corpus import TemporalInputs, fold_partitioners, fold_rows, historical_contract
 
     manifest, path = catalog
     market, folds = protocol["market"], build_folds(protocol)
@@ -199,6 +199,7 @@ def catalog_market_counts(catalog, protocol, members=None):
         fold["id"]: _micros(campaign_chain.posttraining_rows(parent, fold)[0])
         for parent, fold in zip(folds, folds[1:], strict=False)
     }
+    partitioners = fold_partitioners(temporal, folds)
     counts = {fold["id"]: dict.fromkeys(PARTITIONS, 0) for fold in folds}
     fresh = dict.fromkeys(starts, 0)
     sizes = [asset["rows"] for asset in manifest["assets"]]
@@ -218,6 +219,7 @@ def catalog_market_counts(catalog, protocol, members=None):
                 assigned = fold_rows(
                     temporal,
                     fold,
+                    partitioners[fold["id"]],
                     rows["prediction"],
                     rows["available"],
                     valid,
