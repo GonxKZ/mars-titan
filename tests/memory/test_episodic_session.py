@@ -92,6 +92,20 @@ def test_all_predictions_see_one_snapshot_and_errors_use_the_emitted_prediction(
         assert all(p.value != first.predictions[i].value for i, p in enumerate(second.predictions))
 
 
+def test_session_encodes_episodes_with_its_native_binding(native, tmp_path, monkeypatch):
+    received = []
+    encode = FrozenEpisodeCodec.encode
+
+    def recorded(self, batch, *, native=None):
+        received.append(native)
+        return encode(self, batch, native=native)
+
+    monkeypatch.setattr(FrozenEpisodeCodec, "encode", recorded)
+    with session(native, tmp_path / "run", []) as run:
+        run.step(inputs(0), [], batch_rows=1)
+    assert received and all(value is native for value in received)
+
+
 def test_physical_input_batches_keep_identical_state_and_context(native, tmp_path):
     traces = [[], []]
     with (

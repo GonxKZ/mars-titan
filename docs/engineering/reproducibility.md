@@ -37,7 +37,7 @@ uv sync --locked \
   --extra encoders
 ```
 
-El extra `cuda` obtiene PyTorch desde el índice CUDA 13.0 declarado en `pyproject.toml`, para Linux x86-64 y Linux aarch64. La segunda arquitectura corresponde a la DGX GB10 y su estado se describe en [plataformas de hardware](hardware-platforms.md). Se han comprobado importación, operación en `cuda:0`, extracción de representaciones y entrenamiento supervisado. La resolución del lockfile no sustituye estas comprobaciones al cambiar de equipo.
+El extra `cuda` obtiene PyTorch desde el índice CUDA 13.0 declarado en `pyproject.toml`, para Linux x86-64, la única plataforma del proyecto ([plataforma de hardware](hardware-platforms.md)). Se han comprobado importación, operación en `cuda:0`, extracción de representaciones y entrenamiento supervisado. La resolución del lockfile no sustituye estas comprobaciones al cambiar de equipo.
 
 Las herramientas actuales se ejecutan desde la raíz:
 
