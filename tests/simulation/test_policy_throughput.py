@@ -14,7 +14,7 @@ import pytest
 import torch
 from torch.optim import optimizer as optim_module
 
-from mars_titan.simulation import policy_plan, policy_throughput
+from mars_titan.simulation import policy_plan, policy_throughput, window_tapes
 from mars_titan.simulation.native_runtime import library_path
 
 STAGES = {v: Path(f"configs/simulation/historical-masked-rl-stage-{v.lower()}.json") for v in "AB"}
@@ -141,14 +141,18 @@ def test_measurement_steps_the_environment_and_the_network_without_changing_weig
         reduced(), steps=8, warmup=2, library="/nonexistent/library.so"
     )
     assert dict(optim_module._global_optimizer_pre_hooks) == hooks and created == []
-    assert rates["optimizer_steps"] == 0 and rates["tape"]["assets"] == 8
+    # La cinta medida tiene el diseño máximo: universos disjuntos de 8 activos en los tres
+    # tramos de ajuste, la validación y la evaluación.
+    policies = reduced()["policies"]
+    layout = window_tapes.layout_bound(policies["universe"], policies["train_windows"])
+    assert rates["optimizer_steps"] == 0 and rates["tape"]["assets"] == layout == 40
     for market in ("CN", "US"):
         measured = rates["stepping"][market]
         assert measured["python"]["steps_per_second"] > 0
         assert measured["python"]["measured_steps"] == 8
         assert measured["native"]["status"] == "unavailable" and measured["native"]["reason"]
     network = rates["network"]
-    assert network["observation_size"] == 6 * 8 + 2 and network["minibatch_size"] == 16
+    assert network["observation_size"] == 6 * layout + 2 and network["minibatch_size"] == 16
     assert set(network["inference_transitions_per_second"]) == {"1", "4"}
     assert network["gradient_minibatches_per_second"] > 0
     assert not {"loss", "reward", "return"} & set(network)

@@ -48,11 +48,17 @@ Reality Check, StepM, MCS y el diagnóstico de longitud de bloque de Politis y W
 calculados con ``arch`` y ``statsmodels`` sobre las pérdidas diarias de cada familia. Su
 presencia no cambia ninguna otra salida del informe. Esas dos bibliotecas son del extra
 ``research`` y solo se cargan al evaluar una configuración que declara la sección.
+
+También es opcional la retención e interferencia en las revisitas de un régimen
+(``retention_interference``). Usa las mismas series por sesión y un calendario de regímenes
+calculado solo con precios hasta cada decisión (``regime_calendar``), que llega aparte. Sin
+calendario la sección queda pendiente y el resto del informe no cambia.
 """
 
 import argparse
 import dataclasses
 import json
+import re
 import resource
 import time
 from datetime import UTC, datetime
@@ -74,6 +80,8 @@ from mars_titan.evaluation import (
     modality_ablation,
     modality_strata,
     predictive_ability,
+    regime_calendar,
+    retention_interference,
 )
 from mars_titan.evaluation.forecast_panel import WEIGHTINGS, ForecastPanel, SessionSeries
 from mars_titan.evaluation.forecast_scores import (
@@ -148,6 +156,7 @@ ABLATION_FIELD = "modality_ablation"
 LONG_SHORT_FIELD = "long_short"
 JOINT_FIELD = "joint_design"
 PREDICTIVE_FIELD = "predictive_ability"
+RETENTION_FIELD = "retention_interference"
 # Secciones secundarias que exige cada versión de la configuración.
 SECTIONS = {
     1: set(),
@@ -157,7 +166,7 @@ SECTIONS = {
     5: {STRATA_FIELD, ABLATION_FIELD, LONG_SHORT_FIELD, JOINT_FIELD},
 }
 # Secciones secundarias que cualquier versión admite sin exigirlas.
-OPTIONAL_SECTIONS = {PREDICTIVE_FIELD}
+OPTIONAL_SECTIONS = {PREDICTIVE_FIELD, RETENTION_FIELD}
 _JOINT_FIELDS = {
     "declared_at",
     "joint_scope",
@@ -534,6 +543,8 @@ def validate_config(config, digest, folder):
         long_short.declaration(config[LONG_SHORT_FIELD])
     if PREDICTIVE_FIELD in config:
         predictive_ability.declaration(config[PREDICTIVE_FIELD], comparison)
+    if RETENTION_FIELD in config:
+        retention_interference.declaration(config[RETENTION_FIELD], arms)
     resolved = {scope: _protocols(folder, scope, declared) for scope, declared in scopes.items()}
     if JOINT_FIELD in config:
         _joint_design(config[JOINT_FIELD], resolved, arms, families, folder)
@@ -595,19 +606,47 @@ def _view(folder, record, window, scope, policy):
     return digest, edition
 
 
+def _platform_record(value):
+    """Plataforma común de unas fuentes: su huella, o ninguna si todos los recibos son anteriores
+    a su registro, y cuántos se atribuyeron a qué perfil."""
+    if not isinstance(value, dict):
+        return False
+    digest, profile = value.get("platform_sha256"), value.get("unrecorded_profile")
+    recorded, unrecorded = value.get("recorded"), value.get("unrecorded")
+    return (
+        set(value) == {"platform_sha256", "recorded", "unrecorded", "unrecorded_profile"}
+        and type(recorded) is int
+        and type(unrecorded) is int
+        and recorded >= 0
+        and unrecorded >= 0
+        and recorded + unrecorded > 0
+        and (digest is None) == (recorded == 0)
+        and (digest is None or re.fullmatch("[0-9a-f]{64}", digest) is not None)
+        and (profile is None) == (unrecorded == 0)
+        and (profile is None or isinstance(profile, str))
+    )
+
+
 def load_sources(path, config, scope_name):
     """Validar el manifiesto de fuentes de un ámbito antes de leer predicciones."""
     path = Path(path)
     sources, digest = read_manifest(path, 16 * 1024**2)
     scope = config["resolved_scopes"].get(scope_name)
     _require(scope is not None, "El ámbito no está declarado en la configuración")
+    # La versión 2 añade la plataforma común de los recibos. La 1 no la registraba.
+    version = sources.get("schema_version") if isinstance(sources, dict) else None
+    fields = {"schema_version", "kind", "scope", "input_policy", "windows", "arms"}
     _require(
         isinstance(sources, dict)
-        and set(sources) == {"schema_version", "kind", "scope", "input_policy", "windows", "arms"}
-        and sources["schema_version"] == 1
+        and version in (1, 2)
+        and set(sources) == fields | ({"platform"} if version == 2 else set())
         and sources["kind"] == SOURCES_KIND
         and sources["scope"] == scope_name,
         "Las fuentes no cumplen su contrato",
+    )
+    platform = sources.get("platform")
+    _require(
+        version == 1 or _platform_record(platform), "La plataforma de las fuentes no es válida"
     )
     policy = config["input_policy"]
     _require(
@@ -692,6 +731,7 @@ def load_sources(path, config, scope_name):
         edition=edition,
         files=files,
         joint_views=joint_views,
+        platform=platform,
         **scope,
     )
 
@@ -1117,6 +1157,27 @@ def _predictive_ability(config, overall, views):
     )
 
 
+def _retention(config, overall, sources, markets, regimes):
+    """Retención e interferencia con las series de MAE por sesión, o la sección pendiente."""
+    section = config[RETENTION_FIELD]
+    if regimes is None:
+        return retention_interference.pending(section)
+    calendar, digest, rule = regime_calendar.read(regimes)
+    windows = [tuple(window["evaluation"]) for window in sources["windows"].values()]
+
+    def series_of(arm, market):
+        if arm not in overall:
+            return None
+        averaged = _seed_series(overall, arm, market, "mae")
+        times = overall[arm][0][market].session_time
+        return averaged.values, averaged.defined, times, averaged.session_period
+
+    result = retention_interference.report(
+        section, config["comparison"], windows, series_of, calendar, markets
+    )
+    return dict(result, calendar=dict(sha256=digest, rule=rule))
+
+
 def _status(row):
     joint = row["simultaneous_interval"]
     if joint is None:
@@ -1464,7 +1525,7 @@ def _strata_report(config, scored, overall, markets):
 
 
 def evaluate_walk_forward(
-    config_path, sources_path, scope, *, ablation_sources=None, aggregates=None
+    config_path, sources_path, scope, *, ablation_sources=None, aggregates=None, regimes=None
 ):
     """Calcular el informe y la tabla por sesión de un ámbito sin escribir nada.
 
@@ -1473,6 +1534,8 @@ def evaluate_walk_forward(
     admite si la configuración declara la ablación. `aggregates` es la carpeta de los
     agregados por ventana (`window_aggregates`) que guardó la retención v2. Con ella no se
     lee ninguna predicción por fila, y cada ventana exige agregados de estas mismas fuentes.
+    `regimes` es el calendario de regímenes de `regime_calendar`. Solo se admite si la
+    configuración declara la retención e interferencia.
     """
     started = time.perf_counter()
     config = resolve_config(config_path)
@@ -1482,6 +1545,10 @@ def evaluate_walk_forward(
     # Desde aquí, los brazos y las familias son los del ámbito evaluado.
     config = scope_config(config, scope)
     weighting, markets = config["metrics"]["market_weighting"], sources["markets"]
+    _require(
+        regimes is None or RETENTION_FIELD in config,
+        "La configuración no declara la retención e interferencia",
+    )
     ablation = None
     if ablation_sources is not None:
         _require(ABLATION_FIELD in config, "La configuración no declara la ablación de modalidades")
@@ -1529,6 +1596,7 @@ def evaluate_walk_forward(
         markets=markets,
         configuration=dict(name=config["name"], sha256=config["sha256"]),
         sources_sha256=sources["sha256"],
+        **({"platform": sources["platform"]} if sources["platform"] else {}),
         **(policy_identity(config["input_policy"]) or dict(input_policy=config["input_policy"])),
         edition=sources["edition"],
         protocol_sha256=sources["protocol_sha256"],
@@ -1587,6 +1655,11 @@ def evaluate_walk_forward(
         report["analysis_source_sha256"]["evaluation/predictive_ability.py"] = sha256(
             Path(__file__).parents[1] / "evaluation/predictive_ability.py"
         )
+    if RETENTION_FIELD in config:
+        report[RETENTION_FIELD] = _retention(config, overall, sources, markets, regimes)
+        if regimes is not None:
+            for name in ("evaluation/retention_interference.py", "evaluation/regime_calendar.py"):
+                report["analysis_source_sha256"][name] = sha256(Path(__file__).parents[1] / name)
     if strata is not None:
         report[STRATA_FIELD] = strata
         for name in ("evaluation/modality_strata.py", "training/corpus_inputs.py"):
@@ -1616,7 +1689,14 @@ def evaluate_walk_forward(
 
 
 def write_walk_forward(
-    config_path, sources_path, scope, output, *, ablation_sources=None, aggregates=None
+    config_path,
+    sources_path,
+    scope,
+    output,
+    *,
+    ablation_sources=None,
+    aggregates=None,
+    regimes=None,
 ):
     """Publicar el informe y las sesiones en un directorio nuevo fuera de las fuentes."""
     output = Path(output)
@@ -1625,11 +1705,18 @@ def write_walk_forward(
     folders = [Path(config_path).parent, Path(sources_path).parent]
     if ablation_sources is not None:
         folders.append(Path(ablation_sources).parent)
+    if regimes is not None:
+        folders.append(Path(regimes).parent)
     for source in folders:
         outside_source(source, output)
         outside_source(output, source)
     report, sessions = evaluate_walk_forward(
-        config_path, sources_path, scope, ablation_sources=ablation_sources, aggregates=aggregates
+        config_path,
+        sources_path,
+        scope,
+        ablation_sources=ablation_sources,
+        aggregates=aggregates,
+        regimes=regimes,
     )
     json.dumps(report, allow_nan=False)
     output.mkdir(parents=True)
@@ -1647,6 +1734,7 @@ def main(argv=None):
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--ablation-sources", type=Path)
     parser.add_argument("--aggregates", type=Path, help="Agregados por ventana de la retención v2")
+    parser.add_argument("--regimes", type=Path, help="Calendario de regímenes de la edición")
     args = parser.parse_args(argv)
     report = write_walk_forward(
         args.config,
@@ -1655,6 +1743,7 @@ def main(argv=None):
         args.output,
         ablation_sources=args.ablation_sources,
         aggregates=args.aggregates,
+        regimes=args.regimes,
     )
     windows = len(report["windows"])
     print(f"Comparados {len(report['arms'])} brazos en {windows} ventanas. Reserva final cerrada.")
