@@ -11,8 +11,10 @@ cuyos archivos siguen presentes y construye sus índices cronológicos. Las fila
 y sus huellas son los de la vista. `measure` reutiliza esos índices y recorre en `cuda:0` el
 ajuste cronológico de `titans_mac_online` con la receta de 2000 y `_NoStepOptimizer`, con el
 gancho que prohíbe pasos, y la inferencia congelada. Ningún peso cambia y no se registran
-pérdidas ni errores, así que la medida no es una evaluación. Con los caudales medidos estima
-las horas de una semilla del control en el piloto declarado.
+pérdidas ni errores, así que la medida no es una evaluación. Repite el recorrido completo
+`--repeats` veces, porque la GPU es compartida y el caudal varía entre pasadas, y estima las
+horas de una semilla del control en el piloto declarado con la pasada más lenta y con la
+mediana.
 """
 
 import argparse
@@ -21,6 +23,7 @@ import json
 import math
 import os
 import platform
+import statistics
 import subprocess
 import time
 from datetime import UTC, datetime
@@ -176,7 +179,7 @@ def _gpu():
     return out.strip()
 
 
-def measure(work, output):
+def measure(work, output, repeats):
     import torch
 
     from mars_titan.training import campaign_throughput as ct
@@ -191,6 +194,8 @@ def measure(work, output):
     torch.backends.cudnn.allow_tf32 = False
     torch.set_float32_matmul_precision("highest")
     torch.set_num_threads(2)
+    if type(repeats) is not int or not 1 <= repeats <= 9:
+        raise ValueError("Las repeticiones van de una a nueve")
     started = time.perf_counter()
     campaign, document, cases, fold, sources, inputs = _open(work)
     opened = time.perf_counter() - started
@@ -207,22 +212,30 @@ def measure(work, output):
     )
     before = _gpu()
     guard = ct._forbid_steps()
+    records, seconds, gpu = [], [], []
     try:
         with titans.unfused_attention():
-            began = time.perf_counter()
-            record = ct._chronological(build, lambda _: _Pass(), Paused, OPTIONS, inputs, SETTINGS)
-            seconds = time.perf_counter() - began
+            for _ in range(repeats):
+                began = time.perf_counter()
+                records.append(
+                    ct._chronological(build, lambda _: _Pass(), Paused, OPTIONS, inputs, SETTINGS)
+                )
+                seconds.append(time.perf_counter() - began)
+                gpu.append(_gpu())
     finally:
         guard.remove()
-    declared = record["options"][record["declared_option"]]
+    train = [r["options"][r["declared_option"]]["train"] for r in records]
+    inference = [r["inference"] for r in records]
     pilot = json.loads(DECLARATION.read_text())["pilot"]
-    hours = seed_hours(
-        declared["train"],
-        record["inference"],
+    options = dict(
         epochs=recipe.epochs,
         cases=len(cases),
         warmup_months=titans.walk_forward_options(document)["warmup_months"],
         windows=pilot["validation_windows"],
+    )
+    hours = dict(
+        slowest=seed_hours(min(train), min(inference), **options),
+        median=seed_hours(statistics.median(train), statistics.median(inference), **options),
     )
     subset = Path(work) / "view-64" / "manifest.json"
     meta = json.loads(subset.read_text())
@@ -272,8 +285,11 @@ def measure(work, output):
         ),
         settings=SETTINGS,
         sources_open_seconds=opened,
+        repeats=repeats,
         measurement_seconds=seconds,
-        record=record,
+        gpu_after_each_repeat=gpu,
+        records=records,
+        rates=dict(train=train, inference=inference),
         estimate=hours,
         optimizer_steps=0,
         training_runs=0,
@@ -283,7 +299,7 @@ def measure(work, output):
     from mars_titan.data.storage import atomic_json
 
     atomic_json(Path(output), receipt)
-    print(json.dumps(dict(record=record, estimate=hours), default=str))
+    print(json.dumps(dict(rates=dict(train=train, inference=inference), estimate=hours)))
 
 
 def main():
@@ -295,11 +311,12 @@ def main():
     run = commands.add_parser("measure")
     run.add_argument("--work", type=Path, required=True)
     run.add_argument("--output", type=Path, required=True)
+    run.add_argument("--repeats", type=int, default=3)
     args = parser.parse_args()
     if args.command == "prepare":
         prepare(args.view, args.work)
     else:
-        measure(args.work, args.output)
+        measure(args.work, args.output, args.repeats)
 
 
 if __name__ == "__main__":
