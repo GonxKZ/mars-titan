@@ -1,7 +1,6 @@
 """Paridad real de inferencia CUDA, habilitada solo en una ventana de GPU exclusiva."""
 
 import copy
-import os
 
 import numpy as np
 import pyarrow.parquet as pq
@@ -16,14 +15,14 @@ from mars_titan.posttraining.parents import FrozenParent
 from mars_titan.training.checkpoints import StopRequest
 from mars_titan.training.corpus_inputs import CorpusDataset
 from mars_titan.training.experiment_resources import GpuLease
+from tests.suite_support import requires_cuda_integration
 from tests.training.test_temporal_corpus import inputs as inputs
 from tests.training.test_temporal_corpus import prepare
 
+pytestmark = pytest.mark.cuda
 
-@pytest.mark.skipif(
-    os.environ.get("MARS_TITAN_CUDA_INTEGRATION") != "1",
-    reason="Requiere una ventana CUDA exclusiva y activación explícita",
-)
+
+@requires_cuda_integration
 def test_selected_inference_preserves_cpu_reference_on_cuda(inputs, tmp_path):
     prepare(inputs, tmp_path / "views")
     dataset = CorpusDataset(tmp_path / "views/fold-000/manifest.json")

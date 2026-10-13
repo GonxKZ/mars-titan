@@ -20,7 +20,7 @@ from tests.training.test_masked_reference_run import (
     recording_optimizer,
 )
 
-pytestmark = pytest.mark.skipif(not torch.cuda.is_available(), reason="Requiere cuda:0")
+pytestmark = pytest.mark.cuda
 
 
 @pytest.mark.parametrize("kind", KINDS)

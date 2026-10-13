@@ -22,13 +22,13 @@ from mars_titan.simulation.reconstructed_tape import build_reconstructed_tape
 from tests.environments.walk_forward_fixture import fold, protocol
 from tests.simulation.native_library import requires_native_library
 from tests.simulation.unadjusted_edition_fixture import evaluation_window, predictions
+from tests.suite_support import UNADJUSTED_EDITION_REASON
 
 EDITION = os.environ.get("MARS_TITAN_UNADJUSTED_EDITION")
 STATUS = os.environ.get("MARS_TITAN_LISTING_STATUS")
 pytestmark = pytest.mark.skipif(
     EDITION is None or STATUS is None,
-    reason="Declara MARS_TITAN_UNADJUSTED_EDITION y MARS_TITAN_LISTING_STATUS para leer la "
-    "edición real",
+    reason=UNADJUSTED_EDITION_REASON,
 )
 
 

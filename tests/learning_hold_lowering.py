@@ -42,6 +42,10 @@ INVENTORY = {
         "el primer trabajo del control de la cabeza tiene que pasar la protección para "
         "comprobar que vuelve a leerse antes del segundo, aunque el ejecutor sustituido no ajusta"
     ),
+    "tests/test_suite_support.py::test_unguarded_fits_run_when_the_hold_allows_learning": (
+        "la sesión de pytest hija lee una protección temporal que permite aprender para "
+        "comprobar que la marca unguarded_fit deja de omitir, aunque la prueba sondeada no ajusta"
+    ),
 }
 
 
