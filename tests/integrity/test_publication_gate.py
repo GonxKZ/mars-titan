@@ -59,7 +59,20 @@ def budget_result(monkeypatch):
 
 
 @pytest.fixture
-def chain_calls(monkeypatch, budget_result):
+def preprocessing_result(monkeypatch):
+    """Preprocesado superado que una prueba puede cambiar antes de construir el informe."""
+    state = SimpleNamespace(passed=True, calls=[])
+
+    def check(campaign, jobs, output, comparisons, **options):
+        state.calls.append(options)
+        return dict(kind="past_only_preprocessing", passed=state.passed)
+
+    monkeypatch.setattr(gate.past_only_preprocessing, "check", check)
+    return state
+
+
+@pytest.fixture
+def chain_calls(monkeypatch, budget_result, preprocessing_result):
     """Secciones superadas salvo la disjunción de la cadena, que registra sus llamadas."""
     calls = []
 
@@ -110,6 +123,21 @@ def test_the_budget_of_the_campaign_is_one_more_section_that_blocks(
     assert report["failing"] == ["budget/campaign"] and not report["passed"]
 
 
+def test_the_preprocessing_is_one_more_section_that_blocks(
+    chain_calls, preprocessing_result, tmp_path
+):
+    loaded = _loaded(campaign_stage.ANCHORED)
+    report = gate.build(loaded, {}, tmp_path, [], adapter_output=tmp_path, regimes=tmp_path / "r")
+    assert report["preprocessing"]["campaign"]["passed"] and report["passed"]
+    # Recibe la etapa publicada, su salida y el calendario de la publicación.
+    assert preprocessing_result.calls == [
+        dict(posttraining=loaded["posttraining"], adapter_output=tmp_path, regimes=tmp_path / "r")
+    ]
+    preprocessing_result.passed = False
+    report = gate.build(loaded, {}, tmp_path, [], adapter_output=tmp_path)
+    assert report["failing"] == ["preprocessing/campaign"] and not report["passed"]
+
+
 def test_a_failed_report_is_kept_and_stops_the_publication(chain_calls, tmp_path):
     report = gate.build(_loaded(campaign_stage.STAGED), {}, tmp_path, [], adapter_output=tmp_path)
     folder = tmp_path / "partial"
@@ -132,15 +160,15 @@ def stubbed_publication(monkeypatch):
     Solo queda real el orden de `run_publication`: carpeta provisional, informe de
     integridad y nombre del destino. `report` es el informe que devolverá el gate.
     """
-    state = SimpleNamespace(report=None, built=0, comparisons=None)
+    state = SimpleNamespace(report=None, built=0, comparisons=None, regimes=None)
 
     def walk_forward(config, sources, scope, folder, **options):
         Path(folder).mkdir(parents=True)
         (Path(folder) / "comparison.json").write_text("{}")
 
-    def build(loaded, views, output, comparisons, *, adapter_output=None):
+    def build(loaded, views, output, comparisons, *, adapter_output=None, regimes=None):
         state.built += 1
-        state.comparisons = comparisons
+        state.comparisons, state.regimes = comparisons, regimes
         assert {entry["label"] for entry in comparisons} >= {"walk-forward/US+CN"}
         return state.report
 
@@ -188,6 +216,8 @@ def test_the_publication_stops_on_a_failed_report_and_carries_a_passed_one(
     stubbed_publication.report = dict(passed=True, failing=[])
     receipt = _publish(tmp_path, destination)
     assert stubbed_publication.built == 2
+    # El informe recibe el calendario de regímenes de la publicación.
+    assert stubbed_publication.regimes == tmp_path / "regimes.json"
     assert receipt["integrity"] == dict(
         path=gate.REPORT, sha256=sha256(destination / gate.REPORT), passed=True
     )
