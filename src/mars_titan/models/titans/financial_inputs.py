@@ -18,16 +18,18 @@ from mars_titan.data.input_policy import (
 from mars_titan.data.price_windows import PRICE_WINDOW_CHANNELS, validate_price_window
 from mars_titan.training.cohort_contract import representation_identity
 
-from .config import MAX_BLOCK_ROWS, bounded_integer, canonical
+from .config import MAX_BLOCK_ROWS, FingerprintOnce, bounded_integer, canonical
 from .state import check_finite
 
 FINAL_TEST_US = 1_704_067_200_000_000
 HISTORICAL_START_US = 946_684_800_000_000
 MAX_INPUT_BYTES = 64 * 1024**2
+# Identificador de flujo (mercado y activo), compilado una vez porque se comprueba por fila.
+FLOW_ID = re.compile(r"(?:US|CN)/[A-Z0-9.^_=\-]{1,64}")
 
 
 @dataclass(frozen=True, init=False)
-class FinancialInputSpec:
+class FinancialInputSpec(FingerprintOnce):
     source_sha256: str
     view_sha256: str
     input_policy: str
@@ -91,9 +93,6 @@ class FinancialInputSpec:
             dimensions=self.dimensions,
             context=self.context,
         )
-
-    def fingerprint(self):
-        return hashlib.sha256(canonical(self.identity()).encode()).hexdigest()
 
 
 def _timestamps(values, size, name):
@@ -180,11 +179,7 @@ def _decision_identity(batch, size, specification):
         if not isinstance(identifier, str) or len(identifier) > 128:
             raise ValueError("El ID de muestra no está admitido")
         split = identifier.rsplit("/", 1)
-        if (
-            len(split) != 2
-            or split[1] != str(at)
-            or re.fullmatch(r"(?:US|CN)/[A-Z0-9.^_=\-]{1,64}", split[0]) is None
-        ):
+        if len(split) != 2 or split[1] != str(at) or FLOW_ID.fullmatch(split[0]) is None:
             raise ValueError("La muestra no identifica flujo y corte")
         flows.append(split[0])
     if len(set(flows)) != size:

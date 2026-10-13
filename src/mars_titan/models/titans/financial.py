@@ -1,7 +1,6 @@
 """Predictor financiero por decisión, sin banco ni publicación de estado."""
 
 import hashlib
-import re
 from contextlib import nullcontext
 from dataclasses import asdict, dataclass, fields, replace
 
@@ -37,7 +36,13 @@ from .config import (
     canonical,
     require_identity,
 )
-from .financial_inputs import FINAL_TEST_US, HISTORICAL_START_US, DecisionBatch, FinancialInputSpec
+from .financial_inputs import (
+    FINAL_TEST_US,
+    FLOW_ID,
+    HISTORICAL_START_US,
+    DecisionBatch,
+    FinancialInputSpec,
+)
 from .local_control import MACProjectionConfig, MACProjectionControl, ProjectedMACResult
 from .mac import TitansMAC
 from .presence_modulation import (
@@ -403,6 +408,8 @@ class FinancialPredictor(nn.Module):
     def _seal_parameters(self):
         if self.head.weight.dtype not in (torch.float32, torch.float64):
             raise ValueError("El predictor admite float32 y float64")
+        # Una carga o un cambio de tipo o dispositivo vuelve a sellar y a calcular la identidad.
+        self._config_ids = {}
         self._parameter_id = self._parameter_digest()
         self._parameter_signature = self._signature()
 
@@ -489,7 +496,16 @@ class FinancialPredictor(nn.Module):
         super()._load_from_state_dict(state_dict, prefix, *args, **kwargs)
 
     def _config_id(self):
-        return hashlib.sha256(canonical(self.get_extra_state()).encode()).hexdigest()
+        """Huella del contrato de `get_extra_state`, calculada una vez por modo train/eval.
+
+        Fuera del modo, el contrato solo cambia con una carga o un cambio de tipo o
+        dispositivo, que vuelven a sellar los parámetros y olvidan las huellas guardadas.
+        """
+        cached = self._config_ids.get(self.training)
+        if cached is None:
+            cached = hashlib.sha256(canonical(self.get_extra_state()).encode()).hexdigest()
+            self._config_ids[self.training] = cached
+        return cached
 
     def _tensor_bytes_per_flow(self):
         fast = (
@@ -591,9 +607,7 @@ class FinancialPredictor(nn.Module):
     def _check_flows(self, ids):
         bounded_integer(len(ids), "lote de flujos", 1, self.config.max_batch)
         if len(set(ids)) != len(ids) or any(
-            not isinstance(value, str)
-            or re.fullmatch(r"(?:US|CN)/[A-Z0-9.^_=\-]{1,64}", value) is None
-            for value in ids
+            not isinstance(value, str) or FLOW_ID.fullmatch(value) is None for value in ids
         ):
             raise ValueError("Los flujos deben ser identificadores únicos de mercado y activo")
 

@@ -611,3 +611,39 @@ def test_cuda_prepare_waits_for_the_device_once(differentiable):
         model.prepare(batch, state, differentiable=differentiable)
         count = synchronizations(lambda: model.prepare(batch, state, differentiable=differentiable))
     assert count == 1
+
+
+def test_configuration_fingerprints_are_computed_once_and_not_serialized():
+    import pickle
+    from copy import deepcopy
+
+    from mars_titan.models.titans.config import MACConfig, MemoryConfig, canonical
+
+    memory = MemoryConfig(dim=32, max_batch=8, max_tokens=1)
+    for config in (memory, MACConfig(memory=memory, heads=4, max_segment=1), specification()):
+        expected = hashlib.sha256(canonical(config.identity()).encode()).hexdigest()
+        assert config.fingerprint() == expected
+        assert config.__dict__["_fingerprint"] == expected
+        for copied in (deepcopy(config), pickle.loads(pickle.dumps(config))):
+            assert "_fingerprint" not in copied.__dict__
+            assert copied == config and copied.fingerprint() == expected
+
+
+def test_predictor_identity_follows_mode_dtype_and_loads():
+    from mars_titan.models.titans.config import canonical
+
+    def expected(model):
+        return hashlib.sha256(canonical(model.get_extra_state()).encode()).hexdigest()
+
+    model, _ = on_device("cpu", torch.float32)
+    model.train()
+    training = model._config_id()
+    assert training == expected(model)
+    model.eval()
+    assert model._config_id() == expected(model) != training
+    model.double()
+    assert model._config_id() == expected(model)
+    model.train()
+    assert model._config_id() == expected(model) != training
+    model.float().train()
+    assert model._config_id() == training
