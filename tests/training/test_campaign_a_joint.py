@@ -28,7 +28,7 @@ from mars_titan.training import campaign_schedule as order
 from mars_titan.training import masked_campaign as engine
 from mars_titan.training.joint_temporal_corpus import prepare_joint_temporal_corpus
 from mars_titan.training.selection import JOINT_PLATEAU
-from tests.learning_hold_lowering import lowers_learning_hold
+from tests.learning_hold_lowering import allowed_hold, lowers_learning_hold
 from tests.training.test_masked_campaign import Recorder, doubles, run
 from tests.training.test_masked_campaign_joint import COMMON, STOPS, JointRecorder, receipt, slot
 from tests.training.test_walk_forward_v2_views import expected, fixture, observed
@@ -1094,8 +1094,7 @@ def joint_campaign(tmp_path_factory, learning_doubles_module):
 def learning_doubles_module(tmp_path_factory):
     from mars_titan.training.learning_hold import HOLD_ENV
 
-    path = tmp_path_factory.mktemp("hold") / "training-hold.json"
-    path.write_text(json.dumps({"training_allowed": True}), encoding="utf-8")
+    path = allowed_hold(tmp_path_factory.mktemp("hold") / "training-hold.json")
     patch = pytest.MonkeyPatch()
     patch.setenv(HOLD_ENV, str(path))
     yield path

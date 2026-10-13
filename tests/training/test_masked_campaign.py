@@ -34,6 +34,7 @@ from mars_titan.training.campaign_plan import load_campaign, plan_campaign
 from mars_titan.training.corpus_inputs import CorpusDataset
 from mars_titan.training.learning_hold import LearningHoldError
 from tests.hardware.platform_doubles import desktop, laptop
+from tests.learning_hold_lowering import lowers_learning_hold
 from tests.training.test_walk_forward_v2_views import fixture
 
 pytestmark = pytest.mark.usefixtures("learning_doubles")
@@ -313,6 +314,10 @@ def test_active_hold_rejects_the_campaign_before_creating_outputs(
     assert not (tmp_path / "out").exists() and recorder.calls == []
 
 
+@lowers_learning_hold(
+    "tests/training/test_masked_campaign.py::"
+    "test_hold_reinstated_during_the_campaign_stops_before_the_next_job"
+)
 def test_hold_reinstated_during_the_campaign_stops_before_the_next_job(
     prepared, tmp_path, learning_hold
 ):
