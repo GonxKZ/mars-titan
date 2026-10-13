@@ -92,7 +92,7 @@ def test_missing_or_unrepresentable_date_does_not_merge_sessions(times):
 
 
 def row_reference(state, markets, times, errors):
-    """Oráculo secuencial con el orden de suma de cada lote explícito."""
+    """Referencia secuencial con el orden de suma de cada lote explícito."""
     pending = {}
     for market, moment, value in zip(markets, times, errors, strict=True):
         entry = pending.setdefault((str(market), int(moment)), [0, 0.0, 0.0])

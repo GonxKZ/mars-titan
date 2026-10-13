@@ -2,7 +2,7 @@
 
 Ridge y XGBoost no tienen puntos de adaptación. En cada ventana k ≥ 1 su cadena solo tiene
 el padre congelado de k-1, que se predice con el traslado tabular de la campaña base y se
-confirma con el mismo recibo y la misma selección que los demás brazos. Así las políticas
+confirma con el mismo recibo y la misma selección que los demás modelos. Así las políticas
 leen de todas las familias el mismo tipo de predicción fuera de muestra. El recorrido usa
 la campaña reducida de `campaign_fixture` con un Ridge sustituto sin parámetros ajustados.
 """

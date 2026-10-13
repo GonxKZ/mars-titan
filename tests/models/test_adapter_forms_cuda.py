@@ -1,7 +1,7 @@
 """Formas de adaptador de #444 con correcciones nulas en cuda:0, sin pasos de optimizador.
 
 Se omiten sin GPU. Repiten en el dispositivo lo que `test_adapter_forms.py` comprueba en
-CPU: en inferencia el brazo emite los mismos bits que el padre y los pesos efectivos de las
+CPU: en inferencia el modelo emite los mismos bits que el padre y los pesos efectivos de las
 formas por tensor son los del padre bit a bit. Interesan sobre todo dos rutas que la CPU no
 recorre, los sesgos de las recurrentes con cuDNN (BitFit) y las normas por fila de DoRA
 calculadas en la GPU. Frente a CPU se aceptan las tolerancias de
@@ -15,7 +15,7 @@ from torch.nn.utils import parametrize
 from mars_titan.models.predictive_adaptation import adapted_copy, adapter_names, parent_copy
 from tests.models.test_adapter_forms import CASES, arm_targets, batch, parent, same_bits
 
-pytestmark = pytest.mark.skipif(not torch.cuda.is_available(), reason="Requiere cuda:0")
+pytestmark = pytest.mark.cuda
 
 
 # Una copia con los pesos recurrentes en reservas separadas obliga a cuDNN a compactarlos

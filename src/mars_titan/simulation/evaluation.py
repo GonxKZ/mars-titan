@@ -73,11 +73,7 @@ def evaluate(env, policy, *, seed=42, check_resources=None):
             turnover=state["turnover"][env.tape.currency] / initial,
             steps=steps,
             completed=completed,
-            invalid_reason="missing_close"
-            if not completed
-            else "ruined"
-            if reason == "ruin"
-            else None,
+            invalid_reason=reason if not completed else "ruined" if reason == "ruin" else None,
         ),
         currency=env.tape.currency,
         cost_bps=env.cost_bps,

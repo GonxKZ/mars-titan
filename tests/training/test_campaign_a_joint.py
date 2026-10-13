@@ -70,6 +70,7 @@ def edited(tmp_path, change, *, comparison_change=None):
         ("titans_mac", "recipe"),
         ("episodic_gru", "recipe"),
         ("mars_titan", "recipe"),
+        ("mars_titan", "correction_recipe"),
         ("cm_v1", "declaration"),
     ):
         value[section][key] = str((CAMPAIGN.parent / value[section][key]).resolve())
@@ -84,10 +85,10 @@ def edited(tmp_path, change, *, comparison_change=None):
 def test_v2_plans_the_joint_model_for_every_arm_and_three_separate_controls():
     loaded = campaign()
     counts = plan.count_jobs(loaded)
-    assert (counts["training_jobs"], counts["prediction_jobs"]) == (2341, 0)
+    assert (counts["training_jobs"], counts["prediction_jobs"]) == (2873, 0)
     joint, us, cn = (counts["scopes"][scope] for scope in ("US+CN", "US", "CN"))
     assert (joint["windows"], us["windows"], cn["windows"]) == (19, 19, 13)
-    assert (joint["training_jobs"], us["training_jobs"], cn["training_jobs"]) == (1957, 228, 156)
+    assert (joint["training_jobs"], us["training_jobs"], cn["training_jobs"]) == (2489, 228, 156)
     # El control en línea solo se evalúa, y por tanto solo se ajusta, en el ámbito conjunto.
     assert set(us["arms"]) == set(cn["arms"]) == set(CONTROLS)
     assert plan.scope_arms(loaded, "US") == plan.scope_arms(loaded, "CN") == list(CONTROLS)
@@ -347,11 +348,11 @@ def test_window_schedule_orders_every_stage_of_the_window_and_counts_all_jobs():
     totals = Counter()
     for row in schedule:
         totals.update({entry["phase"]: len(entry["jobs"]) for entry in row["phases"]})
-    assert totals["base_search"] + totals["selected_case_seeds"] == 2341
-    # Adaptadores: 6.858 ajustes (270 de la continuación anclada) y 1.116 padres congelados,
-    # y 1.178 selecciones de la cadena en su propia fase.
-    assert (totals["adapters"], totals["chain"]) == (6858 + 1116, 1178)
-    assert (totals["online"], totals["ablation"], totals["rl"]) == (133, 3534, 2160 + 2442)
+    assert totals["base_search"] + totals["selected_case_seeds"] == 2873
+    # Adaptadores: 7.074 ajustes (270 de la continuación anclada) y 1.494 padres congelados,
+    # y 1.577 selecciones de la cadena en su propia fase.
+    assert (totals["adapters"], totals["chain"]) == (7074 + 1494, 1577)
+    assert (totals["online"], totals["ablation"], totals["rl"]) == (133, 4731, 2664 + 3219)
     window = schedule[6]
     selection = window["phases"][order.PHASES.index("selection")]
     assert "CN/fold-000/mars_titan_m1" in selection["decisions"]
@@ -446,14 +447,15 @@ def test_later_stages_of_v2_read_the_joint_model_in_each_market():
     adapter = adapters.load_stage(plan.LATER_STAGES["posttraining_adapter_matrix"]["joint_stage"])
     assert adapter["scopes"] == ["US+CN"]
     counts = adapters.count_stage(adapter)
-    # 20 brazos neuronales con tres semillas y los dos tabulares con una: 62 cadenas por
-    # ventana. Cada ventana con padre congela esos 62 padres y todas eligen su cadena. Los
-    # ajustes incluyen la continuación anclada de las cinco referencias (5 × 18 × 3 = 270).
+    # 21 modelos neuronales y los seis B6 con tres semillas y los dos tabulares con una: 83
+    # cadenas por ventana. Cada ventana con padre congela esos 83 padres y todas eligen su
+    # cadena. Los tabulares y B6 solo tienen el padre congelado. Los ajustes incluyen la
+    # continuación anclada de las cinco referencias (5 × 18 × 3 = 270).
     assert adapter["additional_controls"] == ["anchored_continuation"]
     assert (counts["training_jobs"], counts["prediction_jobs"], counts["selection_jobs"]) == (
-        6858,
-        62 * 18,
-        62 * 19,
+        6804 + 270,
+        83 * 18,
+        83 * 19,
     )
     assert set(adapter["arms"]) == set(
         policy_plan.load_stage(plan.LATER_STAGES["rl_policy_comparison"]["joint_stage"])[
@@ -461,10 +463,10 @@ def test_later_stages_of_v2_read_the_joint_model_in_each_market():
         ]
     )
     masked = ablation.load_stage(plan.LATER_STAGES["modality_ablation"]["joint_stage"])
-    # 20 brazos neuronales con tres semillas y dos tabulares con una, por tres variantes.
-    assert ablation.count_stage(masked)["prediction_jobs"] == (20 * 3 + 2) * 3 * 19
+    # 27 modelos con tres semillas y dos tabulares con una, por tres variantes.
+    assert ablation.count_stage(masked)["prediction_jobs"] == (27 * 3 + 2) * 3 * 19
     stage = policy_plan.load_stage(plan.LATER_STAGES["rl_policy_comparison"]["joint_stage"])
-    assert len(stage["predictors"]) == 22 and stage["scopes"] == ["US+CN"]
+    assert len(stage["predictors"]) == 29 and stage["scopes"] == ["US+CN"]
     us = policy_plan.scope_windows(stage, "US+CN", "US")
     cn = policy_plan.scope_windows(stage, "US+CN", "CN")
     assert [row["window"] for row in us] == [f"fold-{i:03d}" for i in range(4, 19)]
@@ -473,13 +475,49 @@ def test_later_stages_of_v2_read_the_joint_model_in_each_market():
     assert cn[0]["train"] == ["fold-006", "fold-007", "fold-008"]
     counts = policy_plan.count_stage(stage)
     # Referencias: cuatro por ventana y predictor, y el índice de mercado solo en US.
-    assert (counts["training_jobs"], counts["evaluation_jobs"]) == (2160, 22 * (15 * 5 + 9 * 4))
+    assert (counts["training_jobs"], counts["evaluation_jobs"]) == (2664, 29 * (15 * 5 + 9 * 4))
     assert counts["scopes"]["US+CN"]["markets"]["CN"][0] == "fold-010"
     jobs = policy_plan.plan_stage(stage)
+    # Por ventana y semilla, KLPO con los 29 predictores y las cuatro políticas del nivel de
+    # algoritmos con sus dos predictores: 37 ajustes.
     assert Counter(job["market"] for job in jobs if job["kind"] == "fit") == {
-        "US": 15 * 30 * 3,
-        "CN": 9 * 30 * 3,
+        "US": 15 * 37 * 3,
+        "CN": 9 * 37 * 3,
     }
+
+
+def test_the_policy_predictors_follow_the_declaration_of_the_campaign(tmp_path):
+    """Los 29 predictores de las políticas son los productores de la campaña, en su orden.
+
+    Un modelo que la campaña deja pendiente sale de la lista sin tocar la etapa de políticas.
+    """
+    from mars_titan.simulation import policy_plan
+
+    stage = policy_plan.load_stage(plan.LATER_STAGES["rl_policy_comparison"]["joint_stage"])
+    integration = [
+        "mars_titan_m1_k4_first_read",
+        "mars_titan_b6",
+        "mars_titan_b6_bias",
+        "mars_titan_b6_regime",
+        "mars_titan_b6_calendar",
+        "mars_titan_b6_regime_banks",
+        "mars_titan_b6_calendar_banks",
+    ]
+    assert set(integration) <= set(stage["predictors"])
+    assert stage["predictors"] == [
+        spec["arm"] for spec in plan._arm_specs(stage["campaign"]) if not spec["helper"]
+    ]
+
+    def pending(value):
+        section = value["mars_titan"]
+        section["arms"].pop("mars_titan_b6_bias")
+        section["pending_arms"]["mars_titan_b6_bias"] = "Retirado para comprobar la lista"
+
+    loaded = plan.load_campaign(edited(tmp_path, pending))
+    levels = policy_plan.resolve_levels(loaded, stage["policies"], stage["scopes"])
+    assert levels[policy_plan.ALL_PREDICTORS]["predictors"] == [
+        arm for arm in stage["predictors"] if arm != "mars_titan_b6_bias"
+    ]
 
 
 # Comparación sin datos
@@ -622,6 +660,8 @@ def reduced(folder, *, controls=("gru",), arms=("gru", "ridge")):
         market_eligibility={"CN": str(CN_V2.resolve())}, separate_controls=list(controls)
     )
     declared["arms"] = {k: v for k, v in declared["arms"].items() if k in {"zero", *arms}}
+    # Los pares de retención nombran modelos que esta comparación reducida no conserva.
+    declared.pop(comparison.RETENTION_FIELD)
     declared["comparison"].update(
         replicates=20,
         families=dict(references_vs_zero=dict(kind="delta", base="zero", variants=list(arms))),
@@ -872,7 +912,7 @@ def test_comparison_excludes_ineligible_china_rows_and_pairs_joint_with_separate
         mae = scoped["contrasts"][scope]["joint_vs_separate"]["mae"]
         assert [row["name"] for row in mae["contrasts"]] == ["gru_joint-gru"]
         assert set(rows["market"].to_pylist()) == {scope}
-        # El brazo conjunto restringido descarta las filas del otro mercado de la ventana.
+        # El modelo conjunto restringido descarta las filas del otro mercado de la ventana.
         dropped = scoped["arms"]["gru_joint"]["seeds"]["42"]["windows"]["fold-012"]
         other = "CN" if scope == "US" else "US"
         assert dropped["excluded_rows"]["evaluation"][other] > 0
@@ -883,8 +923,13 @@ def test_window_aggregates_score_each_scope_with_its_joint_design(joint_campaign
     from mars_titan.training import rolling_retention as rolling
 
     declared = comparison.load_config(joint_campaign.comparison)
-    # Sin la cartera, que necesitaría la edición de precios, solo queda el walk-forward.
-    plain = {key: value for key, value in declared.items() if key != comparison.LONG_SHORT_FIELD}
+    # Sin la cartera ni los estratos de liquidez, que necesitarían la edición de precios,
+    # solo queda el walk-forward.
+    plain = {
+        key: value
+        for key, value in declared.items()
+        if key not in (comparison.LONG_SHORT_FIELD, comparison.LIQUIDITY_FIELD)
+    }
     monkeypatch.setattr(rolling.Rolling, "comparison_config", lambda self: plain)
     retention = rolling.load_retention(CONFIGS / "baselines/historical-masked-retention-v2.json")
     # Solo se prueban los agregados, así que el recorrido no lleva la etapa de políticas.
@@ -904,7 +949,7 @@ def test_window_aggregates_score_each_scope_with_its_joint_design(joint_campaign
         scoped = comparison.scope_config(declared, scope)
         stored = window_aggregates.read(walker.folder / "aggregates", scoped, sources, window)
         assert window_aggregates.same(stored, comparison._score_window(sources, scoped, window))
-        # En un mercado, los agregados incluyen el brazo conjunto prestado.
+        # En un mercado, los agregados incluyen el modelo conjunto prestado.
         if scope != "US+CN":
             assert {arm for arm, _ in stored[0]} == {"zero", "gru", "gru_joint"}
 
@@ -927,7 +972,7 @@ def test_sources_reject_a_borrowed_arm_from_another_window(joint_campaign):
     config = comparison.load_config(joint_campaign.comparison)
     with pytest.raises(ValueError, match="usa otra vista"):
         comparison.load_sources(tampered, config, "CN")
-    # Sin la vista conjunta emparejada, las fuentes de un ámbito con brazos prestados no valen.
+    # Sin la vista conjunta emparejada, las fuentes de un ámbito con modelos prestados no valen.
     manifest = json.loads(path.read_text())
     manifest["windows"]["fold-000"].pop("joint_view")
     atomic_json(tampered, manifest)
@@ -974,6 +1019,31 @@ def test_budget_projection_applies_the_documented_formula(joint_campaign):
         budget.project(loaded, counts, rates, fixed_hours=5.0, target_hours=5.0)
     with pytest.raises(ValueError, match="positivos"):
         budget.uniform_rates(loaded, 0)
+
+
+def test_uniform_rates_project_the_b6_correction_as_prediction_only():
+    loaded = campaign()
+    counts, _ = budget.read_counts(
+        Path("reports/data/campaign-a-v2-window-counts-20261009.json"), loaded
+    )
+    rates = budget.uniform_rates(loaded, 16000.0)
+    corrections = {
+        arm
+        for arm, record in rates[plan.MARS].items()
+        if record["options"]["recipe"]["train"] is None
+    }
+    assert corrections == {arm for arm in loaded["mars_titan"]["arms"] if "_b6" in arm}
+    assert len(corrections) == 6
+
+    def arms(epochs):
+        families = budget.project(loaded, counts, rates, epochs=epochs)["estimate"]["families"]
+        return families[plan.MARS]["options"]["recipe"]["scopes"]["US+CN"]["arms"]
+
+    ten, thirty = arms(10), arms(30)
+    # B6 predice una vez cada tramo y no depende de las épocas. Un lector sí.
+    assert all(ten[arm] == thirty[arm] for arm in corrections)
+    assert thirty["mars_titan_m1"] > 2 * ten["mars_titan_m1"]
+    assert max(thirty[arm] for arm in corrections) < thirty["mars_titan_m1"] / 30
 
 
 def test_declared_counts_cover_the_v2_campaign_and_reproduce_the_views_receipt():
@@ -1048,7 +1118,7 @@ def test_the_plan_checks_every_declared_document_of_the_campaign_and_its_stages(
         "historical-masked-rl-policies.json",
         "historical-masked-ablation-stage-a-v2.json",
     ]
-    assert len(plan.plan_campaign(value)) == 2341 + 133
+    assert len(plan.plan_campaign(value)) == 2873 + 133
     # Las fuentes de predictor de las políticas son estados ajustados con la edición real.
     from mars_titan.simulation import policy_plan
 

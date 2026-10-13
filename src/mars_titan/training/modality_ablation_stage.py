@@ -1,8 +1,8 @@
 """Etapa de ablación de modalidades: volver a predecir la evaluación sin reentrenar.
 
 La etapa parte de una campaña base confirmada (`training.masked_campaign`). Para cada
-ámbito, ventana, brazo comparado que la campaña produce, semilla y variante declarada en
-la sección `modality_ablation` de la comparación, carga el estado elegido de ese brazo y
+ámbito, ventana, modelo comparado que la campaña produce, semilla y variante declarada en
+la sección `modality_ablation` de la comparación, carga el estado elegido de ese modelo y
 semilla y predice la evaluación de la ventana con la variante aplicada en la lectura
 (`data.modality_ablation`). En una ventana reentrenada el estado es el elegido en ella y en
 una ventana trasladada de la variante B, el del ancla que la campaña base traslada. Se
@@ -144,8 +144,8 @@ def load_stage(path):
         and 0 <= limits["max_prediction_jobs"] <= 1_000_000,
         "El límite de predicciones debe ser un entero declarado",
     )
-    # Brazos comparados con productor en la campaña. Los auxiliares no se comparan. Cada
-    # ámbito vuelve a predecir solo los brazos que la campaña ajusta en él.
+    # Modelos comparados con productor en la campaña. Los auxiliares no se comparan. Cada
+    # ámbito vuelve a predecir solo los modelos que la campaña ajusta en él.
     specs = [spec for spec in _arm_specs(campaign) if not spec["helper"]]
     scope_specs = {
         scope: [spec for spec in _arm_specs(campaign, scope) if not spec["helper"]]
@@ -163,7 +163,7 @@ def load_stage(path):
 
 
 def plan_stage(stage):
-    """Una predicción por ámbito, ventana, brazo, semilla y variante, en orden del plan."""
+    """Una predicción por ámbito, ventana, modelo, semilla y variante, en orden del plan."""
     campaign, jobs = stage["campaign"], []
     for scope in stage["scopes"]:
         folds = list(campaign["comparison_config"]["resolved_scopes"][scope]["windows"].values())
@@ -189,7 +189,7 @@ def plan_stage(stage):
 
 
 def count_stage(stage, jobs=None):
-    """Contar predicciones por ámbito, brazo, semilla y variante y aplicar el límite."""
+    """Contar predicciones por ámbito, modelo, semilla y variante y aplicar el límite."""
     jobs = plan_stage(stage) if jobs is None else jobs
     scopes = {}
     for scope in stage["scopes"]:
@@ -338,9 +338,10 @@ def _titans():
 
 
 def _mars_titan():
-    from .mars_titan_walk_forward import carry_mars_titan
+    # Los lectores y la corrección B6 comparten familia, pero no el traslado.
+    from .mars_titan_walk_forward import carry_mars_titan_arm
 
-    return carry_mars_titan
+    return carry_mars_titan_arm
 
 
 def _cm_v1():
@@ -697,7 +698,7 @@ def write_sources(
     """Escribir el manifiesto de predicciones enmascaradas de un ámbito y validarlo.
 
     Sin `comparison_path` se valida con la comparación de la campaña. Una comparación con
-    un subconjunto de brazos publica solo esos brazos, como `masked_campaign.write_sources`.
+    un subconjunto de modelos publica solo esos modelos, como `masked_campaign.write_sources`.
     Con `window` se publica solo esa ventana en `sources/windows/<ventana>/`.
     """
     pairs = None

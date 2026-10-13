@@ -1,0 +1,318 @@
+{
+  "schema_version": 1,
+  "kind": "titans_variant_cost",
+  "innovation": "pt4_shared_market_memory",
+  "recorded_at_utc": "2026-10-13T02:51:22.671694+00:00",
+  "commit": "8fdb788dc6c929cf93ec0a01a515d9c5e4e67538",
+  "scope": "Forward con grafo, pinball frente a ceros y backward, m\u00e1s inferencia sin grafo, sobre entradas reales sin objetivos. Sin optimizador ni pasos.",
+  "device": "cpu",
+  "cpu": "desconocido",
+  "versions": {
+    "python": "3.12.14",
+    "torch": "2.14.0+cu130"
+  },
+  "precision": "float32",
+  "threads": 2,
+  "declaration": "configs/evaluation/market-memory-comparison.json",
+  "declaration_sha256": "057f09ad536deaac2544793c2b603614262720dac2761b290457eb3c5d5ac5ec",
+  "recipe": "configs/titans/chronological-training-historical-masked.json",
+  "recipe_sha256": "5231ac3ba82ddf5ed1c6477de79e9b4f0eb8831f533c0ad70b87ced215fa288b",
+  "inputs": {
+    "data_sha256": "275365fa237cd78b2dcae50fd7e24a6e2f00a5f894889c976176519f4de0b436",
+    "view_manifest_sha256": "2371878b94b01162a6c60566d3e1c9e152fbbfd589f4036fe4c2d973dddd421d",
+    "flows": 128,
+    "instants": 8,
+    "dimensions": {
+      "news": 384,
+      "charts": 512,
+      "fundamentals": 78,
+      "macro": 420,
+      "prices": 5
+    },
+    "targets_read": false,
+    "rows": 1024,
+    "rows_with_some_absence": 950,
+    "absent_rows_by_modality": {
+      "prices": 0,
+      "news": 928,
+      "charts": 0,
+      "fundamentals": 600,
+      "macro": 0
+    }
+  },
+  "repetitions": 15,
+  "warmup": 2,
+  "order": "repeticiones alternadas entre modelos con orden rotatorio",
+  "models": {
+    "titans_mac_online": {
+      "role": "control",
+      "predictor_changes": {},
+      "total_parameters": 186055,
+      "state_tensor_bytes_per_flow": 65552,
+      "shared_context_tensor_bytes": 0,
+      "session_context": null,
+      "forward_with_graph_seconds": {
+        "median": 0.2524180219988921,
+        "minimum": 0.22460258699902624,
+        "maximum": 0.30715262400008214,
+        "values": [
+          0.22460258699902624,
+          0.22522880200085638,
+          0.22722586499912723,
+          0.23219093400075508,
+          0.23699626500092563,
+          0.24094024400073977,
+          0.2523860239998612,
+          0.2524180219988921,
+          0.260775848000776,
+          0.26756620699961786,
+          0.27129215100103465,
+          0.3002619670005515,
+          0.3012524850000773,
+          0.3067272830012371,
+          0.30715262400008214
+        ]
+      },
+      "backward_seconds": {
+        "median": 0.10992157199871144,
+        "minimum": 0.10410434999903373,
+        "maximum": 0.14620926899988262,
+        "values": [
+          0.10410434999903373,
+          0.1060578019987588,
+          0.10787631899984262,
+          0.1087243120000494,
+          0.10877701000026718,
+          0.10898606400041899,
+          0.1096153949984,
+          0.10992157199871144,
+          0.12267034700016666,
+          0.1268580859996291,
+          0.135062323000966,
+          0.13607840100121393,
+          0.13858571300079348,
+          0.14586636400053976,
+          0.14620926899988262
+        ]
+      },
+      "inference_seconds": {
+        "median": 0.2410323479998624,
+        "minimum": 0.21142155599955004,
+        "maximum": 0.27742995300104667,
+        "values": [
+          0.21142155599955004,
+          0.21231982599965704,
+          0.21812168799988285,
+          0.22432272999867564,
+          0.22601109400056885,
+          0.2264035979987966,
+          0.23763635700015584,
+          0.2410323479998624,
+          0.24761871400005475,
+          0.26130833600109327,
+          0.2665032609984337,
+          0.2696258989999478,
+          0.2710073239995836,
+          0.2751366020002024,
+          0.27742995300104667
+        ]
+      },
+      "parameters_unchanged": true,
+      "added_parameters": 0,
+      "relative_to_control": {
+        "forward_with_graph_seconds": 1.0,
+        "backward_seconds": 1.0,
+        "inference_seconds": 1.0
+      }
+    },
+    "titans_mac_online_pt4_market_memory": {
+      "role": "innovation",
+      "predictor_changes": {
+        "session_context": "market_memory_v1"
+      },
+      "total_parameters": 214921,
+      "state_tensor_bytes_per_flow": 65552,
+      "shared_context_tensor_bytes": 131072,
+      "session_context": {
+        "kind": "market_memory_v1",
+        "sectors": null
+      },
+      "forward_with_graph_seconds": {
+        "median": 0.2919098420006776,
+        "minimum": 0.23301176699897042,
+        "maximum": 0.34294943699933356,
+        "values": [
+          0.23301176699897042,
+          0.25151161899884755,
+          0.25310545599859324,
+          0.2608342169987736,
+          0.2643851300017559,
+          0.2769836059997033,
+          0.2840161989988701,
+          0.2919098420006776,
+          0.2945191230010096,
+          0.29731775499931246,
+          0.3008988600013254,
+          0.3011765640003432,
+          0.30549835600140796,
+          0.3364947509999183,
+          0.34294943699933356
+        ]
+      },
+      "backward_seconds": {
+        "median": 0.1379475049998291,
+        "minimum": 0.11184214999957476,
+        "maximum": 0.1631816200006142,
+        "values": [
+          0.11184214999957476,
+          0.1124591590014461,
+          0.11351128600108495,
+          0.11823941100010416,
+          0.12129826900127227,
+          0.12754242199844157,
+          0.12993112999902223,
+          0.1379475049998291,
+          0.1432256520001829,
+          0.14400229199964087,
+          0.1463235139999597,
+          0.15048932199897536,
+          0.1531562420004775,
+          0.16137063700080034,
+          0.1631816200006142
+        ]
+      },
+      "inference_seconds": {
+        "median": 0.27549760199872253,
+        "minimum": 0.23300147699956142,
+        "maximum": 0.31573332600055437,
+        "values": [
+          0.23300147699956142,
+          0.23697071599963238,
+          0.24570658300035575,
+          0.24888937399919087,
+          0.2558257969994884,
+          0.26202972500141186,
+          0.27244796000013594,
+          0.27549760199872253,
+          0.2777798690003692,
+          0.27781255999980203,
+          0.27917053300006955,
+          0.304687861000275,
+          0.3079097170011664,
+          0.31545154899868066,
+          0.31573332600055437
+        ]
+      },
+      "parameters_unchanged": true,
+      "added_parameters": 28866,
+      "relative_to_control": {
+        "forward_with_graph_seconds": 1.1564540427385128,
+        "backward_seconds": 1.2549629930824333,
+        "inference_seconds": 1.1429901599717223
+      }
+    },
+    "titans_mac_online_pt4_sector_mean": {
+      "role": "trivial_alternative",
+      "predictor_changes": {
+        "session_context": "sector_mean_v1",
+        "sector_map": {
+          "source": "dataset"
+        }
+      },
+      "total_parameters": 190151,
+      "state_tensor_bytes_per_flow": 65552,
+      "shared_context_tensor_bytes": 11264,
+      "session_context": {
+        "kind": "sector_mean_v1",
+        "sectors": {
+          "schema_version": 1,
+          "source": "finmultitime_current_descriptions_v1",
+          "sources_sha256": {
+            "sp500stock_data_description.csv": "1763c2d0469fe14daac29eee7ac1773c22f423d5463347af7002805e1b59b79b",
+            "hs300stock_data_description.csv": "83c00324357c8cd8f336af13ce032242b2fc394af2f338b42d2f593e9eabb8f0"
+          },
+          "groups": 44,
+          "assigned_flows": 5071,
+          "assignment_sha256": "193f9c9282df22d5ab94ad612d6272d39d603d1c76194ae728c7b0415d4cac40",
+          "point_in_time": false
+        }
+      },
+      "forward_with_graph_seconds": {
+        "median": 0.26454182599991327,
+        "minimum": 0.2340259930006141,
+        "maximum": 0.33164702100111754,
+        "values": [
+          0.2340259930006141,
+          0.23724643400055356,
+          0.24101844300093944,
+          0.25314637399969797,
+          0.2571258490006585,
+          0.26094257200020365,
+          0.26358901299863646,
+          0.26454182599991327,
+          0.26725655700101925,
+          0.2786159890001727,
+          0.27947671899892157,
+          0.2808515709984931,
+          0.2922804169993469,
+          0.304088426000817,
+          0.33164702100111754
+        ]
+      },
+      "backward_seconds": {
+        "median": 0.13190444899919385,
+        "minimum": 0.10425067600044713,
+        "maximum": 0.13967295700058457,
+        "values": [
+          0.10425067600044713,
+          0.10666681499969854,
+          0.1131691230002616,
+          0.1170192589997896,
+          0.11748337999961223,
+          0.11818294499971671,
+          0.1314371709995612,
+          0.13190444899919385,
+          0.13284099900010915,
+          0.1328678799982299,
+          0.13437075200090476,
+          0.13637540899981104,
+          0.1366254000004119,
+          0.1376935059997777,
+          0.13967295700058457
+        ]
+      },
+      "inference_seconds": {
+        "median": 0.26539244199921086,
+        "minimum": 0.2260096310001245,
+        "maximum": 0.300146178000432,
+        "values": [
+          0.2260096310001245,
+          0.22959000599985302,
+          0.23772817099961685,
+          0.24296809599945846,
+          0.2455376139987493,
+          0.24942761400052404,
+          0.2502527140004531,
+          0.26539244199921086,
+          0.2671821469994029,
+          0.2682905680012482,
+          0.2772348239996063,
+          0.2781459870002436,
+          0.2878728460000275,
+          0.2915820269990945,
+          0.300146178000432
+        ]
+      },
+      "parameters_unchanged": true,
+      "added_parameters": 4096,
+      "relative_to_control": {
+        "forward_with_graph_seconds": 1.0480306592414166,
+        "backward_seconds": 1.1999869234106304,
+        "inference_seconds": 1.1010656627688926
+      }
+    }
+  },
+  "optimizer_steps": 0,
+  "training_runs": 0,
+  "evaluation": false
+}

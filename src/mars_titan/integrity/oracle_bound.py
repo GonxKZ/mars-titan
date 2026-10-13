@@ -1,10 +1,11 @@
-"""Cota con oráculo de un paso para el entorno financiero. Es un diagnóstico.
+"""Cota con información futura de un paso para el entorno financiero. Es un diagnóstico.
 
 El entorno decide al cierre de t, ejecuta en la apertura de t+1 y valora al cierre de t+1.
-El oráculo conoce el rendimiento de esa sesión, `close[t+1] / open[t+1] - 1`, y lo usa
-como puntuación con la misma regla de asignación del entorno (cuartil superior positivo
-con pesos iguales y exposición completa). Con ello da el rendimiento que obtendría una
-predicción perfecta de la sesión siguiente con esas reglas, costes y liquidez.
+La política con información futura conoce el rendimiento de esa sesión,
+`close[t+1] / open[t+1] - 1`, y lo usa como puntuación con la misma regla de asignación
+del entorno (cuartil superior positivo con pesos iguales y exposición completa). Con ello
+da el rendimiento que obtendría una predicción perfecta de la sesión siguiente con esas
+reglas, costes y liquidez.
 
 No es el máximo global: ignora el hueco nocturno hasta la siguiente apertura y no optimiza
 la rotación. Sirve para dos cosas:
@@ -43,7 +44,7 @@ def oracle_scores(tape):
 
 
 def oracle_tape(tape):
-    """La misma cinta con las puntuaciones del oráculo y una identidad que no se confunde."""
+    """La misma cinta puntuada con información futura y una identidad que no se confunde."""
     return MarketTape(
         tape.prices,
         tape.close_times,
@@ -67,7 +68,7 @@ def _log_growth(result):
 
 
 def bound(tape, *, env_options=None, seed=42):
-    """Política de la cinta con exposición completa, caja y oráculo, con las mismas reglas."""
+    """Cinta con exposición completa, caja y política con información futura, mismas reglas."""
     options = dict(env_options or {})
     full = lambda _observation, _step: FULL_EXPOSURE  # noqa: E731
     model = evaluate(FinancialEnv(tape, **options), full, seed=seed)

@@ -51,7 +51,7 @@
       "adapters": "neural_pinball",
       "full_continuation": "neural_pinball",
       "linear_residual": {
-        "excluded": "La corrección lineal residual corrige la predicción escalar del padre que guarda su caché, que en un padre de cuantiles es solo la mediana. No produce cinco niveles ordenados ni puede optimizar su pinball. El brazo head ya es una corrección por nivel inicializada a cero cuyo orden garantiza la parametrización de la cabeza."
+        "excluded": "La corrección lineal residual corrige la predicción escalar del padre que guarda su caché, que en un padre de cuantiles es solo la mediana. No produce cinco niveles ordenados ni puede optimizar su pinball. El modelo head ya es una corrección por nivel inicializada a cero cuyo orden garantiza la parametrización de la cabeza."
       }
     }
   },
@@ -109,7 +109,7 @@
         },
         "arms": [["core"], ["episodic_readout"], ["core", "episodic_readout"]],
         "frozen": ["refinement", "step_logit"],
-        "without_bank": "M0 no consulta episodios, así que query_projection y value_projection del lector no reciben gradiente. Sin banco solo se ejecuta el brazo del núcleo."
+        "without_bank": "M0 no consulta episodios, así que query_projection y value_projection del lector no reciben gradiente. Sin banco solo se ejecuta el modelo del núcleo."
       },
       "episodic_gru": {
         "points": ["head"],

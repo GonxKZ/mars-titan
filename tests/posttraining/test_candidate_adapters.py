@@ -5,7 +5,6 @@ cambia pesos, sobre la vista conjunta US+CN del corpus técnico. Necesitan el en
 """
 
 import json
-import os
 import shutil
 from dataclasses import asdict
 from pathlib import Path
@@ -30,9 +29,7 @@ from tests.training.test_candidate_walk_forward import allowed as allowed
 from tests.training.test_candidate_walk_forward import views as views
 from tests.training.test_financial_run import RecordingOptimizer
 
-pytestmark = pytest.mark.skipif(
-    not os.environ.get("MARS_TITAN_EPISODIC_NATIVE"), reason="Falta el enlace nativo compilado"
-)
+pytestmark = pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 
 ROOT = Path(__file__).resolve().parents[2]
 SCOPE, FIRST, NEXT = "US+CN", "fold-000", "fold-001"

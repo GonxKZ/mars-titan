@@ -146,7 +146,7 @@ def evaluate_partition(
 
 def _jobs(reference, tabular, adjustments, *, arm="US"):
     if arm not in ("US", "CN", "US+CN"):
-        raise ValueError("La evaluación temporal requiere un único brazo declarado")
+        raise ValueError("La evaluación temporal requiere un único modelo declarado")
     adjustment_summary, _ = read_manifest(adjustments, 8 * 1024**2)
     seeds = matching_seeds(adjustment_summary["identity"]["proof"])
     proof = (
@@ -244,7 +244,7 @@ def _adjustment(path, report, parent, device):
     ):
         raise ValueError("La normalización no procede del entrenamiento del padre")
     neural = case["mode"].startswith("neural_")
-    # Un brazo se reconstruye con sus destinos declarados y no acepta el estado de otro.
+    # Un modelo se reconstruye con sus destinos declarados y no acepta el estado de otro.
     model = build_model(parent, case, grid, normalization, identity)
     state = _best_state(
         path.parent, identity, report["selection"], expected_sha256=report["checkpoint"]["sha256"]
