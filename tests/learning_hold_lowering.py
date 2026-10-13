@@ -34,6 +34,12 @@ INVENTORY = {
         "sustituido que no ajusta, porque el informe solo lee salidas confirmadas de la etapa y "
         "su ejecución se detiene con la protección"
     ),
+    "tests/training/test_mars_titan_campaign.py::"
+    "test_correction_frozen_parent_reproduces_the_carry_and_predicts_the_next_validation": (
+        "traslada como padre congelado una ventana B6 de la campaña B reducida, que el fixture "
+        "campaign_run ejecuta con la protección rebajada de permitted. carry_correction no ajusta, "
+        "pero comprueba la protección porque predice ventanas de la campaña"
+    ),
 }
 
 
