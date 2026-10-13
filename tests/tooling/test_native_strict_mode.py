@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-from tests.suite_support import NATIVE_VARIABLES
+from tests.suite_support import NATIVE_VARIABLES, inner_environment
 
 ROOT = Path(__file__).parents[2]
 NATIVE = "MARS_TITAN_EPISODIC_NATIVE"
@@ -50,8 +50,7 @@ def others(tmp_path):
 
 def probe(tmp_path, **env):
     (tmp_path / "test_probe.py").write_text(PROBE, encoding="utf-8")
-    removed = {*NATIVE_VARIABLES, STRICT}
-    environment = {key: value for key, value in os.environ.items() if key not in removed}
+    environment = inner_environment([*NATIVE_VARIABLES, STRICT])
     environment.update(env, PYTHONPATH=os.pathsep.join([str(ROOT / "src"), str(ROOT)]))
     command = [sys.executable, "-m", "pytest", "-p", "tests.conftest", "-q", "-rs"]
     command += ["-c", os.devnull, "--rootdir", str(tmp_path), "-p", "no:cacheprovider"]
@@ -92,7 +91,7 @@ def test_strict_mode_needs_a_loadable_binding_before_collecting(tmp_path):
     assert f"{STRICT} debe valer 0 o 1" in output(result)
 
 
-@pytest.mark.skipif(not os.environ.get(NATIVE), reason="Falta el enlace nativo compilado")
+@pytest.mark.native(NATIVE)
 def test_strict_mode_turns_a_skipped_native_test_into_a_failure(tmp_path):
     result = probe(tmp_path, **others(tmp_path), **{STRICT: "1", NATIVE: os.environ[NATIVE]})
     assert result.returncode == pytest.ExitCode.TESTS_FAILED, result.stdout + result.stderr

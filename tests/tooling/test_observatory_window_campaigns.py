@@ -178,7 +178,7 @@ def test_the_policy_stage_summary_is_read_with_markets_predictors_and_open_runs(
     assert set(state) == STATE_KEYS and state["active"] == []
     assert {cell[4] for cell in state["cells"]} == {"done"}
     assert all(cell[5].endswith("Z") for cell in state["cells"])
-    # Ámbito con mercado y brazo con predictor, como `ámbito/mercado/ventana/predictor/brazo`.
+    # Ámbito con mercado y modelo con predictor, como `ámbito/mercado/ventana/predictor/modelo`.
     assert state["vocabulary"]["scopes"] == ["US/US"]
     arms = state["vocabulary"]["arms"]
     assert {"gru/klpo_terminal", "gru/double_dqn", "lstm/market_index"} <= set(arms)
@@ -471,7 +471,8 @@ def test_the_publisher_sends_window_documents_and_prunes_what_the_index_dropped(
 
 
 @pytest.mark.skipif(
-    shutil.which("node") is None, reason="Falta Node.js para el validador de la web"
+    shutil.which("node") is None,
+    reason="Falta node en PATH. El validador de la web del observatorio necesita Node.js",
 )
 def test_collector_output_passes_the_site_validators(tmp_path):
     root, output = tmp_path / "root", tmp_path / "public"

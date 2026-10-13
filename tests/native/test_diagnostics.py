@@ -12,7 +12,10 @@ NATIVE = Path(__file__).resolve().parents[2] / "native"
 
 def configure(tmp_path, source, *options):
     if not shutil.which("cmake") or not shutil.which("clang++"):
-        pytest.skip("La comprobación nativa requiere CMake y Clang")
+        pytest.skip(
+            "Faltan cmake o clang++ en PATH. La comprobación nativa necesita CMake 3.24 o "
+            "posterior, Ninja y Clang (native/README.md)"
+        )
     project = tmp_path / "fixture"
     project.mkdir()
     (project / "probe.cpp").write_text(source)
@@ -112,7 +115,9 @@ def test_sanitizers_and_profile_cannot_be_mixed(tmp_path):
 def test_clang_tidy_rejects_a_null_dereference(tmp_path):
     tool = os.environ.get("MARS_TITAN_CLANG_TIDY") or shutil.which("clang-tidy")
     if not tool:
-        pytest.skip("clang-tidy no está configurado")
+        pytest.skip(
+            "Falta clang-tidy. Se instala con LLVM o se declara su ruta en MARS_TITAN_CLANG_TIDY"
+        )
     build, result = configure(
         tmp_path,
         "int main() { int* value = nullptr; return *value; }\n",
@@ -138,7 +143,7 @@ def test_missing_requested_static_analyzer_fails_configuration(tmp_path):
 
 def test_missing_analyzer_fails_even_without_scientific_targets(tmp_path):
     if not shutil.which("cmake"):
-        pytest.skip("La comprobación requiere CMake")
+        pytest.skip("Falta cmake en PATH. La comprobación necesita CMake 3.24 o posterior")
     result = subprocess.run(
         [
             "cmake",

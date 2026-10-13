@@ -5,6 +5,8 @@ import random
 import numpy as np
 import pytest
 
+from tests.suite_support import missing_extra, skip_without_cuda
+
 os.environ.setdefault("CUBLAS_WORKSPACE_CONFIG", ":4096:8")
 
 
@@ -15,11 +17,11 @@ def training_module():
         pytest.fail("Falta el entrenamiento supervisado de medición")
 
 
+@pytest.mark.cuda
 @pytest.mark.parametrize("kind", ["mlp", "gru"])
 def test_real_labels_update_all_modalities_and_resume_exactly(tmp_path, kind):
-    torch = pytest.importorskip("torch")
-    if not torch.cuda.is_available():
-        pytest.skip("CUDA no está disponible, no se sustituye por CPU")
+    torch = pytest.importorskip("torch", reason=missing_extra("torch"))
+    skip_without_cuda()
     from mars_titan.profiling import CostProbe
 
     module = training_module()
@@ -80,10 +82,10 @@ def test_partition_requires_target_maturity_before_training_cutoff():
     )
 
 
+@pytest.mark.cuda
 def test_validation_counts_partial_batches_without_updating_weights():
-    torch = pytest.importorskip("torch")
-    if not torch.cuda.is_available():
-        pytest.skip("CUDA no está disponible, no se sustituye por CPU")
+    torch = pytest.importorskip("torch", reason=missing_extra("torch"))
+    skip_without_cuda()
     from mars_titan.profiling import CostProbe
 
     module = training_module()
@@ -138,6 +140,7 @@ def test_budget_run_rejects_invalid_workload_before_touching_data(tmp_path, opti
     assert not (tmp_path / "out").exists()
 
 
+@pytest.mark.cuda
 @pytest.mark.parametrize(
     "loss,expected_objective,expected_weight",
     [("mse", 5.0, 0.0), ("mae", 2.0, 0.8), ("huber", 0.875, 0.9)],
@@ -145,9 +148,8 @@ def test_budget_run_rejects_invalid_workload_before_touching_data(tmp_path, opti
 def test_objectives_keep_common_metrics_and_apply_the_expected_gradient(
     loss, expected_objective, expected_weight
 ):
-    torch = pytest.importorskip("torch")
-    if not torch.cuda.is_available():
-        pytest.skip("CUDA no está disponible, no se sustituye por CPU")
+    torch = pytest.importorskip("torch", reason=missing_extra("torch"))
+    skip_without_cuda()
 
     class ScalarModel(torch.nn.Module):
         def __init__(self):
@@ -175,10 +177,10 @@ def test_invalid_loss_options_fail_before_touching_a_model(loss, delta):
         training_module().run_epoch(None, None, [], None, loss=loss, huber_delta=delta)
 
 
+@pytest.mark.cuda
 def test_target_broadcasting_is_rejected_before_updating_weights():
-    torch = pytest.importorskip("torch")
-    if not torch.cuda.is_available():
-        pytest.skip("CUDA no está disponible, no se sustituye por CPU")
+    torch = pytest.importorskip("torch", reason=missing_extra("torch"))
+    skip_without_cuda()
 
     class ColumnModel(torch.nn.Module):
         def __init__(self):
@@ -188,10 +190,28 @@ def test_target_broadcasting_is_rejected_before_updating_weights():
         def forward(self, inputs):
             return self.linear(inputs["prices"])
 
+    class RefusedStep:
+        # No hereda de torch.optim.Optimizer, así que el gancho del bloqueo no lo intercepta
+        # y un paso alcanzado hace fallar la prueba en vez de omitirla.
+        def __init__(self, parameters):
+            self.parameters = list(parameters)
+
+        def zero_grad(self, set_to_none=True):
+            for value in self.parameters:
+                value.grad = None
+
+        def step(self):
+            raise AssertionError("La forma errónea llegó al paso del optimizador")
+
     model = ColumnModel().to("cuda:0")
-    optimizer = torch.optim.SGD(model.parameters(), lr=0.1)
+    optimizer = RefusedStep(model.parameters())
     before = {name: value.clone() for name, value in model.state_dict().items()}
     batch = ({"prices": torch.tensor([[1.0], [3.0]])}, torch.zeros(2))
+    # `train_step` solo añade la protección. El paso compartido rechaza la forma tras el
+    # forward y antes de backward, así que la prueba no necesita rebajar la protección.
     with pytest.raises(ValueError, match="forma"):
-        training_module().train_step(model, optimizer, batch, torch.device("cuda:0"))
+        training_module()._supervised_step(
+            model, optimizer, batch, torch.device("cuda:0"), "mse", 0.01
+        )
+    assert all(value.grad is None for value in model.parameters())
     assert all(torch.equal(value, before[name]) for name, value in model.state_dict().items())

@@ -642,8 +642,14 @@ def test_the_default_optimizer_anchors_the_decay_that_the_recipe_declares(shared
 
 
 def test_real_optimizer_is_refused_while_the_learning_hold_blocks(shared, tmp_path, monkeypatch):
+    from mars_titan.training import financial_run
     from mars_titan.training.learning_hold import HOLD_ENV, LearningHoldError
 
+    def past_the_guard():
+        # Sin la protección, el recorrido llegaría al paso y el gancho global lo omitiría.
+        raise AssertionError("El ajuste pasó de la protección del aprendizaje")
+
+    monkeypatch.setattr(financial_run, "StopRequest", past_the_guard)
     _, streams = shared
     hold = tmp_path / "hold.json"
     hold.write_text(json.dumps(dict(training_allowed=False)))
@@ -675,7 +681,7 @@ def test_declared_recipe_builds_the_four_paired_controls(shared):
         FinancialConfig(specification, variant=variant, **options)
 
 
-@pytest.mark.skipif(not torch.cuda.is_available(), reason="Requiere cuda:0 explícito")
+@pytest.mark.cuda
 def test_cuda_pass_matches_cpu_without_optimizer_steps(shared, tmp_path):
     _, streams = shared
     engines = {}

@@ -80,7 +80,7 @@ def same_records(left, right):
         "cpu",
         pytest.param(
             "cuda:0",
-            marks=pytest.mark.skipif(not torch.cuda.is_available(), reason="Falta cuda:0"),
+            marks=pytest.mark.cuda,
         ),
     ],
 )
@@ -114,6 +114,7 @@ def test_titans_pass_is_bit_identical_with_ranges(
     assert entries(on.audit, "prediction")
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 @pytest.mark.parametrize("admission", ["m0", "m1", "m3"])
 @pytest.mark.usefixtures("learning_doubles")
 def test_readout_pass_is_bit_identical_with_ranges(

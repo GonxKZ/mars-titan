@@ -215,7 +215,7 @@ def test_extending_rejects_sections_already_declared_or_foreign(tmp_path):
         )
     # Las secciones se validan con las reglas de la campaña: un padre que no es mac_online.
     mars = dict(prepared["sections"][plan.MARS], parent_arm="titans_mac_frozen")
-    with pytest.raises(ValueError, match="padre el brazo mac_online"):
+    with pytest.raises(ValueError, match="padre el modelo mac_online"):
         plan.extend_campaign(campaign, {plan.MARS: mars})
     # Una copia de la campaña fuera de su carpeta no es la que amplía la declaración.
     copied = plan.load_campaign(write_variant(tmp_path, "A"))

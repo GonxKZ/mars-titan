@@ -27,7 +27,7 @@ TITANS_ARMS = (
     "titans_mac_frozen",
     "titans_mac_online",
 )
-# Recuentos derivados a mano: por ventana reentrenada, cada brazo neuronal y cada control
+# Recuentos derivados a mano: por ventana reentrenada, cada modelo neuronal y cada control
 # de Titans-MAC ajustan dos candidatos con la semilla 42 y dos finalistas, Ridge tres
 # alfas y XGBoost doce configuraciones con la semilla 42 y dos finalistas. Cada traslado
 # es uno por semilla.

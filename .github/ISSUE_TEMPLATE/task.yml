@@ -1,0 +1,41 @@
+name: Tarea técnica
+description: Implementar, corregir o documentar una parte delimitada del proyecto con criterios comprobables.
+body:
+  - type: textarea
+    id: context
+    attributes:
+      label: Contexto
+      description: Qué problema resuelve, a qué objetivo (del 1 al 6) o tarea transversal sirve y qué issues o PR relacionadas existen.
+    validations:
+      required: true
+  - type: textarea
+    id: work
+    attributes:
+      label: Trabajo delimitado
+      description: >-
+        Herramientas para cada función concreta, entradas, pasos y artefactos previstos.
+        Distinguir los archivos que ya existen de las rutas futuras e indicar lo que queda fuera.
+    validations:
+      required: true
+  - type: textarea
+    id: criteria
+    attributes:
+      label: Criterios de aceptación
+      description: Condiciones que se pueden comprobar con una prueba, una orden o un recibo. Una documentación terminada no cierra por sí sola una tarea científica.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidencia y comprobaciones
+      description: >-
+        Pruebas, medidas o informes que se adjuntarán y órdenes que deben pasar (`make check`,
+        `make test-native` o `make test-cuda` si procede). Para una optimización, la referencia
+        numérica y la medida antes y después.
+    validations:
+      required: true
+  - type: textarea
+    id: limits
+    attributes:
+      label: Límites y riesgos
+      description: Bloqueo de aprendizaje, prueba final cerrada, memoria y GPU disponibles, dependencias de otras tareas y datos que no se pueden versionar.

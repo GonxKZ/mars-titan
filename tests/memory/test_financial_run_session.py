@@ -1,5 +1,6 @@
 """Paridad de la validación cronológica con la sesión financiera congelada y su ejecutor nativo."""
 
+import pytest
 import test_native_episode_backend as backend_fixtures
 import torch
 from test_financial_observation_source import source
@@ -9,6 +10,8 @@ from mars_titan.models.titans.financial import FinancialConfig, FinancialPredict
 from mars_titan.models.titans.financial_inputs import validated_cpu_batch
 from mars_titan.training.financial_run import ChronologicalRecipe, ChronologicalTrainer
 from tests.training.test_financial_run import RecordingOptimizer
+
+pytestmark = pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 
 native = backend_fixtures.native
 

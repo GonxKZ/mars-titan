@@ -1,0 +1,463 @@
+{
+ "schema_version": 1,
+ "kind": "targeted_mutation_receipt",
+ "issue": 54,
+ "executed_on": "2026-10-10",
+ "base_commit": "b21e5599dc077f158eb9de99989453364378134e",
+ "sources_sha256": {
+  "src/mars_titan/evaluation/regime_calendar.py": "a7af272899368afaa5518d0489e0ed25fe5346efffe9238f8cc9e6a400ccc732",
+  "src/mars_titan/evaluation/retention_interference.py": "acea2ac7bb6bb6ed723416020333a4e2f6d0b76650a2f941200543c7a8c6224e",
+  "src/mars_titan/evaluation/walk_forward_comparison.py": "9a1cfb04b955877a388eb055bc051dcd9726eab9be08296c1fb527f0196d8705",
+  "tests/evaluation/test_retention_interference.py": "94fd84f31dfdb1e7243fd9c6804d5b713bbd2bb1ffcc95c189ceeaa5c69d7ebd",
+  "tests/evaluation/test_regime_calendar.py": "4528380e33bf6afe5b3f23af54ff815be33b643d3d838a0903058f770f402791",
+  "tests/evaluation/test_walk_forward_retention.py": "e5b6201efece6b317c42ed1857c1081e10a7d43965d529056d802ca3e2760478"
+ },
+ "method": "Copia aislada de src, tests y configs. Cada mutante sustituye un único fragmento, ejecuta las tres pruebas con -x y restaura el archivo. PYTHONPATH apunta a la copia, así que las pruebas importan el código mutado",
+ "tests": [
+  "tests/evaluation/test_retention_interference.py",
+  "tests/evaluation/test_regime_calendar.py",
+  "tests/evaluation/test_walk_forward_retention.py"
+ ],
+ "environment": "CPU con CUDA_VISIBLE_DEVICES=-1 y OMP_NUM_THREADS=2",
+ "baseline": {
+  "returncode": 0,
+  "seconds": 8.1,
+  "tail": [
+   "64 passed in 4.82s"
+  ]
+ },
+ "killed": 39,
+ "survived": 0,
+ "not_applied": 0,
+ "mutants": [
+  {
+   "name": "unclassified_cuts_spells",
+   "file": "src/mars_titan/evaluation/retention_interference.py",
+   "status": "killed",
+   "seconds": 6.9,
+   "tail": [
+    "1 failed, 19 passed in 3.25s"
+   ],
+   "original": "        if route == UNCLASSIFIED:\n            continue\n",
+   "mutated": "        if route == UNCLASSIFIED:\n            current = None\n            continue\n"
+  },
+  {
+   "name": "absence_off_by_one",
+   "file": "src/mars_titan/evaluation/retention_interference.py",
+   "status": "killed",
+   "seconds": 6.4,
+   "tail": [
+    "1 failed, 19 passed in 3.10s"
+   ],
+   "original": "gap = step - last_seen[route] - 1 if revisit else 0",
+   "mutated": "gap = step - last_seen[route] if revisit else 0"
+  },
+  {
+   "name": "absence_from_first_appearance",
+   "file": "src/mars_titan/evaluation/retention_interference.py",
+   "status": "killed",
+   "seconds": 6.5,
+   "tail": [
+    "1 failed, 19 passed in 3.29s"
+   ],
+   "original": "        last_seen[route] = step\n",
+   "mutated": "        last_seen.setdefault(route, step)\n"
+  },
+  {
+   "name": "entry_boundary",
+   "file": "src/mars_titan/evaluation/retention_interference.py",
+   "status": "killed",
+   "seconds": 6.2,
+   "tail": [
+    "1 failed, 19 passed in 3.10s"
+   ],
+   "original": "        if h > entry:\n",
+   "mutated": "        if h >= entry:\n"
+  },
+  {
+   "name": "every_spell_is_novel",
+   "file": "src/mars_titan/evaluation/retention_interference.py",
+   "status": "killed",
+   "seconds": 6.8,
+   "tail": [
+    "1 failed, 19 passed in 3.33s"
+   ],
+   "original": "            revisit = route in last_seen\n",
+   "mutated": "            revisit = False\n"
+  },
+  {
+   "name": "placebo_takes_a_later_route",
+   "file": "src/mars_titan/evaluation/retention_interference.py",
+   "status": "killed",
+   "seconds": 6.7,
+   "tail": [
+    "1 failed, 21 passed in 3.14s"
+   ],
+   "original": "lagged[lag:] = routes[: len(routes) - lag]",
+   "mutated": "lagged[lag:] = routes[lag:]"
+  },
+  {
+   "name": "history_starts_swapped",
+   "file": "src/mars_titan/evaluation/retention_interference.py",
+   "status": "killed",
+   "seconds": 7.0,
+   "tail": [
+    "1 failed, 23 passed in 3.54s"
+   ],
+   "original": "        if start == \"since_warmup_start\":\n",
+   "mutated": "        if start != \"since_warmup_start\":\n"
+  },
+  {
+   "name": "warmup_one_month_shorter",
+   "file": "src/mars_titan/evaluation/retention_interference.py",
+   "status": "killed",
+   "seconds": 6.7,
+   "tail": [
+    "1 failed, 22 passed in 3.28s"
+   ],
+   "original": "position = day.year * 12 + day.month - 1 - months",
+   "mutated": "position = day.year * 12 + day.month - months"
+  },
+  {
+   "name": "history_ignores_warmup",
+   "file": "src/mars_titan/evaluation/retention_interference.py",
+   "status": "killed",
+   "seconds": 7.3,
+   "tail": [
+    "1 failed, 23 passed in 3.67s"
+   ],
+   "original": "begin, stop = np.searchsorted(at, [history, last])",
+   "mutated": "begin, stop = np.searchsorted(at, [first, last])"
+  },
+  {
+   "name": "long_absence_strict",
+   "file": "src/mars_titan/evaluation/retention_interference.py",
+   "status": "killed",
+   "seconds": 7.0,
+   "tail": [
+    "1 failed, 25 passed in 3.29s"
+   ],
+   "original": "revisit & (absence >= long_absence), revisit & (absence < long_absence)",
+   "mutated": "revisit & (absence > long_absence), revisit & (absence <= long_absence)"
+  },
+  {
+   "name": "retention_against_continuing",
+   "file": "src/mars_titan/evaluation/retention_interference.py",
+   "status": "killed",
+   "seconds": 7.2,
+   "tail": [
+    "1 failed, 25 passed in 3.50s"
+   ],
+   "original": "group[\"revisit_entry\"] - group[\"novel_entry\"],",
+   "mutated": "group[\"revisit_entry\"] - group[\"continuing\"],"
+  },
+  {
+   "name": "plasticity_sign",
+   "file": "src/mars_titan/evaluation/retention_interference.py",
+   "status": "killed",
+   "seconds": 6.5,
+   "tail": [
+    "1 failed, 25 passed in 2.97s"
+   ],
+   "original": "group[\"novel_entry\"] - group[\"continuing\"],",
+   "mutated": "group[\"continuing\"] - group[\"novel_entry\"],"
+  },
+  {
+   "name": "undefined_sessions_counted",
+   "file": "src/mars_titan/evaluation/retention_interference.py",
+   "status": "killed",
+   "seconds": 6.7,
+   "tail": [
+    "1 failed, 26 passed in 2.96s"
+   ],
+   "original": "    masks &= defined[:, None]\n",
+   "mutated": ""
+  },
+  {
+   "name": "benefit_sign",
+   "file": "src/mars_titan/evaluation/retention_interference.py",
+   "status": "killed",
+   "seconds": 7.1,
+   "tail": [
+    "1 failed, 25 passed in 3.62s"
+   ],
+   "original": "inputs[name] = (control[0] - memory[0], memory[1] & control[1])",
+   "mutated": "inputs[name] = (memory[0] - control[0], memory[1] & control[1])"
+  },
+  {
+   "name": "defined_only_from_memory",
+   "file": "src/mars_titan/evaluation/retention_interference.py",
+   "status": "killed",
+   "seconds": 6.7,
+   "tail": [
+    "1 failed, 26 passed in 3.14s"
+   ],
+   "original": "inputs[name] = (control[0] - memory[0], memory[1] & control[1])",
+   "mutated": "inputs[name] = (control[0] - memory[0], memory[1])"
+  },
+  {
+   "name": "placebo_is_the_real_route",
+   "file": "src/mars_titan/evaluation/retention_interference.py",
+   "status": "killed",
+   "seconds": 6.6,
+   "tail": [
+    "1 failed, 25 passed in 3.23s"
+   ],
+   "original": "for lag in (False, True)",
+   "mutated": "for lag in (False, False)"
+  },
+  {
+   "name": "bootstrap_seed",
+   "file": "src/mars_titan/evaluation/retention_interference.py",
+   "status": "killed",
+   "seconds": 6.5,
+   "tail": [
+    "1 failed, 27 passed in 3.03s"
+   ],
+   "original": "rng = np.random.default_rng(options[\"seed\"])",
+   "mutated": "rng = np.random.default_rng(options[\"seed\"] + 1)"
+  },
+  {
+   "name": "bootstrap_block_one",
+   "file": "src/mars_titan/evaluation/retention_interference.py",
+   "status": "killed",
+   "seconds": 6.7,
+   "tail": [
+    "1 failed, 27 passed in 3.11s"
+   ],
+   "original": "counts = circular_block_counts(rng, size, periods, block)",
+   "mutated": "counts = circular_block_counts(rng, size, periods, 1)"
+  },
+  {
+   "name": "short_series_boundary",
+   "file": "src/mars_titan/evaluation/retention_interference.py",
+   "status": "killed",
+   "seconds": 6.8,
+   "tail": [
+    "1 failed, 30 passed in 3.32s"
+   ],
+   "original": "draws = None if options[\"block_length\"] >= periods else",
+   "mutated": "draws = None if options[\"block_length\"] > periods else"
+  },
+  {
+   "name": "placebo_counts_ignored",
+   "file": "src/mars_titan/evaluation/retention_interference.py",
+   "status": "killed",
+   "seconds": 6.9,
+   "tail": [
+    "1 failed, 31 passed in 3.27s"
+   ],
+   "original": "counts[k][group] < section[\"min_sessions\"] for k in range(2) for group in groups",
+   "mutated": "counts[k][group] < section[\"min_sessions\"] for k in range(1) for group in groups"
+  },
+  {
+   "name": "decision_needs_one_interval",
+   "file": "src/mars_titan/evaluation/retention_interference.py",
+   "status": "killed",
+   "seconds": 6.6,
+   "tail": [
+    "1 failed, 29 passed in 3.10s"
+   ],
+   "original": "status=confirmed if all(holds) else rejected,",
+   "mutated": "status=confirmed if any(holds) else rejected,"
+  },
+  {
+   "name": "interference_sign",
+   "file": "src/mars_titan/evaluation/retention_interference.py",
+   "status": "killed",
+   "seconds": 6.8,
+   "tail": [
+    "1 failed, 32 passed in 3.24s"
+   ],
+   "original": "holds = [(low > 0) if sign > 0 else (high < 0) for low, high in bounds.values()]",
+   "mutated": "holds = [(low > 0) if sign > 0 else (low < 0) for low, high in bounds.values()]"
+  },
+  {
+   "name": "retention_direction",
+   "file": "src/mars_titan/evaluation/retention_interference.py",
+   "status": "killed",
+   "seconds": 6.7,
+   "tail": [
+    "1 failed, 25 passed in 3.17s"
+   ],
+   "original": "\"retention\": ((\"novel_entry\", \"revisit_entry\"), 1.0,",
+   "mutated": "\"retention\": ((\"novel_entry\", \"revisit_entry\"), -1.0,"
+  },
+  {
+   "name": "marginal_instead_of_joint",
+   "file": "src/mars_titan/evaluation/retention_interference.py",
+   "status": "killed",
+   "seconds": 6.9,
+   "tail": [
+    "1 failed, 27 passed in 3.37s"
+   ],
+   "original": "joint = family_intervals(estimate, draws, confidence)",
+   "mutated": "joint = family_intervals(estimate, draws, 0.5)"
+  },
+  {
+   "name": "long_absence_outside_bins",
+   "file": "src/mars_titan/evaluation/retention_interference.py",
+   "status": "killed",
+   "seconds": 7.2,
+   "tail": [
+    "1 failed, 10 passed in 3.40s"
+   ],
+   "original": "        and long_absence in bins,\n",
+   "mutated": "        and True,\n"
+  },
+  {
+   "name": "repeated_pairs_admitted",
+   "file": "src/mars_titan/evaluation/retention_interference.py",
+   "status": "killed",
+   "seconds": 6.6,
+   "tail": [
+    "1 failed, 16 passed in 2.85s"
+   ],
+   "original": "_require((memory, control) not in seen,",
+   "mutated": "_require(True,"
+  },
+  {
+   "name": "curves_start_at_zero",
+   "file": "src/mars_titan/evaluation/retention_interference.py",
+   "status": "killed",
+   "seconds": 6.8,
+   "tail": [
+    "1 failed, 25 passed in 3.19s"
+   ],
+   "original": "for h in range(1, section[\"entry_sessions\"] + 1)",
+   "mutated": "for h in range(0, section[\"entry_sessions\"])"
+  },
+  {
+   "name": "curves_keep_undefined",
+   "file": "src/mars_titan/evaluation/retention_interference.py",
+   "status": "killed",
+   "seconds": 6.9,
+   "tail": [
+    "1 failed, 26 passed in 3.42s"
+   ],
+   "original": "        mask = mask & defined\n",
+   "mutated": ""
+  },
+  {
+   "name": "calendar_admits_missing_session",
+   "file": "src/mars_titan/evaluation/regime_calendar.py",
+   "status": "killed",
+   "seconds": 7.3,
+   "tail": [
+    "1 failed, 36 passed in 3.20s"
+   ],
+   "original": "cumulative[:, end + 1] - cumulative[:, first] == needed",
+   "mutated": "cumulative[:, end + 1] - cumulative[:, first] >= needed - 1"
+  },
+  {
+   "name": "calendar_anchor_first_column",
+   "file": "src/mars_titan/evaluation/regime_calendar.py",
+   "status": "killed",
+   "seconds": 6.6,
+   "tail": [
+    "1 failed, 36 passed in 3.23s"
+   ],
+   "original": "anchor = window[:, int(np.argmax(slots))]",
+   "mutated": "anchor = window[:, 0]"
+  },
+  {
+   "name": "calendar_absent_sessions_present",
+   "file": "src/mars_titan/evaluation/regime_calendar.py",
+   "status": "killed",
+   "seconds": 7.3,
+   "tail": [
+    "1 failed, 36 passed in 3.83s"
+   ],
+   "original": "prices[:, :, _PRESENT] = slots",
+   "mutated": "prices[:, :, _PRESENT] = 1.0"
+  },
+  {
+   "name": "calendar_reads_final_test",
+   "file": "src/mars_titan/evaluation/regime_calendar.py",
+   "status": "killed",
+   "seconds": 8.1,
+   "tail": [
+    "1 failed, 45 passed in 4.17s"
+   ],
+   "original": "_require(last < FINAL_TEST_START, \"La edición considera sesiones del test final\")",
+   "mutated": "_require(True, \"La edición considera sesiones del test final\")"
+  },
+  {
+   "name": "calendar_check_final_test_flag",
+   "file": "src/mars_titan/evaluation/regime_calendar.py",
+   "status": "killed",
+   "seconds": 7.7,
+   "tail": [
+    "1 failed, 49 passed in 3.82s"
+   ],
+   "original": "        and calendar.get(\"final_test_opened\") is False\n",
+   "mutated": ""
+  },
+  {
+   "name": "calendar_check_increasing",
+   "file": "src/mars_titan/evaluation/regime_calendar.py",
+   "status": "killed",
+   "seconds": 8.2,
+   "tail": [
+    "1 failed, 55 passed in 4.34s"
+   ],
+   "original": "np.all(np.diff(at) > 0), f\"Los instantes de {market} no son crecientes\"",
+   "mutated": "np.all(np.diff(at) >= 0), f\"Los instantes de {market} no son crecientes\""
+  },
+  {
+   "name": "calendar_overwrites",
+   "file": "src/mars_titan/evaluation/regime_calendar.py",
+   "status": "killed",
+   "seconds": 8.3,
+   "tail": [
+    "1 failed, 43 passed in 4.59s"
+   ],
+   "original": "_require(not output.exists(), \"El calendario necesita un archivo nuevo\")",
+   "mutated": "_require(True, \"El calendario necesita un archivo nuevo\")"
+  },
+  {
+   "name": "comparison_uses_mse",
+   "file": "src/mars_titan/evaluation/walk_forward_comparison.py",
+   "status": "killed",
+   "seconds": 9.0,
+   "tail": [
+    "1 failed, 58 passed in 5.25s"
+   ],
+   "original": "averaged = _seed_series(overall, arm, market, \"mae\")",
+   "mutated": "averaged = _seed_series(overall, arm, market, \"mse\")"
+  },
+  {
+   "name": "comparison_calibration_windows",
+   "file": "src/mars_titan/evaluation/walk_forward_comparison.py",
+   "status": "killed",
+   "seconds": 8.5,
+   "tail": [
+    "58 passed, 1 error in 4.96s"
+   ],
+   "original": "windows = [tuple(window[\"evaluation\"]) for window in sources[\"windows\"].values()]",
+   "mutated": "windows = [tuple(window[\"calibration\"]) for window in sources[\"windows\"].values()]"
+  },
+  {
+   "name": "comparison_admits_undeclared_calendar",
+   "file": "src/mars_titan/evaluation/walk_forward_comparison.py",
+   "status": "killed",
+   "seconds": 8.6,
+   "tail": [
+    "1 failed, 61 passed in 5.27s"
+   ],
+   "original": "        regimes is None or RETENTION_FIELD in config,\n",
+   "mutated": "        True,\n"
+  },
+  {
+   "name": "comparison_skips_validation",
+   "file": "src/mars_titan/evaluation/walk_forward_comparison.py",
+   "status": "killed",
+   "seconds": 8.8,
+   "tail": [
+    "1 failed, 62 passed in 5.29s"
+   ],
+   "original": "        retention_interference.declaration(config[RETENTION_FIELD], arms)\n",
+   "mutated": "        pass\n"
+  }
+ ]
+}

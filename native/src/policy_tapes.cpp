@@ -79,6 +79,16 @@ PolicyTape load_policy_tape(const std::filesystem::path& directory, PolicyTapeRo
             "La cinta reconstruida cambió durante la lectura o no conserva su auditoría");
     require(!result.input.context,
             "Las cintas reconstruidas de la política no admiten un contexto observable");
+    // Una baja sin precio de salida deja sin valorar una posición abierta. En el ajuste o en la
+    // validación ocultaría la pérdida al objetivo y a la selección, así que solo se admite en
+    // la evaluación, donde el episodio se publica como fallido con el motivo `unpriced_exit`.
+    require(role == PolicyTapeRole::evaluation ||
+                std::ranges::none_of(tape.actions,
+                                     [](const simulation::CorporateAction& action) {
+                                         return action.kind ==
+                                                simulation::CorporateKind::unpriced_delisting;
+                                     }),
+            "Las cintas de ajuste y validación no admiten bajas sin precio de salida");
     result.identity = Json{{"role", policy_tape_role_name(role)},
                            {"manifest_sha256", tape.source_sha256},
                            {"market_sha256", manifest.at("file_sha256")},

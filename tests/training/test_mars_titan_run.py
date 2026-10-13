@@ -28,6 +28,7 @@ from mars_titan.training.checkpoints import load_training_state
 from mars_titan.training.financial_run import ChronologicalInference, ChronologicalRecipe
 from mars_titan.training.learning_hold import LearningHoldError
 from mars_titan.training.selection import FIXED_BUDGET
+from tests.suite_support import missing_native
 from tests.training.chronological_fixture import decision
 from tests.training.test_financial_run import RecordingOptimizer, StopAtStep, corpus, entries
 from tests.training.test_financial_run import shared as shared
@@ -49,7 +50,7 @@ def explicit_fastpath():
 def native():
     path = os.environ.get("MARS_TITAN_EPISODIC_NATIVE")
     if not path:
-        pytest.skip("Falta el enlace nativo CPU compilado para esta comprobación")
+        pytest.skip(missing_native("MARS_TITAN_EPISODIC_NATIVE"))
     return load_native(path)
 
 
@@ -198,6 +199,7 @@ def test_m3_needs_training_scalers_and_shares_the_three_indices_of_m2(shared):
     assert (m3.capacity, m3.seed, m3.quotas) == (m2.capacity, m2.seed, m2.quotas)
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_m3_scalers_must_come_from_the_training_tramo_of_the_fit(shared, tmp_path, native):
     _, streams = shared
     fitted = scalers_for(streams, recipe())
@@ -233,6 +235,7 @@ def test_roles_cover_the_readout_and_m0_leaves_the_episodic_read_inert(shared, a
         assert set(roles["episodic_read"]) == read and inert == []
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_optimizer_must_cover_exactly_the_trainable_readout(shared, tmp_path, native):
     _, streams = shared
 
@@ -244,6 +247,7 @@ def test_optimizer_must_cover_exactly_the_trainable_readout(shared, tmp_path, na
         build(streams, tmp_path / "run", native, factory=partial)
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 @pytest.mark.parametrize(
     "case",
     [
@@ -331,6 +335,7 @@ def runs(shared, tmp_path_factory, native):
     return result
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 @pytest.mark.parametrize("admission", ["m0", "m1", "m2", "m3"])
 def test_loop_reaches_the_step_without_changing_any_weight(runs, admission):
     engine, report, before = runs[admission]
@@ -382,6 +387,7 @@ def train_passes(audit):
     return [*passes, current] if current else passes
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_each_event_resolves_labels_updates_predicts_and_then_admits(runs):
     engine, _, _ = runs["m1"]
     passes = train_passes(engine.audit)
@@ -423,6 +429,7 @@ def leaves(value):
     return []
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_parent_fast_state_does_not_depend_on_the_bank_or_the_readout(shared, tmp_path, native):
     _, streams = shared
     model = parent(streams)
@@ -465,6 +472,7 @@ def test_parent_fast_state_does_not_depend_on_the_bank_or_the_readout(shared, tm
             assert all(torch.equal(a, b) for a, b in zip(memory, other_memory, strict=True))
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_segment_gradient_is_the_mean_over_labels_whatever_the_block_size(
     shared, tmp_path, native, learning_doubles
 ):
@@ -493,6 +501,7 @@ def test_segment_gradient_is_the_mean_over_labels_whatever_the_block_size(
                 torch.testing.assert_close(left[name], value, rtol=1e-9, atol=1e-12)
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_future_suffix_changes_neither_past_predictions_nor_past_gradients(
     tmp_path, native, learning_doubles
 ):
@@ -523,6 +532,7 @@ def test_future_suffix_changes_neither_past_predictions_nor_past_gradients(
                 torch.testing.assert_close(value, right[key], rtol=0, atol=0)
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 @pytest.mark.parametrize("admission", ["m1", "m2", "m3"])
 def test_resume_after_a_pause_reproduces_the_continuous_run(
     shared, tmp_path, native, learning_doubles, admission
@@ -566,6 +576,7 @@ def test_resume_after_a_pause_reproduces_the_continuous_run(
     assert 1 <= len(retained) <= 3
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_the_default_optimizer_anchors_the_decay_that_the_recipe_declares(shared, tmp_path, native):
     from mars_titan.training.anchored_decay import INITIAL, AnchoredAdamW
 
@@ -588,9 +599,15 @@ def test_the_default_optimizer_anchors_the_decay_that_the_recipe_declares(shared
     assert type(plain.optimizer) is torch.optim.AdamW and "anchored_decay" not in plain.identity
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_readout_fit_is_refused_while_the_learning_hold_blocks(
-    shared, tmp_path, native, learning_hold
+    shared, tmp_path, native, learning_hold, monkeypatch
 ):
+    def past_the_guard():
+        # Sin la protección, el recorrido llegaría al paso y el gancho global lo omitiría.
+        raise AssertionError("El ajuste pasó de la protección del aprendizaje")
+
+    monkeypatch.setattr(mt, "StopRequest", past_the_guard)
     _, streams = shared
     engine = build(streams, tmp_path / "run", native, factory=None)
     assert type(engine.optimizer) is torch.optim.AdamW
@@ -600,6 +617,7 @@ def test_readout_fit_is_refused_while_the_learning_hold_blocks(
     assert not (tmp_path / "run").exists()
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 @pytest.mark.parametrize("refinements", [2, 4])
 def test_refinements_count_per_prediction_and_fixed_episodes_have_their_own_identity(
     shared, tmp_path, native, refinements
@@ -616,6 +634,7 @@ def test_refinements_count_per_prediction_and_fixed_episodes_have_their_own_iden
         assert metrics["mac_updates"] == metrics["observations"]
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_scalar_parent_fits_with_l1_and_writes_no_quantiles(
     shared, tmp_path, native, learning_doubles
 ):
@@ -634,6 +653,7 @@ def test_scalar_parent_fits_with_l1_and_writes_no_quantiles(
     assert rows and all(levels is None for *_, levels in rows)
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_a_replay_that_does_not_reproduce_its_prediction_stops_before_the_step(
     shared, tmp_path, native, learning_doubles, monkeypatch
 ):
@@ -654,6 +674,7 @@ def test_a_replay_that_does_not_reproduce_its_prediction_stops_before_the_step(
     assert engine.optimizer.calls == 0 and engine.global_step == 0
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_a_non_finite_segment_loss_stops_before_the_step(
     shared, tmp_path, native, learning_doubles, monkeypatch
 ):

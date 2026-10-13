@@ -1,8 +1,8 @@
-"""Brazos adaptados de MARS-TITAN y CM-v1 comprobados hasta el paso, sin cambiar pesos.
+"""Modelos adaptados de MARS-TITAN y CM-v1 comprobados hasta el paso, sin cambiar pesos.
 
-Cada brazo parte del mismo núcleo `mac_online` y del mismo lector. El optimizador registra
-gradientes sin modificar parámetros, así que todos los pasos de un brazo se evalúan en el
-mismo punto y se pueden comparar entre brazos y entre tamaños de bloque.
+Cada modelo parte del mismo núcleo `mac_online` y del mismo lector. El optimizador registra
+gradientes sin modificar parámetros, así que todos los pasos de un modelo se evalúan en el
+mismo punto y se pueden comparar entre modelos y entre tamaños de bloque.
 """
 
 import copy
@@ -40,7 +40,7 @@ def explicit_fastpath():
 
 
 def spec(arm):
-    """Puntos del núcleo y forma de la lectura del brazo en la matriz, incluida la reserva."""
+    """Puntos del núcleo y forma de la lectura del modelo en la matriz, incluida la reserva."""
     found = {item["id"]: item for item in cm.arms(MATRIX, "mars_titan", reserve=True)}
     return found[arm]
 
@@ -99,7 +99,7 @@ def without_predictions(audit):
 
 @pytest.fixture(scope="module")
 def arms(shared, tmp_path_factory, native):
-    """Los cuatro brazos de M1 sobre el mismo padre y lector, con el registrador."""
+    """Las cuatro variantes de M1 sobre el mismo padre y lector, con el registrador."""
     _, streams = shared
     root = tmp_path_factory.mktemp("readout-adapters")
     hold = root / "hold.json"
@@ -121,6 +121,7 @@ def arms(shared, tmp_path_factory, native):
     return result
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_arms_share_events_updates_and_issued_predictions(arms):
     baseline, report, _, _ = arms["full_continuation"]
     expected = without_predictions(baseline.audit)
@@ -138,6 +139,7 @@ def test_arms_share_events_updates_and_issued_predictions(arms):
         }, arm
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 @pytest.mark.parametrize("arm", ARMS[1:])
 def test_gradients_reach_only_the_declared_corrections(arms, arm):
     engine, _, core, readout = arms[arm]
@@ -168,6 +170,7 @@ def test_gradients_reach_only_the_declared_corrections(arms, arm):
     assert identity["control_penalty_on_adapted_operator"] is False
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_episodic_gradients_follow_the_chain_rule_of_the_readout_continuation(
     shared, tmp_path, native
 ):
@@ -200,6 +203,7 @@ def test_episodic_gradients_follow_the_chain_rule_of_the_readout_continuation(
     assert nonzero > 0
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_full_continuation_fits_the_whole_readout_with_the_frozen_core(arms):
     engine, _, _, _ = arms["full_continuation"]
     assert set(engine.roles) == set(mt.parameter_roles(engine.readout, "m1")[0])
@@ -208,6 +212,7 @@ def test_full_continuation_fits_the_whole_readout_with_the_frozen_core(arms):
     assert engine.identity["posttraining"]["core_base_parameters_sha256"] is None
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_core_gradient_does_not_depend_on_the_flow_block_size(shared, tmp_path, native):
     _, streams = shared
     whole = build(streams, tmp_path / "whole", native, "core")
@@ -234,6 +239,7 @@ def test_core_without_bank_trains_only_the_core(shared, tmp_path):
     assert any(records[0][name].abs().sum() > 0 for name in records[0])
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_c_penalty_acts_on_the_adapted_operator_and_leaves_the_head_alone(shared, tmp_path, native):
     """g(2w) − g(w) = g(w) − g_B sobre los adaptadores del núcleo, sin recorte."""
     _, streams = shared
@@ -264,6 +270,7 @@ def test_c_penalty_acts_on_the_adapted_operator_and_leaves_the_head_alone(shared
     assert "control_groups_in_objective" not in runs["b"][1]["history"][-1]["train"]
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_resume_reproduces_the_continuous_run_with_both_components(shared, tmp_path, native):
     _, streams = shared
     plan = recipe(epochs=2, checkpoint_updates=2)
@@ -289,6 +296,7 @@ def test_resume_reproduces_the_continuous_run_with_both_components(shared, tmp_p
     assert resumed["history"] == expected["history"]
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_checkpoint_rejects_core_adapters_that_do_not_match(shared, tmp_path, native):
     _, streams = shared
     engine = build(streams, tmp_path / "run", native, "core")
@@ -305,6 +313,7 @@ def test_checkpoint_rejects_core_adapters_that_do_not_match(shared, tmp_path, na
         engine._restore_extra(missing)
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_constructor_rejects_cores_and_readers_outside_the_arm(shared, tmp_path, native):
     _, streams = shared
     readout, codec = reader(streams, "m1")
@@ -385,7 +394,7 @@ def test_constructor_rejects_cores_and_readers_outside_the_arm(shared, tmp_path,
 
 
 def test_staged_m3_scalers_are_the_parent_ones_frozen_before_the_new_rows():
-    """Por etapas, M3 conserva las escalas del brazo padre, anteriores a las filas nuevas."""
+    """Por etapas, M3 conserva las escalas del modelo padre, anteriores a las filas nuevas."""
     from dataclasses import asdict
     from types import SimpleNamespace
 
@@ -414,12 +423,12 @@ def test_staged_m3_scalers_are_the_parent_ones_frozen_before_the_new_rows():
     assert ReadoutAdapterTrainer._check_scalers(staged, scalers, later) is None
     # Escalas que no son las del padre o que miran dentro de las filas nuevas.
     other = SimpleNamespace(_parent_scalers=dict(asdict(scalers), error_median=0.25))
-    with pytest.raises(ValueError, match="brazo padre"):
+    with pytest.raises(ValueError, match="modelo padre"):
         ReadoutAdapterTrainer._check_scalers(other, scalers, later)
     early = SimpleNamespace(
         identity=later.identity, dataset=later.dataset, phase=SimpleNamespace(decision_start=99)
     )
-    with pytest.raises(ValueError, match="brazo padre"):
+    with pytest.raises(ValueError, match="modelo padre"):
         ReadoutAdapterTrainer._check_scalers(staged, scalers, early)
     # Sin colocación por etapas rige la regla del ajuste base: el propio tramo de ajuste.
     base = SimpleNamespace(_parent_scalers=None)
