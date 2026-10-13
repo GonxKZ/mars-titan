@@ -1,0 +1,658 @@
+{
+  "tool": "benchmarks/chronological_replay.py con eventos guardados, envuelto para elegir la proyección del codec y medir encode",
+  "view": "US+CN fold-012 de la edición v3, 254 eventos desde el 127, 2 tramos de calentamiento y 8 medidos",
+  "arms": {
+    "bcm": "cm_readout/cm_v1_bcm",
+    "bm": "cm_readout/cm_v1_bm",
+    "m1": "readout/mars_titan_m1"
+  },
+  "options": {
+    "precision": "fp32_strict",
+    "block_rows": 512,
+    "max_batch": 1024,
+    "max_state_bytes": 134217728
+  },
+  "order": "ABBA: einsum, núcleo, núcleo, einsum, cada ronda en su propio proceso",
+  "native_isa": "avx512f",
+  "native_sha256": "07e20762e9c905cda3d9ed30de3b73f9f34879e5d4cab6203c3360b6c602c1f7",
+  "notes": [
+    "encode y process cubren todo el proceso, calentamiento incluido. rows_per_s y seconds cubren solo los 8 tramos medidos.",
+    "thread_cpu_seconds de encode es el tiempo de CPU del hilo que codifica y depende poco de la carga ajena.",
+    "bits compara las capturas de las rondas 1 y 2: gradientes de cada llamada al optimizador, predicciones pendientes y selecciones de medoids."
+  ],
+  "readers": {
+    "bcm": {
+      "rounds": [
+        {
+          "label": "bcm-numpy_einsum-1",
+          "backend": "numpy_einsum",
+          "rows": 151797,
+          "labels": 154721,
+          "events": 254,
+          "segments": 8,
+          "optimizer_calls": 11,
+          "seconds": 32.21861558803357,
+          "rows_per_s": 4711.468734130819,
+          "segment_rate_min": 4495.907517659108,
+          "segment_rate_median": 4823.0477283455675,
+          "segment_rate_max": 4936.68680314898,
+          "peak_rss_mib": 3730,
+          "peak_allocated_mib": 2309,
+          "loadavg": [
+            11.23974609375,
+            13.11279296875,
+            26.23876953125
+          ],
+          "threads": "2",
+          "tf32_matmul": false,
+          "tf32_cudnn": false,
+          "backends": [
+            "numpy_einsum"
+          ],
+          "encode": {
+            "calls": 452,
+            "rows": 219734,
+            "wall_seconds": 19.520651973201893,
+            "thread_cpu_seconds": 19.508473466999998
+          },
+          "process": {
+            "user_seconds": 76.506937,
+            "system_seconds": 2.983351,
+            "voluntary_switches": 15727,
+            "involuntary_switches": 3074,
+            "wall_seconds": 76.85048614902189
+          },
+          "medoid_seconds": 7.895834827737417
+        },
+        {
+          "label": "bcm-native-2",
+          "backend": "native",
+          "rows": 151797,
+          "labels": 154721,
+          "events": 254,
+          "segments": 8,
+          "optimizer_calls": 11,
+          "seconds": 23.2837828269694,
+          "rows_per_s": 6519.430331748967,
+          "segment_rate_min": 5823.362060195647,
+          "segment_rate_median": 6555.355497576314,
+          "segment_rate_max": 6949.857466203282,
+          "peak_rss_mib": 3722,
+          "peak_allocated_mib": 2309,
+          "loadavg": [
+            11.45068359375,
+            12.58203125,
+            24.5732421875
+          ],
+          "threads": "2",
+          "tf32_matmul": false,
+          "tf32_cudnn": false,
+          "backends": [
+            "native:avx512f"
+          ],
+          "encode": {
+            "calls": 452,
+            "rows": 219734,
+            "wall_seconds": 5.469490575778764,
+            "thread_cpu_seconds": 5.461834797999948
+          },
+          "process": {
+            "user_seconds": 63.68448,
+            "system_seconds": 2.819039,
+            "voluntary_switches": 8432,
+            "involuntary_switches": 2723,
+            "wall_seconds": 61.09479303198168
+          },
+          "medoid_seconds": 8.432069226924796
+        },
+        {
+          "label": "bcm-native-3",
+          "backend": "native",
+          "rows": 151797,
+          "labels": 154721,
+          "events": 254,
+          "segments": 8,
+          "optimizer_calls": 11,
+          "seconds": 32.423608983983286,
+          "rows_per_s": 4681.681180987137,
+          "segment_rate_min": 4152.299123186268,
+          "segment_rate_median": 4638.584064070616,
+          "segment_rate_max": 5444.378443079499,
+          "peak_rss_mib": 3719,
+          "peak_allocated_mib": 2309,
+          "loadavg": [
+            15.97607421875,
+            13.5009765625,
+            23.36669921875
+          ],
+          "threads": "2",
+          "tf32_matmul": false,
+          "tf32_cudnn": false,
+          "backends": [
+            "native:avx512f"
+          ],
+          "encode": {
+            "calls": 452,
+            "rows": 219734,
+            "wall_seconds": 5.920810445968527,
+            "thread_cpu_seconds": 5.810720446000017
+          },
+          "process": {
+            "user_seconds": 82.356486,
+            "system_seconds": 2.910071,
+            "voluntary_switches": 13843,
+            "involuntary_switches": 16770,
+            "wall_seconds": 80.03697909001494
+          },
+          "medoid_seconds": 10.733154370449483
+        },
+        {
+          "label": "bcm-numpy_einsum-4",
+          "backend": "numpy_einsum",
+          "rows": 151797,
+          "labels": 154721,
+          "events": 254,
+          "segments": 8,
+          "optimizer_calls": 11,
+          "seconds": 49.41496580297826,
+          "rows_per_s": 3071.883133648777,
+          "segment_rate_min": 2507.8690734244187,
+          "segment_rate_median": 3187.3070447420537,
+          "segment_rate_max": 3432.7391322535577,
+          "peak_rss_mib": 3718,
+          "peak_allocated_mib": 2309,
+          "loadavg": [
+            20.73974609375,
+            16.65087890625,
+            22.79296875
+          ],
+          "threads": "2",
+          "tf32_matmul": false,
+          "tf32_cudnn": false,
+          "backends": [
+            "numpy_einsum"
+          ],
+          "encode": {
+            "calls": 452,
+            "rows": 219734,
+            "wall_seconds": 22.028442837123293,
+            "thread_cpu_seconds": 21.356186802000035
+          },
+          "process": {
+            "user_seconds": 115.088965,
+            "system_seconds": 3.6934009999999997,
+            "voluntary_switches": 19855,
+            "involuntary_switches": 28870,
+            "wall_seconds": 136.9591083570267
+          },
+          "medoid_seconds": 11.729652048496064
+        }
+      ],
+      "mean_of_two": {
+        "rows_per_s": {
+          "numpy_einsum": 3891.675933889798,
+          "native": 5600.555756368052
+        },
+        "encode_thread_cpu_seconds": {
+          "numpy_einsum": 20.432330134500017,
+          "native": 5.636277621999983
+        },
+        "encode_wall_seconds": {
+          "numpy_einsum": 20.774547405162593,
+          "native": 5.6951505108736455
+        },
+        "process_user_seconds": {
+          "numpy_einsum": 95.797951,
+          "native": 73.020483
+        },
+        "medoid_seconds": {
+          "numpy_einsum": 9.81274343811674,
+          "native": 9.58261179868714
+        },
+        "encode_cpu_saved_seconds": 14.796052512500033,
+        "process_user_saved_seconds": 22.777468,
+        "rows_per_s_ratio": 1.4391115425610987
+      },
+      "bits": {
+        "left": "bcm-numpy_einsum-1",
+        "right": "bcm-native-2",
+        "optimizer_calls": 11,
+        "gradients_same_bits": true,
+        "pending_predictions": 1265,
+        "pending_same_bits": true,
+        "medoid_selections": 86,
+        "selections_identical": true,
+        "backends": [
+          [
+            "numpy_einsum"
+          ],
+          [
+            "native:avx512f"
+          ]
+        ]
+      }
+    },
+    "bm": {
+      "rounds": [
+        {
+          "label": "bm-numpy_einsum-1",
+          "backend": "numpy_einsum",
+          "rows": 151797,
+          "labels": 154721,
+          "events": 254,
+          "segments": 8,
+          "optimizer_calls": 11,
+          "seconds": 37.04899086098885,
+          "rows_per_s": 4097.196616489664,
+          "segment_rate_min": 3476.205581910754,
+          "segment_rate_median": 4282.120422940003,
+          "segment_rate_max": 4372.826901895832,
+          "peak_rss_mib": 3721,
+          "peak_allocated_mib": 2309,
+          "loadavg": [
+            17.080078125,
+            16.7001953125,
+            22.09814453125
+          ],
+          "threads": "2",
+          "tf32_matmul": false,
+          "tf32_cudnn": false,
+          "backends": [
+            "numpy_einsum"
+          ],
+          "encode": {
+            "calls": 452,
+            "rows": 219734,
+            "wall_seconds": 20.899599394353572,
+            "thread_cpu_seconds": 20.724338476000007
+          },
+          "process": {
+            "user_seconds": 91.182707,
+            "system_seconds": 2.650683,
+            "voluntary_switches": 10020,
+            "involuntary_switches": 14192,
+            "wall_seconds": 68.96241574699525
+          },
+          "medoid_seconds": 9.909798494190909
+        },
+        {
+          "label": "bm-native-2",
+          "backend": "native",
+          "rows": 151797,
+          "labels": 154721,
+          "events": 254,
+          "segments": 8,
+          "optimizer_calls": 11,
+          "seconds": 23.682659602025524,
+          "rows_per_s": 6409.626391244383,
+          "segment_rate_min": 6093.303152714556,
+          "segment_rate_median": 6265.626488228361,
+          "segment_rate_max": 7001.439970107628,
+          "peak_rss_mib": 3721,
+          "peak_allocated_mib": 2309,
+          "loadavg": [
+            12.359375,
+            14.90576171875,
+            20.525390625
+          ],
+          "threads": "2",
+          "tf32_matmul": false,
+          "tf32_cudnn": false,
+          "backends": [
+            "native:avx512f"
+          ],
+          "encode": {
+            "calls": 452,
+            "rows": 219734,
+            "wall_seconds": 5.440073366044089,
+            "thread_cpu_seconds": 5.43262255899998
+          },
+          "process": {
+            "user_seconds": 64.097542,
+            "system_seconds": 3.252899,
+            "voluntary_switches": 17603,
+            "involuntary_switches": 2390,
+            "wall_seconds": 120.53785523300758
+          },
+          "medoid_seconds": 8.436272789665964
+        },
+        {
+          "label": "bm-native-3",
+          "backend": "native",
+          "rows": 151797,
+          "labels": 154721,
+          "events": 254,
+          "segments": 8,
+          "optimizer_calls": 11,
+          "seconds": 25.20448092202423,
+          "rows_per_s": 6022.619567910103,
+          "segment_rate_min": 4841.110384541012,
+          "segment_rate_median": 6351.814960022052,
+          "segment_rate_max": 6559.493276781249,
+          "peak_rss_mib": 3715,
+          "peak_allocated_mib": 2309,
+          "loadavg": [
+            16.43701171875,
+            15.712890625,
+            20.244140625
+          ],
+          "threads": "2",
+          "tf32_matmul": false,
+          "tf32_cudnn": false,
+          "backends": [
+            "native:avx512f"
+          ],
+          "encode": {
+            "calls": 452,
+            "rows": 219734,
+            "wall_seconds": 5.9763915172661655,
+            "thread_cpu_seconds": 5.851226113000035
+          },
+          "process": {
+            "user_seconds": 76.012777,
+            "system_seconds": 3.888508,
+            "voluntary_switches": 19180,
+            "involuntary_switches": 17109,
+            "wall_seconds": 56.99282459099777
+          },
+          "medoid_seconds": 9.970064164779615
+        },
+        {
+          "label": "bm-numpy_einsum-4",
+          "backend": "numpy_einsum",
+          "rows": 151797,
+          "labels": 154721,
+          "events": 254,
+          "segments": 8,
+          "optimizer_calls": 11,
+          "seconds": 36.95569188799709,
+          "rows_per_s": 4107.540469274841,
+          "segment_rate_min": 3551.68574989467,
+          "segment_rate_median": 4359.335028931608,
+          "segment_rate_max": 4580.538610584987,
+          "peak_rss_mib": 3708,
+          "peak_allocated_mib": 2309,
+          "loadavg": [
+            15.4052734375,
+            16.3984375,
+            19.4052734375
+          ],
+          "threads": "2",
+          "tf32_matmul": false,
+          "tf32_cudnn": false,
+          "backends": [
+            "numpy_einsum"
+          ],
+          "encode": {
+            "calls": 452,
+            "rows": 219734,
+            "wall_seconds": 21.45762835984351,
+            "thread_cpu_seconds": 21.236319088000037
+          },
+          "process": {
+            "user_seconds": 93.193793,
+            "system_seconds": 3.620428,
+            "voluntary_switches": 22700,
+            "involuntary_switches": 12889,
+            "wall_seconds": 115.43219251197297
+          },
+          "medoid_seconds": 10.099747803236824
+        }
+      ],
+      "mean_of_two": {
+        "rows_per_s": {
+          "numpy_einsum": 4102.368542882252,
+          "native": 6216.122979577243
+        },
+        "encode_thread_cpu_seconds": {
+          "numpy_einsum": 20.980328782000022,
+          "native": 5.641924336000008
+        },
+        "encode_wall_seconds": {
+          "numpy_einsum": 21.17861387709854,
+          "native": 5.708232441655127
+        },
+        "process_user_seconds": {
+          "numpy_einsum": 92.18825,
+          "native": 70.0551595
+        },
+        "medoid_seconds": {
+          "numpy_einsum": 10.004773148713866,
+          "native": 9.203168477222789
+        },
+        "encode_cpu_saved_seconds": 15.338404446000014,
+        "process_user_saved_seconds": 22.133090499999994,
+        "rows_per_s_ratio": 1.515252204817733
+      },
+      "bits": {
+        "left": "bm-numpy_einsum-1",
+        "right": "bm-native-2",
+        "optimizer_calls": 11,
+        "gradients_same_bits": true,
+        "pending_predictions": 1265,
+        "pending_same_bits": true,
+        "medoid_selections": 86,
+        "selections_identical": true,
+        "backends": [
+          [
+            "numpy_einsum"
+          ],
+          [
+            "native:avx512f"
+          ]
+        ]
+      }
+    },
+    "m1": {
+      "rounds": [
+        {
+          "label": "m1-numpy_einsum-1",
+          "backend": "numpy_einsum",
+          "rows": 151797,
+          "labels": 154721,
+          "events": 254,
+          "segments": 8,
+          "optimizer_calls": 11,
+          "seconds": 31.394754110020585,
+          "rows_per_s": 4835.107147775029,
+          "segment_rate_min": 3305.5363319279872,
+          "segment_rate_median": 5229.5686600862455,
+          "segment_rate_max": 5442.758419495342,
+          "peak_rss_mib": 3720,
+          "peak_allocated_mib": 2309,
+          "loadavg": [
+            11.42578125,
+            18.28662109375,
+            42.2626953125
+          ],
+          "threads": "2",
+          "tf32_matmul": false,
+          "tf32_cudnn": false,
+          "backends": [
+            "numpy_einsum"
+          ],
+          "encode": {
+            "calls": 452,
+            "rows": 219734,
+            "wall_seconds": 19.99431237776298,
+            "thread_cpu_seconds": 19.952035938000012
+          },
+          "process": {
+            "user_seconds": 72.956882,
+            "system_seconds": 3.19084,
+            "voluntary_switches": 16352,
+            "involuntary_switches": 4492,
+            "wall_seconds": 103.24600673798705
+          },
+          "medoid_seconds": 4.218697039934341
+        },
+        {
+          "label": "m1-native-2",
+          "backend": "native",
+          "rows": 151797,
+          "labels": 154721,
+          "events": 254,
+          "segments": 8,
+          "optimizer_calls": 11,
+          "seconds": 20.25306910800282,
+          "rows_per_s": 7495.012197436228,
+          "segment_rate_min": 7013.087883023017,
+          "segment_rate_median": 7542.284448990177,
+          "segment_rate_max": 8243.064930109893,
+          "peak_rss_mib": 3724,
+          "peak_allocated_mib": 2309,
+          "loadavg": [
+            12.92333984375,
+            17.0048828125,
+            39.70556640625
+          ],
+          "threads": "2",
+          "tf32_matmul": false,
+          "tf32_cudnn": false,
+          "backends": [
+            "native:avx512f"
+          ],
+          "encode": {
+            "calls": 452,
+            "rows": 219734,
+            "wall_seconds": 5.46775073610479,
+            "thread_cpu_seconds": 5.459101173999941
+          },
+          "process": {
+            "user_seconds": 57.741394,
+            "system_seconds": 2.472757,
+            "voluntary_switches": 6408,
+            "involuntary_switches": 3121,
+            "wall_seconds": 38.75355419499101
+          },
+          "medoid_seconds": 4.2599397848243825
+        },
+        {
+          "label": "m1-native-3",
+          "backend": "native",
+          "rows": 151797,
+          "labels": 154721,
+          "events": 254,
+          "segments": 8,
+          "optimizer_calls": 11,
+          "seconds": 29.225494979997166,
+          "rows_per_s": 5193.992440637689,
+          "segment_rate_min": 3698.8867795583237,
+          "segment_rate_median": 6049.444726010442,
+          "segment_rate_max": 8186.15967115619,
+          "peak_rss_mib": 3718,
+          "peak_allocated_mib": 2309,
+          "loadavg": [
+            18.5810546875,
+            17.73046875,
+            35.6728515625
+          ],
+          "threads": "2",
+          "tf32_matmul": false,
+          "tf32_cudnn": false,
+          "backends": [
+            "native:avx512f"
+          ],
+          "encode": {
+            "calls": 452,
+            "rows": 219734,
+            "wall_seconds": 6.0097306843381375,
+            "thread_cpu_seconds": 5.862771326000022
+          },
+          "process": {
+            "user_seconds": 74.740865,
+            "system_seconds": 2.976984,
+            "voluntary_switches": 13360,
+            "involuntary_switches": 14309,
+            "wall_seconds": 77.25915409997106
+          },
+          "medoid_seconds": 5.523620804771781
+        },
+        {
+          "label": "m1-numpy_einsum-4",
+          "backend": "numpy_einsum",
+          "rows": 151797,
+          "labels": 154721,
+          "events": 254,
+          "segments": 8,
+          "optimizer_calls": 11,
+          "seconds": 30.517232429003343,
+          "rows_per_s": 4974.140441901059,
+          "segment_rate_min": 4763.2234981706015,
+          "segment_rate_median": 4993.88200592122,
+          "segment_rate_max": 5172.763288302447,
+          "peak_rss_mib": 3715,
+          "peak_allocated_mib": 2309,
+          "loadavg": [
+            13.99951171875,
+            16.49609375,
+            32.63525390625
+          ],
+          "threads": "2",
+          "tf32_matmul": false,
+          "tf32_cudnn": false,
+          "backends": [
+            "numpy_einsum"
+          ],
+          "encode": {
+            "calls": 452,
+            "rows": 219734,
+            "wall_seconds": 19.989249184320215,
+            "thread_cpu_seconds": 19.972449563000026
+          },
+          "process": {
+            "user_seconds": 73.22091,
+            "system_seconds": 2.835463,
+            "voluntary_switches": 17777,
+            "involuntary_switches": 3282,
+            "wall_seconds": 53.987405461026356
+          },
+          "medoid_seconds": 4.2036072490154766
+        }
+      ],
+      "mean_of_two": {
+        "rows_per_s": {
+          "numpy_einsum": 4904.623794838044,
+          "native": 6344.502319036958
+        },
+        "encode_thread_cpu_seconds": {
+          "numpy_einsum": 19.962242750500018,
+          "native": 5.660936249999981
+        },
+        "encode_wall_seconds": {
+          "numpy_einsum": 19.991780781041598,
+          "native": 5.738740710221464
+        },
+        "process_user_seconds": {
+          "numpy_einsum": 73.088896,
+          "native": 66.2411295
+        },
+        "medoid_seconds": {
+          "numpy_einsum": 4.211152144474909,
+          "native": 4.891780294798082
+        },
+        "encode_cpu_saved_seconds": 14.301306500500036,
+        "process_user_saved_seconds": 6.847766500000006,
+        "rows_per_s_ratio": 1.293575732702341
+      },
+      "bits": {
+        "left": "m1-numpy_einsum-1",
+        "right": "m1-native-2",
+        "optimizer_calls": 11,
+        "gradients_same_bits": true,
+        "pending_predictions": 1265,
+        "pending_same_bits": true,
+        "medoid_selections": 86,
+        "selections_identical": true,
+        "backends": [
+          [
+            "numpy_einsum"
+          ],
+          [
+            "native:avx512f"
+          ]
+        ]
+      }
+    }
+  }
+}

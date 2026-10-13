@@ -1,0 +1,92 @@
+{
+  "reader": "bm",
+  "tool": "nsys stats --report nvtx_pushpop_sum",
+  "unit": "segundos de reloj entre la apertura y el cierre de cada rango en el hilo que lo abre, con los rangos anidados dentro",
+  "phases": {
+    "readout.observe": {
+      "seconds": 35.262,
+      "instances": 88,
+      "median_ms": 403.713
+    },
+    "readout.admit": {
+      "seconds": 23.363,
+      "instances": 88,
+      "median_ms": 289.178
+    },
+    "readout.prepare": {
+      "seconds": 8.624,
+      "instances": 452,
+      "median_ms": 16.999
+    },
+    "readout.encode": {
+      "seconds": 6.506,
+      "instances": 452,
+      "median_ms": 14.128
+    },
+    "readout.snapshot": {
+      "seconds": 5.711,
+      "instances": 88,
+      "median_ms": 41.52
+    },
+    "readout.update": {
+      "seconds": 3.862,
+      "instances": 11,
+      "median_ms": 331.845
+    },
+    "readout.replay": {
+      "seconds": 3.669,
+      "instances": 11,
+      "median_ms": 318.428
+    },
+    "readout.apply": {
+      "seconds": 2.185,
+      "instances": 452,
+      "median_ms": 4.097
+    },
+    "readout.validate": {
+      "seconds": 2.084,
+      "instances": 88,
+      "median_ms": 31.503
+    },
+    "readout.labels": {
+      "seconds": 0.661,
+      "instances": 89,
+      "median_ms": 4.799
+    },
+    "readout.clip": {
+      "seconds": 0.062,
+      "instances": 11,
+      "median_ms": 0.712
+    },
+    "readout.emit": {
+      "seconds": 0.059,
+      "instances": 452,
+      "median_ms": 0.124
+    },
+    "readout.read": {
+      "seconds": 0.015,
+      "instances": 89,
+      "median_ms": 0.148
+    },
+    "readout.checks": {
+      "seconds": 0.003,
+      "instances": 11,
+      "median_ms": 0.309
+    },
+    "readout.event_plan": {
+      "seconds": 0.0,
+      "instances": 88,
+      "median_ms": 0.004
+    },
+    "readout.optimizer": {
+      "seconds": 0.0,
+      "instances": 11,
+      "median_ms": 0.03
+    },
+    "readout.checkpoint": {
+      "seconds": 0.0,
+      "instances": 1,
+      "median_ms": 0.004
+    }
+  }
+}
