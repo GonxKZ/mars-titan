@@ -545,3 +545,69 @@ def test_list_and_tuple_select_the_same_rows_and_preserve_state_parity():
         left.next_state.mac.memory.weights, right.next_state.mac.memory.weights, strict=True
     ):
         torch.testing.assert_close(first, second, rtol=0, atol=0)
+
+
+cuda = pytest.mark.skipif(not torch.cuda.is_available(), reason="requiere cuda:0")
+
+
+def on_device(device, dtype=torch.float64, variant="mac_online"):
+    spec = specification()
+    config = api().FinancialConfig(spec, variant=variant, hidden_size=32, layers=1, seed=42)
+    model = api().FinancialPredictor(config, dtype=dtype).to(device)
+    batch = api().DecisionBatch.from_corpus(raw_batch(), spec, device=device, dtype=dtype)
+    return model, batch
+
+
+@pytest.mark.parametrize("device", ["cpu", pytest.param("cuda:0", marks=cuda)])
+@pytest.mark.parametrize(
+    ("fault", "message"),
+    [
+        ("prices", "^Los precios contienen valores no finitos$"),
+        ("representation", "^La representación Transformer contiene valores no finitos$"),
+    ],
+)
+def test_price_encoder_checks_keep_their_message_inside_prepare(
+    monkeypatch, device, fault, message
+):
+    from mars_titan.models.baselines.transformer import CompactPriceTransformer
+
+    model, batch = on_device(device)
+    state = model.initial_state(batch.flow_ids)
+    if fault == "prices":
+        monkeypatch.setattr(
+            api(), "gate_price_window", lambda prices: torch.full_like(prices, float("nan"))
+        )
+    else:
+        layer = CompactPriceTransformer._layer
+
+        def broken(self, block, encoded, *, last_only):
+            return layer(self, block, encoded, last_only=last_only) * float("inf")
+
+        monkeypatch.setattr(CompactPriceTransformer, "_layer", broken)
+    # En CUDA las dos comprobaciones se resuelven al final de prepare, con el mismo mensaje.
+    with pytest.raises(ValueError, match=message):
+        model.prepare(batch, state)
+
+
+def synchronizations(function):
+    torch.cuda.synchronize()
+    previous = torch.cuda.get_sync_debug_mode()
+    try:
+        torch.cuda.set_sync_debug_mode(1)
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            function()
+    finally:
+        torch.cuda.set_sync_debug_mode(previous)
+    return sum("synchroniz" in str(item.message) for item in caught)
+
+
+@cuda
+@pytest.mark.parametrize("differentiable", [False, True])
+def test_cuda_prepare_waits_for_the_device_once(differentiable):
+    model, batch = on_device("cuda:0", torch.float32)
+    state = model.initial_state(batch.flow_ids, differentiable=differentiable)
+    with torch.set_grad_enabled(differentiable):
+        model.prepare(batch, state, differentiable=differentiable)
+        count = synchronizations(lambda: model.prepare(batch, state, differentiable=differentiable))
+    assert count == 1

@@ -58,6 +58,7 @@ from .state import (
     deferred_checks,
     mac_tensors,
     map_mac_rows,
+    require_finite,
     require_true,
 )
 
@@ -774,9 +775,16 @@ class FinancialPredictor(nn.Module):
         backend = sdpa_kernel(SDPBackend.MATH) if self.local_control is not None else nullcontext()
         local_result = None
         with torch.set_grad_enabled(differentiable), backend:
-            # El relleno de una sesión ausente en todo el mercado no llega al codificador.
+            # El relleno de una sesión ausente en todo el mercado no llega al codificador. Sus
+            # dos comprobaciones de finitud se difieren con las demás, en el mismo orden, en
+            # lugar de esperar a la GPU antes de lanzar el resto de la emisión.
+            price, encoder_checks = self.price_encoder.encode_last(
+                gate_price_window(batch.inputs["prices"])
+            )
+            for value, message in encoder_checks:
+                require_finite(value, message)
             token = fuse_modalities(
-                self.price_encoder(gate_price_window(batch.inputs["prices"])),
+                price,
                 batch.inputs,
                 self.encoders,
                 self.fusion,
