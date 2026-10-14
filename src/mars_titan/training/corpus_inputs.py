@@ -12,6 +12,7 @@ from pathlib import Path
 
 import numpy as np
 import pyarrow as pa
+import pyarrow.compute as pc
 import pyarrow.parquet as pq
 
 from mars_titan.data.batches import read_bounded_table
@@ -153,6 +154,27 @@ def _times(column):
     if not pa.types.is_timestamp(column.type) or not column.type.tz or column.null_count:
         raise ValueError("Las fechas necesitan una zona y no pueden contener valores ausentes")
     return column.cast(pa.timestamp("us", tz="UTC")).cast(pa.int64()).to_numpy()
+
+
+def _repeated(values):
+    """Si hay valores repetidos. Un vector estrictamente creciente no los tiene, y así se evita
+    ordenar con `np.unique` el caso habitual de etiquetas ya ordenadas."""
+    if len(values) < 2 or bool(np.all(values[1:] > values[:-1])):
+        return False
+    return len(np.unique(values)) != len(values)
+
+
+def _dictionary(column):
+    """Valores distintos de una columna sin ausencias y el código de cada fila.
+
+    Arrow codifica la columna como diccionario sin crear un objeto de Python por fila. El vector
+    de nombres tiene la anchura del texto más largo, la misma que daría
+    `np.asarray(column.to_pylist())` con esas filas.
+    """
+    encoded = column.combine_chunks().dictionary_encode()
+    return np.asarray(encoded.dictionary.to_pylist()), encoded.indices.to_numpy(
+        zero_copy_only=False
+    )
 
 
 def _random(seed, epoch, key):
@@ -668,8 +690,10 @@ class CorpusDataset:
 
     @staticmethod
     def _partition_labels(arrays, partition):
-        positions, prediction, values, maturity, partitions = arrays
-        selected = np.flatnonzero(partitions == partition)
+        # La caché guarda cada partición como un código de un byte y su diccionario de nombres.
+        positions, prediction, values, maturity, names, codes = arrays
+        found = np.flatnonzero(names == partition)
+        selected = np.flatnonzero(codes == found[0]) if len(found) else np.empty(0, np.int64)
         selected = selected[np.argsort(positions[selected])]
         return positions[selected], prediction[selected], values[selected], maturity[selected]
 
@@ -688,17 +712,10 @@ class CorpusDataset:
         if np.any(positions < 0) or np.any(positions >= sample_rows):
             raise ValueError("Una etiqueta no corresponde a una posición del archivo de muestras")
         prediction = _times(table["prediction_at"])
-        if len(np.unique(positions)) != len(positions) or len(np.unique(prediction)) != len(
-            prediction
-        ):
+        if _repeated(positions) or _repeated(prediction):
             raise ValueError("Hay etiquetas duplicadas para la misma muestra o decisión")
         if len(positions) != sample_rows:
             raise ValueError("Falta una etiqueta o una exclusión explícita de una muestra")
-        reasons = (
-            table["reason"].to_pylist()
-            if "reason" in table.column_names
-            else ["accepted"] * len(table)
-        )
         allowed = {
             "accepted",
             "insufficient_history",
@@ -713,16 +730,20 @@ class CorpusDataset:
             from .temporal_corpus import VIEW_REASONS
 
             allowed |= VIEW_REASONS
-        if not set(reasons) <= allowed:
-            raise ValueError("Hay un motivo de exclusión de etiqueta desconocido")
-        partition_values = table["partition"].to_pylist()
-        if any(
-            part is not None
-            for part, reason in zip(partition_values, reasons, strict=True)
-            if reason != "accepted"
-        ):
+        # Motivos y particiones se comprueban por columnas, sin un objeto de Python por fila.
+        # Superada la comprobación de motivos, la columna solo tiene textos permitidos.
+        if "reason" in table.column_names:
+            if not set(table["reason"].unique().to_pylist()) <= allowed:
+                raise ValueError("Hay un motivo de exclusión de etiqueta desconocido")
+            # Una tabla vacía no se compara: su columna puede no ser de texto.
+            accepted = np.zeros(0, dtype=bool)
+            if len(table):
+                accepted = pc.equal(table["reason"], "accepted").to_numpy()
+        else:
+            accepted = np.ones(len(table), dtype=bool)
+        if np.any(table["partition"].is_valid().to_numpy() & ~accepted):
             raise ValueError("Una etiqueta excluida no puede asignarse a una partición")
-        accepted = np.flatnonzero(np.asarray(reasons) == "accepted")
+        accepted = np.flatnonzero(accepted)
         table = table.take(pa.array(accepted, type=pa.int64()))
         positions, prediction = positions[accepted], prediction[accepted]
         if not len(table):
@@ -734,6 +755,7 @@ class CorpusDataset:
                 np.empty(0, dtype=np.float64),
                 prediction.copy(),
                 np.empty(0, dtype="U11"),
+                np.empty(0, dtype=np.uint8),
             )
             self._remember(key, signature, arrays)
             return self._partition_labels(arrays, partition)
@@ -743,7 +765,13 @@ class CorpusDataset:
         values = table["target"].to_numpy()
         if table["target"].null_count or not np.isfinite(values).all():
             raise ValueError("Hay etiquetas ausentes o no finitas")
-        partitions = np.asarray(table["partition"].to_pylist())
+        if table["partition"].null_count:
+            # Una etiqueta aceptada sin partición no supera la comprobación siguiente.
+            names, codes = None, None
+            partitions = np.asarray(table["partition"].to_pylist())
+        else:
+            names, codes = _dictionary(table["partition"])
+            partitions = names[codes]
         years = prediction.astype("datetime64[us]").astype("datetime64[Y]").astype(int) + 1970
         mature_years = maturity.astype("datetime64[us]").astype("datetime64[Y]").astype(int) + 1970
         if self.temporal:
@@ -759,7 +787,8 @@ class CorpusDataset:
             int(np.sum(partitions == p)) != asset["counts"][p] for p in self.partitions
         ):
             raise ValueError("Una etiqueta cruza la partición o sus recuentos no concilian")
-        arrays = positions, prediction, values, maturity, partitions
+        codes = codes.astype(np.min_scalar_type(len(names)))
+        arrays = positions, prediction, values, maturity, names, codes
         self._remember(key, signature, arrays)
         return self._partition_labels(arrays, partition)
 
