@@ -862,8 +862,8 @@ informa aparte. Como en A, la continuación anclada de las cinco referencias ent
 en `versus_frozen_parent` y en `versus_anchored_continuation`, que la contrasta con
 los adaptados y la continuación completa. Si la campaña declara `walk_forward_stages`,
 la declaración debe contrastar esos dos papeles. Salen 21 padres en el ámbito conjunto,
-los 29 modelos de la etapa salvo Ridge, XGBoost y los seis B6, que solo trasladan el
-padre congelado. Cada comparación conserva la
+los 33 modelos de la etapa salvo Ridge, XGBoost, los ocho B6 y las dos extensiones PT1,
+que solo trasladan el padre congelado con la cadena trivial. Cada comparación conserva la
 elegibilidad por mercado del modelo conjunto, así que China solo entra en
 calibración y métricas desde `fold-006`, y deja fuera los controles separados,
 que solo actúan en los ámbitos de un mercado.
