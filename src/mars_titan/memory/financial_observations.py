@@ -15,6 +15,7 @@ import pyarrow.parquet as pq
 from mars_titan import nvtx_ranges
 from mars_titan.data.batches import atomic_parquet_batches
 from mars_titan.data.cohort_files import read_manifest, safe_destination
+from mars_titan.data.price_windows import PRICE_FEATURES, window_rows
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.environments import corpus_source
 from mars_titan.environments.corpus_source import _ordered_parquet
@@ -23,6 +24,7 @@ from mars_titan.models.titans.financial_inputs import FinancialInputSpec, valida
 from mars_titan.training import corpus_inputs
 from mars_titan.training.corpus_inputs import (
     CorpusDataset,
+    _calendar_price_contexts,
     _fill_batch,
     _historical_times,
     _new_batch,
@@ -38,6 +40,8 @@ _FIELDS = ("event_at", "kind", "asset_id", "source_group", "source_row", "sample
 _SCHEMA = pa.schema([(name, pa.int64()) for name in _FIELDS])
 _MAX_ROWS = 100_000_000
 _MAX_BYTES = 4 * 1024**3
+# Filas de un instante: una entrada y una maduración por activo, más el cierre.
+_EVENT_ROWS = 16385
 # Instantes cuyos grupos se piden antes de montarlos cuando hay hilos de decodificación.
 EVENTS_AHEAD = 4
 
@@ -304,6 +308,38 @@ def _block_window_contexts(windows, ends, context):
     )
 
 
+def _block_calendar_contexts(windows, calendars, ends, context):
+    """Ventanas por sesión del calendario de un bloque, con los bits de `price_windows`.
+
+    `windows[i]` es la tabla OHLCV del activo de la fila `i` y `calendars[i]` sus posiciones
+    comprobadas y las ausencias de su mercado (`CorpusDataset.calendar_positions`). Las
+    posiciones crecen de uno en uno como mínimo, así que una ventana no tiene huecos si y
+    solo si su primera y su última fila distan `context - 1` posiciones. Entonces ocupa las
+    `context` filas que terminan en la suya, `_calendar_price_contexts` la transforma con
+    `_price_contexts` y la presencia vale uno en todas sus sesiones: las del bloque se
+    transforman juntas con `_block_window_contexts`, cuyo resultado por fila no depende de
+    las demás. Las ventanas con huecos, o que la comprobación rechaza, siguen la ruta de
+    `window_rows` fila a fila, con sus mismos errores.
+    """
+    result = np.zeros((len(ends), context, len(PRICE_FEATURES) + 1), dtype=np.float32)
+    full = []
+    for row, ((positions, absent), end) in enumerate(zip(calendars, ends, strict=True)):
+        end = int(end)
+        if context - 1 <= end < len(positions) and (
+            positions[end] - positions[end - context + 1] == context - 1
+        ):
+            full.append(row)
+            continue
+        rows = window_rows(positions, np.array([end]), context, absent)
+        result[row] = _calendar_price_contexts(windows[row], rows)[0]
+    if full:
+        selected = [windows[row] for row in full]
+        chosen = np.asarray(ends)[full]
+        result[full, :, : len(PRICE_FEATURES)] = _block_window_contexts(selected, chosen, context)
+        result[full, :, len(PRICE_FEATURES)] = 1
+    return result
+
+
 class _BlockReader:
     """Conservar el último grupo decodificado de cada activo y montar bloques por instante.
 
@@ -337,6 +373,7 @@ class _BlockReader:
         self.peak_cached_bytes, self.redecoded_groups = 0, 0
         self.event, self._used = 0, {}
         self._labels, self._prices, self._group_counts = {}, {}, {}
+        self._positions = {}
         self._executor, self._pending, self._last = executor, {}, {}
 
     def labels(self, identity):
@@ -433,6 +470,14 @@ class _BlockReader:
             self._prices[identity] = self.source.dataset._prices(self.source._assets[identity])
         return self._prices[identity]
 
+    def _asset_calendar(self, identity):
+        """Posiciones de calendario de los precios del activo, comprobadas una vez por recorrido."""
+        if identity not in self._positions:
+            _, price_at = self._asset_prices(identity)
+            asset = self.source._assets[identity]
+            self._positions[identity] = self.source.dataset.calendar_positions(asset, price_at)
+        return self._positions[identity]
+
     def blocks(self, positions):
         self.event += 1
         result = []
@@ -493,17 +538,49 @@ class _BlockReader:
         if dataset.price_window is None:
             batch["inputs"]["prices"][:] = _block_window_contexts(windows, ends, context)
             return batch
-        # Con el contrato de ventanas por sesión del calendario, cada activo forma sus ventanas
-        # con su calendario y sus ausencias de mercado, igual que en `_observation`.
-        rows = {}
-        for filled, (identity, *_) in enumerate(chunk):
-            rows.setdefault(identity, []).append(filled)
-        for identity, filled in rows.items():
-            prices, price_at = self._asset_prices(identity)
-            batch["inputs"]["prices"][filled] = dataset.price_windows(
-                self.source._assets[identity], prices, price_at, np.asarray(ends)[filled]
-            )
+        # Con el contrato de ventanas por sesión del calendario, cada fila usa el calendario y
+        # las ausencias de su mercado, con los mismos bits que `price_windows` en `_observation`.
+        calendars = [self._asset_calendar(identity) for identity, *_ in chunk]
+        batch["inputs"]["prices"][:] = _block_calendar_contexts(windows, calendars, ends, context)
         return batch
+
+
+def _instants(batches, start_cursor, groups):
+    """Agrupar por instante las filas de los lotes del índice y entregarlas desde el cursor.
+
+    Cada fila es una tupla de enteros de Python, como `tuple(int(v) for v in fila)`. Las
+    columnas se convierten enteras con `tolist` y cada instante se copia de una vez entre dos
+    cambios de fecha. Los errores son los de la comprobación fila a fila y se lanzan en el
+    mismo punto, después de entregar los instantes ya completos. Anota en `groups` cada
+    instante con su número de filas, también los anteriores al cursor.
+    """
+    rows, previous = [], None
+    for batch in batches:
+        if any(column.null_count for column in batch.columns):
+            raise ValueError("El índice contiene posiciones ausentes")
+        columns = [column.to_numpy(zero_copy_only=False) for column in batch.columns]
+        items = list(zip(*(values.tolist() for values in columns), strict=True))
+        if not items:
+            continue
+        moments = columns[0]
+        cuts = (np.flatnonzero(moments[1:] != moments[:-1]) + 1).tolist()
+        for left, right in zip([0, *cuts], [*cuts, len(items)], strict=True):
+            at = items[left][0]
+            if previous is not None and at < previous:
+                raise ValueError("El índice ha perdido su orden temporal")
+            if previous is not None and at != previous:
+                groups.append([previous, len(rows)])
+                if len(groups) > start_cursor:
+                    yield previous, rows
+                rows = []
+            if len(rows) + right - left > _EVENT_ROWS:
+                raise ValueError("El evento lógico supera su presupuesto")
+            rows.extend(items[left:right])
+            previous = at
+    if rows:
+        groups.append([previous, len(rows)])
+        if len(groups) > start_cursor:
+            yield previous, rows
 
 
 class FinancialObservationSource:
@@ -550,7 +627,7 @@ class FinancialObservationSource:
                         groups[-1][1] += count
                     else:
                         groups.append([at, count])
-                    if len(groups) > 100_000 or groups[-1][1] > 16385:
+                    if len(groups) > 100_000 or groups[-1][1] > _EVENT_ROWS:
                         raise ValueError("El índice supera su presupuesto de eventos")
         if groups != self.metadata["groups"] or not groups or groups[-1][0] != self.phase.close_at:
             raise ValueError("El resumen no corresponde a todas las filas del índice")
@@ -717,36 +794,16 @@ class FinancialObservationSource:
         if type(start_cursor) is not int or not 0 <= start_cursor <= len(self.metadata["groups"]):
             raise ValueError("El cursor de eventos no pertenece al índice")
         path = self._confirm()
-        groups, rows, previous, count = [], [], None, 0
+        groups = []
         with pq.ParquetFile(path) as file:
             if file.schema_arrow != _SCHEMA or file.metadata.num_rows != self.metadata["rows"]:
                 raise ValueError("El índice cambió su esquema o recuento")
-            for batch in file.iter_batches(batch_size=8192, use_threads=False):
-                if any(column.null_count for column in batch.columns):
-                    raise ValueError("El índice contiene posiciones ausentes")
-                columns = [column.to_numpy(zero_copy_only=False) for column in batch.columns]
-                for values in zip(*columns, strict=True):
-                    item = tuple(int(value) for value in values)
-                    at = item[0]
-                    if previous is not None and at < previous:
-                        raise ValueError("El índice ha perdido su orden temporal")
-                    if previous is not None and at != previous:
-                        groups.append([previous, len(rows)])
-                        if len(groups) > start_cursor:
-                            yield previous, rows
-                        rows = []
-                    rows.append(item)
-                    if len(rows) > 16385:
-                        raise ValueError("El evento lógico supera su presupuesto")
-                    previous, count = at, count + 1
-        if rows:
-            groups.append([previous, len(rows)])
-            if len(groups) > start_cursor:
-                yield previous, rows
+            batches = file.iter_batches(batch_size=8192, use_threads=False)
+            yield from _instants(batches, start_cursor, groups)
         if (
             groups != self.metadata["groups"]
-            or count != self.metadata["rows"]
-            or previous != self.phase.close_at
+            or sum(count for _, count in groups) != self.metadata["rows"]
+            or (groups[-1][0] if groups else None) != self.phase.close_at
         ):
             raise ValueError("La cronología no completa el índice y su cierre")
         self._confirm()
