@@ -145,6 +145,24 @@
         44
       ]
     },
+    "titans_mac_online_pt1_init": {
+      "family": "titans_mac",
+      "output": "quantile_head_v1",
+      "seeds": [
+        42,
+        43,
+        44
+      ]
+    },
+    "titans_mac_online_pt1": {
+      "family": "titans_mac",
+      "output": "quantile_head_v1",
+      "seeds": [
+        42,
+        43,
+        44
+      ]
+    },
     "mars_titan_m0": {
       "family": "mars_titan",
       "output": "quantile_head_v1",
@@ -262,6 +280,24 @@
         44
       ]
     },
+    "mars_titan_b6_kalman": {
+      "family": "mars_titan",
+      "output": "quantile_head_v1",
+      "seeds": [
+        42,
+        43,
+        44
+      ]
+    },
+    "mars_titan_b6_kalman_rho0": {
+      "family": "mars_titan",
+      "output": "quantile_head_v1",
+      "seeds": [
+        42,
+        43,
+        44
+      ]
+    },
     "cm_v1_b": {
       "family": "cm_v1",
       "output": "quantile_head_v1",
@@ -315,6 +351,33 @@
     "groups": "market",
     "min_rows": 1000,
     "order_rule": "widen_to_median_and_inner_interval"
+  },
+  "online_calibration": {
+    "status": "declared_not_executed",
+    "method": "cqr_score_quantile_tracking_matured_cohorts_v1",
+    "maturity_source": "view_labels_target_available_at_v1",
+    "rate_fractions": [
+      0.005,
+      0.02
+    ],
+    "max_pending": 64,
+    "periodic_refit": {
+      "method": "cqr_periodic_refit_matured_rows_v1",
+      "every_sessions": 21,
+      "lookback_days": 91
+    },
+    "selection_years": [
+      2005,
+      2013
+    ],
+    "assessment_years": [
+      2014,
+      2023
+    ],
+    "decision": {
+      "min_relative_reduction": 0.25,
+      "max_relative_interval_score_worsening": 0.01
+    }
   },
   "comparison": {
     "metrics": [
@@ -385,6 +448,21 @@
           "mars_titan_m1_k4_first_read"
         ]
       },
+      "memory_stability": {
+        "kind": "delta",
+        "base": "titans_mac_online",
+        "variants": [
+          "titans_mac_online_pt1_init",
+          "titans_mac_online_pt1"
+        ]
+      },
+      "memory_stability_box": {
+        "kind": "delta",
+        "base": "titans_mac_online_pt1_init",
+        "variants": [
+          "titans_mac_online_pt1"
+        ]
+      },
       "mature_correction": {
         "kind": "delta",
         "base": "titans_mac_online",
@@ -428,6 +506,21 @@
         "base": "mars_titan_b6_calendar_banks",
         "variants": [
           "mars_titan_b6_regime_banks"
+        ]
+      },
+      "kalman_correction": {
+        "kind": "delta",
+        "base": "mars_titan_b6",
+        "variants": [
+          "mars_titan_b6_kalman",
+          "mars_titan_b6_kalman_rho0"
+        ]
+      },
+      "kalman_cohort_correlation": {
+        "kind": "delta",
+        "base": "mars_titan_b6_kalman_rho0",
+        "variants": [
+          "mars_titan_b6_kalman"
         ]
       },
       "cm_v1_factorial": {
@@ -502,6 +595,8 @@
           "titans_mac_disabled",
           "titans_mac_frozen",
           "titans_mac_online",
+          "titans_mac_online_pt1_init",
+          "titans_mac_online_pt1",
           "mars_titan_m0",
           "mars_titan_m1",
           "mars_titan_m2",
@@ -515,6 +610,8 @@
           "mars_titan_b6_calendar",
           "mars_titan_b6_regime_banks",
           "mars_titan_b6_calendar_banks",
+          "mars_titan_b6_kalman",
+          "mars_titan_b6_kalman_rho0",
           "cm_v1_b",
           "cm_v1_bc",
           "cm_v1_bm",

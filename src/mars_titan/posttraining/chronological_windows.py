@@ -83,6 +83,7 @@ from mars_titan.training.titans_walk_forward import (
     case_recipe,
     checked_tables,
     control_config,
+    predictor_options,
     view_protocol,
     walk_forward_options,
     window_phases,
@@ -148,8 +149,9 @@ def _attach(model, targets, seed, *, seal=False):
 
 
 def _predictor(document, specification, request, device, state, *, carried=False):
-    """Variante elegida del padre con su control C, cargada desde su mejor estado."""
-    options = {key: value for key, value in document["predictor"].items() if key != "dtype"}
+    """Variante elegida del padre con su control C y sus cambios del predictor, cargada desde
+    su mejor estado."""
+    options = predictor_options(document, request)
     predictor = FinancialPredictor(
         FinancialConfig(specification, variant=request["variant"], seed=request["seed"], **options),
         local_control=control_config(request.get("local_control")),
