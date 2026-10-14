@@ -17,6 +17,7 @@
 #include <vector>
 
 namespace {
+using mars_titan::medoids::background_bound;
 using mars_titan::medoids::min_column_sums;
 using mars_titan::medoids::nearest_reference_block;
 using mars_titan::medoids::StridedMatrix;
@@ -275,6 +276,40 @@ void invalid_inputs_are_rejected_before_writing() {
     empty.run({});
 }
 
+// La cota del núcleo es la demostrada, escrita aquí con las operaciones de NumPy de
+// `_bounded_minimum` en el mismo orden. Quitar un margen apenas cambia qué pares se descartan
+// en las nubes de prueba, pero rompe la demostración.
+void bound_follows_the_proven_formula() {
+    std::mt19937_64 generator(seed + 3);
+    std::uniform_real_distribution<double> unit_interval(0.0, 1.0);
+    std::uniform_int_distribution<int> exponent(-60, 60);
+    const double unit = std::ldexp(1.0, -53);
+    for (const std::size_t dimensions : {1UL, 64UL, 300UL, 4096UL}) {
+        const double count = static_cast<double>(dimensions);
+        const double relative = 4 * (count + 4) * unit;
+        const double absolute = 4 * unit;
+        const double shrink = 1 - (8 * count + 2048) * unit;
+        for (int draw = 0; draw < 2000; ++draw) {
+            const double left = std::ldexp(unit_interval(generator), exponent(generator));
+            const double right = std::ldexp(unit_interval(generator), exponent(generator));
+            const double limit = left + right;
+            // Cuadrados por debajo del margen, cerca de él y muy por encima.
+            const double square = (draw % 3 == 0 ? -1.0 : 1.0) * limit * limit *
+                                  std::ldexp(unit_interval(generator), exponent(generator) / 4);
+            double margin = limit * limit;
+            margin *= relative;
+            double expected = square - margin;
+            expected = std::sqrt(std::max(expected, 0.0));
+            expected -= limit * absolute;
+            expected *= shrink;
+            require(std::bit_cast<std::uint64_t>(background_bound(square, left, right,
+                                                                  dimensions)) ==
+                        std::bit_cast<std::uint64_t>(expected),
+                    "La cota del núcleo no es la demostrada");
+        }
+    }
+}
+
 // Sumas de math.fsum con valores elegidos a mano: cancelación, empate al par, mínimo con la
 // base y una vista con pasos sobre un búfer mayor, como las de `_Costs`.
 void column_sums_take_the_minimum_and_round_once() {
@@ -316,6 +351,8 @@ void column_sums_take_the_minimum_and_round_once() {
     for (const auto& [values, limits] :
          std::vector<std::pair<std::vector<double>, std::vector<double>>>{
              {{std::numeric_limits<double>::quiet_NaN(), 1.0}, {infinity, infinity}},
+             // numpy.minimum propaga el NaN aunque la base sea finita.
+             {{std::numeric_limits<double>::quiet_NaN(), 1.0}, {2.0, 2.0}},
              {{1.0, 1.0}, {std::numeric_limits<double>::quiet_NaN(), infinity}},
              {{infinity, 1.0}, {infinity, infinity}},
              {{maximum, maximum}, {infinity, infinity}},
@@ -338,6 +375,7 @@ int main() {
         ties_duplicates_and_cancellation_match_the_brute_force();
         invalid_inputs_are_rejected_before_writing();
         column_sums_take_the_minimum_and_round_once();
+        bound_follows_the_proven_formula();
     } catch (const std::exception& error) {
         std::cerr << error.what() << '\n';
         return 1;

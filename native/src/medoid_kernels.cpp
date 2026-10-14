@@ -51,6 +51,10 @@ struct Bound {
 };
 } // namespace
 
+double background_bound(double square, double left, double right, std::size_t dimensions) {
+    return Bound(dimensions)(square, left, right);
+}
+
 // NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic)
 // Los índices salen de las formas comprobadas al entrar.
 double reference_distance(const double* left, const double* right, std::size_t dimensions) {

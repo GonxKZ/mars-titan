@@ -39,6 +39,14 @@ void nearest_reference_block(std::span<double> products, std::span<const double>
                              std::span<const double> clients, std::span<const double> fixed,
                              std::size_t dimensions, std::span<double> nearest);
 
+// Cota inferior que usa nearest_reference_block para descartar un par, con el cuadrado
+// calculado `square`, las raíces `left` y `right` de las normas centradas y `dimensions`
+// coordenadas. Con l = left + right y u = 2^-53, y en este orden de operaciones, como
+// `_bounded_minimum`: (sqrt(max(square - l · l · 4(D + 4)u, 0)) - l · 4u) · (1 - (8D + 2048)u).
+// Se publica para comprobar en las pruebas que el núcleo usa la cota demostrada.
+[[nodiscard]] double background_bound(double square, double left, double right,
+                                      std::size_t dimensions);
+
 // Distancia de referencia entre dos puntos de `dimensions` coordenadas.
 double reference_distance(const double* left, const double* right, std::size_t dimensions);
 
