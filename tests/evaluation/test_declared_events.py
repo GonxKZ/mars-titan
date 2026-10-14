@@ -76,6 +76,7 @@ def test_the_campaign_declares_the_d2_events_of_the_three_proposals():
         (lambda s: s["events"]["march_2020"].update(last="2020-02-01"), "al revés"),
         (lambda s: s["events"]["rate_hikes_2022"].update(last="2024-01-02"), "anterior a 2024"),
         (lambda s: s["events"].update({"Otro": event("US", "2010-05-06", "2010-05-06")}), "Otro"),
+        (lambda s: s["events"].update(pooled=event("US", "2010-05-06", "2010-05-06")), "pooled"),
     ],
 )
 def test_declaration_rejects_any_change_to_its_contract(edit, message):

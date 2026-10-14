@@ -77,6 +77,8 @@ def declaration(section):
         _require(
             isinstance(name, str)
             and _NAME.match(name)
+            # `pooled` es el nombre de los eventos unidos en el informe.
+            and name != "pooled"
             and isinstance(event, dict)
             and set(event) == _EVENT_FIELDS
             and event["market"] in MARKETS
