@@ -27,7 +27,7 @@ import torch
 
 from mars_titan.data import prediction_files
 from mars_titan.data.storage import sha256
-from mars_titan.evaluation import comparison_matrix, forecast_scores
+from mars_titan.evaluation import comparison_matrix, forecast_scores, liquidity_strata
 from mars_titan.evaluation import session_table_contrasts as tables
 from mars_titan.evaluation import walk_forward_comparison as walk
 from mars_titan.integrity import declared_runs as runs
@@ -63,15 +63,20 @@ class Cut(Exception):
 
 
 def plain(declared):
-    """Comparación sin cartera ni ablación.
+    """Comparación sin cartera, ablación ni estratos de liquidez.
 
-    La cartera necesita una edición con los activos del corpus y la ablación su propia etapa.
-    Las dos tienen ya su prueba desde agregados en `test_rolling_retention`.
+    La cartera necesita una edición con los activos del corpus, la ablación su propia etapa y
+    los estratos de liquidez la edición de precios. Las tres tienen ya su prueba desde
+    agregados en `test_rolling_retention`. Su matriz se declara con `PLAIN_METRICS`.
     """
-    for section in (walk.LONG_SHORT_FIELD, walk.ABLATION_FIELD):
+    for section in (walk.LONG_SHORT_FIELD, walk.ABLATION_FIELD, walk.LIQUIDITY_FIELD):
         declared.pop(section)
     # La versión 2 declara solo los estratos de presencia.
     declared["schema_version"] = 2
+
+
+# Métricas de la matriz sobre `plain`: el MSE solo se contrasta junto a sus estratos.
+PLAIN_METRICS = [m for m in walk.SERIES_METRICS if m not in liquidity_strata.QUADRATIC]
 
 
 def stable(report, *volatile):
@@ -107,7 +112,9 @@ def prepared(tmp_path_factory):
             )
     torch.use_deterministic_algorithms(deterministic)
     assert summary["status"] == "completed" and record.optimizers
-    declared = publication_fixture.declare(root / "declared", base.campaign, stage=base.stage)
+    declared = publication_fixture.declare(
+        root / "declared", base.campaign, stage=base.stage, metrics=PLAIN_METRICS
+    )
     primary = engine.write_sources(base.campaign, base.views, base.output, "US")
     comparison = Path(base.campaign).parent / "comparison.json"
     folder = root / "expected"
