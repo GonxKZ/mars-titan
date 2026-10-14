@@ -79,9 +79,14 @@ def write_table(path, arm, window, partition, segment):
 class Stage:
     """Etapa reducida declarada, fuentes de la campaña y recibos escritos sin ejecutar."""
 
-    def __init__(self, root, families=None):
+    def __init__(self, root, families=None, controls=()):
         self.root = root
         _, stage_path = write_configs(root / "config", "A")
+        if controls:
+            # Secciones opcionales de la matriz que la etapa reducida nombra además.
+            value = json.loads(stage_path.read_text())
+            value["additional_controls"] = [*value["additional_controls"], *controls]
+            save(stage_path, value)
         # Sin secciones secundarias: los estratos leerían muestras que estas vistas no tienen.
         comparison = json.loads((root / "config" / "comparison.json").read_text())
         for section in ("modality_strata", "modality_ablation", "long_short"):
@@ -188,6 +193,7 @@ class Stage:
             job["arm"]: job
             for job in self.loaded["groups"]["gru"]["jobs"]["US"]
             if (job["window"], job["seed"]) == (window, seed)
+            and campaign_stage.chain_candidate(job)
         }
         candidates = [
             dict(

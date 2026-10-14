@@ -30,6 +30,7 @@ from mars_titan.posttraining import (
     stage_comparison,
 )
 from mars_titan.posttraining import chronological_matrix as cm
+from mars_titan.posttraining import predictive_objectives as predictive
 from mars_titan.posttraining import replay_continuation as replay
 from mars_titan.posttraining.inputs import PairedInputs
 from mars_titan.posttraining.parent_cache import ParentCache
@@ -70,7 +71,13 @@ def controls(items):
 def test_the_references_add_three_replay_controls_with_the_continuation_case(matrix):
     document, digest = matrix
     assert document[SECTION] == dict(ratio=0.5, campaign=["references"])
-    expected = ["full_continuation", "anchored_continuation", *replay.CONTROLS]
+    # Los objetivos de #128 siguen a los tres controles de repaso.
+    expected = [
+        "full_continuation",
+        "anchored_continuation",
+        *replay.CONTROLS,
+        *predictive.CONTROLS,
+    ]
     for family in adapter_matrix.FAMILIES:
         items = adapter_matrix.cases(document, digest, family, head=QUANTILE_HEAD)
         for seed in document["budget"]["seeds"]:

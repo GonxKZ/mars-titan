@@ -24,6 +24,7 @@ from mars_titan.evaluation import walk_forward_comparison as comparison
 from mars_titan.models.quantile_head import QUANTILE_COLUMNS, QUANTILE_HEAD
 from mars_titan.posttraining import adapter_matrix, campaign_stage, matrix_runs, staged_chain
 from mars_titan.posttraining import chronological_matrix as cm
+from mars_titan.posttraining import predictive_objectives as predictive
 from mars_titan.training import campaign_chain, chain_disjunction
 from mars_titan.training.campaign_plan import load_campaign, plan_campaign
 from mars_titan.training.label_maturity import FIT_PARTITIONS, label_maturity
@@ -130,13 +131,20 @@ def test_jobs_depend_on_the_parent_selected_in_the_previous_window():
         arm: {item["id"]: item["case"] for item in campaign_stage._cases(stage, spec)}
         for arm, spec in active.items()
     }
-    # Las redes de la campaña siguen la pérdida pinball de la cabeza de cuantiles.
+    # Las redes de la campaña siguen la pérdida pinball de la cabeza de cuantiles. Los
+    # objetivos de #128 de la matriz son la corrección lineal de la mediana, y A no los nombra.
     for arm, spec in active.items():
         if spec["design"] is None:
             neural = adapter_matrix.cases(
                 stage["matrix"], stage["matrix_sha256"], spec["family"], head=QUANTILE_HEAD
             )
-            assert {item["case"]["mode"] for item in neural} == {"neural_pinball"}, arm
+            modes = {
+                item["case"]["mode"]
+                for item in neural
+                if item["control"] not in predictive.CONTROLS
+            }
+            assert modes == {"neural_pinball"}, arm
+            assert not any(name.endswith(predictive.CONTROLS) for name in cases[arm])
     windows = {
         scope: [name for name, _ in campaign_chain.scope_windows(stage["campaign"], scope)]
         for scope in stage["scopes"]
