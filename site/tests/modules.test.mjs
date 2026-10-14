@@ -158,6 +158,15 @@ test("un paquete de trazas se lee sin copiar y comprueba tamaño y huella", asyn
   assert.equal(await sha256Hex(buffer, null), null);
 });
 
+test("el eje usa la unidad del paso que declara cada familia", () => {
+  const buffer = bundleBytes();
+  const units = { transition: "Transición", wave: "Oleada", write_event: "Escritura de la memoria asociativa" };
+  for (const [unit, label] of Object.entries(units)) {
+    assert.equal(validateManifest(manifest(buffer, { x_unit: unit })).xLabel, label);
+  }
+  assert.throws(() => validateManifest(manifest(buffer, { x_unit: "episodio" })), TypeError);
+});
+
 test("el manifiesto rechaza referencias fuera del bloque, grupos desconocidos y versiones ajenas", () => {
   const buffer = bundleBytes();
   const base = manifest(buffer);

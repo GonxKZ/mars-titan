@@ -18,6 +18,7 @@ import pytest
 from mars_titan.data import prediction_files
 from mars_titan.data.storage import atomic_json
 from mars_titan.evaluation import long_short_comparison as portfolio
+from mars_titan.evaluation import selection_effect
 from mars_titan.evaluation import walk_forward_comparison as comparison
 from mars_titan.simulation import policy_plan
 from mars_titan.training import campaign_plan as plan
@@ -211,12 +212,30 @@ def test_the_final_comparison_from_aggregates_equals_the_one_that_read_the_rows(
         k: v for k, v in expected_portfolio.items() if k not in volatile
     }
     assert books.equals(expected_books)
-    ledger = walked["state"].ledger()["windows"]
+    state = walked["state"]
+    ledger = state.ledger()["windows"]
+    jobs = plan.plan_campaign(state.campaign)
     for row in walked["windows"]:
         assert set(ledger[row["id"]]["phases"]["aggregates"]["written"]["US"]) == {
             "walk_forward",
             "long_short",
+            "selection_effect",
         }
+        # El efecto de la elección se guardó con todos los casos de búsqueda de la ventana,
+        # aunque la liberación ya haya borrado la evaluación de los no elegidos.
+        window = row["scopes"]["US"]
+        saved = selection_effect.read_window(
+            state.folder / "aggregates", state.comparison_config(), "US", window
+        )
+        searches = {}
+        for job in jobs:
+            if (job["scope"], job["window"], job["stage"]) == ("US", window, "search"):
+                if job.get("phase") != plan.PLATEAU:
+                    searches[job["arm"]] = searches.get(job["arm"], 0) + 1
+        assert saved["excluded"] == {}
+        saved = saved["arms"]
+        assert searches and {arm: e["cases"] for arm, e in saved.items()} == searches
+        assert all(e["applicable"] == (e["cases"] > 1) for e in saved.values())
 
 
 def test_only_bit_exact_regenerations_release_their_rows(walked):

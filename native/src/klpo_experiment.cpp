@@ -1,5 +1,6 @@
 #include "mars_titan/klpo_experiment.hpp"
 #include "mars_titan/learning_hold.hpp"
+#include "mars_titan/learning_traces.hpp"
 #include "mars_titan/policy_evaluation.hpp"
 #include "mars_titan/policy_tapes.hpp"
 #include "mars_titan/ppo_training.hpp"
@@ -362,6 +363,7 @@ class KlpoRun {
         if (state_.at("status") == "completed") {
             return publish("completed");
         }
+        open_learning_traces();
         return loop();
     }
 
@@ -387,6 +389,46 @@ class KlpoRun {
         const auto envelope = parse_bounded_json(read_bounded_file(
             options_.output / "ppo-index.json", simulation::maximum_manifest_bytes));
         return !envelope.at("payload").at("recent").empty();
+    }
+
+    // Trazas de aprendizaje de #448. El paso es la oleada. La actualización de la oleada w
+    // lleva la marca (w, 0) y se escribe antes del paso de Adam, que la confirma al publicar
+    // los contadores. Su validación lleva (w, 1) y la confirma `evaluated_waves`. Al reanudar
+    // se borran las partes posteriores al estado recuperado, también si el corte llegó entre
+    // la parte y su confirmación.
+    TraceCommit confirmed_commit() const {
+        const auto consumed = static_cast<uint64_t>(controller_->counters().consumed_waves);
+        const auto& evaluated = state_.at("evaluated_waves");
+        return {consumed, !evaluated.is_null() && count(evaluated) == consumed ? 1U : 0U};
+    }
+
+    void open_learning_traces() {
+        if (!options_.learning_traces.enabled()) {
+            return;
+        }
+        const Json identity{{"family", config_.learning.group
+                                           ? config_.learning.group->id()
+                                           : std::string("klpo_terminal")},
+                            {"run_identity_sha256", identity_sha256_}};
+        learning_traces_ = std::make_unique<LearningTraceWriter>(
+            options_.output / "traces", options_.learning_traces, identity, "wave",
+            confirmed_commit());
+    }
+
+    void record_update(const KlpoGradientSummary& summary) {
+        const auto wave = static_cast<uint64_t>(controller_->counters().consumed_waves) + 1;
+        if (!learning_traces_ || !learning_traces_->due(wave - 1, wave)) {
+            return;
+        }
+        learning_traces_->scalar(wave, "train", "policy.surrogate", summary.surrogate);
+        learning_traces_->scalar(wave, "train", "rl.grad_l2_total", summary.gradient_norm);
+        learning_traces_->scalar(wave, "train", "rl.episodes",
+                                 static_cast<double>(summary.episodes));
+        learning_traces_->scalar(wave, "train", "rl.sampled_decisions",
+                                 static_cast<double>(summary.sampled_decisions));
+        learning_traces_->scalar(wave, "train", "rl.gradient_blocks",
+                                 static_cast<double>(summary.blocks));
+        learning_traces_->flush({wave, 0});
     }
 
     Json fresh_state() const {
@@ -491,6 +533,22 @@ class KlpoRun {
              score > finite_number(best.at("score")) + config_.min_delta);
         next["evaluations"] = count(state_.at("evaluations")) + 1;
         next["evaluated_waves"] = wave;
+        if (learning_traces_) {
+            // Cada validación completa se registra antes de confirmar la selección.
+            learning_traces_->scalar(wave, "validation", "rl.selection_score", score);
+            learning_traces_->scalar(wave, "validation", "rl.mean_log_growth",
+                                     evaluation.mean_log_growth);
+            if (config_.liquidated_selection) {
+                learning_traces_->scalar(wave, "validation", "rl.mean_liquidated_log_growth",
+                                         evaluation.mean_liquidated_log_growth);
+            }
+            learning_traces_->scalar(wave, "validation", "rl.ruin_count",
+                                     static_cast<double>(evaluation.ruined));
+            learning_traces_->scalar(wave, "validation", "rl.episodes",
+                                     static_cast<double>(evaluation.episodes));
+            learning_traces_->scalar(wave, "validation", "rl.improved", improved ? 1. : 0.);
+            learning_traces_->flush({wave, 1});
+        }
         if (improved) {
             const auto digest = content_sha256(bytes);
             const auto name = std::string(best_prefix) + digest + ".pt";
@@ -565,7 +623,8 @@ class KlpoRun {
                     return pause();
                 }
                 // Ruta real de Adam, pendiente de ejecución bajo el bloqueo de aprendizaje.
-                static_cast<void>(controller_->update_ready(*store_));
+                static_cast<void>(controller_->update_ready(
+                    *store_, {}, [&](const KlpoGradientSummary& summary) { record_update(summary); }));
                 require(controller_->phase() == KlpoLearningPhase::consumed,
                         "La actualización KLPO no consumió la oleada completa");
                 break;
@@ -630,6 +689,7 @@ class KlpoRun {
     Json identity_;
     std::string identity_sha256_;
     Json state_;
+    std::unique_ptr<LearningTraceWriter> learning_traces_;
 };
 
 // Evaluación de la política KLPO elegida en cintas posteriores a su selección.

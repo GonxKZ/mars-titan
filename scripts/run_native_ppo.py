@@ -109,6 +109,9 @@ def command_identity(command):
         "--vram-total-bytes",
         "--stop-after",
         "--parent-pid",
+        # Las trazas de #448 solo observan y no cambian la ejecución que se reanuda.
+        "--learning-trace-every",
+        "--learning-trace-max-bytes",
     }
     selected = []
     index = 0
@@ -486,6 +489,8 @@ def main(argv=None):
     parser.add_argument(
         "--diagnostic", action="store_true", help="Diagnóstico CPU de hasta 32 transiciones"
     )
+    parser.add_argument("--learning-trace-every", type=int, help="Cadencia de las trazas")
+    parser.add_argument("--learning-trace-max-bytes", type=int, help="Presupuesto de las trazas")
     args = parser.parse_args(argv)
     try:
         document, _ = read_manifest(args.config, 4 * MIB)
@@ -547,6 +552,17 @@ def main(argv=None):
         )
     if args.decisions and args.audit_run is None and not args.initial_evaluation:
         parser.error("--decisions solo acompaña a --audit-run o a --initial-evaluation")
+    # Las trazas solo existen mientras se aprende. En la auditoría y en los dos modos sin
+    # aprendizaje el binario no las abriría, así que se rechazan en lugar de ignorarlas.
+    traced = (args.learning_trace_every, args.learning_trace_max_bytes)
+    frozen = args.audit_run is not None or args.initial_evaluation or args.check_sources
+    if (traced[0] is None) != (traced[1] is None) or (
+        traced[0] is not None and (frozen or traced[0] < 1 or not 1024 <= traced[1] <= 1024 * MIB)
+    ):
+        parser.error(
+            "Las trazas necesitan --learning-trace-every positivo y --learning-trace-max-bytes "
+            "entre 1 KiB y 1 GiB, y solo acompañan a un ajuste"
+        )
     if args.stop_after is not None and not 0 <= args.stop_after <= 2**63 - 1:
         parser.error("La parada debe ser un número entero no negativo de 64 bits")
     if not math.isfinite(args.poll_seconds) or not 0.01 <= args.poll_seconds <= 60:
@@ -608,6 +624,9 @@ def main(argv=None):
             command.append("--resume")
         if args.stop_after is not None:
             command.extend(("--stop-after", str(args.stop_after)))
+        if args.learning_trace_every is not None:
+            command.extend(("--learning-trace-every", str(args.learning_trace_every)))
+            command.extend(("--learning-trace-max-bytes", str(args.learning_trace_max_bytes)))
         command.extend(("--device", "cpu" if args.diagnostic else "cuda:0"))
         command.extend(("--parent-pid", str(os.getpid())))
         if args.diagnostic:

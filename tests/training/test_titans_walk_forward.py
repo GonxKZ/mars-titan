@@ -30,6 +30,7 @@ from mars_titan.training.financial_run import ChronologicalTrainer
 from mars_titan.training.learning_hold import LearningHoldError
 from mars_titan.training.temporal_corpus import prepare_temporal_corpus
 from tests.learning_hold_lowering import allowed_hold
+from tests.learning_traces.parity import EVERY_STEP, metrics, same_rows, trace_rows
 from tests.training.chronological_fixture import chronological_corpus, decision
 
 CONFIGS = Path("configs")
@@ -75,7 +76,10 @@ class Recorder:
     """Registrar gradientes por grupo y parámetro sin heredar de Optimizer."""
 
     def __init__(self, groups):
-        self.param_groups = [dict(group, params=list(group["params"])) for group in groups]
+        # Como en un optimizador de PyTorch, cada grupo lleva su tasa, que las trazas registran.
+        self.param_groups = [
+            dict(group, params=list(group["params"]), lr=group.get("lr", 0.0)) for group in groups
+        ]
         self.calls, self.records = 0, []
 
     def step(self):
@@ -711,3 +715,102 @@ def test_window_refuses_an_output_with_files_from_another_run(base, tmp_path, mo
     with pytest.raises(ValueError, match="otra ejecución"):
         window(base["view"], base["protocol"], base["recipe"], output)
     assert sorted(path.name for path in output.iterdir()) == ["other.json"]
+
+
+def test_traces_keep_the_window_bit_for_bit_and_resume_without_duplicates(base, tmp_path):
+    """Trazas en cada paso (#448): mismos gradientes y filas, y una reanudación sin duplicados."""
+    reference, recorded = base["runs"]["mac_online"]
+    output = tmp_path / "traced"
+    report, factory = window(
+        base["view"], base["protocol"], base["recipe"], output, traces=EVERY_STEP
+    )
+    assert len(factory.records) == len(recorded.records) > 0
+    for one, two in zip(factory.records, recorded.records, strict=True):
+        for a, b in zip(one, two, strict=True):
+            assert (a is None and b is None) or torch.equal(a, b)
+    for partition in wf.PREDICTED:
+        assert _compare(base["root"] / "runs" / "mac_online", output, partition)
+    assert report["fit"]["best_score"] == reference["fit"]["best_score"]
+    manifest, rows = trace_rows(output / "traces")
+    assert manifest["identity"]["family"] == "titans_mac" and manifest["exhausted_at_step"] is None
+    assert {"loss", "grad_l2", "update_ratio", "grad_l2_total", "learning_rate"} <= metrics(
+        rows, "train"
+    )
+    # La memoria neuronal de mac_online registra sus puertas y sus pesos rápidos.
+    assert {"memory.alpha.mean", "memory.theta.mean", "memory.fast_weight_l2.0.mean"} <= metrics(
+        rows, "train"
+    )
+    steps = {row["step"] for row in rows if row["phase"] == "train"}
+    assert steps == set(range(1, len(recorded.records) + 1))
+    scores = [row["value"] for row in rows if row["metric"] == "validation.score"]
+    assert report["fit"]["best_score"] in scores
+    resumed_factory = Factory()
+
+    class StopAtStep:
+        @property
+        def requested(self):
+            return sum(item.calls for item in resumed_factory.instances[-1:]) >= 5
+
+    resumed = tmp_path / "resumed"
+    paused, _ = window(
+        base["view"],
+        base["protocol"],
+        base["recipe"],
+        resumed,
+        optimizer_factory=resumed_factory,
+        stop=StopAtStep(),
+        traces=EVERY_STEP,
+    )
+    assert paused["status"] == "paused"
+    final, _ = window(
+        base["view"],
+        base["protocol"],
+        base["recipe"],
+        resumed,
+        optimizer_factory=resumed_factory,
+        traces=EVERY_STEP,
+    )
+    assert final["status"] == "completed"
+    assert same_rows(rows, trace_rows(resumed / "traces")[1])
+
+
+def test_titans_posttraining_traces_the_adapter_and_keeps_its_rows(base, tmp_path):
+    """Trazas de #448 del postentrenamiento de Titans-MAC con el prefijo persistente adaptado."""
+    from mars_titan.posttraining import chronological_matrix as cm
+    from mars_titan.posttraining import chronological_windows as cw
+    from mars_titan.posttraining.adapter_matrix import read_matrix
+
+    matrix, digest = read_matrix(CONFIGS / "posttraining" / "adapter-matrix-v3.json")
+    matrix["budget"].update(epochs=1)
+    item = next(
+        item
+        for item in cm.cases(matrix, digest, "titans_mac", variant="mac_online")
+        if item["case"]["seed"] == 42 and item["id"].endswith("/persistent")
+    )
+    parent = base["root"] / "runs" / "mac_online"
+    common = dict(case=item["case"], matrix=matrix, digest=digest, device="cpu")
+    with unfused_attention():
+        plain = cw.run_titans_posttraining(
+            parent, base["view"], tmp_path / "plain", optimizer_factory=Factory(), **common
+        )
+        traced = cw.run_titans_posttraining(
+            parent,
+            base["view"],
+            tmp_path / "traced",
+            optimizer_factory=Factory(),
+            traces=EVERY_STEP,
+            **common,
+        )
+    assert plain["status"] == traced["status"] == "completed"
+    for partition in wf.PREDICTED:
+        assert (
+            plain["predictions"][partition]["sha256"] == traced["predictions"][partition]["sha256"]
+        )
+    manifest, rows = trace_rows(tmp_path / "traced" / "traces")
+    assert manifest["identity"]["family"] == "posttraining_titans_mac"
+    deltas = [row for row in rows if row["metric"] == "adapter.delta_l2"]
+    assert deltas and all(row["value"] == 0.0 for row in deltas)
+    groups = {row["group"] for row in rows if row["metric"] == "grad_l2"}
+    # Solo la corrección del prefijo persistente recibe gradiente.
+    assert groups == {"predictor.mac"}
+    assert "memory.alpha.mean" in metrics(rows, "train")
