@@ -226,7 +226,8 @@ if(MARS_TITAN_BUILD_SIMULATION)
         add_executable(mars-titan-memory-benchmark benchmarks/episodic_query.cpp)
         target_link_libraries(mars-titan-memory-benchmark PRIVATE mars_titan_ppo)
         mars_titan_configure_target(mars-titan-memory-benchmark)
-        add_library(mars_titan_ppo_files STATIC src/ppo_checkpoints.cpp src/ppo_inputs.cpp src/decision_trace.cpp)
+        add_library(mars_titan_ppo_files STATIC src/ppo_checkpoints.cpp src/ppo_inputs.cpp src/decision_trace.cpp
+            src/learning_traces.cpp)
         target_include_directories(mars_titan_ppo_files PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
         target_link_libraries(mars_titan_ppo_files PUBLIC mars_titan_simulation_files)
         mars_titan_configure_target(mars_titan_ppo_files)
@@ -268,6 +269,7 @@ if(MARS_TITAN_BUILD_SIMULATION)
             "${CMAKE_CURRENT_SOURCE_DIR}/src/ppo_checkpoints.cpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/src/ppo_inputs.cpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/src/decision_trace.cpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/src/learning_traces.cpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/src/ppo_main.cpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/src/ppo_experiment.cpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/src/klpo_experiment.cpp"
@@ -418,9 +420,10 @@ if(MARS_TITAN_BUILD_SIMULATION)
                 set_property(TEST policy_evaluation_only_cuda APPEND PROPERTY ENVIRONMENT
                     "OMP_NUM_THREADS=1" "MKL_NUM_THREADS=1")
             endif()
-            foreach(component episodic_memory policy_context decision_trace learning_replay)
+            foreach(component episodic_memory policy_context decision_trace learning_replay
+                    learning_traces)
                 add_executable(${component}_tests tests/${component}_tests.cpp)
-                if(component STREQUAL "decision_trace")
+                if(component STREQUAL "decision_trace" OR component STREQUAL "learning_traces")
                     target_link_libraries(${component}_tests PRIVATE mars_titan_ppo_files)
                 else()
                     target_link_libraries(${component}_tests PRIVATE mars_titan_ppo)
@@ -500,6 +503,7 @@ if(MARS_TITAN_BUILD_SIMULATION)
                 "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/policy_context.hpp"
                 "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/learning_replay.hpp"
                 "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/decision_trace.hpp"
+                "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/learning_traces.hpp"
                 "${CMAKE_CURRENT_SOURCE_DIR}/cmake/TorchDependencies.cmake")
         endif()
         set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${identity_files})

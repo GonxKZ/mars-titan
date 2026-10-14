@@ -14,7 +14,7 @@ Si las dos implementaciones coinciden, un error de agregación o de convención 
 
 Cubre:
 - MAE y MSE por sesión;
-- dirección con la convención de abstención;
+- dirección con la convención de abstención, y sus aciertos a cada cobertura de la curva riesgo-cobertura cuando el panel trae `asset_id`;
 - precisión y exhaustividad de cada signo;
 - Rank IC con sus motivos de indefinición;
 - pinball y frecuencia por nivel;
@@ -23,8 +23,8 @@ Cubre:
 
 `integrity/score_recheck.py` aplica esa implementación a una comparación ya publicada:
 1. Comprueba las huellas de `comparison.json`, `sessions.parquet`, la configuración y el manifiesto de fuentes.
-2. Vuelve a leer las predicciones crudas de cada modelo, semilla y ventana, también con sus huellas.
-3. Coteja la tabla de sesiones columna a columna y vuelve a agregar MAE, MSE y dirección en cada vista con la ponderación declarada.
+2. Vuelve a leer las predicciones crudas de cada modelo, semilla y ventana, también con sus huellas. Antes de puntuar quita las filas que el diseño conjunto excluye de la ventana, con la regla declarada que aplica también la identidad de filas.
+3. Coteja la tabla de sesiones columna a columna y reconstruye el resumen de cada vista con las reglas del [registro de métricas](#registro-de-métricas).
 
 El resultado cuenta las sesiones que faltan o sobran y las discrepancias por columna, y sale con código distinto de cero si alguna comprobación falla.
 
@@ -36,11 +36,9 @@ uv run python -m mars_titan.integrity.score_recheck \
 
 **Tolerancias.** Los recuentos y los motivos deben coincidir exactamente. Los valores reales usan una tolerancia relativa de 1e-10 y absoluta de 1e-13, que cubre la diferencia de orden de suma entre las dos implementaciones. Un valor indefinido solo coincide con otro indefinido.
 
-**Límites declarados.**
-- Las métricas con los cuantiles calibrados no se recalculan todavía, porque el calibrador común no tiene segunda implementación.
-- El control cero no tiene archivo de predicciones.
+El control cero no tiene archivo de predicciones. Se recalcula con predicción nula sobre los objetivos de la ventana, que la identidad de filas exige comunes a todos los modelos, y se coteja igual que los demás, también en los agregados de cada vista.
 
-El informe de cada recálculo indica las dos exclusiones.
+**Límite declarado.** Las métricas con los cuantiles calibrados no se recalculan todavía, porque el calibrador común no tiene segunda implementación. El informe de cada recálculo indica la exclusión.
 
 **Pruebas.** `tests/integrity/` incluye:
 - los ejemplos de la especificación;
@@ -50,6 +48,30 @@ El informe de cada recálculo indica las dos exclusiones.
 
 También hay dos mutaciones del código principal, una en la media por sesión y otra en la puntuación de intervalo. El recálculo las señala columna a columna sobre un estudio de juguete completo.
 
+## Registro de métricas
+
+`configs/evaluation/metric-registry.json` fija, antes de evaluar, cada cifra que publica el resumen de una vista: definición, unidad, sentido, regla de agregación entre sesiones y sección de [las métricas](metrics.md) donde se explica. Son 85 entradas, desde el MAE hasta cada punto de la curva de fiabilidad. Las unidades distinguen el retorno residual simple del objetivo (0,01 es un 1 %), su cuadrado, fracciones, porcentajes, correlaciones y recuentos.
+
+Los huecos siguen reglas comunes declaradas en el mismo archivo:
+- una sesión sin denominador o sin estado definido queda fuera de la media y se cuenta, nunca vale cero;
+- una vista sin sesiones definidas publica la cifra nula;
+- una fila que falta en un modelo hace fallar la identidad de filas y bloquea la publicación;
+- las filas que excluye el diseño conjunto se predicen y quedan fuera de la calibración y de las métricas.
+
+`integrity/metric_registry.py` lo comprueba de dos formas:
+1. **Contra el código.** `load_registry` exige que las ponderaciones, la agregación de semillas, las filas excluidas, los estados de la correlación de rangos, las coberturas de la abstención, los intervalos de probabilidad y las convenciones de dirección, abstención y probabilidad de subida sean las de la comparación. Cada serie que usan los contrastes debe apuntar a una cifra registrada con el mismo sentido, y cada sección citada debe existir en la documentación.
+2. **Contra cada informe.** `check_summary` reconstruye el resumen en bruto de cada modelo, semilla y vista desde la tabla de sesiones publicada, solo con las reglas del registro y la media de `independent_scores`. Falla con una cifra publicada sin registrar, una registrada que no se publica o un valor distinto. Del resumen calibrado solo se exige que cada cifra esté registrada, porque el calibrador común no tiene segunda implementación.
+
+En una vista de un mercado se reconstruyen 187 cifras con cuantiles y 97 sin ellos, y cada mercado más de la vista conjunta añade las 14 cifras puntuales de ese mercado. Quedan sin recalcular, con su motivo en el registro, los compromisos de signo de los intervalos (la tabla de sesiones no los guarda), el número de periodos, las filas con predicción nula y objetivo nulo, la igualdad entre predicción puntual y mediana y las identidades. Reconstruir una vista cuesta 0,12 s con 6.000 sesiones y 0,24 s con 12.000, medido con la máquina compartida. Convertir una sola vez por vista las columnas de listas de la abstención y de la fiabilidad lo bajó desde 1,21 s, porque esas conversiones eran el 92 % del tiempo. El recálculo y el informe de integridad de cada comparación guardan la huella del registro. La declaración se añade al [registro previo](#registro-previo-y-desviaciones) junto a la configuración de la campaña.
+
+**Pruebas.** `tests/integrity/test_metric_registry.py`, con las dos ponderaciones:
+- todas las vistas del estudio de juguete se reconstruyen sin diferencias;
+- en un panel con sesiones de 1 a 8 filas, ceros, empates y dos mercados, el resumen del código coincide con el registro, y ahí la media por fila y la cobertura de llamadas agrupada sí difieren de sus versiones por sesión (en el estudio todas las sesiones tienen las mismas filas y no las distinguen);
+- veinte cifras cambiadas una a una (RMSE, porcentajes, exhaustividad, una cifra de un mercado, medias por fila, cobertura de llamadas, recuentos, la curva de abstención, pinball, frecuencias, intervalos, Brier, ECE y fiabilidad) y cuatro convenciones o listas cambiadas se detectan, cada una con su nombre y sin arrastrar otras;
+- una cifra nueva sin registrar, un nivel de cuantil de más, una cifra que desaparece y una cifra calibrada sin registrar hacen fallar la comprobación;
+- el control cero publica nula la exactitud condicionada, y un cero en su lugar se detecta;
+- 23 registros alterados se rechazan al cargarlos, desde una convención o una cobertura distintas hasta una serie con el sentido cambiado o una sección inexistente.
+
 ## Mismas filas en todos los modelos
 
 La comparación ya exige que todos los modelos evalúen las mismas filas, con `ForecastPanel.cohort_sha256`. `integrity/row_identity.py` lo comprueba por otro camino:
@@ -58,6 +80,8 @@ La comparación ya exige que todos los modelos evalúen las mismas filas, con `F
 3. Agrupa las huellas por ventana y tramo (calibración y evaluación) y exige que todos los pares modelo-semilla compartan una sola.
 
 Un bit distinto en un objetivo, una fila de más o una de menos separan al modelo afectado en su propio grupo, y el informe lo nombra.
+
+Con el diseño conjunto de A v2, la comparación quita de cada ventana las filas de los mercados que aún no son elegibles (China antes de `fold-006`) y, en un modelo prestado del ámbito conjunto, las del mercado ajeno al ámbito. La comprobación aplica de nuevo esa regla declarada antes de calcular la huella y cuenta por mercado las filas quitadas. Las de cualquier otro mercado siguen siendo un defecto.
 
 Además, cuenta en cada archivo:
 - las filas de la reserva de 2024;
@@ -222,13 +246,71 @@ uv run python -m mars_titan.integrity.preregistration check \
 - Un informe anterior a su declaración, o sin declarar, falla.
 - Con un repositorio git temporal y un remoto local, se distinguen el commit local, el commit publicado y el commit posterior al informe.
 
+## Informe de integridad de la publicación
+
+El paso final de la campaña (`training/campaign_publication.py`) no publica ninguna cifra sin este informe. `integrity/publication_gate.py` lo calcula en la carpeta provisional, después de escribir comparaciones, matriz y comparación postentrenada y antes de darle el nombre del destino. Si alguna comprobación falla, `integrity.json` se queda en la carpeta provisional para revisarlo y la publicación termina con un error. El recibo de una publicación terminada guarda la huella del informe.
+
+**Comparaciones.** Para cada comparación walk-forward y cada comparación postentrenada publicadas, `integrity/comparison_integrity.py` comprueba:
+- la identidad de filas y la ausencia de 2024 de la sección anterior;
+- las filas quitadas por el diseño conjunto, contadas por separado y cotejadas con las que publica la comparación en cada modelo, semilla, ventana y tramo;
+- las sesiones en bruto recalculadas con la segunda implementación, control cero incluido, y las métricas agregadas de cada vista.
+
+Con la retención v2 las filas de una ventana se liberan en cuanto se guardan sus agregados, así que al publicar ya no existen. Por eso la fase `aggregates` del recorrido escribe, junto a cada agregado, un registro `<ventana>.integrity.json` con esas mismas comprobaciones sobre las filas de la ventana, la huella de los agregados y su identidad (fuentes, configuración y código). Si el registro no está superado, el recorrido se detiene antes de liberar nada. Al publicar desde agregados, el informe exige el registro superado de cada ventana con la huella y la identidad de los agregados actuales, que las sesiones publicadas coincidan sin tolerancia con las de los agregados y que las métricas del informe se vuelvan a obtener desde ellas.
+
+**Ejecuciones declaradas.** `integrity/declared_runs.py` vuelve a planificar la campaña y su etapa de adaptadores desde sus declaraciones. Cada trabajo planificado debe tener su recibo confirmado, o su selección en la cadena, y se cuentan todos sus intentos, también los que fallaron o se interrumpieron, junto con la parada temprana que declare su informe. Un recibo de un trabajo que el plan no declara hace fallar el informe, y también una comparación publicada que no tenga exactamente las semillas y ventanas declaradas de cada modelo, o que publique un modelo sin declarar.
+
+**Selección.** `integrity/window_selection.py` lee los recibos confirmados, sin predicciones por fila:
+- en cada ventana reentrenada, la búsqueda elegida es la de menor MAE de validación, con empate por identificador, y esa puntuación es la del informe del ajuste;
+- cada finalista repite el caso elegido con su semilla;
+- cada recibo de ventana de un modelo comparado nombra el estado elegido y declara una última etiqueta usada anterior a la evaluación;
+- los tramos de cada ventana van en orden y la comparación evalúa la evaluación con la calibración como único tramo previo.
+
+Con el walk-forward por etapas, o con una etapa de adaptadores por etapas publicada, añade el verificador de disjunción de [#437](https://github.com/GonxKZ/mars-titan/issues/437) sobre vistas, recibos base y selecciones de la cadena, sin duplicarlo.
+
+**Presupuesto.** `integrity/fit_budget.py` compara el presupuesto de cada modelo ajustado con el de los modelos propios (MARS-TITAN, Titans-MAC y CM-v1), que fija el primer modelo propio declarado. Reúne del plan los casos de búsqueda, las semillas y la forma de iterar: unidad (épocas, rondas, actualizaciones en línea o solución cerrada), entrenador (lotes de filas o recorrido cronológico), máximo, regla de parada y paciencia. Cada campo distinto debe figurar con su motivo en `budget_differences` de la declaración de la publicación. Una diferencia sin declarar, o una declarada que la campaña ya no tiene, impide cargar la declaración y hace fallar el informe. En A v2 se declaran los tabulares (rejilla propia, una semilla y sin épocas), las referencias neuronales (mismas épocas y regla, con lotes de filas) y el control en línea (rejilla de tasas y actualizaciones limitadas por el banco). Después, para cada ajuste confirmado:
+- repite la regla de selección sobre su historial de validación y exige que el ajuste termine donde la regla lo manda (todas las épocas con presupuesto fijo, la primera meseta con parada individual y la época común con parada conjunta) y que entregue la época que la regla elige;
+- un ajuste sin padre que entrega su estado inicial, la época 0 que evalúan los entrenadores cronológicos, o que no declara actualizaciones, no está ajustado. Una referencia sin ajustar no cuenta como control y un modelo propio sin ajustar tampoco cuenta como modelo;
+- con presupuesto fijo, los ajustes del mismo entrenador en el mismo ámbito y ventana aplican las mismas actualizaciones, y los de un grupo de parada conjunta terminan en la misma época;
+- XGBoost no supera sus rondas, elige una ronda ajustada y declara por qué para antes, y el control en línea no usa en ningún tramo más etiquetas que las escrituras del banco que lo limita.
+
+La etapa de adaptadores ya rechaza en su ejecutor un número de actualizaciones distinto del de su diseño. El informe todavía no repite esa comprobación.
+
+**Abstención.** Una predicción cero es una abstención. La exactitud de dirección ya la cuenta como fallo, pero las precisiones de subida y de bajada solo juzgan las llamadas, así que un modelo que casi nunca llama puede mostrar una precisión alta con muy pocas filas. Las reglas están fijadas antes de evaluar en `evaluation/abstention_coverage.py` y cada comparación walk-forward y cada matriz las publican (detalle en [métricas](metrics.md#abstención-con-su-cobertura)):
+- la curva riesgo-cobertura de dirección de cada semilla y vista, con la exactitud entre las ceil(c · n) filas con objetivo no nulo y mayor |predicción| de cada sesión para c de 0,1 a 1, empates por la identidad de fila y la abstención contada como fallo;
+- el valor a la cobertura fija 0,5 (`direction_accuracy@0.5`), declarado junto a la curva;
+- la cobertura de llamadas de cada modelo en cada vista, sumada sobre sus semillas;
+- en las precisiones de subida y de bajada, cada contraste con su cobertura y marcado no elegible si algún modelo llama en menos de la mitad de sus filas juzgables. Se publica, pero no puede presentarse como ganado.
+
+`integrity/abstention_marks.py` lo repite desde la tabla de sesiones publicada, sin el código de la comparación. Recalcula la cobertura de llamadas y exige las reglas declaradas, la marca y la cobertura de cada contraste condicionado a las llamadas, en la comparación y en cada vista de la matriz, y las filas retenidas y los aciertos de cada punto de la curva. La segunda implementación de las métricas recalcula los aciertos de cada cobertura con su propia ordenación por identidad de fila, y el recálculo los coteja sesión a sesión.
+
+**Preprocesado.** Normalizaciones, residualizadores, umbrales de régimen y estratos solo pueden usar datos anteriores al tramo en que se aplican. `integrity/past_only_preprocessing.py` lo comprueba en cuatro partes:
+- **Código.** Recalcula las dos implementaciones de las etiquetas residuales (`data/residual_arrays.py` y la referencia `data/budget_targets.py`) y las rutas del calendario de regímenes con precios deterministas del propio módulo, después de multiplicar alternativamente por 1,7 y 0,6 los precios posteriores a cada uno de tres cortes. Alfa, beta, historia y motivo de cada decisión hasta el corte, los objetivos ya maduros y la ruta, los activos y los rendimientos de cada sesión hasta el corte deben quedar iguales bit a bit. Una auditoría que no compara ninguna fila no pasa.
+- **Edición.** Las etiquetas y el calendario se calculan fuera de la campaña. Cada edición que leen las vistas de una comparación publicada debe tener la huella que fijan esas vistas y declarar el mismo código de etiquetas que se audita, y el calendario de regímenes el mismo código que `regime_calendar`. Con la política `real_edition_only` de A v2, una edición o un calendario sin código declarado también fallan. El manifiesto de las etiquetas v3.1 declara las tres huellas y coinciden con el código actual.
+- **Ajustes.** Ridge y XGBoost calculan medias, escalas y cortes de histograma exactamente con las filas de entrenamiento. Las escalas de escritura de M3 salen del índice de entrenamiento de la ventana y de su edición, con sus mismos límites de decisión, y esas etiquetas maduran antes de la primera decisión de validación. Las demás familias no estiman estadísticas con datos y lo declaran con su motivo, y una familia sin inventariar falla. En la etapa de adaptadores, la normalización de cada padre recorre solo las filas reales de entrenamiento, maduras antes de validación.
+- **Reglas.** Cada sección de la configuración de la comparación está en un inventario con su regla causal: calibración en su propio tramo, presencia de modalidades de la muestra de la decisión, cuartiles de la misma sesión, calendario con ventanas que terminan en la decisión y estratos de liquidez con umbrales fijos sobre la edición sin ajustar hasta la última sesión publicada al emitir. Una sección nueva hace fallar el informe hasta que se declare su regla.
+
+**Pruebas.** Cada mutación dirigida rompe el código principal o un artefacto y debe hacer fallar el informe:
+- una fila de 2024 en las predicciones con la comprobación de tramos desactivada en la comparación;
+- una media por sesión sesgada en el código principal, al publicar desde filas y al guardar los agregados de una ventana, que entonces no se libera;
+- el registro de una ventana ausente, fallido, de otros agregados o de otro código;
+- un ulp de diferencia entre las sesiones publicadas y las de los agregados, también al publicar por la orden de la campaña;
+- una métrica publicada que ya no sale de sus sesiones, al publicar desde filas y desde agregados;
+- filas quitadas mal contadas, un recuento publicado que no coincide con el recontado y un mercado elegible quitado a todos los modelos en el diseño conjunto;
+- un trabajo sin recibo, un recibo sin declarar y una comparación sin una semilla, sin una ventana o con un modelo de más;
+- una puntuación de búsqueda que no es la de su validación, una última etiqueta que alcanza la evaluación, un recibo de ventana que no nombra el estado elegido y tramos fuera de orden;
+- un fallo del verificador de disjunción;
+- en un estudio de juguete donde un modelo solo llama una vez por sesión y acierta siempre, con precisión al alza perfecta, sus contrastes de precisión salen no elegibles en la comparación y en la matriz, su exactitud de dirección y su exactitud a la cobertura fija quedan por debajo de las de los modelos que llaman y el control cero no acierta a ninguna cobertura. Una marca, una cobertura, una regla o un punto de la curva cambiados hacen fallar el informe, y también una marca cambiada en la matriz;
+- una diferencia de presupuesto sin declarar o declarada sin existir, un ajuste truncado, otro que sigue tras su meseta o su época común, una época entregada distinta de la que elige la regla, un estado inicial entregado sin padre, actualizaciones distintas entre ajustes del mismo entrenador y los límites de XGBoost y del control en línea. Una prueba con las cuatro variantes reales de Titans-MAC y un optimizador que no cambia pesos espera que el informe las marque sin ajustar, porque ninguna época mejora la validación inicial. Esa prueba y la de la referencia neuronal real ejecutan los entrenadores, así que se omiten mientras rige el bloqueo y todavía no se han ejecutado. El resto de `tests/integrity/test_fit_budget.py` usa el plan real de A v2 con recibos e historiales escritos en la prueba.
+- en el preprocesado, cada ajuste deliberado con el futuro: un residualizador con la beta de toda la muestra y otro que escala el objetivo con la desviación de todos los objetivos, rutas de régimen con la ventana adelantada cinco sesiones o con el umbral de turbulencia en la mediana de toda la serie, estadísticas tabulares que recorren también validación, escalas M3 de otro índice, de otra edición, de otras decisiones o con etiquetas que maduran en validación y una normalización de un padre con otro tramo, otras filas o etiquetas tardías. También una edición que no es la de sus vistas o de otro código, un calendario de otro código, código sin declarar con la política real y una sección sin inventariar o con una regla no causal.
+
+Las pruebas que recorren la campaña reducida con su etapa de adaptadores necesitan rebajar la protección de aprendizaje y se omiten mientras rige el bloqueo (inventario de [#546](https://github.com/GonxKZ/mars-titan/issues/546)). `tests/integrity/test_declared_runs.py`, `tests/integrity/test_window_selection.py` y `tests/integrity/test_publication_gate.py` repiten las mismas comprobaciones y la conexión del informe con la publicación, el recorrido y la etapa sobre recibos escritos en la prueba, sin ejecutar ninguna campaña.
+
 ## Comprobaciones pendientes
 
 Siguen en #442, en este orden:
-1. Sondas sin ajuste:
+1. Comprobaciones sin ajuste:
    - aplicar el escáner de fugas a la matriz tabular real de cada ventana de los ámbitos US y CN, cuando se preparen sus vistas v3.1 (el ámbito conjunto está en [Matriz real de cada ventana](#matriz-real-de-cada-ventana));
    - ninguna fila de 2024 en las predicciones de validación y en los demás artefactos de selección;
    - invariantes de caja, posiciones, costes y acciones imposibles en las cintas reales con políticas fijas;
    - cota con información futura sobre las cintas reales de cada ventana. La etapa de políticas ya la aplica a la evaluación y al estado elegido en validación. Falta ejecutarla sobre las cintas reales, que la etapa calcula al confirmar cada trabajo.
 2. Falsaciones que ajustan modelos, solo declaradas mientras dure el bloqueo de aprendizaje: placebo con etiquetas permutadas dentro de cada sesión, desplazamiento temporal de las entradas, predicción constante y aleatoria y estabilidad entre semillas. Cada una con su coste y su criterio de éxito o fracaso escritos de antemano.
-3. Informe de integridad generado por la orden única de la campaña, que bloquea la publicación si alguna comprobación falla. Invocará también el verificador de disjunción del diseño por etapas ([#437](https://github.com/GonxKZ/mars-titan/issues/437)) en lugar de duplicarlo.

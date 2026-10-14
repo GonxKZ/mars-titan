@@ -11,6 +11,12 @@ La comparación walk-forward ya exige que todos los modelos evalúen las mismas 
 
 Un cambio de un solo bit en un objetivo, una fila de más o una de menos cambian la huella.
 
+Con el diseño conjunto, la comparación quita de cada ventana las filas de los mercados aún
+no elegibles y, en un modelo prestado del ámbito conjunto, las de los mercados ajenos al
+ámbito. La comprobación vuelve a aplicar esa regla declarada antes de calcular la huella y
+cuenta por mercado las filas quitadas, para cotejarlas con las que publica la comparación.
+Las filas de cualquier otro mercado siguen contando como defecto.
+
 Las predicciones se leen con `prediction_files.read`, que comprueba la huella del archivo
 y devuelve los mismos bits si la retención v2 lo compactó. Una ventana cuyas filas se
 liberaron debe regenerarse antes (`run_masked_campaign.py regenerate`).
@@ -76,11 +82,39 @@ def _duplicates(ordered):
     return int(pc.sum(same).as_py() or 0)
 
 
-def inspect_table(table, segment, markets):
-    """Huella y defectos de una tabla de predicciones frente a su tramo declarado."""
+def dropped_markets(sources, window_id, arm):
+    """Mercados cuyas filas no cuenta la comparación en esa ventana, según el diseño declarado.
+
+    Son los mercados del ámbito que aún no son elegibles en la ventana y, en un modelo prestado
+    del ámbito conjunto, los mercados de ese ámbito que no son de este.
+    """
+    markets = sources["markets"]
+    dropped = {market for market in markets if window_id not in sources["eligible"][market]}
+    if arm in sources["borrowed"]:
+        dropped |= set(comparison.SCOPES[sources["joint_scope"]]) - set(markets)
+    return sorted(dropped)
+
+
+def kept_rows(table, dropped):
+    """Filas que cuenta la comparación y recuento por mercado de las que quita."""
+    if not dropped:
+        return table, {}
+    market = table.column("market").to_numpy(zero_copy_only=False)
+    removed = np.isin(market, dropped)
+    counts = {name: int(np.count_nonzero(market == name)) for name in dropped}
+    return table.filter(pa.array(~removed)), counts
+
+
+def inspect_table(table, segment, markets, dropped=()):
+    """Huella y defectos de una tabla de predicciones frente a su tramo declarado.
+
+    `dropped` son los mercados que el diseño quita de esta ventana y este modelo. Sus filas
+    no entran en la huella y se cuentan aparte.
+    """
     nulls = sum(table.column(name).null_count for name in COLUMNS)
     if nulls:
         return dict(rows=table.num_rows, null_values=nulls, passed=False)
+    table, excluded = kept_rows(table, dropped)
     digest, ordered = row_digest(table)
     moments = ordered.column("prediction_at").cast(pa.int64()).to_numpy()
     start, end = (_microseconds(day) for day in segment)
@@ -92,19 +126,30 @@ def inspect_table(table, segment, markets):
         duplicated_rows=_duplicates(ordered),
         non_finite_targets=int(np.count_nonzero(~np.isfinite(ordered.column("target").to_numpy()))),
     )
-    return dict(rows=ordered.num_rows, digest=digest, **defects, passed=not any(defects.values()))
+    return dict(
+        rows=ordered.num_rows,
+        digest=digest,
+        excluded_rows=excluded,
+        **defects,
+        passed=not any(defects.values()),
+    )
 
 
 def check_sources(config_path, sources_path, scope):
     """Huellas por ventana y tramo y defectos de cada archivo de un manifiesto de fuentes."""
     config = comparison.resolve_config(config_path)
-    sources = comparison.load_sources(sources_path, config, scope)
-    windows, markets = sources["windows"], sources["markets"]
+    return check_loaded(config, comparison.load_sources(sources_path, config, scope))
+
+
+def check_loaded(config, sources):
+    """Lo mismo que `check_sources` con la configuración y las fuentes ya validadas."""
+    windows, markets, scope = sources["windows"], sources["markets"], sources["scope"]
     files, by_segment = [], {}
     for (arm, seed, window_id), records in sorted(sources["files"].items()):
+        dropped = dropped_markets(sources, window_id, arm)
         for partition, record in sorted(records.items()):
             table = prediction_files.read(record["path"], record["sha256"], COLUMNS)
-            finding = inspect_table(table, windows[window_id][partition], markets)
+            finding = inspect_table(table, windows[window_id][partition], markets, dropped)
             files.append(dict(arm=arm, seed=seed, window=window_id, partition=partition, **finding))
             if "digest" in finding:
                 by_segment.setdefault(f"{window_id}/{partition}", {})[f"{arm}/{seed}"] = finding[

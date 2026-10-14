@@ -8,7 +8,14 @@ v2, declarada antes de cualquier resultado, recorre cada ventana de campaña en 
    por etapas, los adaptadores y las políticas reciben un informe de disjunción calculado
    justo antes, y las políticas leen la cadena de la salida de los adaptadores.
 3. `aggregates`: agregados por sesión de la comparación de cada ámbito de la ventana
-   (`evaluation.window_aggregates`), con sus fuentes limitadas a esa ventana.
+   (`evaluation.window_aggregates`), con sus fuentes limitadas a esa ventana, y el efecto
+   de elegir entre los casos de búsqueda (`evaluation.selection_effect`). Con la
+   publicación declarada (`training.campaign_publication`), también los de la comparación
+   postentrenada de cada padre con trabajos de la etapa en la ventana, porque esa
+   comparación lee la calibración y la evaluación del modelo base, que se liberan después.
+   Cada agregado se guarda con su registro de integridad
+   (`integrity.comparison_integrity`): mismas filas en todos los modelos y métricas por
+   sesión recalculadas desde las filas. Si falla, el recorrido se detiene antes de liberar.
 4. `release`: cada tabla por fila de la base y de la ablación que ya no lee ninguna fase
    posterior se regenera por inferencia desde el estado elegido y, solo si sale idéntica
    bit a bit, se libera conservando sus huellas. Si no sale idéntica, se compacta sin
@@ -34,8 +41,9 @@ from pathlib import Path
 from mars_titan.data import prediction_files
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.storage import atomic_json, sha256
+from mars_titan.evaluation import selection_effect, window_aggregates
 from mars_titan.evaluation import walk_forward_comparison as comparison
-from mars_titan.evaluation import window_aggregates
+from mars_titan.integrity import comparison_integrity
 
 from . import prediction_regeneration as regeneration
 from .campaign_plan import ONLINE, PLATEAU
@@ -44,7 +52,7 @@ DECLARATION_KIND = "historical_masked_prediction_retention"
 LEDGER_KIND = "historical_masked_retention_ledger"
 PHASES = ("base", "adapters", "ablation", "rl", "aggregates", "release")
 STAGE_PHASES = ("base", "adapters", "ablation", "rl")
-AGGREGATES = ("walk_forward", "long_short")
+AGGREGATES = ("walk_forward", "long_short", "selection_effect")
 _FIELDS = {
     "schema_version",
     "kind",
@@ -90,7 +98,8 @@ def load_retention(path):
     )
     _require(
         tuple(document["aggregates"]) == AGGREGATES,
-        "La retención solo libera filas con agregados de la comparación y de la cartera",
+        "La retención solo libera filas con agregados de la comparación, de la cartera y del "
+        "efecto de la selección",
     )
     release = document["release"]
     _require(
@@ -175,16 +184,21 @@ class Rolling:
         ablation_executors=None,
         disk=None,
         edition=None,
+        publication=None,
         unrecorded_platform=None,
     ):
         """`disk` activa la guardia por ventana: `storage` (declaración), `extras` (medidas
         de agregados, adaptadores y cintas), `adapter_blocks` (lectura sin copia ordenada) y,
         en las pruebas, `usage` en lugar de `shutil.disk_usage`. `edition` es la edición de
         precios sin ajustar que necesitan la cartera larga y corta y los estratos de liquidez si
-        la comparación los declara. `unrecorded_platform` nombra el perfil al que se atribuyen
-        los recibos anteriores al registro de la plataforma al publicar los agregados.
+        la comparación los declara. `publication` es la declaración del paso final. Con la
+        etapa de adaptadores es obligatoria y su comparación postentrenada debe ser la de esa
+        etapa, porque sus agregados por ventana se guardan antes de liberar.
+        `unrecorded_platform` nombra el perfil al que se atribuyen los recibos anteriores al
+        registro de la plataforma al publicar los agregados.
         """
         from . import masked_campaign as engine
+        from .campaign_publication import load_publication
 
         self.retention, self.campaign_path = retention, Path(campaign_path)
         self.views, self.output, self.windows = views, Path(output), windows
@@ -207,6 +221,25 @@ class Rolling:
             "y solo a esa",
         )
         self.campaign, _ = engine._confirmed_state(campaign_path, views, output)
+        self.publication = None if publication is None else load_publication(publication)
+        stage = None if self.publication is None else self.publication["posttraining"]
+        _require(
+            self.publication is None
+            or self.publication["campaign_config"]["sha256"] == self.campaign["sha256"],
+            "La publicación declara otra campaña",
+        )
+        # Sin la comparación postentrenada declarada, la liberación borraría las filas del
+        # modelo base que esa comparación lee antes de guardar sus agregados.
+        _require(
+            (adapters is None and stage is None)
+            or (
+                adapters is not None
+                and stage is not None
+                and Path(adapters["stage"]).resolve() == Path(stage["stage"]["path"])
+            ),
+            "La etapa de adaptadores del recorrido y la comparación postentrenada de la "
+            "publicación van juntas y deben ser la misma etapa",
+        )
         # Sin la edición no hay agregados de la cartera ni estratos de liquidez, y sus filas
         # no se podrían liberar.
         declared = self.comparison_config()
@@ -462,23 +495,69 @@ class Rolling:
                 masked = comparison._ablation_sources(masked_path, restricted, sources)
             if self._liquidity is None:
                 self._liquidity = comparison.liquidity_source(config, self.edition)
-            records = dict(
-                walk_forward=window_aggregates.write(
-                    folder, restricted, sources, window, masked, liquidity=self._liquidity
-                )
+            # La integridad de la ventana se comprueba antes de liberar ninguna de sus filas.
+            walked, checked = comparison_integrity.write_checked(
+                folder, restricted, sources, window, masked, liquidity=self._liquidity
             )
+            records = dict(walk_forward=walked, integrity=checked)
             if comparison.LONG_SHORT_FIELD in config:
                 records["long_short"] = window_aggregates.write_long_short(
                     folder, restricted, sources, window, self.edition
                 )
-            written[scope] = {
-                name: dict(
-                    path=str(Path(record["path"]).relative_to(self.folder)),
-                    sha256=record["sha256"],
-                    bytes=record["bytes"],
-                )
-                for name, record in records.items()
-            }
+            # Medir la elección entre búsquedas exige la evaluación de todos los casos, también
+            # la de los no elegidos, y la liberación la borra después.
+            _, searches = engine.search_records(
+                self.campaign_path, self.views, self.output, scope, window=window
+            )
+            records["selection_effect"] = selection_effect.write_window(
+                folder, config, scope, window, searches.get(window, {})
+            )
+            written[scope] = {name: self._record(record) for name, record in records.items()}
+            parents = self.posttraining_aggregates(scope, window, path, folder)
+            if parents:
+                written[scope]["posttraining"] = parents
+        return written
+
+    def _record(self, record):
+        path = Path(record["path"])
+        return dict(
+            path=str(path.relative_to(self.folder)),
+            sha256=record["sha256"],
+            bytes=record.get("bytes", path.stat().st_size),
+        )
+
+    def posttraining_aggregates(self, scope, window, base_sources, folder):
+        """Agregados de la comparación postentrenada de cada padre con trabajos en la ventana.
+
+        `base_sources` es el manifiesto de la campaña limitado a la ventana. Se escriben antes
+        de la liberación, que borra la calibración y la evaluación del modelo base que leen.
+        Cada padre hereda los estratos de liquidez de la comparación de la campaña, así que
+        usa el mismo asignador que sus agregados.
+        """
+        from mars_titan.posttraining import stage_comparison
+
+        stage = self.publication and self.publication["posttraining"]
+        if stage is None or scope not in stage["stage"]["scopes"]:
+            return {}
+        written = {}
+        for base_arm in stage["configs"]:
+            if window not in stage_comparison.compared_windows(stage, scope, base_arm):
+                continue
+            record = stage_comparison.write_window_aggregates(
+                self.publication["posttraining_path"],
+                scope,
+                base_arm,
+                window,
+                base_sources=base_sources,
+                stage_output=self.adapters["output"],
+                root=folder,
+                loaded=stage,
+                liquidity=self._liquidity,
+                unrecorded_platform=self.unrecorded_platform,
+            )
+            written[base_arm] = dict(
+                self._record(record), integrity=self._record(record["integrity"])
+            )
         return written
 
     def release(self, index):
@@ -690,6 +769,7 @@ def default_runners(
     stages=None,
     stop=None,
     unrecorded_platform=None,
+    execution=None,
 ):
     """Órdenes de cada fase limitadas a una ventana de campaña.
 
@@ -697,6 +777,8 @@ def default_runners(
     campaña A v2. Sin él se rechaza el recorrido antes de ejecutar nada. Si la campaña
     declara `walk_forward_stages`, los adaptadores y las políticas reciben un informe de
     disjunción recién calculado y las políticas leen la cadena de la salida de los adaptadores.
+    `execution` es la declaración de ejecución de la campaña base. Sus trazas de #448 llegan
+    también a los adaptadores y a las políticas.
     Las políticas contrastan su plataforma con los recibos de la base, y `unrecorded_platform`
     nombra el perfil de los anteriores a ese registro.
     """
@@ -706,10 +788,14 @@ def default_runners(
     from . import masked_campaign as engine
     from . import modality_ablation_stage as ablation_stage
     from .campaign_plan import load_campaign
+    from .campaign_resources import Execution, load_execution
 
     stages = stages or {}
     campaign = load_campaign(campaign_path)
     chain_output = stages.get("adapters", {}).get("output")
+    if execution is not None and not isinstance(execution, Execution):
+        execution = load_execution(execution, scopes=tuple(campaign["scopes"]))
+    traces = None if execution is None else execution.traces
 
     def checked(window, phase):
         if not campaign.get("walk_forward_stages"):
@@ -723,7 +809,13 @@ def default_runners(
         )
     runners = dict(
         base=lambda window: engine.run_campaign(
-            campaign_path, views, output, storage=storage, stop=stop, window=window
+            campaign_path,
+            views,
+            output,
+            storage=storage,
+            stop=stop,
+            window=window,
+            execution=execution,
         )
     )
     if "adapters" in stages:
@@ -736,6 +828,7 @@ def default_runners(
             stop=stop,
             window=window,
             disjunction=checked(window, "adapters"),
+            traces=traces,
         )
     if "ablation" in stages:
         entry = stages["ablation"]
@@ -756,6 +849,7 @@ def default_runners(
             window=window,
             chain_output=chain_output,
             disjunction=checked(window, "rl"),
+            traces=traces,
             unrecorded_platform=unrecorded_platform,
         )
     return runners
@@ -814,6 +908,10 @@ def main(argv=None):
         type=Path,
         help="Tabla del estado de cotización que declaran las políticas",
     )
+    parser.add_argument("--publication", type=Path, help="Declaración del paso final de la campaña")
+    parser.add_argument(
+        "--execution", type=Path, help="Declaración de ejecución (recursos y trazas de #448)"
+    )
     parser.add_argument(
         "--unrecorded-platform",
         help="Perfil de hardware al que se atribuyen los recibos sin plataforma",
@@ -838,6 +936,7 @@ def main(argv=None):
         args.output,
         storage=args.storage,
         stages=stages,
+        execution=args.execution,
         unrecorded_platform=args.unrecorded_platform,
     )
     rolling = Rolling(
@@ -850,6 +949,7 @@ def main(argv=None):
         adapters=stages.get("adapters"),
         rl=stages.get("rl"),
         edition=args.edition,
+        publication=args.publication,
         unrecorded_platform=args.unrecorded_platform,
         disk=dict(
             storage=args.storage,

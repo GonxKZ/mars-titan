@@ -1,0 +1,653 @@
+{
+ "schema_version": 1,
+ "kind": "targeted_mutation_report",
+ "recorded_at": "2026-10-10",
+ "tool": "sustitución de texto en el módulo, pytest -x sobre las pruebas del mutante y restauración",
+ "rounds": [
+  "primera ronda: los 36 mutantes con las pruebas de 3f3c7c0e a f750f3e9",
+  "segunda ronda: los 6 supervivientes con las pruebas añadidas en 964cdf0e",
+  "tercera ronda: los 36 mutantes con la protección de aprendizaje vigente, solo con pruebas que no la rebajan (las de extremo a extremo de la publicación se omiten, #546)"
+ ],
+ "mutants": [
+  {
+   "name": "R1 sin elegibilidad",
+   "module": "src/mars_titan/integrity/row_identity.py",
+   "original": "dropped = {market for market in markets if window_id not in sources[\"eligible\"][market]}",
+   "mutant": "dropped = set()",
+   "tests": [
+    "tests/integrity/test_row_identity.py"
+   ],
+   "first_round": "muere",
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_row_identity.py"
+    ],
+    "verdict": "muere"
+   }
+  },
+  {
+   "name": "R2 sin modelos prestados",
+   "module": "src/mars_titan/integrity/row_identity.py",
+   "original": "    if arm in sources[\"borrowed\"]:",
+   "mutant": "    if False:",
+   "tests": [
+    "tests/integrity/test_row_identity.py"
+   ],
+   "first_round": "muere",
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_row_identity.py"
+    ],
+    "verdict": "muere"
+   }
+  },
+  {
+   "name": "R3 recuento vacío",
+   "module": "src/mars_titan/integrity/row_identity.py",
+   "original": "    counts = {name: int(np.count_nonzero(market == name)) for name in dropped}",
+   "mutant": "    counts = {}",
+   "tests": [
+    "tests/integrity/test_row_identity.py"
+   ],
+   "first_round": "muere",
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_row_identity.py"
+    ],
+    "verdict": "muere"
+   }
+  },
+  {
+   "name": "R4 huella sin exclusión",
+   "module": "src/mars_titan/integrity/row_identity.py",
+   "original": "    table, excluded = kept_rows(table, dropped)\n",
+   "mutant": "    excluded = {}\n",
+   "tests": [
+    "tests/integrity/test_row_identity.py",
+    "tests/integrity/test_comparison_integrity.py"
+   ],
+   "first_round": "SOBREVIVE",
+   "second_round": "muere",
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_comparison_integrity.py",
+     "tests/integrity/test_row_identity.py"
+    ],
+    "verdict": "muere"
+   }
+  },
+  {
+   "name": "S1 recálculo sin exclusión",
+   "module": "src/mars_titan/integrity/score_recheck.py",
+   "original": "    table, excluded = row_identity.kept_rows(\n        table, row_identity.dropped_markets(sources, window_id, arm)\n    )",
+   "mutant": "    excluded = {}",
+   "tests": [
+    "tests/integrity/test_comparison_integrity.py",
+    "tests/integrity/test_score_recheck.py"
+   ],
+   "first_round": "SOBREVIVE",
+   "second_round": "muere",
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_comparison_integrity.py",
+     "tests/integrity/test_score_recheck.py"
+    ],
+    "verdict": "muere"
+   }
+  },
+  {
+   "name": "S2 sin control cero",
+   "module": "src/mars_titan/integrity/score_recheck.py",
+   "original": "    zeros = zero_arms(sources)\n",
+   "mutant": "    zeros = []\n",
+   "tests": [
+    "tests/integrity/test_comparison_integrity.py",
+    "tests/integrity/test_score_recheck.py"
+   ],
+   "first_round": "muere",
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_comparison_integrity.py",
+     "tests/integrity/test_score_recheck.py"
+    ],
+    "verdict": "muere"
+   }
+  },
+  {
+   "name": "S3 agregados sin control cero",
+   "module": "src/mars_titan/integrity/score_recheck.py",
+   "original": "    pairs += [(name, None) for name in zero_arms(sources)]\n",
+   "mutant": "",
+   "tests": [
+    "tests/integrity/test_score_recheck.py"
+   ],
+   "first_round": "SOBREVIVE",
+   "second_round": "muere",
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_score_recheck.py"
+    ],
+    "verdict": "muere"
+   }
+  },
+  {
+   "name": "S4 control cero con predicción del modelo",
+   "module": "src/mars_titan/integrity/score_recheck.py",
+   "original": "    frame[\"prediction\"] = 0.0\n",
+   "mutant": "    frame[\"prediction\"] = frame[\"target\"] * 0.5\n",
+   "tests": [
+    "tests/integrity/test_comparison_integrity.py",
+    "tests/integrity/test_score_recheck.py"
+   ],
+   "first_round": "muere",
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_comparison_integrity.py",
+     "tests/integrity/test_score_recheck.py"
+    ],
+    "verdict": "muere"
+   }
+  },
+  {
+   "name": "C1 filas quitadas sin cotejo",
+   "module": "src/mars_titan/integrity/comparison_integrity.py",
+   "original": "    differing = sorted(key for key in keys if counted.get(key) != declared.get(key))",
+   "mutant": "    differing = []",
+   "tests": [
+    "tests/integrity/test_comparison_integrity.py"
+   ],
+   "first_round": "SOBREVIVE",
+   "second_round": "muere",
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_comparison_integrity.py"
+    ],
+    "verdict": "muere"
+   }
+  },
+  {
+   "name": "C2 ventana sin recálculo",
+   "module": "src/mars_titan/integrity/comparison_integrity.py",
+   "original": "    passed = rows[\"passed\"] and failures == 0 and excluded[\"passed\"]",
+   "mutant": "    passed = rows[\"passed\"] and excluded[\"passed\"]",
+   "tests": [
+    "tests/integrity/test_comparison_integrity.py",
+    "tests/posttraining/test_publication_from_aggregates.py"
+   ],
+   "first_round": "muere",
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_comparison_integrity.py"
+    ],
+    "verdict": "muere"
+   }
+  },
+  {
+   "name": "C3 ventana sin detenerse",
+   "module": "src/mars_titan/integrity/comparison_integrity.py",
+   "original": "    _require(passed, f\"La integridad de {sources['scope']} {window_id} falla: revisa {destination}\")",
+   "mutant": "    pass",
+   "tests": [
+    "tests/integrity/test_comparison_integrity.py",
+    "tests/posttraining/test_publication_from_aggregates.py"
+   ],
+   "first_round": "muere",
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_comparison_integrity.py"
+    ],
+    "verdict": "muere"
+   }
+  },
+  {
+   "name": "C4 registro sin huella",
+   "module": "src/mars_titan/integrity/comparison_integrity.py",
+   "original": "                path.is_file() and record.get(\"aggregates\", {}).get(\"sha256\") == sha256(path),",
+   "mutant": "                True,",
+   "tests": [
+    "tests/integrity/test_comparison_integrity.py"
+   ],
+   "first_round": "muere",
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_comparison_integrity.py"
+    ],
+    "verdict": "muere"
+   }
+  },
+  {
+   "name": "C5 registro sin identidad",
+   "module": "src/mars_titan/integrity/comparison_integrity.py",
+   "original": "            (record.get(\"identity\") == expected, \"procede de otras fuentes o código\"),",
+   "mutant": "",
+   "tests": [
+    "tests/integrity/test_comparison_integrity.py"
+   ],
+   "first_round": "muere",
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_comparison_integrity.py"
+    ],
+    "verdict": "muere"
+   }
+  },
+  {
+   "name": "C6 registro fallido admitido",
+   "module": "src/mars_titan/integrity/comparison_integrity.py",
+   "original": "            (record.get(\"passed\") is True, \"registra fallos\"),",
+   "mutant": "",
+   "tests": [
+    "tests/integrity/test_comparison_integrity.py"
+   ],
+   "first_round": "muere",
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_comparison_integrity.py"
+    ],
+    "verdict": "muere"
+   }
+  },
+  {
+   "name": "C7 sesiones con tolerancia",
+   "module": "src/mars_titan/integrity/comparison_integrity.py",
+   "original": "                stored, raw.loc[theirs, list(stored.columns)], rtol=0.0, atol=0.0",
+   "mutant": "                stored, raw.loc[theirs, list(stored.columns)]",
+   "tests": [
+    "tests/integrity/test_comparison_integrity.py",
+    "tests/posttraining/test_publication_from_aggregates.py"
+   ],
+   "first_round": "muere",
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_comparison_integrity.py"
+    ],
+    "verdict": "muere"
+   }
+  },
+  {
+   "name": "C8 registros ausentes admitidos",
+   "module": "src/mars_titan/integrity/comparison_integrity.py",
+   "original": "        passed = not missing and failures == 0\n",
+   "mutant": "        passed = failures == 0\n",
+   "tests": [
+    "tests/integrity/test_comparison_integrity.py"
+   ],
+   "first_round": "muere",
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_comparison_integrity.py"
+    ],
+    "verdict": "muere"
+   }
+  },
+  {
+   "name": "C9 publicación sin filas",
+   "module": "src/mars_titan/integrity/comparison_integrity.py",
+   "original": "        passed, counted = rows[\"passed\"] and failures == 0, _counted(rows)",
+   "mutant": "        passed, counted = failures == 0, _counted(rows)",
+   "tests": [
+    "tests/integrity/test_comparison_integrity.py"
+   ],
+   "first_round": "muere",
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_comparison_integrity.py"
+    ],
+    "verdict": "muere"
+   }
+  },
+  {
+   "name": "C10 sin agregados recalculados",
+   "module": "src/mars_titan/integrity/comparison_integrity.py",
+   "original": "        passed=passed and excluded[\"passed\"] and wrong == 0,",
+   "mutant": "        passed=passed and excluded[\"passed\"],",
+   "tests": [
+    "tests/integrity/test_comparison_integrity.py",
+    "tests/posttraining/test_publication_from_aggregates.py"
+   ],
+   "first_round": "SOBREVIVE",
+   "second_round": "muere",
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_comparison_integrity.py"
+    ],
+    "verdict": "muere"
+   }
+  },
+  {
+   "name": "D1 recibos sin declarar admitidos",
+   "module": "src/mars_titan/integrity/declared_runs.py",
+   "original": "        if str(job_id) not in planned:",
+   "mutant": "        if False:",
+   "tests": [
+    "tests/posttraining/test_publication_from_aggregates.py"
+   ],
+   "first_round": "muere",
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_declared_runs.py"
+    ],
+    "verdict": "muere"
+   }
+  },
+  {
+   "name": "D2 trabajos sin recibo admitidos",
+   "module": "src/mars_titan/integrity/declared_runs.py",
+   "original": "        if not confirmed:\n            missing.append(job[\"id\"])\n    for job in chains:",
+   "mutant": "        pass\n    for job in chains:",
+   "tests": [
+    "tests/posttraining/test_publication_from_aggregates.py"
+   ],
+   "first_round": "muere",
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_declared_runs.py"
+    ],
+    "verdict": "muere"
+   }
+  },
+  {
+   "name": "D3 intentos sin descontar el confirmado",
+   "module": "src/mars_titan/integrity/declared_runs.py",
+   "original": "        unconfirmed_attempts=len(attempts) - (1 if confirmed and attempts else 0),",
+   "mutant": "        unconfirmed_attempts=len(attempts),",
+   "tests": [
+    "tests/posttraining/test_publication_from_aggregates.py"
+   ],
+   "first_round": "muere",
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_declared_runs.py"
+    ],
+    "verdict": "muere"
+   }
+  },
+  {
+   "name": "D4 ventanas sin cotejo",
+   "module": "src/mars_titan/integrity/declared_runs.py",
+   "original": "            if set(entry[\"windows\"]) != windows:",
+   "mutant": "            if False:",
+   "tests": [
+    "tests/posttraining/test_publication_from_aggregates.py"
+   ],
+   "first_round": "muere",
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_declared_runs.py"
+    ],
+    "verdict": "muere"
+   }
+  },
+  {
+   "name": "D5 modelos de más admitidos",
+   "module": "src/mars_titan/integrity/declared_runs.py",
+   "original": "    extra = sorted(set(report[\"arms\"]) - set(sources[\"arms\"]))",
+   "mutant": "    extra = []",
+   "tests": [
+    "tests/posttraining/test_publication_from_aggregates.py"
+   ],
+   "first_round": "muere",
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_declared_runs.py"
+    ],
+    "verdict": "muere"
+   }
+  },
+  {
+   "name": "D6 selecciones de la cadena sin contar",
+   "module": "src/mars_titan/integrity/declared_runs.py",
+   "original": "        confirmed = selected(job)\n",
+   "mutant": "        confirmed = True\n",
+   "tests": [
+    "tests/posttraining/test_publication_from_aggregates.py"
+   ],
+   "first_round": "SOBREVIVE",
+   "second_round": "muere",
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_declared_runs.py"
+    ],
+    "verdict": "muere"
+   }
+  },
+  {
+   "name": "W1 puntuación sin cotejo",
+   "module": "src/mars_titan/integrity/window_selection.py",
+   "original": "        if receipt[\"score\"] != published:",
+   "mutant": "        if False:",
+   "tests": [
+    "tests/posttraining/test_publication_from_aggregates.py"
+   ],
+   "first_round": "muere",
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_window_selection.py"
+    ],
+    "verdict": "muere"
+   }
+  },
+  {
+   "name": "W2 ganador por máximo",
+   "module": "src/mars_titan/integrity/window_selection.py",
+   "original": "    _, key, receipt = min(scored, key=lambda item: (item[0], item[1]))",
+   "mutant": "    _, key, receipt = max(scored, key=lambda item: (item[0], item[1]))",
+   "tests": [
+    "tests/integrity/test_window_selection.py",
+    "tests/posttraining/test_publication_from_aggregates.py"
+   ],
+   "first_round": "muere",
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_window_selection.py"
+    ],
+    "verdict": "muere"
+   }
+  },
+  {
+   "name": "W3 finalista sin cotejo",
+   "module": "src/mars_titan/integrity/window_selection.py",
+   "original": "            if receipt is None or receipt[\"identity\"][\"case\"] != expected:",
+   "mutant": "            if receipt is None:",
+   "tests": [
+    "tests/integrity/test_window_selection.py"
+   ],
+   "first_round": "muere",
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_window_selection.py"
+    ],
+    "verdict": "muere"
+   }
+  },
+  {
+   "name": "W4 recibo de ventana sin validar",
+   "module": "src/mars_titan/integrity/window_selection.py",
+   "original": "                read_window_receipt(record)\n",
+   "mutant": "                pass\n",
+   "tests": [
+    "tests/posttraining/test_publication_from_aggregates.py"
+   ],
+   "first_round": "muere",
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_window_selection.py"
+    ],
+    "verdict": "muere"
+   }
+  },
+  {
+   "name": "W5 recibo con otro estado",
+   "module": "src/mars_titan/integrity/window_selection.py",
+   "original": "            if record[\"parent\"] != receipt[\"parent\"]:",
+   "mutant": "            if False:",
+   "tests": [
+    "tests/posttraining/test_publication_from_aggregates.py"
+   ],
+   "first_round": "muere",
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_window_selection.py"
+    ],
+    "verdict": "muere"
+   }
+  },
+  {
+   "name": "W6 tramos sin orden",
+   "module": "src/mars_titan/integrity/window_selection.py",
+   "original": "            if not ordered:",
+   "mutant": "            if False:",
+   "tests": [
+    "tests/posttraining/test_publication_from_aggregates.py"
+   ],
+   "first_round": "muere",
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_window_selection.py"
+    ],
+    "verdict": "muere"
+   }
+  },
+  {
+   "name": "W7 tramo evaluado sin comprobar",
+   "module": "src/mars_titan/integrity/window_selection.py",
+   "original": "    if config[\"partition\"] != \"evaluation\" or config[\"calibration\"][\"partition\"] != \"calibration\":",
+   "mutant": "    if False:",
+   "tests": [
+    "tests/posttraining/test_publication_from_aggregates.py"
+   ],
+   "first_round": "muere",
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_window_selection.py"
+    ],
+    "verdict": "muere"
+   }
+  },
+  {
+   "name": "G1 sin disjunción por etapas",
+   "module": "src/mars_titan/integrity/publication_gate.py",
+   "original": "    if campaign.get(\"walk_forward_stages\") or _staged(posttraining):",
+   "mutant": "    if campaign.get(\"walk_forward_stages\"):",
+   "tests": [
+    "tests/posttraining/test_publication_from_aggregates.py"
+   ],
+   "first_round": "muere",
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_publication_gate.py"
+    ],
+    "verdict": "muere"
+   }
+  },
+  {
+   "name": "G2 informe sin detener",
+   "module": "src/mars_titan/integrity/publication_gate.py",
+   "original": "        report[\"passed\"],\n",
+   "mutant": "        True,\n",
+   "tests": [
+    "tests/posttraining/test_publication_from_aggregates.py"
+   ],
+   "first_round": "muere",
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_publication_gate.py"
+    ],
+    "verdict": "muere"
+   }
+  },
+  {
+   "name": "G3 publicación sin informe",
+   "module": "src/mars_titan/training/campaign_publication.py",
+   "original": "    integrity = publication_gate.write(",
+   "mutant": "    integrity = dict(sha256=None) or publication_gate.write(",
+   "tests": [
+    "tests/posttraining/test_publication_from_aggregates.py"
+   ],
+   "first_round": "muere",
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_publication_gate.py"
+    ],
+    "verdict": "muere"
+   }
+  },
+  {
+   "name": "G4 recorrido sin integridad",
+   "module": "src/mars_titan/training/rolling_retention.py",
+   "original": "            walked, checked = comparison_integrity.write_checked(\n                folder, restricted, sources, window, masked\n            )",
+   "mutant": "            walked = window_aggregates.write(folder, restricted, sources, window, masked)\n            checked = walked",
+   "tests": [
+    "tests/posttraining/test_publication_from_aggregates.py",
+    "tests/training/test_rolling_retention.py"
+   ],
+   "first_round": "muere",
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_publication_gate.py"
+    ],
+    "verdict": "muere"
+   }
+  },
+  {
+   "name": "G5 etapa sin integridad",
+   "module": "src/mars_titan/posttraining/stage_comparison.py",
+   "original": "    record, checked = comparison_integrity.write_checked(",
+   "mutant": "    record = checked = comparison_integrity.window_aggregates.write(",
+   "tests": [
+    "tests/posttraining/test_publication_from_aggregates.py"
+   ],
+   "first_round": "muere",
+   "verdict": "muere",
+   "with_hold": {
+    "tests": [
+     "tests/integrity/test_publication_gate.py"
+    ],
+    "verdict": "muere"
+   }
+  }
+ ],
+ "killed": 36,
+ "survived": 0,
+ "training_executed": false,
+ "final_test_opened": false,
+ "with_hold": {
+  "killed": 36,
+  "survived": 0
+ }
+}

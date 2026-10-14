@@ -5,8 +5,11 @@ un único modelo GRU con la semilla 42. El ejecutor neuronal sustituto construye
 referencia de la campaña con la cabeza `quantile_head_v1` y pesos iniciales, guarda su
 estado elegido y escribe validación, calibración y evaluación con sus predicciones
 reales en CPU. Así la etapa de postentrenamiento carga padres verdaderos sin que la
-campaña base aplique ningún paso de optimizador. Los traslados de la variante B usan el
-doble de las pruebas de la campaña, que escribe predicciones nulas.
+campaña base aplique ningún paso de optimizador. Su informe declara las épocas que habría
+recorrido el ejecutor real con su puntuación fija, siguiendo la regla de selección del caso,
+para que el presupuesto consumido del informe de integridad lo lea como un ajuste completo.
+Los traslados de la variante B usan el doble de las pruebas de la campaña, que escribe
+predicciones nulas.
 """
 
 import json
@@ -28,6 +31,7 @@ from mars_titan.training.checkpoints import save_training_state
 from mars_titan.training.corpus_inputs import CorpusDataset
 from mars_titan.training.learning_hold import HOLD_ENV
 from mars_titan.training.reference_run import HELDOUT_FULL_TRAIN_SESSIONS
+from mars_titan.training.selection import FINISH, advance_selection, epoch_decision
 from tests.learning_hold_lowering import allowed_hold
 from tests.training.test_carried_predictions import PresenceCount
 from tests.training.test_masked_campaign import Recorder
@@ -53,17 +57,19 @@ INFERENCE = (
 SCORES = {"gru-00": 0.02, "gru-10": 0.01}
 
 
-def write_configs(folder, variant, *, tabular=False):
+def write_configs(folder, variant, *, tabular=False, start="2021-04-01", comparison=None):
     """Comparación, protocolo, campaña, matriz y etapa reducidos para una variante.
 
     Con `tabular` la comparación, la campaña y la etapa declaran además Ridge, cuya cadena
-    solo tiene el padre congelado.
+    solo tiene el padre congelado. `start` es el inicio de la primera validación del
+    protocolo US: el de omisión deja dos ventanas y cada año antes añade una. `comparison`
+    recibe la comparación declarada y puede cambiarla antes de guardarla.
     """
     folder.mkdir(parents=True, exist_ok=True)
     protocol = json.loads(
         (CONFIGS / "evaluation/historical-masked-us-walk-forward-v2.json").read_text()
     )
-    protocol["first_validation_start"] = "2021-04-01"
+    protocol["first_validation_start"] = start
     atomic_json(folder / "us-protocol.json", protocol)
     declared = json.loads(
         (CONFIGS / "evaluation/historical-masked-2000-comparison.json").read_text()
@@ -83,6 +89,8 @@ def write_configs(folder, variant, *, tabular=False):
         replicates=20,
         families=dict(references_vs_zero=dict(kind="delta", base="zero", variants=["gru"])),
     )
+    if comparison is not None:
+        comparison(declared)
     atomic_json(folder / "comparison.json", declared)
     search = json.loads((CONFIGS / "baselines/tabular-historical-masked.json").read_text())
     search.update(ridge_alphas=[1.0], depths=[3], bins=[64], rates=[0.1])
@@ -101,14 +109,19 @@ def write_configs(folder, variant, *, tabular=False):
     # La comparación reducida no declara las variantes de Titans-MAC.
     campaign.pop("titans_mac")
     atomic_json(folder / "campaign.json", campaign)
-    matrix = json.loads((CONFIGS / "posttraining/adapter-matrix-v2.json").read_text())
-    matrix["budget"].update(seeds=[42], epochs=1, batch_size=BATCH)
-    atomic_json(folder / "matrix.json", matrix)
     stage = json.loads(
         (
             CONFIGS / f"posttraining/historical-masked-adapter-stage-{variant.lower()}.json"
         ).read_text()
     )
+    # A añade la continuación anclada de la matriz v3 (#444). Su matriz reducida es la v3 sin
+    # la variedad, que conserva los casos de la v2 y declara el control.
+    added = "additional_controls" in stage
+    source = "adapter-matrix-v3.json" if added else "adapter-matrix-v2.json"
+    matrix = json.loads((CONFIGS / "posttraining" / source).read_text())
+    matrix.pop("variety", None)
+    matrix["budget"].update(seeds=[42], epochs=1, batch_size=BATCH)
+    atomic_json(folder / "matrix.json", matrix)
     stage.update(
         campaign="campaign.json",
         matrix="matrix.json",
@@ -171,16 +184,19 @@ def quantile_reference(run):
         **policy_identity(HISTORICAL_MASKED),
     )
     score = SCORES[run.job["candidate"]] if run.job["stage"] == "search" else 0.015
+    declared = _declared_epochs(case, score, dataset.manifest["counts"]["train"], run)
+    best = declared["selection"]["best_epoch"]
     run.folder.mkdir(parents=True, exist_ok=True)
+    # El estado elegido conserva los pesos iniciales con la época y la puntuación declaradas.
     checkpoint = save_training_state(
         run.folder / "checkpoints",
         dict(
-            global_step=0,
-            epoch=0,
+            global_step=declared["global_step"] // len(declared["epochs"]) * best,
+            epoch=best,
             confirmed_cursor=None,
             model=model.state_dict(),
             statistics={"samples": 0},
-            selection=dict(best_score=score, best_epoch=0),
+            selection=dict(best_score=score, best_epoch=best),
         ),
         identity=identity,
         best=True,
@@ -201,11 +217,29 @@ def quantile_reference(run):
         predictions=predictions,
         train_summary={},
         checkpoint=dict(path=str(checkpoint.relative_to(run.folder)), sha256=sha256(checkpoint)),
-        selection=dict(best_epoch=0, best_score=score, last_epoch=0),
         final_test_opened=False,
     )
+    report.update(declared)
     atomic_json(run.folder / "run.json", report)
     return report
+
+
+def _declared_epochs(case, score, rows, run):
+    """Épocas, actualizaciones y selección del ejecutor real con una puntuación fija.
+
+    El doble no ajusta nada: repite el bucle de selección del ejecutor con la misma
+    validación en cada época, así que la primera es la elegida.
+    """
+    options = {key: value for key, value in case["selection"].items() if key != "max_epochs"}
+    selection, epochs = None, []
+    while True:
+        epoch = len(epochs) + 1
+        epochs.append(dict(epoch=epoch, validation=dict(session_mae=score)))
+        selection = advance_selection(selection, score, epoch, options)
+        if epoch_decision(selection, options, case["epochs"]) == FINISH:
+            break
+    steps = -(-rows // run.batch_size)
+    return dict(epochs=epochs, global_step=steps * len(epochs), selection=selection)
 
 
 def fixed_tabular(run):
@@ -268,9 +302,11 @@ class CpuLease:
         pass
 
 
-def base_campaign(root, variant, *, tabular=False):
+def base_campaign(root, variant, *, tabular=False, comparison=None):
     """Preparar vistas y ejecutar la campaña base reducida con los dobles."""
-    campaign, stage = write_configs(root / "config", variant, tabular=tabular)
+    campaign, stage = write_configs(
+        root / "config", variant, tabular=tabular, comparison=comparison
+    )
     data = fixture(root / "data", ("US",))
     hold = allowed_hold(root / "hold.json")
     with pytest.MonkeyPatch.context() as patch:
@@ -288,5 +324,5 @@ def base_campaign(root, variant, *, tabular=False):
         )
     assert summary["status"] == "completed"
     return SimpleNamespace(
-        campaign=campaign, stage=stage, views=views, output=root / "campaign", root=root
+        campaign=campaign, stage=stage, views=views, output=root / "campaign", root=root, hold=hold
     )

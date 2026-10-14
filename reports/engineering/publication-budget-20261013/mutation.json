@@ -1,0 +1,419 @@
+[
+ {
+  "name": "B1 diferencias sin declarar admitidas",
+  "module": "src/mars_titan/integrity/fit_budget.py",
+  "original": "undeclared = sorted(f\"{arm}/{field}\" for arm, field in actual - stated)",
+  "mutant": "undeclared = []",
+  "tests": [
+   "tests/integrity/test_fit_budget.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 1 passed in 2.27s",
+  "verdict": "muere"
+ },
+ {
+  "name": "B2 diferencias obsoletas admitidas",
+  "module": "src/mars_titan/integrity/fit_budget.py",
+  "original": "stale = sorted(f\"{arm}/{field}\" for arm, field in stated - actual)",
+  "mutant": "stale = []",
+  "tests": [
+   "tests/integrity/test_fit_budget.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 2 passed in 2.45s",
+  "verdict": "muere"
+ },
+ {
+  "name": "B3 motivo vacío admitido",
+  "module": "src/mars_titan/integrity/fit_budget.py",
+  "original": "field in FIELDS and isinstance(reason, str) and reason.strip()",
+  "mutant": "field in FIELDS and isinstance(reason, str)",
+  "tests": [
+   "tests/integrity/test_fit_budget.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 3 passed in 2.35s",
+  "verdict": "muere"
+ },
+ {
+  "name": "B4 iteraciones sin comparar",
+  "module": "src/mars_titan/integrity/fit_budget.py",
+  "original": "fields = [field for field in FIELDS if item[field] != reference[field]]",
+  "mutant": "fields = [field for field in FIELDS[:2] if item[field] != reference[field]]",
+  "tests": [
+   "tests/integrity/test_fit_budget.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 error in 1.83s",
+  "verdict": "muere"
+ },
+ {
+  "name": "B5 declaración cargada sin cotejo",
+  "module": "src/mars_titan/training/campaign_publication.py",
+  "original": "    _require(\n        budget[\"passed\"],",
+  "mutant": "    _require(\n        True,",
+  "tests": [
+   "tests/integrity/test_fit_budget.py",
+   "tests/training/test_campaign_publication.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 1 passed in 2.53s",
+  "verdict": "muere"
+ },
+ {
+  "name": "B6 informe sin huella",
+  "module": "src/mars_titan/integrity/fit_budget.py",
+  "original": "path.is_file() and sha256(path) == receipt[\"report\"].get(\"sha256\"),",
+  "mutant": "path.is_file(),",
+  "tests": [
+   "tests/integrity/test_fit_budget.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 27 passed, 2 skipped in 2.40s",
+  "verdict": "muere"
+ },
+ {
+  "name": "B7 registro del entrenador sin huella",
+  "module": "src/mars_titan/integrity/fit_budget.py",
+  "original": "nested.is_file() and sha256(nested) == record.get(\"sha256\"),",
+  "mutant": "nested.is_file(),",
+  "tests": [
+   "tests/integrity/test_fit_budget.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 14 passed, 2 skipped in 2.18s",
+  "verdict": "muere"
+ },
+ {
+  "name": "B8 ajuste truncado admitido",
+  "module": "src/mars_titan/integrity/fit_budget.py",
+  "original": "    if finished is None:\n",
+  "mutant": "    if False:\n",
+  "tests": [
+   "tests/integrity/test_fit_budget.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 5 passed in 2.47s",
+  "verdict": "muere"
+ },
+ {
+  "name": "B9 ajuste que sigue tras su final admitido",
+  "module": "src/mars_titan/integrity/fit_budget.py",
+  "original": "    elif finished != len(scores) - 1:\n",
+  "mutant": "    elif False:\n",
+  "tests": [
+   "tests/integrity/test_fit_budget.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 6 passed in 2.66s",
+  "verdict": "muere"
+ },
+ {
+  "name": "B10 época entregada sin cotejo",
+  "module": "src/mars_titan/integrity/fit_budget.py",
+  "original": "if reported.get(\"best_epoch\") != selection[\"best_epoch\"]:",
+  "mutant": "if False:",
+  "tests": [
+   "tests/integrity/test_fit_budget.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 8 passed in 2.41s",
+  "verdict": "muere"
+ },
+ {
+  "name": "B11 ajuste sin actualizaciones admitido",
+  "module": "src/mars_titan/integrity/fit_budget.py",
+  "original": "if type(steps) is not int or steps < 1:",
+  "mutant": "if type(steps) is not int:",
+  "tests": [
+   "tests/integrity/test_fit_budget.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 11 passed in 2.26s",
+  "verdict": "muere"
+ },
+ {
+  "name": "B12 estado inicial admitido",
+  "module": "src/mars_titan/integrity/fit_budget.py",
+  "original": "fitted = job.get(\"parent\") is not None or selection[\"best_epoch\"] > 0",
+  "mutant": "fitted = True",
+  "tests": [
+   "tests/integrity/test_fit_budget.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 9 passed in 2.45s",
+  "verdict": "muere"
+ },
+ {
+  "name": "B13 parada conjunta ignorada",
+  "module": "src/mars_titan/integrity/fit_budget.py",
+  "original": "joint_epoch = joint_epoch if rule[\"stopping\"] == JOINT_PLATEAU else None",
+  "mutant": "joint_epoch = None",
+  "tests": [
+   "tests/integrity/test_fit_budget.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 12 passed in 2.58s",
+  "verdict": "muere"
+ },
+ {
+  "name": "B14 época común antes de la meseta",
+  "module": "src/mars_titan/integrity/fit_budget.py",
+  "original": "common = joint_epoch if individual_stop(selection, maximum) is not None else None",
+  "mutant": "common = joint_epoch",
+  "tests": [
+   "tests/integrity/test_fit_budget.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 12 passed in 2.53s",
+  "verdict": "muere"
+ },
+ {
+  "name": "B15 rondas de más admitidas",
+  "module": "src/mars_titan/integrity/fit_budget.py",
+  "original": "if type(rounds) is not int or not 1 <= rounds <= budget[\"max_rounds\"]:",
+  "mutant": "if type(rounds) is not int:",
+  "tests": [
+   "tests/integrity/test_fit_budget.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 17 passed, 2 skipped in 2.81s",
+  "verdict": "muere"
+ },
+ {
+  "name": "B16 ronda sin ajustar admitida",
+  "module": "src/mars_titan/integrity/fit_budget.py",
+  "original": "elif type(selected) is not int or not 1 <= selected <= rounds:",
+  "mutant": "elif type(selected) is not int:",
+  "tests": [
+   "tests/integrity/test_fit_budget.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 18 passed, 2 skipped in 2.61s",
+  "verdict": "muere"
+ },
+ {
+  "name": "B17 parada sin motivo admitida",
+  "module": "src/mars_titan/integrity/fit_budget.py",
+  "original": "elif rounds < budget[\"max_rounds\"] and not report.get(\"stop_reason\"):",
+  "mutant": "elif False:",
+  "tests": [
+   "tests/integrity/test_fit_budget.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 19 passed, 2 skipped in 2.80s",
+  "verdict": "muere"
+ },
+ {
+  "name": "B18 etiquetas de más admitidas",
+  "module": "src/mars_titan/integrity/fit_budget.py",
+  "original": "if type(labels) is not int or type(cap) is not int or labels > cap:",
+  "mutant": "if type(labels) is not int or type(cap) is not int:",
+  "tests": [
+   "tests/integrity/test_fit_budget.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 21 passed, 2 skipped in 2.55s",
+  "verdict": "muere"
+ },
+ {
+  "name": "B19 tope distinto del banco admitido",
+  "module": "src/mars_titan/integrity/fit_budget.py",
+  "original": "elif metrics.get(\"cap\") != cap:",
+  "mutant": "elif False:",
+  "tests": [
+   "tests/integrity/test_fit_budget.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 22 passed, 2 skipped in 2.57s",
+  "verdict": "muere"
+ },
+ {
+  "name": "B20 control sin etiquetas admitido",
+  "module": "src/mars_titan/integrity/fit_budget.py",
+  "original": "    if not used:\n",
+  "mutant": "    if False:\n",
+  "tests": [
+   "tests/integrity/test_fit_budget.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 23 passed, 2 skipped in 2.73s",
+  "verdict": "muere"
+ },
+ {
+  "name": "B21 actualizaciones sin agrupar",
+  "module": "src/mars_titan/integrity/fit_budget.py",
+  "original": "if fixed and \"global_step\" in entry:",
+  "mutant": "if False:",
+  "tests": [
+   "tests/integrity/test_fit_budget.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 25 passed, 2 skipped in 3.02s",
+  "verdict": "muere"
+ },
+ {
+  "name": "B22 actualizaciones distintas admitidas",
+  "module": "src/mars_titan/integrity/fit_budget.py",
+  "original": "if len(set(steps.values())) > 1",
+  "mutant": "if len(set(steps.values())) > 2",
+  "tests": [
+   "tests/integrity/test_fit_budget.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 25 passed, 2 skipped in 3.04s",
+  "verdict": "muere"
+ },
+ {
+  "name": "B23 grupo conjunto sin cotejo",
+  "module": "src/mars_titan/integrity/fit_budget.py",
+  "original": "if job.get(\"joint_group\") and \"joint_stop_epoch\" in entry:",
+  "mutant": "if False:",
+  "tests": [
+   "tests/integrity/test_fit_budget.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 29 passed, 2 skipped in 2.94s",
+  "verdict": "muere"
+ },
+ {
+  "name": "B24 error de lectura admitido",
+  "module": "src/mars_titan/integrity/fit_budget.py",
+  "original": "entry = dict(failures=[str(error)])",
+  "mutant": "entry = dict(failures=[])",
+  "tests": [
+   "tests/integrity/test_fit_budget.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 27 passed, 2 skipped in 2.88s",
+  "verdict": "muere"
+ },
+ {
+  "name": "B25 superado sin actualizaciones iguales",
+  "module": "src/mars_titan/integrity/fit_budget.py",
+  "original": "passed=not failing and not unequal,",
+  "mutant": "passed=not failing,",
+  "tests": [
+   "tests/integrity/test_fit_budget.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 25 passed, 2 skipped in 2.64s",
+  "verdict": "muere"
+ },
+ {
+  "name": "B26 recibos sin confirmar leídos",
+  "module": "src/mars_titan/integrity/fit_budget.py",
+  "original": "if receipt is None or receipt.get(\"status\") not in CONFIRMED:",
+  "mutant": "if receipt is None:",
+  "tests": [
+   "tests/integrity/test_fit_budget.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 28 passed, 2 skipped in 2.78s",
+  "verdict": "muere"
+ },
+ {
+  "name": "B27 ajustes de meseta leídos",
+  "module": "src/mars_titan/integrity/fit_budget.py",
+  "original": "if job[\"kind\"] not in (plan.FIT, plan.ONLINE) or job.get(\"phase\") == plan.PLATEAU:",
+  "mutant": "if job[\"kind\"] not in (plan.FIT, plan.ONLINE):",
+  "tests": [
+   "tests/integrity/test_fit_budget.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 30 passed, 2 skipped in 2.75s",
+  "verdict": "muere"
+ },
+ {
+  "name": "B28 validación inicial ignorada",
+  "module": "src/mars_titan/integrity/fit_budget.py",
+  "original": "if run.get(\"initial_validation\") is not None:",
+  "mutant": "if False:",
+  "tests": [
+   "tests/integrity/test_fit_budget.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 31 passed, 2 skipped in 3.11s",
+  "verdict": "muere"
+ },
+ {
+  "name": "B29 sección sin declarado",
+  "module": "src/mars_titan/integrity/fit_budget.py",
+  "original": "passed=stated[\"passed\"] and consumed[\"passed\"],",
+  "mutant": "passed=consumed[\"passed\"],",
+  "tests": [
+   "tests/integrity/test_fit_budget.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 32 passed, 2 skipped in 2.99s",
+  "verdict": "muere"
+ },
+ {
+  "name": "B30 rondas declaradas sin leer",
+  "module": "src/mars_titan/integrity/fit_budget.py",
+  "original": "unit=\"round\", trainer=\"xgboost\", max_rounds=case[\"rounds\"], **(case.get(\"selection\") or {})",
+  "mutant": "unit=\"round\", trainer=\"xgboost\", **(case.get(\"selection\") or {})",
+  "tests": [
+   "tests/integrity/test_fit_budget.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed in 2.60s",
+  "verdict": "muere"
+ },
+ {
+  "name": "B31 filas por lote sin declarar",
+  "module": "src/mars_titan/integrity/fit_budget.py",
+  "original": "iterations[\"batch_rows\"] = campaign[\"neural\"][\"batch_size\"]",
+  "mutant": "pass",
+  "tests": [
+   "tests/integrity/test_fit_budget.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed in 2.52s",
+  "verdict": "muere"
+ },
+ {
+  "name": "B32 informe sin presupuesto",
+  "module": "src/mars_titan/integrity/publication_gate.py",
+  "original": "sections = dict(comparisons=checked, runs=runs, selection=selection, budget=budget)",
+  "mutant": "sections = dict(comparisons=checked, runs=runs, selection=selection)",
+  "tests": [
+   "tests/integrity/test_publication_gate.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 4 passed in 1.78s",
+  "verdict": "muere"
+ }
+]

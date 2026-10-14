@@ -13,11 +13,13 @@ import json
 import shutil
 from types import SimpleNamespace
 
+import pyarrow.parquet as pq
 import pytest
 
 from mars_titan.data import prediction_files
 from mars_titan.data.storage import atomic_json
 from mars_titan.evaluation import long_short_comparison as portfolio
+from mars_titan.evaluation import selection_effect
 from mars_titan.evaluation import walk_forward_comparison as comparison
 from mars_titan.simulation import policy_plan
 from mars_titan.training import campaign_plan as plan
@@ -211,12 +213,88 @@ def test_the_final_comparison_from_aggregates_equals_the_one_that_read_the_rows(
         k: v for k, v in expected_portfolio.items() if k not in volatile
     }
     assert books.equals(expected_books)
-    ledger = walked["state"].ledger()["windows"]
+    state = walked["state"]
+    ledger = state.ledger()["windows"]
+    jobs = plan.plan_campaign(state.campaign)
     for row in walked["windows"]:
-        assert set(ledger[row["id"]]["phases"]["aggregates"]["written"]["US"]) == {
-            "walk_forward",
-            "long_short",
-        }
+        written = ledger[row["id"]]["phases"]["aggregates"]["written"]["US"]
+        assert set(written) == {"walk_forward", "integrity", "long_short", "selection_effect"}
+        # La integridad de la ventana, con la ablación, quedó superada antes de liberar.
+        record = json.loads((walked["state"].folder / written["integrity"]["path"]).read_text())
+        assert record["passed"] and record["identity"]["ablation"]
+        # El efecto de la elección se guardó con todos los casos de búsqueda de la ventana,
+        # aunque la liberación ya haya borrado la evaluación de los no elegidos.
+        window = row["scopes"]["US"]
+        saved = selection_effect.read_window(
+            state.folder / "aggregates", state.comparison_config(), "US", window
+        )
+        searches = {}
+        for job in jobs:
+            if (job["scope"], job["window"], job["stage"]) == ("US", window, "search"):
+                if job.get("phase") != plan.PLATEAU:
+                    searches[job["arm"]] = searches.get(job["arm"], 0) + 1
+        assert saved["excluded"] == {}
+        saved = saved["arms"]
+        assert searches and {arm: e["cases"] for arm, e in saved.items()} == searches
+        assert all(e["applicable"] == (e["cases"] > 1) for e in saved.values())
+
+
+@lowers_learning_hold(
+    "tests/training/test_rolling_retention.py::"
+    "test_the_campaign_publication_reads_the_aggregates_with_portfolio_and_ablation"
+)
+def test_the_campaign_publication_reads_the_aggregates_with_portfolio_and_ablation(
+    walked, edition, tmp_path
+):
+    """El paso final sin etapa de adaptadores: cartera y ablación desde agregados."""
+    from mars_titan.training import campaign_publication as publication
+    from tests.training import publication_fixture
+
+    shared, state = walked["base"], walked["state"]
+    declared = publication_fixture.declare(tmp_path / "declared", shared.campaign, portfolio=True)
+    destination = tmp_path / "published"
+    receipt = publication.run_publication(
+        declared.publication,
+        shared.views,
+        state.output,
+        destination,
+        aggregates=state.folder / "aggregates",
+        edition=edition,
+        ablation=dict(stage=shared.stage, output=walked["staged"]),
+    )
+    volatile = {"created_at_utc", "resources", "artifacts"}
+
+    def stable(report):
+        report = json.loads(json.dumps(report))
+        return {key: value for key, value in report.items() if key not in volatile}
+
+    expected, sessions = walked["expected"]
+    folder = destination / "walk-forward" / "US"
+    assert stable(json.loads((folder / "comparison.json").read_text())) == stable(expected)
+    assert pq.read_table(folder / "sessions.parquet").equals(sessions)
+    (expected_portfolio, books), _ = walked["portfolio"]
+    folder = destination / "long-short" / "US"
+    assert stable(json.loads((folder / "long_short.json").read_text())) == stable(
+        expected_portfolio
+    )
+    assert pq.read_table(folder / "sessions.parquet").equals(books)
+    matrix = json.loads((destination / "matrix" / "US" / "matrix.json").read_text())
+    assert set(matrix["views"]) == {"forecast", "portfolio"}
+    manifest = json.loads((destination / "matrix-sources" / "US.json").read_text())
+    assert [entry["kind"] for entry in manifest["reports"]] == [
+        comparison.REPORT_KIND,
+        portfolio.REPORT_KIND,
+    ]
+    assert receipt["from_aggregates"] is True and receipt["posttraining"] is None
+    assert receipt["integrity"]["passed"] is True
+    report = json.loads((destination / "integrity.json").read_text())
+    assert report["comparisons"]["walk-forward/US"]["passed"] and "chain" not in report["selection"]
+    # Sin la edición, una comparación con cartera no se publica.
+    with pytest.raises(ValueError, match="falta la edición de precios"):
+        publication.run_publication(
+            declared.publication, shared.views, state.output, tmp_path / "other"
+        )
+    assert not (tmp_path / "other").exists()
 
 
 def test_only_bit_exact_regenerations_release_their_rows(walked):

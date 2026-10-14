@@ -118,6 +118,10 @@ Arguments parse(int argc, char** argv) {
                 options.vram_budget_bytes = number<std::size_t>(value);
             } else if (name == "--vram-total-bytes") {
                 options.vram_total_bytes = number<std::size_t>(value);
+            } else if (name == "--learning-trace-every") {
+                options.learning_traces.every = number<std::size_t>(value);
+            } else if (name == "--learning-trace-max-bytes") {
+                options.learning_traces.max_bytes = number<std::size_t>(value);
             } else {
                 throw std::invalid_argument("El argumento PPO no está reconocido: " +
                                             std::string(name));
@@ -154,6 +158,19 @@ Arguments parse(int argc, char** argv) {
     if (experiment.decisions && !experiment.audit_run && !experiment.initial_evaluation) {
         throw std::invalid_argument(
             "--decisions solo se admite con --audit-run o --initial-evaluation");
+    }
+    // Las trazas solo se abren mientras se aprende. En la auditoría y en los dos modos sin
+    // aprendizaje se ignorarían, así que se rechazan.
+    const auto& traces = experiment.learning_traces;
+    const bool frozen = experiment.audit_run || experiment.initial_evaluation ||
+                        experiment.source_check;
+    if (seen.contains("--learning-trace-every") != seen.contains("--learning-trace-max-bytes") ||
+        (seen.contains("--learning-trace-every") &&
+         (traces.every == 0 || traces.max_bytes < minimum_learning_trace_bytes ||
+          traces.max_bytes > maximum_learning_trace_bytes || frozen))) {
+        throw std::invalid_argument(
+            "Las trazas de aprendizaje necesitan una cadencia positiva y entre 1 KiB y 1 GiB, y "
+            "solo se admiten durante un ajuste");
     }
     return result;
 }

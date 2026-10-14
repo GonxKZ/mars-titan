@@ -189,3 +189,48 @@ def test_market_weighting_averages_markets_after_sessions():
     assert session_mean(values, [True] * 3, markets, "session") == pytest.approx(14 / 3)
     assert session_mean(values, [True] * 3, markets, "market") == pytest.approx(6.0)
     assert session_mean(values, [False] * 3, markets, "session") is None
+
+
+def test_selective_hits_break_ties_by_the_whole_row_identity_in_two_markets():
+    # |predicción| empatada con aciertos distintos y activos cuyo orden por la identidad
+    # completa `mercado/activo/instante` no es el del activo solo: «A/0» va antes que «A»
+    # porque «A/0/…» < «A/1…», y «A-B» antes que los dos porque «-» < «/».
+    assets = ["A", "A/0", "A-B", "AB", "B"]
+    targets, predictions = [1.0, -1.0, 1.0, -1.0, 2.0], [0.5, 0.5, -0.5, -0.5, 0.0]
+    first, second = 1_700_000_000_000_000, 1_700_086_400_000_000
+    rows = [
+        (market, asset, moment, target, prediction)
+        for market, moment in (("US", first), ("CN", first), ("US", second))
+        for asset, target, prediction in zip(assets, targets, predictions, strict=True)
+    ]
+    # Una sesión sin objetivos no nulos no retiene ninguna fila.
+    rows += [("CN", asset, second, 0.0, 0.5) for asset in assets]
+    data = pd.DataFrame(
+        rows, columns=["market", "asset_id", "prediction_at", "target", "prediction"]
+    )
+    panel = ForecastPanel.from_columns(
+        (
+            data["market"] + "/" + data["asset_id"] + "/" + data["prediction_at"].astype(str)
+        ).to_numpy(),
+        data["market"].to_numpy(),
+        data["prediction_at"].to_numpy(),
+        data["target"].to_numpy(),
+        data["prediction"].to_numpy(),
+        markets=("US", "CN"),
+    )
+    published = score_sessions(panel).to_table().to_pandas()
+    independent = session_scores(data.sample(frac=1.0, random_state=3))
+    outcome = compare_sessions(independent, published)
+    assert outcome["passed"] and outcome["columns"]["selective_hits"]["mismatched_sessions"] == 0
+    hits = {
+        (market, moment): list(found)
+        for market, moment, found in independent[
+            ["market", "prediction_at", "selective_hits"]
+        ].itertuples(index=False)
+    }
+    # Orden A-B, A/0, A, AB y B: fallo, fallo, acierto, acierto y abstención.
+    assert hits["US", first] == hits["CN", first] == [0, 0, 0, 0, 1, 1, 2, 2, 2, 2]
+    assert hits["CN", second] == [0] * 10
+    # Sin ninguna fila juzgable en todo el panel.
+    empty = session_scores(data.assign(target=0.0))
+    assert [list(found) for found in empty["selective_hits"]] == [[0] * 10] * 4

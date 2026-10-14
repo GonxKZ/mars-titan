@@ -48,6 +48,7 @@ from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.input_policy import HISTORICAL_MASKED
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.evaluation.splits import build_folds, stopping_rule
+from mars_titan.learning_traces.trainers import attach as attach_traces
 from mars_titan.memory.financial_observations import (
     FinancialObservationSource,
     prepare_observation_index,
@@ -68,7 +69,7 @@ from .checkpoints import StopRequest
 from .corpus_inputs import CorpusDataset
 from .financial_run import ChronologicalRecipe, ChronologicalTrainer, Paused, load_recipe
 from .learning_hold import require_learning_allowed
-from .search_cases import case_options, checked_search_cases
+from .search_cases import case_options, checked_predictor_changes, checked_search_cases
 from .selection import AWAIT, campaign_rule, with_rule
 from .temporal_contract import temporal_contracts
 from .walk_forward_phases import PREDICTED, checked_warmup, window_phases
@@ -206,6 +207,10 @@ def _sources(dataset, phases, root):
     return sources
 
 
+# Cambios del predictor de un modelo sobre la receta, en la petición y en el caso de la campaña.
+CHANGES = "predictor_changes"
+
+
 def control_config(local_control):
     """Contrato del control local C de la petición. Solo existe en `mac_online`."""
     if local_control is None:
@@ -214,12 +219,24 @@ def control_config(local_control):
     return MACProjectionConfig(**local_control)
 
 
-def _predictor(document, specification, variant, seed, device, local_control=None):
+def predictor_options(document, request):
+    """Opciones del predictor de la receta con los cambios que declara la petición.
+
+    Los cambios (`predictor_changes`) sustituyen opciones enteras de la receta, por ejemplo
+    `gate_bias` y `memory_stability` en PT1. Sin cambios son las opciones de la receta.
+    """
+    options = {key: value for key, value in document["predictor"].items() if key != "dtype"}
+    return options | (checked_predictor_changes(request.get(CHANGES)) or {})
+
+
+def _predictor(document, specification, variant, seed, device, local_control=None, changes=None):
     """Construir la variante con los parámetros iniciales copiados del emparejamiento.
 
     Con el control C, la variante es `mac_online` y coincide con la fuente del emparejamiento.
+    Los cambios del predictor se aplican también a la fuente, de modo que el emparejamiento
+    copia los parámetros de un predictor con la misma arquitectura.
     """
-    options = {key: value for key, value in document["predictor"].items() if key != "dtype"}
+    options = predictor_options(document, {CHANGES: changes})
     dtype = DTYPES[document["predictor"]["dtype"]]
     control = control_config(local_control)
     _require(
@@ -252,12 +269,14 @@ def _request(
     search_case=None,
     local_control=None,
     stopping=None,
+    predictor_changes=None,
 ):
     """Construye una petición verificable sin abrir la vista, con huellas de archivos y código.
 
-    El caso de búsqueda solo aparece si la receta los declara, el control C solo si se pide
-    y la regla de parada solo si la campaña declara una parada temprana, de modo que las
-    demás peticiones conservan su forma anterior.
+    El caso de búsqueda solo aparece si la receta los declara, el control C solo si se pide,
+    la regla de parada solo si la campaña declara una parada temprana y los cambios del
+    predictor solo si el modelo los declara, de modo que las demás peticiones conservan su
+    forma anterior.
     """
     request = dict(
         view_sha256=sha256(Path(view)),
@@ -275,6 +294,8 @@ def _request(
         request["local_control"] = asdict(control_config(local_control))
     if stopping is not None:
         request["stopping_rule"] = dict(stopping)
+    if predictor_changes is not None:
+        request[CHANGES] = checked_predictor_changes(predictor_changes)
     return request
 
 
@@ -359,6 +380,9 @@ def run_titans_window(
     local_control=None,
     stopping=None,
     joint_epoch=None,
+    predictor_changes=None,
+    traces=None,
+    trace_family="titans_mac",
 ):
     """Ajustar una variante en una ventana y escribir sus predicciones por fila.
 
@@ -370,6 +394,10 @@ def run_titans_window(
     parada temprana que declara la campaña, con la misma métrica que el protocolo. Con la
     meseta conjunta la ventana devuelve `awaiting_joint_stop` en la primera meseta y se
     completa al reanudarla con la época común del grupo (`joint_epoch`).
+    `predictor_changes` son las extensiones del núcleo que declara el modelo, como PT1.
+    `traces` declara las trazas de #448 (cadencia y presupuesto), que se escriben en
+    `output/traces` sin entrar en la identidad, y `trace_family` su familia (los núcleos de
+    CM-v1 usan `cm_v1_core`).
     """
     require_learning_allowed("run_titans_window de Titans-MAC")
     _require(variant in VARIANTS, "La variante no pertenece a los controles de Titans-MAC")
@@ -378,6 +406,7 @@ def run_titans_window(
         "El control local C solo se declara sobre mac_online",
     )
     control_config(local_control)
+    checked_predictor_changes(predictor_changes)
     _require(type(seed) is int and 0 <= seed < 2**32, "La semilla no es válida")
     _require(device in ("cpu", "cuda:0"), "El dispositivo debe ser cpu o cuda:0 explícitos")
     view, output = Path(view), Path(output)
@@ -395,6 +424,7 @@ def run_titans_window(
         search_case,
         local_control,
         stopping,
+        predictor_changes,
     )
     safe_destination(output)
     report_path = output / "run.json"
@@ -425,7 +455,13 @@ def run_titans_window(
     sources = _sources(dataset, phases, Path(indices) if indices else output / "indices")
     specification = sources["train"].specification()
     predictor, pairing = _predictor(
-        document, specification, variant, seed, device, request.get("local_control")
+        document,
+        specification,
+        variant,
+        seed,
+        device,
+        request.get("local_control"),
+        request.get(CHANGES),
     )
     trainer = ChronologicalTrainer(
         predictor,
@@ -471,6 +507,7 @@ def run_titans_window(
         atomic_json(report_path, report)
     stop = stop or StopRequest()
     started = time.perf_counter()
+    attach_traces(trainer, output / "traces", traces, trace_family)
     try:
         fit = trainer.run(resume=(output / "fit").exists(), stop=stop, joint_epoch=joint_epoch)
         if fit["status"] == AWAIT:
@@ -665,7 +702,7 @@ def carry_titans(
     _new_destination(output, (*dataset.roots.values(), view.parent, anchor))
     phases = window_phases(fold, options["warmup_months"])
     sources = _sources(dataset, {name: phases[name] for name in partitions}, output / "indices")
-    options_predictor = {k: v for k, v in document["predictor"].items() if k != "dtype"}
+    options_predictor = predictor_options(document, request)
     predictor = FinancialPredictor(
         FinancialConfig(
             sources[partitions[0]].specification(),
@@ -753,7 +790,7 @@ def _campaign_case(run):
     case = run.case
     _require(
         isinstance(case, dict)
-        and set(case) - {STOPPING_FIELD} == CASE_FIELDS
+        and set(case) - {STOPPING_FIELD, CHANGES} == CASE_FIELDS
         and case["seed"] == run.job["seed"]
         and run.policy == HISTORICAL_MASKED,
         "El trabajo no declara un caso de Titans-MAC de la campaña con máscaras",
@@ -789,6 +826,8 @@ def titans_fit(run, *, device="cuda:0", optimizer_factory=None):
             search_case=case["search_case"],
             stopping=case.get(STOPPING_FIELD),
             joint_epoch=run.joint_epoch,
+            predictor_changes=case.get(CHANGES),
+            traces=run.traces,
         )
     if report["status"] == "paused":
         raise CampaignPaused

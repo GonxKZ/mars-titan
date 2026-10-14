@@ -174,6 +174,7 @@ def test_recipe_declarations_that_break_the_contract_are_rejected(tmp_path, chan
         dict(temperature=0.0),
         dict(max_grad_norm=-1.0),
         dict(checkpoint_seconds=0.0),
+        dict(weight_decay_anchor="parent"),
     ],
 )
 def test_recipe_rejects_invalid_values(options):
@@ -588,6 +589,29 @@ def test_resume_after_a_pause_reproduces_the_continuous_run(
     )
     retained = list((tmp_path / "paused/checkpoints").glob("state-*.pt"))
     assert 1 <= len(retained) <= 3
+
+
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
+def test_the_default_optimizer_anchors_the_decay_that_the_recipe_declares(shared, tmp_path, native):
+    from mars_titan.training.anchored_decay import INITIAL, AnchoredAdamW
+
+    _, streams = shared
+    plan = recipe(weight_decay=0.01, weight_decay_anchor=INITIAL)
+    engine = build(streams, tmp_path / "anchored", native, plan=plan, factory=None)
+    assert type(engine.optimizer) is AnchoredAdamW
+    pairs = [
+        (value, anchor)
+        for group in engine.optimizer.param_groups
+        for value, anchor in zip(group["params"], group["anchors"], strict=True)
+    ]
+    assert len(pairs) == len(engine.trainable) and all(
+        torch.equal(value, anchor) and value.data_ptr() != anchor.data_ptr()
+        for value, anchor in pairs
+    )
+    assert engine.identity["recipe"]["weight_decay_anchor"] == INITIAL
+    assert engine.identity["anchored_decay"]["anchor"] == INITIAL
+    plain = build(streams, tmp_path / "plain", native, factory=None)
+    assert type(plain.optimizer) is torch.optim.AdamW and "anchored_decay" not in plain.identity
 
 
 @pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")

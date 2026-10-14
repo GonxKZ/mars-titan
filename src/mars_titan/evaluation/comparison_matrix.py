@@ -29,8 +29,8 @@ from pathlib import Path
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 
+from . import abstention_coverage, long_short
 from . import component_attribution as attribution
-from . import long_short
 from . import session_table_contrasts as tables
 from . import walk_forward_comparison as walk
 from .paired_comparisons import MAX_CONTRASTS, delta
@@ -494,6 +494,7 @@ def evaluate(matrix_path, sources_path, scope):
         else dict(basis=hours["basis"], source=hours["source"], sha256=hours["sha256"]),
         families=families,
         limitations=matrix["limitations"],
+        abstention=abstention_coverage.declaration(),
         quadratic_metrics=sources["quadratic"],
         views=views,
         versions={name: version(name) for name in ("numpy", "pyarrow")},
@@ -503,6 +504,7 @@ def evaluate(matrix_path, sources_path, scope):
                 "evaluation/comparison_matrix.py",
                 "evaluation/component_attribution.py",
                 "evaluation/session_table_contrasts.py",
+                "evaluation/abstention_coverage.py",
                 "evaluation/paired_comparisons.py",
                 "evaluation/financial_conventions.py",
                 "evaluation/long_short.py",

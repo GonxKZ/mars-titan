@@ -275,7 +275,7 @@ class ScriptedLearner:
     def __init__(self, *, pause=(), mutate=None, action=scripted_action):
         self.calls, self.pause, self.mutate, self.action = [], set(pause), mutate, action
 
-    def __call__(self, job, tapes, folder, *, stage, resume, stop, anchor):
+    def __call__(self, job, tapes, folder, *, stage, resume, stop, anchor, traces=None):
         self.calls.append(dict(id=job["id"], resume=resume, tapes=tapes, anchor=anchor))
         extra = {}
         if job["id"] in self.pause and not resume:

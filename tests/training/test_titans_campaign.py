@@ -20,6 +20,7 @@ import torch
 from mars_titan.data.input_policy import HISTORICAL_MASKED, STRICT_INPUTS
 from mars_titan.data.storage import atomic_json, sha256
 from mars_titan.environments.walk_forward_receipt import read_window_receipt
+from mars_titan.training import mars_titan_walk_forward as mw
 from mars_titan.training import masked_campaign as engine
 from mars_titan.training import titans_walk_forward as wf
 from mars_titan.training.campaign_plan import (
@@ -31,10 +32,10 @@ from mars_titan.training.campaign_plan import (
     pending_families,
     plan_campaign,
 )
-from mars_titan.training.search_cases import SEARCHED
-from tests.learning_hold_lowering import allowed_hold
+from mars_titan.training.search_cases import SEARCHED, checked_predictor_changes
+from tests.learning_hold_lowering import allowed_hold, lowers_learning_hold
 from tests.training.test_masked_campaign import Recorder, doubles, write_campaign
-from tests.training.test_titans_walk_forward import Factory, ShiftFirstTarget
+from tests.training.test_titans_walk_forward import PT1, Factory, ShiftFirstTarget
 from tests.training.test_walk_forward_v2_views import fixture
 
 ARM = "titans_mac_online"
@@ -208,6 +209,205 @@ def test_check_lists_titans_as_connected_only_when_the_campaign_declares_it(tmp_
     assert pending_families(plain)["titans_mac"]["arms"] == [ARM]
 
 
+EXTENSION = "titans_mac_online_pt1"
+
+
+def extended_campaign(folder, change=None):
+    """Campaña reducida con PT1 como extensión del núcleo de `titans_mac_online`."""
+    path = titans_campaign(folder)
+    declared = json.loads((folder / "comparison.json").read_text())
+    declared["arms"][EXTENSION] = dict(declared["arms"][ARM])
+    declared["comparison"]["families"]["memory_stability"] = dict(
+        kind="delta", base=ARM, variants=[EXTENSION]
+    )
+    campaign = json.loads(path.read_text())
+    campaign[TITANS]["core_extensions"] = {EXTENSION: dict(base_arm=ARM, predictor_changes=PT1)}
+    if change is not None:
+        change(campaign, declared)
+    atomic_json(folder / "comparison.json", declared)
+    atomic_json(path, campaign)
+    return path
+
+
+def test_core_extensions_repeat_the_base_model_and_add_only_their_predictor_changes(tmp_path):
+    path = extended_campaign(tmp_path / "config")
+    loaded = load_campaign(path)
+    candidates = loaded[TITANS]["candidates"]
+    assert [case for case, _ in candidates[EXTENSION]] == [case for case, _ in candidates[ARM]]
+    assert [value for _, value in candidates[EXTENSION]] == [
+        dict(value, predictor_changes=PT1) for _, value in candidates[ARM]
+    ]
+    counts = check_campaign(path)["counts"]["scopes"]["US"]["arms"]
+    assert counts[EXTENSION] == counts[ARM] == {"42": dict(fit=14, carry=12)}
+    jobs = [job for job in plan_campaign(loaded) if job["arm"] == EXTENSION]
+    assert {(job["family"], job["model"]) for job in jobs} == {(TITANS, TITANS)}
+    fits = [job for job in jobs if job["kind"] == "fit"]
+    assert fits and all(job["case"]["predictor_changes"] == PT1 for job in fits)
+    run = SimpleNamespace(job=fits[0], case=fits[0]["case"], policy="historical_masked_2000_v1")
+    assert wf._campaign_case(run) == fits[0]["case"]
+
+
+def _base(campaign, declared):
+    campaign[TITANS]["core_extensions"][EXTENSION]["base_arm"] = "titans_mac_frozen"
+
+
+def _seeds(campaign, declared):
+    declared["arms"][EXTENSION]["seeds"] = [42, 43]
+
+
+def _foreign(campaign, declared):
+    campaign[TITANS]["core_extensions"][EXTENSION]["predictor_changes"] = dict(
+        hidden_size=dict(value=64)
+    )
+
+
+def _undeclared(campaign, declared):
+    del campaign[TITANS]["core_extensions"]
+
+
+def _empty(campaign, declared):
+    campaign[TITANS]["core_extensions"] = {}
+
+
+def _absent(campaign, declared):
+    del declared["arms"][EXTENSION]
+    del declared["comparison"]["families"]["memory_stability"]
+
+
+def _repeated(campaign, declared):
+    campaign[TITANS]["arms"][EXTENSION] = "mac_frozen"
+
+
+def _fields(campaign, declared):
+    campaign[TITANS]["core_extensions"][EXTENSION]["variant"] = "mac_online"
+
+
+@pytest.mark.parametrize(
+    ("change", "message"),
+    [
+        (_base, "debe extender un modelo de la sección"),
+        (_seeds, "con sus mismas semillas"),
+        (_foreign, "gate_bias y memory_stability"),
+        (_undeclared, "o una extensión declarada"),
+        (_empty, "o una extensión declarada"),
+        (_absent, "o una extensión declarada"),
+        (_repeated, "o una extensión declarada"),
+        (_fields, "debe extender un modelo de la sección"),
+    ],
+    ids=["base", "seeds", "foreign", "undeclared", "empty", "absent", "repeated", "fields"],
+)
+def test_core_extensions_reject_declarations_that_change_more_than_the_extension(
+    tmp_path, change, message
+):
+    with pytest.raises(ValueError, match=message):
+        load_campaign(extended_campaign(tmp_path / "config", change))
+
+
+@lowers_learning_hold(
+    "tests/training/test_titans_campaign.py::"
+    "test_an_extension_fit_builds_its_changes_and_its_carry_rebuilds_them"
+)
+def test_an_extension_fit_builds_its_changes_and_its_carry_rebuilds_them(campaign_run, tmp_path):
+    """El ejecutor de ajuste pasa los cambios del caso al predictor y el de traslado los
+    reconstruye desde la petición del ancla. Sin ellos, el estado del ancla no
+    correspondería a la arquitectura del predictor trasladado."""
+    carry = next(job for job in campaign_run.jobs if job["kind"] == "carry")
+    job = next(
+        job
+        for job in campaign_run.jobs
+        if job["kind"] == "fit" and job["window"] == carry["anchor"]
+    )
+    windows = campaign_run.prepared["US"]["windows"]
+    anchor, later = windows[job["window"]], windows[carry["window"]]
+    run = SimpleNamespace(
+        job=job,
+        case=dict(job["case"], predictor_changes=PT1),
+        view=Path(anchor["path"]),
+        view_sha256=anchor["sha256"],
+        folder=tmp_path / "fit",
+        policy="historical_masked_2000_v1",
+        stop=SimpleNamespace(requested=False),
+        joint_epoch=None,
+    )
+    report = wf.titans_fit(run, device="cpu", optimizer_factory=Factory())
+    assert report["status"] == "completed" and report["request"]["predictor_changes"] == PT1
+    fit = json.loads((tmp_path / "fit" / "fit/run.json").read_text())["identity"]
+    assert fit["predictor"]["memory_stability"] == PT1["memory_stability"]
+    carried = wf.titans_carry(
+        SimpleNamespace(
+            anchor=dict(folder=tmp_path / "fit", view=anchor["path"]),
+            view=later["path"],
+            folder=tmp_path / "carry",
+            stop=None,
+        ),
+        device="cpu",
+    )
+    assert carried["status"] == "completed"
+    assert carried["anchor"]["run_sha256"] == sha256(tmp_path / "fit" / "run.json")
+
+
+@pytest.mark.parametrize(
+    "changes",
+    [{}, dict(hidden_size=dict(value=32)), dict(memory_stability={}), dict(gate_bias=0.15)],
+    ids=["empty", "foreign", "empty-option", "scalar"],
+)
+def test_predictor_changes_outside_the_extensions_are_rejected(changes):
+    # La ventana Titans-MAC los comprueba justo después de la protección y antes de leer nada.
+    assert checked_predictor_changes(None) is None
+    assert checked_predictor_changes(PT1) == PT1
+    with pytest.raises(ValueError, match="gate_bias y memory_stability"):
+        checked_predictor_changes(changes)
+
+
+def test_a_core_with_predictor_changes_cannot_be_the_mars_titan_parent(tmp_path):
+    """Los lectores y B6 reconstruyen el padre con la receta común, así que PT1 no es padre."""
+    view = tmp_path / "view.json"
+    view.write_text("{}")
+    report = dict(
+        kind=mw.TITANS_KIND,
+        status="completed",
+        final_test_opened=False,
+        checkpoint={},
+        request=dict(variant="mac_online", seed=42, view_sha256=sha256(view)),
+        predictions={},
+    )
+    atomic_json(tmp_path / "plain" / "run.json", report)
+    report["request"]["predictor_changes"] = PT1
+    atomic_json(tmp_path / "pt1" / "run.json", report)
+    assert mw._parent(tmp_path / "plain", view, 42)[0]["request"].get("predictor_changes") is None
+    with pytest.raises(ValueError, match="sin cambios del predictor"):
+        mw._parent(tmp_path / "pt1", view, 42)
+
+
+def test_the_frozen_parent_of_the_chain_rebuilds_the_predictor_changes_of_its_request():
+    """El padre congelado de la cadena trivial de PT1 se construye con la caja y el recorte.
+
+    PT1 no añade parámetros, así que solo el estado extra del predictor, que guarda su
+    configuración, distingue sus pesos de los del núcleo. La etapa de adaptadores reconstruye
+    el padre desde la petición de su ventana, y aquí se hace igual con el estado de un
+    predictor recién creado, sin ajustar nada.
+    """
+    from mars_titan.models.titans.financial import FinancialConfig, FinancialPredictor
+    from mars_titan.posttraining.chronological_windows import _predictor
+    from tests.models.titans.test_financial_adapter import specification
+
+    document = json.loads(Path(RECIPE).read_text())
+    document["predictor"].update(hidden_size=32)
+    spec = specification()
+    request = dict(variant="mac_online", seed=42, predictor_changes=PT1)
+    config = FinancialConfig(
+        spec, variant="mac_online", seed=42, **wf.predictor_options(document, request)
+    )
+    state = FinancialPredictor(config, device="cpu", dtype=torch.float32).state_dict()
+    rebuilt = _predictor(document, spec, request, torch.device("cpu"), state)
+    assert rebuilt.config.identity() == config.identity()
+    assert rebuilt.config.identity()["memory_stability"] == PT1["memory_stability"]
+    # Sin los cambios de la petición, el predictor sería el núcleo sin PT1 y rechaza el estado.
+    plain = dict(variant="mac_online", seed=42)
+    with pytest.raises(ValueError, match="no coincide con el contrato"):
+        _predictor(document, spec, plain, torch.device("cpu"), state)
+
+
 def test_campaign_rejects_a_titans_recipe_without_the_protocol_rule(tmp_path):
     folder = tmp_path / "config"
     path = titans_campaign(folder)
@@ -261,6 +461,7 @@ def test_fit_executor_returns_the_completed_window_only_for_its_view(campaign_ru
         policy="historical_masked_2000_v1",
         stop=SimpleNamespace(requested=False),
         joint_epoch=None,
+        traces=None,
     )
     report = wf.titans_fit(run, device="cpu")
     assert report["status"] == "completed"
@@ -294,6 +495,7 @@ def test_executors_declare_unfused_attention_only_while_their_job_runs(monkeypat
         stop=None,
         anchor=dict(folder=tmp_path, view="a"),
         joint_epoch=None,
+        traces=None,
     )
     previous = torch.backends.mha.get_fastpath_enabled()
     torch.backends.mha.set_fastpath_enabled(True)

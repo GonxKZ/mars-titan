@@ -25,6 +25,7 @@ import pytest
 from mars_titan.training.learning_hold import learning_blocked
 
 _POLICY_TAPES = "tests/simulation/test_native_policy_tapes.py::"
+_NATIVE_TRACES = "tests/learning_traces/test_native_policy_traces.py::"
 
 # Motivos compartidos por varias pruebas de las opciones de la campaña A v2 (#363).
 _LAUNCH = (
@@ -38,6 +39,25 @@ _ADAPTER = (
 )
 
 INVENTORY = {
+    "tests/training/test_campaign_a_joint.py::"
+    "test_integrity_recounts_the_rows_the_joint_design_drops": (
+        "publica la comparación conjunta desde la campaña A v2 reducida del fixture "
+        "`joint_campaign`, que ejecuta los dobles de ajuste con la protección rebajada"
+    ),
+    "tests/training/test_campaign_a_joint.py::"
+    "test_integrity_catches_a_comparison_that_drops_other_rows": (
+        "publica la comparación conjunta desde la campaña A v2 reducida del fixture "
+        "`joint_campaign`, que ejecuta los dobles de ajuste con la protección rebajada"
+    ),
+    "tests/integrity/test_fit_budget.py::"
+    "test_a_chronological_fit_with_unchanged_weights_keeps_its_initial_state": (
+        "lee los informes reales de las cuatro variantes de Titans-MAC del fixture `base`, "
+        "que las ejecuta con la protección rebajada y un optimizador que no cambia pesos"
+    ),
+    "tests/integrity/test_fit_budget.py::test_a_neural_reference_from_scratch_counts_as_fitted": (
+        "ejecuta la referencia neuronal enmascarada en CPU con la protección rebajada por "
+        "`cpu_runner` para leer su informe real"
+    ),
     _POLICY_TAPES + "test_ppo_pauses_on_real_tapes_before_its_first_update": (
         "lanza el ajuste PPO nativo, que crea el entrenador y su Adam, y lo pausa antes del "
         "primer recorrido para comprobar la pausa, la reanudación y que una selección abierta "
@@ -50,6 +70,18 @@ INVENTORY = {
     _POLICY_TAPES + "test_klpo_collects_a_full_wave_and_pauses_before_update_ready": (
         "recoge una oleada KLPO con el controlador y su Adam terminal y fabrica una selección "
         "cerrada para recorrer --audit-run"
+    ),
+    _NATIVE_TRACES + "test_double_dqn_traces_keep_the_run_and_record_each_validation": (
+        "ajusta Double DQN con 32 transiciones, por debajo de su calentamiento, con y sin trazas "
+        "para comprobar que las trazas no cambian la ejecución"
+    ),
+    _NATIVE_TRACES + "test_ppo_traces_are_not_duplicated_by_a_pause_and_resume": (
+        "lanza el ajuste PPO nativo, que crea el entrenador y su Adam, y lo pausa y reanuda antes "
+        "del primer recorrido para comprobar que las trazas no se duplican"
+    ),
+    _NATIVE_TRACES + "test_klpo_traces_record_the_initial_validation_once": (
+        "lanza el ajuste KLPO nativo con el controlador y su Adam terminal y lo pausa antes de "
+        "update_ready para comprobar que la validación inicial se traza una vez"
     ),
     _POLICY_TAPES + "test_stage_executors_fit_carry_and_pause_through_the_launcher": (
         "los ejecutores de la etapa lanzan ajustes nativos de Double DQN y KLPO"
@@ -101,6 +133,23 @@ INVENTORY = {
         "recorre la etapa de políticas reducida con GRPO, Dr. GRPO y GSPO y un aprendiz "
         "sustituido que no ajusta, porque el informe solo lee salidas confirmadas de la etapa y "
         "su ejecución se detiene con la protección"
+    ),
+    "tests/training/test_titans_walk_forward.py::"
+    "test_window_builds_the_declared_predictor_changes_and_its_regeneration_repeats_them": (
+        "ajusta una ventana Titans-MAC con PT1 y el optimizador que no modifica pesos para "
+        "comprobar que los cambios del predictor entran en su identidad y que la regeneración los "
+        "repite, y el ajuste se detiene con la protección"
+    ),
+    "tests/training/test_titans_campaign.py::"
+    "test_an_extension_fit_builds_its_changes_and_its_carry_rebuilds_them": (
+        "ejecuta el ajuste y el traslado de la campaña reducida con PT1 sobre la protección "
+        "rebajada de su fixture, porque los dos ejecutores se detienen con ella"
+    ),
+    "tests/training/test_mars_titan_correction.py::"
+    "test_kalman_window_estimates_its_noise_once_and_its_carry_reuses_it": (
+        "ejecuta la ventana B6 con la regla kalman y su traslado sobre el padre que ajusta la "
+        "fixture del módulo con el optimizador que no modifica pesos, y los dos ejecutores se "
+        "detienen con la protección"
     ),
     "tests/training/test_mars_titan_campaign.py::"
     "test_correction_frozen_parent_reproduces_the_carry_and_predicts_the_next_validation": (
@@ -170,6 +219,15 @@ INVENTORY = {
     "test_an_adapter_whose_process_allows_tf32_mid_run_fails_at_the_next_save": _ADAPTER,
     "tests/posttraining/test_masked_run.py::"
     "test_a_final_evaluation_under_tf32_is_not_confirmed": _ADAPTER,
+    "tests/posttraining/test_publication_from_aggregates.py": (
+        "completa la etapa de adaptadores con el optimizador que solo registra gradientes y "
+        "recorre la retención v2, cuya regeneración de predicciones se detiene con la protección"
+    ),
+    "tests/training/test_rolling_retention.py::"
+    "test_the_campaign_publication_reads_the_aggregates_with_portfolio_and_ablation": (
+        "parte del recorrido de la retención v2 del fixture `walked`, que regenera predicciones "
+        "y ejecuta la etapa de ablación con la protección rebajada"
+    ),
 }
 
 
@@ -271,6 +329,11 @@ _REUSES = (
 # guarda exige que coincidan, así que un uso nuevo necesita declararse aquí con su motivo.
 DOUBLES = {
     "tests/conftest.py": (2, _DEFINES),
+    "tests/learning_traces/test_native_policy_traces.py": (
+        1,
+        "la etapa de políticas se detiene al faltar la capacidad de trazas o las vistas, sin "
+        "binarios ni fuentes abiertas",
+    ),
     "tests/models/test_external_cache_cuda.py": (1, _ESTIMATOR),
     "tests/models/test_ridge_statistics_cuda.py": (1, _ESTIMATOR),
     "tests/posttraining/campaign_fixture.py": (1, _CAMPAIGN),
@@ -322,6 +385,11 @@ REDIRECTIONS = {
     "tests/native/test_optimizer_steps_hold.py": (1, _CLOSES),
     "tests/posttraining/campaign_fixture.py": (1, _CAMPAIGN),
     "tests/posttraining/test_learning_hold_entrypoints.py": (2, _READER),
+    "tests/posttraining/test_publication_from_aggregates.py": (
+        4,
+        "reutiliza la protección permitida de la campaña base del fixture para completar la "
+        "etapa de adaptadores con el optimizador registrador y recorrer la retención v2",
+    ),
     "tests/posttraining/test_readout_adapters.py": (1, _RECORDER),
     "tests/simulation/rl_stage_fixture.py": (1, _CAMPAIGN),
     "tests/simulation/test_native_learning_hold.py": (1, _BINARY),
@@ -340,7 +408,7 @@ REDIRECTIONS = {
         _REUSES + ". La prueba inventariada prepara además la corrección B6, que no ajusta",
     ),
     "tests/training/test_modality_ablation_native.py": (3, _REUSES),
-    "tests/training/test_modality_ablation_stage.py": (8, _REUSES),
+    "tests/training/test_modality_ablation_stage.py": (9, _REUSES),
     "tests/training/test_prediction_regeneration.py": (4, _REUSES),
     "tests/training/test_rolling_retention.py": (9, _REUSES),
     "tests/training/test_titans_campaign.py": (1, _RECORDER),

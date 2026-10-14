@@ -66,6 +66,9 @@ def declared_config(folder, change=None):
             declared[section], **{key: str((CAMPAIGN.parent / declared[section][key]).resolve())}
         )
     value[plan.TITANS]["arms"] = {"titans_mac_online": "mac_online"}
+    # La campaña reducida solo declara el núcleo, así que deja fuera las extensiones PT1 de
+    # A v2, que necesitarían sus propios modelos en la comparación.
+    value[plan.TITANS].pop(plan.TITANS_EXTENSIONS, None)
     memory = declared["memory_options"]
     value["memory_options"] = dict(
         memory, receipt=str((CAMPAIGN.parent / memory["receipt"]).resolve())

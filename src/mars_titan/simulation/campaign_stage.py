@@ -144,6 +144,22 @@ CAPABILITIES = {
             "valor escalar de Double DQN por cuantiles"
         ),
     ),
+    "native_ppo_learning_traces": dict(
+        probe="native_ppo",
+        capability=native_policy_runs.LEARNING_TRACES,
+        pending="Compilar mars-titan-ppo con las trazas de aprendizaje de #448",
+    ),
+    "native_klpo_learning_traces": dict(
+        probe="native_klpo",
+        capability=native_policy_runs.LEARNING_TRACES,
+        pending="Compilar mars-titan-klpo con las trazas de aprendizaje de #448",
+    ),
+}
+# Capacidad que añade cada motor cuando la ejecución declara trazas de aprendizaje.
+TRACE_REQUIREMENTS = {
+    "native_ppo": "native_ppo_learning_traces",
+    "native_klpo": "native_klpo_learning_traces",
+    "native_group_relative": "native_klpo_learning_traces",
 }
 
 
@@ -379,7 +395,8 @@ def reference_executor(backend):
     """Ejecutor de las referencias sin aprendizaje con la contabilidad indicada."""
     from .evaluation import REFERENCE_ALLOCATIONS, fixed_policy
 
-    def run(job, tapes, folder, *, stage, resume, stop, anchor):
+    def run(job, tapes, folder, *, stage, resume, stop, anchor, traces=None):
+        # Las referencias no aprenden, así que no tienen trazas de aprendizaje.
         records = evaluate_policy(
             tapes,
             fixed_policy(job["arm"]),
@@ -1151,10 +1168,11 @@ class _Tapes:
 class _Stage:
     """Estado confirmado de la etapa y verificación de cada recibo."""
 
-    def __init__(self, stage, tapes, output, identity, executors, stop):
+    def __init__(self, stage, tapes, output, identity, executors, stop, traces=None):
         self.stage, self.tapes, self.output = stage, tapes, output
         self.identity_sha256 = _digest(identity)
         self.executors, self.stop = executors, stop
+        self.traces = traces
         self.receipts = {}
         self.platform = None
         # Contabilidad de la cota con información futura, la misma que la de las referencias.
@@ -1268,6 +1286,7 @@ class _Stage:
                         resume=resume,
                         stop=self.stop,
                         anchor=anchor,
+                        traces=self.traces,
                     )
                 if report.get("status") == "paused":
                     raise Paused
@@ -1386,6 +1405,7 @@ def run_stage(
     chain_output=None,
     sensitivity=False,
     disjunction=None,
+    traces=None,
     platform=None,
     unrecorded_platform=None,
     bound_backend="native",
@@ -1401,6 +1421,9 @@ def run_stage(
     es la tabla del estado de cotización, cuya huella declaran las políticas. Si la campaña
     declara `walk_forward_stages`, `disjunction` es el informe de `chain_disjunction` sin
     fallos que comprobó las vistas y todas las selecciones de la cadena que se leerán.
+    `traces` declara las trazas de aprendizaje de #448 de los ajustes nativos (cadencia en
+    transiciones u oleadas y presupuesto por trabajo) y exige que los binarios las admitan.
+    No entra en la identidad de la etapa ni de sus trabajos.
 
     El informe de la etapa no abre la campaña base, así que la plataforma se contrasta aquí,
     antes de crear la salida: debe ser la de los recibos de la base que se leen. Los anteriores
@@ -1435,6 +1458,17 @@ def run_stage(
         # Cada política lee también las evaluaciones de sus ventanas de ajuste y validación.
         pairs |= {(scope, name) for job in jobs for scope, name, _ in predictor_reads(stage, job)}
     executors = dict(EXECUTORS if executors is None else executors)
+    if traces is not None:
+        executors = {
+            engine: dict(
+                entry,
+                requires=(
+                    *entry["requires"],
+                    *([TRACE_REQUIREMENTS[engine]] if engine in TRACE_REQUIREMENTS else []),
+                ),
+            )
+            for engine, entry in executors.items()
+        }
     _require(
         {job["engine"] for job in jobs} <= set(executors)
         and all(set(entry) == {"run", "requires", "native"} for entry in executors.values()),
@@ -1526,7 +1560,7 @@ def run_stage(
             stage["universe_predictor"],
             table,
         )
-        state = _Stage(stage, tapes, output, identity, executors, None)
+        state = _Stage(stage, tapes, output, identity, executors, None, traces)
         state.platform, state.bound_backend = platform, bound_backend
         signals = StopRequest() if stop is None else nullcontext(stop)
         _summary(output, identity, jobs, state, "running", **checked)
@@ -1547,6 +1581,8 @@ def run_stage(
 
 
 def main(argv=None):
+    from mars_titan.training.campaign_resources import execution_traces
+
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     commands = parser.add_subparsers(dest="command", required=True)
     check = commands.add_parser("check", help="Validar, contar y revisar capacidades")
@@ -1567,6 +1603,9 @@ def main(argv=None):
         "--disjunction", type=Path, help="Informe de disjunción con las selecciones (por etapas)"
     )
     execute.add_argument(
+        "--execution", type=Path, help="Declaración de ejecución con las trazas de #448"
+    )
+    execute.add_argument(
         "--unrecorded-platform",
         help="Perfil de hardware al que se atribuyen los recibos de la base sin plataforma",
     )
@@ -1585,6 +1624,7 @@ def main(argv=None):
             chain_output=args.chain_output,
             sensitivity=args.sensitivity,
             disjunction=args.disjunction,
+            traces=execution_traces(args.execution),
             unrecorded_platform=args.unrecorded_platform,
         )
         result.pop("jobs")

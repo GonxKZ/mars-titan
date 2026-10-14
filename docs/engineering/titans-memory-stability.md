@@ -1,6 +1,6 @@
 # Memoria de Titans acotada y contractiva (PT1)
 
-Estado a 10 de octubre de 2026: **implementado y comprobado sin entrenar**. El resultado experimental está pendiente, porque el bloqueo de aprendizaje impide el piloto y la comparación. Tarea [#453](https://github.com/GonxKZ/mars-titan/issues/453). La motivación y la regla de decisión están en las [propuestas posteriores a Titans](../research/post-titans-proposals.md#pt1-memoria-de-titans-acotada-y-contractiva) y la matemática propia en el [certificado de contracción](../research/titans-memory-certificate.md).
+Estado a 10 de octubre de 2026: **implementado, conectado a la campaña A v2 y comprobado sin entrenar**. El resultado experimental está pendiente, porque el bloqueo de aprendizaje impide el piloto y la comparación. Tarea [#453](https://github.com/GonxKZ/mars-titan/issues/453). La motivación y la regla de decisión están en las [propuestas posteriores a Titans](../research/post-titans-proposals.md#pt1-memoria-de-titans-acotada-y-contractiva) y la matemática propia en el [certificado de contracción](../research/titans-memory-certificate.md).
 
 ## Qué hace
 
@@ -128,6 +128,24 @@ Puede no ayudar por tres motivos. Las puertas aprendidas quizá nunca visiten la
 
 La [declaración del modelo](../../configs/evaluation/titans-memory-stability-comparison.json) fija, antes de ejecutar nada, tres modelos sobre la receta de 2000 con `mac_online`: el control de la receta, PT1 y una alternativa trivial con las mismas tasas iniciales que PT1 pero sin caja ni recorte. La regla conserva PT1 si el límite superior del intervalo del 95 % de la diferencia relativa de MAE por sesión no supera +0,2 % y el percentil 95 del MAE en los eventos declarados no empeora más de un 1 %. Si la alternativa trivial iguala a PT1, la caja y el recorte no aportan nada sobre el cambio de inicialización. El [control de varianza entre semillas](../research/protocol.md#dispersión-entre-semillas-en-los-pilotos-de-memoria) añade dos semillas del control al piloto y fija qué diferencia es interpretable: PT1 solo se conserva si esa banda queda por debajo de +0,2 %, y la alternativa trivial iguala a PT1 en error si el intervalo de su diferencia queda dentro de la banda. Nada se ha ejecutado.
 
+## Conexión con la campaña A v2
+
+La [campaña A v2](../../configs/baselines/historical-masked-campaign-a-v2.json) declara PT1 y su alternativa trivial como extensiones del núcleo, en `titans_mac.core_extensions`: `titans_mac_online_pt1` y `titans_mac_online_pt1_init`, las dos sobre `titans_mac_online`. Una extensión no tiene variante propia. Repite la variante `mac_online`, los dos casos de búsqueda, las semillas 42, 43 y 44 y la parada de su modelo base y solo añade `predictor_changes`. El plan rechaza una extensión cuyo modelo base no sea de la sección, con otras semillas, con otros campos o con cambios distintos de `gate_bias` y `memory_stability`. Una prueba exige que los cambios de la campaña sean los de la declaración.
+
+Los cambios viajan en el caso del plan y en la petición de la ventana, y `titans_walk_forward.predictor_options` los aplica en el ajuste, el traslado, la regeneración, el padre congelado de la cadena y la medida de caudal. Sin cambios, la petición conserva su forma anterior, así que las ejecuciones de los demás modelos no cambian de identidad. Un traslado que ignorase los cambios no podría cargar el estado del ancla, porque la configuración guardada en el estado no coincidiría con la del predictor.
+
+| Pieza | Decisión |
+| --- | --- |
+| Contrastes | La comparación conjunta añade `memory_stability` (PT1 y la alternativa trivial frente a `titans_mac_online`) y `memory_stability_box` (PT1 frente a la alternativa trivial), que aísla la caja y el recorte del cambio de inicialización |
+| Parada | Las dos extensiones paran en el grupo `encoders_and_cores` de su modelo base, porque la comparación exige que cada contraste emparejado comparta grupo. La época común es la mayor de las primeras mesetas del grupo, así que pueden alargar el presupuesto de los demás núcleos de la v2 |
+| Adaptadores | Cadena trivial del padre congelado, como B6 y los tabulares. Repetir con ellas la matriz de adaptadores no responde a ninguna pregunta de PT1 |
+| Ablación y políticas | Son productores de la campaña, así que entran en la ablación de modalidades y en la etapa de políticas, que pasa de 29 a 31 predictores |
+| MARS-TITAN, B6 y CM-v1 | Siguen sobre el Titans-MAC de la receta. El lector y B6 rechazan un padre con cambios del predictor, porque lo reconstruyen con la receta común |
+
+En US+CN suman 152 ajustes y 152 mesetas, 108 padres congelados, 114 selecciones de la cadena, 342 predicciones de ablación y 144 ajustes y 222 referencias de políticas. Con 10 épocas efectivas y 33.300 filas/s la proyección de la campaña añade unas 91 h de base y 1,5 h de ablación ([proyección de horas](../research/training-campaign-2000.md#proyección-de-horas)).
+
+La mutación dirigida de estos consumidores aplicó ocho defectos de uno en uno en la copia de trabajo, tras comprobar que las pruebas la importaban: llevar una extensión a la matriz de adaptadores, admitir semillas distintas de las de su modelo base, perder los cambios de sus casos, admitir cambios fuera de la declaración, aceptar como padre de MARS-TITAN un núcleo con cambios, construir el predictor o medir su caudal sin los cambios y no planificar las extensiones. Las pruebas detectan los ocho ([recibo](../../reports/engineering/post-titans-consumers-mutations-20261013.json)). El defecto que construye el predictor sin los cambios sobrevivió en una primera pasada, porque la prueba de caudal solo registraba los cambios pedidos. Ahora comprueba la caja y el recorte del predictor construido. Las pruebas de la ventana y de la campaña reducida rebajan la protección del aprendizaje, así que se omiten mientras siga el bloqueo y no entran en esta selección.
+
 ## Comprobaciones
 
 | Propiedad | Prueba |
@@ -172,6 +190,7 @@ La comprobación CUDA ([recibo](../../reports/engineering/titans-memory-stabilit
 ## Pendiente sin medir
 
 - El efecto predictivo, la regla de decisión y el piloto, bloqueados por el aprendizaje.
+- El percentil 95 del MAE en los eventos declarados, que la regla exige y la comparación de la campaña todavía no calcula.
 - La fracción de pasos que las puertas aprendidas pasarían fuera de la caja sin PT1 (D2) y el exponente de Lyapunov de la memoria de dos capas (D5).
 - La fracción de filas recortadas durante el ajuste. Solo se registra la del primer recorrido con los pesos iniciales.
 - El coste en la escala completa de la campaña, con `accumulation_rows` y miles de flujos por evento. La medida usa 128 flujos y ocho eventos.
