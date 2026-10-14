@@ -171,10 +171,21 @@ def _dictionary(column):
     de nombres tiene la anchura del texto más largo, la misma que daría
     `np.asarray(column.to_pylist())` con esas filas.
     """
-    encoded = column.combine_chunks().dictionary_encode()
+    column = column.combine_chunks()
+    # Una columna ya codificada puede repetir valores en su diccionario: se decodifica antes.
+    if pa.types.is_dictionary(column.type):
+        column = column.dictionary_decode()
+    encoded = column.dictionary_encode()
     return np.asarray(encoded.dictionary.to_pylist()), encoded.indices.to_numpy(
         zero_copy_only=False
     )
+
+
+def _counts(names, codes, partitions):
+    """Filas de cada partición pedida a partir de los códigos del diccionario."""
+    counts = np.bincount(codes, minlength=len(names)).tolist()
+    found = dict(zip(names.tolist(), counts, strict=True))
+    return [(p, found.get(p, 0)) for p in partitions]
 
 
 def _random(seed, epoch, key):
@@ -744,7 +755,11 @@ class CorpusDataset:
         if np.any(table["partition"].is_valid().to_numpy() & ~accepted):
             raise ValueError("Una etiqueta excluida no puede asignarse a una partición")
         accepted = np.flatnonzero(accepted)
-        table = table.take(pa.array(accepted, type=pa.int64()))
+        # Solo se copian las columnas que se leen después de filtrar.
+        kept = [
+            c for c in ("target_available_at", "target", "partition") if c in table.column_names
+        ]
+        table = table.select(kept).take(pa.array(accepted, type=pa.int64()))
         positions, prediction = positions[accepted], prediction[accepted]
         if not len(table):
             if any(asset["counts"].values()):
@@ -772,19 +787,22 @@ class CorpusDataset:
         else:
             names, codes = _dictionary(table["partition"])
             partitions = names[codes]
-        years = prediction.astype("datetime64[us]").astype("datetime64[Y]").astype(int) + 1970
-        mature_years = maturity.astype("datetime64[us]").astype("datetime64[Y]").astype(int) + 1970
         if self.temporal:
             temporal = self.temporals[asset["market"]]
             _, available, eligible = temporal.lookup(prediction)
-            assigned = temporal.assign(prediction, available, maturity, eligible)
-            valid = (assigned["partition"] == partitions) & (assigned["reason"] == "accepted")
-        else:
-            valid = ((partitions == "train") & (years <= 2022) & (mature_years <= 2022)) | (
-                (partitions == "validation") & (years == 2023) & (mature_years == 2023)
+            expected, reasons = temporal.partition_reasons(
+                prediction, available, maturity, eligible
             )
+            valid = (expected == partitions) & (reasons == "accepted")
+        else:
+            years = prediction.astype("datetime64[us]").astype("datetime64[Y]").astype(int) + 1970
+            mature = maturity.astype("datetime64[us]").astype("datetime64[Y]").astype(int) + 1970
+            valid = ((partitions == "train") & (years <= 2022) & (mature <= 2022)) | (
+                (partitions == "validation") & (years == 2023) & (mature == 2023)
+            )
+        # Con todas las filas válidas, las particiones no tienen ausencias y sus códigos existen.
         if not valid.all() or any(
-            int(np.sum(partitions == p)) != asset["counts"][p] for p in self.partitions
+            count != asset["counts"][p] for p, count in _counts(names, codes, self.partitions)
         ):
             raise ValueError("Una etiqueta cruza la partición o sus recuentos no concilian")
         codes = codes.astype(np.min_scalar_type(len(names)))

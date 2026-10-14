@@ -11,8 +11,12 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
 
+from mars_titan.data.input_policy import HISTORICAL_MASKED
 from mars_titan.training import corpus_inputs
 from mars_titan.training.cohort_contract import validate_cohort_rows
+from mars_titan.training.corpus_inputs import CorpusDataset
+from mars_titan.training.temporal_corpus import prepare_temporal_corpus
+from tests.training.historical_temporal_fixture import historical_temporal_fixture
 
 # Revisión de develop anterior a #625: su `_labels` recorre motivos, particiones y cohortes
 # fila a fila en Python y es la referencia de los resultados y de los mensajes de error.
@@ -38,7 +42,7 @@ ERRORS = {
 }
 
 
-def reference_module():
+def reference_module(name="corpus_inputs"):
     try:
         source = subprocess.check_output(
             [
@@ -46,7 +50,7 @@ def reference_module():
                 "-C",
                 str(ROOT),
                 "show",
-                f"{REFERENCE}:src/mars_titan/training/corpus_inputs.py",
+                f"{REFERENCE}:src/mars_titan/training/{name}.py",
             ],
             stderr=subprocess.DEVNULL,
         )
@@ -55,9 +59,9 @@ def reference_module():
             f"La revisión de referencia {REFERENCE} no está en este clon. Hace falta un clon con "
             "el historial completo de develop (git fetch --unshallow)"
         )
-    module = types.ModuleType("mars_titan.training._labels_before_columns")
+    module = types.ModuleType(f"mars_titan.training._{name}_before_625")
     module.__package__ = "mars_titan.training"
-    module.__file__ = f"{REFERENCE}:corpus_inputs.py"
+    module.__file__ = f"{REFERENCE}:{name}.py"
     exec(compile(source, module.__file__, "exec"), module.__dict__)
     return module
 
@@ -91,13 +95,18 @@ class Calendar:
     def lookup(self, prediction):
         return None, prediction - 1, np.ones(len(prediction), dtype=bool)
 
-    def assign(self, prediction, available, maturity, eligible):
+    def partition_reasons(self, prediction, available, maturity, eligible):
         names = bucket(prediction.astype("datetime64[us]"), maturity.astype("datetime64[us]"), True)
         accepted = names != None  # noqa: E711
-        return dict(
-            partition=np.where(accepted, names, "excluded").astype("U13"),
-            reason=np.where(accepted, "accepted", "label_crosses_boundary").astype(object),
+        return (
+            np.where(accepted, names, "excluded").astype("U13"),
+            np.where(accepted, "accepted", "label_crosses_boundary").astype("U32"),
         )
+
+    def assign(self, prediction, available, maturity, eligible):
+        # La revisión anterior pedía la asignación con los motivos como objetos.
+        partition, reason = self.partition_reasons(prediction, available, maturity, eligible)
+        return dict(partition=partition, reason=reason.astype(object))
 
 
 def reader(module, path, temporal, cache_limit=1 << 30):
@@ -321,3 +330,66 @@ def test_an_empty_label_file_keeps_any_reason_type(tmp_path):
     expected = outcome(reader(before, path, False), asset, 0, SPLITS[False])
     assert not isinstance(expected, tuple)
     assert outcome(reader(corpus_inputs, path, False), asset, 0, SPLITS[False]) == expected
+
+
+def test_temporal_assignment_matches_the_object_reasons_before(tmp_path):
+    """Los motivos de anchura fija coinciden con los objetos que devolvía `assign`."""
+    before = reference_module("temporal_corpus")
+    fixture = historical_temporal_fixture(tmp_path)
+    views = tmp_path / "views"
+    prepare_temporal_corpus(
+        fixture.parent,
+        fixture.protocols["US"],
+        None,
+        None,
+        views,
+        input_policy=HISTORICAL_MASKED,
+        recover_annual_boundaries=True,
+    )
+    rng = np.random.default_rng(3)
+    checked = set()
+    for manifest in sorted(views.glob("fold-*/manifest.json")):
+        temporal = CorpusDataset(manifest, input_policy=HISTORICAL_MASKED).temporals["US"]
+        sessions = temporal.partitioner.sessions
+        for _ in range(20):
+            chosen = np.sort(rng.choice(len(sessions) - 3, size=min(40, len(sessions) - 3)))
+            prediction = sessions[chosen]
+            maturity = sessions[chosen + rng.integers(1, 3, len(chosen))]
+            available = prediction - rng.integers(-1, 2, len(chosen))
+            eligible = rng.random(len(chosen)) < 0.9
+            args = prediction, available, maturity, eligible
+            expected = before.TemporalInputs.assign(temporal, *args)
+            assigned = temporal.assign(*args)
+            partition, reason = temporal.partition_reasons(*args)
+            assert assigned["partition"].dtype == partition.dtype == expected["partition"].dtype
+            assert assigned["reason"].dtype == expected["reason"].dtype == object
+            assert assigned["partition"].tolist() == partition.tolist()
+            assert partition.tolist() == expected["partition"].tolist()
+            assert assigned["reason"].tolist() == reason.tolist() == expected["reason"].tolist()
+            checked |= set(reason.tolist())
+    # Las comparaciones recorren motivos aceptados, excluidos y reservados.
+    assert {"accepted", "outside_window", "final_test_reserved"} <= checked
+
+
+@pytest.mark.parametrize(
+    "column",
+    [
+        pa.chunked_array([["train", "validation"], ["train"]]),
+        pa.chunked_array([["calibration"] * 3], pa.large_string()),
+        pa.chunked_array(
+            [
+                pa.DictionaryArray.from_arrays(
+                    pa.array([0, 1, 2, 1], pa.int32()), pa.array(["train", "evaluation", "train"])
+                )
+            ]
+        ),
+        pa.chunked_array([], pa.string()),
+    ],
+    ids=["fragmentos", "texto-largo", "diccionario-repetido", "vacia"],
+)
+def test_dictionary_codes_rebuild_the_column(column):
+    names, codes = corpus_inputs._dictionary(column)
+    assert len(set(names.tolist())) == len(names)
+    assert names[codes].tolist() == column.to_pylist()
+    if len(column):
+        assert names[codes].dtype == np.asarray(column.to_pylist()).dtype

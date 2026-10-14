@@ -145,10 +145,20 @@ class TemporalInputs:
         return values, available, valid
 
     def assign(self, prediction, available, maturity, eligible):
-        result = dict(
-            partition=np.full(len(prediction), "excluded", dtype="U13"),
-            reason=np.full(len(prediction), "outside_window", dtype=object),
-        )
+        partition, reason = self.partition_reasons(prediction, available, maturity, eligible)
+        # Los motivos quedan como objetos porque `fold_rows` escribe después motivos de origen
+        # de cualquier longitud.
+        return dict(partition=partition, reason=reason.astype(object))
+
+    def partition_reasons(self, prediction, available, maturity, eligible):
+        """Tramo y motivo de cada decisión, los dos como texto de anchura fija.
+
+        Los motivos posibles caben en 32 caracteres, la anchura de los del particionador.
+        Convertirlos a objetos crea una cadena de Python por fila, y la validación de etiquetas
+        solo necesita compararlos.
+        """
+        partition = np.full(len(prediction), "excluded", dtype="U13")
+        reason = np.full(len(prediction), "outside_window", dtype="U32")
         lower = np.datetime64(self.protocol["train_start"], "us").astype(np.int64)
         upper = np.datetime64(self.protocol["final_test_start"], "us").astype(np.int64)
         selected = (prediction >= lower) & (prediction < upper) & eligible
@@ -160,12 +170,11 @@ class TemporalInputs:
                 maturity[selected],
                 eligible=valid,
             )
-            for name in result:
-                result[name][selected] = assigned[name]
+            partition[selected], reason[selected] = assigned["partition"], assigned["reason"]
         reserved = prediction >= upper
-        result["reason"][reserved] = "final_test_reserved"
-        result["partition"][reserved] = "test_reserved"
-        return result
+        reason[reserved] = "final_test_reserved"
+        partition[reserved] = "test_reserved"
+        return partition, reason
 
 
 def _sample_state(parent, asset, temporal):
