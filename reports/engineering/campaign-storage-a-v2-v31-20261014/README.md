@@ -92,3 +92,7 @@ Repetir la estimación sacó a la luz dos fallos, corregidos junto a este inform
 - El destino de las tablas de los adaptadores. Liberarlas exige una regeneración por inferencia de cada adaptador, que no existe, o aceptar que se borren con su huella y sus agregados ya escritos, sin poder repetirlas. Cualquiera de las dos cambia la retención v2 declarada y debe registrarse como modificación del protocolo antes de ejecutar.
 - El espacio libre. Ninguna variante cabe. La más ligera necesita unos 109 GB libres al empezar (100,1 GB de pico más el margen de 8 GiB) y había 17 GB, 20 GB a las 10:00. Hace falta más disco o una etapa de adaptadores más pequeña.
 - Comprobar en `cuda:0` que la regeneración de cada familia repite sus tablas bit a bit, porque de ello depende que la base y la ablación liberen sus tablas o conserven unos 162 GB más.
+
+## Seguimiento
+
+El mismo 14 de octubre se declaró la retención v3, que mantiene la etapa de adaptadores entera y libera sus tablas por bloques después de guardar sus agregados y regenerarlas idénticas desde el estado elegido. Su estimación, con 54,7 GB conservados y 92,6 GB de pico, está en el [informe de la v3](../campaign-storage-a-v2-v31-v3-20261014/README.md).

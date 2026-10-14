@@ -860,11 +860,23 @@ class _Stage:
         # Declaración de las trazas de #448 o None. No entra en la identidad de la etapa.
         self.traces = None
         self.platform = None
+        # Carpeta de filas comunes de la retención v3 o None (retención v2, sin compactar).
+        self.compact_rows = None
+        # Retención v3: orden que se llama al cerrar la cadena de un modelo base en una
+        # ventana de un ámbito, como `on_block(state, scope, window, base_arm)`.
+        self.on_block = None
 
     # Contextos: una ventana, un padre y una vista abiertos como máximo.
     def close_parent(self):
         if self.parent is not None:
             self.parent.close()
+            if self.compact_rows is not None:
+                # Retención v3: la caché solo acelera los ajustes de este padre, que van
+                # seguidos en el plan. Se reconstruye si un corte obliga a reabrirlo.
+                scope, window, base_arm, seed = self.parent_key
+                folder = self.window_folder(scope, window) / "parents" / base_arm / f"seed-{seed}"
+                for path in folder.glob("predictions.sqlite*"):
+                    path.unlink()
         self.parent_key = self.parent = None
         gc.collect()
 
@@ -1119,8 +1131,48 @@ class _Stage:
             replay=report["identity"]["dataset"].get("replay"),
         )
 
-    def fit_chronological(self, job, folder):
-        """Postentrenar el caso cronológico desde el padre de k-1 con las filas nuevas."""
+    def regenerate(self, job, folder):
+        """Repetir por inferencia las tablas de un trabajo confirmado en `folder`, sin ajustar.
+
+        El padre congelado repite su traslado. Un ajuste carga su estado elegido desde la
+        carpeta confirmada del trabajo, que solo se lee. Devuelve las predicciones con rutas
+        relativas a `folder`, como los ejecutores.
+        """
+        if job["kind"] == FROZEN:
+            return self.frozen(job, folder)
+        if job["family"] in cm.CAMPAIGN_DESIGNS:
+            return self.fit_chronological(job, folder, regenerate=self.folder(job) / "run")
+        run_path = self.folder(job) / "run" / "run.json"
+        report, _ = read_manifest(run_path, 16 * 1024**2)
+        _require(report.get("status") == "completed", f"{job['id']} no tiene un ajuste completado")
+        _, _, parent_report = self.base_parent(
+            job["scope"], job["parent_window"], job["base_arm"], job["seed"]
+        )
+        parent = load_parent(
+            self.population(job["scope"], job["parent_window"]),
+            parent_report,
+            device=self.device,
+            diagnostic=self.device == "cpu",
+            lease=self.lease,
+        )
+        predictions = predict_heldout(
+            parent,
+            run_path,
+            report,
+            self.open_dataset(job["scope"], job["window"]),
+            folder,
+            device=self.device,
+            batch_size=self.batch_size,
+            stop=self.stop,
+            partitions=PREDICTED,
+        )
+        return dict(predictions=predictions)
+
+    def fit_chronological(self, job, folder, regenerate=None):
+        """Postentrenar el caso cronológico desde el padre de k-1 con las filas nuevas.
+
+        Con `regenerate` (la salida confirmada del trabajo), el ejecutor solo repite sus
+        tramos desde el estado elegido."""
         from mars_titan.training.titans_walk_forward import unfused_attention
 
         from .candidate_adapters import run_candidate_posttraining
@@ -1147,6 +1199,7 @@ class _Stage:
                 stop=self.stop,
                 parent_view=Path(self.view(scope, job["parent_window"])["path"]),
                 traces=self.traces,
+                regenerate=regenerate,
             )
         if result["status"] != "completed":
             raise Paused
@@ -1427,6 +1480,26 @@ class _Stage:
         atomic_json(path, receipt)
         return dict(receipt, sha256=sha256(path))
 
+    def retain(self, job, receipt):
+        """Retención v3: compactar sin pérdida las tablas del trabajo confirmado y dejar solo
+        su estado elegido. Es idempotente y no hace nada con la retención v2.
+
+        Las filas comunes van a la carpeta de la retención, compartida con la base y la
+        ablación. Los lectores posteriores (cadena, agregados y políticas) leen las tablas
+        compactadas con `prediction_files.read`, y el trabajo confirmado no vuelve a reanudar.
+        """
+        if self.compact_rows is None:
+            return
+        from mars_titan.training.checkpoints import release_recovery_states
+
+        for partition, record in receipt["predictions"].items():
+            path = self.output / record["path"]
+            if prediction_files.verify(path, record["sha256"]) == prediction_files.PRESENT:
+                rows = self.compact_rows / job["scope"] / job["window"] / partition
+                prediction_files.compact(path, record["sha256"], rows)
+        for marker in sorted(self.folder(job).rglob("checkpoints/identity.json")):
+            release_recovery_states(marker.parent)
+
     def _market_receipts(self, folder, scope, window, parent, labels, predictions):
         """Recibo walk-forward de cada mercado con evaluación, con el contrato de #390."""
         resolved = self.campaign["comparison_config"]["resolved_scopes"][scope]
@@ -1645,12 +1718,23 @@ class _Stage:
         self.selections[job["id"]] = confirmed
 
     def execute(self, order):
-        """Recorrer el plan en orden y confirmar cada trabajo y cada selección."""
-        for job in order:
+        """Recorrer el plan en orden y confirmar cada trabajo y cada selección.
+
+        Con `on_block`, después de la última selección de cada modelo base en una ventana
+        de un ámbito se llama a esa orden, también al reanudar sobre selecciones confirmadas.
+        """
+        closing = {}
+        for position, job in enumerate(order):
+            if job["kind"] == SELECT:
+                closing[job["scope"], job["window"], job["base_arm"]] = position
+        for position, job in enumerate(order):
             if self.stop.requested:
                 raise Paused
             if job["kind"] == SELECT:
                 self.select(job)
+                block = (job["scope"], job["window"], job["base_arm"])
+                if self.on_block is not None and closing[block] == position:
+                    self.on_block(self, *block)
                 continue
             identity = self.job_identity(job)
             receipt = self.confirmed(job, identity)
@@ -1666,6 +1750,7 @@ class _Stage:
                 receipt = self.confirm(job, identity, folder, result)
             self.equal_updates(job, receipt)
             self.receipts[job["id"]] = receipt
+            self.retain(job, receipt)
             if job["family"] in cm.CAMPAIGN_DESIGNS:
                 freed = release_indices(self.folder(job))
                 if freed:
@@ -1755,6 +1840,35 @@ def _gpu_lease():
     return GpuLease()
 
 
+def opened_stage(path, views, campaign_output, output, pairs, *, device="cuda:0", stop=None):
+    """Etapa ya ejecutada, abierta sin ejecutar nada, con sus trabajos en los pares pedidos.
+
+    Confirma los recibos de la base que leen esos trabajos (los de sus ventanas y los de las
+    ventanas de sus padres) y comprueba que la salida es la de esta etapa. Los recibos de la
+    etapa los confirma quien los lee, como la regeneración de tablas o la retención. La
+    reserva de la GPU la pone quien ejecute la inferencia (`state.lease`).
+    """
+    stage = load_stage(path)
+    _require(stage["design"] == STAGED, B_NOT_EXECUTED)
+    campaign, pairs = stage["campaign"], set(pairs)
+    jobs = [job for job in plan_stage(stage) if (job["scope"], job["window"]) in pairs]
+    parents = {(job["scope"], job["parent_window"]) for job in jobs if job["parent_window"]}
+    views = {scope: Path(value) for scope, value in views.items()}
+    campaign_output, output = Path(campaign_output), Path(output)
+    _, base = masked_campaign._confirmed_state(campaign["path"], views, campaign_output)
+    _base_receipts(base, campaign, stage, pairs | parents)
+    identity = _identity(stage, base.views)
+    marker = output / "stage.json"
+    _require(
+        marker.is_file() and read_manifest(marker, 8 * 1024**2)[0] == identity,
+        "La salida pertenece a otra etapa, campaña, matriz, vista o código",
+    )
+    state = _Stage(
+        stage, base, campaign_output, output, identity, device=device, lease=None, stop=stop
+    )
+    return state, jobs
+
+
 def run_stage(
     path,
     views,
@@ -1768,6 +1882,8 @@ def run_stage(
     disjunction=None,
     traces=None,
     platform=None,
+    compact_rows=None,
+    on_block=None,
 ):
     """Ejecutar o reanudar el walk-forward por etapas sobre una campaña base confirmada.
 
@@ -1782,7 +1898,10 @@ def run_stage(
     declaración de ejecución (#448). Como esa declaración, no entra en la identidad.
 
     Cada recibo nuevo guarda la identidad de la plataforma. `platform` sustituye la detectada,
-    solo en las pruebas.
+    solo en las pruebas. `compact_rows` es la carpeta de filas comunes de la retención v3:
+    cada trabajo confirmado compacta allí sus tablas y deja solo su estado elegido, y la caché
+    de cada padre se borra al cerrarlo. `on_block` es la orden de la retención v3 al cerrar
+    la cadena de un modelo base en una ventana (`_Stage.execute`).
     """
     from mars_titan.training.checkpoints import StopRequest
 
@@ -1847,6 +1966,8 @@ def run_stage(
         )
         state.traces = traces
         state.platform = platform_identity() if platform is None else platform
+        state.compact_rows = None if compact_rows is None else Path(compact_rows)
+        state.on_block = on_block
         _summary(output, identity, jobs, chains, state, "running", **checked)
         try:
             with signals as state.stop, reservation as state.lease:

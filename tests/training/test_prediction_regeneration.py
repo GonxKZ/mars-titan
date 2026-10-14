@@ -192,7 +192,14 @@ def test_regeneration_stops_while_the_learning_hold_blocks(base, tmp_path, learn
         regeneration.regenerate_ablation(
             base.stage, base.views, base.output, tmp_path / "out", "x", tmp_path / "other"
         )
-    assert not (tmp_path / "again").exists() and not (tmp_path / "other").exists()
+    # Los adaptadores se detienen igual desde la orden y desde la retención v3.
+    with pytest.raises(LearningHoldError):
+        regeneration.regenerate_adapter(
+            base.stage, base.views, base.output, tmp_path / "out", "x", tmp_path / "third"
+        )
+    with pytest.raises(LearningHoldError):
+        regeneration._regenerate_adapter(None, dict(id="x"), tmp_path / "fourth")
+    assert not any((tmp_path / name).exists() for name in ("again", "other", "third", "fourth"))
 
 
 def test_each_fit_model_has_a_regenerator_except_the_cm_v1_cores():

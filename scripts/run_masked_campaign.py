@@ -17,7 +17,7 @@ con los recuentos de las vistas y tablas sintéticas, sin leer objetivos ni ajus
 caudal necesario para un objetivo de horas. `schedule` muestra las fases de cada ventana de
 campaña con sus trabajos, en el orden en que se ejecutan. `disjunction` comprueba sobre las
 vistas y los recibos, sin ajustar, la disjunción de filas del walk-forward por etapas.
-`rolling` recorre la campaña ventana a ventana con la retención v2 y `regenerate`
+`rolling` recorre la campaña ventana a ventana con la retención v2 o v3 y `regenerate`
 repite por inferencia, sin ajustar, las predicciones por fila de un trabajo confirmado.
 `publication check|run` valida o ejecuta el paso final: comparación walk-forward, cartera,
 matriz de comparaciones y comparación postentrenada de cada padre.

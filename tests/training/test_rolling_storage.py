@@ -340,3 +340,70 @@ def test_tapes_are_only_estimated_with_a_measure_that_covers_the_stage_layout():
     assert {k: v for k, v in published.items() if k not in tapes} == {
         k: v for k, v in previous.items() if k not in tapes
     }
+
+
+def stage_jobs(*arms):
+    return [
+        dict(scope="US", window="fold-001", base_arm=arm, seed=seed, kind="fit")
+        for arm in arms
+        for seed in (42, 43)
+    ]
+
+
+def test_v3_keeps_one_state_per_adapter_and_only_a_block_of_rows_at_a_time():
+    extras = dict(EXTRAS, adapter=dict(ADAPTER, retained_states=3))
+    jobs = stage_jobs("gru", "lstm")
+    window = rolling.adapter_window(jobs, COUNTS, extras, ordered_copy=False, v3=True)
+    aggregates = rolling.comparison_series(jobs) * 17
+    one = ADAPTER["state_bytes"] + ADAPTER["job_report_bytes"]
+    table, current = HELD * 40, HELD * 100
+    assert window["written"] == window["released"] == 4 * one + aggregates
+    assert window["compacted"] == 4 * (table + one) + aggregates
+    # El bloque en curso (dos semillas de un modelo) y el ajuste o la regeneración más grande.
+    running = current + 2 * ADAPTER["state_bytes"] + ADAPTER["parent_cache_bytes"]
+    assert window["transient"] == 2 * table + max(running, current + table)
+    assert (window["table"], window["regeneration"]) == (table, current + table)
+    v2 = rolling.adapter_window(jobs, COUNTS, extras, ordered_copy=False)
+    assert v2["written"] > window["written"] + window["transient"]
+
+
+def test_v3_compacts_the_base_after_its_phase_and_releases_the_adapters(declared):
+    jobs = stage_jobs("gru", "lstm", "neural")
+    v2 = estimate(declared, adapter_jobs=jobs)
+    v3 = estimate(declared, adapter_jobs=jobs, v3=True)
+    assert set(v2) == set(rolling.SCENARIOS)
+    assert set(v3) == {*rolling.SCENARIOS, rolling.ADAPTERS_REGENERATED}
+    # Sin adaptadores la fase empieza donde acaba la base, que con la v3 deja sus tablas
+    # compactadas sobre las filas comunes de la ventana.
+    before = estimate(declared)["all_regenerated"]["windows"][1]["adapters"]
+    alone = estimate(declared, v3=True)["all_regenerated"]
+    compactable = 3 * (LAYOUT["current"] - LAYOUT["shared_rows"])
+    assert before - alone["windows"][1]["adapters"] == compactable - 3 * SHARED
+    window = rolling.adapter_window(jobs, COUNTS, EXTRAS, ordered_copy=False, v3=True)
+    second = v3["all_regenerated"]["windows"][1]
+    assert second["adapters"] == (
+        alone["windows"][1]["adapters"] + window["written"] + window["transient"]
+    )
+    assert second["retained_bytes"] == alone["retained_bytes"] + window["released"]
+    # Aquí el pico es el ajuste de la base, igual en las dos. La fase de adaptadores baja.
+    for name in rolling.SCENARIOS:
+        assert v3[name]["peak_bytes"] <= v2[name]["peak_bytes"], name
+        phases = (v3[name]["windows"][1]["adapters"], v2[name]["windows"][1]["adapters"])
+        assert phases[0] < phases[1], name
+    # Si las regeneraciones de los adaptadores no salen idénticas, sus tablas se conservan
+    # compactadas, como sin la v3. La guardia supone lo contrario.
+    kept = v3["none_regenerated"]["retained_bytes"]
+    kept -= v3[rolling.ADAPTERS_REGENERATED]["retained_bytes"]
+    assert kept == window["compacted"] - window["released"]
+
+
+def test_v3_keeps_the_chain_evaluation_until_its_last_reading_window(declared):
+    jobs = stage_jobs("neural")
+    window = rolling.adapter_window(jobs, COUNTS, EXTRAS, ordered_copy=False, v3=True)
+    alone = estimate(declared, adapter_jobs=jobs, v3=True)["all_regenerated"]
+    read = estimate(declared, adapter_jobs=jobs, v3=True, chain_reads={("US", "fold-001"): [1, 2]})
+    second = read["all_regenerated"]["windows"][1]
+    # Las dos evaluaciones leídas siguen en la ventana. Solo la que lee una ventana posterior
+    # se conserva después, con las filas comunes de la ventana.
+    assert second["adapters"] == alone["windows"][1]["adapters"] + 2 * window["table"]
+    assert second["retained_bytes"] == alone["retained_bytes"] + window["table"] + 3 * SHARED

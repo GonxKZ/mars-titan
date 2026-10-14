@@ -15,6 +15,7 @@ import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
+import torch
 
 from mars_titan.data import prediction_files
 from mars_titan.data.cohort_files import read_manifest
@@ -26,6 +27,7 @@ from mars_titan.posttraining import adapter_matrix, campaign_stage, matrix_runs,
 from mars_titan.posttraining import chronological_matrix as cm
 from mars_titan.posttraining import predictive_objectives as predictive
 from mars_titan.training import campaign_chain, chain_disjunction
+from mars_titan.training import prediction_regeneration as regeneration
 from mars_titan.training.campaign_plan import load_campaign, plan_campaign
 from mars_titan.training.label_maturity import FIT_PARTITIONS, label_maturity
 from mars_titan.training.learning_hold import LearningHoldError
@@ -467,6 +469,63 @@ def test_a_confirmed_first_selection_does_not_reread_released_base_rows(base_a, 
     prediction_files.release(report.parent / record["path"], record["sha256"], stage="fixture")
     again = run(base, output)
     assert again["status"] == "completed" and again["chain"] == summary["chain"]
+
+
+def regenerate(base, output, job_id, destination):
+    with real_data_only():
+        return regeneration.regenerate_adapter(
+            base.stage,
+            base.views,
+            base.output,
+            output,
+            job_id,
+            destination,
+            device="cpu",
+            lease=CpuLease,
+        )
+
+
+def test_v3_compacts_on_confirmation_and_every_job_regenerates_bit_for_bit(
+    base_a, tmp_path, recorder, monkeypatch
+):
+    """Retención v3: cada trabajo compacta al confirmarse y deja solo su estado elegido.
+
+    El padre congelado, los casos y los controles repiten después sus tablas desde ese
+    estado. Ningún trabajo crea optimizadores, y unos pesos alterados no pasan por idénticos.
+    """
+    output, rows = tmp_path / "stage", tmp_path / "rows"
+    summary = run(base_a, output, compact_rows=rows)
+    assert summary["status"] == "completed"
+    created = len(recorder.optimizers)
+    found = receipts(output)
+    for name, receipt in found.items():
+        for record in receipt["predictions"].values():
+            state = prediction_files.verify(output / record["path"], record["sha256"])
+            assert state == prediction_files.COMPACTED, name
+        for checkpoints in (output / "jobs" / name).rglob("checkpoints"):
+            assert len(list(checkpoints.glob("state-*.pt"))) == 1, name
+    assert sorted(path.name for path in rows.iterdir()) == ["US"]
+    # La cadena elige igual con las tablas compactadas, y repetir no ajusta nada.
+    again = run(base_a, output, compact_rows=rows)
+    assert again["chain"] == summary["chain"] and len(recorder.optimizers) == created
+    for name in sorted(found):
+        report = regenerate(base_a, output, name, tmp_path / "again" / name.replace("/", "_"))
+        assert report["identical"] is True, name
+        assert set(report["partitions"]) == set(campaign_stage.PREDICTED)
+        assert (report["stage"], report["optimizer_steps"]) == ("adapters", 0)
+    assert len(recorder.optimizers) == created
+    adjusted = matrix_runs._adjustment
+
+    def perturbed(*args):
+        model, grid, neural = adjusted(*args)
+        with torch.no_grad():
+            for value in model.parameters():
+                value.add_(1e-3)
+        return model, grid, neural
+
+    monkeypatch.setattr(matrix_runs, "_adjustment", perturbed)
+    report = regenerate(base_a, output, "US/fold-001/gru__head/fit-s42", tmp_path / "other")
+    assert report["identical"] is False
 
 
 def test_a_strictly_better_candidate_replaces_the_frozen_parent(
