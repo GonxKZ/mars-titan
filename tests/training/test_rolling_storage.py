@@ -47,6 +47,7 @@ ADAPTER = dict(
     row_bytes_current=100,
     row_bytes_large_groups=60,
     row_bytes_shared_rows=40,
+    comparison_aggregate_bytes_per_series=17,
 )
 EXTRAS = dict(aggregate_bytes_per_row=AGGREGATE, adapter=ADAPTER)
 
@@ -98,22 +99,32 @@ def test_released_rows_leave_states_reports_and_aggregates(declared):
 
 
 @pytest.mark.parametrize("model", ["neural", "titans_mac"])
-def test_a_plateau_keeps_its_states_without_tables_aggregates_or_regeneration(declared, model):
-    # Titans-MAC además indexa observaciones, así que su regeneración tendría índice.
+def test_a_plateau_is_released_by_its_continuation_and_only_its_report_stays(declared, model):
+    # Titans-MAC además indexa observaciones, que la meseta conserva hasta su continuación.
     fits = [job(row["id"], model=model) for row in WINDOWS]
     plateaus = [dict(item, id=item["id"] + "-plateau", phase="plateau") for item in fits]
+    finals = [
+        dict(item, phase="joint", plateau=plateau["id"])
+        for item, plateau in zip(fits, plateaus, strict=True)
+    ]
     counts = {"US": {row["id"]: COUNTS for row in WINDOWS}}
-    joint = [value for pair in zip(plateaus, fits, strict=True) for value in pair]
+    joint = [value for pair in zip(plateaus, finals, strict=True) for value in pair]
     plain = rolling.rolling_estimate(fits, WINDOWS, counts, measured(), declared, EXTRAS)
     grouped = rolling.rolling_estimate(joint, WINDOWS, counts, measured(), declared, EXTRAS)
     footprint = storage.job_footprint(plateaus[0], COUNTS, declared, release=True)
     assert footprint["retained"]["predictions"] == 0
+    if model == "titans_mac":
+        assert footprint["retained"]["indices"] > 0
     for name in rolling.SCENARIOS:
         pairs = zip(plain[name]["windows"], grouped[name]["windows"], strict=True)
         for index, (before, after) in enumerate(pairs):
-            # Lo conservado crece en cada ventana con los estados de una meseta más.
-            extra = (index + 1) * footprint["retained_bytes"]
-            assert after["retained_bytes"] == before["retained_bytes"] + extra
+            # Tras cada ventana solo queda la copia del informe de una meseta más.
+            reports = (index + 1) * footprint["retained"]["reports"]
+            assert after["retained_bytes"] == before["retained_bytes"] + reports
+            assert after["rl"] == before["rl"] + reports
+            # Mientras espera, la meseta ocupa su carpeta y su informe junto a la continuación.
+            previous = index * footprint["retained"]["reports"]
+            assert after["base"] == before["base"] + previous + footprint["retained_bytes"]
             # La regeneración de la liberación es la de la continuación, no la de la meseta.
             assert after["release"] - after["rl"] == before["release"] - before["rl"]
 
@@ -162,6 +173,24 @@ def test_adapter_corpus_only_occupies_disk_with_an_ordered_copy():
     corpus = (COUNTS["train"] + COUNTS["validation"]) * 3 + COUNTS["train"] * 5
     assert ordered["transient"] == corpus
     assert rolling.adapter_window([], COUNTS, EXTRAS, ordered_copy=True)["transient"] == 0
+
+
+def test_the_stage_comparison_keeps_the_aggregates_of_every_compared_series():
+    def stage_job(base_arm, seed, kind):
+        return dict(scope="US", window="fold-001", base_arm=base_arm, seed=seed, kind=kind)
+
+    jobs = [stage_job("gru", s, k) for s in (42, 43) for k in ("frozen", "fit", "fit")]
+    # Ridge solo tiene el padre congelado y no entra en la comparación.
+    jobs.append(stage_job("ridge", 42, "frozen"))
+    # Seis trabajos comparados más el reentreno de la base y la cadena de cada semilla.
+    assert rolling.comparison_series(jobs) == 6 + 2 * 2
+    assert rolling.comparison_series(jobs[-1:]) == 0
+    counted = rolling.adapter_window(jobs, COUNTS, EXTRAS, ordered_copy=False)
+    free = dict(EXTRAS, adapter=dict(ADAPTER, comparison_aggregate_bytes_per_series=0))
+    without = rolling.adapter_window(jobs, COUNTS, free, ordered_copy=False)
+    for key in ("written", "compacted"):
+        assert counted[key] - without[key] == 10 * 17
+    assert counted["transient"] == without["transient"]
 
 
 def test_adapters_ablation_and_tapes_add_to_their_window(declared):
@@ -302,5 +331,12 @@ def test_tapes_are_only_estimated_with_a_measure_that_covers_the_stage_layout():
     folder = Path("reports/engineering/campaign-storage-20261009")
     published = json.loads((folder / "extras-layout-640.json").read_text())
     assert rolling.policy_tape_bytes(stage, published) == 1_697_830
+    previous = json.loads((folder / "extras.json").read_text())
     with pytest.raises(ValueError, match="no cubre"):
-        rolling.policy_tape_bytes(stage, json.loads((folder / "extras.json").read_text()))
+        rolling.policy_tape_bytes(stage, previous)
+    # Las órdenes de la campaña leen la medida de 640 columnas, así que debe llevar las demás
+    # medidas de la anterior sin cambios, también la de los agregados de los adaptadores.
+    tapes = {"tape_bytes", "tape_shape", "tape_without_layout_bytes"}
+    assert {k: v for k, v in published.items() if k not in tapes} == {
+        k: v for k, v in previous.items() if k not in tapes
+    }

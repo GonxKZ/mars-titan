@@ -2,9 +2,15 @@
 
 B6 suma a la predicción del Titans-MAC `mac_online` elegido en la ventana la lectura kᵀA de
 una memoria asociativa lineal escrita solo con resultados maduros
-(`memory.associative_memory.MatureCorrection`). No tiene parámetros que ajustar. Los casos de
-búsqueda de su receta fijan η, la receta fija λ y la campaña elige el caso con el MAE por
-sesión de validación, igual que en los demás modelos.
+(`memory.associative_memory.MatureCorrection`). No tiene parámetros que ajustar. Con las reglas
+delta y proximal, los casos de búsqueda de su receta fijan η, la receta fija λ y la campaña
+elige el caso con el MAE por sesión de validación, igual que en los demás modelos.
+
+La regla kalman (PT3, #455) tiene su propia receta. Sus casos fijan κ = q/σ² y la receta p0/σ²,
+el tope de ϱ y los meses del tramo de estimación. σ² y ϱ se estiman en cada ventana con los
+residuos etiqueta menos núcleo de los últimos meses del tramo de ajuste del padre
+(`memory.cohort_noise`), antes de validación, calibración y evaluación. Como p0 y q escalan
+con σ² y la ventana no usa Huber, la media de la corrección no depende de σ².
 
 Cada ventana recibe la vista, la carpeta de la ventana Titans-MAC `mac_online` completada en
 la misma vista y semilla (el padre), la receta de la corrección, la regla y la clave de
@@ -21,6 +27,12 @@ La ventana guarda `run.json`, `selected.json` con el padre y la corrección, y u
 tramo con las columnas y cuantiles de `training.titans_walk_forward`. La corrección desplaza
 todos los cuantiles emitidos en la misma cantidad que el punto, así que no cambia su anchura.
 
+Con la regla kalman el Parquet lleva dos columnas más para la regla de decisión de PT3: la
+varianza predictiva kᵀPk + σ² con el estado confirmado antes del evento, y la predicción que
+daría otra memoria igual que escribe cada etiqueta una sesión más tarde (D3), en la primera
+decisión de su mercado posterior a su madurez y después de emitirla. Las dos memorias se
+recorren en la misma pasada, así que D3 no repite la inferencia del padre.
+
 No hay tramo de ajuste, de modo que el índice de entrenamiento no se construye ni se lee.
 Los errores que escriben A proceden siempre de predicciones emitidas en el propio tramo,
 nunca del ajuste del padre. Un tramo interrumpido se repite desde su inicio, porque A y la
@@ -29,21 +41,31 @@ memoria rápida se reinician en cada recorrido, y los tramos confirmados conserv
 
 import hashlib
 import importlib
+import math
 import time
 from dataclasses import asdict
 from datetime import UTC, datetime
 from pathlib import Path
 
 import numpy as np
+import pyarrow as pa
 import torch
 
 from mars_titan.data.batches import atomic_parquet_batches
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.input_policy import HISTORICAL_MASKED
 from mars_titan.data.storage import atomic_json, outside_source, sha256
+from mars_titan.learning_traces.hooks import (
+    EMPTY_CURSOR,
+    MAX_PENDING,
+    open_recorder,
+    trace_identity,
+)
 from mars_titan.memory.associative_memory import AssociativeMemory, MatureCorrection
+from mars_titan.memory.cohort_noise import estimate_cohort_noise
 from mars_titan.memory.episodic_codec import FrozenEpisodeCodec
 from mars_titan.memory.financial_observations import FinancialObservationSource
+from mars_titan.memory.financial_session import FinancialPhase
 from mars_titan.memory.mars_titan_variant import (
     check_components,
     core_identity,
@@ -81,20 +103,40 @@ from .titans_walk_forward import (
     walk_forward_options,
     window_phases,
 )
+from .walk_forward_phases import micros, months_before
 
 KIND = "mars_titan_correction_window"
 CARRY_KIND = "mars_titan_correction_carried_predictions"
 SELECTED_KIND = "mars_titan_correction_selected_state"
 RECIPE = "mars_titan_mature_correction_v1"
-# La corrección solo depende de η y λ. Cada valor se declara una sola vez, en la receta o en
-# los casos de búsqueda, para que elegir un caso nunca contradiga a la receta.
+KALMAN_RECIPE = "mars_titan_kalman_correction_v1"
+# Las reglas delta y proximal solo dependen de η y λ. Cada valor se declara una sola vez, en la
+# receta o en los casos de búsqueda, para que elegir un caso nunca contradiga a la receta.
 SEARCHED = ("rate", "forgetting")
+# La regla kalman busca κ = q/σ² y fija en la receta p0/σ², el tope de ϱ y los meses del tramo
+# de estimación. σ² y ϱ no se declaran: se estiman en cada ventana.
+KALMAN_SEARCHED = ("process_ratio",)
+KALMAN_FIXED = ("prior_ratio", "correlation_cap", "estimation_months")
+_RECIPES = {RECIPE: (SEARCHED, ()), KALMAN_RECIPE: (KALMAN_SEARCHED, KALMAN_FIXED)}
 # Un modelo solo declara la regla y la clave. η y λ se añaden con el caso elegido, porque la
-# campaña los busca y no forman parte de la definición del modelo.
+# campaña los busca y no forman parte de la definición del modelo. Un modelo kalman declara
+# además si usa la ϱ estimada o la anula, que es la alternativa con la que se descarta.
 ARM_FIELDS = ("rule", "key")
-# Reglas que admite la ventana. La regla kalman (PT3) no usa η ni λ sino sus varianzas, que
-# esta receta no declara ni busca, así que todavía no tiene ventana.
-RULES = ("delta", "proximal")
+KALMAN_ARM_FIELDS = (*ARM_FIELDS, "cohort_correlation")
+COHORT_CORRELATIONS = ("estimated", "zero")
+RULES = ("delta", "proximal", "kalman")
+# σ² y ϱ con los que se comprueba una combinación kalman antes de abrir fuentes y se mide su
+# caudal. La media de la corrección no depende de σ² y el coste no depende de ninguno.
+UNIT_NOISE = dict(observation_noise=1.0, cohort_correlation=0.0)
+# Columnas que añade la regla kalman a sus predicciones (PT3 y D3, #455).
+KALMAN_COLUMNS = ("predictive_variance", "prediction_label_delay1")
+KALMAN_DIAGNOSTICS = dict(
+    predictive_variance="k_P_k_plus_sigma2_with_the_state_confirmed_before_the_event",
+    label_delay="second_memory_writes_each_label_at_the_next_decision_of_its_market_after_"
+    "maturity_after_emitting",
+    label_delay_sessions=1,
+)
+MAX_ESTIMATION_MONTHS = 12
 _RECIPE_FIELDS = {"schema_version", "recipe_name", "status", "recipe", "walk_forward", "pending"}
 _CODE = (
     "mars_titan.training.mars_titan_correction",
@@ -103,6 +145,7 @@ _CODE = (
     "mars_titan.training.mars_titan_walk_forward",
     "mars_titan.memory.mars_titan_variant",
     "mars_titan.memory.associative_memory",
+    "mars_titan.memory.cohort_noise",
     "mars_titan.memory.episodic_codec",
     "mars_titan.data.batches",
 )
@@ -113,10 +156,11 @@ def _code():
 
 
 def load_correction_recipe(path):
-    """Leer la receta de B6 y comprobar cómo reparte η y λ entre la base y sus casos.
+    """Leer la receta de B6 y comprobar cómo reparte sus valores entre la base y sus casos.
 
-    Todos los casos sustituyen los mismos valores de `SEARCHED`, que por eso no pueden
-    aparecer también en `recipe`, y entre ambos deben declararse los dos. La receta no tiene
+    La receta de las reglas delta y proximal declara η y λ. La de la regla kalman declara κ en
+    sus casos y los valores de `KALMAN_FIXED` en su base. Todos los casos sustituyen los mismos
+    valores buscados, que por eso no pueden aparecer también en `recipe`. La receta no tiene
     épocas ni optimizador porque B6 no ajusta parámetros.
     """
     path = Path(path)
@@ -127,11 +171,13 @@ def load_correction_recipe(path):
     document, _ = read_manifest(path, 64 * 1024)
     cases = (document.get("walk_forward") or {}).get("search_cases") if document else None
     base = document.get("recipe") if isinstance(document, dict) else None
+    name = document.get("recipe_name") if isinstance(document, dict) else None
+    searched, fixed = _RECIPES.get(name, ((), ()))
     valid = (
         isinstance(document, dict)
         and set(document) == _RECIPE_FIELDS
         and document["schema_version"] == 1
-        and document["recipe_name"] == RECIPE
+        and name in _RECIPES
         and isinstance(base, dict)
         and set(document["walk_forward"]) == {"search_cases"}
         and isinstance(cases, dict)
@@ -144,16 +190,38 @@ def load_correction_recipe(path):
         valid
         and len(keys) == 1
         and not next(iter(keys)) & set(base)
-        and next(iter(keys)) | set(base) == set(SEARCHED)
+        and next(iter(keys)) <= set(searched)
+        and next(iter(keys)) | set(base) == {*searched, *fixed}
         and len({canonical(case) for case in cases.values()}) == len(cases),
-        "La receta de la corrección declara η y λ entre su base y de uno a tres casos "
-        "distintos con nombre válido que sustituyen los mismos valores",
+        "La receta de la corrección declara η y λ, o κ y los valores fijos de kalman, entre su "
+        "base y de uno a tres casos distintos con nombre válido que sustituyen los mismos valores",
     )
+    if name == KALMAN_RECIPE:
+        for case in cases.values():
+            _kalman_values(dict(base, **case))
     return document
 
 
+def _kalman_values(values):
+    """Comprobar κ, p0/σ², el tope de ϱ y los meses de estimación antes de abrir fuentes."""
+    process, prior, cap = (
+        values[name] for name in ("process_ratio", "prior_ratio", "correlation_cap")
+    )
+    months = values["estimation_months"]
+    _require(
+        all(type(value) is float and math.isfinite(value) for value in (process, prior, cap))
+        and process >= 0.0
+        and prior > 0.0
+        and 0.0 < cap < 1.0
+        and type(months) is int
+        and 1 <= months <= MAX_ESTIMATION_MONTHS,
+        "La receta kalman necesita κ ≥ 0, p0/σ² > 0, un tope de ϱ en (0, 1) y de 1 a "
+        f"{MAX_ESTIMATION_MONTHS} meses de estimación",
+    )
+
+
 def case_values(document, search_case):
-    """Devolver η y λ del caso elegido y rechazar un caso que la receta no declare."""
+    """Devolver los valores del caso elegido y rechazar un caso que la receta no declare."""
     cases = document["walk_forward"]["search_cases"]
     _require(
         isinstance(search_case, str) and search_case in cases,
@@ -162,26 +230,59 @@ def case_values(document, search_case):
     return dict(document["recipe"], **cases[search_case])
 
 
-def arm_components(components, values):
-    """Completar la combinación de un modelo B6 con el η y el λ del caso.
+def arm_components(components, values, noise=None):
+    """Completar la combinación de un modelo B6 con los valores del caso.
 
     El modelo solo puede declarar la memoria asociativa. Con un banco añadido la ventana
-    mezclaría dos vías de memoria y A5 dejaría de aislar el efecto de la corrección.
+    mezclaría dos vías de memoria y A5 dejaría de aislar el efecto de la corrección. Las reglas
+    delta y proximal reciben η y λ. La regla kalman recibe además `noise`, con la σ² y la ϱ
+    estimadas en la ventana: q = κσ², p0 = (p0/σ²)σ² y ϱ estimada o nula según el modelo.
     """
     memory = components.get("associative_memory") if isinstance(components, dict) else None
+    rule = memory.get("rule") if isinstance(memory, dict) else None
+    fields = KALMAN_ARM_FIELDS if rule == "kalman" else ARM_FIELDS
     _require(
         isinstance(components, dict)
         and set(components) == {"associative_memory"}
         and isinstance(memory, dict)
-        and set(memory) == set(ARM_FIELDS),
-        "Un modelo B6 declara solo associative_memory con su regla y su clave",
+        and set(memory) == set(fields),
+        "Un modelo B6 declara solo associative_memory con su regla y su clave, y con la regla "
+        "kalman también su correlación de cohorte",
     )
+    _require(rule in RULES, "La ventana B6 solo admite las reglas delta y proximal, o kalman")
+    if rule != "kalman":
+        _require(
+            set(values) == set(SEARCHED) and noise is None,
+            "Las reglas delta y proximal usan la receta de η y λ, sin varianzas estimadas",
+        )
+        return dict(associative_memory=dict(memory, **values))
     _require(
-        memory["rule"] in RULES,
-        "La ventana B6 solo admite las reglas delta y proximal. La regla kalman no usa η ni λ "
-        "y todavía no tiene ventana",
+        set(values) == {*KALMAN_SEARCHED, *KALMAN_FIXED}
+        and memory["cohort_correlation"] in COHORT_CORRELATIONS
+        and isinstance(noise, dict)
+        and set(UNIT_NOISE) <= set(noise),
+        "La regla kalman usa la receta de sus varianzas, declara su correlación de cohorte "
+        "estimada o nula y necesita la σ² y la ϱ de la ventana",
     )
-    return dict(associative_memory=dict(memory, **values))
+    variance = noise["observation_noise"]
+    estimated = memory["cohort_correlation"] == "estimated"
+    return dict(
+        associative_memory=dict(
+            rule="kalman",
+            key=memory["key"],
+            process_noise=values["process_ratio"] * variance,
+            observation_noise=variance,
+            cohort_correlation=noise["cohort_correlation"] if estimated else 0.0,
+            prior_variance=values["prior_ratio"] * variance,
+            huber_threshold=None,
+        )
+    )
+
+
+def kalman_arm(components):
+    """Indicar si el modelo B6 usa la regla kalman, que estima sus varianzas en la ventana."""
+    memory = components.get("associative_memory") if isinstance(components, dict) else None
+    return isinstance(memory, dict) and memory.get("rule") == "kalman"
 
 
 class CorrectionInference(ChronologicalInference):
@@ -210,6 +311,9 @@ class CorrectionInference(ChronologicalInference):
             raise ValueError("El codec no comparte la entrada del padre")
         super().__init__(predictor, recipe, audit=audit)
         self.correction, self.codec = correction, codec
+        # Registrador de las trazas de #448, o None. Solo lee A y el error escrito.
+        self.trace_recorder = None
+        self._trace_events, self._trace_phase = 0, "b6"
         self.memory = AssociativeMemory(correction.memory)
         # Para cada decisión pendiente se guardan la predicción del núcleo, la clave del codec y
         # la ruta del régimen. Así A se escribe con el error del núcleo y no con el de la
@@ -217,6 +321,19 @@ class CorrectionInference(ChronologicalInference):
         self._core = {}
         self._staged = []
         self._routing = _RoutingLog()
+        self.kalman = correction.memory.rule == "kalman"
+        self._reset_delay()
+
+    def _reset_delay(self):
+        """Memoria de D3 y su cola: solo existen con la regla kalman.
+
+        `_incoming` recibe las etiquetas que maduran en el evento, `_held` las guarda por
+        mercado hasta la siguiente decisión de ese mercado y `_due` las que se escriben al
+        final del evento actual. `extra` guarda por decisión la varianza y la predicción con
+        retraso, que `KalmanPredictionRows` añade a su fila.
+        """
+        self.delayed = AssociativeMemory(self.correction.memory) if self.kalman else None
+        self._incoming, self._held, self._due, self.extra = [], {}, [], {}
 
     def _observe(self, run, source, event, *, differentiable):
         _require(not differentiable, "B6 no tiene parámetros que ajustar")
@@ -241,14 +358,30 @@ class CorrectionInference(ChronologicalInference):
         self._routing.event(decisions[0][1], states, routes, self.correction.routing)
         # Todas las lecturas del evento usan la A confirmada antes de él, como FinancialSession.
         # Lo que se escriba en este evento solo puede afectar a los siguientes.
-        corrections = self.memory.read(self.correction.keys(inputs, routes))[:, 0].tolist()
+        keys = self.correction.keys(inputs, routes)
+        corrections = self.memory.read(keys)[:, 0].tolist()
+        if self.delayed is not None:
+            extra = zip(
+                self.memory.variance(keys).tolist(),
+                self.delayed.read(keys)[:, 0].tolist(),
+                strict=True,
+            )
+            # Las etiquetas retenidas de los mercados que deciden ahora se escriben al final de
+            # este evento, una sesión después de la que las habría recibido sin retraso.
+            for market in sorted({flow.split("/", 1)[0] for flow, _ in decisions}):
+                self._due += self._held.pop(market, [])
+        else:
+            extra = [None] * len(decisions)
         rows = routes.tolist() if routes is not None else [None] * len(decisions)
-        for decision, key, route, correction in zip(
-            decisions, inputs, rows, corrections, strict=True
+        for decision, key, route, correction, more in zip(
+            decisions, inputs, rows, corrections, extra, strict=True
         ):
             if decision in self._core:
                 raise ValueError("La decisión ya tiene una predicción pendiente")
             core = run.pending[decision]
+            if more is not None:
+                variance, delayed = more
+                self.extra[decision] = (variance, core + delayed)
             self._core[decision] = (core, key, route)
             run.pending[decision] = core + correction
             if decision in run.levels:
@@ -264,6 +397,8 @@ class CorrectionInference(ChronologicalInference):
         for flow, decision_at, value in event.labels:
             core, key, route = self._core.pop((flow, decision_at))
             self._staged.append((decision_at, flow, value - core, key, route))
+            if self.delayed is not None:
+                self._incoming.append(self._staged[-1])
 
     def _write(self, at):
         """Escribir en A las etiquetas del evento cuando sus predicciones ya se han emitido.
@@ -271,14 +406,44 @@ class CorrectionInference(ChronologicalInference):
         Las filas se ordenan por decisión y flujo antes de escribir. La regla delta escribe
         fila a fila, así que otro orden cambiaría A aunque las etiquetas fueran las mismas.
         """
+        if self.delayed is not None:
+            if self._due:
+                due, self._due = self._due, []
+                self.delayed, _ = self._written(self.delayed, due, at)
+            for item in self._incoming:
+                self._held.setdefault(item[1].split("/", 1)[0], []).append(item)
+            self._incoming = []
         if not self._staged:
             return
-        staged, self._staged = sorted(self._staged, key=lambda item: item[:2]), []
-        first = self.memory.writes + 1
+        staged, self._staged = self._staged, []
+        if self.correction.routing is not None:
+            self._routing.writes(np.array([route for *_, route in staged], dtype=np.int64))
+        self.memory, feedback = self._written(self.memory, staged, at)
+        recorder = self.trace_recorder
+        if recorder is not None:
+            # Trazas de #448: B6 no tiene pasos de optimizador y su aprendizaje son las
+            # escrituras de A. Se registran por evento de escritura con la cadencia declarada.
+            self._trace_events += 1
+            if recorder.due(self._trace_events):
+                with recorder.at(self._trace_events, self._trace_phase):
+                    recorder.scalar("associative.writes", self.memory.writes)
+                    recorder.scalar(
+                        "associative.matrix_l2", torch.linalg.vector_norm(self.memory.matrix)
+                    )
+                    recorder.tensor("associative.feedback", feedback.values)
+                if recorder.pending >= MAX_PENDING:
+                    recorder.flush()
+
+    def _written(self, memory, staged, at):
+        """Escribir en `memory` las filas `staged` en el orden canónico de decisión y flujo.
+
+        Devuelve la memoria escrita y el resultado que ha recibido.
+        """
+        staged = sorted(staged, key=lambda item: item[:2])
+        first = memory.writes + 1
         routes = None
         if self.correction.routing is not None:
             routes = np.array([route for *_, route in staged], dtype=np.int64)
-            self._routing.writes(routes)
         feedback = self.correction.feedback(
             ids=[first + offset for offset in range(len(staged))],
             decision_at=[decision_at for decision_at, *_ in staged],
@@ -286,11 +451,13 @@ class CorrectionInference(ChronologicalInference):
             keys=self.correction.keys(np.stack([key for _, _, _, key, _ in staged]), routes),
             values=[value for _, _, value, _, _ in staged],
         )
-        self.memory = self.memory.write(feedback, cutoff=at)
+        return memory.write(feedback, cutoff=at), feedback
 
     def _close(self, run):
         super()._close(run)
         self._core.clear()
+        # Las decisiones cuya etiqueta no madura en el tramo no llegan a ser filas.
+        self.extra.clear()
 
     def evaluate(self, source, *, stop=None, rows=None):
         """Recorrer un tramo medido empezando con A en cero y la memoria rápida inicial.
@@ -317,6 +484,8 @@ class CorrectionInference(ChronologicalInference):
         self.memory = AssociativeMemory(self.correction.memory)
         self._core, self._staged = {}, []
         self._routing = _RoutingLog()
+        self._reset_delay()
+        self._trace_events, self._trace_phase = 0, f"b6_{source.phase.partition}"
         self.predictor.eval()
         with torch.no_grad():
             for event in events:
@@ -339,12 +508,48 @@ class CorrectionInference(ChronologicalInference):
         # Sin enrutamiento las métricas conservan su forma anterior.
         if self.correction.routing is not None:
             metrics["routing"] = self._routing.summary(self.correction.routing)
+        if self.delayed is not None:
+            # Las etiquetas que siguen retenidas al cerrar el tramo no llegan a escribirse.
+            metrics["label_delay_writes"] = self.delayed.writes
         return metrics
 
     def predict(self, source, rows, *, stop=None):
         if not hasattr(rows, "append"):
             raise ValueError("La inferencia necesita un destino de filas")
         return self.evaluate(source, stop=stop, rows=rows)
+
+
+class KalmanPredictionRows(PredictionRows):
+    """Filas de B6 kalman con la varianza predictiva y la predicción con una sesión más de retraso.
+
+    Cada fila toma de la inferencia los dos valores que guardó al emitir su decisión.
+    """
+
+    def __init__(self, inference):
+        super().__init__(inference.quantiles)
+        self.inference, self.extra = inference, []
+
+    def append(self, record):
+        flow, at = record[:2]
+        self.extra.append(self.inference.extra.pop((flow, at)))
+        super().append(record)
+
+    def _flush(self):
+        if not self.buffer:
+            return
+        extra, self.extra = self.extra, []
+        super()._flush()
+        for name, values in zip(KALMAN_COLUMNS, zip(*extra, strict=True), strict=True):
+            self.tables[-1] = self.tables[-1].append_column(
+                name, pa.array(values, type=pa.float64())
+            )
+
+
+def prediction_rows(inference):
+    """Destino de las filas de un tramo, con las columnas de D3 y PT3 si la regla es kalman."""
+    if inference.kalman:
+        return KalmanPredictionRows(inference)
+    return PredictionRows(inference.quantiles)
 
 
 class _RoutingLog:
@@ -386,19 +591,108 @@ class _RoutingLog:
         )
 
 
-def correction_memory_policy(warmup_months):
+def correction_memory_policy(warmup_months, *, kalman=False):
     """Describir la política de memoria del padre ampliada con A.
 
     A también se reinicia en cada recorrido, y el informe lo deja escrito para que se vea
-    que calibración y evaluación no heredan el estado de validación.
+    que calibración y evaluación no heredan el estado de validación. Con la regla kalman A y
+    P vuelven a su previa en cada recorrido y σ² y ϱ proceden del tramo de estimación.
     """
-    return dict(
+    policy = dict(
         memory_policy(warmup_months),
         associative="zero_at_each_pass_then_mature_labels_after_the_event_predictions",
         associative_value="mature_label_minus_core_prediction",
         quantiles="all_levels_shifted_by_the_scalar_correction",
         fit="none_rate_and_forgetting_fixed_by_recipe_and_search_case",
     )
+    if kalman:
+        policy.update(
+            associative="prior_mean_and_covariance_at_each_pass_then_mature_labels_after_the_"
+            "event_predictions",
+            fit="none_variances_estimated_on_the_train_tail_and_process_ratio_by_search_case",
+        )
+    return policy
+
+
+def estimation_phase(fold, months, warmup_months):
+    """Tramo de estimación de σ² y ϱ: los últimos `months` meses del ajuste del padre.
+
+    Empieza el primer día del mes situado `months` meses antes del final del ajuste y termina
+    con él, que es también el corte de maduración de sus etiquetas, así que precede a
+    validación, calibración y evaluación. Antes observa su calentamiento sin etiquetas, como
+    los tramos medidos, sin empezar antes del origen de la ventana.
+    """
+    _require(
+        type(months) is int and 1 <= months <= MAX_ESTIMATION_MONTHS,
+        "Los meses de estimación no son válidos",
+    )
+    origin, end = (micros(day) for day in fold["train"])
+    first = months_before(fold["train"][1], months)
+    start = micros(first)
+    _require(origin < start < end, "El tramo de estimación no cabe dentro del ajuste")
+    warmup = max(origin, micros(months_before(first, warmup_months)))
+    return FinancialPhase("train", warmup, start, end, end)
+
+
+class _Residuals:
+    """Destino de filas del tramo de estimación: residuo, mercado y sesión de cada etiqueta."""
+
+    def __init__(self):
+        self.values, self.markets, self.sessions = [], [], []
+
+    def append(self, row):
+        flow, decision_at, issued, value, _ = row
+        self.values.append(value - issued)
+        self.markets.append(flow.split("/", 1)[0])
+        self.sessions.append(decision_at)
+
+
+def window_cohort_noise(predictor, chronological, source, correlation_cap):
+    """Estimar σ² y ϱ con los residuos etiqueta menos núcleo del tramo de estimación.
+
+    El núcleo es el padre congelado con su receta cronológica y sin corrección, igual que en
+    los tramos medidos, y cada residuo procede de una predicción emitida antes de conocer su
+    etiqueta. La memoria rápida empieza en su estado inicial y observa el calentamiento.
+    """
+    _require(
+        type(source) is FinancialObservationSource
+        and source.phase.partition == "train"
+        and _compatible(predictor.config.inputs, source.specification()),
+        "El tramo de estimación no es un tramo de ajuste de la entrada del padre",
+    )
+    rows = _Residuals()
+    metrics = ChronologicalInference(predictor, chronological).evaluate(source, rows=rows)
+    estimate = estimate_cohort_noise(
+        rows.values,
+        rows.markets,
+        np.asarray(rows.sessions, dtype=np.int64),
+        correlation_cap=correlation_cap,
+    )
+    return dict(estimate, core_session_mae=metrics["session_mae"])
+
+
+def window_noise(fold, values, warmup_months, dataset, root, core, stored=None):
+    """σ² y ϱ de una ventana kalman, con su tramo de estimación y la huella de su índice.
+
+    `core` es el padre congelado con su receta cronológica. Una ventana reanudada pasa en
+    `stored` la estimación de su identidad, que se reutiliza si procede del mismo tramo y del
+    mismo índice, porque repetirla en GPU podría no dar los mismos bits. Con otro tramo, otro
+    índice o un registro incompleto se vuelve a estimar, la identidad deja de coincidir con la
+    guardada y la reanudación se rechaza. La estimación no atiende la parada: recorre un tramo
+    acotado y la parada pedida se atiende al empezar la validación, con la estimación ya en la
+    identidad.
+    """
+    phase = estimation_phase(fold, values["estimation_months"], warmup_months)
+    source = _sources(dataset, {"estimation": phase}, root)["estimation"]
+    noise = dict(phase=asdict(phase), index=source.identity)
+    if (
+        isinstance(stored, dict)
+        and set(stored) == {*noise, "estimate"}
+        and all(stored[key] == value for key, value in noise.items())
+    ):
+        return stored
+    estimate = window_cohort_noise(*core, source, values["correlation_cap"])
+    return dict(noise, estimate=estimate)
 
 
 def _parent_recipe(parent_report):
@@ -475,18 +769,27 @@ def run_correction_window(
     device="cuda:0",
     indices=None,
     stop=None,
+    traces=None,
 ):
     """Predecir los tramos medidos con el padre elegido y la corrección B6 del caso.
 
     La protección del aprendizaje se comprueba antes de leer ninguna fuente, porque la
-    validación selecciona η entre los casos de la campaña.
+    validación selecciona η, o κ con la regla kalman, entre los casos de la campaña. Con la
+    regla kalman, σ² y ϱ se estiman antes de validar con `window_noise`. `traces` declara las
+    trazas de #448: las escrituras de A de cada tramo, con la fase `b6_<tramo>`, en
+    `output/traces`. Su cursor se guarda en `run.json` al confirmar cada tramo, porque B6 no
+    tiene puntos de control y un tramo interrumpido se repite desde el principio.
     """
     from .mars_titan_walk_forward import _cuda, _frozen_parent, _parent
 
     require_learning_allowed("run_correction_window de MARS-TITAN")
     _require(type(seed) is int and 0 <= seed < 2**32, "La semilla no es válida")
     document = load_correction_recipe(recipe)
-    combination = arm_components(components, case_values(document, search_case))
+    values = case_values(document, search_case)
+    kalman = kalman_arm(components)
+    # Una combinación kalman se comprueba con σ² y ϱ de referencia antes de abrir fuentes. Las
+    # estimadas solo cambian sus varianzas.
+    combination = arm_components(components, values, UNIT_NOISE if kalman else None)
     # La combinación se valida contra la declaración antes de abrir ninguna fuente, para que
     # un modelo mal declarado falle sin crear la carpeta de salida.
     checked, correction = check_components(load_declaration(), combination)
@@ -541,9 +844,23 @@ def run_correction_window(
         "Las fases de la ventana no coinciden con las del padre",
     )
     measured = {name: phases[name] for name in PREDICTED}
-    sources = _sources(dataset, measured, Path(indices) if indices else output / "indices")
+    root = Path(indices) if indices else output / "indices"
+    sources = _sources(dataset, measured, root)
     specification = _parent_specification(sources["validation"], parent_report)
     predictor = _frozen_parent(titans, specification, seed, device, parent, parent_report)
+    noise = None
+    if kalman:
+        stored = report["identity"].get("cohort_noise") if report_path.exists() else None
+        noise = window_noise(
+            fold,
+            values,
+            options["warmup_months"],
+            dataset,
+            root,
+            (predictor, chronological),
+            stored,
+        )
+        combination = arm_components(components, values, noise["estimate"])
     variant = _variant(predictor, parent_report, combination)
     codec = FrozenEpisodeCodec(specification)
     inference = CorrectionInference(predictor, chronological, variant.correction, codec)
@@ -559,12 +876,16 @@ def run_correction_window(
         variant_sha256=variant.fingerprint(),
         correction=variant.correction.identity(),
         codec=codec.identity(),
-        memory_policy=correction_memory_policy(options["warmup_months"]),
+        memory_policy=correction_memory_policy(options["warmup_months"], kalman=kalman),
         phases={name: asdict(phase) for name, phase in measured.items()},
         indices={name: source.identity for name, source in sources.items()},
         expected_rows={name: dataset.manifest["counts"][name] for name in PREDICTED},
         final_test_opened=False,
     )
+    if noise is not None:
+        # Solo kalman la lleva, así que las demás reglas conservan su identidad.
+        identity["cohort_noise"] = noise
+        identity["diagnostics"] = KALMAN_DIAGNOSTICS
     if inference.kernel_policy is not None:
         # Como en los lectores, la política de precisión de la receta del padre, que aplica
         # la inferencia al construirse, entra en la identidad. Sin precisión declarada la
@@ -603,6 +924,12 @@ def run_correction_window(
         atomic_json(report_path, report)
     stop = stop or StopRequest()
     started = time.perf_counter()
+    recorder = open_recorder(
+        output / "traces", traces, trace_identity("b6", identity), step_unit="write_event"
+    )
+    if recorder is not None:
+        recorder.load_state_dict(report.get("traces") or EMPTY_CURSOR)
+        inference.trace_recorder = recorder
     try:
         _require(
             sha256(output / "selected.json") == report["checkpoint"]["sha256"],
@@ -615,9 +942,16 @@ def run_correction_window(
                 raise Paused
             # Otro código del proceso podría haber cambiado la precisión entre tramos.
             require_policy(chronological.precision, identity.get("kernel_policy"))
-            rows = PredictionRows(inference.quantiles)
+            rows = prediction_rows(inference)
             metrics = inference.predict(sources[name], rows, stop=stop)
             report["predictions"][name] = _prediction(output, rows, metrics, dataset, name)
+            if recorder is not None:
+                if name == "validation":
+                    # Solo la validación guarda su puntuación, como en los demás modelos.
+                    with recorder.at(inference._trace_events, "validation"):
+                        recorder.scalar("validation.score", metrics["session_mae"])
+                recorder.flush()
+                report["traces"] = recorder.state_dict()
             atomic_json(report_path, report)
         report.update(status="completed", finished_at_utc=datetime.now(UTC).isoformat())
         return report
@@ -644,7 +978,7 @@ def carry_correction(
     regenerate=False,
     frozen_parent=False,
 ):
-    """Predecir una ventana posterior con el padre y el η y λ elegidos en el ancla.
+    """Predecir una ventana posterior con el padre y el caso elegidos en el ancla.
 
     Es la pieza de la variante B, así que no selecciona nada y usa el caso que eligió la
     validación del ancla. Cada tramo trasladado empieza con A en cero, la memoria rápida
@@ -708,8 +1042,12 @@ def carry_correction(
         "La política de precisión no coincide con la del ancla",
     )
     options = walk_forward_options(titans)
+    # La regla kalman usa la σ² y la ϱ estimadas en el ancla, sin volver a estimarlas.
+    noise = identity.get("cohort_noise")
     combination = arm_components(
-        request["components"], case_values(identity["recipe"], request["search_case"])
+        request["components"],
+        case_values(identity["recipe"], request["search_case"]),
+        None if noise is None else noise["estimate"],
     )
     anchor_manifest, _ = read_manifest(anchor_view, 64 * 1024**2)
     partitions = predicted_partitions(modality_ablation, regenerate, frozen_parent)
@@ -742,7 +1080,7 @@ def carry_correction(
     inference = CorrectionInference(predictor, chronological, variant.correction, codec)
     predictions = {}
     for name in partitions:
-        rows = PredictionRows(inference.quantiles)
+        rows = prediction_rows(inference)
         metrics = inference.predict(sources[name], rows, stop=stop)
         predictions[name] = _prediction(output, rows, metrics, dataset, name)
     receipt = dict(
@@ -763,7 +1101,7 @@ def carry_correction(
         fold=fold,
         months_since_anchor_information=age,
         memory_policy=dict(
-            correction_memory_policy(options["warmup_months"]),
+            correction_memory_policy(options["warmup_months"], kalman=noise is not None),
             parameters="anchor_selected_parent_and_correction_without_further_selection",
             fast_state="never_transferred_from_the_anchor_reset_at_each_pass",
         ),

@@ -69,6 +69,12 @@ La [verificación de esta agregación](../../reports/resources/session-evaluatio
 registra ejemplos conocidos, cobertura y mutaciones dirigidas. No presenta esos
 ejemplos como precisión obtenida sobre datos de mercado.
 
+Cada cifra que publica el resumen de una vista de la comparación tiene su
+definición, unidad, sentido y regla de agregación en el
+[registro de métricas](../../configs/evaluation/metric-registry.json), fijado
+antes de evaluar. Al publicar, el resumen se reconstruye desde la tabla de
+sesiones con esas reglas ([banco de integridad](integrity-bench.md#registro-de-métricas)).
+
 ## Contrato de comparación por sesión
 
 `evaluation/forecast_panel.py` define `ForecastPanel`, la entrada común de todas
@@ -199,6 +205,41 @@ de ese signo no tiene precisión, y el contraste emparejado solo usa las sesione
 definidas en todos los modelos que intervienen, con el número de sesiones excluidas
 en el informe. La exhaustividad no se contrasta porque un modelo puede subirla
 llamando siempre el mismo signo.
+
+### Abstención con su cobertura
+
+La precisión solo cuenta las llamadas, así que un modelo que casi siempre se
+abstiene puede mostrar una precisión muy alta con muy pocas filas. Para que la
+abstención no gane ninguna métrica publicada, cada informe la presenta con su
+cobertura (`evaluation/abstention_coverage.py`, reglas fijadas el 13 de octubre de
+2026, antes de evaluar ninguna campaña).
+
+Curva riesgo-cobertura de dirección. En la sesión $s$, con las filas de $E_s$
+ordenadas por $|\hat y_i|$ de mayor a menor y los empates por la identidad de fila
+(`mercado/activo/instante`), $R_s(c)$ son las primeras
+$\lceil c\,|E_s|\rceil$ y
+
+$$
+\operatorname{DA}_s(c)=\frac{|H_s\cap R_s(c)|}{|R_s(c)|},
+\qquad c\in\{0{,}1,\,0{,}2,\ldots,1\}.
+$$
+
+Una predicción nula queda al final del orden y nunca acierta, de modo que
+abstenerse no mejora $\operatorname{DA}_s(c)$ a ninguna cobertura, y
+$\operatorname{DA}_s(1)=\operatorname{DA}_s$. Una sesión sin objetivos no nulos no
+tiene valor. El resumen de cada semilla publica la curva con las filas retenidas,
+los aciertos y la media por sesión, y su valor a la cobertura fija $c=0{,}5$
+(`direction_accuracy@0.5`). La tabla de sesiones conserva los aciertos de cada
+cobertura (`selective_hits`).
+
+Cobertura de llamadas. Para cada modelo y vista, $|C|/|E|$ sumando llamadas y filas
+juzgables de todas sus sesiones y semillas. En `up_precision` y `down_precision`, un
+contraste con algún modelo de cobertura inferior a 0,5 se publica con su cobertura y
+`eligible: false`, en la comparación y en la matriz, y no puede presentarse como
+ganado. El control cero tiene cobertura cero. El MAE y el MSE puntúan todas las filas,
+así que abstenerse en todas equivale al control cero, que ya se compara de forma
+explícita. El informe de integridad recalcula coberturas, marcas y curvas desde la
+tabla de sesiones publicada.
 
 ## Correlación de rangos por sesión
 
@@ -838,14 +879,18 @@ de A, el padre congelado es el trabajo `frozen` de la etapa, que aplica a la
 ventana k el estado elegido por la base en k-1, y el modelo base reentrenado en k
 queda como nivel fuera de las familias. Como la primera ventana de cada ámbito
 no tiene postentrenamiento, la comparación empieza en la segunda. Las familias
-declaradas son `versus_frozen_parent` (adaptados y continuación menos el padre
-congelado) y `versus_full_continuation` (adaptados menos la continuación), más el
-nivel de cada modelo. Todo lo demás se hereda de la comparación de la campaña:
+declaradas son `versus_frozen_parent` (adaptados y continuaciones menos el padre
+congelado), `versus_full_continuation` (adaptados menos la continuación) y
+`versus_anchored_continuation` (adaptados y continuación completa menos la
+[continuación anclada](../engineering/adapter-variety.md#asimetría-del-decaimiento-y-continuación-anclada)),
+más el nivel de cada modelo. La última solo existe en los padres que tienen esa
+continuación. Todo lo demás se hereda de la comparación de la campaña:
 protocolos, métricas, calibración común, remuestreo y secciones secundarias. Hoy
-salen nueve padres: las tres redes recurrentes y DLinear con once modelos, el
-Transformer con diecisiete porque la matriz le da puntos de lectura, y los cuatro
-modelos de Titans-MAC con entre siete y catorce. La validación de los recibos por
-etapas elige el predictor de la cadena y no entra en esta comparación.
+salen nueve padres: las tres redes recurrentes y DLinear con doce modelos, el
+Transformer con dieciocho porque la matriz le da puntos de lectura, y los cuatro
+modelos de Titans-MAC con entre siete y catorce, sin continuación anclada. La
+validación de los recibos por etapas elige el predictor de la cadena y no entra en
+esta comparación.
 
 La [declaración de A v2](../../configs/posttraining/historical-masked-adapter-comparison-a-v2.json),
 fijada el 10 de octubre antes de cualquier resultado, añade dos papeles. `chain` es
@@ -854,9 +899,12 @@ semilla son las del trabajo que eligió su `selection.json`, y `base_retrain` es
 modelo base reentrenado en la ventana. Las familias `versus_frozen_parent` y
 `versus_full_continuation` incluyen la cadena como variante, y `versus_base_retrain`
 contrasta la cadena con el reentreno, la comparación que el diseño por etapas
-informa aparte. Si la campaña declara `walk_forward_stages`, la declaración debe
-contrastar esos dos papeles. Salen veinte padres en el ámbito conjunto, los 22
-modelos de la etapa salvo Ridge y XGBoost. Cada comparación conserva la
+informa aparte. Como en A, la continuación anclada de las cinco referencias entra
+en `versus_frozen_parent` y en `versus_anchored_continuation`, que la contrasta con
+los adaptados y la continuación completa. Si la campaña declara `walk_forward_stages`,
+la declaración debe contrastar esos dos papeles. Salen 21 padres en el ámbito conjunto,
+los 33 modelos de la etapa salvo Ridge, XGBoost, los ocho B6 y las dos extensiones PT1,
+que solo trasladan el padre congelado con la cadena trivial. Cada comparación conserva la
 elegibilidad por mercado del modelo conjunto, así que China solo entra en
 calibración y métricas desde `fold-006`, y deja fuera los controles separados,
 que solo actúan en los ámbitos de un mercado.
@@ -868,6 +916,20 @@ vista o identidad, y la comparación exige las mismas filas y objetivos en todos
 modelos. Cada padre es un análisis secundario propio, sin corrección entre padres,
 y no sirve para elegir la arquitectura base. Sin ablación de modalidades
 conectada para estos modelos, su sección queda pendiente en el informe.
+
+Con la [retención v2](training-campaign-2000.md#retención-v2-ventana-a-ventana), las
+filas de calibración y evaluación del modelo base reentrenado se liberan al terminar
+cada ventana, y la comparación de cada padre las lee. Por eso la fase de agregados del
+recorrido guarda también, para cada padre con trabajos de la etapa en la ventana, el
+manifiesto de fuentes de esa ventana (`sources/windows/<ventana>/<ámbito>/<padre>.json`
+en la salida de la etapa) y sus agregados por sesión
+(`retention/aggregates/posttraining/<padre>/<ámbito>/<ventana>.npz`), puntuados con la
+configuración del padre limitada a la ventana, que conserva su huella. Con `--aggregates`,
+`stage_comparison evaluate` lee esos agregados y no abre ninguna fila. Las pruebas
+comprueban que el informe y la tabla por sesión salen idénticos a los que leen las
+filas, intervalos del bootstrap por bloques incluidos, con la misma semilla y las
+sesiones de dos ventanas. No hace falta ninguna tolerancia. La cartera de un padre lee
+filas y no se combina con agregados.
 
 Falta conectar los productores de predicciones. Las referencias neuronales con
 retención `heldout_full_train_sessions_v1` ya escriben archivos por tramo con
@@ -1311,6 +1373,59 @@ edición real.
   diferencias entre variantes describen poblaciones distintas, igual que los
   estratos.
 
+## Perturbaciones de entradas para la robustez
+
+Es un análisis secundario y descriptivo de #37, declarado el 13 de octubre de 2026 antes de evaluar ninguna variante. Como la ablación, compara cada fila consigo misma: el estado elegido de cada modelo, semilla y ventana volverá a predecir la evaluación con una entrada perturbada, sin reentrenar ni recalibrar. No se usa para seleccionar modelos, configuraciones ni épocas.
+
+### Declaración
+
+La [declaración](../../configs/evaluation/historical-masked-2000-robustness.json) vive fuera de la configuración de la comparación para no cambiar su huella ni la identidad de la campaña. Cita las sensibilidades que ya tienen consumidor:
+
+- costes de 0, 5, 10 y 20 pb en la etapa de políticas y en la cartera larga y corta;
+- ausencia de modalidades, con la ablación y los estratos de la comparación;
+- periodos, con las ventanas walk-forward de cada ámbito;
+- abstención, pendiente de la cobertura y la curva riesgo-cobertura en revisión en #560.
+
+`evaluation/robustness_protocol.py` comprueba que esos archivos y campos existen y que los costes coinciden, que las perturbaciones, la semilla y el generador son los del código y que cada guarda cita una prueba que existe. Un cambio en un lado sin el otro invalida la declaración.
+
+### Perturbaciones
+
+`data/input_perturbations.py` aplica cada variante en la lectura, en el mismo punto que la ablación, y la tabla resultante vuelve a pasar todas las comprobaciones. Viaja por el mismo parámetro del lector y de los traslados, así que todas las familias la reciben sin código propio, y el recibo la identifica con su tipo, intensidad, semilla y generador.
+
+| Variante | Qué hace |
+| --- | --- |
+| `burst_absence_21d_10pct` | Noticias y fundamentales ausentes en ráfagas de 21 días naturales, en un 10 % de los bloques de cada activo |
+| `burst_absence_63d_25pct` | Lo mismo con bloques de 63 días y un 25 % |
+| `noise_10pct` | Cada valor observado de noticias, gráficos, fundamentales y macro se multiplica por `1 + 0,1·z` |
+| `noise_50pct` | Lo mismo con `1 + 0,5·z` |
+
+- **Ráfagas.** Escriben el contrato de una ausencia real (presencia falsa, relleno, disponibilidad nula y causa `input_perturbation`) solo en las filas de los bloques elegidos. Los días desde el 1 de enero de 2000 se agrupan en bloques y cada bloque de cada activo queda ausente con la probabilidad declarada. Las ráfagas de una proporción menor están contenidas en las de una mayor con la misma duración.
+- **Ruido.** Es multiplicativo para no necesitar ninguna escala ajustada con datos. Solo cambia los valores observados: máscaras por concepto, edades y bloques ausentes quedan intactos, y un cero sigue siendo cero. El ruido del macro depende del mercado y de la fecha, no del activo, para que todos los activos de una sesión lean el mismo macro.
+- **Determinismo.** Cada número aleatorio sale de la semilla, el activo o el mercado, la fecha y la posición en el vector (SplitMix64 y Box-Muller). No depende del orden ni del agrupamiento de las filas.
+- **Fuera del alcance.** Los precios llegan por la lectura de la serie y su contrato de ventanas no admite valores alterados, así que no se perturban.
+
+Las intensidades se fijaron en desarrollo sin mirar resultados: un mes y un trimestre de sesiones para las ráfagas, y un 10 % y un 50 % de ruido relativo.
+
+### Guardas del lector
+
+Dos errores de datos no son perturbaciones que un modelo pueda recibir, porque el lector los rechaza. Una sesión repetida se rechaza en la lectura supervisada, en las observaciones y en los eventos con calentamiento de los modelos con memoria, cada una con su guarda. Una disponibilidad posterior a la decisión se rechaza en toda lectura que usa esa fila, y una fila que una lectura no usa no llega al modelo por ella. En cambio, una fecha de disponibilidad falsificada hacia atrás es indistinguible en la lectura. La controlan la procedencia de cada fuente y el escáner de fugas por sesión del [banco de integridad](integrity-bench.md).
+
+### Pruebas y pendientes
+
+`tests/training/test_input_perturbations.py` comprueba sin modelos que una ráfaga se lee exactamente como un corpus técnico con esas filas ausentes de verdad (lotes supervisados, observaciones y eventos con calentamiento, con y sin bloques), que una intensidad nula lee la entrada original, que el ruido es el factor declarado, que fila a fila da lo mismo que la tabla entera y que se rechazan las especificaciones inválidas y las guardas anteriores. Las pruebas de la ablación siguen pasando con la escritura de ausencias generalizada a un subconjunto de filas. `tests/evaluation/test_robustness_protocol.py` comprueba la declaración.
+
+### Etapa y análisis
+
+La etapa de robustez es la etapa de ablación (`training/modality_ablation_stage.py`) con su propio tipo, `historical_masked_robustness_stage`, declarada en [`historical-masked-robustness-stage-a-v2.json`](../../configs/evaluation/historical-masked-robustness-stage-a-v2.json). Repite cada predicción de la ablación con las cuatro perturbaciones: 7.220 predicciones en la campaña A v2, 1.805 por variante, sin ajustar nada. Sus recibos identifican la variante en `read_variant`, su salida tiene otra identidad que la de la ablación y su identidad de código añade el generador, el análisis y la declaración. La protección de aprendizaje la retiene igual que a la ablación, y un gancho rechaza cualquier paso de optimizador.
+
+Su manifiesto lleva la huella de la declaración y lo lee la comparación con `--robustness-sources`, que añade la sección `robustness` al informe sin tocar su configuración. El análisis está declarado en la sección `analysis` de la declaración (14 de octubre de 2026) y vive en `evaluation/robustness.py`:
+
+- **Degradación.** Diferencia del MAE residual por sesión entre la lectura perturbada y la original en las filas cuya entrada cambia, con los mismos umbrales (1.000 filas y 50 sesiones), intervalos calibrados y contrastes que la ablación. En una ráfaga, esas filas son las de sus bloques con noticias o fundamentales. El ruido llega a todas las filas por el macro.
+- **Deriva.** En las filas cuya entrada no cambia, cuántas predicciones cambian y cuánto, y cómo cambia su error. Un modelo sin estado ni historia debe dejarlas intactas. Uno con memoria en línea o con varias sesiones de contexto arrastra la perturbación.
+- **Recuperación.** Esa deriva por días desde el final de la última ráfaga del activo, en tramos de 0 a 5, 5 a 21, 21 a 63 y 63 a 252 días, más las filas sin ráfaga en ese horizonte. Las filas dentro de una ráfaga que no tenían la modalidad van en un tramo propio (`inside`): su entrada no cambia, pero las anteriores de la misma ráfaga sí. Los días se calculan con el mismo generador que la lectura, sin leer las entradas perturbadas. Cuentan desde la ráfaga declarada aunque el activo no tuviera la modalidad en ninguna de sus filas, así que un activo sin noticias ni fundamentales también suma filas a los tramos aunque la ráfaga no cambiara ninguna de sus entradas.
+
+Las pruebas de `tests/training/test_modality_ablation_stage.py` recorren la etapa sobre la campaña reducida en CPU, comprueban que el modelo de referencia sin memoria conserva cada fila cuya entrada no cambia y que la comparación publica la deriva con cero cambios en todos los tramos. `tests/evaluation/test_robustness.py` compara los días desde la última ráfaga con un recorrido día a día y comprueba los tramos, la agregación por ventanas y la declaración. Ninguna perturbación se ha evaluado, porque la evaluación queda retenida por el bloqueo de aprendizaje.
+
 ## Retención e interferencia en las revisitas de régimen
 
 Es un análisis secundario y descriptivo, declarado el 10 de octubre de 2026 antes de
@@ -1499,6 +1614,56 @@ recibo.
 - Ninguna prueba finita respalda olvido cero ni retención ilimitada. Una retención
   descartada o una interferencia detectada se publican igual que el resultado contrario.
 
+## Eventos declarados de D2
+
+Las reglas de PT1, PT2 y PT3 nombran tres eventos fijados antes de ver resultados: la quiebra
+de Lehman (15/09/2008), la caída de marzo de 2020 (24/02/2020 a 23/03/2020) y el inicio de
+las subidas de tipos de 2022 (16/03/2022). El diagnóstico D2 de
+[memory-diagnostics.md](memory-diagnostics.md) los define en EE. UU. con ±60 sesiones y usa
+para China las sesiones de junio a agosto de 2015. La sección `declared_events` de la
+comparación conjunta los declara así desde el 14 de octubre de 2026, antes de cualquier
+ejecución, y `evaluation/declared_events.py` los calcula con las mismas series de MAE por
+sesión que los contrastes.
+
+Un evento ocupa las sesiones evaluadas de su mercado cuyo día cae en su tramo, más 60
+anteriores y 60 posteriores en el orden de esas sesiones. Para cada modelo el informe da,
+por evento y con los eventos de cada vista unidos, el número de sesiones, la media y el
+percentil 95 del MAE por sesión después de promediar las semillas. Para cada contraste de
+dos modelos da el cambio relativo de ese percentil, que es lo que pide la regla de PT1 (no
+empeorar más de un 1 % frente a su control). El intervalo sale de un bootstrap circular por
+bloques de 16 sesiones dentro de cada evento, con las mismas réplicas para los dos modelos.
+Con unas 120 sesiones por evento, el percentil 95 depende de seis o siete sesiones, así que
+el intervalo será ancho y la regla de PT1 se lee junto a él. En la calibración en línea de
+PT2, cada modelo da la cobertura de todas las variantes en las sesiones de cada evento,
+ponderada por filas, y el tramo de años en que cae. El evento de 2008 cae en los años en que
+se elige κ, así que en él la cobertura describe y no contrasta.
+
+Un evento sin sesiones evaluadas queda fuera con su motivo. El evento de 2008 solo entra si
+alguna ventana evalúa septiembre de 2008. No se ha ejecutado, porque necesita las
+predicciones de la campaña.
+
+## Cobertura de la varianza predictiva y retraso de las etiquetas en B6 kalman
+
+La regla de PT3 (#455) usa, además del MAE por sesión, la cobertura del intervalo de ±1,645
+desviaciones predictivas de la corrección y la ganancia que se conserva cuando cada etiqueta
+llega una sesión más tarde (D3 en [memory-diagnostics.md](memory-diagnostics.md)). La
+ventana B6 kalman emite por fila la varianza predictiva kᵀPk + σ² y la predicción de una
+segunda memoria que escribe cada etiqueta en la siguiente decisión de su mercado. La sección
+`kalman_diagnostics` de la comparación conjunta, declarada el 14 de octubre de 2026,
+calcula con las mismas filas que los contrastes:
+
+- la cobertura como fracción de filas con |y − ŷ| ≤ 1,645·√v en los años de 2014 a 2023,
+  por semilla, con las semillas juntas y por año;
+- la ganancia g₀ = media(MAE de `titans_mac_online` − MAE de B6 kalman) y la ganancia con
+  retraso g₁ con la predicción retrasada, con el MAE por sesión promediado entre semillas, y
+  la fracción retenida g₁/g₀.
+
+Los intervalos remuestrean días UTC con bloques circulares de la longitud, las réplicas y la
+semilla de la comparación, los mismos días para las dos ganancias. La regla se aplica a la
+estimación: cobertura entre el 85 % y el 95 % y al menos la mitad de la ganancia. Sin
+ganancia sin retraso, D3 no tiene nada que conservar y el informe lo dice. No se ha
+ejecutado, porque necesita las predicciones de la campaña.
+
 ## Matriz de comparaciones y atribución por componentes
 
 La [matriz de la campaña A](../../configs/evaluation/comparison-matrix-a.json) se
@@ -1510,7 +1675,7 @@ frente al reentreno, al padre trasladado y a la continuación, y el Transformer 
 como control de «seguir aprendiendo». Añade la atribución por componentes de dos
 linajes, Titans y CM-v1. La [tabla del protocolo](protocol.md#qué-pregunta-responde-cada-comparación)
 resume en lenguaje llano qué pregunta responde cada bloque.
-`evaluation/comparison_matrix.py` valida la declaración y compila 47 familias con 356
+`evaluation/comparison_matrix.py` valida la declaración y compila 47 familias con 362
 contrastes. `check` los cuenta sin leer datos y `missing` calcula los modelos que faltan.
 
 ### Declaración
@@ -1597,6 +1762,37 @@ valor nulo es una sesión no definida. Cada métrica se declara en la matriz com
 (no negativa, menor es mejor) o ganancia antes de ver la tabla. Una métrica sin declarar
 se rechaza. Solo admiten medias por sesión. Un estadístico de recorrido, como el Sharpe
 de una política, necesita la vía de la cartera.
+
+### Fuentes y publicación con la campaña
+
+`session_table_contrasts.write_sources` publica el manifiesto de fuentes de la matriz a
+partir de los informes ya escritos, con rutas relativas a su carpeta y la huella de cada
+archivo. Lo escribe primero como candidato y solo lo deja visible si `load_sources` lo
+acepta, así que un informe alterado, incompleto o de otro ámbito no deja manifiesto. La
+[matriz de A v2](../../configs/evaluation/comparison-matrix-a-v2.json) es la de A sobre la
+comparación conjunta de A v2. Esa comparación declara desde
+[#525](https://github.com/GonxKZ/mars-titan/pull/525) los siete modelos de integración
+(`mars_titan_b6`, `mars_titan_b6_bias`, `mars_titan_m1_k4_first_read` y los cuatro del
+régimen observable y su calendario, `mars_titan_b6_regime`, `mars_titan_b6_calendar`,
+`mars_titan_b6_regime_banks` y `mars_titan_b6_calendar_banks`), así que la matriz de A v2
+ya no los condiciona y solo deja condicionada la referencia pública de Titans-MAC. Las dos
+matrices compilan las mismas 47 familias y 362 contrastes.
+
+Cada campaña declara su paso final antes de ver resultados
+([A](../../configs/evaluation/historical-masked-publication-a.json) y
+[A v2](../../configs/evaluation/historical-masked-publication-a-v2.json)): la campaña, su
+matriz y la comparación de su etapa de adaptadores. `training/campaign_publication.py`
+exige que la matriz lea la comparación de la campaña con la misma huella y que la
+comparación postentrenada derive de una etapa de esa misma campaña, así que una matriz
+declarada para otra campaña no llega a evaluarse. El paso final publica, por ámbito, las
+fuentes de la campaña, la comparación walk-forward, la cartera si se declara, el
+manifiesto de la matriz y la matriz, y después las fuentes y la comparación de cada padre
+de la etapa. Con los agregados de la retención v2 no abre ninguna fila. Antes de terminar
+calcula el [informe de integridad](integrity-bench.md#informe-de-integridad-de-la-publicación),
+que vuelve a comprobar por otro camino filas, métricas, ejecuciones declaradas y selección,
+y si falla no publica nada. Todo se escribe en una carpeta provisional que solo toma el
+nombre del destino al terminar, con un recibo que guarda la huella de cada archivo. Un fallo
+deja la carpeta provisional marcada y la siguiente ejecución la descarta y repite.
 
 ### Coste por hora GPU
 

@@ -195,3 +195,53 @@ def test_the_cli_writes_the_report_and_signals_failure(tmp_path):
     assert row_identity.main(arguments) == 1
     written = json.loads(target.read_text())
     assert written["kind"] == row_identity.KIND and written["failures"] == 1
+
+
+def _joint(eligible, borrowed=None):
+    """Fuentes mínimas de un ámbito con elegibilidad por ventana y modelos prestados."""
+    return dict(
+        markets=list(eligible),
+        eligible=eligible,
+        borrowed=borrowed or {},
+        joint_scope="US+CN",
+    )
+
+
+def test_the_dropped_markets_follow_the_declared_joint_design():
+    sources = _joint({"US": ["fold-000", "fold-006"], "CN": ["fold-006"]})
+    assert row_identity.dropped_markets(sources, "fold-000", "gru") == ["CN"]
+    assert row_identity.dropped_markets(sources, "fold-006", "gru") == []
+    # En un mercado, el modelo prestado del conjunto pierde el otro mercado en cada ventana.
+    alone = _joint({"US": ["fold-000"]}, borrowed={"gru_joint": "gru"})
+    assert row_identity.dropped_markets(alone, "fold-000", "gru_joint") == ["CN"]
+    assert row_identity.dropped_markets(alone, "fold-000", "gru") == []
+
+
+def test_kept_rows_count_every_dropped_market_even_without_rows():
+    table = pa.table(dict(market=["US", "CN", "CN", "US"], value=[1, 2, 3, 4]))
+    kept, counts = row_identity.kept_rows(table, ["CN"])
+    assert kept.column("market").to_pylist() == ["US", "US"] and counts == {"CN": 2}
+    kept, counts = row_identity.kept_rows(table.slice(0, 1), ["CN"])
+    assert kept.num_rows == 1 and counts == {"CN": 0}
+    kept, counts = row_identity.kept_rows(table, [])
+    assert kept is table and counts == {}
+
+
+def test_the_digest_leaves_out_the_rows_of_a_dropped_market():
+    moments = pa.array([1_700_000_000_000_000 + i for i in range(4)], pa.timestamp("us", tz="UTC"))
+    joint = pa.table(
+        dict(
+            market=["US", "CN", "US", "CN"],
+            asset_id=["US/A", "CN/A", "US/B", "CN/B"],
+            prediction_at=moments,
+            target=[0.1, 0.2, 0.3, 0.4],
+        )
+    )
+    alone = joint.filter(pa.array([True, False, True, False]))
+    segment = ("2023-11-01", "2023-12-01")
+    finding = row_identity.inspect_table(joint, segment, ["US"], ["CN"])
+    expected = row_identity.inspect_table(alone, segment, ["US"])
+    assert finding["digest"] == expected["digest"] and finding["rows"] == 2
+    assert finding["excluded_rows"] == {"CN": 2} and finding["rows_outside_scope"] == 0
+    # Sin la exclusión declarada, las filas chinas son de un mercado fuera del ámbito.
+    assert row_identity.inspect_table(joint, segment, ["US"])["rows_outside_scope"] == 2

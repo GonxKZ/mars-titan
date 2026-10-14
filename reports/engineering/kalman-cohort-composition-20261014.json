@@ -1,0 +1,1074 @@
+{
+  "schema_version": 1,
+  "kind": "kalman_cohort_composition",
+  "created_at_utc": "2026-10-14T03:12:43.354023+00:00",
+  "issue": 455,
+  "scope": "US+CN",
+  "recipe": {
+    "path": "configs/titans/kalman-correction-historical-masked.json",
+    "sha256": "d8af3355f29bcafcf607d1ef8df4d86fa65f19ef35587f1c638d282dc9c8d91b"
+  },
+  "estimation_months": 3,
+  "cohort": "labels_maturing_at_the_same_instant_within_a_b6_phase",
+  "session": "market_and_decision_instant",
+  "windows": {
+    "fold-000": {
+      "view_sha256": "7915de2aaec19540b68d2a0cfe44f21b212c914a0d3848b96305053f241e4da8",
+      "phases": {
+        "estimation": {
+          "rows": 92148,
+          "cohorts": 61,
+          "sessions": 61,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        },
+        "validation": {
+          "rows": 194655,
+          "cohorts": 125,
+          "sessions": 125,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        },
+        "calibration": {
+          "rows": 100689,
+          "cohorts": 63,
+          "sessions": 63,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        },
+        "evaluation": {
+          "rows": 414341,
+          "cohorts": 251,
+          "sessions": 251,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        }
+      }
+    },
+    "fold-001": {
+      "view_sha256": "5589d47da130c9eb7f13b41b87ae66a6350beb537acb23f62f05e7645b25eb75",
+      "phases": {
+        "estimation": {
+          "rows": 96876,
+          "cohorts": 60,
+          "sessions": 60,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        },
+        "validation": {
+          "rows": 209451,
+          "cohorts": 127,
+          "sessions": 127,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        },
+        "calibration": {
+          "rows": 104708,
+          "cohorts": 62,
+          "sessions": 62,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        },
+        "evaluation": {
+          "rows": 488489,
+          "cohorts": 365,
+          "sessions": 365,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        }
+      }
+    },
+    "fold-002": {
+      "view_sha256": "521c5ab15ccc39b268be2d2dc3931654883390d978e7db2db8d0ae66a86ac95e",
+      "phases": {
+        "estimation": {
+          "rows": 104425,
+          "cohorts": 61,
+          "sessions": 61,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        },
+        "validation": {
+          "rows": 243173,
+          "cohorts": 180,
+          "sessions": 180,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        },
+        "calibration": {
+          "rows": 136955,
+          "cohorts": 121,
+          "sessions": 121,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        },
+        "evaluation": {
+          "rows": 587447,
+          "cohorts": 491,
+          "sessions": 491,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        }
+      }
+    },
+    "fold-003": {
+      "view_sha256": "0b07e2764fcf43485d968d704c6dc5ebec6bd4ad0a6d4295752a023d8201b64c",
+      "phases": {
+        "estimation": {
+          "rows": 134775,
+          "cohorts": 116,
+          "sessions": 116,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        },
+        "validation": {
+          "rows": 294291,
+          "cohorts": 249,
+          "sessions": 249,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        },
+        "calibration": {
+          "rows": 153666,
+          "cohorts": 122,
+          "sessions": 122,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        },
+        "evaluation": {
+          "rows": 648475,
+          "cohorts": 497,
+          "sessions": 497,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        }
+      }
+    },
+    "fold-004": {
+      "view_sha256": "d9cdeff054a32314194f3ec95ea4509122fd02264834d8b5f88ba75fdf4da871",
+      "phases": {
+        "estimation": {
+          "rows": 150161,
+          "cohorts": 118,
+          "sessions": 118,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        },
+        "validation": {
+          "rows": 326977,
+          "cohorts": 250,
+          "sessions": 250,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        },
+        "calibration": {
+          "rows": 166168,
+          "cohorts": 125,
+          "sessions": 125,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        },
+        "evaluation": {
+          "rows": 673364,
+          "cohorts": 494,
+          "sessions": 494,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        }
+      }
+    },
+    "fold-005": {
+      "view_sha256": "1de9f55782c6a2e5fd6d7005f4362644b0a4c46c180153e3f536c43135c3b3f1",
+      "phases": {
+        "estimation": {
+          "rows": 157873,
+          "cohorts": 116,
+          "sessions": 116,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        },
+        "validation": {
+          "rows": 340332,
+          "cohorts": 252,
+          "sessions": 252,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        },
+        "calibration": {
+          "rows": 169766,
+          "cohorts": 122,
+          "sessions": 122,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        },
+        "evaluation": {
+          "rows": 701071,
+          "cohorts": 492,
+          "sessions": 492,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        }
+      }
+    },
+    "fold-006": {
+      "view_sha256": "5cd7dfdcf92a786a22db4dbda431f39aca26a57fbc24616a8edabb0605fca6f5",
+      "phases": {
+        "estimation": {
+          "rows": 163601,
+          "cohorts": 117,
+          "sessions": 117,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        },
+        "validation": {
+          "rows": 351617,
+          "cohorts": 248,
+          "sessions": 248,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        },
+        "calibration": {
+          "rows": 180234,
+          "cohorts": 123,
+          "sessions": 123,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        },
+        "evaluation": {
+          "rows": 749229,
+          "cohorts": 494,
+          "sessions": 494,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        }
+      }
+    },
+    "fold-007": {
+      "view_sha256": "cff9e3e1f0b3ad7cbc85cee94fb8ec67494a84ddb9a10f82f582d8eca56b8522",
+      "phases": {
+        "estimation": {
+          "rows": 176297,
+          "cohorts": 118,
+          "sessions": 118,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        },
+        "validation": {
+          "rows": 378073,
+          "cohorts": 251,
+          "sessions": 251,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        },
+        "calibration": {
+          "rows": 188858,
+          "cohorts": 121,
+          "sessions": 121,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        },
+        "evaluation": {
+          "rows": 783444,
+          "cohorts": 491,
+          "sessions": 491,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        }
+      }
+    },
+    "fold-008": {
+      "view_sha256": "4429006f47ecff464957d6d3052cec1959c57536f6468454ee02de6d28f25542",
+      "phases": {
+        "estimation": {
+          "rows": 186911,
+          "cohorts": 118,
+          "sessions": 118,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        },
+        "validation": {
+          "rows": 393519,
+          "cohorts": 248,
+          "sessions": 248,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        },
+        "calibration": {
+          "rows": 196685,
+          "cohorts": 121,
+          "sessions": 121,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        },
+        "evaluation": {
+          "rows": 820509,
+          "cohorts": 488,
+          "sessions": 488,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        }
+      }
+    },
+    "fold-009": {
+      "view_sha256": "c0e5512a9aeb5c8a41912c5ea6657f5217ca4a8ba7c48d22d721782f50616135",
+      "phases": {
+        "estimation": {
+          "rows": 189513,
+          "cohorts": 114,
+          "sessions": 114,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        },
+        "validation": {
+          "rows": 415127,
+          "cohorts": 247,
+          "sessions": 247,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        },
+        "calibration": {
+          "rows": 209269,
+          "cohorts": 123,
+          "sessions": 123,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        },
+        "evaluation": {
+          "rows": 866108,
+          "cohorts": 495,
+          "sessions": 495,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        }
+      }
+    },
+    "fold-010": {
+      "view_sha256": "0dbbffbea60750f6d5a7321b7d1153df9c4d2a72f9cbab152bf15d4cfd8cc6b8",
+      "phases": {
+        "estimation": {
+          "rows": 201167,
+          "cohorts": 117,
+          "sessions": 117,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        },
+        "validation": {
+          "rows": 436634,
+          "cohorts": 251,
+          "sessions": 251,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        },
+        "calibration": {
+          "rows": 221385,
+          "cohorts": 123,
+          "sessions": 123,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        },
+        "evaluation": {
+          "rows": 915972,
+          "cohorts": 494,
+          "sessions": 494,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        }
+      }
+    },
+    "fold-011": {
+      "view_sha256": "2e4a8d60344394946f2e42869e8f18f354ac853040a0adad034f2828b93ae1c2",
+      "phases": {
+        "estimation": {
+          "rows": 212899,
+          "cohorts": 116,
+          "sessions": 116,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        },
+        "validation": {
+          "rows": 461732,
+          "cohorts": 251,
+          "sessions": 251,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        },
+        "calibration": {
+          "rows": 234019,
+          "cohorts": 123,
+          "sessions": 123,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        },
+        "evaluation": {
+          "rows": 967507,
+          "cohorts": 494,
+          "sessions": 494,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        }
+      }
+    },
+    "fold-012": {
+      "view_sha256": "ada5207b8545dd5be19d5385bcebe981e910113de92cfb81505d56e1731e1bdb",
+      "phases": {
+        "estimation": {
+          "rows": 227659,
+          "cohorts": 118,
+          "sessions": 118,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        },
+        "validation": {
+          "rows": 490809,
+          "cohorts": 251,
+          "sessions": 251,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        },
+        "calibration": {
+          "rows": 241287,
+          "cohorts": 121,
+          "sessions": 121,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        },
+        "evaluation": {
+          "rows": 1005781,
+          "cohorts": 493,
+          "sessions": 493,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        }
+      }
+    },
+    "fold-013": {
+      "view_sha256": "2d7798bf8f5541ddfc126244a7f47982a5cdb3e68329a4a79391b53cd3e30f03",
+      "phases": {
+        "estimation": {
+          "rows": 239996,
+          "cohorts": 119,
+          "sessions": 119,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        },
+        "validation": {
+          "rows": 504806,
+          "cohorts": 249,
+          "sessions": 249,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        },
+        "calibration": {
+          "rows": 252893,
+          "cohorts": 121,
+          "sessions": 121,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        },
+        "evaluation": {
+          "rows": 1061764,
+          "cohorts": 492,
+          "sessions": 492,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        }
+      }
+    },
+    "fold-014": {
+      "view_sha256": "7d2f97349841f3707378895000da3e2a6c85508135b1351855903d97495695a4",
+      "phases": {
+        "estimation": {
+          "rows": 248772,
+          "cohorts": 118,
+          "sessions": 118,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        },
+        "validation": {
+          "rows": 536192,
+          "cohorts": 249,
+          "sessions": 249,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        },
+        "calibration": {
+          "rows": 268266,
+          "cohorts": 121,
+          "sessions": 121,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        },
+        "evaluation": {
+          "rows": 1114685,
+          "cohorts": 491,
+          "sessions": 491,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        }
+      }
+    },
+    "fold-015": {
+      "view_sha256": "5aae226bf0960b7018244c6aa15dfc067e2a80f67dd14157df905cfe26c476c7",
+      "phases": {
+        "estimation": {
+          "rows": 250646,
+          "cohorts": 117,
+          "sessions": 117,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        },
+        "validation": {
+          "rows": 565395,
+          "cohorts": 247,
+          "sessions": 247,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        },
+        "calibration": {
+          "rows": 289820,
+          "cohorts": 123,
+          "sessions": 123,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        },
+        "evaluation": {
+          "rows": 1200117,
+          "cohorts": 494,
+          "sessions": 494,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        }
+      }
+    },
+    "fold-016": {
+      "view_sha256": "a5882ac54bf4f3972758fd000caf491de2cc39fda17afe904081149637bca79b",
+      "phases": {
+        "estimation": {
+          "rows": 283851,
+          "cohorts": 118,
+          "sessions": 118,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        },
+        "validation": {
+          "rows": 601794,
+          "cohorts": 250,
+          "sessions": 250,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        },
+        "calibration": {
+          "rows": 304867,
+          "cohorts": 122,
+          "sessions": 122,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        },
+        "evaluation": {
+          "rows": 1233981,
+          "cohorts": 493,
+          "sessions": 493,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        }
+      }
+    },
+    "fold-017": {
+      "view_sha256": "1ff60d285d7cce886c0056efdec0055eab44d60926862e22260e7968e2adff2a",
+      "phases": {
+        "estimation": {
+          "rows": 293960,
+          "cohorts": 117,
+          "sessions": 117,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        },
+        "validation": {
+          "rows": 619887,
+          "cohorts": 249,
+          "sessions": 249,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        },
+        "calibration": {
+          "rows": 310227,
+          "cohorts": 123,
+          "sessions": 123,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        },
+        "evaluation": {
+          "rows": 1237793,
+          "cohorts": 491,
+          "sessions": 491,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        }
+      }
+    },
+    "fold-018": {
+      "view_sha256": "c9b10cbb1590e74fc9c26b89d2fb6f54f58864186f4f272cea683215ea37c3e0",
+      "phases": {
+        "estimation": {
+          "rows": 300005,
+          "cohorts": 118,
+          "sessions": 118,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        },
+        "validation": {
+          "rows": 620954,
+          "cohorts": 248,
+          "sessions": 248,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        },
+        "calibration": {
+          "rows": 306874,
+          "cohorts": 121,
+          "sessions": 121,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        },
+        "evaluation": {
+          "rows": 1235785,
+          "cohorts": 490,
+          "sessions": 490,
+          "cohorts_mixing_sessions": 0,
+          "rows_in_cohorts_mixing_sessions": 0,
+          "cohorts_mixing_markets": 0,
+          "rows_in_cohorts_mixing_markets": 0,
+          "max_sessions_per_cohort": 1,
+          "sessions_split_across_cohorts": 0,
+          "max_cohorts_per_session": 1
+        }
+      }
+    }
+  },
+  "totals": {
+    "estimation": {
+      "rows": 3711535,
+      "cohorts": 2057,
+      "sessions": 2057,
+      "cohorts_mixing_sessions": 0,
+      "rows_in_cohorts_mixing_sessions": 0,
+      "cohorts_mixing_markets": 0,
+      "rows_in_cohorts_mixing_markets": 0,
+      "sessions_split_across_cohorts": 0
+    },
+    "validation": {
+      "rows": 7985418,
+      "cohorts": 4422,
+      "sessions": 4422,
+      "cohorts_mixing_sessions": 0,
+      "rows_in_cohorts_mixing_sessions": 0,
+      "cohorts_mixing_markets": 0,
+      "rows_in_cohorts_mixing_markets": 0,
+      "sessions_split_across_cohorts": 0
+    },
+    "calibration": {
+      "rows": 4036636,
+      "cohorts": 2201,
+      "sessions": 2201,
+      "cohorts_mixing_sessions": 0,
+      "rows_in_cohorts_mixing_sessions": 0,
+      "cohorts_mixing_markets": 0,
+      "rows_in_cohorts_mixing_markets": 0,
+      "sessions_split_across_cohorts": 0
+    },
+    "evaluation": {
+      "rows": 16705862,
+      "cohorts": 8990,
+      "sessions": 8990,
+      "cohorts_mixing_sessions": 0,
+      "rows_in_cohorts_mixing_sessions": 0,
+      "cohorts_mixing_markets": 0,
+      "rows_in_cohorts_mixing_markets": 0,
+      "sessions_split_across_cohorts": 0
+    }
+  },
+  "code": {
+    "scripts/audit_kalman_cohorts.py": "4f13fc1b48f9fe90fa4b0479733999c66998c172b3d7382f2e717cef53f0357a",
+    "src/mars_titan/memory/cohort_noise.py": "ae902f1083b7b931571972b721ec121cff19a6b96f9b3810ebcd85cec4758941",
+    "src/mars_titan/training/corpus_inputs.py": "dcaeb7d875b3e7821c5dbb2cda6e8497efb1b0287c18d52fd41a9b8715ab14f5"
+  },
+  "seconds": 2109.7748950259993,
+  "cpu_seconds": 2104.8487130529998,
+  "max_rss_gib": 0.9335136413574219,
+  "final_test_opened": false
+}

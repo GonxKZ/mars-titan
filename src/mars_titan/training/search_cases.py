@@ -41,6 +41,29 @@ def checked_search_cases(cases, base, build):
     return cases
 
 
+# Cambios del predictor que un modelo de Titans-MAC declara sobre la receta común, como la
+# memoria acotada PT1 (#453). Son extensiones desactivables del núcleo: sin ellos el modelo es
+# el de la receta. Su contenido lo valida `FinancialConfig` al construir el predictor.
+PREDICTOR_CHANGES = ("gate_bias", "memory_stability")
+
+
+def checked_predictor_changes(changes):
+    """Validar los cambios del predictor de un modelo, o devolver None si no declara ninguno."""
+    if changes is None:
+        return None
+    if not (
+        isinstance(changes, dict)
+        and changes
+        and set(changes) <= set(PREDICTOR_CHANGES)
+        and all(isinstance(value, dict) and value for value in changes.values())
+    ):
+        raise ValueError(
+            "Los cambios del predictor solo declaran gate_bias y memory_stability, cada uno "
+            "como un objeto no vacío"
+        )
+    return changes
+
+
 def case_options(base, cases, search_case):
     """Devuelve las opciones de la receta del caso elegido, o las de la base si no hay casos."""
     if cases is None:

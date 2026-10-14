@@ -778,6 +778,40 @@ def test_modes_without_learning_pass_the_evaluation_gate_with_the_hold_closed(cl
         assert not Path(env["NATIVE_RECORD"]).exists()
 
 
+TRACED = ["--learning-trace-every", "1", "--learning-trace-max-bytes", "1024"]
+
+
+def test_a_fit_forwards_both_trace_options_once(setup):
+    result = execute(setup, "--diagnostic", *TRACED)
+    assert result.returncode == 0, result.stderr
+    forwarded = record(setup)["args"]
+    for option, value in zip(TRACED[::2], TRACED[1::2], strict=True):
+        assert forwarded.count(option) == 1 and forwarded[forwarded.index(option) + 1] == value
+    Path(setup[1]["NATIVE_RECORD"]).unlink()
+    result = execute(setup, "--diagnostic", *TRACED[:2])
+    assert result.returncode == 2 and "solo acompañan a un ajuste" in result.stderr
+    assert not Path(setup[1]["NATIVE_RECORD"]).exists()
+
+
+@pytest.mark.parametrize("mode", ["--audit-run", "--initial-evaluation", "--check-sources"])
+def test_traces_are_rejected_outside_a_fit_before_the_hold(closed_setup, mode):
+    """El binario solo abre las trazas al ajustar, así que en otro modo quedarían sin escribir."""
+    args, env, directory = closed_setup
+    config = Path(args[args.index("--config") + 1])
+    config.write_text(json.dumps(dict(schema_version=4)))
+    native = args[args.index("--binary") + 1]
+    audit = ["--audit-tape", str(directory / "audit-a")]
+    modes = {
+        "--audit-run": [*args[:4], "--binary", native, mode, str(directory / "fit"), *audit],
+        "--initial-evaluation": [*args[:4], "--binary", native, *audit, mode],
+        "--check-sources": [*args, mode],
+    }
+    closed_setup[0][:] = [*modes[mode], *TRACED]
+    result = execute(closed_setup, "--diagnostic")
+    assert result.returncode == 2 and "solo acompañan a un ajuste" in result.stderr
+    assert not Path(env["NATIVE_RECORD"]).exists()
+
+
 def test_relative_command_paths_do_not_reuse_watch_from_another_working_directory(setup):
     args, env, directory = setup
     watch = directory / "watch.json"

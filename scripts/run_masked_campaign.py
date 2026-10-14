@@ -19,6 +19,8 @@ campaña con sus trabajos, en el orden en que se ejecutan. `disjunction` comprue
 vistas y los recibos, sin ajustar, la disjunción de filas del walk-forward por etapas.
 `rolling` recorre la campaña ventana a ventana con la retención v2 y `regenerate`
 repite por inferencia, sin ajustar, las predicciones por fila de un trabajo confirmado.
+`publication check|run` valida o ejecuta el paso final: comparación walk-forward, cartera,
+matriz de comparaciones y comparación postentrenada de cada padre.
 """
 
 import importlib
@@ -39,6 +41,7 @@ COMMANDS = {
     "storage": "mars_titan.training.storage_budget",
     "rolling": "mars_titan.training.rolling_retention",
     "regenerate": "mars_titan.training.prediction_regeneration",
+    "publication": "mars_titan.training.campaign_publication",
 }
 
 

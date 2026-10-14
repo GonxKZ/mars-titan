@@ -31,6 +31,7 @@ from mars_titan.training.carried_predictions import reference_model, selected_re
 from mars_titan.training.checkpoints import StopRequest
 from mars_titan.training.corpus_inputs import CorpusDataset
 from mars_titan.training.titans_walk_forward import _sources
+from tests.learning_traces.parity import EVERY_STEP, trace_rows
 from tests.training.test_carried_predictions import cpu as cpu
 from tests.training.test_carried_predictions import neural_anchor
 from tests.training.test_mars_titan_walk_forward import M1, mars, readout_recipe
@@ -807,3 +808,25 @@ def test_a_copied_output_is_never_reused(base, anchor, tmp_path):
     shutil.copytree(tmp_path / "online", tmp_path / "copy")
     with pytest.raises(ValueError, match="directorio nuevo"):
         run(base, anchor, tmp_path / "copy")
+
+
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
+def test_traces_keep_the_online_control_bit_for_bit(base, anchor, tmp_path):
+    """Trazas en cada paso del control en línea (#448), una fase por tramo."""
+    plain, plain_factory = run(base, anchor, tmp_path / "plain")
+    traced, traced_factory = run(base, anchor, tmp_path / "traced", traces=EVERY_STEP)
+    assert plain["predictions"] == traced["predictions"]
+    left = [g for item in plain_factory.instances for g in item.gradients]
+    right = [g for item in traced_factory.instances for g in item.gradients]
+    assert len(left) == len(right) > 0
+    assert all(torch.equal(a, b) for a, b in zip(left, right, strict=True))
+    manifest, rows = trace_rows(tmp_path / "traced" / "traces")
+    assert manifest["identity"]["family"] == "transformer_compact_online"
+    phases = {row["phase"] for row in rows}
+    updates = {name: plain["predictions"][name]["metrics"]["updates"] for name in online.PARTITIONS}
+    assert phases == {"validation"} | {f"online_{n}" for n, count in updates.items() if count}
+    for name, count in updates.items():
+        steps = {r["step"] for r in rows if r["phase"] == f"online_{name}"}
+        assert steps == set(range(1, count + 1))
+    (score,) = [r for r in rows if r["metric"] == "validation.score"]
+    assert score["value"] == plain["predictions"]["validation"]["metrics"]["session_mae"]

@@ -1,0 +1,221 @@
+{
+  "schema_version": 1,
+  "kind": "targeted_mutation_testing",
+  "scope": "Efecto de la elección entre los casos de búsqueda (#36)",
+  "measured_at": "2026-10-13",
+  "baseline": {
+    "tests/evaluation/test_selection_effect.py": {
+      "pytest": "17 passed in 3.99s",
+      "seconds": 13.97
+    },
+    "tests/training/test_rolling_retention.py::test_the_final_comparison_from_aggregates_equals_the_one_that_read_the_rows": {
+      "pytest": "1 passed in 56.28s",
+      "seconds": 64.64
+    }
+  },
+  "mutations": [
+    {
+      "id": "S01",
+      "description": "Rango invertido",
+      "file": "src/mars_titan/evaluation/selection_effect.py",
+      "tests": [
+        "tests/evaluation/test_selection_effect.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed in 2.43s",
+      "seconds": 9.62
+    },
+    {
+      "id": "S02",
+      "description": "Empates sin rango medio",
+      "file": "src/mars_titan/evaluation/selection_effect.py",
+      "tests": [
+        "tests/evaluation/test_selection_effect.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 1 passed in 1.65s",
+      "seconds": 7.41
+    },
+    {
+      "id": "S03",
+      "description": "Rango relativo sobre n",
+      "file": "src/mars_titan/evaluation/selection_effect.py",
+      "tests": [
+        "tests/evaluation/test_selection_effect.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed in 1.83s",
+      "seconds": 7.53
+    },
+    {
+      "id": "S04",
+      "description": "Logit con el signo cambiado",
+      "file": "src/mars_titan/evaluation/selection_effect.py",
+      "tests": [
+        "tests/evaluation/test_selection_effect.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed in 2.03s",
+      "seconds": 8.49
+    },
+    {
+      "id": "S05",
+      "description": "Ganancia con el signo cambiado",
+      "file": "src/mars_titan/evaluation/selection_effect.py",
+      "tests": [
+        "tests/evaluation/test_selection_effect.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed in 2.30s",
+      "seconds": 9.59
+    },
+    {
+      "id": "S06",
+      "description": "Un solo caso cuenta como elección",
+      "file": "src/mars_titan/evaluation/selection_effect.py",
+      "tests": [
+        "tests/evaluation/test_selection_effect.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 2 passed in 2.21s",
+      "seconds": 9.43
+    },
+    {
+      "id": "S07",
+      "description": "La mediana exacta no cuenta",
+      "file": "src/mars_titan/evaluation/selection_effect.py",
+      "tests": [
+        "tests/evaluation/test_selection_effect.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 3 passed in 2.27s",
+      "seconds": 9.62
+    },
+    {
+      "id": "S08",
+      "description": "Casos con otras filas aceptados",
+      "file": "src/mars_titan/evaluation/selection_effect.py",
+      "tests": [
+        "tests/evaluation/test_selection_effect.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 12 passed in 2.52s",
+      "seconds": 9.43
+    },
+    {
+      "id": "S09",
+      "description": "Ventana guardada sin comprobar su identidad",
+      "file": "src/mars_titan/evaluation/selection_effect.py",
+      "tests": [
+        "tests/evaluation/test_selection_effect.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 11 passed in 2.44s",
+      "seconds": 8.98
+    },
+    {
+      "id": "S10",
+      "description": "Declaración sin comprobar",
+      "file": "src/mars_titan/evaluation/selection_effect.py",
+      "tests": [
+        "tests/evaluation/test_selection_effect.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 4 passed in 2.11s",
+      "seconds": 8.75
+    },
+    {
+      "id": "S11",
+      "description": "Validación de cada caso sin guardar",
+      "file": "src/mars_titan/evaluation/selection_effect.py",
+      "tests": [
+        "tests/evaluation/test_selection_effect.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 10 passed in 2.60s",
+      "seconds": 9.33
+    },
+    {
+      "id": "S12",
+      "description": "Las mesetas entran como casos",
+      "file": "src/mars_titan/training/masked_campaign.py",
+      "tests": [
+        "tests/evaluation/test_selection_effect.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 13 passed in 2.88s",
+      "seconds": 9.51
+    },
+    {
+      "id": "S13",
+      "description": "Los finalistas entran como casos",
+      "file": "src/mars_titan/training/masked_campaign.py",
+      "tests": [
+        "tests/evaluation/test_selection_effect.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 13 passed in 2.81s",
+      "seconds": 10.05
+    },
+    {
+      "id": "S14",
+      "description": "Otras ventanas entran con una ventana pedida",
+      "file": "src/mars_titan/training/masked_campaign.py",
+      "tests": [
+        "tests/evaluation/test_selection_effect.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 14 passed in 2.52s",
+      "seconds": 8.97
+    },
+    {
+      "id": "S15",
+      "description": "Sin confirmar las dependencias de la ventana",
+      "file": "src/mars_titan/training/masked_campaign.py",
+      "tests": [
+        "tests/evaluation/test_selection_effect.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 14 passed in 2.22s",
+      "seconds": 7.76
+    },
+    {
+      "id": "S16",
+      "description": "Empates sin desempate por id",
+      "file": "src/mars_titan/training/masked_campaign.py",
+      "tests": [
+        "tests/evaluation/test_selection_effect.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 16 passed in 2.60s",
+      "seconds": 7.58
+    },
+    {
+      "id": "S17",
+      "description": "Un caso sin confirmar se ignora",
+      "file": "src/mars_titan/training/masked_campaign.py",
+      "tests": [
+        "tests/evaluation/test_selection_effect.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 13 passed in 2.30s",
+      "seconds": 7.65
+    },
+    {
+      "id": "S18",
+      "description": "rolling no guarda el efecto antes de liberar",
+      "file": "src/mars_titan/training/rolling_retention.py",
+      "tests": [
+        "tests/training/test_rolling_retention.py::test_the_final_comparison_from_aggregates_equals_the_one_that_read_the_rows"
+      ],
+      "killed": true,
+      "pytest": "1 failed in 36.42s",
+      "seconds": 43.88
+    }
+  ],
+  "killed": 18,
+  "survived": 0,
+  "notes": [
+    "Cada defecto se aplica de uno en uno y el archivo se restaura después."
+  ]
+}

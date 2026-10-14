@@ -19,6 +19,8 @@
     "titans_mac_disabled",
     "titans_mac_frozen",
     "titans_mac_online",
+    "titans_mac_online_pt1_init",
+    "titans_mac_online_pt1",
     "mars_titan_m0",
     "mars_titan_m1",
     "mars_titan_m2",
@@ -32,17 +34,20 @@
     "mars_titan_b6_calendar",
     "mars_titan_b6_regime_banks",
     "mars_titan_b6_calendar_banks",
+    "mars_titan_b6_kalman",
+    "mars_titan_b6_kalman_rho0",
     "cm_v1_b",
     "cm_v1_bc",
     "cm_v1_bm",
     "cm_v1_bcm"
   ],
   "cohort_reading": {"source": "view_blocks", "max_block_bytes": 3221225472},
+  "additional_controls": ["anchored_continuation", "predictive_objectives"],
   "chain_rule": "chain_validation_score_v1",
   "data_policy": "real_edition_only",
   "limits": {
-    "max_training_jobs": 6804,
-    "max_prediction_jobs": 1494
+    "max_training_jobs": 8694,
+    "max_prediction_jobs": 1710
   },
   "final_test_opened": false
 }

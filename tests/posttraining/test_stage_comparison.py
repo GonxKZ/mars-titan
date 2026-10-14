@@ -7,6 +7,7 @@ A, así que solo la segunda ventana tiene trabajos y el padre congelado es el su
 """
 
 import json
+import os
 import zlib
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -24,6 +25,7 @@ from mars_titan.posttraining import adapter_matrix, campaign_stage
 from mars_titan.posttraining import stage_comparison as compare
 from mars_titan.training import campaign_chain
 from tests.evaluation.test_comparison_sources import masked_view, save
+from tests.hardware.platform_doubles import desktop, laptop
 from tests.posttraining.campaign_fixture import write_configs
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -32,6 +34,8 @@ DECLARATION_V2 = ROOT / "configs/posttraining/historical-masked-adapter-comparis
 ASSETS = tuple("ABCDEFG")
 OFFSETS = np.array([-1.96, -1.28, 0.0, 1.28, 1.96])
 ADAPTED = ["gru__head", "gru__fusion", "gru__head_fusion", "gru__fusion_full_rank"]
+# Las dos continuaciones repiten las predicciones del padre en el fixture.
+PARENT_LIKE = ("gru", "gru__frozen_parent", "gru__full_continuation", "gru__anchored_continuation")
 
 
 def keys(segment):
@@ -47,14 +51,12 @@ def target(window, partition, rows):
 
 
 def prediction(arm, window, partition, truth):
-    """Padre congelado, base y continuación iguales, cabeza perfecta y el resto desplazado."""
+    """Padre congelado, base y continuaciones iguales, cabeza perfecta y el resto desplazado."""
     if arm == "gru__head":
         return truth.copy()
     rng = np.random.default_rng(zlib.crc32(f"parent/{window}/{partition}".encode()))
     parent = np.round(0.5 * truth + rng.normal(0, 0.5, len(truth)), 3)
-    return (
-        parent if arm in ("gru", "gru__frozen_parent", "gru__full_continuation") else parent + 0.1
-    )
+    return parent if arm in PARENT_LIKE else parent + 0.1
 
 
 def write_table(path, arm, window, partition, segment):
@@ -78,9 +80,14 @@ def write_table(path, arm, window, partition, segment):
 class Stage:
     """Etapa reducida declarada, fuentes de la campaña y recibos escritos sin ejecutar."""
 
-    def __init__(self, root, families=None):
+    def __init__(self, root, families=None, start="2021-04-01", controls=()):
         self.root = root
-        _, stage_path = write_configs(root / "config", "A")
+        _, stage_path = write_configs(root / "config", "A", start=start)
+        if controls:
+            # Secciones opcionales de la matriz que la etapa reducida nombra además.
+            value = json.loads(stage_path.read_text())
+            value["additional_controls"] = [*value["additional_controls"], *controls]
+            save(stage_path, value)
         # Sin secciones secundarias: los estratos leerían muestras que estas vistas no tienen.
         comparison = json.loads((root / "config" / "comparison.json").read_text())
         for section in ("modality_strata", "modality_ablation", "long_short"):
@@ -132,12 +139,18 @@ class Stage:
         save(
             self.base_sources,
             dict(
-                schema_version=1,
+                schema_version=2,
                 kind="walk_forward_prediction_sources",
                 scope="US",
                 input_policy=HISTORICAL_MASKED,
                 windows={w: dict(view=view) for w, view in self.views.items()},
                 arms=arms,
+                platform=dict(
+                    platform_sha256=laptop()["platform_sha256"],
+                    recorded=2,
+                    unrecorded=0,
+                    unrecorded_profile=None,
+                ),
             ),
         )
 
@@ -166,6 +179,7 @@ class Stage:
                 ),
                 predictions={part: entry[part] for part in ("calibration", "evaluation")},
                 final_test_opened=False,
+                platform=laptop(),
             )
             save(folder / "receipt.json", receipt)
 
@@ -180,6 +194,7 @@ class Stage:
             job["arm"]: job
             for job in self.loaded["groups"]["gru"]["jobs"]["US"]
             if (job["window"], job["seed"]) == (window, seed)
+            and campaign_stage.chain_candidate(job)
         }
         candidates = [
             dict(
@@ -238,13 +253,27 @@ class Stage:
         )
         return selected
 
-    def sources(self):
+    def window_base_sources(self, window):
+        """Fuentes de la campaña limitadas a una ventana, como las que publica el recorrido."""
+        manifest = json.loads(self.base_sources.read_text())
+        manifest["windows"] = {window: manifest["windows"][window]}
+        manifest["arms"] = {
+            arm: {seed: {window: entries[window]} for seed, entries in seeds.items()}
+            for arm, seeds in manifest["arms"].items()
+        }
+        # En la misma carpeta, para que las rutas relativas sigan valiendo.
+        path = self.base_sources.with_name(f"US-{window}.json")
+        save(path, manifest)
+        return path
+
+    def sources(self, **options):
         return compare.write_sources(
             self.declaration,
             "US",
             "gru",
             base_sources=self.base_sources,
             stage_output=self.output,
+            **options,
         )
 
 
@@ -313,20 +342,26 @@ def test_repository_declaration_derives_every_parent_from_the_stage_plan():
         frozen = group["frozen_parent"]
         assert frozen == f"{base_arm}__frozen_parent"
         assert config["arms"][base_arm] == inherited["arms"][base_arm]
-        assert set(config["arms"]) == {
-            base_arm,
-            frozen,
-            group["full_continuation"],
-            *group["adapted"],
-        }
+        # La continuación anclada (#444) solo existe en las referencias neuronales.
+        anchored = group["anchored_continuation"]
+        neural = base_arm in loaded["stage"]["families"]
+        assert anchored == (f"{base_arm}__anchored_continuation" if neural else None)
+        controls = [group["full_continuation"], *([anchored] if anchored else [])]
+        assert set(config["arms"]) == {base_arm, frozen, *controls, *group["adapted"]}
         assert all(arm["seeds"] == [42, 43, 44] for arm in config["arms"].values())
         # La retención se declara en la comparación principal y no pasa a la etapa.
         assert "retention_interference" in inherited
         assert "retention_interference" not in config
         families = config["resolved_families"]
         assert set(families["versus_frozen_parent"]) == {
-            f"{arm}-{frozen}" for arm in [*group["adapted"], group["full_continuation"]]
+            f"{arm}-{frozen}" for arm in [*group["adapted"], *controls]
         }
+        if anchored:
+            assert set(families["versus_anchored_continuation"]) == {
+                f"{arm}-{anchored}" for arm in [*group["adapted"], group["full_continuation"]]
+            }
+        else:
+            assert "versus_anchored_continuation" not in families
         # La base reentrenada en cada ventana queda como nivel, fuera de las familias.
         assert base_arm in families["levels"]
         # Sin postentrenamiento en la primera ventana, la comparación empieza en la segunda.
@@ -348,10 +383,11 @@ def test_repository_declaration_derives_every_parent_from_the_stage_plan():
 
 def test_frozen_parent_continuation_and_adapters_are_contrasted_by_role(study):
     stage, _, config, report, _, _ = study
-    assert set(report["arms"]) == {"gru", "gru__frozen_parent", "gru__full_continuation", *ADAPTED}
+    assert set(report["arms"]) == {*PARENT_LIKE, *ADAPTED}
     assert report["posttraining"]["roles"] == dict(
         frozen_parent="gru__frozen_parent",
         full_continuation="gru__full_continuation",
+        anchored_continuation="gru__anchored_continuation",
         adapted=ADAPTED,
     )
     assert report["posttraining"]["windows"] == ["fold-001"]
@@ -361,14 +397,20 @@ def test_frozen_parent_continuation_and_adapters_are_contrasted_by_role(study):
     for family, base in (
         ("versus_frozen_parent", "gru__frozen_parent"),
         ("versus_full_continuation", "gru__full_continuation"),
+        ("versus_anchored_continuation", "gru__anchored_continuation"),
     ):
         rows = {row["name"]: row for row in contrasts[family]["mae"]["contrasts"]}
         assert rows[f"gru__head-{base}"]["estimate"] == pytest.approx(-mae, abs=1e-12)
         assert contrasts[family]["mae"]["multiplicity"]["family_size"] == len(rows)
     rows = {row["name"]: row for row in contrasts["versus_frozen_parent"]["mae"]["contrasts"]}
-    assert len(rows) == 5 and set(contrasts) >= {"versus_frozen_parent", "levels"}
-    # La continuación repite las predicciones del padre: su contraste es exactamente cero.
+    assert len(rows) == 6 and set(contrasts) >= {"versus_frozen_parent", "levels"}
+    # Las continuaciones repiten las predicciones del padre: sus contrastes son exactamente cero.
     assert rows["gru__full_continuation-gru__frozen_parent"]["estimate"] == 0.0
+    assert rows["gru__anchored_continuation-gru__frozen_parent"]["estimate"] == 0.0
+    rows = contrasts["versus_anchored_continuation"]["mae"]["contrasts"]
+    rows = {row["name"]: row for row in rows}
+    assert len(rows) == len(ADAPTED) + 1
+    assert rows["gru__full_continuation-gru__anchored_continuation"]["estimate"] == 0.0
     assert config["name"] == "historical-masked-2000-adapters-a-gru"
 
 
@@ -376,12 +418,7 @@ def test_sources_point_to_the_campaign_parent_and_the_stage_receipts(study):
     stage, sources, _, _, _, _ = study
     manifest = json.loads(sources.read_text())
     assert sources == stage.output / "sources" / "US" / "gru.json"
-    assert set(manifest["arms"]) == {
-        "gru",
-        "gru__frozen_parent",
-        "gru__full_continuation",
-        *ADAPTED,
-    }
+    assert set(manifest["arms"]) == {*PARENT_LIKE, *ADAPTED}
     assert list(manifest["windows"]) == ["fold-001"]
     parent = manifest["arms"]["gru"]["42"]["fold-001"]["evaluation"]["path"]
     assert (sources.parent / parent).resolve() == (
@@ -398,6 +435,103 @@ def test_sources_point_to_the_campaign_parent_and_the_stage_receipts(study):
     assert (sources.parent / head).resolve() == (
         stage.output / "jobs" / "US/fold-001/gru__head/fit-s42" / "calibration-predictions.parquet"
     ).resolve()
+
+
+def test_every_declared_contrast_is_reported_even_when_the_variant_is_worse(tmp_path, monkeypatch):
+    # La continuación anclada empeora al padre en 0,3 y las adaptaciones salvo la cabeza
+    # en 0,1. Ninguna desaparece del informe: las familias salen de la declaración y no
+    # de los resultados, y solo se comparan calibración y evaluación, no la validación.
+    original = prediction
+
+    def worse(arm, window, partition, truth):
+        value = original(arm, window, partition, truth)
+        return value + 0.3 if arm == "gru__anchored_continuation" else value
+
+    # `write_table` y `by_hand_session_mae` leen `prediction` del módulo al llamarla.
+    monkeypatch.setitem(globals(), "prediction", worse)
+    stage = Stage(tmp_path)
+    sources = stage.sources()
+    config, report, _, _ = compare.evaluate(stage.declaration, sources, "US", "gru")
+    contrasts = report["contrasts"]["US"]
+    declared = config["comparison"]["families"]
+    deltas = {name: family for name, family in declared.items() if family["kind"] == "delta"}
+    assert {"versus_frozen_parent", "versus_anchored_continuation"} <= set(deltas)
+    for name, family in deltas.items():
+        expected = {f"{variant}-{family['base']}" for variant in family["variants"]}
+        assert {row["name"] for row in contrasts[name]["mae"]["contrasts"]} == expected
+    rows = {row["name"]: row for row in contrasts["versus_frozen_parent"]["mae"]["contrasts"]}
+    mae, _ = by_hand_session_mae(stage, "gru__frozen_parent", ["fold-001"])
+    anchored, _ = by_hand_session_mae(stage, "gru__anchored_continuation", ["fold-001"])
+    assert anchored > mae
+    estimate = rows["gru__anchored_continuation-gru__frozen_parent"]["estimate"]
+    assert estimate == pytest.approx(anchored - mae, abs=1e-12) and estimate > 0
+    assert rows["gru__fusion-gru__frozen_parent"]["estimate"] > 0
+    rows = contrasts["versus_anchored_continuation"]["mae"]["contrasts"]
+    assert {row["name"] for row in rows} == {
+        *(f"{arm}-gru__anchored_continuation" for arm in ADAPTED),
+        "gru__full_continuation-gru__anchored_continuation",
+    }
+    assert report["final_test_opened"] is False
+    manifest = json.loads(sources.read_text())
+    for seeds in manifest["arms"].values():
+        for windows in seeds.values():
+            for entry in windows.values():
+                assert {"calibration", "evaluation"} <= set(entry)
+                assert "validation" not in entry
+
+
+def test_sources_keep_one_platform_shared_with_the_base(tmp_path):
+    stage = Stage(tmp_path)
+    published = stage.sources()
+    manifest = json.loads(published.read_text())
+    assert manifest["schema_version"] == 2
+    jobs = stage.loaded["groups"]["gru"]["jobs"]["US"]
+    assert manifest["platform"] == dict(
+        platform_sha256=laptop()["platform_sha256"],
+        recorded=len(jobs),
+        unrecorded=0,
+        unrecorded_profile=None,
+    )
+    path = stage.output / "jobs" / jobs[0]["id"] / "receipt.json"
+    receipt = json.loads(path.read_text())
+    # Un recibo de otra máquina mezcla plataformas en la etapa.
+    save(path, dict(receipt, platform=desktop()))
+    with pytest.raises(ValueError, match="mezcla plataformas"):
+        stage.sources()
+    # Toda la etapa en otra máquina que la base que hereda.
+    for job in jobs:
+        other = stage.output / "jobs" / job["id"] / "receipt.json"
+        save(other, dict(json.loads(other.read_text()), platform=desktop()))
+    with pytest.raises(ValueError, match="otra plataforma que la base"):
+        stage.sources()
+    # Los rechazos no sustituyen las fuentes ya publicadas.
+    assert json.loads(published.read_text()) == manifest
+
+
+def test_receipts_before_the_platform_record_need_a_declared_profile(tmp_path):
+    stage = Stage(tmp_path)
+    jobs = stage.loaded["groups"]["gru"]["jobs"]["US"]
+    for job in jobs:
+        path = stage.output / "jobs" / job["id"] / "receipt.json"
+        receipt = json.loads(path.read_text())
+        receipt.pop("platform")
+        save(path, receipt)
+    # La base registra su huella y la etapa no: no se puede comprobar que coincidan.
+    with pytest.raises(ValueError, match="los recibos de la etapa no"):
+        stage.sources(unrecorded_platform="rtx4070-laptop")
+    # Con unas fuentes de la base anteriores al registro, solo el perfil declarado las admite.
+    base = json.loads(stage.base_sources.read_text())
+    base.pop("platform")
+    save(stage.base_sources, dict(base, schema_version=1))
+    with pytest.raises(ValueError, match="no registran su plataforma"):
+        stage.sources()
+    manifest = json.loads(stage.sources(unrecorded_platform="rtx4070-laptop").read_text())
+    assert manifest["platform"] == dict(
+        platform_sha256=None,
+        recorded=0,
+        unrecorded=len(jobs),
+        unrecorded_profile="rtx4070-laptop",
+    )
 
 
 def test_a_stage_with_other_identity_or_views_is_rejected(tmp_path):
@@ -456,10 +590,18 @@ def test_a_control_without_a_declared_role_stops_the_derivation(monkeypatch):
     monkeypatch.setattr(compare, "plan_stage", lambda stage: jobs[:2])
     group = compare._groups(staged)["gru"]
     assert group["full_continuation"] == "gru__full_continuation"
-    assert group["adapted"] == ["gru__head"]
+    assert group["adapted"] == ["gru__head"] and group["anchored_continuation"] is None
     assert group["chain"] == "gru__chain" and group["base_retrain"] == "gru"
     # El plan anclado de B no tiene cadena.
     assert compare._groups(dict(design=campaign_stage.ANCHORED))["gru"]["chain"] is None
+    # La continuación anclada tiene su propio papel y un solo modelo por padre.
+    anchored = dict(jobs[0], arm="gru__anchored_continuation", control="anchored_continuation")
+    monkeypatch.setattr(compare, "plan_stage", lambda stage: [*jobs[:2], anchored])
+    assert compare._groups(staged)["gru"]["anchored_continuation"] == "gru__anchored_continuation"
+    twice = [*jobs[:2], anchored, dict(anchored, arm="gru__other")]
+    monkeypatch.setattr(compare, "plan_stage", lambda stage: twice)
+    with pytest.raises(ValueError, match="dos modelos del control anchored_continuation"):
+        compare._groups(staged)
 
 
 def test_adapters_must_evaluate_the_same_rows_as_the_parent(tmp_path):
@@ -479,6 +621,163 @@ def test_adapters_must_evaluate_the_same_rows_as_the_parent(tmp_path):
         compare.evaluate(stage.declaration, sources, "US", "gru")
 
 
+# Agregados por ventana de la retención v2
+
+VOLATILE = {"created_at_utc", "resources"}
+
+
+@pytest.fixture(scope="module")
+def aggregated(tmp_path_factory):
+    """Etapa con tres ventanas, comparada desde las filas y desde sus agregados por ventana.
+
+    La comparación cubre fold-001 y fold-002, así que el informe une sesiones de dos
+    ventanas. Cada ventana guarda sus agregados con sus propias fuentes, como en la fase de
+    agregados del recorrido, y la lectura desde agregados no puede puntuar ninguna fila.
+    """
+    root = tmp_path_factory.mktemp("aggregated")
+    stage = Stage(root, start="2020-04-01")
+    windows = compare.compared_windows(stage.loaded, "US", "gru")
+    sources = stage.sources()
+    expected = compare.evaluate(stage.declaration, sources, "US", "gru")
+    records = {
+        window: compare.write_window_aggregates(
+            stage.declaration,
+            "US",
+            "gru",
+            window,
+            base_sources=stage.window_base_sources(window),
+            stage_output=stage.output,
+            root=root / "aggregates",
+        )
+        for window in windows
+    }
+
+    def refuse(*args, **kwargs):
+        raise AssertionError("Con agregados no se puntúa ninguna fila")
+
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setattr(compare.walk, "_score_window", refuse)
+        actual = compare.evaluate(
+            stage.declaration, sources, "US", "gru", aggregates=root / "aggregates"
+        )
+    return stage, windows, sources, records, expected, actual
+
+
+def test_the_comparison_from_window_aggregates_equals_the_one_that_reads_the_rows(aggregated):
+    stage, windows, _, records, expected, actual = aggregated
+    assert windows == ["fold-001", "fold-002"]
+    config, report, sessions, portfolio = expected
+    same_config, from_aggregates, same_sessions, no_portfolio = actual
+    assert same_config == config and portfolio is None and no_portfolio is None
+    assert report["posttraining"]["windows"] == windows
+    assert {k: v for k, v in from_aggregates.items() if k not in VOLATILE} == {
+        k: v for k, v in report.items() if k not in VOLATILE
+    }
+    assert same_sessions.equals(sessions)
+    # La igualdad incluye los intervalos del bootstrap por bloques con la misma semilla,
+    # calculados sobre las sesiones unidas de las dos ventanas.
+    rows = from_aggregates["contrasts"]["US"]["versus_frozen_parent"]["mae"]["contrasts"]
+    assert rows and all(row["interval"] for row in rows)
+    for window, record in records.items():
+        assert record["path"] == (
+            compare.aggregates_folder(stage.root / "aggregates", "gru") / "US" / f"{window}.npz"
+        )
+        folder = stage.output / "sources" / "windows" / window / "US"
+        assert record["sources"] == folder / "gru.json"
+        assert list(json.loads(record["sources"].read_text())["windows"]) == [window]
+
+
+def test_the_cli_compares_from_the_aggregates_without_rows(aggregated, tmp_path, monkeypatch):
+    stage, _, sources, _, _, actual = aggregated
+
+    def refuse(*args, **kwargs):
+        raise AssertionError("Con agregados no se puntúa ninguna fila")
+
+    monkeypatch.setattr(compare.walk, "_score_window", refuse)
+    arguments = ["evaluate", "--declaration", str(stage.declaration), "--scope", "US"]
+    arguments += ["--base-arm", "gru", "--sources", str(sources)]
+    arguments += ["--output", str(tmp_path / "out"), "--aggregates", str(stage.root / "aggregates")]
+    assert compare.main(arguments) == 0
+    report = json.loads((tmp_path / "out" / "comparison.json").read_text())
+    expected = json.loads(json.dumps(actual[1]))
+    volatile = VOLATILE | {"artifacts"}
+    assert {k: v for k, v in report.items() if k not in volatile} == {
+        k: v for k, v in expected.items() if k not in volatile
+    }
+
+
+def test_window_aggregates_reject_other_predictions_and_missing_windows(aggregated, tmp_path):
+    stage, windows, sources, _, _, _ = aggregated
+    folder = compare.aggregates_folder(stage.root / "aggregates", "gru") / "US"
+    # Una ventana sin trabajos de la etapa no tiene comparación ni agregados.
+    with pytest.raises(ValueError, match="no tiene la ventana fold-000"):
+        compare.write_window_aggregates(
+            stage.declaration,
+            "US",
+            "gru",
+            "fold-000",
+            base_sources=stage.window_base_sources("fold-000"),
+            stage_output=stage.output,
+            root=tmp_path,
+        )
+    # Unas fuentes con otra predicción válida en la segunda ventana no leen sus agregados.
+    manifest = json.loads(sources.read_text())
+    entry = manifest["arms"]["gru__head"]["42"]["fold-002"]["evaluation"]
+    table = pq.read_table(sources.parent / entry["path"])
+    column = table.schema.get_field_index("prediction")
+    changed = tmp_path / "evaluation-predictions.parquet"
+    shifted = pa.array(table["prediction"].to_numpy() + 1.0)
+    pq.write_table(table.set_column(column, "prediction", shifted), changed)
+    entry.update(path=os.path.relpath(changed, sources.parent), sha256=sha256(changed))
+    other = sources.with_name("other.json")
+    save(other, manifest)
+    aggregates = stage.root / "aggregates"
+    with pytest.raises(ValueError, match="fold-002 proceden de otras fuentes o código"):
+        compare.evaluate(stage.declaration, other, "US", "gru", aggregates=aggregates)
+    # Sin los agregados de una ventana, la comparación no se completa con filas.
+    moved = folder / "fold-001.npz"
+    moved.rename(tmp_path / "fold-001.npz")
+    try:
+        with pytest.raises(ValueError, match="Faltan los agregados de US fold-001"):
+            compare.evaluate(
+                stage.declaration, sources, "US", "gru", aggregates=stage.root / "aggregates"
+            )
+    finally:
+        (tmp_path / "fold-001.npz").rename(moved)
+
+
+def test_with_aggregates_the_edition_only_assigns_liquidity_strata(aggregated, monkeypatch):
+    """Con agregados la edición llega a la comparación para los estratos de liquidez, pero la
+    cartera lee filas y no se calcula."""
+    stage, _, sources, _, _, _ = aggregated
+    calls = []
+
+    def evaluated(config, sources_path, scope, **options):
+        calls.append(options)
+        return {}, None
+
+    def portfolio(*args):
+        raise AssertionError("La cartera no puede leer filas desde los agregados")
+
+    monkeypatch.setattr(compare.walk, "evaluate_walk_forward", evaluated)
+    monkeypatch.setattr(compare.long_short_comparison, "evaluate_long_short", portfolio)
+    edition = stage.root / "edition"
+    *_, result = compare.evaluate(
+        stage.declaration,
+        sources,
+        "US",
+        "gru",
+        edition=edition,
+        aggregates=stage.root / "aggregates",
+    )
+    assert result is None
+    assert calls == [
+        dict(
+            aggregates=compare.aggregates_folder(stage.root / "aggregates", "gru"), edition=edition
+        )
+    ]
+
+
 CHAIN_FAMILIES = json.loads(DECLARATION_V2.read_text())["families"]
 
 
@@ -486,10 +785,18 @@ def test_v2_declaration_adds_the_chain_and_the_base_retrain_on_the_joint_scope()
     loaded = compare.load_declaration(DECLARATION_V2)
     stage = loaded["stage"]
     assert stage["scopes"] == ["US+CN"]
-    # Los 29 modelos de la etapa menos la cadena trivial de Ridge, XGBoost y los seis B6.
+    # Los 33 modelos de la etapa menos los doce de cadena trivial: Ridge, XGBoost, los ocho B6
+    # (dos de ellos los kalman de PT3) y las dos extensiones PT1 del núcleo.
     assert len(loaded["groups"]) == 21
-    trivial = {"ridge", "xgboost", *campaign_stage.correction_arms(stage["campaign"])}
-    assert len(trivial) == 8 and not trivial & set(loaded["groups"])
+    campaign = stage["campaign"]
+    trivial = {
+        "ridge",
+        "xgboost",
+        *campaign_stage.correction_arms(campaign),
+        *campaign_stage.extension_arms(campaign),
+    }
+    assert len(stage["arms"]) == 33 and len(trivial) == 12
+    assert not trivial & set(loaded["groups"])
     assert "mars_titan_m1_k4_first_read" in loaded["groups"]
     joint = stage["campaign"]["comparison_config"]["joint_design"]
     for base_arm, config in loaded["configs"].items():
@@ -502,6 +809,16 @@ def test_v2_declaration_adds_the_chain_and_the_base_retrain_on_the_joint_scope()
         assert set(families["versus_base_retrain"]) == {f"{chain}-{base_arm}"}
         assert f"{chain}-{group['frozen_parent']}" in families["versus_frozen_parent"]
         assert f"{chain}-{group['full_continuation']}" in families["versus_full_continuation"]
+        # La continuación anclada solo existe en las cinco referencias, con su familia.
+        anchored = group["anchored_continuation"]
+        if base_arm in ("rnn", "lstm", "gru", "dlinear", "transformer_compact"):
+            assert anchored == f"{base_arm}__anchored_continuation"
+            assert set(families["versus_anchored_continuation"]) == {
+                f"{arm}-{anchored}" for arm in (*group["adapted"], group["full_continuation"])
+            }
+            assert f"{anchored}-{group['frozen_parent']}" in families["versus_frozen_parent"]
+        else:
+            assert anchored is None and "versus_anchored_continuation" not in families
         # Se conserva la elegibilidad del modelo conjunto: China entra en las métricas desde
         # fold-006 y los controles separados quedan fuera porque no hay ámbitos de un mercado.
         assert config["joint_design"] == dict(joint, separate_controls=[])
@@ -594,6 +911,7 @@ def test_the_chain_only_exists_in_the_staged_design(tmp_path):
         {"wrong": {"base": "chain", "variants": ["full_continuation"]}},
         {"wrong": {"base": "base_retrain", "variants": ["chain", "base_retrain"]}},
         {"wrong": {"base": "frozen_parent", "variants": ["frozen_parent"]}},
+        {"wrong": {"base": "anchored_continuation", "variants": ["anchored_continuation"]}},
         {"wrong": {"base": "frozen_parent", "variants": ["linear_residual"]}},
         {"levels": {"base": "frozen_parent", "variants": ["adapted"]}},
         {},
@@ -612,8 +930,10 @@ def test_cli_checks_the_declaration_without_reading_predictions(capsys):
     assert compare.main(["check", "--declaration", str(DECLARATION)]) == 0
     result = json.loads(capsys.readouterr().out)
     assert result["final_test_opened"] is False
-    # La base, su padre congelado, la continuación completa y los modelos de la matriz.
+    # La base, su padre congelado, las dos continuaciones y los modelos de la matriz.
     stage = campaign_stage.load_stage(
         DECLARATION.parent / json.loads(DECLARATION.read_text())["stage"]
     )
-    assert result["parents"]["gru"]["arms"] == 3 + len(matrix_arms(stage, "gru", "gru"))
+    assert result["parents"]["gru"]["arms"] == 4 + len(matrix_arms(stage, "gru", "gru"))
+    assert result["parents"]["gru"]["anchored_continuation"] == "gru__anchored_continuation"
+    assert result["parents"]["titans_mac_online"]["anchored_continuation"] is None

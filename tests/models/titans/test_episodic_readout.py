@@ -7,7 +7,7 @@ from dataclasses import replace
 
 import pytest
 import torch
-from test_financial_adapter import setup
+from test_financial_adapter import setup, synchronizations
 
 from mars_titan.models.titans.config import MAX_BLOCK_ROWS
 
@@ -428,8 +428,22 @@ def test_refinement_rejects_nonzero_absent_read_values():
     z = torch.zeros((1, 32), dtype=torch.float64)
     read = model.read(z)
     invalid = replace(read, values=torch.ones_like(z))
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="^Una lectura ausente necesita relleno cero$"):
         model.refine(z, z, invalid)
+
+
+def test_refinement_checks_the_zero_fill_only_on_absent_rows():
+    model = reader(mode="no_bank")
+    z = torch.zeros((3, 32), dtype=torch.float64)
+    read = model.read(z)
+    presence = torch.tensor([[True], [False], [True]])
+    values = torch.zeros_like(z)
+    values[0] = 1
+    values[2, 5] = -2
+    model.refine(z, z, replace(read, values=values, presence=presence))
+    values[1, 31] = 1e-300
+    with pytest.raises(ValueError, match="^Una lectura ausente necesita relleno cero$"):
+        model.refine(z, z, replace(read, values=values, presence=presence))
 
 
 @pytest.mark.parametrize(
@@ -560,3 +574,22 @@ def test_detached_mode_does_not_keep_the_incoming_autograd_history():
     )
     assert parameter.grad is None
     assert not tuple(model.buffers())
+
+
+@pytest.mark.cuda
+@pytest.mark.parametrize("refinements", [1, 4])
+def test_cuda_readout_waits_for_the_device_once(refinements):
+    """Las comprobaciones de todos los refinamientos se resuelven con una sola espera."""
+    config = api().EpisodicReadoutConfig(CODEC, hidden_size=32, refinements=refinements)
+    model = api().EpisodicReadout(config, dtype=torch.float32).to("cuda:0")
+    episodes = api().EpisodeSnapshot.create(
+        **source(3),
+        cutoff=10,
+        codec_id=CODEC,
+        context_id=CONTEXT,
+        device="cuda:0",
+        dtype=torch.float32,
+    )
+    z = torch.randn((4, 32), device="cuda:0")
+    model(z, episodes, context_id=CONTEXT, cutoff=10)
+    assert synchronizations(lambda: model(z, episodes, context_id=CONTEXT, cutoff=10)) == 1

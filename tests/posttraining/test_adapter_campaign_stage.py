@@ -24,11 +24,14 @@ from mars_titan.evaluation import walk_forward_comparison as comparison
 from mars_titan.models.quantile_head import QUANTILE_COLUMNS, QUANTILE_HEAD
 from mars_titan.posttraining import adapter_matrix, campaign_stage, matrix_runs, staged_chain
 from mars_titan.posttraining import chronological_matrix as cm
+from mars_titan.posttraining import predictive_objectives as predictive
 from mars_titan.training import campaign_chain, chain_disjunction
 from mars_titan.training.campaign_plan import load_campaign, plan_campaign
 from mars_titan.training.label_maturity import FIT_PARTITIONS, label_maturity
 from mars_titan.training.learning_hold import LearningHoldError
+from tests.hardware.platform_doubles import laptop
 from tests.learning_hold_lowering import lowers_learning_hold
+from tests.learning_traces.parity import EVERY_STEP, metrics, trace_rows
 from tests.posttraining.campaign_fixture import CpuLease, base_campaign
 from tests.posttraining.real_only import real_data_only
 
@@ -54,24 +57,18 @@ def micros(day):
 def matrix_cases(stage):
     """Casos de la matriz por ventana y semilla, sumados sobre los modelos base de la etapa.
 
-    Se leen de la matriz y no de una lista fija. Con la v3 y su variedad son 82: nueve en
-    cada red recurrente y DLinear (cuatro variantes de la v2, cuatro de la variedad y la
-    continuación), quince en el Transformer compacto (ocho, seis y la continuación) y los de
-    Titans-MAC (cinco en el codificador directo y en MAC sin memoria, nueve con memoria fija
-    y doce en línea, con sus tres adaptadores de la variedad).
+    Se leen de la matriz y de los controles que la etapa añade, no de una lista fija. Con la
+    v3, su variedad y la continuación anclada son 87: diez en cada red recurrente y DLinear
+    (cuatro adaptadores de la v2, cuatro de la variedad y las dos continuaciones), dieciséis
+    en el Transformer compacto (ocho, seis y las dos continuaciones) y los de Titans-MAC (cinco
+    en el codificador directo y en MAC sin memoria, nueve con memoria fija y doce en línea,
+    con sus tres adaptadores de la variedad). La continuación anclada no se propone en
+    Titans-MAC.
     """
     active, _ = campaign_stage.stage_arms(stage)
-    matrix, digest = stage["matrix"], stage["matrix_sha256"]
     total = 0
     for spec in active.values():
-        if spec["design"] == campaign_stage.FROZEN_ONLY:
-            continue
-        if spec["design"] is None:
-            items = adapter_matrix.cases(matrix, digest, spec["family"], head=QUANTILE_HEAD)
-        else:
-            items = cm.cases(
-                matrix, digest, spec["family"], variant=spec["variant"], bank=spec["bank"]
-            )
+        items = campaign_stage._cases(stage, spec)
         total += sum(item["case"]["seed"] == 42 for item in items)
     return total
 
@@ -85,14 +82,15 @@ def test_stage_a_plans_every_later_window_from_the_previous_parent():
         "real_edition_only",
     )
     counts = result["counts"]
-    assert (counts["training_jobs"], counts["prediction_jobs"]) == (10332, 1302)
+    assert (counts["training_jobs"], counts["prediction_jobs"]) == (10962, 1302)
     assert counts["selection_jobs"] == 1395
     stage = campaign_stage.load_stage(path)
-    assert stage["limits"] == dict(max_training_jobs=10332, max_prediction_jobs=1302)
+    assert stage["limits"] == dict(max_training_jobs=10962, max_prediction_jobs=1302)
     cases = matrix_cases(stage)
-    assert cases == 82
+    assert cases == 87
     assert result["awaiting_sections"] == {}
     assert result["excluded_controls"].keys() == {"linear_residual"}
+    assert result["additional_controls"] == ["anchored_continuation"]
     assert result["objectives"]["adapters"] == "neural_pinball"
     for scope, windows in {"US": 19, "CN": 13, "US+CN": 13}.items():
         entry = counts["scopes"][scope]
@@ -133,13 +131,20 @@ def test_jobs_depend_on_the_parent_selected_in_the_previous_window():
         arm: {item["id"]: item["case"] for item in campaign_stage._cases(stage, spec)}
         for arm, spec in active.items()
     }
-    # Las redes de la campaña siguen la pérdida pinball de la cabeza de cuantiles.
+    # Las redes de la campaña siguen la pérdida pinball de la cabeza de cuantiles. Los
+    # objetivos de #128 de la matriz son la corrección lineal de la mediana, y A no los nombra.
     for arm, spec in active.items():
         if spec["design"] is None:
             neural = adapter_matrix.cases(
                 stage["matrix"], stage["matrix_sha256"], spec["family"], head=QUANTILE_HEAD
             )
-            assert {item["case"]["mode"] for item in neural} == {"neural_pinball"}, arm
+            modes = {
+                item["case"]["mode"]
+                for item in neural
+                if item["control"] not in predictive.CONTROLS
+            }
+            assert modes == {"neural_pinball"}, arm
+            assert not any(name.endswith(predictive.CONTROLS) for name in cases[arm])
     windows = {
         scope: [name for name, _ in campaign_chain.scope_windows(stage["campaign"], scope)]
         for scope in stage["scopes"]
@@ -218,6 +223,12 @@ INVALID = {
     "data_policy": lambda v: v.update(data_policy="real_and_augmented"),
     "no_chain_rule": lambda v: v.pop("chain_rule"),
     "no_data_policy": lambda v: v.pop("data_policy"),
+    "unknown_additional_control": lambda v: v.update(additional_controls=["l2_sp"]),
+    "empty_additional_controls": lambda v: v.update(additional_controls=[]),
+    "repeated_additional_control": lambda v: v.update(
+        additional_controls=["anchored_continuation"] * 2
+    ),
+    "matrix_control_as_additional": lambda v: v.update(additional_controls=["full_continuation"]),
 }
 
 
@@ -255,7 +266,7 @@ def test_variant_b_cannot_declare_the_trivial_chain_of_b6(tmp_path):
         arms=["gru", "mars_titan_m1", "mars_titan_b6"],
     )
     atomic_json(tmp_path / "stage.json", value)
-    with pytest.raises(ValueError, match="cadena trivial de Ridge, XGBoost y B6"):
+    with pytest.raises(ValueError, match="B6 y las extensiones del núcleo solo existe"):
         campaign_stage.load_stage(tmp_path / "stage.json")
     # Sin B6 la misma etapa se acepta: el lector M1 sí tiene casos que ajustar en B.
     value["arms"] = ["gru", "mars_titan_m1"]
@@ -314,15 +325,18 @@ def test_variant_a_adapts_the_previous_parent_with_new_rows_and_publishes_the_ch
     base_a, tmp_path, recorder
 ):
     output = tmp_path / "stage"
-    summary = run(base_a, output)
+    summary = run(base_a, output, platform=laptop())
     assert summary["status"] == "completed"
     assert summary["planned"] == summary["completed"]
-    assert summary["planned"] == dict(training_jobs=5, prediction_jobs=1, selection_jobs=2)
+    assert summary["planned"] == dict(training_jobs=6, prediction_jobs=1, selection_jobs=2)
     found = receipts(output)
+    points = ("full_continuation", "anchored_continuation", "head", "fusion", "head_fusion")
     assert set(found) == {FROZEN} | {
-        f"US/fold-001/gru__{point}/fit-s42"
-        for point in ("full_continuation", "head", "fusion", "head_fusion", "fusion_full_rank")
+        f"US/fold-001/gru__{point}/fit-s42" for point in (*points, "fusion_full_rank")
     }
+    # Cada recibo guarda la plataforma fuera de su identidad, como los de la campaña base.
+    assert all(receipt["platform"] == laptop() for receipt in found.values())
+    assert all("platform" not in receipt["identity"] for receipt in found.values())
     proof = json.loads((output / "windows-data/US/fold-001/fit-rows.json").read_text())
     assert proof["parent_window"] == "fold-000" and proof["window"] == "fold-001"
     assert (proof["start"], proof["end"]) == ("2022-01-01", "2022-04-01")
@@ -342,8 +356,14 @@ def test_variant_a_adapts_the_previous_parent_with_new_rows_and_publishes_the_ch
     # Sin pasos aplicados, la época cero gana y cada caso emite las filas del padre congelado.
     updates = {receipt["updates"] for name, receipt in found.items() if name != FROZEN}
     assert len(updates) == 1 and min(updates) > 0
-    assert len(recorder.optimizers) == 5
+    assert len(recorder.optimizers) == 6
     assert all(len(item.calls) == min(updates) for item in recorder.optimizers)
+    # Solo la continuación anclada construye la versión anclada de AdamW, con el mismo λ.
+    assert [item.anchored for item in recorder.optimizers].count(True) == 1
+    assert {item.weight_decay for item in recorder.optimizers} == {0.01}
+    anchored = found["US/fold-001/gru__anchored_continuation/fit-s42"]["identity"]
+    assert anchored["control"] == "anchored_continuation"
+    assert anchored["case"]["weight_decay_anchor"] == "initial_parameters"
     frozen = found[FROZEN]
     assert frozen["updates"] == 0 and frozen["reported_score"] is None
     assert frozen["identity"]["parent"]["job"] == PARENT and frozen["fit_rows"] is None
@@ -362,6 +382,22 @@ def test_variant_a_adapts_the_previous_parent_with_new_rows_and_publishes_the_ch
             assert receipt["fit_rows"]["rows"] == proof["rows"]
             assert receipt["fit_rows"]["sha256"] == proof["sha256"]
             assert receipt["fit_rows"]["intersection"] == proof["intersection"]
+        # La puntuación que elige en la cadena sale solo de la validación de la ventana, que
+        # termina antes de su calibración y de su evaluación. Las etiquetas usadas maduran
+        # antes de la evaluación, así que ningún caso, el anclado incluido, se elige con ella.
+        moments = {
+            partition: pq.read_table(output / receipt["predictions"][partition]["path"])[
+                "prediction_at"
+            ]
+            .cast(pa.int64())
+            .to_numpy()
+            for partition in campaign_stage.PREDICTED
+        }
+        assert moments["validation"].max() < moments["calibration"].min()
+        assert moments["calibration"].max() < moments["evaluation"].min()
+        assert labels < moments["evaluation"].min()
+        validation = pq.read_table(output / receipt["predictions"]["validation"]["path"])
+        assert receipt["score"] == staged_chain.validation_score(validation)
         for partition in campaign_stage.PREDICTED:
             table = pq.read_table(output / receipt["predictions"][partition]["path"])
             assert (table["prediction_at"].cast(pa.int64()).to_numpy() < FINAL_TEST).all()
@@ -391,7 +427,10 @@ def test_variant_a_adapts_the_previous_parent_with_new_rows_and_publishes_the_ch
     assert first["receipts"]["US"].labels_used_until < micros("2022-01-01")
     second = campaign_chain.read_selection(output, "US", "fold-001", "gru", 42)
     assert second["selected"]["kind"] == "frozen_parent" and second["selected"]["job"] == FROZEN
-    assert second["fit_rows"] is None and len(second["candidates"]) == 6
+    assert second["fit_rows"] is None and len(second["candidates"]) == 7
+    # Las dos continuaciones compiten en la cadena como candidatas de tipo continuación.
+    kinds = {item["arm"]: item["kind"] for item in second["candidates"]}
+    assert kinds["gru__full_continuation"] == kinds["gru__anchored_continuation"] == "continuation"
     assert second["parent"]["job"] == PARENT
     assert second["labels_used_until"] == labels
     assert summary["chain"] == {
@@ -437,8 +476,8 @@ def test_a_strictly_better_candidate_replaces_the_frozen_parent(
 
     def lower_head(table):
         calls.append(None)
-        # Tercer trabajo de la ventana: el modelo head, tras el padre y la continuación.
-        return original(table) - (1e-9 if len(calls) == 3 else 0.0)
+        # Cuarto trabajo de la ventana: el modelo head, tras el padre y las dos continuaciones.
+        return original(table) - (1e-9 if len(calls) == 4 else 0.0)
 
     monkeypatch.setattr(staged_chain, "validation_score", lower_head)
     output = tmp_path / "stage"
@@ -523,12 +562,12 @@ def test_a_paused_case_resumes_its_cursor_without_repeating_updates(base_a, tmp_
     summary = run(base_a, output, stop)
     assert summary["status"] == "completed"
     found = receipts(output)
-    assert len(found) == 6
+    assert len(found) == 7
     # El caso pausado suma sus pasos antes y después de reanudar, sin repetir ninguno.
     assert sum(len(item.calls) for item in recorder.optimizers) == sum(
         receipt["updates"] for receipt in found.values()
     )
-    assert len(recorder.optimizers) == 6
+    assert len(recorder.optimizers) == 7
 
 
 def test_the_hold_blocks_before_reading(base_a, tmp_path, learning_hold):
@@ -608,7 +647,7 @@ def test_command_checks_the_declared_stage_without_reading_data(capsys):
     assert campaign_stage.main(["check", "--stage", str(path)]) == 0
     printed = json.loads(capsys.readouterr().out)
     assert printed["status"] == "checked" and printed["scientific_training_started"] is False
-    assert printed["counts"]["training_jobs"] == 10332
+    assert printed["counts"]["training_jobs"] == 10962
 
 
 def test_matrix_seeds_must_match_the_seeds_of_each_parent(tmp_path):
@@ -663,6 +702,8 @@ B6_ARMS = (
     "mars_titan_b6_calendar",
     "mars_titan_b6_regime_banks",
     "mars_titan_b6_calendar_banks",
+    "mars_titan_b6_kalman",
+    "mars_titan_b6_kalman_rho0",
 )
 
 
@@ -832,3 +873,36 @@ def test_a_staged_campaign_needs_the_disjunction_report_of_its_views(
     assert summary["status"] == "paused" and summary["completed"]["training_jobs"] == 0
     assert summary["disjunction_sha256"] == sha256(tmp_path / "report.json")
     assert recorder.optimizers == []
+
+
+def test_traces_reach_every_fitted_case_and_resume_without_duplicates(base_a, tmp_path, recorder):
+    """Trazas de #448 en la etapa: mismos recibos y cada caso con sus pasos una sola vez."""
+    plain = tmp_path / "plain"
+    assert run(base_a, plain)["status"] == "completed"
+    created = len(recorder.optimizers)
+    stop = SimpleNamespace(requested=False)
+
+    def pause(optimizer):
+        if len(recorder.optimizers) == created + 2 and len(optimizer.calls) == 1:
+            stop.requested = True
+
+    recorder.on_step = pause
+    traced = tmp_path / "traced"
+    assert run(base_a, traced, stop, traces=EVERY_STEP)["status"] == "paused"
+    recorder.on_step, stop.requested = None, False
+    assert run(base_a, traced, stop, traces=EVERY_STEP)["status"] == "completed"
+    expected, found = receipts(plain), receipts(traced)
+    assert set(found) == set(expected)
+    for name, receipt in found.items():
+        for key in ("score", "updates", "selection", "identity"):
+            assert receipt.get(key) == expected[name].get(key), (name, key)
+        for partition, record in receipt.get("predictions", {}).items():
+            assert record["sha256"] == expected[name]["predictions"][partition]["sha256"]
+        if name == FROZEN:
+            assert not (traced / "jobs" / name / "run" / "traces").exists()
+            continue
+        manifest, rows = trace_rows(traced / "jobs" / name / "run" / "traces")
+        assert manifest["identity"]["family"] == "posttraining"
+        steps = {row["step"] for row in rows if row["phase"] == "train"}
+        assert steps == set(range(1, receipt["updates"] + 1))
+        assert "validation.score" in metrics(rows, "validation")

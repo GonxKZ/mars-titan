@@ -1,0 +1,263 @@
+{
+ "schema_version": 1,
+ "kind": "targeted_mutation_testing",
+ "issue": 57,
+ "recorded_at_utc": "2026-10-13T04:24:36.956877+00:00",
+ "files": [
+  "src/mars_titan/training/distillation.py",
+  "src/mars_titan/training/financial_run.py"
+ ],
+ "tests": [
+  "tests/training/test_distillation.py"
+ ],
+ "command": "pytest -q -x tests/training/test_distillation.py sobre una copia de src, tests, configs y el recibo de coste",
+ "baseline": {
+  "code": 0,
+  "tail": "51 passed in 50.87s"
+ },
+ "import_checked": "copia aislada (ruta local omitida)",
+ "killed": 30,
+ "survived": 0,
+ "mutations": [
+  {
+   "id": "D01",
+   "description": "Pesos de tarea y distancia intercambiados",
+   "file": "src/mars_titan/training/distillation.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 27 passed in 15.86s",
+   "seconds": 18.15
+  },
+  {
+   "id": "D02",
+   "description": "Distancia con signo",
+   "file": "src/mars_titan/training/distillation.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 26 passed in 11.55s",
+   "seconds": 13.86
+  },
+  {
+   "id": "D03",
+   "description": "Forma del profesor sin comprobar",
+   "file": "src/mars_titan/training/distillation.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 38 passed in 50.93s",
+   "seconds": 53.1
+  },
+  {
+   "id": "D04",
+   "description": "Fila sin salida del profesor leída como la primera",
+   "file": "src/mars_titan/training/distillation.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 37 passed in 51.57s",
+   "seconds": 53.78
+  },
+  {
+   "id": "D05",
+   "description": "Peso uno aceptado",
+   "file": "src/mars_titan/training/distillation.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 1 passed in 0.69s",
+   "seconds": 2.95
+  },
+  {
+   "id": "D06",
+   "description": "Memoria sin comprobar",
+   "file": "src/mars_titan/training/distillation.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 15 passed in 6.41s",
+   "seconds": 8.75
+  },
+  {
+   "id": "D07",
+   "description": "Tramo sin comprobar al cargar",
+   "file": "src/mars_titan/training/distillation.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 16 passed in 6.03s",
+   "seconds": 8.38
+  },
+  {
+   "id": "D08",
+   "description": "Profesor sin comprobar al cargar",
+   "file": "src/mars_titan/training/distillation.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 18 passed in 6.40s",
+   "seconds": 8.82
+  },
+  {
+   "id": "D09",
+   "description": "Cabeza sin comprobar al cargar",
+   "file": "src/mars_titan/training/distillation.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 21 passed in 6.22s",
+   "seconds": 8.91
+  },
+  {
+   "id": "D10",
+   "description": "Huella del archivo sin comprobar",
+   "file": "src/mars_titan/training/distillation.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 11 passed in 6.36s",
+   "seconds": 8.69
+  },
+  {
+   "id": "D11",
+   "description": "Cuantiles cruzados aceptados",
+   "file": "src/mars_titan/training/distillation.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 22 passed in 7.46s",
+   "seconds": 9.78
+  },
+  {
+   "id": "D12",
+   "description": "Decisiones fuera del tramo aceptadas",
+   "file": "src/mars_titan/training/distillation.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 22 passed in 7.43s",
+   "seconds": 9.81
+  },
+  {
+   "id": "D13",
+   "description": "Corte sin comprobar",
+   "file": "src/mars_titan/training/distillation.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 12 passed in 6.36s",
+   "seconds": 8.7
+  },
+  {
+   "id": "D14",
+   "description": "Profesor sin completar aceptado",
+   "file": "src/mars_titan/training/distillation.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 23 passed in 6.78s",
+   "seconds": 9.28
+  },
+  {
+   "id": "D15",
+   "description": "Profesor de otra fase aceptado",
+   "file": "src/mars_titan/training/distillation.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 23 passed in 6.83s",
+   "seconds": 9.07
+  },
+  {
+   "id": "D16",
+   "description": "Salidas de otra ejecución aceptadas",
+   "file": "src/mars_titan/training/distillation.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 23 passed in 6.33s",
+   "seconds": 8.56
+  },
+  {
+   "id": "D16b",
+   "description": "Salidas emitidas desde otra carpeta aceptadas",
+   "file": "src/mars_titan/training/distillation.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 23 passed in 6.81s",
+   "seconds": 9.06
+  },
+  {
+   "id": "D17",
+   "description": "Salidas sin cargar el estado elegido",
+   "file": "src/mars_titan/training/distillation.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 25 passed in 7.26s",
+   "seconds": 9.46
+  },
+  {
+   "id": "D18",
+   "description": "Etiqueta guardada como salida",
+   "file": "src/mars_titan/training/distillation.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 9 passed in 5.40s",
+   "seconds": 7.46
+  },
+  {
+   "id": "D19",
+   "description": "Filas repetidas aceptadas",
+   "file": "src/mars_titan/training/distillation.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 22 passed in 6.99s",
+   "seconds": 9.39
+  },
+  {
+   "id": "D20",
+   "description": "Declaración sin comprobar el alumno directo",
+   "file": "src/mars_titan/training/distillation.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 41 passed in 50.30s",
+   "seconds": 52.84
+  },
+  {
+   "id": "D21",
+   "description": "Declaración sin comprobar uso y memoria",
+   "file": "src/mars_titan/training/distillation.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 42 passed in 57.59s",
+   "seconds": 59.94
+  },
+  {
+   "id": "D22",
+   "description": "Profesor de otro tramo aceptado por el entrenador",
+   "file": "src/mars_titan/training/financial_run.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 24 passed in 7.33s",
+   "seconds": 9.64
+  },
+  {
+   "id": "D23",
+   "description": "Peso y profesor sin emparejar",
+   "file": "src/mars_titan/training/financial_run.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 24 passed in 7.28s",
+   "seconds": 9.78
+  },
+  {
+   "id": "D24",
+   "description": "Destilación omitida en el tramo completo",
+   "file": "src/mars_titan/training/financial_run.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 28 passed in 20.28s",
+   "seconds": 22.92
+  },
+  {
+   "id": "D25",
+   "description": "Destilación omitida con la penalización C",
+   "file": "src/mars_titan/training/financial_run.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 36 passed in 52.41s",
+   "seconds": 54.89
+  },
+  {
+   "id": "D26",
+   "description": "Destilación omitida en la acumulación",
+   "file": "src/mars_titan/training/financial_run.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 31 passed in 27.05s",
+   "seconds": 29.47
+  },
+  {
+   "id": "D27",
+   "description": "Pérdida informada con el profesor",
+   "file": "src/mars_titan/training/financial_run.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 34 passed in 37.74s",
+   "seconds": 39.92
+  },
+  {
+   "id": "D28",
+   "description": "Identidad sin la destilación",
+   "file": "src/mars_titan/training/financial_run.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 24 passed in 7.02s",
+   "seconds": 9.44
+  },
+  {
+   "id": "D29",
+   "description": "Receta sin la distancia en su identidad",
+   "file": "src/mars_titan/training/financial_run.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 8 passed in 0.78s",
+   "seconds": 3.12
+  }
+ ]
+}

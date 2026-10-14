@@ -11,6 +11,7 @@ cambia ninguna emisión anterior.
 from types import SimpleNamespace
 
 import numpy as np
+import pyarrow as pa
 import pytest
 import torch
 from test_financial_session import moment
@@ -22,15 +23,28 @@ from test_financial_session_associative import shared_native as shared_native
 from test_mars_titan_session_parity import PHASE, events
 from test_mars_titan_variant import session_run
 
-from mars_titan.memory.associative_memory import AssociativeMemoryConfig, MatureCorrection
+from mars_titan.memory.associative_memory import (
+    AssociativeMemoryConfig,
+    KalmanNoise,
+    MatureCorrection,
+)
 from mars_titan.memory.financial_observations import ObservationEvent
 from mars_titan.models.titans.financial import FinancialConfig, FinancialPredictor
 from mars_titan.models.titans.frozen_financial import FrozenFinancialConsumer
 from mars_titan.training.financial_run import ChronologicalInference, ChronologicalRecipe, _Pass
-from mars_titan.training.mars_titan_correction import CorrectionInference
+from mars_titan.training.mars_titan_correction import (
+    KALMAN_COLUMNS,
+    CorrectionInference,
+    KalmanPredictionRows,
+    prediction_rows,
+)
 
 PROXIMAL = MatureCorrection(AssociativeMemoryConfig("proximal", rate=0.25, forgetting=0.01))
 ZERO = MatureCorrection(AssociativeMemoryConfig("proximal", rate=0.0, forgetting=0.0))
+NOISE = KalmanNoise(
+    process_noise=1e-4, observation_noise=0.5, cohort_correlation=0.2, prior_variance=0.05
+)
+KALMAN = MatureCorrection(AssociativeMemoryConfig("kalman", kalman=NOISE))
 RECIPE = ChronologicalRecipe(block_rows=4)
 SOURCE = SimpleNamespace(phase=PHASE)
 
@@ -228,3 +242,70 @@ def test_inference_rejects_a_trainable_parent_or_an_unidentified_correction(
     predictor, correction = change(core(four_flow_source), PROXIMAL)
     with pytest.raises(ValueError, match=message):
         CorrectionInference(predictor, RECIPE, correction, four_flow_source["codec"])
+
+
+def kalman_rows(source, sequence):
+    inference = CorrectionInference(core(source), RECIPE, KALMAN, source["codec"])
+    rows = prediction_rows(inference)
+    metrics = inference._pass(SOURCE, sequence, rows=rows)
+    table = pa.concat_tables(rows.finish()).sort_by("sample_id")
+    return inference, metrics, table
+
+
+def one_session_later(sequence):
+    """Cada etiqueta pasa a la siguiente decisión, la siguiente entrada de su mercado."""
+    moved, held = [], []
+    for event in sequence:
+        held += event.labels
+        labels = ()
+        if event.inputs:
+            labels, held = (
+                tuple(held[: -len(event.labels)] if event.labels else held),
+                list(event.labels),
+            )
+        moved.append(ObservationEvent(event.at, event.inputs, labels, event.close_phase))
+    return moved
+
+
+def test_kalman_rows_add_the_predictive_variance_and_the_delayed_prediction(four_flow_source):
+    sequence = events(four_flow_source)
+    inference, metrics, table = kalman_rows(four_flow_source, sequence)
+    assert type(inference) is CorrectionInference and inference.kalman
+    assert table.num_rows == metrics["labels"] == 16
+    assert set(KALMAN_COLUMNS) <= set(table.column_names)
+    # Los dos primeros eventos se emiten antes de la primera escritura, con P = p0 I y claves
+    # unitarias: kᵀPk + σ² = p0 + σ². Las etiquetas escritas reducen después la varianza.
+    unwritten = sorted(set(table["prediction_at"].to_pylist()))[:2]
+    prior = NOISE.prior_variance + NOISE.observation_noise
+    for row in table.to_pylist():
+        if row["prediction_at"] in unwritten:
+            assert row["predictive_variance"] == pytest.approx(prior, rel=1e-12)
+        else:
+            assert NOISE.observation_noise < row["predictive_variance"] < prior
+    # La memoria retrasada escribe al final del último evento las etiquetas retenidas.
+    assert metrics["label_delay_writes"] == metrics["associative_writes"] == 16
+    # Solo quedan pendientes las cuatro decisiones del último evento, sin etiqueta.
+    assert {at for _, at in inference.extra} == {max(at for _, at in inference.extra)}
+    assert len(inference.extra) == 4
+
+
+def test_the_delayed_prediction_is_the_memory_that_receives_each_label_one_session_later(
+    four_flow_source,
+):
+    sequence = events(four_flow_source)
+    _, _, delayed = kalman_rows(four_flow_source, sequence)
+    _, _, shifted = kalman_rows(four_flow_source, one_session_later(sequence))
+    assert delayed["sample_id"].equals(shifted["sample_id"])
+    assert delayed["prediction_label_delay1"].to_pylist() == shifted["prediction"].to_pylist()
+    # Sin retraso la corrección llega una sesión antes, así que las dos predicciones difieren.
+    assert delayed["prediction"].to_pylist() != delayed["prediction_label_delay1"].to_pylist()
+
+
+def test_delta_and_proximal_rows_keep_their_columns(four_flow_source):
+    inference = CorrectionInference(
+        core(four_flow_source), RECIPE, PROXIMAL, four_flow_source["codec"]
+    )
+    rows = prediction_rows(inference)
+    inference._pass(SOURCE, events(four_flow_source), rows=rows)
+    assert type(rows) is not KalmanPredictionRows and inference.delayed is None
+    assert not set(KALMAN_COLUMNS) & set(pa.concat_tables(rows.finish()).column_names)

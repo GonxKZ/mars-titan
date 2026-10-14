@@ -1,0 +1,65 @@
+{
+  "schema_version": 2,
+  "kind": "campaign_publication",
+  "status": "declared_before_results",
+  "name": "historical-masked-publication-a-v2",
+  "campaign": "../baselines/historical-masked-campaign-a-v2.json",
+  "comparison_matrix": "comparison-matrix-a-v2.json",
+  "posttraining_comparison": "../posttraining/historical-masked-adapter-comparison-a-v2.json",
+  "budget_differences": {
+    "ridge": {
+      "iterations": "Solución cerrada de mínimos cuadrados con penalización, sin épocas ni regla de parada",
+      "search_cases": "Rejilla de la configuración tabular: tres valores de alpha",
+      "seeds": "Ajuste determinista con una sola semilla (seed_policy.deterministic_arms y finalist_seeds de la configuración tabular)"
+    },
+    "xgboost": {
+      "iterations": "Rondas de boosting con selección por validación (mínimo de rondas y paciencia de la configuración tabular) en lugar de épocas",
+      "search_cases": "Rejilla de la configuración tabular: doce combinaciones de profundidad, bins y tasa",
+      "seeds": "La configuración tabular declara una sola semilla (finalist_seeds) y la campaña lo trata como determinista"
+    },
+    "transformer_compact_online": {
+      "iterations": "Actualizaciones en línea durante validación, calibración y evaluación, limitadas por las escrituras del banco de mars_titan_m1, sin épocas",
+      "search_cases": "Rejilla de tasas de online_controls, con la tasa cero que reproduce el Transformer congelado"
+    },
+    "rnn": {
+      "iterations": "Las mismas épocas y la misma regla del protocolo, pero con lotes de filas en lugar del recorrido cronológico de los modelos con memoria"
+    },
+    "lstm": {
+      "iterations": "Las mismas épocas y la misma regla del protocolo, pero con lotes de filas en lugar del recorrido cronológico de los modelos con memoria"
+    },
+    "gru": {
+      "iterations": "Las mismas épocas y la misma regla del protocolo, pero con lotes de filas en lugar del recorrido cronológico de los modelos con memoria"
+    },
+    "dlinear": {
+      "iterations": "Las mismas épocas y la misma regla del protocolo, pero con lotes de filas en lugar del recorrido cronológico de los modelos con memoria"
+    },
+    "transformer_compact": {
+      "iterations": "Las mismas épocas y la misma regla del protocolo, pero con lotes de filas en lugar del recorrido cronológico de los modelos con memoria"
+    },
+    "mars_titan_b6": {
+      "iterations": "No ajusta parámetros: cada trabajo predice los tramos medidos con el η de su caso de la receta B6 sobre el padre congelado, sin épocas ni regla de parada, y por eso queda fuera de los grupos de la parada conjunta (#437, #523 y #525)"
+    },
+    "mars_titan_b6_bias": {
+      "iterations": "No ajusta parámetros: cada trabajo predice los tramos medidos con el η de su caso de la receta B6 sobre el padre congelado, sin épocas ni regla de parada, y por eso queda fuera de los grupos de la parada conjunta (#437, #523 y #525)"
+    },
+    "mars_titan_b6_regime": {
+      "iterations": "No ajusta parámetros: cada trabajo predice los tramos medidos con el η de su caso de la receta B6 sobre el padre congelado, sin épocas ni regla de parada, y por eso queda fuera de los grupos de la parada conjunta (#437, #523 y #525)"
+    },
+    "mars_titan_b6_calendar": {
+      "iterations": "No ajusta parámetros: cada trabajo predice los tramos medidos con el η de su caso de la receta B6 sobre el padre congelado, sin épocas ni regla de parada, y por eso queda fuera de los grupos de la parada conjunta (#437, #523 y #525)"
+    },
+    "mars_titan_b6_regime_banks": {
+      "iterations": "No ajusta parámetros: cada trabajo predice los tramos medidos con el η de su caso de la receta B6 sobre el padre congelado, sin épocas ni regla de parada, y por eso queda fuera de los grupos de la parada conjunta (#437, #523 y #525)"
+    },
+    "mars_titan_b6_calendar_banks": {
+      "iterations": "No ajusta parámetros: cada trabajo predice los tramos medidos con el η de su caso de la receta B6 sobre el padre congelado, sin épocas ni regla de parada, y por eso queda fuera de los grupos de la parada conjunta (#437, #523 y #525)"
+    },
+    "mars_titan_b6_kalman": {
+      "iterations": "No ajusta parámetros: cada trabajo predice los tramos medidos con la regla de Kalman de la receta B6 sobre el padre congelado, con la correlación de cohorte estimada y sin épocas ni regla de parada, y por eso queda fuera de los grupos de la parada conjunta (#455)"
+    },
+    "mars_titan_b6_kalman_rho0": {
+      "iterations": "No ajusta parámetros: cada trabajo predice los tramos medidos con la regla de Kalman de la receta B6 sobre el padre congelado, con correlación de cohorte nula y sin épocas ni regla de parada, y por eso queda fuera de los grupos de la parada conjunta (#455)"
+    }
+  },
+  "final_test_opened": false
+}

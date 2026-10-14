@@ -51,8 +51,12 @@ SCORING_SOURCES = (
     "evaluation/forecast_scores.py",
     "evaluation/modality_strata.py",
     "evaluation/modality_ablation.py",
+    "evaluation/online_calibration.py",
     "evaluation/liquidity_strata.py",
+    "evaluation/kalman_diagnostics.py",
     "calibration/conformal_quantiles.py",
+    "calibration/online_conformal.py",
+    "calibration/periodic_conformal.py",
 )
 # Código de la cartera larga y corta, que lee los precios de la edición sin ajustar.
 LONG_SHORT_SOURCES = (

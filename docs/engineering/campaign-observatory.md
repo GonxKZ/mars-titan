@@ -44,8 +44,8 @@ en `configs/`. Sus salidas previstas son `data/interim/historical-masked-a/<etap
 observatorio las encuentre. Mientras no exista el resumen, la etapa aparece como
 declarada y sin resumen, nunca como trabajos completados.
 
-Estas fuentes no producen registros por ejecución. A suma 22.620 trabajos entre sus
-etapas y A v2 25.831, con las 1.904 mesetas de su parada conjunta y los objetivos de grupo
+Estas fuentes no producen registros por ejecución. A suma 23.250 trabajos entre sus
+etapas y A v2 30.037, con las 2.056 mesetas de su parada conjunta y los objetivos de grupo
 de las políticas, muy por encima del presupuesto por defecto de 4.096 registros, y la web
 descarga todas las páginas del historial al abrirse.
 `observatory/window_campaigns.py` convierte cada resumen en una matriz de ámbito,

@@ -1,6 +1,6 @@
 # Calibración conformal en línea con etiquetas maduras (PT2)
 
-Estado a 10 de octubre de 2026: **implementado y comprobado sin entrenar**. El resultado experimental está pendiente, porque el modelo necesita predicciones que el bloqueo de aprendizaje todavía no permite emitir. Tarea [#454](https://github.com/GonxKZ/mars-titan/issues/454). La motivación, el control y la regla de decisión están en las [propuestas posteriores a Titans](../research/post-titans-proposals.md#pt2-calibración-conformal-en-línea-con-etiquetas-maduras).
+Estado a 10 de octubre de 2026: **implementado, conectado a la comparación por ventanas y comprobado sin entrenar**. El resultado experimental está pendiente, porque el modelo necesita predicciones que el bloqueo de aprendizaje todavía no permite emitir. Tarea [#454](https://github.com/GonxKZ/mars-titan/issues/454). La motivación, el control y la regla de decisión están en las [propuestas posteriores a Titans](../research/post-titans-proposals.md#pt2-calibración-conformal-en-línea-con-etiquetas-maduras).
 
 ## Qué hace
 
@@ -122,6 +122,18 @@ Puede no ayudar por varios motivos. Llega siempre tarde a un salto, porque la et
 
 La [declaración del modelo](../../configs/evaluation/online-conformal-comparison.json) fija, antes de ejecutar nada, tres modelos sobre las mismas predicciones y filas: el control `cqr_static`, la innovación `cqr_online` y una alternativa trivial `cqr_monthly_refit` que recalcula la CQR estática cada 21 sesiones con las filas maduras de los últimos tres meses. κ se elige entre 0,005 y 0,02 en las ventanas con evaluación entre 2005 y 2013 y se mantiene fijo de 2014 a 2023. La regla conserva PT2 si reduce al menos un 25 % la desviación media absoluta de la cobertura respecto al nominal por año y mercado, con un intervalo del 95 % que excluye cero, y el interval score emparejado por sesión no empeora más de un 1 %. Se abandona si el interval score empeora más de un 1 % o si la desviación no baja. Si la recalibración mensual iguala a PT2, el seguimiento por cohortes no aporta sobre una alternativa más simple. Nada se ha ejecutado.
 
+## Conexión con la comparación por ventanas
+
+La [comparación conjunta de A v2](../../configs/evaluation/historical-masked-2000-joint-comparison.json) declara la sección `online_calibration` con los valores anteriores. `evaluation/online_calibration.py` la valida antes de leer predicciones y `walk_forward_comparison` la aplica en cada ventana a los modelos con cuantiles, después de ajustar la CQR estática de la calibración común.
+
+- **Madurez.** El panel de predicciones no lleva `target_available_at`. La comparación lo lee de las etiquetas de la vista de cada ventana con `CorpusDataset`, que comprueba sus huellas, y lo alinea con el panel exigiendo las mismas filas y los mismos objetivos (`view_labels_target_available_at_v1`). Las huellas de esas etiquetas entran en las fuentes del informe.
+- **Variantes.** Sobre las mismas predicciones y filas, cada ventana puntúa por sesión la CQR estática (`cqr_static`), `cqr_online@κ` con κ = 0,005 y 0,02 y la recalibración periódica `cqr_periodic_refit`. Las dos parten de la CQR estática de la ventana, que la comprueba por su huella, y ninguna pasa estado a la ventana siguiente.
+- **Alternativa trivial.** `calibration/periodic_conformal.py` (`cqr_periodic_refit_matured_rows_v1`) recorre las sesiones de cada mercado. Las primeras 21 usan la CQR estática. Al empezar cada bloque siguiente, en el instante t de su primera sesión, vuelve a ajustar la CQR con las filas de calibración y de evaluación del mercado con `matures_at <= t` y `prediction_at >= t − 91 días`. Si no alcanzan el mínimo de filas, conserva la corrección anterior. Cada reajuste registra el instante, las filas, si se usó y la huella del calibrador.
+- **Informe.** `online_calibration` añade por modelo la selección de κ con la métrica primaria de 2005 a 2013 en todos los mercados del ámbito, con la tasa menor en caso de empate. De 2014 a 2023 compara la variante elegida y la periódica con la CQR estática: la desviación de cobertura con su cambio relativo y un intervalo de un bootstrap circular por bloques de días, y el interval score por sesión de cada nominal con la comparación emparejada común. Las semillas se promedian sesión a sesión. La regla da `keep`, `abandon`, `inconclusive` o `not_estimable`, y `periodic_matches_online` dice si la alternativa iguala a la elegida. En US+CN se informa del conjunto y de cada mercado.
+- La mediana no cambia, así que el MAE y el resto de contrastes de la comparación tampoco.
+
+La mutación dirigida de la conexión aplicó nueve defectos de uno en uno en la copia de trabajo: reajustar con filas que maduran después del instante, sin la ventana de 91 días o desde la primera sesión, marcar como usado un reajuste sin filas suficientes, mezclar mercados, elegir la tasa con mayor error, seleccionar con los años evaluados, aceptar con una sola de las dos condiciones de la regla y no reordenar la madurez con el panel. Las pruebas detectan los nueve ([recibo](../../reports/engineering/post-titans-consumers-mutations-20261013.json)). Es una selección dirigida, no una campaña completa de mutación.
+
 ## Comprobaciones
 
 | Propiedad | Prueba |
@@ -161,17 +173,16 @@ El arranque cuesta 3,5 ms con 128 activos y 0,12 s con 4.200. Exportar y restaur
 ## Desviaciones y límites
 
 - La propuesta escribía γ ∈ {0,005, 0,02} sin unidad. La implementación usa γ = κ B̂ y esos valores pasan a ser fracciones κ de la escala de cada mercado e intervalo. El artículo usa 0,1 B̂ por defecto con puntuaciones individuales. Con medias de cohorte de decenas o cientos de activos el error medio es menos ruidoso, y se mantienen los valores declarados.
-- La propuesta describía la alternativa trivial como recalibrar una vez al año, pero la CQR estática de la comparación ya se recalibra en cada ventana anual. La alternativa declarada es una recalibración mensual con filas maduras, que todavía no está implementada.
+- La propuesta describía la alternativa trivial como recalibrar una vez al año, pero la CQR estática de la comparación ya se recalibra en cada ventana anual. La alternativa declarada es una recalibración cada 21 sesiones con las filas maduras de los últimos 91 días.
 - La escala B̂ se fija con la calibración y no con una ventana móvil, para que γ sea constante y la cota (C6) se aplique sin cambios.
 - La réplica exige que las cohortes de un mercado maduren en el orden de emisión. Con el mismo horizonte para todas las filas es lo natural. Si una cohorte posterior madurase antes, esperaría a la anterior.
-- El panel de predicciones de la comparación no lleva `target_available_at`. La integración en `walk_forward_comparison` debe leerlo de la vista de cada ventana y queda pendiente.
+- La madurez se lee de la vista de la ventana y no del panel. Si la vista cambiase después de emitir las predicciones, la alineación por filas y objetivos rechazaría la ventana.
 - La corrección no pasa de una ventana a la siguiente. Cada ventana parte de su propia CQR estática.
 
 ## Pendiente sin medir
 
 - El efecto sobre la cobertura y el interval score, la elección de κ y la regla de decisión, bloqueados porque no hay predicciones de la campaña.
-- La integración en la comparación por ventanas y la alternativa trivial de recalibración mensual.
-- La cobertura en los eventos declarados de 2008, 2020 y 2022.
+- La cobertura en los eventos declarados de 2008, 2020 y 2022 y en el verano de 2015 en China. El informe la calcula desde el 14 de octubre de 2026 con la sección `declared_events` de la comparación conjunta, pero no hay predicciones de la campaña.
 
 ## Referencias
 

@@ -88,6 +88,9 @@
   "pending": [
     "Nada se ha ejecutado. El bloqueo de aprendizaje impide el piloto y la comparación.",
     "gradient_clip = 4 se fija antes de ver datos: con LayerNorm la salida de la memoria tiene escala unitaria por coordenada y, en la memoria lineal con clave unitaria, G = 4 equivale a Huber con δ = 2. La memoria de dos capas no tiene esa equivalencia exacta, así que la fracción de filas recortadas se registra como diagnóstico y no se ajusta.",
-    "La alternativa trivial conserva las tasas iniciales de PT1 sin caja ni recorte. FinancialConfig no expone theta_max, de modo que reducirlo exigiría otra extensión y cambiaría dos cosas a la vez."
+    "La alternativa trivial conserva las tasas iniciales de PT1 sin caja ni recorte. FinancialConfig no expone theta_max, de modo que reducirlo exigiría otra extensión y cambiaría dos cosas a la vez.",
+    "Desde el 10 de octubre la campaña A v2 declara titans_mac_online_pt1 y titans_mac_online_pt1_init en core_extensions, con los casos, las semillas 42, 43 y 44 y el grupo de parada conjunta de titans_mac_online, y la comparación conjunta los contrasta en las familias memory_stability y memory_stability_box. Una prueba exige que sus cambios del predictor sean los de esta declaración.",
+    "El piloto sigue siendo la primera ejecución prevista. Si cumple abandon_if, PT1 se retira de la campaña antes de lanzarla, lo que cambia la huella de la campaña.",
+    "La comparación de la campaña calcula la diferencia de MAE por sesión con bootstrap por bloques y, desde el 14 de octubre de 2026, el percentil 95 en los eventos declarados con la sección declared_events de la comparación conjunta (±60 sesiones de EE. UU. y junio a agosto de 2015 en China, según D2). Los diagnósticos D2 y D5 del estado de la memoria no los calcula y se obtendrán aparte con los mismos estados elegidos."
   ]
 }

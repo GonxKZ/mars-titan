@@ -20,6 +20,11 @@ un gancho global rechaza cualquier paso de un optimizador de PyTorch antes de mo
 pesos. Cada trabajo confirma un recibo con su identidad, el estado de partida, las huellas
 y las filas, que deben ser las de la campaña base en la misma ventana. `sources` publica el
 manifiesto que lee `evaluation.walk_forward_comparison` con `--ablation-sources`.
+
+La etapa de robustez (#37) es la misma con su propio tipo: repite cada trabajo con las
+perturbaciones de `data.input_perturbations` en lugar de las ablaciones. Su declaración vive
+fuera de la comparación (`evaluation.robustness`), sus recibos y su salida tienen otra
+identidad y su manifiesto lo lee la comparación con `--robustness-sources`.
 """
 
 import argparse
@@ -35,10 +40,14 @@ from pathlib import Path
 
 from mars_titan.data import prediction_files
 from mars_titan.data.cohort_files import read_manifest, safe_destination
+from mars_titan.data.input_perturbations import PERTURBATIONS, perturbation_identity
 from mars_titan.data.modality_ablation import VARIANTS, ablation_identity
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.evaluation import modality_ablation as analysis
+from mars_titan.evaluation import robustness
 from mars_titan.evaluation import walk_forward_comparison as comparison
+from mars_titan.hardware import hardware_profiles
+from mars_titan.hardware.platform_identity import platform_identity
 
 from . import campaign_numerics, campaign_schedule, masked_campaign
 from .campaign_plan import (
@@ -58,6 +67,34 @@ from .learning_hold import LearningHoldError, hold_path, learning_blocked
 STAGE_KIND = "historical_masked_modality_ablation_stage"
 RUN_KIND = "historical_masked_modality_ablation_stage_run"
 RECEIPT_KIND = "masked_modality_ablation_job"
+ROBUSTNESS_KIND = "historical_masked_robustness_stage"
+# Cada familia de variantes de lectura con sus tipos, su identidad y sus fuentes.
+FAMILIES = {
+    STAGE_KIND: dict(
+        run=RUN_KIND,
+        receipt=RECEIPT_KIND,
+        variants=tuple(VARIANTS),
+        field="modality_ablation",
+        identity=ablation_identity,
+        sources=analysis.SOURCES_KIND,
+        action="la etapa de ablación de modalidades",
+        code=(),
+    ),
+    ROBUSTNESS_KIND: dict(
+        run="historical_masked_robustness_stage_run",
+        receipt="masked_robustness_job",
+        variants=tuple(PERTURBATIONS),
+        field="read_variant",
+        identity=perturbation_identity,
+        sources=robustness.SOURCES_KIND,
+        action="la etapa de robustez",
+        code=(
+            "data/input_perturbations.py",
+            "evaluation/robustness.py",
+            "evaluation/robustness_protocol.py",
+        ),
+    ),
+}
 PARTITION = "evaluation"
 MAX_ATTEMPTS = 32
 _FIELDS = {
@@ -115,7 +152,7 @@ def load_stage(path):
         isinstance(config, dict)
         and set(config) == _FIELDS
         and config["schema_version"] == 1
-        and config["kind"] == STAGE_KIND
+        and config["kind"] in FAMILIES
         and config["status"] == DECLARED
         and config["final_test_opened"] is False
         and isinstance(config["name"], str)
@@ -124,10 +161,15 @@ def load_stage(path):
     )
     campaign = load_campaign((path.parent / config["campaign"]).resolve())
     declared = campaign["comparison_config"]
-    _require(
-        comparison.ABLATION_FIELD in declared,
-        "La comparación de la campaña no declara la ablación de modalidades",
-    )
+    if config["kind"] == ROBUSTNESS_KIND:
+        # La declaración de la robustez vive fuera de la comparación.
+        declaration = robustness.declaration()
+    else:
+        _require(
+            comparison.ABLATION_FIELD in declared,
+            "La comparación de la campaña no declara la ablación de modalidades",
+        )
+        declaration = declared[comparison.ABLATION_FIELD]
     scopes = config["scopes"]
     _require(
         isinstance(scopes, list)
@@ -156,7 +198,8 @@ def load_stage(path):
         sha256=digest,
         path=str(path.resolve()),
         campaign=campaign,
-        declaration=declared[comparison.ABLATION_FIELD],
+        declaration=declaration,
+        family=FAMILIES[config["kind"]],
         specs=specs,
         scope_specs=scope_specs,
     )
@@ -170,7 +213,7 @@ def plan_stage(stage):
         for row in schedule(folds, campaign["period"]):
             for spec in stage["scope_specs"][scope]:
                 for seed in spec["seeds"]:
-                    for variant in VARIANTS:
+                    for variant in stage["family"]["variants"]:
                         jobs.append(
                             dict(
                                 id=f"{scope}/{row['window']}/{spec['arm']}/{variant}-s{seed}",
@@ -362,9 +405,9 @@ EXECUTORS = {
 }
 
 
-def _code():
+def _code(family):
     root = Path(__file__).parents[1]
-    names = (
+    names = family["code"] + (
         "training/modality_ablation_stage.py",
         "data/modality_ablation.py",
         "evaluation/modality_ablation.py",
@@ -406,6 +449,7 @@ class _Stage:
         self.identity, self.identity_sha256 = identity, _digest(identity)
         self.executors, self.stop = executors, stop
         self.receipts = {}
+        self.platform = None
 
     def folder(self, job):
         return self.output / "jobs" / job["id"]
@@ -437,7 +481,7 @@ class _Stage:
                     "variant",
                 )
             },
-            modality_ablation=ablation_identity(job["variant"]),
+            **{self.stage["family"]["field"]: self.stage["family"]["identity"](job["variant"])},
             view_sha256=self.view(job["scope"], job["window"])["sha256"],
             source=dict(job=key, receipt_sha256=receipt["sha256"]),
             window_source=dict(job=used, receipt_sha256=window["sha256"]),
@@ -495,9 +539,10 @@ class _Stage:
         _require(report.get("final_test_opened") is False, f"{job['id']} abre la reserva final")
         if self.campaign.get("numerics"):
             campaign_numerics.require_job(self.campaign["numerics"], job["id"], report)
+        # El traslado publica la variante de lectura en `modality_ablation` en las dos familias.
         _require(
-            report.get("modality_ablation") == identity["modality_ablation"],
-            f"{job['id']} no declara la ablación pedida",
+            report.get("modality_ablation") == identity[self.stage["family"]["field"]],
+            f"{job['id']} no declara la variante de lectura pedida",
         )
         _require(
             report.get("anchor", {}).get("checkpoint_sha256") == identity["parent"]["sha256"],
@@ -529,7 +574,7 @@ class _Stage:
         )
         receipt = dict(
             schema_version=1,
-            kind=RECEIPT_KIND,
+            kind=self.stage["family"]["receipt"],
             status="completed",
             identity=identity,
             attempt=str(run.folder.relative_to(self.output)),
@@ -544,6 +589,9 @@ class _Stage:
             final_test_opened=False,
             confirmed_at_utc=datetime.now(UTC).isoformat(),
         )
+        if self.platform is not None:
+            # Fuera de la identidad, como en la campaña base.
+            receipt["platform"] = self.platform
         target = self.folder(job) / "receipt.json"
         atomic_json(target, receipt)
         # Con el recibo escrito, los índices del calentamiento ya no se leen.
@@ -558,7 +606,7 @@ class _Stage:
             identity = self.job_identity(job)
             receipt = self.confirmed(job, identity)
             if receipt is None:
-                require_evaluation_allowed(f"la ablación {job['id']}")
+                require_evaluation_allowed(f"{self.stage['family']['action']}: {job['id']}")
                 run = self.prepare(job, identity)
                 report = self.executors[job["model"]](run)
                 receipt = self.confirm(job, identity, run, report)
@@ -570,7 +618,7 @@ def _identity(stage, views):
     campaign = stage["campaign"]
     return dict(
         schema_version=1,
-        kind=RUN_KIND,
+        kind=stage["family"]["run"],
         stage_sha256=stage["sha256"],
         campaign_sha256=campaign["sha256"],
         comparison_sha256=campaign["comparison_config"]["sha256"],
@@ -581,7 +629,7 @@ def _identity(stage, views):
             scope: {window: value["sha256"] for window, value in record["windows"].items()}
             for scope, record in views.items()
         },
-        code=_code(),
+        code=_code(stage["family"]),
         final_test_opened=False,
     )
 
@@ -590,7 +638,7 @@ def _summary(output, identity, jobs, state, status, **extra):
     done = [job for job in jobs if job["id"] in state.receipts]
     summary = dict(
         schema_version=1,
-        kind=RUN_KIND,
+        kind=identity["kind"],
         status=status,
         identity_sha256=_digest(identity),
         planned=dict(training_jobs=0, prediction_jobs=len(jobs)),
@@ -632,18 +680,29 @@ def _opened(path, views, campaign_output, output, pairs=None):
 
 
 def run_stage(
-    path, views, campaign_output, output, *, executors=None, lease=None, stop=None, window=None
+    path,
+    views,
+    campaign_output,
+    output,
+    *,
+    executors=None,
+    lease=None,
+    stop=None,
+    window=None,
+    platform=None,
 ):
     """Ejecutar o reanudar la etapa sobre una campaña base confirmada.
 
     `executors` sustituye los ejecutores por modelo y `lease`, la reserva de la GPU. La
     protección se comprueba antes de abrir fuentes y antes de cada trabajo pendiente.
     `window` limita la etapa a una ventana de campaña y a la base confirmada de esa ventana.
+    Cada recibo nuevo guarda la identidad de la plataforma. `platform` sustituye la detectada,
+    solo en las pruebas.
     """
     from .checkpoints import StopRequest
 
-    require_evaluation_allowed("la etapa de ablación de modalidades")
     stage = load_stage(path)
+    require_evaluation_allowed(stage["family"]["action"])
     jobs = plan_stage(stage)
     count_stage(stage, jobs)
     pairs = None
@@ -673,6 +732,7 @@ def run_stage(
             # La precisión de la campaña base, antes de crear cualquier modelo.
             campaign_numerics.apply(stage["campaign"]["numerics"])
         state = _Stage(stage, base, output, identity, executors, None)
+        state.platform = platform_identity() if platform is None else platform
         signals = StopRequest() if stop is None else nullcontext(stop)
         reservation = (lease or _gpu_lease)()
         _summary(output, identity, jobs, state, "running")
@@ -693,13 +753,25 @@ def run_stage(
 
 
 def write_sources(
-    path, views, campaign_output, output, scope, *, comparison_path=None, window=None
+    path,
+    views,
+    campaign_output,
+    output,
+    scope,
+    *,
+    comparison_path=None,
+    window=None,
+    unrecorded_platform=None,
 ):
     """Escribir el manifiesto de predicciones enmascaradas de un ámbito y validarlo.
 
     Sin `comparison_path` se valida con la comparación de la campaña. Una comparación con
     un subconjunto de modelos publica solo esos modelos, como `masked_campaign.write_sources`.
     Con `window` se publica solo esa ventana en `sources/windows/<ventana>/`.
+
+    Las predicciones enmascaradas se comparan con las de la base, así que sus recibos y los de
+    la base de los que parten deben venir de una sola plataforma. Los anteriores a ese registro
+    solo se admiten si `unrecorded_platform` nombra el perfil al que se atribuyen.
     """
     pairs = None
     if window is not None:
@@ -723,8 +795,10 @@ def write_sources(
     )
     if window is not None:
         validation = comparison.restrict_windows(validation, scope, [window])
+    family = stage["family"]
     _require(
-        validation.get(comparison.ABLATION_FIELD) == stage["declaration"],
+        family["sources"] == robustness.SOURCES_KIND
+        or validation.get(comparison.ABLATION_FIELD) == stage["declaration"],
         "La comparación de validación no declara la misma ablación",
     )
     produced = {spec["arm"]: spec for spec in stage["scope_specs"][scope]}
@@ -741,7 +815,7 @@ def write_sources(
     folder = output / "sources"
     if window is not None:
         windows, folder = {window: windows[window]}, folder / "windows" / window
-    variants = {}
+    variants, platforms = {}, {}
     for job in plan_stage(stage):
         if job["scope"] != scope or job["arm"] not in wanted or job["window"] not in windows:
             continue
@@ -749,8 +823,14 @@ def write_sources(
             job["seed"] in wanted[job["arm"]]["seeds"],
             f"La comparación declara otras semillas para {job['arm']}",
         )
-        receipt = state.confirmed(job, state.job_identity(job))
+        job_identity = state.job_identity(job)
+        receipt = state.confirmed(job, job_identity)
         _require(receipt is not None, f"Falta confirmar {job['id']} antes de publicar fuentes")
+        platforms[job["id"]] = receipt.get("platform")
+        # El estado del ancla y la predicción de la ventana con los que se compara.
+        for origin in ("source", "window_source"):
+            key = job_identity[origin]["job"]
+            platforms[f"campaña base {key}"] = base.receipts[key].get("platform")
         record = receipt["prediction"]
         seeds = variants.setdefault(job["variant"], {}).setdefault(job["arm"], {})
         seeds.setdefault(str(job["seed"]), {})[job["window"]] = dict(
@@ -758,26 +838,33 @@ def write_sources(
                 path=os.path.relpath(output / record["path"], folder), sha256=record["sha256"]
             )
         )
+    platform = hardware_profiles.same_platform(
+        platforms,
+        unrecorded=hardware_profiles.attributed_profile(unrecorded_platform),
+    )
     manifest = dict(
-        schema_version=1,
-        kind=analysis.SOURCES_KIND,
+        schema_version=2,
+        kind=family["sources"],
         scope=scope,
         input_policy=stage["campaign"]["input_policy"],
         comparison_sha256=validation["sha256"],
         windows={window: value["sha256"] for window, value in windows.items()},
         variants=variants,
+        platform=platform,
     )
+    if family["sources"] == robustness.SOURCES_KIND:
+        manifest["declaration_sha256"] = stage["declaration"]["sha256"]
     destination = folder / f"{scope}.json"
     candidate = folder / f".{scope}.candidate.json"
     safe_destination(destination)
     atomic_json(candidate, manifest)
     resolved = validation["resolved_scopes"][scope]
+    expected = dict(scope=scope, views=manifest["windows"], windows=resolved["windows"])
     try:
-        comparison._ablation_sources(
-            candidate,
-            validation,
-            dict(scope=scope, views=manifest["windows"], windows=resolved["windows"]),
-        )
+        if family["sources"] == robustness.SOURCES_KIND:
+            comparison._robustness_sources(candidate, validation, expected, stage["declaration"])
+        else:
+            comparison._ablation_sources(candidate, validation, expected)
     except BaseException:
         candidate.unlink()
         raise
@@ -800,6 +887,10 @@ def main(argv=None):
     execute.add_argument("--window", help="Ventana de campaña que se ejecuta")
     sources.add_argument("--scope", choices=tuple(comparison.SCOPES), required=True)
     sources.add_argument("--comparison", type=Path)
+    sources.add_argument(
+        "--unrecorded-platform",
+        help="Perfil de hardware al que se atribuyen los recibos sin plataforma",
+    )
     args = parser.parse_args(argv)
     if args.command == "check":
         result = check_stage(args.stage)
@@ -815,6 +906,7 @@ def main(argv=None):
             args.output,
             args.scope,
             comparison_path=args.comparison,
+            unrecorded_platform=args.unrecorded_platform,
         )
         result = dict(sources=str(destination), sha256=sha256(destination))
     print(json.dumps(result, ensure_ascii=False, indent=2))

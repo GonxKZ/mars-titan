@@ -15,9 +15,11 @@ Por cada modelo base y semilla, un trabajo de predicción aplica sin ajustar el 
 congelado a la ventana k, y una selección elige el predictor de la cadena con
 `chain_validation_score_v1` (`staged_chain`) entre el padre congelado, los casos de
 adaptadores y la continuación completa. La selección escribe los recibos walk-forward de
-la cadena y `selection.json` al final. En la ventana 0 no hay postentrenamiento y el
-predictor de la cadena es el estado elegido de la base. El reentreno completo de la ventana
-k (la campaña base) es el contraste, no un candidato.
+la cadena y `selection.json` al final. Los objetivos de la corrección lineal de #128
+(`predictive_objectives`) solo emiten la mediana: se ajustan y se comparan, pero no compiten
+en la cadena. En la ventana 0 no hay postentrenamiento y el predictor de la cadena es el
+estado elegido de la base. El reentreno completo de la ventana k (la campaña base) es el
+contraste, no un candidato.
 
 La variante B (reentreno cada 36 meses con traslados) conserva su plan para los recuentos,
 pero no se ejecuta por decisión del 9 de octubre de 2026.
@@ -65,6 +67,7 @@ from mars_titan.environments.walk_forward_receipt import (
 )
 from mars_titan.environments.walk_forward_receipt import read_window_receipt
 from mars_titan.evaluation import walk_forward_comparison as comparison
+from mars_titan.hardware.platform_identity import platform_identity
 from mars_titan.models.quantile_head import MEDIAN_INDEX, QUANTILE_COLUMNS, QUANTILE_HEAD
 from mars_titan.training import (
     campaign_chain,
@@ -85,8 +88,10 @@ from mars_titan.training.corpus_inputs import CorpusDataset
 from mars_titan.training.label_maturity import FIT_PARTITIONS
 from mars_titan.training.learning_hold import LearningHoldError, require_learning_allowed
 
-from . import adapter_matrix, staged_chain, staged_rows
+from . import adapter_matrix, anchored_continuation, staged_chain, staged_rows
 from . import chronological_matrix as cm
+from . import predictive_objectives as predictive
+from . import replay_continuation as replay
 from .heldout import evaluate_partition
 from .matrix_runs import MatrixParent, MatrixWindow, index_manifest, predict_heldout
 from .parents import load_parent
@@ -114,6 +119,17 @@ _FIELDS = {
 }
 # Campos que solo declara la variante A, la única con walk-forward por etapas.
 _STAGED_FIELDS = {"chain_rule", "data_policy"}
+# Secciones de la matriz cuyos controles una etapa ejecuta solo si las nombra: la
+# continuación anclada de #444, los tres controles de repaso de #55 y los objetivos de #128.
+ADDITIONAL = "additional_controls"
+OPTIONAL_CONTROLS = {
+    anchored_continuation.CONTROL: (
+        anchored_continuation.declared,
+        (anchored_continuation.CONTROL,),
+    ),
+    replay.SECTION_NAME: (replay.declared, replay.CONTROLS),
+    predictive.SECTION_NAME: (predictive.declared, predictive.CONTROLS),
+}
 _LIMITS = {"max_training_jobs", "max_prediction_jobs"}
 # Diseños de la etapa: por etapas en A y el plan anclado de B, que no se ejecuta.
 STAGED, ANCHORED = "staged_chain_v1", "anchored_not_executed"
@@ -189,7 +205,7 @@ def load_stage(path):
     _require(not declares_other_data(config), REAL_ONLY)
     _require(
         isinstance(config, dict)
-        and set(config) in (_FIELDS, _FIELDS | _STAGED_FIELDS)
+        and set(config) - {ADDITIONAL} in (_FIELDS, _FIELDS | _STAGED_FIELDS)
         and config["schema_version"] == 1
         and config["kind"] == STAGE_KIND
         and config["status"] == DECLARED
@@ -237,13 +253,20 @@ def load_stage(path):
         and matrix["budget"]["batch_size"] == campaign["neural"]["batch_size"],
         "La matriz debe compartir la política y el lote de la campaña",
     )
+    if ADDITIONAL in config:
+        _stage_controls(config[ADDITIONAL], matrix)
+        # El repaso necesita la frontera de las filas nuevas, que solo existe en A.
+        _require(
+            staged or replay.SECTION_NAME not in config[ADDITIONAL],
+            "El repaso solo existe en el walk-forward por etapas de la variante A",
+        )
     scopes = _names(config["scopes"], campaign["scopes"], "Los ámbitos")
     _require(
         scopes == [scope for scope in campaign["scopes"] if scope in scopes],
         "Los ámbitos siguen el orden de la campaña",
     )
     neural, tabular = campaign["neural"]["arms"], campaign["tabular"]["arms"]
-    trivial = set(tabular) | correction_arms(campaign)
+    trivial = set(tabular) | correction_arms(campaign) | extension_arms(campaign)
     declared = campaign["comparison_config"]["arms"]
     # Modelos cronológicos de la comparación, con o sin sección en la campaña.
     known = {name for name, arm in declared.items() if arm["family"] in cm.CAMPAIGN_DESIGNS}
@@ -258,7 +281,8 @@ def load_stage(path):
     )
     _require(
         staged or not set(arms) & trivial,
-        "La cadena trivial de Ridge, XGBoost y B6 solo existe en el walk-forward por etapas",
+        "La cadena trivial de Ridge, XGBoost, B6 y las extensiones del núcleo solo existe en "
+        "el walk-forward por etapas",
     )
     # Las cadenas triviales no tienen casos de la matriz: siguen las semillas de su modelo.
     _require(
@@ -330,6 +354,13 @@ def chronological_arms(campaign):
     return result
 
 
+def extension_arms(campaign):
+    """Modelos de Titans-MAC con extensiones del núcleo (`core_extensions`), como PT1."""
+    from mars_titan.training import campaign_plan as plan
+
+    return set((campaign.get(plan.TITANS) or {}).get(plan.TITANS_EXTENSIONS, {}))
+
+
 def correction_arms(campaign):
     """Modelos B6 de la sección de MARS-TITAN: solo declaran la memoria asociativa."""
     from mars_titan.training import campaign_plan as plan
@@ -345,6 +376,7 @@ def stage_arms(stage):
     campaign = stage["campaign"]
     neural, chronological = campaign["neural"]["arms"], chronological_arms(campaign)
     tabular, corrections = campaign["tabular"]["arms"], correction_arms(campaign)
+    extensions = extension_arms(campaign)
     active, awaiting = {}, {}
     for arm in stage["arms"]:
         if arm in neural:
@@ -355,6 +387,11 @@ def stage_arms(stage):
             # B6 no ajusta parámetros: su único candidato es el padre congelado de k-1, que
             # traslada el Titans-MAC y el η elegidos en esa ventana.
             active[arm] = dict(family=plan.MARS, design=FROZEN_ONLY)
+        elif arm in extensions:
+            # Una extensión del núcleo se contrasta con su modelo base en la campaña. Repetir
+            # con ella la matriz de adaptadores no responde a ninguna pregunta declarada, así
+            # que su cadena es la trivial del padre congelado, como la de B6.
+            active[arm] = dict(family=plan.TITANS, design=FROZEN_ONLY)
         elif arm in chronological:
             active[arm] = dict(
                 chronological[arm], design=cm.CAMPAIGN_DESIGNS[chronological[arm]["family"]]
@@ -369,8 +406,29 @@ def arm_name(base_arm, point):
     return f"{base_arm}__{point.replace('+', '_')}"
 
 
+def _stage_controls(value, matrix):
+    """Secciones opcionales que ejecuta una etapa. Su matriz debe declararlas."""
+    _require(
+        isinstance(value, list)
+        and value
+        and len(set(value)) == len(value)
+        and all(
+            isinstance(name, str)
+            and name in OPTIONAL_CONTROLS
+            and OPTIONAL_CONTROLS[name][0](matrix) is not None
+            for name in value
+        ),
+        "La etapa solo añade controles que su matriz declara",
+    )
+    return value
+
+
 def _cases(stage, spec):
-    """Casos de la matriz de un modelo base: los neuronales o los cronológicos."""
+    """Casos de la matriz de un modelo base: los neuronales o los cronológicos.
+
+    La continuación anclada, los controles de repaso y los objetivos de #128 solo entran si
+    la etapa nombra su sección en `additional_controls`.
+    """
     matrix, digest = stage["matrix"], stage["matrix_sha256"]
     if spec["design"] == FROZEN_ONLY:
         return []
@@ -378,6 +436,11 @@ def _cases(stage, spec):
         items = adapter_matrix.cases(matrix, digest, spec["family"], head=QUANTILE_HEAD)
     else:
         items = cm.cases(matrix, digest, spec["family"], variant=spec["variant"], bank=spec["bank"])
+    optional = {control for _, controls in OPTIONAL_CONTROLS.values() for control in controls}
+    chosen = {
+        control for name in stage.get(ADDITIONAL, []) for control in OPTIONAL_CONTROLS[name][1]
+    }
+    items = [item for item in items if item["control"] not in optional or item["control"] in chosen]
     for item in items:
         _require(item["case"].get("condition", REAL) == REAL, REAL_ONLY)
     return items
@@ -484,17 +547,26 @@ def _anchored_plan(stage):
     return jobs
 
 
+def chain_candidate(job):
+    """Si el trabajo compite en la cadena. Los objetivos de #128 solo emiten la mediana y
+    se comparan aparte, porque la cadena da a las políticas los cinco niveles."""
+    return job["control"] not in predictive.CONTROLS
+
+
 def plan_chain(stage, jobs):
     """Selecciones de la cadena de cada ámbito, ventana, modelo base y semilla.
 
     En la ventana 0 dependen de los trabajos base que eligen el estado. En las demás, del
-    padre congelado y de todos los casos de su ventana, modelo base y semilla.
+    padre congelado y de todos los casos de su ventana, modelo base y semilla que compiten en
+    la cadena.
     """
     _require(stage["design"] == STAGED, "Solo el walk-forward por etapas tiene cadena")
     campaign = stage["campaign"]
     base_jobs = plan_campaign(campaign)
     grouped = {}
     for job in jobs:
+        if not chain_candidate(job):
+            continue
         key = (job["scope"], job["window"], job["base_arm"], job["seed"])
         grouped.setdefault(key, []).append(job["id"])
     families = {(job["scope"], job["base_arm"]): job["family"] for job in jobs}
@@ -640,6 +712,7 @@ def check_stage(path):
         input_policy=campaign["input_policy"],
         objectives=adapter_matrix.objectives(stage["matrix"], QUANTILE_HEAD),
         excluded_controls=adapter_matrix.excluded_controls(stage["matrix"], QUANTILE_HEAD),
+        additional_controls=stage.get(ADDITIONAL, []),
         cohort_reading=stage["cohort_reading"],
         counts=count_stage(stage, jobs),
         scientific_training_started=False,
@@ -658,6 +731,13 @@ def _code():
         "posttraining/matrix_runs.py",
         "environments/view_cohorts.py",
         "posttraining/adapter_matrix.py",
+        "posttraining/adapter_variety.py",
+        "posttraining/anchored_continuation.py",
+        "training/anchored_decay.py",
+        "posttraining/replay_continuation.py",
+        "posttraining/replay_inputs.py",
+        "memory/regimes.py",
+        "posttraining/predictive_objectives.py",
         "posttraining/run.py",
         "posttraining/heldout.py",
         "posttraining/evaluation.py",
@@ -758,7 +838,7 @@ def candidate_kind(job):
     """Clase del candidato de la cadena que aporta un trabajo de la ventana."""
     if job["kind"] == FROZEN:
         return "frozen_parent"
-    return "continuation" if job["control"] == "full_continuation" else "adapter"
+    return "continuation" if job["control"] in adapter_matrix.CONTINUATIONS else "adapter"
 
 
 class _Stage:
@@ -777,6 +857,9 @@ class _Stage:
         self.proofs, self.populations, self.selections = {}, {}, {}
         self.window_key = self.parent_key = self.dataset_key = None
         self.window = self.parent = self.dataset = None
+        # Declaración de las trazas de #448 o None. No entra en la identidad de la etapa.
+        self.traces = None
+        self.platform = None
 
     # Contextos: una ventana, un padre y una vista abiertos como máximo.
     def close_parent(self):
@@ -924,6 +1007,7 @@ class _Stage:
                 lease=self.lease,
                 stop=self.stop,
                 population=self.population(job["scope"], job["parent_window"]),
+                parent_view=Path(self.view(job["scope"], job["parent_window"])["path"]),
             )
             self.parent_key = key
             self.budgets["/".join(map(str, key))] = self.parent.budget
@@ -1006,6 +1090,7 @@ class _Stage:
             folder / "run",
             checkpoint_seconds=self.campaign["neural"]["checkpoint_seconds"],
             stop=self.stop,
+            traces=self.traces,
         )
         if report["status"] != "completed":
             raise Paused
@@ -1029,6 +1114,9 @@ class _Stage:
             score=report["predictions"]["validation"]["metrics"]["session_mae"],
             updates=report["global_step"],
             selection=report["selection"],
+            # Las filas de repaso son anteriores y las ajustó el padre: no entran en la
+            # prueba de filas nuevas y el recibo las declara aparte.
+            replay=report["identity"]["dataset"].get("replay"),
         )
 
     def fit_chronological(self, job, folder):
@@ -1058,6 +1146,7 @@ class _Stage:
                 device=self.device,
                 stop=self.stop,
                 parent_view=Path(self.view(scope, job["parent_window"])["path"]),
+                traces=self.traces,
             )
         if result["status"] != "completed":
             raise Paused
@@ -1253,8 +1342,8 @@ class _Stage:
         window = resolved["windows"][job["window"]]
         view = self.view(job["scope"], job["window"])
         proof = self.proof(job["scope"], job["window"], job["parent_window"])
-        # Ridge y XGBoost emiten solo la predicción puntual, sin la cabeza de cuantiles.
-        quantiles = not self.tabular(job)
+        # Ridge, XGBoost y los objetivos de #128 emiten solo la predicción puntual.
+        quantiles = not self.tabular(job) and job["control"] not in predictive.CONTROLS
         columns = comparison.COLUMNS + (QUANTILE_COLUMNS if quantiles else ())
         if self.campaign.get("numerics"):
             campaign_numerics.require_job(self.campaign["numerics"], job["id"], result)
@@ -1328,6 +1417,12 @@ class _Stage:
             final_test_opened=False,
             confirmed_at_utc=datetime.now(UTC).isoformat(),
         )
+        if result.get("replay") is not None:
+            receipt["replay"] = result["replay"]
+        if self.platform is not None:
+            # Fuera de la identidad, como en la campaña base: los recibos anteriores siguen
+            # siendo válidos y la publicación de fuentes exige una sola plataforma.
+            receipt["platform"] = self.platform
         path = self.folder(job) / "receipt.json"
         atomic_json(path, receipt)
         return dict(receipt, sha256=sha256(path))
@@ -1381,13 +1476,24 @@ class _Stage:
         )
 
     def equal_updates(self, job, receipt):
-        """Todos los casos ajustados de un padre aplican el mismo número de actualizaciones."""
+        """Los casos ajustados de un padre aplican el mismo número de actualizaciones.
+
+        Los controles de repaso de #55 comparten entre ellos un presupuesto mayor, con sus
+        actualizaciones adicionales, y se comparan solo entre sí.
+        """
         if job["kind"] != FIT:
             return
-        key = (job["scope"], job["window"], job["base_arm"], job["seed"])
+        replayed = replay.KEY in (job["case"] or {})
+        key = (job["scope"], job["window"], job["base_arm"], job["seed"], replayed)
         for name, other in self.receipts.items():
             identity = other["identity"]
-            same = (identity["scope"], identity["window"], identity["base_arm"], identity["seed"])
+            same = (
+                identity["scope"],
+                identity["window"],
+                identity["base_arm"],
+                identity["seed"],
+                replay.KEY in (identity["case"] or {}),
+            )
             if identity["kind"] == FIT and same == key:
                 _require(
                     other["updates"] == receipt["updates"],
@@ -1660,6 +1766,8 @@ def run_stage(
     device="cuda:0",
     window=None,
     disjunction=None,
+    traces=None,
+    platform=None,
 ):
     """Ejecutar o reanudar el walk-forward por etapas sobre una campaña base confirmada.
 
@@ -1670,7 +1778,11 @@ def run_stage(
     `lease` sustituye la reserva de la GPU y `device="cpu"` limita la ejecución a los
     diagnósticos de hasta 5000 filas de `run_case`. La protección del aprendizaje se
     comprueba antes de abrir fuentes y antes de cada trabajo pendiente. La variante B se
-    rechaza antes de leer nada.
+    rechaza antes de leer nada. `traces` es la sección `learning_traces` ya validada de la
+    declaración de ejecución (#448). Como esa declaración, no entra en la identidad.
+
+    Cada recibo nuevo guarda la identidad de la plataforma. `platform` sustituye la detectada,
+    solo en las pruebas.
     """
     from mars_titan.training.checkpoints import StopRequest
 
@@ -1733,6 +1845,8 @@ def run_stage(
         state = _Stage(
             stage, base, campaign_output, output, identity, device=device, lease=None, stop=None
         )
+        state.traces = traces
+        state.platform = platform_identity() if platform is None else platform
         _summary(output, identity, jobs, chains, state, "running", **checked)
         try:
             with signals as state.stop, reservation as state.lease:
@@ -1764,6 +1878,8 @@ def _views_argument(values):
 
 
 def main(argv=None):
+    from mars_titan.training.campaign_resources import execution_traces
+
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     commands = parser.add_subparsers(dest="command", required=True)
     check = commands.add_parser("check", help="Validar y contar trabajos sin leer datos")
@@ -1777,6 +1893,9 @@ def main(argv=None):
     execute.add_argument(
         "--disjunction", type=Path, help="Informe de disjunción sobre las vistas (por etapas)"
     )
+    execute.add_argument(
+        "--execution", type=Path, help="Declaración de ejecución con las trazas de #448"
+    )
     args = parser.parse_args(argv)
     if args.command == "check":
         result = check_stage(args.stage)
@@ -1788,6 +1907,7 @@ def main(argv=None):
             args.output,
             window=args.window,
             disjunction=args.disjunction,
+            traces=execution_traces(args.execution),
         )
         result.pop("jobs")
     print(json.dumps(result, ensure_ascii=False, indent=2))

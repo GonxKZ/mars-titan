@@ -2,7 +2,7 @@
 
 Tarea [#428](https://github.com/GonxKZ/mars-titan/issues/428), 9 y 10 de octubre de 2026. La edición v3.1 parte de la edición `encoded-history-v3-cpu-words`. Corrige tres cosas en la lectura de precios: la conversión del texto numérico de la fuente, las filas que se rechazaban por redondeo y las ventanas que contienen sesiones sin ninguna fila en todo el mercado. Además, todos sus vectores se calculan en FP32 estricto, sin TF32. Noticias, fundamentales, macro, modelos de los codificadores y política de máscaras no cambian.
 
-Este documento describe el código y una medida sobre una porción de 13 activos copiada fuera de las rutas oficiales. La auditoría, la preparación, la codificación y los objetivos v3.1 completos no se han ejecutado y esperan la orden del coordinador. La edición v3, `targets-v3` y la preparación `prepared-accounting-v1` siguen intactas. No se ha entrenado ni evaluado ningún modelo.
+Este documento describe el código, una medida sobre una porción de 13 activos copiada fuera de las rutas oficiales y la [ejecución completa del 10 y 11 de octubre](#ejecución-del-10-y-11-de-octubre), que generó y verificó la edición y sus objetivos. Las muestras de la v3 se sustituyeron activo a activo durante esa ejecución. Se conservan sus manifiestos, configuraciones y factores, su `embeddings.sqlite`, `targets-v3`, `prepared-accounting-v1` y las vistas de la campaña A, que ya no pueden leerse como edición completa. No se ha entrenado ni evaluado ningún modelo.
 
 ## Conversión exacta del texto de la fuente
 
@@ -145,7 +145,7 @@ Desde el primer activo sustituido, la v3 deja de poder leerse como edición comp
 
 Los recibos de `develop` que describen la v3 (`historical-edition-v3-targets-20261009.json` y `campaign-a-views-20261009.json`) quedan como historia. El recuento de ventanas de la campaña A v2 que proponen #462 y #431 (`campaign-a-v2-window-counts-20261009.json`) se calculó sobre `targets-v3` y debe repetirse sobre `targets-v3.1`, porque la v3.1 añade ventanas.
 
-El orden previsto es este:
+El orden fue este. Los pasos 1 a 6 se completaron el 10 y el 11 de octubre, y el 7 y el 8 siguen [pendientes](#pendiente):
 
 1. Comprobar que ningún proceso usa las muestras de la v3, `targets-v3` ni sus vistas. La protección de aprendizaje sigue activa y los servicios de la campaña están deshabilitados.
 2. Integrar #445 en `develop` y ejecutar la regeneración con el código de `develop`.
@@ -160,7 +160,7 @@ El orden previsto es este:
 
 El factor residual de Estados Unidos es SPY tal como lo deja la preparación. La revisión reescribe sus precios, así que el descriptor v2 deja de describir el archivo de la edición nueva. `factor_descriptor.describe_market_factors` crea un descriptor con identidad propia: apunta a los precios revisados de SPY, registra `number_parsing` y la tolerancia de orden, y guarda la huella del descriptor v2 sin abrir sus precios. El CSI300 chino no cambia y conserva la huella de su informe. La auditoría repite las comprobaciones del v2 (huella, precios finitos y positivos, OHLC coherente, sesiones crecientes del calendario anterior a 2024 y disponibilidad igual a la decisión) y aplica a SPY la tolerancia de redondeo que declaró la auditoría de precios. El CSI300 se audita sin tolerancia.
 
-Aplicada a los descriptores v2, la auditoría nueva reproduce exactamente la del v2 en los dos mercados. Un ensayo con SPY revisado aparte, fuera de las rutas oficiales, recupera las dos sesiones que faltaban en el v2 (20 de julio y 29 de diciembre de 2000) y pasa de 6.035 a 6.037 filas. Cinco sesiones de 2000 quedan admitidas por redondeo, todas con un exceso relativo de entre 1,48e-16 y 1,65e-16, es decir, de una ULP. Tres de ellas ya estaban en el v2 porque el conversor de pandas movía algún precio una ULP y la fila quedaba ordenada por casualidad. Con la lectura exacta muestran el mismo desorden que las otras dos. El descriptor oficial se generará sobre la preparación v3.1 completa, cuando se ordene la regeneración.
+Aplicada a los descriptores v2, la auditoría nueva reproduce exactamente la del v2 en los dos mercados. Un ensayo con SPY revisado aparte, fuera de las rutas oficiales, recupera las dos sesiones que faltaban en el v2 (20 de julio y 29 de diciembre de 2000) y pasa de 6.035 a 6.037 filas. Cinco sesiones de 2000 quedan admitidas por redondeo, todas con un exceso relativo de entre 1,48e-16 y 1,65e-16, es decir, de una ULP. Tres de ellas ya estaban en el v2 porque el conversor de pandas movía algún precio una ULP y la fila quedaba ordenada por casualidad. Con la lectura exacta muestran el mismo desorden que las otras dos. El descriptor oficial se generó el 10 de octubre sobre la preparación v3.1 completa. SPY tiene 6.037 filas de 2000 a 2023, sin ninguna sesión ausente en su calendario, y las mismas cinco sesiones de 2000 admitidas por redondeo que en el ensayo.
 
 ## Medida sobre una porción
 
@@ -236,6 +236,35 @@ La estimación de los textos heredados supone la misma proporción que en la por
 
 Las pruebas cubren el contrato, la admisión en el codificador, la lectura desde el corpus, las vistas temporales y el corpus ordenado, las familias, M3, la vista de información, la GRU nativa y las herramientas. Para la precisión comprueban que cada uno de los tres ajustes detiene el codificador antes de abrir CUDA, que la identidad calculada en CPU es la del codificador cargado y que una edición con TF32 no cede vectores. La sustitución se prueba con cada fallo de verificación (huella anterior, huella nueva, columna cambiada y sesión perdida), con un registro que no se puede escribir, con un activo pendiente de GPU y con la reserva de disco, y en todos los casos la v3 queda intacta. El descriptor de factores repite cada comprobación del v2 y prueba que la tolerancia de SPY no se aplica al CSI300. La herencia de textos se prueba con una edición de origen que registra TF32 en cuDNN: si la muestra coincide, la GPU solo codifica la muestra y las muestras finales son las de la v3. Si los textos difieren en el último bit, el activo recodifica todos sus textos, ninguno sale de la v3, las muestras coinciden con las de una codificación en FP32 estricto y la sustitución mide el cambio de la media de noticias en lugar de detenerse. También se prueban la posición de la muestra, la unión de muestras al recoger de nuevo un activo o al repartirlo entre fragmentos, la espera del contraste mientras queden pendientes, la preferencia por un vector calculado en FP32 estricto, una edición de origen modificada y las identidades incompatibles. La mutación dirigida se resume en la PR.
 
+## Ejecución del 10 y 11 de octubre
+
+La regeneración se ejecutó con el código de `develop` en el commit `f475b0d1`, entre el 10 de octubre a las 05:48 UTC y el 11 de octubre a las 15:20 UTC, siguiendo el plan de la sección anterior. Cada paso guardó un recibo con su orden, su entorno y sus tiempos fuera del repositorio. El [recibo de la verificación](../../reports/data/edition-v3-1-verification-20261011.json) copia los tres informes finales con sus huellas.
+
+1. La fase 1 tardó 23 minutos. La auditoría con la tolerancia y la revisión de precios reescribieron los 5.023 archivos de precios sin ningún fallo y la preparación v3.1 tiene 62.577 filas de precios aceptadas más que la anterior. El descriptor de factores se describe en la [sección anterior](#factor-de-mercado).
+2. La codificación recorrió los 5.676 candidatos en 16 tramos con `--shard`, gráficos en lotes de 8, herencia contrastada de textos y sustitución con una reserva de 15 GB. Las pasadas de recogida sumaron 12,0 h de reloj, las de GPU 8,2 h, las finales con sustitución 11,8 h y las liberaciones 0,4 h. La GPU quedó libre entre tramos. En el tramo 3 la primera pasada final se detuvo al minuto de empezar. Al repetir el tramo, la recogida confirmó sus activos con los vectores ya calculados, la pasada de GPU no tuvo nada que codificar y la pasada final no rehízo ningún activo.
+3. La verificación de la edición, la comprobación de vectores, la construcción de `targets-v3.1` y su verificación se ejecutaron seguidas, con parada en el primer fallo. Ninguna falló.
+
+| Elemento | Resultado |
+| --- | --- |
+| Candidatos | 5.676, de ellos 653 sin los precios requeridos y 5.023 codificados (4.213 de EE. UU. y 810 de China). 15 activos de EE. UU. codificados no tienen muestras |
+| Muestras | 18.698.976 (15.874.289 en EE. UU. y 2.824.687 en China), 1.622.952 más que la v3, sin perder ninguna sesión |
+| Huella del manifiesto de la edición | `a459dbb8a39b9308b4ab20ea5a1e58453455fa3d3db9e93984ca5a3c5ba0bc3d` |
+| Ausencias de todo el mercado | 47.570 ventanas chinas contienen alguna de las sesiones ausentes (94.382 posiciones en total). Ninguna en EE. UU. |
+| Sustitución | Los 5.023 activos comparados con la v3 antes de borrar sus muestras (57,5 GB liberados). Las 17.076.024 ventanas comunes coinciden salvo 125.460, que cambian como mucho 7,45e-9. 70.255 gráficos cambian algún píxel |
+| Vectores de gráficos | En las 17.005.769 sesiones comunes con el mismo gráfico, ningún vector coincide bit a bit con el de la v3. Diferencia absoluta máxima 0,0104 y relativa por norma de como mucho 1,82e-3, el efecto de TF32 en la v3 |
+| Herencia de textos | 4.897 activos heredaron los textos de la v3. De 2.525.977 textos heredables se contrastaron 74.748 (3,0 %) y ninguno difirió, así que no se recodificó ninguno |
+| Muestra de vectores (semilla 20261010) | 512 gráficos redibujados con el mismo PNG y el mismo vector calculado de uno en uno, y 256 textos con el mismo vector que en la v3, todos bit a bit |
+| Objetivos | 17.142.187 filas de entrenamiento y 1.235.785 de validación de 5.008 activos, con 321.004 exclusiones con motivo. Huella del manifiesto `fe86a923dd49a24247a1925e195b0bfd07cacf02c7bd43f0bcde0d292251893a` |
+| Recálculo de objetivos | 223.459 etiquetas de 60 activos al azar con la referencia en pandas, con diferencia máxima 0 |
+
+El [diagnóstico de la etiqueta](../../reports/targets/diagnostics.md#repetición-sobre-la-v31) se repitió sobre `targets-v3.1` el 13 de octubre con el mismo código y la misma declaración que en la v3. Recalcula las 18.377.972 etiquetas aceptadas bit a bit y desglosa la cobertura por patrón de máscaras.
+
+Frente a la proyección de la porción, la GPU tardó 8,2 h frente a unas 9 h previstas, y las pasadas de CPU sumaron 21,7 h de CPU (11,0 h la recogida y 10,7 h la final) frente a las 35 a 39 h estimadas, que se midieron con el equipo más cargado. El contraste de textos cubrió un 3,0 % de los textos heredables, cerca del 3,3 % de la porción.
+
 ## Pendiente
 
-Falta ejecutar la auditoría con la tolerancia, la revisión de precios, el descriptor de factores sobre la preparación completa, la codificación, `targets-v3.1` y la verificación completa (verificador de la edición, `verify-targets` y comparación con la v3). El plan acordado recorre la edición en tramos con `--shard`, gráficos en lotes de 8 con la comprobación de uno de cada 64, un límite del asignador de 1 GiB, textos heredados con contraste, sustitución con una reserva de 15 GB y liberación de los temporales tras cada tramo, dejando libre la GPU entre tramos. La ejecución espera la orden del coordinador.
+Las vistas de la campaña A v2 sobre `targets-v3.1` están preparadas y verificadas desde el 14 de octubre ([recibo](../../reports/data/campaign-a-v2-views-v31-20261014.json)), con sus recuentos por ventana en la [estimación de disco](../../reports/engineering/campaign-storage-a-v2-v31-20261014/counts.json) (paso 7).
+
+- Retirar, cuando se decida, `targets-v3`, `prepared-accounting-v1/prepared`, el `embeddings.sqlite` de la v3 y las vistas de la v3, y actualizar los documentos que aún las presentan como vigentes (paso 8).
+
+El [catálogo global de la edición y sus subconjuntos declarados](edition-catalog.md) se construyeron el 13 de octubre en [#537](https://github.com/GonxKZ/mars-titan/issues/537).

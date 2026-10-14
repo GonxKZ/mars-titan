@@ -10,19 +10,23 @@ solo cuenta llamadas y no modifica pesos.
 
 import importlib
 import json
+import shutil
 from collections import OrderedDict
 from pathlib import Path
 from types import SimpleNamespace
 
 import numpy as np
+import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
 import torch
 
+from mars_titan.data.input_perturbations import PERTURBATIONS, perturbation_identity
 from mars_titan.data.input_policy import HISTORICAL_MASKED, MODALITIES, policy_identity
 from mars_titan.data.modality_ablation import VARIANTS, ablation_identity
 from mars_titan.data.storage import atomic_json, sha256
 from mars_titan.evaluation import modality_ablation as analysis
+from mars_titan.evaluation import robustness
 from mars_titan.evaluation import walk_forward_comparison as comparison
 from mars_titan.models.baselines.multimodal import PRESENCE_FUSION, MultimodalReference
 from mars_titan.models.quantile_head import QUANTILE_COLUMNS, QUANTILE_HEAD
@@ -33,6 +37,7 @@ from mars_titan.training.checkpoints import capture_rng, save_training_state
 from mars_titan.training.corpus_inputs import CorpusDataset
 from mars_titan.training.learning_hold import HOLD_ENV, LearningHoldError
 from mars_titan.training.reference_run import _evaluate, scientific_identity
+from tests.hardware.platform_doubles import desktop
 from tests.learning_hold_lowering import allowed_hold, lowers_learning_hold
 from tests.posttraining.campaign_fixture import SCORES, CpuLease, write_configs
 from tests.training.historical_temporal_fixture import historical_temporal_fixture
@@ -437,6 +442,189 @@ def test_one_window_sources_give_the_same_report_through_window_aggregates(base,
     assert from_aggregates.equals(sessions)
 
 
+@lowers_learning_hold(
+    "tests/training/test_modality_ablation_stage.py::"
+    "test_masked_sources_keep_the_platform_of_the_base_they_compare_with"
+)
+def test_masked_sources_keep_the_platform_of_the_base_they_compare_with(
+    base, staged, confirmed, tmp_path
+):
+    output = tmp_path / "ablation"
+    shutil.copytree(staged.output, output)
+    paths = sorted((output / "jobs").rglob("receipt.json"))
+    found = [json.loads(path.read_text()) for path in paths]
+    # Cada recibo guarda la plataforma fuera de su identidad, la misma que la de su base.
+    detected = {json.dumps(receipt["platform"], sort_keys=True) for receipt in found}
+    base_platforms = {
+        json.dumps(receipt["platform"], sort_keys=True) for receipt in confirmed.receipts.values()
+    }
+    assert len(detected) == 1 and detected == base_platforms
+    assert all("platform" not in receipt["identity"] for receipt in found)
+    masked = ablation.write_sources(base.stage, base.views, base.output, output, "US")
+    manifest = json.loads(masked.read_text())
+    assert manifest["schema_version"] == 2
+    assert manifest["platform"]["platform_sha256"] == found[0]["platform"]["platform_sha256"]
+    # Un recibo de otra máquina mezcla plataformas con la base.
+    atomic_json(paths[0], dict(found[0], platform=desktop()))
+    with pytest.raises(ValueError, match="mezcla plataformas"):
+        ablation.write_sources(base.stage, base.views, base.output, output, "US")
+    # Sin plataforma, el recibo solo se admite con el perfil al que se atribuye.
+    atomic_json(paths[0], {k: v for k, v in found[0].items() if k != "platform"})
+    with pytest.raises(ValueError, match="no registran su plataforma"):
+        ablation.write_sources(base.stage, base.views, base.output, output, "US")
+
+
+# Etapa de robustez (#37): la misma campaña base con las perturbaciones de las entradas.
+
+ROBUSTNESS_STAGE = Path("configs/evaluation/historical-masked-robustness-stage-a-v2.json")
+
+
+@pytest.fixture(scope="module")
+def robust(base, staged):
+    """Etapa de robustez, sus fuentes y su sección del informe sobre la campaña base.
+
+    Los umbrales de la declaración (1000 filas y 50 sesiones) no caben en dos ventanas
+    reducidas. Se bajan a una fila y una sesión solo aquí, para que el informe tenga cifras.
+    """
+    real = robustness.declaration()
+    stage = json.loads(ROBUSTNESS_STAGE.read_text())
+    stage.update(
+        name="fixture-robustness-a",
+        campaign="campaign.json",
+        scopes=["US"],
+        limits=dict(max_prediction_jobs=8),
+    )
+    path = base.root / "config" / "robustness.json"
+    atomic_json(path, stage)
+    output = base.root / "robustness"
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setattr(robustness, "declaration", lambda: dict(real, min_rows=1, min_sessions=1))
+        patch.setenv(HOLD_ENV, str(base.hold))
+        # La salida de la ablación pertenece a otra etapa.
+        with pytest.raises(ValueError, match="otra etapa") as foreign:
+            ablation.run_stage(
+                path, base.views, base.output, staged.output, lease=CpuLease, stop=RUNNING
+            )
+        summary = ablation.run_stage(
+            path, base.views, base.output, output, lease=CpuLease, stop=RUNNING
+        )
+        sources = ablation.write_sources(path, base.views, base.output, output, "US")
+        primary = engine.write_sources(base.campaign, base.views, base.output, "US")
+        report, _ = comparison.evaluate_walk_forward(
+            base.comparison, primary, "US", robustness_sources=sources
+        )
+        with pytest.raises(ValueError, match="agregados") as aggregated:
+            comparison.evaluate_walk_forward(
+                base.comparison,
+                primary,
+                "US",
+                robustness_sources=sources,
+                aggregates=base.root / "no-aggregates",
+            )
+    return SimpleNamespace(
+        stage=path,
+        output=output,
+        summary=summary,
+        sources=sources,
+        primary=primary,
+        report=report,
+        errors=dict(foreign=str(foreign.value), aggregated=str(aggregated.value)),
+    )
+
+
+def test_the_robustness_stage_repeats_each_job_with_every_perturbation(base, robust):
+    summary = robust.summary
+    assert summary["status"] == "completed" and summary["optimizer_steps"] == 0
+    assert summary["kind"] == "historical_masked_robustness_stage_run"
+    assert summary["completed"] == dict(training_jobs=0, prediction_jobs=8)
+    assert summary["variants"] == dict.fromkeys(PERTURBATIONS, 2)
+    assert "otra etapa" in robust.errors["foreign"]
+    stage = ablation.load_stage(robust.stage)
+    for job in ablation.plan_stage(stage):
+        receipt = json.loads((robust.output / "jobs" / job["id"] / "receipt.json").read_text())
+        assert receipt["kind"] == "masked_robustness_job" and receipt["optimizer_steps"] == 0
+        assert receipt["identity"]["read_variant"] == perturbation_identity(job["variant"])
+        assert "modality_ablation" not in receipt["identity"]
+    identity = json.loads((robust.output / "stage.json").read_text())
+    assert identity["declaration"]["sha256"] == robustness.declaration()["sha256"]
+    assert "evaluation/robustness.py" in identity["code"]
+
+
+def perturbed_rows(table, presence, variant):
+    """Filas cuya entrada cambia, calculadas con el generador y sin la predicción."""
+    bits = np.array([presence[key] for key in table["sample_id"].to_pylist()])
+    moments = table["prediction_at"].cast(pa.int64()).to_numpy()
+    assets = table["asset_id"].to_numpy(zero_copy_only=False).astype(str)
+    bursts = robustness.burst_context(assets, moments, 252)
+    return robustness.affected_rows(bits, variant, bursts)
+
+
+def test_a_memoryless_reference_keeps_every_row_whose_input_does_not_change(
+    base, robust, confirmed
+):
+    for job in ablation.plan_stage(ablation.load_stage(robust.stage)):
+        receipt = json.loads((robust.output / "jobs" / job["id"] / "receipt.json").read_text())
+        _, selected = confirmed.selected("US", job["window"], "gru", 42)
+        original = pq.read_table(base.output / selected["predictions"]["evaluation"]["path"])
+        changed = pq.read_table(robust.output / receipt["prediction"]["path"])
+        assert changed["sample_id"].equals(original["sample_id"])
+        presence = presence_of(view_of(confirmed, job["window"]))
+        touched = perturbed_rows(original, presence, job["variant"])
+        for name in ("prediction", *QUANTILE_COLUMNS):
+            before, after = original[name].to_numpy(), changed[name].to_numpy()
+            np.testing.assert_array_equal(after[~touched], before[~touched])
+        if job["variant"] in robustness.BURSTS:
+            continue
+        # El ruido llega a todas las filas por el macro y cambia sus predicciones.
+        assert touched.all()
+        assert (original["prediction"].to_numpy() != changed["prediction"].to_numpy()).any()
+
+
+def test_robustness_sources_feed_the_comparison_with_the_drift_after_each_burst(robust):
+    manifest = json.loads(robust.sources.read_text())
+    assert manifest["kind"] == robustness.SOURCES_KIND and manifest["schema_version"] == 2
+    assert manifest["declaration_sha256"] == robustness.declaration()["sha256"]
+    assert set(manifest["variants"]) == set(PERTURBATIONS)
+    section = robust.report["robustness"]
+    assert section["status"] == "computed" and section["recalibrated"] is False
+    assert section["sources_sha256"] == sha256(robust.sources)
+    assert "evaluation/robustness.py" in robust.report["analysis_source_sha256"]
+    for variant in PERTURBATIONS:
+        seeds = section["variants"][variant]["arms"]["gru"]["42"]
+        # Un modelo sin memoria no cambia ninguna fila cuya entrada no cambia.
+        assert set(seeds["unaffected_changed"].values()) == {0}
+        if variant in robustness.BURSTS:
+            assert list(seeds["drift"]) == ["0-5", "5-21", "21-63", "63-252", "inside", "far"]
+            assert {entry["changed"] for entry in seeds["drift"].values()} == {0}
+            assert sum(entry["rows"] for entry in seeds["drift"].values()) == sum(
+                section["variants"][variant]["population"]["windows"][window]["unaffected_rows"]
+                for window in section["variants"][variant]["population"]["windows"]
+            )
+        else:
+            assert "drift" not in seeds
+            summary = seeds["overall"]["US"]
+            assert summary["difference"] == pytest.approx(
+                summary["masked_session_mae"] - summary["original_session_mae"], abs=1e-15
+            )
+    assert "agregados" in robust.errors["aggregated"]
+
+
+def test_robustness_sources_with_another_declaration_are_rejected(robust, tmp_path):
+    manifest = json.loads(robust.sources.read_text())
+    copy = robust.sources.parent / "other-declaration.json"
+    atomic_json(copy, dict(manifest, declaration_sha256="0" * 64))
+    try:
+        with pytest.raises(ValueError, match="la robustez no cumplen su contrato"):
+            comparison.evaluate_walk_forward(
+                robust.stage.parent / "comparison.json",
+                robust.primary,
+                "US",
+                robustness_sources=copy,
+            )
+    finally:
+        copy.unlink()
+
+
 class Counting(torch.optim.Optimizer):
     """Optimizador que solo cuenta llamadas: nunca modifica los pesos."""
 
@@ -575,7 +763,7 @@ def _other_targets(report, folder):
 @pytest.mark.parametrize(
     "edit,message",
     [
-        (_without_ablation, "no declara la ablación pedida"),
+        (_without_ablation, "no declara la variante de lectura pedida"),
         (_other_anchor, "no parte del estado elegido"),
         (_with_calibration, "solo debe predecir la evaluación"),
         (_opened, "abre la reserva final"),

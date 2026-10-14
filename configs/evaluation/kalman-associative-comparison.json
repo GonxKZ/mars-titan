@@ -22,8 +22,8 @@
       "associative_memory": {
         "rule": "proximal",
         "key": "codec",
-        "rate": "η elegido en desarrollo según #392",
-        "forgetting": "λ elegido en desarrollo según #392"
+        "rate": "η elegido en cada ventana con su validación entre los casos de mature-correction-historical-masked.json",
+        "forgetting": "λ fijado por esa receta"
       }
     },
     "b6_kalman": {
@@ -32,8 +32,8 @@
         "rule": "kalman",
         "key": "codec",
         "process_noise_relative_to_observation_noise": [1e-6, 1e-5],
-        "observation_noise": "varianza de los residuos etiqueta menos núcleo en la ventana de entrenamiento",
-        "cohort_correlation": "correlación intraclase de esos residuos por sesión, estimada por momentos y truncada a [0, 0,95]",
+        "observation_noise": "varianza de los residuos etiqueta menos núcleo de los tres últimos meses del ajuste de cada ventana",
+        "cohort_correlation": "correlación intraclase de esos residuos por mercado e instante de decisión, estimada por momentos con el mercado como estrato y truncada a [0, 0,95]",
         "prior_variance": "0,1 veces observation_noise",
         "huber_threshold": null
       }
@@ -51,7 +51,18 @@
       }
     }
   },
-  "selection": "q = κ σ² con κ elegido entre los dos candidatos por la métrica primaria en las ventanas con evaluación entre 2005 y 2013 y fijo en 2014 a 2023",
+  "selection": "q = κ σ² con κ elegido en cada ventana entre los dos candidatos por el MAE por sesión de validación, la misma búsqueda que η en b6_proximal",
+  "campaign": {
+    "config": "configs/baselines/historical-masked-campaign-a-v2.json",
+    "recipe": "configs/titans/kalman-correction-historical-masked.json",
+    "models": {
+      "titans_mac_online": "titans_mac_online",
+      "b6_proximal": "mars_titan_b6",
+      "b6_kalman": "mars_titan_b6_kalman",
+      "b6_kalman_rho0": "mars_titan_b6_kalman_rho0"
+    },
+    "families": ["kalman_correction", "kalman_cohort_correlation"]
+  },
   "equal": [
     "predictions",
     "keys",
@@ -100,6 +111,8 @@
     "La propuesta daba q ∈ {10⁻⁶, 10⁻⁵} sin unidad. Como la escala del residuo solo se conoce al estimar σ², se declaran como fracciones de σ²: q = κ σ².",
     "La propuesta no fijaba p0. Se declara p0 = 0,1 σ² antes de ver datos, de modo que la corrección a priori explica como mucho un 10 % de la varianza del residuo con claves unitarias.",
     "El recorte de Huber está implementado y comprobado, pero el modelo principal no lo usa para no añadir otro grado de libertad.",
-    "El recorrido cronológico por ventanas todavía no emite B6, igual que con las reglas delta y proximal."
+    "El recorrido cronológico por ventanas emite B6 con las tres reglas desde el 13 de octubre de 2026 (#455).",
+    "El 13 de octubre de 2026, antes de ejecutar nada, la selección de κ pasó de una elección única en las ventanas de 2005 a 2013 a una elección por ventana con la validación, igual que η en b6_proximal, y σ² y ϱ pasaron a estimarse con los tres últimos meses del ajuste de cada ventana.",
+    "La comparación de la campaña calcula la diferencia de MAE por sesión. Desde el 14 de octubre de 2026 la ventana kalman emite por fila la varianza predictiva y la predicción de una segunda memoria que recibe cada etiqueta una sesión más tarde, y la sección kalman_diagnostics de la comparación conjunta calcula con ellas la cobertura del intervalo de la corrección y D3 frente a titans_mac_online, sin repetir la inferencia del padre."
   ]
 }

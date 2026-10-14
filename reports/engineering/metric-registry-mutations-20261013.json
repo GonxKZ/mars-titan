@@ -1,0 +1,289 @@
+{
+  "schema_version": 1,
+  "kind": "targeted_mutation_testing",
+  "scope": "Registro de métricas y reconstrucción de los resúmenes publicados (#442)",
+  "measured_at": "2026-10-13",
+  "baseline": {
+    "tests/integrity/test_metric_registry.py": {
+      "pytest": "84 passed in 4.36s",
+      "seconds": 7.68
+    },
+    "tests/integrity/test_metric_registry.py tests/integrity/test_comparison_integrity.py tests/integrity/test_score_recheck.py": {
+      "pytest": "108 passed in 46.53s",
+      "seconds": 50.28
+    }
+  },
+  "mutations": [
+    {
+      "id": "R01",
+      "description": "Sesión definida sin denominador",
+      "file": "src/mars_titan/integrity/metric_registry.py",
+      "tests": [
+        "tests/integrity/test_metric_registry.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed in 2.02s",
+      "seconds": 5.79
+    },
+    {
+      "id": "R02",
+      "description": "RMSE sin raíz",
+      "file": "src/mars_titan/integrity/metric_registry.py",
+      "tests": [
+        "tests/integrity/test_metric_registry.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed in 1.90s",
+      "seconds": 5.47
+    },
+    {
+      "id": "R03",
+      "description": "Diferencia con el nivel sumada",
+      "file": "src/mars_titan/integrity/metric_registry.py",
+      "tests": [
+        "tests/integrity/test_metric_registry.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed in 1.62s",
+      "seconds": 4.53
+    },
+    {
+      "id": "R04",
+      "description": "Media por fila sin pesos",
+      "file": "src/mars_titan/integrity/metric_registry.py",
+      "tests": [
+        "tests/integrity/test_metric_registry.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 56 passed in 4.19s",
+      "seconds": 6.87
+    },
+    {
+      "id": "R05",
+      "description": "Cobertura de llamadas media por sesión",
+      "file": "src/mars_titan/integrity/metric_registry.py",
+      "tests": [
+        "tests/integrity/test_metric_registry.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 56 passed in 3.56s",
+      "seconds": 6.27
+    },
+    {
+      "id": "R06",
+      "description": "Desviación típica poblacional",
+      "file": "src/mars_titan/integrity/metric_registry.py",
+      "tests": [
+        "tests/integrity/test_metric_registry.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed in 1.42s",
+      "seconds": 4.15
+    },
+    {
+      "id": "R07",
+      "description": "Filas retenidas con suelo",
+      "file": "src/mars_titan/integrity/metric_registry.py",
+      "tests": [
+        "tests/integrity/test_metric_registry.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed in 1.36s",
+      "seconds": 4.1
+    },
+    {
+      "id": "R08",
+      "description": "ECE dividido por intervalos",
+      "file": "src/mars_titan/integrity/metric_registry.py",
+      "tests": [
+        "tests/integrity/test_metric_registry.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed in 1.47s",
+      "seconds": 4.62
+    },
+    {
+      "id": "R09",
+      "description": "Mercados sin restringir sus sesiones",
+      "file": "src/mars_titan/integrity/metric_registry.py",
+      "tests": [
+        "tests/integrity/test_metric_registry.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed in 2.58s",
+      "seconds": 7.32
+    },
+    {
+      "id": "R10",
+      "description": "Familias sin comodín",
+      "file": "src/mars_titan/integrity/metric_registry.py",
+      "tests": [
+        "tests/integrity/test_metric_registry.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed in 3.15s",
+      "seconds": 8.99
+    },
+    {
+      "id": "R11",
+      "description": "Cifras de mercado siempre registradas",
+      "file": "src/mars_titan/integrity/metric_registry.py",
+      "tests": [
+        "tests/integrity/test_metric_registry.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 27 passed in 4.23s",
+      "seconds": 9.9
+    },
+    {
+      "id": "R12",
+      "description": "Cifras ausentes sin contar",
+      "file": "src/mars_titan/integrity/metric_registry.py",
+      "tests": [
+        "tests/integrity/test_metric_registry.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 26 passed in 3.04s",
+      "seconds": 7.63
+    },
+    {
+      "id": "R13",
+      "description": "Valores sin comparar",
+      "file": "src/mars_titan/integrity/metric_registry.py",
+      "tests": [
+        "tests/integrity/test_metric_registry.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 2 passed in 1.91s",
+      "seconds": 6.5
+    },
+    {
+      "id": "R14",
+      "description": "Semillas sin cotejar con el código",
+      "file": "src/mars_titan/integrity/metric_registry.py",
+      "tests": [
+        "tests/integrity/test_metric_registry.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 63 passed in 5.19s",
+      "seconds": 9.09
+    },
+    {
+      "id": "R15",
+      "description": "Sentido de las series sin cotejar",
+      "file": "src/mars_titan/integrity/metric_registry.py",
+      "tests": [
+        "tests/integrity/test_metric_registry.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 80 passed in 5.41s",
+      "seconds": 9.65
+    },
+    {
+      "id": "R16",
+      "description": "Secciones sin buscar en la documentación",
+      "file": "src/mars_titan/integrity/metric_registry.py",
+      "tests": [
+        "tests/integrity/test_metric_registry.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 78 passed in 5.29s",
+      "seconds": 9.59
+    },
+    {
+      "id": "R17",
+      "description": "Cuantiles sin exigir en las sesiones",
+      "file": "src/mars_titan/integrity/metric_registry.py",
+      "tests": [
+        "tests/integrity/test_metric_registry.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 26 passed in 3.32s",
+      "seconds": 8.69
+    },
+    {
+      "id": "R18",
+      "description": "Recuentos sin estado",
+      "file": "src/mars_titan/integrity/metric_registry.py",
+      "tests": [
+        "tests/integrity/test_metric_registry.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed in 2.67s",
+      "seconds": 8.3
+    },
+    {
+      "id": "R19",
+      "description": "Extremo superior sin desplazar",
+      "file": "src/mars_titan/integrity/metric_registry.py",
+      "tests": [
+        "tests/integrity/test_metric_registry.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed in 2.23s",
+      "seconds": 6.92
+    },
+    {
+      "id": "R20",
+      "description": "Ponderación fija",
+      "file": "src/mars_titan/integrity/metric_registry.py",
+      "tests": [
+        "tests/integrity/test_metric_registry.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 28 passed in 5.46s",
+      "seconds": 10.75
+    },
+    {
+      "id": "R21",
+      "description": "Calibradas sin contar",
+      "file": "src/mars_titan/integrity/score_recheck.py",
+      "tests": [
+        "tests/integrity/test_metric_registry.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 27 passed in 3.69s",
+      "seconds": 9.1
+    },
+    {
+      "id": "R22",
+      "description": "Recálculo sin cuantiles",
+      "file": "src/mars_titan/integrity/score_recheck.py",
+      "tests": [
+        "tests/integrity/test_metric_registry.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed in 2.22s",
+      "seconds": 7.29
+    },
+    {
+      "id": "R23",
+      "description": "Informe sin la huella del registro",
+      "file": "src/mars_titan/integrity/comparison_integrity.py",
+      "tests": [
+        "tests/integrity/test_metric_registry.py",
+        "tests/integrity/test_comparison_integrity.py",
+        "tests/integrity/test_score_recheck.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 84 passed in 9.00s",
+      "seconds": 14.18
+    },
+    {
+      "id": "R24",
+      "description": "Media del registro sin ponderación de mercado",
+      "file": "src/mars_titan/integrity/metric_registry.py",
+      "tests": [
+        "tests/integrity/test_metric_registry.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 28 passed in 4.66s",
+      "seconds": 9.78
+    }
+  ],
+  "killed": 24,
+  "survived": 0,
+  "notes": [
+    "Cada defecto se aplica de uno en uno y el archivo se restaura después."
+  ]
+}

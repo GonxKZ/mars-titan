@@ -19,6 +19,9 @@ ventana de las variantes A y B, por familia y por opción, incluida la etapa de 
 de adaptadores. Con una declaración preparada (`campaign_extensions`), las familias que A
 y B todavía no declaran se miden y se estiman como si lo estuvieran.
 
+Las mediciones cronológicas admiten `traces`, que engancha las trazas de #448 a cada
+entrenador (y a la corrección B6) para medir su coste con `learning_traces.overhead`.
+
 Con las etapas de políticas, `simulation.policy_throughput` mide además el entorno
 financiero y la red de las políticas por lotes, sin pasos de optimizador, y añade a cada
 variante una estimación orientativa de esa etapa por nivel, ámbito, modelo y predictor,
@@ -39,7 +42,7 @@ import os
 import resource
 import time
 from dataclasses import asdict, replace
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 
 from mars_titan.data.cohort_files import read_manifest
@@ -59,6 +62,7 @@ from .campaign_plan import (
     PLATEAU,
     TITANS,
     _arm_specs,
+    _kalman_arm,
     extend_campaign,
     load_campaign,
     plan_campaign,
@@ -162,13 +166,17 @@ def neural_job_seconds(job, counts, rates, epochs):
     return max(seconds)
 
 
-def validated_job_seconds(job, rows, rate, epochs):
+def validated_job_seconds(job, rows, rate, epochs, *, estimation=False):
     """Segundos de un trabajo que valida antes de la primera época y tras cada una.
 
     Es la forma de Titans-MAC, de la GRU candidata y de los casos de la matriz. Un ajuste
     recorre `epochs` veces el tramo de ajuste, valida `epochs + 1` veces, vuelve a
     predecir la validación con el estado elegido y predice calibración y evaluación. Un
     traslado predice calibración y evaluación. `rows` incluye el calentamiento si existe.
+    Con `estimation`, el ajuste de la regla kalman de B6 recorre antes su tramo de estimación
+    de σ² y ϱ: los tres últimos meses del ajuste con su calentamiento. Los recuentos no los
+    separan, así que se acotan con los de calibración, que también cubre tres meses con el
+    mismo calentamiento. Un traslado usa la estimación del ancla y no los recorre.
     """
     inference = rate["inference"]
     if job["kind"] != FIT:
@@ -176,7 +184,8 @@ def validated_job_seconds(job, rows, rate, epochs):
     if rate["train"] is None:
         # Un trabajo sin ajuste, como la corrección B6, predice una sola vez cada tramo medido,
         # sin épocas ni validaciones repetidas.
-        return (rows["validation"] + rows["calibration"] + rows["evaluation"]) / inference
+        predicted = rows["validation"] + rows["calibration"] + rows["evaluation"]
+        return (predicted + (rows["calibration"] if estimation else 0)) / inference
     predicted = (epochs + 2) * rows["validation"] + rows["calibration"] + rows["evaluation"]
     return epochs * rows["train"] / rate["train"] + predicted / inference
 
@@ -250,6 +259,14 @@ def _option_hours(campaign, family, jobs, counts, measured, epochs):
     opción de los modelos de su familia que comparan opciones, como sus núcleos.
     """
     rows = _chronological_rows(campaign, family, counts)
+    kalman = set()
+    if family == MARS:
+        candidates = campaign[MARS]["candidates"]
+        kalman = {
+            arm for arm, cases in candidates.items() if _kalman_arm(cases[0][1]["components"])
+        }
+        if kalman:
+            _check_estimation_proxy(campaign, kalman)
     compared = {
         arm: record for arm, record in measured.items() if list(record["options"]) != ["recipe"]
     } or measured
@@ -270,10 +287,41 @@ def _option_hours(campaign, family, jobs, counts, measured, epochs):
             rate = dict(
                 train=records[job["arm"]]["train"], inference=measured[job["arm"]]["inference"]
             )
-            return validated_job_seconds(job, rows[job["scope"]][job["window"]], rate, epochs)
+            return validated_job_seconds(
+                job,
+                rows[job["scope"]][job["window"]],
+                rate,
+                epochs,
+                estimation=job["arm"] in kalman,
+            )
 
         result["options"][name] = dict(_hours(jobs, seconds), peak_vram_allocated_bytes=peak)
     return result
+
+
+def _check_estimation_proxy(campaign, arms):
+    """Comprobar que la calibración sirve de medida del tramo de estimación de kalman.
+
+    Los recuentos no separan los últimos meses del ajuste, así que la proyección cuenta como
+    tramo de estimación las filas de calibración, que tienen el mismo calentamiento. Solo
+    vale si en cada ventana la calibración dura los mismos meses naturales que la estimación.
+    """
+    from .mars_titan_correction import load_correction_recipe
+
+    months = {
+        load_correction_recipe(case["recipe"])["recipe"]["estimation_months"]
+        for arm in arms
+        for _, case in campaign[MARS]["candidates"][arm]
+    }
+    for scope in campaign["comparison_config"]["resolved_scopes"].values():
+        for fold in scope["windows"].values():
+            first, last = (date.fromisoformat(day) for day in fold["calibration"])
+            span = (last.year - first.year) * 12 + last.month - first.month
+            _require(
+                first.day == last.day == 1 and months == {span},
+                "La proyección mide el tramo de estimación de kalman con la calibración, que "
+                "debe durar los mismos meses naturales",
+            )
 
 
 def _online_hours(campaign, jobs, counts, neural):
@@ -309,8 +357,15 @@ def _posttraining_hours(stage, counts, rates, fresh=None):
     recorre todo su tramo.
 
     La medida de la matriz solo cubre las redes de referencia. Las variantes de Titans-MAC y la
-    cadena trivial de Ridge y XGBoost quedan en `without_estimate`, sin sumar sus horas.
+    cadena trivial de Ridge y XGBoost quedan en `without_estimate`, sin sumar sus horas. Un
+    control de repaso ajusta en cada época además sus filas de repaso, estimadas con
+    `replay_continuation.estimated_epoch_rows`. La lectura de las sesiones anteriores no
+    se cuenta, como el resto de lecturas de disco. Los objetivos lineales de #128 no tienen
+    medida propia: su corrección no recorre la red en cada época, así que se acotan por
+    arriba con el caudal de la continuación completa del mismo padre.
     """
+    from mars_titan.posttraining import predictive_objectives as predictive
+    from mars_titan.posttraining import replay_continuation as replay
     from mars_titan.posttraining.campaign_stage import FROZEN, plan_stage
 
     measured, neural = rates[POSTTRAINING], rates[NEURAL]
@@ -345,7 +400,17 @@ def _posttraining_hours(stage, counts, rates, fresh=None):
         cache = _slowest(neural[job["base_arm"]].values())["inference"]
         if job["kind"] == FROZEN:
             return (rows["validation"] + rows["calibration"] + rows["evaluation"]) / cache
-        rate = _slowest([points[job["point"]] for points in measured[job["base_arm"]].values()])
+        point = "full_continuation" if job["control"] in predictive.CONTROLS else job["point"]
+        rate = _slowest([points[point] for points in measured[job["base_arm"]].values()])
+        if replay.KEY in job["case"]:
+            rows = dict(
+                rows,
+                train=replay.estimated_epoch_rows(
+                    rows["train"],
+                    job["case"][replay.KEY]["ratio"],
+                    stage["matrix"]["budget"]["batch_size"],
+                ),
+            )
         total = validated_job_seconds(job, rows, rate, epochs)
         if job["id"] in first:
             total += (rows["train"] + rows["validation"]) / cache
@@ -749,11 +814,13 @@ def measure_posttraining(stage, view, *, batches=50, warmup=5):
     El padre es la referencia del modelo base con los pesos iniciales de su caso, porque
     los padres elegidos todavía no existen. Cada modelo de la matriz y la continuación
     completa se construyen como en `posttraining.run.build_model`. Los casos de una
-    semilla bastan: las demás solo cambian la inicialización.
+    semilla bastan: las demás solo cambian la inicialización. Los objetivos lineales de #128
+    necesitan el normalizador del padre y no se miden aquí.
     """
     from mars_titan.data.embeddings import require_cuda
-    from mars_titan.models.quantile_head import CONTRACT, QUANTILE_HEAD
-    from mars_titan.posttraining import adapter_matrix
+    from mars_titan.models.quantile_head import CONTRACT
+    from mars_titan.posttraining import predictive_objectives as predictive
+    from mars_titan.posttraining.campaign_stage import _cases
     from mars_titan.posttraining.parents import FrozenParent
     from mars_titan.posttraining.run import build_model
 
@@ -774,10 +841,9 @@ def measure_posttraining(stage, view, *, batches=50, warmup=5):
                 model, shapes = _reference(case, dataset, budget["batch_size"])
                 parent = FrozenParent(model, dict(identity, model=family), shapes, device)
                 points = rates[arm][name] = {}
-                for item in adapter_matrix.cases(
-                    matrix, stage["matrix_sha256"], family, head=QUANTILE_HEAD
-                ):
-                    if item["case"]["seed"] != seed:
+                for item in _cases(stage, dict(design=None, family=family)):
+                    # La corrección lineal de #128 se acota con la continuación completa.
+                    if item["case"]["seed"] != seed or item["control"] in predictive.CONTROLS:
                         continue
                     adapted = build_model(parent, item["case"], None, None).to(device)
                     record = _batch_rates(
@@ -802,17 +868,15 @@ def _measured_cases(stage):
     """Lo que mide `measure_posttraining`: modelos de las redes, sus casos y el presupuesto.
 
     Los casos se comparan sin la huella de la matriz que los declara, porque un mismo caso
-    cuesta lo mismo en la v2 y en la v3.
+    cuesta lo mismo en la v2 y en la v3. Son los que ejecuta la etapa, con sus controles
+    añadidos.
     """
-    from mars_titan.models.quantile_head import QUANTILE_HEAD
-    from mars_titan.posttraining import adapter_matrix
+    from mars_titan.posttraining.campaign_stage import _cases
 
     cases = {}
     for arm, family in stage["families"].items():
         cases[arm] = {}
-        for item in adapter_matrix.cases(
-            stage["matrix"], stage["matrix_sha256"], family, head=QUANTILE_HEAD
-        ):
+        for item in _cases(stage, dict(design=None, family=family)):
             # La continuación completa no tiene adaptador ni, por tanto, huella de la matriz.
             case = dict(item["case"])
             if "adapter" in case:
@@ -921,21 +985,40 @@ def _inference(trainer, inputs, paused, settings):
     )
 
 
-def _chronological(build, fresh, paused, options, inputs, settings, counters=()):
+def _trace_volume(trainer):
+    """Volumen de las trazas del recorrido medido, tras volcar lo pendiente."""
+    recorder = trainer.traces.recorder
+    trainer.traces.checkpoint()
+    return dict(
+        every=recorder.config.every,
+        step_calls=trainer.optimizer.calls,
+        parts=recorder.sequence,
+        bytes=recorder.bytes,
+        exhausted_at=recorder.exhausted_at,
+    )
+
+
+def _chronological(build, fresh, paused, options, inputs, settings, counters=(), traces=None):
     """Medir el ajuste con cada opción y la inferencia de un control cronológico.
 
     `build(opción)` construye el entrenador con `_NoStepOptimizer` y `fresh(entrenador)` el
     estado vacío de su recorrido de ajuste. La inferencia no depende de la opción de
     memoria y se mide una vez, con la de la receta y sobre los mismos eventos de ajuste.
     Una opción que no cabe en la memoria reservada se registra y la medición sigue.
+    `traces(entrenador)`, si se indica, le engancha las trazas de #448 antes de medir, y el
+    registro de la opción añade su volumen (`learning_traces`).
     """
     import torch
 
     record = dict(declared_option=option_name(options[0]), options={})
     for index, option in enumerate(options):
         trainer = build(option)
+        if traces is not None:
+            traces(trainer)
         torch.cuda.reset_peak_memory_stats(0)
         result = _train_option(trainer, fresh(trainer), paused, settings, counters)
+        if getattr(trainer, "traces", None) is not None and result.get("status") != OUT_OF_MEMORY:
+            result["learning_traces"] = _trace_volume(trainer)
         gc.collect()
         result.update(
             option,
@@ -973,11 +1056,14 @@ def _chronological_sources(view, document, work):
     return fold, sources, _event_inputs(sources["train"])
 
 
-def _core_builder(document, recipe, sources, work, *, variant, seed, device, local_control=None):
+def _core_builder(
+    document, recipe, sources, work, *, variant, seed, device, local_control=None, changes=None
+):
     """Constructor del ajuste cronológico de Titans-MAC con el optimizador de la medición.
 
     `local_control` es el contrato del control C de un núcleo de CM-v1, como en
-    `run_titans_window`. Con `penalty`, cada tramo suma los flujos medidos de C.
+    `run_titans_window`. Con `penalty`, cada tramo suma los flujos medidos de C. `changes`
+    son los cambios del predictor de un modelo, como PT1.
     """
     from mars_titan.budget_training import seed_run
 
@@ -989,7 +1075,7 @@ def _core_builder(document, recipe, sources, work, *, variant, seed, device, loc
     def build(option):
         seed_run(seed)
         predictor, pairing = titans._predictor(
-            document, specification, variant, seed, device, local_control
+            document, specification, variant, seed, device, local_control, changes
         )
         return ChronologicalTrainer(
             predictor,
@@ -1014,7 +1100,7 @@ def _shared(candidates, inputs):
 
 
 def measure_titans(
-    campaign, view, work, *, segments=8, segment_warmup=2, events=64, event_warmup=8
+    campaign, view, work, *, segments=8, segment_warmup=2, events=64, event_warmup=8, traces=None
 ):
     """Medir cada control de Titans-MAC con la receta de la campaña y sus opciones de memoria.
 
@@ -1051,6 +1137,7 @@ def measure_titans(
                     variant=case["variant"],
                     seed=case["seed"],
                     device=device,
+                    changes=case.get(titans.CHANGES),
                 )
                 record = _chronological(
                     build,
@@ -1059,6 +1146,7 @@ def measure_titans(
                     _options(recipe, TITANS_OPTIONS),
                     inputs,
                     settings,
+                    traces=traces,
                 )
                 rates[arm] = dict(record, variant=case["variant"], **_shared(candidates, inputs))
     finally:
@@ -1067,7 +1155,16 @@ def measure_titans(
 
 
 def _readout_record(
-    family, parent, document, case, window, work, device, settings, counters=BANK_COUNTERS
+    family,
+    parent,
+    document,
+    case,
+    window,
+    work,
+    device,
+    settings,
+    counters=BANK_COUNTERS,
+    traces=None,
 ):
     """Medir el lector de una familia sobre un padre `mac_online` con pesos iniciales.
 
@@ -1152,6 +1249,7 @@ def _readout_record(
         inputs,
         settings,
         counters,
+        traces=traces,
     )
     if scalers:
         value = scalers["value"]
@@ -1165,12 +1263,13 @@ def _readout_record(
     return dict(record, bank_capacity=recipe.bank_capacity)
 
 
-def _correction_record(parent, case, window, device, settings):
+def _correction_record(parent, case, window, device, settings, traces=None):
     """Medir la corrección B6 sobre un padre `mac_online` con pesos iniciales.
 
     B6 no tiene ajuste. Se mide la inferencia cronológica del padre con la lectura y la
     escritura de A sobre los eventos del tramo de ajuste, que no tienen calentamiento, así
     que todos los eventos medidos corrigen. El caso solo cambia η y comparte la medida.
+    `traces(inferencia)`, si se indica, le da el registrador de las trazas de #448.
     """
     import torch
 
@@ -1185,8 +1284,11 @@ def _correction_record(parent, case, window, device, settings):
     fold, sources, inputs = window
     document = correction.load_correction_recipe(case["recipe"])
     values = correction.case_values(document, case["search_case"])
+    # Las varianzas de kalman no cambian el coste de una escritura, así que se mide con las de
+    # referencia y sin el tramo de estimación, que la proyección suma aparte.
+    noise = correction.UNIT_NOISE if correction.kalman_arm(case["components"]) else None
     _, mature = check_components(
-        load_declaration(), correction.arm_components(case["components"], values)
+        load_declaration(), correction.arm_components(case["components"], values, noise)
     )
     specification = sources["train"].specification()
     seed_run(case["seed"])
@@ -1199,6 +1301,8 @@ def _correction_record(parent, case, window, device, settings):
     inference = correction.CorrectionInference(
         predictor, chronological, mature, FrozenEpisodeCodec(specification)
     )
+    if traces is not None:
+        traces(inference)
     prefix = [0]
     for count in inputs:
         prefix.append(prefix[-1] + count)
@@ -1215,7 +1319,7 @@ def _correction_record(parent, case, window, device, settings):
         torch.equal(a, b.detach()) for a, b in zip(initial, predictor.parameters(), strict=True)
     ):
         raise RuntimeError("La medición de caudal ha modificado parámetros")
-    return dict(
+    record = dict(
         declared_option="recipe",
         options={"recipe": dict(train=None, peak_vram_allocated_bytes=peak)},
         inference=rate,
@@ -1224,10 +1328,21 @@ def _correction_record(parent, case, window, device, settings):
         associative_writes=inference.memory.writes,
         window=fold["id"],
     )
+    recorder = inference.trace_recorder
+    if recorder is not None:
+        recorder.flush()
+        record["learning_traces"] = dict(
+            every=recorder.config.every,
+            write_events=inference._trace_events,
+            parts=recorder.sequence,
+            bytes=recorder.bytes,
+            exhausted_at=recorder.exhausted_at,
+        )
+    return record
 
 
 def measure_mars_titan(
-    campaign, view, work, *, segments=8, segment_warmup=2, events=64, event_warmup=8
+    campaign, view, work, *, segments=8, segment_warmup=2, events=64, event_warmup=8, traces=None
 ):
     """Medir el lector de cada modelo de MARS-TITAN sobre su padre `titans_mac_online`.
 
@@ -1267,7 +1382,7 @@ def measure_mars_titan(
             for arm, candidates in section["candidates"].items():
                 _, case = candidates[0]
                 if "associative_memory" in case["components"]:
-                    record = _correction_record(parent, case, window, device, settings)
+                    record = _correction_record(parent, case, window, device, settings, traces)
                     rates[arm] = dict(
                         record,
                         components=case["components"],
@@ -1280,7 +1395,16 @@ def measure_mars_titan(
                 if case["components"].get("episodic_bank") == "m3":
                     counters += tuple(m3_counters())
                 record = _readout_record(
-                    family, parent, readout, case, window, work, device, settings, counters
+                    family,
+                    parent,
+                    readout,
+                    case,
+                    window,
+                    work,
+                    device,
+                    settings,
+                    counters,
+                    traces=traces,
                 )
                 rates[arm] = dict(
                     record,
@@ -1313,7 +1437,9 @@ def _check_cm_v1(campaign, segments):
     )
 
 
-def measure_cm_v1(campaign, view, work, *, segments=8, segment_warmup=2, events=64, event_warmup=8):
+def measure_cm_v1(
+    campaign, view, work, *, segments=8, segment_warmup=2, events=64, event_warmup=8, traces=None
+):
     """Medir los dos núcleos de CM-v1 y el lector de cada modelo, sin pasos ni cambios de pesos.
 
     Los núcleos recorren `ChronologicalTrainer._train_pass` con la receta del núcleo:
@@ -1374,6 +1500,7 @@ def measure_cm_v1(campaign, view, work, *, segments=8, segment_warmup=2, events=
                     inputs,
                     settings,
                     CONTROL_COUNTERS if contract["mode"] == "penalty" else (),
+                    traces=traces,
                 )
                 rates[core] = dict(
                     record,
@@ -1397,6 +1524,7 @@ def measure_cm_v1(campaign, view, work, *, segments=8, segment_warmup=2, events=
                     work,
                     device,
                     settings,
+                    traces=traces,
                 )
                 rates[arm] = dict(
                     record,
@@ -1411,7 +1539,7 @@ def measure_cm_v1(campaign, view, work, *, segments=8, segment_warmup=2, events=
 
 
 def measure_candidate(
-    campaign, view, work, *, segments=8, segment_warmup=2, events=64, event_warmup=8
+    campaign, view, work, *, segments=8, segment_warmup=2, events=64, event_warmup=8, traces=None
 ):
     """Medir la GRU candidata con su receta, su variante y sus opciones de memoria.
 
@@ -1483,6 +1611,7 @@ def measure_candidate(
                 _options(recipe, CANDIDATE_OPTIONS),
                 inputs,
                 settings,
+                traces=traces,
             )
             rates[arm] = dict(record, variant=case["variant"], **_shared(candidates, inputs))
     finally:

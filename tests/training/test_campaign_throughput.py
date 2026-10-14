@@ -10,6 +10,7 @@ su gancho. No se usa la GPU ni se registran pérdidas.
 
 import copy
 import json
+from dataclasses import asdict
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -40,13 +41,14 @@ CAMPAIGNS = {
 STAGES = {
     v: Path(f"configs/posttraining/historical-masked-adapter-stage-{v.lower()}.json") for v in "AB"
 }
-# Modelos de la sección `variety` de la matriz v3 (#444), que solo declara la etapa A.
+# Modelos de la sección `variety` de la matriz v3 (#444), que solo declara la etapa A, y la
+# continuación anclada, que A añade como control.
 VARIETY = {
     arm["id"]
     for arm in json.loads(Path("configs/posttraining/adapter-matrix-v3.json").read_text())[
         "variety"
     ]["arms"]
-}
+} | {"anchored_continuation"}
 CANDIDATE = Path("configs/candidate/chronological-training.json")
 EXTENSIONS = Path("configs/baselines/historical-masked-campaign-extensions.json")
 TITANS_RECIPE = Path("configs/titans/chronological-training-historical-masked.json")
@@ -305,9 +307,9 @@ def growing(campaign, step):
 
 @pytest.mark.parametrize(
     ("variant", "fits", "predictions", "parents"),
-    # A ajusta en las redes los 51 casos de la v3 por ventana y semilla, 22 de ellos de la
-    # variedad de adaptadores, y B los 29 de la v2.
-    [("A", 6426, 630, 42 * 15), ("B", 1479, 2436, 17 * 15)],
+    # A ajusta en las redes los 56 casos de la v3 por ventana y semilla, 22 de ellos de la
+    # variedad de adaptadores y 5 de la continuación anclada, y B los 29 de la v2.
+    [("A", 7056, 630, 42 * 15), ("B", 1479, 2436, 17 * 15)],
 )
 def test_posttraining_hours_cover_every_stage_job_and_each_parent_cache(
     variant, fits, predictions, parents
@@ -361,6 +363,67 @@ def test_posttraining_hours_cover_every_stage_job_and_each_parent_cache(
     assert unmeasured["families"][throughput.POSTTRAINING] == dict(status="not_measured")
 
 
+def test_the_replay_controls_add_their_epoch_rows_to_the_estimate():
+    """Los tres controles de repaso de #55 son ajustes con más filas por época.
+
+    A no los nombra en su etapa. Con ellos, cada ventana, referencia y semilla añade tres
+    ajustes que recorren las 6.000 filas nuevas y sus lotes de repaso estimados.
+    """
+    from mars_titan.posttraining import replay_continuation as replay
+
+    stage = campaign_stage.load_stage(STAGES["A"])
+    campaign = load_campaign(CAMPAIGNS["A"])
+    counts, rates = growing(campaign, 12_000)
+    rates[throughput.POSTTRAINING] = matrix_points(stage, slower=2.0)
+    for candidates in rates[NEURAL].values():
+        list(candidates.values())[-1]["inference"] = 200.0
+    family = throughput.POSTTRAINING
+    base = throughput.estimate_hours(campaign, counts, rates, stage=stage)["families"][family]
+    named = dict(stage, additional_controls=[*stage["additional_controls"], replay.SECTION_NAME])
+    found = throughput.estimate_hours(campaign, counts, rates, stage=named)["families"][family]
+    jobs = 3 * 630
+    assert found["training_jobs"] == base["training_jobs"] + jobs
+    assert found["parent_caches"] == base["parent_caches"]
+    rows = replay.estimated_epoch_rows(6_000, 0.5, stage["matrix"]["budget"]["batch_size"])
+    assert rows >= 6_000 * 1.5
+    validation = (7 * 4_000 + 10_000) / 200
+    expected = jobs * (5 * rows / 50 + validation) / 3600
+    assert found["hours"] - base["hours"] == pytest.approx(expected)
+
+
+def test_the_objectives_are_bounded_by_the_rate_of_the_full_continuation():
+    """Los seis objetivos lineales de #128 no tienen medida propia.
+
+    A no los nombra en su etapa. Con ellos, cada ventana, referencia y semilla añade seis
+    ajustes que recorren las 6.000 filas nuevas con el caudal de la continuación completa
+    de su padre, aunque los puntos de los objetivos declaren otro.
+    """
+    from mars_titan.posttraining import predictive_objectives as predictive
+
+    stage = campaign_stage.load_stage(STAGES["A"])
+    campaign = load_campaign(CAMPAIGNS["A"])
+    counts, rates = growing(campaign, 12_000)
+    rates[throughput.POSTTRAINING] = matrix_points(stage, slower=2.0)
+    for candidates in rates[NEURAL].values():
+        list(candidates.values())[-1]["inference"] = 200.0
+    family = throughput.POSTTRAINING
+    base = throughput.estimate_hours(campaign, counts, rates, stage=stage)["families"][family]
+    named = dict(
+        stage, additional_controls=[*stage["additional_controls"], predictive.SECTION_NAME]
+    )
+    for parents in rates[throughput.POSTTRAINING].values():
+        for points in parents.values():
+            for control in predictive.CONTROLS:
+                points[control] = dict(train=1e9, inference=1e9)
+    found = throughput.estimate_hours(campaign, counts, rates, stage=named)["families"][family]
+    jobs = 6 * 630
+    assert found["training_jobs"] == base["training_jobs"] + jobs
+    assert found["parent_caches"] == base["parent_caches"]
+    validation = (7 * 4_000 + 10_000) / 200
+    expected = jobs * (5 * 6_000 / 50 + validation) / 3600
+    assert found["hours"] - base["hours"] == pytest.approx(expected)
+
+
 def test_the_measured_stage_contains_the_cases_of_both_matrix_versions():
     # A declara la matriz v3 y B la v2. Los casos de las redes de B están en A salvo por la
     # huella, y A añade los adaptadores de la variedad, así que se mide A en cualquier orden.
@@ -373,6 +436,8 @@ def test_the_measured_stage_contains_the_cases_of_both_matrix_versions():
     for arm, cases in measured_b["cases"].items():
         extra = set(measured_a["cases"][arm]) - set(cases)
         assert extra and all(key.split("/", 1)[1] in VARIETY for key in extra), arm
+        # A mide también la continuación anclada que ejecuta, y B no la tiene.
+        assert "seed-42/anchored_continuation" in extra, arm
     # Otro presupuesto o una red que A no mide dejan a B sin medida.
     budget = copy.deepcopy(b)
     budget["matrix"]["budget"]["batch_size"] *= 2
@@ -598,8 +663,18 @@ def test_matrix_measurement_covers_every_case_without_changing_the_parent(
     )
     budget = dict(stage["matrix"]["budget"], batch_size=1)
     stage.update(families={"gru": "gru"}, matrix=dict(stage["matrix"], budget=budget))
+    from mars_titan.posttraining import predictive_objectives as predictive
+    from mars_titan.posttraining import replay_continuation as replay
     from mars_titan.posttraining import run as posttraining_run
 
+    # La etapa nombra aquí los objetivos de #128 para comprobar que se planifican pero no se
+    # miden: su corrección lineal necesita el normalizador del padre y `budget` la acota con
+    # la continuación completa.
+    stage["additional_controls"] = [*stage["additional_controls"], predictive.SECTION_NAME]
+    planned = {
+        item["control"] for item in campaign_stage._cases(stage, dict(design=None, family="gru"))
+    }
+    assert set(predictive.CONTROLS) <= planned
     built, build = [], posttraining_run.build_model
     monkeypatch.setattr(
         posttraining_run,
@@ -611,13 +686,16 @@ def test_matrix_measurement_covers_every_case_without_changing_the_parent(
         stage, views / "fold-018/manifest.json", batches=1, warmup=0
     )
     # Los puntos medidos son los casos de una semilla que la matriz da a la GRU, también los
-    # de la variedad de adaptadores.
+    # de la variedad de adaptadores. La etapa A no nombra el repaso (#55), así que sus tres
+    # controles no se ejecutan ni se miden.
+    assert replay.SECTION_NAME not in stage["additional_controls"]
     declared = [
         item["id"].split("/", 1)[1]
         for item in adapter_matrix.cases(
             stage["matrix"], stage["matrix_sha256"], "gru", head=QUANTILE_HEAD
         )
         if item["case"]["seed"] == 42
+        and item["control"] not in (*replay.CONTROLS, *predictive.CONTROLS)
     ]
     assert built == [42] * len(declared)
     assert len(optim_module._global_optimizer_pre_hooks) == hooks
@@ -778,16 +856,25 @@ def test_the_step_guard_rejects_any_optimizer_step_and_is_removed():
     assert dict(optim_module._global_optimizer_pre_hooks) == hooks
 
 
-def titans_campaign(folder):
-    """Campaña A con un único control de Titans y la receta de campaña reducida."""
+def titans_campaign(folder, extensions=None):
+    """Campaña A con un único control de Titans y la receta de campaña reducida.
+
+    `extensions` añade modelos de `core_extensions` sobre ese control, como PT1.
+    """
     campaign = load_campaign(CAMPAIGNS["A"])
     recipe = json.loads(TITANS_RECIPE.read_text())
     recipe["predictor"].update(hidden_size=32)
     recipe["recipe"].update(truncation=3, block_rows=2)
     folder.mkdir(parents=True, exist_ok=True)
     atomic_json(folder / "titans.json", recipe)
-    arms = {"titans_mac_online": campaign["comparison_config"]["arms"]["titans_mac_online"]}
+    online = campaign["comparison_config"]["arms"]["titans_mac_online"]
+    arms = {"titans_mac_online": online} | {name: online for name in extensions or {}}
     section = dict(recipe="titans.json", arms={"titans_mac_online": "mac_online"}, search_seed=42)
+    if extensions:
+        section["core_extensions"] = {
+            name: dict(base_arm="titans_mac_online", predictor_changes=changes)
+            for name, changes in extensions.items()
+        }
     campaign[TITANS] = plan._titans(
         section, arms, campaign["rule"], campaign["input_policy"], folder, 2
     )
@@ -848,6 +935,44 @@ def test_titans_measurement_walks_the_chronological_trainer_without_changing_wei
     assert not (tmp_path / "work/titans-unused").exists()
 
 
+def test_titans_measurement_builds_each_core_extension_with_its_predictor_changes(
+    views, cpu, tmp_path, monkeypatch
+):
+    """PT1 se mide con su propio predictor: la caja y el recorte cambian el coste."""
+    from mars_titan.training import titans_walk_forward as wf
+    from tests.training.test_titans_walk_forward import PT1
+
+    campaign = titans_campaign(tmp_path / "config", {"titans_mac_online_pt1": PT1})
+    built, predictor = [], wf._predictor
+
+    def recorded(document, specification, variant, seed, device, control=None, changes=None):
+        pair = predictor(document, specification, variant, seed, device, control, changes)
+        # Se guarda lo que llega al predictor construido, no solo lo que se le pide.
+        config = pair[0].config
+        options = (config.gate_bias, config.memory_stability)
+        built.append((changes, *(None if value is None else asdict(value) for value in options)))
+        return pair
+
+    monkeypatch.setattr(wf, "_predictor", recorded)
+    rates = throughput.measure_titans(
+        campaign,
+        views / "fold-000/manifest.json",
+        tmp_path / "work",
+        segments=1,
+        segment_warmup=0,
+        events=1,
+        event_warmup=0,
+    )
+    assert set(rates) == {"titans_mac_online", "titans_mac_online_pt1"}
+    assert rates["titans_mac_online_pt1"]["variant"] == "mac_online"
+    # Cada opción de memoria construye su predictor: tres con las opciones de la receta y tres
+    # con las de PT1, que sustituyen las de la receta.
+    recipe = built[0][1:]
+    pt1 = (PT1["gate_bias"], PT1["memory_stability"])
+    assert recipe != pt1
+    assert built == [(None, *recipe)] * 3 + [(PT1, *pt1)] * 3
+
+
 @pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_candidate_measurement_compares_accumulation_and_recomputation(
     views, cpu, tmp_path, guarded_steps
@@ -893,9 +1018,13 @@ MARS_ARMS = {
         "refinement_episodes": "first_read",
     },
     "mars_titan_b6": {"associative_memory": {"rule": "proximal", "key": "codec"}},
+    "mars_titan_b6_kalman": {
+        "associative_memory": {"rule": "kalman", "key": "codec", "cohort_correlation": "estimated"}
+    },
 }
 MEASURED = dict(segments=1, segment_warmup=0, events=1, event_warmup=0)
 CORRECTION_RECIPE = Path("configs/titans/mature-correction-historical-masked.json")
+KALMAN_RECIPE = Path("configs/titans/kalman-correction-historical-masked.json")
 
 
 def reduced_readout(folder):
@@ -910,7 +1039,12 @@ def mars_campaign(folder, arms):
     """Campaña A con el control mac_online reducido y los modelos de MARS-TITAN pedidos."""
     campaign = titans_campaign(folder)
     declared = campaign["comparison_config"]["arms"]
-    compared = {name: declared[name] for name in ("titans_mac_online", *arms)}
+    # Las B6 kalman solo están en la comparación conjunta de A v2 y comparten la declaración
+    # de mars_titan_b6.
+    compared = {
+        name: declared[name] if name in declared else declared["mars_titan_b6"]
+        for name in ("titans_mac_online", *arms)
+    }
     section = dict(
         recipe=str(reduced_readout(folder)),
         arms={name: MARS_ARMS[name] for name in arms},
@@ -918,32 +1052,47 @@ def mars_campaign(folder, arms):
         parent_arm="titans_mac_online",
         search_seed=42,
     )
-    if any("associative_memory" in MARS_ARMS[name] for name in arms):
+    rules = {
+        MARS_ARMS[name]["associative_memory"]["rule"]
+        for name in arms
+        if "associative_memory" in MARS_ARMS[name]
+    }
+    if rules - {"kalman"}:
         section["correction_recipe"] = str(CORRECTION_RECIPE.resolve())
+    if "kalman" in rules:
+        section["kalman_correction_recipe"] = str(KALMAN_RECIPE.resolve())
     campaign[MARS] = plan._mars_titan(
         section, compared, campaign["rule"], campaign["input_policy"], folder, 2, campaign[TITANS]
     )
     return campaign
 
 
+@pytest.mark.parametrize(
+    ("arm", "cases"),
+    [
+        ("mars_titan_b6", ["eta5e-2", "eta25e-2"]),
+        ("mars_titan_b6_kalman", ["kappa1e-6", "kappa1e-5"]),
+    ],
+)
 def test_mars_measurement_walks_the_correction_without_a_reader_or_steps(
-    views, cpu, tmp_path, guarded_steps, frozen_checks
+    views, cpu, tmp_path, guarded_steps, frozen_checks, arm, cases
 ):
-    campaign = mars_campaign(tmp_path / "config", ["mars_titan_b6"])
+    """La regla kalman se mide con σ² y ϱ de referencia, porque no cambian su coste."""
+    campaign = mars_campaign(tmp_path / "config", [arm])
     measured = dict(MEASURED, events=4)
     rates = throughput.measure_mars_titan(
         campaign, views / "fold-000/manifest.json", tmp_path / "work", **measured
     )
-    record = rates["mars_titan_b6"]
+    record = rates[arm]
     assert record["declared_option"] == "recipe"
     assert record["options"] == {"recipe": dict(train=None, peak_vram_allocated_bytes=0)}
     assert record["inference"] > 0 and record["measured_inference_rows"] > 0
     # Los eventos del tramo de ajuste no tienen calentamiento, así que A recibe etiquetas
     # maduras durante toda la medida.
     assert record["associative_writes"] > 0
-    assert record["measured_case"] == "eta5e-2"
-    assert record["shared_by_cases"] == ["eta5e-2", "eta25e-2"]
-    assert record["components"] == MARS_ARMS["mars_titan_b6"]
+    assert record["measured_case"] == cases[0]
+    assert record["shared_by_cases"] == cases
+    assert record["components"] == MARS_ARMS[arm]
     assert not {"loss", "mean_loss", "session_mae"} & set(record)
     # Sin lector no hay optimizador, ni siquiera el de la medición.
     assert guarded_steps == [] and frozen_checks == []
@@ -955,6 +1104,12 @@ def test_correction_hours_predict_each_measured_tramo_once():
     fit, carry = dict(kind=plan.FIT), dict(kind=plan.CARRY)
     assert throughput.validated_job_seconds(fit, rows, rate, 30) == pytest.approx(2400 / 400)
     assert throughput.validated_job_seconds(carry, rows, rate, 30) == pytest.approx(2000 / 400)
+    # La regla kalman estima antes σ² y ϱ en un tramo medido como la calibración. El traslado
+    # usa la estimación del ancla.
+    estimated = throughput.validated_job_seconds(fit, rows, rate, 30, estimation=True)
+    assert estimated == pytest.approx(3200 / 400)
+    carried = throughput.validated_job_seconds(carry, rows, rate, 30, estimation=True)
+    assert carried == pytest.approx(2000 / 400)
     fitted = throughput.validated_job_seconds(fit, rows, dict(rate, train=100.0), 30)
     assert fitted == pytest.approx(30 * 8000 / 100 + (32 * 400 + 2000) / 400)
 

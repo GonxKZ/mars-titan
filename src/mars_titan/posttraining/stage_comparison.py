@@ -4,7 +4,13 @@ La declaración (``posttraining_stage_comparison``) se fija antes de evaluar y e
 etapa de postentrenamiento. La comparación se deriva del plan de la etapa, sin listar
 modelos a mano. Por cada modelo base y ámbito hay una comparación walk-forward con el padre
 congelado, la continuación completa (control ``full_continuation`` de la matriz) y los
-modelos adaptados de la matriz para la familia del padre.
+modelos adaptados de la matriz para la familia del padre. Si la etapa ejecuta la
+continuación con el decaimiento anclado al padre (``anchored_continuation``, #444), entra
+con su propio papel, y lo mismo ocurre con cada control de repaso de #55
+(``replay_uniform``, ``replay_regime_balanced`` y ``repeat_new_rows``) y con cada objetivo
+de la corrección lineal de #128 (``objective_reinforce`` y los demás). Los objetivos solo
+emiten la mediana, así que entran con salida puntual y sin calibración. Una familia cuya
+base no existe para un padre no se deriva para él y un papel ausente no aporta variantes.
 
 En el walk-forward por etapas de la variante A, el padre congelado es el trabajo
 ``frozen`` de la etapa, que aplica a la ventana k el estado elegido por la base en k-1. El
@@ -31,6 +37,12 @@ leídas del manifiesto de fuentes ya validado de la campaña, con los recibos co
 la etapa. Antes de escribirlo se comprueba que la etapa corresponde a esta declaración y
 usó las mismas vistas. La comparación exige después las mismas filas y objetivos en todos
 los modelos. Nada de este módulo ajusta, carga modelos ni abre la reserva de 2024.
+
+Con la retención v2, las filas de calibración y evaluación del modelo base se liberan al
+terminar cada ventana. Por eso la fase de agregados del recorrido ventana a ventana guarda,
+para cada padre y ventana con trabajos de la etapa, los agregados por sesión de su
+comparación (``write_window_aggregates``) antes de liberar nada. El informe final los lee con
+``aggregates``, igual que la comparación walk-forward de la campaña, sin abrir filas.
 """
 
 import argparse
@@ -44,8 +56,12 @@ from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.evaluation import long_short_comparison
 from mars_titan.evaluation import walk_forward_comparison as walk
+from mars_titan.hardware import hardware_profiles
+from mars_titan.integrity import comparison_integrity
 from mars_titan.training import campaign_chain
 
+from . import predictive_objectives as predictive
+from . import replay_continuation as replay
 from .campaign_stage import FROZEN as FROZEN_JOB
 from .campaign_stage import (
     FROZEN_ONLY,
@@ -62,15 +78,22 @@ KIND = "posttraining_stage_comparison"
 DECLARED = "declared_before_evaluation"
 USE = "secondary_contrasts_not_for_selecting_the_base_architecture"
 FROZEN, CONTINUATION, ADAPTED = "frozen_parent", "full_continuation", "adapted"
+ANCHORED = "anchored_continuation"
 CHAIN, BASE = "chain", "base_retrain"
-ROLES = (FROZEN, CONTINUATION, ADAPTED, CHAIN, BASE)
-# Papeles que pueden hacer de base de una familia: los dos controles y el reentreno.
-BASE_ROLES = (FROZEN, CONTINUATION, BASE)
+# Papeles que puede tener un control de la matriz. El padre congelado sale del plan.
+CONTROLS = (CONTINUATION, ANCHORED, *replay.CONTROLS, *predictive.CONTROLS)
+ROLES = (FROZEN, *CONTROLS, ADAPTED, CHAIN, BASE)
+# Papeles que pueden hacer de base de una familia: el padre congelado, los controles y el
+# reentreno.
+BASE_ROLES = (FROZEN, *CONTROLS, BASE)
 _FIELDS = {"schema_version", "kind", "status", "name", "stage", "use", "families"}
 # Familia de cada modelo derivado en la configuración de la comparación.
 ARM_FAMILIES = {
     FROZEN: "posttraining_frozen_parent",
     CONTINUATION: "posttraining_control",
+    ANCHORED: "posttraining_control",
+    **{control: "posttraining_control" for control in replay.CONTROLS},
+    **{control: "posttraining_objective" for control in predictive.CONTROLS},
     ADAPTED: "posttraining_adapter",
     CHAIN: "posttraining_chain",
 }
@@ -130,7 +153,7 @@ def _groups(stage):
             job["base_arm"],
             {
                 FROZEN: job["base_arm"],
-                CONTINUATION: None,
+                **{control: None for control in CONTROLS},
                 ADAPTED: [],
                 CHAIN: campaign_chain.chain_arm(job["base_arm"]) if staged else None,
                 BASE: job["base_arm"],
@@ -139,7 +162,7 @@ def _groups(stage):
         )
         control = job["control"]
         _require(
-            control in (None, CONTINUATION) or job.get("kind") == FROZEN_JOB,
+            control in (None, *CONTROLS) or job.get("kind") == FROZEN_JOB,
             f"El control {control} de {job['arm']} no tiene papel en la comparación",
         )
         if job.get("kind") == FROZEN_JOB:
@@ -148,12 +171,12 @@ def _groups(stage):
                 f"{job['base_arm']} declara dos padres congelados",
             )
             group[FROZEN] = job["arm"]
-        elif control == CONTINUATION:
+        elif control in CONTROLS:
             _require(
-                group[CONTINUATION] in (None, job["arm"]),
-                f"{job['base_arm']} declara dos continuaciones completas",
+                group[control] in (None, job["arm"]),
+                f"{job['base_arm']} declara dos modelos del control {control}",
             )
-            group[CONTINUATION] = job["arm"]
+            group[control] = job["arm"]
         elif job["arm"] not in group[ADAPTED]:
             group[ADAPTED].append(job["arm"])
         group["jobs"].setdefault(job["scope"], []).append(job)
@@ -207,7 +230,7 @@ def derive_config(declaration, stage, base_arm, groups):
     )
     roles = {
         FROZEN: [group[FROZEN]],
-        CONTINUATION: [group[CONTINUATION]],
+        **{control: [group[control]] if group[control] else [] for control in CONTROLS},
         ADAPTED: group[ADAPTED],
         # La cadena solo entra si alguna familia la contrasta, porque exige sus selecciones.
         CHAIN: [group[CHAIN]] if CHAIN in used else [],
@@ -218,9 +241,10 @@ def derive_config(declaration, stage, base_arm, groups):
         for arm in roles[role]:
             if arm == base_arm:
                 continue
-            arms[arm] = dict(
-                family=ARM_FAMILIES[role], output=parent["output"], seeds=parent["seeds"]
-            )
+            # Los objetivos de #128 corrigen la mediana y no emiten cuantiles.
+            output = walk.POINT if role in predictive.CONTROLS else parent["output"]
+            arms[arm] = dict(family=ARM_FAMILIES[role], output=output, seeds=parent["seeds"])
+    # Las familias de la continuación anclada solo existen en los padres que la tienen.
     families = {
         name: dict(
             kind="delta",
@@ -228,6 +252,7 @@ def derive_config(declaration, stage, base_arm, groups):
             variants=[arm for role in family["variants"] for arm in roles[role]],
         )
         for name, family in declaration["families"].items()
+        if roles[family["base"]] and any(roles[role] for role in family["variants"])
     }
     families["levels"] = dict(kind="level", arms=list(arms))
     raw = {
@@ -238,6 +263,9 @@ def derive_config(declaration, stage, base_arm, groups):
     # Los pares de retención e interferencia nombran memorias y controles de la comparación
     # principal. La etapa no los tiene y su pregunta no es la del postentrenamiento.
     raw.pop(walk.RETENTION_FIELD, None)
+    # Los diagnósticos de kalman son de los modelos B6 de la comparación principal, que no son
+    # padres de la etapa.
+    raw.pop(walk.KALMAN_FIELD, None)
     if walk.JOINT_FIELD in raw:
         # La etapa del modelo conjunto solo evalúa su ámbito. Se conserva la elegibilidad por
         # mercado (China en las métricas desde su primera ventana elegible) y se retiran los
@@ -285,6 +313,13 @@ def check_declaration(path):
                 configuration_sha256=config["sha256"],
                 arms=len(config["arms"]),
                 continuation=loaded["groups"][base_arm][CONTINUATION],
+                anchored_continuation=loaded["groups"][base_arm][ANCHORED],
+                replay={
+                    control: loaded["groups"][base_arm][control] for control in replay.CONTROLS
+                },
+                objectives={
+                    control: loaded["groups"][base_arm][control] for control in predictive.CONTROLS
+                },
                 adapted=loaded["groups"][base_arm][ADAPTED],
                 chain=loaded["groups"][base_arm][CHAIN]
                 if loaded["groups"][base_arm][CHAIN] in config["arms"]
@@ -312,8 +347,12 @@ def _base_sources(path, inherited, scope, base_arm):
     return walk.load_sources(path, dict(inherited, arms=arms), scope)
 
 
-def _stage_marker(stage_output, stage, views, scope):
-    """Identidad de la ejecución de la etapa: esta etapa, la reserva cerrada y las vistas."""
+def _stage_marker(stage_output, stage, views, scope, *, window=None):
+    """Identidad de la ejecución de la etapa: esta etapa, la reserva cerrada y las vistas.
+
+    Sin ``window`` la etapa debe haber usado exactamente las vistas de las fuentes de la
+    campaña. Con ella, las fuentes solo traen la vista de esa ventana y se exige esa.
+    """
     marker, _ = read_manifest(stage_output / "stage.json", 8 * 1024**2)
     _require(
         isinstance(marker, dict)
@@ -322,10 +361,10 @@ def _stage_marker(stage_output, stage, views, scope):
         and marker.get("final_test_opened") is False,
         "La salida no pertenece a la etapa declarada",
     )
-    _require(
-        marker.get("views", {}).get(scope) == views,
-        "La etapa usó otras vistas que las fuentes de la campaña",
-    )
+    used = marker.get("views", {}).get(scope)
+    if window is not None and isinstance(used, dict):
+        used = {window: used[window]} if window in used else None
+    _require(used == views, "La etapa usó otras vistas que las fuentes de la campaña")
     return _digest(marker)
 
 
@@ -373,18 +412,53 @@ def _chain_entry(stage_output, stage, scope, window, base_arm, seed, entries):
     return entries[chosen][1]
 
 
-def write_sources(declaration_path, scope, base_arm, *, base_sources, stage_output):
-    """Publicar el manifiesto de fuentes de un padre y un ámbito y validarlo."""
-    loaded = load_declaration(declaration_path)
+def compared_windows(loaded, scope, base_arm):
+    """Ventanas de la comparación de un padre en un ámbito: las que tienen trabajos de la etapa."""
+    return list(loaded["configs"][base_arm]["resolved_scopes"][scope]["windows"])
+
+
+def write_sources(
+    declaration_path,
+    scope,
+    base_arm,
+    *,
+    base_sources,
+    stage_output,
+    window=None,
+    loaded=None,
+    unrecorded_platform=None,
+):
+    """Publicar el manifiesto de fuentes de un padre y un ámbito y validarlo.
+
+    Con ``window`` el manifiesto solo cubre esa ventana y se valida con las configuraciones
+    de la campaña y del padre limitadas a ella. ``base_sources`` es entonces el manifiesto de
+    la campaña de esa misma ventana, y el resultado queda en
+    ``sources/windows/<ventana>/<ámbito>/`` de la salida de la etapa. ``loaded`` evita volver
+    a cargar una declaración ya validada.
+
+    La comparación junta predicciones de la base y de la etapa, así que los recibos de la
+    etapa deben venir de una sola plataforma y coincidir con la de las fuentes de la base
+    (`hardware_profiles.inherited_platform`). Los recibos o las fuentes anteriores a ese
+    registro solo se admiten si `unrecorded_platform` nombra el perfil al que se atribuyen.
+    """
+    loaded = load_declaration(declaration_path) if loaded is None else loaded
     stage = loaded["stage"]
     _require(scope in stage["scopes"], "El ámbito no pertenece a la etapa")
     _require(base_arm in loaded["groups"], "El modelo no es un padre de la etapa")
     inherited = stage["campaign"]["comparison_config"]
     config = loaded["configs"][base_arm]
-    base = _base_sources(Path(base_sources), inherited, scope, base_arm)
     stage_output = Path(stage_output)
-    identity = _stage_marker(stage_output, stage, base["views"], scope)
     folder = stage_output / "sources" / scope
+    if window is not None:
+        _require(
+            window in compared_windows(loaded, scope, base_arm),
+            f"La comparación de {base_arm} no tiene la ventana {window} en {scope}",
+        )
+        inherited = walk.restrict_windows(inherited, scope, [window])
+        config = walk.restrict_windows(config, scope, [window])
+        folder = stage_output / "sources" / "windows" / window / scope
+    base = _base_sources(Path(base_sources), inherited, scope, base_arm)
+    identity = _stage_marker(stage_output, stage, base["views"], scope, window=window)
     destination = folder / f"{base_arm}.json"
 
     def relative(path):
@@ -404,12 +478,17 @@ def write_sources(declaration_path, scope, base_arm, *, base_sources, stage_outp
             entries[window] = dict(input_policy=policy, view_sha256=view_sha256)
             for part, record in files.items():
                 entries[window][part] = dict(path=relative(record["path"]), sha256=record["sha256"])
-    entries = {}
+    entries, platforms = {}, {}
     for job in loaded["groups"][base_arm]["jobs"][scope]:
+        if job["window"] not in views:
+            continue
         view_sha256 = base["views"][job["window"]]
         receipt = _stage_receipt(stage_output, job, identity, view_sha256)
+        platforms[job["id"]] = receipt.get("platform")
         entry = dict(input_policy=policy, view_sha256=view_sha256)
-        for part in COMPARED:
+        # Una salida puntual no tiene calibración que comparar.
+        point = job["control"] in predictive.CONTROLS
+        for part in ("evaluation",) if point else COMPARED:
             record = receipt["predictions"][part]
             entry[part] = dict(
                 path=relative(stage_output / record["path"]), sha256=record["sha256"]
@@ -424,8 +503,13 @@ def write_sources(declaration_path, scope, base_arm, *, base_sources, stage_outp
                 arms[chain].setdefault(str(seed), {})[window] = _chain_entry(
                     stage_output, stage, scope, window, base_arm, seed, entries
                 )
+    platform = hardware_profiles.inherited_platform(
+        platforms,
+        base["platform"],
+        unrecorded=hardware_profiles.attributed_profile(unrecorded_platform),
+    )
     manifest = dict(
-        schema_version=1,
+        schema_version=2,
         kind=walk.SOURCES_KIND,
         scope=scope,
         input_policy=policy,
@@ -434,6 +518,7 @@ def write_sources(declaration_path, scope, base_arm, *, base_sources, stage_outp
             for window, digest in views.items()
         },
         arms=arms,
+        platform=platform,
     )
     safe_destination(destination)
     candidate = folder / f".{base_arm}.candidate.json"
@@ -447,12 +532,79 @@ def write_sources(declaration_path, scope, base_arm, *, base_sources, stage_outp
     return destination
 
 
-def evaluate(declaration_path, sources_path, scope, base_arm, *, edition=None):
-    """Informe walk-forward del padre y, con ``edition``, su cartera y sus estratos de liquidez."""
-    loaded = load_declaration(declaration_path)
+def aggregates_folder(root, base_arm):
+    """Carpeta de los agregados por ventana de la comparación de un padre."""
+    return Path(root) / "posttraining" / base_arm
+
+
+def write_window_aggregates(
+    declaration_path,
+    scope,
+    base_arm,
+    window,
+    *,
+    base_sources,
+    stage_output,
+    root,
+    loaded=None,
+    liquidity=None,
+    unrecorded_platform=None,
+):
+    """Publicar las fuentes de una ventana y guardar los agregados de su comparación.
+
+    ``base_sources`` es el manifiesto de la campaña limitado a esa ventana. Los agregados se
+    puntúan con la configuración del padre limitada a la ventana, que conserva su huella, y
+    quedan en ``aggregates_folder(root, base_arm)`` con su registro de integridad
+    (``integrity.comparison_integrity``), comprobado antes de que se libere ninguna fila.
+    ``liquidity`` es el asignador de estratos de liquidez de la edición
+    (``liquidity_strata.EditionLiquidity``) si la comparación los declara.
+    ``unrecorded_platform`` se pasa a ``write_sources``. Devuelve el registro de
+    ``window_aggregates.write``, el de la integridad en ``integrity`` y la ruta de las fuentes
+    de la ventana.
+    """
+    loaded = load_declaration(declaration_path) if loaded is None else loaded
+    path = write_sources(
+        declaration_path,
+        scope,
+        base_arm,
+        base_sources=base_sources,
+        stage_output=stage_output,
+        window=window,
+        loaded=loaded,
+        unrecorded_platform=unrecorded_platform,
+    )
+    config = walk.restrict_windows(loaded["configs"][base_arm], scope, [window])
+    sources = walk.load_sources(path, config, scope)
+    record, checked = comparison_integrity.write_checked(
+        aggregates_folder(root, base_arm),
+        walk.scope_config(config, scope),
+        sources,
+        window,
+        liquidity=liquidity,
+    )
+    return dict(record, sources=path, integrity=checked)
+
+
+def evaluate(
+    declaration_path, sources_path, scope, base_arm, *, edition=None, aggregates=None, loaded=None
+):
+    """Informe walk-forward del padre y, con ``edition``, su cartera y sus estratos de liquidez.
+
+    Con ``aggregates`` (la raíz de ``aggregates_folder``) cada ventana se lee de sus agregados
+    y no se abre ninguna fila. La edición asigna entonces solo los estratos de liquidez, que
+    también guardan los agregados. La cartera necesita las filas, así que con agregados no se
+    calcula.
+    """
+    loaded = load_declaration(declaration_path) if loaded is None else loaded
     _require(base_arm in loaded["configs"], "El modelo no es un padre de la etapa")
     config = loaded["configs"][base_arm]
-    report, sessions = walk.evaluate_walk_forward(config, sources_path, scope, edition=edition)
+    report, sessions = walk.evaluate_walk_forward(
+        config,
+        sources_path,
+        scope,
+        aggregates=None if aggregates is None else aggregates_folder(aggregates, base_arm),
+        edition=edition,
+    )
     report["posttraining"] = dict(
         declaration=dict(name=loaded["name"], sha256=loaded["sha256"]),
         stage_sha256=loaded["stage"]["sha256"],
@@ -461,6 +613,12 @@ def evaluate(declaration_path, sources_path, scope, base_arm, *, edition=None):
         roles={
             FROZEN: loaded["groups"][base_arm][FROZEN],
             CONTINUATION: loaded["groups"][base_arm][CONTINUATION],
+            ANCHORED: loaded["groups"][base_arm][ANCHORED],
+            **{
+                control: loaded["groups"][base_arm][control]
+                for control in predictive.CONTROLS
+                if loaded["groups"][base_arm][control] is not None
+            },
             ADAPTED: loaded["groups"][base_arm][ADAPTED],
             **(
                 {CHAIN: loaded["groups"][base_arm][CHAIN]}
@@ -472,24 +630,39 @@ def evaluate(declaration_path, sources_path, scope, base_arm, *, edition=None):
         use=USE,
     )
     portfolio = None
-    if edition is not None:
+    if edition is not None and aggregates is None:
         portfolio = long_short_comparison.evaluate_long_short(config, sources_path, scope, edition)
     return config, report, sessions, portfolio
 
 
-def write(declaration_path, sources_path, scope, base_arm, output, *, edition=None):
+def write(
+    declaration_path,
+    sources_path,
+    scope,
+    base_arm,
+    output,
+    *,
+    edition=None,
+    aggregates=None,
+    loaded=None,
+):
     """Publicar configuración derivada, informe y sesiones en un directorio nuevo."""
     output = Path(output)
     safe_destination(output)
     _require(not output.exists(), "La salida debe ser nueva")
     sources = [Path(declaration_path).parent, Path(sources_path).parent]
-    if edition is not None:
-        sources.append(Path(edition))
+    sources += [Path(path) for path in (edition, aggregates) if path is not None]
     for source in sources:
         outside_source(source, output)
         outside_source(output, source)
     config, report, sessions, portfolio = evaluate(
-        declaration_path, sources_path, scope, base_arm, edition=edition
+        declaration_path,
+        sources_path,
+        scope,
+        base_arm,
+        edition=edition,
+        aggregates=aggregates,
+        loaded=loaded,
     )
     json.dumps(report, allow_nan=False)
     if portfolio is not None:
@@ -525,9 +698,14 @@ def main(argv=None):
         command.add_argument("--base-arm", required=True)
     sources.add_argument("--base-sources", type=Path, required=True)
     sources.add_argument("--stage-output", type=Path, required=True)
+    sources.add_argument(
+        "--unrecorded-platform",
+        help="Perfil de hardware al que se atribuyen los recibos o fuentes sin plataforma",
+    )
     run.add_argument("--sources", type=Path, required=True)
     run.add_argument("--output", type=Path, required=True)
     run.add_argument("--edition", type=Path)
+    run.add_argument("--aggregates", type=Path, help="Agregados por ventana de la retención v2")
     args = parser.parse_args(argv)
     if args.command == "check":
         result = check_declaration(args.declaration)
@@ -538,6 +716,7 @@ def main(argv=None):
             args.base_arm,
             base_sources=args.base_sources,
             stage_output=args.stage_output,
+            unrecorded_platform=args.unrecorded_platform,
         )
         result = dict(sources=str(destination), sha256=sha256(destination))
     else:
@@ -548,6 +727,7 @@ def main(argv=None):
             args.base_arm,
             args.output,
             edition=args.edition,
+            aggregates=args.aggregates,
         )
         result = dict(arms=len(report["arms"]), windows=len(report["windows"]))
     print(json.dumps(result, ensure_ascii=False, indent=2))
