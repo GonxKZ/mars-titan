@@ -145,6 +145,22 @@ if(MARS_TITAN_BUILD_SIMULATION)
         mars_titan_sanitizer_test_environment(episodic_projection)
     endif()
 
+    # Fondo exacto de los medoids anclados a partir del producto que calcula la BLAS de NumPy.
+    add_library(mars_titan_medoid_kernels STATIC src/medoid_kernels.cpp)
+    target_include_directories(mars_titan_medoid_kernels PUBLIC
+        "${CMAKE_CURRENT_SOURCE_DIR}/include")
+    set_target_properties(mars_titan_medoid_kernels PROPERTIES POSITION_INDEPENDENT_CODE ON)
+    mars_titan_configure_target(mars_titan_medoid_kernels)
+    list(APPEND mars_analysis_sources "${CMAKE_CURRENT_SOURCE_DIR}/src/medoid_kernels.cpp")
+    if(BUILD_TESTING)
+        add_executable(medoid_kernels_tests tests/medoid_kernels_tests.cpp)
+        target_link_libraries(medoid_kernels_tests PRIVATE mars_titan_medoid_kernels)
+        mars_titan_configure_target(medoid_kernels_tests)
+        add_test(NAME medoid_kernels COMMAND medoid_kernels_tests)
+        set_tests_properties(medoid_kernels PROPERTIES TIMEOUT 120 LABELS "unit;memory")
+        mars_titan_sanitizer_test_environment(medoid_kernels)
+    endif()
+
     if(MARS_TITAN_BUILD_FINANCIAL)
         find_package(Threads REQUIRED)
         add_library(mars_titan_financial STATIC src/financial_session.cpp src/financial_batch.cpp
