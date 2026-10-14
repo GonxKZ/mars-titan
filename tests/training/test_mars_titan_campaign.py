@@ -241,7 +241,7 @@ def recipe_with(tmp_path, change):
             dict(arms=ARMS | {B6_ARM: ARMS[B6_ARM] | {"episodic_bank": "m1"}}),
             "corrección B6",
         ),
-        (dict(correction_recipe=None), "receta de la corrección"),
+        (dict(correction_recipe=None), "recetas de la corrección"),
     ],
 )
 def test_section_rejects_arms_parents_and_seeds_outside_the_design(tmp_path, changes, message):
@@ -273,7 +273,7 @@ def test_section_requires_the_fair_search_and_the_protocol_rule(tmp_path, change
 def test_correction_recipe_is_declared_only_with_correction_arms(tmp_path):
     readers = {k: v for k, v in ARMS.items() if k not in CORRECTIONS}
     pending = {name: "Modelo B6 retirado para una comprobación" for name in CORRECTIONS}
-    with pytest.raises(ValueError, match="receta de la corrección"):
+    with pytest.raises(ValueError, match="recetas de la corrección"):
         plan.load_campaign(declared(tmp_path, arms=readers, pending_arms=pending))
     changes = dict(arms=readers, pending_arms=pending, correction_recipe=None)
     campaign = plan.load_campaign(declared(tmp_path, **changes))
