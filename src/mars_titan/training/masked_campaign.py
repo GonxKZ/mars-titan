@@ -1873,6 +1873,7 @@ def main(argv=None):
             report=str(args.report),
             sha256=sha256(args.report),
             arms={arm: item["summary"] for arm, item in report["arms"].items()},
+            excluded=report["excluded"],
         )
     else:
         destination = write_sources(

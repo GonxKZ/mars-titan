@@ -232,6 +232,8 @@ def test_the_final_comparison_from_aggregates_equals_the_one_that_read_the_rows(
             if (job["scope"], job["window"], job["stage"]) == ("US", window, "search"):
                 if job.get("phase") != plan.PLATEAU:
                     searches[job["arm"]] = searches.get(job["arm"], 0) + 1
+        assert saved["excluded"] == {}
+        saved = saved["arms"]
         assert searches and {arm: e["cases"] for arm, e in saved.items()} == searches
         assert all(e["applicable"] == (e["cases"] > 1) for e in saved.values())
 

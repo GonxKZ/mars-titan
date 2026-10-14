@@ -17,6 +17,10 @@ Por modelo se cuenta en cuántas ventanas λ ≤ 0. Es la versión por ventanas 
 probabilidad de sobreajuste de la selección: cada ventana separa la validación de la
 evaluación en orden temporal, en lugar de las combinaciones de bloques de CSCV. No hay
 p-valor: las ventanas comparten activos y régimen y no son ensayos independientes.
+
+Solo se miden los modelos que puntúa la comparación del ámbito, porque la métrica y las filas
+son las suyas. Un modelo con búsqueda que la comparación no declara, como las variantes de
+CM-v1 en A v2, queda fuera con su motivo en cada ventana y en el informe.
 """
 
 import math
@@ -51,6 +55,7 @@ DECLARED = dict(
     statistics=["relative_rank", "logit", "gain_over_median", "gap_to_best_in_hindsight"],
     aggregate="windows_with_logit_at_or_below_zero",
 )
+NOT_DECLARED = "not_declared_in_the_comparison"
 
 
 def _require(condition, message):
@@ -157,10 +162,15 @@ def window_effects(config, scope, window_id, models):
 
     `models` asigna a cada modelo el trabajo elegido y sus casos, como los devuelve
     `masked_campaign.search_records`. Junto a la evaluación queda la validación que decidió.
+    Devuelve los efectos de los modelos que puntúa la comparación (`arms`) y, aparte, los
+    modelos con búsqueda que no declara, con su motivo (`excluded`).
     """
     _require(config["metrics"]["primary"] == "mae", "La comparación no usa el MAE por sesión")
+    declared = config["resolved_scopes"][scope]["arms"]
     result = {}
     for arm, record in sorted(models.items()):
+        if arm not in declared:
+            continue
         scores = case_scores(config, scope, window_id, arm, record["cases"])
         effect = window_effect(scores, record["selected"])
         effect["validation"] = {key: case["score"] for key, case in record["cases"].items()}
@@ -169,7 +179,8 @@ def window_effects(config, scope, window_id, models):
             key: case["evaluation"]["sha256"] for key, case in record["cases"].items()
         }
         result[arm] = effect
-    return result
+    excluded = {arm: NOT_DECLARED for arm in sorted(models) if arm not in declared}
+    return dict(arms=result, excluded=excluded)
 
 
 def _identity(config, scope, window_id):
@@ -194,7 +205,7 @@ def write_window(folder, config, scope, window_id, models):
         schema_version=1,
         kind=WINDOW_KIND,
         identity=_identity(config, scope, window_id),
-        arms=window_effects(config, scope, window_id, models),
+        **window_effects(config, scope, window_id, models),
         final_test_opened=False,
     )
     atomic_json(path, document)
@@ -213,21 +224,25 @@ def read_window(folder, config, scope, window_id):
         and document.get("final_test_opened") is False,
         f"El efecto de la selección de {scope} {window_id} no procede de esta comparación",
     )
-    return document["arms"]
+    return dict(arms=document["arms"], excluded=document["excluded"])
 
 
 def selection_report(scope, windows, declaration, declaration_sha256):
     """Informe por modelo a partir del efecto de cada ventana, sin leer predicciones."""
-    arms = {}
+    arms, excluded = {}, {}
     for window_id, effects in sorted(windows.items()):
-        for arm, effect in effects.items():
+        for arm, effect in effects["arms"].items():
             arms.setdefault(arm, {})[window_id] = effect
+        for arm, reason in effects["excluded"].items():
+            entry = excluded.setdefault(arm, dict(reason=reason, windows=[]))
+            entry["windows"].append(window_id)
     return dict(
         schema_version=1,
         kind=REPORT_KIND,
         scope=scope,
         declaration_sha256=declaration_sha256,
         not_applied=declaration["not_applied"],
+        excluded=excluded,
         final_test_opened=False,
         arms={
             arm: dict(windows=effects, summary=arm_summary(effects))

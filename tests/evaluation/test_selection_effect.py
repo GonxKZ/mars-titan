@@ -156,6 +156,26 @@ def test_the_report_places_the_validation_winner_in_each_window(study, tmp_path)
     )
     assert report["arms"]["ridge"]["summary"]["at_or_below_median"] == 1
     assert report["final_test_opened"] is False and report["declaration_sha256"] == digest
+    assert report["excluded"] == {}
+
+
+def test_a_model_with_searches_outside_the_comparison_is_excluded_with_its_reason(study, tmp_path):
+    # En A v2, las variantes de CM-v1 tienen búsquedas pero la comparación no las declara.
+    study, config = study
+    records = two_windows(study, tmp_path)
+    for models in records.values():
+        models["cm_v1_core_b"] = models["ridge"]
+    assert "cm_v1_core_b" not in config["resolved_scopes"]["US"]["arms"]
+    windows = {w: effect.window_effects(config, "US", w, models) for w, models in records.items()}
+    for found in windows.values():
+        assert list(found["arms"]) == ["ridge"]
+        assert found["excluded"] == {"cm_v1_core_b": effect.NOT_DECLARED}
+    declaration, digest = effect.load_declaration(DECLARATION)
+    report = effect.selection_report("US", windows, declaration, digest)
+    assert list(report["arms"]) == ["ridge"]
+    assert report["excluded"] == {
+        "cm_v1_core_b": dict(reason=effect.NOT_DECLARED, windows=[f["id"] for f in study.folds])
+    }
 
 
 def test_a_saved_window_is_read_back_only_with_its_comparison_and_code(
@@ -171,7 +191,9 @@ def test_a_saved_window_is_read_back_only_with_its_comparison_and_code(
     assert saved == json.loads(json.dumps(effect.window_effects(config, "US", fold, models)))
     # Una ventana sin búsquedas también deja su registro, vacío.
     effect.write_window(tmp_path / "aggregates", config, "US", "otra", {})
-    assert effect.read_window(tmp_path / "aggregates", config, "US", "otra") == {}
+    assert effect.read_window(tmp_path / "aggregates", config, "US", "otra") == dict(
+        arms={}, excluded={}
+    )
     with pytest.raises(ValueError, match="no procede"):
         effect.read_window(tmp_path / "aggregates", dict(config, sha256="0" * 64), "US", fold)
     monkeypatch.setattr(effect, "CODE", effect.CODE[:1])
