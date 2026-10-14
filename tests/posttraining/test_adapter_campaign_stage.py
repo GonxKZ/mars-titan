@@ -28,6 +28,7 @@ from mars_titan.training import campaign_chain, chain_disjunction
 from mars_titan.training.campaign_plan import load_campaign, plan_campaign
 from mars_titan.training.label_maturity import FIT_PARTITIONS, label_maturity
 from mars_titan.training.learning_hold import LearningHoldError
+from tests.hardware.platform_doubles import laptop
 from tests.learning_hold_lowering import lowers_learning_hold
 from tests.posttraining.campaign_fixture import CpuLease, base_campaign
 from tests.posttraining.real_only import real_data_only
@@ -314,7 +315,7 @@ def test_variant_a_adapts_the_previous_parent_with_new_rows_and_publishes_the_ch
     base_a, tmp_path, recorder
 ):
     output = tmp_path / "stage"
-    summary = run(base_a, output)
+    summary = run(base_a, output, platform=laptop())
     assert summary["status"] == "completed"
     assert summary["planned"] == summary["completed"]
     assert summary["planned"] == dict(training_jobs=5, prediction_jobs=1, selection_jobs=2)
@@ -323,6 +324,9 @@ def test_variant_a_adapts_the_previous_parent_with_new_rows_and_publishes_the_ch
         f"US/fold-001/gru__{point}/fit-s42"
         for point in ("full_continuation", "head", "fusion", "head_fusion", "fusion_full_rank")
     }
+    # Cada recibo guarda la plataforma fuera de su identidad, como los de la campaña base.
+    assert all(receipt["platform"] == laptop() for receipt in found.values())
+    assert all("platform" not in receipt["identity"] for receipt in found.values())
     proof = json.loads((output / "windows-data/US/fold-001/fit-rows.json").read_text())
     assert proof["parent_window"] == "fold-000" and proof["window"] == "fold-001"
     assert (proof["start"], proof["end"]) == ("2022-01-01", "2022-04-01")

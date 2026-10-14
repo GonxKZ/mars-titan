@@ -10,6 +10,7 @@ solo cuenta llamadas y no modifica pesos.
 
 import importlib
 import json
+import shutil
 from collections import OrderedDict
 from pathlib import Path
 from types import SimpleNamespace
@@ -33,6 +34,7 @@ from mars_titan.training.checkpoints import capture_rng, save_training_state
 from mars_titan.training.corpus_inputs import CorpusDataset
 from mars_titan.training.learning_hold import HOLD_ENV, LearningHoldError
 from mars_titan.training.reference_run import _evaluate, scientific_identity
+from tests.hardware.platform_doubles import desktop
 from tests.learning_hold_lowering import allowed_hold, lowers_learning_hold
 from tests.posttraining.campaign_fixture import SCORES, CpuLease, write_configs
 from tests.training.historical_temporal_fixture import historical_temporal_fixture
@@ -435,6 +437,38 @@ def test_one_window_sources_give_the_same_report_through_window_aggregates(base,
         k: v for k, v in expected.items() if k not in volatile
     }
     assert from_aggregates.equals(sessions)
+
+
+@lowers_learning_hold(
+    "tests/training/test_modality_ablation_stage.py::"
+    "test_masked_sources_keep_the_platform_of_the_base_they_compare_with"
+)
+def test_masked_sources_keep_the_platform_of_the_base_they_compare_with(
+    base, staged, confirmed, tmp_path
+):
+    output = tmp_path / "ablation"
+    shutil.copytree(staged.output, output)
+    paths = sorted((output / "jobs").rglob("receipt.json"))
+    found = [json.loads(path.read_text()) for path in paths]
+    # Cada recibo guarda la plataforma fuera de su identidad, la misma que la de su base.
+    detected = {json.dumps(receipt["platform"], sort_keys=True) for receipt in found}
+    base_platforms = {
+        json.dumps(receipt["platform"], sort_keys=True) for receipt in confirmed.receipts.values()
+    }
+    assert len(detected) == 1 and detected == base_platforms
+    assert all("platform" not in receipt["identity"] for receipt in found)
+    masked = ablation.write_sources(base.stage, base.views, base.output, output, "US")
+    manifest = json.loads(masked.read_text())
+    assert manifest["schema_version"] == 2
+    assert manifest["platform"]["platform_sha256"] == found[0]["platform"]["platform_sha256"]
+    # Un recibo de otra máquina mezcla plataformas con la base.
+    atomic_json(paths[0], dict(found[0], platform=desktop()))
+    with pytest.raises(ValueError, match="mezcla plataformas"):
+        ablation.write_sources(base.stage, base.views, base.output, output, "US")
+    # Sin plataforma, el recibo solo se admite con el perfil al que se atribuye.
+    atomic_json(paths[0], {k: v for k, v in found[0].items() if k != "platform"})
+    with pytest.raises(ValueError, match="no registran su plataforma"):
+        ablation.write_sources(base.stage, base.views, base.output, output, "US")
 
 
 class Counting(torch.optim.Optimizer):
