@@ -25,8 +25,9 @@ def entry_points_admitted(request):
 def recorder(monkeypatch):
     """Sustituir AdamW por un optimizador que registra gradientes y nunca cambia pesos.
 
-    Ver `recording_optimizer.install`. `on_step` permite a una prueba reaccionar después de
-    un paso, por ejemplo para pedir una parada.
+    Ver `recording_optimizer.install`, que también sustituye la versión anclada de AdamW
+    (#444). `on_step` permite a una prueba reaccionar después de un paso, por ejemplo para
+    pedir una parada.
     """
     deterministic = torch.are_deterministic_algorithms_enabled()
     yield recording_optimizer.install(monkeypatch)

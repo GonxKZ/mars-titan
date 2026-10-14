@@ -28,7 +28,7 @@ from mars_titan.training import campaign_schedule as order
 from mars_titan.training import masked_campaign as engine
 from mars_titan.training.joint_temporal_corpus import prepare_joint_temporal_corpus
 from mars_titan.training.selection import JOINT_PLATEAU
-from tests.learning_hold_lowering import lowers_learning_hold
+from tests.learning_hold_lowering import allowed_hold, lowers_learning_hold
 from tests.training.test_masked_campaign import Recorder, doubles, run
 from tests.training.test_masked_campaign_joint import COMMON, STOPS, JointRecorder, receipt, slot
 from tests.training.test_walk_forward_v2_views import expected, fixture, observed
@@ -583,9 +583,9 @@ def test_window_schedule_orders_every_stage_of_the_window_and_counts_all_jobs():
     plateaus = {job["id"] for job in jobs if job.get("phase") == plan.PLATEAU}
     read = {d for stage_jobs in stages.values() for j in stage_jobs for d in j.get("depends", ())}
     assert read and not plateaus & read
-    # Adaptadores: 6.804 ajustes y 1.494 padres congelados, y 1.577 selecciones de la cadena
-    # en su propia fase.
-    assert (totals["adapters"], totals["chain"]) == (6804 + 1494, 1577)
+    # Adaptadores: 8.694 ajustes (270 de la continuación anclada y 1.620 de los objetivos de
+    # #128) y 1.494 padres congelados, y 1.577 selecciones de la cadena en su propia fase.
+    assert (totals["adapters"], totals["chain"]) == (8694 + 1494, 1577)
     assert (totals["online"], totals["ablation"], totals["rl"]) == (133, 4731, 3096 + 3219)
     window = schedule[6]
     selection = window["phases"][order.PHASES.index("selection")]
@@ -689,9 +689,12 @@ def test_later_stages_of_v2_read_the_joint_model_in_each_market():
     counts = adapters.count_stage(adapter)
     # 21 modelos neuronales y los seis B6 con tres semillas y los dos tabulares con una: 83
     # cadenas por ventana. Cada ventana con padre congela esos 83 padres y todas eligen su
-    # cadena. Los tabulares y B6 solo tienen el padre congelado.
+    # cadena. Los tabulares y B6 solo tienen el padre congelado. Los ajustes incluyen la
+    # continuación anclada de las cinco referencias (5 × 18 × 3 = 270) y sus seis objetivos
+    # de #128 (6 × 270), que no compiten en la cadena.
+    assert adapter["additional_controls"] == ["anchored_continuation", "predictive_objectives"]
     assert (counts["training_jobs"], counts["prediction_jobs"], counts["selection_jobs"]) == (
-        6804,
+        6804 + 270 + 6 * 270,
         83 * 18,
         83 * 19,
     )
@@ -957,8 +960,7 @@ def joint_campaign(tmp_path_factory, learning_doubles_module):
 def learning_doubles_module(tmp_path_factory):
     from mars_titan.training.learning_hold import HOLD_ENV
 
-    path = tmp_path_factory.mktemp("hold") / "training-hold.json"
-    path.write_text(json.dumps({"training_allowed": True}), encoding="utf-8")
+    path = allowed_hold(tmp_path_factory.mktemp("hold") / "training-hold.json")
     patch = pytest.MonkeyPatch()
     patch.setenv(HOLD_ENV, str(path))
     yield path

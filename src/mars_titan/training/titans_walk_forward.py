@@ -48,6 +48,7 @@ from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.input_policy import HISTORICAL_MASKED
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.evaluation.splits import build_folds, stopping_rule
+from mars_titan.learning_traces.trainers import attach as attach_traces
 from mars_titan.memory.financial_observations import (
     FinancialObservationSource,
     prepare_observation_index,
@@ -359,6 +360,8 @@ def run_titans_window(
     local_control=None,
     stopping=None,
     joint_epoch=None,
+    traces=None,
+    trace_family="titans_mac",
 ):
     """Ajustar una variante en una ventana y escribir sus predicciones por fila.
 
@@ -369,7 +372,9 @@ def run_titans_window(
     (disabled para su B o penalty) y solo se admite con `mac_online`. `stopping` es la
     parada temprana que declara la campaña, con la misma métrica que el protocolo. Con la
     meseta conjunta la ventana devuelve `awaiting_joint_stop` en la primera meseta y se
-    completa al reanudarla con la época común del grupo (`joint_epoch`).
+    completa al reanudarla con la época común del grupo (`joint_epoch`). `traces` declara las
+    trazas de #448 (cadencia y presupuesto), que se escriben en `output/traces` sin entrar
+    en la identidad, y `trace_family` su familia (los núcleos de CM-v1 usan `cm_v1_core`).
     """
     require_learning_allowed("run_titans_window de Titans-MAC")
     _require(variant in VARIANTS, "La variante no pertenece a los controles de Titans-MAC")
@@ -471,6 +476,7 @@ def run_titans_window(
         atomic_json(report_path, report)
     stop = stop or StopRequest()
     started = time.perf_counter()
+    attach_traces(trainer, output / "traces", traces, trace_family)
     try:
         fit = trainer.run(resume=(output / "fit").exists(), stop=stop, joint_epoch=joint_epoch)
         if fit["status"] == AWAIT:
@@ -789,6 +795,7 @@ def titans_fit(run, *, device="cuda:0", optimizer_factory=None):
             search_case=case["search_case"],
             stopping=case.get(STOPPING_FIELD),
             joint_epoch=run.joint_epoch,
+            traces=run.traces,
         )
     if report["status"] == "paused":
         raise CampaignPaused

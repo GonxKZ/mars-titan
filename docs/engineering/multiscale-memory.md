@@ -71,7 +71,7 @@ PT5 no lee nada nuevo: usa α y S_t, calculados por Titans con el token de la de
 
 ## Control con el que se descarta
 
-La [declaración](../../configs/evaluation/multiscale-memory-comparison.json) fija tres modelos sobre la receta de 2000 con `mac_online`: el control, la cascada y el banco, con g = 1/16 en los dos. Comparten filas, ventanas, semillas, pesos iniciales, casos de búsqueda, actualizaciones del optimizador, regla de parada, truncación y número de matrices por flujo, y la declaración registra el presupuesto declarado (9 h de GPU) frente al consumido (cero). La cascada se conserva solo si el límite superior del intervalo del 95 % de la diferencia relativa de MAE por sesión frente al banco es negativo. En otro caso se abandona. La predicción registrada es que el banco igualará a la cascada.
+La [declaración](../../configs/evaluation/multiscale-memory-comparison.json) fija tres modelos sobre la receta de 2000 con `mac_online`: el control, la cascada y el banco, con g = 1/16 en los dos. Comparten filas, ventanas, semillas, pesos iniciales, casos de búsqueda, actualizaciones del optimizador, regla de parada, truncación y número de matrices por flujo, y la declaración registra el presupuesto declarado (9 h de GPU) frente al consumido (cero). La cascada se conserva solo si el límite superior del intervalo del 95 % de la diferencia relativa de MAE por sesión frente al banco queda por debajo de −MID, la banda entre semillas del [control de varianza](../research/protocol.md#dispersión-entre-semillas-en-los-pilotos-de-memoria) (regla `pt5`), que comparte el control del piloto común. En otro caso se abandona. La predicción registrada es que el banco igualará a la cascada.
 
 ## Coste medido sin entrenar
 

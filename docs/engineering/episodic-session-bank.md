@@ -62,7 +62,11 @@ Este formato no equivale al candidato de claves 128 y rasgos 256.
 `RetentionBank.propose` devuelve una copia y deja intacta la instantánea anterior.
 La escritura por lote valida todos los registros maduros y solo permite elegir
 IDs del conjunto E formado por el banco anterior y las nuevas admisiones. Los
-registros seleccionados conservan sus campos. Las políticas disponibles son:
+registros seleccionados conservan sus campos. La copia parte de los bytes de la
+memoria nativa y del generador, sin volver a validar el recibo que sustituye, y la
+clave FP32 de cada registro retenido se convierte desde el enlace una sola vez
+([informe](../../reports/engineering/episodic-consolidation-20261013/README.md)).
+Las políticas disponibles son:
 
 - `reservoir` conserva el reservorio nativo original, que puede descartar la nueva
   admisión después de llenar la capacidad.

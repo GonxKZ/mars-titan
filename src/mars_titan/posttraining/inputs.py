@@ -197,6 +197,24 @@ class PairedInputs:
     def _episode(self, source, episode, condition):
         raise ValueError("Las cohortes reales no tienen episodios adicionales")
 
+    # Valores de `Visit.arm` que se leen como cohortes reales de una fuente. El repaso de
+    # `replay_inputs` añade los suyos, que leen otra fuente o las mismas filas nuevas.
+    read_arms = ("real",)
+
+    def _source(self, partition, visit):
+        """Fuente de la cohorte de una visita leída como cohorte real."""
+        return self.train if partition == "train" else self.validation
+
+    def _rows(self, partition, visit):
+        """Filas que entrega la visita. Sin límite, la cohorte completa."""
+        return self._source(partition, visit).index[visit.cohort][1]
+
+    def _admit(self, visit, raw):
+        """Comprobación adicional de una cohorte leída. Las cohortes reales no la necesitan."""
+
+    def _origin(self, visit, condition):
+        return "real" if visit.arm == "real" else condition.removeprefix("real_")
+
     def batches(self, *, partition, condition, batch_size, epoch=0, seed=0, cursor=None):
         if (
             type(batch_size) is not int
@@ -207,7 +225,7 @@ class PairedInputs:
             raise ValueError("El lote, la semilla o la época exceden su presupuesto")
         visits = self._visits(partition, condition, epoch, seed)
         source = self.train if partition == "train" else self.validation
-        sizes = [source.index[v.cohort][1] for v in visits]
+        sizes = [self._rows(partition, v) for v in visits]
         offsets = np.cumsum([0, *sizes])
         identity = dict(
             data_sha256=self.sha256,
@@ -218,16 +236,24 @@ class PairedInputs:
             batch_size=batch_size,
         )
         point = _resume_point(cursor, identity, sizes, offsets, batch_size)
-        current_episode, view, real = None, None, None
+        current_episode, view, readers = None, None, {}
         for position in range(point["visit"], len(visits)):
             visit = visits[position]
-            if visit.arm == "real":
-                if real is None:
-                    real = _cohorts(
-                        source, [v.cohort for v in visits[position:] if v.arm == "real"]
+            if visit.arm in self.read_arms:
+                origin = self._source(partition, visit)
+                if id(origin) not in readers:
+                    # Cada fuente lee de una vez sus cohortes pendientes en el orden de visita.
+                    readers[id(origin)] = _cohorts(
+                        origin,
+                        [
+                            v.cohort
+                            for v in visits[position:]
+                            if v.arm in self.read_arms and self._source(partition, v) is origin
+                        ],
                     )
-                raw = next(real)
+                raw = next(readers[id(origin)])
             else:
+                origin = source
                 if current_episode != visit.episode:
                     view = self._episode(source, visit.episode, condition)
                     current_episode = visit.episode
@@ -236,22 +262,25 @@ class PairedInputs:
             if self.masked:
                 presence = raw["presence"][np.argsort(raw["asset_ids"])]
                 raw = {key: value for key, value in raw.items() if key != "presence"}
-            raw = read_cohort(raw, self.shapes, source.max_assets, MAX_BYTES)
+            raw = read_cohort(raw, self.shapes, origin.max_assets, MAX_BYTES)
             if presence is not None:
                 raw["presence"] = presence
-            if not _within(source, partition, raw):
+            if not _within(origin, partition, raw):
                 raise ValueError("Una etiqueta u observación cruza la partición")
-            if len(raw["target"]) != sizes[position]:
+            if len(raw["target"]) != origin.index[visit.cohort][1]:
                 raise ValueError("La cohorte ha cambiado su número de filas")
+            self._admit(visit, raw)
             inherited = self.parent.predict(raw)
             start = point["offset"] if position == point["visit"] else 0
-            for offset in range(start, len(inherited), batch_size):
-                end = min(offset + batch_size, len(inherited))
+            # Una visita con límite solo entrega sus primeras filas en el orden por activo.
+            limit = sizes[position]
+            for offset in range(start, limit, batch_size):
+                end = min(offset + batch_size, limit)
                 inputs = {k: v[offset:end].copy() for k, v in raw["inputs"].items()}
                 prediction = inherited[offset:end].copy()
                 bits = None if presence is None else presence[offset:end].copy()
                 features = adapter_features(inputs, bits, prediction)
-                final = end == len(inherited)
+                final = end == limit
                 confirmed = identity | dict(
                     visit=position + int(final),
                     offset=0 if final else end,
@@ -266,7 +295,7 @@ class PairedInputs:
                     sample_ids=[f"{asset}/{raw['prediction_at']}" for asset in ids],
                     market=[asset.split("/")[0] for asset in ids],
                     prediction_at=np.full(end - offset, raw["prediction_at"], dtype=np.int64),
-                    origin="real" if visit.arm == "real" else condition.removeprefix("real_"),
+                    origin=self._origin(visit, condition),
                     confirmed_cursor=confirmed,
                 )
                 if bits is not None:

@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "kind": "search_selection_effect",
+  "issue": 36,
+  "status": "declared_not_executed",
+  "declared_at": "2026-10-13",
+  "final_test_opened": false,
+  "executions": 0,
+  "comparison": "configs/evaluation/historical-masked-2000-comparison.json",
+  "selection": "min_validation_session_mae_then_job_id",
+  "partition": "evaluation",
+  "metric": "primary_metric_of_the_comparison_with_its_market_weighting",
+  "minimum_cases": 2,
+  "statistics": ["relative_rank", "logit", "gain_over_median", "gap_to_best_in_hindsight"],
+  "aggregate": "windows_with_logit_at_or_below_zero",
+  "reading": "Se informa por modelo el número de ventanas con logit menor o igual que cero sobre las ventanas con elección, sin p-valor. Una proporción alta indica que la validación no anticipa qué caso evalúa mejor. Ni una proporción baja demuestra ausencia de sobreajuste ni la ganancia sobre la mediana es una mejora frente a otros modelos.",
+  "not_applied": {
+    "cscv_pbo": "La campaña elige con la validación de cada ventana y solo guarda la puntuación agregada de validación de cada caso. CSCV mediría otra elección, hecha con combinaciones de bloques de un mismo periodo.",
+    "deflated_sharpe_ratio": "La búsqueda elige por MAE por sesión y no por Sharpe. El DSR corrige el máximo Sharpe entre ensayos y no describe esta elección. El Sharpe de la cartera se informa aparte con remuestreo por bloques, según el protocolo."
+  }
+}

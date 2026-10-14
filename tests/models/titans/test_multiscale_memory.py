@@ -422,4 +422,4 @@ def test_comparison_is_declared_with_its_control_rule_and_budget_but_not_execute
     assert budget["consumed"] == dict(gpu_hours=0, executions=0, optimizer_updates=0)
     assert declaration["pilot"]["gpu_hours_max"] == budget["declared"]["gpu_hours_max"] == 9
     rule = declaration["decision_rule"]
-    assert rule["keep_if"][0].endswith("< 0")
+    assert rule["keep_if"][0].endswith("< -minimum_interpretable_difference")
