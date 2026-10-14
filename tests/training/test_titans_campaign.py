@@ -461,6 +461,7 @@ def test_fit_executor_returns_the_completed_window_only_for_its_view(campaign_ru
         policy="historical_masked_2000_v1",
         stop=SimpleNamespace(requested=False),
         joint_epoch=None,
+        traces=None,
     )
     report = wf.titans_fit(run, device="cpu")
     assert report["status"] == "completed"
@@ -494,6 +495,7 @@ def test_executors_declare_unfused_attention_only_while_their_job_runs(monkeypat
         stop=None,
         anchor=dict(folder=tmp_path, view="a"),
         joint_epoch=None,
+        traces=None,
     )
     previous = torch.backends.mha.get_fastpath_enabled()
     torch.backends.mha.set_fastpath_enabled(True)

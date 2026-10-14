@@ -19,6 +19,7 @@ from mars_titan.memory.mars_titan_variant import load_declaration, select_varian
 from mars_titan.models.quantile_head import QUANTILE_COLUMNS
 from mars_titan.training import mars_titan_walk_forward as mw
 from mars_titan.training.learning_hold import LearningHoldError
+from tests.learning_traces.parity import EVERY_STEP, metrics, same_rows, trace_rows
 from tests.suite_support import skip_without_episodic_native
 from tests.training.test_titans_walk_forward import RULE, Factory, recipe, views, window
 from tests.training.test_titans_walk_forward import (
@@ -259,3 +260,41 @@ def test_changed_parent_after_the_window_is_detected_on_resume(base, tmp_path):
     with pytest.raises(ValueError, match="petición"):
         mars(base["view"], folder, base["plan"], output, M0)
     assert report["request"]["parent"]["path"] == str(base["parent"].resolve())
+
+
+def test_traces_keep_the_reader_bit_for_bit_and_resume_without_duplicates(base, tmp_path):
+    """Trazas en cada paso del lector M1 (#448), con el padre congelado y su memoria."""
+    report, factory = base["runs"]["m1"]
+    output = tmp_path / "traced"
+    traced, traced_factory = mars(
+        base["view"], base["parent"], base["plan"], output, traces=EVERY_STEP
+    )
+    assert len(traced_factory.records) == len(factory.records) > 0
+    for one, two in zip(traced_factory.records, factory.records, strict=True):
+        for a, b in zip(one, two, strict=True):
+            assert (a is None and b is None) or torch.equal(a, b)
+    for partition in ("validation", "calibration", "evaluation"):
+        assert table(output, partition).equals(table(base["root"] / "runs" / "m1", partition))
+    manifest, rows = trace_rows(output / "traces")
+    assert manifest["identity"]["family"] == "mars_titan_readout"
+    groups = {row["group"] for row in rows if row["metric"] == "grad_l2"}
+    # El padre está congelado: solo el lector tiene grupos de parámetros.
+    assert groups and all(group.startswith("readout.") for group in groups)
+    assert "memory.alpha.mean" in metrics(rows, "train")
+    assert {"validation.score", "weight_l2"} <= metrics(rows, "validation")
+    resumed_factory = Factory()
+
+    class StopAtStep:
+        @property
+        def requested(self):
+            return sum(item.calls for item in resumed_factory.instances[-1:]) >= 3
+
+    resumed = tmp_path / "resumed"
+    options = dict(optimizer_factory=resumed_factory, traces=EVERY_STEP)
+    paused, _ = mars(
+        base["view"], base["parent"], base["plan"], resumed, stop=StopAtStep(), **options
+    )
+    assert paused["status"] == "paused"
+    final, _ = mars(base["view"], base["parent"], base["plan"], resumed, **options)
+    assert final["status"] == "completed"
+    assert same_rows(rows, trace_rows(resumed / "traces")[1])

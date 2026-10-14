@@ -653,6 +653,7 @@ bool PpoTrainer::advance(const PpoDecisionObserver& observer) {
                         sampled.rewards, sampled.terminated, at::ones_like(sampled.terminated)};
                     const auto update = policy_->update_double_dqn(batch, environment_step);
                     optimizer_steps_ += static_cast<std::size_t>(update.updates);
+                    last_dqn_update_ = update;
                 }
             }
             if (transition.terminated[lane] != 0 || transition.truncated[lane] != 0) {
@@ -920,6 +921,7 @@ void PpoTrainer::restore(const PpoTrainingState& state) {
     ticks_ = ticks;
     failed_ = false;
     last_update_ = {};
+    last_dqn_update_ = {};
 }
 
 const PpoPolicy& PpoTrainer::policy() const noexcept { return *policy_; }
@@ -930,6 +932,7 @@ std::size_t PpoTrainer::partial_ticks() const noexcept { return ticks_; }
 std::size_t PpoTrainer::observed_transitions() const noexcept { return observed_transitions_; }
 std::size_t PpoTrainer::auxiliary_samples() const noexcept { return auxiliary_samples_; }
 const PpoUpdateStats& PpoTrainer::last_update() const noexcept { return last_update_; }
+const DqnUpdateStats& PpoTrainer::last_dqn_update() const noexcept { return last_dqn_update_; }
 
 PpoEvaluation evaluate_policy(const PpoPolicy& policy, std::vector<simulation::BatchInput> inputs,
                               std::size_t workers, const std::function<bool()>& stop,

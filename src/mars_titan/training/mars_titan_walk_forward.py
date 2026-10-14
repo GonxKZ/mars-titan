@@ -41,6 +41,8 @@ from mars_titan.data.batches import atomic_parquet_batches
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.input_policy import HISTORICAL_MASKED
 from mars_titan.data.storage import atomic_json, outside_source, sha256
+from mars_titan.learning_traces.recorder import trace_name
+from mars_titan.learning_traces.trainers import attach as attach_traces
 from mars_titan.memory.episodic_codec import FrozenEpisodeCodec
 from mars_titan.memory.mars_titan_variant import (
     check_components,
@@ -338,13 +340,15 @@ def run_mars_titan_window(
     optimizer_factory=None,
     stopping=None,
     joint_epoch=None,
+    traces=None,
 ):
     """Ajustar el lector de una combinación sobre el padre elegido y escribir sus filas.
 
     La protección del aprendizaje se comprueba antes de leer ninguna fuente.
     `optimizer_factory` solo existe para comprobar el bucle con un optimizador que no
     modifica pesos. `stopping` y `joint_epoch` son la parada temprana de la campaña y la
-    época común del grupo, como en `titans_walk_forward.run_titans_window`.
+    época común del grupo, como en `titans_walk_forward.run_titans_window`, y `traces` las
+    trazas de #448.
     """
     require_learning_allowed("run_mars_titan_window de MARS-TITAN")
     _require(type(seed) is int and 0 <= seed < 2**32, "La semilla no es válida")
@@ -362,6 +366,7 @@ def run_mars_titan_window(
         optimizer_factory=optimizer_factory,
         stopping=stopping,
         joint_epoch=joint_epoch,
+        traces=traces,
     )
 
 
@@ -380,6 +385,7 @@ def run_readout_window(
     optimizer_factory=None,
     stopping=None,
     joint_epoch=None,
+    traces=None,
 ):
     """Recorrido común de la ventana para cualquier familia de lector."""
     require_learning_allowed(f"run_readout_window de {family.label}")
@@ -505,6 +511,9 @@ def run_readout_window(
         atomic_json(report_path, report)
     stop = stop or StopRequest()
     started = time.perf_counter()
+    # Familia de las trazas: mars_titan_readout o cm_v1_readout.
+    label = trace_name(family.label).replace("-", "_")
+    attach_traces(trainer, output / "traces", traces, f"{label}_readout")
     try:
         fit = trainer.run(resume=(output / "fit").exists(), stop=stop, joint_epoch=joint_epoch)
         if fit["status"] == AWAIT:
@@ -827,7 +836,9 @@ def mars_titan_fit(run, *, device="cuda:0", optimizer_factory=None):
 
             # B6 no tiene épocas, así que su caso no puede traer una regla de parada.
             _require(STOPPING_FIELD not in case, "Un caso B6 no declara una regla de parada")
-            report = run_correction_window(run.view, run.parent["folder"], case["recipe"], **common)
+            report = run_correction_window(
+                run.view, run.parent["folder"], case["recipe"], traces=run.traces, **common
+            )
         else:
             report = run_mars_titan_window(
                 run.view,
@@ -836,6 +847,7 @@ def mars_titan_fit(run, *, device="cuda:0", optimizer_factory=None):
                 optimizer_factory=optimizer_factory,
                 stopping=case.get(STOPPING_FIELD),
                 joint_epoch=run.joint_epoch,
+                traces=run.traces,
                 **common,
             )
     if report["status"] == "paused":

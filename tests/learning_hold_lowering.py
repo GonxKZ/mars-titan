@@ -25,6 +25,7 @@ import pytest
 from mars_titan.training.learning_hold import learning_blocked
 
 _POLICY_TAPES = "tests/simulation/test_native_policy_tapes.py::"
+_NATIVE_TRACES = "tests/learning_traces/test_native_policy_traces.py::"
 
 # Motivos compartidos por varias pruebas de las opciones de la campaña A v2 (#363).
 _LAUNCH = (
@@ -50,6 +51,18 @@ INVENTORY = {
     _POLICY_TAPES + "test_klpo_collects_a_full_wave_and_pauses_before_update_ready": (
         "recoge una oleada KLPO con el controlador y su Adam terminal y fabrica una selección "
         "cerrada para recorrer --audit-run"
+    ),
+    _NATIVE_TRACES + "test_double_dqn_traces_keep_the_run_and_record_each_validation": (
+        "ajusta Double DQN con 32 transiciones, por debajo de su calentamiento, con y sin trazas "
+        "para comprobar que las trazas no cambian la ejecución"
+    ),
+    _NATIVE_TRACES + "test_ppo_traces_are_not_duplicated_by_a_pause_and_resume": (
+        "lanza el ajuste PPO nativo, que crea el entrenador y su Adam, y lo pausa y reanuda antes "
+        "del primer recorrido para comprobar que las trazas no se duplican"
+    ),
+    _NATIVE_TRACES + "test_klpo_traces_record_the_initial_validation_once": (
+        "lanza el ajuste KLPO nativo con el controlador y su Adam terminal y lo pausa antes de "
+        "update_ready para comprobar que la validación inicial se traza una vez"
     ),
     _POLICY_TAPES + "test_stage_executors_fit_carry_and_pause_through_the_launcher": (
         "los ejecutores de la etapa lanzan ajustes nativos de Double DQN y KLPO"
@@ -288,6 +301,11 @@ _REUSES = (
 # guarda exige que coincidan, así que un uso nuevo necesita declararse aquí con su motivo.
 DOUBLES = {
     "tests/conftest.py": (2, _DEFINES),
+    "tests/learning_traces/test_native_policy_traces.py": (
+        1,
+        "la etapa de políticas se detiene al faltar la capacidad de trazas o las vistas, sin "
+        "binarios ni fuentes abiertas",
+    ),
     "tests/models/test_external_cache_cuda.py": (1, _ESTIMATOR),
     "tests/models/test_ridge_statistics_cuda.py": (1, _ESTIMATOR),
     "tests/posttraining/campaign_fixture.py": (1, _CAMPAIGN),

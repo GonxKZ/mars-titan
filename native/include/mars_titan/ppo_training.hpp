@@ -70,6 +70,8 @@ public:
     [[nodiscard]] std::size_t invalid_transitions() const noexcept;
     [[nodiscard]] std::size_t partial_ticks() const noexcept;
     [[nodiscard]] const PpoUpdateStats& last_update() const noexcept;
+    // Última actualización Double DQN o QR-DQN del último avance, para las trazas.
+    [[nodiscard]] const DqnUpdateStats& last_dqn_update() const noexcept;
     [[nodiscard]] std::size_t observed_transitions() const noexcept;
     [[nodiscard]] std::size_t auxiliary_samples() const noexcept;
 
@@ -91,6 +93,7 @@ private:
     std::size_t episodes_ = 0;
     bool failed_ = false;
     PpoUpdateStats last_update_;
+    DqnUpdateStats last_dqn_update_;
     PpoLearningOptions learning_;
     std::vector<simulation::BatchInput> active_inputs_;
     std::vector<std::size_t> source_indices_;

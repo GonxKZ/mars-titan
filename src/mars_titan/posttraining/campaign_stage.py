@@ -792,6 +792,8 @@ class _Stage:
         self.proofs, self.populations, self.selections = {}, {}, {}
         self.window_key = self.parent_key = self.dataset_key = None
         self.window = self.parent = self.dataset = None
+        # Declaración de las trazas de #448 o None. No entra en la identidad de la etapa.
+        self.traces = None
         self.platform = None
 
     # Contextos: una ventana, un padre y una vista abiertos como máximo.
@@ -1022,6 +1024,7 @@ class _Stage:
             folder / "run",
             checkpoint_seconds=self.campaign["neural"]["checkpoint_seconds"],
             stop=self.stop,
+            traces=self.traces,
         )
         if report["status"] != "completed":
             raise Paused
@@ -1074,6 +1077,7 @@ class _Stage:
                 device=self.device,
                 stop=self.stop,
                 parent_view=Path(self.view(scope, job["parent_window"])["path"]),
+                traces=self.traces,
             )
         if result["status"] != "completed":
             raise Paused
@@ -1680,6 +1684,7 @@ def run_stage(
     device="cuda:0",
     window=None,
     disjunction=None,
+    traces=None,
     platform=None,
 ):
     """Ejecutar o reanudar el walk-forward por etapas sobre una campaña base confirmada.
@@ -1691,7 +1696,8 @@ def run_stage(
     `lease` sustituye la reserva de la GPU y `device="cpu"` limita la ejecución a los
     diagnósticos de hasta 5000 filas de `run_case`. La protección del aprendizaje se
     comprueba antes de abrir fuentes y antes de cada trabajo pendiente. La variante B se
-    rechaza antes de leer nada.
+    rechaza antes de leer nada. `traces` es la sección `learning_traces` ya validada de la
+    declaración de ejecución (#448). Como esa declaración, no entra en la identidad.
 
     Cada recibo nuevo guarda la identidad de la plataforma. `platform` sustituye la detectada,
     solo en las pruebas.
@@ -1757,6 +1763,7 @@ def run_stage(
         state = _Stage(
             stage, base, campaign_output, output, identity, device=device, lease=None, stop=None
         )
+        state.traces = traces
         state.platform = platform_identity() if platform is None else platform
         _summary(output, identity, jobs, chains, state, "running", **checked)
         try:
@@ -1789,6 +1796,8 @@ def _views_argument(values):
 
 
 def main(argv=None):
+    from mars_titan.training.campaign_resources import execution_traces
+
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     commands = parser.add_subparsers(dest="command", required=True)
     check = commands.add_parser("check", help="Validar y contar trabajos sin leer datos")
@@ -1802,6 +1811,9 @@ def main(argv=None):
     execute.add_argument(
         "--disjunction", type=Path, help="Informe de disjunción sobre las vistas (por etapas)"
     )
+    execute.add_argument(
+        "--execution", type=Path, help="Declaración de ejecución con las trazas de #448"
+    )
     args = parser.parse_args(argv)
     if args.command == "check":
         result = check_stage(args.stage)
@@ -1813,6 +1825,7 @@ def main(argv=None):
             args.output,
             window=args.window,
             disjunction=args.disjunction,
+            traces=execution_traces(args.execution),
         )
         result.pop("jobs")
     print(json.dumps(result, ensure_ascii=False, indent=2))

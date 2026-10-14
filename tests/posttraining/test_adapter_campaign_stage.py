@@ -30,6 +30,7 @@ from mars_titan.training.label_maturity import FIT_PARTITIONS, label_maturity
 from mars_titan.training.learning_hold import LearningHoldError
 from tests.hardware.platform_doubles import laptop
 from tests.learning_hold_lowering import lowers_learning_hold
+from tests.learning_traces.parity import EVERY_STEP, metrics, trace_rows
 from tests.posttraining.campaign_fixture import CpuLease, base_campaign
 from tests.posttraining.real_only import real_data_only
 
@@ -838,3 +839,36 @@ def test_a_staged_campaign_needs_the_disjunction_report_of_its_views(
     assert summary["status"] == "paused" and summary["completed"]["training_jobs"] == 0
     assert summary["disjunction_sha256"] == sha256(tmp_path / "report.json")
     assert recorder.optimizers == []
+
+
+def test_traces_reach_every_fitted_case_and_resume_without_duplicates(base_a, tmp_path, recorder):
+    """Trazas de #448 en la etapa: mismos recibos y cada caso con sus pasos una sola vez."""
+    plain = tmp_path / "plain"
+    assert run(base_a, plain)["status"] == "completed"
+    created = len(recorder.optimizers)
+    stop = SimpleNamespace(requested=False)
+
+    def pause(optimizer):
+        if len(recorder.optimizers) == created + 2 and len(optimizer.calls) == 1:
+            stop.requested = True
+
+    recorder.on_step = pause
+    traced = tmp_path / "traced"
+    assert run(base_a, traced, stop, traces=EVERY_STEP)["status"] == "paused"
+    recorder.on_step, stop.requested = None, False
+    assert run(base_a, traced, stop, traces=EVERY_STEP)["status"] == "completed"
+    expected, found = receipts(plain), receipts(traced)
+    assert set(found) == set(expected)
+    for name, receipt in found.items():
+        for key in ("score", "updates", "selection", "identity"):
+            assert receipt.get(key) == expected[name].get(key), (name, key)
+        for partition, record in receipt.get("predictions", {}).items():
+            assert record["sha256"] == expected[name]["predictions"][partition]["sha256"]
+        if name == FROZEN:
+            assert not (traced / "jobs" / name / "run" / "traces").exists()
+            continue
+        manifest, rows = trace_rows(traced / "jobs" / name / "run" / "traces")
+        assert manifest["identity"]["family"] == "posttraining"
+        steps = {row["step"] for row in rows if row["phase"] == "train"}
+        assert steps == set(range(1, receipt["updates"] + 1))
+        assert "validation.score" in metrics(rows, "validation")

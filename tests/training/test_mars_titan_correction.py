@@ -32,6 +32,7 @@ from mars_titan.training.financial_run import ChronologicalInference
 from mars_titan.training.kernel_policy import FP32_STRICT, kernel_policy_identity
 from mars_titan.training.learning_hold import LearningHoldError
 from tests.learning_hold_lowering import lowers_learning_hold
+from tests.learning_traces.parity import same_rows, trace_rows
 from tests.training.test_titans_walk_forward import (
     learning_doubles_module as learning_doubles_module,
 )
@@ -516,3 +517,38 @@ def test_kalman_window_estimates_its_noise_once_and_its_carry_reuses_it(
             carried["predictions"][partition]["sha256"]
             == (report["predictions"][partition]["sha256"])
         )
+
+
+def test_traces_follow_the_writes_of_a_without_changing_rows(base, tmp_path):
+    """Trazas de B6 (#448): cada escritura de A por tramo, sin cambiar filas ni reanudación."""
+    reference = base["runs"]["proximal"]
+    traces = dict(every=1, max_bytes=16 * 1024**2)
+    output = tmp_path / "traced"
+    traced = correct(base["view"], base["parent"], DECLARED, output, traces=traces)
+    for partition in PARTITIONS:
+        assert (
+            traced["predictions"][partition]["sha256"]
+            == reference["predictions"][partition]["sha256"]
+        )
+    manifest, rows = trace_rows(output / "traces")
+    assert manifest["identity"]["family"] == "b6"
+    assert {row["phase"] for row in rows} == {f"b6_{p}" for p in PARTITIONS} | {"validation"}
+    for partition in PARTITIONS:
+        writes = [
+            r["value"]
+            for r in sorted(rows, key=lambda r: r["step"])
+            if r["phase"] == f"b6_{partition}" and r["metric"] == "associative.writes"
+        ]
+        # A empieza en cero en cada tramo y sus escrituras solo crecen.
+        assert writes and writes == sorted(writes) and writes[0] > 0
+    (score,) = [r for r in rows if r["metric"] == "validation.score"]
+    assert score["value"] == reference["predictions"]["validation"]["metrics"]["session_mae"]
+    resumed = tmp_path / "resumed"
+    paused = correct(
+        base["view"], base["parent"], DECLARED, resumed, stop=StopAfter(40), traces=traces
+    )
+    assert paused["status"] == "paused"
+    assert correct(base["view"], base["parent"], DECLARED, resumed, traces=traces)["status"] == (
+        "completed"
+    )
+    assert same_rows(rows, trace_rows(resumed / "traces")[1])

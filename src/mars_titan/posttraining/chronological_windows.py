@@ -34,6 +34,7 @@ from mars_titan.data.batches import atomic_parquet_batches
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.input_policy import HISTORICAL_MASKED
 from mars_titan.data.storage import atomic_json, outside_source, sha256
+from mars_titan.learning_traces.trainers import attach as attach_traces
 from mars_titan.memory.episodic_codec import FrozenEpisodeCodec
 from mars_titan.memory.financial_session import FinancialPhase
 from mars_titan.models.predictive_adaptation import (
@@ -91,6 +92,7 @@ from mars_titan.training.titans_walk_forward import KIND as TITANS_KIND
 from mars_titan.training.walk_forward_phases import micros, months_before
 
 from . import chronological_matrix as cm
+from .adapter_traces import AdapterObserver
 from .readout_adapters import ReadoutAdapterTrainer
 
 TITANS_WINDOW = "titans_mac_posttraining_window"
@@ -367,6 +369,7 @@ def run_titans_posttraining(
     stop=None,
     optimizer_factory=None,
     parent_view=None,
+    traces=None,
 ):
     """Postentrenar el estado elegido de una variante de Titans-MAC.
 
@@ -374,6 +377,7 @@ def run_titans_posttraining(
     los demás parámetros quedan congelados, y los pesos rápidos siguen su regla asociativa.
     La continuación completa ajusta los mismos papeles que el ajuste base. Con
     `parent_view`, el padre se ajustó en esa vista anterior (walk-forward por etapas).
+    `traces` declara las trazas de #448, con la actualización de los adaptadores.
     """
     require_learning_allowed("el postentrenamiento de Titans-MAC")
     _cuda(device)
@@ -460,6 +464,9 @@ def run_titans_posttraining(
                 "El ajuste cambió parámetros fuera de los adaptadores",
             )
 
+    attach_traces(
+        trainer, output / "traces", traces, "posttraining_titans_mac", observers=[AdapterObserver()]
+    )
     return _fit_and_predict(
         trainer,
         lambda source, rows, stop: trainer.predict_partition(source, rows, stop=stop),
@@ -549,13 +556,15 @@ def run_readout_posttraining(
     stop=None,
     optimizer_factory=None,
     parent_view=None,
+    traces=None,
 ):
     """Postentrenar el núcleo, la lectura episódica o ambos de un modelo con lector.
 
     El núcleo adaptado parte del mismo padre con su control C declarado. Sin adaptadores
     en el núcleo, el padre se carga congelado como en el ajuste del modelo. Con
     `parent_view`, el modelo se ajustó en esa vista anterior (walk-forward por etapas) y,
-    con M3, conserva las escalas congeladas de su propio ajuste.
+    con M3, conserva las escalas congeladas de su propio ajuste. `traces` declara las trazas
+    de #448, con la actualización de los adaptadores.
     """
     require_learning_allowed("el postentrenamiento de un modelo con lector episódico")
     _cuda(device)
@@ -672,6 +681,9 @@ def run_readout_posttraining(
         final_test_opened=False,
     )
     report_out = _report(output, request, record, READOUT_WINDOW)
+    attach_traces(
+        trainer, output / "traces", traces, "posttraining_readout", observers=[AdapterObserver()]
+    )
     return _fit_and_predict(
         trainer,
         lambda source, rows, stop: trainer.evaluate(source, stop=stop, rows=rows),
