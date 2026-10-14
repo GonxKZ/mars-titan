@@ -507,6 +507,38 @@ def test_the_declaration_is_fixed_before_results(tmp_path, edit, message):
         rolling.load_retention(tmp_path / "retention.json")
 
 
+V3 = "configs/baselines/historical-masked-retention-v3.json"
+
+
+@pytest.mark.parametrize(
+    "edit,message",
+    [
+        (lambda d: d["release"]["stages"].remove("adapters"), "regeneradas bit a bit"),
+        (lambda d: d.update(compact=["adapters"]), "compacta los adaptadores"),
+        (lambda d: d["compact"].update(adapters="after_phase"), "compacta los adaptadores"),
+        (lambda d: d.update(adapter_states="all"), "estado elegido"),
+        (lambda d: d.update(adapter_release="at_window_end"), "estado elegido"),
+        (lambda d: d.update(adapter_mismatch="keep_and_continue"), "estado elegido"),
+        (lambda d: d.update(parent_caches="kept"), "estado elegido"),
+        (lambda d: d.pop("parent_caches"), "contrato"),
+    ],
+)
+def test_the_v3_declaration_is_fixed_before_results(tmp_path, edit, message):
+    """La v3 solo añade sus campos a la v2: ni mezcla ni relaja ninguno."""
+    document = json.loads(open(V3).read())
+    loaded = rolling.load_retention(V3)
+    assert loaded["sha256"] != rolling.load_retention(DECLARATION)["sha256"]
+    v2 = json.loads(open(DECLARATION).read())
+    changes = {"name", "declared_on", "release", "compact"}
+    assert set(v2) < set(document)
+    assert all(document[key] == value for key, value in v2.items() if key not in changes)
+    changed = copy.deepcopy(document)
+    edit(changed)
+    atomic_json(tmp_path / "retention.json", changed)
+    with pytest.raises(ValueError, match=message):
+        rolling.load_retention(tmp_path / "retention.json")
+
+
 def test_the_policy_stage_comes_with_the_retention_that_declares_it(
     base,  # noqa: F811
     unconsumed,
@@ -731,6 +763,9 @@ class Walk:
 
     def mark(self, window, phase, **record):
         self.marked.append((window, phase))
+
+    def after_phase(self, index, row, phase):
+        return {}
 
     def aggregates(self, row):
         raise AssertionError("Una fase pausada no llega a los agregados")

@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "kind": "historical_masked_prediction_retention",
+  "name": "historical-masked-retention-v3",
+  "status": "declared_before_results",
+  "declared_on": "2026-10-14",
+  "order": "by_window",
+  "phases": ["base", "adapters", "ablation", "rl", "aggregates", "release"],
+  "aggregates": ["walk_forward", "long_short", "selection_effect"],
+  "release": {
+    "stages": ["base", "ablation", "adapters"],
+    "partitions": ["validation", "calibration", "evaluation"],
+    "requires": "bit_exact_regeneration",
+    "otherwise": "compact_lossless"
+  },
+  "compact": {
+    "base": "after_phase",
+    "adapters": "on_confirmation",
+    "ablation": "after_phase"
+  },
+  "policy_inputs": "compact_until_the_last_reading_policy_window",
+  "consumers": {
+    "rl": {"reads": "evaluation", "release_after": "confirmed_policy_receipts"}
+  },
+  "numerics": {
+    "float32_matmul_precision": "highest",
+    "cuda_matmul_allow_tf32": false,
+    "cudnn_allow_tf32": false
+  },
+  "adapter_states": "selected_only_after_confirmation",
+  "adapter_release": "by_base_arm_block_after_its_aggregates",
+  "adapter_mismatch": "compact_lossless_and_stop",
+  "parent_caches": "released_when_each_parent_closes",
+  "kept": [
+    "selected_state_with_parameters_optimizer_rng_and_normalisers",
+    "reports_receipts_and_failed_or_discarded_attempts",
+    "window_aggregates",
+    "views",
+    "regeneration_reports"
+  ]
+}

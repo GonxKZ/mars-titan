@@ -441,9 +441,11 @@ def estimate(args):
     if args.rl_stage is not None:
         result["policies"] = rl_estimate(args.rl_stage, campaign, extras, args.extensions)
     if args.schedule is not None:
-        from .rolling_retention import load_schedule
+        from .rolling_retention import load_retention, load_schedule
         from .rolling_storage import rolling_estimate, rolling_inputs, window_increment
 
+        retention = None if args.retention is None else load_retention(args.retention)
+        v3 = retention is not None and "adapters" in retention["release"]["stages"]
         windows = load_schedule(args.schedule, campaign)
         stages = rolling_inputs(
             jobs,
@@ -461,10 +463,14 @@ def estimate(args):
             storage,
             extras,
             ordered_copy=not args.adapter_blocks,
+            v3=v3,
             **stages,
         )
         result["rolling"] = dict(
             rolling,
+            retention=None
+            if retention is None
+            else dict(name=retention["name"], sha256=retention["sha256"]),
             adapter_corpus="blocks" if args.adapter_blocks else "ordered_copy",
             increment={scenario: window_increment(rolling, scenario) for scenario in rolling},
         )
@@ -479,7 +485,10 @@ def main(argv=None):
     parser.add_argument("--ablation-stage", type=Path)
     parser.add_argument("--adapter-stage", type=Path)
     parser.add_argument("--rl-stage", type=Path)
-    parser.add_argument("--schedule", type=Path, help="Orden por ventanas de la retención v2")
+    parser.add_argument("--schedule", type=Path, help="Orden por ventanas de la retención")
+    parser.add_argument(
+        "--retention", type=Path, help="Declaración de la retención (sin ella, la v2)"
+    )
     parser.add_argument(
         "--adapter-blocks",
         action="store_true",
