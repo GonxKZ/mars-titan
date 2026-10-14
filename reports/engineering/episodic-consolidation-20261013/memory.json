@@ -1,0 +1,165 @@
+{
+ "issue": 547,
+ "date": "2026-10-13",
+ "commits": {
+  "develop": "7012da85",
+  "branch": "3cc97794"
+ },
+ "script": "5fd3b8b9db22fea589a3df690ae906c829d6a7b235123dd322159d68ed9efb3a",
+ "script_note": "La copia ejecutada solo difería en los saltos de línea que aplica ruff format, con el mismo árbol sintáctico",
+ "note": "Pico de tracemalloc de cada una de las cuatro últimas propuestas, con el banco lleno. No incluye las asignaciones internas del enlace C++.",
+ "configurations": {
+  "legacy_v1/reservoir": {
+   "develop": [
+    {
+     "traced_peak_bytes": 4855935,
+     "estimated_peak_bytes": 20416640
+    },
+    {
+     "traced_peak_bytes": 4854524,
+     "estimated_peak_bytes": 20416640
+    },
+    {
+     "traced_peak_bytes": 4858141,
+     "estimated_peak_bytes": 20416640
+    },
+    {
+     "traced_peak_bytes": 4860893,
+     "estimated_peak_bytes": 20416640
+    }
+   ],
+   "branch": [
+    {
+     "traced_peak_bytes": 4865563,
+     "estimated_peak_bytes": 20416640
+    },
+    {
+     "traced_peak_bytes": 4858684,
+     "estimated_peak_bytes": 20416640
+    },
+    {
+     "traced_peak_bytes": 4860659,
+     "estimated_peak_bytes": 20416640
+    },
+    {
+     "traced_peak_bytes": 4861969,
+     "estimated_peak_bytes": 20416640
+    }
+   ]
+  },
+  "legacy_v1/anchored": {
+   "develop": [
+    {
+     "traced_peak_bytes": 5091274,
+     "estimated_peak_bytes": 20529208
+    },
+    {
+     "traced_peak_bytes": 5091077,
+     "estimated_peak_bytes": 20529208
+    },
+    {
+     "traced_peak_bytes": 5091637,
+     "estimated_peak_bytes": 20529208
+    },
+    {
+     "traced_peak_bytes": 5092113,
+     "estimated_peak_bytes": 20529208
+    }
+   ],
+   "branch": [
+    {
+     "traced_peak_bytes": 5100904,
+     "estimated_peak_bytes": 20529208
+    },
+    {
+     "traced_peak_bytes": 5095863,
+     "estimated_peak_bytes": 20529208
+    },
+    {
+     "traced_peak_bytes": 5096640,
+     "estimated_peak_bytes": 20529208
+    },
+    {
+     "traced_peak_bytes": 5096157,
+     "estimated_peak_bytes": 20529208
+    }
+   ]
+  },
+  "causal_v2/reservoir": {
+   "develop": [
+    {
+     "traced_peak_bytes": 4846815,
+     "estimated_peak_bytes": 20416640
+    },
+    {
+     "traced_peak_bytes": 4854459,
+     "estimated_peak_bytes": 20416640
+    },
+    {
+     "traced_peak_bytes": 4857719,
+     "estimated_peak_bytes": 20416640
+    },
+    {
+     "traced_peak_bytes": 4860131,
+     "estimated_peak_bytes": 20416640
+    }
+   ],
+   "branch": [
+    {
+     "traced_peak_bytes": 4856787,
+     "estimated_peak_bytes": 20416640
+    },
+    {
+     "traced_peak_bytes": 4858407,
+     "estimated_peak_bytes": 20416640
+    },
+    {
+     "traced_peak_bytes": 4860239,
+     "estimated_peak_bytes": 20416640
+    },
+    {
+     "traced_peak_bytes": 4861657,
+     "estimated_peak_bytes": 20416640
+    }
+   ]
+  },
+  "causal_v2/anchored": {
+   "develop": [
+    {
+     "traced_peak_bytes": 5085664,
+     "estimated_peak_bytes": 20529208
+    },
+    {
+     "traced_peak_bytes": 5091134,
+     "estimated_peak_bytes": 20529208
+    },
+    {
+     "traced_peak_bytes": 5091747,
+     "estimated_peak_bytes": 20529208
+    },
+    {
+     "traced_peak_bytes": 5092223,
+     "estimated_peak_bytes": 20529208
+    }
+   ],
+   "branch": [
+    {
+     "traced_peak_bytes": 5095245,
+     "estimated_peak_bytes": 20529208
+    },
+    {
+     "traced_peak_bytes": 5095581,
+     "estimated_peak_bytes": 20529208
+    },
+    {
+     "traced_peak_bytes": 5095917,
+     "estimated_peak_bytes": 20529208
+    },
+    {
+     "traced_peak_bytes": 5096218,
+     "estimated_peak_bytes": 20529208
+    }
+   ]
+  }
+ }
+}

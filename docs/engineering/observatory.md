@@ -59,7 +59,7 @@ La extensión del recolector cambia el contenido de casi todas las páginas y co
 
 Las trazas de #448 pueden tener millones de puntos. Un paquete separa un manifiesto JSON pequeño de un bloque binario con columnas little-endian alineadas a 8 bytes, y el navegador crea vistas tipadas sobre ese bloque sin copiarlo. El bloque se nombra por su huella, la página comprueba el SHA-256 antes de dibujar y NaN codifica una observación ausente que nunca se interpola. El manifiesto declara procedencia (`measured` o `fixture`), unidad del eje, cadencia del registro y, si existe, el paso en el que el productor agotó su presupuesto. Un paquete `fixture` lleva un aviso visible en toda la vista.
 
-`scripts/export_learning_traces.py` convierte la carpeta del registrador de `mars_titan.learning_traces` en un paquete. Cada combinación de métrica, grupo de parámetros, estadístico y fase pasa a ser una serie por paso. Las normas por grupo de parámetros se quedan en optimización y el resto se ordena por el prefijo de la métrica o del grupo (`memory` a Titans, `policy` a RL, etc.). La orden no modifica la carpeta de origen:
+`scripts/export_learning_traces.py` convierte la carpeta del registrador de `mars_titan.learning_traces` en un paquete. Cada combinación de métrica, grupo de parámetros, estadístico y fase pasa a ser una serie por paso. Las normas por grupo de parámetros se quedan en optimización y el resto se ordena por el prefijo de la métrica o del grupo (`memory` a Titans, `policy` y `critic` a RL, etc.). El eje usa la unidad que declara el manifiesto: pasos del optimizador, escrituras de la memoria asociativa de B6, rondas de XGBoost, el ajuste único de Ridge, transiciones de PPO y Double DQN u oleadas de KLPO. La orden no modifica la carpeta de origen. Con `--traces` convierte una carpeta:
 
 ```bash
 uv run --locked python scripts/export_learning_traces.py \
@@ -67,7 +67,14 @@ uv run --locked python scripts/export_learning_traces.py \
   --name NOMBRE --run-id RUN_ID --attempt-id ATTEMPT_ID --model-id MODEL_ID
 ```
 
-Los ganchos del entrenador que llenan el registrador pertenecen a #448. Hasta que existan, la vista de memoria solo puede mostrar paquetes de prueba rotulados como tales.
+Con `--root` recorre todas las carpetas `traces/` de una salida de campaña o de etapa y, con `--watch SEGUNDOS`, repite el recorrido y solo vuelve a leer las carpetas cuyo manifiesto o partes han cambiado. Cada paquete se nombra por su ruta relativa con una huella corta, y una carpeta que no supera la validación de `read_traces` se omite e informa sin detener las demás:
+
+```bash
+uv run --locked python scripts/export_learning_traces.py \
+  --root SALIDA_DE_LA_CAMPAÑA --output RUTA_DE_LOS_PAQUETES --watch 30
+```
+
+Los entrenadores de todas las familias, el postentrenamiento y la etapa RL nativa llenan el registrador con el contrato de [las trazas de aprendizaje](../research/learning-traces.md).
 
 ### Decisiones de visualización
 

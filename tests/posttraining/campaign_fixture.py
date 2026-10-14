@@ -32,6 +32,7 @@ from mars_titan.training.corpus_inputs import CorpusDataset
 from mars_titan.training.learning_hold import HOLD_ENV
 from mars_titan.training.reference_run import HELDOUT_FULL_TRAIN_SESSIONS
 from mars_titan.training.selection import FINISH, advance_selection, epoch_decision
+from tests.learning_hold_lowering import allowed_hold
 from tests.training.test_carried_predictions import PresenceCount
 from tests.training.test_masked_campaign import Recorder
 from tests.training.test_walk_forward_v2_views import fixture
@@ -108,14 +109,19 @@ def write_configs(folder, variant, *, tabular=False, start="2021-04-01", compari
     # La comparación reducida no declara las variantes de Titans-MAC.
     campaign.pop("titans_mac")
     atomic_json(folder / "campaign.json", campaign)
-    matrix = json.loads((CONFIGS / "posttraining/adapter-matrix-v2.json").read_text())
-    matrix["budget"].update(seeds=[42], epochs=1, batch_size=BATCH)
-    atomic_json(folder / "matrix.json", matrix)
     stage = json.loads(
         (
             CONFIGS / f"posttraining/historical-masked-adapter-stage-{variant.lower()}.json"
         ).read_text()
     )
+    # A añade la continuación anclada de la matriz v3 (#444). Su matriz reducida es la v3 sin
+    # la variedad, que conserva los casos de la v2 y declara el control.
+    added = "additional_controls" in stage
+    source = "adapter-matrix-v3.json" if added else "adapter-matrix-v2.json"
+    matrix = json.loads((CONFIGS / "posttraining" / source).read_text())
+    matrix.pop("variety", None)
+    matrix["budget"].update(seeds=[42], epochs=1, batch_size=BATCH)
+    atomic_json(folder / "matrix.json", matrix)
     stage.update(
         campaign="campaign.json",
         matrix="matrix.json",
@@ -302,8 +308,7 @@ def base_campaign(root, variant, *, tabular=False, comparison=None):
         root / "config", variant, tabular=tabular, comparison=comparison
     )
     data = fixture(root / "data", ("US",))
-    hold = root / "hold.json"
-    hold.write_text(json.dumps({"training_allowed": True}), encoding="utf-8")
+    hold = allowed_hold(root / "hold.json")
     with pytest.MonkeyPatch.context() as patch:
         # La campaña base solo ejecuta dobles: ningún modelo se ajusta.
         patch.setenv(HOLD_ENV, str(hold))

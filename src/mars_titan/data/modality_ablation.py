@@ -61,7 +61,7 @@ def ablation_identity(variant):
     )
 
 
-def _lists(values, width, like):
+def list_column(values, width, like):
     """Lista de `width` valores por fila con el tipo Arrow de la columna original."""
     if pa.types.is_fixed_size_list(like):
         array = pa.FixedSizeListArray.from_arrays(values, width)
@@ -81,22 +81,34 @@ def _struct(column, replace):
 
 def ablate_samples(table, variant):
     """Tabla de muestras con las modalidades de la variante ausentes en todas las filas."""
-    modalities = ablated_modalities(variant)
+    return absent_rows(table, ablated_modalities(variant), None, REASON)
+
+
+def absent_rows(table, modalities, rows, reason):
+    """Tabla con `modalities` ausentes en las filas marcadas en `rows`, o en todas con None.
+
+    Las filas que ya carecían de una modalidad conservan su causa original. Las que la
+    pierden reciben `reason`.
+    """
     names = set(table.column_names)
     unknown = names - _REWRITTEN - _INDEPENDENT
     if unknown:
         raise ValueError(f"La ablación no sabe ausentar las columnas {sorted(unknown)}")
     if not {"presence", "news_count", "input_availability", *modalities} <= names:
         raise ValueError("La ablación necesita presencia, recuento, disponibilidad y vectores")
-    rows = len(table)
-    if not rows:
+    count = len(table)
+    if not count:
         return table
+    rows = np.ones(count, dtype=bool) if rows is None else np.asarray(rows, dtype=bool)
+    if rows.shape != (count,):
+        raise ValueError("Las filas ausentes no corresponden a la tabla")
+    selected = pa.array(rows)
     column = table["presence"].combine_chunks()
-    bits = column.flatten().to_numpy(zero_copy_only=False).reshape(rows, len(MODALITIES)).copy()
-    observed = {name: bits[:, MODALITIES.index(name)].copy() for name in modalities}
+    bits = column.flatten().to_numpy(zero_copy_only=False).reshape(count, len(MODALITIES)).copy()
+    observed = {name: bits[:, MODALITIES.index(name)] & rows for name in modalities}
     for name in modalities:
-        bits[:, MODALITIES.index(name)] = False
-    columns = {"presence": _lists(pa.array(bits.ravel()), len(MODALITIES), column.type)}
+        bits[rows, MODALITIES.index(name)] = False
+    columns = {"presence": list_column(pa.array(bits.ravel()), len(MODALITIES), column.type)}
     for name in modalities:
         vector = table[name].combine_chunks()
         lengths = pc.list_value_length(vector)
@@ -104,28 +116,32 @@ def ablate_samples(table, variant):
         if lengths.null_count or bounds["min"] != bounds["max"]:
             raise ValueError(f"Los vectores de {name} no tienen una anchura común")
         width = bounds["min"].as_py()
-        columns[name] = _lists(
-            pa.array(np.zeros(rows * width, dtype=np.float32)), width, vector.type
-        )
+        values = vector.flatten().to_numpy(zero_copy_only=False).reshape(count, width)
+        # Las filas que no se ausentan conservan sus valores y su tipo.
+        values = np.where(rows[:, None], np.zeros((), values.dtype), values)
+        columns[name] = list_column(pa.array(values.ravel()), width, vector.type)
     availability = table["input_availability"].combine_chunks()
     columns["input_availability"] = _struct(
         availability,
         {
-            name: pa.nulls(rows, availability.type.field(name).type)
+            name: pc.if_else(
+                selected,
+                pa.nulls(count, availability.type.field(name).type),
+                availability.field(name),
+            )
             for name in modalities
             if availability.type.get_field_index(name) >= 0
         },
     )
     if "news" in modalities:
-        columns["news_count"] = pa.array(np.zeros(rows, dtype=np.int64)).cast(
-            table["news_count"].type
-        )
+        counts = table["news_count"].combine_chunks()
+        columns["news_count"] = pc.if_else(selected, pa.scalar(0, counts.type), counts)
     if "missing_reasons" in names:
         reasons = table["missing_reasons"].combine_chunks()
         columns["missing_reasons"] = _struct(
             reasons,
             {
-                name: pc.if_else(pa.array(observed[name]), REASON, reasons.field(name))
+                name: pc.if_else(pa.array(observed[name]), reason, reasons.field(name))
                 for name in modalities
             },
         )

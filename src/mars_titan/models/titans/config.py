@@ -23,6 +23,27 @@ def require_identity(actual: object, expected: dict) -> None:
         raise ValueError("La configuración no coincide con el contrato del módulo")
 
 
+class FingerprintOnce:
+    """Huella SHA-256 de la identidad de una configuración inmutable, calculada una vez.
+
+    Solo vale para dataclasses congeladas cuyos campos son inmutables, porque su identidad
+    no puede cambiar después de crearlas. La huella guardada no se serializa ni se copia:
+    una copia o un objeto recuperado la vuelven a calcular con su propio código.
+    """
+
+    def fingerprint(self) -> str:
+        cached = self.__dict__.get("_fingerprint")
+        if cached is None:
+            cached = hashlib.sha256(canonical(self.identity()).encode()).hexdigest()
+            object.__setattr__(self, "_fingerprint", cached)
+        return cached
+
+    def __getstate__(self):
+        state = dict(self.__dict__)
+        state.pop("_fingerprint", None)
+        return state
+
+
 def _finite_number(value: object, name: str) -> float:
     if type(value) not in (int, float) or not math.isfinite(value):
         raise ValueError(f"{name} debe ser un número finito")
@@ -276,7 +297,7 @@ class MemoryMultiscale:
 
 
 @dataclass(frozen=True)
-class MemoryConfig:
+class MemoryConfig(FingerprintOnce):
     dim: int
     depth: int = 2
     normalize_qk: bool = True
@@ -410,12 +431,9 @@ class MemoryConfig:
             "gradient_policy": "explicit_differentiable_or_detached",
         }
 
-    def fingerprint(self) -> str:
-        return hashlib.sha256(canonical(self.identity()).encode()).hexdigest()
-
 
 @dataclass(frozen=True)
-class MACConfig:
+class MACConfig(FingerprintOnce):
     memory: MemoryConfig
     heads: int = 1
     persistent_tokens: int = 4
@@ -451,6 +469,3 @@ class MACConfig:
             "dropout": 0.0,
             "disabled_policy": "attention_only_without_prefix_or_gate",
         }
-
-    def fingerprint(self) -> str:
-        return hashlib.sha256(canonical(self.identity()).encode()).hexdigest()

@@ -38,10 +38,11 @@
     "cm_v1_bcm"
   ],
   "cohort_reading": {"source": "view_blocks", "max_block_bytes": 3221225472},
+  "additional_controls": ["anchored_continuation", "predictive_objectives"],
   "chain_rule": "chain_validation_score_v1",
   "data_policy": "real_edition_only",
   "limits": {
-    "max_training_jobs": 6804,
+    "max_training_jobs": 8694,
     "max_prediction_jobs": 1494
   },
   "final_test_opened": false

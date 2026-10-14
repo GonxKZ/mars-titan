@@ -24,8 +24,8 @@ from datetime import UTC, date, datetime
 from pathlib import Path
 
 from mars_titan.data.cohort_files import read_manifest, safe_destination
+from mars_titan.data.input_perturbations import variant_identity
 from mars_titan.data.input_policy import masked_inputs, policy_identity
-from mars_titan.data.modality_ablation import ablation_identity
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 
 from .temporal_contract import temporal_contracts
@@ -76,10 +76,10 @@ def same_view(anchor_manifest, manifest, regenerate):
 
 
 def ablation_record(modality_ablation):
-    """Campo del recibo que identifica la ablación. Un traslado normal no lo declara."""
+    """Campo del recibo que identifica la variante de lectura. Un traslado normal no lo declara."""
     if modality_ablation is None:
         return {}
-    return dict(modality_ablation=ablation_identity(modality_ablation))
+    return dict(modality_ablation=variant_identity(modality_ablation))
 
 
 def _months(start, end):

@@ -1,10 +1,12 @@
-"""Las pruebas de CTest que dan pasos de optimizador quedan fuera de todos los perfiles.
+"""Las pruebas de CTest que dan pasos de optimizador no se ejecutan mientras rija el bloqueo.
 
 Mientras rija el bloqueo de aprendizaje, ninguna comprobación técnica puede aplicar un paso de
 optimizador, tampoco con datos sintéticos. Estas pruebas leen CMake, C++ y los perfiles sin
-configurar ni compilar nada. Localizan los ejecutables de cada prueba de CTest, buscan en sus
-fuentes las llamadas que llegan a un paso y exigen que esas pruebas, y solo esas, lleven la
-etiqueta `optimizer-steps` y que cada perfil de prueba la excluya.
+configurar ni compilar el proyecto. Localizan los ejecutables de cada prueba de CTest, buscan en
+sus fuentes las llamadas que llegan a un paso y exigen que esas pruebas, y solo esas, lleven la
+etiqueta `optimizer-steps`, que pasen por el lanzador que lee la protección (#567) y que cada
+perfil de prueba excluya la etiqueta. Las comprobaciones del lanzador configuran un proyecto
+mínimo con `OptimizerStepTests.cmake`, sin compilar ni ejecutar ninguna prueba.
 
 La búsqueda es textual. Una función nueva de `native/src` que aplique o propague un paso tiene
 que declararse en `STEPPING`, y la prueba de completitud falla mientras no se haga.
@@ -13,12 +15,17 @@ que declararse en `STEPPING`, y la prueba de completitud falla mientras no se ha
 import json
 import re
 import shutil
+import subprocess
 from pathlib import Path
 
 import pytest
 
 NATIVE = Path(__file__).resolve().parents[2] / "native"
 LABEL = "optimizer-steps"
+# Registro con el lanzador mars-titan-learning-gate y código de salto que devuelve si bloquea.
+GATED = "mars_titan_add_optimizer_step_test"
+CHECK = "mars_titan_require_gated_optimizer_step_tests"
+SKIP_CODE = "77"
 
 # Funciones que aplican un paso de optimizador o llegan a uno, por el archivo que las define.
 STEPPING = {
@@ -42,8 +49,15 @@ NOT_STEPPING = {
 }
 # Pruebas que ejecutan un programa que entrena, pero que se detiene antes del primer paso.
 # La primera solo pasa si aparece el mensaje de una protección bloqueada. La segunda debe
-# fallar, porque el programa rechaza cuda:1 al leer los argumentos.
-REFUSED = {"adapter_control_cli_hold": "hold", "adapter_control_cli_invalid": "arguments"}
+# fallar, porque el programa rechaza cuda:1 al leer los argumentos. Las dos últimas, en CPU y
+# en cuda:0, llaman a las entradas que dan pasos solo dentro de `refused`, que exige el error
+# del cerrojo de solo evaluación (#546).
+REFUSED = {
+    "adapter_control_cli_hold": "hold",
+    "adapter_control_cli_invalid": "arguments",
+    "policy_evaluation_only": "latch",
+    "policy_evaluation_only_cuda": "latch",
+}
 
 NAMES = sorted({name for names in STEPPING.values() for name in names})
 # Llamadas como método o con nombre cualificado. Las declaraciones de las cabeceras no cuentan.
@@ -89,16 +103,24 @@ class Registry:
     """Pruebas, fuentes de cada ejecutable y propiedades de CTest de toda la configuración.
 
     Se reúnen las ramas de todos los `if`, porque cualquier configuración puede registrar la
-    prueba. Los bucles `foreach` se expanden con sus elementos o con una lista ya declarada.
+    prueba. Los bucles `foreach` se expanden con sus elementos o con una lista ya declarada. Los
+    cuerpos de `function` y `macro` se saltan, y una llamada a `mars_titan_add_optimizer_step_test`
+    cuenta como una prueba registrada con el lanzador, que añade la etiqueta y el código de salto.
     """
 
     def __init__(self):
         self.lists, self.sources, self.tests, self.properties = {}, {}, {}, {}
+        self.gated = set()
 
     def read(self, items):
         position = 0
         while position < len(items):
             name, args = items[position]
+            if name in ("function", "macro"):
+                while items[position][0] != f"end{name}":
+                    position += 1
+                position += 1
+                continue
             if name == "foreach":
                 depth, end = 1, position
                 while depth:
@@ -129,20 +151,29 @@ class Registry:
         elif name == "add_test" and args[:1] == ["NAME"]:
             assert args[2] == "COMMAND", args
             self.tests[args[1]] = args[3:]
+        elif name == GATED:
+            assert args[1] == "COMMAND", args
+            self.tests[args[0]] = args[2:]
+            self.gated.add(args[0])
+            self._set(args[0], "SKIP_RETURN_CODE", [SKIP_CODE])
+            self._set(args[0], "LABELS", [LABEL], append=True)
         elif name == "set_tests_properties":
             split = args.index("PROPERTIES")
             pairs = args[split + 1 :]
             for test in args[:split]:
                 for key, value in zip(pairs[::2], pairs[1::2], strict=True):
-                    self._add(test, key, value.split(";"))
+                    self._set(test, key, value.split(";"))
         elif name == "set_property" and args[:1] == ["TEST"]:
             split = args.index("PROPERTY")
+            append = any(arg in ("APPEND", "APPEND_STRING") for arg in args[1:split])
             tests = [arg for arg in args[1:split] if arg not in ("APPEND", "APPEND_STRING")]
             for test in tests:
-                self._add(test, args[split + 1], args[split + 2 :])
+                self._set(test, args[split + 1], args[split + 2 :], append=append)
 
-    def _add(self, test, key, values):
-        self.properties.setdefault(test, {}).setdefault(key, []).extend(values)
+    def _set(self, test, key, values, append=False):
+        """Como CMake, `set_tests_properties` sustituye el valor y `APPEND` lo amplía."""
+        properties = self.properties.setdefault(test, {})
+        properties[key] = [*properties.get(key, []), *values] if append else list(values)
 
     def labels(self, test):
         return set(self.properties.get(test, {}).get("LABELS", []))
@@ -247,6 +278,20 @@ def test_every_test_that_reaches_an_optimizer_step_carries_the_label():
     } == expected
 
 
+def test_every_labelled_test_passes_through_the_launcher():
+    found = registry()
+    labelled = {test for test in found.tests if LABEL in found.labels(test)}
+    assert labelled == found.gated, "Pruebas con la etiqueta registradas sin el lanzador"
+    for test in found.gated:
+        assert found.properties[test]["SKIP_RETURN_CODE"] == [SKIP_CODE], test
+    # La comprobación de CMake se llama después de registrar e incluir todas las pruebas.
+    found_commands = [name for name, _ in commands((NATIVE / "CMakeLists.txt").read_text())]
+    assert found_commands.count(CHECK) == 1
+    registering = {"add_test", GATED, "include", "set_tests_properties", "set_property"}
+    last = max(index for index, name in enumerate(found_commands) if name in registering)
+    assert found_commands.index(CHECK) > last
+
+
 def test_every_test_preset_excludes_the_label_and_nothing_else():
     found = registry()
     other = {label for test in found.tests for label in found.labels(test)} - {LABEL}
@@ -260,7 +305,16 @@ def test_refused_runs_stop_before_the_first_step():
     found = registry()
     for test, reason in REFUSED.items():
         properties = found.properties[test]
-        if reason == "hold":
+        if reason == "latch":
+            sources = [
+                NATIVE / source
+                for target in found.executed(test)
+                for source in found.sources[target]
+            ]
+            lines = [line for source in sources for line in source.read_text().splitlines()]
+            calls = [line for line in lines if CALL.search(line) or STEP.search(line)]
+            assert calls and all("refused([" in line for line in calls), test
+        elif reason == "hold":
             environment = properties["ENVIRONMENT"]
             expected = properties["PASS_REGULAR_EXPRESSION"]
             assert "MARS_TITAN_TRAINING_HOLD=${MARS_TITAN_BLOCKED_HOLD}" in environment
@@ -295,7 +349,7 @@ def _edit(path, old, new):
 
 def test_a_missing_label_a_new_stepping_test_or_an_open_preset_is_reported(native_copy):
     lists = native_copy / "CMakeLists.txt"
-    _edit(lists, "ppo_variant_state adapter_control adapter", "adapter_control adapter")
+    _edit(lists, f"{GATED}(ppo_variant_state COMMAND", "add_test(NAME ppo_variant_state COMMAND")
     found = registry(native_copy)
     assert "ppo_variant_state" in stepping_tests(found, native_copy) - {
         test for test in found.tests if LABEL in found.labels(test)
@@ -325,3 +379,137 @@ def test_a_new_library_path_to_an_optimizer_must_be_declared(native_copy):
         "campaign_fit.cpp llama a ['update_ready']",
         "custom_optimizer.cpp usa torch::optim",
     ]
+
+
+# Entradas que crean un aprendiz con optimizador, fuera de la política, por el archivo que las
+# define. Con el cerrojo de solo evaluación (#546) deben detenerse antes de construir nada.
+LEARNERS = {
+    "ppo_training.cpp": r"PpoTrainer::PpoTrainer\([^{]*\{",
+    "klpo_learning.cpp": r"struct KlpoLearningController::Impl \{\s*Impl\([^{]*\{",
+}
+LATCH = "require_optimizer_steps_allowed("
+ADAM_STEP = re.compile(r"\b\w*optimizer\w*\s*(?:\.|->)\s*step\s*\(\s*\)")
+
+
+def _first_statement(text, signature):
+    """Primera línea de código después de la llave que abre `signature`, sin comentarios."""
+    found = re.search(signature, text, re.S)
+    assert found, signature
+    lines = (line.strip() for line in text[found.end() :].splitlines())
+    return next(line for line in lines if line and not line.startswith("//"))
+
+
+def latch_findings(native=NATIVE):
+    """Pasos de Adam y entradas de ajuste que no consultan antes el cerrojo."""
+    findings = []
+    policy = (native / "src" / "ppo_policy.cpp").read_text()
+    helper = re.search(r"void apply_adam_step\([^)]*\) \{\n(.*?)\n\}", policy, re.S)
+    if not helper or not helper.group(1).strip().startswith(LATCH):
+        findings.append("apply_adam_step no consulta el cerrojo antes del paso")
+    steps = [match.group(0) for match in ADAM_STEP.finditer(policy)]
+    if steps != ["optimizer.step()"] or (helper and "optimizer.step()" not in helper.group(1)):
+        findings.append(f"pasos de Adam fuera de apply_adam_step: {steps}")
+    for name in (*STEPPING["ppo_policy.cpp"], "enable_terminal_adam", "load_mode"):
+        if not _first_statement(policy, rf"\bPpoPolicy::{name}\([^)]*\)[^{{;]*\{{").startswith(
+            LATCH
+        ):
+            findings.append(f"PpoPolicy::{name} no empieza por el cerrojo")
+    for file, signature in LEARNERS.items():
+        if not _first_statement((native / "src" / file).read_text(), signature).startswith(LATCH):
+            findings.append(f"{file} crea su aprendiz sin consultar el cerrojo")
+    return findings
+
+
+def test_every_adam_step_and_learner_passes_through_the_evaluation_latch():
+    assert latch_findings() == []
+
+
+def test_a_step_or_a_learner_outside_the_latch_is_reported(native_copy):
+    policy = native_copy / "src" / "ppo_policy.cpp"
+    _edit(policy, '    require_optimizer_steps_allowed("la actualización Double DQN");\n', "")
+    _edit(
+        policy,
+        "    optimizer.step();\n}",
+        "    optimizer.step();\n}\nvoid extra(A& a) { a.optimizer->step(); }",
+    )
+    training = native_copy / "src" / "ppo_training.cpp"
+    _edit(training, '    require_optimizer_steps_allowed("el entrenador PPO");\n', "")
+    assert latch_findings(native_copy) == [
+        "pasos de Adam fuera de apply_adam_step: ['optimizer.step()', 'optimizer->step()']",
+        "PpoPolicy::update_double_dqn no empieza por el cerrojo",
+        "ppo_training.cpp crea su aprendiz sin consultar el cerrojo",
+    ]
+
+
+# Proyecto mínimo que usa OptimizerStepTests.cmake sin compilar nada. El lanzador es un ejecutable
+# importado y ninguna prueba se ejecuta: solo se configura y se lee el CTestTestfile generado.
+MINIMAL = """cmake_minimum_required(VERSION 3.24)
+project(gate_check NONE)
+enable_testing()
+add_executable(mars-titan-learning-gate IMPORTED)
+set_target_properties(mars-titan-learning-gate PROPERTIES IMPORTED_LOCATION "{gate}")
+include("{module}")
+{body}
+mars_titan_require_gated_optimizer_step_tests()
+"""
+
+
+def _configure(tmp_path, body):
+    if not shutil.which("cmake"):
+        pytest.skip("La comprobación requiere CMake")
+    source = tmp_path / "source"
+    source.mkdir(exist_ok=True)
+    gate = tmp_path / "mars-titan-learning-gate"
+    (source / "CMakeLists.txt").write_text(
+        MINIMAL.format(gate=gate, module=NATIVE / "cmake" / "OptimizerStepTests.cmake", body=body)
+    )
+    build = tmp_path / "build"
+    shutil.rmtree(build, ignore_errors=True)
+    result = subprocess.run(
+        ["cmake", "-S", str(source), "-B", str(build)], capture_output=True, text=True, timeout=60
+    )
+    testfile = build / "CTestTestfile.cmake"
+    return result, gate, testfile.read_text() if testfile.is_file() else ""
+
+
+def test_a_gated_test_runs_the_launcher_with_the_skip_code_and_the_label(tmp_path):
+    result, gate, testfile = _configure(
+        tmp_path,
+        f"{GATED}(step COMMAND /bin/false --flag)\n"
+        "set_tests_properties(step PROPERTIES TIMEOUT 5)\n"
+        "set_property(TEST step APPEND PROPERTY LABELS unit)\n",
+    )
+    assert result.returncode == 0, result.stderr
+    assert f'add_test([=[step]=] "{gate}" "/bin/false" "--flag")' in testfile
+    properties = next(line for line in testfile.splitlines() if "set_tests_properties" in line)
+    assert f'SKIP_RETURN_CODE "{SKIP_CODE}"' in properties
+    assert f'LABELS "{LABEL};unit"' in properties
+
+
+@pytest.mark.parametrize(
+    ("body", "reason"),
+    [
+        (
+            "add_test(NAME step COMMAND /bin/false)\n"
+            f"set_tests_properties(step PROPERTIES LABELS {LABEL})\n",
+            "sin pasar por",
+        ),
+        (
+            f"{GATED}(step COMMAND /bin/false)\n"
+            "set_tests_properties(step PROPERTIES LABELS unit)\n",
+            "perdió la",
+        ),
+        (
+            f"{GATED}(step COMMAND /bin/false)\n"
+            "set_tests_properties(step PROPERTIES SKIP_RETURN_CODE 0)\n",
+            "perdió la",
+        ),
+        (f"{GATED}(step /bin/false)\n", "Uso:"),
+    ],
+    ids=["unlaunched", "label-replaced", "skip-replaced", "no-command"],
+)
+def test_a_labelled_test_outside_the_launcher_stops_the_configuration(tmp_path, body, reason):
+    result, _, _ = _configure(tmp_path, body)
+    assert result.returncode != 0
+    # CMake parte los mensajes largos en varias líneas.
+    assert reason in " ".join(result.stderr.split())

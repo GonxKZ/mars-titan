@@ -19,6 +19,7 @@ from mars_titan.models.quantile_head import QUANTILE_COLUMNS
 from mars_titan.training import candidate_walk_forward as candidate
 from mars_titan.training import mars_titan_walk_forward as mw
 from mars_titan.training.learning_hold import HOLD_ENV
+from tests.learning_hold_lowering import allowed_hold
 from tests.training.historical_temporal_fixture import historical_temporal_fixture
 from tests.training.test_financial_run import RecordingOptimizer
 from tests.training.test_modality_ablation_carry import (
@@ -94,8 +95,7 @@ def episodic(tmp_path_factory):
     from tests.training.test_candidate_walk_forward import MODEL, SMALL
 
     root = tmp_path_factory.mktemp("candidate-ablation")
-    hold = root / "training-hold.json"
-    hold.write_text('{"training_allowed": true}', encoding="utf-8")
+    hold = allowed_hold(root / "training-hold.json")
     runs = {}
     with pytest.MonkeyPatch.context() as patch:
         patch.setenv(HOLD_ENV, str(hold))
