@@ -47,6 +47,7 @@ from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.evaluation import long_short_comparison
 from mars_titan.evaluation import walk_forward_comparison as walk
+from mars_titan.hardware import hardware_profiles
 from mars_titan.training import campaign_chain
 
 from .campaign_stage import FROZEN as FROZEN_JOB
@@ -385,8 +386,16 @@ def _chain_entry(stage_output, stage, scope, window, base_arm, seed, entries):
     return entries[chosen][1]
 
 
-def write_sources(declaration_path, scope, base_arm, *, base_sources, stage_output):
-    """Publicar el manifiesto de fuentes de un padre y un ámbito y validarlo."""
+def write_sources(
+    declaration_path, scope, base_arm, *, base_sources, stage_output, unrecorded_platform=None
+):
+    """Publicar el manifiesto de fuentes de un padre y un ámbito y validarlo.
+
+    La comparación junta predicciones de la base y de la etapa, así que los recibos de la
+    etapa deben venir de una sola plataforma y coincidir con la de las fuentes de la base
+    (`hardware_profiles.inherited_platform`). Los recibos o las fuentes anteriores a ese
+    registro solo se admiten si `unrecorded_platform` nombra el perfil al que se atribuyen.
+    """
     loaded = load_declaration(declaration_path)
     stage = loaded["stage"]
     _require(scope in stage["scopes"], "El ámbito no pertenece a la etapa")
@@ -416,10 +425,11 @@ def write_sources(declaration_path, scope, base_arm, *, base_sources, stage_outp
             entries[window] = dict(input_policy=policy, view_sha256=view_sha256)
             for part, record in files.items():
                 entries[window][part] = dict(path=relative(record["path"]), sha256=record["sha256"])
-    entries = {}
+    entries, platforms = {}, {}
     for job in loaded["groups"][base_arm]["jobs"][scope]:
         view_sha256 = base["views"][job["window"]]
         receipt = _stage_receipt(stage_output, job, identity, view_sha256)
+        platforms[job["id"]] = receipt.get("platform")
         entry = dict(input_policy=policy, view_sha256=view_sha256)
         for part in COMPARED:
             record = receipt["predictions"][part]
@@ -436,8 +446,13 @@ def write_sources(declaration_path, scope, base_arm, *, base_sources, stage_outp
                 arms[chain].setdefault(str(seed), {})[window] = _chain_entry(
                     stage_output, stage, scope, window, base_arm, seed, entries
                 )
+    platform = hardware_profiles.inherited_platform(
+        platforms,
+        base["platform"],
+        unrecorded=hardware_profiles.attributed_profile(unrecorded_platform),
+    )
     manifest = dict(
-        schema_version=1,
+        schema_version=2,
         kind=walk.SOURCES_KIND,
         scope=scope,
         input_policy=policy,
@@ -446,6 +461,7 @@ def write_sources(declaration_path, scope, base_arm, *, base_sources, stage_outp
             for window, digest in views.items()
         },
         arms=arms,
+        platform=platform,
     )
     safe_destination(destination)
     candidate = folder / f".{base_arm}.candidate.json"
@@ -538,6 +554,10 @@ def main(argv=None):
         command.add_argument("--base-arm", required=True)
     sources.add_argument("--base-sources", type=Path, required=True)
     sources.add_argument("--stage-output", type=Path, required=True)
+    sources.add_argument(
+        "--unrecorded-platform",
+        help="Perfil de hardware al que se atribuyen los recibos o fuentes sin plataforma",
+    )
     run.add_argument("--sources", type=Path, required=True)
     run.add_argument("--output", type=Path, required=True)
     run.add_argument("--edition", type=Path)
@@ -551,6 +571,7 @@ def main(argv=None):
             args.base_arm,
             base_sources=args.base_sources,
             stage_output=args.stage_output,
+            unrecorded_platform=args.unrecorded_platform,
         )
         result = dict(sources=str(destination), sha256=sha256(destination))
     else:

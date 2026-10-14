@@ -62,7 +62,11 @@ Este formato no equivale al candidato de claves 128 y rasgos 256.
 `RetentionBank.propose` devuelve una copia y deja intacta la instantánea anterior.
 La escritura por lote valida todos los registros maduros y solo permite elegir
 IDs del conjunto E formado por el banco anterior y las nuevas admisiones. Los
-registros seleccionados conservan sus campos. Las políticas disponibles son:
+registros seleccionados conservan sus campos. La copia parte de los bytes de la
+memoria nativa y del generador, sin volver a validar el recibo que sustituye, y la
+clave FP32 de cada registro retenido se convierte desde el enlace una sola vez
+([informe](../../reports/engineering/episodic-consolidation-20261013/README.md)).
+Las políticas disponibles son:
 
 - `reservoir` conserva el reservorio nativo original, que puede descartar la nueva
   admisión después de llenar la capacidad.
@@ -81,6 +85,13 @@ centros fijos son clientes reales y aportan cero. El fondo usa NumPy y distancia
 euclídeas FP64 sobre las claves FP32 normalizadas efectivamente almacenadas.
 Es una pseudométrica sobre episodios que comparten representación. El valor
 `1 - cosine` de una consulta no se usa como métrica de retención.
+
+Desde el 10 de octubre de 2026 el banco pide al selector la
+[cota del fondo y la reutilización de distancias](../experiments/mars_titan_cm_v1/anchored_retention.md#opciones-que-conservan-los-bits).
+Las dos devuelven los mismos representantes, el mismo objetivo bit a bit y los
+mismos contadores de pares. Solo cambia `estimated_peak_bytes` del recibo, que
+suma su memoria. Si no caben en el presupuesto de la propuesta, el selector usa
+la ruta de referencia.
 
 Los valores predeterminados son frontera 8, hasta 8 candidatos nuevos, 8
 intercambios y 50 millones de pares de distancia. La búsqueda está restringida

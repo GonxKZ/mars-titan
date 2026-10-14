@@ -21,7 +21,13 @@ from mars_titan.evaluation import walk_forward_comparison as walk
 from mars_titan.models.quantile_head import QUANTILE_COLUMNS
 from tests.evaluation.test_comparison_sources import save
 from tests.evaluation.test_modality_strata import by_asset, provider
-from tests.evaluation.test_walk_forward_comparison import CONFIG, Study, rows
+from tests.evaluation.test_walk_forward_comparison import (
+    CONFIG,
+    PLATFORM,
+    Study,
+    rewrite_sources,
+    rows,
+)
 
 DECLARED = json.loads(CONFIG.read_text())
 VARIANTS = list(ablation.VARIANTS)
@@ -447,6 +453,32 @@ def test_masked_predictions_must_evaluate_the_same_rows_and_segment(
     sources = write_ablation(study, change=edited)
     with pytest.raises(ValueError, match=message):
         evaluate(study, monkeypatch, sources)
+
+
+def test_masked_sources_come_from_the_platform_of_the_primary_sources(tmp_path, monkeypatch):
+    study = declare(Study(tmp_path / "study"))
+    rewrite_sources(study, lambda s: s.update(schema_version=2, platform=PLATFORM))
+    same = write_ablation(study, edit=lambda m: m.update(schema_version=2, platform=PLATFORM))
+    report, _ = evaluate(study, monkeypatch, same)
+    assert report["modality_ablation"]["status"] == "computed"
+    # Unas fuentes principales anteriores al registro no impiden comparar.
+    legacy = declare(Study(tmp_path / "legacy"))
+    unrecorded = dict(PLATFORM, platform_sha256=None, recorded=0, unrecorded=3)
+    unrecorded["unrecorded_profile"] = "rtx4070-laptop"
+    evaluate(
+        legacy,
+        monkeypatch,
+        write_ablation(legacy, edit=lambda m: m.update(schema_version=2, platform=unrecorded)),
+    )
+    other = dict(PLATFORM, platform_sha256="b" * 64)
+    for edit, message in (
+        (lambda m: m.update(schema_version=2, platform=other), "otra plataforma"),
+        (lambda m: m.update(schema_version=2), "no cumplen su contrato"),
+        (lambda m: m.update(platform=PLATFORM), "no cumplen su contrato"),
+        (lambda m: m.update(schema_version=2, platform=dict(PLATFORM, recorded=0)), "no es válida"),
+    ):
+        with pytest.raises(ValueError, match=message):
+            evaluate(study, monkeypatch, write_ablation(study, edit=edit))
 
 
 def test_score_pair_rejects_another_cohort_and_counts_empty_cells():

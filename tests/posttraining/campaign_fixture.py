@@ -28,6 +28,7 @@ from mars_titan.training.checkpoints import save_training_state
 from mars_titan.training.corpus_inputs import CorpusDataset
 from mars_titan.training.learning_hold import HOLD_ENV
 from mars_titan.training.reference_run import HELDOUT_FULL_TRAIN_SESSIONS
+from tests.learning_hold_lowering import allowed_hold
 from tests.training.test_carried_predictions import PresenceCount
 from tests.training.test_masked_campaign import Recorder
 from tests.training.test_walk_forward_v2_views import fixture
@@ -276,8 +277,7 @@ def base_campaign(root, variant, *, tabular=False):
     """Preparar vistas y ejecutar la campaña base reducida con los dobles."""
     campaign, stage = write_configs(root / "config", variant, tabular=tabular)
     data = fixture(root / "data", ("US",))
-    hold = root / "hold.json"
-    hold.write_text(json.dumps({"training_allowed": True}), encoding="utf-8")
+    hold = allowed_hold(root / "hold.json")
     with pytest.MonkeyPatch.context() as patch:
         # La campaña base solo ejecuta dobles: ningún modelo se ajusta.
         patch.setenv(HOLD_ENV, str(hold))

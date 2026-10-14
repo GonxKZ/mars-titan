@@ -1,0 +1,143 @@
+{
+  "tool": "mars-titan-projection-benchmark (native/benchmarks/episodic_projection.cpp)",
+  "shapes": {
+    "outputs": 127,
+    "widths": {
+      "prices": 320,
+      "news": 384,
+      "charts": 512,
+      "fundamentals": 78,
+      "macro": 420,
+      "presence": 5
+    }
+  },
+  "unit": "microsegundos por llamada de los seis bloques",
+  "repetitions": 41,
+  "order": "versiones alternadas en cada repetición, con un calentamiento",
+  "cpu": "AMD Ryzen 9 8945HS (AVX2 y AVX-512F)",
+  "compiler": "Clang 21.1.8, Release -O3, -ffp-contract=off, sin -march",
+  "load_average_before_after": [
+    [
+      32.07,
+      32.65,
+      31.68
+    ],
+    [
+      32.25,
+      32.62,
+      31.76
+    ]
+  ],
+  "measurements": [
+    {
+      "rows": 1,
+      "isa": "portable",
+      "repetitions": 41,
+      "median_us": 80.0948,
+      "p10_us": 73.5736,
+      "p90_us": 92.5991
+    },
+    {
+      "rows": 1,
+      "isa": "avx2",
+      "repetitions": 41,
+      "median_us": 52.7571,
+      "p10_us": 47.6071,
+      "p90_us": 64.7238
+    },
+    {
+      "rows": 1,
+      "isa": "avx512f",
+      "repetitions": 41,
+      "median_us": 49.9135,
+      "p10_us": 44.4072,
+      "p90_us": 60.211
+    },
+    {
+      "rows": 16,
+      "isa": "portable",
+      "repetitions": 41,
+      "median_us": 934.947,
+      "p10_us": 819.792,
+      "p90_us": 1140.08
+    },
+    {
+      "rows": 16,
+      "isa": "avx2",
+      "repetitions": 41,
+      "median_us": 428.408,
+      "p10_us": 375.836,
+      "p90_us": 580.321
+    },
+    {
+      "rows": 16,
+      "isa": "avx512f",
+      "repetitions": 41,
+      "median_us": 300.693,
+      "p10_us": 265.539,
+      "p90_us": 333.843
+    },
+    {
+      "rows": 128,
+      "isa": "portable",
+      "repetitions": 41,
+      "median_us": 6776.08,
+      "p10_us": 6226.79,
+      "p90_us": 8099.83
+    },
+    {
+      "rows": 128,
+      "isa": "avx2",
+      "repetitions": 41,
+      "median_us": 3241.37,
+      "p10_us": 3044.98,
+      "p90_us": 3736.27
+    },
+    {
+      "rows": 128,
+      "isa": "avx512f",
+      "repetitions": 41,
+      "median_us": 2263.3,
+      "p10_us": 2116.77,
+      "p90_us": 2514.19
+    },
+    {
+      "rows": 512,
+      "isa": "portable",
+      "repetitions": 41,
+      "median_us": 27519.5,
+      "p10_us": 24151.7,
+      "p90_us": 29679.2
+    },
+    {
+      "rows": 512,
+      "isa": "avx2",
+      "repetitions": 41,
+      "median_us": 13258.3,
+      "p10_us": 11540.1,
+      "p90_us": 14318.6
+    },
+    {
+      "rows": 512,
+      "isa": "avx512f",
+      "repetitions": 41,
+      "median_us": 9082.97,
+      "p10_us": 8296.23,
+      "p90_us": 10558
+    }
+  ],
+  "speedup_over_portable": {
+    "1/portable": 1.0,
+    "1/avx2": 1.518,
+    "1/avx512f": 1.605,
+    "16/portable": 1.0,
+    "16/avx2": 2.182,
+    "16/avx512f": 3.109,
+    "128/portable": 1.0,
+    "128/avx2": 2.09,
+    "128/avx512f": 2.994,
+    "512/portable": 1.0,
+    "512/avx2": 2.076,
+    "512/avx512f": 3.03
+  }
+}

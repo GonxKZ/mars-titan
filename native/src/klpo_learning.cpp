@@ -1,4 +1,5 @@
 #include "mars_titan/klpo_learning.hpp"
+#include "mars_titan/learning_hold.hpp"
 #include "mars_titan/simulation_files.hpp"
 
 #include <ATen/ATen.h>
@@ -147,6 +148,8 @@ KlpoLearningCounters klpo_before_collection(KlpoLearningCounters value, std::siz
 struct KlpoLearningController::Impl {
     Impl(std::vector<simulation::BatchInput> sources, KlpoLearningConfig settings)
         : inputs(std::move(sources)), config(std::move(settings)) {
+        // El controlador existe para dar pasos con Adam: el modo de solo evaluación lo rechaza.
+        require_optimizer_steps_allowed("el controlador KLPO");
         config.validate();
         collector = std::make_unique<KlpoTerminalCollector>(inputs, config.collection);
         actor = std::make_unique<PpoPolicy>(collector->policy().observation_width(),
@@ -437,8 +440,9 @@ void KlpoLearningController::start_next_wave(
 }
 
 KlpoGradientSummary
-KlpoLearningController::update_ready(PpoCheckpointStore& store,
-                                     const std::function<void(KlpoLearningBoundary)>& failure) {
+KlpoLearningController::update_ready(
+    PpoCheckpointStore& store, const std::function<void(KlpoLearningBoundary)>& failure,
+    const std::function<void(const KlpoGradientSummary&)>& computed) {
     require(phase() == KlpoLearningPhase::ready && decisions(impl_->collector->records()) > 0,
             "La actualización necesita una oleada completa con decisiones");
     const auto next = klpo_after_consumption(impl_->counters,
@@ -446,6 +450,9 @@ KlpoLearningController::update_ready(PpoCheckpointStore& store,
     impl_->check_store(store);
     static_cast<void>(save(store));
     auto summary = backward_ready();
+    if (computed) {
+        computed(summary);
+    }
     impl_->busy = true;
     try {
         if (failure) {

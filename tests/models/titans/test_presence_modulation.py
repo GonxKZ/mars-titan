@@ -255,4 +255,9 @@ def test_comparison_is_declared_with_its_control_rule_and_budget_but_not_execute
     budget = declaration["budget"]
     assert budget["consumed"] == dict(gpu_hours=0, executions=0, optimizer_updates=0)
     assert declaration["pilot"]["gpu_hours_max"] == budget["declared"]["gpu_hours_max"] == 6
+    # FiLM debe superar la banda frente a la rama ancha y no empeorar al control más allá
+    # del margen de no inferioridad, ambos con el control de PT7.
+    rule = declaration["decision_rule"]
+    assert rule["keep_if"][0].endswith("< -minimum_interpretable_difference")
+    assert rule["seed_variance_control"]["rules"] == ["pt6", "pt6_control"]
     assert declaration["metric"]["rows"] == "rows_with_some_absent_modality"

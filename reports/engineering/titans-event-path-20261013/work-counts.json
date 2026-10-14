@@ -1,0 +1,105 @@
+{
+ "issue": 549,
+ "date": "2026-10-13",
+ "commits": {
+  "develop": "7a82b055",
+  "branch": "6a013588"
+ },
+ "environment": {
+  "torch": "2.14.0+cu130",
+  "cuda": "13.0",
+  "numpy": "2.5.3",
+  "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+  "driver": "595.91.07",
+  "threads": {
+   "OMP_NUM_THREADS": 2,
+   "MKL_NUM_THREADS": 2
+  },
+  "cublas_workspace": ":4096:8",
+  "tf32": false,
+  "matmul_precision": "highest",
+  "mha_fastpath": false
+ },
+ "device": "cuda:0",
+ "dtype": "float32",
+ "optimizer_steps": 0,
+ "script": "d1c77dcfbbbd41a75e7cfc4f8d7070281575daa8739180b3acd449d506f46dc9",
+ "script_note": "La copia ejecutada solo difería en los saltos de línea que aplica ruff format, con el mismo árbol sintáctico",
+ "note": "Cuentas del mismo recorrido determinista en la fixture técnica, sin cronometrar. host_syncs sale de torch.cuda.set_sync_debug_mode('warn'), que PyTorch declara en prototipo, y coincide con cudaStreamSynchronize del perfilador.",
+ "develop": {
+  "titans/mac_online": {
+   "sha256_calls": 5153,
+   "sha256_bytes": 518646058,
+   "json_dumps_calls": 4820,
+   "json_dumps_chars": 6856302,
+   "observations": 302,
+   "host_syncs": 1676,
+   "cuda_launch_kernel": 92718,
+   "cuda_memcpy_async": 7775,
+   "cuda_stream_synchronize": 1675
+  },
+  "readout/m1": {
+   "sha256_calls": 1517,
+   "sha256_bytes": 21797033,
+   "json_dumps_calls": 1834,
+   "json_dumps_chars": 1969718,
+   "observations": 88,
+   "host_syncs": 2176,
+   "cuda_launch_kernel": 40836,
+   "cuda_memcpy_async": 4117,
+   "cuda_stream_synchronize": 2176
+  }
+ },
+ "branch": {
+  "titans/mac_online": {
+   "sha256_calls": 1518,
+   "sha256_bytes": 514298622,
+   "json_dumps_calls": 1185,
+   "json_dumps_chars": 3069694,
+   "observations": 302,
+   "host_syncs": 1250,
+   "cuda_launch_kernel": 55388,
+   "cuda_memcpy_async": 6716,
+   "cuda_stream_synchronize": 1249
+  },
+  "readout/m1": {
+   "sha256_calls": 560,
+   "sha256_bytes": 20512883,
+   "json_dumps_calls": 877,
+   "json_dumps_chars": 952670,
+   "observations": 88,
+   "host_syncs": 345,
+   "cuda_launch_kernel": 24888,
+   "cuda_memcpy_async": 1976,
+   "cuda_stream_synchronize": 345
+  }
+ },
+ "branch_over_develop": {
+  "titans/mac_online": {
+   "sha256_calls": 0.2946,
+   "sha256_bytes": 0.9916,
+   "json_dumps_calls": 0.2459,
+   "json_dumps_chars": 0.4477,
+   "host_syncs": 0.7458,
+   "cuda_launch_kernel": 0.5974,
+   "cuda_memcpy_async": 0.8638,
+   "cuda_stream_synchronize": 0.7457
+  },
+  "readout/m1": {
+   "sha256_calls": 0.3691,
+   "sha256_bytes": 0.9411,
+   "json_dumps_calls": 0.4782,
+   "json_dumps_chars": 0.4837,
+   "host_syncs": 0.1585,
+   "cuda_launch_kernel": 0.6095,
+   "cuda_memcpy_async": 0.48,
+   "cuda_stream_synchronize": 0.1585
+  }
+ },
+ "remaining_sha256": {
+  "source": "triton cache.py:triton_key < get_cache_key",
+  "bytes": 506207683,
+  "calls": 29,
+  "note": "Igual en develop y en la rama, medido con un recuento por función llamante en la rama"
+ }
+}
