@@ -27,6 +27,12 @@ La ventana guarda `run.json`, `selected.json` con el padre y la corrección, y u
 tramo con las columnas y cuantiles de `training.titans_walk_forward`. La corrección desplaza
 todos los cuantiles emitidos en la misma cantidad que el punto, así que no cambia su anchura.
 
+Con la regla kalman el Parquet lleva dos columnas más para la regla de decisión de PT3: la
+varianza predictiva kᵀPk + σ² con el estado confirmado antes del evento, y la predicción que
+daría otra memoria igual que escribe cada etiqueta una sesión más tarde (D3), en la primera
+decisión de su mercado posterior a su madurez y después de emitirla. Las dos memorias se
+recorren en la misma pasada, así que D3 no repite la inferencia del padre.
+
 No hay tramo de ajuste, de modo que el índice de entrenamiento no se construye ni se lee.
 Los errores que escriben A proceden siempre de predicciones emitidas en el propio tramo,
 nunca del ajuste del padre. Un tramo interrumpido se repite desde su inicio, porque A y la
@@ -42,6 +48,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import numpy as np
+import pyarrow as pa
 import torch
 
 from mars_titan.data.batches import atomic_parquet_batches
@@ -121,6 +128,14 @@ RULES = ("delta", "proximal", "kalman")
 # σ² y ϱ con los que se comprueba una combinación kalman antes de abrir fuentes y se mide su
 # caudal. La media de la corrección no depende de σ² y el coste no depende de ninguno.
 UNIT_NOISE = dict(observation_noise=1.0, cohort_correlation=0.0)
+# Columnas que añade la regla kalman a sus predicciones (PT3 y D3, #455).
+KALMAN_COLUMNS = ("predictive_variance", "prediction_label_delay1")
+KALMAN_DIAGNOSTICS = dict(
+    predictive_variance="k_P_k_plus_sigma2_with_the_state_confirmed_before_the_event",
+    label_delay="second_memory_writes_each_label_at_the_next_decision_of_its_market_after_"
+    "maturity_after_emitting",
+    label_delay_sessions=1,
+)
 MAX_ESTIMATION_MONTHS = 12
 _RECIPE_FIELDS = {"schema_version", "recipe_name", "status", "recipe", "walk_forward", "pending"}
 _CODE = (
@@ -306,6 +321,19 @@ class CorrectionInference(ChronologicalInference):
         self._core = {}
         self._staged = []
         self._routing = _RoutingLog()
+        self.kalman = correction.memory.rule == "kalman"
+        self._reset_delay()
+
+    def _reset_delay(self):
+        """Memoria de D3 y su cola: solo existen con la regla kalman.
+
+        `_incoming` recibe las etiquetas que maduran en el evento, `_held` las guarda por
+        mercado hasta la siguiente decisión de ese mercado y `_due` las que se escriben al
+        final del evento actual. `extra` guarda por decisión la varianza y la predicción con
+        retraso, que `KalmanPredictionRows` añade a su fila.
+        """
+        self.delayed = AssociativeMemory(self.correction.memory) if self.kalman else None
+        self._incoming, self._held, self._due, self.extra = [], {}, [], {}
 
     def _observe(self, run, source, event, *, differentiable):
         _require(not differentiable, "B6 no tiene parámetros que ajustar")
@@ -330,14 +358,30 @@ class CorrectionInference(ChronologicalInference):
         self._routing.event(decisions[0][1], states, routes, self.correction.routing)
         # Todas las lecturas del evento usan la A confirmada antes de él, como FinancialSession.
         # Lo que se escriba en este evento solo puede afectar a los siguientes.
-        corrections = self.memory.read(self.correction.keys(inputs, routes))[:, 0].tolist()
+        keys = self.correction.keys(inputs, routes)
+        corrections = self.memory.read(keys)[:, 0].tolist()
+        if self.delayed is not None:
+            extra = zip(
+                self.memory.variance(keys).tolist(),
+                self.delayed.read(keys)[:, 0].tolist(),
+                strict=True,
+            )
+            # Las etiquetas retenidas de los mercados que deciden ahora se escriben al final de
+            # este evento, una sesión después de la que las habría recibido sin retraso.
+            for market in sorted({flow.split("/", 1)[0] for flow, _ in decisions}):
+                self._due += self._held.pop(market, [])
+        else:
+            extra = [None] * len(decisions)
         rows = routes.tolist() if routes is not None else [None] * len(decisions)
-        for decision, key, route, correction in zip(
-            decisions, inputs, rows, corrections, strict=True
+        for decision, key, route, correction, more in zip(
+            decisions, inputs, rows, corrections, extra, strict=True
         ):
             if decision in self._core:
                 raise ValueError("La decisión ya tiene una predicción pendiente")
             core = run.pending[decision]
+            if more is not None:
+                variance, delayed = more
+                self.extra[decision] = (variance, core + delayed)
             self._core[decision] = (core, key, route)
             run.pending[decision] = core + correction
             if decision in run.levels:
@@ -353,6 +397,8 @@ class CorrectionInference(ChronologicalInference):
         for flow, decision_at, value in event.labels:
             core, key, route = self._core.pop((flow, decision_at))
             self._staged.append((decision_at, flow, value - core, key, route))
+            if self.delayed is not None:
+                self._incoming.append(self._staged[-1])
 
     def _write(self, at):
         """Escribir en A las etiquetas del evento cuando sus predicciones ya se han emitido.
@@ -360,22 +406,19 @@ class CorrectionInference(ChronologicalInference):
         Las filas se ordenan por decisión y flujo antes de escribir. La regla delta escribe
         fila a fila, así que otro orden cambiaría A aunque las etiquetas fueran las mismas.
         """
+        if self.delayed is not None:
+            if self._due:
+                due, self._due = self._due, []
+                self.delayed, _ = self._written(self.delayed, due, at)
+            for item in self._incoming:
+                self._held.setdefault(item[1].split("/", 1)[0], []).append(item)
+            self._incoming = []
         if not self._staged:
             return
-        staged, self._staged = sorted(self._staged, key=lambda item: item[:2]), []
-        first = self.memory.writes + 1
-        routes = None
+        staged, self._staged = self._staged, []
         if self.correction.routing is not None:
-            routes = np.array([route for *_, route in staged], dtype=np.int64)
-            self._routing.writes(routes)
-        feedback = self.correction.feedback(
-            ids=[first + offset for offset in range(len(staged))],
-            decision_at=[decision_at for decision_at, *_ in staged],
-            available_at=[at] * len(staged),
-            keys=self.correction.keys(np.stack([key for _, _, _, key, _ in staged]), routes),
-            values=[value for _, _, value, _, _ in staged],
-        )
-        self.memory = self.memory.write(feedback, cutoff=at)
+            self._routing.writes(np.array([route for *_, route in staged], dtype=np.int64))
+        self.memory, feedback = self._written(self.memory, staged, at)
         recorder = self.trace_recorder
         if recorder is not None:
             # Trazas de #448: B6 no tiene pasos de optimizador y su aprendizaje son las
@@ -391,9 +434,30 @@ class CorrectionInference(ChronologicalInference):
                 if recorder.pending >= MAX_PENDING:
                     recorder.flush()
 
+    def _written(self, memory, staged, at):
+        """Escribir en `memory` las filas `staged` en el orden canónico de decisión y flujo.
+
+        Devuelve la memoria escrita y el resultado que ha recibido.
+        """
+        staged = sorted(staged, key=lambda item: item[:2])
+        first = memory.writes + 1
+        routes = None
+        if self.correction.routing is not None:
+            routes = np.array([route for *_, route in staged], dtype=np.int64)
+        feedback = self.correction.feedback(
+            ids=[first + offset for offset in range(len(staged))],
+            decision_at=[decision_at for decision_at, *_ in staged],
+            available_at=[at] * len(staged),
+            keys=self.correction.keys(np.stack([key for _, _, _, key, _ in staged]), routes),
+            values=[value for _, _, value, _, _ in staged],
+        )
+        return memory.write(feedback, cutoff=at), feedback
+
     def _close(self, run):
         super()._close(run)
         self._core.clear()
+        # Las decisiones cuya etiqueta no madura en el tramo no llegan a ser filas.
+        self.extra.clear()
 
     def evaluate(self, source, *, stop=None, rows=None):
         """Recorrer un tramo medido empezando con A en cero y la memoria rápida inicial.
@@ -420,6 +484,7 @@ class CorrectionInference(ChronologicalInference):
         self.memory = AssociativeMemory(self.correction.memory)
         self._core, self._staged = {}, []
         self._routing = _RoutingLog()
+        self._reset_delay()
         self._trace_events, self._trace_phase = 0, f"b6_{source.phase.partition}"
         self.predictor.eval()
         with torch.no_grad():
@@ -443,12 +508,48 @@ class CorrectionInference(ChronologicalInference):
         # Sin enrutamiento las métricas conservan su forma anterior.
         if self.correction.routing is not None:
             metrics["routing"] = self._routing.summary(self.correction.routing)
+        if self.delayed is not None:
+            # Las etiquetas que siguen retenidas al cerrar el tramo no llegan a escribirse.
+            metrics["label_delay_writes"] = self.delayed.writes
         return metrics
 
     def predict(self, source, rows, *, stop=None):
         if not hasattr(rows, "append"):
             raise ValueError("La inferencia necesita un destino de filas")
         return self.evaluate(source, stop=stop, rows=rows)
+
+
+class KalmanPredictionRows(PredictionRows):
+    """Filas de B6 kalman con la varianza predictiva y la predicción con una sesión más de retraso.
+
+    Cada fila toma de la inferencia los dos valores que guardó al emitir su decisión.
+    """
+
+    def __init__(self, inference):
+        super().__init__(inference.quantiles)
+        self.inference, self.extra = inference, []
+
+    def append(self, record):
+        flow, at = record[:2]
+        self.extra.append(self.inference.extra.pop((flow, at)))
+        super().append(record)
+
+    def _flush(self):
+        if not self.buffer:
+            return
+        extra, self.extra = self.extra, []
+        super()._flush()
+        for name, values in zip(KALMAN_COLUMNS, zip(*extra, strict=True), strict=True):
+            self.tables[-1] = self.tables[-1].append_column(
+                name, pa.array(values, type=pa.float64())
+            )
+
+
+def prediction_rows(inference):
+    """Destino de las filas de un tramo, con las columnas de D3 y PT3 si la regla es kalman."""
+    if inference.kalman:
+        return KalmanPredictionRows(inference)
+    return PredictionRows(inference.quantiles)
 
 
 class _RoutingLog:
@@ -784,6 +885,7 @@ def run_correction_window(
     if noise is not None:
         # Solo kalman la lleva, así que las demás reglas conservan su identidad.
         identity["cohort_noise"] = noise
+        identity["diagnostics"] = KALMAN_DIAGNOSTICS
     if inference.kernel_policy is not None:
         # Como en los lectores, la política de precisión de la receta del padre, que aplica
         # la inferencia al construirse, entra en la identidad. Sin precisión declarada la
@@ -840,7 +942,7 @@ def run_correction_window(
                 raise Paused
             # Otro código del proceso podría haber cambiado la precisión entre tramos.
             require_policy(chronological.precision, identity.get("kernel_policy"))
-            rows = PredictionRows(inference.quantiles)
+            rows = prediction_rows(inference)
             metrics = inference.predict(sources[name], rows, stop=stop)
             report["predictions"][name] = _prediction(output, rows, metrics, dataset, name)
             if recorder is not None:
@@ -978,7 +1080,7 @@ def carry_correction(
     inference = CorrectionInference(predictor, chronological, variant.correction, codec)
     predictions = {}
     for name in partitions:
-        rows = PredictionRows(inference.quantiles)
+        rows = prediction_rows(inference)
         metrics = inference.predict(sources[name], rows, stop=stop)
         predictions[name] = _prediction(output, rows, metrics, dataset, name)
     receipt = dict(

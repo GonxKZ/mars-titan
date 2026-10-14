@@ -62,6 +62,10 @@ Todas las versiones publican la abstención con su cobertura (``abstention_cover
 curva riesgo-cobertura de dirección de cada semilla, la cobertura de llamadas de cada modelo
 en cada vista y, en las precisiones de subida y de bajada, qué contrastes no son elegibles
 porque algún modelo llama en menos filas que la cobertura mínima declarada.
+
+Con ``kalman_diagnostics`` los modelos B6 kalman declarados leen además la varianza
+predictiva y la predicción con una sesión más de retraso, y el informe da la cobertura de
+±z desviaciones y la ganancia retenida con el retraso (D3) frente a su control.
 """
 
 import argparse
@@ -87,6 +91,7 @@ from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.evaluation import (
     abstention_coverage,
     declared_events,
+    kalman_diagnostics,
     liquidity_strata,
     long_short,
     modality_ablation,
@@ -177,6 +182,7 @@ ONLINE_FIELD = online_calibration.FIELD
 LIQUIDITY_FIELD = "liquidity_strata"
 RETENTION_FIELD = "retention_interference"
 EVENTS_FIELD = declared_events.FIELD
+KALMAN_FIELD = kalman_diagnostics.FIELD
 # Secciones secundarias que exige cada versión de la configuración.
 SECTIONS = {
     1: set(),
@@ -192,6 +198,7 @@ OPTIONAL_SECTIONS = {
     LIQUIDITY_FIELD,
     RETENTION_FIELD,
     EVENTS_FIELD,
+    KALMAN_FIELD,
 }
 _JOINT_FIELDS = {
     "declared_at",
@@ -582,6 +589,8 @@ def validate_config(config, digest, folder):
         retention_interference.declaration(config[RETENTION_FIELD], arms)
     if EVENTS_FIELD in config:
         declared_events.declaration(config[EVENTS_FIELD])
+    if KALMAN_FIELD in config:
+        kalman_diagnostics.declaration(config[KALMAN_FIELD], arms)
     resolved = {scope: _protocols(folder, scope, declared) for scope, declared in scopes.items()}
     if JOINT_FIELD in config:
         _joint_design(config[JOINT_FIELD], resolved, arms, families, folder)
@@ -1158,9 +1167,12 @@ def _score_window(
     row_codes, presence, bits, maturity = None, None, None, None
     liquid_codes, liquid_record, bursts = None, None, None
     extremes = None if liquidity is None else config[LIQUIDITY_FIELD]["extremes"][-1]
+    kalman = config[KALMAN_FIELD]["arms"] if KALMAN_FIELD in config else {}
     for name, arm in config["arms"].items():
         quantile = arm["output"] == QUANTILE_HEAD
         columns = COLUMNS + (QUANTILE_COLUMNS if quantile else ())
+        # Solo la evaluación de un modelo kalman declarado lee sus columnas de diagnóstico.
+        evaluated = columns + (kalman_diagnostics.COLUMNS if name in kalman else ())
         for seed in arm["seeds"]:
             label = f"{name} semilla {seed} en {window_id}"
             files = sources["files"][name, seed, window_id]
@@ -1182,7 +1194,7 @@ def _score_window(
                 )
                 # El registro queda congelado con su huella antes de abrir la evaluación.
                 entry["calibrator"] = dict(sha256=cqr.calibrator_sha256(record), record=record)
-            table = _read_predictions(files["evaluation"], columns)
+            table = _read_predictions(files["evaluation"], evaluated)
             table, excluded["evaluation"] = _restricted(table, sources, window_id, name)
             if any(excluded.values()):
                 entry["excluded_rows"] = excluded
@@ -1206,6 +1218,26 @@ def _score_window(
                     bursts = _burst_context(table, reference, robustness_sources)
             _same_rows(reference, panel, label)
             entry["raw"] = score_sessions(panel, rank_ic_min_assets=minimum)
+            if name in kalman:
+                extra = {
+                    column: _panel(
+                        table,
+                        window,
+                        "evaluation",
+                        sources,
+                        label,
+                        output=POINT,
+                        prediction=table[column].to_numpy(),
+                    )
+                    for column in kalman_diagnostics.COLUMNS
+                }
+                entry[KALMAN_FIELD] = kalman_diagnostics.score_window(
+                    panel,
+                    extra[kalman_diagnostics.VARIANCE],
+                    extra[kalman_diagnostics.DELAYED],
+                    z=config[KALMAN_FIELD]["z"],
+                    rank_ic_min_assets=minimum,
+                )
             calibrated = None
             if quantile:
                 calibrated, adjusted, reason = _calibrated(panel, entry["calibrator"]["record"])
@@ -1437,6 +1469,25 @@ def _declared_events(config, overall, views):
         overall,
         views,
         series_of,
+    )
+
+
+def _kalman_diagnostics(config, per_window, overall, views):
+    """Cobertura de la varianza predictiva y D3 de los modelos kalman, con las mismas series."""
+
+    def series_of(arm, view):
+        averaged = _seed_series(overall, arm, view, "mae")
+        scores = overall[arm][0][view]
+        return (
+            averaged.values,
+            averaged.defined,
+            scores.session_time,
+            scores.session_market,
+            scores.markets,
+        )
+
+    return kalman_diagnostics.report(
+        config[KALMAN_FIELD], config["comparison"], per_window, views, series_of
     )
 
 
@@ -2034,6 +2085,11 @@ def evaluate_walk_forward(
         if regimes is not None:
             for name in ("evaluation/retention_interference.py", "evaluation/regime_calendar.py"):
                 report["analysis_source_sha256"][name] = sha256(Path(__file__).parents[1] / name)
+    if KALMAN_FIELD in config:
+        report[KALMAN_FIELD] = _kalman_diagnostics(config, per_window, overall, names)
+        report["analysis_source_sha256"]["evaluation/kalman_diagnostics.py"] = sha256(
+            Path(__file__).parents[1] / "evaluation/kalman_diagnostics.py"
+        )
     if EVENTS_FIELD in config:
         report[EVENTS_FIELD] = _declared_events(config, overall, names)
         report["analysis_source_sha256"]["evaluation/declared_events.py"] = sha256(

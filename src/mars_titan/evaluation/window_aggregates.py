@@ -53,6 +53,7 @@ SCORING_SOURCES = (
     "evaluation/modality_ablation.py",
     "evaluation/online_calibration.py",
     "evaluation/liquidity_strata.py",
+    "evaluation/kalman_diagnostics.py",
     "calibration/conformal_quantiles.py",
     "calibration/online_conformal.py",
     "calibration/periodic_conformal.py",

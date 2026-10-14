@@ -933,5 +933,25 @@
         "sessions_after": 0
       }
     }
+  },
+  "kalman_diagnostics": {
+    "status": "declared_not_executed",
+    "declared_at": "2026-10-14",
+    "arms": {
+      "mars_titan_b6_kalman": "titans_mac_online",
+      "mars_titan_b6_kalman_rho0": "titans_mac_online"
+    },
+    "z": 1.645,
+    "assessment_years": [
+      2014,
+      2023
+    ],
+    "decision": {
+      "coverage": [
+        0.85,
+        0.95
+      ],
+      "min_retained_gain": 0.5
+    }
   }
 }
