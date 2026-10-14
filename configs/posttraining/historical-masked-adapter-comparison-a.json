@@ -8,11 +8,15 @@
   "families": {
     "versus_frozen_parent": {
       "base": "frozen_parent",
-      "variants": ["adapted", "full_continuation"]
+      "variants": ["adapted", "full_continuation", "anchored_continuation"]
     },
     "versus_full_continuation": {
       "base": "full_continuation",
       "variants": ["adapted"]
+    },
+    "versus_anchored_continuation": {
+      "base": "anchored_continuation",
+      "variants": ["adapted", "full_continuation"]
     }
   }
 }

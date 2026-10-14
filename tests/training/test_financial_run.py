@@ -152,6 +152,7 @@ def named_records(engine):
         dict(selection=dict(SELECTION, minimum_epochs=1), epochs=1),
         dict(selection=dict(SELECTION, metric="mae")),
         dict(checkpoint_seconds=0.0),
+        dict(weight_decay_anchor="parent"),
     ],
 )
 def test_recipe_rejects_undeclared_or_invalid_declarations(options):
@@ -594,6 +595,50 @@ def test_selection_follows_declared_patience_and_keeps_the_best_state(
     assert reports["fixed"]["plateau_epoch"] == 3 and reports["fixed"]["stopping"] == FIXED_BUDGET
     assert reports["patience"]["plateau_epoch"] is None
     assert (reports["parent"]["best_epoch"], reports["parent"]["best_score"]) == (0, 0.1)
+
+
+def test_the_default_optimizer_anchors_the_decay_that_the_recipe_declares(shared, tmp_path):
+    from mars_titan.training.anchored_decay import INITIAL, AnchoredAdamW
+
+    _, streams = shared
+    common = dict(truncation=3, epochs=1, block_rows=2, selection=SELECTION, weight_decay=0.01)
+
+    def build(output, recipe, **options):
+        return ChronologicalTrainer(
+            predictor(streams),
+            recipe,
+            train=streams["train"],
+            validation=streams["validation"],
+            output=output,
+            **options,
+        )
+
+    anchored = ChronologicalRecipe(**common, weight_decay_anchor=INITIAL)
+    engine = build(tmp_path / "anchored", anchored)
+    assert type(engine.optimizer) is AnchoredAdamW
+    pairs = [
+        (value, anchor)
+        for group in engine.optimizer.param_groups
+        for value, anchor in zip(group["params"], group["anchors"], strict=True)
+    ]
+    # Las anclas son copias del estado inicial, que en el postentrenamiento es el padre.
+    assert pairs and all(
+        torch.equal(value, anchor) and value.data_ptr() != anchor.data_ptr()
+        for value, anchor in pairs
+    )
+    assert engine.identity["recipe"]["weight_decay_anchor"] == INITIAL
+    assert engine.identity["anchored_decay"]["anchor"] == INITIAL
+    plain = build(tmp_path / "plain", ChronologicalRecipe(**common))
+    assert type(plain.optimizer) is torch.optim.AdamW
+    assert "anchored_decay" not in plain.identity
+    assert "weight_decay_anchor" not in plain.identity["recipe"]
+    # Una fábrica de PyTorch que no aplica el ancla declarada se rechaza al construir.
+    with pytest.raises(ValueError, match="no aplica el ancla"):
+        build(
+            tmp_path / "mismatch",
+            anchored,
+            optimizer_factory=lambda groups: torch.optim.AdamW(groups, lr=1e-3),
+        )
 
 
 def test_real_optimizer_is_refused_while_the_learning_hold_blocks(shared, tmp_path, monkeypatch):
