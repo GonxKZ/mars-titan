@@ -1,0 +1,253 @@
+{
+  "kind": "edition_v3_1_verification_receipt",
+  "description": "Copia de los tres informes de verificación de la edición v3.1 y de sus objetivos residuales, generados el 11 de octubre de 2026 fuera del repositorio. Sin entrenamiento ni apertura del test final.",
+  "edition_manifest": {
+    "path": "/home/gonzalo/.local/state/mars-titan/history-2000-20261007/materialization/encoded-history-v3.1/manifest.json",
+    "sha256": "a459dbb8a39b9308b4ab20ea5a1e58453455fa3d3db9e93984ca5a3c5ba0bc3d"
+  },
+  "targets_manifest": {
+    "path": "/home/gonzalo/.local/state/mars-titan/history-2000-20261007/materialization/targets-v3.1/manifest.json",
+    "sha256": "fe86a923dd49a24247a1925e195b0bfd07cacf02c7bd43f0bcde0d292251893a"
+  },
+  "finish": {
+    "resumed_at": "2026-10-11T14:54:17.934756+00:00",
+    "finished_at": "2026-10-11T15:20:17.171707+00:00",
+    "state": "completed",
+    "steps": {
+      "verify-edition": {
+        "state": "completed",
+        "elapsed_seconds": 88.35125222697388
+      },
+      "verify-vectors": {
+        "state": "completed",
+        "elapsed_seconds": 44.6874820140074
+      },
+      "targets": {
+        "state": "completed",
+        "elapsed_seconds": 1251.858001835004
+      },
+      "verify-targets": {
+        "state": "completed",
+        "elapsed_seconds": 174.21530332998373
+      }
+    }
+  },
+  "reports": {
+    "edition": {
+      "path": "/home/gonzalo/.local/state/mars-titan/history-2000-20261007/materialization/v3.1-runner/verification-edition-v3.1.json",
+      "sha256": "fd201e8f5f3b1fdcb1845f47f79cbaf7a3126398c5acb4f98952ff4582bb1846",
+      "content": {
+        "kind": "edition_v3_1_verification",
+        "checked_at": "2026-10-11T14:55:46.156964+00:00",
+        "verifier_sha256": "5817fcb4fb4476671c2d1cf6549103cb97eca8a9b0b4c73d4fe8a8446ddcab65",
+        "edition": "/home/gonzalo/.local/state/mars-titan/history-2000-20261007/materialization/encoded-history-v3.1",
+        "edition_manifest_sha256": "a459dbb8a39b9308b4ab20ea5a1e58453455fa3d3db9e93984ca5a3c5ba0bc3d",
+        "configuration_sha256": "3b1bf03baa281ca171403611e8f4ecd99ccc66253918dbe7822fefbeb8cab96e",
+        "candidates": 5676,
+        "encoded_assets": 5023,
+        "samples": 18698976,
+        "samples_by_market": {
+          "CN": 2824687,
+          "US": 15874289
+        },
+        "market_absent": {
+          "CN_windows": 47570,
+          "CN_sessions": 94382,
+          "US_windows": 0,
+          "US_sessions": 0
+        },
+        "text_carry": {
+          "assets": 4897,
+          "reused": 4897,
+          "candidates": 2525977,
+          "compared": 74748,
+          "mismatched": 0,
+          "reencoded": 0
+        },
+        "substitution": {
+          "assets": 5023,
+          "previous_samples": 17076024,
+          "samples": 18698976,
+          "common": 17076024,
+          "new_sessions": 1622952,
+          "windows_compared": 17076024,
+          "windows_changed": 125460,
+          "changed_charts": 70255,
+          "previous_bytes_removed": 57521573389,
+          "window_max_abs_change": 7.450580596923828e-09,
+          "reencoded_charts": {
+            "compared": 17005769,
+            "identical": 0,
+            "max_abs": 0.010403633117675781,
+            "max_rel": 1.0,
+            "max_norm_rel": 0.001817429256894456
+          },
+          "reencoded_texts": null
+        },
+        "failures": [],
+        "failure_count": 0,
+        "passed": true,
+        "elapsed_seconds": 87.63971752900397,
+        "peak_rss_bytes": 145174528,
+        "training_executed": false,
+        "final_test_opened": false
+      }
+    },
+    "vectors": {
+      "path": "/home/gonzalo/.local/state/mars-titan/history-2000-20261007/materialization/v3.1-runner/verification-vectors-v3.1.json",
+      "sha256": "ce38a7bcbfbec0db9ae910588cc5c6cd2a35330694ee3cf660f1667fef8883b5",
+      "content": {
+        "kind": "edition_v3_1_vector_check",
+        "checked_at": "2026-10-11T14:56:29.556249+00:00",
+        "verifier_sha256": "77bc4b0ee8a816786e8ef8114bcf560c0b6d8dbad068770da6beaf81ac1b3771",
+        "edition_manifest_sha256": "a459dbb8a39b9308b4ab20ea5a1e58453455fa3d3db9e93984ca5a3c5ba0bc3d",
+        "seed": 20261010,
+        "charts": {
+          "compared": 512,
+          "png_identical": 512,
+          "vector_identical": 512,
+          "differences": []
+        },
+        "texts": {
+          "compared": 256,
+          "identical": 256,
+          "differences": []
+        },
+        "cuda_peak_allocated_bytes": 179243008,
+        "elapsed_seconds": 42.54697132500587,
+        "passed": true,
+        "training_executed": false
+      }
+    },
+    "targets": {
+      "path": "/home/gonzalo/.local/state/mars-titan/history-2000-20261007/materialization/v3.1-runner/verification-targets-v3.1.json",
+      "sha256": "24ac829b166d5aa7d1264531d7d207c5ec5cc4660d3a8c910f96d762801c5c26",
+      "content": {
+        "kind": "edition_v3_1_targets_verification",
+        "checked_at_utc": "2026-10-11T15:20:17.085519+00:00",
+        "verifier_sha256": "ec4b23db657d2dee31d42d9661b3fcea8b4ff1247a0c9edfc55bec81b300744a",
+        "runtime_commit": "f475b0d12e410efed869c67f5abf3728af69cb97",
+        "targets_manifest_sha256": "fe86a923dd49a24247a1925e195b0bfd07cacf02c7bd43f0bcde0d292251893a",
+        "edition_manifest_sha256": "a459dbb8a39b9308b4ab20ea5a1e58453455fa3d3db9e93984ca5a3c5ba0bc3d",
+        "samples": 18698976,
+        "labelled_assets": 5008,
+        "encoded_assets_without_accepted_labels": [
+          "US/BNKD",
+          "US/BNKU",
+          "US/CAMP",
+          "US/CGRO",
+          "US/ETH",
+          "US/FFBW",
+          "US/GERM",
+          "US/JHMU",
+          "US/LAC",
+          "US/MNR",
+          "US/NESR",
+          "US/NRGD",
+          "US/NRGU",
+          "US/UBOH",
+          "US/VRM"
+        ],
+        "counts": {
+          "train": 17142187,
+          "validation": 1235785
+        },
+        "counts_by_market": {
+          "US": {
+            "train": 14565147,
+            "validation": 1040641
+          },
+          "CN": {
+            "train": 2577040,
+            "validation": 195144
+          }
+        },
+        "excluded_reasons": {
+          "insufficient_history": 309838,
+          "target_after_cutoff": 4995,
+          "target_crosses_partition_boundary": 4989,
+          "missing_next_session": 1182
+        },
+        "recomputed_assets": [
+          "US/PAUG",
+          "US/GRID",
+          "US/ATRO",
+          "US/IBM",
+          "US/NUE",
+          "US/RIGL",
+          "US/NSIT",
+          "US/PEG",
+          "US/HURN",
+          "US/EVF",
+          "US/ERC",
+          "US/RCMT",
+          "US/UFEB",
+          "US/ABR",
+          "US/LPG",
+          "US/NTAP",
+          "US/TPVG",
+          "US/ESTC",
+          "US/FGEN",
+          "US/OTTW",
+          "US/LIQT",
+          "US/LYV",
+          "US/COLM",
+          "US/CGEN",
+          "US/BHFAP",
+          "US/CBL",
+          "US/JHML",
+          "US/NFE",
+          "US/RDIB",
+          "US/LQDA",
+          "US/BH",
+          "US/UHS",
+          "US/QLD",
+          "US/DLHC",
+          "US/RDWR",
+          "US/ASPN",
+          "US/SPUU",
+          "US/EYE",
+          "US/FUV",
+          "US/BNY",
+          "CN/600780.SS",
+          "CN/600006.SS",
+          "CN/688111.SS",
+          "CN/300347.SZ",
+          "CN/600926.SS",
+          "CN/600873.SS",
+          "CN/601555.SS",
+          "CN/600938.SS",
+          "CN/600221.SS",
+          "CN/600638.SS",
+          "CN/002353.SZ",
+          "CN/601390.SS",
+          "CN/600690.SS",
+          "CN/600171.SS",
+          "CN/600271.SS",
+          "CN/000768.SZ",
+          "CN/300601.SZ",
+          "CN/000059.SZ",
+          "CN/600522.SS",
+          "CN/600518.SS"
+        ],
+        "recomputed_labels": 223459,
+        "recompute_seed": 20261010,
+        "max_abs_difference": 0.0,
+        "comparison_with_v3_on_recomputed_assets": {
+          "assets": 60,
+          "common": 207886,
+          "identical": 14831,
+          "max_abs_difference": 0.022679971760932404,
+          "only_v3": 0,
+          "only_v3_1": 15573
+        },
+        "training_hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+        "training_executed": false,
+        "final_test_opened": false,
+        "passed": true,
+        "elapsed_seconds": 173.8007019229699,
+        "peak_rss_bytes": 345075712
+      }
+    }
+  }
+}

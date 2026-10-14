@@ -41,6 +41,26 @@
       "titans_mac_frozen": "mac_frozen",
       "titans_mac_online": "mac_online"
     },
+    "core_extensions": {
+      "titans_mac_online_pt1": {
+        "base_arm": "titans_mac_online",
+        "predictor_changes": {
+          "gate_bias": {"alpha_half_life": 256.0, "eta": 0.15, "theta": 0.05},
+          "memory_stability": {
+            "alpha_floor": 0.002,
+            "eta_ceiling": 0.3,
+            "gradient_clip": 4.0,
+            "gate_box": true
+          }
+        }
+      },
+      "titans_mac_online_pt1_init": {
+        "base_arm": "titans_mac_online",
+        "predictor_changes": {
+          "gate_bias": {"alpha_half_life": 256.0, "eta": 0.15, "theta": 0.05}
+        }
+      }
+    },
     "search_seed": 42
   },
   "episodic_gru": {
@@ -73,10 +93,17 @@
       },
       "mars_titan_b6_calendar_banks": {
         "associative_memory": {"rule": "proximal", "key": "codec_by_calendar"}
+      },
+      "mars_titan_b6_kalman": {
+        "associative_memory": {"rule": "kalman", "key": "codec", "cohort_correlation": "estimated"}
+      },
+      "mars_titan_b6_kalman_rho0": {
+        "associative_memory": {"rule": "kalman", "key": "codec", "cohort_correlation": "zero"}
       }
     },
     "pending_arms": {},
     "correction_recipe": "../titans/mature-correction-historical-masked.json",
+    "kalman_correction_recipe": "../titans/kalman-correction-historical-masked.json",
     "parent_arm": "titans_mac_online",
     "search_seed": 42
   },
@@ -98,7 +125,7 @@
     "max_epochs": 30,
     "group_epoch": "maximum_of_first_plateaus",
     "groups": {
-      "encoders_and_cores": ["gru", "transformer_compact", "gru_episodic", "titans_transformer_direct", "titans_mac_disabled", "titans_mac_frozen", "titans_mac_online"],
+      "encoders_and_cores": ["gru", "transformer_compact", "gru_episodic", "titans_transformer_direct", "titans_mac_disabled", "titans_mac_frozen", "titans_mac_online", "titans_mac_online_pt1_init", "titans_mac_online_pt1"],
       "episodic_readers": ["mars_titan_m0", "mars_titan_m1", "mars_titan_m2", "mars_titan_m3", "mars_titan_m1_k2", "mars_titan_m1_k4", "mars_titan_m1_k4_first_read", "cm_v1_b", "cm_v1_bc", "cm_v1_bm", "cm_v1_bcm"],
       "cm_v1_cores": ["cm_v1_core_b", "cm_v1_core_c"]
     }
@@ -161,7 +188,7 @@
     "cm_v1": {"accumulation_rows": 1024}
   },
   "limits": {
-    "max_training_jobs": 2873,
+    "max_training_jobs": 3177,
     "max_prediction_jobs": 0
   },
   "final_test_opened": false

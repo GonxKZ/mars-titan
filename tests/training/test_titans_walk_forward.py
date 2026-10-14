@@ -29,7 +29,7 @@ from mars_titan.training.corpus_inputs import CorpusDataset
 from mars_titan.training.financial_run import ChronologicalTrainer
 from mars_titan.training.learning_hold import LearningHoldError
 from mars_titan.training.temporal_corpus import prepare_temporal_corpus
-from tests.learning_hold_lowering import allowed_hold
+from tests.learning_hold_lowering import allowed_hold, lowers_learning_hold
 from tests.learning_traces.parity import EVERY_STEP, metrics, same_rows, trace_rows
 from tests.training.chronological_fixture import chronological_corpus, decision
 
@@ -535,6 +535,55 @@ def test_window_fits_the_chosen_search_case_and_names_it_in_its_request(base, tm
         assert table(tmp_path / "run", partition) == table(
             base["root"] / "runs" / "mac_online", partition
         )
+
+
+# Cambios de PT1 (#453) sobre la receta, los mismos que declara la campaña A v2.
+PT1 = dict(
+    gate_bias=dict(alpha_half_life=256.0, eta=0.15, theta=0.05),
+    memory_stability=dict(alpha_floor=0.002, eta_ceiling=0.3, gradient_clip=4.0, gate_box=True),
+)
+
+
+@lowers_learning_hold(
+    "tests/training/test_titans_walk_forward.py::"
+    "test_window_builds_the_declared_predictor_changes_and_its_regeneration_repeats_them"
+)
+def test_window_builds_the_declared_predictor_changes_and_its_regeneration_repeats_them(
+    base, tmp_path
+):
+    """PT1 viaja en la petición, entra en la identidad del predictor y se reconstruye al
+    trasladar. Sin cambios, la petición conserva su forma anterior."""
+    from mars_titan.training import prediction_regeneration as regeneration
+
+    with unfused_attention():
+        report, _ = window(
+            base["view"], base["protocol"], base["recipe"], tmp_path / "run", predictor_changes=PT1
+        )
+    assert report["status"] == "completed" and report["request"]["predictor_changes"] == PT1
+    plain = base["runs"]["mac_online"][0]
+    assert "predictor_changes" not in plain["request"]
+    fit = json.loads((tmp_path / "run" / "fit/run.json").read_text())["identity"]
+    reference = json.loads((base["root"] / "runs/mac_online/fit/run.json").read_text())
+    assert fit["predictor"]["memory_gate_bias"] == PT1["gate_bias"]
+    assert fit["predictor"]["memory_stability"] == PT1["memory_stability"]
+    assert "memory_stability" not in reference["identity"]["predictor"]
+    # La η inicial de la caja cambia los bias iniciales de la memoria.
+    assert fit["initial_parameters_sha256"] != reference["identity"]["initial_parameters_sha256"]
+    # Sin PT1 en el predictor del traslado, el estado del ancla no correspondería a su
+    # arquitectura. La regeneración repite las filas de la ventana sin diferencias.
+    with unfused_attention():
+        again = wf.carry_titans(
+            tmp_path / "run",
+            base["view"],
+            base["view"],
+            tmp_path / "again",
+            device="cpu",
+            regenerate=True,
+        )
+    result = regeneration.compare(
+        regeneration.originals(tmp_path / "run", report), tmp_path / "again", again
+    )
+    assert result["identical"] is True, result
 
 
 @pytest.mark.parametrize(

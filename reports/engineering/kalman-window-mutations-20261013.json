@@ -1,0 +1,231 @@
+{
+  "schema_version": 1,
+  "kind": "targeted_mutation_testing",
+  "scope": "Consumidores de PT3 (#455): estimador de σ² y ϱ, ventana kalman de B6, campaña A v2 y proyección",
+  "measured_at": "2026-10-13",
+  "worktree_imports": "PYTHONPATH apunta al src de la propia copia de trabajo",
+  "tests": [
+    "tests/memory/test_cohort_noise.py",
+    "tests/training/test_campaign_a_joint.py",
+    "tests/training/test_campaign_throughput.py",
+    "tests/training/test_kalman_correction.py",
+    "tests/training/test_mars_titan_campaign.py"
+  ],
+  "baseline": {
+    "tests/memory/test_cohort_noise.py": {
+      "pytest_tail": "12 passed in 0.32s",
+      "seconds": 2.66
+    },
+    "tests/training/test_campaign_a_joint.py tests/training/test_mars_titan_campaign.py": {
+      "pytest_tail": "119 passed, 9 skipped in 66.71s (0:01:06)",
+      "seconds": 69.55
+    },
+    "tests/training/test_campaign_throughput.py tests/training/test_campaign_a_joint.py": {
+      "pytest_tail": "140 passed, 3 skipped in 83.28s (0:01:23)",
+      "seconds": 86.33
+    },
+    "tests/training/test_kalman_correction.py": {
+      "pytest_tail": "29 passed in 9.21s",
+      "seconds": 11.73
+    }
+  },
+  "mutations": [
+    {
+      "id": "K01",
+      "description": "La media cuadrática entre sesiones divide por sesiones menos uno, sin restar los mercados",
+      "file": "src/mars_titan/memory/cohort_noise.py",
+      "tests": [
+        "tests/memory/test_cohort_noise.py"
+      ],
+      "killed": true,
+      "pytest_tail": "1 failed in 0.18s",
+      "seconds": 2.31
+    },
+    {
+      "id": "K02",
+      "description": "La media cuadrática dentro de las sesiones divide por todas las filas",
+      "file": "src/mars_titan/memory/cohort_noise.py",
+      "tests": [
+        "tests/memory/test_cohort_noise.py"
+      ],
+      "killed": true,
+      "pytest_tail": "1 failed in 0.18s",
+      "seconds": 2.4
+    },
+    {
+      "id": "K03",
+      "description": "La varianza común negativa no se trunca en cero",
+      "file": "src/mars_titan/memory/cohort_noise.py",
+      "tests": [
+        "tests/memory/test_cohort_noise.py"
+      ],
+      "killed": true,
+      "pytest_tail": "1 failed, 4 passed in 0.32s",
+      "seconds": 2.42
+    },
+    {
+      "id": "K04",
+      "description": "La correlación de cohorte no respeta su tope",
+      "file": "src/mars_titan/memory/cohort_noise.py",
+      "tests": [
+        "tests/memory/test_cohort_noise.py"
+      ],
+      "killed": true,
+      "pytest_tail": "1 failed, 4 passed in 0.29s",
+      "seconds": 2.33
+    },
+    {
+      "id": "K05",
+      "description": "Las sesiones se agrupan sin su mercado",
+      "file": "src/mars_titan/memory/cohort_noise.py",
+      "tests": [
+        "tests/memory/test_cohort_noise.py"
+      ],
+      "killed": true,
+      "pytest_tail": "1 failed in 0.19s",
+      "seconds": 2.27
+    },
+    {
+      "id": "K06",
+      "description": "El tamaño medio de sesión ignora la concentración por mercado",
+      "file": "src/mars_titan/memory/cohort_noise.py",
+      "tests": [
+        "tests/memory/test_cohort_noise.py"
+      ],
+      "killed": true,
+      "pytest_tail": "1 failed in 0.20s",
+      "seconds": 2.29
+    },
+    {
+      "id": "K07",
+      "description": "Cada residuo se atribuye a EE. UU. sin leer su flujo",
+      "file": "src/mars_titan/training/mars_titan_correction.py",
+      "tests": [
+        "tests/training/test_kalman_correction.py"
+      ],
+      "killed": true,
+      "pytest_tail": "1 failed, 24 passed in 3.08s",
+      "seconds": 5.43
+    },
+    {
+      "id": "K08",
+      "description": "El residuo es la etiqueta sin restar la predicción del núcleo",
+      "file": "src/mars_titan/training/mars_titan_correction.py",
+      "tests": [
+        "tests/training/test_kalman_correction.py"
+      ],
+      "killed": true,
+      "pytest_tail": "1 failed, 23 passed in 3.10s",
+      "seconds": 5.37
+    },
+    {
+      "id": "K09",
+      "description": "El tramo de estimación empieza un mes antes de lo declarado",
+      "file": "src/mars_titan/training/mars_titan_correction.py",
+      "tests": [
+        "tests/training/test_kalman_correction.py"
+      ],
+      "killed": true,
+      "pytest_tail": "1 failed, 22 passed in 0.93s",
+      "seconds": 3.18
+    },
+    {
+      "id": "K10",
+      "description": "Una ventana reanudada reutiliza una estimación de otro tramo o de otro índice",
+      "file": "src/mars_titan/training/mars_titan_correction.py",
+      "tests": [
+        "tests/training/test_kalman_correction.py"
+      ],
+      "killed": true,
+      "pytest_tail": "1 failed, 25 passed in 3.35s",
+      "seconds": 5.64
+    },
+    {
+      "id": "K11",
+      "description": "El ruido de proceso no escala con la σ² estimada",
+      "file": "src/mars_titan/training/mars_titan_correction.py",
+      "tests": [
+        "tests/training/test_kalman_correction.py"
+      ],
+      "killed": true,
+      "pytest_tail": "1 failed, 12 passed in 0.94s",
+      "seconds": 3.09
+    },
+    {
+      "id": "K12",
+      "description": "La varianza inicial no escala con la σ² estimada",
+      "file": "src/mars_titan/training/mars_titan_correction.py",
+      "tests": [
+        "tests/training/test_kalman_correction.py"
+      ],
+      "killed": true,
+      "pytest_tail": "1 failed, 12 passed in 0.90s",
+      "seconds": 3.12
+    },
+    {
+      "id": "K13",
+      "description": "La alternativa ϱ = 0 usa la correlación estimada",
+      "file": "src/mars_titan/training/mars_titan_correction.py",
+      "tests": [
+        "tests/training/test_kalman_correction.py"
+      ],
+      "killed": true,
+      "pytest_tail": "1 failed, 12 passed in 0.89s",
+      "seconds": 3.1
+    },
+    {
+      "id": "K14",
+      "description": "La campaña admite modelos kalman sin su receta o la receta sin modelos",
+      "file": "src/mars_titan/training/campaign_plan.py",
+      "tests": [
+        "tests/training/test_campaign_a_joint.py",
+        "tests/training/test_mars_titan_campaign.py"
+      ],
+      "killed": true,
+      "pytest_tail": "1 failed, 26 passed in 4.44s",
+      "seconds": 6.75
+    },
+    {
+      "id": "K15",
+      "description": "Un modelo kalman admite una correlación de cohorte no declarada",
+      "file": "src/mars_titan/training/campaign_plan.py",
+      "tests": [
+        "tests/training/test_campaign_a_joint.py",
+        "tests/training/test_mars_titan_campaign.py"
+      ],
+      "killed": true,
+      "pytest_tail": "1 failed, 29 passed in 4.24s",
+      "seconds": 6.59
+    },
+    {
+      "id": "K16",
+      "description": "La proyección no cuenta el tramo de estimación de los modelos kalman",
+      "file": "src/mars_titan/training/campaign_throughput.py",
+      "tests": [
+        "tests/training/test_campaign_throughput.py",
+        "tests/training/test_campaign_a_joint.py"
+      ],
+      "killed": true,
+      "pytest_tail": "1 failed, 127 passed, 3 skipped in 74.69s (0:01:14)",
+      "seconds": 77.68
+    },
+    {
+      "id": "K17",
+      "description": "La proyección no comprueba que la calibración sirva de medida del tramo de estimación",
+      "file": "src/mars_titan/training/campaign_throughput.py",
+      "tests": [
+        "tests/training/test_campaign_throughput.py",
+        "tests/training/test_campaign_a_joint.py"
+      ],
+      "killed": true,
+      "pytest_tail": "1 failed, 83 passed, 3 skipped in 20.50s",
+      "seconds": 23.43
+    }
+  ],
+  "killed": 17,
+  "survived": 0,
+  "notes": [
+    "Cada defecto se aplica de uno en uno y el archivo se restaura después.",
+    "Las pruebas de la ventana completa rebajan la protección del aprendizaje y se omiten mientras rige el bloqueo, así que no entran en esta selección."
+  ]
+}

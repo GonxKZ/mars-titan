@@ -81,8 +81,19 @@
   },
   "measures": ["mae", "direction_accuracy", "interval_coverage", "interval_width", "rows"],
   "reading": "Cada perturbación se compara con la lectura limpia del mismo modelo, semilla, ventana y estado de partida, sobre las mismas filas. Se informa la degradación por variante sin elegir modelos con ella. Una ausencia mayor con menos filas evaluadas no se presenta como mejora, y un modelo que empeora poco por predecir casi constante no se presenta como robusto sin su error limpio.",
+  "analysis": {
+    "declared_at": "2026-10-14",
+    "status": "secondary_descriptive",
+    "use": "description_only_not_for_model_selection_or_primary_conclusion",
+    "metric": "session_mae_perturbed_minus_original",
+    "rows": "evaluation_rows_whose_input_changes",
+    "drift": "unchanged_rows_by_days_since_the_last_burst_of_the_asset",
+    "recovery_bins_days": [5, 21, 63, 252],
+    "min_rows": 1000,
+    "min_sessions": 50,
+    "multiplicity": "bonferroni_over_variants_and_views_with_max_t_over_arms"
+  },
   "not_measured_yet": {
-    "state_drift_and_recovery": "La deriva del estado de memoria y el tiempo de recuperación tras una ráfaga necesitan la etapa que repite cada trabajo con la variante, pendiente en #37 hasta que se integren #575 y #579.",
-    "execution": "Ninguna perturbación se ha evaluado. La evaluación queda retenida por el bloqueo de aprendizaje."
+    "execution": "Ninguna perturbación se ha evaluado. La etapa de robustez (configs/evaluation/historical-masked-robustness-stage-a-v2.json) y su análisis están declarados, pero la evaluación queda retenida por el bloqueo de aprendizaje."
   }
 }

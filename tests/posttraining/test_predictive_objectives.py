@@ -201,8 +201,8 @@ def test_campaign_a_v2_fits_the_six_objectives_for_the_five_references(v2):
     }
     counts = campaign_stage.count_stage(stage, jobs)
     totals = (counts["training_jobs"], counts["prediction_jobs"], counts["selection_jobs"])
-    assert totals == (7074 + 1620, 1494, 1577)
-    assert stage["limits"] == dict(max_training_jobs=8694, max_prediction_jobs=1494)
+    assert totals == (7074 + 1620, 1710, 1805)
+    assert stage["limits"] == dict(max_training_jobs=8694, max_prediction_jobs=1710)
     # Cada objetivo parte del mismo padre de k-1, con las mismas dependencias y el mismo
     # presupuesto que la continuación completa de su ventana y semilla.
     full = {
@@ -239,7 +239,7 @@ def test_a_stage_plans_the_objectives_only_when_it_names_the_section(tmp_path, v
         campaign=str(folder / value["campaign"]),
         matrix=str(folder / value["matrix"]),
         additional_controls=["anchored_continuation"],
-        limits=dict(max_training_jobs=7074, max_prediction_jobs=1494),
+        limits=dict(max_training_jobs=7074, max_prediction_jobs=1710),
     )
     atomic_json(tmp_path / "stage.json", value)
     plain = campaign_stage.load_stage(tmp_path / "stage.json")
