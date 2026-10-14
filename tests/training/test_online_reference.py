@@ -810,6 +810,7 @@ def test_a_copied_output_is_never_reused(base, anchor, tmp_path):
         run(base, anchor, tmp_path / "copy")
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_traces_keep_the_online_control_bit_for_bit(base, anchor, tmp_path):
     """Trazas en cada paso del control en línea (#448), una fase por tramo."""
     plain, plain_factory = run(base, anchor, tmp_path / "plain")
