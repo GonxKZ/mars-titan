@@ -15,7 +15,8 @@ Todo se empareja fila a fila con la predicción original del mismo estado:
   modelo sin estado ni contexto debe conservarlas. Uno con memoria en línea o con historia
   de varias sesiones arrastra la perturbación;
 - recuperación tras una ráfaga: esa deriva y la diferencia de error por días desde el final
-  de la última ráfaga del activo, en los tramos declarados.
+  de la última ráfaga del activo, en los tramos declarados. Las filas sin modalidad dentro de
+  una ráfaga van aparte, porque su estado puede arrastrar la ráfaga en curso.
 
 No mide la robustez ante datos reales distintos de estas perturbaciones, ni la utilidad de
 una modalidad, ni el comportamiento de un modelo reentrenado con entradas perturbadas.
@@ -132,11 +133,13 @@ def affected_rows(bits, variant, bursts):
     return present
 
 
-def drift(original, perturbed, rows, since, bins):
+def drift(original, perturbed, rows, inside, since, bins):
     """Deriva en las filas cuya entrada no cambia, por tramos de días desde la última ráfaga.
 
-    Guarda sumas, no medias, para agregar ventanas sumando. El último tramo, `far`, reúne las
-    filas sin ráfaga anterior dentro del horizonte o fuera de ellas por no tener la modalidad.
+    Guarda sumas, no medias, para agregar ventanas sumando. `inside` reúne las filas dentro
+    de una ráfaga que no tenían la modalidad: su entrada no cambia, pero las anteriores de la
+    misma ráfaga sí, así que no sirven de referencia lejana. El último tramo, `far`, reúne las
+    filas fuera de una ráfaga y sin ninguna anterior dentro del horizonte.
     """
     unchanged = ~rows
     difference = np.abs(perturbed.prediction - original.prediction)
@@ -148,7 +151,8 @@ def drift(original, perturbed, rows, since, bins):
         (f"{low}-{high}", unchanged & (since >= low) & (since < high))
         for low, high in zip(edges[:-1], edges[1:], strict=True)
     ]
-    selections.append(("far", unchanged & np.isnan(since)))
+    selections.append(("inside", unchanged & inside))
+    selections.append(("far", unchanged & ~inside & np.isnan(since)))
     return {
         name: dict(
             rows=int(selected.sum()),
@@ -167,7 +171,7 @@ def score(original, perturbed, variant, bits, bursts, bins, *, rank_ic_min_asset
         original, perturbed, rows, rank_ic_min_assets=rank_ic_min_assets, calibrated=calibrated
     )
     if variant in BURSTS:
-        entry["drift"] = drift(original, perturbed, rows, bursts[variant][1], bins)
+        entry["drift"] = drift(original, perturbed, rows, *bursts[variant], bins)
     return entry
 
 

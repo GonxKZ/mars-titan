@@ -594,7 +594,7 @@ def test_robustness_sources_feed_the_comparison_with_the_drift_after_each_burst(
         # Un modelo sin memoria no cambia ninguna fila cuya entrada no cambia.
         assert set(seeds["unaffected_changed"].values()) == {0}
         if variant in robustness.BURSTS:
-            assert list(seeds["drift"]) == ["0-5", "5-21", "21-63", "63-252", "far"]
+            assert list(seeds["drift"]) == ["0-5", "5-21", "21-63", "63-252", "inside", "far"]
             assert {entry["changed"] for entry in seeds["drift"].values()} == {0}
             assert sum(entry["rows"] for entry in seeds["drift"].values()) == sum(
                 section["variants"][variant]["population"]["windows"][window]["unaffected_rows"]

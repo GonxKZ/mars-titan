@@ -95,8 +95,10 @@ def test_drift_sums_unchanged_rows_by_days_since_the_last_burst():
     perturbed = panel([0.5, 0.2, 0.0, 0.1, -0.3, 0.4], [1.0] * 6)
     rows = np.array([True, False, False, False, False, False])
     since = np.array([np.nan, 0.0, 4.0, 5.0, np.nan, 300.0])
-    found = robustness.drift(original, perturbed, rows, since, [5, 21])
-    assert list(found) == ["0-5", "5-21", "far"]
+    inside = np.zeros(6, dtype=bool)
+    found = robustness.drift(original, perturbed, rows, inside, since, [5, 21])
+    assert list(found) == ["0-5", "5-21", "inside", "far"]
+    assert found["inside"]["rows"] == 0
     # |1 − 0,2| − |1 − 0| en la fila de 0 días, que es la única que cambia.
     assert found["0-5"] == dict(
         rows=2, changed=1, sum_abs_difference=0.2, sum_error_difference=pytest.approx(-0.2)
@@ -105,6 +107,14 @@ def test_drift_sums_unchanged_rows_by_days_since_the_last_burst():
     assert found["5-21"]["rows"] == 1 and found["5-21"]["changed"] == 1
     assert found["far"]["rows"] == 1 and found["far"]["sum_abs_difference"] == pytest.approx(0.3)
     assert found["far"]["sum_error_difference"] == pytest.approx(0.3)
+    # Una fila sin modalidad dentro de una ráfaga no cambia su entrada, pero tampoco está
+    # lejos de la ráfaga: va a su propio tramo y sale de `far`.
+    inside[4] = True
+    found = robustness.drift(original, perturbed, rows, inside, since, [5, 21])
+    assert found["inside"] == dict(
+        rows=1, changed=1, sum_abs_difference=0.3, sum_error_difference=pytest.approx(0.3)
+    )
+    assert found["far"]["rows"] == 0
 
 
 def test_drift_summary_adds_windows_before_dividing():
