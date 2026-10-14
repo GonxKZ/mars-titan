@@ -220,3 +220,70 @@ def test_v3_stops_when_an_adapter_regeneration_differs(base, retention, tmp_path
     # La diferencia comparada es definitiva: reanudar vuelve a detenerse sin regenerar.
     with pytest.raises(ValueError, match="no salen idénticas"):
         rolling.run_rolling(state, runners)
+
+
+@pytest.mark.parametrize("last", [1, 2])
+def test_v3_keeps_a_chain_evaluation_compacted_until_its_last_reader(
+    base, retention, tmp_path, recorder, last
+):
+    """Una evaluación de la cadena que leerá una política sale del bloque compactada. La
+    libera, tras regenerarla, la liberación de la ventana de su último lector: la propia
+    (`last` 1) o una posterior a la campaña reducida (`last` 2), en cuyo caso sigue al final."""
+    adapters = tmp_path / "adapters"
+    assert stage(base, base.output, adapters)["status"] == "completed"
+    output = tmp_path / "campaign"
+    shutil.copytree(base.output, output, symlinks=True)
+    declared = publication_fixture.declare(
+        tmp_path / "declared", base.campaign, stage=base.stage, metrics=PLAIN_METRICS
+    )
+    path, campaign = schedule(base, tmp_path)
+    state = rolling.Rolling(
+        rolling.load_retention(retention),
+        base.campaign,
+        base.views,
+        output,
+        rolling.load_schedule(path, campaign),
+        adapters=dict(stage=base.stage, output=adapters),
+        regenerators=REGENERATORS,
+        publication=declared.publication,
+        adapter_device="cpu",
+        adapter_lease=CpuLease,
+    )
+    job = "US/fold-001/gru__head/fit-s42"
+    assert state.positions["US", WINDOW] == 1
+
+    def chain_keep(self, index, only=None):
+        return {job: (last, [])} if only in (None, ("US", WINDOW, "gru")) else {}
+
+    runners = dict(
+        base=lambda window: dict(status="completed"),
+        adapters=lambda window: stage(
+            base,
+            output,
+            adapters,
+            window=window,
+            compact_rows=state.folder / "rows",
+            on_block=state.block,
+        ),
+    )
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setattr(rolling.Rolling, "chain_keep", chain_keep)
+        assert rolling.run_rolling(state, runners)["status"] == "completed"
+    block = json.loads((state.folder / "blocks" / "US" / WINDOW / "gru.json").read_text())
+    assert (block["released"], block["kept_for_policies"], block["not_regenerable"]) == (6, 1, 0)
+    receipt = json.loads((adapters / "jobs" / job / "receipt.json").read_text())
+    found = {
+        prediction_files.verify(adapters / item["path"], item["sha256"])
+        for item in receipt["predictions"].values()
+    }
+    released = state.ledger()["windows"][WINDOW]["phases"]["release"]["adapters"]
+    decisions = sorted((state.folder / "regeneration-reports").glob("adapters_*.json"))
+    if last == 1:
+        assert found == {prediction_files.RELEASED}
+        assert released == dict(released=1, kept_for_policies=0, not_regenerable=0)
+        assert len(decisions) == 7
+    else:
+        assert found == {prediction_files.COMPACTED}
+        assert released == dict(released=0, kept_for_policies=1, not_regenerable=0)
+        assert len(decisions) == 6
+    assert all(json.loads(p.read_text())["identical"] is True for p in decisions)
