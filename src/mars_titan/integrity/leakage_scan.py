@@ -93,36 +93,52 @@ class _Sessions:
         return np.where(mask, ranks - np.repeat(mean, self.lengths), 0.0)
 
 
-def _session_ic(sessions, values, target, min_assets, cache):
-    """Spearman por sesión entre cada columna de `values` y `target`, con ausencias por columna.
+def _ranked_columns(sessions, values, observed):
+    """Rangos centrados por sesión de cada columna, con sus filas presentes y su varianza.
 
-    `values` y `target` siguen el orden de `sessions`. Devuelve dos matrices (sesiones ×
-    columnas): la correlación y el número de filas presentes. Los rangos del objetivo se
-    reutilizan entre columnas con las mismas filas presentes (`cache`), que en una modalidad
-    son casi siempre las mismas.
+    No dependen del objetivo, solo de qué filas lo tienen (`observed`). Es un generador para
+    que el escáner siga ordenando columna a columna sin guardarlas todas, y el nulo por
+    permutación los guarda por bloques para reutilizarlos en todas sus permutaciones.
     """
-    observed = np.isfinite(target)
-    correlations, counts = [], []
     for column in values.T:
         mask = np.isfinite(column) & observed
         count = sessions.sums(mask.astype(np.float64))
-        key = np.packbits(mask).tobytes()
-        if key not in cache:
-            cache.clear()
-            cache[key] = sessions.centered(sessions.ranks(target, mask), mask, count)
-        centered_y = cache[key]
-        centered_x = sessions.centered(sessions.ranks(column, mask), mask, count)
+        centered = sessions.centered(sessions.ranks(column, mask), mask, count)
         # Sumas centradas por sesión: una columna constante da varianza exactamente cero, sin
         # el residuo de redondeo de la fórmula de suma de cuadrados.
+        yield np.packbits(mask).tobytes(), mask, count, centered, sessions.sums(centered * centered)
+
+
+def _correlations(sessions, ranked, target, min_assets, cache):
+    """Spearman por sesión entre columnas ya ordenadas y `target`.
+
+    Los rangos del objetivo se reutilizan entre columnas con las mismas filas presentes
+    (`cache`), que en una modalidad son casi siempre las mismas.
+    """
+    correlations, counts = [], []
+    for key, mask, count, centered_x, variance_x in ranked:
+        if key not in cache:
+            cache.clear()
+            centered_y = sessions.centered(sessions.ranks(target, mask), mask, count)
+            cache[key] = centered_y, sessions.sums(centered_y * centered_y)
+        centered_y, variance_y = cache[key]
         covariance = sessions.sums(centered_x * centered_y)
-        variance_x = sessions.sums(centered_x * centered_x)
-        variance_y = sessions.sums(centered_y * centered_y)
         defined = (count >= min_assets) & (variance_x > 0) & (variance_y > 0)
         with np.errstate(invalid="ignore", divide="ignore"):
             ic = covariance / np.sqrt(variance_x * variance_y)
         correlations.append(np.where(defined, ic, np.nan))
         counts.append(count)
     return np.column_stack(correlations), np.column_stack(counts)
+
+
+def _session_ic(sessions, values, target, min_assets, cache):
+    """Spearman por sesión entre cada columna de `values` y `target`, con ausencias por columna.
+
+    `values` y `target` siguen el orden de `sessions`. Devuelve dos matrices (sesiones ×
+    columnas): la correlación y el número de filas presentes.
+    """
+    ranked = _ranked_columns(sessions, values, np.isfinite(target))
+    return _correlations(sessions, ranked, target, min_assets, cache)
 
 
 def scan(frame, feature_columns, *, lag, **options):
@@ -252,25 +268,35 @@ def permutation_null(keys, values, names, *, permutations, seed, **options):
     values = values[sessions.order]
     unused = np.full(len(sessions.starts), np.nan)
 
-    def score(order):
-        ic, present = _session_ic(sessions, values, target[order], settings["min_assets"], {})
+    def judge(ic, present, block):
         found = [
             _finding(name, ic[:, j], present[:, j], unused, settings)
-            for j, name in enumerate(names)
+            for j, name in enumerate(block)
         ]
         means = [entry["mean_abs_ic"] for entry in found if entry["mean_abs_ic"] is not None]
-        return ic, found, max(means, default=None)
+        return found, max(means, default=np.nan)
 
-    ic, found, strongest = score(np.arange(len(target)))
-    _require(strongest is not None, "Ninguna sesión tiene una correlación definida")
+    ic, present = _session_ic(sessions, values, target, settings["min_assets"], {})
+    found, strongest = judge(ic, present, names)
+    _require(np.isfinite(strongest), "Ninguna sesión tiene una correlación definida")
     flagged = [entry["column"] for entry in found if entry["flagged"]]
-    rng = np.random.default_rng(seed)
-    counts, maxima = [], []
-    for _ in range(permutations):
-        _, null, top = score(_within_sessions(sessions, rng))
-        counts.append(sum(entry["flagged"] for entry in null))
-        maxima.append(top)
-    counts, maxima = np.array(counts), np.array(maxima, dtype=np.float64)
+    # Permutar el objetivo no cambia los rangos de las columnas. Se calculan una vez por bloque
+    # de `chunk` columnas y cada permutación solo vuelve a ordenar el objetivo. Cada bloque
+    # recorre las permutaciones con un generador nuevo de la misma semilla, así que todos ven
+    # los mismos órdenes y el resultado es el de puntuar todas las columnas a la vez.
+    counts, maxima = np.zeros(permutations, dtype=np.int64), np.full(permutations, np.nan)
+    for start in range(0, len(names), settings["chunk"]):
+        block = names[start : start + settings["chunk"]]
+        ranked = list(_ranked_columns(sessions, values[:, start : start + len(block)], True))
+        rng = np.random.default_rng(seed)
+        for index in range(permutations):
+            order = _within_sessions(sessions, rng)
+            null_ic, null_present = _correlations(
+                sessions, ranked, target[order], settings["min_assets"], {}
+            )
+            null, top = judge(null_ic, null_present, block)
+            counts[index] += sum(entry["flagged"] for entry in null)
+            maxima[index] = np.fmax(maxima[index], top)
     quantiles = (0.05, 0.5, 0.95)
     defined = np.isfinite(ic)
     positive = ((ic > 0) & defined).sum(axis=0) / np.maximum(defined.sum(axis=0), 1)
