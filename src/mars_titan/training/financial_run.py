@@ -42,7 +42,7 @@ from mars_titan.models.titans.state import (
     require_true,
 )
 
-from . import anchored_decay
+from . import anchored_decay, distillation
 from .anchored_decay import ANCHORS
 from .checkpoints import (
     StopRequest,
@@ -107,11 +107,15 @@ class ChronologicalRecipe:
     # None conserva el decaimiento de AdamW hacia cero. `initial_parameters` lo ancla al
     # estado con que empieza el ajuste, que en el postentrenamiento es el padre (#444).
     weight_decay_anchor: str | None = None
+    # None ajusta solo con las etiquetas. Una fracción w suma la distancia a las salidas de un
+    # profesor en las filas de ajuste con peso w y deja 1 − w a la tarea (#57).
+    distillation_weight: float | None = None
 
     def __post_init__(self):
         # pinball solo corresponde a `quantile_head_v1`. huber_delta conserva su validación.
         validate_loss("mae" if self.loss == PINBALL else self.loss, self.huber_delta)
         validate_selection(self.selection, epochs=self.epochs)
+        distillation.checked_weight(self.distillation_weight)
         numbers = (self.learning_rate, self.weight_decay, self.checkpoint_seconds)
         if (
             any(type(v) is not int or not 1 <= v <= m for v, m in self._bounded())
@@ -160,6 +164,10 @@ class ChronologicalRecipe:
             fields.pop("precision")
         if fields["weight_decay_anchor"] is None:
             fields.pop("weight_decay_anchor")
+        if fields["distillation_weight"] is None:
+            fields.pop("distillation_weight")
+        else:
+            fields["distillation_distance"] = distillation.DISTANCE
         return dict(
             schema_version=1,
             recipe=RECIPE,
@@ -705,6 +713,7 @@ class ChronologicalTrainer(ChronologicalInference):
         optimizer_factory=None,
         pairing=None,
         posttraining=None,
+        teacher=None,
         audit=False,
     ):
         super().__init__(predictor, recipe, audit=audit)
@@ -729,6 +738,17 @@ class ChronologicalTrainer(ChronologicalInference):
             or pairing.get("runtime_state_transferred") is not False
         ):
             raise ValueError("El recibo de emparejamiento no corresponde a estos parámetros")
+        # Las salidas del profesor solo entran en la pérdida y deben ser de este tramo (#57).
+        if (recipe.distillation_weight is None) != (teacher is None) or (
+            teacher is not None
+            and (
+                type(teacher) is not distillation.TeacherTargets
+                or teacher.quantiles != self.quantiles
+                or teacher.source != distillation.bound_source(train)
+            )
+        ):
+            raise ValueError("La destilación necesita las salidas del profesor de este tramo")
+        self.teacher = teacher
         self.train, self.validation = train, validation
         self.output = Path(output)
         for protected in (*train.dataset.roots.values(), train.path.parent, validation.path.parent):
@@ -808,6 +828,13 @@ class ChronologicalTrainer(ChronologicalInference):
         if posttraining is not None:
             # Sin postentrenamiento la identidad conserva literalmente su forma anterior.
             self.identity.update(posttraining=posttraining, frozen_parameters=frozen)
+        if teacher is not None:
+            # Sin destilación la identidad conserva literalmente su forma anterior.
+            self.identity["distillation"] = dict(
+                teacher.identity,
+                weight=recipe.distillation_weight,
+                implementation_sha256=sha256(Path(distillation.__file__)),
+            )
         anchored = anchored_decay.describe(self.optimizer, recipe.weight_decay_anchor)
         if anchored is not None:
             # Solo el decaimiento anclado añade su código. Sin él la identidad no cambia.
@@ -839,18 +866,26 @@ class ChronologicalTrainer(ChronologicalInference):
             return functional.mse_loss(prediction, target)
         return functional.huber_loss(prediction, target, delta=self.recipe.huber_delta)
 
+    def _distilled(self, loss, prediction, keys):
+        """Objetivo del tramo: la tarea o, con profesor, su mezcla con la distancia a él."""
+        if self.teacher is None:
+            return loss
+        teacher = self.teacher.values(keys, device=prediction.device, dtype=prediction.dtype)
+        return distillation.objective(loss, prediction, teacher, self.recipe.distillation_weight)
+
     def _backward(self, run):
         """Gradiente de la pérdida media del tramo con los grafos conservados.
 
-        Con la penalización C, el objetivo suma la media de los términos de los grupos
-        medidos en el tramo. La pérdida devuelta sigue siendo la de la tarea.
+        Con profesor, la tarea se mezcla con la distancia a sus salidas. Con la penalización
+        C, el objetivo suma la media de los términos de los grupos medidos en el tramo. La
+        pérdida devuelta sigue siendo la de la tarea.
         """
         prediction = torch.stack(run.predictions)
         target = torch.tensor(run.targets, dtype=prediction.dtype, device=prediction.device)
         loss = self._loss(prediction, target)
-        objective = loss
+        objective = self._distilled(loss, prediction, [(flow, at) for flow, at, _ in run.used])
         if run.penalties:
-            objective = loss + torch.stack(run.penalties).mean()
+            objective = objective + torch.stack(run.penalties).mean()
         if not torch.isfinite(objective).item():
             raise ValueError("La pérdida del tramo no es finita")
         objective.backward()
@@ -925,8 +960,12 @@ class ChronologicalTrainer(ChronologicalInference):
                         dtype=prediction.dtype,
                         device=prediction.device,
                     )
-                    loss = self._loss(prediction, target) * (len(keys) / len(run.used))
+                    task = self._loss(prediction, target)
+                    share = len(keys) / len(run.used)
+                    loss = task * share
                     total += float(loss.detach())
+                    if self.teacher is not None:
+                        loss = self._distilled(task, prediction, keys) * share
                     terms.append(loss)
                 if penalties:
                     terms.append(sum(penalties) / len(run.penalties))
