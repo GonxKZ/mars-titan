@@ -108,7 +108,10 @@ class Captured(Exception):
 captured = {}
 
 
-def _intercept(build, fresh, paused, _options, inputs, _settings, counters=()):
+def _intercept(build, fresh, paused, _options, inputs, _settings, counters=(), traces=None):
+    # La medida es la del recorrido sin las trazas de #448, que tienen su propia medición.
+    if traces is not None:
+        raise SystemExit("chronological_replay.py mide el recorrido sin trazas")
     captured.update(build=build, fresh=fresh, paused=paused, inputs=inputs)
     raise Captured
 

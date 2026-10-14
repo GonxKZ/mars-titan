@@ -47,7 +47,7 @@ Guarda la auditoría completa (cada predicción, etiqueta y pérdida en orden), 
 
 En los 28 pares coinciden la auditoría (605 entradas en Titans-MAC, 183 en M0 y 214 en M1 y M3), los gradientes de las 11 llamadas, los estados exportados en cada cierre (tres recorridos en Titans-MAC y uno en el lector), las métricas y la identidad. Los módulos cuyo SHA-256 cambia son los siete de la rama: `config`, `episodic_readout`, `financial`, `financial_inputs` y `state` de `models.titans`, y `financial_run` y `mars_titan_run` de `training`. Como control de que la captura distingue dispositivos, la captura de CPU y la de `cuda:0` de un mismo árbol en FP32 no coinciden (en M1, el gradiente difiere hasta 3,5e-10).
 
-Los commits comparados son `develop` en 7a82b055 y la rama en 6a013588. Antes de integrar #565 la misma comparación, entre b9b1f36d y la rama sobre él, dio el mismo resultado. Esta igualdad está comprobada en el corpus técnico. La comparación con los eventos reales de la campaña queda pendiente con las medidas de tiempo, por el motivo que se explica más abajo.
+Los commits comparados son `develop` en 7a82b055 y la rama en 6a013588. Antes de integrar #565 la misma comparación, entre b9b1f36d y la rama sobre él, dio el mismo resultado. Esta igualdad está comprobada en el corpus técnico. La comparación con los eventos reales de la campaña está en [Medidas de tiempo](#medidas-de-tiempo).
 
 ## Mutaciones
 
@@ -101,22 +101,36 @@ Los bytes resumidos apenas cambian porque casi todos vienen de otro sitio. Un re
 
 La fixture usa bloques de 2 filas y `hidden_size` 32, mientras la campaña usa bloques de cientos de filas y `hidden_size` 64. Estas proporciones muestran qué trabajo se ha retirado, pero no predicen la reducción de tiempo en la campaña, que solo puede salir de la medida del recorrido real.
 
-## Medidas de tiempo pendientes
+## Medidas de tiempo
 
-El cuarto criterio de #549, que el recorrido por evento de `mac_online` y de los lectores con banco mejore de forma medida, sigue abierto. Faltan las rondas de tiempo y VRAM, los perfiles de py-spy y Nsight Systems y el benchmark del CUDA Graph de la emisión. Hay dos motivos.
+Las rondas se tomaron el 14 de octubre de 2026, con la GPU sin otras cargas de cómputo. La única carga ajena era un renderizador de Chrome, en torno al 48 % de un núcleo, y la carga media de cada ronda queda en el recibo [`abba-20261014.json`](abba-20261014.json).
 
-- **GPU con una carga ajena.** Un `llama-server` de otro proyecto del usuario ocupaba unos 5,4 GB y un 84 % de uso a las 14:36, y a las 18:34 seguía con 5.438 MiB y un 91 %. Las medidas de tiempo y VRAM solo se toman con la GPU libre de cargas ajenas, así que no se publica ninguna cifra tomada con esa carga.
-- **Eventos sin vista.** Los eventos guardados de la vista `US+CN/fold-012` de #363 ya no se pueden abrir, porque la ejecución de la v3.1 sustituyó las muestras de la vista v3 activo a activo (la misma dependencia que describe el [informe del cableado de núcleos](../campaign-kernels-wiring-20261010/README.md#dependencias)). Hacen falta una vista v3.1 del mismo fold y eventos nuevos guardados desde ella.
+- **Datos.** Vista `US+CN/fold-012` de las vistas v3.1 de A v2. Los eventos se guardaron una sola vez desde `develop` en 06e69db6, con `benchmarks/chronological_events.py VISTA TRABAJO eventos.pkl 100 6`, y empiezan en el evento 3.224 de 6.449. Los dos árboles recorren el mismo tramo de ajuste: 88.028 filas, 87.202 etiquetas y 11 llamadas a `_NoStepOptimizer`, que nunca aplica un paso.
+- **Árboles.** A = 7012da85 y B = 37f4b7a7, el commit de #589 en `develop`. Entre los dos entran también [#594](https://github.com/GonxKZ/mars-titan/pull/594), que cambia cómo se trocean las tablas acotadas de `data/batches.py`, y dos cambios nativos de la evaluación de políticas. Ninguno toca el recorrido medido: los eventos vienen guardados, la lectura de datos ocupa entre el 0,03 % y el 0,11 % del tiempo en los dos árboles y el enlace episódico es el mismo binario, compilado desde `develop` en df7bb523.
+- **Orden.** A B B A por modelo. Cada ronda va en su propio proceso y trabajo `memslot gpu`, con `--strict --warmup 2 --segments 8`, FP32 estricto (sin TF32 en matmul ni en cuDNN), `CUBLAS_WORKSPACE_CONFIG=:4096:8`, dos hilos y el perfil de energía de ahorro.
+- **Opciones.** Titans-MAC usa la receta de la campaña. Los lectores usan además `precision="fp32_strict"`, `block_rows=512`, `max_batch=1024` y `max_state_bytes=134217728`, y las escalas de M3 salen de los mismos eventos en los dos árboles.
 
-Las órdenes para repetirlas, desde la raíz de cada árbol (`develop` y la rama) y con `CUBLAS_WORKSPACE_CONFIG=:4096:8 OMP_NUM_THREADS=2 PYTHONPATH=src`:
+| Modelo | Filas/s antes | Filas/s después | Cociente de medias | Peor par | Pico asignado antes y después |
+| --- | --- | --- | --- | --- | --- |
+| `titans_mac_online` | 13.583 y 14.379 | 19.534 y 19.319 | 1,39 | 1,34 | 2.113 MiB en las dos |
+| `mars_titan_m1` | 6.112 y 6.203 | 7.201 y 7.078 | 1,16 | 1,14 | 397 y 402 MiB |
+| `mars_titan_m3` | 5.027 y 5.463 | 6.112 y 6.230 | 1,18 | 1,12 | 397 y 402 MiB |
+
+El peor par divide la ronda más lenta de después entre la más rápida de antes. En los lectores el pico asignado sube 5 MiB (1,3 %) y el reservado de 480 a 492 o 494 MiB. En Titans-MAC no cambia.
+
+Las capturas de las cuatro rondas de cada modelo coinciden bit a bit, entre árboles (rondas 1 y 2, 4 y 3) y dentro de cada árbol (1 y 4, 2 y 3). Coinciden los nombres de los parámetros, los gradientes de las 11 llamadas (442 tensores en Titans-MAC y 77 en cada lector) y las 3.347 predicciones pendientes al terminar, con `torch.equal` y el mismo tipo. Así queda comprobada con eventos reales la igualdad que [Igualdad de bits](#igualdad-de-bits) comprobó en el corpus técnico.
+
+Como los eventos vienen guardados, los cocientes describen el recorrido por evento. El tiempo de una ventana completa incluye también la lectura de la vista, la preparación y las validaciones, y no se extrapola de estas rondas.
+
+## Pendiente
+
+Quedan los perfiles de py-spy y Nsight Systems del recorrido actual y el benchmark del CUDA Graph de la emisión. Solo con ellos se decidirá si compensa capturar CUDA Graphs por forma exacta o fusionar la actualización de memoria en un núcleo CUDA, que este informe no evalúa. Las órdenes, desde la raíz de cada árbol y con `CUBLAS_WORKSPACE_CONFIG=:4096:8 OMP_NUM_THREADS=2 PYTHONPATH=src`:
 
 1. Eventos, una vez y sin GPU: `python benchmarks/chronological_events.py VISTA/manifest.json TRABAJO eventos.pkl 100 6`.
-2. Rondas alternas `develop`, rama, rama, `develop`, cada una en su propio trabajo `memslot gpu`: `python benchmarks/chronological_replay.py VISTA/manifest.json TRABAJO --family titans --arm titans_mac_online --strict --warmup 2 --segments 8 --events eventos.pkl --capture CAPTURA.pt --output resultados.jsonl --label ETIQUETA`. Para los lectores, `--family readout --arm mars_titan_m1` y `--arm mars_titan_m3` con `--option precision='"fp32_strict"' --option block_rows=512 --predictor max_batch=1024 --predictor max_state_bytes=134217728`.
-3. Bits de las rondas: `python reports/engineering/profiling-20261010/compare_capture.py DIRECTORIO salida.json develop:rama`.
+2. Rondas alternas, cada una en su propio trabajo `memslot gpu`: `python benchmarks/chronological_replay.py VISTA/manifest.json TRABAJO --family titans --arm titans_mac_online --strict --warmup 2 --segments 8 --events eventos.pkl --capture CAPTURA.pt --output resultados.jsonl --label ETIQUETA`. Para los lectores, `--family readout --arm mars_titan_m1` y `--arm mars_titan_m3` con `--option precision='"fp32_strict"' --option block_rows=512 --predictor max_batch=1024 --predictor max_state_bytes=134217728`, y `BENCH_M3_EVENTS=eventos.pkl` para que M3 estime sus escalas con los mismos eventos.
+3. Bits de las rondas: `python reports/engineering/profiling-20261010/compare_capture.py DIRECTORIO salida.json antes:despues`.
 4. Perfiles: `py-spy record --rate 100 --format raw` y `MARS_TITAN_NVTX=1 nsys profile --trace=cuda,nvtx --sample=none --cpuctxsw=none` sobre la orden de la ronda, resumidos con `benchmarks/collapsed_profile_summary.py` y `benchmarks/nsys_range_summary.py`.
 5. Emisión con CUDA Graph: `python benchmarks/titans_emission_graph.py eventos.pkl VISTA/manifest.json salida.json 1024`.
-
-Solo con esas medidas se decidirá si compensa capturar CUDA Graphs por forma exacta o fusionar la actualización de memoria en un núcleo CUDA, que este informe no evalúa.
 
 ## Reproducción
 

@@ -30,10 +30,18 @@ def _ranges(db, names):
 
 
 def _copy_kinds(db):
+    return dict(_rows(db, "SELECT id, label FROM ENUM_CUDA_MEMCPY_OPER"))
+
+
+def _rows(db, query):
+    """Filas de una tabla de actividad. nsys no exporta la tabla de un tipo que no ocurrió,
+    como los grafos en un recorrido sin CUDA Graphs, y entonces no hay filas que contar."""
     try:
-        return dict(db.execute("SELECT id, label FROM ENUM_CUDA_MEMCPY_OPER").fetchall())
-    except sqlite3.OperationalError:
-        return {}
+        return db.execute(query).fetchall()
+    except sqlite3.OperationalError as error:
+        if "no such table" not in str(error):
+            raise
+        return []
 
 
 def summary(path, names, repeats=1):
@@ -44,20 +52,20 @@ def summary(path, names, repeats=1):
         "SELECT start, end, nameId, correlationId FROM CUPTI_ACTIVITY_KIND_RUNTIME"
     ).fetchall()
     kernels = {}
-    for correlation, duration in db.execute(
-        "SELECT correlationId, end - start FROM CUPTI_ACTIVITY_KIND_KERNEL"
+    for correlation, duration in _rows(
+        db, "SELECT correlationId, end - start FROM CUPTI_ACTIVITY_KIND_KERNEL"
     ):
         count, total = kernels.get(correlation, (0, 0))
         kernels[correlation] = (count + 1, total + duration)
     graphs = {}
-    for correlation, duration in db.execute(
-        "SELECT correlationId, end - start FROM CUPTI_ACTIVITY_KIND_GRAPH_TRACE"
+    for correlation, duration in _rows(
+        db, "SELECT correlationId, end - start FROM CUPTI_ACTIVITY_KIND_GRAPH_TRACE"
     ):
         count, total = graphs.get(correlation, (0, 0))
         graphs[correlation] = (count + 1, total + duration)
     copies = {}
-    for correlation, kind, size in db.execute(
-        "SELECT correlationId, copyKind, bytes FROM CUPTI_ACTIVITY_KIND_MEMCPY"
+    for correlation, kind, size in _rows(
+        db, "SELECT correlationId, copyKind, bytes FROM CUPTI_ACTIVITY_KIND_MEMCPY"
     ):
         copies.setdefault(correlation, []).append((kind, size))
     result = {}
