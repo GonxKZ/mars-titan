@@ -24,6 +24,8 @@ REFERENCE = "dd0a5d68"
 ROOT = Path(__file__).resolve().parents[2]
 COHORT = "us_historical_masked"
 BASE = np.datetime64("2021-01-01", "D")
+# Inicio del tramo reservado de la vista temporal de prueba, como `final_test_start`.
+RESERVED = np.datetime64("2023-10-01", "us")
 SPLITS = {
     False: ("train", "validation"),
     True: ("train", "validation", "calibration", "evaluation"),
@@ -98,10 +100,12 @@ class Calendar:
     def partition_reasons(self, prediction, available, maturity, eligible):
         names = bucket(prediction.astype("datetime64[us]"), maturity.astype("datetime64[us]"), True)
         accepted = names != None  # noqa: E711
-        return (
-            np.where(accepted, names, "excluded").astype("U13"),
-            np.where(accepted, "accepted", "label_crosses_boundary").astype("U32"),
-        )
+        partition = np.where(accepted, names, "excluded").astype("U13")
+        reason = np.where(accepted, "accepted", "label_crosses_boundary").astype("U32")
+        # Como la vista real, el final queda reservado con un tramo propio y sin aceptar.
+        reserved = prediction.astype("datetime64[us]") >= RESERVED
+        partition[reserved], reason[reserved] = "test_reserved", "final_test_reserved"
+        return partition, reason
 
     def assign(self, prediction, available, maturity, eligible):
         # La revisión anterior pedía la asignación con los motivos como objetos.
@@ -143,6 +147,8 @@ def label_case(rng, temporal, path):
     if temporal:
         view = rng.random(rows) < 0.1
         reason[view], partition[view] = "outside_window", None
+        reserved = prediction >= RESERVED
+        reason[reserved], partition[reserved] = "final_test_reserved", None
     columns = dict(
         sample_row=np.arange(rows, dtype=np.int64),
         prediction_at=prediction,
@@ -194,6 +200,10 @@ def label_case(rng, temporal, path):
         columns["partition"][:] = None
     elif defect == 16 and len(accepted):
         columns["partition"][rng.choice(accepted)] = "test_reserved"
+    elif defect == 17 and temporal and np.any(prediction >= RESERVED):
+        # Coincide con el tramo de la vista, pero la vista no acepta la fila.
+        row = rng.choice(np.flatnonzero(prediction >= RESERVED))
+        columns["reason"][row], columns["partition"][row] = "accepted", "test_reserved"
     # Las filas se escriben a veces desordenadas, y en grupos que dan varios fragmentos.
     order = rng.permutation(rows) if rng.random() < 0.5 else np.arange(rows)
     arrays = {
