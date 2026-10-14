@@ -360,7 +360,7 @@ REDIRECTIONS = {
     "tests/posttraining/campaign_fixture.py": (1, _CAMPAIGN),
     "tests/posttraining/test_learning_hold_entrypoints.py": (2, _READER),
     "tests/posttraining/test_publication_from_aggregates.py": (
-        3,
+        4,
         "reutiliza la protección permitida de la campaña base del fixture para completar la "
         "etapa de adaptadores con el optimizador registrador y recorrer la retención v2",
     ),
