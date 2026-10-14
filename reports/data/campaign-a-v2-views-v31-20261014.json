@@ -1,0 +1,727 @@
+{
+  "schema_version": 1,
+  "recorded_at_utc": "2026-10-14T05:03:29.203062+00:00",
+  "kind": "prepared_and_verified_campaign_a_v2_views",
+  "scope": "Vistas walk-forward de la campaña A v2 sobre la edición v3.1. Sin modelos ni aprendizaje.",
+  "input_policy": "historical_masked_2000_v1",
+  "campaign_config": "configs/baselines/historical-masked-campaign-a-v2.json",
+  "campaign_config_sha256": "cb8ce969532b46ac9beb0bd466a6283e36b9dadc9199e4cd1de5e2d6da3e0873",
+  "targets_manifest_sha256": "fe86a923dd49a24247a1925e195b0bfd07cacf02c7bd43f0bcde0d292251893a",
+  "preparation": {
+    "entry": "training.masked_campaign prepare --scope, un proceso por ámbito dentro de memslot heavy",
+    "note": "US+CN se preparó con 7a82b055 y US y CN con 9b2641c8. Entre los dos commits no cambian prepare_views, los protocolos de las vistas ni el subconjunto de la campaña, y el verificador compara cada ventana conjunta con su gemela por mercado.",
+    "scopes": {
+      "US+CN": {
+        "windows": 19,
+        "report_sha256": "c0c00a475840e23f8c8138da1844f4076ee9a90834b2a40ceadddb02acfba4fe",
+        "parent_sha256": "fe86a923dd49a24247a1925e195b0bfd07cacf02c7bd43f0bcde0d292251893a",
+        "counts_total": {
+          "train": 143200257,
+          "validation": 7985418,
+          "calibration": 4036636,
+          "evaluation": 16705862
+        },
+        "purged_by_boundary_total": {
+          "train": 62413,
+          "validation": 64680,
+          "calibration": 65514,
+          "evaluation": 63910
+        },
+        "counts_by_window": [
+          {
+            "train": 1313128,
+            "validation": 194655,
+            "calibration": 100689,
+            "evaluation": 414341
+          },
+          {
+            "train": 1710065,
+            "validation": 209451,
+            "calibration": 104708,
+            "evaluation": 488489
+          },
+          {
+            "train": 2133660,
+            "validation": 243173,
+            "calibration": 136955,
+            "evaluation": 587447
+          },
+          {
+            "train": 2654761,
+            "validation": 294291,
+            "calibration": 153666,
+            "evaluation": 648475
+          },
+          {
+            "train": 3260098,
+            "validation": 326977,
+            "calibration": 166168,
+            "evaluation": 673364
+          },
+          {
+            "train": 3918943,
+            "validation": 340332,
+            "calibration": 169766,
+            "evaluation": 701071
+          },
+          {
+            "train": 4600775,
+            "validation": 351617,
+            "calibration": 180234,
+            "evaluation": 749229
+          },
+          {
+            "train": 5317452,
+            "validation": 378073,
+            "calibration": 188858,
+            "evaluation": 783444
+          },
+          {
+            "train": 6080386,
+            "validation": 393519,
+            "calibration": 196685,
+            "evaluation": 820509
+          },
+          {
+            "train": 6869679,
+            "validation": 415127,
+            "calibration": 209269,
+            "evaluation": 866108
+          },
+          {
+            "train": 7705214,
+            "validation": 436634,
+            "calibration": 221385,
+            "evaluation": 915972
+          },
+          {
+            "train": 8586629,
+            "validation": 461732,
+            "calibration": 234019,
+            "evaluation": 967507
+          },
+          {
+            "train": 9521146,
+            "validation": 490809,
+            "calibration": 241287,
+            "evaluation": 1005781
+          },
+          {
+            "train": 10504940,
+            "validation": 504806,
+            "calibration": 252893,
+            "evaluation": 1061764
+          },
+          {
+            "train": 11523645,
+            "validation": 536192,
+            "calibration": 268266,
+            "evaluation": 1114685
+          },
+          {
+            "train": 12591684,
+            "validation": 565395,
+            "calibration": 289820,
+            "evaluation": 1200117
+          },
+          {
+            "train": 13744248,
+            "validation": 601794,
+            "calibration": 304867,
+            "evaluation": 1233981
+          },
+          {
+            "train": 14959405,
+            "validation": 619887,
+            "calibration": 310227,
+            "evaluation": 1237793
+          },
+          {
+            "train": 16204399,
+            "validation": 620954,
+            "calibration": 306874,
+            "evaluation": 1235785
+          }
+        ],
+        "preparation": {
+          "commit": "7a82b055af671a76bbdc2936ca7e31b9a51a75ae",
+          "started": "2026-10-13T17:35:14Z",
+          "wall_clock_seconds": 5080,
+          "max_rss_kib": 2161652,
+          "exit_code": 0
+        },
+        "bytes_apparent": 8549936964,
+        "bytes_allocated": 8740978688,
+        "files": 95214,
+        "eligible_cn_windows": [
+          "fold-006",
+          "fold-007",
+          "fold-008",
+          "fold-009",
+          "fold-010",
+          "fold-011",
+          "fold-012",
+          "fold-013",
+          "fold-014",
+          "fold-015",
+          "fold-016",
+          "fold-017",
+          "fold-018"
+        ],
+        "counts_by_window_and_market": {
+          "fold-000": {
+            "US": {
+              "train": 1313128,
+              "validation": 194655,
+              "calibration": 100689,
+              "evaluation": 414341
+            },
+            "CN": {
+              "train": 0,
+              "validation": 0,
+              "calibration": 0,
+              "evaluation": 0
+            }
+          },
+          "fold-001": {
+            "US": {
+              "train": 1710065,
+              "validation": 209451,
+              "calibration": 104708,
+              "evaluation": 437645
+            },
+            "CN": {
+              "train": 0,
+              "validation": 0,
+              "calibration": 0,
+              "evaluation": 50844
+            }
+          },
+          "fold-002": {
+            "US": {
+              "train": 2133660,
+              "validation": 218863,
+              "calibration": 110863,
+              "evaluation": 475623
+            },
+            "CN": {
+              "train": 0,
+              "validation": 24310,
+              "calibration": 26092,
+              "evaluation": 111824
+            }
+          },
+          "fold-003": {
+            "US": {
+              "train": 2578424,
+              "validation": 236733,
+              "calibration": 125375,
+              "evaluation": 525350
+            },
+            "CN": {
+              "train": 76337,
+              "validation": 57558,
+              "calibration": 28291,
+              "evaluation": 123125
+            }
+          },
+          "fold-004": {
+            "US": {
+              "train": 3068237,
+              "validation": 265024,
+              "calibration": 134265,
+              "evaluation": 546868
+            },
+            "CN": {
+              "train": 191861,
+              "validation": 61953,
+              "calibration": 31903,
+              "evaluation": 126496
+            }
+          },
+          "fold-005": {
+            "US": {
+              "train": 3602637,
+              "validation": 274686,
+              "calibration": 139027,
+              "evaluation": 570313
+            },
+            "CN": {
+              "train": 316306,
+              "validation": 65646,
+              "calibration": 30739,
+              "evaluation": 130758
+            }
+          },
+          "fold-006": {
+            "US": {
+              "train": 4156708,
+              "validation": 285537,
+              "calibration": 146451,
+              "evaluation": 604238
+            },
+            "CN": {
+              "train": 444067,
+              "validation": 66080,
+              "calibration": 33783,
+              "evaluation": 144991
+            }
+          },
+          "fold-007": {
+            "US": {
+              "train": 4739006,
+              "validation": 303335,
+              "calibration": 152663,
+              "evaluation": 629911
+            },
+            "CN": {
+              "train": 578446,
+              "validation": 74738,
+              "calibration": 36195,
+              "evaluation": 153533
+            }
+          },
+          "fold-008": {
+            "US": {
+              "train": 5353824,
+              "validation": 315473,
+              "calibration": 157840,
+              "evaluation": 666320
+            },
+            "CN": {
+              "train": 726562,
+              "validation": 78046,
+              "calibration": 38845,
+              "evaluation": 154189
+            }
+          },
+          "fold-009": {
+            "US": {
+              "train": 5988592,
+              "validation": 337016,
+              "calibration": 170209,
+              "evaluation": 706326
+            },
+            "CN": {
+              "train": 881087,
+              "validation": 78111,
+              "calibration": 39060,
+              "evaluation": 159782
+            }
+          },
+          "fold-010": {
+            "US": {
+              "train": 6667897,
+              "validation": 354810,
+              "calibration": 181845,
+              "evaluation": 754028
+            },
+            "CN": {
+              "train": 1037317,
+              "validation": 81824,
+              "calibration": 39540,
+              "evaluation": 161944
+            }
+          },
+          "fold-011": {
+            "US": {
+              "train": 7389019,
+              "validation": 378420,
+              "calibration": 193676,
+              "evaluation": 800803
+            },
+            "CN": {
+              "train": 1197610,
+              "validation": 83312,
+              "calibration": 40343,
+              "evaluation": 166704
+            }
+          },
+          "fold-012": {
+            "US": {
+              "train": 8158260,
+              "validation": 405737,
+              "calibration": 200640,
+              "evaluation": 833969
+            },
+            "CN": {
+              "train": 1362886,
+              "validation": 85072,
+              "calibration": 40647,
+              "evaluation": 171812
+            }
+          },
+          "fold-013": {
+            "US": {
+              "train": 8974007,
+              "validation": 417082,
+              "calibration": 210488,
+              "evaluation": 885298
+            },
+            "CN": {
+              "train": 1530933,
+              "validation": 87724,
+              "calibration": 42405,
+              "evaluation": 176466
+            }
+          },
+          "fold-014": {
+            "US": {
+              "train": 9818574,
+              "validation": 446475,
+              "calibration": 224847,
+              "evaluation": 950243
+            },
+            "CN": {
+              "train": 1705071,
+              "validation": 89717,
+              "calibration": 43419,
+              "evaluation": 164442
+            }
+          },
+          "fold-015": {
+            "US": {
+              "train": 10722076,
+              "validation": 476924,
+              "calibration": 244312,
+              "evaluation": 1015804
+            },
+            "CN": {
+              "train": 1869608,
+              "validation": 88471,
+              "calibration": 45508,
+              "evaluation": 184313
+            }
+          },
+          "fold-016": {
+            "US": {
+              "train": 11694982,
+              "validation": 508446,
+              "calibration": 259102,
+              "evaluation": 1042405
+            },
+            "CN": {
+              "train": 2049266,
+              "validation": 93348,
+              "calibration": 45765,
+              "evaluation": 191576
+            }
+          },
+          "fold-017": {
+            "US": {
+              "train": 12724225,
+              "validation": 522266,
+              "calibration": 262341,
+              "evaluation": 1043826
+            },
+            "CN": {
+              "train": 2235180,
+              "validation": 97621,
+              "calibration": 47886,
+              "evaluation": 193967
+            }
+          },
+          "fold-018": {
+            "US": {
+              "train": 13775654,
+              "validation": 521928,
+              "calibration": 259215,
+              "evaluation": 1040641
+            },
+            "CN": {
+              "train": 2428745,
+              "validation": 99026,
+              "calibration": 47659,
+              "evaluation": 195144
+            }
+          }
+        }
+      },
+      "US": {
+        "windows": 19,
+        "report_sha256": "cbbde2a1ce34c2393257c8ac336f5699b5446c7afe59dfa01a42180c0aa120fb",
+        "parent_sha256": "900ded8ef8bb4893b94187752a12667dde61f8bc68506d0264b813b52ec3097e",
+        "counts_total": {
+          "train": 124568975,
+          "validation": 6672861,
+          "calibration": 3378556,
+          "evaluation": 13943952
+        },
+        "purged_by_boundary_total": {
+          "train": 52282,
+          "validation": 53666,
+          "calibration": 54432,
+          "evaluation": 52828
+        },
+        "counts_by_window": [
+          {
+            "train": 1313128,
+            "validation": 194655,
+            "calibration": 100689,
+            "evaluation": 414341
+          },
+          {
+            "train": 1710065,
+            "validation": 209451,
+            "calibration": 104708,
+            "evaluation": 437645
+          },
+          {
+            "train": 2133660,
+            "validation": 218863,
+            "calibration": 110863,
+            "evaluation": 475623
+          },
+          {
+            "train": 2578424,
+            "validation": 236733,
+            "calibration": 125375,
+            "evaluation": 525350
+          },
+          {
+            "train": 3068237,
+            "validation": 265024,
+            "calibration": 134265,
+            "evaluation": 546868
+          },
+          {
+            "train": 3602637,
+            "validation": 274686,
+            "calibration": 139027,
+            "evaluation": 570313
+          },
+          {
+            "train": 4156708,
+            "validation": 285537,
+            "calibration": 146451,
+            "evaluation": 604238
+          },
+          {
+            "train": 4739006,
+            "validation": 303335,
+            "calibration": 152663,
+            "evaluation": 629911
+          },
+          {
+            "train": 5353824,
+            "validation": 315473,
+            "calibration": 157840,
+            "evaluation": 666320
+          },
+          {
+            "train": 5988592,
+            "validation": 337016,
+            "calibration": 170209,
+            "evaluation": 706326
+          },
+          {
+            "train": 6667897,
+            "validation": 354810,
+            "calibration": 181845,
+            "evaluation": 754028
+          },
+          {
+            "train": 7389019,
+            "validation": 378420,
+            "calibration": 193676,
+            "evaluation": 800803
+          },
+          {
+            "train": 8158260,
+            "validation": 405737,
+            "calibration": 200640,
+            "evaluation": 833969
+          },
+          {
+            "train": 8974007,
+            "validation": 417082,
+            "calibration": 210488,
+            "evaluation": 885298
+          },
+          {
+            "train": 9818574,
+            "validation": 446475,
+            "calibration": 224847,
+            "evaluation": 950243
+          },
+          {
+            "train": 10722076,
+            "validation": 476924,
+            "calibration": 244312,
+            "evaluation": 1015804
+          },
+          {
+            "train": 11694982,
+            "validation": 508446,
+            "calibration": 259102,
+            "evaluation": 1042405
+          },
+          {
+            "train": 12724225,
+            "validation": 522266,
+            "calibration": 262341,
+            "evaluation": 1043826
+          },
+          {
+            "train": 13775654,
+            "validation": 521928,
+            "calibration": 259215,
+            "evaluation": 1040641
+          }
+        ],
+        "preparation": {
+          "commit": "9b2641c8856e0020055d1fdbc4ee5b89f6fc4bd3",
+          "started": "2026-10-14T03:20:01Z",
+          "wall_clock_seconds": 1440.21,
+          "max_rss_kib": 2005660,
+          "exit_code": 0
+        },
+        "bytes_apparent": 7157591323,
+        "bytes_allocated": 7317405696,
+        "files": 79782
+      },
+      "CN": {
+        "windows": 13,
+        "report_sha256": "0a719627ee7da43ba3026acd20071ed2afed5472ef3a41040fd82166efe01fee",
+        "parent_sha256": "7a44d5c2649533f21e1de908e010c2e2ac3dddb7b7449018dfbd0633beb18705",
+        "counts_total": {
+          "train": 18046778,
+          "validation": 1103090,
+          "calibration": 541055,
+          "evaluation": 2218863
+        },
+        "purged_by_boundary_total": {
+          "train": 8668,
+          "validation": 9065,
+          "calibration": 9117,
+          "evaluation": 8547
+        },
+        "counts_by_window": [
+          {
+            "train": 444067,
+            "validation": 66080,
+            "calibration": 33783,
+            "evaluation": 144991
+          },
+          {
+            "train": 578446,
+            "validation": 74738,
+            "calibration": 36195,
+            "evaluation": 153533
+          },
+          {
+            "train": 726562,
+            "validation": 78046,
+            "calibration": 38845,
+            "evaluation": 154189
+          },
+          {
+            "train": 881087,
+            "validation": 78111,
+            "calibration": 39060,
+            "evaluation": 159782
+          },
+          {
+            "train": 1037317,
+            "validation": 81824,
+            "calibration": 39540,
+            "evaluation": 161944
+          },
+          {
+            "train": 1197610,
+            "validation": 83312,
+            "calibration": 40343,
+            "evaluation": 166704
+          },
+          {
+            "train": 1362886,
+            "validation": 85072,
+            "calibration": 40647,
+            "evaluation": 171812
+          },
+          {
+            "train": 1530933,
+            "validation": 87724,
+            "calibration": 42405,
+            "evaluation": 176466
+          },
+          {
+            "train": 1705071,
+            "validation": 89717,
+            "calibration": 43419,
+            "evaluation": 164442
+          },
+          {
+            "train": 1869608,
+            "validation": 88471,
+            "calibration": 45508,
+            "evaluation": 184313
+          },
+          {
+            "train": 2049266,
+            "validation": 93348,
+            "calibration": 45765,
+            "evaluation": 191576
+          },
+          {
+            "train": 2235180,
+            "validation": 97621,
+            "calibration": 47886,
+            "evaluation": 193967
+          },
+          {
+            "train": 2428745,
+            "validation": 99026,
+            "calibration": 47659,
+            "evaluation": 195144
+          }
+        ],
+        "preparation": {
+          "commit": "9b2641c8856e0020055d1fdbc4ee5b89f6fc4bd3",
+          "started": "2026-10-14T03:44:02Z",
+          "wall_clock_seconds": 273.74,
+          "max_rss_kib": 1226676,
+          "exit_code": 0
+        },
+        "bytes_apparent": 904773707,
+        "bytes_allocated": 925917184,
+        "files": 10544
+      }
+    },
+    "parents_bytes_apparent": 6091840,
+    "bytes_apparent": 16618393834,
+    "bytes_allocated": 16990400512
+  },
+  "official_validation": {
+    "entry": "masked_campaign.scope_views sobre los tres ámbitos",
+    "exit_code": 0
+  },
+  "independent_verification": {
+    "checked_at_utc": "2026-10-14T05:02:27.179943+00:00",
+    "verifier_sha256": "9110fc5d8d75938deb67408765b7cf31811ca5afa9e717a97288e4c3b29abfef",
+    "receipt_sha256": "b0e708868fe5c923b9f4bc13870f7a2f8143013403f8df165e87dd2a5d7944c1",
+    "runtime_commit": "9b2641c8856e0020055d1fdbc4ee5b89f6fc4bd3",
+    "assets": 5008,
+    "windows": {
+      "US": 19,
+      "CN": 13,
+      "US+CN": 19
+    },
+    "elapsed_seconds": 1380.1,
+    "checks": [
+      "fronteras de cada ventana recalculadas desde los protocolos sin el código que preparó las vistas",
+      "el protocolo CN v3 conjunto es el US v2 con otro mercado",
+      "partición por instante de decisión y purga por intervalo de etiqueta",
+      "ningún objetivo fuera de ventana, ninguna fila desde 2024 y maduración posterior a la decisión",
+      "objetivos idénticos bit a bit a targets-v3.1",
+      "ninguna fila elegible perdida",
+      "recuentos iguales a los manifiestos y al informe de cada ventana y mercado",
+      "elegibilidad de CN en US+CN recalculada e igual a la declarada",
+      "cada ventana conjunta idéntica a su gemela por mercado (US en todas y CN en las elegibles)"
+    ],
+    "exit_code": 0
+  },
+  "training_executed": false,
+  "final_test_opened": false,
+  "campaign_launched": false
+}

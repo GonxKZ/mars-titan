@@ -571,7 +571,7 @@ La campaña se ejecuta en una RTX 4070 Laptop de 8 GB con el perfil de energía 
 
 - Terminar el código y las implementaciones pendientes y revisar un resumen de su estado. Hasta entonces la protección de aprendizaje sigue activa.
 - Registrar la huella de la configuración que se lance. La campaña A v2 ya copia la declaración ampliada ([#363](https://github.com/GonxKZ/mars-titan/issues/363)).
-- Preparar y verificar las vistas de los tres ámbitos de la campaña v2 sobre la edición v3.1, cuando esa edición esté verificada, y recalcular con ella los recuentos y la proyección de horas.
+- Recalcular la proyección de horas con los recuentos de las vistas v3.1, ya preparadas y verificadas ([recibo](../../reports/data/campaign-a-v2-views-v31-20261014.json)), y un caudal medido en `cuda:0` sobre ellas.
 - Repetir sobre la vista v3.1 la medida de memoria que fija las opciones de la campaña A v2 (`accumulation_rows` de Titans-MAC, CM-v1 y la GRU candidata y `recompute` de esta) y actualizar el recibo si cambia algún valor.
 - Medir el coste real y la huella de disco del control `transformer_compact_online`.
 - Ejecutar el verificador de disjunción sobre las vistas v3.1 y, después, sobre los recibos de cada ventana. Las etapas v2 de adaptadores y de políticas ya siguen el contrato de la cadena.
