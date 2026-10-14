@@ -113,6 +113,6 @@
     "El recorte de Huber está implementado y comprobado, pero el modelo principal no lo usa para no añadir otro grado de libertad.",
     "El recorrido cronológico por ventanas emite B6 con las tres reglas desde el 13 de octubre de 2026 (#455).",
     "El 13 de octubre de 2026, antes de ejecutar nada, la selección de κ pasó de una elección única en las ventanas de 2005 a 2013 a una elección por ventana con la validación, igual que η en b6_proximal, y σ² y ϱ pasaron a estimarse con los tres últimos meses del ajuste de cada ventana.",
-    "La comparación de la campaña calcula la diferencia de MAE por sesión. La cobertura del intervalo de la corrección y D3 necesitan la varianza predictiva por fila y un recorrido con retraso adicional, que la ventana todavía no emite."
+    "La comparación de la campaña calcula la diferencia de MAE por sesión. Desde el 14 de octubre de 2026 la ventana kalman emite por fila la varianza predictiva y la predicción de una segunda memoria que recibe cada etiqueta una sesión más tarde, y la sección kalman_diagnostics de la comparación conjunta calcula con ellas la cobertura del intervalo de la corrección y D3 frente a titans_mac_online, sin repetir la inferencia del padre."
   ]
 }

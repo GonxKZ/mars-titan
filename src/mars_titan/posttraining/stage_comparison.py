@@ -263,6 +263,9 @@ def derive_config(declaration, stage, base_arm, groups):
     # Los pares de retención e interferencia nombran memorias y controles de la comparación
     # principal. La etapa no los tiene y su pregunta no es la del postentrenamiento.
     raw.pop(walk.RETENTION_FIELD, None)
+    # Los diagnósticos de kalman son de los modelos B6 de la comparación principal, que no son
+    # padres de la etapa.
+    raw.pop(walk.KALMAN_FIELD, None)
     if walk.JOINT_FIELD in raw:
         # La etapa del modelo conjunto solo evalúa su ámbito. Se conserva la elegibilidad por
         # mercado (China en las métricas desde su primera ventana elegible) y se retiran los

@@ -104,6 +104,9 @@ SECTIONS = {
     # Sesiones fijadas por fechas declaradas antes de ver resultados y percentiles de las
     # mismas series por sesión que los contrastes, sin estadísticas ajustadas con datos.
     "declared_events": None,
+    # Varianza emitida por B6 kalman con el estado anterior a cada evento y predicción con las
+    # etiquetas una sesión más tarde. La regla causal es la de la ventana B6.
+    "kalman_diagnostics": None,
     "liquidity_strata": (
         "source",
         {"unadjusted_reconstructed_verified_rows_up_to_the_last_published_session_v1"},

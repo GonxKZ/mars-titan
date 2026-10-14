@@ -1642,6 +1642,28 @@ Un evento sin sesiones evaluadas queda fuera con su motivo. El evento de 2008 so
 alguna ventana evalúa septiembre de 2008. No se ha ejecutado, porque necesita las
 predicciones de la campaña.
 
+## Cobertura de la varianza predictiva y retraso de las etiquetas en B6 kalman
+
+La regla de PT3 (#455) usa, además del MAE por sesión, la cobertura del intervalo de ±1,645
+desviaciones predictivas de la corrección y la ganancia que se conserva cuando cada etiqueta
+llega una sesión más tarde (D3 en [memory-diagnostics.md](memory-diagnostics.md)). La
+ventana B6 kalman emite por fila la varianza predictiva kᵀPk + σ² y la predicción de una
+segunda memoria que escribe cada etiqueta en la siguiente decisión de su mercado. La sección
+`kalman_diagnostics` de la comparación conjunta, declarada el 14 de octubre de 2026,
+calcula con las mismas filas que los contrastes:
+
+- la cobertura como fracción de filas con |y − ŷ| ≤ 1,645·√v en los años de 2014 a 2023,
+  por semilla, con las semillas juntas y por año;
+- la ganancia g₀ = media(MAE de `titans_mac_online` − MAE de B6 kalman) y la ganancia con
+  retraso g₁ con la predicción retrasada, con el MAE por sesión promediado entre semillas, y
+  la fracción retenida g₁/g₀.
+
+Los intervalos remuestrean días UTC con bloques circulares de la longitud, las réplicas y la
+semilla de la comparación, los mismos días para las dos ganancias. La regla se aplica a la
+estimación: cobertura entre el 85 % y el 95 % y al menos la mitad de la ganancia. Sin
+ganancia sin retraso, D3 no tiene nada que conservar y el informe lo dice. No se ha
+ejecutado, porque necesita las predicciones de la campaña.
+
 ## Matriz de comparaciones y atribución por componentes
 
 La [matriz de la campaña A](../../configs/evaluation/comparison-matrix-a.json) se
