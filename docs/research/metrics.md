@@ -1614,6 +1614,34 @@ recibo.
 - Ninguna prueba finita respalda olvido cero ni retención ilimitada. Una retención
   descartada o una interferencia detectada se publican igual que el resultado contrario.
 
+## Eventos declarados de D2
+
+Las reglas de PT1, PT2 y PT3 nombran tres eventos fijados antes de ver resultados: la quiebra
+de Lehman (15/09/2008), la caída de marzo de 2020 (24/02/2020 a 23/03/2020) y el inicio de
+las subidas de tipos de 2022 (16/03/2022). El diagnóstico D2 de
+[memory-diagnostics.md](memory-diagnostics.md) los define en EE. UU. con ±60 sesiones y usa
+para China las sesiones de junio a agosto de 2015. La sección `declared_events` de la
+comparación conjunta los declara así desde el 14 de octubre de 2026, antes de cualquier
+ejecución, y `evaluation/declared_events.py` los calcula con las mismas series de MAE por
+sesión que los contrastes.
+
+Un evento ocupa las sesiones evaluadas de su mercado cuyo día cae en su tramo, más 60
+anteriores y 60 posteriores en el orden de esas sesiones. Para cada modelo el informe da,
+por evento y con los eventos de cada vista unidos, el número de sesiones, la media y el
+percentil 95 del MAE por sesión después de promediar las semillas. Para cada contraste de
+dos modelos da el cambio relativo de ese percentil, que es lo que pide la regla de PT1 (no
+empeorar más de un 1 % frente a su control). El intervalo sale de un bootstrap circular por
+bloques de 16 sesiones dentro de cada evento, con las mismas réplicas para los dos modelos.
+Con unas 120 sesiones por evento, el percentil 95 depende de seis o siete sesiones, así que
+el intervalo será ancho y la regla de PT1 se lee junto a él. En la calibración en línea de
+PT2, cada modelo da la cobertura de todas las variantes en las sesiones de cada evento,
+ponderada por filas, y el tramo de años en que cae. El evento de 2008 cae en los años en que
+se elige κ, así que en él la cobertura describe y no contrasta.
+
+Un evento sin sesiones evaluadas queda fuera con su motivo. El evento de 2008 solo entra si
+alguna ventana evalúa septiembre de 2008. No se ha ejecutado, porque necesita las
+predicciones de la campaña.
+
 ## Matriz de comparaciones y atribución por componentes
 
 La [matriz de la campaña A](../../configs/evaluation/comparison-matrix-a.json) se

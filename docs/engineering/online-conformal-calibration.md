@@ -182,7 +182,7 @@ El arranque cuesta 3,5 ms con 128 activos y 0,12 s con 4.200. Exportar y restaur
 ## Pendiente sin medir
 
 - El efecto sobre la cobertura y el interval score, la elección de κ y la regla de decisión, bloqueados porque no hay predicciones de la campaña.
-- La cobertura en los eventos declarados de 2008, 2020 y 2022.
+- La cobertura en los eventos declarados de 2008, 2020 y 2022 y en el verano de 2015 en China. El informe la calcula desde el 14 de octubre de 2026 con la sección `declared_events` de la comparación conjunta, pero no hay predicciones de la campaña.
 
 ## Referencias
 
