@@ -7,6 +7,7 @@ pruebas admiten la etapa con la protección temporal permitida de `learning_doub
 """
 
 import json
+import math
 import shutil
 from pathlib import Path
 from types import SimpleNamespace
@@ -86,9 +87,14 @@ def test_variant_a_runs_every_policy_on_the_same_causal_tapes(base_a, tmp_path, 
         universes.setdefault(identity["window"], set()).add(identity["tapes"]["universe_sha256"])
         assert len(receipt["evaluation"]) == 4 and receipt["final_test_opened"] is False
         if identity["kind"] == "fit":
-            assert receipt["selection"] == dict(
+            selection = dict(receipt["selection"])
+            best = selection.pop("best")
+            assert selection == dict(
                 metric="ruin_count_then_mean_liquidated_log_growth", partition="validation"
             )
+            # El mejor estado publica sus ruinas y su crecimiento liquidado de validación.
+            assert best["ruin_count"] == 0 and math.isfinite(best["mean_liquidated_log_growth"])
+            assert receipt["validation_future_information_bound"] is not None
             assert receipt["policy"]["id"] == identity["id"]
             if identity["arm"] == "klpo_terminal":
                 # Dos oleadas completas de dos episodios anuales, sin superar el presupuesto.
@@ -543,6 +549,8 @@ INVALID = {
     "drops_an_episode": (_pop, "cada coste"),
     "predictor_mae": (_selection(metric="session_mae"), "criterio de cartera"),
     "selects_on_evaluation": (_selection(partition="evaluation"), "criterio de cartera"),
+    "selection_without_best": (_selection(best=None), "mejor estado de validación"),
+    "best_without_growth": (_selection(best=dict(ruin_count=0)), "mejor estado de validación"),
     "fewer_transitions": (_fewer, "presupuesto"),
     "klpo_beyond_its_waves": (_beyond_waves, "presupuesto"),
     "policy_of_another_job": (

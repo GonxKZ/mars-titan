@@ -44,6 +44,9 @@ Reglas declaradas antes de ver resultados:
   trata como un fallo del entorno hasta demostrar lo contrario. Se publica en
   `future_information` y el informe queda como `environment_review_required`, por delante de
   cualquier otro estado. Los episodios cuya cota no terminó se publican como no comprobados.
+- El mejor estado de validación que eligió cada ajuste se compara igual con la cota de su
+  cinta de validación (`validation_information`). Una fuga presente solo en la validación
+  influiría en la selección sin aparecer en la evaluación.
 """
 
 import argparse
@@ -72,10 +75,19 @@ from mars_titan.hardware import hardware_profiles
 from mars_titan.integrity import oracle_bound
 
 from . import index_benchmark
-from .campaign_stage import BOUND_COST_BPS, BOUND_KIND, RUN_KIND, _digest, _record, summarize
+from .campaign_stage import (
+    BOUND_COST_BPS,
+    BOUND_KIND,
+    RUN_KIND,
+    _digest,
+    _record,
+    best_state,
+    summarize,
+)
 from .environment import ALLOCATIONS
 from .evaluation import REFERENCE_ALLOCATIONS
 from .policy_plan import (
+    FIT,
     MARKET_INDEX,
     REFERENCE,
     _require,
@@ -383,8 +395,8 @@ def survival(policies, output):
     )
 
 
-def _bound(root, reference, receipt):
-    """Episodio de la cota que enlaza un recibo, con sus comprobaciones."""
+def _bound(root, reference, receipt, partition="evaluation"):
+    """Episodio de la cota que enlaza un recibo para una de sus cintas, con sus comprobaciones."""
     job = receipt["job"]["id"]
     path = (root / reference["path"]).resolve()
     _require(path.is_relative_to(root), f"La cota de {job} está fuera de su salida")
@@ -393,14 +405,14 @@ def _bound(root, reference, receipt):
     _require(
         digest == reference["sha256"]
         and document.get("kind") == BOUND_KIND
-        and document.get("tape_sha256") == receipt["identity"]["tapes"]["evaluation"]
+        and document.get("tape_sha256") == receipt["identity"]["tapes"][partition]
         and document.get("action") == oracle_bound.FULL_EXPOSURE
         and document.get("suspicious_fraction") == oracle_bound.SUSPICIOUS_FRACTION
         and document.get("excluded_from_comparisons") is True
         and document.get("final_test_opened") is False
         and isinstance(episode, dict)
         and episode.get("cost_bps") == BOUND_COST_BPS,
-        f"La cota de {job} no es la de su cinta de evaluación",
+        f"La cota de {job} no es la de su cinta de {partition}",
     )
     return episode
 
@@ -479,6 +491,84 @@ def future_information(policies, output):
         cost_bps=BOUND_COST_BPS,
         suspicious_fraction=fraction,
         status="review_required" if flagged else "no_flagged_episodes",
+        checked=checked,
+        flagged=flagged,
+        unchecked=unchecked,
+    )
+
+
+def validation_information(policies, output):
+    """Mejores estados de validación que superan la cota de su cinta o se acercan a ella.
+
+    Cada ajuste elige el estado con el crecimiento logarítmico medio de validación de su
+    criterio, que paga el coste del entorno. Ninguna política con costes debería superar la cota sin
+    costes de la misma cinta, y todas las aprendidas reparten con las puntuaciones, así que
+    la fracción sospechosa se aplica a todas. Un mejor estado con alguna ruina no se compara.
+    """
+    root = Path(output["path"])
+    fraction = oracle_bound.SUSPICIOUS_FRACTION
+    loaded, flagged, unchecked, checked = {}, [], [], 0
+    for receipt in output["receipts"].values():
+        job = receipt["job"]
+        reference = receipt.get("validation_future_information_bound", False)
+        _require(
+            reference is not False, f"El recibo de {job['id']} no enlaza la cota de su validación"
+        )
+        chosen = job["kind"] == FIT and receipt["selection"] is not None
+        _require(
+            (reference is not None) == chosen,
+            f"Solo el recibo de un ajuste con selección enlaza la cota de su validación "
+            f"({job['id']})",
+        )
+        if reference is None:
+            continue
+        if reference["path"] not in loaded:
+            loaded[reference["path"]] = _bound(root, reference, receipt, "validation")
+        bound = loaded[reference["path"]]
+        state = best_state(receipt["selection"]["best"], policies["selection"]["metric"])
+        _require(
+            state is not None,
+            f"El mejor estado de {job['id']} no publica sus ruinas y su crecimiento de validación",
+        )
+        ruins, growth = state
+        where = dict(
+            scope=job["scope"],
+            market=job["market"],
+            window=job["window"],
+            predictor=job["predictor"],
+            arm=job["arm"],
+            seed=job["seed"],
+        )
+        if bound["status"] != "completed":
+            unchecked.append(dict(where, bound_status=bound["status"], reason=bound["reason"]))
+            continue
+        if ruins:
+            continue
+        checked += 1
+        limit = math.log1p(bound["net_return"])
+        if growth > limit:
+            reason = "exceeds_bound"
+        elif limit > 0 and growth >= fraction * limit:
+            reason = "suspicious_fraction"
+        else:
+            continue
+        flagged.append(
+            dict(
+                where,
+                reason=reason,
+                log_growth=growth,
+                bound_log_growth=limit,
+                fraction_of_bound=growth / limit if limit > 0 else None,
+                bound=reference["path"],
+            )
+        )
+    return dict(
+        rule=oracle_bound.RULE,
+        metric=policies["selection"]["metric"],
+        cost_bps=policies["environment"]["cost_bps"],
+        bound_cost_bps=BOUND_COST_BPS,
+        suspicious_fraction=fraction,
+        status="review_required" if flagged else "no_flagged_states",
         checked=checked,
         flagged=flagged,
         unchecked=unchecked,
@@ -613,8 +703,11 @@ def _interval(row):
 
 
 def report_status(sections):
-    """Un episodio señalado por la cota se revisa antes que la sensibilidad de supervivencia."""
-    if any(section["future_information"]["flagged"] for section in sections):
+    """Un episodio o un estado señalados por la cota se revisan antes que la supervivencia."""
+    if any(
+        section["future_information"]["flagged"] or section["validation_information"]["flagged"]
+        for section in sections
+    ):
         return "environment_review_required"
     if any(section["survival"]["affected"] for section in sections):
         return "pending_survival_sensitivity"
@@ -684,9 +777,16 @@ def build_report(
         ]
         exits = survival(policies, output)
         bounded = future_information(policies, output)
+        chosen = validation_information(policies, output)
         output.pop("receipts")
         sections.append(
-            dict(output=output, families=found, survival=exits, future_information=bounded)
+            dict(
+                output=output,
+                families=found,
+                survival=exits,
+                future_information=bounded,
+                validation_information=chosen,
+            )
         )
     platform = receipts_platform(platforms, unrecorded_platform)
     metrics, contrasts, equity = _tables(sections)
@@ -769,6 +869,10 @@ def main(argv=None):
                 with_bootstrap=sum("differences" in (f["bootstrap"] or {}) for f in families),
                 flagged_by_bound=sum(
                     len(section["future_information"]["flagged"]) for section in result["sections"]
+                ),
+                flagged_by_validation_bound=sum(
+                    len(section["validation_information"]["flagged"])
+                    for section in result["sections"]
                 ),
                 component_bootstraps=sum(len(f["components"]) for f in families),
                 missing_benchmarks=result["missing_benchmarks"],

@@ -10,8 +10,10 @@ fixture, cubre desde septiembre de 2019. Los ejecutores aprendidos se sustituyen
 
 import hashlib
 import json
+import math
 import shutil
 from contextlib import contextmanager
+from dataclasses import replace
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -286,7 +288,9 @@ class ScriptedLearner:
             atomic_json(state, dict(job=job["id"], seed=job["seed"], rule="observation_sha256"))
             policy = dict(id=job["id"], sha256=sha256(state))
             selection = dict(
-                metric=stage["policies"]["selection"]["metric"], partition="validation"
+                metric=stage["policies"]["selection"]["metric"],
+                partition="validation",
+                best=validation_best(tapes, stage, job["market"], self.action),
             )
             budget = stage["policies"]["budget"]
             transitions = budget["transitions"]
@@ -311,6 +315,28 @@ class ScriptedLearner:
             ),
         )
         return self.mutate(job, report) if self.mutate else report
+
+
+def validation_best(tapes, stage, market, action):
+    """Mejor estado de validación de la política de reglas fijas: su episodio con coste.
+
+    La política no aprende, así que su único estado es el elegido. Se publica con los campos
+    del motor nativo para que la etapa reducida lo compare con la cota de la validación.
+    """
+    policies = stage["policies"]
+    cost = dict(
+        stage, policies=dict(policies, evaluation_costs_bps=[policies["environment"]["cost_bps"]])
+    )
+    validation = replace(tapes, evaluation=tapes.validation)
+    (record,) = campaign_stage.evaluate_policy(validation, action, cost, market, backend="python")
+    growth = math.log1p(record["net_return"])
+    liquidated = math.log1p(record["liquidated_net_return"])
+    return dict(
+        ruin_count=int(record["status"] == "ruined"),
+        episodes=1,
+        mean_log_growth=growth,
+        mean_liquidated_log_growth=liquidated,
+    )
 
 
 def executors(learner, backend="python"):

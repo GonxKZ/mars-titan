@@ -6,6 +6,7 @@ lee archivos confirmados.
 """
 
 import math
+from dataclasses import replace
 
 import pytest
 
@@ -334,8 +335,12 @@ def test_receipts_must_link_the_bound_of_their_tape_inside_the_output(tmp_path):
 
 
 def test_a_flagged_episode_takes_precedence_over_the_pending_survival_sensitivity():
-    def section(flagged, affected):
-        return dict(future_information=dict(flagged=flagged), survival=dict(affected=affected))
+    def section(flagged, affected, chosen=()):
+        return dict(
+            future_information=dict(flagged=flagged),
+            validation_information=dict(flagged=list(chosen)),
+            survival=dict(affected=affected),
+        )
 
     assert stage_report.report_status([section([], [])]) == "complete"
     pending = [section([], []), section([], [dict(window="fold-002")])]
@@ -343,3 +348,178 @@ def test_a_flagged_episode_takes_precedence_over_the_pending_survival_sensitivit
     flagged = [section([dict(reason="exceeds_bound")], []), section([], [dict(window="w")])]
     assert stage_report.report_status(flagged) == "environment_review_required"
     assert stage_report.report_status(list(reversed(flagged))) == "environment_review_required"
+    # Un mejor estado de validación señalado también pasa por delante de la supervivencia.
+    chosen = [section([], [dict(window="w")], [dict(reason="suspicious_fraction")])]
+    assert stage_report.report_status(chosen) == "environment_review_required"
+
+
+# Cota de la cinta de validación y mejor estado de cada ajuste
+
+VALIDATION_SHA = "d" * 64
+
+
+def test_the_validation_bound_is_the_bound_of_that_tape_and_shared_with_its_evaluation_role(
+    tmp_path, monkeypatch
+):
+    tape = custom(walk(sessions=20, assets=3))
+    as_validation = replace(tapes(None), validation=tape)
+    found = campaign_stage.future_information_bound(
+        as_validation, STAGE, "US", backend="python", partition="validation"
+    )
+    assert found == campaign_stage.future_information_bound(
+        tapes(tape), STAGE, "US", backend="python"
+    )
+    # Una cinta que evalúa una ventana y valida la siguiente se calcula una sola vez.
+    state = stage_state(tmp_path)
+    first = state.bound(dict(market="US"), tapes(tape))
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("La cota de una cinta ya calculada se volvió a calcular")
+
+    monkeypatch.setattr(campaign_stage, "future_information_bound", forbidden)
+    assert state.bound(dict(market="US"), as_validation, "validation") == first
+
+
+@pytest.mark.parametrize(
+    "kind, selection, linked",
+    [("fit", dict(best={}), True), ("fit", None, False), ("carry", None, False)]
+    + [("reference", None, False)],
+)
+def test_only_a_fit_that_chose_a_state_links_the_bound_of_its_validation(
+    tmp_path, monkeypatch, kind, selection, linked
+):
+    monkeypatch.setattr(campaign_stage, "check_report", lambda *args: None)
+    state = stage_state(tmp_path)
+    evaluation = custom(walk(sessions=20, assets=3, seed=1))
+    validation = custom(walk(sessions=20, assets=3, seed=2))
+    work = replace(tapes(evaluation), validation=validation)
+    report = dict(transitions=0, updates=0, selection=selection, policy=None, evaluation=[])
+    confirmed = state.confirm(job(kind=kind), {}, work, report, None)
+    assert confirmed["future_information_bound"]["path"] == f"bounds/{evaluation.sha256}.json"
+    linked_bound = confirmed["validation_future_information_bound"]
+    if linked:
+        assert linked_bound["path"] == f"bounds/{validation.sha256}.json"
+        assert linked_bound["sha256"] == sha256(tmp_path / linked_bound["path"])
+    else:
+        assert linked_bound is None
+
+
+def chosen(growth, *, ruins=0, of=None, validation_tape=VALIDATION_SHA):
+    """Recibo de un ajuste con el mejor estado de validación dado."""
+    item = receipt(0.1, of=of)
+    item["identity"]["tapes"]["validation"] = validation_tape
+    item["selection"] = dict(
+        metric="ruin_count_then_mean_liquidated_log_growth",
+        partition="validation",
+        best=dict(ruin_count=ruins, mean_liquidated_log_growth=growth),
+    )
+    item["validation_future_information_bound"] = None
+    return item
+
+
+def validated(root, receipts, net_return=1.0, **changes):
+    """Salida con la cota de evaluación y la de validación enlazadas a cada ajuste."""
+    output = output_with(root, receipts, bound_document(3.0))
+    document = bound_document(net_return, **dict(dict(tape_sha256=VALIDATION_SHA), **changes))
+    atomic_json(root / "bounds" / "validation.json", document)
+    linked = dict(path="bounds/validation.json", sha256=sha256(root / "bounds" / "validation.json"))
+    for item in receipts:
+        if item.get("selection") is not None:
+            item["validation_future_information_bound"] = linked
+    return output
+
+
+POLICIES = dict(
+    evaluation_costs_bps=COSTS,
+    environment=ENVIRONMENT,
+    selection=dict(metric="ruin_count_then_mean_liquidated_log_growth"),
+)
+
+
+def chosen_states(output):
+    return stage_report.validation_information(POLICIES, output)
+
+
+def test_best_states_far_below_the_validation_bound_are_checked_without_flags(tmp_path):
+    found = chosen_states(validated(tmp_path, [chosen(0.05)]))
+    assert found["status"] == "no_flagged_states" and found["checked"] == 1
+    assert found["flagged"] == [] and found["unchecked"] == []
+    assert (found["cost_bps"], found["bound_cost_bps"]) == (10, 0)
+    assert found["metric"] == POLICIES["selection"]["metric"]
+
+
+@pytest.mark.parametrize(
+    "growth, reason", [(math.log(2) * 0.5, "suspicious_fraction"), (0.8, "exceeds_bound")]
+)
+def test_a_best_state_near_or_above_the_validation_bound_is_flagged(tmp_path, growth, reason):
+    # La cota crece log(2): la mitad ya es sospechosa y más que ella la supera.
+    found = chosen_states(validated(tmp_path, [chosen(growth)]))
+    assert found["status"] == "review_required"
+    (flag,) = found["flagged"]
+    assert flag["reason"] == reason and flag["log_growth"] == growth
+    assert flag["bound_log_growth"] == pytest.approx(math.log(2))
+    assert flag["bound"] == "bounds/validation.json" and flag["arm"] == "klpo_terminal"
+
+
+def test_ruined_states_are_not_compared_and_unfinished_bounds_are_unchecked(tmp_path):
+    found = chosen_states(validated(tmp_path / "a", [chosen(5.0, ruins=1)]))
+    assert found["checked"] == 0 and found["flagged"] == [] and found["unchecked"] == []
+    unfinished = validated(
+        tmp_path / "b", [chosen(5.0)], None, episode=record(0, None, "failed", "unpriced_exit")
+    )
+    found = chosen_states(unfinished)
+    assert found["checked"] == 0 and found["flagged"] == []
+    assert found["unchecked"][0]["reason"] == "unpriced_exit"
+
+
+def test_only_fits_that_chose_a_state_link_the_validation_bound(tmp_path):
+    output = validated(tmp_path / "a", [chosen(0.05)])
+    linked = next(iter(output["receipts"].values()))
+    linked.pop("validation_future_information_bound")
+    with pytest.raises(ValueError, match="no enlaza la cota de su validación"):
+        chosen_states(output)
+    # Un ajuste con selección sin cota, o una referencia con ella, también fallan.
+    output = validated(tmp_path / "b", [chosen(0.05)])
+    next(iter(output["receipts"].values()))["validation_future_information_bound"] = None
+    with pytest.raises(ValueError, match="Solo el recibo de un ajuste con selección"):
+        chosen_states(output)
+    reference = chosen(0.05, of=job(arm="market_index", kind="reference"))
+    output = validated(tmp_path / "c", [reference])
+    next(iter(output["receipts"].values()))["selection"] = None
+    next(iter(output["receipts"].values()))["validation_future_information_bound"] = dict(
+        path="bounds/validation.json", sha256="0" * 64
+    )
+    with pytest.raises(ValueError, match="Solo el recibo de un ajuste con selección"):
+        chosen_states(output)
+
+
+@pytest.mark.parametrize(
+    "metric, field",
+    [
+        ("ruin_count_then_mean_liquidated_log_growth", "mean_liquidated_log_growth"),
+        ("ruin_count_then_mean_log_growth", "mean_log_growth"),
+    ],
+)
+def test_the_best_state_is_read_with_the_growth_of_the_declared_criterion(metric, field):
+    best = dict(ruin_count=0, **{field: 0.25})
+    assert campaign_stage.best_state(best, metric) == (0, 0.25)
+    other = next(name for name in campaign_stage.SELECTION_GROWTH if name != metric)
+    assert campaign_stage.best_state(best, other) is None
+    for wrong in (
+        dict(best, ruin_count=-1),
+        dict(best, ruin_count=1.0),
+        dict(best, **{field: math.inf}),
+        dict(best, **{field: 1}),
+        None,
+    ):
+        assert campaign_stage.best_state(wrong, metric) is None
+
+
+def test_the_bound_of_another_tape_or_a_best_state_without_growth_is_rejected(tmp_path):
+    other = validated(tmp_path / "a", [chosen(0.05, validation_tape=TAPE_SHA)])
+    with pytest.raises(ValueError, match="no es la de su cinta de validation"):
+        chosen_states(other)
+    output = validated(tmp_path / "b", [chosen(0.05)])
+    next(iter(output["receipts"].values()))["selection"]["best"].pop("ruin_count")
+    with pytest.raises(ValueError, match="no publica sus ruinas"):
+        chosen_states(output)

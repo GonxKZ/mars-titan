@@ -84,6 +84,15 @@ def test_every_family_pairs_klpo_with_its_controls_on_the_same_sessions(
     bounded = section["future_information"]
     assert bounded["checked"] == sum(e["status"] == "completed" for e in free) > 0
     assert bounded["flagged"] == [] and bounded["unchecked"] == []
+    # Cada ajuste enlaza también la cota de su validación y su mejor estado queda por debajo.
+    linked = {
+        key: r["validation_future_information_bound"] is not None
+        for key, r in receipts(stage_output).items()
+    }
+    fits = [key for key in linked if key.rsplit("/", 1)[1].startswith("fit-")]
+    assert fits and sorted(key for key, found in linked.items() if found) == sorted(fits)
+    chosen = section["validation_information"]
+    assert chosen["checked"] == len(fits) and chosen["flagged"] == []
     for name in ("report.json", "metrics.csv", "contrasts.csv", "equity.parquet"):
         assert (tmp_path / "report" / name).is_file()
 
@@ -477,7 +486,7 @@ def test_the_campaign_command_writes_the_report(base, stage_output, tmp_path, ca
     # Las políticas reducidas no declaran contrastes de componente.
     assert printed["component_bootstraps"] == 0
     assert printed["missing_benchmarks"] == ["CN"] and printed["status"] == "complete"
-    assert printed["flagged_by_bound"] == 0
+    assert printed["flagged_by_bound"] == 0 and printed["flagged_by_validation_bound"] == 0
 
 
 def test_a_universe_series_ending_in_evaluation_is_listed_for_the_survival_sensitivity(

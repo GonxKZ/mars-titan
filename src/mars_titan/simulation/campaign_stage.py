@@ -64,6 +64,7 @@ from .policy_plan import (
     FIT,
     MARKET_INDEX,
     REFERENCE,
+    SELECTION_GROWTH,
     _number,
     _require,
     count_stage,
@@ -287,6 +288,19 @@ def episode(cost, result=None, *, failure=None):
     )
 
 
+def best_state(best, metric):
+    """Ruinas y crecimiento de validación del mejor estado de un ajuste, o None sin ellos.
+
+    El crecimiento es el del criterio de selección declarado: liquidado o valorado al cierre.
+    """
+    if not isinstance(best, dict) or type(best.get("ruin_count")) is not int:
+        return None
+    growth = best.get(SELECTION_GROWTH[metric])
+    if best["ruin_count"] < 0 or not isinstance(growth, float) or not math.isfinite(growth):
+        return None
+    return best["ruin_count"], growth
+
+
 def market_rules(tape, market):
     """Reglas de acciones A de una cinta china con el estado de su auditoría. EE. UU. no tiene."""
     from .market_rules import tape_instruments
@@ -323,18 +337,23 @@ def evaluate_policy(tapes, policy, stage, market, *, backend, seed=42, allocatio
     return records
 
 
-def future_information_bound(tapes, stage, market, *, backend):
-    """Episodio sin costes de la cota con información futura en la cinta de evaluación.
+def future_information_bound(tapes, stage, market, *, backend, partition="evaluation"):
+    """Episodio sin costes de la cota con información futura en una cinta del trabajo.
 
     Es la política de exposición completa sobre la cinta puntuada con el rendimiento de cada
     tenencia (`integrity.oracle_bound`), con las mismas reglas y liquidez que las políticas
-    evaluadas. El informe de la etapa compara con él los episodios sin costes y trata como un
-    fallo del entorno, hasta demostrar lo contrario, el que lo supere o el que alcance la
+    evaluadas. El informe de la etapa compara con la cota de la evaluación los episodios sin
+    costes y con la de la validación el mejor estado que eligió cada ajuste. Trata como un
+    fallo del entorno, hasta demostrar lo contrario, el que la supere o el que alcance la
     fracción sospechosa de su crecimiento. Queda fuera de toda comparación.
+
+    La cota depende solo de la cinta, así que una cinta que es evaluación de una ventana y
+    validación de otra tiene la misma.
     """
     from mars_titan.integrity import oracle_bound
 
-    oracle = replace(tapes, evaluation=oracle_bound.oracle_tape(tapes.evaluation))
+    tape = getattr(tapes, partition)
+    oracle = replace(tapes, evaluation=oracle_bound.oracle_tape(tape))
     free = dict(stage, policies=dict(stage["policies"], evaluation_costs_bps=[BOUND_COST_BPS]))
     (record,) = evaluate_policy(oracle, oracle_bound.full_exposure, free, market, backend=backend)
     return dict(
@@ -343,7 +362,7 @@ def future_information_bound(tapes, stage, market, *, backend):
         rule=oracle_bound.RULE,
         action=oracle_bound.FULL_EXPOSURE,
         suspicious_fraction=oracle_bound.SUSPICIOUS_FRACTION,
-        tape_sha256=tapes.evaluation.sha256,
+        tape_sha256=tape.sha256,
         oracle_tape_sha256=oracle.evaluation.sha256,
         episode={key: value for key, value in record.items() if key != "equity"},
         excluded_from_comparisons=True,
@@ -536,6 +555,7 @@ def check_report(stage, job, report, tapes, anchor=None):
             isinstance(selection, dict)
             and selection.get("metric") == policies["selection"]["metric"]
             and selection.get("partition") == "validation"
+            and best_state(selection.get("best"), policies["selection"]["metric"]) is not None
             and spent
             and report["updates"] >= 0
             and isinstance(policy, dict)
@@ -543,7 +563,7 @@ def check_report(stage, job, report, tapes, anchor=None):
             and policy["id"] == job["id"]
             and _HEX.fullmatch(str(policy["sha256"])),
             f"{job['id']}: el ajuste no aplica el presupuesto, el criterio de cartera o "
-            "no identifica la política elegida",
+            "no identifica la política elegida y su mejor estado de validación",
         )
     elif job["kind"] == CARRY:
         _require(
@@ -1165,21 +1185,21 @@ class _Stage:
         _require(receipt.get("identity") == identity, f"{job['id']} cambió de identidad")
         return dict(receipt, sha256=digest)
 
-    def bound(self, job, tapes):
-        """Cota de la cinta de evaluación del trabajo, calculada una sola vez por cinta."""
-        if tapes.evaluation is None:
+    def bound(self, job, tapes, partition="evaluation"):
+        """Cota de una cinta del trabajo, calculada una sola vez por cinta."""
+        tape = getattr(tapes, partition)
+        if tape is None:
             return None
-        path = self.output / "bounds" / f"{tapes.evaluation.sha256}.json"
+        path = self.output / "bounds" / f"{tape.sha256}.json"
         if path.is_file():
             document, digest = read_manifest(path, 8 * 1024**2)
             _require(
-                document.get("kind") == BOUND_KIND
-                and document.get("tape_sha256") == tapes.evaluation.sha256,
-                f"La cota guardada en {path.name} no es la de su cinta de evaluación",
+                document.get("kind") == BOUND_KIND and document.get("tape_sha256") == tape.sha256,
+                f"La cota guardada en {path.name} no es la de su cinta de {partition}",
             )
         else:
             document = future_information_bound(
-                tapes, self.stage, job["market"], backend=self.bound_backend
+                tapes, self.stage, job["market"], backend=self.bound_backend, partition=partition
             )
             atomic_json(path, document)
             digest = sha256(path)
@@ -1188,6 +1208,9 @@ class _Stage:
     def confirm(self, job, identity, tapes, report, anchor):
         check_report(self.stage, job, report, tapes, anchor)
         bound = self.bound(job, tapes)
+        # Solo un ajuste elige un estado con la validación. Los traslados heredan el de su ancla.
+        chosen = job["kind"] == FIT and report["selection"] is not None
+        validation = self.bound(job, tapes, "validation") if chosen else None
         receipt = dict(
             schema_version=1,
             kind=RECEIPT_KIND,
@@ -1202,6 +1225,7 @@ class _Stage:
             policy=report["policy"],
             evaluation=report["evaluation"],
             future_information_bound=bound,
+            validation_future_information_bound=validation,
             final_test_opened=False,
             confirmed_at_utc=datetime.now(UTC).isoformat(),
         )
